@@ -3,11 +3,11 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   test: {
     environment: 'node',
-    include: ['{server,lib,db,shared,tests}/**/*.test.ts'],
+    include: ['{server,lib,db,shared,tests,app}/**/*.test.ts'],
     coverage: {
       provider: 'v8',
       all: true,
-      include: ['server/utils/**/*.ts', 'shared/**/*.ts'],
+      include: ['server/utils/**/*.ts', 'shared/**/*.ts', 'app/utils/**/*.ts'],
       exclude: [
         '**/*.test.ts',
         '**/types/**',
