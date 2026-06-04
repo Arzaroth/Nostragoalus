@@ -30,6 +30,14 @@ export default defineNuxtConfig({
   nitro: {
     preset: 'node-server',
     experimental: { tasks: true },
+    scheduledTasks: {
+      // Live score polling self-gates on the live window, so off-window ticks make no API calls.
+      '*/2 * * * *': ['scores:poll'],
+      // Hourly fixture/bracket refresh.
+      '0 * * * *': ['fixtures:refresh'],
+      // Lock predictions at kickoff and score finished matches.
+      '*/5 * * * *': ['matches:finalize'],
+    },
   },
 
   runtimeConfig: {
