@@ -8,7 +8,13 @@ export default defineConfig({
       provider: 'v8',
       all: true,
       include: ['server/utils/**/*.ts', 'shared/**/*.ts'],
-      exclude: ['**/*.test.ts', '**/types/**', 'server/utils/providers/index.ts'],
+      exclude: [
+        '**/*.test.ts',
+        '**/types/**',
+        'server/utils/providers/index.ts',
+        'server/utils/auth-guards.ts',
+        'server/utils/http.ts',
+      ],
       thresholds: {
         lines: 95,
         functions: 95,

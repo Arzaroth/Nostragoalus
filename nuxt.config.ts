@@ -29,6 +29,7 @@ export default defineNuxtConfig({
 
   nitro: {
     preset: 'node-server',
+    experimental: { tasks: true },
   },
 
   runtimeConfig: {
@@ -39,6 +40,7 @@ export default defineNuxtConfig({
     apiFootballKey: '',
     wcSeason: '2026',
     cronEnabled: 'true',
+    adminEmails: '',
     public: {
       authUrl: '',
       appName: 'Mon Petit Prono',
