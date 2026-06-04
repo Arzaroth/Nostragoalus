@@ -1,0 +1,24 @@
+import { footballDataProvider } from './football-data'
+import type { MatchDataProvider } from './types'
+
+export interface ProviderSelection {
+  provider: string
+  footballDataToken?: string
+  apiFootballKey?: string
+  fetchImpl?: typeof fetch
+}
+
+export function createProvider(selection: ProviderSelection): MatchDataProvider {
+  if (selection.provider === 'football-data') {
+    if (!selection.footballDataToken) {
+      throw new Error('football-data provider requires NUXT_FOOTBALL_DATA_TOKEN')
+    }
+    return footballDataProvider({ token: selection.footballDataToken, fetchImpl: selection.fetchImpl })
+  }
+
+  if (selection.provider === 'api-football') {
+    throw new Error('api-football adapter is not implemented yet')
+  }
+
+  throw new Error(`unknown match provider: ${selection.provider}`)
+}

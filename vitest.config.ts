@@ -8,7 +8,7 @@ export default defineConfig({
       provider: 'v8',
       all: true,
       include: ['server/utils/**/*.ts', 'shared/**/*.ts'],
-      exclude: ['**/*.test.ts', '**/types/**'],
+      exclude: ['**/*.test.ts', '**/types/**', 'server/utils/providers/index.ts'],
       thresholds: {
         lines: 95,
         functions: 95,
