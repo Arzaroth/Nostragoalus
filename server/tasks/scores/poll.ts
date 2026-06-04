@@ -1,8 +1,8 @@
-import { db } from '../../db'
-import { getProvider } from '../utils/providers'
-import { hasLiveWindow } from '../utils/sync/live-window'
-import { upsertMatches } from '../utils/sync/upsert-matches'
-import { ProviderRateLimitError } from '../utils/providers/types'
+import { db } from '../../../db'
+import { getProvider } from '../../utils/providers'
+import { hasLiveWindow } from '../../utils/sync/live-window'
+import { upsertMatches } from '../../utils/sync/upsert-matches'
+import { ProviderRateLimitError } from '../../utils/providers/types'
 
 export default defineTask({
   meta: { name: 'scores:poll', description: 'Poll live scores while matches are in a live window' },
