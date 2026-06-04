@@ -1,0 +1,35 @@
+# Dependencies
+node_modules
+
+# Nuxt / Nitro build + dev artifacts
+.nuxt
+.output
+.nitro
+.data
+.cache
+dist
+
+# Logs
+logs
+*.log
+pnpm-debug.log*
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+.idea
+.fleet
+.vscode/*
+!.vscode/extensions.json
+
+# Test / coverage
+coverage
+
+# Misc
+*.local
+
+# Note: Drizzle migrations (./drizzle/**) are committed on purpose.
