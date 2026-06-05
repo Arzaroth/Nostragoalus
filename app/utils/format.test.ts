@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isLocked, matchStatusLabel, statusSeverity, tierLabel } from './format'
+import { flagUrl, isLocked, matchStatusLabel, statusSeverity, tierLabel } from './format'
 import type { MatchStatus } from '../../shared/types/match'
 
 const STATUSES: MatchStatus[] = [
@@ -46,5 +46,13 @@ describe('isLocked', () => {
     const kickoff = '2026-06-11T16:00:00Z'
     expect(isLocked(kickoff, new Date('2026-06-11T16:00:01Z').getTime())).toBe(true)
     expect(isLocked(kickoff, new Date('2026-06-11T15:59:59Z').getTime())).toBe(false)
+  })
+})
+
+describe('flagUrl', () => {
+  it('builds a FIFA flag url or returns null', () => {
+    expect(flagUrl('MEX')).toContain('/flags-sq-3/MEX')
+    expect(flagUrl(null)).toBeNull()
+    expect(flagUrl(undefined)).toBeNull()
   })
 })

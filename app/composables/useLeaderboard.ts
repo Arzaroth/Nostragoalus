@@ -11,8 +11,12 @@ export interface LeaderboardRow {
 }
 
 export function useLeaderboard() {
+  const slug = useSelectedCompetition()
   return useQuery({
-    queryKey: ['leaderboard'],
-    queryFn: () => $fetch<{ rows: LeaderboardRow[] }>('/api/leaderboard').then((r) => r.rows),
+    queryKey: ['leaderboard', slug],
+    queryFn: () =>
+      $fetch<{ rows: LeaderboardRow[] }>('/api/leaderboard', {
+        query: slug.value ? { competition: slug.value } : {},
+      }).then((r) => r.rows),
   })
 }

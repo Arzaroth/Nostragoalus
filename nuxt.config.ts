@@ -4,6 +4,21 @@ export default defineNuxtConfig({
   compatibilityDate: '2026-06-04',
   devtools: { enabled: true },
 
+  app: {
+    head: {
+      title: 'Nostragoalus',
+      htmlAttrs: { lang: 'en' },
+      // Apply the saved/preferred theme before paint to avoid a flash.
+      script: [
+        {
+          innerHTML:
+            "try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('app-dark')}catch(e){}",
+          tagPosition: 'head',
+        },
+      ],
+    },
+  },
+
   modules: [
     '@primevue/nuxt-module',
     '@unocss/nuxt',
@@ -52,7 +67,7 @@ export default defineNuxtConfig({
     adminEmails: '',
     public: {
       authUrl: '',
-      appName: 'Mon Petit Prono',
+      appName: 'Nostragoalus',
     },
   },
 

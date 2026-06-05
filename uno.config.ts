@@ -1,5 +1,6 @@
 import { defineConfig, presetWind3 } from 'unocss'
 
 export default defineConfig({
-  presets: [presetWind3()],
+  // Dark variant keys off the same `.app-dark` class PrimeVue's theme uses.
+  presets: [presetWind3({ dark: { dark: '.app-dark' } })],
 })

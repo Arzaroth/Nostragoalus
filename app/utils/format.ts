@@ -59,3 +59,8 @@ export function tierLabel(tier: string | null | undefined): string {
 export function isLocked(kickoffTime: string | Date, now: number = Date.now()): boolean {
   return new Date(kickoffTime).getTime() <= now
 }
+
+// FIFA flag image derived from a team's tricode (e.g. MEX) — avoids storing crests.
+export function flagUrl(code: string | null | undefined): string | null {
+  return code ? `https://api.fifa.com/api/v3/picture/flags-sq-3/${code}` : null
+}

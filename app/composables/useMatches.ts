@@ -22,8 +22,12 @@ export interface MatchListItem {
 }
 
 export function useMatches() {
+  const slug = useSelectedCompetition()
   return useQuery({
-    queryKey: ['matches'],
-    queryFn: () => $fetch<{ matches: MatchListItem[] }>('/api/matches').then((r) => r.matches),
+    queryKey: ['matches', slug],
+    queryFn: () =>
+      $fetch<{ matches: MatchListItem[] }>('/api/matches', {
+        query: slug.value ? { competition: slug.value } : {},
+      }).then((r) => r.matches),
   })
 }
