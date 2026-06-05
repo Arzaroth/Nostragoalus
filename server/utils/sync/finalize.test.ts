@@ -5,7 +5,7 @@ import { findRoundId } from './rounds'
 import { ensureDefaultScoringConfig } from '../scoring/store'
 import { finalizeMatches, scoreMatchRow } from './finalize'
 import { makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
-import { match, prediction, scoringConfig } from '../../../db/schema'
+import { championPick, match, prediction, scoringConfig } from '../../../db/schema'
 
 const NOW = new Date('2026-06-11T20:00:00Z')
 const KICKOFF = new Date('2026-06-11T16:00:00Z')
@@ -134,6 +134,33 @@ describe('finalizeMatches', () => {
     expect(p.bonusSource).toBe('CROWD')
     expect(Number(p.crowdShare)).toBeCloseTo(1 / 6, 3)
     expect(p.totalPoints).toBe(4)
+    await client.close()
+  })
+
+  it('awards the champion bonus when the final is decided', async () => {
+    const { db, client, competitionId } = await setup()
+    const finalRound = (await findRoundId(db, competitionId, 'FINAL', null)) as string
+    const champ = await makeUser(db, 'champ')
+    const loser = await makeUser(db, 'loser')
+    await db.insert(championPick).values({ userId: champ, competitionId, teamCode: 'BRA', teamName: 'Brazil' })
+    await db.insert(championPick).values({ userId: loser, competitionId, teamCode: 'ARG', teamName: 'Argentina' })
+    await makeMatch(db, {
+      competitionId,
+      roundId: finalRound,
+      stage: 'FINAL',
+      kickoffTime: KICKOFF,
+      status: 'FINISHED',
+      fullTimeHome: 1,
+      fullTimeAway: 0,
+      homeTeamCode: 'BRA',
+      awayTeamCode: 'ARG',
+      winner: 'HOME',
+    })
+
+    await finalizeMatches(db, NOW)
+    const picks = Object.fromEntries((await db.select().from(championPick)).map((p) => [p.userId, p.awardedPoints]))
+    expect(picks[champ]).toBe(10)
+    expect(picks[loser]).toBe(0)
     await client.close()
   })
 })

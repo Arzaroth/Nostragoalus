@@ -33,6 +33,7 @@ function fmtTime(d: string) {
 <template>
   <div>
     <h1 class="text-2xl font-bold mb-5">Fixtures</h1>
+    <ChampionPick />
     <div v-if="isLoading" class="opacity-60">Loading fixtures…</div>
     <div v-else-if="!matches || !matches.length" class="opacity-60">
       No fixtures yet — import them from the <NuxtLink to="/admin" class="underline">admin page</NuxtLink>.

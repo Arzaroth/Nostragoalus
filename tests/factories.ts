@@ -55,6 +55,11 @@ export interface MatchOptions {
   fullTimeHome?: number | null
   fullTimeAway?: number | null
   groupName?: string | null
+  homeTeam?: string
+  awayTeam?: string
+  homeTeamCode?: string | null
+  awayTeamCode?: string | null
+  winner?: 'HOME' | 'AWAY' | 'DRAW' | null
 }
 
 export async function makeMatch(db: AppDatabase, opts: MatchOptions): Promise<string> {
@@ -66,12 +71,15 @@ export async function makeMatch(db: AppDatabase, opts: MatchOptions): Promise<st
       roundId: opts.roundId,
       stage: opts.stage ?? 'GROUP',
       groupName: opts.groupName ?? null,
-      homeTeam: 'Home',
-      awayTeam: 'Away',
+      homeTeam: opts.homeTeam ?? 'Home',
+      awayTeam: opts.awayTeam ?? 'Away',
+      homeTeamCode: opts.homeTeamCode ?? null,
+      awayTeamCode: opts.awayTeamCode ?? null,
       kickoffTime: opts.kickoffTime,
       status: opts.status ?? 'SCHEDULED',
       fullTimeHome: opts.fullTimeHome ?? null,
       fullTimeAway: opts.fullTimeAway ?? null,
+      winner: opts.winner ?? null,
     })
     .returning({ id: match.id })
   return row.id

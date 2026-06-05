@@ -53,6 +53,17 @@ CREATE TABLE "verification" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "champion_pick" (
+	"id" text PRIMARY KEY NOT NULL,
+	"user_id" text NOT NULL,
+	"competition_id" text NOT NULL,
+	"team_code" text,
+	"team_name" text NOT NULL,
+	"awarded_points" integer DEFAULT 0 NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "competition" (
 	"id" text PRIMARY KEY NOT NULL,
 	"slug" text NOT NULL,
@@ -149,6 +160,7 @@ CREATE TABLE "scoring_config" (
 	"pts_miss" integer DEFAULT 0 NOT NULL,
 	"joker_multiplier" numeric(4, 2) DEFAULT '2' NOT NULL,
 	"joker_applies_to_bonus" boolean DEFAULT true NOT NULL,
+	"champion_bonus" integer DEFAULT 10 NOT NULL,
 	"bonus_source" "bonus_source" DEFAULT 'CROWD' NOT NULL,
 	"crowd_tiers" jsonb NOT NULL,
 	"crowd_match_basis" text DEFAULT 'EXACT' NOT NULL,
@@ -171,6 +183,8 @@ CREATE TABLE "user_profile" (
 --> statement-breakpoint
 ALTER TABLE "account" ADD CONSTRAINT "account_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "session" ADD CONSTRAINT "session_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "champion_pick" ADD CONSTRAINT "champion_pick_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "champion_pick" ADD CONSTRAINT "champion_pick_competition_id_competition_id_fk" FOREIGN KEY ("competition_id") REFERENCES "public"."competition"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "match" ADD CONSTRAINT "match_competition_id_competition_id_fk" FOREIGN KEY ("competition_id") REFERENCES "public"."competition"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "match" ADD CONSTRAINT "match_round_id_round_id_fk" FOREIGN KEY ("round_id") REFERENCES "public"."round"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "match_score_event" ADD CONSTRAINT "match_score_event_match_id_match_id_fk" FOREIGN KEY ("match_id") REFERENCES "public"."match"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -182,6 +196,7 @@ ALTER TABLE "user_profile" ADD CONSTRAINT "user_profile_user_id_user_id_fk" FORE
 CREATE INDEX "account_userId_idx" ON "account" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "session_userId_idx" ON "session" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "verification_identifier_idx" ON "verification" USING btree ("identifier");--> statement-breakpoint
+CREATE UNIQUE INDEX "champion_pick_user_competition_uq" ON "champion_pick" USING btree ("user_id","competition_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "competition_slug_uq" ON "competition" USING btree ("slug");--> statement-breakpoint
 CREATE UNIQUE INDEX "match_provider_uq" ON "match" USING btree ("competition_id","provider_match_id");--> statement-breakpoint
 CREATE INDEX "match_competition_idx" ON "match" USING btree ("competition_id");--> statement-breakpoint

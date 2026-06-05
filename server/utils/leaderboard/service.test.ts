@@ -4,7 +4,7 @@ import { createTestDb, type TestDb } from '../../../tests/db'
 import { findRoundId } from '../sync/rounds'
 import { makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
 import { getLeaderboard } from './service'
-import { prediction } from '../../../db/schema'
+import { championPick, prediction } from '../../../db/schema'
 
 async function score(db: TestDb, predId: string, totalPoints: number, baseTier: 'EXACT' | 'DIFF' | 'OUTCOME' | 'MISS') {
   await db
@@ -62,6 +62,19 @@ describe('getLeaderboard', () => {
     const page = await getLeaderboard(db, { competitionId, limit: 1, offset: 1 })
     expect(page).toHaveLength(1)
     expect(page[0].rank).toBe(2)
+    await client.close()
+  })
+
+  it('includes the champion-pick bonus in the total and ranking', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const a = await makeUser(db, 'a', 'A')
+    await makeUser(db, 'b', 'B')
+    await db.insert(championPick).values({ userId: a, competitionId, teamCode: 'MEX', teamName: 'Mexico', awardedPoints: 10 })
+
+    const board = await getLeaderboard(db, { competitionId })
+    expect(board[0]).toMatchObject({ userId: a, totalPoints: 10, championPoints: 10, predictionPoints: 0 })
+    expect(board[1]).toMatchObject({ totalPoints: 0 })
     await client.close()
   })
 })

@@ -3,6 +3,7 @@ import type { AppDatabase } from '../../../db/types'
 import { match, matchScoreEvent, prediction } from '../../../db/schema'
 import { getActiveScoringConfig } from '../scoring/store'
 import { scorePredictions } from '../scoring/engine'
+import { awardChampionBonuses } from '../champion/service'
 import { resultHashOf } from './upsert-matches'
 import { lockDuePredictions, unlockFuturePredictions } from './live-window'
 
@@ -119,6 +120,14 @@ export async function finalizeMatches(db: AppDatabase, now: Date = new Date()): 
   for (const m of finished) {
     if (m.fullTimeHome === null || m.fullTimeAway === null) continue
     if ((await scoreMatchRow(db, m.id, context)) === 'scored') scored += 1
+  }
+
+  // Award champion-pick bonuses once a final is decided (idempotent per tick).
+  for (const m of finished) {
+    if (m.stage === 'FINAL' && (m.winner === 'HOME' || m.winner === 'AWAY')) {
+      const winnerCode = m.winner === 'HOME' ? m.homeTeamCode : m.awayTeamCode
+      await awardChampionBonuses(db, m.competitionId, winnerCode, context.rules.championBonus)
+    }
   }
 
   const voidable = await db.select().from(match).where(inArray(match.status, ['CANCELLED', 'POSTPONED']))

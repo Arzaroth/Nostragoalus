@@ -71,6 +71,7 @@ export const scoringConfig = pgTable(
     ptsMiss: integer('pts_miss').notNull().default(0),
     jokerMultiplier: numeric('joker_multiplier', { precision: 4, scale: 2 }).notNull().default('2'),
     jokerAppliesToBonus: boolean('joker_applies_to_bonus').notNull().default(true),
+    championBonus: integer('champion_bonus').notNull().default(10),
     bonusSource: bonusSourceEnum('bonus_source').notNull().default('CROWD'),
     crowdTiers: jsonb('crowd_tiers').$type<CrowdTier[]>().notNull(),
     crowdMatchBasis: text('crowd_match_basis', { enum: ['EXACT', 'OUTCOME'] }).notNull().default('EXACT'),
@@ -214,6 +215,28 @@ export const prediction = pgTable(
   ],
 )
 
+export const championPick = pgTable(
+  'champion_pick',
+  {
+    id: pk(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    competitionId: text('competition_id')
+      .notNull()
+      .references(() => competition.id, { onDelete: 'cascade' }),
+    teamCode: text('team_code'),
+    teamName: text('team_name').notNull(),
+    awardedPoints: integer('awarded_points').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [uniqueIndex('champion_pick_user_competition_uq').on(t.userId, t.competitionId)],
+)
+
 export const matchScoreEvent = pgTable(
   'match_score_event',
   {
@@ -260,4 +283,9 @@ export const predictionRelations = relations(prediction, ({ one }) => ({
 
 export const matchScoreEventRelations = relations(matchScoreEvent, ({ one }) => ({
   match: one(match, { fields: [matchScoreEvent.matchId], references: [match.id] }),
+}))
+
+export const championPickRelations = relations(championPick, ({ one }) => ({
+  user: one(user, { fields: [championPick.userId], references: [user.id] }),
+  competition: one(competition, { fields: [championPick.competitionId], references: [competition.id] }),
 }))
