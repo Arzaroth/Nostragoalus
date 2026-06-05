@@ -103,6 +103,8 @@
     "profileHint": "When changing your email, you'll need to confirm the new address first.",
     "email": "Email",
     "displayName": "Display name",
+    "changeAvatar": "Change avatar",
+    "avatarHint": "Upload a square image (JPG/PNG).",
     "newEmail": "New email",
     "updateEmail": "Update email",
     "emailChanged": "Email updated.",

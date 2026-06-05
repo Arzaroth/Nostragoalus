@@ -103,6 +103,8 @@
     "profileHint": "Lors d'un changement d'e-mail, vous devrez d'abord confirmer la nouvelle adresse.",
     "email": "E-mail",
     "displayName": "Nom affiché",
+    "changeAvatar": "Changer l'avatar",
+    "avatarHint": "Téléversez une image carrée (JPG/PNG).",
     "newEmail": "Nouvel e-mail",
     "updateEmail": "Modifier l'e-mail",
     "emailChanged": "E-mail mis à jour.",

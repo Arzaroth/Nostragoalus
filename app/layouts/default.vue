@@ -88,6 +88,7 @@ async function onSignOut() {
               <button type="button" class="rounded-full" :aria-label="t('account.title')" @click="(e) => userMenu.toggle(e)">
                 <Avatar
                   :label="(session.data.user.name || '?').charAt(0).toUpperCase()"
+                  :image="session.data.user.image || undefined"
                   shape="circle"
                   class="!bg-[var(--p-primary-color)] !text-[var(--p-primary-contrast-color)] font-bold cursor-pointer"
                 />

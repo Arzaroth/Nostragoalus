@@ -17,6 +17,45 @@ watch(
   { immediate: true },
 )
 
+const avatarUrl = ref('')
+const avatarInput = ref<HTMLInputElement>()
+const avatarErr = ref('')
+watch(currentUser, (u) => { if (u && !avatarUrl.value) avatarUrl.value = u.image ?? '' }, { immediate: true })
+
+// Resize + square-crop the chosen image to a small data URL (no upload infra needed).
+function resizeToDataUrl(file: File, size = 256): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = size
+      canvas.height = size
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return reject(new Error('canvas unsupported'))
+      const scale = Math.max(size / img.width, size / img.height)
+      const w = img.width * scale
+      const h = img.height * scale
+      ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h)
+      resolve(canvas.toDataURL('image/jpeg', 0.85))
+    }
+    img.onerror = () => reject(new Error('invalid image'))
+    img.src = URL.createObjectURL(file)
+  })
+}
+async function onAvatarFile(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  avatarErr.value = ''
+  try {
+    const dataUrl = await resizeToDataUrl(file)
+    const { error } = await updateUser({ image: dataUrl })
+    if (error) throw new Error(error.message ?? 'Failed')
+    avatarUrl.value = dataUrl
+  } catch (err) {
+    avatarErr.value = (err as Error).message
+  }
+}
+
 const profileErr = ref('')
 const profileMsg = ref('')
 const profileLoading = ref(false)
@@ -96,6 +135,31 @@ async function confirmDelete() {
           <p class="text-sm mt-1" style="color: var(--p-text-muted-color)">{{ t('account.profileHint') }}</p>
         </div>
         <div class="md:col-span-2 flex flex-col gap-4">
+          <div class="flex items-center gap-4">
+            <div class="relative shrink-0">
+              <Avatar v-if="avatarUrl" :image="avatarUrl" size="xlarge" shape="circle" />
+              <Avatar
+                v-else
+                :label="(displayName || '?').charAt(0).toUpperCase()"
+                size="xlarge"
+                shape="circle"
+                class="!bg-[var(--p-primary-color)] !text-[var(--p-primary-contrast-color)] font-bold"
+              />
+              <button
+                type="button"
+                class="absolute -bottom-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center shadow-md cursor-pointer"
+                style="background: var(--p-primary-color); color: var(--p-primary-contrast-color)"
+                :aria-label="t('account.changeAvatar')"
+                @click="avatarInput?.click()"
+              >
+                <i class="pi pi-pencil text-xs" />
+              </button>
+              <input ref="avatarInput" type="file" accept="image/*" class="hidden" @change="onAvatarFile" >
+            </div>
+            <div class="text-sm" style="color: var(--p-text-muted-color)">{{ t('account.avatarHint') }}</div>
+          </div>
+          <Message v-if="avatarErr" severity="error" size="small">{{ avatarErr }}</Message>
+
           <div class="flex flex-col gap-1">
             <label class="text-sm font-medium">{{ t('account.email') }}</label>
             <IconField>
