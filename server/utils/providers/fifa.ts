@@ -9,6 +9,7 @@ import type {
   NormalizedMatch,
   Score,
   Team,
+  TopScorer,
   Winner,
 } from '../../../shared/types/match'
 import { RateLimiter } from './rate-limiter'
@@ -287,6 +288,60 @@ export function normalizeFifaBracket(data: FifaBracketResponse): NormalizedBrack
   return { winner, rounds }
 }
 
+// FIFA Opta stat Type codes (verified against WC2022: Mbappe 8 goals, Griezmann 3 assists).
+const FIFA_STAT_GOALS = 1
+const FIFA_STAT_ASSISTS = 219
+
+interface FifaStatEntry {
+  Type: number
+  Value: number
+}
+
+interface FifaAggregatedTeam {
+  IdTeam?: string | null
+  TeamName?: FifaLocalized[]
+  IdCountry?: string | null
+}
+
+interface FifaAggregatedPlayer {
+  IdTeam?: string | null
+  IdPlayer?: string | null
+  PlayerName?: FifaLocalized[]
+  Statistic?: FifaStatEntry[]
+}
+
+export interface FifaTeamStatsResponse {
+  AggregatedTeamStats?: FifaAggregatedTeam[]
+  AggregatedPlayerStats?: FifaAggregatedPlayer[]
+}
+
+// The /statistics/teams/{teamId} endpoint returns tournament-wide aggregates; we
+// derive the official top scorers + assisters from AggregatedPlayerStats.
+export function normalizeFifaPlayerStats(data: FifaTeamStatsResponse): TopScorer[] {
+  const teams = new Map<string, { name: string; code: string | null }>()
+  for (const t of data.AggregatedTeamStats ?? []) {
+    if (t.IdTeam) teams.set(t.IdTeam, { name: t.TeamName?.[0]?.Description ?? '', code: t.IdCountry ?? null })
+  }
+
+  const statValue = (p: FifaAggregatedPlayer, type: number) =>
+    (p.Statistic ?? []).find((s) => s.Type === type)?.Value ?? 0
+
+  return (data.AggregatedPlayerStats ?? [])
+    .map((p) => {
+      const team = (p.IdTeam && teams.get(p.IdTeam)) || { name: '', code: null }
+      return {
+        playerName: p.PlayerName?.[0]?.Description ?? 'Unknown',
+        teamName: team.name,
+        teamCode: team.code,
+        goals: statValue(p, FIFA_STAT_GOALS),
+        assists: statValue(p, FIFA_STAT_ASSISTS),
+        penalties: null,
+      }
+    })
+    .filter((s) => s.goals > 0 || (s.assists ?? 0) > 0)
+    .sort((a, b) => b.goals - a.goals || (b.assists ?? 0) - (a.assists ?? 0) || a.playerName.localeCompare(b.playerName))
+}
+
 export interface FifaOptions {
   seasonId: string
   competitionId?: string
@@ -390,6 +445,15 @@ export function fifaProvider(options: FifaOptions): MatchDataProvider {
       if (response.status === 429) throw new ProviderRateLimitError()
       if (!response.ok) throw new ProviderUpstreamError(response.status, await response.text())
       return normalizeFifaBracket((await response.json()) as FifaBracketResponse)
+    },
+    async getPlayerStats({ teamId }: { teamId: string }) {
+      await limiter.acquire()
+      const response = await doFetch(
+        `${baseUrl}/statistics/teams/${teamId}?idSeason=${options.seasonId}&idCompetition=${options.competitionId}&language=en`,
+      )
+      if (response.status === 429) throw new ProviderRateLimitError()
+      if (!response.ok) throw new ProviderUpstreamError(response.status, await response.text())
+      return normalizeFifaPlayerStats((await response.json()) as FifaTeamStatsResponse)
     },
   }
 }

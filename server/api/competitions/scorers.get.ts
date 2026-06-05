@@ -1,8 +1,10 @@
+import { eq } from 'drizzle-orm'
 import { db } from '../../../db'
 import { providerForCompetition } from '../../utils/providers'
 import { resolveCompetition } from '../../utils/competitions/store'
 import { resolveCompetitionSeason } from '../../utils/sync/competition'
 import { getCompetitionTopScorers } from '../../utils/stats/scorers'
+import { goalEvent } from '../../../db/schema'
 
 const cache = new Map<string, { at: number; scorers: unknown[] }>()
 const TTL_MS = 10 * 60 * 1000
@@ -12,22 +14,44 @@ export default defineEventHandler(async (event) => {
   const competition = await resolveCompetition(db, (query.competition as string) || null)
   if (!competition) return { scorers: [] }
 
-  // Prefer locally-aggregated goal events (FIFA, keyless).
-  const local = await getCompetitionTopScorers(db, competition.id)
-  if (local.length > 0) return { scorers: local }
-
-  // Otherwise fall back to a provider that exposes scorers directly (e.g. football-data).
   const cached = cache.get(competition.id)
   if (cached && Date.now() - cached.at < TTL_MS) return { scorers: cached.scorers }
 
   const provider = providerForCompetition(competition, await resolveCompetitionSeason(db, competition))
-  if (!provider.getTopScorers) return { scorers: [] }
 
-  try {
-    const scorers = await provider.getTopScorers({ season: competition.seasonHint ?? '' })
-    cache.set(competition.id, { at: Date.now(), scorers })
-    return { scorers }
-  } catch {
-    return { scorers: [] }
+  // Official FIFA player stats (goals + assists), keyless — needs any team id seen this season.
+  if (provider.getPlayerStats) {
+    const teamRow = await db
+      .select({ teamId: goalEvent.teamId })
+      .from(goalEvent)
+      .where(eq(goalEvent.competitionId, competition.id))
+      .limit(1)
+    const teamId = teamRow[0]?.teamId
+    if (teamId) {
+      try {
+        const scorers = await provider.getPlayerStats({ teamId })
+        cache.set(competition.id, { at: Date.now(), scorers })
+        return { scorers }
+      } catch {
+        // fall through to local / football-data
+      }
+    }
   }
+
+  // Local goal-event aggregation (goals only).
+  const local = await getCompetitionTopScorers(db, competition.id)
+  if (local.length > 0) return { scorers: local }
+
+  // A provider that exposes scorers directly (e.g. football-data).
+  if (provider.getTopScorers) {
+    try {
+      const scorers = await provider.getTopScorers({ season: competition.seasonHint ?? '' })
+      cache.set(competition.id, { at: Date.now(), scorers })
+      return { scorers }
+    } catch {
+      return { scorers: [] }
+    }
+  }
+
+  return { scorers: [] }
 })

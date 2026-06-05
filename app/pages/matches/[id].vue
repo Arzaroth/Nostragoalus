@@ -24,7 +24,14 @@ const selectedSlug = useSelectedCompetition()
 const { data: scorersData } = await useFetch<{ scorers: any[] }>('/api/competitions/scorers', {
   query: computed(() => (selectedSlug.value ? { competition: selectedSlug.value } : {})),
 })
-const scorers = computed(() => scorersData.value?.scorers ?? [])
+const scorers = computed<any[]>(() => scorersData.value?.scorers ?? [])
+const topScorers = computed(() => scorers.value.filter((s) => s.goals > 0).slice(0, 10))
+const topAssists = computed(() =>
+  scorers.value
+    .filter((s) => (s.assists ?? 0) > 0)
+    .sort((a, b) => (b.assists ?? 0) - (a.assists ?? 0))
+    .slice(0, 10),
+)
 
 const m = computed(() => data.value?.match)
 const { live } = useLiveMatch(id)
@@ -84,7 +91,7 @@ function fmtDate(d: string) {
           <Tab value="form">{{ t('match.form') }}</Tab>
           <Tab value="next">{{ t('match.next') }}</Tab>
           <Tab v-if="insights.headToHead.length" value="h2h">{{ t('match.h2h') }}</Tab>
-          <Tab v-if="scorers.length" value="scorers">{{ t('match.scorers') }}</Tab>
+          <Tab v-if="scorers.length" value="scorers">{{ t('match.players') }}</Tab>
         </TabList>
         <TabPanels>
           <TabPanel v-if="insights.goals.length || insights.possession.home !== null" value="stats">
@@ -179,13 +186,28 @@ function fmtDate(d: string) {
           </TabPanel>
 
           <TabPanel v-if="scorers.length" value="scorers">
-            <div class="flex flex-col text-sm">
-              <div v-for="(s, i) in scorers" :key="i" class="flex items-center gap-3 border-t py-2" style="border-color: var(--p-content-border-color)">
-                <span class="w-5 text-center" style="color: var(--p-text-muted-color)">{{ i + 1 }}</span>
-                <img v-if="flagUrl(s.teamCode)" :src="flagUrl(s.teamCode) || ''" class="w-5 h-5 rounded" alt="" >
-                <span class="flex-1 font-medium">{{ s.playerName }}</span>
-                <span class="hidden sm:inline" style="color: var(--p-text-muted-color)">{{ s.teamName }}</span>
-                <span class="font-bold tabular-nums">{{ s.goals }}</span>
+            <div class="grid sm:grid-cols-2 gap-6">
+              <div>
+                <div class="text-xs uppercase tracking-wider font-semibold mb-2" style="color: var(--p-text-muted-color)">{{ t('match.scorers') }}</div>
+                <div class="flex flex-col text-sm">
+                  <div v-for="(s, i) in topScorers" :key="i" class="flex items-center gap-2 border-t py-2" style="border-color: var(--p-content-border-color)">
+                    <span class="w-4 text-center text-xs" style="color: var(--p-text-muted-color)">{{ i + 1 }}</span>
+                    <img v-if="flagUrl(s.teamCode)" :src="flagUrl(s.teamCode) || ''" class="w-5 h-5 rounded" alt="" >
+                    <span class="flex-1 font-medium truncate">{{ s.playerName }}</span>
+                    <span class="font-bold tabular-nums">{{ s.goals }}</span>
+                  </div>
+                </div>
+              </div>
+              <div v-if="topAssists.length">
+                <div class="text-xs uppercase tracking-wider font-semibold mb-2" style="color: var(--p-text-muted-color)">{{ t('match.assists') }}</div>
+                <div class="flex flex-col text-sm">
+                  <div v-for="(s, i) in topAssists" :key="i" class="flex items-center gap-2 border-t py-2" style="border-color: var(--p-content-border-color)">
+                    <span class="w-4 text-center text-xs" style="color: var(--p-text-muted-color)">{{ i + 1 }}</span>
+                    <img v-if="flagUrl(s.teamCode)" :src="flagUrl(s.teamCode) || ''" class="w-5 h-5 rounded" alt="" >
+                    <span class="flex-1 font-medium truncate">{{ s.playerName }}</span>
+                    <span class="font-bold tabular-nums">{{ s.assists }}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </TabPanel>

@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { fifaProvider, normalizeFifaBracket, normalizeFifaMatch, normalizeFifaMatchDetail, type FifaMatch } from './fifa'
+import {
+  fifaProvider,
+  normalizeFifaBracket,
+  normalizeFifaMatch,
+  normalizeFifaMatchDetail,
+  normalizeFifaPlayerStats,
+  type FifaMatch,
+} from './fifa'
 import { RateLimiter } from './rate-limiter'
 
 describe('normalizeFifaMatch providerStageId', () => {
@@ -202,5 +209,58 @@ describe('fifaProvider.getBracket', () => {
       rateLimiter: new RateLimiter(0),
     })
     await expect(provider.getBracket!()).rejects.toThrow()
+  })
+})
+
+describe('normalizeFifaPlayerStats', () => {
+  const data = {
+    AggregatedTeamStats: [
+      { IdTeam: 'fra', TeamName: [{ Locale: 'en', Description: 'France' }], IdCountry: 'FRA' },
+      { IdTeam: 'esp' },
+      {},
+    ],
+    AggregatedPlayerStats: [
+      { IdTeam: 'fra', IdPlayer: 'mbappe', PlayerName: [{ Locale: 'en', Description: 'MBAPPE' }], Statistic: [{ Type: 1, Value: 8 }, { Type: 219, Value: 2 }] },
+      { IdTeam: 'fra', IdPlayer: 'griezmann', PlayerName: [{ Locale: 'en', Description: 'GRIEZMANN' }], Statistic: [{ Type: 1, Value: 0 }, { Type: 219, Value: 3 }] },
+      { IdTeam: 'esp', IdPlayer: 'morata', PlayerName: [{ Locale: 'en', Description: 'MORATA' }], Statistic: [{ Type: 1, Value: 3 }] },
+      { IdTeam: 'ghost', IdPlayer: 'x', PlayerName: [{ Locale: 'en', Description: 'GHOST' }], Statistic: [{ Type: 1, Value: 1 }] },
+      { IdTeam: 'fra', IdPlayer: 'noname', Statistic: [{ Type: 1, Value: 1 }] },
+      { IdTeam: 'fra', IdPlayer: 'bench', PlayerName: [{ Locale: 'en', Description: 'BENCH' }] },
+    ],
+  }
+
+  it('extracts goals (Type 1) + assists (Type 219), maps teams, fills fallbacks, drops blanks, sorts', () => {
+    const s = normalizeFifaPlayerStats(data)
+    const by = (n: string) => s.find((x) => x.playerName === n)
+    expect(by('BENCH')).toBeUndefined() // no stats → dropped
+    expect(s[0].playerName).toBe('MBAPPE') // sorted by goals desc
+    expect(by('MBAPPE')).toMatchObject({ teamName: 'France', teamCode: 'FRA', goals: 8, assists: 2 })
+    expect(by('GRIEZMANN')).toMatchObject({ goals: 0, assists: 3 }) // assist-only still included
+    expect(by('MORATA')).toMatchObject({ teamName: '', teamCode: null, goals: 3, assists: 0 }) // team without name/code, missing assist stat
+    expect(by('GHOST')).toMatchObject({ teamName: '', teamCode: null, goals: 1 }) // team id not in map
+    expect(by('Unknown')).toMatchObject({ goals: 1 }) // missing PlayerName
+  })
+
+  it('handles empty data', () => {
+    expect(normalizeFifaPlayerStats({})).toEqual([])
+  })
+})
+
+describe('fifaProvider.getPlayerStats', () => {
+  it('fetches and normalizes player stats', async () => {
+    const fetchImpl = (async () =>
+      new Response(JSON.stringify({ AggregatedTeamStats: [], AggregatedPlayerStats: [] }), { status: 200 })) as unknown as typeof fetch
+    const provider = fifaProvider({ seasonId: '255711', competitionId: '17', fetchImpl, rateLimiter: new RateLimiter(0) })
+    expect(await provider.getPlayerStats!({ teamId: '43946' })).toEqual([])
+  })
+
+  it('throws on an upstream error', async () => {
+    const provider = fifaProvider({
+      seasonId: '1',
+      competitionId: '17',
+      fetchImpl: (async () => new Response('x', { status: 500 })) as unknown as typeof fetch,
+      rateLimiter: new RateLimiter(0),
+    })
+    await expect(provider.getPlayerStats!({ teamId: '1' })).rejects.toThrow()
   })
 })

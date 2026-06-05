@@ -21,6 +21,8 @@ export interface MatchDataProvider {
   getMatchDetail?(opts: { stageId: string; matchId: string }): Promise<MatchDetail | null>
   // Optional: the knockout bracket projection — FIFA exposes this keyless.
   getBracket?(): Promise<NormalizedBracket | null>
+  // Optional: official per-player stats (goals + assists) keyed by any team id in the season.
+  getPlayerStats?(opts: { teamId: string }): Promise<TopScorer[]>
 }
 
 export class ProviderRateLimitError extends Error {
