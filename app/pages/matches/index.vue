@@ -10,9 +10,12 @@ const predByMatch = computed(() => {
   return map
 })
 
+const search = ref('')
 const grouped = computed(() => {
+  const q = search.value.trim().toLowerCase()
   const groups = new Map<string, { label: string; sort: number; items: MatchListItem[] }>()
   for (const m of matches.value ?? []) {
+    if (q && !`${m.homeTeam} ${m.awayTeam}`.toLowerCase().includes(q)) continue
     const g = groups.get(m.roundId) ?? { label: m.roundLabel, sort: m.roundSortOrder, items: [] }
     g.items.push(m)
     groups.set(m.roundId, g)
@@ -35,8 +38,13 @@ function fmtTime(d: string) {
   <div>
     <h1 class="text-2xl font-bold mb-5">{{ t('matches.title') }}</h1>
     <ChampionPick />
+    <IconField class="mb-5 block w-full sm:w-96">
+      <InputIcon class="pi pi-search" />
+      <InputText v-model="search" :placeholder="t('matches.search')" class="w-full" />
+    </IconField>
     <div v-if="isLoading" class="opacity-60">{{ t('common.loading') }}</div>
     <div v-else-if="!matches || !matches.length" class="opacity-60">{{ t('matches.empty') }}</div>
+    <div v-else-if="!grouped.length" class="opacity-60">{{ t('matches.noResults') }}</div>
 
     <div v-else class="flex flex-col gap-8">
       <section v-for="g in grouped" :key="g.label">
@@ -51,14 +59,17 @@ function fmtTime(d: string) {
             <NuxtLink :to="`/matches/${m.id}`" class="flex items-center justify-between gap-2 group">
               <div class="flex items-center gap-2 flex-1 min-w-0">
                 <img v-if="flagUrl(m.homeTeamCode)" :src="flagUrl(m.homeTeamCode) || ''" class="w-6 h-6 rounded object-cover" alt="" >
-                <span class="truncate font-medium group-hover:underline">{{ m.homeTeam }}</span>
+                <span class="truncate font-medium group-hover:underline" :title="m.homeTeam">{{ m.homeTeam }}</span>
               </div>
-              <div class="px-3 font-bold tabular-nums text-lg shrink-0">
-                <span v-if="m.fullTimeHome !== null">{{ m.fullTimeHome }}–{{ m.fullTimeAway }}</span>
-                <span v-else class="text-sm font-normal" style="color: var(--p-text-muted-color)">vs</span>
+              <div class="px-3 text-center shrink-0">
+                <div v-if="m.fullTimeHome !== null" class="font-bold tabular-nums text-lg">{{ m.fullTimeHome }}–{{ m.fullTimeAway }}</div>
+                <div v-else class="text-sm" style="color: var(--p-text-muted-color)">vs</div>
+                <div v-if="m.status === 'LIVE' || m.status === 'PAUSED'" class="flex items-center justify-center gap-1 text-[10px] font-bold" style="color: #ef4444">
+                  <span class="w-1.5 h-1.5 rounded-full animate-pulse" style="background: #ef4444" />LIVE
+                </div>
               </div>
               <div class="flex items-center gap-2 flex-1 min-w-0 justify-end">
-                <span class="truncate font-medium text-right group-hover:underline">{{ m.awayTeam }}</span>
+                <span class="truncate font-medium text-right group-hover:underline" :title="m.awayTeam">{{ m.awayTeam }}</span>
                 <img v-if="flagUrl(m.awayTeamCode)" :src="flagUrl(m.awayTeamCode) || ''" class="w-6 h-6 rounded object-cover" alt="" >
               </div>
             </NuxtLink>
@@ -68,16 +79,15 @@ function fmtTime(d: string) {
               <Tag :value="matchStatusLabel(m.status)" :severity="statusSeverity(m.status)" />
             </div>
 
-            <div class="flex items-center justify-between gap-2 pt-3 border-t" style="border-color: var(--p-content-border-color)">
+            <div class="flex flex-col items-center gap-2 pt-3 border-t" style="border-color: var(--p-content-border-color)">
               <ScoreInput
                 :home="predByMatch[m.id]?.homeGoals ?? null"
                 :away="predByMatch[m.id]?.awayGoals ?? null"
                 :disabled="m.isLocked"
                 @update="(v) => save(m.id, v)"
               />
-              <div class="flex flex-col items-end gap-1">
+              <div v-if="predByMatch[m.id]" class="flex items-center gap-3">
                 <Button
-                  v-if="predByMatch[m.id]"
                   :label="predByMatch[m.id].isJoker ? '★ Joker' : 'Joker'"
                   :icon="predByMatch[m.id].isJoker ? 'pi pi-star-fill' : 'pi pi-star'"
                   :severity="predByMatch[m.id].isJoker ? 'warn' : 'secondary'"

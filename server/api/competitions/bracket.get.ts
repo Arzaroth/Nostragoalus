@@ -1,4 +1,6 @@
+import { eq } from 'drizzle-orm'
 import { db } from '../../../db'
+import { match } from '../../../db/schema'
 import { providerForCompetition } from '../../utils/providers'
 import { resolveCompetition } from '../../utils/competitions/store'
 import { resolveCompetitionSeason } from '../../utils/sync/competition'
@@ -19,6 +21,17 @@ export default defineEventHandler(async (event) => {
 
   try {
     const bracket = await provider.getBracket()
+    if (bracket) {
+      // Link each bracket match to our internal match id (for navigation).
+      const ours = await db
+        .select({ id: match.id, pid: match.providerMatchId })
+        .from(match)
+        .where(eq(match.competitionId, competition.id))
+      const idByProvider = new Map(ours.map((m) => [m.pid, m.id]))
+      for (const round of bracket.rounds) {
+        for (const m of round.matches) m.id = idByProvider.get(m.providerMatchId) ?? null
+      }
+    }
     cache.set(competition.id, { at: Date.now(), bracket })
     return { bracket }
   } catch {

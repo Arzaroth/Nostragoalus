@@ -23,7 +23,9 @@
   },
   "matches": {
     "title": "Calendrier",
-    "empty": "Aucun match — importez-les depuis la page admin."
+    "empty": "Aucun match — importez-les depuis la page admin.",
+    "search": "Rechercher une équipe…",
+    "noResults": "Aucun match trouvé."
   },
   "predictions": {
     "empty": "Vous n'avez pas encore de pronostics.",

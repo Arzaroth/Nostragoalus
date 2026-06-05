@@ -147,6 +147,7 @@ describe('normalizeFifaBracket', () => {
             HomeTeamPenaltyScore: 4,
             AwayTeamPenaltyScore: 2,
             Winner: 'arg',
+            IdMatch: 'mFinal',
             MatchStatus: 0,
             Date: '2022-12-18T15:00:00Z',
           },
@@ -155,7 +156,7 @@ describe('normalizeFifaBracket', () => {
       {
         SequenceOrder: 2,
         Name: [{ Locale: 'en', Description: 'Round of 16' }],
-        Matches: [{ PlaceHolderA: '1A', PlaceHolderB: '2B', MatchStatus: 1, Date: '2022-12-03T15:00:00Z' }],
+        Matches: [{ IdMatch: 'mR16', PlaceHolderA: '1A', PlaceHolderB: '2B', MatchStatus: 1, Date: '2022-12-03T15:00:00Z' }],
       },
       {
         SequenceOrder: 4,
@@ -167,10 +168,11 @@ describe('normalizeFifaBracket', () => {
             HomeTeamScore: 0,
             AwayTeamScore: 1,
             Winner: 'a',
+            IdMatch: 'mSF1',
             MatchStatus: 0,
             Date: '2022-12-13T19:00:00Z',
           },
-          { Winner: 'zzz', MatchStatus: 0, Date: '2022-12-14T19:00:00Z' },
+          { IdMatch: 'mSF2', Winner: 'zzz', MatchStatus: 0, Date: '2022-12-14T19:00:00Z' },
         ],
       },
     ],
@@ -184,7 +186,7 @@ describe('normalizeFifaBracket', () => {
     const sf = b.rounds.find((r) => r.name === 'Semi-final')!
     const final = b.rounds.find((r) => r.name === 'Final')!
     expect(r16.matches[0]).toMatchObject({ homeTeam: '1A', awayTeam: '2B', winner: null, status: 'SCHEDULED' })
-    expect(final.matches[0]).toMatchObject({ homeTeam: 'Argentina', winner: 'HOME', homePens: 4, awayPens: 2, status: 'FINISHED' })
+    expect(final.matches[0]).toMatchObject({ homeTeam: 'Argentina', winner: 'HOME', homePens: 4, awayPens: 2, status: 'FINISHED', providerMatchId: 'mFinal' })
     expect(sf.matches[0]).toMatchObject({ winner: 'AWAY' })
     expect(sf.matches[1]).toMatchObject({ homeTeam: 'TBD', awayTeam: 'TBD', winner: null })
   })

@@ -12,6 +12,14 @@ export const DEFAULT_COMPETITIONS = [
     seasonHint: '2026',
   },
   {
+    slug: 'world-cup-2022',
+    name: 'FIFA World Cup 2022',
+    provider: 'fifa',
+    externalCompetitionId: '17',
+    externalSeasonId: '255711' as string | null,
+    seasonHint: '2022',
+  },
+  {
     slug: 'euro-2024',
     name: 'UEFA Euro 2024',
     provider: 'football-data',

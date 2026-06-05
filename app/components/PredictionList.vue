@@ -8,10 +8,11 @@ function fmt(d: string) {
 
 <template>
   <div class="flex flex-col gap-3">
-    <div
+    <NuxtLink
       v-for="p in predictions"
       :key="p.id"
-      class="ng-card rounded-2xl border p-4"
+      :to="`/matches/${p.matchId}`"
+      class="ng-card block rounded-2xl border p-4"
       style="background: var(--p-content-background)"
     >
       <div class="flex items-center justify-between text-xs mb-2" style="color: var(--p-text-muted-color)">
@@ -21,7 +22,7 @@ function fmt(d: string) {
 
       <div class="flex items-center gap-3">
         <div class="flex items-center gap-2 flex-1 min-w-0 justify-end">
-          <span class="truncate font-medium text-right">{{ p.homeTeam }}</span>
+          <span class="truncate font-medium text-right" :title="p.homeTeam">{{ p.homeTeam }}</span>
           <img v-if="flagUrl(p.homeTeamCode)" :src="flagUrl(p.homeTeamCode) || ''" class="w-6 h-6 rounded object-cover" alt="" >
         </div>
         <div class="text-center shrink-0 px-2">
@@ -32,7 +33,7 @@ function fmt(d: string) {
         </div>
         <div class="flex items-center gap-2 flex-1 min-w-0">
           <img v-if="flagUrl(p.awayTeamCode)" :src="flagUrl(p.awayTeamCode) || ''" class="w-6 h-6 rounded object-cover" alt="" >
-          <span class="truncate font-medium">{{ p.awayTeam }}</span>
+          <span class="truncate font-medium" :title="p.awayTeam">{{ p.awayTeam }}</span>
         </div>
       </div>
 
@@ -40,6 +41,6 @@ function fmt(d: string) {
         <Tag :value="tierLabel(p.baseTier)" :severity="p.totalPoints > 0 ? 'success' : 'secondary'" />
         <span class="font-semibold" style="color: var(--p-primary-color)">+{{ p.totalPoints }} pts</span>
       </div>
-    </div>
+    </NuxtLink>
   </div>
 </template>

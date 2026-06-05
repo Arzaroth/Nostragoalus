@@ -226,6 +226,7 @@ interface FifaBracketTeam {
 }
 
 interface FifaBracketMatch {
+  IdMatch: string
   HomeTeam?: FifaBracketTeam | null
   AwayTeam?: FifaBracketTeam | null
   PlaceHolderA?: string | null
@@ -259,6 +260,7 @@ function toBracketMatch(m: FifaBracketMatch): BracketMatch {
         : null
     : null
   return {
+    providerMatchId: m.IdMatch,
     homeTeam: m.HomeTeam?.TeamName?.[0]?.Description || m.PlaceHolderA || 'TBD',
     homeCode: m.HomeTeam?.Abbreviation || null,
     awayTeam: m.AwayTeam?.TeamName?.[0]?.Description || m.PlaceHolderB || 'TBD',

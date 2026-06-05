@@ -23,7 +23,9 @@
   },
   "matches": {
     "title": "Fixtures",
-    "empty": "No fixtures yet — import them from the admin page."
+    "empty": "No fixtures yet — import them from the admin page.",
+    "search": "Search a team…",
+    "noResults": "No matches found."
   },
   "predictions": {
     "empty": "You haven't made any predictions yet.",

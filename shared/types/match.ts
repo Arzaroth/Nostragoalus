@@ -76,6 +76,8 @@ export interface MatchDetail {
 }
 
 export interface BracketMatch {
+  id?: string | null
+  providerMatchId: string
   homeTeam: string
   homeCode: string | null
   awayTeam: string
