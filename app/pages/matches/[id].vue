@@ -79,6 +79,7 @@ function fmtDate(d: string) {
     <div v-if="insights" class="rounded-2xl border p-2 sm:p-4" style="background: var(--p-content-background); border-color: var(--p-content-border-color)">
       <Tabs value="form">
         <TabList>
+          <Tab v-if="insights.goals.length || insights.possession.home !== null" value="stats">{{ t('match.stats') }}</Tab>
           <Tab v-if="insights.standings" value="standings">{{ t('match.standings') }}</Tab>
           <Tab value="form">{{ t('match.form') }}</Tab>
           <Tab value="next">{{ t('match.next') }}</Tab>
@@ -86,6 +87,31 @@ function fmtDate(d: string) {
           <Tab v-if="scorers.length" value="scorers">{{ t('match.scorers') }}</Tab>
         </TabList>
         <TabPanels>
+          <TabPanel v-if="insights.goals.length || insights.possession.home !== null" value="stats">
+            <div v-if="insights.possession.home !== null" class="mb-4">
+              <div class="flex justify-between text-xs mb-1" style="color: var(--p-text-muted-color)">
+                <span>{{ Math.round(insights.possession.home) }}%</span>
+                <span>{{ t('match.possession') }}</span>
+                <span>{{ Math.round(insights.possession.away) }}%</span>
+              </div>
+              <div class="flex h-2 rounded overflow-hidden">
+                <div :style="`width:${insights.possession.home}%; background: var(--p-primary-color)`" />
+                <div :style="`width:${insights.possession.away}%; background: var(--p-content-border-color)`" />
+              </div>
+            </div>
+            <div class="flex flex-col text-sm">
+              <div v-for="(g, i) in insights.goals" :key="i" class="flex items-center gap-2 border-t py-2" style="border-color: var(--p-content-border-color)">
+                <i class="pi pi-circle-fill text-xs" :style="`color:${g.side === 'HOME' ? 'var(--p-primary-color)' : 'var(--p-text-muted-color)'}`" />
+                <span class="w-10 tabular-nums" style="color: var(--p-text-muted-color)">{{ g.minute }}</span>
+                <span class="font-medium">{{ g.playerName }}</span>
+                <span v-if="g.ownGoal" class="text-xs">(OG)</span>
+                <span v-if="g.assistPlayerName" class="text-xs" style="color: var(--p-text-muted-color)">· {{ g.assistPlayerName }}</span>
+                <span class="flex-1" />
+                <span style="color: var(--p-text-muted-color)">{{ g.teamCode || g.teamName }}</span>
+              </div>
+            </div>
+          </TabPanel>
+
           <TabPanel v-if="insights.standings" value="standings">
             <table class="w-full text-sm">
               <thead>

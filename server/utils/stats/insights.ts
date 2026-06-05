@@ -2,6 +2,7 @@ import { and, asc, desc, eq, gt, ne, or } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { match } from '../../../db/schema'
 import { computeGroupStandings, type StandingRow } from './standings'
+import { getMatchGoals } from './scorers'
 
 export interface FormResult {
   result: 'W' | 'D' | 'L'
@@ -23,11 +24,23 @@ export interface HeadToHead {
   kickoffTime: string
 }
 
+export interface MatchGoalView {
+  side: 'HOME' | 'AWAY'
+  teamName: string
+  teamCode: string | null
+  playerName: string
+  minute: string | null
+  ownGoal: boolean
+  assistPlayerName: string | null
+}
+
 export interface MatchInsights {
   standings: StandingRow[] | null
   form: { home: FormResult[]; away: FormResult[] }
   next: { home: NextMatch[]; away: NextMatch[] }
   headToHead: HeadToHead[]
+  possession: { home: number | null; away: number | null }
+  goals: MatchGoalView[]
 }
 
 async function teamForm(db: AppDatabase, competitionId: string, team: string, limit: number): Promise<FormResult[]> {
@@ -127,5 +140,26 @@ export async function getMatchInsights(db: AppDatabase, matchId: string, now: Da
       kickoffTime: new Date(r.kickoffTime).toISOString(),
     }))
 
-  return { standings, form: { home: homeForm, away: awayForm }, next: { home: homeNext, away: awayNext }, headToHead }
+  const goalRows = await getMatchGoals(db, m.id)
+  const goals: MatchGoalView[] = goalRows.map((g) => ({
+    side: g.side as 'HOME' | 'AWAY',
+    teamName: g.teamName,
+    teamCode: g.teamCode,
+    playerName: g.playerName,
+    minute: g.minute,
+    ownGoal: g.ownGoal,
+    assistPlayerName: g.assistPlayerName,
+  }))
+
+  return {
+    standings,
+    form: { home: homeForm, away: awayForm },
+    next: { home: homeNext, away: awayNext },
+    headToHead,
+    possession: {
+      home: m.possessionHome != null ? Number(m.possessionHome) : null,
+      away: m.possessionAway != null ? Number(m.possessionAway) : null,
+    },
+    goals,
+  }
 }

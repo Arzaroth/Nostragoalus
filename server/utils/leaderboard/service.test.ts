@@ -3,8 +3,23 @@ import { eq } from 'drizzle-orm'
 import { createTestDb, type TestDb } from '../../../tests/db'
 import { findRoundId } from '../sync/rounds'
 import { makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
-import { getLeaderboard } from './service'
+import { compareLeaderboardRows, getLeaderboard } from './service'
 import { championPick, prediction } from '../../../db/schema'
+
+describe('compareLeaderboardRows', () => {
+  const base = { totalPoints: 0, exactCount: 0, outcomeCount: 0, gdCount: 0, joinedAt: new Date('2026-01-01'), userId: 'a' }
+  it('applies each tie-break level in order', () => {
+    expect(compareLeaderboardRows({ ...base, totalPoints: 1 }, { ...base, totalPoints: 2 })).toBeGreaterThan(0)
+    expect(compareLeaderboardRows({ ...base, exactCount: 2 }, { ...base, exactCount: 1 })).toBeLessThan(0)
+    expect(compareLeaderboardRows({ ...base, outcomeCount: 2 }, { ...base, outcomeCount: 1 })).toBeLessThan(0)
+    expect(compareLeaderboardRows({ ...base, gdCount: 2 }, { ...base, gdCount: 1 })).toBeLessThan(0)
+    expect(compareLeaderboardRows({ ...base, joinedAt: new Date('2026-01-01') }, { ...base, joinedAt: new Date('2026-02-01') })).toBeLessThan(0)
+    expect(compareLeaderboardRows({ ...base, joinedAt: new Date('2026-03-01') }, { ...base, joinedAt: new Date('2026-02-01') })).toBeGreaterThan(0)
+    expect(compareLeaderboardRows({ ...base, userId: 'a' }, { ...base, userId: 'b' })).toBeLessThan(0)
+    expect(compareLeaderboardRows({ ...base, userId: 'b' }, { ...base, userId: 'a' })).toBeGreaterThan(0)
+    expect(compareLeaderboardRows({ ...base }, { ...base })).toBe(0)
+  })
+})
 
 async function score(db: TestDb, predId: string, totalPoints: number, baseTier: 'EXACT' | 'DIFF' | 'OUTCOME' | 'MISS') {
   await db

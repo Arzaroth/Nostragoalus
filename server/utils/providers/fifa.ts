@@ -1,4 +1,13 @@
-import type { AppStage, MatchStatus, NormalizedMatch, Score, Team, Winner } from '../../../shared/types/match'
+import type {
+  AppStage,
+  MatchDetail,
+  MatchStatus,
+  NormalizedGoal,
+  NormalizedMatch,
+  Score,
+  Team,
+  Winner,
+} from '../../../shared/types/match'
 import { RateLimiter } from './rate-limiter'
 import { ProviderRateLimitError, ProviderUpstreamError, type ListFixturesOptions, type MatchDataProvider } from './types'
 
@@ -88,6 +97,7 @@ export function normalizeFifaMatch(match: FifaMatch): NormalizedMatch {
 
   return {
     providerMatchId: match.IdMatch,
+    providerStageId: match.IdStage,
     stage: mapFifaStage(match.StageName?.[0]?.Description ?? ''),
     group: parseFifaGroup(match.GroupName?.[0]?.Description),
     matchday: null,
@@ -120,8 +130,87 @@ export function assignGroupMatchdays(matches: NormalizedMatch[]): NormalizedMatc
   return matches
 }
 
+interface FifaDetailPlayer {
+  IdPlayer: string
+  PlayerName?: FifaLocalized[]
+  ShortName?: FifaLocalized[]
+}
+
+interface FifaDetailGoal {
+  Type?: number | null
+  IdPlayer?: string | null
+  Minute?: string | null
+  IdAssistPlayer?: string | null
+  IdTeam?: string | null
+}
+
+interface FifaDetailTeam {
+  IdTeam?: string | null
+  TeamName?: FifaLocalized[]
+  Abbreviation?: string | null
+  Players?: FifaDetailPlayer[]
+  Goals?: FifaDetailGoal[]
+}
+
+export interface FifaMatchDetailResponse {
+  HomeTeam?: FifaDetailTeam | null
+  AwayTeam?: FifaDetailTeam | null
+  BallPossession?: { OverallHome?: number | null; OverallAway?: number | null } | null
+}
+
+export function normalizeFifaMatchDetail(detail: FifaMatchDetailResponse): MatchDetail {
+  const names = new Map<string, string>()
+  const homeIds = new Set<string>()
+  const awayIds = new Set<string>()
+  for (const p of detail.HomeTeam?.Players ?? []) {
+    if (p.IdPlayer) {
+      homeIds.add(p.IdPlayer)
+      names.set(p.IdPlayer, p.PlayerName?.[0]?.Description || p.ShortName?.[0]?.Description || 'Unknown')
+    }
+  }
+  for (const p of detail.AwayTeam?.Players ?? []) {
+    if (p.IdPlayer) {
+      awayIds.add(p.IdPlayer)
+      names.set(p.IdPlayer, p.PlayerName?.[0]?.Description || p.ShortName?.[0]?.Description || 'Unknown')
+    }
+  }
+
+  const goals: NormalizedGoal[] = []
+  for (const [side, team] of [
+    ['HOME', detail.HomeTeam],
+    ['AWAY', detail.AwayTeam],
+  ] as const) {
+    const ownRoster = side === 'HOME' ? homeIds : awayIds
+    const otherRoster = side === 'HOME' ? awayIds : homeIds
+    for (const g of team?.Goals ?? []) {
+      // An own goal sits under the benefiting team but the scorer is on the opponent's roster.
+      const ownGoal = !!g.IdPlayer && otherRoster.has(g.IdPlayer) && !ownRoster.has(g.IdPlayer)
+      goals.push({
+        side,
+        teamId: g.IdTeam ?? team?.IdTeam ?? null,
+        teamName: team?.TeamName?.[0]?.Description || '',
+        teamCode: team?.Abbreviation || null,
+        playerId: g.IdPlayer ?? null,
+        playerName: (g.IdPlayer && names.get(g.IdPlayer)) || 'Unknown',
+        minute: g.Minute ?? null,
+        goalType: g.Type ?? null,
+        ownGoal,
+        assistPlayerId: g.IdAssistPlayer ?? null,
+        assistPlayerName: (g.IdAssistPlayer && names.get(g.IdAssistPlayer)) || null,
+      })
+    }
+  }
+
+  return {
+    possessionHome: detail.BallPossession?.OverallHome ?? null,
+    possessionAway: detail.BallPossession?.OverallAway ?? null,
+    goals,
+  }
+}
+
 export interface FifaOptions {
   seasonId: string
+  competitionId?: string
   baseUrl?: string
   fetchImpl?: typeof fetch
   rateLimiter?: RateLimiter
@@ -206,6 +295,15 @@ export function fifaProvider(options: FifaOptions): MatchDataProvider {
     },
     async getLiveMatches() {
       return (await fetchAll()).filter((m) => m.status === 'LIVE' || m.status === 'PAUSED')
+    },
+    async getMatchDetail({ stageId, matchId }: { stageId: string; matchId: string }) {
+      await limiter.acquire()
+      const response = await doFetch(
+        `${baseUrl}/live/football/${options.competitionId}/${options.seasonId}/${stageId}/${matchId}?language=en`,
+      )
+      if (response.status === 429) throw new ProviderRateLimitError()
+      if (!response.ok) throw new ProviderUpstreamError(response.status, await response.text())
+      return normalizeFifaMatchDetail((await response.json()) as FifaMatchDetailResponse)
     },
   }
 }

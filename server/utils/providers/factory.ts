@@ -13,7 +13,11 @@ export interface ProviderSelection {
 
 export function createProvider(selection: ProviderSelection): MatchDataProvider {
   if (selection.provider === 'fifa') {
-    return fifaProvider({ seasonId: selection.fifaSeasonId || '285023', fetchImpl: selection.fetchImpl })
+    return fifaProvider({
+      seasonId: selection.fifaSeasonId || '285023',
+      competitionId: selection.externalCompetitionId || '17',
+      fetchImpl: selection.fetchImpl,
+    })
   }
 
   if (selection.provider === 'football-data') {

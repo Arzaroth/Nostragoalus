@@ -42,6 +42,7 @@ export interface TopScorer {
 
 export interface NormalizedMatch {
   providerMatchId: string
+  providerStageId?: string | null
   stage: AppStage
   group: string | null
   matchday: number | null
@@ -52,4 +53,24 @@ export interface NormalizedMatch {
   score: Score
   winner: Winner
   lastUpdated?: string
+}
+
+export interface NormalizedGoal {
+  side: 'HOME' | 'AWAY'
+  teamId: string | null
+  teamName: string
+  teamCode: string | null
+  playerId: string | null
+  playerName: string
+  minute: string | null
+  goalType: number | null
+  ownGoal: boolean
+  assistPlayerId: string | null
+  assistPlayerName: string | null
+}
+
+export interface MatchDetail {
+  possessionHome: number | null
+  possessionAway: number | null
+  goals: NormalizedGoal[]
 }

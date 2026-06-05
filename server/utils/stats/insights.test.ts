@@ -1,12 +1,50 @@
 import { describe, it, expect } from 'vitest'
+import { eq } from 'drizzle-orm'
 import { createTestDb } from '../../../tests/db'
 import { findRoundId } from '../sync/rounds'
 import { makeMatch, seedCompetition } from '../../../tests/factories'
 import { getMatchInsights } from './insights'
+import { goalEvent, match } from '../../../db/schema'
 
 const NOW = new Date('2026-06-13T00:00:00Z')
 
 describe('getMatchInsights', () => {
+  it('includes possession and goals stored for the match', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const md1 = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+    const mid = await makeMatch(db, {
+      competitionId,
+      roundId: md1,
+      groupName: 'A',
+      stage: 'GROUP',
+      kickoffTime: new Date('2026-06-11T16:00:00Z'),
+      status: 'FINISHED',
+      fullTimeHome: 1,
+      fullTimeAway: 0,
+      homeTeam: 'A',
+      homeTeamCode: 'A',
+      awayTeam: 'B',
+      awayTeamCode: 'B',
+    })
+    await db.update(match).set({ possessionHome: '55', possessionAway: '45' }).where(eq(match.id, mid))
+    await db.insert(goalEvent).values({
+      matchId: mid,
+      competitionId,
+      side: 'HOME',
+      teamName: 'A',
+      teamCode: 'A',
+      playerName: 'Scorer',
+      ownGoal: false,
+      minute: "10'",
+    })
+
+    const insights = await getMatchInsights(db, mid, NOW)
+    expect(insights!.possession).toEqual({ home: 55, away: 45 })
+    expect(insights!.goals[0]).toMatchObject({ playerName: 'Scorer', side: 'HOME', minute: "10'" })
+    await client.close()
+  })
+
   it('returns null for an unknown match', async () => {
     const { db, client } = await createTestDb()
     expect(await getMatchInsights(db, 'nope', NOW)).toBeNull()

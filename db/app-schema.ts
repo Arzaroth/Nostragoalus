@@ -151,6 +151,10 @@ export const match = pgTable(
     penaltiesHome: integer('penalties_home'),
     penaltiesAway: integer('penalties_away'),
     winner: outcomeEnum('winner'),
+    providerStageId: text('provider_stage_id'),
+    possessionHome: numeric('possession_home', { precision: 5, scale: 2 }),
+    possessionAway: numeric('possession_away', { precision: 5, scale: 2 }),
+    detailsFetchedAt: timestamp('details_fetched_at', { withTimezone: true }),
     scoringState: matchScoringStateEnum('scoring_state').notNull().default('PENDING'),
     scoredAtVersion: integer('scored_at_version'),
     scoredAt: timestamp('scored_at', { withTimezone: true }),
@@ -169,6 +173,31 @@ export const match = pgTable(
     index('match_stage_idx').on(t.stage),
     index('match_scoring_state_idx').on(t.scoringState),
   ],
+)
+
+export const goalEvent = pgTable(
+  'goal_event',
+  {
+    id: pk(),
+    matchId: text('match_id')
+      .notNull()
+      .references(() => match.id, { onDelete: 'cascade' }),
+    competitionId: text('competition_id')
+      .notNull()
+      .references(() => competition.id, { onDelete: 'cascade' }),
+    side: text('side', { enum: ['HOME', 'AWAY'] }).notNull(),
+    teamId: text('team_id'),
+    teamName: text('team_name').notNull(),
+    teamCode: text('team_code'),
+    playerId: text('player_id'),
+    playerName: text('player_name').notNull(),
+    minute: text('minute'),
+    goalType: integer('goal_type'),
+    ownGoal: boolean('own_goal').notNull().default(false),
+    assistPlayerId: text('assist_player_id'),
+    assistPlayerName: text('assist_player_name'),
+  },
+  (t) => [index('goal_event_competition_idx').on(t.competitionId), index('goal_event_match_idx').on(t.matchId)],
 )
 
 export const prediction = pgTable(
@@ -288,4 +317,9 @@ export const matchScoreEventRelations = relations(matchScoreEvent, ({ one }) => 
 export const championPickRelations = relations(championPick, ({ one }) => ({
   user: one(user, { fields: [championPick.userId], references: [user.id] }),
   competition: one(competition, { fields: [championPick.competitionId], references: [competition.id] }),
+}))
+
+export const goalEventRelations = relations(goalEvent, ({ one }) => ({
+  match: one(match, { fields: [goalEvent.matchId], references: [match.id] }),
+  competition: one(competition, { fields: [goalEvent.competitionId], references: [competition.id] }),
 }))

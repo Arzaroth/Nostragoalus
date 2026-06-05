@@ -20,6 +20,27 @@ const exactCount = sql<number>`count(*) filter (where ${match.id} is not null an
 const outcomeCount = sql<number>`count(*) filter (where ${match.id} is not null and ${prediction.baseTier} in ('EXACT', 'DIFF', 'OUTCOME'))`
 const gdCount = sql<number>`count(*) filter (where ${match.id} is not null and ${prediction.baseTier} in ('EXACT', 'DIFF'))`
 
+export interface RankableRow {
+  totalPoints: number
+  exactCount: number
+  outcomeCount: number
+  gdCount: number
+  joinedAt: Date
+  userId: string
+}
+
+// Ranking ladder: points → exact → outcome → goal-diff → earliest joiner → userId.
+export function compareLeaderboardRows(a: RankableRow, b: RankableRow): number {
+  return (
+    b.totalPoints - a.totalPoints ||
+    b.exactCount - a.exactCount ||
+    b.outcomeCount - a.outcomeCount ||
+    b.gdCount - a.gdCount ||
+    (a.joinedAt < b.joinedAt ? -1 : a.joinedAt > b.joinedAt ? 1 : 0) ||
+    (a.userId < b.userId ? -1 : a.userId > b.userId ? 1 : 0)
+  )
+}
+
 export async function getLeaderboard(
   db: AppDatabase,
   opts: { competitionId: string; limit?: number; offset?: number },
@@ -54,15 +75,7 @@ export async function getLeaderboard(
     return { ...r, championPoints, totalPoints: r.predictionPoints + championPoints }
   })
 
-  merged.sort(
-    (a, b) =>
-      b.totalPoints - a.totalPoints ||
-      b.exactCount - a.exactCount ||
-      b.outcomeCount - a.outcomeCount ||
-      b.gdCount - a.gdCount ||
-      (a.joinedAt < b.joinedAt ? -1 : a.joinedAt > b.joinedAt ? 1 : 0) ||
-      (a.userId < b.userId ? -1 : a.userId > b.userId ? 1 : 0),
-  )
+  merged.sort(compareLeaderboardRows)
 
   return merged.slice(offset, offset + limit).map((r, index) => ({
     rank: offset + index + 1,

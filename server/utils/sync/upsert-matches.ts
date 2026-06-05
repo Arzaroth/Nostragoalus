@@ -63,7 +63,13 @@ export async function upsertMatches(
         result.skipped += 1
         continue
       }
-      await db.insert(match).values({ competitionId, providerMatchId: m.providerMatchId, roundId, ...mutableFields(m) })
+      await db.insert(match).values({
+        competitionId,
+        providerMatchId: m.providerMatchId,
+        providerStageId: m.providerStageId ?? null,
+        roundId,
+        ...mutableFields(m),
+      })
       result.inserted += 1
       continue
     }

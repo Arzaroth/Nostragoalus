@@ -1,5 +1,5 @@
 {
-  "id": "77ee46f1-7f41-4b1d-b41f-1bf8b1fab610",
+  "id": "4c0a6282-54b4-4438-8f28-55903fbe8cf9",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -557,6 +557,162 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.goal_event": {
+      "name": "goal_event",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "match_id": {
+          "name": "match_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "competition_id": {
+          "name": "competition_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "side": {
+          "name": "side",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "team_id": {
+          "name": "team_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "team_name": {
+          "name": "team_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "team_code": {
+          "name": "team_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "player_id": {
+          "name": "player_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "player_name": {
+          "name": "player_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "minute": {
+          "name": "minute",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "goal_type": {
+          "name": "goal_type",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "own_goal": {
+          "name": "own_goal",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "assist_player_id": {
+          "name": "assist_player_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "assist_player_name": {
+          "name": "assist_player_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "goal_event_competition_idx": {
+          "name": "goal_event_competition_idx",
+          "columns": [
+            {
+              "expression": "competition_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "goal_event_match_idx": {
+          "name": "goal_event_match_idx",
+          "columns": [
+            {
+              "expression": "match_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "goal_event_match_id_match_id_fk": {
+          "name": "goal_event_match_id_match_id_fk",
+          "tableFrom": "goal_event",
+          "tableTo": "match",
+          "columnsFrom": [
+            "match_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "goal_event_competition_id_competition_id_fk": {
+          "name": "goal_event_competition_id_competition_id_fk",
+          "tableFrom": "goal_event",
+          "tableTo": "competition",
+          "columnsFrom": [
+            "competition_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.match": {
       "name": "match",
       "schema": "",
@@ -688,6 +844,30 @@
           "name": "winner",
           "type": "outcome",
           "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "provider_stage_id": {
+          "name": "provider_stage_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "possession_home": {
+          "name": "possession_home",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "possession_away": {
+          "name": "possession_away",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "details_fetched_at": {
+          "name": "details_fetched_at",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         },
