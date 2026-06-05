@@ -1,4 +1,4 @@
-import { and, asc, eq, type SQL } from 'drizzle-orm'
+import { and, asc, eq, or, type SQL } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { match, prediction, round } from '../../../db/schema'
 import type { AppStage, MatchStatus } from '../../../shared/types/match'
@@ -42,6 +42,20 @@ export async function listMatches(db: AppDatabase, filters: MatchFilters) {
     .from(match)
     .innerJoin(round, eq(match.roundId, round.id))
     .where(and(...conditions))
+    .orderBy(asc(match.kickoffTime))
+}
+
+export async function getTeamMatches(db: AppDatabase, competitionId: string, teamCode: string) {
+  return db
+    .select(matchColumns)
+    .from(match)
+    .innerJoin(round, eq(match.roundId, round.id))
+    .where(
+      and(
+        eq(match.competitionId, competitionId),
+        or(eq(match.homeTeamCode, teamCode), eq(match.awayTeamCode, teamCode)),
+      ),
+    )
     .orderBy(asc(match.kickoffTime))
 }
 

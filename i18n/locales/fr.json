@@ -27,6 +27,10 @@
     "search": "Rechercher une équipe…",
     "noResults": "Aucun match trouvé."
   },
+  "team": {
+    "notFound": "Équipe introuvable.",
+    "noMatches": "Aucun match pour cette équipe."
+  },
   "predictions": {
     "empty": "Vous n'avez pas encore de pronostics.",
     "none": "Aucun pronostic à afficher.",

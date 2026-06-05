@@ -27,6 +27,10 @@
     "search": "Search a team…",
     "noResults": "No matches found."
   },
+  "team": {
+    "notFound": "Team not found.",
+    "noMatches": "No matches for this team."
+  },
   "predictions": {
     "empty": "You haven't made any predictions yet.",
     "none": "No predictions to show yet.",
