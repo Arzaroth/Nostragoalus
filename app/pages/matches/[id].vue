@@ -29,6 +29,9 @@ const { data: scorersData } = await useFetch<{ scorers: any[] }>('/api/competiti
 })
 const scorers = computed<any[]>(() => scorersData.value?.scorers ?? [])
 
+const { data: detailData } = await useFetch<{ detail: any }>(`/api/matches/${id.value}/live-detail`)
+const detail = computed(() => detailData.value?.detail)
+
 const m = computed(() => data.value?.match)
 const { live } = useLiveMatch(id)
 
@@ -54,6 +57,9 @@ function bestBy(side: 'home' | 'away', field: 'goals' | 'assists') {
 }
 const homeGoalEvents = computed(() => (insights.value?.goals ?? []).filter((g: any) => g.side === 'HOME'))
 const awayGoalEvents = computed(() => (insights.value?.goals ?? []).filter((g: any) => g.side === 'AWAY'))
+const hasStats = computed(
+  () => homeGoalEvents.value.length > 0 || awayGoalEvents.value.length > 0 || insights.value?.possession?.home != null || !!detail.value,
+)
 function formColor(r: string) {
   return r === 'W' ? '#22c55e' : r === 'L' ? '#ef4444' : '#a1a1aa'
 }
@@ -108,7 +114,7 @@ function fmtDate(d: string) {
     <div v-if="insights" class="rounded-2xl border p-2 sm:p-4" style="background: var(--p-content-background); border-color: var(--p-content-border-color)">
       <Tabs value="form">
         <TabList>
-          <Tab v-if="insights.goals.length || insights.possession.home !== null" value="stats">{{ t('match.stats') }}</Tab>
+          <Tab v-if="hasStats" value="stats">{{ t('match.stats') }}</Tab>
           <Tab v-if="insights.standings" value="standings">{{ t('match.standings') }}</Tab>
           <Tab value="form">{{ t('match.form') }}</Tab>
           <Tab value="next">{{ t('match.next') }}</Tab>
@@ -116,7 +122,13 @@ function fmtDate(d: string) {
           <Tab v-if="scorers.length" value="scorers">{{ t('match.players') }}</Tab>
         </TabList>
         <TabPanels>
-          <TabPanel v-if="insights.goals.length || insights.possession.home !== null" value="stats">
+          <TabPanel v-if="hasStats" value="stats">
+            <div v-if="detail" class="flex flex-wrap justify-center gap-4 text-xs mb-4" style="color: var(--p-text-muted-color)">
+              <span v-if="detail.stadium"><i class="pi pi-map-marker" /> {{ detail.stadium }}</span>
+              <span v-if="detail.attendance"><i class="pi pi-users" /> {{ detail.attendance.toLocaleString() }}</span>
+              <span><span class="inline-block w-2.5 h-3.5 rounded-sm align-middle mr-1" style="background: #eab308" />{{ detail.cards.home.yellow }}–{{ detail.cards.away.yellow }}</span>
+              <span v-if="detail.cards.home.red || detail.cards.away.red"><span class="inline-block w-2.5 h-3.5 rounded-sm align-middle mr-1" style="background: #ef4444" />{{ detail.cards.home.red }}–{{ detail.cards.away.red }}</span>
+            </div>
             <div v-if="insights.possession.home !== null" class="mb-4">
               <div class="flex justify-between text-xs mb-1" style="color: var(--p-text-muted-color)">
                 <span>{{ Math.round(insights.possession.home) }}%</span>

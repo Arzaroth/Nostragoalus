@@ -153,18 +153,35 @@ interface FifaDetailGoal {
 // goals and must not count toward scorers (matches the official Golden Boot).
 const FIFA_SHOOTOUT_PERIOD = 11
 
+interface FifaDetailBooking {
+  Card?: number | null
+}
+
 interface FifaDetailTeam {
   IdTeam?: string | null
   TeamName?: FifaLocalized[]
   Abbreviation?: string | null
   Players?: FifaDetailPlayer[]
   Goals?: FifaDetailGoal[]
+  Bookings?: FifaDetailBooking[]
 }
 
 export interface FifaMatchDetailResponse {
   HomeTeam?: FifaDetailTeam | null
   AwayTeam?: FifaDetailTeam | null
   BallPossession?: { OverallHome?: number | null; OverallAway?: number | null } | null
+  Attendance?: number | null
+  Stadium?: { Name?: FifaLocalized[] } | null
+}
+
+function countCards(bookings: FifaDetailBooking[] | undefined): { yellow: number; red: number } {
+  let yellow = 0
+  let red = 0
+  for (const b of bookings ?? []) {
+    if (b.Card === 1) yellow += 1
+    else if (b.Card != null) red += 1
+  }
+  return { yellow, red }
 }
 
 export function normalizeFifaMatchDetail(detail: FifaMatchDetailResponse): MatchDetail {
@@ -215,6 +232,9 @@ export function normalizeFifaMatchDetail(detail: FifaMatchDetailResponse): Match
   return {
     possessionHome: detail.BallPossession?.OverallHome ?? null,
     possessionAway: detail.BallPossession?.OverallAway ?? null,
+    attendance: detail.Attendance ?? null,
+    stadium: detail.Stadium?.Name?.[0]?.Description ?? null,
+    cards: { home: countCards(detail.HomeTeam?.Bookings), away: countCards(detail.AwayTeam?.Bookings) },
     goals,
   }
 }

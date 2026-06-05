@@ -69,9 +69,17 @@ export interface NormalizedGoal {
   assistPlayerName: string | null
 }
 
+export interface TeamCards {
+  yellow: number
+  red: number
+}
+
 export interface MatchDetail {
   possessionHome: number | null
   possessionAway: number | null
+  attendance: number | null
+  stadium: string | null
+  cards: { home: TeamCards; away: TeamCards }
   goals: NormalizedGoal[]
 }
 

@@ -88,7 +88,26 @@ describe('normalizeFifaMatchDetail', () => {
   })
 
   it('handles missing teams and possession', () => {
-    expect(normalizeFifaMatchDetail({})).toEqual({ possessionHome: null, possessionAway: null, goals: [] })
+    expect(normalizeFifaMatchDetail({})).toEqual({
+      possessionHome: null,
+      possessionAway: null,
+      attendance: null,
+      stadium: null,
+      cards: { home: { yellow: 0, red: 0 }, away: { yellow: 0, red: 0 } },
+      goals: [],
+    })
+  })
+
+  it('extracts attendance, stadium and cards (yellow/red, ignoring blanks)', () => {
+    const d = normalizeFifaMatchDetail({
+      Attendance: 88966,
+      Stadium: { Name: [{ Locale: 'en', Description: 'Lusail Stadium' }] },
+      HomeTeam: { Bookings: [{ Card: 1 }, { Card: 1 }, { Card: 2 }] },
+      AwayTeam: { Bookings: [{ Card: 1 }, { Card: 3 }, {}] },
+    })
+    expect(d.attendance).toBe(88966)
+    expect(d.stadium).toBe('Lusail Stadium')
+    expect(d.cards).toEqual({ home: { yellow: 2, red: 1 }, away: { yellow: 1, red: 1 } })
   })
 })
 
@@ -106,6 +125,9 @@ describe('fifaProvider.getMatchDetail', () => {
     expect(await provider.getMatchDetail!({ stageId: 'st1', matchId: 'm1' })).toEqual({
       possessionHome: 50,
       possessionAway: 50,
+      attendance: null,
+      stadium: null,
+      cards: { home: { yellow: 0, red: 0 }, away: { yellow: 0, red: 0 } },
       goals: [],
     })
   })
