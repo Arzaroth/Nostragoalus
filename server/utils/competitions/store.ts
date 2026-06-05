@@ -2,19 +2,31 @@ import { eq } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { competition } from '../../../db/schema'
 
-export const DEFAULT_COMPETITION = {
-  slug: 'world-cup-2026',
-  name: 'FIFA World Cup 2026',
-  provider: 'fifa',
-  externalCompetitionId: '17',
-  externalSeasonId: null as string | null,
-  seasonHint: '2026',
-}
+export const DEFAULT_COMPETITIONS = [
+  {
+    slug: 'world-cup-2026',
+    name: 'FIFA World Cup 2026',
+    provider: 'fifa',
+    externalCompetitionId: '17',
+    externalSeasonId: null as string | null,
+    seasonHint: '2026',
+  },
+  {
+    slug: 'euro-2024',
+    name: 'UEFA Euro 2024',
+    provider: 'football-data',
+    externalCompetitionId: 'EC',
+    externalSeasonId: null as string | null,
+    seasonHint: '2024',
+  },
+]
 
+// Idempotent per slug, so new defaults are added on upgrade without duplicates.
 export async function ensureDefaultCompetition(db: AppDatabase): Promise<void> {
-  const existing = await db.select({ id: competition.id }).from(competition).limit(1)
-  if (existing.length > 0) return
-  await db.insert(competition).values({ ...DEFAULT_COMPETITION, isActive: true })
+  for (const def of DEFAULT_COMPETITIONS) {
+    const existing = await db.select({ id: competition.id }).from(competition).where(eq(competition.slug, def.slug)).limit(1)
+    if (existing.length === 0) await db.insert(competition).values({ ...def, isActive: true })
+  }
 }
 
 export async function listCompetitions(db: AppDatabase) {

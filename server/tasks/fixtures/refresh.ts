@@ -12,9 +12,13 @@ export default defineTask({
 
     const result: Record<string, unknown> = {}
     for (const competition of await listActiveCompetitions(db)) {
-      const seasonId = await resolveCompetitionSeason(db, competition)
-      const provider = providerForCompetition(competition, seasonId)
-      result[competition.slug] = await syncFixtures(db, competition.id, provider, competition.seasonHint ?? '')
+      try {
+        const seasonId = await resolveCompetitionSeason(db, competition)
+        const provider = providerForCompetition(competition, seasonId)
+        result[competition.slug] = await syncFixtures(db, competition.id, provider, competition.seasonHint ?? '')
+      } catch (error) {
+        result[competition.slug] = { error: (error as Error).message }
+      }
     }
     return { result }
   },

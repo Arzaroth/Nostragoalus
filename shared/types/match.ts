@@ -31,6 +31,15 @@ export interface Score {
   penalties?: ScorePair
 }
 
+export interface TopScorer {
+  playerName: string
+  teamName: string
+  teamCode: string | null
+  goals: number
+  assists: number | null
+  penalties: number | null
+}
+
 export interface NormalizedMatch {
   providerMatchId: string
   stage: AppStage

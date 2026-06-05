@@ -8,6 +8,7 @@ export function providerForCompetition(
   const config = useRuntimeConfig()
   return createProvider({
     provider: competition.provider,
+    externalCompetitionId: competition.externalCompetitionId,
     fifaSeasonId: seasonId,
     footballDataToken: config.footballDataToken,
     apiFootballKey: config.apiFootballKey,

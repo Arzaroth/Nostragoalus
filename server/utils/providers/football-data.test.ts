@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { footballDataProvider, normalizeFootballDataMatch, type FdMatch } from './football-data'
+import { footballDataProvider, normalizeFdScorer, normalizeFootballDataMatch, type FdMatch } from './football-data'
 import { RateLimiter } from './rate-limiter'
 import { ProviderRateLimitError, ProviderUpstreamError } from './types'
 
@@ -172,5 +172,27 @@ describe('footballDataProvider', () => {
     const fetchImpl = (async () => jsonResponse({ matches: [] })) as unknown as typeof fetch
     const provider = footballDataProvider({ token: 't', fetchImpl })
     expect(await provider.listFixtures({ season: '2026' })).toEqual([])
+  })
+
+  it('returns normalized top scorers', async () => {
+    const payload = { scorers: [{ player: { name: 'Harry Kane' }, team: { name: 'England', tla: 'ENG' }, goals: 8, assists: 3, penalties: 2 }] }
+    const fetchImpl = vi.fn(async (url: string) => {
+      expect(url).toContain('/competitions/WC/scorers?season=2026')
+      return jsonResponse(payload)
+    }) as unknown as typeof fetch
+    const provider = footballDataProvider({ token: 't', fetchImpl, rateLimiter: noWait() })
+    const scorers = await provider.getTopScorers!({ season: '2026' })
+    expect(scorers[0]).toEqual({ playerName: 'Harry Kane', teamName: 'England', teamCode: 'ENG', goals: 8, assists: 3, penalties: 2 })
+  })
+
+  it('throws on a scorers upstream error', async () => {
+    const provider = footballDataProvider({ token: 't', fetchImpl: (async () => new Response('boom', { status: 500 })) as unknown as typeof fetch, rateLimiter: noWait() })
+    await expect(provider.getTopScorers!({ season: '2026' })).rejects.toBeInstanceOf(ProviderUpstreamError)
+  })
+})
+
+describe('normalizeFdScorer', () => {
+  it('falls back gracefully on missing fields', () => {
+    expect(normalizeFdScorer({})).toEqual({ playerName: 'Unknown', teamName: '', teamCode: null, goals: 0, assists: null, penalties: null })
   })
 })

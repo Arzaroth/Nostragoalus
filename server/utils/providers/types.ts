@@ -1,4 +1,4 @@
-import type { NormalizedMatch } from '../../../shared/types/match'
+import type { NormalizedMatch, TopScorer } from '../../../shared/types/match'
 
 export interface ListFixturesOptions {
   season: string
@@ -15,6 +15,8 @@ export interface MatchDataProvider {
   listFixtures(opts: ListFixturesOptions): Promise<NormalizedMatch[]>
   getMatchesByDate(date: string): Promise<NormalizedMatch[]>
   getLiveMatches(): Promise<NormalizedMatch[]>
+  // Optional: aggregate top scorers for the season (not all providers expose this).
+  getTopScorers?(opts: ListFixturesOptions): Promise<TopScorer[]>
 }
 
 export class ProviderRateLimitError extends Error {

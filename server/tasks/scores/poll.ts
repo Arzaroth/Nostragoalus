@@ -4,7 +4,6 @@ import { listActiveCompetitions } from '../../utils/competitions/store'
 import { resolveCompetitionSeason, syncLive } from '../../utils/sync/competition'
 import { hasLiveWindow } from '../../utils/sync/live-window'
 import { publishMatchUpdates } from '../../utils/live/hub'
-import { ProviderRateLimitError } from '../../utils/providers/types'
 
 export default defineTask({
   meta: { name: 'scores:poll', description: 'Poll live scores for active competitions while matches are live' },
@@ -13,16 +12,16 @@ export default defineTask({
     if (!(await hasLiveWindow(db))) return { result: 'idle' }
 
     const changed: string[] = []
-    try {
-      for (const competition of await listActiveCompetitions(db)) {
+    for (const competition of await listActiveCompetitions(db)) {
+      try {
         const seasonId = await resolveCompetitionSeason(db, competition)
         const provider = providerForCompetition(competition, seasonId)
         const res = await syncLive(db, competition.id, provider)
         changed.push(...res.changedMatchIds)
+      } catch {
+        // Skip competitions that error (rate-limited or missing provider token);
+        // never let one break the others' live updates.
       }
-    } catch (error) {
-      if (error instanceof ProviderRateLimitError) return { result: 'rate_limited' }
-      throw error
     }
 
     await publishMatchUpdates(db, changed)

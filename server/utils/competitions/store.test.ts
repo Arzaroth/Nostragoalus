@@ -12,13 +12,14 @@ import {
 import { makeCompetition } from '../../../tests/factories'
 
 describe('competition store', () => {
-  it('seeds the default competition once', async () => {
+  it('seeds the default competitions once (idempotent per slug)', async () => {
     const { db, client } = await createTestDb()
     await ensureDefaultCompetition(db)
     await ensureDefaultCompetition(db)
     const all = await listCompetitions(db)
-    expect(all).toHaveLength(1)
-    expect(all[0]).toMatchObject({ slug: 'world-cup-2026', provider: 'fifa', externalCompetitionId: '17' })
+    expect(all.map((c) => c.slug).sort()).toEqual(['euro-2024', 'world-cup-2026'])
+    expect(all.find((c) => c.slug === 'world-cup-2026')).toMatchObject({ provider: 'fifa', externalCompetitionId: '17' })
+    expect(all.find((c) => c.slug === 'euro-2024')).toMatchObject({ provider: 'football-data', externalCompetitionId: 'EC' })
     await client.close()
   })
 

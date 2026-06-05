@@ -1,4 +1,4 @@
-import type { NormalizedMatch, Score, ScorePair, Team, Winner } from '../../../shared/types/match'
+import type { NormalizedMatch, Score, ScorePair, Team, TopScorer, Winner } from '../../../shared/types/match'
 import { mapFootballDataStage, mapFootballDataStatus, parseFootballDataGroup } from './status-map'
 import { RateLimiter } from './rate-limiter'
 import { ProviderRateLimitError, ProviderUpstreamError, type ListFixturesOptions, type MatchDataProvider } from './types'
@@ -75,6 +75,25 @@ export function normalizeFootballDataMatch(match: FdMatch): NormalizedMatch {
   }
 }
 
+interface FdScorer {
+  player?: { name?: string | null }
+  team?: { name?: string | null; tla?: string | null }
+  goals?: number | null
+  assists?: number | null
+  penalties?: number | null
+}
+
+export function normalizeFdScorer(scorer: FdScorer): TopScorer {
+  return {
+    playerName: scorer.player?.name ?? 'Unknown',
+    teamName: scorer.team?.name ?? '',
+    teamCode: scorer.team?.tla ?? null,
+    goals: scorer.goals ?? 0,
+    assists: scorer.assists ?? null,
+    penalties: scorer.penalties ?? null,
+  }
+}
+
 export interface FootballDataOptions {
   token: string
   baseUrl?: string
@@ -104,10 +123,22 @@ export function footballDataProvider(options: FootballDataOptions): MatchDataPro
     return (data.matches ?? []).map(normalizeFootballDataMatch)
   }
 
+  async function getScorers(season: string): Promise<TopScorer[]> {
+    await limiter.acquire()
+    const response = await doFetch(`${baseUrl}/competitions/${competition}/scorers?season=${season}&limit=20`, {
+      headers: { 'X-Auth-Token': options.token },
+    })
+    if (response.status === 429) throw new ProviderRateLimitError()
+    if (!response.ok) throw new ProviderUpstreamError(response.status, await response.text())
+    const data = (await response.json()) as { scorers?: FdScorer[] }
+    return (data.scorers ?? []).map(normalizeFdScorer)
+  }
+
   return {
     meta: { name: 'football-data', rateLimitPerMin: 10, dailyCap: null },
     listFixtures: ({ season }: ListFixturesOptions) => getMatches(`?season=${season}`),
     getMatchesByDate: (date: string) => getMatches(`?dateFrom=${date}&dateTo=${date}`),
     getLiveMatches: () => getMatches('?status=IN_PLAY,PAUSED'),
+    getTopScorers: ({ season }: ListFixturesOptions) => getScorers(season),
   }
 }

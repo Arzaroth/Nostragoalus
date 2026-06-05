@@ -4,6 +4,7 @@ import type { MatchDataProvider } from './types'
 
 export interface ProviderSelection {
   provider: string
+  externalCompetitionId?: string
   fifaSeasonId?: string
   footballDataToken?: string
   apiFootballKey?: string
@@ -19,7 +20,11 @@ export function createProvider(selection: ProviderSelection): MatchDataProvider 
     if (!selection.footballDataToken) {
       throw new Error('football-data provider requires NUXT_FOOTBALL_DATA_TOKEN')
     }
-    return footballDataProvider({ token: selection.footballDataToken, fetchImpl: selection.fetchImpl })
+    return footballDataProvider({
+      token: selection.footballDataToken,
+      competition: selection.externalCompetitionId || 'WC',
+      fetchImpl: selection.fetchImpl,
+    })
   }
 
   if (selection.provider === 'api-football') {
