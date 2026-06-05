@@ -138,11 +138,16 @@ interface FifaDetailPlayer {
 
 interface FifaDetailGoal {
   Type?: number | null
+  Period?: number | null
   IdPlayer?: string | null
   Minute?: string | null
   IdAssistPlayer?: string | null
   IdTeam?: string | null
 }
+
+// FIFA "Period" 11 is the penalty shootout — those conversions are not match
+// goals and must not count toward scorers (matches the official Golden Boot).
+const FIFA_SHOOTOUT_PERIOD = 11
 
 interface FifaDetailTeam {
   IdTeam?: string | null
@@ -183,6 +188,7 @@ export function normalizeFifaMatchDetail(detail: FifaMatchDetailResponse): Match
     const ownRoster = side === 'HOME' ? homeIds : awayIds
     const otherRoster = side === 'HOME' ? awayIds : homeIds
     for (const g of team?.Goals ?? []) {
+      if (g.Period === FIFA_SHOOTOUT_PERIOD) continue
       // An own goal sits under the benefiting team but the scorer is on the opponent's roster.
       const ownGoal = !!g.IdPlayer && otherRoster.has(g.IdPlayer) && !ownRoster.has(g.IdPlayer)
       goals.push({
@@ -195,8 +201,9 @@ export function normalizeFifaMatchDetail(detail: FifaMatchDetailResponse): Match
         minute: g.Minute ?? null,
         goalType: g.Type ?? null,
         ownGoal,
-        assistPlayerId: g.IdAssistPlayer ?? null,
-        assistPlayerName: (g.IdAssistPlayer && names.get(g.IdAssistPlayer)) || null,
+        // FIFA's IdAssistPlayer is the beaten goalkeeper, not the assister — so no assist data here.
+        assistPlayerId: null,
+        assistPlayerName: null,
       })
     }
   }

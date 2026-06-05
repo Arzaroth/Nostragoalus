@@ -41,23 +41,24 @@ describe('normalizeFifaMatchDetail', () => {
         { IdPlayer: 'a2', PlayerName: [{ Locale: 'en', Description: 'ASSIST GUY' }] },
       ],
       Goals: [
-        { Type: 1, IdPlayer: 'a1', Minute: "16'", IdAssistPlayer: 'a2', IdTeam: 'A' },
-        { Type: 1, IdPlayer: 'a1', Minute: "31'", IdAssistPlayer: null, IdTeam: 'A' },
+        { Type: 1, Period: 3, IdPlayer: 'a1', Minute: "16'", IdAssistPlayer: 'a2', IdTeam: 'A' },
+        { Type: 1, Period: 5, IdPlayer: 'a1', Minute: "31'", IdAssistPlayer: null, IdTeam: 'A' },
+        { Type: 1, Period: 11, IdPlayer: 'a1', Minute: "121'", IdAssistPlayer: null, IdTeam: 'A' },
       ],
     },
   }
 
-  it('maps goals with scorer/assist names and possession', () => {
+  it('maps goals with scorer/assist names and possession, excluding shootout goals', () => {
     const d = normalizeFifaMatchDetail(detail)
     expect(d.possessionHome).toBeCloseTo(47.1)
-    expect(d.goals).toHaveLength(2)
+    expect(d.goals).toHaveLength(2) // the Period 11 (shootout) goal is dropped
     expect(d.goals[0]).toMatchObject({
       side: 'AWAY',
       playerName: 'E. VALENCIA',
       teamCode: 'ECU',
       minute: "16'",
       ownGoal: false,
-      assistPlayerName: 'ASSIST GUY',
+      assistPlayerName: null,
     })
     expect(d.goals[1].assistPlayerName).toBeNull()
   })
