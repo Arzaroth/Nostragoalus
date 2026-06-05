@@ -21,15 +21,12 @@ const COORDS: Record<string, [number, number]> = {
 
 const el = ref<HTMLElement>()
 let map: L.Map | null = null
+let markers: L.LayerGroup | null = null
 
-onMounted(() => {
-  if (!el.value) return
-  map = L.map(el.value, { center: [25, 10], zoom: 2, minZoom: 1, maxZoom: 6, worldCopyJump: true })
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap',
-    maxZoom: 6,
-  }).addTo(map)
-
+function drawMarkers() {
+  if (!map) return
+  if (!markers) markers = L.layerGroup().addTo(map)
+  markers.clearLayers()
   for (const team of props.teams) {
     const coord = COORDS[team.code]
     if (!coord) continue
@@ -39,18 +36,29 @@ onMounted(() => {
       iconSize: [28, 28],
       iconAnchor: [14, 14],
     })
-    L.marker(coord, { icon, title: team.name })
-      .addTo(map)
-      .on('click', () => emit('select', team))
+    L.marker(coord, { icon, title: team.name }).on('click', () => emit('select', team)).addTo(markers)
   }
+}
 
+onMounted(() => {
+  if (!el.value) return
+  map = L.map(el.value, { center: [25, 10], zoom: 2, minZoom: 1, maxZoom: 6, worldCopyJump: true })
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap',
+    maxZoom: 6,
+  }).addTo(map)
+  drawMarkers()
   // The container may not have its final size during hydration — recompute after layout.
   setTimeout(() => map?.invalidateSize(), 150)
 })
 
+// Redraw markers when the competition (teams) changes.
+watch(() => props.teams, drawMarkers, { deep: true })
+
 onBeforeUnmount(() => {
   map?.remove()
   map = null
+  markers = null
 })
 </script>
 

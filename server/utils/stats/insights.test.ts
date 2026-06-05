@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm'
 import { createTestDb } from '../../../tests/db'
 import { findRoundId } from '../sync/rounds'
 import { makeMatch, seedCompetition } from '../../../tests/factories'
-import { getMatchInsights } from './insights'
+import { getMatchInsights, minuteValue } from './insights'
 import { goalEvent, match } from '../../../db/schema'
 
 const NOW = new Date('2026-06-13T00:00:00Z')
@@ -38,10 +38,13 @@ describe('getMatchInsights', () => {
       ownGoal: false,
       minute: "10'",
     })
+    await db.insert(goalEvent).values({ matchId: mid, competitionId, side: 'AWAY', teamName: 'B', teamCode: 'B', playerName: 'Late', ownGoal: false, minute: "45'+2'" })
+    await db.insert(goalEvent).values({ matchId: mid, competitionId, side: 'HOME', teamName: 'A', teamCode: 'A', playerName: 'Early', ownGoal: false, minute: "5'" })
 
     const insights = await getMatchInsights(db, mid, NOW)
     expect(insights!.possession).toEqual({ home: 55, away: 45 })
-    expect(insights!.goals[0]).toMatchObject({ playerName: 'Scorer', side: 'HOME', minute: "10'" })
+    // goals sorted chronologically regardless of insert/side order
+    expect(insights!.goals.map((g) => g.minute)).toEqual(["5'", "10'", "45'+2'"])
     await client.close()
   })
 
@@ -94,5 +97,29 @@ describe('getMatchInsights', () => {
     expect(insights!.form.away.map((f) => f.result)).toEqual(['L'])
     expect(insights!.headToHead.length).toBeGreaterThan(0)
     await client.close()
+  })
+
+  it('decides level-knockout form by the penalty shootout', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const r16 = (await findRoundId(db, competitionId, 'R16', null)) as string
+    const sf = (await findRoundId(db, competitionId, 'SF', null)) as string
+    const pens = await makeMatch(db, { competitionId, roundId: r16, stage: 'R16', kickoffTime: new Date('2026-06-28T16:00:00Z'), status: 'FINISHED', fullTimeHome: 1, fullTimeAway: 1, homeTeam: 'B', homeTeamCode: 'B', awayTeam: 'C', awayTeamCode: 'C' })
+    await db.update(match).set({ penaltiesHome: 4, penaltiesAway: 2 }).where(eq(match.id, pens))
+    const focus = await makeMatch(db, { competitionId, roundId: sf, stage: 'SF', kickoffTime: new Date('2026-07-05T16:00:00Z'), status: 'SCHEDULED', homeTeam: 'B', homeTeamCode: 'B', awayTeam: 'C', awayTeamCode: 'C' })
+
+    const insights = await getMatchInsights(db, focus, NOW)
+    expect(insights!.form.home[0]).toMatchObject({ result: 'W', score: '1–1 (4–2p)' })
+    expect(insights!.form.away[0]).toMatchObject({ result: 'L', score: '1–1 (2–4p)' })
+    await client.close()
+  })
+})
+
+describe('minuteValue', () => {
+  it('parses minutes with stoppage time and falls back for blanks', () => {
+    expect(minuteValue("9'")).toBe(900)
+    expect(minuteValue("45'+2'")).toBe(4502)
+    expect(minuteValue(null)).toBe(1e9)
+    expect(minuteValue('?')).toBe(1e9)
   })
 })

@@ -17,11 +17,38 @@ async function onSelect(team: { code: string; name: string }) {
   loading.value = false
 }
 
+// Switching competition invalidates the selected team.
+watch(slug, () => {
+  selected.value = null
+  info.value = null
+})
+
 const matches = computed<any[]>(() => info.value?.matches ?? [])
 const live = computed(() => matches.value.find((m) => m.status === 'LIVE' || m.status === 'PAUSED'))
 const next = computed(() => matches.value.find((m) => m.status === 'SCHEDULED'))
-const last = computed(() => [...matches.value].reverse().find((m) => m.fullTimeHome !== null))
 
+function teamResult(m: any) {
+  const isHome = m.homeTeamCode === selected.value?.code
+  const gf = isHome ? m.fullTimeHome : m.fullTimeAway
+  const ga = isHome ? m.fullTimeAway : m.fullTimeHome
+  const pf = isHome ? m.penaltiesHome : m.penaltiesAway
+  const pa = isHome ? m.penaltiesAway : m.penaltiesHome
+  let result: 'W' | 'D' | 'L' = gf > ga ? 'W' : gf < ga ? 'L' : 'D'
+  if (result === 'D' && pf != null && pa != null && pf !== pa) result = pf > pa ? 'W' : 'L'
+  return { id: m.id, result, opponent: isHome ? m.awayTeam : m.homeTeam, opponentCode: isHome ? m.awayTeamCode : m.homeTeamCode, gf, ga }
+}
+const results = computed(() =>
+  matches.value
+    .filter((m) => m.fullTimeHome !== null)
+    .slice()
+    .sort((a, b) => new Date(b.kickoffTime).getTime() - new Date(a.kickoffTime).getTime())
+    .map(teamResult),
+)
+const record = computed(() => results.value.reduce((r, x) => ((r[x.result] += 1), r), { W: 0, D: 0, L: 0 } as Record<string, number>))
+
+function formColor(r: string) {
+  return r === 'W' ? '#22c55e' : r === 'L' ? '#ef4444' : '#a1a1aa'
+}
 function fmt(d: string) {
   return new Date(d).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
@@ -48,7 +75,7 @@ function fmt(d: string) {
             <NuxtLink :to="`/teams/${selected.code}`" class="text-lg font-bold hover:underline">{{ selected.name }}</NuxtLink>
           </div>
           <div v-if="loading" class="opacity-60">{{ t('common.loading') }}</div>
-          <div v-else class="flex flex-col gap-3 text-sm">
+          <div v-else class="flex flex-col gap-4 text-sm">
             <div v-if="live">
               <div class="text-xs font-bold mb-1" style="color: #ef4444">● {{ t('map.live') }}</div>
               <NuxtLink :to="`/matches/${live.id}`" class="hover:underline">{{ live.homeTeam }} <b>{{ live.fullTimeHome }}–{{ live.fullTimeAway }}</b> {{ live.awayTeam }}</NuxtLink>
@@ -57,11 +84,21 @@ function fmt(d: string) {
               <div class="text-xs font-semibold mb-1" style="color: var(--p-text-muted-color)">{{ t('map.next') }}</div>
               <NuxtLink :to="`/matches/${next.id}`" class="hover:underline">{{ next.homeTeam }} vs {{ next.awayTeam }} · {{ fmt(next.kickoffTime) }}</NuxtLink>
             </div>
-            <div v-if="last">
-              <div class="text-xs font-semibold mb-1" style="color: var(--p-text-muted-color)">{{ t('map.last') }}</div>
-              <NuxtLink :to="`/matches/${last.id}`" class="hover:underline">{{ last.homeTeam }} {{ last.fullTimeHome }}–{{ last.fullTimeAway }} {{ last.awayTeam }}</NuxtLink>
+            <div v-if="results.length">
+              <div class="text-xs font-semibold mb-2 flex items-center justify-between" style="color: var(--p-text-muted-color)">
+                <span>{{ t('map.recent') }}</span>
+                <span class="tabular-nums">{{ record.W }}W · {{ record.D }}D · {{ record.L }}L</span>
+              </div>
+              <div class="flex flex-col gap-1.5">
+                <NuxtLink v-for="r in results.slice(0, 6)" :key="r.id" :to="`/matches/${r.id}`" class="flex items-center gap-2 hover:opacity-80">
+                  <span class="w-4 h-4 rounded text-white text-[10px] flex items-center justify-center font-bold shrink-0" :style="`background:${formColor(r.result)}`">{{ r.result }}</span>
+                  <img v-if="flagUrl(r.opponentCode)" :src="flagUrl(r.opponentCode) || ''" class="w-4 h-4 rounded shrink-0" alt="" >
+                  <span class="truncate flex-1">{{ r.opponent }}</span>
+                  <span class="tabular-nums shrink-0" style="color: var(--p-text-muted-color)">{{ r.gf }}–{{ r.ga }}</span>
+                </NuxtLink>
+              </div>
             </div>
-            <div v-if="!live && !next && !last" class="opacity-60">{{ t('map.noData') }}</div>
+            <div v-if="!live && !next && !results.length" class="opacity-60">{{ t('map.noData') }}</div>
           </div>
         </div>
       </div>

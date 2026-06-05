@@ -23,7 +23,7 @@ const sides = computed(() => {
     <div v-else-if="!sides" class="opacity-60">{{ t('bracket.empty') }}</div>
 
     <div v-else class="overflow-x-auto pb-4" style="width: 100vw; margin-left: calc(50% - 50vw)">
-      <div class="br min-w-max flex items-stretch gap-6 px-6">
+      <div class="br w-max mx-auto flex items-stretch gap-8 px-6">
         <!-- left side -->
         <div class="flex items-stretch gap-5 br-left">
           <div v-for="(col, ci) in sides.left" :key="'l' + ci" class="br-col" :data-advance="ci < sides.left.length - 1 ? 'true' : 'false'" :data-tail="ci === sides.left.length - 1 ? 'true' : 'false'">

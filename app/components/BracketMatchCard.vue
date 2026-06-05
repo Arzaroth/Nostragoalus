@@ -30,9 +30,9 @@ function fmtDate(d: string) {
 <style scoped>
 .br-card {
   display: block;
-  width: 8rem;
+  width: 11rem;
   border-radius: 0.55rem;
-  padding: 0.38rem 0.5rem;
+  padding: 0.45rem 0.6rem;
   transition: border-color 0.15s ease;
 }
 a.br-card:hover {
@@ -41,8 +41,8 @@ a.br-card:hover {
 .br-team {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  font-size: 0.7rem;
+  gap: 0.3rem;
+  font-size: 0.78rem;
   font-weight: 500;
   white-space: nowrap;
   min-width: 0;
@@ -52,8 +52,8 @@ a.br-card:hover {
   font-weight: 800;
 }
 .br-flag {
-  width: 0.85rem;
-  height: 0.85rem;
+  width: 1rem;
+  height: 1rem;
   border-radius: 2px;
   object-fit: cover;
   flex-shrink: 0;

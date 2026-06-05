@@ -43,6 +43,13 @@ export interface MatchInsights {
   goals: MatchGoalView[]
 }
 
+// Goal minutes are strings like "45'+7'"; parse to a sortable number (base * 100 + stoppage).
+export function minuteValue(minute: string | null): number {
+  if (!minute) return 1e9
+  const m = minute.match(/(\d+)(?:[^\d]*\+(\d+))?/)
+  return m ? Number(m[1]) * 100 + (m[2] ? Number(m[2]) : 0) : 1e9
+}
+
 async function teamForm(db: AppDatabase, competitionId: string, team: string, limit: number): Promise<FormResult[]> {
   const rows = await db
     .select()
@@ -63,8 +70,13 @@ async function teamForm(db: AppDatabase, competitionId: string, team: string, li
       const isHome = r.homeTeam === team
       const gf = (isHome ? r.fullTimeHome : r.fullTimeAway) as number
       const ga = (isHome ? r.fullTimeAway : r.fullTimeHome) as number
-      const result: FormResult['result'] = gf > ga ? 'W' : gf < ga ? 'L' : 'D'
-      return { result, opponent: isHome ? r.awayTeam : r.homeTeam, score: `${gf}–${ga}` }
+      const pf = isHome ? r.penaltiesHome : r.penaltiesAway
+      const pa = isHome ? r.penaltiesAway : r.penaltiesHome
+      let result: FormResult['result'] = gf > ga ? 'W' : gf < ga ? 'L' : 'D'
+      // A knockout level after regulation is decided on penalties — use the shootout for W/L.
+      if (result === 'D' && pf != null && pa != null && pf !== pa) result = pf > pa ? 'W' : 'L'
+      const score = pf != null && pa != null ? `${gf}–${ga} (${pf}–${pa}p)` : `${gf}–${ga}`
+      return { result, opponent: isHome ? r.awayTeam : r.homeTeam, score }
     })
 }
 
@@ -141,15 +153,17 @@ export async function getMatchInsights(db: AppDatabase, matchId: string, now: Da
     }))
 
   const goalRows = await getMatchGoals(db, m.id)
-  const goals: MatchGoalView[] = goalRows.map((g) => ({
-    side: g.side as 'HOME' | 'AWAY',
-    teamName: g.teamName,
-    teamCode: g.teamCode,
-    playerName: g.playerName,
-    minute: g.minute,
-    ownGoal: g.ownGoal,
-    assistPlayerName: g.assistPlayerName,
-  }))
+  const goals: MatchGoalView[] = goalRows
+    .map((g) => ({
+      side: g.side as 'HOME' | 'AWAY',
+      teamName: g.teamName,
+      teamCode: g.teamCode,
+      playerName: g.playerName,
+      minute: g.minute,
+      ownGoal: g.ownGoal,
+      assistPlayerName: g.assistPlayerName,
+    }))
+    .sort((a, b) => minuteValue(a.minute) - minuteValue(b.minute))
 
   return {
     standings,

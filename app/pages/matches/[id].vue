@@ -123,11 +123,11 @@ function fmtDate(d: string) {
         </TabList>
         <TabPanels>
           <TabPanel v-if="hasStats" value="stats">
-            <div v-if="detail" class="flex flex-wrap justify-center gap-4 text-xs mb-4" style="color: var(--p-text-muted-color)">
-              <span v-if="detail.stadium"><i class="pi pi-map-marker" /> {{ detail.stadium }}</span>
-              <span v-if="detail.attendance"><i class="pi pi-users" /> {{ detail.attendance.toLocaleString() }}</span>
-              <span><span class="inline-block w-2.5 h-3.5 rounded-sm align-middle mr-1" style="background: #eab308" />{{ detail.cards.home.yellow }}–{{ detail.cards.away.yellow }}</span>
-              <span v-if="detail.cards.home.red || detail.cards.away.red"><span class="inline-block w-2.5 h-3.5 rounded-sm align-middle mr-1" style="background: #ef4444" />{{ detail.cards.home.red }}–{{ detail.cards.away.red }}</span>
+            <div v-if="detail" class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs mb-4" style="color: var(--p-text-muted-color)">
+              <span v-if="detail.stadium" class="inline-flex items-center gap-1"><i class="pi pi-map-marker" /> {{ detail.stadium }}</span>
+              <span v-if="detail.attendance" class="inline-flex items-center gap-1"><i class="pi pi-users" /> {{ detail.attendance.toLocaleString() }}</span>
+              <span class="inline-flex items-center gap-1"><span class="inline-block w-2.5 h-3.5 rounded-sm" style="background: #eab308" />{{ detail.cards.home.yellow }}–{{ detail.cards.away.yellow }}</span>
+              <span v-if="detail.cards.home.red || detail.cards.away.red" class="inline-flex items-center gap-1"><span class="inline-block w-2.5 h-3.5 rounded-sm" style="background: #ef4444" />{{ detail.cards.home.red }}–{{ detail.cards.away.red }}</span>
             </div>
             <div v-if="insights.possession.home !== null" class="mb-4">
               <div class="flex justify-between text-xs mb-1" style="color: var(--p-text-muted-color)">
@@ -163,7 +163,12 @@ function fmtDate(d: string) {
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(row, i) in insights.standings" :key="row.name" class="border-t text-center" style="border-color: var(--p-content-border-color)">
+                <tr
+                  v-for="(row, i) in insights.standings"
+                  :key="row.name"
+                  class="border-t text-center"
+                  :style="`border-color: var(--p-content-border-color)${row.code === m.homeTeamCode || row.code === m.awayTeamCode ? '; background: color-mix(in srgb, var(--p-primary-color) 14%, transparent)' : ''}`"
+                >
                   <td class="py-2 text-left">{{ i + 1 }}</td>
                   <td class="text-left">
                     <span class="flex items-center gap-2">
