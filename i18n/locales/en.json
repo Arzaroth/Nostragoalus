@@ -17,6 +17,8 @@
     "live": "Live",
     "next": "Next match",
     "last": "Last result",
+    "recent": "Recent results",
+    "group": "Group",
     "noData": "No matches yet."
   },
   "common": {

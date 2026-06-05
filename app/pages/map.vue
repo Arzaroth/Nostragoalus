@@ -45,6 +45,9 @@ const results = computed(() =>
     .map(teamResult),
 )
 const record = computed(() => results.value.reduce((r, x) => ((r[x.result] += 1), r), { W: 0, D: 0, L: 0 } as Record<string, number>))
+const topScorer = computed(() => info.value?.topScorer ?? null)
+const topAssister = computed(() => info.value?.topAssister ?? null)
+const standings = computed<any[]>(() => info.value?.standings ?? [])
 
 function formColor(r: string) {
   return r === 'W' ? '#22c55e' : r === 'L' ? '#ef4444' : '#a1a1aa'
@@ -76,6 +79,39 @@ function fmt(d: string) {
           </div>
           <div v-if="loading" class="opacity-60">{{ t('common.loading') }}</div>
           <div v-else class="flex flex-col gap-4 text-sm">
+            <div v-if="topScorer || topAssister" class="flex flex-col gap-1">
+              <div v-if="topScorer" class="flex items-center justify-between gap-2">
+                <span style="color: var(--p-text-muted-color)">{{ t('match.topScorer') }}</span>
+                <span class="font-medium truncate">{{ topScorer.playerName }} <span class="tabular-nums">({{ topScorer.goals }}⚽)</span></span>
+              </div>
+              <div v-if="topAssister" class="flex items-center justify-between gap-2">
+                <span style="color: var(--p-text-muted-color)">{{ t('match.topAssister') }}</span>
+                <span class="font-medium truncate">{{ topAssister.playerName }} <span class="tabular-nums">({{ topAssister.assists }}🅰)</span></span>
+              </div>
+            </div>
+
+            <div v-if="standings.length">
+              <div class="text-xs font-semibold mb-1" style="color: var(--p-text-muted-color)">{{ t('map.group') }} {{ info.group }}</div>
+              <table class="w-full text-xs">
+                <tbody>
+                  <tr
+                    v-for="(row, i) in standings"
+                    :key="row.name"
+                    :style="row.code === selected.code ? 'background: color-mix(in srgb, var(--p-primary-color) 14%, transparent)' : ''"
+                  >
+                    <td class="py-0.5 pl-1 w-4" style="color: var(--p-text-muted-color)">{{ i + 1 }}</td>
+                    <td class="py-0.5">
+                      <span class="flex items-center gap-1">
+                        <img v-if="flagUrl(row.code)" :src="flagUrl(row.code) || ''" class="w-3.5 h-3.5 rounded" alt="" >{{ row.code || row.name }}
+                      </span>
+                    </td>
+                    <td class="py-0.5 text-right tabular-nums" style="color: var(--p-text-muted-color)">{{ row.played }}</td>
+                    <td class="py-0.5 pr-1 text-right tabular-nums font-bold">{{ row.points }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
             <div v-if="live">
               <div class="text-xs font-bold mb-1" style="color: #ef4444">● {{ t('map.live') }}</div>
               <NuxtLink :to="`/matches/${live.id}`" class="hover:underline">{{ live.homeTeam }} <b>{{ live.fullTimeHome }}–{{ live.fullTimeAway }}</b> {{ live.awayTeam }}</NuxtLink>
@@ -90,7 +126,7 @@ function fmt(d: string) {
                 <span class="tabular-nums">{{ record.W }}W · {{ record.D }}D · {{ record.L }}L</span>
               </div>
               <div class="flex flex-col gap-1.5">
-                <NuxtLink v-for="r in results.slice(0, 6)" :key="r.id" :to="`/matches/${r.id}`" class="flex items-center gap-2 hover:opacity-80">
+                <NuxtLink v-for="r in results" :key="r.id" :to="`/matches/${r.id}`" class="flex items-center gap-2 hover:opacity-80">
                   <span class="w-4 h-4 rounded text-white text-[10px] flex items-center justify-center font-bold shrink-0" :style="`background:${formColor(r.result)}`">{{ r.result }}</span>
                   <img v-if="flagUrl(r.opponentCode)" :src="flagUrl(r.opponentCode) || ''" class="w-4 h-4 rounded shrink-0" alt="" >
                   <span class="truncate flex-1">{{ r.opponent }}</span>

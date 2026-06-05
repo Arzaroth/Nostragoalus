@@ -17,6 +17,8 @@
     "live": "En direct",
     "next": "Prochain match",
     "last": "Dernier résultat",
+    "recent": "Résultats récents",
+    "group": "Groupe",
     "noData": "Aucun match pour l'instant."
   },
   "common": {
