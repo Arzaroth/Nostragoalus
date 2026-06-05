@@ -1,0 +1,162 @@
+import type { AppStage, MatchStatus, NormalizedMatch, Score, Team, Winner } from '../../../shared/types/match'
+import { RateLimiter } from './rate-limiter'
+import { ProviderRateLimitError, ProviderUpstreamError, type ListFixturesOptions, type MatchDataProvider } from './types'
+
+interface FifaLocalized {
+  Locale: string
+  Description: string
+}
+
+interface FifaTeam {
+  IdTeam: string | null
+  Score: number | null
+  TeamName?: FifaLocalized[]
+  Abbreviation?: string | null
+  IdCountry?: string | null
+  PictureUrl?: string | null
+}
+
+export interface FifaMatch {
+  IdMatch: string
+  IdStage: string
+  IdGroup: string | null
+  StageName?: FifaLocalized[]
+  GroupName?: FifaLocalized[]
+  Date: string
+  Home: FifaTeam | null
+  Away: FifaTeam | null
+  HomeTeamScore: number | null
+  AwayTeamScore: number | null
+  HomeTeamPenaltyScore: number | null
+  AwayTeamPenaltyScore: number | null
+  Winner: string | null
+  MatchStatus: number
+  PlaceHolderA?: string | null
+  PlaceHolderB?: string | null
+}
+
+export function mapFifaStatus(code: number): MatchStatus {
+  switch (code) {
+    case 0:
+      return 'FINISHED'
+    case 3:
+      return 'LIVE'
+    case 1:
+    default:
+      return 'SCHEDULED'
+  }
+}
+
+export function mapFifaStage(stageName: string): AppStage {
+  const s = stageName.toLowerCase()
+  if (s.includes('third')) return 'THIRD_PLACE'
+  if (s.includes('semi')) return 'SF'
+  if (s.includes('quarter')) return 'QF'
+  if (s.includes('round of 32')) return 'R32'
+  if (s.includes('round of 16')) return 'R16'
+  if (s.includes('final')) return 'FINAL'
+  return 'GROUP'
+}
+
+export function parseFifaGroup(name: string | undefined): string | null {
+  if (!name) return null
+  const match = name.match(/([A-L])\s*$/i)
+  return match ? match[1].toUpperCase() : null
+}
+
+function toTeam(team: FifaTeam | null | undefined, placeholder: string | null | undefined): Team {
+  return {
+    name: team?.TeamName?.[0]?.Description || placeholder || 'TBD',
+    code: team?.Abbreviation || team?.IdCountry || null,
+    crest: team?.PictureUrl ? team.PictureUrl.replace('{format}', 'sq').replace('{size}', '4') : null,
+    providerTeamId: team?.IdTeam ?? null,
+  }
+}
+
+function toWinner(match: FifaMatch): Winner {
+  if (match.Winner && match.Winner === match.Home?.IdTeam) return 'HOME'
+  if (match.Winner && match.Winner === match.Away?.IdTeam) return 'AWAY'
+  if (match.HomeTeamScore != null && match.HomeTeamScore === match.AwayTeamScore) return 'DRAW'
+  return null
+}
+
+export function normalizeFifaMatch(match: FifaMatch): NormalizedMatch {
+  const score: Score = { fullTime: { home: match.HomeTeamScore, away: match.AwayTeamScore } }
+  if (match.HomeTeamPenaltyScore != null || match.AwayTeamPenaltyScore != null) {
+    score.penalties = { home: match.HomeTeamPenaltyScore, away: match.AwayTeamPenaltyScore }
+  }
+
+  return {
+    providerMatchId: match.IdMatch,
+    stage: mapFifaStage(match.StageName?.[0]?.Description ?? ''),
+    group: parseFifaGroup(match.GroupName?.[0]?.Description),
+    matchday: null,
+    homeTeam: toTeam(match.Home, match.PlaceHolderA),
+    awayTeam: toTeam(match.Away, match.PlaceHolderB),
+    kickoffTime: match.Date,
+    status: mapFifaStatus(match.MatchStatus),
+    score,
+    winner: toWinner(match),
+  }
+}
+
+// FIFA does not expose a matchday number, so derive it for group matches by ordering
+// each group's six fixtures by kickoff (two per matchday).
+export function assignGroupMatchdays(matches: NormalizedMatch[]): NormalizedMatch[] {
+  const byGroup = new Map<string, NormalizedMatch[]>()
+  for (const m of matches) {
+    if (m.stage !== 'GROUP' || !m.group) continue
+    const bucket = byGroup.get(m.group) ?? []
+    bucket.push(m)
+    byGroup.set(m.group, bucket)
+  }
+
+  for (const groupMatches of byGroup.values()) {
+    groupMatches.sort((a, b) => a.kickoffTime.localeCompare(b.kickoffTime))
+    groupMatches.forEach((m, index) => {
+      m.matchday = Math.floor(index / 2) + 1
+    })
+  }
+  return matches
+}
+
+export interface FifaOptions {
+  seasonId: string
+  baseUrl?: string
+  fetchImpl?: typeof fetch
+  rateLimiter?: RateLimiter
+}
+
+const DEFAULT_BASE_URL = 'https://api.fifa.com/api/v3'
+
+export function fifaProvider(options: FifaOptions): MatchDataProvider {
+  const baseUrl = options.baseUrl ?? DEFAULT_BASE_URL
+  const doFetch = options.fetchImpl ?? fetch
+  const limiter = options.rateLimiter ?? new RateLimiter(1000)
+
+  async function fetchAll(): Promise<NormalizedMatch[]> {
+    await limiter.acquire()
+    const response = await doFetch(
+      `${baseUrl}/calendar/matches?language=en&count=500&idSeason=${options.seasonId}`,
+    )
+
+    if (response.status === 429) throw new ProviderRateLimitError()
+    if (!response.ok) throw new ProviderUpstreamError(response.status, await response.text())
+
+    const data = (await response.json()) as { Results?: FifaMatch[] }
+    return (data.Results ?? []).map(normalizeFifaMatch)
+  }
+
+  return {
+    meta: { name: 'fifa', rateLimitPerMin: 60, dailyCap: null },
+    async listFixtures(_options: ListFixturesOptions) {
+      return assignGroupMatchdays(await fetchAll())
+    },
+    async getMatchesByDate(date: string) {
+      return (await fetchAll()).filter((m) => m.kickoffTime.startsWith(date))
+    },
+    async getLiveMatches() {
+      return (await fetchAll()).filter((m) => m.status === 'LIVE' || m.status === 'PAUSED')
+    },
+  }
+}

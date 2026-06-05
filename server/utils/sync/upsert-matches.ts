@@ -18,10 +18,10 @@ export interface UpsertResult {
   skipped: number
 }
 
-function toRow(m: NormalizedMatch, roundId: string) {
+// Fields that may change between syncs. roundId is intentionally excluded: it is
+// assigned once at insert and must stay stable (live updates may lack a matchday).
+function mutableFields(m: NormalizedMatch) {
   return {
-    providerMatchId: m.providerMatchId,
-    roundId,
     stage: m.stage,
     groupName: m.group,
     homeTeam: m.homeTeam.name,
@@ -46,12 +46,6 @@ export async function upsertMatches(db: AppDatabase, matches: NormalizedMatch[])
   const result: UpsertResult = { inserted: 0, updated: 0, skipped: 0 }
 
   for (const m of matches) {
-    const roundId = await findRoundId(db, m.stage, m.matchday)
-    if (!roundId) {
-      result.skipped += 1
-      continue
-    }
-
     const existing = await db
       .select()
       .from(match)
@@ -59,7 +53,12 @@ export async function upsertMatches(db: AppDatabase, matches: NormalizedMatch[])
       .limit(1)
 
     if (existing.length === 0) {
-      await db.insert(match).values(toRow(m, roundId))
+      const roundId = await findRoundId(db, m.stage, m.matchday)
+      if (!roundId) {
+        result.skipped += 1
+        continue
+      }
+      await db.insert(match).values({ providerMatchId: m.providerMatchId, roundId, ...mutableFields(m) })
       result.inserted += 1
       continue
     }
@@ -70,9 +69,7 @@ export async function upsertMatches(db: AppDatabase, matches: NormalizedMatch[])
       continue
     }
 
-    const { providerMatchId, ...mutable } = toRow(m, roundId)
-    void providerMatchId
-    await db.update(match).set(mutable).where(eq(match.id, existing[0].id))
+    await db.update(match).set(mutableFields(m)).where(eq(match.id, existing[0].id))
     result.updated += 1
   }
 

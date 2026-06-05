@@ -2,6 +2,10 @@ import { describe, it, expect } from 'vitest'
 import { createProvider } from './factory'
 
 describe('createProvider', () => {
+  it('creates the keyless fifa provider', () => {
+    expect(createProvider({ provider: 'fifa' }).meta.name).toBe('fifa')
+  })
+
   it('creates the football-data provider when a token is present', () => {
     const provider = createProvider({ provider: 'football-data', footballDataToken: 'tok' })
     expect(provider.meta.name).toBe('football-data')

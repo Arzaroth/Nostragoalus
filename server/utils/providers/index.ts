@@ -8,6 +8,7 @@ export function getProvider(): MatchDataProvider {
     const config = useRuntimeConfig()
     cached = createProvider({
       provider: config.matchProvider,
+      fifaSeasonId: config.fifaSeasonId,
       footballDataToken: config.footballDataToken,
       apiFootballKey: config.apiFootballKey,
     })
