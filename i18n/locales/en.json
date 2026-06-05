@@ -52,7 +52,9 @@
     "noPick": "No champion picked — locked."
   },
   "leaderboard": {
-    "title": "Global ranking",
+    "title": "Ranking",
+    "thisCompetition": "Competition",
+    "global": "Global",
     "empty": "No scores yet — predictions get scored once matches finish.",
     "you": "(you)",
     "exact": "exact",
@@ -69,6 +71,9 @@
     "assists": "Top assists",
     "stats": "Stats",
     "possession": "Possession",
+    "pens": "pens",
+    "topScorer": "Top scorer",
+    "topAssister": "Top assister",
     "noResults": "No results yet.",
     "noUpcoming": "No upcoming matches."
   },

@@ -69,6 +69,25 @@ describe('getLeaderboard', () => {
     await client.close()
   })
 
+  it('aggregates across all competitions for the global ranking (incl. champions)', async () => {
+    const { db, client } = await createTestDb()
+    const c1 = await seedCompetition(db)
+    const c2 = await seedCompetition(db)
+    const r1 = (await findRoundId(db, c1, 'GROUP', 1)) as string
+    const r2 = (await findRoundId(db, c2, 'GROUP', 1)) as string
+    const u = await makeUser(db, 'u', 'U')
+    const m1 = await makeMatch(db, { competitionId: c1, roundId: r1, kickoffTime: new Date('2026-06-11T16:00:00Z'), status: 'FINISHED', fullTimeHome: 1, fullTimeAway: 0 })
+    const m2 = await makeMatch(db, { competitionId: c2, roundId: r2, kickoffTime: new Date('2026-06-11T16:00:00Z'), status: 'FINISHED', fullTimeHome: 1, fullTimeAway: 0 })
+    await score(db, await makePrediction(db, { userId: u, matchId: m1, roundId: r1, home: 1, away: 0, lockedAt: new Date() }), 3, 'EXACT')
+    await score(db, await makePrediction(db, { userId: u, matchId: m2, roundId: r2, home: 1, away: 0, lockedAt: new Date() }), 2, 'DIFF')
+    await db.insert(championPick).values({ userId: u, competitionId: c1, teamCode: 'A', teamName: 'A', awardedPoints: 10 })
+    await db.insert(championPick).values({ userId: u, competitionId: c2, teamCode: 'B', teamName: 'B', awardedPoints: 5 })
+
+    const board = await getLeaderboard(db, { competitionId: null })
+    expect(board[0]).toMatchObject({ totalPoints: 20, predictionPoints: 5, championPoints: 15 })
+    await client.close()
+  })
+
   it('paginates with offset-based ranks', async () => {
     const { db, client } = await createTestDb()
     const competitionId = await seedCompetition(db)

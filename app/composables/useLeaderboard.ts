@@ -10,13 +10,14 @@ export interface LeaderboardRow {
   gdCount: number
 }
 
-export function useLeaderboard() {
+export function useLeaderboard(global?: Ref<boolean>) {
   const slug = useSelectedCompetition()
+  const isGlobal = global ?? ref(false)
   return useQuery({
-    queryKey: ['leaderboard', slug],
+    queryKey: ['leaderboard', slug, isGlobal],
     queryFn: () =>
       $fetch<{ rows: LeaderboardRow[] }>('/api/leaderboard', {
-        query: slug.value ? { competition: slug.value } : {},
+        query: isGlobal.value ? { global: 'true' } : slug.value ? { competition: slug.value } : {},
       }).then((r) => r.rows),
   })
 }

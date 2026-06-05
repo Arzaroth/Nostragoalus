@@ -15,6 +15,8 @@ const { data } = await useFetch<{
     status: string
     fullTimeHome: number | null
     fullTimeAway: number | null
+    penaltiesHome: number | null
+    penaltiesAway: number | null
     group: string | null
     roundLabel: string
   }
@@ -26,13 +28,6 @@ const { data: scorersData } = await useFetch<{ scorers: any[] }>('/api/competiti
   query: computed(() => (selectedSlug.value ? { competition: selectedSlug.value } : {})),
 })
 const scorers = computed<any[]>(() => scorersData.value?.scorers ?? [])
-const topScorers = computed(() => scorers.value.filter((s) => s.goals > 0).slice(0, 10))
-const topAssists = computed(() =>
-  scorers.value
-    .filter((s) => (s.assists ?? 0) > 0)
-    .sort((a, b) => (b.assists ?? 0) - (a.assists ?? 0))
-    .slice(0, 10),
-)
 
 const m = computed(() => data.value?.match)
 const { live } = useLiveMatch(id)
@@ -43,6 +38,22 @@ const awayScore = computed(() => live.value?.fullTimeAway ?? m.value?.fullTimeAw
 const isLive = computed(() => status.value === 'LIVE' || status.value === 'PAUSED')
 
 const sides = ['home', 'away'] as const
+
+function teamCodeFor(side: 'home' | 'away') {
+  return side === 'home' ? m.value?.homeTeamCode : m.value?.awayTeamCode
+}
+function teamPlayers(side: 'home' | 'away') {
+  const code = teamCodeFor(side)
+  return code ? scorers.value.filter((s) => s.teamCode === code) : []
+}
+function bestBy(side: 'home' | 'away', field: 'goals' | 'assists') {
+  return teamPlayers(side)
+    .filter((s) => (s[field] ?? 0) > 0)
+    .slice()
+    .sort((a, b) => (b[field] ?? 0) - (a[field] ?? 0))[0] ?? null
+}
+const homeGoalEvents = computed(() => (insights.value?.goals ?? []).filter((g: any) => g.side === 'HOME'))
+const awayGoalEvents = computed(() => (insights.value?.goals ?? []).filter((g: any) => g.side === 'AWAY'))
 function formColor(r: string) {
   return r === 'W' ? '#22c55e' : r === 'L' ? '#ef4444' : '#a1a1aa'
 }
@@ -76,10 +87,20 @@ function fmtDate(d: string) {
         <div class="text-center min-w-24">
           <div v-if="homeScore !== null" class="text-5xl font-extrabold tabular-nums">{{ homeScore }}–{{ awayScore }}</div>
           <div v-else class="text-sm" style="color: var(--p-text-muted-color)">{{ new Date(m.kickoffTime).toLocaleString() }}</div>
+          <div v-if="m.penaltiesHome !== null" class="text-sm font-semibold mt-1" style="color: var(--p-text-muted-color)">{{ m.penaltiesHome }}–{{ m.penaltiesAway }} {{ t('match.pens') }}</div>
         </div>
         <div class="flex flex-col items-center gap-2 flex-1">
           <img v-if="flagUrl(m.awayTeamCode)" :src="flagUrl(m.awayTeamCode) || ''" class="w-16 h-16 rounded-lg object-cover" alt="" >
           <component :is="m.awayTeamCode ? NuxtLinkC : 'span'" :to="m.awayTeamCode ? `/teams/${m.awayTeamCode}` : undefined" class="font-bold text-center hover:underline" :title="m.awayTeam">{{ m.awayTeam }}</component>
+        </div>
+      </div>
+
+      <div v-if="homeGoalEvents.length || awayGoalEvents.length" class="grid grid-cols-2 gap-4 mt-4 pt-3 border-t text-xs" style="color: var(--p-text-muted-color); border-color: var(--p-content-border-color)">
+        <div class="flex flex-col items-end gap-0.5 text-right">
+          <span v-for="(g, i) in homeGoalEvents" :key="i">{{ g.playerName }} {{ g.minute }}<span v-if="g.ownGoal"> (OG)</span> ⚽</span>
+        </div>
+        <div class="flex flex-col items-start gap-0.5">
+          <span v-for="(g, i) in awayGoalEvents" :key="i">⚽ {{ g.minute }} {{ g.playerName }}<span v-if="g.ownGoal"> (OG)</span></span>
         </div>
       </div>
     </div>
@@ -188,27 +209,26 @@ function fmtDate(d: string) {
 
           <TabPanel v-if="scorers.length" value="scorers">
             <div class="grid sm:grid-cols-2 gap-6">
-              <div>
-                <div class="text-xs uppercase tracking-wider font-semibold mb-2" style="color: var(--p-text-muted-color)">{{ t('match.scorers') }}</div>
-                <div class="flex flex-col text-sm">
-                  <div v-for="(s, i) in topScorers" :key="i" class="flex items-center gap-2 border-t py-2" style="border-color: var(--p-content-border-color)">
-                    <span class="w-4 text-center text-xs" style="color: var(--p-text-muted-color)">{{ i + 1 }}</span>
-                    <img v-if="flagUrl(s.teamCode)" :src="flagUrl(s.teamCode) || ''" class="w-5 h-5 rounded" alt="" >
-                    <span class="flex-1 font-medium truncate">{{ s.playerName }}</span>
-                    <span class="font-bold tabular-nums">{{ s.goals }}</span>
+              <div v-for="side in sides" :key="side">
+                <div class="font-semibold mb-2 flex items-center gap-2">
+                  <img v-if="flagUrl(teamCodeFor(side))" :src="flagUrl(teamCodeFor(side)) || ''" class="w-5 h-5 rounded" alt="" >
+                  {{ side === 'home' ? m.homeTeam : m.awayTeam }}
+                </div>
+                <div v-if="teamPlayers(side).length" class="text-sm flex flex-col gap-1">
+                  <div style="color: var(--p-text-muted-color)">
+                    {{ t('match.topScorer') }}: <b style="color: var(--p-text-color)">{{ bestBy(side, 'goals')?.playerName ?? '—' }}</b><span v-if="bestBy(side, 'goals')"> ({{ bestBy(side, 'goals').goals }}⚽)</span>
+                  </div>
+                  <div style="color: var(--p-text-muted-color)">
+                    {{ t('match.topAssister') }}: <b style="color: var(--p-text-color)">{{ bestBy(side, 'assists')?.playerName ?? '—' }}</b><span v-if="bestBy(side, 'assists')"> ({{ bestBy(side, 'assists').assists }}🅰)</span>
+                  </div>
+                  <div class="border-t mt-1 pt-2 flex flex-col gap-1" style="border-color: var(--p-content-border-color)">
+                    <div v-for="(p, i) in teamPlayers(side)" :key="i" class="flex items-center justify-between gap-2">
+                      <span class="truncate">{{ p.playerName }}</span>
+                      <span class="tabular-nums shrink-0" style="color: var(--p-text-muted-color)">{{ p.goals }}⚽ · {{ p.assists }}🅰</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div v-if="topAssists.length">
-                <div class="text-xs uppercase tracking-wider font-semibold mb-2" style="color: var(--p-text-muted-color)">{{ t('match.assists') }}</div>
-                <div class="flex flex-col text-sm">
-                  <div v-for="(s, i) in topAssists" :key="i" class="flex items-center gap-2 border-t py-2" style="border-color: var(--p-content-border-color)">
-                    <span class="w-4 text-center text-xs" style="color: var(--p-text-muted-color)">{{ i + 1 }}</span>
-                    <img v-if="flagUrl(s.teamCode)" :src="flagUrl(s.teamCode) || ''" class="w-5 h-5 rounded" alt="" >
-                    <span class="flex-1 font-medium truncate">{{ s.playerName }}</span>
-                    <span class="font-bold tabular-nums">{{ s.assists }}</span>
-                  </div>
-                </div>
+                <div v-else class="text-sm" style="color: var(--p-text-muted-color)">—</div>
               </div>
             </div>
           </TabPanel>

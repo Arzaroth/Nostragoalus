@@ -43,6 +43,9 @@ onMounted(() => {
       .addTo(map)
       .on('click', () => emit('select', team))
   }
+
+  // The container may not have its final size during hydration — recompute after layout.
+  setTimeout(() => map?.invalidateSize(), 150)
 })
 
 onBeforeUnmount(() => {

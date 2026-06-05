@@ -1,8 +1,14 @@
 <script setup lang="ts">
 const { t } = useI18n()
-const { data: rows, isLoading } = useLeaderboard()
+const global = ref(false)
+const { data: rows, isLoading } = useLeaderboard(global)
 const { session } = useAuth()
 const meId = computed(() => session?.data?.user?.id)
+
+const scopeOptions = computed(() => [
+  { label: t('leaderboard.thisCompetition'), value: false },
+  { label: t('leaderboard.global'), value: true },
+])
 
 function medal(rank: number) {
   return rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null
@@ -11,7 +17,10 @@ function medal(rank: number) {
 
 <template>
   <div>
-    <h1 class="text-2xl font-bold mb-5">{{ t('leaderboard.title') }}</h1>
+    <div class="flex items-center justify-between gap-3 flex-wrap mb-5">
+      <h1 class="text-2xl font-bold">{{ t('leaderboard.title') }}</h1>
+      <SelectButton v-model="global" :options="scopeOptions" option-label="label" option-value="value" :allow-empty="false" size="small" />
+    </div>
     <div v-if="isLoading" class="opacity-60">{{ t('common.loading') }}</div>
     <div v-else-if="!rows || !rows.length" class="opacity-60">{{ t('leaderboard.empty') }}</div>
 

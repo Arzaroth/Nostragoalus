@@ -43,7 +43,7 @@ export function compareLeaderboardRows(a: RankableRow, b: RankableRow): number {
 
 export async function getLeaderboard(
   db: AppDatabase,
-  opts: { competitionId: string; limit?: number; offset?: number },
+  opts: { competitionId: string | null; limit?: number; offset?: number },
 ): Promise<LeaderboardRow[]> {
   const limit = opts.limit ?? 100
   const offset = opts.offset ?? 0
@@ -60,14 +60,21 @@ export async function getLeaderboard(
     })
     .from(user)
     .leftJoin(prediction, and(eq(prediction.userId, user.id), isNotNull(prediction.totalPoints)))
-    .leftJoin(match, and(eq(match.id, prediction.matchId), eq(match.competitionId, opts.competitionId)))
+    .leftJoin(
+      match,
+      opts.competitionId
+        ? and(eq(match.id, prediction.matchId), eq(match.competitionId, opts.competitionId))
+        : eq(match.id, prediction.matchId),
+    )
     .groupBy(user.id, user.name, user.createdAt)
 
   const champions = await db
     .select({ userId: championPick.userId, points: championPick.awardedPoints })
     .from(championPick)
-    .where(eq(championPick.competitionId, opts.competitionId))
-  const championByUser = new Map(champions.map((c) => [c.userId, c.points]))
+    .where(opts.competitionId ? eq(championPick.competitionId, opts.competitionId) : undefined)
+  // Sum across competitions for the global view (a user may have several picks).
+  const championByUser = new Map<string, number>()
+  for (const c of champions) championByUser.set(c.userId, (championByUser.get(c.userId) ?? 0) + c.points)
 
   // Champion points are merged in JS (a SQL join would fan out the per-prediction rows).
   const merged = base.map((r) => {

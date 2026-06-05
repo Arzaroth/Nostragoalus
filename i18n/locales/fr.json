@@ -52,7 +52,9 @@
     "noPick": "Aucun vainqueur choisi — verrouillé."
   },
   "leaderboard": {
-    "title": "Classement global",
+    "title": "Classement",
+    "thisCompetition": "Compétition",
+    "global": "Global",
     "empty": "Pas encore de points — les pronos sont comptés à la fin des matchs.",
     "you": "(vous)",
     "exact": "exacts",
@@ -69,6 +71,9 @@
     "assists": "Passeurs",
     "stats": "Stats",
     "possession": "Possession",
+    "pens": "t.a.b.",
+    "topScorer": "Meilleur buteur",
+    "topAssister": "Meilleur passeur",
     "noResults": "Aucun résultat.",
     "noUpcoming": "Aucun match à venir."
   },

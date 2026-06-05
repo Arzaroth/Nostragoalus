@@ -6,8 +6,9 @@ export interface Competition {
   name: string
 }
 
+// Cookie-backed so the selected competition survives refresh and is available during SSR.
 export function useSelectedCompetition() {
-  return useState<string | null>('competition-slug', () => null)
+  return useCookie<string | null>('ng-competition', { default: () => null, sameSite: 'lax', maxAge: 60 * 60 * 24 * 365 })
 }
 
 export function useCompetitions() {

@@ -19,6 +19,20 @@ export const NostraTheme = definePreset(Aura, {
     },
     colorScheme: {
       light: {
+        surface: {
+          0: '#ffffff',
+          50: '#f5f6fc',
+          100: '#ebedf7',
+          200: '#d8dcef',
+          300: '#bcc2e0',
+          400: '#9197bd',
+          500: '#686e94',
+          600: '#4c5275',
+          700: '#3a3f5b',
+          800: '#262a3f',
+          900: '#181b2b',
+          950: '#0d0f1a',
+        },
         primary: {
           color: '{primary.600}',
           contrastColor: '#ffffff',

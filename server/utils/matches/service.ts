@@ -23,6 +23,8 @@ const matchColumns = {
   status: match.status,
   fullTimeHome: match.fullTimeHome,
   fullTimeAway: match.fullTimeAway,
+  penaltiesHome: match.penaltiesHome,
+  penaltiesAway: match.penaltiesAway,
   winner: match.winner,
   scoringState: match.scoringState,
   roundId: match.roundId,
