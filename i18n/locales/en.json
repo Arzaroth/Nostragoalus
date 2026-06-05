@@ -138,6 +138,14 @@
       "add": "Add provider",
       "added": "Provider registered."
     },
+    "users": {
+      "title": "Users",
+      "hint": "Create users, promote them to admin, or remove them.",
+      "create": "Create",
+      "promote": "Make admin",
+      "demote": "Remove admin",
+      "delete": "Delete user"
+    },
     "data": {
       "title": "Data",
       "hint": "Import fixtures and trigger live-score / finalize tasks.",

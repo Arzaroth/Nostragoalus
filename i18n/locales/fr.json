@@ -138,6 +138,14 @@
       "add": "Ajouter le fournisseur",
       "added": "Fournisseur enregistré."
     },
+    "users": {
+      "title": "Utilisateurs",
+      "hint": "Créez des utilisateurs, promouvez-les admin ou supprimez-les.",
+      "create": "Créer",
+      "promote": "Promouvoir admin",
+      "demote": "Retirer admin",
+      "delete": "Supprimer l'utilisateur"
+    },
     "data": {
       "title": "Données",
       "hint": "Importer les matchs et déclencher les tâches scores en direct / clôture.",

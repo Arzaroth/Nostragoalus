@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { sso } from '@better-auth/sso'
+import { admin } from 'better-auth/plugins'
 import { db } from '../db'
 import * as schema from '../db/schema'
 import { withEncryptedSSO } from '../server/utils/crypto/encrypted-adapter'
@@ -31,8 +32,8 @@ export const auth = betterAuth({
   account: {
     accountLinking: { enabled: true },
   },
-  // Runtime-configurable SSO: OIDC + SAML providers managed from the admin UI.
-  plugins: [sso()],
+  // Runtime-configurable SSO (OIDC + SAML) + role-based user administration.
+  plugins: [sso(), admin()],
   secret: process.env.BETTER_AUTH_SECRET ?? process.env.NUXT_BETTER_AUTH_SECRET,
   baseURL: process.env.BETTER_AUTH_URL ?? process.env.NUXT_PUBLIC_AUTH_URL,
 })

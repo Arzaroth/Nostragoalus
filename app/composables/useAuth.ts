@@ -10,5 +10,6 @@ export function useAuth() {
     changePassword: authClient.changePassword,
     updateUser: authClient.updateUser,
     deleteUser: authClient.deleteUser,
+    admin: authClient.admin,
   }
 }

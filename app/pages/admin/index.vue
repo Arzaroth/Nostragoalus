@@ -59,6 +59,51 @@ async function runTask(task: string) {
     syncBusy.value = ''
   }
 }
+
+const { admin } = useAuth()
+const users = ref<any[]>([])
+const usersLoading = ref(false)
+async function loadUsers() {
+  usersLoading.value = true
+  try {
+    const res = await admin.listUsers({ query: { limit: 200, sortBy: 'createdAt', sortDirection: 'desc' } })
+    users.value = (res.data as { users?: any[] } | null)?.users ?? []
+  } catch {
+    users.value = []
+  } finally {
+    usersLoading.value = false
+  }
+}
+onMounted(loadUsers)
+
+async function toggleAdmin(u: any) {
+  await admin.setRole({ userId: u.id, role: u.role === 'admin' ? 'user' : 'admin' })
+  await loadUsers()
+}
+async function removeUser(u: any) {
+  await admin.removeUser({ userId: u.id })
+  await loadUsers()
+}
+
+const nu = reactive({ name: '', email: '', password: '', role: 'user' })
+const createErr = ref('')
+const creating = ref(false)
+const roleOptions = [
+  { label: 'User', value: 'user' },
+  { label: 'Admin', value: 'admin' },
+]
+async function createUser() {
+  createErr.value = ''
+  creating.value = true
+  const { error } = await admin.createUser({ name: nu.name, email: nu.email, password: nu.password, role: nu.role as 'user' | 'admin' })
+  creating.value = false
+  if (error) {
+    createErr.value = error.message || 'Failed to create user'
+    return
+  }
+  Object.assign(nu, { name: '', email: '', password: '', role: 'user' })
+  await loadUsers()
+}
 </script>
 
 <template>
@@ -136,6 +181,46 @@ async function runTask(task: string) {
             <span style="color: var(--p-text-muted-color)">{{ p.domain }}</span>
             <span class="flex-1" />
             <Button icon="pi pi-trash" severity="danger" text rounded size="small" :aria-label="t('common.cancel')" @click="removeProvider(p.providerId)" />
+          </div>
+        </div>
+      </section>
+
+      <!-- Users -->
+      <section class="ng-card rounded-2xl border overflow-hidden" style="background: var(--p-content-background)">
+        <div class="grid md:grid-cols-3 gap-6 p-6">
+          <div>
+            <h2 class="font-semibold">{{ t('admin.users.title') }}</h2>
+            <p class="text-sm mt-1" style="color: var(--p-text-muted-color)">{{ t('admin.users.hint') }}</p>
+          </div>
+          <div class="md:col-span-2 flex flex-col gap-3">
+            <div class="grid sm:grid-cols-2 gap-2">
+              <InputText v-model="nu.name" :placeholder="t('account.displayName')" />
+              <InputText v-model="nu.email" type="email" :placeholder="t('account.email')" />
+              <Password v-model="nu.password" :feedback="false" toggle-mask fluid :placeholder="t('account.password')" />
+              <div class="flex items-center gap-2">
+                <SelectButton v-model="nu.role" :options="roleOptions" option-label="label" option-value="value" :allow-empty="false" size="small" />
+                <Button :label="t('admin.users.create')" size="small" :loading="creating" :disabled="!nu.email || !nu.password" @click="createUser" />
+              </div>
+            </div>
+            <Message v-if="createErr" severity="error" size="small">{{ createErr }}</Message>
+          </div>
+        </div>
+        <div class="border-t" style="border-color: var(--p-content-border-color)">
+          <div v-if="usersLoading" class="px-6 py-4 opacity-60">{{ t('common.loading') }}</div>
+          <div v-for="u in users" :key="u.id" class="flex items-center gap-3 px-6 py-3 border-t text-sm" style="border-color: var(--p-content-border-color)">
+            <div class="flex-1 min-w-0">
+              <div class="font-medium truncate">{{ u.name }}</div>
+              <div class="text-xs truncate" style="color: var(--p-text-muted-color)">{{ u.email }}</div>
+            </div>
+            <Tag v-if="u.role === 'admin'" value="ADMIN" severity="success" />
+            <Button
+              :label="u.role === 'admin' ? t('admin.users.demote') : t('admin.users.promote')"
+              size="small"
+              severity="secondary"
+              outlined
+              @click="toggleAdmin(u)"
+            />
+            <Button icon="pi pi-trash" size="small" severity="danger" text rounded :aria-label="t('admin.users.delete')" @click="removeUser(u)" />
           </div>
         </div>
       </section>

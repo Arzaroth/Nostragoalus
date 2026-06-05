@@ -19,14 +19,22 @@ function adminEmails(): string[] {
     .filter(Boolean)
 }
 
+export function isEnvAdmin(user: { email: string }): boolean {
+  return adminEmails().includes(user.email.toLowerCase())
+}
+
+function isAdminUser(user: { email: string; role?: string | null }): boolean {
+  return user.role === 'admin' || isEnvAdmin(user)
+}
+
 export async function isAdmin(event: H3Event): Promise<boolean> {
   const user = await getSessionUser(event)
-  return !!user && adminEmails().includes(user.email.toLowerCase())
+  return !!user && isAdminUser(user)
 }
 
 export async function requireAdmin(event: H3Event) {
   const user = await requireUser(event)
-  if (!adminEmails().includes(user.email.toLowerCase())) {
+  if (!isAdminUser(user)) {
     throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
   }
   return user

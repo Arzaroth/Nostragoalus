@@ -15,6 +15,13 @@
       "when": 1780689398739,
       "tag": "0001_chilly_master_chief",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780693363244,
+      "tag": "0002_lethal_mauler",
+      "breakpoints": true
     }
   ]
 }
