@@ -1,0 +1,65 @@
+name: mpp
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: mpp
+      POSTGRES_PASSWORD: mpp
+      POSTGRES_DB: mpp
+    ports:
+      - '5432:5432'
+    volumes:
+      - mpp_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U mpp -d mpp']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Production app: `docker compose up` builds and runs this.
+  app:
+    build:
+      context: .
+      target: prod
+    image: mpp-app
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: production
+      RUN_MIGRATIONS: 'true'
+      DATABASE_URL: postgres://mpp:mpp@db:5432/mpp
+      NUXT_DATABASE_URL: postgres://mpp:mpp@db:5432/mpp
+    ports:
+      - '3000:3000'
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Dev app with hot reload: `docker compose --profile dev up app-dev`.
+  app-dev:
+    profiles: ['dev']
+    build:
+      context: .
+      target: dev
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgres://mpp:mpp@db:5432/mpp
+      NUXT_DATABASE_URL: postgres://mpp:mpp@db:5432/mpp
+    ports:
+      - '3000:3000'
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  mpp_pgdata:

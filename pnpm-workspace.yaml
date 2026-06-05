@@ -1,0 +1,10 @@
+# pnpm 11 defaults to a ~24h minimum release age, which rejects freshly published
+# transitive deps (e.g. rollup platform binaries) and breaks installs/Docker builds.
+# Disabled here; raise to a minutes value to re-enable the supply-chain delay.
+minimumReleaseAge: 0
+
+# Allow these dependencies to run install/build scripts (pnpm blocks them by default).
+allowBuilds:
+  esbuild: true
+  '@parcel/watcher': true
+  vue-demi: true

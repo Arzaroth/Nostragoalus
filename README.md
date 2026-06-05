@@ -18,11 +18,26 @@ get, ranked on a single global leaderboard. First scope is the **FIFA World Cup 
 Tiered base points (exact 3 / goal-difference 2 / outcome 1 / miss 0) + a rarity bonus + one ×2 joker
 per round. Scored on the 90-minute full-time result.
 
-## Development
+## Running with Docker (production build)
+
+`compose.yaml` builds the multi-stage production image and runs it alongside Postgres. Database
+migrations are applied automatically on startup (`RUN_MIGRATIONS=true`).
 
 ```bash
+cp .env.example .env        # set BETTER_AUTH_SECRET, NUXT_ADMIN_EMAILS, a provider token
+docker compose up --build   # Postgres + prod app at http://localhost:3000
+docker compose down         # stop (add -v to also wipe the database volume)
+```
+
+Optional hot-reloading dev container: `docker compose --profile dev up app-dev`.
+
+## Local development
+
+```bash
+docker compose up -d db     # Postgres only
 pnpm install
-cp .env.example .env   # then fill in secrets
-pnpm dev               # http://localhost:3000
-pnpm test:coverage     # unit tests (>=95% coverage enforced)
+cp .env.example .env        # then fill in secrets
+pnpm db:migrate             # apply migrations
+pnpm dev                    # http://localhost:3000
+pnpm test:coverage          # unit tests (>=95% coverage enforced)
 ```
