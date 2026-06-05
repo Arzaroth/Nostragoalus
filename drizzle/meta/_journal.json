@@ -8,6 +8,13 @@
       "when": 1780653919004,
       "tag": "0000_nebulous_exodus",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1780689398739,
+      "tag": "0001_chilly_master_chief",
+      "breakpoints": true
     }
   ]
 }

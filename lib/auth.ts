@@ -1,16 +1,20 @@
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
+import { sso } from '@better-auth/sso'
 import { db } from '../db'
 import * as schema from '../db/schema'
+import { withEncryptedSSO } from '../server/utils/crypto/encrypted-adapter'
 
 const googleClientId = process.env.NUXT_GOOGLE_CLIENT_ID
 const googleClientSecret = process.env.NUXT_GOOGLE_CLIENT_SECRET
 
 export const auth = betterAuth({
-  database: drizzleAdapter(db, {
-    provider: 'pg',
-    schema,
-  }),
+  database: withEncryptedSSO(
+    drizzleAdapter(db, {
+      provider: 'pg',
+      schema,
+    }),
+  ),
   emailAndPassword: {
     enabled: true,
   },
@@ -27,6 +31,8 @@ export const auth = betterAuth({
   account: {
     accountLinking: { enabled: true },
   },
+  // Runtime-configurable SSO: OIDC + SAML providers managed from the admin UI.
+  plugins: [sso()],
   secret: process.env.BETTER_AUTH_SECRET ?? process.env.NUXT_BETTER_AUTH_SECRET,
   baseURL: process.env.BETTER_AUTH_URL ?? process.env.NUXT_PUBLIC_AUTH_URL,
 })
