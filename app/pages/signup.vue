@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const { t } = useI18n()
-const { signUp } = useAuth()
+const { signUp, signIn } = useAuth()
 const router = useRouter()
 
 const name = ref('')
@@ -23,6 +23,10 @@ async function submit() {
     loading.value = false
   }
 }
+
+async function signInGoogle() {
+  await signIn.social({ provider: 'google', callbackURL: '/matches' })
+}
 </script>
 
 <template>
@@ -33,6 +37,10 @@ async function submit() {
     <InputText v-model="email" type="email" :placeholder="t('auth.email')" />
     <Password v-model="password" :placeholder="t('auth.password')" :feedback="false" toggle-mask :input-style="{ width: '100%' }" />
     <Button :label="t('auth.signUp')" :loading="loading" @click="submit" />
+    <div class="flex items-center gap-3 text-xs my-1" style="color: var(--p-text-muted-color)">
+      <div class="flex-1 border-t" style="border-color: var(--p-content-border-color)" />{{ t('auth.or') }}<div class="flex-1 border-t" style="border-color: var(--p-content-border-color)" />
+    </div>
+    <Button :label="t('auth.google')" icon="pi pi-google" severity="secondary" outlined @click="signInGoogle" />
     <NuxtLink to="/login" class="text-sm text-center">{{ t('auth.haveAccount') }}</NuxtLink>
   </div>
 </template>

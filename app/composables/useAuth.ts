@@ -6,5 +6,7 @@ export function useAuth() {
     signIn: authClient.signIn,
     signUp: authClient.signUp,
     signOut: authClient.signOut,
+    changeEmail: authClient.changeEmail,
+    changePassword: authClient.changePassword,
   }
 }

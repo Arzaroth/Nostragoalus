@@ -71,6 +71,20 @@
     "password": "Mot de passe",
     "displayName": "Nom affiché",
     "needAccount": "Pas de compte ? Inscrivez-vous",
-    "haveAccount": "Déjà un compte ? Connectez-vous"
+    "haveAccount": "Déjà un compte ? Connectez-vous",
+    "or": "ou",
+    "google": "Continuer avec Google"
+  },
+  "account": {
+    "title": "Compte",
+    "email": "E-mail",
+    "newEmail": "Nouvel e-mail",
+    "updateEmail": "Modifier l'e-mail",
+    "emailChanged": "E-mail mis à jour.",
+    "password": "Mot de passe",
+    "currentPassword": "Mot de passe actuel",
+    "newPassword": "Nouveau mot de passe (8 car. min)",
+    "updatePassword": "Modifier le mot de passe",
+    "passwordChanged": "Mot de passe mis à jour."
   }
 }

@@ -3,6 +3,9 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { db } from '../db'
 import * as schema from '../db/schema'
 
+const googleClientId = process.env.NUXT_GOOGLE_CLIENT_ID
+const googleClientSecret = process.env.NUXT_GOOGLE_CLIENT_SECRET
+
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: 'pg',
@@ -10,6 +13,18 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
+  },
+  // Let local users change their email (no verification email infra, so it applies directly).
+  user: {
+    changeEmail: { enabled: true },
+  },
+  // Google login is enabled only when credentials are configured.
+  socialProviders:
+    googleClientId && googleClientSecret
+      ? { google: { clientId: googleClientId, clientSecret: googleClientSecret } }
+      : undefined,
+  account: {
+    accountLinking: { enabled: true },
   },
   secret: process.env.BETTER_AUTH_SECRET ?? process.env.NUXT_BETTER_AUTH_SECRET,
   baseURL: process.env.BETTER_AUTH_URL ?? process.env.NUXT_PUBLIC_AUTH_URL,

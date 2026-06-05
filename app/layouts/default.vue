@@ -87,11 +87,13 @@ async function onSignOut() {
         />
 
         <template v-if="session && session.data">
-          <Avatar
-            :label="(session.data.user.name || '?').charAt(0).toUpperCase()"
-            shape="circle"
-            class="!bg-[var(--p-primary-color)] !text-[var(--p-primary-contrast-color)] font-bold"
-          />
+          <NuxtLink to="/account" :title="t('account.title')">
+            <Avatar
+              :label="(session.data.user.name || '?').charAt(0).toUpperCase()"
+              shape="circle"
+              class="!bg-[var(--p-primary-color)] !text-[var(--p-primary-contrast-color)] font-bold cursor-pointer"
+            />
+          </NuxtLink>
           <Button :label="t('nav.signOut')" size="small" severity="secondary" text @click="onSignOut" />
         </template>
         <NuxtLink v-else to="/login">

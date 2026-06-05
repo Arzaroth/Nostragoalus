@@ -22,6 +22,10 @@ async function submit() {
     loading.value = false
   }
 }
+
+async function signInGoogle() {
+  await signIn.social({ provider: 'google', callbackURL: '/matches' })
+}
 </script>
 
 <template>
@@ -31,6 +35,10 @@ async function submit() {
     <InputText v-model="email" type="email" :placeholder="t('auth.email')" @keyup.enter="submit" />
     <Password v-model="password" :placeholder="t('auth.password')" :feedback="false" toggle-mask :input-style="{ width: '100%' }" @keyup.enter="submit" />
     <Button :label="t('auth.signIn')" :loading="loading" @click="submit" />
+    <div class="flex items-center gap-3 text-xs my-1" style="color: var(--p-text-muted-color)">
+      <div class="flex-1 border-t" style="border-color: var(--p-content-border-color)" />{{ t('auth.or') }}<div class="flex-1 border-t" style="border-color: var(--p-content-border-color)" />
+    </div>
+    <Button :label="t('auth.google')" icon="pi pi-google" severity="secondary" outlined @click="signInGoogle" />
     <NuxtLink to="/signup" class="text-sm text-center">{{ t('auth.needAccount') }}</NuxtLink>
   </div>
 </template>

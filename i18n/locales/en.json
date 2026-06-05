@@ -71,6 +71,20 @@
     "password": "Password",
     "displayName": "Display name",
     "needAccount": "Need an account? Sign up",
-    "haveAccount": "Already have an account? Sign in"
+    "haveAccount": "Already have an account? Sign in",
+    "or": "or",
+    "google": "Continue with Google"
+  },
+  "account": {
+    "title": "Account",
+    "email": "Email",
+    "newEmail": "New email",
+    "updateEmail": "Update email",
+    "emailChanged": "Email updated.",
+    "password": "Password",
+    "currentPassword": "Current password",
+    "newPassword": "New password (min 8 chars)",
+    "updatePassword": "Update password",
+    "passwordChanged": "Password updated."
   }
 }
