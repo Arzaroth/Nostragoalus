@@ -43,10 +43,11 @@
   }
 }
 
-/* Cards: a subtle background contrast on hover (no movement). */
+/* Cards: a subtle, uniform background contrast on hover (no movement).
+   !important overrides the per-card inline background so the whole card tints evenly. */
 .ng-card {
-  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 .ng-card:hover {
-  box-shadow: inset 0 0 0 100px color-mix(in srgb, var(--p-text-color) 5%, transparent);
+  background: color-mix(in srgb, var(--p-text-color) 4%, var(--p-content-background)) !important;
 }
