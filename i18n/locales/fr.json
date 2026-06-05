@@ -43,7 +43,10 @@
   "predictions": {
     "empty": "Vous n'avez pas encore de pronostics.",
     "none": "Aucun pronostic à afficher.",
-    "publicNote": "Seuls les pronostics des matchs déjà commencés sont affichés."
+    "publicNote": "Seuls les pronostics des matchs déjà commencés sont affichés.",
+    "joker": "Joker",
+    "makeJoker": "Définir joker ×2",
+    "jokerError": "Impossible de déplacer le joker — un match a peut-être déjà commencé."
   },
   "champion": {
     "title": "Votre vainqueur",

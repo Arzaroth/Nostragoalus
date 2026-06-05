@@ -1,8 +1,13 @@
 <script setup lang="ts">
-defineProps<{ predictions: MyPrediction[] }>()
+const { t } = useI18n()
+defineProps<{ predictions: MyPrediction[]; editable?: boolean }>()
+const emit = defineEmits<{ toggleJoker: [p: MyPrediction] }>()
 
 function fmt(d: string) {
   return new Date(d).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+}
+function isLocked(p: MyPrediction) {
+  return new Date(p.kickoffTime).getTime() <= Date.now()
 }
 </script>
 
@@ -17,7 +22,16 @@ function fmt(d: string) {
     >
       <div class="flex items-center justify-between text-xs mb-2" style="color: var(--p-text-muted-color)">
         <span>{{ p.roundLabel }} · {{ fmt(p.kickoffTime) }}</span>
-        <span v-if="p.isJoker" class="font-semibold" style="color: #f59e0b">★ Joker</span>
+        <button
+          v-if="editable && !isLocked(p)"
+          type="button"
+          class="font-semibold flex items-center gap-1 transition hover:opacity-80"
+          :style="`color:${p.isJoker ? '#f59e0b' : 'var(--p-text-muted-color)'}`"
+          @click.stop.prevent="emit('toggleJoker', p)"
+        >
+          <i :class="p.isJoker ? 'pi pi-star-fill' : 'pi pi-star'" />{{ p.isJoker ? t('predictions.joker') : t('predictions.makeJoker') }}
+        </button>
+        <span v-else-if="p.isJoker" class="font-semibold" style="color: #f59e0b">★ {{ t('predictions.joker') }}</span>
       </div>
 
       <div class="flex items-center gap-3">

@@ -109,6 +109,16 @@ describe('setJoker', () => {
     await client.close()
   })
 
+  it('refuses to move the joker off a match that already kicked off', async () => {
+    const { db, client, competitionId, roundId, userId } = await setup()
+    const started = await makeMatch(db, { competitionId, roundId, kickoffTime: PAST })
+    const upcoming = await makeMatch(db, { competitionId, roundId, kickoffTime: FUTURE })
+    await db.insert(prediction).values({ userId, matchId: started, roundId, homeGoals: 1, awayGoals: 0, isJoker: true })
+    await upsertPrediction(db, { userId, matchId: upcoming, home: 2, away: 0 }, NOW)
+    await expect(setJoker(db, { userId, matchId: upcoming, isJoker: true }, NOW)).rejects.toBeInstanceOf(LockedError)
+    await client.close()
+  })
+
   it('allows re-confirming the joker on the same match', async () => {
     const { db, client, competitionId, roundId, userId } = await setup()
     const m = await makeMatch(db, { competitionId, roundId, kickoffTime: FUTURE })

@@ -43,7 +43,10 @@
   "predictions": {
     "empty": "You haven't made any predictions yet.",
     "none": "No predictions to show yet.",
-    "publicNote": "Only predictions for matches that have kicked off are shown."
+    "publicNote": "Only predictions for matches that have kicked off are shown.",
+    "joker": "Joker",
+    "makeJoker": "Set ×2 joker",
+    "jokerError": "Couldn't move the joker — a match may have already started."
   },
   "champion": {
     "title": "Your champion",

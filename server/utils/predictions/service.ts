@@ -119,10 +119,12 @@ export async function setJoker(db: AppDatabase, input: SetJokerInput, now: Date 
   if (preds.length === 0) throw new NotFoundError('prediction not found')
 
   if (input.isJoker) {
-    // One joker per round: move it by clearing any existing joker in the round first.
-    await db
-      .update(prediction)
-      .set({ isJoker: false })
+    // One joker per round: move it from the current joker — but only if that match
+    // hasn't kicked off yet (a joker on a started match is already committed there).
+    const current = await db
+      .select({ id: prediction.id, kickoffTime: match.kickoffTime })
+      .from(prediction)
+      .innerJoin(match, eq(match.id, prediction.matchId))
       .where(
         and(
           eq(prediction.userId, input.userId),
@@ -130,6 +132,11 @@ export async function setJoker(db: AppDatabase, input: SetJokerInput, now: Date 
           eq(prediction.isJoker, true),
         ),
       )
+      .limit(1)
+    if (current.length > 0 && current[0].id !== preds[0].id) {
+      if (now >= current[0].kickoffTime) throw new LockedError()
+      await db.update(prediction).set({ isJoker: false }).where(eq(prediction.id, current[0].id))
+    }
   }
 
   await db.update(prediction).set({ isJoker: input.isJoker }).where(eq(prediction.id, preds[0].id))
