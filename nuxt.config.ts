@@ -1,4 +1,4 @@
-import Aura from '@primeuix/themes/aura'
+import { NostraTheme } from './lib/theme'
 
 export default defineNuxtConfig({
   compatibilityDate: '2026-06-04',
@@ -41,7 +41,7 @@ export default defineNuxtConfig({
     options: {
       ripple: true,
       theme: {
-        preset: Aura,
+        preset: NostraTheme,
         options: {
           darkModeSelector: '.app-dark',
           cssLayer: {
