@@ -17,6 +17,7 @@ export const auth = betterAuth({
   // Let local users change their email (no verification email infra, so it applies directly).
   user: {
     changeEmail: { enabled: true },
+    deleteUser: { enabled: true },
   },
   // Google login is enabled only when credentials are configured.
   socialProviders:

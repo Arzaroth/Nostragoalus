@@ -8,5 +8,7 @@ export function useAuth() {
     signOut: authClient.signOut,
     changeEmail: authClient.changeEmail,
     changePassword: authClient.changePassword,
+    updateUser: authClient.updateUser,
+    deleteUser: authClient.deleteUser,
   }
 }

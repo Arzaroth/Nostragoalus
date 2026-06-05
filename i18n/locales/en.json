@@ -21,6 +21,7 @@
   "common": {
     "loading": "Loading…",
     "save": "Save",
+    "cancel": "Cancel",
     "back": "Back to fixtures",
     "refresh": "Refresh"
   },
@@ -90,14 +91,32 @@
   },
   "account": {
     "title": "Account",
+    "profile": "Profile",
+    "profileHint": "When changing your email, you'll need to confirm the new address first.",
     "email": "Email",
+    "displayName": "Display name",
     "newEmail": "New email",
     "updateEmail": "Update email",
     "emailChanged": "Email updated.",
+    "saved": "Profile saved.",
     "password": "Password",
+    "passwordHint": "Update the password associated with your account.",
     "currentPassword": "Current password",
     "newPassword": "New password (min 8 chars)",
+    "confirmPassword": "Confirm password",
+    "passwordMismatch": "Passwords don't match.",
     "updatePassword": "Update password",
-    "passwordChanged": "Password updated."
+    "passwordChanged": "Password updated.",
+    "dangerTitle": "Account termination",
+    "dangerHint": "Deleting your account is irreversible — all your predictions are lost.",
+    "deleteAccount": "Delete account",
+    "confirmDeleteHint": "Enter your password to confirm deletion."
+  },
+  "strength": {
+    "veryWeak": "Very weak",
+    "weak": "Weak",
+    "fair": "Fair",
+    "good": "Good",
+    "strong": "Strong"
   }
 }

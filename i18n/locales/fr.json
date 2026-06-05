@@ -21,6 +21,7 @@
   "common": {
     "loading": "Chargement…",
     "save": "Enregistrer",
+    "cancel": "Annuler",
     "back": "Retour aux matchs",
     "refresh": "Actualiser"
   },
@@ -90,14 +91,32 @@
   },
   "account": {
     "title": "Compte",
+    "profile": "Profil",
+    "profileHint": "Lors d'un changement d'e-mail, vous devrez d'abord confirmer la nouvelle adresse.",
     "email": "E-mail",
+    "displayName": "Nom affiché",
     "newEmail": "Nouvel e-mail",
     "updateEmail": "Modifier l'e-mail",
     "emailChanged": "E-mail mis à jour.",
+    "saved": "Profil enregistré.",
     "password": "Mot de passe",
+    "passwordHint": "Modifiez le mot de passe associé à votre compte.",
     "currentPassword": "Mot de passe actuel",
     "newPassword": "Nouveau mot de passe (8 car. min)",
+    "confirmPassword": "Confirmer le mot de passe",
+    "passwordMismatch": "Les mots de passe ne correspondent pas.",
     "updatePassword": "Modifier le mot de passe",
-    "passwordChanged": "Mot de passe mis à jour."
+    "passwordChanged": "Mot de passe mis à jour.",
+    "dangerTitle": "Suppression du compte",
+    "dangerHint": "La suppression de votre compte est irréversible — tous vos pronostics sont perdus.",
+    "deleteAccount": "Supprimer le compte",
+    "confirmDeleteHint": "Saisissez votre mot de passe pour confirmer la suppression."
+  },
+  "strength": {
+    "veryWeak": "Très faible",
+    "weak": "Faible",
+    "fair": "Moyen",
+    "good": "Bon",
+    "strong": "Fort"
   }
 }
