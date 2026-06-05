@@ -44,7 +44,7 @@ export default defineNuxtConfig({
 
   nitro: {
     preset: 'node-server',
-    experimental: { tasks: true },
+    experimental: { tasks: true, websocket: true },
     scheduledTasks: {
       // Live score polling self-gates on the live window, so off-window ticks make no API calls.
       '*/2 * * * *': ['scores:poll'],
