@@ -11,7 +11,7 @@ export async function hasLiveWindow(db: AppDatabase, now: Date = new Date()): Pr
     .from(match)
     .where(
       or(
-        eq(match.status, 'IN_PLAY'),
+        eq(match.status, 'LIVE'),
         eq(match.status, 'PAUSED'),
         and(eq(match.status, 'SCHEDULED'), lte(match.kickoffTime, now), gt(match.kickoffTime, windowStart)),
       ),

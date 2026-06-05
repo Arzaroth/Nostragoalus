@@ -1,21 +1,15 @@
 import { createProvider } from './factory'
 import type { MatchDataProvider } from './types'
 
-let cached: MatchDataProvider | null = null
-
-export function getProvider(): MatchDataProvider {
-  if (!cached) {
-    const config = useRuntimeConfig()
-    cached = createProvider({
-      provider: config.matchProvider,
-      fifaSeasonId: config.fifaSeasonId,
-      footballDataToken: config.footballDataToken,
-      apiFootballKey: config.apiFootballKey,
-    })
-  }
-  return cached
-}
-
-export function resetProviderCache(): void {
-  cached = null
+export function providerForCompetition(
+  competition: { provider: string; externalCompetitionId: string },
+  seasonId?: string,
+): MatchDataProvider {
+  const config = useRuntimeConfig()
+  return createProvider({
+    provider: competition.provider,
+    fifaSeasonId: seasonId,
+    footballDataToken: config.footballDataToken,
+    apiFootballKey: config.apiFootballKey,
+  })
 }

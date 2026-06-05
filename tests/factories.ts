@@ -1,13 +1,52 @@
 import type { AppDatabase } from '../db/types'
-import { match, prediction, user } from '../db/schema'
-import type { AppStage, MatchStatus } from '../shared/types/match'
+import { competition, match, prediction, user } from '../db/schema'
+import type { AppStage, MatchStatus, NormalizedMatch } from '../shared/types/match'
+import { ensureRounds } from '../server/utils/sync/rounds'
 
 export async function makeUser(db: AppDatabase, id: string, name = id): Promise<string> {
   await db.insert(user).values({ id, name, email: `${id}@example.com`, emailVerified: false })
   return id
 }
 
+export interface CompetitionOptions {
+  slug?: string
+  name?: string
+  provider?: string
+  externalCompetitionId?: string
+  externalSeasonId?: string | null
+  seasonHint?: string | null
+  isActive?: boolean
+}
+
+export async function makeCompetition(db: AppDatabase, over: CompetitionOptions = {}): Promise<string> {
+  const [row] = await db
+    .insert(competition)
+    .values({
+      slug: over.slug ?? `comp-${crypto.randomUUID()}`,
+      name: over.name ?? 'Test Cup',
+      provider: over.provider ?? 'fifa',
+      externalCompetitionId: over.externalCompetitionId ?? '17',
+      externalSeasonId: over.externalSeasonId ?? null,
+      seasonHint: over.seasonHint ?? '2026',
+      isActive: over.isActive ?? true,
+    })
+    .returning({ id: competition.id })
+  return row.id
+}
+
+// Seed a competition with the standard WC-style rounds (group MD 1-3 + R32..Final).
+export async function seedCompetition(db: AppDatabase): Promise<string> {
+  const competitionId = await makeCompetition(db)
+  const synthetic = [
+    ...[1, 2, 3].map((matchday) => ({ stage: 'GROUP', matchday })),
+    ...['R32', 'R16', 'QF', 'SF', 'THIRD_PLACE', 'FINAL'].map((stage) => ({ stage, matchday: null })),
+  ] as unknown as NormalizedMatch[]
+  await ensureRounds(db, competitionId, synthetic)
+  return competitionId
+}
+
 export interface MatchOptions {
+  competitionId: string
   roundId: string
   kickoffTime: Date
   providerMatchId?: string
@@ -15,15 +54,18 @@ export interface MatchOptions {
   status?: MatchStatus
   fullTimeHome?: number | null
   fullTimeAway?: number | null
+  groupName?: string | null
 }
 
 export async function makeMatch(db: AppDatabase, opts: MatchOptions): Promise<string> {
   const [row] = await db
     .insert(match)
     .values({
+      competitionId: opts.competitionId,
       providerMatchId: opts.providerMatchId ?? `prov-${crypto.randomUUID()}`,
       roundId: opts.roundId,
       stage: opts.stage ?? 'GROUP',
+      groupName: opts.groupName ?? null,
       homeTeam: 'Home',
       awayTeam: 'Away',
       kickoffTime: opts.kickoffTime,

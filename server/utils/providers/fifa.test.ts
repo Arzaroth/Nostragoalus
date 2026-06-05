@@ -6,6 +6,8 @@ import {
   mapFifaStatus,
   normalizeFifaMatch,
   parseFifaGroup,
+  pickFifaSeason,
+  resolveFifaSeasonId,
   type FifaMatch,
 } from './fifa'
 import { RateLimiter } from './rate-limiter'
@@ -236,5 +238,43 @@ describe('fifaProvider', () => {
   it('uses a default rate limiter when none is supplied', async () => {
     const provider = fifaProvider({ seasonId: '1', fetchImpl: (async () => jsonResponse({ Results: [] })) as unknown as typeof fetch })
     expect(await provider.getMatchesByDate('2026-06-11')).toEqual([])
+  })
+})
+
+const SEASONS = [
+  { IdSeason: '285023', Name: [{ Locale: 'en', Description: 'FIFA World Cup 2026' }], StartDate: '2026-06-11T00:00:00Z', EndDate: '2026-07-19T00:00:00Z' },
+  { IdSeason: '255711', Name: [{ Locale: 'en', Description: 'FIFA World Cup Qatar 2022' }], StartDate: '2022-11-20T00:00:00Z', EndDate: '2022-12-18T00:00:00Z' },
+]
+
+describe('pickFifaSeason', () => {
+  it('matches by name hint', () => {
+    expect(pickFifaSeason(SEASONS, '2026', new Date('2020-01-01'))).toBe('285023')
+  })
+  it('picks the currently running season', () => {
+    expect(pickFifaSeason(SEASONS, null, new Date('2026-06-15'))).toBe('285023')
+  })
+  it('picks the next upcoming season', () => {
+    expect(pickFifaSeason(SEASONS, null, new Date('2024-01-01'))).toBe('285023')
+  })
+  it('falls back to the latest by start date', () => {
+    expect(pickFifaSeason(SEASONS, null, new Date('2030-01-01'))).toBe('285023')
+  })
+  it('throws when there are no seasons', () => {
+    expect(() => pickFifaSeason([], null, new Date('2026-01-01'))).toThrow(/no FIFA season/)
+  })
+})
+
+describe('resolveFifaSeasonId', () => {
+  it('fetches /seasons and picks by hint', async () => {
+    const fetchImpl = vi.fn(async (url: string) => {
+      expect(url).toContain('idCompetition=17')
+      return jsonResponse({ Results: SEASONS })
+    }) as unknown as typeof fetch
+    expect(await resolveFifaSeasonId({ competitionId: '17', hint: '2026', fetchImpl, now: new Date('2020-01-01') })).toBe('285023')
+  })
+
+  it('throws on an upstream error', async () => {
+    const fetchImpl = (async () => new Response('boom', { status: 500 })) as unknown as typeof fetch
+    await expect(resolveFifaSeasonId({ competitionId: '17', fetchImpl })).rejects.toBeInstanceOf(ProviderUpstreamError)
   })
 })

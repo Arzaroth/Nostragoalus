@@ -129,6 +129,55 @@ export interface FifaOptions {
 
 const DEFAULT_BASE_URL = 'https://api.fifa.com/api/v3'
 
+interface FifaSeason {
+  IdSeason: string
+  Name?: FifaLocalized[]
+  StartDate?: string | null
+  EndDate?: string | null
+}
+
+// Choose the right season for a competition: prefer a name hint (e.g. "2026"),
+// else the edition currently running, else the next upcoming, else the latest.
+export function pickFifaSeason(seasons: FifaSeason[], hint: string | null | undefined, now: Date): string {
+  if (hint) {
+    const byHint = seasons.find((s) => (s.Name?.[0]?.Description ?? '').includes(hint))
+    if (byHint) return byHint.IdSeason
+  }
+
+  const nowMs = now.getTime()
+  const current = seasons.find(
+    (s) => s.StartDate && s.EndDate && Date.parse(s.StartDate) <= nowMs && nowMs <= Date.parse(s.EndDate),
+  )
+  if (current) return current.IdSeason
+
+  const upcoming = seasons
+    .filter((s) => s.StartDate && Date.parse(s.StartDate) > nowMs)
+    .sort((a, b) => Date.parse(a.StartDate as string) - Date.parse(b.StartDate as string))
+  if (upcoming.length) return upcoming[0].IdSeason
+
+  const dated = seasons
+    .filter((s) => s.StartDate)
+    .sort((a, b) => Date.parse(b.StartDate as string) - Date.parse(a.StartDate as string))
+  if (dated.length) return dated[0].IdSeason
+
+  throw new Error('no FIFA season found for the given competition')
+}
+
+export async function resolveFifaSeasonId(opts: {
+  competitionId: string
+  hint?: string | null
+  now?: Date
+  baseUrl?: string
+  fetchImpl?: typeof fetch
+}): Promise<string> {
+  const baseUrl = opts.baseUrl ?? DEFAULT_BASE_URL
+  const doFetch = opts.fetchImpl ?? fetch
+  const response = await doFetch(`${baseUrl}/seasons?idCompetition=${opts.competitionId}&count=100&language=en`)
+  if (!response.ok) throw new ProviderUpstreamError(response.status, await response.text())
+  const data = (await response.json()) as { Results?: FifaSeason[] }
+  return pickFifaSeason(data.Results ?? [], opts.hint, opts.now ?? new Date())
+}
+
 export function fifaProvider(options: FifaOptions): MatchDataProvider {
   const baseUrl = options.baseUrl ?? DEFAULT_BASE_URL
   const doFetch = options.fetchImpl ?? fetch

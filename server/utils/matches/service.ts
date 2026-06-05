@@ -4,6 +4,7 @@ import { match, prediction, round } from '../../../db/schema'
 import type { AppStage, MatchStatus } from '../../../shared/types/match'
 
 export interface MatchFilters {
+  competitionId: string
   stage?: AppStage
   status?: MatchStatus
   matchday?: number
@@ -11,6 +12,7 @@ export interface MatchFilters {
 
 const matchColumns = {
   id: match.id,
+  competitionId: match.competitionId,
   stage: match.stage,
   group: match.groupName,
   homeTeam: match.homeTeam,
@@ -29,8 +31,8 @@ const matchColumns = {
   roundSortOrder: round.sortOrder,
 }
 
-export async function listMatches(db: AppDatabase, filters: MatchFilters = {}) {
-  const conditions: SQL[] = []
+export async function listMatches(db: AppDatabase, filters: MatchFilters) {
+  const conditions: SQL[] = [eq(match.competitionId, filters.competitionId)]
   if (filters.stage) conditions.push(eq(match.stage, filters.stage))
   if (filters.status) conditions.push(eq(match.status, filters.status))
   if (filters.matchday !== undefined) conditions.push(eq(round.matchday, filters.matchday))
@@ -39,7 +41,7 @@ export async function listMatches(db: AppDatabase, filters: MatchFilters = {}) {
     .select(matchColumns)
     .from(match)
     .innerJoin(round, eq(match.roundId, round.id))
-    .where(conditions.length ? and(...conditions) : undefined)
+    .where(and(...conditions))
     .orderBy(asc(match.kickoffTime))
 }
 

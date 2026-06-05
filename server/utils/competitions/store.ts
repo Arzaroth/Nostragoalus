@@ -1,0 +1,48 @@
+import { eq } from 'drizzle-orm'
+import type { AppDatabase } from '../../../db/types'
+import { competition } from '../../../db/schema'
+
+export const DEFAULT_COMPETITION = {
+  slug: 'world-cup-2026',
+  name: 'FIFA World Cup 2026',
+  provider: 'fifa',
+  externalCompetitionId: '17',
+  externalSeasonId: null as string | null,
+  seasonHint: '2026',
+}
+
+export async function ensureDefaultCompetition(db: AppDatabase): Promise<void> {
+  const existing = await db.select({ id: competition.id }).from(competition).limit(1)
+  if (existing.length > 0) return
+  await db.insert(competition).values({ ...DEFAULT_COMPETITION, isActive: true })
+}
+
+export async function listCompetitions(db: AppDatabase) {
+  return db.select().from(competition)
+}
+
+export async function listActiveCompetitions(db: AppDatabase) {
+  return db.select().from(competition).where(eq(competition.isActive, true))
+}
+
+export async function getCompetitionBySlug(db: AppDatabase, slug: string) {
+  const rows = await db.select().from(competition).where(eq(competition.slug, slug)).limit(1)
+  return rows[0] ?? null
+}
+
+export async function getCompetitionById(db: AppDatabase, id: string) {
+  const rows = await db.select().from(competition).where(eq(competition.id, id)).limit(1)
+  return rows[0] ?? null
+}
+
+export async function setExternalSeasonId(db: AppDatabase, id: string, externalSeasonId: string): Promise<void> {
+  await db.update(competition).set({ externalSeasonId }).where(eq(competition.id, id))
+}
+
+// Resolve a competition by slug, or fall back to the first active one (for the
+// default view when no competition is specified).
+export async function resolveCompetition(db: AppDatabase, slug?: string | null) {
+  if (slug) return getCompetitionBySlug(db, slug)
+  const active = await listActiveCompetitions(db)
+  return active[0] ?? null
+}

@@ -19,10 +19,11 @@ const pk = () => text('id').primaryKey().$defaultFn(() => randomUUID())
 
 export const stageEnum = pgEnum('stage', ['GROUP', 'R32', 'R16', 'QF', 'SF', 'THIRD_PLACE', 'FINAL'])
 
+// Mirrors the normalized MatchStatus in shared/types/match.ts (providers map their
+// own raw statuses, e.g. football-data IN_PLAY/TIMED, onto these).
 export const matchStatusEnum = pgEnum('match_status', [
   'SCHEDULED',
-  'TIMED',
-  'IN_PLAY',
+  'LIVE',
   'PAUSED',
   'FINISHED',
   'POSTPONED',
@@ -84,10 +85,29 @@ export const scoringConfig = pgTable(
   ],
 )
 
+export const competition = pgTable(
+  'competition',
+  {
+    id: pk(),
+    slug: text('slug').notNull(),
+    name: text('name').notNull(),
+    provider: text('provider').notNull(),
+    externalCompetitionId: text('external_competition_id').notNull(),
+    externalSeasonId: text('external_season_id'),
+    seasonHint: text('season_hint'),
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('competition_slug_uq').on(t.slug)],
+)
+
 export const round = pgTable(
   'round',
   {
     id: pk(),
+    competitionId: text('competition_id')
+      .notNull()
+      .references(() => competition.id, { onDelete: 'cascade' }),
     kind: roundKindEnum('kind').notNull(),
     stage: stageEnum('stage').notNull(),
     matchday: integer('matchday'),
@@ -97,8 +117,8 @@ export const round = pgTable(
     firstKickoffAt: timestamp('first_kickoff_at', { withTimezone: true }),
   },
   (t) => [
-    uniqueIndex('round_sort_uq').on(t.sortOrder),
-    uniqueIndex('round_stage_matchday_uq').on(t.stage, t.matchday),
+    uniqueIndex('round_competition_sort_uq').on(t.competitionId, t.sortOrder),
+    uniqueIndex('round_competition_stage_matchday_uq').on(t.competitionId, t.stage, t.matchday),
   ],
 )
 
@@ -106,6 +126,9 @@ export const match = pgTable(
   'match',
   {
     id: pk(),
+    competitionId: text('competition_id')
+      .notNull()
+      .references(() => competition.id, { onDelete: 'cascade' }),
     providerMatchId: text('provider_match_id').notNull(),
     roundId: text('round_id')
       .notNull()
@@ -138,7 +161,8 @@ export const match = pgTable(
       .$onUpdate(() => new Date()),
   },
   (t) => [
-    uniqueIndex('match_provider_uq').on(t.providerMatchId),
+    uniqueIndex('match_provider_uq').on(t.competitionId, t.providerMatchId),
+    index('match_competition_idx').on(t.competitionId),
     index('match_kickoff_idx').on(t.kickoffTime),
     index('match_round_idx').on(t.roundId),
     index('match_stage_idx').on(t.stage),
@@ -210,12 +234,19 @@ export const userProfileRelations = relations(userProfile, ({ one }) => ({
   user: one(user, { fields: [userProfile.userId], references: [user.id] }),
 }))
 
-export const roundRelations = relations(round, ({ many }) => ({
+export const competitionRelations = relations(competition, ({ many }) => ({
+  rounds: many(round),
+  matches: many(match),
+}))
+
+export const roundRelations = relations(round, ({ one, many }) => ({
+  competition: one(competition, { fields: [round.competitionId], references: [competition.id] }),
   matches: many(match),
   predictions: many(prediction),
 }))
 
 export const matchRelations = relations(match, ({ one, many }) => ({
+  competition: one(competition, { fields: [match.competitionId], references: [competition.id] }),
   round: one(round, { fields: [match.roundId], references: [round.id] }),
   predictions: many(prediction),
   scoreEvents: many(matchScoreEvent),

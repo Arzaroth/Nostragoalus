@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { eq } from 'drizzle-orm'
 import { createTestDb } from '../../../tests/db'
-import { ensureRounds, findRoundId } from '../sync/rounds'
-import { makeMatch, makePrediction, makeUser } from '../../../tests/factories'
+import { findRoundId } from '../sync/rounds'
+import { makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
 import { getMyPredictions, setJoker, upsertPrediction } from './service'
 import { prediction } from '../../../db/schema'
 import { JokerQuotaError, LockedError, NotFoundError, ValidationError } from '../errors'
@@ -13,16 +13,16 @@ const PAST = new Date('2026-06-09T16:00:00Z')
 
 async function setup() {
   const ctx = await createTestDb()
-  await ensureRounds(ctx.db)
-  const roundId = (await findRoundId(ctx.db, 'GROUP', 1)) as string
+  const competitionId = await seedCompetition(ctx.db)
+  const roundId = (await findRoundId(ctx.db, competitionId, 'GROUP', 1)) as string
   const userId = await makeUser(ctx.db, 'u1')
-  return { ...ctx, roundId, userId }
+  return { ...ctx, competitionId, roundId, userId }
 }
 
 describe('upsertPrediction', () => {
   it('rejects invalid goal values', async () => {
-    const { db, client, roundId, userId } = await setup()
-    const m = await makeMatch(db, { roundId, kickoffTime: FUTURE })
+    const { db, client, competitionId, roundId, userId } = await setup()
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: FUTURE })
     await expect(upsertPrediction(db, { userId, matchId: m, home: -1, away: 0 }, NOW)).rejects.toBeInstanceOf(ValidationError)
     await expect(upsertPrediction(db, { userId, matchId: m, home: 1.5, away: 0 }, NOW)).rejects.toBeInstanceOf(ValidationError)
     await expect(upsertPrediction(db, { userId, matchId: m, home: 0, away: 100 }, NOW)).rejects.toBeInstanceOf(ValidationError)
@@ -36,15 +36,15 @@ describe('upsertPrediction', () => {
   })
 
   it('throws when the match is already locked', async () => {
-    const { db, client, roundId, userId } = await setup()
-    const m = await makeMatch(db, { roundId, kickoffTime: PAST })
+    const { db, client, competitionId, roundId, userId } = await setup()
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: PAST })
     await expect(upsertPrediction(db, { userId, matchId: m, home: 1, away: 0 }, NOW)).rejects.toBeInstanceOf(LockedError)
     await client.close()
   })
 
   it('inserts then updates a prediction in place', async () => {
-    const { db, client, roundId, userId } = await setup()
-    const m = await makeMatch(db, { roundId, kickoffTime: FUTURE })
+    const { db, client, competitionId, roundId, userId } = await setup()
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: FUTURE })
     const id1 = await upsertPrediction(db, { userId, matchId: m, home: 1, away: 0 }, NOW)
     const id2 = await upsertPrediction(db, { userId, matchId: m, home: 2, away: 2 }, NOW)
     expect(id1).toBe(id2)
@@ -56,9 +56,9 @@ describe('upsertPrediction', () => {
 
 describe('getMyPredictions', () => {
   it('returns only the caller predictions', async () => {
-    const { db, client, roundId, userId } = await setup()
+    const { db, client, competitionId, roundId, userId } = await setup()
     const other = await makeUser(db, 'u2')
-    const m = await makeMatch(db, { roundId, kickoffTime: FUTURE })
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: FUTURE })
     await upsertPrediction(db, { userId, matchId: m, home: 1, away: 0 }, NOW)
     await makePrediction(db, { userId: other, matchId: m, roundId, home: 0, away: 0 })
     const mine = await getMyPredictions(db, userId)
@@ -70,8 +70,8 @@ describe('getMyPredictions', () => {
 
 describe('setJoker', () => {
   it('sets and unsets the joker', async () => {
-    const { db, client, roundId, userId } = await setup()
-    const m = await makeMatch(db, { roundId, kickoffTime: FUTURE })
+    const { db, client, competitionId, roundId, userId } = await setup()
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: FUTURE })
     await upsertPrediction(db, { userId, matchId: m, home: 1, away: 0 }, NOW)
     await setJoker(db, { userId, matchId: m, isJoker: true }, NOW)
     expect((await db.select().from(prediction))[0].isJoker).toBe(true)
@@ -81,9 +81,9 @@ describe('setJoker', () => {
   })
 
   it('enforces one joker per round', async () => {
-    const { db, client, roundId, userId } = await setup()
-    const m1 = await makeMatch(db, { roundId, kickoffTime: FUTURE })
-    const m2 = await makeMatch(db, { roundId, kickoffTime: FUTURE })
+    const { db, client, competitionId, roundId, userId } = await setup()
+    const m1 = await makeMatch(db, { competitionId, roundId, kickoffTime: FUTURE })
+    const m2 = await makeMatch(db, { competitionId, roundId, kickoffTime: FUTURE })
     await upsertPrediction(db, { userId, matchId: m1, home: 1, away: 0 }, NOW)
     await upsertPrediction(db, { userId, matchId: m2, home: 2, away: 0 }, NOW)
     await setJoker(db, { userId, matchId: m1, isJoker: true }, NOW)
@@ -92,8 +92,8 @@ describe('setJoker', () => {
   })
 
   it('allows re-confirming the joker on the same match', async () => {
-    const { db, client, roundId, userId } = await setup()
-    const m = await makeMatch(db, { roundId, kickoffTime: FUTURE })
+    const { db, client, competitionId, roundId, userId } = await setup()
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: FUTURE })
     await upsertPrediction(db, { userId, matchId: m, home: 1, away: 0 }, NOW)
     await setJoker(db, { userId, matchId: m, isJoker: true }, NOW)
     await expect(setJoker(db, { userId, matchId: m, isJoker: true }, NOW)).resolves.toBeUndefined()
@@ -101,11 +101,11 @@ describe('setJoker', () => {
   })
 
   it('validates match existence, lock state, and prediction existence', async () => {
-    const { db, client, roundId, userId } = await setup()
+    const { db, client, competitionId, roundId, userId } = await setup()
     await expect(setJoker(db, { userId, matchId: 'nope', isJoker: true }, NOW)).rejects.toBeInstanceOf(NotFoundError)
-    const locked = await makeMatch(db, { roundId, kickoffTime: PAST })
+    const locked = await makeMatch(db, { competitionId, roundId, kickoffTime: PAST })
     await expect(setJoker(db, { userId, matchId: locked, isJoker: true }, NOW)).rejects.toBeInstanceOf(LockedError)
-    const noPred = await makeMatch(db, { roundId, kickoffTime: FUTURE })
+    const noPred = await makeMatch(db, { competitionId, roundId, kickoffTime: FUTURE })
     await expect(setJoker(db, { userId, matchId: noPred, isJoker: true }, NOW)).rejects.toBeInstanceOf(NotFoundError)
     await client.close()
   })

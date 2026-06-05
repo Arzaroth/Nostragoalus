@@ -1,0 +1,44 @@
+import { describe, it, expect, vi } from 'vitest'
+import { createTestDb } from '../../../tests/db'
+import {
+  addLiveSubscriber,
+  liveSubscriberCount,
+  publishMatchUpdates,
+  removeLiveSubscriber,
+  type LiveSubscriber,
+} from './hub'
+import { findRoundId } from '../sync/rounds'
+import { makeMatch, seedCompetition } from '../../../tests/factories'
+
+describe('live hub', () => {
+  it('delivers updates only to subscribers watching the match', async () => {
+    const { db, client } = await createTestDb()
+    const cid = await seedCompetition(db)
+    const roundId = (await findRoundId(db, cid, 'GROUP', 1)) as string
+    const m = await makeMatch(db, { competitionId: cid, roundId, kickoffTime: new Date('2026-06-11T16:00:00Z'), status: 'LIVE', fullTimeHome: 1, fullTimeAway: 0 })
+
+    const watcher: LiveSubscriber = { matchIds: new Set([m]), send: vi.fn() }
+    const other: LiveSubscriber = { matchIds: new Set(['nope']), send: vi.fn() }
+    addLiveSubscriber(watcher)
+    addLiveSubscriber(other)
+    expect(liveSubscriberCount()).toBe(2)
+
+    try {
+      expect(await publishMatchUpdates(db, [m])).toBe(1)
+      expect(watcher.send).toHaveBeenCalledWith(expect.objectContaining({ type: 'match:update' }))
+      expect(other.send).not.toHaveBeenCalled()
+    } finally {
+      removeLiveSubscriber(watcher)
+      removeLiveSubscriber(other)
+    }
+    expect(liveSubscriberCount()).toBe(0)
+    await client.close()
+  })
+
+  it('no-ops with no match ids or no subscribers', async () => {
+    const { db, client } = await createTestDb()
+    expect(await publishMatchUpdates(db, [])).toBe(0)
+    expect(await publishMatchUpdates(db, ['x'])).toBe(0)
+    await client.close()
+  })
+})

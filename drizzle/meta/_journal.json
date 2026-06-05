@@ -5,15 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1780611155862,
-      "tag": "0000_crazy_jubilee",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1780611627187,
-      "tag": "0001_volatile_dormammu",
+      "when": 1780648950216,
+      "tag": "0000_greedy_wraith",
       "breakpoints": true
     }
   ]

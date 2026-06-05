@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { match } from '../../../db/schema'
 import type { NormalizedMatch } from '../../../shared/types/match'
@@ -16,10 +16,11 @@ export interface UpsertResult {
   inserted: number
   updated: number
   skipped: number
+  changedMatchIds: string[]
 }
 
-// Fields that may change between syncs. roundId is intentionally excluded: it is
-// assigned once at insert and must stay stable (live updates may lack a matchday).
+// Fields that may change between syncs. competitionId/roundId are intentionally
+// excluded: they are assigned once at insert and must stay stable.
 function mutableFields(m: NormalizedMatch) {
   return {
     stage: m.stage,
@@ -42,35 +43,46 @@ function mutableFields(m: NormalizedMatch) {
   }
 }
 
-export async function upsertMatches(db: AppDatabase, matches: NormalizedMatch[]): Promise<UpsertResult> {
-  const result: UpsertResult = { inserted: 0, updated: 0, skipped: 0 }
+export async function upsertMatches(
+  db: AppDatabase,
+  competitionId: string,
+  matches: NormalizedMatch[],
+): Promise<UpsertResult> {
+  const result: UpsertResult = { inserted: 0, updated: 0, skipped: 0, changedMatchIds: [] }
 
   for (const m of matches) {
     const existing = await db
       .select()
       .from(match)
-      .where(eq(match.providerMatchId, m.providerMatchId))
+      .where(and(eq(match.competitionId, competitionId), eq(match.providerMatchId, m.providerMatchId)))
       .limit(1)
 
     if (existing.length === 0) {
-      const roundId = await findRoundId(db, m.stage, m.matchday)
+      const roundId = await findRoundId(db, competitionId, m.stage, m.matchday)
       if (!roundId) {
         result.skipped += 1
         continue
       }
-      await db.insert(match).values({ providerMatchId: m.providerMatchId, roundId, ...mutableFields(m) })
+      await db.insert(match).values({ competitionId, providerMatchId: m.providerMatchId, roundId, ...mutableFields(m) })
       result.inserted += 1
       continue
     }
 
+    const prev = existing[0]
     // Never let a late non-final poll downgrade a match we already consider finished.
-    if (existing[0].status === 'FINISHED' && m.status !== 'FINISHED') {
+    if (prev.status === 'FINISHED' && m.status !== 'FINISHED') {
       result.skipped += 1
       continue
     }
 
-    await db.update(match).set(mutableFields(m)).where(eq(match.id, existing[0].id))
+    await db.update(match).set(mutableFields(m)).where(eq(match.id, prev.id))
     result.updated += 1
+
+    const changed =
+      prev.status !== m.status ||
+      prev.fullTimeHome !== m.score.fullTime.home ||
+      prev.fullTimeAway !== m.score.fullTime.away
+    if (changed) result.changedMatchIds.push(prev.id)
   }
 
   return result

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { eq } from 'drizzle-orm'
 import { createTestDb } from '../../../tests/db'
-import { ensureRounds } from './rounds'
+import { makeCompetition, seedCompetition } from '../../../tests/factories'
 import { resultHashOf, upsertMatches } from './upsert-matches'
 import { match } from '../../../db/schema'
 import type { NormalizedMatch } from '../../../shared/types/match'
@@ -31,47 +31,62 @@ describe('resultHashOf', () => {
 })
 
 describe('upsertMatches', () => {
-  it('inserts new matches and links them to a round', async () => {
+  it('inserts new matches linked to a round', async () => {
     const { db, client } = await createTestDb()
-    await ensureRounds(db)
-    const res = await upsertMatches(db, [normalized()])
-    expect(res).toEqual({ inserted: 1, updated: 0, skipped: 0 })
-
-    const rows = await db.select().from(match).where(eq(match.providerMatchId, 'p1'))
+    const cid = await seedCompetition(db)
+    const res = await upsertMatches(db, cid, [normalized()])
+    expect(res).toMatchObject({ inserted: 1, updated: 0, skipped: 0 })
+    const rows = await db.select().from(match).where(eq(match.competitionId, cid))
     expect(rows[0]).toMatchObject({ homeTeam: 'Mexico', stage: 'GROUP', groupName: 'A', status: 'SCHEDULED' })
     await client.close()
   })
 
-  it('updates an existing match in place', async () => {
+  it('updates an existing match and flags score/status changes', async () => {
     const { db, client } = await createTestDb()
-    await ensureRounds(db)
-    await upsertMatches(db, [normalized()])
-    const res = await upsertMatches(db, [
+    const cid = await seedCompetition(db)
+    await upsertMatches(db, cid, [normalized()])
+    const res = await upsertMatches(db, cid, [
       normalized({ status: 'FINISHED', score: { fullTime: { home: 2, away: 1 } }, winner: 'HOME' }),
     ])
-    expect(res).toEqual({ inserted: 0, updated: 1, skipped: 0 })
+    expect(res).toMatchObject({ inserted: 0, updated: 1, skipped: 0 })
+    expect(res.changedMatchIds).toHaveLength(1)
+    await client.close()
+  })
 
-    const rows = await db.select().from(match).where(eq(match.providerMatchId, 'p1'))
-    expect(rows[0]).toMatchObject({ status: 'FINISHED', fullTimeHome: 2, fullTimeAway: 1, winner: 'HOME' })
+  it('does not flag an unchanged update', async () => {
+    const { db, client } = await createTestDb()
+    const cid = await seedCompetition(db)
+    await upsertMatches(db, cid, [normalized()])
+    const res = await upsertMatches(db, cid, [normalized()])
+    expect(res.updated).toBe(1)
+    expect(res.changedMatchIds).toHaveLength(0)
     await client.close()
   })
 
   it('does not downgrade a finished match with non-final data', async () => {
     const { db, client } = await createTestDb()
-    await ensureRounds(db)
-    await upsertMatches(db, [normalized({ status: 'FINISHED', score: { fullTime: { home: 2, away: 1 } } })])
-    const res = await upsertMatches(db, [normalized({ status: 'SCHEDULED', score: { fullTime: { home: null, away: null } } })])
-    expect(res).toEqual({ inserted: 0, updated: 0, skipped: 1 })
-
-    const rows = await db.select().from(match).where(eq(match.providerMatchId, 'p1'))
-    expect(rows[0].status).toBe('FINISHED')
+    const cid = await seedCompetition(db)
+    await upsertMatches(db, cid, [normalized({ status: 'FINISHED', score: { fullTime: { home: 2, away: 1 } } })])
+    const res = await upsertMatches(db, cid, [normalized({ status: 'SCHEDULED', score: { fullTime: { home: null, away: null } } })])
+    expect(res).toMatchObject({ inserted: 0, updated: 0, skipped: 1 })
     await client.close()
   })
 
   it('skips matches whose round is not seeded', async () => {
     const { db, client } = await createTestDb()
-    const res = await upsertMatches(db, [normalized()])
-    expect(res).toEqual({ inserted: 0, updated: 0, skipped: 1 })
+    const cid = await makeCompetition(db)
+    const res = await upsertMatches(db, cid, [normalized()])
+    expect(res).toMatchObject({ inserted: 0, updated: 0, skipped: 1 })
+    await client.close()
+  })
+
+  it('isolates the same provider match id across competitions', async () => {
+    const { db, client } = await createTestDb()
+    const c1 = await seedCompetition(db)
+    const c2 = await seedCompetition(db)
+    await upsertMatches(db, c1, [normalized()])
+    const res = await upsertMatches(db, c2, [normalized()])
+    expect(res.inserted).toBe(1)
     await client.close()
   })
 })
