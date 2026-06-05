@@ -31,6 +31,12 @@ describe('computeGroupStandings', () => {
     expect(table[0].played).toBe(0)
   })
 
+  it('credits the away team on an away win', () => {
+    const table = computeGroupStandings([m('A', 'B', 'FINISHED', 0, 2)])
+    expect(table[0]).toMatchObject({ name: 'B', won: 1, lost: 0, points: 3, gd: 2 })
+    expect(table.find((r) => r.name === 'A')).toMatchObject({ won: 0, lost: 1, points: 0, gd: -2 })
+  })
+
   it('breaks ties on goals-for then name', () => {
     // X and Y both 3pts, gd +1, but X scored more.
     const byGf = computeGroupStandings([m('X', 'Z', 'FINISHED', 3, 2), m('Y', 'W', 'FINISHED', 1, 0)])

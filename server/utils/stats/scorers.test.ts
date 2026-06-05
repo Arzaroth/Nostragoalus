@@ -30,11 +30,17 @@ describe('getCompetitionTopScorers', () => {
     await addGoal(db, competitionId, mid, { playerId: 'p1', playerName: 'Mbappe', teamCode: 'FRA' })
     await addGoal(db, competitionId, mid, { playerId: 'p2', playerName: 'Griezmann', teamCode: 'FRA' })
     await addGoal(db, competitionId, mid, { playerId: 'p3', playerName: 'OwnGoalGuy', teamCode: 'XXX', ownGoal: true })
+    await addGoal(db, competitionId, mid, { playerId: 'p4', playerName: 'Aaa', teamCode: 'AAA' })
+    await addGoal(db, competitionId, mid, { playerId: 'p5', playerName: 'Zzz', teamCode: 'ZZZ' })
 
     const top = await getCompetitionTopScorers(db, competitionId)
     expect(top[0]).toMatchObject({ playerName: 'Mbappe', goals: 2, assists: 0 })
-    expect(top[1]).toMatchObject({ playerName: 'Griezmann', goals: 1, assists: 1 })
     expect(top.find((s) => s.playerName === 'OwnGoalGuy')).toBeUndefined()
+    const names = top.map((s) => s.playerName)
+    // 1 goal each: Griezmann (1 assist) ranks above Aaa/Zzz (assists tie-break),
+    // then Aaa before Zzz (name tie-break).
+    expect(names.indexOf('Griezmann')).toBeLessThan(names.indexOf('Aaa'))
+    expect(names.indexOf('Aaa')).toBeLessThan(names.indexOf('Zzz'))
     await client.close()
   })
 })

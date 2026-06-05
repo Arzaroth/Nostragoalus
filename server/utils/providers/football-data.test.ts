@@ -189,6 +189,16 @@ describe('footballDataProvider', () => {
     const provider = footballDataProvider({ token: 't', fetchImpl: (async () => new Response('boom', { status: 500 })) as unknown as typeof fetch, rateLimiter: noWait() })
     await expect(provider.getTopScorers!({ season: '2026' })).rejects.toBeInstanceOf(ProviderUpstreamError)
   })
+
+  it('surfaces rate limiting on scorers', async () => {
+    const provider = footballDataProvider({ token: 't', fetchImpl: (async () => new Response('', { status: 429 })) as unknown as typeof fetch, rateLimiter: noWait() })
+    await expect(provider.getTopScorers!({ season: '2026' })).rejects.toBeInstanceOf(ProviderRateLimitError)
+  })
+
+  it('returns an empty scorers list when the field is absent', async () => {
+    const provider = footballDataProvider({ token: 't', fetchImpl: (async () => jsonResponse({})) as unknown as typeof fetch, rateLimiter: noWait() })
+    expect(await provider.getTopScorers!({ season: '2026' })).toEqual([])
+  })
 })
 
 describe('normalizeFdScorer', () => {

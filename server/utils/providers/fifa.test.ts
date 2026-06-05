@@ -256,6 +256,17 @@ describe('pickFifaSeason', () => {
   it('picks the next upcoming season', () => {
     expect(pickFifaSeason(SEASONS, null, new Date('2024-01-01'))).toBe('285023')
   })
+  it('orders multiple upcoming seasons by start date', () => {
+    const future = [
+      { IdSeason: 'later', Name: [{ Locale: 'en', Description: 'Later' }], StartDate: '2031-01-01T00:00:00Z', EndDate: '2031-02-01T00:00:00Z' },
+      { IdSeason: 'sooner', Name: [{ Locale: 'en', Description: 'Sooner' }], StartDate: '2030-01-01T00:00:00Z', EndDate: '2030-02-01T00:00:00Z' },
+    ]
+    expect(pickFifaSeason(future, null, new Date('2029-01-01'))).toBe('sooner')
+  })
+  it('ignores a hint that matches no season', () => {
+    const seasons = [{ IdSeason: 'x', StartDate: '2026-06-11T00:00:00Z', EndDate: '2026-07-19T00:00:00Z' }]
+    expect(pickFifaSeason(seasons, '9999', new Date('2026-06-15'))).toBe('x')
+  })
   it('falls back to the latest by start date', () => {
     expect(pickFifaSeason(SEASONS, null, new Date('2030-01-01'))).toBe('285023')
   })

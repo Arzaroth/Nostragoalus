@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { createTestDb } from '../../../tests/db'
 import { findRoundId } from '../sync/rounds'
 import { makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
-import { getMatchDetail, listMatches } from './service'
+import { getMatchDetail, getTeamMatches, listMatches } from './service'
 
 async function setup() {
   const ctx = await createTestDb()
@@ -33,6 +33,18 @@ describe('listMatches', () => {
     await makeMatch(db, { competitionId, roundId: g1, kickoffTime: new Date('2026-06-11T16:00:00Z') })
     await makeMatch(db, { competitionId: other, roundId: og1, kickoffTime: new Date('2026-06-11T16:00:00Z') })
     expect(await listMatches(db, { competitionId })).toHaveLength(1)
+    await client.close()
+  })
+})
+
+describe('getTeamMatches', () => {
+  it('returns the team matches (home or away) ordered by kickoff', async () => {
+    const { db, client, competitionId } = await setup()
+    const g1 = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+    const a = await makeMatch(db, { competitionId, roundId: g1, kickoffTime: new Date('2026-06-11T16:00:00Z'), homeTeamCode: 'FRA', awayTeamCode: 'MEX' })
+    const b = await makeMatch(db, { competitionId, roundId: g1, kickoffTime: new Date('2026-06-15T16:00:00Z'), homeTeamCode: 'BRA', awayTeamCode: 'FRA' })
+    await makeMatch(db, { competitionId, roundId: g1, kickoffTime: new Date('2026-06-12T16:00:00Z'), homeTeamCode: 'BRA', awayTeamCode: 'MEX' })
+    expect((await getTeamMatches(db, competitionId, 'FRA')).map((m) => m.id)).toEqual([a, b])
     await client.close()
   })
 })

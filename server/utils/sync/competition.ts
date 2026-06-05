@@ -20,7 +20,7 @@ export type SeasonResolver = (opts: { competitionId: string; hint?: string | nul
 export async function resolveCompetitionSeason(
   db: AppDatabase,
   competition: SyncCompetition,
-  resolver: SeasonResolver = (opts) => resolveFifaSeasonId(opts),
+  resolver: SeasonResolver = resolveFifaSeasonId,
 ): Promise<string | undefined> {
   if (competition.provider !== 'fifa') return undefined
   if (competition.externalSeasonId) return competition.externalSeasonId

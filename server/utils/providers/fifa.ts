@@ -340,8 +340,8 @@ export function normalizeFifaPlayerStats(data: FifaTeamStatsResponse): TopScorer
         penalties: null,
       }
     })
-    .filter((s) => s.goals > 0 || (s.assists ?? 0) > 0)
-    .sort((a, b) => b.goals - a.goals || (b.assists ?? 0) - (a.assists ?? 0) || a.playerName.localeCompare(b.playerName))
+    .filter((s) => s.goals > 0 || s.assists > 0)
+    .sort((a, b) => b.goals - a.goals || b.assists - a.assists || a.playerName.localeCompare(b.playerName))
 }
 
 export interface FifaOptions {

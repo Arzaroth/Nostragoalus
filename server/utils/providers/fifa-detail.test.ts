@@ -266,3 +266,65 @@ describe('fifaProvider.getPlayerStats', () => {
     await expect(provider.getPlayerStats!({ teamId: '1' })).rejects.toThrow()
   })
 })
+
+describe('normalizeFifaMatchDetail fallbacks', () => {
+  it('fills defaults for missing names, teams and goal fields', () => {
+    const d = normalizeFifaMatchDetail({
+      HomeTeam: {
+        Players: [
+          { IdPlayer: 'h1', ShortName: [{ Locale: 'en', Description: 'H1 SHORT' }] },
+          { IdPlayer: 'h2' },
+          { ShortName: [{ Locale: 'en', Description: 'NO ID' }] },
+        ],
+        Goals: [{ IdPlayer: 'h1' }, {}],
+      },
+      AwayTeam: {
+        Players: [{ IdPlayer: 'a1', PlayerName: [{ Locale: 'en', Description: 'A1' }] }, {}],
+        Goals: [],
+      },
+    })
+    expect(d.goals).toHaveLength(2)
+    expect(d.goals[0]).toMatchObject({ playerName: 'H1 SHORT', teamId: null, teamName: '', teamCode: null, minute: null, goalType: null })
+    expect(d.goals[1]).toMatchObject({ playerId: null, playerName: 'Unknown' })
+  })
+})
+
+describe('normalizeFifaBracket fallbacks', () => {
+  it('handles a stage and winner with missing fields', () => {
+    const b = normalizeFifaBracket({ Winner: {}, KnockoutStages: [{ SequenceOrder: 1 }] })
+    expect(b.winner).toEqual({ name: '', code: null })
+    expect(b.rounds[0]).toMatchObject({ name: '', sequence: 1, matches: [] })
+  })
+})
+
+describe('normalizeFifaPlayerStats sort', () => {
+  it('breaks goal ties by assists then name', () => {
+    const data = {
+      AggregatedTeamStats: [],
+      AggregatedPlayerStats: [
+        { IdPlayer: 'p1', PlayerName: [{ Locale: 'en', Description: 'Zzz' }], Statistic: [{ Type: 1, Value: 1 }, { Type: 219, Value: 0 }] },
+        { IdPlayer: 'p2', PlayerName: [{ Locale: 'en', Description: 'Aaa' }], Statistic: [{ Type: 1, Value: 1 }, { Type: 219, Value: 0 }] },
+        { IdPlayer: 'p3', PlayerName: [{ Locale: 'en', Description: 'Helper' }], Statistic: [{ Type: 1, Value: 1 }, { Type: 219, Value: 2 }] },
+      ],
+    }
+    expect(normalizeFifaPlayerStats(data).map((s) => s.playerName)).toEqual(['Helper', 'Aaa', 'Zzz'])
+  })
+})
+
+describe('fifaProvider rate limits', () => {
+  const limited = (method: 'getBracket' | 'getPlayerStats') => {
+    const provider = fifaProvider({
+      seasonId: '1',
+      competitionId: '17',
+      fetchImpl: (async () => new Response('', { status: 429 })) as unknown as typeof fetch,
+      rateLimiter: new RateLimiter(0),
+    })
+    return method === 'getBracket' ? provider.getBracket!() : provider.getPlayerStats!({ teamId: '1' })
+  }
+  it('throws on bracket rate limiting', async () => {
+    await expect(limited('getBracket')).rejects.toThrow()
+  })
+  it('throws on player-stats rate limiting', async () => {
+    await expect(limited('getPlayerStats')).rejects.toThrow()
+  })
+})
