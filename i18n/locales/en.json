@@ -2,6 +2,7 @@
   "nav": {
     "matches": "Matches",
     "bracket": "Bracket",
+    "map": "Map",
     "ranking": "Ranking",
     "myPicks": "My picks",
     "signIn": "Sign in",
@@ -9,6 +10,13 @@
   },
   "bracket": {
     "empty": "The knockout bracket isn't available yet."
+  },
+  "map": {
+    "hint": "Click a country on the map to see its team.",
+    "live": "Live",
+    "next": "Next match",
+    "last": "Last result",
+    "noData": "No matches yet."
   },
   "common": {
     "loading": "Loading…",

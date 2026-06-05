@@ -2,6 +2,7 @@
   "nav": {
     "matches": "Matchs",
     "bracket": "Tableau",
+    "map": "Carte",
     "ranking": "Classement",
     "myPicks": "Mes pronos",
     "signIn": "Connexion",
@@ -9,6 +10,13 @@
   },
   "bracket": {
     "empty": "Le tableau final n'est pas encore disponible."
+  },
+  "map": {
+    "hint": "Cliquez sur un pays pour voir son équipe.",
+    "live": "En direct",
+    "next": "Prochain match",
+    "last": "Dernier résultat",
+    "noData": "Aucun match pour l'instant."
   },
   "common": {
     "loading": "Chargement…",

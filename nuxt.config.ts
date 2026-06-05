@@ -35,7 +35,7 @@ export default defineNuxtConfig({
     detectBrowserLanguage: { useCookie: true, cookieKey: 'ng_locale', redirectOn: 'no prefix' },
   },
 
-  css: ['primeicons/primeicons.css', '~/assets/css/main.css'],
+  css: ['primeicons/primeicons.css', 'leaflet/dist/leaflet.css', '~/assets/css/main.css'],
 
   primevue: {
     options: {
