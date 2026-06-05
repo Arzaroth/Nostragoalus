@@ -36,7 +36,7 @@ async function onSignOut() {
       class="sticky top-0 z-50 backdrop-blur-md border-b"
       style="background: color-mix(in srgb, var(--p-content-background) 82%, transparent); border-color: var(--p-content-border-color)"
     >
-      <div class="mx-auto max-w-6xl px-4 h-16 flex items-center gap-3">
+      <div class="mx-auto max-w-7xl px-4 h-16 flex items-center gap-3">
         <NuxtLink to="/" class="flex items-center gap-2 font-extrabold text-lg shrink-0">
           <span class="text-2xl">🔮</span>
           <span class="bg-gradient-to-r from-indigo-500 to-emerald-500 bg-clip-text text-transparent">
@@ -71,10 +71,10 @@ async function onSignOut() {
         <Select
           v-model="lang"
           :options="locales"
-          option-label="code"
+          option-label="name"
           option-value="code"
           size="small"
-          class="w-20 uppercase"
+          class="w-32"
         />
 
         <Button
@@ -112,7 +112,7 @@ async function onSignOut() {
       </nav>
     </header>
 
-    <main class="flex-1 w-full max-w-6xl mx-auto px-4 py-6">
+    <main class="flex-1 w-full max-w-7xl mx-auto px-4 py-6">
       <slot />
     </main>
   </div>

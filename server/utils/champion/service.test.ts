@@ -39,6 +39,7 @@ describe('listCompetitionTeams', () => {
     const { db, client, competitionId, roundId } = await setup()
     await makeMatch(db, { competitionId, roundId, kickoffTime: FUTURE, homeTeam: 'Mexico', homeTeamCode: 'MEX', awayTeam: 'Canada', awayTeamCode: 'CAN' })
     await makeMatch(db, { competitionId, roundId, kickoffTime: FUTURE, homeTeam: 'Mexico', homeTeamCode: 'MEX', awayTeam: 'Winner A', awayTeamCode: null })
+    await makeMatch(db, { competitionId, roundId, kickoffTime: FUTURE, homeTeam: 'Winner B', homeTeamCode: null, awayTeam: 'Canada', awayTeamCode: 'CAN' })
     expect(await listCompetitionTeams(db, competitionId)).toEqual([
       { code: 'CAN', name: 'Canada' },
       { code: 'MEX', name: 'Mexico' },
@@ -64,6 +65,12 @@ describe('setChampionPick / getMyChampionPick', () => {
     await expect(
       setChampionPick(db, { userId, competitionId, teamCode: 'MEX', teamName: 'Mexico' }, afterKickoff),
     ).rejects.toBeInstanceOf(LockedError)
+    await client.close()
+  })
+
+  it('returns null when the user has no pick', async () => {
+    const { db, client, competitionId } = await setup()
+    expect(await getMyChampionPick(db, 'ghost', competitionId)).toBeNull()
     await client.close()
   })
 

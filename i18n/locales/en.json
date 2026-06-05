@@ -25,8 +25,14 @@
     "title": "Fixtures",
     "empty": "No fixtures yet — import them from the admin page."
   },
+  "predictions": {
+    "empty": "You haven't made any predictions yet.",
+    "none": "No predictions to show yet.",
+    "publicNote": "Only predictions for matches that have kicked off are shown."
+  },
   "champion": {
     "title": "Your champion",
+    "current": "Current pick:",
     "pick": "Pick the winner",
     "hint": "Bonus if your pick lifts the trophy · locks at the first kickoff.",
     "noPick": "No champion picked — locked."

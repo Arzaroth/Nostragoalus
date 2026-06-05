@@ -1,7 +1,7 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, lte } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
-import { match, prediction } from '../../../db/schema'
-import { JokerQuotaError, LockedError, NotFoundError, ValidationError } from '../errors'
+import { match, prediction, round } from '../../../db/schema'
+import { LockedError, NotFoundError, ValidationError } from '../errors'
 
 export interface UpsertPredictionInput {
   userId: string
@@ -55,8 +55,49 @@ export async function upsertPrediction(
   return row.id
 }
 
+// Prediction joined with enough match/round context to render a readable list.
+const predictionView = {
+  id: prediction.id,
+  userId: prediction.userId,
+  matchId: prediction.matchId,
+  roundId: prediction.roundId,
+  homeGoals: prediction.homeGoals,
+  awayGoals: prediction.awayGoals,
+  isJoker: prediction.isJoker,
+  baseTier: prediction.baseTier,
+  totalPoints: prediction.totalPoints,
+  homeTeam: match.homeTeam,
+  awayTeam: match.awayTeam,
+  homeTeamCode: match.homeTeamCode,
+  awayTeamCode: match.awayTeamCode,
+  kickoffTime: match.kickoffTime,
+  status: match.status,
+  fullTimeHome: match.fullTimeHome,
+  fullTimeAway: match.fullTimeAway,
+  roundLabel: round.label,
+  roundSort: round.sortOrder,
+}
+
 export async function getMyPredictions(db: AppDatabase, userId: string) {
-  return db.select().from(prediction).where(eq(prediction.userId, userId))
+  return db
+    .select(predictionView)
+    .from(prediction)
+    .innerJoin(match, eq(match.id, prediction.matchId))
+    .innerJoin(round, eq(round.id, prediction.roundId))
+    .where(eq(prediction.userId, userId))
+    .orderBy(match.kickoffTime)
+}
+
+// Another user's predictions are only revealed for matches that have kicked off,
+// so picks can't be copied before lock.
+export async function getUserPublicPredictions(db: AppDatabase, userId: string, now: Date = new Date()) {
+  return db
+    .select(predictionView)
+    .from(prediction)
+    .innerJoin(match, eq(match.id, prediction.matchId))
+    .innerJoin(round, eq(round.id, prediction.roundId))
+    .where(and(eq(prediction.userId, userId), lte(match.kickoffTime, now)))
+    .orderBy(match.kickoffTime)
 }
 
 export interface SetJokerInput {
@@ -78,9 +119,10 @@ export async function setJoker(db: AppDatabase, input: SetJokerInput, now: Date 
   if (preds.length === 0) throw new NotFoundError('prediction not found')
 
   if (input.isJoker) {
-    const others = await db
-      .select({ id: prediction.id })
-      .from(prediction)
+    // One joker per round: move it by clearing any existing joker in the round first.
+    await db
+      .update(prediction)
+      .set({ isJoker: false })
       .where(
         and(
           eq(prediction.userId, input.userId),
@@ -88,7 +130,6 @@ export async function setJoker(db: AppDatabase, input: SetJokerInput, now: Date 
           eq(prediction.isJoker, true),
         ),
       )
-    if (others.some((o) => o.id !== preds[0].id)) throw new JokerQuotaError()
   }
 
   await db.update(prediction).set({ isJoker: input.isJoker }).where(eq(prediction.id, preds[0].id))

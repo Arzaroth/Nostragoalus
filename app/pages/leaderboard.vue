@@ -16,9 +16,10 @@ function medal(rank: number) {
     <div v-else-if="!rows || !rows.length" class="opacity-60">{{ t('leaderboard.empty') }}</div>
 
     <div v-else class="flex flex-col gap-2">
-      <div
+      <NuxtLink
         v-for="r in rows"
         :key="r.userId"
+        :to="`/users/${r.userId}`"
         class="ng-card flex items-center gap-3 rounded-xl border px-4 py-3"
         :style="`background: var(--p-content-background); border-color: ${r.userId === meId ? 'var(--p-primary-color)' : 'var(--p-content-border-color)'}; border-width: ${r.userId === meId ? '2px' : '1px'}`"
       >
@@ -42,7 +43,8 @@ function medal(rank: number) {
           <span class="text-xl font-bold tabular-nums">{{ r.totalPoints }}</span>
           <span class="text-xs ml-1" style="color: var(--p-text-muted-color)">{{ t('leaderboard.pts') }}</span>
         </div>
-      </div>
+        <i class="pi pi-angle-right text-xs shrink-0" style="color: var(--p-text-muted-color)" />
+      </NuxtLink>
     </div>
   </div>
 </template>

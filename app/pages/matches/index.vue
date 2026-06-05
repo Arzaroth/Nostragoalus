@@ -41,7 +41,7 @@ function fmtTime(d: string) {
     <div v-else class="flex flex-col gap-8">
       <section v-for="g in grouped" :key="g.label">
         <h2 class="text-xs uppercase tracking-wider font-semibold mb-3" style="color: var(--p-text-muted-color)">{{ g.label }}</h2>
-        <div class="grid gap-3 sm:grid-cols-2">
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <div
             v-for="m in g.items"
             :key="m.id"

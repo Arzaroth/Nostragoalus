@@ -2,16 +2,18 @@
 const props = defineProps<{ home: number | null; away: number | null; disabled?: boolean }>()
 const emit = defineEmits<{ update: [value: { home: number; away: number }] }>()
 
-const home = ref(props.home ?? 0)
-const away = ref(props.away ?? 0)
+const home = ref<number | null>(props.home)
+const away = ref<number | null>(props.away)
 
 watch(
   () => [props.home, props.away],
   () => {
-    home.value = props.home ?? 0
-    away.value = props.away ?? 0
+    home.value = props.home
+    away.value = props.away
   },
 )
+
+const canSave = computed(() => home.value != null && away.value != null)
 </script>
 
 <template>
@@ -23,6 +25,7 @@ watch(
       :disabled="disabled"
       show-buttons
       button-layout="vertical"
+      placeholder="–"
       :input-style="{ width: '3rem', textAlign: 'center' }"
     />
     <span class="font-bold">:</span>
@@ -33,8 +36,15 @@ watch(
       :disabled="disabled"
       show-buttons
       button-layout="vertical"
+      placeholder="–"
       :input-style="{ width: '3rem', textAlign: 'center' }"
     />
-    <Button v-if="!disabled" label="Save" size="small" @click="emit('update', { home, away })" />
+    <Button
+      v-if="!disabled"
+      label="Save"
+      size="small"
+      :disabled="!canSave"
+      @click="canSave && emit('update', { home: home as number, away: away as number })"
+    />
   </div>
 </template>

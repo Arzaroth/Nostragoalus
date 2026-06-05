@@ -30,11 +30,11 @@ export async function ensureDefaultCompetition(db: AppDatabase): Promise<void> {
 }
 
 export async function listCompetitions(db: AppDatabase) {
-  return db.select().from(competition)
+  return db.select().from(competition).orderBy(competition.createdAt)
 }
 
 export async function listActiveCompetitions(db: AppDatabase) {
-  return db.select().from(competition).where(eq(competition.isActive, true))
+  return db.select().from(competition).where(eq(competition.isActive, true)).orderBy(competition.createdAt)
 }
 
 export async function getCompetitionBySlug(db: AppDatabase, slug: string) {

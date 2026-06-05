@@ -3,9 +3,9 @@ import { eq } from 'drizzle-orm'
 import { createTestDb } from '../../../tests/db'
 import { findRoundId } from '../sync/rounds'
 import { makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
-import { getMyPredictions, setJoker, upsertPrediction } from './service'
+import { getMyPredictions, getUserPublicPredictions, setJoker, upsertPrediction } from './service'
 import { prediction } from '../../../db/schema'
-import { JokerQuotaError, LockedError, NotFoundError, ValidationError } from '../errors'
+import { LockedError, NotFoundError, ValidationError } from '../errors'
 
 const NOW = new Date('2026-06-10T00:00:00Z')
 const FUTURE = new Date('2026-06-11T16:00:00Z')
@@ -64,6 +64,21 @@ describe('getMyPredictions', () => {
     const mine = await getMyPredictions(db, userId)
     expect(mine).toHaveLength(1)
     expect(mine[0].userId).toBe(userId)
+    expect(mine[0].homeTeam).toBeDefined()
+    await client.close()
+  })
+})
+
+describe('getUserPublicPredictions', () => {
+  it('returns only predictions for matches that have kicked off', async () => {
+    const { db, client, competitionId, roundId, userId } = await setup()
+    const locked = await makeMatch(db, { competitionId, roundId, kickoffTime: PAST })
+    const future = await makeMatch(db, { competitionId, roundId, kickoffTime: FUTURE })
+    await makePrediction(db, { userId, matchId: locked, roundId, home: 1, away: 0 })
+    await makePrediction(db, { userId, matchId: future, roundId, home: 2, away: 2 })
+    const pub = await getUserPublicPredictions(db, userId, NOW)
+    expect(pub).toHaveLength(1)
+    expect(pub[0].matchId).toBe(locked)
     await client.close()
   })
 })
@@ -80,14 +95,17 @@ describe('setJoker', () => {
     await client.close()
   })
 
-  it('enforces one joker per round', async () => {
+  it('moves the joker within a round (one per round)', async () => {
     const { db, client, competitionId, roundId, userId } = await setup()
     const m1 = await makeMatch(db, { competitionId, roundId, kickoffTime: FUTURE })
     const m2 = await makeMatch(db, { competitionId, roundId, kickoffTime: FUTURE })
     await upsertPrediction(db, { userId, matchId: m1, home: 1, away: 0 }, NOW)
     await upsertPrediction(db, { userId, matchId: m2, home: 2, away: 0 }, NOW)
     await setJoker(db, { userId, matchId: m1, isJoker: true }, NOW)
-    await expect(setJoker(db, { userId, matchId: m2, isJoker: true }, NOW)).rejects.toBeInstanceOf(JokerQuotaError)
+    await setJoker(db, { userId, matchId: m2, isJoker: true }, NOW)
+    const preds = await db.select().from(prediction)
+    expect(preds.find((p) => p.matchId === m1)!.isJoker).toBe(false)
+    expect(preds.find((p) => p.matchId === m2)!.isJoker).toBe(true)
     await client.close()
   })
 

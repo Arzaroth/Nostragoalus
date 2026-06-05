@@ -9,12 +9,31 @@ export interface MyPrediction {
   isJoker: boolean
   baseTier: string | null
   totalPoints: number | null
+  homeTeam: string
+  awayTeam: string
+  homeTeamCode: string | null
+  awayTeamCode: string | null
+  kickoffTime: string
+  status: string
+  fullTimeHome: number | null
+  fullTimeAway: number | null
+  roundLabel: string
+  roundSort: number
 }
 
 export function useMyPredictions() {
   return useQuery({
     queryKey: ['predictions'],
     queryFn: () => $fetch<{ predictions: MyPrediction[] }>('/api/predictions').then((r) => r.predictions),
+  })
+}
+
+export function useUserPredictions(userId: MaybeRefOrGetter<string>) {
+  const id = toRef(userId)
+  return useQuery({
+    queryKey: ['user-predictions', id],
+    queryFn: () =>
+      $fetch<{ user: { id: string; name: string }; predictions: MyPrediction[] }>(`/api/users/${id.value}/predictions`),
   })
 }
 

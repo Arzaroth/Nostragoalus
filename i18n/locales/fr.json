@@ -25,8 +25,14 @@
     "title": "Calendrier",
     "empty": "Aucun match — importez-les depuis la page admin."
   },
+  "predictions": {
+    "empty": "Vous n'avez pas encore de pronostics.",
+    "none": "Aucun pronostic à afficher.",
+    "publicNote": "Seuls les pronostics des matchs déjà commencés sont affichés."
+  },
   "champion": {
     "title": "Votre vainqueur",
+    "current": "Choix actuel :",
     "pick": "Choisissez le vainqueur",
     "hint": "Bonus si votre choix soulève le trophée · verrouillé au premier coup d'envoi.",
     "noPick": "Aucun vainqueur choisi — verrouillé."

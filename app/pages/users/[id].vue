@@ -1,0 +1,19 @@
+<script setup lang="ts">
+const route = useRoute()
+const { t } = useI18n()
+const { data } = await useFetch<{ user: { id: string; name: string }; predictions: MyPrediction[] }>(
+  `/api/users/${route.params.id}/predictions`,
+)
+</script>
+
+<template>
+  <div v-if="data">
+    <NuxtLink to="/leaderboard" class="text-sm inline-flex items-center gap-1" style="color: var(--p-text-muted-color)">
+      <i class="pi pi-arrow-left" /> {{ t('leaderboard.title') }}
+    </NuxtLink>
+    <h1 class="text-2xl font-bold mt-3 mb-1">{{ data.user.name }}</h1>
+    <p class="text-sm mb-5" style="color: var(--p-text-muted-color)">{{ t('predictions.publicNote') }}</p>
+    <PredictionList :predictions="data.predictions" />
+    <div v-if="!data.predictions.length" class="opacity-60">{{ t('predictions.none') }}</div>
+  </div>
+</template>
