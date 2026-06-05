@@ -1,19 +1,19 @@
-name: mpp
+name: nostragoalus
 
 services:
   db:
     image: postgres:17-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: mpp
-      POSTGRES_PASSWORD: mpp
-      POSTGRES_DB: mpp
+      POSTGRES_USER: nostragoalus
+      POSTGRES_PASSWORD: nostragoalus
+      POSTGRES_DB: nostragoalus
     ports:
       - '5432:5432'
     volumes:
-      - mpp_pgdata:/var/lib/postgresql/data
+      - nostragoalus_pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U mpp -d mpp']
+      test: ['CMD-SHELL', 'pg_isready -U nostragoalus -d nostragoalus']
       interval: 5s
       timeout: 5s
       retries: 10
@@ -23,7 +23,7 @@ services:
     build:
       context: .
       target: prod
-    image: mpp-app
+    image: nostragoalus-app
     restart: unless-stopped
     env_file:
       - path: .env
@@ -31,8 +31,8 @@ services:
     environment:
       NODE_ENV: production
       RUN_MIGRATIONS: 'true'
-      DATABASE_URL: postgres://mpp:mpp@db:5432/mpp
-      NUXT_DATABASE_URL: postgres://mpp:mpp@db:5432/mpp
+      DATABASE_URL: postgres://nostragoalus:nostragoalus@db:5432/nostragoalus
+      NUXT_DATABASE_URL: postgres://nostragoalus:nostragoalus@db:5432/nostragoalus
     ports:
       - '3000:3000'
     depends_on:
@@ -50,8 +50,8 @@ services:
         required: false
     environment:
       NODE_ENV: development
-      DATABASE_URL: postgres://mpp:mpp@db:5432/mpp
-      NUXT_DATABASE_URL: postgres://mpp:mpp@db:5432/mpp
+      DATABASE_URL: postgres://nostragoalus:nostragoalus@db:5432/nostragoalus
+      NUXT_DATABASE_URL: postgres://nostragoalus:nostragoalus@db:5432/nostragoalus
     ports:
       - '3000:3000'
     volumes:
@@ -62,4 +62,4 @@ services:
         condition: service_healthy
 
 volumes:
-  mpp_pgdata:
+  nostragoalus_pgdata:
