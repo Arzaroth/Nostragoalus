@@ -1,4 +1,4 @@
-import type { MatchDetail, NormalizedMatch, TopScorer } from '../../../shared/types/match'
+import type { MatchDetail, NormalizedBracket, NormalizedMatch, TopScorer } from '../../../shared/types/match'
 
 export interface ListFixturesOptions {
   season: string
@@ -19,6 +19,8 @@ export interface MatchDataProvider {
   getTopScorers?(opts: ListFixturesOptions): Promise<TopScorer[]>
   // Optional: per-match detail (goals, possession) — FIFA exposes this keyless.
   getMatchDetail?(opts: { stageId: string; matchId: string }): Promise<MatchDetail | null>
+  // Optional: the knockout bracket projection — FIFA exposes this keyless.
+  getBracket?(): Promise<NormalizedBracket | null>
 }
 
 export class ProviderRateLimitError extends Error {

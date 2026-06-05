@@ -163,4 +163,28 @@ describe('finalizeMatches', () => {
     expect(picks[loser]).toBe(0)
     await client.close()
   })
+
+  it('awards the champion bonus to the away winner of a final', async () => {
+    const { db, client, competitionId } = await setup()
+    const finalRound = (await findRoundId(db, competitionId, 'FINAL', null)) as string
+    const champ = await makeUser(db, 'champ-away')
+    await db.insert(championPick).values({ userId: champ, competitionId, teamCode: 'ARG', teamName: 'Argentina' })
+    await makeMatch(db, {
+      competitionId,
+      roundId: finalRound,
+      stage: 'FINAL',
+      kickoffTime: KICKOFF,
+      status: 'FINISHED',
+      fullTimeHome: 0,
+      fullTimeAway: 1,
+      homeTeamCode: 'BRA',
+      awayTeamCode: 'ARG',
+      winner: 'AWAY',
+    })
+
+    await finalizeMatches(db, NOW)
+    const picks = Object.fromEntries((await db.select().from(championPick)).map((p) => [p.userId, p.awardedPoints]))
+    expect(picks[champ]).toBe(10)
+    await client.close()
+  })
 })

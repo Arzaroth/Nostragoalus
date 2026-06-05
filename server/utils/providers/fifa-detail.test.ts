@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fifaProvider, normalizeFifaMatch, normalizeFifaMatchDetail, type FifaMatch } from './fifa'
+import { fifaProvider, normalizeFifaBracket, normalizeFifaMatch, normalizeFifaMatchDetail, type FifaMatch } from './fifa'
 import { RateLimiter } from './rate-limiter'
 
 describe('normalizeFifaMatch providerStageId', () => {
@@ -121,5 +121,86 @@ describe('fifaProvider.getMatchDetail', () => {
       rateLimiter: noWait(),
     })
     await expect(provider.getMatchDetail!({ stageId: 's', matchId: 'm' })).rejects.toThrow()
+  })
+})
+
+describe('normalizeFifaBracket', () => {
+  const data = {
+    Winner: { TeamName: [{ Locale: 'en', Description: 'Argentina' }], Abbreviation: 'ARG' },
+    KnockoutStages: [
+      {
+        SequenceOrder: 6,
+        Name: [{ Locale: 'en', Description: 'Final' }],
+        Matches: [
+          {
+            HomeTeam: { IdTeam: 'arg', TeamName: [{ Locale: 'en', Description: 'Argentina' }], Abbreviation: 'ARG' },
+            AwayTeam: { IdTeam: 'fra', TeamName: [{ Locale: 'en', Description: 'France' }], Abbreviation: 'FRA' },
+            HomeTeamScore: 3,
+            AwayTeamScore: 3,
+            HomeTeamPenaltyScore: 4,
+            AwayTeamPenaltyScore: 2,
+            Winner: 'arg',
+            MatchStatus: 0,
+            Date: '2022-12-18T15:00:00Z',
+          },
+        ],
+      },
+      {
+        SequenceOrder: 2,
+        Name: [{ Locale: 'en', Description: 'Round of 16' }],
+        Matches: [{ PlaceHolderA: '1A', PlaceHolderB: '2B', MatchStatus: 1, Date: '2022-12-03T15:00:00Z' }],
+      },
+      {
+        SequenceOrder: 4,
+        Name: [{ Locale: 'en', Description: 'Semi-final' }],
+        Matches: [
+          {
+            HomeTeam: { IdTeam: 'h', TeamName: [{ Locale: 'en', Description: 'H' }], Abbreviation: 'H' },
+            AwayTeam: { IdTeam: 'a', TeamName: [{ Locale: 'en', Description: 'A' }], Abbreviation: 'A' },
+            HomeTeamScore: 0,
+            AwayTeamScore: 1,
+            Winner: 'a',
+            MatchStatus: 0,
+            Date: '2022-12-13T19:00:00Z',
+          },
+          { Winner: 'zzz', MatchStatus: 0, Date: '2022-12-14T19:00:00Z' },
+        ],
+      },
+    ],
+  }
+
+  it('sorts rounds by sequence, resolves placeholders, maps winner/scores/pens', () => {
+    const b = normalizeFifaBracket(data)
+    expect(b.winner).toEqual({ name: 'Argentina', code: 'ARG' })
+    expect(b.rounds.map((r) => r.sequence)).toEqual([2, 4, 6])
+    const r16 = b.rounds.find((r) => r.name === 'Round of 16')!
+    const sf = b.rounds.find((r) => r.name === 'Semi-final')!
+    const final = b.rounds.find((r) => r.name === 'Final')!
+    expect(r16.matches[0]).toMatchObject({ homeTeam: '1A', awayTeam: '2B', winner: null, status: 'SCHEDULED' })
+    expect(final.matches[0]).toMatchObject({ homeTeam: 'Argentina', winner: 'HOME', homePens: 4, awayPens: 2, status: 'FINISHED' })
+    expect(sf.matches[0]).toMatchObject({ winner: 'AWAY' })
+    expect(sf.matches[1]).toMatchObject({ homeTeam: 'TBD', awayTeam: 'TBD', winner: null })
+  })
+
+  it('handles an empty bracket', () => {
+    expect(normalizeFifaBracket({})).toEqual({ winner: null, rounds: [] })
+  })
+})
+
+describe('fifaProvider.getBracket', () => {
+  it('fetches and normalizes the bracket', async () => {
+    const fetchImpl = (async () => new Response(JSON.stringify({ KnockoutStages: [], Winner: null }), { status: 200 })) as unknown as typeof fetch
+    const provider = fifaProvider({ seasonId: '255711', competitionId: '17', fetchImpl, rateLimiter: new RateLimiter(0) })
+    expect(await provider.getBracket!()).toEqual({ winner: null, rounds: [] })
+  })
+
+  it('throws on an upstream error', async () => {
+    const provider = fifaProvider({
+      seasonId: '1',
+      competitionId: '17',
+      fetchImpl: (async () => new Response('x', { status: 500 })) as unknown as typeof fetch,
+      rateLimiter: new RateLimiter(0),
+    })
+    await expect(provider.getBracket!()).rejects.toThrow()
   })
 })

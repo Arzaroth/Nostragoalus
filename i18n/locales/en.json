@@ -1,10 +1,14 @@
 {
   "nav": {
     "matches": "Matches",
+    "bracket": "Bracket",
     "ranking": "Ranking",
     "myPicks": "My picks",
     "signIn": "Sign in",
     "signOut": "Sign out"
+  },
+  "bracket": {
+    "empty": "The knockout bracket isn't available yet."
   },
   "common": {
     "loading": "Loading…",

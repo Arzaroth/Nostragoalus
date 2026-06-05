@@ -1,7 +1,10 @@
 import type {
   AppStage,
+  BracketMatch,
+  BracketRound,
   MatchDetail,
   MatchStatus,
+  NormalizedBracket,
   NormalizedGoal,
   NormalizedMatch,
   Score,
@@ -215,6 +218,75 @@ export function normalizeFifaMatchDetail(detail: FifaMatchDetailResponse): Match
   }
 }
 
+interface FifaBracketTeam {
+  IdTeam?: string | null
+  TeamName?: FifaLocalized[]
+  Abbreviation?: string | null
+}
+
+interface FifaBracketMatch {
+  HomeTeam?: FifaBracketTeam | null
+  AwayTeam?: FifaBracketTeam | null
+  PlaceHolderA?: string | null
+  PlaceHolderB?: string | null
+  HomeTeamScore?: number | null
+  AwayTeamScore?: number | null
+  HomeTeamPenaltyScore?: number | null
+  AwayTeamPenaltyScore?: number | null
+  Winner?: string | null
+  MatchStatus: number
+  Date: string
+}
+
+interface FifaBracketStage {
+  SequenceOrder: number
+  Name?: FifaLocalized[]
+  Matches?: FifaBracketMatch[]
+}
+
+export interface FifaBracketResponse {
+  KnockoutStages?: FifaBracketStage[]
+  Winner?: FifaBracketTeam | null
+}
+
+function toBracketMatch(m: FifaBracketMatch): BracketMatch {
+  const winner: BracketMatch['winner'] = m.Winner
+    ? m.Winner === m.HomeTeam?.IdTeam
+      ? 'HOME'
+      : m.Winner === m.AwayTeam?.IdTeam
+        ? 'AWAY'
+        : null
+    : null
+  return {
+    homeTeam: m.HomeTeam?.TeamName?.[0]?.Description || m.PlaceHolderA || 'TBD',
+    homeCode: m.HomeTeam?.Abbreviation || null,
+    awayTeam: m.AwayTeam?.TeamName?.[0]?.Description || m.PlaceHolderB || 'TBD',
+    awayCode: m.AwayTeam?.Abbreviation || null,
+    homeScore: m.HomeTeamScore ?? null,
+    awayScore: m.AwayTeamScore ?? null,
+    homePens: m.HomeTeamPenaltyScore ?? null,
+    awayPens: m.AwayTeamPenaltyScore ?? null,
+    winner,
+    status: mapFifaStatus(m.MatchStatus),
+    kickoffTime: m.Date,
+  }
+}
+
+export function normalizeFifaBracket(data: FifaBracketResponse): NormalizedBracket {
+  const rounds: BracketRound[] = (data.KnockoutStages ?? [])
+    .slice()
+    .sort((a, b) => a.SequenceOrder - b.SequenceOrder)
+    .map((st) => ({
+      name: st.Name?.[0]?.Description ?? '',
+      sequence: st.SequenceOrder,
+      matches: (st.Matches ?? []).map(toBracketMatch),
+    }))
+  const winner = data.Winner
+    ? { name: data.Winner.TeamName?.[0]?.Description ?? '', code: data.Winner.Abbreviation ?? null }
+    : null
+  return { winner, rounds }
+}
+
 export interface FifaOptions {
   seasonId: string
   competitionId?: string
@@ -311,6 +383,13 @@ export function fifaProvider(options: FifaOptions): MatchDataProvider {
       if (response.status === 429) throw new ProviderRateLimitError()
       if (!response.ok) throw new ProviderUpstreamError(response.status, await response.text())
       return normalizeFifaMatchDetail((await response.json()) as FifaMatchDetailResponse)
+    },
+    async getBracket() {
+      await limiter.acquire()
+      const response = await doFetch(`${baseUrl}/seasonbracket/season/${options.seasonId}?language=en`)
+      if (response.status === 429) throw new ProviderRateLimitError()
+      if (!response.ok) throw new ProviderUpstreamError(response.status, await response.text())
+      return normalizeFifaBracket((await response.json()) as FifaBracketResponse)
     },
   }
 }

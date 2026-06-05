@@ -1,10 +1,14 @@
 {
   "nav": {
     "matches": "Matchs",
+    "bracket": "Tableau",
     "ranking": "Classement",
     "myPicks": "Mes pronos",
     "signIn": "Connexion",
     "signOut": "Déconnexion"
+  },
+  "bracket": {
+    "empty": "Le tableau final n'est pas encore disponible."
   },
   "common": {
     "loading": "Chargement…",

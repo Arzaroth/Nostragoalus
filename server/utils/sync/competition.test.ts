@@ -44,6 +44,14 @@ describe('resolveCompetitionSeason', () => {
     await client.close()
   })
 
+  it('falls back to the default resolver argument when none is supplied', async () => {
+    const { db, client } = await createTestDb()
+    const id = await makeCompetition(db, { provider: 'football-data', externalSeasonId: null })
+    const comp = (await getCompetitionById(db, id)) as NonNullable<Awaited<ReturnType<typeof getCompetitionById>>>
+    expect(await resolveCompetitionSeason(db, comp)).toBeUndefined()
+    await client.close()
+  })
+
   it('returns the cached season without calling the resolver', async () => {
     const { db, client } = await createTestDb()
     const id = await makeCompetition(db, { externalSeasonId: '285023' })

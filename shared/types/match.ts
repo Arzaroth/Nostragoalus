@@ -74,3 +74,28 @@ export interface MatchDetail {
   possessionAway: number | null
   goals: NormalizedGoal[]
 }
+
+export interface BracketMatch {
+  homeTeam: string
+  homeCode: string | null
+  awayTeam: string
+  awayCode: string | null
+  homeScore: number | null
+  awayScore: number | null
+  homePens: number | null
+  awayPens: number | null
+  winner: 'HOME' | 'AWAY' | null
+  status: MatchStatus
+  kickoffTime: string
+}
+
+export interface BracketRound {
+  name: string
+  sequence: number
+  matches: BracketMatch[]
+}
+
+export interface NormalizedBracket {
+  winner: { name: string; code: string | null } | null
+  rounds: BracketRound[]
+}

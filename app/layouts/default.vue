@@ -19,6 +19,7 @@ const lang = computed({
 
 const navLinks = [
   { to: '/matches', key: 'nav.matches', icon: 'pi pi-calendar' },
+  { to: '/bracket', key: 'nav.bracket', icon: 'pi pi-sitemap' },
   { to: '/leaderboard', key: 'nav.ranking', icon: 'pi pi-trophy' },
   { to: '/predictions', key: 'nav.myPicks', icon: 'pi pi-check-circle' },
 ]
