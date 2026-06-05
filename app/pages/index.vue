@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useI18n()
 const { session } = useAuth()
 const config = useRuntimeConfig()
 </script>
@@ -11,11 +12,9 @@ const config = useRuntimeConfig()
         {{ config.public.appName }}
       </span>
     </h1>
-    <p class="text-lg max-w-md" style="color: var(--p-text-muted-color)">
-      Predict football scores, earn points for how close you get, and out-foresee your friends on the global ranking.
-    </p>
+    <p class="text-lg max-w-md" style="color: var(--p-text-muted-color)">{{ t('home.tagline') }}</p>
     <NuxtLink :to="session && session.data ? '/matches' : '/login'">
-      <Button :label="session && session.data ? 'Go to matches' : 'Get started'" icon="pi pi-arrow-right" icon-pos="right" size="large" />
+      <Button :label="session && session.data ? t('home.goToMatches') : t('home.getStarted')" icon="pi pi-arrow-right" icon-pos="right" size="large" />
     </NuxtLink>
   </div>
 </template>

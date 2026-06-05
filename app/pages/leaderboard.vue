@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useI18n()
 const { data: rows, isLoading } = useLeaderboard()
 const { session } = useAuth()
 const meId = computed(() => session?.data?.user?.id)
@@ -10,9 +11,9 @@ function medal(rank: number) {
 
 <template>
   <div>
-    <h1 class="text-2xl font-bold mb-5">Global ranking</h1>
-    <div v-if="isLoading" class="opacity-60">Loading…</div>
-    <div v-else-if="!rows || !rows.length" class="opacity-60">No scores yet — predictions get scored once matches finish.</div>
+    <h1 class="text-2xl font-bold mb-5">{{ t('leaderboard.title') }}</h1>
+    <div v-if="isLoading" class="opacity-60">{{ t('common.loading') }}</div>
+    <div v-else-if="!rows || !rows.length" class="opacity-60">{{ t('leaderboard.empty') }}</div>
 
     <div v-else class="flex flex-col gap-2">
       <div
@@ -33,13 +34,13 @@ function medal(rank: number) {
         <div class="flex-1 min-w-0">
           <div class="font-semibold truncate">
             {{ r.displayName }}
-            <span v-if="r.userId === meId" class="text-xs font-normal" style="color: var(--p-primary-color)">(you)</span>
+            <span v-if="r.userId === meId" class="text-xs font-normal" style="color: var(--p-primary-color)">{{ t('leaderboard.you') }}</span>
           </div>
-          <div class="text-xs" style="color: var(--p-text-muted-color)">{{ r.exactCount }} exact · {{ r.outcomeCount }} correct</div>
+          <div class="text-xs" style="color: var(--p-text-muted-color)">{{ r.exactCount }} {{ t('leaderboard.exact') }} · {{ r.outcomeCount }} {{ t('leaderboard.correct') }}</div>
         </div>
         <div class="text-right shrink-0">
           <span class="text-xl font-bold tabular-nums">{{ r.totalPoints }}</span>
-          <span class="text-xs ml-1" style="color: var(--p-text-muted-color)">pts</span>
+          <span class="text-xs ml-1" style="color: var(--p-text-muted-color)">{{ t('leaderboard.pts') }}</span>
         </div>
       </div>
     </div>

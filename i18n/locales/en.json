@@ -1,0 +1,55 @@
+{
+  "nav": {
+    "matches": "Matches",
+    "ranking": "Ranking",
+    "myPicks": "My picks",
+    "signIn": "Sign in",
+    "signOut": "Sign out"
+  },
+  "common": {
+    "loading": "Loading…",
+    "save": "Save",
+    "back": "Back to fixtures",
+    "refresh": "Refresh"
+  },
+  "home": {
+    "tagline": "Predict football scores, earn points for how close you get, and out-foresee your friends on the global ranking.",
+    "getStarted": "Get started",
+    "goToMatches": "Go to matches"
+  },
+  "matches": {
+    "title": "Fixtures",
+    "empty": "No fixtures yet — import them from the admin page."
+  },
+  "champion": {
+    "title": "Your champion",
+    "pick": "Pick the winner",
+    "hint": "Bonus if your pick lifts the trophy · locks at the first kickoff.",
+    "noPick": "No champion picked — locked."
+  },
+  "leaderboard": {
+    "title": "Global ranking",
+    "empty": "No scores yet — predictions get scored once matches finish.",
+    "you": "(you)",
+    "exact": "exact",
+    "correct": "correct",
+    "pts": "pts"
+  },
+  "match": {
+    "standings": "Standings",
+    "form": "Form",
+    "next": "Next",
+    "h2h": "Head-to-head",
+    "noResults": "No results yet.",
+    "noUpcoming": "No upcoming matches."
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signUp": "Create account",
+    "email": "Email",
+    "password": "Password",
+    "displayName": "Display name",
+    "needAccount": "Need an account? Sign up",
+    "haveAccount": "Already have an account? Sign in"
+  }
+}

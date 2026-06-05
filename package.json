@@ -34,6 +34,7 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.1",
+    "@nuxtjs/i18n": "^10.4.0",
     "@primevue/nuxt-module": "^4.5.5",
     "@types/pg": "^8.20.0",
     "@unocss/nuxt": "^66.7.0",

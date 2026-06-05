@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useI18n()
 const { query, setPick } = useChampion()
 const data = computed<any>(() => query.data.value)
 const selectedCode = ref<string | null>(null)
@@ -20,7 +21,7 @@ function save() {
     class="ng-card rounded-2xl border p-4 mb-6 flex flex-wrap items-center gap-3"
     style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
   >
-    <div class="flex items-center gap-2 font-semibold shrink-0"><span class="text-xl">🏆</span> Your champion</div>
+    <div class="flex items-center gap-2 font-semibold shrink-0"><span class="text-xl">🏆</span> {{ t('champion.title') }}</div>
 
     <template v-if="data.locked">
       <span v-if="data.myPick" class="flex items-center gap-2">
@@ -28,7 +29,7 @@ function save() {
         <strong>{{ data.myPick.teamName }}</strong>
         <Tag v-if="data.myPick.awardedPoints > 0" :value="`+${data.myPick.awardedPoints} pts`" severity="success" />
       </span>
-      <span v-else style="color: var(--p-text-muted-color)">No champion picked — locked.</span>
+      <span v-else style="color: var(--p-text-muted-color)">{{ t('champion.noPick') }}</span>
     </template>
 
     <template v-else>
@@ -38,14 +39,12 @@ function save() {
         option-label="name"
         option-value="code"
         filter
-        placeholder="Pick the winner"
+        :placeholder="t('champion.pick')"
         size="small"
         class="min-w-56"
       />
-      <Button label="Save" icon="pi pi-check" size="small" :disabled="!selectedCode" :loading="saving" @click="save" />
-      <span class="text-xs flex-1" style="color: var(--p-text-muted-color)">
-        Bonus if your pick lifts the trophy · locks at the first kickoff.
-      </span>
+      <Button :label="t('common.save')" icon="pi pi-check" size="small" :disabled="!selectedCode" :loading="saving" @click="save" />
+      <span class="text-xs flex-1" style="color: var(--p-text-muted-color)">{{ t('champion.hint') }}</span>
     </template>
   </div>
 </template>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useI18n()
 const { signUp } = useAuth()
 const router = useRouter()
 
@@ -26,12 +27,12 @@ async function submit() {
 
 <template>
   <div class="flex flex-col gap-3 max-w-sm mx-auto mt-12">
-    <h1 class="text-2xl font-bold">Create account</h1>
+    <h1 class="text-2xl font-bold">{{ t('auth.signUp') }}</h1>
     <Message v-if="error" severity="error">{{ error }}</Message>
-    <InputText v-model="name" placeholder="Display name" />
-    <InputText v-model="email" type="email" placeholder="Email" />
-    <Password v-model="password" placeholder="Password (min 8 chars)" :feedback="false" toggle-mask :input-style="{ width: '100%' }" />
-    <Button label="Sign up" :loading="loading" @click="submit" />
-    <NuxtLink to="/login" class="text-sm text-center">Already have an account? Sign in</NuxtLink>
+    <InputText v-model="name" :placeholder="t('auth.displayName')" />
+    <InputText v-model="email" type="email" :placeholder="t('auth.email')" />
+    <Password v-model="password" :placeholder="t('auth.password')" :feedback="false" toggle-mask :input-style="{ width: '100%' }" />
+    <Button :label="t('auth.signUp')" :loading="loading" @click="submit" />
+    <NuxtLink to="/login" class="text-sm text-center">{{ t('auth.haveAccount') }}</NuxtLink>
   </div>
 </template>

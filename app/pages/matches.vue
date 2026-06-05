@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useI18n()
 const { data: matches, isLoading } = useMatches()
 const { data: predictions } = useMyPredictions()
 const { upsert, setJoker } = usePredictionMutations()
@@ -32,12 +33,10 @@ function fmtTime(d: string) {
 
 <template>
   <div>
-    <h1 class="text-2xl font-bold mb-5">Fixtures</h1>
+    <h1 class="text-2xl font-bold mb-5">{{ t('matches.title') }}</h1>
     <ChampionPick />
-    <div v-if="isLoading" class="opacity-60">Loading fixtures…</div>
-    <div v-else-if="!matches || !matches.length" class="opacity-60">
-      No fixtures yet — import them from the <NuxtLink to="/admin" class="underline">admin page</NuxtLink>.
-    </div>
+    <div v-if="isLoading" class="opacity-60">{{ t('common.loading') }}</div>
+    <div v-else-if="!matches || !matches.length" class="opacity-60">{{ t('matches.empty') }}</div>
 
     <div v-else class="flex flex-col gap-8">
       <section v-for="g in grouped" :key="g.label">

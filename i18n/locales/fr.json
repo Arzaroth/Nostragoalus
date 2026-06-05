@@ -1,0 +1,55 @@
+{
+  "nav": {
+    "matches": "Matchs",
+    "ranking": "Classement",
+    "myPicks": "Mes pronos",
+    "signIn": "Connexion",
+    "signOut": "Déconnexion"
+  },
+  "common": {
+    "loading": "Chargement…",
+    "save": "Enregistrer",
+    "back": "Retour aux matchs",
+    "refresh": "Actualiser"
+  },
+  "home": {
+    "tagline": "Pronostiquez les scores, gagnez des points selon votre précision, et devancez vos amis au classement global.",
+    "getStarted": "Commencer",
+    "goToMatches": "Voir les matchs"
+  },
+  "matches": {
+    "title": "Calendrier",
+    "empty": "Aucun match — importez-les depuis la page admin."
+  },
+  "champion": {
+    "title": "Votre vainqueur",
+    "pick": "Choisissez le vainqueur",
+    "hint": "Bonus si votre choix soulève le trophée · verrouillé au premier coup d'envoi.",
+    "noPick": "Aucun vainqueur choisi — verrouillé."
+  },
+  "leaderboard": {
+    "title": "Classement global",
+    "empty": "Pas encore de points — les pronos sont comptés à la fin des matchs.",
+    "you": "(vous)",
+    "exact": "exacts",
+    "correct": "corrects",
+    "pts": "pts"
+  },
+  "match": {
+    "standings": "Classement",
+    "form": "Forme",
+    "next": "À venir",
+    "h2h": "Confrontations",
+    "noResults": "Aucun résultat.",
+    "noUpcoming": "Aucun match à venir."
+  },
+  "auth": {
+    "signIn": "Connexion",
+    "signUp": "Créer un compte",
+    "email": "E-mail",
+    "password": "Mot de passe",
+    "displayName": "Nom affiché",
+    "needAccount": "Pas de compte ? Inscrivez-vous",
+    "haveAccount": "Déjà un compte ? Connectez-vous"
+  }
+}

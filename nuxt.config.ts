@@ -22,7 +22,18 @@ export default defineNuxtConfig({
   modules: [
     '@primevue/nuxt-module',
     '@unocss/nuxt',
+    '@nuxtjs/i18n',
   ],
+
+  i18n: {
+    strategy: 'no_prefix',
+    defaultLocale: 'en',
+    locales: [
+      { code: 'en', name: 'English', file: 'en.json' },
+      { code: 'fr', name: 'Français', file: 'fr.json' },
+    ],
+    detectBrowserLanguage: { useCookie: true, cookieKey: 'ng_locale', redirectOn: 'no prefix' },
+  },
 
   css: ['primeicons/primeicons.css', '~/assets/css/main.css'],
 

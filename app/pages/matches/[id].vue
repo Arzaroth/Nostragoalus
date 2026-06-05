@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useI18n()
 const route = useRoute()
 const id = computed(() => route.params.id as string)
 
@@ -39,7 +40,7 @@ function fmtDate(d: string) {
 <template>
   <div v-if="m" class="flex flex-col gap-6">
     <NuxtLink to="/matches" class="text-sm inline-flex items-center gap-1" style="color: var(--p-text-muted-color)">
-      <i class="pi pi-arrow-left" /> Back to fixtures
+      <i class="pi pi-arrow-left" /> {{ t('common.back') }}
     </NuxtLink>
 
     <div class="rounded-2xl border p-6" style="background: var(--p-content-background); border-color: var(--p-content-border-color)">
@@ -72,10 +73,10 @@ function fmtDate(d: string) {
     <div v-if="insights" class="rounded-2xl border p-2 sm:p-4" style="background: var(--p-content-background); border-color: var(--p-content-border-color)">
       <Tabs value="form">
         <TabList>
-          <Tab v-if="insights.standings" value="standings">Standings</Tab>
-          <Tab value="form">Form</Tab>
-          <Tab value="next">Next</Tab>
-          <Tab v-if="insights.headToHead.length" value="h2h">H2H</Tab>
+          <Tab v-if="insights.standings" value="standings">{{ t('match.standings') }}</Tab>
+          <Tab value="form">{{ t('match.form') }}</Tab>
+          <Tab value="next">{{ t('match.next') }}</Tab>
+          <Tab v-if="insights.headToHead.length" value="h2h">{{ t('match.h2h') }}</Tab>
         </TabList>
         <TabPanels>
           <TabPanel v-if="insights.standings" value="standings">
@@ -114,7 +115,7 @@ function fmtDate(d: string) {
                     <span class="font-medium tabular-nums">{{ f.score }}</span>
                   </div>
                 </div>
-                <div v-else class="text-sm" style="color: var(--p-text-muted-color)">No results yet.</div>
+                <div v-else class="text-sm" style="color: var(--p-text-muted-color)">{{ t('match.noResults') }}</div>
               </div>
             </div>
           </TabPanel>
@@ -130,7 +131,7 @@ function fmtDate(d: string) {
                     <img v-if="flagUrl(n.opponentCode)" :src="flagUrl(n.opponentCode) || ''" class="w-4 h-4 rounded" alt="" >{{ n.opponent }}
                   </div>
                 </div>
-                <div v-else class="text-sm" style="color: var(--p-text-muted-color)">No upcoming matches.</div>
+                <div v-else class="text-sm" style="color: var(--p-text-muted-color)">{{ t('match.noUpcoming') }}</div>
               </div>
             </div>
           </TabPanel>

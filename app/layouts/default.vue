@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const { session, signOut } = useAuth()
 const { isDark, toggle } = useTheme()
+const { t, locale, locales, setLocale } = useI18n()
 const router = useRouter()
 const config = useRuntimeConfig()
 
@@ -11,10 +12,15 @@ watchEffect(() => {
   if (!selected.value && competitions.value?.length) selected.value = competitions.value[0].slug
 })
 
+const lang = computed({
+  get: () => locale.value,
+  set: (value: string) => setLocale(value as 'en' | 'fr'),
+})
+
 const navLinks = [
-  { to: '/matches', label: 'Matches', icon: 'pi pi-calendar' },
-  { to: '/leaderboard', label: 'Ranking', icon: 'pi pi-trophy' },
-  { to: '/predictions', label: 'My picks', icon: 'pi pi-check-circle' },
+  { to: '/matches', key: 'nav.matches', icon: 'pi pi-calendar' },
+  { to: '/leaderboard', key: 'nav.ranking', icon: 'pi pi-trophy' },
+  { to: '/predictions', key: 'nav.myPicks', icon: 'pi pi-check-circle' },
 ]
 
 async function onSignOut() {
@@ -55,11 +61,20 @@ async function onSignOut() {
             class="px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition hover:bg-black/5 dark:hover:bg-white/10"
             active-class="!text-[var(--p-primary-color)] bg-black/5 dark:bg-white/10"
           >
-            <i :class="l.icon" />{{ l.label }}
+            <i :class="l.icon" />{{ t(l.key) }}
           </NuxtLink>
         </nav>
 
         <div class="flex-1" />
+
+        <Select
+          v-model="lang"
+          :options="locales"
+          option-label="code"
+          option-value="code"
+          size="small"
+          class="w-20 uppercase"
+        />
 
         <Button
           :icon="isDark ? 'pi pi-sun' : 'pi pi-moon'"
@@ -76,10 +91,10 @@ async function onSignOut() {
             shape="circle"
             class="!bg-[var(--p-primary-color)] !text-[var(--p-primary-contrast-color)] font-bold"
           />
-          <Button label="Sign out" size="small" severity="secondary" text @click="onSignOut" />
+          <Button :label="t('nav.signOut')" size="small" severity="secondary" text @click="onSignOut" />
         </template>
         <NuxtLink v-else to="/login">
-          <Button label="Sign in" size="small" />
+          <Button :label="t('nav.signIn')" size="small" />
         </NuxtLink>
       </div>
 
@@ -91,7 +106,7 @@ async function onSignOut() {
           class="px-2 py-1 rounded-lg whitespace-nowrap flex items-center gap-1"
           active-class="!text-[var(--p-primary-color)]"
         >
-          <i :class="l.icon" />{{ l.label }}
+          <i :class="l.icon" />{{ t(l.key) }}
         </NuxtLink>
       </nav>
     </header>
