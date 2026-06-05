@@ -5,6 +5,7 @@
     "map": "Map",
     "ranking": "Ranking",
     "myPicks": "My picks",
+    "admin": "Admin",
     "signIn": "Sign in",
     "signOut": "Sign out"
   },
@@ -90,7 +91,9 @@
     "needAccount": "Need an account? Sign up",
     "haveAccount": "Already have an account? Sign in",
     "or": "or",
-    "google": "Continue with Google"
+    "google": "Continue with Google",
+    "sso": "Sign in with SSO",
+    "ssoEmailHint": "Enter your email above to continue with SSO."
   },
   "account": {
     "title": "Account",
@@ -114,6 +117,30 @@
     "dangerHint": "Deleting your account is irreversible — all your predictions are lost.",
     "deleteAccount": "Delete account",
     "confirmDeleteHint": "Enter your password to confirm deletion."
+  },
+  "admin": {
+    "title": "Admin",
+    "forbidden": "You don't have admin access.",
+    "sso": {
+      "title": "Single Sign-On",
+      "hint": "Configure OIDC, SAML or Google identity providers. Client secrets are envelope-encrypted at rest.",
+      "providerId": "Provider ID",
+      "domain": "Email domain",
+      "issuer": "Issuer URL",
+      "clientId": "Client ID",
+      "clientSecret": "Client secret",
+      "entryPoint": "IdP SSO URL",
+      "cert": "IdP certificate",
+      "idpMetadata": "IdP metadata XML",
+      "optionalXml": "Optional — paste IdP metadata XML",
+      "add": "Add provider",
+      "added": "Provider registered."
+    },
+    "data": {
+      "title": "Data",
+      "hint": "Import fixtures and trigger live-score / finalize tasks.",
+      "import": "Import fixtures"
+    }
   },
   "strength": {
     "veryWeak": "Very weak",

@@ -12,13 +12,21 @@ export async function requireUser(event: H3Event) {
   return user
 }
 
-export async function requireAdmin(event: H3Event) {
-  const user = await requireUser(event)
-  const admins = (useRuntimeConfig().adminEmails || '')
+function adminEmails(): string[] {
+  return (useRuntimeConfig().adminEmails || '')
     .split(',')
     .map((entry) => entry.trim().toLowerCase())
     .filter(Boolean)
-  if (!admins.includes(user.email.toLowerCase())) {
+}
+
+export async function isAdmin(event: H3Event): Promise<boolean> {
+  const user = await getSessionUser(event)
+  return !!user && adminEmails().includes(user.email.toLowerCase())
+}
+
+export async function requireAdmin(event: H3Event) {
+  const user = await requireUser(event)
+  if (!adminEmails().includes(user.email.toLowerCase())) {
     throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
   }
   return user

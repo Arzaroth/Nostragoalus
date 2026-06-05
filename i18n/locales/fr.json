@@ -5,6 +5,7 @@
     "map": "Carte",
     "ranking": "Classement",
     "myPicks": "Mes pronos",
+    "admin": "Admin",
     "signIn": "Connexion",
     "signOut": "Déconnexion"
   },
@@ -90,7 +91,9 @@
     "needAccount": "Pas de compte ? Inscrivez-vous",
     "haveAccount": "Déjà un compte ? Connectez-vous",
     "or": "ou",
-    "google": "Continuer avec Google"
+    "google": "Continuer avec Google",
+    "sso": "Connexion via SSO",
+    "ssoEmailHint": "Saisissez votre e-mail ci-dessus pour continuer via SSO."
   },
   "account": {
     "title": "Compte",
@@ -114,6 +117,30 @@
     "dangerHint": "La suppression de votre compte est irréversible — tous vos pronostics sont perdus.",
     "deleteAccount": "Supprimer le compte",
     "confirmDeleteHint": "Saisissez votre mot de passe pour confirmer la suppression."
+  },
+  "admin": {
+    "title": "Admin",
+    "forbidden": "Vous n'avez pas l'accès administrateur.",
+    "sso": {
+      "title": "Authentification unique (SSO)",
+      "hint": "Configurez des fournisseurs OIDC, SAML ou Google. Les secrets sont chiffrés au repos.",
+      "providerId": "Identifiant du fournisseur",
+      "domain": "Domaine e-mail",
+      "issuer": "URL de l'émetteur",
+      "clientId": "Client ID",
+      "clientSecret": "Secret client",
+      "entryPoint": "URL SSO de l'IdP",
+      "cert": "Certificat de l'IdP",
+      "idpMetadata": "Métadonnées XML de l'IdP",
+      "optionalXml": "Optionnel — collez le XML de métadonnées de l'IdP",
+      "add": "Ajouter le fournisseur",
+      "added": "Fournisseur enregistré."
+    },
+    "data": {
+      "title": "Données",
+      "hint": "Importer les matchs et déclencher les tâches scores en direct / clôture.",
+      "import": "Importer les matchs"
+    }
   },
   "strength": {
     "veryWeak": "Très faible",

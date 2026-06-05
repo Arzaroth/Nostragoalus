@@ -26,6 +26,16 @@ async function submit() {
 async function signInGoogle() {
   await signIn.social({ provider: 'google', callbackURL: '/matches' })
 }
+
+async function signInSSO() {
+  error.value = ''
+  if (!email.value) {
+    error.value = t('auth.ssoEmailHint')
+    return
+  }
+  const { error: err } = await signIn.sso({ email: email.value, callbackURL: '/matches' })
+  if (err) error.value = err.message ?? 'SSO failed'
+}
 </script>
 
 <template>
@@ -39,6 +49,7 @@ async function signInGoogle() {
       <div class="flex-1 border-t" style="border-color: var(--p-content-border-color)" />{{ t('auth.or') }}<div class="flex-1 border-t" style="border-color: var(--p-content-border-color)" />
     </div>
     <Button :label="t('auth.google')" icon="pi pi-google" severity="secondary" outlined @click="signInGoogle" />
+    <Button :label="t('auth.sso')" icon="pi pi-key" severity="secondary" outlined @click="signInSSO" />
     <NuxtLink to="/signup" class="text-sm text-center">{{ t('auth.needAccount') }}</NuxtLink>
   </div>
 </template>

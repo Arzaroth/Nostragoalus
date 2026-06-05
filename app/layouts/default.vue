@@ -17,13 +17,17 @@ const lang = computed({
   set: (value: string) => setLocale(value as 'en' | 'fr'),
 })
 
-const navLinks = [
+const { data: adminStatus } = useFetch('/api/admin/status')
+const isAdmin = computed(() => (adminStatus.value as { isAdmin?: boolean } | null)?.isAdmin === true)
+
+const navLinks = computed(() => [
   { to: '/matches', key: 'nav.matches', icon: 'pi pi-calendar' },
   { to: '/bracket', key: 'nav.bracket', icon: 'pi pi-sitemap' },
   { to: '/map', key: 'nav.map', icon: 'pi pi-map' },
   { to: '/leaderboard', key: 'nav.ranking', icon: 'pi pi-trophy' },
   { to: '/predictions', key: 'nav.myPicks', icon: 'pi pi-check-circle' },
-]
+  ...(isAdmin.value ? [{ to: '/admin', key: 'nav.admin', icon: 'pi pi-cog' }] : []),
+])
 
 async function onSignOut() {
   await signOut()
