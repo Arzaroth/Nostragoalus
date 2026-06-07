@@ -14,6 +14,7 @@ import type {
 } from '../../../shared/types/match'
 import { RateLimiter } from './rate-limiter'
 import { ProviderRateLimitError, ProviderUpstreamError, type ListFixturesOptions, type MatchDataProvider } from './types'
+import { minuteValue } from '../stats/insights'
 
 interface FifaLocalized {
   Locale: string
@@ -228,6 +229,9 @@ export function normalizeFifaMatchDetail(detail: FifaMatchDetailResponse): Match
       })
     }
   }
+
+  // Home goals are collected before away goals — restore match chronology.
+  goals.sort((a, b) => minuteValue(a.minute) - minuteValue(b.minute))
 
   return {
     possessionHome: detail.BallPossession?.OverallHome ?? null,

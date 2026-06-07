@@ -48,8 +48,10 @@ const dimOpacity = useTransform(bt, (v) => 0.6 * v)
   <div class="flex flex-col gap-20 sm:gap-28 pb-12">
     <!-- Banner intro: sticky while the first SCRUB px of scroll animate it from
          screen-centered (page dimmed behind) to the docked full-bleed strip. -->
+    <!-- z-40 on the wrapper: its transform creates a stacking context, so inner
+         z-indexes can't escape it — without this the z-30 dim paints over the banner. -->
     <div
-      class="relative left-1/2 -translate-x-1/2 w-screen -mt-6 -mb-8 sm:-mb-12"
+      class="relative left-1/2 -translate-x-1/2 w-screen -mt-6 -mb-8 sm:-mb-12 z-40"
       :style="{ height: reduced ? 'min(30.2vw, 40vh)' : `calc(min(30.2vw, 40vh) + ${SCRUB}px)` }"
     >
       <div class="sticky top-16 z-40 flex justify-center">
