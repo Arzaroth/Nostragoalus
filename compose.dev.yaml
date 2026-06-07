@@ -1,0 +1,51 @@
+# Dev overlay: docker compose -f compose.yaml -f compose.dev.yaml up
+# Adds the maildev mail catcher (inbox UI on http://localhost:1080), points the
+# app's SMTP at it, layers optional .env.dev, and provides the hot-reload app.
+
+services:
+  maildev:
+    image: maildev/maildev:2.2.1
+    restart: unless-stopped
+    ports:
+      - '1080:1080'
+      - '1025:1025'
+
+  app:
+    environment:
+      NUXT_SMTP_URL: smtp://maildev:1025
+    env_file:
+      - path: .env
+        required: false
+      - path: .env.dev
+        required: false
+    depends_on:
+      maildev:
+        condition: service_started
+
+  # Hot reload: docker compose -f compose.yaml -f compose.dev.yaml --profile dev up app-dev
+  app-dev:
+    profiles: ['dev']
+    build:
+      context: .
+      target: dev
+    image: nostragoalus-app:dev
+    env_file:
+      - path: .env
+        required: false
+      - path: .env.dev
+        required: false
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgres://nostragoalus:nostragoalus@db:5432/nostragoalus
+      NUXT_DATABASE_URL: postgres://nostragoalus:nostragoalus@db:5432/nostragoalus
+      NUXT_SMTP_URL: smtp://maildev:1025
+    ports:
+      - '3000:3000'
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+      maildev:
+        condition: service_started

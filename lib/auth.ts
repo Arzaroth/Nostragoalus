@@ -8,6 +8,8 @@ import { count, eq } from 'drizzle-orm'
 import { db } from '../db'
 import * as schema from '../db/schema'
 import { withEncryptedSSO } from '../server/utils/crypto/encrypted-adapter'
+import { verifyTotpCode } from '../server/utils/auth/totp'
+import { symmetricDecrypt } from 'better-auth/crypto'
 
 // Email OTP works only when an SMTP transport is configured (NUXT_SMTP_URL,
 // e.g. smtp://user:pass@host:587); TOTP authenticator 2FA needs nothing.
@@ -38,12 +40,23 @@ export const auth = betterAuth({
     changeEmail: { enabled: true },
     deleteUser: {
       enabled: true,
-      // The last admin must not be able to remove itself and orphan the instance.
-      async beforeDelete(u) {
-        if ((u as { role?: string }).role !== 'admin') return
-        const admins = await db.select({ n: count() }).from(schema.user).where(eq(schema.user.role, 'admin'))
-        if (Number(admins[0]?.n ?? 0) <= 1) {
-          throw new APIError('BAD_REQUEST', { message: 'The last admin account cannot be deleted.' })
+      // Guards: the last admin cannot orphan the instance, and 2FA holders must
+      // present a fresh TOTP code (sent as the x-totp-code header).
+      async beforeDelete(u, request) {
+        if ((u as { role?: string }).role === 'admin') {
+          const admins = await db.select({ n: count() }).from(schema.user).where(eq(schema.user.role, 'admin'))
+          if (Number(admins[0]?.n ?? 0) <= 1) {
+            throw new APIError('BAD_REQUEST', { message: 'The last admin account cannot be deleted.' })
+          }
+        }
+        if ((u as { twoFactorEnabled?: boolean | null }).twoFactorEnabled) {
+          const code = request?.headers.get('x-totp-code') ?? ''
+          const rows = await db.select().from(schema.twoFactor).where(eq(schema.twoFactor.userId, u.id)).limit(1)
+          const key = process.env.BETTER_AUTH_SECRET ?? process.env.NUXT_BETTER_AUTH_SECRET ?? ''
+          const secret = rows[0] ? await symmetricDecrypt({ key, data: rows[0].secret }) : ''
+          if (!rows[0] || !verifyTotpCode(secret, code, Date.now(), 1, 'raw')) {
+            throw new APIError('BAD_REQUEST', { message: 'A valid two-factor code is required to delete this account.' })
+          }
         }
       },
     },

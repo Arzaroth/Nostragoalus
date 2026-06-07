@@ -1,0 +1,29 @@
+# Shortcuts for the compose stacks (mise run <task>).
+
+[tasks.up]
+description = "Prod-like stack: app + db"
+run = "docker compose up -d --build --wait"
+
+[tasks.dev]
+description = "Dev stack: app + db + maildev (mail inbox on http://localhost:1080)"
+run = "docker compose -f compose.yaml -f compose.dev.yaml up -d --build --wait"
+
+[tasks.dev-hot]
+description = "Hot-reload dev server in docker + maildev"
+run = "docker compose -f compose.yaml -f compose.dev.yaml --profile dev up -d --build --wait db maildev app-dev"
+
+[tasks.down]
+description = "Stop everything (incl. dev overlay services)"
+run = "docker compose -f compose.yaml -f compose.dev.yaml --profile dev down"
+
+[tasks.logs]
+description = "Follow app logs"
+run = "docker compose logs -f app"
+
+[tasks.psql]
+description = "psql into the database"
+run = "docker compose exec db psql -U nostragoalus -d nostragoalus"
+
+[tasks.test]
+description = "Run the test suite with the coverage gate"
+run = "pnpm test:coverage"

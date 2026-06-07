@@ -338,6 +338,7 @@
     "remove": "Supprimer",
     "unnamed": "Clé sans nom",
     "signIn": "Connexion avec une clé d'accès",
-    "failed": "Échec de la connexion par clé d'accès."
+    "failed": "Échec de la connexion par clé d'accès.",
+    "gateFailed": "Mot de passe ou code incorrect."
   }
 }

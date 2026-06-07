@@ -114,6 +114,8 @@ const passkeys = ref<{ id: string; name: string | null; createdAt: string | null
 const pkBusy = ref(false)
 const pkErr = ref('')
 const pkName = ref('')
+const pkPassword = ref('')
+const pkCode = ref('')
 async function loadPasskeys() {
   const res = await authClient.passkey.listUserPasskeys()
   passkeys.value = (res.data as any[]) ?? []
@@ -123,12 +125,23 @@ async function addPasskey() {
   pkErr.value = ''
   pkBusy.value = true
   try {
+    // Sudo mode first: a passkey grants account access, so prove the password (+2FA).
+    const gate = await $fetch<{ valid: boolean }>('/api/me/confirm-credentials', {
+      method: 'POST',
+      body: { password: pkPassword.value, code: String(pkCode.value || '') },
+    })
+    if (!gate.valid) {
+      pkErr.value = t('passkeys.gateFailed')
+      return
+    }
     const res = await authClient.passkey.addPasskey({ name: pkName.value || undefined })
     if (res?.error) {
       pkErr.value = res.error.message || 'Failed'
       return
     }
     pkName.value = ''
+    pkPassword.value = ''
+    pkCode.value = ''
     await loadPasskeys()
   } finally {
     pkBusy.value = false
@@ -278,12 +291,17 @@ async function savePassword() {
 
 const confirming = ref(false)
 const deletePassword = ref('')
+const deleteCode = ref('')
 const delErr = ref('')
 const delLoading = ref(false)
 async function confirmDelete() {
   delErr.value = ''
   delLoading.value = true
-  const { error } = await deleteUser({ password: deletePassword.value })
+  const { error } = await deleteUser({
+    password: deletePassword.value,
+    // 2FA holders must also present a fresh code (enforced server-side).
+    fetchOptions: tfaEnabled.value ? { headers: { 'x-totp-code': String(deleteCode.value) } } : undefined,
+  } as Parameters<typeof deleteUser>[0])
   delLoading.value = false
   if (error) {
     delErr.value = error.message ?? 'Failed'
@@ -493,12 +511,20 @@ async function confirmDelete() {
             </div>
           </div>
           <div v-else class="text-sm" style="color: var(--p-text-muted-color)">{{ t('passkeys.none') }}</div>
-          <div class="flex items-end gap-3">
+          <div class="flex flex-wrap items-end gap-3">
             <div class="flex flex-col gap-1">
               <label class="text-xs font-medium">{{ t('passkeys.name') }}</label>
-              <InputText v-model="pkName" :placeholder="t('passkeys.namePlaceholder')" @keyup.enter="addPasskey" />
+              <InputText v-model="pkName" :placeholder="t('passkeys.namePlaceholder')" />
             </div>
-            <Button :label="t('passkeys.add')" icon="pi pi-plus" :loading="pkBusy" @click="addPasskey" />
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium">{{ t('account.currentPassword') }}</label>
+              <Password v-model="pkPassword" :feedback="false" toggle-mask />
+            </div>
+            <div v-if="tfaEnabled" class="flex flex-col gap-1">
+              <label class="text-xs font-medium">{{ t('twofa.disableCode') }}</label>
+              <InputOtp v-model="pkCode" :length="6" integer-only />
+            </div>
+            <Button :label="t('passkeys.add')" icon="pi pi-plus" :loading="pkBusy" :disabled="!pkPassword || (tfaEnabled && String(pkCode).length < 6)" @click="addPasskey" />
           </div>
         </div>
       </div>
@@ -518,9 +544,13 @@ async function confirmDelete() {
             <label class="text-sm font-medium">{{ t('account.confirmDeleteHint') }}</label>
             <Password v-model="deletePassword" :feedback="false" toggle-mask fluid :placeholder="t('account.currentPassword')" />
           </div>
+          <div v-if="tfaEnabled" class="flex flex-col gap-1">
+            <label class="text-sm font-medium">{{ t('twofa.disableCode') }}</label>
+            <InputOtp v-model="deleteCode" :length="6" integer-only />
+          </div>
           <div class="flex gap-2">
             <Button :label="t('common.cancel')" severity="secondary" text @click="confirming = false" />
-            <Button :label="t('account.deleteAccount')" severity="danger" :loading="delLoading" :disabled="!deletePassword" @click="confirmDelete" />
+            <Button :label="t('account.deleteAccount')" severity="danger" :loading="delLoading" :disabled="!deletePassword || (tfaEnabled && String(deleteCode).length < 6)" @click="confirmDelete" />
           </div>
         </div>
         <Message v-if="delErr" severity="error" size="small">{{ delErr }}</Message>

@@ -338,6 +338,7 @@
     "remove": "Remove",
     "unnamed": "Unnamed passkey",
     "signIn": "Sign in with a passkey",
-    "failed": "Passkey sign-in failed."
+    "failed": "Passkey sign-in failed.",
+    "gateFailed": "Wrong password or code."
   }
 }
