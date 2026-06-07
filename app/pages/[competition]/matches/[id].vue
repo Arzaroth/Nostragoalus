@@ -60,6 +60,51 @@ const awayGoalEvents = computed(() => (insights.value?.goals ?? []).filter((g: a
 const hasStats = computed(
   () => homeGoalEvents.value.length > 0 || awayGoalEvents.value.length > 0 || insights.value?.possession?.home != null || !!detail.value,
 )
+const hadShootout = computed(() => ((m.value?.penaltiesHome ?? 0) + (m.value?.penaltiesAway ?? 0)) > 0)
+
+function minuteVal(minute: string | null): number {
+  if (!minute) return Number.MAX_SAFE_INTEGER
+  const match2 = /^(\d+)'(?:\+(\d+))?/.exec(minute)
+  return match2 ? Number(match2[1]) * 100 + Number(match2[2] ?? 0) : Number.MAX_SAFE_INTEGER
+}
+function cardEvents(side: 'HOME' | 'AWAY') {
+  return (detail.value?.bookings ?? []).filter((b: any) => b.side === side)
+}
+// Goals + bookings interleaved chronologically for the stats-tab timeline.
+const timeline = computed(() => {
+  const goals = (insights.value?.goals ?? []).map((g: any) => ({ kind: 'goal' as const, ...g }))
+  const cards = (detail.value?.bookings ?? []).map((b: any) => ({
+    kind: b.card === 'RED' ? ('red' as const) : ('yellow' as const),
+    side: b.side,
+    minute: b.minute,
+    playerName: b.playerName,
+    teamCode: b.side === 'HOME' ? m.value?.homeTeamCode : m.value?.awayTeamCode,
+  }))
+  return [...goals, ...cards].sort((a, b) => minuteVal(a.minute) - minuteVal(b.minute))
+})
+// FIFA football-intelligence per-match stat rows (home | label | away).
+const statRows = computed(() => {
+  const h = detail.value?.stats?.home as Record<string, number | null> | null | undefined
+  const a = detail.value?.stats?.away as Record<string, number | null> | null | undefined
+  if (!h && !a) return []
+  const fmt = (v: number | null | undefined, digits = 0, suffix = '') => (v == null ? '–' : `${v.toFixed(digits)}${suffix}`)
+  const acc = (s?: Record<string, number | null> | null) =>
+    s?.passes && s?.passesCompleted ? `${((s.passesCompleted / s.passes) * 100).toFixed(0)}%` : '–'
+  const row = (label: string, key: string, digits = 0, suffix = '') => ({ label, home: fmt(h?.[key], digits, suffix), away: fmt(a?.[key], digits, suffix) })
+  return [
+    row(t('match.attempts'), 'attempts'),
+    row(t('match.onTarget'), 'onTarget'),
+    row(t('match.passes'), 'passes'),
+    { label: t('match.passAccuracy'), home: acc(h), away: acc(a) },
+    row(t('match.crosses'), 'crosses'),
+    row(t('match.corners'), 'corners'),
+    row(t('match.fouls'), 'fouls'),
+    row(t('match.offsides'), 'offsides'),
+    row(t('match.distance'), 'distanceKm', 1, ' km'),
+    row(t('match.pressures'), 'pressuresApplied'),
+    row(t('match.turnovers'), 'forcedTurnovers'),
+  ].filter((r) => r.home !== '–' || r.away !== '–')
+})
 function formColor(r: string) {
   return r === 'W' ? '#22c55e' : r === 'L' ? '#ef4444' : '#a1a1aa'
 }
@@ -96,7 +141,7 @@ function fmtDate(d: string) {
             <span>{{ new Date(m.kickoffTime).toLocaleString() }}</span>
             <Countdown :to="m.kickoffTime" />
           </div>
-          <div v-if="m.penaltiesHome !== null" class="text-sm font-semibold mt-1" style="color: var(--p-text-muted-color)">{{ m.penaltiesHome }}–{{ m.penaltiesAway }} {{ t('match.pens') }}</div>
+          <div v-if="hadShootout" class="text-sm font-semibold mt-1" style="color: var(--p-text-muted-color)">{{ m.penaltiesHome }}–{{ m.penaltiesAway }} {{ t('match.pens') }}</div>
         </div>
         <div class="flex flex-col items-center gap-2 flex-1">
           <img v-if="flagUrl(m.awayTeamCode)" :src="flagUrl(m.awayTeamCode) || ''" class="w-16 h-16 rounded-lg object-cover" alt="" >
@@ -104,12 +149,18 @@ function fmtDate(d: string) {
         </div>
       </div>
 
-      <div v-if="homeGoalEvents.length || awayGoalEvents.length" class="grid grid-cols-2 gap-4 mt-4 pt-3 border-t text-xs" style="color: var(--p-text-muted-color); border-color: var(--p-content-border-color)">
+      <div v-if="homeGoalEvents.length || awayGoalEvents.length || cardEvents('HOME').length || cardEvents('AWAY').length" class="grid grid-cols-2 gap-4 mt-4 pt-3 border-t text-xs" style="color: var(--p-text-muted-color); border-color: var(--p-content-border-color)">
         <div class="flex flex-col items-end gap-0.5 text-right">
-          <span v-for="(g, i) in homeGoalEvents" :key="i">{{ g.playerName }} {{ g.minute }}<span v-if="g.ownGoal"> (OG)</span> ⚽</span>
+          <span v-for="(g, i) in homeGoalEvents" :key="`g${i}`">{{ g.playerName }} {{ g.minute }}<span v-if="g.ownGoal"> (OG)</span> ⚽</span>
+          <span v-for="(b, i) in cardEvents('HOME')" :key="`c${i}`" class="inline-flex items-center gap-1 justify-end">
+            {{ b.playerName }} {{ b.minute }} <span class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${b.card === 'RED' ? '#ef4444' : '#eab308'}`" />
+          </span>
         </div>
         <div class="flex flex-col items-start gap-0.5">
-          <span v-for="(g, i) in awayGoalEvents" :key="i">⚽ {{ g.minute }} {{ g.playerName }}<span v-if="g.ownGoal"> (OG)</span></span>
+          <span v-for="(g, i) in awayGoalEvents" :key="`g${i}`">⚽ {{ g.minute }} {{ g.playerName }}<span v-if="g.ownGoal"> (OG)</span></span>
+          <span v-for="(b, i) in cardEvents('AWAY')" :key="`c${i}`" class="inline-flex items-center gap-1">
+            <span class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${b.card === 'RED' ? '#ef4444' : '#eab308'}`" /> {{ b.minute }} {{ b.playerName }}
+          </span>
         </div>
       </div>
     </div>
@@ -143,15 +194,23 @@ function fmtDate(d: string) {
                 <div :style="`width:${insights.possession.away}%; background: var(--p-content-border-color)`" />
               </div>
             </div>
+            <div v-if="statRows.length" class="flex flex-col text-sm mb-4">
+              <div v-for="r in statRows" :key="r.label" class="grid grid-cols-[1fr_auto_1fr] items-center gap-3 border-t py-1.5" style="border-color: var(--p-content-border-color)">
+                <span class="text-right tabular-nums font-medium">{{ r.home }}</span>
+                <span class="text-xs text-center min-w-32" style="color: var(--p-text-muted-color)">{{ r.label }}</span>
+                <span class="tabular-nums font-medium">{{ r.away }}</span>
+              </div>
+            </div>
             <div class="flex flex-col text-sm">
-              <div v-for="(g, i) in insights.goals" :key="i" class="flex items-center gap-2 border-t py-2" style="border-color: var(--p-content-border-color)">
-                <i class="pi pi-circle-fill text-xs" :style="`color:${g.side === 'HOME' ? 'var(--p-primary-color)' : 'var(--p-text-muted-color)'}`" />
-                <span class="w-10 tabular-nums" style="color: var(--p-text-muted-color)">{{ g.minute }}</span>
-                <span class="font-medium">{{ g.playerName }}</span>
-                <span v-if="g.ownGoal" class="text-xs">(OG)</span>
-                <span v-if="g.assistPlayerName" class="text-xs" style="color: var(--p-text-muted-color)">· {{ g.assistPlayerName }}</span>
+              <div v-for="(e, i) in timeline" :key="i" class="flex items-center gap-2 border-t py-2" style="border-color: var(--p-content-border-color)">
+                <span v-if="e.kind === 'goal'" class="w-3.5 text-center"><i class="pi pi-circle-fill text-xs" :style="`color:${e.side === 'HOME' ? 'var(--p-primary-color)' : 'var(--p-text-muted-color)'}`" /></span>
+                <span v-else class="w-3.5 flex justify-center"><span class="inline-block w-2.5 h-3.5 rounded-[2px]" :style="`background:${e.kind === 'red' ? '#ef4444' : '#eab308'}`" /></span>
+                <span class="w-10 tabular-nums" style="color: var(--p-text-muted-color)">{{ e.minute }}</span>
+                <span class="font-medium">{{ e.playerName }}</span>
+                <span v-if="e.kind === 'goal' && e.ownGoal" class="text-xs">(OG)</span>
+                <span v-if="e.kind === 'goal' && e.assistPlayerName" class="text-xs" style="color: var(--p-text-muted-color)">· {{ e.assistPlayerName }}</span>
                 <span class="flex-1" />
-                <span style="color: var(--p-text-muted-color)">{{ g.teamCode || g.teamName }}</span>
+                <span style="color: var(--p-text-muted-color)">{{ e.teamCode || (e.kind === 'goal' ? e.teamName : '') }}</span>
               </div>
             </div>
           </TabPanel>

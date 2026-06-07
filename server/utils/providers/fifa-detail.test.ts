@@ -530,3 +530,36 @@ describe('new provider methods', () => {
     await expect(limited.getMatchStats!({ ifesId: '133016' })).rejects.toThrow()
   })
 })
+
+describe('squad edge cases (coverage of fallbacks)', () => {
+  it('falls back to Unknown names, boolean captain, and sorts null positions/shirts last', () => {
+    const squad = normalizeFifaSquad(
+      [
+        {
+          HomeTeam: {
+            IdTeam: 'T1',
+            Players: [
+              { IdPlayer: 'n1', Captain: true, ShirtNumber: '', Position: 7 }, // no names, boolean captain, blank shirt
+              { IdPlayer: 'n2', Position: 8 }, // no names, no shirt — exercises the null/null sort tail
+              { IdPlayer: 'n3', PlayerName: [{ Locale: 'en', Description: 'Named' }], ShirtNumber: 4, Position: 1 },
+            ],
+          },
+        },
+      ],
+      'T1',
+    )
+    expect(squad[0]).toMatchObject({ playerId: 'n3', position: 'DF' })
+    const tail = squad.slice(1)
+    expect(tail.every((p) => p.name === 'Unknown' && p.position === null)).toBe(true)
+    expect(tail.find((p) => p.playerId === 'n1')!.captain).toBe(true)
+    expect(tail.find((p) => p.playerId === 'n1')!.shirtNumber).toBeNull()
+  })
+
+  it('names an away scorer with no name fields as Unknown', () => {
+    const d = normalizeFifaMatchDetail({
+      HomeTeam: { IdTeam: 'H', Players: [], Goals: [] },
+      AwayTeam: { IdTeam: 'A', Players: [{ IdPlayer: 'x9' }], Goals: [{ Type: 1, IdPlayer: 'x9', Minute: "5'", IdTeam: 'A' }] },
+    })
+    expect(d.goals[0].playerName).toBe('Unknown')
+  })
+})
