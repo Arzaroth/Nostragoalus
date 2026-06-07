@@ -195,7 +195,8 @@
     "topScorer": "Top scorer",
     "topAssister": "Top assister",
     "noResults": "No results yet.",
-    "noUpcoming": "No upcoming matches."
+    "noUpcoming": "No upcoming matches.",
+    "yourPick": "Your pick"
   },
   "auth": {
     "signIn": "Sign in",

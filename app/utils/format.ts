@@ -64,3 +64,11 @@ export function isLocked(kickoffTime: string | Date, now: number = Date.now()): 
 export function flagUrl(code: string | null | undefined): string | null {
   return code ? `https://api.fifa.com/api/v3/picture/flags-sq-3/${code}` : null
 }
+
+// "4–2" when a shootout actually happened, else null (0–0 penalty rows are sync artifacts).
+export function pensResult(m: { penaltiesHome?: number | null; penaltiesAway?: number | null }): string | null {
+  const h = m.penaltiesHome ?? null
+  const a = m.penaltiesAway ?? null
+  if (h == null || a == null || h + a <= 0) return null
+  return `${h}–${a}`
+}

@@ -66,7 +66,10 @@ function fmtTime(d: string) {
                 <span class="truncate font-medium group-hover:underline" :title="m.homeTeam">{{ m.homeTeam }}</span>
               </div>
               <div class="px-3 text-center shrink-0">
-                <div v-if="m.fullTimeHome !== null" class="font-bold tabular-nums text-lg">{{ m.fullTimeHome }}–{{ m.fullTimeAway }}</div>
+                <div v-if="m.fullTimeHome !== null" class="font-bold tabular-nums text-lg">
+                  {{ m.fullTimeHome }}–{{ m.fullTimeAway }}
+                  <span v-if="pensResult(m)" class="block text-[10px] font-normal leading-tight" style="color: var(--p-text-muted-color)">{{ pensResult(m) }} {{ t('match.pens') }}</span>
+                </div>
                 <div v-else class="text-sm" style="color: var(--p-text-muted-color)">vs</div>
                 <div v-if="m.status === 'LIVE' || m.status === 'PAUSED'" class="flex items-center justify-center gap-1 text-[10px] font-bold" style="color: #ef4444">
                   <span class="w-1.5 h-1.5 rounded-full animate-pulse" style="background: #ef4444" />LIVE

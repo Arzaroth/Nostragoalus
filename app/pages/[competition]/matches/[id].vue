@@ -81,6 +81,12 @@ function minuteVal(minute: string | null): number {
 function cardEvents(side: 'HOME' | 'AWAY') {
   return (detail.value?.bookings ?? []).filter((b: any) => b.side === side)
 }
+// Goals + cards for one side, in match order (for the hero under-team lists).
+function sideEvents(side: 'HOME' | 'AWAY') {
+  const goals = (side === 'HOME' ? homeGoalEvents.value : awayGoalEvents.value).map((g: any) => ({ kind: 'goal' as const, ...g }))
+  const cards = cardEvents(side).map((b: any) => ({ kind: 'card' as const, ...b }))
+  return [...goals, ...cards].sort((a, b) => minuteVal(a.minute) - minuteVal(b.minute))
+}
 // Goals + bookings interleaved chronologically for the stats-tab timeline.
 const timeline = computed(() => {
   const goals = (insights.value?.goals ?? []).map((g: any) => ({ kind: 'goal' as const, ...g }))
@@ -161,35 +167,35 @@ function fmtDate(d: string) {
         </div>
       </div>
 
-      <div v-if="homeGoalEvents.length || awayGoalEvents.length || cardEvents('HOME').length || cardEvents('AWAY').length" class="grid grid-cols-2 gap-4 mt-4 pt-3 border-t text-xs" style="color: var(--p-text-muted-color); border-color: var(--p-content-border-color)">
+      <div v-if="sideEvents('HOME').length || sideEvents('AWAY').length" class="grid grid-cols-2 gap-4 mt-4 pt-3 border-t text-xs" style="color: var(--p-text-muted-color); border-color: var(--p-content-border-color)">
         <div class="flex flex-col items-end gap-0.5 text-right">
-          <span v-for="(g, i) in homeGoalEvents" :key="`g${i}`">{{ g.playerName }} {{ g.minute }}<span v-if="g.ownGoal"> (OG)</span> ⚽</span>
-          <span v-for="(b, i) in cardEvents('HOME')" :key="`c${i}`" class="inline-flex items-center gap-1 justify-end">
-            {{ b.playerName }} {{ b.minute }}
-            <span v-if="b.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: #ef4444" /></span>
-            <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${b.card === 'RED' ? '#ef4444' : '#eab308'}`" />
+          <span v-for="(e, i) in sideEvents('HOME')" :key="i" class="inline-flex items-center gap-1 justify-end">
+            {{ e.playerName }} {{ e.minute }}<span v-if="e.kind === 'goal' && e.ownGoal"> (OG)</span>
+            <template v-if="e.kind === 'goal'">⚽</template>
+            <span v-else-if="e.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: #ef4444" /></span>
+            <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${e.card === 'RED' ? '#ef4444' : '#eab308'}`" />
           </span>
         </div>
         <div class="flex flex-col items-start gap-0.5">
-          <span v-for="(g, i) in awayGoalEvents" :key="`g${i}`">⚽ {{ g.minute }} {{ g.playerName }}<span v-if="g.ownGoal"> (OG)</span></span>
-          <span v-for="(b, i) in cardEvents('AWAY')" :key="`c${i}`" class="inline-flex items-center gap-1">
-            <span v-if="b.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: #ef4444" /></span>
-            <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${b.card === 'RED' ? '#ef4444' : '#eab308'}`" />
-            {{ b.minute }} {{ b.playerName }}
+          <span v-for="(e, i) in sideEvents('AWAY')" :key="i" class="inline-flex items-center gap-1">
+            <template v-if="e.kind === 'goal'">⚽</template>
+            <span v-else-if="e.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: #ef4444" /></span>
+            <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${e.card === 'RED' ? '#ef4444' : '#eab308'}`" />
+            {{ e.minute }} {{ e.playerName }}<span v-if="e.kind === 'goal' && e.ownGoal"> (OG)</span>
           </span>
         </div>
       </div>
 
       <!-- your pick: editable until kickoff -->
-      <div v-if="canPredict || myPred" class="flex flex-wrap items-center justify-center gap-3 mt-4 pt-3 border-t text-sm" style="border-color: var(--p-content-border-color)">
-        <span class="text-xs font-semibold" style="color: var(--p-text-muted-color)">{{ t('match.yourPick') }}</span>
+      <div v-if="canPredict || myPred" class="flex flex-col items-center gap-1.5 mt-4 pt-3 border-t text-sm" style="border-color: var(--p-content-border-color)">
+        <span class="text-xs font-semibold uppercase tracking-wider" style="color: var(--p-text-muted-color)">
+          {{ t('match.yourPick') }}<span v-if="myPred?.isJoker" title="Joker" style="color: #f59e0b"> ★</span>
+        </span>
         <ScoreInput v-if="canPredict" :home="myPred?.homeGoals ?? null" :away="myPred?.awayGoals ?? null" @update="savePrediction" />
         <template v-else-if="myPred">
           <span class="font-bold tabular-nums">{{ myPred.homeGoals }}–{{ myPred.awayGoals }}</span>
-          <span v-if="myPred.isJoker" title="Joker" style="color: #f59e0b">★</span>
           <span v-if="myPred.totalPoints !== null" class="text-xs font-semibold" style="color: var(--p-primary-color)">+{{ myPred.totalPoints }} pts · {{ tierLabel(myPred.baseTier) }}</span>
         </template>
-        <span v-if="canPredict && myPred?.isJoker" title="Joker" style="color: #f59e0b">★</span>
       </div>
     </div>
 
@@ -309,7 +315,7 @@ function fmtDate(d: string) {
           <TabPanel v-if="insights.headToHead.length" value="h2h">
             <div class="flex flex-col text-sm">
               <div v-for="(h, i) in insights.headToHead" :key="i" class="flex items-center justify-between border-t py-2" style="border-color: var(--p-content-border-color)">
-                <span class="font-medium">{{ h.homeTeam }} {{ h.homeScore }}–{{ h.awayScore }} {{ h.awayTeam }}</span>
+                <span class="font-medium">{{ h.homeTeam }} {{ h.homeScore }}–{{ h.awayScore }}<template v-if="pensResult(h)"> ({{ pensResult(h) }} {{ t('match.pens') }})</template> {{ h.awayTeam }}</span>
                 <span style="color: var(--p-text-muted-color)">{{ fmtDate(h.kickoffTime) }}</span>
               </div>
             </div>

@@ -123,8 +123,11 @@ function fmt(d: string) {
             <span class="truncate" :class="{ 'font-bold': m.homeTeamCode === data.team.code }">{{ m.homeTeam }}</span>
             <img v-if="flagUrl(m.homeTeamCode)" :src="flagUrl(m.homeTeamCode) || ''" class="w-5 h-5 rounded" alt="" >
           </span>
-          <span class="font-bold tabular-nums px-2 shrink-0">
-            <template v-if="m.fullTimeHome !== null">{{ m.fullTimeHome }}–{{ m.fullTimeAway }}</template>
+          <span class="font-bold tabular-nums px-2 shrink-0 text-center">
+            <template v-if="m.fullTimeHome !== null">
+              {{ m.fullTimeHome }}–{{ m.fullTimeAway }}
+              <span v-if="pensResult(m)" class="block text-[10px] font-normal leading-tight" style="color: var(--p-text-muted-color)">{{ pensResult(m) }} {{ t('match.pens') }}</span>
+            </template>
             <template v-else>vs</template>
           </span>
           <span class="flex items-center gap-2 flex-1 min-w-0">

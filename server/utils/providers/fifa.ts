@@ -312,15 +312,54 @@ export function normalizeFifaSquad(details: FifaMatchDetailResponse[], teamRef: 
   )
 }
 
+// FIFA capitalizes player surnames ("Kylian MBAPPE") but not coach names — align them.
+export function upperSurname(name: string): string {
+  const [first, ...rest] = name.split(' ')
+  return rest.length ? `${first} ${rest.join(' ').toUpperCase()}` : name
+}
+
 export function normalizeFifaCoach(details: FifaMatchDetailResponse[], teamRef: string): string | null {
   const matches = (t: FifaDetailTeam | null | undefined) => !!t && (t.IdTeam === teamRef || t.Abbreviation === teamRef)
   for (const detail of details) {
     const team = matches(detail.HomeTeam) ? detail.HomeTeam : matches(detail.AwayTeam) ? detail.AwayTeam : null
     const head = (team?.Coaches ?? []).find((c) => Number(c.Role ?? 0) === 0) ?? team?.Coaches?.[0]
     const name = head?.Name?.[0]?.Description || head?.Alias?.[0]?.Description
-    if (name) return name
+    if (name) return upperSurname(name)
   }
   return null
+}
+
+// The official seasonal squad document — real positions for everyone, bench included.
+export interface FifaSquadDoc {
+  Players?: {
+    IdPlayer?: string | null
+    PlayerName?: FifaLocalized[]
+    ShortName?: FifaLocalized[]
+    JerseyNum?: number | string | null
+    Position?: number | string | null
+  }[]
+  Officials?: { Name?: FifaLocalized[]; Role?: number | string | null }[]
+}
+
+export function normalizeFifaSquadDoc(doc: FifaSquadDoc, captains: Set<string>): { squad: SquadPlayer[]; coach: string | null } {
+  const squad: SquadPlayer[] = []
+  for (const p of doc.Players ?? []) {
+    if (!p.IdPlayer) continue
+    squad.push({
+      playerId: p.IdPlayer,
+      name: p.PlayerName?.[0]?.Description || p.ShortName?.[0]?.Description || 'Unknown',
+      shirtNumber: p.JerseyNum != null && p.JerseyNum !== '' ? Number(p.JerseyNum) : null,
+      position: FIFA_POSITIONS[Number(p.Position)] ?? null,
+      captain: captains.has(p.IdPlayer),
+    })
+  }
+  const order: Record<string, number> = { GK: 0, DF: 1, MF: 2, FW: 3 }
+  squad.sort(
+    (a, b) => (order[a.position ?? ''] ?? 4) - (order[b.position ?? ''] ?? 4) || (a.shirtNumber ?? 99) - (b.shirtNumber ?? 99),
+  )
+  const head = (doc.Officials ?? []).find((o) => Number(o.Role ?? -1) === 0) ?? doc.Officials?.[0]
+  const coach = head?.Name?.[0]?.Description ?? null
+  return { squad, coach: coach ? upperSurname(coach) : null }
 }
 
 // Season totals built by summing the per-match football-intelligence stats —
@@ -657,9 +696,31 @@ export function fifaProvider(options: FifaOptions): MatchDataProvider {
         const norm = normalizeFdhMatchStats((await r.json()) as FdhMatchStatsResponse)
         if (norm[team.IdTeam]) perMatch.push(norm[team.IdTeam])
       }
+      // Prefer the official seasonal squad doc (real positions for bench players);
+      // match-day union is the fallback, and supplies captaincy either way.
+      const unionSquad = normalizeFifaSquad(details, teamRef)
+      const captains = new Set(unionSquad.filter((p) => p.captain).map((p) => p.playerId))
+      let squad = unionSquad
+      let coach = normalizeFifaCoach(details, teamRef)
+      const teamId = details.map(sideOf).find((t) => t?.IdTeam)?.IdTeam
+      if (teamId) {
+        try {
+          await limiter.acquire()
+          const r = await doFetch(
+            `${baseUrl}/teams/${teamId}/squad?idCompetition=${options.competitionId}&idSeason=${options.seasonId}&language=en`,
+          )
+          if (r.ok) {
+            const fromDoc = normalizeFifaSquadDoc((await r.json()) as FifaSquadDoc, captains)
+            if (fromDoc.squad.length) squad = fromDoc.squad
+            if (fromDoc.coach) coach = fromDoc.coach
+          }
+        } catch {
+          // union fallback already in place
+        }
+      }
       return {
-        squad: normalizeFifaSquad(details, teamRef),
-        coach: normalizeFifaCoach(details, teamRef),
+        squad,
+        coach,
         stats: aggregateTeamMatchStats(perMatch, cards),
       }
     },

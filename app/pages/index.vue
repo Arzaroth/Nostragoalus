@@ -33,7 +33,8 @@ const tiers = [
 //   phase 2 (SCRUB→SCRUB+SCRUB2): the strip shrinks into a slim bar pinned under the header
 const SCRUB = 420
 const SCRUB2 = 360
-const MINI_H = 56
+const MINI_H = 76
+const BANNER_AR = 688 / 208
 const reduced = useReducedMotion()
 const { scrollY } = useScroll()
 const spring = { stiffness: 220, damping: 30 }
@@ -52,11 +53,19 @@ const bShadow = useTransform([t1, t2] as never, (values: never) => {
   return `0 ${(30 * a + 6 * b).toFixed(1)}px ${(90 * a + 18 * b).toFixed(1)}px rgba(8, 6, 24, ${(0.55 * a + 0.35 * b).toFixed(3)})`
 })
 const dimOpacity = useTransform(t1, (v) => 0.6 * v)
+// The image shrinks WITH the bar (keeps its aspect, no giant cover-crop in the mini state).
+const bImgWidth = useTransform(t2, (b) => `calc(100% * ${(1 - b).toFixed(4)} + ${(MINI_H * BANNER_AR).toFixed(1)}px * ${b.toFixed(4)})`)
+
+// Stars float above the dim during the intro, then settle behind the content.
+const starsFront = ref(true)
+onMounted(() => {
+  t1.on('change', (v) => (starsFront.value = v > 0.04))
+})
 </script>
 
 <template>
   <div class="flex flex-col gap-20 sm:gap-28 pb-12">
-    <StarField />
+    <StarField :style="{ zIndex: starsFront && !reduced ? 31 : -10 }" />
     <!-- Spacer reserving the docked strip + the phase-1 scroll budget; the banner
          itself is fixed so it can stay pinned (slim) for the whole page. -->
     <div
@@ -69,10 +78,10 @@ const dimOpacity = useTransform(t1, (v) => 0.6 * v)
     </div>
     <motion.div
       v-if="!reduced"
-      class="fixed left-1/2 top-16 z-40 overflow-hidden"
-      :style="{ width: bWidth, height: bHeight, transform: bTransform, borderRadius: bRadius, boxShadow: bShadow }"
+      class="fixed left-1/2 top-16 z-40 overflow-hidden flex justify-center"
+      :style="{ width: bWidth, height: bHeight, transform: bTransform, borderRadius: bRadius, boxShadow: bShadow, background: '#171436' }"
     >
-      <img src="/brand/banner-wide.svg" alt="Nostragoalus — the football oracle" class="w-full h-full object-cover block" >
+      <motion.img src="/brand/banner-wide.svg" alt="Nostragoalus — the football oracle" class="h-full object-cover block shrink-0" :style="{ width: bImgWidth }" />
     </motion.div>
     <motion.div v-if="!reduced" class="fixed inset-0 z-30 pointer-events-none" :style="{ background: '#0b0a18', opacity: dimOpacity }" />
 

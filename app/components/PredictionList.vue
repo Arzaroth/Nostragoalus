@@ -49,7 +49,7 @@ function isLocked(p: MyPrediction) {
           <template v-else>
             <div class="font-bold tabular-nums text-lg">{{ p.homeGoals }}–{{ p.awayGoals }}</div>
             <div v-if="p.fullTimeHome !== null" class="text-xs" style="color: var(--p-text-muted-color)">
-              {{ p.fullTimeHome }}–{{ p.fullTimeAway }}
+              {{ p.fullTimeHome }}–{{ p.fullTimeAway }}<template v-if="pensResult(p)"> ({{ pensResult(p) }} {{ t('match.pens') }})</template>
             </div>
           </template>
         </div>

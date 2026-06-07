@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { flagUrl, isLocked, matchStatusLabel, statusSeverity, tierLabel } from './format'
+import { flagUrl, isLocked, matchStatusLabel, pensResult, statusSeverity, tierLabel } from './format'
 import type { MatchStatus } from '../../shared/types/match'
 
 const STATUSES: MatchStatus[] = [
@@ -54,5 +54,14 @@ describe('flagUrl', () => {
     expect(flagUrl('MEX')).toContain('/flags-sq-3/MEX')
     expect(flagUrl(null)).toBeNull()
     expect(flagUrl(undefined)).toBeNull()
+  })
+})
+
+describe('pensResult', () => {
+  it('formats real shootouts and hides artifacts', () => {
+    expect(pensResult({ penaltiesHome: 4, penaltiesAway: 2 })).toBe('4–2')
+    expect(pensResult({ penaltiesHome: 0, penaltiesAway: 0 })).toBeNull()
+    expect(pensResult({ penaltiesHome: null, penaltiesAway: null })).toBeNull()
+    expect(pensResult({})).toBeNull()
   })
 })

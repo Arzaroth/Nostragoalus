@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
   fifaProvider,
+  normalizeFifaSquadDoc,
+  upperSurname,
   normalizeFdhMatchStats,
   normalizeFifaBracket,
   normalizeFifaMatch,
@@ -468,15 +470,28 @@ describe('new provider methods', () => {
       AwayTeam: { IdTeam: 'T2', Players: [], Goals: [] },
     }
     const fdh = { T1: [['Possession', 0.5, true], ['AttemptAtGoal', 20, true], ['Passes', 600, true], ['PassesCompleted', 480, true]] }
+    const squadDoc = {
+      Players: [
+        { IdPlayer: 'a', PlayerName: [{ Locale: 'en', Description: 'A' }], JerseyNum: '1', Position: '0' },
+        { IdPlayer: 'z', PlayerName: [{ Locale: 'en', Description: 'Bench DF' }], JerseyNum: 17, Position: 1 },
+      ],
+      Officials: [
+        { Name: [{ Locale: 'en', Description: 'Guy Stephan' }], Role: '1' },
+        { Name: [{ Locale: 'en', Description: 'Didier Deschamps' }], Role: '0' },
+      ],
+    }
     const payloads = [
       new Response(JSON.stringify(detail), { status: 200 }),
       new Response(JSON.stringify(fdh), { status: 200 }),
+      new Response(JSON.stringify(squadDoc), { status: 200 }),
     ]
     const fetchImpl = (async () => payloads.shift()!) as unknown as typeof fetch
     const provider = fifaProvider({ seasonId: '255711', competitionId: '17', rateLimiter: noWait(), fetchImpl })
     const res = await provider.getTeamTournament!({ teamRef: 'FRA', matches: [{ stageId: 's', matchId: 'm1' }] })
-    expect(res.coach).toBe('Didier Deschamps')
-    expect(res.squad).toHaveLength(1)
+    expect(res.coach).toBe('Didier DESCHAMPS') // head coach (Role 0), surname aligned with player style
+    expect(res.squad).toHaveLength(2) // official squad doc wins: bench player has a real position
+    expect(res.squad.find((p) => p.playerId === 'z')!.position).toBe('DF')
+    expect(res.squad.find((p) => p.playerId === 'a')!.captain).toBe(false)
     expect(res.stats).toMatchObject({ attempts: 20, passes: 600, possession: 50, yellowCards: 1, redCards: 0 })
     expect(res.stats!.passAccuracy).toBeCloseTo(80, 5)
   })
@@ -543,7 +558,7 @@ describe('normalizeFifaCoach + aggregateTeamMatchStats', () => {
       { AwayTeam: { IdTeam: 'T1', Coaches: [{ Role: 0, Name: [{ Locale: 'en', Description: 'Head Coach' }] }] } },
     ]
     expect(normalizeFifaCoach(details, 'T1')).toBe('Assistant') // first match: falls back to first coach
-    expect(normalizeFifaCoach([details[1]], 'T1')).toBe('Head Coach')
+    expect(normalizeFifaCoach([details[1]], 'T1')).toBe('Head COACH') // surname aligned to player style
     expect(normalizeFifaCoach([{}], 'T1')).toBeNull()
   })
 
@@ -561,5 +576,70 @@ describe('normalizeFifaCoach + aggregateTeamMatchStats', () => {
     expect(agg!.passAccuracy).toBeCloseTo(87.5, 5)
     expect(aggregateTeamMatchStats([], [])).toBeNull()
     expect(aggregateTeamMatchStats([m({})], [])!.passAccuracy).toBeNull()
+  })
+})
+
+describe('normalizeFifaSquadDoc + upperSurname', () => {
+  it('maps the official squad doc with real positions and head coach', () => {
+    const out = normalizeFifaSquadDoc(
+      {
+        Players: [
+          { IdPlayer: 's1', PlayerName: [{ Locale: 'en', Description: 'William SALIBA' }], JerseyNum: '17', Position: '1' },
+          { IdPlayer: 's2', ShortName: [{ Locale: 'en', Description: 'LLORIS' }], JerseyNum: 1, Position: 0 },
+          { IdPlayer: '', Position: 3 },
+          { IdPlayer: 's3', JerseyNum: '', Position: 9 },
+        ],
+      },
+      new Set(['s2']),
+    )
+    expect(out.squad.map((p) => [p.playerId, p.position, p.captain])).toEqual([
+      ['s2', 'GK', true],
+      ['s1', 'DF', false],
+      ['s3', null, false],
+    ])
+    expect(out.coach).toBeNull()
+  })
+
+  it('uppercases everything after the first name', () => {
+    expect(upperSurname('Didier Deschamps')).toBe('Didier DESCHAMPS')
+    expect(upperSurname('Louis van Gaal')).toBe('Louis VAN GAAL')
+    expect(upperSurname('Pele')).toBe('Pele')
+  })
+})
+
+describe('getTeamTournament fallback paths', () => {
+  const noWait = () => new RateLimiter(0)
+
+  it('matches the away side, skips unmatched/ifes-less details, falls back to union squad', async () => {
+    const d1 = {
+      HomeTeam: { IdTeam: 'X' },
+      AwayTeam: {
+        IdTeam: 'T9',
+        Abbreviation: 'AAA',
+        Players: [{ IdPlayer: 'q', ShortName: [{ Locale: 'en', Description: 'Q' }], ShirtNumber: 9, Position: 3 }],
+        Bookings: [{ Card: 1 }],
+        Coaches: [{ Alias: [{ Locale: 'en', Description: 'Alias Coach' }] }],
+      },
+    } // no Properties → fdh skipped
+    const d2 = { HomeTeam: { IdTeam: 'o1' }, AwayTeam: { IdTeam: 'o2' } } // not our team → skipped
+    const payloads = [
+      new Response(JSON.stringify(d1), { status: 200 }),
+      new Response(JSON.stringify(d2), { status: 200 }),
+      new Response('x', { status: 500 }), // squad doc fails → union fallback
+    ]
+    const provider = fifaProvider({ seasonId: '1', competitionId: '17', rateLimiter: noWait(), fetchImpl: (async () => payloads.shift()!) as unknown as typeof fetch })
+    const res = await provider.getTeamTournament!({ teamRef: 'AAA', matches: [{ stageId: 's', matchId: 'm1' }, { stageId: 's', matchId: 'm2' }] })
+    expect(res.squad.map((p) => p.name)).toEqual(['Q'])
+    expect(res.coach).toBe('Alias COACH')
+    expect(res.stats!.yellowCards).toBe(1)
+  })
+
+  it('squad doc with only an assistant official falls back to it; unnamed players become Unknown', () => {
+    const out = normalizeFifaSquadDoc(
+      { Players: [{ IdPlayer: 'u1', JerseyNum: 3, Position: 2 }], Officials: [{ Name: [{ Locale: 'en', Description: 'Only One' }], Role: '1' }] },
+      new Set(),
+    )
+    expect(out.squad[0].name).toBe('Unknown')
+    expect(out.coach).toBe('Only ONE')
   })
 })

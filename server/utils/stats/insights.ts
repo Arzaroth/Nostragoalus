@@ -21,6 +21,8 @@ export interface HeadToHead {
   awayTeam: string
   homeScore: number
   awayScore: number
+  penaltiesHome: number | null
+  penaltiesAway: number | null
   kickoffTime: string
 }
 
@@ -149,6 +151,8 @@ export async function getMatchInsights(db: AppDatabase, matchId: string, now: Da
       awayTeam: r.awayTeam,
       homeScore: r.fullTimeHome as number,
       awayScore: r.fullTimeAway as number,
+      penaltiesHome: r.penaltiesHome,
+      penaltiesAway: r.penaltiesAway,
       kickoffTime: new Date(r.kickoffTime).toISOString(),
     }))
 

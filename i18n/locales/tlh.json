@@ -195,7 +195,8 @@
     "topScorer": "bachwI' po'",
     "topAssister": "qachwI' po'",
     "noResults": "wej ta' tu'lu'.",
-    "noUpcoming": "may' veb tu'be'lu'."
+    "noUpcoming": "may' veb tu'be'lu'.",
+    "yourPick": "wIvlIj"
   },
   "auth": {
     "signIn": "yI'el",

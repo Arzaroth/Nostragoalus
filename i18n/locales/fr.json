@@ -195,7 +195,8 @@
     "topScorer": "Meilleur buteur",
     "topAssister": "Meilleur passeur",
     "noResults": "Aucun résultat.",
-    "noUpcoming": "Aucun match à venir."
+    "noUpcoming": "Aucun match à venir.",
+    "yourPick": "Votre prono"
   },
   "auth": {
     "signIn": "Connexion",
