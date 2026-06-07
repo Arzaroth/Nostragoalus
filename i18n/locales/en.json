@@ -310,6 +310,12 @@
     "useBackup": "Use a backup code",
     "emailCode": "Email me a code",
     "emailSent": "Code sent - check your inbox.",
-    "emailUnavailable": "Email codes are not available on this server."
+    "emailUnavailable": "Email codes are not available on this server.",
+    "secret": "Setup key (manual entry)",
+    "secretHint": "Can't scan? Enter this key manually in your authenticator app.",
+    "reveal": "Show key",
+    "copy": "Copy",
+    "copyCodes": "Copy codes",
+    "download": "Download .txt"
   }
 }

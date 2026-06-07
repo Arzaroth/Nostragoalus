@@ -54,7 +54,10 @@ async function sendEmailCode() {
     <Message v-if="error" severity="error">{{ error }}</Message>
     <Message v-if="info" severity="info">{{ info }}</Message>
 
-    <InputText v-model="code" :placeholder="mode === 'backup' ? t('twofa.backupCode') : t('twofa.code')" class="text-center tracking-widest" autofocus @keyup.enter="verify" />
+    <div v-if="mode !== 'backup'" class="flex justify-center">
+      <InputOtp v-model="code" :length="6" integer-only @keyup.enter="verify" />
+    </div>
+    <InputText v-else v-model="code" :placeholder="t('twofa.backupCode')" class="text-center tracking-widest" autofocus @keyup.enter="verify" />
     <label v-if="mode !== 'backup'" class="flex items-center gap-2 text-sm" style="color: var(--p-text-muted-color)">
       <Checkbox v-model="trustDevice" binary /> {{ t('twofa.trust') }}
     </label>

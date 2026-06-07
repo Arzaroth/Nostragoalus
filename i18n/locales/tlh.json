@@ -310,6 +310,12 @@
     "useBackup": "toD ngoq vIlo'",
     "emailCode": "jabbI'ID ngoq HIngeH",
     "emailSent": "ngoq ngeHlu'ta' - jabbI'IDlIj yIlegh.",
-    "emailUnavailable": "jabbI'ID ngoqmey lo'laHbe' jabwI'vam."
+    "emailUnavailable": "jabbI'ID ngoqmey lo'laHbe' jabwI'vam.",
+    "secret": "cher ngoq (ghop qon)",
+    "secretHint": "QR Daleghbe'chugh, ngoqvam yIqon App-Daq.",
+    "reveal": "ngoq yIcha'",
+    "copy": "yIvelqa'",
+    "copyCodes": "ngoqmey tIvelqa'",
+    "download": ".txt yISuq"
   }
 }

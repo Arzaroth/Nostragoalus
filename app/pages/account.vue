@@ -12,7 +12,30 @@ const currentUser = computed(() => session.value?.data?.user)
 const tfaPassword = ref('')
 const tfaCode = ref('')
 const tfaQr = ref('')
+const tfaUri = ref('')
+const tfaSecretShown = ref(false)
+const tfaCopied = ref('')
 const tfaBackup = ref<string[]>([])
+const tfaSecret = computed(() => {
+  try {
+    return new URL(tfaUri.value).searchParams.get('secret') ?? ''
+  } catch {
+    return ''
+  }
+})
+async function copyText(text: string, which: string) {
+  await navigator.clipboard.writeText(text)
+  tfaCopied.value = which
+  setTimeout(() => (tfaCopied.value = ''), 1500)
+}
+function downloadBackupCodes() {
+  const blob = new Blob([tfaBackup.value.join('\n') + '\n'], { type: 'text/plain' })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = 'nostragoalus-backup-codes.txt'
+  a.click()
+  URL.revokeObjectURL(a.href)
+}
 const tfaStep = ref<'idle' | 'verify' | 'done'>('idle')
 const tfaErr = ref('')
 const tfaBusy = ref(false)
@@ -28,7 +51,8 @@ async function startEnable2fa() {
       return
     }
     tfaBackup.value = res.data?.backupCodes ?? []
-    tfaQr.value = await QRCode.toDataURL(res.data?.totpURI ?? '', { margin: 1, width: 192 })
+    tfaUri.value = res.data?.totpURI ?? ''
+    tfaQr.value = await QRCode.toDataURL(tfaUri.value, { margin: 1, width: 192 })
     tfaStep.value = 'verify'
   } finally {
     tfaBusy.value = false
@@ -282,8 +306,12 @@ async function confirmDelete() {
             <div class="flex items-center gap-2 text-sm font-medium"><i class="pi pi-shield" style="color: #22c55e" /> {{ t('twofa.enabled') }}</div>
             <div v-if="tfaBackup.length" class="rounded-xl border p-3" style="border-color: var(--p-content-border-color)">
               <div class="text-xs mb-2" style="color: var(--p-text-muted-color)">{{ t('twofa.backupHintLong') }}</div>
-              <div class="grid grid-cols-2 sm:grid-cols-5 gap-1 font-mono text-xs">
+              <div class="grid grid-cols-2 sm:grid-cols-5 gap-1 font-mono text-xs mb-3">
                 <span v-for="c in tfaBackup" :key="c">{{ c }}</span>
+              </div>
+              <div class="flex gap-2">
+                <Button :icon="tfaCopied === 'codes' ? 'pi pi-check' : 'pi pi-copy'" :label="t('twofa.copyCodes')" size="small" severity="secondary" outlined @click="copyText(tfaBackup.join('\n'), 'codes')" />
+                <Button icon="pi pi-download" :label="t('twofa.download')" size="small" severity="secondary" outlined @click="downloadBackupCodes" />
               </div>
             </div>
             <div class="flex items-end gap-3">
@@ -297,16 +325,21 @@ async function confirmDelete() {
 
           <template v-else-if="tfaStep === 'verify'">
             <p class="text-sm" style="color: var(--p-text-muted-color)">{{ t('twofa.scan') }}</p>
-            <img :src="tfaQr" alt="TOTP QR" class="w-44 h-44 rounded-lg bg-white p-2 self-start" >
-            <div v-if="tfaBackup.length" class="rounded-xl border p-3" style="border-color: var(--p-content-border-color)">
-              <div class="text-xs mb-2" style="color: var(--p-text-muted-color)">{{ t('twofa.backupHintLong') }}</div>
-              <div class="grid grid-cols-2 sm:grid-cols-5 gap-1 font-mono text-xs">
-                <span v-for="c in tfaBackup" :key="c">{{ c }}</span>
+            <div class="flex flex-col sm:flex-row gap-6 items-start">
+              <img :src="tfaQr" alt="TOTP QR" class="w-44 h-44 rounded-lg bg-white p-2 shrink-0" >
+              <div class="flex flex-col gap-2 min-w-0">
+                <label class="text-xs font-medium">{{ t('twofa.secret') }}</label>
+                <div class="flex items-center gap-1">
+                  <code class="px-3 py-2 rounded-lg border font-mono text-sm tracking-wider break-all" style="border-color: var(--p-content-border-color)">{{ tfaSecretShown ? tfaSecret : '••••••••••••••••' }}</code>
+                  <Button :icon="tfaSecretShown ? 'pi pi-eye-slash' : 'pi pi-eye'" text rounded severity="secondary" :aria-label="t('twofa.reveal')" @click="tfaSecretShown = !tfaSecretShown" />
+                  <Button :icon="tfaCopied === 'secret' ? 'pi pi-check' : 'pi pi-copy'" text rounded severity="secondary" :aria-label="t('twofa.copy')" @click="copyText(tfaSecret, 'secret')" />
+                </div>
+                <p class="text-xs" style="color: var(--p-text-muted-color)">{{ t('twofa.secretHint') }}</p>
               </div>
             </div>
-            <div class="flex items-center gap-3">
-              <InputText v-model="tfaCode" :placeholder="t('twofa.code')" class="w-40 text-center tracking-widest" @keyup.enter="confirmEnable2fa" />
-              <Button :label="t('twofa.confirm')" :loading="tfaBusy" :disabled="!tfaCode.trim()" @click="confirmEnable2fa" />
+            <div class="flex items-center gap-3 flex-wrap">
+              <InputOtp v-model="tfaCode" :length="6" integer-only @keyup.enter="confirmEnable2fa" />
+              <Button :label="t('twofa.confirm')" :loading="tfaBusy" :disabled="!tfaCode || String(tfaCode).length < 6" @click="confirmEnable2fa" />
             </div>
           </template>
 

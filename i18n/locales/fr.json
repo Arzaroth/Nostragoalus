@@ -310,6 +310,12 @@
     "useBackup": "Utiliser un code de secours",
     "emailCode": "M'envoyer un code par e-mail",
     "emailSent": "Code envoyé : vérifiez votre boîte mail.",
-    "emailUnavailable": "Les codes par e-mail ne sont pas disponibles sur ce serveur."
+    "emailUnavailable": "Les codes par e-mail ne sont pas disponibles sur ce serveur.",
+    "secret": "Clé de configuration (saisie manuelle)",
+    "secretHint": "Impossible de scanner ? Saisissez cette clé manuellement dans votre application.",
+    "reveal": "Afficher la clé",
+    "copy": "Copier",
+    "copyCodes": "Copier les codes",
+    "download": "Télécharger .txt"
   }
 }
