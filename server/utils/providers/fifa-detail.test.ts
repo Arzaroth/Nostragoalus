@@ -102,6 +102,7 @@ describe('normalizeFifaMatchDetail', () => {
       cards: { home: { yellow: 0, red: 0 }, away: { yellow: 0, red: 0 } },
       goals: [],
       bookings: [],
+      substitutions: [],
       ifesId: null,
       homeTeamId: null,
       awayTeamId: null,
@@ -140,6 +141,7 @@ describe('fifaProvider.getMatchDetail', () => {
       cards: { home: { yellow: 0, red: 0 }, away: { yellow: 0, red: 0 } },
       goals: [],
       bookings: [],
+      substitutions: [],
       ifesId: null,
       homeTeamId: 'H',
       awayTeamId: 'A',
@@ -572,6 +574,42 @@ describe('new provider methods', () => {
     const d = await provider.getMatchDetail!({ stageId: 's', matchId: 'm' })
     expect(d!.bookings[0]).toMatchObject({ playerName: 'Julian Nagelsmann', coach: true, playerId: 'c9' })
     expect(d!.bookings[1]).toMatchObject({ playerName: 'Unknown', coach: false })
+  })
+
+  it('substitutions normalize from both sides with sparse fields', async () => {
+    const detail = {
+      HomeTeam: {
+        IdTeam: 't1', TeamName: [{ Locale: 'en', Description: 'France' }], Players: [], Goals: [], Bookings: [],
+        Substitutions: [
+          { Minute: "72'", IdPlayerOff: 'a', IdPlayerOn: 'b', PlayerOffName: [{ Locale: 'en', Description: 'ALMOEZ ALI' }], PlayerOnName: [{ Locale: 'en', Description: 'MOHAMMED MUNTARI' }] },
+          { Minute: null, IdPlayerOff: null, IdPlayerOn: null }, // sparse: every fallback
+        ],
+      },
+      AwayTeam: {
+        IdTeam: 't2', TeamName: [{ Locale: 'en', Description: 'Brazil' }], Players: [], Goals: [], Bookings: [],
+        Substitutions: [{ Minute: "60'", IdPlayerOff: 'c', IdPlayerOn: 'd', PlayerOffName: [{ Locale: 'en', Description: 'OFF AWAY' }], PlayerOnName: [{ Locale: 'en', Description: 'ON AWAY' }] }],
+      },
+      Properties: {},
+    }
+    const provider = fifaProvider({ seasonId: '1', competitionId: '17', rateLimiter: noWait(), fetchImpl: okJson(detail) })
+    const d = await provider.getMatchDetail!({ stageId: 's', matchId: 'm' })
+    expect(d!.substitutions.map((x) => [x.minute, x.playerOffName, x.playerOnName, x.side])).toEqual([
+      ["60'", 'OFF AWAY', 'ON AWAY', 'AWAY'],
+      ["72'", 'ALMOEZ ALI', 'MOHAMMED MUNTARI', 'HOME'],
+      [null, '?', '?', 'HOME'], // minute-less sorts last
+    ])
+  })
+
+  it('coach booking with no coach roster falls back to "Coach"; alias name path', async () => {
+    const mk = (coaches: unknown) => ({
+      HomeTeam: { IdTeam: 't1', TeamName: [{ Locale: 'en', Description: 'X' }], Players: [], Goals: [], Coaches: coaches, Bookings: [{ Card: 1, Minute: "10'", IdPlayer: null, IdCoach: 'c1' }] },
+      AwayTeam: { IdTeam: 't2', TeamName: [{ Locale: 'en', Description: 'Y' }], Players: [], Goals: [], Bookings: [] },
+      Properties: {},
+    })
+    const noRoster = fifaProvider({ seasonId: '1', competitionId: '17', rateLimiter: noWait(), fetchImpl: okJson(mk(undefined)) })
+    expect((await noRoster.getMatchDetail!({ stageId: 's', matchId: 'm' }))!.bookings[0].playerName).toBe('Coach')
+    const aliasOnly = fifaProvider({ seasonId: '1', competitionId: '17', rateLimiter: noWait(), fetchImpl: okJson(mk([{ Alias: [{ Locale: 'en', Description: 'Le Boss' }], Role: 0 }])) })
+    expect((await aliasOnly.getMatchDetail!({ stageId: 's', matchId: 'm' }))!.bookings[0].playerName).toBe('Le Boss')
   })
 
   it('getMatchStats normalizes fdh stats and returns null on failure', async () => {

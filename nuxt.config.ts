@@ -69,7 +69,20 @@ export default defineNuxtConfig({
 
   nitro: {
     preset: 'node-server',
-    experimental: { tasks: true, websocket: true },
+    experimental: { tasks: true, websocket: true, openAPI: true },
+    openAPI: {
+      production: 'runtime',
+      meta: {
+        title: 'Nostragoalus API',
+        description: 'The HTTP API behind the prediction game: fixtures, predictions, leaderboards, teams, live match data. Session-cookie authenticated (better-auth); admin routes need an admin session.',
+        version: '1.0',
+      },
+      route: '/_docs/openapi.json',
+      ui: {
+        scalar: { route: '/_docs/api' },
+        swagger: false,
+      },
+    },
     scheduledTasks: {
       // Live score polling self-gates on the live window, so off-window ticks make no API calls.
       '*/2 * * * *': ['scores:poll'],

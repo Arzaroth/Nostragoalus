@@ -1,5 +1,6 @@
 import type {
   AppStage,
+  SubstitutionEvent,
   BookingEvent,
   BracketMatch,
   BracketRound,
@@ -169,6 +170,14 @@ interface FifaDetailBooking {
   Minute?: string | null
 }
 
+interface FifaDetailSubstitution {
+  Minute?: string | null
+  IdPlayerOff?: string | null
+  IdPlayerOn?: string | null
+  PlayerOffName?: FifaLocalized[]
+  PlayerOnName?: FifaLocalized[]
+}
+
 interface FifaDetailTeam {
   IdTeam?: string | null
   TeamName?: FifaLocalized[]
@@ -176,6 +185,7 @@ interface FifaDetailTeam {
   Players?: FifaDetailPlayer[]
   Goals?: FifaDetailGoal[]
   Bookings?: FifaDetailBooking[]
+  Substitutions?: FifaDetailSubstitution[]
   Coaches?: { Name?: FifaLocalized[]; Alias?: FifaLocalized[]; Role?: number | string | null }[]
 }
 
@@ -270,6 +280,24 @@ export function normalizeFifaMatchDetail(detail: FifaMatchDetailResponse): Match
   }
   bookings.sort((a, b) => minuteValue(a.minute) - minuteValue(b.minute))
 
+  const substitutions: SubstitutionEvent[] = []
+  for (const [side, team] of [
+    ['HOME', detail.HomeTeam],
+    ['AWAY', detail.AwayTeam],
+  ] as const) {
+    for (const sub of team?.Substitutions ?? []) {
+      substitutions.push({
+        side,
+        minute: sub.Minute ?? null,
+        playerOffId: sub.IdPlayerOff ?? null,
+        playerOffName: sub.PlayerOffName?.[0]?.Description ?? '?',
+        playerOnId: sub.IdPlayerOn ?? null,
+        playerOnName: sub.PlayerOnName?.[0]?.Description ?? '?',
+      })
+    }
+  }
+  substitutions.sort((a, b) => minuteValue(a.minute) - minuteValue(b.minute))
+
   return {
     possessionHome: detail.BallPossession?.OverallHome ?? null,
     possessionAway: detail.BallPossession?.OverallAway ?? null,
@@ -278,6 +306,7 @@ export function normalizeFifaMatchDetail(detail: FifaMatchDetailResponse): Match
     cards: { home: countCards(detail.HomeTeam?.Bookings), away: countCards(detail.AwayTeam?.Bookings) },
     goals,
     bookings,
+    substitutions,
     ifesId: detail.Properties?.IdIFES ?? null,
     homeTeamId: detail.HomeTeam?.IdTeam ?? null,
     awayTeamId: detail.AwayTeam?.IdTeam ?? null,

@@ -2,6 +2,7 @@ import type {
   AppStage,
   BookingEvent,
   MatchDetail,
+  SubstitutionEvent,
   MatchStatus,
   NormalizedGoal,
   NormalizedMatch,
@@ -415,6 +416,21 @@ export function uefaProvider(options: UefaOptions): MatchDataProvider {
           coach: e.primaryActor?.type === 'COACH',
         })
       }
+      const substitutions: SubstitutionEvent[] = []
+      for (const e of events) {
+        if (e.type !== 'SUBSTITUTION') continue
+        const side = sideOf(e)
+        if (!side) continue
+        substitutions.push({
+          side,
+          minute: eventMinute(e),
+          playerOffId: actorId(e.primaryActor?.person),
+          playerOffName: actorName(e.primaryActor?.person),
+          playerOnId: actorId(e.secondaryActor?.person),
+          playerOnName: e.secondaryActor?.person ? actorName(e.secondaryActor.person) : '?',
+        })
+      }
+
       // The events feed arrives newest-first - present both lists chronologically.
       const minuteRank = (min: string | null) => {
         const m = /^(\d+)'(?:\+(\d+))?/.exec(min ?? '')
@@ -422,6 +438,7 @@ export function uefaProvider(options: UefaOptions): MatchDataProvider {
       }
       goals.sort((a, b) => minuteRank(a.minute) - minuteRank(b.minute))
       bookings.sort((a, b) => minuteRank(a.minute) - minuteRank(b.minute))
+      substitutions.sort((a, b) => minuteRank(a.minute) - minuteRank(b.minute))
 
       const countCards = (side: 'HOME' | 'AWAY') => ({
         yellow: bookings.filter((b) => b.side === side && b.card !== 'RED').length,
@@ -437,6 +454,7 @@ export function uefaProvider(options: UefaOptions): MatchDataProvider {
         cards: { home: countCards('HOME'), away: countCards('AWAY') },
         goals,
         bookings,
+        substitutions,
         // UEFA has no separate stats id - the match id doubles as the stats handle.
         ifesId: matchId,
         homeTeamId: homeId,

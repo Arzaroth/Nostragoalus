@@ -84,6 +84,15 @@ export interface BookingEvent {
   coach?: boolean
 }
 
+export interface SubstitutionEvent {
+  side: 'HOME' | 'AWAY'
+  minute: string | null
+  playerOffId: string | null
+  playerOffName: string
+  playerOnId: string | null
+  playerOnName: string
+}
+
 export interface MatchDetail {
   possessionHome: number | null
   possessionAway: number | null
@@ -92,6 +101,7 @@ export interface MatchDetail {
   cards: { home: TeamCards; away: TeamCards }
   goals: NormalizedGoal[]
   bookings: BookingEvent[]
+  substitutions: SubstitutionEvent[]
   ifesId: string | null
   homeTeamId: string | null
   awayTeamId: string | null

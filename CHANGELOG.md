@@ -22,7 +22,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 - Euro matches synced before the stats feed landed had no possession - backfilled.
 
 ### Added (UX)
-- Match view remembers its open tab in the URL (survives refresh, shareable).
+- Match view remembers its open tab in the URL (survives refresh, shareable); stats is the default tab when available.
+- Substitutions on the match timeline (on/off players, both providers) with persisted toggles to hide subs or bookings.
+- Auto-generated API documentation at /_docs/api (OpenAPI via Nitro, Scalar UI), linked from the footer.
+- About: VueUse, Nuxt I18n and node-postgres added to the stack.
 - Fixture search is accent-insensitive and matches country codes ("Tur" finds Türkiye, "FRA" finds France).
 - About: theme-aware mise logo, official TanStack icon, project homepages preferred over GitHub links.
 

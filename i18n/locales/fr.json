@@ -197,7 +197,11 @@
     "noResults": "Aucun résultat.",
     "noUpcoming": "Aucun match à venir.",
     "yourPick": "Votre prono",
-    "coachCard": "Carton pour l'encadrement"
+    "coachCard": "Carton pour l'encadrement",
+    "subs": "Remplacements",
+    "bookings": "Cartons",
+    "toggleSubs": "Afficher ou masquer les remplacements",
+    "toggleBookings": "Afficher ou masquer les cartons"
   },
   "auth": {
     "signIn": "Connexion",
@@ -354,7 +358,7 @@
     "changelogTitle": "Journal des modifications"
   },
   "footer": {
-    "builtWith": "Fait avec ♥ par des fans de foot.",
+    "builtWith": "Fait avec ♥️ depuis la 🇫🇷",
     "source": "Code source"
   },
   "faq": {

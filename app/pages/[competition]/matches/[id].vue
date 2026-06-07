@@ -94,6 +94,10 @@ function cardEvents(side: 'HOME' | 'AWAY') {
 // once both have settled so events don't pop in piecemeal.
 const eventsReady = computed(() => insightsStatus.value !== 'pending' && detailStatus.value !== 'pending')
 // Goals + bookings interleaved chronologically.
+// Timeline visibility toggles, remembered across visits.
+const showBookings = useLocalStorage('ng-timeline-bookings', true)
+const showSubs = useLocalStorage('ng-timeline-subs', true)
+
 const timeline = computed(() => {
   const goals = (insights.value?.goals ?? []).map((g: any) => ({ kind: 'goal' as const, ...g }))
   const cards = (detail.value?.bookings ?? []).map((b: any) => ({
@@ -105,8 +109,20 @@ const timeline = computed(() => {
     coach: !!b.coach,
     teamCode: b.side === 'HOME' ? m.value?.homeTeamCode : m.value?.awayTeamCode,
   }))
-  return [...goals, ...cards].sort((a, b) => minuteVal(a.minute) - minuteVal(b.minute))
+  const subs = (detail.value?.substitutions ?? []).map((sub: any) => ({
+    kind: 'sub' as const,
+    side: sub.side,
+    minute: sub.minute,
+    playerName: sub.playerOnName,
+    offName: sub.playerOffName,
+  }))
+  return [
+    ...goals,
+    ...(showBookings.value ? cards : []),
+    ...(showSubs.value ? subs : []),
+  ].sort((a, b) => minuteVal(a.minute) - minuteVal(b.minute))
 })
+const hasTimelineExtras = computed(() => (detail.value?.bookings?.length ?? 0) > 0 || (detail.value?.substitutions?.length ?? 0) > 0)
 // FIFA football-intelligence per-match stat rows (home | label | away).
 const statRows = computed(() => {
   const h = detail.value?.stats?.home as Record<string, number | null> | null | undefined
@@ -131,9 +147,13 @@ const statRows = computed(() => {
   ].filter((r) => r.home !== '–' || r.away !== '–')
 })
 // The open tab lives in the URL so a refresh (or a shared link) lands on it.
-const activeTab = ref((route.query.tab as string) || 'form')
+const activeTab = ref((route.query.tab as string) || 'stats')
+// No stats (upcoming match) and no explicit choice: land on form instead.
+watch([() => detailStatus.value, () => insightsStatus.value], () => {
+  if (!route.query.tab && eventsReady.value && !hasStats.value && activeTab.value === 'stats') activeTab.value = 'form'
+})
 watch(activeTab, (tab) => {
-  router.replace({ query: { ...route.query, tab: tab === 'form' ? undefined : tab } })
+  router.replace({ query: { ...route.query, tab: tab === 'stats' ? undefined : tab } })
 })
 
 function formColor(r: string) {
@@ -182,11 +202,18 @@ function fmtDate(d: string) {
 
       <!-- One laced timeline: each event is a row, on its team's side - the whole
            match reads top-to-bottom at a glance. -->
-      <div v-if="eventsReady && timeline.length" class="grid grid-cols-[1fr_auto_1fr] gap-x-2 gap-y-0.5 mt-4 pt-3 border-t text-xs items-center" style="color: var(--p-text-muted-color); border-color: var(--p-content-border-color)">
+      <div v-if="eventsReady && hasTimelineExtras" class="flex justify-end gap-2 mt-3 text-xs">
+        <button type="button" class="px-2 py-0.5 rounded-full border transition-opacity" :class="showBookings ? '' : 'opacity-40'" style="border-color: var(--p-content-border-color); color: var(--p-text-muted-color)" :title="t('match.toggleBookings')" @click="showBookings = !showBookings">🟨 {{ t('match.bookings') }}</button>
+        <button type="button" class="px-2 py-0.5 rounded-full border transition-opacity" :class="showSubs ? '' : 'opacity-40'" style="border-color: var(--p-content-border-color); color: var(--p-text-muted-color)" :title="t('match.toggleSubs')" @click="showSubs = !showSubs">🔄 {{ t('match.subs') }}</button>
+      </div>
+      <div v-if="eventsReady && timeline.length" class="grid grid-cols-[1fr_auto_1fr] gap-x-2 gap-y-0.5 mt-2 pt-3 border-t text-xs items-center" style="color: var(--p-text-muted-color); border-color: var(--p-content-border-color)">
         <template v-for="(e, i) in timeline" :key="i">
           <span class="inline-flex items-center gap-1 justify-end text-right">
             <template v-if="e.side === 'HOME'">
-              {{ formatPlayerName(e.playerName) }}<span v-if="e.kind === 'goal' && e.ownGoal"> (OG)</span><span v-if="e.kind === 'card' && e.coach" :title="t('match.coachCard')"> 📋</span>
+              <template v-if="e.kind === 'sub'"><span style="color: #22c55e">▲</span> {{ formatPlayerName(e.playerName) }} <span class="opacity-60">· {{ formatPlayerName(e.offName) }} <span style="color: #ef4444">▼</span></span> 🔄</template>
+              <template v-else>
+                {{ formatPlayerName(e.playerName) }}<span v-if="e.kind === 'goal' && e.ownGoal"> (OG)</span><span v-if="e.kind === 'card' && e.coach" :title="t('match.coachCard')"> 📋</span>
+              </template>
               <template v-if="e.kind === 'goal'">⚽</template>
               <span v-else-if="e.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: #ef4444" /></span>
               <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${e.card === 'RED' ? '#ef4444' : '#eab308'}`" />
@@ -195,8 +222,9 @@ function fmtDate(d: string) {
           <span class="tabular-nums text-center w-12 opacity-70">{{ e.minute }}</span>
           <span class="inline-flex items-center gap-1">
             <template v-if="e.side === 'AWAY'">
+              <template v-if="e.kind === 'sub'">🔄 <span style="color: #22c55e">▲</span> {{ formatPlayerName(e.playerName) }} <span class="opacity-60">· {{ formatPlayerName(e.offName) }} <span style="color: #ef4444">▼</span></span></template>
               <template v-if="e.kind === 'goal'">⚽</template>
-              <span v-else-if="e.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: #ef4444" /></span>
+              <span v-else-if="e.kind === 'card' && e.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: #ef4444" /></span>
               <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${e.card === 'RED' ? '#ef4444' : '#eab308'}`" />
               {{ formatPlayerName(e.playerName) }}<span v-if="e.kind === 'goal' && e.ownGoal"> (OG)</span><span v-if="e.kind === 'card' && e.coach" :title="t('match.coachCard')"> 📋</span>
             </template>

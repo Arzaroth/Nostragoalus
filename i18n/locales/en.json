@@ -197,7 +197,11 @@
     "noResults": "No results yet.",
     "noUpcoming": "No upcoming matches.",
     "yourPick": "Your pick",
-    "coachCard": "Coach booking"
+    "coachCard": "Coach booking",
+    "subs": "Subs",
+    "bookings": "Bookings",
+    "toggleSubs": "Show or hide substitutions",
+    "toggleBookings": "Show or hide bookings"
   },
   "auth": {
     "signIn": "Sign in",
@@ -354,7 +358,7 @@
     "changelogTitle": "Changelog"
   },
   "footer": {
-    "builtWith": "Built with ♥ by football fans.",
+    "builtWith": "Made with ♥️ from 🇫🇷",
     "source": "Source code"
   },
   "faq": {

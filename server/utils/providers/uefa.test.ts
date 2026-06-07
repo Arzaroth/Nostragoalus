@@ -561,3 +561,23 @@ it('residual branch tails: away-coded champion, third-place skip, empty stats fe
 
   expect(normalizeUefaMatchStats({}).possession).toBeNull() // statistics missing entirely
 })
+
+it('substitutions: primary actor leaves, secondary enters, chronological, sideless dropped', async () => {
+  const SUB_EVENTS: UefaEvent[] = [
+    { type: 'SUBSTITUTION', time: { minute: 89 }, primaryActor: { person: { id: 'p2', internationalName: 'Lamine Yamal' }, team: { id: '1' } }, secondaryActor: { person: { id: 'p3', internationalName: 'Mikel Merino' } } },
+    { type: 'SUBSTITUTION', time: { minute: 68 }, primaryActor: { person: { id: 'p4', internationalName: 'Álvaro Morata' }, team: { id: '1' } }, secondaryActor: { person: { id: 'p5', internationalName: 'Mikel Oyarzabal' } } },
+    { type: 'SUBSTITUTION', time: { minute: 61 }, primaryActor: { person: { id: 'x', internationalName: 'Ghost' }, team: { id: 'unknown' } } },
+  ]
+  const provider = uefaProvider({ seasonYear: '2024', rateLimiter: new RateLimiter(0), fetchImpl: detailFetch(FULL_MATCH, SUB_EVENTS) })
+  const d = await provider.getMatchDetail!({ matchId: '900' })
+  expect(d!.substitutions).toHaveLength(2)
+  expect(d!.substitutions[0]).toMatchObject({ minute: "68'", playerOffName: 'Álvaro Morata', playerOnName: 'Mikel Oyarzabal', side: 'HOME' })
+  expect(d!.substitutions[1].playerOffName).toBe('Lamine Yamal')
+})
+
+it('substitution without a secondary actor keeps a placeholder', async () => {
+  const EVS: UefaEvent[] = [{ type: 'SUBSTITUTION', time: { minute: 46 }, primaryActor: { person: { id: 'p', internationalName: 'Off Only' }, team: { id: '1' } } }]
+  const provider = uefaProvider({ seasonYear: '2024', rateLimiter: new RateLimiter(0), fetchImpl: detailFetch(FULL_MATCH, EVS) })
+  const d = await provider.getMatchDetail!({ matchId: '900' })
+  expect(d!.substitutions[0].playerOnName).toBe('?')
+})
