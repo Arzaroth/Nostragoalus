@@ -165,6 +165,7 @@ const FIFA_SHOOTOUT_PERIOD = 11
 interface FifaDetailBooking {
   Card?: number | null
   IdPlayer?: string | null
+  IdCoach?: string | null
   Minute?: string | null
 }
 
@@ -250,16 +251,20 @@ export function normalizeFifaMatchDetail(detail: FifaMatchDetailResponse): Match
     ['HOME', detail.HomeTeam],
     ['AWAY', detail.AwayTeam],
   ] as const) {
+    const headCoach = team?.Coaches?.find((c) => Number(c.Role) === 0)
+    const coachName = headCoach?.Name?.[0]?.Description ?? headCoach?.Alias?.[0]?.Description ?? null
     for (const b of team?.Bookings ?? []) {
       if (b.Card == null) continue
+      const isCoach = !b.IdPlayer && b.IdCoach != null
       bookings.push({
         side,
-        playerId: b.IdPlayer ?? null,
-        playerName: (b.IdPlayer && names.get(b.IdPlayer)) || 'Unknown',
+        playerId: b.IdPlayer ?? b.IdCoach ?? null,
+        playerName: (b.IdPlayer && names.get(b.IdPlayer)) || (isCoach ? coachName ?? 'Coach' : 'Unknown'),
         minute: b.Minute ?? null,
         // FIFA card codes: 1 = yellow, 2 = straight red, 3 = second yellow.
         // (verified against WC2022: Hennessey straight red = 2, Dumfries 1 then 3)
         card: b.Card === 1 ? 'YELLOW' : b.Card === 3 ? 'SECOND_YELLOW' : 'RED',
+        coach: isCoach,
       })
     }
   }

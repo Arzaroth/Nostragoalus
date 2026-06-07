@@ -196,7 +196,8 @@
     "topAssister": "Top assister",
     "noResults": "No results yet.",
     "noUpcoming": "No upcoming matches.",
-    "yourPick": "Your pick"
+    "yourPick": "Your pick",
+    "coachCard": "Coach booking"
   },
   "auth": {
     "signIn": "Sign in",

@@ -527,3 +527,37 @@ describe('uefa official match stats + coach actors', () => {
     expect(actorId(undefined)).toBeNull()
   })
 })
+
+it('explicit second-yellow types map to one SECOND_YELLOW booking (dismissal not duplicated)', async () => {
+  const CARD_EVENTS: UefaEvent[] = [
+    { type: 'YELLOW_CARD', time: { minute: 11 }, primaryActor: { person: { id: 'b1', internationalName: 'Antonín Barák' }, team: { id: '1' } } },
+    { type: 'YELLOW_CARD_SECOND', time: { minute: 20 }, primaryActor: { person: { id: 'b1', internationalName: 'Antonín Barák' }, team: { id: '1' } } },
+    { type: 'RED_YELLOW_CARD', time: { minute: 20 }, primaryActor: { person: { id: 'b1', internationalName: 'Antonín Barák' }, team: { id: '1' } } },
+  ]
+  const provider = uefaProvider({ seasonYear: '2024', rateLimiter: new RateLimiter(0), fetchImpl: detailFetch(FULL_MATCH, CARD_EVENTS) })
+  const d = await provider.getMatchDetail!({ matchId: '900' })
+  expect(d!.bookings.map((b) => b.card)).toEqual(['YELLOW', 'SECOND_YELLOW'])
+  expect(d!.cards.home).toEqual({ yellow: 2, red: 1 })
+})
+
+it('residual branch tails: away-coded champion, third-place skip, empty stats feed, null stat list', async () => {
+  const fixtures = [
+    { ...baseMatch({ id: 'f2' }), winner: { match: { team: { id: '39' } } } }, // away side wins the final
+    baseMatch({ id: 'tp', round: { id: 'rt', metaData: { name: 'Third place' } } }),
+  ]
+  const fetchImpl = (async () => new Response(JSON.stringify(fixtures), { status: 200 })) as unknown as typeof fetch
+  const b = await uefaProvider({ seasonYear: '2024', rateLimiter: new RateLimiter(0), fetchImpl }).getBracket!()
+  expect(b!.winner).toEqual({ name: 'England', code: 'ENG' })
+  expect(b!.rounds).toHaveLength(1) // third place excluded
+
+  const emptyFeed = (async (url: string) => {
+    const u = String(url)
+    if (u.includes('/v1/team-statistics/')) return new Response('[]', { status: 200 })
+    if (u.includes('/events')) return new Response('[]', { status: 200 })
+    return new Response(JSON.stringify(FULL_MATCH), { status: 200 })
+  }) as unknown as typeof fetch
+  const stats = await uefaProvider({ seasonYear: '2024', rateLimiter: new RateLimiter(0), fetchImpl: emptyFeed }).getMatchStats!({ ifesId: '900' })
+  expect(stats!['1']).toBeDefined() // empty official feed falls through to events
+
+  expect(normalizeUefaMatchStats({}).possession).toBeNull() // statistics missing entirely
+})

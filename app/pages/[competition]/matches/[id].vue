@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const { t } = useI18n()
 const route = useRoute()
+const router = useRouter()
 const id = computed(() => route.params.id as string)
 const NuxtLinkC = resolveComponent('NuxtLink')
 
@@ -101,6 +102,7 @@ const timeline = computed(() => {
     side: b.side,
     minute: b.minute,
     playerName: b.playerName,
+    coach: !!b.coach,
     teamCode: b.side === 'HOME' ? m.value?.homeTeamCode : m.value?.awayTeamCode,
   }))
   return [...goals, ...cards].sort((a, b) => minuteVal(a.minute) - minuteVal(b.minute))
@@ -128,6 +130,12 @@ const statRows = computed(() => {
     row(t('match.turnovers'), 'forcedTurnovers'),
   ].filter((r) => r.home !== '–' || r.away !== '–')
 })
+// The open tab lives in the URL so a refresh (or a shared link) lands on it.
+const activeTab = ref((route.query.tab as string) || 'form')
+watch(activeTab, (tab) => {
+  router.replace({ query: { ...route.query, tab: tab === 'form' ? undefined : tab } })
+})
+
 function formColor(r: string) {
   return r === 'W' ? '#22c55e' : r === 'L' ? '#ef4444' : '#a1a1aa'
 }
@@ -178,7 +186,7 @@ function fmtDate(d: string) {
         <template v-for="(e, i) in timeline" :key="i">
           <span class="inline-flex items-center gap-1 justify-end text-right">
             <template v-if="e.side === 'HOME'">
-              {{ formatPlayerName(e.playerName) }}<span v-if="e.kind === 'goal' && e.ownGoal"> (OG)</span>
+              {{ formatPlayerName(e.playerName) }}<span v-if="e.kind === 'goal' && e.ownGoal"> (OG)</span><span v-if="e.kind === 'card' && e.coach" :title="t('match.coachCard')"> 📋</span>
               <template v-if="e.kind === 'goal'">⚽</template>
               <span v-else-if="e.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: #ef4444" /></span>
               <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${e.card === 'RED' ? '#ef4444' : '#eab308'}`" />
@@ -190,7 +198,7 @@ function fmtDate(d: string) {
               <template v-if="e.kind === 'goal'">⚽</template>
               <span v-else-if="e.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: #ef4444" /></span>
               <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${e.card === 'RED' ? '#ef4444' : '#eab308'}`" />
-              {{ formatPlayerName(e.playerName) }}<span v-if="e.kind === 'goal' && e.ownGoal"> (OG)</span>
+              {{ formatPlayerName(e.playerName) }}<span v-if="e.kind === 'goal' && e.ownGoal"> (OG)</span><span v-if="e.kind === 'card' && e.coach" :title="t('match.coachCard')"> 📋</span>
             </template>
           </span>
         </template>
@@ -213,7 +221,7 @@ function fmtDate(d: string) {
     </div>
 
     <div v-if="insights" class="rounded-2xl border p-2 sm:p-4" style="background: var(--p-content-background); border-color: var(--p-content-border-color)">
-      <Tabs value="form">
+      <Tabs v-model:value="activeTab">
         <TabList>
           <Tab v-if="hasStats" value="stats">{{ t('match.stats') }}</Tab>
           <Tab v-if="insights.standings" value="standings">{{ t('match.standings') }}</Tab>

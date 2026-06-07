@@ -17,7 +17,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 - Player and coach names render in title case everywhere (FIFA's "Kylian MBAPPÉ" becomes "Kylian Mbappé"; correctly-cased names pass through).
 
 ### Fixed
-- Coach bookings showed "?" - touchline cards (Nagelsmann, Hjulmand) now carry the coach's name.
+- Coach bookings showed "?" - touchline cards (Nagelsmann, Hjulmand) now carry the coach's name and a clipboard marker, on both providers.
+- Second yellows on Euro matches were dropped (UEFA encodes them as explicit YELLOW_CARD_SECOND / RED_YELLOW_CARD events).
+- Euro matches synced before the stats feed landed had no possession - backfilled.
+
+### Added (UX)
+- Match view remembers its open tab in the URL (survives refresh, shareable).
+- Fixture search is accent-insensitive and matches country codes ("Tur" finds Türkiye, "FRA" finds France).
 - About: theme-aware mise logo, official TanStack icon, project homepages preferred over GitHub links.
 
 ## [0.7.0] - 2026-06-07

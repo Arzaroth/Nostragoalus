@@ -196,7 +196,8 @@
     "topAssister": "Meilleur passeur",
     "noResults": "Aucun résultat.",
     "noUpcoming": "Aucun match à venir.",
-    "yourPick": "Votre prono"
+    "yourPick": "Votre prono",
+    "coachCard": "Carton pour l'encadrement"
   },
   "auth": {
     "signIn": "Connexion",

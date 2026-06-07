@@ -380,9 +380,9 @@ describe('booking events', () => {
       },
     })
     expect(d.bookings).toEqual([
-      { side: 'AWAY', playerId: 'p2', playerName: 'Marcos ACUNA', minute: "12'", card: 'RED' },
-      { side: 'AWAY', playerId: 'p2', playerName: 'Marcos ACUNA', minute: "30'", card: 'SECOND_YELLOW' },
-      { side: 'HOME', playerId: 'p1', playerName: 'Adrien RABIOT', minute: "55'", card: 'YELLOW' },
+      { side: 'AWAY', playerId: 'p2', playerName: 'Marcos ACUNA', minute: "12'", card: 'RED', coach: false },
+      { side: 'AWAY', playerId: 'p2', playerName: 'Marcos ACUNA', minute: "30'", card: 'SECOND_YELLOW', coach: false },
+      { side: 'HOME', playerId: 'p1', playerName: 'Adrien RABIOT', minute: "55'", card: 'YELLOW', coach: false },
     ])
   })
 })
@@ -550,6 +550,28 @@ describe('new provider methods', () => {
     }) as unknown as typeof fetch
     const p2 = fifaProvider({ seasonId: '1', competitionId: '17', rateLimiter: noWait(), fetchImpl: calDown })
     expect((await p2.getTeamTournament!({ teamRef: 'FRA', matches: [{ stageId: 's', matchId: 'm1' }] })).squad).toEqual([])
+  })
+
+  it('coach bookings carry the head coach name and flag', async () => {
+    const detail = {
+      HomeTeam: {
+        IdTeam: 't1',
+        TeamName: [{ Locale: 'en', Description: 'Germany' }],
+        Coaches: [{ Name: [{ Locale: 'en', Description: 'Julian Nagelsmann' }], Role: 0 }],
+        Bookings: [
+          { Card: 1, Minute: "59'", IdPlayer: null, IdCoach: 'c9' },
+          { Card: 1, Minute: "70'", IdPlayer: 'nobody', IdCoach: null },
+        ],
+        Players: [],
+        Goals: [],
+      },
+      AwayTeam: { IdTeam: 't2', TeamName: [{ Locale: 'en', Description: 'Denmark' }], Bookings: [], Players: [], Goals: [] },
+      Properties: {},
+    }
+    const provider = fifaProvider({ seasonId: '1', competitionId: '17', rateLimiter: noWait(), fetchImpl: okJson(detail) })
+    const d = await provider.getMatchDetail!({ stageId: 's', matchId: 'm' })
+    expect(d!.bookings[0]).toMatchObject({ playerName: 'Julian Nagelsmann', coach: true, playerId: 'c9' })
+    expect(d!.bookings[1]).toMatchObject({ playerName: 'Unknown', coach: false })
   })
 
   it('getMatchStats normalizes fdh stats and returns null on failure', async () => {

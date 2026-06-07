@@ -125,6 +125,7 @@ export interface UefaEvent {
   phase?: string | null
   time?: { minute?: number | null; injuryMinute?: number | null } | null
   primaryActor?: {
+    type?: string | null
     person?: UefaEventPerson | null
     team?: { id?: string | null } | null
   } | null
@@ -229,8 +230,8 @@ export function aggregateUefaEvents(events: UefaEvent[], teamId: string | null):
     distanceKm: null,
     pressuresApplied: null,
     forcedTurnovers: null,
-    yellowCards: count((t) => t === 'YELLOW_CARD'),
-    redCards: count((t) => t === 'RED_CARD'),
+    yellowCards: count((t) => t === 'YELLOW_CARD' || t === 'YELLOW_CARD_SECOND'),
+    redCards: count((t) => t === 'RED_CARD' || t === 'RED_YELLOW_CARD'),
   }
 }
 
@@ -393,11 +394,14 @@ export function uefaProvider(options: UefaOptions): MatchDataProvider {
       const bookings: BookingEvent[] = []
       const yellowsSeen = new Set<string>()
       for (const e of events) {
-        if (e.type !== 'YELLOW_CARD' && e.type !== 'RED_CARD') continue
+        // RED_YELLOW_CARD is the dismissal paired with YELLOW_CARD_SECOND one
+        // second earlier - keeping both would duplicate the same incident.
+        if (e.type !== 'YELLOW_CARD' && e.type !== 'RED_CARD' && e.type !== 'YELLOW_CARD_SECOND') continue
         const side = sideOf(e)
         if (!side) continue
         const playerId = actorId(e.primaryActor?.person)
-        let card: BookingEvent['card'] = e.type === 'RED_CARD' ? 'RED' : 'YELLOW'
+        let card: BookingEvent['card'] =
+          e.type === 'RED_CARD' ? 'RED' : e.type === 'YELLOW_CARD_SECOND' ? 'SECOND_YELLOW' : 'YELLOW'
         if (e.type === 'YELLOW_CARD' && playerId) {
           if (yellowsSeen.has(playerId)) card = 'SECOND_YELLOW'
           yellowsSeen.add(playerId)
@@ -408,6 +412,7 @@ export function uefaProvider(options: UefaOptions): MatchDataProvider {
           playerName: actorName(e.primaryActor?.person),
           minute: eventMinute(e),
           card,
+          coach: e.primaryActor?.type === 'COACH',
         })
       }
       // The events feed arrives newest-first - present both lists chronologically.

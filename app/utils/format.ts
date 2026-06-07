@@ -90,3 +90,12 @@ export function formatPlayerName(name: string | null | undefined): string {
     )
     .join(' ')
 }
+
+// Accent-insensitive search matching: "Tur" finds "Türkiye", "FRA" finds France.
+export function searchable(text: string | null | undefined): string {
+  return (text ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/ı/g, 'i')
+    .toLowerCase()
+}

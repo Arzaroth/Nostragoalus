@@ -13,10 +13,10 @@ const predByMatch = computed(() => {
 
 const search = ref('')
 const grouped = computed(() => {
-  const q = search.value.trim().toLowerCase()
+  const q = searchable(search.value.trim())
   const groups = new Map<string, { label: string; sort: number; items: MatchListItem[] }>()
   for (const m of matches.value ?? []) {
-    if (q && !`${m.homeTeam} ${m.awayTeam}`.toLowerCase().includes(q)) continue
+    if (q && !searchable(`${m.homeTeam} ${m.awayTeam} ${m.homeTeamCode ?? ''} ${m.awayTeamCode ?? ''}`).includes(q)) continue
     const g = groups.get(m.roundId) ?? { label: m.roundLabel, sort: m.roundSortOrder, items: [] }
     g.items.push(m)
     groups.set(m.roundId, g)

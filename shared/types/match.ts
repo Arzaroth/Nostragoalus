@@ -80,6 +80,8 @@ export interface BookingEvent {
   playerName: string
   minute: string | null
   card: 'YELLOW' | 'SECOND_YELLOW' | 'RED'
+  // Touchline booking (manager/staff), not a player on the pitch.
+  coach?: boolean
 }
 
 export interface MatchDetail {
