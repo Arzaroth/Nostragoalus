@@ -47,6 +47,26 @@ async function removeProvider(id: string) {
 
 const syncMsg = ref('')
 const syncBusy = ref('')
+
+// Next scheduled run, derived from the cron map (hourly / */2 / */5).
+const nowTick = ref(Date.now())
+let tick: ReturnType<typeof setInterval> | undefined
+onMounted(() => {
+  tick = setInterval(() => (nowTick.value = Date.now()), 1000)
+})
+onBeforeUnmount(() => clearInterval(tick))
+function nextRun(stepMinutes: number | 'hourly') {
+  const d = new Date(nowTick.value)
+  const next = new Date(d)
+  next.setSeconds(0, 0)
+  if (stepMinutes === 'hourly') {
+    next.setMinutes(0)
+    next.setHours(d.getHours() + 1)
+  } else {
+    next.setMinutes(d.getMinutes() + (stepMinutes - (d.getMinutes() % stepMinutes)))
+  }
+  return next.toLocaleTimeString()
+}
 async function runImport() {
   syncBusy.value = 'import'
   try {
@@ -247,11 +267,23 @@ function createUser() {
             <p class="text-sm mt-1" style="color: var(--p-text-muted-color)">{{ t('admin.data.hint') }}</p>
           </div>
           <div class="md:col-span-2 flex flex-col gap-3">
-            <div class="flex flex-wrap gap-2">
-              <Button v-tooltip.bottom="t('admin.data.importTip')" :label="t('admin.data.import')" icon="pi pi-download" size="small" severity="info" :loading="syncBusy === 'import'" @click="runImport" />
-              <Button v-tooltip.bottom="t('admin.data.refreshTip')" :label="t('admin.data.refresh')" icon="pi pi-refresh" size="small" severity="help" :loading="syncBusy === 'fixtures'" @click="runTask('fixtures')" />
-              <Button v-tooltip.bottom="t('admin.data.pollTip')" :label="t('admin.data.poll')" icon="pi pi-bolt" size="small" severity="warn" :loading="syncBusy === 'live'" @click="runTask('live')" />
-              <Button v-tooltip.bottom="t('admin.data.finalizeTip')" :label="t('admin.data.finalize')" icon="pi pi-flag" size="small" severity="success" :loading="syncBusy === 'finalize'" @click="runTask('finalize')" />
+            <div class="flex flex-col gap-2">
+              <div class="flex items-center gap-3">
+                <Button v-tooltip.bottom="t('admin.data.importTip')" :label="t('admin.data.import')" icon="pi pi-download" size="small" severity="info" class="w-44 justify-start" :loading="syncBusy === 'import'" @click="runImport" />
+                <span class="text-xs" style="color: var(--p-text-muted-color)">{{ t('admin.data.nextRun') }}: {{ t('admin.data.manual') }}</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <Button v-tooltip.bottom="t('admin.data.refreshTip')" :label="t('admin.data.refresh')" icon="pi pi-refresh" size="small" severity="help" class="w-44 justify-start" :loading="syncBusy === 'fixtures'" @click="runTask('fixtures')" />
+                <span class="text-xs tabular-nums" style="color: var(--p-text-muted-color)">{{ t('admin.data.nextRun') }}: {{ nextRun('hourly') }}</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <Button v-tooltip.bottom="t('admin.data.pollTip')" :label="t('admin.data.poll')" icon="pi pi-bolt" size="small" severity="warn" class="w-44 justify-start" :loading="syncBusy === 'live'" @click="runTask('live')" />
+                <span class="text-xs tabular-nums" style="color: var(--p-text-muted-color)">{{ t('admin.data.nextRun') }}: {{ nextRun(2) }}</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <Button v-tooltip.bottom="t('admin.data.finalizeTip')" :label="t('admin.data.finalize')" icon="pi pi-flag" size="small" severity="success" class="w-44 justify-start" :loading="syncBusy === 'finalize'" @click="runTask('finalize')" />
+                <span class="text-xs tabular-nums" style="color: var(--p-text-muted-color)">{{ t('admin.data.nextRun') }}: {{ nextRun(5) }}</span>
+              </div>
             </div>
             <pre v-if="syncMsg" class="text-xs p-2 rounded overflow-x-auto" style="background: color-mix(in srgb, var(--p-text-color) 6%, transparent)">{{ syncMsg }}</pre>
           </div>

@@ -14,13 +14,26 @@ const selected = ref<{ code: string; name: string } | null>(null)
 const info = ref<any>(null)
 const loading = ref(false)
 
+// Monotonic token: a slow response for a previously selected team must not
+// overwrite the panel of the currently selected one.
+let reqSeq = 0
 async function onSelect(team: { code: string; name: string }) {
   selected.value = team
   // Shareable URLs: the selected team rides along as ?team=XXX.
   if (route.query.team !== team.code) void router.replace({ query: { ...route.query, team: team.code } })
+  const my = ++reqSeq
   loading.value = true
-  info.value = await $fetch(`/api/teams/${team.code}`, { query: slug.value ? { competition: slug.value } : {} })
-  loading.value = false
+  info.value = null
+  try {
+    // lite=1: the panel doesn't need the squad/stats sweep — keeps it snappy.
+    const res = await $fetch(`/api/teams/${team.code}`, {
+      query: { ...(slug.value ? { competition: slug.value } : {}), lite: '1' },
+    })
+    if (my !== reqSeq) return
+    info.value = res
+  } finally {
+    if (my === reqSeq) loading.value = false
+  }
 }
 
 function selectByCode(code: string | undefined | null, center = true) {
@@ -104,7 +117,10 @@ function fmt(d: string) {
             <img v-if="flagUrl(selected.code)" :src="flagUrl(selected.code) || ''" class="w-8 h-8 rounded object-cover" alt="" >
             <NuxtLink :to="`/${slug}/teams/${selected.code}`" class="text-lg font-bold hover:underline">{{ selected.name }}</NuxtLink>
           </div>
-          <div v-if="loading" class="opacity-60">{{ t('common.loading') }}</div>
+          <div v-if="loading" class="flex flex-col items-center gap-2 py-10">
+            <ProgressSpinner style="width: 44px; height: 44px" stroke-width="5" />
+            <span class="text-xs" style="color: var(--p-text-muted-color)">{{ t('common.loading') }}</span>
+          </div>
           <div v-else class="flex flex-col gap-4 text-sm">
             <div v-if="topScorer || topAssister" class="flex flex-col gap-1">
               <div v-if="topScorer" class="flex items-center justify-between gap-2">

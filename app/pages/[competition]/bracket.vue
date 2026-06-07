@@ -64,6 +64,8 @@ const sides = computed(() => {
 <style scoped>
 .br {
   --line: var(--p-content-border-color);
+  /* Stretch columns so the dense edge rounds (8 matches) get vertical air. */
+  min-height: max(620px, calc(100vh - 230px));
 }
 .br-col {
   display: flex;
@@ -75,6 +77,7 @@ const sides = computed(() => {
   display: flex;
   align-items: center;
   position: relative;
+  padding: 4px 0;
 }
 
 /* left side: lines advance to the right */

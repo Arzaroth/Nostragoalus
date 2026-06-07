@@ -174,6 +174,7 @@ interface FifaDetailTeam {
   Players?: FifaDetailPlayer[]
   Goals?: FifaDetailGoal[]
   Bookings?: FifaDetailBooking[]
+  Coaches?: { Name?: FifaLocalized[]; Alias?: FifaLocalized[]; Role?: number | string | null }[]
 }
 
 export interface FifaMatchDetailResponse {
@@ -255,7 +256,8 @@ export function normalizeFifaMatchDetail(detail: FifaMatchDetailResponse): Match
         playerId: b.IdPlayer ?? null,
         playerName: (b.IdPlayer && names.get(b.IdPlayer)) || 'Unknown',
         minute: b.Minute ?? null,
-        card: b.Card === 1 ? 'YELLOW' : 'RED',
+        // FIFA card codes: 1 = yellow, 2 = second yellow (yellow-red), 3 = straight red.
+        card: b.Card === 1 ? 'YELLOW' : b.Card === 2 ? 'SECOND_YELLOW' : 'RED',
       })
     }
   }
@@ -310,44 +312,42 @@ export function normalizeFifaSquad(details: FifaMatchDetailResponse[], teamRef: 
   )
 }
 
-// FIFA aggregate stat type codes, decoded by cross-checking sums against known
-// tournament totals (WC2022: 172 goals, 227 yellows, 1 red, 44.9 attempts/match).
-const FIFA_TEAM_STAT_TYPES = {
-  goals: 33,
-  conceded: 34,
-  assists: 219,
-  possession: 2,
-  attempts: 3,
-  onTarget: 4,
-  passes: 68,
-  passesCompleted: 23,
-  crosses: 70,
-  corners: 12,
-  offsides: 13,
-  yellowCards: 21,
-  redCards: 179,
-} as const
+export function normalizeFifaCoach(details: FifaMatchDetailResponse[], teamRef: string): string | null {
+  const matches = (t: FifaDetailTeam | null | undefined) => !!t && (t.IdTeam === teamRef || t.Abbreviation === teamRef)
+  for (const detail of details) {
+    const team = matches(detail.HomeTeam) ? detail.HomeTeam : matches(detail.AwayTeam) ? detail.AwayTeam : null
+    const head = (team?.Coaches ?? []).find((c) => Number(c.Role ?? 0) === 0) ?? team?.Coaches?.[0]
+    const name = head?.Name?.[0]?.Description || head?.Alias?.[0]?.Description
+    if (name) return name
+  }
+  return null
+}
 
-export function normalizeFifaTeamStats(data: FifaTeamStatsResponse, teamId: string): TeamSeasonStats | null {
-  const team = (data.AggregatedTeamStats ?? []).find((t) => t.IdTeam === teamId)
-  if (!team) return null
-  const value = (type: number) => (team.Statistic ?? []).find((s) => s.Type === type)?.Value ?? null
-  const passes = value(FIFA_TEAM_STAT_TYPES.passes)
-  const completed = value(FIFA_TEAM_STAT_TYPES.passesCompleted)
+// Season totals built by summing the per-match football-intelligence stats —
+// the same numbers FIFA's own team pages show (no opaque type-code guessing).
+export function aggregateTeamMatchStats(perMatch: TeamMatchStats[], cards: { yellow: number; red: number }[]): TeamSeasonStats | null {
+  if (perMatch.length === 0 && cards.length === 0) return null
+  const sum = (key: keyof TeamMatchStats) => {
+    const vals = perMatch.map((m) => m[key]).filter((v): v is number => v != null)
+    return vals.length ? vals.reduce((a, b) => a + b, 0) : null
+  }
+  const possessions = perMatch.map((m) => m.possession).filter((v): v is number => v != null)
+  const passes = sum('passes')
+  const completed = sum('passesCompleted')
   return {
-    goals: value(FIFA_TEAM_STAT_TYPES.goals),
-    conceded: value(FIFA_TEAM_STAT_TYPES.conceded),
-    assists: value(FIFA_TEAM_STAT_TYPES.assists),
-    possession: value(FIFA_TEAM_STAT_TYPES.possession),
-    attempts: value(FIFA_TEAM_STAT_TYPES.attempts),
-    onTarget: value(FIFA_TEAM_STAT_TYPES.onTarget),
+    goals: null, // filled by the caller from stored results
+    conceded: null,
+    assists: null,
+    possession: possessions.length ? possessions.reduce((a, b) => a + b, 0) / possessions.length : null,
+    attempts: sum('attempts'),
+    onTarget: sum('onTarget'),
     passes,
     passAccuracy: passes && completed ? (completed / passes) * 100 : null,
-    crosses: value(FIFA_TEAM_STAT_TYPES.crosses),
-    corners: value(FIFA_TEAM_STAT_TYPES.corners),
-    offsides: value(FIFA_TEAM_STAT_TYPES.offsides),
-    yellowCards: value(FIFA_TEAM_STAT_TYPES.yellowCards),
-    redCards: value(FIFA_TEAM_STAT_TYPES.redCards),
+    crosses: sum('crosses'),
+    corners: sum('corners'),
+    offsides: sum('offsides'),
+    yellowCards: cards.length ? cards.reduce((a, c) => a + c.yellow, 0) : null,
+    redCards: cards.length ? cards.reduce((a, c) => a + c.red, 0) : null,
   }
 }
 
@@ -624,18 +624,9 @@ export function fifaProvider(options: FifaOptions): MatchDataProvider {
       if (!response.ok) throw new ProviderUpstreamError(response.status, await response.text())
       return normalizeFifaPlayerStats((await response.json()) as FifaTeamStatsResponse)
     },
-    // Same upstream document as getPlayerStats — one fetch yields both views.
-    async getTeamSeason({ teamId }: { teamId: string }) {
-      await limiter.acquire()
-      const response = await doFetch(
-        `${baseUrl}/statistics/teams/${teamId}?idSeason=${options.seasonId}&idCompetition=${options.competitionId}&language=en`,
-      )
-      if (response.status === 429) throw new ProviderRateLimitError()
-      if (!response.ok) throw new ProviderUpstreamError(response.status, await response.text())
-      const data = (await response.json()) as FifaTeamStatsResponse
-      return { players: normalizeFifaPlayerStats(data), team: normalizeFifaTeamStats(data, teamId) }
-    },
-    async getSquad({ teamId, matches }: { teamId: string; matches: { stageId: string; matchId: string }[] }) {
+    // One sweep over the team's matches: squad, head coach, and season totals
+    // (per-match stats summed — the same numbers FIFA's team pages show).
+    async getTeamTournament({ teamRef, matches }: { teamRef: string; matches: { stageId: string; matchId: string }[] }) {
       const details: FifaMatchDetailResponse[] = []
       for (const m of matches) {
         await limiter.acquire()
@@ -643,10 +634,34 @@ export function fifaProvider(options: FifaOptions): MatchDataProvider {
           `${baseUrl}/live/football/${options.competitionId}/${options.seasonId}/${m.stageId}/${m.matchId}?language=en`,
         )
         if (response.status === 429) throw new ProviderRateLimitError()
-        if (!response.ok) continue // a missing match-day roster shouldn't sink the squad
+        if (!response.ok) continue // a missing match-day roster shouldn't sink the sweep
         details.push((await response.json()) as FifaMatchDetailResponse)
       }
-      return normalizeFifaSquad(details, teamId)
+      const sideOf = (d: FifaMatchDetailResponse) =>
+        d.HomeTeam && (d.HomeTeam.IdTeam === teamRef || d.HomeTeam.Abbreviation === teamRef)
+          ? d.HomeTeam
+          : d.AwayTeam && (d.AwayTeam.IdTeam === teamRef || d.AwayTeam.Abbreviation === teamRef)
+            ? d.AwayTeam
+            : null
+      const perMatch: TeamMatchStats[] = []
+      const cards: { yellow: number; red: number }[] = []
+      for (const d of details) {
+        const team = sideOf(d)
+        if (!team) continue
+        cards.push(countCards(team.Bookings))
+        const ifes = d.Properties?.IdIFES
+        if (!ifes || !team.IdTeam) continue
+        await limiter.acquire()
+        const r = await doFetch(`${fdhBaseUrl}/v1/stats/match/${ifes}/teams.json`)
+        if (!r.ok) continue
+        const norm = normalizeFdhMatchStats((await r.json()) as FdhMatchStatsResponse)
+        if (norm[team.IdTeam]) perMatch.push(norm[team.IdTeam])
+      }
+      return {
+        squad: normalizeFifaSquad(details, teamRef),
+        coach: normalizeFifaCoach(details, teamRef),
+        stats: aggregateTeamMatchStats(perMatch, cards),
+      }
     },
     async getMatchStats({ ifesId }: { ifesId: string }) {
       await limiter.acquire()

@@ -79,7 +79,7 @@ export interface BookingEvent {
   playerId: string | null
   playerName: string
   minute: string | null
-  card: 'YELLOW' | 'RED'
+  card: 'YELLOW' | 'SECOND_YELLOW' | 'RED'
 }
 
 export interface MatchDetail {

@@ -21,7 +21,11 @@
     "group": "'ay'",
     "noData": "wej may' tu'lu'."
   },
-  "countdown": { "d": "jaj", "h": "rep", "m": "tup" },
+  "countdown": {
+    "d": "jaj",
+    "h": "rep",
+    "m": "tup"
+  },
   "picks": {
     "points": "QuQmey",
     "rank": "patlh — {n} SuvwI'pu'",
@@ -59,19 +63,51 @@
     "featuresTitle": "SuvmeH Hoch Daghajbogh",
     "featuresSub": "pup noHvo' DaH may' He qo' mIllogh je.",
     "f": {
-      "scoring": { "t": "pup noH", "d": "bIpupchugh QuQmey law' DaSuq — mI' pup, QIH chuq, ghap jeywI' neH." },
-      "joker": { "t": "Hov ×2", "d": "wa' may'Daq QuQmeylIj cha'logh boqmoH, bIQam'chugh." },
-      "champion": { "t": "che'wI' wIv", "d": "'aqtu' jeywI' yInoH 'ej tev nI' yISuq — may' wa'DIch taghDI' SoQmoHlu'." },
-      "live": { "t": "DaH mI'mey", "d": "may' qaStaHvIS, SIbI' mI'mey choHmoHlu'." },
-      "bracket": { "t": "may' He", "d": "Qav may'Daq He yItlha' — cha' Dop may' HeDaq." },
-      "map": { "t": "qo' mIllogh", "d": "qo' milloghDaq Sep yIwIv — ghom, Dotlh, patlh, may' veb je yIlegh." },
-      "stats": { "t": "may' De' jaq", "d": "loSpev, QI'D naghmey, bejwI'pu', QuQ poH, 'ej ghom Hoch — bachwI' qach je." },
-      "ranking": { "t": "patlhmey", "d": "wa' 'aqtu'Daq ghap Hoch qo'Daq yISuv." },
-      "competitions": { "t": "'aqtu'mey law'", "d": "qo' HIvje' 2026, qo' HIvje' 2022, yu'rop tev 2024 je — SIbI' choH." }
+      "scoring": {
+        "t": "pup noH",
+        "d": "bIpupchugh QuQmey law' DaSuq — mI' pup, QIH chuq, ghap jeywI' neH."
+      },
+      "joker": {
+        "t": "Hov ×2",
+        "d": "wa' may'Daq QuQmeylIj cha'logh boqmoH, bIQam'chugh."
+      },
+      "champion": {
+        "t": "che'wI' wIv",
+        "d": "'aqtu' jeywI' yInoH 'ej tev nI' yISuq — may' wa'DIch taghDI' SoQmoHlu'."
+      },
+      "live": {
+        "t": "DaH mI'mey",
+        "d": "may' qaStaHvIS, SIbI' mI'mey choHmoHlu'."
+      },
+      "bracket": {
+        "t": "may' He",
+        "d": "Qav may'Daq He yItlha' — cha' Dop may' HeDaq."
+      },
+      "map": {
+        "t": "qo' mIllogh",
+        "d": "qo' milloghDaq Sep yIwIv — ghom, Dotlh, patlh, may' veb je yIlegh."
+      },
+      "stats": {
+        "t": "may' De' jaq",
+        "d": "loSpev, QI'D naghmey, bejwI'pu', QuQ poH, 'ej ghom Hoch — bachwI' qach je."
+      },
+      "ranking": {
+        "t": "patlhmey",
+        "d": "wa' 'aqtu'Daq ghap Hoch qo'Daq yISuv."
+      },
+      "competitions": {
+        "t": "'aqtu'mey law'",
+        "d": "qo' HIvje' 2026, qo' HIvje' 2022, yu'rop tev 2024 je — SIbI' choH."
+      }
     },
     "scoringTitle": "noH nap — po' neH",
     "scoringSub": "90 tup ta'vo' noHlu'. bISumchugh, law' DaSuq.",
-    "tier": { "exact": "mI' pup", "diff": "QIH chuq", "outcome": "jeywI' lugh", "miss": "Qagh" },
+    "tier": {
+      "exact": "mI' pup",
+      "diff": "QIH chuq",
+      "outcome": "jeywI' lugh",
+      "miss": "Qagh"
+    },
     "bonus": "wIv jaqqu'vaD tev le'",
     "jokerPill": "wa' Hov ×2 wa' gho",
     "championPill": "che'wI' wIv tev",
@@ -97,9 +133,16 @@
     "conceded": "QuQmey Hevlu'ta'",
     "assists": "qachmey",
     "yellow": "SuD Degh",
-    "red": "Doq Degh"
+    "red": "Doq Degh",
+    "coach": "ra'wI'"
   },
-  "pos": { "GK": "'avwI'pu'", "DF": "HubwI'pu'", "MF": "botlh SuvwI'pu'", "FW": "HIvwI'pu'" },
+  "pos": {
+    "GK": "'avwI'pu'",
+    "DF": "HubwI'pu'",
+    "MF": "botlh SuvwI'pu'",
+    "FW": "HIvwI'pu'",
+    "sub": "tam SuvwI'pu'"
+  },
   "predictions": {
     "empty": "wej bInoHpu'.",
     "none": "wej wIv cha'lu'.",
@@ -228,7 +271,9 @@
       "poll": "DaH mI'mey yISuq",
       "pollTip": "DaH mI'mey yISuq (may' qaStaHvIS cha' tup Hoch, 'oH'egh qaS).",
       "finalize": "yIrInmoH",
-      "finalizeTip": "wIvmey tISoQmoH, rInpu'bogh may'mey tInoH, QuQmey tInob, patlh yIchu'qa'."
+      "finalizeTip": "wIvmey tISoQmoH, rInpu'bogh may'mey tInoH, QuQmey tInob, patlh yIchu'qa'.",
+      "nextRun": "qaS veb",
+      "manual": "ghop neH"
     }
   },
   "strength": {

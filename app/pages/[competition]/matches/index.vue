@@ -60,8 +60,8 @@ function fmtTime(d: string) {
             class="ng-card rounded-2xl border p-4 flex flex-col gap-3"
             style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
           >
-            <NuxtLink :to="`/${slug}/matches/${m.id}`" class="flex items-center justify-between gap-2 group">
-              <div class="flex items-center gap-2 flex-1 min-w-0">
+            <NuxtLink :to="`/${slug}/matches/${m.id}`" class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 group">
+              <div class="flex items-center gap-2 min-w-0">
                 <img v-if="flagUrl(m.homeTeamCode)" :src="flagUrl(m.homeTeamCode) || ''" class="w-6 h-6 rounded object-cover" alt="" >
                 <span class="truncate font-medium group-hover:underline" :title="m.homeTeam">{{ m.homeTeam }}</span>
               </div>
@@ -72,7 +72,7 @@ function fmtTime(d: string) {
                   <span class="w-1.5 h-1.5 rounded-full animate-pulse" style="background: #ef4444" />LIVE
                 </div>
               </div>
-              <div class="flex items-center gap-2 flex-1 min-w-0 justify-end">
+              <div class="flex items-center gap-2 min-w-0 justify-end">
                 <span class="truncate font-medium text-right group-hover:underline" :title="m.awayTeam">{{ m.awayTeam }}</span>
                 <img v-if="flagUrl(m.awayTeamCode)" :src="flagUrl(m.awayTeamCode) || ''" class="w-6 h-6 rounded object-cover" alt="" >
               </div>

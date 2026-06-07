@@ -21,7 +21,11 @@
     "group": "Group",
     "noData": "No matches yet."
   },
-  "countdown": { "d": "d", "h": "h", "m": "m" },
+  "countdown": {
+    "d": "d",
+    "h": "h",
+    "m": "m"
+  },
   "picks": {
     "points": "Points",
     "rank": "Rank of {n} players",
@@ -59,19 +63,51 @@
     "featuresTitle": "Everything you need to play",
     "featuresSub": "From closeness scoring to live brackets and an interactive world map.",
     "f": {
-      "scoring": { "t": "Closeness scoring", "d": "Points scale with accuracy — nail the exact score, the goal difference, or just the right outcome." },
-      "joker": { "t": "×2 Joker", "d": "Double the points on one match per round when you're feeling confident." },
-      "champion": { "t": "Champion pick", "d": "Call the tournament winner for a season-long bonus, locked at the first kickoff." },
-      "live": { "t": "Live scores", "d": "Scores update in real time over WebSockets as the matches play out." },
-      "bracket": { "t": "Knockout bracket", "d": "Follow the road to the final on a clean, two-sided bracket." },
-      "map": { "t": "Interactive map", "d": "Pick a country on a world map for its squad, form, standings and next match." },
-      "stats": { "t": "Deep match stats", "d": "Possession, cards, attendance, goal timeline and each team's top scorer & passer." },
-      "ranking": { "t": "Rankings", "d": "Compete per competition or on the all-time global leaderboard." },
-      "competitions": { "t": "Multiple competitions", "d": "World Cup 2026, World Cup 2022 and UEFA Euro 2024 — switch in a click." }
+      "scoring": {
+        "t": "Closeness scoring",
+        "d": "Points scale with accuracy — nail the exact score, the goal difference, or just the right outcome."
+      },
+      "joker": {
+        "t": "×2 Joker",
+        "d": "Double the points on one match per round when you're feeling confident."
+      },
+      "champion": {
+        "t": "Champion pick",
+        "d": "Call the tournament winner for a season-long bonus, locked at the first kickoff."
+      },
+      "live": {
+        "t": "Live scores",
+        "d": "Scores update in real time over WebSockets as the matches play out."
+      },
+      "bracket": {
+        "t": "Knockout bracket",
+        "d": "Follow the road to the final on a clean, two-sided bracket."
+      },
+      "map": {
+        "t": "Interactive map",
+        "d": "Pick a country on a world map for its squad, form, standings and next match."
+      },
+      "stats": {
+        "t": "Deep match stats",
+        "d": "Possession, cards, attendance, goal timeline and each team's top scorer & passer."
+      },
+      "ranking": {
+        "t": "Rankings",
+        "d": "Compete per competition or on the all-time global leaderboard."
+      },
+      "competitions": {
+        "t": "Multiple competitions",
+        "d": "World Cup 2026, World Cup 2022 and UEFA Euro 2024 — switch in a click."
+      }
     },
     "scoringTitle": "Simple, skill-based scoring",
     "scoringSub": "Scored on the 90-minute result. The closer you are, the more you earn.",
-    "tier": { "exact": "Exact score", "diff": "Goal difference", "outcome": "Correct outcome", "miss": "Miss" },
+    "tier": {
+      "exact": "Exact score",
+      "diff": "Goal difference",
+      "outcome": "Correct outcome",
+      "miss": "Miss"
+    },
     "bonus": "Rarity bonus for bold calls",
     "jokerPill": "One ×2 joker per round",
     "championPill": "Champion-pick bonus",
@@ -97,9 +133,16 @@
     "conceded": "Goals conceded",
     "assists": "Assists",
     "yellow": "Yellow cards",
-    "red": "Red cards"
+    "red": "Red cards",
+    "coach": "Manager"
   },
-  "pos": { "GK": "Goalkeepers", "DF": "Defenders", "MF": "Midfielders", "FW": "Forwards" },
+  "pos": {
+    "GK": "Goalkeepers",
+    "DF": "Defenders",
+    "MF": "Midfielders",
+    "FW": "Forwards",
+    "sub": "Substitutes"
+  },
   "predictions": {
     "empty": "You haven't made any predictions yet.",
     "none": "No predictions to show yet.",
@@ -228,7 +271,9 @@
       "poll": "Poll scores",
       "pollTip": "Fetch live scores right now (also runs automatically every 2 minutes during live windows).",
       "finalize": "Finalize",
-      "finalizeTip": "Lock due predictions, score finished matches, award points and refresh the rankings."
+      "finalizeTip": "Lock due predictions, score finished matches, award points and refresh the rankings.",
+      "nextRun": "Next run",
+      "manual": "manual only"
     }
   },
   "strength": {

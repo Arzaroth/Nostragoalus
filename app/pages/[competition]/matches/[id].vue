@@ -4,7 +4,7 @@ const route = useRoute()
 const id = computed(() => route.params.id as string)
 const NuxtLinkC = resolveComponent('NuxtLink')
 
-const { data } = await useFetch<{
+const { data, refresh: refreshMatch } = await useFetch<{
   match: {
     id: string
     homeTeam: string
@@ -20,6 +20,8 @@ const { data } = await useFetch<{
     group: string | null
     roundLabel: string
   }
+  myPrediction: { homeGoals: number; awayGoals: number; isJoker: boolean; totalPoints: number | null; baseTier: string | null } | null
+  isLocked: boolean
 }>(`/api/matches/${id.value}`)
 const { data: insights } = await useFetch<any>(`/api/matches/${id.value}/insights`)
 
@@ -34,6 +36,15 @@ const detail = computed(() => detailData.value?.detail)
 
 const m = computed(() => data.value?.match)
 const { live } = useLiveMatch(id)
+
+// Your pick, editable in place until kickoff.
+const myPred = computed(() => data.value?.myPrediction ?? null)
+const predLocked = computed(() => data.value?.isLocked ?? true)
+const canPredict = computed(() => !predLocked.value && !!m.value?.homeTeamCode && !!m.value?.awayTeamCode)
+const { upsert } = usePredictionMutations()
+function savePrediction(v: { home: number; away: number }) {
+  upsert.mutate({ matchId: id.value, home: v.home, away: v.away }, { onSuccess: () => refreshMatch() })
+}
 
 const status = computed(() => live.value?.status ?? m.value?.status ?? 'SCHEDULED')
 const homeScore = computed(() => live.value?.fullTimeHome ?? m.value?.fullTimeHome ?? null)
@@ -74,7 +85,8 @@ function cardEvents(side: 'HOME' | 'AWAY') {
 const timeline = computed(() => {
   const goals = (insights.value?.goals ?? []).map((g: any) => ({ kind: 'goal' as const, ...g }))
   const cards = (detail.value?.bookings ?? []).map((b: any) => ({
-    kind: b.card === 'RED' ? ('red' as const) : ('yellow' as const),
+    kind: 'card' as const,
+    card: b.card as 'YELLOW' | 'SECOND_YELLOW' | 'RED',
     side: b.side,
     minute: b.minute,
     playerName: b.playerName,
@@ -153,15 +165,31 @@ function fmtDate(d: string) {
         <div class="flex flex-col items-end gap-0.5 text-right">
           <span v-for="(g, i) in homeGoalEvents" :key="`g${i}`">{{ g.playerName }} {{ g.minute }}<span v-if="g.ownGoal"> (OG)</span> ⚽</span>
           <span v-for="(b, i) in cardEvents('HOME')" :key="`c${i}`" class="inline-flex items-center gap-1 justify-end">
-            {{ b.playerName }} {{ b.minute }} <span class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${b.card === 'RED' ? '#ef4444' : '#eab308'}`" />
+            {{ b.playerName }} {{ b.minute }}
+            <span v-if="b.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: #ef4444" /></span>
+            <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${b.card === 'RED' ? '#ef4444' : '#eab308'}`" />
           </span>
         </div>
         <div class="flex flex-col items-start gap-0.5">
           <span v-for="(g, i) in awayGoalEvents" :key="`g${i}`">⚽ {{ g.minute }} {{ g.playerName }}<span v-if="g.ownGoal"> (OG)</span></span>
           <span v-for="(b, i) in cardEvents('AWAY')" :key="`c${i}`" class="inline-flex items-center gap-1">
-            <span class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${b.card === 'RED' ? '#ef4444' : '#eab308'}`" /> {{ b.minute }} {{ b.playerName }}
+            <span v-if="b.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: #ef4444" /></span>
+            <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${b.card === 'RED' ? '#ef4444' : '#eab308'}`" />
+            {{ b.minute }} {{ b.playerName }}
           </span>
         </div>
+      </div>
+
+      <!-- your pick: editable until kickoff -->
+      <div v-if="canPredict || myPred" class="flex flex-wrap items-center justify-center gap-3 mt-4 pt-3 border-t text-sm" style="border-color: var(--p-content-border-color)">
+        <span class="text-xs font-semibold" style="color: var(--p-text-muted-color)">{{ t('match.yourPick') }}</span>
+        <ScoreInput v-if="canPredict" :home="myPred?.homeGoals ?? null" :away="myPred?.awayGoals ?? null" @update="savePrediction" />
+        <template v-else-if="myPred">
+          <span class="font-bold tabular-nums">{{ myPred.homeGoals }}–{{ myPred.awayGoals }}</span>
+          <span v-if="myPred.isJoker" title="Joker" style="color: #f59e0b">★</span>
+          <span v-if="myPred.totalPoints !== null" class="text-xs font-semibold" style="color: var(--p-primary-color)">+{{ myPred.totalPoints }} pts · {{ tierLabel(myPred.baseTier) }}</span>
+        </template>
+        <span v-if="canPredict && myPred?.isJoker" title="Joker" style="color: #f59e0b">★</span>
       </div>
     </div>
 
@@ -204,7 +232,8 @@ function fmtDate(d: string) {
             <div class="flex flex-col text-sm">
               <div v-for="(e, i) in timeline" :key="i" class="flex items-center gap-2 border-t py-2" style="border-color: var(--p-content-border-color)">
                 <span v-if="e.kind === 'goal'" class="w-3.5 text-center"><i class="pi pi-circle-fill text-xs" :style="`color:${e.side === 'HOME' ? 'var(--p-primary-color)' : 'var(--p-text-muted-color)'}`" /></span>
-                <span v-else class="w-3.5 flex justify-center"><span class="inline-block w-2.5 h-3.5 rounded-[2px]" :style="`background:${e.kind === 'red' ? '#ef4444' : '#eab308'}`" /></span>
+                <span v-else-if="e.card === 'SECOND_YELLOW'" class="w-3.5 relative" title="Second yellow"><span class="absolute left-0 top-0 w-2.5 h-3.5 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2.5 h-3.5 rounded-[2px]" style="background: #ef4444" /></span>
+                <span v-else class="w-3.5 flex justify-center"><span class="inline-block w-2.5 h-3.5 rounded-[2px]" :style="`background:${e.card === 'RED' ? '#ef4444' : '#eab308'}`" /></span>
                 <span class="w-10 tabular-nums" style="color: var(--p-text-muted-color)">{{ e.minute }}</span>
                 <span class="font-medium">{{ e.playerName }}</span>
                 <span v-if="e.kind === 'goal' && e.ownGoal" class="text-xs">(OG)</span>

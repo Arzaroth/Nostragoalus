@@ -31,10 +31,12 @@ export interface MatchDataProvider {
   getBracket?(): Promise<NormalizedBracket | null>
   // Optional: official per-player stats (goals + assists) keyed by any team id in the season.
   getPlayerStats?(opts: { teamId: string }): Promise<TopScorer[]>
-  // Optional: one fetch giving both player stats and the team's season aggregates.
-  getTeamSeason?(opts: { teamId: string }): Promise<{ players: TopScorer[]; team: TeamSeasonStats | null }>
-  // Optional: squad derived from match-day rosters (union across the given matches).
-  getSquad?(opts: { teamId: string; matches: { stageId: string; matchId: string }[] }): Promise<SquadPlayer[]>
+  // Optional: squad + head coach + season totals, derived from a sweep over the team's matches.
+  getTeamTournament?(opts: { teamRef: string; matches: { stageId: string; matchId: string }[] }): Promise<{
+    squad: SquadPlayer[]
+    coach: string | null
+    stats: TeamSeasonStats | null
+  }>
   // Optional: per-match team stats (attempts, passes, distance…) keyed by team id.
   getMatchStats?(opts: { ifesId: string }): Promise<Record<string, TeamMatchStats> | null>
 }

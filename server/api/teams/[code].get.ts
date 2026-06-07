@@ -1,7 +1,7 @@
 import { and, eq, or } from 'drizzle-orm'
 import { db } from '../../../db'
 import { competition as competitionTable, goalEvent, match } from '../../../db/schema'
-import type { SquadPlayer } from '../../../shared/types/match'
+import type { SquadPlayer, TeamSeasonStats, TopScorer } from '../../../shared/types/match'
 import { resolveCompetition } from '../../utils/competitions/store'
 import { getTeamMatches } from '../../utils/matches/service'
 import { computeGroupStandings } from '../../utils/stats/standings'
@@ -9,16 +9,21 @@ import { getCompetitionTopScorers } from '../../utils/stats/scorers'
 import { providerForCompetition } from '../../utils/providers'
 import { resolveCompetitionSeason } from '../../utils/sync/competition'
 
-// Squads are unions of match-day rosters (several upstream calls) — cache hard.
-const squadCache = new Map<string, { at: number; squad: SquadPlayer[] }>()
-const SQUAD_TTL_MS = 6 * 60 * 60 * 1000
+// The FIFA statistics document is season-wide (same for every team) and heavy —
+// cache it per competition. The tournament sweep (squad/coach/stats) is many
+// upstream calls — cache it per team, long.
+const playersCache = new Map<string, { at: number; players: TopScorer[] }>()
+const PLAYERS_TTL_MS = 10 * 60 * 1000
+const tournamentCache = new Map<string, { at: number; data: { squad: SquadPlayer[]; coach: string | null; stats: TeamSeasonStats | null } }>()
+const TOURNAMENT_TTL_MS = 6 * 60 * 60 * 1000
 
 export default defineEventHandler(async (event) => {
   const code = getRouterParam(event, 'code') as string
   const query = getQuery(event)
+  const lite = query.lite === '1' // map panel: skip the expensive tournament sweep
   const competition = await resolveCompetition(db, (query.competition as string) || null)
   if (!competition) {
-    return { team: null, matches: [], group: null, standings: null, topScorer: null, topAssister: null, teamStats: null, squad: [], competitions: [] }
+    return { team: null, matches: [], group: null, standings: null, topScorer: null, topAssister: null, teamStats: null, squad: [], coach: null, competitions: [] }
   }
 
   const matches = await getTeamMatches(db, competition.id, code)
@@ -51,24 +56,31 @@ export default defineEventHandler(async (event) => {
     standings = computeGroupStandings(groupMatches)
   }
 
-  // Prefer official FIFA stats (real assists + team aggregates); fall back to goal events.
-  let teamScorers: { playerName: string; teamCode: string | null; goals: number; assists: number | null }[] = []
-  let teamStats = null
+  // Player stats: official FIFA aggregates (real assists) with goal-event fallback.
   const provider = providerForCompetition(competition, await resolveCompetitionSeason(db, competition))
-  const ownTeamRow = await db
-    .select({ teamId: goalEvent.teamId })
-    .from(goalEvent)
-    .where(and(eq(goalEvent.competitionId, competition.id), eq(goalEvent.teamCode, code)))
-    .limit(1)
-  if (provider.getTeamSeason && ownTeamRow[0]?.teamId) {
-    try {
-      const season = await provider.getTeamSeason({ teamId: ownTeamRow[0].teamId })
-      teamScorers = season.players.filter((s) => s.teamCode === code)
-      teamStats = season.team
-    } catch {
-      // fall through to local aggregation
+  let allPlayers: TopScorer[] = []
+  if (provider.getPlayerStats) {
+    const cached = playersCache.get(competition.id)
+    if (cached && Date.now() - cached.at < PLAYERS_TTL_MS) {
+      allPlayers = cached.players
+    } else {
+      const anyTeamRow = await db
+        .select({ teamId: goalEvent.teamId })
+        .from(goalEvent)
+        .where(eq(goalEvent.competitionId, competition.id))
+        .limit(1)
+      if (anyTeamRow[0]?.teamId) {
+        try {
+          allPlayers = await provider.getPlayerStats({ teamId: anyTeamRow[0].teamId })
+          playersCache.set(competition.id, { at: Date.now(), players: allPlayers })
+        } catch {
+          // fall through to local aggregation
+        }
+      }
     }
   }
+  let teamScorers: { playerName: string; teamCode: string | null; goals: number; assists: number | null }[] =
+    allPlayers.filter((s) => s.teamCode === code)
   if (teamScorers.length === 0) {
     teamScorers = (await getCompetitionTopScorers(db, competition.id, 500)).filter((s) => s.teamCode === code)
   }
@@ -77,13 +89,15 @@ export default defineEventHandler(async (event) => {
     .filter((s) => (s.assists ?? 0) > 0)
     .sort((a, b) => (b.assists ?? 0) - (a.assists ?? 0))[0] ?? null
 
-  // Squad from match-day rosters, enriched with per-player goals/assists.
+  // Squad + coach + season totals (skipped in lite mode — the map doesn't show them).
   let squad: (SquadPlayer & { goals: number; assists: number })[] = []
-  if (provider.getSquad) {
+  let coach: string | null = null
+  let teamStats: TeamSeasonStats | null = null
+  if (!lite && provider.getTeamTournament) {
     const cacheKey = `${competition.id}:${code}`
-    const cached = squadCache.get(cacheKey)
-    let roster = cached && Date.now() - cached.at < SQUAD_TTL_MS ? cached.squad : null
-    if (!roster) {
+    const cached = tournamentCache.get(cacheKey)
+    let data = cached && Date.now() - cached.at < TOURNAMENT_TTL_MS ? cached.data : null
+    if (!data) {
       const refs = await db
         .select({ stageId: match.providerStageId, matchId: match.providerMatchId })
         .from(match)
@@ -91,21 +105,39 @@ export default defineEventHandler(async (event) => {
           and(eq(match.competitionId, competition.id), or(eq(match.homeTeamCode, code), eq(match.awayTeamCode, code))),
         )
       try {
-        roster = await provider.getSquad({
-          teamId: code,
+        data = await provider.getTeamTournament({
+          teamRef: code,
           matches: refs.filter((r) => r.stageId).map((r) => ({ stageId: r.stageId as string, matchId: r.matchId })),
         })
-        squadCache.set(cacheKey, { at: Date.now(), squad: roster })
+        tournamentCache.set(cacheKey, { at: Date.now(), data })
       } catch {
-        roster = []
+        data = { squad: [], coach: null, stats: null }
       }
     }
+    coach = data.coach
     const statsByName = new Map(teamScorers.map((s) => [s.playerName, s]))
-    squad = roster.map((p) => ({
+    squad = data.squad.map((p) => ({
       ...p,
       goals: statsByName.get(p.name)?.goals ?? 0,
       assists: statsByName.get(p.name)?.assists ?? 0,
     }))
+    // Goals for/against come from our stored results; assists from player stats.
+    if (data.stats) {
+      let gf = 0
+      let ga = 0
+      for (const m of matches) {
+        if (m.fullTimeHome == null || m.fullTimeAway == null) continue
+        const isHome = m.homeTeamCode === code
+        gf += isHome ? m.fullTimeHome : m.fullTimeAway
+        ga += isHome ? m.fullTimeAway : m.fullTimeHome
+      }
+      teamStats = {
+        ...data.stats,
+        goals: gf,
+        conceded: ga,
+        assists: teamScorers.reduce((a, s) => a + (s.assists ?? 0), 0) || null,
+      }
+    }
   }
 
   return {
@@ -117,6 +149,7 @@ export default defineEventHandler(async (event) => {
     topAssister,
     teamStats,
     squad,
+    coach,
     competitions,
   }
 })

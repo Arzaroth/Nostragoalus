@@ -28,45 +28,52 @@ const tiers = [
   { pts: '0', key: 'miss' },
 ]
 
-// Banner intro: scroll-scrubbed (Motion for Vue) from a screen-centered card
-// over a dimmed page to the docked full-bleed strip. The wrapper reserves
-// SCRUB px of scroll for the move; a light spring smooths the scrub.
+// Banner journey (Motion for Vue), scrubbed by scroll in two phases:
+//   phase 1 (0→SCRUB): screen-centered card over a dimmed page → docked full-bleed strip
+//   phase 2 (SCRUB→SCRUB+SCRUB2): the strip shrinks into a slim bar pinned under the header
 const SCRUB = 420
+const SCRUB2 = 360
+const MINI_H = 56
 const reduced = useReducedMotion()
 const { scrollY } = useScroll()
-const tRaw = useTransform(scrollY, [0, SCRUB], [1, 0]) // 1 = centered, 0 = docked
-const bt = useSpring(tRaw, { stiffness: 220, damping: 30 })
-const bWidth = useTransform(bt, (v) => `${(100 - 12 * v).toFixed(2)}vw`)
-const bHeight = useTransform(bt, (v) => `min(${((100 - 12 * v) * 0.3023).toFixed(2)}vw, 40vh)`)
-const bTransform = useTransform(bt, (v) => `translateY(calc(${v.toFixed(4)} * (50vh - 50% - 88px)))`)
-const bRadius = useTransform(bt, (v) => `${(30 * v).toFixed(1)}px`)
-const bShadow = useTransform(bt, (v) => `0 30px 90px rgba(8, 6, 24, ${(0.55 * v).toFixed(3)})`)
-const dimOpacity = useTransform(bt, (v) => 0.6 * v)
+const spring = { stiffness: 220, damping: 30 }
+const t1 = useSpring(useTransform(scrollY, [0, SCRUB], [1, 0]), spring) // 1 = centered
+const t2 = useSpring(useTransform(scrollY, [SCRUB, SCRUB + SCRUB2], [0, 1]), spring) // 1 = mini bar
+const bWidth = useTransform(t1, (v) => `${(100 - 12 * v).toFixed(2)}vw`)
+const bHeight = useTransform([t1, t2] as never, (values: never) => {
+  const [a, b] = values as unknown as [number, number]
+  const w = 100 - 12 * a
+  return `calc(min(${(w * 0.3023).toFixed(2)}vw, 40vh) * ${(1 - b).toFixed(4)} + ${(MINI_H * b).toFixed(1)}px)`
+})
+const bTransform = useTransform(t1, (v) => `translateX(-50%) translateY(calc(${v.toFixed(4)} * (50vh - 50% - 88px)))`)
+const bRadius = useTransform(t1, (v) => `${(30 * v).toFixed(1)}px`)
+const bShadow = useTransform([t1, t2] as never, (values: never) => {
+  const [a, b] = values as unknown as [number, number]
+  return `0 ${(30 * a + 6 * b).toFixed(1)}px ${(90 * a + 18 * b).toFixed(1)}px rgba(8, 6, 24, ${(0.55 * a + 0.35 * b).toFixed(3)})`
+})
+const dimOpacity = useTransform(t1, (v) => 0.6 * v)
 </script>
 
 <template>
   <div class="flex flex-col gap-20 sm:gap-28 pb-12">
-    <!-- Banner intro: sticky while the first SCRUB px of scroll animate it from
-         screen-centered (page dimmed behind) to the docked full-bleed strip. -->
-    <!-- z-40 on the wrapper: its transform creates a stacking context, so inner
-         z-indexes can't escape it — without this the z-30 dim paints over the banner. -->
+    <StarField />
+    <!-- Spacer reserving the docked strip + the phase-1 scroll budget; the banner
+         itself is fixed so it can stay pinned (slim) for the whole page. -->
     <div
-      class="relative left-1/2 -translate-x-1/2 w-screen -mt-6 -mb-8 sm:-mb-12 z-40"
+      class="relative w-screen left-1/2 -translate-x-1/2 -mt-6 -mb-8 sm:-mb-12"
       :style="{ height: reduced ? 'min(30.2vw, 40vh)' : `calc(min(30.2vw, 40vh) + ${SCRUB}px)` }"
     >
-      <div class="sticky top-16 z-40 flex justify-center">
-        <motion.div
-          v-if="!reduced"
-          class="overflow-hidden"
-          :style="{ width: bWidth, height: bHeight, transform: bTransform, borderRadius: bRadius, boxShadow: bShadow }"
-        >
-          <img src="/brand/banner-wide.svg" alt="Nostragoalus — the football oracle" class="w-full h-full object-cover block" >
-        </motion.div>
-        <div v-else class="w-screen h-[min(30.2vw,40vh)]">
-          <img src="/brand/banner-wide.svg" alt="Nostragoalus — the football oracle" class="w-full h-full object-cover block" >
-        </div>
+      <div v-if="reduced" class="w-screen h-[min(30.2vw,40vh)]">
+        <img src="/brand/banner-wide.svg" alt="Nostragoalus — the football oracle" class="w-full h-full object-cover block" >
       </div>
     </div>
+    <motion.div
+      v-if="!reduced"
+      class="fixed left-1/2 top-16 z-40 overflow-hidden"
+      :style="{ width: bWidth, height: bHeight, transform: bTransform, borderRadius: bRadius, boxShadow: bShadow }"
+    >
+      <img src="/brand/banner-wide.svg" alt="Nostragoalus — the football oracle" class="w-full h-full object-cover block" >
+    </motion.div>
     <motion.div v-if="!reduced" class="fixed inset-0 z-30 pointer-events-none" :style="{ background: '#0b0a18', opacity: dimOpacity }" />
 
     <!-- Hero -->

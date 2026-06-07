@@ -21,7 +21,11 @@
     "group": "Groupe",
     "noData": "Aucun match pour l'instant."
   },
-  "countdown": { "d": "j", "h": "h", "m": "min" },
+  "countdown": {
+    "d": "j",
+    "h": "h",
+    "m": "min"
+  },
   "picks": {
     "points": "Points",
     "rank": "Rang sur {n} joueurs",
@@ -59,19 +63,51 @@
     "featuresTitle": "Tout ce qu'il faut pour jouer",
     "featuresSub": "Du score à la précision aux tableaux en direct et à la carte interactive.",
     "f": {
-      "scoring": { "t": "Score à la précision", "d": "Les points dépendent de votre précision — score exact, différence de buts ou simplement le bon résultat." },
-      "joker": { "t": "Joker ×2", "d": "Doublez les points sur un match par tour quand vous êtes sûr de vous." },
-      "champion": { "t": "Vainqueur", "d": "Désignez le vainqueur du tournoi pour un bonus, verrouillé au premier coup d'envoi." },
-      "live": { "t": "Scores en direct", "d": "Les scores se mettent à jour en temps réel via WebSocket pendant les matchs." },
-      "bracket": { "t": "Tableau final", "d": "Suivez la route vers la finale sur un tableau à deux côtés." },
-      "map": { "t": "Carte interactive", "d": "Cliquez sur un pays pour son effectif, sa forme, son classement et son prochain match." },
-      "stats": { "t": "Stats détaillées", "d": "Possession, cartons, affluence, chronologie des buts et meilleur buteur/passeur de chaque équipe." },
-      "ranking": { "t": "Classements", "d": "Affrontez-vous par compétition ou au classement global de tous les temps." },
-      "competitions": { "t": "Plusieurs compétitions", "d": "Coupe du Monde 2026, 2022 et Euro 2024 — changez en un clic." }
+      "scoring": {
+        "t": "Score à la précision",
+        "d": "Les points dépendent de votre précision — score exact, différence de buts ou simplement le bon résultat."
+      },
+      "joker": {
+        "t": "Joker ×2",
+        "d": "Doublez les points sur un match par tour quand vous êtes sûr de vous."
+      },
+      "champion": {
+        "t": "Vainqueur",
+        "d": "Désignez le vainqueur du tournoi pour un bonus, verrouillé au premier coup d'envoi."
+      },
+      "live": {
+        "t": "Scores en direct",
+        "d": "Les scores se mettent à jour en temps réel via WebSocket pendant les matchs."
+      },
+      "bracket": {
+        "t": "Tableau final",
+        "d": "Suivez la route vers la finale sur un tableau à deux côtés."
+      },
+      "map": {
+        "t": "Carte interactive",
+        "d": "Cliquez sur un pays pour son effectif, sa forme, son classement et son prochain match."
+      },
+      "stats": {
+        "t": "Stats détaillées",
+        "d": "Possession, cartons, affluence, chronologie des buts et meilleur buteur/passeur de chaque équipe."
+      },
+      "ranking": {
+        "t": "Classements",
+        "d": "Affrontez-vous par compétition ou au classement global de tous les temps."
+      },
+      "competitions": {
+        "t": "Plusieurs compétitions",
+        "d": "Coupe du Monde 2026, 2022 et Euro 2024 — changez en un clic."
+      }
     },
     "scoringTitle": "Un score simple, basé sur le talent",
     "scoringSub": "Compté sur le résultat à 90 minutes. Plus vous êtes proche, plus vous marquez.",
-    "tier": { "exact": "Score exact", "diff": "Différence de buts", "outcome": "Bon résultat", "miss": "Raté" },
+    "tier": {
+      "exact": "Score exact",
+      "diff": "Différence de buts",
+      "outcome": "Bon résultat",
+      "miss": "Raté"
+    },
     "bonus": "Bonus de rareté pour les pronos audacieux",
     "jokerPill": "Un joker ×2 par tour",
     "championPill": "Bonus vainqueur",
@@ -97,9 +133,16 @@
     "conceded": "Buts encaissés",
     "assists": "Passes décisives",
     "yellow": "Cartons jaunes",
-    "red": "Cartons rouges"
+    "red": "Cartons rouges",
+    "coach": "Sélectionneur"
   },
-  "pos": { "GK": "Gardiens", "DF": "Défenseurs", "MF": "Milieux", "FW": "Attaquants" },
+  "pos": {
+    "GK": "Gardiens",
+    "DF": "Défenseurs",
+    "MF": "Milieux",
+    "FW": "Attaquants",
+    "sub": "Remplaçants"
+  },
   "predictions": {
     "empty": "Vous n'avez pas encore de pronostics.",
     "none": "Aucun pronostic à afficher.",
@@ -228,7 +271,9 @@
       "poll": "Scores en direct",
       "pollTip": "Récupère les scores en direct maintenant (s'exécute aussi automatiquement toutes les 2 minutes pendant les matchs).",
       "finalize": "Clôturer",
-      "finalizeTip": "Verrouille les pronos échus, note les matchs terminés, attribue les points et met à jour le classement."
+      "finalizeTip": "Verrouille les pronos échus, note les matchs terminés, attribue les points et met à jour le classement.",
+      "nextRun": "Prochaine exécution",
+      "manual": "manuel uniquement"
     }
   },
   "strength": {

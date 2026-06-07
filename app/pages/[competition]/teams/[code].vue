@@ -2,15 +2,18 @@
 const route = useRoute()
 const { t } = useI18n()
 const slug = useSelectedCompetition()
-const { data } = await useFetch<{
+const { data, status } = await useFetch<{
   team: { code: string; name: string } | null
   matches: any[]
   topScorer: { playerName: string; goals: number } | null
   topAssister: { playerName: string; assists: number } | null
   teamStats: Record<string, number | null> | null
   squad: { playerId: string; name: string; shirtNumber: number | null; position: string | null; captain: boolean; goals: number; assists: number }[]
+  coach: string | null
   competitions: { slug: string; name: string }[]
 }>(`/api/teams/${route.params.code}`, { query: computed(() => (slug.value ? { competition: slug.value } : {})) })
+
+const pending = computed(() => status.value === 'pending')
 
 const statItems = computed(() => {
   const s = data.value?.teamStats
@@ -39,7 +42,8 @@ const squadGroups = computed(() => {
   const groups: { key: string; label: string; players: typeof squad }[] = []
   for (const key of ['GK', 'DF', 'MF', 'FW', null] as const) {
     const players = squad.filter((p) => p.position === key)
-    if (players.length) groups.push({ key: key ?? 'other', label: key ? t(`pos.${key}`) : '·', players })
+    // FIFA's public feed marks bench-only outfielders as plain substitutes (no position).
+    if (players.length) groups.push({ key: key ?? 'sub', label: key ? t(`pos.${key}`) : t('pos.sub'), players })
   }
   return groups
 })
@@ -85,12 +89,17 @@ function fmt(d: string) {
         {{ c.name }}
       </NuxtLink>
     </div>
-    <div v-if="data.topScorer || data.topAssister" class="flex flex-wrap gap-x-5 gap-y-1 text-sm mb-6" style="color: var(--p-text-muted-color)">
+    <div v-if="data.topScorer || data.topAssister || data.coach" class="flex flex-wrap gap-x-5 gap-y-1 text-sm mb-4" style="color: var(--p-text-muted-color)">
+      <span v-if="data.coach">{{ t('team.coach') }}: <b style="color: var(--p-text-color)">{{ data.coach }}</b></span>
       <span v-if="data.topScorer">{{ t('match.topScorer') }}: <b style="color: var(--p-text-color)">{{ data.topScorer.playerName }}</b> ({{ data.topScorer.goals }}⚽)</span>
       <span v-if="data.topAssister">{{ t('match.topAssister') }}: <b style="color: var(--p-text-color)">{{ data.topAssister.playerName }}</b> ({{ data.topAssister.assists }}🅰)</span>
     </div>
 
-    <div class="flex flex-col gap-3">
+    <div v-if="pending" class="flex items-center gap-2 text-sm mb-4" style="color: var(--p-text-muted-color)">
+      <ProgressSpinner style="width: 20px; height: 20px" stroke-width="6" /> {{ t('common.loading') }}
+    </div>
+
+    <div class="flex flex-col gap-3" :class="{ 'opacity-50 transition-opacity': pending }">
       <NuxtLink
         v-for="m in data.matches"
         :key="m.id"
