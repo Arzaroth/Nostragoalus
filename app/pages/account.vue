@@ -93,19 +93,17 @@ function confirmBackupSaved() {
 
 // Fresh backup codes on demand (old ones stop working); each code is single-use.
 const regenCodes = ref<string[]>([])
-const regenPassword = ref('')
 const regenBusy = ref(false)
 async function regenerateBackupCodes() {
   tfaErr.value = ''
   regenBusy.value = true
   try {
-    const res = await authClient.twoFactor.generateBackupCodes({ password: regenPassword.value })
+    const res = await authClient.twoFactor.generateBackupCodes({ password: tfaPassword.value })
     if (res.error) {
       tfaErr.value = res.error.message || t('twofa.wrongPassword')
       return
     }
     regenCodes.value = res.data?.backupCodes ?? []
-    regenPassword.value = ''
   } finally {
     regenBusy.value = false
   }
@@ -411,6 +409,12 @@ async function confirmDelete() {
               <Button :label="t('twofa.trustRevoke')" icon="pi pi-eraser" size="small" severity="secondary" outlined @click="revokeTrust" />
             </div>
 
+            <!-- one password gate shared by the actions below -->
+            <div class="flex flex-col gap-1 max-w-xs">
+              <label class="text-xs font-medium">{{ t('account.currentPassword') }}</label>
+              <Password v-model="tfaPassword" :feedback="false" toggle-mask fluid />
+            </div>
+
             <div class="rounded-xl border p-3 flex flex-col gap-3" style="border-color: var(--p-content-border-color)">
               <div class="text-xs" style="color: var(--p-text-muted-color)">{{ t('twofa.regenHint') }}</div>
               <div v-if="regenCodes.length">
@@ -422,20 +426,12 @@ async function confirmDelete() {
                   <Button icon="pi pi-download" :label="t('twofa.download')" size="small" severity="secondary" outlined @click="downloadBackupCodes(regenCodes)" />
                 </div>
               </div>
-              <div v-else class="flex items-end gap-3">
-                <div class="flex flex-col gap-1">
-                  <label class="text-xs font-medium">{{ t('account.currentPassword') }}</label>
-                  <Password v-model="regenPassword" :feedback="false" toggle-mask @keyup.enter="regenPassword && regenerateBackupCodes()" />
-                </div>
-                <Button :label="t('twofa.regen')" size="small" severity="secondary" outlined :loading="regenBusy" :disabled="!regenPassword" @click="regenerateBackupCodes" />
+              <div v-else>
+                <Button :label="t('twofa.regen')" size="small" severity="secondary" outlined :loading="regenBusy" :disabled="!tfaPassword" @click="regenerateBackupCodes" />
               </div>
             </div>
 
             <div class="flex flex-wrap items-end gap-3">
-              <div class="flex flex-col gap-1">
-                <label class="text-xs font-medium">{{ t('account.currentPassword') }}</label>
-                <Password v-model="tfaPassword" :feedback="false" toggle-mask @keyup.enter="tfaPassword && tfaDisableCode && disable2fa()" />
-              </div>
               <div class="flex flex-col gap-1">
                 <label class="text-xs font-medium">{{ t('twofa.disableCode') }}</label>
                 <InputOtp v-model="tfaDisableCode" :length="6" integer-only @keyup.enter="tfaPassword && tfaDisableCode && disable2fa()" />
