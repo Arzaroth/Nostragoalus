@@ -216,7 +216,6 @@ onMounted(() => {
       <div>© 2026 {{ config.public.appName }} · {{ t('landing.footer') }} {{ t('footer.builtWith') }}</div>
       <div class="flex justify-center gap-4 text-xs">
         <NuxtLink to="/about" class="hover:underline">{{ t('about.title') }}</NuxtLink>
-        <a href="https://github.com/Arzaroth/Nostragoalus" target="_blank" rel="noopener" class="hover:underline">{{ t('footer.source') }}</a>
         <span>WTFPL</span>
       </div>
     </footer>

@@ -5,6 +5,7 @@ const { t } = useI18n()
 
 interface StackItem {
   name: string
+  logo?: string
   desc: string
   url: string
   license: string
@@ -15,38 +16,39 @@ const stack: { group: string; items: StackItem[] }[] = [
   {
     group: 'Frontend',
     items: [
-      { name: 'Nuxt', desc: 'Vue meta-framework: SSR, routing, server in one', url: 'https://nuxt.com', license: 'MIT', licenseUrl: 'https://github.com/nuxt/nuxt/blob/main/LICENSE' },
-      { name: 'Vue 3', desc: 'The reactive UI framework underneath it all', url: 'https://vuejs.org', license: 'MIT', licenseUrl: 'https://github.com/vuejs/core/blob/main/LICENSE' },
-      { name: 'TypeScript', desc: 'Typed JavaScript, end to end', url: 'https://www.typescriptlang.org', license: 'Apache-2.0', licenseUrl: 'https://github.com/microsoft/TypeScript/blob/main/LICENSE.txt' },
-      { name: 'PrimeVue', desc: 'The component library (inputs, tables, tooltips…)', url: 'https://primevue.org', license: 'MIT', licenseUrl: 'https://github.com/primefaces/primevue/blob/master/LICENSE.md' },
-      { name: 'UnoCSS', desc: 'Atomic CSS engine for the utility classes', url: 'https://unocss.dev', license: 'MIT', licenseUrl: 'https://github.com/unocss/unocss/blob/main/LICENSE' },
-      { name: 'TanStack Query', desc: 'Server-state caching, mutations, invalidation', url: 'https://tanstack.com/query', license: 'MIT', licenseUrl: 'https://github.com/TanStack/query/blob/main/LICENSE' },
-      { name: 'Motion for Vue', desc: 'The scroll-driven banner choreography', url: 'https://motion.dev', license: 'MIT', licenseUrl: 'https://github.com/motiondivision/motion/blob/main/LICENSE.md' },
-      { name: 'Leaflet', desc: 'The interactive world map', url: 'https://leafletjs.com', license: 'BSD-2-Clause', licenseUrl: 'https://github.com/Leaflet/Leaflet/blob/main/LICENSE' },
+      { name: 'Nuxt', logo: 'nuxt', desc: 'Vue meta-framework: SSR, routing, server in one', url: 'https://nuxt.com', license: 'MIT', licenseUrl: 'https://github.com/nuxt/nuxt/blob/main/LICENSE' },
+      { name: 'Vue 3', logo: 'vuedotjs', desc: 'The reactive UI framework underneath it all', url: 'https://vuejs.org', license: 'MIT', licenseUrl: 'https://github.com/vuejs/core/blob/main/LICENSE' },
+      { name: 'TypeScript', logo: 'typescript', desc: 'Typed JavaScript, end to end', url: 'https://www.typescriptlang.org', license: 'Apache-2.0', licenseUrl: 'https://github.com/microsoft/TypeScript/blob/main/LICENSE.txt' },
+      { name: 'PrimeVue', logo: 'primevue', desc: 'The component library (inputs, tables, tooltips…)', url: 'https://primevue.org', license: 'MIT', licenseUrl: 'https://github.com/primefaces/primevue/blob/master/LICENSE.md' },
+      { name: 'UnoCSS', logo: 'unocss', desc: 'Atomic CSS engine for the utility classes', url: 'https://unocss.dev', license: 'MIT', licenseUrl: 'https://github.com/unocss/unocss/blob/main/LICENSE' },
+      { name: 'TanStack Query', logo: 'reactquery', desc: 'Server-state caching, mutations, invalidation', url: 'https://tanstack.com/query', license: 'MIT', licenseUrl: 'https://github.com/TanStack/query/blob/main/LICENSE' },
+      { name: 'Motion for Vue', logo: 'framer', desc: 'The scroll-driven banner choreography', url: 'https://motion.dev', license: 'MIT', licenseUrl: 'https://github.com/motiondivision/motion/blob/main/LICENSE.md' },
+      { name: 'Leaflet', logo: 'leaflet', desc: 'The interactive world map', url: 'https://leafletjs.com', license: 'BSD-2-Clause', licenseUrl: 'https://github.com/Leaflet/Leaflet/blob/main/LICENSE' },
     ],
   },
   {
     group: 'Backend',
     items: [
-      { name: 'Nitro / h3', desc: 'The server engine: API routes, tasks, WebSockets', url: 'https://nitro.build', license: 'MIT', licenseUrl: 'https://github.com/nitrojs/nitro/blob/main/LICENSE' },
-      { name: 'Drizzle ORM', desc: 'Typed SQL, schema and migrations', url: 'https://orm.drizzle.team', license: 'Apache-2.0', licenseUrl: 'https://github.com/drizzle-team/drizzle-orm/blob/main/LICENSE' },
-      { name: 'PostgreSQL', desc: 'The database', url: 'https://www.postgresql.org', license: 'PostgreSQL', licenseUrl: 'https://www.postgresql.org/about/licence/' },
-      { name: 'better-auth', desc: 'Auth: sessions, 2FA, passkeys, SSO, admin', url: 'https://better-auth.com', license: 'MIT', licenseUrl: 'https://github.com/better-auth/better-auth/blob/main/LICENSE.md' },
-      { name: 'Nodemailer', desc: 'SMTP delivery for email codes', url: 'https://nodemailer.com', license: 'MIT-0', licenseUrl: 'https://github.com/nodemailer/nodemailer/blob/master/LICENSE' },
-      { name: 'node-qrcode', desc: 'The 2FA enrollment QR codes', url: 'https://github.com/soldair/node-qrcode', license: 'MIT', licenseUrl: 'https://github.com/soldair/node-qrcode/blob/master/license' },
+      { name: 'Nitro / h3', logo: 'nitro', desc: 'The server engine: API routes, tasks, WebSockets', url: 'https://nitro.build', license: 'MIT', licenseUrl: 'https://github.com/nitrojs/nitro/blob/main/LICENSE' },
+      { name: 'Drizzle ORM', logo: 'drizzle', desc: 'Typed SQL, schema and migrations', url: 'https://orm.drizzle.team', license: 'Apache-2.0', licenseUrl: 'https://github.com/drizzle-team/drizzle-orm/blob/main/LICENSE' },
+      { name: 'PostgreSQL', logo: 'postgresql', desc: 'The database', url: 'https://www.postgresql.org', license: 'PostgreSQL', licenseUrl: 'https://www.postgresql.org/about/licence/' },
+      { name: 'better-auth', logo: 'betterauth', desc: 'Auth: sessions, 2FA, passkeys, SSO, admin', url: 'https://better-auth.com', license: 'MIT', licenseUrl: 'https://github.com/better-auth/better-auth/blob/main/LICENSE.md' },
+      { name: 'Nodemailer', logo: 'gmail', desc: 'SMTP delivery for email codes', url: 'https://nodemailer.com', license: 'MIT-0', licenseUrl: 'https://github.com/nodemailer/nodemailer/blob/master/LICENSE' },
+      { name: 'node-qrcode', logo: 'qrcode', desc: 'The 2FA enrollment QR codes', url: 'https://github.com/soldair/node-qrcode', license: 'MIT', licenseUrl: 'https://github.com/soldair/node-qrcode/blob/master/license' },
     ],
   },
   {
     group: 'Tooling & infrastructure',
     items: [
-      { name: 'Node.js', desc: 'The runtime', url: 'https://nodejs.org', license: 'MIT', licenseUrl: 'https://github.com/nodejs/node/blob/main/LICENSE' },
-      { name: 'pnpm', desc: 'Package management', url: 'https://pnpm.io', license: 'MIT', licenseUrl: 'https://github.com/pnpm/pnpm/blob/main/LICENSE' },
-      { name: 'Vite', desc: 'Dev server and bundling under Nuxt', url: 'https://vite.dev', license: 'MIT', licenseUrl: 'https://github.com/vitejs/vite/blob/main/LICENSE' },
-      { name: 'Vitest', desc: 'The test runner behind the 98% coverage gate', url: 'https://vitest.dev', license: 'MIT', licenseUrl: 'https://github.com/vitest-dev/vitest/blob/main/LICENSE' },
-      { name: 'Docker', desc: 'Containers for the app, database and mail catcher', url: 'https://www.docker.com', license: 'Apache-2.0', licenseUrl: 'https://github.com/moby/moby/blob/master/LICENSE' },
-      { name: 'maildev', desc: 'Local SMTP catcher for dev email flows', url: 'https://github.com/maildev/maildev', license: 'MIT', licenseUrl: 'https://github.com/maildev/maildev/blob/master/LICENSE' },
-      { name: 'mise', desc: 'Task shortcuts for the compose stacks', url: 'https://mise.jdx.dev', license: 'MIT', licenseUrl: 'https://github.com/jdx/mise/blob/main/LICENSE' },
-      { name: 'PGlite', desc: 'In-memory Postgres powering hermetic tests', url: 'https://pglite.dev', license: 'Apache-2.0', licenseUrl: 'https://github.com/electric-sql/pglite/blob/main/LICENSE' },
+      { name: 'Node.js', logo: 'nodedotjs', desc: 'The runtime', url: 'https://nodejs.org', license: 'MIT', licenseUrl: 'https://github.com/nodejs/node/blob/main/LICENSE' },
+      { name: 'pnpm', logo: 'pnpm', desc: 'Package management', url: 'https://pnpm.io', license: 'MIT', licenseUrl: 'https://github.com/pnpm/pnpm/blob/main/LICENSE' },
+      { name: 'Vite', logo: 'vite', desc: 'Dev server and bundling under Nuxt', url: 'https://vite.dev', license: 'MIT', licenseUrl: 'https://github.com/vitejs/vite/blob/main/LICENSE' },
+      { name: 'Vitest', logo: 'vitest', desc: 'The test runner behind the 98% coverage gate', url: 'https://vitest.dev', license: 'MIT', licenseUrl: 'https://github.com/vitest-dev/vitest/blob/main/LICENSE' },
+      { name: 'Docker', logo: 'docker', desc: 'Containers for the app, database and mail catcher', url: 'https://www.docker.com', license: 'Apache-2.0', licenseUrl: 'https://github.com/moby/moby/blob/master/LICENSE' },
+      { name: 'maildev', logo: 'maildotru', desc: 'Local SMTP catcher for dev email flows', url: 'https://github.com/maildev/maildev', license: 'MIT', licenseUrl: 'https://github.com/maildev/maildev/blob/master/LICENSE' },
+      { name: 'mise', logo: 'mise', desc: 'Task shortcuts for the compose stacks', url: 'https://mise.jdx.dev', license: 'MIT', licenseUrl: 'https://github.com/jdx/mise/blob/main/LICENSE' },
+      { name: 'PGlite', logo: 'postgresql', desc: 'In-memory Postgres powering hermetic tests', url: 'https://pglite.dev', license: 'Apache-2.0', licenseUrl: 'https://github.com/electric-sql/pglite/blob/main/LICENSE' },
+      { name: 'Bun', logo: 'bun', desc: 'Alternative runtime - the production bundle runs on it too', url: 'https://bun.sh', license: 'MIT', licenseUrl: 'https://github.com/oven-sh/bun/blob/main/LICENSE.md' },
     ],
   },
 ]
@@ -84,6 +86,7 @@ const changelog = computed<ChangelogVersion[]>(() => {
 
 <template>
   <div class="max-w-4xl mx-auto flex flex-col gap-12 pb-12">
+    <StarField :style="{ zIndex: -10 }" />
     <div>
       <h1 class="text-3xl font-bold flex items-center gap-3"><img src="/brand/mark.svg" alt="" class="w-10 h-10" >{{ t('about.title') }}</h1>
       <p class="mt-3 max-w-2xl" style="color: var(--p-text-muted-color)">{{ t('about.intro') }}</p>
@@ -111,9 +114,12 @@ const changelog = computed<ChangelogVersion[]>(() => {
             class="ng-card rounded-xl border p-4 flex flex-col gap-1 hover:!border-[var(--p-primary-color)] transition-colors"
             style="background: var(--p-content-background)"
           >
-            <span class="font-semibold flex items-center justify-between">
-              {{ item.name }}
-              <a :href="item.licenseUrl" target="_blank" rel="noopener" class="text-[10px] font-mono px-1.5 py-0.5 rounded border hover:underline" style="color: var(--p-text-muted-color); border-color: var(--p-content-border-color)" @click.stop>{{ item.license }}</a>
+            <span class="font-semibold flex items-center justify-between gap-2">
+              <span class="flex items-center gap-2 min-w-0">
+                <img v-if="item.logo" :src="`https://cdn.simpleicons.org/${item.logo}`" class="w-5 h-5 shrink-0" alt="" loading="lazy" onerror="this.style.display='none'" >
+                <span class="truncate">{{ item.name }}</span>
+              </span>
+              <a :href="item.licenseUrl" target="_blank" rel="noopener" class="text-[10px] font-mono px-1.5 py-0.5 rounded border hover:underline shrink-0" style="color: var(--p-text-muted-color); border-color: var(--p-content-border-color)" @click.stop>{{ item.license }}</a>
             </span>
             <span class="text-xs" style="color: var(--p-text-muted-color)">{{ item.desc }}</span>
           </a>
