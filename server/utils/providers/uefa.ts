@@ -112,17 +112,63 @@ export function normalizeUefaMatch(m: UefaMatch): NormalizedMatch {
   }
 }
 
+interface UefaEventPerson {
+  id?: string | null
+  internationalName?: string | null
+  countryCode?: string | null
+  // Coach actors nest one level deeper, with translated names only.
+  person?: { id?: string | null; translations?: { name?: Record<string, string> | null } | null } | null
+}
+
 export interface UefaEvent {
   type?: string | null
   phase?: string | null
   time?: { minute?: number | null; injuryMinute?: number | null } | null
   primaryActor?: {
-    person?: { id?: string | null; internationalName?: string | null; countryCode?: string | null } | null
+    person?: UefaEventPerson | null
     team?: { id?: string | null } | null
   } | null
   secondaryActor?: {
-    person?: { id?: string | null; internationalName?: string | null } | null
+    person?: UefaEventPerson | null
   } | null
+}
+
+export function actorName(person: UefaEventPerson | null | undefined): string {
+  return person?.internationalName ?? person?.person?.translations?.name?.EN ?? '?'
+}
+
+export function actorId(person: UefaEventPerson | null | undefined): string | null {
+  return person?.id ?? person?.person?.id ?? null
+}
+
+export interface UefaMatchStatRow {
+  teamId?: string | null
+  statistics?: { name?: string | null; value?: string | null }[] | null
+}
+
+export function normalizeUefaMatchStats(row: UefaMatchStatRow): TeamMatchStats {
+  const num = (name: string): number | null => {
+    const v = (row.statistics ?? []).find((s) => s.name === name)?.value
+    if (v == null || v === '') return null
+    const n = Number(v)
+    return Number.isFinite(n) ? n : null
+  }
+  return {
+    possession: num('ball_possession'),
+    attempts: num('attempts'),
+    onTarget: num('attempts_on_target'),
+    passes: num('passes_attempted'),
+    passesCompleted: num('passes_completed'),
+    crosses: num('cross_attempted'),
+    corners: num('corners'),
+    fouls: num('fouls_committed'),
+    offsides: num('offsides'),
+    distanceKm: num('distance_covered'),
+    pressuresApplied: null,
+    forcedTurnovers: null,
+    yellowCards: num('yellow_cards'),
+    redCards: num('red_cards'),
+  }
 }
 
 export interface UefaPlayerRow {
@@ -200,6 +246,7 @@ export interface UefaOptions {
   competitionId?: string
   baseUrl?: string
   statsBaseUrl?: string
+  matchStatsBaseUrl?: string
   compBaseUrl?: string
   fetchImpl?: typeof fetch
   rateLimiter?: RateLimiter
@@ -207,11 +254,13 @@ export interface UefaOptions {
 
 const DEFAULT_BASE_URL = 'https://match.uefa.com'
 const DEFAULT_STATS_BASE_URL = 'https://compstats.uefa.com'
+const DEFAULT_MATCH_STATS_BASE_URL = 'https://matchstats.uefa.com'
 const DEFAULT_COMP_BASE_URL = 'https://comp.uefa.com'
 
 export function uefaProvider(options: UefaOptions): MatchDataProvider {
   const baseUrl = options.baseUrl ?? DEFAULT_BASE_URL
   const statsBaseUrl = options.statsBaseUrl ?? DEFAULT_STATS_BASE_URL
+  const matchStatsBaseUrl = options.matchStatsBaseUrl ?? DEFAULT_MATCH_STATS_BASE_URL
   const compBaseUrl = options.compBaseUrl ?? DEFAULT_COMP_BASE_URL
   const competitionId = options.competitionId ?? '3' // EURO
   const doFetch = options.fetchImpl ?? fetch
@@ -227,6 +276,20 @@ export function uefaProvider(options: UefaOptions): MatchDataProvider {
 
   function fetchEvents(matchId: string) {
     return getJson<UefaEvent[]>(`${baseUrl}/v5/matches/${matchId}/events?filter=ALL&limit=500&offset=0`)
+  }
+
+  // The official per-match team statistics feed (what uefa.com's match centre shows).
+  async function fetchMatchStats(matchId: string): Promise<Record<string, TeamMatchStats> | null> {
+    try {
+      const rows = await getJson<UefaMatchStatRow[]>(`${matchStatsBaseUrl}/v1/team-statistics/${matchId}`)
+      const out: Record<string, TeamMatchStats> = {}
+      for (const row of rows) {
+        if (row.teamId) out[row.teamId] = normalizeUefaMatchStats(row)
+      }
+      return Object.keys(out).length ? out : null
+    } catch {
+      return null
+    }
   }
 
   async function fetchRanking(kind: 'player-ranking' | 'team-ranking', stats: string, limit: number, offset = 0) {
@@ -317,13 +380,13 @@ export function uefaProvider(options: UefaOptions): MatchDataProvider {
           teamId: team?.id ?? null,
           teamName: team?.internationalName ?? '?',
           teamCode: team?.countryCode ?? null,
-          playerId: e.primaryActor?.person?.id ?? null,
-          playerName: e.primaryActor?.person?.internationalName ?? '?',
+          playerId: actorId(e.primaryActor?.person),
+          playerName: actorName(e.primaryActor?.person),
           minute: eventMinute(e),
           goalType: null,
           ownGoal: e.type === 'OWN_GOAL',
-          assistPlayerId: e.secondaryActor?.person?.id ?? null,
-          assistPlayerName: e.secondaryActor?.person?.internationalName ?? null,
+          assistPlayerId: actorId(e.secondaryActor?.person),
+          assistPlayerName: e.secondaryActor?.person ? actorName(e.secondaryActor.person) : null,
         })
       }
 
@@ -333,7 +396,7 @@ export function uefaProvider(options: UefaOptions): MatchDataProvider {
         if (e.type !== 'YELLOW_CARD' && e.type !== 'RED_CARD') continue
         const side = sideOf(e)
         if (!side) continue
-        const playerId = e.primaryActor?.person?.id ?? null
+        const playerId = actorId(e.primaryActor?.person)
         let card: BookingEvent['card'] = e.type === 'RED_CARD' ? 'RED' : 'YELLOW'
         if (e.type === 'YELLOW_CARD' && playerId) {
           if (yellowsSeen.has(playerId)) card = 'SECOND_YELLOW'
@@ -342,7 +405,7 @@ export function uefaProvider(options: UefaOptions): MatchDataProvider {
         bookings.push({
           side,
           playerId,
-          playerName: e.primaryActor?.person?.internationalName ?? '?',
+          playerName: actorName(e.primaryActor?.person),
           minute: eventMinute(e),
           card,
         })
@@ -360,9 +423,10 @@ export function uefaProvider(options: UefaOptions): MatchDataProvider {
         red: bookings.filter((b) => b.side === side && b.card !== 'YELLOW').length,
       })
 
+      const statsByTeam = await fetchMatchStats(matchId)
       return {
-        possessionHome: null,
-        possessionAway: null,
+        possessionHome: (homeId && statsByTeam?.[homeId]?.possession) ?? null,
+        possessionAway: (awayId && statsByTeam?.[awayId]?.possession) ?? null,
         attendance: m.matchAttendance ?? null,
         stadium: m.stadium?.translations?.name?.EN ?? null,
         cards: { home: countCards('HOME'), away: countCards('AWAY') },
@@ -376,6 +440,9 @@ export function uefaProvider(options: UefaOptions): MatchDataProvider {
     },
 
     async getMatchStats({ ifesId }: { ifesId: string }): Promise<Record<string, TeamMatchStats> | null> {
+      const official = await fetchMatchStats(ifesId)
+      if (official) return official
+      // Fallback: rebuild what we can from the event stream.
       const m = await getJson<UefaMatch | null>(`${baseUrl}/v5/matches/${ifesId}`)
       if (!m) return null
       const events = await fetchEvents(ifesId)

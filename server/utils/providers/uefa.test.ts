@@ -458,3 +458,72 @@ describe('uefa bracket', () => {
     expect(b!.rounds[0].matches).toHaveLength(2) // kickoff-order fallback kept both
   })
 })
+
+import { actorId, actorName, normalizeUefaMatchStats } from './uefa'
+
+describe('uefa official match stats + coach actors', () => {
+  const noWait = () => new RateLimiter(0)
+  const STAT_ROWS = [
+    { teamId: '122', statistics: [
+      { name: 'ball_possession', value: '63' }, { name: 'attempts', value: '15' }, { name: 'attempts_on_target', value: '5' },
+      { name: 'passes_attempted', value: '544' }, { name: 'passes_completed', value: '496' }, { name: 'cross_attempted', value: '23' },
+      { name: 'corners', value: '10' }, { name: 'fouls_committed', value: '11' }, { name: 'offsides', value: '1' },
+      { name: 'distance_covered', value: '109.14' }, { name: 'yellow_cards', value: '1' }, { name: 'red_cards', value: '0' },
+    ] },
+    { teamId: '39', statistics: [{ name: 'ball_possession', value: '37' }] },
+    { statistics: [{ name: 'ball_possession', value: '0' }] }, // no teamId - dropped
+  ]
+
+  it('normalizes the official per-match feed', () => {
+    const s = normalizeUefaMatchStats(STAT_ROWS[0])
+    expect(s).toMatchObject({ possession: 63, attempts: 15, onTarget: 5, passes: 544, passesCompleted: 496, crosses: 23, corners: 10, fouls: 11, offsides: 1, distanceKm: 109.14, yellowCards: 1, redCards: 0, pressuresApplied: null })
+    expect(normalizeUefaMatchStats({ statistics: [{ name: 'attempts', value: 'NaN-ish' }] }).attempts).toBeNull()
+  })
+
+  it('getMatchStats prefers the official feed and keys by team id', async () => {
+    const fetchImpl = (async (url: string) => {
+      if (String(url).includes('/v1/team-statistics/')) return new Response(JSON.stringify(STAT_ROWS), { status: 200 })
+      return new Response('null', { status: 200 })
+    }) as unknown as typeof fetch
+    const provider = uefaProvider({ seasonYear: '2024', rateLimiter: noWait(), fetchImpl })
+    const stats = await provider.getMatchStats!({ ifesId: '2036211' })
+    expect(Object.keys(stats!).sort()).toEqual(['122', '39'])
+    expect(stats!['122'].possession).toBe(63)
+  })
+
+  it('detail picks up possession from the feed; falls back to event aggregation when it 404s', async () => {
+    const okStats = (async (url: string) => {
+      const u = String(url)
+      if (u.includes('/v1/team-statistics/')) return new Response(JSON.stringify([{ teamId: '1', statistics: [{ name: 'ball_possession', value: '58' }] }, { teamId: '2', statistics: [{ name: 'ball_possession', value: '42' }] }]), { status: 200 })
+      if (u.includes('/events')) return new Response('[]', { status: 200 })
+      return new Response(JSON.stringify(FULL_MATCH), { status: 200 })
+    }) as unknown as typeof fetch
+    const provider = uefaProvider({ seasonYear: '2024', rateLimiter: noWait(), fetchImpl: okStats })
+    const d = await provider.getMatchDetail!({ matchId: '900' })
+    expect(d!.possessionHome).toBe(58)
+    expect(d!.possessionAway).toBe(42)
+
+    const noFeed = (async (url: string) => {
+      const u = String(url)
+      if (u.includes('/v1/team-statistics/')) return new Response('nope', { status: 404 })
+      if (u.includes('/events')) return new Response(JSON.stringify(EVENTS), { status: 200 })
+      return new Response(JSON.stringify(FULL_MATCH), { status: 200 })
+    }) as unknown as typeof fetch
+    const fb = uefaProvider({ seasonYear: '2024', rateLimiter: noWait(), fetchImpl: noFeed })
+    const stats = await fb.getMatchStats!({ ifesId: '900' })
+    expect(stats!['1'].attempts).toBe(3) // event-derived fallback
+    const d2 = await fb.getMatchDetail!({ matchId: '900' })
+    expect(d2!.possessionHome).toBeNull()
+  })
+
+  it('coach bookings resolve the nested translated name', async () => {
+    const COACH_EVENTS: UefaEvent[] = [
+      { type: 'YELLOW_CARD', time: { minute: 59 }, primaryActor: { person: { person: { id: 'c1', translations: { name: { EN: 'Julian Nagelsmann' } } } }, team: { id: '1' } } },
+    ]
+    const provider = uefaProvider({ seasonYear: '2024', rateLimiter: noWait(), fetchImpl: detailFetch(FULL_MATCH, COACH_EVENTS) })
+    const d = await provider.getMatchDetail!({ matchId: '900' })
+    expect(d!.bookings[0]).toMatchObject({ playerName: 'Julian Nagelsmann', playerId: 'c1', card: 'YELLOW' })
+    expect(actorName(null)).toBe('?')
+    expect(actorId(undefined)).toBeNull()
+  })
+})
