@@ -36,7 +36,6 @@ async function signInSSO() {
 
 <template>
   <div class="flex flex-col gap-3 max-w-sm mx-auto mt-12">
-    <GuestPrefs />
     <img src="/brand/mark.svg" alt="Nostragoalus" class="w-20 mx-auto" >
     <h1 class="text-2xl font-bold">{{ t('auth.signIn') }}</h1>
     <Message v-if="error" severity="error">{{ error }}</Message>
@@ -48,5 +47,6 @@ async function signInSSO() {
     </div>
     <Button :label="t('auth.sso')" icon="pi pi-key" severity="secondary" outlined @click="signInSSO" />
     <NuxtLink to="/signup" class="text-sm text-center">{{ t('auth.needAccount') }}</NuxtLink>
+    <div class="flex justify-center mt-6 opacity-75"><GuestPrefs /></div>
   </div>
 </template>

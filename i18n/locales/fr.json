@@ -277,7 +277,8 @@
       "nextRun": "Prochaine exécution",
       "manual": "manuel uniquement",
       "lastRun": "Dernière exécution",
-      "lastFailure": "Dernier échec"
+      "lastFailure": "Dernier échec",
+      "nothingToDo": "rien à faire"
     }
   },
   "strength": {
@@ -317,6 +318,12 @@
     "copy": "Copier",
     "copyCodes": "Copier les codes",
     "download": "Télécharger .txt",
-    "disableCode": "Code actuel à 6 chiffres"
+    "disableCode": "Code actuel à 6 chiffres",
+    "backupTitle": "Sauvegardez vos codes de secours",
+    "savedCodes": "J'ai sauvegardé mes codes",
+    "regen": "Générer de nouveaux codes",
+    "regenHint": "Les codes de secours sont à usage unique. Générez-en de nouveaux à tout moment ; les anciens cessent de fonctionner.",
+    "trustRevoke": "Ne plus faire confiance à cet appareil",
+    "trustRevoked": "Appareil oublié"
   }
 }

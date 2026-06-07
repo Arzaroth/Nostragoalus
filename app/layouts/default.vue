@@ -16,7 +16,12 @@ watch(
   { immediate: true },
 )
 
-const { data: adminStatus } = useFetch('/api/admin/status')
+const { data: adminStatus, refresh: refreshAdminStatus } = useFetch('/api/admin/status')
+// The admin flag must follow sign-in/out without a hard refresh.
+watch(
+  () => session.value?.data?.user?.id,
+  () => refreshAdminStatus(),
+)
 const isAdmin = computed(() => (adminStatus.value as { isAdmin?: boolean } | null)?.isAdmin === true)
 
 const navLinks = computed(() => {

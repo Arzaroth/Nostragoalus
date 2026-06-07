@@ -63,12 +63,34 @@ const refreshTooltip = computed(() => ({ value: taskTip('fixtures:refresh', t('a
 const pollTooltip = computed(() => ({ value: taskTip('scores:poll', t('admin.data.pollTip')), escape: false }))
 const finalizeTooltip = computed(() => ({ value: taskTip('matches:finalize', t('admin.data.finalizeTip')), escape: false }))
 
+// Turn the stored JSON result into readable "key: value" lines.
+function humanizeResult(json: string): string {
+  try {
+    const data = JSON.parse(json)
+    const root = data && typeof data === 'object' && 'result' in data ? data.result : data
+    if (root === null || typeof root !== 'object') return escapeHtml(String(root))
+    const lines: string[] = []
+    const walk = (v: unknown, path: string[]) => {
+      if (v === null || v === undefined) return
+      if (typeof v === 'object') {
+        for (const [k, x] of Object.entries(v as Record<string, unknown>)) walk(x, [...path, k])
+      } else if (!(typeof v === 'number' && v === 0)) {
+        lines.push(`${escapeHtml(path.join(' · '))}: <b>${escapeHtml(String(v))}</b>`)
+      }
+    }
+    walk(root, [])
+    if (!lines.length) return escapeHtml(t('admin.data.nothingToDo'))
+    return lines.slice(0, 8).join('<br>') + (lines.length > 8 ? '<br>…' : '')
+  } catch {
+    return escapeHtml(json)
+  }
+}
 function taskTip(name: string, base: string) {
   const row = taskStatus.value?.tasks?.find((x) => x.taskName === name)
   let html = escapeHtml(base)
   if (row?.lastRunAt) {
     html += `<br><br><b>${escapeHtml(t('admin.data.lastRun'))}:</b> ${new Date(row.lastRunAt).toLocaleString()} · ${row.lastDurationMs}ms`
-    if (row.lastResult) html += `<br><span style="opacity:.75">${escapeHtml(String(row.lastResult).slice(0, 160))}</span>`
+    if (row.lastResult) html += `<br><span style="opacity:.8">${humanizeResult(String(row.lastResult))}</span>`
   }
   if (row?.lastFailureAt) {
     html += `<br><br><b style="color:#fca5a5">${escapeHtml(t('admin.data.lastFailure'))}:</b> ${new Date(row.lastFailureAt).toLocaleString()}<br><span style="opacity:.75">${escapeHtml(String(row.lastError ?? '').slice(0, 160))}</span>`

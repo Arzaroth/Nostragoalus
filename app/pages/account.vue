@@ -28,15 +28,16 @@ async function copyText(text: string, which: string) {
   tfaCopied.value = which
   setTimeout(() => (tfaCopied.value = ''), 1500)
 }
-function downloadBackupCodes() {
-  const blob = new Blob([tfaBackup.value.join('\n') + '\n'], { type: 'text/plain' })
+function downloadBackupCodes(codes?: string[]) {
+  const list = Array.isArray(codes) ? codes : tfaBackup.value
+  const blob = new Blob([list.join('\n') + '\n'], { type: 'text/plain' })
   const a = document.createElement('a')
   a.href = URL.createObjectURL(blob)
   a.download = 'nostragoalus-backup-codes.txt'
   a.click()
   URL.revokeObjectURL(a.href)
 }
-const tfaStep = ref<'idle' | 'verify' | 'done'>('idle')
+const tfaStep = ref<'idle' | 'verify' | 'backup' | 'done'>('idle')
 const tfaErr = ref('')
 const tfaBusy = ref(false)
 const tfaEnabled = computed(() => (currentUser.value as any)?.twoFactorEnabled === true || tfaStep.value === 'done')
@@ -62,12 +63,13 @@ async function confirmEnable2fa() {
   tfaErr.value = ''
   tfaBusy.value = true
   try {
-    const res = await authClient.twoFactor.verifyTotp({ code: tfaCode.value.trim() })
+    const res = await authClient.twoFactor.verifyTotp({ code: String(tfaCode.value).trim() })
     if (res.error) {
       tfaErr.value = t('twofa.wrongCode')
       return
     }
-    tfaStep.value = 'done'
+    // Code accepted: walk the user through saving the backup codes before finishing.
+    tfaStep.value = 'backup'
     tfaPassword.value = ''
     tfaCode.value = ''
   } finally {
@@ -84,6 +86,39 @@ function cancelEnable2fa() {
   tfaUri.value = ''
   tfaBackup.value = []
 }
+function confirmBackupSaved() {
+  tfaStep.value = 'done'
+  tfaBackup.value = []
+}
+
+// Fresh backup codes on demand (old ones stop working); each code is single-use.
+const regenCodes = ref<string[]>([])
+const regenPassword = ref('')
+const regenBusy = ref(false)
+async function regenerateBackupCodes() {
+  tfaErr.value = ''
+  regenBusy.value = true
+  try {
+    const res = await authClient.twoFactor.generateBackupCodes({ password: regenPassword.value })
+    if (res.error) {
+      tfaErr.value = res.error.message || t('twofa.wrongPassword')
+      return
+    }
+    regenCodes.value = res.data?.backupCodes ?? []
+    regenPassword.value = ''
+  } finally {
+    regenBusy.value = false
+  }
+}
+
+// Forget the trust cookie on this device (next sign-in asks for the code again).
+const trustRevoked = ref(false)
+async function revokeTrust() {
+  await $fetch('/api/me/revoke-trust', { method: 'POST' })
+  trustRevoked.value = true
+  setTimeout(() => (trustRevoked.value = false), 2500)
+}
+
 async function disable2fa() {
   tfaErr.value = ''
   tfaBusy.value = true
@@ -320,9 +355,10 @@ async function confirmDelete() {
         <div class="md:col-span-2 flex flex-col gap-3">
           <Message v-if="tfaErr" severity="error" size="small">{{ tfaErr }}</Message>
 
-          <template v-if="tfaEnabled">
-            <div class="flex items-center gap-2 text-sm font-medium"><i class="pi pi-shield" style="color: #22c55e" /> {{ t('twofa.enabled') }}</div>
-            <div v-if="tfaBackup.length" class="rounded-xl border p-3" style="border-color: var(--p-content-border-color)">
+          <!-- enrollment step 2: save the backup codes before finishing -->
+          <template v-if="tfaStep === 'backup'">
+            <div class="font-medium text-sm">{{ t('twofa.backupTitle') }}</div>
+            <div class="rounded-xl border p-3" style="border-color: var(--p-content-border-color)">
               <div class="text-xs mb-2" style="color: var(--p-text-muted-color)">{{ t('twofa.backupHintLong') }}</div>
               <div class="grid grid-cols-2 sm:grid-cols-5 gap-1 font-mono text-xs mb-3">
                 <span v-for="c in tfaBackup" :key="c">{{ c }}</span>
@@ -332,6 +368,38 @@ async function confirmDelete() {
                 <Button icon="pi pi-download" :label="t('twofa.download')" size="small" severity="secondary" outlined @click="downloadBackupCodes" />
               </div>
             </div>
+            <div class="flex justify-end border-t pt-4" style="border-color: var(--p-content-border-color)">
+              <Button :label="t('twofa.savedCodes')" icon="pi pi-check" @click="confirmBackupSaved" />
+            </div>
+          </template>
+
+          <template v-else-if="tfaEnabled">
+            <div class="flex items-center gap-2 text-sm font-medium"><i class="pi pi-shield" style="color: #22c55e" /> {{ t('twofa.enabled') }}</div>
+
+            <div class="flex items-center gap-3 text-sm">
+              <Button :label="trustRevoked ? t('twofa.trustRevoked') : t('twofa.trustRevoke')" :icon="trustRevoked ? 'pi pi-check' : 'pi pi-eraser'" size="small" severity="secondary" outlined @click="revokeTrust" />
+            </div>
+
+            <div class="rounded-xl border p-3 flex flex-col gap-3" style="border-color: var(--p-content-border-color)">
+              <div class="text-xs" style="color: var(--p-text-muted-color)">{{ t('twofa.regenHint') }}</div>
+              <div v-if="regenCodes.length">
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-1 font-mono text-xs mb-3">
+                  <span v-for="c in regenCodes" :key="c">{{ c }}</span>
+                </div>
+                <div class="flex gap-2">
+                  <Button :icon="tfaCopied === 'regen' ? 'pi pi-check' : 'pi pi-copy'" :label="t('twofa.copyCodes')" size="small" severity="secondary" outlined @click="copyText(regenCodes.join('\n'), 'regen')" />
+                  <Button icon="pi pi-download" :label="t('twofa.download')" size="small" severity="secondary" outlined @click="downloadBackupCodes(regenCodes)" />
+                </div>
+              </div>
+              <div v-else class="flex items-end gap-3">
+                <div class="flex flex-col gap-1">
+                  <label class="text-xs font-medium">{{ t('account.currentPassword') }}</label>
+                  <Password v-model="regenPassword" :feedback="false" toggle-mask @keyup.enter="regenPassword && regenerateBackupCodes()" />
+                </div>
+                <Button :label="t('twofa.regen')" size="small" severity="secondary" outlined :loading="regenBusy" :disabled="!regenPassword" @click="regenerateBackupCodes" />
+              </div>
+            </div>
+
             <div class="flex flex-wrap items-end gap-3">
               <div class="flex flex-col gap-1">
                 <label class="text-xs font-medium">{{ t('account.currentPassword') }}</label>

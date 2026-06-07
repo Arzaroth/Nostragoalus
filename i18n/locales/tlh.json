@@ -277,7 +277,8 @@
       "nextRun": "qaS veb",
       "manual": "ghop neH",
       "lastRun": "qaS Qav",
-      "lastFailure": "luj Qav"
+      "lastFailure": "luj Qav",
+      "nothingToDo": "Qu' tu'be'lu'"
     }
   },
   "strength": {
@@ -317,6 +318,12 @@
     "copy": "yIvelqa'",
     "copyCodes": "ngoqmey tIvelqa'",
     "download": ".txt yISuq",
-    "disableCode": "DaH jav mI' ngoq"
+    "disableCode": "DaH jav mI' ngoq",
+    "backupTitle": "toD ngoqmey tIpol",
+    "savedCodes": "toD ngoqmey vIpolta",
+    "regen": "ngoqmey chu' tIchenmoH",
+    "regenHint": "wa'logh neH Qap toD ngoq. ngoqmey chu' DachenmoHlaH; ngoqmey qan Qapbe' choH.",
+    "trustRevoke": "janvam yIvoqHa'",
+    "trustRevoked": "jan lIjlu'ta'"
   }
 }

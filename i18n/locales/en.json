@@ -277,7 +277,8 @@
       "nextRun": "Next run",
       "manual": "manual only",
       "lastRun": "Last run",
-      "lastFailure": "Last failure"
+      "lastFailure": "Last failure",
+      "nothingToDo": "nothing to do"
     }
   },
   "strength": {
@@ -317,6 +318,12 @@
     "copy": "Copy",
     "copyCodes": "Copy codes",
     "download": "Download .txt",
-    "disableCode": "Current 6-digit code"
+    "disableCode": "Current 6-digit code",
+    "backupTitle": "Save your backup codes",
+    "savedCodes": "I saved my backup codes",
+    "regen": "Generate new codes",
+    "regenHint": "Backup codes are single-use. Generate a fresh set anytime; the old ones stop working.",
+    "trustRevoke": "Stop trusting this device",
+    "trustRevoked": "Device forgotten"
   }
 }

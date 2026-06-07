@@ -24,7 +24,7 @@ async function verify() {
       error.value = t('twofa.wrongCode')
       return
     }
-    await navigateTo('/')
+    await navigateTo('/matches')
   } finally {
     loading.value = false
   }
