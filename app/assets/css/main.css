@@ -45,6 +45,19 @@
     text-decoration: none;
   }
 
+  /* Native buttons (avatar trigger, popover menu items…) shouldn't carry the UA's
+     gray background/padding — PrimeVue buttons restyle themselves in a later layer. */
+  button {
+    background: none;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: inherit;
+    text-align: inherit;
+    cursor: pointer;
+  }
+
   ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
