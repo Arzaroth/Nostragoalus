@@ -23,15 +23,18 @@ const { data, refresh: refreshMatch } = await useFetch<{
   myPrediction: { homeGoals: number; awayGoals: number; isJoker: boolean; totalPoints: number | null; baseTier: string | null } | null
   isLocked: boolean
 }>(`/api/matches/${id.value}`)
-const { data: insights } = await useFetch<any>(`/api/matches/${id.value}/insights`)
+// lazy: the page navigates immediately on the core match fetch; insight/stat
+// sections fill in as their (slower, FIFA-backed) data lands.
+const { data: insights } = await useFetch<any>(`/api/matches/${id.value}/insights`, { lazy: true })
 
 const selectedSlug = useSelectedCompetition()
 const { data: scorersData } = await useFetch<{ scorers: any[] }>('/api/competitions/scorers', {
   query: computed(() => (selectedSlug.value ? { competition: selectedSlug.value } : {})),
+  lazy: true,
 })
 const scorers = computed<any[]>(() => scorersData.value?.scorers ?? [])
 
-const { data: detailData } = await useFetch<{ detail: any }>(`/api/matches/${id.value}/live-detail`)
+const { data: detailData, status: detailStatus } = await useFetch<{ detail: any }>(`/api/matches/${id.value}/live-detail`, { lazy: true })
 const detail = computed(() => detailData.value?.detail)
 
 const m = computed(() => data.value?.match)
@@ -80,12 +83,6 @@ function minuteVal(minute: string | null): number {
 }
 function cardEvents(side: 'HOME' | 'AWAY') {
   return (detail.value?.bookings ?? []).filter((b: any) => b.side === side)
-}
-// Goals + cards for one side, in match order (for the hero under-team lists).
-function sideEvents(side: 'HOME' | 'AWAY') {
-  const goals = (side === 'HOME' ? homeGoalEvents.value : awayGoalEvents.value).map((g: any) => ({ kind: 'goal' as const, ...g }))
-  const cards = cardEvents(side).map((b: any) => ({ kind: 'card' as const, ...b }))
-  return [...goals, ...cards].sort((a, b) => minuteVal(a.minute) - minuteVal(b.minute))
 }
 // Goals + bookings interleaved chronologically for the stats-tab timeline.
 const timeline = computed(() => {
@@ -167,23 +164,31 @@ function fmtDate(d: string) {
         </div>
       </div>
 
-      <div v-if="sideEvents('HOME').length || sideEvents('AWAY').length" class="grid grid-cols-2 gap-4 mt-4 pt-3 border-t text-xs" style="color: var(--p-text-muted-color); border-color: var(--p-content-border-color)">
-        <div class="flex flex-col items-end gap-0.5 text-right">
-          <span v-for="(e, i) in sideEvents('HOME')" :key="i" class="inline-flex items-center gap-1 justify-end">
-            {{ e.playerName }} {{ e.minute }}<span v-if="e.kind === 'goal' && e.ownGoal"> (OG)</span>
-            <template v-if="e.kind === 'goal'">⚽</template>
-            <span v-else-if="e.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: #ef4444" /></span>
-            <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${e.card === 'RED' ? '#ef4444' : '#eab308'}`" />
+      <!-- One laced timeline: each event is a row, on its team's side — the whole
+           match reads top-to-bottom at a glance. -->
+      <div v-if="timeline.length" class="grid grid-cols-[1fr_auto_1fr] gap-x-2 gap-y-0.5 mt-4 pt-3 border-t text-xs items-center" style="color: var(--p-text-muted-color); border-color: var(--p-content-border-color)">
+        <template v-for="(e, i) in timeline" :key="i">
+          <span class="inline-flex items-center gap-1 justify-end text-right">
+            <template v-if="e.side === 'HOME'">
+              {{ e.playerName }}<span v-if="e.kind === 'goal' && e.ownGoal"> (OG)</span>
+              <template v-if="e.kind === 'goal'">⚽</template>
+              <span v-else-if="e.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: #ef4444" /></span>
+              <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${e.card === 'RED' ? '#ef4444' : '#eab308'}`" />
+            </template>
           </span>
-        </div>
-        <div class="flex flex-col items-start gap-0.5">
-          <span v-for="(e, i) in sideEvents('AWAY')" :key="i" class="inline-flex items-center gap-1">
-            <template v-if="e.kind === 'goal'">⚽</template>
-            <span v-else-if="e.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: #ef4444" /></span>
-            <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${e.card === 'RED' ? '#ef4444' : '#eab308'}`" />
-            {{ e.minute }} {{ e.playerName }}<span v-if="e.kind === 'goal' && e.ownGoal"> (OG)</span>
+          <span class="tabular-nums text-center w-12 opacity-70">{{ e.minute }}</span>
+          <span class="inline-flex items-center gap-1">
+            <template v-if="e.side === 'AWAY'">
+              <template v-if="e.kind === 'goal'">⚽</template>
+              <span v-else-if="e.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: #ef4444" /></span>
+              <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${e.card === 'RED' ? '#ef4444' : '#eab308'}`" />
+              {{ e.playerName }}<span v-if="e.kind === 'goal' && e.ownGoal"> (OG)</span>
+            </template>
           </span>
-        </div>
+        </template>
+      </div>
+      <div v-else-if="detailStatus === 'pending'" class="flex justify-center mt-4 pt-3 border-t" style="border-color: var(--p-content-border-color)">
+        <ProgressSpinner style="width: 22px; height: 22px" stroke-width="6" />
       </div>
 
       <!-- your pick: editable until kickoff -->

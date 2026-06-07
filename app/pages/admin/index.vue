@@ -268,7 +268,7 @@ function createUser() {
           </div>
           <div class="md:col-span-2 flex flex-col gap-3">
             <!-- auto-sized button column: buttons hug their labels, next-run column stays aligned -->
-            <div class="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2">
+            <div class="grid grid-cols-[auto_auto] items-center gap-x-4 gap-y-2 justify-center">
               <Button v-tooltip.bottom="t('admin.data.importTip')" :label="t('admin.data.import')" icon="pi pi-download" size="small" severity="info" class="justify-self-start" :loading="syncBusy === 'import'" @click="runImport" />
               <span class="text-xs" style="color: var(--p-text-muted-color)">{{ t('admin.data.nextRun') }}: {{ t('admin.data.manual') }}</span>
               <Button v-tooltip.bottom="t('admin.data.refreshTip')" :label="t('admin.data.refresh')" icon="pi pi-refresh" size="small" severity="help" class="justify-self-start" :loading="syncBusy === 'fixtures'" @click="runTask('fixtures')" />

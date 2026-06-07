@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
     .from(match)
     .where(eq(match.id, id))
     .limit(1)
-  if (rows.length === 0 || !rows[0].providerStageId) return { detail: null }
+  if (rows.length === 0) return { detail: null }
 
   const competition = await getCompetitionById(db, rows[0].competitionId)
   if (!competition) return { detail: null }
@@ -26,7 +26,7 @@ export default defineEventHandler(async (event) => {
   if (!provider.getMatchDetail) return { detail: null }
 
   try {
-    const detail = await provider.getMatchDetail({ stageId: rows[0].providerStageId, matchId: rows[0].providerMatchId })
+    const detail = await provider.getMatchDetail({ stageId: rows[0].providerStageId ?? undefined, matchId: rows[0].providerMatchId })
     // Enrich with the football-intelligence per-match stats when FIFA exposes them.
     let stats: { home: unknown; away: unknown } | null = null
     if (detail?.ifesId && provider.getMatchStats) {

@@ -643,3 +643,17 @@ describe('getTeamTournament fallback paths', () => {
     expect(out.coach).toBe('Only ONE')
   })
 })
+
+describe('getMatchDetail by bare match id', () => {
+  it('uses the single-id live endpoint when no stage id is available', async () => {
+    let calledUrl = ''
+    const fetchImpl = (async (url: string) => {
+      calledUrl = String(url)
+      return new Response(JSON.stringify({ HomeTeam: { IdTeam: 'H' }, AwayTeam: { IdTeam: 'A' } }), { status: 200 })
+    }) as unknown as typeof fetch
+    const provider = fifaProvider({ seasonId: '255711', competitionId: '17', rateLimiter: new RateLimiter(0), fetchImpl })
+    const d = await provider.getMatchDetail!({ matchId: '400235467' })
+    expect(calledUrl).toContain('/live/football/400235467?')
+    expect(d!.homeTeamId).toBe('H')
+  })
+})

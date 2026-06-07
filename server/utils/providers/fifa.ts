@@ -638,10 +638,13 @@ export function fifaProvider(options: FifaOptions): MatchDataProvider {
     async getLiveMatches() {
       return (await fetchAll()).filter((m) => m.status === 'LIVE' || m.status === 'PAUSED')
     },
-    async getMatchDetail({ stageId, matchId }: { stageId: string; matchId: string }) {
+    async getMatchDetail({ stageId, matchId }: { stageId?: string; matchId: string }) {
       await limiter.acquire()
+      // FIFA also serves match detail by bare match id — used when no stage id is stored.
       const response = await doFetch(
-        `${baseUrl}/live/football/${options.competitionId}/${options.seasonId}/${stageId}/${matchId}?language=en`,
+        stageId
+          ? `${baseUrl}/live/football/${options.competitionId}/${options.seasonId}/${stageId}/${matchId}?language=en`
+          : `${baseUrl}/live/football/${matchId}?language=en`,
       )
       if (response.status === 429) throw new ProviderRateLimitError()
       if (!response.ok) throw new ProviderUpstreamError(response.status, await response.text())

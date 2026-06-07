@@ -33,8 +33,7 @@ const tiers = [
 //   phase 2 (SCRUB→SCRUB+SCRUB2): the strip shrinks into a slim bar pinned under the header
 const SCRUB = 420
 const SCRUB2 = 360
-const MINI_H = 76
-const BANNER_AR = 688 / 208
+const MINI_H = 100
 const reduced = useReducedMotion()
 const { scrollY } = useScroll()
 const spring = { stiffness: 220, damping: 30 }
@@ -53,8 +52,8 @@ const bShadow = useTransform([t1, t2] as never, (values: never) => {
   return `0 ${(30 * a + 6 * b).toFixed(1)}px ${(90 * a + 18 * b).toFixed(1)}px rgba(8, 6, 24, ${(0.55 * a + 0.35 * b).toFixed(3)})`
 })
 const dimOpacity = useTransform(t1, (v) => 0.6 * v)
-// The image shrinks WITH the bar (keeps its aspect, no giant cover-crop in the mini state).
-const bImgWidth = useTransform(t2, (b) => `calc(100% * ${(1 - b).toFixed(4)} + ${(MINI_H * BANNER_AR).toFixed(1)}px * ${b.toFixed(4)})`)
+// Phase 2 crossfades the full artwork into a purpose-built compact banner.
+const wideOpacity = useTransform(t2, (v) => 1 - v)
 
 // Stars float above the dim during the intro, then settle behind the content.
 const starsFront = ref(true)
@@ -76,14 +75,29 @@ onMounted(() => {
         <img src="/brand/banner-wide.svg" alt="Nostragoalus — the football oracle" class="w-full h-full object-cover block" >
       </div>
     </div>
-    <motion.div
-      v-if="!reduced"
-      class="fixed left-1/2 top-16 z-40 overflow-hidden flex justify-center"
-      :style="{ width: bWidth, height: bHeight, transform: bTransform, borderRadius: bRadius, boxShadow: bShadow, background: '#171436' }"
-    >
-      <motion.img src="/brand/banner-wide.svg" alt="Nostragoalus — the football oracle" class="h-full object-cover block shrink-0" :style="{ width: bImgWidth }" />
-    </motion.div>
-    <motion.div v-if="!reduced" class="fixed inset-0 z-30 pointer-events-none" :style="{ background: '#0b0a18', opacity: dimOpacity }" />
+    <!-- ClientOnly: motion-v styles SSR'd then re-driven client-side caused a
+         hydration mismatch that killed the whole page's interactivity on first load. -->
+    <ClientOnly>
+      <motion.div
+        v-if="!reduced"
+        class="fixed left-1/2 top-16 z-40 overflow-hidden"
+        :style="{ width: bWidth, height: bHeight, transform: bTransform, borderRadius: bRadius, boxShadow: bShadow, background: '#171436' }"
+      >
+        <motion.div class="absolute inset-0" :style="{ opacity: t2, background: 'url(/brand/banner-mini.svg) center / cover no-repeat' }" />
+        <motion.img src="/brand/banner-wide.svg" alt="Nostragoalus — the football oracle" class="absolute inset-0 w-full h-full object-cover" :style="{ opacity: wideOpacity }" />
+      </motion.div>
+      <motion.div v-if="!reduced" class="fixed inset-0 z-30 pointer-events-none" :style="{ background: '#0b0a18', opacity: dimOpacity }" />
+      <template #fallback>
+        <!-- static replica of the t=1 motion state so first paint matches hydration -->
+        <div
+          class="fixed left-1/2 top-16 z-40 overflow-hidden w-[88vw] rounded-[30px]"
+          style="height: min(26.6vw, 40vh); transform: translateX(-50%) translateY(calc(50vh - 50% - 88px)); box-shadow: 0 30px 90px rgba(8, 6, 24, 0.55); background: #171436"
+        >
+          <img src="/brand/banner-wide.svg" alt="Nostragoalus — the football oracle" class="absolute inset-0 w-full h-full object-cover" >
+        </div>
+        <div class="fixed inset-0 z-30 pointer-events-none" style="background: #0b0a18; opacity: 0.6" />
+      </template>
+    </ClientOnly>
 
     <!-- Hero -->
     <section class="text-center flex flex-col items-center gap-6">
