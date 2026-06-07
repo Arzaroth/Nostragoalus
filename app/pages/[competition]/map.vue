@@ -6,22 +6,45 @@ const { data: teamsData } = await useFetch<{ teams: { code: string; name: string
 })
 const teams = computed(() => teamsData.value?.teams ?? [])
 
+const route = useRoute()
+const router = useRouter()
+const mapRef = ref<{ centerOn: (code: string) => void } | null>(null)
+
 const selected = ref<{ code: string; name: string } | null>(null)
 const info = ref<any>(null)
 const loading = ref(false)
 
 async function onSelect(team: { code: string; name: string }) {
   selected.value = team
+  // Shareable URLs: the selected team rides along as ?team=XXX.
+  if (route.query.team !== team.code) void router.replace({ query: { ...route.query, team: team.code } })
   loading.value = true
   info.value = await $fetch(`/api/teams/${team.code}`, { query: slug.value ? { competition: slug.value } : {} })
   loading.value = false
 }
 
-// Switching competition invalidates the selected team.
-watch(slug, () => {
-  selected.value = null
-  info.value = null
-})
+function selectByCode(code: string | undefined | null, center = true) {
+  const team = code ? teams.value.find((tm) => tm.code === code) : null
+  if (!team) return false
+  void onSelect(team)
+  if (center) mapRef.value?.centerOn(team.code)
+  return true
+}
+
+// On load and on competition switch: keep (or restore from the URL) the selected
+// team when it exists in the current competition, otherwise clear it.
+watch(
+  teams,
+  () => {
+    const want = selected.value?.code ?? (route.query.team as string | undefined)
+    if (!selectByCode(want)) {
+      selected.value = null
+      info.value = null
+      if (route.query.team) void router.replace({ query: { ...route.query, team: undefined } })
+    }
+  },
+  { immediate: true },
+)
 
 const matches = computed<any[]>(() => info.value?.matches ?? [])
 const live = computed(() => matches.value.find((m) => m.status === 'LIVE' || m.status === 'PAUSED'))
@@ -35,7 +58,8 @@ function teamResult(m: any) {
   const pa = isHome ? m.penaltiesAway : m.penaltiesHome
   let result: 'W' | 'D' | 'L' = gf > ga ? 'W' : gf < ga ? 'L' : 'D'
   if (result === 'D' && pf != null && pa != null && pf !== pa) result = pf > pa ? 'W' : 'L'
-  return { id: m.id, result, opponent: isHome ? m.awayTeam : m.homeTeam, opponentCode: isHome ? m.awayTeamCode : m.homeTeamCode, gf, ga }
+  const pens = pf != null && pa != null && pf + pa > 0 ? `${pf}–${pa}` : null
+  return { id: m.id, result, opponent: isHome ? m.awayTeam : m.homeTeam, opponentCode: isHome ? m.awayTeamCode : m.homeTeamCode, gf, ga, pens }
 }
 const results = computed(() =>
   matches.value
@@ -66,7 +90,7 @@ function fmt(d: string) {
     <div class="grid lg:grid-cols-3 gap-4">
       <div class="lg:col-span-2">
         <ClientOnly>
-          <WorldMap :teams="teams" @select="onSelect" />
+          <WorldMap ref="mapRef" :teams="teams" @select="onSelect" />
           <template #fallback>
             <div class="rounded-2xl border" style="height: 70vh; border-color: var(--p-content-border-color)" />
           </template>
@@ -100,7 +124,9 @@ function fmt(d: string) {
                   <tr
                     v-for="(row, i) in standings"
                     :key="row.name"
+                    :class="{ 'cursor-pointer hover:opacity-75': row.code && row.code !== selected.code }"
                     :style="row.code === selected.code ? 'background: color-mix(in srgb, var(--p-primary-color) 14%, transparent)' : ''"
+                    @click="row.code && row.code !== selected.code && selectByCode(row.code)"
                   >
                     <td class="py-0.5 pl-1 w-4" style="color: var(--p-text-muted-color)">{{ i + 1 }}</td>
                     <td class="py-0.5">
@@ -133,7 +159,7 @@ function fmt(d: string) {
                   <span class="w-4 h-4 rounded text-white text-[10px] flex items-center justify-center font-bold shrink-0" :style="`background:${formColor(r.result)}`">{{ r.result }}</span>
                   <img v-if="flagUrl(r.opponentCode)" :src="flagUrl(r.opponentCode) || ''" class="w-4 h-4 rounded shrink-0" alt="" >
                   <span class="truncate flex-1">{{ r.opponent }}</span>
-                  <span class="tabular-nums shrink-0" style="color: var(--p-text-muted-color)">{{ r.gf }}–{{ r.ga }}</span>
+                  <span class="tabular-nums shrink-0" style="color: var(--p-text-muted-color)">{{ r.gf }}–{{ r.ga }}<template v-if="r.pens"> ({{ r.pens }} {{ t('match.pens') }})</template></span>
                 </NuxtLink>
               </div>
             </div>

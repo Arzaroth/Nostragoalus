@@ -90,7 +90,7 @@ function fmtTime(d: string) {
               <ScoreInput
                 :home="predByMatch[m.id]?.homeGoals ?? null"
                 :away="predByMatch[m.id]?.awayGoals ?? null"
-                :disabled="m.isLocked"
+                :disabled="m.isLocked || !m.homeTeamCode || !m.awayTeamCode"
                 @update="(v) => save(m.id, v)"
               />
               <!-- Always rendered on open matches (disabled until a pick exists) so saving never resizes the card. -->

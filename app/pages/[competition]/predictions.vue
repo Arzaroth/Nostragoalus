@@ -2,7 +2,11 @@
 const { t } = useI18n()
 const slug = useSelectedCompetition()
 const { data: predictions, isLoading } = useMyPredictions()
-const { setJoker } = usePredictionMutations()
+const { upsert, setJoker } = usePredictionMutations()
+
+function onUpdateScore({ p, home, away }: { p: MyPrediction; home: number; away: number }) {
+  upsert.mutate({ matchId: p.matchId, home, away })
+}
 
 const { data: statsData } = await useFetch<{ stats: { rank: number | null; players: number; totalPoints: number; exact: number; predictions: number; jokers: number } | null }>(
   '/api/me/stats',
@@ -52,6 +56,6 @@ function onToggleJoker(p: MyPrediction) {
     <Message v-if="jokerErr" severity="warn" class="mb-4">{{ jokerErr }}</Message>
     <div v-if="isLoading" class="opacity-60">{{ t('common.loading') }}</div>
     <div v-else-if="!predictions || !predictions.length" class="opacity-60">{{ t('predictions.empty') }}</div>
-    <PredictionList v-else :predictions="predictions" editable @toggle-joker="onToggleJoker" />
+    <PredictionList v-else :predictions="predictions" editable @toggle-joker="onToggleJoker" @update-score="onUpdateScore" />
   </div>
 </template>

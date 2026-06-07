@@ -2,7 +2,7 @@
 const { t } = useI18n()
 const slug = useSelectedCompetition()
 defineProps<{ predictions: MyPrediction[]; editable?: boolean }>()
-const emit = defineEmits<{ toggleJoker: [p: MyPrediction] }>()
+const emit = defineEmits<{ toggleJoker: [p: MyPrediction]; updateScore: [payload: { p: MyPrediction; home: number; away: number }] }>()
 
 function fmt(d: string) {
   return new Date(d).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
@@ -41,10 +41,16 @@ function isLocked(p: MyPrediction) {
           <img v-if="flagUrl(p.homeTeamCode)" :src="flagUrl(p.homeTeamCode) || ''" class="w-6 h-6 rounded object-cover" alt="" >
         </div>
         <div class="text-center shrink-0 px-2">
-          <div class="font-bold tabular-nums text-lg">{{ p.homeGoals }}–{{ p.awayGoals }}</div>
-          <div v-if="p.fullTimeHome !== null" class="text-xs" style="color: var(--p-text-muted-color)">
-            {{ p.fullTimeHome }}–{{ p.fullTimeAway }}
+          <!-- Open matches stay editable right from My Picks. -->
+          <div v-if="editable && !isLocked(p)" @click.stop.prevent>
+            <ScoreInput :home="p.homeGoals" :away="p.awayGoals" @update="(v) => emit('updateScore', { p, home: v.home, away: v.away })" />
           </div>
+          <template v-else>
+            <div class="font-bold tabular-nums text-lg">{{ p.homeGoals }}–{{ p.awayGoals }}</div>
+            <div v-if="p.fullTimeHome !== null" class="text-xs" style="color: var(--p-text-muted-color)">
+              {{ p.fullTimeHome }}–{{ p.fullTimeAway }}
+            </div>
+          </template>
         </div>
         <div class="flex items-center gap-2 flex-1 min-w-0">
           <img v-if="flagUrl(p.awayTeamCode)" :src="flagUrl(p.awayTeamCode) || ''" class="w-6 h-6 rounded object-cover" alt="" >

@@ -16,7 +16,8 @@ function targetPath(s: string) {
 }
 function switchTo(s: string) {
   menu.value?.hide?.()
-  router.push(targetPath(s))
+  // Keep the query (e.g. the map's ?team=) so context survives the switch.
+  router.push({ path: targetPath(s), query: route.query })
 }
 </script>
 

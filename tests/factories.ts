@@ -73,8 +73,10 @@ export async function makeMatch(db: AppDatabase, opts: MatchOptions): Promise<st
       groupName: opts.groupName ?? null,
       homeTeam: opts.homeTeam ?? 'Home',
       awayTeam: opts.awayTeam ?? 'Away',
-      homeTeamCode: opts.homeTeamCode ?? null,
-      awayTeamCode: opts.awayTeamCode ?? null,
+      // Real-looking codes by default — predictions are rejected on TBD teams,
+      // so the common case must look like a confirmed fixture.
+      homeTeamCode: opts.homeTeamCode !== undefined ? opts.homeTeamCode : 'HOM',
+      awayTeamCode: opts.awayTeamCode !== undefined ? opts.awayTeamCode : 'AWY',
       kickoffTime: opts.kickoffTime,
       status: opts.status ?? 'SCHEDULED',
       fullTimeHome: opts.fullTimeHome ?? null,

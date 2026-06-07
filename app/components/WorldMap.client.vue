@@ -36,9 +36,20 @@ function drawMarkers() {
       iconSize: [28, 28],
       iconAnchor: [14, 14],
     })
-    L.marker(coord, { icon, title: team.name }).on('click', () => emit('select', team)).addTo(markers)
+    L.marker(coord, { icon, title: team.name })
+      .on('click', () => {
+        emit('select', team)
+        centerOn(team.code)
+      })
+      .addTo(markers)
   }
 }
+
+function centerOn(code: string) {
+  const coord = COORDS[code]
+  if (map && coord) map.flyTo(coord, Math.max(map.getZoom(), 4), { duration: 0.8 })
+}
+defineExpose({ centerOn })
 
 onMounted(() => {
   if (!el.value) return

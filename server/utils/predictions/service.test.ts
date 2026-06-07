@@ -35,6 +35,13 @@ describe('upsertPrediction', () => {
     await client.close()
   })
 
+  it('rejects predictions for matches without both teams confirmed', async () => {
+    const { db, client, competitionId, roundId, userId } = await setup()
+    const placeholder = await makeMatch(db, { competitionId, roundId, kickoffTime: FUTURE, homeTeamCode: null })
+    await expect(upsertPrediction(db, { userId, matchId: placeholder, home: 1, away: 0 }, NOW)).rejects.toBeInstanceOf(ValidationError)
+    await client.close()
+  })
+
   it('throws when the match is already locked', async () => {
     const { db, client, competitionId, roundId, userId } = await setup()
     const m = await makeMatch(db, { competitionId, roundId, kickoffTime: PAST })

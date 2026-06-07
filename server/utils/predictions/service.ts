@@ -40,6 +40,8 @@ export async function upsertPrediction(
   const rows = await db.select().from(match).where(eq(match.id, input.matchId)).limit(1)
   if (rows.length === 0) throw new NotFoundError('match not found')
   if (now >= rows[0].kickoffTime) throw new LockedError()
+  // Knockout placeholders ("Winner Group A") aren't predictable until both teams are known.
+  if (!rows[0].homeTeamCode || !rows[0].awayTeamCode) throw new ValidationError('teams not confirmed yet')
 
   const existing = await db
     .select({ id: prediction.id })
