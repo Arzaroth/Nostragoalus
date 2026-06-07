@@ -49,7 +49,9 @@ const syncMsg = ref('')
 const syncBusy = ref('')
 
 // Last run / failure per task, shown in the action tooltips.
-const { data: taskStatus, refresh: refreshTaskStatus } = await useFetch<{ tasks: any[] }>('/api/admin/task-status', { lazy: true })
+// blocking (not lazy): if this landed after hover, the reactive tooltip value
+// change would re-create and hide an already-open tooltip
+const { data: taskStatus, refresh: refreshTaskStatus } = await useFetch<{ tasks: any[] }>('/api/admin/task-status')
 function escapeHtml(v: string) {
   return v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
