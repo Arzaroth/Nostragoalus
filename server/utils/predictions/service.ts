@@ -1,7 +1,20 @@
-import { and, eq, lte } from 'drizzle-orm'
+import { and, eq, lte, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { match, prediction, round } from '../../../db/schema'
 import { LockedError, NotFoundError, ValidationError } from '../errors'
+
+// Aggregate counters for the "my stats" strip (points/rank come from the leaderboard).
+export async function getMyStats(db: AppDatabase, userId: string, competitionId: string) {
+  const rows = await db
+    .select({
+      predictions: sql<number>`count(*)`.mapWith(Number),
+      jokers: sql<number>`count(*) filter (where ${prediction.isJoker})`.mapWith(Number),
+    })
+    .from(prediction)
+    .innerJoin(match, eq(match.id, prediction.matchId))
+    .where(and(eq(prediction.userId, userId), eq(match.competitionId, competitionId)))
+  return rows[0]
+}
 
 export interface UpsertPredictionInput {
   userId: string

@@ -21,6 +21,13 @@
     "group": "Group",
     "noData": "No matches yet."
   },
+  "countdown": { "d": "d", "h": "h", "m": "m" },
+  "picks": {
+    "points": "Points",
+    "rank": "Rank of {n} players",
+    "exact": "Exact scores",
+    "jokers": "Jokers used · {n} picks"
+  },
   "common": {
     "loading": "Loading…",
     "save": "Save",

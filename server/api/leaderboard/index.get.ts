@@ -1,5 +1,6 @@
 import { db } from '../../../db'
 import { getLeaderboard } from '../../utils/leaderboard/service'
+import { getRankMovements } from '../../utils/leaderboard/snapshots'
 import { resolveCompetition } from '../../utils/competitions/store'
 
 export default defineEventHandler(async (event) => {
@@ -14,8 +15,12 @@ export default defineEventHandler(async (event) => {
 
   const competition = await resolveCompetition(db, (query.competition as string) || null)
   if (!competition) return { competition: null, rows: [] }
+  const [rows, movements] = await Promise.all([
+    getLeaderboard(db, { competitionId: competition.id, limit, offset }),
+    getRankMovements(db, competition.id),
+  ])
   return {
     competition: { id: competition.id, slug: competition.slug, name: competition.name },
-    rows: await getLeaderboard(db, { competitionId: competition.id, limit, offset }),
+    rows: rows.map((r) => ({ ...r, movement: movements.get(r.userId) ?? null })),
   }
 })

@@ -8,6 +8,7 @@ import {
   numeric,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -323,3 +324,21 @@ export const goalEventRelations = relations(goalEvent, ({ one }) => ({
   match: one(match, { fields: [goalEvent.matchId], references: [match.id] }),
   competition: one(competition, { fields: [goalEvent.competitionId], references: [competition.id] }),
 }))
+
+// Rank snapshot per user+competition: when a rank changes during finalize, the
+// previous one is kept so the leaderboard can show movement arrows.
+export const leaderboardRank = pgTable(
+  'leaderboard_rank',
+  {
+    competitionId: text('competition_id')
+      .notNull()
+      .references(() => competition.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    rank: integer('rank').notNull(),
+    prevRank: integer('prev_rank'),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.competitionId, t.userId] })],
+)

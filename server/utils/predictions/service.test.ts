@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm'
 import { createTestDb } from '../../../tests/db'
 import { findRoundId } from '../sync/rounds'
 import { makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
-import { getMyPredictions, getUserPublicPredictions, setJoker, upsertPrediction } from './service'
+import { getMyPredictions, getMyStats, getUserPublicPredictions, setJoker, upsertPrediction } from './service'
 import { prediction } from '../../../db/schema'
 import { LockedError, NotFoundError, ValidationError } from '../errors'
 
@@ -78,6 +78,25 @@ describe('getMyPredictions', () => {
     await upsertPrediction(db, { userId, matchId: m2, home: 2, away: 0 }, NOW)
     expect(await getMyPredictions(db, userId, competitionId)).toHaveLength(1)
     expect(await getMyPredictions(db, userId)).toHaveLength(2)
+    await client.close()
+  })
+})
+
+describe('getMyStats', () => {
+  it('counts predictions and jokers per competition', async () => {
+    const { db, client, competitionId, roundId, userId } = await setup()
+    const other = await seedCompetition(db)
+    const otherRound = (await findRoundId(db, other, 'GROUP', 1)) as string
+    const m1 = await makeMatch(db, { competitionId, roundId, kickoffTime: FUTURE })
+    const m2 = await makeMatch(db, { competitionId, roundId, kickoffTime: FUTURE })
+    const m3 = await makeMatch(db, { competitionId: other, roundId: otherRound, kickoffTime: FUTURE })
+    await upsertPrediction(db, { userId, matchId: m1, home: 1, away: 0 }, NOW)
+    await upsertPrediction(db, { userId, matchId: m2, home: 2, away: 0 }, NOW)
+    await upsertPrediction(db, { userId, matchId: m3, home: 0, away: 0 }, NOW)
+    await setJoker(db, { userId, matchId: m1, isJoker: true }, NOW)
+
+    expect(await getMyStats(db, userId, competitionId)).toEqual({ predictions: 2, jokers: 1 })
+    expect(await getMyStats(db, userId, other)).toEqual({ predictions: 1, jokers: 0 })
     await client.close()
   })
 })

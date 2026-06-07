@@ -21,6 +21,13 @@
     "group": "Groupe",
     "noData": "Aucun match pour l'instant."
   },
+  "countdown": { "d": "j", "h": "h", "m": "min" },
+  "picks": {
+    "points": "Points",
+    "rank": "Rang sur {n} joueurs",
+    "exact": "Scores exacts",
+    "jokers": "Jokers utilisés · {n} pronos"
+  },
   "common": {
     "loading": "Chargement…",
     "save": "Enregistrer",

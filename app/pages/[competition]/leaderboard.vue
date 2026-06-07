@@ -36,9 +36,14 @@ function medal(rank: number) {
         class="ng-card flex items-center gap-3 rounded-xl border px-4 py-3"
         :style="`background: var(--p-content-background); border-color: ${r.userId === meId ? 'var(--p-primary-color)' : 'var(--p-content-border-color)'}; border-width: ${r.userId === meId ? '2px' : '1px'}`"
       >
-        <div class="w-8 text-center font-bold tabular-nums text-lg shrink-0">
-          <span v-if="medal(r.rank)">{{ medal(r.rank) }}</span>
-          <span v-else style="color: var(--p-text-muted-color)">{{ r.rank }}</span>
+        <div class="w-8 text-center shrink-0">
+          <div class="font-bold tabular-nums text-lg leading-tight">
+            <span v-if="medal(r.rank)">{{ medal(r.rank) }}</span>
+            <span v-else style="color: var(--p-text-muted-color)">{{ r.rank }}</span>
+          </div>
+          <div v-if="r.movement" class="text-[10px] font-bold leading-none" :style="`color: ${r.movement > 0 ? '#22c55e' : '#ef4444'}`">
+            {{ r.movement > 0 ? '▲' : '▼' }}{{ Math.abs(r.movement) }}
+          </div>
         </div>
         <Avatar
           :label="(r.displayName || '?').charAt(0).toUpperCase()"

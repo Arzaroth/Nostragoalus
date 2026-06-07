@@ -8,6 +8,7 @@ export interface LeaderboardRow {
   exactCount: number
   outcomeCount: number
   gdCount: number
+  movement?: number | null
 }
 
 export function useLeaderboard(global?: Ref<boolean>) {

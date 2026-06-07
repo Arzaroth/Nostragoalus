@@ -92,7 +92,10 @@ function fmtDate(d: string) {
         </div>
         <div class="text-center min-w-24">
           <div v-if="homeScore !== null" class="text-5xl font-extrabold tabular-nums">{{ homeScore }}–{{ awayScore }}</div>
-          <div v-else class="text-sm" style="color: var(--p-text-muted-color)">{{ new Date(m.kickoffTime).toLocaleString() }}</div>
+          <div v-else class="text-sm flex flex-col items-center gap-1" style="color: var(--p-text-muted-color)">
+            <span>{{ new Date(m.kickoffTime).toLocaleString() }}</span>
+            <Countdown :to="m.kickoffTime" />
+          </div>
           <div v-if="m.penaltiesHome !== null" class="text-sm font-semibold mt-1" style="color: var(--p-text-muted-color)">{{ m.penaltiesHome }}–{{ m.penaltiesAway }} {{ t('match.pens') }}</div>
         </div>
         <div class="flex flex-col items-center gap-2 flex-1">

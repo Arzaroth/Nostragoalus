@@ -78,8 +78,11 @@ function fmtTime(d: string) {
               </div>
             </NuxtLink>
 
-            <div class="flex items-center justify-between text-xs" style="color: var(--p-text-muted-color)">
-              <span>{{ fmtTime(m.kickoffTime) }}<template v-if="m.group"> · Grp {{ m.group }}</template></span>
+            <div class="flex items-center justify-between gap-2 text-xs" style="color: var(--p-text-muted-color)">
+              <span class="flex items-center gap-2 min-w-0">
+                <span class="truncate">{{ fmtTime(m.kickoffTime) }}<template v-if="m.group"> · Grp {{ m.group }}</template></span>
+                <Countdown v-if="m.status === 'SCHEDULED'" :to="m.kickoffTime" />
+              </span>
               <Tag :value="matchStatusLabel(m.status)" :severity="statusSeverity(m.status)" />
             </div>
 

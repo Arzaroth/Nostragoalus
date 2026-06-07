@@ -22,6 +22,13 @@
       "when": 1780693363244,
       "tag": "0002_lethal_mauler",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1780838834795,
+      "tag": "0003_gigantic_texas_twister",
+      "breakpoints": true
     }
   ]
 }
