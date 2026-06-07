@@ -173,7 +173,7 @@ function fmtDate(d: string) {
         <template v-for="(e, i) in timeline" :key="i">
           <span class="inline-flex items-center gap-1 justify-end text-right">
             <template v-if="e.side === 'HOME'">
-              {{ e.playerName }}<span v-if="e.kind === 'goal' && e.ownGoal"> (OG)</span>
+              {{ formatPlayerName(e.playerName) }}<span v-if="e.kind === 'goal' && e.ownGoal"> (OG)</span>
               <template v-if="e.kind === 'goal'">⚽</template>
               <span v-else-if="e.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: #ef4444" /></span>
               <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${e.card === 'RED' ? '#ef4444' : '#eab308'}`" />
@@ -185,7 +185,7 @@ function fmtDate(d: string) {
               <template v-if="e.kind === 'goal'">⚽</template>
               <span v-else-if="e.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: #ef4444" /></span>
               <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${e.card === 'RED' ? '#ef4444' : '#eab308'}`" />
-              {{ e.playerName }}<span v-if="e.kind === 'goal' && e.ownGoal"> (OG)</span>
+              {{ formatPlayerName(e.playerName) }}<span v-if="e.kind === 'goal' && e.ownGoal"> (OG)</span>
             </template>
           </span>
         </template>
@@ -327,14 +327,14 @@ function fmtDate(d: string) {
                 </div>
                 <div v-if="teamPlayers(side).length" class="text-sm flex flex-col gap-1">
                   <div style="color: var(--p-text-muted-color)">
-                    {{ t('match.topScorer') }}: <b style="color: var(--p-text-color)">{{ bestBy(side, 'goals')?.playerName ?? '-' }}</b><span v-if="bestBy(side, 'goals')"> ({{ bestBy(side, 'goals').goals }}⚽)</span>
+                    {{ t('match.topScorer') }}: <b style="color: var(--p-text-color)">{{ formatPlayerName(bestBy(side, 'goals')?.playerName) || '-' }}</b><span v-if="bestBy(side, 'goals')"> ({{ bestBy(side, 'goals').goals }}⚽)</span>
                   </div>
                   <div style="color: var(--p-text-muted-color)">
-                    {{ t('match.topAssister') }}: <b style="color: var(--p-text-color)">{{ bestBy(side, 'assists')?.playerName ?? '-' }}</b><span v-if="bestBy(side, 'assists')"> ({{ bestBy(side, 'assists').assists }}👟)</span>
+                    {{ t('match.topAssister') }}: <b style="color: var(--p-text-color)">{{ formatPlayerName(bestBy(side, 'assists')?.playerName) || '-' }}</b><span v-if="bestBy(side, 'assists')"> ({{ bestBy(side, 'assists').assists }}👟)</span>
                   </div>
                   <div class="border-t mt-1 pt-2 flex flex-col gap-1" style="border-color: var(--p-content-border-color)">
                     <div v-for="(p, i) in teamPlayers(side)" :key="i" class="flex items-center justify-between gap-2">
-                      <span class="truncate">{{ p.playerName }}</span>
+                      <span class="truncate">{{ formatPlayerName(p.playerName) }}</span>
                       <span class="tabular-nums shrink-0" style="color: var(--p-text-muted-color)">{{ p.goals }}⚽ · {{ p.assists }}👟</span>
                     </div>
                   </div>

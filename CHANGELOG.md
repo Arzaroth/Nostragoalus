@@ -5,6 +5,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-06-08
+
+### Added
+- Euro knockout bracket, derived from results (feeders ordered under their parents, champion crowned).
+- Full player rankings for Euro (paged; previously cut at 200, hiding most of any squad on match pages).
+- Finished matches cache their detail and stats for the process lifetime (live ones still refresh every 5 minutes).
+
+### Changed
+- Player and coach names render in title case everywhere (FIFA's "Kylian MBAPPÉ" becomes "Kylian Mbappé"; correctly-cased names pass through).
+- About: theme-aware mise logo, official TanStack icon, project homepages preferred over GitHub links.
+
+### Known gaps
+- UEFA's open APIs expose no per-match possession or passes - those stat rows stay empty on Euro matches (season totals on team pages have them).
+
 ## [0.7.0] - 2026-06-07
 
 ### Added

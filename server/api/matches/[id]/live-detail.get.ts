@@ -5,16 +5,18 @@ import { providerForCompetition } from '../../../utils/providers'
 import { getCompetitionById } from '../../../utils/competitions/store'
 import { resolveCompetitionSeason } from '../../../utils/sync/competition'
 
-const cache = new Map<string, { at: number; detail: unknown }>()
+// Full-time details never change again - cache them for the process lifetime.
+// Live matches refresh every 5 minutes. (Single instance: in-memory is enough.)
+const cache = new Map<string, { at: number; final: boolean; detail: unknown }>()
 const TTL_MS = 5 * 60 * 1000
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id') as string
   const cached = cache.get(id)
-  if (cached && Date.now() - cached.at < TTL_MS) return { detail: cached.detail }
+  if (cached && (cached.final || Date.now() - cached.at < TTL_MS)) return { detail: cached.detail }
 
   const rows = await db
-    .select({ providerMatchId: match.providerMatchId, providerStageId: match.providerStageId, competitionId: match.competitionId })
+    .select({ providerMatchId: match.providerMatchId, providerStageId: match.providerStageId, competitionId: match.competitionId, status: match.status })
     .from(match)
     .where(eq(match.id, id))
     .limit(1)
@@ -43,7 +45,7 @@ export default defineEventHandler(async (event) => {
       }
     }
     const enriched = detail ? { ...detail, stats } : null
-    cache.set(id, { at: Date.now(), detail: enriched })
+    cache.set(id, { at: Date.now(), final: rows[0].status === 'FINISHED' && enriched != null, detail: enriched })
     return { detail: enriched }
   } catch {
     return { detail: null }

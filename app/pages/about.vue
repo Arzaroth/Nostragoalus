@@ -2,10 +2,17 @@
 import changelogRaw from '../../CHANGELOG.md?raw'
 
 const { t } = useI18n()
+const { isDark } = useTheme()
+
+function logoSrc(item: StackItem): string {
+  const logo = (isDark.value && item.logoDark) || item.logo!
+  return logo.startsWith('http') ? logo : `https://cdn.simpleicons.org/${logo}${item.logoColor ? `/${item.logoColor}` : ''}`
+}
 
 interface StackItem {
   name: string
   logo?: string // simpleicons slug, or an absolute URL to an official logo
+  logoDark?: string // dark-mode variant when the project ships one
   logoColor?: string // simpleicons color override for marks invisible on one theme
   icon?: string // PrimeIcons class for projects without a logo
   desc: string
@@ -23,7 +30,7 @@ const stack: { group: string; items: StackItem[] }[] = [
       { name: 'TypeScript', logo: 'typescript', desc: 'Typed JavaScript, end to end', url: 'https://www.typescriptlang.org', license: 'Apache-2.0', licenseUrl: 'https://github.com/microsoft/TypeScript/blob/main/LICENSE.txt' },
       { name: 'PrimeVue', logo: 'primevue', desc: 'The component library (inputs, tables, tooltips…)', url: 'https://primevue.org', license: 'MIT', licenseUrl: 'https://github.com/primefaces/primevue/blob/master/LICENSE.md' },
       { name: 'UnoCSS', logo: 'unocss', logoColor: '8b8b8b', desc: 'Atomic CSS engine for the utility classes', url: 'https://unocss.dev', license: 'MIT', licenseUrl: 'https://github.com/unocss/unocss/blob/main/LICENSE' },
-      { name: 'TanStack Query', logo: 'reactquery', desc: 'Server-state caching, mutations, invalidation', url: 'https://tanstack.com/query', license: 'MIT', licenseUrl: 'https://github.com/TanStack/query/blob/main/LICENSE' },
+      { name: 'TanStack Query', logo: 'https://tanstack.com/favicon-32x32.png', desc: 'Server-state caching, mutations, invalidation', url: 'https://tanstack.com/query', license: 'MIT', licenseUrl: 'https://github.com/TanStack/query/blob/main/LICENSE' },
       { name: 'Motion for Vue', logo: 'framer', desc: 'The scroll-driven banner choreography', url: 'https://motion.dev', license: 'MIT', licenseUrl: 'https://github.com/motiondivision/motion/blob/main/LICENSE.md' },
       { name: 'Leaflet', logo: 'leaflet', desc: 'The interactive world map', url: 'https://leafletjs.com', license: 'BSD-2-Clause', licenseUrl: 'https://github.com/Leaflet/Leaflet/blob/main/LICENSE' },
     ],
@@ -47,8 +54,8 @@ const stack: { group: string; items: StackItem[] }[] = [
       { name: 'Vite', logo: 'vite', desc: 'Dev server and bundling under Nuxt', url: 'https://vite.dev', license: 'MIT', licenseUrl: 'https://github.com/vitejs/vite/blob/main/LICENSE' },
       { name: 'Vitest', logo: 'vitest', desc: 'The test runner behind the 98% coverage gate', url: 'https://vitest.dev', license: 'MIT', licenseUrl: 'https://github.com/vitest-dev/vitest/blob/main/LICENSE' },
       { name: 'Docker', logo: 'docker', desc: 'Containers for the app, database and mail catcher', url: 'https://www.docker.com', license: 'Apache-2.0', licenseUrl: 'https://github.com/moby/moby/blob/master/LICENSE' },
-      { name: 'maildev', icon: 'pi pi-inbox', desc: 'Local SMTP catcher for dev email flows', url: 'https://github.com/maildev/maildev', license: 'MIT', licenseUrl: 'https://github.com/maildev/maildev/blob/master/LICENSE' },
-      { name: 'mise', logo: 'https://mise.jdx.dev/logo.svg', desc: 'Task shortcuts for the compose stacks', url: 'https://mise.jdx.dev', license: 'MIT', licenseUrl: 'https://github.com/jdx/mise/blob/main/LICENSE' },
+      { name: 'maildev', icon: 'pi pi-inbox', desc: 'Local SMTP catcher for dev email flows', url: 'https://maildev.github.io/maildev/', license: 'MIT', licenseUrl: 'https://github.com/maildev/maildev/blob/master/LICENSE' },
+      { name: 'mise', logo: 'https://mise.jdx.dev/logo-light.svg', logoDark: 'https://mise.jdx.dev/logo-dark.svg', desc: 'Task shortcuts for the compose stacks', url: 'https://mise.jdx.dev', license: 'MIT', licenseUrl: 'https://github.com/jdx/mise/blob/main/LICENSE' },
       { name: 'PGlite', logo: 'postgresql', desc: 'In-memory Postgres powering hermetic tests', url: 'https://pglite.dev', license: 'Apache-2.0', licenseUrl: 'https://github.com/electric-sql/pglite/blob/main/LICENSE' },
       { name: 'Bun', logo: 'https://bun.com/logo.svg', desc: 'Alternative runtime - the production bundle runs on it too', url: 'https://bun.sh', license: 'MIT', licenseUrl: 'https://github.com/oven-sh/bun/blob/main/LICENSE.md' },
     ],
@@ -118,7 +125,7 @@ const changelog = computed<ChangelogVersion[]>(() => {
           >
             <span class="font-semibold flex items-center justify-between gap-2">
               <span class="flex items-center gap-2 min-w-0">
-                <img v-if="item.logo" :src="item.logo.startsWith('http') ? item.logo : `https://cdn.simpleicons.org/${item.logo}${item.logoColor ? `/${item.logoColor}` : ''}`" class="w-5 h-5 shrink-0" alt="" loading="lazy" onerror="this.style.display='none'" >
+                <img v-if="item.logo" :src="logoSrc(item)" class="w-5 h-5 shrink-0" alt="" loading="lazy" onerror="this.style.display='none'" >
                 <i v-else-if="item.icon" :class="item.icon" class="text-lg shrink-0" style="color: var(--p-text-muted-color)" />
                 <span class="truncate">{{ item.name }}</span>
               </span>

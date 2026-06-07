@@ -125,11 +125,11 @@ function fmt(d: string) {
             <div v-if="topScorer || topAssister" class="flex flex-col gap-1">
               <div v-if="topScorer" class="flex items-center justify-between gap-2">
                 <span style="color: var(--p-text-muted-color)">{{ t('match.topScorer') }}</span>
-                <span class="font-medium truncate">{{ topScorer.playerName }} <span class="tabular-nums">({{ topScorer.goals }}⚽)</span></span>
+                <span class="font-medium truncate">{{ formatPlayerName(topScorer.playerName) }} <span class="tabular-nums">({{ topScorer.goals }}⚽)</span></span>
               </div>
               <div v-if="topAssister" class="flex items-center justify-between gap-2">
                 <span style="color: var(--p-text-muted-color)">{{ t('match.topAssister') }}</span>
-                <span class="font-medium truncate">{{ topAssister.playerName }} <span class="tabular-nums">({{ topAssister.assists }}👟)</span></span>
+                <span class="font-medium truncate">{{ formatPlayerName(topAssister.playerName) }} <span class="tabular-nums">({{ topAssister.assists }}👟)</span></span>
               </div>
             </div>
 

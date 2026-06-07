@@ -72,3 +72,21 @@ export function pensResult(m: { penaltiesHome?: number | null; penaltiesAway?: n
   if (h == null || a == null || h + a <= 0) return null
   return `${h}–${a}`
 }
+
+// Upstream feeds mix "Kylian MBAPPÉ" (FIFA) with "Kylian Mbappé" (UEFA).
+// Normalize to title case: only fully-uppercased words are rewritten, so
+// already-correct names ("McTominay", "van Dijk") pass through untouched.
+export function formatPlayerName(name: string | null | undefined): string {
+  if (!name) return ''
+  return name
+    .split(' ')
+    .map((word) =>
+      word === word.toUpperCase() && /\p{Lu}{2}/u.test(word)
+        ? word
+            .split(/([-'])/)
+            .map((part) => (part.length > 1 ? part[0] + part.slice(1).toLowerCase() : part))
+            .join('')
+        : word,
+    )
+    .join(' ')
+}

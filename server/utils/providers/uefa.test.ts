@@ -410,3 +410,51 @@ it('final coverage tails: actorless events, missing away team, bare ranking and 
   expect(t.squad[0]).toMatchObject({ playerId: '', name: '?', shirtNumber: null, position: null })
   expect(t.stats).toMatchObject({ goals: null, passes: null })
 })
+
+describe('uefa bracket', () => {
+  const noWait = () => new RateLimiter(0)
+  const ko = (id: string, round: string, md: string, home: [string, string], away: [string, string], hs: number, as: number, winnerId: string, pens?: [number, number]) => ({
+    id,
+    status: 'FINISHED',
+    kickOffTime: { dateTime: `2024-07-0${id.length}T19:00:00Z` },
+    homeTeam: { id: home[0], internationalName: home[1], countryCode: home[1].slice(0, 3).toUpperCase() },
+    awayTeam: { id: away[0], internationalName: away[1], countryCode: away[1].slice(0, 3).toUpperCase() },
+    score: { total: { home: hs, away: as }, ...(pens ? { penalty: { home: pens[0], away: pens[1] } } : {}) },
+    round: { id: 'r' + round, metaData: { name: round } },
+    matchday: { name: md, phase: 'TOURNAMENT' },
+    winner: { match: { team: { id: winnerId } } },
+  })
+
+  it('orders feeders under their parents and reports the champion', async () => {
+    const fixtures = [
+      ko('f', 'Final', 'MD7', ['1', 'Alpha'], ['2', 'Beta'], 2, 1, '1'),
+      // pool order intentionally scrambled: Beta's semi listed first
+      ko('s2', 'Semi-finals', 'MD6', ['3', 'Gamma'], ['2', 'Beta'], 0, 0, '2', [3, 5]),
+      ko('s1', 'Semi-finals', 'MD6', ['1', 'Alpha'], ['4', 'Delta'], 3, 0, '1'),
+    ]
+    const fetchImpl = (async () => new Response(JSON.stringify(fixtures), { status: 200 })) as unknown as typeof fetch
+    const provider = uefaProvider({ seasonYear: '2024', rateLimiter: noWait(), fetchImpl })
+    const b = await provider.getBracket!()
+    expect(b!.winner).toEqual({ name: 'Alpha', code: 'ALP' })
+    expect(b!.rounds.map((r) => r.name)).toEqual(['Semi-finals', 'Final'])
+    // Alpha's semi must sit first (feeds the final's home slot)
+    expect(b!.rounds[0].matches.map((m) => m.providerMatchId)).toEqual(['s1', 's2'])
+    expect(b!.rounds[0].matches[1]).toMatchObject({ homePens: 3, awayPens: 5, winner: 'AWAY' })
+    expect(b!.rounds[1].matches[0]).toMatchObject({ homeTeam: 'Alpha', homeScore: 2, winner: 'HOME' })
+  })
+
+  it('returns null without a final and falls back to kickoff order for undecided feeders', async () => {
+    const noFinal = (async () => new Response(JSON.stringify([ko('s1', 'Semi-finals', 'MD6', ['1', 'Alpha'], ['2', 'Beta'], 1, 0, '1')]), { status: 200 })) as unknown as typeof fetch
+    expect(await uefaProvider({ seasonYear: '2024', rateLimiter: noWait(), fetchImpl: noFinal }).getBracket!()).toBeNull()
+
+    const undecided = [
+      { ...ko('f', 'Final', 'MD7', ['0', 'TBD'], ['0', 'TBD'], 0, 0, ''), status: 'UPCOMING', winner: null, score: null },
+      { ...ko('s1', 'Semi-finals', 'MD6', ['1', 'Alpha'], ['2', 'Beta'], 0, 0, ''), status: 'UPCOMING', winner: null, score: null },
+      { ...ko('s2', 'Semi-finals', 'MD6', ['3', 'Gamma'], ['4', 'Delta'], 0, 0, ''), status: 'UPCOMING', winner: null, score: null },
+    ]
+    const fetchImpl = (async () => new Response(JSON.stringify(undecided), { status: 200 })) as unknown as typeof fetch
+    const b = await uefaProvider({ seasonYear: '2024', rateLimiter: noWait(), fetchImpl }).getBracket!()
+    expect(b!.winner).toBeNull()
+    expect(b!.rounds[0].matches).toHaveLength(2) // kickoff-order fallback kept both
+  })
+})

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { flagUrl, isLocked, matchStatusLabel, pensResult, statusSeverity, tierLabel } from './format'
+import { flagUrl, formatPlayerName, isLocked, matchStatusLabel, pensResult, statusSeverity, tierLabel } from './format'
 import type { MatchStatus } from '../../shared/types/match'
 
 const STATUSES: MatchStatus[] = [
@@ -63,5 +63,22 @@ describe('pensResult', () => {
     expect(pensResult({ penaltiesHome: 0, penaltiesAway: 0 })).toBeNull()
     expect(pensResult({ penaltiesHome: null, penaltiesAway: null })).toBeNull()
     expect(pensResult({})).toBeNull()
+  })
+})
+
+describe('formatPlayerName', () => {
+  it('title-cases fully-uppercased words only', () => {
+    expect(formatPlayerName('Kylian MBAPPÉ')).toBe('Kylian Mbappé')
+    expect(formatPlayerName('Brice SAMBA')).toBe('Brice Samba')
+    expect(formatPlayerName('Warren ZAÏRE-EMERY')).toBe('Warren Zaïre-Emery')
+    expect(formatPlayerName("N'GOLO KANTÉ")).toBe("N'Golo Kanté")
+    expect(formatPlayerName('Didier DESCHAMPS')).toBe('Didier Deschamps')
+  })
+  it('leaves mixed-case names and edge inputs alone', () => {
+    expect(formatPlayerName('Kylian Mbappé')).toBe('Kylian Mbappé')
+    expect(formatPlayerName('van Dijk')).toBe('van Dijk')
+    expect(formatPlayerName('McTominay')).toBe('McTominay')
+    expect(formatPlayerName(null)).toBe('')
+    expect(formatPlayerName('A')).toBe('A')
   })
 })

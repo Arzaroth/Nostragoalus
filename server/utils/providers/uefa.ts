@@ -229,14 +229,21 @@ export function uefaProvider(options: UefaOptions): MatchDataProvider {
     return getJson<UefaEvent[]>(`${baseUrl}/v5/matches/${matchId}/events?filter=ALL&limit=500&offset=0`)
   }
 
-  async function fetchRanking(kind: 'player-ranking' | 'team-ranking', stats: string, limit: number) {
+  async function fetchRanking(kind: 'player-ranking' | 'team-ranking', stats: string, limit: number, offset = 0) {
     return getJson<UefaRankingRow[]>(
-      `${statsBaseUrl}/v1/${kind}?competitionId=${competitionId}&seasonYear=${options.seasonYear}&phase=TOURNAMENT&stats=${stats}&order=DESC&limit=${limit}&offset=0&optionalFields=PLAYER,TEAM`,
+      `${statsBaseUrl}/v1/${kind}?competitionId=${competitionId}&seasonYear=${options.seasonYear}&phase=TOURNAMENT&stats=${stats}&order=DESC&limit=${limit}&offset=${offset}&optionalFields=PLAYER,TEAM`,
     )
   }
 
   async function fetchScorerRanking(): Promise<TopScorer[]> {
-    const rows = await fetchRanking('player-ranking', 'goals,assists', 200)
+    // Page the whole ranking - cutting at one page loses every player past ~200.
+    const rows: UefaRankingRow[] = []
+    const pageSize = 200
+    for (let offset = 0; ; offset += pageSize) {
+      const page = await fetchRanking('player-ranking', 'goals,assists', pageSize, offset)
+      rows.push(...page)
+      if (page.length < pageSize) break
+    }
     return rows.map((r) => ({
       playerName: r.player?.internationalName ?? '?',
       teamName: r.team?.internationalName ?? '?',
@@ -381,6 +388,64 @@ export function uefaProvider(options: UefaOptions): MatchDataProvider {
 
     getTopScorers(_opts: ListFixturesOptions) {
       return fetchScorerRanking()
+    },
+
+    async getBracket() {
+      const all = await fetchAll()
+      const KNOCKOUT_ORDER: AppStage[] = ['R32', 'R16', 'QF', 'SF', 'THIRD_PLACE', 'FINAL']
+      const STAGE_LABELS: Record<string, string> = { R32: 'Round of 32', R16: 'Round of 16', QF: 'Quarter-finals', SF: 'Semi-finals', THIRD_PLACE: 'Third place', FINAL: 'Final' }
+      const byStage = new Map<AppStage, NormalizedMatch[]>()
+      for (const m of all) {
+        if (!KNOCKOUT_ORDER.includes(m.stage) || m.stage === 'THIRD_PLACE') continue
+        byStage.set(m.stage, [...(byStage.get(m.stage) ?? []), m])
+      }
+      if (!byStage.has('FINAL')) return null
+
+      const winnerCode = (m: NormalizedMatch) =>
+        m.winner === 'HOME' ? m.homeTeam.code : m.winner === 'AWAY' ? m.awayTeam.code : null
+      const toBracketMatch = (m: NormalizedMatch) => ({
+        providerMatchId: m.providerMatchId,
+        homeTeam: m.homeTeam.name,
+        homeCode: m.homeTeam.code,
+        awayTeam: m.awayTeam.name,
+        awayCode: m.awayTeam.code,
+        homeScore: m.score.fullTime.home,
+        awayScore: m.score.fullTime.away,
+        homePens: m.score.penalties?.home ?? null,
+        awayPens: m.score.penalties?.away ?? null,
+        winner: m.winner === 'HOME' || m.winner === 'AWAY' ? m.winner : null,
+      })
+
+      // Order each round so feeders sit above their parent: walk down from the
+      // final, picking for each slot the earlier-round match won by that team.
+      const stages = KNOCKOUT_ORDER.filter((s) => s !== 'THIRD_PLACE' && byStage.has(s))
+      const ordered = new Map<AppStage, NormalizedMatch[]>()
+      ordered.set('FINAL', byStage.get('FINAL')!)
+      for (let i = stages.length - 2; i >= 0; i--) {
+        const stage = stages[i]
+        const pool = [...byStage.get(stage)!]
+        const next: NormalizedMatch[] = []
+        for (const parent of ordered.get(stages[i + 1])!) {
+          for (const code of [parent.homeTeam.code, parent.awayTeam.code]) {
+            const idx = pool.findIndex((m) => code != null && winnerCode(m) === code)
+            if (idx >= 0) next.push(...pool.splice(idx, 1))
+          }
+        }
+        // Undecided feeders (future tournaments) fall back to kickoff order.
+        next.push(...pool.sort((a, b) => a.kickoffTime.localeCompare(b.kickoffTime)))
+        ordered.set(stage, next)
+      }
+
+      const final = byStage.get('FINAL')![0]
+      const champCode = winnerCode(final)
+      return {
+        winner: champCode ? { name: champCode === final.homeTeam.code ? final.homeTeam.name : final.awayTeam.name, code: champCode } : null,
+        rounds: stages.map((s, i) => ({
+          name: STAGE_LABELS[s],
+          sequence: i + 1,
+          matches: ordered.get(s)!.map(toBracketMatch),
+        })),
+      }
     },
 
     getPlayerStats(_opts: { teamId: string }) {
