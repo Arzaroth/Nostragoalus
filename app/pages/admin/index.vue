@@ -269,13 +269,13 @@ function createUser() {
           <div class="md:col-span-2 flex flex-col gap-3">
             <!-- uniform buttons with centered labels; next-run column aligned -->
             <div class="grid grid-cols-[auto_auto] items-center gap-x-4 gap-y-2 justify-center">
-              <Button v-tooltip.bottom="t('admin.data.importTip')" :label="t('admin.data.import')" icon="pi pi-download" size="small" severity="info" class="w-48" :loading="syncBusy === 'import'" @click="runImport" />
+              <Button v-tooltip.left="t('admin.data.importTip')" :label="t('admin.data.import')" icon="pi pi-download" size="small" severity="info" class="w-48" :loading="syncBusy === 'import'" @click="runImport" />
               <span class="text-xs" style="color: var(--p-text-muted-color)">{{ t('admin.data.nextRun') }}: {{ t('admin.data.manual') }}</span>
-              <Button v-tooltip.bottom="t('admin.data.refreshTip')" :label="t('admin.data.refresh')" icon="pi pi-refresh" size="small" severity="help" class="w-48" :loading="syncBusy === 'fixtures'" @click="runTask('fixtures')" />
+              <Button v-tooltip.left="t('admin.data.refreshTip')" :label="t('admin.data.refresh')" icon="pi pi-refresh" size="small" severity="help" class="w-48" :loading="syncBusy === 'fixtures'" @click="runTask('fixtures')" />
               <span class="text-xs tabular-nums" style="color: var(--p-text-muted-color)">{{ t('admin.data.nextRun') }}: {{ nextRun('hourly') }}</span>
-              <Button v-tooltip.bottom="t('admin.data.pollTip')" :label="t('admin.data.poll')" icon="pi pi-bolt" size="small" severity="warn" class="w-48" :loading="syncBusy === 'live'" @click="runTask('live')" />
+              <Button v-tooltip.left="t('admin.data.pollTip')" :label="t('admin.data.poll')" icon="pi pi-bolt" size="small" severity="warn" class="w-48" :loading="syncBusy === 'live'" @click="runTask('live')" />
               <span class="text-xs tabular-nums" style="color: var(--p-text-muted-color)">{{ t('admin.data.nextRun') }}: {{ nextRun(2) }}</span>
-              <Button v-tooltip.bottom="t('admin.data.finalizeTip')" :label="t('admin.data.finalize')" icon="pi pi-flag" size="small" severity="success" class="w-48" :loading="syncBusy === 'finalize'" @click="runTask('finalize')" />
+              <Button v-tooltip.left="t('admin.data.finalizeTip')" :label="t('admin.data.finalize')" icon="pi pi-flag" size="small" severity="success" class="w-48" :loading="syncBusy === 'finalize'" @click="runTask('finalize')" />
               <span class="text-xs tabular-nums" style="color: var(--p-text-muted-color)">{{ t('admin.data.nextRun') }}: {{ nextRun(5) }}</span>
             </div>
             <pre v-if="syncMsg" class="text-xs p-2 rounded overflow-x-auto" style="background: color-mix(in srgb, var(--p-text-color) 6%, transparent)">{{ syncMsg }}</pre>
