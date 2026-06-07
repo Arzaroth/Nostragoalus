@@ -208,6 +208,12 @@ async function createUser() {
         <div class="border-t" style="border-color: var(--p-content-border-color)">
           <div v-if="usersLoading" class="px-6 py-4 opacity-60">{{ t('common.loading') }}</div>
           <div v-for="u in users" :key="u.id" class="flex items-center gap-3 px-6 py-3 border-t text-sm" style="border-color: var(--p-content-border-color)">
+            <Avatar
+              :image="u.image || undefined"
+              :label="u.image ? undefined : (u.name || '?').charAt(0).toUpperCase()"
+              shape="circle"
+              class="shrink-0 !bg-[var(--p-primary-color)] !text-[var(--p-primary-contrast-color)] font-bold overflow-hidden"
+            />
             <div class="flex-1 min-w-0">
               <div class="font-medium truncate">{{ u.name }}</div>
               <div class="text-xs truncate" style="color: var(--p-text-muted-color)">{{ u.email }}</div>

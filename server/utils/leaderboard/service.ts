@@ -52,6 +52,7 @@ export async function getLeaderboard(
     .select({
       userId: user.id,
       displayName: user.name,
+      image: user.image,
       joinedAt: user.createdAt,
       predictionPoints: predPoints.mapWith(Number),
       exactCount: exactCount.mapWith(Number),
@@ -66,7 +67,7 @@ export async function getLeaderboard(
         ? and(eq(match.id, prediction.matchId), eq(match.competitionId, opts.competitionId))
         : eq(match.id, prediction.matchId),
     )
-    .groupBy(user.id, user.name, user.createdAt)
+    .groupBy(user.id, user.name, user.image, user.createdAt)
 
   const champions = await db
     .select({ userId: championPick.userId, points: championPick.awardedPoints })
@@ -88,6 +89,7 @@ export async function getLeaderboard(
     rank: offset + index + 1,
     userId: r.userId,
     displayName: r.displayName,
+    image: r.image,
     totalPoints: r.totalPoints,
     predictionPoints: r.predictionPoints,
     championPoints: r.championPoints,

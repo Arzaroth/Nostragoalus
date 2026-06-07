@@ -103,13 +103,15 @@ export async function getMyPredictions(db: AppDatabase, userId: string, competit
 
 // Another user's predictions are only revealed for matches that have kicked off,
 // so picks can't be copied before lock.
-export async function getUserPublicPredictions(db: AppDatabase, userId: string, now: Date = new Date()) {
+export async function getUserPublicPredictions(db: AppDatabase, userId: string, now: Date = new Date(), competitionId?: string) {
+  const base = [eq(prediction.userId, userId), lte(match.kickoffTime, now)]
+  if (competitionId) base.push(eq(match.competitionId, competitionId))
   return db
     .select(predictionView)
     .from(prediction)
     .innerJoin(match, eq(match.id, prediction.matchId))
     .innerJoin(round, eq(round.id, prediction.roundId))
-    .where(and(eq(prediction.userId, userId), lte(match.kickoffTime, now)))
+    .where(and(...base))
     .orderBy(match.kickoffTime)
 }
 

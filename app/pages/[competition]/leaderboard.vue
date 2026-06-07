@@ -46,9 +46,10 @@ function medal(rank: number) {
           </div>
         </div>
         <Avatar
-          :label="(r.displayName || '?').charAt(0).toUpperCase()"
+          :label="r.image ? undefined : (r.displayName || '?').charAt(0).toUpperCase()"
+          :image="r.image || undefined"
           shape="circle"
-          class="!bg-[var(--p-primary-color)] !text-[var(--p-primary-contrast-color)] font-bold shrink-0"
+          class="!bg-[var(--p-primary-color)] !text-[var(--p-primary-contrast-color)] font-bold shrink-0 overflow-hidden"
         />
         <div class="flex-1 min-w-0">
           <div class="font-semibold truncate">

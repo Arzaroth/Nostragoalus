@@ -111,6 +111,14 @@ describe('getUserPublicPredictions', () => {
     const pub = await getUserPublicPredictions(db, userId, NOW)
     expect(pub).toHaveLength(1)
     expect(pub[0].matchId).toBe(locked)
+
+    // and scopes to a competition when one is given
+    const other = await seedCompetition(db)
+    const otherRound = (await findRoundId(db, other, 'GROUP', 1)) as string
+    const otherLocked = await makeMatch(db, { competitionId: other, roundId: otherRound, kickoffTime: PAST })
+    await makePrediction(db, { userId, matchId: otherLocked, roundId: otherRound, home: 1, away: 1 })
+    expect(await getUserPublicPredictions(db, userId, NOW)).toHaveLength(2)
+    expect(await getUserPublicPredictions(db, userId, NOW, competitionId)).toHaveLength(1)
     await client.close()
   })
 })
