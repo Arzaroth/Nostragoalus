@@ -31,7 +31,7 @@ const tiers = [
   <div class="flex flex-col gap-20 sm:gap-28 pb-12">
     <!-- Hero -->
     <section class="text-center pt-8 sm:pt-16 flex flex-col items-center gap-6">
-      <img src="/brand/mark.svg" alt="" class="w-24 sm:w-28 drop-shadow-xl" >
+      <img src="/brand/banner.svg" alt="Nostragoalus — the football oracle" class="w-full max-w-xl sm:max-w-2xl drop-shadow-xl" >
       <div
         class="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium"
         style="border-color: var(--p-content-border-color); color: var(--p-text-muted-color)"
