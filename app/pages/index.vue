@@ -190,6 +190,18 @@ onMounted(() => {
       </div>
     </section>
 
+    <!-- FAQ -->
+    <section class="max-w-3xl mx-auto w-full">
+      <h2 class="text-3xl font-extrabold text-center mb-2">{{ t('faq.title') }}</h2>
+      <p class="text-center mb-8" style="color: var(--p-text-muted-color)">{{ t('faq.sub') }}</p>
+      <Accordion>
+        <AccordionPanel v-for="i in 8" :key="i" :value="String(i)">
+          <AccordionHeader>{{ t(`faq.q${i}.q`) }}</AccordionHeader>
+          <AccordionContent><p class="text-sm" style="color: var(--p-text-muted-color)">{{ t(`faq.q${i}.a`) }}</p></AccordionContent>
+        </AccordionPanel>
+      </Accordion>
+    </section>
+
     <!-- Final CTA -->
     <section class="rounded-3xl p-10 sm:p-16 text-center text-white flex flex-col items-center gap-5" style="background: linear-gradient(135deg, #4f46e5, #10b981)">
       <img src="/brand/mark.svg" alt="" class="w-20" >
@@ -200,8 +212,13 @@ onMounted(() => {
       </NuxtLink>
     </section>
 
-    <footer class="text-center text-sm" style="color: var(--p-text-muted-color)">
-      {{ config.public.appName }} · {{ t('landing.footer') }}
+    <footer class="text-center text-sm flex flex-col gap-2" style="color: var(--p-text-muted-color)">
+      <div>© 2026 {{ config.public.appName }} · {{ t('landing.footer') }} {{ t('footer.builtWith') }}</div>
+      <div class="flex justify-center gap-4 text-xs">
+        <NuxtLink to="/about" class="hover:underline">{{ t('about.title') }}</NuxtLink>
+        <a href="https://github.com/Arzaroth/Nostragoalus" target="_blank" rel="noopener" class="hover:underline">{{ t('footer.source') }}</a>
+        <span>WTFPL</span>
+      </div>
     </footer>
   </div>
 </template>

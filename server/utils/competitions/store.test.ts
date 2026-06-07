@@ -20,7 +20,7 @@ describe('competition store', () => {
     expect(all.map((c) => c.slug).sort()).toEqual(['euro-2024', 'world-cup-2022', 'world-cup-2026'])
     expect(all.find((c) => c.slug === 'world-cup-2026')).toMatchObject({ provider: 'fifa', externalCompetitionId: '17' })
     expect(all.find((c) => c.slug === 'world-cup-2022')).toMatchObject({ provider: 'fifa', externalSeasonId: '255711' })
-    expect(all.find((c) => c.slug === 'euro-2024')).toMatchObject({ provider: 'football-data', externalCompetitionId: 'EC' })
+    expect(all.find((c) => c.slug === 'euro-2024')).toMatchObject({ provider: 'uefa', externalCompetitionId: '3' })
     await client.close()
   })
 

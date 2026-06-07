@@ -32,3 +32,7 @@ run = "docker compose exec db psql -U nostragoalus -d nostragoalus"
 [tasks.test]
 description = "Run the test suite with the coverage gate"
 run = "pnpm test:coverage"
+
+[tasks.e2e-smtp]
+description = "E2E: email-OTP flow through the running stack + maildev"
+run = "pnpm e2e:smtp"

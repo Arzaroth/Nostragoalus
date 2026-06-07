@@ -1,10 +1,12 @@
 import { fifaProvider } from './fifa'
+import { uefaProvider } from './uefa'
 import { footballDataProvider } from './football-data'
 import type { MatchDataProvider } from './types'
 
 export interface ProviderSelection {
   provider: string
   externalCompetitionId?: string
+  seasonHint?: string | null
   fifaSeasonId?: string
   footballDataToken?: string
   apiFootballKey?: string
@@ -27,6 +29,14 @@ export function createProvider(selection: ProviderSelection): MatchDataProvider 
     return footballDataProvider({
       token: selection.footballDataToken,
       competition: selection.externalCompetitionId || 'WC',
+      fetchImpl: selection.fetchImpl,
+    })
+  }
+
+  if (selection.provider === 'uefa') {
+    return uefaProvider({
+      seasonYear: selection.seasonHint || '2024',
+      competitionId: selection.externalCompetitionId || '3',
       fetchImpl: selection.fetchImpl,
     })
   }

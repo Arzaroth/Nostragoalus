@@ -340,5 +340,56 @@
     "signIn": "Sign in with a passkey",
     "failed": "Passkey sign-in failed.",
     "gateFailed": "Wrong password or code."
+  },
+  "about": {
+    "title": "About",
+    "intro": "Nostragoalus is an open-source football prediction game: call the scores, earn points for how close you get, and out-foresee your friends.",
+    "aiTitle": "Built with AI",
+    "aiText": "This entire application - code, design, translations and even the artwork pipeline - was built in collaboration with Claude (Anthropic), with a human football fan directing every decision. The AI wrote the code; the humans own the opinions.",
+    "stackTitle": "Tech stack",
+    "stackSub": "The open-source software this app stands on. Every card links to the project; the badge links to its license.",
+    "dataTitle": "Data sources",
+    "dataText": "Match data comes from publicly accessible FIFA and UEFA endpoints (unofficial, read-only, politely rate-limited). Map tiles by OpenStreetMap contributors. This project is not affiliated with or endorsed by FIFA or UEFA.",
+    "changelogTitle": "Changelog"
+  },
+  "footer": {
+    "builtWith": "Built with ♥ by football fans.",
+    "source": "Source code"
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "sub": "Everything you need before your first pick.",
+    "q1": {
+      "q": "How does scoring work?",
+      "a": "Each match is scored on closeness: the exact score earns 3 points, the right goal difference 2, just the right outcome 1, and a miss 0. Nailing an exact score few others dared brings a rarity bonus on top."
+    },
+    "q2": {
+      "q": "When do predictions lock?",
+      "a": "At kickoff, per match, enforced by the server - not your clock. Until then you can change your pick as often as you like, from the fixtures page, your picks, or the match view."
+    },
+    "q3": {
+      "q": "What is the ×2 joker?",
+      "a": "Once per round you can mark one match as your joker: it doubles every point you earn on it. You can move it to another match in the same round as long as neither match has kicked off."
+    },
+    "q4": {
+      "q": "What is the champion pick?",
+      "a": "Before the first kickoff of the tournament, call the team that lifts the trophy. If you are right, you collect a bonus at the end - and your crowned flag watches over your fixtures all tournament long."
+    },
+    "q5": {
+      "q": "Can others see my picks?",
+      "a": "Only after a match kicks off. Your pending predictions are private, so nobody can copy your genius before lock."
+    },
+    "q6": {
+      "q": "What about extra time and penalties?",
+      "a": "Predictions are scored on the final score of play; penalty shootouts decide who advances but never your points. A knockout draw that goes to penalties scores as a draw."
+    },
+    "q7": {
+      "q": "Where does the data come from?",
+      "a": "From publicly accessible FIFA and UEFA endpoints: fixtures, live scores (about every two minutes during matches), squads, and stats. The world map is OpenStreetMap."
+    },
+    "q8": {
+      "q": "Is it free?",
+      "a": "Completely. The whole project is open source under the WTFPL - you can read every line, run your own instance for your friends, and do what you want with it."
+    }
   }
 }

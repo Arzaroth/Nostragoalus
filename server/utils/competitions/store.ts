@@ -22,8 +22,8 @@ export const DEFAULT_COMPETITIONS = [
   {
     slug: 'euro-2024',
     name: 'UEFA Euro 2024',
-    provider: 'football-data',
-    externalCompetitionId: 'EC',
+    provider: 'uefa',
+    externalCompetitionId: '3',
     externalSeasonId: null as string | null,
     seasonHint: '2024',
   },

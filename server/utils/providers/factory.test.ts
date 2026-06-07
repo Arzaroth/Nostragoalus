@@ -23,3 +23,10 @@ describe('createProvider', () => {
     expect(() => createProvider({ provider: 'mystery' })).toThrow(/unknown match provider/)
   })
 })
+
+it('creates the uefa provider with defaults and explicit values', () => {
+  const def = createProvider({ provider: 'uefa' })
+  expect(def.meta.name).toBe('uefa')
+  const explicit = createProvider({ provider: 'uefa', seasonHint: '2028', externalCompetitionId: '3' })
+  expect(explicit.meta.name).toBe('uefa')
+})

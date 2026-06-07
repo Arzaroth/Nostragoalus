@@ -4,9 +4,19 @@
 
 # Nostragoalus
 
+![Coverage](.github/coverage-badge.svg) ![License: WTFPL](https://img.shields.io/badge/License-WTFPL-brightgreen.svg)
+
 A football score-prediction game: friends predict match scores and earn points by how close they
 get, ranked per competition and on a global leaderboard. Ships with the **FIFA World Cup 2026**
 (default), **World Cup 2022**, and **UEFA Euro 2024**.
+
+## Runtimes
+
+Built and tested on **Node.js 22**. The production bundle also runs under **Bun** (smoke-tested):
+
+```sh
+pnpm build && bun .output/server/index.mjs
+```
 
 ## Features
 

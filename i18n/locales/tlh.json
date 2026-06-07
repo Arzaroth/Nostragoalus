@@ -340,5 +340,56 @@
     "signIn": "jan ngoq lo'taHvIS yI'el",
     "failed": "jan ngoq 'el Qagh.",
     "gateFailed": "pegh mu' pagh ngoq qarbe'."
+  },
+  "about": {
+    "title": "De'",
+    "intro": "Nostragoalus: QI'D noH Quj poSmoHlu'pu'bogh. mI'mey yInoH, QuQmey yISuq, juppu'lI' tIjey.",
+    "aiTitle": "AI lo'taHvIS chenmoHlu'",
+    "aiText": "naQ Doch - ngoq, nagh, mughmey je - Claude (Anthropic) tlhej chenmoHlu'. AI ngoq qonta'; Humanpu' wuqmey ghaj.",
+    "stackTitle": "jan tetlh",
+    "stackSub": "poSmoHlu'pu'bogh jan Dochvam Qutlh. Hoch nav projectDaq ghoS; Degh licenseDaq ghoS.",
+    "dataTitle": "De' mungmey",
+    "dataText": "may' De' FIFA UEFA je naw'Daq vo' (official pagh, laD neH). qo' mIllogh OpenStreetMap vo'. FIFA UEFA joq projectvam luvoqbe'.",
+    "changelogTitle": "choH tetlh"
+  },
+  "footer": {
+    "builtWith": "QI'D parmaqqaypu' ♥ lo'taHvIS chenmoHlu'.",
+    "source": "ngoq mung"
+  },
+  "faq": {
+    "title": "tlhobmey motlh",
+    "sub": "wIv wa'DIch yIqonpa' Hoch DaSovnISbogh.",
+    "q1": {
+      "q": "chay' noHlu'?",
+      "a": "Sum noHlu': mI' pup wej QuQ, QIH chuq lugh cha', jeywI' lugh wa', Qagh pagh. mI' pup jaq tev le' chel."
+    },
+    "q2": {
+      "q": "ghorgh wIvmey SoQmoHlu'?",
+      "a": "may' taghDI', jabwI' 'oH wuqwI''e'. taghpa' wIvlIj DachoHlaH reH."
+    },
+    "q3": {
+      "q": "Hov ×2 nuq?",
+      "a": "wa' gho wa'logh, may'vaD Hov yIQeq: QuQmey cha'logh boqlu'. cha' may'mey taghbe'taHvIS yIvIHlaH."
+    },
+    "q4": {
+      "q": "che'wI' wIv nuq?",
+      "a": "may' wa'DIch taghpa', 'aqtu' jeywI' yInoH. bIlughchugh, tev DaHev rInDI'."
+    },
+    "q5": {
+      "q": "wIvmeywIj lulegh'a' latlhpu'?",
+      "a": "may' taghpu'DI' neH. taghpa' peghqu' wIvmeylIj."
+    },
+    "q6": {
+      "q": "poH chel QI'D bachmey je?",
+      "a": "Quj mI' Qav noHlu'. QI'D bachmey ghoSwI' wuq, QuQmeylIj wuqbe'."
+    },
+    "q7": {
+      "q": "nuqDaq De' mung?",
+      "a": "FIFA UEFA je naw'mey vo': may'mey, DaH mI'mey, SuvwI'pu', De' je. qo' mIllogh OpenStreetMap."
+    },
+    "q8": {
+      "q": "tlhab'a'?",
+      "a": "naQ tlhab. WTFPL bIngDaq poSmoHlu'pu'. Hoch ngoq yIlaD, Doch'a'lIj yIche'."
+    }
   }
 }

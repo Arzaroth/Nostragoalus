@@ -340,5 +340,56 @@
     "signIn": "Connexion avec une clé d'accès",
     "failed": "Échec de la connexion par clé d'accès.",
     "gateFailed": "Mot de passe ou code incorrect."
+  },
+  "about": {
+    "title": "À propos",
+    "intro": "Nostragoalus est un jeu de pronostics football open source : pronostiquez les scores, marquez des points selon votre précision et devancez vos amis.",
+    "aiTitle": "Construit avec l'IA",
+    "aiText": "Toute cette application - code, design, traductions et même la chaîne graphique - a été construite en collaboration avec Claude (Anthropic), un fan de foot humain dirigeant chaque décision. L'IA a écrit le code ; les humains gardent les opinions.",
+    "stackTitle": "Stack technique",
+    "stackSub": "Les logiciels open source sur lesquels repose l'application. Chaque carte pointe vers le projet ; le badge vers sa licence.",
+    "dataTitle": "Sources de données",
+    "dataText": "Les données des matchs proviennent de points d'accès FIFA et UEFA publiquement accessibles (non officiels, lecture seule, poliment limités en débit). Tuiles de carte par les contributeurs OpenStreetMap. Ce projet n'est ni affilié ni approuvé par la FIFA ou l'UEFA.",
+    "changelogTitle": "Journal des modifications"
+  },
+  "footer": {
+    "builtWith": "Fait avec ♥ par des fans de foot.",
+    "source": "Code source"
+  },
+  "faq": {
+    "title": "Questions fréquentes",
+    "sub": "Tout ce qu'il faut savoir avant votre premier prono.",
+    "q1": {
+      "q": "Comment fonctionne le score ?",
+      "a": "Chaque match est noté à la précision : le score exact rapporte 3 points, la bonne différence de buts 2, le bon résultat 1, raté 0. Un score exact que peu ont osé apporte un bonus de rareté en plus."
+    },
+    "q2": {
+      "q": "Quand les pronos se verrouillent-ils ?",
+      "a": "Au coup d'envoi, match par match, côté serveur - pas selon votre horloge. Avant cela, modifiez vos pronos autant que vous voulez."
+    },
+    "q3": {
+      "q": "C'est quoi le joker ×2 ?",
+      "a": "Une fois par tour, désignez un match joker : tous ses points sont doublés. Vous pouvez le déplacer tant qu'aucun des deux matchs n'a commencé."
+    },
+    "q4": {
+      "q": "C'est quoi le choix du vainqueur ?",
+      "a": "Avant le premier coup d'envoi du tournoi, désignez l'équipe qui soulèvera le trophée. Si vous avez vu juste, un bonus tombe à la fin."
+    },
+    "q5": {
+      "q": "Les autres voient-ils mes pronos ?",
+      "a": "Seulement après le coup d'envoi. Vos pronos en attente restent privés : personne ne copie votre génie avant le verrouillage."
+    },
+    "q6": {
+      "q": "Et les prolongations / tirs au but ?",
+      "a": "Les pronos sont notés sur le score final du jeu ; les tirs au but décident qui se qualifie, jamais vos points. Un nul qui va aux t.a.b. compte comme un nul."
+    },
+    "q7": {
+      "q": "D'où viennent les données ?",
+      "a": "De points d'accès FIFA et UEFA publiquement accessibles : calendrier, scores en direct (environ toutes les deux minutes), effectifs et stats. La carte est OpenStreetMap."
+    },
+    "q8": {
+      "q": "C'est gratuit ?",
+      "a": "Totalement. Le projet est open source sous licence WTFPL : lisez chaque ligne, hébergez votre propre instance entre amis, faites-en ce que vous voulez."
+    }
   }
 }
