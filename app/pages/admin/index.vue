@@ -235,7 +235,8 @@ async function createUser() {
           <div class="md:col-span-2 flex flex-col gap-3">
             <div class="flex flex-wrap gap-2">
               <Button :label="t('admin.data.import')" icon="pi pi-download" size="small" severity="secondary" :loading="syncBusy === 'import'" @click="runImport" />
-              <Button label="Live scores" icon="pi pi-bolt" size="small" severity="secondary" :loading="syncBusy === 'live'" @click="runTask('live')" />
+              <Button label="Refresh fixtures" icon="pi pi-refresh" size="small" severity="secondary" :loading="syncBusy === 'fixtures'" @click="runTask('fixtures')" />
+              <Button label="Poll scores" icon="pi pi-bolt" size="small" severity="secondary" :loading="syncBusy === 'live'" @click="runTask('live')" />
               <Button label="Finalize" icon="pi pi-flag" size="small" severity="secondary" :loading="syncBusy === 'finalize'" @click="runTask('finalize')" />
             </div>
             <pre v-if="syncMsg" class="text-xs p-2 rounded overflow-x-auto" style="background: color-mix(in srgb, var(--p-text-color) 6%, transparent)">{{ syncMsg }}</pre>
