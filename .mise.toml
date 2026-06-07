@@ -1,24 +1,29 @@
 # Shortcuts for the compose stacks (mise run <task>).
+# app (prod build) and app-dev (HMR) share port 3000 - each task stops the other first.
 
 [tasks.up]
-description = "Prod-like stack: app + db"
-run = "docker compose up -d --build --wait"
+description = "Prod-like stack: built app + db (no mail catcher)"
+run = "docker compose -f compose.yaml -f compose.dev.yaml --profile dev stop app-dev 2>/dev/null; docker compose up -d --build --wait"
 
 [tasks.dev]
-description = "Dev stack: app + db + maildev (mail inbox on http://localhost:1080)"
-run = "docker compose -f compose.yaml -f compose.dev.yaml up -d --build --wait"
+description = "HMR dev server + db + maildev (source bind-mounted, hot reload)"
+run = "docker compose stop app 2>/dev/null; docker compose -f compose.yaml -f compose.dev.yaml --profile dev up -d --build --wait db maildev app-dev"
 
-[tasks.dev-hot]
-description = "Hot-reload dev server in docker + maildev"
-run = "docker compose -f compose.yaml -f compose.dev.yaml --profile dev up -d --build --wait db maildev app-dev"
+[tasks.preview]
+description = "Built (prod-target) app + db + maildev (dev env, no HMR)"
+run = "docker compose -f compose.yaml -f compose.dev.yaml --profile dev stop app-dev 2>/dev/null; docker compose -f compose.yaml -f compose.dev.yaml up -d --build --wait"
 
 [tasks.down]
 description = "Stop everything (incl. dev overlay services)"
 run = "docker compose -f compose.yaml -f compose.dev.yaml --profile dev down"
 
 [tasks.logs]
-description = "Follow app logs"
+description = "Follow app logs (built app)"
 run = "docker compose logs -f app"
+
+[tasks.logs-dev]
+description = "Follow HMR dev server logs"
+run = "docker compose -f compose.yaml -f compose.dev.yaml --profile dev logs -f app-dev"
 
 [tasks.psql]
 description = "psql into the database"
