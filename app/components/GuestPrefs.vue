@@ -14,7 +14,7 @@ const lang = computed({
 
 <template>
   <div class="flex items-center justify-end gap-1">
-    <Select v-model="lang" :options="locales" option-label="name" option-value="code" size="small" class="w-36" />
+    <Select v-model="lang" :options="locales" option-label="name" option-value="code" size="small" class="w-48" />
     <Button :icon="isDark ? 'pi pi-sun' : 'pi pi-moon'" text rounded severity="secondary" aria-label="Toggle theme" @click="toggle" />
   </div>
 </template>

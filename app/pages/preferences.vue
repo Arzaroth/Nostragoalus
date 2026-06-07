@@ -29,9 +29,9 @@ const theme = computed({
 
 const langOptions = [
   { label: 'English', value: 'en' },
-  { label: 'Français', value: 'fr' },
-  { label: 'ไทย', value: 'th' },
-  { label: 'tlhIngan Hol', value: 'tlh' },
+  { label: 'Français (French)', value: 'fr' },
+  { label: 'ไทย (Thai)', value: 'th' },
+  { label: 'tlhIngan Hol (Klingon)', value: 'tlh' },
 ]
 const themeOptions = computed(() => [
   { label: t('prefs.light'), value: 'light', icon: 'pi pi-sun' },
