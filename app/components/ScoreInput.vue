@@ -5,10 +5,13 @@ const emit = defineEmits<{ update: [value: { home: number; away: number }] }>()
 const home = ref<number | null>(props.home)
 const away = ref<number | null>(props.away)
 const saved = ref(false)
+const editing = ref(false)
 
 watch(
   () => [props.home, props.away],
   () => {
+    // A background refetch (live scores, invalidation) must not clobber a draft mid-edit.
+    if (editing.value) return
     home.value = props.home
     away.value = props.away
   },
@@ -28,9 +31,9 @@ function commit() {
 <template>
   <div class="flex flex-col items-center gap-1">
     <div class="flex items-center justify-center gap-2">
-      <InputNumber v-model="home" :min="0" :max="99" :disabled="disabled" placeholder="–" :input-style="{ width: '2.6rem', textAlign: 'center' }" @input="home = $event.value" @blur="commit" @keyup.enter="commit" />
+      <InputNumber v-model="home" :min="0" :max="99" :disabled="disabled" placeholder="–" :input-style="{ width: '2.6rem', textAlign: 'center' }" @input="home = $event.value" @focus="editing = true" @blur="editing = false; commit()" @keyup.enter="commit" />
       <span class="font-bold opacity-60">:</span>
-      <InputNumber v-model="away" :min="0" :max="99" :disabled="disabled" placeholder="–" :input-style="{ width: '2.6rem', textAlign: 'center' }" @input="away = $event.value" @blur="commit" @keyup.enter="commit" />
+      <InputNumber v-model="away" :min="0" :max="99" :disabled="disabled" placeholder="–" :input-style="{ width: '2.6rem', textAlign: 'center' }" @input="away = $event.value" @focus="editing = true" @blur="editing = false; commit()" @keyup.enter="commit" />
     </div>
     <div v-if="!disabled" class="h-3.5 leading-none" style="color: var(--p-primary-color)">
       <i v-if="saved" class="pi pi-check" style="font-size: 0.72rem" />

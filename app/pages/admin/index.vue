@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+
 const { t } = useI18n()
 
 const { data: status } = await useFetch<{ isAdmin: boolean }>('/api/admin/status')
@@ -60,49 +62,58 @@ async function runTask(task: string) {
   }
 }
 
+// Users list lives in the query cache like every other server dataset:
+// mutations invalidate, the list re-derives.
 const { admin } = useAuth()
-const users = ref<any[]>([])
-const usersLoading = ref(false)
-async function loadUsers() {
-  usersLoading.value = true
-  try {
-    const res = await admin.listUsers({ query: { limit: 200, sortBy: 'createdAt', sortDirection: 'desc' } })
-    users.value = (res.data as { users?: any[] } | null)?.users ?? []
-  } catch {
-    users.value = []
-  } finally {
-    usersLoading.value = false
-  }
-}
-onMounted(loadUsers)
+const queryClient = useQueryClient()
+const invalidateUsers = () => queryClient.invalidateQueries({ queryKey: ['admin-users'] })
 
-async function toggleAdmin(u: any) {
-  await admin.setRole({ userId: u.id, role: u.role === 'admin' ? 'user' : 'admin' })
-  await loadUsers()
-}
-async function removeUser(u: any) {
-  await admin.removeUser({ userId: u.id })
-  await loadUsers()
-}
+const { data: usersData, isPending: usersLoading } = useQuery({
+  queryKey: ['admin-users'],
+  enabled: isAdmin,
+  queryFn: async () => {
+    const res = await admin.listUsers({ query: { limit: 200, sortBy: 'createdAt', sortDirection: 'desc' } })
+    return (res.data as { users?: any[] } | null)?.users ?? []
+  },
+})
+const users = computed(() => usersData.value ?? [])
+
+const roleMutation = useMutation({
+  mutationFn: (u: any) => admin.setRole({ userId: u.id, role: u.role === 'admin' ? 'user' : 'admin' }),
+  onSuccess: invalidateUsers,
+})
+const toggleAdmin = (u: any) => roleMutation.mutate(u)
+
+const deleteMutation = useMutation({
+  mutationFn: (u: any) => admin.removeUser({ userId: u.id }),
+  onSuccess: invalidateUsers,
+})
+const removeUser = (u: any) => deleteMutation.mutate(u)
 
 const nu = reactive({ name: '', email: '', password: '', role: 'user' })
 const createErr = ref('')
-const creating = ref(false)
 const roleOptions = [
   { label: 'User', value: 'user' },
   { label: 'Admin', value: 'admin' },
 ]
-async function createUser() {
+const createMutation = useMutation({
+  mutationFn: async () => {
+    // better-auth returns errors as data, not throws — normalize for the mutation.
+    const { error } = await admin.createUser({ name: nu.name, email: nu.email, password: nu.password, role: nu.role as 'user' | 'admin' })
+    if (error) throw new Error(error.message || 'Failed to create user')
+  },
+  onSuccess: () => {
+    Object.assign(nu, { name: '', email: '', password: '', role: 'user' })
+    invalidateUsers()
+  },
+  onError: (e: Error) => {
+    createErr.value = e.message
+  },
+})
+const creating = createMutation.isPending
+function createUser() {
   createErr.value = ''
-  creating.value = true
-  const { error } = await admin.createUser({ name: nu.name, email: nu.email, password: nu.password, role: nu.role as 'user' | 'admin' })
-  creating.value = false
-  if (error) {
-    createErr.value = error.message || 'Failed to create user'
-    return
-  }
-  Object.assign(nu, { name: '', email: '', password: '', role: 'user' })
-  await loadUsers()
+  createMutation.mutate()
 }
 </script>
 
