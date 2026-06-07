@@ -55,6 +55,14 @@ const { data: taskStatus, refresh: refreshTaskStatus } = await useFetch<{ tasks:
 function escapeHtml(v: string) {
   return v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
+// Computed (cached object identity): the 1s next-run ticker re-renders this
+// component; a fresh inline tooltip object each render makes PrimeVue re-create
+// (and dismiss) an open tooltip every second.
+const importTooltip = computed(() => ({ value: taskTip('import-fixtures', t('admin.data.importTip')), escape: false }))
+const refreshTooltip = computed(() => ({ value: taskTip('fixtures:refresh', t('admin.data.refreshTip')), escape: false }))
+const pollTooltip = computed(() => ({ value: taskTip('scores:poll', t('admin.data.pollTip')), escape: false }))
+const finalizeTooltip = computed(() => ({ value: taskTip('matches:finalize', t('admin.data.finalizeTip')), escape: false }))
+
 function taskTip(name: string, base: string) {
   const row = taskStatus.value?.tasks?.find((x) => x.taskName === name)
   let html = escapeHtml(base)
@@ -308,13 +316,13 @@ function createUser() {
           <div class="md:col-span-2 flex flex-col gap-3">
             <!-- uniform buttons with centered labels; next-run column aligned -->
             <div class="grid grid-cols-[auto_auto] items-center gap-x-4 gap-y-2 justify-center">
-              <Button v-tooltip.left="{ value: taskTip('import-fixtures', t('admin.data.importTip')), escape: false }" :label="t('admin.data.import')" icon="pi pi-download" size="small" severity="info" class="w-48" :loading="syncBusy === 'import'" @click="runImport" />
+              <Button v-tooltip.left="importTooltip" :label="t('admin.data.import')" icon="pi pi-download" size="small" severity="info" class="w-48" :loading="syncBusy === 'import'" @click="runImport" />
               <span class="text-xs" style="color: var(--p-text-muted-color)">{{ t('admin.data.nextRun') }}: {{ t('admin.data.manual') }}</span>
-              <Button v-tooltip.left="{ value: taskTip('fixtures:refresh', t('admin.data.refreshTip')), escape: false }" :label="t('admin.data.refresh')" icon="pi pi-refresh" size="small" severity="help" class="w-48" :loading="syncBusy === 'fixtures'" @click="runTask('fixtures')" />
+              <Button v-tooltip.left="refreshTooltip" :label="t('admin.data.refresh')" icon="pi pi-refresh" size="small" severity="help" class="w-48" :loading="syncBusy === 'fixtures'" @click="runTask('fixtures')" />
               <span class="text-xs tabular-nums" style="color: var(--p-text-muted-color)">{{ t('admin.data.nextRun') }}: {{ nextRun('hourly') }}</span>
-              <Button v-tooltip.left="{ value: taskTip('scores:poll', t('admin.data.pollTip')), escape: false }" :label="t('admin.data.poll')" icon="pi pi-bolt" size="small" severity="warn" class="w-48" :loading="syncBusy === 'live'" @click="runTask('live')" />
+              <Button v-tooltip.left="pollTooltip" :label="t('admin.data.poll')" icon="pi pi-bolt" size="small" severity="warn" class="w-48" :loading="syncBusy === 'live'" @click="runTask('live')" />
               <span class="text-xs tabular-nums" style="color: var(--p-text-muted-color)">{{ t('admin.data.nextRun') }}: {{ nextRun(2) }}</span>
-              <Button v-tooltip.left="{ value: taskTip('matches:finalize', t('admin.data.finalizeTip')), escape: false }" :label="t('admin.data.finalize')" icon="pi pi-flag" size="small" severity="success" class="w-48" :loading="syncBusy === 'finalize'" @click="runTask('finalize')" />
+              <Button v-tooltip.left="finalizeTooltip" :label="t('admin.data.finalize')" icon="pi pi-flag" size="small" severity="success" class="w-48" :loading="syncBusy === 'finalize'" @click="runTask('finalize')" />
               <span class="text-xs tabular-nums" style="color: var(--p-text-muted-color)">{{ t('admin.data.nextRun') }}: {{ nextRun(5) }}</span>
             </div>
             <pre v-if="syncMsg" class="text-xs p-2 rounded overflow-x-auto" style="background: color-mix(in srgb, var(--p-text-color) 6%, transparent)">{{ syncMsg }}</pre>
