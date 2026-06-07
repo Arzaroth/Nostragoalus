@@ -35,8 +35,8 @@ export async function makeCompetition(db: AppDatabase, over: CompetitionOptions 
 }
 
 // Seed a competition with the standard WC-style rounds (group MD 1-3 + R32..Final).
-export async function seedCompetition(db: AppDatabase): Promise<string> {
-  const competitionId = await makeCompetition(db)
+export async function seedCompetition(db: AppDatabase, over: CompetitionOptions = {}): Promise<string> {
+  const competitionId = await makeCompetition(db, over)
   const synthetic = [
     ...[1, 2, 3].map((matchday) => ({ stage: 'GROUP', matchday })),
     ...['R32', 'R16', 'QF', 'SF', 'THIRD_PLACE', 'FINAL'].map((stage) => ({ stage, matchday: null })),

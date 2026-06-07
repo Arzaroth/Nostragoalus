@@ -123,3 +123,20 @@ describe('minuteValue', () => {
     expect(minuteValue('?')).toBe(1e9)
   })
 })
+
+it('head-to-head spans competitions and carries each match competition', async () => {
+  const { db, client } = await createTestDb()
+  const competitionId = await seedCompetition(db)
+  const other = await seedCompetition(db, { slug: 'older-cup', name: 'Older Cup' })
+  const md1 = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+  const otherMd1 = (await findRoundId(db, other, 'GROUP', 1)) as string
+
+  // an old meeting in ANOTHER competition
+  await makeMatch(db, { competitionId: other, roundId: otherMd1, stage: 'GROUP', groupName: 'A', kickoffTime: new Date('2022-12-01T16:00:00Z'), status: 'FINISHED', fullTimeHome: 3, fullTimeAway: 1, homeTeam: 'Spain', homeTeamCode: 'ESP', awayTeam: 'England', awayTeamCode: 'ENG' })
+  const focus = await makeMatch(db, { competitionId, roundId: md1, stage: 'GROUP', groupName: 'A', kickoffTime: new Date('2026-06-15T16:00:00Z'), status: 'SCHEDULED', homeTeam: 'England', homeTeamCode: 'ENG', awayTeam: 'Spain', awayTeamCode: 'ESP' })
+
+  const insights = await getMatchInsights(db, focus, NOW)
+  expect(insights!.headToHead).toHaveLength(1)
+  expect(insights!.headToHead[0]).toMatchObject({ homeTeam: 'Spain', homeScore: 3, competitionSlug: 'older-cup', competitionName: 'Older Cup' })
+  await client.close()
+})

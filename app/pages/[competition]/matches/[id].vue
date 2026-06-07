@@ -385,9 +385,9 @@ function fmtDate(d: string) {
               </div>
             </div>
             <div class="flex flex-col text-sm">
-              <NuxtLink v-for="(h, i) in insights.headToHead" :key="i" :to="`/${selectedSlug}/matches/${h.matchId}`" class="flex items-center justify-between border-t py-2 hover:opacity-80" style="border-color: var(--p-content-border-color)">
+              <NuxtLink v-for="(h, i) in insights.headToHead" :key="i" :to="`/${h.competitionSlug}/matches/${h.matchId}`" class="flex items-center justify-between border-t py-2 hover:opacity-80" style="border-color: var(--p-content-border-color)">
                 <span class="font-medium">{{ h.homeTeam }} {{ h.homeScore }}–{{ h.awayScore }}<template v-if="pensResult(h)"> ({{ pensResult(h) }} {{ t('match.pens') }})</template> {{ h.awayTeam }}</span>
-                <span style="color: var(--p-text-muted-color)">{{ fmtDate(h.kickoffTime) }}</span>
+                <span class="text-xs" style="color: var(--p-text-muted-color)">{{ h.competitionName }} · {{ fmtDate(h.kickoffTime) }}</span>
               </NuxtLink>
             </div>
           </TabPanel>

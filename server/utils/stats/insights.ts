@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, gt, ne, or } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
-import { match } from '../../../db/schema'
+import { competition as competitionTable, match } from '../../../db/schema'
 import { computeGroupStandings, type StandingRow } from './standings'
 import { getMatchGoals } from './scorers'
 
@@ -27,6 +27,8 @@ export interface HeadToHead {
   penaltiesHome: number | null
   penaltiesAway: number | null
   kickoffTime: string
+  competitionSlug: string
+  competitionName: string
 }
 
 export interface MatchGoalView {
@@ -133,33 +135,38 @@ export async function getMatchInsights(db: AppDatabase, matchId: string, now: Da
     teamNext(db, m.competitionId, m.awayTeam, now, 3),
   ])
 
+  // Head-to-head spans every competition we know - inside one tournament two
+  // teams rarely meet twice. Codes match across providers; names are the fallback.
+  const pair = (a: 'homeTeamCode' | 'homeTeam', b: 'awayTeamCode' | 'awayTeam', va: string, vb: string) =>
+    or(and(eq(match[a], va), eq(match[b], vb)), and(eq(match[a], vb), eq(match[b], va)))
   const h2hRows = await db
-    .select()
+    .select({ m: match, slug: competitionTable.slug, name: competitionTable.name })
     .from(match)
+    .innerJoin(competitionTable, eq(competitionTable.id, match.competitionId))
     .where(
       and(
-        eq(match.competitionId, m.competitionId),
         eq(match.status, 'FINISHED'),
         ne(match.id, m.id),
-        or(
-          and(eq(match.homeTeam, m.homeTeam), eq(match.awayTeam, m.awayTeam)),
-          and(eq(match.homeTeam, m.awayTeam), eq(match.awayTeam, m.homeTeam)),
-        ),
+        m.homeTeamCode && m.awayTeamCode
+          ? pair('homeTeamCode', 'awayTeamCode', m.homeTeamCode, m.awayTeamCode)
+          : pair('homeTeam', 'awayTeam', m.homeTeam, m.awayTeam),
       ),
     )
     .orderBy(desc(match.kickoffTime))
 
   const headToHead: HeadToHead[] = h2hRows
-    .filter((r) => r.fullTimeHome != null && r.fullTimeAway != null)
+    .filter((r) => r.m.fullTimeHome != null && r.m.fullTimeAway != null)
     .map((r) => ({
-      matchId: r.id,
-      homeTeam: r.homeTeam,
-      awayTeam: r.awayTeam,
-      homeScore: r.fullTimeHome as number,
-      awayScore: r.fullTimeAway as number,
-      penaltiesHome: r.penaltiesHome,
-      penaltiesAway: r.penaltiesAway,
-      kickoffTime: new Date(r.kickoffTime).toISOString(),
+      matchId: r.m.id,
+      homeTeam: r.m.homeTeam,
+      awayTeam: r.m.awayTeam,
+      homeScore: r.m.fullTimeHome as number,
+      awayScore: r.m.fullTimeAway as number,
+      penaltiesHome: r.m.penaltiesHome,
+      penaltiesAway: r.m.penaltiesAway,
+      kickoffTime: new Date(r.m.kickoffTime).toISOString(),
+      competitionSlug: r.slug,
+      competitionName: r.name,
     }))
 
   const goalRows = await getMatchGoals(db, m.id)
