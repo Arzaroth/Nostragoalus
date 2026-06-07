@@ -330,12 +330,12 @@ function fmtDate(d: string) {
                     {{ t('match.topScorer') }}: <b style="color: var(--p-text-color)">{{ bestBy(side, 'goals')?.playerName ?? '—' }}</b><span v-if="bestBy(side, 'goals')"> ({{ bestBy(side, 'goals').goals }}⚽)</span>
                   </div>
                   <div style="color: var(--p-text-muted-color)">
-                    {{ t('match.topAssister') }}: <b style="color: var(--p-text-color)">{{ bestBy(side, 'assists')?.playerName ?? '—' }}</b><span v-if="bestBy(side, 'assists')"> ({{ bestBy(side, 'assists').assists }}🅰)</span>
+                    {{ t('match.topAssister') }}: <b style="color: var(--p-text-color)">{{ bestBy(side, 'assists')?.playerName ?? '—' }}</b><span v-if="bestBy(side, 'assists')"> ({{ bestBy(side, 'assists').assists }}👟)</span>
                   </div>
                   <div class="border-t mt-1 pt-2 flex flex-col gap-1" style="border-color: var(--p-content-border-color)">
                     <div v-for="(p, i) in teamPlayers(side)" :key="i" class="flex items-center justify-between gap-2">
                       <span class="truncate">{{ p.playerName }}</span>
-                      <span class="tabular-nums shrink-0" style="color: var(--p-text-muted-color)">{{ p.goals }}⚽ · {{ p.assists }}🅰</span>
+                      <span class="tabular-nums shrink-0" style="color: var(--p-text-muted-color)">{{ p.goals }}⚽ · {{ p.assists }}👟</span>
                     </div>
                   </div>
                 </div>

@@ -92,7 +92,7 @@ function fmt(d: string) {
     <div v-if="data.topScorer || data.topAssister || data.coach" class="flex flex-wrap gap-x-5 gap-y-1 text-sm mb-4" style="color: var(--p-text-muted-color)">
       <span v-if="data.coach">{{ t('team.coach') }}: <b style="color: var(--p-text-color)">{{ data.coach }}</b></span>
       <span v-if="data.topScorer">{{ t('match.topScorer') }}: <b style="color: var(--p-text-color)">{{ data.topScorer.playerName }}</b> ({{ data.topScorer.goals }}⚽)</span>
-      <span v-if="data.topAssister">{{ t('match.topAssister') }}: <b style="color: var(--p-text-color)">{{ data.topAssister.playerName }}</b> ({{ data.topAssister.assists }}🅰)</span>
+      <span v-if="data.topAssister">{{ t('match.topAssister') }}: <b style="color: var(--p-text-color)">{{ data.topAssister.playerName }}</b> ({{ data.topAssister.assists }}👟)</span>
     </div>
 
     <div v-if="pending" class="flex items-center gap-2 text-sm mb-4" style="color: var(--p-text-muted-color)">
@@ -160,7 +160,7 @@ function fmt(d: string) {
             <span class="w-7 text-center tabular-nums font-bold" style="color: var(--p-text-muted-color)">{{ p.shirtNumber ?? '–' }}</span>
             <span class="flex-1 font-medium truncate">{{ p.name }}<span v-if="p.captain" class="ml-1 text-xs" style="color: var(--p-primary-color)" title="Captain">©</span></span>
             <span v-if="p.goals" class="text-xs tabular-nums shrink-0">{{ p.goals }}⚽</span>
-            <span v-if="p.assists" class="text-xs tabular-nums shrink-0">{{ p.assists }}🅰</span>
+            <span v-if="p.assists" class="text-xs tabular-nums shrink-0">{{ p.assists }}👟</span>
           </div>
         </template>
       </div>
