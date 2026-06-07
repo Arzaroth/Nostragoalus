@@ -54,3 +54,11 @@ describe('competition store', () => {
     await client.close()
   })
 })
+
+it('lists competitions newest season first', async () => {
+  const { db, client } = await createTestDb()
+  await ensureDefaultCompetition(db)
+  const all = await listActiveCompetitions(db)
+  expect(all.map((c) => c.slug)).toEqual(['world-cup-2026', 'euro-2024', 'world-cup-2022'])
+  await client.close()
+})

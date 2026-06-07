@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { eq, desc } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { competition } from '../../../db/schema'
 
@@ -42,7 +42,8 @@ export async function listCompetitions(db: AppDatabase) {
 }
 
 export async function listActiveCompetitions(db: AppDatabase) {
-  return db.select().from(competition).where(eq(competition.isActive, true)).orderBy(competition.createdAt)
+  // Newest season first - the picker leads with the current tournament.
+  return db.select().from(competition).where(eq(competition.isActive, true)).orderBy(desc(competition.seasonHint))
 }
 
 export async function getCompetitionBySlug(db: AppDatabase, slug: string) {
