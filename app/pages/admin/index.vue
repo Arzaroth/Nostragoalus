@@ -27,6 +27,8 @@ async function addProvider() {
   ssoErr.value = ''
   ssoMsg.value = ''
   ssoLoading.value = true
+  // Google needs no provider id choice — default it so only domain + credentials remain.
+  if (form.type === 'google' && !form.providerId) form.providerId = 'google'
   try {
     await $fetch('/api/admin/sso', { method: 'POST', body: { ...form } })
     ssoMsg.value = t('admin.sso.added')
@@ -246,10 +248,10 @@ function createUser() {
           </div>
           <div class="md:col-span-2 flex flex-col gap-3">
             <div class="flex flex-wrap gap-2">
-              <Button :label="t('admin.data.import')" icon="pi pi-download" size="small" severity="secondary" :loading="syncBusy === 'import'" @click="runImport" />
-              <Button label="Refresh fixtures" icon="pi pi-refresh" size="small" severity="secondary" :loading="syncBusy === 'fixtures'" @click="runTask('fixtures')" />
-              <Button label="Poll scores" icon="pi pi-bolt" size="small" severity="secondary" :loading="syncBusy === 'live'" @click="runTask('live')" />
-              <Button label="Finalize" icon="pi pi-flag" size="small" severity="secondary" :loading="syncBusy === 'finalize'" @click="runTask('finalize')" />
+              <Button v-tooltip.bottom="t('admin.data.importTip')" :label="t('admin.data.import')" icon="pi pi-download" size="small" severity="info" :loading="syncBusy === 'import'" @click="runImport" />
+              <Button v-tooltip.bottom="t('admin.data.refreshTip')" :label="t('admin.data.refresh')" icon="pi pi-refresh" size="small" severity="help" :loading="syncBusy === 'fixtures'" @click="runTask('fixtures')" />
+              <Button v-tooltip.bottom="t('admin.data.pollTip')" :label="t('admin.data.poll')" icon="pi pi-bolt" size="small" severity="warn" :loading="syncBusy === 'live'" @click="runTask('live')" />
+              <Button v-tooltip.bottom="t('admin.data.finalizeTip')" :label="t('admin.data.finalize')" icon="pi pi-flag" size="small" severity="success" :loading="syncBusy === 'finalize'" @click="runTask('finalize')" />
             </div>
             <pre v-if="syncMsg" class="text-xs p-2 rounded overflow-x-auto" style="background: color-mix(in srgb, var(--p-text-color) 6%, transparent)">{{ syncMsg }}</pre>
           </div>

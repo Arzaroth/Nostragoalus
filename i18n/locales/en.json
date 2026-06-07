@@ -221,7 +221,14 @@
     "data": {
       "title": "Data",
       "hint": "Import fixtures and trigger live-score / finalize tasks.",
-      "import": "Import fixtures"
+      "import": "Import fixtures",
+      "importTip": "Fetch and store every fixture of all active competitions (first-time setup).",
+      "refresh": "Refresh fixtures",
+      "refreshTip": "Re-sync fixtures from the provider — fills newly decided knockout teams, never overwrites finished scores.",
+      "poll": "Poll scores",
+      "pollTip": "Fetch live scores right now (also runs automatically every 2 minutes during live windows).",
+      "finalize": "Finalize",
+      "finalizeTip": "Lock due predictions, score finished matches, award points and refresh the rankings."
     }
   },
   "strength": {

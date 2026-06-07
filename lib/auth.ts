@@ -6,9 +6,6 @@ import { db } from '../db'
 import * as schema from '../db/schema'
 import { withEncryptedSSO } from '../server/utils/crypto/encrypted-adapter'
 
-const googleClientId = process.env.NUXT_GOOGLE_CLIENT_ID
-const googleClientSecret = process.env.NUXT_GOOGLE_CLIENT_SECRET
-
 export const auth = betterAuth({
   database: withEncryptedSSO(
     drizzleAdapter(db, {
@@ -29,11 +26,7 @@ export const auth = betterAuth({
       theme: { type: 'string', required: false },
     },
   },
-  // Google login is enabled only when credentials are configured.
-  socialProviders:
-    googleClientId && googleClientSecret
-      ? { google: { clientId: googleClientId, clientSecret: googleClientSecret } }
-      : undefined,
+  // Google goes through the runtime SSO admin UI (one config path, secrets encrypted at rest).
   account: {
     accountLinking: { enabled: true },
   },

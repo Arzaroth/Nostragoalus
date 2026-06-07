@@ -221,7 +221,14 @@
     "data": {
       "title": "Données",
       "hint": "Importer les matchs et déclencher les tâches scores en direct / clôture.",
-      "import": "Importer les matchs"
+      "import": "Importer les matchs",
+      "importTip": "Récupère et stocke tous les matchs des compétitions actives (premier lancement).",
+      "refresh": "Actualiser les matchs",
+      "refreshTip": "Re-synchronise les matchs depuis le fournisseur — complète les équipes qualifiées, sans jamais écraser un score terminé.",
+      "poll": "Scores en direct",
+      "pollTip": "Récupère les scores en direct maintenant (s'exécute aussi automatiquement toutes les 2 minutes pendant les matchs).",
+      "finalize": "Clôturer",
+      "finalizeTip": "Verrouille les pronos échus, note les matchs terminés, attribue les points et met à jour le classement."
     }
   },
   "strength": {
