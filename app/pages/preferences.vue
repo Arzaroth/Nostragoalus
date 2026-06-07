@@ -29,7 +29,7 @@ const theme = computed({
 
 const langOptions = [
   { label: 'English', value: 'en' },
-  { label: 'Français (French)', value: 'fr' },
+  { label: 'Français', value: 'fr' },
   { label: 'ไทย (Thai)', value: 'th' },
   { label: 'tlhIngan Hol (Klingon)', value: 'tlh' },
 ]
