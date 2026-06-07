@@ -29,9 +29,13 @@ const tiers = [
 
 <template>
   <div class="flex flex-col gap-20 sm:gap-28 pb-12">
+    <!-- Full-bleed brand banner, glued under the header -->
+    <div class="relative left-1/2 -translate-x-1/2 w-screen -mt-6 -mb-8 sm:-mb-12">
+      <img src="/brand/banner-wide.svg" alt="Nostragoalus — the football oracle" class="w-full max-h-[40vh] object-cover block" >
+    </div>
+
     <!-- Hero -->
-    <section class="text-center pt-8 sm:pt-16 flex flex-col items-center gap-6">
-      <img src="/brand/banner.svg" alt="Nostragoalus — the football oracle" class="w-full max-w-xl sm:max-w-2xl drop-shadow-xl" >
+    <section class="text-center flex flex-col items-center gap-6">
       <div
         class="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium"
         style="border-color: var(--p-content-border-color); color: var(--p-text-muted-color)"
