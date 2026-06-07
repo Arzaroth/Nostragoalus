@@ -1,10 +1,13 @@
 import { describe, it, expect } from 'vitest'
 import {
   fifaProvider,
+  normalizeFdhMatchStats,
   normalizeFifaBracket,
   normalizeFifaMatch,
   normalizeFifaMatchDetail,
   normalizeFifaPlayerStats,
+  normalizeFifaSquad,
+  normalizeFifaTeamStats,
   type FifaMatch,
 } from './fifa'
 import { RateLimiter } from './rate-limiter'
@@ -95,6 +98,10 @@ describe('normalizeFifaMatchDetail', () => {
       stadium: null,
       cards: { home: { yellow: 0, red: 0 }, away: { yellow: 0, red: 0 } },
       goals: [],
+      bookings: [],
+      ifesId: null,
+      homeTeamId: null,
+      awayTeamId: null,
     })
   })
 
@@ -129,6 +136,10 @@ describe('fifaProvider.getMatchDetail', () => {
       stadium: null,
       cards: { home: { yellow: 0, red: 0 }, away: { yellow: 0, red: 0 } },
       goals: [],
+      bookings: [],
+      ifesId: null,
+      homeTeamId: 'H',
+      awayTeamId: 'A',
     })
   })
 
@@ -348,5 +359,174 @@ describe('fifaProvider rate limits', () => {
   })
   it('throws on player-stats rate limiting', async () => {
     await expect(limited('getPlayerStats')).rejects.toThrow()
+  })
+})
+
+describe('booking events', () => {
+  it('extracts named, chronological booking events from both sides', () => {
+    const d = normalizeFifaMatchDetail({
+      HomeTeam: {
+        IdTeam: 'H',
+        Players: [{ IdPlayer: 'p1', PlayerName: [{ Locale: 'en', Description: 'Adrien RABIOT' }] }],
+        Bookings: [{ Card: 1, IdPlayer: 'p1', Minute: "55'" }],
+      },
+      AwayTeam: {
+        IdTeam: 'A',
+        Players: [{ IdPlayer: 'p2', PlayerName: [{ Locale: 'en', Description: 'Marcos ACUNA' }] }],
+        Bookings: [{ Card: 2, IdPlayer: 'p2', Minute: "12'" }, {}],
+      },
+    })
+    expect(d.bookings).toEqual([
+      { side: 'AWAY', playerId: 'p2', playerName: 'Marcos ACUNA', minute: "12'", card: 'RED' },
+      { side: 'HOME', playerId: 'p1', playerName: 'Adrien RABIOT', minute: "55'", card: 'YELLOW' },
+    ])
+  })
+})
+
+describe('normalizeFifaSquad', () => {
+  const detail = (players: any[], teamId = 'T1') => ({ HomeTeam: { IdTeam: teamId, Players: players } })
+
+  it('unions match-day rosters, keeps best-known position, sorts GK→FW then by number', () => {
+    const squad = normalizeFifaSquad(
+      [
+        detail([
+          { IdPlayer: 'a', PlayerName: [{ Locale: 'en', Description: 'Keeper' }], ShirtNumber: '1', Position: '0', Captain: 'True' },
+          { IdPlayer: 'b', PlayerName: [{ Locale: 'en', Description: 'Striker' }], ShirtNumber: 10, Position: 3 },
+          { IdPlayer: 'c', ShortName: [{ Locale: 'en', Description: 'BENCH' }], ShirtNumber: 20, Position: 9 },
+        ]),
+        detail([
+          { IdPlayer: 'c', PlayerName: [{ Locale: 'en', Description: 'Sub Mid' }], ShirtNumber: 20, Position: 2 },
+          { IdPlayer: 'b', PlayerName: [{ Locale: 'en', Description: 'Striker' }], ShirtNumber: 10, Position: 3, Captain: true },
+          { IdPlayer: '' },
+        ]),
+        { HomeTeam: { IdTeam: 'OTHER', Players: [{ IdPlayer: 'x', ShirtNumber: 5, Position: 1 }] } },
+      ],
+      'T1',
+    )
+    expect(squad.map((p) => [p.playerId, p.position, p.shirtNumber, p.captain])).toEqual([
+      ['a', 'GK', 1, true],
+      ['c', 'MF', 20, false],
+      ['b', 'FW', 10, true],
+    ])
+  })
+
+  it('matches the away side too and handles empty input', () => {
+    const squad = normalizeFifaSquad(
+      [{ AwayTeam: { IdTeam: 'T2', Players: [{ IdPlayer: 'z', PlayerName: [{ Locale: 'en', Description: 'Away Guy' }], ShirtNumber: null, Position: 1 }] } }],
+      'T2',
+    )
+    expect(squad).toEqual([{ playerId: 'z', name: 'Away Guy', shirtNumber: null, position: 'DF', captain: false }])
+    expect(normalizeFifaSquad([], 'T2')).toEqual([])
+  })
+})
+
+describe('normalizeFifaTeamStats', () => {
+  const stat = (type: number, value: number) => ({ Type: type, Value: value })
+
+  it('decodes the team stat type codes', () => {
+    const stats = normalizeFifaTeamStats(
+      {
+        AggregatedTeamStats: [
+          {
+            IdTeam: 'T1',
+            Statistic: [
+              stat(33, 16), stat(34, 8), stat(219, 12), stat(2, 51.2), stat(3, 101), stat(4, 36),
+              stat(68, 4812), stat(23, 3221), stat(70, 171), stat(12, 38), stat(13, 15), stat(21, 8), stat(179, 0),
+            ],
+          },
+        ],
+      },
+      'T1',
+    )
+    expect(stats).toMatchObject({ goals: 16, conceded: 8, assists: 12, attempts: 101, onTarget: 36, passes: 4812, corners: 38, offsides: 15, yellowCards: 8, redCards: 0 })
+    expect(stats!.passAccuracy).toBeCloseTo(66.94, 1)
+  })
+
+  it('returns null for an unknown team and null accuracy without passes', () => {
+    expect(normalizeFifaTeamStats({ AggregatedTeamStats: [] }, 'T1')).toBeNull()
+    expect(normalizeFifaTeamStats({ AggregatedTeamStats: [{ IdTeam: 'T1', Statistic: [] }] }, 'T1')!.passAccuracy).toBeNull()
+  })
+})
+
+describe('normalizeFdhMatchStats', () => {
+  it('maps named stats per team and skips the contested bucket', () => {
+    const out = normalizeFdhMatchStats({
+      '-1': [['Possession', 0.1, true]],
+      T1: [
+        ['Possession', 0.441, true],
+        ['AttemptAtGoal', 23, true],
+        ['AttemptAtGoalOnTarget', 10, true],
+        ['Passes', 550, true],
+        ['PassesCompleted', 480, true],
+        ['Crosses', 18, true],
+        ['Corners', 7, true],
+        ['FoulsAgainst', 14, true],
+        ['Offsides', 2, true],
+        ['TotalDistance', 109120.8, true],
+        ['DefensivePressuresApplied', 269, true],
+        ['ForcedTurnovers', 79, true],
+      ],
+      T2: [['AttemptAtGoal', 9, true]],
+    })
+    expect(Object.keys(out).sort()).toEqual(['T1', 'T2'])
+    expect(out.T1).toEqual({
+      possession: 44.1, attempts: 23, onTarget: 10, passes: 550, passesCompleted: 480,
+      crosses: 18, corners: 7, fouls: 14, offsides: 2,
+      distanceKm: 109.1208, pressuresApplied: 269, forcedTurnovers: 79,
+    })
+    expect(out.T2.passes).toBeNull()
+  })
+})
+
+describe('new provider methods', () => {
+  const noWait = () => new RateLimiter(0)
+  const okJson = (body: unknown) => (async () => new Response(JSON.stringify(body), { status: 200 })) as unknown as typeof fetch
+
+  it('getTeamSeason returns players and team stats from one fetch', async () => {
+    const provider = fifaProvider({
+      seasonId: '255711',
+      competitionId: '17',
+      rateLimiter: noWait(),
+      fetchImpl: okJson({
+        AggregatedTeamStats: [{ IdTeam: 'T1', TeamName: [{ Locale: 'en', Description: 'France' }], IdCountry: 'FRA', Statistic: [{ Type: 33, Value: 16 }] }],
+        AggregatedPlayerStats: [{ IdTeam: 'T1', IdPlayer: 'p', PlayerName: [{ Locale: 'en', Description: 'KM' }], Statistic: [{ Type: 1, Value: 8 }] }],
+      }),
+    })
+    const res = await provider.getTeamSeason!({ teamId: 'T1' })
+    expect(res.team!.goals).toBe(16)
+    expect(res.players[0]).toMatchObject({ playerName: 'KM', goals: 8 })
+  })
+
+  it('getTeamSeason surfaces rate limit and upstream errors', async () => {
+    const limited = fifaProvider({ seasonId: '1', competitionId: '17', rateLimiter: noWait(), fetchImpl: (async () => new Response('', { status: 429 })) as unknown as typeof fetch })
+    await expect(limited.getTeamSeason!({ teamId: 'T1' })).rejects.toThrow()
+    const broken = fifaProvider({ seasonId: '1', competitionId: '17', rateLimiter: noWait(), fetchImpl: (async () => new Response('x', { status: 500 })) as unknown as typeof fetch })
+    await expect(broken.getTeamSeason!({ teamId: 'T1' })).rejects.toThrow()
+  })
+
+  it('getSquad unions rosters and skips failed match fetches', async () => {
+    const payloads = [
+      new Response(JSON.stringify({ HomeTeam: { IdTeam: 'T1', Players: [{ IdPlayer: 'a', PlayerName: [{ Locale: 'en', Description: 'A' }], ShirtNumber: 1, Position: 0 }] } }), { status: 200 }),
+      new Response('nope', { status: 500 }),
+    ]
+    const fetchImpl = (async () => payloads.shift()!) as unknown as typeof fetch
+    const provider = fifaProvider({ seasonId: '255711', competitionId: '17', rateLimiter: noWait(), fetchImpl })
+    const squad = await provider.getSquad!({ teamId: 'T1', matches: [{ stageId: 's', matchId: 'm1' }, { stageId: 's', matchId: 'm2' }] })
+    expect(squad).toHaveLength(1)
+    expect(squad[0].name).toBe('A')
+  })
+
+  it('getSquad throws when rate limited', async () => {
+    const provider = fifaProvider({ seasonId: '1', competitionId: '17', rateLimiter: noWait(), fetchImpl: (async () => new Response('', { status: 429 })) as unknown as typeof fetch })
+    await expect(provider.getSquad!({ teamId: 'T1', matches: [{ stageId: 's', matchId: 'm' }] })).rejects.toThrow()
+  })
+
+  it('getMatchStats normalizes fdh stats and returns null on failure', async () => {
+    const ok = fifaProvider({ seasonId: '1', competitionId: '17', rateLimiter: noWait(), fetchImpl: okJson({ T1: [['AttemptAtGoal', 23, true]] }) })
+    expect((await ok.getMatchStats!({ ifesId: '133016' }))!.T1.attempts).toBe(23)
+    const broken = fifaProvider({ seasonId: '1', competitionId: '17', rateLimiter: noWait(), fetchImpl: (async () => new Response('x', { status: 500 })) as unknown as typeof fetch })
+    expect(await broken.getMatchStats!({ ifesId: '133016' })).toBeNull()
+    const limited = fifaProvider({ seasonId: '1', competitionId: '17', rateLimiter: noWait(), fetchImpl: (async () => new Response('', { status: 429 })) as unknown as typeof fetch })
+    await expect(limited.getMatchStats!({ ifesId: '133016' })).rejects.toThrow()
   })
 })

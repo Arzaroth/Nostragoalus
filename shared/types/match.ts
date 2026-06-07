@@ -74,6 +74,14 @@ export interface TeamCards {
   red: number
 }
 
+export interface BookingEvent {
+  side: 'HOME' | 'AWAY'
+  playerId: string | null
+  playerName: string
+  minute: string | null
+  card: 'YELLOW' | 'RED'
+}
+
 export interface MatchDetail {
   possessionHome: number | null
   possessionAway: number | null
@@ -81,6 +89,51 @@ export interface MatchDetail {
   stadium: string | null
   cards: { home: TeamCards; away: TeamCards }
   goals: NormalizedGoal[]
+  bookings: BookingEvent[]
+  ifesId: string | null
+  homeTeamId: string | null
+  awayTeamId: string | null
+}
+
+// Per-team stats for one match (FIFA football-intelligence feed).
+export interface TeamMatchStats {
+  possession: number | null
+  attempts: number | null
+  onTarget: number | null
+  passes: number | null
+  passesCompleted: number | null
+  crosses: number | null
+  corners: number | null
+  fouls: number | null
+  offsides: number | null
+  distanceKm: number | null
+  pressuresApplied: number | null
+  forcedTurnovers: number | null
+}
+
+export interface SquadPlayer {
+  playerId: string
+  name: string
+  shirtNumber: number | null
+  position: 'GK' | 'DF' | 'MF' | 'FW' | null
+  captain: boolean
+}
+
+// Tournament-wide aggregates for one team (decoded FIFA stat type codes).
+export interface TeamSeasonStats {
+  goals: number | null
+  conceded: number | null
+  assists: number | null
+  possession: number | null
+  attempts: number | null
+  onTarget: number | null
+  passes: number | null
+  passAccuracy: number | null
+  crosses: number | null
+  corners: number | null
+  offsides: number | null
+  yellowCards: number | null
+  redCards: number | null
 }
 
 export interface BracketMatch {

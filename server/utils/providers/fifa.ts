@@ -1,5 +1,6 @@
 import type {
   AppStage,
+  BookingEvent,
   BracketMatch,
   BracketRound,
   MatchDetail,
@@ -8,7 +9,10 @@ import type {
   NormalizedGoal,
   NormalizedMatch,
   Score,
+  SquadPlayer,
   Team,
+  TeamMatchStats,
+  TeamSeasonStats,
   TopScorer,
   Winner,
 } from '../../../shared/types/match'
@@ -139,6 +143,9 @@ interface FifaDetailPlayer {
   IdPlayer: string
   PlayerName?: FifaLocalized[]
   ShortName?: FifaLocalized[]
+  ShirtNumber?: number | string | null
+  Position?: number | string | null
+  Captain?: boolean | string | null
 }
 
 interface FifaDetailGoal {
@@ -156,6 +163,8 @@ const FIFA_SHOOTOUT_PERIOD = 11
 
 interface FifaDetailBooking {
   Card?: number | null
+  IdPlayer?: string | null
+  Minute?: string | null
 }
 
 interface FifaDetailTeam {
@@ -173,6 +182,7 @@ export interface FifaMatchDetailResponse {
   BallPossession?: { OverallHome?: number | null; OverallAway?: number | null } | null
   Attendance?: number | null
   Stadium?: { Name?: FifaLocalized[] } | null
+  Properties?: { IdIFES?: string | null } | null
 }
 
 function countCards(bookings: FifaDetailBooking[] | undefined): { yellow: number; red: number } {
@@ -233,6 +243,24 @@ export function normalizeFifaMatchDetail(detail: FifaMatchDetailResponse): Match
   // Home goals are collected before away goals — restore match chronology.
   goals.sort((a, b) => minuteValue(a.minute) - minuteValue(b.minute))
 
+  const bookings: BookingEvent[] = []
+  for (const [side, team] of [
+    ['HOME', detail.HomeTeam],
+    ['AWAY', detail.AwayTeam],
+  ] as const) {
+    for (const b of team?.Bookings ?? []) {
+      if (b.Card == null) continue
+      bookings.push({
+        side,
+        playerId: b.IdPlayer ?? null,
+        playerName: (b.IdPlayer && names.get(b.IdPlayer)) || 'Unknown',
+        minute: b.Minute ?? null,
+        card: b.Card === 1 ? 'YELLOW' : 'RED',
+      })
+    }
+  }
+  bookings.sort((a, b) => minuteValue(a.minute) - minuteValue(b.minute))
+
   return {
     possessionHome: detail.BallPossession?.OverallHome ?? null,
     possessionAway: detail.BallPossession?.OverallAway ?? null,
@@ -240,7 +268,119 @@ export function normalizeFifaMatchDetail(detail: FifaMatchDetailResponse): Match
     stadium: detail.Stadium?.Name?.[0]?.Description ?? null,
     cards: { home: countCards(detail.HomeTeam?.Bookings), away: countCards(detail.AwayTeam?.Bookings) },
     goals,
+    bookings,
+    ifesId: detail.Properties?.IdIFES ?? null,
+    homeTeamId: detail.HomeTeam?.IdTeam ?? null,
+    awayTeamId: detail.AwayTeam?.IdTeam ?? null,
   }
+}
+
+const FIFA_POSITIONS: Record<number, SquadPlayer['position']> = { 0: 'GK', 1: 'DF', 2: 'MF', 3: 'FW' }
+
+// A team's squad is the union of its match-day rosters (FIFA has no public
+// stand-alone squad endpoint we can reach keylessly). teamRef matches the FIFA
+// team id or the 3-letter code, whichever the caller has.
+export function normalizeFifaSquad(details: FifaMatchDetailResponse[], teamRef: string): SquadPlayer[] {
+  const byId = new Map<string, SquadPlayer>()
+  const matches = (t: FifaDetailTeam | null | undefined) => !!t && (t.IdTeam === teamRef || t.Abbreviation === teamRef)
+  for (const detail of details) {
+    const team = matches(detail.HomeTeam) ? detail.HomeTeam : matches(detail.AwayTeam) ? detail.AwayTeam : null
+    for (const p of team?.Players ?? []) {
+      if (!p.IdPlayer) continue
+      const position = FIFA_POSITIONS[Number(p.Position)] ?? null
+      const existing = byId.get(p.IdPlayer)
+      if (existing) {
+        // A bench appearance may report no position — keep the best-known one.
+        if (!existing.position && position) existing.position = position
+        if (p.Captain === true || p.Captain === 'True') existing.captain = true
+        continue
+      }
+      byId.set(p.IdPlayer, {
+        playerId: p.IdPlayer,
+        name: p.PlayerName?.[0]?.Description || p.ShortName?.[0]?.Description || 'Unknown',
+        shirtNumber: p.ShirtNumber != null && p.ShirtNumber !== '' ? Number(p.ShirtNumber) : null,
+        position,
+        captain: p.Captain === true || p.Captain === 'True',
+      })
+    }
+  }
+  const order: Record<string, number> = { GK: 0, DF: 1, MF: 2, FW: 3 }
+  return [...byId.values()].sort(
+    (a, b) => (order[a.position ?? ''] ?? 4) - (order[b.position ?? ''] ?? 4) || (a.shirtNumber ?? 99) - (b.shirtNumber ?? 99),
+  )
+}
+
+// FIFA aggregate stat type codes, decoded by cross-checking sums against known
+// tournament totals (WC2022: 172 goals, 227 yellows, 1 red, 44.9 attempts/match).
+const FIFA_TEAM_STAT_TYPES = {
+  goals: 33,
+  conceded: 34,
+  assists: 219,
+  possession: 2,
+  attempts: 3,
+  onTarget: 4,
+  passes: 68,
+  passesCompleted: 23,
+  crosses: 70,
+  corners: 12,
+  offsides: 13,
+  yellowCards: 21,
+  redCards: 179,
+} as const
+
+export function normalizeFifaTeamStats(data: FifaTeamStatsResponse, teamId: string): TeamSeasonStats | null {
+  const team = (data.AggregatedTeamStats ?? []).find((t) => t.IdTeam === teamId)
+  if (!team) return null
+  const value = (type: number) => (team.Statistic ?? []).find((s) => s.Type === type)?.Value ?? null
+  const passes = value(FIFA_TEAM_STAT_TYPES.passes)
+  const completed = value(FIFA_TEAM_STAT_TYPES.passesCompleted)
+  return {
+    goals: value(FIFA_TEAM_STAT_TYPES.goals),
+    conceded: value(FIFA_TEAM_STAT_TYPES.conceded),
+    assists: value(FIFA_TEAM_STAT_TYPES.assists),
+    possession: value(FIFA_TEAM_STAT_TYPES.possession),
+    attempts: value(FIFA_TEAM_STAT_TYPES.attempts),
+    onTarget: value(FIFA_TEAM_STAT_TYPES.onTarget),
+    passes,
+    passAccuracy: passes && completed ? (completed / passes) * 100 : null,
+    crosses: value(FIFA_TEAM_STAT_TYPES.crosses),
+    corners: value(FIFA_TEAM_STAT_TYPES.corners),
+    offsides: value(FIFA_TEAM_STAT_TYPES.offsides),
+    yellowCards: value(FIFA_TEAM_STAT_TYPES.yellowCards),
+    redCards: value(FIFA_TEAM_STAT_TYPES.redCards),
+  }
+}
+
+// fdh-api per-match team stats: { [teamId]: [name, value, isOfficial][] }.
+export type FdhMatchStatsResponse = Record<string, [string, number, boolean][]>
+
+export function normalizeFdhMatchStats(data: FdhMatchStatsResponse): Record<string, TeamMatchStats> {
+  const out: Record<string, TeamMatchStats> = {}
+  for (const [teamId, rows] of Object.entries(data)) {
+    if (teamId === '-1') continue // contested/neutral bucket
+    const byName = new Map(rows.map(([name, value]) => [name, value]))
+    const num = (name: string) => {
+      const v = byName.get(name)
+      return typeof v === 'number' ? v : null
+    }
+    const distance = num('TotalDistance')
+    const possession = num('Possession')
+    out[teamId] = {
+      possession: possession != null ? possession * 100 : null,
+      attempts: num('AttemptAtGoal'),
+      onTarget: num('AttemptAtGoalOnTarget'),
+      passes: num('Passes'),
+      passesCompleted: num('PassesCompleted'),
+      crosses: num('Crosses'),
+      corners: num('Corners'),
+      fouls: num('FoulsAgainst'),
+      offsides: num('Offsides'),
+      distanceKm: distance != null ? distance / 1000 : null,
+      pressuresApplied: num('DefensivePressuresApplied'),
+      forcedTurnovers: num('ForcedTurnovers'),
+    }
+  }
+  return out
 }
 
 interface FifaBracketTeam {
@@ -372,11 +512,13 @@ export interface FifaOptions {
   seasonId: string
   competitionId?: string
   baseUrl?: string
+  fdhBaseUrl?: string
   fetchImpl?: typeof fetch
   rateLimiter?: RateLimiter
 }
 
 const DEFAULT_BASE_URL = 'https://api.fifa.com/api/v3'
+const DEFAULT_FDH_BASE_URL = 'https://fdh-api.fifa.com'
 
 interface FifaSeason {
   IdSeason: string
@@ -429,6 +571,7 @@ export async function resolveFifaSeasonId(opts: {
 
 export function fifaProvider(options: FifaOptions): MatchDataProvider {
   const baseUrl = options.baseUrl ?? DEFAULT_BASE_URL
+  const fdhBaseUrl = options.fdhBaseUrl ?? DEFAULT_FDH_BASE_URL
   const doFetch = options.fetchImpl ?? fetch
   const limiter = options.rateLimiter ?? new RateLimiter(1000)
 
@@ -480,6 +623,37 @@ export function fifaProvider(options: FifaOptions): MatchDataProvider {
       if (response.status === 429) throw new ProviderRateLimitError()
       if (!response.ok) throw new ProviderUpstreamError(response.status, await response.text())
       return normalizeFifaPlayerStats((await response.json()) as FifaTeamStatsResponse)
+    },
+    // Same upstream document as getPlayerStats — one fetch yields both views.
+    async getTeamSeason({ teamId }: { teamId: string }) {
+      await limiter.acquire()
+      const response = await doFetch(
+        `${baseUrl}/statistics/teams/${teamId}?idSeason=${options.seasonId}&idCompetition=${options.competitionId}&language=en`,
+      )
+      if (response.status === 429) throw new ProviderRateLimitError()
+      if (!response.ok) throw new ProviderUpstreamError(response.status, await response.text())
+      const data = (await response.json()) as FifaTeamStatsResponse
+      return { players: normalizeFifaPlayerStats(data), team: normalizeFifaTeamStats(data, teamId) }
+    },
+    async getSquad({ teamId, matches }: { teamId: string; matches: { stageId: string; matchId: string }[] }) {
+      const details: FifaMatchDetailResponse[] = []
+      for (const m of matches) {
+        await limiter.acquire()
+        const response = await doFetch(
+          `${baseUrl}/live/football/${options.competitionId}/${options.seasonId}/${m.stageId}/${m.matchId}?language=en`,
+        )
+        if (response.status === 429) throw new ProviderRateLimitError()
+        if (!response.ok) continue // a missing match-day roster shouldn't sink the squad
+        details.push((await response.json()) as FifaMatchDetailResponse)
+      }
+      return normalizeFifaSquad(details, teamId)
+    },
+    async getMatchStats({ ifesId }: { ifesId: string }) {
+      await limiter.acquire()
+      const response = await doFetch(`${fdhBaseUrl}/v1/stats/match/${ifesId}/teams.json`)
+      if (response.status === 429) throw new ProviderRateLimitError()
+      if (!response.ok) return null
+      return normalizeFdhMatchStats((await response.json()) as FdhMatchStatsResponse)
     },
   }
 }

@@ -27,8 +27,24 @@ export default defineEventHandler(async (event) => {
 
   try {
     const detail = await provider.getMatchDetail({ stageId: rows[0].providerStageId, matchId: rows[0].providerMatchId })
-    cache.set(id, { at: Date.now(), detail })
-    return { detail }
+    // Enrich with the football-intelligence per-match stats when FIFA exposes them.
+    let stats: { home: unknown; away: unknown } | null = null
+    if (detail?.ifesId && provider.getMatchStats) {
+      try {
+        const byTeam = await provider.getMatchStats({ ifesId: detail.ifesId })
+        if (byTeam) {
+          stats = {
+            home: (detail.homeTeamId && byTeam[detail.homeTeamId]) || null,
+            away: (detail.awayTeamId && byTeam[detail.awayTeamId]) || null,
+          }
+        }
+      } catch {
+        // stats are a bonus — never sink the detail payload over them
+      }
+    }
+    const enriched = detail ? { ...detail, stats } : null
+    cache.set(id, { at: Date.now(), detail: enriched })
+    return { detail: enriched }
   } catch {
     return { detail: null }
   }
