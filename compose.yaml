@@ -33,11 +33,21 @@ services:
       RUN_MIGRATIONS: 'true'
       DATABASE_URL: postgres://nostragoalus:nostragoalus@db:5432/nostragoalus
       NUXT_DATABASE_URL: postgres://nostragoalus:nostragoalus@db:5432/nostragoalus
+      # Local mail catcher (maildev); replace with a real SMTP URL in production.
+      NUXT_SMTP_URL: smtp://maildev:1025
     ports:
       - '3000:3000'
     depends_on:
       db:
         condition: service_healthy
+
+  # Local mail catcher for 2FA email codes: SMTP on 1025, inbox UI on http://localhost:1080.
+  maildev:
+    image: maildev/maildev
+    restart: unless-stopped
+    ports:
+      - '1080:1080'
+      - '1025:1025'
 
   # Dev app with hot reload: `docker compose --profile dev up app-dev`.
   app-dev:
@@ -52,6 +62,7 @@ services:
       NODE_ENV: development
       DATABASE_URL: postgres://nostragoalus:nostragoalus@db:5432/nostragoalus
       NUXT_DATABASE_URL: postgres://nostragoalus:nostragoalus@db:5432/nostragoalus
+      NUXT_SMTP_URL: smtp://maildev:1025
     ports:
       - '3000:3000'
     volumes:
