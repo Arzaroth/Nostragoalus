@@ -67,6 +67,19 @@ describe('getMyPredictions', () => {
     expect(mine[0].homeTeam).toBeDefined()
     await client.close()
   })
+
+  it('filters by competition when an id is given', async () => {
+    const { db, client, competitionId, roundId, userId } = await setup()
+    const other = await seedCompetition(db)
+    const otherRound = (await findRoundId(db, other, 'GROUP', 1)) as string
+    const m1 = await makeMatch(db, { competitionId, roundId, kickoffTime: FUTURE })
+    const m2 = await makeMatch(db, { competitionId: other, roundId: otherRound, kickoffTime: FUTURE })
+    await upsertPrediction(db, { userId, matchId: m1, home: 1, away: 0 }, NOW)
+    await upsertPrediction(db, { userId, matchId: m2, home: 2, away: 0 }, NOW)
+    expect(await getMyPredictions(db, userId, competitionId)).toHaveLength(1)
+    expect(await getMyPredictions(db, userId)).toHaveLength(2)
+    await client.close()
+  })
 })
 
 describe('getUserPublicPredictions', () => {

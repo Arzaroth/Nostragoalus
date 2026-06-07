@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const { t } = useI18n()
+const slug = useSelectedCompetition()
 const { data: matches, isLoading } = useMatches()
 const { data: predictions } = useMyPredictions()
 const { upsert, setJoker } = usePredictionMutations()
@@ -36,7 +37,10 @@ function fmtTime(d: string) {
 
 <template>
   <div>
-    <h1 class="text-2xl font-bold mb-5">{{ t('matches.title') }}</h1>
+    <div class="flex items-center justify-between gap-3 flex-wrap mb-5">
+      <h1 class="text-2xl font-bold">{{ t('matches.title') }}</h1>
+      <CompetitionPill />
+    </div>
     <ChampionPick />
     <IconField class="mb-5 block w-full sm:w-96">
       <InputIcon class="pi pi-search" />
@@ -56,7 +60,7 @@ function fmtTime(d: string) {
             class="ng-card rounded-2xl border p-4 flex flex-col gap-3"
             style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
           >
-            <NuxtLink :to="`/matches/${m.id}`" class="flex items-center justify-between gap-2 group">
+            <NuxtLink :to="`/${slug}/matches/${m.id}`" class="flex items-center justify-between gap-2 group">
               <div class="flex items-center gap-2 flex-1 min-w-0">
                 <img v-if="flagUrl(m.homeTeamCode)" :src="flagUrl(m.homeTeamCode) || ''" class="w-6 h-6 rounded object-cover" alt="" >
                 <span class="truncate font-medium group-hover:underline" :title="m.homeTeam">{{ m.homeTeam }}</span>

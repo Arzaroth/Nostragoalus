@@ -3,14 +3,19 @@ const { session, signOut } = useAuth()
 const { isDark, toggle } = useTheme()
 const { t, locale, locales, setLocale } = useI18n()
 const router = useRouter()
+const route = useRoute()
 const config = useRuntimeConfig()
 
-const { data: competitions } = useCompetitions()
-const selected = useSelectedCompetition()
-
-watchEffect(() => {
-  if (!selected.value && competitions.value?.length) selected.value = competitions.value[0].slug
-})
+const slug = useSelectedCompetition()
+const last = useLastCompetition()
+// Remember the competition you're browsing so "/" and legacy links return to it.
+watch(
+  () => route.params.competition,
+  (c) => {
+    if (c) last.value = c as string
+  },
+  { immediate: true },
+)
 
 const lang = computed({
   get: () => locale.value,
@@ -20,14 +25,17 @@ const lang = computed({
 const { data: adminStatus } = useFetch('/api/admin/status')
 const isAdmin = computed(() => (adminStatus.value as { isAdmin?: boolean } | null)?.isAdmin === true)
 
-const navLinks = computed(() => [
-  { to: '/matches', key: 'nav.matches', icon: 'pi pi-calendar' },
-  { to: '/bracket', key: 'nav.bracket', icon: 'pi pi-sitemap' },
-  { to: '/map', key: 'nav.map', icon: 'pi pi-map' },
-  { to: '/leaderboard', key: 'nav.ranking', icon: 'pi pi-trophy' },
-  { to: '/predictions', key: 'nav.myPicks', icon: 'pi pi-check-circle' },
-  ...(isAdmin.value ? [{ to: '/admin', key: 'nav.admin', icon: 'pi pi-cog' }] : []),
-])
+const navLinks = computed(() => {
+  const c = slug.value
+  return [
+    { to: `/${c}/matches`, key: 'nav.matches', icon: 'pi pi-calendar' },
+    { to: `/${c}/bracket`, key: 'nav.bracket', icon: 'pi pi-sitemap' },
+    { to: `/${c}/map`, key: 'nav.map', icon: 'pi pi-map' },
+    { to: `/${c}/leaderboard`, key: 'nav.ranking', icon: 'pi pi-trophy' },
+    { to: `/${c}/predictions`, key: 'nav.myPicks', icon: 'pi pi-check-circle' },
+    ...(isAdmin.value ? [{ to: '/admin', key: 'nav.admin', icon: 'pi pi-cog' }] : []),
+  ]
+})
 
 const userMenu = ref()
 async function onSignOut() {
@@ -43,24 +51,14 @@ async function onSignOut() {
       class="sticky top-0 z-50 backdrop-blur-md border-b"
       style="background: color-mix(in srgb, var(--p-content-background) 82%, transparent); border-color: var(--p-content-border-color)"
     >
-      <div class="mx-auto max-w-7xl px-4 h-16 flex justify-between md:grid md:grid-cols-[1fr_auto_1fr] items-center gap-3">
-        <div class="flex items-center gap-3 min-w-0">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 h-16 flex justify-between md:grid md:grid-cols-[1fr_auto_1fr] items-center gap-4">
+        <div class="flex items-center min-w-0">
           <NuxtLink to="/" class="flex items-center gap-2 font-extrabold text-lg shrink-0">
             <span class="text-2xl">🔮</span>
             <span class="bg-gradient-to-r from-indigo-500 to-emerald-500 bg-clip-text text-transparent">
               {{ config.public.appName }}
             </span>
           </NuxtLink>
-
-          <Select
-            v-if="competitions && competitions.length"
-            v-model="selected"
-            :options="competitions"
-            option-label="name"
-            option-value="slug"
-            size="small"
-            class="max-w-52"
-          />
         </div>
 
         <nav class="hidden md:flex items-center gap-1">
@@ -76,16 +74,14 @@ async function onSignOut() {
           </NuxtLink>
         </nav>
 
-        <div class="flex items-center gap-1.5 justify-end">
-          <Select v-model="lang" :options="locales" option-label="name" option-value="code" size="small" class="w-[4.5rem]">
-            <template #value="{ value }">{{ String(value).toUpperCase() }}</template>
-          </Select>
+        <div class="flex items-center gap-2 justify-end">
+          <Select v-model="lang" :options="locales" option-label="name" option-value="code" size="small" class="w-28" />
 
           <Button :icon="isDark ? 'pi pi-sun' : 'pi pi-moon'" text rounded severity="secondary" aria-label="Toggle theme" @click="toggle" />
 
           <ClientOnly>
             <template v-if="session && session.data">
-              <button type="button" class="rounded-full" :aria-label="t('account.title')" @click="(e) => userMenu.toggle(e)">
+              <button type="button" class="rounded-full shrink-0" :aria-label="t('account.title')" @click="(e) => userMenu.toggle(e)">
                 <Avatar
                   :label="(session.data.user.name || '?').charAt(0).toUpperCase()"
                   :image="session.data.user.image || undefined"
@@ -129,7 +125,7 @@ async function onSignOut() {
       </nav>
     </header>
 
-    <main class="flex-1 w-full max-w-7xl mx-auto px-4 py-6">
+    <main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6">
       <slot />
     </main>
   </div>

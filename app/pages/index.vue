@@ -2,6 +2,8 @@
 const { t } = useI18n()
 const { session } = useAuth()
 const config = useRuntimeConfig()
+const last = useLastCompetition()
+const homeLink = computed(() => (session && session.data ? `/${last.value}/matches` : '/login'))
 </script>
 
 <template>
@@ -13,7 +15,7 @@ const config = useRuntimeConfig()
       </span>
     </h1>
     <p class="text-lg max-w-md" style="color: var(--p-text-muted-color)">{{ t('home.tagline') }}</p>
-    <NuxtLink :to="session && session.data ? '/matches' : '/login'">
+    <NuxtLink :to="homeLink">
       <Button :label="session && session.data ? t('home.goToMatches') : t('home.getStarted')" icon="pi pi-arrow-right" icon-pos="right" size="large" />
     </NuxtLink>
   </div>

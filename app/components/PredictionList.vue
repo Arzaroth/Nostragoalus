@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const { t } = useI18n()
+const slug = useSelectedCompetition()
 defineProps<{ predictions: MyPrediction[]; editable?: boolean }>()
 const emit = defineEmits<{ toggleJoker: [p: MyPrediction] }>()
 
@@ -16,7 +17,7 @@ function isLocked(p: MyPrediction) {
     <NuxtLink
       v-for="p in predictions"
       :key="p.id"
-      :to="`/matches/${p.matchId}`"
+      :to="`/${slug}/matches/${p.matchId}`"
       class="ng-card block rounded-2xl border p-4"
       style="background: var(--p-content-background)"
     >

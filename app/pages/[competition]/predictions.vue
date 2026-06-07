@@ -19,7 +19,10 @@ function onToggleJoker(p: MyPrediction) {
 
 <template>
   <div>
-    <h1 class="text-2xl font-bold mb-5">{{ t('nav.myPicks') }}</h1>
+    <div class="flex items-center justify-between gap-3 flex-wrap mb-5">
+      <h1 class="text-2xl font-bold">{{ t('nav.myPicks') }}</h1>
+      <CompetitionPill />
+    </div>
     <Message v-if="jokerErr" severity="warn" class="mb-4">{{ jokerErr }}</Message>
     <div v-if="isLoading" class="opacity-60">{{ t('common.loading') }}</div>
     <div v-else-if="!predictions || !predictions.length" class="opacity-60">{{ t('predictions.empty') }}</div>

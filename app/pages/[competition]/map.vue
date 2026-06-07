@@ -59,7 +59,10 @@ function fmt(d: string) {
 
 <template>
   <div>
-    <h1 class="text-2xl font-bold mb-5">{{ t('nav.map') }}</h1>
+    <div class="flex items-center justify-between gap-3 flex-wrap mb-5">
+      <h1 class="text-2xl font-bold">{{ t('nav.map') }}</h1>
+      <CompetitionPill />
+    </div>
     <div class="grid lg:grid-cols-3 gap-4">
       <div class="lg:col-span-2">
         <ClientOnly>
@@ -75,7 +78,7 @@ function fmt(d: string) {
         <div v-else>
           <div class="flex items-center gap-2 mb-4">
             <img v-if="flagUrl(selected.code)" :src="flagUrl(selected.code) || ''" class="w-8 h-8 rounded object-cover" alt="" >
-            <NuxtLink :to="`/teams/${selected.code}`" class="text-lg font-bold hover:underline">{{ selected.name }}</NuxtLink>
+            <NuxtLink :to="`/${slug}/teams/${selected.code}`" class="text-lg font-bold hover:underline">{{ selected.name }}</NuxtLink>
           </div>
           <div v-if="loading" class="opacity-60">{{ t('common.loading') }}</div>
           <div v-else class="flex flex-col gap-4 text-sm">
@@ -114,11 +117,11 @@ function fmt(d: string) {
 
             <div v-if="live">
               <div class="text-xs font-bold mb-1" style="color: #ef4444">● {{ t('map.live') }}</div>
-              <NuxtLink :to="`/matches/${live.id}`" class="hover:underline">{{ live.homeTeam }} <b>{{ live.fullTimeHome }}–{{ live.fullTimeAway }}</b> {{ live.awayTeam }}</NuxtLink>
+              <NuxtLink :to="`/${slug}/matches/${live.id}`" class="hover:underline">{{ live.homeTeam }} <b>{{ live.fullTimeHome }}–{{ live.fullTimeAway }}</b> {{ live.awayTeam }}</NuxtLink>
             </div>
             <div v-if="next">
               <div class="text-xs font-semibold mb-1" style="color: var(--p-text-muted-color)">{{ t('map.next') }}</div>
-              <NuxtLink :to="`/matches/${next.id}`" class="hover:underline">{{ next.homeTeam }} vs {{ next.awayTeam }} · {{ fmt(next.kickoffTime) }}</NuxtLink>
+              <NuxtLink :to="`/${slug}/matches/${next.id}`" class="hover:underline">{{ next.homeTeam }} vs {{ next.awayTeam }} · {{ fmt(next.kickoffTime) }}</NuxtLink>
             </div>
             <div v-if="results.length">
               <div class="text-xs font-semibold mb-2 flex items-center justify-between" style="color: var(--p-text-muted-color)">
@@ -126,7 +129,7 @@ function fmt(d: string) {
                 <span class="tabular-nums">{{ record.W }}W · {{ record.D }}D · {{ record.L }}L</span>
               </div>
               <div class="flex flex-col gap-1.5">
-                <NuxtLink v-for="r in results" :key="r.id" :to="`/matches/${r.id}`" class="flex items-center gap-2 hover:opacity-80">
+                <NuxtLink v-for="r in results" :key="r.id" :to="`/${slug}/matches/${r.id}`" class="flex items-center gap-2 hover:opacity-80">
                   <span class="w-4 h-4 rounded text-white text-[10px] flex items-center justify-center font-bold shrink-0" :style="`background:${formColor(r.result)}`">{{ r.result }}</span>
                   <img v-if="flagUrl(r.opponentCode)" :src="flagUrl(r.opponentCode) || ''" class="w-4 h-4 rounded shrink-0" alt="" >
                   <span class="truncate flex-1">{{ r.opponent }}</span>

@@ -30,7 +30,7 @@ function fmt(d: string) {
 
 <template>
   <div v-if="data && data.team">
-    <NuxtLink to="/matches" class="text-sm inline-flex items-center gap-1" style="color: var(--p-text-muted-color)">
+    <NuxtLink :to="`/${slug}/matches`" class="text-sm inline-flex items-center gap-1" style="color: var(--p-text-muted-color)">
       <i class="pi pi-arrow-left" /> {{ t('matches.title') }}
     </NuxtLink>
     <div class="flex items-center gap-3 mt-3 mb-2">
@@ -46,7 +46,7 @@ function fmt(d: string) {
       <NuxtLink
         v-for="m in data.matches"
         :key="m.id"
-        :to="`/matches/${m.id}`"
+        :to="`/${slug}/matches/${m.id}`"
         class="ng-card block rounded-2xl border p-4"
         :style="`background: var(--p-content-background); border-left: 4px solid ${outcomeColor(outcome(m))}`"
       >

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const slug = useSelectedCompetition()
 defineProps<{ match: any }>()
 const NuxtLinkC = resolveComponent('NuxtLink')
 function fmtDate(d: string) {
@@ -9,7 +10,7 @@ function fmtDate(d: string) {
 <template>
   <component
     :is="match.id ? NuxtLinkC : 'div'"
-    :to="match.id ? `/matches/${match.id}` : undefined"
+    :to="match.id ? `/${slug}/matches/${match.id}` : undefined"
     class="br-card"
     style="background: var(--p-content-background); border: 1px solid var(--p-content-border-color)"
   >

@@ -1,14 +1,16 @@
 <script setup lang="ts">
 const route = useRoute()
 const { t } = useI18n()
+const slug = useSelectedCompetition()
 const { data } = await useFetch<{ user: { id: string; name: string }; predictions: MyPrediction[] }>(
   `/api/users/${route.params.id}/predictions`,
+  { query: computed(() => (slug.value ? { competition: slug.value } : {})) },
 )
 </script>
 
 <template>
   <div v-if="data">
-    <NuxtLink to="/leaderboard" class="text-sm inline-flex items-center gap-1" style="color: var(--p-text-muted-color)">
+    <NuxtLink :to="`/${slug}/leaderboard`" class="text-sm inline-flex items-center gap-1" style="color: var(--p-text-muted-color)">
       <i class="pi pi-arrow-left" /> {{ t('leaderboard.title') }}
     </NuxtLink>
     <h1 class="text-2xl font-bold mt-3 mb-1">{{ data.user.name }}</h1>

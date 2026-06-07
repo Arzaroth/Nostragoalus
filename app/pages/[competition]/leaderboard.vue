@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const { t } = useI18n()
+const slug = useSelectedCompetition()
 const global = ref(false)
 const { data: rows, isLoading } = useLeaderboard(global)
 const { session } = useAuth()
@@ -18,7 +19,10 @@ function medal(rank: number) {
 <template>
   <div>
     <div class="flex items-center justify-between gap-3 flex-wrap mb-5">
-      <h1 class="text-2xl font-bold">{{ t('leaderboard.title') }}</h1>
+      <div class="flex items-center gap-3 flex-wrap">
+        <h1 class="text-2xl font-bold">{{ t('leaderboard.title') }}</h1>
+        <CompetitionPill />
+      </div>
       <SelectButton v-model="global" :options="scopeOptions" option-label="label" option-value="value" :allow-empty="false" size="small" />
     </div>
     <div v-if="isLoading" class="opacity-60">{{ t('common.loading') }}</div>
@@ -28,7 +32,7 @@ function medal(rank: number) {
       <NuxtLink
         v-for="r in rows"
         :key="r.userId"
-        :to="`/users/${r.userId}`"
+        :to="`/${slug}/users/${r.userId}`"
         class="ng-card flex items-center gap-3 rounded-xl border px-4 py-3"
         :style="`background: var(--p-content-background); border-color: ${r.userId === meId ? 'var(--p-primary-color)' : 'var(--p-content-border-color)'}; border-width: ${r.userId === meId ? '2px' : '1px'}`"
       >

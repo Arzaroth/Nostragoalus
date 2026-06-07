@@ -18,7 +18,10 @@ const sides = computed(() => {
 
 <template>
   <div>
-    <h1 class="text-2xl font-bold mb-5">{{ t('nav.bracket') }}</h1>
+    <div class="flex items-center justify-between gap-3 flex-wrap mb-5">
+      <h1 class="text-2xl font-bold">{{ t('nav.bracket') }}</h1>
+      <CompetitionPill />
+    </div>
     <div v-if="isLoading" class="opacity-60">{{ t('common.loading') }}</div>
     <div v-else-if="!sides" class="opacity-60">{{ t('bracket.empty') }}</div>
 

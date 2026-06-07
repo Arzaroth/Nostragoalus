@@ -70,7 +70,7 @@ function fmtDate(d: string) {
 
 <template>
   <div v-if="m" class="flex flex-col gap-6">
-    <NuxtLink to="/matches" class="text-sm inline-flex items-center gap-1" style="color: var(--p-text-muted-color)">
+    <NuxtLink :to="`/${selectedSlug}/matches`" class="text-sm inline-flex items-center gap-1" style="color: var(--p-text-muted-color)">
       <i class="pi pi-arrow-left" /> {{ t('common.back') }}
     </NuxtLink>
 
@@ -88,7 +88,7 @@ function fmtDate(d: string) {
       <div class="flex items-center justify-around gap-4">
         <div class="flex flex-col items-center gap-2 flex-1">
           <img v-if="flagUrl(m.homeTeamCode)" :src="flagUrl(m.homeTeamCode) || ''" class="w-16 h-16 rounded-lg object-cover" alt="" >
-          <component :is="m.homeTeamCode ? NuxtLinkC : 'span'" :to="m.homeTeamCode ? `/teams/${m.homeTeamCode}` : undefined" class="font-bold text-center hover:underline" :title="m.homeTeam">{{ m.homeTeam }}</component>
+          <component :is="m.homeTeamCode ? NuxtLinkC : 'span'" :to="m.homeTeamCode ? `/${selectedSlug}/teams/${m.homeTeamCode}` : undefined" class="font-bold text-center hover:underline" :title="m.homeTeam">{{ m.homeTeam }}</component>
         </div>
         <div class="text-center min-w-24">
           <div v-if="homeScore !== null" class="text-5xl font-extrabold tabular-nums">{{ homeScore }}–{{ awayScore }}</div>
@@ -97,7 +97,7 @@ function fmtDate(d: string) {
         </div>
         <div class="flex flex-col items-center gap-2 flex-1">
           <img v-if="flagUrl(m.awayTeamCode)" :src="flagUrl(m.awayTeamCode) || ''" class="w-16 h-16 rounded-lg object-cover" alt="" >
-          <component :is="m.awayTeamCode ? NuxtLinkC : 'span'" :to="m.awayTeamCode ? `/teams/${m.awayTeamCode}` : undefined" class="font-bold text-center hover:underline" :title="m.awayTeam">{{ m.awayTeam }}</component>
+          <component :is="m.awayTeamCode ? NuxtLinkC : 'span'" :to="m.awayTeamCode ? `/${selectedSlug}/teams/${m.awayTeamCode}` : undefined" class="font-bold text-center hover:underline" :title="m.awayTeam">{{ m.awayTeam }}</component>
         </div>
       </div>
 

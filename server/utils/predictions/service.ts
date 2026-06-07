@@ -78,13 +78,13 @@ const predictionView = {
   roundSort: round.sortOrder,
 }
 
-export async function getMyPredictions(db: AppDatabase, userId: string) {
+export async function getMyPredictions(db: AppDatabase, userId: string, competitionId?: string) {
   return db
     .select(predictionView)
     .from(prediction)
     .innerJoin(match, eq(match.id, prediction.matchId))
     .innerJoin(round, eq(round.id, prediction.roundId))
-    .where(eq(prediction.userId, userId))
+    .where(competitionId ? and(eq(prediction.userId, userId), eq(match.competitionId, competitionId)) : eq(prediction.userId, userId))
     .orderBy(match.kickoffTime)
 }
 

@@ -22,9 +22,13 @@ export interface MyPrediction {
 }
 
 export function useMyPredictions() {
+  const slug = useSelectedCompetition()
   return useQuery({
-    queryKey: ['predictions'],
-    queryFn: () => $fetch<{ predictions: MyPrediction[] }>('/api/predictions').then((r) => r.predictions),
+    queryKey: ['predictions', slug],
+    queryFn: () =>
+      $fetch<{ predictions: MyPrediction[] }>('/api/predictions', {
+        query: slug.value ? { competition: slug.value } : {},
+      }).then((r) => r.predictions),
   })
 }
 

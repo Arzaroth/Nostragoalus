@@ -6,9 +6,19 @@ export interface Competition {
   name: string
 }
 
-// Cookie-backed so the selected competition survives refresh and is available during SSR.
+export const DEFAULT_COMPETITION = 'world-cup-2026'
+
+// The active competition is the `[competition]` path segment. On un-prefixed
+// pages (account/admin/login) it falls back to the last-viewed one (cookie).
 export function useSelectedCompetition() {
-  return useCookie<string | null>('ng-competition', { default: () => null, sameSite: 'lax', maxAge: 60 * 60 * 24 * 365 })
+  const route = useRoute()
+  const last = useLastCompetition()
+  return computed(() => (route.params.competition as string) || last.value || DEFAULT_COMPETITION)
+}
+
+// Remembered across navigations so "/" and legacy links land on a sensible competition.
+export function useLastCompetition() {
+  return useCookie<string>('ng-competition', { default: () => DEFAULT_COMPETITION, sameSite: 'lax', maxAge: 60 * 60 * 24 * 365 })
 }
 
 export function useCompetitions() {
