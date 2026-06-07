@@ -261,7 +261,9 @@
       "promote": "Promouvoir admin",
       "demote": "Retirer admin",
       "delete": "Supprimer l'utilisateur",
-      "remove2fa": "Retirer la 2FA de ce compte"
+      "remove2fa": "Retirer la 2FA de ce compte",
+      "ban": "Bannir",
+      "unban": "Débannir"
     },
     "data": {
       "title": "Données",
@@ -325,5 +327,17 @@
     "regenHint": "Les codes de secours sont à usage unique. Générez-en de nouveaux à tout moment ; les anciens cessent de fonctionner.",
     "trustRevoke": "Ne plus faire confiance à cet appareil",
     "trustRevoked": "Appareil oublié"
+  },
+  "passkeys": {
+    "title": "Clés d'accès",
+    "hint": "Connectez-vous avec votre appareil (empreinte, visage, clé de sécurité) au lieu d'un mot de passe.",
+    "none": "Aucune clé d'accès.",
+    "name": "Nom",
+    "namePlaceholder": "Mon ordinateur",
+    "add": "Ajouter une clé",
+    "remove": "Supprimer",
+    "unnamed": "Clé sans nom",
+    "signIn": "Connexion avec une clé d'accès",
+    "failed": "Échec de la connexion par clé d'accès."
   }
 }

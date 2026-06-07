@@ -261,7 +261,9 @@
       "promote": "loHwI' yIchenmoH",
       "demote": "loHwI' yIteq",
       "delete": "lo'wI' yIQaw'",
-      "remove2fa": "Doch'a'vamvo' cha' 'ol yIteq"
+      "remove2fa": "Doch'a'vamvo' cha' 'ol yIteq",
+      "ban": "lo'wI' yIghIpDIj",
+      "unban": "ghIpDIj yIteq"
     },
     "data": {
       "title": "De'",
@@ -325,5 +327,17 @@
     "regenHint": "wa'logh neH Qap toD ngoq. ngoqmey chu' DachenmoHlaH; ngoqmey qan Qapbe' choH.",
     "trustRevoke": "janvam yIvoqHa'",
     "trustRevoked": "jan lIjlu'ta'"
+  },
+  "passkeys": {
+    "title": "jan ngoqmey",
+    "hint": "pegh mu' lo'be'chugh, janlIj yIlo' (nItlh, qab, Qan ngoq).",
+    "none": "jan ngoq tu'be'lu'.",
+    "name": "pong",
+    "namePlaceholder": "De'wI'wIj",
+    "add": "jan ngoq yIchel",
+    "remove": "yIteq",
+    "unnamed": "pong Hutlh",
+    "signIn": "jan ngoq lo'taHvIS yI'el",
+    "failed": "jan ngoq 'el Qagh."
   }
 }

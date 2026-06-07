@@ -111,12 +111,43 @@ async function regenerateBackupCodes() {
   }
 }
 
+// --- Passkeys ---
+const passkeys = ref<{ id: string; name: string | null; createdAt: string | null; deviceType: string }[]>([])
+const pkBusy = ref(false)
+const pkErr = ref('')
+const pkName = ref('')
+async function loadPasskeys() {
+  const res = await authClient.passkey.listUserPasskeys()
+  passkeys.value = (res.data as any[]) ?? []
+}
+onMounted(loadPasskeys)
+async function addPasskey() {
+  pkErr.value = ''
+  pkBusy.value = true
+  try {
+    const res = await authClient.passkey.addPasskey({ name: pkName.value || undefined })
+    if (res?.error) {
+      pkErr.value = res.error.message || 'Failed'
+      return
+    }
+    pkName.value = ''
+    await loadPasskeys()
+  } finally {
+    pkBusy.value = false
+  }
+}
+async function removePasskey(id: string) {
+  await authClient.passkey.deletePasskey({ id })
+  await loadPasskeys()
+}
+
 // Forget the trust cookie on this device (next sign-in asks for the code again).
-const trustRevoked = ref(false)
+// The cookie is HttpOnly, so the server reports whether this device is trusted.
+const { data: trustStatus, refresh: refreshTrust } = await useFetch<{ trusted: boolean }>('/api/me/trust-status', { lazy: true })
+const deviceTrusted = computed(() => trustStatus.value?.trusted === true)
 async function revokeTrust() {
   await $fetch('/api/me/revoke-trust', { method: 'POST' })
-  trustRevoked.value = true
-  setTimeout(() => (trustRevoked.value = false), 2500)
+  await refreshTrust()
 }
 
 async function disable2fa() {
@@ -376,8 +407,8 @@ async function confirmDelete() {
           <template v-else-if="tfaEnabled">
             <div class="flex items-center gap-2 text-sm font-medium"><i class="pi pi-shield" style="color: #22c55e" /> {{ t('twofa.enabled') }}</div>
 
-            <div class="flex items-center gap-3 text-sm">
-              <Button :label="trustRevoked ? t('twofa.trustRevoked') : t('twofa.trustRevoke')" :icon="trustRevoked ? 'pi pi-check' : 'pi pi-eraser'" size="small" severity="secondary" outlined @click="revokeTrust" />
+            <div v-if="deviceTrusted" class="flex items-center gap-3 text-sm">
+              <Button :label="t('twofa.trustRevoke')" icon="pi pi-eraser" size="small" severity="secondary" outlined @click="revokeTrust" />
             </div>
 
             <div class="rounded-xl border p-3 flex flex-col gap-3" style="border-color: var(--p-content-border-color)">
@@ -445,6 +476,34 @@ async function confirmDelete() {
               <Button :label="t('twofa.enable')" :loading="tfaBusy" :disabled="!tfaPassword" @click="startEnable2fa" />
             </div>
           </template>
+        </div>
+      </div>
+    </section>
+
+    <section class="ng-card rounded-2xl border" style="background: var(--p-content-background)">
+      <div class="grid md:grid-cols-3 gap-6 p-6">
+        <div>
+          <h2 class="font-semibold">{{ t('passkeys.title') }}</h2>
+          <p class="text-sm mt-1" style="color: var(--p-text-muted-color)">{{ t('passkeys.hint') }}</p>
+        </div>
+        <div class="md:col-span-2 flex flex-col gap-3">
+          <Message v-if="pkErr" severity="error" size="small">{{ pkErr }}</Message>
+          <div v-if="passkeys.length" class="flex flex-col rounded-xl border divide-y" style="border-color: var(--p-content-border-color)">
+            <div v-for="pk in passkeys" :key="pk.id" class="flex items-center gap-3 px-4 py-2.5 text-sm" style="border-color: var(--p-content-border-color)">
+              <i class="pi pi-key" style="color: var(--p-primary-color)" />
+              <span class="flex-1 truncate font-medium">{{ pk.name || t('passkeys.unnamed') }}</span>
+              <span class="text-xs" style="color: var(--p-text-muted-color)">{{ pk.createdAt ? new Date(pk.createdAt).toLocaleDateString() : '' }}</span>
+              <Button icon="pi pi-trash" size="small" severity="danger" text rounded :aria-label="t('passkeys.remove')" @click="removePasskey(pk.id)" />
+            </div>
+          </div>
+          <div v-else class="text-sm" style="color: var(--p-text-muted-color)">{{ t('passkeys.none') }}</div>
+          <div class="flex items-end gap-3">
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium">{{ t('passkeys.name') }}</label>
+              <InputText v-model="pkName" :placeholder="t('passkeys.namePlaceholder')" @keyup.enter="addPasskey" />
+            </div>
+            <Button :label="t('passkeys.add')" icon="pi pi-plus" :loading="pkBusy" @click="addPasskey" />
+          </div>
         </div>
       </div>
     </section>

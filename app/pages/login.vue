@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { authClient } from '../../lib/auth-client'
 const { t } = useI18n()
 const { signIn } = useAuth()
 const router = useRouter()
@@ -23,6 +24,16 @@ async function submit() {
   }
 }
 
+async function signInPasskey() {
+  error.value = ''
+  const res = await authClient.signIn.passkey()
+  if (res?.error) {
+    error.value = res.error.message || t('passkeys.failed')
+    return
+  }
+  await router.push('/matches')
+}
+
 async function signInSSO() {
   error.value = ''
   if (!email.value) {
@@ -45,6 +56,7 @@ async function signInSSO() {
     <div class="flex items-center gap-3 text-xs my-1" style="color: var(--p-text-muted-color)">
       <div class="flex-1 border-t" style="border-color: var(--p-content-border-color)" />{{ t('auth.or') }}<div class="flex-1 border-t" style="border-color: var(--p-content-border-color)" />
     </div>
+    <Button :label="t('passkeys.signIn')" icon="pi pi-id-card" severity="secondary" outlined @click="signInPasskey" />
     <Button :label="t('auth.sso')" icon="pi pi-key" severity="secondary" outlined @click="signInSSO" />
     <NuxtLink to="/signup" class="text-sm text-center">{{ t('auth.needAccount') }}</NuxtLink>
     <div class="flex justify-center mt-6 opacity-75"><GuestPrefs /></div>

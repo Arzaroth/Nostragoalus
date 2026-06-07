@@ -261,7 +261,9 @@
       "promote": "Make admin",
       "demote": "Remove admin",
       "delete": "Delete user",
-      "remove2fa": "Remove 2FA from this account"
+      "remove2fa": "Remove 2FA from this account",
+      "ban": "Ban user",
+      "unban": "Unban user"
     },
     "data": {
       "title": "Data",
@@ -325,5 +327,17 @@
     "regenHint": "Backup codes are single-use. Generate a fresh set anytime; the old ones stop working.",
     "trustRevoke": "Stop trusting this device",
     "trustRevoked": "Device forgotten"
+  },
+  "passkeys": {
+    "title": "Passkeys",
+    "hint": "Sign in with your device (fingerprint, face, security key) instead of a password.",
+    "none": "No passkeys yet.",
+    "name": "Name",
+    "namePlaceholder": "My laptop",
+    "add": "Add passkey",
+    "remove": "Remove",
+    "unnamed": "Unnamed passkey",
+    "signIn": "Sign in with a passkey",
+    "failed": "Passkey sign-in failed."
   }
 }

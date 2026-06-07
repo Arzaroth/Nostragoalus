@@ -50,6 +50,13 @@
       "when": 1780858334179,
       "tag": "0006_fixed_arachne",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1780862198508,
+      "tag": "0007_faithful_fantastic_four",
+      "breakpoints": true
     }
   ]
 }

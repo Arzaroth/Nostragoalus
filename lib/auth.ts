@@ -2,7 +2,8 @@ import { betterAuth } from 'better-auth'
 import { APIError } from 'better-auth/api'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { sso } from '@better-auth/sso'
-import { admin, twoFactor } from 'better-auth/plugins'
+import { passkey } from '@better-auth/passkey'
+import { admin, haveIBeenPwned, twoFactor } from 'better-auth/plugins'
 import { count, eq } from 'drizzle-orm'
 import { db } from '../db'
 import * as schema from '../db/schema'
@@ -61,6 +62,10 @@ export const auth = betterAuth({
   plugins: [
     sso(),
     admin(),
+    // Reject passwords found in known breaches (HIBP k-anonymity API, no key needed).
+    haveIBeenPwned(),
+    // WebAuthn passkeys (rpID/origin derive from baseURL).
+    passkey({ rpName: 'Nostragoalus' }),
     twoFactor({
       otpOptions: {
         async sendOTP({ user: u, otp }) {

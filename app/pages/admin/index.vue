@@ -140,6 +140,13 @@ const roleMutation = useMutation({
 })
 const toggleAdmin = (u: any) => roleMutation.mutate(u)
 
+const banMutation = useMutation({
+  mutationFn: (u: any) =>
+    u.banned ? admin.unbanUser({ userId: u.id }) : admin.banUser({ userId: u.id, banReason: 'banned by admin' }),
+  onSuccess: invalidateUsers,
+})
+const toggleBan = (u: any) => banMutation.mutate(u)
+
 const strip2faMutation = useMutation({
   mutationFn: (u: any) => $fetch(`/api/admin/users/${u.id}/remove-2fa`, { method: 'POST' }),
   onSuccess: invalidateUsers,
@@ -296,6 +303,18 @@ function createUser() {
               rounded
               :aria-label="t('admin.users.remove2fa')"
               @click="strip2fa(u)"
+            />
+            <Tag v-if="u.banned" value="BANNED" severity="danger" />
+            <Button
+              v-if="u.id !== myId"
+              v-tooltip.left="u.banned ? t('admin.users.unban') : t('admin.users.ban')"
+              :icon="u.banned ? 'pi pi-lock-open' : 'pi pi-ban'"
+              size="small"
+              :severity="u.banned ? 'success' : 'danger'"
+              text
+              rounded
+              :aria-label="u.banned ? t('admin.users.unban') : t('admin.users.ban')"
+              @click="toggleBan(u)"
             />
             <Tag v-if="u.role === 'admin'" value="ADMIN" severity="success" />
             <Button
