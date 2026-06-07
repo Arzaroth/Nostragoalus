@@ -658,3 +658,25 @@ describe('getMatchDetail by bare match id', () => {
     expect(d!.homeTeamId).toBe('H')
   })
 })
+
+describe('squad doc + fdh edge branches', () => {
+  it('empty squad doc yields empty squad and null coach', () => {
+    expect(normalizeFifaSquadDoc({}, new Set())).toEqual({ squad: [], coach: null })
+  })
+
+  it('a failing fdh fetch still aggregates cards from the detail', async () => {
+    const detail = {
+      Properties: { IdIFES: '999' },
+      HomeTeam: { IdTeam: 'T1', Abbreviation: 'AAA', Players: [], Bookings: [{ Card: 1 }, { Card: 2 }] },
+      AwayTeam: { IdTeam: 'T2' },
+    }
+    const payloads = [
+      new Response(JSON.stringify(detail), { status: 200 }),
+      new Response('down', { status: 500 }), // fdh fails
+      new Response('down', { status: 500 }), // squad doc fails
+    ]
+    const provider = fifaProvider({ seasonId: '1', competitionId: '17', rateLimiter: new RateLimiter(0), fetchImpl: (async () => payloads.shift()!) as unknown as typeof fetch })
+    const res = await provider.getTeamTournament!({ teamRef: 'AAA', matches: [{ stageId: 's', matchId: 'm' }] })
+    expect(res.stats).toMatchObject({ yellowCards: 1, redCards: 1, attempts: null })
+  })
+})

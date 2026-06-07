@@ -1,4 +1,5 @@
 import { db } from '../../../db'
+import { recordTaskRun } from '../../utils/tasks/recorder'
 import { providerForCompetition } from '../../utils/providers'
 import { listActiveCompetitions } from '../../utils/competitions/store'
 import { resolveCompetitionSeason, syncLive } from '../../utils/sync/competition'
@@ -8,7 +9,9 @@ import { publishMatchUpdates } from '../../utils/live/hub'
 export default defineTask({
   meta: { name: 'scores:poll', description: 'Poll live scores for active competitions while matches are live' },
   async run() {
-    if (useRuntimeConfig().cronEnabled !== 'true') return { result: 'disabled' }
+    return recordTaskRun(db, 'scores:poll', async () => {
+    // String(): nitro coerces NUXT_CRON_ENABLED=true to a boolean via destr.
+    if (String(useRuntimeConfig().cronEnabled) !== 'true') return { result: 'disabled' }
     if (!(await hasLiveWindow(db))) return { result: 'idle' }
 
     const changed: string[] = []
@@ -26,5 +29,6 @@ export default defineTask({
 
     await publishMatchUpdates(db, changed)
     return { result: { changed: changed.length } }
+    })
   },
 })

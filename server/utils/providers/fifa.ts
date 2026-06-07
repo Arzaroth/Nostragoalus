@@ -100,7 +100,8 @@ function toWinner(match: FifaMatch): Winner {
 
 export function normalizeFifaMatch(match: FifaMatch): NormalizedMatch {
   const score: Score = { fullTime: { home: match.HomeTeamScore, away: match.AwayTeamScore } }
-  if (match.HomeTeamPenaltyScore != null || match.AwayTeamPenaltyScore != null) {
+  // FIFA reports 0-0 penalty fields on matches with no shootout — store only real ones.
+  if ((match.HomeTeamPenaltyScore ?? 0) + (match.AwayTeamPenaltyScore ?? 0) > 0) {
     score.penalties = { home: match.HomeTeamPenaltyScore, away: match.AwayTeamPenaltyScore }
   }
 

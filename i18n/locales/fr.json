@@ -260,7 +260,8 @@
       "create": "Créer",
       "promote": "Promouvoir admin",
       "demote": "Retirer admin",
-      "delete": "Supprimer l'utilisateur"
+      "delete": "Supprimer l'utilisateur",
+      "remove2fa": "Retirer la 2FA de ce compte"
     },
     "data": {
       "title": "Données",
@@ -274,7 +275,9 @@
       "finalize": "Clôturer",
       "finalizeTip": "Verrouille les pronos échus, note les matchs terminés, attribue les points et met à jour le classement.",
       "nextRun": "Prochaine exécution",
-      "manual": "manuel uniquement"
+      "manual": "manuel uniquement",
+      "lastRun": "Dernière exécution",
+      "lastFailure": "Dernier échec"
     }
   },
   "strength": {
@@ -283,5 +286,30 @@
     "fair": "Moyen",
     "good": "Bon",
     "strong": "Fort"
+  },
+  "twofa": {
+    "sectionTitle": "Authentification à deux facteurs",
+    "sectionHint": "Une seconde étape à la connexion : une application d'authentification (ou un code par e-mail si configuré).",
+    "enable": "Activer la 2FA",
+    "disable": "Désactiver la 2FA",
+    "confirm": "Confirmer",
+    "enabled": "L'authentification à deux facteurs est activée.",
+    "scan": "Scannez le QR code avec votre application d'authentification, puis saisissez un code à 6 chiffres.",
+    "backupHintLong": "Codes de secours : conservez-les en lieu sûr ; chacun fonctionne une seule fois.",
+    "code": "Code à 6 chiffres",
+    "backupCode": "Code de secours",
+    "wrongCode": "Code invalide.",
+    "wrongPassword": "Mot de passe incorrect.",
+    "title": "Vérification en deux étapes",
+    "hint": "Saisissez le code à 6 chiffres de votre application d'authentification.",
+    "otpHint": "Saisissez le code reçu par e-mail.",
+    "backupHint": "Saisissez un de vos codes de secours.",
+    "verify": "Vérifier",
+    "trust": "Faire confiance à cet appareil pendant 30 jours",
+    "useTotp": "Utiliser mon application",
+    "useBackup": "Utiliser un code de secours",
+    "emailCode": "M'envoyer un code par e-mail",
+    "emailSent": "Code envoyé : vérifiez votre boîte mail.",
+    "emailUnavailable": "Les codes par e-mail ne sont pas disponibles sur ce serveur."
   }
 }

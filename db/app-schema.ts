@@ -325,6 +325,16 @@ export const goalEventRelations = relations(goalEvent, ({ one }) => ({
   competition: one(competition, { fields: [goalEvent.competitionId], references: [competition.id] }),
 }))
 
+// Last run / last failure per background task, for the admin dashboard.
+export const taskRun = pgTable('task_run', {
+  taskName: text('task_name').primaryKey(),
+  lastRunAt: timestamp('last_run_at'),
+  lastDurationMs: integer('last_duration_ms'),
+  lastResult: text('last_result'),
+  lastFailureAt: timestamp('last_failure_at'),
+  lastError: text('last_error'),
+})
+
 // Rank snapshot per user+competition: when a rank changes during finalize, the
 // previous one is kept so the leaderboard can show movement arrows.
 export const leaderboardRank = pgTable(

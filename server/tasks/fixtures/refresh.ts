@@ -1,4 +1,5 @@
 import { db } from '../../../db'
+import { recordTaskRun } from '../../utils/tasks/recorder'
 import { providerForCompetition } from '../../utils/providers'
 import { ensureDefaultCompetition, listActiveCompetitions } from '../../utils/competitions/store'
 import { resolveCompetitionSeason, syncFixtures } from '../../utils/sync/competition'
@@ -7,6 +8,7 @@ import { ensureDefaultScoringConfig } from '../../utils/scoring/store'
 export default defineTask({
   meta: { name: 'fixtures:refresh', description: 'Refresh fixtures for all active competitions' },
   async run() {
+    return recordTaskRun(db, 'fixtures:refresh', async () => {
     await ensureDefaultScoringConfig(db)
     await ensureDefaultCompetition(db)
 
@@ -21,5 +23,6 @@ export default defineTask({
       }
     }
     return { result }
+    })
   },
 })

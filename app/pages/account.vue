@@ -1,9 +1,73 @@
 <script setup lang="ts">
+import QRCode from 'qrcode'
+import { authClient } from '../../lib/auth-client'
+
 const { t } = useI18n()
 const { session, changeEmail, changePassword, updateUser, deleteUser, signOut } = useAuth()
 const router = useRouter()
 
 const currentUser = computed(() => session.value?.data?.user)
+
+// --- Two-factor authentication ---
+const tfaPassword = ref('')
+const tfaCode = ref('')
+const tfaQr = ref('')
+const tfaBackup = ref<string[]>([])
+const tfaStep = ref<'idle' | 'verify' | 'done'>('idle')
+const tfaErr = ref('')
+const tfaBusy = ref(false)
+const tfaEnabled = computed(() => (currentUser.value as any)?.twoFactorEnabled === true || tfaStep.value === 'done')
+
+async function startEnable2fa() {
+  tfaErr.value = ''
+  tfaBusy.value = true
+  try {
+    const res = await authClient.twoFactor.enable({ password: tfaPassword.value })
+    if (res.error) {
+      tfaErr.value = res.error.message || t('twofa.wrongPassword')
+      return
+    }
+    tfaBackup.value = res.data?.backupCodes ?? []
+    tfaQr.value = await QRCode.toDataURL(res.data?.totpURI ?? '', { margin: 1, width: 192 })
+    tfaStep.value = 'verify'
+  } finally {
+    tfaBusy.value = false
+  }
+}
+async function confirmEnable2fa() {
+  tfaErr.value = ''
+  tfaBusy.value = true
+  try {
+    const res = await authClient.twoFactor.verifyTotp({ code: tfaCode.value.trim() })
+    if (res.error) {
+      tfaErr.value = t('twofa.wrongCode')
+      return
+    }
+    tfaStep.value = 'done'
+    tfaPassword.value = ''
+    tfaCode.value = ''
+  } finally {
+    tfaBusy.value = false
+  }
+}
+async function disable2fa() {
+  tfaErr.value = ''
+  tfaBusy.value = true
+  try {
+    const res = await authClient.twoFactor.disable({ password: tfaPassword.value })
+    if (res.error) {
+      tfaErr.value = res.error.message || t('twofa.wrongPassword')
+      return
+    }
+    tfaStep.value = 'idle'
+    tfaPassword.value = ''
+    tfaQr.value = ''
+    tfaBackup.value = []
+    await session.value?.refetch?.()
+  } finally {
+    tfaBusy.value = false
+  }
+}
 
 const email = ref('')
 const displayName = ref('')
@@ -202,6 +266,60 @@ async function confirmDelete() {
       </div>
       <div class="border-t px-6 py-3 flex justify-end" style="border-color: var(--p-content-border-color)">
         <Button :label="t('common.save')" :loading="pwLoading" :disabled="!currentPassword || !newPassword || !confirmPassword" @click="savePassword" />
+      </div>
+    </section>
+
+    <section class="ng-card rounded-2xl border" style="background: var(--p-content-background)">
+      <div class="grid md:grid-cols-3 gap-6 p-6">
+        <div>
+          <h2 class="font-semibold">{{ t('twofa.sectionTitle') }}</h2>
+          <p class="text-sm mt-1" style="color: var(--p-text-muted-color)">{{ t('twofa.sectionHint') }}</p>
+        </div>
+        <div class="md:col-span-2 flex flex-col gap-3">
+          <Message v-if="tfaErr" severity="error" size="small">{{ tfaErr }}</Message>
+
+          <template v-if="tfaEnabled">
+            <div class="flex items-center gap-2 text-sm font-medium"><i class="pi pi-shield" style="color: #22c55e" /> {{ t('twofa.enabled') }}</div>
+            <div v-if="tfaBackup.length" class="rounded-xl border p-3" style="border-color: var(--p-content-border-color)">
+              <div class="text-xs mb-2" style="color: var(--p-text-muted-color)">{{ t('twofa.backupHintLong') }}</div>
+              <div class="grid grid-cols-2 sm:grid-cols-5 gap-1 font-mono text-xs">
+                <span v-for="c in tfaBackup" :key="c">{{ c }}</span>
+              </div>
+            </div>
+            <div class="flex items-end gap-3">
+              <div class="flex flex-col gap-1">
+                <label class="text-xs font-medium">{{ t('account.currentPassword') }}</label>
+                <Password v-model="tfaPassword" :feedback="false" toggle-mask />
+              </div>
+              <Button :label="t('twofa.disable')" severity="danger" outlined :loading="tfaBusy" :disabled="!tfaPassword" @click="disable2fa" />
+            </div>
+          </template>
+
+          <template v-else-if="tfaStep === 'verify'">
+            <p class="text-sm" style="color: var(--p-text-muted-color)">{{ t('twofa.scan') }}</p>
+            <img :src="tfaQr" alt="TOTP QR" class="w-44 h-44 rounded-lg bg-white p-2 self-start" >
+            <div v-if="tfaBackup.length" class="rounded-xl border p-3" style="border-color: var(--p-content-border-color)">
+              <div class="text-xs mb-2" style="color: var(--p-text-muted-color)">{{ t('twofa.backupHintLong') }}</div>
+              <div class="grid grid-cols-2 sm:grid-cols-5 gap-1 font-mono text-xs">
+                <span v-for="c in tfaBackup" :key="c">{{ c }}</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <InputText v-model="tfaCode" :placeholder="t('twofa.code')" class="w-40 text-center tracking-widest" @keyup.enter="confirmEnable2fa" />
+              <Button :label="t('twofa.confirm')" :loading="tfaBusy" :disabled="!tfaCode.trim()" @click="confirmEnable2fa" />
+            </div>
+          </template>
+
+          <template v-else>
+            <div class="flex items-end gap-3">
+              <div class="flex flex-col gap-1">
+                <label class="text-xs font-medium">{{ t('account.currentPassword') }}</label>
+                <Password v-model="tfaPassword" :feedback="false" toggle-mask />
+              </div>
+              <Button :label="t('twofa.enable')" :loading="tfaBusy" :disabled="!tfaPassword" @click="startEnable2fa" />
+            </div>
+          </template>
+        </div>
       </div>
     </section>
 

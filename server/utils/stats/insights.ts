@@ -5,18 +5,21 @@ import { computeGroupStandings, type StandingRow } from './standings'
 import { getMatchGoals } from './scorers'
 
 export interface FormResult {
+  matchId: string
   result: 'W' | 'D' | 'L'
   opponent: string
   score: string
 }
 
 export interface NextMatch {
+  matchId: string
   opponent: string
   opponentCode: string | null
   kickoffTime: string
 }
 
 export interface HeadToHead {
+  matchId: string
   homeTeam: string
   awayTeam: string
   homeScore: number
@@ -77,8 +80,9 @@ async function teamForm(db: AppDatabase, competitionId: string, team: string, li
       let result: FormResult['result'] = gf > ga ? 'W' : gf < ga ? 'L' : 'D'
       // A knockout level after regulation is decided on penalties — use the shootout for W/L.
       if (result === 'D' && pf != null && pa != null && pf !== pa) result = pf > pa ? 'W' : 'L'
-      const score = pf != null && pa != null ? `${gf}–${ga} (${pf}–${pa}p)` : `${gf}–${ga}`
-      return { result, opponent: isHome ? r.awayTeam : r.homeTeam, score }
+      // only real shootouts — 0-0 penalty rows are sync artifacts
+      const score = pf != null && pa != null && pf + pa > 0 ? `${gf}–${ga} (${pf}–${pa}p)` : `${gf}–${ga}`
+      return { matchId: r.id, result, opponent: isHome ? r.awayTeam : r.homeTeam, score }
     })
 }
 
@@ -100,6 +104,7 @@ async function teamNext(db: AppDatabase, competitionId: string, team: string, no
   return rows.map((r) => {
     const isHome = r.homeTeam === team
     return {
+      matchId: r.id,
       opponent: isHome ? r.awayTeam : r.homeTeam,
       opponentCode: isHome ? r.awayTeamCode : r.homeTeamCode,
       kickoffTime: new Date(r.kickoffTime).toISOString(),
@@ -147,6 +152,7 @@ export async function getMatchInsights(db: AppDatabase, matchId: string, now: Da
   const headToHead: HeadToHead[] = h2hRows
     .filter((r) => r.fullTimeHome != null && r.fullTimeAway != null)
     .map((r) => ({
+      matchId: r.id,
       homeTeam: r.homeTeam,
       awayTeam: r.awayTeam,
       homeScore: r.fullTimeHome as number,

@@ -1,5 +1,6 @@
 import { db } from '../../../db'
 import { requireAdmin } from '../../utils/auth-guards'
+import { recordTaskRun } from '../../utils/tasks/recorder'
 import { providerForCompetition } from '../../utils/providers'
 import {
   ensureDefaultCompetition,
@@ -16,6 +17,7 @@ export default defineEventHandler(async (event) => {
   await requireAdmin(event)
   const body = await readBody(event).catch(() => ({}))
 
+  return recordTaskRun(db, 'import-fixtures', async () => {
   await ensureDefaultScoringConfig(db)
   await ensureDefaultCompetition(db)
 
@@ -37,4 +39,5 @@ export default defineEventHandler(async (event) => {
     }
   }
   return result
+  })
 })

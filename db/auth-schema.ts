@@ -13,11 +13,22 @@ export const user = pgTable("user", {
   banExpires: timestamp("ban_expires"),
   locale: text("locale"),
   theme: text("theme"),
+  twoFactorEnabled: boolean("two_factor_enabled").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
+});
+
+export const twoFactor = pgTable("two_factor", {
+  id: text("id").primaryKey(),
+  secret: text("secret").notNull(),
+  backupCodes: text("backup_codes").notNull(),
+  verified: boolean("verified").default(false),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
 });
 
 export const session = pgTable(

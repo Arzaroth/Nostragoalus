@@ -48,6 +48,24 @@ async function removeProvider(id: string) {
 const syncMsg = ref('')
 const syncBusy = ref('')
 
+// Last run / failure per task, shown in the action tooltips.
+const { data: taskStatus, refresh: refreshTaskStatus } = await useFetch<{ tasks: any[] }>('/api/admin/task-status', { lazy: true })
+function escapeHtml(v: string) {
+  return v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+function taskTip(name: string, base: string) {
+  const row = taskStatus.value?.tasks?.find((x) => x.taskName === name)
+  let html = escapeHtml(base)
+  if (row?.lastRunAt) {
+    html += `<br><br><b>${escapeHtml(t('admin.data.lastRun'))}:</b> ${new Date(row.lastRunAt).toLocaleString()} · ${row.lastDurationMs}ms`
+    if (row.lastResult) html += `<br><span style="opacity:.75">${escapeHtml(String(row.lastResult).slice(0, 160))}</span>`
+  }
+  if (row?.lastFailureAt) {
+    html += `<br><br><b style="color:#fca5a5">${escapeHtml(t('admin.data.lastFailure'))}:</b> ${new Date(row.lastFailureAt).toLocaleString()}<br><span style="opacity:.75">${escapeHtml(String(row.lastError ?? '').slice(0, 160))}</span>`
+  }
+  return html
+}
+
 // Next scheduled run, derived from the cron map (hourly / */2 / */5).
 const nowTick = ref(Date.now())
 let tick: ReturnType<typeof setInterval> | undefined
@@ -73,6 +91,7 @@ async function runImport() {
     syncMsg.value = JSON.stringify(await $fetch('/api/admin/import-fixtures', { method: 'POST' }))
   } finally {
     syncBusy.value = ''
+    void refreshTaskStatus()
   }
 }
 async function runTask(task: string) {
@@ -81,6 +100,7 @@ async function runTask(task: string) {
     syncMsg.value = JSON.stringify(await $fetch('/api/admin/sync', { method: 'POST', body: { task } }))
   } finally {
     syncBusy.value = ''
+    void refreshTaskStatus()
   }
 }
 
@@ -105,6 +125,12 @@ const roleMutation = useMutation({
   onSuccess: invalidateUsers,
 })
 const toggleAdmin = (u: any) => roleMutation.mutate(u)
+
+const strip2faMutation = useMutation({
+  mutationFn: (u: any) => $fetch(`/api/admin/users/${u.id}/remove-2fa`, { method: 'POST' }),
+  onSuccess: invalidateUsers,
+})
+const strip2fa = (u: any) => strip2faMutation.mutate(u)
 
 const deleteMutation = useMutation({
   mutationFn: (u: any) => admin.removeUser({ userId: u.id }),
@@ -246,6 +272,17 @@ function createUser() {
               <div class="font-medium truncate">{{ u.name }}</div>
               <div class="text-xs truncate" style="color: var(--p-text-muted-color)">{{ u.email }}</div>
             </div>
+            <Button
+              v-if="u.twoFactorEnabled"
+              v-tooltip.left="t('admin.users.remove2fa')"
+              icon="pi pi-shield"
+              size="small"
+              severity="warn"
+              text
+              rounded
+              :aria-label="t('admin.users.remove2fa')"
+              @click="strip2fa(u)"
+            />
             <Tag v-if="u.role === 'admin'" value="ADMIN" severity="success" />
             <Button
               :label="u.role === 'admin' ? t('admin.users.demote') : t('admin.users.promote')"
@@ -269,13 +306,13 @@ function createUser() {
           <div class="md:col-span-2 flex flex-col gap-3">
             <!-- uniform buttons with centered labels; next-run column aligned -->
             <div class="grid grid-cols-[auto_auto] items-center gap-x-4 gap-y-2 justify-center">
-              <Button v-tooltip.left="t('admin.data.importTip')" :label="t('admin.data.import')" icon="pi pi-download" size="small" severity="info" class="w-48" :loading="syncBusy === 'import'" @click="runImport" />
+              <Button v-tooltip.left="{ value: taskTip('import-fixtures', t('admin.data.importTip')), escape: false }" :label="t('admin.data.import')" icon="pi pi-download" size="small" severity="info" class="w-48" :loading="syncBusy === 'import'" @click="runImport" />
               <span class="text-xs" style="color: var(--p-text-muted-color)">{{ t('admin.data.nextRun') }}: {{ t('admin.data.manual') }}</span>
-              <Button v-tooltip.left="t('admin.data.refreshTip')" :label="t('admin.data.refresh')" icon="pi pi-refresh" size="small" severity="help" class="w-48" :loading="syncBusy === 'fixtures'" @click="runTask('fixtures')" />
+              <Button v-tooltip.left="{ value: taskTip('fixtures:refresh', t('admin.data.refreshTip')), escape: false }" :label="t('admin.data.refresh')" icon="pi pi-refresh" size="small" severity="help" class="w-48" :loading="syncBusy === 'fixtures'" @click="runTask('fixtures')" />
               <span class="text-xs tabular-nums" style="color: var(--p-text-muted-color)">{{ t('admin.data.nextRun') }}: {{ nextRun('hourly') }}</span>
-              <Button v-tooltip.left="t('admin.data.pollTip')" :label="t('admin.data.poll')" icon="pi pi-bolt" size="small" severity="warn" class="w-48" :loading="syncBusy === 'live'" @click="runTask('live')" />
+              <Button v-tooltip.left="{ value: taskTip('scores:poll', t('admin.data.pollTip')), escape: false }" :label="t('admin.data.poll')" icon="pi pi-bolt" size="small" severity="warn" class="w-48" :loading="syncBusy === 'live'" @click="runTask('live')" />
               <span class="text-xs tabular-nums" style="color: var(--p-text-muted-color)">{{ t('admin.data.nextRun') }}: {{ nextRun(2) }}</span>
-              <Button v-tooltip.left="t('admin.data.finalizeTip')" :label="t('admin.data.finalize')" icon="pi pi-flag" size="small" severity="success" class="w-48" :loading="syncBusy === 'finalize'" @click="runTask('finalize')" />
+              <Button v-tooltip.left="{ value: taskTip('matches:finalize', t('admin.data.finalizeTip')), escape: false }" :label="t('admin.data.finalize')" icon="pi pi-flag" size="small" severity="success" class="w-48" :loading="syncBusy === 'finalize'" @click="runTask('finalize')" />
               <span class="text-xs tabular-nums" style="color: var(--p-text-muted-color)">{{ t('admin.data.nextRun') }}: {{ nextRun(5) }}</span>
             </div>
             <pre v-if="syncMsg" class="text-xs p-2 rounded overflow-x-auto" style="background: color-mix(in srgb, var(--p-text-color) 6%, transparent)">{{ syncMsg }}</pre>

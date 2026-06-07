@@ -36,6 +36,20 @@
       "when": 1780840670799,
       "tag": "0004_damp_mimic",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1780857518624,
+      "tag": "0005_brainy_the_phantom",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1780858334179,
+      "tag": "0006_fixed_arachne",
+      "breakpoints": true
     }
   ]
 }

@@ -260,7 +260,8 @@
       "create": "Create",
       "promote": "Make admin",
       "demote": "Remove admin",
-      "delete": "Delete user"
+      "delete": "Delete user",
+      "remove2fa": "Remove 2FA from this account"
     },
     "data": {
       "title": "Data",
@@ -274,7 +275,9 @@
       "finalize": "Finalize",
       "finalizeTip": "Lock due predictions, score finished matches, award points and refresh the rankings.",
       "nextRun": "Next run",
-      "manual": "manual only"
+      "manual": "manual only",
+      "lastRun": "Last run",
+      "lastFailure": "Last failure"
     }
   },
   "strength": {
@@ -283,5 +286,30 @@
     "fair": "Fair",
     "good": "Good",
     "strong": "Strong"
+  },
+  "twofa": {
+    "sectionTitle": "Two-factor authentication",
+    "sectionHint": "A second step at sign-in: an authenticator app (or a code by email when configured).",
+    "enable": "Enable 2FA",
+    "disable": "Disable 2FA",
+    "confirm": "Confirm",
+    "enabled": "Two-factor authentication is enabled.",
+    "scan": "Scan the QR code with your authenticator app, then enter a 6-digit code to confirm.",
+    "backupHintLong": "Backup codes - store them somewhere safe; each one works once if you lose your authenticator.",
+    "code": "6-digit code",
+    "backupCode": "Backup code",
+    "wrongCode": "Invalid code.",
+    "wrongPassword": "Wrong password.",
+    "title": "Two-step verification",
+    "hint": "Enter the 6-digit code from your authenticator app.",
+    "otpHint": "Enter the code we emailed you.",
+    "backupHint": "Enter one of your backup codes.",
+    "verify": "Verify",
+    "trust": "Trust this device for 30 days",
+    "useTotp": "Use my authenticator app",
+    "useBackup": "Use a backup code",
+    "emailCode": "Email me a code",
+    "emailSent": "Code sent - check your inbox.",
+    "emailUnavailable": "Email codes are not available on this server."
   }
 }

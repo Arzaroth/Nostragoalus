@@ -1,4 +1,5 @@
 import { db } from '../../../db'
+import { recordTaskRun } from '../../utils/tasks/recorder'
 import { finalizeMatches } from '../../utils/sync/finalize'
 import { listActiveCompetitions } from '../../utils/competitions/store'
 import { providerForCompetition } from '../../utils/providers'
@@ -9,6 +10,7 @@ import { updateRankSnapshots } from '../../utils/leaderboard/snapshots'
 export default defineTask({
   meta: { name: 'matches:finalize', description: 'Lock due predictions, score finished matches, fetch match details' },
   async run() {
+    return recordTaskRun(db, 'matches:finalize', async () => {
     const result = await finalizeMatches(db)
 
     const details: Record<string, unknown> = {}
@@ -29,5 +31,6 @@ export default defineTask({
     }
 
     return { result: { ...result, details } }
+    })
   },
 })

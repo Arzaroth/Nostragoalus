@@ -260,7 +260,8 @@
       "create": "yIchenmoH",
       "promote": "loHwI' yIchenmoH",
       "demote": "loHwI' yIteq",
-      "delete": "lo'wI' yIQaw'"
+      "delete": "lo'wI' yIQaw'",
+      "remove2fa": "Doch'a'vamvo' cha' 'ol yIteq"
     },
     "data": {
       "title": "De'",
@@ -274,7 +275,9 @@
       "finalize": "yIrInmoH",
       "finalizeTip": "wIvmey tISoQmoH, rInpu'bogh may'mey tInoH, QuQmey tInob, patlh yIchu'qa'.",
       "nextRun": "qaS veb",
-      "manual": "ghop neH"
+      "manual": "ghop neH",
+      "lastRun": "qaS Qav",
+      "lastFailure": "luj Qav"
     }
   },
   "strength": {
@@ -283,5 +286,30 @@
     "fair": "ruch",
     "good": "QaQ",
     "strong": "HoSghaj"
+  },
+  "twofa": {
+    "sectionTitle": "cha' 'ol mIw",
+    "sectionHint": "bI'elDI' mIw cha'DIch: 'olwI' App (pagh jabbI'ID ngoq, cherlu'pu'chugh).",
+    "enable": "cha' 'ol yIchu'",
+    "disable": "cha' 'ol yIchu'Ha'",
+    "confirm": "yI'ol",
+    "enabled": "cha' 'ol mIw chu'lu'ta'.",
+    "scan": "'olwI' App lo'taHvIS QR yIlegh, vaj jav mI' ngoq yIqon.",
+    "backupHintLong": "toD ngoqmey - Daq Qan tIpol; wa'logh neH Qap Hoch.",
+    "code": "jav mI' ngoq",
+    "backupCode": "toD ngoq",
+    "wrongCode": "ngoq qarbe.",
+    "wrongPassword": "pegh mu' qarbe.",
+    "title": "cha' mIw 'ol",
+    "hint": "'olwI' App jav mI' ngoq yIqon.",
+    "otpHint": "jabbI'ID ngoq yIqon.",
+    "backupHint": "toD ngoq yIqon.",
+    "verify": "yI'ol",
+    "trust": "wejmaH jaj janvam yIvoq",
+    "useTotp": "'olwI' App vIlo'",
+    "useBackup": "toD ngoq vIlo'",
+    "emailCode": "jabbI'ID ngoq HIngeH",
+    "emailSent": "ngoq ngeHlu'ta' - jabbI'IDlIj yIlegh.",
+    "emailUnavailable": "jabbI'ID ngoqmey lo'laHbe' jabwI'vam."
   }
 }

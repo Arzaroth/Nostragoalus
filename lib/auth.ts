@@ -1,10 +1,24 @@
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { sso } from '@better-auth/sso'
-import { admin } from 'better-auth/plugins'
+import { admin, twoFactor } from 'better-auth/plugins'
 import { db } from '../db'
 import * as schema from '../db/schema'
 import { withEncryptedSSO } from '../server/utils/crypto/encrypted-adapter'
+
+// Email OTP works only when an SMTP transport is configured (NUXT_SMTP_URL,
+// e.g. smtp://user:pass@host:587); TOTP authenticator 2FA needs nothing.
+async function sendOtpMail(to: string, otp: string): Promise<void> {
+  const smtpUrl = process.env.NUXT_SMTP_URL
+  if (!smtpUrl) throw new Error('email OTP unavailable: NUXT_SMTP_URL is not configured')
+  const { createTransport } = await import('nodemailer')
+  await createTransport(smtpUrl).sendMail({
+    from: process.env.NUXT_SMTP_FROM ?? 'Nostragoalus <no-reply@nostragoalus.local>',
+    to,
+    subject: 'Your Nostragoalus sign-in code',
+    text: `Your verification code is: ${otp}\n\nIt expires in 5 minutes.`,
+  })
+}
 
 export const auth = betterAuth({
   database: withEncryptedSSO(
@@ -30,8 +44,19 @@ export const auth = betterAuth({
   account: {
     accountLinking: { enabled: true },
   },
-  // Runtime-configurable SSO (OIDC + SAML) + role-based user administration.
-  plugins: [sso(), admin()],
+  // Runtime-configurable SSO (OIDC + SAML), role-based user administration,
+  // and 2FA (TOTP authenticator + email OTP when SMTP is configured).
+  plugins: [
+    sso(),
+    admin(),
+    twoFactor({
+      otpOptions: {
+        async sendOTP({ user: u, otp }) {
+          await sendOtpMail(u.email, otp)
+        },
+      },
+    }),
+  ],
   secret: process.env.BETTER_AUTH_SECRET ?? process.env.NUXT_BETTER_AUTH_SECRET,
   baseURL: process.env.BETTER_AUTH_URL ?? process.env.NUXT_PUBLIC_AUTH_URL,
 })

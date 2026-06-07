@@ -265,9 +265,9 @@ function fmtDate(d: string) {
                 >
                   <td class="py-2 text-left">{{ i + 1 }}</td>
                   <td class="text-left">
-                    <span class="flex items-center gap-2">
+                    <component :is="row.code ? NuxtLinkC : 'span'" :to="row.code ? `/${selectedSlug}/teams/${row.code}` : undefined" class="flex items-center gap-2" :class="{ 'hover:underline': row.code }">
                       <img v-if="flagUrl(row.code)" :src="flagUrl(row.code) || ''" class="w-5 h-5 rounded" alt="" >{{ row.name }}
-                    </span>
+                    </component>
                   </td>
                   <td>{{ row.played }}</td><td>{{ row.won }}</td><td>{{ row.drawn }}</td><td>{{ row.lost }}</td>
                   <td>{{ row.gd > 0 ? '+' : '' }}{{ row.gd }}</td>
@@ -282,11 +282,11 @@ function fmtDate(d: string) {
               <div v-for="side in sides" :key="side">
                 <div class="font-semibold mb-2">{{ side === 'home' ? m.homeTeam : m.awayTeam }}</div>
                 <div v-if="insights.form[side].length" class="flex flex-col gap-1.5">
-                  <div v-for="(f, i) in insights.form[side]" :key="i" class="flex items-center gap-2 text-sm">
+                  <NuxtLink v-for="(f, i) in insights.form[side]" :key="i" :to="`/${selectedSlug}/matches/${f.matchId}`" class="flex items-center gap-2 text-sm hover:opacity-80">
                     <span class="w-5 h-5 rounded text-white text-xs flex items-center justify-center font-bold" :style="`background:${formColor(f.result)}`">{{ f.result }}</span>
                     <span style="color: var(--p-text-muted-color)">vs {{ f.opponent }}</span>
                     <span class="font-medium tabular-nums">{{ f.score }}</span>
-                  </div>
+                  </NuxtLink>
                 </div>
                 <div v-else class="text-sm" style="color: var(--p-text-muted-color)">{{ t('match.noResults') }}</div>
               </div>
@@ -298,11 +298,11 @@ function fmtDate(d: string) {
               <div v-for="side in sides" :key="side">
                 <div class="font-semibold mb-2">{{ side === 'home' ? m.homeTeam : m.awayTeam }}</div>
                 <div v-if="insights.next[side].length" class="flex flex-col gap-1.5 text-sm">
-                  <div v-for="(n, i) in insights.next[side]" :key="i" class="flex items-center gap-2">
+                  <NuxtLink v-for="(n, i) in insights.next[side]" :key="i" :to="`/${selectedSlug}/matches/${n.matchId}`" class="flex items-center gap-2 hover:opacity-80">
                     <span style="color: var(--p-text-muted-color)">{{ fmtDate(n.kickoffTime) }}</span>
                     <span style="color: var(--p-text-muted-color)">vs</span>
                     <img v-if="flagUrl(n.opponentCode)" :src="flagUrl(n.opponentCode) || ''" class="w-4 h-4 rounded" alt="" >{{ n.opponent }}
-                  </div>
+                  </NuxtLink>
                 </div>
                 <div v-else class="text-sm" style="color: var(--p-text-muted-color)">{{ t('match.noUpcoming') }}</div>
               </div>
@@ -311,10 +311,10 @@ function fmtDate(d: string) {
 
           <TabPanel v-if="insights.headToHead.length" value="h2h">
             <div class="flex flex-col text-sm">
-              <div v-for="(h, i) in insights.headToHead" :key="i" class="flex items-center justify-between border-t py-2" style="border-color: var(--p-content-border-color)">
+              <NuxtLink v-for="(h, i) in insights.headToHead" :key="i" :to="`/${selectedSlug}/matches/${h.matchId}`" class="flex items-center justify-between border-t py-2 hover:opacity-80" style="border-color: var(--p-content-border-color)">
                 <span class="font-medium">{{ h.homeTeam }} {{ h.homeScore }}–{{ h.awayScore }}<template v-if="pensResult(h)"> ({{ pensResult(h) }} {{ t('match.pens') }})</template> {{ h.awayTeam }}</span>
                 <span style="color: var(--p-text-muted-color)">{{ fmtDate(h.kickoffTime) }}</span>
-              </div>
+              </NuxtLink>
             </div>
           </TabPanel>
 
