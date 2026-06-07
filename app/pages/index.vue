@@ -25,18 +25,54 @@ const tiers = [
   { pts: '1', key: 'outcome' },
   { pts: '0', key: 'miss' },
 ]
+
+// Banner intro: scroll-scrubbed from screen-centered card (page dimmed) to the
+// docked full-bleed strip. The wrapper reserves SCRUB px of scroll for the move.
+const SCRUB = 420
+const bannerP = ref(0) // 0 = centered intro, 1 = docked
+function onBannerScroll() {
+  bannerP.value = Math.min(1, Math.max(0, window.scrollY / SCRUB))
+}
+onMounted(() => {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    bannerP.value = 1
+    return
+  }
+  onBannerScroll()
+  window.addEventListener('scroll', onBannerScroll, { passive: true })
+})
+onBeforeUnmount(() => window.removeEventListener('scroll', onBannerScroll))
+
+const bannerT = computed(() => 1 - bannerP.value)
+const bannerStyle = computed(() => {
+  const t = bannerT.value
+  const w = 100 - 12 * t // 88vw centered → 100vw docked
+  return {
+    width: `${w.toFixed(2)}vw`,
+    height: `min(${(w * 0.3023).toFixed(2)}vw, 40vh)`,
+    transform: `translateY(calc(${t.toFixed(4)} * (50vh - 50% - 88px)))`,
+    borderRadius: `${(30 * t).toFixed(1)}px`,
+    boxShadow: `0 30px 90px rgba(8, 6, 24, ${(0.55 * t).toFixed(3)})`,
+    background: "url('/brand/banner-wide.svg') center / cover no-repeat",
+  }
+})
 </script>
 
 <template>
   <div class="flex flex-col gap-20 sm:gap-28 pb-12">
-    <!-- Full-bleed brand banner, glued under the header. Rendered as a background
-         (not <img> + object-cover) so the SVG is rasterized at painted size — crisp. -->
-    <div
-      class="relative left-1/2 -translate-x-1/2 w-screen -mt-6 -mb-8 sm:-mb-12 h-[min(30.2vw,40vh)]"
-      style="background: url('/brand/banner-wide.svg') center / cover no-repeat"
-      role="img"
-      aria-label="Nostragoalus — the football oracle"
-    />
+    <!-- Banner intro: sticky while the first SCRUB px of scroll animate it from
+         screen-centered (page dimmed behind) to the docked full-bleed strip. -->
+    <div class="relative left-1/2 -translate-x-1/2 w-screen -mt-6 -mb-8 sm:-mb-12" :style="{ height: `calc(min(30.2vw, 40vh) + ${SCRUB}px)` }">
+      <div class="sticky top-16 z-40 flex justify-center">
+        <div
+          class="overflow-hidden"
+          :style="bannerStyle"
+          role="img"
+          aria-label="Nostragoalus — the football oracle"
+        />
+      </div>
+    </div>
+    <div v-if="bannerT > 0.01" class="fixed inset-0 z-30 pointer-events-none" :style="{ background: '#0b0a18', opacity: (0.6 * bannerT).toFixed(3) }" />
 
     <!-- Hero -->
     <section class="text-center flex flex-col items-center gap-6">
