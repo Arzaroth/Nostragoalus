@@ -14,13 +14,7 @@ const { data } = await useFetch<{ user: { id: string; name: string; image: strin
       <i class="pi pi-arrow-left" /> {{ t('leaderboard.title') }}
     </NuxtLink>
     <div class="flex items-center gap-3 mt-3 mb-1">
-      <Avatar
-        :image="data.user.image || undefined"
-        :label="data.user.image ? undefined : (data.user.name || '?').charAt(0).toUpperCase()"
-        shape="circle"
-        size="large"
-        class="!bg-[var(--p-primary-color)] !text-[var(--p-primary-contrast-color)] font-bold overflow-hidden shrink-0"
-      />
+      <Avatar :image="data.user.image || '/brand/avatar.svg'" shape="circle" size="large" class="overflow-hidden shrink-0" />
       <h1 class="text-2xl font-bold">{{ data.user.name }}</h1>
     </div>
     <p class="text-sm mb-5" style="color: var(--p-text-muted-color)">{{ t('predictions.publicNote') }}</p>

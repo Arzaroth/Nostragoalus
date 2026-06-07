@@ -137,14 +137,7 @@ async function confirmDelete() {
         <div class="md:col-span-2 flex flex-col gap-4">
           <div class="flex items-center gap-4">
             <div class="relative shrink-0">
-              <Avatar v-if="avatarUrl" :image="avatarUrl" size="xlarge" shape="circle" />
-              <Avatar
-                v-else
-                :label="(displayName || '?').charAt(0).toUpperCase()"
-                size="xlarge"
-                shape="circle"
-                class="!bg-[var(--p-primary-color)] !text-[var(--p-primary-contrast-color)] font-bold"
-              />
+              <Avatar :image="avatarUrl || '/brand/avatar.svg'" size="xlarge" shape="circle" class="overflow-hidden" />
               <button
                 type="button"
                 class="absolute -bottom-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center shadow-md cursor-pointer"

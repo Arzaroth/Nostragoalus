@@ -45,12 +45,7 @@ function medal(rank: number) {
             {{ r.movement > 0 ? '▲' : '▼' }}{{ Math.abs(r.movement) }}
           </div>
         </div>
-        <Avatar
-          :label="r.image ? undefined : (r.displayName || '?').charAt(0).toUpperCase()"
-          :image="r.image || undefined"
-          shape="circle"
-          class="!bg-[var(--p-primary-color)] !text-[var(--p-primary-contrast-color)] font-bold shrink-0 overflow-hidden"
-        />
+        <Avatar :image="r.image || '/brand/avatar.svg'" shape="circle" class="shrink-0 overflow-hidden" />
         <div class="flex-1 min-w-0">
           <div class="font-semibold truncate">
             {{ r.displayName }}

@@ -73,10 +73,9 @@ async function onSignOut() {
             <template v-if="session && session.data">
               <button type="button" class="rounded-full shrink-0" :aria-label="t('account.title')" @click="(e) => userMenu.toggle(e)">
                 <Avatar
-                  :label="session.data.user.image ? undefined : (session.data.user.name || '?').charAt(0).toUpperCase()"
-                  :image="session.data.user.image || undefined"
+                  :image="session.data.user.image || '/brand/avatar.svg'"
                   shape="circle"
-                  class="!bg-[var(--p-primary-color)] !text-[var(--p-primary-contrast-color)] font-bold cursor-pointer"
+                  class="cursor-pointer overflow-hidden"
                 />
               </button>
               <Popover ref="userMenu">
