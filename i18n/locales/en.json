@@ -33,6 +33,38 @@
     "getStarted": "Get started",
     "goToMatches": "Go to matches"
   },
+  "landing": {
+    "badge": "Live for the 2026 World Cup",
+    "heroA": "Predict every match.",
+    "heroB": "Outsmart your friends.",
+    "sub": "Nostragoalus turns football tournaments into a prediction game — call the scores, earn points for how close you get, and climb the leaderboard.",
+    "browse": "Browse fixtures",
+    "featuresTitle": "Everything you need to play",
+    "featuresSub": "From closeness scoring to live brackets and an interactive world map.",
+    "f": {
+      "scoring": { "t": "Closeness scoring", "d": "Points scale with accuracy — nail the exact score, the goal difference, or just the right outcome." },
+      "joker": { "t": "×2 Joker", "d": "Double the points on one match per round when you're feeling confident." },
+      "champion": { "t": "Champion pick", "d": "Call the tournament winner for a season-long bonus, locked at the first kickoff." },
+      "live": { "t": "Live scores", "d": "Scores update in real time over WebSockets as the matches play out." },
+      "bracket": { "t": "Knockout bracket", "d": "Follow the road to the final on a clean, two-sided bracket." },
+      "map": { "t": "Interactive map", "d": "Pick a country on a world map for its squad, form, standings and next match." },
+      "stats": { "t": "Deep match stats", "d": "Possession, cards, attendance, goal timeline and each team's top scorer & passer." },
+      "ranking": { "t": "Rankings", "d": "Compete per competition or on the all-time global leaderboard." },
+      "competitions": { "t": "Multiple competitions", "d": "World Cup 2026, World Cup 2022 and UEFA Euro 2024 — switch in a click." }
+    },
+    "scoringTitle": "Simple, skill-based scoring",
+    "scoringSub": "Scored on the 90-minute result. The closer you are, the more you earn.",
+    "tier": { "exact": "Exact score", "diff": "Goal difference", "outcome": "Correct outcome", "miss": "Miss" },
+    "bonus": "Rarity bonus for bold calls",
+    "jokerPill": "One ×2 joker per round",
+    "championPill": "Champion-pick bonus",
+    "compsTitle": "Pick your competition",
+    "compsSub": "Jump straight into the action.",
+    "viewComp": "View fixtures",
+    "ctaTitle": "Ready to make your picks?",
+    "ctaSub": "Create an account, invite your friends, and see who really knows their football.",
+    "footer": "Predict. Score. Win."
+  },
   "matches": {
     "title": "Fixtures",
     "empty": "No fixtures yet — import them from the admin page.",

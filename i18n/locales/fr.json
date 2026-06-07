@@ -33,6 +33,38 @@
     "getStarted": "Commencer",
     "goToMatches": "Voir les matchs"
   },
+  "landing": {
+    "badge": "En direct pour la Coupe du Monde 2026",
+    "heroA": "Pronostiquez chaque match.",
+    "heroB": "Devancez vos amis.",
+    "sub": "Nostragoalus transforme les tournois de foot en jeu de pronostics — pronostiquez les scores, marquez selon votre précision et grimpez au classement.",
+    "browse": "Voir les matchs",
+    "featuresTitle": "Tout ce qu'il faut pour jouer",
+    "featuresSub": "Du score à la précision aux tableaux en direct et à la carte interactive.",
+    "f": {
+      "scoring": { "t": "Score à la précision", "d": "Les points dépendent de votre précision — score exact, différence de buts ou simplement le bon résultat." },
+      "joker": { "t": "Joker ×2", "d": "Doublez les points sur un match par tour quand vous êtes sûr de vous." },
+      "champion": { "t": "Vainqueur", "d": "Désignez le vainqueur du tournoi pour un bonus, verrouillé au premier coup d'envoi." },
+      "live": { "t": "Scores en direct", "d": "Les scores se mettent à jour en temps réel via WebSocket pendant les matchs." },
+      "bracket": { "t": "Tableau final", "d": "Suivez la route vers la finale sur un tableau à deux côtés." },
+      "map": { "t": "Carte interactive", "d": "Cliquez sur un pays pour son effectif, sa forme, son classement et son prochain match." },
+      "stats": { "t": "Stats détaillées", "d": "Possession, cartons, affluence, chronologie des buts et meilleur buteur/passeur de chaque équipe." },
+      "ranking": { "t": "Classements", "d": "Affrontez-vous par compétition ou au classement global de tous les temps." },
+      "competitions": { "t": "Plusieurs compétitions", "d": "Coupe du Monde 2026, 2022 et Euro 2024 — changez en un clic." }
+    },
+    "scoringTitle": "Un score simple, basé sur le talent",
+    "scoringSub": "Compté sur le résultat à 90 minutes. Plus vous êtes proche, plus vous marquez.",
+    "tier": { "exact": "Score exact", "diff": "Différence de buts", "outcome": "Bon résultat", "miss": "Raté" },
+    "bonus": "Bonus de rareté pour les pronos audacieux",
+    "jokerPill": "Un joker ×2 par tour",
+    "championPill": "Bonus vainqueur",
+    "compsTitle": "Choisissez votre compétition",
+    "compsSub": "Plongez directement dans l'action.",
+    "viewComp": "Voir les matchs",
+    "ctaTitle": "Prêt à faire vos pronos ?",
+    "ctaSub": "Créez un compte, invitez vos amis et voyez qui s'y connaît vraiment en foot.",
+    "footer": "Pronostiquez. Marquez. Gagnez."
+  },
   "matches": {
     "title": "Calendrier",
     "empty": "Aucun match — importez-les depuis la page admin.",
