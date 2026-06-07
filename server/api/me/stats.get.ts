@@ -26,3 +26,32 @@ export default defineEventHandler(async (event) => {
     },
   }
 })
+
+defineRouteMeta({
+  openAPI: {
+    "tags": [
+      "Account"
+    ],
+    "summary": "My stats",
+    "description": "Points, rank, exact-score count and joker usage for the signed-in user.",
+    "parameters": [
+      {
+        "in": "query",
+        "name": "competition",
+        "required": false,
+        "description": "Competition slug (e.g. 'world-cup-2026'). Defaults to the current tournament.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Personal stats."
+      },
+      "401": {
+        "description": "Not signed in."
+      }
+    }
+  },
+})

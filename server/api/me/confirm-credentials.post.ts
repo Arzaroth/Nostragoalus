@@ -35,3 +35,43 @@ export default defineEventHandler(async (event) => {
   setCookie(event, 'ng_reauth', issueReauth(sessionUser.id), { httpOnly: true, sameSite: 'lax', path: '/', maxAge: 300 })
   return { valid: true }
 })
+
+defineRouteMeta({
+  openAPI: {
+    "tags": [
+      "Account"
+    ],
+    "summary": "Confirm credentials (sudo)",
+    "description": "Re-verify password (and TOTP when 2FA is on) to open a 5-minute re-auth window, required for sensitive actions like registering a passkey.",
+    "requestBody": {
+      "required": true,
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "properties": {
+              "password": {
+                "type": "string"
+              },
+              "code": {
+                "type": "string",
+                "description": "6-digit TOTP, required when 2FA is enabled."
+              }
+            },
+            "required": [
+              "password"
+            ]
+          }
+        }
+      }
+    },
+    "responses": {
+      "200": {
+        "description": "{valid: boolean}; sets the re-auth cookie when valid."
+      },
+      "401": {
+        "description": "Not signed in."
+      }
+    }
+  },
+})

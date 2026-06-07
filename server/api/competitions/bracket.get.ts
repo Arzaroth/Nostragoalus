@@ -38,3 +38,29 @@ export default defineEventHandler(async (event) => {
     return { bracket: null }
   }
 })
+
+defineRouteMeta({
+  openAPI: {
+    "tags": [
+      "Competitions"
+    ],
+    "summary": "Knockout bracket",
+    "description": "The knockout tree (rounds, feeders ordered under their parents) plus the champion once decided. Null while no knockout structure exists.",
+    "parameters": [
+      {
+        "in": "query",
+        "name": "competition",
+        "required": false,
+        "description": "Competition slug (e.g. 'world-cup-2026'). Defaults to the current tournament.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Bracket rounds and winner, or null."
+      }
+    }
+  },
+})

@@ -24,3 +24,38 @@ export default defineEventHandler(async (event) => {
     rows: rows.map((r) => ({ ...r, movement: movements.get(r.userId) ?? null })),
   }
 })
+
+defineRouteMeta({
+  openAPI: {
+    "tags": [
+      "Leaderboard"
+    ],
+    "summary": "Rankings",
+    "description": "Per-competition or global leaderboard with movement arrows derived from rank snapshots.",
+    "parameters": [
+      {
+        "in": "query",
+        "name": "competition",
+        "required": false,
+        "description": "Competition slug (e.g. 'world-cup-2026'). Defaults to the current tournament.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "in": "query",
+        "name": "global",
+        "required": false,
+        "description": "Set to 1 for the all-competition leaderboard.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Ranked players with points, exact counts and movement."
+      }
+    }
+  },
+})

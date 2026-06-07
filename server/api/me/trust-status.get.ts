@@ -6,3 +6,21 @@ export default defineEventHandler(async (event) => {
   const trusted = !!(getCookie(event, 'better-auth.trust_device') || getCookie(event, '__Secure-better-auth.trust_device'))
   return { trusted }
 })
+
+defineRouteMeta({
+  openAPI: {
+    "tags": [
+      "Account"
+    ],
+    "summary": "Device trust status",
+    "description": "Whether this browser currently holds a 2FA trust-device cookie.",
+    "responses": {
+      "200": {
+        "description": "{trusted: boolean}."
+      },
+      "401": {
+        "description": "Not signed in."
+      }
+    }
+  },
+})

@@ -22,3 +22,32 @@ export default defineEventHandler(async (event) => {
     locked: !!lock && Date.now() >= new Date(lock).getTime(),
   }
 })
+
+defineRouteMeta({
+  openAPI: {
+    "tags": [
+      "Predictions"
+    ],
+    "summary": "My champion pick",
+    "description": "The tournament-winner pick and whether it is still editable (locks at the first kickoff).",
+    "parameters": [
+      {
+        "in": "query",
+        "name": "competition",
+        "required": false,
+        "description": "Competition slug (e.g. 'world-cup-2026'). Defaults to the current tournament.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Champion pick state."
+      },
+      "401": {
+        "description": "Not signed in."
+      }
+    }
+  },
+})

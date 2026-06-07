@@ -9,3 +9,35 @@ export default defineEventHandler(async (event) => {
   await db.delete(ssoProvider).where(eq(ssoProvider.providerId, id))
   return { ok: true }
 })
+
+defineRouteMeta({
+  openAPI: {
+    "tags": [
+      "Admin (internal)"
+    ],
+    "summary": "Remove an SSO provider",
+    "description": "Internal.",
+    "parameters": [
+      {
+        "in": "path",
+        "name": "providerId",
+        "required": true,
+        "description": "Provider id.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Removed."
+      },
+      "401": {
+        "description": "Not signed in."
+      },
+      "403": {
+        "description": "Admin session required."
+      }
+    }
+  },
+})

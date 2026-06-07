@@ -41,3 +41,24 @@ export default defineEventHandler(async (event) => {
   return result
   })
 })
+
+defineRouteMeta({
+  openAPI: {
+    "tags": [
+      "Admin (internal)"
+    ],
+    "summary": "Import fixtures",
+    "description": "Internal: one-shot import of all fixtures for every competition from their providers.",
+    "responses": {
+      "200": {
+        "description": "Per-competition import counts."
+      },
+      "401": {
+        "description": "Not signed in."
+      },
+      "403": {
+        "description": "Admin session required."
+      }
+    }
+  },
+})

@@ -55,3 +55,29 @@ export default defineEventHandler(async (event) => {
 
   return { scorers: [] }
 })
+
+defineRouteMeta({
+  openAPI: {
+    "tags": [
+      "Competitions"
+    ],
+    "summary": "Player rankings",
+    "description": "Per-player goals and assists for the competition, from official sources (FIFA player stats or UEFA rankings).",
+    "parameters": [
+      {
+        "in": "query",
+        "name": "competition",
+        "required": false,
+        "description": "Competition slug (e.g. 'world-cup-2026'). Defaults to the current tournament.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Array of {playerName, teamName, teamCode, goals, assists}."
+      }
+    }
+  },
+})

@@ -14,3 +14,18 @@ export default defineEventHandler(async (event) => {
   }
   return { isAdmin: (u as { role?: string }).role === 'admin' || isEnvAdmin(u) }
 })
+
+defineRouteMeta({
+  openAPI: {
+    "tags": [
+      "Admin (internal)"
+    ],
+    "summary": "Admin status",
+    "description": "Whether the current session belongs to an admin. Internal: drives the admin UI.",
+    "responses": {
+      "200": {
+        "description": "{admin: boolean}."
+      }
+    }
+  },
+})

@@ -15,3 +15,47 @@ export default defineEventHandler(async (event) => {
   const { result } = await runTask(name)
   return { task: name, result }
 })
+
+defineRouteMeta({
+  openAPI: {
+    "tags": [
+      "Admin (internal)"
+    ],
+    "summary": "Run a data task",
+    "description": "Internal: trigger fixtures refresh, live poll or finalize on demand.",
+    "requestBody": {
+      "required": true,
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "properties": {
+              "task": {
+                "type": "string",
+                "enum": [
+                  "fixtures",
+                  "live",
+                  "finalize"
+                ]
+              }
+            },
+            "required": [
+              "task"
+            ]
+          }
+        }
+      }
+    },
+    "responses": {
+      "200": {
+        "description": "Task result."
+      },
+      "401": {
+        "description": "Not signed in."
+      },
+      "403": {
+        "description": "Admin session required."
+      }
+    }
+  },
+})

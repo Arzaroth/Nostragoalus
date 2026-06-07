@@ -15,3 +15,38 @@ export default defineEventHandler(async (event) => {
     predictions: await getUserPublicPredictions(db, id, new Date(), competition?.id),
   }
 })
+
+defineRouteMeta({
+  openAPI: {
+    "tags": [
+      "Users"
+    ],
+    "summary": "A player's picks",
+    "description": "Another player's predictions - only for matches that have kicked off (pending picks stay private).",
+    "parameters": [
+      {
+        "in": "path",
+        "name": "id",
+        "required": true,
+        "description": "User id.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "in": "query",
+        "name": "competition",
+        "required": false,
+        "description": "Competition slug (e.g. 'world-cup-2026'). Defaults to the current tournament.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Locked predictions with points."
+      }
+    }
+  },
+})

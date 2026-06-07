@@ -22,3 +22,24 @@ export default defineEventHandler(async (event) => {
     })),
   }
 })
+
+defineRouteMeta({
+  openAPI: {
+    "tags": [
+      "Admin (internal)"
+    ],
+    "summary": "List SSO providers",
+    "description": "Internal: registered SSO providers (secrets stay encrypted at rest).",
+    "responses": {
+      "200": {
+        "description": "Provider list."
+      },
+      "401": {
+        "description": "Not signed in."
+      },
+      "403": {
+        "description": "Admin session required."
+      }
+    }
+  },
+})

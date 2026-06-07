@@ -155,3 +155,47 @@ export default defineEventHandler(async (event) => {
     competitions,
   }
 })
+
+defineRouteMeta({
+  openAPI: {
+    "tags": [
+      "Teams"
+    ],
+    "summary": "Team page data",
+    "description": "Squad with positions and per-player goal involvement, coach, season stats, matches, group standings and the competitions the team appears in. lite=1 skips the expensive squad/stats sweep (used by the map).",
+    "parameters": [
+      {
+        "in": "path",
+        "name": "code",
+        "required": true,
+        "description": "3-letter team code.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "in": "query",
+        "name": "competition",
+        "required": false,
+        "description": "Competition slug (e.g. 'world-cup-2026'). Defaults to the current tournament.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "in": "query",
+        "name": "lite",
+        "required": false,
+        "description": "1 to skip squad/coach/season stats.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Team bundle."
+      }
+    }
+  },
+})

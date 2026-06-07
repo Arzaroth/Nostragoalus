@@ -33,7 +33,7 @@ const stack: { group: string; items: StackItem[] }[] = [
       { name: 'TanStack Query', logo: 'https://tanstack.com/favicon-32x32.png', desc: 'Server-state caching, mutations, invalidation', url: 'https://tanstack.com/query', license: 'MIT', licenseUrl: 'https://github.com/TanStack/query/blob/main/LICENSE' },
       { name: 'Motion for Vue', logo: 'framer', desc: 'The scroll-driven banner choreography', url: 'https://motion.dev', license: 'MIT', licenseUrl: 'https://github.com/motiondivision/motion/blob/main/LICENSE.md' },
       { name: 'VueUse', logo: 'vueuse', desc: 'Composition utilities: clipboard, QR, timers, media queries', url: 'https://vueuse.org', license: 'MIT', licenseUrl: 'https://github.com/vueuse/vueuse/blob/main/LICENSE' },
-      { name: 'Nuxt I18n', icon: 'pi pi-globe', desc: 'The four-language catalog (vue-i18n under the hood)', url: 'https://i18n.nuxtjs.org', license: 'MIT', licenseUrl: 'https://github.com/nuxt-modules/i18n/blob/main/LICENSE' },
+      { name: 'Nuxt I18n', logo: 'https://i18n.nuxtjs.org/icon.svg', desc: 'The four-language catalog (vue-i18n under the hood)', url: 'https://i18n.nuxtjs.org', license: 'MIT', licenseUrl: 'https://github.com/nuxt-modules/i18n/blob/main/LICENSE' },
       { name: 'Leaflet', logo: 'leaflet', desc: 'The interactive world map', url: 'https://leafletjs.com', license: 'BSD-2-Clause', licenseUrl: 'https://github.com/Leaflet/Leaflet/blob/main/LICENSE' },
     ],
   },
@@ -43,9 +43,9 @@ const stack: { group: string; items: StackItem[] }[] = [
       { name: 'Nitro / h3', logo: 'https://nitro.build/icon.svg', desc: 'The server engine: API routes, tasks, WebSockets', url: 'https://nitro.build', license: 'MIT', licenseUrl: 'https://github.com/nitrojs/nitro/blob/main/LICENSE' },
       { name: 'Drizzle ORM', logo: 'drizzle', desc: 'Typed SQL, schema and migrations', url: 'https://orm.drizzle.team', license: 'Apache-2.0', licenseUrl: 'https://github.com/drizzle-team/drizzle-orm/blob/main/LICENSE' },
       { name: 'PostgreSQL', logo: 'postgresql', desc: 'The database', url: 'https://www.postgresql.org', license: 'PostgreSQL', licenseUrl: 'https://www.postgresql.org/about/licence/' },
-      { name: 'node-postgres', icon: 'pi pi-database', desc: 'The pg driver wiring Drizzle to the database', url: 'https://node-postgres.com', license: 'MIT', licenseUrl: 'https://github.com/brianc/node-postgres/blob/master/LICENSE' },
+      { name: 'node-postgres', logo: 'https://node-postgres.com/favicon.ico', desc: 'The pg driver wiring Drizzle to the database', url: 'https://node-postgres.com', license: 'MIT', licenseUrl: 'https://github.com/brianc/node-postgres/blob/master/LICENSE' },
       { name: 'better-auth', logo: 'betterauth', logoColor: '8b8b8b', desc: 'Auth: sessions, 2FA, passkeys, SSO, admin', url: 'https://better-auth.com', license: 'MIT', licenseUrl: 'https://github.com/better-auth/better-auth/blob/main/LICENSE.md' },
-      { name: 'Nodemailer', icon: 'pi pi-envelope', desc: 'SMTP delivery for email codes', url: 'https://nodemailer.com', license: 'MIT-0', licenseUrl: 'https://github.com/nodemailer/nodemailer/blob/master/LICENSE' },
+      { name: 'Nodemailer', logo: 'https://nodemailer.com/img/favicon.ico', desc: 'SMTP delivery for email codes', url: 'https://nodemailer.com', license: 'MIT-0', licenseUrl: 'https://github.com/nodemailer/nodemailer/blob/master/LICENSE' },
       { name: 'node-qrcode', icon: 'pi pi-qrcode', desc: 'The 2FA enrollment QR codes', url: 'https://github.com/soldair/node-qrcode', license: 'MIT', licenseUrl: 'https://github.com/soldair/node-qrcode/blob/master/license' },
     ],
   },
@@ -57,7 +57,7 @@ const stack: { group: string; items: StackItem[] }[] = [
       { name: 'Vite', logo: 'vite', desc: 'Dev server and bundling under Nuxt', url: 'https://vite.dev', license: 'MIT', licenseUrl: 'https://github.com/vitejs/vite/blob/main/LICENSE' },
       { name: 'Vitest', logo: 'vitest', desc: 'The test runner behind the 98% coverage gate', url: 'https://vitest.dev', license: 'MIT', licenseUrl: 'https://github.com/vitest-dev/vitest/blob/main/LICENSE' },
       { name: 'Docker', logo: 'docker', desc: 'Containers for the app, database and mail catcher', url: 'https://www.docker.com', license: 'Apache-2.0', licenseUrl: 'https://github.com/moby/moby/blob/master/LICENSE' },
-      { name: 'maildev', icon: 'pi pi-inbox', desc: 'Local SMTP catcher for dev email flows', url: 'https://maildev.github.io/maildev/', license: 'MIT', licenseUrl: 'https://github.com/maildev/maildev/blob/master/LICENSE' },
+      { name: 'maildev', logo: 'https://maildev.github.io/maildev/favicon.ico', desc: 'Local SMTP catcher for dev email flows', url: 'https://maildev.github.io/maildev/', license: 'MIT', licenseUrl: 'https://github.com/maildev/maildev/blob/master/LICENSE' },
       { name: 'mise', logo: 'https://mise.jdx.dev/logo-light.svg', logoDark: 'https://mise.jdx.dev/logo-dark.svg', desc: 'Task shortcuts for the compose stacks', url: 'https://mise.jdx.dev', license: 'MIT', licenseUrl: 'https://github.com/jdx/mise/blob/main/LICENSE' },
       { name: 'PGlite', logo: 'postgresql', desc: 'In-memory Postgres powering hermetic tests', url: 'https://pglite.dev', license: 'Apache-2.0', licenseUrl: 'https://github.com/electric-sql/pglite/blob/main/LICENSE' },
       { name: 'Bun', logo: 'https://bun.com/logo.svg', desc: 'Alternative runtime - the production bundle runs on it too', url: 'https://bun.sh', license: 'MIT', licenseUrl: 'https://github.com/oven-sh/bun/blob/main/LICENSE.md' },
@@ -169,5 +169,7 @@ const changelog = computed<ChangelogVersion[]>(() => {
         </div>
       </div>
     </section>
+
+    <AppFooter />
   </div>
 </template>

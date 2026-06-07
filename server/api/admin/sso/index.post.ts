@@ -73,3 +73,24 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: (error as Error)?.message || 'Failed to register provider' })
   }
 })
+
+defineRouteMeta({
+  openAPI: {
+    "tags": [
+      "Admin (internal)"
+    ],
+    "summary": "Register an SSO provider",
+    "description": "Internal: add an OIDC/SAML/Google provider at runtime. Secrets are envelope-encrypted before storage.",
+    "responses": {
+      "200": {
+        "description": "Created provider."
+      },
+      "401": {
+        "description": "Not signed in."
+      },
+      "403": {
+        "description": "Admin session required."
+      }
+    }
+  },
+})

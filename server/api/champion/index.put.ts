@@ -22,3 +22,46 @@ export default defineEventHandler(async (event) => {
     throw toHttpError(error)
   }
 })
+
+defineRouteMeta({
+  openAPI: {
+    "tags": [
+      "Predictions"
+    ],
+    "summary": "Pick the champion",
+    "description": "Set the tournament-winner pick. Locked from the first kickoff of the competition.",
+    "requestBody": {
+      "required": true,
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "properties": {
+              "teamCode": {
+                "type": "string",
+                "example": "FRA"
+              },
+              "competition": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "teamCode"
+            ]
+          }
+        }
+      }
+    },
+    "responses": {
+      "200": {
+        "description": "Stored pick."
+      },
+      "401": {
+        "description": "Not signed in."
+      },
+      "409": {
+        "description": "Tournament already started."
+      }
+    }
+  },
+})

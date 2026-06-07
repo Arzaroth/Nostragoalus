@@ -1,6 +1,6 @@
 import { authClient } from '../../lib/auth-client'
 
-const PUBLIC_ROUTES = ['/', '/login', '/signup', '/two-factor', '/about']
+const PUBLIC_ROUTES = ['/', '/login', '/signup', '/two-factor', '/about', '/license']
 
 export default defineNuxtRouteMiddleware(async (to) => {
   if (import.meta.server) return

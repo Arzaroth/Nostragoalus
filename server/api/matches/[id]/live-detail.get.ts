@@ -51,3 +51,29 @@ export default defineEventHandler(async (event) => {
     return { detail: null }
   }
 })
+
+defineRouteMeta({
+  openAPI: {
+    "tags": [
+      "Matches"
+    ],
+    "summary": "Live match detail",
+    "description": "Upstream detail: goals with assists, bookings (incl. touchline cards), substitutions, attendance, venue and per-team match stats. Cached 5 minutes while live, for the process lifetime once finished.",
+    "parameters": [
+      {
+        "in": "path",
+        "name": "id",
+        "required": true,
+        "description": "Internal match id (UUID).",
+        "schema": {
+          "type": "string"
+        }
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Detail payload or null when the provider has nothing."
+      }
+    }
+  },
+})

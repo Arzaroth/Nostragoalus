@@ -212,13 +212,6 @@ onMounted(() => {
       </NuxtLink>
     </section>
 
-    <footer class="text-center text-sm flex flex-col gap-2" style="color: var(--p-text-muted-color)">
-      <div>© 2026 {{ config.public.appName }} · {{ t('landing.footer') }} {{ t('footer.builtWith') }}</div>
-      <div class="flex justify-center gap-4 text-xs">
-        <NuxtLink to="/about" class="hover:underline">{{ t('about.title') }}</NuxtLink>
-        <a href="/_docs/api" target="_blank" rel="noopener" class="hover:underline">API</a>
-        <span>WTFPL</span>
-      </div>
-    </footer>
+    <AppFooter />
   </div>
 </template>

@@ -18,3 +18,42 @@ export default defineEventHandler(async (event) => {
   const secret = await symmetricDecrypt({ key, data: rows[0].secret })
   return { valid: verifyTotpCode(secret, code, Date.now(), 1, 'raw') }
 })
+
+defineRouteMeta({
+  openAPI: {
+    "tags": [
+      "Account"
+    ],
+    "summary": "Verify a TOTP code",
+    "description": "Check a 6-digit authenticator code against the enrolled secret (used before disabling 2FA).",
+    "requestBody": {
+      "required": true,
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          }
+        }
+      }
+    },
+    "responses": {
+      "200": {
+        "description": "{valid: boolean}."
+      },
+      "401": {
+        "description": "Not signed in."
+      },
+      "400": {
+        "description": "2FA not enabled."
+      }
+    }
+  },
+})

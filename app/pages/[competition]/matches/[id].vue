@@ -213,20 +213,22 @@ function fmtDate(d: string) {
               <template v-if="e.kind === 'sub'"><span style="color: #22c55e">▲</span> {{ formatPlayerName(e.playerName) }} <span class="opacity-60">· {{ formatPlayerName(e.offName) }} <span style="color: #ef4444">▼</span></span> 🔄</template>
               <template v-else>
                 {{ formatPlayerName(e.playerName) }}<span v-if="e.kind === 'goal' && e.ownGoal"> (OG)</span><span v-if="e.kind === 'card' && e.coach" :title="t('match.coachCard')"> 📋</span>
+                <template v-if="e.kind === 'goal'">⚽</template>
+                <span v-else-if="e.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: #ef4444" /></span>
+                <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${e.card === 'RED' ? '#ef4444' : '#eab308'}`" />
               </template>
-              <template v-if="e.kind === 'goal'">⚽</template>
-              <span v-else-if="e.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: #ef4444" /></span>
-              <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${e.card === 'RED' ? '#ef4444' : '#eab308'}`" />
             </template>
           </span>
           <span class="tabular-nums text-center w-12 opacity-70">{{ e.minute }}</span>
           <span class="inline-flex items-center gap-1">
             <template v-if="e.side === 'AWAY'">
               <template v-if="e.kind === 'sub'">🔄 <span style="color: #22c55e">▲</span> {{ formatPlayerName(e.playerName) }} <span class="opacity-60">· {{ formatPlayerName(e.offName) }} <span style="color: #ef4444">▼</span></span></template>
-              <template v-if="e.kind === 'goal'">⚽</template>
-              <span v-else-if="e.kind === 'card' && e.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: #ef4444" /></span>
-              <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${e.card === 'RED' ? '#ef4444' : '#eab308'}`" />
-              {{ formatPlayerName(e.playerName) }}<span v-if="e.kind === 'goal' && e.ownGoal"> (OG)</span><span v-if="e.kind === 'card' && e.coach" :title="t('match.coachCard')"> 📋</span>
+              <template v-else>
+                <template v-if="e.kind === 'goal'">⚽</template>
+                <span v-else-if="e.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: #ef4444" /></span>
+                <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${e.card === 'RED' ? '#ef4444' : '#eab308'}`" />
+                {{ formatPlayerName(e.playerName) }}<span v-if="e.kind === 'goal' && e.ownGoal"> (OG)</span><span v-if="e.kind === 'card' && e.coach" :title="t('match.coachCard')"> 📋</span>
+              </template>
             </template>
           </span>
         </template>
