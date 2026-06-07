@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { motion, useReducedMotion, useScroll, useSpring, useTransform } from 'motion-v'
+
 const { t } = useI18n()
 const { session } = useAuth()
 const config = useRuntimeConfig()
@@ -26,53 +28,44 @@ const tiers = [
   { pts: '0', key: 'miss' },
 ]
 
-// Banner intro: scroll-scrubbed from screen-centered card (page dimmed) to the
-// docked full-bleed strip. The wrapper reserves SCRUB px of scroll for the move.
+// Banner intro: scroll-scrubbed (Motion for Vue) from a screen-centered card
+// over a dimmed page to the docked full-bleed strip. The wrapper reserves
+// SCRUB px of scroll for the move; a light spring smooths the scrub.
 const SCRUB = 420
-const bannerP = ref(0) // 0 = centered intro, 1 = docked
-function onBannerScroll() {
-  bannerP.value = Math.min(1, Math.max(0, window.scrollY / SCRUB))
-}
-onMounted(() => {
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    bannerP.value = 1
-    return
-  }
-  onBannerScroll()
-  window.addEventListener('scroll', onBannerScroll, { passive: true })
-})
-onBeforeUnmount(() => window.removeEventListener('scroll', onBannerScroll))
-
-const bannerT = computed(() => 1 - bannerP.value)
-const bannerStyle = computed(() => {
-  const t = bannerT.value
-  const w = 100 - 12 * t // 88vw centered → 100vw docked
-  return {
-    width: `${w.toFixed(2)}vw`,
-    height: `min(${(w * 0.3023).toFixed(2)}vw, 40vh)`,
-    transform: `translateY(calc(${t.toFixed(4)} * (50vh - 50% - 88px)))`,
-    borderRadius: `${(30 * t).toFixed(1)}px`,
-    boxShadow: `0 30px 90px rgba(8, 6, 24, ${(0.55 * t).toFixed(3)})`,
-    background: "url('/brand/banner-wide.svg') center / cover no-repeat",
-  }
-})
+const reduced = useReducedMotion()
+const { scrollY } = useScroll()
+const tRaw = useTransform(scrollY, [0, SCRUB], [1, 0]) // 1 = centered, 0 = docked
+const bt = useSpring(tRaw, { stiffness: 220, damping: 30 })
+const bWidth = useTransform(bt, (v) => `${(100 - 12 * v).toFixed(2)}vw`)
+const bHeight = useTransform(bt, (v) => `min(${((100 - 12 * v) * 0.3023).toFixed(2)}vw, 40vh)`)
+const bTransform = useTransform(bt, (v) => `translateY(calc(${v.toFixed(4)} * (50vh - 50% - 88px)))`)
+const bRadius = useTransform(bt, (v) => `${(30 * v).toFixed(1)}px`)
+const bShadow = useTransform(bt, (v) => `0 30px 90px rgba(8, 6, 24, ${(0.55 * v).toFixed(3)})`)
+const dimOpacity = useTransform(bt, (v) => 0.6 * v)
 </script>
 
 <template>
   <div class="flex flex-col gap-20 sm:gap-28 pb-12">
     <!-- Banner intro: sticky while the first SCRUB px of scroll animate it from
          screen-centered (page dimmed behind) to the docked full-bleed strip. -->
-    <div class="relative left-1/2 -translate-x-1/2 w-screen -mt-6 -mb-8 sm:-mb-12" :style="{ height: `calc(min(30.2vw, 40vh) + ${SCRUB}px)` }">
+    <div
+      class="relative left-1/2 -translate-x-1/2 w-screen -mt-6 -mb-8 sm:-mb-12"
+      :style="{ height: reduced ? 'min(30.2vw, 40vh)' : `calc(min(30.2vw, 40vh) + ${SCRUB}px)` }"
+    >
       <div class="sticky top-16 z-40 flex justify-center">
-        <div
+        <motion.div
+          v-if="!reduced"
           class="overflow-hidden"
-          :style="bannerStyle"
-          role="img"
-          aria-label="Nostragoalus — the football oracle"
-        />
+          :style="{ width: bWidth, height: bHeight, transform: bTransform, borderRadius: bRadius, boxShadow: bShadow }"
+        >
+          <img src="/brand/banner-wide.svg" alt="Nostragoalus — the football oracle" class="w-full h-full object-cover block" >
+        </motion.div>
+        <div v-else class="w-screen h-[min(30.2vw,40vh)]">
+          <img src="/brand/banner-wide.svg" alt="Nostragoalus — the football oracle" class="w-full h-full object-cover block" >
+        </div>
       </div>
     </div>
-    <div v-if="bannerT > 0.01" class="fixed inset-0 z-30 pointer-events-none" :style="{ background: '#0b0a18', opacity: (0.6 * bannerT).toFixed(3) }" />
+    <motion.div v-if="!reduced" class="fixed inset-0 z-30 pointer-events-none" :style="{ background: '#0b0a18', opacity: dimOpacity }" />
 
     <!-- Hero -->
     <section class="text-center flex flex-col items-center gap-6">
