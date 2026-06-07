@@ -61,7 +61,12 @@ function teamCodeFor(side: 'home' | 'away') {
 }
 function teamPlayers(side: 'home' | 'away') {
   const code = teamCodeFor(side)
-  return code ? scorers.value.filter((s) => s.teamCode === code) : []
+  // Contributors only - a full roster of 0-0 rows is noise here.
+  return code
+    ? scorers.value
+        .filter((s) => s.teamCode === code && ((s.goals ?? 0) > 0 || (s.assists ?? 0) > 0))
+        .sort((a, b) => (b.goals ?? 0) - (a.goals ?? 0) || (b.assists ?? 0) - (a.assists ?? 0))
+    : []
 }
 function bestBy(side: 'home' | 'away', field: 'goals' | 'assists') {
   return teamPlayers(side)
@@ -335,7 +340,7 @@ function fmtDate(d: string) {
                   <div class="border-t mt-1 pt-2 flex flex-col gap-1" style="border-color: var(--p-content-border-color)">
                     <div v-for="(p, i) in teamPlayers(side)" :key="i" class="flex items-center justify-between gap-2">
                       <span class="truncate">{{ formatPlayerName(p.playerName) }}</span>
-                      <span class="tabular-nums shrink-0" style="color: var(--p-text-muted-color)">{{ p.goals }}⚽ · {{ p.assists }}👟</span>
+                      <span class="tabular-nums shrink-0" style="color: var(--p-text-muted-color)">{{ p.goals ?? 0 }}⚽ · {{ p.assists ?? 0 }}👟</span>
                     </div>
                   </div>
                 </div>
