@@ -3,7 +3,7 @@ import { decryptSecret, encryptSecret, isSealed } from './envelope'
 // The @better-auth/sso plugin stores provider config (incl. client secrets and
 // SAML keys) as JSON in the ssoProvider.oidcConfig / .samlConfig columns. This
 // wrapper envelope-encrypts those columns on write and decrypts them on read,
-// transparently — every other model passes straight through untouched.
+// transparently - every other model passes straight through untouched.
 
 const ENCRYPTED_MODEL = 'ssoProvider'
 const ENCRYPTED_FIELDS = ['oidcConfig', 'samlConfig'] as const
@@ -27,7 +27,7 @@ function openFields<T>(row: T): T {
         const parsed = JSON.parse(v)
         if (isSealed(parsed)) out[f] = decryptSecret(parsed)
       } catch {
-        // not JSON / not a sealed envelope — leave as-is (e.g. legacy plaintext)
+        // not JSON / not a sealed envelope - leave as-is (e.g. legacy plaintext)
       }
     }
   }

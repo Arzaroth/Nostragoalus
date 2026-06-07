@@ -136,7 +136,7 @@ export async function setJoker(db: AppDatabase, input: SetJokerInput, now: Date 
   if (preds.length === 0) throw new NotFoundError('prediction not found')
 
   if (input.isJoker) {
-    // One joker per round: move it from the current joker — but only if that match
+    // One joker per round: move it from the current joker - but only if that match
     // hasn't kicked off yet (a joker on a started match is already committed there).
     const current = await db
       .select({ id: prediction.id, kickoffTime: match.kickoffTime })

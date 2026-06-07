@@ -58,14 +58,14 @@
     "badge": "En direct pour la Coupe du Monde 2026",
     "heroA": "Pronostiquez chaque match.",
     "heroB": "Devancez vos amis.",
-    "sub": "Nostragoalus transforme les tournois de foot en jeu de pronostics — pronostiquez les scores, marquez selon votre précision et grimpez au classement.",
+    "sub": "Nostragoalus transforme les tournois de foot en jeu de pronostics - pronostiquez les scores, marquez selon votre précision et grimpez au classement.",
     "browse": "Voir les matchs",
     "featuresTitle": "Tout ce qu'il faut pour jouer",
     "featuresSub": "Du score à la précision aux tableaux en direct et à la carte interactive.",
     "f": {
       "scoring": {
         "t": "Score à la précision",
-        "d": "Les points dépendent de votre précision — score exact, différence de buts ou simplement le bon résultat."
+        "d": "Les points dépendent de votre précision - score exact, différence de buts ou simplement le bon résultat."
       },
       "joker": {
         "t": "Joker ×2",
@@ -97,7 +97,7 @@
       },
       "competitions": {
         "t": "Plusieurs compétitions",
-        "d": "Coupe du Monde 2026, 2022 et Euro 2024 — changez en un clic."
+        "d": "Coupe du Monde 2026, 2022 et Euro 2024 - changez en un clic."
       }
     },
     "scoringTitle": "Un score simple, basé sur le talent",
@@ -120,7 +120,7 @@
   },
   "matches": {
     "title": "Calendrier",
-    "empty": "Aucun match — importez-les depuis la page admin.",
+    "empty": "Aucun match - importez-les depuis la page admin.",
     "search": "Rechercher une équipe…",
     "noResults": "Aucun match trouvé."
   },
@@ -149,22 +149,22 @@
     "publicNote": "Seuls les pronostics des matchs déjà commencés sont affichés.",
     "joker": "Joker",
     "makeJoker": "Définir joker ×2",
-    "jokerError": "Impossible de déplacer le joker — un match a peut-être déjà commencé."
+    "jokerError": "Impossible de déplacer le joker - un match a peut-être déjà commencé."
   },
   "champion": {
     "title": "Votre vainqueur",
     "current": "Choix actuel :",
     "pick": "Choisissez le vainqueur",
     "hint": "Bonus si votre choix soulève le trophée · verrouillé au premier coup d'envoi.",
-    "noPick": "Aucun vainqueur choisi — verrouillé.",
-    "lockedIn": "Verrouillé — bonne chance !",
+    "noPick": "Aucun vainqueur choisi - verrouillé.",
+    "lockedIn": "Verrouillé - bonne chance !",
     "preview": "pas encore enregistré"
   },
   "leaderboard": {
     "title": "Classement",
     "thisCompetition": "Compétition",
     "global": "Global",
-    "empty": "Pas encore de points — les pronos sont comptés à la fin des matchs.",
+    "empty": "Pas encore de points - les pronos sont comptés à la fin des matchs.",
     "you": "(vous)",
     "exact": "exacts",
     "correct": "corrects",
@@ -232,7 +232,7 @@
     "updatePassword": "Modifier le mot de passe",
     "passwordChanged": "Mot de passe mis à jour.",
     "dangerTitle": "Suppression du compte",
-    "dangerHint": "La suppression de votre compte est irréversible — tous vos pronostics sont perdus.",
+    "dangerHint": "La suppression de votre compte est irréversible - tous vos pronostics sont perdus.",
     "deleteAccount": "Supprimer le compte",
     "confirmDeleteHint": "Saisissez votre mot de passe pour confirmer la suppression."
   },
@@ -250,7 +250,7 @@
       "entryPoint": "URL SSO de l'IdP",
       "cert": "Certificat de l'IdP",
       "idpMetadata": "Métadonnées XML de l'IdP",
-      "optionalXml": "Optionnel — collez le XML de métadonnées de l'IdP",
+      "optionalXml": "Optionnel - collez le XML de métadonnées de l'IdP",
       "add": "Ajouter le fournisseur",
       "added": "Fournisseur enregistré."
     },
@@ -269,7 +269,7 @@
       "import": "Importer les matchs",
       "importTip": "Récupère et stocke tous les matchs des compétitions actives (premier lancement).",
       "refresh": "Actualiser les matchs",
-      "refreshTip": "Re-synchronise les matchs depuis le fournisseur — complète les équipes qualifiées, sans jamais écraser un score terminé.",
+      "refreshTip": "Re-synchronise les matchs depuis le fournisseur - complète les équipes qualifiées, sans jamais écraser un score terminé.",
       "poll": "Scores en direct",
       "pollTip": "Récupère les scores en direct maintenant (s'exécute aussi automatiquement toutes les 2 minutes pendant les matchs).",
       "finalize": "Clôturer",
@@ -316,6 +316,7 @@
     "reveal": "Afficher la clé",
     "copy": "Copier",
     "copyCodes": "Copier les codes",
-    "download": "Télécharger .txt"
+    "download": "Télécharger .txt",
+    "disableCode": "Code actuel à 6 chiffres"
   }
 }

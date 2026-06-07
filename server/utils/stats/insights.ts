@@ -78,9 +78,9 @@ async function teamForm(db: AppDatabase, competitionId: string, team: string, li
       const pf = isHome ? r.penaltiesHome : r.penaltiesAway
       const pa = isHome ? r.penaltiesAway : r.penaltiesHome
       let result: FormResult['result'] = gf > ga ? 'W' : gf < ga ? 'L' : 'D'
-      // A knockout level after regulation is decided on penalties — use the shootout for W/L.
+      // A knockout level after regulation is decided on penalties - use the shootout for W/L.
       if (result === 'D' && pf != null && pa != null && pf !== pa) result = pf > pa ? 'W' : 'L'
-      // only real shootouts — 0-0 penalty rows are sync artifacts
+      // only real shootouts - 0-0 penalty rows are sync artifacts
       const score = pf != null && pa != null && pf + pa > 0 ? `${gf}–${ga} (${pf}–${pa}p)` : `${gf}–${ga}`
       return { matchId: r.id, result, opponent: isHome ? r.awayTeam : r.homeTeam, score }
     })

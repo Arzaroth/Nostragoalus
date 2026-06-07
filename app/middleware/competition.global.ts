@@ -18,7 +18,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
         const res = await $fetch<{ competitions: { slug: string }[] }>('/api/competitions')
         known.value = res.competitions.map((c) => c.slug)
       } catch {
-        return // can't validate (API down) — let the page render rather than block navigation
+        return // can't validate (API down) - let the page render rather than block navigation
       }
     }
     if (!known.value.includes(slug)) {

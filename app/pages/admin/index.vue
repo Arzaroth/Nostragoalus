@@ -27,7 +27,7 @@ async function addProvider() {
   ssoErr.value = ''
   ssoMsg.value = ''
   ssoLoading.value = true
-  // Google needs no provider id choice — default it so only domain + credentials remain.
+  // Google needs no provider id choice - default it so only domain + credentials remain.
   if (form.type === 'google' && !form.providerId) form.providerId = 'google'
   try {
     await $fetch('/api/admin/sso', { method: 'POST', body: { ...form } })
@@ -76,25 +76,6 @@ function taskTip(name: string, base: string) {
   return html
 }
 
-// Next scheduled run, derived from the cron map (hourly / */2 / */5).
-const nowTick = ref(Date.now())
-let tick: ReturnType<typeof setInterval> | undefined
-onMounted(() => {
-  tick = setInterval(() => (nowTick.value = Date.now()), 1000)
-})
-onBeforeUnmount(() => clearInterval(tick))
-function nextRun(stepMinutes: number | 'hourly') {
-  const d = new Date(nowTick.value)
-  const next = new Date(d)
-  next.setSeconds(0, 0)
-  if (stepMinutes === 'hourly') {
-    next.setMinutes(0)
-    next.setHours(d.getHours() + 1)
-  } else {
-    next.setMinutes(d.getMinutes() + (stepMinutes - (d.getMinutes() % stepMinutes)))
-  }
-  return next.toLocaleTimeString()
-}
 async function runImport() {
   syncBusy.value = 'import'
   try {
@@ -116,7 +97,8 @@ async function runTask(task: string) {
 
 // Users list lives in the query cache like every other server dataset:
 // mutations invalidate, the list re-derives.
-const { admin } = useAuth()
+const { admin, session } = useAuth()
+const myId = computed(() => session.value?.data?.user?.id)
 const queryClient = useQueryClient()
 const invalidateUsers = () => queryClient.invalidateQueries({ queryKey: ['admin-users'] })
 
@@ -156,7 +138,7 @@ const roleOptions = [
 ]
 const createMutation = useMutation({
   mutationFn: async () => {
-    // better-auth returns errors as data, not throws — normalize for the mutation.
+    // better-auth returns errors as data, not throws - normalize for the mutation.
     const { error } = await admin.createUser({ name: nu.name, email: nu.email, password: nu.password, role: nu.role as 'user' | 'admin' })
     if (error) throw new Error(error.message || 'Failed to create user')
   },
@@ -301,7 +283,7 @@ function createUser() {
               outlined
               @click="toggleAdmin(u)"
             />
-            <Button icon="pi pi-trash" size="small" severity="danger" text rounded :aria-label="t('admin.users.delete')" @click="removeUser(u)" />
+            <Button v-if="u.id !== myId" icon="pi pi-trash" size="small" severity="danger" text rounded :aria-label="t('admin.users.delete')" @click="removeUser(u)" />
           </div>
         </div>
       </section>
@@ -317,13 +299,13 @@ function createUser() {
             <!-- uniform buttons with centered labels; next-run column aligned -->
             <div class="grid grid-cols-[auto_auto] items-center gap-x-4 gap-y-2 justify-center">
               <Button v-tooltip.left="importTooltip" :label="t('admin.data.import')" icon="pi pi-download" size="small" severity="info" class="w-48" :loading="syncBusy === 'import'" @click="runImport" />
-              <span class="text-xs" style="color: var(--p-text-muted-color)">{{ t('admin.data.nextRun') }}: {{ t('admin.data.manual') }}</span>
+              <NextRunLabel :step="null" />
               <Button v-tooltip.left="refreshTooltip" :label="t('admin.data.refresh')" icon="pi pi-refresh" size="small" severity="help" class="w-48" :loading="syncBusy === 'fixtures'" @click="runTask('fixtures')" />
-              <span class="text-xs tabular-nums" style="color: var(--p-text-muted-color)">{{ t('admin.data.nextRun') }}: {{ nextRun('hourly') }}</span>
+              <NextRunLabel step="hourly" />
               <Button v-tooltip.left="pollTooltip" :label="t('admin.data.poll')" icon="pi pi-bolt" size="small" severity="warn" class="w-48" :loading="syncBusy === 'live'" @click="runTask('live')" />
-              <span class="text-xs tabular-nums" style="color: var(--p-text-muted-color)">{{ t('admin.data.nextRun') }}: {{ nextRun(2) }}</span>
+              <NextRunLabel :step="2" />
               <Button v-tooltip.left="finalizeTooltip" :label="t('admin.data.finalize')" icon="pi pi-flag" size="small" severity="success" class="w-48" :loading="syncBusy === 'finalize'" @click="runTask('finalize')" />
-              <span class="text-xs tabular-nums" style="color: var(--p-text-muted-color)">{{ t('admin.data.nextRun') }}: {{ nextRun(5) }}</span>
+              <NextRunLabel :step="5" />
             </div>
             <pre v-if="syncMsg" class="text-xs p-2 rounded overflow-x-auto" style="background: color-mix(in srgb, var(--p-text-color) 6%, transparent)">{{ syncMsg }}</pre>
           </div>

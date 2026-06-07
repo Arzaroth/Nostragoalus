@@ -5,7 +5,7 @@
   *::before,
   *::after {
     box-sizing: border-box;
-    /* No UnoCSS preflight, so give the `border` utility a usable default — without
+    /* No UnoCSS preflight, so give the `border` utility a usable default - without
        this, border-style stays `none` and borders never render. PrimeVue (a later
        layer) still controls its own component borders. */
     border-width: 0;
@@ -52,7 +52,7 @@
   }
 
   /* Native buttons (avatar trigger, popover menu items…) shouldn't carry the UA's
-     gray background/padding — PrimeVue buttons restyle themselves in a later layer. */
+     gray background/padding - PrimeVue buttons restyle themselves in a later layer. */
   button {
     background: none;
     border: 0;

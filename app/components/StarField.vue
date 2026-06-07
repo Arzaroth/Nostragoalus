@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Ambient animated starfield (canvas) behind the landing page — echoes the
+// Ambient animated starfield (canvas) behind the landing page - echoes the
 // brand artwork. Twinkle + slow upward drift; static frame under reduced motion.
 // Plain component (NOT .client): the async client-only wrapper fails to mount on
 // initial page load; SSR just emits an empty <canvas>, all work happens onMounted.

@@ -72,7 +72,7 @@ onMounted(() => {
       :style="{ height: reduced ? 'min(30.2vw, 40vh)' : `calc(min(30.2vw, 40vh) + ${SCRUB}px)` }"
     >
       <div v-if="reduced" class="w-screen h-[min(30.2vw,40vh)]">
-        <img src="/brand/banner-wide.svg" alt="Nostragoalus — the football oracle" class="w-full h-full object-cover block" >
+        <img src="/brand/banner-wide.svg" alt="Nostragoalus - the football oracle" class="w-full h-full object-cover block" >
       </div>
     </div>
     <!-- ClientOnly: motion-v styles SSR'd then re-driven client-side caused a
@@ -84,7 +84,7 @@ onMounted(() => {
         :style="{ width: bWidth, height: bHeight, transform: bTransform, borderRadius: bRadius, boxShadow: bShadow, background: '#171436' }"
       >
         <motion.div class="absolute inset-0" :style="{ opacity: t2, background: 'url(/brand/banner-mini.svg) center / cover no-repeat' }" />
-        <motion.img src="/brand/banner-wide.svg" alt="Nostragoalus — the football oracle" class="absolute inset-0 w-full h-full object-cover" :style="{ opacity: wideOpacity }" />
+        <motion.img src="/brand/banner-wide.svg" alt="Nostragoalus - the football oracle" class="absolute inset-0 w-full h-full object-cover" :style="{ opacity: wideOpacity }" />
       </motion.div>
       <motion.div v-if="!reduced" class="fixed inset-0 z-30 pointer-events-none" :style="{ background: '#0b0a18', opacity: dimOpacity }" />
       <template #fallback>
@@ -93,7 +93,7 @@ onMounted(() => {
           class="fixed left-1/2 top-16 z-40 overflow-hidden w-[88vw] rounded-[30px]"
           style="height: min(26.6vw, 40vh); transform: translateX(-50%) translateY(calc(50vh - 50% - 88px)); box-shadow: 0 30px 90px rgba(8, 6, 24, 0.55); background: #171436"
         >
-          <img src="/brand/banner-wide.svg" alt="Nostragoalus — the football oracle" class="absolute inset-0 w-full h-full object-cover" >
+          <img src="/brand/banner-wide.svg" alt="Nostragoalus - the football oracle" class="absolute inset-0 w-full h-full object-cover" >
         </div>
         <div class="fixed inset-0 z-30 pointer-events-none" style="background: #0b0a18; opacity: 0.6" />
       </template>

@@ -40,7 +40,7 @@ function onToggleJoker(p: MyPrediction) {
         <div class="text-xs mt-0.5" style="color: var(--p-text-muted-color)">{{ t('picks.points') }}</div>
       </div>
       <div class="ng-card rounded-2xl border p-4 text-center" style="background: var(--p-content-background)">
-        <div class="text-2xl font-extrabold tabular-nums">{{ stats.rank ? `#${stats.rank}` : '—' }}</div>
+        <div class="text-2xl font-extrabold tabular-nums">{{ stats.rank ? `#${stats.rank}` : '-' }}</div>
         <div class="text-xs mt-0.5" style="color: var(--p-text-muted-color)">{{ t('picks.rank', { n: stats.players }) }}</div>
       </div>
       <div class="ng-card rounded-2xl border p-4 text-center" style="background: var(--p-content-background)">

@@ -100,7 +100,7 @@ function toWinner(match: FifaMatch): Winner {
 
 export function normalizeFifaMatch(match: FifaMatch): NormalizedMatch {
   const score: Score = { fullTime: { home: match.HomeTeamScore, away: match.AwayTeamScore } }
-  // FIFA reports 0-0 penalty fields on matches with no shootout — store only real ones.
+  // FIFA reports 0-0 penalty fields on matches with no shootout - store only real ones.
   if ((match.HomeTeamPenaltyScore ?? 0) + (match.AwayTeamPenaltyScore ?? 0) > 0) {
     score.penalties = { home: match.HomeTeamPenaltyScore, away: match.AwayTeamPenaltyScore }
   }
@@ -158,7 +158,7 @@ interface FifaDetailGoal {
   IdTeam?: string | null
 }
 
-// FIFA "Period" 11 is the penalty shootout — those conversions are not match
+// FIFA "Period" 11 is the penalty shootout - those conversions are not match
 // goals and must not count toward scorers (matches the official Golden Boot).
 const FIFA_SHOOTOUT_PERIOD = 11
 
@@ -235,14 +235,14 @@ export function normalizeFifaMatchDetail(detail: FifaMatchDetailResponse): Match
         minute: g.Minute ?? null,
         goalType: g.Type ?? null,
         ownGoal,
-        // FIFA's IdAssistPlayer is the beaten goalkeeper, not the assister — so no assist data here.
+        // FIFA's IdAssistPlayer is the beaten goalkeeper, not the assister - so no assist data here.
         assistPlayerId: null,
         assistPlayerName: null,
       })
     }
   }
 
-  // Home goals are collected before away goals — restore match chronology.
+  // Home goals are collected before away goals - restore match chronology.
   goals.sort((a, b) => minuteValue(a.minute) - minuteValue(b.minute))
 
   const bookings: BookingEvent[] = []
@@ -294,7 +294,7 @@ export function normalizeFifaSquad(details: FifaMatchDetailResponse[], teamRef: 
       const position = FIFA_POSITIONS[Number(p.Position)] ?? null
       const existing = byId.get(p.IdPlayer)
       if (existing) {
-        // A bench appearance may report no position — keep the best-known one.
+        // A bench appearance may report no position - keep the best-known one.
         if (!existing.position && position) existing.position = position
         if (p.Captain === true || p.Captain === 'True') existing.captain = true
         continue
@@ -314,7 +314,7 @@ export function normalizeFifaSquad(details: FifaMatchDetailResponse[], teamRef: 
   )
 }
 
-// FIFA capitalizes player surnames ("Kylian MBAPPE") but not coach names — align them.
+// FIFA capitalizes player surnames ("Kylian MBAPPE") but not coach names - align them.
 export function upperSurname(name: string): string {
   const [first, ...rest] = name.split(' ')
   return rest.length ? `${first} ${rest.join(' ').toUpperCase()}` : name
@@ -331,7 +331,7 @@ export function normalizeFifaCoach(details: FifaMatchDetailResponse[], teamRef: 
   return null
 }
 
-// The official seasonal squad document — real positions for everyone, bench included.
+// The official seasonal squad document - real positions for everyone, bench included.
 export interface FifaSquadDoc {
   Players?: {
     IdPlayer?: string | null
@@ -364,7 +364,7 @@ export function normalizeFifaSquadDoc(doc: FifaSquadDoc, captains: Set<string>):
   return { squad, coach: coach ? upperSurname(coach) : null }
 }
 
-// Season totals built by summing the per-match football-intelligence stats —
+// Season totals built by summing the per-match football-intelligence stats -
 // the same numbers FIFA's own team pages show (no opaque type-code guessing).
 export function aggregateTeamMatchStats(perMatch: TeamMatchStats[], cards: { yellow: number; red: number }[]): TeamSeasonStats | null {
   if (perMatch.length === 0 && cards.length === 0) return null
@@ -642,7 +642,7 @@ export function fifaProvider(options: FifaOptions): MatchDataProvider {
     },
     async getMatchDetail({ stageId, matchId }: { stageId?: string; matchId: string }) {
       await limiter.acquire()
-      // FIFA also serves match detail by bare match id — used when no stage id is stored.
+      // FIFA also serves match detail by bare match id - used when no stage id is stored.
       const response = await doFetch(
         stageId
           ? `${baseUrl}/live/football/${options.competitionId}/${options.seasonId}/${stageId}/${matchId}?language=en`
@@ -669,7 +669,7 @@ export function fifaProvider(options: FifaOptions): MatchDataProvider {
       return normalizeFifaPlayerStats((await response.json()) as FifaTeamStatsResponse)
     },
     // One sweep over the team's matches: squad, head coach, and season totals
-    // (per-match stats summed — the same numbers FIFA's team pages show).
+    // (per-match stats summed - the same numbers FIFA's team pages show).
     async getTeamTournament({ teamRef, matches }: { teamRef: string; matches: { stageId: string; matchId: string }[] }) {
       const details: FifaMatchDetailResponse[] = []
       for (const m of matches) {

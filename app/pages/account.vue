@@ -74,10 +74,26 @@ async function confirmEnable2fa() {
     tfaBusy.value = false
   }
 }
+const tfaDisableCode = ref('')
+function cancelEnable2fa() {
+  tfaStep.value = 'idle'
+  tfaErr.value = ''
+  tfaPassword.value = ''
+  tfaCode.value = ''
+  tfaQr.value = ''
+  tfaUri.value = ''
+  tfaBackup.value = []
+}
 async function disable2fa() {
   tfaErr.value = ''
   tfaBusy.value = true
   try {
+    // Require a valid current TOTP code on top of the password.
+    const check = await $fetch<{ valid: boolean }>('/api/me/confirm-totp', { method: 'POST', body: { code: String(tfaDisableCode.value) } })
+    if (!check.valid) {
+      tfaErr.value = t('twofa.wrongCode')
+      return
+    }
     const res = await authClient.twoFactor.disable({ password: tfaPassword.value })
     if (res.error) {
       tfaErr.value = res.error.message || t('twofa.wrongPassword')
@@ -85,7 +101,9 @@ async function disable2fa() {
     }
     tfaStep.value = 'idle'
     tfaPassword.value = ''
+    tfaDisableCode.value = ''
     tfaQr.value = ''
+    tfaUri.value = ''
     tfaBackup.value = []
     await session.value?.refetch?.()
   } finally {
@@ -314,12 +332,16 @@ async function confirmDelete() {
                 <Button icon="pi pi-download" :label="t('twofa.download')" size="small" severity="secondary" outlined @click="downloadBackupCodes" />
               </div>
             </div>
-            <div class="flex items-end gap-3">
+            <div class="flex flex-wrap items-end gap-3">
               <div class="flex flex-col gap-1">
                 <label class="text-xs font-medium">{{ t('account.currentPassword') }}</label>
-                <Password v-model="tfaPassword" :feedback="false" toggle-mask />
+                <Password v-model="tfaPassword" :feedback="false" toggle-mask @keyup.enter="tfaPassword && tfaDisableCode && disable2fa()" />
               </div>
-              <Button :label="t('twofa.disable')" severity="danger" outlined :loading="tfaBusy" :disabled="!tfaPassword" @click="disable2fa" />
+              <div class="flex flex-col gap-1">
+                <label class="text-xs font-medium">{{ t('twofa.disableCode') }}</label>
+                <InputOtp v-model="tfaDisableCode" :length="6" integer-only @keyup.enter="tfaPassword && tfaDisableCode && disable2fa()" />
+              </div>
+              <Button :label="t('twofa.disable')" severity="danger" outlined :loading="tfaBusy" :disabled="!tfaPassword || String(tfaDisableCode).length < 6" @click="disable2fa" />
             </div>
           </template>
 
@@ -337,9 +359,12 @@ async function confirmDelete() {
                 <p class="text-xs" style="color: var(--p-text-muted-color)">{{ t('twofa.secretHint') }}</p>
               </div>
             </div>
-            <div class="flex items-center gap-3 flex-wrap">
-              <InputOtp v-model="tfaCode" :length="6" integer-only @keyup.enter="confirmEnable2fa" />
-              <Button :label="t('twofa.confirm')" :loading="tfaBusy" :disabled="!tfaCode || String(tfaCode).length < 6" @click="confirmEnable2fa" />
+            <div class="flex flex-wrap items-center justify-between gap-3 border-t pt-4" style="border-color: var(--p-content-border-color)">
+              <InputOtp v-model="tfaCode" :length="6" integer-only @keyup.enter="String(tfaCode).length === 6 && confirmEnable2fa()" />
+              <div class="flex gap-2">
+                <Button :label="t('common.cancel')" severity="secondary" text @click="cancelEnable2fa" />
+                <Button :label="t('twofa.confirm')" :loading="tfaBusy" :disabled="!tfaCode || String(tfaCode).length < 6" @click="confirmEnable2fa" />
+              </div>
             </div>
           </template>
 
@@ -347,7 +372,7 @@ async function confirmDelete() {
             <div class="flex items-end gap-3">
               <div class="flex flex-col gap-1">
                 <label class="text-xs font-medium">{{ t('account.currentPassword') }}</label>
-                <Password v-model="tfaPassword" :feedback="false" toggle-mask />
+                <Password v-model="tfaPassword" :feedback="false" toggle-mask @keyup.enter="tfaPassword && startEnable2fa()" />
               </div>
               <Button :label="t('twofa.enable')" :loading="tfaBusy" :disabled="!tfaPassword" @click="startEnable2fa" />
             </div>

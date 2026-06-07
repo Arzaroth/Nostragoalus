@@ -2,7 +2,7 @@ import type { AppDatabase } from '../../../db/types'
 import { taskRun } from '../../../db/schema'
 
 // Persist the outcome of a background-task run: success updates last-run fields,
-// failure updates last-failure fields — each side preserved across the other.
+// failure updates last-failure fields - each side preserved across the other.
 export async function recordTaskRun<T>(db: AppDatabase, name: string, fn: () => Promise<T>): Promise<T> {
   const started = Date.now()
   try {

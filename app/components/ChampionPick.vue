@@ -1,5 +1,7 @@
 <script setup lang="ts">
 const { t } = useI18n()
+const NuxtLinkC = resolveComponent('NuxtLink')
+const slug = useSelectedCompetition()
 const { query, setPick } = useChampion()
 const data = computed<any>(() => query.data.value)
 const selectedCode = ref<string | null>(null)
@@ -76,7 +78,7 @@ const isSaved = computed(() => !!data.value?.myPick && showcaseCode.value === da
 
       <!-- Crowned champion showcase -->
       <div class="shrink-0 flex flex-col items-center gap-2 self-center sm:pr-8">
-        <div class="relative mt-3">
+        <component :is="showcaseCode ? NuxtLinkC : 'div'" :to="showcaseCode ? `/${slug}/teams/${showcaseCode}` : undefined" class="relative mt-3 block" :class="{ 'hover:opacity-90': showcaseCode }">
           <template v-if="showcaseCode">
             <div
               class="absolute -inset-5 rounded-full blur-xl pointer-events-none"
@@ -101,11 +103,13 @@ const isSaved = computed(() => !!data.value?.myPick && showcaseCode.value === da
               style="border-color: var(--p-content-border-color); color: var(--p-text-muted-color)"
             >?</div>
           </template>
-        </div>
+        </component>
         <div class="text-center">
-          <strong v-if="showcaseCode" class="block leading-tight">{{ teamName(showcaseCode) }}</strong>
+          <component :is="NuxtLinkC" v-if="showcaseCode" :to="`/${slug}/teams/${showcaseCode}`" class="hover:underline">
+            <strong class="block leading-tight">{{ teamName(showcaseCode) }}</strong>
+          </component>
           <span v-else class="block text-sm leading-tight" style="color: var(--p-text-muted-color)">{{ t('champion.pick') }}</span>
-          <!-- one reserved line: points / preview hint / invisible spacer — the card never resizes -->
+          <!-- one reserved line: points / preview hint / invisible spacer - the card never resizes -->
           <span v-if="isSaved && data.myPick?.awardedPoints > 0" class="text-xs block mt-0.5 font-bold" style="color: #22c55e">+{{ data.myPick.awardedPoints }} pts</span>
           <span
             v-else

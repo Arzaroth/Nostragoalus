@@ -39,7 +39,7 @@ export default defineEventHandler(async (event) => {
           }
         }
       } catch {
-        // stats are a bonus — never sink the detail payload over them
+        // stats are a bonus - never sink the detail payload over them
       }
     }
     const enriched = detail ? { ...detail, stats } : null

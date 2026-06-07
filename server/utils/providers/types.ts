@@ -25,10 +25,10 @@ export interface MatchDataProvider {
   getLiveMatches(): Promise<NormalizedMatch[]>
   // Optional: aggregate top scorers for the season (not all providers expose this).
   getTopScorers?(opts: ListFixturesOptions): Promise<TopScorer[]>
-  // Optional: per-match detail (goals, possession) — FIFA exposes this keyless.
+  // Optional: per-match detail (goals, possession) - FIFA exposes this keyless.
   // stageId is optional; FIFA also resolves details from the bare match id.
   getMatchDetail?(opts: { stageId?: string; matchId: string }): Promise<MatchDetail | null>
-  // Optional: the knockout bracket projection — FIFA exposes this keyless.
+  // Optional: the knockout bracket projection - FIFA exposes this keyless.
   getBracket?(): Promise<NormalizedBracket | null>
   // Optional: official per-player stats (goals + assists) keyed by any team id in the season.
   getPlayerStats?(opts: { teamId: string }): Promise<TopScorer[]>

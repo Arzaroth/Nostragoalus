@@ -528,7 +528,7 @@ describe('squad edge cases (coverage of fallbacks)', () => {
             IdTeam: 'T1',
             Players: [
               { IdPlayer: 'n1', Captain: true, ShirtNumber: '', Position: 7 }, // no names, boolean captain, blank shirt
-              { IdPlayer: 'n2', Position: 8 }, // no names, no shirt — exercises the null/null sort tail
+              { IdPlayer: 'n2', Position: 8 }, // no names, no shirt - exercises the null/null sort tail
               { IdPlayer: 'n3', PlayerName: [{ Locale: 'en', Description: 'Named' }], ShirtNumber: 4, Position: 1 },
             ],
           },

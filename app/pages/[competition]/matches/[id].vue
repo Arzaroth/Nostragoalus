@@ -84,7 +84,7 @@ function minuteVal(minute: string | null): number {
 function cardEvents(side: 'HOME' | 'AWAY') {
   return (detail.value?.bookings ?? []).filter((b: any) => b.side === side)
 }
-// Goals arrive with insights, cards with the live detail — show the timeline only
+// Goals arrive with insights, cards with the live detail - show the timeline only
 // once both have settled so events don't pop in piecemeal.
 const eventsReady = computed(() => insightsStatus.value !== 'pending' && detailStatus.value !== 'pending')
 // Goals + bookings interleaved chronologically.
@@ -167,7 +167,7 @@ function fmtDate(d: string) {
         </div>
       </div>
 
-      <!-- One laced timeline: each event is a row, on its team's side — the whole
+      <!-- One laced timeline: each event is a row, on its team's side - the whole
            match reads top-to-bottom at a glance. -->
       <div v-if="eventsReady && timeline.length" class="grid grid-cols-[1fr_auto_1fr] gap-x-2 gap-y-0.5 mt-4 pt-3 border-t text-xs items-center" style="color: var(--p-text-muted-color); border-color: var(--p-content-border-color)">
         <template v-for="(e, i) in timeline" :key="i">
@@ -327,10 +327,10 @@ function fmtDate(d: string) {
                 </div>
                 <div v-if="teamPlayers(side).length" class="text-sm flex flex-col gap-1">
                   <div style="color: var(--p-text-muted-color)">
-                    {{ t('match.topScorer') }}: <b style="color: var(--p-text-color)">{{ bestBy(side, 'goals')?.playerName ?? '—' }}</b><span v-if="bestBy(side, 'goals')"> ({{ bestBy(side, 'goals').goals }}⚽)</span>
+                    {{ t('match.topScorer') }}: <b style="color: var(--p-text-color)">{{ bestBy(side, 'goals')?.playerName ?? '-' }}</b><span v-if="bestBy(side, 'goals')"> ({{ bestBy(side, 'goals').goals }}⚽)</span>
                   </div>
                   <div style="color: var(--p-text-muted-color)">
-                    {{ t('match.topAssister') }}: <b style="color: var(--p-text-color)">{{ bestBy(side, 'assists')?.playerName ?? '—' }}</b><span v-if="bestBy(side, 'assists')"> ({{ bestBy(side, 'assists').assists }}👟)</span>
+                    {{ t('match.topAssister') }}: <b style="color: var(--p-text-color)">{{ bestBy(side, 'assists')?.playerName ?? '-' }}</b><span v-if="bestBy(side, 'assists')"> ({{ bestBy(side, 'assists').assists }}👟)</span>
                   </div>
                   <div class="border-t mt-1 pt-2 flex flex-col gap-1" style="border-color: var(--p-content-border-color)">
                     <div v-for="(p, i) in teamPlayers(side)" :key="i" class="flex items-center justify-between gap-2">
@@ -339,7 +339,7 @@ function fmtDate(d: string) {
                     </div>
                   </div>
                 </div>
-                <div v-else class="text-sm" style="color: var(--p-text-muted-color)">—</div>
+                <div v-else class="text-sm" style="color: var(--p-text-muted-color)">-</div>
               </div>
             </div>
           </TabPanel>

@@ -59,7 +59,7 @@ onMounted(() => {
     maxZoom: 6,
   }).addTo(map)
   drawMarkers()
-  // The container may not have its final size during hydration — recompute after layout.
+  // The container may not have its final size during hydration - recompute after layout.
   setTimeout(() => map?.invalidateSize(), 150)
 })
 

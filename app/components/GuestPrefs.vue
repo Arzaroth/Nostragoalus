@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Minimal language/theme controls for signed-out pages — the choices stick via
+// Minimal language/theme controls for signed-out pages - the choices stick via
 // the i18n cookie + localStorage, and survive first login (no saved prefs yet).
 const { locale, locales, setLocale } = useI18n()
 const { isDark, toggle } = useTheme()

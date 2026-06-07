@@ -12,7 +12,7 @@ function byId(scores: ReturnType<typeof scorePredictions>) {
   return Object.fromEntries(scores.map((s) => [s.id, s]))
 }
 
-describe('scorePredictions — base tiers (no bonus)', () => {
+describe('scorePredictions - base tiers (no bonus)', () => {
   it('scores each prediction by closeness', () => {
     const scores = byId(
       scorePredictions({
@@ -37,7 +37,7 @@ describe('scorePredictions — base tiers (no bonus)', () => {
   })
 })
 
-describe('scorePredictions — crowd rarity bonus', () => {
+describe('scorePredictions - crowd rarity bonus', () => {
   const rules: ScoringRules = { ...DEFAULT_RULES, bonusSource: 'CROWD', crowdMatchBasis: 'EXACT', crowdMinDenominator: 1 }
 
   it('rewards a rare exact score and leaves non-exact picks bonus-free', () => {
@@ -75,7 +75,7 @@ describe('scorePredictions — crowd rarity bonus', () => {
   })
 })
 
-describe('scorePredictions — odds bonus', () => {
+describe('scorePredictions - odds bonus', () => {
   it('rewards a correct outcome by the actual outcome odds', () => {
     const rules: ScoringRules = { ...DEFAULT_RULES, bonusSource: 'ODDS', oddsAppliesTo: 'OUTCOME' }
     const scores = byId(
@@ -105,7 +105,7 @@ describe('scorePredictions — odds bonus', () => {
   })
 })
 
-describe('scorePredictions — joker', () => {
+describe('scorePredictions - joker', () => {
   const oddsRules: ScoringRules = { ...DEFAULT_RULES, bonusSource: 'ODDS', oddsAppliesTo: 'OUTCOME' }
 
   it('doubles base + bonus by default', () => {

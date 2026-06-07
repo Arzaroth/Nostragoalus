@@ -58,14 +58,14 @@
     "badge": "Live for the 2026 World Cup",
     "heroA": "Predict every match.",
     "heroB": "Outsmart your friends.",
-    "sub": "Nostragoalus turns football tournaments into a prediction game — call the scores, earn points for how close you get, and climb the leaderboard.",
+    "sub": "Nostragoalus turns football tournaments into a prediction game - call the scores, earn points for how close you get, and climb the leaderboard.",
     "browse": "Browse fixtures",
     "featuresTitle": "Everything you need to play",
     "featuresSub": "From closeness scoring to live brackets and an interactive world map.",
     "f": {
       "scoring": {
         "t": "Closeness scoring",
-        "d": "Points scale with accuracy — nail the exact score, the goal difference, or just the right outcome."
+        "d": "Points scale with accuracy - nail the exact score, the goal difference, or just the right outcome."
       },
       "joker": {
         "t": "×2 Joker",
@@ -97,7 +97,7 @@
       },
       "competitions": {
         "t": "Multiple competitions",
-        "d": "World Cup 2026, World Cup 2022 and UEFA Euro 2024 — switch in a click."
+        "d": "World Cup 2026, World Cup 2022 and UEFA Euro 2024 - switch in a click."
       }
     },
     "scoringTitle": "Simple, skill-based scoring",
@@ -120,7 +120,7 @@
   },
   "matches": {
     "title": "Fixtures",
-    "empty": "No fixtures yet — import them from the admin page.",
+    "empty": "No fixtures yet - import them from the admin page.",
     "search": "Search a team…",
     "noResults": "No matches found."
   },
@@ -149,22 +149,22 @@
     "publicNote": "Only predictions for matches that have kicked off are shown.",
     "joker": "Joker",
     "makeJoker": "Set ×2 joker",
-    "jokerError": "Couldn't move the joker — a match may have already started."
+    "jokerError": "Couldn't move the joker - a match may have already started."
   },
   "champion": {
     "title": "Your champion",
     "current": "Current pick:",
     "pick": "Pick the winner",
     "hint": "Bonus if your pick lifts the trophy · locks at the first kickoff.",
-    "noPick": "No champion picked — locked.",
-    "lockedIn": "Locked in — good luck!",
+    "noPick": "No champion picked - locked.",
+    "lockedIn": "Locked in - good luck!",
     "preview": "not saved yet"
   },
   "leaderboard": {
     "title": "Ranking",
     "thisCompetition": "Competition",
     "global": "Global",
-    "empty": "No scores yet — predictions get scored once matches finish.",
+    "empty": "No scores yet - predictions get scored once matches finish.",
     "you": "(you)",
     "exact": "exact",
     "correct": "correct",
@@ -232,7 +232,7 @@
     "updatePassword": "Update password",
     "passwordChanged": "Password updated.",
     "dangerTitle": "Account termination",
-    "dangerHint": "Deleting your account is irreversible — all your predictions are lost.",
+    "dangerHint": "Deleting your account is irreversible - all your predictions are lost.",
     "deleteAccount": "Delete account",
     "confirmDeleteHint": "Enter your password to confirm deletion."
   },
@@ -250,7 +250,7 @@
       "entryPoint": "IdP SSO URL",
       "cert": "IdP certificate",
       "idpMetadata": "IdP metadata XML",
-      "optionalXml": "Optional — paste IdP metadata XML",
+      "optionalXml": "Optional - paste IdP metadata XML",
       "add": "Add provider",
       "added": "Provider registered."
     },
@@ -269,7 +269,7 @@
       "import": "Import fixtures",
       "importTip": "Fetch and store every fixture of all active competitions (first-time setup).",
       "refresh": "Refresh fixtures",
-      "refreshTip": "Re-sync fixtures from the provider — fills newly decided knockout teams, never overwrites finished scores.",
+      "refreshTip": "Re-sync fixtures from the provider - fills newly decided knockout teams, never overwrites finished scores.",
       "poll": "Poll scores",
       "pollTip": "Fetch live scores right now (also runs automatically every 2 minutes during live windows).",
       "finalize": "Finalize",
@@ -316,6 +316,7 @@
     "reveal": "Show key",
     "copy": "Copy",
     "copyCodes": "Copy codes",
-    "download": "Download .txt"
+    "download": "Download .txt",
+    "disableCode": "Current 6-digit code"
   }
 }

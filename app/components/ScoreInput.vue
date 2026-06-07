@@ -19,7 +19,7 @@ watch(
 
 const dirty = computed(() => home.value != null && away.value != null && (home.value !== props.home || away.value !== props.away))
 
-// Auto-save: debounced while typing, immediate on blur/enter — no Save button.
+// Auto-save: debounced while typing, immediate on blur/enter - no Save button.
 let debounce: ReturnType<typeof setTimeout> | undefined
 function scheduleCommit() {
   clearTimeout(debounce)

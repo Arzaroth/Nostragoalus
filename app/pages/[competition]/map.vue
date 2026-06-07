@@ -25,7 +25,7 @@ async function onSelect(team: { code: string; name: string }) {
   loading.value = true
   info.value = null
   try {
-    // lite=1: the panel doesn't need the squad/stats sweep — keeps it snappy.
+    // lite=1: the panel doesn't need the squad/stats sweep - keeps it snappy.
     const res = await $fetch(`/api/teams/${team.code}`, {
       query: { ...(slug.value ? { competition: slug.value } : {}), lite: '1' },
     })

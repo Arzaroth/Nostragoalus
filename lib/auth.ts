@@ -1,7 +1,9 @@
 import { betterAuth } from 'better-auth'
+import { APIError } from 'better-auth/api'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { sso } from '@better-auth/sso'
 import { admin, twoFactor } from 'better-auth/plugins'
+import { count, eq } from 'drizzle-orm'
 import { db } from '../db'
 import * as schema from '../db/schema'
 import { withEncryptedSSO } from '../server/utils/crypto/encrypted-adapter'
@@ -33,7 +35,17 @@ export const auth = betterAuth({
   // Let local users change their email (no verification email infra, so it applies directly).
   user: {
     changeEmail: { enabled: true },
-    deleteUser: { enabled: true },
+    deleteUser: {
+      enabled: true,
+      // The last admin must not be able to remove itself and orphan the instance.
+      async beforeDelete(u) {
+        if ((u as { role?: string }).role !== 'admin') return
+        const admins = await db.select({ n: count() }).from(schema.user).where(eq(schema.user.role, 'admin'))
+        if (Number(admins[0]?.n ?? 0) <= 1) {
+          throw new APIError('BAD_REQUEST', { message: 'The last admin account cannot be deleted.' })
+        }
+      },
+    },
     // Per-user preferences, restored on login (browser/system values are used until set).
     additionalFields: {
       locale: { type: 'string', required: false },

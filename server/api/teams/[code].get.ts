@@ -9,9 +9,9 @@ import { getCompetitionTopScorers } from '../../utils/stats/scorers'
 import { providerForCompetition } from '../../utils/providers'
 import { resolveCompetitionSeason } from '../../utils/sync/competition'
 
-// The FIFA statistics document is season-wide (same for every team) and heavy —
+// The FIFA statistics document is season-wide (same for every team) and heavy -
 // cache it per competition. The tournament sweep (squad/coach/stats) is many
-// upstream calls — cache it per team, long.
+// upstream calls - cache it per team, long.
 const playersCache = new Map<string, { at: number; players: TopScorer[] }>()
 const PLAYERS_TTL_MS = 10 * 60 * 1000
 const tournamentCache = new Map<string, { at: number; data: { squad: SquadPlayer[]; coach: string | null; stats: TeamSeasonStats | null } }>()
@@ -89,7 +89,7 @@ export default defineEventHandler(async (event) => {
     .filter((s) => (s.assists ?? 0) > 0)
     .sort((a, b) => (b.assists ?? 0) - (a.assists ?? 0))[0] ?? null
 
-  // Squad + coach + season totals (skipped in lite mode — the map doesn't show them).
+  // Squad + coach + season totals (skipped in lite mode - the map doesn't show them).
   let squad: (SquadPlayer & { goals: number; assists: number })[] = []
   let coach: string | null = null
   let teamStats: TeamSeasonStats | null = null

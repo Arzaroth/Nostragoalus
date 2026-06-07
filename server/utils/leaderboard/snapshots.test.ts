@@ -26,7 +26,7 @@ describe('rank snapshots', () => {
     await score(db, await makePrediction(db, { userId: alice, matchId: m1, roundId, home: 1, away: 0, lockedAt: new Date() }), 3)
     await score(db, await makePrediction(db, { userId: bob, matchId: m1, roundId, home: 1, away: 0, lockedAt: new Date() }), 1)
 
-    // First snapshot just records ranks — no movement yet.
+    // First snapshot just records ranks - no movement yet.
     await updateRankSnapshots(db, competitionId)
     expect((await getRankMovements(db, competitionId)).size).toBe(0)
 

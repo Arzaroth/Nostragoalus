@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
 
   const provider = providerForCompetition(competition, await resolveCompetitionSeason(db, competition))
 
-  // Official FIFA player stats (goals + assists), keyless — needs any team id seen this season.
+  // Official FIFA player stats (goals + assists), keyless - needs any team id seen this season.
   if (provider.getPlayerStats) {
     const teamRow = await db
       .select({ teamId: goalEvent.teamId })

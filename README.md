@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/brand/banner.svg" alt="Nostragoalus — the football oracle" width="640">
+  <img src="public/brand/banner.svg" alt="Nostragoalus - the football oracle" width="640">
 </p>
 
 # Nostragoalus

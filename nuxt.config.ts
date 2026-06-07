@@ -13,9 +13,9 @@ export default defineNuxtConfig({
         { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
       ],
       meta: [
-        { name: 'description', content: 'Nostragoalus — the football oracle. Predict scores, earn points, outsmart your friends.' },
+        { name: 'description', content: 'Nostragoalus - the football oracle. Predict scores, earn points, outsmart your friends.' },
         { property: 'og:title', content: 'Nostragoalus' },
-        { property: 'og:description', content: 'The football oracle — predict scores, earn points, climb the leaderboard.' },
+        { property: 'og:description', content: 'The football oracle - predict scores, earn points, climb the leaderboard.' },
         { property: 'og:image', content: '/brand/banner.png' },
         { name: 'twitter:card', content: 'summary_large_image' },
       ],

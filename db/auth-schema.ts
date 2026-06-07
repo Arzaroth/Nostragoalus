@@ -92,7 +92,7 @@ export const verification = pgTable(
 );
 
 // @better-auth/sso plugin table. oidcConfig / samlConfig hold the provider
-// config JSON (incl. secrets) — envelope-encrypted at rest by the adapter wrapper.
+// config JSON (incl. secrets) - envelope-encrypted at rest by the adapter wrapper.
 export const ssoProvider = pgTable(
   "sso_provider",
   {

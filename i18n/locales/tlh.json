@@ -28,7 +28,7 @@
   },
   "picks": {
     "points": "QuQmey",
-    "rank": "patlh — {n} SuvwI'pu'",
+    "rank": "patlh - {n} SuvwI'pu'",
     "exact": "pup wIvmey",
     "jokers": "Hov lo'lu'ta' · {n} wIvmey"
   },
@@ -55,17 +55,17 @@
     "goToMatches": "may'meyDaq yIghoS"
   },
   "landing": {
-    "badge": "qo' HIvje' 2026 — DaH qaSlI'",
+    "badge": "qo' HIvje' 2026 - DaH qaSlI'",
     "heroA": "Hoch may' yInoH.",
     "heroB": "juppu'lI' tIjey.",
-    "sub": "QI'D Quj moj QI'D 'aD — Nostragoalus lo'lu'DI', may' mI'mey DanoH, pup DanIDmo' QuQmey DaSuq, 'ej patlh DatoS.",
+    "sub": "QI'D Quj moj QI'D 'aD - Nostragoalus lo'lu'DI', may' mI'mey DanoH, pup DanIDmo' QuQmey DaSuq, 'ej patlh DatoS.",
     "browse": "may'mey tIlegh",
     "featuresTitle": "SuvmeH Hoch Daghajbogh",
     "featuresSub": "pup noHvo' DaH may' He qo' mIllogh je.",
     "f": {
       "scoring": {
         "t": "pup noH",
-        "d": "bIpupchugh QuQmey law' DaSuq — mI' pup, QIH chuq, ghap jeywI' neH."
+        "d": "bIpupchugh QuQmey law' DaSuq - mI' pup, QIH chuq, ghap jeywI' neH."
       },
       "joker": {
         "t": "Hov ×2",
@@ -73,7 +73,7 @@
       },
       "champion": {
         "t": "che'wI' wIv",
-        "d": "'aqtu' jeywI' yInoH 'ej tev nI' yISuq — may' wa'DIch taghDI' SoQmoHlu'."
+        "d": "'aqtu' jeywI' yInoH 'ej tev nI' yISuq - may' wa'DIch taghDI' SoQmoHlu'."
       },
       "live": {
         "t": "DaH mI'mey",
@@ -81,15 +81,15 @@
       },
       "bracket": {
         "t": "may' He",
-        "d": "Qav may'Daq He yItlha' — cha' Dop may' HeDaq."
+        "d": "Qav may'Daq He yItlha' - cha' Dop may' HeDaq."
       },
       "map": {
         "t": "qo' mIllogh",
-        "d": "qo' milloghDaq Sep yIwIv — ghom, Dotlh, patlh, may' veb je yIlegh."
+        "d": "qo' milloghDaq Sep yIwIv - ghom, Dotlh, patlh, may' veb je yIlegh."
       },
       "stats": {
         "t": "may' De' jaq",
-        "d": "loSpev, QI'D naghmey, bejwI'pu', QuQ poH, 'ej ghom Hoch — bachwI' qach je."
+        "d": "loSpev, QI'D naghmey, bejwI'pu', QuQ poH, 'ej ghom Hoch - bachwI' qach je."
       },
       "ranking": {
         "t": "patlhmey",
@@ -97,10 +97,10 @@
       },
       "competitions": {
         "t": "'aqtu'mey law'",
-        "d": "qo' HIvje' 2026, qo' HIvje' 2022, yu'rop tev 2024 je — SIbI' choH."
+        "d": "qo' HIvje' 2026, qo' HIvje' 2022, yu'rop tev 2024 je - SIbI' choH."
       }
     },
-    "scoringTitle": "noH nap — po' neH",
+    "scoringTitle": "noH nap - po' neH",
     "scoringSub": "90 tup ta'vo' noHlu'. bISumchugh, law' DaSuq.",
     "tier": {
       "exact": "mI' pup",
@@ -115,12 +115,12 @@
     "compsSub": "SIbI' yISuv.",
     "viewComp": "may'mey tIlegh",
     "ctaTitle": "bIwIvrupqu''a'?",
-    "ctaSub": "Doch'a' yIchenmoH, juppu'lI' tIrI', 'ej 'Iv QI'D Sov teH — yI'agh.",
+    "ctaSub": "Doch'a' yIchenmoH, juppu'lI' tIrI', 'ej 'Iv QI'D Sov teH - yI'agh.",
     "footer": "yInoH. yISuq. yIjey."
   },
   "matches": {
     "title": "may'mey",
-    "empty": "wej may' tu'lu' — loHwI' pa'vo' tIlIH.",
+    "empty": "wej may' tu'lu' - loHwI' pa'vo' tIlIH.",
     "search": "ghom yISam…",
     "noResults": "may' tu'be'lu'."
   },
@@ -149,22 +149,22 @@
     "publicNote": "taghpu'bogh may'mey wIvmey neH cha'lu'.",
     "joker": "Hov",
     "makeJoker": "Hov ×2 yIQeq",
-    "jokerError": "Hov vIHmoHlaHbe' — chaq may' taghpu'."
+    "jokerError": "Hov vIHmoHlaHbe' - chaq may' taghpu'."
   },
   "champion": {
     "title": "che'wI'lIj",
     "current": "DaH wIv:",
     "pick": "jeywI' yIwIv",
     "hint": "wIvlIj 'aqtu' jeychugh, tev DaSuq · may' wa'DIch taghDI' SoQmoHlu'.",
-    "noPick": "che'wI' wIvbe'lu' — SoQ.",
-    "lockedIn": "SoQ — Qapla'!",
+    "noPick": "che'wI' wIvbe'lu' - SoQ.",
+    "lockedIn": "SoQ - Qapla'!",
     "preview": "wej choqlu'"
   },
   "leaderboard": {
     "title": "patlh",
     "thisCompetition": "'aqtu'",
     "global": "Hoch qo'",
-    "empty": "wej QuQ tu'lu' — may' rInDI' noHlu'.",
+    "empty": "wej QuQ tu'lu' - may' rInDI' noHlu'.",
     "you": "(SoH)",
     "exact": "pup",
     "correct": "lugh",
@@ -232,7 +232,7 @@
     "updatePassword": "pegh mu' yIchoH",
     "passwordChanged": "pegh mu' choHlu'ta'.",
     "dangerTitle": "Doch'a' Qaw'",
-    "dangerHint": "Doch'a' DaQaw'chugh, chegh DuH pagh — Hoch wIvmeylIj luQaw'lu'.",
+    "dangerHint": "Doch'a' DaQaw'chugh, chegh DuH pagh - Hoch wIvmeylIj luQaw'lu'.",
     "deleteAccount": "Doch'a' yIQaw'",
     "confirmDeleteHint": "Qaw' Da'olmeH pegh mu' yIqon."
   },
@@ -250,7 +250,7 @@
       "entryPoint": "IdP SSO URL",
       "cert": "IdP 'olwI'",
       "idpMetadata": "IdP De' XML",
-      "optionalXml": "DuHmey — IdP De' XML yIlan",
+      "optionalXml": "DuHmey - IdP De' XML yIlan",
       "add": "jabwI' yIchel",
       "added": "jabwI' qonlu'ta'."
     },
@@ -269,7 +269,7 @@
       "import": "may'mey tIlIH",
       "importTip": "Hoch 'aqtu'mey may'mey tIlIH 'ej tIchoq (wa'DIch lo').",
       "refresh": "may'mey yIchu'qa'",
-      "refreshTip": "jabwI'vo' may'mey yIchu'qa' — ghommey chu' tIchel, rInpu'bogh mI'mey tIQaw'Qo'.",
+      "refreshTip": "jabwI'vo' may'mey yIchu'qa' - ghommey chu' tIchel, rInpu'bogh mI'mey tIQaw'Qo'.",
       "poll": "DaH mI'mey yISuq",
       "pollTip": "DaH mI'mey yISuq (may' qaStaHvIS cha' tup Hoch, 'oH'egh qaS).",
       "finalize": "yIrInmoH",
@@ -316,6 +316,7 @@
     "reveal": "ngoq yIcha'",
     "copy": "yIvelqa'",
     "copyCodes": "ngoqmey tIvelqa'",
-    "download": ".txt yISuq"
+    "download": ".txt yISuq",
+    "disableCode": "DaH jav mI' ngoq"
   }
 }
