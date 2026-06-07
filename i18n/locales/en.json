@@ -95,7 +95,9 @@
     "current": "Current pick:",
     "pick": "Pick the winner",
     "hint": "Bonus if your pick lifts the trophy · locks at the first kickoff.",
-    "noPick": "No champion picked — locked."
+    "noPick": "No champion picked — locked.",
+    "lockedIn": "Locked in — good luck!",
+    "preview": "not saved yet"
   },
   "leaderboard": {
     "title": "Ranking",

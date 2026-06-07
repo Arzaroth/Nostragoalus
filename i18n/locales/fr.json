@@ -95,7 +95,9 @@
     "current": "Choix actuel :",
     "pick": "Choisissez le vainqueur",
     "hint": "Bonus si votre choix soulève le trophée · verrouillé au premier coup d'envoi.",
-    "noPick": "Aucun vainqueur choisi — verrouillé."
+    "noPick": "Aucun vainqueur choisi — verrouillé.",
+    "lockedIn": "Verrouillé — bonne chance !",
+    "preview": "pas encore enregistré"
   },
   "leaderboard": {
     "title": "Classement",
