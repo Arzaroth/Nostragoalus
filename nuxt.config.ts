@@ -8,6 +8,17 @@ export default defineNuxtConfig({
     head: {
       title: 'Nostragoalus',
       htmlAttrs: { lang: 'en' },
+      link: [
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+        { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+      ],
+      meta: [
+        { name: 'description', content: 'Nostragoalus — the football oracle. Predict scores, earn points, outsmart your friends.' },
+        { property: 'og:title', content: 'Nostragoalus' },
+        { property: 'og:description', content: 'The football oracle — predict scores, earn points, climb the leaderboard.' },
+        { property: 'og:image', content: '/brand/banner.png' },
+        { name: 'twitter:card', content: 'summary_large_image' },
+      ],
       // Apply the saved/preferred theme before paint to avoid a flash.
       script: [
         {

@@ -31,6 +31,7 @@ const tiers = [
   <div class="flex flex-col gap-20 sm:gap-28 pb-12">
     <!-- Hero -->
     <section class="text-center pt-8 sm:pt-16 flex flex-col items-center gap-6">
+      <img src="/brand/mark.svg" alt="" class="w-24 sm:w-28 drop-shadow-xl" >
       <div
         class="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium"
         style="border-color: var(--p-content-border-color); color: var(--p-text-muted-color)"
@@ -122,7 +123,7 @@ const tiers = [
 
     <!-- Final CTA -->
     <section class="rounded-3xl p-10 sm:p-16 text-center text-white flex flex-col items-center gap-5" style="background: linear-gradient(135deg, #4f46e5, #10b981)">
-      <span class="text-5xl">🔮</span>
+      <img src="/brand/mark.svg" alt="" class="w-20" >
       <h2 class="text-3xl sm:text-4xl font-extrabold">{{ t('landing.ctaTitle') }}</h2>
       <p class="max-w-md text-white/90">{{ t('landing.ctaSub') }}</p>
       <NuxtLink :to="authed ? matchesLink : '/signup'">
