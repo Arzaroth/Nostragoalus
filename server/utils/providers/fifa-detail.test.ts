@@ -376,11 +376,12 @@ describe('booking events', () => {
       AwayTeam: {
         IdTeam: 'A',
         Players: [{ IdPlayer: 'p2', PlayerName: [{ Locale: 'en', Description: 'Marcos ACUNA' }] }],
-        Bookings: [{ Card: 2, IdPlayer: 'p2', Minute: "12'" }, {}],
+        Bookings: [{ Card: 2, IdPlayer: 'p2', Minute: "12'" }, { Card: 3, IdPlayer: 'p2', Minute: "30'" }, {}],
       },
     })
     expect(d.bookings).toEqual([
-      { side: 'AWAY', playerId: 'p2', playerName: 'Marcos ACUNA', minute: "12'", card: 'SECOND_YELLOW' },
+      { side: 'AWAY', playerId: 'p2', playerName: 'Marcos ACUNA', minute: "12'", card: 'RED' },
+      { side: 'AWAY', playerId: 'p2', playerName: 'Marcos ACUNA', minute: "30'", card: 'SECOND_YELLOW' },
       { side: 'HOME', playerId: 'p1', playerName: 'Adrien RABIOT', minute: "55'", card: 'YELLOW' },
     ])
   })

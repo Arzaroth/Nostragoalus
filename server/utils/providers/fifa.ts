@@ -256,8 +256,9 @@ export function normalizeFifaMatchDetail(detail: FifaMatchDetailResponse): Match
         playerId: b.IdPlayer ?? null,
         playerName: (b.IdPlayer && names.get(b.IdPlayer)) || 'Unknown',
         minute: b.Minute ?? null,
-        // FIFA card codes: 1 = yellow, 2 = second yellow (yellow-red), 3 = straight red.
-        card: b.Card === 1 ? 'YELLOW' : b.Card === 2 ? 'SECOND_YELLOW' : 'RED',
+        // FIFA card codes: 1 = yellow, 2 = straight red, 3 = second yellow.
+        // (verified against WC2022: Hennessey straight red = 2, Dumfries 1 then 3)
+        card: b.Card === 1 ? 'YELLOW' : b.Card === 3 ? 'SECOND_YELLOW' : 'RED',
       })
     }
   }

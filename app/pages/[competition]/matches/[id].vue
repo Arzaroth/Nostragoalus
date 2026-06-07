@@ -25,7 +25,7 @@ const { data, refresh: refreshMatch } = await useFetch<{
 }>(`/api/matches/${id.value}`)
 // lazy: the page navigates immediately on the core match fetch; insight/stat
 // sections fill in as their (slower, FIFA-backed) data lands.
-const { data: insights } = await useFetch<any>(`/api/matches/${id.value}/insights`, { lazy: true })
+const { data: insights, status: insightsStatus } = await useFetch<any>(`/api/matches/${id.value}/insights`, { lazy: true })
 
 const selectedSlug = useSelectedCompetition()
 const { data: scorersData } = await useFetch<{ scorers: any[] }>('/api/competitions/scorers', {
@@ -84,7 +84,10 @@ function minuteVal(minute: string | null): number {
 function cardEvents(side: 'HOME' | 'AWAY') {
   return (detail.value?.bookings ?? []).filter((b: any) => b.side === side)
 }
-// Goals + bookings interleaved chronologically for the stats-tab timeline.
+// Goals arrive with insights, cards with the live detail — show the timeline only
+// once both have settled so events don't pop in piecemeal.
+const eventsReady = computed(() => insightsStatus.value !== 'pending' && detailStatus.value !== 'pending')
+// Goals + bookings interleaved chronologically.
 const timeline = computed(() => {
   const goals = (insights.value?.goals ?? []).map((g: any) => ({ kind: 'goal' as const, ...g }))
   const cards = (detail.value?.bookings ?? []).map((b: any) => ({
@@ -166,7 +169,7 @@ function fmtDate(d: string) {
 
       <!-- One laced timeline: each event is a row, on its team's side — the whole
            match reads top-to-bottom at a glance. -->
-      <div v-if="timeline.length" class="grid grid-cols-[1fr_auto_1fr] gap-x-2 gap-y-0.5 mt-4 pt-3 border-t text-xs items-center" style="color: var(--p-text-muted-color); border-color: var(--p-content-border-color)">
+      <div v-if="eventsReady && timeline.length" class="grid grid-cols-[1fr_auto_1fr] gap-x-2 gap-y-0.5 mt-4 pt-3 border-t text-xs items-center" style="color: var(--p-text-muted-color); border-color: var(--p-content-border-color)">
         <template v-for="(e, i) in timeline" :key="i">
           <span class="inline-flex items-center gap-1 justify-end text-right">
             <template v-if="e.side === 'HOME'">
@@ -187,7 +190,7 @@ function fmtDate(d: string) {
           </span>
         </template>
       </div>
-      <div v-else-if="detailStatus === 'pending'" class="flex justify-center mt-4 pt-3 border-t" style="border-color: var(--p-content-border-color)">
+      <div v-else-if="!eventsReady" class="flex justify-center mt-4 pt-3 border-t" style="border-color: var(--p-content-border-color)">
         <ProgressSpinner style="width: 22px; height: 22px" stroke-width="6" />
       </div>
 
@@ -240,19 +243,8 @@ function fmtDate(d: string) {
                 <span class="tabular-nums font-medium">{{ r.away }}</span>
               </div>
             </div>
-            <div class="flex flex-col text-sm">
-              <div v-for="(e, i) in timeline" :key="i" class="flex items-center gap-2 border-t py-2" style="border-color: var(--p-content-border-color)">
-                <span v-if="e.kind === 'goal'" class="w-3.5 text-center"><i class="pi pi-circle-fill text-xs" :style="`color:${e.side === 'HOME' ? 'var(--p-primary-color)' : 'var(--p-text-muted-color)'}`" /></span>
-                <span v-else-if="e.card === 'SECOND_YELLOW'" class="w-3.5 relative" title="Second yellow"><span class="absolute left-0 top-0 w-2.5 h-3.5 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2.5 h-3.5 rounded-[2px]" style="background: #ef4444" /></span>
-                <span v-else class="w-3.5 flex justify-center"><span class="inline-block w-2.5 h-3.5 rounded-[2px]" :style="`background:${e.card === 'RED' ? '#ef4444' : '#eab308'}`" /></span>
-                <span class="w-10 tabular-nums" style="color: var(--p-text-muted-color)">{{ e.minute }}</span>
-                <span class="font-medium">{{ e.playerName }}</span>
-                <span v-if="e.kind === 'goal' && e.ownGoal" class="text-xs">(OG)</span>
-                <span v-if="e.kind === 'goal' && e.assistPlayerName" class="text-xs" style="color: var(--p-text-muted-color)">· {{ e.assistPlayerName }}</span>
-                <span class="flex-1" />
-                <span style="color: var(--p-text-muted-color)">{{ e.teamCode || (e.kind === 'goal' ? e.teamName : '') }}</span>
-              </div>
-            </div>
+<!-- the chronological event list lives in the hero under both teams -->
+
           </TabPanel>
 
           <TabPanel v-if="insights.standings" value="standings">
