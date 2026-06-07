@@ -10,51 +10,64 @@ A football score-prediction game: friends predict match scores and earn points b
 get, ranked per competition and on a global leaderboard. Ships with the **FIFA World Cup 2026**
 (default), **World Cup 2022**, and **UEFA Euro 2024**.
 
+Source: <https://git.arzaroth.com/Arzaroth/Nostragoalus>
+
 ## Runtimes
 
-Built and tested on **Node.js 22**. The production bundle also runs under **Bun** (smoke-tested):
+Built and tested on **Node.js 22** and **Bun**:
 
 ```sh
-pnpm build && bun .output/server/index.mjs
+pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
 ```
 
 ## Features
 
 - Score predictions with closeness-tiered points, a rarity bonus, and one ×2 **joker** per round
 - **Champion pick** bonus, locked at the first kickoff
-- Per-competition **and global** rankings; browse other players' (locked) predictions
-- Live scores over WebSocket; match view with possession, cards, attendance, goal timeline, penalty
-  shootout, and each team's top scorer / top assister
-- Knockout **bracket** projection and an interactive **world map** (Leaflet / OpenStreetMap)
-- Per-team pages, fixture search, EN/FR i18n, light/dark themes, Google or email sign-in
+- Per-competition **and global** rankings with movement arrows; browse other players' (locked) predictions
+- Live scores over WebSocket; match view with possession, per-team match stats, goal timeline with
+  cards (incl. touchline bookings) and substitutions, head-to-head tally, penalty shootouts,
+  and each team's top scorer / top assister
+- Per-team pages: official squads with positions, manager, season stats, competition switcher
+- Knockout **bracket** and an interactive **world map** (Leaflet / OpenStreetMap)
+- Auth: email + password (HIBP-checked), **2FA** (TOTP, email codes, single-use backup codes,
+  trusted devices), **passkeys** (sudo-gated registration), runtime-configurable **SSO** (OIDC /
+  SAML / Google) with envelope-encrypted secrets, admin user management
+- Four languages (EN / FR / TH / tlh), light/dark/system themes saved per account
+- Auto-generated **API docs** at `/docs/api` (OpenAPI + Scalar)
 
 ## Stack
 
-- **Nuxt 4** + Vue 3 + TypeScript (Nitro `node-server`)
-- **PrimeVue v4** + **UnoCSS**
+See the in-app **About** page for the full annotated list with licenses. Highlights:
+
+- **Nuxt 4** + Vue 3 + TypeScript (Nitro `node-server`), **PrimeVue v4**, **UnoCSS**, **VueUse**,
+  **motion-v**, **Nuxt I18n**
 - **TanStack Vue Query** (client) + Nuxt `useFetch` (SSR)
-- **better-auth** (email + password, optional Google)
-- **Drizzle ORM** + **Postgres**
-- Provider-agnostic match data: keyless **FIFA API** (default) or **football-data.org**
+- **better-auth** (sessions, 2FA, passkeys, SSO, admin)
+- **Drizzle ORM** + **PostgreSQL** (PGlite for hermetic tests)
+- Provider-agnostic match data: keyless **FIFA** and **UEFA** public APIs
 - In-process scheduled tasks (Croner) for fixtures / live scores / finalize
 
 ## Scoring
 
 Tiered base points (exact 3 / goal-difference 2 / outcome 1 / miss 0) + a rarity bonus + one ×2 joker
-per round, plus a champion-pick bonus. Scored on the 90-minute full-time result.
+per round, plus a champion-pick bonus. Penalty shootouts decide who advances, never your points.
 
-## Running with Docker (production build)
+## Running with Docker
 
-`compose.yaml` builds the multi-stage production image and runs it alongside Postgres. Database
-migrations are applied automatically on startup (`RUN_MIGRATIONS=true`).
+`compose.yaml` is the prod-shaped base (pinned Postgres + the multi-stage app image);
+`compose.dev.yaml` overlays dev extras (maildev SMTP catcher, hot-reload container, `.env.dev`).
+Migrations apply automatically on startup (`RUN_MIGRATIONS=true`). With [mise](https://mise.jdx.dev):
 
 ```bash
-cp .env.example .env        # set BETTER_AUTH_SECRET, NUXT_ADMIN_EMAILS (+ optional provider / Google keys)
-docker compose up --build   # Postgres + prod app at http://localhost:3000
-docker compose down         # stop (add -v to also wipe the database volume)
+cp .env.example .env   # set BETTER_AUTH_SECRET, NUXT_ADMIN_EMAILS, ...
+mise run up            # prod-like: app + db
+mise run dev           # HMR dev server + db + maildev (inbox UI on :1080)
+mise run preview       # built app + db + maildev
+mise run down          # stop everything
 ```
 
-Optional hot-reloading dev container: `docker compose --profile dev up app-dev`.
+(Equivalent raw commands live in `.mise.toml`.)
 
 ## Local development
 
@@ -64,5 +77,7 @@ pnpm install
 cp .env.example .env        # then fill in secrets
 pnpm db:migrate             # apply migrations
 pnpm dev                    # http://localhost:3000
-pnpm test:coverage          # unit tests (>=98% coverage enforced)
+pnpm test:coverage          # unit tests (>=98% branch coverage enforced)
+pnpm e2e:smtp               # email-OTP end-to-end (needs mise run dev)
+pnpm badge                  # refresh the coverage badge from the last run
 ```

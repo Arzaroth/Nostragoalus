@@ -10,6 +10,7 @@ const config = useRuntimeConfig()
     <div class="flex justify-center gap-4 text-xs">
       <NuxtLink to="/about" class="hover:underline">{{ t('about.title') }}</NuxtLink>
       <a href="/docs/api" target="_blank" rel="noopener" class="hover:underline">API</a>
+      <a href="https://git.arzaroth.com/Arzaroth/Nostragoalus" target="_blank" rel="noopener" class="hover:underline">{{ t('footer.source') }}</a>
       <NuxtLink to="/license" class="hover:underline">WTFPL</NuxtLink>
     </div>
   </footer>

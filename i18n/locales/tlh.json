@@ -201,7 +201,8 @@
     "subs": "tam",
     "bookings": "Deghmey",
     "toggleSubs": "tammey cha' pagh So'",
-    "toggleBookings": "Deghmey cha' pagh So'"
+    "toggleBookings": "Deghmey cha' pagh So'",
+    "draws": "raghmey"
   },
   "auth": {
     "signIn": "yI'el",
@@ -355,7 +356,8 @@
     "stackSub": "poSmoHlu'pu'bogh jan Dochvam Qutlh. Hoch nav projectDaq ghoS; Degh licenseDaq ghoS.",
     "dataTitle": "De' mungmey",
     "dataText": "may' De' FIFA UEFA je naw'Daq vo' (official pagh, laD neH). qo' mIllogh OpenStreetMap vo'. FIFA UEFA joq projectvam luvoqbe'.",
-    "changelogTitle": "choH tetlh"
+    "changelogTitle": "choH tetlh",
+    "sourceCta": "ngoq mung yIlaD"
   },
   "footer": {
     "builtWith": "🇫🇷 vo' ♥️ lo'taHvIS chenmoHlu'",

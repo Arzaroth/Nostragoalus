@@ -156,6 +156,25 @@ watch(activeTab, (tab) => {
   router.replace({ query: { ...route.query, tab: tab === 'stats' ? undefined : tab } })
 })
 
+// Head-to-head tally from this fixture's perspective (pens decide 'wins').
+const h2hSummary = computed(() => {
+  const me = m.value?.homeTeam
+  const out = { homeWins: 0, draws: 0, awayWins: 0 }
+  for (const h of insights.value?.headToHead ?? []) {
+    if (h.homeScore == null || h.awayScore == null) continue
+    let winner: 'home' | 'away' | null =
+      h.homeScore > h.awayScore ? 'home' : h.awayScore > h.homeScore ? 'away' : null
+    if (!winner && h.penalties && h.penalties.home !== h.penalties.away) {
+      winner = h.penalties.home > h.penalties.away ? 'home' : 'away'
+    }
+    if (!winner) out.draws++
+    else if ((winner === 'home' ? h.homeTeam : h.awayTeam) === me) out.homeWins++
+    else out.awayWins++
+  }
+  return out
+})
+const h2hTotal = computed(() => h2hSummary.value.homeWins + h2hSummary.value.draws + h2hSummary.value.awayWins)
+
 function formColor(r: string) {
   return r === 'W' ? '#22c55e' : r === 'L' ? '#ef4444' : '#a1a1aa'
 }
@@ -353,6 +372,18 @@ function fmtDate(d: string) {
           </TabPanel>
 
           <TabPanel v-if="insights.headToHead.length" value="h2h">
+            <div v-if="h2hTotal" class="mb-4">
+              <div class="flex justify-between text-xs mb-1" style="color: var(--p-text-muted-color)">
+                <span><b style="color: var(--p-text-color)">{{ h2hSummary.homeWins }}</b> {{ m.homeTeam }}</span>
+                <span>{{ h2hSummary.draws }} {{ t('match.draws') }}</span>
+                <span>{{ m.awayTeam }} <b style="color: var(--p-text-color)">{{ h2hSummary.awayWins }}</b></span>
+              </div>
+              <div class="flex h-2 rounded-full overflow-hidden gap-px">
+                <div :style="`width:${(h2hSummary.homeWins / h2hTotal) * 100}%; background: var(--p-primary-color)`" />
+                <div :style="`width:${(h2hSummary.draws / h2hTotal) * 100}%; background: var(--p-content-border-color)`" />
+                <div :style="`width:${(h2hSummary.awayWins / h2hTotal) * 100}%; background: #71717a`" />
+              </div>
+            </div>
             <div class="flex flex-col text-sm">
               <NuxtLink v-for="(h, i) in insights.headToHead" :key="i" :to="`/${selectedSlug}/matches/${h.matchId}`" class="flex items-center justify-between border-t py-2 hover:opacity-80" style="border-color: var(--p-content-border-color)">
                 <span class="font-medium">{{ h.homeTeam }} {{ h.homeScore }}–{{ h.awayScore }}<template v-if="pensResult(h)"> ({{ pensResult(h) }} {{ t('match.pens') }})</template> {{ h.awayTeam }}</span>

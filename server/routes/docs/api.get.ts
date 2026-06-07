@@ -4,7 +4,10 @@ export default defineEventHandler((event) => {
   setHeader(event, 'content-type', 'text/html; charset=utf-8')
   const configuration = {
     url: '/docs/openapi.json',
+    // Note: Scalar remembers a previously-picked client in localStorage; the
+    // default only applies to fresh visitors.
     defaultHttpClient: { targetKey: 'shell', clientKey: 'httpie' },
+    hiddenClients: ['wget', 'fetch', 'xhr', 'jquery', 'okhttp', 'unirest', 'nsurlsession', 'cohttp', 'restmethod', 'webrequest', 'guzzle', 'http1', 'http2'],
     metaData: { title: 'Nostragoalus API' },
   }
   return `<!doctype html>

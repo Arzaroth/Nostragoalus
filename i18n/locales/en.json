@@ -201,7 +201,8 @@
     "subs": "Subs",
     "bookings": "Bookings",
     "toggleSubs": "Show or hide substitutions",
-    "toggleBookings": "Show or hide bookings"
+    "toggleBookings": "Show or hide bookings",
+    "draws": "draws"
   },
   "auth": {
     "signIn": "Sign in",
@@ -355,7 +356,8 @@
     "stackSub": "The open-source software this app stands on. Every card links to the project; the badge links to its license.",
     "dataTitle": "Data sources",
     "dataText": "Match data comes from publicly accessible FIFA and UEFA endpoints (unofficial, read-only, politely rate-limited). Map tiles by OpenStreetMap contributors. This project is not affiliated with or endorsed by FIFA or UEFA.",
-    "changelogTitle": "Changelog"
+    "changelogTitle": "Changelog",
+    "sourceCta": "Read the source"
   },
   "footer": {
     "builtWith": "Made with ♥️ from 🇫🇷",

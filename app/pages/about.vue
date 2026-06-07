@@ -97,8 +97,8 @@ const changelog = computed<ChangelogVersion[]>(() => {
 </script>
 
 <template>
-  <div class="max-w-4xl mx-auto flex flex-col gap-12 pb-12">
-    <StarField :style="{ zIndex: -10 }" />
+  <PublicShell>
+    <div class="max-w-4xl mx-auto flex flex-col gap-12">
     <div>
       <h1 class="text-3xl font-bold flex items-center gap-3"><img src="/brand/mark.svg" alt="" class="w-10 h-10" >{{ t('about.title') }}</h1>
       <p class="mt-3 max-w-2xl" style="color: var(--p-text-muted-color)">{{ t('about.intro') }}</p>
@@ -108,6 +108,7 @@ const changelog = computed<ChangelogVersion[]>(() => {
     <section class="ng-card rounded-2xl border p-6" style="background: var(--p-content-background)">
       <h2 class="font-semibold text-lg flex items-center gap-2"><i class="pi pi-sparkles" style="color: var(--p-primary-color)" /> {{ t('about.aiTitle') }}</h2>
       <p class="text-sm mt-2" style="color: var(--p-text-muted-color)">{{ t('about.aiText') }}</p>
+      <a href="https://git.arzaroth.com/Arzaroth/Nostragoalus" target="_blank" rel="noopener" class="inline-flex items-center gap-2 mt-3 text-sm hover:underline" style="color: var(--p-primary-color)"><i class="pi pi-code" /> {{ t('about.sourceCta') }}</a>
     </section>
 
     <!-- Tech stack -->
@@ -169,7 +170,6 @@ const changelog = computed<ChangelogVersion[]>(() => {
         </div>
       </div>
     </section>
-
-    <AppFooter />
-  </div>
+    </div>
+  </PublicShell>
 </template>

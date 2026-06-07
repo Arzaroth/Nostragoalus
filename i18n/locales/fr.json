@@ -201,7 +201,8 @@
     "subs": "Remplacements",
     "bookings": "Cartons",
     "toggleSubs": "Afficher ou masquer les remplacements",
-    "toggleBookings": "Afficher ou masquer les cartons"
+    "toggleBookings": "Afficher ou masquer les cartons",
+    "draws": "nuls"
   },
   "auth": {
     "signIn": "Connexion",
@@ -355,7 +356,8 @@
     "stackSub": "Les logiciels open source sur lesquels repose l'application. Chaque carte pointe vers le projet ; le badge vers sa licence.",
     "dataTitle": "Sources de données",
     "dataText": "Les données des matchs proviennent de points d'accès FIFA et UEFA publiquement accessibles (non officiels, lecture seule, poliment limités en débit). Tuiles de carte par les contributeurs OpenStreetMap. Ce projet n'est ni affilié ni approuvé par la FIFA ou l'UEFA.",
-    "changelogTitle": "Journal des modifications"
+    "changelogTitle": "Journal des modifications",
+    "sourceCta": "Lire le code source"
   },
   "footer": {
     "builtWith": "Fait avec ♥️ depuis la 🇫🇷",

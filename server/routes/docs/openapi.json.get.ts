@@ -1,10 +1,20 @@
+import responseSchemas from '../../utils/docs/response-schemas.json'
+
 // The public API spec: Nitro's generated document, stripped of framework
 // internals (__nuxt_error, _i18n, docs routes...) so only /api/* remains.
+// GET responses get real schemas + examples, sampled from the live API
+// (scripts/gen-api-schemas.mjs regenerates them).
 export default defineEventHandler(async (event) => {
   const spec = await event.$fetch<Record<string, any>>('/_docs/openapi.json')
-  const paths: Record<string, unknown> = {}
-  for (const [path, ops] of Object.entries(spec.paths ?? {})) {
-    if (path.startsWith('/api/')) paths[path] = ops
+  const paths: Record<string, any> = {}
+  for (const [path, ops] of Object.entries<any>(spec.paths ?? {})) {
+    if (!path.startsWith('/api/')) continue
+    const sampled = (responseSchemas as Record<string, { schema: unknown; example: unknown }>)[path]
+    const ok = ops?.get?.responses?.['200']
+    if (sampled && ok && !ok.content) {
+      ok.content = { 'application/json': { schema: sampled.schema, example: sampled.example } }
+    }
+    paths[path] = ops
   }
   // Admin endpoints sink to the bottom of the sidebar.
   const tags = [
