@@ -28,6 +28,16 @@
     "exact": "Exact scores",
     "jokers": "Jokers used · {n} picks"
   },
+  "prefs": {
+    "title": "Preferences",
+    "hint": "Saved to your account and restored when you sign in. Until then, your browser and system settings are used.",
+    "language": "Language",
+    "theme": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System",
+    "saved": "Saved"
+  },
   "common": {
     "loading": "Loading…",
     "save": "Save",

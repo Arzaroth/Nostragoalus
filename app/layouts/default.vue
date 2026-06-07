@@ -1,7 +1,6 @@
 <script setup lang="ts">
 const { session, signOut } = useAuth()
-const { isDark, toggle } = useTheme()
-const { t, locale, locales, setLocale } = useI18n()
+const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const config = useRuntimeConfig()
@@ -16,11 +15,6 @@ watch(
   },
   { immediate: true },
 )
-
-const lang = computed({
-  get: () => locale.value,
-  set: (value: string) => setLocale(value as 'en' | 'fr'),
-})
 
 const { data: adminStatus } = useFetch('/api/admin/status')
 const isAdmin = computed(() => (adminStatus.value as { isAdmin?: boolean } | null)?.isAdmin === true)
@@ -75,10 +69,6 @@ async function onSignOut() {
         </nav>
 
         <div class="flex items-center gap-2 justify-end">
-          <Select v-model="lang" :options="locales" option-label="name" option-value="code" size="small" class="w-28" />
-
-          <Button :icon="isDark ? 'pi pi-sun' : 'pi pi-moon'" text rounded severity="secondary" aria-label="Toggle theme" @click="toggle" />
-
           <ClientOnly>
             <template v-if="session && session.data">
               <button type="button" class="rounded-full shrink-0" :aria-label="t('account.title')" @click="(e) => userMenu.toggle(e)">
@@ -98,6 +88,9 @@ async function onSignOut() {
                   <div class="border-t" style="border-color: var(--p-content-border-color)" />
                   <NuxtLink to="/account" class="px-3 py-2 text-sm flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/10" @click="userMenu.hide()">
                     <i class="pi pi-user" />{{ t('account.title') }}
+                  </NuxtLink>
+                  <NuxtLink to="/preferences" class="px-3 py-2 text-sm flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/10" @click="userMenu.hide()">
+                    <i class="pi pi-sliders-h" />{{ t('prefs.title') }}
                   </NuxtLink>
                   <button type="button" class="px-3 py-2 text-sm text-left flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/10" @click="onSignOut">
                     <i class="pi pi-sign-out" />{{ t('nav.signOut') }}

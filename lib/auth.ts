@@ -23,6 +23,11 @@ export const auth = betterAuth({
   user: {
     changeEmail: { enabled: true },
     deleteUser: { enabled: true },
+    // Per-user preferences, restored on login (browser/system values are used until set).
+    additionalFields: {
+      locale: { type: 'string', required: false },
+      theme: { type: 'string', required: false },
+    },
   },
   // Google login is enabled only when credentials are configured.
   socialProviders:

@@ -1,5 +1,8 @@
+export type ThemePref = 'light' | 'dark' | 'system'
+
 export function useTheme() {
   const isDark = useState('theme-dark', () => false)
+  const preference = useState<ThemePref>('theme-pref', () => 'system')
 
   function apply() {
     if (import.meta.client) {
@@ -7,11 +10,26 @@ export function useTheme() {
     }
   }
 
-  function toggle() {
-    isDark.value = !isDark.value
-    if (import.meta.client) localStorage.setItem('theme', isDark.value ? 'dark' : 'light')
+  function resolve(pref: ThemePref): boolean {
+    if (pref !== 'system') return pref === 'dark'
+    return import.meta.client ? (window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false) : false
+  }
+
+  // 'system' keeps following the OS (and clears the localStorage override the
+  // anti-FOUC boot script reads); explicit prefs pin it.
+  function setPreference(pref: ThemePref) {
+    preference.value = pref
+    isDark.value = resolve(pref)
+    if (import.meta.client) {
+      if (pref === 'system') localStorage.removeItem('theme')
+      else localStorage.setItem('theme', pref)
+    }
     apply()
   }
 
-  return { isDark, toggle, apply }
+  function toggle() {
+    setPreference(isDark.value ? 'light' : 'dark')
+  }
+
+  return { isDark, preference, setPreference, toggle, apply }
 }

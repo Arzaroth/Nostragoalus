@@ -28,6 +28,16 @@
     "exact": "Scores exacts",
     "jokers": "Jokers utilisés · {n} pronos"
   },
+  "prefs": {
+    "title": "Préférences",
+    "hint": "Enregistrées sur votre compte et restaurées à la connexion. Avant cela, les réglages du navigateur et du système sont utilisés.",
+    "language": "Langue",
+    "theme": "Thème",
+    "light": "Clair",
+    "dark": "Sombre",
+    "system": "Système",
+    "saved": "Enregistré"
+  },
   "common": {
     "loading": "Chargement…",
     "save": "Enregistrer",
