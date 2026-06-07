@@ -31,6 +31,8 @@ export default defineNuxtConfig({
     locales: [
       { code: 'en', name: 'English', file: 'en.json' },
       { code: 'fr', name: 'Français', file: 'fr.json' },
+      { code: 'th', name: 'ไทย', file: 'th.json' },
+      { code: 'tlh', name: 'tlhIngan Hol', file: 'tlh.json' },
     ],
     detectBrowserLanguage: { useCookie: true, cookieKey: 'ng_locale', redirectOn: 'no prefix' },
   },

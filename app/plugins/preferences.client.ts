@@ -11,8 +11,8 @@ export default defineNuxtPlugin((nuxtApp) => {
       if ((u.theme === 'light' || u.theme === 'dark' || u.theme === 'system') && u.theme !== preference.value) {
         setPreference(u.theme)
       }
-      const i18n = nuxtApp.$i18n as unknown as { locale: { value: string }; setLocale: (l: 'en' | 'fr') => Promise<void> } | undefined
-      if ((u.locale === 'en' || u.locale === 'fr') && i18n && i18n.locale.value !== u.locale) {
+      const i18n = nuxtApp.$i18n as unknown as { locale: { value: string }; setLocale: (l: string) => Promise<void> } | undefined
+      if (u.locale && ['en', 'fr', 'th', 'tlh'].includes(u.locale) && i18n && i18n.locale.value !== u.locale) {
         void i18n.setLocale(u.locale)
       }
     },

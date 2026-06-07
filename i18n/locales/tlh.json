@@ -1,0 +1,215 @@
+{
+  "nav": {
+    "matches": "may'mey",
+    "bracket": "may' He",
+    "map": "qo' mIllogh",
+    "ranking": "patlh",
+    "myPicks": "wIvmeywIj",
+    "admin": "loHwI'",
+    "signIn": "yI'el",
+    "signOut": "yImej"
+  },
+  "bracket": {
+    "empty": "wej may' He tu'lu'."
+  },
+  "map": {
+    "hint": "Sep yIwIv 'ej ghomDaj yIlegh.",
+    "live": "DaH",
+    "next": "may' veb",
+    "last": "Qav ta'",
+    "recent": "ta'mey tlhol",
+    "group": "'ay'",
+    "noData": "wej may' tu'lu'."
+  },
+  "countdown": { "d": "jaj", "h": "rep", "m": "tup" },
+  "picks": {
+    "points": "QuQmey",
+    "rank": "patlh — {n} SuvwI'pu'",
+    "exact": "pup wIvmey",
+    "jokers": "Hov lo'lu'ta' · {n} wIvmey"
+  },
+  "prefs": {
+    "title": "wIvmey qaq",
+    "hint": "Doch'a'lIjDaq choqlu' 'ej bI'elDI' cheghmoHlu'. wej DanoHpu'chugh, De'wI'lIj patlh lo'lu'.",
+    "language": "Hol",
+    "theme": "HaSta",
+    "light": "wov",
+    "dark": "Hurgh",
+    "system": "pat",
+    "saved": "choqlu'ta'"
+  },
+  "common": {
+    "loading": "yIloS…",
+    "save": "yIchoq",
+    "cancel": "yImev",
+    "back": "may'meyDaq yIchegh",
+    "refresh": "yIchu'qa'"
+  },
+  "home": {
+    "tagline": "QujmeH qonwI' wIvmey yIqon, pup DanIDmo' QuQmey yISuq, 'ej patlhDaq juppu'lI' tIjey.",
+    "getStarted": "yItagh",
+    "goToMatches": "may'meyDaq yIghoS"
+  },
+  "landing": {
+    "badge": "qo' HIvje' 2026 — DaH qaSlI'",
+    "heroA": "Hoch may' yInoH.",
+    "heroB": "juppu'lI' tIjey.",
+    "sub": "QI'D Quj moj QI'D 'aD — Nostragoalus lo'lu'DI', may' mI'mey DanoH, pup DanIDmo' QuQmey DaSuq, 'ej patlh DatoS.",
+    "browse": "may'mey tIlegh",
+    "featuresTitle": "SuvmeH Hoch Daghajbogh",
+    "featuresSub": "pup noHvo' DaH may' He qo' mIllogh je.",
+    "f": {
+      "scoring": { "t": "pup noH", "d": "bIpupchugh QuQmey law' DaSuq — mI' pup, QIH chuq, ghap jeywI' neH." },
+      "joker": { "t": "Hov ×2", "d": "wa' may'Daq QuQmeylIj cha'logh boqmoH, bIQam'chugh." },
+      "champion": { "t": "che'wI' wIv", "d": "'aqtu' jeywI' yInoH 'ej tev nI' yISuq — may' wa'DIch taghDI' SoQmoHlu'." },
+      "live": { "t": "DaH mI'mey", "d": "may' qaStaHvIS, SIbI' mI'mey choHmoHlu'." },
+      "bracket": { "t": "may' He", "d": "Qav may'Daq He yItlha' — cha' Dop may' HeDaq." },
+      "map": { "t": "qo' mIllogh", "d": "qo' milloghDaq Sep yIwIv — ghom, Dotlh, patlh, may' veb je yIlegh." },
+      "stats": { "t": "may' De' jaq", "d": "loSpev, QI'D naghmey, bejwI'pu', QuQ poH, 'ej ghom Hoch — bachwI' qach je." },
+      "ranking": { "t": "patlhmey", "d": "wa' 'aqtu'Daq ghap Hoch qo'Daq yISuv." },
+      "competitions": { "t": "'aqtu'mey law'", "d": "qo' HIvje' 2026, qo' HIvje' 2022, yu'rop tev 2024 je — SIbI' choH." }
+    },
+    "scoringTitle": "noH nap — po' neH",
+    "scoringSub": "90 tup ta'vo' noHlu'. bISumchugh, law' DaSuq.",
+    "tier": { "exact": "mI' pup", "diff": "QIH chuq", "outcome": "jeywI' lugh", "miss": "Qagh" },
+    "bonus": "wIv jaqqu'vaD tev le'",
+    "jokerPill": "wa' Hov ×2 wa' gho",
+    "championPill": "che'wI' wIv tev",
+    "compsTitle": "'aqtu'lIj yIwIv",
+    "compsSub": "SIbI' yISuv.",
+    "viewComp": "may'mey tIlegh",
+    "ctaTitle": "bIwIvrupqu''a'?",
+    "ctaSub": "Doch'a' yIchenmoH, juppu'lI' tIrI', 'ej 'Iv QI'D Sov teH — yI'agh.",
+    "footer": "yInoH. yISuq. yIjey."
+  },
+  "matches": {
+    "title": "may'mey",
+    "empty": "wej may' tu'lu' — loHwI' pa'vo' tIlIH.",
+    "search": "ghom yISam…",
+    "noResults": "may' tu'be'lu'."
+  },
+  "team": {
+    "notFound": "ghom tu'be'lu'.",
+    "noMatches": "ghomvamvaD may' tu'be'lu'."
+  },
+  "predictions": {
+    "empty": "wej bInoHpu'.",
+    "none": "wej wIv cha'lu'.",
+    "publicNote": "taghpu'bogh may'mey wIvmey neH cha'lu'.",
+    "joker": "Hov",
+    "makeJoker": "Hov ×2 yIQeq",
+    "jokerError": "Hov vIHmoHlaHbe' — chaq may' taghpu'."
+  },
+  "champion": {
+    "title": "che'wI'lIj",
+    "current": "DaH wIv:",
+    "pick": "jeywI' yIwIv",
+    "hint": "wIvlIj 'aqtu' jeychugh, tev DaSuq · may' wa'DIch taghDI' SoQmoHlu'.",
+    "noPick": "che'wI' wIvbe'lu' — SoQ.",
+    "lockedIn": "SoQ — Qapla'!",
+    "preview": "wej choqlu'"
+  },
+  "leaderboard": {
+    "title": "patlh",
+    "thisCompetition": "'aqtu'",
+    "global": "Hoch qo'",
+    "empty": "wej QuQ tu'lu' — may' rInDI' noHlu'.",
+    "you": "(SoH)",
+    "exact": "pup",
+    "correct": "lugh",
+    "pts": "QuQ"
+  },
+  "match": {
+    "standings": "patlh",
+    "form": "Dotlh",
+    "next": "veb",
+    "h2h": "qaD tlhol",
+    "scorers": "bachwI' po'",
+    "players": "QujwI'pu'",
+    "assists": "qachwI' po'",
+    "stats": "De'",
+    "possession": "loSpev",
+    "pens": "QI'D bachmey",
+    "topScorer": "bachwI' po'",
+    "topAssister": "qachwI' po'",
+    "noResults": "wej ta' tu'lu'.",
+    "noUpcoming": "may' veb tu'be'lu'."
+  },
+  "auth": {
+    "signIn": "yI'el",
+    "signUp": "Doch'a' yIchenmoH",
+    "email": "jabbI'ID",
+    "password": "pegh mu'",
+    "displayName": "pong cha'lu'bogh",
+    "needAccount": "Doch'a' Daneh'a'? yIqon",
+    "haveAccount": "Doch'a' Daghajchugh, yI'el",
+    "or": "ghap",
+    "google": "Google lo'taHvIS yIruch",
+    "sso": "SSO lo'taHvIS yI'el",
+    "ssoEmailHint": "SSO DaneHchugh, jabbI'IDlIj yIqon."
+  },
+  "account": {
+    "title": "Doch'a'",
+    "profile": "ngoDmey",
+    "profileHint": "jabbI'ID DachoHchugh, chu'wI' yI'olnIS.",
+    "email": "jabbI'ID",
+    "displayName": "pong cha'lu'bogh",
+    "changeAvatar": "mIllogh yIchoH",
+    "avatarHint": "mIllogh meyrI' yIlan (JPG/PNG).",
+    "newEmail": "jabbI'ID chu'",
+    "updateEmail": "jabbI'ID yIchoH",
+    "emailChanged": "jabbI'ID choHlu'ta'.",
+    "saved": "ngoDmey choqlu'ta'.",
+    "password": "pegh mu'",
+    "passwordHint": "Doch'a'lIj pegh mu' yIchoH.",
+    "currentPassword": "DaH pegh mu'",
+    "newPassword": "pegh mu' chu' (8 Degh law')",
+    "confirmPassword": "pegh mu' yI'olqa'",
+    "passwordMismatch": "rapbe' pegh mu'mey.",
+    "updatePassword": "pegh mu' yIchoH",
+    "passwordChanged": "pegh mu' choHlu'ta'.",
+    "dangerTitle": "Doch'a' Qaw'",
+    "dangerHint": "Doch'a' DaQaw'chugh, chegh DuH pagh — Hoch wIvmeylIj luQaw'lu'.",
+    "deleteAccount": "Doch'a' yIQaw'",
+    "confirmDeleteHint": "Qaw' Da'olmeH pegh mu' yIqon."
+  },
+  "admin": {
+    "title": "loHwI'",
+    "forbidden": "loHwI' DIb Daghajbe'.",
+    "sso": {
+      "title": "SSO",
+      "hint": "OIDC, SAML, Google joq yIcher. peghmey So'lu'taHvIS choqlu'.",
+      "providerId": "jabwI' pong",
+      "domain": "jabbI'ID Sep",
+      "issuer": "Issuer URL",
+      "clientId": "Client ID",
+      "clientSecret": "Client pegh",
+      "entryPoint": "IdP SSO URL",
+      "cert": "IdP 'olwI'",
+      "idpMetadata": "IdP De' XML",
+      "optionalXml": "DuHmey — IdP De' XML yIlan",
+      "add": "jabwI' yIchel",
+      "added": "jabwI' qonlu'ta'."
+    },
+    "users": {
+      "title": "lo'wI'pu'",
+      "hint": "lo'wI'pu' yIchenmoH, loHwI' tIchenmoH, ghap tIteq.",
+      "create": "yIchenmoH",
+      "promote": "loHwI' yIchenmoH",
+      "demote": "loHwI' yIteq",
+      "delete": "lo'wI' yIQaw'"
+    },
+    "data": {
+      "title": "De'",
+      "hint": "may'mey tIlIH 'ej DaH mI' / rIn Qu'mey yIchu'.",
+      "import": "may'mey tIlIH"
+    }
+  },
+  "strength": {
+    "veryWeak": "pujqu'",
+    "weak": "puj",
+    "fair": "ruch",
+    "good": "QaQ",
+    "strong": "HoSghaj"
+  }
+}

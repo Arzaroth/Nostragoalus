@@ -31,6 +31,7 @@ async function signInGoogle() {
 
 <template>
   <div class="flex flex-col gap-3 max-w-sm mx-auto mt-12">
+    <GuestPrefs />
     <h1 class="text-2xl font-bold">{{ t('auth.signUp') }}</h1>
     <Message v-if="error" severity="error">{{ error }}</Message>
     <InputText v-model="name" :placeholder="t('auth.displayName')" />

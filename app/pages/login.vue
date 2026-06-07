@@ -40,6 +40,7 @@ async function signInSSO() {
 
 <template>
   <div class="flex flex-col gap-3 max-w-sm mx-auto mt-12">
+    <GuestPrefs />
     <h1 class="text-2xl font-bold">{{ t('auth.signIn') }}</h1>
     <Message v-if="error" severity="error">{{ error }}</Message>
     <InputText v-model="email" type="email" :placeholder="t('auth.email')" @keyup.enter="submit" />
