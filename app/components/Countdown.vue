@@ -3,15 +3,8 @@ const { t } = useI18n()
 const props = defineProps<{ to: string }>()
 
 // Rendered only after mount (the label depends on "now", which would mismatch SSR).
-const mounted = ref(false)
-const now = ref(0)
-let timer: ReturnType<typeof setInterval> | undefined
-onMounted(() => {
-  mounted.value = true
-  now.value = Date.now()
-  timer = setInterval(() => (now.value = Date.now()), 30_000)
-})
-onBeforeUnmount(() => clearInterval(timer))
+const mounted = useMounted()
+const now = useTimestamp({ interval: 30_000 })
 
 const MAX_MS = 45 * 24 * 60 * 60 * 1000 // beyond ~6 weeks a countdown is just noise
 

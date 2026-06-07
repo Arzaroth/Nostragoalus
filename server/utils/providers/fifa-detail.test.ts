@@ -509,6 +509,49 @@ describe('new provider methods', () => {
     await expect(limited.getTeamTournament!({ teamRef: 'FRA', matches: [{ stageId: 's', matchId: 'm' }] })).rejects.toThrow()
   })
 
+  it('getTeamTournament resolves the team id from the calendar before kickoff (announced squads)', async () => {
+    const calendar = { Results: [{ IdMatch: 'm1', Home: { IdTeam: '43946', Abbreviation: 'FRA', Score: null }, Away: { IdTeam: '43935', Abbreviation: 'BRA', Score: null } }] }
+    const squadDoc = {
+      Players: [{ IdPlayer: 'p1', PlayerName: [{ Locale: 'en', Description: 'Brice SAMBA' }], JerseyNum: '1', Position: '0' }],
+      Officials: [{ Name: [{ Locale: 'en', Description: 'Didier Deschamps' }], Role: 0 }],
+    }
+    const fetchImpl = (async (url: string) => {
+      const u = String(url)
+      if (u.includes('/live/football/')) return new Response('null', { status: 200 }) // unplayed: 200 with a null body
+      if (u.includes('/calendar/matches')) return new Response(JSON.stringify(calendar), { status: 200 })
+      if (u.includes('/squad')) return new Response(JSON.stringify(squadDoc), { status: 200 })
+      return new Response('{}', { status: 200 })
+    }) as unknown as typeof fetch
+    const provider = fifaProvider({ seasonId: '285023', competitionId: '17', rateLimiter: noWait(), fetchImpl })
+    const res = await provider.getTeamTournament!({ teamRef: 'FRA', matches: [{ stageId: 's', matchId: 'm1' }] })
+    expect(res.squad).toHaveLength(1)
+    expect(res.squad[0]).toMatchObject({ name: 'Brice SAMBA', position: 'GK', shirtNumber: 1 })
+    expect(res.coach).toBe('Didier DESCHAMPS')
+    expect(res.stats).toBeNull() // nothing played, nothing aggregated
+  })
+
+  it('getTeamTournament stays empty when the calendar has no such team or fails', async () => {
+    const emptyCal = (async (url: string) => {
+      const u = String(url)
+      if (u.includes('/live/football/')) return new Response('null', { status: 200 })
+      if (u.includes('/calendar/matches')) return new Response(JSON.stringify({ Results: [{ Home: null, Away: { IdTeam: null, Abbreviation: 'FRA', Score: null } }, { Home: { IdTeam: 'X9', Abbreviation: 'ZZ', Score: null }, Away: null }] }), { status: 200 })
+      return new Response('{}', { status: 200 })
+    }) as unknown as typeof fetch
+    const provider = fifaProvider({ seasonId: '1', competitionId: '17', rateLimiter: noWait(), fetchImpl: emptyCal })
+    const res = await provider.getTeamTournament!({ teamRef: 'FRA', matches: [{ stageId: 's', matchId: 'm1' }] })
+    expect(res.squad).toEqual([])
+    // exact-id match path
+    expect((await provider.getTeamTournament!({ teamRef: 'X9', matches: [{ stageId: 's', matchId: 'm1' }] })).squad).toEqual([])
+
+    const calDown = (async (url: string) => {
+      const u = String(url)
+      if (u.includes('/live/football/')) return new Response('null', { status: 200 })
+      return new Response('down', { status: 500 })
+    }) as unknown as typeof fetch
+    const p2 = fifaProvider({ seasonId: '1', competitionId: '17', rateLimiter: noWait(), fetchImpl: calDown })
+    expect((await p2.getTeamTournament!({ teamRef: 'FRA', matches: [{ stageId: 's', matchId: 'm1' }] })).squad).toEqual([])
+  })
+
   it('getMatchStats normalizes fdh stats and returns null on failure', async () => {
     const ok = fifaProvider({ seasonId: '1', competitionId: '17', rateLimiter: noWait(), fetchImpl: okJson({ T1: [['AttemptAtGoal', 23, true]] }) })
     expect((await ok.getMatchStats!({ ifesId: '133016' }))!.T1.attempts).toBe(23)

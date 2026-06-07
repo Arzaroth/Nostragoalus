@@ -679,7 +679,8 @@ export function fifaProvider(options: FifaOptions): MatchDataProvider {
         )
         if (response.status === 429) throw new ProviderRateLimitError()
         if (!response.ok) continue // a missing match-day roster shouldn't sink the sweep
-        details.push((await response.json()) as FifaMatchDetailResponse)
+        const doc = (await response.json()) as FifaMatchDetailResponse | null
+        if (doc) details.push(doc) // unplayed matches answer 200 with a null body
       }
       const sideOf = (d: FifaMatchDetailResponse) =>
         d.HomeTeam && (d.HomeTeam.IdTeam === teamRef || d.HomeTeam.Abbreviation === teamRef)
@@ -707,7 +708,25 @@ export function fifaProvider(options: FifaOptions): MatchDataProvider {
       const captains = new Set(unionSquad.filter((p) => p.captain).map((p) => p.playerId))
       let squad = unionSquad
       let coach = normalizeFifaCoach(details, teamRef)
-      const teamId = details.map(sideOf).find((t) => t?.IdTeam)?.IdTeam
+      let teamId = details.map(sideOf).find((t) => t?.IdTeam)?.IdTeam
+      if (!teamId) {
+        // Before kickoff there are no match docs - resolve the id from the calendar
+        // so announced squads show up ahead of the tournament.
+        try {
+          await limiter.acquire()
+          const r = await doFetch(`${baseUrl}/calendar/matches?language=en&count=500&idSeason=${options.seasonId}`)
+          if (r.ok) {
+            const cal = (await r.json()) as { Results?: FifaMatch[] }
+            for (const cm of cal.Results ?? []) {
+              for (const side of [cm.Home, cm.Away]) {
+                if (side?.IdTeam && (side.IdTeam === teamRef || side.Abbreviation === teamRef)) teamId = side.IdTeam
+              }
+            }
+          }
+        } catch {
+          // no calendar, no squad - the union fallback stays empty
+        }
+      }
       if (teamId) {
         try {
           await limiter.acquire()

@@ -3,6 +3,7 @@ export type ThemePref = 'light' | 'dark' | 'system'
 export function useTheme() {
   const isDark = useState('theme-dark', () => false)
   const preference = useState<ThemePref>('theme-pref', () => 'system')
+  const prefersDark = usePreferredDark()
 
   function apply() {
     if (import.meta.client) {
@@ -12,7 +13,7 @@ export function useTheme() {
 
   function resolve(pref: ThemePref): boolean {
     if (pref !== 'system') return pref === 'dark'
-    return import.meta.client ? (window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false) : false
+    return import.meta.client ? prefersDark.value : false
   }
 
   // 'system' keeps following the OS (and clears the localStorage override the

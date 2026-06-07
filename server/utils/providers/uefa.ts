@@ -1,4 +1,18 @@
-import type { AppStage, MatchStatus, NormalizedMatch, Score, Team, Winner } from '../../../shared/types/match'
+import type {
+  AppStage,
+  BookingEvent,
+  MatchDetail,
+  MatchStatus,
+  NormalizedGoal,
+  NormalizedMatch,
+  Score,
+  SquadPlayer,
+  Team,
+  TeamMatchStats,
+  TeamSeasonStats,
+  TopScorer,
+  Winner,
+} from '../../../shared/types/match'
 import { RateLimiter } from './rate-limiter'
 import { ProviderRateLimitError, ProviderUpstreamError, type ListFixturesOptions, type MatchDataProvider } from './types'
 
@@ -26,6 +40,8 @@ export interface UefaMatch {
   group?: { metaData?: { groupName?: string | null } | null } | null
   matchday?: { name?: string | null; phase?: string | null } | null
   winner?: { match?: { team?: { id?: string | null } | null } | null } | null
+  matchAttendance?: number | null
+  stadium?: { translations?: { name?: Record<string, string> | null } | null } | null
 }
 
 export function mapUefaStatus(status: string | null | undefined): MatchStatus {
@@ -96,21 +112,140 @@ export function normalizeUefaMatch(m: UefaMatch): NormalizedMatch {
   }
 }
 
+export interface UefaEvent {
+  type?: string | null
+  phase?: string | null
+  time?: { minute?: number | null; injuryMinute?: number | null } | null
+  primaryActor?: {
+    person?: { id?: string | null; internationalName?: string | null; countryCode?: string | null } | null
+    team?: { id?: string | null } | null
+  } | null
+  secondaryActor?: {
+    person?: { id?: string | null; internationalName?: string | null } | null
+  } | null
+}
+
+export interface UefaPlayerRow {
+  id?: string | null
+  internationalName?: string | null
+  countryCode?: string | null
+  nationalFieldPosition?: string | null
+  fieldPosition?: string | null
+  nationalJerseyNumber?: string | null
+}
+
+export interface UefaRankingRow {
+  statistics?: { name?: string | null; value?: string | null }[] | null
+  player?: { internationalName?: string | null } | null
+  team?: { countryCode?: string | null; internationalName?: string | null } | null
+}
+
+export function eventMinute(e: UefaEvent): string | null {
+  const minute = e.time?.minute
+  if (minute == null) return null
+  const injury = e.time?.injuryMinute
+  return injury ? `${minute}'+${injury}` : `${minute}'`
+}
+
+export function mapUefaPosition(pos: string | null | undefined): SquadPlayer['position'] {
+  switch (pos) {
+    case 'GOALKEEPER':
+      return 'GK'
+    case 'DEFENDER':
+      return 'DF'
+    case 'MIDFIELDER':
+      return 'MF'
+    case 'FORWARD':
+      return 'FW'
+    default:
+      return null
+  }
+}
+
+const SHOT_TYPES = new Set(['GOAL', 'OWN_GOAL', 'SHOT_ON_GOAL', 'SHOT_WIDE', 'SHOT_BLOCKED'])
+const ON_TARGET_TYPES = new Set(['GOAL', 'SHOT_ON_GOAL'])
+
+export function aggregateUefaEvents(events: UefaEvent[], teamId: string | null): TeamMatchStats {
+  const mine = events.filter(
+    (e) => e.phase !== 'PENALTY_SHOOTOUT' && e.primaryActor?.team?.id != null && e.primaryActor.team.id === teamId,
+  )
+  const count = (pred: (t: string) => boolean) => mine.filter((e) => e.type != null && pred(e.type)).length
+  return {
+    possession: null,
+    attempts: count((t) => SHOT_TYPES.has(t)),
+    onTarget: count((t) => ON_TARGET_TYPES.has(t)),
+    passes: null,
+    passesCompleted: null,
+    crosses: null,
+    corners: count((t) => t === 'CORNER'),
+    fouls: count((t) => t === 'FOUL'),
+    offsides: count((t) => t === 'OFFSIDE'),
+    distanceKm: null,
+    pressuresApplied: null,
+    forcedTurnovers: null,
+    yellowCards: count((t) => t === 'YELLOW_CARD'),
+    redCards: count((t) => t === 'RED_CARD'),
+  }
+}
+
+function statValue(row: UefaRankingRow, name: string): number | null {
+  const v = (row.statistics ?? []).find((s) => s.name === name)?.value
+  if (v == null || v === '') return null
+  const n = Number(v)
+  return Number.isFinite(n) ? n : null
+}
+
 export interface UefaOptions {
   seasonYear: string
   competitionId?: string
   baseUrl?: string
+  statsBaseUrl?: string
+  compBaseUrl?: string
   fetchImpl?: typeof fetch
   rateLimiter?: RateLimiter
 }
 
 const DEFAULT_BASE_URL = 'https://match.uefa.com'
+const DEFAULT_STATS_BASE_URL = 'https://compstats.uefa.com'
+const DEFAULT_COMP_BASE_URL = 'https://comp.uefa.com'
 
 export function uefaProvider(options: UefaOptions): MatchDataProvider {
   const baseUrl = options.baseUrl ?? DEFAULT_BASE_URL
+  const statsBaseUrl = options.statsBaseUrl ?? DEFAULT_STATS_BASE_URL
+  const compBaseUrl = options.compBaseUrl ?? DEFAULT_COMP_BASE_URL
   const competitionId = options.competitionId ?? '3' // EURO
   const doFetch = options.fetchImpl ?? fetch
   const limiter = options.rateLimiter ?? new RateLimiter(1000)
+
+  async function getJson<T>(url: string): Promise<T> {
+    await limiter.acquire()
+    const response = await doFetch(url, { headers: { 'user-agent': 'Mozilla/5.0' } })
+    if (response.status === 429) throw new ProviderRateLimitError()
+    if (!response.ok) throw new ProviderUpstreamError(response.status, await response.text())
+    return (await response.json()) as T
+  }
+
+  function fetchEvents(matchId: string) {
+    return getJson<UefaEvent[]>(`${baseUrl}/v5/matches/${matchId}/events?filter=ALL&limit=500&offset=0`)
+  }
+
+  async function fetchRanking(kind: 'player-ranking' | 'team-ranking', stats: string, limit: number) {
+    return getJson<UefaRankingRow[]>(
+      `${statsBaseUrl}/v1/${kind}?competitionId=${competitionId}&seasonYear=${options.seasonYear}&phase=TOURNAMENT&stats=${stats}&order=DESC&limit=${limit}&offset=0&optionalFields=PLAYER,TEAM`,
+    )
+  }
+
+  async function fetchScorerRanking(): Promise<TopScorer[]> {
+    const rows = await fetchRanking('player-ranking', 'goals,assists', 200)
+    return rows.map((r) => ({
+      playerName: r.player?.internationalName ?? '?',
+      teamName: r.team?.internationalName ?? '?',
+      teamCode: r.team?.countryCode ?? null,
+      goals: statValue(r, 'goals') ?? 0,
+      assists: statValue(r, 'assists'),
+      penalties: null,
+    }))
+  }
 
   async function fetchAll(): Promise<NormalizedMatch[]> {
     const out: NormalizedMatch[] = []
@@ -141,6 +276,170 @@ export function uefaProvider(options: UefaOptions): MatchDataProvider {
     },
     async getLiveMatches() {
       return (await fetchAll()).filter((m) => m.status === 'LIVE' || m.status === 'PAUSED')
+    },
+
+    async getMatchDetail({ matchId }: { stageId?: string; matchId: string }): Promise<MatchDetail | null> {
+      const m = await getJson<UefaMatch | null>(`${baseUrl}/v5/matches/${matchId}`)
+      if (!m) return null
+      let events: UefaEvent[] = []
+      try {
+        events = await fetchEvents(matchId)
+      } catch {
+        // events are richer but optional - the match doc alone still yields a detail
+      }
+      const homeId = m.homeTeam?.id ?? null
+      const awayId = m.awayTeam?.id ?? null
+      const sideOf = (e: UefaEvent): 'HOME' | 'AWAY' | null => {
+        const tid = e.primaryActor?.team?.id ?? null
+        if (tid && tid === homeId) return 'HOME'
+        if (tid && tid === awayId) return 'AWAY'
+        return null
+      }
+      const teamFor = (side: 'HOME' | 'AWAY') => (side === 'HOME' ? m.homeTeam : m.awayTeam)
+
+      const goals: NormalizedGoal[] = []
+      for (const e of events) {
+        if ((e.type !== 'GOAL' && e.type !== 'OWN_GOAL') || e.phase === 'PENALTY_SHOOTOUT') continue
+        const actorSide = sideOf(e)
+        if (!actorSide) continue
+        // An own goal is credited to the opposite side of the unlucky scorer.
+        const side = e.type === 'OWN_GOAL' ? (actorSide === 'HOME' ? 'AWAY' : 'HOME') : actorSide
+        const team = teamFor(side)
+        goals.push({
+          side,
+          teamId: team?.id ?? null,
+          teamName: team?.internationalName ?? '?',
+          teamCode: team?.countryCode ?? null,
+          playerId: e.primaryActor?.person?.id ?? null,
+          playerName: e.primaryActor?.person?.internationalName ?? '?',
+          minute: eventMinute(e),
+          goalType: null,
+          ownGoal: e.type === 'OWN_GOAL',
+          assistPlayerId: e.secondaryActor?.person?.id ?? null,
+          assistPlayerName: e.secondaryActor?.person?.internationalName ?? null,
+        })
+      }
+
+      const bookings: BookingEvent[] = []
+      const yellowsSeen = new Set<string>()
+      for (const e of events) {
+        if (e.type !== 'YELLOW_CARD' && e.type !== 'RED_CARD') continue
+        const side = sideOf(e)
+        if (!side) continue
+        const playerId = e.primaryActor?.person?.id ?? null
+        let card: BookingEvent['card'] = e.type === 'RED_CARD' ? 'RED' : 'YELLOW'
+        if (e.type === 'YELLOW_CARD' && playerId) {
+          if (yellowsSeen.has(playerId)) card = 'SECOND_YELLOW'
+          yellowsSeen.add(playerId)
+        }
+        bookings.push({
+          side,
+          playerId,
+          playerName: e.primaryActor?.person?.internationalName ?? '?',
+          minute: eventMinute(e),
+          card,
+        })
+      }
+      // The events feed arrives newest-first - present both lists chronologically.
+      const minuteRank = (min: string | null) => {
+        const m = /^(\d+)'(?:\+(\d+))?/.exec(min ?? '')
+        return m ? Number(m[1]) * 100 + Number(m[2] ?? 0) : -1
+      }
+      goals.sort((a, b) => minuteRank(a.minute) - minuteRank(b.minute))
+      bookings.sort((a, b) => minuteRank(a.minute) - minuteRank(b.minute))
+
+      const countCards = (side: 'HOME' | 'AWAY') => ({
+        yellow: bookings.filter((b) => b.side === side && b.card !== 'RED').length,
+        red: bookings.filter((b) => b.side === side && b.card !== 'YELLOW').length,
+      })
+
+      return {
+        possessionHome: null,
+        possessionAway: null,
+        attendance: m.matchAttendance ?? null,
+        stadium: m.stadium?.translations?.name?.EN ?? null,
+        cards: { home: countCards('HOME'), away: countCards('AWAY') },
+        goals,
+        bookings,
+        // UEFA has no separate stats id - the match id doubles as the stats handle.
+        ifesId: matchId,
+        homeTeamId: homeId,
+        awayTeamId: awayId,
+      }
+    },
+
+    async getMatchStats({ ifesId }: { ifesId: string }): Promise<Record<string, TeamMatchStats> | null> {
+      const m = await getJson<UefaMatch | null>(`${baseUrl}/v5/matches/${ifesId}`)
+      if (!m) return null
+      const events = await fetchEvents(ifesId)
+      const out: Record<string, TeamMatchStats> = {}
+      for (const team of [m.homeTeam, m.awayTeam]) {
+        if (team?.id) out[team.id] = aggregateUefaEvents(events, team.id)
+      }
+      return out
+    },
+
+    getTopScorers(_opts: ListFixturesOptions) {
+      return fetchScorerRanking()
+    },
+
+    getPlayerStats(_opts: { teamId: string }) {
+      return fetchScorerRanking()
+    },
+
+    async getTeamTournament({ teamRef }: { teamRef: string; matches: { stageId: string; matchId: string }[] }) {
+      const squad: SquadPlayer[] = []
+      const pageSize = 200
+      for (let offset = 0; ; offset += pageSize) {
+        const page = await getJson<UefaPlayerRow[]>(
+          `${compBaseUrl}/v2/players?competitionId=${competitionId}&seasonYear=${options.seasonYear}&phase=TOURNAMENT&limit=${pageSize}&offset=${offset}`,
+        )
+        squad.push(
+          ...page
+            .filter((p) => p.countryCode === teamRef)
+            .map((p) => ({
+              playerId: p.id ?? '',
+              name: p.internationalName ?? '?',
+              shirtNumber: p.nationalJerseyNumber != null && p.nationalJerseyNumber !== '' ? Number(p.nationalJerseyNumber) : null,
+              position: mapUefaPosition(p.nationalFieldPosition ?? p.fieldPosition),
+              captain: false,
+            })),
+        )
+        if (page.length < pageSize) break
+      }
+
+      let stats: TeamSeasonStats | null = null
+      try {
+        const rows = await fetchRanking(
+          'team-ranking',
+          'goals,goals_conceded,attempts,attempts_on_target,passes_attempted,passes_completed,ball_possession,corners,offsides,yellow_cards,red_cards',
+          40,
+        )
+        const row = rows.find((r) => r.team?.countryCode === teamRef)
+        if (row) {
+          const passes = statValue(row, 'passes_attempted')
+          const completed = statValue(row, 'passes_completed')
+          stats = {
+            goals: statValue(row, 'goals'),
+            conceded: statValue(row, 'goals_conceded'),
+            assists: null,
+            possession: statValue(row, 'ball_possession'),
+            attempts: statValue(row, 'attempts'),
+            onTarget: statValue(row, 'attempts_on_target'),
+            passes,
+            passAccuracy: passes && completed != null ? Math.round((completed / passes) * 1000) / 10 : null,
+            crosses: null,
+            corners: statValue(row, 'corners'),
+            offsides: statValue(row, 'offsides'),
+            yellowCards: statValue(row, 'yellow_cards'),
+            redCards: statValue(row, 'red_cards'),
+          }
+        }
+      } catch {
+        // season stats are optional - squad alone is still worth returning
+      }
+
+      return { squad, coach: null, stats }
     },
   }
 }

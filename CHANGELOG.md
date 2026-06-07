@@ -5,6 +5,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-06-07
+
+### Added
+- Euro 2024 feature parity with the FIFA competitions: match events (goals with assists, yellow / second-yellow / red cards), per-match stats derived from UEFA's event stream, official squads with positions, season team stats (UEFA-exact), and top scorers / assisters from UEFA's ranking API.
+- World Cup 2026 announced squads now show before the tournament (team id resolved from the calendar when no match has been played).
+- About page: official logos on every stack card, Bun in the stack.
+
+### Changed
+- Competitions ordered newest season first everywhere.
+- VueUse adopted where it simplifies: reactive QR rendering for 2FA enrollment, clipboard, tickers (countdowns, next-run labels), system dark-mode detection.
+
+### Fixed
+- Team page competition switcher had no defined order.
+
 ## [0.6.0] - 2026-06-07
 
 ### Added

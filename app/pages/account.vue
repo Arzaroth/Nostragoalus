@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import QRCode from 'qrcode'
+import { useQRCode } from '@vueuse/integrations/useQRCode'
 import { authClient } from '../../lib/auth-client'
 
 const { t } = useI18n()
@@ -11,8 +11,8 @@ const currentUser = computed(() => session.value?.data?.user)
 // --- Two-factor authentication ---
 const tfaPassword = ref('')
 const tfaCode = ref('')
-const tfaQr = ref('')
 const tfaUri = ref('')
+const tfaQr = useQRCode(tfaUri, { margin: 1, width: 192 })
 const tfaSecretShown = ref(false)
 const tfaCopied = ref('')
 const tfaBackup = ref<string[]>([])
@@ -23,8 +23,9 @@ const tfaSecret = computed(() => {
     return ''
   }
 })
+const { copy: copyToClipboard } = useClipboard()
 async function copyText(text: string, which: string) {
-  await navigator.clipboard.writeText(text)
+  await copyToClipboard(text)
   tfaCopied.value = which
   setTimeout(() => (tfaCopied.value = ''), 1500)
 }
@@ -53,7 +54,6 @@ async function startEnable2fa() {
     }
     tfaBackup.value = res.data?.backupCodes ?? []
     tfaUri.value = res.data?.totpURI ?? ''
-    tfaQr.value = await QRCode.toDataURL(tfaUri.value, { margin: 1, width: 192 })
     tfaStep.value = 'verify'
   } finally {
     tfaBusy.value = false
@@ -82,7 +82,6 @@ function cancelEnable2fa() {
   tfaErr.value = ''
   tfaPassword.value = ''
   tfaCode.value = ''
-  tfaQr.value = ''
   tfaUri.value = ''
   tfaBackup.value = []
 }
@@ -179,8 +178,7 @@ async function disable2fa() {
     tfaStep.value = 'idle'
     tfaPassword.value = ''
     tfaDisableCode.value = ''
-    tfaQr.value = ''
-    tfaUri.value = ''
+      tfaUri.value = ''
     tfaBackup.value = []
     await session.value?.refetch?.()
   } finally {

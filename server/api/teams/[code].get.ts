@@ -1,4 +1,4 @@
-import { and, eq, or } from 'drizzle-orm'
+import { and, desc, eq, or } from 'drizzle-orm'
 import { db } from '../../../db'
 import { competition as competitionTable, goalEvent, match } from '../../../db/schema'
 import type { SquadPlayer, TeamSeasonStats, TopScorer } from '../../../shared/types/match'
@@ -41,10 +41,11 @@ export default defineEventHandler(async (event) => {
 
   // Every competition this team appears in (for the team-page switcher).
   const competitions = await db
-    .selectDistinct({ slug: competitionTable.slug, name: competitionTable.name })
+    .selectDistinct({ slug: competitionTable.slug, name: competitionTable.name, seasonHint: competitionTable.seasonHint })
     .from(match)
     .innerJoin(competitionTable, eq(competitionTable.id, match.competitionId))
     .where(or(eq(match.homeTeamCode, code), eq(match.awayTeamCode, code)))
+    .orderBy(desc(competitionTable.seasonHint))
 
   const groupName = matches.find((m) => m.group)?.group ?? null
   let standings = null
@@ -69,9 +70,10 @@ export default defineEventHandler(async (event) => {
         .from(goalEvent)
         .where(eq(goalEvent.competitionId, competition.id))
         .limit(1)
-      if (anyTeamRow[0]?.teamId) {
+      // FIFA needs any real team id to address the stats doc; UEFA's ranking doesn't.
+      if (anyTeamRow[0]?.teamId || competition.provider === 'uefa') {
         try {
-          allPlayers = await provider.getPlayerStats({ teamId: anyTeamRow[0].teamId })
+          allPlayers = await provider.getPlayerStats({ teamId: anyTeamRow[0]?.teamId ?? '' })
           playersCache.set(competition.id, { at: Date.now(), players: allPlayers })
         } catch {
           // fall through to local aggregation

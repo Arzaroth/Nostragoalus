@@ -5,12 +5,7 @@
 const props = defineProps<{ step: number | 'hourly' | null }>()
 const { t } = useI18n()
 
-const nowTick = ref(Date.now())
-let tick: ReturnType<typeof setInterval> | undefined
-onMounted(() => {
-  tick = setInterval(() => (nowTick.value = Date.now()), 1000)
-})
-onBeforeUnmount(() => clearInterval(tick))
+const nowTick = useTimestamp({ interval: 1000 })
 
 const label = computed(() => {
   if (props.step === null) return t('admin.data.manual')
