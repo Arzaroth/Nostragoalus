@@ -103,10 +103,16 @@ const isSaved = computed(() => !!data.value?.myPick && showcaseCode.value === da
           </template>
         </div>
         <div class="text-center">
-          <strong v-if="showcaseCode" class="block">{{ teamName(showcaseCode) }}</strong>
-          <span v-else class="text-sm" style="color: var(--p-text-muted-color)">{{ t('champion.pick') }}</span>
-          <span v-if="showcaseCode && !isSaved && !data.locked" class="text-xs block mt-0.5" style="color: var(--p-text-muted-color)">{{ t('champion.preview') }}</span>
-          <Tag v-if="isSaved && data.myPick?.awardedPoints > 0" :value="`+${data.myPick.awardedPoints} pts`" severity="success" class="mt-1" />
+          <strong v-if="showcaseCode" class="block leading-tight">{{ teamName(showcaseCode) }}</strong>
+          <span v-else class="block text-sm leading-tight" style="color: var(--p-text-muted-color)">{{ t('champion.pick') }}</span>
+          <!-- one reserved line: points / preview hint / invisible spacer — the card never resizes -->
+          <span v-if="isSaved && data.myPick?.awardedPoints > 0" class="text-xs block mt-0.5 font-bold" style="color: #22c55e">+{{ data.myPick.awardedPoints }} pts</span>
+          <span
+            v-else
+            class="text-xs block mt-0.5"
+            :class="{ invisible: !(showcaseCode && !isSaved && !data.locked) }"
+            style="color: var(--p-text-muted-color)"
+          >{{ t('champion.preview') }}</span>
         </div>
       </div>
     </div>

@@ -93,15 +93,16 @@ function fmtTime(d: string) {
                 :disabled="m.isLocked"
                 @update="(v) => save(m.id, v)"
               />
-              <div v-if="predByMatch[m.id]" class="flex items-center gap-3">
+              <!-- Always rendered on open matches (disabled until a pick exists) so saving never resizes the card. -->
+              <div v-if="!m.isLocked || predByMatch[m.id]" class="flex items-center gap-3">
                 <Button
-                  :label="predByMatch[m.id].isJoker ? '★ Joker' : 'Joker'"
-                  :icon="predByMatch[m.id].isJoker ? 'pi pi-star-fill' : 'pi pi-star'"
-                  :severity="predByMatch[m.id].isJoker ? 'warn' : 'secondary'"
-                  :outlined="!predByMatch[m.id].isJoker"
+                  :label="predByMatch[m.id]?.isJoker ? '★ Joker' : 'Joker'"
+                  :icon="predByMatch[m.id]?.isJoker ? 'pi pi-star-fill' : 'pi pi-star'"
+                  :severity="predByMatch[m.id]?.isJoker ? 'warn' : 'secondary'"
+                  :outlined="!predByMatch[m.id]?.isJoker"
                   size="small"
-                  :disabled="m.isLocked"
-                  @click="toggleJoker(predByMatch[m.id])"
+                  :disabled="m.isLocked || !predByMatch[m.id]"
+                  @click="predByMatch[m.id] && toggleJoker(predByMatch[m.id])"
                 />
                 <span v-if="predByMatch[m.id]?.totalPoints != null" class="text-xs font-semibold" style="color: var(--p-primary-color)">
                   +{{ predByMatch[m.id].totalPoints }} pts · {{ tierLabel(predByMatch[m.id].baseTier) }}
