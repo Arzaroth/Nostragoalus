@@ -90,8 +90,16 @@
   },
   "team": {
     "notFound": "Team not found.",
-    "noMatches": "No matches for this team."
+    "noMatches": "No matches for this team.",
+    "stats": "Tournament stats",
+    "squad": "Squad",
+    "goals": "Goals scored",
+    "conceded": "Goals conceded",
+    "assists": "Assists",
+    "yellow": "Yellow cards",
+    "red": "Red cards"
   },
+  "pos": { "GK": "Goalkeepers", "DF": "Defenders", "MF": "Midfielders", "FW": "Forwards" },
   "predictions": {
     "empty": "You haven't made any predictions yet.",
     "none": "No predictions to show yet.",

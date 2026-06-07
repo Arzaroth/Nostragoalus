@@ -90,8 +90,16 @@
   },
   "team": {
     "notFound": "Équipe introuvable.",
-    "noMatches": "Aucun match pour cette équipe."
+    "noMatches": "Aucun match pour cette équipe.",
+    "stats": "Stats du tournoi",
+    "squad": "Effectif",
+    "goals": "Buts marqués",
+    "conceded": "Buts encaissés",
+    "assists": "Passes décisives",
+    "yellow": "Cartons jaunes",
+    "red": "Cartons rouges"
   },
+  "pos": { "GK": "Gardiens", "DF": "Défenseurs", "MF": "Milieux", "FW": "Attaquants" },
   "predictions": {
     "empty": "Vous n'avez pas encore de pronostics.",
     "none": "Aucun pronostic à afficher.",

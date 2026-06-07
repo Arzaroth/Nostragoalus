@@ -90,8 +90,16 @@
   },
   "team": {
     "notFound": "ghom tu'be'lu'.",
-    "noMatches": "ghomvamvaD may' tu'be'lu'."
+    "noMatches": "ghomvamvaD may' tu'be'lu'.",
+    "stats": "'aqtu' De'",
+    "squad": "SuvwI'pu'",
+    "goals": "QuQmey bachlu'ta'",
+    "conceded": "QuQmey Hevlu'ta'",
+    "assists": "qachmey",
+    "yellow": "SuD Degh",
+    "red": "Doq Degh"
   },
+  "pos": { "GK": "'avwI'pu'", "DF": "HubwI'pu'", "MF": "botlh SuvwI'pu'", "FW": "HIvwI'pu'" },
   "predictions": {
     "empty": "wej bInoHpu'.",
     "none": "wej wIv cha'lu'.",
