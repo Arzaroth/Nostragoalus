@@ -2,7 +2,7 @@
   <img src="public/brand/banner.svg" alt="Nostragoalus - the football oracle" width="640">
 </p>
 
-# Nostragoalus
+# <img src="public/brand/mark.svg" width="36" alt="" align="top"> Nostragoalus
 
 ![Coverage](.github/coverage-badge.svg) ![License: WTFPL](https://img.shields.io/badge/License-WTFPL-brightgreen.svg)
 
