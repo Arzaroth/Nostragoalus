@@ -178,7 +178,14 @@ onMounted(() => {
       trail.push([rbx, rby, r])
       if (trail.length > 34) trail.shift()
     }
-    if (tc < 60) trail = []
+    if (miss) {
+      // resting ball: nothing lingers; star phase: the trail retracts and
+      // dims away with the ball instead of hanging frozen in the sky
+      if (tc < 350) trail = []
+      else if (tc >= 2000 && tc < 2700 && trail.length) trail.splice(0, 2)
+    } else if (tc < 60) {
+      trail = []
+    }
     for (let i = 0; i < trail.length; i++) {
       const a = ((i + 1) / trail.length) * 0.5
       disc(trail[i][0], trail[i][1], Math.max(1, Math.round(trail[i][2] * 0.5)), `rgba(205,191,255,${a})`)

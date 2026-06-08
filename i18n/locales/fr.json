@@ -40,7 +40,9 @@
     "light": "Clair",
     "dark": "Sombre",
     "system": "Système",
-    "saved": "Enregistré"
+    "saved": "Enregistré",
+    "crowd": "Afficher les totaux du groupe",
+    "crowdHint": "Sous chaque prono, le score cumulé de tous les joueurs (1-1 + 2-1 + 4-0 donne 7-2)."
   },
   "common": {
     "loading": "Chargement…",
@@ -149,7 +151,8 @@
     "publicNote": "Seuls les pronostics des matchs déjà commencés sont affichés.",
     "joker": "Joker",
     "makeJoker": "Définir joker ×2",
-    "jokerError": "Impossible de déplacer le joker - un match a peut-être déjà commencé."
+    "jokerError": "Impossible de déplacer le joker - un match a peut-être déjà commencé.",
+    "crowd": "le groupe"
   },
   "champion": {
     "title": "Votre vainqueur",

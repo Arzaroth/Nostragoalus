@@ -1,11 +1,12 @@
 <script setup lang="ts">
-// The crystal ball extracted from the full emblem (no cosmic disc, no
-// pedestal), inlined so each part can glow on hover, GitLab-fox style:
-// glow -> orb -> constellation -> nodes -> shine, staggered.
+// The crystal ball + pedestal extracted from the emblem (no cosmic disc),
+// inlined so the ball's SECTIONS light up on hover, GitLab-fox style: the
+// five outer panels of the star-constellation football and its core fill in
+// sequence, like a paint bucket passing through.
 </script>
 
 <template>
-  <svg viewBox="225 160 230 230" class="logo-mark" aria-hidden="true">
+  <svg viewBox="220 150 240 320" class="logo-mark" aria-hidden="true">
     <defs>
       <radialGradient id="lm-glow" cx="50%" cy="50%" r="50%">
         <stop offset="0%" stop-color="#a99bff" stop-opacity="0.85" />
@@ -19,9 +20,23 @@
         <stop offset="100%" stop-color="#5a4fb2" stop-opacity="0.18" />
       </radialGradient>
     </defs>
-    <circle class="lp lp-halo" cx="340" cy="275" r="112" fill="url(#lm-glow)" />
-    <circle class="lp lp-orb" cx="340" cy="275" r="105" fill="url(#lm-orb)" stroke="#f4d488" stroke-width="1.5" stroke-opacity="0.5" />
-    <g class="lp lp-net" stroke="#f4d488" stroke-width="1.3" fill="none" opacity="0.85">
+
+    <circle cx="340" cy="275" r="112" fill="url(#lm-glow)" />
+    <circle cx="340" cy="275" r="105" fill="url(#lm-orb)" stroke="#f4d488" stroke-width="1.5" stroke-opacity="0.5" />
+
+    <!-- The football's sections: five outer panels + the core pentagon.
+         Transparent by default; they fill gold one after another on hover. -->
+    <g class="lm-sections" fill="#f4d488">
+      <polygon class="sec sec-1" points="340,197 414.2,250.9 376.1,263.3 340,237" />
+      <polygon class="sec sec-2" points="414.2,250.9 385.8,338.1 362.3,305.7 376.1,263.3" />
+      <polygon class="sec sec-3" points="385.8,338.1 294.2,338.1 317.7,305.7 362.3,305.7" />
+      <polygon class="sec sec-4" points="294.2,338.1 265.8,250.9 303.9,263.3 317.7,305.7" />
+      <polygon class="sec sec-5" points="265.8,250.9 340,197 340,237 303.9,263.3" />
+      <polygon class="sec sec-core" points="340,237 376.1,263.3 362.3,305.7 317.7,305.7 303.9,263.3" />
+    </g>
+
+    <!-- constellation lines + nodes (static) -->
+    <g stroke="#f4d488" stroke-width="1.3" fill="none" opacity="0.85">
       <polygon points="340,197 414.2,250.9 385.8,338.1 294.2,338.1 265.8,250.9" />
       <line x1="340" y1="237" x2="340" y2="197" />
       <line x1="376.1" y1="263.3" x2="414.2" y2="250.9" />
@@ -30,14 +45,26 @@
       <line x1="303.9" y1="263.3" x2="265.8" y2="250.9" />
       <polygon points="340,237 376.1,263.3 362.3,305.7 317.7,305.7 303.9,263.3" fill="#0e1538" fill-opacity="0.85" stroke-width="1.5" />
     </g>
-    <g class="lp lp-nodes" fill="#f4d488">
+    <g fill="#f4d488">
       <circle cx="340" cy="197" r="3.4" /><circle cx="414.2" cy="250.9" r="3.4" /><circle cx="385.8" cy="338.1" r="3.4" /><circle cx="294.2" cy="338.1" r="3.4" /><circle cx="265.8" cy="250.9" r="3.4" />
       <circle cx="340" cy="197" r="1.3" fill="#fff" /><circle cx="414.2" cy="250.9" r="1.3" fill="#fff" /><circle cx="385.8" cy="338.1" r="1.3" fill="#fff" /><circle cx="294.2" cy="338.1" r="1.3" fill="#fff" /><circle cx="265.8" cy="250.9" r="1.3" fill="#fff" />
       <circle cx="340" cy="237" r="2.3" /><circle cx="376.1" cy="263.3" r="2.3" /><circle cx="362.3" cy="305.7" r="2.3" /><circle cx="317.7" cy="305.7" r="2.3" /><circle cx="303.9" cy="263.3" r="2.3" />
     </g>
-    <g class="lp lp-shine" fill="#fff">
+    <g fill="#fff">
       <ellipse cx="312" cy="242" rx="30" ry="15" opacity="0.16" />
       <circle cx="300" cy="232" r="4" opacity="0.5" />
+    </g>
+
+    <!-- pedestal -->
+    <g>
+      <ellipse cx="340" cy="384" rx="64" ry="15" fill="none" stroke="#e8b75a" stroke-width="3" />
+      <path d="M281 380 C 269 372, 270 356, 283 350" fill="none" stroke="#e8b75a" stroke-width="2.4" />
+      <path d="M399 380 C 411 372, 410 356, 397 350" fill="none" stroke="#e8b75a" stroke-width="2.4" />
+      <path d="M333 394 Q340 396 347 394 L350 448 Q340 452 330 448 Z" fill="#e8b75a" />
+      <circle cx="340" cy="418" r="7.5" fill="#f4d488" stroke="#b8862f" stroke-width="1" />
+      <ellipse cx="340" cy="458" rx="50" ry="12" fill="#e8b75a" />
+      <ellipse cx="340" cy="452" rx="40" ry="8" fill="none" stroke="#b8862f" stroke-width="1.3" opacity="0.7" />
+      <ellipse cx="340" cy="458" rx="50" ry="12" fill="none" stroke="#f4d488" stroke-width="0.9" opacity="0.6" />
     </g>
   </svg>
 </template>
@@ -47,29 +74,21 @@
   display: block;
   overflow: visible;
 }
-.lp {
-  transition: filter 0.3s ease, opacity 0.3s ease;
+.sec {
+  opacity: 0;
+  transition: opacity 0.25s ease;
 }
-/* staggered glow when the wrapping link is hovered */
-:global(.logo-home:hover) .lp-halo {
-  filter: brightness(1.8);
-  transition-delay: 0s;
+/* the panels fill one after another, like a paint bucket making its round */
+:global(.logo-home:hover) .sec {
+  opacity: 0.55;
 }
-:global(.logo-home:hover) .lp-orb {
-  filter: drop-shadow(0 0 7px rgba(169, 155, 255, 0.9)) brightness(1.25);
-  transition-delay: 0.06s;
+:global(.logo-home:hover) .sec-core {
+  opacity: 0.8;
 }
-:global(.logo-home:hover) .lp-net {
-  filter: drop-shadow(0 0 4px rgba(244, 212, 136, 0.95)) brightness(1.5);
-  transition-delay: 0.14s;
-}
-:global(.logo-home:hover) .lp-nodes {
-  filter: drop-shadow(0 0 5px rgba(244, 212, 136, 1)) brightness(1.7);
-  transition-delay: 0.22s;
-}
-:global(.logo-home:hover) .lp-shine {
-  filter: brightness(2);
-  opacity: 1.5;
-  transition-delay: 0.3s;
-}
+:global(.logo-home:hover) .sec-1 { transition-delay: 0s; }
+:global(.logo-home:hover) .sec-2 { transition-delay: 0.09s; }
+:global(.logo-home:hover) .sec-3 { transition-delay: 0.18s; }
+:global(.logo-home:hover) .sec-4 { transition-delay: 0.27s; }
+:global(.logo-home:hover) .sec-5 { transition-delay: 0.36s; }
+:global(.logo-home:hover) .sec-core { transition-delay: 0.48s; }
 </style>

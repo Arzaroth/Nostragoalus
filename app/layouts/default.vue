@@ -53,7 +53,7 @@ async function onSignOut() {
       <div class="mx-auto max-w-7xl px-4 sm:px-6 h-16 flex justify-between md:grid md:grid-cols-[1fr_auto_1fr] items-center gap-4">
         <div class="flex items-center min-w-0">
           <NuxtLink to="/" class="logo-home flex items-center gap-2 font-extrabold text-lg shrink-0">
-            <LogoMark class="w-12 h-12 shrink-0" />
+            <LogoMark class="h-12 w-auto shrink-0" />
             <span class="bg-gradient-to-r from-indigo-500 to-emerald-500 bg-clip-text text-transparent">
               {{ config.public.appName }}
             </span>

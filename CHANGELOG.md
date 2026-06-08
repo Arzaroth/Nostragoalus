@@ -5,6 +5,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- "Show everyone's totals" preference: under each prediction input, the combined score of all players' predictions (1-1 + 2-1 + 4-0 shows as 7-2) with the prediction count - on fixtures, the match view and My Picks.
+- Header crystal ball is bigger, includes the pedestal, and its football sections fill with gold one after another on hover.
+- Stats tab shows skeletons while match detail loads.
+
 ## [0.8.0] - 2026-06-08
 
 ### Added

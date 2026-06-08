@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const { t, locale, setLocale } = useI18n()
-const { updateUser } = useAuth()
+const { session, updateUser } = useAuth()
 const { preference, setPreference } = useTheme()
 
 const saved = ref(false)
@@ -26,6 +26,18 @@ const theme = computed({
     void persist({ theme: v })
   },
 })
+
+const showCrowd = computed({
+  get: () => (session.value?.data?.user as any)?.showCrowd === true,
+  set: (v: boolean) => {
+    void (updateUser as (f: Record<string, unknown>) => Promise<unknown>)({ showCrowd: v }).then(() => persistFlash())
+  },
+})
+function persistFlash() {
+  saved.value = true
+  clearTimeout(savedTimer)
+  savedTimer = setTimeout(() => (saved.value = false), 1500)
+}
 
 const langOptions = [
   { label: 'English', value: 'en' },
@@ -65,6 +77,13 @@ const themeOptions = computed(() => [
           </div>
           <div class="h-4 text-xs" style="color: var(--p-primary-color)">
             <span v-if="saved"><i class="pi pi-check" /> {{ t('prefs.saved') }}</span>
+          </div>
+          <div class="flex items-start gap-3 pt-1">
+            <ToggleSwitch v-model="showCrowd" input-id="show-crowd" />
+            <label for="show-crowd" class="flex flex-col cursor-pointer">
+              <span class="text-sm font-medium">{{ t('prefs.crowd') }}</span>
+              <span class="text-xs" style="color: var(--p-text-muted-color)">{{ t('prefs.crowdHint') }}</span>
+            </label>
           </div>
         </div>
       </div>

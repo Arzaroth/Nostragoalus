@@ -64,6 +64,8 @@ export const auth = betterAuth({
     additionalFields: {
       locale: { type: 'string', required: false },
       theme: { type: 'string', required: false },
+      // Opt-in: show the combined total of everyone's predictions per match.
+      showCrowd: { type: 'boolean', required: false },
     },
   },
   // Google goes through the runtime SSO admin UI (one config path, secrets encrypted at rest).

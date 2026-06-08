@@ -57,6 +57,13 @@
       "when": 1780862198508,
       "tag": "0007_faithful_fantastic_four",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1780862198509,
+      "tag": "0008_show_crowd",
+      "breakpoints": true
     }
   ]
 }

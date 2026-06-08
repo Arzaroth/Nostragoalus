@@ -40,7 +40,9 @@
     "light": "Light",
     "dark": "Dark",
     "system": "System",
-    "saved": "Saved"
+    "saved": "Saved",
+    "crowd": "Show everyone's totals",
+    "crowdHint": "Under each prediction, the combined score of all players (1-1 + 2-1 + 4-0 shows as 7-2)."
   },
   "common": {
     "loading": "Loading…",
@@ -149,7 +151,8 @@
     "publicNote": "Only predictions for matches that have kicked off are shown.",
     "joker": "Joker",
     "makeJoker": "Set ×2 joker",
-    "jokerError": "Couldn't move the joker - a match may have already started."
+    "jokerError": "Couldn't move the joker - a match may have already started.",
+    "crowd": "everyone"
   },
   "champion": {
     "title": "Your champion",

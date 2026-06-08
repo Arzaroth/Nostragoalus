@@ -13,6 +13,7 @@ export const user = pgTable("user", {
   banExpires: timestamp("ban_expires"),
   locale: text("locale"),
   theme: text("theme"),
+  showCrowd: boolean("show_crowd"),
   twoFactorEnabled: boolean("two_factor_enabled").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")

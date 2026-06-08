@@ -40,7 +40,9 @@
     "light": "wov",
     "dark": "Hurgh",
     "system": "pat",
-    "saved": "choqlu'ta'"
+    "saved": "choqlu'ta'",
+    "crowd": "Hoch mI'mey boq cha'",
+    "crowdHint": "Hoch wIv bIngDaq, Hoch QujwI'pu' mI' boqlu'pu'."
   },
   "common": {
     "loading": "yIloS…",
@@ -149,7 +151,8 @@
     "publicNote": "taghpu'bogh may'mey wIvmey neH cha'lu'.",
     "joker": "Hov",
     "makeJoker": "Hov ×2 yIQeq",
-    "jokerError": "Hov vIHmoHlaHbe' - chaq may' taghpu'."
+    "jokerError": "Hov vIHmoHlaHbe' - chaq may' taghpu'.",
+    "crowd": "Hoch"
   },
   "champion": {
     "title": "che'wI'lIj",
