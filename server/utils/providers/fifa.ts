@@ -506,8 +506,10 @@ function toBracketMatch(m: FifaBracketMatch): BracketMatch {
     awayCode: m.AwayTeam?.Abbreviation || null,
     homeScore: m.HomeTeamScore ?? null,
     awayScore: m.AwayTeamScore ?? null,
-    homePens: m.HomeTeamPenaltyScore ?? null,
-    awayPens: m.AwayTeamPenaltyScore ?? null,
+    // FIFA reports 0-0 "shootouts" on matches decided in regulation - only a
+    // scored shootout is real.
+    homePens: (m.HomeTeamPenaltyScore ?? 0) + (m.AwayTeamPenaltyScore ?? 0) > 0 ? (m.HomeTeamPenaltyScore ?? null) : null,
+    awayPens: (m.HomeTeamPenaltyScore ?? 0) + (m.AwayTeamPenaltyScore ?? 0) > 0 ? (m.AwayTeamPenaltyScore ?? null) : null,
     winner,
     status: mapFifaStatus(m.MatchStatus),
     kickoffTime: m.Date,
