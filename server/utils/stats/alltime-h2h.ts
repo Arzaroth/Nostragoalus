@@ -34,6 +34,30 @@ interface FifaCalendarRow {
 
 const BASE_URL = 'https://api.fifa.com/api/v3'
 
+type FifaSide = NonNullable<FifaCalendarRow['Home']>
+const sideName = (s: FifaSide | null | undefined) => s?.TeamName?.[0]?.Description ?? s?.Abbreviation ?? '?'
+
+// A row of a match that was actually played (both scores present). The type
+// guard narrows so the decode helpers never need a `?? 0` on the scores.
+type PlayedRow = FifaCalendarRow & { HomeTeamScore: number; AwayTeamScore: number }
+const isPlayed = (m: FifaCalendarRow): m is PlayedRow => m.HomeTeamScore != null && m.AwayTeamScore != null
+
+// Decode a played row from one team's perspective.
+function rowFromPerspective(m: PlayedRow, code: string) {
+  const isHome = m.Home?.Abbreviation === code
+  const forGoals = isHome ? m.HomeTeamScore : m.AwayTeamScore
+  const against = isHome ? m.AwayTeamScore : m.HomeTeamScore
+  return {
+    isHome,
+    forGoals,
+    against,
+    result: (forGoals > against ? 'W' : forGoals < against ? 'L' : 'D') as 'W' | 'D' | 'L',
+    opponentName: sideName(isHome ? m.Away : m.Home),
+    competition: m.CompetitionName?.[0]?.Description ?? '',
+    date: m.Date ?? '',
+  }
+}
+
 // Senior team ids are not searchable; harvest them from season calendars that
 // jointly cover every team we track (the Euro lives in FIFA's calendar too).
 const ID_SOURCES = [
@@ -93,20 +117,18 @@ export async function getTeamRecentResults(
     const teamId = ids.get(code)
     if (!teamId) return null
     const rows = (await teamCalendar(teamId, fetchImpl, now))
-      .filter((m) => m.HomeTeamScore != null && m.AwayTeamScore != null && (m.Date ?? '') < before)
+      .filter(isPlayed)
+      .filter((m) => (m.Date ?? '') < before)
       .sort((a, b) => (b.Date ?? '').localeCompare(a.Date ?? ''))
       .slice(0, count)
     return rows.map((m) => {
-      const isHome = m.Home?.Abbreviation === code
-      const gf = isHome ? (m.HomeTeamScore as number) : (m.AwayTeamScore as number)
-      const ga = isHome ? (m.AwayTeamScore as number) : (m.HomeTeamScore as number)
-      const opp = isHome ? m.Away : m.Home
+      const v = rowFromPerspective(m, code)
       return {
-        result: gf > ga ? 'W' : gf < ga ? 'L' : 'D',
-        opponent: opp?.TeamName?.[0]?.Description ?? opp?.Abbreviation ?? '?',
-        score: `${gf}–${ga}`,
-        date: m.Date ?? '',
-        competition: m.CompetitionName?.[0]?.Description ?? '',
+        result: v.result,
+        opponent: v.opponentName,
+        score: `${v.forGoals}–${v.against}`,
+        date: v.date,
+        competition: v.competition,
       }
     })
   } catch {
@@ -162,33 +184,31 @@ export async function getAllTimeHeadToHead(
     const perspective = ids.get(codeA) ? codeA : codeB
     if (teamId) {
       const opponent = perspective === codeA ? codeB : codeA
-      const rows = (await teamCalendar(teamId, fetchImpl, now)).filter(
-        (m) =>
-          m.HomeTeamScore != null &&
-          m.AwayTeamScore != null &&
-          (m.Date ?? '') < before &&
-          ((m.Home?.Abbreviation === perspective && m.Away?.Abbreviation === opponent) ||
-            (m.Home?.Abbreviation === opponent && m.Away?.Abbreviation === perspective)),
-      )
+      const rows = (await teamCalendar(teamId, fetchImpl, now))
+        .filter(isPlayed)
+        .filter(
+          (m) =>
+            (m.Date ?? '') < before &&
+            ((m.Home?.Abbreviation === perspective && m.Away?.Abbreviation === opponent) ||
+              (m.Home?.Abbreviation === opponent && m.Away?.Abbreviation === perspective)),
+        )
       const h2h: AllTimeH2H = { wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0, meetings: [] }
       for (const m of rows) {
-        const aIsHome = m.Home?.Abbreviation === codeA
-        const forA = aIsHome ? (m.HomeTeamScore as number) : (m.AwayTeamScore as number)
-        const against = aIsHome ? (m.AwayTeamScore as number) : (m.HomeTeamScore as number)
-        h2h.goalsFor += forA
-        h2h.goalsAgainst += against
-        if (forA > against) h2h.wins++
-        else if (forA < against) h2h.losses++
+        const v = rowFromPerspective(m, codeA)
+        h2h.goalsFor += v.forGoals
+        h2h.goalsAgainst += v.against
+        if (v.result === 'W') h2h.wins++
+        else if (v.result === 'L') h2h.losses++
         else h2h.draws++
         h2h.meetings.push({
-          date: m.Date ?? '',
-          competition: m.CompetitionName?.[0]?.Description ?? '',
-          homeTeam: m.Home?.TeamName?.[0]?.Description ?? m.Home?.Abbreviation ?? '?',
-          awayTeam: m.Away?.TeamName?.[0]?.Description ?? m.Away?.Abbreviation ?? '?',
+          date: v.date,
+          competition: v.competition,
+          homeTeam: sideName(m.Home),
+          awayTeam: sideName(m.Away),
           homeCode: m.Home?.Abbreviation ?? null,
           awayCode: m.Away?.Abbreviation ?? null,
-          homeScore: m.HomeTeamScore as number,
-          awayScore: m.AwayTeamScore as number,
+          homeScore: m.HomeTeamScore,
+          awayScore: m.AwayTeamScore,
         })
       }
       h2h.meetings.sort((a, b) => b.date.localeCompare(a.date))

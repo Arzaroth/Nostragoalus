@@ -18,6 +18,7 @@ import type {
   Winner,
 } from '../../../shared/types/match'
 import { RateLimiter } from './rate-limiter'
+import { mapStageFromName, parseGroupLetter } from './stage'
 import { ProviderRateLimitError, ProviderUpstreamError, type ListFixturesOptions, type MatchDataProvider } from './types'
 import { minuteValue } from '../stats/insights'
 
@@ -67,20 +68,11 @@ export function mapFifaStatus(code: number): MatchStatus {
 }
 
 export function mapFifaStage(stageName: string): AppStage {
-  const s = stageName.toLowerCase()
-  if (s.includes('third')) return 'THIRD_PLACE'
-  if (s.includes('semi')) return 'SF'
-  if (s.includes('quarter')) return 'QF'
-  if (s.includes('round of 32')) return 'R32'
-  if (s.includes('round of 16')) return 'R16'
-  if (s.includes('final')) return 'FINAL'
-  return 'GROUP'
+  return mapStageFromName(stageName)
 }
 
 export function parseFifaGroup(name: string | undefined): string | null {
-  if (!name) return null
-  const match = name.match(/([A-L])\s*$/i)
-  return match ? match[1].toUpperCase() : null
+  return parseGroupLetter(name)
 }
 
 function toTeam(team: FifaTeam | null | undefined, placeholder: string | null | undefined): Team {

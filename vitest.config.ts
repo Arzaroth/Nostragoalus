@@ -11,12 +11,16 @@ export default defineConfig({
       provider: 'v8',
       all: true,
       reporter: ['text', 'json-summary'],
+      // Scope: the business logic - scoring, providers, sync, stats, crypto,
+      // auth guards, the request-validation wrapper, shared helpers. The
+      // interactive surface (app/components, app/pages, server/api handlers) is
+      // NOT in the denominator: it has no component-test harness and is instead
+      // guarded by `pnpm typecheck` (strict). The badge measures logic coverage.
       include: ['server/utils/**/*.ts', 'shared/**/*.ts', 'app/utils/**/*.ts'],
       exclude: [
         '**/*.test.ts',
         '**/types/**',
         'server/utils/providers/index.ts',
-        'server/utils/auth-guards.ts',
         'server/utils/http.ts',
       ],
       thresholds: {

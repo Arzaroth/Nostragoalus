@@ -15,6 +15,7 @@ import type {
   Winner,
 } from '../../../shared/types/match'
 import { RateLimiter } from './rate-limiter'
+import { mapStageFromName, parseGroupLetter } from './stage'
 import { ProviderRateLimitError, ProviderUpstreamError, type ListFixturesOptions, type MatchDataProvider } from './types'
 
 // UEFA's public match API (the one uefa.com itself uses) - keyless.
@@ -59,16 +60,7 @@ export function mapUefaStatus(status: string | null | undefined): MatchStatus {
 }
 
 export function mapUefaStage(roundName: string | null | undefined): AppStage {
-  const s = (roundName ?? '').toLowerCase()
-  // "Final tournament" is the group stage - test before the bare "final".
-  if (s.includes('final tournament')) return 'GROUP'
-  if (s.includes('round of 32')) return 'R32'
-  if (s.includes('round of 16')) return 'R16'
-  if (s.includes('quarter')) return 'QF'
-  if (s.includes('semi')) return 'SF'
-  if (s.includes('third')) return 'THIRD_PLACE'
-  if (s.includes('final')) return 'FINAL'
-  return 'GROUP'
+  return mapStageFromName(roundName)
 }
 
 function toTeam(team: UefaTeam | null | undefined): Team {
@@ -102,7 +94,7 @@ export function normalizeUefaMatch(m: UefaMatch): NormalizedMatch {
     providerMatchId: m.id,
     providerStageId: m.round?.id ?? null,
     stage,
-    group: groupName ? (groupName.match(/([A-L])\s*$/i)?.[1]?.toUpperCase() ?? null) : null,
+    group: parseGroupLetter(groupName),
     matchday: stage === 'GROUP' && mdMatch ? Number(mdMatch[1]) : null,
     homeTeam: toTeam(m.homeTeam),
     awayTeam: toTeam(m.awayTeam),
