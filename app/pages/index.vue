@@ -193,25 +193,28 @@ onMounted(() => {
     <!-- Showcase: real screenshots over the demo league -->
     <section class="max-w-5xl mx-auto w-full">
       <h2 class="text-3xl font-extrabold text-center mb-2">{{ t('landing.showcaseTitle') }}</h2>
-      <p class="text-center mb-10" style="color: var(--p-text-muted-color)">{{ t('landing.showcaseSub') }}</p>
-      <div class="flex flex-col gap-14">
-        <div
-          v-for="(shot, i) in ['fixtures', 'match', 'ranking', 'bracket', 'map', 'team']"
-          :key="shot"
-          class="grid md:grid-cols-5 gap-6 items-center"
-        >
-          <div class="md:col-span-2" :class="i % 2 ? 'md:order-2' : ''">
-            <h3 class="text-xl font-bold mb-2">{{ t(`landing.shot.${shot}.t`) }}</h3>
-            <p class="text-sm" style="color: var(--p-text-muted-color)">{{ t(`landing.shot.${shot}.d`) }}</p>
-          </div>
-          <div class="md:col-span-3 rounded-xl overflow-hidden border shadow-xl" style="border-color: var(--p-content-border-color)">
-            <div class="flex items-center gap-1.5 px-3 py-2" style="background: var(--p-content-background); border-bottom: 1px solid var(--p-content-border-color)">
-              <span class="w-2.5 h-2.5 rounded-full" style="background: #f87171" /><span class="w-2.5 h-2.5 rounded-full" style="background: #fbbf24" /><span class="w-2.5 h-2.5 rounded-full" style="background: #34d399" />
+      <p class="text-center mb-8" style="color: var(--p-text-muted-color)">{{ t('landing.showcaseSub') }}</p>
+      <Carousel
+        :value="['fixtures', 'match', 'ranking', 'bracket', 'map', 'team']"
+        :num-visible="1"
+        :num-scroll="1"
+        circular
+        :autoplay-interval="5000"
+        :show-indicators="true"
+      >
+        <template #item="{ data: shot }">
+          <div class="px-2 sm:px-10 pb-2">
+            <div class="rounded-xl overflow-hidden border shadow-xl" style="border-color: var(--p-content-border-color)">
+              <div class="flex items-center gap-1.5 px-3 py-2" style="background: var(--p-content-background); border-bottom: 1px solid var(--p-content-border-color)">
+                <span class="w-2.5 h-2.5 rounded-full" style="background: #f87171" /><span class="w-2.5 h-2.5 rounded-full" style="background: #fbbf24" /><span class="w-2.5 h-2.5 rounded-full" style="background: #34d399" />
+                <span class="ml-2 text-xs font-semibold">{{ t(`landing.shot.${shot}.t`) }}</span>
+              </div>
+              <img :src="`/showcase/${shot}.png`" :alt="t(`landing.shot.${shot}.t`)" class="block w-full" loading="lazy" >
             </div>
-            <img :src="`/showcase/${shot}.png`" :alt="t(`landing.shot.${shot}.t`)" class="block w-full" loading="lazy" >
+            <p class="text-sm text-center mt-3 max-w-2xl mx-auto" style="color: var(--p-text-muted-color)">{{ t(`landing.shot.${shot}.d`) }}</p>
           </div>
-        </div>
-      </div>
+        </template>
+      </Carousel>
     </section>
 
     <!-- FAQ -->

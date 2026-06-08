@@ -25,14 +25,27 @@ const SHOTS = [
   { name: 'fixtures', path: '/world-cup-2026/matches', wait: 2500 },
   { name: 'match', path: process.env.MATCH_PATH ?? '/euro-2024/matches', wait: 3500 },
   { name: 'bracket', path: '/world-cup-2022/bracket', wait: 2500 },
-  { name: 'map', path: '/world-cup-2026/map?team=FRA', wait: 4000 },
+  // the map's .client component only mounts on client-side navigation - reach
+  // it by clicking through the app, then select France via its marker
+  { name: 'map', clickThrough: true, wait: 2500, selector: '.leaflet-tile-loaded' },
   { name: 'ranking', path: '/world-cup-2022/leaderboard', wait: 2500 },
   { name: 'team', path: '/euro-2024/teams/ESP', wait: 4000 },
 ]
 
+const only = process.env.ONLY
 for (const shot of SHOTS) {
+  if (only && shot.name !== only) continue
   try {
-    await page.goto(`${APP}${shot.path}`, { waitUntil: 'networkidle0', timeout: 45000 }).catch(() => {})
+    if (shot.clickThrough) {
+      await page.goto(`${APP}/world-cup-2026/matches`, { waitUntil: 'networkidle0', timeout: 45000 }).catch(() => {})
+      await page.click('a[href$="/map"]')
+    } else {
+      await page.goto(`${APP}${shot.path}`, { waitUntil: 'networkidle0', timeout: 45000 }).catch(() => {})
+    }
+    if (shot.selector) await page.waitForSelector(shot.selector, { timeout: 20000 }).catch(() => console.log('  (selector never appeared)'))
+    if (shot.clickThrough) {
+      await page.click(`.leaflet-marker-icon img[src*='FRA']`).catch(() => console.log('  (FRA marker not found)'))
+    }
     await new Promise((r) => setTimeout(r, shot.wait))
     await page.screenshot({ path: `public/showcase/${shot.name}.png` })
     console.log('shot', shot.name)
