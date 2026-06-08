@@ -397,9 +397,14 @@ function fmtDate(d: string) {
                 <div class="font-semibold mb-2">{{ side === 'home' ? m.homeTeam : m.awayTeam }}</div>
                 <div v-if="insights.next[side].length" class="flex flex-col gap-1.5 text-sm">
                   <NuxtLink v-for="(n, i) in insights.next[side]" :key="i" :to="`/${selectedSlug}/matches/${n.matchId}`" class="flex items-center gap-2 hover:opacity-80">
-                    <span style="color: var(--p-text-muted-color)">{{ fmtDate(n.kickoffTime) }}</span>
+                    <!-- Played since (browsing history): same look as the Form tab. -->
+                    <span v-if="n.result" class="w-5 h-5 rounded text-white text-xs flex items-center justify-center font-bold shrink-0" :style="`background:${formColor(n.result)}`">{{ n.result }}</span>
+                    <span v-else class="shrink-0" style="color: var(--p-text-muted-color)">{{ fmtDate(n.kickoffTime) }}</span>
                     <span style="color: var(--p-text-muted-color)">vs</span>
-                    <img v-if="flagUrl(n.opponentCode)" :src="flagUrl(n.opponentCode) || ''" class="w-4 h-4 rounded" alt="" >{{ n.opponent }}
+                    <img v-if="flagUrl(n.opponentCode)" :src="flagUrl(n.opponentCode) || ''" class="w-4 h-4 rounded" alt="" >
+                    <span class="truncate">{{ n.opponent }}</span>
+                    <span v-if="n.score" class="font-medium tabular-nums">{{ n.score }}</span>
+                    <span v-if="n.result" class="text-xs ml-auto shrink-0" style="color: var(--p-text-muted-color)">{{ fmtDate(n.kickoffTime) }}</span>
                   </NuxtLink>
                 </div>
                 <div v-else class="text-sm" style="color: var(--p-text-muted-color)">{{ t('match.noUpcoming') }}</div>

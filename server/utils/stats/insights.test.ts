@@ -152,3 +152,36 @@ it('falls back to name pairing when a team code is missing', async () => {
   expect(insights!.headToHead[0].homeTeam).toBe('Mystery FC')
   await client.close()
 })
+
+it('next is relative to the focus match and carries results for games played since', async () => {
+  const { db, client } = await createTestDb()
+  const competitionId = await seedCompetition(db)
+  const md1 = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+  const md2 = (await findRoundId(db, competitionId, 'GROUP', 2)) as string
+  const base = { competitionId, groupName: 'A', stage: 'GROUP' as const }
+
+  // focus: a PAST match; its "next" (md2) has since been played
+  const focus = await makeMatch(db, { ...base, roundId: md1, kickoffTime: new Date('2026-06-11T16:00:00Z'), status: 'FINISHED', fullTimeHome: 2, fullTimeAway: 0, homeTeam: 'Mexico', homeTeamCode: 'MEX', awayTeam: 'Canada', awayTeamCode: 'CAN' })
+  await makeMatch(db, { ...base, roundId: md2, kickoffTime: new Date('2026-06-15T16:00:00Z'), status: 'FINISHED', fullTimeHome: 1, fullTimeAway: 3, homeTeam: 'Spain', homeTeamCode: 'ESP', awayTeam: 'Mexico', awayTeamCode: 'MEX' })
+  await makeMatch(db, { ...base, roundId: md2, kickoffTime: new Date('2026-06-16T16:00:00Z'), status: 'SCHEDULED', homeTeam: 'Mexico', homeTeamCode: 'MEX', awayTeam: 'Brazil', awayTeamCode: 'BRA' })
+
+  const insights = await getMatchInsights(db, focus, new Date('2026-06-20T00:00:00Z'))
+  expect(insights!.next.home).toHaveLength(2)
+  expect(insights!.next.home[0]).toMatchObject({ opponent: 'Spain', result: 'W', score: '3–1' }) // away win, team perspective
+  expect(insights!.next.home[1]).toMatchObject({ opponent: 'Brazil', result: null, score: null })
+  await client.close()
+})
+
+it('next covers home draws and losses', async () => {
+  const { db, client } = await createTestDb()
+  const competitionId = await seedCompetition(db)
+  const md1 = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+  const md2 = (await findRoundId(db, competitionId, 'GROUP', 2)) as string
+  const base = { competitionId, groupName: 'A', stage: 'GROUP' as const }
+  const focus = await makeMatch(db, { ...base, roundId: md1, kickoffTime: new Date('2026-06-11T16:00:00Z'), status: 'FINISHED', fullTimeHome: 0, fullTimeAway: 0, homeTeam: 'Mexico', homeTeamCode: 'MEX', awayTeam: 'Canada', awayTeamCode: 'CAN' })
+  await makeMatch(db, { ...base, roundId: md2, kickoffTime: new Date('2026-06-15T16:00:00Z'), status: 'FINISHED', fullTimeHome: 1, fullTimeAway: 1, homeTeam: 'Mexico', homeTeamCode: 'MEX', awayTeam: 'Spain', awayTeamCode: 'ESP' })
+  await makeMatch(db, { ...base, roundId: md2, kickoffTime: new Date('2026-06-16T16:00:00Z'), status: 'FINISHED', fullTimeHome: 0, fullTimeAway: 2, homeTeam: 'Mexico', homeTeamCode: 'MEX', awayTeam: 'Brazil', awayTeamCode: 'BRA' })
+  const insights = await getMatchInsights(db, focus, new Date('2026-06-20T00:00:00Z'))
+  expect(insights!.next.home.map((n) => n.result)).toEqual(['D', 'L'])
+  await client.close()
+})

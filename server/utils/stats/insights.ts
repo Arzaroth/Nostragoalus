@@ -16,6 +16,9 @@ export interface NextMatch {
   opponent: string
   opponentCode: string | null
   kickoffTime: string
+  // Filled when that later match has since been played (viewing a past match).
+  result: 'W' | 'D' | 'L' | null
+  score: string | null
 }
 
 export interface HeadToHead {
@@ -88,15 +91,17 @@ async function teamForm(db: AppDatabase, competitionId: string, team: string, li
     })
 }
 
-async function teamNext(db: AppDatabase, competitionId: string, team: string, now: Date, limit: number): Promise<NextMatch[]> {
+// The team's matches in this competition AFTER the focus match - relative to
+// the match being viewed, not to the wall clock. Later games may already be
+// played (when browsing history); those carry their result.
+async function teamNext(db: AppDatabase, competitionId: string, team: string, after: Date, limit: number): Promise<NextMatch[]> {
   const rows = await db
     .select()
     .from(match)
     .where(
       and(
         eq(match.competitionId, competitionId),
-        eq(match.status, 'SCHEDULED'),
-        gt(match.kickoffTime, now),
+        gt(match.kickoffTime, after),
         or(eq(match.homeTeam, team), eq(match.awayTeam, team)),
       ),
     )
@@ -105,11 +110,16 @@ async function teamNext(db: AppDatabase, competitionId: string, team: string, no
 
   return rows.map((r) => {
     const isHome = r.homeTeam === team
+    const played = r.status === 'FINISHED' && r.fullTimeHome != null && r.fullTimeAway != null
+    const gf = isHome ? r.fullTimeHome : r.fullTimeAway
+    const ga = isHome ? r.fullTimeAway : r.fullTimeHome
     return {
       matchId: r.id,
       opponent: isHome ? r.awayTeam : r.homeTeam,
       opponentCode: isHome ? r.awayTeamCode : r.homeTeamCode,
       kickoffTime: new Date(r.kickoffTime).toISOString(),
+      result: played ? ((gf as number) > (ga as number) ? 'W' : (gf as number) < (ga as number) ? 'L' : 'D') : null,
+      score: played ? `${gf}–${ga}` : null,
     }
   })
 }
@@ -131,8 +141,8 @@ export async function getMatchInsights(db: AppDatabase, matchId: string, now: Da
   const [homeForm, awayForm, homeNext, awayNext] = await Promise.all([
     teamForm(db, m.competitionId, m.homeTeam, 5),
     teamForm(db, m.competitionId, m.awayTeam, 5),
-    teamNext(db, m.competitionId, m.homeTeam, now, 3),
-    teamNext(db, m.competitionId, m.awayTeam, now, 3),
+    teamNext(db, m.competitionId, m.homeTeam, new Date(m.kickoffTime), 3),
+    teamNext(db, m.competitionId, m.awayTeam, new Date(m.kickoffTime), 3),
   ])
 
   // Head-to-head spans every competition we know - inside one tournament two

@@ -130,3 +130,26 @@ it('covers calendar cache hits, dateless rows and fully-anonymous sides', async 
   const again = await getAllTimeHeadToHead('GER', 'SCO', fetchImpl, 2000)
   expect(again!.meetings).toHaveLength(1)
 })
+
+it('expired calendar cache refetches; anonymous away side in h2h meeting fields', async () => {
+  const anonAway = {
+    Date: '2021-05-05T19:00:00Z', CompetitionName: [{ Description: 'Friendlies' }], HomeTeamScore: 0, AwayTeamScore: 3,
+    Home: { IdTeam: '43948', Abbreviation: 'GER', TeamName: [{ Description: 'Germany' }] },
+    Away: { IdTeam: '43967', Abbreviation: 'SCO', TeamName: null },
+  }
+  let teamCalls = 0
+  const fetchImpl = (async (url: string) => {
+    const u = String(url)
+    if (u.includes('idTeam=')) {
+      teamCalls++
+      return new Response(JSON.stringify({ Results: [anonAway] }), { status: 200 })
+    }
+    return new Response(JSON.stringify({ Results: SEASON_ROWS }), { status: 200 })
+  }) as unknown as typeof fetch
+  const h2h = await getAllTimeHeadToHead('GER', 'SCO', fetchImpl, 1000)
+  expect(h2h!.meetings[0]).toMatchObject({ awayTeam: 'SCO', awayCode: 'SCO', homeTeam: 'Germany' })
+  // 25h later: pair cache AND calendar cache expired -> refetch
+  const dayLater = 1000 + 25 * 60 * 60 * 1000
+  await getAllTimeHeadToHead('GER', 'SCO', fetchImpl, dayLater)
+  expect(teamCalls).toBe(2)
+})
