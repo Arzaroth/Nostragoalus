@@ -5,6 +5,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- `mise run create-admin <email> <password> [name]` provisions an admin on demand (signs up via better-auth so the password is HIBP-checked + hashed, then sets the DB role); idempotent. No default admin password exists - this or NUXT_ADMIN_EMAILS bootstraps the first admin.
+
+### Changed
+- Dropped dead config (NUXT_MATCH_PROVIDER, NUXT_FIFA_SEASON_ID, NUXT_WC_SEASON): provider and season are per-competition (DB / live FIFA seasons API), the env vars were never read.
+
 ## [0.13.0] - 2026-06-08
 
 ### Fixed

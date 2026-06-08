@@ -22,7 +22,8 @@
     "db:studio": "drizzle-kit studio",
     "e2e:smtp": "node tests/e2e/smtp-otp.e2e.mjs",
     "badge": "node scripts/coverage-badge.mjs",
-    "test:components": "vitest run --project nuxt"
+    "test:components": "vitest run --project nuxt",
+    "create-admin": "node scripts/create-admin.mjs"
   },
   "dependencies": {
     "@better-auth/passkey": "^1.6.14",

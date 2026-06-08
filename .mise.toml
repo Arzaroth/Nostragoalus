@@ -52,3 +52,7 @@ run = "node scripts/showcase-shots.mjs"
 [tasks.check]
 description = "Full gate: types + tests with the coverage threshold"
 run = ["pnpm typecheck", "pnpm test:coverage", "pnpm test:components"]
+
+[tasks.create-admin]
+description = "Create or promote an admin (needs the stack up): mise run create-admin <email> <password> [name]"
+run = 'node scripts/create-admin.mjs {{arg(name="email")}} {{arg(name="password")}}'

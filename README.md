@@ -88,3 +88,13 @@ pnpm badge                  # refresh the coverage badge from the last run
 ```
 
 `mise run check` runs the full gate (typecheck + coverage + component tests).
+
+### First admin
+
+There's no default admin password. Either add your email to `NUXT_ADMIN_EMAILS` and sign up normally, or provision one directly (stack must be up):
+
+```bash
+mise run create-admin you@example.com 'a-strong-password' "Your Name"
+```
+
+It signs up through better-auth (so the password is HIBP-checked and properly hashed) and sets the DB role to admin. Idempotent - re-running just promotes an existing account.
