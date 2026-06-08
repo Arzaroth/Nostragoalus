@@ -9,9 +9,13 @@ const current = computed(() => competitions.value?.find((c) => c.slug === slug.v
 
 // Switch competition but keep the kind of page you're on (detail pages fall back to a list).
 function targetPath(s: string) {
-  const section = route.path.split('/')[2] || 'matches'
+  const parts = route.path.split('/')
+  const section = parts[2] || 'matches'
+  // A player exists across competitions - keep their page (and the team page).
+  if (section === 'users' && parts[3]) return `/${s}/users/${parts[3]}`
+  if (section === 'teams' && parts[3]) return `/${s}/teams/${parts[3]}`
   if (['bracket', 'map', 'leaderboard', 'predictions', 'matches'].includes(section)) return `/${s}/${section}`
-  if (section === 'users') return `/${s}/leaderboard`
+  // a single match (matches/:id) has no equivalent elsewhere - fall back to the list
   return `/${s}/matches`
 }
 function switchTo(s: string) {
