@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- All-time head-to-head on the match view, sourced from FIFA's full international calendar (World Cups, qualifiers, continental championships, friendlies - back to 1908 where FIFA has it). Works before kickoff, so it doubles as a prediction tool. Tally + goals line + meeting list, linked to our match pages where we hold the fixture.
+
 ## [0.7.1] - 2026-06-08
 
 ### Added

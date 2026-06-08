@@ -156,17 +156,20 @@ watch(activeTab, (tab) => {
   router.replace({ query: { ...route.query, tab: tab === 'stats' ? undefined : tab } })
 })
 
-// Head-to-head tally from this fixture's perspective (pens decide 'wins').
+// All-time head-to-head (FIFA's full calendar: friendlies, qualifiers,
+// championships) from the home side's perspective; our own data as fallback.
 const h2hSummary = computed(() => {
+  const all = insights.value?.h2hAll
+  if (all) return { homeWins: all.wins, draws: all.draws, awayWins: all.losses, goalsFor: all.goalsFor, goalsAgainst: all.goalsAgainst }
   const me = m.value?.homeTeam
-  const out = { homeWins: 0, draws: 0, awayWins: 0 }
+  const out = { homeWins: 0, draws: 0, awayWins: 0, goalsFor: 0, goalsAgainst: 0 }
   for (const h of insights.value?.headToHead ?? []) {
     if (h.homeScore == null || h.awayScore == null) continue
-    let winner: 'home' | 'away' | null =
+    const winner: 'home' | 'away' | null =
       h.homeScore > h.awayScore ? 'home' : h.awayScore > h.homeScore ? 'away' : null
-    if (!winner && h.penalties && h.penalties.home !== h.penalties.away) {
-      winner = h.penalties.home > h.penalties.away ? 'home' : 'away'
-    }
+    const meHome = h.homeTeam === me
+    out.goalsFor += meHome ? h.homeScore : h.awayScore
+    out.goalsAgainst += meHome ? h.awayScore : h.homeScore
     if (!winner) out.draws++
     else if ((winner === 'home' ? h.homeTeam : h.awayTeam) === me) out.homeWins++
     else out.awayWins++
@@ -174,6 +177,30 @@ const h2hSummary = computed(() => {
   return out
 })
 const h2hTotal = computed(() => h2hSummary.value.homeWins + h2hSummary.value.draws + h2hSummary.value.awayWins)
+
+// Meeting list: the all-time calendar, linked to our match pages when we hold
+// that fixture (matched by day + the two team codes).
+const h2hRows = computed(() => {
+  const ours = insights.value?.headToHead ?? []
+  const all = insights.value?.h2hAll?.meetings
+  if (!all?.length) {
+    return ours.map((h: any) => ({ ...h, competition: h.competitionName, link: `/${h.competitionSlug}/matches/${h.matchId}` }))
+  }
+  return all.map((meeting: any) => {
+    const local = ours.find(
+      (h: any) =>
+        h.kickoffTime.slice(0, 10) === meeting.date.slice(0, 10) &&
+        ((h.homeTeam === meeting.homeTeam && h.awayTeam === meeting.awayTeam) || (h.homeTeam === meeting.awayTeam && h.awayTeam === meeting.homeTeam)),
+    )
+    return {
+      ...meeting,
+      kickoffTime: meeting.date,
+      penaltiesHome: local?.penaltiesHome ?? null,
+      penaltiesAway: local?.penaltiesAway ?? null,
+      link: local ? `/${local.competitionSlug}/matches/${local.matchId}` : null,
+    }
+  })
+})
 
 function formColor(r: string) {
   return r === 'W' ? '#22c55e' : r === 'L' ? '#ef4444' : '#a1a1aa'
@@ -372,7 +399,7 @@ function fmtDate(d: string) {
           </TabPanel>
 
           <TabPanel value="h2h">
-            <div v-if="!insights.headToHead.length" class="text-sm text-center py-4" style="color: var(--p-text-muted-color)">{{ t('match.h2hNone') }}</div>
+            <div v-if="!h2hRows.length" class="text-sm text-center py-4" style="color: var(--p-text-muted-color)">{{ t('match.h2hNone') }}</div>
             <template v-else>
             <div v-if="h2hTotal" class="mb-4">
               <div class="flex justify-between text-xs mb-1" style="color: var(--p-text-muted-color)">
@@ -385,12 +412,13 @@ function fmtDate(d: string) {
                 <div :style="`width:${(h2hSummary.draws / h2hTotal) * 100}%; background: var(--p-content-border-color)`" />
                 <div :style="`width:${(h2hSummary.awayWins / h2hTotal) * 100}%; background: #71717a`" />
               </div>
+              <div class="text-center text-xs mt-1" style="color: var(--p-text-muted-color)">{{ h2hSummary.goalsFor }}–{{ h2hSummary.goalsAgainst }} {{ t('team.goals').toLowerCase() }}</div>
             </div>
             <div class="flex flex-col text-sm">
-              <NuxtLink v-for="(h, i) in insights.headToHead" :key="i" :to="`/${h.competitionSlug}/matches/${h.matchId}`" class="flex items-center justify-between border-t py-2 hover:opacity-80" style="border-color: var(--p-content-border-color)">
-                <span class="font-medium">{{ h.homeTeam }} {{ h.homeScore }}–{{ h.awayScore }}<template v-if="pensResult(h)"> ({{ pensResult(h) }} {{ t('match.pens') }})</template> {{ h.awayTeam }}</span>
-                <span class="text-xs" style="color: var(--p-text-muted-color)">{{ h.competitionName }} · {{ fmtDate(h.kickoffTime) }}</span>
-              </NuxtLink>
+              <component :is="h.link ? NuxtLinkC : 'div'" v-for="(h, i) in h2hRows" :key="i" :to="h.link ?? undefined" class="flex items-center justify-between gap-3 border-t py-2" :class="h.link ? 'hover:opacity-80' : ''" style="border-color: var(--p-content-border-color)">
+                <span class="font-medium truncate">{{ h.homeTeam }} {{ h.homeScore }}–{{ h.awayScore }}<template v-if="pensResult(h)"> ({{ pensResult(h) }} {{ t('match.pens') }})</template> {{ h.awayTeam }}</span>
+                <span class="text-xs shrink-0" style="color: var(--p-text-muted-color)">{{ h.competition }} · {{ fmtDate(h.kickoffTime) }}</span>
+              </component>
             </div>
             </template>
           </TabPanel>

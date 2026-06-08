@@ -140,3 +140,15 @@ it('head-to-head spans competitions and carries each match competition', async (
   expect(insights!.headToHead[0]).toMatchObject({ homeTeam: 'Spain', homeScore: 3, competitionSlug: 'older-cup', competitionName: 'Older Cup' })
   await client.close()
 })
+
+it('falls back to name pairing when a team code is missing', async () => {
+  const { db, client } = await createTestDb()
+  const competitionId = await seedCompetition(db)
+  const md1 = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+  await makeMatch(db, { competitionId, roundId: md1, stage: 'GROUP', groupName: 'A', kickoffTime: new Date('2026-06-10T16:00:00Z'), status: 'FINISHED', fullTimeHome: 2, fullTimeAway: 0, homeTeam: 'Mystery FC', homeTeamCode: null, awayTeam: 'Enigma XI', awayTeamCode: null })
+  const focus = await makeMatch(db, { competitionId, roundId: md1, stage: 'GROUP', groupName: 'A', kickoffTime: new Date('2026-06-15T16:00:00Z'), status: 'SCHEDULED', homeTeam: 'Enigma XI', homeTeamCode: null, awayTeam: 'Mystery FC', awayTeamCode: null })
+  const insights = await getMatchInsights(db, focus, NOW)
+  expect(insights!.headToHead).toHaveLength(1)
+  expect(insights!.headToHead[0].homeTeam).toBe('Mystery FC')
+  await client.close()
+})
