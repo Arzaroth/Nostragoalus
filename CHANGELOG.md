@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-06-08
+
 ### Fixed
 - Crowd totals genuinely refresh on a competition switch now: the three consumers shared one static useFetch key, so Nuxt served the previous competition's cached payload. Rewritten as a plain ref + explicit refetch on (preference, competition) change; locked by a component test.
 
