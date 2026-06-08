@@ -203,7 +203,8 @@
     "toggleSubs": "Show or hide substitutions",
     "toggleBookings": "Show or hide bookings",
     "draws": "draws",
-    "h2hNone": "These teams have never met in our records - this would be the first."
+    "h2hNone": "These teams have never met in our records - this would be the first.",
+    "goal": "GOOOAL!"
   },
   "auth": {
     "signIn": "Sign in",

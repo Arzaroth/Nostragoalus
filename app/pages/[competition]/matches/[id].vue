@@ -41,6 +41,20 @@ const detail = computed(() => detailData.value?.detail)
 const m = computed(() => data.value?.match)
 const { live } = useLiveMatch(id)
 
+// A live score increase = somebody scored: run the pixel celebration.
+const celebrating = ref(false)
+let celebrationTimer: ReturnType<typeof setTimeout> | undefined
+watch(live, (now, prev) => {
+  const total = (u: any) => (u?.fullTimeHome ?? 0) + (u?.fullTimeAway ?? 0)
+  const baseline = prev ?? { fullTimeHome: m.value?.fullTimeHome, fullTimeAway: m.value?.fullTimeAway }
+  if (now && now.status !== 'FINISHED' && total(now) > total(baseline)) {
+    celebrating.value = true
+    clearTimeout(celebrationTimer)
+    celebrationTimer = setTimeout(() => (celebrating.value = false), 3200)
+  }
+})
+onBeforeUnmount(() => clearTimeout(celebrationTimer))
+
 // Your pick, editable in place until kickoff.
 const myPred = computed(() => data.value?.myPrediction ?? null)
 const predLocked = computed(() => data.value?.isLocked ?? true)
@@ -211,6 +225,16 @@ function fmtDate(d: string) {
 </script>
 
 <template>
+  <div>
+  <Teleport to="body">
+    <Transition name="goal-pop">
+      <div v-if="celebrating" class="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4" style="background: rgba(10, 8, 24, 0.82)" @click="celebrating = false">
+        <GoalAnimation />
+        <div class="text-3xl font-black tracking-widest" style="color: #cdbfff">{{ t('match.goal') }}</div>
+        <div class="text-sm" style="color: var(--p-text-muted-color)">{{ m?.homeTeam }} {{ homeScore }}–{{ awayScore }} {{ m?.awayTeam }}</div>
+      </div>
+    </Transition>
+  </Teleport>
   <div v-if="m" class="flex flex-col gap-6">
     <NuxtLink :to="`/${selectedSlug}/matches`" class="text-sm inline-flex items-center gap-1" style="color: var(--p-text-muted-color)">
       <i class="pi pi-arrow-left" /> {{ t('common.back') }}
@@ -467,4 +491,5 @@ function fmtDate(d: string) {
     </div>
   </div>
   <div v-else class="opacity-60">Match not found.</div>
+  </div>
 </template>

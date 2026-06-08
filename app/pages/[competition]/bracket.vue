@@ -28,15 +28,16 @@ const sides = computed(() => {
     <div v-else class="overflow-x-auto pb-4" style="width: 100vw; margin-left: calc(50% - 50vw)">
       <div class="br w-max mx-auto flex items-stretch gap-8 px-6">
         <!-- left side -->
-        <div class="flex items-stretch gap-5 br-left">
+        <div class="flex items-stretch gap-8 br-left">
           <div v-for="(col, ci) in sides.left" :key="'l' + ci" class="br-col" :data-advance="ci < sides.left.length - 1 ? 'true' : 'false'" :data-tail="ci === sides.left.length - 1 ? 'true' : 'false'">
             <div v-for="(m, mi) in col.matches" :key="mi" class="br-cell"><BracketMatchCard :match="m" /></div>
           </div>
         </div>
 
-        <!-- center -->
-        <div class="flex flex-col items-center justify-center gap-4 px-1 shrink-0">
-          <div class="text-center">
+        <!-- center: a 3-row grid keeps the final on the semis' midline no
+             matter what sits above (trophy) or below (3rd place). -->
+        <div class="grid grid-rows-[1fr_auto_1fr] justify-items-center px-1 shrink-0">
+          <div class="text-center self-end pb-4">
             <i class="pi pi-trophy text-4xl" style="color: #f5b301" />
             <div class="text-xs uppercase tracking-widest font-bold mt-1">{{ bracket.winner ? bracket.winner.name : 'Champion' }}</div>
           </div>
@@ -44,14 +45,16 @@ const sides = computed(() => {
             <div class="text-[10px] uppercase tracking-wider font-semibold mb-1" style="color: var(--p-primary-color)">{{ sides.final.name }}</div>
             <BracketMatchCard v-for="(m, mi) in sides.final.matches" :key="mi" :match="m" />
           </div>
-          <div v-if="sides.third" class="text-center opacity-80">
+          <div v-else />
+          <div v-if="sides.third" class="text-center opacity-80 self-start pt-4">
             <div class="text-[10px] uppercase tracking-wider font-semibold mb-1" style="color: var(--p-text-muted-color)">3rd place</div>
             <BracketMatchCard v-for="(m, mi) in sides.third.matches" :key="mi" :match="m" />
           </div>
+          <div v-else />
         </div>
 
         <!-- right side -->
-        <div class="flex items-stretch gap-5 br-right">
+        <div class="flex items-stretch gap-8 br-right">
           <div v-for="(col, ci) in sides.right" :key="'r' + ci" class="br-col" :data-advance="ci > 0 ? 'true' : 'false'" :data-tail="ci === 0 ? 'true' : 'false'">
             <div v-for="(m, mi) in col.matches" :key="mi" class="br-cell"><BracketMatchCard :match="m" /></div>
           </div>
@@ -80,31 +83,36 @@ const sides = computed(() => {
   padding: 4px 0;
 }
 
-/* left side: lines advance to the right */
+/* left side: a short stub out of each card, verticals merging at mid-gap,
+   then a straight lead-in to the next fixture (classic bracket elbows). */
 .br-left .br-col[data-advance='true'] .br-cell::after,
 .br-left .br-col[data-tail='true'] .br-cell::after {
   content: '';
   position: absolute;
   left: 100%;
   top: 50%;
-  width: 1.25rem;
+  width: 0.75rem;
   border-top: 2px solid var(--line);
 }
 .br-left .br-col[data-advance='true'] .br-cell:nth-child(odd)::before {
   content: '';
   position: absolute;
-  left: calc(100% + 1.25rem);
+  left: calc(100% + 0.75rem);
   top: 50%;
   height: 50%;
+  width: 1.25rem;
   border-left: 2px solid var(--line);
+  border-bottom: 2px solid var(--line);
 }
 .br-left .br-col[data-advance='true'] .br-cell:nth-child(even)::before {
   content: '';
   position: absolute;
-  left: calc(100% + 1.25rem);
+  left: calc(100% + 0.75rem);
   bottom: 50%;
   height: 50%;
+  width: 1.25rem;
   border-left: 2px solid var(--line);
+  border-top: 2px solid var(--line);
 }
 
 /* right side: mirrored to the left */
@@ -114,23 +122,27 @@ const sides = computed(() => {
   position: absolute;
   right: 100%;
   top: 50%;
-  width: 1.25rem;
+  width: 0.75rem;
   border-top: 2px solid var(--line);
 }
 .br-right .br-col[data-advance='true'] .br-cell:nth-child(odd)::before {
   content: '';
   position: absolute;
-  right: calc(100% + 1.25rem);
+  right: calc(100% + 0.75rem);
   top: 50%;
   height: 50%;
+  width: 1.25rem;
   border-right: 2px solid var(--line);
+  border-bottom: 2px solid var(--line);
 }
 .br-right .br-col[data-advance='true'] .br-cell:nth-child(even)::before {
   content: '';
   position: absolute;
-  right: calc(100% + 1.25rem);
+  right: calc(100% + 0.75rem);
   bottom: 50%;
   height: 50%;
+  width: 1.25rem;
   border-right: 2px solid var(--line);
+  border-top: 2px solid var(--line);
 }
 </style>

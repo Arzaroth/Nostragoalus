@@ -203,7 +203,8 @@
     "toggleSubs": "Afficher ou masquer les remplacements",
     "toggleBookings": "Afficher ou masquer les cartons",
     "draws": "nuls",
-    "h2hNone": "Ces équipes ne se sont jamais rencontrées dans nos données - ce serait une première."
+    "h2hNone": "Ces équipes ne se sont jamais rencontrées dans nos données - ce serait une première.",
+    "goal": "BUUUT !"
   },
   "auth": {
     "signIn": "Connexion",

@@ -90,3 +90,6 @@ html:not(.app-dark) .ng-card {
 html:not(.app-dark) .ng-card:hover {
   box-shadow: 0 2px 4px rgba(30, 27, 75, 0.08), 0 8px 20px rgba(30, 27, 75, 0.07);
 }
+
+.goal-pop-enter-active, .goal-pop-leave-active { transition: opacity 0.3s ease; }
+.goal-pop-enter-from, .goal-pop-leave-to { opacity: 0; }

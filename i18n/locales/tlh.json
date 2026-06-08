@@ -203,7 +203,8 @@
     "toggleSubs": "tammey cha' pagh So'",
     "toggleBookings": "Deghmey cha' pagh So'",
     "draws": "raghmey",
-    "h2hNone": "not ghom cha' ghommeyvam - wa'DIch 'oH."
+    "h2hNone": "not ghom cha' ghommeyvam - wa'DIch 'oH.",
+    "goal": "QAPLA'!"
   },
   "auth": {
     "signIn": "yI'el",
