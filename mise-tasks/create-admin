@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+#MISE description="Create or promote an admin (prompts for password; needs the stack up)"
+#USAGE arg "<email>" help="Email of the admin to create or promote"
+#USAGE arg "[name]" help="Display name (defaults to the email local-part)"
+
+exec node scripts/create-admin.mjs "$usage_email" ${usage_name:+"$usage_name"}

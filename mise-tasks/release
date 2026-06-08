@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+#MISE description="Cut a release: changelog section, version bump, full gate, commit+tag+push"
+#USAGE arg "<version>" help="Semver to release, e.g. 0.13.0"
+
+exec node scripts/release.mjs "$usage_version"

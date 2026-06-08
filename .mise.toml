@@ -37,9 +37,6 @@ run = "pnpm test:coverage"
 description = "E2E: email-OTP flow through the running stack + maildev"
 run = "pnpm e2e:smtp"
 
-[tasks.release]
-description = "Cut a release: changelog section, version bump, test gate, commit+tag+push (e.g. mise run release 0.9.0)"
-run = 'node scripts/release.mjs'
 
 [tasks.seed-demo]
 description = "Fill the DB with demo players/predictions, then re-score (needs the stack up)"
@@ -53,6 +50,3 @@ run = "node scripts/showcase-shots.mjs"
 description = "Full gate: types + tests with the coverage threshold"
 run = ["pnpm typecheck", "pnpm test:coverage", "pnpm test:components"]
 
-[tasks.create-admin]
-description = "Create or promote an admin (prompts for password; needs the stack up): mise run create-admin <email> [name]"
-run = 'node scripts/create-admin.mjs'
