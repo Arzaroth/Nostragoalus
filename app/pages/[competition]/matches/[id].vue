@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { buildTimeline, h2hSummaryOf } from '../../../utils/match-view'
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
@@ -97,11 +98,6 @@ const hasStats = computed(
 )
 const hadShootout = computed(() => ((m.value?.penaltiesHome ?? 0) + (m.value?.penaltiesAway ?? 0)) > 0)
 
-function minuteVal(minute: string | null): number {
-  if (!minute) return Number.MAX_SAFE_INTEGER
-  const match2 = /^(\d+)'(?:\+(\d+))?/.exec(minute)
-  return match2 ? Number(match2[1]) * 100 + Number(match2[2] ?? 0) : Number.MAX_SAFE_INTEGER
-}
 function cardEvents(side: 'HOME' | 'AWAY') {
   return (detail.value?.bookings ?? []).filter((b: any) => b.side === side)
 }
@@ -113,30 +109,17 @@ const eventsReady = computed(() => insightsStatus.value !== 'pending' && detailS
 const showBookings = useLocalStorage('ng-timeline-bookings', true)
 const showSubs = useLocalStorage('ng-timeline-subs', true)
 
-const timeline = computed(() => {
-  const goals = (insights.value?.goals ?? []).map((g: any) => ({ kind: 'goal' as const, ...g }))
-  const cards = (detail.value?.bookings ?? []).map((b: any) => ({
-    kind: 'card' as const,
-    card: b.card as 'YELLOW' | 'SECOND_YELLOW' | 'RED',
-    side: b.side,
-    minute: b.minute,
-    playerName: b.playerName,
-    coach: !!b.coach,
-    teamCode: b.side === 'HOME' ? m.value?.homeTeamCode : m.value?.awayTeamCode,
-  }))
-  const subs = (detail.value?.substitutions ?? []).map((sub: any) => ({
-    kind: 'sub' as const,
-    side: sub.side,
-    minute: sub.minute,
-    playerName: sub.playerOnName,
-    offName: sub.playerOffName,
-  }))
-  return [
-    ...goals,
-    ...(showBookings.value ? cards : []),
-    ...(showSubs.value ? subs : []),
-  ].sort((a, b) => minuteVal(a.minute) - minuteVal(b.minute))
-})
+const timeline = computed(() =>
+  buildTimeline({
+    goals: insights.value?.goals ?? [],
+    bookings: detail.value?.bookings ?? [],
+    substitutions: detail.value?.substitutions ?? [],
+    homeCode: m.value?.homeTeamCode,
+    awayCode: m.value?.awayTeamCode,
+    showBookings: showBookings.value,
+    showSubs: showSubs.value,
+  }),
+)
 const hasTimelineExtras = computed(() => (detail.value?.bookings?.length ?? 0) > 0 || (detail.value?.substitutions?.length ?? 0) > 0)
 // FIFA football-intelligence per-match stat rows (home | label | away).
 const statRows = computed(() => {
@@ -173,24 +156,7 @@ watch(activeTab, (tab) => {
 
 // All-time head-to-head (FIFA's full calendar: friendlies, qualifiers,
 // championships) from the home side's perspective; our own data as fallback.
-const h2hSummary = computed(() => {
-  const all = insights.value?.h2hAll
-  if (all) return { homeWins: all.wins, draws: all.draws, awayWins: all.losses, goalsFor: all.goalsFor, goalsAgainst: all.goalsAgainst }
-  const me = m.value?.homeTeam
-  const out = { homeWins: 0, draws: 0, awayWins: 0, goalsFor: 0, goalsAgainst: 0 }
-  for (const h of insights.value?.headToHead ?? []) {
-    if (h.homeScore == null || h.awayScore == null) continue
-    const winner: 'home' | 'away' | null =
-      h.homeScore > h.awayScore ? 'home' : h.awayScore > h.homeScore ? 'away' : null
-    const meHome = h.homeTeam === me
-    out.goalsFor += meHome ? h.homeScore : h.awayScore
-    out.goalsAgainst += meHome ? h.awayScore : h.homeScore
-    if (!winner) out.draws++
-    else if ((winner === 'home' ? h.homeTeam : h.awayTeam) === me) out.homeWins++
-    else out.awayWins++
-  }
-  return out
-})
+const h2hSummary = computed(() => h2hSummaryOf(insights.value?.h2hAll, insights.value?.headToHead, m.value?.homeTeam))
 const h2hTotal = computed(() => h2hSummary.value.homeWins + h2hSummary.value.draws + h2hSummary.value.awayWins)
 
 // Meeting list: the all-time calendar, linked to our match pages when we hold

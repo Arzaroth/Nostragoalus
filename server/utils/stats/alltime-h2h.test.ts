@@ -153,3 +153,53 @@ it('expired calendar cache refetches; anonymous away side in h2h meeting fields'
   await getAllTimeHeadToHead('GER', 'SCO', fetchImpl, dayLater)
   expect(teamCalls).toBe(2)
 })
+
+it('branch fill: team calendar with no Results key, and a dateless row in the sort', async () => {
+  const dateless = { Date: null, CompetitionName: null, HomeTeamScore: 2, AwayTeamScore: 0, Home: { IdTeam: '43948', Abbreviation: 'GER' }, Away: { IdTeam: '9', Abbreviation: 'XX' } }
+  const f = (async (url: string) => {
+    const u = String(url)
+    if (u.includes('idTeam=43948')) return new Response(JSON.stringify({ Results: [dateless] }), { status: 200 }) // wait, need no-Results case too
+    if (u.includes('idTeam=')) return new Response(JSON.stringify({}), { status: 200 })
+    return new Response(JSON.stringify({ Results: SEASON_ROWS }), { status: 200 })
+  }) as unknown as typeof fetch
+  const { getTeamRecentResults } = await import('./alltime-h2h')
+  const form = await getTeamRecentResults('GER', '2024-01-01', f, 6100)
+  expect(form!.length).toBe(1) // dateless row still included, sorts fine
+  // a team whose own calendar has no Results key -> [] (the ?? [] branch)
+  resetAllTimeH2hCaches()
+  const none = (async (url: string) => {
+    if (String(url).includes('idTeam=43948')) return new Response(JSON.stringify({}), { status: 200 })
+    return new Response(JSON.stringify({ Results: SEASON_ROWS }), { status: 200 })
+  }) as unknown as typeof fetch
+  expect(await getTeamRecentResults('GER', '2024-01-01', none, 6200)).toEqual([])
+})
+
+it('branch fill: calendar cache reuse, anon codes, getTeamRecentResults failure', async () => {
+  const anon = {
+    Date: '2019-01-01T00:00:00Z', CompetitionName: [{ Description: 'Friendlies' }], HomeTeamScore: 1, AwayTeamScore: 0,
+    Home: { IdTeam: '43948', TeamName: null }, // no Abbreviation -> homeCode null
+    Away: { IdTeam: '43967', TeamName: null }, // no Abbreviation -> awayCode null
+  }
+  let teamCalls = 0
+  const fetchImpl = (async (url: string) => {
+    const u = String(url)
+    if (u.includes('idTeam=43948')) { teamCalls++; return new Response(JSON.stringify({ Results: [anon] }), { status: 200 }) }
+    if (u.includes('idTeam=')) return new Response(JSON.stringify({}), { status: 200 }) // no Results key
+    return new Response(JSON.stringify({ Results: SEASON_ROWS }), { status: 200 })
+  }) as unknown as typeof fetch
+  // anon abbreviations: perspective never matches, so 0 meetings, but exercises the decode fallbacks via form
+  const { getTeamRecentResults } = await import('./alltime-h2h')
+  const form = await getTeamRecentResults('GER', '2024-01-01', fetchImpl, 5000)
+  expect(form).not.toBeNull()
+  // second call within TTL reuses the calendar cache (no extra team fetch)
+  await getTeamRecentResults('GER', '2024-01-01', fetchImpl, 5000)
+  expect(teamCalls).toBe(1)
+
+  // a thrown calendar fetch -> null
+  const boom = (async (url: string) => {
+    if (String(url).includes('idTeam=43948')) return new Response('x', { status: 500 })
+    return new Response(JSON.stringify({ Results: SEASON_ROWS }), { status: 200 })
+  }) as unknown as typeof fetch
+  resetAllTimeH2hCaches()
+  expect(await getTeamRecentResults('GER', '2024-01-01', boom, 9000)).toBeNull()
+})

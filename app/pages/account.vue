@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { useQRCode } from '@vueuse/integrations/useQRCode'
-import { authClient } from '../../lib/auth-client'
+import { resizeToDataUrl } from '../utils/image'
 
 const { t } = useI18n()
 const { session, changeEmail, changePassword, updateUser, deleteUser, signOut } = useAuth()
@@ -8,21 +7,31 @@ const router = useRouter()
 
 const currentUser = computed(() => session.value?.data?.user)
 
-// --- Two-factor authentication ---
-const tfaPassword = ref('')
-const tfaCode = ref('')
-const tfaUri = ref('')
-const tfaQr = useQRCode(tfaUri, { margin: 1, width: 192 })
+// --- Two-factor authentication (state machine extracted to a tested composable) ---
+const tfa = useTwoFactor(currentUser)
+const tfaPassword = tfa.password
+const tfaCode = tfa.code
+const tfaUri = tfa.uri
+const tfaQr = tfa.qr
+const tfaBackup = tfa.backup
+const tfaStep = tfa.step
+const tfaErr = tfa.err
+const tfaBusy = tfa.busy
+const tfaDisableCode = tfa.disableCode
+const tfaSecret = tfa.secret
+const tfaEnabled = tfa.enabled
+const regenCodes = tfa.regenCodes
+const regenBusy = tfa.regenBusy
+const startEnable2fa = tfa.startEnable
+const confirmEnable2fa = tfa.confirmEnable
+const cancelEnable2fa = tfa.cancelEnable
+const confirmBackupSaved = tfa.confirmBackupSaved
+const regenerateBackupCodes = tfa.regenerate
+const disable2fa = () => tfa.disable(() => session.value?.refetch?.())
+
+// Presentation-only helpers kept on the page (copy feedback, download, reveal).
 const tfaSecretShown = ref(false)
 const tfaCopied = ref('')
-const tfaBackup = ref<string[]>([])
-const tfaSecret = computed(() => {
-  try {
-    return new URL(tfaUri.value).searchParams.get('secret') ?? ''
-  } catch {
-    return ''
-  }
-})
 const { copy: copyToClipboard } = useClipboard()
 async function copyText(text: string, which: string) {
   await copyToClipboard(text)
@@ -38,121 +47,20 @@ function downloadBackupCodes(codes?: string[]) {
   a.click()
   URL.revokeObjectURL(a.href)
 }
-const tfaStep = ref<'idle' | 'verify' | 'backup' | 'done'>('idle')
-const tfaErr = ref('')
-const tfaBusy = ref(false)
-const tfaEnabled = computed(() => (currentUser.value as any)?.twoFactorEnabled === true || tfaStep.value === 'done')
 
-async function startEnable2fa() {
-  tfaErr.value = ''
-  tfaBusy.value = true
-  try {
-    const res = await authClient.twoFactor.enable({ password: tfaPassword.value })
-    if (res.error) {
-      tfaErr.value = res.error.message || t('twofa.wrongPassword')
-      return
-    }
-    tfaBackup.value = res.data?.backupCodes ?? []
-    tfaUri.value = res.data?.totpURI ?? ''
-    tfaStep.value = 'verify'
-  } finally {
-    tfaBusy.value = false
-  }
-}
-async function confirmEnable2fa() {
-  tfaErr.value = ''
-  tfaBusy.value = true
-  try {
-    const res = await authClient.twoFactor.verifyTotp({ code: String(tfaCode.value).trim() })
-    if (res.error) {
-      tfaErr.value = t('twofa.wrongCode')
-      return
-    }
-    // Code accepted: walk the user through saving the backup codes before finishing.
-    tfaStep.value = 'backup'
-    tfaPassword.value = ''
-    tfaCode.value = ''
-  } finally {
-    tfaBusy.value = false
-  }
-}
-const tfaDisableCode = ref('')
-function cancelEnable2fa() {
-  tfaStep.value = 'idle'
-  tfaErr.value = ''
-  tfaPassword.value = ''
-  tfaCode.value = ''
-  tfaUri.value = ''
-  tfaBackup.value = []
-}
-function confirmBackupSaved() {
-  tfaStep.value = 'done'
-  tfaBackup.value = []
-}
+// --- Passkeys (extracted composable) ---
+const pk = usePasskeys()
+const passkeys = pk.list
+const pkBusy = pk.busy
+const pkErr = pk.err
+const pkName = pk.name
+const pkPassword = pk.password
+const pkCode = pk.code
+const addPasskey = pk.add
+const removePasskey = pk.remove
+onMounted(pk.load)
 
-// Fresh backup codes on demand (old ones stop working); each code is single-use.
-const regenCodes = ref<string[]>([])
-const regenBusy = ref(false)
-async function regenerateBackupCodes() {
-  tfaErr.value = ''
-  regenBusy.value = true
-  try {
-    const res = await authClient.twoFactor.generateBackupCodes({ password: tfaPassword.value })
-    if (res.error) {
-      tfaErr.value = res.error.message || t('twofa.wrongPassword')
-      return
-    }
-    regenCodes.value = res.data?.backupCodes ?? []
-  } finally {
-    regenBusy.value = false
-  }
-}
-
-// --- Passkeys ---
-const passkeys = ref<{ id: string; name: string | null; createdAt: string | null; deviceType: string }[]>([])
-const pkBusy = ref(false)
-const pkErr = ref('')
-const pkName = ref('')
-const pkPassword = ref('')
-const pkCode = ref('')
-async function loadPasskeys() {
-  const res = await authClient.passkey.listUserPasskeys()
-  passkeys.value = (res.data as any[]) ?? []
-}
-onMounted(loadPasskeys)
-async function addPasskey() {
-  pkErr.value = ''
-  pkBusy.value = true
-  try {
-    // Sudo mode first: a passkey grants account access, so prove the password (+2FA).
-    const gate = await $fetch<{ valid: boolean }>('/api/me/confirm-credentials', {
-      method: 'POST',
-      body: { password: pkPassword.value, code: String(pkCode.value || '') },
-    })
-    if (!gate.valid) {
-      pkErr.value = t('passkeys.gateFailed')
-      return
-    }
-    const res = await authClient.passkey.addPasskey({ name: pkName.value || undefined })
-    if (res?.error) {
-      pkErr.value = res.error.message || 'Failed'
-      return
-    }
-    pkName.value = ''
-    pkPassword.value = ''
-    pkCode.value = ''
-    await loadPasskeys()
-  } finally {
-    pkBusy.value = false
-  }
-}
-async function removePasskey(id: string) {
-  await authClient.passkey.deletePasskey({ id })
-  await loadPasskeys()
-}
-
-// Forget the trust cookie on this device (next sign-in asks for the code again).
-// The cookie is HttpOnly, so the server reports whether this device is trusted.
+// --- Trusted-device cookie (HttpOnly; the server reports trust state) ---
 const { data: trustStatus, refresh: refreshTrust } = await useFetch<{ trusted: boolean }>('/api/me/trust-status', { lazy: true })
 const deviceTrusted = computed(() => trustStatus.value?.trusted === true)
 async function revokeTrust() {
@@ -160,31 +68,6 @@ async function revokeTrust() {
   await refreshTrust()
 }
 
-async function disable2fa() {
-  tfaErr.value = ''
-  tfaBusy.value = true
-  try {
-    // Require a valid current TOTP code on top of the password.
-    const check = await $fetch<{ valid: boolean }>('/api/me/confirm-totp', { method: 'POST', body: { code: String(tfaDisableCode.value) } })
-    if (!check.valid) {
-      tfaErr.value = t('twofa.wrongCode')
-      return
-    }
-    const res = await authClient.twoFactor.disable({ password: tfaPassword.value })
-    if (res.error) {
-      tfaErr.value = res.error.message || t('twofa.wrongPassword')
-      return
-    }
-    tfaStep.value = 'idle'
-    tfaPassword.value = ''
-    tfaDisableCode.value = ''
-      tfaUri.value = ''
-    tfaBackup.value = []
-    await session.value?.refetch?.()
-  } finally {
-    tfaBusy.value = false
-  }
-}
 
 const email = ref('')
 const displayName = ref('')
@@ -203,26 +86,6 @@ const avatarInput = ref<HTMLInputElement>()
 const avatarErr = ref('')
 watch(currentUser, (u) => { if (u && !avatarUrl.value) avatarUrl.value = u.image ?? '' }, { immediate: true })
 
-// Resize + square-crop the chosen image to a small data URL (no upload infra needed).
-function resizeToDataUrl(file: File, size = 256): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => {
-      const canvas = document.createElement('canvas')
-      canvas.width = size
-      canvas.height = size
-      const ctx = canvas.getContext('2d')
-      if (!ctx) return reject(new Error('canvas unsupported'))
-      const scale = Math.max(size / img.width, size / img.height)
-      const w = img.width * scale
-      const h = img.height * scale
-      ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h)
-      resolve(canvas.toDataURL('image/jpeg', 0.85))
-    }
-    img.onerror = () => reject(new Error('invalid image'))
-    img.src = URL.createObjectURL(file)
-  })
-}
 async function onAvatarFile(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0]
   if (!file) return

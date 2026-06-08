@@ -16,12 +16,13 @@
     "postinstall": "nuxt prepare",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage",
+    "test:coverage": "vitest run --project unit --coverage",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "e2e:smtp": "node tests/e2e/smtp-otp.e2e.mjs",
-    "badge": "node scripts/coverage-badge.mjs"
+    "badge": "node scripts/coverage-badge.mjs",
+    "test:components": "vitest run --project nuxt"
   },
   "dependencies": {
     "@better-auth/passkey": "^1.6.14",
@@ -47,6 +48,7 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.1",
+    "@nuxt/test-utils": "^4.0.3",
     "@nuxtjs/i18n": "^10.4.0",
     "@primevue/nuxt-module": "^4.5.5",
     "@types/leaflet": "^1.9.21",
@@ -55,8 +57,10 @@
     "@types/qrcode": "^1.5.6",
     "@unocss/nuxt": "^66.7.0",
     "@vitest/coverage-v8": "^4.1.8",
+    "@vue/test-utils": "^2.4.11",
     "dotenv": "^17.4.2",
     "drizzle-kit": "^0.31.10",
+    "happy-dom": "^20.10.2",
     "puppeteer-core": "^25.1.0",
     "typescript": "^6.0.3",
     "unocss": "^66.7.0",

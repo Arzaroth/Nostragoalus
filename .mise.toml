@@ -51,4 +51,4 @@ run = "node scripts/showcase-shots.mjs"
 
 [tasks.check]
 description = "Full gate: types + tests with the coverage threshold"
-run = ["pnpm typecheck", "pnpm test:coverage"]
+run = ["pnpm typecheck", "pnpm test:coverage", "pnpm test:components"]

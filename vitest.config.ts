@@ -1,34 +1,44 @@
 import { defineConfig } from 'vitest/config'
+import { defineVitestProject } from '@nuxt/test-utils/config'
 
-export default defineConfig({
+// Two projects: 'unit' (node env - logic, the coverage gate) and 'nuxt'
+// (component/composable tests needing a Nuxt runtime). Coverage is scoped to the
+// logic surface; the nuxt project doesn't execute it, so the union is the unit
+// project's numbers.
+export default defineConfig(async () => ({
   test: {
-    environment: 'node',
-    include: ['{server,lib,db,shared,tests,app}/**/*.test.ts'],
-    // pglite runs the full migration per DB test; allow headroom under parallel load.
-    testTimeout: 30000,
-    hookTimeout: 30000,
     coverage: {
       provider: 'v8',
       all: true,
       reporter: ['text', 'json-summary'],
-      // Scope: the business logic - scoring, providers, sync, stats, crypto,
-      // auth guards, the request-validation wrapper, shared helpers. The
-      // interactive surface (app/components, app/pages, server/api handlers) is
-      // NOT in the denominator: it has no component-test harness and is instead
-      // guarded by `pnpm typecheck` (strict). The badge measures logic coverage.
       include: ['server/utils/**/*.ts', 'shared/**/*.ts', 'app/utils/**/*.ts'],
       exclude: [
         '**/*.test.ts',
         '**/types/**',
         'server/utils/providers/index.ts',
         'server/utils/http.ts',
+        'app/utils/image.ts', // canvas/Image DOM glue - no headless canvas to exercise it
       ],
-      thresholds: {
-        lines: 98,
-        functions: 98,
-        statements: 98,
-        branches: 98,
-      },
+      thresholds: { lines: 98, functions: 98, statements: 98, branches: 98 },
     },
+    projects: [
+      {
+        test: {
+          name: 'unit',
+          environment: 'node',
+          include: ['{server,lib,db,shared,tests,app}/**/*.test.ts'],
+          exclude: ['**/*.nuxt.test.ts', '**/node_modules/**'],
+          testTimeout: 30000,
+          hookTimeout: 30000,
+        },
+      },
+      await defineVitestProject({
+        test: {
+          name: 'nuxt',
+          environment: 'nuxt',
+          include: ['app/**/*.nuxt.test.ts'],
+        },
+      }),
+    ],
   },
-})
+}))
