@@ -31,6 +31,9 @@ onMounted(() => {
     cy |= 0
     for (let dy = -rad; dy <= rad; dy++) {
       const ww = Math.floor(Math.sqrt(rad * rad - dy * dy + 0.25))
+      // skip the lone pole pixels on larger discs - stacked concentric discs
+      // otherwise leave single off-color "droplets" poking out of the ball
+      if (rad >= 4 && ww === 0) continue
       x.fillRect(cx - ww, cy + dy, ww * 2 + 1, 1)
     }
   }
@@ -218,7 +221,8 @@ onMounted(() => {
       px(138, 21, 1, 1, '#d8ccff')
       x.globalAlpha = 1
     } else if (!miss || tc < 2000 || tc >= 2700) {
-      ball(rbx, rby, r, t * 0.016)
+      // a resting ball doesn't spin - frozen markings, no crawling pixels
+      ball(rbx, rby, r, miss && tc < 350 ? 1.2 : t * 0.016)
     }
     if (!miss && tc >= 2100 && tc < 2700) {
       const age = (tc - 2100) / 600

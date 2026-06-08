@@ -79,7 +79,7 @@ const themeOptions = computed(() => [
             <span v-if="saved"><i class="pi pi-check" /> {{ t('prefs.saved') }}</span>
           </div>
           <div class="flex items-start gap-3 pt-1">
-            <ToggleSwitch v-model="showCrowd" input-id="show-crowd" />
+            <ToggleSwitch v-model="showCrowd" input-id="show-crowd" class="shrink-0 mt-0.5" style="min-width: 3rem" />
             <label for="show-crowd" class="flex flex-col cursor-pointer">
               <span class="text-sm font-medium">{{ t('prefs.crowd') }}</span>
               <span class="text-xs" style="color: var(--p-text-muted-color)">{{ t('prefs.crowdHint') }}</span>
