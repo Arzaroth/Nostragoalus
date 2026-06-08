@@ -1,4 +1,4 @@
-import { basePointsFor, classifyTier, outcomeOf, type BaseTier, type Outcome, type Scoreline } from './tiers'
+import { basePointsFor, classifyTier, outcomeOf, predictionHits, type BaseTier, type Outcome, type Scoreline } from './tiers'
 import { crowdBonus, oddsBonus } from './bonus'
 import type { BonusSource, ScoringRules } from './config'
 
@@ -46,9 +46,7 @@ function computeBonus(
 ): { bonus: number; source: BonusSource; share: number | null } {
   if (rules.bonusSource === 'CROWD') {
     const byExact = rules.crowdMatchBasis === 'EXACT'
-    const hit = byExact
-      ? pred.home === actual.home && pred.away === actual.away
-      : outcomeOf(pred) === hist.actualOutcome
+    const hit = predictionHits(pred, actual, byExact)
     const matchCount = byExact ? hist.exactCount : hist.outcomeCount
     const { bonus, share } = crowdBonus(hit, matchCount, hist.total, rules.crowdTiers, rules.crowdMinDenominator)
     return { bonus, source: 'CROWD', share }
@@ -56,9 +54,7 @@ function computeBonus(
 
   if (rules.bonusSource === 'ODDS') {
     const byExact = rules.oddsAppliesTo === 'EXACT'
-    const hit = byExact
-      ? pred.home === actual.home && pred.away === actual.away
-      : outcomeOf(pred) === hist.actualOutcome
+    const hit = predictionHits(pred, actual, byExact)
     return { bonus: oddsBonus(hit, actualOutcomeOdds, rules.oddsTiers), source: 'ODDS', share: null }
   }
 
@@ -101,8 +97,8 @@ export function scorePredictions(input: ScoreMatchInput): PredictionScore[] {
   let exactCount = 0
   let outcomeCount = 0
   for (const p of predictions) {
-    if (p.home === actual.home && p.away === actual.away) exactCount += 1
-    if (outcomeOf({ home: p.home, away: p.away }) === actualOutcome) outcomeCount += 1
+    if (predictionHits(p, actual, true)) exactCount += 1
+    if (predictionHits(p, actual, false)) outcomeCount += 1
   }
 
   const hist: Histogram = { exactCount, outcomeCount, total: predictions.length, actualOutcome }

@@ -10,6 +10,20 @@ export type MatchStatus =
 
 export type AppStage = 'GROUP' | 'R32' | 'R16' | 'QF' | 'SF' | 'THIRD_PLACE' | 'FINAL'
 
+// Single-match rounds carry no joker - the final doubles for everyone, the
+// third-place tie scores normally. These helpers keep that rule in one place
+// instead of scattered `stage === 'FINAL'` literals across server + client.
+export const SINGLE_MATCH_STAGES: AppStage[] = ['FINAL', 'THIRD_PLACE']
+export function isSingleMatchStage(stage: AppStage | string | null | undefined): boolean {
+  return stage === 'FINAL' || stage === 'THIRD_PLACE'
+}
+export function countsDouble(stage: AppStage | string | null | undefined): boolean {
+  return stage === 'FINAL'
+}
+export function isKnockout(stage: AppStage | string | null | undefined): boolean {
+  return stage != null && stage !== 'GROUP'
+}
+
 export type Winner = 'HOME' | 'AWAY' | 'DRAW' | null
 
 export interface Team {

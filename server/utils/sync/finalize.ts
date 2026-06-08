@@ -1,6 +1,7 @@
 import { and, eq, inArray, isNotNull } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { match, matchScoreEvent, prediction } from '../../../db/schema'
+import { countsDouble } from '../../../shared/types/match'
 import { getActiveScoringConfig } from '../scoring/store'
 import { scorePredictions } from '../scoring/engine'
 import { awardChampionBonuses } from '../champion/service'
@@ -42,7 +43,7 @@ export async function scoreMatchRow(
     actual: { home: m.fullTimeHome, away: m.fullTimeAway },
     rules,
     predictions: locked.map((p) => ({ id: p.id, home: p.homeGoals, away: p.awayGoals, isJoker: p.isJoker })),
-    forceJoker: m.stage === 'FINAL',
+    forceJoker: countsDouble(m.stage),
   })
   const scoreById = new Map(scores.map((s) => [s.id, s]))
 
@@ -125,7 +126,7 @@ export async function finalizeMatches(db: AppDatabase, now: Date = new Date()): 
       if ((await scoreMatchRow(tx, m.id, context)) === 'scored') scored += 1
       // A decided final's champion bonus is awarded in the same transaction as
       // its scoring, so the two can never disagree.
-      if (m.stage === 'FINAL' && (m.winner === 'HOME' || m.winner === 'AWAY')) {
+      if (countsDouble(m.stage) && (m.winner === 'HOME' || m.winner === 'AWAY')) {
         const winnerCode = m.winner === 'HOME' ? m.homeTeamCode : m.awayTeamCode
         await awardChampionBonuses(tx, m.competitionId, winnerCode, context.rules.championBonus)
       }

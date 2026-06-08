@@ -23,12 +23,16 @@ function openFields<T>(row: T): T {
   for (const f of ENCRYPTED_FIELDS) {
     const v = out[f]
     if (typeof v === 'string' && v.length > 0) {
+      let parsed: unknown
       try {
-        const parsed = JSON.parse(v)
-        if (isSealed(parsed)) out[f] = decryptSecret(parsed)
+        parsed = JSON.parse(v)
       } catch {
-        // not JSON / not a sealed envelope - leave as-is (e.g. legacy plaintext)
+        // not JSON - genuine legacy plaintext, leave as-is
+        continue
       }
+      // A sealed envelope that fails to decrypt is corruption, not plaintext:
+      // let the error surface rather than silently returning ciphertext.
+      if (isSealed(parsed)) out[f] = decryptSecret(parsed)
     }
   }
   return out as T

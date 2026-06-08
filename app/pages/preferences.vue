@@ -29,8 +29,9 @@ const theme = computed({
 
 const showCrowd = computed({
   get: () => (session.value?.data?.user as any)?.showCrowd === true,
-  set: (v: boolean) => {
-    void (updateUser as (f: Record<string, unknown>) => Promise<unknown>)({ showCrowd: v }).then(() => persistFlash())
+  set: async (v: boolean) => {
+    await (updateUser as (f: Record<string, unknown>) => Promise<unknown>)({ showCrowd: v })
+    persistFlash()
   },
 })
 function persistFlash() {

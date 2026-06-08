@@ -52,7 +52,8 @@ export const auth = betterAuth({
         if ((u as { twoFactorEnabled?: boolean | null }).twoFactorEnabled) {
           const code = request?.headers.get('x-totp-code') ?? ''
           const rows = await db.select().from(schema.twoFactor).where(eq(schema.twoFactor.userId, u.id)).limit(1)
-          const key = process.env.BETTER_AUTH_SECRET ?? process.env.NUXT_BETTER_AUTH_SECRET ?? ''
+          const key = process.env.BETTER_AUTH_SECRET ?? process.env.NUXT_BETTER_AUTH_SECRET
+          if (!key) throw new APIError('INTERNAL_SERVER_ERROR', { message: 'Auth secret is not configured.' })
           const secret = rows[0] ? await symmetricDecrypt({ key, data: rows[0].secret }) : ''
           if (!rows[0] || !verifyTotpCode(secret, code, Date.now(), 1, 'raw')) {
             throw new APIError('BAD_REQUEST', { message: 'A valid two-factor code is required to delete this account.' })

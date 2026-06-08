@@ -49,3 +49,9 @@ export function basePointsFor(tier: BaseTier, points: BasePoints = DEFAULT_BASE_
       return points.miss
   }
 }
+
+// Whether a prediction "hits" by a given basis: an exact-score match, or just
+// the right outcome. Used for the crowd/odds rarity bonus and the histogram.
+export function predictionHits(pred: Scoreline, actual: Scoreline, byExact: boolean): boolean {
+  return byExact ? pred.home === actual.home && pred.away === actual.away : outcomeOf(pred) === outcomeOf(actual)
+}

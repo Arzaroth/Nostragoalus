@@ -1,6 +1,7 @@
 import { and, eq, lte, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { competition as competitionTable, match, prediction, round } from '../../../db/schema'
+import { isSingleMatchStage } from '../../../shared/types/match'
 import { LockedError, NotFoundError, ValidationError } from '../errors'
 
 // Aggregate counters for the "my stats" strip (points/rank come from the leaderboard).
@@ -136,7 +137,7 @@ export async function setJoker(db: AppDatabase, input: SetJokerInput, now: Date 
   if (rows.length === 0) throw new NotFoundError('match not found')
   if (now >= rows[0].kickoffTime) throw new LockedError()
   // Single-match rounds have no joker choice - the final doubles for everyone.
-  if (rows[0].stage === 'FINAL' || rows[0].stage === 'THIRD_PLACE') {
+  if (isSingleMatchStage(rows[0].stage)) {
     throw new ValidationError('no joker on single-match rounds')
   }
   // Can't joker a fixture whose teams aren't decided yet (same as predicting it).

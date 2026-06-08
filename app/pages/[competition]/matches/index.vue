@@ -104,9 +104,9 @@ function fmtTime(d: string) {
               <!-- Always rendered on open matches (disabled until a pick exists) so saving never resizes the card. -->
               <div v-if="!m.isLocked || predByMatch[m.id]" class="flex items-center gap-3">
                 <!-- single-match rounds: no joker to place; the final doubles for everyone -->
-                <span v-if="m.stage === 'FINAL'" class="text-xs font-semibold px-2 py-1 rounded-full" style="color: #f59e0b; background: rgba(245, 158, 11, 0.12)" :title="t('predictions.finalDoubleHint')">★ {{ t('predictions.finalDouble') }}</span>
+                <span v-if="countsDouble(m.stage)" class="text-xs font-semibold px-2 py-1 rounded-full" style="color: #f59e0b; background: rgba(245, 158, 11, 0.12)" :title="t('predictions.finalDoubleHint')">★ {{ t('predictions.finalDouble') }}</span>
                 <Button
-                  v-else-if="m.stage !== 'THIRD_PLACE'"
+                  v-else-if="!isSingleMatchStage(m.stage)"
                   :label="predByMatch[m.id]?.isJoker ? '★ Joker' : 'Joker'"
                   :icon="predByMatch[m.id]?.isJoker ? 'pi pi-star-fill' : 'pi pi-star'"
                   :severity="predByMatch[m.id]?.isJoker ? 'warn' : 'secondary'"
