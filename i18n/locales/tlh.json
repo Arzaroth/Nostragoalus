@@ -118,7 +118,35 @@
     "viewComp": "may'mey tIlegh",
     "ctaTitle": "bIwIvrupqu''a'?",
     "ctaSub": "Doch'a' yIchenmoH, juppu'lI' tIrI', 'ej 'Iv QI'D Sov teH - yI'agh.",
-    "footer": "yInoH. yISuq. yIjey."
+    "footer": "yInoH. yISuq. yIjey.",
+    "showcaseTitle": "Qap yIlegh",
+    "showcaseSub": "wa'maH cha' leSSov pIn'a'pu' Sol.",
+    "shot": {
+      "fixtures": {
+        "t": "Hoch may' yInoH",
+        "d": "mI' lan, poH togh, Hoch boq."
+      },
+      "match": {
+        "t": "may' naQ",
+        "d": "QuQmey, Deghmey, tammey - wa' poH tetlhDaq."
+      },
+      "bracket": {
+        "t": "HevDaq He",
+        "d": "cha' Dop nagh beQ."
+      },
+      "map": {
+        "t": "qo' HaSta",
+        "d": "Hoch ghom Daqdaj."
+      },
+      "ranking": {
+        "t": "patlh yItoS",
+        "d": "patlh tetlhmey, vIHtaHghach Deghmey je."
+      },
+      "team": {
+        "t": "Hoch ghom yISov",
+        "d": "SuvwI' tetlh 'oHbogh, DevwI', De' 'Il."
+      }
+    }
   },
   "matches": {
     "title": "may'mey",

@@ -118,7 +118,35 @@
     "viewComp": "View fixtures",
     "ctaTitle": "Ready to make your picks?",
     "ctaSub": "Create an account, invite your friends, and see who really knows their football.",
-    "footer": "Predict. Score. Win."
+    "footer": "Predict. Score. Win.",
+    "showcaseTitle": "See it in action",
+    "showcaseSub": "A tournament with two dozen oracles already arguing.",
+    "shot": {
+      "fixtures": {
+        "t": "Predict every fixture",
+        "d": "Inline score inputs, kickoff countdowns, the crowd's combined call under every match, and your crowned champion watching over it all."
+      },
+      "match": {
+        "t": "Matches in full depth",
+        "d": "Goals, cards and substitutions laced on one timeline, official stats, head-to-head back to the archives."
+      },
+      "bracket": {
+        "t": "The road to the final",
+        "d": "A real two-sided bracket with penalty shootouts where they happened."
+      },
+      "map": {
+        "t": "A world cup on a world map",
+        "d": "Every team where it lives - squads, form and standings one click away."
+      },
+      "ranking": {
+        "t": "Climb the ranking",
+        "d": "Per-competition and global leaderboards, with movement arrows and medals."
+      },
+      "team": {
+        "t": "Know every team",
+        "d": "Official squads with positions, the manager, and tournament stats that match the federations' own numbers."
+      }
+    }
   },
   "matches": {
     "title": "Fixtures",

@@ -118,7 +118,35 @@
     "viewComp": "Voir les matchs",
     "ctaTitle": "Prêt à faire vos pronos ?",
     "ctaSub": "Créez un compte, invitez vos amis et voyez qui s'y connaît vraiment en foot.",
-    "footer": "Pronostiquez. Marquez. Gagnez."
+    "footer": "Pronostiquez. Marquez. Gagnez.",
+    "showcaseTitle": "Voyez-le en action",
+    "showcaseSub": "Un tournoi où deux douzaines d'oracles se disputent déjà.",
+    "shot": {
+      "fixtures": {
+        "t": "Pronostiquez chaque match",
+        "d": "Saisie directe des scores, comptes à rebours, le total du groupe sous chaque match, et votre champion couronné qui veille."
+      },
+      "match": {
+        "t": "Des matchs en profondeur",
+        "d": "Buts, cartons et remplacements sur une seule chronologie, stats officielles, historique des confrontations."
+      },
+      "bracket": {
+        "t": "La route vers la finale",
+        "d": "Un vrai tableau à deux côtés, tirs au but inclus."
+      },
+      "map": {
+        "t": "Une coupe du monde sur une carte",
+        "d": "Chaque équipe chez elle - effectifs, forme et classements en un clic."
+      },
+      "ranking": {
+        "t": "Grimpez au classement",
+        "d": "Classements par compétition et global, avec flèches de progression et médailles."
+      },
+      "team": {
+        "t": "Connaissez chaque équipe",
+        "d": "Effectifs officiels avec postes, sélectionneur, et des stats qui collent aux chiffres des fédérations."
+      }
+    }
   },
   "matches": {
     "title": "Calendrier",

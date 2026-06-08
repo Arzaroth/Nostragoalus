@@ -40,3 +40,11 @@ run = "pnpm e2e:smtp"
 [tasks.release]
 description = "Cut a release: changelog section, version bump, test gate, commit+tag+push (e.g. mise run release 0.9.0)"
 run = 'node scripts/release.mjs {{arg(name="version")}}'
+
+[tasks.seed-demo]
+description = "Fill the DB with demo players/predictions, then re-score (needs the stack up)"
+run = "node scripts/seed-demo.mjs"
+
+[tasks.shots]
+description = "Retake the landing showcase screenshots with headless Firefox (stack + seed first)"
+run = "node scripts/showcase-shots.mjs"

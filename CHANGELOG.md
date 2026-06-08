@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- Landing showcase: six real screenshots (fixtures with crowd totals, match depth, ranking, bracket, map, team page) over a seeded league of two dozen demo oracles; mise tasks seed-demo and shots regenerate everything with headless Firefox.
+
 ## [0.9.0] - 2026-06-08
 
 ### Added
