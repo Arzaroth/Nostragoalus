@@ -36,3 +36,7 @@ run = "pnpm test:coverage"
 [tasks.e2e-smtp]
 description = "E2E: email-OTP flow through the running stack + maildev"
 run = "pnpm e2e:smtp"
+
+[tasks.release]
+description = "Cut a release: changelog section, version bump, test gate, commit+tag+push (e.g. mise run release 0.9.0)"
+run = 'node scripts/release.mjs {{arg(name="version")}}'
