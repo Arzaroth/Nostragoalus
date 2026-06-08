@@ -51,10 +51,67 @@ interface Cache<T> {
 
 let idMapCache: Cache<Map<string, string>> | null = null
 const h2hCache = new Map<string, Cache<AllTimeH2H | null>>()
+const calendarCache = new Map<string, Cache<FifaCalendarRow[]>>()
 
 export function resetAllTimeH2hCaches() {
   idMapCache = null
   h2hCache.clear()
+  calendarCache.clear()
+}
+
+async function teamCalendar(teamId: string, fetchImpl: typeof fetch, now: number): Promise<FifaCalendarRow[]> {
+  const cached = calendarCache.get(teamId)
+  if (cached && now - cached.at < DAY_MS) return cached.value
+  const data = await getJson<{ Results?: FifaCalendarRow[] }>(
+    `${BASE_URL}/calendar/matches?idTeam=${teamId}&language=en&count=500`,
+    fetchImpl,
+  )
+  const rows = data.Results ?? []
+  calendarCache.set(teamId, { at: now, value: rows })
+  return rows
+}
+
+export interface AllTimeFormEntry {
+  result: 'W' | 'D' | 'L'
+  opponent: string
+  score: string
+  date: string
+  competition: string
+}
+
+// The team's last N results across ALL international football before a date -
+// not just inside one of our competitions.
+export async function getTeamRecentResults(
+  code: string,
+  before: string,
+  fetchImpl: typeof fetch = fetch,
+  now = Date.now(),
+  count = 5,
+): Promise<AllTimeFormEntry[] | null> {
+  try {
+    const ids = await teamIdMap(fetchImpl, now)
+    const teamId = ids.get(code)
+    if (!teamId) return null
+    const rows = (await teamCalendar(teamId, fetchImpl, now))
+      .filter((m) => m.HomeTeamScore != null && m.AwayTeamScore != null && (m.Date ?? '') < before)
+      .sort((a, b) => (b.Date ?? '').localeCompare(a.Date ?? ''))
+      .slice(0, count)
+    return rows.map((m) => {
+      const isHome = m.Home?.Abbreviation === code
+      const gf = isHome ? (m.HomeTeamScore as number) : (m.AwayTeamScore as number)
+      const ga = isHome ? (m.AwayTeamScore as number) : (m.HomeTeamScore as number)
+      const opp = isHome ? m.Away : m.Home
+      return {
+        result: gf > ga ? 'W' : gf < ga ? 'L' : 'D',
+        opponent: opp?.TeamName?.[0]?.Description ?? opp?.Abbreviation ?? '?',
+        score: `${gf}–${ga}`,
+        date: m.Date ?? '',
+        competition: m.CompetitionName?.[0]?.Description ?? '',
+      }
+    })
+  } catch {
+    return null
+  }
 }
 
 async function getJson<T>(url: string, fetchImpl: typeof fetch): Promise<T> {
@@ -90,8 +147,11 @@ export async function getAllTimeHeadToHead(
   codeB: string,
   fetchImpl: typeof fetch = fetch,
   now = Date.now(),
+  // Only meetings strictly before this instant count - when looking at a past
+  // match, its own result and anything later must not color the history.
+  before = '9999',
 ): Promise<AllTimeH2H | null> {
-  const key = [codeA, codeB].join('|')
+  const key = [codeA, codeB, before].join('|')
   const cached = h2hCache.get(key)
   if (cached && now - cached.at < DAY_MS) return cached.value
 
@@ -101,15 +161,12 @@ export async function getAllTimeHeadToHead(
     const teamId = ids.get(codeA) ?? ids.get(codeB)
     const perspective = ids.get(codeA) ? codeA : codeB
     if (teamId) {
-      const data = await getJson<{ Results?: FifaCalendarRow[] }>(
-        `${BASE_URL}/calendar/matches?idTeam=${teamId}&language=en&count=500`,
-        fetchImpl,
-      )
       const opponent = perspective === codeA ? codeB : codeA
-      const rows = (data.Results ?? []).filter(
+      const rows = (await teamCalendar(teamId, fetchImpl, now)).filter(
         (m) =>
           m.HomeTeamScore != null &&
           m.AwayTeamScore != null &&
+          (m.Date ?? '') < before &&
           ((m.Home?.Abbreviation === perspective && m.Away?.Abbreviation === opponent) ||
             (m.Home?.Abbreviation === opponent && m.Away?.Abbreviation === perspective)),
       )

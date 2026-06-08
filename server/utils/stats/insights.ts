@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, ne, or } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, lt, ne, or } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { competition as competitionTable, match } from '../../../db/schema'
 import { computeGroupStandings, type StandingRow } from './standings'
@@ -147,6 +147,7 @@ export async function getMatchInsights(db: AppDatabase, matchId: string, now: Da
       and(
         eq(match.status, 'FINISHED'),
         ne(match.id, m.id),
+        lt(match.kickoffTime, m.kickoffTime), // history only - later results don't color a past match
         m.homeTeamCode && m.awayTeamCode
           ? pair('homeTeamCode', 'awayTeamCode', m.homeTeamCode, m.awayTeamCode)
           : pair('homeTeam', 'awayTeam', m.homeTeam, m.awayTeam),

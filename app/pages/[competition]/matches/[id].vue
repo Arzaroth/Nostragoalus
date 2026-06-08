@@ -206,7 +206,7 @@ function formColor(r: string) {
   return r === 'W' ? '#22c55e' : r === 'L' ? '#ef4444' : '#a1a1aa'
 }
 function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString([], { day: 'numeric', month: 'short' })
+  return new Date(d).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })
 }
 </script>
 
@@ -370,7 +370,16 @@ function fmtDate(d: string) {
             <div class="grid sm:grid-cols-2 gap-6">
               <div v-for="side in sides" :key="side">
                 <div class="font-semibold mb-2">{{ side === 'home' ? m.homeTeam : m.awayTeam }}</div>
-                <div v-if="insights.form[side].length" class="flex flex-col gap-1.5">
+                <!-- All international results before this match, not just our competitions. -->
+                <div v-if="insights.formAll?.[side]?.length" class="flex flex-col gap-1.5">
+                  <div v-for="(f, i) in insights.formAll[side]" :key="i" class="flex items-center gap-2 text-sm">
+                    <span class="w-5 h-5 rounded text-white text-xs flex items-center justify-center font-bold shrink-0" :style="`background:${formColor(f.result)}`">{{ f.result }}</span>
+                    <span class="truncate" style="color: var(--p-text-muted-color)">vs {{ f.opponent }}</span>
+                    <span class="font-medium tabular-nums">{{ f.score }}</span>
+                    <span class="text-xs ml-auto text-right shrink-0" style="color: var(--p-text-muted-color)">{{ f.competition }} · {{ fmtDate(f.date) }}</span>
+                  </div>
+                </div>
+                <div v-else-if="insights.form[side].length" class="flex flex-col gap-1.5">
                   <NuxtLink v-for="(f, i) in insights.form[side]" :key="i" :to="`/${selectedSlug}/matches/${f.matchId}`" class="flex items-center gap-2 text-sm hover:opacity-80">
                     <span class="w-5 h-5 rounded text-white text-xs flex items-center justify-center font-bold" :style="`background:${formColor(f.result)}`">{{ f.result }}</span>
                     <span style="color: var(--p-text-muted-color)">vs {{ f.opponent }}</span>

@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '../../../../db'
 import { match } from '../../../../db/schema'
 import { getMatchInsights } from '../../../utils/stats/insights'
-import { getAllTimeHeadToHead } from '../../../utils/stats/alltime-h2h'
+import { getAllTimeHeadToHead, getTeamRecentResults } from '../../../utils/stats/alltime-h2h'
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id') as string
@@ -12,16 +12,24 @@ export default defineEventHandler(async (event) => {
   // All-time tally (incl. friendlies/qualifiers) from FIFA's full calendar,
   // from the home side's perspective. Optional enrichment - never blocks.
   let h2hAll = null
+  let formAll = null
   const rows = await db
-    .select({ home: match.homeTeamCode, away: match.awayTeamCode })
+    .select({ home: match.homeTeamCode, away: match.awayTeamCode, kickoff: match.kickoffTime })
     .from(match)
     .where(eq(match.id, id))
     .limit(1)
   if (rows[0]?.home && rows[0]?.away) {
-    h2hAll = await getAllTimeHeadToHead(rows[0].home, rows[0].away)
+    const before = new Date(rows[0].kickoff).toISOString()
+    const [all, homeForm, awayForm] = await Promise.all([
+      getAllTimeHeadToHead(rows[0].home, rows[0].away, fetch, Date.now(), before),
+      getTeamRecentResults(rows[0].home, before),
+      getTeamRecentResults(rows[0].away, before),
+    ])
+    h2hAll = all
+    formAll = homeForm || awayForm ? { home: homeForm ?? [], away: awayForm ?? [] } : null
   }
 
-  return { ...insights, h2hAll }
+  return { ...insights, h2hAll, formAll }
 })
 
 defineRouteMeta({
