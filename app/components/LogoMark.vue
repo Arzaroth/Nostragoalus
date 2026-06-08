@@ -74,21 +74,23 @@
   display: block;
   overflow: visible;
 }
-.sec {
+</style>
+
+<!-- Unscoped on purpose: Vue's scoped compiler mangles
+     ":global(ancestor) .child" selectors (drops the child part). -->
+<style>
+.logo-mark .sec {
   opacity: 0;
   transition: opacity 0.25s ease;
 }
 /* the panels fill one after another, like a paint bucket making its round */
-:global(.logo-home:hover) .sec {
+.logo-home:hover .sec {
   opacity: 0.55;
 }
-:global(.logo-home:hover) .sec-core {
-  opacity: 0.8;
-}
-:global(.logo-home:hover) .sec-1 { transition-delay: 0s; }
-:global(.logo-home:hover) .sec-2 { transition-delay: 0.09s; }
-:global(.logo-home:hover) .sec-3 { transition-delay: 0.18s; }
-:global(.logo-home:hover) .sec-4 { transition-delay: 0.27s; }
-:global(.logo-home:hover) .sec-5 { transition-delay: 0.36s; }
-:global(.logo-home:hover) .sec-core { transition-delay: 0.48s; }
+.logo-home:hover .sec-1 { transition-delay: 0s; }
+.logo-home:hover .sec-2 { transition-delay: 0.09s; }
+.logo-home:hover .sec-3 { transition-delay: 0.18s; }
+.logo-home:hover .sec-4 { transition-delay: 0.27s; }
+.logo-home:hover .sec-5 { transition-delay: 0.36s; }
+.logo-home:hover .sec-core { opacity: 0.8; transition-delay: 0.48s; }
 </style>
