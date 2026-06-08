@@ -129,8 +129,13 @@ onMounted(() => {
       // The shot sails over the bar and is lost among the stars (fitting, for
       // a page that wasn't found). Then it twinkles, fades, and the loop kicks
       // off again from the spot.
-      if (tc < 1800) {
-        const p = tc / 1800
+      if (tc < 350) {
+        // a breath before the shot
+        bx = 100
+        by = 96
+        r = 8
+      } else if (tc < 2000) {
+        const p = (tc - 350) / 1650
         const ease = 1 - Math.pow(1 - p, 2)
         const env = Math.sin(Math.PI * p)
         const ang = p * Math.PI * 2 * 2.2
@@ -141,7 +146,8 @@ onMounted(() => {
         bx = 138
         by = 20
         r = 1
-        starAlpha = tc < 2500 ? 1 : Math.max(0, 1 - (tc - 2500) / 200)
+        // the ball dims into just-another-star over the first half second
+        starAlpha = 1 - 0.45 * Math.min(1, (tc - 2000) / 500)
       } else {
         // the lost star streaks back down to the spot - at the loop seam the
         // ball is exactly where the next kick starts (clean loop).
@@ -168,7 +174,7 @@ onMounted(() => {
     }
     const rbx = Math.round(bx)
     const rby = Math.round(by)
-    if (miss ? tc < 1800 || tc >= 2700 : tc < 2100) {
+    if (miss ? (tc >= 350 && tc < 2000) || tc >= 2700 : tc < 2100) {
       trail.push([rbx, rby, r])
       if (trail.length > 34) trail.shift()
     }
@@ -196,7 +202,7 @@ onMounted(() => {
       px(138, 19, 1, 1, '#d8ccff')
       px(138, 21, 1, 1, '#d8ccff')
       x.globalAlpha = 1
-    } else if (!miss || tc < 1800 || tc >= 2700) {
+    } else if (!miss || tc < 2000 || tc >= 2700) {
       ball(rbx, rby, r, t * 0.016)
     }
     if (!miss && tc >= 2100 && tc < 2700) {

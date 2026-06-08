@@ -56,8 +56,8 @@ onMounted(() => {
 
   // Gravitational lens around the pointer: stars within the radius lean
   // toward it (eased), brighten slightly, and spring back when it leaves.
-  const LENS_R = 180
-  const LENS_PULL = 22
+  const LENS_R = 210
+  const LENS_PULL = 34
 
   function draw(ts: number, animate: boolean) {
     ctx!.clearRect(0, 0, w, h)
