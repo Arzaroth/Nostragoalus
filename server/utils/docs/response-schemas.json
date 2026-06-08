@@ -1612,12 +1612,99 @@
       "properties": {
         "predictions": {
           "type": "array",
-          "items": {}
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "userId": {
+                "type": "string"
+              },
+              "matchId": {
+                "type": "string"
+              },
+              "roundId": {
+                "type": "string"
+              },
+              "homeGoals": {
+                "type": "integer"
+              },
+              "awayGoals": {
+                "type": "integer"
+              },
+              "isJoker": {
+                "type": "boolean"
+              },
+              "baseTier": {
+                "type": "string",
+                "nullable": true
+              },
+              "totalPoints": {
+                "type": "string",
+                "nullable": true
+              },
+              "homeTeam": {
+                "type": "string"
+              },
+              "awayTeam": {
+                "type": "string"
+              },
+              "homeTeamCode": {
+                "type": "string"
+              },
+              "awayTeamCode": {
+                "type": "string"
+              },
+              "kickoffTime": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "fullTimeHome": {
+                "type": "string",
+                "nullable": true
+              },
+              "fullTimeAway": {
+                "type": "string",
+                "nullable": true
+              },
+              "roundLabel": {
+                "type": "string"
+              },
+              "roundSort": {
+                "type": "integer"
+              }
+            }
+          }
         }
       }
     },
     "example": {
-      "predictions": []
+      "predictions": [
+        {
+          "id": "fbafbc3f-556f-43c9-9e2f-3464d8680fd2",
+          "userId": "G7xbY1kqtdBzlBZ2N0IrhsxghnvpGroz",
+          "matchId": "fa21e2cb-52bb-4ff0-a9df-c6dff6961247",
+          "roundId": "85d7ce4b-41fe-478c-b784-b2f2e8fc7bf4",
+          "homeGoals": 4,
+          "awayGoals": 0,
+          "isJoker": false,
+          "baseTier": null,
+          "totalPoints": null,
+          "homeTeam": "Mexico",
+          "awayTeam": "South Africa",
+          "homeTeamCode": "MEX",
+          "awayTeamCode": "RSA",
+          "kickoffTime": "2026-06-11T19:00:00.000Z",
+          "status": "SCHEDULED",
+          "fullTimeHome": null,
+          "fullTimeAway": null,
+          "roundLabel": "Group Matchday 1",
+          "roundSort": 1
+        }
+      ]
     }
   },
   "/api/champion": {
@@ -1653,8 +1740,33 @@
           }
         },
         "myPick": {
-          "type": "string",
-          "nullable": true
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "userId": {
+              "type": "string"
+            },
+            "competitionId": {
+              "type": "string"
+            },
+            "teamCode": {
+              "type": "string"
+            },
+            "teamName": {
+              "type": "string"
+            },
+            "awardedPoints": {
+              "type": "integer"
+            },
+            "createdAt": {
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string"
+            }
+          }
         },
         "locked": {
           "type": "boolean"
@@ -1663,18 +1775,27 @@
     },
     "example": {
       "competition": {
-        "id": "b8d3f79e-cb18-40fe-b6de-a3522e388d7a",
-        "slug": "world-cup-2022",
-        "name": "FIFA World Cup 2022"
+        "id": "bc4da63c-691d-40ff-8093-cb7c9d812864",
+        "slug": "world-cup-2026",
+        "name": "FIFA World Cup 2026"
       },
       "teams": [
         {
-          "code": "ARG",
-          "name": "Argentina"
+          "code": "ALG",
+          "name": "Algeria"
         }
       ],
-      "myPick": null,
-      "locked": true
+      "myPick": {
+        "id": "b3792531-5c52-4950-84fd-e40d2f7f2393",
+        "userId": "G7xbY1kqtdBzlBZ2N0IrhsxghnvpGroz",
+        "competitionId": "bc4da63c-691d-40ff-8093-cb7c9d812864",
+        "teamCode": "FRA",
+        "teamName": "France",
+        "awardedPoints": 0,
+        "createdAt": "2026-06-05T18:57:04.202Z",
+        "updatedAt": "2026-06-07T13:36:35.218Z"
+      },
+      "locked": false
     }
   },
   "/api/me/stats": {
@@ -1716,8 +1837,8 @@
         "totalPoints": 0,
         "exact": 0,
         "outcome": 0,
-        "predictions": 0,
-        "jokers": 0
+        "predictions": 8,
+        "jokers": 1
       }
     }
   },
@@ -1740,12 +1861,166 @@
       "properties": {
         "totals": {
           "type": "object",
-          "properties": {}
+          "properties": {
+            "b733999f-7ecc-4971-ab18-6117a5bbca16": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "fa21e2cb-52bb-4ff0-a9df-c6dff6961247": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "73260ec4-009b-4193-94f3-6627b62be791": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "110e5165-97f7-4bb5-b4de-538593103a55": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "dc1cd645-05a9-4955-8426-3eb207c747c0": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "131f49e5-d82b-475d-b9b5-8cdab372bf25": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "fa335828-8c86-4271-b48d-67393c089e09": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "3bdb0b8c-38f2-45db-8f8d-c5b8eb5f7170": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
         }
       }
     },
     "example": {
-      "totals": {}
+      "totals": {
+        "b733999f-7ecc-4971-ab18-6117a5bbca16": {
+          "home": 1,
+          "away": 2,
+          "count": 1
+        },
+        "fa21e2cb-52bb-4ff0-a9df-c6dff6961247": {
+          "home": 4,
+          "away": 0,
+          "count": 1
+        },
+        "73260ec4-009b-4193-94f3-6627b62be791": {
+          "home": 3,
+          "away": 0,
+          "count": 1
+        },
+        "110e5165-97f7-4bb5-b4de-538593103a55": {
+          "home": 2,
+          "away": 2,
+          "count": 1
+        },
+        "dc1cd645-05a9-4955-8426-3eb207c747c0": {
+          "home": 1,
+          "away": 2,
+          "count": 1
+        },
+        "131f49e5-d82b-475d-b9b5-8cdab372bf25": {
+          "home": 1,
+          "away": 1,
+          "count": 1
+        },
+        "fa335828-8c86-4271-b48d-67393c089e09": {
+          "home": 1,
+          "away": 1,
+          "count": 1
+        },
+        "3bdb0b8c-38f2-45db-8f8d-c5b8eb5f7170": {
+          "home": 1,
+          "away": 1,
+          "count": 1
+        }
+      }
     }
   },
   "/api/users/{id}/predictions": {

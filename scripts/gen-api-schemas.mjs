@@ -50,7 +50,8 @@ const signIn = await fetch(`${APP}/api/auth/sign-in/email`, {
 })
 cookie = (signIn.headers.getSetCookie?.() ?? []).map((c) => c.split(';')[0]).join('; ')
 
-const comp = 'world-cup-2022'
+const comp = 'world-cup-2022' // finished matches: results, stats, brackets
+const liveComp = 'world-cup-2026' // where the seeded account actually predicts
 const matches = await call(`/api/matches?competition=${comp}`)
 const sampleMatch = (matches.matches ?? matches).find?.((m) => m.status === 'FINISHED') ?? null
 const matchId = sampleMatch?.id
@@ -69,12 +70,12 @@ const TARGETS = {
   '/api/competitions/teams': `/api/competitions/teams?competition=${comp}`,
   '/api/competitions/bracket': `/api/competitions/bracket?competition=${comp}`,
   '/api/teams/{code}': `/api/teams/FRA?competition=${comp}`,
-  '/api/predictions': `/api/predictions?competition=${comp}`,
-  '/api/champion': `/api/champion?competition=${comp}`,
-  '/api/me/stats': `/api/me/stats?competition=${comp}`,
+  '/api/predictions': `/api/predictions?competition=${liveComp}`,
+  '/api/champion': `/api/champion?competition=${liveComp}`,
+  '/api/me/stats': `/api/me/stats?competition=${liveComp}`,
   '/api/me/trust-status': '/api/me/trust-status',
-  '/api/predictions/crowd': `/api/predictions/crowd?competition=${comp}`,
-  '/api/users/{id}/predictions': `/api/users/${userId}/predictions?competition=${comp}`,
+  '/api/predictions/crowd': `/api/predictions/crowd?competition=${liveComp}`,
+  '/api/users/{id}/predictions': `/api/users/${userId}/predictions?competition=${liveComp}`,
 }
 
 const out = {}
