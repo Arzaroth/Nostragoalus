@@ -5,12 +5,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-06-08
+
 ### Added
 - Component-test harness (@nuxt/test-utils): a `nuxt`-env Vitest project mounts components/composables with auto-imports + PrimeVue via `mountSuspended` (`pnpm test:components`, wired into the release gate and `mise check`).
 
 ### Changed
 - God-components split, logic extracted to tested units. account.vue (558->421 lines): the 2FA enrol/disable/regenerate state machine is now `useTwoFactor` (8 tests) and passkey management `usePasskeys` (5 tests); image resize moved to `app/utils/image.ts`. The match view's timeline assembly and head-to-head tally moved to a pure `app/utils/match-view.ts` (unit-tested). The coverage gate stays on the node logic surface (98.3%); components are covered by their own suite.
-
 
 ## [0.11.0] - 2026-06-08
 
