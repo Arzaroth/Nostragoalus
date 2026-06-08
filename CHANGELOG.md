@@ -8,8 +8,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 ### Added
 - `mise run create-admin <email> [name]` provisions an admin on demand: prompts for the password (hidden, never in shell history or the process list), signs up via better-auth (HIBP-checked + hashed), then sets the DB role; idempotent. No default admin password exists - this or NUXT_ADMIN_EMAILS bootstraps the first admin.
 
+### Fixed
+- UEFA match assists showed the beaten goalkeeper instead of the assister (a goal event's secondaryActor is the keeper); real assists are separate ASSIST events, now paired to goals by minute. Penalties correctly show no assist.
+- UEFA own goals were never detected (marked as a GOAL with subType 'OWN', not type OWN_GOAL) - 0 recorded across Euro 2024 and each miscredited to the scorer's team; now detected, credited to the beneficiary, with the forcing player's assist.
+- Admin import/sync now invalidates the client query cache, so a previously-loaded (e.g. empty) competition no longer keeps showing stale data until a manual refresh.
+
 ### Changed
 - Dropped dead config (NUXT_MATCH_PROVIDER, NUXT_FIFA_SEASON_ID, NUXT_WC_SEASON): provider and season are per-competition (DB / live FIFA seasons API), the env vars were never read.
+
+### Security / ops
+- Postgres no longer publishes a host port in the prod compose base (the app reaches it in-network); host access for local dev moved to the dev overlay, bound to loopback. The app binds to 127.0.0.1 (put a reverse proxy in front).
+- Slimmed the Docker build context so editing compose files, docs, scripts or tests no longer busts the build cache; removed an accidentally-committed curl cookie jar.
 
 ## [0.13.0] - 2026-06-08
 
