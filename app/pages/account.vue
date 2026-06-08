@@ -156,7 +156,7 @@ async function removePasskey(id: string) {
 const { data: trustStatus, refresh: refreshTrust } = await useFetch<{ trusted: boolean }>('/api/me/trust-status', { lazy: true })
 const deviceTrusted = computed(() => trustStatus.value?.trusted === true)
 async function revokeTrust() {
-  await $fetch('/api/me/revoke-trust', { method: 'POST' })
+  await $fetch<{ trusted: boolean }>('/api/me/revoke-trust', { method: 'POST' })
   await refreshTrust()
 }
 
@@ -410,7 +410,7 @@ async function confirmDelete() {
               </div>
               <div class="flex gap-2">
                 <Button :icon="tfaCopied === 'codes' ? 'pi pi-check' : 'pi pi-copy'" :label="t('twofa.copyCodes')" size="small" severity="secondary" outlined @click="copyText(tfaBackup.join('\n'), 'codes')" />
-                <Button icon="pi pi-download" :label="t('twofa.download')" size="small" severity="secondary" outlined @click="downloadBackupCodes" />
+                <Button icon="pi pi-download" :label="t('twofa.download')" size="small" severity="secondary" outlined @click="() => downloadBackupCodes()" />
               </div>
             </div>
             <div class="flex justify-end border-t pt-4" style="border-color: var(--p-content-border-color)">

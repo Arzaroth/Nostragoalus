@@ -7,7 +7,7 @@ const config = useRuntimeConfig()
 const last = useLastCompetition()
 const { data: competitions } = useCompetitions()
 
-const authed = computed(() => !!(session && session.data))
+const authed = computed(() => !!session.value?.data)
 const matchesLink = computed(() => `/${last.value}/matches`)
 
 const features = [

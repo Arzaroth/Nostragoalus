@@ -5,19 +5,28 @@ export interface ChampionTeam {
   name: string
 }
 
+export interface ChampionData {
+  competition: { id: string; slug: string; name: string } | null
+  teams: ChampionTeam[]
+  myPick: { teamCode: string | null; teamName: string; awardedPoints: number } | null
+  locked: boolean
+}
+
 export function useChampion() {
   const slug = useSelectedCompetition()
   const queryClient = useQueryClient()
 
+  // Explicit response generic keeps $fetch off its route-literal inference path
+  // (which recurses to "excessive stack depth" on these endpoints).
   const query = useQuery({
     queryKey: ['champion', slug],
     queryFn: () =>
-      $fetch('/api/champion', { query: slug.value ? { competition: slug.value } : {} }),
+      $fetch<ChampionData>('/api/champion', { query: slug.value ? { competition: slug.value } : {} }),
   })
 
   const setPick = useMutation({
     mutationFn: (team: ChampionTeam) =>
-      $fetch('/api/champion', {
+      $fetch<{ ok: boolean }>('/api/champion', {
         method: 'PUT',
         body: { competition: slug.value, teamCode: team.code, teamName: team.name },
       }),

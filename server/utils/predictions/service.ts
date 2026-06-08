@@ -94,6 +94,8 @@ const predictionView = {
   stage: match.stage,
   fullTimeHome: match.fullTimeHome,
   fullTimeAway: match.fullTimeAway,
+  penaltiesHome: match.penaltiesHome,
+  penaltiesAway: match.penaltiesAway,
   roundLabel: round.label,
   roundSort: round.sortOrder,
 }

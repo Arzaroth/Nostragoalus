@@ -65,7 +65,7 @@ function savePrediction(v: { home: number; away: number }) {
   upsert.mutate({ matchId: id.value, home: v.home, away: v.away }, { onSuccess: () => refreshMatch() })
 }
 
-const status = computed(() => live.value?.status ?? m.value?.status ?? 'SCHEDULED')
+const status = computed(() => (live.value?.status ?? m.value?.status ?? 'SCHEDULED') as import('../../../../shared/types/match').MatchStatus)
 const homeScore = computed(() => live.value?.fullTimeHome ?? m.value?.fullTimeHome ?? null)
 const awayScore = computed(() => live.value?.fullTimeAway ?? m.value?.fullTimeAway ?? null)
 const isLive = computed(() => status.value === 'LIVE' || status.value === 'PAUSED')
@@ -391,7 +391,7 @@ function fmtDate(d: string) {
                   class="border-t text-center"
                   :style="`border-color: var(--p-content-border-color)${row.code === m.homeTeamCode || row.code === m.awayTeamCode ? '; background: color-mix(in srgb, var(--p-primary-color) 14%, transparent)' : ''}`"
                 >
-                  <td class="py-2 text-left">{{ i + 1 }}</td>
+                  <td class="py-2 text-left">{{ Number(i) + 1 }}</td>
                   <td class="text-left">
                     <component :is="row.code ? NuxtLinkC : 'span'" :to="row.code ? `/${selectedSlug}/teams/${row.code}` : undefined" class="flex items-center gap-2" :class="{ 'hover:underline': row.code }">
                       <img v-if="flagUrl(row.code)" :src="flagUrl(row.code) || ''" class="w-5 h-5 rounded" alt="" >{{ row.name }}

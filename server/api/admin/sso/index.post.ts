@@ -67,7 +67,9 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const result = await auth.api.registerSSOProvider({ body, headers: event.headers })
+    // body is built dynamically per provider type; better-auth's union body type
+    // can't be narrowed from Record<string, unknown>, so assert at the call.
+    const result = await auth.api.registerSSOProvider({ body: body as never, headers: event.headers })
     return { ok: true, providerId, result }
   } catch (error) {
     throw createError({ statusCode: 400, statusMessage: (error as Error)?.message || 'Failed to register provider' })

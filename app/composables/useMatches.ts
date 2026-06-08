@@ -1,23 +1,9 @@
 import { useQuery } from '@tanstack/vue-query'
+import type { Serialized } from '../../shared/types/serialized'
+import type { listMatches } from '../../server/utils/matches/service'
 
-export interface MatchListItem {
-  id: string
-  stage: string
-  group: string | null
-  homeTeam: string
-  awayTeam: string
-  homeTeamCode: string | null
-  awayTeamCode: string | null
-  kickoffTime: string
-  status: string
-  fullTimeHome: number | null
-  fullTimeAway: number | null
-  winner: string | null
-  scoringState: string
-  roundId: string
-  roundLabel: string
-  matchday: number | null
-  roundSortOrder: number
+// Derived from the server query (+ isLocked, which the API computes per request).
+export type MatchListItem = Serialized<Awaited<ReturnType<typeof listMatches>>[number]> & {
   isLocked: boolean
 }
 

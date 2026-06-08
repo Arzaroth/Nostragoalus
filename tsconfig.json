@@ -1,3 +1,9 @@
 {
-  "extends": "./.nuxt/tsconfig.json"
+  "extends": "./.nuxt/tsconfig.json",
+  "compilerOptions": {
+    // strict stays on; noUncheckedIndexedAccess (a Nuxt default) is off - it
+    // flagged ~110 arr[0]-after-length-check sites with little real safety and
+    // would have buried the drift errors that actually bite (TS2339/2345).
+    "noUncheckedIndexedAccess": false
+  }
 }

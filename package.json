@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "nuxt dev",
     "build": "nuxt build",
+    "typecheck": "nuxt typecheck",
     "preview": "nuxt preview",
     "start": "node .output/server/index.mjs",
     "postinstall": "nuxt prepare",
@@ -41,7 +42,8 @@
     "primevue": "^4.5.5",
     "qrcode": "^1.5.4",
     "vue": "^3.5.35",
-    "vue-router": "^5.1.0"
+    "vue-router": "^5.1.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.1",
@@ -56,8 +58,10 @@
     "dotenv": "^17.4.2",
     "drizzle-kit": "^0.31.10",
     "puppeteer-core": "^25.1.0",
+    "typescript": "^6.0.3",
     "unocss": "^66.7.0",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.8",
+    "vue-tsc": "^3.3.3"
   },
   "license": "WTFPL"
 }

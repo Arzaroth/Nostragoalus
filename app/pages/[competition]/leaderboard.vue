@@ -4,7 +4,7 @@ const slug = useSelectedCompetition()
 const global = ref(false)
 const { data: rows, isLoading } = useLeaderboard(global)
 const { session } = useAuth()
-const meId = computed(() => session?.data?.user?.id)
+const meId = computed(() => session.value?.data?.user?.id)
 
 const scopeOptions = computed(() => [
   { label: t('leaderboard.thisCompetition'), value: false },

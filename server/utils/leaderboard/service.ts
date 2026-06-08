@@ -6,6 +6,7 @@ export interface LeaderboardRow {
   rank: number
   userId: string
   displayName: string
+  image: string | null
   totalPoints: number
   predictionPoints: number
   championPoints: number

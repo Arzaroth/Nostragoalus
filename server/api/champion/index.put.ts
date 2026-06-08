@@ -1,26 +1,26 @@
+import { z } from 'zod'
 import { db } from '../../../db'
-import { requireUser } from '../../utils/auth-guards'
 import { resolveCompetition } from '../../utils/competitions/store'
 import { setChampionPick } from '../../utils/champion/service'
-import { toHttpError } from '../../utils/http'
+import { defineValidatedHandler } from '../../utils/validated-handler'
 
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
-  const body = await readBody(event)
-  const competition = await resolveCompetition(db, body?.competition || null)
+const bodySchema = z.object({
+  teamCode: z.string().min(1).max(8),
+  teamName: z.string().min(1).max(64),
+  competition: z.string().optional(),
+})
+
+export default defineValidatedHandler({ body: bodySchema }, async ({ body, user }) => {
+  const competition = await resolveCompetition(db, body.competition || null)
   if (!competition) throw createError({ statusCode: 404, statusMessage: 'competition not found' })
 
-  try {
-    await setChampionPick(db, {
-      userId: user.id,
-      competitionId: competition.id,
-      teamCode: String(body?.teamCode),
-      teamName: String(body?.teamName),
-    })
-    return { ok: true }
-  } catch (error) {
-    throw toHttpError(error)
-  }
+  await setChampionPick(db, {
+    userId: user.id,
+    competitionId: competition.id,
+    teamCode: body.teamCode,
+    teamName: body.teamName,
+  })
+  return { ok: true }
 })
 
 defineRouteMeta({

@@ -168,8 +168,6 @@ export function normalizeUefaMatchStats(row: UefaMatchStatRow): TeamMatchStats {
     distanceKm: num('distance_covered'),
     pressuresApplied: null,
     forcedTurnovers: null,
-    yellowCards: num('yellow_cards'),
-    redCards: num('red_cards'),
   }
 }
 
@@ -231,8 +229,6 @@ export function aggregateUefaEvents(events: UefaEvent[], teamId: string | null):
     distanceKm: null,
     pressuresApplied: null,
     forcedTurnovers: null,
-    yellowCards: count((t) => t === 'YELLOW_CARD' || t === 'YELLOW_CARD_SECOND'),
-    redCards: count((t) => t === 'RED_CARD' || t === 'RED_YELLOW_CARD'),
   }
 }
 
@@ -447,8 +443,8 @@ export function uefaProvider(options: UefaOptions): MatchDataProvider {
 
       const statsByTeam = await fetchMatchStats(matchId)
       return {
-        possessionHome: (homeId && statsByTeam?.[homeId]?.possession) ?? null,
-        possessionAway: (awayId && statsByTeam?.[awayId]?.possession) ?? null,
+        possessionHome: homeId ? (statsByTeam?.[homeId]?.possession ?? null) : null,
+        possessionAway: awayId ? (statsByTeam?.[awayId]?.possession ?? null) : null,
         attendance: m.matchAttendance ?? null,
         stadium: m.stadium?.translations?.name?.EN ?? null,
         cards: { home: countCards('HOME'), away: countCards('AWAY') },

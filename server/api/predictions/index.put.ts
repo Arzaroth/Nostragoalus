@@ -1,33 +1,25 @@
+import { z } from 'zod'
 import { db } from '../../../db'
 import { getMatchCrowdTotal, upsertPrediction } from '../../utils/predictions/service'
 import { publishCrowdUpdate } from '../../utils/live/hub'
-import { requireUser } from '../../utils/auth-guards'
-import { toHttpError } from '../../utils/http'
+import { defineValidatedHandler } from '../../utils/validated-handler'
 
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
-  const body = await readBody(event)
-  try {
-    const id = await upsertPrediction(db, {
-      userId: user.id,
-      matchId: String(body?.matchId),
-      home: Number(body?.home),
-      away: Number(body?.away),
-    })
-    // live crowd totals for everyone with the preference on
-    const matchId = String(body?.matchId)
-    publishCrowdUpdate(matchId, await getMatchCrowdTotal(db, matchId))
-    return { id }
-  } catch (error) {
-    throw toHttpError(error)
-  }
+const bodySchema = z.object({
+  matchId: z.string().uuid(),
+  home: z.number().int().min(0).max(99),
+  away: z.number().int().min(0).max(99),
+})
+
+export default defineValidatedHandler({ body: bodySchema }, async ({ body, user }) => {
+  const id = await upsertPrediction(db, { userId: user.id, matchId: body.matchId, home: body.home, away: body.away })
+  // live crowd totals for everyone with the preference on
+  publishCrowdUpdate(body.matchId, await getMatchCrowdTotal(db, body.matchId))
+  return { id }
 })
 
 defineRouteMeta({
   openAPI: {
-    "tags": [
-      "Predictions"
-    ],
+    "tags": ["Predictions"],
     "summary": "Save a prediction",
     "description": "Create or update the score prediction for one match. Rejected once the match has kicked off (server-side lock) or while the teams are unconfirmed.",
     "requestBody": {
@@ -37,41 +29,20 @@ defineRouteMeta({
           "schema": {
             "type": "object",
             "properties": {
-              "matchId": {
-                "type": "string",
-                "format": "uuid"
-              },
-              "homeGoals": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "awayGoals": {
-                "type": "integer",
-                "minimum": 0
-              }
+              "matchId": { "type": "string", "format": "uuid" },
+              "home": { "type": "integer", "minimum": 0, "maximum": 99 },
+              "away": { "type": "integer", "minimum": 0, "maximum": 99 }
             },
-            "required": [
-              "matchId",
-              "homeGoals",
-              "awayGoals"
-            ]
+            "required": ["matchId", "home", "away"]
           }
         }
       }
     },
     "responses": {
-      "200": {
-        "description": "The stored prediction."
-      },
-      "401": {
-        "description": "Not signed in."
-      },
-      "409": {
-        "description": "Match already kicked off."
-      },
-      "422": {
-        "description": "Invalid scores or unconfirmed teams."
-      }
+      "200": { "description": "The stored prediction id." },
+      "401": { "description": "Not signed in." },
+      "409": { "description": "Match already kicked off." },
+      "422": { "description": "Invalid body, invalid scores, or unconfirmed teams." }
     }
   },
 })

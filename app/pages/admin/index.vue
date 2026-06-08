@@ -30,7 +30,7 @@ async function addProvider() {
   // Google needs no provider id choice - default it so only domain + credentials remain.
   if (form.type === 'google' && !form.providerId) form.providerId = 'google'
   try {
-    await $fetch('/api/admin/sso', { method: 'POST', body: { ...form } })
+    await $fetch<unknown>('/api/admin/sso', { method: 'POST', body: { ...form } })
     ssoMsg.value = t('admin.sso.added')
     Object.assign(form, blank)
     await refreshSso()
@@ -41,7 +41,7 @@ async function addProvider() {
   }
 }
 async function removeProvider(id: string) {
-  await $fetch(`/api/admin/sso/${id}`, { method: 'DELETE' })
+  await $fetch<unknown>(`/api/admin/sso/${id}`, { method: 'DELETE' })
   await refreshSso()
 }
 
@@ -101,7 +101,7 @@ function taskTip(name: string, base: string) {
 async function runImport() {
   syncBusy.value = 'import'
   try {
-    syncMsg.value = JSON.stringify(await $fetch('/api/admin/import-fixtures', { method: 'POST' }))
+    syncMsg.value = JSON.stringify(await $fetch<unknown>('/api/admin/import-fixtures', { method: 'POST' }))
   } finally {
     syncBusy.value = ''
     void refreshTaskStatus()
@@ -110,7 +110,7 @@ async function runImport() {
 async function runTask(task: string) {
   syncBusy.value = task
   try {
-    syncMsg.value = JSON.stringify(await $fetch('/api/admin/sync', { method: 'POST', body: { task } }))
+    syncMsg.value = JSON.stringify(await $fetch<unknown>('/api/admin/sync', { method: 'POST', body: { task } }))
   } finally {
     syncBusy.value = ''
     void refreshTaskStatus()
@@ -148,7 +148,7 @@ const banMutation = useMutation({
 const toggleBan = (u: any) => banMutation.mutate(u)
 
 const strip2faMutation = useMutation({
-  mutationFn: (u: any) => $fetch(`/api/admin/users/${u.id}/remove-2fa`, { method: 'POST' }),
+  mutationFn: (u: any) => $fetch<unknown>(`/api/admin/users/${u.id}/remove-2fa`, { method: 'POST' }),
   onSuccess: invalidateUsers,
 })
 const strip2fa = (u: any) => strip2faMutation.mutate(u)

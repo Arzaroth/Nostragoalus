@@ -1,24 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import type { Serialized } from '../../shared/types/serialized'
+import type { getMyPredictions } from '../../server/utils/predictions/service'
 
-export interface MyPrediction {
-  id: string
-  matchId: string
-  roundId: string
-  homeGoals: number
-  awayGoals: number
-  isJoker: boolean
-  baseTier: string | null
-  totalPoints: number | null
-  homeTeam: string
-  awayTeam: string
-  homeTeamCode: string | null
-  awayTeamCode: string | null
-  kickoffTime: string
-  status: string
-  fullTimeHome: number | null
-  fullTimeAway: number | null
-  roundLabel: string
-  roundSort: number
+// Derived from the server query so it can never drift from the schema. The
+// public-predictions endpoint adds the competition fields, hence optional here.
+export type MyPrediction = Serialized<Awaited<ReturnType<typeof getMyPredictions>>[number]> & {
+  competitionSlug?: string
+  competitionName?: string
 }
 
 export function useMyPredictions() {
@@ -46,7 +34,7 @@ export function usePredictionMutations() {
 
   const upsert = useMutation({
     mutationFn: (input: { matchId: string; home: number; away: number }) =>
-      $fetch('/api/predictions', { method: 'PUT', body: input }),
+      $fetch<{ id: string }>('/api/predictions', { method: 'PUT', body: input }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['predictions'] })
       queryClient.invalidateQueries({ queryKey: ['matches'] })
@@ -55,7 +43,7 @@ export function usePredictionMutations() {
 
   const setJoker = useMutation({
     mutationFn: (input: { matchId: string; isJoker: boolean }) =>
-      $fetch('/api/predictions/joker', { method: 'PUT', body: input }),
+      $fetch<{ ok: boolean }>('/api/predictions/joker', { method: 'PUT', body: input }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['predictions'] }),
   })
 

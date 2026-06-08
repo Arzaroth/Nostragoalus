@@ -43,24 +43,24 @@ export function withEncryptedSSO<F>(factory: F): F {
     const isEnc = (model: string) => model === ENCRYPTED_MODEL
     return {
       ...adapter,
-      async create(args) {
+      async create(args: any) {
         if (!isEnc(args.model)) return adapter.create(args)
         return openFields(await adapter.create({ ...args, data: sealFields(args.data ?? {}) }))
       },
-      async update(args) {
+      async update(args: any) {
         if (!isEnc(args.model)) return adapter.update(args)
         const a = args.update ? { ...args, update: sealFields(args.update) } : args
         return openFields(await adapter.update(a))
       },
-      async updateMany(args) {
+      async updateMany(args: any) {
         if (!isEnc(args.model) || !args.update) return adapter.updateMany(args)
         return adapter.updateMany({ ...args, update: sealFields(args.update) })
       },
-      async findOne(args) {
+      async findOne(args: any) {
         const row = await adapter.findOne(args)
         return isEnc(args.model) ? openFields(row) : row
       },
-      async findMany(args) {
+      async findMany(args: any) {
         const rows = await adapter.findMany(args)
         return isEnc(args.model) && Array.isArray(rows) ? rows.map(openFields) : rows
       },

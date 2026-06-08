@@ -1,16 +1,9 @@
 import { useQuery } from '@tanstack/vue-query'
+import type { LeaderboardRow as ServerLeaderboardRow } from '../../server/utils/leaderboard/service'
 
-export interface LeaderboardRow {
-  rank: number
-  userId: string
-  displayName: string
-  image?: string | null
-  totalPoints: number
-  exactCount: number
-  outcomeCount: number
-  gdCount: number
-  movement?: number | null
-}
+// The API adds movement on top of the server row; everything else is the
+// canonical server interface (championCode/championPoints included).
+export type LeaderboardRow = ServerLeaderboardRow & { movement?: number | null }
 
 export function useLeaderboard(global?: Ref<boolean>) {
   const slug = useSelectedCompetition()

@@ -228,8 +228,8 @@ describe('uefa match detail', () => {
   it('getMatchStats aggregates events per team id', async () => {
     const provider = uefaProvider({ seasonYear: '2024', rateLimiter: noWait(), fetchImpl: detailFetch(FULL_MATCH, EVENTS) })
     const stats = await provider.getMatchStats!({ ifesId: '900' })
-    expect(stats!['1']).toMatchObject({ attempts: 3, onTarget: 2, offsides: 1, redCards: 1, yellowCards: 0 })
-    expect(stats!['2']).toMatchObject({ attempts: 1, corners: 1, fouls: 1, yellowCards: 2 })
+    expect(stats!['1']).toMatchObject({ attempts: 3, onTarget: 2, offsides: 1 })
+    expect(stats!['2']).toMatchObject({ attempts: 1, corners: 1, fouls: 1 })
     const nullStats = uefaProvider({ seasonYear: '2024', rateLimiter: noWait(), fetchImpl: detailFetch(null, []) })
     expect(await nullStats.getMatchStats!({ ifesId: 'x' })).toBeNull()
   })
@@ -476,7 +476,7 @@ describe('uefa official match stats + coach actors', () => {
 
   it('normalizes the official per-match feed', () => {
     const s = normalizeUefaMatchStats(STAT_ROWS[0])
-    expect(s).toMatchObject({ possession: 63, attempts: 15, onTarget: 5, passes: 544, passesCompleted: 496, crosses: 23, corners: 10, fouls: 11, offsides: 1, distanceKm: 109.14, yellowCards: 1, redCards: 0, pressuresApplied: null })
+    expect(s).toMatchObject({ possession: 63, attempts: 15, onTarget: 5, passes: 544, passesCompleted: 496, crosses: 23, corners: 10, fouls: 11, offsides: 1, distanceKm: 109.14, pressuresApplied: null })
     expect(normalizeUefaMatchStats({ statistics: [{ name: 'attempts', value: 'NaN-ish' }] }).attempts).toBeNull()
   })
 
