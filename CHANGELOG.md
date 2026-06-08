@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-06-08
+
 ### Fixed
 - Crowd totals refresh when you switch competition (they were stuck showing "–" for the new competition's matches).
 - Tech-stack cards mangled every third entry (monospace, tiny text): the card was an anchor with the license badge as a nested anchor - invalid HTML that Firefox split, leaking the badge style. Card is now a div with a stretched project link and a sibling badge link.
