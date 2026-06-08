@@ -400,5 +400,10 @@
       "q": "Is it free?",
       "a": "Completely. The whole project is open source under the WTFPL - you can read every line, run your own instance for your friends, and do what you want with it."
     }
+  },
+  "err": {
+    "notFound": "This one sailed over the bar - the page you're looking for is lost among the stars.",
+    "generic": "Something went wrong on our side.",
+    "home": "Back to the pitch"
   }
 }

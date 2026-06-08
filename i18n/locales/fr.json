@@ -400,5 +400,10 @@
       "q": "C'est gratuit ?",
       "a": "Totalement. Le projet est open source sous licence WTFPL : lisez chaque ligne, hébergez votre propre instance entre amis, faites-en ce que vous voulez."
     }
+  },
+  "err": {
+    "notFound": "Celle-ci est passée au-dessus de la barre - la page que vous cherchez s'est perdue dans les étoiles.",
+    "generic": "Une erreur est survenue de notre côté.",
+    "home": "Retour au terrain"
   }
 }

@@ -3,6 +3,7 @@
 // decides when to show/hide. Honors reduced-motion by simply not animating.
 // The art is per-pixel canvas rasterization - motion-v animates DOM/CSS, so
 // VueUse drives the frame loop and the rest stays hand-painted.
+const props = defineProps<{ miss?: boolean }>()
 const canvas = ref<HTMLCanvasElement | null>(null)
 const reducedMotion = usePreferredReducedMotion()
 
@@ -117,12 +118,32 @@ onMounted(() => {
     }
     if (r >= 2) px(cx - Math.ceil(r / 2), cy - Math.ceil(r / 2), 1, 1, '#ffffff')
   }
+  const miss = props.miss === true
   render = (t: number) => {
     const tc = t % 3000
-    const flashA = tc >= 2100 && tc < 2360 ? (1 - (tc - 2100) / 260) * 0.6 : 0
+    const flashA = !miss && tc >= 2100 && tc < 2360 ? (1 - (tc - 2100) / 260) * 0.6 : 0
     scene(t, flashA)
     let bx: number, by: number, r: number
-    if (tc < 2100) {
+    let starAlpha = 0
+    if (miss) {
+      // The shot sails over the bar and is lost among the stars (fitting, for
+      // a page that wasn't found). Then it twinkles, fades, and the loop kicks
+      // off again from the spot.
+      if (tc < 1800) {
+        const p = tc / 1800
+        const ease = 1 - Math.pow(1 - p, 2)
+        const env = Math.sin(Math.PI * p)
+        const ang = p * Math.PI * 2 * 2.2
+        bx = 100 + Math.cos(ang) * env * 20 + 38 * ease
+        by = 96 - 76 * ease + Math.sin(ang) * env * 10
+        r = Math.max(1, Math.round(8 * (1 - 0.8 * ease)))
+      } else {
+        bx = 138
+        by = 20
+        r = 1
+        starAlpha = tc < 2600 ? 1 : Math.max(0, 1 - (tc - 2600) / 400)
+      }
+    } else if (tc < 2100) {
       const p = tc / 2100
       const ease = 1 - Math.pow(1 - p, 2)
       const env = Math.sin(Math.PI * p)
@@ -139,7 +160,7 @@ onMounted(() => {
     }
     const rbx = Math.round(bx)
     const rby = Math.round(by)
-    if (tc < 2100) {
+    if (tc < (miss ? 1800 : 2100)) {
       trail.push([rbx, rby, r])
       if (trail.length > 34) trail.shift()
     }
@@ -157,8 +178,20 @@ onMounted(() => {
       }
       x.globalAlpha = 1
     }
-    ball(rbx, rby, r, t * 0.016)
-    if (tc >= 2100 && tc < 2700) {
+    if (miss && starAlpha > 0) {
+      // the lost ball, twinkling like the other stars
+      const tw = starAlpha * (0.6 + 0.4 * Math.sin(t / 160))
+      x.globalAlpha = tw
+      px(138, 20, 1, 1, '#ffffff')
+      px(137, 20, 1, 1, '#d8ccff')
+      px(139, 20, 1, 1, '#d8ccff')
+      px(138, 19, 1, 1, '#d8ccff')
+      px(138, 21, 1, 1, '#d8ccff')
+      x.globalAlpha = 1
+    } else if (!miss || tc < 1800) {
+      ball(rbx, rby, r, t * 0.016)
+    }
+    if (!miss && tc >= 2100 && tc < 2700) {
       const age = (tc - 2100) / 600
       for (let i = 0; i < 13; i++) {
         const ang = (i / 13) * 6.283

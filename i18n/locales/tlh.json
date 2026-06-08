@@ -400,5 +400,10 @@
       "q": "tlhab'a'?",
       "a": "naQ tlhab. WTFPL bIngDaq poSmoHlu'pu'. Hoch ngoq yIlaD, Doch'a'lIj yIche'."
     }
+  },
+  "err": {
+    "notFound": "'er Dung juS - Hovmey HopDaq nav DaSambogh chIl.",
+    "generic": "QaghmaH maQagh.",
+    "home": "yotlh chegh"
   }
 }
