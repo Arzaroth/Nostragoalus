@@ -644,16 +644,21 @@ export function fifaProvider(options: FifaOptions): MatchDataProvider {
   const doFetch = options.fetchImpl ?? fetch
   const limiter = options.rateLimiter ?? new RateLimiter(1000)
 
-  async function fetchAll(): Promise<NormalizedMatch[]> {
+  // The throw-on-error envelope (rate-limit + ok-check + json), shared by the
+  // call sites that want it. The sweep sites that skip/return-null on a missing
+  // resource keep their own explicit handling.
+  async function getJson<T>(url: string): Promise<T> {
     await limiter.acquire()
-    const response = await doFetch(
-      `${baseUrl}/calendar/matches?language=en&count=500&idSeason=${options.seasonId}`,
-    )
-
+    const response = await doFetch(url)
     if (response.status === 429) throw new ProviderRateLimitError()
     if (!response.ok) throw new ProviderUpstreamError(response.status, await response.text())
+    return (await response.json()) as T
+  }
 
-    const data = (await response.json()) as { Results?: FifaMatch[] }
+  async function fetchAll(): Promise<NormalizedMatch[]> {
+    const data = await getJson<{ Results?: FifaMatch[] }>(
+      `${baseUrl}/calendar/matches?language=en&count=500&idSeason=${options.seasonId}`,
+    )
     return (data.Results ?? []).map(normalizeFifaMatch)
   }
 
@@ -669,32 +674,25 @@ export function fifaProvider(options: FifaOptions): MatchDataProvider {
       return (await fetchAll()).filter((m) => m.status === 'LIVE' || m.status === 'PAUSED')
     },
     async getMatchDetail({ stageId, matchId }: { stageId?: string; matchId: string }) {
-      await limiter.acquire()
       // FIFA also serves match detail by bare match id - used when no stage id is stored.
-      const response = await doFetch(
+      const detail = await getJson<FifaMatchDetailResponse>(
         stageId
           ? `${baseUrl}/live/football/${options.competitionId}/${options.seasonId}/${stageId}/${matchId}?language=en`
           : `${baseUrl}/live/football/${matchId}?language=en`,
       )
-      if (response.status === 429) throw new ProviderRateLimitError()
-      if (!response.ok) throw new ProviderUpstreamError(response.status, await response.text())
-      return normalizeFifaMatchDetail((await response.json()) as FifaMatchDetailResponse)
+      return normalizeFifaMatchDetail(detail)
     },
     async getBracket() {
-      await limiter.acquire()
-      const response = await doFetch(`${baseUrl}/seasonbracket/season/${options.seasonId}?language=en`)
-      if (response.status === 429) throw new ProviderRateLimitError()
-      if (!response.ok) throw new ProviderUpstreamError(response.status, await response.text())
-      return normalizeFifaBracket((await response.json()) as FifaBracketResponse)
+      return normalizeFifaBracket(
+        await getJson<FifaBracketResponse>(`${baseUrl}/seasonbracket/season/${options.seasonId}?language=en`),
+      )
     },
     async getPlayerStats({ teamId }: { teamId: string }) {
-      await limiter.acquire()
-      const response = await doFetch(
-        `${baseUrl}/statistics/teams/${teamId}?idSeason=${options.seasonId}&idCompetition=${options.competitionId}&language=en`,
+      return normalizeFifaPlayerStats(
+        await getJson<FifaTeamStatsResponse>(
+          `${baseUrl}/statistics/teams/${teamId}?idSeason=${options.seasonId}&idCompetition=${options.competitionId}&language=en`,
+        ),
       )
-      if (response.status === 429) throw new ProviderRateLimitError()
-      if (!response.ok) throw new ProviderUpstreamError(response.status, await response.text())
-      return normalizeFifaPlayerStats((await response.json()) as FifaTeamStatsResponse)
     },
     // One sweep over the team's matches: squad, head coach, and season totals
     // (per-match stats summed - the same numbers FIFA's team pages show).
