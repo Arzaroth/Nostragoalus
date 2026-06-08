@@ -183,17 +183,25 @@ onMounted(() => {
       const a = ((i + 1) / trail.length) * 0.5
       disc(trail[i][0], trail[i][1], Math.max(1, Math.round(trail[i][2] * 0.5)), `rgba(205,191,255,${a})`)
     }
-    if (tc < 150) {
-      x.globalAlpha = (1 - tc / 150) * 0.6
+    const burstAt = miss ? 350 : 0
+    if (tc >= burstAt && tc < burstAt + 150) {
+      const bp = (tc - burstAt) / 150
+      x.globalAlpha = (1 - bp) * 0.6
       for (let i = 0; i < 6; i++) {
         const ang = (i / 6) * 6.283
-        const d = (tc / 150) * 9
+        const d = bp * 9
         px(100 + Math.cos(ang) * d, 95 + Math.sin(ang) * d * 0.6, 1, 1, '#d8ccff')
       }
       x.globalAlpha = 1
     }
     if (miss && starAlpha > 0) {
-      // the lost ball, twinkling like the other stars
+      // the ball's glow evaporates over the first half second...
+      const k = Math.min(1, (tc - 2000) / 500)
+      if (k < 1) {
+        disc(138, 20, 2, `rgba(179, 162, 240, ${(1 - k) * 0.85})`)
+        disc(138, 20, 4, `rgba(160, 138, 240, ${(1 - k) * 0.3})`)
+      }
+      // ...leaving just another twinkling star
       const tw = starAlpha * (0.6 + 0.4 * Math.sin(t / 160))
       x.globalAlpha = tw
       px(138, 20, 1, 1, '#ffffff')
