@@ -96,11 +96,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     databaseUrl: '',
     betterAuthSecret: '',
-    matchProvider: 'fifa',
-    fifaSeasonId: '285023',
     footballDataToken: '',
     apiFootballKey: '',
-    wcSeason: '2026',
     cronEnabled: 'true',
     adminEmails: '',
     public: {
