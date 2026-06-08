@@ -185,7 +185,8 @@
     "finalDoubleHint": "Every prediction on the final earns double points - no joker needed.",
     "rarity": "rarity",
     "rarityTip": "Only {pct}% of players picked this exact score - bold calls earn a bonus.",
-    "rarityTipNoShare": "A rare exact score earns a bonus on top."
+    "rarityTipNoShare": "A rare exact score earns a bonus on top.",
+    "jokerHint": "Your joker doubled the points on this match (base + rarity)."
   },
   "champion": {
     "title": "Your champion",

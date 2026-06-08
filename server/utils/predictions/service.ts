@@ -84,6 +84,7 @@ const predictionView = {
   basePoints: prediction.basePoints,
   bonusPoints: prediction.bonusPoints,
   crowdShare: prediction.crowdShare,
+  jokerMultiplierApplied: prediction.jokerMultiplierApplied,
   homeTeam: match.homeTeam,
   awayTeam: match.awayTeam,
   homeTeamCode: match.homeTeamCode,

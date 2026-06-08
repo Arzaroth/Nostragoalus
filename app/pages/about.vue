@@ -118,25 +118,25 @@ const changelog = computed<ChangelogVersion[]>(() => {
       <div v-for="g in stack" :key="g.group" class="mb-6">
         <h3 class="text-xs uppercase tracking-wider font-semibold mb-3" style="color: var(--p-text-muted-color)">{{ g.group }}</h3>
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          <a
+          <!-- Card is a plain div: the project link is a stretched anchor over the
+               whole card, the license badge a second anchor on top. Two sibling
+               anchors, never nested (nesting corrupts the parse + leaks styles). -->
+          <div
             v-for="item in g.items"
             :key="item.name"
-            :href="item.url"
-            target="_blank"
-            rel="noopener"
-            class="ng-card rounded-xl border p-4 flex flex-col gap-1 hover:!border-[var(--p-primary-color)] transition-colors"
+            class="ng-card relative rounded-xl border p-4 flex flex-col gap-1 hover:!border-[var(--p-primary-color)] transition-colors"
             style="background: var(--p-content-background)"
           >
             <span class="font-semibold flex items-center justify-between gap-2">
               <span class="flex items-center gap-2 min-w-0">
                 <img v-if="item.logo" :src="logoSrc(item)" class="w-5 h-5 shrink-0" alt="" loading="lazy" onerror="this.style.display='none'" >
                 <i v-else-if="item.icon" :class="item.icon" class="text-lg shrink-0" style="color: var(--p-text-muted-color)" />
-                <span class="truncate">{{ item.name }}</span>
+                <a :href="item.url" target="_blank" rel="noopener" class="truncate after:absolute after:inset-0 after:content-['']">{{ item.name }}</a>
               </span>
-              <a :href="item.licenseUrl" target="_blank" rel="noopener" class="text-[10px] font-mono px-1.5 py-0.5 rounded border hover:underline shrink-0" style="color: var(--p-text-muted-color); border-color: var(--p-content-border-color)" @click.stop>{{ item.license }}</a>
+              <a :href="item.licenseUrl" target="_blank" rel="noopener" class="relative text-[10px] font-mono px-1.5 py-0.5 rounded border hover:underline shrink-0" style="color: var(--p-text-muted-color); border-color: var(--p-content-border-color)">{{ item.license }}</a>
             </span>
             <span class="text-xs" style="color: var(--p-text-muted-color)">{{ item.desc }}</span>
-          </a>
+          </div>
         </div>
       </div>
     </section>

@@ -5,6 +5,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+- Tech-stack cards mangled every third entry (monospace, tiny text): the card was an anchor with the license badge as a nested anchor - invalid HTML that Firefox split, leaking the badge style. Card is now a div with a stretched project link and a sibling badge link.
+
+### Changed
+- Prediction points reconcile with the joker/final multiplier: a "+N rarity" chip ("only X% picked this") plus a "×2" badge when the joker or the final doubled the score, so the breakdown matches the total.
+
 ### Added
 - Scoring is now spelled out: predictions show the base points and a separate "+N rarity" chip with an "only X% picked this" tooltip; champion-pick points appear on the leaderboard and player pages; the FAQ carries the full formula in plain notation.
 

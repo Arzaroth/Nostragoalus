@@ -185,7 +185,8 @@
     "finalDoubleHint": "HevDaq Hoch wIv cha'logh QuQ.",
     "rarity": "le'",
     "rarityTip": "mI'vam pup wIvta' {pct}% neH - jaq wIvmey tev luSuq.",
-    "rarityTipNoShare": "mI' pup le' tev chel."
+    "rarityTipNoShare": "mI' pup le' tev chel.",
+    "jokerHint": "Hovlij QuQ cha'logh (mung + le')."
   },
   "champion": {
     "title": "che'wI'lIj",

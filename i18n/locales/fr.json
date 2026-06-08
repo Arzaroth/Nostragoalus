@@ -185,7 +185,8 @@
     "finalDoubleHint": "Chaque prono sur la finale rapporte le double - pas besoin de joker.",
     "rarity": "rareté",
     "rarityTip": "Seulement {pct}% des joueurs ont tenté ce score exact - les pronos audacieux rapportent un bonus.",
-    "rarityTipNoShare": "Un score exact rare rapporte un bonus."
+    "rarityTipNoShare": "Un score exact rare rapporte un bonus.",
+    "jokerHint": "Votre joker a doublé les points de ce match (base + rareté)."
   },
   "champion": {
     "title": "Votre vainqueur",

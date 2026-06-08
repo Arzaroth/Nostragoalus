@@ -11,6 +11,10 @@ function fmt(d: string) {
 function isLocked(p: MyPrediction) {
   return new Date(p.kickoffTime).getTime() <= Date.now()
 }
+function rarityTip(p: { crowdShare?: number | string | null }) {
+  const pct = p.crowdShare != null ? Math.round(Number(p.crowdShare) * 100) : null
+  return pct != null ? t('predictions.rarityTip', { pct }) : t('predictions.rarityTipNoShare')
+}
 </script>
 
 <template>
@@ -71,6 +75,12 @@ function isLocked(p: MyPrediction) {
           class="font-semibold px-1.5 py-0.5 rounded-full cursor-help"
           style="color: #f59e0b; background: rgba(245, 158, 11, 0.12)"
         >+{{ p.bonusPoints }} {{ t('predictions.rarity') }}</span>
+        <span
+          v-if="Number(p.jokerMultiplierApplied) > 1"
+          v-tooltip.top="p.stage === 'FINAL' ? t('predictions.finalDoubleHint') : t('predictions.jokerHint')"
+          class="font-bold px-1.5 py-0.5 rounded-full cursor-help"
+          style="color: #f59e0b; background: rgba(245, 158, 11, 0.12)"
+        >×{{ Number(p.jokerMultiplierApplied) }}</span>
       </div>
     </NuxtLink>
   </div>
