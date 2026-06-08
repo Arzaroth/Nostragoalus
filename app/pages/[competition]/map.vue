@@ -87,7 +87,7 @@ const topAssister = computed(() => info.value?.topAssister ?? null)
 const standings = computed<any[]>(() => info.value?.standings ?? [])
 
 function formColor(r: string) {
-  return r === 'W' ? '#22c55e' : r === 'L' ? '#ef4444' : '#a1a1aa'
+  return r === 'W' ? 'var(--ng-success)' : r === 'L' ? 'var(--ng-danger)' : '#a1a1aa'
 }
 function fmt(d: string) {
   return new Date(d).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
@@ -158,7 +158,7 @@ function fmt(d: string) {
             </div>
 
             <div v-if="live">
-              <div class="text-xs font-bold mb-1" style="color: #ef4444">● {{ t('map.live') }}</div>
+              <div class="text-xs font-bold mb-1" style="color: var(--ng-danger)">● {{ t('map.live') }}</div>
               <NuxtLink :to="`/${slug}/matches/${live.id}`" class="hover:underline">{{ live.homeTeam }} <b>{{ live.fullTimeHome }}–{{ live.fullTimeAway }}</b> {{ live.awayTeam }}</NuxtLink>
             </div>
             <div v-if="next">

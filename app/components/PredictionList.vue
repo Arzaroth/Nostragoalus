@@ -32,13 +32,13 @@ function rarityTip(p: { crowdShare?: number | string | null }) {
           v-if="editable && !isLocked(p) && !isSingleMatchStage(p.stage) && p.homeTeamCode && p.awayTeamCode"
           type="button"
           class="font-semibold flex items-center gap-1 transition hover:opacity-80"
-          :style="`color:${p.isJoker ? '#f59e0b' : 'var(--p-text-muted-color)'}`"
+          :style="`color:${p.isJoker ? 'var(--ng-star)' : 'var(--p-text-muted-color)'}`"
           @click.stop.prevent="emit('toggleJoker', p)"
         >
           <i :class="p.isJoker ? 'pi pi-star-fill' : 'pi pi-star'" />{{ p.isJoker ? t('predictions.joker') : t('predictions.makeJoker') }}
         </button>
-        <span v-else-if="countsDouble(p.stage)" class="font-semibold" style="color: #f59e0b" :title="t('predictions.finalDoubleHint')">★ {{ t('predictions.finalDouble') }}</span>
-        <span v-else-if="p.isJoker" class="font-semibold" style="color: #f59e0b">★ {{ t('predictions.joker') }}</span>
+        <span v-else-if="countsDouble(p.stage)" class="font-semibold" style="color: var(--ng-star)" :title="t('predictions.finalDoubleHint')">★ {{ t('predictions.finalDouble') }}</span>
+        <span v-else-if="p.isJoker" class="font-semibold" style="color: var(--ng-star)">★ {{ t('predictions.joker') }}</span>
       </div>
 
       <!-- grid with symmetric 1fr sides keeps the score block dead-center regardless of name lengths -->
@@ -73,13 +73,13 @@ function rarityTip(p: { crowdShare?: number | string | null }) {
           v-if="p.bonusPoints"
           v-tooltip.top="rarityTip(p)"
           class="font-semibold px-1.5 py-0.5 rounded-full cursor-help"
-          style="color: #f59e0b; background: rgba(245, 158, 11, 0.12)"
+          style="color: var(--ng-star); background: var(--ng-star-soft)"
         >+{{ p.bonusPoints }} {{ t('predictions.rarity') }}</span>
         <span
           v-if="Number(p.jokerMultiplierApplied) > 1"
           v-tooltip.top="p.stage === 'FINAL' ? t('predictions.finalDoubleHint') : t('predictions.jokerHint')"
           class="font-bold px-1.5 py-0.5 rounded-full cursor-help"
-          style="color: #f59e0b; background: rgba(245, 158, 11, 0.12)"
+          style="color: var(--ng-star); background: var(--ng-star-soft)"
         >×{{ Number(p.jokerMultiplierApplied) }}</span>
       </div>
     </NuxtLink>

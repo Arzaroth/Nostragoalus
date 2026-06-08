@@ -60,7 +60,7 @@ function outcome(m: any): 'W' | 'D' | 'L' | null {
   return r
 }
 function outcomeColor(o: string | null) {
-  return o === 'W' ? '#22c55e' : o === 'L' ? '#ef4444' : o === 'D' ? '#a1a1aa' : 'var(--p-content-border-color)'
+  return o === 'W' ? 'var(--ng-success)' : o === 'L' ? 'var(--ng-danger)' : o === 'D' ? '#a1a1aa' : 'var(--p-content-border-color)'
 }
 function fmt(d: string) {
   return new Date(d).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })

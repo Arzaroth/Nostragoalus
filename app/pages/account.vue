@@ -419,7 +419,7 @@ async function confirmDelete() {
           </template>
 
           <template v-else-if="tfaEnabled">
-            <div class="flex items-center gap-2 text-sm font-medium"><i class="pi pi-shield" style="color: #22c55e" /> {{ t('twofa.enabled') }}</div>
+            <div class="flex items-center gap-2 text-sm font-medium"><i class="pi pi-shield" style="color: var(--ng-success)" /> {{ t('twofa.enabled') }}</div>
 
             <div v-if="deviceTrusted" class="flex items-center gap-3 text-sm">
               <Button :label="t('twofa.trustRevoke')" icon="pi pi-eraser" size="small" severity="secondary" outlined @click="revokeTrust" />
@@ -528,7 +528,7 @@ async function confirmDelete() {
       </div>
     </section>
 
-    <section class="ng-card rounded-2xl border" style="background: var(--p-content-background); border-color: color-mix(in srgb, #ef4444 40%, var(--p-content-border-color))">
+    <section class="ng-card rounded-2xl border" style="background: var(--p-content-background); border-color: color-mix(in srgb, var(--ng-danger) 40%, var(--p-content-border-color))">
       <div class="p-6 flex flex-col gap-4">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>

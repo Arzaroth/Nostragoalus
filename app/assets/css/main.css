@@ -1,5 +1,19 @@
 @layer reset, primevue;
 
+:root {
+  /* Semantic brand colours - one source instead of the hex literal sprinkled
+     across components (amber star/joker, danger red, success green). */
+  --ng-star: #f59e0b;
+  --ng-danger: #ef4444;
+  --ng-success: #22c55e;
+  --ng-star-soft: color-mix(in srgb, var(--ng-star) 12%, transparent);
+}
+
+/* the single most-repeated inline style, as a utility */
+.text-muted {
+  color: var(--p-text-muted-color);
+}
+
 @layer reset {
   *,
   *::before,

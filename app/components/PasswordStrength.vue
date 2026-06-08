@@ -15,7 +15,7 @@ const score = computed(() => {
   return Math.min(s, 4)
 })
 
-const colors = ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e']
+const colors = ['var(--ng-danger)', '#f97316', '#eab308', '#84cc16', 'var(--ng-success)']
 const keys = ['veryWeak', 'weak', 'fair', 'good', 'strong']
 </script>
 

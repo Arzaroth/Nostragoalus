@@ -32,7 +32,7 @@ const { data } = await useFetch<{
         <span v-if="data.champion?.teamCode && flagUrl(data.champion.teamCode)" class="relative shrink-0 inline-flex items-center gap-1.5" :title="`${t('champion.title')}: ${data.champion.teamName}`">
           <img :src="flagUrl(data.champion.teamCode) || ''" class="w-6 h-6 rounded object-cover" alt="" >
           <span class="absolute -top-2.5 -left-2 text-sm" style="transform: rotate(-25deg)">👑</span>
-          <span v-if="data.champion.awardedPoints" class="text-xs font-semibold" style="color: #f59e0b">+{{ data.champion.awardedPoints }} pts</span>
+          <span v-if="data.champion.awardedPoints" class="text-xs font-semibold" style="color: var(--ng-star)">+{{ data.champion.awardedPoints }} pts</span>
         </span>
         <CompetitionPill v-if="!global" />
       </div>

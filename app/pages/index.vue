@@ -12,14 +12,14 @@ const matchesLink = computed(() => `/${last.value}/matches`)
 
 const features = [
   { icon: 'pi pi-bullseye', color: '#6366f1', key: 'scoring' },
-  { icon: 'pi pi-star-fill', color: '#f59e0b', key: 'joker' },
+  { icon: 'pi pi-star-fill', color: 'var(--ng-star)', key: 'joker' },
   { icon: 'pi pi-trophy', color: '#10b981', key: 'champion' },
-  { icon: 'pi pi-bolt', color: '#ef4444', key: 'live' },
+  { icon: 'pi pi-bolt', color: 'var(--ng-danger)', key: 'live' },
   { icon: 'pi pi-sitemap', color: '#8b5cf6', key: 'bracket' },
   { icon: 'pi pi-map', color: '#06b6d4', key: 'map' },
   { icon: 'pi pi-chart-bar', color: '#ec4899', key: 'stats' },
   { icon: 'pi pi-users', color: '#3b82f6', key: 'ranking' },
-  { icon: 'pi pi-flag', color: '#22c55e', key: 'competitions' },
+  { icon: 'pi pi-flag', color: 'var(--ng-success)', key: 'competitions' },
 ]
 const tiers = [
   { pts: '3', key: 'exact' },
@@ -105,7 +105,7 @@ onMounted(() => {
         class="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium"
         style="border-color: var(--p-content-border-color); color: var(--p-text-muted-color)"
       >
-        <span class="w-1.5 h-1.5 rounded-full animate-pulse" style="background: #22c55e" /> {{ t('landing.badge') }}
+        <span class="w-1.5 h-1.5 rounded-full animate-pulse" style="background: var(--ng-success)" /> {{ t('landing.badge') }}
       </div>
       <h1 class="text-4xl sm:text-6xl font-extrabold max-w-3xl leading-[1.1]">
         {{ t('landing.heroA') }}

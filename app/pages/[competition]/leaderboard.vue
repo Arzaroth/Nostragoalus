@@ -41,7 +41,7 @@ function medal(rank: number) {
             <span v-if="medal(r.rank)">{{ medal(r.rank) }}</span>
             <span v-else style="color: var(--p-text-muted-color)">{{ r.rank }}</span>
           </div>
-          <div v-if="r.movement" class="text-[10px] font-bold leading-none" :style="`color: ${r.movement > 0 ? '#22c55e' : '#ef4444'}`">
+          <div v-if="r.movement" class="text-[10px] font-bold leading-none" :style="`color: ${r.movement > 0 ? 'var(--ng-success)' : 'var(--ng-danger)'}`">
             {{ r.movement > 0 ? '▲' : '▼' }}{{ Math.abs(r.movement) }}
           </div>
         </div>

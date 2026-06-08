@@ -72,8 +72,8 @@ function fmtTime(d: string) {
                   <span v-if="pensResult(m)" class="block text-[10px] font-normal leading-tight" style="color: var(--p-text-muted-color)">{{ pensResult(m) }} {{ t('match.pens') }}</span>
                 </div>
                 <div v-else class="text-sm" style="color: var(--p-text-muted-color)">vs</div>
-                <div v-if="m.status === 'LIVE' || m.status === 'PAUSED'" class="flex items-center justify-center gap-1 text-[10px] font-bold" style="color: #ef4444">
-                  <span class="w-1.5 h-1.5 rounded-full animate-pulse" style="background: #ef4444" />LIVE
+                <div v-if="m.status === 'LIVE' || m.status === 'PAUSED'" class="flex items-center justify-center gap-1 text-[10px] font-bold" style="color: var(--ng-danger)">
+                  <span class="w-1.5 h-1.5 rounded-full animate-pulse" style="background: var(--ng-danger)" />LIVE
                 </div>
               </div>
               <div class="flex items-center gap-2 min-w-0 justify-end">
@@ -104,7 +104,7 @@ function fmtTime(d: string) {
               <!-- Always rendered on open matches (disabled until a pick exists) so saving never resizes the card. -->
               <div v-if="!m.isLocked || predByMatch[m.id]" class="flex items-center gap-3">
                 <!-- single-match rounds: no joker to place; the final doubles for everyone -->
-                <span v-if="countsDouble(m.stage)" class="text-xs font-semibold px-2 py-1 rounded-full" style="color: #f59e0b; background: rgba(245, 158, 11, 0.12)" :title="t('predictions.finalDoubleHint')">★ {{ t('predictions.finalDouble') }}</span>
+                <span v-if="countsDouble(m.stage)" class="text-xs font-semibold px-2 py-1 rounded-full" style="color: var(--ng-star); background: var(--ng-star-soft)" :title="t('predictions.finalDoubleHint')">★ {{ t('predictions.finalDouble') }}</span>
                 <Button
                   v-else-if="!isSingleMatchStage(m.stage)"
                   :label="predByMatch[m.id]?.isJoker ? '★ Joker' : 'Joker'"
@@ -122,7 +122,7 @@ function fmtTime(d: string) {
                   v-if="predByMatch[m.id]?.bonusPoints"
                   v-tooltip.top="predByMatch[m.id].crowdShare != null ? t('predictions.rarityTip', { pct: Math.round(Number(predByMatch[m.id].crowdShare) * 100) }) : t('predictions.rarityTipNoShare')"
                   class="text-xs font-semibold px-1.5 py-0.5 rounded-full cursor-help"
-                  style="color: #f59e0b; background: rgba(245, 158, 11, 0.12)"
+                  style="color: var(--ng-star); background: var(--ng-star-soft)"
                 >+{{ predByMatch[m.id].bonusPoints }} {{ t('predictions.rarity') }}</span>
               </div>
             </div>

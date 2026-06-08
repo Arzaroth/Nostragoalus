@@ -218,7 +218,7 @@ const h2hRows = computed(() => {
 })
 
 function formColor(r: string) {
-  return r === 'W' ? '#22c55e' : r === 'L' ? '#ef4444' : '#a1a1aa'
+  return r === 'W' ? 'var(--ng-success)' : r === 'L' ? 'var(--ng-danger)' : '#a1a1aa'
 }
 function fmtDate(d: string) {
   return new Date(d).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })
@@ -245,8 +245,8 @@ function fmtDate(d: string) {
       <div class="flex items-center justify-between text-xs mb-4" style="color: var(--p-text-muted-color)">
         <span>{{ m.roundLabel }}<template v-if="m.group"> · Group {{ m.group }}</template></span>
         <span class="flex items-center gap-2">
-          <span v-if="isLive" class="flex items-center gap-1 font-semibold" style="color: #ef4444">
-            <span class="w-2 h-2 rounded-full animate-pulse" style="background: #ef4444" /> LIVE
+          <span v-if="isLive" class="flex items-center gap-1 font-semibold" style="color: var(--ng-danger)">
+            <span class="w-2 h-2 rounded-full animate-pulse" style="background: var(--ng-danger)" /> LIVE
           </span>
           <Tag :value="matchStatusLabel(status)" :severity="statusSeverity(status)" />
         </span>
@@ -281,23 +281,23 @@ function fmtDate(d: string) {
         <template v-for="(e, i) in timeline" :key="i">
           <span class="inline-flex items-center gap-1 justify-end text-right">
             <template v-if="e.side === 'HOME'">
-              <template v-if="e.kind === 'sub'"><span style="color: #22c55e">▲</span> {{ formatPlayerName(e.playerName) }} <span class="opacity-60">· {{ formatPlayerName(e.offName) }} <span style="color: #ef4444">▼</span></span> 🔄</template>
+              <template v-if="e.kind === 'sub'"><span style="color: var(--ng-success)">▲</span> {{ formatPlayerName(e.playerName) }} <span class="opacity-60">· {{ formatPlayerName(e.offName) }} <span style="color: var(--ng-danger)">▼</span></span> 🔄</template>
               <template v-else>
                 {{ formatPlayerName(e.playerName) }}<span v-if="e.kind === 'goal' && e.ownGoal"> (OG)</span><span v-if="e.kind === 'card' && e.coach" :title="t('match.coachCard')"> 📋</span>
                 <template v-if="e.kind === 'goal'">⚽</template>
-                <span v-else-if="e.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: #ef4444" /></span>
-                <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${e.card === 'RED' ? '#ef4444' : '#eab308'}`" />
+                <span v-else-if="e.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: var(--ng-danger)" /></span>
+                <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${e.card === 'RED' ? 'var(--ng-danger)' : '#eab308'}`" />
               </template>
             </template>
           </span>
           <span class="tabular-nums text-center w-12 opacity-70">{{ e.minute }}</span>
           <span class="inline-flex items-center gap-1">
             <template v-if="e.side === 'AWAY'">
-              <template v-if="e.kind === 'sub'">🔄 <span style="color: #22c55e">▲</span> {{ formatPlayerName(e.playerName) }} <span class="opacity-60">· {{ formatPlayerName(e.offName) }} <span style="color: #ef4444">▼</span></span></template>
+              <template v-if="e.kind === 'sub'">🔄 <span style="color: var(--ng-success)">▲</span> {{ formatPlayerName(e.playerName) }} <span class="opacity-60">· {{ formatPlayerName(e.offName) }} <span style="color: var(--ng-danger)">▼</span></span></template>
               <template v-else>
                 <template v-if="e.kind === 'goal'">⚽</template>
-                <span v-else-if="e.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: #ef4444" /></span>
-                <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${e.card === 'RED' ? '#ef4444' : '#eab308'}`" />
+                <span v-else-if="e.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: var(--ng-danger)" /></span>
+                <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${e.card === 'RED' ? 'var(--ng-danger)' : '#eab308'}`" />
                 {{ formatPlayerName(e.playerName) }}<span v-if="e.kind === 'goal' && e.ownGoal"> (OG)</span><span v-if="e.kind === 'card' && e.coach" :title="t('match.coachCard')"> 📋</span>
               </template>
             </template>
@@ -311,7 +311,7 @@ function fmtDate(d: string) {
       <!-- your pick: editable until kickoff -->
       <div v-if="canPredict || myPred" class="flex flex-col items-center gap-1.5 mt-4 pt-3 border-t text-sm" style="border-color: var(--p-content-border-color)">
         <span class="text-xs font-semibold uppercase tracking-wider" style="color: var(--p-text-muted-color)">
-          {{ t('match.yourPick') }}<span v-if="myPred?.isJoker" title="Joker" style="color: #f59e0b"> ★</span>
+          {{ t('match.yourPick') }}<span v-if="myPred?.isJoker" title="Joker" style="color: var(--ng-star)"> ★</span>
         </span>
         <ScoreInput v-if="canPredict" :home="myPred?.homeGoals ?? null" :away="myPred?.awayGoals ?? null" @update="savePrediction" />
         <span v-if="crowdEnabled" class="text-xs tabular-nums" style="color: var(--p-text-muted-color)" :title="t('prefs.crowd')">👥 <template v-if="crowdTotals[id]">{{ crowdTotals[id].home }}–{{ crowdTotals[id].away }} ({{ crowdTotals[id].count }})</template><template v-else>–</template></span>
@@ -343,7 +343,7 @@ function fmtDate(d: string) {
               <span v-if="detail.stadium" class="inline-flex items-center gap-1"><i class="pi pi-map-marker" /> {{ detail.stadium }}</span>
               <span v-if="detail.attendance" class="inline-flex items-center gap-1"><i class="pi pi-users" /> {{ detail.attendance.toLocaleString() }}</span>
               <span class="inline-flex items-center gap-1"><span class="inline-block w-2.5 h-3.5 rounded-sm" style="background: #eab308" />{{ detail.cards.home.yellow }}–{{ detail.cards.away.yellow }}</span>
-              <span v-if="detail.cards.home.red || detail.cards.away.red" class="inline-flex items-center gap-1"><span class="inline-block w-2.5 h-3.5 rounded-sm" style="background: #ef4444" />{{ detail.cards.home.red }}–{{ detail.cards.away.red }}</span>
+              <span v-if="detail.cards.home.red || detail.cards.away.red" class="inline-flex items-center gap-1"><span class="inline-block w-2.5 h-3.5 rounded-sm" style="background: var(--ng-danger)" />{{ detail.cards.home.red }}–{{ detail.cards.away.red }}</span>
             </div>
             <div v-if="insights.possession.home !== null" class="mb-4">
               <div class="flex justify-between text-xs mb-1" style="color: var(--p-text-muted-color)">

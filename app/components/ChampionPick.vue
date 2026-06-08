@@ -136,7 +136,7 @@ const isSaved = computed(() => !!data.value?.myPick && showcaseCode.value === da
           </component>
           <span v-else class="block text-sm leading-tight" style="color: var(--p-text-muted-color)">{{ t('champion.pick') }}</span>
           <!-- one reserved line: points / preview hint / invisible spacer - the card never resizes -->
-          <span v-if="isSaved && data.myPick?.awardedPoints > 0" class="text-xs block mt-0.5 font-bold" style="color: #22c55e">+{{ data.myPick.awardedPoints }} pts</span>
+          <span v-if="isSaved && data.myPick?.awardedPoints > 0" class="text-xs block mt-0.5 font-bold" style="color: var(--ng-success)">+{{ data.myPick.awardedPoints }} pts</span>
           <span
             v-else
             class="text-xs block mt-0.5"
