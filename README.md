@@ -80,7 +80,11 @@ pnpm install
 cp .env.example .env        # then fill in secrets
 pnpm db:migrate             # apply migrations
 pnpm dev                    # http://localhost:3000
-pnpm test:coverage          # unit tests (>=98% branch coverage enforced)
+pnpm typecheck              # strict vue-tsc gate
+pnpm test:coverage          # logic unit tests (>=98% branch coverage enforced)
+pnpm test:components        # component/composable tests (Nuxt runtime)
 pnpm e2e:smtp               # email-OTP end-to-end (needs mise run dev)
 pnpm badge                  # refresh the coverage badge from the last run
 ```
+
+`mise run check` runs the full gate (typecheck + coverage + component tests).
