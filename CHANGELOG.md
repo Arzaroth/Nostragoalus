@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-06-08
+
 ### Added
 - `pnpm typecheck` gate (strict vue-tsc) wired into the release gate and `mise run check` - the type-safety net that was configured but never run. Client types (MyPrediction/MatchListItem/LeaderboardRow) now derive from the server query return types (via a `Serialized<>` helper), so they can't drift from the schema.
 - Runtime request validation: a `defineValidatedHandler` wrapper (auth guard + Zod body parse + error mapping) on the prediction/joker/champion writes, making the OpenAPI schemas load-bearing (422 on bad input). Handler-level and auth-guard tests added.
@@ -16,7 +18,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 ### Changed
 - Dedup + structure: shared provider stage ladder (one ordered table - fixes the fifa/uefa divergence), shared `getJson` envelope in the FIFA provider, `predictionHits` scoring predicate, `rowFromPerspective` h2h decode, `AppStage` helpers (`isSingleMatchStage`/`countsDouble`), semantic colour tokens (`--ng-star`/`--ng-danger`/`--ng-success`).
 - Hardening: 2FA-delete hard-fails on a missing auth secret instead of decrypting against `''`; the encrypted-adapter no longer treats a corrupt sealed envelope as legacy plaintext; the scoring-config seed includes championBonus.
-
 
 ## [0.10.0] - 2026-06-08
 
