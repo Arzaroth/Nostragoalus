@@ -98,6 +98,13 @@ function taskTip(name: string, base: string) {
   return html
 }
 
+// Import/sync change fixtures, scores, brackets and standings - drop the cached
+// server datasets so a previously-loaded (e.g. empty) competition isn't served
+// stale from the vue-query cache.
+function invalidateServerData() {
+  void queryClient.invalidateQueries()
+}
+
 async function runImport() {
   syncBusy.value = 'import'
   try {
@@ -105,6 +112,7 @@ async function runImport() {
   } finally {
     syncBusy.value = ''
     void refreshTaskStatus()
+    invalidateServerData()
   }
 }
 async function runTask(task: string) {
@@ -114,6 +122,7 @@ async function runTask(task: string) {
   } finally {
     syncBusy.value = ''
     void refreshTaskStatus()
+    invalidateServerData()
   }
 }
 
