@@ -17,14 +17,14 @@ function fmtDate(d: string) {
     <div class="flex items-center justify-between gap-1">
       <span class="br-team" :class="{ win: match.winner === 'HOME' }">
         <img v-if="flagUrl(match.homeCode)" :src="flagUrl(match.homeCode) || ''" class="br-flag" alt="" ><i v-else class="pi pi-shield br-shield" />
-        <span class="truncate">{{ match.homeCode || match.homeTeam }}</span><b v-if="match.homeScore !== null" class="ml-1 tabular-nums">{{ match.homeScore }}</b>
+        <span class="truncate">{{ match.homeCode || match.homeTeam }}</span><b v-if="match.homeScore !== null" class="ml-1 tabular-nums">{{ match.homeScore }}<sup v-if="match.homePens !== null" class="br-pens">({{ match.homePens }})</sup></b>
       </span>
       <span class="br-team justify-end" :class="{ win: match.winner === 'AWAY' }">
-        <b v-if="match.awayScore !== null" class="mr-1 tabular-nums">{{ match.awayScore }}</b><span class="truncate">{{ match.awayCode || match.awayTeam }}</span>
+        <b v-if="match.awayScore !== null" class="mr-1 tabular-nums"><sup v-if="match.awayPens !== null" class="br-pens">({{ match.awayPens }})</sup>{{ match.awayScore }}</b><span class="truncate">{{ match.awayCode || match.awayTeam }}</span>
         <img v-if="flagUrl(match.awayCode)" :src="flagUrl(match.awayCode) || ''" class="br-flag" alt="" ><i v-else class="pi pi-shield br-shield" />
       </span>
     </div>
-    <div class="br-date">{{ fmtDate(match.kickoffTime) }}</div>
+    <div v-if="match.kickoffTime" class="br-date">{{ fmtDate(match.kickoffTime) }}</div>
   </component>
 </template>
 
@@ -58,6 +58,12 @@ a.br-card:hover {
   border-radius: 2px;
   object-fit: cover;
   flex-shrink: 0;
+}
+.br-pens {
+  font-size: 0.6em;
+  font-weight: 600;
+  opacity: 0.75;
+  margin: 0 1px;
 }
 .br-shield {
   font-size: 0.65rem;

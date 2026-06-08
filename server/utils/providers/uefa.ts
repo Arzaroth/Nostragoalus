@@ -495,6 +495,8 @@ export function uefaProvider(options: UefaOptions): MatchDataProvider {
         m.winner === 'HOME' ? m.homeTeam.code : m.winner === 'AWAY' ? m.awayTeam.code : null
       const toBracketMatch = (m: NormalizedMatch) => ({
         providerMatchId: m.providerMatchId,
+        status: m.status,
+        kickoffTime: m.kickoffTime,
         homeTeam: m.homeTeam.name,
         homeCode: m.homeTeam.code,
         awayTeam: m.awayTeam.name,
