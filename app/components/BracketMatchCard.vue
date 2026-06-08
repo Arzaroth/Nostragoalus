@@ -73,5 +73,6 @@ a.br-card:hover {
   margin-top: 0.15rem;
   font-size: 0.58rem;
   color: var(--p-text-muted-color);
+  text-align: center;
 }
 </style>
