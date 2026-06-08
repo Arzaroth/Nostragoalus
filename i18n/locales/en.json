@@ -180,7 +180,9 @@
     "joker": "Joker",
     "makeJoker": "Set ×2 joker",
     "jokerError": "Couldn't move the joker - a match may have already started.",
-    "crowd": "everyone"
+    "crowd": "everyone",
+    "finalDouble": "Final counts double",
+    "finalDoubleHint": "Every prediction on the final earns double points - no joker needed."
   },
   "champion": {
     "title": "Your champion",

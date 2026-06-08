@@ -47,7 +47,7 @@ function medal(rank: number) {
         </div>
         <Avatar :image="r.image || '/brand/avatar.svg'" shape="circle" class="shrink-0 overflow-hidden" />
         <div class="flex-1 min-w-0">
-          <div class="font-semibold truncate flex items-center gap-1.5">
+          <div class="font-semibold truncate flex items-center gap-2.5">
             <span class="truncate">{{ r.displayName }}</span>
             <span v-if="r.championCode && flagUrl(r.championCode)" class="relative shrink-0 inline-flex" :title="`${t('champion.title')}: ${r.championCode}`">
               <img :src="flagUrl(r.championCode) || ''" class="w-4 h-4 rounded object-cover" alt="" >

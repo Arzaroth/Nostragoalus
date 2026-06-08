@@ -87,6 +87,7 @@ const predictionView = {
   awayTeamCode: match.awayTeamCode,
   kickoffTime: match.kickoffTime,
   status: match.status,
+  stage: match.stage,
   fullTimeHome: match.fullTimeHome,
   fullTimeAway: match.fullTimeAway,
   roundLabel: round.label,
@@ -128,6 +129,10 @@ export async function setJoker(db: AppDatabase, input: SetJokerInput, now: Date 
   const rows = await db.select().from(match).where(eq(match.id, input.matchId)).limit(1)
   if (rows.length === 0) throw new NotFoundError('match not found')
   if (now >= rows[0].kickoffTime) throw new LockedError()
+  // Single-match rounds have no joker choice - the final doubles for everyone.
+  if (rows[0].stage === 'FINAL' || rows[0].stage === 'THIRD_PLACE') {
+    throw new ValidationError('no joker on single-match rounds')
+  }
 
   const preds = await db
     .select()

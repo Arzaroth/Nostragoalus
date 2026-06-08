@@ -219,3 +219,14 @@ describe('getMatchCrowdTotal', () => {
     await client.close()
   })
 })
+
+it('setJoker is rejected on single-match rounds (final, third place)', async () => {
+  const { db, client } = await createTestDb()
+  const competitionId = await seedCompetition(db)
+  const finalRound = (await findRoundId(db, competitionId, 'FINAL', null)) as string
+  const m = await makeMatch(db, { competitionId, roundId: finalRound, stage: 'FINAL', kickoffTime: new Date('2026-07-19T16:00:00Z') })
+  const u = await makeUser(db, 'jk', 'JK')
+  await makePrediction(db, { userId: u, matchId: m, roundId: finalRound, home: 1, away: 0 })
+  await expect(setJoker(db, { userId: u, matchId: m, isJoker: true }, new Date('2026-07-01T00:00:00Z'))).rejects.toThrow('single-match')
+  await client.close()
+})

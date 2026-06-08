@@ -140,3 +140,20 @@ describe('scorePredictions - joker', () => {
     expect(score.totalPoints).toBe(5)
   })
 })
+
+it('forceJoker doubles everyone on the final, joker or not', async () => {
+  const { scorePredictions } = await import('./engine')
+  const rules = { ptsExact: 3, ptsDiff: 2, ptsOutcome: 1, ptsMiss: 0, jokerMultiplier: 2, jokerAppliesToBonus: true, bonusSource: 'NONE' as const, crowdTiers: [], crowdMinDenominator: 5, oddsTiers: null }
+  const scores = scorePredictions({
+    actual: { home: 2, away: 1 },
+    rules,
+    forceJoker: true,
+    predictions: [
+      { id: 'a', home: 2, away: 1, isJoker: false },
+      { id: 'b', home: 1, away: 0, isJoker: false },
+    ],
+  })
+  expect(scores.find((s) => s.id === 'a')!.totalPoints).toBe(6) // exact x2
+  expect(scores.find((s) => s.id === 'b')!.totalPoints).toBe(4) // gd x2
+  expect(scores[0].jokerMultiplier).toBe(2)
+})

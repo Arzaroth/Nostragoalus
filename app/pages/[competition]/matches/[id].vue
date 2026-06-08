@@ -334,23 +334,10 @@ function fmtDate(d: string) {
         </TabList>
         <TabPanels>
           <TabPanel v-if="hasStats || detailStatus === 'pending'" value="stats">
-            <!-- skeletons while the upstream-backed detail loads -->
-            <div v-if="detailStatus === 'pending' && !detail" class="flex flex-col gap-4">
-              <div class="flex justify-center gap-4">
-                <Skeleton width="8rem" height="1rem" />
-                <Skeleton width="5rem" height="1rem" />
-              </div>
-              <div>
-                <div class="flex justify-between mb-1"><Skeleton width="2.5rem" height="0.9rem" /><Skeleton width="5rem" height="0.9rem" /><Skeleton width="2.5rem" height="0.9rem" /></div>
-                <Skeleton width="100%" height="0.55rem" border-radius="999px" />
-              </div>
-              <div class="flex flex-col gap-2">
-                <div v-for="i in 8" :key="i" class="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-                  <Skeleton width="2.5rem" height="0.9rem" class="justify-self-end" />
-                  <Skeleton :width="`${5 + (i % 3)}rem`" height="0.9rem" />
-                  <Skeleton width="2.5rem" height="0.9rem" />
-                </div>
-              </div>
+            <!-- venue-line skeleton while the upstream-backed detail loads -->
+            <div v-if="detailStatus === 'pending' && !detail" class="flex justify-center gap-4 mb-4">
+              <Skeleton width="8rem" height="1rem" />
+              <Skeleton width="5rem" height="1rem" />
             </div>
             <div v-if="detail" class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs mb-4" style="color: var(--p-text-muted-color)">
               <span v-if="detail.stadium" class="inline-flex items-center gap-1"><i class="pi pi-map-marker" /> {{ detail.stadium }}</span>
@@ -367,6 +354,14 @@ function fmtDate(d: string) {
               <div class="flex h-2 rounded overflow-hidden">
                 <div :style="`width:${insights.possession.home}%; background: var(--p-primary-color)`" />
                 <div :style="`width:${insights.possession.away}%; background: var(--p-content-border-color)`" />
+              </div>
+            </div>
+            <!-- stat rows skeleton below the (already-loaded) possession bar -->
+            <div v-if="detailStatus === 'pending' && !detail" class="flex flex-col gap-2">
+              <div v-for="i in 8" :key="i" class="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                <Skeleton width="2.5rem" height="0.9rem" class="justify-self-end" />
+                <Skeleton :width="`${5 + (i % 3)}rem`" height="0.9rem" class="justify-self-center" />
+                <Skeleton width="2.5rem" height="0.9rem" />
               </div>
             </div>
             <div v-if="statRows.length" class="flex flex-col text-sm mb-4">

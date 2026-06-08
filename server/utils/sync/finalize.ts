@@ -42,6 +42,7 @@ export async function scoreMatchRow(
     actual: { home: m.fullTimeHome, away: m.fullTimeAway },
     rules,
     predictions: locked.map((p) => ({ id: p.id, home: p.homeGoals, away: p.awayGoals, isJoker: p.isJoker })),
+    forceJoker: m.stage === 'FINAL',
   })
   const scoreById = new Map(scores.map((s) => [s.id, s]))
 

@@ -25,7 +25,7 @@ function isLocked(p: MyPrediction) {
       <div class="flex items-center justify-between text-xs mb-2" style="color: var(--p-text-muted-color)">
         <span>{{ p.roundLabel }} · {{ fmt(p.kickoffTime) }}</span>
         <button
-          v-if="editable && !isLocked(p)"
+          v-if="editable && !isLocked(p) && p.stage !== 'FINAL' && p.stage !== 'THIRD_PLACE'"
           type="button"
           class="font-semibold flex items-center gap-1 transition hover:opacity-80"
           :style="`color:${p.isJoker ? '#f59e0b' : 'var(--p-text-muted-color)'}`"
@@ -33,6 +33,7 @@ function isLocked(p: MyPrediction) {
         >
           <i :class="p.isJoker ? 'pi pi-star-fill' : 'pi pi-star'" />{{ p.isJoker ? t('predictions.joker') : t('predictions.makeJoker') }}
         </button>
+        <span v-else-if="p.stage === 'FINAL'" class="font-semibold" style="color: #f59e0b" :title="t('predictions.finalDoubleHint')">★ {{ t('predictions.finalDouble') }}</span>
         <span v-else-if="p.isJoker" class="font-semibold" style="color: #f59e0b">★ {{ t('predictions.joker') }}</span>
       </div>
 

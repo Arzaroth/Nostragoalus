@@ -25,6 +25,9 @@ export interface ScoreMatchInput {
   predictions: PredictionInput[]
   rules: ScoringRules
   actualOutcomeOdds?: number | null
+  // Single-match rounds (the final): the multiplier applies to everyone -
+  // there is no joker to place when there is only one match to place it on.
+  forceJoker?: boolean
 }
 
 interface Histogram {
@@ -74,7 +77,7 @@ function scoreOne(input: ScoreMatchInput, hist: Histogram, p: PredictionInput): 
     input.actualOutcomeOdds ?? null,
   )
 
-  const multiplier = p.isJoker ? input.rules.jokerMultiplier : 1
+  const multiplier = p.isJoker || input.forceJoker ? input.rules.jokerMultiplier : 1
   const scalable = input.rules.jokerAppliesToBonus ? basePoints + bonus : basePoints
   const fixed = input.rules.jokerAppliesToBonus ? 0 : bonus
   const totalPoints = Math.round(scalable * multiplier + fixed)

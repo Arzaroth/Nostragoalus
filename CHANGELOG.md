@@ -6,6 +6,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 ## [Unreleased]
 
 ### Added
+- Champion picks visible at a glance: crowned flag beside each name on the ranking and on player pages; player pages gained a competition switcher and a Global scope.
+- Landing showcase is a carousel (circular, autoplay) and the map screenshot now actually shows the map.
+
+### Changed
+- Single-match rounds have no joker: the final automatically counts double for everyone (badge says so), the third-place play-off scores normally; placing a joker there is rejected server-side.
+
+### Fixed
+- Stats skeleton no longer fights the already-loaded possession bar (possession sits above the skeleton, which lost its fake bar).
+
+### Added
 - Landing showcase: six real screenshots (fixtures with crowd totals, match depth, ranking, bracket, map, team page) over a seeded league of two dozen demo oracles; mise tasks seed-demo and shots regenerate everything with headless Firefox.
 
 ## [0.9.0] - 2026-06-08

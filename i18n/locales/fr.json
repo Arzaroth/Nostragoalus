@@ -180,7 +180,9 @@
     "joker": "Joker",
     "makeJoker": "Définir joker ×2",
     "jokerError": "Impossible de déplacer le joker - un match a peut-être déjà commencé.",
-    "crowd": "le groupe"
+    "crowd": "le groupe",
+    "finalDouble": "La finale compte double",
+    "finalDoubleHint": "Chaque prono sur la finale rapporte le double - pas besoin de joker."
   },
   "champion": {
     "title": "Votre vainqueur",
