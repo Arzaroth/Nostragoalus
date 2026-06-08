@@ -159,6 +159,19 @@ export async function setJoker(db: AppDatabase, input: SetJokerInput, now: Date 
   await db.update(prediction).set({ isJoker: input.isJoker }).where(eq(prediction.id, preds[0].id))
 }
 
+// Combined totals of one match's predictions (for live pushes after a save).
+export async function getMatchCrowdTotal(db: AppDatabase, matchId: string) {
+  const rows = await db
+    .select({
+      home: sql<number>`coalesce(sum(${prediction.homeGoals}), 0)`.mapWith(Number),
+      away: sql<number>`coalesce(sum(${prediction.awayGoals}), 0)`.mapWith(Number),
+      count: sql<number>`count(*)`.mapWith(Number),
+    })
+    .from(prediction)
+    .where(eq(prediction.matchId, matchId))
+  return rows[0] ?? { home: 0, away: 0, count: 0 }
+}
+
 // Combined totals of everyone's predictions per match (1-1 + 2-1 + 4-0 = 7-2).
 export async function getCrowdTotals(db: AppDatabase, competitionId: string) {
   const rows = await db

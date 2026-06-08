@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const { t } = useI18n()
-const { totals: crowdTotals } = useCrowdTotals()
+const { enabled: crowdEnabled, totals: crowdTotals } = useCrowdTotals()
 const slug = useSelectedCompetition()
 defineProps<{ predictions: MyPrediction[]; editable?: boolean }>()
 const emit = defineEmits<{ toggleJoker: [p: MyPrediction]; updateScore: [payload: { p: MyPrediction; home: number; away: number }] }>()
@@ -46,7 +46,7 @@ function isLocked(p: MyPrediction) {
           <!-- Open matches stay editable right from My Picks. -->
           <div v-if="editable && !isLocked(p)" @click.stop.prevent>
             <ScoreInput :home="p.homeGoals" :away="p.awayGoals" @update="(v) => emit('updateScore', { p, home: v.home, away: v.away })" />
-            <div v-if="crowdTotals[p.matchId]" class="text-xs tabular-nums mt-1" style="color: var(--p-text-muted-color)" :title="t('prefs.crowd')">👥 {{ crowdTotals[p.matchId].home }}–{{ crowdTotals[p.matchId].away }}</div>
+            <div v-if="crowdEnabled" class="text-xs tabular-nums mt-1" style="color: var(--p-text-muted-color)" :title="t('prefs.crowd')">👥 <template v-if="crowdTotals[p.matchId]">{{ crowdTotals[p.matchId].home }}–{{ crowdTotals[p.matchId].away }}</template><template v-else>–</template></div>
           </div>
           <template v-else>
             <div class="font-bold tabular-nums text-lg">{{ p.homeGoals }}–{{ p.awayGoals }}</div>

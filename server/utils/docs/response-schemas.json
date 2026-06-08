@@ -357,11 +357,55 @@
           "properties": {
             "home": {
               "type": "array",
-              "items": {}
+              "items": {
+                "type": "object",
+                "properties": {
+                  "matchId": {
+                    "type": "string"
+                  },
+                  "opponent": {
+                    "type": "string"
+                  },
+                  "opponentCode": {
+                    "type": "string"
+                  },
+                  "kickoffTime": {
+                    "type": "string"
+                  },
+                  "result": {
+                    "type": "string"
+                  },
+                  "score": {
+                    "type": "string"
+                  }
+                }
+              }
             },
             "away": {
               "type": "array",
-              "items": {}
+              "items": {
+                "type": "object",
+                "properties": {
+                  "matchId": {
+                    "type": "string"
+                  },
+                  "opponent": {
+                    "type": "string"
+                  },
+                  "opponentCode": {
+                    "type": "string"
+                  },
+                  "kickoffTime": {
+                    "type": "string"
+                  },
+                  "result": {
+                    "type": "string"
+                  },
+                  "score": {
+                    "type": "string"
+                  }
+                }
+              }
             }
           }
         },
@@ -409,6 +453,81 @@
               }
             }
           }
+        },
+        "h2hAll": {
+          "type": "object",
+          "properties": {
+            "wins": {
+              "type": "integer"
+            },
+            "draws": {
+              "type": "integer"
+            },
+            "losses": {
+              "type": "integer"
+            },
+            "goalsFor": {
+              "type": "integer"
+            },
+            "goalsAgainst": {
+              "type": "integer"
+            },
+            "meetings": {
+              "type": "array",
+              "items": {}
+            }
+          }
+        },
+        "formAll": {
+          "type": "object",
+          "properties": {
+            "home": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "result": {
+                    "type": "string"
+                  },
+                  "opponent": {
+                    "type": "string"
+                  },
+                  "score": {
+                    "type": "string"
+                  },
+                  "date": {
+                    "type": "string"
+                  },
+                  "competition": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "away": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "result": {
+                    "type": "string"
+                  },
+                  "opponent": {
+                    "type": "string"
+                  },
+                  "score": {
+                    "type": "string"
+                  },
+                  "date": {
+                    "type": "string"
+                  },
+                  "competition": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -446,8 +565,26 @@
         ]
       },
       "next": {
-        "home": [],
-        "away": []
+        "home": [
+          {
+            "matchId": "94de5872-d4af-4045-bcf2-bafa0aa4b272",
+            "opponent": "Senegal",
+            "opponentCode": "SEN",
+            "kickoffTime": "2022-11-25T13:00:00.000Z",
+            "result": "L",
+            "score": "1–3"
+          }
+        ],
+        "away": [
+          {
+            "matchId": "306d4ed1-588d-4b32-b9bf-e991118b3406",
+            "opponent": "Netherlands",
+            "opponentCode": "NED",
+            "kickoffTime": "2022-11-25T16:00:00.000Z",
+            "result": "D",
+            "score": "1–1"
+          }
+        ]
       },
       "headToHead": [],
       "possession": {
@@ -464,7 +601,35 @@
           "ownGoal": false,
           "assistPlayerName": null
         }
-      ]
+      ],
+      "h2hAll": {
+        "wins": 0,
+        "draws": 0,
+        "losses": 0,
+        "goalsFor": 0,
+        "goalsAgainst": 0,
+        "meetings": []
+      },
+      "formAll": {
+        "home": [
+          {
+            "result": "D",
+            "opponent": "Chile",
+            "score": "2–2",
+            "date": "2022-09-27T17:00:00Z",
+            "competition": "Friendlies"
+          }
+        ],
+        "away": [
+          {
+            "result": "D",
+            "opponent": "Iraq",
+            "score": "0–0",
+            "date": "2022-11-12T17:30:00Z",
+            "competition": "Friendlies"
+          }
+        ]
+      }
     }
   },
   "/api/matches/{id}/live-detail": {
@@ -1011,10 +1176,12 @@
                           "type": "integer"
                         },
                         "homePens": {
-                          "type": "integer"
+                          "type": "string",
+                          "nullable": true
                         },
                         "awayPens": {
-                          "type": "integer"
+                          "type": "string",
+                          "nullable": true
                         },
                         "winner": {
                           "type": "string"
@@ -1050,19 +1217,19 @@
             "sequence": 2,
             "matches": [
               {
-                "providerMatchId": "400128131",
-                "homeTeam": "Argentina",
-                "homeCode": "ARG",
-                "awayTeam": "Australia",
-                "awayCode": "AUS",
-                "homeScore": 2,
+                "providerMatchId": "400128136",
+                "homeTeam": "Netherlands",
+                "homeCode": "NED",
+                "awayTeam": "United States",
+                "awayCode": "USA",
+                "homeScore": 3,
                 "awayScore": 1,
-                "homePens": 0,
-                "awayPens": 0,
+                "homePens": null,
+                "awayPens": null,
                 "winner": "HOME",
                 "status": "FINISHED",
-                "kickoffTime": "2022-12-03T19:00:00Z",
-                "id": "50db850e-6d42-43c8-9577-a66bfff62081"
+                "kickoffTime": "2022-12-03T15:00:00Z",
+                "id": "b6653777-09e6-4eb2-89f2-3cc37deaa785"
               }
             ]
           }
@@ -1565,6 +1732,20 @@
     },
     "example": {
       "trusted": false
+    }
+  },
+  "/api/predictions/crowd": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "totals": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    },
+    "example": {
+      "totals": {}
     }
   },
   "/api/users/{id}/predictions": {

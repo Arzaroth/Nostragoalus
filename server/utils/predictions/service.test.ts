@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm'
 import { createTestDb } from '../../../tests/db'
 import { findRoundId } from '../sync/rounds'
 import { makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
-import { getCrowdTotals, getMyPredictions, getMyStats, getUserPublicPredictions, setJoker, upsertPrediction } from './service'
+import { getCrowdTotals, getMatchCrowdTotal, getMyPredictions, getMyStats, getUserPublicPredictions, setJoker, upsertPrediction } from './service'
 import { prediction } from '../../../db/schema'
 import { LockedError, NotFoundError, ValidationError } from '../errors'
 
@@ -202,6 +202,20 @@ describe('getCrowdTotals', () => {
     const totals = await getCrowdTotals(db, competitionId)
     expect(totals[m]).toEqual({ home: 7, away: 2, count: 3 })
     expect(totals[m2]).toBeUndefined()
+    await client.close()
+  })
+})
+
+describe('getMatchCrowdTotal', () => {
+  it('sums one match and returns zeros when nobody predicted', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const roundId = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: new Date('2026-06-15T16:00:00Z') })
+    expect(await getMatchCrowdTotal(db, m)).toEqual({ home: 0, away: 0, count: 0 })
+    const u = await makeUser(db, 'cx', 'CX')
+    await makePrediction(db, { userId: u, matchId: m, roundId, home: 3, away: 2 })
+    expect(await getMatchCrowdTotal(db, m)).toEqual({ home: 3, away: 2, count: 1 })
     await client.close()
   })
 })

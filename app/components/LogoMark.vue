@@ -1,8 +1,8 @@
 <script setup lang="ts">
 // The crystal ball + pedestal extracted from the emblem (no cosmic disc),
-// inlined so the ball's SECTIONS light up on hover, GitLab-fox style: the
-// five outer panels of the star-constellation football and its core fill in
-// sequence, like a paint bucket passing through.
+// inlined so each SECTION of the ball glows gold when hovered individually
+// (GitLab-fox style): the five panels, the core pentagon, and the outer ring
+// of the orb around the constellation.
 </script>
 
 <template>
@@ -27,6 +27,12 @@
     <!-- The football's sections: five outer panels + the core pentagon.
          Transparent by default; they fill gold one after another on hover. -->
     <g class="lm-sections" fill="#f4d488">
+      <!-- the orb's outer ring: the disc minus the constellation pentagon -->
+      <path
+        class="sec sec-ring"
+        fill-rule="evenodd"
+        d="M340 170 A105 105 0 1 0 340.01 170 Z M340 197 L414.2 250.9 L385.8 338.1 L294.2 338.1 L265.8 250.9 Z"
+      />
       <polygon class="sec sec-1" points="340,197 414.2,250.9 376.1,263.3 340,237" />
       <polygon class="sec sec-2" points="414.2,250.9 385.8,338.1 362.3,305.7 376.1,263.3" />
       <polygon class="sec sec-3" points="385.8,338.1 294.2,338.1 317.7,305.7 362.3,305.7" />
@@ -81,16 +87,22 @@
 <style>
 .logo-mark .sec {
   opacity: 0;
-  transition: opacity 0.25s ease;
+  transition: opacity 0.3s ease;
+  pointer-events: visible; /* hover works even while transparent */
 }
-/* the panels fill one after another, like a paint bucket making its round */
-.logo-home:hover .sec {
-  opacity: 0.55;
+/* each section glows when YOU touch it, paint-bucket style */
+.logo-mark .sec:hover {
+  opacity: 0.6;
+  transition-duration: 0.12s;
 }
-.logo-home:hover .sec-1 { transition-delay: 0s; }
-.logo-home:hover .sec-2 { transition-delay: 0.09s; }
-.logo-home:hover .sec-3 { transition-delay: 0.18s; }
-.logo-home:hover .sec-4 { transition-delay: 0.27s; }
-.logo-home:hover .sec-5 { transition-delay: 0.36s; }
-.logo-home:hover .sec-core { opacity: 0.8; transition-delay: 0.48s; }
+.logo-mark .sec-core:hover {
+  opacity: 0.85;
+}
+.logo-mark .sec-ring:hover {
+  opacity: 0.3; /* the big ring stays subtle so it doesn't swallow the orb */
+}
+/* the decorative layers above the sections must not steal the hover */
+.logo-mark .lm-sections ~ g {
+  pointer-events: none;
+}
 </style>

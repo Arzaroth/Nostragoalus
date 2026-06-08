@@ -1,5 +1,6 @@
 import { db } from '../../../db'
-import { upsertPrediction } from '../../utils/predictions/service'
+import { getMatchCrowdTotal, upsertPrediction } from '../../utils/predictions/service'
+import { publishCrowdUpdate } from '../../utils/live/hub'
 import { requireUser } from '../../utils/auth-guards'
 import { toHttpError } from '../../utils/http'
 
@@ -13,6 +14,9 @@ export default defineEventHandler(async (event) => {
       home: Number(body?.home),
       away: Number(body?.away),
     })
+    // live crowd totals for everyone with the preference on
+    const matchId = String(body?.matchId)
+    publishCrowdUpdate(matchId, await getMatchCrowdTotal(db, matchId))
     return { id }
   } catch (error) {
     throw toHttpError(error)

@@ -31,6 +31,17 @@ const liveColumns = {
   kickoffTime: match.kickoffTime,
 }
 
+// A prediction changed: broadcast the new crowd totals for that match to every
+// connected client (the client ignores it unless the preference is on).
+export function publishCrowdUpdate(matchId: string, totals: { home: number; away: number; count: number }): number {
+  let delivered = 0
+  for (const sub of subscribers) {
+    sub.send({ type: 'crowd:update', matchId, totals })
+    delivered += 1
+  }
+  return delivered
+}
+
 // Push the current state of the given matches to every subscriber watching them.
 export async function publishMatchUpdates(db: AppDatabase, matchIds: string[]): Promise<number> {
   if (matchIds.length === 0 || subscribers.size === 0) return 0

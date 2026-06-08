@@ -73,6 +73,7 @@ const TARGETS = {
   '/api/champion': `/api/champion?competition=${comp}`,
   '/api/me/stats': `/api/me/stats?competition=${comp}`,
   '/api/me/trust-status': '/api/me/trust-status',
+  '/api/predictions/crowd': `/api/predictions/crowd?competition=${comp}`,
   '/api/users/{id}/predictions': `/api/users/${userId}/predictions?competition=${comp}`,
 }
 

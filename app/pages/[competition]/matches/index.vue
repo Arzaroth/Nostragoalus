@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const { t } = useI18n()
-const { totals: crowdTotals } = useCrowdTotals()
+const { enabled: crowdEnabled, totals: crowdTotals } = useCrowdTotals()
 const slug = useSelectedCompetition()
 const { data: matches, isLoading } = useMatches()
 const { data: predictions } = useMyPredictions()
@@ -97,8 +97,9 @@ function fmtTime(d: string) {
                 :disabled="m.isLocked || !m.homeTeamCode || !m.awayTeamCode"
                 @update="(v) => save(m.id, v)"
               />
-              <div v-if="crowdTotals[m.id]" class="text-xs tabular-nums" style="color: var(--p-text-muted-color)" :title="t('prefs.crowd')">
-                👥 {{ t('predictions.crowd') }}: {{ crowdTotals[m.id].home }}–{{ crowdTotals[m.id].away }} ({{ crowdTotals[m.id].count }})
+              <!-- Reserved whenever the preference is on, so cards never resize. -->
+              <div v-if="crowdEnabled" class="text-xs tabular-nums" style="color: var(--p-text-muted-color)" :title="t('prefs.crowd')">
+                👥 {{ t('predictions.crowd') }}: <template v-if="crowdTotals[m.id]">{{ crowdTotals[m.id].home }}–{{ crowdTotals[m.id].away }} ({{ crowdTotals[m.id].count }})</template><template v-else>–</template>
               </div>
               <!-- Always rendered on open matches (disabled until a pick exists) so saving never resizes the card. -->
               <div v-if="!m.isLocked || predByMatch[m.id]" class="flex items-center gap-3">

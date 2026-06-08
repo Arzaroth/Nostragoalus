@@ -42,3 +42,14 @@ describe('live hub', () => {
     await client.close()
   })
 })
+
+it('publishCrowdUpdate broadcasts to every subscriber regardless of match subscriptions', async () => {
+  const { addLiveSubscriber, removeLiveSubscriber, publishCrowdUpdate } = await import('./hub')
+  const got: unknown[] = []
+  const sub = { matchIds: new Set<string>(), send: (p: unknown) => got.push(p) }
+  addLiveSubscriber(sub)
+  const delivered = publishCrowdUpdate('m1', { home: 7, away: 2, count: 3 })
+  removeLiveSubscriber(sub)
+  expect(delivered).toBeGreaterThanOrEqual(1)
+  expect(got.at(-1)).toEqual({ type: 'crowd:update', matchId: 'm1', totals: { home: 7, away: 2, count: 3 } })
+})

@@ -23,11 +23,13 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
 ## Features
 
 - Score predictions with closeness-tiered points, a rarity bonus, and one ×2 **joker** per round
+- Optional **crowd totals** under every prediction (everyone's picks combined), updated live over WebSocket
 - **Champion pick** bonus, locked at the first kickoff
 - Per-competition **and global** rankings with movement arrows; browse other players' (locked) predictions
-- Live scores over WebSocket; match view with possession, per-team match stats, goal timeline with
-  cards (incl. touchline bookings) and substitutions, head-to-head tally, penalty shootouts,
-  and each team's top scorer / top assister
+- Live scores over WebSocket with a pixel-art **goal celebration**; match view with possession,
+  per-team match stats, goal timeline with cards (incl. touchline bookings) and substitutions,
+  **all-time head-to-head** and cross-competition form (friendlies included, causally cut off at
+  kickoff), penalty shootouts, and each team's top scorer / top assister
 - Per-team pages: official squads with positions, manager, season stats, competition switcher
 - Knockout **bracket** and an interactive **world map** (Leaflet / OpenStreetMap)
 - Auth: email + password (HIBP-checked), **2FA** (TOTP, email codes, single-use backup codes,

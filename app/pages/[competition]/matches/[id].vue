@@ -40,7 +40,7 @@ const detail = computed(() => detailData.value?.detail)
 
 const m = computed(() => data.value?.match)
 const { live } = useLiveMatch(id)
-const { totals: crowdTotals } = useCrowdTotals()
+const { enabled: crowdEnabled, totals: crowdTotals } = useCrowdTotals()
 
 // A live score increase = somebody scored: run the pixel celebration.
 const celebrating = ref(false)
@@ -314,7 +314,7 @@ function fmtDate(d: string) {
           {{ t('match.yourPick') }}<span v-if="myPred?.isJoker" title="Joker" style="color: #f59e0b"> ★</span>
         </span>
         <ScoreInput v-if="canPredict" :home="myPred?.homeGoals ?? null" :away="myPred?.awayGoals ?? null" @update="savePrediction" />
-        <span v-if="crowdTotals[id]" class="text-xs tabular-nums" style="color: var(--p-text-muted-color)" :title="t('prefs.crowd')">👥 {{ crowdTotals[id].home }}–{{ crowdTotals[id].away }} ({{ crowdTotals[id].count }})</span>
+        <span v-if="crowdEnabled" class="text-xs tabular-nums" style="color: var(--p-text-muted-color)" :title="t('prefs.crowd')">👥 <template v-if="crowdTotals[id]">{{ crowdTotals[id].home }}–{{ crowdTotals[id].away }} ({{ crowdTotals[id].count }})</template><template v-else>–</template></span>
         <template v-else-if="myPred">
           <span class="font-bold tabular-nums">{{ myPred.homeGoals }}–{{ myPred.awayGoals }}</span>
           <span v-if="myPred.totalPoints !== null" class="text-xs font-semibold" style="color: var(--p-primary-color)">+{{ myPred.totalPoints }} pts · {{ tierLabel(myPred.baseTier) }}</span>
