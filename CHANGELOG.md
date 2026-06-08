@@ -5,9 +5,27 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-06-08
+
 ### Added
-- Form shows each team's last five results across ALL international football (friendlies and qualifiers included), with competition and date; Next lists the team's competition games after the viewed match, carrying results for games played since.
 - All-time head-to-head on the match view, sourced from FIFA's full international calendar (World Cups, qualifiers, continental championships, friendlies - back to 1908 where FIFA has it). Works before kickoff, so it doubles as a prediction tool. Tally + goals line + meeting list, linked to our match pages where we hold the fixture.
+- Form shows each team's last five results across ALL international football (friendlies and qualifiers included), with competition and date.
+- Next lists the team's competition games after the viewed match - results shown form-style for games played since.
+- Live-goal celebration: when a live match's score increases, a pixel-art first-person goal animation takes over for three seconds (contributed artwork; reduced-motion respected).
+- Match-page dates include the year (head-to-head reaches back decades).
+
+### Changed
+- Head-to-head, Form and the in-house meeting list all cut off at the viewed match's kickoff - the future never dictates the past.
+- The head-to-head tab is always visible; pairs with no recorded meeting get a "first meeting" note instead of a silently missing tab.
+- All commit history rewritten to the Arzaroth identity.
+
+### Fixed
+- Knockout brackets aligned feeder matches under the wrong parents (FIFA lists knockout matches arbitrarily; Morocco and Brazil sat on the wrong sides). A shared ordering pass now walks down from the final for every provider.
+- Bracket cards showed (0) penalty scores on matches decided in regulation; pens render as superscripts only for real shootouts.
+- The final is pinned to the semis' midline; connector lines merge mid-gap and lead straight into the next fixture; dates centered on every card.
+- Euro bracket cards showed "Invalid Date" (UEFA bracket matches lacked kickoff times).
+- Match players tab lists contributors only instead of full 26-man rosters of zeros.
+- About: Motion's own mark replaces the Framer design-tool logo; official favicons for Nuxt I18n, node-postgres, Nodemailer, maildev.
 
 ## [0.7.1] - 2026-06-08
 
