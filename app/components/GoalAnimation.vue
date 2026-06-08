@@ -1,12 +1,17 @@
 <script setup lang="ts">
 // Pixel-art first-person goal, contributed art. One loop is 3s; the parent
 // decides when to show/hide. Honors reduced-motion by simply not animating.
+// The art is per-pixel canvas rasterization - motion-v animates DOM/CSS, so
+// VueUse drives the frame loop and the rest stays hand-painted.
 const canvas = ref<HTMLCanvasElement | null>(null)
-let raf = 0
+const reducedMotion = usePreferredReducedMotion()
+
+let render: ((t: number) => void) | null = null
+const { resume } = useRafFn(({ timestamp }) => render?.(timestamp), { immediate: false })
 
 onMounted(() => {
   const c = canvas.value
-  if (!c || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+  if (!c || reducedMotion.value === 'reduce') return
   const x = c.getContext('2d')!
   x.imageSmoothingEnabled = false
   const W = 200
@@ -112,7 +117,7 @@ onMounted(() => {
     }
     if (r >= 2) px(cx - Math.ceil(r / 2), cy - Math.ceil(r / 2), 1, 1, '#ffffff')
   }
-  function draw(t: number) {
+  render = (t: number) => {
     const tc = t % 3000
     const flashA = tc >= 2100 && tc < 2360 ? (1 - (tc - 2100) / 260) * 0.6 : 0
     scene(t, flashA)
@@ -163,11 +168,9 @@ onMounted(() => {
       }
       x.globalAlpha = 1
     }
-    raf = requestAnimationFrame(draw)
   }
-  raf = requestAnimationFrame(draw)
+  resume()
 })
-onBeforeUnmount(() => cancelAnimationFrame(raf))
 </script>
 
 <template>
