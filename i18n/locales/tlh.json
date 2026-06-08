@@ -202,7 +202,8 @@
     "bookings": "Deghmey",
     "toggleSubs": "tammey cha' pagh So'",
     "toggleBookings": "Deghmey cha' pagh So'",
-    "draws": "raghmey"
+    "draws": "raghmey",
+    "h2hNone": "not ghom cha' ghommeyvam - wa'DIch 'oH."
   },
   "auth": {
     "signIn": "yI'el",

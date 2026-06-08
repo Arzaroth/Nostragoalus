@@ -276,7 +276,7 @@ function fmtDate(d: string) {
           <Tab v-if="insights.standings" value="standings">{{ t('match.standings') }}</Tab>
           <Tab value="form">{{ t('match.form') }}</Tab>
           <Tab value="next">{{ t('match.next') }}</Tab>
-          <Tab v-if="insights.headToHead.length" value="h2h">{{ t('match.h2h') }}</Tab>
+          <Tab value="h2h">{{ t('match.h2h') }}</Tab>
           <Tab v-if="scorers.length" value="scorers">{{ t('match.players') }}</Tab>
         </TabList>
         <TabPanels>
@@ -371,7 +371,9 @@ function fmtDate(d: string) {
             </div>
           </TabPanel>
 
-          <TabPanel v-if="insights.headToHead.length" value="h2h">
+          <TabPanel value="h2h">
+            <div v-if="!insights.headToHead.length" class="text-sm text-center py-4" style="color: var(--p-text-muted-color)">{{ t('match.h2hNone') }}</div>
+            <template v-else>
             <div v-if="h2hTotal" class="mb-4">
               <div class="flex justify-between text-xs mb-1" style="color: var(--p-text-muted-color)">
                 <span><b style="color: var(--p-text-color)">{{ h2hSummary.homeWins }}</b> {{ m.homeTeam }}</span>
@@ -390,6 +392,7 @@ function fmtDate(d: string) {
                 <span class="text-xs" style="color: var(--p-text-muted-color)">{{ h.competitionName }} · {{ fmtDate(h.kickoffTime) }}</span>
               </NuxtLink>
             </div>
+            </template>
           </TabPanel>
 
           <TabPanel v-if="scorers.length" value="scorers">
