@@ -2,19 +2,63 @@
 // (scrypt hashing, HIBP breach check, account row) against the running app,
 // then sets role=admin in the DB so it doesn't rely on NUXT_ADMIN_EMAILS.
 //
-//   mise run create-admin <email> <password> [name]
-// or: node scripts/create-admin.mjs <email> <password> [name]
+//   mise run create-admin <email> [name]
+// or: node scripts/create-admin.mjs <email> [name]
 //
-// Idempotent: if the account already exists, it's just promoted.
+// The password is prompted for (hidden), never passed as an argument, so it
+// stays out of shell history and the process list. Idempotent: an existing
+// account is just promoted.
+import { createInterface } from 'node:readline'
+import { stdin, stdout } from 'node:process'
 import pg from 'pg'
 
-const [email, password, ...nameParts] = process.argv.slice(2)
+const [email, ...nameParts] = process.argv.slice(2)
 const name = nameParts.join(' ') || (email ? email.split('@')[0] : '')
 const APP = process.env.APP_URL ?? 'http://localhost:3000'
 const DB = process.env.DATABASE_URL ?? 'postgres://nostragoalus:nostragoalus@localhost:5432/nostragoalus'
 
-if (!email || !password) {
-  console.error('usage: node scripts/create-admin.mjs <email> <password> [name]')
+if (!email) {
+  console.error('usage: node scripts/create-admin.mjs <email> [name]')
+  process.exit(1)
+}
+
+// Piped (automation/test): read the whole stream once and pull lines from it -
+// a per-question readline races with buffered pipe input. Interactive TTY: a
+// muted readline so the password isn't echoed.
+const tty = stdin.isTTY === true
+let pipedLines = null
+async function askHidden(question) {
+  if (!tty) {
+    if (pipedLines === null) {
+      const chunks = []
+      for await (const c of stdin) chunks.push(c)
+      pipedLines = Buffer.concat(chunks).toString('utf8').split(/\r?\n/)
+    }
+    return pipedLines.shift() ?? ''
+  }
+  return new Promise((resolve) => {
+    const rl = createInterface({ input: stdin, output: stdout, terminal: true })
+    let muted = false
+    rl._writeToOutput = (str) => {
+      if (!muted) stdout.write(str)
+    }
+    rl.question(question, (value) => {
+      rl.close()
+      stdout.write('\n')
+      resolve(value)
+    })
+    muted = true
+  })
+}
+
+const password = await askHidden(`Password for ${email}: `)
+const confirm = await askHidden('Confirm password: ')
+if (password.length < 8) {
+  console.error('password must be at least 8 characters')
+  process.exit(1)
+}
+if (password !== confirm) {
+  console.error('passwords do not match')
   process.exit(1)
 }
 
@@ -30,7 +74,6 @@ if (res.ok) {
   const msg = await res.text()
   const exists = /exist|already/i.test(msg)
   if (!exists) {
-    // e.g. HIBP rejected the password, or the app is unreachable
     console.error(`sign-up failed (${res.status}): ${msg.slice(0, 200)}`)
     console.error('(a breached password is rejected by HIBP - choose a stronger one)')
     process.exit(1)
