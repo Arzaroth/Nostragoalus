@@ -9,6 +9,7 @@ export interface LeaderboardRow {
   totalPoints: number
   predictionPoints: number
   championPoints: number
+  championCode: string | null
   exactCount: number
   outcomeCount: number
   gdCount: number
@@ -70,17 +71,22 @@ export async function getLeaderboard(
     .groupBy(user.id, user.name, user.image, user.createdAt)
 
   const champions = await db
-    .select({ userId: championPick.userId, points: championPick.awardedPoints })
+    .select({ userId: championPick.userId, points: championPick.awardedPoints, teamCode: championPick.teamCode })
     .from(championPick)
     .where(opts.competitionId ? eq(championPick.competitionId, opts.competitionId) : undefined)
   // Sum across competitions for the global view (a user may have several picks).
   const championByUser = new Map<string, number>()
-  for (const c of champions) championByUser.set(c.userId, (championByUser.get(c.userId) ?? 0) + c.points)
+  const championCodeByUser = new Map<string, string | null>()
+  for (const c of champions) {
+    championByUser.set(c.userId, (championByUser.get(c.userId) ?? 0) + c.points)
+    // the flag only makes sense scoped to one competition
+    if (opts.competitionId) championCodeByUser.set(c.userId, c.teamCode)
+  }
 
   // Champion points are merged in JS (a SQL join would fan out the per-prediction rows).
   const merged = base.map((r) => {
     const championPoints = championByUser.get(r.userId) ?? 0
-    return { ...r, championPoints, totalPoints: r.predictionPoints + championPoints }
+    return { ...r, championPoints, championCode: championCodeByUser.get(r.userId) ?? null, totalPoints: r.predictionPoints + championPoints }
   })
 
   merged.sort(compareLeaderboardRows)
@@ -93,6 +99,7 @@ export async function getLeaderboard(
     totalPoints: r.totalPoints,
     predictionPoints: r.predictionPoints,
     championPoints: r.championPoints,
+    championCode: r.championCode,
     exactCount: r.exactCount,
     outcomeCount: r.outcomeCount,
     gdCount: r.gdCount,

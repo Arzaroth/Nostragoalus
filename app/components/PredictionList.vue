@@ -18,7 +18,7 @@ function isLocked(p: MyPrediction) {
     <NuxtLink
       v-for="p in predictions"
       :key="p.id"
-      :to="`/${slug}/matches/${p.matchId}`"
+      :to="`/${p.competitionSlug ?? slug}/matches/${p.matchId}`"
       class="ng-card block rounded-2xl border p-4"
       style="background: var(--p-content-background)"
     >

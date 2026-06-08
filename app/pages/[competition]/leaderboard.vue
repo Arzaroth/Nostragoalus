@@ -32,7 +32,7 @@ function medal(rank: number) {
       <NuxtLink
         v-for="r in rows"
         :key="r.userId"
-        :to="`/${slug}/users/${r.userId}`"
+        :to="`/${slug}/users/${r.userId}${global ? '?global=1' : ''}`"
         class="ng-card flex items-center gap-3 rounded-xl border px-4 py-3"
         :style="`background: var(--p-content-background); border-color: ${r.userId === meId ? 'var(--p-primary-color)' : 'var(--p-content-border-color)'}; border-width: ${r.userId === meId ? '2px' : '1px'}`"
       >
@@ -47,8 +47,12 @@ function medal(rank: number) {
         </div>
         <Avatar :image="r.image || '/brand/avatar.svg'" shape="circle" class="shrink-0 overflow-hidden" />
         <div class="flex-1 min-w-0">
-          <div class="font-semibold truncate">
-            {{ r.displayName }}
+          <div class="font-semibold truncate flex items-center gap-1.5">
+            <span class="truncate">{{ r.displayName }}</span>
+            <span v-if="r.championCode && flagUrl(r.championCode)" class="relative shrink-0 inline-flex" :title="`${t('champion.title')}: ${r.championCode}`">
+              <img :src="flagUrl(r.championCode) || ''" class="w-4 h-4 rounded object-cover" alt="" >
+              <span class="absolute -top-2 -left-1.5 text-[10px]" style="transform: rotate(-25deg)">👑</span>
+            </span>
             <span v-if="r.userId === meId" class="text-xs font-normal" style="color: var(--p-primary-color)">{{ t('leaderboard.you') }}</span>
           </div>
           <div class="text-xs" style="color: var(--p-text-muted-color)">{{ r.exactCount }} {{ t('leaderboard.exact') }} · {{ r.outcomeCount }} {{ t('leaderboard.correct') }}</div>

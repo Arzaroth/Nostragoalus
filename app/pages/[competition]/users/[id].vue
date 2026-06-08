@@ -1,11 +1,23 @@
 <script setup lang="ts">
 const route = useRoute()
+const router = useRouter()
 const { t } = useI18n()
 const slug = useSelectedCompetition()
-const { data } = await useFetch<{ user: { id: string; name: string; image: string | null }; predictions: MyPrediction[] }>(
-  `/api/users/${route.params.id}/predictions`,
-  { query: computed(() => (slug.value ? { competition: slug.value } : {})) },
-)
+const global = computed({
+  get: () => route.query.global === '1',
+  set: (v: boolean) => router.replace({ query: { ...route.query, global: v ? '1' : undefined } }),
+})
+const scopeOptions = computed(() => [
+  { label: t('leaderboard.thisCompetition'), value: false },
+  { label: t('leaderboard.global'), value: true },
+])
+const { data } = await useFetch<{
+  user: { id: string; name: string; image: string | null }
+  champion: { teamCode: string | null; teamName: string } | null
+  predictions: (MyPrediction & { competitionSlug?: string })[]
+}>(`/api/users/${route.params.id}/predictions`, {
+  query: computed(() => ({ competition: global.value ? 'global' : (slug.value ?? undefined) })),
+})
 </script>
 
 <template>
@@ -13,9 +25,17 @@ const { data } = await useFetch<{ user: { id: string; name: string; image: strin
     <NuxtLink :to="`/${slug}/leaderboard`" class="text-sm inline-flex items-center gap-1" style="color: var(--p-text-muted-color)">
       <i class="pi pi-arrow-left" /> {{ t('leaderboard.title') }}
     </NuxtLink>
-    <div class="flex items-center gap-3 mt-3 mb-1">
-      <Avatar :image="data.user.image || '/brand/avatar.svg'" shape="circle" size="large" class="overflow-hidden shrink-0" />
-      <h1 class="text-2xl font-bold">{{ data.user.name }}</h1>
+    <div class="flex items-center justify-between gap-3 flex-wrap mt-3 mb-1">
+      <div class="flex items-center gap-3 min-w-0">
+        <Avatar :image="data.user.image || '/brand/avatar.svg'" shape="circle" size="large" class="overflow-hidden shrink-0" />
+        <h1 class="text-2xl font-bold truncate">{{ data.user.name }}</h1>
+        <span v-if="data.champion?.teamCode && flagUrl(data.champion.teamCode)" class="relative shrink-0 inline-flex" :title="`${t('champion.title')}: ${data.champion.teamName}`">
+          <img :src="flagUrl(data.champion.teamCode) || ''" class="w-6 h-6 rounded object-cover" alt="" >
+          <span class="absolute -top-2.5 -left-2 text-sm" style="transform: rotate(-25deg)">👑</span>
+        </span>
+        <CompetitionPill v-if="!global" />
+      </div>
+      <SelectButton v-model="global" :options="scopeOptions" option-label="label" option-value="value" :allow-empty="false" size="small" />
     </div>
     <p class="text-sm mb-5" style="color: var(--p-text-muted-color)">{{ t('predictions.publicNote') }}</p>
     <PredictionList :predictions="data.predictions" />

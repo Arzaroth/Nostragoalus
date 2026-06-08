@@ -1,6 +1,6 @@
 import { and, eq, lte, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
-import { match, prediction, round } from '../../../db/schema'
+import { competition as competitionTable, match, prediction, round } from '../../../db/schema'
 import { LockedError, NotFoundError, ValidationError } from '../errors'
 
 // Aggregate counters for the "my stats" strip (points/rank come from the leaderboard).
@@ -109,10 +109,11 @@ export async function getUserPublicPredictions(db: AppDatabase, userId: string, 
   const base = [eq(prediction.userId, userId), lte(match.kickoffTime, now)]
   if (competitionId) base.push(eq(match.competitionId, competitionId))
   return db
-    .select(predictionView)
+    .select({ ...predictionView, competitionSlug: competitionTable.slug, competitionName: competitionTable.name })
     .from(prediction)
     .innerJoin(match, eq(match.id, prediction.matchId))
     .innerJoin(round, eq(round.id, prediction.roundId))
+    .innerJoin(competitionTable, eq(competitionTable.id, match.competitionId))
     .where(and(...base))
     .orderBy(match.kickoffTime)
 }

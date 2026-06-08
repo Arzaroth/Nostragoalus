@@ -1,6 +1,6 @@
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { db } from '../../../../db'
-import { user } from '../../../../db/schema'
+import { championPick, user } from '../../../../db/schema'
 import { getUserPublicPredictions } from '../../../utils/predictions/service'
 import { resolveCompetition } from '../../../utils/competitions/store'
 
@@ -9,9 +9,26 @@ export default defineEventHandler(async (event) => {
   const rows = await db.select({ name: user.name, image: user.image }).from(user).where(eq(user.id, id)).limit(1)
   if (rows.length === 0) throw createError({ statusCode: 404, statusMessage: 'user not found' })
 
-  const competition = await resolveCompetition(db, (getQuery(event).competition as string) || null)
+  // 'global' shows the player across every competition
+  const requested = (getQuery(event).competition as string) || null
+  const global = requested === 'global'
+  const competition = global ? null : await resolveCompetition(db, requested)
+
+  const championRows = await db
+    .select({ teamCode: championPick.teamCode, teamName: championPick.teamName, competitionId: championPick.competitionId })
+    .from(championPick)
+    .where(
+      competition
+        ? and(eq(championPick.userId, id), eq(championPick.competitionId, competition.id))
+        : eq(championPick.userId, id),
+    )
+  const champion = competition ? (championRows[0] ?? null) : null
+
   return {
     user: { id, name: rows[0].name, image: rows[0].image },
+    champion,
+    champions: global ? championRows : undefined,
+    global,
     predictions: await getUserPublicPredictions(db, id, new Date(), competition?.id),
   }
 })
