@@ -160,8 +160,12 @@ const actor = (teamId: string, personId: string, name: string) => ({
 })
 
 const EVENTS: UefaEvent[] = [
-  { type: 'GOAL', phase: 'FIRST_HALF', time: { minute: 23 }, primaryActor: actor('1', 'p1', 'Striker'), secondaryActor: { person: { id: 'p2', internationalName: 'Passer' } } },
-  { type: 'OWN_GOAL', phase: 'SECOND_HALF', time: { minute: 55 }, primaryActor: actor('2', 'p9', 'Unlucky') },
+  // secondaryActor here is the beaten keeper - must be ignored; the assist is the ASSIST event below.
+  { type: 'GOAL', phase: 'FIRST_HALF', time: { minute: 23 }, primaryActor: actor('1', 'p1', 'Striker'), secondaryActor: { person: { id: 'gk', internationalName: 'Keeper' } } },
+  { type: 'ASSIST', phase: 'FIRST_HALF', time: { minute: 23 }, primaryActor: actor('1', 'p2', 'Passer') },
+  // UEFA's real shape for an own goal: a GOAL with subType 'OWN' (not type OWN_GOAL).
+  { type: 'GOAL', subType: 'OWN', phase: 'SECOND_HALF', time: { minute: 55 }, primaryActor: actor('2', 'p9', 'Unlucky') },
+  { type: 'ASSIST', phase: 'SECOND_HALF', time: { minute: 55 }, primaryActor: actor('1', 'p3', 'OG Forcer') },
   { type: 'GOAL', phase: 'PENALTY_SHOOTOUT', time: { minute: 120 }, primaryActor: actor('1', 'p1', 'Striker') },
   { type: 'YELLOW_CARD', phase: 'FIRST_HALF', time: { minute: 30 }, primaryActor: actor('2', 'p7', 'Hacker') },
   { type: 'YELLOW_CARD', phase: 'SECOND_HALF', time: { minute: 78, injuryMinute: undefined }, primaryActor: actor('2', 'p7', 'Hacker') },
@@ -209,8 +213,11 @@ describe('uefa match detail', () => {
     expect(d!.ifesId).toBe('900')
     expect(d!.homeTeamId).toBe('1')
     expect(d!.goals).toHaveLength(2) // shootout goal excluded
+    // assist comes from the ASSIST event, NOT the goal's secondaryActor (the keeper)
     expect(d!.goals[0]).toMatchObject({ side: 'HOME', playerName: 'Striker', minute: "23'", assistPlayerName: 'Passer', ownGoal: false })
-    expect(d!.goals[1]).toMatchObject({ side: 'HOME', teamName: 'Alpha', playerName: 'Unlucky', ownGoal: true }) // away player's own goal credits home
+    expect(d!.goals[0].assistPlayerName).not.toBe('Keeper')
+    // own goals carry an assist too (UEFA credits the player who forced it)
+    expect(d!.goals[1]).toMatchObject({ side: 'HOME', teamName: 'Alpha', playerName: 'Unlucky', ownGoal: true, assistPlayerName: 'OG Forcer' }) // away player's own goal credits home
     expect(d!.bookings.map((b) => b.card)).toEqual(['YELLOW', 'SECOND_YELLOW', 'RED'])
     expect(d!.bookings[2].minute).toBe("90'+2")
     expect(d!.cards).toEqual({ home: { yellow: 0, red: 1 }, away: { yellow: 2, red: 1 } })

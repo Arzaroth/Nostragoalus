@@ -115,6 +115,8 @@ interface UefaEventPerson {
 
 export interface UefaEvent {
   type?: string | null
+  // Own goals and penalties are type 'GOAL' with subType 'OWN' / 'PENALTY'.
+  subType?: string | null
   phase?: string | null
   time?: { minute?: number | null; injuryMinute?: number | null } | null
   primaryActor?: {
@@ -357,14 +359,29 @@ export function uefaProvider(options: UefaOptions): MatchDataProvider {
       }
       const teamFor = (side: 'HOME' | 'AWAY') => (side === 'HOME' ? m.homeTeam : m.awayTeam)
 
+      // The assist is its own ASSIST event (the goal event's secondaryActor is
+      // the beaten goalkeeper, not the assister). Pair them by match minute -
+      // each goal consumes at most one assist at that minute; penalties have none.
+      const minuteKey = (e: UefaEvent) => `${e.time?.minute ?? ''}:${e.time?.injuryMinute ?? ''}`
+      const assistsByMinute = new Map<string, UefaEvent[]>()
+      for (const e of events) {
+        if (e.type !== 'ASSIST') continue
+        const bucket = assistsByMinute.get(minuteKey(e)) ?? []
+        bucket.push(e)
+        assistsByMinute.set(minuteKey(e), bucket)
+      }
+
       const goals: NormalizedGoal[] = []
       for (const e of events) {
         if ((e.type !== 'GOAL' && e.type !== 'OWN_GOAL') || e.phase === 'PENALTY_SHOOTOUT') continue
         const actorSide = sideOf(e)
         if (!actorSide) continue
-        // An own goal is credited to the opposite side of the unlucky scorer.
-        const side = e.type === 'OWN_GOAL' ? (actorSide === 'HOME' ? 'AWAY' : 'HOME') : actorSide
+        // UEFA marks own goals as a GOAL with subType 'OWN' (the legacy OWN_GOAL
+        // type is kept for safety). Credit them to the opposite side of the scorer.
+        const isOwnGoal = e.type === 'OWN_GOAL' || e.subType === 'OWN'
+        const side = isOwnGoal ? (actorSide === 'HOME' ? 'AWAY' : 'HOME') : actorSide
         const team = teamFor(side)
+        const assist = assistsByMinute.get(minuteKey(e))?.shift() ?? null
         goals.push({
           side,
           teamId: team?.id ?? null,
@@ -374,9 +391,9 @@ export function uefaProvider(options: UefaOptions): MatchDataProvider {
           playerName: actorName(e.primaryActor?.person),
           minute: eventMinute(e),
           goalType: null,
-          ownGoal: e.type === 'OWN_GOAL',
-          assistPlayerId: actorId(e.secondaryActor?.person),
-          assistPlayerName: e.secondaryActor?.person ? actorName(e.secondaryActor.person) : null,
+          ownGoal: isOwnGoal,
+          assistPlayerId: actorId(assist?.primaryActor?.person),
+          assistPlayerName: assist?.primaryActor?.person ? actorName(assist.primaryActor.person) : null,
         })
       }
 
