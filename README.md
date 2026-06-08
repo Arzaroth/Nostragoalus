@@ -75,7 +75,7 @@ mise run down          # stop everything
 ## Local development
 
 ```bash
-docker compose up -d db     # Postgres only
+docker compose -f compose.yaml -f compose.dev.yaml up -d db   # Postgres (loopback :5432)
 pnpm install
 cp .env.example .env        # then fill in secrets
 pnpm db:migrate             # apply migrations

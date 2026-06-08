@@ -13,8 +13,8 @@ services:
       POSTGRES_USER: nostragoalus
       POSTGRES_PASSWORD: nostragoalus
       POSTGRES_DB: nostragoalus
-    ports:
-      - '5432:5432'
+    # No published port: the app reaches the db in-network as `db:5432`. Host
+    # access (local `pnpm dev`, psql) is added by compose.dev.yaml, on loopback.
     volumes:
       - nostragoalus_pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -37,8 +37,10 @@ services:
       RUN_MIGRATIONS: 'true'
       DATABASE_URL: postgres://nostragoalus:nostragoalus@db:5432/nostragoalus
       NUXT_DATABASE_URL: postgres://nostragoalus:nostragoalus@db:5432/nostragoalus
+    # Bound to loopback: put a reverse proxy (TLS, the public BETTER_AUTH_URL host)
+    # in front. Change to '3000:3000' only if exposing the app directly.
     ports:
-      - '3000:3000'
+      - '127.0.0.1:3000:3000'
     depends_on:
       db:
         condition: service_healthy

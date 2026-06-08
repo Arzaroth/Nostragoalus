@@ -15,3 +15,22 @@ dist
 .vscode
 .idea
 .DS_Store
+
+# Not build/runtime inputs - exclude so editing them doesn't bust the COPY layer
+# (and to slim the build context). Keep: app/server/shared/lib/db/i18n/public/
+# drizzle + nuxt.config/tsconfig/uno.config/package files.
+# NOTE: LICENSE and CHANGELOG.md are imported (?raw) by license.vue / about.vue,
+# so they are build inputs - do NOT exclude them.
+Dockerfile
+.dockerignore
+compose.yaml
+compose.dev.yaml
+.mise.toml
+README.md
+scripts
+tests
+vitest.config.ts
+**/*.test.ts
+.editorconfig
+.prettier*
+.eslint*

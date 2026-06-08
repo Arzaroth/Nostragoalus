@@ -3,12 +3,18 @@
 # app's SMTP at it, layers optional .env.dev, and provides the hot-reload app.
 
 services:
+  # Loopback-only db publish for host tooling (local `pnpm dev`, psql, drizzle-kit).
+  # The prod base keeps the db unpublished (the app talks to it in-network).
+  db:
+    ports:
+      - '127.0.0.1:5432:5432'
+
   maildev:
     image: maildev/maildev:2.2.1
     restart: unless-stopped
     ports:
-      - '1080:1080'
-      - '1025:1025'
+      - '127.0.0.1:1080:1080'
+      - '127.0.0.1:1025:1025'
 
   app:
     environment:
@@ -40,7 +46,7 @@ services:
       NUXT_DATABASE_URL: postgres://nostragoalus:nostragoalus@db:5432/nostragoalus
       NUXT_SMTP_URL: smtp://maildev:1025
     ports:
-      - '3000:3000'
+      - '127.0.0.1:3000:3000'
     volumes:
       - .:/app
       - /app/node_modules
