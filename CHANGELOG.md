@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-06-08
+
 ### Added
 - Crowd totals update live over the WebSocket (anyone saving a prediction refreshes everyone's view, your own saves included) and reserve their line so cards never resize.
 - Header crystal ball is bigger, includes the pedestal, and each section glows gold under the cursor (five panels, core, and the orb's outer ring).
