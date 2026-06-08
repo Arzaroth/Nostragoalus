@@ -34,3 +34,7 @@ coverage
 *.local
 
 # Note: Drizzle migrations (./drizzle/**) are committed on purpose.
+
+# curl cookie jars from E2E/manual testing (never commit session tokens)
+*.jar
+cookies.txt
