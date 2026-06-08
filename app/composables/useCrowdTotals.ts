@@ -1,37 +1,43 @@
-// The "show everyone's totals" preference + per-match crowd sums, kept live:
-// fetch per competition (auto-refetches when the competition changes), then
-// patched from crowd:update WS pushes (anyone saving a prediction updates
-// everyone's view, your own saves included).
+type CrowdTotal = { home: number; away: number; count: number }
+
+// The "show everyone's totals" preference + per-match crowd sums, kept live.
+// Plain ref + explicit refetch on (enabled, competition) change - a shared
+// useFetch key served the previous competition's cached totals on a switch.
+// WS crowd:update pushes patch individual matches on top.
 export function useCrowdTotals() {
   const { session } = useAuth()
   const slug = useSelectedCompetition()
   const enabled = computed(() => (session.value?.data?.user as any)?.showCrowd === true)
 
-  // WS patches, scoped per competition so a switch starts clean
-  const patches = useState<Record<string, { home: number; away: number; count: number }>>('crowd-patches', () => ({}))
+  const fetched = ref<Record<string, CrowdTotal>>({})
+  const patches = ref<Record<string, CrowdTotal>>({})
 
-  const { data, refresh } = useFetch<{ totals: Record<string, { home: number; away: number; count: number }> }>(
-    '/api/predictions/crowd',
-    {
-      query: computed(() => ({ competition: slug.value ?? '' })),
-      immediate: enabled.value,
-      // default watch on `query` is kept: switching competition refetches.
-      lazy: true,
-      key: 'crowd-totals',
-    },
-  )
-  // enabling the preference mid-session triggers the first fetch
-  watch(enabled, (on) => {
-    if (on) refresh()
-  })
-  // a competition switch invalidates the previous round's live patches
+  async function load() {
+    if (!enabled.value || !slug.value) {
+      fetched.value = {}
+      return
+    }
+    try {
+      const r = await $fetch<{ totals: Record<string, CrowdTotal> }>('/api/predictions/crowd', {
+        query: { competition: slug.value },
+      })
+      fetched.value = r.totals ?? {}
+    } catch {
+      fetched.value = {}
+    }
+  }
+
+  // Refetch whenever the preference flips or the competition changes; a switch
+  // also drops the previous round's live patches.
   watch(slug, () => {
     patches.value = {}
   })
+  watch([enabled, slug], load, { immediate: true })
 
   let socket: WebSocket | null = null
   onMounted(() => {
     if (!import.meta.client) return
+    void load() // ensure a client-side fetch even if the watcher ran during SSR
     const proto = location.protocol === 'https:' ? 'wss' : 'ws'
     socket = new WebSocket(`${proto}://${location.host}/_ws`)
     socket.onmessage = (event) => {
@@ -47,6 +53,6 @@ export function useCrowdTotals() {
   })
   onBeforeUnmount(() => socket?.close())
 
-  const totals = computed(() => (enabled.value ? { ...(data.value?.totals ?? {}), ...patches.value } : {}))
+  const totals = computed(() => (enabled.value ? { ...fetched.value, ...patches.value } : {}))
   return { enabled, totals }
 }
