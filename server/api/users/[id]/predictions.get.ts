@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
   const competition = global ? null : await resolveCompetition(db, requested)
 
   const championRows = await db
-    .select({ teamCode: championPick.teamCode, teamName: championPick.teamName, competitionId: championPick.competitionId })
+    .select({ teamCode: championPick.teamCode, teamName: championPick.teamName, competitionId: championPick.competitionId, awardedPoints: championPick.awardedPoints })
     .from(championPick)
     .where(
       competition

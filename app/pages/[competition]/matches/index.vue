@@ -118,6 +118,12 @@ function fmtTime(d: string) {
                 <span v-if="predByMatch[m.id]?.totalPoints != null" class="text-xs font-semibold" style="color: var(--p-primary-color)">
                   +{{ predByMatch[m.id].totalPoints }} pts · {{ tierLabel(predByMatch[m.id].baseTier) }}
                 </span>
+                <span
+                  v-if="predByMatch[m.id]?.bonusPoints"
+                  v-tooltip.top="predByMatch[m.id].crowdShare != null ? t('predictions.rarityTip', { pct: Math.round(Number(predByMatch[m.id].crowdShare) * 100) }) : t('predictions.rarityTipNoShare')"
+                  class="text-xs font-semibold px-1.5 py-0.5 rounded-full cursor-help"
+                  style="color: #f59e0b; background: rgba(245, 158, 11, 0.12)"
+                >+{{ predByMatch[m.id].bonusPoints }} {{ t('predictions.rarity') }}</span>
               </div>
             </div>
           </div>

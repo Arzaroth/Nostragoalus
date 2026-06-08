@@ -230,3 +230,14 @@ it('setJoker is rejected on single-match rounds (final, third place)', async () 
   await expect(setJoker(db, { userId: u, matchId: m, isJoker: true }, new Date('2026-07-01T00:00:00Z'))).rejects.toThrow('single-match')
   await client.close()
 })
+
+it('setJoker is rejected when teams are not confirmed', async () => {
+  const { db, client } = await createTestDb()
+  const competitionId = await seedCompetition(db)
+  const r16 = (await findRoundId(db, competitionId, 'R16', null)) as string
+  const m = await makeMatch(db, { competitionId, roundId: r16, stage: 'R16', kickoffTime: new Date('2026-07-01T16:00:00Z'), homeTeam: 'Winner A', homeTeamCode: null, awayTeam: 'Winner B', awayTeamCode: null })
+  const u = await makeUser(db, 'jk2', 'JK2')
+  await makePrediction(db, { userId: u, matchId: m, roundId: r16, home: 1, away: 0 })
+  await expect(setJoker(db, { userId: u, matchId: m, isJoker: true }, new Date('2026-06-20T00:00:00Z'))).rejects.toThrow('not confirmed')
+  await client.close()
+})

@@ -25,7 +25,7 @@ function isLocked(p: MyPrediction) {
       <div class="flex items-center justify-between text-xs mb-2" style="color: var(--p-text-muted-color)">
         <span>{{ p.roundLabel }} · {{ fmt(p.kickoffTime) }}</span>
         <button
-          v-if="editable && !isLocked(p) && p.stage !== 'FINAL' && p.stage !== 'THIRD_PLACE'"
+          v-if="editable && !isLocked(p) && p.stage !== 'FINAL' && p.stage !== 'THIRD_PLACE' && p.homeTeamCode && p.awayTeamCode"
           type="button"
           class="font-semibold flex items-center gap-1 transition hover:opacity-80"
           :style="`color:${p.isJoker ? '#f59e0b' : 'var(--p-text-muted-color)'}`"
@@ -65,6 +65,12 @@ function isLocked(p: MyPrediction) {
       <div v-if="p.totalPoints !== null" class="flex items-center justify-center gap-2 mt-3 text-xs">
         <Tag :value="tierLabel(p.baseTier)" :severity="p.totalPoints > 0 ? 'success' : 'secondary'" />
         <span class="font-semibold" style="color: var(--p-primary-color)">+{{ p.totalPoints }} pts</span>
+        <span
+          v-if="p.bonusPoints"
+          v-tooltip.top="rarityTip(p)"
+          class="font-semibold px-1.5 py-0.5 rounded-full cursor-help"
+          style="color: #f59e0b; background: rgba(245, 158, 11, 0.12)"
+        >+{{ p.bonusPoints }} {{ t('predictions.rarity') }}</span>
       </div>
     </NuxtLink>
   </div>

@@ -13,7 +13,7 @@ const scopeOptions = computed(() => [
 ])
 const { data } = await useFetch<{
   user: { id: string; name: string; image: string | null }
-  champion: { teamCode: string | null; teamName: string } | null
+  champion: { teamCode: string | null; teamName: string; awardedPoints: number } | null
   predictions: (MyPrediction & { competitionSlug?: string })[]
 }>(`/api/users/${route.params.id}/predictions`, {
   query: computed(() => ({ competition: global.value ? 'global' : (slug.value ?? undefined) })),
@@ -29,9 +29,10 @@ const { data } = await useFetch<{
       <div class="flex items-center gap-3 min-w-0">
         <Avatar :image="data.user.image || '/brand/avatar.svg'" shape="circle" size="large" class="overflow-hidden shrink-0" />
         <h1 class="text-2xl font-bold truncate">{{ data.user.name }}</h1>
-        <span v-if="data.champion?.teamCode && flagUrl(data.champion.teamCode)" class="relative shrink-0 inline-flex" :title="`${t('champion.title')}: ${data.champion.teamName}`">
+        <span v-if="data.champion?.teamCode && flagUrl(data.champion.teamCode)" class="relative shrink-0 inline-flex items-center gap-1.5" :title="`${t('champion.title')}: ${data.champion.teamName}`">
           <img :src="flagUrl(data.champion.teamCode) || ''" class="w-6 h-6 rounded object-cover" alt="" >
           <span class="absolute -top-2.5 -left-2 text-sm" style="transform: rotate(-25deg)">👑</span>
+          <span v-if="data.champion.awardedPoints" class="text-xs font-semibold" style="color: #f59e0b">+{{ data.champion.awardedPoints }} pts</span>
         </span>
         <CompetitionPill v-if="!global" />
       </div>

@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 ## [Unreleased]
 
 ### Added
+- Scoring is now spelled out: predictions show the base points and a separate "+N rarity" chip with an "only X% picked this" tooltip; champion-pick points appear on the leaderboard and player pages; the FAQ carries the full formula in plain notation.
+
+### Changed
+- A joker can't be placed on a fixture whose teams aren't decided yet (same rule as predicting it), server-enforced and hidden in the UI.
+
+### Added
 - Champion picks visible at a glance: crowned flag beside each name on the ranking and on player pages; player pages gained a competition switcher and a Global scope.
 - Landing showcase is a carousel (circular, autoplay) and the map screenshot now actually shows the map.
 

@@ -182,7 +182,10 @@
     "jokerError": "Impossible de déplacer le joker - un match a peut-être déjà commencé.",
     "crowd": "le groupe",
     "finalDouble": "La finale compte double",
-    "finalDoubleHint": "Chaque prono sur la finale rapporte le double - pas besoin de joker."
+    "finalDoubleHint": "Chaque prono sur la finale rapporte le double - pas besoin de joker.",
+    "rarity": "rareté",
+    "rarityTip": "Seulement {pct}% des joueurs ont tenté ce score exact - les pronos audacieux rapportent un bonus.",
+    "rarityTipNoShare": "Un score exact rare rapporte un bonus."
   },
   "champion": {
     "title": "Votre vainqueur",
@@ -432,6 +435,11 @@
     "q8": {
       "q": "C'est gratuit ?",
       "a": "Totalement. Le projet est open source sous licence WTFPL : lisez chaque ligne, hébergez votre propre instance entre amis, faites-en ce que vous voulez."
+    },
+    "formula": {
+      "q": "Comment les points sont-ils calculés exactement ?",
+      "a": "Chaque prono est noté sur le résultat à 90 minutes. La formule complète :",
+      "example": "Exemple : vous pronostiquez Belgique 1-0 et le match finit 1-0 - score exact (3). Si seulement 5,9% des joueurs ont osé ce score, la rareté ajoute +2, soit 5 points. En finale, ou avec votre joker, ce serait doublé."
     }
   },
   "err": {

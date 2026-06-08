@@ -182,7 +182,10 @@
     "jokerError": "Couldn't move the joker - a match may have already started.",
     "crowd": "everyone",
     "finalDouble": "Final counts double",
-    "finalDoubleHint": "Every prediction on the final earns double points - no joker needed."
+    "finalDoubleHint": "Every prediction on the final earns double points - no joker needed.",
+    "rarity": "rarity",
+    "rarityTip": "Only {pct}% of players picked this exact score - bold calls earn a bonus.",
+    "rarityTipNoShare": "A rare exact score earns a bonus on top."
   },
   "champion": {
     "title": "Your champion",
@@ -432,6 +435,11 @@
     "q8": {
       "q": "Is it free?",
       "a": "Completely. The whole project is open source under the WTFPL - you can read every line, run your own instance for your friends, and do what you want with it."
+    },
+    "formula": {
+      "q": "How exactly are points calculated?",
+      "a": "Every prediction is scored on the regulation (90-minute) result. The full formula:",
+      "example": "Example: you call Belgium 1-0 and it finishes 1-0 - that is an exact score (3). If only 5.9% of players dared that scoreline, the rarity tier adds +2, for 5 points. On the final, or with your joker, it would double."
     }
   },
   "err": {

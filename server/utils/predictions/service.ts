@@ -81,6 +81,9 @@ const predictionView = {
   isJoker: prediction.isJoker,
   baseTier: prediction.baseTier,
   totalPoints: prediction.totalPoints,
+  basePoints: prediction.basePoints,
+  bonusPoints: prediction.bonusPoints,
+  crowdShare: prediction.crowdShare,
   homeTeam: match.homeTeam,
   awayTeam: match.awayTeam,
   homeTeamCode: match.homeTeamCode,
@@ -132,6 +135,10 @@ export async function setJoker(db: AppDatabase, input: SetJokerInput, now: Date 
   // Single-match rounds have no joker choice - the final doubles for everyone.
   if (rows[0].stage === 'FINAL' || rows[0].stage === 'THIRD_PLACE') {
     throw new ValidationError('no joker on single-match rounds')
+  }
+  // Can't joker a fixture whose teams aren't decided yet (same as predicting it).
+  if (!rows[0].homeTeamCode || !rows[0].awayTeamCode) {
+    throw new ValidationError('teams not confirmed yet')
   }
 
   const preds = await db

@@ -182,7 +182,10 @@
     "jokerError": "Hov vIHmoHlaHbe' - chaq may' taghpu'.",
     "crowd": "Hoch",
     "finalDouble": "HevDaq cha'logh",
-    "finalDoubleHint": "HevDaq Hoch wIv cha'logh QuQ."
+    "finalDoubleHint": "HevDaq Hoch wIv cha'logh QuQ.",
+    "rarity": "le'",
+    "rarityTip": "mI'vam pup wIvta' {pct}% neH - jaq wIvmey tev luSuq.",
+    "rarityTipNoShare": "mI' pup le' tev chel."
   },
   "champion": {
     "title": "che'wI'lIj",
@@ -432,6 +435,11 @@
     "q8": {
       "q": "tlhab'a'?",
       "a": "naQ tlhab. WTFPL bIngDaq poSmoHlu'pu'. Hoch ngoq yIlaD, Doch'a'lIj yIche'."
+    },
+    "formula": {
+      "q": "chay' 'ot mI' bohlu'?",
+      "a": "Hoch wIv 90 tup mI' noHlu'. naQ chen:",
+      "example": "bI'reS: Belgium 1-0 DawIv, 1-0 rIn - mI' pup (3). 5.9% neH wIvchugh, le' +2 chel, 5 'ot. HevDaq joq Hov lo'taHvIS, cha'logh."
     }
   },
   "err": {

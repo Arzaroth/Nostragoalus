@@ -226,6 +226,30 @@ onMounted(() => {
           <AccordionHeader>{{ t(`faq.q${i}.q`) }}</AccordionHeader>
           <AccordionContent><p class="text-sm" style="color: var(--p-text-muted-color)">{{ t(`faq.q${i}.a`) }}</p></AccordionContent>
         </AccordionPanel>
+        <AccordionPanel value="formula">
+          <AccordionHeader>{{ t('faq.formula.q') }}</AccordionHeader>
+          <AccordionContent>
+            <p class="text-sm mb-3" style="color: var(--p-text-muted-color)">{{ t('faq.formula.a') }}</p>
+            <pre class="text-xs overflow-x-auto rounded-lg border p-4 leading-relaxed" style="background: var(--p-content-background); border-color: var(--p-content-border-color)">points = (base + rarity) × multiplier
+
+base    = 3  if exact score          (home & away both right)
+          2  if right goal difference (and right outcome)
+          1  if right outcome only    (win / draw / loss)
+          0  otherwise
+
+rarity  = +5  if &lt; 0.5% of players picked that exact score
+          +3  if &lt; 5%
+          +2  if &lt; 15%
+          +1  if &lt; 40%
+          +0  otherwise        (only on an exact score; needs &ge; 5 entries)
+
+multiplier = 2  on your round joker, and on every final
+             1  otherwise
+
+champion = +10  if your tournament winner pick lifts the trophy</pre>
+            <p class="text-xs mt-3" style="color: var(--p-text-muted-color)">{{ t('faq.formula.example') }}</p>
+          </AccordionContent>
+        </AccordionPanel>
       </Accordion>
     </section>
 

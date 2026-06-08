@@ -55,7 +55,9 @@ function medal(rank: number) {
             </span>
             <span v-if="r.userId === meId" class="text-xs font-normal" style="color: var(--p-primary-color)">{{ t('leaderboard.you') }}</span>
           </div>
-          <div class="text-xs" style="color: var(--p-text-muted-color)">{{ r.exactCount }} {{ t('leaderboard.exact') }} · {{ r.outcomeCount }} {{ t('leaderboard.correct') }}</div>
+          <div class="text-xs" style="color: var(--p-text-muted-color)">
+            {{ r.exactCount }} {{ t('leaderboard.exact') }} · {{ r.outcomeCount }} {{ t('leaderboard.correct') }}<template v-if="r.championPoints"> · 👑 +{{ r.championPoints }}</template>
+          </div>
         </div>
         <div class="text-right shrink-0">
           <span class="text-xl font-bold tabular-nums">{{ r.totalPoints }}</span>
