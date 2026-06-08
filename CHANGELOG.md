@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-06-08
+
 ### Added
 - `mise run create-admin <email> [name]` provisions an admin on demand: prompts for the password (hidden, never in shell history or the process list), signs up via better-auth (HIBP-checked + hashed), then sets the DB role; idempotent. No default admin password exists - this or NUXT_ADMIN_EMAILS bootstraps the first admin.
 
