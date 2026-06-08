@@ -19,6 +19,22 @@ function save() {
   if (team) setPick.mutate(team)
 }
 
+// Holographic hover: the card tilts toward the cursor and a light sweep
+// follows it (the one emotional pick in the game deserves some sparkle).
+const showcaseEl = ref<HTMLElement | null>(null)
+const { elementX, elementY, elementWidth, elementHeight, isOutside } = useMouseInElement(showcaseEl)
+const holo = computed(() => {
+  if (isOutside.value || !elementWidth.value) return { transform: '', sheen: 0, sx: 50, sy: 50 }
+  const px = elementX.value / elementWidth.value
+  const py = elementY.value / elementHeight.value
+  return {
+    transform: `perspective(420px) rotateY(${(px - 0.5) * 22}deg) rotateX(${(0.5 - py) * 22}deg) scale(1.06)`,
+    sheen: 1,
+    sx: px * 100,
+    sy: py * 100,
+  }
+})
+
 // What the crown showcase displays: the live selection (preview) or the saved pick.
 const showcaseCode = computed(() =>
   data.value?.locked ? (data.value?.myPick?.teamCode ?? null) : (selectedCode.value ?? data.value?.myPick?.teamCode ?? null),
@@ -88,13 +104,23 @@ const isSaved = computed(() => !!data.value?.myPick && showcaseCode.value === da
               class="absolute -top-4 -left-4 text-3xl z-10 select-none"
               style="transform: rotate(-25deg); filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35))"
             >👑</span>
-            <img
-              v-if="flagUrl(showcaseCode)"
-              :src="flagUrl(showcaseCode) || ''"
-              class="relative w-20 h-20 rounded-2xl object-cover"
-              style="box-shadow: 0 0 0 3px rgba(245, 179, 1, 0.6), 0 10px 24px rgba(0, 0, 0, 0.3)"
-              alt=""
-            >
+            <span ref="showcaseEl" class="relative block w-20 h-20 rounded-2xl" style="transition: transform 0.25s ease" :style="{ transform: holo.transform }">
+              <img
+                v-if="flagUrl(showcaseCode)"
+                :src="flagUrl(showcaseCode) || ''"
+                class="relative w-20 h-20 rounded-2xl object-cover"
+                style="box-shadow: 0 0 0 3px rgba(245, 179, 1, 0.6), 0 10px 24px rgba(0, 0, 0, 0.3)"
+                alt=""
+              >
+              <span
+                class="absolute inset-0 rounded-2xl pointer-events-none"
+                style="transition: opacity 0.25s ease; mix-blend-mode: screen"
+                :style="{
+                  opacity: holo.sheen * 0.75,
+                  background: `radial-gradient(140px circle at ${holo.sx}% ${holo.sy}%, rgba(255,255,255,0.55), rgba(245,179,1,0.18) 45%, transparent 70%)`,
+                }"
+              />
+            </span>
           </template>
           <template v-else>
             <span class="absolute -top-4 -left-4 text-3xl z-10 opacity-30 grayscale select-none" style="transform: rotate(-25deg)">👑</span>

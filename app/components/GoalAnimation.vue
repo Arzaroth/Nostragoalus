@@ -137,11 +137,19 @@ onMounted(() => {
         bx = 100 + Math.cos(ang) * env * 20 + 38 * ease
         by = 96 - 76 * ease + Math.sin(ang) * env * 10
         r = Math.max(1, Math.round(8 * (1 - 0.8 * ease)))
-      } else {
+      } else if (tc < 2700) {
         bx = 138
         by = 20
         r = 1
-        starAlpha = tc < 2600 ? 1 : Math.max(0, 1 - (tc - 2600) / 400)
+        starAlpha = tc < 2500 ? 1 : Math.max(0, 1 - (tc - 2500) / 200)
+      } else {
+        // the lost star streaks back down to the spot - at the loop seam the
+        // ball is exactly where the next kick starts (clean loop).
+        const p = (tc - 2700) / 300
+        const ease = p * p
+        bx = 138 + (100 - 138) * ease
+        by = 20 + (96 - 20) * ease
+        r = Math.max(1, Math.round(1 + 7 * ease))
       }
     } else if (tc < 2100) {
       const p = tc / 2100
@@ -160,7 +168,7 @@ onMounted(() => {
     }
     const rbx = Math.round(bx)
     const rby = Math.round(by)
-    if (tc < (miss ? 1800 : 2100)) {
+    if (miss ? tc < 1800 || tc >= 2700 : tc < 2100) {
       trail.push([rbx, rby, r])
       if (trail.length > 34) trail.shift()
     }
@@ -188,7 +196,7 @@ onMounted(() => {
       px(138, 19, 1, 1, '#d8ccff')
       px(138, 21, 1, 1, '#d8ccff')
       x.globalAlpha = 1
-    } else if (!miss || tc < 1800) {
+    } else if (!miss || tc < 1800 || tc >= 2700) {
       ball(rbx, rby, r, t * 0.016)
     }
     if (!miss && tc >= 2100 && tc < 2700) {
