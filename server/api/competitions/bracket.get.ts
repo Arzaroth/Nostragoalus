@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '../../../db'
 import { match } from '../../../db/schema'
 import { providerForCompetition } from '../../utils/providers'
+import { orderBracketFeeders } from '../../utils/providers/bracket-order'
 import { resolveCompetition } from '../../utils/competitions/store'
 import { resolveCompetitionSeason } from '../../utils/sync/competition'
 
@@ -20,8 +21,9 @@ export default defineEventHandler(async (event) => {
   if (!provider.getBracket) return { bracket: null }
 
   try {
-    const bracket = await provider.getBracket()
+    let bracket = await provider.getBracket()
     if (bracket) {
+      bracket = orderBracketFeeders(bracket)
       // Link each bracket match to our internal match id (for navigation).
       const ours = await db
         .select({ id: match.id, pid: match.providerMatchId })
