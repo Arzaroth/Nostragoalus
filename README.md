@@ -24,7 +24,8 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
 
 - Score predictions with closeness-tiered points, a rarity bonus, and one ×2 **joker** per round
 - Optional **crowd totals** under every prediction (everyone's picks combined), updated live over WebSocket
-- **Champion pick** bonus, locked at the first kickoff
+- Transparent scoring: base + rarity bonus + joker/final ×2 broken out on every pick, with the full formula in the FAQ
+- **Champion pick** bonus, locked at the first kickoff and shown beside every name on the rankings
 - Per-competition **and global** rankings with movement arrows; browse other players' (locked) predictions
 - Live scores over WebSocket with a pixel-art **goal celebration**; match view with possession,
   per-team match stats, goal timeline with cards (incl. touchline bookings) and substitutions,

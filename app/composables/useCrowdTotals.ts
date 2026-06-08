@@ -1,32 +1,34 @@
 // The "show everyone's totals" preference + per-match crowd sums, kept live:
-// initial fetch per competition, then patched from crowd:update WS pushes
-// (anyone saving a prediction updates everyone's view, including your own saves).
+// fetch per competition (auto-refetches when the competition changes), then
+// patched from crowd:update WS pushes (anyone saving a prediction updates
+// everyone's view, your own saves included).
 export function useCrowdTotals() {
   const { session } = useAuth()
   const slug = useSelectedCompetition()
   const enabled = computed(() => (session.value?.data?.user as any)?.showCrowd === true)
 
+  // WS patches, scoped per competition so a switch starts clean
   const patches = useState<Record<string, { home: number; away: number; count: number }>>('crowd-patches', () => ({}))
 
-  const { data } = useFetch<{ totals: Record<string, { home: number; away: number; count: number }> }>(
+  const { data, refresh } = useFetch<{ totals: Record<string, { home: number; away: number; count: number }> }>(
     '/api/predictions/crowd',
     {
-      query: computed(() => (slug.value ? { competition: slug.value } : {})),
-      immediate: false,
-      watch: false,
+      query: computed(() => ({ competition: slug.value ?? '' })),
+      immediate: enabled.value,
+      // default watch on `query` is kept: switching competition refetches.
       lazy: true,
       key: 'crowd-totals',
     },
   )
-  watch(
-    [enabled, slug],
-    async ([on]) => {
-      if (on) await refreshNuxtData('crowd-totals').catch(() => {})
-    },
-    { immediate: true },
-  )
+  // enabling the preference mid-session triggers the first fetch
+  watch(enabled, (on) => {
+    if (on) refresh()
+  })
+  // a competition switch invalidates the previous round's live patches
+  watch(slug, () => {
+    patches.value = {}
+  })
 
-  // one socket per consumer page; cheap, and the hub broadcasts to everyone
   let socket: WebSocket | null = null
   onMounted(() => {
     if (!import.meta.client) return
@@ -45,8 +47,6 @@ export function useCrowdTotals() {
   })
   onBeforeUnmount(() => socket?.close())
 
-  const totals = computed(() =>
-    enabled.value ? { ...(data.value?.totals ?? {}), ...patches.value } : {},
-  )
+  const totals = computed(() => (enabled.value ? { ...(data.value?.totals ?? {}), ...patches.value } : {}))
   return { enabled, totals }
 }

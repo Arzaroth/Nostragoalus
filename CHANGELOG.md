@@ -6,6 +6,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 ## [Unreleased]
 
 ### Fixed
+- Crowd totals refresh when you switch competition (they were stuck showing "–" for the new competition's matches).
 - Tech-stack cards mangled every third entry (monospace, tiny text): the card was an anchor with the license badge as a nested anchor - invalid HTML that Firefox split, leaking the badge style. Card is now a div with a stretched project link and a sibling badge link.
 
 ### Changed
@@ -29,6 +30,22 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ### Added
 - Landing showcase: six real screenshots (fixtures with crowd totals, match depth, ranking, bracket, map, team page) over a seeded league of two dozen demo oracles; mise tasks seed-demo and shots regenerate everything with headless Firefox.
+
+## [Unreleased]
+
+### Added
+- Scoring is now fully transparent: predictions show base points plus a "+N rarity" chip with an "only X% picked this" tooltip, and a "×2" badge when the joker or the final doubled the score (so the breakdown reconciles with the total). The FAQ carries the full point formula in plain notation.
+- Champion picks visible at a glance: crowned flag beside each name on the ranking and on player pages, with the awarded points shown; player pages gained a competition switcher and a Global scope.
+- Landing showcase: a carousel of six real screenshots (fixtures with crowd totals, match depth, ranking, bracket, map, team page) over a seeded league of two dozen demo oracles. New mise tasks seed-demo and shots regenerate the data and screenshots with headless Firefox.
+
+### Changed
+- Single-match rounds have no joker: the final automatically counts double for everyone, the third-place play-off scores normally; placing a joker on either (or on a fixture whose teams aren't decided yet) is rejected server-side and hidden in the UI.
+- Switching competition on a player or team page stays on that page instead of bouncing to the leaderboard.
+
+### Fixed
+- Crowd totals refresh when you switch competition (they were stuck showing "–" for the new competition's matches).
+- Tech-stack cards mangled every third entry (monospace, tiny text): the card was an anchor with the license badge as a nested anchor - invalid HTML that Firefox split, leaking the badge style. Card is now a div with a stretched project link and a sibling badge link.
+- Stats skeleton no longer fights the already-loaded possession bar (possession sits above the skeleton, which lost its fake bar).
 
 ## [0.9.0] - 2026-06-08
 

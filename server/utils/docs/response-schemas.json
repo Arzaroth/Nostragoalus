@@ -28,6 +28,11 @@
           "id": "bc4da63c-691d-40ff-8093-cb7c9d812864",
           "slug": "world-cup-2026",
           "name": "FIFA World Cup 2026"
+        },
+        {
+          "id": "0a4c1eb8-ad34-4128-a0ec-961d53352c0f",
+          "slug": "euro-2024",
+          "name": "UEFA Euro 2024"
         }
       ]
     }
@@ -148,6 +153,29 @@
           "penaltiesHome": null,
           "penaltiesAway": null,
           "winner": "AWAY",
+          "scoringState": "SCORED",
+          "roundId": "c6d33cfa-70fa-444d-9493-aeaa709834d5",
+          "roundLabel": "Group Matchday 1",
+          "matchday": 1,
+          "roundSortOrder": 1,
+          "isLocked": true
+        },
+        {
+          "id": "b0afbdb7-97f1-484f-acbc-33b2f18bce73",
+          "competitionId": "b8d3f79e-cb18-40fe-b6de-a3522e388d7a",
+          "stage": "GROUP",
+          "group": "B",
+          "homeTeam": "England",
+          "awayTeam": "Iran",
+          "homeTeamCode": "ENG",
+          "awayTeamCode": "IRN",
+          "kickoffTime": "2022-11-21T13:00:00.000Z",
+          "status": "FINISHED",
+          "fullTimeHome": 6,
+          "fullTimeAway": 2,
+          "penaltiesHome": null,
+          "penaltiesAway": null,
+          "winner": "HOME",
           "scoringState": "SCORED",
           "roundId": "c6d33cfa-70fa-444d-9493-aeaa709834d5",
           "roundLabel": "Group Matchday 1",
@@ -544,6 +572,18 @@
           "ga": 1,
           "gd": 4,
           "points": 7
+        },
+        {
+          "code": "SEN",
+          "name": "Senegal",
+          "played": 3,
+          "won": 2,
+          "drawn": 0,
+          "lost": 1,
+          "gf": 5,
+          "ga": 4,
+          "gd": 1,
+          "points": 6
         }
       ],
       "form": {
@@ -553,6 +593,12 @@
             "result": "L",
             "opponent": "Netherlands",
             "score": "0–2"
+          },
+          {
+            "matchId": "94de5872-d4af-4045-bcf2-bafa0aa4b272",
+            "result": "L",
+            "opponent": "Senegal",
+            "score": "1–3"
           }
         ],
         "away": [
@@ -561,72 +607,12 @@
             "result": "L",
             "opponent": "Senegal",
             "score": "1–2"
-          }
-        ]
-      },
-      "next": {
-        "home": [
-          {
-            "matchId": "94de5872-d4af-4045-bcf2-bafa0aa4b272",
-            "opponent": "Senegal",
-            "opponentCode": "SEN",
-            "kickoffTime": "2022-11-25T13:00:00.000Z",
-            "result": "L",
-            "score": "1–3"
-          }
-        ],
-        "away": [
+          },
           {
             "matchId": "306d4ed1-588d-4b32-b9bf-e991118b3406",
+            "result": "D",
             "opponent": "Netherlands",
-            "opponentCode": "NED",
-            "kickoffTime": "2022-11-25T16:00:00.000Z",
-            "result": "D",
             "score": "1–1"
-          }
-        ]
-      },
-      "headToHead": [],
-      "possession": {
-        "home": 47.09,
-        "away": 52.91
-      },
-      "goals": [
-        {
-          "side": "AWAY",
-          "teamName": "Ecuador",
-          "teamCode": "ECU",
-          "playerName": "Enner VALENCIA",
-          "minute": "16'",
-          "ownGoal": false,
-          "assistPlayerName": null
-        }
-      ],
-      "h2hAll": {
-        "wins": 0,
-        "draws": 0,
-        "losses": 0,
-        "goalsFor": 0,
-        "goalsAgainst": 0,
-        "meetings": []
-      },
-      "formAll": {
-        "home": [
-          {
-            "result": "D",
-            "opponent": "Chile",
-            "score": "2–2",
-            "date": "2022-09-27T17:00:00Z",
-            "competition": "Friendlies"
-          }
-        ],
-        "away": [
-          {
-            "result": "D",
-            "opponent": "Iraq",
-            "score": "0–0",
-            "date": "2022-11-12T17:30:00Z",
-            "competition": "Friendlies"
           }
         ]
       }
@@ -902,6 +888,19 @@
             "ownGoal": false,
             "assistPlayerId": null,
             "assistPlayerName": null
+          },
+          {
+            "side": "AWAY",
+            "teamId": "43927",
+            "teamName": "Ecuador",
+            "teamCode": "ECU",
+            "playerId": "373400",
+            "playerName": "Enner VALENCIA",
+            "minute": "31'",
+            "goalType": 2,
+            "ownGoal": false,
+            "assistPlayerId": null,
+            "assistPlayerName": null
           }
         ],
         "bookings": [
@@ -910,6 +909,14 @@
             "playerId": "284087",
             "playerName": "SAAD ALSHEEB",
             "minute": "15'",
+            "card": "YELLOW",
+            "coach": false
+          },
+          {
+            "side": "HOME",
+            "playerId": "386366",
+            "playerName": "ALMOEZ ALI",
+            "minute": "22'",
             "card": "YELLOW",
             "coach": false
           }
@@ -922,6 +929,14 @@
             "playerOffName": "Romario IBARRA",
             "playerOnId": "441237",
             "playerOnName": "Jeremy SARMIENTO"
+          },
+          {
+            "side": "HOME",
+            "minute": "72'",
+            "playerOffId": "386366",
+            "playerOffName": "ALMOEZ ALI",
+            "playerOnId": "385070",
+            "playerOnName": "MOHAMMED MUNTARI"
           }
         ],
         "ifesId": "128084",
@@ -1004,6 +1019,9 @@
               "championPoints": {
                 "type": "integer"
               },
+              "championCode": {
+                "type": "string"
+              },
               "exactCount": {
                 "type": "integer"
               },
@@ -1014,8 +1032,7 @@
                 "type": "integer"
               },
               "movement": {
-                "type": "string",
-                "nullable": true
+                "type": "integer"
               }
             }
           }
@@ -1031,16 +1048,31 @@
       "rows": [
         {
           "rank": 1,
-          "userId": "G7xbY1kqtdBzlBZ2N0IrhsxghnvpGroz",
-          "displayName": "Verify",
-          "image": "data:image/jpeg;base64,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",
-          "totalPoints": 0,
-          "predictionPoints": 0,
+          "userId": "demo-8-gegenpressgreta",
+          "displayName": "Gegenpress Greta",
+          "image": "https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Gegenpress%20Greta",
+          "totalPoints": 100,
+          "predictionPoints": 100,
           "championPoints": 0,
-          "exactCount": 0,
-          "outcomeCount": 0,
-          "gdCount": 0,
-          "movement": null
+          "championCode": "FRA",
+          "exactCount": 17,
+          "outcomeCount": 35,
+          "gdCount": 20,
+          "movement": 2
+        },
+        {
+          "rank": 2,
+          "userId": "demo-1-madameirma",
+          "displayName": "Madame Irma",
+          "image": "https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Madame%20Irma",
+          "totalPoints": 99,
+          "predictionPoints": 99,
+          "championPoints": 0,
+          "championCode": "ENG",
+          "exactCount": 17,
+          "outcomeCount": 30,
+          "gdCount": 20,
+          "movement": -1
         }
       ]
     }
@@ -1087,6 +1119,14 @@
           "goals": 8,
           "assists": 2,
           "penalties": null
+        },
+        {
+          "playerName": "Lionel MESSI",
+          "teamName": "Argentina",
+          "teamCode": "ARG",
+          "goals": 7,
+          "assists": 3,
+          "penalties": null
         }
       ]
     }
@@ -1116,6 +1156,10 @@
         {
           "code": "ARG",
           "name": "Argentina"
+        },
+        {
+          "code": "AUS",
+          "name": "Australia"
         }
       ]
     }
@@ -1230,6 +1274,57 @@
                 "status": "FINISHED",
                 "kickoffTime": "2022-12-03T15:00:00Z",
                 "id": "b6653777-09e6-4eb2-89f2-3cc37deaa785"
+              },
+              {
+                "providerMatchId": "400128131",
+                "homeTeam": "Argentina",
+                "homeCode": "ARG",
+                "awayTeam": "Australia",
+                "awayCode": "AUS",
+                "homeScore": 2,
+                "awayScore": 1,
+                "homePens": null,
+                "awayPens": null,
+                "winner": "HOME",
+                "status": "FINISHED",
+                "kickoffTime": "2022-12-03T19:00:00Z",
+                "id": "50db850e-6d42-43c8-9577-a66bfff62081"
+              }
+            ]
+          },
+          {
+            "name": "Quarter-final",
+            "sequence": 3,
+            "matches": [
+              {
+                "providerMatchId": "400128139",
+                "homeTeam": "Netherlands",
+                "homeCode": "NED",
+                "awayTeam": "Argentina",
+                "awayCode": "ARG",
+                "homeScore": 2,
+                "awayScore": 2,
+                "homePens": 3,
+                "awayPens": 4,
+                "winner": "AWAY",
+                "status": "FINISHED",
+                "kickoffTime": "2022-12-09T19:00:00Z",
+                "id": "68266e9a-71aa-4d49-aa06-e8b43619997c"
+              },
+              {
+                "providerMatchId": "400128141",
+                "homeTeam": "Croatia",
+                "homeCode": "CRO",
+                "awayTeam": "Brazil",
+                "awayCode": "BRA",
+                "homeScore": 1,
+                "awayScore": 1,
+                "homePens": 4,
+                "awayPens": 2,
+                "winner": "HOME",
+                "status": "FINISHED",
+                "kickoffTime": "2022-12-09T15:00:00Z",
+                "id": "e0d94ebf-3db3-44f2-bf10-e1ad4132ff5b"
               }
             ]
           }
@@ -1537,6 +1632,28 @@
           "roundLabel": "Group Matchday 1",
           "matchday": 1,
           "roundSortOrder": 1
+        },
+        {
+          "id": "798cbeea-9b74-41dc-aada-0ec128431387",
+          "competitionId": "b8d3f79e-cb18-40fe-b6de-a3522e388d7a",
+          "stage": "GROUP",
+          "group": "D",
+          "homeTeam": "France",
+          "awayTeam": "Denmark",
+          "homeTeamCode": "FRA",
+          "awayTeamCode": "DEN",
+          "kickoffTime": "2022-11-26T16:00:00.000Z",
+          "status": "FINISHED",
+          "fullTimeHome": 2,
+          "fullTimeAway": 1,
+          "penaltiesHome": null,
+          "penaltiesAway": null,
+          "winner": "HOME",
+          "scoringState": "SCORED",
+          "roundId": "f159aa9e-95c1-4bf3-9d9d-487a4bfb1f80",
+          "roundLabel": "Group Matchday 2",
+          "matchday": 2,
+          "roundSortOrder": 2
         }
       ],
       "group": "D",
@@ -1551,6 +1668,18 @@
           "gf": 6,
           "ga": 3,
           "gd": 3,
+          "points": 6
+        },
+        {
+          "code": "AUS",
+          "name": "Australia",
+          "played": 3,
+          "won": 2,
+          "drawn": 0,
+          "lost": 1,
+          "gf": 3,
+          "ga": 4,
+          "gd": -1,
           "points": 6
         }
       ],
@@ -1594,6 +1723,15 @@
           "captain": true,
           "goals": 0,
           "assists": 0
+        },
+        {
+          "playerId": "254133",
+          "name": "Steve MANDANDA",
+          "shirtNumber": 16,
+          "position": "GK",
+          "captain": false,
+          "goals": 0,
+          "assists": 0
         }
       ],
       "coach": "Didier DESCHAMPS",
@@ -1602,6 +1740,11 @@
           "slug": "world-cup-2026",
           "name": "FIFA World Cup 2026",
           "seasonHint": "2026"
+        },
+        {
+          "slug": "euro-2024",
+          "name": "UEFA Euro 2024",
+          "seasonHint": "2024"
         }
       ]
     }
@@ -1644,6 +1787,22 @@
                 "type": "string",
                 "nullable": true
               },
+              "basePoints": {
+                "type": "string",
+                "nullable": true
+              },
+              "bonusPoints": {
+                "type": "string",
+                "nullable": true
+              },
+              "crowdShare": {
+                "type": "string",
+                "nullable": true
+              },
+              "jokerMultiplierApplied": {
+                "type": "string",
+                "nullable": true
+              },
               "homeTeam": {
                 "type": "string"
               },
@@ -1660,6 +1819,9 @@
                 "type": "string"
               },
               "status": {
+                "type": "string"
+              },
+              "stage": {
                 "type": "string"
               },
               "fullTimeHome": {
@@ -1693,12 +1855,43 @@
           "isJoker": false,
           "baseTier": null,
           "totalPoints": null,
+          "basePoints": null,
+          "bonusPoints": null,
+          "crowdShare": null,
+          "jokerMultiplierApplied": null,
           "homeTeam": "Mexico",
           "awayTeam": "South Africa",
           "homeTeamCode": "MEX",
           "awayTeamCode": "RSA",
           "kickoffTime": "2026-06-11T19:00:00.000Z",
           "status": "SCHEDULED",
+          "stage": "GROUP",
+          "fullTimeHome": null,
+          "fullTimeAway": null,
+          "roundLabel": "Group Matchday 1",
+          "roundSort": 1
+        },
+        {
+          "id": "cc8ee5de-3fba-4c1a-a98b-e67a8a468091",
+          "userId": "G7xbY1kqtdBzlBZ2N0IrhsxghnvpGroz",
+          "matchId": "110e5165-97f7-4bb5-b4de-538593103a55",
+          "roundId": "85d7ce4b-41fe-478c-b784-b2f2e8fc7bf4",
+          "homeGoals": 2,
+          "awayGoals": 3,
+          "isJoker": false,
+          "baseTier": null,
+          "totalPoints": null,
+          "basePoints": null,
+          "bonusPoints": null,
+          "crowdShare": null,
+          "jokerMultiplierApplied": null,
+          "homeTeam": "Korea Republic",
+          "awayTeam": "Czechia",
+          "homeTeamCode": "KOR",
+          "awayTeamCode": "CZE",
+          "kickoffTime": "2026-06-12T02:00:00.000Z",
+          "status": "SCHEDULED",
+          "stage": "GROUP",
           "fullTimeHome": null,
           "fullTimeAway": null,
           "roundLabel": "Group Matchday 1",
@@ -1783,6 +1976,10 @@
         {
           "code": "ALG",
           "name": "Algeria"
+        },
+        {
+          "code": "ARG",
+          "name": "Argentina"
         }
       ],
       "myPick": {
@@ -1832,13 +2029,13 @@
     },
     "example": {
       "stats": {
-        "rank": 1,
-        "players": 2,
+        "rank": 25,
+        "players": 26,
         "totalPoints": 0,
         "exact": 0,
         "outcome": 0,
         "predictions": 8,
-        "jokers": 1
+        "jokers": 2
       }
     }
   },
@@ -1862,6 +2059,48 @@
         "totals": {
           "type": "object",
           "properties": {
+            "84319173-de28-41cb-b88c-479dcb24a058": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "8f88ae29-8388-499f-b02f-2d20d226b302": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "7526ade1-5980-4e8a-95f7-8d040c107a7d": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
             "b733999f-7ecc-4971-ab18-6117a5bbca16": {
               "type": "object",
               "properties": {
@@ -1876,7 +2115,539 @@
                 }
               }
             },
+            "b620f8e5-9fba-4dee-80a0-b81c3b1c84fb": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "03fc9906-4dab-43d3-95ef-6922bfe9735e": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "a97fe9a3-a0c8-4226-83a1-0db0813c831d": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "c9ec694e-5927-4d5d-8819-0d49be0b234a": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "da71d405-785f-446c-a4c3-757d7ca94040": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "f8c79e9c-134c-41bb-be30-1544a7d0bdd0": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "f7dd3880-0614-45b5-a669-b2f54f83d4a6": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "0af995d2-8963-4b2c-bab8-455a0d3b29e4": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "89c73a60-f8fe-4f7f-b833-3821c232b5ad": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "45ad43c6-6d67-42b2-82d2-0bda367cb4da": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "08e9d292-4aba-4bcc-b06d-0ea3968c2456": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "3dc01cb1-fe56-4b61-8e21-9462f37aaef1": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "51f589da-d711-43fc-bc2c-8a793b930f82": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "2a15b809-6b41-49f1-a9d5-b9e905f3cc36": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "28830c09-a4c5-49a7-8e66-bea0a50768e6": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "63126225-0d49-4360-ba1b-27ec74495014": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "edd044b0-863d-4e65-9780-718c483d79df": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "c651ced3-eaf6-4603-9685-06506fb9d981": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "6d825375-93b7-478c-925f-522850582cfe": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "a0d18fcd-9c76-487d-b212-3c9200918c45": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "705bbcb0-328e-470a-b9d3-a208ca204986": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "29bf6a57-d105-41d4-8dae-9e3cfb9eae81": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
             "fa21e2cb-52bb-4ff0-a9df-c6dff6961247": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "3df0becd-5365-4964-9650-bf20e210c17f": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "33f5ba9e-0efd-4a51-8a76-b8d2c3065a29": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "36323f9f-de26-4bcb-a879-23b598030b72": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "e8743cef-549a-49bf-8eb5-4357e7d9a225": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "289c44b0-e681-4c85-a3f5-c0cbc911ae2e": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "afe7eea8-a72e-4b58-bbce-4661a03c1c35": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "3b73348a-f92d-4ae9-b312-5ad4c7059a23": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "acd77f37-89b7-4436-abb3-6f362add0a5a": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "48005d2d-e1f4-4641-948d-aa17c5c6f745": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "eab98d20-6410-44b8-8ee0-626ebac6bdb3": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "230c30e5-f043-40a9-800a-54e6e25cf77c": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "c7ebf656-13bb-4500-a4b7-5d16c1e63734": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "faa10c4e-7d7e-4c4a-bcd5-dac489dd5d4a": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "7f7c4ef7-c980-46f0-be63-8b92eeb05538": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "32abb63d-fa96-4eff-9fd9-39afa919c741": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "59172dc6-4ce8-4d6b-9d68-3412d5c13450": {
               "type": "object",
               "properties": {
                 "home": {
@@ -1918,6 +2689,62 @@
                 }
               }
             },
+            "b19c7f3e-3fdc-4c8e-9c57-d9c0528203bc": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "8083ac24-d979-4423-9a91-39379ebb3fea": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "eadd5085-3a14-49fc-a5ce-b20ec8d1c5f6": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "71047c4e-23a3-4a43-be1f-0bb869bcbe05": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
             "dc1cd645-05a9-4955-8426-3eb207c747c0": {
               "type": "object",
               "properties": {
@@ -1946,7 +2773,287 @@
                 }
               }
             },
+            "611776a7-a8a7-4680-be1e-6f274180c3ed": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "a3e96c48-b458-4572-8e6c-a578413e67d6": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "ae46590d-7a0a-46d7-b50f-90d6baf5bf81": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
             "fa335828-8c86-4271-b48d-67393c089e09": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "af3fea94-1cc2-4519-a5da-0b3bb8fc64eb": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "63fbf6ff-d7df-4697-a5d9-5a576acfefad": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "318571f6-d4ba-42a5-b354-c8e5839d577a": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "d7d5ea9b-d86a-4c73-89fb-19444384991b": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "b316c07d-c356-4d78-bea8-b7444568e03f": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "e65fb255-8e70-44e9-9acf-17febec05daf": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "4b65b5d3-76f6-4df5-b392-eede53965280": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "df35f62c-fac0-44dd-b4f8-a3458f050c03": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "17ab60ac-0490-4f9a-bd13-bce47c92f4a6": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "0df7ae66-6a90-4b0d-bcb2-44da3432c6db": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "8581a045-22cf-4e8c-94cb-82921315ffe7": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "fd70747c-153f-49d6-9630-cc189a28ff0e": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "c2f426b3-9724-4570-ac60-3ee83cc071c1": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "183d3fc5-eccc-4c6f-8507-c6805b116d02": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "81af3ca1-80f5-408e-ac59-c0163f5735ed": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "bcdcc18a-7b94-48fe-8beb-5ec5df928d6d": {
+              "type": "object",
+              "properties": {
+                "home": {
+                  "type": "integer"
+                },
+                "away": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            },
+            "fd6af1c2-063c-49aa-b4bf-5ebad2b24160": {
               "type": "object",
               "properties": {
                 "home": {
@@ -1980,45 +3087,15 @@
     },
     "example": {
       "totals": {
-        "b733999f-7ecc-4971-ab18-6117a5bbca16": {
-          "home": 1,
-          "away": 2,
-          "count": 1
+        "84319173-de28-41cb-b88c-479dcb24a058": {
+          "home": 29,
+          "away": 19,
+          "count": 23
         },
-        "fa21e2cb-52bb-4ff0-a9df-c6dff6961247": {
-          "home": 4,
-          "away": 0,
-          "count": 1
-        },
-        "73260ec4-009b-4193-94f3-6627b62be791": {
-          "home": 3,
-          "away": 0,
-          "count": 1
-        },
-        "110e5165-97f7-4bb5-b4de-538593103a55": {
-          "home": 2,
-          "away": 2,
-          "count": 1
-        },
-        "dc1cd645-05a9-4955-8426-3eb207c747c0": {
-          "home": 1,
-          "away": 2,
-          "count": 1
-        },
-        "131f49e5-d82b-475d-b9b5-8cdab372bf25": {
-          "home": 1,
-          "away": 1,
-          "count": 1
-        },
-        "fa335828-8c86-4271-b48d-67393c089e09": {
-          "home": 1,
-          "away": 1,
-          "count": 1
-        },
-        "3bdb0b8c-38f2-45db-8f8d-c5b8eb5f7170": {
-          "home": 1,
-          "away": 1,
-          "count": 1
+        "8f88ae29-8388-499f-b02f-2d20d226b302": {
+          "home": 18,
+          "away": 18,
+          "count": 20
         }
       }
     }
@@ -2041,6 +3118,26 @@
             }
           }
         },
+        "champion": {
+          "type": "object",
+          "properties": {
+            "teamCode": {
+              "type": "string"
+            },
+            "teamName": {
+              "type": "string"
+            },
+            "competitionId": {
+              "type": "string"
+            },
+            "awardedPoints": {
+              "type": "integer"
+            }
+          }
+        },
+        "global": {
+          "type": "boolean"
+        },
         "predictions": {
           "type": "array",
           "items": {}
@@ -2053,6 +3150,13 @@
         "name": "Verify",
         "image": "data:image/jpeg;base64,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"
       },
+      "champion": {
+        "teamCode": "FRA",
+        "teamName": "France",
+        "competitionId": "bc4da63c-691d-40ff-8093-cb7c9d812864",
+        "awardedPoints": 0
+      },
+      "global": false,
       "predictions": []
     }
   }

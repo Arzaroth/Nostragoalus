@@ -28,9 +28,12 @@ function inferSchema(value, depth = 0) {
 
 // Examples stay readable: arrays cut to one element, deep objects kept.
 function trimExample(value, depth = 0) {
-  if (Array.isArray(value)) return value.slice(0, 1).map((v) => trimExample(v, depth + 1))
+  if (Array.isArray(value)) return value.slice(0, 2).map((v) => trimExample(v, depth + 1))
   if (value && typeof value === 'object') {
-    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, trimExample(v, depth + 1)]))
+    // cap maps (e.g. crowd totals keyed by matchId) to a couple of sample keys
+    const entries = Object.entries(value)
+    const capped = entries.length > 3 && entries.every(([, v]) => v && typeof v === 'object') ? entries.slice(0, 2) : entries
+    return Object.fromEntries(capped.map(([k, v]) => [k, trimExample(v, depth + 1)]))
   }
   return value
 }
