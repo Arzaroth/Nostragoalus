@@ -110,6 +110,8 @@ const importTooltip = computed(() => ({ value: taskTip('import-fixtures', t('adm
 const refreshTooltip = computed(() => ({ value: taskTip('fixtures:refresh', t('admin.data.refreshTip')), escape: false }))
 const pollTooltip = computed(() => ({ value: taskTip('scores:poll', t('admin.data.pollTip')), escape: false }))
 const finalizeTooltip = computed(() => ({ value: taskTip('matches:finalize', t('admin.data.finalizeTip')), escape: false }))
+const oddsTooltip = computed(() => ({ value: taskTip('odds:refresh', t('admin.data.oddsTip')), escape: false }))
+const oddsBackfillTooltip = computed(() => ({ value: taskTip('odds:backfill', t('admin.data.oddsBackfillTip')), escape: false }))
 
 // Turn the stored JSON result into readable "key: value" lines.
 function humanizeResult(json: string): string {
@@ -512,6 +514,10 @@ function createUser() {
               <NextRunLabel :step="2" />
               <Button v-tooltip.left="finalizeTooltip" :label="t('admin.data.finalize')" icon="pi pi-flag" size="small" severity="success" class="w-48" :loading="syncBusy === 'finalize'" @click="runTask('finalize')" />
               <NextRunLabel :step="5" />
+              <Button v-tooltip.left="oddsTooltip" :label="t('admin.data.odds')" icon="pi pi-percentage" size="small" severity="secondary" class="w-48" :loading="syncBusy === 'odds'" @click="runTask('odds')" />
+              <NextRunLabel :step="30" />
+              <Button v-tooltip.left="oddsBackfillTooltip" :label="t('admin.data.oddsBackfill')" icon="pi pi-history" size="small" severity="secondary" class="w-48" :loading="syncBusy === 'odds-backfill'" @click="runTask('odds-backfill')" />
+              <NextRunLabel :step="null" />
             </div>
             <pre v-if="syncMsg" class="text-xs p-2 rounded overflow-x-auto" style="background: color-mix(in srgb, var(--p-text-color) 6%, transparent)">{{ syncMsg }}</pre>
           </div>
