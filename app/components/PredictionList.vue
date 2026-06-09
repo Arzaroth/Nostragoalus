@@ -3,7 +3,8 @@ const { t } = useI18n()
 const { enabled: crowdEnabled, totals: crowdTotals, leagueTotals, leagueActive } = useCrowdTotals()
 const { enabled: oddsEnabled, byMatch: oddsByMatch } = useMatchOdds()
 const slug = useSelectedCompetition()
-defineProps<{ predictions: MyPrediction[]; editable?: boolean }>()
+// consensusCount/Total only arrive on the bot's rows ("picked by X/Y").
+defineProps<{ predictions: (MyPrediction & { consensusCount?: number; consensusTotal?: number })[]; editable?: boolean }>()
 const emit = defineEmits<{ toggleJoker: [p: MyPrediction]; updateScore: [payload: { p: MyPrediction; home: number; away: number }] }>()
 
 function fmt(d: string) {
@@ -28,7 +29,7 @@ function rarityTip(p: { crowdShare?: number | string | null }) {
       style="background: var(--p-content-background)"
     >
       <div class="flex items-center justify-between text-xs mb-2" style="color: var(--p-text-muted-color)">
-        <span>{{ p.roundLabel }} · {{ fmt(p.kickoffTime) }}</span>
+        <span>{{ p.roundLabel }} · {{ fmt(p.kickoffTime) }}<template v-if="p.consensusTotal"> · 👥 {{ t('bot.pickedBy', { count: p.consensusCount, total: p.consensusTotal }) }}</template></span>
         <button
           v-if="editable && !isLocked(p) && !isSingleMatchStage(p.stage) && p.homeTeamCode && p.awayTeamCode"
           type="button"

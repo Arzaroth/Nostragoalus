@@ -219,6 +219,18 @@
     "correct": "lugh",
     "pts": "QuQ"
   },
+  "bot": {
+    "name": "ghom qoq",
+    "show": "qoq",
+    "virtual": "QujwI' qoq",
+    "note": "QujwI' law' wIv motlh noH qoq - pagh botlh. patlh choHbe'.",
+    "pickedBy": "{count}/{total} wIv",
+    "adminUpcoming": "loHwI' legh: may' taghbe'pu'bogh je 'ang - may' taghpu'bogh neH legh QujwI'pu'.",
+    "empty": "wej noH ghom - noHDI' QujwI'pu' 'ang.",
+    "methodMode": "wIv motlh",
+    "methodMean": "botlh",
+    "modeDisabled": "noH puS - wIv motlh Qagh, vaj botlh 'ang."
+  },
   "match": {
     "standings": "patlh",
     "form": "Dotlh",

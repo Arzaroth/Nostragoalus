@@ -219,6 +219,18 @@
     "correct": "correct",
     "pts": "pts"
   },
+  "bot": {
+    "name": "Crowd Bot",
+    "show": "Bot",
+    "virtual": "virtual player",
+    "note": "Predicts the most common score picked by all players - or the average. It doesn't affect anyone's rank.",
+    "pickedBy": "picked by {count}/{total}",
+    "adminUpcoming": "Admin view: consensus for upcoming matches is included - players only see kicked-off matches.",
+    "empty": "No consensus yet - it appears once players start predicting.",
+    "methodMode": "Most picked",
+    "methodMean": "Average",
+    "modeDisabled": "Too few predictions - the most-picked score would be biased, so the average is shown."
+  },
   "match": {
     "standings": "Standings",
     "form": "Form",
