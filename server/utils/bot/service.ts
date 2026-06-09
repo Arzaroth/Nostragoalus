@@ -1,18 +1,18 @@
 import { and, eq } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { championPick, leagueMember, match, prediction, round } from '../../../db/schema'
-import { countsDouble, isSingleMatchStage } from '../../../shared/types/match'
+import { countsDouble, isSingleMatchStage, type AppStage, type MatchStatus } from '../../../shared/types/match'
+import type { BaseTier } from '../scoring/tiers'
 import type { ScoringRules } from '../scoring/config'
 import { scoreSyntheticPrediction } from '../scoring/engine'
 import { getActiveScoringConfig } from '../scoring/store'
 import { getLeaderboard } from '../leaderboard/service'
 
-export const BOT_USER_ID = '__bot__'
+import { BOT_USER_ID, type ConsensusMethod } from '../../../shared/types/bot'
+
 // Below this many distinct predictors, the most-common scoreline is noise, not
 // consensus - the MODE method falls back to MEAN (mirrors crowdMinDenominator).
 export const MIN_CONSENSUS_USERS = 5
-
-export type ConsensusMethod = 'MODE' | 'MEAN'
 
 export interface Consensus {
   home: number
@@ -55,7 +55,7 @@ export interface BotMatchRow {
   homeGoals: number
   awayGoals: number
   isJoker: boolean
-  baseTier: string | null
+  baseTier: BaseTier | null
   totalPoints: number | null
   basePoints: number | null
   bonusPoints: number | null
@@ -66,8 +66,8 @@ export interface BotMatchRow {
   homeTeamCode: string | null
   awayTeamCode: string | null
   kickoffTime: Date
-  status: string
-  stage: string
+  status: MatchStatus
+  stage: AppStage
   fullTimeHome: number | null
   fullTimeAway: number | null
   penaltiesHome: number | null
@@ -145,7 +145,7 @@ export async function getBotChampion(
   }
   if (counts.size === 0) return null
   const best = [...counts.values()].sort(
-    (a, b) => b.count - a.count || (a.teamCode < b.teamCode ? -1 : 1),
+    (a, b) => b.count - a.count || a.teamCode.localeCompare(b.teamCode),
   )[0]
 
   // Mirrors finalizeMatches: the bonus exists once a final has a decided winner.
@@ -256,7 +256,7 @@ export async function getBotOverview(
       (a, b) =>
         b.count - a.count ||
         a.kickoffTime.getTime() - b.kickoffTime.getTime() ||
-        (a.matchId < b.matchId ? -1 : 1),
+        a.matchId.localeCompare(b.matchId),
     )
     jokerMatches.add(candidates[0].matchId)
   }
