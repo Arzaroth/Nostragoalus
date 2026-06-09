@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+- Admin user list: "Unlink from SSO" only appears for users actually linked to a provider (small link icon shows who is, with the provider ids in its tooltip), and admins can no longer demote themselves (it broke every admin query on the page mid-session).
+
 ### Added
 - Forgejo-style footer on every page: app version (links to About), server/client page render time, a themed language switcher, a dark-mode toggle and the API docs link (moved out of the landing footer). The login/signup pages' standalone language/theme controls are gone - the footer covers them.
 

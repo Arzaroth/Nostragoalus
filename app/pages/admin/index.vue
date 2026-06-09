@@ -191,6 +191,17 @@ const { data: usersData, isPending: usersLoading } = useQuery({
 })
 const users = computed(() => usersData.value ?? [])
 
+// better-auth's listUsers has no account info; the SSO indicator and the
+// unlink action need to know who is actually linked. Key shares the
+// 'admin-users' prefix so invalidateUsers refreshes both.
+const { data: ssoLinksData } = useQuery({
+  queryKey: ['admin-users', 'sso-links'],
+  enabled: isAdmin,
+  queryFn: ({ signal }) =>
+    $fetch<{ links: Record<string, string[]> }>('/api/admin/users/sso-links', { signal }).then((r) => r.links),
+})
+const ssoLinks = computed(() => ssoLinksData.value ?? {})
+
 const roleMutation = useMutation({
   mutationFn: (u: any) => admin.setRole({ userId: u.id, role: u.role === 'admin' ? 'user' : 'admin' }),
   onSuccess: invalidateUsers,
@@ -231,18 +242,24 @@ const rowMenuItems = computed(() => {
   const u = menuUser.value
   if (!u) return []
   return [
-    {
-      label: u.role === 'admin' ? t('admin.users.demote') : t('admin.users.promote'),
-      icon: u.role === 'admin' ? 'pi pi-angle-double-down' : 'pi pi-angle-double-up',
-      command: () => toggleAdmin(u),
-    },
+    // Self-demotion is hidden: dropping your own admin role mid-session breaks
+    // every admin query on this page (another admin can always demote you).
+    ...(u.id !== myId.value
+      ? [
+          {
+            label: u.role === 'admin' ? t('admin.users.demote') : t('admin.users.promote'),
+            icon: u.role === 'admin' ? 'pi pi-angle-double-down' : 'pi pi-angle-double-up',
+            command: () => toggleAdmin(u),
+          },
+        ]
+      : []),
     {
       label: u.hiddenFromLeaderboard ? t('admin.users.show') : t('admin.users.hide'),
       icon: u.hiddenFromLeaderboard ? 'pi pi-eye' : 'pi pi-eye-slash',
       command: () => toggleVisibility(u),
     },
     ...(u.twoFactorEnabled ? [{ label: t('admin.users.remove2fa'), icon: 'pi pi-shield', command: () => strip2fa(u) }] : []),
-    { label: t('admin.users.unlinkSso'), icon: 'pi pi-link', command: () => unlinkSso(u) },
+    ...(ssoLinks.value[u.id]?.length ? [{ label: t('admin.users.unlinkSso'), icon: 'pi pi-link', command: () => unlinkSso(u) }] : []),
     ...(u.id !== myId.value
       ? [
           { separator: true },
@@ -455,6 +472,12 @@ function createUser() {
               style="color: var(--p-text-muted-color)"
             />
             <i v-if="u.twoFactorEnabled" v-tooltip.left="'2FA'" class="pi pi-shield text-xs" style="color: var(--p-text-muted-color)" />
+            <i
+              v-if="ssoLinks[u.id]?.length"
+              v-tooltip.left="`SSO: ${ssoLinks[u.id].join(', ')}`"
+              class="pi pi-link text-xs"
+              style="color: var(--p-text-muted-color)"
+            />
             <Tag v-if="u.banned" value="BANNED" severity="danger" />
             <Tag v-if="u.role === 'admin'" value="ADMIN" severity="success" />
             <Button
