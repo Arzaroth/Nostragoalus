@@ -164,5 +164,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateNavFades))
     <main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6">
       <slot />
     </main>
+
+    <SiteFooter />
   </div>
 </template>

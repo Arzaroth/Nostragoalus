@@ -1,4 +1,5 @@
 import { NostraTheme } from './lib/theme'
+import pkg from './package.json'
 
 export default defineNuxtConfig({
   compatibilityDate: '2026-06-04',
@@ -109,6 +110,7 @@ export default defineNuxtConfig({
     public: {
       authUrl: '',
       appName: 'Nostragoalus',
+      version: pkg.version,
     },
   },
 

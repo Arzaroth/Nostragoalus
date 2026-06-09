@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- Forgejo-style footer on every page: app version (links to About), server/client page render time, a compact language switcher and the API docs link (moved out of the landing footer).
+
 ## [0.15.0] - 2026-06-09
 
 ### Added
