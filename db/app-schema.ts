@@ -159,8 +159,10 @@ export const match = pgTable(
     possessionHome: numeric('possession_home', { precision: 5, scale: 2 }),
     possessionAway: numeric('possession_away', { precision: 5, scale: 2 }),
     // Odds-provider event id (e.g. Sofascore event id), resolved once by the
-    // name+kickoff matcher so polling never re-matches.
+    // name+kickoff matcher so polling never re-matches; swapped = the provider
+    // lists our away side as home, so fetched odds must be flipped.
     oddsEventRef: text('odds_event_ref'),
+    oddsEventSwapped: boolean('odds_event_swapped').notNull().default(false),
     detailsFetchedAt: timestamp('details_fetched_at', { withTimezone: true }),
     scoringState: matchScoringStateEnum('scoring_state').notNull().default('PENDING'),
     scoredAtVersion: integer('scored_at_version'),
