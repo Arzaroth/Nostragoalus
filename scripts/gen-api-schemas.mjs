@@ -77,6 +77,8 @@ const TARGETS = {
   '/api/champion': `/api/champion?competition=${liveComp}`,
   '/api/me/stats': `/api/me/stats?competition=${liveComp}`,
   '/api/me/trust-status': '/api/me/trust-status',
+  '/api/me/sso-status': '/api/me/sso-status',
+  '/api/sso/check': '/api/sso/check?email=player%40example.com',
   '/api/predictions/crowd': `/api/predictions/crowd?competition=${liveComp}`,
   '/api/users/{id}/predictions': `/api/users/${userId}/predictions?competition=${liveComp}`,
 }

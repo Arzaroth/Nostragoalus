@@ -1020,7 +1020,8 @@
                 "type": "integer"
               },
               "championCode": {
-                "type": "string"
+                "type": "string",
+                "nullable": true
               },
               "exactCount": {
                 "type": "integer"
@@ -1032,7 +1033,8 @@
                 "type": "integer"
               },
               "movement": {
-                "type": "integer"
+                "type": "string",
+                "nullable": true
               }
             }
           }
@@ -1048,31 +1050,31 @@
       "rows": [
         {
           "rank": 1,
-          "userId": "demo-8-gegenpressgreta",
-          "displayName": "Gegenpress Greta",
-          "image": "https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Gegenpress%20Greta",
-          "totalPoints": 100,
-          "predictionPoints": 100,
+          "userId": "demo-16-bouledecristal",
+          "displayName": "Boule de Cristal",
+          "image": "https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Boule%20de%20Cristal",
+          "totalPoints": 105,
+          "predictionPoints": 105,
           "championPoints": 0,
-          "championCode": "FRA",
-          "exactCount": 17,
-          "outcomeCount": 35,
-          "gdCount": 20,
-          "movement": 2
+          "championCode": null,
+          "exactCount": 18,
+          "outcomeCount": 33,
+          "gdCount": 21,
+          "movement": null
         },
         {
           "rank": 2,
-          "userId": "demo-1-madameirma",
-          "displayName": "Madame Irma",
-          "image": "https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Madame%20Irma",
+          "userId": "demo-8-gegenpressgreta",
+          "displayName": "Gegenpress Greta",
+          "image": "https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Gegenpress%20Greta",
           "totalPoints": 99,
           "predictionPoints": 99,
           "championPoints": 0,
-          "championCode": "ENG",
-          "exactCount": 17,
-          "outcomeCount": 30,
-          "gdCount": 20,
-          "movement": -1
+          "championCode": null,
+          "exactCount": 15,
+          "outcomeCount": 32,
+          "gdCount": 22,
+          "movement": null
         }
       ]
     }
@@ -1832,6 +1834,14 @@
                 "type": "string",
                 "nullable": true
               },
+              "penaltiesHome": {
+                "type": "string",
+                "nullable": true
+              },
+              "penaltiesAway": {
+                "type": "string",
+                "nullable": true
+              },
               "roundLabel": {
                 "type": "string"
               },
@@ -1868,6 +1878,8 @@
           "stage": "GROUP",
           "fullTimeHome": null,
           "fullTimeAway": null,
+          "penaltiesHome": null,
+          "penaltiesAway": null,
           "roundLabel": "Group Matchday 1",
           "roundSort": 1
         },
@@ -1894,6 +1906,8 @@
           "stage": "GROUP",
           "fullTimeHome": null,
           "fullTimeAway": null,
+          "penaltiesHome": null,
+          "penaltiesAway": null,
           "roundLabel": "Group Matchday 1",
           "roundSort": 1
         }
@@ -2030,11 +2044,11 @@
     "example": {
       "stats": {
         "rank": 25,
-        "players": 26,
+        "players": 27,
         "totalPoints": 0,
         "exact": 0,
         "outcome": 0,
-        "predictions": 8,
+        "predictions": 9,
         "jokers": 2
       }
     }
@@ -2050,6 +2064,42 @@
     },
     "example": {
       "trusted": false
+    }
+  },
+  "/api/me/sso-status": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "ssoManaged": {
+          "type": "boolean"
+        },
+        "mailEnabled": {
+          "type": "boolean"
+        }
+      }
+    },
+    "example": {
+      "ssoManaged": false,
+      "mailEnabled": true
+    }
+  },
+  "/api/sso/check": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "providerId": {
+          "type": "string",
+          "nullable": true
+        },
+        "name": {
+          "type": "string",
+          "nullable": true
+        }
+      }
+    },
+    "example": {
+      "providerId": null,
+      "name": null
     }
   },
   "/api/predictions/crowd": {
@@ -2465,7 +2515,7 @@
                 }
               }
             },
-            "36323f9f-de26-4bcb-a879-23b598030b72": {
+            "e8743cef-549a-49bf-8eb5-4357e7d9a225": {
               "type": "object",
               "properties": {
                 "home": {
@@ -2479,7 +2529,7 @@
                 }
               }
             },
-            "e8743cef-549a-49bf-8eb5-4357e7d9a225": {
+            "36323f9f-de26-4bcb-a879-23b598030b72": {
               "type": "object",
               "properties": {
                 "home": {
@@ -3088,14 +3138,14 @@
     "example": {
       "totals": {
         "84319173-de28-41cb-b88c-479dcb24a058": {
-          "home": 29,
+          "home": 26,
           "away": 19,
-          "count": 23
+          "count": 20
         },
         "8f88ae29-8388-499f-b02f-2d20d226b302": {
-          "home": 18,
-          "away": 18,
-          "count": 20
+          "home": 33,
+          "away": 13,
+          "count": 19
         }
       }
     }

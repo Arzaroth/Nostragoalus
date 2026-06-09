@@ -22,20 +22,27 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
 
 ## Features
 
-- Score predictions with closeness-tiered points, a rarity bonus, and one ×2 **joker** per round
+- Score predictions with closeness-tiered points, a rarity bonus, and one ×2 **joker** per round;
+  Enter/space hops between score inputs so a whole matchday can be typed without the mouse
 - Optional **crowd totals** under every prediction (everyone's picks combined), updated live over WebSocket
 - Transparent scoring: base + rarity bonus + joker/final ×2 broken out on every pick, with the full formula in the FAQ
 - **Champion pick** bonus, locked at the first kickoff and shown beside every name on the rankings
-- Per-competition **and global** rankings with movement arrows; browse other players' (locked) predictions
+- Per-competition **and global** rankings with movement arrows; browse other players' (locked)
+  predictions; admins can hide any account from the rankings (hidden players still count in crowd totals)
 - Live scores over WebSocket with a pixel-art **goal celebration**; match view with possession,
   per-team match stats, goal timeline with cards (incl. touchline bookings) and substitutions,
   **all-time head-to-head** and cross-competition form (friendlies included, causally cut off at
   kickoff), penalty shootouts, and each team's top scorer / top assister
 - Per-team pages: official squads with positions, manager, season stats, competition switcher
 - Knockout **bracket** and an interactive **world map** (Leaflet / OpenStreetMap)
-- Auth: email + password (HIBP-checked), **2FA** (TOTP, email codes, single-use backup codes,
-  trusted devices), **passkeys** (sudo-gated registration), runtime-configurable **SSO** (OIDC /
-  SAML / Google) with envelope-encrypted secrets, admin user management
+- Auth: identifier-first login with **SSO domain capture** - runtime-configurable OIDC / SAML /
+  Google providers (several domains each, display names, envelope-encrypted secrets, in-place
+  editing, SP metadata for IdP setup); email + password (HIBP-checked) with mailed reset; **2FA**
+  (TOTP, email codes, single-use backup codes, trusted devices); **passkeys** (sudo-gated
+  registration). SSO-managed accounts hand credential management to the IdP (an SSO sign-in
+  removes any local password; admins are exempt as break-glass access)
+- Admin user management (roles, bans, leaderboard visibility, 2FA removal, SSO unlink); with SMTP
+  configured, account deletion is confirmed through a mailed link
 - Four languages (EN / FR / TH / tlh), light/dark/system themes saved per account
 - Auto-generated **API docs** at `/docs/api` (OpenAPI + Scalar)
 

@@ -39,5 +39,6 @@ coverage
 *.jar
 cookies.txt
 
-# Claude Code local state (worktrees, settings)
-.claude/
+# Claude Code local state (skills and commands ARE tracked)
+.claude/worktrees/
+.claude/settings.local.json
