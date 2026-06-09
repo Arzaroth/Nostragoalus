@@ -6,7 +6,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 ## [Unreleased]
 
 ### Added
-- Forgejo-style footer on every page: app version (links to About), server/client page render time, a compact language switcher and the API docs link (moved out of the landing footer).
+- Forgejo-style footer on every page: app version (links to About), server/client page render time, a themed language switcher, a dark-mode toggle and the API docs link (moved out of the landing footer). The login/signup pages' standalone language/theme controls are gone - the footer covers them.
 
 ## [0.15.0] - 2026-06-09
 

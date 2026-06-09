@@ -81,6 +81,5 @@ async function signInGoogle() {
       <div class="flex-1 border-t" style="border-color: var(--p-content-border-color)" />{{ t('auth.or') }}<div class="flex-1 border-t" style="border-color: var(--p-content-border-color)" />
     </div>
     <NuxtLink to="/login" class="text-sm text-center">{{ t('auth.haveAccount') }}</NuxtLink>
-    <div class="flex justify-center mt-6 opacity-75"><GuestPrefs /></div>
   </div>
 </template>

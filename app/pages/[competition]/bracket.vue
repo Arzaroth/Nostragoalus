@@ -67,8 +67,9 @@ const sides = computed(() => {
 <style scoped>
 .br {
   --line: var(--p-content-border-color);
-  /* Stretch columns so the dense edge rounds (8 matches) get vertical air. */
-  min-height: max(620px, calc(100vh - 230px));
+  /* Stretch columns so the dense edge rounds (8 matches) get vertical air.
+     The 270px budget covers header + page paddings + the site footer. */
+  min-height: max(620px, calc(100vh - 270px));
 }
 .br-col {
   display: flex;

@@ -95,6 +95,5 @@ async function signInPasskey() {
     </div>
     <Button :label="t('passkeys.signIn')" icon="pi pi-id-card" severity="secondary" outlined @click="signInPasskey" />
     <NuxtLink to="/signup" class="text-sm text-center">{{ t('auth.needAccount') }}</NuxtLink>
-    <div class="flex justify-center mt-6 opacity-75"><GuestPrefs /></div>
   </div>
 </template>
