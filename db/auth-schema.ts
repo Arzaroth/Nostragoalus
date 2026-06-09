@@ -124,6 +124,9 @@ export const ssoProvider = pgTable(
     providerId: text("provider_id").notNull().unique(),
     organizationId: text("organization_id"),
     domain: text("domain").notNull(),
+    // Ours, not the plugin's: human-readable name shown to end users
+    // (e.g. the signup "this domain uses SSO" warning).
+    displayName: text("display_name"),
   },
   (table) => [index("sso_provider_domain_idx").on(table.domain)],
 )

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { resizeToDataUrl } from '../utils/image'
-import { authClient } from '../../lib/auth-client'
 
 const { t } = useI18n()
 const { session, changeEmail, changePassword, updateUser, deleteUser, signOut } = useAuth()
@@ -8,19 +7,11 @@ const router = useRouter()
 
 const currentUser = computed(() => session.value?.data?.user)
 
-// SSO-managed accounts (no credential account row) get their email, password,
-// 2FA and passkeys from the IdP - local credential management is hidden and
-// the server rejects it too.
-const linkedAccounts = ref<{ provider?: string; providerId?: string }[] | null>(null)
-onMounted(async () => {
-  const res = await authClient.listAccounts()
-  linkedAccounts.value = (res.data as { provider?: string; providerId?: string }[] | null) ?? []
-})
-const ssoManaged = computed(() => {
-  const list = linkedAccounts.value
-  if (!list || list.length === 0) return false
-  return !list.some((a) => (a.provider ?? a.providerId) === 'credential')
-})
+// SSO-managed accounts get their email, password, 2FA and passkeys from the
+// IdP - local credential management is hidden and the server rejects it too.
+// Resolved server-side (SSR) so the sections never flash in before hiding.
+const { data: ssoStatus } = await useFetch<{ ssoManaged: boolean }>('/api/me/sso-status')
+const ssoManaged = computed(() => ssoStatus.value?.ssoManaged === true)
 
 // --- Two-factor authentication (state machine extracted to a tested composable) ---
 const tfa = useTwoFactor(currentUser)

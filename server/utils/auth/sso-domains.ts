@@ -49,6 +49,9 @@ export async function resolveSsoProviderId(db: AppDatabase, domain: string): Pro
 }
 
 // Domains already captured by another provider - first-come-first-served.
+// Checked both ways: claiming mail.corp.com under someone's corp.com is a
+// conflict, and so is claiming corp.com when someone holds mail.corp.com
+// (subdomain matching would make sign-ins ambiguous in either direction).
 export async function findDomainConflicts(
   db: AppDatabase,
   providerId: string,
@@ -58,5 +61,15 @@ export async function findDomainConflicts(
     .select({ providerId: ssoProvider.providerId, domain: ssoProvider.domain })
     .from(ssoProvider)
   const others = rows.filter((r) => r.providerId !== providerId)
-  return domains.filter((d) => others.some((o) => domainMatchesList(d, o.domain)))
+  return domains.filter((d) =>
+    others.some(
+      (o) =>
+        domainMatchesList(d, o.domain) ||
+        (o.domain ?? '')
+          .split(',')
+          .map((od) => od.trim().toLowerCase())
+          .filter(Boolean)
+          .some((od) => domainMatchesList(od, d)),
+    ),
+  )
 }

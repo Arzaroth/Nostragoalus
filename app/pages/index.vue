@@ -42,19 +42,14 @@ const reduced = useReducedMotion()
 //   banner-mini.svg (2752x144) the ball+title span x~879..1736 (~857 units,
 //   centered at x~1308 - NOT the svg's middle), so with cover-fit the content
 //   fits while vw/(h/144) >= ~880 -> h <= ~0.16*vw, capped at MINI_H.
-// - miniBgPos: shifts the cover-fit artwork so x=1308 lands at the bar's center.
 const topPx = ref(64)
 const miniH = ref(MINI_H)
-const miniBgPos = ref('center')
 function layoutBanner() {
   const vw = window.innerWidth
   const header = document.querySelector('header')
   topPx.value = header ? Math.floor(header.getBoundingClientRect().height) - 1 : 64
   miniH.value = Math.min(MINI_H, Math.round(vw * 0.16))
-  const s = miniH.value / 144
-  miniBgPos.value = `${Math.round(vw / 2 - 1308 * s)}px center`
 }
-const miniBg = computed(() => `url(/brand/banner-mini.svg) ${miniBgPos.value} / cover no-repeat`)
 
 const { scrollY } = useScroll()
 const spring = { stiffness: 220, damping: 30 }
@@ -76,6 +71,24 @@ const bShadow = useTransform([t1, t2] as never, (values: never) => {
 const dimOpacity = useTransform(t1, (v) => 0.6 * v)
 // Phase 2 crossfades the full artwork into a purpose-built compact banner.
 const wideOpacity = useTransform(t2, (v) => 1 - v)
+// The mini artwork's cover-fit scale changes every frame while the bar height
+// animates, so its background is recomputed per frame too: explicit size +
+// position keep the content block centered with no horizontal swimming, and
+// the position is clamped so the image always fills the bar (above ~1900px
+// wide, cover becomes width-bound and a static offset would leave a blank
+// stripe at the edge).
+const miniBgMotion = useTransform([t1, t2] as never, (values: never) => {
+  const [a, b] = values as unknown as [number, number]
+  if (typeof window === 'undefined') return 'none'
+  const vw = window.innerWidth
+  const barW = ((100 - 12 * a) / 100) * vw
+  const base = Math.min(barW * 0.3023, 0.4 * window.innerHeight)
+  const h = base * (1 - b) + miniH.value * b
+  const s = Math.max(h / 144, barW / 2752)
+  const w = 2752 * s
+  const p = Math.min(0, Math.max(barW - w, barW / 2 - 1308 * s))
+  return `url(/brand/banner-mini.svg) ${p.toFixed(1)}px center / ${w.toFixed(1)}px ${(144 * s).toFixed(1)}px no-repeat`
+})
 
 // Stars float above the dim during the intro, then settle behind the content.
 const starsFront = ref(true)
@@ -108,7 +121,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', layoutBanner))
         class="fixed left-1/2 z-40 overflow-hidden"
         :style="{ top: `${topPx}px`, width: bWidth, height: bHeight, transform: bTransform, borderRadius: bRadius, boxShadow: bShadow, background: '#171436' }"
       >
-        <motion.div class="absolute inset-0" :style="{ opacity: t2, background: miniBg }" />
+        <motion.div class="absolute inset-0" :style="{ opacity: t2, background: miniBgMotion }" />
         <motion.img src="/brand/banner-wide.svg" alt="Nostragoalus - the football oracle" class="absolute inset-0 w-full h-full object-cover" :style="{ opacity: wideOpacity }" />
       </motion.div>
       <motion.div v-if="!reduced" class="fixed inset-0 z-30 pointer-events-none" :style="{ background: '#0b0a18', opacity: dimOpacity }" />

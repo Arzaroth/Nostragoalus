@@ -253,7 +253,19 @@
     "haveAccount": "Doch'a' Daghajchugh, yI'el",
     "or": "ghap",
     "continue": "yIruch",
-    "ssoRedirect": "DubelmoHwI' ngu'meH DaqDaq Duqemlu'taH…"
+    "ssoRedirect": "DubelmoHwI' ngu'meH DaqDaq Duqemlu'taH…",
+    "ssoDomainWarn": "QIn Sepvam 'elmeH mIw SeH {name}. mu'wIj raQwI' chenmoHlaH SoH, 'ach SSO 'oH He'e'.",
+    "ssoDomainUse": "{name} lo'taHvIS yI'el",
+    "ssoDomainContinue": "mu'wIj raQwI' yIchenmoHtaH",
+    "forgot": "mu'wIj Dalijta'a'?",
+    "resetTitle": "mu'wIj yIchoHqa'",
+    "resetHint": "QIn yIqon 'ej mu'wIj chu' chenmoHmeH leQ wInganmoH.",
+    "resetSend": "leQ yIngeH",
+    "resetSent": "Daqvamvad raQwI' tu'lu'chugh, leQ ghoStaH.",
+    "resetNew": "mu'wIj chu'",
+    "resetSubmit": "mu'wIj chu' yIchenmoH",
+    "resetDone": "mu'wIj choHlu'ta' - DaH yI'el.",
+    "resetInvalid": "leQvam qar be' pagh ngabpu'."
   },
   "account": {
     "title": "Doch'a'",
@@ -313,7 +325,9 @@
       "edit": "jabwI' yIchoH",
       "save": "choHmey yIchoq",
       "updated": "jabwI' choHlu'ta'.",
-      "editing": "\"{id}\" jabwI' choHlu'taH - Segh pong je choHlaHbe'; peghmey chIm choqlu'."
+      "editing": "\"{id}\" jabwI' choHlu'taH - Segh pong je choHlaHbe'; peghmey chIm choqlu'.",
+      "displayName": "pong cha'lu'bogh",
+      "displayNameHint": "QujwI'pu'vaD cha'lu' (qonmeH ghuHmoH). DuHmey."
     },
     "users": {
       "title": "lo'wI'pu'",

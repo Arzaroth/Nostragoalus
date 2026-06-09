@@ -6,13 +6,20 @@ const { t } = useI18n()
 const { data: status } = await useFetch<{ isAdmin: boolean }>('/api/admin/status')
 const isAdmin = computed(() => status.value?.isAdmin === true)
 
-const { data: ssoData, refresh: refreshSso } = await useFetch<{ providers: { providerId: string; domains: string[]; issuer: string; type: 'oidc' | 'saml' }[] }>(
+interface SsoProviderRow {
+  providerId: string
+  domains: string[]
+  issuer: string
+  name: string | null
+  type: 'oidc' | 'saml'
+}
+const { data: ssoData, refresh: refreshSso } = await useFetch<{ providers: SsoProviderRow[] }>(
   '/api/admin/sso',
   { default: () => ({ providers: [] }) },
 )
 const providers = computed(() => ssoData.value?.providers ?? [])
 
-const blank = { type: 'google', providerId: '', domains: '', issuer: '', clientId: '', clientSecret: '', entryPoint: '', cert: '', entityId: '', audience: '', idpMetadata: '', scopes: '' }
+const blank = { type: 'google', providerId: '', name: '', domains: '', issuer: '', clientId: '', clientSecret: '', entryPoint: '', cert: '', entityId: '', audience: '', idpMetadata: '', scopes: '' }
 const form = reactive({ ...blank })
 const typeOptions = [
   { label: 'Google', value: 'google' },
@@ -31,14 +38,22 @@ const setupId = computed(() => form.providerId.trim() || (form.type === 'google'
 const oidcRedirectUri = computed(() => `${origin}/api/auth/sso/callback/${setupId.value}`)
 const samlAcsUrl = computed(() => `${origin}/api/auth/sso/saml2/callback/${setupId.value}`)
 const samlSpEntityId = computed(() => form.entityId.trim() || origin)
+// Registered providers: the plugin's public endpoint (IdPs can poll it).
 const spMetadataUrl = (id: string) => `${origin}/api/auth/sso/saml2/sp/metadata?providerId=${encodeURIComponent(id)}`
+// Unsaved form: generated from the form values, so the IdP side can be
+// configured before the provider exists here.
+const draftSpMetadataUrl = computed(
+  () => `${origin}/api/admin/sso/sp-metadata?providerId=${encodeURIComponent(form.providerId.trim())}&entityId=${encodeURIComponent(form.entityId.trim())}`,
+)
+const formSpMetadataUrl = computed(() => (ssoEditing.value ? spMetadataUrl(form.providerId) : draftSpMetadataUrl.value))
 
-function startEditProvider(p: { providerId: string; domains: string[]; issuer: string; type: 'oidc' | 'saml' }) {
+function startEditProvider(p: SsoProviderRow) {
   ssoErr.value = ''
   ssoMsg.value = ''
   Object.assign(form, blank, {
     type: p.type === 'saml' ? 'saml' : 'oidc',
     providerId: p.providerId,
+    name: p.name ?? '',
     domains: p.domains.join(', '),
     issuer: p.issuer,
   })
@@ -262,6 +277,11 @@ function createUser() {
                 <span class="text-xs" style="color: var(--p-text-muted-color)">{{ t('admin.sso.providerIdHint') }}</span>
               </div>
               <div class="flex flex-col gap-1">
+                <label class="text-xs font-medium">{{ t('admin.sso.displayName') }}</label>
+                <InputText v-model="form.name" placeholder="Acme Corp" class="w-full" />
+                <span class="text-xs" style="color: var(--p-text-muted-color)">{{ t('admin.sso.displayNameHint') }}</span>
+              </div>
+              <div class="flex flex-col gap-1 col-span-2">
                 <label class="text-xs font-medium">{{ t('admin.sso.domains') }}</label>
                 <InputText v-model="form.domains" placeholder="acme.com, acme.fr" class="w-full" />
                 <span class="text-xs" style="color: var(--p-text-muted-color)">{{ t('admin.sso.domainsHint') }}</span>
@@ -315,7 +335,7 @@ function createUser() {
                 <div>{{ t('admin.sso.claims') }}: <code>nameID, email</code> · {{ t('admin.sso.claimsOptional') }}: <code>givenName, surname, displayName</code></div>
                 <div v-if="form.providerId">
                   {{ t('admin.sso.spMetadata') }}:
-                  <a :href="spMetadataUrl(form.providerId)" target="_blank" rel="noopener" class="underline">{{ spMetadataUrl(form.providerId) }}</a>
+                  <a :href="formSpMetadataUrl" target="_blank" rel="noopener" class="underline">{{ formSpMetadataUrl }}</a>
                 </div>
               </template>
             </div>
@@ -337,7 +357,8 @@ function createUser() {
         <div v-if="providers.length" class="border-t px-6 py-4 flex flex-col gap-2" style="border-color: var(--p-content-border-color)">
           <div v-for="p in providers" :key="p.providerId" class="flex items-center gap-3 text-sm">
             <Tag :value="p.type.toUpperCase()" :severity="p.type === 'saml' ? 'warn' : 'info'" />
-            <span class="font-medium">{{ p.providerId }}</span>
+            <span class="font-medium">{{ p.name || p.providerId }}</span>
+            <span v-if="p.name" class="text-xs" style="color: var(--p-text-muted-color)">{{ p.providerId }}</span>
             <span class="truncate" style="color: var(--p-text-muted-color)">{{ p.domains.join(', ') }}</span>
             <span class="flex-1" />
             <a

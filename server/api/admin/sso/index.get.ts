@@ -10,6 +10,7 @@ export default defineEventHandler(async (event) => {
       providerId: ssoProvider.providerId,
       issuer: ssoProvider.issuer,
       domain: ssoProvider.domain,
+      displayName: ssoProvider.displayName,
       saml: ssoProvider.samlConfig,
     })
     .from(ssoProvider)
@@ -17,6 +18,7 @@ export default defineEventHandler(async (event) => {
     providers: rows.map((r) => ({
       providerId: r.providerId,
       issuer: r.issuer,
+      name: r.displayName,
       // The domain column natively holds a CSV list of captured domains.
       domains: r.domain.split(',').map((d) => d.trim()).filter(Boolean),
       type: r.saml ? ('saml' as const) : ('oidc' as const),

@@ -83,8 +83,11 @@ async function signInPasskey() {
     <Message v-if="error" severity="error">{{ error }}</Message>
     <Message v-if="redirecting" severity="info">{{ t('auth.ssoRedirect') }}</Message>
     <InputText v-model="email" type="email" :placeholder="t('auth.email')" @keyup.enter="next" />
-    <div v-if="step === 'password'" ref="passwordWrap" class="flex flex-col">
+    <div v-if="step === 'password'" ref="passwordWrap" class="flex flex-col gap-1">
       <Password v-model="password" :placeholder="t('auth.password')" :feedback="false" toggle-mask :input-style="{ width: '100%' }" @keyup.enter="submit" />
+      <NuxtLink :to="{ path: '/forgot-password', query: email ? { email } : {} }" class="text-xs self-end" style="color: var(--p-text-muted-color)">
+        {{ t('auth.forgot') }}
+      </NuxtLink>
     </div>
     <Button :label="step === 'password' ? t('auth.signIn') : t('auth.continue')" :loading="loading" @click="next" />
     <div class="flex items-center gap-3 text-xs my-1" style="color: var(--p-text-muted-color)">

@@ -2,7 +2,13 @@ import { NostraTheme } from './lib/theme'
 
 export default defineNuxtConfig({
   compatibilityDate: '2026-06-04',
-  devtools: { enabled: true },
+  devtools: {
+    enabled: true,
+
+    timeline: {
+      enabled: true,
+    },
+  },
 
   app: {
     head: {

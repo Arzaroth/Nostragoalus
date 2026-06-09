@@ -35,7 +35,10 @@ export default defineEventHandler(async (event) => {
 
   const origin = getRequestURL(event).origin
   // The plugin natively supports several captured domains as a CSV list.
-  const update: Partial<typeof ssoProvider.$inferInsert> = { domain: domains.join(',') }
+  const update: Partial<typeof ssoProvider.$inferInsert> = {
+    domain: domains.join(','),
+    displayName: String(b?.name || '').trim() || null,
+  }
 
   if (existing.samlConfig) {
     const current = openConfig(existing.samlConfig)

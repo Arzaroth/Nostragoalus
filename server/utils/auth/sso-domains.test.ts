@@ -94,6 +94,13 @@ describe('db-backed resolution', () => {
     expect(await findDomainConflicts(db, 'globex', ['corp.fr', 'globex.test'])).toEqual(['corp.fr'])
   })
 
+  it('flags subdomain overlap in both directions', async () => {
+    // mail.corp.test falls under acme's corp.test
+    expect(await findDomainConflicts(db, 'globex', ['mail.corp.test'])).toEqual(['mail.corp.test'])
+    // test (parent of globex.test) would swallow globex's domain
+    expect(await findDomainConflicts(db, 'acme', ['globex.test', 'sub.globex.test'])).toEqual(['globex.test', 'sub.globex.test'])
+  })
+
   it('does not flag a provider against itself', async () => {
     expect(await findDomainConflicts(db, 'acme', ['corp.test', 'corp.fr', 'corp.de'])).toEqual([])
   })

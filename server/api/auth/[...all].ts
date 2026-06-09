@@ -1,7 +1,6 @@
-import { eq } from 'drizzle-orm'
 import { auth } from '~~/lib/auth'
 import { db } from '~~/db'
-import { account } from '~~/db/schema'
+import { isSsoManaged } from '../../utils/auth/sso-managed'
 
 // Credential management an SSO-managed account must not touch locally: its
 // email, passkeys and 2FA belong to the IdP. (Password endpoints already fail
@@ -13,15 +12,24 @@ const SSO_LOCKED = [
   '/api/auth/two-factor/enable',
 ]
 
+// The SSO plugin ships its own provider-management endpoints gated only by a
+// session; registering a provider captures email domains (and trusts the IdP
+// for account linking), so over HTTP they are admin-surface only. Our
+// /api/admin/sso/* routes call auth.api directly and bypass this handler.
+const SSO_ADMIN_ONLY = [
+  '/api/auth/sso/register',
+  '/api/auth/sso/update-provider',
+  '/api/auth/sso/delete-provider',
+]
+
 export default defineEventHandler(async (event) => {
+  if (SSO_ADMIN_ONLY.some((p) => event.path === p || event.path.startsWith(`${p}?`))) {
+    throw createError({ statusCode: 404, statusMessage: 'Not found' })
+  }
   if (SSO_LOCKED.some((p) => event.path === p || event.path.startsWith(`${p}?`))) {
     const session = await auth.api.getSession({ headers: event.headers })
-    if (session) {
-      const rows = await db.select({ providerId: account.providerId }).from(account).where(eq(account.userId, session.user.id))
-      const ssoManaged = rows.length > 0 && !rows.some((r) => r.providerId === 'credential')
-      if (ssoManaged) {
-        throw createError({ statusCode: 403, statusMessage: 'This account is managed by your identity provider.' })
-      }
+    if (session && (await isSsoManaged(db, session.user.id))) {
+      throw createError({ statusCode: 403, statusMessage: 'This account is managed by your identity provider.' })
     }
   }
   return auth.handler(toWebRequest(event))

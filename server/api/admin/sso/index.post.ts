@@ -1,5 +1,7 @@
+import { eq } from 'drizzle-orm'
 import { auth } from '../../../../lib/auth'
 import { db } from '../../../../db'
+import { ssoProvider } from '../../../../db/schema'
 import { requireAdmin } from '../../../utils/auth-guards'
 import { findDomainConflicts, parseDomainList } from '../../../utils/auth/sso-domains'
 
@@ -78,6 +80,11 @@ export default defineEventHandler(async (event) => {
     // body is built dynamically per provider type; better-auth's union body type
     // can't be narrowed from Record<string, unknown>, so assert at the call.
     const result = await auth.api.registerSSOProvider({ body: body as never, headers: event.headers })
+    // displayName is our column, not a plugin field - written after registration.
+    const displayName = String(b?.name || '').trim()
+    if (displayName) {
+      await db.update(ssoProvider).set({ displayName }).where(eq(ssoProvider.providerId, providerId))
+    }
     return { ok: true, providerId, result }
   } catch (error) {
     throw createError({ statusCode: 400, statusMessage: (error as Error)?.message || 'Failed to register provider' })

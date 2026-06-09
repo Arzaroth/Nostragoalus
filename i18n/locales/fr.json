@@ -253,7 +253,19 @@
     "haveAccount": "Déjà un compte ? Connectez-vous",
     "or": "ou",
     "continue": "Continuer",
-    "ssoRedirect": "Redirection vers votre fournisseur d'identité…"
+    "ssoRedirect": "Redirection vers votre fournisseur d'identité…",
+    "ssoDomainWarn": "La connexion pour ce domaine e-mail est gérée par {name}. Vous pouvez quand même créer un compte avec mot de passe, mais le SSO est la voie prévue.",
+    "ssoDomainUse": "Se connecter via {name}",
+    "ssoDomainContinue": "Créer un compte avec mot de passe quand même",
+    "forgot": "Mot de passe oublié ?",
+    "resetTitle": "Réinitialiser le mot de passe",
+    "resetHint": "Saisissez votre e-mail et nous vous enverrons un lien pour définir un nouveau mot de passe.",
+    "resetSend": "Envoyer le lien",
+    "resetSent": "Si un compte existe pour cette adresse, un lien de réinitialisation est en route.",
+    "resetNew": "Nouveau mot de passe",
+    "resetSubmit": "Définir le nouveau mot de passe",
+    "resetDone": "Mot de passe mis à jour - vous pouvez vous connecter.",
+    "resetInvalid": "Ce lien de réinitialisation est invalide ou a expiré."
   },
   "account": {
     "title": "Compte",
@@ -313,7 +325,9 @@
       "edit": "Modifier le fournisseur",
       "save": "Enregistrer",
       "updated": "Fournisseur mis à jour.",
-      "editing": "Modification du fournisseur « {id} » - type et identifiant fixes ; les secrets vides conservent leur valeur."
+      "editing": "Modification du fournisseur « {id} » - type et identifiant fixes ; les secrets vides conservent leur valeur.",
+      "displayName": "Nom d'affichage",
+      "displayNameHint": "Visible par les joueurs (avertissement à l'inscription). Optionnel."
     },
     "users": {
       "title": "Utilisateurs",

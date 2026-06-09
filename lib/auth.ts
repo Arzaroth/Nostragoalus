@@ -10,21 +10,22 @@ import { db } from '../db'
 import * as schema from '../db/schema'
 import { withEncryptedSSO } from '../server/utils/crypto/encrypted-adapter'
 import { verifyTotpCode } from '../server/utils/auth/totp'
+import { isSsoManaged } from '../server/utils/auth/sso-managed'
 import { symmetricDecrypt } from 'better-auth/crypto'
 
 type AuthDb = PgDatabase<PgQueryResultHKT, typeof schema>
 
-// Email OTP works only when an SMTP transport is configured (NUXT_SMTP_URL,
+// Mail works only when an SMTP transport is configured (NUXT_SMTP_URL,
 // e.g. smtp://user:pass@host:587); TOTP authenticator 2FA needs nothing.
-async function sendOtpMail(to: string, otp: string): Promise<void> {
+async function sendMail(to: string, subject: string, text: string): Promise<void> {
   const smtpUrl = process.env.NUXT_SMTP_URL
-  if (!smtpUrl) throw new Error('email OTP unavailable: NUXT_SMTP_URL is not configured')
+  if (!smtpUrl) throw new Error('email unavailable: NUXT_SMTP_URL is not configured')
   const { createTransport } = await import('nodemailer')
   await createTransport(smtpUrl).sendMail({
     from: process.env.NUXT_SMTP_FROM ?? 'Nostragoalus <no-reply@nostragoalus.local>',
     to,
-    subject: 'Your Nostragoalus sign-in code',
-    text: `Your verification code is: ${otp}\n\nIt expires in 5 minutes.`,
+    subject,
+    text,
   })
 }
 
@@ -39,6 +40,19 @@ export function buildAuthOptions(database: AuthDb) {
     ),
     emailAndPassword: {
       enabled: true,
+      // Forgot-password mail. Silently skipped for SSO-managed accounts (their
+      // IdP owns the credentials; the endpoint's response stays identical so
+      // account existence is not revealed). Once a provider is deleted its
+      // users stop being managed and can use this flow to set a local password
+      // (better-auth creates the credential account on reset if missing).
+      async sendResetPassword({ user: u, url }: { user: { id: string; email: string }; url: string }) {
+        if (await isSsoManaged(database, u.id)) return
+        await sendMail(
+          u.email,
+          'Reset your Nostragoalus password',
+          `Someone (hopefully you) asked to reset the password for this account.\n\nSet a new password: ${url}\n\nThe link expires in 1 hour. If this wasn't you, ignore this mail.`,
+        )
+      },
     },
     // Let local users change their email (no verification email infra, so it applies directly).
     user: {
@@ -112,7 +126,7 @@ export function buildAuthOptions(database: AuthDb) {
       twoFactor({
         otpOptions: {
           async sendOTP({ user: u, otp }: { user: { email: string }; otp: string }) {
-            await sendOtpMail(u.email, otp)
+            await sendMail(u.email, 'Your Nostragoalus sign-in code', `Your verification code is: ${otp}\n\nIt expires in 5 minutes.`)
           },
         },
       }),

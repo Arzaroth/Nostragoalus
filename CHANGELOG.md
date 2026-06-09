@@ -23,6 +23,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ### Changed
 - In-flight API requests are aborted when leaving a page or switching competition (vue-query signals, crowd totals, and the match page's slow FIFA-backed lazy fetches).
+- SSO providers have an optional display name shown to players; SP metadata for a SAML provider can be downloaded before the provider is saved (the IdP side usually needs it first); domain-capture conflicts are now checked in both subdomain directions.
+- Forgot-password flow: reset link from the login page (mail via SMTP), with better-auth creating the local password on reset - this is also the recovery path for users whose SSO provider was deleted. SSO-managed accounts never receive reset mails.
+- Signing up with a password on an SSO-captured domain warns first (with the provider's display name) and requires an explicit "continue anyway".
+- The SSO plugin's own HTTP provider-management endpoints (register/update/delete) are blocked; provider management goes through the admin API only.
+- "SSO-managed" now means a still-registered provider: deleting a provider releases its users, who regain credential management and can set a password via the reset flow.
 
 ## [0.14.0] - 2026-06-08
 

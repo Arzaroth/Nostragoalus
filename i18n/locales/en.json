@@ -253,7 +253,19 @@
     "haveAccount": "Already have an account? Sign in",
     "or": "or",
     "continue": "Continue",
-    "ssoRedirect": "Redirecting to your identity provider…"
+    "ssoRedirect": "Redirecting to your identity provider…",
+    "ssoDomainWarn": "Sign-in for this email domain is managed by {name}. You can still create a separate password account, but SSO is the expected way in.",
+    "ssoDomainUse": "Sign in with {name}",
+    "ssoDomainContinue": "Create a password account anyway",
+    "forgot": "Forgot password?",
+    "resetTitle": "Reset password",
+    "resetHint": "Enter your email and we will send you a link to set a new password.",
+    "resetSend": "Send reset link",
+    "resetSent": "If an account exists for this address, a reset link is on its way.",
+    "resetNew": "New password",
+    "resetSubmit": "Set new password",
+    "resetDone": "Password updated - you can sign in now.",
+    "resetInvalid": "This reset link is invalid or has expired."
   },
   "account": {
     "title": "Account",
@@ -313,7 +325,9 @@
       "edit": "Edit provider",
       "save": "Save changes",
       "updated": "Provider updated.",
-      "editing": "Editing provider \"{id}\" - type and ID are fixed; blank secrets keep their stored value."
+      "editing": "Editing provider \"{id}\" - type and ID are fixed; blank secrets keep their stored value.",
+      "displayName": "Display name",
+      "displayNameHint": "Shown to players (signup warning, messages). Optional."
     },
     "users": {
       "title": "Users",
