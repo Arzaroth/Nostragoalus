@@ -35,6 +35,12 @@ const SCRUB = 420
 const SCRUB2 = 360
 const MINI_H = 100
 const reduced = useReducedMotion()
+// banner-mini.svg is a ~19:1 strip drawn for desktop widths; cover-cropping it
+// (or the wide artwork) into a phone-width bar always clips the title. Narrow
+// screens skip the mini crossfade: the wide artwork rides the whole journey and
+// switches to object-contain, so it shrinks intact into the pinned bar with the
+// brand background filling the sides.
+const narrow = ref(false)
 const { scrollY } = useScroll()
 const spring = { stiffness: 220, damping: 30 }
 const t1 = useSpring(useTransform(scrollY, [0, SCRUB], [1, 0]), spring) // 1 = centered
@@ -45,7 +51,9 @@ const bHeight = useTransform([t1, t2] as never, (values: never) => {
   const w = 100 - 12 * a
   return `calc(min(${(w * 0.3023).toFixed(2)}vw, 40vh) * ${(1 - b).toFixed(4)} + ${(MINI_H * b).toFixed(1)}px)`
 })
-const bTransform = useTransform(t1, (v) => `translateX(-50%) translateY(calc(${v.toFixed(4)} * (50vh - 50% - 88px)))`)
+// The centering constant compensates the bar's resting offset: 64px (top-16)
+// on desktop, 112px (top-28, clearing the two-row mobile header) on narrow.
+const bTransform = useTransform(t1, (v) => `translateX(-50%) translateY(calc(${v.toFixed(4)} * (50vh - 50% - ${narrow.value ? 136 : 88}px)))`)
 const bRadius = useTransform(t1, (v) => `${(30 * v).toFixed(1)}px`)
 const bShadow = useTransform([t1, t2] as never, (values: never) => {
   const [a, b] = values as unknown as [number, number]
@@ -57,17 +65,12 @@ const wideOpacity = useTransform(t2, (v) => 1 - v)
 
 // Stars float above the dim during the intro, then settle behind the content.
 const starsFront = ref(true)
-// banner-mini.svg is a ~19:1 strip drawn for desktop widths; cover-cropping it
-// on a phone leaves a few giant letters. Narrow screens reuse the wide artwork,
-// whose aspect is close to the pinned bar's.
-const narrow = ref(false)
 onMounted(() => {
   t1.on('change', (v) => (starsFront.value = v > 0.04))
   const mq = window.matchMedia('(max-width: 640px)')
   narrow.value = mq.matches
   mq.addEventListener('change', (e) => (narrow.value = e.matches))
 })
-const miniBg = computed(() => `url(/brand/banner-${narrow.value ? 'wide' : 'mini'}.svg) center / cover no-repeat`)
 </script>
 
 <template>
@@ -88,11 +91,18 @@ const miniBg = computed(() => `url(/brand/banner-${narrow.value ? 'wide' : 'mini
     <ClientOnly>
       <motion.div
         v-if="!reduced"
-        class="fixed left-1/2 top-16 z-40 overflow-hidden"
+        class="fixed left-1/2 z-40 overflow-hidden"
+        :class="narrow ? 'top-28' : 'top-16'"
         :style="{ width: bWidth, height: bHeight, transform: bTransform, borderRadius: bRadius, boxShadow: bShadow, background: '#171436' }"
       >
-        <motion.div class="absolute inset-0" :style="{ opacity: t2, background: miniBg }" />
-        <motion.img src="/brand/banner-wide.svg" alt="Nostragoalus - the football oracle" class="absolute inset-0 w-full h-full object-cover" :style="{ opacity: wideOpacity }" />
+        <motion.div v-if="!narrow" class="absolute inset-0" :style="{ opacity: t2, background: 'url(/brand/banner-mini.svg) center / cover no-repeat' }" />
+        <motion.img
+          src="/brand/banner-wide.svg"
+          alt="Nostragoalus - the football oracle"
+          class="absolute inset-0 w-full h-full"
+          :class="narrow ? 'object-contain' : 'object-cover'"
+          :style="{ opacity: narrow ? 1 : wideOpacity }"
+        />
       </motion.div>
       <motion.div v-if="!reduced" class="fixed inset-0 z-30 pointer-events-none" :style="{ background: '#0b0a18', opacity: dimOpacity }" />
       <template #fallback>
