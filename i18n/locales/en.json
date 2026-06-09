@@ -278,7 +278,8 @@
     "dangerTitle": "Account termination",
     "dangerHint": "Deleting your account is irreversible - all your predictions are lost.",
     "deleteAccount": "Delete account",
-    "confirmDeleteHint": "Enter your password to confirm deletion."
+    "confirmDeleteHint": "Enter your password to confirm deletion.",
+    "ssoManagedHint": "This account signs in through your organization's identity provider. Email, password, two-factor and passkeys are managed there."
   },
   "admin": {
     "title": "Admin",

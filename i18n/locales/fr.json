@@ -278,7 +278,8 @@
     "dangerTitle": "Suppression du compte",
     "dangerHint": "La suppression de votre compte est irréversible - tous vos pronostics sont perdus.",
     "deleteAccount": "Supprimer le compte",
-    "confirmDeleteHint": "Saisissez votre mot de passe pour confirmer la suppression."
+    "confirmDeleteHint": "Saisissez votre mot de passe pour confirmer la suppression.",
+    "ssoManagedHint": "Ce compte se connecte via le fournisseur d'identité de votre organisation. E-mail, mot de passe, double authentification et passkeys y sont gérés."
   },
   "admin": {
     "title": "Admin",

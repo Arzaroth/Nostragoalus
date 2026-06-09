@@ -1,11 +1,26 @@
 <script setup lang="ts">
 import { resizeToDataUrl } from '../utils/image'
+import { authClient } from '../../lib/auth-client'
 
 const { t } = useI18n()
 const { session, changeEmail, changePassword, updateUser, deleteUser, signOut } = useAuth()
 const router = useRouter()
 
 const currentUser = computed(() => session.value?.data?.user)
+
+// SSO-managed accounts (no credential account row) get their email, password,
+// 2FA and passkeys from the IdP - local credential management is hidden and
+// the server rejects it too.
+const linkedAccounts = ref<{ provider?: string; providerId?: string }[] | null>(null)
+onMounted(async () => {
+  const res = await authClient.listAccounts()
+  linkedAccounts.value = (res.data as { provider?: string; providerId?: string }[] | null) ?? []
+})
+const ssoManaged = computed(() => {
+  const list = linkedAccounts.value
+  if (!list || list.length === 0) return false
+  return !list.some((a) => (a.provider ?? a.providerId) === 'credential')
+})
 
 // --- Two-factor authentication (state machine extracted to a tested composable) ---
 const tfa = useTwoFactor(currentUser)
@@ -113,7 +128,7 @@ async function saveProfile() {
       const { error } = await updateUser({ name: displayName.value })
       if (error) throw new Error(error.message ?? 'Failed')
     }
-    if (email.value && email.value !== u?.email) {
+    if (!ssoManaged.value && email.value && email.value !== u?.email) {
       const { error } = await changeEmail({ newEmail: email.value })
       if (error) throw new Error(error.message ?? 'Failed')
     }
@@ -159,7 +174,8 @@ async function confirmDelete() {
   delErr.value = ''
   delLoading.value = true
   const { error } = await deleteUser({
-    password: deletePassword.value,
+    // SSO-managed accounts have no password; deletion rides on the fresh session.
+    ...(ssoManaged.value ? {} : { password: deletePassword.value }),
     // 2FA holders must also present a fresh code (enforced server-side).
     fetchOptions: tfaEnabled.value ? { headers: { 'x-totp-code': String(deleteCode.value) } } : undefined,
   } as Parameters<typeof deleteUser>[0])
@@ -201,12 +217,13 @@ async function confirmDelete() {
             <div class="text-sm" style="color: var(--p-text-muted-color)">{{ t('account.avatarHint') }}</div>
           </div>
           <Message v-if="avatarErr" severity="error" size="small">{{ avatarErr }}</Message>
+          <Message v-if="ssoManaged" severity="info" size="small">{{ t('account.ssoManagedHint') }}</Message>
 
           <div class="flex flex-col gap-1">
             <label class="text-sm font-medium">{{ t('account.email') }}</label>
             <IconField>
               <InputIcon class="pi pi-envelope" />
-              <InputText v-model="email" type="email" class="w-full" />
+              <InputText v-model="email" type="email" class="w-full" :disabled="ssoManaged" />
             </IconField>
           </div>
           <div class="flex flex-col gap-1">
@@ -225,7 +242,7 @@ async function confirmDelete() {
       </div>
     </section>
 
-    <section class="ng-card rounded-2xl border overflow-hidden" style="background: var(--p-content-background)">
+    <section v-if="!ssoManaged" class="ng-card rounded-2xl border overflow-hidden" style="background: var(--p-content-background)">
       <div class="grid md:grid-cols-3 gap-6 p-6">
         <div>
           <h2 class="font-semibold">{{ t('account.password') }}</h2>
@@ -254,7 +271,7 @@ async function confirmDelete() {
       </div>
     </section>
 
-    <section class="ng-card rounded-2xl border" style="background: var(--p-content-background)">
+    <section v-if="!ssoManaged" class="ng-card rounded-2xl border" style="background: var(--p-content-background)">
       <div class="grid md:grid-cols-3 gap-6 p-6">
         <div>
           <h2 class="font-semibold">{{ t('twofa.sectionTitle') }}</h2>
@@ -355,7 +372,7 @@ async function confirmDelete() {
       </div>
     </section>
 
-    <section class="ng-card rounded-2xl border" style="background: var(--p-content-background)">
+    <section v-if="!ssoManaged" class="ng-card rounded-2xl border" style="background: var(--p-content-background)">
       <div class="grid md:grid-cols-3 gap-6 p-6">
         <div>
           <h2 class="font-semibold">{{ t('passkeys.title') }}</h2>
@@ -401,7 +418,7 @@ async function confirmDelete() {
           <Button v-if="!confirming" :label="t('account.deleteAccount')" severity="danger" outlined class="shrink-0" @click="confirming = true" />
         </div>
         <div v-if="confirming" class="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <div class="flex-1 flex flex-col gap-1">
+          <div v-if="!ssoManaged" class="flex-1 flex flex-col gap-1">
             <label class="text-sm font-medium">{{ t('account.confirmDeleteHint') }}</label>
             <Password v-model="deletePassword" :feedback="false" toggle-mask fluid :placeholder="t('account.currentPassword')" />
           </div>
@@ -411,7 +428,7 @@ async function confirmDelete() {
           </div>
           <div class="flex gap-2">
             <Button :label="t('common.cancel')" severity="secondary" text @click="confirming = false" />
-            <Button :label="t('account.deleteAccount')" severity="danger" :loading="delLoading" :disabled="!deletePassword || (tfaEnabled && String(deleteCode).length < 6)" @click="confirmDelete" />
+            <Button :label="t('account.deleteAccount')" severity="danger" :loading="delLoading" :disabled="(!ssoManaged && !deletePassword) || (tfaEnabled && String(deleteCode).length < 6)" @click="confirmDelete" />
           </div>
         </div>
         <Message v-if="delErr" severity="error" size="small">{{ delErr }}</Message>

@@ -278,7 +278,8 @@
     "dangerTitle": "Doch'a' Qaw'",
     "dangerHint": "Doch'a' DaQaw'chugh, chegh DuH pagh - Hoch wIvmeylIj luQaw'lu'.",
     "deleteAccount": "Doch'a' yIQaw'",
-    "confirmDeleteHint": "Qaw' Da'olmeH pegh mu' yIqon."
+    "confirmDeleteHint": "Qaw' Da'olmeH pegh mu' yIqon.",
+    "ssoManagedHint": "ngu'meH Daq lo'taHvIS 'el raQwI'vam. pa' QIn, mu'wIj, cha' 'ol, passkey je SeHlu'."
   },
   "admin": {
     "title": "loHwI'",
