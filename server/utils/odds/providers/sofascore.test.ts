@@ -119,6 +119,21 @@ describe('sofascore getEventOdds', () => {
   })
 })
 
+describe('sofascore defaults', () => {
+  it('constructs with default base URL, fetch and rate limiter', async () => {
+    expect(sofascoreProvider().key).toBe('sofascore')
+    // Default base URL composes with an injected fetch; an event page without
+    // an events array is tolerated.
+    const p = sofascoreProvider({
+      fetchImpl: jsonFetch({
+        '/unique-tournament/16/seasons': SEASONS,
+        '/unique-tournament/16/season/58210/events/next/0': { hasNextPage: false },
+      }),
+    })
+    expect(await p.listEvents({ providerRef: '16', seasonHint: '2026', scope: 'upcoming' })).toEqual([])
+  })
+})
+
 describe('sofascore error mapping', () => {
   it('maps 403/429 to rate-limit errors and other failures upstream', async () => {
     const status = (code: number) =>
