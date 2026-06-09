@@ -47,6 +47,7 @@ function layoutBanner() {
   topPx.value = header ? Math.floor(header.getBoundingClientRect().height) - 1 : 64
   miniH.value = Math.min(MINI_H, Math.round(vw * 0.16))
   layoutTick.set(layoutTick.get() + 1)
+  updateArt()
 }
 
 const { scrollY } = useScroll()
@@ -77,31 +78,39 @@ const bShadow = useTransform([t1, t2] as never, (values: never) => {
   return `0 ${(30 * a + 6 * b).toFixed(1)}px ${(90 * a + 18 * b).toFixed(1)}px rgba(8, 6, 24, ${(0.55 * a + 0.35 * b).toFixed(3)})`
 })
 const dimOpacity = useTransform(t1, (v) => 0.6 * cl(v))
-// One artwork for the whole journey: no compact-banner crossfade (the two
+// One INLINE artwork for the whole journey (no compact-banner swap - the two
 // artworks were composed differently, so any swap read as the title jumping
-// sideways - worse the wider the window). As the bar shrinks, the wide art
-// stays cover-fit (width-bound and horizontally centered, so nothing ever
-// moves on x) and simply crops vertically toward its title band (title
-// vertical center sits at y~400 of the 832-unit canvas). At full height the
-// crop offset is zero, so the glide into the band is continuous.
-const widePosMotion = useTransform([t1, t2, layoutTick] as never, (values: never) => {
-  const [a, b] = (values as unknown as [number, number, number]).map(cl)
-  if (typeof window === 'undefined') return '50% 50%'
+// sideways). The svg is cover-fit and horizontally centered, so x never
+// moves; as the bar shrinks, the artwork itself adapts: the planet scales
+// down in place to stay whole inside the visible band, the subtitle fades
+// away, and the title nudges down so its cap tops never clip. All knobs are
+// pure functions of the visible band height (in svg units), so the journey
+// is continuous from the full banner to the slim bar.
+const ballScale = ref(1)
+const subtitleOp = ref(1)
+const titleShift = ref(0)
+function updateArt() {
+  const a = cl(t1.get())
+  const b = cl(t2.get())
   const vw = window.innerWidth
   const barW = ((100 - 12 * a) / 100) * vw
   const base = Math.min(barW * 0.3023, 0.4 * window.innerHeight)
   const h = base * (1 - b) + miniH.value * b
   const s = Math.max(barW / 2752, h / 832)
-  const imgH = 832 * s
-  const oy = Math.min(Math.max(400 * s - h / 2, 0), imgH - h)
-  return `50% ${(-oy).toFixed(1)}px`
-})
+  const band = h / s
+  ballScale.value = Math.min(1, (0.85 * band) / 470)
+  subtitleOp.value = cl((band - 500) / 150)
+  titleShift.value = Math.max(0, 416 - band / 2 + 6 - 338)
+}
 
 // Stars float above the dim during the intro, then settle behind the content.
 const starsFront = ref(true)
 onMounted(() => {
   t1.on('change', (v) => (starsFront.value = v > 0.04))
+  t1.on('change', updateArt)
+  t2.on('change', updateArt)
   layoutBanner()
+  updateArt()
   window.addEventListener('resize', layoutBanner, { passive: true })
 })
 onBeforeUnmount(() => window.removeEventListener('resize', layoutBanner))
@@ -128,7 +137,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', layoutBanner))
         class="fixed left-1/2 z-40 overflow-hidden"
         :style="{ top: `${topPx}px`, width: bWidth, height: bHeight, transform: bTransform, borderRadius: bRadius, boxShadow: bShadow, background: '#171436' }"
       >
-        <motion.img src="/brand/banner-wide.svg" alt="Nostragoalus - the football oracle" class="absolute inset-0 w-full h-full object-cover" :style="{ objectPosition: widePosMotion }" />
+        <BannerArt :ball-scale="ballScale" :subtitle-opacity="subtitleOp" :title-shift="titleShift" />
       </motion.div>
       <motion.div v-if="!reduced" class="fixed inset-0 z-30 pointer-events-none" :style="{ background: '#0b0a18', opacity: dimOpacity }" />
       <template #fallback>
