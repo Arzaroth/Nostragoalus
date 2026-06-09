@@ -38,10 +38,7 @@ const reduced = useReducedMotion()
 
 // Pinned-bar geometry, derived from the real layout instead of breakpoints:
 // - topPx: the bar pins flush under the (one- or two-row) header, measured.
-// - miniH: bar height scaled so the mini artwork's content block fits. In
-//   banner-mini.svg (2752x144) the ball+title span x~879..1736 (~857 units,
-//   centered at x~1308 - NOT the svg's middle), so with cover-fit the content
-//   fits while vw/(h/144) >= ~880 -> h <= ~0.16*vw, capped at MINI_H.
+// - miniH: pinned-bar height, slimmer on phones, capped at MINI_H.
 const topPx = ref(64)
 const miniH = ref(MINI_H)
 function layoutBanner() {
@@ -80,31 +77,24 @@ const bShadow = useTransform([t1, t2] as never, (values: never) => {
   return `0 ${(30 * a + 6 * b).toFixed(1)}px ${(90 * a + 18 * b).toFixed(1)}px rgba(8, 6, 24, ${(0.55 * a + 0.35 * b).toFixed(3)})`
 })
 const dimOpacity = useTransform(t1, (v) => 0.6 * cl(v))
-// Phase 2 swaps the full artwork for the compact banner. The two artworks are
-// composed differently (the wide title sits at ~69% of the canvas, the mini
-// one near center), so a straight crossfade reads as the title jumping left by
-// ~0.18*vw - worse the wider the window. Instead the wide art fades out into
-// the bar's dark brand background first, and the mini art fades in after:
-// nothing visible carries position across the swap.
-const wideOpacity = useTransform(t2, (v) => 1 - cl(cl(v) * 2.2))
-const miniOpacity = useTransform(t2, (v) => cl((cl(v) - 0.55) * 2.2))
-// The mini artwork's cover-fit scale changes every frame while the bar height
-// animates, so its background is recomputed per frame too: explicit size +
-// position keep the content block centered with no horizontal swimming, and
-// the position is clamped so the image always fills the bar (above ~1900px
-// wide, cover becomes width-bound and a static offset would leave a blank
-// stripe at the edge).
-const miniBgMotion = useTransform([t1, t2, layoutTick] as never, (values: never) => {
+// One artwork for the whole journey: no compact-banner crossfade (the two
+// artworks were composed differently, so any swap read as the title jumping
+// sideways - worse the wider the window). As the bar shrinks, the wide art
+// stays cover-fit (width-bound and horizontally centered, so nothing ever
+// moves on x) and simply crops vertically toward its title band (title
+// vertical center sits at y~400 of the 832-unit canvas). At full height the
+// crop offset is zero, so the glide into the band is continuous.
+const widePosMotion = useTransform([t1, t2, layoutTick] as never, (values: never) => {
   const [a, b] = (values as unknown as [number, number, number]).map(cl)
-  if (typeof window === 'undefined') return 'none'
+  if (typeof window === 'undefined') return '50% 50%'
   const vw = window.innerWidth
   const barW = ((100 - 12 * a) / 100) * vw
   const base = Math.min(barW * 0.3023, 0.4 * window.innerHeight)
   const h = base * (1 - b) + miniH.value * b
-  const s = Math.max(h / 144, barW / 2752)
-  const w = 2752 * s
-  const p = Math.min(0, Math.max(barW - w, barW / 2 - 1308 * s))
-  return `url(/brand/banner-mini.svg) ${p.toFixed(1)}px center / ${w.toFixed(1)}px ${(144 * s).toFixed(1)}px no-repeat`
+  const s = Math.max(barW / 2752, h / 832)
+  const imgH = 832 * s
+  const oy = Math.min(Math.max(400 * s - h / 2, 0), imgH - h)
+  return `50% ${(-oy).toFixed(1)}px`
 })
 
 // Stars float above the dim during the intro, then settle behind the content.
@@ -138,8 +128,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', layoutBanner))
         class="fixed left-1/2 z-40 overflow-hidden"
         :style="{ top: `${topPx}px`, width: bWidth, height: bHeight, transform: bTransform, borderRadius: bRadius, boxShadow: bShadow, background: '#171436' }"
       >
-        <motion.div class="absolute inset-0" :style="{ opacity: miniOpacity, background: miniBgMotion }" />
-        <motion.img src="/brand/banner-wide.svg" alt="Nostragoalus - the football oracle" class="absolute inset-0 w-full h-full object-cover" :style="{ opacity: wideOpacity }" />
+        <motion.img src="/brand/banner-wide.svg" alt="Nostragoalus - the football oracle" class="absolute inset-0 w-full h-full object-cover" :style="{ objectPosition: widePosMotion }" />
       </motion.div>
       <motion.div v-if="!reduced" class="fixed inset-0 z-30 pointer-events-none" :style="{ background: '#0b0a18', opacity: dimOpacity }" />
       <template #fallback>

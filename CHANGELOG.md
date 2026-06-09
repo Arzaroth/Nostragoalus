@@ -32,7 +32,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 - The admin user list moved its per-user actions into a kebab menu (promote, hide, remove 2FA, unlink SSO, ban, delete) with inline status indicators.
 - Admins are exempt from the SSO password nuke: their password is break-glass access for deleting a broken provider (ultimate fallback: `mise run create-admin` from the host).
 - With SMTP configured, account deletion is confirmed through a mailed link (works for SSO accounts too - no more one-click deletion); without SMTP the password / fresh-session confirmation stays. The mailed link replaces the TOTP requirement, since it proves mailbox ownership.
-- The landing banner no longer crossfades the wide artwork into the compact one (their compositions differ, which read as the title jumping left, growing with window width): the wide art fades out into the bar's dark background, then the compact art fades in.
+- The landing banner uses one artwork for the whole scroll journey: the wide art stays cover-fit (horizontally centered, so nothing ever moves sideways) and crops vertically toward its title band as the bar shrinks. No more crossfade into the compact artwork - any swap between the two differently-composed banners read as the title jumping sideways.
 
 ## [0.14.0] - 2026-06-08
 
