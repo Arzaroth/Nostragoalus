@@ -324,7 +324,9 @@
       "delete": "Delete user",
       "remove2fa": "Remove 2FA from this account",
       "ban": "Ban user",
-      "unban": "Unban user"
+      "unban": "Unban user",
+      "hide": "Hide from leaderboard",
+      "show": "Show on leaderboard"
     },
     "data": {
       "title": "Data",

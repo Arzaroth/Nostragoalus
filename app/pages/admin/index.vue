@@ -195,6 +195,13 @@ const strip2faMutation = useMutation({
 })
 const strip2fa = (u: any) => strip2faMutation.mutate(u)
 
+const visibilityMutation = useMutation({
+  mutationFn: (u: any) =>
+    $fetch<unknown>(`/api/admin/users/${u.id}/visibility`, { method: 'POST', body: { hidden: !u.hiddenFromLeaderboard } }),
+  onSuccess: invalidateUsers,
+})
+const toggleVisibility = (u: any) => visibilityMutation.mutate(u)
+
 const deleteMutation = useMutation({
   mutationFn: (u: any) => admin.removeUser({ userId: u.id }),
   onSuccess: invalidateUsers,
@@ -386,6 +393,16 @@ function createUser() {
               rounded
               :aria-label="t('admin.users.remove2fa')"
               @click="strip2fa(u)"
+            />
+            <Button
+              v-tooltip.left="u.hiddenFromLeaderboard ? t('admin.users.show') : t('admin.users.hide')"
+              :icon="u.hiddenFromLeaderboard ? 'pi pi-eye-slash' : 'pi pi-eye'"
+              size="small"
+              :severity="u.hiddenFromLeaderboard ? 'warn' : 'secondary'"
+              text
+              rounded
+              :aria-label="u.hiddenFromLeaderboard ? t('admin.users.show') : t('admin.users.hide')"
+              @click="toggleVisibility(u)"
             />
             <Tag v-if="u.banned" value="BANNED" severity="danger" />
             <Button

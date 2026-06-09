@@ -324,7 +324,9 @@
       "delete": "lo'wI' yIQaw'",
       "remove2fa": "Doch'a'vamvo' cha' 'ol yIteq",
       "ban": "lo'wI' yIghIpDIj",
-      "unban": "ghIpDIj yIteq"
+      "unban": "ghIpDIj yIteq",
+      "hide": "patlh tetlhvo' yISo'",
+      "show": "patlh tetlhDaq yIcha'"
     },
     "data": {
       "title": "De'",

@@ -10,7 +10,8 @@ export default defineEventHandler(async (event) => {
   if (!competition) return { stats: null }
 
   const [board, counters] = await Promise.all([
-    getLeaderboard(db, { competitionId: competition.id, limit: 1000 }),
+    // includeHidden: a user hidden from the public board still sees their own stats.
+    getLeaderboard(db, { competitionId: competition.id, limit: 1000, includeHidden: true }),
     getMyStats(db, user.id, competition.id),
   ])
   const row = board.find((r) => r.userId === user.id)

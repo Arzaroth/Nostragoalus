@@ -324,7 +324,9 @@
       "delete": "Supprimer l'utilisateur",
       "remove2fa": "Retirer la 2FA de ce compte",
       "ban": "Bannir",
-      "unban": "Débannir"
+      "unban": "Débannir",
+      "hide": "Masquer du classement",
+      "show": "Afficher dans le classement"
     },
     "data": {
       "title": "Données",

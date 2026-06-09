@@ -4,7 +4,7 @@ import { createTestDb, type TestDb } from '../../../tests/db'
 import { findRoundId } from '../sync/rounds'
 import { makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
 import { compareLeaderboardRows, getLeaderboard } from './service'
-import { championPick, prediction } from '../../../db/schema'
+import { championPick, prediction, user } from '../../../db/schema'
 
 describe('compareLeaderboardRows', () => {
   const base = { totalPoints: 0, exactCount: 0, outcomeCount: 0, gdCount: 0, joinedAt: new Date('2026-01-01'), userId: 'a' }
@@ -109,6 +109,21 @@ describe('getLeaderboard', () => {
     const board = await getLeaderboard(db, { competitionId })
     expect(board[0]).toMatchObject({ userId: a, totalPoints: 10, championPoints: 10, predictionPoints: 0 })
     expect(board[1]).toMatchObject({ totalPoints: 0 })
+    await client.close()
+  })
+
+  it('excludes hidden users unless includeHidden is set', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    await makeUser(db, 'alice', 'Alice')
+    const ghost = await makeUser(db, 'ghost', 'Ghost')
+    await db.update(user).set({ hiddenFromLeaderboard: true }).where(eq(user.id, ghost))
+
+    const board = await getLeaderboard(db, { competitionId })
+    expect(board.map((r) => r.displayName)).toEqual(['Alice'])
+
+    const full = await getLeaderboard(db, { competitionId, includeHidden: true })
+    expect(full.map((r) => r.displayName).sort()).toEqual(['Alice', 'Ghost'])
     await client.close()
   })
 })

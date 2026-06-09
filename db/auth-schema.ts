@@ -14,6 +14,9 @@ export const user = pgTable("user", {
   locale: text("locale"),
   theme: text("theme"),
   showCrowd: boolean("show_crowd"),
+  // Admin-managed (not a better-auth additionalField, so users cannot set it
+  // through updateUser): excluded from leaderboards and rank snapshots.
+  hiddenFromLeaderboard: boolean("hidden_from_leaderboard").default(false).notNull(),
   twoFactorEnabled: boolean("two_factor_enabled").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")

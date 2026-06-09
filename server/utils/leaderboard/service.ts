@@ -45,7 +45,7 @@ export function compareLeaderboardRows(a: RankableRow, b: RankableRow): number {
 
 export async function getLeaderboard(
   db: AppDatabase,
-  opts: { competitionId: string | null; limit?: number; offset?: number },
+  opts: { competitionId: string | null; limit?: number; offset?: number; includeHidden?: boolean },
 ): Promise<LeaderboardRow[]> {
   const limit = opts.limit ?? 100
   const offset = opts.offset ?? 0
@@ -69,6 +69,8 @@ export async function getLeaderboard(
         ? and(eq(match.id, prediction.matchId), eq(match.competitionId, opts.competitionId))
         : eq(match.id, prediction.matchId),
     )
+    // includeHidden serves self-stats: a hidden user still sees their own points.
+    .where(opts.includeHidden ? undefined : eq(user.hiddenFromLeaderboard, false))
     .groupBy(user.id, user.name, user.image, user.createdAt)
 
   const champions = await db

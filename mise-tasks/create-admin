@@ -80,10 +80,15 @@ if (res.ok) {
   console.log(`${email} already exists - promoting`)
 }
 
-// 2. Promote to admin in the DB.
+// 2. Promote to admin in the DB. Admin accounts start hidden from the
+// leaderboard (they run the game, they don't compete); an admin can unhide
+// any account from /admin later.
 const client = new pg.Client(DB)
 await client.connect()
-const { rowCount } = await client.query(`UPDATE "user" SET role = 'admin' WHERE lower(email) = lower($1)`, [email])
+const { rowCount } = await client.query(
+  `UPDATE "user" SET role = 'admin', hidden_from_leaderboard = true WHERE lower(email) = lower($1)`,
+  [email],
+)
 await client.end()
 
 if (rowCount === 0) {

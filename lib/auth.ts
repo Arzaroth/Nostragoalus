@@ -72,6 +72,9 @@ export function buildAuthOptions(database: AuthDb) {
         theme: { type: 'string' as const, required: false },
         // Opt-in: show the combined total of everyone's predictions per match.
         showCrowd: { type: 'boolean' as const, required: false },
+        // input: false - readable everywhere (session, admin listUsers) but never
+        // settable through updateUser; only the admin visibility route writes it.
+        hiddenFromLeaderboard: { type: 'boolean' as const, required: false, input: false },
       },
     },
     // Google goes through the runtime SSO admin UI (one config path, secrets encrypted at rest).

@@ -71,6 +71,13 @@
       "when": 1781032806345,
       "tag": "0009_show_crowd_snapshot_sync",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1781033584688,
+      "tag": "0010_hidden_from_leaderboard",
+      "breakpoints": true
     }
   ]
 }
