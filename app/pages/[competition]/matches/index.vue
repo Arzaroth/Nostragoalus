@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const { t } = useI18n()
 const { enabled: crowdEnabled, totals: crowdTotals } = useCrowdTotals()
+const { enabled: oddsEnabled } = useMatchOdds()
 const slug = useSelectedCompetition()
 const { data: matches, isLoading } = useMatches()
 const { data: predictions } = useMyPredictions()
@@ -101,6 +102,7 @@ function fmtTime(d: string) {
               <div v-if="crowdEnabled" class="text-xs tabular-nums" style="color: var(--p-text-muted-color)" :title="t('prefs.crowd')">
                 👥 {{ t('predictions.crowd') }}: <template v-if="crowdTotals[m.id]">{{ crowdTotals[m.id].home }}–{{ crowdTotals[m.id].away }} ({{ crowdTotals[m.id].count }})</template><template v-else>–</template>
               </div>
+              <MatchOdds v-if="oddsEnabled" :odds="m.odds" />
               <!-- Always rendered on open matches (disabled until a pick exists) so saving never resizes the card. -->
               <div v-if="!m.isLocked || predByMatch[m.id]" class="flex items-center gap-3">
                 <!-- single-match rounds: no joker to place; the final doubles for everyone -->

@@ -34,6 +34,15 @@ const showCrowd = computed({
     persistFlash()
   },
 })
+
+// Opt-out (default on): unset means shown.
+const showOdds = computed({
+  get: () => (session.value?.data?.user as any)?.showOdds !== false,
+  set: async (v: boolean) => {
+    await (updateUser as (f: Record<string, unknown>) => Promise<unknown>)({ showOdds: v })
+    persistFlash()
+  },
+})
 function persistFlash() {
   saved.value = true
   clearTimeout(savedTimer)
@@ -84,6 +93,13 @@ const themeOptions = computed(() => [
             <label for="show-crowd" class="flex flex-col cursor-pointer">
               <span class="text-sm font-medium">{{ t('prefs.crowd') }}</span>
               <span class="text-xs" style="color: var(--p-text-muted-color)">{{ t('prefs.crowdHint') }}</span>
+            </label>
+          </div>
+          <div class="flex items-start gap-3 pt-1">
+            <ToggleSwitch v-model="showOdds" input-id="show-odds" class="shrink-0 mt-0.5" />
+            <label for="show-odds" class="flex flex-col cursor-pointer">
+              <span class="text-sm font-medium">{{ t('prefs.odds') }}</span>
+              <span class="text-xs" style="color: var(--p-text-muted-color)">{{ t('prefs.oddsHint') }}</span>
             </label>
           </div>
         </div>

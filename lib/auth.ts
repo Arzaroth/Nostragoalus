@@ -103,6 +103,8 @@ export function buildAuthOptions(database: AuthDb) {
         theme: { type: 'string' as const, required: false },
         // Opt-in: show the combined total of everyone's predictions per match.
         showCrowd: { type: 'boolean' as const, required: false },
+        // Opt-out: bookmaker odds under each match (null/undefined = shown).
+        showOdds: { type: 'boolean' as const, required: false },
         // input: false - readable everywhere (session, admin listUsers) but never
         // settable through updateUser; only the admin visibility route writes it.
         hiddenFromLeaderboard: { type: 'boolean' as const, required: false, input: false },
