@@ -1,0 +1,33 @@
+#!/usr/bin/env -S node
+//MISE description="Restore a pg_dump custom-format backup into the dockerized Postgres (DESTRUCTIVE)"
+//USAGE arg "<file>" help="Backup file produced by db-backup (.dump)"
+
+// Equivalent raw command:
+//   docker compose exec -T db pg_restore -U nostragoalus -d nostragoalus --clean --if-exists < backups/<file>
+// --clean --if-exists drops and recreates objects, so the database ends up
+// exactly as dumped. Stop the app first if it is mid-write.
+import { execSync } from 'node:child_process'
+import { existsSync } from 'node:fs'
+import { createInterface } from 'node:readline/promises'
+
+const file = process.env.usage_file
+if (!file || !existsSync(file)) {
+  console.error('usage: mise run db-restore <backup.dump>')
+  process.exit(1)
+}
+
+if (process.stdin.isTTY) {
+  const rl = createInterface({ input: process.stdin, output: process.stdout })
+  const answer = await rl.question(`This OVERWRITES the current database with ${file}. Type "yes" to continue: `)
+  rl.close()
+  if (answer.trim() !== 'yes') {
+    console.error('aborted')
+    process.exit(1)
+  }
+}
+
+execSync(`docker compose exec -T db pg_restore -U nostragoalus -d nostragoalus --clean --if-exists < ${JSON.stringify(file)}`, {
+  stdio: ['ignore', 'inherit', 'inherit'],
+  shell: '/bin/sh',
+})
+console.log(`restored ${file}`)

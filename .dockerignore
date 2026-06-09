@@ -35,3 +35,4 @@ vitest.config.ts
 .prettier*
 .eslint*
 mise-tasks
+backups

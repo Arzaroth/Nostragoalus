@@ -42,3 +42,6 @@ cookies.txt
 # Claude Code local state (skills and commands ARE tracked)
 .claude/worktrees/
 .claude/settings.local.json
+
+# Database backups (mise run db-backup)
+backups/

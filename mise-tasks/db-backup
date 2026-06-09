@@ -1,0 +1,28 @@
+#!/usr/bin/env -S node
+//MISE description="Dump the dockerized Postgres to backups/ (pg_dump custom format)"
+//USAGE arg "[outdir]" help="Destination directory (default: ./backups)"
+
+// Equivalent raw command:
+//   docker compose exec -T db pg_dump -U nostragoalus -Fc nostragoalus > backups/nostragoalus-<stamp>.dump
+// Custom format (-Fc) is compressed and restorable table-by-table with pg_restore.
+import { execSync } from 'node:child_process'
+import { mkdirSync, statSync } from 'node:fs'
+
+const outdir = process.env.usage_outdir || 'backups'
+mkdirSync(outdir, { recursive: true })
+
+const stamp = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19)
+const file = `${outdir}/nostragoalus-${stamp}.dump`
+
+execSync(`docker compose exec -T db pg_dump -U nostragoalus -Fc nostragoalus > ${JSON.stringify(file)}`, {
+  stdio: ['ignore', 'inherit', 'inherit'],
+  shell: '/bin/sh',
+})
+
+const size = statSync(file).size
+if (size < 1024) {
+  console.error(`${file} is suspiciously small (${size} bytes) - is the db container up?`)
+  process.exit(1)
+}
+console.log(`wrote ${file} (${(size / 1024 / 1024).toFixed(1)} MiB)`)
+console.log(`restore with: mise run db-restore ${file}`)
