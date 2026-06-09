@@ -4,6 +4,8 @@ const TASK_NAMES: Record<string, string> = {
   fixtures: 'fixtures:refresh',
   live: 'scores:poll',
   finalize: 'matches:finalize',
+  odds: 'odds:refresh',
+  'odds-backfill': 'odds:backfill',
 }
 
 export default defineEventHandler(async (event) => {
@@ -12,7 +14,8 @@ export default defineEventHandler(async (event) => {
   const name = TASK_NAMES[String(body?.task)]
   if (!name) throw createError({ statusCode: 400, statusMessage: 'unknown task' })
 
-  const { result } = await runTask(name)
+  // Manual triggers run even when the cron loop is disabled.
+  const { result } = await runTask(name, { payload: { force: true } })
   return { task: name, result }
 })
 
@@ -35,7 +38,9 @@ defineRouteMeta({
                 "enum": [
                   "fixtures",
                   "live",
-                  "finalize"
+                  "finalize",
+                  "odds",
+                  "odds-backfill"
                 ]
               }
             },

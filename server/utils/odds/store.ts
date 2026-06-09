@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, inArray, isNotNull, lte, max, sql } from 'drizzle-orm'
+import { and, desc, eq, gt, inArray, isNotNull, isNull, lte, max, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { match, oddsSnapshot } from '../../../db/schema'
 import type { OddsSnapshotKind, StoredBookmakerOdds } from '../../../shared/types/odds'
@@ -90,10 +90,38 @@ export async function closingOddsForOutcome(
   return Number(value)
 }
 
-export async function setMatchOddsEventRefs(db: AppDatabase, pairs: { matchId: string; ref: string }[]): Promise<void> {
+export async function setMatchOddsEventRefs(
+  db: AppDatabase,
+  pairs: { matchId: string; ref: string; swapped?: boolean }[],
+): Promise<void> {
   for (const pair of pairs) {
-    await db.update(match).set({ oddsEventRef: pair.ref }).where(eq(match.id, pair.matchId))
+    await db
+      .update(match)
+      .set({ oddsEventRef: pair.ref, oddsEventSwapped: pair.swapped ?? false })
+      .where(eq(match.id, pair.matchId))
   }
+}
+
+// Upcoming fixtures with real teams that the matcher hasn't claimed yet.
+export async function unmappedUpcomingMatches(
+  db: AppDatabase,
+  competitionId: string,
+  now: Date,
+): Promise<{ id: string; homeTeam: string; awayTeam: string; kickoffTime: Date }[]> {
+  return db
+    .select({ id: match.id, homeTeam: match.homeTeam, awayTeam: match.awayTeam, kickoffTime: match.kickoffTime })
+    .from(match)
+    .where(
+      and(
+        eq(match.competitionId, competitionId),
+        eq(match.status, 'SCHEDULED'),
+        gt(match.kickoffTime, now),
+        isNull(match.oddsEventRef),
+        isNotNull(match.homeTeamCode),
+        isNotNull(match.awayTeamCode),
+      ),
+    )
+    .orderBy(match.kickoffTime)
 }
 
 // Mapped upcoming matches whose newest snapshot is stale per the cadence rules:
@@ -102,13 +130,14 @@ export async function matchesNeedingOdds(
   db: AppDatabase,
   competitionIds: string[],
   now: Date,
-): Promise<{ id: string; oddsEventRef: string; kickoffTime: Date }[]> {
+): Promise<{ id: string; oddsEventRef: string; oddsEventSwapped: boolean; kickoffTime: Date }[]> {
   if (competitionIds.length === 0) return []
   const horizon = new Date(now.getTime() + 72 * 60 * 60 * 1000)
   const rows = await db
     .select({
       id: match.id,
       oddsEventRef: match.oddsEventRef,
+      oddsEventSwapped: match.oddsEventSwapped,
       kickoffTime: match.kickoffTime,
       lastFetchedAt: max(oddsSnapshot.fetchedAt),
     })
@@ -126,13 +155,18 @@ export async function matchesNeedingOdds(
     .groupBy(match.id)
     .orderBy(match.kickoffTime)
 
-  const due: { id: string; oddsEventRef: string; kickoffTime: Date }[] = []
+  const due: { id: string; oddsEventRef: string; oddsEventSwapped: boolean; kickoffTime: Date }[] = []
   for (const row of rows) {
     const msToKickoff = row.kickoffTime.getTime() - now.getTime()
     const staleMs = msToKickoff <= 2 * 60 * 60 * 1000 ? 30 * 60 * 1000 : 6 * 60 * 60 * 1000
     const last = row.lastFetchedAt?.getTime() ?? null
     if (last === null || now.getTime() - last >= staleMs) {
-      due.push({ id: row.id, oddsEventRef: row.oddsEventRef!, kickoffTime: row.kickoffTime })
+      due.push({
+        id: row.id,
+        oddsEventRef: row.oddsEventRef!,
+        oddsEventSwapped: row.oddsEventSwapped,
+        kickoffTime: row.kickoffTime,
+      })
     }
   }
   return due
@@ -142,11 +176,21 @@ export async function matchesNeedingOdds(
 export async function matchesNeedingBackfill(
   db: AppDatabase,
   competitionId: string,
-): Promise<{ id: string; oddsEventRef: string | null; homeTeam: string; awayTeam: string; kickoffTime: Date }[]> {
+): Promise<
+  {
+    id: string
+    oddsEventRef: string | null
+    oddsEventSwapped: boolean
+    homeTeam: string
+    awayTeam: string
+    kickoffTime: Date
+  }[]
+> {
   const rows = await db
     .select({
       id: match.id,
       oddsEventRef: match.oddsEventRef,
+      oddsEventSwapped: match.oddsEventSwapped,
       homeTeam: match.homeTeam,
       awayTeam: match.awayTeam,
       kickoffTime: match.kickoffTime,

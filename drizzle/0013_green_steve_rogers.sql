@@ -1,0 +1,1 @@
+ALTER TABLE "match" ADD COLUMN "odds_event_swapped" boolean DEFAULT false NOT NULL;

@@ -97,6 +97,8 @@ export default defineNuxtConfig({
       '0 * * * *': ['fixtures:refresh'],
       // Lock predictions at kickoff and score finished matches.
       '*/5 * * * *': ['matches:finalize'],
+      // Odds snapshots self-gate on per-match staleness, so most ticks are no-ops.
+      '*/30 * * * *': ['odds:refresh'],
     },
   },
 
