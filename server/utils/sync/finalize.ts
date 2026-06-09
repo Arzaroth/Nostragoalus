@@ -4,6 +4,8 @@ import { match, matchScoreEvent, prediction } from '../../../db/schema'
 import { countsDouble } from '../../../shared/types/match'
 import { getActiveScoringConfig } from '../scoring/store'
 import { scorePredictions } from '../scoring/engine'
+import { outcomeOf } from '../scoring/tiers'
+import { closingOddsForOutcome } from '../odds/store'
 import { awardChampionBonuses } from '../champion/service'
 import { resultHashOf } from './upsert-matches'
 import { lockDuePredictions, unlockFuturePredictions } from './live-window'
@@ -39,10 +41,19 @@ export async function scoreMatchRow(
     .from(prediction)
     .where(and(eq(prediction.matchId, matchId), isNotNull(prediction.lockedAt)))
 
+  // Closing odds of the actual outcome feed the ODDS bonus. Gated on the
+  // config so the default CROWD path costs no extra query; the resolver only
+  // reads append-only pre-kickoff snapshots, so rescoring stays idempotent.
+  const actualOutcomeOdds =
+    rules.bonusSource === 'ODDS'
+      ? await closingOddsForOutcome(db, matchId, m.kickoffTime, outcomeOf({ home: m.fullTimeHome, away: m.fullTimeAway }))
+      : null
+
   const scores = scorePredictions({
     actual: { home: m.fullTimeHome, away: m.fullTimeAway },
     rules,
     predictions: locked.map((p) => ({ id: p.id, home: p.homeGoals, away: p.awayGoals, isJoker: p.isJoker })),
+    actualOutcomeOdds,
     forceJoker: countsDouble(m.stage),
   })
   const scoreById = new Map(scores.map((s) => [s.id, s]))

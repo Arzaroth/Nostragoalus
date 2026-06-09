@@ -137,6 +137,68 @@ describe('finalizeMatches', () => {
     await client.close()
   })
 
+  it('awards the odds bonus from the closing snapshot when the config uses ODDS', async () => {
+    const { db, client, competitionId, roundId } = await setup()
+    await db.update(scoringConfig).set({ bonusSource: 'ODDS', version: 2 }).where(eq(scoringConfig.isActive, true))
+    const u1 = await makeUser(db, 'u1')
+    const u2 = await makeUser(db, 'u2')
+    const u3 = await makeUser(db, 'u3')
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: KICKOFF, status: 'FINISHED', fullTimeHome: 0, fullTimeAway: 1 })
+    await makePrediction(db, { userId: u1, matchId: m, roundId, home: 0, away: 1 }) // exact, hits outcome
+    await makePrediction(db, { userId: u2, matchId: m, roundId, home: 0, away: 2 }) // outcome only
+    await makePrediction(db, { userId: u3, matchId: m, roundId, home: 1, away: 0 }) // miss
+
+    const { insertOddsSnapshots } = await import('../odds/store')
+    await insertOddsSnapshots(db, [
+      {
+        matchId: m,
+        provider: 'sofascore',
+        providerEventRef: 'e',
+        kind: 'POLL',
+        // Stale early price - must NOT be the one used.
+        current: { home: 2.1, draw: 3.4, away: 9 },
+        initial: null,
+        bookmakers: null,
+        fetchedAt: new Date(KICKOFF.getTime() - 60 * 60 * 1000),
+      },
+      {
+        matchId: m,
+        provider: 'sofascore',
+        providerEventRef: 'e',
+        kind: 'POLL',
+        // Closing: away win at 3.6 -> tier {minDecimalOdds: 3.5, bonus: 3}.
+        current: { home: 2.1, draw: 3.4, away: 3.6 },
+        initial: null,
+        bookmakers: null,
+        fetchedAt: KICKOFF,
+      },
+    ])
+
+    expect(await finalizeMatches(db, NOW)).toMatchObject({ scored: 1 })
+    const preds = await predsByUser(db)
+    // Joker applies to bonus by default: (base + bonus) * 1 for non-jokers.
+    expect(preds.u1).toMatchObject({ baseTier: 'EXACT', bonusPoints: 3, bonusSource: 'ODDS', totalPoints: 6 })
+    expect(preds.u2).toMatchObject({ baseTier: 'OUTCOME', bonusPoints: 3, bonusSource: 'ODDS', totalPoints: 4 })
+    expect(preds.u3).toMatchObject({ baseTier: 'MISS', bonusPoints: 0, totalPoints: 0 })
+
+    // Rescoring after a config bump resolves the same closing odds.
+    await db.update(scoringConfig).set({ version: 3 }).where(eq(scoringConfig.isActive, true))
+    expect((await finalizeMatches(db, NOW)).scored).toBe(1)
+    expect((await predsByUser(db)).u1).toMatchObject({ bonusPoints: 3, totalPoints: 6 })
+    await client.close()
+  })
+
+  it('scores without a bonus when no pre-kickoff snapshot exists under ODDS', async () => {
+    const { db, client, competitionId, roundId } = await setup()
+    await db.update(scoringConfig).set({ bonusSource: 'ODDS', version: 2 }).where(eq(scoringConfig.isActive, true))
+    const u1 = await makeUser(db, 'u1')
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: KICKOFF, status: 'FINISHED', fullTimeHome: 0, fullTimeAway: 1 })
+    await makePrediction(db, { userId: u1, matchId: m, roundId, home: 0, away: 1 })
+    expect(await finalizeMatches(db, NOW)).toMatchObject({ scored: 1 })
+    expect((await predsByUser(db)).u1).toMatchObject({ baseTier: 'EXACT', bonusPoints: 0, bonusSource: 'ODDS', totalPoints: 3 })
+    await client.close()
+  })
+
   it('awards the champion bonus when the final is decided', async () => {
     const { db, client, competitionId } = await setup()
     const finalRound = (await findRoundId(db, competitionId, 'FINAL', null)) as string
