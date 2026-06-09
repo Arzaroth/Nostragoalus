@@ -10,9 +10,10 @@ export function useLeaderboard(global?: Ref<boolean>) {
   const isGlobal = global ?? ref(false)
   return useQuery({
     queryKey: ['leaderboard', slug, isGlobal],
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       $fetch<{ rows: LeaderboardRow[] }>('/api/leaderboard', {
         query: isGlobal.value ? { global: 'true' } : slug.value ? { competition: slug.value } : {},
+        signal,
       }).then((r) => r.rows),
   })
 }

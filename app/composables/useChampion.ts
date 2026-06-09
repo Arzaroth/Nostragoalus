@@ -20,8 +20,8 @@ export function useChampion() {
   // (which recurses to "excessive stack depth" on these endpoints).
   const query = useQuery({
     queryKey: ['champion', slug],
-    queryFn: () =>
-      $fetch<ChampionData>('/api/champion', { query: slug.value ? { competition: slug.value } : {} }),
+    queryFn: ({ signal }) =>
+      $fetch<ChampionData>('/api/champion', { query: slug.value ? { competition: slug.value } : {}, signal }),
   })
 
   const setPick = useMutation({

@@ -24,7 +24,9 @@ export function useLastCompetition() {
 export function useCompetitions() {
   return useQuery({
     queryKey: ['competitions'],
-    queryFn: () => $fetch<{ competitions: Competition[] }>('/api/competitions').then((r) => r.competitions),
+    // signal: vue-query aborts it when the last subscriber unmounts, so a page
+    // switch cancels the request instead of letting it run to completion.
+    queryFn: ({ signal }) => $fetch<{ competitions: Competition[] }>('/api/competitions', { signal }).then((r) => r.competitions),
     staleTime: 5 * 60_000,
   })
 }

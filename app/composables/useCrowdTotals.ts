@@ -12,20 +12,28 @@ export function useCrowdTotals() {
   const fetched = ref<Record<string, CrowdTotal>>({})
   const patches = ref<Record<string, CrowdTotal>>({})
 
+  // One in-flight request at a time: a competition switch (or unmount) aborts
+  // the previous fetch instead of letting a stale response land late.
+  let loadCtl: AbortController | null = null
   async function load() {
+    loadCtl?.abort()
     if (!enabled.value || !slug.value) {
       fetched.value = {}
       return
     }
+    const ctl = new AbortController()
+    loadCtl = ctl
     try {
       const r = await $fetch<{ totals: Record<string, CrowdTotal> }>('/api/predictions/crowd', {
         query: { competition: slug.value },
+        signal: ctl.signal,
       })
       fetched.value = r.totals ?? {}
     } catch {
-      fetched.value = {}
+      if (!ctl.signal.aborted) fetched.value = {}
     }
   }
+  onScopeDispose(() => loadCtl?.abort())
 
   // Refetch whenever the preference flips or the competition changes; a switch
   // also drops the previous round's live patches.

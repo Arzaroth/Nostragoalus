@@ -27,17 +27,24 @@ const { data, refresh: refreshMatch } = await useFetch<{
 }>(`/api/matches/${id.value}`)
 // lazy: the page navigates immediately on the core match fetch; insight/stat
 // sections fill in as their (slower, FIFA-backed) data lands.
-const { data: insights, status: insightsStatus } = await useFetch<any>(`/api/matches/${id.value}/insights`, { lazy: true })
+const { data: insights, status: insightsStatus, clear: clearInsights } = await useFetch<any>(`/api/matches/${id.value}/insights`, { lazy: true })
 
 const selectedSlug = useSelectedCompetition()
-const { data: scorersData } = await useFetch<{ scorers: any[] }>('/api/competitions/scorers', {
+const { data: scorersData, status: scorersStatus, clear: clearScorers } = await useFetch<{ scorers: any[] }>('/api/competitions/scorers', {
   query: computed(() => (selectedSlug.value ? { competition: selectedSlug.value } : {})),
   lazy: true,
 })
 const scorers = computed<any[]>(() => scorersData.value?.scorers ?? [])
 
-const { data: detailData, status: detailStatus } = await useFetch<{ detail: any }>(`/api/matches/${id.value}/live-detail`, { lazy: true })
+const { data: detailData, status: detailStatus, clear: clearDetail } = await useFetch<{ detail: any }>(`/api/matches/${id.value}/live-detail`, { lazy: true })
 const detail = computed(() => detailData.value?.detail)
+
+// These FIFA-backed fetches can run for seconds; leaving the page aborts them.
+useCancelOnLeave(
+  { status: insightsStatus, clear: clearInsights },
+  { status: scorersStatus, clear: clearScorers },
+  { status: detailStatus, clear: clearDetail },
+)
 
 const m = computed(() => data.value?.match)
 const { live } = useLiveMatch(id)

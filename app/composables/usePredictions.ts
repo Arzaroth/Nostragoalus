@@ -13,9 +13,10 @@ export function useMyPredictions() {
   const slug = useSelectedCompetition()
   return useQuery({
     queryKey: ['predictions', slug],
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       $fetch<{ predictions: MyPrediction[] }>('/api/predictions', {
         query: slug.value ? { competition: slug.value } : {},
+        signal,
       }).then((r) => r.predictions),
   })
 }
@@ -24,8 +25,8 @@ export function useUserPredictions(userId: MaybeRefOrGetter<string>) {
   const id = toRef(userId)
   return useQuery({
     queryKey: ['user-predictions', id],
-    queryFn: () =>
-      $fetch<{ user: { id: string; name: string }; predictions: MyPrediction[] }>(`/api/users/${id.value}/predictions`),
+    queryFn: ({ signal }) =>
+      $fetch<{ user: { id: string; name: string }; predictions: MyPrediction[] }>(`/api/users/${id.value}/predictions`, { signal }),
   })
 }
 

@@ -11,9 +11,10 @@ export function useMatches() {
   const slug = useSelectedCompetition()
   return useQuery({
     queryKey: ['matches', slug],
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       $fetch<{ matches: MatchListItem[] }>('/api/matches', {
         query: slug.value ? { competition: slug.value } : {},
+        signal,
       }).then((r) => r.matches),
   })
 }
