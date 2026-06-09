@@ -38,3 +38,6 @@ coverage
 # curl cookie jars from E2E/manual testing (never commit session tokens)
 *.jar
 cookies.txt
+
+# Claude Code local state (worktrees, settings)
+.claude/
