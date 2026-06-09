@@ -107,3 +107,19 @@ html:not(.app-dark) .ng-card:hover {
 
 .goal-pop-enter-active, .goal-pop-leave-active { transition: opacity 0.3s ease; }
 .goal-pop-enter-from, .goal-pop-leave-to { opacity: 0; }
+
+/* PrimeVue accordion: the content wrapper sizes itself to max-content for the
+   open/close animation, so a wide child (the FAQ scoring <pre>) pushes the whole
+   page into horizontal scroll instead of scrolling inside its own box. */
+.p-accordioncontent-wrapper,
+.p-accordioncontent-content {
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* No CSS preflight (UnoCSS ships none), so the browser-default 1em margin on a
+   leading <p> collapses out of the unpadded accordion content and renders as a
+   page-background gap between the header and its content. */
+.p-accordioncontent-content > :first-child {
+  margin-top: 0;
+}

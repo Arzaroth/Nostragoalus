@@ -57,9 +57,17 @@ const wideOpacity = useTransform(t2, (v) => 1 - v)
 
 // Stars float above the dim during the intro, then settle behind the content.
 const starsFront = ref(true)
+// banner-mini.svg is a ~19:1 strip drawn for desktop widths; cover-cropping it
+// on a phone leaves a few giant letters. Narrow screens reuse the wide artwork,
+// whose aspect is close to the pinned bar's.
+const narrow = ref(false)
 onMounted(() => {
   t1.on('change', (v) => (starsFront.value = v > 0.04))
+  const mq = window.matchMedia('(max-width: 640px)')
+  narrow.value = mq.matches
+  mq.addEventListener('change', (e) => (narrow.value = e.matches))
 })
+const miniBg = computed(() => `url(/brand/banner-${narrow.value ? 'wide' : 'mini'}.svg) center / cover no-repeat`)
 </script>
 
 <template>
@@ -83,7 +91,7 @@ onMounted(() => {
         class="fixed left-1/2 top-16 z-40 overflow-hidden"
         :style="{ width: bWidth, height: bHeight, transform: bTransform, borderRadius: bRadius, boxShadow: bShadow, background: '#171436' }"
       >
-        <motion.div class="absolute inset-0" :style="{ opacity: t2, background: 'url(/brand/banner-mini.svg) center / cover no-repeat' }" />
+        <motion.div class="absolute inset-0" :style="{ opacity: t2, background: miniBg }" />
         <motion.img src="/brand/banner-wide.svg" alt="Nostragoalus - the football oracle" class="absolute inset-0 w-full h-full object-cover" :style="{ opacity: wideOpacity }" />
       </motion.div>
       <motion.div v-if="!reduced" class="fixed inset-0 z-30 pointer-events-none" :style="{ background: '#0b0a18', opacity: dimOpacity }" />

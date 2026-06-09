@@ -42,6 +42,33 @@ async function onSignOut() {
   await signOut()
   await router.push('/login')
 }
+
+// Mobile nav scrolls horizontally; edge fades signal there's more, and the
+// active link is brought into view so the current section is never off-screen.
+const mnav = ref<HTMLElement | null>(null)
+const fadeL = ref(false)
+const fadeR = ref(false)
+function updateNavFades() {
+  const el = mnav.value
+  if (!el) return
+  fadeL.value = el.scrollLeft > 4
+  fadeR.value = el.scrollLeft + el.clientWidth < el.scrollWidth - 4
+}
+function scrollActiveNavIntoView() {
+  const el = mnav.value?.querySelector<HTMLElement>('.router-link-active')
+  el?.scrollIntoView({ inline: 'center', block: 'nearest' })
+}
+watch([() => route.path, navLinks], async () => {
+  await nextTick()
+  scrollActiveNavIntoView()
+  updateNavFades()
+})
+onMounted(() => {
+  updateNavFades()
+  scrollActiveNavIntoView()
+  window.addEventListener('resize', updateNavFades, { passive: true })
+})
+onBeforeUnmount(() => window.removeEventListener('resize', updateNavFades))
 </script>
 
 <template>
@@ -109,17 +136,29 @@ async function onSignOut() {
         </div>
       </div>
 
-      <nav class="md:hidden flex items-center gap-2 px-4 pb-2 overflow-x-auto text-sm">
-        <NuxtLink
-          v-for="l in navLinks"
-          :key="l.to"
-          :to="l.to"
-          class="px-2 py-1 rounded-lg whitespace-nowrap flex items-center gap-1"
-          active-class="!text-[var(--p-primary-color)]"
-        >
-          <i :class="l.icon" />{{ t(l.key) }}
-        </NuxtLink>
-      </nav>
+      <div class="md:hidden relative">
+        <nav ref="mnav" class="flex items-center gap-2 px-4 pb-2 overflow-x-auto text-sm" @scroll.passive="updateNavFades">
+          <NuxtLink
+            v-for="l in navLinks"
+            :key="l.to"
+            :to="l.to"
+            class="px-2 py-1 rounded-lg whitespace-nowrap flex items-center gap-1"
+            active-class="!text-[var(--p-primary-color)]"
+          >
+            <i :class="l.icon" />{{ t(l.key) }}
+          </NuxtLink>
+        </nav>
+        <div
+          v-if="fadeL"
+          class="pointer-events-none absolute inset-y-0 left-0 w-8"
+          style="background: linear-gradient(to right, var(--p-content-background), transparent)"
+        />
+        <div
+          v-if="fadeR"
+          class="pointer-events-none absolute inset-y-0 right-0 w-8"
+          style="background: linear-gradient(to left, var(--p-content-background), transparent)"
+        />
+      </div>
     </header>
 
     <main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6">
