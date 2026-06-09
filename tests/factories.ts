@@ -15,6 +15,8 @@ export interface CompetitionOptions {
   externalCompetitionId?: string
   externalSeasonId?: string | null
   seasonHint?: string | null
+  oddsProvider?: string | null
+  oddsProviderRef?: string | null
   isActive?: boolean
 }
 
@@ -28,6 +30,8 @@ export async function makeCompetition(db: AppDatabase, over: CompetitionOptions 
       externalCompetitionId: over.externalCompetitionId ?? '17',
       externalSeasonId: over.externalSeasonId ?? null,
       seasonHint: over.seasonHint ?? '2026',
+      oddsProvider: over.oddsProvider ?? null,
+      oddsProviderRef: over.oddsProviderRef ?? null,
       isActive: over.isActive ?? true,
     })
     .returning({ id: competition.id })

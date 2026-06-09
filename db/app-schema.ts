@@ -15,6 +15,7 @@ import {
 } from 'drizzle-orm/pg-core'
 import { user } from './auth-schema'
 import type { CrowdTier, OddsTier } from '../shared/types/scoring'
+import type { OddsSnapshotKind, StoredBookmakerOdds } from '../shared/types/odds'
 
 const pk = () => text('id').primaryKey().$defaultFn(() => randomUUID())
 
@@ -97,6 +98,8 @@ export const competition = pgTable(
     externalCompetitionId: text('external_competition_id').notNull(),
     externalSeasonId: text('external_season_id'),
     seasonHint: text('season_hint'),
+    oddsProvider: text('odds_provider'),
+    oddsProviderRef: text('odds_provider_ref'),
     isActive: boolean('is_active').notNull().default(true),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -155,6 +158,9 @@ export const match = pgTable(
     providerStageId: text('provider_stage_id'),
     possessionHome: numeric('possession_home', { precision: 5, scale: 2 }),
     possessionAway: numeric('possession_away', { precision: 5, scale: 2 }),
+    // Odds-provider event id (e.g. Sofascore event id), resolved once by the
+    // name+kickoff matcher so polling never re-matches.
+    oddsEventRef: text('odds_event_ref'),
     detailsFetchedAt: timestamp('details_fetched_at', { withTimezone: true }),
     scoringState: matchScoringStateEnum('scoring_state').notNull().default('PENDING'),
     scoredAtVersion: integer('scored_at_version'),
@@ -267,6 +273,33 @@ export const championPick = pgTable(
   (t) => [uniqueIndex('champion_pick_user_competition_uq').on(t.userId, t.competitionId)],
 )
 
+// Append-only 1X2 odds history. POLL rows are only written pre-kickoff, so the
+// latest row at/before kickoff is the closing snapshot scoring relies on;
+// BACKFILL rows (finished events, retroactive providers) are stamped with the
+// kickoff time itself so the same resolver finds them.
+export const oddsSnapshot = pgTable(
+  'odds_snapshot',
+  {
+    id: pk(),
+    matchId: text('match_id')
+      .notNull()
+      .references(() => match.id, { onDelete: 'cascade' }),
+    provider: text('provider').notNull(),
+    providerEventRef: text('provider_event_ref').notNull(),
+    kind: text('kind', { enum: ['POLL', 'BACKFILL'] }).$type<OddsSnapshotKind>().notNull().default('POLL'),
+    oddsHome: numeric('odds_home', { precision: 7, scale: 3 }).notNull(),
+    oddsDraw: numeric('odds_draw', { precision: 7, scale: 3 }).notNull(),
+    oddsAway: numeric('odds_away', { precision: 7, scale: 3 }).notNull(),
+    initialHome: numeric('initial_home', { precision: 7, scale: 3 }),
+    initialDraw: numeric('initial_draw', { precision: 7, scale: 3 }),
+    initialAway: numeric('initial_away', { precision: 7, scale: 3 }),
+    bookmakers: jsonb('bookmakers').$type<StoredBookmakerOdds[]>(),
+    fetchedAt: timestamp('fetched_at', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('odds_snapshot_match_fetched_idx').on(t.matchId, t.fetchedAt)],
+)
+
 export const matchScoreEvent = pgTable(
   'match_score_event',
   {
@@ -313,6 +346,10 @@ export const predictionRelations = relations(prediction, ({ one }) => ({
 
 export const matchScoreEventRelations = relations(matchScoreEvent, ({ one }) => ({
   match: one(match, { fields: [matchScoreEvent.matchId], references: [match.id] }),
+}))
+
+export const oddsSnapshotRelations = relations(oddsSnapshot, ({ one }) => ({
+  match: one(match, { fields: [oddsSnapshot.matchId], references: [match.id] }),
 }))
 
 export const championPickRelations = relations(championPick, ({ one }) => ({
