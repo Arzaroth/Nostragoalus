@@ -7,7 +7,8 @@ import { ensureDefaultScoringConfig } from '../scoring/store'
 import { DEFAULT_RULES } from '../scoring/config'
 import { finalizeMatches } from '../sync/finalize'
 import { championPick, match, prediction } from '../../../db/schema'
-import { BOT_USER_ID, MIN_CONSENSUS_USERS, computeConsensus, getBotChampion, getBotOverview } from './service'
+import { BOT_USER_ID } from '../../../shared/types/bot'
+import { MIN_CONSENSUS_USERS, computeConsensus, getBotChampion, getBotOverview } from './service'
 
 const NOW = new Date('2026-06-15T12:00:00Z')
 const PAST = new Date('2026-06-11T16:00:00Z')
@@ -288,6 +289,31 @@ describe('getBotChampion', () => {
     await client.close()
   })
 
+  it('awards nothing when the decided winner is not the bot pick, and handles AWAY winners', async () => {
+    const { db, client, competitionId } = await setup()
+    const finalRound = (await findRoundId(db, competitionId, 'FINAL', null)) as string
+    const u = await makeUsers(db, 3)
+    for (const [i, code] of (['BRA', 'BRA', 'ARG'] as const).entries()) {
+      await db.insert(championPick).values({ userId: u[i], competitionId, teamCode: code, teamName: code })
+    }
+    await makeMatch(db, { competitionId, roundId: finalRound, stage: 'FINAL', kickoffTime: PAST, status: 'FINISHED', fullTimeHome: 0, fullTimeAway: 1, winner: 'AWAY', homeTeamCode: 'BRA', awayTeamCode: 'ARG' })
+
+    // ARG won but the bot picked BRA.
+    expect(await getBotChampion(db, competitionId, DEFAULT_RULES)).toMatchObject({ teamCode: 'BRA', awardedPoints: 0 })
+    await client.close()
+  })
+
+  it('ignores picks without a team code', async () => {
+    const { db, client, competitionId } = await setup()
+    const u = await makeUsers(db, 2)
+    await db.insert(championPick).values({ userId: u[0], competitionId, teamCode: null, teamName: 'TBD' })
+    expect(await getBotChampion(db, competitionId, DEFAULT_RULES)).toBeNull()
+
+    await db.insert(championPick).values({ userId: u[1], competitionId, teamCode: 'BRA', teamName: 'Brazil' })
+    expect(await getBotChampion(db, competitionId, DEFAULT_RULES)).toMatchObject({ teamCode: 'BRA', count: 1, total: 2 })
+    await client.close()
+  })
+
   it('scopes the pick to league members', async () => {
     const { db, client, competitionId } = await setup()
     const u = await makeUsers(db, 3)
@@ -296,6 +322,68 @@ describe('getBotChampion', () => {
     }
     const leagueId = await makeLeague(db, { competitionId, ownerId: u[2] })
     expect((await getBotChampion(db, competitionId, DEFAULT_RULES, { leagueId }))?.teamCode).toBe('FRA')
+    await client.close()
+  })
+})
+
+describe('getBotOverview - edge branches', () => {
+  it('breaks an exact joker tie by match id and skips prediction-less knockout matches', async () => {
+    const { db, client, competitionId } = await setup()
+    const r16 = (await findRoundId(db, competitionId, 'R16', null)) as string
+    const u = await makeUsers(db, 5)
+    // Same kickoff, one joker each: the id decides, deterministically.
+    const a = await makeMatch(db, { competitionId, roundId: r16, stage: 'R16', kickoffTime: PAST })
+    const b = await makeMatch(db, { competitionId, roundId: r16, stage: 'R16', kickoffTime: PAST })
+    await makeMatch(db, { competitionId, roundId: r16, stage: 'R16', kickoffTime: PAST })
+    await predictAll(db, u, a, r16, [[1, 0, true], [1, 0], [1, 0], [1, 0], [1, 0]])
+    await predictAll(db, u, b, r16, [[0, 0], [0, 0, true], [0, 0], [0, 0], [0, 0]])
+
+    const overview = await getBotOverview(db, competitionId, {}, NOW)
+    const winner = a < b ? a : b
+    expect(overview.rows.filter((r) => r.isJoker).map((r) => r.matchId)).toEqual([winner])
+    // The third match has no predictions at all and simply yields no row.
+    expect(overview.rows).toHaveLength(2)
+    await client.close()
+  })
+
+  it('treats a scored match without full-time scores or locked picks defensively', async () => {
+    const { db, client, competitionId, groupRound } = await setup()
+    const u = await makeUsers(db, 5)
+    // SCORED flag but no result: consensus shows, points stay pending.
+    const noResult = await makeMatch(db, { competitionId, roundId: groupRound, kickoffTime: PAST })
+    await predictAll(db, u, noResult, groupRound, [[1, 0], [1, 0], [1, 0], [0, 0], [2, 0]])
+    await db.update(match).set({ scoringState: 'SCORED' }).where(eq(match.id, noResult))
+    // SCORED with a result but nothing locked: empty histogram, no bonus, no share.
+    const noLocks = await makeMatch(db, { competitionId, roundId: groupRound, kickoffTime: PAST, status: 'FINISHED', fullTimeHome: 1, fullTimeAway: 0 })
+    await predictAll(db, u, noLocks, groupRound, [[1, 0], [1, 0], [1, 0], [0, 0], [2, 0]])
+    await db.update(match).set({ scoringState: 'SCORED' }).where(eq(match.id, noLocks))
+
+    const overview = await getBotOverview(db, competitionId, {}, NOW)
+    expect(overview.rows.find((r) => r.matchId === noResult)).toMatchObject({ totalPoints: null })
+    expect(overview.rows.find((r) => r.matchId === noLocks)).toMatchObject({
+      baseTier: 'EXACT',
+      totalPoints: 3,
+      bonusPoints: 0,
+      crowdShare: null,
+    })
+    await client.close()
+  })
+
+  it('adds the champion bonus into the bot summary', async () => {
+    const { db, client, competitionId } = await setup()
+    const finalRound = (await findRoundId(db, competitionId, 'FINAL', null)) as string
+    const u = await makeUsers(db, 5)
+    const final = await makeMatch(db, { competitionId, roundId: finalRound, stage: 'FINAL', kickoffTime: PAST, status: 'FINISHED', fullTimeHome: 2, fullTimeAway: 0, winner: 'HOME', homeTeamCode: 'BRA', awayTeamCode: 'FRA' })
+    await predictAll(db, u, final, finalRound, [[2, 0], [1, 0], [1, 1], [0, 1], [2, 0]])
+    for (const id of u) {
+      await db.insert(championPick).values({ userId: id, competitionId, teamCode: 'BRA', teamName: 'Brazil' })
+    }
+    await finalizeMatches(db, NOW)
+
+    const overview = await getBotOverview(db, competitionId, {}, NOW)
+    expect(overview.champion).toMatchObject({ teamCode: 'BRA', awardedPoints: 10 })
+    expect(overview.summary.championPoints).toBe(10)
+    expect(overview.summary.totalPoints).toBe(overview.summary.predictionPoints + 10)
     await client.close()
   })
 })
