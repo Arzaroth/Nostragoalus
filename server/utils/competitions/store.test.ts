@@ -24,6 +24,32 @@ describe('competition store', () => {
     await client.close()
   })
 
+  it('backfills odds provider columns on existing rows without clobbering overrides', async () => {
+    const { db, client } = await createTestDb()
+    // Row predating the odds columns.
+    await makeCompetition(db, { slug: 'world-cup-2026', oddsProvider: null, oddsProviderRef: null })
+    await ensureDefaultCompetition(db)
+    expect(await getCompetitionBySlug(db, 'world-cup-2026')).toMatchObject({
+      oddsProvider: 'sofascore',
+      oddsProviderRef: '16',
+    })
+    expect(await getCompetitionBySlug(db, 'euro-2024')).toMatchObject({
+      oddsProvider: 'sofascore',
+      oddsProviderRef: '1',
+    })
+
+    // Admin override survives subsequent runs.
+    const { competition } = await import('../../../db/schema')
+    const { eq } = await import('drizzle-orm')
+    await db.update(competition).set({ oddsProvider: 'betexplorer', oddsProviderRef: 'x' }).where(eq(competition.slug, 'world-cup-2026'))
+    await ensureDefaultCompetition(db)
+    expect(await getCompetitionBySlug(db, 'world-cup-2026')).toMatchObject({
+      oddsProvider: 'betexplorer',
+      oddsProviderRef: 'x',
+    })
+    await client.close()
+  })
+
   it('lists only active competitions and looks up by slug/id', async () => {
     const { db, client } = await createTestDb()
     const a = await makeCompetition(db, { slug: 'a', isActive: true })

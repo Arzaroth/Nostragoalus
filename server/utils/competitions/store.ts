@@ -1,4 +1,4 @@
-import { eq, desc } from 'drizzle-orm'
+import { eq, desc, and, isNull } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { competition } from '../../../db/schema'
 
@@ -10,6 +10,8 @@ export const DEFAULT_COMPETITIONS = [
     externalCompetitionId: '17',
     externalSeasonId: null as string | null,
     seasonHint: '2026',
+    oddsProvider: 'sofascore' as string | null,
+    oddsProviderRef: '16' as string | null,
   },
   {
     slug: 'world-cup-2022',
@@ -18,6 +20,8 @@ export const DEFAULT_COMPETITIONS = [
     externalCompetitionId: '17',
     externalSeasonId: '255711' as string | null,
     seasonHint: '2022',
+    oddsProvider: 'sofascore' as string | null,
+    oddsProviderRef: '16' as string | null,
   },
   {
     slug: 'euro-2024',
@@ -26,14 +30,25 @@ export const DEFAULT_COMPETITIONS = [
     externalCompetitionId: '3',
     externalSeasonId: null as string | null,
     seasonHint: '2024',
+    oddsProvider: 'sofascore' as string | null,
+    oddsProviderRef: '1' as string | null,
   },
 ]
 
 // Idempotent per slug, so new defaults are added on upgrade without duplicates.
+// Existing rows that predate the odds columns get them backfilled (only while
+// both are still null, so an admin override is never clobbered).
 export async function ensureDefaultCompetition(db: AppDatabase): Promise<void> {
   for (const def of DEFAULT_COMPETITIONS) {
     const existing = await db.select({ id: competition.id }).from(competition).where(eq(competition.slug, def.slug)).limit(1)
-    if (existing.length === 0) await db.insert(competition).values({ ...def, isActive: true })
+    if (existing.length === 0) {
+      await db.insert(competition).values({ ...def, isActive: true })
+    } else if (def.oddsProvider) {
+      await db
+        .update(competition)
+        .set({ oddsProvider: def.oddsProvider, oddsProviderRef: def.oddsProviderRef })
+        .where(and(eq(competition.id, existing[0].id), isNull(competition.oddsProvider), isNull(competition.oddsProviderRef)))
+    }
   }
 }
 
