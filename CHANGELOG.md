@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-06-09
+
 ### Added
 - Identifier-first login with SSO domain capture: enter your email, Continue either redirects straight to your IdP or reveals the password field. `/login?password=1` skips capture (IdP-outage escape hatch for password accounts).
 - SSO providers can capture several email domains (comma-separated, subdomains included); domains already captured by another provider are rejected.
