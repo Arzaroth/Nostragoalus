@@ -10,8 +10,11 @@ const currentUser = computed(() => session.value?.data?.user)
 // SSO-managed accounts get their email, password, 2FA and passkeys from the
 // IdP - local credential management is hidden and the server rejects it too.
 // Resolved server-side (SSR) so the sections never flash in before hiding.
-const { data: ssoStatus } = await useFetch<{ ssoManaged: boolean }>('/api/me/sso-status')
+const { data: ssoStatus } = await useFetch<{ ssoManaged: boolean; mailEnabled: boolean }>('/api/me/sso-status')
 const ssoManaged = computed(() => ssoStatus.value?.ssoManaged === true)
+// With SMTP available, account deletion is confirmed through a mailed link
+// instead of a password (protects SSO accounts from one-click deletion too).
+const mailEnabled = computed(() => ssoStatus.value?.mailEnabled === true)
 
 // --- Two-factor authentication (state machine extracted to a tested composable) ---
 const tfa = useTwoFactor(currentUser)
@@ -160,19 +163,27 @@ const confirming = ref(false)
 const deletePassword = ref('')
 const deleteCode = ref('')
 const delErr = ref('')
+const delMailSent = ref(false)
 const delLoading = ref(false)
 async function confirmDelete() {
   delErr.value = ''
   delLoading.value = true
   const { error } = await deleteUser({
-    // SSO-managed accounts have no password; deletion rides on the fresh session.
-    ...(ssoManaged.value ? {} : { password: deletePassword.value }),
+    // With SMTP, the server mails a confirmation link instead of deleting:
+    // no password needed up front. Otherwise the password (or, for
+    // SSO-managed accounts, the fresh session) confirms the request.
+    ...(mailEnabled.value ? { callbackURL: '/login' } : ssoManaged.value ? {} : { password: deletePassword.value }),
     // 2FA holders must also present a fresh code (enforced server-side).
-    fetchOptions: tfaEnabled.value ? { headers: { 'x-totp-code': String(deleteCode.value) } } : undefined,
+    fetchOptions: !mailEnabled.value && tfaEnabled.value ? { headers: { 'x-totp-code': String(deleteCode.value) } } : undefined,
   } as Parameters<typeof deleteUser>[0])
   delLoading.value = false
   if (error) {
     delErr.value = error.message ?? 'Failed'
+    return
+  }
+  if (mailEnabled.value) {
+    delMailSent.value = true
+    confirming.value = false
     return
   }
   await signOut()
@@ -409,19 +420,29 @@ async function confirmDelete() {
           <Button v-if="!confirming" :label="t('account.deleteAccount')" severity="danger" outlined class="shrink-0" @click="confirming = true" />
         </div>
         <div v-if="confirming" class="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <div v-if="!ssoManaged" class="flex-1 flex flex-col gap-1">
+          <div v-if="mailEnabled" class="flex-1 text-sm" style="color: var(--p-text-muted-color)">
+            {{ t('account.deleteMailHint') }}
+          </div>
+          <div v-else-if="!ssoManaged" class="flex-1 flex flex-col gap-1">
             <label class="text-sm font-medium">{{ t('account.confirmDeleteHint') }}</label>
             <Password v-model="deletePassword" :feedback="false" toggle-mask fluid :placeholder="t('account.currentPassword')" />
           </div>
-          <div v-if="tfaEnabled" class="flex flex-col gap-1">
+          <div v-if="!mailEnabled && tfaEnabled" class="flex flex-col gap-1">
             <label class="text-sm font-medium">{{ t('twofa.disableCode') }}</label>
             <InputOtp v-model="deleteCode" :length="6" integer-only />
           </div>
           <div class="flex gap-2">
             <Button :label="t('common.cancel')" severity="secondary" text @click="confirming = false" />
-            <Button :label="t('account.deleteAccount')" severity="danger" :loading="delLoading" :disabled="(!ssoManaged && !deletePassword) || (tfaEnabled && String(deleteCode).length < 6)" @click="confirmDelete" />
+            <Button
+              :label="mailEnabled ? t('account.deleteSendMail') : t('account.deleteAccount')"
+              severity="danger"
+              :loading="delLoading"
+              :disabled="!mailEnabled && ((!ssoManaged && !deletePassword) || (tfaEnabled && String(deleteCode).length < 6))"
+              @click="confirmDelete"
+            />
           </div>
         </div>
+        <Message v-if="delMailSent" severity="info" size="small">{{ t('account.deleteMailSent') }}</Message>
         <Message v-if="delErr" severity="error" size="small">{{ delErr }}</Message>
       </div>
     </section>

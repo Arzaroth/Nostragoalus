@@ -80,8 +80,14 @@ const bShadow = useTransform([t1, t2] as never, (values: never) => {
   return `0 ${(30 * a + 6 * b).toFixed(1)}px ${(90 * a + 18 * b).toFixed(1)}px rgba(8, 6, 24, ${(0.55 * a + 0.35 * b).toFixed(3)})`
 })
 const dimOpacity = useTransform(t1, (v) => 0.6 * cl(v))
-// Phase 2 crossfades the full artwork into a purpose-built compact banner.
-const wideOpacity = useTransform(t2, (v) => 1 - cl(v))
+// Phase 2 swaps the full artwork for the compact banner. The two artworks are
+// composed differently (the wide title sits at ~69% of the canvas, the mini
+// one near center), so a straight crossfade reads as the title jumping left by
+// ~0.18*vw - worse the wider the window. Instead the wide art fades out into
+// the bar's dark brand background first, and the mini art fades in after:
+// nothing visible carries position across the swap.
+const wideOpacity = useTransform(t2, (v) => 1 - cl(cl(v) * 2.2))
+const miniOpacity = useTransform(t2, (v) => cl((cl(v) - 0.55) * 2.2))
 // The mini artwork's cover-fit scale changes every frame while the bar height
 // animates, so its background is recomputed per frame too: explicit size +
 // position keep the content block centered with no horizontal swimming, and
@@ -132,7 +138,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', layoutBanner))
         class="fixed left-1/2 z-40 overflow-hidden"
         :style="{ top: `${topPx}px`, width: bWidth, height: bHeight, transform: bTransform, borderRadius: bRadius, boxShadow: bShadow, background: '#171436' }"
       >
-        <motion.div class="absolute inset-0" :style="{ opacity: t2, background: miniBgMotion }" />
+        <motion.div class="absolute inset-0" :style="{ opacity: miniOpacity, background: miniBgMotion }" />
         <motion.img src="/brand/banner-wide.svg" alt="Nostragoalus - the football oracle" class="absolute inset-0 w-full h-full object-cover" :style="{ opacity: wideOpacity }" />
       </motion.div>
       <motion.div v-if="!reduced" class="fixed inset-0 z-30 pointer-events-none" :style="{ background: '#0b0a18', opacity: dimOpacity }" />

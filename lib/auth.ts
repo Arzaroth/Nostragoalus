@@ -59,8 +59,24 @@ export function buildAuthOptions(database: AuthDb) {
       changeEmail: { enabled: true },
       deleteUser: {
         enabled: true,
+        // With SMTP available, every deletion is confirmed through a mailed
+        // link (better-auth routes password-supplied requests through it too).
+        // Without SMTP it falls back to password / fresh-session confirmation.
+        ...(process.env.NUXT_SMTP_URL
+          ? {
+              async sendDeleteAccountVerification({ user: u, url }: { user: { email: string }; url: string }) {
+                await sendMail(
+                  u.email,
+                  'Confirm deleting your Nostragoalus account',
+                  `Someone (hopefully you) asked to permanently delete this account, including all its predictions.\n\nConfirm the deletion: ${url}\n\nThe link expires in 24 hours. If this wasn't you, ignore this mail.`,
+                )
+              },
+            }
+          : {}),
         // Guards: the last admin cannot orphan the instance, and 2FA holders must
-        // present a fresh TOTP code (sent as the x-totp-code header).
+        // present a fresh TOTP code (sent as the x-totp-code header) - unless the
+        // deletion was already confirmed by the mailed link, which proves mailbox
+        // ownership and arrives without our custom header.
         async beforeDelete(u: { id: string }, request?: Request) {
           if ((u as { role?: string }).role === 'admin') {
             const admins = await database.select({ n: count() }).from(schema.user).where(eq(schema.user.role, 'admin'))
@@ -68,7 +84,8 @@ export function buildAuthOptions(database: AuthDb) {
               throw new APIError('BAD_REQUEST', { message: 'The last admin account cannot be deleted.' })
             }
           }
-          if ((u as { twoFactorEnabled?: boolean | null }).twoFactorEnabled) {
+          const viaMailedLink = request?.url?.includes('/delete-user/callback') ?? false
+          if (!viaMailedLink && (u as { twoFactorEnabled?: boolean | null }).twoFactorEnabled) {
             const code = request?.headers.get('x-totp-code') ?? ''
             const rows = await database.select().from(schema.twoFactor).where(eq(schema.twoFactor.userId, u.id)).limit(1)
             const key = process.env.BETTER_AUTH_SECRET ?? process.env.NUXT_BETTER_AUTH_SECRET
@@ -122,9 +139,13 @@ export function buildAuthOptions(database: AuthDb) {
         // any local password is removed (the account becomes SSO-managed), so a
         // pre-existing password can't keep bypassing the IdP. Recovery path if
         // the provider ever goes away: the forgot-password flow recreates the
-        // credential account.
+        // credential account. Admins are exempt - their password is break-glass
+        // access for deleting a broken provider (otherwise recovering the
+        // instance would need host access via `mise run create-admin`).
         provisionUserOnEveryLogin: true,
         async provisionUser({ user: u }: { user: { id: string } }) {
+          const rows = await database.select({ role: schema.user.role }).from(schema.user).where(eq(schema.user.id, u.id)).limit(1)
+          if (rows[0]?.role === 'admin') return
           await database
             .delete(schema.account)
             .where(and(eq(schema.account.userId, u.id), eq(schema.account.providerId, 'credential')))

@@ -291,7 +291,10 @@
     "dangerHint": "Doch'a' DaQaw'chugh, chegh DuH pagh - Hoch wIvmeylIj luQaw'lu'.",
     "deleteAccount": "Doch'a' yIQaw'",
     "confirmDeleteHint": "Qaw' Da'olmeH pegh mu' yIqon.",
-    "ssoManagedHint": "ngu'meH Daq lo'taHvIS 'el raQwI'vam. pa' QIn, mu'wIj, cha' 'ol, passkey je SeHlu'."
+    "ssoManagedHint": "ngu'meH Daq lo'taHvIS 'el raQwI'vam. pa' QIn, mu'wIj, cha' 'ol, passkey je SeHlu'.",
+    "deleteMailHint": "QInlIjDaq 'olmeH leQ ngeHlu' - leQ Da'uYDI' neH raQwI' Qaw'lu'.",
+    "deleteSendMail": "'olmeH QIn yIngeH",
+    "deleteMailSent": "'olmeH QIn ngeHlu'ta' - leQ DapoSmoHDI' raQwI' Qaw'lu'."
   },
   "admin": {
     "title": "loHwI'",

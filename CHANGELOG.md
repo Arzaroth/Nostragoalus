@@ -30,6 +30,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 - "SSO-managed" now means a still-registered provider: deleting a provider releases its users, who regain credential management and can set a password via the reset flow.
 - A successful SSO sign-in removes the account's local password (the IdP becomes authoritative); the reset flow is the way back if the provider ever goes away. Admins can also unlink any user from SSO.
 - The admin user list moved its per-user actions into a kebab menu (promote, hide, remove 2FA, unlink SSO, ban, delete) with inline status indicators.
+- Admins are exempt from the SSO password nuke: their password is break-glass access for deleting a broken provider (ultimate fallback: `mise run create-admin` from the host).
+- With SMTP configured, account deletion is confirmed through a mailed link (works for SSO accounts too - no more one-click deletion); without SMTP the password / fresh-session confirmation stays. The mailed link replaces the TOTP requirement, since it proves mailbox ownership.
+- The landing banner no longer crossfades the wide artwork into the compact one (their compositions differ, which read as the title jumping left, growing with window width): the wide art fades out into the bar's dark background, then the compact art fades in.
 
 ## [0.14.0] - 2026-06-08
 

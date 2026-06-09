@@ -291,7 +291,10 @@
     "dangerHint": "Deleting your account is irreversible - all your predictions are lost.",
     "deleteAccount": "Delete account",
     "confirmDeleteHint": "Enter your password to confirm deletion.",
-    "ssoManagedHint": "This account signs in through your organization's identity provider. Email, password, two-factor and passkeys are managed there."
+    "ssoManagedHint": "This account signs in through your organization's identity provider. Email, password, two-factor and passkeys are managed there.",
+    "deleteMailHint": "A confirmation link will be sent to your email address - the account is only deleted once you click it.",
+    "deleteSendMail": "Send confirmation mail",
+    "deleteMailSent": "Confirmation mail sent - the account will be deleted when you open the link."
   },
   "admin": {
     "title": "Admin",

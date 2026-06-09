@@ -123,6 +123,22 @@ describe('SSO account linking', () => {
     expect(accounts.map((a) => a.providerId)).toEqual(['acme'])
   })
 
+  it('keeps the password of an admin account on SSO sign-in (break-glass access)', async () => {
+    const email = 'root@corp.test'
+    idpUsers[email] = { sub: 'idp-root', email, name: 'Root' }
+    const signUp = await auth.api.signUpEmail({
+      body: { email, password: 'tr0ubadour-horse-staple!', name: 'Root' },
+    })
+    await db.update(schema.user).set({ role: 'admin' }).where(eq(schema.user.id, signUp.user.id))
+
+    const cb = await ssoSignIn(email)
+    expect(cb.status).toBe(302)
+    expect(cb.headers.get('location') ?? '').not.toContain('error')
+
+    const accounts = await db.select().from(schema.account).where(eq(schema.account.userId, signUp.user.id))
+    expect(accounts.map((a) => a.providerId).sort()).toEqual(['acme', 'credential'])
+  })
+
   it('creates a fresh user for an SSO sign-in with an unknown email', async () => {
     const email = 'bob@corp.test'
     idpUsers[email] = { sub: 'idp-bob', email, name: 'Bob' }
