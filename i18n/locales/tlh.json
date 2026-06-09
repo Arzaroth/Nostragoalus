@@ -252,9 +252,8 @@
     "needAccount": "Doch'a' Daneh'a'? yIqon",
     "haveAccount": "Doch'a' Daghajchugh, yI'el",
     "or": "ghap",
-    "google": "Google lo'taHvIS yIruch",
-    "sso": "SSO lo'taHvIS yI'el",
-    "ssoEmailHint": "SSO DaneHchugh, jabbI'IDlIj yIqon."
+    "continue": "yIruch",
+    "ssoRedirect": "DubelmoHwI' ngu'meH DaqDaq Duqemlu'taH…"
   },
   "account": {
     "title": "Doch'a'",

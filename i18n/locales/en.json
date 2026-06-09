@@ -252,9 +252,8 @@
     "needAccount": "Need an account? Sign up",
     "haveAccount": "Already have an account? Sign in",
     "or": "or",
-    "google": "Continue with Google",
-    "sso": "Sign in with SSO",
-    "ssoEmailHint": "Enter your email above to continue with SSO."
+    "continue": "Continue",
+    "ssoRedirect": "Redirecting to your identity provider…"
   },
   "account": {
     "title": "Account",

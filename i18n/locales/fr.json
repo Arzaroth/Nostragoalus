@@ -252,9 +252,8 @@
     "needAccount": "Pas de compte ? Inscrivez-vous",
     "haveAccount": "Déjà un compte ? Connectez-vous",
     "or": "ou",
-    "google": "Continuer avec Google",
-    "sso": "Connexion via SSO",
-    "ssoEmailHint": "Saisissez votre e-mail ci-dessus pour continuer via SSO."
+    "continue": "Continuer",
+    "ssoRedirect": "Redirection vers votre fournisseur d'identité…"
   },
   "account": {
     "title": "Compte",

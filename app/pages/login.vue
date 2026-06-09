@@ -3,11 +3,52 @@ import { authClient } from '../../lib/auth-client'
 const { t } = useI18n()
 const { signIn } = useAuth()
 const router = useRouter()
+const route = useRoute()
 
 const email = ref('')
 const password = ref('')
 const error = ref('')
 const loading = ref(false)
+const redirecting = ref(false)
+const passwordWrap = ref<HTMLElement | null>(null)
+
+// /login?password=1 escape hatch: skips domain capture so a password account
+// (e.g. the admin) can still get in when the IdP is down.
+const forcePassword = route.query.password !== undefined
+const step = ref<'email' | 'password'>(forcePassword ? 'password' : 'email')
+
+// Changing the identifier invalidates a revealed password step: the new
+// domain may be SSO-captured.
+watch(email, () => {
+  if (!forcePassword) step.value = 'email'
+})
+
+async function next() {
+  if (step.value === 'password') {
+    await submit()
+    return
+  }
+  if (!email.value) return
+  error.value = ''
+  loading.value = true
+  try {
+    const { providerId } = await $fetch<{ providerId: string | null }>('/api/sso/check', { query: { email: email.value } })
+    if (providerId) {
+      redirecting.value = true
+      const { error: err } = await signIn.sso({ providerId, callbackURL: '/matches' })
+      if (err) {
+        redirecting.value = false
+        error.value = err.message ?? 'SSO failed'
+      }
+      return
+    }
+    step.value = 'password'
+    await nextTick()
+    passwordWrap.value?.querySelector('input')?.focus()
+  } finally {
+    loading.value = false
+  }
+}
 
 async function submit() {
   loading.value = true
@@ -33,16 +74,6 @@ async function signInPasskey() {
   }
   await router.push('/matches')
 }
-
-async function signInSSO() {
-  error.value = ''
-  if (!email.value) {
-    error.value = t('auth.ssoEmailHint')
-    return
-  }
-  const { error: err } = await signIn.sso({ email: email.value, callbackURL: '/matches' })
-  if (err) error.value = err.message ?? 'SSO failed'
-}
 </script>
 
 <template>
@@ -50,14 +81,16 @@ async function signInSSO() {
     <img src="/brand/mark.svg" alt="Nostragoalus" class="w-20 mx-auto" >
     <h1 class="text-2xl font-bold">{{ t('auth.signIn') }}</h1>
     <Message v-if="error" severity="error">{{ error }}</Message>
-    <InputText v-model="email" type="email" :placeholder="t('auth.email')" @keyup.enter="submit" />
-    <Password v-model="password" :placeholder="t('auth.password')" :feedback="false" toggle-mask :input-style="{ width: '100%' }" @keyup.enter="submit" />
-    <Button :label="t('auth.signIn')" :loading="loading" @click="submit" />
+    <Message v-if="redirecting" severity="info">{{ t('auth.ssoRedirect') }}</Message>
+    <InputText v-model="email" type="email" :placeholder="t('auth.email')" @keyup.enter="next" />
+    <div v-if="step === 'password'" ref="passwordWrap" class="flex flex-col">
+      <Password v-model="password" :placeholder="t('auth.password')" :feedback="false" toggle-mask :input-style="{ width: '100%' }" @keyup.enter="submit" />
+    </div>
+    <Button :label="step === 'password' ? t('auth.signIn') : t('auth.continue')" :loading="loading" @click="next" />
     <div class="flex items-center gap-3 text-xs my-1" style="color: var(--p-text-muted-color)">
       <div class="flex-1 border-t" style="border-color: var(--p-content-border-color)" />{{ t('auth.or') }}<div class="flex-1 border-t" style="border-color: var(--p-content-border-color)" />
     </div>
     <Button :label="t('passkeys.signIn')" icon="pi pi-id-card" severity="secondary" outlined @click="signInPasskey" />
-    <Button :label="t('auth.sso')" icon="pi pi-key" severity="secondary" outlined @click="signInSSO" />
     <NuxtLink to="/signup" class="text-sm text-center">{{ t('auth.needAccount') }}</NuxtLink>
     <div class="flex justify-center mt-6 opacity-75"><GuestPrefs /></div>
   </div>
