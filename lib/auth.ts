@@ -4,7 +4,7 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { sso } from '@better-auth/sso'
 import { passkey } from '@better-auth/passkey'
 import { admin, haveIBeenPwned, twoFactor } from 'better-auth/plugins'
-import { count, eq } from 'drizzle-orm'
+import { and, count, eq } from 'drizzle-orm'
 import type { PgDatabase, PgQueryResultHKT } from 'drizzle-orm/pg-core'
 import { db } from '../db'
 import * as schema from '../db/schema'
@@ -117,7 +117,19 @@ export function buildAuthOptions(database: AuthDb) {
     // Runtime-configurable SSO (OIDC + SAML), role-based user administration,
     // and 2FA (TOTP authenticator + email OTP when SMTP is configured).
     plugins: [
-      sso(),
+      sso({
+        // A successful SSO sign-in makes the IdP authoritative for the account:
+        // any local password is removed (the account becomes SSO-managed), so a
+        // pre-existing password can't keep bypassing the IdP. Recovery path if
+        // the provider ever goes away: the forgot-password flow recreates the
+        // credential account.
+        provisionUserOnEveryLogin: true,
+        async provisionUser({ user: u }: { user: { id: string } }) {
+          await database
+            .delete(schema.account)
+            .where(and(eq(schema.account.userId, u.id), eq(schema.account.providerId, 'credential')))
+        },
+      }),
       admin(),
       // Reject passwords found in known breaches (HIBP k-anonymity API, no key needed).
       haveIBeenPwned(),

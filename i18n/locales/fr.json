@@ -340,7 +340,9 @@
       "ban": "Bannir",
       "unban": "Débannir",
       "hide": "Masquer du classement",
-      "show": "Afficher dans le classement"
+      "show": "Afficher dans le classement",
+      "unlinkSso": "Délier du SSO",
+      "actions": "Actions utilisateur"
     },
     "data": {
       "title": "Données",

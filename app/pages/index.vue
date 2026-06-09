@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { motion, useReducedMotion, useScroll, useSpring, useTransform } from 'motion-v'
+import { motion, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform } from 'motion-v'
 
 const { t } = useI18n()
 const { session } = useAuth()
@@ -49,36 +49,47 @@ function layoutBanner() {
   const header = document.querySelector('header')
   topPx.value = header ? Math.floor(header.getBoundingClientRect().height) - 1 : 64
   miniH.value = Math.min(MINI_H, Math.round(vw * 0.16))
+  layoutTick.set(layoutTick.get() + 1)
 }
 
 const { scrollY } = useScroll()
 const spring = { stiffness: 220, damping: 30 }
 const t1 = useSpring(useTransform(scrollY, [0, SCRUB], [1, 0]), spring) // 1 = centered
 const t2 = useSpring(useTransform(scrollY, [SCRUB, SCRUB + SCRUB2], [0, 1]), spring) // 1 = mini bar
-const bWidth = useTransform(t1, (v) => `${(100 - 12 * v).toFixed(2)}vw`)
+// The springs overshoot their [0,1] targets while settling; unclamped, that
+// overshoot scales with (viewport-sized) geometry - e.g. the bar height swings
+// by (40vh - miniH) * overshoot, a visible left-right wobble on big screens.
+const cl = (v: number) => Math.min(1, Math.max(0, v))
+// Bumped by layoutBanner so px-baked transforms recompute on resize, not only
+// on the next scroll.
+const layoutTick = useMotionValue(0)
+const bWidth = useTransform(t1, (v) => `${(100 - 12 * cl(v)).toFixed(2)}vw`)
 const bHeight = useTransform([t1, t2] as never, (values: never) => {
-  const [a, b] = values as unknown as [number, number]
+  const [a, b] = (values as unknown as [number, number]).map(cl)
   const w = 100 - 12 * a
   return `calc(min(${(w * 0.3023).toFixed(2)}vw, 40vh) * ${(1 - b).toFixed(4)} + ${(miniH.value * b).toFixed(1)}px)`
 })
 // The centering constant compensates the bar's resting offset (header height + 24).
-const bTransform = useTransform(t1, (v) => `translateX(-50%) translateY(calc(${v.toFixed(4)} * (50vh - 50% - ${topPx.value + 24}px)))`)
-const bRadius = useTransform(t1, (v) => `${(30 * v).toFixed(1)}px`)
+const bTransform = useTransform([t1, layoutTick] as never, (values: never) => {
+  const [v] = values as unknown as [number, number]
+  return `translateX(-50%) translateY(calc(${cl(v).toFixed(4)} * (50vh - 50% - ${topPx.value + 24}px)))`
+})
+const bRadius = useTransform(t1, (v) => `${(30 * cl(v)).toFixed(1)}px`)
 const bShadow = useTransform([t1, t2] as never, (values: never) => {
-  const [a, b] = values as unknown as [number, number]
+  const [a, b] = (values as unknown as [number, number]).map(cl)
   return `0 ${(30 * a + 6 * b).toFixed(1)}px ${(90 * a + 18 * b).toFixed(1)}px rgba(8, 6, 24, ${(0.55 * a + 0.35 * b).toFixed(3)})`
 })
-const dimOpacity = useTransform(t1, (v) => 0.6 * v)
+const dimOpacity = useTransform(t1, (v) => 0.6 * cl(v))
 // Phase 2 crossfades the full artwork into a purpose-built compact banner.
-const wideOpacity = useTransform(t2, (v) => 1 - v)
+const wideOpacity = useTransform(t2, (v) => 1 - cl(v))
 // The mini artwork's cover-fit scale changes every frame while the bar height
 // animates, so its background is recomputed per frame too: explicit size +
 // position keep the content block centered with no horizontal swimming, and
 // the position is clamped so the image always fills the bar (above ~1900px
 // wide, cover becomes width-bound and a static offset would leave a blank
 // stripe at the edge).
-const miniBgMotion = useTransform([t1, t2] as never, (values: never) => {
-  const [a, b] = values as unknown as [number, number]
+const miniBgMotion = useTransform([t1, t2, layoutTick] as never, (values: never) => {
+  const [a, b] = (values as unknown as [number, number, number]).map(cl)
   if (typeof window === 'undefined') return 'none'
   const vw = window.innerWidth
   const barW = ((100 - 12 * a) / 100) * vw

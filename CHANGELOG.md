@@ -28,6 +28,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 - Signing up with a password on an SSO-captured domain warns first (with the provider's display name) and requires an explicit "continue anyway".
 - The SSO plugin's own HTTP provider-management endpoints (register/update/delete) are blocked; provider management goes through the admin API only.
 - "SSO-managed" now means a still-registered provider: deleting a provider releases its users, who regain credential management and can set a password via the reset flow.
+- A successful SSO sign-in removes the account's local password (the IdP becomes authoritative); the reset flow is the way back if the provider ever goes away. Admins can also unlink any user from SSO.
+- The admin user list moved its per-user actions into a kebab menu (promote, hide, remove 2FA, unlink SSO, ban, delete) with inline status indicators.
 
 ## [0.14.0] - 2026-06-08
 

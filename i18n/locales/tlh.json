@@ -340,7 +340,9 @@
       "ban": "lo'wI' yIghIpDIj",
       "unban": "ghIpDIj yIteq",
       "hide": "patlh tetlhvo' yISo'",
-      "show": "patlh tetlhDaq yIcha'"
+      "show": "patlh tetlhDaq yIcha'",
+      "unlinkSso": "SSO rarwI' yIteq",
+      "actions": "lo'wI' Qu'mey"
     },
     "data": {
       "title": "De'",

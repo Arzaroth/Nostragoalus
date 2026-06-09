@@ -217,6 +217,50 @@ const visibilityMutation = useMutation({
 })
 const toggleVisibility = (u: any) => visibilityMutation.mutate(u)
 
+const unlinkSsoMutation = useMutation({
+  mutationFn: (u: any) => $fetch<unknown>(`/api/admin/users/${u.id}/unlink-sso`, { method: 'POST' }),
+  onSuccess: invalidateUsers,
+})
+const unlinkSso = (u: any) => unlinkSsoMutation.mutate(u)
+
+// Per-user actions live in one popup menu - the inline button row stopped
+// scaling with the number of actions.
+const rowMenu = ref()
+const menuUser = ref<any>(null)
+const rowMenuItems = computed(() => {
+  const u = menuUser.value
+  if (!u) return []
+  return [
+    {
+      label: u.role === 'admin' ? t('admin.users.demote') : t('admin.users.promote'),
+      icon: u.role === 'admin' ? 'pi pi-angle-double-down' : 'pi pi-angle-double-up',
+      command: () => toggleAdmin(u),
+    },
+    {
+      label: u.hiddenFromLeaderboard ? t('admin.users.show') : t('admin.users.hide'),
+      icon: u.hiddenFromLeaderboard ? 'pi pi-eye' : 'pi pi-eye-slash',
+      command: () => toggleVisibility(u),
+    },
+    ...(u.twoFactorEnabled ? [{ label: t('admin.users.remove2fa'), icon: 'pi pi-shield', command: () => strip2fa(u) }] : []),
+    { label: t('admin.users.unlinkSso'), icon: 'pi pi-link', command: () => unlinkSso(u) },
+    ...(u.id !== myId.value
+      ? [
+          { separator: true },
+          {
+            label: u.banned ? t('admin.users.unban') : t('admin.users.ban'),
+            icon: u.banned ? 'pi pi-lock-open' : 'pi pi-ban',
+            command: () => toggleBan(u),
+          },
+          { label: t('admin.users.delete'), icon: 'pi pi-trash', command: () => removeUser(u) },
+        ]
+      : []),
+  ]
+})
+function openRowMenu(e: Event, u: any) {
+  menuUser.value = u
+  rowMenu.value?.toggle(e)
+}
+
 const deleteMutation = useMutation({
   mutationFn: (u: any) => admin.removeUser({ userId: u.id }),
   onSuccess: invalidateUsers,
@@ -404,50 +448,27 @@ function createUser() {
               <div class="font-medium truncate">{{ u.name }}</div>
               <div class="text-xs truncate" style="color: var(--p-text-muted-color)">{{ u.email }}</div>
             </div>
-            <Button
-              v-if="u.twoFactorEnabled"
-              v-tooltip.left="t('admin.users.remove2fa')"
-              icon="pi pi-shield"
-              size="small"
-              severity="warn"
-              text
-              rounded
-              :aria-label="t('admin.users.remove2fa')"
-              @click="strip2fa(u)"
+            <i
+              v-if="u.hiddenFromLeaderboard"
+              v-tooltip.left="t('admin.users.hide')"
+              class="pi pi-eye-slash text-xs"
+              style="color: var(--p-text-muted-color)"
             />
-            <Button
-              v-tooltip.left="u.hiddenFromLeaderboard ? t('admin.users.show') : t('admin.users.hide')"
-              :icon="u.hiddenFromLeaderboard ? 'pi pi-eye-slash' : 'pi pi-eye'"
-              size="small"
-              :severity="u.hiddenFromLeaderboard ? 'warn' : 'secondary'"
-              text
-              rounded
-              :aria-label="u.hiddenFromLeaderboard ? t('admin.users.show') : t('admin.users.hide')"
-              @click="toggleVisibility(u)"
-            />
+            <i v-if="u.twoFactorEnabled" v-tooltip.left="'2FA'" class="pi pi-shield text-xs" style="color: var(--p-text-muted-color)" />
             <Tag v-if="u.banned" value="BANNED" severity="danger" />
-            <Button
-              v-if="u.id !== myId"
-              v-tooltip.left="u.banned ? t('admin.users.unban') : t('admin.users.ban')"
-              :icon="u.banned ? 'pi pi-lock-open' : 'pi pi-ban'"
-              size="small"
-              :severity="u.banned ? 'success' : 'danger'"
-              text
-              rounded
-              :aria-label="u.banned ? t('admin.users.unban') : t('admin.users.ban')"
-              @click="toggleBan(u)"
-            />
             <Tag v-if="u.role === 'admin'" value="ADMIN" severity="success" />
             <Button
-              :label="u.role === 'admin' ? t('admin.users.demote') : t('admin.users.promote')"
+              icon="pi pi-ellipsis-v"
               size="small"
               severity="secondary"
-              outlined
-              @click="toggleAdmin(u)"
+              text
+              rounded
+              :aria-label="t('admin.users.actions')"
+              @click="openRowMenu($event, u)"
             />
-            <Button v-if="u.id !== myId" icon="pi pi-trash" size="small" severity="danger" text rounded :aria-label="t('admin.users.delete')" @click="removeUser(u)" />
           </div>
         </div>
+        <Menu ref="rowMenu" :model="rowMenuItems" popup />
       </section>
 
       <!-- Data -->

@@ -99,7 +99,7 @@ describe('SSO account linking', () => {
     )
   }
 
-  it('links an SSO sign-in to an existing local account with the same email', async () => {
+  it('links an SSO sign-in to an existing local account and removes its password', async () => {
     const email = 'alice@corp.test'
     idpUsers[email] = { sub: 'idp-alice', email, name: 'Alice' }
     const signUp = await auth.api.signUpEmail({
@@ -117,9 +117,10 @@ describe('SSO account linking', () => {
     expect(users).toHaveLength(1)
     expect(users[0].id).toBe(localUserId)
 
+    // Merged into the same user, and the IdP is now authoritative: the
+    // credential account is nuked by provisionUser on SSO sign-in.
     const accounts = await db.select().from(schema.account).where(eq(schema.account.userId, localUserId))
-    const providers = accounts.map((a) => a.providerId).sort()
-    expect(providers).toEqual(['acme', 'credential'])
+    expect(accounts.map((a) => a.providerId)).toEqual(['acme'])
   })
 
   it('creates a fresh user for an SSO sign-in with an unknown email', async () => {

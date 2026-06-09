@@ -66,9 +66,9 @@ async function signInGoogle() {
     <Message v-if="ssoWarn" severity="warn">
       <div class="flex flex-col gap-2">
         <span>{{ t('auth.ssoDomainWarn', { name: ssoWarn.name }) }}</span>
-        <div class="flex gap-2">
-          <Button :label="t('auth.ssoDomainUse', { name: ssoWarn.name })" size="small" @click="useSso" />
-          <Button :label="t('auth.ssoDomainContinue')" size="small" severity="secondary" outlined @click="continueAnyway" />
+        <div class="grid grid-cols-2 gap-2 items-stretch">
+          <Button :label="t('auth.ssoDomainUse', { name: ssoWarn.name })" size="small" class="justify-center text-center" @click="useSso" />
+          <Button :label="t('auth.ssoDomainContinue')" size="small" severity="secondary" outlined class="justify-center text-center" @click="continueAnyway" />
         </div>
       </div>
     </Message>
