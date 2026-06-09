@@ -45,6 +45,14 @@ mise run release <x.y.z> --dry-run   # preview the changelog section
 mise run release <x.y.z>             # the real thing
 ```
 
+Gotcha: the hot-reload container (`nostragoalus-app-dev-1`) runs as root on the
+repo volume and keeps regenerating `.nuxt/` - the host-side gate then dies with
+`EACCES ... .nuxt/dev/index.mjs` (pnpm's CI dep-check reruns `nuxt prepare`).
+**Stop app-dev before releasing**, and if `.nuxt` is already root-owned:
+`docker run --rm -v "$PWD/.nuxt:/x" alpine chown -R $(id -u):$(id -g) /x`.
+If the task dies mid-gate it leaves the CHANGELOG/package.json bump uncommitted:
+`git checkout -- CHANGELOG.md package.json`, fix the cause, re-run.
+
 The task: moves `[Unreleased]` into a dated `## [x.y.z]` section, bumps
 `package.json`, runs the full gate (typecheck + unit coverage + component
 tests), commits `chore(release): x.y.z`, creates annotated tag `vx.y.z`, and
