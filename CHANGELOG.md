@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- Bookmaker odds: decimal 1X2 odds (Sofascore feed) under every score input - match cards, match page and editable picks - with an opt-out preference. Snapshots are append-only; a scheduled task refreshes upcoming matches (every 6h, every 30min in the last 2h before kickoff) and an admin backfill recovers closing odds for past tournaments (WC 2022, Euro 2024).
+- The scoring engine's ODDS bonus mode is now live data-backed: when the active scoring config selects ODDS, finished matches score against the closing (pre-kickoff) odds of the actual outcome. The default CROWD mode is unchanged.
+
 ## [0.15.2] - 2026-06-10
 
 ### Fixed
@@ -24,8 +28,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 ## [0.15.0] - 2026-06-09
 
 ### Added
-- Bookmaker odds: decimal 1X2 odds (Sofascore feed) under every score input - match cards, match page and editable picks - with an opt-out preference. Snapshots are append-only; a scheduled task refreshes upcoming matches (every 6h, every 30min in the last 2h before kickoff) and an admin backfill recovers closing odds for past tournaments (WC 2022, Euro 2024).
-- The scoring engine's ODDS bonus mode is now live data-backed: when the active scoring config selects ODDS, finished matches score against the closing (pre-kickoff) odds of the actual outcome. The default CROWD mode is unchanged.
 - Identifier-first login with SSO domain capture: enter your email, Continue either redirects straight to your IdP or reveals the password field. `/login?password=1` skips capture (IdP-outage escape hatch for password accounts).
 - SSO providers can capture several email domains (comma-separated, subdomains included); domains already captured by another provider are rejected.
 - SSO providers can be edited in place from the admin page (type and provider id stay fixed; blank secrets keep their stored value; OIDC endpoints re-resolve from discovery on save).
