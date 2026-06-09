@@ -1,5 +1,7 @@
 import { auth } from '../../../../lib/auth'
+import { db } from '../../../../db'
 import { requireAdmin } from '../../../utils/auth-guards'
+import { findDomainConflicts, parseDomainList } from '../../../utils/auth/sso-domains'
 
 // Registers an SSO provider (OIDC / Google / SAML). Secrets are envelope-encrypted
 // at rest by the adapter wrapper when better-auth persists the config.
@@ -7,10 +9,16 @@ export default defineEventHandler(async (event) => {
   await requireAdmin(event)
   const b = await readBody(event)
   const providerId = String(b?.providerId || '').trim()
-  const domain = String(b?.domain || '').trim()
-  if (!providerId || !domain) {
-    throw createError({ statusCode: 400, statusMessage: 'providerId and domain are required' })
+  const domains = parseDomainList(b?.domains ?? b?.domain)
+  if (!providerId || !domains) {
+    throw createError({ statusCode: 400, statusMessage: 'providerId and at least one valid domain are required' })
   }
+  const conflicts = await findDomainConflicts(db, providerId, domains)
+  if (conflicts.length > 0) {
+    throw createError({ statusCode: 400, statusMessage: `Domain(s) already captured by another provider: ${conflicts.join(', ')}` })
+  }
+  // The plugin natively supports several captured domains as a CSV list.
+  const domain = domains.join(',')
 
   const origin = getRequestURL(event).origin
   let body: Record<string, unknown>

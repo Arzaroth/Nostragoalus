@@ -64,6 +64,13 @@
       "when": 1780862198509,
       "tag": "0008_show_crowd",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1781032806345,
+      "tag": "0009_show_crowd_snapshot_sync",
+      "breakpoints": true
     }
   ]
 }

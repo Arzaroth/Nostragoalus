@@ -17,8 +17,9 @@ export default defineEventHandler(async (event) => {
     providers: rows.map((r) => ({
       providerId: r.providerId,
       issuer: r.issuer,
-      domain: r.domain,
-      type: r.saml ? 'saml' : 'oidc',
+      // The domain column natively holds a CSV list of captured domains.
+      domains: r.domain.split(',').map((d) => d.trim()).filter(Boolean),
+      type: r.saml ? ('saml' as const) : ('oidc' as const),
     })),
   }
 })

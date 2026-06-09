@@ -352,3 +352,4 @@ export const leaderboardRank = pgTable(
   },
   (t) => [primaryKey({ columns: [t.competitionId, t.userId] })],
 )
+
