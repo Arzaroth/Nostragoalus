@@ -37,6 +37,38 @@ describe('listMatches', () => {
   })
 })
 
+describe('match odds exposure', () => {
+  it('carries the latest odds snapshot on list and detail, null without one', async () => {
+    const { db, client, competitionId } = await setup()
+    const g1 = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+    const kickoff = new Date('2026-06-11T16:00:00Z')
+    const withOdds = await makeMatch(db, { competitionId, roundId: g1, kickoffTime: kickoff })
+    const without = await makeMatch(db, { competitionId, roundId: g1, kickoffTime: kickoff })
+
+    const { insertOddsSnapshots } = await import('../odds/store')
+    await insertOddsSnapshots(db, [
+      {
+        matchId: withOdds,
+        provider: 'sofascore',
+        providerEventRef: 'e',
+        kind: 'POLL',
+        current: { home: 2.1, draw: 3.4, away: 3.6 },
+        initial: null,
+        bookmakers: null,
+        fetchedAt: new Date(kickoff.getTime() - 60 * 60 * 1000),
+      },
+    ])
+
+    const rows = await listMatches(db, { competitionId })
+    expect(rows.find((m) => m.id === withOdds)?.odds).toMatchObject({ home: 2.1, draw: 3.4, away: 3.6 })
+    expect(rows.find((m) => m.id === without)?.odds).toBeNull()
+
+    expect((await getMatchDetail(db, withOdds))?.odds).toMatchObject({ home: 2.1, draw: 3.4, away: 3.6 })
+    expect((await getMatchDetail(db, without))?.odds).toBeNull()
+    await client.close()
+  })
+})
+
 describe('getTeamMatches', () => {
   it('returns the team matches (home or away) ordered by kickoff', async () => {
     const { db, client, competitionId } = await setup()
