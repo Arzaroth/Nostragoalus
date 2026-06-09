@@ -23,6 +23,7 @@ const { data, refresh: refreshMatch } = await useFetch<{
     roundLabel: string
   }
   myPrediction: { homeGoals: number; awayGoals: number; isJoker: boolean; totalPoints: number | null; baseTier: string | null } | null
+  odds: { home: number; draw: number; away: number; fetchedAt: string } | null
   isLocked: boolean
 }>(`/api/matches/${id.value}`)
 // lazy: the page navigates immediately on the core match fetch; insight/stat
@@ -49,6 +50,7 @@ useCancelOnLeave(
 const m = computed(() => data.value?.match)
 const { live } = useLiveMatch(id)
 const { enabled: crowdEnabled, totals: crowdTotals } = useCrowdTotals()
+const { enabled: oddsEnabled } = useMatchOdds()
 
 // A live score increase = somebody scored: run the pixel celebration.
 const celebrating = ref(false)
@@ -310,6 +312,7 @@ function toggleFormInfo(side: string, i: number | string) {
         </span>
         <ScoreInput v-if="canPredict" :home="myPred?.homeGoals ?? null" :away="myPred?.awayGoals ?? null" @update="savePrediction" />
         <span v-if="crowdEnabled" class="text-xs tabular-nums" style="color: var(--p-text-muted-color)" :title="t('prefs.crowd')">👥 <template v-if="crowdTotals[id]">{{ crowdTotals[id].home }}–{{ crowdTotals[id].away }} ({{ crowdTotals[id].count }})</template><template v-else>–</template></span>
+        <MatchOdds v-if="oddsEnabled" :odds="data?.odds ?? null" />
         <template v-else-if="myPred">
           <span class="font-bold tabular-nums">{{ myPred.homeGoals }}–{{ myPred.awayGoals }}</span>
           <span v-if="myPred.totalPoints !== null" class="text-xs font-semibold" style="color: var(--p-primary-color)">+{{ myPred.totalPoints }} pts · {{ tierLabel(myPred.baseTier) }}</span>

@@ -42,7 +42,15 @@
     "system": "Système",
     "saved": "Enregistré",
     "crowd": "Afficher les totaux du groupe",
-    "crowdHint": "Sous chaque prono, le score cumulé de tous les joueurs (1-1 + 2-1 + 4-0 donne 7-2)."
+    "crowdHint": "Sous chaque prono, le score cumulé de tous les joueurs (1-1 + 2-1 + 4-0 donne 7-2).",
+    "odds": "Afficher les cotes",
+    "oddsHint": "Cotes 1X2 décimales sous chaque match, figées au coup d'envoi."
+  },
+  "odds": {
+    "title": "Cotes bookmaker (1 / nul / 2)",
+    "home": "Cote victoire domicile",
+    "draw": "Cote match nul",
+    "away": "Cote victoire extérieur"
   },
   "common": {
     "loading": "Chargement…",

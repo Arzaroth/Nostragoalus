@@ -42,7 +42,15 @@
     "system": "System",
     "saved": "Saved",
     "crowd": "Show everyone's totals",
-    "crowdHint": "Under each prediction, the combined score of all players (1-1 + 2-1 + 4-0 shows as 7-2)."
+    "crowdHint": "Under each prediction, the combined score of all players (1-1 + 2-1 + 4-0 shows as 7-2).",
+    "odds": "Show bookmaker odds",
+    "oddsHint": "Decimal 1X2 odds under each match, frozen at kickoff."
+  },
+  "odds": {
+    "title": "Bookmaker odds (1 / draw / 2)",
+    "home": "Home win odds",
+    "draw": "Draw odds",
+    "away": "Away win odds"
   },
   "common": {
     "loading": "Loading…",

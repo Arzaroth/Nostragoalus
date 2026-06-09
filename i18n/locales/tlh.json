@@ -42,7 +42,15 @@
     "system": "pat",
     "saved": "choqlu'ta'",
     "crowd": "Hoch mI'mey boq cha'",
-    "crowdHint": "Hoch wIv bIngDaq, Hoch QujwI'pu' mI' boqlu'pu'."
+    "crowdHint": "Hoch wIv bIngDaq, Hoch QujwI'pu' mI' boqlu'pu'.",
+    "odds": "SuD mI'mey cha'",
+    "oddsHint": "Hoch Quj bIngDaq SuD mI'mey 1X2; Quj taghDI' tlhab."
+  },
+  "odds": {
+    "title": "SuD mI'mey (1 / rap / 2)",
+    "home": "juH Qap SuD mI'",
+    "draw": "rap SuD mI'",
+    "away": "lengwI' Qap SuD mI'"
   },
   "common": {
     "loading": "yIloS…",
