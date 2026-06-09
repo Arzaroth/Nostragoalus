@@ -17,7 +17,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 - An SSO sign-in whose email matches an existing password account now links to it (one merged account) instead of failing with account_not_linked.
 - SSO-managed accounts (no local password) no longer see or can reach email change, password, 2FA or passkey management - the IdP owns those; enforced server-side too.
 - Mobile: the FAQ scoring formula no longer forces page-wide horizontal scroll (it scrolls inside its own box), and the page-background gap between an opened FAQ question and its answer is gone.
-- Mobile: the pinned title banner showed a few giant cropped letters (a 19:1 desktop strip cover-cropped to phone width); narrow screens now reuse the wide artwork.
+- Mobile: the pinned title banner showed a few giant cropped letters (a 19:1 desktop strip cover-cropped to phone width) - fixed by the banner rework under Changed.
 - Mobile: substitution rows no longer overflow the match timeline card; the form tab keeps scores on one line and tucks the competition behind the tappable (dotted-underlined) date.
 - The mobile header nav signals its horizontal overflow with edge fades and scrolls the active link into view.
 
