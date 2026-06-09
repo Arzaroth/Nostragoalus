@@ -257,29 +257,44 @@ function toggleFormInfo(side: string, i: number | string) {
         <button type="button" class="px-2 py-0.5 rounded-full border transition-opacity" :class="showBookings ? '' : 'opacity-40'" style="border-color: var(--p-content-border-color); color: var(--p-text-muted-color)" :title="t('match.toggleBookings')" @click="showBookings = !showBookings">🟨 {{ t('match.bookings') }}</button>
         <button type="button" class="px-2 py-0.5 rounded-full border transition-opacity" :class="showSubs ? '' : 'opacity-40'" style="border-color: var(--p-content-border-color); color: var(--p-text-muted-color)" :title="t('match.toggleSubs')" @click="showSubs = !showSubs">🔄 {{ t('match.subs') }}</button>
       </div>
-      <div v-if="eventsReady && timeline.length" class="grid grid-cols-[1fr_auto_1fr] gap-x-2 gap-y-0.5 mt-2 pt-3 border-t text-xs items-center" style="color: var(--p-text-muted-color); border-color: var(--p-content-border-color)">
+      <!-- name | icon | minute | icon | name: the icons live in their own rail
+           next to the minute, so they stay aligned even when a name wraps.
+           Substitutions are two lines: player on above player off, arrows first. -->
+      <div v-if="eventsReady && timeline.length" class="grid grid-cols-[1fr_auto_auto_auto_1fr] gap-x-1.5 gap-y-1 mt-2 pt-3 border-t text-xs items-center" style="color: var(--p-text-muted-color); border-color: var(--p-content-border-color)">
         <template v-for="(e, i) in timeline" :key="i">
-          <span class="inline-flex flex-wrap min-w-0 items-center gap-1 justify-end text-right">
+          <span class="min-w-0 text-right">
             <template v-if="e.side === 'HOME'">
-              <template v-if="e.kind === 'sub'"><span class="whitespace-nowrap"><span style="color: var(--ng-success)">▲</span> {{ formatPlayerName(e.playerName) }}</span> <span class="opacity-60 whitespace-nowrap">· {{ formatPlayerName(e.offName) }} <span style="color: var(--ng-danger)">▼</span></span> 🔄</template>
-              <template v-else>
-                {{ formatPlayerName(e.playerName) }}<span v-if="e.kind === 'goal' && e.ownGoal"> (OG)</span><span v-if="e.kind === 'card' && e.coach" :title="t('match.coachCard')"> 📋</span>
-                <template v-if="e.kind === 'goal'">⚽</template>
-                <span v-else-if="e.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: var(--ng-danger)" /></span>
-                <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${e.card === 'RED' ? 'var(--ng-danger)' : '#eab308'}`" />
-              </template>
+              <span v-if="e.kind === 'sub'" class="flex flex-col items-end">
+                <span><span style="color: var(--ng-success)">▲</span> {{ formatPlayerName(e.playerName) }}</span>
+                <span class="opacity-60"><span style="color: var(--ng-danger)">▼</span> {{ formatPlayerName(e.offName) }}</span>
+              </span>
+              <template v-else>{{ formatPlayerName(e.playerName) }}<span v-if="e.kind === 'goal' && e.ownGoal"> (OG)</span><span v-if="e.kind === 'card' && e.coach" :title="t('match.coachCard')"> 📋</span></template>
+            </template>
+          </span>
+          <span class="w-4 flex justify-center">
+            <template v-if="e.side === 'HOME'">
+              <template v-if="e.kind === 'goal'">⚽</template>
+              <template v-else-if="e.kind === 'sub'">🔄</template>
+              <span v-else-if="e.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: var(--ng-danger)" /></span>
+              <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${e.card === 'RED' ? 'var(--ng-danger)' : '#eab308'}`" />
             </template>
           </span>
           <span class="tabular-nums text-center w-12 opacity-70">{{ e.minute }}</span>
-          <span class="inline-flex flex-wrap min-w-0 items-center gap-1">
+          <span class="w-4 flex justify-center">
             <template v-if="e.side === 'AWAY'">
-              <template v-if="e.kind === 'sub'">🔄 <span class="whitespace-nowrap"><span style="color: var(--ng-success)">▲</span> {{ formatPlayerName(e.playerName) }}</span> <span class="opacity-60 whitespace-nowrap">· {{ formatPlayerName(e.offName) }} <span style="color: var(--ng-danger)">▼</span></span></template>
-              <template v-else>
-                <template v-if="e.kind === 'goal'">⚽</template>
-                <span v-else-if="e.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: var(--ng-danger)" /></span>
-                <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${e.card === 'RED' ? 'var(--ng-danger)' : '#eab308'}`" />
-                {{ formatPlayerName(e.playerName) }}<span v-if="e.kind === 'goal' && e.ownGoal"> (OG)</span><span v-if="e.kind === 'card' && e.coach" :title="t('match.coachCard')"> 📋</span>
-              </template>
+              <template v-if="e.kind === 'goal'">⚽</template>
+              <template v-else-if="e.kind === 'sub'">🔄</template>
+              <span v-else-if="e.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: var(--ng-danger)" /></span>
+              <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${e.card === 'RED' ? 'var(--ng-danger)' : '#eab308'}`" />
+            </template>
+          </span>
+          <span class="min-w-0">
+            <template v-if="e.side === 'AWAY'">
+              <span v-if="e.kind === 'sub'" class="flex flex-col items-start">
+                <span><span style="color: var(--ng-success)">▲</span> {{ formatPlayerName(e.playerName) }}</span>
+                <span class="opacity-60"><span style="color: var(--ng-danger)">▼</span> {{ formatPlayerName(e.offName) }}</span>
+              </span>
+              <template v-else>{{ formatPlayerName(e.playerName) }}<span v-if="e.kind === 'goal' && e.ownGoal"> (OG)</span><span v-if="e.kind === 'card' && e.coach" :title="t('match.coachCard')"> 📋</span></template>
             </template>
           </span>
         </template>
