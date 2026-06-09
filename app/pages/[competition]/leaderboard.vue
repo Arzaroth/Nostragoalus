@@ -23,6 +23,37 @@ const scopeOptions = computed(() => [
   { label: t('leaderboard.global'), value: 'global' as const },
 ])
 
+// The bot follows the board's scope - competition-wide or league members
+// only - but has no global identity (joker rounds, finals and champion picks
+// are competition-scoped), so the toggle disappears in the global view.
+const showBot = ref(false)
+const botMethod = useBotMethod()
+const botEnabled = computed(() => showBot.value && !isGlobal.value)
+const { data: bot } = useBotRow(botEnabled, botMethod, scopedLeagueId)
+const methodOptions = computed(() => [
+  { label: t('bot.methodMode'), value: 'mode', disabled: bot.value ? !bot.value.modeAvailable : false },
+  { label: t('bot.methodMean'), value: 'mean', disabled: false },
+])
+// The server enforces the population gate; mirror it in the control.
+watchEffect(() => {
+  if (bot.value && !bot.value.modeAvailable && botMethod.value === 'mode') botMethod.value = 'mean'
+})
+
+type DisplayRow = LeaderboardRow & { movement?: number | null; isBot?: boolean }
+const displayRows = computed<DisplayRow[]>(() => {
+  const base: DisplayRow[] = rows.value ?? []
+  const row = bot.value?.row
+  if (!botEnabled.value || !row || row.rank === null) return base
+  return insertGhostRow(base, {
+    ...row,
+    rank: row.rank,
+    displayName: t('bot.name'),
+    image: null,
+    movement: null,
+    isBot: true,
+  })
+})
+
 function medal(rank: number) {
   return rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null
 }
@@ -36,18 +67,30 @@ function medal(rank: number) {
         <CompetitionPill />
         <LeaguePill />
       </div>
-      <SelectButton v-model="scope" :options="scopeOptions" option-label="label" option-value="value" :allow-empty="false" size="small" />
+      <div class="flex items-center gap-2 flex-wrap">
+        <template v-if="!isGlobal">
+          <ToggleButton v-model="showBot" :on-label="t('bot.show')" :off-label="t('bot.show')" on-icon="pi pi-eye" off-icon="pi pi-eye-slash" size="small" />
+          <SelectButton v-if="showBot" v-model="botMethod" :options="methodOptions" option-label="label" option-value="value" option-disabled="disabled" :allow-empty="false" size="small" />
+          <i
+            v-if="showBot && bot && !bot.modeAvailable"
+            v-tooltip.top="t('bot.modeDisabled')"
+            class="pi pi-info-circle cursor-help"
+            style="color: var(--p-text-muted-color)"
+          />
+        </template>
+        <SelectButton v-model="scope" :options="scopeOptions" option-label="label" option-value="value" :allow-empty="false" size="small" />
+      </div>
     </div>
     <div v-if="isLoading" class="opacity-60">{{ t('common.loading') }}</div>
-    <div v-else-if="!rows || !rows.length" class="opacity-60">{{ t('leaderboard.empty') }}</div>
+    <div v-else-if="!displayRows.length" class="opacity-60">{{ t('leaderboard.empty') }}</div>
 
     <div v-else class="flex flex-col gap-2">
       <NuxtLink
-        v-for="r in rows"
+        v-for="r in displayRows"
         :key="r.userId"
-        :to="`/${slug}/users/${r.userId}${isGlobal ? '?global=1' : ''}`"
+        :to="r.isBot ? `/${slug}/bot${scopedLeagueId ? `?league=${scopedLeagueId}` : ''}` : `/${slug}/users/${r.userId}${isGlobal ? '?global=1' : ''}`"
         class="ng-card flex items-center gap-3 rounded-xl border px-4 py-3"
-        :style="`background: var(--p-content-background); border-color: ${r.userId === meId ? 'var(--p-primary-color)' : 'var(--p-content-border-color)'}; border-width: ${r.userId === meId ? '2px' : '1px'}`"
+        :style="`background: var(--p-content-background); border-style: ${r.isBot ? 'dashed' : 'solid'}; opacity: ${r.isBot ? '0.85' : '1'}; border-color: ${r.userId === meId ? 'var(--p-primary-color)' : 'var(--p-content-border-color)'}; border-width: ${r.userId === meId ? '2px' : '1px'}`"
       >
         <div class="w-8 text-center shrink-0">
           <div class="font-bold tabular-nums text-lg leading-tight">
@@ -58,10 +101,12 @@ function medal(rank: number) {
             {{ r.movement > 0 ? '▲' : '▼' }}{{ Math.abs(r.movement) }}
           </div>
         </div>
-        <Avatar :image="r.image || '/brand/avatar.svg'" shape="circle" class="shrink-0 overflow-hidden" />
+        <span v-if="r.isBot" class="shrink-0 text-2xl leading-none w-8 h-8 inline-flex items-center justify-center">🤖</span>
+        <Avatar v-else :image="r.image || '/brand/avatar.svg'" shape="circle" class="shrink-0 overflow-hidden" />
         <div class="flex-1 min-w-0">
           <div class="font-semibold truncate flex items-center gap-2.5">
             <span class="truncate">{{ r.displayName }}</span>
+            <span v-if="r.isBot" class="text-xs font-normal px-1.5 py-0.5 rounded-full" style="color: var(--p-text-muted-color); background: var(--p-content-border-color)">{{ t('bot.virtual') }}</span>
             <span v-if="r.championCode && flagUrl(r.championCode)" class="relative shrink-0 inline-flex" :title="`${t('champion.title')}: ${r.championCode}`">
               <img :src="flagUrl(r.championCode) || ''" class="w-4 h-4 rounded object-cover" alt="" >
               <span class="absolute -top-2 -left-1.5 text-[10px]" style="transform: rotate(-25deg)">👑</span>

@@ -219,6 +219,18 @@
     "correct": "corrects",
     "pts": "pts"
   },
+  "bot": {
+    "name": "Bot consensus",
+    "show": "Bot",
+    "virtual": "joueur virtuel",
+    "note": "Pronostique le score le plus choisi par les joueurs - ou la moyenne. N'affecte le classement de personne.",
+    "pickedBy": "choisi par {count}/{total}",
+    "adminUpcoming": "Vue admin : le consensus des matchs à venir est inclus - les joueurs ne voient que les matchs commencés.",
+    "empty": "Pas encore de consensus - il apparaît dès que les joueurs pronostiquent.",
+    "methodMode": "Plus choisi",
+    "methodMean": "Moyenne",
+    "modeDisabled": "Trop peu de pronos - le score le plus choisi serait biaisé, la moyenne est affichée."
+  },
   "match": {
     "standings": "Classement",
     "form": "Forme",
