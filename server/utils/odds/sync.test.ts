@@ -142,6 +142,48 @@ describe('syncOdds', () => {
     await client.close()
   })
 
+  it('resolves real providers by default and skips unknown keys', async () => {
+    const { db, client } = await createTestDb()
+    // No matches: the sofascore provider is constructed but never called.
+    await seedCompetition(db, { slug: 'wc', oddsProvider: 'sofascore', oddsProviderRef: '16' })
+    await seedCompetition(db, { slug: 'other', oddsProvider: 'nope', oddsProviderRef: 'x' })
+    expect((await syncOdds(db)).competitions).toEqual({})
+    expect((await backfillOdds(db)).competitions).toEqual({})
+    await client.close()
+  })
+
+  it('stops crossing into the next competition once the call budget is spent', async () => {
+    const { db, client, competitionId, roundId } = await setup()
+    const c2 = await seedCompetition(db, { slug: 'euro', oddsProvider: 'sofascore', oddsProviderRef: '1' })
+    const r2 = (await findRoundId(db, c2, 'GROUP', 1)) as string
+    for (const [competition, round_] of [[competitionId, roundId], [c2, r2]] as const) {
+      const id = await makeMatch(db, { competitionId: competition, roundId: round_, kickoffTime: KICKOFF })
+      await db.update(match).set({ oddsEventRef: `ref-${id}` }).where(eq(match.id, id))
+    }
+    const getEventOdds = vi.fn(async () => ({ current: TRIPLE, initial: null, bookmakers: null }))
+    const summary = await syncOdds(db, { now: NOW, maxCalls: 1, providerFactory: () => fakeProvider({ getEventOdds }) })
+    expect(getEventOdds).toHaveBeenCalledTimes(1)
+    expect(Object.keys(summary.competitions)).toHaveLength(1)
+    await client.close()
+  })
+
+  it('contains a mapping-pass failure as a competition error', async () => {
+    const { db, client, competitionId, roundId } = await setup()
+    await makeMatch(db, { competitionId, roundId, kickoffTime: KICKOFF })
+    const summary = await syncOdds(db, {
+      now: NOW,
+      providerFactory: () =>
+        fakeProvider({
+          listEvents: async () => {
+            throw new Error('boom')
+          },
+        }),
+    })
+    expect(summary.competitions['world-cup-2026']).toMatchObject({ errors: 1 })
+    expect(summary.aborted).toBeUndefined()
+    await client.close()
+  })
+
   it('logs fixtures the provider does not list', async () => {
     const { db, client, competitionId, roundId } = await setup()
     await makeMatch(db, { competitionId, roundId, kickoffTime: KICKOFF, homeTeam: 'France', awayTeam: 'Brazil' })
@@ -211,6 +253,36 @@ describe('backfillOdds', () => {
         }),
     })
     expect(summary.aborted).toBe('rate_limited')
+    await client.close()
+  })
+
+  it('stops backfill across competitions once the budget is spent', async () => {
+    const { db, client, competitionId, roundId } = await setup()
+    const c2 = await seedCompetition(db, { slug: 'euro', oddsProvider: 'sofascore', oddsProviderRef: '1' })
+    const r2 = (await findRoundId(db, c2, 'GROUP', 1)) as string
+    for (const [competition, round_] of [[competitionId, roundId], [c2, r2]] as const) {
+      const id = await makeMatch(db, { competitionId: competition, roundId: round_, kickoffTime: KICKOFF, status: 'FINISHED' })
+      await db.update(match).set({ oddsEventRef: `ref-${id}` }).where(eq(match.id, id))
+    }
+    const getEventOdds = vi.fn(async () => ({ current: TRIPLE, initial: null, bookmakers: null }))
+    const summary = await backfillOdds(db, { maxCalls: 1, providerFactory: () => fakeProvider({ getEventOdds }) })
+    expect(getEventOdds).toHaveBeenCalledTimes(1)
+    expect(Object.keys(summary.competitions)).toHaveLength(1)
+    await client.close()
+  })
+
+  it('contains a mapping-pass failure as a competition error', async () => {
+    const { db, client, competitionId, roundId } = await setup()
+    await makeMatch(db, { competitionId, roundId, kickoffTime: KICKOFF, status: 'FINISHED' })
+    const summary = await backfillOdds(db, {
+      providerFactory: () =>
+        fakeProvider({
+          listEvents: async () => {
+            throw new Error('boom')
+          },
+        }),
+    })
+    expect(summary.competitions['world-cup-2026']).toMatchObject({ errors: 1 })
     await client.close()
   })
 
