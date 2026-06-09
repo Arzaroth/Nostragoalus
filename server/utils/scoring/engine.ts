@@ -90,17 +90,24 @@ function scoreOne(input: ScoreMatchInput, hist: Histogram, p: PredictionInput): 
   }
 }
 
-export function scorePredictions(input: ScoreMatchInput): PredictionScore[] {
-  const { actual, predictions } = input
-  const actualOutcome = outcomeOf(actual)
-
+function buildHistogram(actual: Scoreline, predictions: PredictionInput[]): Histogram {
   let exactCount = 0
   let outcomeCount = 0
   for (const p of predictions) {
     if (predictionHits(p, actual, true)) exactCount += 1
     if (predictionHits(p, actual, false)) outcomeCount += 1
   }
+  return { exactCount, outcomeCount, total: predictions.length, actualOutcome: outcomeOf(actual) }
+}
 
-  const hist: Histogram = { exactCount, outcomeCount, total: predictions.length, actualOutcome }
-  return predictions.map((p) => scoreOne(input, hist, p))
+export function scorePredictions(input: ScoreMatchInput): PredictionScore[] {
+  const hist = buildHistogram(input.actual, input.predictions)
+  return input.predictions.map((p) => scoreOne(input, hist, p))
+}
+
+// Scores a pick that is not part of the crowd (the consensus bot): it must not
+// sit in its own rarity denominator, or being the consensus would dilute the
+// very bonus it is measured against.
+export function scoreSyntheticPrediction(input: ScoreMatchInput, p: PredictionInput): PredictionScore {
+  return scoreOne(input, buildHistogram(input.actual, input.predictions), p)
 }

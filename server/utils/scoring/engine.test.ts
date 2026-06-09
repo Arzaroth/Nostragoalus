@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { scorePredictions, type PredictionInput } from './engine'
+import { scorePredictions, scoreSyntheticPrediction, type PredictionInput } from './engine'
 import { DEFAULT_RULES, type ScoringRules } from './config'
 
 const NO_BONUS: ScoringRules = { ...DEFAULT_RULES, bonusSource: 'NONE' }
@@ -138,6 +138,46 @@ describe('scorePredictions - joker', () => {
     })
     // base 3 * 1.5 = 4.5 => 5
     expect(score.totalPoints).toBe(5)
+  })
+})
+
+describe('scoreSyntheticPrediction', () => {
+  const rules: ScoringRules = { ...DEFAULT_RULES, bonusSource: 'CROWD', crowdMatchBasis: 'EXACT', crowdMinDenominator: 1 }
+
+  it('keeps the synthetic pick out of its own crowd denominator', () => {
+    const crowd = preds(['p1', 2, 1], ['p2', 1, 0], ['p3', 3, 1], ['p4', 0, 0])
+    const input = { actual: { home: 2, away: 1 }, rules, predictions: crowd }
+    const synthetic = scoreSyntheticPrediction(input, { id: 'bot', home: 2, away: 1, isJoker: false })
+    const real = byId(scorePredictions(input))
+    // Same share as p1 (1/4): the bot pick did not bump exactCount or total.
+    expect(synthetic.crowdShare).toBe(real.p1.crowdShare)
+    expect(synthetic).toMatchObject({ baseTier: 'EXACT', basePoints: 3, bonusPoints: 1, totalPoints: 4 })
+  })
+
+  it('leaves the real scores untouched compared to a crowd that contains the pick', () => {
+    const crowd = preds(['p1', 2, 1], ['p2', 1, 0])
+    const polluted = preds(['p1', 2, 1], ['p2', 1, 0], ['bot', 2, 1])
+    const clean = scoreSyntheticPrediction({ actual: { home: 2, away: 1 }, rules, predictions: crowd }, { id: 'bot', home: 2, away: 1, isJoker: false })
+    const inCrowd = byId(scorePredictions({ actual: { home: 2, away: 1 }, rules, predictions: polluted }))
+    // 1/2 vs 2/3: joining the crowd would have changed the share.
+    expect(clean.crowdShare).toBe(0.5)
+    expect(inCrowd.bot.crowdShare).toBeCloseTo(2 / 3)
+  })
+
+  it('applies the joker multiplier and forceJoker', () => {
+    const noBonus = { actual: { home: 1, away: 0 }, rules: NO_BONUS, predictions: preds(['p1', 0, 1]) }
+    expect(scoreSyntheticPrediction(noBonus, { id: 'bot', home: 1, away: 0, isJoker: true }).totalPoints).toBe(6)
+    expect(
+      scoreSyntheticPrediction({ ...noBonus, forceJoker: true }, { id: 'bot', home: 1, away: 0, isJoker: false }).totalPoints,
+    ).toBe(6)
+  })
+
+  it('scores against an empty crowd without a bonus', () => {
+    const score = scoreSyntheticPrediction(
+      { actual: { home: 1, away: 0 }, rules, predictions: [] },
+      { id: 'bot', home: 1, away: 0, isJoker: false },
+    )
+    expect(score).toMatchObject({ baseTier: 'EXACT', bonusPoints: 0, crowdShare: null, totalPoints: 3 })
   })
 })
 
