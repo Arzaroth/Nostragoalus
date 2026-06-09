@@ -25,6 +25,9 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
 - Score predictions with closeness-tiered points, a rarity bonus, and one ×2 **joker** per round;
   Enter/space hops between score inputs so a whole matchday can be typed without the mouse
 - Optional **crowd totals** under every prediction (everyone's picks combined), updated live over WebSocket
+- **Bookmaker odds** (decimal 1X2, Sofascore feed) under every score input, frozen at kickoff;
+  optional ODDS scoring mode awards the bonus from the closing odds of the actual outcome, and an
+  admin backfill recovers closing odds for past tournaments
 - Transparent scoring: base + rarity bonus + joker/final ×2 broken out on every pick, with the full formula in the FAQ
 - **Champion pick** bonus, locked at the first kickoff and shown beside every name on the rankings
 - Per-competition **and global** rankings with movement arrows; browse other players' (locked)
