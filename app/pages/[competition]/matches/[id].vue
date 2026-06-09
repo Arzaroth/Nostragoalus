@@ -189,6 +189,13 @@ function formColor(r: string) {
 function fmtDate(d: string) {
   return new Date(d).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })
 }
+
+// Narrow form rows hide the competition behind the date; one open at a time.
+const openFormInfo = ref<string | null>(null)
+function toggleFormInfo(side: string, i: number | string) {
+  const k = `${side}-${i}`
+  openFormInfo.value = openFormInfo.value === k ? null : k
+}
 </script>
 
 <template>
@@ -245,9 +252,9 @@ function fmtDate(d: string) {
       </div>
       <div v-if="eventsReady && timeline.length" class="grid grid-cols-[1fr_auto_1fr] gap-x-2 gap-y-0.5 mt-2 pt-3 border-t text-xs items-center" style="color: var(--p-text-muted-color); border-color: var(--p-content-border-color)">
         <template v-for="(e, i) in timeline" :key="i">
-          <span class="inline-flex items-center gap-1 justify-end text-right">
+          <span class="inline-flex flex-wrap min-w-0 items-center gap-1 justify-end text-right">
             <template v-if="e.side === 'HOME'">
-              <template v-if="e.kind === 'sub'"><span style="color: var(--ng-success)">▲</span> {{ formatPlayerName(e.playerName) }} <span class="opacity-60">· {{ formatPlayerName(e.offName) }} <span style="color: var(--ng-danger)">▼</span></span> 🔄</template>
+              <template v-if="e.kind === 'sub'"><span class="whitespace-nowrap"><span style="color: var(--ng-success)">▲</span> {{ formatPlayerName(e.playerName) }}</span> <span class="opacity-60 whitespace-nowrap">· {{ formatPlayerName(e.offName) }} <span style="color: var(--ng-danger)">▼</span></span> 🔄</template>
               <template v-else>
                 {{ formatPlayerName(e.playerName) }}<span v-if="e.kind === 'goal' && e.ownGoal"> (OG)</span><span v-if="e.kind === 'card' && e.coach" :title="t('match.coachCard')"> 📋</span>
                 <template v-if="e.kind === 'goal'">⚽</template>
@@ -257,9 +264,9 @@ function fmtDate(d: string) {
             </template>
           </span>
           <span class="tabular-nums text-center w-12 opacity-70">{{ e.minute }}</span>
-          <span class="inline-flex items-center gap-1">
+          <span class="inline-flex flex-wrap min-w-0 items-center gap-1">
             <template v-if="e.side === 'AWAY'">
-              <template v-if="e.kind === 'sub'">🔄 <span style="color: var(--ng-success)">▲</span> {{ formatPlayerName(e.playerName) }} <span class="opacity-60">· {{ formatPlayerName(e.offName) }} <span style="color: var(--ng-danger)">▼</span></span></template>
+              <template v-if="e.kind === 'sub'">🔄 <span class="whitespace-nowrap"><span style="color: var(--ng-success)">▲</span> {{ formatPlayerName(e.playerName) }}</span> <span class="opacity-60 whitespace-nowrap">· {{ formatPlayerName(e.offName) }} <span style="color: var(--ng-danger)">▼</span></span></template>
               <template v-else>
                 <template v-if="e.kind === 'goal'">⚽</template>
                 <span v-else-if="e.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: var(--ng-danger)" /></span>
@@ -377,18 +384,30 @@ function fmtDate(d: string) {
                 <div class="font-semibold mb-2">{{ side === 'home' ? m.homeTeam : m.awayTeam }}</div>
                 <!-- All international results before this match, not just our competitions. -->
                 <div v-if="insights.formAll?.[side]?.length" class="flex flex-col gap-1.5">
-                  <div v-for="(f, i) in insights.formAll[side]" :key="i" class="flex items-center gap-2 text-sm">
-                    <span class="w-5 h-5 rounded text-white text-xs flex items-center justify-center font-bold shrink-0" :style="`background:${formColor(f.result)}`">{{ f.result }}</span>
-                    <span class="truncate" style="color: var(--p-text-muted-color)">vs {{ f.opponent }}</span>
-                    <span class="font-medium tabular-nums">{{ f.score }}</span>
-                    <span class="text-xs ml-auto text-right shrink-0" style="color: var(--p-text-muted-color)">{{ f.competition }} · {{ fmtDate(f.date) }}</span>
-                  </div>
+                  <template v-for="(f, i) in insights.formAll[side]" :key="i">
+                    <div class="flex items-center gap-2 text-sm">
+                      <span class="w-5 h-5 rounded text-white text-xs flex items-center justify-center font-bold shrink-0" :style="`background:${formColor(f.result)}`">{{ f.result }}</span>
+                      <span class="truncate" style="color: var(--p-text-muted-color)">vs {{ f.opponent }}</span>
+                      <span class="font-medium tabular-nums whitespace-nowrap shrink-0">{{ f.score }}</span>
+                      <!-- Narrow screens: only the date fits; the dotted underline hints
+                           that tapping it reveals the competition. -->
+                      <button
+                        type="button"
+                        class="text-xs ml-auto text-right shrink-0 whitespace-nowrap sm:hidden underline decoration-dotted underline-offset-2"
+                        style="color: var(--p-text-muted-color)"
+                        :title="f.competition"
+                        @click="toggleFormInfo(side, i)"
+                      >{{ fmtDate(f.date) }}</button>
+                      <span class="text-xs ml-auto text-right shrink-0 hidden sm:inline" style="color: var(--p-text-muted-color)">{{ f.competition }} · {{ fmtDate(f.date) }}</span>
+                    </div>
+                    <div v-if="openFormInfo === `${side}-${i}`" class="sm:hidden text-xs pl-7 -mt-1" style="color: var(--p-text-muted-color)">{{ f.competition }}</div>
+                  </template>
                 </div>
                 <div v-else-if="insights.form[side].length" class="flex flex-col gap-1.5">
                   <NuxtLink v-for="(f, i) in insights.form[side]" :key="i" :to="`/${selectedSlug}/matches/${f.matchId}`" class="flex items-center gap-2 text-sm hover:opacity-80">
                     <span class="w-5 h-5 rounded text-white text-xs flex items-center justify-center font-bold" :style="`background:${formColor(f.result)}`">{{ f.result }}</span>
-                    <span style="color: var(--p-text-muted-color)">vs {{ f.opponent }}</span>
-                    <span class="font-medium tabular-nums">{{ f.score }}</span>
+                    <span class="truncate" style="color: var(--p-text-muted-color)">vs {{ f.opponent }}</span>
+                    <span class="font-medium tabular-nums whitespace-nowrap shrink-0">{{ f.score }}</span>
                   </NuxtLink>
                 </div>
                 <div v-else class="text-sm" style="color: var(--p-text-muted-color)">{{ t('match.noResults') }}</div>

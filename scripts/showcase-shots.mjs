@@ -16,7 +16,8 @@ const browser = await puppeteer.launch({
 const page = await browser.newPage()
 
 // sign in as the demo admin so prediction inputs and crowd totals render
-await page.goto(`${APP}/login`, { waitUntil: 'networkidle0' })
+// ?password=1 skips the identifier-first SSO domain check and shows the password field directly
+await page.goto(`${APP}/login?password=1`, { waitUntil: 'networkidle0' })
 await page.type('input[type="email"]', 'verify@example.com')
 await page.type('input[type="password"]', 'password123')
 await Promise.all([page.keyboard.press('Enter'), page.waitForNavigation({ waitUntil: 'networkidle0', timeout: 30000 }).catch(() => {})])
