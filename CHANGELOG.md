@@ -5,6 +5,25 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- Identifier-first login with SSO domain capture: enter your email, Continue either redirects straight to your IdP or reveals the password field. `/login?password=1` skips capture (IdP-outage escape hatch for password accounts).
+- SSO providers can capture several email domains (comma-separated, subdomains included); domains already captured by another provider are rejected.
+- SSO providers can be edited in place from the admin page (type and provider id stay fixed; blank secrets keep their stored value; OIDC endpoints re-resolve from discovery on save).
+- The admin SSO form shows everything the IdP side needs as it is filled: OIDC redirect URI, scopes and claims, SAML ACS URL, SP entity ID and a link to the generated SP metadata XML.
+- Admins can hide any user from the leaderboard (eye toggle in the user list); hidden players keep playing and still count in crowd totals. `create-admin` accounts start hidden.
+- Enter or space in a score input saves and hops home → away → next match, so a whole matchday can be typed without the mouse.
+
+### Fixed
+- An SSO sign-in whose email matches an existing password account now links to it (one merged account) instead of failing with account_not_linked.
+- SSO-managed accounts (no local password) no longer see or can reach email change, password, 2FA or passkey management - the IdP owns those; enforced server-side too.
+- Mobile: the FAQ scoring formula no longer forces page-wide horizontal scroll (it scrolls inside its own box), and the page-background gap between an opened FAQ question and its answer is gone.
+- Mobile: the pinned title banner showed a few giant cropped letters (a 19:1 desktop strip cover-cropped to phone width); narrow screens now reuse the wide artwork.
+- Mobile: substitution rows no longer overflow the match timeline card; the form tab keeps scores on one line and tucks the competition behind the tappable (dotted-underlined) date.
+- The mobile header nav signals its horizontal overflow with edge fades and scrolls the active link into view.
+
+### Changed
+- In-flight API requests are aborted when leaving a page or switching competition (vue-query signals, crowd totals, and the match page's slow FIFA-backed lazy fetches).
+
 ## [0.14.0] - 2026-06-08
 
 ### Added
