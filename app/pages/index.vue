@@ -88,6 +88,7 @@ const dimOpacity = useTransform(t1, (v) => 0.6 * cl(v))
 // is continuous from the full banner to the slim bar.
 const ballScale = ref(1)
 const subtitleOp = ref(1)
+const titleScale = ref(1)
 const titleShift = ref(0)
 function updateArt() {
   const a = cl(t1.get())
@@ -100,7 +101,11 @@ function updateArt() {
   const band = h / s
   ballScale.value = Math.min(1, (0.85 * band) / 470)
   subtitleOp.value = cl((band - 500) / 150)
-  titleShift.value = Math.max(0, 416 - band / 2 + 6 - 338)
+  // The title (cap height ~110 units, center y~400) shrinks to 80% of the band
+  // when the band is slimmer than it (ultrawide screens), and drifts toward the
+  // band's vertical center (y=416); both are identity at full height.
+  titleScale.value = Math.min(1, (0.8 * band) / 110)
+  titleShift.value = 16 * (1 - band / 832)
 }
 
 // Stars float above the dim during the intro, then settle behind the content.
@@ -137,7 +142,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', layoutBanner))
         class="fixed left-1/2 z-40 overflow-hidden"
         :style="{ top: `${topPx}px`, width: bWidth, height: bHeight, transform: bTransform, borderRadius: bRadius, boxShadow: bShadow, background: '#171436' }"
       >
-        <BannerArt :ball-scale="ballScale" :subtitle-opacity="subtitleOp" :title-shift="titleShift" />
+        <BannerArt :ball-scale="ballScale" :subtitle-opacity="subtitleOp" :title-scale="titleScale" :title-shift="titleShift" />
       </motion.div>
       <motion.div v-if="!reduced" class="fixed inset-0 z-30 pointer-events-none" :style="{ background: '#0b0a18', opacity: dimOpacity }" />
       <template #fallback>

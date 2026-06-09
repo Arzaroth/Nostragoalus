@@ -4,7 +4,7 @@
 // swap to): the planet shrinks in place, the subtitle fades, and the title
 // nudges down when the visible band gets slim. Regenerate from the source svg
 // if the artwork changes.
-defineProps<{ ballScale: number; subtitleOpacity: number; titleShift: number }>()
+defineProps<{ ballScale: number; subtitleOpacity: number; titleScale: number; titleShift: number }>()
 </script>
 
 <template>
@@ -362,13 +362,15 @@ defineProps<{ ballScale: number; subtitleOpacity: number; titleShift: number }>(
 
 <!-- wordmark -->
 <g font-family="Georgia, 'Palatino Linotype', 'Times New Roman', serif">
-  <text x="1130" :y="448 + titleShift" font-size="158" font-weight="700" letter-spacing="14" fill="url(#txt)">NOSTRAGOALUS</text>
+<g :transform="`translate(1905 ${400 + titleShift}) scale(${titleScale}) translate(-1905 -400)`">
+  <text x="1130" y="448" font-size="158" font-weight="700" letter-spacing="14" fill="url(#txt)">NOSTRAGOALUS</text>
   <g :opacity="subtitleOpacity">
   <line x1="1138" y1="512" x2="1745" y2="512" stroke="#f4d488" stroke-width="3" opacity="0.75"/>
   <path d="M1775 498 Q1777.52 509.48 1789 512 Q1777.52 514.52 1775 526 Q1772.48 514.52 1761 512 Q1772.48 509.48 1775 498Z" fill="#f4d488" opacity="0.9"/>
   <line x1="1805" y1="512" x2="2412" y2="512" stroke="#f4d488" stroke-width="3" opacity="0.75"/>
   <text x="1380" y="588" font-size="54" letter-spacing="30" fill="#e9cd8d">THE FOOTBALL ORACLE</text>
   </g>
+</g>
 </g>
 
 <rect x="0" y="0" width="2752" height="832" fill="url(#vign)"/>
