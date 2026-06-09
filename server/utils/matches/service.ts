@@ -2,6 +2,7 @@ import { and, asc, eq, or, type SQL } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { match, prediction, round } from '../../../db/schema'
 import type { AppStage, MatchStatus } from '../../../shared/types/match'
+import { latestOddsByMatch } from '../odds/store'
 
 export interface MatchFilters {
   competitionId: string
@@ -39,12 +40,18 @@ export async function listMatches(db: AppDatabase, filters: MatchFilters) {
   if (filters.status) conditions.push(eq(match.status, filters.status))
   if (filters.matchday !== undefined) conditions.push(eq(round.matchday, filters.matchday))
 
-  return db
+  const rows = await db
     .select(matchColumns)
     .from(match)
     .innerJoin(round, eq(match.roundId, round.id))
     .where(and(...conditions))
     .orderBy(asc(match.kickoffTime))
+
+  const odds = await latestOddsByMatch(
+    db,
+    rows.map((r) => r.id),
+  )
+  return rows.map((row) => ({ ...row, odds: odds[row.id] ?? null }))
 }
 
 export async function getTeamMatches(db: AppDatabase, competitionId: string, teamCode: string) {
@@ -80,5 +87,6 @@ export async function getMatchDetail(db: AppDatabase, matchId: string, userId?: 
     myPrediction = preds[0] ?? null
   }
 
-  return { match: rows[0], myPrediction }
+  const odds = await latestOddsByMatch(db, [matchId])
+  return { match: rows[0], myPrediction, odds: odds[matchId] ?? null }
 }
