@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [0.19.1] - 2026-06-10
+
 ### Fixed
 - Live scores and crowd totals now auto-reconnect after a server restart/deploy (shared reconnecting WebSocket with backoff, re-subscribing and refetching on reconnect) instead of silently freezing until the next navigation.
 - The leaderboard falls back to the competition board (instead of showing an empty board) when a selected league was deleted or membership was revoked.
