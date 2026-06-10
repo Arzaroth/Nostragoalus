@@ -29,6 +29,8 @@ export const TEAM_NAME_ALIASES: Record<string, string> = {
   'uae': 'united arab emirates',
   'czech republic': 'czechia',
   'bosnia': 'bosnia and herzegovina',
+  // Sofascore writes "Bosnia & Herzegovina"; the ampersand normalizes away.
+  'bosnia herzegovina': 'bosnia and herzegovina',
 }
 
 export function canonicalTeamName(name: string): string {
