@@ -229,7 +229,8 @@
     "empty": "wej noH ghom - noHDI' QujwI'pu' 'ang.",
     "methodMode": "wIv motlh",
     "methodMean": "botlh",
-    "modeDisabled": "noH puS - wIv motlh Qagh, vaj botlh 'ang."
+    "modeDisabled": "noH puS - wIv motlh Qagh, vaj botlh 'ang.",
+    "meanOf": "{total} vo' motlh"
   },
   "match": {
     "standings": "patlh",

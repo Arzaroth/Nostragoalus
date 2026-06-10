@@ -7,6 +7,8 @@ import type { ScoringRules } from '../scoring/config'
 import { scoreSyntheticPrediction } from '../scoring/engine'
 import { getActiveScoringConfig } from '../scoring/store'
 import { getLeaderboard } from '../leaderboard/service'
+import { closingOddsForOutcome } from '../odds/store'
+import { outcomeOf } from '../scoring/tiers'
 
 import { BOT_USER_ID, type ConsensusMethod } from '../../../shared/types/bot'
 
@@ -76,6 +78,7 @@ export interface BotMatchRow {
   roundSort: number
   consensusCount: number
   consensusTotal: number
+  consensusMethod: ConsensusMethod
 }
 
 export interface BotChampion {
@@ -115,6 +118,9 @@ export interface BotScopeOptions {
   // were awarded against the full locked crowd.
   leagueId?: string
   includeUpcoming?: boolean
+  // Rank the bot against the same board the viewer sees: league mates/admins
+  // see private profiles, so their board includes them.
+  includePrivate?: boolean
 }
 
 // The bot's champion pick is the team most users picked.
@@ -134,11 +140,12 @@ export async function getBotChampion(
       and(eq(leagueMember.userId, championPick.userId), eq(leagueMember.leagueId, opts.leagueId)),
     )
   }
-  const picks = await query.where(eq(championPick.competitionId, competitionId))
+  const picks = (await query.where(eq(championPick.competitionId, competitionId))).filter(
+    (p): p is { teamCode: string; teamName: string } => p.teamCode !== null,
+  )
 
   const counts = new Map<string, { teamCode: string; teamName: string; count: number }>()
   for (const p of picks) {
-    if (!p.teamCode) continue
     const entry = counts.get(p.teamCode)
     if (entry) entry.count += 1
     else counts.set(p.teamCode, { teamCode: p.teamCode, teamName: p.teamName, count: 1 })
@@ -160,7 +167,7 @@ export async function getBotChampion(
     teamCode: best.teamCode,
     teamName: best.teamName,
     count: best.count,
-    total: picks.length,
+    total: picks.length, // null-team picks already filtered out
     awardedPoints: winnerCode !== null && winnerCode === best.teamCode ? rules.championBonus : 0,
   }
 }
@@ -271,11 +278,18 @@ export async function getBotOverview(
 
     const isJoker = jokerMatches.has(m.id)
     const scored = m.scoringState === 'SCORED' && m.fullTimeHome !== null && m.fullTimeAway !== null
+    // Under the ODDS bonus config the bot must score against the same closing
+    // odds real users got (else its identical pick scores less); CROWD ignores it.
+    const actualOutcomeOdds =
+      scored && rules.bonusSource === 'ODDS'
+        ? await closingOddsForOutcome(db, m.id, m.kickoffTime, outcomeOf({ home: m.fullTimeHome!, away: m.fullTimeAway! }))
+        : null
     const score = scored
       ? scoreSyntheticPrediction(
           {
             actual: { home: m.fullTimeHome!, away: m.fullTimeAway! },
             rules,
+            actualOutcomeOdds,
             predictions: (lockedByMatch.get(m.id) ?? []).map((p, i) => ({
               id: String(i),
               home: p.home,
@@ -317,6 +331,7 @@ export async function getBotOverview(
       roundSort: m.roundSort,
       consensusCount: consensus.count,
       consensusTotal: consensus.total,
+      consensusMethod: method,
     })
   }
 
@@ -333,7 +348,7 @@ export async function getBotOverview(
 
   let rank: number | null = null
   if (hasScores) {
-    const board = await getLeaderboard(db, { competitionId, leagueId: opts.leagueId, limit: 10000 })
+    const board = await getLeaderboard(db, { competitionId, leagueId: opts.leagueId, includePrivate: opts.includePrivate, limit: 10000 })
     // Display-only ladder (the 4 numeric levels); real users win exact ties.
     rank =
       1 +

@@ -89,3 +89,23 @@ Deferred work, queued behind feature development.
       selection on a league fetch 404.
 - [ ] Rate limiter is in-process per instance; multi-instance multiplies the
       join-code attempt budget (shared limiter / store needed if scaled out).
+
+## Crowd bot (deferred from the merge review)
+
+- [ ] getBotOverview runs on every request with no caching: it scans all
+      competition predictions into memory, rebuilds per-match histograms on the
+      read path, and re-runs getLeaderboard(limit:10000) for the rank. Identical
+      per (competition, league, method) - wrap in a short-TTL cached function,
+      or push MODE/MEAN to a SQL GROUP BY and precompute scores at finalize.
+- [ ] insertGhostRow appends the bot to the end of a *paginated* board page when
+      its rank exceeds the page; fine at friends-scale (<100) but misranks the
+      ghost row on a partial page. Insert by rank against the full ordering.
+- [ ] Bot rank reimplements the first four levels of compareLeaderboardRows
+      inline; build a RankableRow and rank through the shared comparator so the
+      ghost row can't drift from the real ladder. The 10000-row cap also
+      silently truncates the comparison population.
+- [ ] Dedup the bot endpoints' league-guard/competition-resolution preamble
+      (resolveBotScope helper) and the client method-toggle + bot badge between
+      leaderboard.vue and bot.vue.
+- [ ] MEAN rounding uses Math.round (half-up bias on x.5 averages); consider
+      banker's rounding or documenting the bias.

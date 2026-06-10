@@ -6,7 +6,8 @@ import { addLeagueMember, makeLeague, makeMatch, makePrediction, makeUser, seedC
 import { ensureDefaultScoringConfig } from '../scoring/store'
 import { DEFAULT_RULES } from '../scoring/config'
 import { finalizeMatches } from '../sync/finalize'
-import { championPick, match, prediction } from '../../../db/schema'
+import { championPick, match, prediction, scoringConfig, user } from '../../../db/schema'
+import { insertOddsSnapshots } from '../odds/store'
 import { BOT_USER_ID } from '../../../shared/types/bot'
 import { MIN_CONSENSUS_USERS, computeConsensus, getBotChampion, getBotOverview } from './service'
 
@@ -116,6 +117,7 @@ describe('getBotOverview - scoring parity', () => {
       baseTier: 'EXACT',
       consensusCount: 2,
       consensusTotal: 6,
+      consensusMethod: 'MODE',
     })
     // Bit-for-bit parity with a real user who made the same pick.
     const [real] = await db
@@ -209,6 +211,66 @@ describe('getBotOverview - methods and gates', () => {
     expect(voidRow).toMatchObject({ homeGoals: 2, awayGoals: 2, totalPoints: null })
     expect(overview.summary.totalPoints).toBe(0)
     expect(overview.hasScores).toBe(false)
+    await client.close()
+  })
+})
+
+describe('getBotOverview - ODDS bonus parity', () => {
+  it('scores the bot against the same closing odds real users get', async () => {
+    const { db, client, competitionId, groupRound } = await setup()
+    await db.update(scoringConfig).set({ bonusSource: 'ODDS' }).where(eq(scoringConfig.isActive, true))
+    const u = await makeUsers(db, 6)
+    const m = await makeMatch(db, { competitionId, roundId: groupRound, kickoffTime: PAST, status: 'FINISHED', fullTimeHome: 2, fullTimeAway: 1 })
+    // Closing odds snapshot before kickoff; HOME is the actual outcome.
+    await insertOddsSnapshots(db, [
+      {
+        matchId: m,
+        provider: 'sofascore',
+        providerEventRef: 'e1',
+        kind: 'POLL',
+        current: { home: 4.5, draw: 3.4, away: 1.8 },
+        initial: null,
+        bookmakers: null,
+        fetchedAt: new Date(PAST.getTime() - 3600_000),
+      },
+    ])
+    await predictAll(db, u, m, groupRound, [[2, 1], [2, 1], [1, 0], [0, 0], [3, 2], [1, 1]])
+    await finalizeMatches(db, NOW)
+
+    const overview = await getBotOverview(db, competitionId, {}, NOW)
+    const [row] = overview.rows
+    const [real] = await db
+      .select()
+      .from(prediction)
+      .where(and(eq(prediction.matchId, m), eq(prediction.userId, u[0])))
+    // The bot picked 2-1 like u0; under ODDS its bonus must equal u0's, not 0.
+    expect(row.bonusPoints).toBe(real.bonusPoints)
+    expect(row.bonusPoints).toBeGreaterThan(0)
+    expect(row.totalPoints).toBe(real.totalPoints)
+    await client.close()
+  })
+})
+
+describe('getBotOverview - rank visibility', () => {
+  it('counts private league members for members (includePrivate) but not for outsiders', async () => {
+    const { db, client, competitionId, groupRound } = await setup()
+    const u = await makeUsers(db, 6)
+    const leagueId = await makeLeague(db, { competitionId, ownerId: u[0] })
+    for (const id of u.slice(1)) await addLeagueMember(db, leagueId, id) // u0 is already OWNER
+    // A private member who out-scores everyone (and the bot) with an exact pick.
+    await db.update(user).set({ profilePrivate: true }).where(eq(user.id, u[0]))
+    const m = await makeMatch(db, { competitionId, roundId: groupRound, kickoffTime: PAST, status: 'FINISHED', fullTimeHome: 2, fullTimeAway: 1 })
+    // Bot consensus is 1-1 (a DRAW miss -> 0 pts); only u0 (private) scores.
+    await predictAll(db, u, m, groupRound, [[2, 1], [1, 1], [1, 1], [1, 1], [1, 1], [1, 1]])
+    await finalizeMatches(db, NOW)
+
+    // Member view: the private high scorer is on the board, so the bot (0 pts,
+    // tying the 5 others) ranks behind all 6 humans.
+    const memberView = await getBotOverview(db, competitionId, { leagueId, includePrivate: true }, NOW)
+    expect(memberView.summary.rank).toBe(7)
+    // Outsider view: the private member is excluded, leaving 5 humans.
+    const outsiderView = await getBotOverview(db, competitionId, { leagueId, includePrivate: false }, NOW)
+    expect(outsiderView.summary.rank).toBe(6)
     await client.close()
   })
 })
@@ -310,7 +372,8 @@ describe('getBotChampion', () => {
     expect(await getBotChampion(db, competitionId, DEFAULT_RULES)).toBeNull()
 
     await db.insert(championPick).values({ userId: u[1], competitionId, teamCode: 'BRA', teamName: 'Brazil' })
-    expect(await getBotChampion(db, competitionId, DEFAULT_RULES)).toMatchObject({ teamCode: 'BRA', count: 1, total: 2 })
+    // total counts only picks with a team: the null-team pick is excluded.
+    expect(await getBotChampion(db, competitionId, DEFAULT_RULES)).toMatchObject({ teamCode: 'BRA', count: 1, total: 1 })
     await client.close()
   })
 

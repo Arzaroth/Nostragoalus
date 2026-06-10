@@ -15,6 +15,7 @@ export default defineEventHandler(async (event) => {
   // Same league guard as /api/leaderboard: members, public leagues, or admins.
   let league: LeagueRow | null = null
   let competition = null
+  let includePrivate = false
   if (query.league) {
     const user = await requireUser(event)
     league = await getLeague(db, String(query.league))
@@ -23,6 +24,7 @@ export default defineEventHandler(async (event) => {
     if (!canViewLeague(league, membership, membership ? false : admin)) {
       throw createError({ statusCode: 404, statusMessage: 'League not found' })
     }
+    includePrivate = !!membership || admin
     competition = await getCompetitionById(db, league.competitionId)
   } else {
     competition = await resolveCompetition(db, (query.competition as string) || null)
@@ -33,6 +35,7 @@ export default defineEventHandler(async (event) => {
     method,
     leagueId: league?.id,
     includeUpcoming: admin,
+    includePrivate,
   })
 
   return {
