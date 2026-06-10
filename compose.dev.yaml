@@ -45,6 +45,11 @@ services:
       DATABASE_URL: postgres://nostragoalus:nostragoalus@db:5432/nostragoalus
       NUXT_DATABASE_URL: postgres://nostragoalus:nostragoalus@db:5432/nostragoalus
       NUXT_SMTP_URL: smtp://maildev:1025
+      # nuxi's dep check runs pnpm install on start; when the node_modules volume
+      # is stale vs the lockfile it wants to purge, and with no TTY it aborts.
+      # CI=true makes the purge+reinstall non-interactive (the npm_config_/.npmrc
+      # knob isn't honored by pnpm 11). Lockfile is in sync, so frozen is fine.
+      CI: 'true'
     ports:
       - '127.0.0.1:3000:3000'
     volumes:
