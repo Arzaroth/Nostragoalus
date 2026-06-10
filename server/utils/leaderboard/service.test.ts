@@ -4,7 +4,7 @@ import { createTestDb, type TestDb } from '../../../tests/db'
 import { findRoundId } from '../sync/rounds'
 import { addLeagueMember, makeLeague, makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
 import { compareLeaderboardRows, getLeaderboard } from './service'
-import { championPick, prediction, user } from '../../../db/schema'
+import { bestScorerPick, championPick, prediction, user } from '../../../db/schema'
 
 describe('compareLeaderboardRows', () => {
   const base = { totalPoints: 0, exactCount: 0, outcomeCount: 0, gdCount: 0, joinedAt: new Date('2026-01-01'), userId: 'a' }
@@ -82,9 +82,11 @@ describe('getLeaderboard', () => {
     await score(db, await makePrediction(db, { userId: u, matchId: m2, roundId: r2, home: 1, away: 0, lockedAt: new Date() }), 2, 'DIFF')
     await db.insert(championPick).values({ userId: u, competitionId: c1, teamCode: 'A', teamName: 'A', awardedPoints: 10 })
     await db.insert(championPick).values({ userId: u, competitionId: c2, teamCode: 'B', teamName: 'B', awardedPoints: 5 })
+    await db.insert(bestScorerPick).values({ userId: u, competitionId: c1, playerId: 'p1', playerName: 'P One', teamCode: 'A', teamName: 'A', awardedPoints: 4 })
+    await db.insert(bestScorerPick).values({ userId: u, competitionId: c2, playerId: 'p2', playerName: 'P Two', teamCode: 'B', teamName: 'B', awardedPoints: 6 })
 
     const board = await getLeaderboard(db, { competitionId: null })
-    expect(board[0]).toMatchObject({ totalPoints: 20, predictionPoints: 5, championPoints: 15 })
+    expect(board[0]).toMatchObject({ totalPoints: 30, predictionPoints: 5, championPoints: 15, bestScorerPoints: 10, bestScorerName: null })
     await client.close()
   })
 
@@ -109,6 +111,19 @@ describe('getLeaderboard', () => {
     const board = await getLeaderboard(db, { competitionId })
     expect(board[0]).toMatchObject({ userId: a, totalPoints: 10, championPoints: 10, predictionPoints: 0 })
     expect(board[1]).toMatchObject({ totalPoints: 0 })
+    await client.close()
+  })
+
+  it('includes the best-scorer bonus in the total and ranking', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const a = await makeUser(db, 'a', 'A')
+    await makeUser(db, 'b', 'B')
+    await db.insert(bestScorerPick).values({ userId: a, competitionId, playerId: 'p-mbappe', playerName: 'Kylian MBAPPE', teamCode: 'FRA', teamName: 'France', awardedPoints: 10 })
+
+    const board = await getLeaderboard(db, { competitionId })
+    expect(board[0]).toMatchObject({ userId: a, totalPoints: 10, bestScorerPoints: 10, bestScorerName: 'Kylian MBAPPE', predictionPoints: 0 })
+    expect(board[1]).toMatchObject({ totalPoints: 0, bestScorerPoints: 0, bestScorerName: null })
     await client.close()
   })
 

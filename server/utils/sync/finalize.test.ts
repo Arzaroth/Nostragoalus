@@ -5,7 +5,7 @@ import { findRoundId } from './rounds'
 import { ensureDefaultScoringConfig } from '../scoring/store'
 import { finalizeMatches, scoreMatchRow } from './finalize'
 import { makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
-import { championPick, match, prediction, scoringConfig } from '../../../db/schema'
+import { bestScorerPick, championPick, goalEvent, match, prediction, scoringConfig } from '../../../db/schema'
 
 const NOW = new Date('2026-06-11T20:00:00Z')
 const KICKOFF = new Date('2026-06-11T16:00:00Z')
@@ -222,6 +222,34 @@ describe('finalizeMatches', () => {
     await finalizeMatches(db, NOW)
     const picks = Object.fromEntries((await db.select().from(championPick)).map((p) => [p.userId, p.awardedPoints]))
     expect(picks[champ]).toBe(10)
+    expect(picks[loser]).toBe(0)
+    await client.close()
+  })
+
+  it('awards the best-scorer bonus when the final is decided', async () => {
+    const { db, client, competitionId } = await setup()
+    const finalRound = (await findRoundId(db, competitionId, 'FINAL', null)) as string
+    const winner = await makeUser(db, 'boot')
+    const loser = await makeUser(db, 'noboot')
+    await db.insert(bestScorerPick).values({ userId: winner, competitionId, playerId: 'p-mbappe', playerName: 'Kylian MBAPPE', teamCode: 'FRA', teamName: 'France' })
+    await db.insert(bestScorerPick).values({ userId: loser, competitionId, playerId: 'p-messi', playerName: 'Lionel MESSI', teamCode: 'ARG', teamName: 'Argentina' })
+    const final = await makeMatch(db, {
+      competitionId,
+      roundId: finalRound,
+      stage: 'FINAL',
+      kickoffTime: KICKOFF,
+      status: 'FINISHED',
+      fullTimeHome: 1,
+      fullTimeAway: 0,
+      homeTeamCode: 'FRA',
+      awayTeamCode: 'ARG',
+      winner: 'HOME',
+    })
+    await db.insert(goalEvent).values({ matchId: final, competitionId, side: 'HOME', teamName: 'France', teamCode: 'FRA', playerId: 'p-mbappe', playerName: 'Kylian MBAPPE' })
+
+    await finalizeMatches(db, NOW)
+    const picks = Object.fromEntries((await db.select().from(bestScorerPick)).map((p) => [p.userId, p.awardedPoints]))
+    expect(picks[winner]).toBe(10)
     expect(picks[loser]).toBe(0)
     await client.close()
   })

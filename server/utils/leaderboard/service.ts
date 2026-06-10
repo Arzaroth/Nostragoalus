@@ -1,6 +1,6 @@
 import { and, eq, isNotNull, or, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
-import { championPick, leagueMember, match, prediction, user } from '../../../db/schema'
+import { bestScorerPick, championPick, leagueMember, match, prediction, user } from '../../../db/schema'
 
 export interface LeaderboardRow {
   rank: number
@@ -11,6 +11,8 @@ export interface LeaderboardRow {
   predictionPoints: number
   championPoints: number
   championCode: string | null
+  bestScorerPoints: number
+  bestScorerName: string | null
   exactCount: number
   outcomeCount: number
   gdCount: number
@@ -117,10 +119,30 @@ export async function getLeaderboard(
     if (opts.competitionId) championCodeByUser.set(c.userId, c.teamCode)
   }
 
-  // Champion points are merged in JS (a SQL join would fan out the per-prediction rows).
+  const bestScorers = await db
+    .select({ userId: bestScorerPick.userId, points: bestScorerPick.awardedPoints, playerName: bestScorerPick.playerName })
+    .from(bestScorerPick)
+    .where(opts.competitionId ? eq(bestScorerPick.competitionId, opts.competitionId) : undefined)
+  const bestScorerByUser = new Map<string, number>()
+  const bestScorerNameByUser = new Map<string, string | null>()
+  for (const b of bestScorers) {
+    bestScorerByUser.set(b.userId, (bestScorerByUser.get(b.userId) ?? 0) + b.points)
+    // the name only makes sense scoped to one competition
+    if (opts.competitionId) bestScorerNameByUser.set(b.userId, b.playerName)
+  }
+
+  // Bonus points are merged in JS (a SQL join would fan out the per-prediction rows).
   const merged = base.map((r) => {
     const championPoints = championByUser.get(r.userId) ?? 0
-    return { ...r, championPoints, championCode: championCodeByUser.get(r.userId) ?? null, totalPoints: r.predictionPoints + championPoints }
+    const bestScorerPoints = bestScorerByUser.get(r.userId) ?? 0
+    return {
+      ...r,
+      championPoints,
+      championCode: championCodeByUser.get(r.userId) ?? null,
+      bestScorerPoints,
+      bestScorerName: bestScorerNameByUser.get(r.userId) ?? null,
+      totalPoints: r.predictionPoints + championPoints + bestScorerPoints,
+    }
   })
 
   merged.sort(compareLeaderboardRows)
@@ -134,6 +156,8 @@ export async function getLeaderboard(
     predictionPoints: r.predictionPoints,
     championPoints: r.championPoints,
     championCode: r.championCode,
+    bestScorerPoints: r.bestScorerPoints,
+    bestScorerName: r.bestScorerName,
     exactCount: r.exactCount,
     outcomeCount: r.outcomeCount,
     gdCount: r.gdCount,
