@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-06-10
+
 ### Added
 - Best scorer (Golden Boot): pick the player you think finishes the tournament's top scorer; at the final, everyone who picked a player tied at the top goal count (own goals excluded) gets a bonus, folded into the leaderboard total beside the champion pick. Picker with team/player selects and FIFA headshots, locked at the first kickoff like the champion pick.
 
