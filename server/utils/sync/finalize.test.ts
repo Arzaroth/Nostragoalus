@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm'
 import { createTestDb } from '../../../tests/db'
 import { findRoundId } from './rounds'
 import { ensureDefaultScoringConfig } from '../scoring/store'
+import { awardBestScorerBonuses } from '../bestscorer/service'
 import { finalizeMatches, scoreMatchRow } from './finalize'
 import { makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
 import { bestScorerPick, championPick, goalEvent, match, prediction, scoringConfig } from '../../../db/schema'
@@ -248,6 +249,9 @@ describe('finalizeMatches', () => {
     await db.insert(goalEvent).values({ matchId: final, competitionId, side: 'HOME', teamName: 'France', teamCode: 'FRA', playerId: 'p-mbappe', playerName: 'Kylian MBAPPE' })
 
     await finalizeMatches(db, NOW)
+    // The task awards the best-scorer bonus after the detail sync refreshes
+    // goal_event (so it never reads a half-synced final).
+    await awardBestScorerBonuses(db, competitionId, 10)
     const picks = Object.fromEntries((await db.select().from(bestScorerPick)).map((p) => [p.userId, p.awardedPoints]))
     expect(picks[winner]).toBe(10)
     expect(picks[loser]).toBe(0)
