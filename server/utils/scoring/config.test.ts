@@ -9,6 +9,7 @@ describe('DEFAULT_RULES', () => {
     expect(DEFAULT_RULES.jokerMultiplier).toBe(2)
     expect(DEFAULT_RULES.jokerAppliesToBonus).toBe(true)
     expect(DEFAULT_RULES.championBonus).toBe(10)
+    expect(DEFAULT_RULES.bestScorerBonus).toBe(10)
   })
 })
 
@@ -21,6 +22,7 @@ describe('rulesFromConfigRow', () => {
     jokerMultiplier: '2.00',
     jokerAppliesToBonus: false,
     championBonus: 7,
+    bestScorerBonus: 8,
     bonusSource: 'ODDS',
     crowdTiers: [{ maxShareExclusive: 0.1, bonus: 2 }],
     crowdMatchBasis: 'OUTCOME',
@@ -43,6 +45,7 @@ describe('rulesFromConfigRow', () => {
     expect(rules.bonusSource).toBe('ODDS')
     expect(rules.jokerAppliesToBonus).toBe(false)
     expect(rules.championBonus).toBe(7)
+    expect(rules.bestScorerBonus).toBe(8)
     expect(rules.crowdMatchBasis).toBe('OUTCOME')
     expect(rules.crowdMinDenominator).toBe(10)
     expect(rules.oddsTiers).toEqual([{ minDecimalOdds: 3, bonus: 2 }])

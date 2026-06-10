@@ -9,6 +9,7 @@ export interface ScoringRules {
   jokerMultiplier: number
   jokerAppliesToBonus: boolean
   championBonus: number
+  bestScorerBonus: number
   bonusSource: BonusSource
   crowdTiers: CrowdTier[]
   crowdMatchBasis: MatchBasis
@@ -35,6 +36,7 @@ export const DEFAULT_RULES: ScoringRules = {
   jokerMultiplier: 2,
   jokerAppliesToBonus: true,
   championBonus: 10,
+  bestScorerBonus: 10,
   bonusSource: 'CROWD',
   crowdTiers: DEFAULT_CROWD_TIERS,
   crowdMatchBasis: 'EXACT',
@@ -51,6 +53,7 @@ export interface ScoringConfigRow {
   jokerMultiplier: string | number
   jokerAppliesToBonus: boolean
   championBonus: number
+  bestScorerBonus: number
   bonusSource: BonusSource
   crowdTiers: CrowdTier[]
   crowdMatchBasis: MatchBasis
@@ -65,6 +68,7 @@ export function rulesFromConfigRow(row: ScoringConfigRow): ScoringRules {
     jokerMultiplier: Number(row.jokerMultiplier),
     jokerAppliesToBonus: row.jokerAppliesToBonus,
     championBonus: row.championBonus,
+    bestScorerBonus: row.bestScorerBonus,
     bonusSource: row.bonusSource,
     crowdTiers: row.crowdTiers,
     crowdMatchBasis: row.crowdMatchBasis,
