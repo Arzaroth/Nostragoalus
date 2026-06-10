@@ -20,7 +20,10 @@ const sides = computed(() => {
   <div>
     <div class="flex items-center justify-between gap-3 flex-wrap mb-5">
       <h1 class="text-2xl font-bold">{{ t('nav.bracket') }}</h1>
-      <CompetitionPill />
+      <div class="flex items-center gap-2 flex-wrap">
+        <CompetitionPill />
+        <LeaguePill />
+      </div>
     </div>
     <div v-if="isLoading" class="opacity-60">{{ t('common.loading') }}</div>
     <div v-else-if="!sides" class="opacity-60">{{ t('bracket.empty') }}</div>

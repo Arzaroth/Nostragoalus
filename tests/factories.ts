@@ -1,5 +1,5 @@
 import type { AppDatabase } from '../db/types'
-import { competition, match, prediction, user } from '../db/schema'
+import { competition, league, leagueMember, match, prediction, user } from '../db/schema'
 import type { AppStage, MatchStatus, NormalizedMatch } from '../shared/types/match'
 import { ensureRounds } from '../server/utils/sync/rounds'
 
@@ -89,6 +89,38 @@ export async function makeMatch(db: AppDatabase, opts: MatchOptions): Promise<st
     })
     .returning({ id: match.id })
   return row.id
+}
+
+export interface LeagueOptions {
+  competitionId: string
+  ownerId?: string
+  name?: string
+  joinCode?: string
+  visibility?: 'PRIVATE' | 'PUBLIC'
+}
+
+export async function makeLeague(db: AppDatabase, opts: LeagueOptions): Promise<string> {
+  const [row] = await db
+    .insert(league)
+    .values({
+      competitionId: opts.competitionId,
+      name: opts.name ?? 'Test League',
+      joinCode: opts.joinCode ?? `CODE${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
+      visibility: opts.visibility ?? 'PRIVATE',
+      createdBy: opts.ownerId ?? null,
+    })
+    .returning({ id: league.id })
+  if (opts.ownerId) await addLeagueMember(db, row.id, opts.ownerId, 'OWNER')
+  return row.id
+}
+
+export async function addLeagueMember(
+  db: AppDatabase,
+  leagueId: string,
+  userId: string,
+  role: 'OWNER' | 'MODERATOR' | 'MEMBER' = 'MEMBER',
+): Promise<void> {
+  await db.insert(leagueMember).values({ leagueId, userId, role })
 }
 
 export interface PredictionOptions {

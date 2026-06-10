@@ -4,6 +4,9 @@ import { match } from '../../../db/schema'
 
 export interface LiveSubscriber {
   matchIds: Set<string>
+  // Resolved from the session cookie at WS open; null for guests. Lets
+  // league-scoped pushes go to members only.
+  userId?: string | null
   send: (payload: unknown) => void
 }
 
@@ -38,6 +41,25 @@ export function publishCrowdUpdate(matchId: string, totals: { home: number; away
   for (const sub of subscribers) {
     sub.send({ type: 'crowd:update', matchId, totals })
     delivered += 1
+  }
+  return delivered
+}
+
+// League crowd totals are gated data (private leagues): deliver only to the
+// league's members, however many connections each of them has open.
+export function publishLeagueCrowdUpdate(
+  leagueId: string,
+  memberIds: readonly string[],
+  matchId: string,
+  totals: { home: number; away: number; count: number },
+): number {
+  const members = new Set(memberIds)
+  let delivered = 0
+  for (const sub of subscribers) {
+    if (sub.userId && members.has(sub.userId)) {
+      sub.send({ type: 'crowd:update', leagueId, matchId, totals })
+      delivered += 1
+    }
   }
   return delivered
 }

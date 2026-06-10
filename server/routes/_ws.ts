@@ -1,11 +1,22 @@
+import { auth } from '../../lib/auth'
 import { addLiveSubscriber, removeLiveSubscriber, type LiveSubscriber } from '../utils/live/hub'
 
 const peers = new WeakMap<object, LiveSubscriber>()
 
 export default defineWebSocketHandler({
-  open(peer) {
+  async open(peer) {
+    // Identify the connection so league-scoped pushes reach members only;
+    // guests still get the global broadcasts.
+    let userId: string | null = null
+    try {
+      const session = await auth.api.getSession({ headers: peer.request.headers })
+      userId = session?.user?.id ?? null
+    } catch {
+      // anonymous connection
+    }
     const subscriber: LiveSubscriber = {
       matchIds: new Set(),
+      userId,
       send: (payload) => peer.send(JSON.stringify(payload)),
     }
     peers.set(peer, subscriber)

@@ -25,3 +25,17 @@ export class ValidationError extends Error {
     this.name = 'ValidationError'
   }
 }
+
+export class ConflictError extends Error {
+  constructor(message = 'conflict') {
+    super(message)
+    this.name = 'ConflictError'
+  }
+}
+
+export class ForbiddenError extends Error {
+  constructor(message = 'forbidden') {
+    super(message)
+    this.name = 'ForbiddenError'
+  }
+}

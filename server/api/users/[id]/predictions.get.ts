@@ -3,11 +3,26 @@ import { db } from '../../../../db'
 import { championPick, user } from '../../../../db/schema'
 import { getUserPublicPredictions } from '../../../utils/predictions/service'
 import { resolveCompetition } from '../../../utils/competitions/store'
+import { getSessionUser, isAdmin } from '../../../utils/auth-guards'
+import { canViewProfile } from '../../../utils/leagues/service'
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id') as string
-  const rows = await db.select({ name: user.name, image: user.image }).from(user).where(eq(user.id, id)).limit(1)
+  const rows = await db
+    .select({ name: user.name, image: user.image, profilePrivate: user.profilePrivate })
+    .from(user)
+    .where(eq(user.id, id))
+    .limit(1)
   if (rows.length === 0) throw createError({ statusCode: 404, statusMessage: 'user not found' })
+
+  // Private profiles 404 (not 403) for everyone but league mates, admins and
+  // the user themself, so probing an id never confirms the account exists.
+  if (rows[0].profilePrivate) {
+    const viewer = await getSessionUser(event)
+    const allowed =
+      viewer && (await canViewProfile(db, { viewerId: viewer.id, targetUserId: id, isAdmin: await isAdmin(event) }))
+    if (!allowed) throw createError({ statusCode: 404, statusMessage: 'user not found' })
+  }
 
   // 'global' shows the player across every competition
   const requested = (getQuery(event).competition as string) || null
@@ -63,6 +78,9 @@ defineRouteMeta({
     "responses": {
       "200": {
         "description": "Locked predictions with points."
+      },
+      "404": {
+        "description": "Unknown user, or a private profile the caller does not share a league with (admins and the user themself always pass)."
       }
     }
   },

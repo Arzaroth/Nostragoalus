@@ -44,6 +44,14 @@ const showOdds = computed({
     persistFlash()
   },
 })
+
+const profilePrivate = computed({
+  get: () => (session.value?.data?.user as any)?.profilePrivate === true,
+  set: async (v: boolean) => {
+    await (updateUser as (f: Record<string, unknown>) => Promise<unknown>)({ profilePrivate: v })
+    persistFlash()
+  },
+})
 function persistFlash() {
   saved.value = true
   clearTimeout(savedTimer)
@@ -101,6 +109,13 @@ const themeOptions = computed(() => [
             <label for="show-odds" class="flex flex-col cursor-pointer">
               <span class="text-sm font-medium">{{ t('prefs.odds') }}</span>
               <span class="text-xs" style="color: var(--p-text-muted-color)">{{ t('prefs.oddsHint') }}</span>
+            </label>
+          </div>
+          <div class="flex items-start gap-3">
+            <ToggleSwitch v-model="profilePrivate" input-id="profile-private" class="shrink-0 mt-0.5" />
+            <label for="profile-private" class="flex flex-col cursor-pointer">
+              <span class="text-sm font-medium">{{ t('prefs.privateProfile') }}</span>
+              <span class="text-xs" style="color: var(--p-text-muted-color)">{{ t('prefs.privateProfileHint') }}</span>
             </label>
           </div>
         </div>

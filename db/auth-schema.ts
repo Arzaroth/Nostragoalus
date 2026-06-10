@@ -15,9 +15,15 @@ export const user = pgTable("user", {
   theme: text("theme"),
   showCrowd: boolean("show_crowd"),
   showOdds: boolean("show_odds"),
+  // User-chosen: out of the global/competition rankings; profile visible only
+  // to league mates and admins. League boards still rank them for co-members.
+  profilePrivate: boolean("profile_private").default(false).notNull(),
   // Admin-managed (not a better-auth additionalField, so users cannot set it
   // through updateUser): excluded from leaderboards and rank snapshots.
   hiddenFromLeaderboard: boolean("hidden_from_leaderboard").default(false).notNull(),
+  // Null = the one-time "join a league" prompt has never been dismissed.
+  // Written only by the league service (dismiss/join/create), read-only client-side.
+  leaguePromptDismissedAt: timestamp("league_prompt_dismissed_at"),
   twoFactorEnabled: boolean("two_factor_enabled").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")

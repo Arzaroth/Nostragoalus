@@ -1,4 +1,4 @@
-type CrowdTotal = { home: number; away: number; count: number }
+export type CrowdTotal = { home: number; away: number; count: number }
 
 // The "show everyone's totals" preference + per-match crowd sums, kept live.
 // Plain ref + explicit refetch on (enabled, competition) change - a shared
@@ -42,18 +42,49 @@ export function useCrowdTotals() {
   })
   watch([enabled, slug], load, { immediate: true })
 
+  // League crowd rides next to the global one (display only - the scoring
+  // bonus uses everyone). Members get live WS patches for their leagues.
+  const { leagueId } = useSelectedLeague()
+  const leagueFetched = ref<Record<string, CrowdTotal>>({})
+  const leaguePatches = ref<Record<string, CrowdTotal>>({})
+  let leagueCtl: AbortController | null = null
+  async function loadLeague() {
+    leagueCtl?.abort()
+    if (!enabled.value || !leagueId.value) {
+      leagueFetched.value = {}
+      return
+    }
+    const ctl = new AbortController()
+    leagueCtl = ctl
+    try {
+      const r = await $fetch<{ totals: Record<string, CrowdTotal> }>('/api/predictions/crowd', {
+        query: { league: leagueId.value },
+        signal: ctl.signal,
+      })
+      leagueFetched.value = r.totals ?? {}
+    } catch {
+      if (!ctl.signal.aborted) leagueFetched.value = {}
+    }
+  }
+  onScopeDispose(() => leagueCtl?.abort())
+  watch(leagueId, () => {
+    leaguePatches.value = {}
+  })
+  watch([enabled, leagueId], loadLeague, { immediate: true })
+
   let socket: WebSocket | null = null
   onMounted(() => {
     if (!import.meta.client) return
     void load() // ensure a client-side fetch even if the watcher ran during SSR
+    void loadLeague()
     const proto = location.protocol === 'https:' ? 'wss' : 'ws'
     socket = new WebSocket(`${proto}://${location.host}/_ws`)
     socket.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data)
-        if (msg?.type === 'crowd:update' && msg.matchId) {
-          patches.value = { ...patches.value, [msg.matchId]: msg.totals }
-        }
+        const scope = crowdPatchScope(msg, leagueId.value)
+        if (scope === 'global') patches.value = { ...patches.value, [msg.matchId]: msg.totals }
+        else if (scope === 'league') leaguePatches.value = { ...leaguePatches.value, [msg.matchId]: msg.totals }
       } catch {
         // ignore
       }
@@ -62,5 +93,9 @@ export function useCrowdTotals() {
   onBeforeUnmount(() => socket?.close())
 
   const totals = computed(() => (enabled.value ? { ...fetched.value, ...patches.value } : {}))
-  return { enabled, totals }
+  const leagueTotals = computed(() =>
+    enabled.value && leagueId.value ? { ...leagueFetched.value, ...leaguePatches.value } : {},
+  )
+  const leagueActive = computed(() => enabled.value && !!leagueId.value)
+  return { enabled, totals, leagueTotals, leagueActive }
 }
