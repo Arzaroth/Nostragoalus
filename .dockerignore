@@ -27,6 +27,7 @@ compose.yaml
 compose.dev.yaml
 .mise.toml
 README.md
+TODO.md
 scripts
 tests
 vitest.config.ts
