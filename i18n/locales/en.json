@@ -229,7 +229,8 @@
     "empty": "No consensus yet - it appears once players start predicting.",
     "methodMode": "Most picked",
     "methodMean": "Average",
-    "modeDisabled": "Too few predictions - the most-picked score would be biased, so the average is shown."
+    "modeDisabled": "Too few predictions - the most-picked score would be biased, so the average is shown.",
+    "meanOf": "averaged over {total}"
   },
   "match": {
     "standings": "Standings",

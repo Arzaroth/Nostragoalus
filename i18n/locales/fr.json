@@ -229,7 +229,8 @@
     "empty": "Pas encore de consensus - il apparaît dès que les joueurs pronostiquent.",
     "methodMode": "Plus choisi",
     "methodMean": "Moyenne",
-    "modeDisabled": "Trop peu de pronos - le score le plus choisi serait biaisé, la moyenne est affichée."
+    "modeDisabled": "Trop peu de pronos - le score le plus choisi serait biaisé, la moyenne est affichée.",
+    "meanOf": "moyenne de {total}"
   },
   "match": {
     "standings": "Classement",
