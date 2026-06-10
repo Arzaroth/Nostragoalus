@@ -1,6 +1,6 @@
 import { and, eq, isNotNull, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
-import { championPick, match, prediction, user } from '../../../db/schema'
+import { championPick, leagueMember, match, prediction, user } from '../../../db/schema'
 
 export interface LeaderboardRow {
   rank: number
@@ -45,12 +45,21 @@ export function compareLeaderboardRows(a: RankableRow, b: RankableRow): number {
 
 export async function getLeaderboard(
   db: AppDatabase,
-  opts: { competitionId: string | null; limit?: number; offset?: number; includeHidden?: boolean },
+  opts: {
+    competitionId: string | null
+    leagueId?: string
+    limit?: number
+    offset?: number
+    includeHidden?: boolean
+    // profilePrivate users opted out of public boards; league boards set this
+    // when the viewer is a member of that league (or an admin).
+    includePrivate?: boolean
+  },
 ): Promise<LeaderboardRow[]> {
   const limit = opts.limit ?? 100
   const offset = opts.offset ?? 0
 
-  const base = await db
+  let query = db
     .select({
       userId: user.id,
       displayName: user.name,
@@ -62,6 +71,12 @@ export async function getLeaderboard(
       gdCount: gdCount.mapWith(Number),
     })
     .from(user)
+    .$dynamic()
+  // League view = same ranking over the member subset; ranks stay contiguous.
+  if (opts.leagueId) {
+    query = query.innerJoin(leagueMember, and(eq(leagueMember.userId, user.id), eq(leagueMember.leagueId, opts.leagueId)))
+  }
+  const base = await query
     .leftJoin(prediction, and(eq(prediction.userId, user.id), isNotNull(prediction.totalPoints)))
     .leftJoin(
       match,
@@ -70,7 +85,12 @@ export async function getLeaderboard(
         : eq(match.id, prediction.matchId),
     )
     // includeHidden serves self-stats: a hidden user still sees their own points.
-    .where(opts.includeHidden ? undefined : eq(user.hiddenFromLeaderboard, false))
+    .where(
+      and(
+        ...(opts.includeHidden ? [] : [eq(user.hiddenFromLeaderboard, false)]),
+        ...(opts.includePrivate ? [] : [eq(user.profilePrivate, false)]),
+      ),
+    )
     .groupBy(user.id, user.name, user.image, user.createdAt)
 
   const champions = await db

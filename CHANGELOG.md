@@ -5,6 +5,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- Leagues: competition-scoped player groups. Create your own (private with a shareable join code, or public so anyone can join and view its rankings), join several or none - predictions stay yours either way, leagues only filter the views.
+- A league pill next to the competition switcher remembers your last selection per competition and scopes the leaderboard (third option in the scope toggle) and the crowd totals (league first, global behind a globe - the rarity bonus stays computed from everyone).
+- `/leagues` page: manage your leagues (rename, copy/regenerate code, public/private toggle, promote moderators, transfer ownership, kick, leave, delete) and browse public leagues; `/leagues/:id` shows a league's standings - for public leagues even without joining.
+- League roles: owner and moderators manage members and the join code; leaving or being kicked is remembered so SSO auto-join never re-adds anyone against their will.
+- One-time prompt on first sign-in without a league: enter a join code, create a league, browse public ones, or skip forever.
+- Admins manage every league (create, ownerless allowed, members, roles, visibility, delete) and SSO providers can auto-join their domain-captured users into chosen leagues on every login - the same league can hang off several providers.
+- Private profile preference: step out of the global and competition rankings; only league mates (and admins) can open your profile, which answers 404 to anyone else. League boards still rank you for co-members and your predictions keep counting in the anonymous crowd totals.
+- League boards show movement arrows (per-league rank snapshots, refreshed with the global ones) for members and admins; league crowd totals update live over WebSocket, delivered to that league's members only.
+- The first player joining an ownerless league becomes its owner (code, public and SSO auto-joins alike); admins can still hand ownership to anyone. The last member leaving keeps the league alive - empty and reclaimable by its next joiner - and admins have an irreversible "Prune empty leagues" action to clean those up.
+- Join-code attempts are rate limited (10 per minute per account).
+
 ## [0.16.0] - 2026-06-10
 
 ### Added

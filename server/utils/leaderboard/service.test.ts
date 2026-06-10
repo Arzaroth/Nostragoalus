@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { eq } from 'drizzle-orm'
 import { createTestDb, type TestDb } from '../../../tests/db'
 import { findRoundId } from '../sync/rounds'
-import { makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
+import { addLeagueMember, makeLeague, makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
 import { compareLeaderboardRows, getLeaderboard } from './service'
 import { championPick, prediction, user } from '../../../db/schema'
 
@@ -124,6 +124,84 @@ describe('getLeaderboard', () => {
 
     const full = await getLeaderboard(db, { competitionId, includeHidden: true })
     expect(full.map((r) => r.displayName).sort()).toEqual(['Alice', 'Ghost'])
+    await client.close()
+  })
+
+  it('league scope ranks only members, with contiguous ranks and champion bonus', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const roundId = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: new Date('2026-06-11T16:00:00Z'), status: 'FINISHED', fullTimeHome: 2, fullTimeAway: 1 })
+    const alice = await makeUser(db, 'alice', 'Alice')
+    const bob = await makeUser(db, 'bob', 'Bob')
+    const carol = await makeUser(db, 'carol', 'Carol')
+    // Carol outscores everyone but is not in the league.
+    await score(db, await makePrediction(db, { userId: carol, matchId: m, roundId, home: 2, away: 1, lockedAt: new Date() }), 9, 'EXACT')
+    await score(db, await makePrediction(db, { userId: alice, matchId: m, roundId, home: 2, away: 1, lockedAt: new Date() }), 3, 'EXACT')
+    await db.insert(championPick).values({ userId: bob, competitionId, teamCode: 'MEX', teamName: 'Mexico', awardedPoints: 10 })
+    const leagueId = await makeLeague(db, { competitionId, ownerId: alice })
+    await addLeagueMember(db, leagueId, bob)
+
+    const board = await getLeaderboard(db, { competitionId, leagueId })
+    expect(board.map((r) => r.displayName)).toEqual(['Bob', 'Alice'])
+    expect(board.map((r) => r.rank)).toEqual([1, 2])
+    expect(board[0]).toMatchObject({ championPoints: 10, totalPoints: 10 })
+    expect(board[1]).toMatchObject({ predictionPoints: 3, totalPoints: 3 })
+    await client.close()
+  })
+
+  it('league scope still excludes hidden users and ignores other competitions', async () => {
+    const { db, client } = await createTestDb()
+    const c1 = await seedCompetition(db)
+    const c2 = await seedCompetition(db)
+    const r2 = (await findRoundId(db, c2, 'GROUP', 1)) as string
+    const alice = await makeUser(db, 'alice', 'Alice')
+    const ghost = await makeUser(db, 'ghost', 'Ghost')
+    await db.update(user).set({ hiddenFromLeaderboard: true }).where(eq(user.id, ghost))
+    // Points in c2 must not leak into a c1 league board.
+    const m2 = await makeMatch(db, { competitionId: c2, roundId: r2, kickoffTime: new Date('2026-06-11T16:00:00Z'), status: 'FINISHED', fullTimeHome: 1, fullTimeAway: 0 })
+    await score(db, await makePrediction(db, { userId: alice, matchId: m2, roundId: r2, home: 1, away: 0, lockedAt: new Date() }), 3, 'EXACT')
+    const leagueId = await makeLeague(db, { competitionId: c1, ownerId: alice })
+    await addLeagueMember(db, leagueId, ghost)
+
+    const board = await getLeaderboard(db, { competitionId: c1, leagueId })
+    expect(board.map((r) => r.displayName)).toEqual(['Alice'])
+    expect(board[0].totalPoints).toBe(0)
+    await client.close()
+  })
+
+  it('excludes private users from public boards, includes them for league mates', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    await makeUser(db, 'alice', 'Alice')
+    const recluse = await makeUser(db, 'recluse', 'Recluse')
+    await db.update(user).set({ profilePrivate: true }).where(eq(user.id, recluse))
+    const leagueId = await makeLeague(db, { competitionId, ownerId: 'alice' })
+    await addLeagueMember(db, leagueId, recluse)
+
+    // Public boards: opted out.
+    expect((await getLeaderboard(db, { competitionId })).map((r) => r.displayName)).toEqual(['Alice'])
+    expect((await getLeaderboard(db, { competitionId: null })).map((r) => r.displayName)).toEqual(['Alice'])
+    // Self-stats path still sees them.
+    const all = await getLeaderboard(db, { competitionId, includeHidden: true, includePrivate: true })
+    expect(all.map((r) => r.displayName).sort()).toEqual(['Alice', 'Recluse'])
+    // League board: member viewer (includePrivate) sees them, outsider does not.
+    expect((await getLeaderboard(db, { competitionId, leagueId, includePrivate: true })).map((r) => r.displayName)).toEqual(['Alice', 'Recluse'])
+    expect((await getLeaderboard(db, { competitionId, leagueId })).map((r) => r.displayName)).toEqual(['Alice'])
+    await client.close()
+  })
+
+  it('league scope paginates with offset-based ranks', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const a = await makeUser(db, 'a', 'A')
+    const b = await makeUser(db, 'b', 'B')
+    await makeUser(db, 'c', 'C')
+    const leagueId = await makeLeague(db, { competitionId, ownerId: a })
+    await addLeagueMember(db, leagueId, b)
+    const page = await getLeaderboard(db, { competitionId, leagueId, limit: 1, offset: 1 })
+    expect(page).toHaveLength(1)
+    expect(page[0].rank).toBe(2)
     await client.close()
   })
 })

@@ -16,6 +16,11 @@ vi.mock('./useAuth', async () => {
   const showCrowd = ref(true)
   return { useAuth: () => ({ session: ref({ data: { user: { showCrowd: showCrowd.value } } }) }), __showCrowd: showCrowd }
 })
+vi.mock('./useSelectedLeague', async () => {
+  const { ref } = await import('vue')
+  const leagueId = ref<string | null>(null)
+  return { useSelectedLeague: () => ({ leagueId }), __leagueId: leagueId }
+})
 
 async function setSlug(v: string) {
   const mod = (await import('./useCompetitions')) as any
@@ -27,14 +32,23 @@ async function setShowCrowd(v: boolean) {
   mod.__showCrowd.value = v
 }
 
+async function setLeague(v: string | null) {
+  const mod = (await import('./useSelectedLeague')) as any
+  mod.__leagueId.value = v
+}
+
 const COUNT: Record<string, number> = { 'world-cup-2026': 26, 'euro-2024': 24 }
 let fetchMock: ReturnType<typeof vi.fn>
 beforeEach(async () => {
   await setSlug('world-cup-2026')
   await setShowCrowd(true)
-  fetchMock = vi.fn(async (_url: string, opts: any) => ({
-    totals: { m1: { home: 1, away: 1, count: COUNT[opts?.query?.competition as string] ?? 0 } },
-  }))
+  await setLeague(null)
+  fetchMock = vi.fn(async (_url: string, opts: any) => {
+    if (opts?.query?.league) {
+      return { totals: { m1: { home: 2, away: 0, count: 3 } }, league: { id: opts.query.league, name: 'L' } }
+    }
+    return { totals: { m1: { home: 1, away: 1, count: COUNT[opts?.query?.competition as string] ?? 0 } } }
+  })
   vi.stubGlobal('$fetch', fetchMock)
 })
 afterEach(() => vi.unstubAllGlobals())
@@ -61,5 +75,23 @@ describe('useCrowdTotals', () => {
     await new Promise((r) => setTimeout(r, 20))
     expect(api.totals.value).toEqual({})
     expect(fetchMock).not.toHaveBeenCalledWith('/api/predictions/crowd', expect.anything())
+  })
+
+  it('fetches league totals when a league is selected and clears them when unselected', async () => {
+    const api = await setup()
+    await vi.waitFor(() => expect(api.totals.value.m1?.count).toBe(26))
+    expect(api.leagueActive.value).toBe(false)
+    expect(api.leagueTotals.value).toEqual({})
+
+    await setLeague('l1')
+    await vi.waitFor(() => expect(api.leagueTotals.value.m1?.count).toBe(3))
+    expect(api.leagueActive.value).toBe(true)
+    expect(fetchMock).toHaveBeenCalledWith('/api/predictions/crowd', expect.objectContaining({ query: { league: 'l1' } }))
+    // Global totals are untouched by the league fetch.
+    expect(api.totals.value.m1?.count).toBe(26)
+
+    await setLeague(null)
+    await vi.waitFor(() => expect(api.leagueTotals.value).toEqual({}))
+    expect(api.leagueActive.value).toBe(false)
   })
 })

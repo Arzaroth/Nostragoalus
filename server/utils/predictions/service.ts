@@ -1,6 +1,6 @@
 import { and, eq, lte, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
-import { competition as competitionTable, match, prediction, round } from '../../../db/schema'
+import { competition as competitionTable, leagueMember, match, prediction, round } from '../../../db/schema'
 import { isSingleMatchStage } from '../../../shared/types/match'
 import { LockedError, NotFoundError, ValidationError } from '../errors'
 
@@ -170,21 +170,29 @@ export async function setJoker(db: AppDatabase, input: SetJokerInput, now: Date 
 }
 
 // Combined totals of one match's predictions (for live pushes after a save).
-export async function getMatchCrowdTotal(db: AppDatabase, matchId: string) {
-  const rows = await db
+export async function getMatchCrowdTotal(db: AppDatabase, matchId: string, opts?: { leagueId?: string }) {
+  let query = db
     .select({
       home: sql<number>`coalesce(sum(${prediction.homeGoals}), 0)`.mapWith(Number),
       away: sql<number>`coalesce(sum(${prediction.awayGoals}), 0)`.mapWith(Number),
       count: sql<number>`count(*)`.mapWith(Number),
     })
     .from(prediction)
-    .where(eq(prediction.matchId, matchId))
+    .$dynamic()
+  if (opts?.leagueId) {
+    query = query.innerJoin(
+      leagueMember,
+      and(eq(leagueMember.userId, prediction.userId), eq(leagueMember.leagueId, opts.leagueId)),
+    )
+  }
+  const rows = await query.where(eq(prediction.matchId, matchId))
   return rows[0] ?? { home: 0, away: 0, count: 0 }
 }
 
 // Combined totals of everyone's predictions per match (1-1 + 2-1 + 4-0 = 7-2).
-export async function getCrowdTotals(db: AppDatabase, competitionId: string) {
-  const rows = await db
+// League scope is display-only: the scoring crowd bonus always uses everyone.
+export async function getCrowdTotals(db: AppDatabase, competitionId: string, opts?: { leagueId?: string }) {
+  let query = db
     .select({
       matchId: prediction.matchId,
       home: sql<number>`sum(${prediction.homeGoals})`.mapWith(Number),
@@ -193,7 +201,13 @@ export async function getCrowdTotals(db: AppDatabase, competitionId: string) {
     })
     .from(prediction)
     .innerJoin(match, eq(match.id, prediction.matchId))
-    .where(eq(match.competitionId, competitionId))
-    .groupBy(prediction.matchId)
+    .$dynamic()
+  if (opts?.leagueId) {
+    query = query.innerJoin(
+      leagueMember,
+      and(eq(leagueMember.userId, prediction.userId), eq(leagueMember.leagueId, opts.leagueId)),
+    )
+  }
+  const rows = await query.where(eq(match.competitionId, competitionId)).groupBy(prediction.matchId)
   return Object.fromEntries(rows.map((r) => [r.matchId, { home: r.home, away: r.away, count: r.count }]))
 }

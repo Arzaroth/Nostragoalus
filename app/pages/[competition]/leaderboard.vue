@@ -1,14 +1,26 @@
 <script setup lang="ts">
 const { t } = useI18n()
 const slug = useSelectedCompetition()
-const global = ref(false)
-const { data: rows, isLoading } = useLeaderboard(global)
+const { league, leagueId } = useSelectedLeague()
+
+// Three scopes once a league is picked in the pill; the pill decides WHICH
+// league, this toggle decides how wide the ranking is.
+const scope = ref<'league' | 'competition' | 'global'>(leagueId.value ? 'league' : 'competition')
+watch(leagueId, (id) => {
+  if (id) scope.value = 'league'
+  else if (scope.value === 'league') scope.value = 'competition'
+})
+
+const isGlobal = computed(() => scope.value === 'global')
+const scopedLeagueId = computed(() => (scope.value === 'league' ? leagueId.value : null))
+const { data: rows, isLoading } = useLeaderboard(isGlobal, scopedLeagueId)
 const { session } = useAuth()
 const meId = computed(() => session.value?.data?.user?.id)
 
 const scopeOptions = computed(() => [
-  { label: t('leaderboard.thisCompetition'), value: false },
-  { label: t('leaderboard.global'), value: true },
+  ...(league.value ? [{ label: league.value.name, value: 'league' as const }] : []),
+  { label: t('leaderboard.thisCompetition'), value: 'competition' as const },
+  { label: t('leaderboard.global'), value: 'global' as const },
 ])
 
 function medal(rank: number) {
@@ -22,8 +34,9 @@ function medal(rank: number) {
       <div class="flex items-center gap-3 flex-wrap">
         <h1 class="text-2xl font-bold">{{ t('leaderboard.title') }}</h1>
         <CompetitionPill />
+        <LeaguePill />
       </div>
-      <SelectButton v-model="global" :options="scopeOptions" option-label="label" option-value="value" :allow-empty="false" size="small" />
+      <SelectButton v-model="scope" :options="scopeOptions" option-label="label" option-value="value" :allow-empty="false" size="small" />
     </div>
     <div v-if="isLoading" class="opacity-60">{{ t('common.loading') }}</div>
     <div v-else-if="!rows || !rows.length" class="opacity-60">{{ t('leaderboard.empty') }}</div>
@@ -32,7 +45,7 @@ function medal(rank: number) {
       <NuxtLink
         v-for="r in rows"
         :key="r.userId"
-        :to="`/${slug}/users/${r.userId}${global ? '?global=1' : ''}`"
+        :to="`/${slug}/users/${r.userId}${isGlobal ? '?global=1' : ''}`"
         class="ng-card flex items-center gap-3 rounded-xl border px-4 py-3"
         :style="`background: var(--p-content-background); border-color: ${r.userId === meId ? 'var(--p-primary-color)' : 'var(--p-content-border-color)'}; border-width: ${r.userId === meId ? '2px' : '1px'}`"
       >

@@ -12,6 +12,7 @@ interface SsoProviderRow {
   issuer: string
   name: string | null
   type: 'oidc' | 'saml'
+  autoJoinLeagueIds: string[]
 }
 const { data: ssoData, refresh: refreshSso } = await useFetch<{ providers: SsoProviderRow[] }>(
   '/api/admin/sso',
@@ -21,6 +22,8 @@ const providers = computed(() => ssoData.value?.providers ?? [])
 
 const blank = { type: 'google', providerId: '', name: '', domains: '', issuer: '', clientId: '', clientSecret: '', entryPoint: '', cert: '', entityId: '', audience: '', idpMetadata: '', scopes: '' }
 const form = reactive({ ...blank })
+// Kept out of `blank`: Object.assign would share one array between resets.
+const formAutoJoinLeagueIds = ref<string[]>([])
 const typeOptions = [
   { label: 'Google', value: 'google' },
   { label: 'OIDC', value: 'oidc' },
@@ -57,11 +60,13 @@ function startEditProvider(p: SsoProviderRow) {
     domains: p.domains.join(', '),
     issuer: p.issuer,
   })
+  formAutoJoinLeagueIds.value = [...p.autoJoinLeagueIds]
   ssoEditing.value = p.providerId
 }
 function cancelEditProvider() {
   ssoEditing.value = null
   Object.assign(form, blank)
+  formAutoJoinLeagueIds.value = []
 }
 
 async function saveProvider() {
@@ -71,6 +76,7 @@ async function saveProvider() {
   // Google needs no provider id choice - default it so only domain + credentials remain.
   if (form.type === 'google' && !form.providerId) form.providerId = 'google'
   try {
+    const providerId = ssoEditing.value || form.providerId
     if (ssoEditing.value) {
       await $fetch<unknown>(`/api/admin/sso/${ssoEditing.value}`, { method: 'PUT', body: { ...form } })
       ssoMsg.value = t('admin.sso.updated')
@@ -78,8 +84,14 @@ async function saveProvider() {
       await $fetch<unknown>('/api/admin/sso', { method: 'POST', body: { ...form } })
       ssoMsg.value = t('admin.sso.added')
     }
+    // League links live outside the provider's encrypted config.
+    await $fetch<unknown>(`/api/admin/sso/${providerId}/leagues`, {
+      method: 'PUT',
+      body: { leagueIds: formAutoJoinLeagueIds.value },
+    })
     ssoEditing.value = null
     Object.assign(form, blank)
+    formAutoJoinLeagueIds.value = []
     await refreshSso()
   } catch (e: any) {
     ssoErr.value = e?.data?.statusMessage || e?.data?.message || 'Failed to save provider'
@@ -182,6 +194,19 @@ const { admin, session } = useAuth()
 const myId = computed(() => session.value?.data?.user?.id)
 const queryClient = useQueryClient()
 const invalidateUsers = () => queryClient.invalidateQueries({ queryKey: ['admin-users'] })
+
+// Every league, for the SSO auto-join MultiSelect.
+const { data: allLeaguesData } = useQuery({
+  queryKey: ['admin-leagues', 'options'],
+  enabled: isAdmin,
+  queryFn: ({ signal }) =>
+    $fetch<{ leagues: Array<{ id: string; name: string; competition: { name: string } }> }>('/api/admin/leagues', {
+      signal,
+    }).then((r) => r.leagues),
+})
+const leagueOptions = computed(() =>
+  (allLeaguesData.value ?? []).map((l) => ({ label: `${l.name} — ${l.competition.name}`, value: l.id })),
+)
 
 const { data: usersData, isPending: usersLoading } = useQuery({
   queryKey: ['admin-users'],
@@ -349,6 +374,20 @@ function createUser() {
                 <InputText v-model="form.domains" placeholder="acme.com, acme.fr" class="w-full" />
                 <span class="text-xs" style="color: var(--p-text-muted-color)">{{ t('admin.sso.domainsHint') }}</span>
               </div>
+              <div class="flex flex-col gap-1 col-span-2">
+                <label class="text-xs font-medium">{{ t('admin.sso.autoJoinLeagues') }}</label>
+                <MultiSelect
+                  v-model="formAutoJoinLeagueIds"
+                  :options="leagueOptions"
+                  option-label="label"
+                  option-value="value"
+                  display="chip"
+                  filter
+                  class="w-full"
+                  :placeholder="t('admin.sso.autoJoinLeagues')"
+                />
+                <span class="text-xs" style="color: var(--p-text-muted-color)">{{ t('admin.sso.autoJoinLeaguesHint') }}</span>
+              </div>
             </div>
 
             <template v-if="form.type !== 'saml'">
@@ -495,6 +534,9 @@ function createUser() {
         </div>
         <Menu ref="rowMenu" :model="rowMenuItems" popup />
       </section>
+
+      <!-- Leagues -->
+      <AdminLeaguesSection :is-admin="isAdmin" />
 
       <!-- Data -->
       <section class="ng-card rounded-2xl border overflow-hidden" style="background: var(--p-content-background)">

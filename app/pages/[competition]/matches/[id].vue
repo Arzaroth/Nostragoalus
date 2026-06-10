@@ -49,7 +49,7 @@ useCancelOnLeave(
 
 const m = computed(() => data.value?.match)
 const { live } = useLiveMatch(id)
-const { enabled: crowdEnabled, totals: crowdTotals } = useCrowdTotals()
+const { enabled: crowdEnabled, totals: crowdTotals, leagueTotals, leagueActive } = useCrowdTotals()
 const oddsEnabled = useOddsPreference()
 
 // A live score increase = somebody scored: run the pixel celebration.
@@ -317,7 +317,7 @@ function toggleFormInfo(side: string, i: number | string) {
           <span class="font-bold tabular-nums">{{ myPred.homeGoals }}–{{ myPred.awayGoals }}</span>
           <span v-if="myPred.totalPoints !== null" class="text-xs font-semibold" style="color: var(--p-primary-color)">+{{ myPred.totalPoints }} pts · {{ tierLabel(myPred.baseTier) }}</span>
         </template>
-        <span v-if="crowdEnabled" class="text-xs tabular-nums" style="color: var(--p-text-muted-color)" :title="t('prefs.crowd')">👥 <template v-if="crowdTotals[id]">{{ crowdTotals[id].home }}–{{ crowdTotals[id].away }} ({{ crowdTotals[id].count }})</template><template v-else>–</template></span>
+        <CrowdLine v-if="crowdEnabled" :match-id="id" :totals="crowdTotals" :league-totals="leagueTotals" :league-active="leagueActive" count />
         <MatchOdds v-if="oddsEnabled" :odds="data?.odds ?? null" />
       </div>
     </div>

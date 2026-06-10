@@ -11,6 +11,7 @@ import * as schema from '../db/schema'
 import { withEncryptedSSO } from '../server/utils/crypto/encrypted-adapter'
 import { verifyTotpCode } from '../server/utils/auth/totp'
 import { isSsoManaged } from '../server/utils/auth/sso-managed'
+import { autoJoinSsoLeagues } from '../server/utils/leagues/auto-join'
 import { symmetricDecrypt } from 'better-auth/crypto'
 
 type AuthDb = PgDatabase<PgQueryResultHKT, typeof schema>
@@ -105,9 +106,14 @@ export function buildAuthOptions(database: AuthDb) {
         showCrowd: { type: 'boolean' as const, required: false },
         // Opt-out: bookmaker odds under each match (null/undefined = shown).
         showOdds: { type: 'boolean' as const, required: false },
+        // Opt-out of the global rankings; profile gated to league mates/admins.
+        profilePrivate: { type: 'boolean' as const, required: false },
         // input: false - readable everywhere (session, admin listUsers) but never
         // settable through updateUser; only the admin visibility route writes it.
         hiddenFromLeaderboard: { type: 'boolean' as const, required: false, input: false },
+        // input: false - the onboarding dialog reads it from the session; only
+        // the league service writes it (dismiss, or first join/create).
+        leaguePromptDismissedAt: { type: 'date' as const, required: false, input: false },
       },
     },
     // Google goes through the runtime SSO admin UI (one config path, secrets encrypted at rest).
@@ -145,12 +151,18 @@ export function buildAuthOptions(database: AuthDb) {
         // access for deleting a broken provider (otherwise recovering the
         // instance would need host access via `mise run create-admin`).
         provisionUserOnEveryLogin: true,
-        async provisionUser({ user: u }: { user: { id: string } }) {
+        async provisionUser({ user: u, provider }: { user: { id: string }; provider: { providerId: string } }) {
           const rows = await database.select({ role: schema.user.role }).from(schema.user).where(eq(schema.user.id, u.id)).limit(1)
-          if (rows[0]?.role === 'admin') return
-          await database
-            .delete(schema.account)
-            .where(and(eq(schema.account.userId, u.id), eq(schema.account.providerId, 'credential')))
+          if (rows[0]?.role !== 'admin') {
+            await database
+              .delete(schema.account)
+              .where(and(eq(schema.account.userId, u.id), eq(schema.account.providerId, 'credential')))
+          }
+          try {
+            await autoJoinSsoLeagues(database, { userId: u.id, providerId: provider.providerId })
+          } catch {
+            // League bookkeeping must never block an SSO login.
+          }
         },
       }),
       admin(),

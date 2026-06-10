@@ -7,7 +7,8 @@
     "myPicks": "Mes pronos",
     "admin": "Admin",
     "signIn": "Connexion",
-    "signOut": "Déconnexion"
+    "signOut": "Déconnexion",
+    "leagues": "Ligues"
   },
   "bracket": {
     "empty": "Le tableau final n'est pas encore disponible."
@@ -43,6 +44,8 @@
     "saved": "Enregistré",
     "crowd": "Afficher les totaux du groupe",
     "crowdHint": "Sous chaque prono, le score cumulé de tous les joueurs (1-1 + 2-1 + 4-0 donne 7-2).",
+    "privateProfile": "Profil privé",
+    "privateProfileHint": "Sortez des classements généraux et par compétition. Seuls les membres de vos ligues (et les admins) voient votre profil ; vos classements de ligue vous incluent toujours. Vos pronos restent dans les totaux anonymes de la foule.",
     "odds": "Afficher les cotes",
     "oddsHint": "Cotes 1X2 décimales sous chaque match, figées au coup d'envoi."
   },
@@ -57,7 +60,8 @@
     "save": "Enregistrer",
     "cancel": "Annuler",
     "back": "Retour aux matchs",
-    "refresh": "Actualiser"
+    "refresh": "Actualiser",
+    "confirm": "Confirmer"
   },
   "home": {
     "tagline": "Pronostiquez les scores, gagnez des points selon votre précision, et devancez vos amis au classement global.",
@@ -339,7 +343,9 @@
       "updated": "Fournisseur mis à jour.",
       "editing": "Modification du fournisseur « {id} » - type et identifiant fixes ; les secrets vides conservent leur valeur.",
       "displayName": "Nom d'affichage",
-      "displayNameHint": "Visible par les joueurs (avertissement à l'inscription). Optionnel."
+      "displayNameHint": "Visible par les joueurs (avertissement à l'inscription). Optionnel.",
+      "autoJoinLeagues": "Ligues auto-rejointes",
+      "autoJoinLeaguesHint": "Les utilisateurs qui se connectent via ce fournisseur sont ajoutés à ces ligues (sauf s'ils les ont quittées)."
     },
     "users": {
       "title": "Utilisateurs",
@@ -376,6 +382,28 @@
       "lastRun": "Dernière exécution",
       "lastFailure": "Dernier échec",
       "nothingToDo": "rien à faire"
+    },
+    "leagues": {
+      "title": "Ligues",
+      "hint": "Les ligues privées regroupent des joueurs ; les publiques sont ouvertes à tous. Les fournisseurs SSO peuvent y inscrire leurs utilisateurs automatiquement.",
+      "create": "Créer une ligue",
+      "name": "Nom",
+      "competition": "Compétition",
+      "owner": "Propriétaire",
+      "ownerOptional": "Propriétaire (facultatif)",
+      "members": "Membres",
+      "code": "Code",
+      "visibility": "Visibilité",
+      "addMember": "Ajouter un utilisateur",
+      "removeMember": "Retirer",
+      "role": "Rôle",
+      "manageMembers": "Gérer les membres",
+      "delete": "Supprimer",
+      "deleteConfirm": "Supprimer cette ligue pour tous ses membres ?",
+      "empty": "Pas encore de ligue.",
+      "prune": "Purger les ligues vides",
+      "pruneConfirm": "Supprimer définitivement toutes les ligues sans aucun membre ? Leurs codes d'invitation cesseront de fonctionner. Action irréversible.",
+      "prunedCount": "{n} ligue supprimée | {n} ligues supprimées"
     }
   },
   "strength": {
@@ -499,5 +527,63 @@
     "notFound": "Celle-ci est passée au-dessus de la barre - la page que vous cherchez s'est perdue dans les étoiles.",
     "generic": "Une erreur est survenue de notre côté.",
     "home": "Retour au terrain"
+  },
+  "leagues": {
+    "title": "Ligues",
+    "global": "Tout le monde",
+    "pillLabel": "Ligue",
+    "empty": "Vous n'êtes dans aucune ligue pour l'instant.",
+    "join": "Rejoindre avec un code",
+    "joinTitle": "Rejoindre une ligue",
+    "joinCodeLabel": "Code d'invitation",
+    "joinCodePlaceholder": "ex. AB2CD3EF",
+    "joinSubmit": "Rejoindre",
+    "joinInvalid": "Aucune ligue ne correspond à ce code.",
+    "alreadyMember": "Vous êtes déjà dans cette ligue.",
+    "create": "Créer une ligue",
+    "createTitle": "Créer une ligue",
+    "nameLabel": "Nom de la ligue",
+    "namePlaceholder": "ex. Les collègues",
+    "createSubmit": "Créer",
+    "competitionLabel": "Compétition",
+    "visibilityLabel": "Visibilité",
+    "visibilityPrivate": "Privée — accès par code",
+    "visibilityPublic": "Publique — tout le monde peut rejoindre et voir le classement",
+    "members": "Membres",
+    "memberCount": "{n} membre | {n} membres",
+    "roleOwner": "Propriétaire",
+    "roleModerator": "Modérateur",
+    "roleMember": "Membre",
+    "codeLabel": "Code d'invitation",
+    "copyCode": "Copier le code",
+    "codeCopied": "Copié !",
+    "regenerate": "Régénérer le code",
+    "regenerateConfirm": "Générer un nouveau code ? L'actuel cessera de fonctionner.",
+    "rename": "Renommer",
+    "promote": "Nommer modérateur",
+    "demote": "Retirer modérateur",
+    "transfer": "Nommer propriétaire",
+    "transferConfirm": "Faire de {name} le propriétaire ? Vous devenez modérateur.",
+    "kick": "Retirer de la ligue",
+    "kickConfirm": "Retirer {name} de la ligue ? Cette personne ne sera pas ré-ajoutée automatiquement.",
+    "leave": "Quitter la ligue",
+    "leaveConfirm": "Quitter cette ligue ? Vous ne serez pas ré-ajouté automatiquement.",
+    "leaveOwnerBlocked": "Transférez la propriété ou supprimez la ligue d'abord.",
+    "delete": "Supprimer la ligue",
+    "deleteConfirm": "Supprimer cette ligue pour tous ses membres ? Action irréversible.",
+    "public": "Ligues publiques",
+    "publicBrowse": "Parcourir les ligues publiques",
+    "publicEmpty": "Pas encore de ligue publique pour cette compétition.",
+    "viewRankings": "Voir le classement",
+    "joinPublic": "Rejoindre",
+    "onboardTitle": "Vous avez un code de ligue ?",
+    "onboardBody": "Rejoignez une ligue privée pour jouer entre amis ou collègues. Vous pouvez aussi en créer une, ou passer et jouer au classement général.",
+    "onboardJoin": "Rejoindre",
+    "onboardCreate": "Créer une ligue",
+    "onboardBrowse": "Parcourir les ligues publiques",
+    "onboardSkip": "Plus tard",
+    "crowdLeague": "Ligue",
+    "crowdGlobal": "Tout le monde",
+    "crowdBonusHint": "Les points bonus de foule sont toujours calculés sur les pronostics de tout le monde, pas seulement votre ligue."
   }
 }

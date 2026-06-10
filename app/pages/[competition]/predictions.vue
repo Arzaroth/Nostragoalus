@@ -32,7 +32,10 @@ function onToggleJoker(p: MyPrediction) {
   <div>
     <div class="flex items-center justify-between gap-3 flex-wrap mb-5">
       <h1 class="text-2xl font-bold">{{ t('nav.myPicks') }}</h1>
-      <CompetitionPill />
+      <div class="flex items-center gap-2 flex-wrap">
+        <CompetitionPill />
+        <LeaguePill />
+      </div>
     </div>
     <div v-if="stats" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
       <div class="ng-card rounded-2xl border p-4 text-center" style="background: var(--p-content-background)">

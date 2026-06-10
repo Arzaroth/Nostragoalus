@@ -1,6 +1,7 @@
 import { db } from '../../../../db'
 import { ssoProvider } from '../../../../db/schema'
 import { requireAdmin } from '../../../utils/auth-guards'
+import { listProviderAutoJoinLeagues } from '../../../utils/leagues/service'
 
 // Lists registered SSO providers without exposing the (encrypted) config.
 export default defineEventHandler(async (event) => {
@@ -14,6 +15,7 @@ export default defineEventHandler(async (event) => {
       saml: ssoProvider.samlConfig,
     })
     .from(ssoProvider)
+  const autoJoin = await listProviderAutoJoinLeagues(db)
   return {
     providers: rows.map((r) => ({
       providerId: r.providerId,
@@ -22,6 +24,7 @@ export default defineEventHandler(async (event) => {
       // The domain column natively holds a CSV list of captured domains.
       domains: r.domain.split(',').map((d) => d.trim()).filter(Boolean),
       type: r.saml ? ('saml' as const) : ('oidc' as const),
+      autoJoinLeagueIds: autoJoin.get(r.providerId) ?? [],
     })),
   }
 })

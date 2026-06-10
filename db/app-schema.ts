@@ -13,7 +13,7 @@ import {
   timestamp,
   uniqueIndex,
 } from 'drizzle-orm/pg-core'
-import { user } from './auth-schema'
+import { ssoProvider, user } from './auth-schema'
 import type { CrowdTier, OddsTier } from '../shared/types/scoring'
 import type { OddsSnapshotKind, StoredBookmakerOdds } from '../shared/types/odds'
 
@@ -366,6 +366,104 @@ export const championPickRelations = relations(championPick, ({ one }) => ({
 export const goalEventRelations = relations(goalEvent, ({ one }) => ({
   match: one(match, { fields: [goalEvent.matchId], references: [match.id] }),
   competition: one(competition, { fields: [goalEvent.competitionId], references: [competition.id] }),
+}))
+
+export const leagueRoleEnum = pgEnum('league_role', ['OWNER', 'MODERATOR', 'MEMBER'])
+
+export const leagueVisibilityEnum = pgEnum('league_visibility', ['PRIVATE', 'PUBLIC'])
+
+export const league = pgTable(
+  'league',
+  {
+    id: pk(),
+    competitionId: text('competition_id')
+      .notNull()
+      .references(() => competition.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    visibility: leagueVisibilityEnum('visibility').notNull().default('PRIVATE'),
+    joinCode: text('join_code').notNull(),
+    createdBy: text('created_by').references(() => user.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('league_join_code_uq').on(t.joinCode), index('league_competition_idx').on(t.competitionId)],
+)
+
+// Row exists = member. No status column: leave-memory lives in leagueOptOut so
+// every membership join stays filter-free.
+export const leagueMember = pgTable(
+  'league_member',
+  {
+    leagueId: text('league_id')
+      .notNull()
+      .references(() => league.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    role: leagueRoleEnum('role').notNull().default('MEMBER'),
+    joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.leagueId, t.userId] }), index('league_member_user_idx').on(t.userId)],
+)
+
+// A row means "do not auto-(re)join this user to this league" (SSO auto-join).
+// Written on leave/kick/admin-remove; deleted on voluntary re-join or admin add.
+export const leagueOptOut = pgTable(
+  'league_opt_out',
+  {
+    leagueId: text('league_id')
+      .notNull()
+      .references(() => league.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.leagueId, t.userId] })],
+)
+
+// SSO provider <-> league auto-join links. Same league may hang off several
+// providers; references the stable human providerId key, not the row id.
+export const ssoProviderLeague = pgTable(
+  'sso_provider_league',
+  {
+    providerId: text('provider_id')
+      .notNull()
+      .references(() => ssoProvider.providerId, { onDelete: 'cascade' }),
+    leagueId: text('league_id')
+      .notNull()
+      .references(() => league.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.providerId, t.leagueId] })],
+)
+
+// Per-league rank snapshots, mirroring leaderboardRank: refreshed during
+// finalize, previous rank kept so league boards can show movement arrows.
+// Ranks cover the full member set (private profiles included).
+export const leagueLeaderboardRank = pgTable(
+  'league_leaderboard_rank',
+  {
+    leagueId: text('league_id')
+      .notNull()
+      .references(() => league.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    rank: integer('rank').notNull(),
+    prevRank: integer('prev_rank'),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.leagueId, t.userId] })],
+)
+
+export const leagueRelations = relations(league, ({ one, many }) => ({
+  competition: one(competition, { fields: [league.competitionId], references: [competition.id] }),
+  members: many(leagueMember),
+}))
+
+export const leagueMemberRelations = relations(leagueMember, ({ one }) => ({
+  league: one(league, { fields: [leagueMember.leagueId], references: [league.id] }),
+  user: one(user, { fields: [leagueMember.userId], references: [user.id] }),
 }))
 
 // Last run / last failure per background task, for the admin dashboard.

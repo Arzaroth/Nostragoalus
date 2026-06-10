@@ -152,4 +152,30 @@ describe('SSO account linking', () => {
     const accounts = await db.select().from(schema.account).where(eq(schema.account.userId, users[0].id))
     expect(accounts.map((a) => a.providerId)).toEqual(['acme'])
   })
+
+  it('auto-joins the provider leagues on sign-in but never re-adds after a leave', async () => {
+    const { makeCompetition, makeLeague } = await import('./factories')
+    const { leaveLeague, getMembership, setProviderAutoJoinLeagues } = await import('../server/utils/leagues/service')
+    const competitionId = await makeCompetition(db)
+    const leagueId = await makeLeague(db, { competitionId, name: 'Acme Corp' })
+    await setProviderAutoJoinLeagues(db, 'acme', [leagueId])
+
+    const email = 'carol@corp.test'
+    idpUsers[email] = { sub: 'idp-carol', email, name: 'Carol' }
+    const cb = await ssoSignIn(email)
+    expect(cb.status).toBe(302)
+    expect(cb.headers.get('location') ?? '').not.toContain('error')
+
+    const users = await db.select().from(schema.user).where(eq(schema.user.email, email))
+    const carol = users[0].id
+    // The league was created ownerless: first auto-joined user claims it.
+    expect((await getMembership(db, leagueId, carol))?.role).toBe('OWNER')
+    expect(users[0].leaguePromptDismissedAt).not.toBeNull()
+
+    await leaveLeague(db, { leagueId, userId: carol })
+    const again = await ssoSignIn(email)
+    expect(again.status).toBe(302)
+    expect(again.headers.get('location') ?? '').not.toContain('error')
+    expect(await getMembership(db, leagueId, carol)).toBeNull()
+  })
 })

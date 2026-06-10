@@ -120,6 +120,9 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateNavFades))
                   <NuxtLink to="/account" class="px-3 py-2 text-sm flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/10" @click="userMenu.hide()">
                     <i class="pi pi-user" />{{ t('account.title') }}
                   </NuxtLink>
+                  <NuxtLink to="/leagues" class="px-3 py-2 text-sm flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/10" @click="userMenu.hide()">
+                    <i class="pi pi-users" />{{ t('leagues.title') }}
+                  </NuxtLink>
                   <NuxtLink to="/preferences" class="px-3 py-2 text-sm flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/10" @click="userMenu.hide()">
                     <i class="pi pi-sliders-h" />{{ t('prefs.title') }}
                   </NuxtLink>
@@ -132,6 +135,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateNavFades))
             <NuxtLink v-else to="/login">
               <Button :label="t('nav.signIn')" size="small" />
             </NuxtLink>
+            <LeagueOnboardingDialog v-if="session && session.data" />
           </ClientOnly>
         </div>
       </div>

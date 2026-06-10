@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const { t } = useI18n()
-const { enabled: crowdEnabled, totals: crowdTotals } = useCrowdTotals()
+const { enabled: crowdEnabled, totals: crowdTotals, leagueTotals, leagueActive } = useCrowdTotals()
 const oddsEnabled = useOddsPreference()
 const slug = useSelectedCompetition()
 const { data: matches, isLoading } = useMatches()
@@ -41,7 +41,10 @@ function fmtTime(d: string) {
   <div>
     <div class="flex items-center justify-between gap-3 flex-wrap mb-5">
       <h1 class="text-2xl font-bold">{{ t('matches.title') }}</h1>
-      <CompetitionPill />
+      <div class="flex items-center gap-2 flex-wrap">
+        <CompetitionPill />
+        <LeaguePill />
+      </div>
     </div>
     <ChampionPick />
     <IconField class="mb-5 block w-full sm:w-96">
@@ -99,8 +102,8 @@ function fmtTime(d: string) {
                 @update="(v) => save(m.id, v)"
               />
               <!-- Reserved whenever the preference is on, so cards never resize. -->
-              <div v-if="crowdEnabled" class="text-xs tabular-nums" style="color: var(--p-text-muted-color)" :title="t('prefs.crowd')">
-                👥 {{ t('predictions.crowd') }}: <template v-if="crowdTotals[m.id]">{{ crowdTotals[m.id].home }}–{{ crowdTotals[m.id].away }} ({{ crowdTotals[m.id].count }})</template><template v-else>–</template>
+              <div v-if="crowdEnabled">
+                <CrowdLine :match-id="m.id" :totals="crowdTotals" :league-totals="leagueTotals" :league-active="leagueActive" label count />
               </div>
               <MatchOdds v-if="oddsEnabled" :odds="m.odds" />
               <!-- Always rendered on open matches (disabled until a pick exists) so saving never resizes the card. -->

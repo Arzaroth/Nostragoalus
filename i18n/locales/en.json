@@ -7,7 +7,8 @@
     "myPicks": "My picks",
     "admin": "Admin",
     "signIn": "Sign in",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "leagues": "Leagues"
   },
   "bracket": {
     "empty": "The knockout bracket isn't available yet."
@@ -43,6 +44,8 @@
     "saved": "Saved",
     "crowd": "Show everyone's totals",
     "crowdHint": "Under each prediction, the combined score of all players (1-1 + 2-1 + 4-0 shows as 7-2).",
+    "privateProfile": "Private profile",
+    "privateProfileHint": "Step out of the global and competition rankings. Only members of your leagues (and admins) can see your profile; your league rankings still include you. Predictions stay in the anonymous crowd totals.",
     "odds": "Show bookmaker odds",
     "oddsHint": "Decimal 1X2 odds under each match, frozen at kickoff."
   },
@@ -57,7 +60,8 @@
     "save": "Save",
     "cancel": "Cancel",
     "back": "Back to fixtures",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "confirm": "Confirm"
   },
   "home": {
     "tagline": "Predict football scores, earn points for how close you get, and out-foresee your friends on the global ranking.",
@@ -339,7 +343,9 @@
       "updated": "Provider updated.",
       "editing": "Editing provider \"{id}\" - type and ID are fixed; blank secrets keep their stored value.",
       "displayName": "Display name",
-      "displayNameHint": "Shown to players (signup warning, messages). Optional."
+      "displayNameHint": "Shown to players (signup warning, messages). Optional.",
+      "autoJoinLeagues": "Auto-join leagues",
+      "autoJoinLeaguesHint": "Users signing in through this provider are added to these leagues (unless they previously left)."
     },
     "users": {
       "title": "Users",
@@ -376,6 +382,28 @@
       "lastRun": "Last run",
       "lastFailure": "Last failure",
       "nothingToDo": "nothing to do"
+    },
+    "leagues": {
+      "title": "Leagues",
+      "hint": "Private leagues group players; public ones are open to everyone. SSO providers can auto-join their users.",
+      "create": "Create league",
+      "name": "Name",
+      "competition": "Competition",
+      "owner": "Owner",
+      "ownerOptional": "Owner (optional)",
+      "members": "Members",
+      "code": "Code",
+      "visibility": "Visibility",
+      "addMember": "Add user",
+      "removeMember": "Remove",
+      "role": "Role",
+      "manageMembers": "Manage members",
+      "delete": "Delete",
+      "deleteConfirm": "Delete this league for every member?",
+      "empty": "No leagues yet.",
+      "prune": "Prune empty leagues",
+      "pruneConfirm": "Permanently delete every league without a single member? Their join codes stop working. This cannot be undone.",
+      "prunedCount": "{n} league removed | {n} leagues removed"
     }
   },
   "strength": {
@@ -499,5 +527,63 @@
     "notFound": "This one sailed over the bar - the page you're looking for is lost among the stars.",
     "generic": "Something went wrong on our side.",
     "home": "Back to the pitch"
+  },
+  "leagues": {
+    "title": "Leagues",
+    "global": "Everyone",
+    "pillLabel": "League",
+    "empty": "You're not in any league yet.",
+    "join": "Join with code",
+    "joinTitle": "Join a league",
+    "joinCodeLabel": "Join code",
+    "joinCodePlaceholder": "e.g. AB2CD3EF",
+    "joinSubmit": "Join",
+    "joinInvalid": "No league matches this code.",
+    "alreadyMember": "You're already in this league.",
+    "create": "Create league",
+    "createTitle": "Create a league",
+    "nameLabel": "League name",
+    "namePlaceholder": "e.g. Office friends",
+    "createSubmit": "Create",
+    "competitionLabel": "Competition",
+    "visibilityLabel": "Visibility",
+    "visibilityPrivate": "Private — join by code",
+    "visibilityPublic": "Public — anyone can join and view rankings",
+    "members": "Members",
+    "memberCount": "{n} member | {n} members",
+    "roleOwner": "Owner",
+    "roleModerator": "Moderator",
+    "roleMember": "Member",
+    "codeLabel": "Join code",
+    "copyCode": "Copy code",
+    "codeCopied": "Copied!",
+    "regenerate": "Regenerate code",
+    "regenerateConfirm": "Generate a new code? The current one stops working.",
+    "rename": "Rename",
+    "promote": "Make moderator",
+    "demote": "Remove moderator",
+    "transfer": "Make owner",
+    "transferConfirm": "Make {name} the owner? You become a moderator.",
+    "kick": "Remove from league",
+    "kickConfirm": "Remove {name} from the league? They won't be re-added automatically.",
+    "leave": "Leave league",
+    "leaveConfirm": "Leave this league? You won't be re-added automatically.",
+    "leaveOwnerBlocked": "Transfer ownership or delete the league first.",
+    "delete": "Delete league",
+    "deleteConfirm": "Delete this league for every member? This cannot be undone.",
+    "public": "Public leagues",
+    "publicBrowse": "Browse public leagues",
+    "publicEmpty": "No public league yet for this competition.",
+    "viewRankings": "View rankings",
+    "joinPublic": "Join",
+    "onboardTitle": "Got a league code?",
+    "onboardBody": "Join a private league to compete with friends or colleagues. You can also create one, or skip and play in the global ranking.",
+    "onboardJoin": "Join",
+    "onboardCreate": "Create a league",
+    "onboardBrowse": "Browse public leagues",
+    "onboardSkip": "Maybe later",
+    "crowdLeague": "League",
+    "crowdGlobal": "Everyone",
+    "crowdBonusHint": "Crowd bonus points are always based on everyone's predictions, not only your league."
   }
 }

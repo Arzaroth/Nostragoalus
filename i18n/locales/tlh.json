@@ -7,7 +7,8 @@
     "myPicks": "wIvmeywIj",
     "admin": "loHwI'",
     "signIn": "yI'el",
-    "signOut": "yImej"
+    "signOut": "yImej",
+    "leagues": "boqmey"
   },
   "bracket": {
     "empty": "wej may' He tu'lu'."
@@ -43,6 +44,8 @@
     "saved": "choqlu'ta'",
     "crowd": "Hoch mI'mey boq cha'",
     "crowdHint": "Hoch wIv bIngDaq, Hoch QujwI'pu' mI' boqlu'pu'.",
+    "privateProfile": "De' pegh",
+    "privateProfileHint": "patlh nIvvo' yImej. boqlIj boqwI'pu' (loHwI'pu' je) neH De'lIj lulegh; boq patlhDaq SoHtaH. ghom mImeyDaq QInmeylIj ratlh.",
     "odds": "SuD mI'mey cha'",
     "oddsHint": "Hoch Quj bIngDaq SuD mI'mey 1X2; Quj taghDI' tlhab."
   },
@@ -57,7 +60,8 @@
     "save": "yIchoq",
     "cancel": "yImev",
     "back": "may'meyDaq yIchegh",
-    "refresh": "yIchu'qa'"
+    "refresh": "yIchu'qa'",
+    "confirm": "yIchut"
   },
   "home": {
     "tagline": "QujmeH qonwI' wIvmey yIqon, pup DanIDmo' QuQmey yISuq, 'ej patlhDaq juppu'lI' tIjey.",
@@ -339,7 +343,9 @@
       "updated": "jabwI' choHlu'ta'.",
       "editing": "\"{id}\" jabwI' choHlu'taH - Segh pong je choHlaHbe'; peghmey chIm choqlu'.",
       "displayName": "pong cha'lu'bogh",
-      "displayNameHint": "QujwI'pu'vaD cha'lu' (qonmeH ghuHmoH). DuHmey."
+      "displayNameHint": "QujwI'pu'vaD cha'lu' (qonmeH ghuHmoH). DuHmey.",
+      "autoJoinLeagues": "boqmey automatic muv",
+      "autoJoinLeaguesHint": "jabwI'vam lo'bogh lo'wI'pu' boqmeyvamDaq lanlu' (mejpu'chugh lanbe'lu')."
     },
     "users": {
       "title": "lo'wI'pu'",
@@ -376,6 +382,28 @@
       "lastRun": "qaS Qav",
       "lastFailure": "luj Qav",
       "nothingToDo": "Qu' tu'be'lu'"
+    },
+    "leagues": {
+      "title": "boqmey",
+      "hint": "QujwI'pu' boq pegh boqmoH; HochvaD poSmoH boq Sachlaw'. boqDaq lo'wI'pu'chaj automatic lan SSO jabwI'pu'.",
+      "create": "boq yIchenmoH",
+      "name": "pong",
+      "competition": "'ovghach",
+      "owner": "ghajwI'",
+      "ownerOptional": "ghajwI' (DuHbe')",
+      "members": "boqwI'pu'",
+      "code": "ngoq",
+      "visibility": "leghlaHghach",
+      "addMember": "lo'wI' yIchel",
+      "removeMember": "yIteq",
+      "role": "Qu'",
+      "manageMembers": "boqwI'pu' yIloH",
+      "delete": "yIQaw'",
+      "deleteConfirm": "Hoch boqwI'pu'vaD boqvam DaQaw''a'?",
+      "empty": "boq tu'be'lu'.",
+      "prune": "boqmey chIm yIQaw'",
+      "pruneConfirm": "boqwI' Hutlhbogh Hoch boqmey DaQaw''a'? Qotlhbe'choH ngoqmeychaj. cheghlaHbe'.",
+      "prunedCount": "{n} boq Qaw'lu'ta' | {n} boqmey Qaw'lu'ta'"
     }
   },
   "strength": {
@@ -499,5 +527,63 @@
     "notFound": "'er Dung juS - Hovmey HopDaq nav DaSambogh chIl.",
     "generic": "QaghmaH maQagh.",
     "home": "yotlh chegh"
+  },
+  "leagues": {
+    "title": "boqmey",
+    "global": "Hoch",
+    "pillLabel": "boq",
+    "empty": "pagh boqDaq SoHtaH.",
+    "join": "ngoqmo' yImuv",
+    "joinTitle": "boq yImuv",
+    "joinCodeLabel": "muvmeH ngoq",
+    "joinCodePlaceholder": "AB2CD3EF",
+    "joinSubmit": "yImuv",
+    "joinInvalid": "ngoqvam lo'bogh boq tu'be'lu'.",
+    "alreadyMember": "boqvamDaq SoHtaH rIntaH.",
+    "create": "boq yIchenmoH",
+    "createTitle": "boq chenmoH",
+    "nameLabel": "boq pong",
+    "namePlaceholder": "Qe' juppu'",
+    "createSubmit": "yIchenmoH",
+    "competitionLabel": "'ovghach",
+    "visibilityLabel": "leghlaHghach",
+    "visibilityPrivate": "pegh — ngoqmo' muv",
+    "visibilityPublic": "Sachlaw' — muvlaH 'ej patlh leghlaH Hoch",
+    "members": "boqwI'pu'",
+    "memberCount": "{n} boqwI' | {n} boqwI'pu'",
+    "roleOwner": "ghajwI'",
+    "roleModerator": "loHwI'",
+    "roleMember": "boqwI'",
+    "codeLabel": "muvmeH ngoq",
+    "copyCode": "ngoq yIvelqa'",
+    "codeCopied": "velqa'lu'ta'!",
+    "regenerate": "ngoq chu' yIchenmoH",
+    "regenerateConfirm": "ngoq chu' DachenmoH'a'? Qotlhbe'choH ngoq ngo'.",
+    "rename": "pong yIchoH",
+    "promote": "loHwI' yIchenmoH",
+    "demote": "loHwI' yIteq",
+    "transfer": "ghajwI' yIchenmoH",
+    "transferConfirm": "ghajwI' moj {name}'a'? loHwI' SoHchoH.",
+    "kick": "boqvo' yIteq",
+    "kickConfirm": "boqvo' {name} Dateq'a'? automatic chegh'be'.",
+    "leave": "boq yImej",
+    "leaveConfirm": "boqvam Damej'a'? automatic Dachegh'be'.",
+    "leaveOwnerBlocked": "wa'DIch ghajghach yInob pagh boq yIQaw'.",
+    "delete": "boq yIQaw'",
+    "deleteConfirm": "Hoch boqwI'pu'vaD boqvam DaQaw''a'? cheghlaHbe'.",
+    "public": "boqmey Sachlaw'",
+    "publicBrowse": "boqmey Sachlaw' yInej",
+    "publicEmpty": "'ovghachvamvaD boq Sachlaw' tu'be'lu'.",
+    "viewRankings": "patlh yIlegh",
+    "joinPublic": "yImuv",
+    "onboardTitle": "boq ngoq Daghaj'a'?",
+    "onboardBody": "juppu'lI'vaD boq pegh yImuv. boq DachenmoHlaH je, pagh patlh nIvDaq yIQuj.",
+    "onboardJoin": "yImuv",
+    "onboardCreate": "boq yIchenmoH",
+    "onboardBrowse": "boqmey Sachlaw' yInej",
+    "onboardSkip": "tugh",
+    "crowdLeague": "boq",
+    "crowdGlobal": "Hoch",
+    "crowdBonusHint": "reH Hoch QInmey lo' ghom 'ev — boqlIj neH lo'be'."
   }
 }

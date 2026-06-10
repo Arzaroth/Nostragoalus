@@ -11,7 +11,7 @@ const scopeOptions = computed(() => [
   { label: t('leaderboard.thisCompetition'), value: false },
   { label: t('leaderboard.global'), value: true },
 ])
-const { data } = await useFetch<{
+const { data, error } = await useFetch<{
   user: { id: string; name: string; image: string | null }
   champion: { teamCode: string | null; teamName: string; awardedPoints: number } | null
   predictions: (MyPrediction & { competitionSlug?: string })[]
@@ -42,4 +42,6 @@ const { data } = await useFetch<{
     <PredictionList :predictions="data.predictions" />
     <div v-if="!data.predictions.length" class="opacity-60">{{ t('predictions.none') }}</div>
   </div>
+  <!-- Unknown user or a private profile the viewer doesn't share a league with. -->
+  <div v-else-if="error" class="opacity-60">{{ t('err.notFound') }}</div>
 </template>

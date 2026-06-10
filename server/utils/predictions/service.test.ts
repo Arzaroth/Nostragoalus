@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { eq } from 'drizzle-orm'
 import { createTestDb } from '../../../tests/db'
 import { findRoundId } from '../sync/rounds'
-import { makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
+import { addLeagueMember, makeLeague, makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
 import { getCrowdTotals, getMatchCrowdTotal, getMyPredictions, getMyStats, getUserPublicPredictions, setJoker, upsertPrediction } from './service'
 import { prediction } from '../../../db/schema'
 import { LockedError, NotFoundError, ValidationError } from '../errors'
@@ -202,6 +202,31 @@ describe('getCrowdTotals', () => {
     const totals = await getCrowdTotals(db, competitionId)
     expect(totals[m]).toEqual({ home: 7, away: 2, count: 3 })
     expect(totals[m2]).toBeUndefined()
+    await client.close()
+  })
+
+  it('league scope sums only the members predictions', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const roundId = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: new Date('2026-06-15T16:00:00Z') })
+    const u1 = await makeUser(db, 'u1', 'U1')
+    const u2 = await makeUser(db, 'u2', 'U2')
+    const u3 = await makeUser(db, 'u3', 'U3')
+    await makePrediction(db, { userId: u1, matchId: m, roundId, home: 1, away: 1 })
+    await makePrediction(db, { userId: u2, matchId: m, roundId, home: 2, away: 1 })
+    await makePrediction(db, { userId: u3, matchId: m, roundId, home: 4, away: 0 })
+    const leagueId = await makeLeague(db, { competitionId, ownerId: u1 })
+    await addLeagueMember(db, leagueId, u2)
+    const emptyLeague = await makeLeague(db, { competitionId })
+
+    const totals = await getCrowdTotals(db, competitionId, { leagueId })
+    expect(totals[m]).toEqual({ home: 3, away: 2, count: 2 })
+    expect(await getCrowdTotals(db, competitionId, { leagueId: emptyLeague })).toEqual({})
+    // A member with no prediction contributes nothing.
+    const u4 = await makeUser(db, 'u4', 'U4')
+    await addLeagueMember(db, leagueId, u4)
+    expect((await getCrowdTotals(db, competitionId, { leagueId }))[m]).toEqual({ home: 3, away: 2, count: 2 })
     await client.close()
   })
 })
