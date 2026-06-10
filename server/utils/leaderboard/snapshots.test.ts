@@ -4,7 +4,7 @@ import { createTestDb, type TestDb } from '../../../tests/db'
 import { findRoundId } from '../sync/rounds'
 import { addLeagueMember, makeLeague, makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
 import { getLeagueRankMovements, getRankMovements, updateLeagueRankSnapshots, updateRankSnapshots } from './snapshots'
-import { prediction, user } from '../../../db/schema'
+import { leaderboardRank, prediction, user } from '../../../db/schema'
 import { removeMembership } from '../leagues/service'
 
 async function score(db: TestDb, predId: string, totalPoints: number) {
@@ -44,6 +44,30 @@ describe('rank snapshots', () => {
     expect((await getRankMovements(db, competitionId)).get(bob)).toBe(1)
     await client.close()
   })
+  it('drops snapshot rows for users who left the board (no phantom +1 for the rest)', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const a = await makeUser(db, 'a', 'Alice')
+    await makeUser(db, 'b', 'Bob')
+    await makeUser(db, 'c', 'Carol')
+    await updateRankSnapshots(db, competitionId)
+    expect((await getRankMovements(db, competitionId)).size).toBe(0)
+
+    // Alice (rank 1) goes private and leaves the visible board. Bob/Carol
+    // genuinely shift up, but Alice's stale row must not linger to imply they
+    // each climbed against a ghost - and re-snapshotting must converge.
+    await db.update(user).set({ profilePrivate: true }).where(eq(user.id, a))
+    await updateRankSnapshots(db, competitionId)
+    const rows = await db.select().from(leaderboardRank).where(eq(leaderboardRank.competitionId, competitionId))
+    expect(rows.map((r) => r.userId).sort()).toEqual(['b', 'c'])
+    // Second pass with no further change: arrows settle (the shift was real
+    // once, but it does not regenerate every tick).
+    await updateRankSnapshots(db, competitionId)
+    const settled = await db.select().from(leaderboardRank).where(eq(leaderboardRank.competitionId, competitionId))
+    expect(settled.map((r) => r.userId).sort()).toEqual(['b', 'c'])
+    await client.close()
+  })
+
   it('no-ops on an empty board (no users) without writing snapshots', async () => {
     const { db, client } = await createTestDb()
     const competitionId = await seedCompetition(db)

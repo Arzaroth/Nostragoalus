@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm'
+import { and, eq, notInArray, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { leaderboardRank, league, leagueLeaderboardRank } from '../../../db/schema'
 import { getLeaderboard, type LeaderboardRow } from './service'
@@ -6,6 +6,9 @@ import { getLeaderboard, type LeaderboardRow } from './service'
 // Persist the current ranks in one upsert; prevRank is set to the old rank only
 // when the rank actually changed, so the leaderboard shows a movement arrow
 // until the next change. One statement for the whole board (no per-row N+1).
+// Rows for users no longer on the board (went private/hidden, deleted, left the
+// league) are dropped, so a departed user can't leave a phantom that shifts
+// everyone below them, and a returning user starts fresh (no resurrected arrow).
 async function writeRankSnapshots(
   db: AppDatabase,
   table: typeof leaderboardRank | typeof leagueLeaderboardRank,
@@ -13,7 +16,12 @@ async function writeRankSnapshots(
   scope: { competitionId: string } | { leagueId: string },
   board: LeaderboardRow[],
 ): Promise<void> {
-  if (board.length === 0) return
+  const scopeValue = 'competitionId' in scope ? scope.competitionId : scope.leagueId
+  const userIds = board.map((row) => row.userId)
+  if (userIds.length === 0) {
+    await db.delete(table).where(eq(scopeColumn, scopeValue))
+    return
+  }
   await db
     .insert(table)
     .values(board.map((row) => ({ ...scope, userId: row.userId, rank: row.rank })))
@@ -26,6 +34,7 @@ async function writeRankSnapshots(
         updatedAt: new Date(),
       },
     })
+  await db.delete(table).where(and(eq(scopeColumn, scopeValue), notInArray(table.userId, userIds)))
 }
 
 function movementsFrom(rows: { userId: string; rank: number; prevRank: number | null }[]): Map<string, number> {

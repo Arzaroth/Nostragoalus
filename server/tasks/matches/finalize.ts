@@ -34,9 +34,15 @@ export default defineTask({
         // never fail the task over the best-scorer award
       }
       try {
-        // Best-effort: refresh rank snapshots so the leaderboard can show movement arrows.
-        await updateRankSnapshots(db, competition.id)
-        await updateLeagueRankSnapshots(db, competition.id)
+        // Only re-baseline rank snapshots when scoring actually changed this
+        // tick. Refreshing every tick turned pure roster churn (a user joins,
+        // goes private, or is removed between matches) into phantom movement
+        // arrows - on day 1, with no match scored, the whole board is tied and
+        // any roster change shifted everyone. Movement now reflects scoring.
+        if (result.scored > 0) {
+          await updateRankSnapshots(db, competition.id)
+          await updateLeagueRankSnapshots(db, competition.id)
+        }
       } catch {
         // never fail the task over snapshots
       }
