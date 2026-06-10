@@ -9,7 +9,7 @@ import { finalizeMatches } from '../sync/finalize'
 import { championPick, match, prediction, scoringConfig, user } from '../../../db/schema'
 import { insertOddsSnapshots } from '../odds/store'
 import { BOT_USER_ID } from '../../../shared/types/bot'
-import { MIN_CONSENSUS_USERS, computeConsensus, getBotChampion, getBotOverview } from './service'
+import { MIN_CONSENSUS_USERS, clearBotCache, computeConsensus, getBotChampion, getBotOverview, getBotOverviewCached } from './service'
 
 const NOW = new Date('2026-06-15T12:00:00Z')
 const PAST = new Date('2026-06-11T16:00:00Z')
@@ -472,6 +472,34 @@ describe('getBotOverview - league scope', () => {
     // Both members scored 4 and tie the bot -> bot ranks after them, non-members ignored.
     expect(overview.summary.rank).toBe(3)
     expect(overview.champion).toBeNull()
+    await client.close()
+  })
+})
+
+
+describe('getBotOverviewCached', () => {
+  it('memoizes within the TTL and recomputes after clear', async () => {
+    const { db, client, competitionId, groupRound } = await setup()
+    clearBotCache()
+    const u = await makeUsers(db, 6)
+    // getBotOverviewCached uses the real wall clock, so the match must have
+    // genuinely kicked off (not the test's synthetic NOW).
+    const longPast = new Date('2026-06-01T16:00:00Z')
+    const m = await makeMatch(db, { competitionId, roundId: groupRound, kickoffTime: longPast, status: 'FINISHED', fullTimeHome: 2, fullTimeAway: 1 })
+    await predictAll(db, u, m, groupRound, [[2, 1], [2, 1], [1, 0], [0, 0], [3, 2], [1, 1]])
+    await finalizeMatches(db, NOW)
+
+    const first = await getBotOverviewCached(db, competitionId, {})
+    expect(first.rows).toHaveLength(1)
+    // A new prediction would change consensusTotal, but the cached call returns
+    // the prior result until the entry is cleared.
+    await makePrediction(db, { userId: await makeUser(db, 'late', 'late'), matchId: m, roundId: groupRound, home: 2, away: 1 })
+    const cached = await getBotOverviewCached(db, competitionId, {})
+    expect(cached.rows[0].consensusTotal).toBe(first.rows[0].consensusTotal)
+
+    clearBotCache()
+    const fresh = await getBotOverviewCached(db, competitionId, {})
+    expect(fresh.rows[0].consensusTotal).toBe(first.rows[0].consensusTotal + 1)
     await client.close()
   })
 })
