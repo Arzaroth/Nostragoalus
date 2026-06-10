@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, inArray, isNotNull, isNull, lte, max, min, sql } from 'drizzle-orm'
+import { and, desc, eq, gt, inArray, isNotNull, isNull, lte, max, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { match, oddsSnapshot, round } from '../../../db/schema'
 import type { OddsSnapshotKind, StoredBookmakerOdds } from '../../../shared/types/odds'
@@ -129,12 +129,18 @@ export async function unmappedUpcomingMatches(
 // rescheduled match flips back to SCHEDULED and reopens its round on its own.
 const OPEN_MATCH_STATUSES = ['SCHEDULED', 'LIVE', 'PAUSED', 'SUSPENDED'] as const
 
+// The third-place playoff and the final are played as one closing level, so
+// they share an odds level and light up together; every other round keeps its
+// own sortOrder. The constant sits above any real sortOrder, preserving order.
+const FINAL_LEVEL = 1_000_000
+const roundLevel = sql<number>`case when ${round.stage} in ('THIRD_PLACE', 'FINAL') then ${FINAL_LEVEL} else ${round.sortOrder} end`
+
 // Mapped matches of the *current round* whose newest snapshot is stale.
 // Eligibility is round-based, not a fixed time horizon: the current round is the
-// earliest one (by sortOrder) per competition that still has a match to play, so
-// the whole matchday / bracket level gets odds at once, and the next round starts
-// the instant the current one finishes. Cadence within that: every 6h, tightening
-// to 30min in the last 2h before kickoff (the closing snapshot scoring relies on).
+// earliest level per competition that still has a match to play, so the whole
+// matchday / bracket level gets odds at once, and the next round starts the
+// instant the current one finishes. Cadence within that: every 6h, tightening to
+// 30min in the last 2h before kickoff (the closing snapshot scoring relies on).
 export async function matchesNeedingOdds(
   db: AppDatabase,
   competitionIds: string[],
@@ -142,7 +148,7 @@ export async function matchesNeedingOdds(
 ): Promise<{ id: string; oddsEventRef: string; oddsEventSwapped: boolean; kickoffTime: Date }[]> {
   if (competitionIds.length === 0) return []
   const currentRound = db
-    .select({ competitionId: round.competitionId, sortOrder: min(round.sortOrder).as('cur_sort') })
+    .select({ competitionId: round.competitionId, level: sql<number>`min(${roundLevel})`.as('cur_level') })
     .from(round)
     .innerJoin(match, eq(match.roundId, round.id))
     .where(and(inArray(round.competitionId, competitionIds), inArray(match.status, [...OPEN_MATCH_STATUSES])))
@@ -161,7 +167,7 @@ export async function matchesNeedingOdds(
     .innerJoin(round, eq(match.roundId, round.id))
     .innerJoin(
       currentRound,
-      and(eq(currentRound.competitionId, round.competitionId), eq(round.sortOrder, currentRound.sortOrder)),
+      and(eq(currentRound.competitionId, round.competitionId), eq(roundLevel, currentRound.level)),
     )
     .leftJoin(oddsSnapshot, eq(oddsSnapshot.matchId, match.id))
     .where(
