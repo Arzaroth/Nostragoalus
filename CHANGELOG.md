@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-06-10
+
 ### Added
 - Bookmaker odds: decimal 1X2 odds (Sofascore feed) under every score input - match cards, match page and editable picks - with an opt-out preference. Snapshots are append-only (identical re-polls skip the write); a scheduled task refreshes matches kicking off within two weeks (every 6h, every 30min in the last 2h before kickoff), and an admin backfill recovers closing odds for past tournaments (WC 2022, Euro 2024).
 - The scoring engine's ODDS bonus mode is now live data-backed: when the active scoring config selects ODDS, finished matches score against the closing (pre-kickoff) odds of the actual outcome - backfilled closing odds trigger a rescore of already-scored matches. The default CROWD mode is unchanged.
