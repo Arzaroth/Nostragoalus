@@ -34,6 +34,9 @@ interface SofaMarket {
   choices?: SofaChoice[] | null
 }
 
+// Module-level so TypeScript treats it as a unique symbol (narrows unions).
+const NOT_FOUND = Symbol('not_found')
+
 const DEFAULT_BASE_URL = 'https://api.sofascore.com'
 const BROWSER_UA = 'Mozilla/5.0 (X11; Linux x86_64; rv:139.0) Gecko/20100101 Firefox/139.0'
 const FULL_TIME_MARKET_ID = 1
@@ -65,23 +68,32 @@ export function sofascoreProvider(options: SofascoreOptions = {}): OddsProvider 
   // sync layer additionally caps calls per run.
   const limiter = options.rateLimiter ?? new RateLimiter(5000)
 
-  async function getJson<T>(path: string): Promise<T | null> {
+  async function getJson<T>(path: string): Promise<T | typeof NOT_FOUND> {
     await limiter.acquire()
     const response = await doFetch(`${baseUrl}/api/v1${path}`, { headers: { 'user-agent': BROWSER_UA } })
     // Cloudflare answers 403 when it decides we're a bot - same back-off as 429.
     if (response.status === 429 || response.status === 403) throw new ProviderRateLimitError()
-    if (response.status === 404) return null
+    if (response.status === 404) return NOT_FOUND
     if (!response.ok) throw new ProviderUpstreamError(response.status, await response.text())
-    return (await response.json()) as T
+    try {
+      return (await response.json()) as T
+    } catch {
+      // A 200 that isn't JSON is Cloudflare serving a bot-challenge page:
+      // back off like a rate limit instead of hammering the rest of the batch.
+      throw new ProviderRateLimitError()
+    }
   }
 
   async function resolveSeasonId(providerRef: string, seasonHint: string | null): Promise<number | null> {
     const data = await getJson<{ seasons: SofaSeason[] }>(`/unique-tournament/${providerRef}/seasons`)
-    const seasons = data?.seasons ?? []
+    const seasons = data === NOT_FOUND ? [] : (data.seasons ?? [])
     if (seasons.length === 0) return null
     if (seasonHint) {
       const hit = seasons.find((s) => s.year === seasonHint)
       if (hit) return hit.id
+      // A hint that matches nothing means we'd silently list the wrong
+      // edition's events (and burn the call budget recovering nothing).
+      throw new ProviderUpstreamError(404, `season "${seasonHint}" not found for tournament ${providerRef}`)
     }
     // Seasons come newest first.
     return seasons[0].id
@@ -100,21 +112,28 @@ export function sofascoreProvider(options: SofascoreOptions = {}): OddsProvider 
     }
   }
 
+  // A tournament edition is ~7 pages; the cap only matters if the upstream
+  // flag misbehaves (it would otherwise spin forever at one call per 5s).
+  const MAX_EVENT_PAGES = 30
+
   async function listEvents(opts: ListEventsOptions): Promise<OddsEvent[]> {
     const seasonId = await resolveSeasonId(opts.providerRef, opts.seasonHint)
     if (seasonId === null) return []
     const direction = opts.scope === 'upcoming' ? 'next' : 'last'
     const events: OddsEvent[] = []
-    for (let page = 0; ; page += 1) {
+    for (let page = 0; page < MAX_EVENT_PAGES; page += 1) {
       const data = await getJson<{ events: SofaEvent[]; hasNextPage?: boolean }>(
         `/unique-tournament/${opts.providerRef}/season/${seasonId}/events/${direction}/${page}`,
       )
-      if (!data) break
+      if (data === NOT_FOUND) break
       for (const raw of data.events ?? []) {
         const event = toOddsEvent(raw)
         if (event) events.push(event)
       }
       if (!data.hasNextPage) break
+      if (page === MAX_EVENT_PAGES - 1) {
+        console.warn(`[odds] sofascore event listing for tournament ${opts.providerRef} exceeded ${MAX_EVENT_PAGES} pages - truncated`)
+      }
     }
     return events
   }
@@ -128,9 +147,12 @@ export function sofascoreProvider(options: SofascoreOptions = {}): OddsProvider 
     return { home, draw, away }
   }
 
-  async function getEventOdds(ref: string): Promise<FetchedOdds | null> {
+  async function getEventOdds(ref: string): Promise<FetchedOdds | 'gone' | null> {
     const data = await getJson<{ markets: SofaMarket[] }>(`/event/${ref}/odds/1/all`)
-    const market = data?.markets?.find((m) => m.marketId === FULL_TIME_MARKET_ID)
+    // 404 = the event itself is gone (deleted/recreated after a reschedule):
+    // the mapping is dead and the caller should re-match the fixture.
+    if (data === NOT_FOUND) return 'gone'
+    const market = data.markets?.find((m) => m.marketId === FULL_TIME_MARKET_ID)
     const current = market?.choices ? tripleFrom(market.choices, 'fractionalValue') : null
     if (!current) return null
     return {

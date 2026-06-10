@@ -54,7 +54,12 @@ describe('syncOdds', () => {
     expect(row.oddsEventSwapped).toBe(false)
     const snaps = await db.select().from(oddsSnapshot).where(eq(oddsSnapshot.matchId, m1))
     expect(snaps).toHaveLength(1)
-    expect(snaps[0]).toMatchObject({ kind: 'POLL', provider: 'sofascore', oddsHome: '2.100', fetchedAt: NOW })
+    expect(snaps[0]).toMatchObject({ kind: 'POLL', provider: 'sofascore', oddsHome: '2.100' })
+    // Stamped at the actual fetch (the rate limiter can drift a run for
+    // minutes), not at the run's logical `now`.
+    expect(Math.abs(snaps[0].fetchedAt.getTime() - Date.now())).toBeLessThan(60_000)
+    const [checked] = await db.select({ at: match.oddsCheckedAt }).from(match).where(eq(match.id, m1))
+    expect(checked.at).not.toBeNull()
     expect(summary.competitions['world-cup-2026']).toMatchObject({ mapped: 1, fetched: 1, errors: 0, remaining: 0 })
 
     // Second run inside the staleness window: no re-mapping, no new snapshot.
@@ -70,7 +75,11 @@ describe('syncOdds', () => {
     const m1 = await makeMatch(db, { competitionId, roundId, kickoffTime: KICKOFF, homeTeam: 'Brazil', awayTeam: 'France' })
     const provider = fakeProvider({
       listEvents: async () => [sofaEvent()],
-      getEventOdds: async () => ({ current: { home: 1.5, draw: 4, away: 6 }, initial: { home: 1.4, draw: 4, away: 7 }, bookmakers: null }),
+      getEventOdds: async () => ({
+        current: { home: 1.5, draw: 4, away: 6 },
+        initial: { home: 1.4, draw: 4, away: 7 },
+        bookmakers: [{ key: 'b1', title: 'B1', home: 1.5, draw: 4, away: 6 }],
+      }),
     })
     await syncOdds(db, { now: NOW, providerFactory: () => provider })
     const [snap] = await db.select().from(oddsSnapshot).where(eq(oddsSnapshot.matchId, m1))
@@ -81,6 +90,8 @@ describe('syncOdds', () => {
       initialHome: '7.000',
       initialAway: '1.400',
     })
+    // Per-bookmaker rows flip with the headline triple.
+    expect(snap.bookmakers).toEqual([{ key: 'b1', title: 'B1', home: 6, draw: 4, away: 1.5 }])
     await client.close()
   })
 
@@ -194,10 +205,59 @@ describe('syncOdds', () => {
     warn.mockRestore()
     await client.close()
   })
+
+  it("drops the mapping when the provider reports the event gone", async () => {
+    const { db, client, competitionId, roundId } = await setup()
+    const id = await makeMatch(db, { competitionId, roundId, kickoffTime: KICKOFF })
+    await db.update(match).set({ oddsEventRef: 'dead' }).where(eq(match.id, id))
+    const summary = await syncOdds(db, { now: NOW, providerFactory: () => fakeProvider({ getEventOdds: async () => 'gone' }) })
+    expect(summary.competitions['world-cup-2026']).toMatchObject({ gone: 1, fetched: 0 })
+    const [row] = await db.select({ ref: match.oddsEventRef }).from(match).where(eq(match.id, id))
+    expect(row.ref).toBeNull()
+    await client.close()
+  })
+
+  it('skips identical re-polls instead of appending duplicate snapshots', async () => {
+    const { db, client, competitionId, roundId } = await setup()
+    const id = await makeMatch(db, { competitionId, roundId, kickoffTime: KICKOFF })
+    await db.update(match).set({ oddsEventRef: 'r' }).where(eq(match.id, id))
+    const factory = () => fakeProvider()
+    await syncOdds(db, { now: NOW, providerFactory: factory })
+    // Force the cadence to consider it stale again, same price comes back.
+    await db.update(match).set({ oddsCheckedAt: new Date(NOW.getTime() - 7 * 60 * 60 * 1000) }).where(eq(match.id, id))
+    const summary = await syncOdds(db, { now: NOW, providerFactory: factory })
+    expect(summary.competitions['world-cup-2026']).toMatchObject({ unchanged: 1, fetched: 0 })
+    expect(await db.select().from(oddsSnapshot).where(eq(oddsSnapshot.matchId, id))).toHaveLength(1)
+    await client.close()
+  })
+
+  it('refuses to store a poll fetched after kickoff as a closing price', async () => {
+    const { db, client, competitionId, roundId } = await setup()
+    // Kickoff in the real past: selection (logical now) admits it, but the
+    // insert-time check sees the wall clock already past kickoff.
+    const past = new Date(Date.now() - 60 * 60 * 1000)
+    const id = await makeMatch(db, { competitionId, roundId, kickoffTime: past })
+    await db.update(match).set({ oddsEventRef: 'r' }).where(eq(match.id, id))
+    const logicalNow = new Date(past.getTime() - 60 * 60 * 1000)
+    const summary = await syncOdds(db, { now: logicalNow, providerFactory: () => fakeProvider() })
+    expect(summary.competitions['world-cup-2026']).toMatchObject({ late: 1, fetched: 0 })
+    expect(await db.select().from(oddsSnapshot)).toHaveLength(0)
+    await client.close()
+  })
+
+  it('only refreshes active competitions (backfill still reaches inactive ones)', async () => {
+    const { db, client, competitionId, roundId } = await setup({ isActive: false })
+    const id = await makeMatch(db, { competitionId, roundId, kickoffTime: KICKOFF })
+    await db.update(match).set({ oddsEventRef: 'r' }).where(eq(match.id, id))
+    const getEventOdds = vi.fn(async () => ({ current: TRIPLE, initial: null, bookmakers: null }))
+    expect((await syncOdds(db, { now: NOW, providerFactory: () => fakeProvider({ getEventOdds }) })).competitions).toEqual({})
+    expect(getEventOdds).not.toHaveBeenCalled()
+    await client.close()
+  })
 })
 
 describe('backfillOdds', () => {
-  it('maps finished matches and stamps BACKFILL snapshots at kickoff', async () => {
+  it('maps finished matches, stamps real-time BACKFILL snapshots, queues rescores', async () => {
     const { db, client, competitionId, roundId } = await setup({ seasonHint: '2022' })
     const past = new Date('2022-11-29T19:00:00Z')
     const m1 = await makeMatch(db, {
@@ -214,12 +274,18 @@ describe('backfillOdds', () => {
     const listEvents = vi.fn(async () => [
       sofaEvent({ ref: '555', homeName: 'Iran', awayName: 'United States', kickoff: past, finished: true }),
     ])
+    await db.update(match).set({ scoringState: 'SCORED' }).where(eq(match.id, m1))
     const summary = await backfillOdds(db, { providerFactory: () => fakeProvider({ listEvents }) })
 
     expect(listEvents).toHaveBeenCalledWith({ providerRef: '16', seasonHint: '2022', scope: 'finished' })
     const snaps = await db.select().from(oddsSnapshot).where(eq(oddsSnapshot.matchId, m1))
     expect(snaps).toHaveLength(1)
-    expect(snaps[0]).toMatchObject({ kind: 'BACKFILL', providerEventRef: '555', fetchedAt: past })
+    expect(snaps[0]).toMatchObject({ kind: 'BACKFILL', providerEventRef: '555' })
+    // Real fetch time (the closing-odds resolver falls back on kind, not on a
+    // forged timestamp), and the already-scored match is queued for a rescore.
+    expect(Math.abs(snaps[0].fetchedAt.getTime() - Date.now())).toBeLessThan(60_000)
+    const [m1row] = await db.select({ state: match.scoringState }).from(match).where(eq(match.id, m1))
+    expect(m1row.state).toBe('STALE')
     expect(summary.competitions['world-cup-2026']).toMatchObject({ mapped: 1, fetched: 1, remaining: 0 })
 
     // Drained: nothing left to backfill, no provider calls.

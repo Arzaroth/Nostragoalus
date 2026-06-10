@@ -1,11 +1,18 @@
-type OddsTriple = { home: number; draw: number; away: number }
+import type { OddsTriple } from '../../shared/types/odds'
+import { showOddsEnabled } from '../utils/prefs'
 
-// The "show bookmaker odds" preference (default ON) + per-match odds for
-// components that only know a matchId (PredictionList); pages rendering
-// MatchListItem rows can read m.odds directly and just use `enabled`.
-export function useMatchOdds() {
+// The "show bookmaker odds" preference alone (default ON) - for pages that
+// already have their odds data (MatchListItem.odds, the match detail payload)
+// and must not drag the whole match-list query in just for a boolean.
+export function useOddsPreference() {
   const { session } = useAuth()
-  const enabled = computed(() => (session.value?.data?.user as any)?.showOdds !== false)
+  return computed(() => showOddsEnabled(session.value?.data?.user))
+}
+
+// Preference + per-match odds for components that only know a matchId
+// (PredictionList rows). Subscribes to the match-list query.
+export function useMatchOdds() {
+  const enabled = useOddsPreference()
 
   const { data: matches } = useMatches()
   const byMatch = computed<Record<string, OddsTriple>>(() => {

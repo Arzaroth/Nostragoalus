@@ -44,3 +44,18 @@ Deferred work, queued behind feature development.
 - [ ] Nightly backup cron on the host (pre-1.0 checklist):
       `0 4 * * * cd ~/repos/nostragoalus && mise run db-backup`, outdir on
       a different disk than the Postgres volume.
+
+## Odds feature (deferred from the merge review)
+
+- [ ] Provider-scope `match.oddsEventRef` (or prefix it `sofascore:`): switching
+      a competition's odds provider would replay foreign ids into the new
+      provider's namespace. Procedural for now: clear refs when switching.
+- [ ] TEAM_NAME_ALIASES is in-code; a DB alias table (or an admin override to
+      pin a match's event ref) would fix unmatchable names without a deploy.
+- [ ] Extract the provider JSON envelope (rate limit + status mapping + json)
+      shared by fifa/uefa/alltime-h2h/sofascore - sofascore is the 4th copy,
+      now with extra knobs (403=rate-limit, 404 sentinel, parse-challenge).
+- [ ] normalizeTeamName (odds matcher) vs searchable() (app/utils/format)
+      duplicate diacritic folding with diverging special cases.
+- [ ] RateLimiter.acquire is check-then-sleep; concurrent callers can fire
+      together. A promise-chain queue would make the host spacing a guarantee.

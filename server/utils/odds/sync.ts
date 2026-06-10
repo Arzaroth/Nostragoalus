@@ -1,10 +1,14 @@
 import type { AppDatabase } from '../../../db/types'
-import { listCompetitions } from '../competitions/store'
+import { listActiveCompetitions, listCompetitions } from '../competitions/store'
 import { ProviderRateLimitError } from '../providers/types'
 import { matchEventsToFixtures } from './matcher'
 import { sofascoreProvider } from './providers/sofascore'
 import {
+  clearOddsMapping,
   insertOddsSnapshots,
+  latestOddsByMatch,
+  markMatchesStaleForRescore,
+  markOddsChecked,
   matchesNeedingBackfill,
   matchesNeedingOdds,
   setMatchOddsEventRefs,
@@ -17,14 +21,15 @@ import type { FetchedOdds, OddsProvider, OddsTriple } from './types'
 const MAX_REFRESH_CALLS = 20
 const MAX_BACKFILL_CALLS = 30
 
-const PROVIDERS: Record<string, () => OddsProvider> = {
-  sofascore: () => sofascoreProvider(),
-}
-
 export type OddsProviderFactory = (key: string) => OddsProvider | null
 
+// One instance per provider for the process lifetime: the rate limiter lives
+// inside the provider, so per-call construction would reset the host spacing
+// at every competition boundary (and across overlapping runs).
+let sofascoreInstance: OddsProvider | null = null
 function defaultProviderFactory(key: string): OddsProvider | null {
-  return PROVIDERS[key]?.() ?? null
+  if (key === 'sofascore') return (sofascoreInstance ??= sofascoreProvider())
+  return null
 }
 
 export interface OddsSyncOptions {
@@ -38,7 +43,10 @@ interface CompetitionSummary {
   unmatched?: number
   ambiguous?: number
   fetched?: number
+  unchanged?: number
   empty?: number
+  gone?: number
+  late?: number
   errors?: number
   remaining?: number
 }
@@ -59,11 +67,19 @@ interface OddsCompetition {
 function orient(odds: FetchedOdds, swapped: boolean): FetchedOdds {
   if (!swapped) return odds
   const flip = (t: OddsTriple): OddsTriple => ({ home: t.away, draw: t.draw, away: t.home })
-  return { ...odds, current: flip(odds.current), initial: odds.initial ? flip(odds.initial) : null }
+  return {
+    ...odds,
+    current: flip(odds.current),
+    initial: odds.initial ? flip(odds.initial) : null,
+    bookmakers: odds.bookmakers?.map((b) => ({ ...b, home: b.away, away: b.home })) ?? null,
+  }
 }
 
-async function oddsCompetitions(db: AppDatabase): Promise<OddsCompetition[]> {
-  const all = await listCompetitions(db)
+// The 30-min refresh only touches active competitions (deactivating one stops
+// its polling, matching every other sync task); backfill deliberately reaches
+// finished/inactive ones - recovering archives is its whole point.
+async function oddsCompetitions(db: AppDatabase, scope: 'active' | 'all'): Promise<OddsCompetition[]> {
+  const all = scope === 'active' ? await listActiveCompetitions(db) : await listCompetitions(db)
   return all.filter((c) => c.oddsProvider !== null && c.oddsProviderRef !== null)
 }
 
@@ -96,6 +112,87 @@ async function mapCompetition(
   return { mapped: result.matched.length, unmatched: unmatchedFixtures, ambiguous: result.ambiguous.length }
 }
 
+interface FetchTarget {
+  id: string
+  oddsEventRef: string
+  oddsEventSwapped: boolean
+  kickoffTime: Date
+}
+
+interface FetchCounters {
+  fetched: number
+  unchanged: number
+  empty: number
+  gone: number
+  late: number
+  errors: number
+}
+
+// Shared per-target fetch step for refresh and backfill: fetch, drop dead
+// mappings, orient, dedupe against the latest stored triple, insert, and stamp
+// the attempt (so the cadence covers unpriced events too). POLL inserts are
+// re-checked against kickoff at insert time - the rate limiter can push a
+// fetch past kickoff, and an in-play price must never pose as a closing one.
+async function fetchTarget(
+  db: AppDatabase,
+  provider: OddsProvider,
+  providerKey: string,
+  target: FetchTarget,
+  kind: 'POLL' | 'BACKFILL',
+  counters: FetchCounters,
+  // The run's logical clock: cadence bookkeeping (oddsCheckedAt) compares
+  // against it, while snapshot timestamps use the wall clock (data truth).
+  now: Date,
+): Promise<void> {
+  try {
+    const odds = await provider.getEventOdds(target.oddsEventRef)
+    const fetchedAt = new Date()
+    if (odds === 'gone') {
+      await clearOddsMapping(db, target.id)
+      counters.gone += 1
+      return
+    }
+    if (odds === null) {
+      counters.empty += 1
+      return
+    }
+    if (kind === 'POLL' && fetchedAt.getTime() >= target.kickoffTime.getTime()) {
+      counters.late += 1
+      return
+    }
+    const oriented = orient(odds, target.oddsEventSwapped)
+    const latest = (await latestOddsByMatch(db, [target.id]))[target.id]
+    if (
+      kind === 'POLL' &&
+      latest &&
+      latest.home === oriented.current.home &&
+      latest.draw === oriented.current.draw &&
+      latest.away === oriented.current.away
+    ) {
+      counters.unchanged += 1
+      return
+    }
+    await insertOddsSnapshots(db, [
+      {
+        matchId: target.id,
+        provider: providerKey,
+        providerEventRef: target.oddsEventRef,
+        kind,
+        current: oriented.current,
+        initial: oriented.initial,
+        bookmakers: oriented.bookmakers,
+        fetchedAt,
+      },
+    ])
+    counters.fetched += 1
+  } catch (error) {
+    if (error instanceof ProviderRateLimitError) throw error
+    counters.errors += 1
+  } finally {
+    await markOddsChecked(db, [target.id], now).catch(() => {})
+  }
+}
+
 export async function syncOdds(db: AppDatabase, opts: OddsSyncOptions = {}): Promise<OddsRunSummary> {
   const now = opts.now ?? new Date()
   const factory = opts.providerFactory ?? defaultProviderFactory
@@ -103,7 +200,7 @@ export async function syncOdds(db: AppDatabase, opts: OddsSyncOptions = {}): Pro
   const summary: OddsRunSummary = { competitions: {} }
   let budget = maxCalls
 
-  for (const competition of await oddsCompetitions(db)) {
+  for (const competition of await oddsCompetitions(db, 'active')) {
     const provider = factory(competition.oddsProvider!)
     if (!provider) continue
     const slug = competition.slug
@@ -113,44 +210,17 @@ export async function syncOdds(db: AppDatabase, opts: OddsSyncOptions = {}): Pro
         summary.competitions[slug] = await mapCompetition(db, competition, provider, unmapped, 'upcoming')
       }
 
-      const due = await matchesNeedingOdds(db, [competition.id], now)
+      const due = await matchesNeedingOdds(db, competition.id, now)
       const batch = due.slice(0, Math.max(budget, 0))
       budget -= batch.length
-      let fetched = 0
-      let empty = 0
-      let errors = 0
+      const counters: FetchCounters = { fetched: 0, unchanged: 0, empty: 0, gone: 0, late: 0, errors: 0 }
       for (const target of batch) {
-        try {
-          const odds = await provider.getEventOdds(target.oddsEventRef)
-          if (odds === null) {
-            empty += 1
-            continue
-          }
-          const oriented = orient(odds, target.oddsEventSwapped)
-          await insertOddsSnapshots(db, [
-            {
-              matchId: target.id,
-              provider: competition.oddsProvider!,
-              providerEventRef: target.oddsEventRef,
-              kind: 'POLL',
-              current: oriented.current,
-              initial: oriented.initial,
-              bookmakers: oriented.bookmakers,
-              fetchedAt: now,
-            },
-          ])
-          fetched += 1
-        } catch (error) {
-          if (error instanceof ProviderRateLimitError) throw error
-          errors += 1
-        }
+        await fetchTarget(db, provider, competition.oddsProvider!, target, 'POLL', counters, now)
       }
       if (due.length > 0) {
         summary.competitions[slug] = {
           ...summary.competitions[slug],
-          fetched,
-          empty,
-          errors,
+          ...counters,
           remaining: due.length - batch.length,
         }
       }
@@ -168,15 +238,17 @@ export async function syncOdds(db: AppDatabase, opts: OddsSyncOptions = {}): Pro
 }
 
 // Retroactive odds for finished matches (Sofascore keeps closing prices on
-// past events). Snapshots are stamped with the kickoff itself: that is the
-// closing state, and the scoring resolver only looks at/before kickoff.
+// past events). Snapshots carry their real fetch time and kind=BACKFILL; the
+// closing-odds resolver falls back to them when no pre-kickoff POLL exists.
+// Matches already scored get flagged STALE so the next finalize tick rescores
+// them with the recovered odds (the ODDS bonus would otherwise stay at 0).
 export async function backfillOdds(db: AppDatabase, opts: OddsSyncOptions = {}): Promise<OddsRunSummary> {
   const factory = opts.providerFactory ?? defaultProviderFactory
   const maxCalls = opts.maxCalls ?? MAX_BACKFILL_CALLS
   const summary: OddsRunSummary = { competitions: {} }
   let budget = maxCalls
 
-  for (const competition of await oddsCompetitions(db)) {
+  for (const competition of await oddsCompetitions(db, 'all')) {
     const provider = factory(competition.oddsProvider!)
     if (!provider) continue
     const slug = competition.slug
@@ -193,40 +265,25 @@ export async function backfillOdds(db: AppDatabase, opts: OddsSyncOptions = {}):
       const mapped = targets.filter((t) => t.oddsEventRef !== null)
       const batch = mapped.slice(0, Math.max(budget, 0))
       budget -= batch.length
-      let fetched = 0
-      let empty = 0
-      let errors = 0
+      const counters: FetchCounters = { fetched: 0, unchanged: 0, empty: 0, gone: 0, late: 0, errors: 0 }
+      const recovered: string[] = []
       for (const target of batch) {
-        try {
-          const odds = await provider.getEventOdds(target.oddsEventRef!)
-          if (odds === null) {
-            empty += 1
-            continue
-          }
-          const oriented = orient(odds, target.oddsEventSwapped)
-          await insertOddsSnapshots(db, [
-            {
-              matchId: target.id,
-              provider: competition.oddsProvider!,
-              providerEventRef: target.oddsEventRef!,
-              kind: 'BACKFILL',
-              current: oriented.current,
-              initial: oriented.initial,
-              bookmakers: oriented.bookmakers,
-              fetchedAt: target.kickoffTime,
-            },
-          ])
-          fetched += 1
-        } catch (error) {
-          if (error instanceof ProviderRateLimitError) throw error
-          errors += 1
-        }
+        const before = counters.fetched
+        await fetchTarget(
+          db,
+          provider,
+          competition.oddsProvider!,
+          { ...target, oddsEventRef: target.oddsEventRef! },
+          'BACKFILL',
+          counters,
+          new Date(),
+        )
+        if (counters.fetched > before) recovered.push(target.id)
       }
+      await markMatchesStaleForRescore(db, recovered)
       summary.competitions[slug] = {
         ...summary.competitions[slug],
-        fetched,
-        empty,
-        errors,
+        ...counters,
         remaining: mapped.length - batch.length,
       }
     } catch (error) {

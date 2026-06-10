@@ -5,9 +5,12 @@ import { makeMatch, seedCompetition } from '../../../tests/factories'
 import { findRoundId } from '../sync/rounds'
 import { match } from '../../../db/schema'
 import {
+  clearOddsMapping,
   closingOddsForOutcome,
   insertOddsSnapshots,
   latestOddsByMatch,
+  markMatchesStaleForRescore,
+  markOddsChecked,
   matchesNeedingBackfill,
   matchesNeedingOdds,
   setMatchOddsEventRefs,
@@ -72,6 +75,48 @@ describe('odds store snapshots', () => {
     await client.close()
   })
 
+  it('falls back to a BACKFILL snapshot when no pre-kickoff poll exists', async () => {
+    const { db, client, competitionId, roundId } = await setup()
+    const m1 = await makeMatch(db, { competitionId, roundId, kickoffTime: KICKOFF, status: 'FINISHED' })
+    await insertOddsSnapshots(db, [
+      // Recovered from the provider archive AFTER the match - real fetch time.
+      snapshot(m1, new Date(KICKOFF.getTime() + 30 * 24 * HOUR), { kind: 'BACKFILL', current: { home: 4.2, draw: 3.1, away: 1.9 } }),
+      // An in-play POLL row never qualifies, even with backfill present.
+      snapshot(m1, new Date(KICKOFF.getTime() + HOUR), { current: { home: 9, draw: 9, away: 9 } }),
+    ])
+    expect(await closingOddsForOutcome(db, m1, KICKOFF, 'HOME')).toBe(4.2)
+    await client.close()
+  })
+
+  it('clears a dead mapping and stamps fetch attempts', async () => {
+    const { db, client, competitionId, roundId } = await setup()
+    const m1 = await makeMatch(db, { competitionId, roundId, kickoffTime: KICKOFF })
+    await setMatchOddsEventRefs(db, [{ matchId: m1, ref: 'dead', swapped: true }])
+    const checked = new Date('2026-06-14T10:00:00Z')
+    await markOddsChecked(db, [m1], checked)
+    await markOddsChecked(db, [], checked)
+    await clearOddsMapping(db, m1)
+    const [row] = await db
+      .select({ ref: match.oddsEventRef, swapped: match.oddsEventSwapped, checkedAt: match.oddsCheckedAt })
+      .from(match)
+      .where(eq(match.id, m1))
+    expect(row).toEqual({ ref: null, swapped: false, checkedAt: checked })
+    await client.close()
+  })
+
+  it('flags only SCORED matches for a rescore', async () => {
+    const { db, client, competitionId, roundId } = await setup()
+    const scored = await makeMatch(db, { competitionId, roundId, kickoffTime: KICKOFF, status: 'FINISHED' })
+    const pending = await makeMatch(db, { competitionId, roundId, kickoffTime: KICKOFF, status: 'FINISHED' })
+    await db.update(match).set({ scoringState: 'SCORED' }).where(eq(match.id, scored))
+    await markMatchesStaleForRescore(db, [scored, pending])
+    await markMatchesStaleForRescore(db, [])
+    const rows = await db.select({ id: match.id, state: match.scoringState }).from(match)
+    expect(rows.find((r) => r.id === scored)?.state).toBe('STALE')
+    expect(rows.find((r) => r.id === pending)?.state).toBe('PENDING')
+    await client.close()
+  })
+
   it('persists odds event refs', async () => {
     const { db, client, competitionId, roundId } = await setup()
     const m1 = await makeMatch(db, { competitionId, roundId, kickoffTime: KICKOFF })
@@ -82,88 +127,53 @@ describe('odds store snapshots', () => {
   })
 })
 
-describe('matchesNeedingOdds round gate + cadence', () => {
-  it('limits odds to the current round, with staleness cadence', async () => {
-    const { db, client, competitionId } = await setup()
-    const md1 = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
-    const md2 = (await findRoundId(db, competitionId, 'GROUP', 2)) as string
+describe('matchesNeedingOdds window + cadence', () => {
+  it('selects mapped scheduled matches inside the window, by attempt staleness', async () => {
+    const { db, client, competitionId, roundId } = await setup()
     const now = new Date('2026-06-15T12:00:00Z')
-    const mk = async (roundId: string, kickoffTime: Date, over: Partial<Parameters<typeof makeMatch>[1]> = {}) => {
+    const mk = async (kickoffTime: Date, over: Partial<Parameters<typeof makeMatch>[1]> = {}) => {
       const id = await makeMatch(db, { competitionId, roundId, kickoffTime, ...over })
       await setMatchOddsEventRefs(db, [{ matchId: id, ref: `ref-${id}` }])
       return id
     }
 
-    // Current round (MD1): every cadence case.
-    const never = await mk(md1, new Date(now.getTime() + 24 * HOUR)) // no snapshot -> due
-    const fresh = await mk(md1, new Date(now.getTime() + 24 * HOUR)) // 1h-old snapshot -> not due
-    const stale = await mk(md1, new Date(now.getTime() + 24 * HOUR)) // 7h-old snapshot -> due
-    const imminent = await mk(md1, new Date(now.getTime() + HOUR)) // 1h-old snapshot but <2h to kickoff -> due
-    const farInRound = await mk(md1, new Date(now.getTime() + 100 * HOUR)) // no horizon: still due
-    const started = await mk(md1, new Date(now.getTime() - HOUR)) // kicked off
-    const live = await mk(md1, new Date(now.getTime() + 24 * HOUR), { status: 'LIVE' }) // keeps MD1 open
-    const unmapped = await makeMatch(db, { competitionId, roundId: md1, kickoffTime: new Date(now.getTime() + 24 * HOUR) })
+    const never = await mk(new Date(now.getTime() + 24 * HOUR)) // never checked -> due
+    const fresh = await mk(new Date(now.getTime() + 24 * HOUR)) // checked 1h ago -> not due
+    const stale = await mk(new Date(now.getTime() + 24 * HOUR)) // checked 7h ago -> due
+    const imminent = await mk(new Date(now.getTime() + HOUR)) // checked 1h ago but <2h to kickoff -> due
+    const nextWeek = await mk(new Date(now.getTime() + 10 * 24 * HOUR)) // inside the 14d window -> due
+    const farFuture = await mk(new Date(now.getTime() + 20 * 24 * HOUR)) // beyond the window -> not due
+    const started = await mk(new Date(now.getTime() - HOUR)) // kicked off
+    const unmapped = await makeMatch(db, { competitionId, roundId, kickoffTime: new Date(now.getTime() + 24 * HOUR) })
 
-    // Next round (MD2): not the current round -> never due while MD1 is open.
-    const next = await mk(md2, new Date(now.getTime() + 48 * HOUR))
+    await markOddsChecked(db, [fresh, imminent], new Date(now.getTime() - HOUR))
+    await markOddsChecked(db, [stale], new Date(now.getTime() - 7 * HOUR))
 
-    await insertOddsSnapshots(db, [
-      snapshot(fresh, new Date(now.getTime() - HOUR)),
-      snapshot(stale, new Date(now.getTime() - 7 * HOUR)),
-      snapshot(imminent, new Date(now.getTime() - HOUR)),
-    ])
-
-    const ids = (await matchesNeedingOdds(db, [competitionId], now)).map((d) => d.id)
-    expect(ids).toEqual(expect.arrayContaining([never, stale, imminent, farInRound]))
+    const due = await matchesNeedingOdds(db, competitionId, now)
+    const ids = due.map((d) => d.id)
+    expect(ids).toEqual(expect.arrayContaining([never, stale, imminent, nextWeek]))
     expect(ids).not.toContain(fresh)
+    expect(ids).not.toContain(farFuture)
     expect(ids).not.toContain(started)
-    expect(ids).not.toContain(live)
     expect(ids).not.toContain(unmapped)
-    expect(ids).not.toContain(next)
-    expect(
-      (await matchesNeedingOdds(db, [competitionId], now)).find((d) => d.id === never)?.oddsEventRef,
-    ).toBe(`ref-${never}`)
-    expect(await matchesNeedingOdds(db, [], now)).toEqual([])
+    expect(due.find((d) => d.id === never)?.oddsEventRef).toBe(`ref-${never}`)
+    // Least-recently-checked first: never-checked rows lead, then the 7h-stale one.
+    expect(ids.indexOf(stale)).toBeGreaterThan(ids.indexOf(never))
     await client.close()
   })
 
-  it('pairs the third-place playoff and the final as one closing level', async () => {
-    const { db, client, competitionId } = await setup()
-    const third = (await findRoundId(db, competitionId, 'THIRD_PLACE', null)) as string
-    const final = (await findRoundId(db, competitionId, 'FINAL', null)) as string
-    const now = new Date('2026-07-18T12:00:00Z')
-    const tp = await makeMatch(db, { competitionId, roundId: third, stage: 'THIRD_PLACE', kickoffTime: new Date(now.getTime() + 24 * HOUR) })
-    const fn = await makeMatch(db, { competitionId, roundId: final, stage: 'FINAL', kickoffTime: new Date(now.getTime() + 48 * HOUR) })
-    await setMatchOddsEventRefs(db, [
-      { matchId: tp, ref: 't' },
-      { matchId: fn, ref: 'f' },
-    ])
-
-    const ids = (await matchesNeedingOdds(db, [competitionId], now)).map((d) => d.id)
-    expect(ids).toEqual(expect.arrayContaining([tp, fn]))
-    expect(ids).toHaveLength(2)
-    await client.close()
-  })
-
-  it('advances to the next round once the current round is fully played', async () => {
-    const { db, client, competitionId } = await setup()
-    const md1 = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
-    const md2 = (await findRoundId(db, competitionId, 'GROUP', 2)) as string
+  it('honors the cadence for unpriced events (attempts stamp, snapshots optional)', async () => {
+    const { db, client, competitionId, roundId } = await setup()
     const now = new Date('2026-06-15T12:00:00Z')
+    const id = await makeMatch(db, { competitionId, roundId, kickoffTime: new Date(now.getTime() + 24 * HOUR) })
+    await setMatchOddsEventRefs(db, [{ matchId: id, ref: 'r' }])
 
-    const md1match = await makeMatch(db, { competitionId, roundId: md1, kickoffTime: new Date(now.getTime() + HOUR) })
-    const md2match = await makeMatch(db, { competitionId, roundId: md2, kickoffTime: new Date(now.getTime() + 48 * HOUR) })
-    await setMatchOddsEventRefs(db, [
-      { matchId: md1match, ref: 'r1' },
-      { matchId: md2match, ref: 'r2' },
-    ])
+    // An attempt that stored nothing still counts against the cadence.
+    await markOddsChecked(db, [id], new Date(now.getTime() - HOUR))
+    expect(await matchesNeedingOdds(db, competitionId, now)).toEqual([])
 
-    // MD1 open -> only MD1 eligible.
-    expect((await matchesNeedingOdds(db, [competitionId], now)).map((d) => d.id)).toEqual([md1match])
-
-    // MD1 played out -> MD2 becomes the current round.
-    await db.update(match).set({ status: 'FINISHED' }).where(eq(match.id, md1match))
-    expect((await matchesNeedingOdds(db, [competitionId], now)).map((d) => d.id)).toEqual([md2match])
+    await markOddsChecked(db, [id], new Date(now.getTime() - 7 * HOUR))
+    expect((await matchesNeedingOdds(db, competitionId, now)).map((d) => d.id)).toEqual([id])
     await client.close()
   })
 })
