@@ -82,24 +82,30 @@ describe('odds store snapshots', () => {
   })
 })
 
-describe('matchesNeedingOdds cadence', () => {
-  it('applies the 72h horizon with 6h staleness, tightening to 30min near kickoff', async () => {
-    const { db, client, competitionId, roundId } = await setup()
+describe('matchesNeedingOdds round gate + cadence', () => {
+  it('limits odds to the current round, with staleness cadence', async () => {
+    const { db, client, competitionId } = await setup()
+    const md1 = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+    const md2 = (await findRoundId(db, competitionId, 'GROUP', 2)) as string
     const now = new Date('2026-06-15T12:00:00Z')
-    const mk = async (kickoffTime: Date, over: Parameters<typeof makeMatch>[1] extends infer T ? Partial<T> : never = {}) => {
+    const mk = async (roundId: string, kickoffTime: Date, over: Partial<Parameters<typeof makeMatch>[1]> = {}) => {
       const id = await makeMatch(db, { competitionId, roundId, kickoffTime, ...over })
       await setMatchOddsEventRefs(db, [{ matchId: id, ref: `ref-${id}` }])
       return id
     }
 
-    const never = await mk(new Date(now.getTime() + 24 * HOUR)) // no snapshot -> due
-    const fresh = await mk(new Date(now.getTime() + 24 * HOUR)) // 1h-old snapshot -> not due
-    const stale = await mk(new Date(now.getTime() + 24 * HOUR)) // 7h-old snapshot -> due
-    const imminent = await mk(new Date(now.getTime() + HOUR)) // 1h-old snapshot but <2h to kickoff -> due
-    const beyond = await mk(new Date(now.getTime() + 80 * HOUR)) // outside horizon
-    const started = await mk(new Date(now.getTime() - HOUR)) // kicked off
-    const unmapped = await makeMatch(db, { competitionId, roundId, kickoffTime: new Date(now.getTime() + 24 * HOUR) })
-    const live = await mk(new Date(now.getTime() + 24 * HOUR), { status: 'LIVE' })
+    // Current round (MD1): every cadence case.
+    const never = await mk(md1, new Date(now.getTime() + 24 * HOUR)) // no snapshot -> due
+    const fresh = await mk(md1, new Date(now.getTime() + 24 * HOUR)) // 1h-old snapshot -> not due
+    const stale = await mk(md1, new Date(now.getTime() + 24 * HOUR)) // 7h-old snapshot -> due
+    const imminent = await mk(md1, new Date(now.getTime() + HOUR)) // 1h-old snapshot but <2h to kickoff -> due
+    const farInRound = await mk(md1, new Date(now.getTime() + 100 * HOUR)) // no horizon: still due
+    const started = await mk(md1, new Date(now.getTime() - HOUR)) // kicked off
+    const live = await mk(md1, new Date(now.getTime() + 24 * HOUR), { status: 'LIVE' }) // keeps MD1 open
+    const unmapped = await makeMatch(db, { competitionId, roundId: md1, kickoffTime: new Date(now.getTime() + 24 * HOUR) })
+
+    // Next round (MD2): not the current round -> never due while MD1 is open.
+    const next = await mk(md2, new Date(now.getTime() + 48 * HOUR))
 
     await insertOddsSnapshots(db, [
       snapshot(fresh, new Date(now.getTime() - HOUR)),
@@ -107,18 +113,39 @@ describe('matchesNeedingOdds cadence', () => {
       snapshot(imminent, new Date(now.getTime() - HOUR)),
     ])
 
-    const due = await matchesNeedingOdds(db, [competitionId], now)
-    const ids = due.map((d) => d.id)
-    expect(ids).toContain(never)
-    expect(ids).toContain(stale)
-    expect(ids).toContain(imminent)
+    const ids = (await matchesNeedingOdds(db, [competitionId], now)).map((d) => d.id)
+    expect(ids).toEqual(expect.arrayContaining([never, stale, imminent, farInRound]))
     expect(ids).not.toContain(fresh)
-    expect(ids).not.toContain(beyond)
     expect(ids).not.toContain(started)
-    expect(ids).not.toContain(unmapped)
     expect(ids).not.toContain(live)
-    expect(due.find((d) => d.id === never)?.oddsEventRef).toBe(`ref-${never}`)
+    expect(ids).not.toContain(unmapped)
+    expect(ids).not.toContain(next)
+    expect(
+      (await matchesNeedingOdds(db, [competitionId], now)).find((d) => d.id === never)?.oddsEventRef,
+    ).toBe(`ref-${never}`)
     expect(await matchesNeedingOdds(db, [], now)).toEqual([])
+    await client.close()
+  })
+
+  it('advances to the next round once the current round is fully played', async () => {
+    const { db, client, competitionId } = await setup()
+    const md1 = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+    const md2 = (await findRoundId(db, competitionId, 'GROUP', 2)) as string
+    const now = new Date('2026-06-15T12:00:00Z')
+
+    const md1match = await makeMatch(db, { competitionId, roundId: md1, kickoffTime: new Date(now.getTime() + HOUR) })
+    const md2match = await makeMatch(db, { competitionId, roundId: md2, kickoffTime: new Date(now.getTime() + 48 * HOUR) })
+    await setMatchOddsEventRefs(db, [
+      { matchId: md1match, ref: 'r1' },
+      { matchId: md2match, ref: 'r2' },
+    ])
+
+    // MD1 open -> only MD1 eligible.
+    expect((await matchesNeedingOdds(db, [competitionId], now)).map((d) => d.id)).toEqual([md1match])
+
+    // MD1 played out -> MD2 becomes the current round.
+    await db.update(match).set({ status: 'FINISHED' }).where(eq(match.id, md1match))
+    expect((await matchesNeedingOdds(db, [competitionId], now)).map((d) => d.id)).toEqual([md2match])
     await client.close()
   })
 })
