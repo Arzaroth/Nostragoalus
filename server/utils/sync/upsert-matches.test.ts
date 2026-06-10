@@ -63,6 +63,36 @@ describe('upsertMatches', () => {
     await client.close()
   })
 
+  it('drops the odds mapping when a side correction flips the teams', async () => {
+    const { db, client } = await createTestDb()
+    const cid = await seedCompetition(db)
+    await upsertMatches(db, cid, [normalized()])
+    const [before] = await db.select().from(match)
+    await db
+      .update(match)
+      .set({ oddsEventRef: 'ev-1', oddsEventSwapped: true })
+      .where(eq(match.id, before.id))
+
+    // Same teams again: the mapping survives.
+    await upsertMatches(db, cid, [normalized()])
+    let [row] = await db.select().from(match).where(eq(match.id, before.id))
+    expect(row.oddsEventRef).toBe('ev-1')
+
+    // Provider corrects home/away: the stored swapped flag is now wrong, so
+    // the mapping is cleared for the matcher to re-claim.
+    const swapped = normalized()
+    const fixed: typeof swapped = {
+      ...swapped,
+      homeTeam: swapped.awayTeam,
+      awayTeam: swapped.homeTeam,
+    }
+    await upsertMatches(db, cid, [fixed])
+    ;[row] = await db.select().from(match).where(eq(match.id, before.id))
+    expect(row.oddsEventRef).toBeNull()
+    expect(row.oddsEventSwapped).toBe(false)
+    await client.close()
+  })
+
   it('does not downgrade a finished match with non-final data', async () => {
     const { db, client } = await createTestDb()
     const cid = await seedCompetition(db)

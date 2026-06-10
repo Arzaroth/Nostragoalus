@@ -77,16 +77,16 @@ export async function getMatchDetail(db: AppDatabase, matchId: string, userId?: 
     .limit(1)
   if (rows.length === 0) return null
 
-  let myPrediction = null
-  if (userId) {
-    const preds = await db
-      .select()
-      .from(prediction)
-      .where(and(eq(prediction.matchId, matchId), eq(prediction.userId, userId)))
-      .limit(1)
-    myPrediction = preds[0] ?? null
-  }
-
-  const odds = await latestOddsByMatch(db, [matchId])
-  return { match: rows[0], myPrediction, odds: odds[matchId] ?? null }
+  // Independent lookups - overlap them instead of paying serial round-trips.
+  const [preds, odds] = await Promise.all([
+    userId
+      ? db
+          .select()
+          .from(prediction)
+          .where(and(eq(prediction.matchId, matchId), eq(prediction.userId, userId)))
+          .limit(1)
+      : Promise.resolve([]),
+    latestOddsByMatch(db, [matchId]),
+  ])
+  return { match: rows[0], myPrediction: preds[0] ?? null, odds: odds[matchId] ?? null }
 }

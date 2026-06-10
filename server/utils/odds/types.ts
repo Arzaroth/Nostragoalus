@@ -1,10 +1,7 @@
-import type { OddsProviderKey, StoredBookmakerOdds } from '../../../shared/types/odds'
+import type { OddsProviderKey, OddsTriple, StoredBookmakerOdds } from '../../../shared/types/odds'
 
-export interface OddsTriple {
-  home: number
-  draw: number
-  away: number
-}
+// Canonical OddsTriple lives in shared/types/odds.ts (the client renders it too).
+export type { OddsTriple }
 
 // A provider-side event candidate for the name+kickoff matcher.
 export interface OddsEvent {
@@ -32,6 +29,8 @@ export interface ListEventsOptions {
 export interface OddsProvider {
   readonly key: OddsProviderKey
   listEvents(opts: ListEventsOptions): Promise<OddsEvent[]>
-  // null = the event exists but exposes no 1X2 market.
-  getEventOdds(ref: string): Promise<FetchedOdds | null>
+  // null = the event exists but exposes no 1X2 market (try again later);
+  // 'gone' = the event no longer exists (deleted/recreated upstream), so the
+  // caller should drop the mapping and let the matcher re-claim the fixture.
+  getEventOdds(ref: string): Promise<FetchedOdds | 'gone' | null>
 }

@@ -1,4 +1,4 @@
-import { eq, desc, and, isNull } from 'drizzle-orm'
+import { eq, desc } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { competition } from '../../../db/schema'
 
@@ -36,18 +36,14 @@ export const DEFAULT_COMPETITIONS = [
 ]
 
 // Idempotent per slug, so new defaults are added on upgrade without duplicates.
-// Existing rows that predate the odds columns get them backfilled (only while
-// both are still null, so an admin override is never clobbered).
+// Strictly insert-only: rows that predate the odds columns were backfilled once
+// by migration 0015, so an admin clearing odds_provider/odds_provider_ref
+// genuinely disables odds for that competition (no hourly re-seeding).
 export async function ensureDefaultCompetition(db: AppDatabase): Promise<void> {
   for (const def of DEFAULT_COMPETITIONS) {
     const existing = await db.select({ id: competition.id }).from(competition).where(eq(competition.slug, def.slug)).limit(1)
     if (existing.length === 0) {
       await db.insert(competition).values({ ...def, isActive: true })
-    } else if (def.oddsProvider) {
-      await db
-        .update(competition)
-        .set({ oddsProvider: def.oddsProvider, oddsProviderRef: def.oddsProviderRef })
-        .where(and(eq(competition.id, existing[0].id), isNull(competition.oddsProvider), isNull(competition.oddsProviderRef)))
     }
   }
 }

@@ -24,21 +24,23 @@ describe('competition store', () => {
     await client.close()
   })
 
-  it('backfills odds provider columns on existing rows without clobbering overrides', async () => {
+  it('never touches existing rows - clearing the odds columns disables odds for good', async () => {
     const { db, client } = await createTestDb()
-    // Row predating the odds columns.
+    // An admin cleared the columns to stop odds polling (rows that predate the
+    // odds columns were backfilled once by migration 0015, not at runtime).
     await makeCompetition(db, { slug: 'world-cup-2026', oddsProvider: null, oddsProviderRef: null })
     await ensureDefaultCompetition(db)
     expect(await getCompetitionBySlug(db, 'world-cup-2026')).toMatchObject({
-      oddsProvider: 'sofascore',
-      oddsProviderRef: '16',
+      oddsProvider: null,
+      oddsProviderRef: null,
     })
+    // Missing defaults are still inserted (with their odds config).
     expect(await getCompetitionBySlug(db, 'euro-2024')).toMatchObject({
       oddsProvider: 'sofascore',
       oddsProviderRef: '1',
     })
 
-    // Admin override survives subsequent runs.
+    // Any other override survives subsequent runs too.
     const { competition } = await import('../../../db/schema')
     const { eq } = await import('drizzle-orm')
     await db.update(competition).set({ oddsProvider: 'betexplorer', oddsProviderRef: 'x' }).where(eq(competition.slug, 'world-cup-2026'))

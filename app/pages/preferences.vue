@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { showOddsEnabled } from '../utils/prefs'
 const { t, locale, setLocale } = useI18n()
 const { session, updateUser } = useAuth()
 const { preference, setPreference } = useTheme()
@@ -35,9 +36,9 @@ const showCrowd = computed({
   },
 })
 
-// Opt-out (default on): unset means shown.
+// Opt-out (default on): unset means shown - rule shared with useOddsPreference.
 const showOdds = computed({
-  get: () => (session.value?.data?.user as any)?.showOdds !== false,
+  get: () => showOddsEnabled(session.value?.data?.user),
   set: async (v: boolean) => {
     await (updateUser as (f: Record<string, unknown>) => Promise<unknown>)({ showOdds: v })
     persistFlash()

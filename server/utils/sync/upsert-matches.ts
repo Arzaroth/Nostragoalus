@@ -81,7 +81,17 @@ export async function upsertMatches(
       continue
     }
 
-    await db.update(match).set(mutableFields(m)).where(eq(match.id, prev.id))
+    // A side correction invalidates the odds mapping: the stored swapped flag
+    // was computed against the old orientation, so keeping it would invert
+    // every later snapshot. Drop the mapping; the matcher re-claims it.
+    const sidesChanged = prev.homeTeam !== m.homeTeam.name || prev.awayTeam !== m.awayTeam.name
+    await db
+      .update(match)
+      .set({
+        ...mutableFields(m),
+        ...(sidesChanged && prev.oddsEventRef !== null ? { oddsEventRef: null, oddsEventSwapped: false } : {}),
+      })
+      .where(eq(match.id, prev.id))
     result.updated += 1
 
     const changed =

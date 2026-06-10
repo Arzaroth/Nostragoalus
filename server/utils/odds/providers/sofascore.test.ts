@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { RateLimiter } from '../../providers/rate-limiter'
 import { ProviderRateLimitError, ProviderUpstreamError } from '../../providers/types'
 import { sofascoreProvider } from './sofascore'
@@ -47,7 +47,7 @@ describe('sofascore listEvents', () => {
     })
   })
 
-  it('falls back to the newest season without a hint match and uses next/ for upcoming', async () => {
+  it('uses the newest season when no hint is given and next/ for upcoming', async () => {
     const p = provider({
       '/unique-tournament/16/seasons': SEASONS,
       '/unique-tournament/16/season/58210/events/next/0': {
@@ -55,9 +55,31 @@ describe('sofascore listEvents', () => {
         hasNextPage: false,
       },
     })
-    const events = await p.listEvents({ providerRef: '16', seasonHint: '1990', scope: 'upcoming' })
+    const events = await p.listEvents({ providerRef: '16', seasonHint: null, scope: 'upcoming' })
     expect(events).toHaveLength(1)
     expect(events[0].finished).toBe(false)
+  })
+
+  it('fails loudly when the season hint matches nothing (wrong-edition guard)', async () => {
+    const p = provider({ '/unique-tournament/16/seasons': SEASONS })
+    await expect(p.listEvents({ providerRef: '16', seasonHint: '1990', scope: 'upcoming' })).rejects.toBeInstanceOf(
+      ProviderUpstreamError,
+    )
+  })
+
+  it('caps pagination when the upstream flag never clears', async () => {
+    const routes: Record<string, unknown> = { '/unique-tournament/16/seasons': SEASONS }
+    for (let page = 0; page < 60; page += 1) {
+      routes[`/unique-tournament/16/season/58210/events/next/${page}`] = {
+        events: [sofaEvent(100 + page, 'A', 'B', 1781546400)],
+        hasNextPage: true,
+      }
+    }
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const events = await provider(routes).listEvents({ providerRef: '16', seasonHint: null, scope: 'upcoming' })
+    expect(events).toHaveLength(30)
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('truncated'))
+    warn.mockRestore()
   })
 
   it('skips events missing teams or a kickoff and tolerates 404 pages', async () => {
@@ -114,8 +136,11 @@ describe('sofascore getEventOdds', () => {
       '/event/7/odds/1/all': { markets: [{ marketId: 1, choices: choices.slice(0, 2) }] },
     })
     expect(await incomplete.getEventOdds('7')).toBeNull()
+  })
+
+  it("reports a deleted event as 'gone' so the mapping can be dropped", async () => {
     const gone = provider({})
-    expect(await gone.getEventOdds('7')).toBeNull()
+    expect(await gone.getEventOdds('7')).toBe('gone')
   })
 })
 
@@ -144,5 +169,13 @@ describe('sofascore error mapping', () => {
     await expect(status(403).getEventOdds('7')).rejects.toBeInstanceOf(ProviderRateLimitError)
     await expect(status(429).getEventOdds('7')).rejects.toBeInstanceOf(ProviderRateLimitError)
     await expect(status(500).getEventOdds('7')).rejects.toBeInstanceOf(ProviderUpstreamError)
+  })
+
+  it('treats a 200 non-JSON body (Cloudflare challenge page) as a rate limit', async () => {
+    const p = sofascoreProvider({
+      rateLimiter: noWait(),
+      fetchImpl: (async () => new Response('<html>challenge</html>', { status: 200 })) as unknown as typeof fetch,
+    })
+    await expect(p.getEventOdds('7')).rejects.toBeInstanceOf(ProviderRateLimitError)
   })
 })

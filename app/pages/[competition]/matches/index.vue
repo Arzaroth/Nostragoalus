@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const { t } = useI18n()
 const { enabled: crowdEnabled, totals: crowdTotals } = useCrowdTotals()
-const { enabled: oddsEnabled } = useMatchOdds()
+const oddsEnabled = useOddsPreference()
 const slug = useSelectedCompetition()
 const { data: matches, isLoading } = useMatches()
 const { data: predictions } = useMyPredictions()

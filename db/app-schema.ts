@@ -163,6 +163,8 @@ export const match = pgTable(
     // lists our away side as home, so fetched odds must be flipped.
     oddsEventRef: text('odds_event_ref'),
     oddsEventSwapped: boolean('odds_event_swapped').notNull().default(false),
+    // Last odds fetch ATTEMPT (priced or not) - drives the polling cadence.
+    oddsCheckedAt: timestamp('odds_checked_at', { withTimezone: true }),
     detailsFetchedAt: timestamp('details_fetched_at', { withTimezone: true }),
     scoringState: matchScoringStateEnum('scoring_state').notNull().default('PENDING'),
     scoredAtVersion: integer('scored_at_version'),
@@ -299,7 +301,9 @@ export const oddsSnapshot = pgTable(
     fetchedAt: timestamp('fetched_at', { withTimezone: true }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index('odds_snapshot_match_fetched_idx').on(t.matchId, t.fetchedAt)],
+  // Descending on fetched_at: latestOddsByMatch / closing-odds resolution scan
+  // newest-first per match.
+  (t) => [index('odds_snapshot_match_fetched_idx').on(t.matchId, t.fetchedAt.desc())],
 )
 
 export const matchScoreEvent = pgTable(
