@@ -44,20 +44,9 @@ export async function upsertPrediction(
   // Knockout placeholders ("Winner Group A") aren't predictable until both teams are known.
   if (!rows[0].homeTeamCode || !rows[0].awayTeamCode) throw new ValidationError('teams not confirmed yet')
 
-  const existing = await db
-    .select({ id: prediction.id })
-    .from(prediction)
-    .where(and(eq(prediction.userId, input.userId), eq(prediction.matchId, input.matchId)))
-    .limit(1)
-
-  if (existing.length > 0) {
-    await db
-      .update(prediction)
-      .set({ homeGoals: input.home, awayGoals: input.away })
-      .where(eq(prediction.id, existing[0].id))
-    return existing[0].id
-  }
-
+  // Atomic upsert keyed on the prediction_user_match_uq index. A plain
+  // select-then-insert raced on concurrent double-submits (autosave + manual
+  // save, retries), with the loser hitting the unique constraint as a 500.
   const [row] = await db
     .insert(prediction)
     .values({
@@ -66,6 +55,10 @@ export async function upsertPrediction(
       roundId: rows[0].roundId,
       homeGoals: input.home,
       awayGoals: input.away,
+    })
+    .onConflictDoUpdate({
+      target: [prediction.userId, prediction.matchId],
+      set: { homeGoals: input.home, awayGoals: input.away },
     })
     .returning({ id: prediction.id })
   return row.id
