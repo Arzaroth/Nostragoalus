@@ -15,8 +15,10 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ body, user 
   const id = await upsertPrediction(db, { userId: user.id, matchId: body.matchId, home: body.home, away: body.away })
   // live crowd totals for everyone with the preference on
   publishCrowdUpdate(body.matchId, await getMatchCrowdTotal(db, body.matchId))
-  // and the league-scoped totals to the predictor's league mates
-  await publishLeagueCrowdUpdates(db, { userId: user.id, matchId: body.matchId })
+  // and the league-scoped totals to the predictor's league mates - fire and
+  // forget: it is a per-league fan-out of queries that must not add latency to
+  // (or fail) the save itself.
+  void publishLeagueCrowdUpdates(db, { userId: user.id, matchId: body.matchId }).catch(() => {})
   return { id }
 })
 

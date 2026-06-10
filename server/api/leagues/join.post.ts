@@ -15,14 +15,14 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ body, user 
   if (!limiter.allow(user.id)) {
     throw createError({ statusCode: 429, statusMessage: 'Too many attempts, try again in a minute' })
   }
-  const league = await joinLeagueByCode(db, { userId: user.id, code: body.code })
+  const { league, role } = await joinLeagueByCode(db, { userId: user.id, code: body.code })
   const competition = await getCompetitionById(db, league.competitionId)
   return {
     league: {
       id: league.id,
       name: league.name,
       visibility: league.visibility,
-      role: 'MEMBER',
+      role,
       competition: competition ? { id: competition.id, slug: competition.slug, name: competition.name } : null,
     },
   }

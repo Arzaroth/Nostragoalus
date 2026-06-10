@@ -100,20 +100,25 @@ export async function createLeague(db: AppDatabase, opts: CreateLeagueOptions): 
   const codeGen = opts.codeGen ?? generateJoinCode
   for (let attempt = 1; ; attempt++) {
     try {
-      const [row] = await db
-        .insert(league)
-        .values({
-          competitionId: opts.competitionId,
-          name: opts.name,
-          visibility: opts.visibility ?? 'PRIVATE',
-          joinCode: codeGen(),
-          createdBy: opts.ownerId,
-        })
-        .returning()
-      await db.insert(leagueMember).values({ leagueId: row.id, userId: opts.ownerId, role: 'OWNER' })
-      await stampPromptDismissed(db, opts.ownerId)
-      return row as LeagueRow
+      // One transaction: a failure after the league row must not leave an
+      // orphaned, ownerless league with a live join code.
+      return await db.transaction(async (tx) => {
+        const [row] = await tx
+          .insert(league)
+          .values({
+            competitionId: opts.competitionId,
+            name: opts.name,
+            visibility: opts.visibility ?? 'PRIVATE',
+            joinCode: codeGen(),
+            createdBy: opts.ownerId,
+          })
+          .returning()
+        await tx.insert(leagueMember).values({ leagueId: row.id, userId: opts.ownerId, role: 'OWNER' })
+        await stampPromptDismissed(tx, opts.ownerId)
+        return row as LeagueRow
+      })
     } catch (error) {
+      // Only the join-code collision is retryable; the tx rolled back fully.
       if (!isUniqueViolation(error) || attempt >= MAX_CODE_ATTEMPTS) throw error
     }
   }
@@ -169,7 +174,13 @@ export async function listPublicLeagues(
 export async function listLeagueMembers(
   db: AppDatabase,
   leagueId: string,
+  opts?: { includePrivate?: boolean },
 ): Promise<Array<{ userId: string; name: string; image: string | null; role: LeagueRole; joinedAt: Date }>> {
+  // profilePrivate users are visible to league mates/admins but not to
+  // outsiders browsing a public league (same rule as the league board).
+  const where = opts?.includePrivate
+    ? eq(leagueMember.leagueId, leagueId)
+    : and(eq(leagueMember.leagueId, leagueId), eq(user.profilePrivate, false))
   const rows = await db
     .select({
       userId: leagueMember.userId,
@@ -180,7 +191,7 @@ export async function listLeagueMembers(
     })
     .from(leagueMember)
     .innerJoin(user, eq(user.id, leagueMember.userId))
-    .where(eq(leagueMember.leagueId, leagueId))
+    .where(where)
     .orderBy(
       sql`case ${leagueMember.role} when 'OWNER' then 0 when 'MODERATOR' then 1 else 2 end`,
       asc(leagueMember.joinedAt),
@@ -198,31 +209,46 @@ export async function leagueHasOwner(db: AppDatabase, leagueId: string): Promise
   return owners.length > 0
 }
 
+// Membership insert for an ownerless-league claim: the first one in becomes
+// OWNER. The single-owner unique index makes it race-safe at the DB level - a
+// concurrent second OWNER insert is rejected (surfaced as a 409 by toHttpError)
+// rather than creating two owners; the loser retries and joins as a member.
+export async function claimMembership(db: AppDatabase, leagueId: string, userId: string): Promise<LeagueRole> {
+  const role: LeagueRole = (await leagueHasOwner(db, leagueId)) ? 'MEMBER' : 'OWNER'
+  await db.insert(leagueMember).values({ leagueId, userId, role })
+  return role
+}
+
 // Joining an ownerless league (admin-created without an owner, emptied by
 // everyone leaving, or orphaned by account deletion) claims ownership: the
 // first one in becomes OWNER. Applies to code, public and SSO auto-joins.
-async function addMembership(db: AppDatabase, leagueId: string, userId: string): Promise<void> {
-  const owned = await leagueHasOwner(db, leagueId)
-  await db.insert(leagueMember).values({ leagueId, userId, role: owned ? 'MEMBER' : 'OWNER' })
+async function addMembership(db: AppDatabase, leagueId: string, userId: string): Promise<LeagueRole> {
+  const role = await claimMembership(db, leagueId, userId)
   await db.delete(leagueOptOut).where(and(eq(leagueOptOut.leagueId, leagueId), eq(leagueOptOut.userId, userId)))
   await stampPromptDismissed(db, userId)
+  return role
 }
 
-export async function joinLeagueByCode(db: AppDatabase, opts: { userId: string; code: string }): Promise<LeagueRow> {
+export interface JoinResult {
+  league: LeagueRow
+  role: LeagueRole
+}
+
+export async function joinLeagueByCode(db: AppDatabase, opts: { userId: string; code: string }): Promise<JoinResult> {
   const row = await findLeagueByCode(db, opts.code)
   if (!row) throw new NotFoundError('no league matches this code')
   if (await getMembership(db, row.id, opts.userId)) throw new ConflictError('already a member of this league')
-  await addMembership(db, row.id, opts.userId)
-  return row
+  const role = await addMembership(db, row.id, opts.userId)
+  return { league: row, role }
 }
 
-export async function joinPublicLeague(db: AppDatabase, opts: { userId: string; leagueId: string }): Promise<LeagueRow> {
+export async function joinPublicLeague(db: AppDatabase, opts: { userId: string; leagueId: string }): Promise<JoinResult> {
   const row = await getLeague(db, opts.leagueId)
   // Private leagues 404 here on purpose: ids must not leak existence.
   if (!row || row.visibility !== 'PUBLIC') throw new NotFoundError('league not found')
   if (await getMembership(db, row.id, opts.userId)) throw new ConflictError('already a member of this league')
-  await addMembership(db, row.id, opts.userId)
-  return row
+  const role = await addMembership(db, row.id, opts.userId)
+  return { league: row, role }
 }
 
 export async function leaveLeague(db: AppDatabase, opts: { leagueId: string; userId: string }): Promise<void> {
@@ -245,9 +271,14 @@ export async function leaveLeague(db: AppDatabase, opts: { leagueId: string; use
 
 // Irreversible admin cleanup: drop every league without a single member.
 export async function pruneEmptyLeagues(db: AppDatabase): Promise<number> {
+  // Keep SSO-linked leagues: those are created empty by design and populate on
+  // future logins; pruning them would silently break auto-join.
   const rows = await db
     .delete(league)
-    .where(sql`not exists (select 1 from ${leagueMember} where ${leagueMember.leagueId} = ${league.id})`)
+    .where(
+      sql`not exists (select 1 from ${leagueMember} where ${leagueMember.leagueId} = ${league.id})
+        and not exists (select 1 from ${ssoProviderLeague} where ${ssoProviderLeague.leagueId} = ${league.id})`,
+    )
     .returning({ id: league.id })
   return rows.length
 }
@@ -268,11 +299,15 @@ export async function kickMember(
 // so SSO auto-join cannot undo it. The rank snapshot goes too - a re-join
 // must not resurrect a months-old movement arrow.
 export async function removeMembership(db: AppDatabase, leagueId: string, userId: string): Promise<void> {
-  await db.delete(leagueMember).where(and(eq(leagueMember.leagueId, leagueId), eq(leagueMember.userId, userId)))
-  await db.insert(leagueOptOut).values({ leagueId, userId }).onConflictDoNothing()
-  await db
-    .delete(leagueLeaderboardRank)
-    .where(and(eq(leagueLeaderboardRank.leagueId, leagueId), eq(leagueLeaderboardRank.userId, userId)))
+  // Atomic: the opt-out row is the invariant that stops SSO auto-join from
+  // silently re-adding a user who just left/was kicked.
+  await db.transaction(async (tx) => {
+    await tx.delete(leagueMember).where(and(eq(leagueMember.leagueId, leagueId), eq(leagueMember.userId, userId)))
+    await tx.insert(leagueOptOut).values({ leagueId, userId }).onConflictDoNothing()
+    await tx
+      .delete(leagueLeaderboardRank)
+      .where(and(eq(leagueLeaderboardRank.leagueId, leagueId), eq(leagueLeaderboardRank.userId, userId)))
+  })
 }
 
 export async function setMemberRole(
@@ -293,17 +328,19 @@ export async function transferOwnership(
   opts: { leagueId: string; fromUserId: string; toUserId: string },
 ): Promise<void> {
   if (opts.fromUserId === opts.toUserId) throw new ValidationError('already the owner')
-  const target = await getMembership(db, opts.leagueId, opts.toUserId)
-  if (!target) throw new NotFoundError('not a member of this league')
   await db.transaction(async (tx) => {
     await tx
       .update(leagueMember)
       .set({ role: 'MODERATOR' })
       .where(and(eq(leagueMember.leagueId, opts.leagueId), eq(leagueMember.userId, opts.fromUserId)))
-    await tx
+    // Promote inside the tx and assert it took: if the target left between the
+    // pre-check and here, roll back so the league is never left ownerless.
+    const promoted = await tx
       .update(leagueMember)
       .set({ role: 'OWNER' })
       .where(and(eq(leagueMember.leagueId, opts.leagueId), eq(leagueMember.userId, opts.toUserId)))
+      .returning({ userId: leagueMember.userId })
+    if (promoted.length === 0) throw new NotFoundError('not a member of this league')
   })
 }
 

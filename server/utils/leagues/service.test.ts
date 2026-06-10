@@ -125,8 +125,9 @@ describe('joinLeagueByCode', () => {
     await makeUser(db, 'bob')
     const id = await makeLeague(db, { competitionId, ownerId: 'alice', joinCode: 'ABCD2345' })
     await db.insert(leagueOptOut).values({ leagueId: id, userId: 'bob' })
-    const row = await joinLeagueByCode(db, { userId: 'bob', code: 'abcd2345' })
+    const { league: row, role } = await joinLeagueByCode(db, { userId: 'bob', code: 'abcd2345' })
     expect(row.id).toBe(id)
+    expect(role).toBe('MEMBER')
     expect((await getMembership(db, id, 'bob'))?.role).toBe('MEMBER')
     expect(await optOutExists(id, 'bob')).toBe(false)
     expect(await promptDismissedAt('bob')).not.toBeNull()
@@ -156,6 +157,18 @@ describe('first joiner of an ownerless league', () => {
     const id = await makeLeague(db, { competitionId, visibility: 'PUBLIC' })
     await joinPublicLeague(db, { userId: 'alice', leagueId: id })
     expect((await getMembership(db, id, 'alice'))?.role).toBe('OWNER')
+  })
+
+  it('the single-owner index rejects a second OWNER row', async () => {
+    await makeUser(db, 'alice')
+    await makeUser(db, 'bob')
+    const id = await makeLeague(db, { competitionId, ownerId: 'alice' })
+    // The DB guarantee behind the race-safety: a second OWNER cannot be written.
+    await expect(
+      db.insert(leagueMember).values({ leagueId: id, userId: 'bob', role: 'OWNER' }),
+    ).rejects.toBeTruthy()
+    const members = await listLeagueMembers(db, id, { includePrivate: true })
+    expect(members.filter((m) => m.role === 'OWNER')).toHaveLength(1)
   })
 })
 
@@ -229,6 +242,19 @@ describe('listLeagueMembers', () => {
     const rows = await listLeagueMembers(db, id)
     expect(rows.map((r) => r.userId)).toEqual(['alice', 'carol', 'bob'])
     expect(rows.map((r) => r.role)).toEqual(['OWNER', 'MODERATOR', 'MEMBER'])
+  })
+
+  it('excludes private-profile members unless includePrivate is set', async () => {
+    await makeUser(db, 'alice')
+    await makeUser(db, 'shy')
+    const id = await makeLeague(db, { competitionId, ownerId: 'alice' })
+    await addLeagueMember(db, id, 'shy')
+    await db.update(user).set({ profilePrivate: true }).where(eq(user.id, 'shy'))
+
+    const outsiderView = await listLeagueMembers(db, id)
+    expect(outsiderView.map((m) => m.userId)).toEqual(['alice'])
+    const memberView = await listLeagueMembers(db, id, { includePrivate: true })
+    expect(memberView.map((m) => m.userId).sort()).toEqual(['alice', 'shy'])
   })
 })
 

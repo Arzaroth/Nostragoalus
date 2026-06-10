@@ -68,7 +68,10 @@ export function useCrowdTotals() {
   }
   onScopeDispose(() => leagueCtl?.abort())
   watch(leagueId, () => {
+    // Clear both: keeping leagueFetched would show the previous league's totals
+    // under the new league's lens until the refetch lands.
     leaguePatches.value = {}
+    leagueFetched.value = {}
   })
   watch([enabled, leagueId], loadLeague, { immediate: true })
 

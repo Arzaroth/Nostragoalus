@@ -10,15 +10,19 @@ export default defineEventHandler(async (event) => {
   if (!competition) return { stats: null }
 
   const [board, counters] = await Promise.all([
-    // includeHidden/includePrivate: hidden or private users still see their own stats.
-    getLeaderboard(db, { competitionId: competition.id, limit: 1000, includeHidden: true, includePrivate: true }),
+    // Rank the caller against the SAME population the visible board shows
+    // (other hidden/private users excluded), but always keep the caller on it
+    // so they see their own rank and points even if they went private.
+    getLeaderboard(db, { competitionId: competition.id, limit: 1000, alwaysIncludeUserId: user.id }),
     getMyStats(db, user.id, competition.id),
   ])
   const row = board.find((r) => r.userId === user.id)
+  // A private/hidden caller occupies no public position; null reads as "-".
+  const isExcluded = (user as { profilePrivate?: boolean; hiddenFromLeaderboard?: boolean }).profilePrivate === true || (user as { hiddenFromLeaderboard?: boolean }).hiddenFromLeaderboard === true
   return {
     stats: {
-      rank: row?.rank ?? null,
-      players: board.length,
+      rank: isExcluded ? null : (row?.rank ?? null),
+      players: board.length - (isExcluded ? 1 : 0),
       totalPoints: row?.totalPoints ?? 0,
       exact: row?.exactCount ?? 0,
       outcome: row?.outcomeCount ?? 0,

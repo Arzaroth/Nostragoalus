@@ -37,9 +37,13 @@ export function useSelectedLeague() {
   // selections is a watch source too (stale cookie writes, other tabs); the
   // changed-check below keeps that from looping.
   watch(
-    [() => mine.isSuccess.value, () => mine.data.value, slug, selections],
+    [() => mine.isSuccess.value, () => mine.isFetching.value, () => mine.data.value, slug, selections],
     () => {
-      if (!mine.isSuccess.value) return
+      // Wait for a settled, non-stale list: a just-joined/created league id is
+      // written to the cookie right after join, while the leagues query is still
+      // refetching with the old list - pruning then would erase the new
+      // selection (vue-query keeps isSuccess true during a background refetch).
+      if (!mine.isSuccess.value || mine.isFetching.value) return
       const validIds = (mine.data.value ?? []).map((l) => l.id)
       const pruned = pruneLeagueSelection(selections.value, slug.value, validIds)
       if (selectedLeagueFor(pruned, slug.value) !== selectedLeagueFor(selections.value, slug.value)) {

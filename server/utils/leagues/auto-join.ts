@@ -1,6 +1,7 @@
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { leagueMember, leagueOptOut, ssoProviderLeague, user } from '../../../db/schema'
+import { claimMembership } from './service'
 
 // Runs on every SSO login (provisionUserOnEveryLogin), so it must be
 // idempotent: skip leagues the user is in, and honor explicit leaves.
@@ -29,22 +30,19 @@ export async function autoJoinSsoLeagues(
   const toJoin = leagueIds.filter((id) => !skip.has(id))
   if (toJoin.length === 0) return []
 
-  // First one into an ownerless league becomes its owner, same as the
-  // deliberate join paths.
-  const owned = await db
-    .select({ leagueId: leagueMember.leagueId })
-    .from(leagueMember)
-    .where(and(inArray(leagueMember.leagueId, toJoin), eq(leagueMember.role, 'OWNER')))
-  const ownedIds = new Set(owned.map((r) => r.leagueId))
-  // onConflictDoNothing: concurrent logins may race on the same membership.
-  await db
-    .insert(leagueMember)
-    .values(toJoin.map((leagueId) => ({ leagueId, userId: opts.userId, role: ownedIds.has(leagueId) ? ('MEMBER' as const) : ('OWNER' as const) })))
-    .onConflictDoNothing()
+  // First one into an ownerless league becomes its owner, same as the deliberate
+  // join paths. claimMembership relies on the single-owner unique index, so a
+  // concurrent first-login can't create a second OWNER (the loser throws and is
+  // caught by the SSO provisionUser wrapper - the user auto-joins next login).
+  const joined: string[] = []
+  for (const leagueId of toJoin) {
+    await claimMembership(db, leagueId, opts.userId)
+    joined.push(leagueId)
+  }
   // Auto-joined users have a league: the one-time prompt would be noise.
   await db
     .update(user)
     .set({ leaguePromptDismissedAt: new Date() })
     .where(and(eq(user.id, opts.userId), sql`${user.leaguePromptDismissedAt} is null`))
-  return toJoin
+  return joined
 }

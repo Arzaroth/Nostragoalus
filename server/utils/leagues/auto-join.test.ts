@@ -71,6 +71,26 @@ describe('autoJoinSsoLeagues', () => {
     expect(await autoJoinSsoLeagues(db, { userId: 'alice', providerId: 'ghost' })).toEqual([])
   })
 
+  it('is idempotent: a second run joins nothing and never throws on conflicts', async () => {
+    await makeUser(db, 'alice')
+    const a = await makeLeague(db, { competitionId })
+    await makeProvider('acme')
+    await setProviderAutoJoinLeagues(db, 'acme', [a])
+    expect(await autoJoinSsoLeagues(db, { userId: 'alice', providerId: 'acme' })).toEqual([a])
+    // Second login: already a member - the membership-conflict path is skipped,
+    // not surfaced as an error.
+    expect(await autoJoinSsoLeagues(db, { userId: 'alice', providerId: 'acme' })).toEqual([])
+  })
+
+  it('rethrows a non-conflict error (e.g. the user row is gone)', async () => {
+    const a = await makeLeague(db, { competitionId })
+    await makeProvider('acme')
+    await setProviderAutoJoinLeagues(db, 'acme', [a])
+    // No user row for 'ghost' -> the membership insert hits a FK violation,
+    // which is not a unique conflict and must propagate.
+    await expect(autoJoinSsoLeagues(db, { userId: 'ghost', providerId: 'acme' })).rejects.toBeTruthy()
+  })
+
   it('two providers can share a league without conflict', async () => {
     await makeUser(db, 'alice')
     const a = await makeLeague(db, { competitionId })

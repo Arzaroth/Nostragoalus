@@ -2,7 +2,7 @@ import { db } from '../../../db'
 import { getCompetitionById, resolveCompetition } from '../../utils/competitions/store'
 import { getCrowdTotals } from '../../utils/predictions/service'
 import { isAdmin, requireUser } from '../../utils/auth-guards'
-import { canViewLeague, getLeague, getMembership } from '../../utils/leagues/service'
+import { getLeague, getMembership } from '../../utils/leagues/service'
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
@@ -13,7 +13,10 @@ export default defineEventHandler(async (event) => {
     const league = await getLeague(db, String(query.league))
     if (!league) throw createError({ statusCode: 404, statusMessage: 'League not found' })
     const membership = await getMembership(db, league.id, user.id)
-    if (!canViewLeague(league, membership, membership ? false : await isAdmin(event))) {
+    // Members/admins only: the live crowd consensus is a members feature (the
+    // WS league channel is members-only too), and folding private-profile
+    // members into a small public league's totals would deanonymize them.
+    if (!membership && !(await isAdmin(event))) {
       throw createError({ statusCode: 404, statusMessage: 'League not found' })
     }
     const competition = await getCompetitionById(db, league.competitionId)

@@ -59,3 +59,33 @@ Deferred work, queued behind feature development.
       duplicate diacritic folding with diverging special cases.
 - [ ] RateLimiter.acquire is check-then-sleep; concurrent callers can fire
       together. A promise-chain queue would make the host spacing a guarantee.
+
+## Leagues feature (deferred from the merge review)
+
+- [ ] Dedup the rank-snapshot pair: updateLeagueRankSnapshots/getLeagueRankMovements
+      are verbatim copies of the global ones (snapshots.ts) - parameterize by
+      table/scope. Same for the per-league fetch pipeline in useCrowdTotals
+      (clone of the global block) and adminCreateLeague vs createLeague.
+- [ ] Extract one resolveLeagueView(event, leagueId) guard helper - the
+      getLeague/membership/admin/canView/competition-slug block is copy-pasted
+      across leaderboard, crowd and league-detail routes (already drifted: the
+      mutation routes 403 where the GETs 404, leaking league existence).
+- [ ] Adopt defineValidatedHandler on the hand-rolled league mutation routes
+      (join/leave/kick/regenerate/delete) so toHttpError + future hooks apply
+      uniformly; the user-facing delete currently 500s on a vanished league.
+- [ ] Share a LeaderboardRows component between /[competition]/leaderboard and
+      /leagues/[id] - the league page copy dropped movement arrows + the
+      champion crown (a feature gap: per-league movement is computed but unshown).
+- [ ] Scale: updateLeagueRankSnapshots is leagues x members sequential
+      INSERT/UPDATE per finalize tick; getLeaderboard's champion query isn't
+      league-scoped (fetches all picks for a 20-row board); publishLeagueCrowd
+      fan-out scans all subscribers per league. Batch/scope when league count grows.
+- [ ] WS auth is resolved once at socket open; a signed-out/expired session keeps
+      its userId for the socket's life. Re-validate periodically or on a sentinel.
+- [ ] Dead endpoint: GET /api/me/league-prompt + shouldShowLeaguePrompt have no
+      caller (the dialog derives visibility client-side); remove or wire up.
+- [ ] League leaderboard page shows an empty board (not an error) when the
+      selected league was deleted/left until useMyLeagues refetches; clear the
+      selection on a league fetch 404.
+- [ ] Rate limiter is in-process per instance; multi-instance multiplies the
+      join-code attempt budget (shared limiter / store needed if scaled out).
