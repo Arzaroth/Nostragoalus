@@ -6,9 +6,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 ## [Unreleased]
 
 ### Fixed
+- The hot-reload dev container keeps node_modules AND its build output (.nuxt/.output) in container-private volumes: its root-owned artifacts on the bind mount broke host-side pnpm/nuxt runs, and pnpm's no-TTY purge prompt could kill the container start.
 - Admin user list: "Unlink from SSO" only appears for users actually linked to a provider (small link icon shows who is, with the provider ids in its tooltip), and admins can no longer demote themselves (it broke every admin query on the page mid-session).
 
 ### Added
+- `mise run db-backup` / `mise run db-restore`: compressed pg_dump out of the dockerized Postgres into `backups/` and the matching (confirmed, destructive) restore - the missing piece for a nightly-backup cron.
 - Forgejo-style footer on every page: app version (links to About), server/client page render time, a themed language switcher, a dark-mode toggle and the API docs link (moved out of the landing footer). The login/signup pages' standalone language/theme controls are gone - the footer covers them.
 
 ## [0.15.0] - 2026-06-09
