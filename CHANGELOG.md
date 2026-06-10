@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+- Saving a prediction is now an atomic upsert: concurrent double-submits (autosave racing a manual save, a retry) no longer crash with a 500 on the unique (user, match) constraint - the loser updates the existing row instead.
+- A failed SSO sign-in lands back on the login page with a flash ("single sign-on failed…") instead of dumping the user on the site root with raw `?error=` query params; the verbose identity-provider description (which can carry trace IDs) goes to the browser console only.
+
 ## [0.15.1] - 2026-06-10
 
 ### Fixed
