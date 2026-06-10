@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [0.15.1] - 2026-06-10
+
 ### Fixed
 - The hot-reload dev container keeps node_modules AND its build output (.nuxt/.output) in container-private volumes: its root-owned artifacts on the bind mount broke host-side pnpm/nuxt runs, and pnpm's no-TTY purge prompt could kill the container start.
 - Admin user list: "Unlink from SSO" only appears for users actually linked to a provider (small link icon shows who is, with the provider ids in its tooltip), and admins can no longer demote themselves (it broke every admin query on the page mid-session).
