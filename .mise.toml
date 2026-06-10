@@ -7,7 +7,7 @@ run = "docker compose -f compose.yaml -f compose.dev.yaml --profile dev stop app
 
 [tasks.dev]
 description = "HMR dev server + db + maildev (source bind-mounted, hot reload)"
-run = "docker compose stop app 2>/dev/null; docker compose -f compose.yaml -f compose.dev.yaml --profile dev up -d --build --wait db maildev app-dev"
+run = "docker compose stop app 2>/dev/null; docker compose -f compose.yaml -f compose.dev.yaml --profile dev up -d --build --renew-anon-volumes --wait db maildev app-dev"
 
 [tasks.preview]
 description = "Built (prod-target) app + db + maildev (dev env, no HMR)"
