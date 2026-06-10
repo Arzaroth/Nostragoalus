@@ -209,6 +209,15 @@
     "lockedIn": "SoQ - Qapla'!",
     "preview": "wej choqlu'"
   },
+  "bestScorer": {
+    "title": "qIchwI'lIj nIv",
+    "pickTeam": "ghom yIwIv",
+    "pickPlayer": "qIchwI' yIwIv",
+    "hint": "DaS qIj nIv Suqchugh wIvlIj, tev DaSuq · may' wa'DIch taghDI' SoQmoHlu'.",
+    "noPick": "qIchwI' nIv wIvbe'lu' - SoQ.",
+    "lockedIn": "SoQ - Qapla'!",
+    "preview": "wej choqlu'"
+  },
   "leaderboard": {
     "title": "patlh",
     "thisCompetition": "'aqtu'",

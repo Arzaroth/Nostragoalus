@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { flagUrl, formatPlayerName, isLocked, searchable, matchStatusLabel, pensResult, statusSeverity, tierLabel } from './format'
+import { flagUrl, playerPhotoUrl, formatPlayerName, isLocked, searchable, matchStatusLabel, pensResult, statusSeverity, tierLabel } from './format'
 import type { MatchStatus } from '../../shared/types/match'
 
 const STATUSES: MatchStatus[] = [
@@ -54,6 +54,14 @@ describe('flagUrl', () => {
     expect(flagUrl('MEX')).toContain('/flags-sq-3/MEX')
     expect(flagUrl(null)).toBeNull()
     expect(flagUrl(undefined)).toBeNull()
+  })
+})
+
+describe('playerPhotoUrl', () => {
+  it('builds a FIFA headshot url or returns null', () => {
+    expect(playerPhotoUrl('400089481')).toContain('/players-sq-3/400089481')
+    expect(playerPhotoUrl(null)).toBeNull()
+    expect(playerPhotoUrl(undefined)).toBeNull()
   })
 })
 

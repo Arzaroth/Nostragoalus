@@ -209,6 +209,15 @@
     "lockedIn": "Locked in - good luck!",
     "preview": "not saved yet"
   },
+  "bestScorer": {
+    "title": "Your best scorer",
+    "pickTeam": "Pick a team",
+    "pickPlayer": "Pick the scorer",
+    "hint": "Bonus if your pick wins the Golden Boot · locks at the first kickoff.",
+    "noPick": "No best scorer picked - locked.",
+    "lockedIn": "Locked in - good luck!",
+    "preview": "not saved yet"
+  },
   "leaderboard": {
     "title": "Ranking",
     "thisCompetition": "Competition",

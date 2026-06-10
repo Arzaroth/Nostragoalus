@@ -65,6 +65,12 @@ export function flagUrl(code: string | null | undefined): string | null {
   return code ? `https://api.fifa.com/api/v3/picture/flags-sq-3/${code}` : null
 }
 
+// FIFA headshot derived from the provider player id - same picture API as the
+// flags. Not every player has one; callers must fall back on image error.
+export function playerPhotoUrl(playerId: string | null | undefined): string | null {
+  return playerId ? `https://api.fifa.com/api/v3/picture/players-sq-3/${playerId}` : null
+}
+
 // "4–2" when a shootout actually happened, else null (0–0 penalty rows are sync artifacts).
 export function pensResult(m: { penaltiesHome?: number | null; penaltiesAway?: number | null }): string | null {
   const h = m.penaltiesHome ?? null

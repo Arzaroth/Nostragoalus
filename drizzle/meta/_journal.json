@@ -127,6 +127,13 @@
       "when": 1781118695033,
       "tag": "0017_leagues_owner_constraint_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1781126620314,
+      "tag": "0018_best_scorer",
+      "breakpoints": true
     }
   ]
 }

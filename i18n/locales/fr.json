@@ -209,6 +209,15 @@
     "lockedIn": "Verrouillé - bonne chance !",
     "preview": "pas encore enregistré"
   },
+  "bestScorer": {
+    "title": "Votre meilleur buteur",
+    "pickTeam": "Choisissez une équipe",
+    "pickPlayer": "Choisissez le buteur",
+    "hint": "Bonus si votre choix remporte le Soulier d'or · verrouillé au premier coup d'envoi.",
+    "noPick": "Aucun buteur choisi - verrouillé.",
+    "lockedIn": "Verrouillé - bonne chance !",
+    "preview": "pas encore enregistré"
+  },
   "leaderboard": {
     "title": "Classement",
     "thisCompetition": "Compétition",
