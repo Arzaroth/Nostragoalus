@@ -35,7 +35,10 @@ async function next() {
     const { providerId } = await $fetch<{ providerId: string | null }>('/api/sso/check', { query: { email: email.value } })
     if (providerId) {
       redirecting.value = true
-      const { error: err } = await signIn.sso({ providerId, callbackURL: '/matches' })
+      // errorCallbackURL keeps a failed token exchange / callback on this page
+      // (better-auth appends ?error=&error_description=) instead of dumping the
+      // user on the site root - see the onMounted handler below.
+      const { error: err } = await signIn.sso({ providerId, callbackURL: '/matches', errorCallbackURL: '/login' })
       if (err) {
         redirecting.value = false
         error.value = err.message ?? 'SSO failed'
@@ -64,6 +67,20 @@ async function submit() {
     loading.value = false
   }
 }
+
+// A failed SSO callback redirects back here as /login?error=…&error_description=…
+// (errorCallbackURL above). Surface a generic flash - the raw description can be
+// a verbose IdP message carrying trace IDs, so it only goes to the console - then
+// strip the query so a refresh doesn't replay the error.
+onMounted(() => {
+  if (route.query.error === undefined) return
+  if (route.query.error_description) {
+    console.warn('SSO sign-in failed:', route.query.error, route.query.error_description)
+  }
+  error.value = t('auth.ssoFailed')
+  const { error: _e, error_description: _d, ...rest } = route.query
+  router.replace({ query: rest })
+})
 
 async function signInPasskey() {
   error.value = ''

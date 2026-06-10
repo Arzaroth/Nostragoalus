@@ -254,6 +254,7 @@
     "or": "ou",
     "continue": "Continuer",
     "ssoRedirect": "Redirection vers votre fournisseur d'identité…",
+    "ssoFailed": "Échec de l'authentification unique. Réessayez ou contactez votre administrateur.",
     "ssoDomainWarn": "La connexion pour ce domaine e-mail est gérée par {name}. Vous pouvez quand même créer un compte avec mot de passe, mais le SSO est la voie prévue.",
     "ssoDomainUse": "Se connecter via {name}",
     "ssoDomainContinue": "Créer un compte avec mot de passe quand même",

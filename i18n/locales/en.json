@@ -254,6 +254,7 @@
     "or": "or",
     "continue": "Continue",
     "ssoRedirect": "Redirecting to your identity provider…",
+    "ssoFailed": "Single sign-on failed. Please try again or contact your administrator.",
     "ssoDomainWarn": "Sign-in for this email domain is managed by {name}. You can still create a separate password account, but SSO is the expected way in.",
     "ssoDomainUse": "Sign in with {name}",
     "ssoDomainContinue": "Create a password account anyway",

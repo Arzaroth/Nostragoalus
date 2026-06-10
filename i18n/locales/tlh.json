@@ -254,6 +254,7 @@
     "or": "ghap",
     "continue": "yIruch",
     "ssoRedirect": "DubelmoHwI' ngu'meH DaqDaq Duqemlu'taH…",
+    "ssoFailed": "SSO Qapbe'. yInIDqa' pagh DevwI'lI' yISummoH.",
     "ssoDomainWarn": "QIn Sepvam 'elmeH mIw SeH {name}. mu'wIj raQwI' chenmoHlaH SoH, 'ach SSO 'oH He'e'.",
     "ssoDomainUse": "{name} lo'taHvIS yI'el",
     "ssoDomainContinue": "mu'wIj raQwI' yIchenmoHtaH",
