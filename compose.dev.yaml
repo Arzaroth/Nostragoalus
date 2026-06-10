@@ -45,9 +45,6 @@ services:
       DATABASE_URL: postgres://nostragoalus:nostragoalus@db:5432/nostragoalus
       NUXT_DATABASE_URL: postgres://nostragoalus:nostragoalus@db:5432/nostragoalus
       NUXT_SMTP_URL: smtp://maildev:1025
-      # pnpm's dep check may want to purge node_modules; no TTY in a container,
-      # so answer for it instead of aborting the start.
-      npm_config_confirm_modules_purge: 'false'
     ports:
       - '127.0.0.1:3000:3000'
     volumes:
