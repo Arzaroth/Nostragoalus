@@ -376,17 +376,6 @@ export async function deleteLeague(db: AppDatabase, leagueId: string): Promise<v
   if (!rows[0]) throw new NotFoundError('league not found')
 }
 
-export async function shouldShowLeaguePrompt(db: AppDatabase, userId: string): Promise<boolean> {
-  const rows = await db
-    .select({ dismissedAt: user.leaguePromptDismissedAt })
-    .from(user)
-    .where(eq(user.id, userId))
-    .limit(1)
-  if (!rows[0] || rows[0].dismissedAt !== null) return false
-  const [memberships] = await db.select({ n: count() }).from(leagueMember).where(eq(leagueMember.userId, userId))
-  return Number(memberships?.n ?? 0) === 0
-}
-
 export async function dismissLeaguePrompt(db: AppDatabase, userId: string): Promise<void> {
   await stampPromptDismissed(db, userId)
 }

@@ -1,6 +1,6 @@
 import { db } from '../../../db'
 import { BOT_USER_ID, type ConsensusMethod } from '../../../shared/types/bot'
-import { getBotOverview } from '../../utils/bot/service'
+import { getBotOverviewCached } from '../../utils/bot/service'
 import { getCompetitionById, resolveCompetition } from '../../utils/competitions/store'
 import { isAdmin, requireUser } from '../../utils/auth-guards'
 import { canViewLeague, getLeague, getMembership, type LeagueRow } from '../../utils/leagues/service'
@@ -28,7 +28,7 @@ export default defineEventHandler(async (event) => {
   }
   if (!competition) return { competition: null, row: null, method, modeAvailable: false }
 
-  const overview = await getBotOverview(db, competition.id, { method, leagueId: league?.id, includePrivate })
+  const overview = await getBotOverviewCached(db, competition.id, { method, leagueId: league?.id, includePrivate })
   // The ghost row only exists once the bot has scored points to show.
   const row = overview.hasScores
     ? {

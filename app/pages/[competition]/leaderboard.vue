@@ -13,7 +13,15 @@ watch(leagueId, (id) => {
 
 const isGlobal = computed(() => scope.value === 'global')
 const scopedLeagueId = computed(() => (scope.value === 'league' ? leagueId.value : null))
-const { data: rows, isLoading } = useLeaderboard(isGlobal, scopedLeagueId)
+const { data: rows, isLoading, error: boardError } = useLeaderboard(isGlobal, scopedLeagueId)
+// The selected league was deleted, or membership was revoked: its board 404s.
+// Drop the stale selection so the view falls back to the competition board
+// instead of showing a misleading "empty leaderboard".
+watch(boardError, (err) => {
+  if (err && scope.value === 'league' && (err as { statusCode?: number }).statusCode === 404) {
+    leagueId.value = null
+  }
+})
 const { session } = useAuth()
 const meId = computed(() => session.value?.data?.user?.id)
 

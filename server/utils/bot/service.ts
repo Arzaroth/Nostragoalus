@@ -371,3 +371,36 @@ export async function getBotOverview(
     hasScores,
   }
 }
+
+
+// getBotOverview scans every prediction + re-runs the leaderboard query, and
+// its result is identical for everyone sharing (competition, league, method,
+// visibility). A short in-process TTL collapses the per-request cost during a
+// busy leaderboard view; the bot is display-only so brief staleness is fine.
+const BOT_CACHE_TTL_MS = 30_000
+const botCache = new Map<string, { at: number; value: BotOverview }>()
+
+export async function getBotOverviewCached(
+  db: AppDatabase,
+  competitionId: string,
+  opts: BotScopeOptions = {},
+): Promise<BotOverview> {
+  const key = [
+    competitionId,
+    opts.leagueId ?? '',
+    opts.method ?? '',
+    opts.includeUpcoming ? 1 : 0,
+    opts.includePrivate ? 1 : 0,
+  ].join('|')
+  const now = Date.now()
+  const hit = botCache.get(key)
+  if (hit && now - hit.at < BOT_CACHE_TTL_MS) return hit.value
+  const value = await getBotOverview(db, competitionId, opts)
+  botCache.set(key, { at: now, value })
+  return value
+}
+
+// Test seam: drop memoized entries so a fresh computation runs.
+export function clearBotCache(): void {
+  botCache.clear()
+}

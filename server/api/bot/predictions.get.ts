@@ -1,6 +1,6 @@
 import { db } from '../../../db'
 import { BOT_USER_ID, type ConsensusMethod } from '../../../shared/types/bot'
-import { getBotOverview } from '../../utils/bot/service'
+import { getBotOverviewCached } from '../../utils/bot/service'
 import { getCompetitionById, resolveCompetition } from '../../utils/competitions/store'
 import { isAdmin, requireUser } from '../../utils/auth-guards'
 import { canViewLeague, getLeague, getMembership, type LeagueRow } from '../../utils/leagues/service'
@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
   }
   if (!competition) throw createError({ statusCode: 404, statusMessage: 'competition not found' })
 
-  const overview = await getBotOverview(db, competition.id, {
+  const overview = await getBotOverviewCached(db, competition.id, {
     method,
     leagueId: league?.id,
     includeUpcoming: admin,

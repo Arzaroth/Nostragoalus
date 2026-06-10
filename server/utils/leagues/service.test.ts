@@ -34,7 +34,6 @@ import {
   setAdminMemberRole,
   setLeagueVisibility,
   setMemberRole,
-  shouldShowLeaguePrompt,
   transferOwnership,
 } from './service'
 
@@ -411,26 +410,16 @@ describe('rename / visibility / delete', () => {
   })
 })
 
-describe('league prompt', () => {
-  it('shows only for users with no membership and no dismissal', async () => {
+describe('dismissLeaguePrompt', () => {
+  it('stamps the dismissal once and is idempotent', async () => {
     await makeUser(db, 'alice')
-    expect(await shouldShowLeaguePrompt(db, 'alice')).toBe(true)
+    expect(await promptDismissedAt('alice')).toBeNull()
     await dismissLeaguePrompt(db, 'alice')
-    expect(await shouldShowLeaguePrompt(db, 'alice')).toBe(false)
-    // Idempotent: the original timestamp is kept.
     const first = await promptDismissedAt('alice')
+    expect(first).not.toBeNull()
+    // Re-dismissing keeps the original timestamp.
     await dismissLeaguePrompt(db, 'alice')
     expect(await promptDismissedAt('alice')).toEqual(first)
-  })
-
-  it('membership alone hides the prompt, and unknown users never see it', async () => {
-    await makeUser(db, 'bob')
-    const id = await makeLeague(db, { competitionId })
-    await addLeagueMember(db, id, 'bob')
-    // Direct insert (factory) bypasses the service stamp - membership must win on its own.
-    expect(await promptDismissedAt('bob')).toBeNull()
-    expect(await shouldShowLeaguePrompt(db, 'bob')).toBe(false)
-    expect(await shouldShowLeaguePrompt(db, 'ghost')).toBe(false)
   })
 })
 

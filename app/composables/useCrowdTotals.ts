@@ -75,25 +75,20 @@ export function useCrowdTotals() {
   })
   watch([enabled, leagueId], loadLeague, { immediate: true })
 
-  let socket: WebSocket | null = null
-  onMounted(() => {
-    if (!import.meta.client) return
-    void load() // ensure a client-side fetch even if the watcher ran during SSR
-    void loadLeague()
-    const proto = location.protocol === 'https:' ? 'wss' : 'ws'
-    socket = new WebSocket(`${proto}://${location.host}/_ws`)
-    socket.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data)
-        const scope = crowdPatchScope(msg, leagueId.value)
-        if (scope === 'global') patches.value = { ...patches.value, [msg.matchId]: msg.totals }
-        else if (scope === 'league') leaguePatches.value = { ...leaguePatches.value, [msg.matchId]: msg.totals }
-      } catch {
-        // ignore
-      }
-    }
+  // Shared reconnecting socket: on (re)connect, refetch the snapshot we may
+  // have missed while disconnected, then resume applying live patches.
+  useReconnectingSocket({
+    onOpen: () => {
+      void load()
+      void loadLeague()
+    },
+    onMessage: (data) => {
+      const msg = data as { type?: string; matchId?: string; totals?: CrowdTotal }
+      const scope = crowdPatchScope(msg, leagueId.value)
+      if (scope === 'global' && msg.matchId && msg.totals) patches.value = { ...patches.value, [msg.matchId]: msg.totals }
+      else if (scope === 'league' && msg.matchId && msg.totals) leaguePatches.value = { ...leaguePatches.value, [msg.matchId]: msg.totals }
+    },
   })
-  onBeforeUnmount(() => socket?.close())
 
   const totals = computed(() => (enabled.value ? { ...fetched.value, ...patches.value } : {}))
   const leagueTotals = computed(() =>

@@ -44,6 +44,13 @@ describe('rank snapshots', () => {
     expect((await getRankMovements(db, competitionId)).get(bob)).toBe(1)
     await client.close()
   })
+  it('no-ops on an empty board (no users) without writing snapshots', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    await updateRankSnapshots(db, competitionId)
+    expect((await getRankMovements(db, competitionId)).size).toBe(0)
+    await client.close()
+  })
 })
 
 describe('league rank snapshots', () => {
