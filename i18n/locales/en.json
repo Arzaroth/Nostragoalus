@@ -368,7 +368,7 @@
       "finalize": "Finalize",
       "finalizeTip": "Lock due predictions, score finished matches, award points and refresh the rankings.",
       "odds": "Refresh odds",
-      "oddsTip": "Snapshot bookmaker odds for upcoming matches (self-gates: every 6h, tightening to 30min in the last 2h before kickoff).",
+      "oddsTip": "Snapshot bookmaker odds for the current round (self-gates: every 6h, tightening to 30min in the last 2h before kickoff; the next round starts once this one finishes).",
       "oddsBackfill": "Backfill odds",
       "oddsBackfillTip": "Recover closing odds for finished matches of past tournaments. Capped per run - re-trigger until 'remaining' reaches 0.",
       "nextRun": "Next run",
