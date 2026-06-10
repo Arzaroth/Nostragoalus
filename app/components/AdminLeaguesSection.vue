@@ -262,12 +262,13 @@ const roleOptions = computed(() => [
           option-label="label"
           option-value="value"
           filter
-          class="flex-1"
+          class="flex-1 min-w-0"
           :placeholder="t('admin.leagues.addMember')"
         />
         <Button
           :label="t('admin.leagues.addMember')"
           size="small"
+          class="shrink-0 whitespace-nowrap"
           :disabled="!addUserId"
           :loading="addMutation.isPending.value"
           @click="addMutation.mutate()"
@@ -275,7 +276,7 @@ const roleOptions = computed(() => [
       </div>
       <ul class="flex flex-col divide-y" style="border-color: var(--p-content-border-color)">
         <li v-for="m in detail?.members ?? []" :key="m.userId" class="flex items-center gap-3 py-2">
-          <Avatar :image="m.image || '/brand/avatar.svg'" shape="circle" class="shrink-0 overflow-hidden" />
+          <UserAvatar :image="m.image" />
           <span class="flex-1 min-w-0 truncate text-sm font-medium">{{ m.name }}</span>
           <Select
             :model-value="m.role"

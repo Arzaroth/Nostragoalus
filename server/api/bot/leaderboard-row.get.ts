@@ -29,8 +29,9 @@ export default defineEventHandler(async (event) => {
   if (!competition) return { competition: null, row: null, method, modeAvailable: false }
 
   const overview = await getBotOverviewCached(db, competition.id, { method, leagueId: league?.id, includePrivate })
-  // The ghost row only exists once the bot has scored points to show.
-  const row = overview.hasScores
+  // Shown as soon as the bot has a rank (anyone has predicted), even at 0 pts
+  // pre-scoring, so the toggle always reveals it.
+  const row = overview.summary.rank !== null
     ? {
         rank: overview.summary.rank,
         userId: BOT_USER_ID,

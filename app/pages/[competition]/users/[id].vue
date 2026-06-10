@@ -27,7 +27,7 @@ const { data, error } = await useFetch<{
     </NuxtLink>
     <div class="flex items-center justify-between gap-3 flex-wrap mt-3 mb-1">
       <div class="flex items-center gap-3 min-w-0">
-        <Avatar :image="data.user.image || '/brand/avatar.svg'" shape="circle" size="large" class="overflow-hidden shrink-0" />
+        <UserAvatar :image="data.user.image" size="large" />
         <h1 class="text-2xl font-bold truncate">{{ data.user.name }}</h1>
         <span v-if="data.champion?.teamCode && flagUrl(data.champion.teamCode)" class="relative shrink-0 inline-flex items-center gap-1.5" :title="`${t('champion.title')}: ${data.champion.teamName}`">
           <img :src="flagUrl(data.champion.teamCode) || ''" class="w-6 h-6 rounded object-cover" alt="" >

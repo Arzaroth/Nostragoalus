@@ -1,6 +1,7 @@
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
-import { leagueMember, leagueOptOut, ssoProviderLeague, user } from '../../../db/schema'
+import { leagueMember, leagueOptOut, ssoProvider, ssoProviderLeague, user } from '../../../db/schema'
+import { domainMatchesList, domainOfEmail } from '../auth/sso-domains'
 import { claimMembership } from './service'
 
 // Runs on every SSO login (provisionUserOnEveryLogin), so it must be
@@ -45,4 +46,36 @@ export async function autoJoinSsoLeagues(
     .set({ leaguePromptDismissedAt: new Date() })
     .where(and(eq(user.id, opts.userId), sql`${user.leaguePromptDismissedAt} is null`))
   return joined
+}
+
+// Admin "apply now": auto-join is otherwise only triggered on a user's SSO
+// login. This back-fills it for every EXISTING user whose email domain a
+// linked provider captures - so configuring provider leagues takes effect
+// without waiting for everyone to log in again. Honors opt-outs/memberships
+// (autoJoinSsoLeagues is idempotent).
+export async function applyAllProviderAutoJoins(
+  db: AppDatabase,
+): Promise<{ providers: number; usersMatched: number; joined: number }> {
+  const links = await db.selectDistinct({ providerId: ssoProviderLeague.providerId }).from(ssoProviderLeague)
+  const providerIds = links.map((l) => l.providerId)
+  if (providerIds.length === 0) return { providers: 0, usersMatched: 0, joined: 0 }
+
+  // Fetch the providers via the FK target, so every row is guaranteed present
+  // (no orphan-link branch) and carries its captured domains.
+  const providers = await db
+    .select({ providerId: ssoProvider.providerId, domain: ssoProvider.domain })
+    .from(ssoProvider)
+    .where(inArray(ssoProvider.providerId, providerIds))
+  const allUsers = await db.select({ id: user.id, email: user.email }).from(user)
+  let usersMatched = 0
+  let joined = 0
+  for (const provider of providers) {
+    for (const u of allUsers) {
+      const domain = domainOfEmail(u.email)
+      if (!domain || !domainMatchesList(domain, provider.domain)) continue
+      usersMatched += 1
+      joined += (await autoJoinSsoLeagues(db, { userId: u.id, providerId: provider.providerId })).length
+    }
+  }
+  return { providers: providers.length, usersMatched, joined }
 }

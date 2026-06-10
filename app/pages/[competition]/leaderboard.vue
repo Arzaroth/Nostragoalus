@@ -25,8 +25,10 @@ watch(boardError, (err) => {
 const { session } = useAuth()
 const meId = computed(() => session.value?.data?.user?.id)
 
+// Short fixed label for the league scope: the pill already names the league,
+// and the full name overflowed the header next to the bot controls.
 const scopeOptions = computed(() => [
-  ...(league.value ? [{ label: league.value.name, value: 'league' as const }] : []),
+  ...(league.value ? [{ label: t('leaderboard.leagueScope'), value: 'league' as const }] : []),
   { label: t('leaderboard.thisCompetition'), value: 'competition' as const },
   { label: t('leaderboard.global'), value: 'global' as const },
 ])
@@ -38,9 +40,11 @@ const showBot = ref(false)
 const botMethod = useBotMethod()
 const botEnabled = computed(() => showBot.value && !isGlobal.value)
 const { data: bot } = useBotRow(botEnabled, botMethod, scopedLeagueId)
+// Both methods always selectable; below the population threshold only MEAN is
+// meaningful, so the toggle is hidden then (no greyed-out disabled option).
 const methodOptions = computed(() => [
-  { label: t('bot.methodMode'), value: 'mode', disabled: bot.value ? !bot.value.modeAvailable : false },
-  { label: t('bot.methodMean'), value: 'mean', disabled: false },
+  { label: t('bot.methodMode'), value: 'mode' },
+  { label: t('bot.methodMean'), value: 'mean' },
 ])
 // The server enforces the population gate; mirror it in the control.
 watchEffect(() => {
@@ -78,7 +82,7 @@ function medal(rank: number) {
       <div class="flex items-center gap-2 flex-wrap">
         <template v-if="!isGlobal">
           <ToggleButton v-model="showBot" :on-label="t('bot.show')" :off-label="t('bot.show')" on-icon="pi pi-eye" off-icon="pi pi-eye-slash" size="small" />
-          <SelectButton v-if="showBot" v-model="botMethod" :options="methodOptions" option-label="label" option-value="value" option-disabled="disabled" :allow-empty="false" size="small" />
+          <SelectButton v-if="showBot && bot?.modeAvailable" v-model="botMethod" :options="methodOptions" option-label="label" option-value="value" :allow-empty="false" size="small" />
           <i
             v-if="showBot && bot && !bot.modeAvailable"
             v-tooltip.top="t('bot.modeDisabled')"
@@ -110,7 +114,7 @@ function medal(rank: number) {
           </div>
         </div>
         <span v-if="r.isBot" class="shrink-0 text-2xl leading-none w-8 h-8 inline-flex items-center justify-center">🤖</span>
-        <Avatar v-else :image="r.image || '/brand/avatar.svg'" shape="circle" class="shrink-0 overflow-hidden" />
+        <UserAvatar v-else :image="r.image" />
         <div class="flex-1 min-w-0">
           <div class="font-semibold truncate flex items-center gap-2.5">
             <span class="truncate">{{ r.displayName }}</span>

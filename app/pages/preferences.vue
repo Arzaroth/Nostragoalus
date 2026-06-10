@@ -36,7 +36,7 @@ const showCrowd = computed({
   },
 })
 
-// Opt-out (default on): unset means shown - rule shared with useOddsPreference.
+// Opt-in (default off): unset means hidden - rule shared with useOddsPreference.
 const showOdds = computed({
   get: () => showOddsEnabled(session.value?.data?.user),
   set: async (v: boolean) => {
