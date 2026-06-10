@@ -5,6 +5,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+- Live scores and crowd totals now auto-reconnect after a server restart/deploy (shared reconnecting WebSocket with backoff, re-subscribing and refetching on reconnect) instead of silently freezing until the next navigation.
+- The leaderboard falls back to the competition board (instead of showing an empty board) when a selected league was deleted or membership was revoked.
+
+### Changed
+- Crowd-bot consensus is briefly cached per (competition, league, method) to avoid recomputing the full prediction scan on every leaderboard view; league rank snapshots are written in one batched upsert per board.
+
 ## [0.19.0] - 2026-06-10
 
 ### Added
