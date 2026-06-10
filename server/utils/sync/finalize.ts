@@ -7,6 +7,7 @@ import { scorePredictions } from '../scoring/engine'
 import { outcomeOf } from '../scoring/tiers'
 import { closingOddsForOutcome } from '../odds/store'
 import { awardChampionBonuses } from '../champion/service'
+import { awardBestScorerBonuses } from '../bestscorer/service'
 import { resultHashOf } from './upsert-matches'
 import { lockDuePredictions, unlockFuturePredictions } from './live-window'
 
@@ -135,11 +136,12 @@ export async function finalizeMatches(db: AppDatabase, now: Date = new Date()): 
     for (const m of finished) {
       if (m.fullTimeHome === null || m.fullTimeAway === null) continue
       if ((await scoreMatchRow(tx, m.id, context)) === 'scored') scored += 1
-      // A decided final's champion bonus is awarded in the same transaction as
-      // its scoring, so the two can never disagree.
+      // A decided final's champion and best-scorer bonuses are awarded in the
+      // same transaction as its scoring, so they can never disagree.
       if (countsDouble(m.stage) && (m.winner === 'HOME' || m.winner === 'AWAY')) {
         const winnerCode = m.winner === 'HOME' ? m.homeTeamCode : m.awayTeamCode
         await awardChampionBonuses(tx, m.competitionId, winnerCode, context.rules.championBonus)
+        await awardBestScorerBonuses(tx, m.competitionId, context.rules.bestScorerBonus)
       }
     }
 
