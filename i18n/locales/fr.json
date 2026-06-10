@@ -226,7 +226,8 @@
     "you": "(vous)",
     "exact": "exacts",
     "correct": "corrects",
-    "pts": "pts"
+    "pts": "pts",
+    "leagueScope": "Ligue"
   },
   "bot": {
     "name": "Bot consensus",
@@ -367,7 +368,10 @@
       "displayName": "Nom d'affichage",
       "displayNameHint": "Visible par les joueurs (avertissement à l'inscription). Optionnel.",
       "autoJoinLeagues": "Ligues auto-rejointes",
-      "autoJoinLeaguesHint": "Les utilisateurs qui se connectent via ce fournisseur sont ajoutés à ces ligues (sauf s'ils les ont quittées)."
+      "autoJoinLeaguesHint": "Les utilisateurs qui se connectent via ce fournisseur sont ajoutés à ces ligues (sauf s'ils les ont quittées).",
+      "syncAutoJoin": "Appliquer l'auto-adhésion",
+      "syncAutoJoinHint": "Ajoute les utilisateurs existants aux ligues de leur fournisseur selon le domaine e-mail.",
+      "syncAutoJoinDone": "{joined} adhésion(s) ajoutée(s) pour {users} utilisateur(s)."
     },
     "users": {
       "title": "Utilisateurs",

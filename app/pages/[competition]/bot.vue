@@ -8,8 +8,8 @@ const leagueId = computed(() => (route.query.league ? String(route.query.league)
 const { data, isLoading } = useBotPredictions(botMethod, leagueId)
 
 const methodOptions = computed(() => [
-  { label: t('bot.methodMode'), value: 'mode', disabled: data.value ? !data.value.modeAvailable : false },
-  { label: t('bot.methodMean'), value: 'mean', disabled: false },
+  { label: t('bot.methodMode'), value: 'mode' },
+  { label: t('bot.methodMean'), value: 'mean' },
 ])
 // The server enforces the population gate; mirror it in the control.
 watchEffect(() => {
@@ -41,7 +41,7 @@ watchEffect(() => {
           <CompetitionPill />
           <span v-if="data.league" class="text-xs font-semibold px-2 py-1 rounded-full shrink-0" style="color: var(--p-primary-color); background: var(--p-highlight-background, var(--p-content-border-color))">{{ data.league.name }}</span>
         </div>
-        <SelectButton v-model="botMethod" :options="methodOptions" option-label="label" option-value="value" option-disabled="disabled" :allow-empty="false" size="small" />
+        <SelectButton v-if="data.modeAvailable" v-model="botMethod" :options="methodOptions" option-label="label" option-value="value" :allow-empty="false" size="small" />
       </div>
       <p class="text-sm mb-2" style="color: var(--p-text-muted-color)">
         {{ t('bot.note') }}

@@ -191,7 +191,9 @@ describe('getBotOverview - methods and gates', () => {
     const admin = await getBotOverview(db, competitionId, { includeUpcoming: true }, NOW)
     expect(admin.rows[0]).toMatchObject({ matchId: upcoming, homeGoals: 1, awayGoals: 0, totalPoints: null, baseTier: null })
     expect(admin.hasScores).toBe(false)
-    expect(admin.summary.rank).toBeNull()
+    // Ranked even before scoring (last, at 0 pts) so the ghost row is visible:
+    // 5 predictors all on 0 points, the bot sits behind them.
+    expect(admin.summary.rank).toBe(6)
     await client.close()
   })
 
@@ -500,6 +502,18 @@ describe('getBotOverviewCached', () => {
     clearBotCache()
     const fresh = await getBotOverviewCached(db, competitionId, {})
     expect(fresh.rows[0].consensusTotal).toBe(first.rows[0].consensusTotal + 1)
+
+    // Cover the cache-key flag branches (admin upcoming + includePrivate).
+    const keyed = await getBotOverviewCached(db, competitionId, { includeUpcoming: true, includePrivate: true })
+    expect(keyed.summary.rank).not.toBeNull()
+    await client.close()
+  })
+
+  it('has no rank with zero predictors (no ghost row)', async () => {
+    const { db, client, competitionId } = await setup()
+    const overview = await getBotOverview(db, competitionId, {}, NOW)
+    expect(overview.population).toBe(0)
+    expect(overview.summary.rank).toBeNull()
     await client.close()
   })
 })

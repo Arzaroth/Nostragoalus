@@ -226,7 +226,8 @@
     "you": "(you)",
     "exact": "exact",
     "correct": "correct",
-    "pts": "pts"
+    "pts": "pts",
+    "leagueScope": "League"
   },
   "bot": {
     "name": "Crowd Bot",
@@ -367,7 +368,10 @@
       "displayName": "Display name",
       "displayNameHint": "Shown to players (signup warning, messages). Optional.",
       "autoJoinLeagues": "Auto-join leagues",
-      "autoJoinLeaguesHint": "Users signing in through this provider are added to these leagues (unless they previously left)."
+      "autoJoinLeaguesHint": "Users signing in through this provider are added to these leagues (unless they previously left).",
+      "syncAutoJoin": "Apply auto-join now",
+      "syncAutoJoinHint": "Join existing users to their provider leagues by email domain.",
+      "syncAutoJoinDone": "Joined {joined} membership(s) across {users} user(s)."
     },
     "users": {
       "title": "Users",

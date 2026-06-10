@@ -346,8 +346,11 @@ export async function getBotOverview(
   const outcomeCount = gdCount + scoredRows.filter((r) => r.baseTier === 'OUTCOME').length
   const hasScores = scoredRows.length > 0
 
+  // Rank the bot as soon as anyone has predicted, even before any match is
+  // scored (it sits last on a 0-point board) - so the ghost row is visible the
+  // moment the toggle is on, not only once it has points.
   let rank: number | null = null
-  if (hasScores) {
+  if (population > 0) {
     const board = await getLeaderboard(db, { competitionId, leagueId: opts.leagueId, includePrivate: opts.includePrivate, limit: 10000 })
     // Display-only ladder (the 4 numeric levels); real users win exact ties.
     rank =

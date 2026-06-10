@@ -105,6 +105,20 @@ async function removeProvider(id: string) {
   await refreshSso()
 }
 
+// Back-fill provider league auto-join for all existing domain-matched users.
+const ssoSyncBusy = ref(false)
+const ssoSyncMsg = ref('')
+async function syncSsoAutoJoin() {
+  ssoSyncBusy.value = true
+  ssoSyncMsg.value = ''
+  try {
+    const r = await $fetch<{ usersMatched: number; joined: number }>('/api/admin/leagues/sync-sso', { method: 'POST' })
+    ssoSyncMsg.value = t('admin.sso.syncAutoJoinDone', { joined: r.joined, users: r.usersMatched })
+  } finally {
+    ssoSyncBusy.value = false
+  }
+}
+
 const syncMsg = ref('')
 const syncBusy = ref('')
 
@@ -213,10 +227,12 @@ const { data: usersData, isPending: usersLoading } = useQuery({
   enabled: isAdmin,
   queryFn: async () => {
     const res = await admin.listUsers({ query: { limit: 200, sortBy: 'createdAt', sortDirection: 'desc' } })
-    return (res.data as { users?: any[] } | null)?.users ?? []
+    const data = res.data as { users?: any[]; total?: number } | null
+    return { users: data?.users ?? [], total: data?.total ?? data?.users?.length ?? 0 }
   },
 })
-const users = computed(() => usersData.value ?? [])
+const users = computed(() => usersData.value?.users ?? [])
+const userTotal = computed(() => usersData.value?.total ?? 0)
 
 // better-auth's listUsers has no account info; the SSO indicator and the
 // unlink action need to know who is actually linked. Key shares the
@@ -475,6 +491,18 @@ function createUser() {
             <Button icon="pi pi-pencil" severity="secondary" text rounded size="small" :aria-label="t('admin.sso.edit')" @click="startEditProvider(p)" />
             <Button icon="pi pi-trash" severity="danger" text rounded size="small" :aria-label="t('common.cancel')" @click="removeProvider(p.providerId)" />
           </div>
+          <div v-if="providers.length" class="flex items-center gap-3 flex-wrap pt-2 border-t" style="border-color: var(--p-content-border-color)">
+            <Button
+              :label="t('admin.sso.syncAutoJoin')"
+              icon="pi pi-users"
+              size="small"
+              severity="help"
+              :loading="ssoSyncBusy"
+              @click="syncSsoAutoJoin"
+            />
+            <span class="text-xs" style="color: var(--p-text-muted-color)">{{ t('admin.sso.syncAutoJoinHint') }}</span>
+            <span v-if="ssoSyncMsg" class="text-xs font-semibold" style="color: var(--ng-success)">{{ ssoSyncMsg }}</span>
+          </div>
         </div>
       </section>
 
@@ -482,7 +510,10 @@ function createUser() {
       <section class="ng-card rounded-2xl border overflow-hidden" style="background: var(--p-content-background)">
         <div class="grid md:grid-cols-3 gap-6 p-6">
           <div>
-            <h2 class="font-semibold">{{ t('admin.users.title') }}</h2>
+            <h2 class="font-semibold flex items-center gap-2">
+              {{ t('admin.users.title') }}
+              <Tag v-if="!usersLoading" :value="String(userTotal)" severity="secondary" rounded />
+            </h2>
             <p class="text-sm mt-1" style="color: var(--p-text-muted-color)">{{ t('admin.users.hint') }}</p>
           </div>
           <div class="md:col-span-2 flex flex-col gap-3">
@@ -501,7 +532,7 @@ function createUser() {
         <div class="border-t" style="border-color: var(--p-content-border-color)">
           <div v-if="usersLoading" class="px-6 py-4 opacity-60">{{ t('common.loading') }}</div>
           <div v-for="u in users" :key="u.id" class="flex items-center gap-3 px-6 py-3 border-t text-sm" style="border-color: var(--p-content-border-color)">
-            <Avatar :image="u.image || '/brand/avatar.svg'" shape="circle" class="shrink-0 overflow-hidden" />
+            <UserAvatar :image="u.image" />
             <div class="flex-1 min-w-0">
               <div class="font-medium truncate">{{ u.name }}</div>
               <div class="text-xs truncate" style="color: var(--p-text-muted-color)">{{ u.email }}</div>
@@ -556,9 +587,9 @@ function createUser() {
               <NextRunLabel :step="2" />
               <Button v-tooltip.left="finalizeTooltip" :label="t('admin.data.finalize')" icon="pi pi-flag" size="small" severity="success" class="w-48" :loading="syncBusy === 'finalize'" @click="runTask('finalize')" />
               <NextRunLabel :step="5" />
-              <Button v-tooltip.left="oddsTooltip" :label="t('admin.data.odds')" icon="pi pi-percentage" size="small" severity="secondary" class="w-48" :loading="syncBusy === 'odds'" @click="runTask('odds')" />
+              <Button v-tooltip.left="oddsTooltip" :label="t('admin.data.odds')" icon="pi pi-percentage" size="small" severity="contrast" class="w-48" :loading="syncBusy === 'odds'" @click="runTask('odds')" />
               <NextRunLabel :step="30" />
-              <Button v-tooltip.left="oddsBackfillTooltip" :label="t('admin.data.oddsBackfill')" icon="pi pi-history" size="small" severity="secondary" class="w-48" :loading="syncBusy === 'odds-backfill'" @click="runTask('odds-backfill')" />
+              <Button v-tooltip.left="oddsBackfillTooltip" :label="t('admin.data.oddsBackfill')" icon="pi pi-history" size="small" severity="primary" class="w-48" :loading="syncBusy === 'odds-backfill'" @click="runTask('odds-backfill')" />
               <NextRunLabel :step="null" />
             </div>
             <pre v-if="syncMsg" class="text-xs p-2 rounded overflow-x-auto" style="background: color-mix(in srgb, var(--p-text-color) 6%, transparent)">{{ syncMsg }}</pre>

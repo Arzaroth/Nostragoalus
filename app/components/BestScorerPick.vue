@@ -62,6 +62,24 @@ watch(() => showcase.value?.playerId, () => {
   photoFailed.value = false
 })
 const photoSrc = computed(() => (photoFailed.value ? null : playerPhotoUrl(showcase.value?.playerId)))
+
+const NuxtLinkC = resolveComponent('NuxtLink')
+
+// Holographic hover, identical to the champion showcase: the picture tilts
+// toward the cursor with a light sweep.
+const showcaseEl = ref<HTMLElement | null>(null)
+const { elementX, elementY, elementWidth, elementHeight, isOutside } = useMouseInElement(showcaseEl)
+const holo = computed(() => {
+  if (isOutside.value || !elementWidth.value) return { transform: '', sheen: 0, sx: 50, sy: 50 }
+  const px = elementX.value / elementWidth.value
+  const py = elementY.value / elementHeight.value
+  return {
+    transform: `perspective(420px) rotateY(${(px - 0.5) * 22}deg) rotateX(${(0.5 - py) * 22}deg) scale(1.06)`,
+    sheen: 1,
+    sx: px * 100,
+    sy: py * 100,
+  }
+})
 </script>
 
 <template>
@@ -136,7 +154,7 @@ const photoSrc = computed(() => (photoFailed.value ? null : playerPhotoUrl(showc
 
       <!-- Golden boot showcase -->
       <div class="shrink-0 flex flex-col items-center gap-2 self-center sm:pr-8">
-        <div class="relative mt-3">
+        <component :is="showcase?.teamCode ? NuxtLinkC : 'div'" :to="showcase?.teamCode ? `/${slug}/teams/${showcase.teamCode}` : undefined" class="relative mt-3 block" :class="{ 'hover:opacity-90': showcase?.teamCode }">
           <template v-if="showcase">
             <div
               class="absolute -inset-5 rounded-full blur-xl pointer-events-none"
@@ -146,21 +164,23 @@ const photoSrc = computed(() => (photoFailed.value ? null : playerPhotoUrl(showc
               class="absolute -top-4 -left-4 text-3xl z-10 select-none"
               style="transform: rotate(-25deg); filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35))"
             >👟</span>
-            <img
-              v-if="photoSrc"
-              :src="photoSrc"
-              class="relative w-20 h-20 rounded-2xl object-cover"
-              style="box-shadow: 0 0 0 3px rgba(245, 179, 1, 0.6), 0 10px 24px rgba(0, 0, 0, 0.3)"
-              alt=""
-              @error="photoFailed = true"
-            >
-            <img
-              v-else-if="flagUrl(showcase.teamCode)"
-              :src="flagUrl(showcase.teamCode) || ''"
-              class="relative w-20 h-20 rounded-2xl object-cover"
-              style="box-shadow: 0 0 0 3px rgba(245, 179, 1, 0.6), 0 10px 24px rgba(0, 0, 0, 0.3)"
-              alt=""
-            >
+            <span ref="showcaseEl" class="relative block w-20 h-20 rounded-2xl" style="transition: transform 0.25s ease" :style="{ transform: holo.transform }">
+              <img
+                :src="photoSrc || flagUrl(showcase.teamCode) || ''"
+                class="relative w-20 h-20 rounded-2xl object-cover"
+                style="box-shadow: 0 0 0 3px rgba(245, 179, 1, 0.6), 0 10px 24px rgba(0, 0, 0, 0.3)"
+                alt=""
+                @error="photoFailed = true"
+              >
+              <span
+                class="absolute inset-0 rounded-2xl pointer-events-none"
+                style="transition: opacity 0.25s ease; mix-blend-mode: screen"
+                :style="{
+                  opacity: holo.sheen * 0.75,
+                  background: `radial-gradient(140px circle at ${holo.sx}% ${holo.sy}%, rgba(255,255,255,0.55), rgba(245,179,1,0.18) 45%, transparent 70%)`,
+                }"
+              />
+            </span>
           </template>
           <template v-else>
             <span class="absolute -top-4 -left-4 text-3xl z-10 opacity-30 grayscale select-none" style="transform: rotate(-25deg)">👟</span>
@@ -169,7 +189,7 @@ const photoSrc = computed(() => (photoFailed.value ? null : playerPhotoUrl(showc
               style="border-color: var(--p-content-border-color); color: var(--p-text-muted-color)"
             >?</div>
           </template>
-        </div>
+        </component>
         <div class="text-center">
           <strong v-if="showcase" class="block leading-tight">{{ formatPlayerName(showcase.playerName) }}</strong>
           <span v-else class="block text-sm leading-tight" style="color: var(--p-text-muted-color)">{{ t('bestScorer.pickPlayer') }}</span>

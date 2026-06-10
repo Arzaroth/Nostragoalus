@@ -226,7 +226,8 @@
     "you": "(SoH)",
     "exact": "pup",
     "correct": "lugh",
-    "pts": "QuQ"
+    "pts": "QuQ",
+    "leagueScope": "ghom"
   },
   "bot": {
     "name": "ghom qoq",
@@ -367,7 +368,10 @@
       "displayName": "pong cha'lu'bogh",
       "displayNameHint": "QujwI'pu'vaD cha'lu' (qonmeH ghuHmoH). DuHmey.",
       "autoJoinLeagues": "boqmey automatic muv",
-      "autoJoinLeaguesHint": "jabwI'vam lo'bogh lo'wI'pu' boqmeyvamDaq lanlu' (mejpu'chugh lanbe'lu')."
+      "autoJoinLeaguesHint": "jabwI'vam lo'bogh lo'wI'pu' boqmeyvamDaq lanlu' (mejpu'chugh lanbe'lu').",
+      "syncAutoJoin": "DaH chel",
+      "syncAutoJoinHint": "SSO domain users ghom chel.",
+      "syncAutoJoinDone": "{users} users, {joined} ghom chel."
     },
     "users": {
       "title": "lo'wI'pu'",

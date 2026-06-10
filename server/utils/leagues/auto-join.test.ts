@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm'
 import { createTestDb, type TestDb } from '../../../tests/db'
 import { addLeagueMember, makeCompetition, makeLeague, makeUser } from '../../../tests/factories'
 import { ssoProvider, ssoProviderLeague, user } from '../../../db/schema'
-import { autoJoinSsoLeagues } from './auto-join'
+import { applyAllProviderAutoJoins, autoJoinSsoLeagues } from './auto-join'
 import { getMembership, leaveLeague, setProviderAutoJoinLeagues } from './service'
 
 let db: TestDb
@@ -102,5 +102,40 @@ describe('autoJoinSsoLeagues', () => {
     ])
     expect(await autoJoinSsoLeagues(db, { userId: 'alice', providerId: 'acme' })).toEqual([a])
     expect(await autoJoinSsoLeagues(db, { userId: 'alice', providerId: 'globex' })).toEqual([])
+  })
+})
+
+
+describe('applyAllProviderAutoJoins', () => {
+  it('joins existing domain-matched users, skips non-matching and opted-out', async () => {
+    const a = await makeLeague(db, { competitionId })
+    await makeProvider('acme')
+    // provider captures corp.test
+    await db.update(ssoProvider).set({ domain: 'corp.test' }).where(eq(ssoProvider.providerId, 'acme'))
+    await setProviderAutoJoinLeagues(db, 'acme', [a])
+
+    const inDomain = await makeUser(db, 'in', 'in')
+    await db.update(user).set({ email: 'in@corp.test' }).where(eq(user.id, inDomain))
+    const outDomain = await makeUser(db, 'out', 'out')
+    await db.update(user).set({ email: 'out@other.test' }).where(eq(user.id, outDomain))
+    // Malformed email (no domain) is skipped, not matched.
+    const noDomain = await makeUser(db, 'nod', 'nod')
+    await db.update(user).set({ email: 'broken' }).where(eq(user.id, noDomain))
+
+    const res = await applyAllProviderAutoJoins(db)
+    expect(res.providers).toBe(1)
+    expect(res.usersMatched).toBe(1)
+    expect(res.joined).toBe(1)
+    expect((await getMembership(db, a, inDomain))?.role).toBe('OWNER')
+    expect(await getMembership(db, a, outDomain)).toBeNull()
+
+    // Idempotent re-run joins nothing new.
+    const again = await applyAllProviderAutoJoins(db)
+    expect(again.joined).toBe(0)
+  })
+
+  it('returns zeros when no provider has linked leagues', async () => {
+    await makeProvider('acme')
+    expect(await applyAllProviderAutoJoins(db)).toEqual({ providers: 0, usersMatched: 0, joined: 0 })
   })
 })

@@ -22,7 +22,6 @@ const sides = computed(() => {
       <h1 class="text-2xl font-bold">{{ t('nav.bracket') }}</h1>
       <div class="flex items-center gap-2 flex-wrap">
         <CompetitionPill />
-        <LeaguePill />
       </div>
     </div>
     <div v-if="isLoading" class="opacity-60">{{ t('common.loading') }}</div>

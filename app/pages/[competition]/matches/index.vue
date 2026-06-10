@@ -113,7 +113,7 @@ function fmtTime(d: string) {
                 <span v-if="countsDouble(m.stage)" class="text-xs font-semibold px-2 py-1 rounded-full" style="color: var(--ng-star); background: var(--ng-star-soft)" :title="t('predictions.finalDoubleHint')">★ {{ t('predictions.finalDouble') }}</span>
                 <Button
                   v-else-if="!isSingleMatchStage(m.stage)"
-                  :label="predByMatch[m.id]?.isJoker ? '★ Joker' : 'Joker'"
+                  :label="t('predictions.joker')"
                   :icon="predByMatch[m.id]?.isJoker ? 'pi pi-star-fill' : 'pi pi-star'"
                   :severity="predByMatch[m.id]?.isJoker ? 'warn' : 'secondary'"
                   :outlined="!predByMatch[m.id]?.isJoker"
