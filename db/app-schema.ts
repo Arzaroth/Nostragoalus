@@ -74,6 +74,7 @@ export const scoringConfig = pgTable(
     jokerMultiplier: numeric('joker_multiplier', { precision: 4, scale: 2 }).notNull().default('2'),
     jokerAppliesToBonus: boolean('joker_applies_to_bonus').notNull().default(true),
     championBonus: integer('champion_bonus').notNull().default(10),
+    bestScorerBonus: integer('best_scorer_bonus').notNull().default(10),
     bonusSource: bonusSourceEnum('bonus_source').notNull().default('CROWD'),
     crowdTiers: jsonb('crowd_tiers').$type<CrowdTier[]>().notNull(),
     crowdMatchBasis: text('crowd_match_basis', { enum: ['EXACT', 'OUTCOME'] }).notNull().default('EXACT'),
@@ -277,6 +278,30 @@ export const championPick = pgTable(
   (t) => [uniqueIndex('champion_pick_user_competition_uq').on(t.userId, t.competitionId)],
 )
 
+export const bestScorerPick = pgTable(
+  'best_scorer_pick',
+  {
+    id: pk(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    competitionId: text('competition_id')
+      .notNull()
+      .references(() => competition.id, { onDelete: 'cascade' }),
+    playerId: text('player_id').notNull(),
+    playerName: text('player_name').notNull(),
+    teamCode: text('team_code'),
+    teamName: text('team_name').notNull(),
+    awardedPoints: integer('awarded_points').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [uniqueIndex('best_scorer_pick_user_competition_uq').on(t.userId, t.competitionId)],
+)
+
 // Append-only 1X2 odds history. POLL rows are only written pre-kickoff, so the
 // latest row at/before kickoff is the closing snapshot scoring relies on;
 // BACKFILL rows (finished events, retroactive providers) are stamped with the
@@ -361,6 +386,11 @@ export const oddsSnapshotRelations = relations(oddsSnapshot, ({ one }) => ({
 export const championPickRelations = relations(championPick, ({ one }) => ({
   user: one(user, { fields: [championPick.userId], references: [user.id] }),
   competition: one(competition, { fields: [championPick.competitionId], references: [competition.id] }),
+}))
+
+export const bestScorerPickRelations = relations(bestScorerPick, ({ one }) => ({
+  user: one(user, { fields: [bestScorerPick.userId], references: [user.id] }),
+  competition: one(competition, { fields: [bestScorerPick.competitionId], references: [competition.id] }),
 }))
 
 export const goalEventRelations = relations(goalEvent, ({ one }) => ({
