@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- Crowd bot: a synthetic "consensus" player whose pick each match is the crowd's most-common scoreline (MODE, falling back to a rounded average / MEAN below 5 predictors), scored by the real engine with joker, champion and rank. It shows as a ghost row on the leaderboard (toggle, per-competition or per-league) and a /bot detail page; upcoming-match consensus is admin-only. Display-only - it never changes anyone's real rank, and it is kept out of its own rarity-bonus denominator.
+
 ## [0.17.0] - 2026-06-10
 
 ### Added
