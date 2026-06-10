@@ -42,6 +42,9 @@ services:
         required: false
     environment:
       NODE_ENV: development
+      # Apply pending migrations on boot, same as the prod app service - so a
+      # freshly imported / older dump is brought up to the code's schema.
+      RUN_MIGRATIONS: 'true'
       DATABASE_URL: postgres://nostragoalus:nostragoalus@db:5432/nostragoalus
       NUXT_DATABASE_URL: postgres://nostragoalus:nostragoalus@db:5432/nostragoalus
       NUXT_SMTP_URL: smtp://maildev:1025
