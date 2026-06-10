@@ -30,6 +30,7 @@ describe('canonicalTeamName', () => {
     expect(canonicalTeamName('Turkey')).toBe('turkiye')
     expect(canonicalTeamName('Ivory Coast')).toBe('cote d ivoire')
     expect(canonicalTeamName('United States')).toBe('usa')
+    expect(canonicalTeamName('Bosnia & Herzegovina')).toBe('bosnia and herzegovina')
     expect(canonicalTeamName('France')).toBe('france')
   })
 })

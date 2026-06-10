@@ -1,3 +1,4 @@
+import { Agent, fetch as undiciFetch } from 'undici'
 import { RateLimiter } from '../../providers/rate-limiter'
 import { ProviderRateLimitError, ProviderUpstreamError } from '../../providers/types'
 import { fractionalToDecimal } from '../fractional'
@@ -37,6 +38,20 @@ const DEFAULT_BASE_URL = 'https://api.sofascore.com'
 const BROWSER_UA = 'Mozilla/5.0 (X11; Linux x86_64; rv:139.0) Gecko/20100101 Firefox/139.0'
 const FULL_TIME_MARKET_ID = 1
 
+// Sofascore's CDN fingerprints the TLS ClientHello: Node's trimmed default
+// cipher list is answered with 403 regardless of headers or HTTP version,
+// while OpenSSL's stock list ('DEFAULT') passes. Lazy singleton so importing
+// the module (tests, builds) never constructs a dispatcher.
+let tlsSpoofedFetch: typeof fetch | null = null
+function defaultSofascoreFetch(): typeof fetch {
+  if (!tlsSpoofedFetch) {
+    const dispatcher = new Agent({ connect: { ciphers: 'DEFAULT' } })
+    tlsSpoofedFetch = ((input: Parameters<typeof undiciFetch>[0], init?: Parameters<typeof undiciFetch>[1]) =>
+      undiciFetch(input, { ...init, dispatcher })) as unknown as typeof fetch
+  }
+  return tlsSpoofedFetch
+}
+
 export interface SofascoreOptions {
   baseUrl?: string
   fetchImpl?: typeof fetch
@@ -45,7 +60,7 @@ export interface SofascoreOptions {
 
 export function sofascoreProvider(options: SofascoreOptions = {}): OddsProvider {
   const baseUrl = options.baseUrl ?? DEFAULT_BASE_URL
-  const doFetch = options.fetchImpl ?? fetch
+  const doFetch = options.fetchImpl ?? defaultSofascoreFetch()
   // 5s spacing: well under scraping-forum guidance for bulk pulls, and the
   // sync layer additionally caps calls per run.
   const limiter = options.rateLimiter ?? new RateLimiter(5000)
