@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-06-10
+
 ### Added
 - Leagues: competition-scoped player groups. Create your own (private with a shareable join code, or public so anyone can join and view its rankings), join several or none - predictions stay yours either way, leagues only filter the views.
 - A league pill next to the competition switcher remembers your last selection per competition and scopes the leaderboard (third option in the scope toggle) and the crowd totals (league first, global behind a globe - the rarity bonus stays computed from everyone).
