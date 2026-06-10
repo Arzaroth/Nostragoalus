@@ -3,7 +3,7 @@ import type { AppDatabase } from '../../../db/types'
 import { match, oddsSnapshot } from '../../../db/schema'
 import type { OddsSnapshotKind, StoredBookmakerOdds } from '../../../shared/types/odds'
 import type { Outcome } from '../scoring/tiers'
-import type { OddsTriple } from './types'
+import type { OddsTriple } from '../../../shared/types/odds'
 
 export interface OddsSnapshotInsert {
   matchId: string

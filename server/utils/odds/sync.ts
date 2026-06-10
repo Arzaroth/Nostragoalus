@@ -14,7 +14,8 @@ import {
   setMatchOddsEventRefs,
   unmappedUpcomingMatches,
 } from './store'
-import type { FetchedOdds, OddsProvider, OddsTriple } from './types'
+import type { FetchedOdds, OddsProvider } from './types'
+import type { OddsTriple } from '../../../shared/types/odds'
 
 // Per-run ceilings keep a tick polite toward the scraped API; whatever is cut
 // off is picked up by the next tick (refresh) or the next trigger (backfill).

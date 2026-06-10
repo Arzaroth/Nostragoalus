@@ -2,7 +2,8 @@ import { Agent, fetch as undiciFetch } from 'undici'
 import { RateLimiter } from '../../providers/rate-limiter'
 import { ProviderRateLimitError, ProviderUpstreamError } from '../../providers/types'
 import { fractionalToDecimal } from '../fractional'
-import type { FetchedOdds, ListEventsOptions, OddsEvent, OddsProvider, OddsTriple } from '../types'
+import type { FetchedOdds, ListEventsOptions, OddsEvent, OddsProvider } from '../types'
+import type { OddsTriple } from '../../../../shared/types/odds'
 
 // Sofascore's unofficial JSON API (the one sofascore.com itself calls).
 // Keyless, but Cloudflare-fronted: it wants a browser User-Agent and spaced
