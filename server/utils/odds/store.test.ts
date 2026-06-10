@@ -127,6 +127,24 @@ describe('matchesNeedingOdds round gate + cadence', () => {
     await client.close()
   })
 
+  it('pairs the third-place playoff and the final as one closing level', async () => {
+    const { db, client, competitionId } = await setup()
+    const third = (await findRoundId(db, competitionId, 'THIRD_PLACE', null)) as string
+    const final = (await findRoundId(db, competitionId, 'FINAL', null)) as string
+    const now = new Date('2026-07-18T12:00:00Z')
+    const tp = await makeMatch(db, { competitionId, roundId: third, stage: 'THIRD_PLACE', kickoffTime: new Date(now.getTime() + 24 * HOUR) })
+    const fn = await makeMatch(db, { competitionId, roundId: final, stage: 'FINAL', kickoffTime: new Date(now.getTime() + 48 * HOUR) })
+    await setMatchOddsEventRefs(db, [
+      { matchId: tp, ref: 't' },
+      { matchId: fn, ref: 'f' },
+    ])
+
+    const ids = (await matchesNeedingOdds(db, [competitionId], now)).map((d) => d.id)
+    expect(ids).toEqual(expect.arrayContaining([tp, fn]))
+    expect(ids).toHaveLength(2)
+    await client.close()
+  })
+
   it('advances to the next round once the current round is fully played', async () => {
     const { db, client, competitionId } = await setup()
     const md1 = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
