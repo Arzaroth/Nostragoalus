@@ -1,6 +1,6 @@
 import { and, eq, inArray } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
-import { bestScorerPick, goalEvent } from '../../../db/schema'
+import { bestScorerPick, goalEvent, match } from '../../../db/schema'
 import { LockedError } from '../errors'
 import { getChampionLockTime } from '../champion/service'
 
@@ -27,19 +27,11 @@ export async function setBestScorerPick(db: AppDatabase, input: SetBestScorerInp
   const lock = await getChampionLockTime(db, input.competitionId)
   if (lock && now >= lock) throw new LockedError('best scorer pick is locked (the competition has started)')
 
-  const existing = await db
-    .select({ id: bestScorerPick.id })
-    .from(bestScorerPick)
-    .where(and(eq(bestScorerPick.userId, input.userId), eq(bestScorerPick.competitionId, input.competitionId)))
-    .limit(1)
-
-  if (existing.length > 0) {
-    await db
-      .update(bestScorerPick)
-      .set({ playerId: input.playerId, playerName: input.playerName, teamCode: input.teamCode, teamName: input.teamName })
-      .where(eq(bestScorerPick.id, existing[0].id))
-  } else {
-    await db.insert(bestScorerPick).values({
+  // Upsert on the unique (user, competition) index - race-safe against a
+  // double-submit (no select-then-insert window) and "last write wins".
+  await db
+    .insert(bestScorerPick)
+    .values({
       userId: input.userId,
       competitionId: input.competitionId,
       playerId: input.playerId,
@@ -47,7 +39,10 @@ export async function setBestScorerPick(db: AppDatabase, input: SetBestScorerInp
       teamCode: input.teamCode,
       teamName: input.teamName,
     })
-  }
+    .onConflictDoUpdate({
+      target: [bestScorerPick.userId, bestScorerPick.competitionId],
+      set: { playerId: input.playerId, playerName: input.playerName, teamCode: input.teamCode, teamName: input.teamName },
+    })
 }
 
 // Golden Boot winners from stored goal events: every player tied at the top
@@ -70,9 +65,19 @@ export async function topScorerPlayerIds(db: AppDatabase, competitionId: string)
 }
 
 // Idempotent: reset all picks for the competition, then award the bonus to the
-// winners. Safe to run on every finalize tick.
+// Golden Boot winner(s). Safe to run on every finalize tick. Self-gated on a
+// decided final: until the tournament is over the goal tally is incomplete, so
+// awarding early would crown a transient leader (and this runs AFTER the detail
+// sync that populates goal_event, not inside the scoring transaction).
 export async function awardBestScorerBonuses(db: AppDatabase, competitionId: string, bonus: number): Promise<number> {
   await db.update(bestScorerPick).set({ awardedPoints: 0 }).where(eq(bestScorerPick.competitionId, competitionId))
+
+  const finals = await db
+    .select({ winner: match.winner })
+    .from(match)
+    .where(and(eq(match.competitionId, competitionId), eq(match.stage, 'FINAL')))
+  const decided = finals.some((m) => m.winner === 'HOME' || m.winner === 'AWAY')
+  if (!decided) return 0
 
   const winners = await topScorerPlayerIds(db, competitionId)
   if (winners.length === 0) return 0

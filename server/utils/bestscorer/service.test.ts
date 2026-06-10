@@ -14,6 +14,11 @@ import { LockedError } from '../errors'
 const PAST = new Date('2026-06-01T00:00:00Z')
 const FUTURE = new Date('2026-06-11T16:00:00Z')
 
+async function seedDecidedFinal(db: TestDb, competitionId: string): Promise<void> {
+  const finalRound = (await findRoundId(db, competitionId, 'FINAL', null)) as string
+  await makeMatch(db, { competitionId, roundId: finalRound, stage: 'FINAL', kickoffTime: PAST, status: 'FINISHED', winner: 'HOME' })
+}
+
 async function setup() {
   const ctx = await createTestDb()
   const competitionId = await seedCompetition(ctx.db)
@@ -117,6 +122,7 @@ describe('awardBestScorerBonuses', () => {
     const other = await makeUser(db, 'u2')
     await setBestScorerPick(db, { userId, competitionId, ...MBAPPE })
     await setBestScorerPick(db, { userId: other, competitionId, ...MESSI })
+    await seedDecidedFinal(db, competitionId)
     const m = await makeMatch(db, { competitionId, roundId, kickoffTime: PAST })
     await makeGoal(db, { matchId: m, competitionId, playerId: 'p-mbappe' })
 
@@ -131,6 +137,18 @@ describe('awardBestScorerBonuses', () => {
     byUser = Object.fromEntries((await db.select().from(bestScorerPick)).map((p) => [p.userId, p.awardedPoints]))
     expect(byUser[userId]).toBe(10)
     expect(byUser[other]).toBe(10)
+    await client.close()
+  })
+
+  it('awards nothing until a final is decided', async () => {
+    const { db, client, competitionId, roundId, userId } = await setup()
+    await setBestScorerPick(db, { userId, competitionId, ...MBAPPE })
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: PAST })
+    await makeGoal(db, { matchId: m, competitionId, playerId: 'p-mbappe' })
+    // No decided final yet: the Golden Boot tally is incomplete, so no bonus.
+    expect(await awardBestScorerBonuses(db, competitionId, 10)).toBe(0)
+    const [pick] = await db.select().from(bestScorerPick)
+    expect(pick.awardedPoints).toBe(0)
     await client.close()
   })
 

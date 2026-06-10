@@ -109,3 +109,27 @@ Deferred work, queued behind feature development.
       leaderboard.vue and bot.vue.
 - [ ] MEAN rounding uses Math.round (half-up bias on x.5 averages); consider
       banker's rounding or documenting the bias.
+
+## Best scorer (deferred from the merge review)
+
+- [ ] Champion and best-scorer are near-identical clones at every layer (pick
+      service lock+upsert, idempotent award, the two leaderboard bonus-merge
+      blocks, the picker SFC, the composable, both endpoints). Generalize into
+      one "meta pick" mechanism (upsertMetaPick / awardBonuses(winnerWhere) /
+      mergeBonus / <MetaPickCard> / useMetaPick) so a third bonus is config, not
+      copy-paste. High-churn, touches the working champion feature - do as its
+      own focused pass.
+- [ ] topScorerPlayerIds drops goals with a null playerId; if a real top
+      scorer's goals are partly unattributed the tie can be miscomputed. Picks
+      match by playerId so it self-limits, but consider a playerName fallback or
+      surfacing unattributed goals.
+- [ ] topScorerPlayerIds loads all goal_event rows and counts in JS; a SQL
+      GROUP BY/COUNT avoids the in-memory pass (it runs each finalize tick).
+- [ ] Picker UI swallows save errors (no onError/toast - mirrors ChampionPick);
+      a locked-race 409 or 422 is silent. Add inline error surfacing (and to
+      ChampionPick) once there's a toast/error pattern.
+- [ ] BestScorerPick watchEffect seeds the selects once (guard === null); a
+      slow myPick load after the user touches the team select desyncs the
+      dropdowns from the stored pick.
+- [ ] The bot has no best-scorer consensus (only champion); consider a
+      best-scorer consensus for parity, or document the asymmetry.
