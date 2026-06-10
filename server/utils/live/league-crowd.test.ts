@@ -32,7 +32,7 @@ describe('publishLeagueCrowdUpdates', () => {
       const delivered = await publishLeagueCrowdUpdates(db, { userId: alice, matchId: m })
       expect(delivered).toBe(2)
       const expected = {
-        type: 'crowd:update',
+        type: 'crowd:league-update',
         leagueId,
         matchId: m,
         // Carol's prediction is outside the league: totals cover members only.

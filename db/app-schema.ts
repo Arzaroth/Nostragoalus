@@ -402,7 +402,13 @@ export const leagueMember = pgTable(
     role: leagueRoleEnum('role').notNull().default('MEMBER'),
     joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [primaryKey({ columns: [t.leagueId, t.userId] }), index('league_member_user_idx').on(t.userId)],
+  (t) => [
+    primaryKey({ columns: [t.leagueId, t.userId] }),
+    index('league_member_user_idx').on(t.userId),
+    // At most one OWNER per league - makes the ownerless-league claim race-safe
+    // (a second concurrent OWNER insert fails instead of creating two owners).
+    uniqueIndex('league_member_one_owner_uq').on(t.leagueId).where(sql`${t.role} = 'OWNER'`),
+  ],
 )
 
 // A row means "do not auto-(re)join this user to this league" (SSO auto-join).
@@ -418,7 +424,7 @@ export const leagueOptOut = pgTable(
       .references(() => user.id, { onDelete: 'cascade' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [primaryKey({ columns: [t.leagueId, t.userId] })],
+  (t) => [primaryKey({ columns: [t.leagueId, t.userId] }), index('league_opt_out_user_idx').on(t.userId)],
 )
 
 // SSO provider <-> league auto-join links. Same league may hang off several
@@ -453,7 +459,7 @@ export const leagueLeaderboardRank = pgTable(
     prevRank: integer('prev_rank'),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
-  (t) => [primaryKey({ columns: [t.leagueId, t.userId] })],
+  (t) => [primaryKey({ columns: [t.leagueId, t.userId] }), index('league_leaderboard_rank_user_idx').on(t.userId)],
 )
 
 export const leagueRelations = relations(league, ({ one, many }) => ({

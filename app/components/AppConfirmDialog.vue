@@ -12,8 +12,10 @@ const emit = defineEmits<{ confirm: [] }>()
 const { t } = useI18n()
 
 function confirm() {
-  visible.value = false
+  // Emit first: hiding sets visible=false, and parents that clear their target
+  // ref in @update:visible would otherwise null it before @confirm reads it.
   emit('confirm')
+  visible.value = false
 }
 </script>
 

@@ -13,7 +13,11 @@ export default defineEventHandler(async (event) => {
   const admin = membership ? false : await isAdmin(event)
   // Private leagues 404 (not 403) for outsiders so ids never leak existence.
   if (!canViewLeague(league, membership, admin)) throw createError({ statusCode: 404, statusMessage: 'League not found' })
-  const [competition, members] = await Promise.all([getCompetitionById(db, league.competitionId), listLeagueMembers(db, id)])
+  const includePrivate = !!membership || admin
+  const [competition, members] = await Promise.all([
+    getCompetitionById(db, league.competitionId),
+    listLeagueMembers(db, id, { includePrivate }),
+  ])
   return {
     league: {
       id: league.id,

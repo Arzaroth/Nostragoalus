@@ -7,8 +7,8 @@ export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
   const id = getRouterParam(event, 'id')!
   try {
-    const league = await joinPublicLeague(db, { userId: user.id, leagueId: id })
-    return { league: { id: league.id, name: league.name, visibility: league.visibility, role: 'MEMBER' } }
+    const { league, role } = await joinPublicLeague(db, { userId: user.id, leagueId: id })
+    return { league: { id: league.id, name: league.name, visibility: league.visibility, role } }
   } catch (error) {
     throw toHttpError(error)
   }

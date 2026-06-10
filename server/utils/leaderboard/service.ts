@@ -1,4 +1,4 @@
-import { and, eq, isNotNull, sql } from 'drizzle-orm'
+import { and, eq, isNotNull, or, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { championPick, leagueMember, match, prediction, user } from '../../../db/schema'
 
@@ -54,6 +54,9 @@ export async function getLeaderboard(
     // profilePrivate users opted out of public boards; league boards set this
     // when the viewer is a member of that league (or an admin).
     includePrivate?: boolean
+    // Keep this user on the board even when hidden/private would exclude them
+    // (so they see their own rank among the otherwise-visible population).
+    alwaysIncludeUserId?: string
   },
 ): Promise<LeaderboardRow[]> {
   const limit = opts.limit ?? 100
@@ -86,10 +89,18 @@ export async function getLeaderboard(
     )
     // includeHidden serves self-stats: a hidden user still sees their own points.
     .where(
-      and(
-        ...(opts.includeHidden ? [] : [eq(user.hiddenFromLeaderboard, false)]),
-        ...(opts.includePrivate ? [] : [eq(user.profilePrivate, false)]),
-      ),
+      opts.alwaysIncludeUserId
+        ? or(
+            eq(user.id, opts.alwaysIncludeUserId),
+            and(
+              ...(opts.includeHidden ? [] : [eq(user.hiddenFromLeaderboard, false)]),
+              ...(opts.includePrivate ? [] : [eq(user.profilePrivate, false)]),
+            ),
+          )
+        : and(
+            ...(opts.includeHidden ? [] : [eq(user.hiddenFromLeaderboard, false)]),
+            ...(opts.includePrivate ? [] : [eq(user.profilePrivate, false)]),
+          ),
     )
     .groupBy(user.id, user.name, user.image, user.createdAt)
 

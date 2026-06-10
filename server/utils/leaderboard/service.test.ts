@@ -188,6 +188,10 @@ describe('getLeaderboard', () => {
     // League board: member viewer (includePrivate) sees them, outsider does not.
     expect((await getLeaderboard(db, { competitionId, leagueId, includePrivate: true })).map((r) => r.displayName)).toEqual(['Alice', 'Recluse'])
     expect((await getLeaderboard(db, { competitionId, leagueId })).map((r) => r.displayName)).toEqual(['Alice'])
+    // alwaysIncludeUserId keeps the caller on an otherwise-exclusive board:
+    // the private caller appears, other private users still don't (me/stats).
+    const selfView = await getLeaderboard(db, { competitionId, alwaysIncludeUserId: recluse })
+    expect(selfView.map((r) => r.displayName).sort()).toEqual(['Alice', 'Recluse'])
     await client.close()
   })
 

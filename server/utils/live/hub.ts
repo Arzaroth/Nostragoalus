@@ -57,7 +57,9 @@ export function publishLeagueCrowdUpdate(
   let delivered = 0
   for (const sub of subscribers) {
     if (sub.userId && members.has(sub.userId)) {
-      sub.send({ type: 'crowd:update', leagueId, matchId, totals })
+      // Distinct type so a pre-deploy client (which treats any crowd:update with
+      // a matchId as global) can't fold league totals into its global map.
+      sub.send({ type: 'crowd:league-update', leagueId, matchId, totals })
       delivered += 1
     }
   }

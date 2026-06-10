@@ -5,22 +5,23 @@ const peers = new WeakMap<object, LiveSubscriber>()
 
 export default defineWebSocketHandler({
   async open(peer) {
-    // Identify the connection so league-scoped pushes reach members only;
-    // guests still get the global broadcasts.
-    let userId: string | null = null
-    try {
-      const session = await auth.api.getSession({ headers: peer.request.headers })
-      userId = session?.user?.id ?? null
-    } catch {
-      // anonymous connection
-    }
+    // Register synchronously so a subscribe message or close that arrives while
+    // the session lookup is still awaiting is not lost (crossws does not
+    // serialize hooks). userId is patched in once resolved - league-scoped
+    // pushes reach members only; guests still get the global broadcasts.
     const subscriber: LiveSubscriber = {
       matchIds: new Set(),
-      userId,
+      userId: null,
       send: (payload) => peer.send(JSON.stringify(payload)),
     }
     peers.set(peer, subscriber)
     addLiveSubscriber(subscriber)
+    try {
+      const session = await auth.api.getSession({ headers: peer.request.headers })
+      subscriber.userId = session?.user?.id ?? null
+    } catch {
+      // anonymous connection
+    }
   },
 
   message(peer, message) {
