@@ -13,6 +13,8 @@ export interface BotLeaderboardRow {
   predictionPoints: number
   championPoints: number
   championCode: string | null
+  bestScorerPoints: number
+  bestScorerName: string | null
   exactCount: number
   outcomeCount: number
   gdCount: number

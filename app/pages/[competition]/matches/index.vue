@@ -47,6 +47,7 @@ function fmtTime(d: string) {
       </div>
     </div>
     <ChampionPick />
+    <BestScorerPick />
     <IconField class="mb-5 block w-full sm:w-96">
       <InputIcon class="pi pi-search" />
       <InputText v-model="search" :placeholder="t('matches.search')" class="w-full" />
