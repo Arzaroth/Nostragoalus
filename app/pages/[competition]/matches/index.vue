@@ -69,6 +69,9 @@ function closeSearch() {
   searchOpen.value = false
   searchRaw.value = ''
 }
+function toggleSearch() {
+  searchOpen.value ? closeSearch() : openSearch()
+}
 useHotkey('Mod+F', openSearch)
 </script>
 
@@ -80,11 +83,14 @@ useHotkey('Mod+F', openSearch)
         <button
           type="button"
           v-tooltip.bottom="t('matches.search')"
-          class="inline-flex items-center justify-center w-8 h-8 rounded-full transition hover:bg-black/5 dark:hover:bg-white/10"
+          class="inline-flex items-center justify-center w-8 h-8 rounded-full transition"
+          :class="searchOpen ? 'text-white' : 'hover:bg-black/5 dark:hover:bg-white/10'"
+          :style="searchOpen ? 'background: var(--p-primary-color)' : 'background: var(--p-content-border-color)'"
           :aria-label="t('matches.search')"
-          @click="openSearch"
+          :aria-pressed="searchOpen"
+          @click="toggleSearch"
         >
-          <i class="pi pi-search" style="color: var(--p-text-muted-color)" />
+          <i class="pi pi-search" :style="searchOpen ? '' : 'color: var(--p-text-muted-color)'" />
         </button>
       </div>
       <div class="flex items-center gap-2 flex-wrap">
@@ -113,9 +119,10 @@ useHotkey('Mod+F', openSearch)
     <ChampionPick />
     <BestScorerPick />
     <Message v-if="jokerErr" severity="warn" class="mb-4">{{ jokerErr }}</Message>
-    <!-- Hidden until opened (Mod+F or the title's search icon); on open it
-         scrolls to the top of the viewport (scroll-margin clears the header). -->
-    <div v-if="searchOpen" ref="searchBar" class="mb-3" style="scroll-margin-top: calc(var(--ng-header-h, 4rem) + 0.5rem)">
+    <!-- Hidden until opened (Mod+F or the title's search icon). On open it
+         scrolls to the top (scroll-margin clears the header), then sticks there
+         so it follows the scroll. -->
+    <div v-if="searchOpen" ref="searchBar" class="sticky z-30 py-1 mb-3" style="top: var(--ng-header-h, 4rem); scroll-margin-top: calc(var(--ng-header-h, 4rem) + 0.5rem)">
       <IconField class="block w-full sm:w-96">
         <InputIcon class="pi pi-search" />
         <InputText ref="searchInput" v-model="searchRaw" :placeholder="t('matches.search')" class="w-full" @keydown.esc="closeSearch" />
