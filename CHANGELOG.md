@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [0.20.1] - 2026-06-11
+
 ### Changed
 - The fixtures filter is now opened on demand - a search icon next to "Fixtures" or Ctrl/Cmd+F reveals it, scrolls it to the top and follows the scroll; the icon shows an active state and toggles it off, Escape closes it. The field is debounced with a clear button.
 - The Map view no longer shows the league pill (it has no league-scoped data).
