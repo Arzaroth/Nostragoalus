@@ -5,6 +5,22 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- The leaderboard now shows each player's best-scorer pick (team flag + 👟) beside their champion pick, with the full team / normalized player name in the tooltip.
+- Admin: an "Apply auto-join now" action back-fills SSO league membership for all existing users whose email domain a linked provider captures (no need to wait for each to log in again), plus a total user count.
+- The consensus bot's ghost row appears as soon as anyone has predicted (ranked last at 0 points pre-scoring), not only once it has scored.
+
+### Changed
+- Bookmaker odds are now OFF by default (opt-in); the preference and a tooltip explain 1X2 and decimal odds (1 = home win, X = draw, 2 = away win; lower = more likely).
+- The "My Picks" page is gone - its standing boxes and the champion / best-scorer pick cards now live on the Matches page. The rank and player count honor the selected league.
+- Leaderboard movement arrows now reflect only scoring changes, not roster churn (joining, going private, or being removed no longer nudges everyone).
+- Player headshots come from UEFA for UEFA competitions and FIFA for the World Cup; the best-scorer player list shows attackers first.
+
+### Fixed
+- Broken avatars: a token-gated identity-provider picture (e.g. Microsoft Graph) is fetched once at sign-in and inlined, or replaced with the placeholder, instead of showing a broken image.
+- Live scores and crowd totals auto-reconnect after a server restart instead of silently freezing; the match page gained the league pill.
+- Champion / best-scorer flag alignment, the joker button's duplicate star, the admin manage-members modal (long names, a crash), and the leaderboard header overflow with a long league name.
+
 ## [0.19.1] - 2026-06-10
 
 ### Fixed
