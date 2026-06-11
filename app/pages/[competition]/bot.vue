@@ -15,6 +15,12 @@ const methodOptions = computed(() => [
 watchEffect(() => {
   if (data.value && !data.value.modeAvailable && botMethod.value === 'mode') botMethod.value = 'mean'
 })
+
+// Admin view includes not-yet-kicked-off consensus; split it off behind the
+// same divider the user-picks view uses.
+const now = Date.now()
+const kickedOff = computed(() => (data.value?.predictions ?? []).filter((p) => new Date(p.kickoffTime).getTime() <= now))
+const upcoming = computed(() => (data.value?.predictions ?? []).filter((p) => new Date(p.kickoffTime).getTime() > now))
 </script>
 
 <template>
@@ -54,8 +60,16 @@ watchEffect(() => {
         <span>· {{ data.summary.outcomeCount }} {{ t('leaderboard.correct') }}</span>
         <span v-if="data.summary.championPoints">· 👑 +{{ data.summary.championPoints }}</span>
       </div>
-      <Message v-if="data.admin" severity="info" size="small" class="mb-4">{{ t('bot.adminUpcoming') }}</Message>
-      <PredictionList :predictions="data.predictions" />
+      <template v-if="data.admin && upcoming.length">
+        <PredictionList :predictions="kickedOff" />
+        <div class="flex items-center gap-3 my-4 text-xs font-semibold" style="color: var(--p-text-muted-color)">
+          <span class="flex-1 border-t" style="border-color: var(--p-content-border-color)" />
+          <span class="inline-flex items-center gap-1.5"><i class="pi pi-eye-slash" />{{ t('predictions.adminUpcomingDivider') }}</span>
+          <span class="flex-1 border-t" style="border-color: var(--p-content-border-color)" />
+        </div>
+        <PredictionList :predictions="upcoming" />
+      </template>
+      <PredictionList v-else :predictions="data.predictions" />
       <div v-if="!data.predictions.length" class="opacity-60">{{ t('bot.empty') }}</div>
     </div>
   </div>
