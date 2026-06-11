@@ -7,6 +7,15 @@ const { data: matches, isLoading } = useMatches()
 const { data: predictions } = useMyPredictions()
 const { upsert, setJoker } = usePredictionMutations()
 
+// Your standing (folded in from the removed My Picks page). Honors the league
+// pill: with a league selected, rank/players are within that league.
+const { leagueId } = useSelectedLeague()
+const { data: statsData } = await useFetch<{ stats: { rank: number | null; players: number; totalPoints: number; exact: number; predictions: number; jokers: number } | null }>(
+  '/api/me/stats',
+  { query: computed(() => (leagueId.value ? { league: leagueId.value } : slug.value ? { competition: slug.value } : {})) },
+)
+const stats = computed(() => statsData.value?.stats)
+
 const predByMatch = computed(() => {
   const map: Record<string, MyPrediction> = {}
   for (const p of predictions.value ?? []) map[p.matchId] = p
@@ -29,8 +38,13 @@ const grouped = computed(() => {
 function save(matchId: string, value: { home: number; away: number }) {
   upsert.mutate({ matchId, ...value })
 }
+const jokerErr = ref('')
 function toggleJoker(p: MyPrediction) {
-  setJoker.mutate({ matchId: p.matchId, isJoker: !p.isJoker })
+  jokerErr.value = ''
+  setJoker.mutate(
+    { matchId: p.matchId, isJoker: !p.isJoker },
+    { onError: (e: any) => (jokerErr.value = e?.data?.message || e?.data?.statusMessage || t('predictions.jokerError')) },
+  )
 }
 function fmtTime(d: string) {
   return new Date(d).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
@@ -46,8 +60,27 @@ function fmtTime(d: string) {
         <LeaguePill />
       </div>
     </div>
+    <div v-if="stats" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+      <div class="ng-card rounded-2xl border p-4 text-center" style="background: var(--p-content-background)">
+        <div class="text-2xl font-extrabold tabular-nums" style="color: var(--p-primary-color)">{{ stats.totalPoints }}</div>
+        <div class="text-xs mt-0.5" style="color: var(--p-text-muted-color)">{{ t('picks.points') }}</div>
+      </div>
+      <div class="ng-card rounded-2xl border p-4 text-center" style="background: var(--p-content-background)">
+        <div class="text-2xl font-extrabold tabular-nums">{{ stats.rank ? `#${stats.rank}` : '-' }}</div>
+        <div class="text-xs mt-0.5" style="color: var(--p-text-muted-color)">{{ t('picks.rank', { n: stats.players }) }}</div>
+      </div>
+      <div class="ng-card rounded-2xl border p-4 text-center" style="background: var(--p-content-background)">
+        <div class="text-2xl font-extrabold tabular-nums">{{ stats.exact }}</div>
+        <div class="text-xs mt-0.5" style="color: var(--p-text-muted-color)">{{ t('picks.exact') }}</div>
+      </div>
+      <div class="ng-card rounded-2xl border p-4 text-center" style="background: var(--p-content-background)">
+        <div class="text-2xl font-extrabold tabular-nums">{{ stats.jokers }}</div>
+        <div class="text-xs mt-0.5" style="color: var(--p-text-muted-color)">{{ t('picks.jokers', { n: stats.predictions }) }}</div>
+      </div>
+    </div>
     <ChampionPick />
     <BestScorerPick />
+    <Message v-if="jokerErr" severity="warn" class="mb-4">{{ jokerErr }}</Message>
     <IconField class="mb-5 block w-full sm:w-96">
       <InputIcon class="pi pi-search" />
       <InputText v-model="search" :placeholder="t('matches.search')" class="w-full" />

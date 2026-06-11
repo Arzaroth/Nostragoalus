@@ -119,9 +119,13 @@ function medal(rank: number) {
           <div class="font-semibold truncate flex items-center gap-2.5">
             <span class="truncate">{{ r.displayName }}</span>
             <span v-if="r.isBot" class="text-xs font-normal px-1.5 py-0.5 rounded-full" style="color: var(--p-text-muted-color); background: var(--p-content-border-color)">{{ t('bot.virtual') }}</span>
-            <span v-if="r.championCode && flagUrl(r.championCode)" class="relative shrink-0 inline-flex" :title="`${t('champion.title')}: ${r.championCode}`">
+            <span v-if="r.championCode && flagUrl(r.championCode)" v-tooltip.top="`${t('champion.tag')}: ${r.championName ?? r.championCode}`" class="relative shrink-0 inline-flex">
               <img :src="flagUrl(r.championCode) || ''" class="w-4 h-4 rounded object-cover" alt="" >
               <span class="absolute -top-2 -left-1.5 text-[10px]" style="transform: rotate(-25deg)">👑</span>
+            </span>
+            <span v-if="r.bestScorerCode && flagUrl(r.bestScorerCode)" v-tooltip.top="`${t('bestScorer.tag')}: ${r.bestScorerName ? formatPlayerName(r.bestScorerName) : r.bestScorerCode}`" class="relative shrink-0 inline-flex">
+              <img :src="flagUrl(r.bestScorerCode) || ''" class="w-4 h-4 rounded object-cover" alt="" >
+              <span class="absolute -top-2 -left-1.5 text-[10px]" style="transform: rotate(-12deg)">👟</span>
             </span>
             <span v-if="r.userId === meId" class="text-xs font-normal" style="color: var(--p-primary-color)">{{ t('leaderboard.you') }}</span>
           </div>

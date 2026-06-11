@@ -31,7 +31,6 @@ const navLinks = computed(() => {
     { to: `/${c}/bracket`, key: 'nav.bracket', icon: 'pi pi-sitemap' },
     { to: `/${c}/map`, key: 'nav.map', icon: 'pi pi-map' },
     { to: `/${c}/leaderboard`, key: 'nav.ranking', icon: 'pi pi-trophy' },
-    { to: `/${c}/predictions`, key: 'nav.myPicks', icon: 'pi pi-check-circle' },
     ...(isAdmin.value ? [{ to: '/admin', key: 'nav.admin', icon: 'pi pi-cog' }] : []),
   ]
 })

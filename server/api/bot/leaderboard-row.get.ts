@@ -39,9 +39,11 @@ export default defineEventHandler(async (event) => {
         predictionPoints: overview.summary.predictionPoints,
         championPoints: overview.summary.championPoints,
         championCode: overview.champion?.teamCode ?? null,
+        championName: overview.champion?.teamName ?? null,
         // The bot does not pick a best scorer.
         bestScorerPoints: 0,
         bestScorerName: null,
+        bestScorerCode: null,
         exactCount: overview.summary.exactCount,
         outcomeCount: overview.summary.outcomeCount,
         gdCount: overview.summary.gdCount,

@@ -207,7 +207,8 @@
     "hint": "Bonus if your pick lifts the trophy · locks at the first kickoff.",
     "noPick": "No champion picked - locked.",
     "lockedIn": "Locked in - good luck!",
-    "preview": "not saved yet"
+    "preview": "not saved yet",
+    "tag": "Champion"
   },
   "bestScorer": {
     "title": "Your best scorer",
@@ -216,7 +217,8 @@
     "hint": "Bonus if your pick wins the Golden Boot · locks at the first kickoff.",
     "noPick": "No best scorer picked - locked.",
     "lockedIn": "Locked in - good luck!",
-    "preview": "not saved yet"
+    "preview": "not saved yet",
+    "tag": "Best scorer"
   },
   "leaderboard": {
     "title": "Ranking",

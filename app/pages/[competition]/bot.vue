@@ -32,7 +32,7 @@ watchEffect(() => {
           <span
             v-if="data.champion?.teamCode && flagUrl(data.champion.teamCode)"
             class="relative shrink-0 inline-flex items-center gap-1.5"
-            :title="`${t('champion.title')}: ${data.champion.teamName} (${t('bot.pickedBy', { count: data.champion.count, total: data.champion.total })})`"
+            v-tooltip.top="`${t('champion.title')}: ${data.champion.teamName} (${t('bot.pickedBy', { count: data.champion.count, total: data.champion.total })})`"
           >
             <img :src="flagUrl(data.champion.teamCode) || ''" class="w-6 h-6 rounded object-cover" alt="" >
             <span class="absolute -top-2.5 -left-2 text-sm" style="transform: rotate(-25deg)">👑</span>

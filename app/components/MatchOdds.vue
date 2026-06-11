@@ -7,9 +7,9 @@ const fmt = (v: number) => v.toFixed(2)
 <template>
   <div
     v-if="odds"
-    class="flex items-center gap-2 text-xs tabular-nums"
+    v-tooltip.bottom="{ value: t('odds.title'), pt: { text: 'max-w-xs text-xs' } }"
+    class="flex items-center gap-2 text-xs tabular-nums cursor-help"
     style="color: var(--p-text-muted-color)"
-    :title="t('odds.title')"
   >
     <span :aria-label="t('odds.home')"><span class="font-semibold">1</span> {{ fmt(odds.home) }}</span>
     <span aria-hidden="true">·</span>
