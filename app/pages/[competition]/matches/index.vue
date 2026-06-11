@@ -49,6 +49,18 @@ function toggleJoker(p: MyPrediction) {
 function fmtTime(d: string) {
   return new Date(d).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
+
+// Ctrl/Cmd+F focuses the fixtures filter instead of the browser's find bar.
+const searchInput = ref<{ $el?: HTMLElement } | null>(null)
+function onKeydown(e: KeyboardEvent) {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+    e.preventDefault()
+    const el = searchInput.value?.$el?.querySelector('input') ?? searchInput.value?.$el
+    ;(el as HTMLInputElement | undefined)?.focus()
+  }
+}
+onMounted(() => window.addEventListener('keydown', onKeydown))
+onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 </script>
 
 <template>
@@ -56,6 +68,10 @@ function fmtTime(d: string) {
     <div class="flex items-center justify-between gap-3 flex-wrap mb-5">
       <h1 class="text-2xl font-bold">{{ t('matches.title') }}</h1>
       <div class="flex items-center gap-2 flex-wrap">
+        <IconField class="block w-full sm:w-72">
+          <InputIcon class="pi pi-search" />
+          <InputText ref="searchInput" v-model="search" :placeholder="t('matches.search')" class="w-full" />
+        </IconField>
         <CompetitionPill />
         <LeaguePill />
       </div>
@@ -81,10 +97,6 @@ function fmtTime(d: string) {
     <ChampionPick />
     <BestScorerPick />
     <Message v-if="jokerErr" severity="warn" class="mb-4">{{ jokerErr }}</Message>
-    <IconField class="mb-5 block w-full sm:w-96">
-      <InputIcon class="pi pi-search" />
-      <InputText v-model="search" :placeholder="t('matches.search')" class="w-full" />
-    </IconField>
     <div v-if="isLoading" class="opacity-60">{{ t('common.loading') }}</div>
     <div v-else-if="!matches || !matches.length" class="opacity-60">{{ t('matches.empty') }}</div>
     <div v-else-if="!grouped.length" class="opacity-60">{{ t('matches.noResults') }}</div>
