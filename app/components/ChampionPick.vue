@@ -93,7 +93,7 @@ const isSaved = computed(() => !!data.value?.myPick && showcaseCode.value === da
       </div>
 
       <!-- Crowned champion showcase -->
-      <div class="shrink-0 flex flex-col items-center gap-2 self-center sm:pr-8">
+      <div class="shrink-0 flex flex-col items-center gap-2 self-center sm:self-start sm:pr-8">
         <component :is="showcaseCode ? NuxtLinkC : 'div'" :to="showcaseCode ? `/${slug}/teams/${showcaseCode}` : undefined" class="relative mt-3 block" :class="{ 'hover:opacity-90': showcaseCode }">
           <template v-if="showcaseCode">
             <div

@@ -11,7 +11,7 @@ import * as schema from '../db/schema'
 import { withEncryptedSSO } from '../server/utils/crypto/encrypted-adapter'
 import { verifyTotpCode } from '../server/utils/auth/totp'
 import { isSsoManaged } from '../server/utils/auth/sso-managed'
-import { isUnusableAvatarUrl } from '../server/utils/auth/avatar'
+import { fetchAvatarDataUrl, isUnusableAvatarUrl } from '../server/utils/auth/avatar'
 import { autoJoinSsoLeagues } from '../server/utils/leagues/auto-join'
 import { symmetricDecrypt } from 'better-auth/crypto'
 
@@ -154,11 +154,22 @@ export function buildAuthOptions(database: AuthDb) {
         provisionUserOnEveryLogin: true,
         async provisionUser({ user: u, provider }: { user: { id: string }; provider: { providerId: string } }) {
           const rows = await database.select({ role: schema.user.role, image: schema.user.image }).from(schema.user).where(eq(schema.user.id, u.id)).limit(1)
-          // Drop an IdP picture URL a browser can't load (e.g. the MS Graph
-          // photo endpoint, which needs the user's token): show the placeholder
-          // instead of a broken image, and let a later upload stick.
+          // The IdP mapped a token-gated picture URL a browser can't load (e.g.
+          // the MS Graph photo endpoint). Fetch it once with the stored access
+          // token and inline it as a data URL; if that fails, null it so the
+          // placeholder shows. Either outcome stops it being an unusable URL, so
+          // this runs only on the first login after this code ships. With no
+          // token yet, leave it for the next login to retry.
           if (isUnusableAvatarUrl(rows[0]?.image)) {
-            await database.update(schema.user).set({ image: null }).where(eq(schema.user.id, u.id))
+            const acct = await database
+              .select({ token: schema.account.accessToken })
+              .from(schema.account)
+              .where(and(eq(schema.account.userId, u.id), eq(schema.account.providerId, provider.providerId)))
+              .limit(1)
+            if (acct[0]?.token) {
+              const dataUrl = await fetchAvatarDataUrl(rows[0]!.image!, acct[0].token)
+              await database.update(schema.user).set({ image: dataUrl }).where(eq(schema.user.id, u.id))
+            }
           }
           if (rows[0]?.role !== 'admin') {
             await database
