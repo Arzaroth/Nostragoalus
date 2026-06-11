@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Changed
+- The version number in the footer now links straight to that version's section in the about-page changelog.
+
 ## [0.20.1] - 2026-06-11
 
 ### Changed

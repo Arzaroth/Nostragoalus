@@ -157,7 +157,7 @@ const changelog = computed<ChangelogVersion[]>(() => {
     <section>
       <h2 class="font-semibold text-xl mb-5">{{ t('about.changelogTitle') }}</h2>
       <div class="flex flex-col gap-6">
-        <div v-for="v in changelog" :key="v.version" class="ng-card rounded-2xl border p-5" style="background: var(--p-content-background)">
+        <div v-for="v in changelog" :id="`v${v.version}`" :key="v.version" class="ng-card rounded-2xl border p-5" style="scroll-margin-top: calc(var(--ng-header-h, 4rem) + 1rem); background: var(--p-content-background)">
           <div class="flex items-baseline gap-3 mb-3">
             <span class="font-bold text-lg" style="color: var(--p-primary-color)">{{ v.version }}</span>
             <span class="text-xs" style="color: var(--p-text-muted-color)">{{ v.date }}</span>
