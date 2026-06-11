@@ -88,11 +88,11 @@
       },
       "champion": {
         "t": "che'wI' wIv",
-        "d": "'aqtu' jeywI' yInoH 'ej tev nI' yISuq - may' wa'DIch taghDI' SoQmoHlu'."
+        "d": "'aqtu' jeywI' yInoH 'ej tev nI' yISuq - wIvDI' FIFA patlh Sub law', tev tIn law'."
       },
       "live": {
-        "t": "DaH mI'mey",
-        "d": "may' qaStaHvIS, SIbI' mI'mey choHmoHlu'."
+        "t": "Hoch DaH",
+        "d": "mI', De', 'ej patlh DaH choH WebSocket - DujmeyDaq jorwI' choHtaHvIS patlh yIlegh."
       },
       "bracket": {
         "t": "may' He",
@@ -113,6 +113,18 @@
       "competitions": {
         "t": "'aqtu'mey law'",
         "d": "qo' HIvje' 2026, qo' HIvje' 2022, yu'rop tev 2024 je - SIbI' choH."
+      },
+      "bestScorer": {
+        "t": "vongwI' wIv",
+        "d": "Qup vongwI' Dun DawIv 'ej HevDaq tev yISuq."
+      },
+      "leagues": {
+        "t": "ghom pegh",
+        "d": "juplI', qorDu'lI', vaj qIb ghom yIchenmoH - De' yIqIp 'ej wa'DIch Daq yIghoS; SoH Dapanmey lI'."
+      },
+      "bot": {
+        "t": "qum qoq",
+        "d": "DochmeyDaq mI' law' qoq wIv reH - qum val yIjey 'ej laHlIj yi'ang."
       }
     },
     "scoringTitle": "noH nap - po' neH",
@@ -159,7 +171,8 @@
         "t": "Hoch ghom yISov",
         "d": "SuvwI' tetlh 'oHbogh, DevwI', De' 'Il."
       }
-    }
+    },
+    "bestScorerPill": "vongwI' tev"
   },
   "matches": {
     "title": "may'mey",
@@ -534,7 +547,7 @@
     },
     "q4": {
       "q": "che'wI' wIv nuq?",
-      "a": "may' wa'DIch taghpa', 'aqtu' jeywI' yInoH. bIlughchugh, tev DaHev rInDI'."
+      "a": "may' wa'DIch taghpa', 'aqtu' jeywI' yInoH. bIlughchugh, HevDaq tev DaHev - wIvlIj FIFA patlh Sub law', tev tIn law' - 'ej may'meylIj joqwI' che'wI' wIvlIj."
     },
     "q5": {
       "q": "wIvmeywIj lulegh'a' latlhpu'?",
@@ -555,7 +568,19 @@
     "formula": {
       "q": "chay' 'ot mI' bohlu'?",
       "a": "Hoch wIv 90 tup mI' noHlu'. naQ chen:",
-      "example": "bI'reS: Belgium 1-0 DawIv, 1-0 rIn - mI' pup (3). 5.9% neH wIvchugh, le' +2 chel, 5 'ot. HevDaq joq Hov lo'taHvIS, cha'logh."
+      "example": "bI'reS: Brazil 2-1 DawIv, 2-1 rIn - mI' pup (3). Brazil jey wIvbogh Hoch, 4% neH 2-1 wIv, vaj le' +4 chel, 7 'ot. HevDaq joq Hov lo'taHvIS, cha'logh."
+    },
+    "q9": {
+      "q": "vongwI' wIv nuq?",
+      "a": "che'wI'lI' tlhej, Qup vongwI' Dun DawIv. vongwI' Dun wIvbogh Hoch (chetvI' bommey Hutlhlu') HevDaq tev luHev."
+    },
+    "q10": {
+      "q": "ghommey nuq?",
+      "a": "Qup ghommey 'oH - pegh (De') joq lI'. ghom yIchenmoH joq juplI' ghom yIjun - reH SoH Dapanmey lI'; ghom neH patlh 'ej qum De' juvHa'."
+    },
+    "q11": {
+      "q": "DaH choH'a' patlh?",
+      "a": "HISlaH. may'mey taHtaHvIS, provisional patlh 'ang patlhwI' - DaH DapanmeylIj mI' DaH juv, jorwI' choHtaHvIS DaH choH. may'Daq ghom patlh je DaH vIH."
     }
   },
   "err": {

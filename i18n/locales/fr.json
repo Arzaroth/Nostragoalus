@@ -87,12 +87,12 @@
         "d": "Doublez les points sur un match par tour quand vous êtes sûr de vous."
       },
       "champion": {
-        "t": "Vainqueur",
-        "d": "Désignez le vainqueur du tournoi pour un bonus, verrouillé au premier coup d'envoi."
+        "t": "Pronostic champion",
+        "d": "Désigne le vainqueur du tournoi pour un bonus sur toute la durée - plus la cote est longue au moment du choix, plus la récompense est grande."
       },
       "live": {
-        "t": "Scores en direct",
-        "d": "Les scores se mettent à jour en temps réel via WebSocket pendant les matchs."
+        "t": "Tout en direct",
+        "d": "Scores, stats et classement se mettent à jour en temps réel via WebSocket - regarde le tableau bouger au fil des buts."
       },
       "bracket": {
         "t": "Tableau final",
@@ -113,6 +113,18 @@
       "competitions": {
         "t": "Plusieurs compétitions",
         "d": "Coupe du Monde 2026, 2022 et Euro 2024 - changez en un clic."
+      },
+      "bestScorer": {
+        "t": "Soulier d'or",
+        "d": "Choisis qui terminera meilleur buteur du tournoi pour un bonus supplémentaire en finale."
+      },
+      "leagues": {
+        "t": "Ligues privées",
+        "d": "Crée une ligue pour tes amis, ta famille ou tes collègues - partage un code et vise la première place ; tes pronos restent les tiens."
+      },
+      "bot": {
+        "t": "Bot consensus",
+        "d": "Un joueur virtuel qui choisit toujours le score le plus fréquent de la foule - bats la sagesse des foules pour prouver ta valeur."
       }
     },
     "scoringTitle": "Un score simple, basé sur le talent",
@@ -159,7 +171,8 @@
         "t": "Connaissez chaque équipe",
         "d": "Effectifs officiels avec postes, sélectionneur, et des stats qui collent aux chiffres des fédérations."
       }
-    }
+    },
+    "bestScorerPill": "Bonus soulier d'or"
   },
   "matches": {
     "title": "Calendrier",
@@ -534,7 +547,7 @@
     },
     "q4": {
       "q": "C'est quoi le choix du vainqueur ?",
-      "a": "Avant le premier coup d'envoi du tournoi, désignez l'équipe qui soulèvera le trophée. Si vous avez vu juste, un bonus tombe à la fin."
+      "a": "Avant le premier coup d'envoi, désigne l'équipe qui soulèvera le trophée. Si tu as raison, tu empoches un bonus en finale - d'autant plus gros que le choix est audacieux (plus le classement FIFA de ton équipe est bas au moment du choix, plus ça rapporte) - et ton drapeau couronné veille sur tes matchs tout le tournoi."
     },
     "q5": {
       "q": "Les autres voient-ils mes pronos ?",
@@ -555,7 +568,19 @@
     "formula": {
       "q": "Comment les points sont-ils calculés exactement ?",
       "a": "Chaque prono est noté sur le résultat à 90 minutes. La formule complète :",
-      "example": "Exemple : vous pronostiquez Belgique 1-0 et le match finit 1-0 - score exact (3). Si seulement 5,9% des joueurs ont osé ce score, la rareté ajoute +2, soit 5 points. En finale, ou avec votre joker, ce serait doublé."
+      "example": "Exemple : tu pronostiques Brésil 2-1 et ça finit 2-1 - score exact (3). Parmi tous ceux qui ont aussi vu la victoire du Brésil, seuls ~4% ont trouvé le 2-1, donc le palier de rareté ajoute +4, soit 7 points. En finale, ou avec ton joker, ça double."
+    },
+    "q9": {
+      "q": "C'est quoi le pronostic soulier d'or ?",
+      "a": "En plus de ton champion, choisis le joueur qui terminera meilleur buteur du tournoi. Tous ceux qui ont choisi un joueur à égalité au sommet (buts contre son camp exclus) empochent un bonus en finale."
+    },
+    "q10": {
+      "q": "C'est quoi les ligues ?",
+      "a": "Les ligues sont des groupes liés à une compétition, privées (code à partager) ou publiques. Crée-en une ou rejoins celle de tes amis - tes pronos restent toujours les tiens ; les ligues filtrent juste les classements et les stats de la foule à ce groupe."
+    },
+    "q11": {
+      "q": "Le classement se met-il à jour en direct ?",
+      "a": "Oui. Pendant les matchs, le classement affiche un classement provisoire - tes pronos en cours notés au score actuel, mis à jour en direct au fil des buts. Les tableaux de groupe sur un match bougent aussi en direct."
     }
   },
   "err": {

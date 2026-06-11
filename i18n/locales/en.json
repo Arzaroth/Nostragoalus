@@ -88,11 +88,11 @@
       },
       "champion": {
         "t": "Champion pick",
-        "d": "Call the tournament winner for a season-long bonus, locked at the first kickoff."
+        "d": "Call the tournament winner for a season-long bonus - the longer the odds at pick time, the bigger the reward."
       },
       "live": {
-        "t": "Live scores",
-        "d": "Scores update in real time over WebSockets as the matches play out."
+        "t": "Live everything",
+        "d": "Scores, stats and the standings update in real time over WebSockets - watch the table move as the goals go in."
       },
       "bracket": {
         "t": "Knockout bracket",
@@ -113,6 +113,18 @@
       "competitions": {
         "t": "Multiple competitions",
         "d": "World Cup 2026, World Cup 2022 and UEFA Euro 2024 - switch in a click."
+      },
+      "bestScorer": {
+        "t": "Golden Boot",
+        "d": "Pick who you think finishes the tournament's top scorer for an extra bonus at the final."
+      },
+      "leagues": {
+        "t": "Private leagues",
+        "d": "Spin up a league for friends, family or the office - share a code and race for top spot; your predictions stay yours."
+      },
+      "bot": {
+        "t": "Consensus bot",
+        "d": "A virtual player that always picks the crowd's most-common scoreline - beat the wisdom of the crowd to prove your edge."
       }
     },
     "scoringTitle": "Simple, skill-based scoring",
@@ -159,7 +171,8 @@
         "t": "Know every team",
         "d": "Official squads with positions, the manager, and tournament stats that match the federations' own numbers."
       }
-    }
+    },
+    "bestScorerPill": "Golden Boot bonus"
   },
   "matches": {
     "title": "Fixtures",
@@ -534,7 +547,7 @@
     },
     "q4": {
       "q": "What is the champion pick?",
-      "a": "Before the first kickoff of the tournament, call the team that lifts the trophy. If you are right, you collect a bonus at the end - and your crowned flag watches over your fixtures all tournament long."
+      "a": "Before the first kickoff, call the team that lifts the trophy. If you are right you collect a bonus at the final - bigger the bolder the call (the lower your pick's FIFA ranking at pick time, the more it pays) - and your crowned flag watches over your fixtures all tournament long."
     },
     "q5": {
       "q": "Can others see my picks?",
@@ -555,7 +568,19 @@
     "formula": {
       "q": "How exactly are points calculated?",
       "a": "Every prediction is scored on the regulation (90-minute) result. The full formula:",
-      "example": "Example: you call Belgium 1-0 and it finishes 1-0 - that is an exact score (3). If only 5.9% of players dared that scoreline, the rarity tier adds +2, for 5 points. On the final, or with your joker, it would double."
+      "example": "Example: you call Brazil 2-1 and it finishes 2-1 - an exact score (3). Among everyone who also saw the Brazil win, only ~4% nailed 2-1, so the rarity tier adds +4, for 7 points. On the final, or with your joker, it doubles."
+    },
+    "q9": {
+      "q": "What is the Golden Boot pick?",
+      "a": "Alongside your champion, pick the player you think finishes the tournament's top scorer. Everyone who picked a player tied for the most goals (own goals excluded) collects a bonus at the final."
+    },
+    "q10": {
+      "q": "What are leagues?",
+      "a": "Leagues are groups scoped to a competition, private (shareable code) or public. Create one or join your friends' - your predictions are always yours; leagues just filter the rankings and crowd stats to that group."
+    },
+    "q11": {
+      "q": "Do the standings update live?",
+      "a": "Yes. While matches are in play the leaderboard shows provisional standings - your in-progress picks scored at the current scoreline, updating live as the goals go in. The group tables on a match move live too."
     }
   },
   "err": {
