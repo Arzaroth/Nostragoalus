@@ -219,9 +219,13 @@ function toggleFormInfo(side: string, i: number | string) {
     </Transition>
   </Teleport>
   <div v-if="m" class="flex flex-col gap-6">
-    <NuxtLink :to="`/${selectedSlug}/matches`" class="text-sm inline-flex items-center gap-1" style="color: var(--p-text-muted-color)">
-      <i class="pi pi-arrow-left" /> {{ t('common.back') }}
-    </NuxtLink>
+    <div class="flex items-center justify-between gap-3 flex-wrap">
+      <NuxtLink :to="`/${selectedSlug}/matches`" class="text-sm inline-flex items-center gap-1" style="color: var(--p-text-muted-color)">
+        <i class="pi pi-arrow-left" /> {{ t('common.back') }}
+      </NuxtLink>
+      <!-- Scopes the crowd line below (and the league crowd patches). -->
+      <LeaguePill v-if="crowdEnabled" />
+    </div>
 
     <div class="rounded-2xl border p-6" style="background: var(--p-content-background); border-color: var(--p-content-border-color)">
       <div class="flex items-center justify-between text-xs mb-4" style="color: var(--p-text-muted-color)">
