@@ -100,7 +100,6 @@ function fmt(d: string) {
       <h1 class="text-2xl font-bold">{{ t('nav.map') }}</h1>
       <div class="flex items-center gap-2 flex-wrap">
         <CompetitionPill />
-        <LeaguePill />
       </div>
     </div>
     <div class="grid lg:grid-cols-3 gap-4">
