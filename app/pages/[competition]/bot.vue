@@ -39,7 +39,7 @@ watchEffect(() => {
             <span v-if="data.champion.awardedPoints" class="text-xs font-semibold" style="color: var(--ng-star)">+{{ data.champion.awardedPoints }} pts</span>
           </span>
           <CompetitionPill />
-          <span v-if="data.league" class="text-xs font-semibold px-2 py-1 rounded-full shrink-0" style="color: var(--p-primary-color); background: var(--p-highlight-background, var(--p-content-border-color))">{{ data.league.name }}</span>
+          <span v-if="data.league" class="text-xs font-semibold px-2 py-1 rounded-full truncate min-w-0 max-w-[45vw] sm:max-w-none" style="color: var(--p-primary-color); background: var(--p-highlight-background, var(--p-content-border-color))">{{ data.league.name }}</span>
         </div>
         <SelectButton v-if="data.modeAvailable" v-model="botMethod" :options="methodOptions" option-label="label" option-value="value" :allow-empty="false" size="small" />
       </div>

@@ -5,6 +5,7 @@ const { enabled: crowdEnabled, totals: crowdTotals, leagueTotals, leagueActive }
 const oddsEnabled = useOddsPreference()
 const slug = useSelectedCompetition()
 const { data: matches, isLoading } = useMatches()
+useLiveMatches(matches)
 const { data: predictions } = useMyPredictions()
 const { upsert, setJoker } = usePredictionMutations()
 

@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm'
 import { db } from '../../../../db'
-import { championPick, user } from '../../../../db/schema'
+import { bestScorerPick, championPick, user } from '../../../../db/schema'
 import { getUserPublicPredictions } from '../../../utils/predictions/service'
 import { resolveCompetition } from '../../../utils/competitions/store'
 import { getSessionUser, isAdmin } from '../../../utils/auth-guards'
@@ -8,6 +8,7 @@ import { canViewProfile } from '../../../utils/leagues/service'
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id') as string
+  const admin = await isAdmin(event)
   const rows = await db
     .select({ name: user.name, image: user.image, profilePrivate: user.profilePrivate })
     .from(user)
@@ -19,8 +20,7 @@ export default defineEventHandler(async (event) => {
   // the user themself, so probing an id never confirms the account exists.
   if (rows[0].profilePrivate) {
     const viewer = await getSessionUser(event)
-    const allowed =
-      viewer && (await canViewProfile(db, { viewerId: viewer.id, targetUserId: id, isAdmin: await isAdmin(event) }))
+    const allowed = viewer && (await canViewProfile(db, { viewerId: viewer.id, targetUserId: id, isAdmin: admin }))
     if (!allowed) throw createError({ statusCode: 404, statusMessage: 'user not found' })
   }
 
@@ -39,12 +39,23 @@ export default defineEventHandler(async (event) => {
     )
   const champion = competition ? (championRows[0] ?? null) : null
 
+  const bestScorerRows = competition
+    ? await db
+        .select({ teamCode: bestScorerPick.teamCode, teamName: bestScorerPick.teamName, playerName: bestScorerPick.playerName, awardedPoints: bestScorerPick.awardedPoints })
+        .from(bestScorerPick)
+        .where(and(eq(bestScorerPick.userId, id), eq(bestScorerPick.competitionId, competition.id)))
+        .limit(1)
+    : []
+  const bestScorer = bestScorerRows[0] ?? null
+
   return {
     user: { id, name: rows[0].name, image: rows[0].image },
     champion,
+    bestScorer,
     champions: global ? championRows : undefined,
     global,
-    predictions: await getUserPublicPredictions(db, id, new Date(), competition?.id),
+    // Admins see picks for matches that haven't kicked off yet.
+    predictions: await getUserPublicPredictions(db, id, new Date(), competition?.id, admin),
   }
 })
 

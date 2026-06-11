@@ -128,6 +128,17 @@ describe('getUserPublicPredictions', () => {
     expect(await getUserPublicPredictions(db, userId, NOW, competitionId)).toHaveLength(1)
     await client.close()
   })
+
+  it('includes not-yet-kicked-off picks for admins (includeUpcoming)', async () => {
+    const { db, client, competitionId, roundId, userId } = await setup()
+    const locked = await makeMatch(db, { competitionId, roundId, kickoffTime: PAST })
+    const future = await makeMatch(db, { competitionId, roundId, kickoffTime: FUTURE })
+    await makePrediction(db, { userId, matchId: locked, roundId, home: 1, away: 0 })
+    await makePrediction(db, { userId, matchId: future, roundId, home: 2, away: 2 })
+    expect(await getUserPublicPredictions(db, userId, NOW)).toHaveLength(1)
+    expect(await getUserPublicPredictions(db, userId, NOW, competitionId, true)).toHaveLength(2)
+    await client.close()
+  })
 })
 
 describe('setJoker', () => {

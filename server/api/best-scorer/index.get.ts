@@ -3,17 +3,19 @@ import { requireUser } from '../../utils/auth-guards'
 import { resolveCompetition } from '../../utils/competitions/store'
 import { getChampionLockTime, listCompetitionTeams } from '../../utils/champion/service'
 import { getMyBestScorerPick } from '../../utils/bestscorer/service'
+import { getActiveScoringConfig } from '../../utils/scoring/store'
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
   const query = getQuery(event)
   const competition = await resolveCompetition(db, (query.competition as string) || null)
-  if (!competition) return { competition: null, teams: [], myPick: null, locked: true }
+  if (!competition) return { competition: null, teams: [], myPick: null, locked: true, bonus: 0 }
 
-  const [teams, myPick, lock] = await Promise.all([
+  const [teams, myPick, lock, config] = await Promise.all([
     listCompetitionTeams(db, competition.id),
     getMyBestScorerPick(db, user.id, competition.id),
     getChampionLockTime(db, competition.id),
+    getActiveScoringConfig(db),
   ])
 
   return {
@@ -22,6 +24,8 @@ export default defineEventHandler(async (event) => {
     // provider, with the season for the UEFA path.
     provider: competition.provider,
     season: competition.seasonHint,
+    // Flat points a winning best-scorer pick pays (shown under the selection).
+    bonus: config.rules.bestScorerBonus,
     teams,
     myPick,
     locked: !!lock && Date.now() >= new Date(lock).getTime(),
