@@ -61,7 +61,8 @@
     "cancel": "Cancel",
     "back": "Back to fixtures",
     "refresh": "Refresh",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "clear": "Clear"
   },
   "home": {
     "tagline": "Predict football scores, earn points for how close you get, and out-foresee your friends on the global ranking.",

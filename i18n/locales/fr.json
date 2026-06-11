@@ -61,7 +61,8 @@
     "cancel": "Annuler",
     "back": "Retour aux matchs",
     "refresh": "Actualiser",
-    "confirm": "Confirmer"
+    "confirm": "Confirmer",
+    "clear": "Effacer"
   },
   "home": {
     "tagline": "Pronostiquez les scores, gagnez des points selon votre précision, et devancez vos amis au classement global.",
