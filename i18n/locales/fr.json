@@ -174,6 +174,10 @@
       "bot": {
         "t": "Bats le bot consensus",
         "d": "Un joueur virtuel qui choisit le score le plus fréquent de la foule à chaque match - noté par le vrai moteur, bonus de rareté compris, pour te mesurer à la sagesse des foules."
+      },
+      "leagues": {
+        "t": "Joue en ligues privées",
+        "d": "Regroupe-toi avec amis, famille ou collègues - crée une ligue, partage son code, et vise la première place de ton propre classement."
       }
     },
     "bestScorerPill": "Bonus soulier d'or"
@@ -572,7 +576,8 @@
     "formula": {
       "q": "Comment les points sont-ils calculés exactement ?",
       "a": "Chaque prono est noté sur le résultat à 90 minutes. La formule complète :",
-      "example": "Exemple : tu pronostiques Brésil 2-1 et ça finit 2-1 - score exact (3). Parmi tous ceux qui ont aussi vu la victoire du Brésil, seuls ~4% ont trouvé le 2-1, donc le palier de rareté ajoute +4, soit 7 points. En finale, ou avec ton joker, ça double."
+      "example": "Exemple : tu pronostiques Brésil 2-1 et ça finit 2-1 - score exact (3). Parmi tous ceux qui ont aussi vu la victoire du Brésil, seuls ~4% ont trouvé le 2-1, donc le palier de rareté ajoute +4, soit 7 points. En finale, ou avec ton joker, ça double.",
+      "code": "points = (base + rareté) × multiplicateur   (+ champion & Soulier d'or en finale)\n\nbase   = 3  score exact              (domicile & extérieur exacts)\n         2  bonne différence de buts (et bon résultat)\n         1  bon résultat seulement   (victoire / nul / défaite)\n         0  sinon\n\nrareté = un bonus sur un score exact, selon sa rareté\n         parmi les joueurs ayant aussi trouvé le résultat :\n         +5  < 1%      +4  < 5%       +3  < 12%\n         +2  < 22%     +1  < 35%      +0  sinon   (≥ 5 joueurs requis)\n\nmultiplicateur = 2  sur ton joker du tour, et à chaque finale\n                 1  sinon\n\nchampion     = bonus sur tout le tournoi si ton vainqueur soulève le trophée,\n               d'autant plus gros que la cote est longue (paliers FIFA, jusqu'à 4×)\nSoulier d'or = bonus si ton buteur finit meilleur buteur du tournoi"
     },
     "q9": {
       "q": "C'est quoi le pronostic soulier d'or ?",
