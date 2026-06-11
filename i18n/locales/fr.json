@@ -233,7 +233,10 @@
     "exact": "exacts",
     "correct": "corrects",
     "pts": "pts",
-    "leagueScope": "Ligue"
+    "leagueScope": "Ligue",
+    "liveProvisional": "EN DIRECT",
+    "live": "live",
+    "livePointsHint": "Points provisoires des matchs en cours — mis à jour à chaque changement de score."
   },
   "bot": {
     "name": "Bot consensus",

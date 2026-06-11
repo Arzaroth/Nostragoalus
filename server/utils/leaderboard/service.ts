@@ -15,6 +15,7 @@ export interface LeaderboardRow {
   bestScorerPoints: number
   bestScorerName: string | null
   bestScorerCode: string | null
+  livePoints: number
   exactCount: number
   outcomeCount: number
   gdCount: number
@@ -61,6 +62,8 @@ export async function getLeaderboard(
     // Keep this user on the board even when hidden/private would exclude them
     // (so they see their own rank among the otherwise-visible population).
     alwaysIncludeUserId?: string
+    // In-progress matches scored at their current scoreline, per user.
+    liveProvisional?: Map<string, { points: number; exact: number; outcome: number; gd: number }>
   },
 ): Promise<LeaderboardRow[]> {
   const limit = opts.limit ?? 100
@@ -142,9 +145,13 @@ export async function getLeaderboard(
   }
 
   // Bonus points are merged in JS (a SQL join would fan out the per-prediction rows).
+  // Live provisional points (in-progress matches scored at their current
+  // scoreline) fold into the total and the tie-break counts so standings rank
+  // provisionally; livePoints is surfaced separately for the UI.
   const merged = base.map((r) => {
     const championPoints = championByUser.get(r.userId) ?? 0
     const bestScorerPoints = bestScorerByUser.get(r.userId) ?? 0
+    const live = opts.liveProvisional?.get(r.userId)
     return {
       ...r,
       championPoints,
@@ -153,7 +160,11 @@ export async function getLeaderboard(
       bestScorerPoints,
       bestScorerName: bestScorerNameByUser.get(r.userId) ?? null,
       bestScorerCode: bestScorerCodeByUser.get(r.userId) ?? null,
-      totalPoints: r.predictionPoints + championPoints + bestScorerPoints,
+      livePoints: live?.points ?? 0,
+      exactCount: r.exactCount + (live?.exact ?? 0),
+      outcomeCount: r.outcomeCount + (live?.outcome ?? 0),
+      gdCount: r.gdCount + (live?.gd ?? 0),
+      totalPoints: r.predictionPoints + championPoints + bestScorerPoints + (live?.points ?? 0),
     }
   })
 
@@ -172,6 +183,7 @@ export async function getLeaderboard(
     bestScorerPoints: r.bestScorerPoints,
     bestScorerName: r.bestScorerName,
     bestScorerCode: r.bestScorerCode,
+    livePoints: r.livePoints,
     exactCount: r.exactCount,
     outcomeCount: r.outcomeCount,
     gdCount: r.gdCount,

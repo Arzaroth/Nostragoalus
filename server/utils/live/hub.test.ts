@@ -26,7 +26,9 @@ describe('live hub', () => {
     try {
       expect(await publishMatchUpdates(db, [m])).toBe(1)
       expect(watcher.send).toHaveBeenCalledWith(expect.objectContaining({ type: 'match:update' }))
-      expect(other.send).not.toHaveBeenCalled()
+      // The non-watcher gets no per-match update, only the global scores:changed nudge.
+      expect(other.send).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'match:update' }))
+      expect(other.send).toHaveBeenCalledWith({ type: 'scores:changed' })
     } finally {
       removeLiveSubscriber(watcher)
       removeLiveSubscriber(other)

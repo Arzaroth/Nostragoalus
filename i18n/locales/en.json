@@ -233,7 +233,10 @@
     "exact": "exact",
     "correct": "correct",
     "pts": "pts",
-    "leagueScope": "League"
+    "leagueScope": "League",
+    "liveProvisional": "LIVE",
+    "live": "live",
+    "livePointsHint": "Provisional points from matches in progress — updates as scores change."
   },
   "bot": {
     "name": "Crowd Bot",
