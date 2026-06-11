@@ -26,7 +26,15 @@ const squadQuery = useQuery({
       signal,
     }),
 })
-const squad = computed<any[]>(() => squadQuery.data.value?.squad ?? [])
+// Attackers first for picking a top scorer (the provider lists GK->FW).
+const POSITION_ORDER: Record<string, number> = { FW: 0, MF: 1, DF: 2, GK: 3 }
+const squad = computed<any[]>(() =>
+  [...(squadQuery.data.value?.squad ?? [])].sort(
+    (a, b) =>
+      (POSITION_ORDER[a.position ?? ''] ?? 4) - (POSITION_ORDER[b.position ?? ''] ?? 4) ||
+      (a.shirtNumber ?? 99) - (b.shirtNumber ?? 99),
+  ),
+)
 
 function onTeamChange() {
   selectedPlayerId.value = null
@@ -155,7 +163,7 @@ const holo = computed(() => {
       </div>
 
       <!-- Golden boot showcase -->
-      <div class="shrink-0 flex flex-col items-center gap-2 self-center sm:pr-8">
+      <div class="shrink-0 flex flex-col items-center gap-2 self-center sm:self-start sm:pr-8">
         <component :is="showcase?.teamCode ? NuxtLinkC : 'div'" :to="showcase?.teamCode ? `/${slug}/teams/${showcase.teamCode}` : undefined" class="relative mt-3 block" :class="{ 'hover:opacity-90': showcase?.teamCode }">
           <template v-if="showcase">
             <div

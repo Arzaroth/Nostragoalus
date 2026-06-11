@@ -109,12 +109,14 @@ const { data: usersData } = useQuery({
   enabled,
   queryFn: async () => {
     const res = await admin.listUsers({ query: { limit: 200, sortBy: 'createdAt', sortDirection: 'desc' } })
-    return (res.data as { users?: Array<{ id: string; name: string; email: string }> } | null)?.users ?? []
+    // Same shape as the admin page's ['admin-users'] query (shared cache key).
+    const data = res.data as { users?: Array<{ id: string; name: string; email: string }>; total?: number } | null
+    return { users: data?.users ?? [], total: data?.total ?? data?.users?.length ?? 0 }
   },
 })
 const addCandidates = computed(() => {
   const memberIds = new Set((detail.value?.members ?? []).map((m) => m.userId))
-  return (usersData.value ?? []).filter((u) => !memberIds.has(u.id)).map((u) => ({ label: `${u.name} (${u.email})`, value: u.id }))
+  return (usersData.value?.users ?? []).filter((u) => !memberIds.has(u.id)).map((u) => ({ label: `${u.name} (${u.email})`, value: u.id }))
 })
 const addUserId = ref<string | null>(null)
 
