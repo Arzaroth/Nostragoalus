@@ -40,6 +40,22 @@ const showcaseCode = computed(() =>
   data.value?.locked ? (data.value?.myPick?.teamCode ?? null) : (selectedCode.value ?? data.value?.myPick?.teamCode ?? null),
 )
 const isSaved = computed(() => !!data.value?.myPick && showcaseCode.value === data.value.myPick.teamCode)
+
+// Points the displayed pick pays if it wins: the saved pick keeps the value
+// snapshotted at pick time, a preview shows what picking now would lock in.
+const showcaseWorth = computed<{ rank: number | null; points: number } | null>(() => {
+  if (!showcaseCode.value) return null
+  if (isSaved.value && data.value?.myPick) {
+    return { rank: data.value.myPick.fifaRank ?? null, points: data.value.myPick.potentialPoints }
+  }
+  const team = data.value?.teams?.find((tm: ChampionTeam) => tm.code === showcaseCode.value)
+  return team ? { rank: team.fifaRank, points: team.potentialPoints } : null
+})
+
+function worthLabel(rank: number | null, points: number) {
+  const worth = t('champion.worth', { points })
+  return rank == null ? worth : `${t('champion.fifaRank', { rank })} · ${worth}`
+}
 </script>
 
 <template>
@@ -75,9 +91,12 @@ const isSaved = computed(() => !!data.value?.myPick && showcaseCode.value === da
                 <span v-else>{{ placeholder }}</span>
               </template>
               <template #option="{ option }">
-                <span class="flex items-center gap-2">
+                <span class="flex items-center gap-2 w-full">
                   <img v-if="flagUrl(option.code)" :src="flagUrl(option.code) || ''" class="w-5 h-5 rounded object-cover" alt="" >
                   {{ option.name }}
+                  <span class="ml-auto text-xs whitespace-nowrap" style="color: var(--p-text-muted-color)">
+                    {{ worthLabel(option.fifaRank, option.potentialPoints) }}
+                  </span>
                 </span>
               </template>
             </Select>
@@ -135,14 +154,19 @@ const isSaved = computed(() => !!data.value?.myPick && showcaseCode.value === da
             <strong class="block leading-tight">{{ teamName(showcaseCode) }}</strong>
           </component>
           <span v-else class="block text-sm leading-tight" style="color: var(--p-text-muted-color)">{{ t('champion.pick') }}</span>
-          <!-- one reserved line: points / preview hint / invisible spacer - the card never resizes -->
+          <!-- one reserved line: points / preview hint / worth / invisible spacer - the card never resizes -->
           <span v-if="isSaved && data.myPick?.awardedPoints > 0" class="text-xs block mt-0.5 font-bold" style="color: var(--ng-success)">+{{ data.myPick.awardedPoints }} pts</span>
+          <span
+            v-else-if="showcaseCode && !isSaved && !data.locked"
+            class="text-xs block mt-0.5"
+            style="color: var(--p-text-muted-color)"
+          >{{ t('champion.preview') }}</span>
           <span
             v-else
             class="text-xs block mt-0.5"
-            :class="{ invisible: !(showcaseCode && !isSaved && !data.locked) }"
+            :class="{ invisible: !(showcaseCode && showcaseWorth) }"
             style="color: var(--p-text-muted-color)"
-          >{{ t('champion.preview') }}</span>
+          >{{ showcaseWorth ? worthLabel(showcaseWorth.rank, showcaseWorth.points) : ' ' }}</span>
         </div>
       </div>
     </div>

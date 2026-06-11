@@ -2,6 +2,9 @@ import { z } from 'zod'
 import { db } from '../../../db'
 import { resolveCompetition } from '../../utils/competitions/store'
 import { setChampionPick } from '../../utils/champion/service'
+import { getFifaRanks } from '../../utils/champion/ranking'
+import { championPointsForRank } from '../../utils/scoring/config'
+import { getActiveScoringConfig } from '../../utils/scoring/store'
 import { defineValidatedHandler } from '../../utils/validated-handler'
 
 const bodySchema = z.object({
@@ -14,11 +17,16 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ body, user 
   const competition = await resolveCompetition(db, body.competition || null)
   if (!competition) throw createError({ statusCode: 404, statusMessage: 'competition not found' })
 
+  const [ranks, config] = await Promise.all([getFifaRanks(), getActiveScoringConfig(db)])
+  const fifaRank = ranks?.get(body.teamCode) ?? null
+
   await setChampionPick(db, {
     userId: user.id,
     competitionId: competition.id,
     teamCode: body.teamCode,
     teamName: body.teamName,
+    fifaRank,
+    potentialPoints: championPointsForRank(fifaRank, config.rules),
   })
   return { ok: true }
 })

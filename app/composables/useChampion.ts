@@ -3,12 +3,20 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 export interface ChampionTeam {
   code: string
   name: string
+  fifaRank: number | null
+  potentialPoints: number
 }
 
 export interface ChampionData {
   competition: { id: string; slug: string; name: string } | null
   teams: ChampionTeam[]
-  myPick: { teamCode: string | null; teamName: string; awardedPoints: number } | null
+  myPick: {
+    teamCode: string | null
+    teamName: string
+    fifaRank: number | null
+    potentialPoints: number
+    awardedPoints: number
+  } | null
   locked: boolean
 }
 

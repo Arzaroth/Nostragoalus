@@ -134,6 +134,13 @@
       "when": 1781126620314,
       "tag": "0018_best_scorer",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1781144785852,
+      "tag": "0019_champion_tiers",
+      "breakpoints": true
     }
   ]
 }

@@ -205,10 +205,12 @@
     "title": "Your champion",
     "current": "Current pick:",
     "pick": "Pick the winner",
-    "hint": "Bonus if your pick lifts the trophy · locks at the first kickoff.",
+    "hint": "Bonus if your pick lifts the trophy · long shots pay more · locks at the first kickoff.",
     "noPick": "No champion picked - locked.",
     "lockedIn": "Locked in - good luck!",
     "preview": "not saved yet",
+    "worth": "worth {points} pts",
+    "fifaRank": "FIFA #{rank}",
     "tag": "Champion"
   },
   "bestScorer": {

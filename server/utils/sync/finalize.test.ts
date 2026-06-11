@@ -205,7 +205,9 @@ describe('finalizeMatches', () => {
     const finalRound = (await findRoundId(db, competitionId, 'FINAL', null)) as string
     const champ = await makeUser(db, 'champ')
     const loser = await makeUser(db, 'loser')
-    await db.insert(championPick).values({ userId: champ, competitionId, teamCode: 'BRA', teamName: 'Brazil' })
+    // potentialPoints is the snapshot taken at pick time - the award must pay
+    // exactly that, not the flat config bonus.
+    await db.insert(championPick).values({ userId: champ, competitionId, teamCode: 'BRA', teamName: 'Brazil', fifaRank: 25, potentialPoints: 25 })
     await db.insert(championPick).values({ userId: loser, competitionId, teamCode: 'ARG', teamName: 'Argentina' })
     await makeMatch(db, {
       competitionId,
@@ -222,7 +224,7 @@ describe('finalizeMatches', () => {
 
     await finalizeMatches(db, NOW)
     const picks = Object.fromEntries((await db.select().from(championPick)).map((p) => [p.userId, p.awardedPoints]))
-    expect(picks[champ]).toBe(10)
+    expect(picks[champ]).toBe(25)
     expect(picks[loser]).toBe(0)
     await client.close()
   })

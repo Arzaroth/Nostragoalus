@@ -205,10 +205,12 @@
     "title": "Votre vainqueur",
     "current": "Choix actuel :",
     "pick": "Choisissez le vainqueur",
-    "hint": "Bonus si votre choix soulève le trophée · verrouillé au premier coup d'envoi.",
+    "hint": "Bonus si votre choix soulève le trophée · les outsiders rapportent plus · verrouillé au premier coup d'envoi.",
     "noPick": "Aucun vainqueur choisi - verrouillé.",
     "lockedIn": "Verrouillé - bonne chance !",
     "preview": "pas encore enregistré",
+    "worth": "vaut {points} pts",
+    "fifaRank": "FIFA n°{rank}",
     "tag": "Champion"
   },
   "bestScorer": {
