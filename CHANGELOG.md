@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-06-11
+
 ### Added
 - The leaderboard now shows each player's best-scorer pick (team flag + 👟) beside their champion pick, with the full team / normalized player name in the tooltip.
 - Admin: an "Apply auto-join now" action back-fills SSO league membership for all existing users whose email domain a linked provider captures (no need to wait for each to log in again), plus a total user count.
