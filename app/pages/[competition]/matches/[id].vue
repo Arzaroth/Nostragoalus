@@ -127,8 +127,12 @@ function cardEvents(side: 'HOME' | 'AWAY') {
   return (detail.value?.bookings ?? []).filter((b: any) => b.side === side)
 }
 // Goals arrive with insights, cards with the live detail - show the timeline only
-// once both have settled so events don't pop in piecemeal.
-const eventsReady = computed(() => insightsStatus.value !== 'pending' && detailStatus.value !== 'pending')
+// once both have settled so events don't pop in piecemeal. A live-refresh keeps
+// the previous data while re-fetching, so stay "ready" then and patch the
+// timeline in place instead of collapsing back to the spinner.
+const eventsReady = computed(
+  () => (insightsStatus.value !== 'pending' || !!insights.value) && (detailStatus.value !== 'pending' || !!detail.value),
+)
 // Goals + bookings interleaved chronologically.
 // Timeline visibility toggles, remembered across visits.
 const showBookings = useLocalStorage('ng-timeline-bookings', true)
