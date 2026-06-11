@@ -1,5 +1,6 @@
 import { db } from '../../../db'
 import { getLeaderboard } from '../../utils/leaderboard/service'
+import { getLiveProvisionalPoints } from '../../utils/leaderboard/live'
 import { getLeagueRankMovements, getRankMovements } from '../../utils/leaderboard/snapshots'
 import { getCompetitionById, resolveCompetition } from '../../utils/competitions/store'
 import { getSessionUser, isAdmin, requireUser } from '../../utils/auth-guards'
@@ -31,6 +32,7 @@ export default defineEventHandler(async (event) => {
     // League mates see each other even with private profiles; outsiders
     // browsing a public league's board don't.
     const includePrivate = !!membership || admin
+    const liveProvisional = await getLiveProvisionalPoints(db, league.competitionId)
     const rows = await getLeaderboard(db, {
       competitionId: league.competitionId,
       leagueId: league.id,
@@ -38,6 +40,7 @@ export default defineEventHandler(async (event) => {
       offset,
       includePrivate,
       alwaysIncludeUserId: user.id,
+      liveProvisional,
     })
     // Movement only for the full-member view: the outsider board excludes
     // private profiles, so snapshot ranks wouldn't line up with displayed ones.
@@ -45,6 +48,7 @@ export default defineEventHandler(async (event) => {
     return {
       competition: competition ? { id: competition.id, slug: competition.slug, name: competition.name } : null,
       league: { id: league.id, name: league.name },
+      live: liveProvisional.size > 0,
       rows: rows.map((r) => ({ ...r, movement: movements.get(r.userId) ?? null })),
     }
   }
@@ -56,12 +60,14 @@ export default defineEventHandler(async (event) => {
 
   const competition = await resolveCompetition(db, (query.competition as string) || null)
   if (!competition) return { competition: null, rows: [] }
-  const [rows, movements] = await Promise.all([
-    getLeaderboard(db, { competitionId: competition.id, limit, offset, alwaysIncludeUserId: viewer?.id }),
+  const [liveProvisional, movements] = await Promise.all([
+    getLiveProvisionalPoints(db, competition.id),
     getRankMovements(db, competition.id),
   ])
+  const rows = await getLeaderboard(db, { competitionId: competition.id, limit, offset, alwaysIncludeUserId: viewer?.id, liveProvisional })
   return {
     competition: { id: competition.id, slug: competition.slug, name: competition.name },
+    live: liveProvisional.size > 0,
     rows: rows.map((r) => ({ ...r, movement: movements.get(r.userId) ?? null })),
   }
 })

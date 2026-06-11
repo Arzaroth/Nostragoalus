@@ -1,7 +1,18 @@
 <script setup lang="ts">
+import { useQueryClient } from '@tanstack/vue-query'
 const { t } = useI18n()
 const slug = useSelectedCompetition()
 const { league, leagueId } = useSelectedLeague()
+
+// Standings move while matches are live (provisional points). The server nudges
+// every client with scores:changed on each score poll - refetch the board then,
+// so the live points and the ranking stay current over the WebSocket (no poll).
+const qc = useQueryClient()
+useReconnectingSocket({
+  onMessage: (data) => {
+    if ((data as { type?: string })?.type === 'scores:changed') qc.invalidateQueries({ queryKey: ['leaderboard'] })
+  },
+})
 
 // Three scopes once a league is picked in the pill; the pill decides WHICH
 // league, this toggle decides how wide the ranking is.
@@ -61,6 +72,7 @@ const displayRows = computed<DisplayRow[]>(() => {
     rank: row.rank,
     displayName: t('bot.name'),
     image: null,
+    livePoints: 0,
     movement: null,
     isBot: true,
   })
@@ -69,6 +81,9 @@ const displayRows = computed<DisplayRow[]>(() => {
 function medal(rank: number) {
   return rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null
 }
+
+// Any provisional points = at least one match is live and counting.
+const hasLive = computed(() => displayRows.value.some((r) => r.livePoints))
 </script>
 
 <template>
@@ -76,6 +91,9 @@ function medal(rank: number) {
     <div class="flex items-center justify-between gap-3 flex-wrap mb-5">
       <div class="flex items-center gap-3 flex-wrap">
         <h1 class="text-2xl font-bold">{{ t('leaderboard.title') }}</h1>
+        <span v-if="hasLive" class="inline-flex items-center gap-1.5 text-xs font-bold px-2 py-1 rounded-full" style="color: #fff; background: var(--ng-danger)">
+          <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />{{ t('leaderboard.liveProvisional') }}
+        </span>
         <CompetitionPill />
         <LeaguePill />
       </div>
@@ -134,8 +152,11 @@ function medal(rank: number) {
           </div>
         </div>
         <div class="text-right shrink-0">
-          <span class="text-xl font-bold tabular-nums">{{ r.totalPoints }}</span>
-          <span class="text-xs ml-1" style="color: var(--p-text-muted-color)">{{ t('leaderboard.pts') }}</span>
+          <div>
+            <span class="text-xl font-bold tabular-nums">{{ r.totalPoints }}</span>
+            <span class="text-xs ml-1" style="color: var(--p-text-muted-color)">{{ t('leaderboard.pts') }}</span>
+          </div>
+          <div v-if="r.livePoints" v-tooltip.left="t('leaderboard.livePointsHint')" class="text-[10px] font-bold leading-none tabular-nums" style="color: var(--ng-danger)">+{{ r.livePoints }} {{ t('leaderboard.live') }}</div>
         </div>
         <i class="pi pi-angle-right text-xs shrink-0" style="color: var(--p-text-muted-color)" />
       </NuxtLink>

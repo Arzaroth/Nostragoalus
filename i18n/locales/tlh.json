@@ -233,7 +233,10 @@
     "exact": "pup",
     "correct": "lugh",
     "pts": "QuQ",
-    "leagueScope": "ghom"
+    "leagueScope": "ghom",
+    "liveProvisional": "DaH",
+    "live": "DaH",
+    "livePointsHint": "qaStaHvIS may' provisional points — Sumchugh score choH"
   },
   "bot": {
     "name": "ghom qoq",

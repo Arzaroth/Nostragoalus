@@ -80,5 +80,8 @@ export async function publishMatchUpdates(db: AppDatabase, matchIds: string[]): 
       }
     }
   }
+  // A score moved somewhere: nudge every client to refetch derived views
+  // (provisional standings) without each having to subscribe to match ids.
+  for (const sub of subscribers) sub.send({ type: 'scores:changed' })
   return delivered
 }

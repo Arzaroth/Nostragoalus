@@ -233,7 +233,10 @@
     "exact": "เป๊ะ",
     "correct": "ถูก",
     "pts": "คะแนน",
-    "leagueScope": "ลีก"
+    "leagueScope": "ลีก",
+    "liveProvisional": "สด",
+    "live": "สด",
+    "livePointsHint": "คะแนนชั่วคราวจากแมตช์ที่กำลังแข่ง — อัปเดตเมื่อสกอร์เปลี่ยน"
   },
   "bot": {
     "name": "บอทมหาชน",
