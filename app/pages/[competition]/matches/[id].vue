@@ -28,7 +28,7 @@ const { data, refresh: refreshMatch } = await useFetch<{
 }>(`/api/matches/${id.value}`)
 // lazy: the page navigates immediately on the core match fetch; insight/stat
 // sections fill in as their (slower, FIFA-backed) data lands.
-const { data: insights, status: insightsStatus, clear: clearInsights } = await useFetch<any>(`/api/matches/${id.value}/insights`, { lazy: true })
+const { data: insights, status: insightsStatus, clear: clearInsights, refresh: refreshInsights } = await useFetch<any>(`/api/matches/${id.value}/insights`, { lazy: true })
 
 const selectedSlug = useSelectedCompetition()
 const { data: scorersData, status: scorersStatus, clear: clearScorers } = await useFetch<{ scorers: any[] }>('/api/competitions/scorers', {
@@ -37,7 +37,7 @@ const { data: scorersData, status: scorersStatus, clear: clearScorers } = await 
 })
 const scorers = computed<any[]>(() => scorersData.value?.scorers ?? [])
 
-const { data: detailData, status: detailStatus, clear: clearDetail } = await useFetch<{ detail: any }>(`/api/matches/${id.value}/live-detail`, { lazy: true })
+const { data: detailData, status: detailStatus, clear: clearDetail, refresh: refreshDetail } = await useFetch<{ detail: any }>(`/api/matches/${id.value}/live-detail`, { lazy: true })
 const detail = computed(() => detailData.value?.detail)
 
 // These FIFA-backed fetches can run for seconds; leaving the page aborts them.
@@ -62,6 +62,9 @@ watch(live, (now, prev) => {
     celebrating.value = true
     clearTimeout(celebrationTimer)
     celebrationTimer = setTimeout(() => (celebrating.value = false), 3200)
+    // The score moved - pull fresh goals/cards/stats right away.
+    refreshInsights()
+    refreshDetail()
   }
 })
 onBeforeUnmount(() => clearTimeout(celebrationTimer))
@@ -79,6 +82,19 @@ const status = computed(() => (live.value?.status ?? m.value?.status ?? 'SCHEDUL
 const homeScore = computed(() => live.value?.fullTimeHome ?? m.value?.fullTimeHome ?? null)
 const awayScore = computed(() => live.value?.fullTimeAway ?? m.value?.fullTimeAway ?? null)
 const isLive = computed(() => status.value === 'LIVE' || status.value === 'PAUSED')
+
+// While the match is live, the score patches over WS but the stats and event
+// timeline (FIFA-backed) don't - poll them so they keep up.
+let liveStatsTimer: ReturnType<typeof setInterval> | undefined
+watch(
+  isLive,
+  (on) => {
+    clearInterval(liveStatsTimer)
+    if (on && import.meta.client) liveStatsTimer = setInterval(() => { refreshInsights(); refreshDetail() }, 45_000)
+  },
+  { immediate: true },
+)
+onBeforeUnmount(() => clearInterval(liveStatsTimer))
 
 const sides = ['home', 'away'] as const
 

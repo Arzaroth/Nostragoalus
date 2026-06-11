@@ -199,7 +199,8 @@
     "rarity": "le'",
     "rarityTip": "mI'vam pup wIvta' {pct}% neH - jaq wIvmey tev luSuq.",
     "rarityTipNoShare": "mI' pup le' tev chel.",
-    "jokerHint": "Hovlij QuQ cha'logh (mung + le')."
+    "jokerHint": "Hovlij QuQ cha'logh (mung + le').",
+    "adminUpcomingDivider": "qaStaHvIS lojmIt — admin neH lo'laHbe'"
   },
   "champion": {
     "title": "che'wI'lIj",
