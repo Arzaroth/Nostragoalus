@@ -22,8 +22,12 @@ export interface StandingRow {
 }
 
 // Compute a group table from its matches. Unplayed teams still appear (0 across),
-// so the full group is shown before kickoff.
-export function computeGroupStandings(matches: StandingsInputMatch[]): StandingRow[] {
+// so the full group is shown before kickoff. With includeLive, in-progress
+// matches count at their current scoreline (provisional table for the live view).
+export function computeGroupStandings(
+  matches: StandingsInputMatch[],
+  opts: { includeLive?: boolean } = {},
+): StandingRow[] {
   const table = new Map<string, StandingRow>()
 
   const ensure = (name: string, code: string | null): StandingRow => {
@@ -38,7 +42,8 @@ export function computeGroupStandings(matches: StandingsInputMatch[]): StandingR
   for (const m of matches) {
     const home = ensure(m.homeTeam, m.homeTeamCode)
     const away = ensure(m.awayTeam, m.awayTeamCode)
-    if (m.status !== 'FINISHED' || m.fullTimeHome == null || m.fullTimeAway == null) continue
+    const counts = m.status === 'FINISHED' || (!!opts.includeLive && (m.status === 'LIVE' || m.status === 'PAUSED'))
+    if (!counts || m.fullTimeHome == null || m.fullTimeAway == null) continue
 
     home.played += 1
     away.played += 1

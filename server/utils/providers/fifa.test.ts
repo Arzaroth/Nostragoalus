@@ -224,6 +224,26 @@ describe('fifaProvider', () => {
     expect((await provider.getMatchesByDate('2026-06-12')).map((m) => m.providerMatchId)).toEqual(['sched'])
   })
 
+  it('keeps just-finished matches in the live feed so the final whistle lands', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-06-11T20:30:00Z'))
+    try {
+      const payload = {
+        Results: [
+          groupMatch({ IdMatch: 'live', MatchStatus: 3, Date: '2026-06-11T20:00:00Z' }),
+          groupMatch({ IdMatch: 'ft', MatchStatus: 0, Date: '2026-06-11T18:00:00Z' }), // ~2.5h ago
+          groupMatch({ IdMatch: 'old', MatchStatus: 0, Date: '2026-06-10T18:00:00Z' }), // > 4h ago
+        ],
+      }
+      const provider = fifaProvider({ seasonId: '285023', fetchImpl: (async () => jsonResponse(payload)) as unknown as typeof fetch, rateLimiter: noWait() })
+      const ids = (await provider.getLiveMatches()).map((m) => m.providerMatchId)
+      expect(ids).toEqual(expect.arrayContaining(['live', 'ft']))
+      expect(ids).not.toContain('old')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('handles empty payloads and upstream errors', async () => {
     const rate = fifaProvider({ seasonId: '1', fetchImpl: (async () => new Response('', { status: 429 })) as unknown as typeof fetch, rateLimiter: noWait() })
     await expect(rate.listFixtures({ season: '2026' })).rejects.toBeInstanceOf(ProviderRateLimitError)

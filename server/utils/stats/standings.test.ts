@@ -37,6 +37,13 @@ describe('computeGroupStandings', () => {
     expect(table.find((r) => r.name === 'A')).toMatchObject({ won: 0, lost: 1, points: 0, gd: -2 })
   })
 
+  it('ignores in-progress matches by default but counts them with includeLive', () => {
+    const live = [m('A', 'B', 'LIVE', 2, 1)]
+    expect(computeGroupStandings(live)[0].played).toBe(0)
+    const prov = computeGroupStandings(live, { includeLive: true })
+    expect(prov[0]).toMatchObject({ name: 'A', played: 1, won: 1, points: 3, gd: 1 })
+  })
+
   it('breaks ties on goals-for then name', () => {
     // X and Y both 3pts, gd +1, but X scored more.
     const byGf = computeGroupStandings([m('X', 'Z', 'FINISHED', 3, 2), m('Y', 'W', 'FINISHED', 1, 0)])
