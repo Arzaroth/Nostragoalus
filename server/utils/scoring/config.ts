@@ -19,11 +19,15 @@ export interface ScoringRules {
   oddsAppliesTo: MatchBasis
 }
 
+// Share = your exact score's count / players who got the correct RESULT. Only a
+// clear minority of the right-result crowd earns anything, with a steep climb
+// for genuinely rare calls; sharing your exact with a third+ of them pays 0.
 export const DEFAULT_CROWD_TIERS: CrowdTier[] = [
-  { maxShareExclusive: 0.005, bonus: 5 },
-  { maxShareExclusive: 0.05, bonus: 3 },
-  { maxShareExclusive: 0.15, bonus: 2 },
-  { maxShareExclusive: 0.4, bonus: 1 },
+  { maxShareExclusive: 0.01, bonus: 5 },
+  { maxShareExclusive: 0.05, bonus: 4 },
+  { maxShareExclusive: 0.12, bonus: 3 },
+  { maxShareExclusive: 0.22, bonus: 2 },
+  { maxShareExclusive: 0.35, bonus: 1 },
 ]
 
 export const DEFAULT_ODDS_TIERS: OddsTier[] = [

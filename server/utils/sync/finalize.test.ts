@@ -123,18 +123,27 @@ describe('finalizeMatches', () => {
     const m = await makeMatch(db, { competitionId, roundId, kickoffTime: KICKOFF, status: 'FINISHED', fullTimeHome: 2, fullTimeAway: 1 })
     const exactUser = await makeUser(db, 'exact')
     await makePrediction(db, { userId: exactUser, matchId: m, roundId, home: 2, away: 1, lockedAt: KICKOFF })
-    for (let i = 0; i < 5; i += 1) {
+    // Five more got the home win but not the exact score: rarity is measured
+    // against this correct-result crowd, so 1-in-6 of them lands a mid tier.
+    const others = [
+      [1, 0],
+      [3, 1],
+      [4, 2],
+      [3, 0],
+      [5, 1],
+    ]
+    for (let i = 0; i < others.length; i += 1) {
       const u = await makeUser(db, `u${i}`)
-      await makePrediction(db, { userId: u, matchId: m, roundId, home: 0, away: 0, lockedAt: KICKOFF })
+      await makePrediction(db, { userId: u, matchId: m, roundId, home: others[i][0], away: others[i][1], lockedAt: KICKOFF })
     }
 
     await finalizeMatches(db, NOW)
     const [p] = await db.select().from(prediction).where(eq(prediction.userId, exactUser))
     expect(p.baseTier).toBe('EXACT')
-    expect(p.bonusPoints).toBe(1)
+    expect(p.bonusPoints).toBe(2)
     expect(p.bonusSource).toBe('CROWD')
     expect(Number(p.crowdShare)).toBeCloseTo(1 / 6, 3)
-    expect(p.totalPoints).toBe(4)
+    expect(p.totalPoints).toBe(5)
     await client.close()
   })
 

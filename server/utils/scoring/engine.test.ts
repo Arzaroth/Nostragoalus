@@ -44,14 +44,15 @@ describe('scorePredictions - crowd rarity bonus', () => {
     const scores = byId(
       scorePredictions({
         actual: { home: 2, away: 1 },
+        // Five got the home win, only p1 nailed the exact score.
         rules,
-        predictions: preds(['p1', 2, 1], ['p2', 1, 0], ['p3', 3, 1], ['p4', 0, 0]),
+        predictions: preds(['p1', 2, 1], ['p2', 1, 0], ['p3', 3, 1], ['p4', 4, 2], ['p5', 3, 0], ['miss', 0, 0]),
       }),
     )
-    // exactCount=1, total=4 => share 0.25 < 0.4 => bonus 1
-    expect(scores.p1).toMatchObject({ baseTier: 'EXACT', basePoints: 3, bonusPoints: 1, bonusSource: 'CROWD', crowdShare: 0.25, totalPoints: 4 })
+    // exactCount=1 among outcomeCount=5 correct-result picks => share 0.2 < 0.22 => bonus 2
+    expect(scores.p1).toMatchObject({ baseTier: 'EXACT', basePoints: 3, bonusPoints: 2, bonusSource: 'CROWD', crowdShare: 0.2, totalPoints: 5 })
     expect(scores.p2).toMatchObject({ baseTier: 'DIFF', bonusPoints: 0, crowdShare: null, totalPoints: 2 })
-    expect(scores.p4).toMatchObject({ baseTier: 'MISS', totalPoints: 0 })
+    expect(scores.miss).toMatchObject({ baseTier: 'MISS', totalPoints: 0 })
   })
 
   it('supports an OUTCOME crowd basis', () => {
@@ -61,8 +62,8 @@ describe('scorePredictions - crowd rarity bonus', () => {
     const scores = byId(
       scorePredictions({ actual: { home: 1, away: 0 }, rules: outcomeRules, predictions: preds(...rows) }),
     )
-    // outcomeCount=1, total=10 => share 0.1 < 0.15 => bonus 2
-    expect(scores.win).toMatchObject({ bonusPoints: 2, bonusSource: 'CROWD', crowdShare: 0.1, totalPoints: 5 })
+    // outcomeCount=1, total=10 => share 0.1 < 0.12 => bonus 3 (outcome rarity = whole field)
+    expect(scores.win).toMatchObject({ bonusPoints: 3, bonusSource: 'CROWD', crowdShare: 0.1, totalPoints: 6 })
     expect(scores.loss0).toMatchObject({ bonusPoints: 0, crowdShare: null })
   })
 

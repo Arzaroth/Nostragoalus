@@ -21,7 +21,7 @@ describe('crowdBonus', () => {
 
   it('awards a middle-tier bonus by share', () => {
     const result = crowdBonus(true, 3, 100, DEFAULT_CROWD_TIERS, 5)
-    expect(result.bonus).toBe(3)
+    expect(result.bonus).toBe(4)
     expect(result.share).toBeCloseTo(0.03)
   })
 

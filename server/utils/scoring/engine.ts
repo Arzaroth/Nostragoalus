@@ -48,7 +48,12 @@ function computeBonus(
     const byExact = rules.crowdMatchBasis === 'EXACT'
     const hit = predictionHits(pred, actual, byExact)
     const matchCount = byExact ? hist.exactCount : hist.outcomeCount
-    const { bonus, share } = crowdBonus(hit, matchCount, hist.total, rules.crowdTiers, rules.crowdMinDenominator)
+    // Rarity pool (MPP-style): exact-score rarity is measured among players who
+    // got the correct RESULT, not the whole field - sharing a 1-0 call with a
+    // third of the people who also saw the win is common, even if it's a small
+    // slice of everyone. Outcome rarity stays measured against the full field.
+    const pool = byExact ? hist.outcomeCount : hist.total
+    const { bonus, share } = crowdBonus(hit, matchCount, pool, rules.crowdTiers, rules.crowdMinDenominator)
     return { bonus, source: 'CROWD', share }
   }
 
