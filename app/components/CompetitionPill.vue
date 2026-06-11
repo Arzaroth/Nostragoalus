@@ -14,7 +14,7 @@ function targetPath(s: string) {
   // A player exists across competitions - keep their page (and the team page).
   if (section === 'users' && parts[3]) return `/${s}/users/${parts[3]}`
   if (section === 'teams' && parts[3]) return `/${s}/teams/${parts[3]}`
-  if (['bracket', 'map', 'leaderboard', 'predictions', 'matches'].includes(section)) return `/${s}/${section}`
+  if (['bracket', 'map', 'leaderboard', 'matches'].includes(section)) return `/${s}/${section}`
   // a single match (matches/:id) has no equivalent elsewhere - fall back to the list
   return `/${s}/matches`
 }

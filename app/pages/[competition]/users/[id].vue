@@ -29,7 +29,7 @@ const { data, error } = await useFetch<{
       <div class="flex items-center gap-3 min-w-0">
         <UserAvatar :image="data.user.image" size="large" />
         <h1 class="text-2xl font-bold truncate">{{ data.user.name }}</h1>
-        <span v-if="data.champion?.teamCode && flagUrl(data.champion.teamCode)" class="relative shrink-0 inline-flex items-center gap-1.5" :title="`${t('champion.title')}: ${data.champion.teamName}`">
+        <span v-if="data.champion?.teamCode && flagUrl(data.champion.teamCode)" v-tooltip.top="`${t('champion.tag')}: ${data.champion.teamName}`" class="relative shrink-0 inline-flex items-center gap-1.5">
           <img :src="flagUrl(data.champion.teamCode) || ''" class="w-6 h-6 rounded object-cover" alt="" >
           <span class="absolute -top-2.5 -left-2 text-sm" style="transform: rotate(-25deg)">👑</span>
           <span v-if="data.champion.awardedPoints" class="text-xs font-semibold" style="color: var(--ng-star)">+{{ data.champion.awardedPoints }} pts</span>

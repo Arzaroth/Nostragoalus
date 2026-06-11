@@ -207,7 +207,8 @@
     "hint": "Bonus si votre choix soulève le trophée · verrouillé au premier coup d'envoi.",
     "noPick": "Aucun vainqueur choisi - verrouillé.",
     "lockedIn": "Verrouillé - bonne chance !",
-    "preview": "pas encore enregistré"
+    "preview": "pas encore enregistré",
+    "tag": "Champion"
   },
   "bestScorer": {
     "title": "Votre meilleur buteur",
@@ -216,7 +217,8 @@
     "hint": "Bonus si votre choix remporte le Soulier d'or · verrouillé au premier coup d'envoi.",
     "noPick": "Aucun buteur choisi - verrouillé.",
     "lockedIn": "Verrouillé - bonne chance !",
-    "preview": "pas encore enregistré"
+    "preview": "pas encore enregistré",
+    "tag": "Meilleur buteur"
   },
   "leaderboard": {
     "title": "Classement",

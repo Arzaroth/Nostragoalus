@@ -11,8 +11,10 @@ export interface LeaderboardRow {
   predictionPoints: number
   championPoints: number
   championCode: string | null
+  championName: string | null
   bestScorerPoints: number
   bestScorerName: string | null
+  bestScorerCode: string | null
   exactCount: number
   outcomeCount: number
   gdCount: number
@@ -107,28 +109,36 @@ export async function getLeaderboard(
     .groupBy(user.id, user.name, user.image, user.createdAt)
 
   const champions = await db
-    .select({ userId: championPick.userId, points: championPick.awardedPoints, teamCode: championPick.teamCode })
+    .select({ userId: championPick.userId, points: championPick.awardedPoints, teamCode: championPick.teamCode, teamName: championPick.teamName })
     .from(championPick)
     .where(opts.competitionId ? eq(championPick.competitionId, opts.competitionId) : undefined)
   // Sum across competitions for the global view (a user may have several picks).
   const championByUser = new Map<string, number>()
   const championCodeByUser = new Map<string, string | null>()
+  const championNameByUser = new Map<string, string | null>()
   for (const c of champions) {
     championByUser.set(c.userId, (championByUser.get(c.userId) ?? 0) + c.points)
     // the flag only makes sense scoped to one competition
-    if (opts.competitionId) championCodeByUser.set(c.userId, c.teamCode)
+    if (opts.competitionId) {
+      championCodeByUser.set(c.userId, c.teamCode)
+      championNameByUser.set(c.userId, c.teamName)
+    }
   }
 
   const bestScorers = await db
-    .select({ userId: bestScorerPick.userId, points: bestScorerPick.awardedPoints, playerName: bestScorerPick.playerName })
+    .select({ userId: bestScorerPick.userId, points: bestScorerPick.awardedPoints, playerName: bestScorerPick.playerName, teamCode: bestScorerPick.teamCode })
     .from(bestScorerPick)
     .where(opts.competitionId ? eq(bestScorerPick.competitionId, opts.competitionId) : undefined)
   const bestScorerByUser = new Map<string, number>()
   const bestScorerNameByUser = new Map<string, string | null>()
+  const bestScorerCodeByUser = new Map<string, string | null>()
   for (const b of bestScorers) {
     bestScorerByUser.set(b.userId, (bestScorerByUser.get(b.userId) ?? 0) + b.points)
-    // the name only makes sense scoped to one competition
-    if (opts.competitionId) bestScorerNameByUser.set(b.userId, b.playerName)
+    // the name/team only make sense scoped to one competition
+    if (opts.competitionId) {
+      bestScorerNameByUser.set(b.userId, b.playerName)
+      bestScorerCodeByUser.set(b.userId, b.teamCode)
+    }
   }
 
   // Bonus points are merged in JS (a SQL join would fan out the per-prediction rows).
@@ -139,8 +149,10 @@ export async function getLeaderboard(
       ...r,
       championPoints,
       championCode: championCodeByUser.get(r.userId) ?? null,
+      championName: championNameByUser.get(r.userId) ?? null,
       bestScorerPoints,
       bestScorerName: bestScorerNameByUser.get(r.userId) ?? null,
+      bestScorerCode: bestScorerCodeByUser.get(r.userId) ?? null,
       totalPoints: r.predictionPoints + championPoints + bestScorerPoints,
     }
   })
@@ -156,8 +168,10 @@ export async function getLeaderboard(
     predictionPoints: r.predictionPoints,
     championPoints: r.championPoints,
     championCode: r.championCode,
+    championName: r.championName,
     bestScorerPoints: r.bestScorerPoints,
     bestScorerName: r.bestScorerName,
+    bestScorerCode: r.bestScorerCode,
     exactCount: r.exactCount,
     outcomeCount: r.outcomeCount,
     gdCount: r.gdCount,
