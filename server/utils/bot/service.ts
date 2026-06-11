@@ -127,11 +127,14 @@ export interface BotScopeOptions {
 export async function getBotChampion(
   db: AppDatabase,
   competitionId: string,
-  rules: ScoringRules,
   opts: { leagueId?: string } = {},
 ): Promise<BotChampion | null> {
   let query = db
-    .select({ teamCode: championPick.teamCode, teamName: championPick.teamName })
+    .select({
+      teamCode: championPick.teamCode,
+      teamName: championPick.teamName,
+      potentialPoints: championPick.potentialPoints,
+    })
     .from(championPick)
     .$dynamic()
   if (opts.leagueId) {
@@ -141,19 +144,29 @@ export async function getBotChampion(
     )
   }
   const picks = (await query.where(eq(championPick.competitionId, competitionId))).filter(
-    (p): p is { teamCode: string; teamName: string } => p.teamCode !== null,
+    (p): p is { teamCode: string; teamName: string; potentialPoints: number } => p.teamCode !== null,
   )
 
-  const counts = new Map<string, { teamCode: string; teamName: string; count: number }>()
+  const counts = new Map<string, { teamCode: string; teamName: string; count: number; points: number[] }>()
   for (const p of picks) {
     const entry = counts.get(p.teamCode)
-    if (entry) entry.count += 1
-    else counts.set(p.teamCode, { teamCode: p.teamCode, teamName: p.teamName, count: 1 })
+    if (entry) {
+      entry.count += 1
+      entry.points.push(p.potentialPoints)
+    } else {
+      counts.set(p.teamCode, { teamCode: p.teamCode, teamName: p.teamName, count: 1, points: [p.potentialPoints] })
+    }
   }
   if (counts.size === 0) return null
   const best = [...counts.values()].sort(
     (a, b) => b.count - a.count || a.teamCode.localeCompare(b.teamCode),
   )[0]
+
+  // The bot's virtual pick pays what most of its crowd locked in for that team
+  // (picks made at different times can carry different snapshots; ties go low).
+  const pointTally = new Map<number, number>()
+  for (const pts of best.points) pointTally.set(pts, (pointTally.get(pts) ?? 0) + 1)
+  const botPoints = [...pointTally.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0][0]
 
   // Mirrors finalizeMatches: the bonus exists once a final has a decided winner.
   const finals = await db
@@ -168,7 +181,7 @@ export async function getBotChampion(
     teamName: best.teamName,
     count: best.count,
     total: picks.length, // null-team picks already filtered out
-    awardedPoints: winnerCode !== null && winnerCode === best.teamCode ? rules.championBonus : 0,
+    awardedPoints: winnerCode !== null && winnerCode === best.teamCode ? botPoints : 0,
   }
 }
 
@@ -335,7 +348,7 @@ export async function getBotOverview(
     })
   }
 
-  const champion = await getBotChampion(db, competitionId, rules, { leagueId: opts.leagueId })
+  const champion = await getBotChampion(db, competitionId, { leagueId: opts.leagueId })
 
   const scoredRows = rows.filter((r) => r.totalPoints !== null)
   const predictionPoints = scoredRows.reduce((sum, r) => sum + r.totalPoints!, 0)

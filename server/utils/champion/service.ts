@@ -1,4 +1,4 @@
-import { and, eq, min } from 'drizzle-orm'
+import { and, eq, min, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { championPick, match } from '../../../db/schema'
 import { LockedError } from '../errors'
@@ -41,6 +41,10 @@ export interface SetChampionInput {
   competitionId: string
   teamCode: string
   teamName: string
+  // Snapshot taken when the pick is made; null when the team is unranked or
+  // the ranking fetch failed (potentialPoints then carries the flat fallback).
+  fifaRank: number | null
+  potentialPoints: number
 }
 
 export async function setChampionPick(db: AppDatabase, input: SetChampionInput, now: Date = new Date()): Promise<void> {
@@ -56,7 +60,12 @@ export async function setChampionPick(db: AppDatabase, input: SetChampionInput, 
   if (existing.length > 0) {
     await db
       .update(championPick)
-      .set({ teamCode: input.teamCode, teamName: input.teamName })
+      .set({
+        teamCode: input.teamCode,
+        teamName: input.teamName,
+        fifaRank: input.fifaRank,
+        potentialPoints: input.potentialPoints,
+      })
       .where(eq(championPick.id, existing[0].id))
   } else {
     await db.insert(championPick).values({
@@ -64,24 +73,25 @@ export async function setChampionPick(db: AppDatabase, input: SetChampionInput, 
       competitionId: input.competitionId,
       teamCode: input.teamCode,
       teamName: input.teamName,
+      fifaRank: input.fifaRank,
+      potentialPoints: input.potentialPoints,
     })
   }
 }
 
-// Idempotent: reset all picks for the competition, then award the bonus to the
-// winners. Safe to run on every finalize tick.
+// Idempotent: reset all picks for the competition, then award each winner the
+// points locked in at pick time. Safe to run on every finalize tick.
 export async function awardChampionBonuses(
   db: AppDatabase,
   competitionId: string,
   winnerCode: string | null,
-  bonus: number,
 ): Promise<number> {
   await db.update(championPick).set({ awardedPoints: 0 }).where(eq(championPick.competitionId, competitionId))
   if (!winnerCode) return 0
 
   const updated = await db
     .update(championPick)
-    .set({ awardedPoints: bonus })
+    .set({ awardedPoints: sql`${championPick.potentialPoints}` })
     .where(and(eq(championPick.competitionId, competitionId), eq(championPick.teamCode, winnerCode)))
     .returning({ id: championPick.id })
   return updated.length

@@ -14,7 +14,7 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/pg-core'
 import { ssoProvider, user } from './auth-schema'
-import type { CrowdTier, OddsTier } from '../shared/types/scoring'
+import type { ChampionTier, CrowdTier, OddsTier } from '../shared/types/scoring'
 import type { OddsSnapshotKind, StoredBookmakerOdds } from '../shared/types/odds'
 
 const pk = () => text('id').primaryKey().$defaultFn(() => randomUUID())
@@ -81,6 +81,7 @@ export const scoringConfig = pgTable(
     crowdMinDenominator: integer('crowd_min_denominator').notNull().default(5),
     oddsTiers: jsonb('odds_tiers').$type<OddsTier[]>(),
     oddsAppliesTo: text('odds_applies_to', { enum: ['EXACT', 'OUTCOME'] }).default('OUTCOME'),
+    championTiers: jsonb('champion_tiers').$type<ChampionTier[]>(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -268,6 +269,10 @@ export const championPick = pgTable(
       .references(() => competition.id, { onDelete: 'cascade' }),
     teamCode: text('team_code'),
     teamName: text('team_name').notNull(),
+    // FIFA rank snapshotted at pick time - the payout is judged on what was
+    // known when the pick was made, never recomputed as rankings move.
+    fifaRank: integer('fifa_rank'),
+    potentialPoints: integer('potential_points').notNull().default(10),
     awardedPoints: integer('awarded_points').notNull().default(0),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true })

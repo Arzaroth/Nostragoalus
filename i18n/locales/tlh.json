@@ -205,10 +205,12 @@
     "title": "che'wI'lIj",
     "current": "DaH wIv:",
     "pick": "jeywI' yIwIv",
-    "hint": "wIvlIj 'aqtu' jeychugh, tev DaSuq · may' wa'DIch taghDI' SoQmoHlu'.",
+    "hint": "wIvlIj 'aqtu' jeychugh, tev DaSuq · pujwI' wIvchugh, tev tIn law' · may' wa'DIch taghDI' SoQmoHlu'.",
     "noPick": "che'wI' wIvbe'lu' - SoQ.",
     "lockedIn": "SoQ - Qapla'!",
     "preview": "wej choqlu'",
+    "worth": "{points} QuQ 'oH",
+    "fifaRank": "FIFA mI' {rank}",
     "tag": "Qa'wI'"
   },
   "bestScorer": {

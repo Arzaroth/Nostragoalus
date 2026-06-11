@@ -142,7 +142,7 @@ export async function finalizeMatches(db: AppDatabase, now: Date = new Date()): 
       // once details are fresh.
       if (countsDouble(m.stage) && (m.winner === 'HOME' || m.winner === 'AWAY')) {
         const winnerCode = m.winner === 'HOME' ? m.homeTeamCode : m.awayTeamCode
-        await awardChampionBonuses(tx, m.competitionId, winnerCode, context.rules.championBonus)
+        await awardChampionBonuses(tx, m.competitionId, winnerCode)
       }
     }
 

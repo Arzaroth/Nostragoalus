@@ -15,6 +15,8 @@ import { LockedError } from '../errors'
 const PAST = new Date('2026-06-01T00:00:00Z')
 const FUTURE = new Date('2026-06-11T16:00:00Z')
 
+const snapshot = { fifaRank: null, potentialPoints: 10 }
+
 async function setup() {
   const ctx = await createTestDb()
   const competitionId = await seedCompetition(ctx.db)
@@ -52,9 +54,14 @@ describe('setChampionPick / getMyChampionPick', () => {
   it('inserts then updates before the lock', async () => {
     const { db, client, competitionId, roundId, userId } = await setup()
     await makeMatch(db, { competitionId, roundId, kickoffTime: FUTURE })
-    await setChampionPick(db, { userId, competitionId, teamCode: 'MEX', teamName: 'Mexico' }, PAST)
-    await setChampionPick(db, { userId, competitionId, teamCode: 'BRA', teamName: 'Brazil' }, PAST)
-    expect(await getMyChampionPick(db, userId, competitionId)).toMatchObject({ teamCode: 'BRA', teamName: 'Brazil' })
+    await setChampionPick(db, { userId, competitionId, teamCode: 'MEX', teamName: 'Mexico', fifaRank: 14, potentialPoints: 15 }, PAST)
+    await setChampionPick(db, { userId, competitionId, teamCode: 'BRA', teamName: 'Brazil', fifaRank: 6, potentialPoints: 10 }, PAST)
+    expect(await getMyChampionPick(db, userId, competitionId)).toMatchObject({
+      teamCode: 'BRA',
+      teamName: 'Brazil',
+      fifaRank: 6,
+      potentialPoints: 10,
+    })
     await client.close()
   })
 
@@ -63,7 +70,7 @@ describe('setChampionPick / getMyChampionPick', () => {
     await makeMatch(db, { competitionId, roundId, kickoffTime: FUTURE })
     const afterKickoff = new Date('2026-06-12T00:00:00Z')
     await expect(
-      setChampionPick(db, { userId, competitionId, teamCode: 'MEX', teamName: 'Mexico' }, afterKickoff),
+      setChampionPick(db, { userId, competitionId, teamCode: 'MEX', teamName: 'Mexico', ...snapshot }, afterKickoff),
     ).rejects.toBeInstanceOf(LockedError)
     await client.close()
   })
@@ -76,25 +83,27 @@ describe('setChampionPick / getMyChampionPick', () => {
 
   it('allows a pick when no fixtures exist yet', async () => {
     const { db, client, competitionId, userId } = await setup()
-    await setChampionPick(db, { userId, competitionId, teamCode: 'MEX', teamName: 'Mexico' })
+    await setChampionPick(db, { userId, competitionId, teamCode: 'MEX', teamName: 'Mexico', ...snapshot })
     expect((await getMyChampionPick(db, userId, competitionId))?.teamCode).toBe('MEX')
     await client.close()
   })
 })
 
 describe('awardChampionBonuses', () => {
-  it('awards matching picks and resets others, idempotently', async () => {
+  it('awards each pick the points snapshotted at pick time and resets others, idempotently', async () => {
     const { db, client, competitionId, userId } = await setup()
     const other = await makeUser(db, 'u2')
-    await setChampionPick(db, { userId, competitionId, teamCode: 'MEX', teamName: 'Mexico' })
-    await setChampionPick(db, { userId: other, competitionId, teamCode: 'BRA', teamName: 'Brazil' })
+    // A long shot (rank 82 -> 40 pts) against a favorite (rank 6 -> 10 pts):
+    // the award must read each pick's own snapshot, not a flat bonus.
+    await setChampionPick(db, { userId, competitionId, teamCode: 'CUW', teamName: 'Curacao', fifaRank: 82, potentialPoints: 40 })
+    await setChampionPick(db, { userId: other, competitionId, teamCode: 'BRA', teamName: 'Brazil', fifaRank: 6, potentialPoints: 10 })
 
-    expect(await awardChampionBonuses(db, competitionId, 'MEX', 10)).toBe(1)
+    expect(await awardChampionBonuses(db, competitionId, 'CUW')).toBe(1)
     let byUser = Object.fromEntries((await db.select().from(championPick)).map((p) => [p.userId, p.awardedPoints]))
-    expect(byUser[userId]).toBe(10)
+    expect(byUser[userId]).toBe(40)
     expect(byUser[other]).toBe(0)
 
-    expect(await awardChampionBonuses(db, competitionId, 'BRA', 10)).toBe(1)
+    expect(await awardChampionBonuses(db, competitionId, 'BRA')).toBe(1)
     byUser = Object.fromEntries((await db.select().from(championPick)).map((p) => [p.userId, p.awardedPoints]))
     expect(byUser[userId]).toBe(0)
     expect(byUser[other]).toBe(10)
@@ -103,8 +112,8 @@ describe('awardChampionBonuses', () => {
 
   it('resets to zero when there is no winner', async () => {
     const { db, client, competitionId, userId } = await setup()
-    await setChampionPick(db, { userId, competitionId, teamCode: 'MEX', teamName: 'Mexico' })
-    expect(await awardChampionBonuses(db, competitionId, null, 10)).toBe(0)
+    await setChampionPick(db, { userId, competitionId, teamCode: 'MEX', teamName: 'Mexico', ...snapshot })
+    expect(await awardChampionBonuses(db, competitionId, null)).toBe(0)
     expect((await db.select().from(championPick))[0].awardedPoints).toBe(0)
     await client.close()
   })

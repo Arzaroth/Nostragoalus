@@ -2,6 +2,9 @@ import { db } from '../../../db'
 import { requireUser } from '../../utils/auth-guards'
 import { resolveCompetition } from '../../utils/competitions/store'
 import { getChampionLockTime, getMyChampionPick, listCompetitionTeams } from '../../utils/champion/service'
+import { getFifaRanks } from '../../utils/champion/ranking'
+import { championPointsForRank } from '../../utils/scoring/config'
+import { getActiveScoringConfig } from '../../utils/scoring/store'
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
@@ -9,15 +12,22 @@ export default defineEventHandler(async (event) => {
   const competition = await resolveCompetition(db, (query.competition as string) || null)
   if (!competition) return { competition: null, teams: [], myPick: null, locked: true }
 
-  const [teams, myPick, lock] = await Promise.all([
+  const [teams, myPick, lock, ranks, config] = await Promise.all([
     listCompetitionTeams(db, competition.id),
     getMyChampionPick(db, user.id, competition.id),
     getChampionLockTime(db, competition.id),
+    getFifaRanks(),
+    getActiveScoringConfig(db),
   ])
 
   return {
     competition: { id: competition.id, slug: competition.slug, name: competition.name },
-    teams,
+    // Each team carries what a winning pick made right now would pay - the
+    // saved pick keeps the value snapshotted when it was made (myPick).
+    teams: teams.map((team) => {
+      const fifaRank = ranks?.get(team.code) ?? null
+      return { ...team, fifaRank, potentialPoints: championPointsForRank(fifaRank, config.rules) }
+    }),
     myPick,
     locked: !!lock && Date.now() >= new Date(lock).getTime(),
   }

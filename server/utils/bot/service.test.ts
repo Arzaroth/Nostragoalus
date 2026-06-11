@@ -330,7 +330,7 @@ describe('getBotChampion', () => {
       await db.insert(championPick).values({ userId: u[i], competitionId, teamCode: code, teamName: code })
     }
 
-    expect(await getBotChampion(db, competitionId, DEFAULT_RULES)).toMatchObject({
+    expect(await getBotChampion(db, competitionId)).toMatchObject({
       teamCode: 'BRA',
       count: 3,
       total: 5,
@@ -338,18 +338,18 @@ describe('getBotChampion', () => {
     })
 
     await makeMatch(db, { competitionId, roundId: finalRound, stage: 'FINAL', kickoffTime: PAST, status: 'FINISHED', fullTimeHome: 2, fullTimeAway: 0, winner: 'HOME', homeTeamCode: 'BRA', awayTeamCode: 'FRA' })
-    expect((await getBotChampion(db, competitionId, DEFAULT_RULES))?.awardedPoints).toBe(DEFAULT_RULES.championBonus)
+    expect((await getBotChampion(db, competitionId))?.awardedPoints).toBe(DEFAULT_RULES.championBonus)
     await client.close()
   })
 
   it('breaks ties alphabetically and returns null without picks', async () => {
     const { db, client, competitionId } = await setup()
-    expect(await getBotChampion(db, competitionId, DEFAULT_RULES)).toBeNull()
+    expect(await getBotChampion(db, competitionId)).toBeNull()
 
     const u = await makeUsers(db, 2)
     await db.insert(championPick).values({ userId: u[0], competitionId, teamCode: 'FRA', teamName: 'France' })
     await db.insert(championPick).values({ userId: u[1], competitionId, teamCode: 'BRA', teamName: 'Brazil' })
-    expect((await getBotChampion(db, competitionId, DEFAULT_RULES))?.teamCode).toBe('BRA')
+    expect((await getBotChampion(db, competitionId))?.teamCode).toBe('BRA')
     await client.close()
   })
 
@@ -363,7 +363,7 @@ describe('getBotChampion', () => {
     await makeMatch(db, { competitionId, roundId: finalRound, stage: 'FINAL', kickoffTime: PAST, status: 'FINISHED', fullTimeHome: 0, fullTimeAway: 1, winner: 'AWAY', homeTeamCode: 'BRA', awayTeamCode: 'ARG' })
 
     // ARG won but the bot picked BRA.
-    expect(await getBotChampion(db, competitionId, DEFAULT_RULES)).toMatchObject({ teamCode: 'BRA', awardedPoints: 0 })
+    expect(await getBotChampion(db, competitionId)).toMatchObject({ teamCode: 'BRA', awardedPoints: 0 })
     await client.close()
   })
 
@@ -371,11 +371,11 @@ describe('getBotChampion', () => {
     const { db, client, competitionId } = await setup()
     const u = await makeUsers(db, 2)
     await db.insert(championPick).values({ userId: u[0], competitionId, teamCode: null, teamName: 'TBD' })
-    expect(await getBotChampion(db, competitionId, DEFAULT_RULES)).toBeNull()
+    expect(await getBotChampion(db, competitionId)).toBeNull()
 
     await db.insert(championPick).values({ userId: u[1], competitionId, teamCode: 'BRA', teamName: 'Brazil' })
     // total counts only picks with a team: the null-team pick is excluded.
-    expect(await getBotChampion(db, competitionId, DEFAULT_RULES)).toMatchObject({ teamCode: 'BRA', count: 1, total: 1 })
+    expect(await getBotChampion(db, competitionId)).toMatchObject({ teamCode: 'BRA', count: 1, total: 1 })
     await client.close()
   })
 
@@ -386,7 +386,24 @@ describe('getBotChampion', () => {
       await db.insert(championPick).values({ userId: u[i], competitionId, teamCode: code, teamName: code })
     }
     const leagueId = await makeLeague(db, { competitionId, ownerId: u[2] })
-    expect((await getBotChampion(db, competitionId, DEFAULT_RULES, { leagueId }))?.teamCode).toBe('FRA')
+    expect((await getBotChampion(db, competitionId, { leagueId }))?.teamCode).toBe('FRA')
+    await client.close()
+  })
+
+  it('pays the most common snapshotted points among the consensus picks, ties going low', async () => {
+    const { db, client, competitionId } = await setup()
+    const finalRound = (await findRoundId(db, competitionId, 'FINAL', null)) as string
+    const u = await makeUsers(db, 4)
+    // Picks made at different times carry different snapshots: 25 is the mode.
+    for (const [i, pts] of [25, 25, 10].entries()) {
+      await db.insert(championPick).values({ userId: u[i], competitionId, teamCode: 'MAR', teamName: 'Morocco', fifaRank: 21, potentialPoints: pts })
+    }
+    await makeMatch(db, { competitionId, roundId: finalRound, stage: 'FINAL', kickoffTime: PAST, status: 'FINISHED', fullTimeHome: 1, fullTimeAway: 0, winner: 'HOME', homeTeamCode: 'MAR', awayTeamCode: 'FRA' })
+    expect((await getBotChampion(db, competitionId))?.awardedPoints).toBe(25)
+
+    // A 1-1 split ties: the bot takes the lower (favorite-priced) value.
+    await db.insert(championPick).values({ userId: u[3], competitionId, teamCode: 'MAR', teamName: 'Morocco', fifaRank: 8, potentialPoints: 10 })
+    expect((await getBotChampion(db, competitionId))?.awardedPoints).toBe(10)
     await client.close()
   })
 })
