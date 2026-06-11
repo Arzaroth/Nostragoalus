@@ -170,6 +170,10 @@
       "team": {
         "t": "Know every team",
         "d": "Official squads with positions, the manager, and tournament stats that match the federations' own numbers."
+      },
+      "bot": {
+        "t": "Beat the consensus bot",
+        "d": "A virtual player that picks the crowd's most-common scoreline every match - scored by the real engine, with rarity bonuses, so you can measure yourself against the wisdom of the crowd."
       }
     },
     "bestScorerPill": "Golden Boot bonus"
