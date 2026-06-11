@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useHotkey } from '@tanstack/vue-hotkeys'
 const { t } = useI18n()
 const { enabled: crowdEnabled, totals: crowdTotals, leagueTotals, leagueActive } = useCrowdTotals()
 const oddsEnabled = useOddsPreference()
@@ -50,19 +51,11 @@ function fmtTime(d: string) {
   return new Date(d).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
-// Ctrl/Cmd+F focuses the fixtures filter instead of the browser's find bar.
-const searchInput = ref<{ $el?: HTMLElement } | null>(null)
-function onKeydown(e: KeyboardEvent) {
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
-    e.preventDefault()
-    const el = searchInput.value?.$el?.querySelector('input') ?? searchInput.value?.$el
-    // preventScroll: the field lives at the top; without this, focusing it from
-    // further down the list yanks the page back up.
-    ;(el as HTMLInputElement | undefined)?.focus({ preventScroll: true })
-  }
-}
-onMounted(() => window.addEventListener('keydown', onKeydown))
-onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
+// Mod+F (Ctrl/Cmd) focuses the fixtures filter instead of the browser find bar
+// (preventDefault is on by default). The field is sticky, so it's already in
+// view - preventScroll just avoids any nudge.
+const searchInput = ref<{ $el?: HTMLInputElement } | null>(null)
+useHotkey('Mod+F', () => searchInput.value?.$el?.focus({ preventScroll: true }))
 </script>
 
 <template>
@@ -70,10 +63,6 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
     <div class="flex items-center justify-between gap-3 flex-wrap mb-5">
       <h1 class="text-2xl font-bold">{{ t('matches.title') }}</h1>
       <div class="flex items-center gap-2 flex-wrap">
-        <IconField class="block w-full sm:w-72">
-          <InputIcon class="pi pi-search" />
-          <InputText ref="searchInput" v-model="search" :placeholder="t('matches.search')" class="w-full" />
-        </IconField>
         <CompetitionPill />
         <LeaguePill />
       </div>
@@ -99,6 +88,15 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
     <ChampionPick />
     <BestScorerPick />
     <Message v-if="jokerErr" severity="warn" class="mb-4">{{ jokerErr }}</Message>
+    <!-- Sticky so it stays in view while scrolling the fixtures, and Mod+F can
+         focus it without yanking the page (also visible for non-keyboard users). -->
+    <div class="sticky top-0 z-10 py-2 mb-2" style="background: var(--p-content-background)">
+      <IconField class="block w-full sm:w-96">
+        <InputIcon class="pi pi-search" />
+        <InputText ref="searchInput" v-model="search" :placeholder="t('matches.search')" class="w-full" />
+        <InputIcon v-if="search" class="pi pi-times cursor-pointer" :aria-label="t('common.clear')" @click="search = ''" />
+      </IconField>
+    </div>
     <div v-if="isLoading" class="opacity-60">{{ t('common.loading') }}</div>
     <div v-else-if="!matches || !matches.length" class="opacity-60">{{ t('matches.empty') }}</div>
     <div v-else-if="!grouped.length" class="opacity-60">{{ t('matches.noResults') }}</div>
