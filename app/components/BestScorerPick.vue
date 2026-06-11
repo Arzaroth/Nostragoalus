@@ -203,14 +203,14 @@ const holo = computed(() => {
         <div class="text-center w-28">
           <strong v-if="showcase" class="block leading-tight">{{ formatPlayerName(showcase.playerName) }}</strong>
           <span v-else class="block text-sm leading-tight" style="color: var(--p-text-muted-color)">{{ t('bestScorer.pickPlayer') }}</span>
-          <!-- one reserved line: points / preview hint / invisible spacer - the card never resizes -->
+          <!-- one reserved line: awarded points / worth (preview or locked) / spacer - the card never resizes -->
           <span v-if="isSaved && data.myPick?.awardedPoints > 0" class="text-xs block mt-0.5 font-bold" style="color: var(--ng-success)">+{{ data.myPick.awardedPoints }} pts</span>
           <span
             v-else
             class="text-xs block mt-0.5"
-            :class="{ invisible: !(showcase && !isSaved && !data.locked) }"
+            :class="{ invisible: !(showcase && data.bonus) }"
             style="color: var(--p-text-muted-color)"
-          >{{ data.bonus ? t('champion.worth', { points: data.bonus }) : t('bestScorer.preview') }}</span>
+          >{{ data.bonus ? t('champion.worth', { points: data.bonus }) : ' ' }}</span>
         </div>
       </div>
     </div>
