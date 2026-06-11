@@ -130,7 +130,7 @@ const isSaved = computed(() => !!data.value?.myPick && showcaseCode.value === da
             >?</div>
           </template>
         </component>
-        <div class="text-center">
+        <div class="text-center w-28">
           <component :is="NuxtLinkC" v-if="showcaseCode" :to="`/${slug}/teams/${showcaseCode}`" class="hover:underline">
             <strong class="block leading-tight">{{ teamName(showcaseCode) }}</strong>
           </component>

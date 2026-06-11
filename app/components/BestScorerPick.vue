@@ -115,7 +115,7 @@ const holo = computed(() => {
               option-value="code"
               filter
               :placeholder="t('bestScorer.pickTeam')"
-              class="w-full sm:w-56"
+              class="w-full sm:w-72"
               @change="onTeamChange"
             >
               <template #value="{ value, placeholder }">
@@ -200,7 +200,7 @@ const holo = computed(() => {
             >?</div>
           </template>
         </component>
-        <div class="text-center">
+        <div class="text-center w-28">
           <strong v-if="showcase" class="block leading-tight">{{ formatPlayerName(showcase.playerName) }}</strong>
           <span v-else class="block text-sm leading-tight" style="color: var(--p-text-muted-color)">{{ t('bestScorer.pickPlayer') }}</span>
           <!-- one reserved line: points / preview hint / invisible spacer - the card never resizes -->
