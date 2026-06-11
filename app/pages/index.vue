@@ -14,7 +14,10 @@ const features = [
   { icon: 'pi pi-bullseye', color: '#6366f1', key: 'scoring' },
   { icon: 'pi pi-star-fill', color: 'var(--ng-star)', key: 'joker' },
   { icon: 'pi pi-trophy', color: '#10b981', key: 'champion' },
+  { icon: 'pi pi-user', color: '#f43f5e', key: 'bestScorer' },
   { icon: 'pi pi-bolt', color: 'var(--ng-danger)', key: 'live' },
+  { icon: 'pi pi-shield', color: '#f59e0b', key: 'leagues' },
+  { icon: 'pi pi-android', color: '#14b8a6', key: 'bot' },
   { icon: 'pi pi-sitemap', color: '#8b5cf6', key: 'bracket' },
   { icon: 'pi pi-map', color: '#06b6d4', key: 'map' },
   { icon: 'pi pi-chart-bar', color: '#ec4899', key: 'stats' },
@@ -221,6 +224,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', layoutBanner))
         <span class="rounded-full border px-3 py-1.5" style="border-color: var(--p-content-border-color); background: var(--p-content-background)">✨ {{ t('landing.bonus') }}</span>
         <span class="rounded-full border px-3 py-1.5" style="border-color: var(--p-content-border-color); background: var(--p-content-background)">★ {{ t('landing.jokerPill') }}</span>
         <span class="rounded-full border px-3 py-1.5" style="border-color: var(--p-content-border-color); background: var(--p-content-background)">🏆 {{ t('landing.championPill') }}</span>
+        <span class="rounded-full border px-3 py-1.5" style="border-color: var(--p-content-border-color); background: var(--p-content-background)">👟 {{ t('landing.bestScorerPill') }}</span>
       </div>
     </section>
 
@@ -280,7 +284,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', layoutBanner))
       <h2 class="text-3xl font-extrabold text-center mb-2">{{ t('faq.title') }}</h2>
       <p class="text-center mb-8" style="color: var(--p-text-muted-color)">{{ t('faq.sub') }}</p>
       <Accordion>
-        <AccordionPanel v-for="i in 8" :key="i" :value="String(i)">
+        <AccordionPanel v-for="i in 11" :key="i" :value="String(i)">
           <AccordionHeader>{{ t(`faq.q${i}.q`) }}</AccordionHeader>
           <AccordionContent><p class="text-sm" style="color: var(--p-text-muted-color)">{{ t(`faq.q${i}.a`) }}</p></AccordionContent>
         </AccordionPanel>
@@ -288,23 +292,24 @@ onBeforeUnmount(() => window.removeEventListener('resize', layoutBanner))
           <AccordionHeader>{{ t('faq.formula.q') }}</AccordionHeader>
           <AccordionContent>
             <p class="text-sm mb-3" style="color: var(--p-text-muted-color)">{{ t('faq.formula.a') }}</p>
-            <pre class="text-xs overflow-x-auto rounded-lg border p-4 leading-relaxed" style="background: var(--p-content-background); border-color: var(--p-content-border-color)">points = (base + rarity) × multiplier
+            <pre class="text-xs overflow-x-auto rounded-lg border p-4 leading-relaxed" style="background: var(--p-content-background); border-color: var(--p-content-border-color)">points = (base + rarity) × multiplier     (+ champion &amp; Golden Boot at the final)
 
-base    = 3  if exact score          (home & away both right)
-          2  if right goal difference (and right outcome)
-          1  if right outcome only    (win / draw / loss)
+base    = 3  exact score            (home &amp; away both right)
+          2  right goal difference  (and right outcome)
+          1  right outcome only     (win / draw / loss)
           0  otherwise
 
-rarity  = +5  if &lt; 0.5% of players picked that exact score
-          +3  if &lt; 5%
-          +2  if &lt; 15%
-          +1  if &lt; 40%
-          +0  otherwise        (only on an exact score; needs &ge; 5 entries)
+rarity  = a bonus on an exact score, by how rare your scoreline was
+          AMONG the players who also got the result right:
+          +5  &lt; 1%      +4  &lt; 5%       +3  &lt; 12%
+          +2  &lt; 22%     +1  &lt; 35%      +0  otherwise   (needs &ge; 5 such players)
 
-multiplier = 2  on your round joker, and on every final
-             1  otherwise
+multiplier  = 2  on your round joker, and on every final
+              1  otherwise
 
-champion = +10  if your tournament winner pick lifts the trophy</pre>
+champion    = season-long bonus if your winner pick lifts the trophy,
+              bigger the longer the odds (FIFA-rank tiers, up to 4×)
+Golden Boot = bonus if your top-scorer pick finishes the tournament's top scorer</pre>
             <p class="text-xs mt-3" style="color: var(--p-text-muted-color)">{{ t('faq.formula.example') }}</p>
           </AccordionContent>
         </AccordionPanel>
