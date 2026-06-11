@@ -135,7 +135,8 @@ export async function getMatchInsights(db: AppDatabase, matchId: string, now: Da
       .select()
       .from(match)
       .where(and(eq(match.competitionId, m.competitionId), eq(match.groupName, m.groupName)))
-    standings = computeGroupStandings(groupMatches)
+    // Match view: fold in-progress matches into the table so it tracks live.
+    standings = computeGroupStandings(groupMatches, { includeLive: true })
   }
 
   const [homeForm, awayForm, homeNext, awayNext] = await Promise.all([

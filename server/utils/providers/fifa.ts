@@ -671,7 +671,17 @@ export function fifaProvider(options: FifaOptions): MatchDataProvider {
       return (await fetchAll()).filter((m) => m.kickoffTime.startsWith(date))
     },
     async getLiveMatches() {
-      return (await fetchAll()).filter((m) => m.status === 'LIVE' || m.status === 'PAUSED')
+      // Include matches that just finished, not only in-play ones: FIFA drops a
+      // match from "live" the moment it goes FINISHED, so a feed of LIVE/PAUSED
+      // alone never carries the final whistle and the DB stays stuck LIVE until
+      // the hourly fixtures refresh. A 4h recent-kickoff window covers ET+pens.
+      const finishedCutoff = Date.now() - 4 * 60 * 60 * 1000
+      return (await fetchAll()).filter(
+        (m) =>
+          m.status === 'LIVE' ||
+          m.status === 'PAUSED' ||
+          (m.status === 'FINISHED' && new Date(m.kickoffTime).getTime() >= finishedCutoff),
+      )
     },
     async getMatchDetail({ stageId, matchId }: { stageId?: string; matchId: string }) {
       // FIFA also serves match detail by bare match id - used when no stage id is stored.
