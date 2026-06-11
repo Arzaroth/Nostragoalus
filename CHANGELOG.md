@@ -5,6 +5,24 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- Live provisional standings: while matches are in progress the leaderboard folds in what each player *would* score at the current scoreline (full scoring, bonuses included), ranks provisionally, shows a "+N live" delta per row and a pulsing LIVE badge. It updates over the WebSocket as scores change - no polling.
+- The group standings table on a match view now tracks the live match: the in-progress scoreline counts provisionally and updates in place.
+- Your best-scorer pick now shows on your profile (team flag + 👟) beside your champion, and the best-scorer card shows the points a winning pick is worth.
+- The fixtures list updates live - match status and scores refresh in place as games play, over the WebSocket.
+- While a match is live, its stats and event timeline now stay up to date.
+- Admin viewing a player's picks sees their not-yet-kicked-off picks too, behind a divider that marks them admin-only.
+
+### Changed
+- Crowd rarity bonus reworked (MPP-style): a pick's exact-score rarity is now measured among the players who got the correct *result*, not the whole field, and the tiers are tighter - only a clear minority of that right-result crowd earns a bonus, with a steeper climb for genuinely rare calls. Already-scored games are re-scored under the new rules.
+
+### Fixed
+- A match marked full-time on FIFA could stay "live" in the app for up to an hour (FIFA drops finished games from its live feed); the final whistle now lands on the next 2-minute poll.
+- You're always shown on a leaderboard you belong to, even if your account is hidden from public boards - a hidden account no longer saw an empty board in its own league.
+- Live stat/event updates patch in place instead of flashing the loading spinner and redrawing the timeline.
+- The crowd-bot league name no longer overflows the page header on mobile.
+- The banner logo and title now settle together when the bar docks (the title no longer shrank well before the planet).
+
 ## [0.21.0] - 2026-06-11
 
 ### Added

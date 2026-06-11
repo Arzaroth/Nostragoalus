@@ -122,26 +122,12 @@
               "roundSortOrder": {
                 "type": "integer"
               },
+              "odds": {
+                "type": "string",
+                "nullable": true
+              },
               "isLocked": {
                 "type": "boolean"
-              },
-              "odds": {
-                "type": "object",
-                "nullable": true,
-                "properties": {
-                  "home": {
-                    "type": "number"
-                  },
-                  "draw": {
-                    "type": "number"
-                  },
-                  "away": {
-                    "type": "number"
-                  },
-                  "fetchedAt": {
-                    "type": "string"
-                  }
-                }
               }
             }
           }
@@ -176,8 +162,8 @@
           "roundLabel": "Group Matchday 1",
           "matchday": 1,
           "roundSortOrder": 1,
-          "isLocked": true,
-          "odds": null
+          "odds": null,
+          "isLocked": true
         },
         {
           "id": "b0afbdb7-97f1-484f-acbc-33b2f18bce73",
@@ -200,8 +186,8 @@
           "roundLabel": "Group Matchday 1",
           "matchday": 1,
           "roundSortOrder": 1,
-          "isLocked": true,
-          "odds": null
+          "odds": null,
+          "isLocked": true
         }
       ]
     }
@@ -282,22 +268,8 @@
           "nullable": true
         },
         "odds": {
-          "type": "object",
-          "nullable": true,
-          "properties": {
-            "home": {
-              "type": "number"
-            },
-            "draw": {
-              "type": "number"
-            },
-            "away": {
-              "type": "number"
-            },
-            "fetchedAt": {
-              "type": "string"
-            }
-          }
+          "type": "string",
+          "nullable": true
         },
         "isLocked": {
           "type": "boolean"
@@ -1032,6 +1004,9 @@
             }
           }
         },
+        "live": {
+          "type": "boolean"
+        },
         "rows": {
           "type": "array",
           "items": {
@@ -1062,6 +1037,24 @@
                 "type": "string",
                 "nullable": true
               },
+              "championName": {
+                "type": "string",
+                "nullable": true
+              },
+              "bestScorerPoints": {
+                "type": "integer"
+              },
+              "bestScorerName": {
+                "type": "string",
+                "nullable": true
+              },
+              "bestScorerCode": {
+                "type": "string",
+                "nullable": true
+              },
+              "livePoints": {
+                "type": "integer"
+              },
               "exactCount": {
                 "type": "integer"
               },
@@ -1086,6 +1079,7 @@
         "slug": "world-cup-2022",
         "name": "FIFA World Cup 2022"
       },
+      "live": false,
       "rows": [
         {
           "rank": 1,
@@ -1096,6 +1090,11 @@
           "predictionPoints": 105,
           "championPoints": 0,
           "championCode": null,
+          "championName": null,
+          "bestScorerPoints": 0,
+          "bestScorerName": null,
+          "bestScorerCode": null,
+          "livePoints": 0,
           "exactCount": 18,
           "outcomeCount": 33,
           "gdCount": 21,
@@ -1110,6 +1109,11 @@
           "predictionPoints": 99,
           "championPoints": 0,
           "championCode": null,
+          "championName": null,
+          "bestScorerPoints": 0,
+          "bestScorerName": null,
+          "bestScorerCode": null,
+          "livePoints": 0,
           "exactCount": 15,
           "outcomeCount": 32,
           "gdCount": 22,
@@ -1821,28 +1825,23 @@
                 "type": "boolean"
               },
               "baseTier": {
-                "type": "string",
-                "nullable": true
+                "type": "string"
               },
               "totalPoints": {
-                "type": "string",
-                "nullable": true
+                "type": "integer"
               },
               "basePoints": {
-                "type": "string",
-                "nullable": true
+                "type": "integer"
               },
               "bonusPoints": {
-                "type": "string",
-                "nullable": true
+                "type": "integer"
               },
               "crowdShare": {
                 "type": "string",
                 "nullable": true
               },
               "jokerMultiplierApplied": {
-                "type": "string",
-                "nullable": true
+                "type": "string"
               },
               "homeTeam": {
                 "type": "string"
@@ -1866,12 +1865,10 @@
                 "type": "string"
               },
               "fullTimeHome": {
-                "type": "string",
-                "nullable": true
+                "type": "integer"
               },
               "fullTimeAway": {
-                "type": "string",
-                "nullable": true
+                "type": "integer"
               },
               "penaltiesHome": {
                 "type": "string",
@@ -1902,21 +1899,21 @@
           "homeGoals": 4,
           "awayGoals": 0,
           "isJoker": false,
-          "baseTier": null,
-          "totalPoints": null,
-          "basePoints": null,
-          "bonusPoints": null,
+          "baseTier": "OUTCOME",
+          "totalPoints": 1,
+          "basePoints": 1,
+          "bonusPoints": 0,
           "crowdShare": null,
-          "jokerMultiplierApplied": null,
+          "jokerMultiplierApplied": "1.00",
           "homeTeam": "Mexico",
           "awayTeam": "South Africa",
           "homeTeamCode": "MEX",
           "awayTeamCode": "RSA",
           "kickoffTime": "2026-06-11T19:00:00.000Z",
-          "status": "SCHEDULED",
+          "status": "FINISHED",
           "stage": "GROUP",
-          "fullTimeHome": null,
-          "fullTimeAway": null,
+          "fullTimeHome": 2,
+          "fullTimeAway": 0,
           "penaltiesHome": null,
           "penaltiesAway": null,
           "roundLabel": "Group Matchday 1",
@@ -1981,6 +1978,12 @@
               },
               "name": {
                 "type": "string"
+              },
+              "fifaRank": {
+                "type": "integer"
+              },
+              "potentialPoints": {
+                "type": "integer"
               }
             }
           }
@@ -2002,6 +2005,13 @@
             },
             "teamName": {
               "type": "string"
+            },
+            "fifaRank": {
+              "type": "string",
+              "nullable": true
+            },
+            "potentialPoints": {
+              "type": "integer"
             },
             "awardedPoints": {
               "type": "integer"
@@ -2028,11 +2038,15 @@
       "teams": [
         {
           "code": "ALG",
-          "name": "Algeria"
+          "name": "Algeria",
+          "fifaRank": 28,
+          "potentialPoints": 25
         },
         {
           "code": "ARG",
-          "name": "Argentina"
+          "name": "Argentina",
+          "fifaRank": 1,
+          "potentialPoints": 10
         }
       ],
       "myPick": {
@@ -2041,11 +2055,13 @@
         "competitionId": "bc4da63c-691d-40ff-8093-cb7c9d812864",
         "teamCode": "FRA",
         "teamName": "France",
+        "fifaRank": null,
+        "potentialPoints": 10,
         "awardedPoints": 0,
         "createdAt": "2026-06-05T18:57:04.202Z",
         "updatedAt": "2026-06-07T13:36:35.218Z"
       },
-      "locked": false
+      "locked": true
     }
   },
   "/api/me/stats": {
@@ -2056,7 +2072,8 @@
           "type": "object",
           "properties": {
             "rank": {
-              "type": "integer"
+              "type": "string",
+              "nullable": true
             },
             "players": {
               "type": "integer"
@@ -2082,11 +2099,11 @@
     },
     "example": {
       "stats": {
-        "rank": 25,
+        "rank": null,
         "players": 27,
-        "totalPoints": 0,
+        "totalPoints": 1,
         "exact": 0,
-        "outcome": 0,
+        "outcome": 1,
         "predictions": 9,
         "jokers": 2
       }
@@ -3224,12 +3241,110 @@
             }
           }
         },
+        "bestScorer": {
+          "type": "string",
+          "nullable": true
+        },
         "global": {
+          "type": "boolean"
+        },
+        "adminView": {
           "type": "boolean"
         },
         "predictions": {
           "type": "array",
-          "items": {}
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "userId": {
+                "type": "string"
+              },
+              "matchId": {
+                "type": "string"
+              },
+              "roundId": {
+                "type": "string"
+              },
+              "homeGoals": {
+                "type": "integer"
+              },
+              "awayGoals": {
+                "type": "integer"
+              },
+              "isJoker": {
+                "type": "boolean"
+              },
+              "baseTier": {
+                "type": "string"
+              },
+              "totalPoints": {
+                "type": "integer"
+              },
+              "basePoints": {
+                "type": "integer"
+              },
+              "bonusPoints": {
+                "type": "integer"
+              },
+              "crowdShare": {
+                "type": "string",
+                "nullable": true
+              },
+              "jokerMultiplierApplied": {
+                "type": "string"
+              },
+              "homeTeam": {
+                "type": "string"
+              },
+              "awayTeam": {
+                "type": "string"
+              },
+              "homeTeamCode": {
+                "type": "string"
+              },
+              "awayTeamCode": {
+                "type": "string"
+              },
+              "kickoffTime": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "stage": {
+                "type": "string"
+              },
+              "fullTimeHome": {
+                "type": "integer"
+              },
+              "fullTimeAway": {
+                "type": "integer"
+              },
+              "penaltiesHome": {
+                "type": "string",
+                "nullable": true
+              },
+              "penaltiesAway": {
+                "type": "string",
+                "nullable": true
+              },
+              "roundLabel": {
+                "type": "string"
+              },
+              "roundSort": {
+                "type": "integer"
+              },
+              "competitionSlug": {
+                "type": "string"
+              },
+              "competitionName": {
+                "type": "string"
+              }
+            }
+          }
         }
       }
     },
@@ -3245,8 +3360,71 @@
         "competitionId": "bc4da63c-691d-40ff-8093-cb7c9d812864",
         "awardedPoints": 0
       },
+      "bestScorer": null,
       "global": false,
-      "predictions": []
+      "adminView": true,
+      "predictions": [
+        {
+          "id": "fbafbc3f-556f-43c9-9e2f-3464d8680fd2",
+          "userId": "G7xbY1kqtdBzlBZ2N0IrhsxghnvpGroz",
+          "matchId": "fa21e2cb-52bb-4ff0-a9df-c6dff6961247",
+          "roundId": "85d7ce4b-41fe-478c-b784-b2f2e8fc7bf4",
+          "homeGoals": 4,
+          "awayGoals": 0,
+          "isJoker": false,
+          "baseTier": "OUTCOME",
+          "totalPoints": 1,
+          "basePoints": 1,
+          "bonusPoints": 0,
+          "crowdShare": null,
+          "jokerMultiplierApplied": "1.00",
+          "homeTeam": "Mexico",
+          "awayTeam": "South Africa",
+          "homeTeamCode": "MEX",
+          "awayTeamCode": "RSA",
+          "kickoffTime": "2026-06-11T19:00:00.000Z",
+          "status": "FINISHED",
+          "stage": "GROUP",
+          "fullTimeHome": 2,
+          "fullTimeAway": 0,
+          "penaltiesHome": null,
+          "penaltiesAway": null,
+          "roundLabel": "Group Matchday 1",
+          "roundSort": 1,
+          "competitionSlug": "world-cup-2026",
+          "competitionName": "FIFA World Cup 2026"
+        },
+        {
+          "id": "cc8ee5de-3fba-4c1a-a98b-e67a8a468091",
+          "userId": "G7xbY1kqtdBzlBZ2N0IrhsxghnvpGroz",
+          "matchId": "110e5165-97f7-4bb5-b4de-538593103a55",
+          "roundId": "85d7ce4b-41fe-478c-b784-b2f2e8fc7bf4",
+          "homeGoals": 2,
+          "awayGoals": 3,
+          "isJoker": false,
+          "baseTier": null,
+          "totalPoints": null,
+          "basePoints": null,
+          "bonusPoints": null,
+          "crowdShare": null,
+          "jokerMultiplierApplied": null,
+          "homeTeam": "Korea Republic",
+          "awayTeam": "Czechia",
+          "homeTeamCode": "KOR",
+          "awayTeamCode": "CZE",
+          "kickoffTime": "2026-06-12T02:00:00.000Z",
+          "status": "SCHEDULED",
+          "stage": "GROUP",
+          "fullTimeHome": null,
+          "fullTimeAway": null,
+          "penaltiesHome": null,
+          "penaltiesAway": null,
+          "roundLabel": "Group Matchday 1",
+          "roundSort": 1,
+          "competitionSlug": "world-cup-2026",
+          "competitionName": "FIFA World Cup 2026"
+        }
+      ]
     }
   }
 }
