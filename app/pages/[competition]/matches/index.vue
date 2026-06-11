@@ -53,17 +53,40 @@ function fmtTime(d: string) {
   return new Date(d).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
-// Mod+F (Ctrl/Cmd) focuses the fixtures filter instead of the browser find bar
-// (preventDefault is on by default). The field is sticky, so it's already in
-// view - preventScroll just avoids any nudge.
+// The filter is hidden until opened by Mod+F (Ctrl/Cmd, preventDefault on by
+// default) or the search icon by the title. Opening scrolls it to the top of
+// the viewport (below the header) and focuses it. Escape closes + clears.
+const searchOpen = ref(false)
 const searchInput = ref<{ $el?: HTMLInputElement } | null>(null)
-useHotkey('Mod+F', () => searchInput.value?.$el?.focus({ preventScroll: true }))
+const searchBar = ref<HTMLElement | null>(null)
+async function openSearch() {
+  searchOpen.value = true
+  await nextTick()
+  searchBar.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  searchInput.value?.$el?.focus({ preventScroll: true })
+}
+function closeSearch() {
+  searchOpen.value = false
+  searchRaw.value = ''
+}
+useHotkey('Mod+F', openSearch)
 </script>
 
 <template>
   <div>
     <div class="flex items-center justify-between gap-3 flex-wrap mb-5">
-      <h1 class="text-2xl font-bold">{{ t('matches.title') }}</h1>
+      <div class="flex items-center gap-2">
+        <h1 class="text-2xl font-bold">{{ t('matches.title') }}</h1>
+        <button
+          type="button"
+          v-tooltip.bottom="t('matches.search')"
+          class="inline-flex items-center justify-center w-8 h-8 rounded-full transition hover:bg-black/5 dark:hover:bg-white/10"
+          :aria-label="t('matches.search')"
+          @click="openSearch"
+        >
+          <i class="pi pi-search" style="color: var(--p-text-muted-color)" />
+        </button>
+      </div>
       <div class="flex items-center gap-2 flex-wrap">
         <CompetitionPill />
         <LeaguePill />
@@ -90,13 +113,12 @@ useHotkey('Mod+F', () => searchInput.value?.$el?.focus({ preventScroll: true }))
     <ChampionPick />
     <BestScorerPick />
     <Message v-if="jokerErr" severity="warn" class="mb-4">{{ jokerErr }}</Message>
-    <!-- Pins just below the app header (whose height varies on mobile) so it
-         stays in view while scrolling the fixtures, and Mod+F focuses it without
-         yanking the page. Also a normal visible field for non-keyboard users. -->
-    <div class="sticky z-30 py-2 mb-3" style="top: var(--ng-header-h, 4rem)">
+    <!-- Hidden until opened (Mod+F or the title's search icon); on open it
+         scrolls to the top of the viewport (scroll-margin clears the header). -->
+    <div v-if="searchOpen" ref="searchBar" class="mb-3" style="scroll-margin-top: calc(var(--ng-header-h, 4rem) + 0.5rem)">
       <IconField class="block w-full sm:w-96">
         <InputIcon class="pi pi-search" />
-        <InputText ref="searchInput" v-model="searchRaw" :placeholder="t('matches.search')" class="w-full" />
+        <InputText ref="searchInput" v-model="searchRaw" :placeholder="t('matches.search')" class="w-full" @keydown.esc="closeSearch" />
         <InputIcon v-if="searchRaw" class="pi pi-times cursor-pointer" :aria-label="t('common.clear')" @click="searchRaw = ''" />
       </IconField>
     </div>
