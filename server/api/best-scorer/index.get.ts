@@ -18,6 +18,10 @@ export default defineEventHandler(async (event) => {
 
   return {
     competition: { id: competition.id, slug: competition.slug, name: competition.name },
+    // Player-headshot source: FIFA vs UEFA picture CDN keyed by the fixtures
+    // provider, with the season for the UEFA path.
+    provider: competition.provider,
+    season: competition.seasonHint,
     teams,
     myPick,
     locked: !!lock && Date.now() >= new Date(lock).getTime(),

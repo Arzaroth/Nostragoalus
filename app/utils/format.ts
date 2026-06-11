@@ -65,10 +65,20 @@ export function flagUrl(code: string | null | undefined): string | null {
   return code ? `https://api.fifa.com/api/v3/picture/flags-sq-3/${code}` : null
 }
 
-// FIFA headshot derived from the provider player id - same picture API as the
-// flags. Not every player has one; callers must fall back on image error.
-export function playerPhotoUrl(playerId: string | null | undefined): string | null {
-  return playerId ? `https://api.fifa.com/api/v3/picture/players-sq-3/${playerId}` : null
+// Player headshot from the FIXTURES provider's picture CDN, keyed by that
+// provider's player id (FIFA ids -> FIFA, UEFA ids -> UEFA - they don't cross).
+// UEFA needs the season in the path. Not every player has one; callers must
+// fall back on image error. Defaults to FIFA (the World Cup).
+export function playerPhotoUrl(
+  playerId: string | null | undefined,
+  opts?: { provider?: string | null; season?: string | null },
+): string | null {
+  if (!playerId) return null
+  if (opts?.provider === 'uefa') {
+    const season = opts.season || '2024'
+    return `https://img.uefa.com/imgml/TP/players/3/${season}/324x324/${playerId}.jpg`
+  }
+  return `https://api.fifa.com/api/v3/picture/players-sq-3/${playerId}`
 }
 
 // "4–2" when a shootout actually happened, else null (0–0 penalty rows are sync artifacts).
