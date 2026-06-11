@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-06-11
+
 ### Changed
 - Landing page refreshed for the 1.0 launch: the feature grid now covers private leagues, the Golden Boot pick and the consensus bot; the scoring section and the "how points are calculated" formula match the current rules (correct-result rarity tiers, FIFA-rank champion bonus, Golden Boot bonus); new FAQ entries for the Golden Boot, leagues and live standings.
 
