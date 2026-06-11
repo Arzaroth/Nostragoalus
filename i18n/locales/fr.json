@@ -170,6 +170,10 @@
       "team": {
         "t": "Connaissez chaque équipe",
         "d": "Effectifs officiels avec postes, sélectionneur, et des stats qui collent aux chiffres des fédérations."
+      },
+      "bot": {
+        "t": "Bats le bot consensus",
+        "d": "Un joueur virtuel qui choisit le score le plus fréquent de la foule à chaque match - noté par le vrai moteur, bonus de rareté compris, pour te mesurer à la sagesse des foules."
       }
     },
     "bestScorerPill": "Bonus soulier d'or"

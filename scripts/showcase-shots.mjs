@@ -30,6 +30,10 @@ const SHOTS = [
   // it by clicking through the app, then select France via its marker
   { name: 'map', clickThrough: true, wait: 2500, selector: '.leaflet-tile-loaded' },
   { name: 'ranking', path: '/world-cup-2022/leaderboard', wait: 2500 },
+  // bot uses the finished demo competition so the consensus has real picks to
+  // show; the /leagues page is intentionally NOT captured - it would expose live
+  // join codes of real leagues.
+  { name: 'bot', path: '/world-cup-2022/bot', wait: 3000 },
   { name: 'team', path: '/euro-2024/teams/ESP', wait: 4000 },
 ]
 
