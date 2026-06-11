@@ -47,10 +47,10 @@
     "privateProfile": "Private profile",
     "privateProfileHint": "Step out of the global and competition rankings. Only members of your leagues (and admins) can see your profile; your league rankings still include you. Predictions stay in the anonymous crowd totals.",
     "odds": "Show bookmaker odds",
-    "oddsHint": "Decimal 1X2 odds under each match, frozen at kickoff."
+    "oddsHint": "Decimal 1X2 odds under each match: 1 = home win, X = draw, 2 = away win. Lower number = more likely. Snapshotted at kickoff."
   },
   "odds": {
-    "title": "Bookmaker odds (1 / draw / 2)",
+    "title": "Bookmaker odds — 1: home win, X: draw, 2: away win. Decimal odds; the lower the number, the more likely the outcome.",
     "home": "Home win odds",
     "draw": "Draw odds",
     "away": "Away win odds"
