@@ -56,7 +56,9 @@ function onKeydown(e: KeyboardEvent) {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
     e.preventDefault()
     const el = searchInput.value?.$el?.querySelector('input') ?? searchInput.value?.$el
-    ;(el as HTMLInputElement | undefined)?.focus()
+    // preventScroll: the field lives at the top; without this, focusing it from
+    // further down the list yanks the page back up.
+    ;(el as HTMLInputElement | undefined)?.focus({ preventScroll: true })
   }
 }
 onMounted(() => window.addEventListener('keydown', onKeydown))
