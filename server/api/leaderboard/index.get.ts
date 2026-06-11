@@ -2,13 +2,16 @@ import { db } from '../../../db'
 import { getLeaderboard } from '../../utils/leaderboard/service'
 import { getLeagueRankMovements, getRankMovements } from '../../utils/leaderboard/snapshots'
 import { getCompetitionById, resolveCompetition } from '../../utils/competitions/store'
-import { isAdmin, requireUser } from '../../utils/auth-guards'
+import { getSessionUser, isAdmin, requireUser } from '../../utils/auth-guards'
 import { canViewLeague, getLeague, getMembership } from '../../utils/leagues/service'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const limit = query.limit ? Math.min(Number(query.limit), 200) : 100
   const offset = query.offset ? Math.max(Number(query.offset), 0) : 0
+  // Always keep the signed-in viewer on the board so a hidden/private account
+  // (e.g. an admin-hidden one) still sees its own row, even in its own league.
+  const viewer = await getSessionUser(event)
 
   // League-scoped ranking. The league fixes the competition; movement arrows
   // are global-rank deltas and don't translate to within-league positions.
@@ -34,6 +37,7 @@ export default defineEventHandler(async (event) => {
       limit,
       offset,
       includePrivate,
+      alwaysIncludeUserId: user.id,
     })
     // Movement only for the full-member view: the outsider board excludes
     // private profiles, so snapshot ranks wouldn't line up with displayed ones.
@@ -47,13 +51,13 @@ export default defineEventHandler(async (event) => {
 
   // Global ranking across every competition.
   if (query.global === 'true') {
-    return { competition: null, rows: await getLeaderboard(db, { competitionId: null, limit, offset }) }
+    return { competition: null, rows: await getLeaderboard(db, { competitionId: null, limit, offset, alwaysIncludeUserId: viewer?.id }) }
   }
 
   const competition = await resolveCompetition(db, (query.competition as string) || null)
   if (!competition) return { competition: null, rows: [] }
   const [rows, movements] = await Promise.all([
-    getLeaderboard(db, { competitionId: competition.id, limit, offset }),
+    getLeaderboard(db, { competitionId: competition.id, limit, offset, alwaysIncludeUserId: viewer?.id }),
     getRankMovements(db, competition.id),
   ])
   return {

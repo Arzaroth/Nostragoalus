@@ -54,7 +54,9 @@ export default defineEventHandler(async (event) => {
     bestScorer,
     champions: global ? championRows : undefined,
     global,
-    // Admins see picks for matches that haven't kicked off yet.
+    // Admins see picks for matches that haven't kicked off yet; the client
+    // draws a divider before those rows.
+    adminView: admin,
     predictions: await getUserPublicPredictions(db, id, new Date(), competition?.id, admin),
   }
 })

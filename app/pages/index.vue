@@ -101,10 +101,10 @@ function updateArt() {
   const band = h / s
   ballScale.value = Math.min(1, (0.85 * band) / 470)
   subtitleOp.value = cl((band - 500) / 150)
-  // Title shrinks in lockstep with the planet (same curve) so the logo and the
-  // text reach their docked size together - separate thresholds made the text
-  // settle long before the planet, which read as a timing glitch.
-  titleScale.value = ballScale.value
+  // Title eases on the SAME curve as the planet (so they settle together, not
+  // text-then-planet), but over a gentler range so the docked title stays
+  // readable (~0.8) instead of shrinking to the planet's ~0.2.
+  titleScale.value = 0.78 + 0.22 * ballScale.value
   titleShift.value = 16 * (1 - band / 832)
 }
 

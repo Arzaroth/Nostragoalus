@@ -24,11 +24,20 @@ export function useLiveMatches(matches: Ref<MatchListItem[] | undefined>) {
     },
   })
 
+  // Only matches that can still change: finished/cancelled ones never emit, so
+  // there's no point subscribing to them (keeps the set small even with 104
+  // fixtures - the server only pushes updates for matches that actually moved).
+  const liveIds = () =>
+    (matches.value ?? [])
+      .filter((m) => !['FINISHED', 'CANCELLED', 'POSTPONED', 'AWARDED'].includes(String(m.status)))
+      .map((m) => m.id)
+
   function subscribe() {
-    const ids = (matches.value ?? []).map((m) => m.id)
+    const ids = liveIds()
     if (ids.length) send({ type: 'subscribe', matchIds: ids })
   }
 
-  // Re-subscribe when the visible set changes (competition switch, first load).
-  watch(() => (matches.value ?? []).map((m) => m.id).join(','), subscribe)
+  // Re-subscribe when the watched set changes (competition switch, a match
+  // kicking off or finishing).
+  watch(() => liveIds().join(','), subscribe)
 }
