@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-06-11
+
 ### Added
 - Live provisional standings: while matches are in progress the leaderboard folds in what each player *would* score at the current scoreline (full scoring, bonuses included), ranks provisionally, shows a "+N live" delta per row and a pulsing LIVE badge. It updates over the WebSocket as scores change - no polling.
 - The group standings table on a match view now tracks the live match: the in-progress scoreline counts provisionally and updates in place.
