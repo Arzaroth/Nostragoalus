@@ -292,24 +292,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', layoutBanner))
           <AccordionHeader>{{ t('faq.formula.q') }}</AccordionHeader>
           <AccordionContent>
             <p class="text-sm mb-3" style="color: var(--p-text-muted-color)">{{ t('faq.formula.a') }}</p>
-            <pre class="text-xs overflow-x-auto rounded-lg border p-4 leading-relaxed" style="background: var(--p-content-background); border-color: var(--p-content-border-color)">points = (base + rarity) × multiplier     (+ champion &amp; Golden Boot at the final)
-
-base    = 3  exact score            (home &amp; away both right)
-          2  right goal difference  (and right outcome)
-          1  right outcome only     (win / draw / loss)
-          0  otherwise
-
-rarity  = a bonus on an exact score, by how rare your scoreline was
-          AMONG the players who also got the result right:
-          +5  &lt; 1%      +4  &lt; 5%       +3  &lt; 12%
-          +2  &lt; 22%     +1  &lt; 35%      +0  otherwise   (needs &ge; 5 such players)
-
-multiplier  = 2  on your round joker, and on every final
-              1  otherwise
-
-champion    = season-long bonus if your winner pick lifts the trophy,
-              bigger the longer the odds (FIFA-rank tiers, up to 4×)
-Golden Boot = bonus if your top-scorer pick finishes the tournament's top scorer</pre>
+            <pre class="text-xs overflow-x-auto rounded-lg border p-4 leading-relaxed" style="background: var(--p-content-background); border-color: var(--p-content-border-color)">{{ t('faq.formula.code') }}</pre>
             <p class="text-xs mt-3" style="color: var(--p-text-muted-color)">{{ t('faq.formula.example') }}</p>
           </AccordionContent>
         </AccordionPanel>

@@ -174,6 +174,10 @@
       "bot": {
         "t": "Beat the consensus bot",
         "d": "A virtual player that picks the crowd's most-common scoreline every match - scored by the real engine, with rarity bonuses, so you can measure yourself against the wisdom of the crowd."
+      },
+      "leagues": {
+        "t": "Play in private leagues",
+        "d": "Group up with friends, family or the office - create a league, share its code, and race for the top spot in your own table."
       }
     },
     "bestScorerPill": "Golden Boot bonus"
@@ -572,7 +576,8 @@
     "formula": {
       "q": "How exactly are points calculated?",
       "a": "Every prediction is scored on the regulation (90-minute) result. The full formula:",
-      "example": "Example: you call Brazil 2-1 and it finishes 2-1 - an exact score (3). Among everyone who also saw the Brazil win, only ~4% nailed 2-1, so the rarity tier adds +4, for 7 points. On the final, or with your joker, it doubles."
+      "example": "Example: you call Brazil 2-1 and it finishes 2-1 - an exact score (3). Among everyone who also saw the Brazil win, only ~4% nailed 2-1, so the rarity tier adds +4, for 7 points. On the final, or with your joker, it doubles.",
+      "code": "points = (base + rarity) × multiplier     (+ champion & Golden Boot at the final)\n\nbase    = 3  exact score            (home & away both right)\n          2  right goal difference  (and right outcome)\n          1  right outcome only     (win / draw / loss)\n          0  otherwise\n\nrarity  = a bonus on an exact score, by how rare your scoreline was\n          among the players who also got the result right:\n          +5  < 1%      +4  < 5%       +3  < 12%\n          +2  < 22%     +1  < 35%      +0  otherwise   (needs ≥ 5 such players)\n\nmultiplier  = 2  on your round joker, and on every final\n              1  otherwise\n\nchampion    = season-long bonus if your winner pick lifts the trophy,\n              bigger the longer the odds (FIFA-rank tiers, up to 4×)\nGolden Boot = bonus if your top-scorer pick finishes the tournament's top scorer"
     },
     "q9": {
       "q": "What is the Golden Boot pick?",
