@@ -19,6 +19,9 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ body, user 
 
   const [ranks, config] = await Promise.all([getFifaRanks(), getActiveScoringConfig(db)])
   const fifaRank = ranks?.get(body.teamCode) ?? null
+  // Ranks known -> tier by rank (an absent team is a catch-all long shot).
+  // Ranking fetch failed (ranks null) -> flat fallback so a pick still saves.
+  const potentialPoints = ranks ? championPointsForRank(fifaRank, config.rules) : config.rules.championBonus
 
   await setChampionPick(db, {
     userId: user.id,
@@ -26,7 +29,7 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ body, user 
     teamCode: body.teamCode,
     teamName: body.teamName,
     fifaRank,
-    potentialPoints: championPointsForRank(fifaRank, config.rules),
+    potentialPoints,
   })
   return { ok: true }
 })

@@ -141,3 +141,24 @@ Deferred work, queued behind feature development.
       (shared useReconnectingSocket; live scores + crowd no longer freeze after
       a deploy/restart). [partial on the bot perf item: TTL cache added; SQL
       GROUP BY aggregation + the 10000-row rank cap still open.]
+
+## Champion tiers (deferred from the merge review)
+
+- [ ] Pre-feature champion picks backfilled to potential_points=10 (migration
+      DEFAULT): they keep the flat value until re-saved, so an early long-shot
+      picker is under-paid vs a post-deploy picker of the same team. Ships
+      before lock so users can re-confirm; acceptable since championBonus
+      default is 10. Consider a one-time re-snapshot if picks predate the deploy.
+- [ ] FIFA rank cache is per-process with a 12h TTL: across a FIFA publication
+      boundary (or multiple server instances) two users can snapshot different
+      ranks for the same team. Bound max staleness / invalidate on publication
+      if it matters.
+- [ ] ChampionPick: a saved pick shows its locked snapshot worth while the
+      dropdown/team list shows the live tier - the same team can display two
+      worths after ranks move. Label the snapshot ("locked") to disambiguate.
+- [ ] Bot champion payout is the mode of pickers' snapshots (ties low) and is
+      dragged by backfilled-10 legacy picks; revisit if the bot's champion
+      points look off.
+- [ ] Extract the shared provider getJson envelope (rate-limit + 429/403 +
+      json-guard) now duplicated across fifa, sofascore and fifa-ranking; and a
+      generic ordered-tier resolver for crowd/odds/champion tiers.

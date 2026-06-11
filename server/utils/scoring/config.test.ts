@@ -37,16 +37,23 @@ describe('championPointsForRank', () => {
     expect(championPointsForRank(150, DEFAULT_RULES)).toBe(40)
   })
 
-  it('falls back to the flat champion bonus for unknown ranks', () => {
-    expect(championPointsForRank(null, DEFAULT_RULES)).toBe(10)
-    expect(championPointsForRank(undefined, DEFAULT_RULES)).toBe(10)
-    expect(championPointsForRank(null, { ...DEFAULT_RULES, championBonus: 7 })).toBe(7)
+  it('treats an unknown rank (team not in the FIFA table) as the catch-all long shot', () => {
+    expect(championPointsForRank(null, DEFAULT_RULES)).toBe(40)
+    expect(championPointsForRank(undefined, DEFAULT_RULES)).toBe(40)
   })
 
-  it('falls back to the flat bonus when no tier covers the rank (no catch-all)', () => {
+  it('falls back to the flat bonus only when no tier covers the rank (no catch-all)', () => {
     const rules = { ...DEFAULT_RULES, championBonus: 9, championTiers: [{ maxRank: 8, points: 12 }] }
     expect(championPointsForRank(5, rules)).toBe(12)
     expect(championPointsForRank(50, rules)).toBe(9)
+    expect(championPointsForRank(null, rules)).toBe(9)
+  })
+
+  it('resolves correctly even when tiers are stored out of order', () => {
+    const rules = { ...DEFAULT_RULES, championTiers: [{ maxRank: null, points: 40 }, { maxRank: 8, points: 10 }, { maxRank: 20, points: 15 }] }
+    expect(championPointsForRank(5, rules)).toBe(10)
+    expect(championPointsForRank(15, rules)).toBe(15)
+    expect(championPointsForRank(99, rules)).toBe(40)
   })
 })
 

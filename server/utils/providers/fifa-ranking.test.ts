@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { RateLimiter } from './rate-limiter'
-import { ProviderUpstreamError } from './types'
+import { ProviderRateLimitError, ProviderUpstreamError } from './types'
 import { fifaRankingProvider, normalizeFifaRanking } from './fifa-ranking'
 
 const noWait = () => new RateLimiter(0)
@@ -83,5 +83,20 @@ describe('fifaRankingProvider', () => {
   it('throws when the ranking table comes back empty (FIFA does this for stale ids)', async () => {
     const p = provider({ [BY_COUNTRY_PATH]: BY_COUNTRY, [OVERVIEW_PATH]: { rankings: [] } })
     await expect(p.getLatestRanks()).rejects.toBeInstanceOf(ProviderUpstreamError)
+  })
+
+  it('maps 403/429 to a rate-limit error (Cloudflare bot challenge)', async () => {
+    const status = (code: number) =>
+      fifaRankingProvider({ rateLimiter: noWait(), fetchImpl: (async () => new Response('blocked', { status: code })) as unknown as typeof fetch })
+    await expect(status(403).getLatestScheduleId()).rejects.toBeInstanceOf(ProviderRateLimitError)
+    await expect(status(429).getLatestScheduleId()).rejects.toBeInstanceOf(ProviderRateLimitError)
+  })
+
+  it('treats a 200 non-JSON body (challenge page) as a rate limit, not data', async () => {
+    const p = fifaRankingProvider({
+      rateLimiter: noWait(),
+      fetchImpl: (async () => new Response('<html>just a moment…</html>', { status: 200 })) as unknown as typeof fetch,
+    })
+    await expect(p.getLatestScheduleId()).rejects.toBeInstanceOf(ProviderRateLimitError)
   })
 })

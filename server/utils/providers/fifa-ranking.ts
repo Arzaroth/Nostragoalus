@@ -1,5 +1,5 @@
 import { RateLimiter } from './rate-limiter'
-import { ProviderUpstreamError } from './types'
+import { ProviderRateLimitError, ProviderUpstreamError } from './types'
 
 // FIFA men's world ranking via the keyless inside.fifa.com JSON endpoints.
 // /api/ranking-overview needs a publication ("schedule") id; the current one is
@@ -63,8 +63,16 @@ export function fifaRankingProvider(options?: FifaRankingOptions): FifaRankingPr
   async function getJson<T>(path: string): Promise<T> {
     await limiter.acquire()
     const response = await doFetch(`${baseUrl}${path}`, { headers: { 'User-Agent': BROWSER_UA } })
+    // Cloudflare in front of inside.fifa.com answers 403/429 when it suspects a
+    // bot - same typed back-off the other providers use.
+    if (response.status === 429 || response.status === 403) throw new ProviderRateLimitError()
     if (!response.ok) throw new ProviderUpstreamError(response.status, await response.text())
-    return (await response.json()) as T
+    try {
+      return (await response.json()) as T
+    } catch {
+      // A 200 that isn't JSON is a Cloudflare challenge page, not data.
+      throw new ProviderRateLimitError()
+    }
   }
 
   async function getLatestScheduleId(): Promise<string> {

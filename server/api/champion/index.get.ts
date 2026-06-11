@@ -26,7 +26,9 @@ export default defineEventHandler(async (event) => {
     // saved pick keeps the value snapshotted when it was made (myPick).
     teams: teams.map((team) => {
       const fifaRank = ranks?.get(team.code) ?? null
-      return { ...team, fifaRank, potentialPoints: championPointsForRank(fifaRank, config.rules) }
+      // Ranks known -> tier (absent = catch-all); fetch failed -> flat fallback.
+      const potentialPoints = ranks ? championPointsForRank(fifaRank, config.rules) : config.rules.championBonus
+      return { ...team, fifaRank, potentialPoints }
     }),
     myPick,
     locked: !!lock && Date.now() >= new Date(lock).getTime(),
