@@ -41,13 +41,17 @@ export const DEFAULT_CHAMPION_TIERS: ChampionTier[] = [
   { maxRank: null, points: 40 },
 ]
 
-// The points a champion pick is worth when made now: first tier whose bound
-// covers the team's rank. An unknown rank (team missing from the FIFA table,
-// ranking fetch failed) falls back to the flat championBonus.
+// The points a champion pick is worth when ranks are known: first tier (by
+// ascending bound) whose maxRank covers the rank. A null rank means the team is
+// not in the FIFA table - a genuine long shot, so it gets the catch-all tier,
+// NOT the flat bonus. (A failed ranking fetch is handled by the caller, which
+// passes the flat championBonus directly rather than calling this.) Tiers are
+// sorted defensively so a hand-edited, out-of-order config can't mis-tier.
 export function championPointsForRank(rank: number | null | undefined, rules: ScoringRules): number {
-  if (rank == null) return rules.championBonus
-  for (const tier of rules.championTiers) {
-    if (tier.maxRank == null || rank <= tier.maxRank) return tier.points
+  const tiers = [...rules.championTiers].sort((a, b) => (a.maxRank ?? Infinity) - (b.maxRank ?? Infinity))
+  const effectiveRank = rank == null ? Infinity : rank
+  for (const tier of tiers) {
+    if (tier.maxRank == null || effectiveRank <= tier.maxRank) return tier.points
   }
   return rules.championBonus
 }

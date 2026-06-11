@@ -64,4 +64,31 @@ describe('getFifaRanks', () => {
     expect(stale?.get('BRA')).toBe(6)
     warn.mockRestore()
   })
+
+  it('shares one in-flight fetch across concurrent cold-cache callers (no stampede)', async () => {
+    const provider = fakeProvider({ BRA: 6 })
+    const [a, b, c] = await Promise.all([getFifaRanks(provider, T0), getFifaRanks(provider, T0), getFifaRanks(provider, T0)])
+    expect(a?.get('BRA')).toBe(6)
+    expect(b?.get('BRA')).toBe(6)
+    expect(c?.get('BRA')).toBe(6)
+    expect(provider.calls).toBe(1)
+  })
+
+  it('does not re-hammer a failing endpoint within the backoff window', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    let calls = 0
+    const provider: FifaRankingProvider = {
+      getLatestScheduleId: () => Promise.reject(new Error('down')),
+      getRanks: () => Promise.reject(new Error('down')),
+      getLatestRanks: () => {
+        calls += 1
+        return Promise.reject(new Error('down'))
+      },
+    }
+    expect(await getFifaRanks(provider, T0)).toBeNull()
+    // 1 minute later (within the 5-minute backoff) - no retry.
+    expect(await getFifaRanks(provider, new Date('2026-06-01T00:01:00Z'))).toBeNull()
+    expect(calls).toBe(1)
+    warn.mockRestore()
+  })
 })

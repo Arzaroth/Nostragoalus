@@ -160,7 +160,7 @@ function worthLabel(rank: number | null, points: number) {
             v-else-if="showcaseCode && !isSaved && !data.locked"
             class="text-xs block mt-0.5"
             style="color: var(--p-text-muted-color)"
-          >{{ t('champion.preview') }}</span>
+          >{{ showcaseWorth ? worthLabel(showcaseWorth.rank, showcaseWorth.points) : t('champion.preview') }}</span>
           <span
             v-else
             class="text-xs block mt-0.5"
