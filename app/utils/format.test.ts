@@ -60,6 +60,12 @@ describe('flagUrl', () => {
 describe('playerPhotoUrl', () => {
   it('builds a FIFA headshot url or returns null', () => {
     expect(playerPhotoUrl('400089481')).toContain('/players-sq-3/400089481')
+    expect(playerPhotoUrl('400089481', { provider: 'fifa' })).toContain('api.fifa.com')
+    expect(playerPhotoUrl('250016833', { provider: 'uefa', season: '2024' })).toBe(
+      'https://img.uefa.com/imgml/TP/players/3/2024/324x324/250016833.jpg',
+    )
+    // UEFA without a season falls back to a default year.
+    expect(playerPhotoUrl('250016833', { provider: 'uefa' })).toContain('img.uefa.com/imgml/TP/players/3/2024/')
     expect(playerPhotoUrl(null)).toBeNull()
     expect(playerPhotoUrl(undefined)).toBeNull()
   })

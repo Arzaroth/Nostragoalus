@@ -61,7 +61,9 @@ const photoFailed = ref(false)
 watch(() => showcase.value?.playerId, () => {
   photoFailed.value = false
 })
-const photoSrc = computed(() => (photoFailed.value ? null : playerPhotoUrl(showcase.value?.playerId)))
+const photoSrc = computed(() =>
+  photoFailed.value ? null : playerPhotoUrl(showcase.value?.playerId, { provider: data.value?.provider, season: data.value?.season }),
+)
 
 const NuxtLinkC = resolveComponent('NuxtLink')
 

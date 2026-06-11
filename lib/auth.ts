@@ -11,6 +11,7 @@ import * as schema from '../db/schema'
 import { withEncryptedSSO } from '../server/utils/crypto/encrypted-adapter'
 import { verifyTotpCode } from '../server/utils/auth/totp'
 import { isSsoManaged } from '../server/utils/auth/sso-managed'
+import { isUnusableAvatarUrl } from '../server/utils/auth/avatar'
 import { autoJoinSsoLeagues } from '../server/utils/leagues/auto-join'
 import { symmetricDecrypt } from 'better-auth/crypto'
 
@@ -152,7 +153,13 @@ export function buildAuthOptions(database: AuthDb) {
         // instance would need host access via `mise run create-admin`).
         provisionUserOnEveryLogin: true,
         async provisionUser({ user: u, provider }: { user: { id: string }; provider: { providerId: string } }) {
-          const rows = await database.select({ role: schema.user.role }).from(schema.user).where(eq(schema.user.id, u.id)).limit(1)
+          const rows = await database.select({ role: schema.user.role, image: schema.user.image }).from(schema.user).where(eq(schema.user.id, u.id)).limit(1)
+          // Drop an IdP picture URL a browser can't load (e.g. the MS Graph
+          // photo endpoint, which needs the user's token): show the placeholder
+          // instead of a broken image, and let a later upload stick.
+          if (isUnusableAvatarUrl(rows[0]?.image)) {
+            await database.update(schema.user).set({ image: null }).where(eq(schema.user.id, u.id))
+          }
           if (rows[0]?.role !== 'admin') {
             await database
               .delete(schema.account)
