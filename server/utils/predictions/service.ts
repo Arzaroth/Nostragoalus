@@ -106,8 +106,17 @@ export async function getMyPredictions(db: AppDatabase, userId: string, competit
 
 // Another user's predictions are only revealed for matches that have kicked off,
 // so picks can't be copied before lock.
-export async function getUserPublicPredictions(db: AppDatabase, userId: string, now: Date = new Date(), competitionId?: string) {
-  const base = [eq(prediction.userId, userId), lte(match.kickoffTime, now)]
+export async function getUserPublicPredictions(
+  db: AppDatabase,
+  userId: string,
+  now: Date = new Date(),
+  competitionId?: string,
+  // Admins see every pick, including not-yet-kicked-off matches (the kickoff
+  // gate is a fairness rule for regular viewers, not for admins).
+  includeUpcoming = false,
+) {
+  const base = [eq(prediction.userId, userId)]
+  if (!includeUpcoming) base.push(lte(match.kickoffTime, now))
   if (competitionId) base.push(eq(match.competitionId, competitionId))
   return db
     .select({ ...predictionView, competitionSlug: competitionTable.slug, competitionName: competitionTable.name })

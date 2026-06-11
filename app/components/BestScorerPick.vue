@@ -210,7 +210,7 @@ const holo = computed(() => {
             class="text-xs block mt-0.5"
             :class="{ invisible: !(showcase && !isSaved && !data.locked) }"
             style="color: var(--p-text-muted-color)"
-          >{{ t('bestScorer.preview') }}</span>
+          >{{ data.bonus ? t('champion.worth', { points: data.bonus }) : t('bestScorer.preview') }}</span>
         </div>
       </div>
     </div>

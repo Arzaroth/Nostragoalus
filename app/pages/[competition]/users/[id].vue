@@ -14,6 +14,7 @@ const scopeOptions = computed(() => [
 const { data, error } = await useFetch<{
   user: { id: string; name: string; image: string | null }
   champion: { teamCode: string | null; teamName: string; awardedPoints: number } | null
+  bestScorer: { teamCode: string | null; teamName: string; playerName: string; awardedPoints: number } | null
   predictions: (MyPrediction & { competitionSlug?: string })[]
 }>(`/api/users/${route.params.id}/predictions`, {
   query: computed(() => ({ competition: global.value ? 'global' : (slug.value ?? undefined) })),
@@ -33,6 +34,11 @@ const { data, error } = await useFetch<{
           <img :src="flagUrl(data.champion.teamCode) || ''" class="w-6 h-6 rounded object-cover" alt="" >
           <span class="absolute -top-2.5 -left-2 text-sm" style="transform: rotate(-25deg)">👑</span>
           <span v-if="data.champion.awardedPoints" class="text-xs font-semibold" style="color: var(--ng-star)">+{{ data.champion.awardedPoints }} pts</span>
+        </span>
+        <span v-if="data.bestScorer?.teamCode && flagUrl(data.bestScorer.teamCode)" v-tooltip.top="`${t('bestScorer.tag')}: ${formatPlayerName(data.bestScorer.playerName)}`" class="relative shrink-0 inline-flex items-center gap-1.5">
+          <img :src="flagUrl(data.bestScorer.teamCode) || ''" class="w-6 h-6 rounded object-cover" alt="" >
+          <span class="absolute -top-2.5 -left-2 text-sm" style="transform: rotate(-12deg)">👟</span>
+          <span v-if="data.bestScorer.awardedPoints" class="text-xs font-semibold" style="color: var(--ng-star)">+{{ data.bestScorer.awardedPoints }} pts</span>
         </span>
         <CompetitionPill v-if="!global" />
       </div>
