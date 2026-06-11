@@ -23,7 +23,9 @@ const predByMatch = computed(() => {
   return map
 })
 
-const search = ref('')
+// Immediate model for the field; the (debounced) value drives filtering.
+const searchRaw = ref('')
+const search = refDebounced(searchRaw, 200)
 const grouped = computed(() => {
   const q = searchable(search.value.trim())
   const groups = new Map<string, { label: string; sort: number; items: MatchListItem[] }>()
@@ -88,13 +90,17 @@ useHotkey('Mod+F', () => searchInput.value?.$el?.focus({ preventScroll: true }))
     <ChampionPick />
     <BestScorerPick />
     <Message v-if="jokerErr" severity="warn" class="mb-4">{{ jokerErr }}</Message>
-    <!-- Sticky so it stays in view while scrolling the fixtures, and Mod+F can
-         focus it without yanking the page (also visible for non-keyboard users). -->
-    <div class="sticky top-0 z-10 py-2 mb-2" style="background: var(--p-content-background)">
+    <!-- Pins just below the app header (whose height varies on mobile) so it
+         stays in view while scrolling the fixtures, and Mod+F focuses it without
+         yanking the page. Also a normal visible field for non-keyboard users. -->
+    <div
+      class="sticky z-30 -mx-4 sm:-mx-6 px-4 sm:px-6 py-2 mb-3 backdrop-blur-md border-b"
+      style="top: var(--ng-header-h, 4rem); background: color-mix(in srgb, var(--p-content-background) 82%, transparent); border-color: var(--p-content-border-color)"
+    >
       <IconField class="block w-full sm:w-96">
         <InputIcon class="pi pi-search" />
-        <InputText ref="searchInput" v-model="search" :placeholder="t('matches.search')" class="w-full" />
-        <InputIcon v-if="search" class="pi pi-times cursor-pointer" :aria-label="t('common.clear')" @click="search = ''" />
+        <InputText ref="searchInput" v-model="searchRaw" :placeholder="t('matches.search')" class="w-full" />
+        <InputIcon v-if="searchRaw" class="pi pi-times cursor-pointer" :aria-label="t('common.clear')" @click="searchRaw = ''" />
       </IconField>
     </div>
     <div v-if="isLoading" class="opacity-60">{{ t('common.loading') }}</div>

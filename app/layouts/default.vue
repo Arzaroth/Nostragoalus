@@ -1,6 +1,13 @@
 <script setup lang="ts">
 const { session, signOut } = useAuth()
 const { t } = useI18n()
+
+// Expose the sticky header's (variable, taller on mobile) height as a CSS var
+// so page-level sticky bars can pin right below it.
+const headerEl = ref<HTMLElement | null>(null)
+useResizeObserver(headerEl, ([entry]) => {
+  document.documentElement.style.setProperty('--ng-header-h', `${entry.target.clientHeight}px`)
+})
 const router = useRouter()
 const route = useRoute()
 const config = useRuntimeConfig()
@@ -73,6 +80,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateNavFades))
 <template>
   <div class="min-h-screen flex flex-col">
     <header
+      ref="headerEl"
       class="sticky top-0 z-50 backdrop-blur-md border-b"
       style="background: color-mix(in srgb, var(--p-content-background) 82%, transparent); border-color: var(--p-content-border-color)"
     >
