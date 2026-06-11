@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-06-11
+
 ### Changed
 - Landing showcase screenshots refreshed to the current UI, and a consensus-bot screenshot added to the carousel.
 
