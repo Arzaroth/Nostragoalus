@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- Champion pick difficulty: the points a champion pick is worth now depend on the team's FIFA world ranking at pick time - favorites pay the flat bonus, long shots up to 4x. The worth (and the team's FIFA rank) is shown on each option and locked in when you pick; the winner is paid that locked value at the final. Falls back to the flat bonus if the FIFA ranking is briefly unavailable.
+
 ## [0.20.3] - 2026-06-11
 
 ### Fixed
