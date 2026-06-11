@@ -47,10 +47,10 @@
     "privateProfile": "Profil privé",
     "privateProfileHint": "Sortez des classements généraux et par compétition. Seuls les membres de vos ligues (et les admins) voient votre profil ; vos classements de ligue vous incluent toujours. Vos pronos restent dans les totaux anonymes de la foule.",
     "odds": "Afficher les cotes",
-    "oddsHint": "Cotes 1X2 décimales sous chaque match, figées au coup d'envoi."
+    "oddsHint": "Cotes décimales 1X2 sous chaque match : 1 = victoire domicile, X = nul, 2 = victoire extérieur. Plus le nombre est bas, plus c'est probable. Figées au coup d'envoi."
   },
   "odds": {
-    "title": "Cotes bookmaker (1 / nul / 2)",
+    "title": "Cotes des bookmakers — 1 : victoire domicile, X : nul, 2 : victoire extérieur. Cotes décimales ; plus le nombre est bas, plus le résultat est probable.",
     "home": "Cote victoire domicile",
     "draw": "Cote match nul",
     "away": "Cote victoire extérieur"

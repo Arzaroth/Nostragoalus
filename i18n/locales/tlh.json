@@ -47,10 +47,10 @@
     "privateProfile": "De' pegh",
     "privateProfileHint": "patlh nIvvo' yImej. boqlIj boqwI'pu' (loHwI'pu' je) neH De'lIj lulegh; boq patlhDaq SoHtaH. ghom mImeyDaq QInmeylIj ratlh.",
     "odds": "SuD mI'mey cha'",
-    "oddsHint": "Hoch Quj bIngDaq SuD mI'mey 1X2; Quj taghDI' tlhab."
+    "oddsHint": "1X2 mI': 1 = juH Qap, X = rap, 2 = nIteb Qap. mI' machHa' law', DuH law'. may' taghDI' qon."
   },
   "odds": {
-    "title": "SuD mI'mey (1 / rap / 2)",
+    "title": "bookmaker mI' — 1: juH Qap, X: rap, 2: nIteb Qap. mI' machHa' law', DuH law'.",
     "home": "juH Qap SuD mI'",
     "draw": "rap SuD mI'",
     "away": "lengwI' Qap SuD mI'"
