@@ -15,20 +15,20 @@ const browser = await puppeteer.launch({
 
 const page = await browser.newPage()
 
-// sign in as the demo admin so prediction inputs and crowd totals render
-// ?password=1 skips the identifier-first SSO domain check and shows the password field directly
-await page.goto(`${APP}/login?password=1`, { waitUntil: 'domcontentloaded' })
-// Wait for the (client-rendered) password field before typing - otherwise we
-// type into nothing and submit an empty/identifier-only form that never auths.
-await page.waitForSelector('input[type="password"]', { timeout: 15000 })
-await page.type('input[type="email"]', 'verify@example.com')
-await page.type('input[type="password"]', 'password123')
-// networkidle0 here (not domcontentloaded): it waits for the better-auth XHR +
-// redirect so the session cookie is committed before we load gated pages. An
-// optimistic redirect-off-/login fires before the cookie lands and everything
-// then bounces back to /login.
-await Promise.all([page.keyboard.press('Enter'), page.waitForNavigation({ waitUntil: 'networkidle0', timeout: 30000 }).catch(() => {})])
-await new Promise((r) => setTimeout(r, 1000))
+// Sign in as the demo admin by calling the API from inside the page, so the
+// browser stores the session cookie natively (the login form's Enter-submit is
+// flaky headless; setting the cookie by hand misses better-auth's attributes).
+await page.goto(`${APP}/login`, { waitUntil: 'domcontentloaded' })
+const authStatus = await page.evaluate(async () => {
+  const r = await fetch('/api/auth/sign-in/email', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email: 'verify@example.com', password: 'password123' }),
+    credentials: 'include',
+  })
+  return r.status
+})
+console.log('  (sign-in status', authStatus + ')')
 
 // "Matches in full depth" needs a real match-detail page, not the fixtures
 // list: discover a finished match (prefer the final) from the API.
