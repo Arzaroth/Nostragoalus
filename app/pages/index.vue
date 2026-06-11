@@ -257,7 +257,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', layoutBanner))
       <h2 class="text-3xl font-extrabold text-center mb-2">{{ t('landing.showcaseTitle') }}</h2>
       <p class="text-center mb-8" style="color: var(--p-text-muted-color)">{{ t('landing.showcaseSub') }}</p>
       <Carousel
-        :value="['fixtures', 'match', 'ranking', 'bot', 'bracket', 'map', 'team']"
+        :value="['fixtures', 'match', 'ranking', 'bot', 'leagues', 'bracket', 'map', 'team']"
         :num-visible="1"
         :num-scroll="1"
         circular
