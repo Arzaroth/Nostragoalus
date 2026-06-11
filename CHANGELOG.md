@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [0.20.3] - 2026-06-11
+
 ### Fixed
 - Anchor links (e.g. the footer version jump) no longer land under the sticky header - hash navigation is offset by the header height.
 
