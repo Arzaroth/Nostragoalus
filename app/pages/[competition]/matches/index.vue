@@ -93,10 +93,7 @@ useHotkey('Mod+F', () => searchInput.value?.$el?.focus({ preventScroll: true }))
     <!-- Pins just below the app header (whose height varies on mobile) so it
          stays in view while scrolling the fixtures, and Mod+F focuses it without
          yanking the page. Also a normal visible field for non-keyboard users. -->
-    <div
-      class="sticky z-30 -mx-4 sm:-mx-6 px-4 sm:px-6 py-2 mb-3 backdrop-blur-md border-b"
-      style="top: var(--ng-header-h, 4rem); background: color-mix(in srgb, var(--p-content-background) 82%, transparent); border-color: var(--p-content-border-color)"
-    >
+    <div class="sticky z-30 py-2 mb-3" style="top: var(--ng-header-h, 4rem)">
       <IconField class="block w-full sm:w-96">
         <InputIcon class="pi pi-search" />
         <InputText ref="searchInput" v-model="searchRaw" :placeholder="t('matches.search')" class="w-full" />
