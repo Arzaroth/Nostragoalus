@@ -5,6 +5,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Changed
+- The About page lists each dependency separately, each with its own one-line description.
+
+### Fixed
+- The `create-admin`, `roadmap-seed` and `roadmap-add` CLI tasks work on a production host now - they connect to the dockerized database directly instead of needing a local install.
+
 ## [1.1.1] - 2026-06-12
 
 ### Added
