@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-06-12
+
 ### Changed
 - The About page lists each dependency separately, each with its own one-line description.
 
