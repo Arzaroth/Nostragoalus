@@ -9,12 +9,11 @@
 // argument, so it stays out of shell history and the process list. Idempotent.
 import { createInterface } from 'node:readline'
 import { stdin, stdout } from 'node:process'
-import pg from 'pg'
+import { execFileSync } from 'node:child_process'
 
 const email = process.env.usage_email
 const name = (process.env.usage_name || '').trim() || (email ? email.split('@')[0] : '')
 const APP = process.env.APP_URL ?? 'http://localhost:3000'
-const DB = process.env.DATABASE_URL ?? 'postgres://nostragoalus:nostragoalus@localhost:5432/nostragoalus'
 
 if (!email) {
   console.error('usage: mise run create-admin <email> [name]')
@@ -83,15 +82,23 @@ if (res.ok) {
 // 2. Promote to admin in the DB. Admin accounts start hidden from the
 // leaderboard (they run the game, they don't compete); an admin can unhide
 // any account from /admin later.
-const client = new pg.Client(DB)
-await client.connect()
-const { rowCount } = await client.query(
-  `UPDATE "user" SET role = 'admin', hidden_from_leaderboard = true WHERE lower(email) = lower($1)`,
-  [email],
+// psql via docker (like db-backup) so this needs no node_modules on a prod host.
+// :'email' is psql's quoted-literal interpolation (no hand-built SQL); RETURNING
+// + -tA prints one id per updated row, so empty output means nothing matched.
+const out = execFileSync(
+  'docker',
+  [
+    'compose', 'exec', '-T', 'db',
+    'psql', '-U', 'nostragoalus', '-d', 'nostragoalus', '-tA',
+    '-v', 'ON_ERROR_STOP=1',
+    '-v', `email=${email}`,
+  ],
+  {
+    input: `UPDATE "user" SET role = 'admin', hidden_from_leaderboard = true WHERE lower(email) = lower(:'email') RETURNING id;`,
+    encoding: 'utf8',
+  },
 )
-await client.end()
-
-if (rowCount === 0) {
+if (!out.trim()) {
   console.error(`no user row for ${email} - sign-up did not create one; nothing promoted`)
   process.exit(1)
 }
