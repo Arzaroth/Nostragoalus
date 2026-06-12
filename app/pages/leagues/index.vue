@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const { t } = useI18n()
+useHead({ title: t('leagues.title') })
 const route = useRoute()
 const router = useRouter()
 const mine = useMyLeagues()

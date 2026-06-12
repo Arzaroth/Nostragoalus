@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useQueryClient } from '@tanstack/vue-query'
 const { t } = useI18n()
+useHead({ title: t('leaderboard.title') })
 const slug = useSelectedCompetition()
 const { league, leagueId } = useSelectedLeague()
 

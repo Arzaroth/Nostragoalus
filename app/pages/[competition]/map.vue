@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const { t } = useI18n()
+useHead({ title: t('nav.map') })
 const slug = useSelectedCompetition()
 const { data: teamsData } = await useFetch<{ teams: { code: string; name: string }[] }>('/api/competitions/teams', {
   query: computed(() => (slug.value ? { competition: slug.value } : {})),

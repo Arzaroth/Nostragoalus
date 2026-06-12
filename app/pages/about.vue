@@ -4,6 +4,7 @@ import DOMPurify from 'isomorphic-dompurify'
 import changelogRaw from '../../CHANGELOG.md?raw'
 
 const { t } = useI18n()
+useHead({ title: t('about.title') })
 const { isDark } = useTheme()
 
 function logoSrc(item: StackItem): string {

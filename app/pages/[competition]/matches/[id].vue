@@ -48,6 +48,7 @@ useCancelOnLeave(
 )
 
 const m = computed(() => data.value?.match)
+useHead({ title: () => (m.value ? `${m.value.homeTeam} – ${m.value.awayTeam}` : t('nav.matches')) })
 const { live } = useLiveMatch(id)
 const { enabled: crowdEnabled, totals: crowdTotals, leagueTotals, leagueActive } = useCrowdTotals()
 const oddsEnabled = useOddsPreference()
