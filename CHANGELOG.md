@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-06-12
+
 ### Added
 - `mise run roadmap-seed`: bootstrap the public roadmap with a curated starter set (idempotent - skips a roadmap that already has items).
 
