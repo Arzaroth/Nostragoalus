@@ -5,6 +5,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- Every page now sets a proper browser-tab title (e.g. "Matches · Nostragoalus", or "Korea Republic – Czechia" on a match), instead of every tab reading "Nostragoalus".
+- The live match view shows the running clock under the score ("61'", or "HT" at the break) next to the live indicator.
+
+### Fixed
+- During a live match the goal timeline, stats and possession now update from live data - they previously only filled in once the match finished.
+- The possession bar accounts for contested possession (an "in contest" segment), so the two sides add up to 100%.
+
 ## [1.1.2] - 2026-06-12
 
 ### Changed
