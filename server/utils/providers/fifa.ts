@@ -285,13 +285,16 @@ export function normalizeFifaMatchDetail(detail: FifaMatchDetailResponse): Match
     ['AWAY', detail.AwayTeam],
   ] as const) {
     for (const sub of team?.Substitutions ?? []) {
+      // FIFA briefly emits a fresh sub with empty inline name arrays before the
+      // names attach; the bench player is already in the roster, so fall back to
+      // that id->name map to avoid a transient "?".
       substitutions.push({
         side,
         minute: sub.Minute ?? null,
         playerOffId: sub.IdPlayerOff ?? null,
-        playerOffName: sub.PlayerOffName?.[0]?.Description ?? '?',
+        playerOffName: sub.PlayerOffName?.[0]?.Description || (sub.IdPlayerOff && names.get(sub.IdPlayerOff)) || '?',
         playerOnId: sub.IdPlayerOn ?? null,
-        playerOnName: sub.PlayerOnName?.[0]?.Description ?? '?',
+        playerOnName: sub.PlayerOnName?.[0]?.Description || (sub.IdPlayerOn && names.get(sub.IdPlayerOn)) || '?',
       })
     }
   }
