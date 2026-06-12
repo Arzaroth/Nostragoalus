@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import type { RoadmapItem, RoadmapStatus } from '../composables/useRoadmap'
+import type { RoadmapStatus } from '../composables/useRoadmap'
+import { groupByStatus } from '../composables/useRoadmap'
 
 const { t } = useI18n()
-const { data: items, isPending } = useRoadmap()
+const { data: items, isPending, isError } = useRoadmap()
 
 // Display order: what's moving first, then the queue, then the trophy shelf.
 const sections: Array<{ status: RoadmapStatus; key: string; icon: string; severity: string }> = [
@@ -10,11 +11,7 @@ const sections: Array<{ status: RoadmapStatus; key: string; icon: string; severi
   { status: 'PLANNED', key: 'roadmap.planned', icon: 'pi pi-clock', severity: 'secondary' },
   { status: 'SHIPPED', key: 'roadmap.shipped', icon: 'pi pi-check-circle', severity: 'success' },
 ]
-const byStatus = computed(() => {
-  const groups: Record<RoadmapStatus, RoadmapItem[]> = { PLANNED: [], IN_PROGRESS: [], SHIPPED: [] }
-  for (const item of items.value ?? []) groups[item.status].push(item)
-  return groups
-})
+const byStatus = computed(() => groupByStatus(items.value))
 
 useHead({ title: t('roadmap.title') })
 </script>
@@ -27,6 +24,7 @@ useHead({ title: t('roadmap.title') })
     </div>
 
     <div v-if="isPending" class="opacity-60">{{ t('common.loading') }}</div>
+    <div v-else-if="isError" class="opacity-60">{{ t('roadmap.error') }}</div>
 
     <template v-else>
       <section

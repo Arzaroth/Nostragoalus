@@ -375,7 +375,8 @@
       "save": "yIchoq",
       "delete": "yIQaw'",
       "moveUp": "yISal",
-      "moveDown": "yIghIr"
+      "moveDown": "yIghIr",
+      "actionFailed": "Qagh - yInID."
     },
     "sso": {
       "title": "SSO",
@@ -550,7 +551,8 @@
     "planned": "nablu'",
     "inProgress": "chenmoHlu'taH",
     "shipped": "rInpu'",
-    "empty": "pagh naDev tu'lu'."
+    "empty": "pagh naDev tu'lu'.",
+    "error": "DaH He vI'ang laHbe'."
   },
   "footer": {
     "builtWith": "🇫🇷 vo' ♥️ lo'taHvIS chenmoHlu'",

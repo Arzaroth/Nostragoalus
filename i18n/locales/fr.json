@@ -375,7 +375,8 @@
       "save": "Enregistrer",
       "delete": "Supprimer",
       "moveUp": "Monter",
-      "moveDown": "Descendre"
+      "moveDown": "Descendre",
+      "actionFailed": "L'action a échoué - réessaie."
     },
     "sso": {
       "title": "Authentification unique (SSO)",
@@ -550,7 +551,8 @@
     "planned": "Prévu",
     "inProgress": "En cours",
     "shipped": "Livré",
-    "empty": "Rien ici pour l'instant."
+    "empty": "Rien ici pour l'instant.",
+    "error": "Impossible de charger la feuille de route pour le moment."
   },
   "footer": {
     "builtWith": "Fait avec ♥️ depuis la 🇫🇷",
