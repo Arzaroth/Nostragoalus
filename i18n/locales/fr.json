@@ -67,7 +67,11 @@
   "home": {
     "tagline": "Pronostiquez les scores, gagnez des points selon votre précision, et devancez vos amis au classement global.",
     "getStarted": "Commencer",
-    "goToMatches": "Voir les matchs"
+    "goToMatches": "Voir les matchs",
+    "nextCta": {
+      "title": "Prochain match",
+      "pick": "Faire votre prono"
+    }
   },
   "landing": {
     "badge": "En direct pour la Coupe du Monde 2026",

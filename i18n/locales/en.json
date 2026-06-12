@@ -67,7 +67,11 @@
   "home": {
     "tagline": "Predict football scores, earn points for how close you get, and out-foresee your friends on the global ranking.",
     "getStarted": "Get started",
-    "goToMatches": "Go to matches"
+    "goToMatches": "Go to matches",
+    "nextCta": {
+      "title": "Next match",
+      "pick": "Make your pick"
+    }
   },
   "landing": {
     "badge": "Live for the 2026 World Cup",

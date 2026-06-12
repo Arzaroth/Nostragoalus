@@ -67,7 +67,11 @@
   "home": {
     "tagline": "QujmeH qonwI' wIvmey yIqon, pup DanIDmo' QuQmey yISuq, 'ej patlhDaq juppu'lI' tIjey.",
     "getStarted": "yItagh",
-    "goToMatches": "may'meyDaq yIghoS"
+    "goToMatches": "may'meyDaq yIghoS",
+    "nextCta": {
+      "title": "may' veb",
+      "pick": "yInoH"
+    }
   },
   "landing": {
     "badge": "qo' HIvje' 2026 - DaH qaSlI'",
