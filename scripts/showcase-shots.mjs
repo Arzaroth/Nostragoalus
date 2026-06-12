@@ -70,9 +70,9 @@ const SHOTS = [
   { name: 'map', clickThrough: true, wait: 2500, selector: '.leaflet-tile-loaded' },
   { name: 'ranking', path: '/world-cup-2022/leaderboard', wait: 2500 },
   { name: 'bot', path: '/world-cup-2022/bot', wait: 3000 },
-  // ng-competition cookie makes the public-leagues browser default to WC 2026,
-  // which has a real public league to show.
-  { name: 'leagues', path: '/leagues', wait: 2500, cookies: [{ name: 'ng-competition', value: 'world-cup-2026' }] },
+  // Clear the last-competition cookie an earlier shot set so the public-leagues
+  // browser falls back to the default (WC 2026, which has a public league).
+  { name: 'leagues', path: '/leagues', wait: 2500, clearCookie: 'ng-competition' },
   // a group-stage team (3 games) so the squad/stats show, not a long history.
   { name: 'team', path: '/euro-2024/teams/CRO', wait: 4000 },
 ]
@@ -82,7 +82,7 @@ for (const shot of SHOTS) {
   if (only && shot.name !== only) continue
   try {
     await page.setViewport(shot.viewport ?? VIEWPORT)
-    if (shot.cookies) for (const c of shot.cookies) await page.setCookie({ ...c, domain: 'localhost', path: '/' })
+    if (shot.clearCookie) await page.deleteCookie({ name: shot.clearCookie, url: APP })
     if (shot.clickThrough) {
       // The .client map only mounts on client-side navigation. Launch the SPA
       // from the bracket page (no live WebSocket - hydrates fast and reliably),
@@ -110,9 +110,12 @@ for (const shot of SHOTS) {
     if (shot.clickThrough) {
       await page.click(`.leaflet-marker-icon img[src*='FRA']`).catch(() => console.log('  (FRA marker not found)'))
     }
-    // Hide the Admin nav item - the demo user is an admin, but the showcase
-    // should look like an ordinary player's view.
-    await page.addStyleTag({ content: 'a[href$="/admin"]{display:none !important}' }).catch(() => {})
+    // Hide the Admin nav item (the demo user is an admin, but the showcase
+    // should read as an ordinary player's view) and the dev-only Nuxt DevTools
+    // tab (the app runs in dev mode for capture).
+    await page
+      .addStyleTag({ content: 'a[href$="/admin"]{display:none !important} #nuxt-devtools-anchor,#nuxt-devtools-container,nuxt-devtools-inspect-panel{display:none !important}' })
+      .catch(() => {})
     await new Promise((r) => setTimeout(r, shot.wait))
 
     // Capture both themes from the one load (toggle the .app-dark class).
