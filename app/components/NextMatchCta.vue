@@ -71,6 +71,9 @@ watch(scrollY, (y) => {
 const showNext = computed(() => authed.value && !!next.value && dismissedNextId.value !== next.value.id)
 const showLive = computed(() => authed.value && !!liveKey.value && dismissedLiveId.value !== liveKey.value)
 const matchesLink = computed(() => `/${last.value}/matches`)
+// Land on the matches page scrolled to this fixture (rows carry match-<id>
+// anchors; router.options offsets hash scrolls under the sticky header).
+const pickLink = computed(() => (next.value ? `${matchesLink.value}#match-${next.value.id}` : matchesLink.value))
 const liveLink = computed(() => (live.value ? `/${last.value}/matches/${live.value.id}` : matchesLink.value))
 </script>
 
@@ -122,7 +125,7 @@ const liveLink = computed(() => (live.value ? `/${last.value}/matches/${live.val
           {{ next.awayTeam }}
         </span>
         <Countdown :to="next.kickoffTime" />
-        <NuxtLink :to="matchesLink">
+        <NuxtLink :to="pickLink">
           <Button :label="t('home.nextCta.pick')" size="small" icon="pi pi-arrow-right" icon-pos="right" />
         </NuxtLink>
       </div>

@@ -7,6 +7,18 @@ const oddsEnabled = useOddsPreference()
 const slug = useSelectedCompetition()
 const { data: matches, isLoading } = useMatches()
 useLiveMatches(matches)
+
+// Hash anchors (e.g. the home page's next-match CTA) point at rows that only
+// exist once the query resolves - the router's scroll fires too early, so
+// re-scroll when the list is first rendered. scrollIntoView honors the rows'
+// scroll-margin-top, unlike the router's hash scroll.
+const route = useRoute()
+const stopHashScroll = watch(matches, async (list) => {
+  if (!list?.length || !route.hash.startsWith('#match-')) return
+  stopHashScroll()
+  await nextTick()
+  document.getElementById(route.hash.slice(1))?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}, { immediate: true })
 const { data: predictions } = useMyPredictions()
 const { upsert, setJoker } = usePredictionMutations()
 
@@ -141,9 +153,10 @@ useHotkey('Mod+F', openSearch)
         <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <div
             v-for="m in g.items"
+            :id="`match-${m.id}`"
             :key="m.id"
             class="ng-card rounded-2xl border p-4 flex flex-col gap-3"
-            style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
+            style="background: var(--p-content-background); border-color: var(--p-content-border-color); scroll-margin-top: calc(var(--ng-header-h, 64px) + 16px)"
           >
             <NuxtLink :to="`/${slug}/matches/${m.id}`" class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 group">
               <div class="flex items-center gap-2 min-w-0">
