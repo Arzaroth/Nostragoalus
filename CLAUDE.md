@@ -62,6 +62,12 @@
   Added / Changed / Fixed, user-facing wording). The release fails on an empty
   one.
 - Bump **minor** for a user-facing feature, **patch** for fix-only.
+- Bump **major** only when a release breaks the deploy/run contract (a
+  destructive/irreversible migration, a new required service/env var, an
+  auth-provider or DB-engine swap, single- to multi-instance) or shifts the
+  product's identity (multi-sport pivot, a scoring overhaul that resets points).
+  A library/framework swap alone is not major if how you build, run and deploy
+  it is unchanged.
 - Pre-release: stop `app-dev` and the working tree must be clean. The release
   only writes the tag and pushes - the user owns the actual prod deploy (and the
   prod roadmap update).
