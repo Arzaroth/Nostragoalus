@@ -26,7 +26,11 @@ const { data: matches } = useQuery<MatchListItem[]>({
     }).then((r) => r.matches),
 })
 
-const live = computed(() => (matches.value ?? []).find(isLive) ?? null)
+const liveMatches = computed(() => (matches.value ?? []).filter(isLive))
+// One live match gets the detailed score pill; simultaneous kickoffs (group
+// stage final rounds) collapse to a count linking to the matches list.
+const live = computed(() => (liveMatches.value.length === 1 ? liveMatches.value[0]! : null))
+const liveCount = computed(() => liveMatches.value.length)
 
 const now = useTimestamp({ interval: 60_000 })
 const next = computed(
@@ -47,20 +51,25 @@ const dismissedNextId = ref<string | null>(import.meta.client ? sessionStorage.g
 const dismissedLiveId = ref<string | null>(import.meta.client ? sessionStorage.getItem(LIVE_KEY) : null)
 const { y: scrollY } = useWindowScroll()
 const faded = computed(() => Math.min(1, scrollY.value / 240))
+// Dismissal key for the live pill: the (sorted) id set, so a new simultaneous
+// batch - or a different single match - gets its own shot.
+const liveKey = computed(() =>
+  liveMatches.value.map((m) => m.id).sort().join('+') || null,
+)
 watch(scrollY, (y) => {
   if (y <= 240) return
   if (next.value && dismissedNextId.value !== next.value.id) {
     dismissedNextId.value = next.value.id
     sessionStorage.setItem(NEXT_KEY, next.value.id)
   }
-  if (live.value && dismissedLiveId.value !== live.value.id) {
-    dismissedLiveId.value = live.value.id
-    sessionStorage.setItem(LIVE_KEY, live.value.id)
+  if (liveKey.value && dismissedLiveId.value !== liveKey.value) {
+    dismissedLiveId.value = liveKey.value
+    sessionStorage.setItem(LIVE_KEY, liveKey.value)
   }
 })
 
 const showNext = computed(() => authed.value && !!next.value && dismissedNextId.value !== next.value.id)
-const showLive = computed(() => authed.value && !!live.value && dismissedLiveId.value !== live.value.id)
+const showLive = computed(() => authed.value && !!liveKey.value && dismissedLiveId.value !== liveKey.value)
 const matchesLink = computed(() => `/${last.value}/matches`)
 const liveLink = computed(() => (live.value ? `/${last.value}/matches/${live.value.id}` : matchesLink.value))
 </script>
@@ -73,7 +82,7 @@ const liveLink = computed(() => (live.value ? `/${last.value}/matches/${live.val
   >
     <Transition name="next-cta">
       <div
-        v-if="showLive && live"
+        v-if="showLive"
         class="flex items-center gap-3 rounded-2xl border px-4 py-2.5 shadow-lg text-sm whitespace-nowrap"
         style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
         role="complementary"
@@ -83,13 +92,14 @@ const liveLink = computed(() => (live.value ? `/${last.value}/matches/${live.val
           <span class="w-1.5 h-1.5 rounded-full animate-pulse" style="background: var(--ng-danger)" />
           {{ t('home.nextCta.live') }}
         </span>
-        <span class="flex items-center gap-1.5 font-semibold">
+        <span v-if="live" class="flex items-center gap-1.5 font-semibold">
           <img v-if="flagUrl(live.homeTeamCode)" :src="flagUrl(live.homeTeamCode) || ''" class="w-5 h-3.5 rounded-sm object-cover" alt="" >
           {{ live.homeTeam }}
           <span>{{ live.fullTimeHome ?? 0 }} - {{ live.fullTimeAway ?? 0 }}</span>
           <img v-if="flagUrl(live.awayTeamCode)" :src="flagUrl(live.awayTeamCode) || ''" class="w-5 h-3.5 rounded-sm object-cover" alt="" >
           {{ live.awayTeam }}
         </span>
+        <span v-else class="font-semibold">{{ t('home.nextCta.liveMany', { n: liveCount }) }}</span>
         <NuxtLink :to="liveLink">
           <Button :label="t('home.nextCta.watch')" size="small" severity="danger" icon="pi pi-bolt" icon-pos="right" />
         </NuxtLink>
