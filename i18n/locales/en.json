@@ -278,6 +278,8 @@
     "form": "Form",
     "next": "Next",
     "h2h": "Head-to-head",
+    "playByPlay": "Play-by-play",
+    "playByPlayEmpty": "No play-by-play for this match yet.",
     "scorers": "Top scorers",
     "players": "Players",
     "assists": "Top assists",

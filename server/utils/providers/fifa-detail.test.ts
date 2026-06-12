@@ -7,6 +7,7 @@ import {
   normalizeFifaBracket,
   normalizeFifaMatch,
   normalizeFifaMatchDetail,
+  normalizeFifaTimeline,
   normalizeFifaPlayerStats,
   normalizeFifaSquad,
   normalizeFifaCoach,
@@ -127,6 +128,59 @@ describe('normalizeFifaMatchDetail', () => {
     expect(d.attendance).toBe(88966)
     expect(d.stadium).toBe('Lusail Stadium')
     expect(d.cards).toEqual({ home: { yellow: 2, red: 1 }, away: { yellow: 1, red: 1 } })
+  })
+})
+
+describe('normalizeFifaTimeline', () => {
+  const desc = (s: string) => [{ Locale: 'en-GB', Description: s }]
+
+  it('keeps only curated events, maps sides, and reverses to newest-first', () => {
+    const events = normalizeFifaTimeline(
+      {
+        Event: [
+          { Type: 7, MatchMinute: "1'", EventDescription: desc('Kick-off.') },
+          { Type: 18, MatchMinute: "3'", IdTeam: 'H', EventDescription: desc('Foul.') }, // noise, dropped
+          { Type: 0, MatchMinute: "23'", IdTeam: 'H', HomeGoals: 1, AwayGoals: 0, EventDescription: desc('SCORER scores!') },
+          { Type: 2, MatchMinute: "30'", IdTeam: 'A', EventDescription: desc('BOOKED is booked.') },
+          { Type: 5, MatchMinute: "60'", IdTeam: 'X', EventDescription: desc('Sub for a neutral team.') },
+        ],
+      },
+      'H',
+      'A',
+    )
+    expect(events.map((e) => [e.kind, e.side, e.minute])).toEqual([
+      ['sub', null, "60'"], // IdTeam X matches neither home nor away -> null side
+      ['yellow', 'AWAY', "30'"],
+      ['goal', 'HOME', "23'"],
+      ['period', null, "1'"],
+    ])
+    expect(events.find((e) => e.kind === 'goal')).toMatchObject({ homeScore: 1, awayScore: 0, text: 'SCORER scores!' })
+  })
+
+  it('drops events with no type or no description, and defaults a missing minute', () => {
+    expect(normalizeFifaTimeline({ Event: [{ Type: 0, MatchMinute: "5'", EventDescription: [] }] })).toEqual([])
+    expect(normalizeFifaTimeline({ Event: [{ EventDescription: desc('No type, dropped.') }] })).toEqual([])
+    expect(normalizeFifaTimeline({})).toEqual([])
+    // A kept event with neither minute nor team id: minute null, side null.
+    expect(normalizeFifaTimeline({ Event: [{ Type: 71, EventDescription: desc('VAR check.') }] })).toEqual([
+      { kind: 'var', side: null, minute: null, text: 'VAR check.', homeScore: null, awayScore: null },
+    ])
+  })
+})
+
+describe('fifaProvider.getMatchTimeline', () => {
+  const noWait = () => new RateLimiter(0)
+
+  it('fetches, normalizes and resolves sides from the passed team ids', async () => {
+    const payload = {
+      Event: [
+        { Type: 0, MatchMinute: "10'", IdTeam: 'home-id', HomeGoals: 1, AwayGoals: 0, EventDescription: [{ Locale: 'en', Description: 'Goal!' }] },
+      ],
+    }
+    const fetchImpl = (async () => new Response(JSON.stringify(payload), { status: 200 })) as unknown as typeof fetch
+    const provider = fifaProvider({ seasonId: '255711', competitionId: '17', fetchImpl, rateLimiter: noWait() })
+    const events = await provider.getMatchTimeline!({ matchId: 'm1', homeTeamId: 'home-id', awayTeamId: 'away-id' })
+    expect(events).toEqual([{ kind: 'goal', side: 'HOME', minute: "10'", text: 'Goal!', homeScore: 1, awayScore: 0 }])
   })
 })
 
