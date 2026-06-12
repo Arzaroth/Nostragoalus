@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-06-13
+
 ### Added
 - A "next match" prompt on the landing page: when you're signed in, it surfaces your next fixture with a countdown and a one-tap jump to its pick, plus a live-now pill (a count when several matches are in play) that deep-links straight into the action. Scroll past or follow it to dismiss.
 - Status filter chips on the fixtures page (full-time / live / upcoming) with a clear "Full-time" label; the landing live pill deep-links here pre-filtered to live and scrolled to the match.
