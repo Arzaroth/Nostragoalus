@@ -12,11 +12,22 @@
 - The gate before any merge: `pnpm typecheck`, `pnpm test:coverage` (98%
   thresholds, enforced), `pnpm test:components`. Beware zsh pipelines masking
   exit codes (`typecheck | tail` reports success) - `set -o pipefail` or check
-  steps separately.
+  steps separately. The 98% gate covers `server/utils`, `shared`, `app/utils`
+  (not `server/api` routes or pages) - that's why logic lives in services: keep
+  routes/pages thin enough to not need direct coverage.
+- A finished feature branch goes through feature-treatment (rebase -> max-effort
+  parallel review -> fix -> gate -> merge -> release -> remove the worktree).
+  Nothing merges without that adversarial review and a green gate.
 - async/await + try/catch, not `.then/.catch`. Comments explain WHY only, and
   rarely - never narrate code or talk to the reviewer.
 - Commit frequently and focused (conventional commits); each slice should be
   revertable on its own.
+- Never use em-dashes (the `—` character) anywhere: prose, comments, commit
+  messages, changelog, roadmap copy. Use a spaced hyphen ` - `, a colon, or two
+  sentences.
+- Never assume the deployed/prod version or state - the user runs the deploy and
+  you have no server access. Check `https://goal.arzaroth.com/about` for the live
+  version, or ask. Don't claim "prod is behind".
 
 ## Conventions (match the existing shape)
 
@@ -36,6 +47,24 @@
 - Local stack: `mise run dev` (HMR) / `mise run preview` (prod-target build,
   what you use to demo a branch). Worktree previews need `.env` copied from
   the main checkout or auth 500s on the default secret.
+- mise tasks must run on a prod host with only the built app (no `node_modules`):
+  talk to Postgres via `docker compose exec -T db psql`, not the `pg` module.
+  Never build SQL by string concat in a task - pass values as psql `-v` vars and
+  interpolate with `:'var'` (psql quotes/escapes), and run via `execFileSync`
+  (no shell) so there's no shell-quoting injection either.
+
+## Releases
+
+- Cut releases with `mise run release <x.y.z>`: it moves CHANGELOG `[Unreleased]`
+  into a dated section, bumps `package.json`, runs the full gate, tags, and
+  pushes.
+- Keep `CHANGELOG.md` `[Unreleased]` populated as you work (Keep a Changelog:
+  Added / Changed / Fixed, user-facing wording). The release fails on an empty
+  one.
+- Bump **minor** for a user-facing feature, **patch** for fix-only.
+- Pre-release: stop `app-dev` and the working tree must be clean. The release
+  only writes the tag and pushes - the user owns the actual prod deploy (and the
+  prod roadmap update).
 
 ## Keep the planning docs current as you work
 
