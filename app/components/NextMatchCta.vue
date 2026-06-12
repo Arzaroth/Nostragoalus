@@ -15,7 +15,7 @@ const isLive = (m: MatchListItem) => m.status === 'LIVE' || m.status === 'PAUSED
 // useMatches (route-derived slug); same endpoint, last-used competition.
 // While a match is live, poll so the pill's score doesn't fossilize (the WS
 // patcher is bound to the route-derived cache key, not this one).
-const { data: matches } = useQuery({
+const { data: matches } = useQuery<MatchListItem[]>({
   queryKey: ['next-match', last],
   enabled: authed,
   refetchInterval: (query) => ((query.state.data ?? []).some(isLive) ? 60_000 : false),
