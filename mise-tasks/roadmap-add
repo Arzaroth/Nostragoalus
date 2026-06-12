@@ -1,0 +1,36 @@
+#!/usr/bin/env -S node
+//MISE description="Add an item to the public roadmap (direct DB insert)"
+//USAGE arg "<title>" help="Item title (3-120 chars)"
+//USAGE arg "[description]" help="Optional description"
+//USAGE flag "-s --status <status>" help="PLANNED (default), IN_PROGRESS or SHIPPED"
+
+import { randomUUID } from 'node:crypto'
+import pg from 'pg'
+
+const title = (process.env.usage_title || '').trim()
+const description = (process.env.usage_description || '').trim() || null
+const status = (process.env.usage_status || 'PLANNED').toUpperCase()
+const DB = process.env.DATABASE_URL ?? 'postgres://nostragoalus:nostragoalus@localhost:5432/nostragoalus'
+
+const STATUSES = ['PLANNED', 'IN_PROGRESS', 'SHIPPED']
+if (title.length < 3 || title.length > 120) {
+  console.error('usage: mise run roadmap-add <title> [description] [-s status] - title must be 3-120 chars')
+  process.exit(1)
+}
+if (!STATUSES.includes(status)) {
+  console.error(`status must be one of: ${STATUSES.join(', ')}`)
+  process.exit(1)
+}
+
+const client = new pg.Client({ connectionString: DB })
+await client.connect()
+try {
+  const { rows } = await client.query('SELECT COALESCE(MAX(position), -1) + 1 AS next FROM roadmap_item WHERE status = $1', [status])
+  const { rows: inserted } = await client.query(
+    'INSERT INTO roadmap_item (id, title, description, status, position) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+    [randomUUID(), title, description, status, rows[0].next],
+  )
+  console.log(`added roadmap item ${inserted[0].id} [${status}] ${title}`)
+} finally {
+  await client.end()
+}
