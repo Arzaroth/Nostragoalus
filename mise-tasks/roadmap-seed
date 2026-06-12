@@ -1,0 +1,53 @@
+#!/usr/bin/env -S node
+//MISE description="Seed the public roadmap with a curated starter set (idempotent)"
+//USAGE flag "--force" help="Insert even if the roadmap table is not empty"
+
+// One-time bootstrap so a fresh deploy's /roadmap isn't empty. After this the
+// roadmap is managed from the admin panel - editing this seed only affects a
+// fresh (still-empty) table, not a roadmap that already has items.
+import { randomUUID } from 'node:crypto'
+import pg from 'pg'
+
+const force = process.env.usage_force === 'true'
+const DB = process.env.DATABASE_URL ?? 'postgres://nostragoalus:nostragoalus@localhost:5432/nostragoalus'
+
+// Curated, public-facing subset of ROADMAP.md (internal notes stay internal).
+// Order within a status = display order (position).
+const ITEMS = [
+  { status: 'IN_PROGRESS', title: 'Public roadmap', description: 'This page - admin-curated, so you can see what we are building.' },
+  { status: 'PLANNED', title: 'Auto-refresh on new version', description: 'A "new version available" prompt when the app updates, so you are never on a stale build.' },
+  { status: 'PLANNED', title: 'League invite links', description: 'Share a link to join your league, with optional expiry and a max number of uses.' },
+  { status: 'PLANNED', title: 'New-since-last-visit changelog', description: 'A badge on the changelog highlighting what shipped since you last looked.' },
+  { status: 'PLANNED', title: 'Calendar feed', description: 'Subscribe to fixtures and pick-lockout deadlines from your own calendar app (iCal).' },
+  { status: 'PLANNED', title: 'Pick reminders & web push', description: 'Installable app with notifications: lockout reminders for missing picks and goal alerts on your matches.' },
+  { status: 'PLANNED', title: 'Tournament Wrapped', description: 'An end-of-competition recap - best and worst pick, joker efficiency, your percentile - with a shareable card.' },
+  { status: 'PLANNED', title: 'Personal & what-if stats', description: 'See where a joker would have helped, how you compare to the crowd, and your prediction biases.' },
+]
+
+const client = new pg.Client({ connectionString: DB })
+await client.connect()
+try {
+  const { rows } = await client.query('SELECT COUNT(*)::int AS n FROM roadmap_item')
+  if (rows[0].n > 0 && !force) {
+    console.log(`roadmap already has ${rows[0].n} item(s) - skipping (pass --force to seed anyway)`)
+    process.exit(0)
+  }
+  // position is per-status; restart the counter for each column.
+  const next = {}
+  let added = 0
+  for (const it of ITEMS) {
+    const pos = next[it.status] ?? 0
+    next[it.status] = pos + 1
+    await client.query('INSERT INTO roadmap_item (id, title, description, status, position) VALUES ($1, $2, $3, $4, $5)', [
+      randomUUID(),
+      it.title,
+      it.description,
+      it.status,
+      pos,
+    ])
+    added += 1
+  }
+  console.log(`seeded ${added} roadmap item(s)`)
+} finally {
+  await client.end()
+}
