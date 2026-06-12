@@ -195,9 +195,9 @@
     "search": "ค้นหาทีม…",
     "noResults": "ไม่พบแมตช์",
     "filterStatus": {
-      "upcoming": "ยังไม่แข่ง",
+      "fulltime": "จบแล้ว",
       "live": "กำลังแข่ง",
-      "finished": "จบแล้ว"
+      "upcoming": "ยังไม่แข่ง"
     }
   },
   "team": {

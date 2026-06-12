@@ -195,9 +195,9 @@
     "search": "ghom yISam…",
     "noResults": "may' tu'be'lu'.",
     "filterStatus": {
-      "upcoming": "pIq",
+      "fulltime": "rInpu'",
       "live": "DaH qaSlI'",
-      "finished": "rInpu'"
+      "upcoming": "pIq"
     }
   },
   "team": {

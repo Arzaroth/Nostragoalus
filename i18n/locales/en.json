@@ -195,9 +195,9 @@
     "search": "Search a team…",
     "noResults": "No matches found.",
     "filterStatus": {
-      "upcoming": "Upcoming",
+      "fulltime": "Full-time",
       "live": "Live",
-      "finished": "Finished"
+      "upcoming": "Upcoming"
     }
   },
   "team": {
