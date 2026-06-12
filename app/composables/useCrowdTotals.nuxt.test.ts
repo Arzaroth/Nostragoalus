@@ -51,11 +51,20 @@ beforeEach(async () => {
   })
   vi.stubGlobal('$fetch', fetchMock)
 })
-afterEach(() => vi.unstubAllGlobals())
+// Unmount between tests: a leaked component keeps its query observer alive,
+// and the next test's beforeEach slug reset makes it refetch into that test's
+// fresh fetch mock (flaked under parallel load once the suite grew).
+let mounted: Array<{ unmount: () => void }> = []
+afterEach(() => {
+  for (const w of mounted) w.unmount()
+  mounted = []
+  vi.unstubAllGlobals()
+})
 
 async function setup() {
   let api!: ReturnType<typeof useCrowdTotals>
-  await mountSuspended({ setup() { api = useCrowdTotals(); return () => null } })
+  const wrapper = await mountSuspended({ setup() { api = useCrowdTotals(); return () => null } })
+  mounted.push(wrapper)
   return api
 }
 
