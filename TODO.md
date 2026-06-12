@@ -63,6 +63,11 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       cache key (the landing page has no competition route param) and polls
       every 60s during live matches; the WS patcher only feeds
       ['matches', slug]. Unify the keys or subscribe the CTA to the socket.
+- [ ] STATUS_BUCKETS (matches/index.vue) is a third MatchStatus grouping that can
+      drift from statusSeverity/matchStatusLabel (format.ts), and isLive is
+      hand-redefined in NextMatchCta/map/matches[id] (a 4th, exclusion-based copy
+      lives in useLiveMatches). Centralise the status -> bucket/severity/isLive
+      facts in one place (format.ts) so they can't diverge.
 - [ ] PWA update flow (worktree-pwa-auto-refresh, once merged): the banner's
       two paths (build-manifest poll, waiting SW + controllerchange reload)
       were only verifiable by hand across local rebuilds - verify across two
