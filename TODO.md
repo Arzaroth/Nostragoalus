@@ -44,7 +44,29 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
 - [ ] Nightly backup cron on the host (pre-1.0 checklist):
       `0 4 * * * cd ~/repos/nostragoalus && mise run db-backup`, outdir on
-      a different disk than the Postgres volume.
+      a different disk than the Postgres volume. (Checked 2026-06-13: no
+      crontab/timer on the dev host - confirm whether prod has one.)
+- [ ] Worktree previews start without the gitignored `.env` (better-auth
+      refuses its default secret, auth 500s): `mise run preview` could copy
+      `.env` from the main checkout when missing, or at least fail loudly.
+
+## Roadmap / home CTA / PWA (deferred from the feature passes)
+
+- [ ] Roadmap admin reorder is two sequential PUTs from the client (swap with
+      the neighbor); one failing leaves duplicate positions. A server-side
+      swap/reorder endpoint fixes it and is a prerequisite for the kanban
+      drag-and-drop (ROADMAP.md).
+- [ ] Roadmap item content is single-language while the chrome around it is
+      i18n'd in four locales; decide whether that's accepted (EN-only roadmap)
+      or items grow per-locale fields.
+- [ ] NextMatchCta duplicates the matches query under its own ['next-match']
+      cache key (the landing page has no competition route param) and polls
+      every 60s during live matches; the WS patcher only feeds
+      ['matches', slug]. Unify the keys or subscribe the CTA to the socket.
+- [ ] PWA update flow (worktree-pwa-auto-refresh, once merged): the banner's
+      two paths (build-manifest poll, waiting SW + controllerchange reload)
+      were only verifiable by hand across local rebuilds - verify across two
+      real prod deploys, and check iOS installed-PWA behavior specifically.
 
 ## Odds feature (deferred from the merge review)
 
@@ -71,8 +93,10 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       getLeague/membership/admin/canView/competition-slug block is copy-pasted
       across leaderboard, crowd and league-detail routes (already drifted: the
       mutation routes 403 where the GETs 404, leaking league existence).
-- [ ] Adopt defineValidatedHandler on the hand-rolled league mutation routes
-      (join/leave/kick/regenerate/delete) so toHttpError + future hooks apply
+- [ ] Adopt defineValidatedHandler on the remaining hand-rolled league mutation
+      routes - create/join/rename/transfer are converted; `[id]/index.delete`,
+      `[id]/join`, `[id]/leave`, `[id]/members/[userId].delete` and
+      `[id]/regenerate-code` still aren't - so toHttpError + future hooks apply
       uniformly; the user-facing delete currently 500s on a vanished league.
 - [ ] Share a LeaderboardRows component between /[competition]/leaderboard and
       /leagues/[id] - the league page copy dropped movement arrows + the
@@ -145,11 +169,10 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
 ## Champion tiers (deferred from the merge review)
 
-- [ ] Pre-feature champion picks backfilled to potential_points=10 (migration
-      DEFAULT): they keep the flat value until re-saved, so an early long-shot
-      picker is under-paid vs a post-deploy picker of the same team. Ships
-      before lock so users can re-confirm; acceptable since championBonus
-      default is 10. Consider a one-time re-snapshot if picks predate the deploy.
+- [x] ~~Pre-feature champion picks backfilled to potential_points=10~~ Moot
+      since 2026-06-11: champion picks locked at the first WC kickoff with the
+      legacy +10 values in place - no re-snapshot is possible anymore. Lesson
+      for the next competition: re-snapshot legacy picks before lock.
 - [ ] FIFA rank cache is per-process with a 12h TTL: across a FIFA publication
       boundary (or multiple server instances) two users can snapshot different
       ranks for the same team. Bound max staleness / invalidate on publication
