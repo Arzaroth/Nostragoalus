@@ -589,7 +589,7 @@
     },
     "q7": {
       "q": "Where does the data come from?",
-      "a": "From publicly accessible FIFA and UEFA endpoints: fixtures, live scores (about every two minutes during matches), squads, and stats. The world map is OpenStreetMap."
+      "a": "From publicly accessible FIFA and UEFA endpoints: fixtures, live scores (about every two minutes during matches), squads, and stats. Bookmaker odds come from Sofascore, and the world map is OpenStreetMap."
     },
     "q8": {
       "q": "Is it free?",
