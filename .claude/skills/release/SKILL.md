@@ -32,9 +32,12 @@ before it.
   the docs on purpose. Endpoint descriptions themselves live inline in
   `defineRouteMeta` blocks - nothing to regenerate for those.
 - **About page** (`app/pages/about.vue`): the changelog tab parses
-  `CHANGELOG.md?raw` automatically - no action. The tech-stack list is manual:
-  update it only if dependencies were added/removed since the last tag
-  (`git diff v<last>..HEAD -- package.json`).
+  `CHANGELOG.md?raw` automatically - no action. The tech-stack `stack` list is
+  manual and easy to forget. **Always run `git diff v<last>..HEAD -- package.json`
+  first**; for every dependency added, add a `stack` entry (and remove entries for
+  dropped deps). Conventions: one entry per project (don't group two libraries
+  into one), and the `desc` is the library's own one-line tagline (from its
+  GitHub/site), not a project-specific note.
 - Commit the docs sweep as `docs(release): ...` (the release task requires a
   clean tree).
 
