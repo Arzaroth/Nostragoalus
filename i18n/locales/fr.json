@@ -195,9 +195,9 @@
     "search": "Rechercher une équipe…",
     "noResults": "Aucun match trouvé.",
     "filterStatus": {
-      "upcoming": "À venir",
+      "fulltime": "Terminés",
       "live": "En direct",
-      "finished": "Terminés"
+      "upcoming": "À venir"
     }
   },
   "team": {

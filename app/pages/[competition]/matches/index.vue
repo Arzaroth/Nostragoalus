@@ -11,10 +11,11 @@ useLiveMatches(matches)
 // Status filter buckets: all on by default, untick to hide. ?status=live
 // (comma list) pre-selects, e.g. the home CTA's "N matches in play" link.
 const route = useRoute()
+// Chip order is a past->future timeline, mirroring the page (oldest first).
 const STATUS_BUCKETS = {
-  upcoming: ['SCHEDULED', 'POSTPONED', 'CANCELLED'],
+  fulltime: ['FINISHED', 'AWARDED'],
   live: ['LIVE', 'PAUSED', 'SUSPENDED'],
-  finished: ['FINISHED', 'AWARDED'],
+  upcoming: ['SCHEDULED', 'POSTPONED', 'CANCELLED'],
 } as const
 type StatusBucket = keyof typeof STATUS_BUCKETS
 const ALL_BUCKETS = Object.keys(STATUS_BUCKETS) as StatusBucket[]
