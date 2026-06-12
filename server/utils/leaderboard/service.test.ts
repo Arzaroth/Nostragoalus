@@ -52,6 +52,26 @@ describe('getLeaderboard', () => {
     await client.close()
   })
 
+  it('ranks provisionally by scored + live, but displays scored points and the live delta', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const roundId = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: new Date('2026-06-11T16:00:00Z'), status: 'FINISHED', fullTimeHome: 1, fullTimeAway: 0 })
+    const high = await makeUser(db, 'high', 'High') // 3 scored, no live
+    const low = await makeUser(db, 'low', 'Low') // 1 scored, +5 live
+    await score(db, await makePrediction(db, { userId: high, matchId: m, roundId, home: 1, away: 0, lockedAt: new Date() }), 3, 'EXACT')
+    await score(db, await makePrediction(db, { userId: low, matchId: m, roundId, home: 1, away: 1, lockedAt: new Date() }), 1, 'OUTCOME')
+
+    const liveProvisional = new Map([[low, { points: 5, exact: 1, outcome: 1, gd: 1 }]])
+    const board = await getLeaderboard(db, { competitionId, liveProvisional })
+    // Low ranks first on provisional 1+5=6 vs High's 3...
+    expect(board.map((r) => r.displayName)).toEqual(['Low', 'High'])
+    // ...but the displayed total stays scored, with the live points as a delta.
+    expect(board[0]).toMatchObject({ displayName: 'Low', rank: 1, totalPoints: 1, livePoints: 5 })
+    expect(board[1]).toMatchObject({ displayName: 'High', rank: 2, totalPoints: 3, livePoints: 0 })
+    await client.close()
+  })
+
   it('only counts points from the requested competition', async () => {
     const { db, client } = await createTestDb()
     const c1 = await seedCompetition(db)
