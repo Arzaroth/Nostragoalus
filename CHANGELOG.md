@@ -5,6 +5,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- **Play-by-play**: a new tab on the match view with the full minute-by-minute timeline (goals, cards, substitutions, shots, penalties, VAR), newest first. It opens by default on live matches; the quick-glance events under the score stay as they were.
+
+### Changed
+- Leaderboard ties: players level on points (then exact scores, correct results, goal difference) now share the same rank, and the next place is skipped. Join date is no longer a tie-breaker. A tooltip on the leaderboard explains the order.
+
+### Fixed
+- Leaderboard live ranking: points from in-progress matches now move you up the board, while the displayed total stays your confirmed score with the live points shown as a separate "+N" delta.
+- The live clock now shows "HT" at half-time (FIFA keeps a match marked live through the break, so it previously showed a bare "LIVE").
+- Live substitutions no longer flash "?" for the players involved in the seconds right after a change.
+- A live match view now updates on its own when the match kicks off or finishes, even if its tab was in the background, instead of staying on a stale "Live" until you reload.
+
 ## [1.2.0] - 2026-06-12
 
 ### Added
