@@ -42,7 +42,46 @@ export default defineNuxtConfig({
     '@primevue/nuxt-module',
     '@unocss/nuxt',
     '@nuxtjs/i18n',
+    '@vite-pwa/nuxt',
   ],
+
+  // Surface new deploys: poll the build manifest so the update banner can
+  // offer a reload instead of users riding a stale bundle all tournament.
+  experimental: {
+    checkOutdatedBuildInterval: 10 * 60 * 1000,
+  },
+
+  pwa: {
+    // 'prompt': the update banner controls when the new SW takes over - an
+    // auto-activating SW would swap assets mid-prediction.
+    registerType: 'prompt',
+    manifest: {
+      name: 'Nostragoalus',
+      short_name: 'Nostragoalus',
+      description: 'The football oracle - predict scores, earn points, climb the leaderboard.',
+      theme_color: '#4f46e5',
+      background_color: '#1e1b4b',
+      display: 'standalone',
+      start_url: '/',
+      icons: [
+        { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+        { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+        { src: '/maskable-icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+      ],
+    },
+    workbox: {
+      // SSR app: every navigation must hit the server (sessions, live data).
+      // The SW only precaches the build's static assets.
+      navigateFallback: null,
+      globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2}'],
+      maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+    },
+    client: {
+      // Re-check the SW hourly so long-lived tabs/installed apps see deploys.
+      periodicSyncForUpdates: 3600,
+    },
+    devOptions: { enabled: false },
+  },
 
   i18n: {
     strategy: 'no_prefix',

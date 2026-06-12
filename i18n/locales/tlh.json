@@ -572,6 +572,11 @@
     "empty": "pagh naDev tu'lu'.",
     "error": "DaH He vI'ang laHbe'."
   },
+  "update": {
+    "available": "Segh chu' tu'lu'",
+    "reload": "yItagh",
+    "dismiss": "yIbuSQo'"
+  },
   "footer": {
     "builtWith": "🇫🇷 vo' ♥️ lo'taHvIS chenmoHlu'",
     "source": "ngoq mung",

@@ -11,4 +11,5 @@ useHead({
   <NuxtLayout>
     <NuxtPage />
   </NuxtLayout>
+  <UpdateBanner />
 </template>
