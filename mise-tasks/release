@@ -1,62 +1,59 @@
-#!/usr/bin/env -S node
-//MISE description="Cut a release: changelog section, version bump, full gate, commit+tag+push"
-//USAGE arg "<version>" help="Semver to release, e.g. 0.13.0"
-//USAGE flag "--dry-run" help="Preview the release without writing, committing or pushing"
+#!/usr/bin/env bash
+#MISE description="Cut a release: changelog section, version bump, full gate, commit+tag+push"
+#USAGE arg "<version>" help="Semver to release, e.g. 0.13.0"
+#USAGE flag "--dry-run" help="Preview the release without writing, committing or pushing"
 
-// Move [Unreleased] into a dated version section, bump package.json, run the
-// gate (typecheck + coverage + component tests), commit, tag, push.
-import { execSync } from 'node:child_process'
-import { readFileSync, writeFileSync } from 'node:fs'
+# Move [Unreleased] into a dated version section, bump package.json, run the gate
+# (typecheck + coverage + component tests), commit, tag, push. Plain shell; the
+# only structured-text edits delegate out - jq for package.json, a small node
+# helper for the changelog (both far less brittle than sed/awk here).
+set -euo pipefail
 
-const version = process.env.usage_version
-const dryRun = process.env.usage_dry_run === 'true'
-if (!/^\d+\.\d+\.\d+$/.test(version ?? '')) {
-  console.error('usage: mise run release <x.y.z> [--dry-run]')
-  process.exit(1)
-}
+version="${usage_version:-}"
+dry_run="${usage_dry_run:-false}"
+here="$(cd "$(dirname "$0")" && pwd)"
 
-const sh = (cmd, opts = {}) => execSync(cmd, { stdio: 'pipe', encoding: 'utf8', ...opts }).trim()
+if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  echo "usage: mise run release <x.y.z> [--dry-run]" >&2
+  exit 1
+fi
+if [[ -n "$(git status --porcelain)" ]]; then
+  echo "working tree is not clean - commit or stash first" >&2
+  exit 1
+fi
+if git tag -l | grep -qx "v${version}"; then
+  echo "tag v${version} already exists" >&2
+  exit 1
+fi
 
-if (sh('git status --porcelain')) {
-  console.error('working tree is not clean - commit or stash first')
-  process.exit(1)
-}
-if (sh('git tag -l').split('\n').includes(`v${version}`)) {
-  console.error(`tag v${version} already exists`)
-  process.exit(1)
-}
+pending="$(node "${here}/lib/changelog.mjs" read)"
+if [[ -z "$pending" ]]; then
+  echo "CHANGELOG.md has no [Unreleased] content - nothing to release" >&2
+  exit 1
+fi
 
-const changelog = readFileSync('CHANGELOG.md', 'utf8')
-const m = changelog.match(/## \[Unreleased\]\n([\s\S]*?)(?=\n## \[)/)
-const pending = (m?.[1] ?? '').trim()
-if (!pending) {
-  console.error('CHANGELOG.md has no [Unreleased] content - nothing to release')
-  process.exit(1)
-}
+date="$(date +%F)"
+printf 'releasing v%s (%s) with:\n\n%s\n\n' "$version" "$date" "$pending"
+if [[ "$dry_run" == "true" ]]; then
+  echo "dry run - nothing written"
+  exit 0
+fi
 
-const date = new Date().toISOString().slice(0, 10)
-console.log(`releasing v${version} (${date}) with:\n\n${pending}\n`)
-if (dryRun) {
-  console.log('dry run - nothing written')
-  process.exit(0)
-}
+# Move [Unreleased] -> dated section (node) and bump the version (jq).
+node "${here}/lib/changelog.mjs" promote "$version" "$date"
+tmp="$(mktemp)"
+jq --indent 2 --arg v "$version" '.version = $v' package.json > "$tmp"
+mv "$tmp" package.json
 
-writeFileSync(
-  'CHANGELOG.md',
-  changelog.replace(/## \[Unreleased\]\n[\s\S]*?(?=\n## \[)/, `## [Unreleased]\n\n## [${version}] - ${date}\n\n${pending}\n`),
-)
-const pkg = JSON.parse(readFileSync('package.json', 'utf8'))
-pkg.version = version
-writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n')
+echo "running the gate (typecheck + coverage + component tests)..."
+export CI=true
+pnpm typecheck
+pnpm test:coverage
+pnpm test:components
 
-console.log('running the gate (typecheck + coverage + component tests)...')
-const gate = { stdio: 'inherit', env: { ...process.env, CI: 'true' } }
-execSync('pnpm typecheck', gate)
-execSync('pnpm test:coverage', gate)
-execSync('pnpm test:components', gate)
-
-execSync('git add CHANGELOG.md package.json', { stdio: 'inherit' })
-execSync(`git commit -m "chore(release): ${version}"`, { stdio: 'inherit' })
-execSync(`git tag -a v${version} -m "Nostragoalus ${version}"`, { stdio: 'inherit' })
-execSync('git push origin main --follow-tags', { stdio: 'inherit' })
-console.log(`\nreleased v${version}`)
+git add CHANGELOG.md package.json
+git commit -m "chore(release): ${version}"
+git tag -a "v${version}" -m "Nostragoalus ${version}"
+git push origin main --follow-tags
+echo
+echo "released v${version}"
