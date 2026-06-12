@@ -665,6 +665,25 @@ describe('new provider methods', () => {
     ])
   })
 
+  it('resolves sub names from the roster when the inline arrays are momentarily empty', async () => {
+    const detail = {
+      HomeTeam: {
+        IdTeam: 't1', TeamName: [{ Locale: 'en', Description: 'France' }], Goals: [], Bookings: [],
+        Players: [
+          { IdPlayer: 'off1', PlayerName: [{ Locale: 'en', Description: 'STARTER' }] },
+          { IdPlayer: 'on1', PlayerName: [{ Locale: 'en', Description: 'BENCH GUY' }] },
+        ],
+        // FIFA's transient state: the event exists, the inline names do not yet.
+        Substitutions: [{ Minute: "61'", IdPlayerOff: 'off1', IdPlayerOn: 'on1', PlayerOffName: [], PlayerOnName: [] }],
+      },
+      AwayTeam: { IdTeam: 't2', TeamName: [{ Locale: 'en', Description: 'Brazil' }], Players: [], Goals: [], Bookings: [], Substitutions: [] },
+      Properties: {},
+    }
+    const provider = fifaProvider({ seasonId: '1', competitionId: '17', rateLimiter: noWait(), fetchImpl: okJson(detail) })
+    const d = await provider.getMatchDetail!({ stageId: 's', matchId: 'm' })
+    expect(d!.substitutions).toEqual([{ side: 'HOME', minute: "61'", playerOffId: 'off1', playerOffName: 'STARTER', playerOnId: 'on1', playerOnName: 'BENCH GUY' }])
+  })
+
   it('coach booking with no coach roster falls back to "Coach"; alias name path', async () => {
     const mk = (coaches: unknown) => ({
       HomeTeam: { IdTeam: 't1', TeamName: [{ Locale: 'en', Description: 'X' }], Players: [], Goals: [], Coaches: coaches, Bookings: [{ Card: 1, Minute: "10'", IdPlayer: null, IdCoach: 'c1' }] },
