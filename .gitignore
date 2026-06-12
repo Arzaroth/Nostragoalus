@@ -45,3 +45,6 @@ cookies.txt
 
 # Database backups (mise run db-backup)
 backups/
+
+# pnpm content-addressable store (created by store-dir in repo)
+.pnpm-store

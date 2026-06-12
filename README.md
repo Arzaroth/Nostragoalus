@@ -4,7 +4,7 @@
 
 # <img src="public/brand/mark.svg" width="36" alt="" align="top"> Nostragoalus
 
-![Coverage](.github/coverage-badge.svg) ![License: WTFPL](https://img.shields.io/badge/License-WTFPL-brightgreen.svg)
+![Coverage](.github/coverage-badge.svg) ![License: MIT OR WTFPL](https://img.shields.io/badge/License-MIT%20OR%20WTFPL-brightgreen.svg)
 
 A football score-prediction game: friends predict match scores and earn points by how close they
 get, ranked per competition and on a global leaderboard. Ships with the **FIFA World Cup 2026**
@@ -108,3 +108,8 @@ mise run create-admin you@example.com "Your Name"
 ```
 
 It prompts for the password (hidden, never in shell history), signs up through better-auth (HIBP-checked + hashed), and sets the DB role to admin. Idempotent - re-running just promotes an existing account.
+
+## License
+
+Dual-licensed: use it under **either** the [MIT License](LICENSE-MIT) **or** the
+[WTFPL](LICENSE-WTFPL), whichever you prefer (`SPDX-License-Identifier: MIT OR WTFPL`).

@@ -70,5 +70,5 @@
     "vitest": "^4.1.8",
     "vue-tsc": "^3.3.3"
   },
-  "license": "WTFPL"
+  "license": "(MIT OR WTFPL)"
 }
