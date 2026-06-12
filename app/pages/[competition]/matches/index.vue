@@ -8,17 +8,28 @@ const slug = useSelectedCompetition()
 const { data: matches, isLoading } = useMatches()
 useLiveMatches(matches)
 
-// Hash anchors (e.g. the home page's next-match CTA) point at rows that only
-// exist once the query resolves - the router's scroll fires too early, so
-// re-scroll when the list is first rendered. scrollIntoView honors the rows'
-// scroll-margin-top, unlike the router's hash scroll.
+// Status filter buckets: all on by default, untick to hide. ?status=live
+// (comma list) pre-selects, e.g. the home CTA's "N matches in play" link.
 const route = useRoute()
-const stopHashScroll = watch(matches, async (list) => {
-  if (!list?.length || !route.hash.startsWith('#match-')) return
-  stopHashScroll()
-  await nextTick()
-  document.getElementById(route.hash.slice(1))?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-}, { immediate: true })
+const STATUS_BUCKETS = {
+  upcoming: ['SCHEDULED', 'POSTPONED', 'CANCELLED'],
+  live: ['LIVE', 'PAUSED', 'SUSPENDED'],
+  finished: ['FINISHED', 'AWARDED'],
+} as const
+type StatusBucket = keyof typeof STATUS_BUCKETS
+const ALL_BUCKETS = Object.keys(STATUS_BUCKETS) as StatusBucket[]
+const fromQuery = String(route.query.status ?? '')
+  .split(',')
+  .filter((b): b is StatusBucket => ALL_BUCKETS.includes(b as StatusBucket))
+const activeBuckets = ref<StatusBucket[]>(fromQuery.length ? fromQuery : [...ALL_BUCKETS])
+const bucketOf = (s: string): StatusBucket =>
+  ALL_BUCKETS.find((b) => (STATUS_BUCKETS[b] as readonly string[]).includes(s)) ?? 'upcoming'
+function toggleBucket(b: StatusBucket) {
+  activeBuckets.value = activeBuckets.value.includes(b)
+    ? activeBuckets.value.filter((x) => x !== b)
+    : [...activeBuckets.value, b]
+}
+
 const { data: predictions } = useMyPredictions()
 const { upsert, setJoker } = usePredictionMutations()
 
@@ -44,6 +55,7 @@ const grouped = computed(() => {
   const q = searchable(search.value.trim())
   const groups = new Map<string, { label: string; sort: number; items: MatchListItem[] }>()
   for (const m of matches.value ?? []) {
+    if (!activeBuckets.value.includes(bucketOf(m.status))) continue
     if (q && !searchable(`${m.homeTeam} ${m.awayTeam} ${m.homeTeamCode ?? ''} ${m.awayTeamCode ?? ''}`).includes(q)) continue
     const g = groups.get(m.roundId) ?? { label: m.roundLabel, sort: m.roundSortOrder, items: [] }
     g.items.push(m)
@@ -51,6 +63,27 @@ const grouped = computed(() => {
   }
   return [...groups.values()].sort((a, b) => a.sort - b.sort)
 })
+
+// Hash anchors (e.g. the home page's next-match CTA) point at rows that only
+// exist once the query resolves AND the page is mounted - the router's own
+// hash scroll fires before either. Retry whenever the rendered list or mount
+// state changes, until the target exists. scrollIntoView honors the rows'
+// scroll-margin-top, unlike the router's hash scroll.
+const pageMounted = useMounted()
+let hashScrolled = false
+watch(
+  [grouped, pageMounted],
+  async () => {
+    const target = route.hash.startsWith('#match-') ? route.hash.slice(1) : null
+    if (hashScrolled || !target || !pageMounted.value) return
+    await nextTick()
+    const el = document.getElementById(target)
+    if (!el) return
+    hashScrolled = true
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  },
+  { immediate: true, flush: 'post' },
+)
 
 function save(matchId: string, value: { home: number; away: number }) {
   upsert.mutate({ matchId, ...value })
@@ -143,6 +176,24 @@ useHotkey('Mod+F', openSearch)
         <InputIcon v-if="searchRaw" class="pi pi-times cursor-pointer" :aria-label="t('common.clear')" @click="searchRaw = ''" />
       </IconField>
     </div>
+    <div class="flex items-center gap-2 mb-4 flex-wrap">
+      <button
+        v-for="b in ALL_BUCKETS"
+        :key="b"
+        class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition"
+        :style="
+          activeBuckets.includes(b)
+            ? 'background: color-mix(in srgb, var(--p-primary-color) 14%, transparent); border-color: var(--p-primary-color); color: var(--p-primary-color)'
+            : 'border-color: var(--p-content-border-color); color: var(--p-text-muted-color); opacity: 0.7'
+        "
+        :aria-pressed="activeBuckets.includes(b)"
+        @click="toggleBucket(b)"
+      >
+        <i :class="activeBuckets.includes(b) ? 'pi pi-check-circle' : 'pi pi-circle'" style="font-size: 0.7rem" />
+        {{ t(`matches.filterStatus.${b}`) }}
+      </button>
+    </div>
+
     <div v-if="isLoading" class="opacity-60">{{ t('common.loading') }}</div>
     <div v-else-if="!matches || !matches.length" class="opacity-60">{{ t('matches.empty') }}</div>
     <div v-else-if="!grouped.length" class="opacity-60">{{ t('matches.noResults') }}</div>

@@ -72,9 +72,27 @@ const showNext = computed(() => authed.value && !!next.value && dismissedNextId.
 const showLive = computed(() => authed.value && !!liveKey.value && dismissedLiveId.value !== liveKey.value)
 const matchesLink = computed(() => `/${last.value}/matches`)
 // Land on the matches page scrolled to this fixture (rows carry match-<id>
-// anchors; router.options offsets hash scrolls under the sticky header).
+// anchors; the page re-scrolls once the async list renders).
 const pickLink = computed(() => (next.value ? `${matchesLink.value}#match-${next.value.id}` : matchesLink.value))
-const liveLink = computed(() => (live.value ? `/${last.value}/matches/${live.value.id}` : matchesLink.value))
+// Single live match goes to its page; several go to the matches list
+// pre-filtered to live, scrolled to the first one.
+const liveLink = computed(() => {
+  if (live.value) return `/${last.value}/matches/${live.value.id}`
+  const first = liveMatches.value[0]
+  return first ? `${matchesLink.value}?status=live#match-${first.id}` : matchesLink.value
+})
+
+// Following a pill counts as consuming it - same flags as scroll-dismiss.
+function dismissNext() {
+  if (!next.value) return
+  dismissedNextId.value = next.value.id
+  sessionStorage.setItem(NEXT_KEY, next.value.id)
+}
+function dismissLive() {
+  if (!liveKey.value) return
+  dismissedLiveId.value = liveKey.value
+  sessionStorage.setItem(LIVE_KEY, liveKey.value)
+}
 </script>
 
 <template>
@@ -103,7 +121,7 @@ const liveLink = computed(() => (live.value ? `/${last.value}/matches/${live.val
           {{ live.awayTeam }}
         </span>
         <span v-else class="font-semibold">{{ t('home.nextCta.liveMany', { n: liveCount }) }}</span>
-        <NuxtLink :to="liveLink">
+        <NuxtLink :to="liveLink" @click="dismissLive">
           <Button :label="t('home.nextCta.watch')" size="small" severity="danger" icon="pi pi-bolt" icon-pos="right" />
         </NuxtLink>
       </div>
@@ -125,7 +143,7 @@ const liveLink = computed(() => (live.value ? `/${last.value}/matches/${live.val
           {{ next.awayTeam }}
         </span>
         <Countdown :to="next.kickoffTime" />
-        <NuxtLink :to="pickLink">
+        <NuxtLink :to="pickLink" @click="dismissNext">
           <Button :label="t('home.nextCta.pick')" size="small" icon="pi pi-arrow-right" icon-pos="right" />
         </NuxtLink>
       </div>

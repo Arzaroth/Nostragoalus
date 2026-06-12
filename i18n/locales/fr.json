@@ -193,7 +193,12 @@
     "title": "Calendrier",
     "empty": "Aucun match - importez-les depuis la page admin.",
     "search": "Rechercher une équipe…",
-    "noResults": "Aucun match trouvé."
+    "noResults": "Aucun match trouvé.",
+    "filterStatus": {
+      "upcoming": "À venir",
+      "live": "En direct",
+      "finished": "Terminés"
+    }
   },
   "team": {
     "notFound": "Équipe introuvable.",

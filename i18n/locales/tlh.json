@@ -193,7 +193,12 @@
     "title": "may'mey",
     "empty": "wej may' tu'lu' - loHwI' pa'vo' tIlIH.",
     "search": "ghom yISam…",
-    "noResults": "may' tu'be'lu'."
+    "noResults": "may' tu'be'lu'.",
+    "filterStatus": {
+      "upcoming": "pIq",
+      "live": "DaH qaSlI'",
+      "finished": "rInpu'"
+    }
   },
   "team": {
     "notFound": "ghom tu'be'lu'.",
