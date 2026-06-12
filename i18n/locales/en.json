@@ -193,7 +193,12 @@
     "title": "Fixtures",
     "empty": "No fixtures yet - import them from the admin page.",
     "search": "Search a team…",
-    "noResults": "No matches found."
+    "noResults": "No matches found.",
+    "filterStatus": {
+      "upcoming": "Upcoming",
+      "live": "Live",
+      "finished": "Finished"
+    }
   },
   "team": {
     "notFound": "Team not found.",
