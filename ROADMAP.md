@@ -100,9 +100,14 @@ effort buckets; order within a bucket is not priority.
     default, league owner enables.
   - One change per round (same scarcity as the joker) - a rescue flare, not
     a strategy.
-  - Penalty: changed pick scores **floor(pts / 3)** - with the current tier
-    table only an exact second-half read scores at all (3->1, 2->0, 1->0).
-    Floor, not round: the design intent lives in that rounding rule.
+  - Penalty: changed pick scores **floor(base pts / 3)** - with the current
+    tier table only an exact second-half read scores at all (3->1, 2->0,
+    1->0). Floor, not round: the design intent lives in that rounding rule.
+  - **No rarity/odds bonus** on a changed pick: rarity is measured against
+    the pre-match crowd the new pick was never part of (and closing odds
+    price uncertainty you no longer face) - paying it would hand hindsight
+    a bonus. Net effect, the one-sentence rule: a VAR'd pick is worth
+    exactly 1 point on an exact score, 0 otherwise.
   - Changing **burns the joker** (no refund): the joker is a pre-match
     confidence bet; mid-match edits forfeit it. Uniform penalty, kills the
     "joker every round, adjust at HT" exploit.
