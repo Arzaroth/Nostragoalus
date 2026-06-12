@@ -39,7 +39,7 @@ const stack: { group: string; items: StackItem[] }[] = [
       { name: 'Nuxt I18n', logo: 'https://i18n.nuxtjs.org/icon.svg', desc: 'Internationalization for Nuxt', url: 'https://i18n.nuxtjs.org', license: 'MIT', licenseUrl: 'https://github.com/nuxt-modules/i18n/blob/main/LICENSE' },
       { name: 'Leaflet', logo: 'leaflet', desc: 'An open-source library for mobile-friendly interactive maps', url: 'https://leafletjs.com', license: 'BSD-2-Clause', licenseUrl: 'https://github.com/Leaflet/Leaflet/blob/main/LICENSE' },
       { name: 'marked', logo: 'markdown', desc: 'A markdown parser and compiler built for speed', url: 'https://marked.js.org', license: 'MIT', licenseUrl: 'https://github.com/markedjs/marked/blob/master/LICENSE.md' },
-      { name: 'DOMPurify', icon: 'pi pi-shield', desc: 'A DOM-only, super-fast, uber-tolerant XSS sanitizer for HTML, MathML and SVG', url: 'https://github.com/cure53/DOMPurify', license: 'Apache-2.0 OR MPL-2.0', licenseUrl: 'https://github.com/cure53/DOMPurify/blob/main/LICENSE' },
+      { name: 'DOMPurify', logo: 'https://cure53.de/favicon.ico', desc: 'A DOM-only, super-fast, uber-tolerant XSS sanitizer for HTML, MathML and SVG', url: 'https://cure53.de/purify', license: 'Apache-2.0 OR MPL-2.0', licenseUrl: 'https://github.com/cure53/DOMPurify/blob/main/LICENSE' },
     ],
   },
   {
