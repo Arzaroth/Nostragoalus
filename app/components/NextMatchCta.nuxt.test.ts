@@ -104,4 +104,73 @@ describe('NextMatchCta', () => {
     await vi.waitFor(() => expect(c.text()).toContain('2 matches in play'))
     expect(c.text()).not.toContain('Spain')
   })
+
+  it('keeps the live pill hidden when one of a dismissed batch ends (subset)', async () => {
+    // Both ids were dismissed; m-l1 has since finished, leaving the strict subset
+    // [m-l2] still live. The per-id dismissal must keep the pill hidden.
+    sessionStorage.setItem('ng-live-cta-dismissed', 'm-l1,m-l2')
+    vi.stubGlobal(
+      '$fetch',
+      vi.fn(async () => ({
+        matches: [{ id: 'm-l2', status: 'LIVE', kickoffTime: PAST, homeTeam: 'Italy', awayTeam: 'Norway', homeTeamCode: 'ITA', awayTeamCode: 'NOR', fullTimeHome: 0, fullTimeAway: 0 }],
+      })),
+    )
+    const c = await setup()
+    await new Promise((r) => setTimeout(r, 20))
+    expect(c.text()).not.toContain('Live now')
+  })
+
+  it('re-shows the live pill for a newly kicked-off match not yet dismissed', async () => {
+    sessionStorage.setItem('ng-live-cta-dismissed', 'm-l1')
+    vi.stubGlobal(
+      '$fetch',
+      vi.fn(async () => ({
+        matches: [
+          { id: 'm-l1', status: 'LIVE', kickoffTime: PAST, homeTeam: 'Italy', awayTeam: 'Norway', homeTeamCode: 'ITA', awayTeamCode: 'NOR', fullTimeHome: 0, fullTimeAway: 0 },
+          { id: 'm-l3', status: 'LIVE', kickoffTime: PAST, homeTeam: 'Spain', awayTeam: 'Germany', homeTeamCode: 'ESP', awayTeamCode: 'GER', fullTimeHome: 1, fullTimeAway: 0 },
+        ],
+      })),
+    )
+    const c = await setup()
+    // Only the undismissed match is shown, as the single detailed pill.
+    await vi.waitFor(() => expect(c.text()).toContain('Live now'))
+    expect(c.text()).toContain('Spain')
+    expect(c.text()).not.toContain('Italy')
+  })
+
+  it('deep-links the next pill to the fixture anchor', async () => {
+    const c = await setup()
+    await vi.waitFor(() => expect(c.text()).toContain('France'))
+    const hrefs = c.findAll('a').map((a) => a.attributes('href'))
+    expect(hrefs.some((h) => h?.endsWith('#match-m-next'))).toBe(true)
+  })
+
+  it('deep-links a single live match to its own page', async () => {
+    vi.stubGlobal(
+      '$fetch',
+      vi.fn(async () => ({
+        matches: [{ id: 'm-live', status: 'LIVE', kickoffTime: PAST, homeTeam: 'Spain', awayTeam: 'Germany', homeTeamCode: 'ESP', awayTeamCode: 'GER', fullTimeHome: 2, fullTimeAway: 1 }, ...MATCHES],
+      })),
+    )
+    const c = await setup()
+    await vi.waitFor(() => expect(c.text()).toContain('Spain'))
+    const hrefs = c.findAll('a').map((a) => a.attributes('href'))
+    expect(hrefs.some((h) => h?.endsWith('/matches/m-live'))).toBe(true)
+  })
+
+  it('deep-links many live matches to the live-filtered list', async () => {
+    vi.stubGlobal(
+      '$fetch',
+      vi.fn(async () => ({
+        matches: [
+          { id: 'm-l1', status: 'LIVE', kickoffTime: PAST, homeTeam: 'Spain', awayTeam: 'Germany', homeTeamCode: 'ESP', awayTeamCode: 'GER', fullTimeHome: 2, fullTimeAway: 1 },
+          { id: 'm-l2', status: 'LIVE', kickoffTime: PAST, homeTeam: 'Italy', awayTeam: 'Norway', homeTeamCode: 'ITA', awayTeamCode: 'NOR', fullTimeHome: 0, fullTimeAway: 0 },
+        ],
+      })),
+    )
+    const c = await setup()
+    await vi.waitFor(() => expect(c.text()).toContain('2 matches in play'))
+    const hrefs = c.findAll('a').map((a) => a.attributes('href'))
+    expect(hrefs.some((h) => h?.includes('?status=live#match-m-l1'))).toBe(true)
+  })
 })

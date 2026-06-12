@@ -27,10 +27,31 @@ const { data: matches } = useQuery<MatchListItem[]>({
 })
 
 const liveMatches = computed(() => (matches.value ?? []).filter(isLive))
-// One live match gets the detailed score pill; simultaneous kickoffs (group
-// stage final rounds) collapse to a count linking to the matches list.
-const live = computed(() => (liveMatches.value.length === 1 ? liveMatches.value[0]! : null))
-const liveCount = computed(() => liveMatches.value.length)
+
+// Scrolling away dismisses, per match and per pill: the same fixture never comes
+// back this session.
+const NEXT_KEY = 'ng-next-cta-dismissed'
+const LIVE_KEY = 'ng-live-cta-dismissed'
+// Read synchronously (ClientOnly mount, sessionStorage always there): seeding in
+// onMounted let a cached match render the pill for a frame before the dismissal
+// kicked in.
+const dismissedNextId = ref<string | null>(import.meta.client ? sessionStorage.getItem(NEXT_KEY) : null)
+// Per-id dismissal for the live pill: dismissing hides what's in play now, but a
+// NEW match kicking off later (an id we never dismissed) still gets its own pill.
+// A single key for the whole set re-showed the pill every time one of several
+// simultaneous matches ended, because the set shrank to a different key.
+const dismissedLiveIds = ref(
+  new Set<string>(import.meta.client ? (sessionStorage.getItem(LIVE_KEY)?.split(',').filter(Boolean) ?? []) : []),
+)
+function dismissLiveNow() {
+  for (const m of liveMatches.value) dismissedLiveIds.value.add(m.id)
+  sessionStorage.setItem(LIVE_KEY, [...dismissedLiveIds.value].join(','))
+}
+const liveShown = computed(() => liveMatches.value.filter((m) => !dismissedLiveIds.value.has(m.id)))
+// One live match gets the detailed score pill; simultaneous kickoffs collapse to
+// a count linking to the matches list - over what's still shown.
+const live = computed(() => (liveShown.value.length === 1 ? liveShown.value[0]! : null))
+const liveCount = computed(() => liveShown.value.length)
 
 const now = useTimestamp({ interval: 60_000 })
 const next = computed(
@@ -40,22 +61,8 @@ const next = computed(
     ) ?? null,
 )
 
-// Scrolling away dismisses, per match and per pill: the same fixture never
-// comes back this session, the next fixture gets its own shot.
-const NEXT_KEY = 'ng-next-cta-dismissed'
-const LIVE_KEY = 'ng-live-cta-dismissed'
-// Read synchronously (ClientOnly mount, sessionStorage always there): seeding
-// in onMounted let a cached match render the pill for a frame before the
-// dismissal kicked in.
-const dismissedNextId = ref<string | null>(import.meta.client ? sessionStorage.getItem(NEXT_KEY) : null)
-const dismissedLiveId = ref<string | null>(import.meta.client ? sessionStorage.getItem(LIVE_KEY) : null)
 const { y: scrollY } = useWindowScroll()
 const faded = computed(() => Math.min(1, scrollY.value / 240))
-// Dismissal key for the live pill: the (sorted) id set, so a new simultaneous
-// batch - or a different single match - gets its own shot.
-const liveKey = computed(() =>
-  liveMatches.value.map((m) => m.id).sort().join('+') || null,
-)
 // Clicking a pill's action navigates, and the destination's hash scroll fires
 // this watcher before unmount - without the guard it dismissed BOTH pills.
 const clickedAway = ref(false)
@@ -65,23 +72,20 @@ watch(scrollY, (y) => {
     dismissedNextId.value = next.value.id
     sessionStorage.setItem(NEXT_KEY, next.value.id)
   }
-  if (liveKey.value && dismissedLiveId.value !== liveKey.value) {
-    dismissedLiveId.value = liveKey.value
-    sessionStorage.setItem(LIVE_KEY, liveKey.value)
-  }
+  if (liveShown.value.length) dismissLiveNow()
 })
 
 const showNext = computed(() => authed.value && !!next.value && dismissedNextId.value !== next.value.id)
-const showLive = computed(() => authed.value && !!liveKey.value && dismissedLiveId.value !== liveKey.value)
+const showLive = computed(() => authed.value && liveShown.value.length > 0)
 const matchesLink = computed(() => `/${last.value}/matches`)
 // Land on the matches page scrolled to this fixture (rows carry match-<id>
 // anchors; the page re-scrolls once the async list renders).
 const pickLink = computed(() => (next.value ? `${matchesLink.value}#match-${next.value.id}` : matchesLink.value))
-// Single live match goes to its page; several go to the matches list
-// pre-filtered to live, scrolled to the first one.
+// Single live match goes to its page; several go to the matches list pre-filtered
+// to live, scrolled to the first one.
 const liveLink = computed(() => {
   if (live.value) return `/${last.value}/matches/${live.value.id}`
-  const first = liveMatches.value[0]
+  const first = liveShown.value[0]
   return first ? `${matchesLink.value}?status=live#match-${first.id}` : matchesLink.value
 })
 
@@ -94,10 +98,9 @@ function dismissNext() {
   sessionStorage.setItem(NEXT_KEY, next.value.id)
 }
 function dismissLive() {
-  if (!liveKey.value) return
+  if (!liveMatches.value.length) return
   clickedAway.value = true
-  dismissedLiveId.value = liveKey.value
-  sessionStorage.setItem(LIVE_KEY, liveKey.value)
+  dismissLiveNow()
 }
 </script>
 
