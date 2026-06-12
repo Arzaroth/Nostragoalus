@@ -184,6 +184,7 @@ interface FifaDetailTeam {
 export interface FifaMatchDetailResponse {
   HomeTeam?: FifaDetailTeam | null
   AwayTeam?: FifaDetailTeam | null
+  MatchTime?: string | null
   BallPossession?: { OverallHome?: number | null; OverallAway?: number | null } | null
   Attendance?: number | null
   Stadium?: { Name?: FifaLocalized[] } | null
@@ -291,6 +292,7 @@ export function normalizeFifaMatchDetail(detail: FifaMatchDetailResponse): Match
   substitutions.sort((a, b) => minuteValue(a.minute) - minuteValue(b.minute))
 
   return {
+    minute: detail.MatchTime ?? null,
     possessionHome: detail.BallPossession?.OverallHome ?? null,
     possessionAway: detail.BallPossession?.OverallAway ?? null,
     attendance: detail.Attendance ?? null,

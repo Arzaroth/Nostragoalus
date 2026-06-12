@@ -83,6 +83,23 @@ const status = computed(() => (live.value?.status ?? m.value?.status ?? 'SCHEDUL
 const homeScore = computed(() => live.value?.fullTimeHome ?? m.value?.fullTimeHome ?? null)
 const awayScore = computed(() => live.value?.fullTimeAway ?? m.value?.fullTimeAway ?? null)
 const isLive = computed(() => status.value === 'LIVE' || status.value === 'PAUSED')
+// Live clock under the score: half-time, the provider's running minute (e.g.
+// "47'"), or a bare LIVE when the minute isn't exposed.
+const liveClock = computed(() => (status.value === 'PAUSED' ? t('match.halfTime') : detail.value?.minute || t('match.live')))
+// Possession bar: FIFA's BallPossession is null mid-match, but the live IFES
+// stats carry it - fall back to those so the bar shows during the game too.
+const possession = computed(() => {
+  const ins = insights.value?.possession
+  if (ins?.home != null && ins?.away != null) return { home: ins.home, away: ins.away }
+  const h = detail.value?.stats?.home?.possession
+  const a = detail.value?.stats?.away?.possession
+  return h != null && a != null ? { home: h, away: a } : null
+})
+// Per-team possession is "clean" possession; the rest is contested (FIFA shows
+// it as a middle "in contest" segment), so the two sides don't sum to 100.
+const possessionContest = computed(() =>
+  possession.value ? Math.max(0, Math.round(100 - possession.value.home - possession.value.away)) : 0,
+)
 
 // While the match is live, the score patches over WS but the stats and event
 // timeline (FIFA-backed) don't - poll them so they keep up.
@@ -117,8 +134,11 @@ function bestBy(side: 'home' | 'away', field: 'goals' | 'assists') {
     .slice()
     .sort((a, b) => (b[field] ?? 0) - (a[field] ?? 0))[0] ?? null
 }
-const homeGoalEvents = computed(() => (insights.value?.goals ?? []).filter((g: any) => g.side === 'HOME'))
-const awayGoalEvents = computed(() => (insights.value?.goals ?? []).filter((g: any) => g.side === 'AWAY'))
+// Prefer the live FIFA detail goals (present during the match) over the DB
+// goal_event view (only synced at finalize, so empty for a live game).
+const goals = computed<any[]>(() => (detail.value?.goals ?? insights.value?.goals ?? []) as any[])
+const homeGoalEvents = computed(() => goals.value.filter((g: any) => g.side === 'HOME'))
+const awayGoalEvents = computed(() => goals.value.filter((g: any) => g.side === 'AWAY'))
 const hasStats = computed(
   () => homeGoalEvents.value.length > 0 || awayGoalEvents.value.length > 0 || insights.value?.possession?.home != null || !!detail.value,
 )
@@ -141,7 +161,7 @@ const showSubs = useLocalStorage('ng-timeline-subs', true)
 
 const timeline = computed(() =>
   buildTimeline({
-    goals: insights.value?.goals ?? [],
+    goals: goals.value,
     bookings: detail.value?.bookings ?? [],
     substitutions: detail.value?.substitutions ?? [],
     homeCode: m.value?.homeTeamCode,
@@ -251,12 +271,7 @@ function toggleFormInfo(side: string, i: number | string) {
     <div class="rounded-2xl border p-6" style="background: var(--p-content-background); border-color: var(--p-content-border-color)">
       <div class="flex items-center justify-between text-xs mb-4" style="color: var(--p-text-muted-color)">
         <span>{{ m.roundLabel }}<template v-if="m.group"> · Group {{ m.group }}</template></span>
-        <span class="flex items-center gap-2">
-          <span v-if="isLive" class="flex items-center gap-1 font-semibold" style="color: var(--ng-danger)">
-            <span class="w-2 h-2 rounded-full animate-pulse" style="background: var(--ng-danger)" /> LIVE
-          </span>
-          <Tag :value="matchStatusLabel(status)" :severity="statusSeverity(status)" />
-        </span>
+        <Tag :value="matchStatusLabel(status)" :severity="statusSeverity(status)" />
       </div>
 
       <div class="flex items-center justify-around gap-4">
@@ -271,6 +286,10 @@ function toggleFormInfo(side: string, i: number | string) {
             <Countdown :to="m.kickoffTime" />
           </div>
           <div v-if="hadShootout" class="text-sm font-semibold mt-1" style="color: var(--p-text-muted-color)">{{ m.penaltiesHome }}–{{ m.penaltiesAway }} {{ t('match.pens') }}</div>
+          <!-- live indicator + clock, under the score -->
+          <div v-if="isLive" class="flex items-center justify-center gap-1.5 mt-1.5 text-sm font-semibold tabular-nums" style="color: var(--ng-danger)">
+            <span class="w-2 h-2 rounded-full animate-pulse" style="background: var(--ng-danger)" />{{ liveClock }}
+          </div>
         </div>
         <div class="flex flex-col items-center gap-2 flex-1">
           <img v-if="flagUrl(m.awayTeamCode)" :src="flagUrl(m.awayTeamCode) || ''" class="w-16 h-16 rounded-lg object-cover" alt="" >
@@ -370,15 +389,16 @@ function toggleFormInfo(side: string, i: number | string) {
               <span class="inline-flex items-center gap-1"><span class="inline-block w-2.5 h-3.5 rounded-sm" style="background: #eab308" />{{ detail.cards.home.yellow }}–{{ detail.cards.away.yellow }}</span>
               <span v-if="detail.cards.home.red || detail.cards.away.red" class="inline-flex items-center gap-1"><span class="inline-block w-2.5 h-3.5 rounded-sm" style="background: var(--ng-danger)" />{{ detail.cards.home.red }}–{{ detail.cards.away.red }}</span>
             </div>
-            <div v-if="insights.possession.home !== null" class="mb-4">
+            <div v-if="possession" class="mb-4">
               <div class="flex justify-between text-xs mb-1" style="color: var(--p-text-muted-color)">
-                <span>{{ Math.round(insights.possession.home) }}%</span>
-                <span>{{ t('match.possession') }}</span>
-                <span>{{ Math.round(insights.possession.away) }}%</span>
+                <span>{{ Math.round(possession.home) }}%</span>
+                <span>{{ t('match.possession') }}<template v-if="possessionContest > 0"> · {{ possessionContest }}% {{ t('match.inContest') }}</template></span>
+                <span>{{ Math.round(possession.away) }}%</span>
               </div>
               <div class="flex h-2 rounded overflow-hidden">
-                <div :style="`width:${insights.possession.home}%; background: var(--p-primary-color)`" />
-                <div :style="`width:${insights.possession.away}%; background: var(--p-content-border-color)`" />
+                <div :style="`width:${possession.home}%; background: var(--p-primary-color)`" />
+                <div v-if="possessionContest > 0" :style="`width:${possessionContest}%; background: var(--ng-star)`" />
+                <div :style="`width:${possession.away}%; background: var(--p-content-border-color)`" />
               </div>
             </div>
             <!-- stat rows skeleton below the (already-loaded) possession bar -->

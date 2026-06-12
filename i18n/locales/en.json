@@ -306,7 +306,10 @@
     "toggleBookings": "Show or hide bookings",
     "draws": "draws",
     "h2hNone": "These teams have never met in our records - this would be the first.",
-    "goal": "GOOOAL!"
+    "goal": "GOOOAL!",
+    "halfTime": "HT",
+    "live": "LIVE",
+    "inContest": "in contest"
   },
   "auth": {
     "signIn": "Sign in",

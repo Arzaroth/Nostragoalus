@@ -306,7 +306,10 @@
     "toggleBookings": "Deghmey cha' pagh So'",
     "draws": "raghmey",
     "h2hNone": "not ghom cha' ghommeyvam - wa'DIch 'oH.",
-    "goal": "QAPLA'!"
+    "goal": "QAPLA'!",
+    "halfTime": "botlh",
+    "live": "DaH",
+    "inContest": "qab"
   },
   "auth": {
     "signIn": "yI'el",
