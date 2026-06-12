@@ -42,10 +42,10 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
 ## Ops
 
-- [ ] Nightly backup cron on the host (pre-1.0 checklist):
+- [x] Nightly backup cron on the host (pre-1.0 checklist):
       `0 4 * * * cd ~/repos/nostragoalus && mise run db-backup`, outdir on
-      a different disk than the Postgres volume. (Checked 2026-06-13: no
-      crontab/timer on the dev host - confirm whether prod has one.)
+      a different disk than the Postgres volume. (Confirmed 2026-06-13: prod
+      has it; the dev host intentionally doesn't.)
 - [ ] Worktree previews start without the gitignored `.env` (better-auth
       refuses its default secret, auth 500s): `mise run preview` could copy
       `.env` from the main checkout when missing, or at least fail loudly.
@@ -158,6 +158,18 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       dropdowns from the stored pick.
 - [ ] The bot has no best-scorer consensus (only champion); consider a
       best-scorer consensus for parity, or document the asymmetry.
+
+## Play-by-play (deferred from the feature-treatment review)
+
+- [ ] timeline.get.ts duplicates live-detail.get.ts wholesale (imports, cache
+      shape/TTL, the match-row select, the getCompetitionById ->
+      resolveCompetitionSeason -> providerForCompetition ladder). Extract a
+      shared resolveMatchProvider(id) (or a withMatchProviderCache helper) so
+      the two endpoints collapse to their unique provider call and can't drift.
+- [ ] TIMELINE_ICONS / GOAL_KINDS in matches/[id].vue hand-mirror the server's
+      TimelineEventKind union and FIFA_EVENT_KINDS goal set; a new/renamed kind
+      silently falls back to the bullet and (for goals) loses bold + the score
+      column. Share the kind list / goal-kind set from shared types.
 
 
 ## Done (post-merge correctness pass)
