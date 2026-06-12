@@ -5,12 +5,18 @@ const { $pwa } = useNuxtApp()
 // Two staleness signals, one banner: the build-manifest poll (plain tabs)
 // and the waiting service worker (installed PWA / SW-controlled tabs).
 const outdated = useState('outdated-build', () => false)
-const dismissed = ref(false)
+// Shared so the manifest-poll plugin can clear it on a fresh deploy (re-surface
+// after an earlier dismissal). A new waiting SW clears it via the watcher below.
+const dismissed = useState('update-dismissed', () => false)
 const swNeedsRefresh = computed(() => $pwa?.needRefresh === true)
+watch(swNeedsRefresh, (now, prev) => {
+  if (now && !prev) dismissed.value = false
+})
 const show = computed(() => !dismissed.value && (outdated.value || swNeedsRefresh.value))
 
 const reloading = ref(false)
 async function reload() {
+  if (reloading.value) return
   reloading.value = true
   if (swNeedsRefresh.value && 'serviceWorker' in navigator) {
     // One deterministic reload: watch for the new SW taking control
@@ -32,7 +38,7 @@ async function reload() {
   <Transition name="update-banner">
     <div
       v-if="show"
-      class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-xl border px-4 py-2 shadow-lg text-sm"
+      class="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-xl border px-4 py-2 shadow-lg text-sm"
       style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
       role="status"
     >
@@ -60,6 +66,6 @@ async function reload() {
 .update-banner-enter-from,
 .update-banner-leave-to {
   opacity: 0;
-  transform: translate(-50%, 0.5rem);
+  transform: translate(-50%, -0.5rem);
 }
 </style>
