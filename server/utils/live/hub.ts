@@ -85,3 +85,15 @@ export async function publishMatchUpdates(db: AppDatabase, matchIds: string[]): 
   for (const sub of subscribers) sub.send({ type: 'scores:changed' })
   return delivered
 }
+
+// On (re)subscribe, push the current state of the subscribed matches to that one
+// client so it converges to truth. Live transitions (kickoff, full-time) are
+// broadcast once; a client that was disconnected or had not subscribed yet would
+// otherwise keep its stale state until a full reload.
+export async function sendMatchSnapshot(db: AppDatabase, sub: LiveSubscriber): Promise<number> {
+  const ids = [...sub.matchIds]
+  if (ids.length === 0) return 0
+  const rows = await db.select(liveColumns).from(match).where(inArray(match.id, ids))
+  for (const row of rows) sub.send({ type: 'match:update', match: row })
+  return rows.length
+}

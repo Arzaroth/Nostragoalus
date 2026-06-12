@@ -5,6 +5,7 @@ import {
   liveSubscriberCount,
   publishMatchUpdates,
   removeLiveSubscriber,
+  sendMatchSnapshot,
   type LiveSubscriber,
 } from './hub'
 import { findRoundId } from '../sync/rounds'
@@ -41,6 +42,24 @@ describe('live hub', () => {
     const { db, client } = await createTestDb()
     expect(await publishMatchUpdates(db, [])).toBe(0)
     expect(await publishMatchUpdates(db, ['x'])).toBe(0)
+    await client.close()
+  })
+
+  it('sends a current snapshot of the subscribed matches on (re)subscribe', async () => {
+    const { db, client } = await createTestDb()
+    const cid = await seedCompetition(db)
+    const roundId = (await findRoundId(db, cid, 'GROUP', 1)) as string
+    const m = await makeMatch(db, { competitionId: cid, roundId, kickoffTime: new Date('2026-06-11T16:00:00Z'), status: 'FINISHED', fullTimeHome: 2, fullTimeAway: 1 })
+
+    const empty: LiveSubscriber = { matchIds: new Set(), send: vi.fn() }
+    const sub: LiveSubscriber = { matchIds: new Set([m]), send: vi.fn() }
+    // Nothing subscribed: nothing to converge.
+    expect(await sendMatchSnapshot(db, empty)).toBe(0)
+    expect(empty.send).not.toHaveBeenCalled()
+    // Subscribed: the client is handed the match's current (finished) state so a
+    // missed full-time transition heals without a reload.
+    expect(await sendMatchSnapshot(db, sub)).toBe(1)
+    expect(sub.send).toHaveBeenCalledWith({ type: 'match:update', match: expect.objectContaining({ id: m, status: 'FINISHED' }) })
     await client.close()
   })
 })
