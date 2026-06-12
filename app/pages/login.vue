@@ -17,6 +17,9 @@ const passwordWrap = ref<HTMLElement | null>(null)
 const forcePassword = route.query.password !== undefined
 const step = ref<'email' | 'password'>(forcePassword ? 'password' : 'email')
 
+// Deep links (e.g. an invite landing page) bounce through here as ?next=.
+const nextPath = computed(() => safeNext(route.query.next))
+
 // Changing the identifier invalidates a revealed password step: the new
 // domain may be SSO-captured.
 watch(email, () => {
@@ -38,7 +41,7 @@ async function next() {
       // errorCallbackURL keeps a failed token exchange / callback on this page
       // (better-auth appends ?error=&error_description=) instead of dumping the
       // user on the site root - see the onMounted handler below.
-      const { error: err } = await signIn.sso({ providerId, callbackURL: '/matches', errorCallbackURL: '/login' })
+      const { error: err } = await signIn.sso({ providerId, callbackURL: nextPath.value, errorCallbackURL: '/login' })
       if (err) {
         redirecting.value = false
         error.value = err.message ?? 'SSO failed'
@@ -62,7 +65,7 @@ async function submit() {
       error.value = err.message ?? 'Sign in failed'
       return
     }
-    await router.push('/matches')
+    await router.push(nextPath.value)
   } finally {
     loading.value = false
   }
@@ -89,7 +92,7 @@ async function signInPasskey() {
     error.value = res.error.message || t('passkeys.failed')
     return
   }
-  await router.push('/matches')
+  await router.push(nextPath.value)
 }
 </script>
 
@@ -115,6 +118,6 @@ async function signInPasskey() {
       <div class="flex-1 border-t" style="border-color: var(--p-content-border-color)" />{{ t('auth.or') }}<div class="flex-1 border-t" style="border-color: var(--p-content-border-color)" />
     </div>
     <Button :label="t('passkeys.signIn')" icon="pi pi-id-card" severity="secondary" outlined @click="signInPasskey" />
-    <NuxtLink to="/signup" class="text-sm text-center">{{ t('auth.needAccount') }}</NuxtLink>
+    <NuxtLink :to="{ path: '/signup', query: route.query.next ? { next: route.query.next } : {} }" class="text-sm text-center">{{ t('auth.needAccount') }}</NuxtLink>
   </div>
 </template>

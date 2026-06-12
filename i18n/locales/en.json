@@ -702,5 +702,37 @@
     "crowdLeague": "League",
     "crowdGlobal": "Everyone",
     "crowdBonusHint": "Crowd bonus points are always based on everyone's predictions, not only your league."
+  },
+  "invites": {
+    "title": "Invite links",
+    "hint": "Share a link to let people join. Add an expiry or a use limit for tighter control.",
+    "expiryLabel": "Expires",
+    "usesLabel": "Uses",
+    "create": "Create link",
+    "copyLink": "Copy link",
+    "revoke": "Revoke",
+    "empty": "No invite links yet.",
+    "expiresOn": "Expires {date}",
+    "expiry": {
+      "never": "Never",
+      "h24": "24 hours",
+      "d7": "7 days",
+      "d30": "30 days"
+    },
+    "uses": {
+      "unlimited": "Unlimited"
+    },
+    "joinTitle": "Join a league",
+    "invitedTo": "You've been invited to",
+    "memberCount": "{n} members",
+    "accept": "Join league",
+    "signInToJoin": "Sign in to join",
+    "goToLeague": "Go to league",
+    "alreadyMember": "You're already a member of this league.",
+    "expired": "This invite link has expired.",
+    "exhausted": "This invite link has reached its use limit.",
+    "notFound": "This invite link is invalid or no longer exists.",
+    "browseLeagues": "Browse leagues",
+    "joinFailed": "Couldn't join the league. The link may have just expired."
   }
 }

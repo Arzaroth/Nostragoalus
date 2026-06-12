@@ -2,6 +2,10 @@
 const { t } = useI18n()
 const { signUp, signIn } = useAuth()
 const router = useRouter()
+const route = useRoute()
+
+// Carried through from an invite/deep link so the new account lands there.
+const next = computed(() => safeNext(route.query.next))
 
 const name = ref('')
 const email = ref('')
@@ -35,7 +39,7 @@ async function submit() {
       error.value = err.message ?? 'Sign up failed'
       return
     }
-    await router.push('/matches')
+    await router.push(next.value)
   } finally {
     loading.value = false
   }
@@ -49,12 +53,12 @@ function continueAnyway() {
 
 async function useSso() {
   if (!ssoWarn.value) return
-  const { error: err } = await signIn.sso({ providerId: ssoWarn.value.providerId, callbackURL: '/matches' })
+  const { error: err } = await signIn.sso({ providerId: ssoWarn.value.providerId, callbackURL: next.value })
   if (err) error.value = err.message ?? 'SSO failed'
 }
 
 async function signInGoogle() {
-  await signIn.social({ provider: 'google', callbackURL: '/matches' })
+  await signIn.social({ provider: 'google', callbackURL: next.value })
 }
 </script>
 
@@ -80,6 +84,6 @@ async function signInGoogle() {
     <div class="flex items-center gap-3 text-xs my-1" style="color: var(--p-text-muted-color)">
       <div class="flex-1 border-t" style="border-color: var(--p-content-border-color)" />{{ t('auth.or') }}<div class="flex-1 border-t" style="border-color: var(--p-content-border-color)" />
     </div>
-    <NuxtLink to="/login" class="text-sm text-center">{{ t('auth.haveAccount') }}</NuxtLink>
+    <NuxtLink :to="{ path: '/login', query: route.query.next ? { next: route.query.next } : {} }" class="text-sm text-center">{{ t('auth.haveAccount') }}</NuxtLink>
   </div>
 </template>
