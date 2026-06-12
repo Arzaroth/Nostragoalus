@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-06-12
+
 ### Added
 - Every page now sets a proper browser-tab title (e.g. "Matches · Nostragoalus", or "Korea Republic – Czechia" on a match), instead of every tab reading "Nostragoalus".
 - The live match view shows the running clock under the score ("61'", or "HT" at the break) next to the live indicator.
