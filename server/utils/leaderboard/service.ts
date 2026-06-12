@@ -144,14 +144,17 @@ export async function getLeaderboard(
     }
   }
 
-  // Bonus points are merged in JS (a SQL join would fan out the per-prediction rows).
-  // Live provisional points (in-progress matches scored at their current
-  // scoreline) fold into the total and the tie-break counts so standings rank
-  // provisionally; livePoints is surfaced separately for the UI.
+  // Bonus points are merged in JS (a SQL join would fan out the per-prediction
+  // rows). totalPoints / exactCount / ... are the SCORED (confirmed) figures the
+  // UI shows; livePoints is the provisional delta from in-progress matches shown
+  // as "+N live". Ranking, though, is provisional: rows sort by scored + live so
+  // the standings reflect what's happening on the pitch.
   const merged = base.map((r) => {
     const championPoints = championByUser.get(r.userId) ?? 0
     const bestScorerPoints = bestScorerByUser.get(r.userId) ?? 0
     const live = opts.liveProvisional?.get(r.userId)
+    const totalPoints = r.predictionPoints + championPoints + bestScorerPoints
+    const livePoints = live?.points ?? 0
     return {
       ...r,
       championPoints,
@@ -160,15 +163,26 @@ export async function getLeaderboard(
       bestScorerPoints,
       bestScorerName: bestScorerNameByUser.get(r.userId) ?? null,
       bestScorerCode: bestScorerCodeByUser.get(r.userId) ?? null,
-      livePoints: live?.points ?? 0,
-      exactCount: r.exactCount + (live?.exact ?? 0),
-      outcomeCount: r.outcomeCount + (live?.outcome ?? 0),
-      gdCount: r.gdCount + (live?.gd ?? 0),
-      totalPoints: r.predictionPoints + championPoints + bestScorerPoints + (live?.points ?? 0),
+      livePoints,
+      totalPoints, // scored only - the live delta is added for ranking, not display
+      rankTotal: totalPoints + livePoints,
+      rankExact: r.exactCount + (live?.exact ?? 0),
+      rankOutcome: r.outcomeCount + (live?.outcome ?? 0),
+      rankGd: r.gdCount + (live?.gd ?? 0),
     }
   })
 
-  merged.sort(compareLeaderboardRows)
+  // Same ladder as compareLeaderboardRows, but on the provisional (scored + live)
+  // keys so in-progress points move players up the board.
+  merged.sort(
+    (a, b) =>
+      b.rankTotal - a.rankTotal ||
+      b.rankExact - a.rankExact ||
+      b.rankOutcome - a.rankOutcome ||
+      b.rankGd - a.rankGd ||
+      (a.joinedAt < b.joinedAt ? -1 : a.joinedAt > b.joinedAt ? 1 : 0) ||
+      (a.userId < b.userId ? -1 : a.userId > b.userId ? 1 : 0),
+  )
 
   return merged.slice(offset, offset + limit).map((r, index) => ({
     rank: offset + index + 1,
