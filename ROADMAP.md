@@ -5,11 +5,10 @@ effort buckets; order within a bucket is not priority.
 
 ## Up next
 
-- [ ] **Roadmap page (MVP)**: now that this backlog exists, the page that
-      shows it ships first. v1 = admin-filled items with status
-      (planned / in-progress / shipped), public page, CLI add command
-      (nitro task or script against the admin API); seed content from this
-      file. User suggestions + upvotes deferred to v2 (see Features below).
+- [x] **Roadmap page (MVP)** (shipped in 1.1.1): admin-filled items with
+      status (planned / in-progress / shipped), public `/roadmap` page,
+      `mise run roadmap-add` / `roadmap-seed` CLI. User suggestions +
+      upvotes deferred to v2 (see Features below).
 
 ## Quick wins
 
