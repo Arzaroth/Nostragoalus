@@ -5,11 +5,13 @@
 // One-time bootstrap so a fresh deploy's /roadmap isn't empty. After this the
 // roadmap is managed from the admin panel - editing this seed only affects a
 // fresh (still-empty) table, not a roadmap that already has items.
-import { randomUUID } from 'node:crypto'
-import pg from 'pg'
+//
+// Talks to the dockerized Postgres via `docker compose exec db psql` (same as
+// db-backup), so it needs no node_modules - works on a prod host with only the
+// built app deployed.
+import { execSync } from 'node:child_process'
 
 const force = process.env.usage_force === 'true'
-const DB = process.env.DATABASE_URL ?? 'postgres://nostragoalus:nostragoalus@localhost:5432/nostragoalus'
 
 // Curated, public-facing subset of ROADMAP.md (internal notes stay internal).
 // Order within a status = display order (position).
@@ -24,30 +26,26 @@ const ITEMS = [
   { status: 'PLANNED', title: 'Personal & what-if stats', description: 'See where a joker would have helped, how you compare to the crowd, and your prediction biases.' },
 ]
 
-const client = new pg.Client({ connectionString: DB })
-await client.connect()
-try {
-  const { rows } = await client.query('SELECT COUNT(*)::int AS n FROM roadmap_item')
-  if (rows[0].n > 0 && !force) {
-    console.log(`roadmap already has ${rows[0].n} item(s) - skipping (pass --force to seed anyway)`)
-    process.exit(0)
-  }
-  // position is per-status; restart the counter for each column.
-  const next = {}
-  let added = 0
-  for (const it of ITEMS) {
-    const pos = next[it.status] ?? 0
-    next[it.status] = pos + 1
-    await client.query('INSERT INTO roadmap_item (id, title, description, status, position) VALUES ($1, $2, $3, $4, $5)', [
-      randomUUID(),
-      it.title,
-      it.description,
-      it.status,
-      pos,
-    ])
-    added += 1
-  }
-  console.log(`seeded ${added} roadmap item(s)`)
-} finally {
-  await client.end()
-}
+const q = (s) => (s === null ? 'NULL' : `'${String(s).replace(/'/g, "''")}'`)
+const next = {}
+const values = ITEMS.map((it) => {
+  const pos = next[it.status] ?? 0
+  next[it.status] = pos + 1
+  return `(gen_random_uuid()::text, ${q(it.title)}, ${q(it.description)}, ${q(it.status)}::roadmap_status, ${pos})`
+}).join(',\n  ')
+
+// The WHERE on the SELECT (from a VALUES list) makes it a no-op when the table
+// already has items, unless --force drops the guard.
+const guard = force ? '' : '\nWHERE (SELECT count(*) FROM roadmap_item) = 0'
+const sql = `INSERT INTO roadmap_item (id, title, description, status, position)
+SELECT * FROM (VALUES
+  ${values}
+) AS v(id, title, description, status, position)${guard};`
+
+const out = execSync('docker compose exec -T db psql -U nostragoalus -d nostragoalus -v ON_ERROR_STOP=1', {
+  input: sql,
+  encoding: 'utf8',
+  shell: '/bin/sh',
+})
+const inserted = Number(/INSERT \d+ (\d+)/.exec(out)?.[1] ?? 0)
+console.log(inserted > 0 ? `seeded ${inserted} roadmap item(s)` : 'roadmap already has items - skipped (pass --force to seed anyway)')
