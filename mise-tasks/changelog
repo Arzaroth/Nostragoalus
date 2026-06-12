@@ -1,0 +1,32 @@
+#!/usr/bin/env -S node
+//MISE description="(internal) CHANGELOG.md surgery for the release task"
+//MISE hide=true
+//USAGE arg "<mode>" help="read | promote"
+//USAGE arg "[version]"
+//USAGE arg "[date]"
+
+// A multiline [Unreleased] extract/replace is brittle in sed/awk, so the release
+// task delegates it here. Run as a mise task (`mise run changelog ...`) so it
+// resolves from the project root - no path math in the caller. Builtins only.
+//   mise run changelog read                      -> print the [Unreleased] body
+//   mise run changelog promote <version> <date>  -> move it into a dated section
+import { readFileSync, writeFileSync } from 'node:fs'
+
+const mode = process.env.usage_mode
+const version = process.env.usage_version
+const date = process.env.usage_date
+const PATH = 'CHANGELOG.md'
+const changelog = readFileSync(PATH, 'utf8')
+const pending = (changelog.match(/## \[Unreleased\]\n([\s\S]*?)(?=\n## \[)/)?.[1] ?? '').trim()
+
+if (mode === 'read') {
+  process.stdout.write(pending)
+} else if (mode === 'promote') {
+  writeFileSync(
+    PATH,
+    changelog.replace(/## \[Unreleased\]\n[\s\S]*?(?=\n## \[)/, `## [Unreleased]\n\n## [${version}] - ${date}\n\n${pending}\n`),
+  )
+} else {
+  console.error('usage: mise run changelog read | promote <version> <date>')
+  process.exit(1)
+}

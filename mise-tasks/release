@@ -5,13 +5,12 @@
 
 # Move [Unreleased] into a dated version section, bump package.json, run the gate
 # (typecheck + coverage + component tests), commit, tag, push. Plain shell; the
-# only structured-text edits delegate out - jq for package.json, a small node
-# helper for the changelog (both far less brittle than sed/awk here).
+# only structured-text edits delegate out - jq for package.json, the `changelog`
+# mise task for the [Unreleased] move (both far less brittle than sed/awk here).
 set -euo pipefail
 
 version="${usage_version:-}"
 dry_run="${usage_dry_run:-false}"
-here="$(cd "$(dirname "$0")" && pwd)"
 
 if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   echo "usage: mise run release <x.y.z> [--dry-run]" >&2
@@ -26,7 +25,7 @@ if git tag -l | grep -qx "v${version}"; then
   exit 1
 fi
 
-pending="$(node "${here}/lib/changelog.mjs" read)"
+pending="$(mise run changelog read)"
 if [[ -z "$pending" ]]; then
   echo "CHANGELOG.md has no [Unreleased] content - nothing to release" >&2
   exit 1
@@ -39,8 +38,8 @@ if [[ "$dry_run" == "true" ]]; then
   exit 0
 fi
 
-# Move [Unreleased] -> dated section (node) and bump the version (jq).
-node "${here}/lib/changelog.mjs" promote "$version" "$date"
+# Move [Unreleased] -> dated section (changelog task) and bump the version (jq).
+mise run changelog promote "$version" "$date"
 tmp="$(mktemp)"
 jq --indent 2 --arg v "$version" '.version = $v' package.json > "$tmp"
 mv "$tmp" package.json
