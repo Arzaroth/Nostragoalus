@@ -90,6 +90,41 @@ effort buckets; order within a bucket is not priority.
       suggestions feed the roadmap, roadmap items get user upvotes. One
       schema, two views. CLI pull command for suggestions. Spam guard: auth
       required + rate limit.
+- [ ] **Roadmap as kanban board**: render the /roadmap page as columns per
+      status (planned / in progress / shipped) instead of stacked sections;
+      admins drag cards between columns and reorder within one (replaces the
+      up/down buttons). Public view read-only.
+- [ ] **Half-time prediction change ("the VAR")**: overturn your own call on
+      a live match before the second half kicks off.
+  - League house rule behind a new per-league **difficulty setting**; off by
+    default, league owner enables.
+  - One change per round (same scarcity as the joker) - a rescue flare, not
+    a strategy.
+  - Penalty: changed pick scores **floor(pts / 3)** - with the current tier
+    table only an exact second-half read scores at all (3->1, 2->0, 1->0).
+    Floor, not round: the design intent lives in that rounding rule.
+  - Changing **burns the joker** (no refund): the joker is a pre-match
+    confidence bet; mid-match edits forfeit it. Uniform penalty, kills the
+    "joker every round, adjust at HT" exploit.
+  - No honors on changed picks: excluded from achievements/badges/rewards.
+  - Original pick retained and shown alongside the new one.
+  - Scoring model: ONE global change per user (no per-league predictions -
+    they'd poison crowd totals, rarity and storage). Finalize computes both
+    values (original points, changed points); league boards with the rule ON
+    rank on the changed value, leagues with it OFF and the **global board
+    always rank on the original** - global stays a pure pre-match game.
+- [ ] **Match line-ups**: starting XI + bench (+ formation if the feed has
+      it) on the match view, sourced from the existing data providers.
+      Squad/player pages already exist to link into.
+- [ ] **League rewards + "My fridge"**: league owner attaches real-world
+      stakes to the season ("most exact scores -> bottle of Saint-Emilion").
+  - Criteria from a **curated, auto-computed list only** (league winner,
+    most exact scores, best matchday, most jokers converted, ...); reward is
+    free text. No custom criteria - everything resolves from data.
+  - Awarded automatically at competition end; the app tracks honor, humans
+    hand over the bottle (no in-app transactions, it's a social contract).
+  - **"My fridge"** page: every reward you've won across leagues, because
+    arguably you're winning wine bottles.
 - [ ] **Prune inactive users** (admin):
   - Users with predictions are load-bearing (historical rankings, crowd
     totals, rarity): **anonymize, never delete** - keep picks/points under
@@ -106,6 +141,15 @@ effort buckets; order within a bucket is not priority.
 
 ## Big rocks
 
+- [ ] **League import from other services** (MPP first):
+  - Spike the source format first: MPP has no public API - figure out what
+    an owner can actually export/hand us before designing the importer.
+  - Member mapping: **email first, claim-link fallback** - auto-attach to
+    existing accounts when the export has emails; everyone else becomes a
+    ghost member (display name + imported standing) holding a claim
+    link/code the owner distributes; claiming binds a real account.
+  - Imported standings are historical flavor (shown on the league), not
+    points in our ladder - scoring systems don't translate.
 - [ ] **More competitions**:
   - Spike order: UCL 2025-26 first (check the UEFA API covers it; cheap test
     of long-format comps in the round model), then EU top-5 leagues, then
