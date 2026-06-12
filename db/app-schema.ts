@@ -446,6 +446,26 @@ export const leagueMember = pgTable(
   ],
 )
 
+// Shareable join links, minted by owners/moderators. Unlike the join code
+// (a guessable short secret), tokens are 96-bit random and individually
+// revocable, with optional expiry and a capped number of uses.
+export const leagueInvite = pgTable(
+  'league_invite',
+  {
+    id: pk(),
+    leagueId: text('league_id')
+      .notNull()
+      .references(() => league.id, { onDelete: 'cascade' }),
+    token: text('token').notNull(),
+    createdBy: text('created_by').references(() => user.id, { onDelete: 'set null' }),
+    expiresAt: timestamp('expires_at', { withTimezone: true }),
+    maxUses: integer('max_uses'),
+    uses: integer('uses').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('league_invite_token_uq').on(t.token), index('league_invite_league_idx').on(t.leagueId)],
+)
+
 // A row means "do not auto-(re)join this user to this league" (SSO auto-join).
 // Written on leave/kick/admin-remove; deleted on voluntary re-join or admin add.
 export const leagueOptOut = pgTable(
