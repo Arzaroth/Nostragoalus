@@ -7,17 +7,16 @@ import { compareLeaderboardRows, getLeaderboard } from './service'
 import { bestScorerPick, championPick, prediction, user } from '../../../db/schema'
 
 describe('compareLeaderboardRows', () => {
-  const base = { totalPoints: 0, exactCount: 0, outcomeCount: 0, gdCount: 0, joinedAt: new Date('2026-01-01'), userId: 'a' }
-  it('applies each tie-break level in order', () => {
+  const base = { totalPoints: 0, exactCount: 0, outcomeCount: 0, gdCount: 0, userId: 'a' }
+  it('applies each tie-break level in order, with userId only stabilising order', () => {
     expect(compareLeaderboardRows({ ...base, totalPoints: 1 }, { ...base, totalPoints: 2 })).toBeGreaterThan(0)
     expect(compareLeaderboardRows({ ...base, exactCount: 2 }, { ...base, exactCount: 1 })).toBeLessThan(0)
     expect(compareLeaderboardRows({ ...base, outcomeCount: 2 }, { ...base, outcomeCount: 1 })).toBeLessThan(0)
     expect(compareLeaderboardRows({ ...base, gdCount: 2 }, { ...base, gdCount: 1 })).toBeLessThan(0)
-    expect(compareLeaderboardRows({ ...base, joinedAt: new Date('2026-01-01') }, { ...base, joinedAt: new Date('2026-02-01') })).toBeLessThan(0)
-    expect(compareLeaderboardRows({ ...base, joinedAt: new Date('2026-03-01') }, { ...base, joinedAt: new Date('2026-02-01') })).toBeGreaterThan(0)
     expect(compareLeaderboardRows({ ...base, userId: 'a' }, { ...base, userId: 'b' })).toBeLessThan(0)
     expect(compareLeaderboardRows({ ...base, userId: 'b' }, { ...base, userId: 'a' })).toBeGreaterThan(0)
-    expect(compareLeaderboardRows({ ...base }, { ...base })).toBe(0)
+    // Equal on the whole ladder (userId aside) compares as a true tie either way.
+    expect(compareLeaderboardRows({ ...base, userId: 'x' }, { ...base, userId: 'x' })).toBe(0)
   })
 })
 

@@ -368,7 +368,11 @@ export function normalizeFifaTimeline(
     // Period markers carry their own text; a curated event with no description
     // (rare) is not worth a blank row.
     if (!text) continue
-    const side = e.IdTeam && e.IdTeam === homeTeamId ? 'HOME' : e.IdTeam && e.IdTeam === awayTeamId ? 'AWAY' : null
+    const rawSide = e.IdTeam && e.IdTeam === homeTeamId ? 'HOME' : e.IdTeam && e.IdTeam === awayTeamId ? 'AWAY' : null
+    // An own goal's IdTeam is the scorer's own team, but the goal counts for the
+    // opponent (the side whose running score ticks up) - place it there, matching
+    // the under-score timeline.
+    const side = kind === 'own-goal' && rawSide ? (rawSide === 'HOME' ? 'AWAY' : 'HOME') : rawSide
     events.push({
       kind,
       side,
