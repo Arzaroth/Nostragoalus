@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- **Roadmap**: a public `/roadmap` page (linked in the footer) showing what's **in progress**, **planned**, and **shipped**. Admins curate it from the admin panel - add, edit, delete items, move them between columns and reorder within a column - and there's a `mise run roadmap-add` CLI for quick entries.
+
 ## [1.0.2] - 2026-06-12
 
 ### Changed
