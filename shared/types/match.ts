@@ -83,6 +83,34 @@ export interface NormalizedGoal {
   assistPlayerName: string | null
 }
 
+// A single curated play-by-play entry. `kind` drives the icon/emphasis; `text`
+// is the provider's ready-made commentary line. `side` is null for neutral
+// markers (period start/end, VAR).
+export type TimelineEventKind =
+  | 'goal'
+  | 'own-goal'
+  | 'penalty-goal'
+  | 'penalty-missed'
+  | 'penalty-awarded'
+  | 'assist'
+  | 'yellow'
+  | 'red'
+  | 'second-yellow'
+  | 'sub'
+  | 'shot'
+  | 'var'
+  | 'period'
+
+export interface TimelineEvent {
+  kind: TimelineEventKind
+  side: 'HOME' | 'AWAY' | null
+  minute: string | null
+  text: string
+  // Running score at this point in the match (goals only carry it meaningfully).
+  homeScore: number | null
+  awayScore: number | null
+}
+
 export interface TeamCards {
   yellow: number
   red: number

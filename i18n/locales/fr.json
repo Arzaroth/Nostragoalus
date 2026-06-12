@@ -278,6 +278,8 @@
     "form": "Forme",
     "next": "À venir",
     "h2h": "Confrontations",
+    "playByPlay": "Fil du match",
+    "playByPlayEmpty": "Pas encore de fil du match pour cette rencontre.",
     "scorers": "Buteurs",
     "players": "Joueurs",
     "assists": "Passeurs",

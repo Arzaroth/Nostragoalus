@@ -40,11 +40,23 @@ const scorers = computed<any[]>(() => scorersData.value?.scorers ?? [])
 const { data: detailData, status: detailStatus, clear: clearDetail, refresh: refreshDetail } = await useFetch<{ detail: any }>(`/api/matches/${id.value}/live-detail`, { lazy: true })
 const detail = computed(() => detailData.value?.detail)
 
+// The play-by-play is heavy (hundreds of events) and behind a tab - fetch it
+// only once that tab is opened, then refresh it on the live poll.
+const {
+  data: timelineData,
+  status: timelineStatus,
+  clear: clearTimeline,
+  refresh: refreshTimeline,
+  execute: loadTimeline,
+} = await useFetch<{ events: any[] }>(`/api/matches/${id.value}/timeline`, { lazy: true, immediate: false })
+const playByPlay = computed<any[]>(() => timelineData.value?.events ?? [])
+
 // These FIFA-backed fetches can run for seconds; leaving the page aborts them.
 useCancelOnLeave(
   { status: insightsStatus, clear: clearInsights },
   { status: scorersStatus, clear: clearScorers },
   { status: detailStatus, clear: clearDetail },
+  { status: timelineStatus, clear: clearTimeline },
 )
 
 const m = computed(() => data.value?.match)
@@ -110,7 +122,13 @@ watch(
   isLive,
   (on) => {
     clearInterval(liveStatsTimer)
-    if (on && import.meta.client) liveStatsTimer = setInterval(() => { refreshInsights(); refreshDetail() }, 45_000)
+    if (on && import.meta.client)
+      liveStatsTimer = setInterval(() => {
+        refreshInsights()
+        refreshDetail()
+        // Only keep the play-by-play warm once it has been opened.
+        if (timelineStatus.value !== 'idle') refreshTimeline()
+      }, 45_000)
   },
   { immediate: true },
 )
@@ -145,6 +163,28 @@ const hasStats = computed(
   () => homeGoalEvents.value.length > 0 || awayGoalEvents.value.length > 0 || insights.value?.possession?.home != null || !!detail.value,
 )
 const hadShootout = computed(() => ((m.value?.penaltiesHome ?? 0) + (m.value?.penaltiesAway ?? 0)) > 0)
+// The play-by-play tab is offered once the match is under way (the feed is empty
+// before kickoff); on finished matches it stays for the full record.
+const hasStarted = computed(() => isLive.value || status.value === 'FINISHED')
+
+// Emoji per play-by-play event kind; goals/own-goals/penalties read as the loud
+// moments, the rest are quieter markers.
+const TIMELINE_ICONS: Record<string, string> = {
+  goal: '⚽',
+  'own-goal': '⚽',
+  'penalty-goal': '⚽',
+  'penalty-missed': '❌',
+  'penalty-awarded': '🎯',
+  assist: '👟',
+  yellow: '🟨',
+  red: '🟥',
+  'second-yellow': '🟥',
+  sub: '🔄',
+  shot: '🥅',
+  var: '📺',
+  period: '⏱️',
+}
+const GOAL_KINDS = new Set(['goal', 'own-goal', 'penalty-goal'])
 
 function cardEvents(side: 'HOME' | 'AWAY') {
   return (detail.value?.bookings ?? []).filter((b: any) => b.side === side)
@@ -197,7 +237,9 @@ const statRows = computed(() => {
   ].filter((r) => r.home !== '–' || r.away !== '–')
 })
 // The open tab lives in the URL so a refresh (or a shared link) lands on it.
-const activeTab = ref((route.query.tab as string) || 'stats')
+// With no explicit tab, a live match opens straight on the play-by-play; any
+// other state defaults to stats.
+const activeTab = ref((route.query.tab as string) || (isLive.value ? 'timeline' : 'stats'))
 // No stats (upcoming match) and no explicit choice: land on form instead.
 watch([() => detailStatus.value, () => insightsStatus.value], () => {
   if (!route.query.tab && eventsReady.value && !hasStats.value && activeTab.value === 'stats') activeTab.value = 'form'
@@ -205,6 +247,9 @@ watch([() => detailStatus.value, () => insightsStatus.value], () => {
 watch(activeTab, (tab) => {
   router.replace({ query: { ...route.query, tab: tab === 'stats' ? undefined : tab } })
 })
+// Lazy-load the play-by-play the first time its tab is opened (immediate covers
+// a direct landing on ?tab=timeline).
+watch(activeTab, (tab) => { if (tab === 'timeline' && timelineStatus.value === 'idle') loadTimeline() }, { immediate: true })
 
 // All-time head-to-head (FIFA's full calendar: friendlies, qualifiers,
 // championships) from the home side's perspective; our own data as fallback.
@@ -371,6 +416,7 @@ function toggleFormInfo(side: string, i: number | string) {
     <div v-if="insights" class="rounded-2xl border p-2 sm:p-4" style="background: var(--p-content-background); border-color: var(--p-content-border-color)">
       <Tabs v-model:value="activeTab">
         <TabList>
+          <Tab v-if="hasStarted" value="timeline">{{ t('match.playByPlay') }}</Tab>
           <Tab v-if="hasStats || detailStatus === 'pending'" value="stats">{{ t('match.stats') }}</Tab>
           <Tab v-if="insights.standings" value="standings">{{ t('match.standings') }}</Tab>
           <Tab value="form">{{ t('match.form') }}</Tab>
@@ -533,6 +579,32 @@ function toggleFormInfo(side: string, i: number | string) {
               </component>
             </div>
             </template>
+          </TabPanel>
+
+          <TabPanel v-if="hasStarted" value="timeline">
+            <!-- skeleton on the first open; a live refresh keeps the list in place -->
+            <div v-if="timelineStatus === 'pending' && !playByPlay.length" class="flex flex-col gap-2">
+              <div v-for="i in 8" :key="i" class="flex items-center gap-3 py-1">
+                <Skeleton width="2rem" height="0.9rem" />
+                <Skeleton width="1.25rem" height="1.25rem" shape="circle" />
+                <Skeleton :width="`${8 + (i % 4) * 2}rem`" height="0.9rem" />
+              </div>
+            </div>
+            <div v-else-if="!playByPlay.length" class="text-sm text-center py-4" style="color: var(--p-text-muted-color)">{{ t('match.playByPlayEmpty') }}</div>
+            <div v-else class="flex flex-col">
+              <div
+                v-for="(e, i) in playByPlay"
+                :key="i"
+                class="grid grid-cols-[2.25rem_1.5rem_1fr_auto] items-baseline gap-2 border-t py-2 pl-2"
+                :class="GOAL_KINDS.has(e.kind) ? 'font-semibold' : ''"
+                :style="`border-left: 2px solid ${e.side === 'HOME' ? 'var(--p-primary-color)' : e.side === 'AWAY' ? '#71717a' : 'transparent'}; border-top-color: var(--p-content-border-color)`"
+              >
+                <span class="tabular-nums text-xs text-right" style="color: var(--p-text-muted-color)">{{ e.minute }}</span>
+                <span class="text-center leading-none">{{ TIMELINE_ICONS[e.kind] || '•' }}</span>
+                <span :style="e.side ? '' : 'color: var(--p-text-muted-color)'">{{ e.text }}</span>
+                <span v-if="GOAL_KINDS.has(e.kind) && e.homeScore != null" class="tabular-nums text-xs px-1.5 py-0.5 rounded" style="background: var(--p-content-border-color)">{{ e.homeScore }}–{{ e.awayScore }}</span>
+              </div>
+            </div>
           </TabPanel>
 
           <TabPanel v-if="scorers.length" value="scorers">

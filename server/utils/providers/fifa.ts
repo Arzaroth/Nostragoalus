@@ -14,6 +14,8 @@ import type {
   Team,
   TeamMatchStats,
   TeamSeasonStats,
+  TimelineEvent,
+  TimelineEventKind,
   TopScorer,
   Winner,
 } from '../../../shared/types/match'
@@ -310,6 +312,71 @@ export function normalizeFifaMatchDetail(detail: FifaMatchDetailResponse): Match
     homeTeamId: detail.HomeTeam?.IdTeam ?? null,
     awayTeamId: detail.AwayTeam?.IdTeam ?? null,
   }
+}
+
+export interface FifaTimelineEvent {
+  Type?: number | null
+  MatchMinute?: string | null
+  Period?: number | null
+  IdTeam?: string | null
+  HomeGoals?: number | null
+  AwayGoals?: number | null
+  EventDescription?: FifaLocalized[] | null
+}
+
+export interface FifaTimelineResponse {
+  Event?: FifaTimelineEvent[] | null
+}
+
+// Curated FIFA "Type" codes -> our event kind. Anything not in this map (fouls,
+// throw-ins, offsides, clearances, duels, coin toss…) is dropped as noise. Both
+// 0 and 39 are scored as plain "Goal!" in the feed.
+const FIFA_EVENT_KINDS: Record<number, TimelineEventKind> = {
+  0: 'goal',
+  39: 'goal',
+  34: 'own-goal',
+  41: 'penalty-goal',
+  51: 'penalty-missed',
+  60: 'penalty-missed',
+  65: 'penalty-missed',
+  6: 'penalty-awarded',
+  1: 'assist',
+  2: 'yellow',
+  3: 'red',
+  4: 'second-yellow',
+  5: 'sub',
+  12: 'shot',
+  71: 'var',
+  7: 'period',
+  8: 'period',
+  26: 'period',
+}
+
+export function normalizeFifaTimeline(
+  response: FifaTimelineResponse,
+  homeTeamId?: string | null,
+  awayTeamId?: string | null,
+): TimelineEvent[] {
+  const events: TimelineEvent[] = []
+  for (const e of response.Event ?? []) {
+    const kind = e.Type == null ? undefined : FIFA_EVENT_KINDS[e.Type]
+    if (!kind) continue
+    const text = e.EventDescription?.[0]?.Description?.trim()
+    // Period markers carry their own text; a curated event with no description
+    // (rare) is not worth a blank row.
+    if (!text) continue
+    const side = e.IdTeam && e.IdTeam === homeTeamId ? 'HOME' : e.IdTeam && e.IdTeam === awayTeamId ? 'AWAY' : null
+    events.push({
+      kind,
+      side,
+      minute: e.MatchMinute ?? null,
+      text,
+      homeScore: e.HomeGoals ?? null,
+      awayScore: e.AwayGoals ?? null,
+    })
+  }
+  // Feed is chronological; the UI wants newest first.
+  return events.reverse()
 }
 
 const FIFA_POSITIONS: Record<number, SquadPlayer['position']> = { 0: 'GK', 1: 'DF', 2: 'MF', 3: 'FW' }
@@ -698,6 +765,10 @@ export function fifaProvider(options: FifaOptions): MatchDataProvider {
           : `${baseUrl}/live/football/${matchId}?language=en`,
       )
       return normalizeFifaMatchDetail(detail)
+    },
+    async getMatchTimeline({ matchId, homeTeamId, awayTeamId }: { matchId: string; homeTeamId?: string | null; awayTeamId?: string | null }) {
+      const response = await getJson<FifaTimelineResponse>(`${baseUrl}/timelines/${matchId}?language=en`)
+      return normalizeFifaTimeline(response, homeTeamId, awayTeamId)
     },
     async getBracket() {
       return normalizeFifaBracket(

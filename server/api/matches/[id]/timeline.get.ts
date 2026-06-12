@@ -1,0 +1,73 @@
+import { eq } from 'drizzle-orm'
+import { db } from '../../../../db'
+import { match } from '../../../../db/schema'
+import { providerForCompetition } from '../../../utils/providers'
+import { getCompetitionById } from '../../../utils/competitions/store'
+import { resolveCompetitionSeason } from '../../../utils/sync/competition'
+
+// Finished timelines never change again - cache for the process lifetime. Live
+// matches refresh every minute so new events show up. (Single instance: an
+// in-memory map is enough.)
+const cache = new Map<string, { at: number; final: boolean; events: unknown }>()
+const TTL_MS = 60 * 1000
+
+export default defineEventHandler(async (event) => {
+  const id = getRouterParam(event, 'id') as string
+  const cached = cache.get(id)
+  if (cached && (cached.final || Date.now() - cached.at < TTL_MS)) return { events: cached.events }
+
+  const rows = await db
+    .select({ providerMatchId: match.providerMatchId, providerStageId: match.providerStageId, competitionId: match.competitionId, status: match.status })
+    .from(match)
+    .where(eq(match.id, id))
+    .limit(1)
+  if (rows.length === 0) return { events: [] }
+
+  const competition = await getCompetitionById(db, rows[0].competitionId)
+  if (!competition) return { events: [] }
+  const provider = providerForCompetition(competition, await resolveCompetitionSeason(db, competition))
+  if (!provider.getMatchTimeline) return { events: [] }
+
+  try {
+    // The timeline tags each event with a provider team id; the detail resolves
+    // which of those is home/away so the UI can lace events onto the right side.
+    const detail = provider.getMatchDetail
+      ? await provider.getMatchDetail({ stageId: rows[0].providerStageId ?? undefined, matchId: rows[0].providerMatchId })
+      : null
+    const events = await provider.getMatchTimeline({
+      matchId: rows[0].providerMatchId,
+      homeTeamId: detail?.homeTeamId,
+      awayTeamId: detail?.awayTeamId,
+    })
+    cache.set(id, { at: Date.now(), final: rows[0].status === 'FINISHED', events })
+    return { events }
+  } catch {
+    return { events: [] }
+  }
+})
+
+defineRouteMeta({
+  openAPI: {
+    "tags": [
+      "Matches"
+    ],
+    "summary": "Match play-by-play timeline",
+    "description": "Curated minute-by-minute events (goals, cards, subs, shots, penalties, VAR, period markers) from the upstream feed, newest first. Cached one minute while live, for the process lifetime once finished.",
+    "parameters": [
+      {
+        "in": "path",
+        "name": "id",
+        "required": true,
+        "description": "Internal match id (UUID).",
+        "schema": {
+          "type": "string"
+        }
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Curated, newest-first event list (empty when the provider has nothing)."
+      }
+    }
+  },
+})

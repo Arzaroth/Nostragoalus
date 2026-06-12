@@ -5,6 +5,7 @@ import type {
   SquadPlayer,
   TeamMatchStats,
   TeamSeasonStats,
+  TimelineEvent,
   TopScorer,
 } from '../../../shared/types/match'
 
@@ -40,6 +41,9 @@ export interface MatchDataProvider {
   }>
   // Optional: per-match team stats (attempts, passes, distance…) keyed by team id.
   getMatchStats?(opts: { ifesId: string }): Promise<Record<string, TeamMatchStats> | null>
+  // Optional: curated play-by-play timeline (goals, cards, subs, shots, VAR…) -
+  // FIFA exposes this keyless. homeTeamId/awayTeamId map each event to a side.
+  getMatchTimeline?(opts: { matchId: string; homeTeamId?: string | null; awayTeamId?: string | null }): Promise<TimelineEvent[]>
 }
 
 export class ProviderRateLimitError extends Error {
