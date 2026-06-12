@@ -1,12 +1,14 @@
 #!/usr/bin/env -S node
 //MISE description="Dump the dockerized Postgres to backups/ (pg_dump custom format)"
 //USAGE arg "[outdir]" help="Destination directory (default: ./backups)"
+//USAGE flag "--keep <n>" help="Keep only the newest N dumps (env BACKUP_KEEP; 0 = unlimited)"
+//USAGE flag "--max-age-days <d>" help="Delete dumps older than D days (env BACKUP_MAX_AGE_DAYS; 0 = unlimited)"
 
 // Equivalent raw command:
 //   docker compose exec -T db pg_dump -U nostragoalus -Fc nostragoalus > backups/nostragoalus-<stamp>.dump
 // Custom format (-Fc) is compressed and restorable table-by-table with pg_restore.
 import { execSync } from 'node:child_process'
-import { mkdirSync, statSync } from 'node:fs'
+import { mkdirSync, statSync, readdirSync, unlinkSync } from 'node:fs'
 
 const outdir = process.env.usage_outdir || 'backups'
 mkdirSync(outdir, { recursive: true })
@@ -25,4 +27,28 @@ if (size < 1024) {
   process.exit(1)
 }
 console.log(`wrote ${file} (${(size / 1024 / 1024).toFixed(1)} MiB)`)
+
+// Retention: prune old dumps by count and/or age. Both default to unlimited, so
+// without flags/env nothing is deleted (the long-standing behaviour). CLI flags
+// win over env vars.
+const keep = Number(process.env.usage_keep || process.env.BACKUP_KEEP || 0)
+const maxAgeDays = Number(process.env.usage_max_age_days || process.env.BACKUP_MAX_AGE_DAYS || 0)
+if (keep > 0 || maxAgeDays > 0) {
+  const dumps = readdirSync(outdir)
+    .filter((f) => /^nostragoalus-.*\.dump$/.test(f))
+    .map((f) => ({ path: `${outdir}/${f}`, mtime: statSync(`${outdir}/${f}`).mtimeMs }))
+    .sort((a, b) => b.mtime - a.mtime) // newest first
+  const doomed = new Set()
+  if (keep > 0) dumps.slice(keep).forEach((d) => doomed.add(d.path))
+  if (maxAgeDays > 0) {
+    const cutoff = Date.now() - maxAgeDays * 86_400_000
+    dumps.forEach((d) => d.mtime < cutoff && doomed.add(d.path))
+  }
+  doomed.delete(file) // never prune the dump we just wrote
+  for (const path of doomed) {
+    unlinkSync(path)
+    console.log(`pruned ${path}`)
+  }
+}
+
 console.log(`restore with: mise run db-restore ${file}`)
