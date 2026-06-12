@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-06-13
+
 ### Added
 - Nostragoalus is now an installable PWA (app icons + web manifest), so you can add it to your home screen and launch it like an app.
 - A "new version available" banner appears after a deploy and reloads to the fresh build on your tap, instead of leaving you on a stale bundle. It never reloads mid-prediction, and a later deploy re-surfaces it even if you dismissed an earlier one.
