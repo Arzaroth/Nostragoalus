@@ -222,7 +222,7 @@ export async function claimMembership(db: AppDatabase, leagueId: string, userId:
 // Joining an ownerless league (admin-created without an owner, emptied by
 // everyone leaving, or orphaned by account deletion) claims ownership: the
 // first one in becomes OWNER. Applies to code, public and SSO auto-joins.
-async function addMembership(db: AppDatabase, leagueId: string, userId: string): Promise<LeagueRole> {
+export async function addMembership(db: AppDatabase, leagueId: string, userId: string): Promise<LeagueRole> {
   const role = await claimMembership(db, leagueId, userId)
   await db.delete(leagueOptOut).where(and(eq(leagueOptOut.leagueId, leagueId), eq(leagueOptOut.userId, userId)))
   await stampPromptDismissed(db, userId)

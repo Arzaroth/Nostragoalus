@@ -155,6 +155,13 @@
       "when": 1781223268202,
       "tag": "0021_roadmap_item",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1781301959736,
+      "tag": "0022_league_invite",
+      "breakpoints": true
     }
   ]
 }
