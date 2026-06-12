@@ -41,6 +41,7 @@ const stack: { group: string; items: StackItem[] }[] = [
       { name: 'Leaflet', logo: 'leaflet', desc: 'An open-source library for mobile-friendly interactive maps', url: 'https://leafletjs.com', license: 'BSD-2-Clause', licenseUrl: 'https://github.com/Leaflet/Leaflet/blob/main/LICENSE' },
       { name: 'marked', logo: 'markdown', desc: 'A markdown parser and compiler built for speed', url: 'https://marked.js.org', license: 'MIT', licenseUrl: 'https://github.com/markedjs/marked/blob/master/LICENSE.md' },
       { name: 'DOMPurify', logo: 'https://cure53.de/favicon.ico', desc: 'A DOM-only, super-fast, uber-tolerant XSS sanitizer for HTML, MathML and SVG', url: 'https://cure53.de/purify', license: 'Apache-2.0 OR MPL-2.0', licenseUrl: 'https://github.com/cure53/DOMPurify/blob/main/LICENSE' },
+      { name: 'Vite PWA', logo: 'https://vite-pwa-org.netlify.app/favicon.svg', desc: 'Zero-config PWA framework-agnostic plugin for Vite', url: 'https://vite-pwa-org.netlify.app', license: 'MIT', licenseUrl: 'https://github.com/vite-pwa/vite-plugin-pwa/blob/main/LICENSE' },
     ],
   },
   {
