@@ -6,11 +6,13 @@
 
 // Talks to the dockerized Postgres via `docker compose exec db psql` (same as
 // db-backup), so it needs no node_modules - works on a prod host with only the
-// built app deployed.
-import { execSync } from 'node:child_process'
+// built app deployed. Values are passed as psql variables and interpolated with
+// :'var' (psql quotes/escapes them), so there's no hand-rolled SQL string
+// building; execFileSync runs without a shell, so no shell quoting either.
+import { execFileSync } from 'node:child_process'
 
 const title = (process.env.usage_title || '').trim()
-const description = (process.env.usage_description || '').trim() || null
+const description = (process.env.usage_description || '').trim()
 const status = (process.env.usage_status || 'PLANNED').toUpperCase()
 
 const STATUSES = ['PLANNED', 'IN_PROGRESS', 'SHIPPED']
@@ -23,17 +25,23 @@ if (!STATUSES.includes(status)) {
   process.exit(1)
 }
 
-const q = (s) => (s === null ? 'NULL' : `'${String(s).replace(/'/g, "''")}'`)
-// Append at the end of the status column (position is per-status).
+// :'var' = psql's quoted-literal interpolation; NULLIF turns an empty
+// description into NULL. position is per-status (append at the end).
 const sql = `INSERT INTO roadmap_item (id, title, description, status, position)
-SELECT gen_random_uuid()::text, ${q(title)}, ${q(description)}, ${q(status)}::roadmap_status, COALESCE(MAX(position), -1) + 1
-FROM roadmap_item WHERE status = ${q(status)}::roadmap_status
+SELECT gen_random_uuid()::text, :'title', NULLIF(:'descr', ''), :'st'::roadmap_status, COALESCE(MAX(position), -1) + 1
+FROM roadmap_item WHERE status = :'st'::roadmap_status
 RETURNING id;`
 
-const out = execSync('docker compose exec -T db psql -U nostragoalus -d nostragoalus -tA -v ON_ERROR_STOP=1', {
-  input: sql,
-  encoding: 'utf8',
-  shell: '/bin/sh',
-})
-const id = out.trim().split('\n')[0]
-console.log(`added roadmap item ${id} [${status}] ${title}`)
+const out = execFileSync(
+  'docker',
+  [
+    'compose', 'exec', '-T', 'db',
+    'psql', '-U', 'nostragoalus', '-d', 'nostragoalus', '-tA',
+    '-v', 'ON_ERROR_STOP=1',
+    '-v', `title=${title}`,
+    '-v', `descr=${description}`,
+    '-v', `st=${status}`,
+  ],
+  { input: sql, encoding: 'utf8' },
+)
+console.log(`added roadmap item ${out.trim().split('\n')[0]} [${status}] ${title}`)
