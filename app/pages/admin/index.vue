@@ -569,6 +569,9 @@ function createUser() {
       <!-- Leagues -->
       <AdminLeaguesSection :is-admin="isAdmin" />
 
+      <!-- Roadmap -->
+      <AdminRoadmapSection :is-admin="isAdmin" />
+
       <!-- Data -->
       <section class="ng-card rounded-2xl border overflow-hidden" style="background: var(--p-content-background)">
         <div class="grid md:grid-cols-3 gap-6 p-6">

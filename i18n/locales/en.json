@@ -365,6 +365,18 @@
   "admin": {
     "title": "Admin",
     "forbidden": "You don't have admin access.",
+    "roadmap": {
+      "title": "Roadmap",
+      "hint": "Curate the public roadmap: add, edit, reorder and ship items.",
+      "add": "Add item",
+      "titleLabel": "Title",
+      "descriptionLabel": "Description (optional)",
+      "edit": "Edit item",
+      "save": "Save",
+      "delete": "Delete",
+      "moveUp": "Move up",
+      "moveDown": "Move down"
+    },
     "sso": {
       "title": "Single Sign-On",
       "hint": "Configure OIDC, SAML or Google identity providers. Client secrets are envelope-encrypted at rest.",
@@ -531,6 +543,14 @@
     "dataText": "Match data comes from publicly accessible FIFA and UEFA endpoints (unofficial, read-only, politely rate-limited). Map tiles by OpenStreetMap contributors. This project is not affiliated with or endorsed by FIFA or UEFA.",
     "changelogTitle": "Changelog",
     "sourceCta": "Read the source"
+  },
+  "roadmap": {
+    "title": "Roadmap",
+    "sub": "What's planned, what's being built, and what already shipped.",
+    "planned": "Planned",
+    "inProgress": "In progress",
+    "shipped": "Shipped",
+    "empty": "Nothing here yet - watch this space."
   },
   "footer": {
     "builtWith": "Made with ♥️ from 🇫🇷",

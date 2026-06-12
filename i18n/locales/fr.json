@@ -365,6 +365,18 @@
   "admin": {
     "title": "Admin",
     "forbidden": "Vous n'avez pas l'accès administrateur.",
+    "roadmap": {
+      "title": "Feuille de route",
+      "hint": "Gérez la feuille de route publique : ajout, édition, réorganisation et livraison.",
+      "add": "Ajouter",
+      "titleLabel": "Titre",
+      "descriptionLabel": "Description (optionnelle)",
+      "edit": "Modifier l'élément",
+      "save": "Enregistrer",
+      "delete": "Supprimer",
+      "moveUp": "Monter",
+      "moveDown": "Descendre"
+    },
     "sso": {
       "title": "Authentification unique (SSO)",
       "hint": "Configurez des fournisseurs OIDC, SAML ou Google. Les secrets sont chiffrés au repos.",
@@ -531,6 +543,14 @@
     "dataText": "Les données des matchs proviennent de points d'accès FIFA et UEFA publiquement accessibles (non officiels, lecture seule, poliment limités en débit). Tuiles de carte par les contributeurs OpenStreetMap. Ce projet n'est ni affilié ni approuvé par la FIFA ou l'UEFA.",
     "changelogTitle": "Journal des modifications",
     "sourceCta": "Lire le code source"
+  },
+  "roadmap": {
+    "title": "Feuille de route",
+    "sub": "Ce qui est prévu, en cours de développement et déjà livré.",
+    "planned": "Prévu",
+    "inProgress": "En cours",
+    "shipped": "Livré",
+    "empty": "Rien ici pour l'instant."
   },
   "footer": {
     "builtWith": "Fait avec ♥️ depuis la 🇫🇷",
