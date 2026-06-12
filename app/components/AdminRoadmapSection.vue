@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import type { RoadmapItem, RoadmapStatus } from '../composables/useRoadmap'
+import { groupByStatus } from '../composables/useRoadmap'
 
 const props = defineProps<{ isAdmin: boolean }>()
 
@@ -15,16 +16,18 @@ const { data: items, isPending } = useQuery({
 })
 const invalidate = () => queryClient.invalidateQueries({ queryKey: ['roadmap'] })
 
+// Surfaced for the status/reorder/delete actions (the create form has its own).
+const actionErr = ref('')
+const onActionError = (e: any) => {
+  actionErr.value = e?.data?.statusMessage || t('admin.roadmap.actionFailed')
+}
+
 const statusOptions = computed(() => [
   { label: t('roadmap.planned'), value: 'PLANNED' },
   { label: t('roadmap.inProgress'), value: 'IN_PROGRESS' },
   { label: t('roadmap.shipped'), value: 'SHIPPED' },
 ])
-const grouped = computed(() => {
-  const groups: Record<RoadmapStatus, RoadmapItem[]> = { IN_PROGRESS: [], PLANNED: [], SHIPPED: [] }
-  for (const item of items.value ?? []) groups[item.status].push(item)
-  return groups
-})
+const grouped = computed(() => groupByStatus(items.value))
 
 // Create form
 const newTitle = ref('')
@@ -56,23 +59,34 @@ const createMutation = useMutation({
 const updateMutation = useMutation({
   mutationFn: (input: { id: string; body: Partial<Pick<RoadmapItem, 'title' | 'description' | 'status' | 'position'>> }) =>
     $fetch<unknown>(`/api/admin/roadmap/${input.id}`, { method: 'PUT', body: input.body }),
-  onSuccess: invalidate,
+  onSuccess: () => {
+    actionErr.value = ''
+    invalidate()
+  },
+  onError: onActionError,
 })
 const setStatus = (item: RoadmapItem, status: RoadmapStatus) => updateMutation.mutate({ id: item.id, body: { status } })
 
-// Swap positions with the neighbor in the same status group.
-function move(item: RoadmapItem, dir: -1 | 1) {
-  const siblings = grouped.value[item.status]
-  const idx = siblings.findIndex((s) => s.id === item.id)
-  const neighbor = siblings[idx + dir]
-  if (!neighbor) return
-  updateMutation.mutate({ id: item.id, body: { position: neighbor.position } })
-  updateMutation.mutate({ id: neighbor.id, body: { position: item.position } })
-}
+// Reorder atomically server-side (one request swaps with the neighbor) rather
+// than firing two independent position writes that could leave the list corrupt.
+const moveMutation = useMutation({
+  mutationFn: (input: { id: string; direction: 'up' | 'down' }) =>
+    $fetch<unknown>(`/api/admin/roadmap/${input.id}/move`, { method: 'POST', body: { direction: input.direction } }),
+  onSuccess: () => {
+    actionErr.value = ''
+    invalidate()
+  },
+  onError: onActionError,
+})
+const move = (item: RoadmapItem, direction: 'up' | 'down') => moveMutation.mutate({ id: item.id, direction })
 
 const deleteMutation = useMutation({
   mutationFn: (id: string) => $fetch<unknown>(`/api/admin/roadmap/${id}`, { method: 'DELETE' }),
-  onSuccess: invalidate,
+  onSuccess: () => {
+    actionErr.value = ''
+    invalidate()
+  },
+  onError: onActionError,
 })
 
 // Edit dialog
@@ -119,6 +133,7 @@ function saveEdit() {
     </div>
 
     <div class="border-t" style="border-color: var(--p-content-border-color)">
+      <Message v-if="actionErr" severity="error" size="small" class="mx-6 mt-3">{{ actionErr }}</Message>
       <div v-if="isPending" class="px-6 py-4 opacity-60">{{ t('common.loading') }}</div>
       <template v-for="opt in statusOptions" :key="opt.value">
         <div
@@ -136,7 +151,7 @@ function saveEdit() {
               severity="secondary"
               :disabled="idx === 0"
               :aria-label="t('admin.roadmap.moveUp')"
-              @click="move(item, -1)"
+              @click="move(item, 'up')"
             />
             <Button
               icon="pi pi-chevron-down"
@@ -146,7 +161,7 @@ function saveEdit() {
               severity="secondary"
               :disabled="idx === grouped[opt.value as RoadmapStatus].length - 1"
               :aria-label="t('admin.roadmap.moveDown')"
-              @click="move(item, 1)"
+              @click="move(item, 'down')"
             />
           </div>
           <div class="flex-1 min-w-0">

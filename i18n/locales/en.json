@@ -375,7 +375,8 @@
       "save": "Save",
       "delete": "Delete",
       "moveUp": "Move up",
-      "moveDown": "Move down"
+      "moveDown": "Move down",
+      "actionFailed": "That action failed - try again."
     },
     "sso": {
       "title": "Single Sign-On",
@@ -550,7 +551,8 @@
     "planned": "Planned",
     "inProgress": "In progress",
     "shipped": "Shipped",
-    "empty": "Nothing here yet - watch this space."
+    "empty": "Nothing here yet - watch this space.",
+    "error": "Couldn't load the roadmap right now."
   },
   "footer": {
     "builtWith": "Made with ♥️ from 🇫🇷",

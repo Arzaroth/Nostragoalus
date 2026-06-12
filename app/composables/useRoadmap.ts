@@ -11,6 +11,14 @@ export interface RoadmapItem {
   updatedAt: string
 }
 
+// Bucket items into their status columns (shared by the public page and the
+// admin editor so the grouping logic lives in one place).
+export function groupByStatus(items: RoadmapItem[] | undefined): Record<RoadmapStatus, RoadmapItem[]> {
+  const groups: Record<RoadmapStatus, RoadmapItem[]> = { PLANNED: [], IN_PROGRESS: [], SHIPPED: [] }
+  for (const item of items ?? []) groups[item.status].push(item)
+  return groups
+}
+
 export function useRoadmap() {
   return useQuery({
     queryKey: ['roadmap'],

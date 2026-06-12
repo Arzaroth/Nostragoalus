@@ -6,6 +6,7 @@ import {
   createRoadmapItem,
   deleteRoadmapItem,
   listRoadmapItems,
+  reorderRoadmapItem,
   updateRoadmapItem,
 } from './service'
 
@@ -51,11 +52,14 @@ describe('roadmap service', () => {
     await expect(createRoadmapItem(db, { title: '   ' })).rejects.toThrow(ValidationError)
   })
 
-  it('lists items ordered by position then creation', async () => {
+  it('lists items grouped by status, each column ordered by position', async () => {
     const items = await listRoadmapItems(db)
     expect(items.length).toBeGreaterThanOrEqual(4)
-    const positions = items.map((i) => i.position)
-    expect(positions).toEqual([...positions].sort((x, y) => x - y))
+    const byStatus = new Map<string, number[]>()
+    for (const i of items) byStatus.set(i.status, [...(byStatus.get(i.status) ?? []), i.position])
+    for (const positions of byStatus.values()) {
+      expect(positions).toEqual([...positions].sort((x, y) => x - y))
+    }
   })
 
   it('updates fields independently', async () => {
@@ -92,5 +96,47 @@ describe('roadmap service', () => {
     await deleteRoadmapItem(db, item.id)
     const items = await listRoadmapItems(db)
     expect(items.find((i) => i.id === item.id)).toBeUndefined()
+  })
+
+  it('appends to the end of the new column on a status change (no position collision)', async () => {
+    const { db: d, client: c } = await createTestDb()
+    const planned = await createRoadmapItem(d, { title: 'p0' }) // PLANNED 0
+    await createRoadmapItem(d, { title: 'i0', status: 'IN_PROGRESS' }) // IN_PROGRESS 0
+    await createRoadmapItem(d, { title: 'i1', status: 'IN_PROGRESS' }) // IN_PROGRESS 1
+    const moved = await updateRoadmapItem(d, planned.id, { status: 'IN_PROGRESS' })
+    expect(moved.status).toBe('IN_PROGRESS')
+    expect(moved.position).toBe(2) // appended, not left at 0
+    // An explicit position on a status change is honored instead.
+    const pinned = await updateRoadmapItem(d, planned.id, { status: 'SHIPPED', position: 5 })
+    expect(pinned.position).toBe(5)
+    // Re-setting the same status doesn't re-append (position untouched).
+    const same = await updateRoadmapItem(d, planned.id, { status: 'SHIPPED' })
+    expect(same.position).toBe(5)
+    await c.close()
+  })
+
+  it('reorders within a status column atomically, no-ops at the edge', async () => {
+    const { db: d, client: c } = await createTestDb()
+    const a = await createRoadmapItem(d, { title: 'a' })
+    await createRoadmapItem(d, { title: 'b' })
+    await createRoadmapItem(d, { title: 'c' })
+    const titles = async () => (await listRoadmapItems(d)).map((i) => i.title)
+
+    const b = (await listRoadmapItems(d))[1]
+    const movedB = await reorderRoadmapItem(d, b.id, 'up')
+    expect(movedB.position).toBe(0)
+    expect(await titles()).toEqual(['b', 'a', 'c'])
+
+    await reorderRoadmapItem(d, a.id, 'down') // a is now at index 1
+    expect(await titles()).toEqual(['b', 'c', 'a'])
+
+    const noop = await reorderRoadmapItem(d, b.id, 'up') // already top
+    expect(noop.position).toBe(0)
+    expect(await titles()).toEqual(['b', 'c', 'a'])
+    await c.close()
+  })
+
+  it('reorder throws NotFoundError for a missing item', async () => {
+    await expect(reorderRoadmapItem(db, 'nope', 'up')).rejects.toThrow(NotFoundError)
   })
 })
