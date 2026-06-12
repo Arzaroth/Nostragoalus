@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-06-12
+
 ### Added
 - **Play-by-play**: a new tab on the match view with the full minute-by-minute timeline (goals, cards, substitutions, shots, penalties, VAR), newest first. It opens by default on live matches; the quick-glance events under the score stay as they were.
 
