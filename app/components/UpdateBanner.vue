@@ -13,9 +13,14 @@ const reloading = ref(false)
 async function reload() {
   reloading.value = true
   if (swNeedsRefresh.value) {
-    // Activates the waiting SW and reloads the page itself.
-    await $pwa?.updateServiceWorker(true)
-    return
+    // updateServiceWorker(true) reloads via a controllerchange round-trip
+    // that can leave this window behind (observed stuck in the installed
+    // PWA while a sibling tab reloaded). Activate the waiting SW, but only
+    // give it a beat - then force the reload ourselves either way.
+    await Promise.race([
+      $pwa?.updateServiceWorker(true),
+      new Promise((resolve) => setTimeout(resolve, 1500)),
+    ])
   }
   window.location.reload()
 }
