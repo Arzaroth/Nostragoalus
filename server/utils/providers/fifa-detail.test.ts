@@ -157,6 +157,17 @@ describe('normalizeFifaTimeline', () => {
     expect(events.find((e) => e.kind === 'goal')).toMatchObject({ homeScore: 1, awayScore: 0, text: 'SCORER scores!' })
   })
 
+  it('places an own goal on the benefiting side, not the scorer team', () => {
+    // FIFA tags an own goal with the scorer's own team (here the away team 'A'),
+    // but it counts for the opponent - the home side's score ticks up.
+    const events = normalizeFifaTimeline(
+      { Event: [{ Type: 34, MatchMinute: "40'", IdTeam: 'A', HomeGoals: 1, AwayGoals: 0, EventDescription: desc('DEFENDER scores an own goal!!') }] },
+      'H',
+      'A',
+    )
+    expect(events[0]).toMatchObject({ kind: 'own-goal', side: 'HOME', homeScore: 1, awayScore: 0 })
+  })
+
   it('drops events with no type or no description, and defaults a missing minute', () => {
     expect(normalizeFifaTimeline({ Event: [{ Type: 0, MatchMinute: "5'", EventDescription: [] }] })).toEqual([])
     expect(normalizeFifaTimeline({ Event: [{ EventDescription: desc('No type, dropped.') }] })).toEqual([])

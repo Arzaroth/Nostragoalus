@@ -32,18 +32,17 @@ export interface RankableRow {
   exactCount: number
   outcomeCount: number
   gdCount: number
-  joinedAt: Date
   userId: string
 }
 
-// Ranking ladder: points → exact → outcome → goal-diff → earliest joiner → userId.
+// Ranking ladder: points → exact → outcome → goal-diff. Players level on all four
+// share a rank; userId only stabilises array order, it is not a tie-breaker.
 export function compareLeaderboardRows(a: RankableRow, b: RankableRow): number {
   return (
     b.totalPoints - a.totalPoints ||
     b.exactCount - a.exactCount ||
     b.outcomeCount - a.outcomeCount ||
     b.gdCount - a.gdCount ||
-    (a.joinedAt < b.joinedAt ? -1 : a.joinedAt > b.joinedAt ? 1 : 0) ||
     (a.userId < b.userId ? -1 : a.userId > b.userId ? 1 : 0)
   )
 }
@@ -74,7 +73,6 @@ export async function getLeaderboard(
       userId: user.id,
       displayName: user.name,
       image: user.image,
-      joinedAt: user.createdAt,
       predictionPoints: predPoints.mapWith(Number),
       exactCount: exactCount.mapWith(Number),
       outcomeCount: outcomeCount.mapWith(Number),
@@ -109,7 +107,7 @@ export async function getLeaderboard(
             ...(opts.includePrivate ? [] : [eq(user.profilePrivate, false)]),
           ),
     )
-    .groupBy(user.id, user.name, user.image, user.createdAt)
+    .groupBy(user.id, user.name, user.image)
 
   const champions = await db
     .select({ userId: championPick.userId, points: championPick.awardedPoints, teamCode: championPick.teamCode, teamName: championPick.teamName })
@@ -173,17 +171,14 @@ export async function getLeaderboard(
     }
   })
 
-  // Tie-break ladder (provisional, so in-progress points move players up):
-  // points -> exact scores -> correct results -> goal difference. userId is only
-  // a stable array order, NOT a rank key, so players equal on the whole ladder
-  // share a rank.
-  merged.sort(
-    (a, b) =>
-      b.rankTotal - a.rankTotal ||
-      b.rankExact - a.rankExact ||
-      b.rankOutcome - a.rankOutcome ||
-      b.rankGd - a.rankGd ||
-      (a.userId < b.userId ? -1 : a.userId > b.userId ? 1 : 0),
+  // Same ladder as compareLeaderboardRows, but over the provisional (scored +
+  // live) figures so in-progress points move players up. Players level on the
+  // whole ladder share a rank; userId only stabilises array order.
+  merged.sort((a, b) =>
+    compareLeaderboardRows(
+      { totalPoints: a.rankTotal, exactCount: a.rankExact, outcomeCount: a.rankOutcome, gdCount: a.rankGd, userId: a.userId },
+      { totalPoints: b.rankTotal, exactCount: b.rankExact, outcomeCount: b.rankOutcome, gdCount: b.rankGd, userId: b.userId },
+    ),
   )
 
   // Standard competition ranking ("1224"): equal-on-the-ladder rows share a rank,

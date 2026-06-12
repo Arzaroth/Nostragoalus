@@ -39,7 +39,9 @@ export default defineEventHandler(async (event) => {
       homeTeamId: detail?.homeTeamId,
       awayTeamId: detail?.awayTeamId,
     })
-    cache.set(id, { at: Date.now(), final: rows[0].status === 'FINISHED', events })
+    // Only freeze the cache for a finished match once it actually has events; a
+    // transient empty result must stay refetchable rather than stick forever.
+    cache.set(id, { at: Date.now(), final: rows[0].status === 'FINISHED' && events.length > 0, events })
     return { events }
   } catch {
     return { events: [] }
