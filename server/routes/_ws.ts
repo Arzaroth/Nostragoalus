@@ -1,5 +1,6 @@
 import { auth } from '../../lib/auth'
-import { addLiveSubscriber, removeLiveSubscriber, type LiveSubscriber } from '../utils/live/hub'
+import { db } from '../../db'
+import { addLiveSubscriber, removeLiveSubscriber, sendMatchSnapshot, type LiveSubscriber } from '../utils/live/hub'
 
 const peers = new WeakMap<object, LiveSubscriber>()
 
@@ -24,13 +25,16 @@ export default defineWebSocketHandler({
     }
   },
 
-  message(peer, message) {
+  async message(peer, message) {
     const subscriber = peers.get(peer)
     if (!subscriber) return
     try {
       const data = JSON.parse(message.text())
       if (data?.type === 'subscribe' && Array.isArray(data.matchIds)) {
         subscriber.matchIds = new Set(data.matchIds.map(String))
+        // Converge this client immediately: a transition it missed while
+        // disconnected (e.g. full-time) would otherwise stick until reload.
+        await sendMatchSnapshot(db, subscriber)
       }
     } catch {
       // ignore malformed client messages
