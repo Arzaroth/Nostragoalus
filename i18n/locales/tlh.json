@@ -365,6 +365,18 @@
   "admin": {
     "title": "loHwI'",
     "forbidden": "loHwI' DIb Daghajbe'.",
+    "roadmap": {
+      "title": "He nab",
+      "hint": "He nab yIloH: yIchel, yIchoH, yIrar, yIrInmoH.",
+      "add": "yIchel",
+      "titleLabel": "pong",
+      "descriptionLabel": "QIj (DuHbe')",
+      "edit": "yIchoH",
+      "save": "yIchoq",
+      "delete": "yIQaw'",
+      "moveUp": "yISal",
+      "moveDown": "yIghIr"
+    },
     "sso": {
       "title": "SSO",
       "hint": "OIDC, SAML, Google joq yIcher. peghmey So'lu'taHvIS choqlu'.",
@@ -531,6 +543,14 @@
     "dataText": "may' De' FIFA UEFA je naw'Daq vo' (official pagh, laD neH). qo' mIllogh OpenStreetMap vo'. FIFA UEFA joq projectvam luvoqbe'.",
     "changelogTitle": "choH tetlh",
     "sourceCta": "ngoq mung yIlaD"
+  },
+  "roadmap": {
+    "title": "He nab",
+    "sub": "nabmey, chenmoHtaHghachmey, rInpu'bogh Doch je.",
+    "planned": "nablu'",
+    "inProgress": "chenmoHlu'taH",
+    "shipped": "rInpu'",
+    "empty": "pagh naDev tu'lu'."
   },
   "footer": {
     "builtWith": "🇫🇷 vo' ♥️ lo'taHvIS chenmoHlu'",

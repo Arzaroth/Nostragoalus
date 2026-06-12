@@ -62,6 +62,7 @@ const lang = computed({
           aria-label="Toggle theme"
           @click="toggle"
         />
+        <NuxtLink to="/roadmap" class="hover:underline">{{ t('roadmap.title') }}</NuxtLink>
         <a href="/docs/api" target="_blank" rel="noopener" class="hover:underline">API</a>
       </div>
     </div>
