@@ -572,6 +572,11 @@
     "empty": "Nothing here yet - watch this space.",
     "error": "Couldn't load the roadmap right now."
   },
+  "update": {
+    "available": "A new version is available",
+    "reload": "Reload",
+    "dismiss": "Dismiss"
+  },
   "footer": {
     "builtWith": "Made with ♥️ from 🇫🇷",
     "source": "Source code",

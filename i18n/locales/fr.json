@@ -572,6 +572,11 @@
     "empty": "Rien ici pour l'instant.",
     "error": "Impossible de charger la feuille de route pour le moment."
   },
+  "update": {
+    "available": "Une nouvelle version est disponible",
+    "reload": "Recharger",
+    "dismiss": "Ignorer"
+  },
   "footer": {
     "builtWith": "Fait avec ♥️ depuis la 🇫🇷",
     "source": "Code source",
