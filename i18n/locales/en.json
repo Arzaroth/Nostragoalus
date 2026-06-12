@@ -257,7 +257,8 @@
     "leagueScope": "League",
     "liveProvisional": "LIVE",
     "live": "live",
-    "livePointsHint": "Provisional points from matches in progress — updates as scores change."
+    "livePointsHint": "Provisional points from matches in progress — updates as scores change.",
+    "tiebreakHint": "Players tied on points are split by exact scores, then correct results, then goal difference. Still level after that? They share the rank, and the next place is skipped."
   },
   "bot": {
     "name": "Crowd Bot",

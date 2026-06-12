@@ -169,23 +169,38 @@ export async function getLeaderboard(
       rankExact: r.exactCount + (live?.exact ?? 0),
       rankOutcome: r.outcomeCount + (live?.outcome ?? 0),
       rankGd: r.gdCount + (live?.gd ?? 0),
+      rank: 0,
     }
   })
 
-  // Same ladder as compareLeaderboardRows, but on the provisional (scored + live)
-  // keys so in-progress points move players up the board.
+  // Tie-break ladder (provisional, so in-progress points move players up):
+  // points -> exact scores -> correct results -> goal difference. userId is only
+  // a stable array order, NOT a rank key, so players equal on the whole ladder
+  // share a rank.
   merged.sort(
     (a, b) =>
       b.rankTotal - a.rankTotal ||
       b.rankExact - a.rankExact ||
       b.rankOutcome - a.rankOutcome ||
       b.rankGd - a.rankGd ||
-      (a.joinedAt < b.joinedAt ? -1 : a.joinedAt > b.joinedAt ? 1 : 0) ||
       (a.userId < b.userId ? -1 : a.userId > b.userId ? 1 : 0),
   )
 
-  return merged.slice(offset, offset + limit).map((r, index) => ({
-    rank: offset + index + 1,
+  // Standard competition ranking ("1224"): equal-on-the-ladder rows share a rank,
+  // the next distinct row skips ahead. Computed over the full board before paging.
+  let rank = 0
+  let prevKey: string | null = null
+  merged.forEach((r, i) => {
+    const key = `${r.rankTotal}|${r.rankExact}|${r.rankOutcome}|${r.rankGd}`
+    if (key !== prevKey) {
+      rank = i + 1
+      prevKey = key
+    }
+    r.rank = rank
+  })
+
+  return merged.slice(offset, offset + limit).map((r) => ({
+    rank: r.rank,
     userId: r.userId,
     displayName: r.displayName,
     image: r.image,
