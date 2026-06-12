@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent } from 'vue'
+import { useQueryClient } from '@tanstack/vue-query'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import NextMatchCta from './NextMatchCta.vue'
 
@@ -32,7 +34,17 @@ afterEach(async () => {
 })
 
 async function setup() {
-  const wrapper = await mountSuspended(NextMatchCta)
+  // The app-level QueryClient persists across mounts with a 60s staleTime;
+  // clear it so each test's $fetch stub actually runs.
+  const wrapper = await mountSuspended(
+    defineComponent({
+      components: { NextMatchCta },
+      setup() {
+        useQueryClient().clear()
+      },
+      template: '<NextMatchCta />',
+    }),
+  )
   mounted.push(wrapper)
   return wrapper
 }
@@ -58,5 +70,23 @@ describe('NextMatchCta', () => {
     const c = await setup()
     await new Promise((r) => setTimeout(r, 20))
     expect(c.text().trim()).toBe('')
+  })
+
+  it('shows a live pill above the next pill when a match is in play', async () => {
+    vi.stubGlobal(
+      '$fetch',
+      vi.fn(async () => ({
+        matches: [
+          { id: 'm-live', status: 'LIVE', kickoffTime: PAST, homeTeam: 'Spain', awayTeam: 'Germany', homeTeamCode: 'ESP', awayTeamCode: 'GER', fullTimeHome: 2, fullTimeAway: 1 },
+          ...MATCHES,
+        ],
+      })),
+    )
+    const c = await setup()
+    await vi.waitFor(() => expect(c.text()).toContain('Spain'))
+    expect(c.text()).toContain('2 - 1')
+    expect(c.text()).toContain('Live now')
+    // both pills render together
+    expect(c.text()).toContain('France')
   })
 })

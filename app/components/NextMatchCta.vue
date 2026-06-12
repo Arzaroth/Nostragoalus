@@ -9,17 +9,24 @@ const last = useLastCompetition()
 
 const authed = computed(() => !!session.value?.data)
 
+const isLive = (m: MatchListItem) => m.status === 'LIVE' || m.status === 'PAUSED'
+
 // The landing page has no competition route param, so this can't reuse
 // useMatches (route-derived slug); same endpoint, last-used competition.
+// While a match is live, poll so the pill's score doesn't fossilize (the WS
+// patcher is bound to the route-derived cache key, not this one).
 const { data: matches } = useQuery({
   queryKey: ['next-match', last],
   enabled: authed,
+  refetchInterval: (query) => ((query.state.data ?? []).some(isLive) ? 60_000 : false),
   queryFn: ({ signal }) =>
     $fetch<{ matches: MatchListItem[] }>('/api/matches', {
       query: { competition: last.value },
       signal,
     }).then((r) => r.matches),
 })
+
+const live = computed(() => (matches.value ?? []).find(isLive) ?? null)
 
 const now = useTimestamp({ interval: 60_000 })
 const next = computed(
@@ -29,50 +36,88 @@ const next = computed(
     ) ?? null,
 )
 
-// Scrolling away dismisses, per match: the same fixture never comes back this
-// session, the next fixture gets its own shot.
-const DISMISS_KEY = 'ng-next-cta-dismissed'
+// Scrolling away dismisses, per match and per pill: the same fixture never
+// comes back this session, the next fixture gets its own shot.
+const NEXT_KEY = 'ng-next-cta-dismissed'
+const LIVE_KEY = 'ng-live-cta-dismissed'
 // Read synchronously (ClientOnly mount, sessionStorage always there): seeding
-// it in onMounted let a cached match render the pill for a frame before the
+// in onMounted let a cached match render the pill for a frame before the
 // dismissal kicked in.
-const dismissedId = ref<string | null>(import.meta.client ? sessionStorage.getItem(DISMISS_KEY) : null)
+const dismissedNextId = ref<string | null>(import.meta.client ? sessionStorage.getItem(NEXT_KEY) : null)
+const dismissedLiveId = ref<string | null>(import.meta.client ? sessionStorage.getItem(LIVE_KEY) : null)
 const { y: scrollY } = useWindowScroll()
 const faded = computed(() => Math.min(1, scrollY.value / 240))
 watch(scrollY, (y) => {
-  if (y > 240 && next.value && dismissedId.value !== next.value.id) {
-    dismissedId.value = next.value.id
-    sessionStorage.setItem(DISMISS_KEY, next.value.id)
+  if (y <= 240) return
+  if (next.value && dismissedNextId.value !== next.value.id) {
+    dismissedNextId.value = next.value.id
+    sessionStorage.setItem(NEXT_KEY, next.value.id)
+  }
+  if (live.value && dismissedLiveId.value !== live.value.id) {
+    dismissedLiveId.value = live.value.id
+    sessionStorage.setItem(LIVE_KEY, live.value.id)
   }
 })
 
-const show = computed(() => authed.value && !!next.value && dismissedId.value !== next.value.id)
+const showNext = computed(() => authed.value && !!next.value && dismissedNextId.value !== next.value.id)
+const showLive = computed(() => authed.value && !!live.value && dismissedLiveId.value !== live.value.id)
 const matchesLink = computed(() => `/${last.value}/matches`)
+const liveLink = computed(() => (live.value ? `/${last.value}/matches/${live.value.id}` : matchesLink.value))
 </script>
 
 <template>
-  <Transition name="next-cta">
-    <div
-      v-if="show && next"
-      class="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 rounded-2xl border px-4 py-2.5 shadow-lg text-sm whitespace-nowrap"
-      style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
-      :style="{ opacity: 1 - faded }"
-      role="complementary"
-      :aria-label="t('home.nextCta.title')"
-    >
-      <span class="font-medium" style="color: var(--p-text-muted-color)">{{ t('home.nextCta.title') }}</span>
-      <span class="flex items-center gap-1.5 font-semibold">
-        <img v-if="flagUrl(next.homeTeamCode)" :src="flagUrl(next.homeTeamCode) || ''" class="w-5 h-3.5 rounded-sm object-cover" alt="" >
-        {{ next.homeTeam }}
-        <span style="color: var(--p-text-muted-color)">-</span>
-        <img v-if="flagUrl(next.awayTeamCode)" :src="flagUrl(next.awayTeamCode) || ''" class="w-5 h-3.5 rounded-sm object-cover" alt="" >
-        {{ next.awayTeam }}
-      </span>
-      <Countdown :to="next.kickoffTime" />
-      <NuxtLink :to="matchesLink">
-        <Button :label="t('home.nextCta.pick')" size="small" icon="pi pi-arrow-right" icon-pos="right" />
-      </NuxtLink>
-    </div>
-  </Transition>
+  <div
+    v-if="showNext || showLive"
+    class="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 flex flex-col items-center gap-2"
+    :style="{ opacity: 1 - faded }"
+  >
+    <Transition name="next-cta">
+      <div
+        v-if="showLive && live"
+        class="flex items-center gap-3 rounded-2xl border px-4 py-2.5 shadow-lg text-sm whitespace-nowrap"
+        style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
+        role="complementary"
+        :aria-label="t('home.nextCta.live')"
+      >
+        <span class="flex items-center gap-1.5 font-medium" style="color: var(--ng-danger)">
+          <span class="w-1.5 h-1.5 rounded-full animate-pulse" style="background: var(--ng-danger)" />
+          {{ t('home.nextCta.live') }}
+        </span>
+        <span class="flex items-center gap-1.5 font-semibold">
+          <img v-if="flagUrl(live.homeTeamCode)" :src="flagUrl(live.homeTeamCode) || ''" class="w-5 h-3.5 rounded-sm object-cover" alt="" >
+          {{ live.homeTeam }}
+          <span>{{ live.fullTimeHome ?? 0 }} - {{ live.fullTimeAway ?? 0 }}</span>
+          <img v-if="flagUrl(live.awayTeamCode)" :src="flagUrl(live.awayTeamCode) || ''" class="w-5 h-3.5 rounded-sm object-cover" alt="" >
+          {{ live.awayTeam }}
+        </span>
+        <NuxtLink :to="liveLink">
+          <Button :label="t('home.nextCta.watch')" size="small" severity="danger" icon="pi pi-bolt" icon-pos="right" />
+        </NuxtLink>
+      </div>
+    </Transition>
+    <Transition name="next-cta">
+      <div
+        v-if="showNext && next"
+        class="flex items-center gap-3 rounded-2xl border px-4 py-2.5 shadow-lg text-sm whitespace-nowrap"
+        style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
+        role="complementary"
+        :aria-label="t('home.nextCta.title')"
+      >
+        <span class="font-medium" style="color: var(--p-text-muted-color)">{{ t('home.nextCta.title') }}</span>
+        <span class="flex items-center gap-1.5 font-semibold">
+          <img v-if="flagUrl(next.homeTeamCode)" :src="flagUrl(next.homeTeamCode) || ''" class="w-5 h-3.5 rounded-sm object-cover" alt="" >
+          {{ next.homeTeam }}
+          <span style="color: var(--p-text-muted-color)">-</span>
+          <img v-if="flagUrl(next.awayTeamCode)" :src="flagUrl(next.awayTeamCode) || ''" class="w-5 h-3.5 rounded-sm object-cover" alt="" >
+          {{ next.awayTeam }}
+        </span>
+        <Countdown :to="next.kickoffTime" />
+        <NuxtLink :to="matchesLink">
+          <Button :label="t('home.nextCta.pick')" size="small" icon="pi pi-arrow-right" icon-pos="right" />
+        </NuxtLink>
+      </div>
+    </Transition>
+  </div>
 </template>
 
 <style scoped>
@@ -83,6 +128,6 @@ const matchesLink = computed(() => `/${last.value}/matches`)
 .next-cta-enter-from,
 .next-cta-leave-to {
   opacity: 0;
-  transform: translate(-50%, 0.5rem);
+  transform: translateY(0.5rem);
 }
 </style>
