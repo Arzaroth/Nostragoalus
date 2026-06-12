@@ -535,3 +535,24 @@ export const leaderboardRank = pgTable(
   (t) => [primaryKey({ columns: [t.competitionId, t.userId] })],
 )
 
+export const roadmapStatusEnum = pgEnum('roadmap_status', ['PLANNED', 'IN_PROGRESS', 'SHIPPED'])
+
+// Admin-curated public roadmap entries (the /roadmap page).
+export const roadmapItem = pgTable(
+  'roadmap_item',
+  {
+    id: pk(),
+    title: text('title').notNull(),
+    description: text('description'),
+    status: roadmapStatusEnum('status').notNull().default('PLANNED'),
+    // Manual ordering within a status column; lower comes first.
+    position: integer('position').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [index('roadmap_item_status_position_idx').on(t.status, t.position)],
+)
+
