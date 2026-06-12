@@ -32,10 +32,10 @@ const next = computed(
 // Scrolling away dismisses, per match: the same fixture never comes back this
 // session, the next fixture gets its own shot.
 const DISMISS_KEY = 'ng-next-cta-dismissed'
-const dismissedId = ref<string | null>(null)
-onMounted(() => {
-  dismissedId.value = sessionStorage.getItem(DISMISS_KEY)
-})
+// Read synchronously (ClientOnly mount, sessionStorage always there): seeding
+// it in onMounted let a cached match render the pill for a frame before the
+// dismissal kicked in.
+const dismissedId = ref<string | null>(import.meta.client ? sessionStorage.getItem(DISMISS_KEY) : null)
 const { y: scrollY } = useWindowScroll()
 const faded = computed(() => Math.min(1, scrollY.value / 240))
 watch(scrollY, (y) => {
