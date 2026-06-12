@@ -38,6 +38,7 @@ const stack: { group: string; items: StackItem[] }[] = [
       { name: 'VueUse', logo: 'vueuse', desc: 'Composition utilities: clipboard, QR, timers, media queries', url: 'https://vueuse.org', license: 'MIT', licenseUrl: 'https://github.com/vueuse/vueuse/blob/main/LICENSE' },
       { name: 'Nuxt I18n', logo: 'https://i18n.nuxtjs.org/icon.svg', desc: 'The four-language catalog (vue-i18n under the hood)', url: 'https://i18n.nuxtjs.org', license: 'MIT', licenseUrl: 'https://github.com/nuxt-modules/i18n/blob/main/LICENSE' },
       { name: 'Leaflet', logo: 'leaflet', desc: 'The interactive world map', url: 'https://leafletjs.com', license: 'BSD-2-Clause', licenseUrl: 'https://github.com/Leaflet/Leaflet/blob/main/LICENSE' },
+      { name: 'marked + DOMPurify', logo: 'markdown', desc: 'Renders this changelog from CHANGELOG.md (sanitized)', url: 'https://marked.js.org', license: 'MIT', licenseUrl: 'https://github.com/markedjs/marked/blob/master/LICENSE.md' },
     ],
   },
   {

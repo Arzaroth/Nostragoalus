@@ -46,7 +46,7 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   removes any local password; admins are exempt as break-glass access)
 - Admin user management (roles, bans, leaderboard visibility, 2FA removal, SSO unlink); with SMTP
   configured, account deletion is confirmed through a mailed link
-- Public **roadmap** page (in progress / planned / shipped), admin-curated with drag-free reordering and a `mise run roadmap-add` CLI
+- Public **roadmap** page (in progress / planned / shipped), admin-curated with reordering, plus `mise run roadmap-add` / `roadmap-seed` CLIs
 - Four languages (EN / FR / TH / tlh), light/dark/system themes saved per account
 - Auto-generated **API docs** at `/docs/api` (OpenAPI + Scalar)
 
