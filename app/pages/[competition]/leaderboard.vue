@@ -92,6 +92,11 @@ const hasLive = computed(() => displayRows.value.some((r) => r.livePoints))
     <div class="flex items-center justify-between gap-3 flex-wrap mb-5">
       <div class="flex items-center gap-3 flex-wrap">
         <h1 class="text-2xl font-bold">{{ t('leaderboard.title') }}</h1>
+        <i
+          v-tooltip.top="t('leaderboard.tiebreakHint')"
+          class="pi pi-info-circle cursor-help text-sm"
+          style="color: var(--p-text-muted-color)"
+        />
         <span v-if="hasLive" class="inline-flex items-center gap-1.5 text-xs font-bold px-2 py-1 rounded-full" style="color: #fff; background: var(--ng-danger)">
           <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />{{ t('leaderboard.liveProvisional') }}
         </span>

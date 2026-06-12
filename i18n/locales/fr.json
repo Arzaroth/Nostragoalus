@@ -257,7 +257,8 @@
     "leagueScope": "Ligue",
     "liveProvisional": "EN DIRECT",
     "live": "live",
-    "livePointsHint": "Points provisoires des matchs en cours — mis à jour à chaque changement de score."
+    "livePointsHint": "Points provisoires des matchs en cours — mis à jour à chaque changement de score.",
+    "tiebreakHint": "Les joueurs à égalité de points sont départagés par les scores exacts, puis les bons résultats, puis la différence de buts. Toujours à égalité ? Ils partagent le rang, et la place suivante est sautée."
   },
   "bot": {
     "name": "Bot consensus",

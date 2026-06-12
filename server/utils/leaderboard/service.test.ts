@@ -113,11 +113,32 @@ describe('getLeaderboard', () => {
   it('paginates with offset-based ranks', async () => {
     const { db, client } = await createTestDb()
     const competitionId = await seedCompetition(db)
-    await makeUser(db, 'a', 'A')
+    const a = await makeUser(db, 'a', 'A')
     await makeUser(db, 'b', 'B')
+    // Distinct points so the two users hold distinct ranks (1, 2).
+    await db.insert(championPick).values({ userId: a, competitionId, teamCode: 'A', teamName: 'A', awardedPoints: 10 })
     const page = await getLeaderboard(db, { competitionId, limit: 1, offset: 1 })
     expect(page).toHaveLength(1)
     expect(page[0].rank).toBe(2)
+    await client.close()
+  })
+
+  it('gives players tied on the whole ladder the same rank, and skips the gap', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const roundId = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: new Date('2026-06-11T16:00:00Z'), status: 'FINISHED', fullTimeHome: 2, fullTimeAway: 1 })
+    // Two players with identical scoring (same exact pick), one player behind.
+    const ann = await makeUser(db, 'ann', 'Ann')
+    const ben = await makeUser(db, 'ben', 'Ben')
+    await makeUser(db, 'cat', 'Cat')
+    await score(db, await makePrediction(db, { userId: ann, matchId: m, roundId, home: 2, away: 1, lockedAt: new Date() }), 3, 'EXACT')
+    await score(db, await makePrediction(db, { userId: ben, matchId: m, roundId, home: 2, away: 1, lockedAt: new Date() }), 3, 'EXACT')
+
+    const board = await getLeaderboard(db, { competitionId })
+    // Ann and Ben tie at rank 1; Cat (0 points) is rank 3, not 2.
+    expect(board.map((r) => r.rank)).toEqual([1, 1, 3])
+    expect(board.map((r) => r.totalPoints)).toEqual([3, 3, 0])
     await client.close()
   })
 
@@ -238,6 +259,8 @@ describe('getLeaderboard', () => {
     await makeUser(db, 'c', 'C')
     const leagueId = await makeLeague(db, { competitionId, ownerId: a })
     await addLeagueMember(db, leagueId, b)
+    // Distinct points so the members hold distinct ranks (1, 2).
+    await db.insert(championPick).values({ userId: a, competitionId, teamCode: 'A', teamName: 'A', awardedPoints: 10 })
     const page = await getLeaderboard(db, { competitionId, leagueId, limit: 1, offset: 1 })
     expect(page).toHaveLength(1)
     expect(page[0].rank).toBe(2)

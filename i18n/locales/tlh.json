@@ -257,7 +257,8 @@
     "leagueScope": "ghom",
     "liveProvisional": "DaH",
     "live": "DaH",
-    "livePointsHint": "qaStaHvIS may' provisional points — Sumchugh score choH"
+    "livePointsHint": "qaStaHvIS may' provisional points — Sumchugh score choH",
+    "tiebreakHint": "rap points luSuqbogh chamwI'pu' — exact score wInoH, ghIq result lugh, ghIq goal difference. rapchugh je? rap patlh luSuq, 'ej patlh veb luchID."
   },
   "bot": {
     "name": "ghom qoq",
