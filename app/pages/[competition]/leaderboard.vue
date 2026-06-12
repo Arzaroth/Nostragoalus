@@ -149,12 +149,12 @@ const hasLive = computed(() => displayRows.value.some((r) => r.livePoints))
             </span>
             <span v-if="r.bestScorerCode && flagUrl(r.bestScorerCode)" v-tooltip.top="`${t('bestScorer.tag')}: ${r.bestScorerName ? formatPlayerName(r.bestScorerName) : r.bestScorerCode}`" class="relative shrink-0 inline-flex">
               <img :src="flagUrl(r.bestScorerCode) || ''" class="w-4 h-4 rounded object-cover" alt="" >
-              <span class="absolute -top-2 -left-1.5 text-[10px]" style="transform: rotate(-12deg)">👟</span>
+              <span class="absolute -top-2 -left-1.5 text-[10px]" style="transform: rotate(-12deg)"><GoldenBoot /></span>
             </span>
             <span v-if="r.userId === meId" class="text-xs font-normal" style="color: var(--p-primary-color)">{{ t('leaderboard.you') }}</span>
           </div>
           <div class="text-xs" style="color: var(--p-text-muted-color)">
-            {{ r.exactCount }} {{ t('leaderboard.exact') }} · {{ r.outcomeCount }} {{ t('leaderboard.correct') }}<template v-if="r.championPoints"> · 👑 +{{ r.championPoints }}</template><template v-if="r.bestScorerPoints"> · 👟 +{{ r.bestScorerPoints }}</template>
+            {{ r.exactCount }} {{ t('leaderboard.exact') }} · {{ r.outcomeCount }} {{ t('leaderboard.correct') }}<template v-if="r.championPoints"> · 👑 +{{ r.championPoints }}</template><template v-if="r.bestScorerPoints"> · <GoldenBoot /> +{{ r.bestScorerPoints }}</template>
           </div>
         </div>
         <div class="text-right shrink-0">
