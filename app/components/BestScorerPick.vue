@@ -96,7 +96,7 @@ const holo = computed(() => {
   <div v-if="data && data.competition" class="ng-card rounded-2xl border p-5 mb-6" style="background: var(--p-content-background)">
     <div class="flex flex-col sm:flex-row sm:items-center gap-6">
       <div class="flex-1 min-w-0">
-        <div class="flex items-center gap-2 font-semibold text-lg mb-1"><span class="text-2xl">👟</span> {{ t('bestScorer.title') }}</div>
+        <div class="flex items-center gap-2 font-semibold text-lg mb-1"><GoldenBoot class="text-2xl" /> {{ t('bestScorer.title') }}</div>
         <p class="text-sm mb-4" style="color: var(--p-text-muted-color)">{{ t('bestScorer.hint') }}</p>
 
         <template v-if="data.locked">
@@ -173,7 +173,7 @@ const holo = computed(() => {
             <span
               class="absolute -top-4 -left-4 text-3xl z-10 select-none"
               style="transform: rotate(-25deg); filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35))"
-            >👟</span>
+            ><GoldenBoot /></span>
             <span ref="showcaseEl" class="relative block w-20 h-20 rounded-2xl" style="transition: transform 0.25s ease" :style="{ transform: holo.transform }">
               <img
                 :src="photoSrc || flagUrl(showcase.teamCode) || ''"
@@ -193,7 +193,7 @@ const holo = computed(() => {
             </span>
           </template>
           <template v-else>
-            <span class="absolute -top-4 -left-4 text-3xl z-10 opacity-30 grayscale select-none" style="transform: rotate(-25deg)">👟</span>
+            <span class="absolute -top-4 -left-4 text-3xl z-10 opacity-30 grayscale select-none" style="transform: rotate(-25deg)"><GoldenBoot /></span>
             <div
               class="w-20 h-20 rounded-2xl border-2 border-dashed flex items-center justify-center text-2xl"
               style="border-color: var(--p-content-border-color); color: var(--p-text-muted-color)"

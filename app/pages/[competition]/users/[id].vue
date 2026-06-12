@@ -43,7 +43,7 @@ const upcoming = computed(() => (data.value?.predictions ?? []).filter((p) => ne
         </span>
         <span v-if="data.bestScorer?.teamCode && flagUrl(data.bestScorer.teamCode)" v-tooltip.top="`${t('bestScorer.tag')}: ${formatPlayerName(data.bestScorer.playerName)}`" class="relative shrink-0 inline-flex items-center gap-1.5">
           <img :src="flagUrl(data.bestScorer.teamCode) || ''" class="w-6 h-6 rounded object-cover" alt="" >
-          <span class="absolute -top-2.5 -left-2 text-sm" style="transform: rotate(-12deg)">👟</span>
+          <span class="absolute -top-2.5 -left-2 text-sm" style="transform: rotate(-12deg)"><GoldenBoot /></span>
           <span v-if="data.bestScorer.awardedPoints" class="text-xs font-semibold" style="color: var(--ng-star)">+{{ data.bestScorer.awardedPoints }} pts</span>
         </span>
         <CompetitionPill v-if="!global" />
