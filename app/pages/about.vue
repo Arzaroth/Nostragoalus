@@ -164,6 +164,7 @@ const renderInline = (md: string): string =>
       <div class="flex flex-wrap gap-2 mt-3 text-xs">
         <a href="https://www.fifa.com" target="_blank" rel="noopener" class="px-2.5 py-1 rounded-full border hover:underline" style="border-color: var(--p-content-border-color)">FIFA</a>
         <a href="https://www.uefa.com" target="_blank" rel="noopener" class="px-2.5 py-1 rounded-full border hover:underline" style="border-color: var(--p-content-border-color)">UEFA</a>
+        <a href="https://www.sofascore.com" target="_blank" rel="noopener" class="px-2.5 py-1 rounded-full border hover:underline" style="border-color: var(--p-content-border-color)">Sofascore (odds)</a>
         <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener" class="px-2.5 py-1 rounded-full border hover:underline" style="border-color: var(--p-content-border-color)">OpenStreetMap (ODbL)</a>
       </div>
     </section>
