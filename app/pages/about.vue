@@ -95,6 +95,18 @@ const changelog = computed<ChangelogVersion[]>(() => {
   }
   return versions
 })
+
+// Render the inline markdown our changelog uses (bold / `code` / *italic* /
+// links). The source is our own committed CHANGELOG.md (trusted), but escape
+// first anyway so any stray angle bracket renders literally.
+function renderInline(md: string): string {
+  const escaped = md.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  return escaped
+    .replace(/`([^`]+)`/g, '<code style="background: var(--p-content-border-color); padding: 0.1em 0.35em; border-radius: 4px; font-size: 0.9em">$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener" class="underline">$1</a>')
+}
 </script>
 
 <template>
@@ -165,7 +177,7 @@ const changelog = computed<ChangelogVersion[]>(() => {
           <div v-for="s in v.sections" :key="s.title" class="mb-2">
             <div class="text-xs uppercase tracking-wider font-semibold mb-1" style="color: var(--p-text-muted-color)">{{ s.title }}</div>
             <ul class="text-sm flex flex-col gap-1 list-disc pl-5">
-              <li v-for="(item, i) in s.items" :key="i">{{ item }}</li>
+              <li v-for="(item, i) in s.items" :key="i" v-html="renderInline(item)" />
             </ul>
           </div>
         </div>

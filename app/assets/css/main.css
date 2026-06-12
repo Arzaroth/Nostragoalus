@@ -55,9 +55,12 @@
   }
 
   /* clip (not hidden) keeps position:sticky working while letting full-bleed
-     100vw sections overhang the scrollbar gutter without a horizontal scrollbar */
+     100vw sections overhang the scrollbar gutter without a horizontal scrollbar.
+     scrollbar-gutter: stable always reserves the scrollbar space so opening a
+     modal (which removes the scrollbar) doesn't reflow the page. */
   html {
     overflow-x: clip;
+    scrollbar-gutter: stable;
   }
 
   a {
@@ -86,6 +89,14 @@
     background: var(--p-content-border-color);
     border-radius: 6px;
   }
+}
+
+/* PrimeVue's modal scroll-lock adds padding-right (= scrollbar width) to the
+   body to compensate for the removed scrollbar. We already reserve that space
+   permanently via scrollbar-gutter: stable, so its padding only shifts the page
+   - drop it. */
+body.p-overflow-hidden {
+  padding-right: 0 !important;
 }
 
 /* Cards: a subtle, uniform background contrast on hover (no movement).
