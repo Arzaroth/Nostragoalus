@@ -272,7 +272,12 @@ onBeforeUnmount(() => window.removeEventListener('resize', layoutBanner))
                 <span class="w-2.5 h-2.5 rounded-full" style="background: #f87171" /><span class="w-2.5 h-2.5 rounded-full" style="background: #fbbf24" /><span class="w-2.5 h-2.5 rounded-full" style="background: #34d399" />
                 <span class="ml-2 text-xs font-semibold">{{ t(`landing.shot.${shot}.t`) }}</span>
               </div>
-              <img :src="`/showcase/${isDark ? 'dark/' : ''}${shot}.png`" :alt="t(`landing.shot.${shot}.t`)" class="block w-full" loading="lazy" >
+              <!-- Fixed aspect so every slide is the same height (no gap before
+                   the caption); the content shots fill it exactly, the wide
+                   bracket letterboxes onto the card background. -->
+              <div class="aspect-[1380/1050] flex items-center justify-center" style="background: var(--p-content-background)">
+                <img :src="`/showcase/${isDark ? 'dark/' : ''}${shot}.png`" :alt="t(`landing.shot.${shot}.t`)" class="block w-full h-full object-contain" loading="lazy" >
+              </div>
             </div>
             <p class="text-sm text-center mt-3 max-w-2xl mx-auto" style="color: var(--p-text-muted-color)">{{ t(`landing.shot.${shot}.d`) }}</p>
           </div>

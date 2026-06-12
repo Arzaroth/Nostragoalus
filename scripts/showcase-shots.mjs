@@ -9,11 +9,15 @@ import { mkdirSync } from 'node:fs'
 const APP = process.env.APP_URL ?? 'http://localhost:3000'
 mkdirSync('public/showcase/dark', { recursive: true })
 
+// One uniform viewport for every content shot so the carousel cards are all the
+// same height (the bracket is the only exception - a wide clip, letterboxed in
+// the carousel).
+const VIEWPORT = { width: 1380, height: 1050 }
 const browser = await puppeteer.launch({
   browser: 'firefox',
   executablePath: '/usr/bin/firefox',
   headless: true,
-  defaultViewport: { width: 1380, height: 860 },
+  defaultViewport: VIEWPORT,
 })
 
 const page = await browser.newPage()
@@ -57,8 +61,7 @@ if (!process.env.MATCH_PATH) {
 
 const SHOTS = [
   { name: 'fixtures', path: '/world-cup-2026/matches', wait: 2500 },
-  // taller viewport so the timeline AND the stats below it fit in one shot.
-  { name: 'match', path: matchPath, wait: 3500, viewport: { width: 1380, height: 1280 } },
+  { name: 'match', path: matchPath, wait: 3500 },
   // the bracket is wider than the viewport - clip to the bracket element itself
   // so the whole tree is captured (no side crop, no footer bleeding in).
   { name: 'bracket', path: '/world-cup-2022/bracket', wait: 2500, clip: '.br', viewport: { width: 1920, height: 1040 } },
@@ -67,9 +70,9 @@ const SHOTS = [
   { name: 'map', clickThrough: true, wait: 2500, selector: '.leaflet-tile-loaded' },
   { name: 'ranking', path: '/world-cup-2022/leaderboard', wait: 2500 },
   { name: 'bot', path: '/world-cup-2022/bot', wait: 3000 },
-  // taller viewport; ng-competition cookie makes the public-leagues browser
-  // default to WC 2026, which has a real public league to show.
-  { name: 'leagues', path: '/leagues', wait: 2500, viewport: { width: 1380, height: 1150 }, cookies: [{ name: 'ng-competition', value: 'world-cup-2026' }] },
+  // ng-competition cookie makes the public-leagues browser default to WC 2026,
+  // which has a real public league to show.
+  { name: 'leagues', path: '/leagues', wait: 2500, cookies: [{ name: 'ng-competition', value: 'world-cup-2026' }] },
   // a group-stage team (3 games) so the squad/stats show, not a long history.
   { name: 'team', path: '/euro-2024/teams/CRO', wait: 4000 },
 ]
@@ -78,7 +81,7 @@ const only = process.env.ONLY
 for (const shot of SHOTS) {
   if (only && shot.name !== only) continue
   try {
-    await page.setViewport(shot.viewport ?? { width: 1380, height: 860 })
+    await page.setViewport(shot.viewport ?? VIEWPORT)
     if (shot.cookies) for (const c of shot.cookies) await page.setCookie({ ...c, domain: 'localhost', path: '/' })
     if (shot.clickThrough) {
       // The .client map only mounts on client-side navigation. Launch the SPA
