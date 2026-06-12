@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-06-12
+
 ### Fixed
 - Play-by-play: own goals now show on the side that benefits from them (the team whose score went up), matching the timeline under the score.
 
