@@ -84,7 +84,9 @@ git merge --ff-only worktree-<name>      # fast-forward; the rebase made this cl
 
 Run the **release** skill. Pick the bump: **minor** for a user-facing feature,
 **patch** for fix-only. That skill does the docs sweep (CHANGELOG, README, API
-response schemas for any new public GET endpoint, about-page deps) and
+response schemas for any new public GET endpoint, and the about-page tech-stack
+list - if the feature added a dependency, add it there, one entry per project
+with the library's own tagline) and
 `mise run release <x.y.z>` (gate + tag + push). Remember its gotchas: **stop the
 `app-dev` container first**, and stash any unrelated dirty files (e.g. the user's
 `TODO.md`/`ROADMAP.md`) so the tree is clean, then restore them after.
