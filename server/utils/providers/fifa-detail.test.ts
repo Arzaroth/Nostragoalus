@@ -96,6 +96,7 @@ describe('normalizeFifaMatchDetail', () => {
   it('handles missing teams and possession', () => {
     expect(normalizeFifaMatchDetail({})).toEqual({
       minute: null,
+      halfTime: false,
       possessionHome: null,
       possessionAway: null,
       attendance: null,
@@ -110,6 +111,10 @@ describe('normalizeFifaMatchDetail', () => {
     })
     // The live clock comes through when FIFA exposes it.
     expect(normalizeFifaMatchDetail({ MatchTime: "47'" }).minute).toBe("47'")
+    // Period 4 is the half-time interval - flagged so the UI shows "HT" even
+    // though the clock has reset and MatchStatus is still LIVE.
+    expect(normalizeFifaMatchDetail({ Period: 4, MatchTime: "0'" }).halfTime).toBe(true)
+    expect(normalizeFifaMatchDetail({ Period: 5, MatchTime: "47'" }).halfTime).toBe(false)
   })
 
   it('extracts attendance, stadium and cards (yellow/red, ignoring blanks)', () => {
@@ -139,6 +144,7 @@ describe('fifaProvider.getMatchDetail', () => {
     const provider = fifaProvider({ seasonId: '255711', competitionId: '17', fetchImpl, rateLimiter: noWait() })
     expect(await provider.getMatchDetail!({ stageId: 'st1', matchId: 'm1' })).toEqual({
       minute: "62'",
+      halfTime: false,
       possessionHome: 50,
       possessionAway: 50,
       attendance: null,

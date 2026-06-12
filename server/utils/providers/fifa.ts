@@ -154,6 +154,9 @@ interface FifaDetailGoal {
 // FIFA "Period" 11 is the penalty shootout - those conversions are not match
 // goals and must not count toward scorers (matches the official Golden Boot).
 const FIFA_SHOOTOUT_PERIOD = 11
+// FIFA "Period" 4 is the half-time interval (MatchStatus stays LIVE, MatchTime
+// resets to "0'"/"") - the only signal that the match is paused at the break.
+const FIFA_HALFTIME_PERIOD = 4
 
 interface FifaDetailBooking {
   Card?: number | null
@@ -185,6 +188,7 @@ export interface FifaMatchDetailResponse {
   HomeTeam?: FifaDetailTeam | null
   AwayTeam?: FifaDetailTeam | null
   MatchTime?: string | null
+  Period?: number | null
   BallPossession?: { OverallHome?: number | null; OverallAway?: number | null } | null
   Attendance?: number | null
   Stadium?: { Name?: FifaLocalized[] } | null
@@ -293,6 +297,7 @@ export function normalizeFifaMatchDetail(detail: FifaMatchDetailResponse): Match
 
   return {
     minute: detail.MatchTime ?? null,
+    halfTime: detail.Period === FIFA_HALFTIME_PERIOD,
     possessionHome: detail.BallPossession?.OverallHome ?? null,
     possessionAway: detail.BallPossession?.OverallAway ?? null,
     attendance: detail.Attendance ?? null,
