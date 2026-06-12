@@ -5,6 +5,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Changed
+- Nostragoalus is now dual-licensed under **MIT OR WTFPL** - use whichever you prefer (footer link and the in-app license page show both).
+- Landing showcase screenshots refreshed to the current UI and captured in **both light and dark**, served to match your theme; uniform card sizes (no gap before the caption), a leagues view added, and the admin nav / dev tooling hidden in them.
+- The FAQ "how points are calculated" formula is now translated into all four languages (was English-only).
+- The bot's consensus list marks not-yet-kicked-off (admin-only) matches with the same divider the player-picks view uses, instead of a banner.
+- `mise run db-backup` can prune old dumps: `--keep N` / `BACKUP_KEEP` (newest N) and `--max-age-days D` / `BACKUP_MAX_AGE_DAYS` (by age). Both default to unlimited, so nothing is pruned unless you opt in.
+
+### Fixed
+- The best-scorer card shows the points a winning pick is worth even once it's locked, not only while picking.
+- The login form submits on Enter from any field (it's a real `<form>` now).
+
 ## [1.0.1] - 2026-06-11
 
 ### Changed
