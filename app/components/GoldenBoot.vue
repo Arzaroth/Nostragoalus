@@ -1,8 +1,9 @@
 <script setup lang="ts">
 // The Golden Boot, as a real gold icon - the best-scorer award shares no glyph
-// with assists (which keep the plain 👟). Sizes to the surrounding font (1em),
-// so it drops in wherever the emoji was. A per-instance gradient id keeps
-// multiple boots on one page from sharing (and clipping) defs.
+// with assists (which keep the plain 👟). Boot silhouette is Material Design
+// Icons' shoe-cleat (Apache-2.0), filled with a gold gradient. Sizes to the
+// surrounding font (1em) so it drops in wherever the emoji was; a per-instance
+// gradient id keeps several boots on one page from sharing defs.
 const uid = useId()
 </script>
 
@@ -11,32 +12,14 @@ const uid = useId()
     <defs>
       <linearGradient :id="`gb-${uid}`" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stop-color="#fde68a" />
-        <stop offset="55%" stop-color="#f59e0b" />
-        <stop offset="100%" stop-color="#d97706" />
+        <stop offset="50%" stop-color="#f59e0b" />
+        <stop offset="100%" stop-color="#c2740a" />
       </linearGradient>
     </defs>
-    <!-- boot upper: toe at the left, ankle collar at the top right -->
     <path
       :fill="`url(#gb-${uid})`"
-      stroke="#9a6510"
-      stroke-width="0.6"
-      stroke-linejoin="round"
-      d="M1.6 13.4 C1.6 12.6 2.1 12.1 3 11.9 L9.4 10.7 C10.9 10.4 12 9.7 12.9 8.5 L14.4 6.6 C15 5.9 15.8 5.6 16.7 5.6 L18.4 5.6 C19.8 5.6 20.8 6.5 21.1 7.9 L21.9 11.6 C22.1 12.7 22.2 13.7 22.2 14.8 L22.2 15.4 C22.2 16.2 21.7 16.7 20.9 16.7 L3 16.7 C2.1 16.7 1.6 16.2 1.6 15.4 Z"
+      d="M21 8h-.7l-.05-.03c-2.11-.13-3.87-.8-4.72-1.74L14 7c-.05.1-.11.19-.16.28c.71.61 1.16 1.37 1.16 2.22c0 .33-.09.64-.21.95l-1.87-1.87c-.22.25-.45.49-.7.71l2.03 2.03c-.21.25-.45.47-.75.68l-2.07-2.09c-.29.2-.58.37-.88.54l2.03 2.05c-.33.13-.69.24-1.08.32l-1.91-1.91c-.34.14-.68.27-1.03.38l1.7 1.71H10c-1.5 0-2.8-.46-3.72-1.18c-.82.13-1.6.18-2.28.18c-2 0-2 3-2 3c0 1.11.89 2 2 2v1c0 .55.45 1 1 1s1-.45 1-1v-1h1v1c0 .55.45 1 1 1s1-.45 1-1v-1h1v1c0 .55.45 1 1 1s1-.45 1-1v-1h3v1c0 .55.45 1 1 1s1-.45 1-1v-1h1v1c0 .55.45 1 1 1s1-.45 1-1v-1h1s1 0 1-4.5C22 9 21 8 21 8"
     />
-    <!-- laces -->
-    <g stroke="#fff7e0" stroke-width="0.7" stroke-linecap="round" opacity="0.85">
-      <line x1="12" y1="9.6" x2="13.7" y2="8.3" />
-      <line x1="13.1" y1="10.8" x2="14.8" y2="9.5" />
-      <line x1="14.2" y1="11.9" x2="15.8" y2="10.6" />
-    </g>
-    <!-- sole + studs -->
-    <path fill="#8a5a16" d="M1.6 16.7 L22.2 16.7 L22.2 18 C22.2 18.7 21.7 19.1 21 19.1 L2.8 19.1 C2.1 19.1 1.6 18.7 1.6 18 Z" />
-    <g fill="#8a5a16">
-      <rect x="3.2" y="19.1" width="2.1" height="1.7" rx="0.5" />
-      <rect x="9" y="19.1" width="2.1" height="1.7" rx="0.5" />
-      <rect x="14.8" y="19.1" width="2.1" height="1.7" rx="0.5" />
-      <rect x="19" y="19.1" width="2.1" height="1.7" rx="0.5" />
-    </g>
   </svg>
 </template>
 
