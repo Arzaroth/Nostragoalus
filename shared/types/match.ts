@@ -111,6 +111,9 @@ export interface MatchDetail {
   // Live clock as the provider reports it, e.g. "47'" (null once final / for
   // providers that don't expose it).
   minute?: string | null
+  // At half-time the running clock stops and resets, so the minute is no help -
+  // this flag lets the UI show "HT" instead of a bare LIVE.
+  halfTime?: boolean
   possessionHome: number | null
   possessionAway: number | null
   attendance: number | null

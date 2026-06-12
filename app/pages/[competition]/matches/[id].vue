@@ -85,7 +85,9 @@ const awayScore = computed(() => live.value?.fullTimeAway ?? m.value?.fullTimeAw
 const isLive = computed(() => status.value === 'LIVE' || status.value === 'PAUSED')
 // Live clock under the score: half-time, the provider's running minute (e.g.
 // "47'"), or a bare LIVE when the minute isn't exposed.
-const liveClock = computed(() => (status.value === 'PAUSED' ? t('match.halfTime') : detail.value?.minute || t('match.live')))
+const liveClock = computed(() =>
+  status.value === 'PAUSED' || detail.value?.halfTime ? t('match.halfTime') : detail.value?.minute || t('match.live'),
+)
 // Possession bar: FIFA's BallPossession is null mid-match, but the live IFES
 // stats carry it - fall back to those so the bar shows during the game too.
 const possession = computed(() => {
