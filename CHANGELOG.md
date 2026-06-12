@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-06-12
+
 ### Changed
 - Nostragoalus is now dual-licensed under **MIT OR WTFPL** - use whichever you prefer (footer link and the in-app license page show both).
 - Landing showcase screenshots refreshed to the current UI and captured in **both light and dark**, served to match your theme; uniform card sizes (no gap before the caption), a leagues view added, and the admin nav / dev tooling hidden in them.
