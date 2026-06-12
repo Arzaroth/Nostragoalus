@@ -64,6 +64,7 @@ const userId = session?.user?.id
 // docs path -> live sample path
 const TARGETS = {
   '/api/competitions': '/api/competitions',
+  '/api/roadmap': '/api/roadmap',
   '/api/matches': `/api/matches?competition=${comp}`,
   '/api/matches/{id}': `/api/matches/${matchId}`,
   '/api/matches/{id}/insights': `/api/matches/${matchId}/insights`,

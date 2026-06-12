@@ -37,6 +37,51 @@
       ]
     }
   },
+  "/api/roadmap": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "position": {
+                "type": "integer"
+              },
+              "updatedAt": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "example": {
+      "items": [
+        {
+          "id": "8ca308ad-700c-444f-940b-63629272ed4d",
+          "title": "Mobile app",
+          "description": "Native iOS and Android client",
+          "status": "IN_PROGRESS",
+          "position": 0,
+          "updatedAt": "2026-06-12T01:34:05.162Z"
+        }
+      ]
+    }
+  },
   "/api/matches": {
     "schema": {
       "type": "object",
@@ -1086,8 +1131,8 @@
           "userId": "demo-16-bouledecristal",
           "displayName": "Boule de Cristal",
           "image": "https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Boule%20de%20Cristal",
-          "totalPoints": 105,
-          "predictionPoints": 105,
+          "totalPoints": 87,
+          "predictionPoints": 87,
           "championPoints": 0,
           "championCode": null,
           "championName": null,
@@ -1105,8 +1150,8 @@
           "userId": "demo-8-gegenpressgreta",
           "displayName": "Gegenpress Greta",
           "image": "https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Gegenpress%20Greta",
-          "totalPoints": 99,
-          "predictionPoints": 99,
+          "totalPoints": 86,
+          "predictionPoints": 86,
           "championPoints": 0,
           "championCode": null,
           "championName": null,
