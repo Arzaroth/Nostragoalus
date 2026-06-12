@@ -72,6 +72,7 @@
       "title": "Next match",
       "pick": "Make your pick",
       "live": "Live now",
+      "liveMany": "{n} matches in play",
       "watch": "Watch"
     }
   },

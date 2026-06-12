@@ -89,4 +89,19 @@ describe('NextMatchCta', () => {
     // both pills render together
     expect(c.text()).toContain('France')
   })
+
+  it('collapses simultaneous live matches into a count', async () => {
+    vi.stubGlobal(
+      '$fetch',
+      vi.fn(async () => ({
+        matches: [
+          { id: 'm-l1', status: 'LIVE', kickoffTime: PAST, homeTeam: 'Spain', awayTeam: 'Germany', homeTeamCode: 'ESP', awayTeamCode: 'GER', fullTimeHome: 2, fullTimeAway: 1 },
+          { id: 'm-l2', status: 'PAUSED', kickoffTime: PAST, homeTeam: 'Italy', awayTeam: 'Norway', homeTeamCode: 'ITA', awayTeamCode: 'NOR', fullTimeHome: 0, fullTimeAway: 0 },
+        ],
+      })),
+    )
+    const c = await setup()
+    await vi.waitFor(() => expect(c.text()).toContain('2 matches in play'))
+    expect(c.text()).not.toContain('Spain')
+  })
 })
