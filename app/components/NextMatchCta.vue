@@ -56,8 +56,11 @@ const faded = computed(() => Math.min(1, scrollY.value / 240))
 const liveKey = computed(() =>
   liveMatches.value.map((m) => m.id).sort().join('+') || null,
 )
+// Clicking a pill's action navigates, and the destination's hash scroll fires
+// this watcher before unmount - without the guard it dismissed BOTH pills.
+const clickedAway = ref(false)
 watch(scrollY, (y) => {
-  if (y <= 240) return
+  if (y <= 240 || clickedAway.value) return
   if (next.value && dismissedNextId.value !== next.value.id) {
     dismissedNextId.value = next.value.id
     sessionStorage.setItem(NEXT_KEY, next.value.id)
@@ -82,14 +85,17 @@ const liveLink = computed(() => {
   return first ? `${matchesLink.value}?status=live#match-${first.id}` : matchesLink.value
 })
 
-// Following a pill counts as consuming it - same flags as scroll-dismiss.
+// Following a pill consumes that pill only - the other survives for the next
+// visit (scroll-dismiss is suppressed for the rest of this page's life).
 function dismissNext() {
   if (!next.value) return
+  clickedAway.value = true
   dismissedNextId.value = next.value.id
   sessionStorage.setItem(NEXT_KEY, next.value.id)
 }
 function dismissLive() {
   if (!liveKey.value) return
+  clickedAway.value = true
   dismissedLiveId.value = liveKey.value
   sessionStorage.setItem(LIVE_KEY, liveKey.value)
 }
