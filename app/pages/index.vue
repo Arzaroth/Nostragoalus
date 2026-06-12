@@ -3,7 +3,6 @@ import { motion, useMotionValue, useReducedMotion, useScroll, useSpring, useTran
 
 const { t } = useI18n()
 const { session } = useAuth()
-const { isDark } = useTheme()
 const config = useRuntimeConfig()
 const last = useLastCompetition()
 const { data: competitions } = useCompetitions()
@@ -274,9 +273,12 @@ onBeforeUnmount(() => window.removeEventListener('resize', layoutBanner))
               </div>
               <!-- Fixed aspect so every slide is the same height (no gap before
                    the caption); the content shots fill it exactly, the wide
-                   bracket letterboxes onto the card background. -->
+                   bracket letterboxes onto the card background. Light/dark are
+                   swapped by the `.app-dark` class (set before hydration), not a
+                   JS ref - so the right one shows on first paint. -->
               <div class="aspect-[1380/1050] flex items-center justify-center" style="background: var(--p-content-background)">
-                <img :src="`/showcase/${isDark ? 'dark/' : ''}${shot}.png`" :alt="t(`landing.shot.${shot}.t`)" class="block w-full h-full object-contain" loading="lazy" >
+                <img :src="`/showcase/${shot}.png`" :alt="t(`landing.shot.${shot}.t`)" class="w-full h-full object-contain block dark:hidden" loading="lazy" >
+                <img :src="`/showcase/dark/${shot}.png`" :alt="t(`landing.shot.${shot}.t`)" class="w-full h-full object-contain hidden dark:block" loading="lazy" >
               </div>
             </div>
             <p class="text-sm text-center mt-3 max-w-2xl mx-auto" style="color: var(--p-text-muted-color)">{{ t(`landing.shot.${shot}.d`) }}</p>
