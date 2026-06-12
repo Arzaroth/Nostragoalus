@@ -19,10 +19,25 @@ const STATUS_BUCKETS = {
 } as const
 type StatusBucket = keyof typeof STATUS_BUCKETS
 const ALL_BUCKETS = Object.keys(STATUS_BUCKETS) as StatusBucket[]
-const fromQuery = String(route.query.status ?? '')
-  .split(',')
-  .filter((b): b is StatusBucket => ALL_BUCKETS.includes(b as StatusBucket))
+// Parse the (deduped) ?status= comma list; unknown buckets are dropped.
+const parseBuckets = (v: unknown): StatusBucket[] => [
+  ...new Set(
+    String(v ?? '')
+      .split(',')
+      .filter((b): b is StatusBucket => ALL_BUCKETS.includes(b as StatusBucket)),
+  ),
+]
+const fromQuery = parseBuckets(route.query.status)
 const activeBuckets = ref<StatusBucket[]>(fromQuery.length ? fromQuery : [...ALL_BUCKETS])
+// A query-only navigation (e.g. the home CTA's ?status=live link while the page
+// is already open) doesn't remount, so re-apply the filter when it changes.
+watch(
+  () => route.query.status,
+  (v) => {
+    const parsed = parseBuckets(v)
+    if (parsed.length) activeBuckets.value = parsed
+  },
+)
 const bucketOf = (s: string): StatusBucket =>
   ALL_BUCKETS.find((b) => (STATUS_BUCKETS[b] as readonly string[]).includes(s)) ?? 'upcoming'
 function toggleBucket(b: StatusBucket) {
@@ -77,16 +92,18 @@ const grouped = computed(() => {
 // state changes, until the target exists. scrollIntoView honors the rows'
 // scroll-margin-top, unlike the router's hash scroll.
 const pageMounted = useMounted()
-let hashScrolled = false
+// Track the last hash we scrolled to (not a bare flag) so a query-only/hash
+// navigation while the page is already open re-scrolls to the new target.
+let scrolledHash = ''
 watch(
-  [grouped, pageMounted],
+  [grouped, pageMounted, () => route.hash],
   async () => {
     const target = route.hash.startsWith('#match-') ? route.hash.slice(1) : null
-    if (hashScrolled || !target || !pageMounted.value) return
+    if (!target || route.hash === scrolledHash || !pageMounted.value) return
     await nextTick()
     const el = document.getElementById(target)
     if (!el) return
-    hashScrolled = true
+    scrolledHash = route.hash
     el.scrollIntoView({ behavior: 'smooth', block: 'start' })
   },
   { immediate: true, flush: 'post' },
