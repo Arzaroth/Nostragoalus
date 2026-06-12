@@ -12,15 +12,17 @@ const show = computed(() => !dismissed.value && (outdated.value || swNeedsRefres
 const reloading = ref(false)
 async function reload() {
   reloading.value = true
-  if (swNeedsRefresh.value) {
-    // updateServiceWorker(true) reloads via a controllerchange round-trip
-    // that can leave this window behind (observed stuck in the installed
-    // PWA while a sibling tab reloaded). Activate the waiting SW, but only
-    // give it a beat - then force the reload ourselves either way.
-    await Promise.race([
-      $pwa?.updateServiceWorker(true),
-      new Promise((resolve) => setTimeout(resolve, 1500)),
-    ])
+  if (swNeedsRefresh.value && 'serviceWorker' in navigator) {
+    // One deterministic reload: watch for the new SW taking control
+    // ourselves (listener attached before triggering activation - the
+    // library's own reload-on-controllerchange skipped the installed PWA
+    // window, and a blind timed reload races activation and resurfaces
+    // the banner). 3s fallback in case control never flips.
+    const controlled = new Promise<void>((resolve) => {
+      navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), { once: true })
+    })
+    await $pwa?.updateServiceWorker(false)
+    await Promise.race([controlled, new Promise((resolve) => setTimeout(resolve, 3000))])
   }
   window.location.reload()
 }
