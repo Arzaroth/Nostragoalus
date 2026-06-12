@@ -99,14 +99,18 @@ async function signInPasskey() {
     <h1 class="text-2xl font-bold">{{ t('auth.signIn') }}</h1>
     <Message v-if="error" severity="error">{{ error }}</Message>
     <Message v-if="redirecting" severity="info">{{ t('auth.ssoRedirect') }}</Message>
-    <InputText v-model="email" type="email" :placeholder="t('auth.email')" @keyup.enter="next" />
-    <div v-if="step === 'password'" ref="passwordWrap" class="flex flex-col gap-1">
-      <Password v-model="password" :placeholder="t('auth.password')" :feedback="false" toggle-mask :input-style="{ width: '100%' }" @keyup.enter="submit" />
-      <NuxtLink :to="{ path: '/forgot-password', query: email ? { email } : {} }" class="text-xs self-end" style="color: var(--p-text-muted-color)">
-        {{ t('auth.forgot') }}
-      </NuxtLink>
-    </div>
-    <Button :label="step === 'password' ? t('auth.signIn') : t('auth.continue')" :loading="loading" @click="next" />
+    <!-- A real form so Enter submits via native form semantics (works the same
+         from any field) instead of per-input @keyup.enter handlers. -->
+    <form class="flex flex-col gap-3" @submit.prevent="next">
+      <InputText v-model="email" type="email" :placeholder="t('auth.email')" />
+      <div v-if="step === 'password'" ref="passwordWrap" class="flex flex-col gap-1">
+        <Password v-model="password" :placeholder="t('auth.password')" :feedback="false" toggle-mask :input-style="{ width: '100%' }" />
+        <NuxtLink :to="{ path: '/forgot-password', query: email ? { email } : {} }" class="text-xs self-end" style="color: var(--p-text-muted-color)">
+          {{ t('auth.forgot') }}
+        </NuxtLink>
+      </div>
+      <Button type="submit" :label="step === 'password' ? t('auth.signIn') : t('auth.continue')" :loading="loading" />
+    </form>
     <div class="flex items-center gap-3 text-xs my-1" style="color: var(--p-text-muted-color)">
       <div class="flex-1 border-t" style="border-color: var(--p-content-border-color)" />{{ t('auth.or') }}<div class="flex-1 border-t" style="border-color: var(--p-content-border-color)" />
     </div>
