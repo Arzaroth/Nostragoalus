@@ -3,6 +3,7 @@ import { motion, useMotionValue, useReducedMotion, useScroll, useSpring, useTran
 
 const { t } = useI18n()
 const { session } = useAuth()
+const { isDark } = useTheme()
 const config = useRuntimeConfig()
 const last = useLastCompetition()
 const { data: competitions } = useCompetitions()
@@ -271,7 +272,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', layoutBanner))
                 <span class="w-2.5 h-2.5 rounded-full" style="background: #f87171" /><span class="w-2.5 h-2.5 rounded-full" style="background: #fbbf24" /><span class="w-2.5 h-2.5 rounded-full" style="background: #34d399" />
                 <span class="ml-2 text-xs font-semibold">{{ t(`landing.shot.${shot}.t`) }}</span>
               </div>
-              <img :src="`/showcase/${shot}.png`" :alt="t(`landing.shot.${shot}.t`)" class="block w-full" loading="lazy" >
+              <img :src="`/showcase/${isDark ? 'dark/' : ''}${shot}.png`" :alt="t(`landing.shot.${shot}.t`)" class="block w-full" loading="lazy" >
             </div>
             <p class="text-sm text-center mt-3 max-w-2xl mx-auto" style="color: var(--p-text-muted-color)">{{ t(`landing.shot.${shot}.d`) }}</p>
           </div>
