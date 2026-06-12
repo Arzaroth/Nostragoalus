@@ -70,7 +70,9 @@
     "goToMatches": "Voir les matchs",
     "nextCta": {
       "title": "Prochain match",
-      "pick": "Faire votre prono"
+      "pick": "Faire votre prono",
+      "live": "En direct",
+      "watch": "Suivre"
     }
   },
   "landing": {

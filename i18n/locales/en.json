@@ -70,7 +70,9 @@
     "goToMatches": "Go to matches",
     "nextCta": {
       "title": "Next match",
-      "pick": "Make your pick"
+      "pick": "Make your pick",
+      "live": "Live now",
+      "watch": "Watch"
     }
   },
   "landing": {
