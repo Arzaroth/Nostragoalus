@@ -702,5 +702,37 @@
     "crowdLeague": "boq",
     "crowdGlobal": "Hoch",
     "crowdBonusHint": "reH Hoch QInmey lo' ghom 'ev — boqlIj neH lo'be'."
+  },
+  "invites": {
+    "title": "rIymey muvmeH",
+    "hint": "rIy yIboq 'ej latlh tlhej. poH vuS joq mI' vuS yIchel 'oH yISeH 'e' DaneHchugh.",
+    "expiryLabel": "natlh",
+    "usesLabel": "lo'",
+    "create": "rIy yIchenmoH",
+    "copyLink": "rIy yIvel",
+    "revoke": "yIchID",
+    "empty": "muvmeH rIy tu'lu'be'.",
+    "expiresOn": "natlh {date}",
+    "expiry": {
+      "never": "not",
+      "h24": "rep 24",
+      "d7": "jaj 7",
+      "d30": "jaj 30"
+    },
+    "uses": {
+      "unlimited": "vuSbe'"
+    },
+    "joinTitle": "ghom yImuv",
+    "invitedTo": "DaSuq 'e' luSov",
+    "memberCount": "{n} tlhejwI'",
+    "accept": "ghom yImuv",
+    "signInToJoin": "muvmeH yI'el",
+    "goToLeague": "ghomDaq yIghoS",
+    "alreadyMember": "ghomvam tlhejwI' SoH.",
+    "expired": "natlhpu' muvmeH rIyvam.",
+    "exhausted": "lo' vuS Sangpu' muvmeH rIyvam.",
+    "notFound": "lughbe' joq taHbe' muvmeH rIyvam.",
+    "browseLeagues": "ghommey yIbej",
+    "joinFailed": "ghom DamuvlaHbe'. DaH natlhpu' rIy 'e' DuH."
   }
 }

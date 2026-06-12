@@ -702,5 +702,37 @@
     "crowdLeague": "Ligue",
     "crowdGlobal": "Tout le monde",
     "crowdBonusHint": "Les points bonus de foule sont toujours calculés sur les pronostics de tout le monde, pas seulement votre ligue."
+  },
+  "invites": {
+    "title": "Liens d'invitation",
+    "hint": "Partagez un lien pour laisser des gens rejoindre. Ajoutez une expiration ou une limite d'utilisations pour plus de contrôle.",
+    "expiryLabel": "Expire",
+    "usesLabel": "Utilisations",
+    "create": "Créer un lien",
+    "copyLink": "Copier le lien",
+    "revoke": "Révoquer",
+    "empty": "Aucun lien d'invitation.",
+    "expiresOn": "Expire le {date}",
+    "expiry": {
+      "never": "Jamais",
+      "h24": "24 heures",
+      "d7": "7 jours",
+      "d30": "30 jours"
+    },
+    "uses": {
+      "unlimited": "Illimité"
+    },
+    "joinTitle": "Rejoindre une ligue",
+    "invitedTo": "Vous êtes invité à rejoindre",
+    "memberCount": "{n} membres",
+    "accept": "Rejoindre la ligue",
+    "signInToJoin": "Connectez-vous pour rejoindre",
+    "goToLeague": "Aller à la ligue",
+    "alreadyMember": "Vous êtes déjà membre de cette ligue.",
+    "expired": "Ce lien d'invitation a expiré.",
+    "exhausted": "Ce lien d'invitation a atteint sa limite d'utilisations.",
+    "notFound": "Ce lien d'invitation est invalide ou n'existe plus.",
+    "browseLeagues": "Parcourir les ligues",
+    "joinFailed": "Impossible de rejoindre la ligue. Le lien vient peut-être d'expirer."
   }
 }

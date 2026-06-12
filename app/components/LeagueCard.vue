@@ -16,6 +16,7 @@ const copied = ref(false)
 const confirmRegen = ref(false)
 const confirmLeave = ref(false)
 const confirmDelete = ref(false)
+const showInvites = ref(false)
 
 const canManage = computed(() => props.league.role === 'OWNER' || props.league.role === 'MODERATOR')
 const isOwner = computed(() => props.league.role === 'OWNER')
@@ -126,6 +127,14 @@ function toggleVisibility() {
         :loading="regenerateCode.isPending.value"
         @click="confirmRegen = true"
       />
+      <Button
+        v-tooltip.top="t('invites.title')"
+        icon="pi pi-link"
+        text
+        size="small"
+        :aria-label="t('invites.title')"
+        @click="showInvites = true"
+      />
     </div>
 
     <button type="button" class="mt-2 text-sm inline-flex items-center gap-1" style="color: var(--p-text-muted-color)" @click="toggleMembers">
@@ -142,6 +151,7 @@ function toggleVisibility() {
       />
     </div>
 
+    <LeagueInviteDialog v-if="canManage" v-model:visible="showInvites" :league-id="props.league.id" />
     <AppConfirmDialog v-model:visible="confirmRegen" :header="t('leagues.regenerate')" :message="t('leagues.regenerateConfirm')" @confirm="regenerateCode.mutate(props.league.id)" />
     <AppConfirmDialog v-model:visible="confirmLeave" :header="t('leagues.leave')" :message="t('leagues.leaveConfirm')" severity="danger" @confirm="leave.mutate(props.league.id)" />
     <AppConfirmDialog v-model:visible="confirmDelete" :header="t('leagues.delete')" :message="t('leagues.deleteConfirm')" severity="danger" @confirm="remove.mutate(props.league.id)" />
