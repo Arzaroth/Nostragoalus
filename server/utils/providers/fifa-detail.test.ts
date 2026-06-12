@@ -95,6 +95,7 @@ describe('normalizeFifaMatchDetail', () => {
 
   it('handles missing teams and possession', () => {
     expect(normalizeFifaMatchDetail({})).toEqual({
+      minute: null,
       possessionHome: null,
       possessionAway: null,
       attendance: null,
@@ -107,6 +108,8 @@ describe('normalizeFifaMatchDetail', () => {
       homeTeamId: null,
       awayTeamId: null,
     })
+    // The live clock comes through when FIFA exposes it.
+    expect(normalizeFifaMatchDetail({ MatchTime: "47'" }).minute).toBe("47'")
   })
 
   it('extracts attendance, stadium and cards (yellow/red, ignoring blanks)', () => {
@@ -127,6 +130,7 @@ describe('fifaProvider.getMatchDetail', () => {
 
   it('fetches and normalizes a match detail', async () => {
     const payload = {
+      MatchTime: "62'",
       BallPossession: { OverallHome: 50, OverallAway: 50 },
       HomeTeam: { IdTeam: 'H', Players: [], Goals: [] },
       AwayTeam: { IdTeam: 'A', Players: [], Goals: [] },
@@ -134,6 +138,7 @@ describe('fifaProvider.getMatchDetail', () => {
     const fetchImpl = (async () => new Response(JSON.stringify(payload), { status: 200 })) as unknown as typeof fetch
     const provider = fifaProvider({ seasonId: '255711', competitionId: '17', fetchImpl, rateLimiter: noWait() })
     expect(await provider.getMatchDetail!({ stageId: 'st1', matchId: 'm1' })).toEqual({
+      minute: "62'",
       possessionHome: 50,
       possessionAway: 50,
       attendance: null,

@@ -108,6 +108,9 @@ export interface SubstitutionEvent {
 }
 
 export interface MatchDetail {
+  // Live clock as the provider reports it, e.g. "47'" (null once final / for
+  // providers that don't expose it).
+  minute?: string | null
   possessionHome: number | null
   possessionAway: number | null
   attendance: number | null

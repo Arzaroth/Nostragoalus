@@ -6,9 +6,10 @@ import { getCompetitionById } from '../../../utils/competitions/store'
 import { resolveCompetitionSeason } from '../../../utils/sync/competition'
 
 // Full-time details never change again - cache them for the process lifetime.
-// Live matches refresh every 5 minutes. (Single instance: in-memory is enough.)
+// Live matches refresh every minute so the clock and stats stay current.
+// (Single instance: in-memory is enough.)
 const cache = new Map<string, { at: number; final: boolean; detail: unknown }>()
-const TTL_MS = 5 * 60 * 1000
+const TTL_MS = 60 * 1000
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id') as string
