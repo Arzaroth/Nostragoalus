@@ -2,6 +2,8 @@
 import licenseRaw from '../../LICENSE?raw'
 import mitRaw from '../../LICENSE-MIT?raw'
 import wtfplRaw from '../../LICENSE-WTFPL?raw'
+
+useHead({ title: 'License' })
 </script>
 
 <template>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useHotkey } from '@tanstack/vue-hotkeys'
 const { t } = useI18n()
+useHead({ title: t('nav.matches') })
 const { enabled: crowdEnabled, totals: crowdTotals, leagueTotals, leagueActive } = useCrowdTotals()
 const oddsEnabled = useOddsPreference()
 const slug = useSelectedCompetition()
