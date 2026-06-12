@@ -15,8 +15,14 @@ effort buckets; order within a bucket is not priority.
 - [ ] **Auto-refresh on new version**: Nuxt built-in (`app:manifest:update`
       hook / `checkOutdatedBuildInterval`), toast "new version available,
       reload?".
-- [ ] **League invite links**: token-based, optional expiry + max uses.
-      Highest-leverage league feature.
+- [x] **League invite links** (built on worktree-league-invite-links, pending
+      merge): 96-bit tokens, optional expiry + max-uses, owner/moderator mint/
+      revoke. Public `/leagues/join/[token]` previews the league signed-out and
+      bounces through login via a same-origin-guarded `?next=`, auto-accepting
+      on return. Accept is atomic (conditional use-increment gates the cap).
+      Reuses the existing addMembership join path (ownerless-league claim, opt-
+      out clear). Kept the short join code too - the link is the easy path, the
+      code the fallback.
 - [ ] **Changelog since-last-seen**: store last-seen version per user, badge
       dot on the changelog nav entry, highlight the delta section.
 - [ ] **Next-match CTA**: on the home banner when logged in; scrolling
