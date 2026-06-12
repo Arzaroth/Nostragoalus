@@ -25,9 +25,15 @@ const activeBuckets = ref<StatusBucket[]>(fromQuery.length ? fromQuery : [...ALL
 const bucketOf = (s: string): StatusBucket =>
   ALL_BUCKETS.find((b) => (STATUS_BUCKETS[b] as readonly string[]).includes(s)) ?? 'upcoming'
 function toggleBucket(b: StatusBucket) {
-  activeBuckets.value = activeBuckets.value.includes(b)
-    ? activeBuckets.value.filter((x) => x !== b)
-    : [...activeBuckets.value, b]
+  if (activeBuckets.value.includes(b)) {
+    // An empty filter renders "no matches found", which reads as a bug, not
+    // a choice - the last active bucket refuses to untick (same allow-empty:
+    // false convention as the SelectButtons).
+    if (activeBuckets.value.length === 1) return
+    activeBuckets.value = activeBuckets.value.filter((x) => x !== b)
+  } else {
+    activeBuckets.value = [...activeBuckets.value, b]
+  }
 }
 
 const { data: predictions } = useMyPredictions()
