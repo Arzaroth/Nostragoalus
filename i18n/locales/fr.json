@@ -589,7 +589,7 @@
     },
     "q7": {
       "q": "D'où viennent les données ?",
-      "a": "De points d'accès FIFA et UEFA publiquement accessibles : calendrier, scores en direct (environ toutes les deux minutes), effectifs et stats. La carte est OpenStreetMap."
+      "a": "De points d'accès FIFA et UEFA publiquement accessibles : calendrier, scores en direct (environ toutes les deux minutes), effectifs et stats. Les cotes viennent de Sofascore, et la carte est OpenStreetMap."
     },
     "q8": {
       "q": "C'est gratuit ?",
