@@ -5,6 +5,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- `mise run roadmap-seed`: bootstrap the public roadmap with a curated starter set (idempotent - skips a roadmap that already has items).
+
+### Fixed
+- Opening a modal no longer nudges the page sideways (the scrollbar gutter is reserved, so the layout doesn't reflow).
+- The changelog on the About page now renders its markdown (bold, `code`, links) instead of showing the raw symbols.
+- Crowd-score tooltips are stylized consistently, whether or not a league is selected.
+- The About page and the FAQ now credit Sofascore (the odds source) alongside FIFA, UEFA and OpenStreetMap.
+
 ## [1.1.0] - 2026-06-12
 
 ### Added
