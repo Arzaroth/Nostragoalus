@@ -1,6 +1,7 @@
 # TODO
 
 Deferred work, queued behind feature development.
+Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
 ## Test debt
 
