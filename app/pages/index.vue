@@ -160,6 +160,13 @@ onBeforeUnmount(() => window.removeEventListener('resize', layoutBanner))
       </template>
     </ClientOnly>
 
+    <!-- Next-match CTA: rides the fullscreen-banner moment, scrolling away
+         dismisses it for this fixture (session-scoped). Client-only: depends
+         on sessionStorage + "now". -->
+    <ClientOnly>
+      <NextMatchCta />
+    </ClientOnly>
+
     <!-- Hero -->
     <section class="text-center flex flex-col items-center gap-6">
       <div
