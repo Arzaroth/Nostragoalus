@@ -5,12 +5,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- The match play-by-play now also shows fouls, and tags each event line with the relevant team's flag.
+
 ### Changed
 - When the home-page next-match/live prompt is too narrow to fit on one line, the two teams now stack vertically (home, separator, away) instead of wrapping awkwardly, and long team names wrap cleanly within the card.
 - The next-match countdown now sits next to the "Next match" label instead of off to the side, so the card stays centered.
 
 ### Fixed
 - The fixtures page now keeps up as a match goes live then finishes without a reload: your pick locks at kickoff and the points appear after full-time (the score and status already updated live).
+- Penalty awards now appear in the play-by-play (they were dropped when the feed gave them no commentary text).
+- A few tooltips (second yellow card, captain, joker) were English-only; they are now translated in every language.
 
 ## [1.5.1] - 2026-06-13
 
