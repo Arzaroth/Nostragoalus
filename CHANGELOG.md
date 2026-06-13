@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+- The home-page next-match and live-match prompts no longer overflow the screen on narrow viewports: they wrap and stay within the window instead of clipping off the edges.
+
 ## [1.5.0] - 2026-06-13
 
 ### Added
