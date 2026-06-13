@@ -535,6 +535,8 @@ export const taskRun = pgTable('task_run', {
   lastResult: text('last_result'),
   lastFailureAt: timestamp('last_failure_at'),
   lastError: text('last_error'),
+  // Total runs (success + failure) since first recorded, for the admin view.
+  executions: integer('executions').notNull().default(0),
 })
 
 // Rank snapshot per user+competition: when a rank changes during finalize, the

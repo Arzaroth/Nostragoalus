@@ -25,6 +25,8 @@ describe('recordTaskRun', () => {
     ;[row] = await db.select().from(taskRun)
     expect(row.lastResult).toBe('"ok"')
     expect(row.lastError).toBe('boom')
+    // every run (2 successes + 1 failure) bumped the counter
+    expect(row.executions).toBe(3)
 
     // non-Error throw is stringified
     await expect(recordTaskRun(db, 'demo2', async () => Promise.reject('raw'))).rejects.toBe('raw')

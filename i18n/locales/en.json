@@ -458,6 +458,7 @@
       "title": "Data",
       "hint": "Import fixtures and trigger live-score / finalize tasks.",
       "import": "Import fixtures",
+      "cronLink": "Cron tasks",
       "importTip": "Fetch and store every fixture of all active competitions (first-time setup).",
       "refresh": "Refresh fixtures",
       "refreshTip": "Re-sync fixtures from the provider - fills newly decided knockout teams, never overwrites finished scores.",
@@ -581,6 +582,23 @@
     "available": "A new version is available",
     "reload": "Reload",
     "dismiss": "Dismiss"
+  },
+  "cron": {
+    "title": "Cron tasks",
+    "hint": "The scheduled background jobs: their schedule, next and last run, run count and last result. Run one now, or tap a result for its output.",
+    "manual": "manual",
+    "runNow": "Run now",
+    "col": { "name": "Name", "schedule": "Schedule", "next": "Next run", "previous": "Previous run", "executions": "Executions", "result": "Result" },
+    "task": {
+      "scoresPoll": "Live score poll",
+      "fixturesRefresh": "Fixtures & bracket refresh",
+      "matchesFinalize": "Lock & score matches",
+      "oddsRefresh": "Odds snapshots",
+      "oddsBackfill": "Odds backfill (historical)"
+    },
+    "status": { "ok": "Last run succeeded", "failed": "Last run failed", "never": "Never run" },
+    "tip": { "never": "Has not run yet" },
+    "dialog": { "lastRun": "Last run", "lastFailure": "Last failure", "duration": "Duration", "output": "Last output", "error": "Last error", "noOutput": "No output recorded." }
   },
   "footer": {
     "builtWith": "Made with ♥️ from 🇫🇷",

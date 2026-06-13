@@ -1,5 +1,6 @@
 import { NostraTheme } from './lib/theme'
 import pkg from './package.json'
+import { scheduledTasksMap } from './server/utils/tasks/registry'
 
 export default defineNuxtConfig({
   compatibilityDate: '2026-06-04',
@@ -129,16 +130,9 @@ export default defineNuxtConfig({
         swagger: false,
       },
     },
-    scheduledTasks: {
-      // Live score polling self-gates on the live window, so off-window ticks make no API calls.
-      '*/2 * * * *': ['scores:poll'],
-      // Hourly fixture/bracket refresh.
-      '0 * * * *': ['fixtures:refresh'],
-      // Lock predictions at kickoff and score finished matches.
-      '*/5 * * * *': ['matches:finalize'],
-      // Odds snapshots self-gate on per-match staleness, so most ticks are no-ops.
-      '*/30 * * * *': ['odds:refresh'],
-    },
+    // Built from the task registry (server/utils/tasks/registry.ts), the single
+    // source of truth shared with the admin cron view.
+    scheduledTasks: scheduledTasksMap(),
   },
 
   runtimeConfig: {
