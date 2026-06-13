@@ -210,6 +210,7 @@
     "assists": "แอสซิสต์",
     "yellow": "ใบเหลือง",
     "red": "ใบแดง",
+    "captain": "กัปตัน",
     "coach": "ผู้จัดการทีม"
   },
   "pos": {
@@ -292,7 +293,7 @@
     "h2h": "สถิติเจอกัน",
     "playByPlay": "เหตุการณ์ในเกม",
     "playByPlayEmpty": "ยังไม่มีเหตุการณ์ในเกมสำหรับแมตช์นี้",
-    "pbpKind": { "goal": "ประตู", "ownGoal": "ทำเข้าประตูตัวเอง", "penaltyGoal": "ประตูจุดโทษ", "penaltyMissed": "ยิงจุดโทษพลาด", "penaltyAwarded": "ได้จุดโทษ", "assist": "แอสซิสต์", "yellow": "ใบเหลือง", "red": "ใบแดง", "secondYellow": "ใบเหลืองใบที่สอง", "sub": "เปลี่ยนตัว", "shot": "ยิง", "var": "VAR", "period": "ช่วงเวลา" },
+    "pbpKind": { "goal": "ประตู", "ownGoal": "ทำเข้าประตูตัวเอง", "penaltyGoal": "ประตูจุดโทษ", "penaltyMissed": "ยิงจุดโทษพลาด", "penaltyAwarded": "ได้จุดโทษ", "assist": "แอสซิสต์", "yellow": "ใบเหลือง", "red": "ใบแดง", "secondYellow": "ใบเหลืองใบที่สอง", "sub": "เปลี่ยนตัว", "shot": "ยิง", "foul": "ฟาวล์", "var": "VAR", "period": "ช่วงเวลา" },
     "scorers": "ดาวซัลโว",
     "players": "ผู้เล่น",
     "assists": "แอสซิสต์สูงสุด",
@@ -316,6 +317,7 @@
     "noUpcoming": "ไม่มีนัดถัดไป",
     "yourPick": "คำทายของคุณ",
     "coachCard": "ใบเหลืองโค้ช",
+    "secondYellow": "ใบเหลืองใบที่สอง",
     "subs": "การเปลี่ยนตัว",
     "bookings": "ใบเตือน",
     "toggleSubs": "แสดงหรือซ่อนการเปลี่ยนตัว",

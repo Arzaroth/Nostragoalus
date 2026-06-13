@@ -139,7 +139,8 @@ describe('normalizeFifaTimeline', () => {
       {
         Event: [
           { Type: 7, MatchMinute: "1'", EventDescription: desc('Kick-off.') },
-          { Type: 18, MatchMinute: "3'", IdTeam: 'H', EventDescription: desc('Foul.') }, // noise, dropped
+          { Type: 24, MatchMinute: "3'", IdTeam: 'H', EventDescription: desc('Throw-in.') }, // noise (throw-in), dropped
+          { Type: 18, MatchMinute: "5'", IdTeam: 'A', EventDescription: desc('PLAYER commits a foul.') },
           { Type: 0, MatchMinute: "23'", IdTeam: 'H', HomeGoals: 1, AwayGoals: 0, EventDescription: desc('SCORER scores!') },
           { Type: 2, MatchMinute: "30'", IdTeam: 'A', EventDescription: desc('BOOKED is booked.') },
           { Type: 5, MatchMinute: "60'", IdTeam: 'X', EventDescription: desc('Sub for a neutral team.') },
@@ -152,6 +153,7 @@ describe('normalizeFifaTimeline', () => {
       ['sub', null, "60'"], // IdTeam X matches neither home nor away -> null side
       ['yellow', 'AWAY', "30'"],
       ['goal', 'HOME', "23'"],
+      ['foul', 'AWAY', "5'"],
       ['period', null, "1'"],
     ])
     expect(events.find((e) => e.kind === 'goal')).toMatchObject({ homeScore: 1, awayScore: 0, text: 'SCORER scores!' })

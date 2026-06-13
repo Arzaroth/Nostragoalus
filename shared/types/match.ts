@@ -98,6 +98,7 @@ export type TimelineEventKind =
   | 'second-yellow'
   | 'sub'
   | 'shot'
+  | 'foul'
   | 'var'
   | 'period'
 

@@ -39,7 +39,7 @@ function rarityTip(p: { crowdShare?: number | string | null }) {
         >
           <i :class="p.isJoker ? 'pi pi-star-fill' : 'pi pi-star'" />{{ p.isJoker ? t('predictions.joker') : t('predictions.makeJoker') }}
         </button>
-        <span v-else-if="countsDouble(p.stage)" class="font-semibold" style="color: var(--ng-star)" :title="t('predictions.finalDoubleHint')">★ {{ t('predictions.finalDouble') }}</span>
+        <span v-else-if="countsDouble(p.stage)" v-tooltip.top="t('predictions.finalDoubleHint')" class="font-semibold" style="color: var(--ng-star)">★ {{ t('predictions.finalDouble') }}</span>
         <span v-else-if="p.isJoker" class="font-semibold" style="color: var(--ng-star)">★ {{ t('predictions.joker') }}</span>
       </div>
 

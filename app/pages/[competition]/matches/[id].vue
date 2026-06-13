@@ -181,6 +181,7 @@ const TIMELINE_ICONS: Record<string, string> = {
   'second-yellow': '🟥',
   sub: '🔄',
   shot: '🥅',
+  foul: '⚠️',
   var: '📺',
   period: '⏱️',
 }
@@ -199,6 +200,7 @@ const KIND_LABEL_KEYS: Record<string, string> = {
   'second-yellow': 'secondYellow',
   sub: 'sub',
   shot: 'shot',
+  foul: 'foul',
   var: 'var',
   period: 'period',
 }
@@ -374,8 +376,8 @@ function toggleFormInfo(side: string, i: number | string) {
       <!-- One laced timeline: each event is a row, on its team's side - the whole
            match reads top-to-bottom at a glance. -->
       <div v-if="eventsReady && hasTimelineExtras" class="flex justify-end gap-2 mt-3 text-xs">
-        <button type="button" class="px-2 py-0.5 rounded-full border transition-opacity" :class="showBookings ? '' : 'opacity-40'" style="border-color: var(--p-content-border-color); color: var(--p-text-muted-color)" :title="t('match.toggleBookings')" @click="showBookings = !showBookings">🟨 {{ t('match.bookings') }}</button>
-        <button type="button" class="px-2 py-0.5 rounded-full border transition-opacity" :class="showSubs ? '' : 'opacity-40'" style="border-color: var(--p-content-border-color); color: var(--p-text-muted-color)" :title="t('match.toggleSubs')" @click="showSubs = !showSubs">🔄 {{ t('match.subs') }}</button>
+        <button type="button" class="px-2 py-0.5 rounded-full border transition-opacity" :class="showBookings ? '' : 'opacity-40'" style="border-color: var(--p-content-border-color); color: var(--p-text-muted-color)" v-tooltip.top="t('match.toggleBookings')" @click="showBookings = !showBookings">🟨 {{ t('match.bookings') }}</button>
+        <button type="button" class="px-2 py-0.5 rounded-full border transition-opacity" :class="showSubs ? '' : 'opacity-40'" style="border-color: var(--p-content-border-color); color: var(--p-text-muted-color)" v-tooltip.top="t('match.toggleSubs')" @click="showSubs = !showSubs">🔄 {{ t('match.subs') }}</button>
       </div>
       <!-- name | icon | minute | icon | name: the icons live in their own rail
            next to the minute, so they stay aligned even when a name wraps.
@@ -388,14 +390,14 @@ function toggleFormInfo(side: string, i: number | string) {
                 <span><span style="color: var(--ng-success)">▲</span> {{ formatPlayerName(e.playerName) }}</span>
                 <span class="opacity-60"><span style="color: var(--ng-danger)">▼</span> {{ formatPlayerName(e.offName) }}</span>
               </span>
-              <template v-else>{{ formatPlayerName(e.playerName) }}<span v-if="e.kind === 'goal' && e.ownGoal"> (OG)</span><span v-if="e.kind === 'card' && e.coach" :title="t('match.coachCard')"> 📋</span></template>
+              <template v-else>{{ formatPlayerName(e.playerName) }}<span v-if="e.kind === 'goal' && e.ownGoal"> (OG)</span><span v-if="e.kind === 'card' && e.coach" v-tooltip.top="t('match.coachCard')"> 📋</span></template>
             </template>
           </span>
           <span class="w-4 flex justify-center">
             <template v-if="e.side === 'HOME'">
               <template v-if="e.kind === 'goal'">⚽</template>
               <template v-else-if="e.kind === 'sub'">🔄</template>
-              <span v-else-if="e.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: var(--ng-danger)" /></span>
+              <span v-else-if="e.card === 'SECOND_YELLOW'" v-tooltip.top="t('match.secondYellow')" class="relative inline-block w-3 h-3"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: var(--ng-danger)" /></span>
               <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${e.card === 'RED' ? 'var(--ng-danger)' : '#eab308'}`" />
             </template>
           </span>
@@ -404,7 +406,7 @@ function toggleFormInfo(side: string, i: number | string) {
             <template v-if="e.side === 'AWAY'">
               <template v-if="e.kind === 'goal'">⚽</template>
               <template v-else-if="e.kind === 'sub'">🔄</template>
-              <span v-else-if="e.card === 'SECOND_YELLOW'" class="relative inline-block w-3 h-3" title="Second yellow"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: var(--ng-danger)" /></span>
+              <span v-else-if="e.card === 'SECOND_YELLOW'" v-tooltip.top="t('match.secondYellow')" class="relative inline-block w-3 h-3"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: var(--ng-danger)" /></span>
               <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${e.card === 'RED' ? 'var(--ng-danger)' : '#eab308'}`" />
             </template>
           </span>
@@ -414,7 +416,7 @@ function toggleFormInfo(side: string, i: number | string) {
                 <span><span style="color: var(--ng-success)">▲</span> {{ formatPlayerName(e.playerName) }}</span>
                 <span class="opacity-60"><span style="color: var(--ng-danger)">▼</span> {{ formatPlayerName(e.offName) }}</span>
               </span>
-              <template v-else>{{ formatPlayerName(e.playerName) }}<span v-if="e.kind === 'goal' && e.ownGoal"> (OG)</span><span v-if="e.kind === 'card' && e.coach" :title="t('match.coachCard')"> 📋</span></template>
+              <template v-else>{{ formatPlayerName(e.playerName) }}<span v-if="e.kind === 'goal' && e.ownGoal"> (OG)</span><span v-if="e.kind === 'card' && e.coach" v-tooltip.top="t('match.coachCard')"> 📋</span></template>
             </template>
           </span>
         </template>
@@ -426,7 +428,7 @@ function toggleFormInfo(side: string, i: number | string) {
       <!-- your pick: editable until kickoff -->
       <div v-if="canPredict || myPred" class="flex flex-col items-center gap-1.5 mt-4 pt-3 border-t text-sm" style="border-color: var(--p-content-border-color)">
         <span class="text-xs font-semibold uppercase tracking-wider" style="color: var(--p-text-muted-color)">
-          {{ t('match.yourPick') }}<span v-if="myPred?.isJoker" title="Joker" style="color: var(--ng-star)"> ★</span>
+          {{ t('match.yourPick') }}<span v-if="myPred?.isJoker" v-tooltip.top="t('predictions.joker')" style="color: var(--ng-star)"> ★</span>
         </span>
         <ScoreInput v-if="canPredict" :home="myPred?.homeGoals ?? null" :away="myPred?.awayGoals ?? null" @update="savePrediction" />
         <!-- Independent lines: the locked pick + points must never depend on the

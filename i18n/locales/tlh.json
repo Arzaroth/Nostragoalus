@@ -210,6 +210,7 @@
     "assists": "qachmey",
     "yellow": "SuD Degh",
     "red": "Doq Degh",
+    "captain": "la'",
     "coach": "ra'wI'"
   },
   "pos": {
@@ -292,7 +293,7 @@
     "h2h": "qaD tlhol",
     "playByPlay": "may' lut",
     "playByPlayEmpty": "may'vam lutmey tu'lu'be' DaH.",
-    "pbpKind": { "goal": "naQmoH", "ownGoal": "naQmoH'egh", "penaltyGoal": "bortaS naQmoH", "penaltyMissed": "bortaS luj", "penaltyAwarded": "bortaS nob", "assist": "QaH", "yellow": "letlh SuD", "red": "letlh Doq", "secondYellow": "letlh SuD cha'DIch", "sub": "choH", "shot": "bach", "var": "VAR", "period": "poH" },
+    "pbpKind": { "goal": "naQmoH", "ownGoal": "naQmoH'egh", "penaltyGoal": "bortaS naQmoH", "penaltyMissed": "bortaS luj", "penaltyAwarded": "bortaS nob", "assist": "QaH", "yellow": "letlh SuD", "red": "letlh Doq", "secondYellow": "letlh SuD cha'DIch", "sub": "choH", "shot": "bach", "foul": "qab", "var": "VAR", "period": "poH" },
     "scorers": "bachwI' po'",
     "players": "QujwI'pu'",
     "assists": "qachwI' po'",
@@ -316,6 +317,7 @@
     "noUpcoming": "may' veb tu'be'lu'.",
     "yourPick": "wIvlIj",
     "coachCard": "DevwI' Degh",
+    "secondYellow": "letlh SuD cha'DIch",
     "subs": "tam",
     "bookings": "Deghmey",
     "toggleSubs": "tammey cha' pagh So'",

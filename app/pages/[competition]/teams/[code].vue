@@ -158,7 +158,7 @@ function fmt(d: string) {
           </div>
           <div v-for="p in g.players" :key="p.playerId" class="flex items-center gap-3 px-4 py-2 border-t text-sm" style="border-color: var(--p-content-border-color)">
             <span class="w-7 text-center tabular-nums font-bold" style="color: var(--p-text-muted-color)">{{ p.shirtNumber ?? '–' }}</span>
-            <span class="flex-1 font-medium truncate">{{ formatPlayerName(p.name) }}<span v-if="p.captain" class="ml-1 text-xs" style="color: var(--p-primary-color)" title="Captain">©</span></span>
+            <span class="flex-1 font-medium truncate">{{ formatPlayerName(p.name) }}<span v-if="p.captain" v-tooltip.top="t('team.captain')" class="ml-1 text-xs" style="color: var(--p-primary-color)">©</span></span>
             <span v-if="p.goals" class="text-xs tabular-nums shrink-0">{{ p.goals }}⚽</span>
             <span v-if="p.assists" class="text-xs tabular-nums shrink-0">{{ p.assists }}👟</span>
           </div>

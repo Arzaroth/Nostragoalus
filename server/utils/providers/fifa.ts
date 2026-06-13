@@ -349,6 +349,7 @@ const FIFA_EVENT_KINDS: Record<number, TimelineEventKind> = {
   4: 'second-yellow',
   5: 'sub',
   12: 'shot',
+  18: 'foul',
   71: 'var',
   7: 'period',
   8: 'period',

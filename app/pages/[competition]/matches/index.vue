@@ -279,7 +279,7 @@ useHotkey('Mod+F', openSearch)
               <!-- Always rendered on open matches (disabled until a pick exists) so saving never resizes the card. -->
               <div v-if="!m.isLocked || predByMatch[m.id]" class="flex items-center gap-3">
                 <!-- single-match rounds: no joker to place; the final doubles for everyone -->
-                <span v-if="countsDouble(m.stage)" class="text-xs font-semibold px-2 py-1 rounded-full" style="color: var(--ng-star); background: var(--ng-star-soft)" :title="t('predictions.finalDoubleHint')">★ {{ t('predictions.finalDouble') }}</span>
+                <span v-if="countsDouble(m.stage)" v-tooltip.top="t('predictions.finalDoubleHint')" class="text-xs font-semibold px-2 py-1 rounded-full" style="color: var(--ng-star); background: var(--ng-star-soft)">★ {{ t('predictions.finalDouble') }}</span>
                 <Button
                   v-else-if="!isSingleMatchStage(m.stage)"
                   :label="t('predictions.joker')"
