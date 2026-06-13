@@ -37,18 +37,24 @@ effort buckets; order within a bucket is not priority.
       score of every prediction; see how it fared. Draws are self-twins by
       design; one-line tooltip ("even your evil twin agrees") instead of a
       rules paragraph. Exact draw handling still TBD (swap vs crowd-derived).
-- [ ] **Email verification for signups** (admin runtime toggle):
-  - Flag in the runtime-settings table (same pattern as SSO config);
-    better-auth `requireEmailVerification` + `sendVerificationEmail` do the
-    flow. If the option is init-time-only on our version, enforce via a
-    `before` sign-in hook checking flag + `user.emailVerified`.
-  - Toggle gated on SMTP being configured (same as account deletion).
-  - Grandfather pre-toggle accounts as verified.
-  - SSO signups exempt (IdP-verified).
-  - Admin **force-verify** action on any user (no role break-glass; doubles
-    as "mail never arrived" support tool). Lives next to 2FA-removal/SSO-unlink.
-  - Unverified-account TTL: scheduled task deletes
-    `emailVerified = false AND no SSO link AND createdAt < now - 7d`.
+- [x] **Email verification for signups** (admin runtime toggle) - built on
+      worktree-email-verification, pending merge:
+  - Flag in a new generic `app_setting` key-value table (the SSO config path
+    is its own encrypted table; a plain boolean didn't need that). better-auth
+    1.6.14 reads `requireEmailVerification` live per request (verified it's
+    never captured at init), so it's exposed as a **getter** over a synced
+    in-memory cache - the toggle takes effect with no redeploy, no sign-in
+    hook needed. `emailVerification.sendVerificationEmail` always configured.
+  - Toggle gated on SMTP (`NUXT_SMTP_URL`); enabling without it is refused.
+  - Grandfather: enabling sets every existing account `emailVerified = true`
+    (done in the service, so no hand-written data migration).
+  - SSO sign-ins exempt for free - the gate lives only in the email/password
+    sign-in route; SSO uses a different route and arrives verified.
+  - Admin **force-verify** action on any unverified user, in the user row menu.
+  - Unverified-account TTL: daily `users:prune-unverified` task deletes
+    `emailVerified = false AND createdAt < now - 7d`, exempting SSO-linked and
+    admin accounts, and self-gating to a no-op unless verification is required
+    (otherwise unverified is the normal state and it would wipe everyone).
 
 ## Features
 
