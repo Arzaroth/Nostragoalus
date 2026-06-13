@@ -714,6 +714,7 @@
     "copyLink": "Copier le lien",
     "revoke": "Révoquer",
     "empty": "Aucun lien d'invitation.",
+    "evergreen": "Lien permanent (code) - sans expiration",
     "expiresOn": "Expire le {date}",
     "expiry": {
       "never": "Jamais",

@@ -714,6 +714,7 @@
     "copyLink": "rIy yIvel",
     "revoke": "yIchID",
     "empty": "muvmeH rIy tu'lu'be'.",
+    "evergreen": "reH taHbogh rIy (muvmeH mu') - not natlh",
     "expiresOn": "natlh {date}",
     "expiry": {
       "never": "not",

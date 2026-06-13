@@ -714,6 +714,7 @@
     "copyLink": "Copy link",
     "revoke": "Revoke",
     "empty": "No invite links yet.",
+    "evergreen": "Permanent link (join code) - never expires",
     "expiresOn": "Expires {date}",
     "expiry": {
       "never": "Never",

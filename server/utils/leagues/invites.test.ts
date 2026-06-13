@@ -92,6 +92,23 @@ describe('league invites', () => {
     await expect(acceptInvite(db, { token: 'missing', userId: u })).rejects.toThrow(NotFoundError)
   })
 
+  it('treats the join code as an evergreen invite (preview + accept, no use accounting)', async () => {
+    const competitionId = await makeCompetition(db, { slug: 'ever-comp' })
+    const evOwner = await makeUser(db, 'ev-owner')
+    const codeLeague = await makeLeague(db, { competitionId, ownerId: evOwner, name: 'Code League', joinCode: 'EVERGREEN' })
+    const joiner = await makeUser(db, 'ev-joiner')
+
+    const preview = await previewInvite(db, 'EVERGREEN')
+    expect(preview?.league.id).toBe(codeLeague)
+    expect(preview?.status).toBe('VALID')
+
+    const res = await acceptInvite(db, { token: 'EVERGREEN', userId: joiner })
+    expect(res.league.id).toBe(codeLeague)
+    expect(res.role).toBe('MEMBER')
+    // No league_invite row was created for the code path.
+    expect(await listInvites(db, codeLeague)).toHaveLength(0)
+  })
+
   it('revoke removes the invite and 404s when gone', async () => {
     const inv = await createInvite(db, { leagueId, createdBy: owner })
     await revokeInvite(db, leagueId, inv.id)

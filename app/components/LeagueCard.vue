@@ -137,10 +137,16 @@ function toggleVisibility() {
       />
     </div>
 
-    <button type="button" class="mt-2 text-sm inline-flex items-center gap-1" style="color: var(--p-text-muted-color)" @click="toggleMembers">
-      <i :class="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'" class="text-xs" />
-      {{ t('leagues.members') }}
-    </button>
+    <div class="mt-2 flex items-center gap-4">
+      <button type="button" class="text-sm inline-flex items-center gap-1" style="color: var(--p-text-muted-color)" @click="toggleMembers">
+        <i :class="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'" class="text-xs" />
+        {{ t('leagues.members') }}
+      </button>
+      <NuxtLink :to="`/leagues/${props.league.id}`" class="text-sm inline-flex items-center gap-1 hover:underline" style="color: var(--p-primary-color)">
+        <i class="pi pi-trophy text-xs" />
+        {{ t('leagues.viewRankings') }}
+      </NuxtLink>
+    </div>
     <div v-if="expanded" class="mt-1">
       <div v-if="detail.isLoading.value" class="text-sm opacity-60">{{ t('common.loading') }}</div>
       <LeagueMembersList
@@ -152,7 +158,7 @@ function toggleVisibility() {
       />
     </div>
 
-    <LeagueInviteDialog v-if="canManage" v-model:visible="showInvites" :league-id="props.league.id" />
+    <LeagueInviteDialog v-if="canManage" v-model:visible="showInvites" :league-id="props.league.id" :join-code="props.league.joinCode" />
     <AppConfirmDialog v-model:visible="confirmRegen" :header="t('leagues.regenerate')" :message="t('leagues.regenerateConfirm')" @confirm="regenerateCode.mutate(props.league.id)" />
     <AppConfirmDialog v-model:visible="confirmLeave" :header="t('leagues.leave')" :message="t('leagues.leaveConfirm')" severity="danger" @confirm="leave.mutate(props.league.id)" />
     <AppConfirmDialog v-model:visible="confirmDelete" :header="t('leagues.delete')" :message="t('leagues.deleteConfirm')" severity="danger" @confirm="remove.mutate(props.league.id)" />
