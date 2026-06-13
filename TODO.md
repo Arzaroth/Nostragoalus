@@ -87,6 +87,26 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       ever feels abrupt, widen it into a short easing band instead of a hard
       threshold.
 
+## Email verification (deferred from the feature-treatment review)
+
+- [ ] The email-verification flag cache (`server/utils/auth/email-verification.ts`)
+      is a process-wide module `let cached`; tests rely on a beforeEach re-seed.
+      A test that reads `emailVerificationRequiredSync` before seeding could see
+      another suite's value (order-dependent flake, the class CLAUDE.md warns of).
+      Expose a reset, or make the cache injectable.
+- [ ] Verifying via the mailed link lands on `/matches`, dropping any `next` the
+      user signed up with (e.g. a league-invite deep link): signup passes
+      `callbackURL: '/verify-email'`, so the original `next` isn't carried through
+      the verification round-trip. Thread `next` through verify-email.
+- [ ] `users:prune-unverified` task doesn't check `cronDisabled` (consistent with
+      finalize/fixtures, and self-gated on the verification flag) - if cron is
+      disabled to halt jobs, the destructive prune still runs when the flag is on.
+      Consider honoring the cron kill-switch for the destructive one.
+- [ ] Sign-up enumeration hardening: with verification on, better-auth returns a
+      token-less synthetic 200 for existing emails; with the admin + two-factor
+      plugins adding user fields, set `customSyntheticUser` so the new-vs-existing
+      response shape stays indistinguishable.
+
 ## Odds feature (deferred from the merge review)
 
 - [ ] Provider-scope `match.oddsEventRef` (or prefix it `sofascore:`): switching
