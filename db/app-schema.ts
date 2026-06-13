@@ -274,6 +274,12 @@ export const championPick = pgTable(
     fifaRank: integer('fifa_rank'),
     potentialPoints: integer('potential_points').notNull().default(10),
     awardedPoints: integer('awarded_points').notNull().default(0),
+    // Second chance: set permanently the first time the pick is switched during
+    // the re-pick window. Latches true (reverting doesn't clear it) and halves
+    // the award. The original* columns keep the pre-switch pick for display.
+    repicked: boolean('repicked').notNull().default(false),
+    originalTeamCode: text('original_team_code'),
+    originalTeamName: text('original_team_name'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true })
       .notNull()
@@ -298,6 +304,11 @@ export const bestScorerPick = pgTable(
     teamCode: text('team_code'),
     teamName: text('team_name').notNull(),
     awardedPoints: integer('awarded_points').notNull().default(0),
+    // Second chance, mirrors champion_pick: latches true on the first switch in
+    // the window, halves the award, original* keeps the pre-switch pick.
+    repicked: boolean('repicked').notNull().default(false),
+    originalPlayerName: text('original_player_name'),
+    originalTeamCode: text('original_team_code'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true })
       .notNull()

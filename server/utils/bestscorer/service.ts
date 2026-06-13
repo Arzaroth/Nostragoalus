@@ -1,8 +1,9 @@
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { bestScorerPick, goalEvent, match } from '../../../db/schema'
-import { LockedError } from '../errors'
+import { LockedError, ValidationError } from '../errors'
 import { getChampionLockTime } from '../champion/service'
+import { getSecondChanceWindow, isSecondChanceOpen } from '../picks/window'
 
 export async function getMyBestScorerPick(db: AppDatabase, userId: string, competitionId: string) {
   const rows = await db
@@ -45,6 +46,29 @@ export async function setBestScorerPick(db: AppDatabase, input: SetBestScorerInp
     })
 }
 
+// Second chance, mirrors repickChampion: switch the Golden Boot pick during the
+// [last group round -> knockouts] window, latching `repicked` (permanent half)
+// and snapshotting the original for display.
+export async function repickBestScorer(db: AppDatabase, input: SetBestScorerInput, now: Date = new Date()): Promise<void> {
+  const window = await getSecondChanceWindow(db, input.competitionId)
+  if (!isSecondChanceOpen(window, now)) throw new LockedError('the second-chance window is not open')
+
+  const existing = await getMyBestScorerPick(db, input.userId, input.competitionId)
+  if (!existing) throw new ValidationError('no best scorer pick to change')
+
+  await db
+    .update(bestScorerPick)
+    .set({
+      playerId: input.playerId,
+      playerName: input.playerName,
+      teamCode: input.teamCode,
+      teamName: input.teamName,
+      repicked: true,
+      ...(existing.repicked ? {} : { originalPlayerName: existing.playerName, originalTeamCode: existing.teamCode }),
+    })
+    .where(eq(bestScorerPick.id, existing.id))
+}
+
 // Golden Boot winners from stored goal events: every player tied at the top
 // goal count (own goals excluded, like the official award).
 export async function topScorerPlayerIds(db: AppDatabase, competitionId: string): Promise<string[]> {
@@ -82,9 +106,14 @@ export async function awardBestScorerBonuses(db: AppDatabase, competitionId: str
   const winners = await topScorerPlayerIds(db, competitionId)
   if (winners.length === 0) return 0
 
+  const halved = Math.floor(bonus / 2)
   const updated = await db
     .update(bestScorerPick)
-    .set({ awardedPoints: bonus })
+    // Half (floored) for picks switched in the second-chance window. The cast
+    // pins the integer type the column needs (the branch params are untyped).
+    .set({
+      awardedPoints: sql`(CASE WHEN ${bestScorerPick.repicked} THEN ${halved} ELSE ${bonus} END)::int`,
+    })
     .where(and(eq(bestScorerPick.competitionId, competitionId), inArray(bestScorerPick.playerId, winners)))
     .returning({ id: bestScorerPick.id })
   return updated.length
