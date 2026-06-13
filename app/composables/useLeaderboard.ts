@@ -5,16 +5,23 @@ import type { LeaderboardRow as ServerLeaderboardRow } from '../../server/utils/
 // canonical server interface (championCode/championPoints included).
 export type LeaderboardRow = ServerLeaderboardRow & { movement?: number | null }
 
-export function useLeaderboard(global?: Ref<boolean>, leagueId?: Ref<string | null>) {
+interface LeaderboardResponse {
+  rows: LeaderboardRow[]
+  // League scope only: members left off the board for visibility reasons
+  // (admin-hidden, or private profiles the viewer can't see).
+  hiddenCount?: number
+}
+
+function leaderboardQuery(global?: Ref<boolean>, leagueId?: Ref<string | null>) {
   const slug = useSelectedCompetition()
   const isGlobal = global ?? ref(false)
   const league = leagueId ?? ref(null)
-  return useQuery({
+  return {
     // league is part of the key: switching the pill refetches and keeps the
     // previous scope cached for an instant toggle back.
-    queryKey: ['leaderboard', slug, isGlobal, league],
-    queryFn: ({ signal }) =>
-      $fetch<{ rows: LeaderboardRow[] }>('/api/leaderboard', {
+    queryKey: ['leaderboard', slug, isGlobal, league] as const,
+    queryFn: ({ signal }: { signal: AbortSignal }) =>
+      $fetch<LeaderboardResponse>('/api/leaderboard', {
         query: isGlobal.value
           ? { global: 'true' }
           : league.value
@@ -23,6 +30,16 @@ export function useLeaderboard(global?: Ref<boolean>, leagueId?: Ref<string | nu
               ? { competition: slug.value }
               : {},
         signal,
-      }).then((r) => r.rows),
-  })
+      }),
+  }
+}
+
+export function useLeaderboard(global?: Ref<boolean>, leagueId?: Ref<string | null>) {
+  return useQuery({ ...leaderboardQuery(global, leagueId), select: (r) => r.rows })
+}
+
+// Shares the cache key with useLeaderboard (same fetch, different projection),
+// so the board and its "+N hidden" marker never disagree.
+export function useLeaderboardHiddenCount(leagueId: Ref<string | null>) {
+  return useQuery({ ...leaderboardQuery(ref(false), leagueId), select: (r) => r.hiddenCount ?? 0 })
 }

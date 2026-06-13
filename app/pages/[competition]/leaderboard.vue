@@ -26,6 +26,7 @@ watch(leagueId, (id) => {
 const isGlobal = computed(() => scope.value === 'global')
 const scopedLeagueId = computed(() => (scope.value === 'league' ? leagueId.value : null))
 const { data: rows, isLoading, error: boardError } = useLeaderboard(isGlobal, scopedLeagueId)
+const { data: hiddenCount } = useLeaderboardHiddenCount(scopedLeagueId)
 // The selected league was deleted, or membership was revoked: its board 404s.
 // Drop the stale selection so the view falls back to the competition board
 // instead of showing a misleading "empty leaderboard".
@@ -166,6 +167,16 @@ const hasLive = computed(() => displayRows.value.some((r) => r.livePoints))
         </div>
         <i class="pi pi-angle-right text-xs shrink-0" style="color: var(--p-text-muted-color)" />
       </NuxtLink>
+      <div
+        v-if="hiddenCount"
+        v-tooltip.top="{ value: t('leaderboard.hiddenTip'), pt: { text: 'text-xs max-w-64' } }"
+        class="flex items-center justify-center gap-1.5 rounded-xl border border-dashed px-4 py-2 text-xs cursor-help"
+        style="border-color: var(--p-content-border-color); color: var(--p-text-muted-color)"
+      >
+        <i class="pi pi-eye-slash" style="font-size: 0.7rem" />
+        {{ t('leaderboard.hidden', { n: hiddenCount }, hiddenCount) }}
+        <i class="pi pi-info-circle" style="font-size: 0.7rem; opacity: 0.6" />
+      </div>
     </div>
   </div>
 </template>
