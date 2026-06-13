@@ -56,12 +56,39 @@ watch(locale, () => {
   if (timelineStatus.value !== 'idle') refreshTimeline()
 })
 
+// League standings for this match: every member ranked by the points their pick
+// earns here, live while the match is in play. The server hides picks until
+// kickoff (scope 'upcoming', no rows), so the tab only shows once a league is
+// picked and the match is under way. Manual-only fetch (watch: false) - an empty
+// leagueId would 400, so we drive it from maybeLoadLeagueBoard() instead.
+const { leagueId } = useSelectedLeague()
+const { session } = useAuth()
+const meId = computed(() => session.value?.data?.user?.id)
+const {
+  data: leagueBoardData,
+  status: leagueBoardStatus,
+  clear: clearLeagueBoard,
+  refresh: refreshLeagueBoard,
+} = await useFetch<{ scope: string; rows: any[]; notPredicted: number; league: { id: string; name: string } }>(
+  `/api/matches/${id.value}/league-standings`,
+  { query: computed(() => ({ league: leagueId.value ?? '' })), lazy: true, immediate: false, watch: false },
+)
+const leagueRows = computed<any[]>(() => leagueBoardData.value?.rows ?? [])
+const leagueBoardLive = computed(() => leagueBoardData.value?.scope === 'live')
+function maybeLoadLeagueBoard() {
+  if (leagueId.value && hasStarted.value && activeTab.value === 'league') refreshLeagueBoard()
+}
+function medal(rank: number) {
+  return rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null
+}
+
 // These FIFA-backed fetches can run for seconds; leaving the page aborts them.
 useCancelOnLeave(
   { status: insightsStatus, clear: clearInsights },
   { status: scorersStatus, clear: clearScorers },
   { status: detailStatus, clear: clearDetail },
   { status: timelineStatus, clear: clearTimeline },
+  { status: leagueBoardStatus, clear: clearLeagueBoard },
 )
 
 const m = computed(() => data.value?.match)
@@ -83,6 +110,7 @@ watch(live, (now, prev) => {
     // The score moved - pull fresh goals/cards/stats right away.
     refreshInsights()
     refreshDetail()
+    maybeLoadLeagueBoard()
   }
 })
 onBeforeUnmount(() => clearTimeout(celebrationTimer))
@@ -131,6 +159,7 @@ watch(
       liveStatsTimer = setInterval(() => {
         refreshInsights()
         refreshDetail()
+        maybeLoadLeagueBoard()
         // Only keep the play-by-play warm once it has been opened.
         if (timelineStatus.value !== 'idle') refreshTimeline()
       }, 45_000)
@@ -320,6 +349,11 @@ watch(activeTab, (tab) => {
 // Lazy-load the play-by-play the first time its tab is opened (immediate covers
 // a direct landing on ?tab=timeline).
 watch(activeTab, (tab) => { if (tab === 'timeline' && timelineStatus.value === 'idle') loadTimeline() }, { immediate: true })
+// Load (and keep current) the league board when it's the open tab; a status
+// change (e.g. kickoff, or full-time) refetches so live flips to final.
+watch([activeTab, leagueId, hasStarted, status], maybeLoadLeagueBoard, { immediate: true })
+// The selected league was cleared while reading its board: fall back to stats.
+watch(leagueId, (id) => { if (!id && activeTab.value === 'league') activeTab.value = 'stats' })
 
 // All-time head-to-head (FIFA's full calendar: friendlies, qualifiers,
 // championships) from the home side's perspective; our own data as fallback.
@@ -489,6 +523,7 @@ function toggleFormInfo(side: string, i: number | string) {
           <Tab v-if="hasStarted" value="timeline">{{ t('match.playByPlay') }}</Tab>
           <Tab v-if="hasStats || detailStatus === 'pending'" value="stats">{{ t('match.stats') }}</Tab>
           <Tab v-if="insights.standings" value="standings">{{ t('match.standings') }}</Tab>
+          <Tab v-if="leagueId && hasStarted" value="league">{{ t('match.leagueTab') }}</Tab>
           <Tab value="form">{{ t('match.form') }}</Tab>
           <Tab value="next">{{ t('match.next') }}</Tab>
           <Tab value="h2h">{{ t('match.h2h') }}</Tab>
@@ -566,6 +601,51 @@ function toggleFormInfo(side: string, i: number | string) {
                 </tr>
               </tbody>
             </table>
+          </TabPanel>
+
+          <TabPanel v-if="leagueId && hasStarted" value="league">
+            <div v-if="leagueBoardLive" class="flex items-center gap-1.5 text-xs font-bold mb-3" style="color: var(--ng-danger)">
+              <span class="w-1.5 h-1.5 rounded-full animate-pulse" style="background: var(--ng-danger)" />{{ t('leaderboard.liveProvisional') }}
+            </div>
+            <div v-if="leagueBoardStatus === 'pending' && !leagueRows.length" class="flex flex-col gap-2">
+              <div v-for="i in 4" :key="i" class="flex items-center gap-3 py-1">
+                <Skeleton width="1.5rem" height="1.5rem" shape="circle" />
+                <Skeleton width="2rem" height="2rem" shape="circle" />
+                <Skeleton :width="`${6 + (i % 3) * 2}rem`" height="0.9rem" />
+              </div>
+            </div>
+            <div v-else-if="!leagueRows.length" class="text-sm text-center py-4" style="color: var(--p-text-muted-color)">{{ t('match.leagueNoPicks') }}</div>
+            <div v-else class="flex flex-col gap-2">
+              <NuxtLink
+                v-for="r in leagueRows"
+                :key="r.userId"
+                :to="`/${selectedSlug}/users/${r.userId}`"
+                class="flex items-center gap-3 rounded-xl border px-3 py-2 hover:opacity-90"
+                :style="`background: var(--p-content-background); border-color: ${r.userId === meId ? 'var(--p-primary-color)' : 'var(--p-content-border-color)'}; border-width: ${r.userId === meId ? '2px' : '1px'}`"
+              >
+                <div class="w-7 text-center shrink-0 font-bold tabular-nums">
+                  <span v-if="medal(r.rank)">{{ medal(r.rank) }}</span>
+                  <span v-else style="color: var(--p-text-muted-color)">{{ r.rank }}</span>
+                </div>
+                <UserAvatar :image="r.image" />
+                <div class="flex-1 min-w-0">
+                  <div class="font-semibold truncate flex items-center gap-2">
+                    <span class="truncate">{{ r.displayName }}</span>
+                    <span v-if="r.userId === meId" class="text-xs font-normal" style="color: var(--p-primary-color)">{{ t('leaderboard.you') }}</span>
+                  </div>
+                  <div class="text-xs tabular-nums" style="color: var(--p-text-muted-color)">
+                    {{ r.homeGoals }}–{{ r.awayGoals }}<span v-if="r.isJoker" v-tooltip.top="t('predictions.joker')" style="color: var(--ng-star)"> ★</span><template v-if="r.baseTier"> · {{ tierLabel(r.baseTier) }}</template>
+                  </div>
+                </div>
+                <div class="text-right shrink-0">
+                  <span class="text-lg font-bold tabular-nums" :style="leagueBoardLive ? 'color: var(--ng-danger)' : ''">{{ r.points > 0 ? '+' : '' }}{{ r.points }}</span>
+                  <span class="text-xs ml-1" style="color: var(--p-text-muted-color)">{{ t('leaderboard.pts') }}</span>
+                </div>
+              </NuxtLink>
+              <div v-if="leagueBoardData?.notPredicted" class="text-xs text-center pt-1" style="color: var(--p-text-muted-color)">
+                {{ t('match.leagueNoPick', { n: leagueBoardData.notPredicted }, leagueBoardData.notPredicted) }}
+              </div>
+            </div>
           </TabPanel>
 
           <TabPanel value="form">

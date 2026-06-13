@@ -350,7 +350,10 @@
     "goal": "GOOOAL!",
     "halfTime": "HT",
     "live": "LIVE",
-    "inContest": "in contest"
+    "inContest": "in contest",
+    "leagueTab": "League",
+    "leagueNoPicks": "No league picks for this match yet.",
+    "leagueNoPick": "{n} member made no pick | {n} members made no pick"
   },
   "auth": {
     "signIn": "Sign in",

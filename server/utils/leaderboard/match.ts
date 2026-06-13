@@ -1,0 +1,183 @@
+import { and, eq, isNotNull, or } from 'drizzle-orm'
+import type { AppDatabase } from '../../../db/types'
+import { leagueMember, match, prediction, user } from '../../../db/schema'
+import { countsDouble } from '../../../shared/types/match'
+import { closingOddsForOutcome } from '../odds/store'
+import { getActiveScoringConfig } from '../scoring/store'
+import type { ScoringRules } from '../scoring/config'
+import { scorePredictions } from '../scoring/engine'
+import { outcomeOf, type BaseTier } from '../scoring/tiers'
+import { compareLeaderboardRows } from './service'
+
+export interface MatchStandingRow {
+  rank: number
+  userId: string
+  displayName: string
+  image: string | null
+  homeGoals: number
+  awayGoals: number
+  isJoker: boolean
+  points: number
+  baseTier: BaseTier | null
+}
+
+export type MatchStandingsScope = 'upcoming' | 'live' | 'final'
+
+export interface MatchLeagueStandings {
+  scope: MatchStandingsScope
+  rows: MatchStandingRow[]
+  // League members with no (locked) pick on this match - shown as a muted footer.
+  notPredicted: number
+}
+
+function tierCounts(tier: BaseTier | null): { exact: number; outcome: number; gd: number } {
+  return {
+    exact: tier === 'EXACT' ? 1 : 0,
+    outcome: tier === 'EXACT' || tier === 'DIFF' || tier === 'OUTCOME' ? 1 : 0,
+    gd: tier === 'EXACT' || tier === 'DIFF' ? 1 : 0,
+  }
+}
+
+// One match's standings within a league: every member who locked a pick, ranked
+// by the points that pick earns on this match. A live match scores at its
+// current scoreline (same engine as finalize, not persisted); a finished match
+// uses the persisted points. Picks are never revealed before kickoff.
+export async function getMatchLeagueStandings(
+  db: AppDatabase,
+  opts: {
+    matchId: string
+    leagueId: string
+    viewerId: string
+    includePrivate?: boolean
+    includeHidden?: boolean
+    rules?: ScoringRules
+  },
+): Promise<MatchLeagueStandings> {
+  const [m] = await db
+    .select({
+      id: match.id,
+      stage: match.stage,
+      status: match.status,
+      kickoffTime: match.kickoffTime,
+      fullTimeHome: match.fullTimeHome,
+      fullTimeAway: match.fullTimeAway,
+    })
+    .from(match)
+    .where(eq(match.id, opts.matchId))
+    .limit(1)
+  // Copy-protection: other members' picks stay hidden until the match is under
+  // way, so the board has nothing to show (and nothing to score) before kickoff.
+  const started = m && (m.status === 'LIVE' || m.status === 'PAUSED' || m.status === 'FINISHED')
+  if (!m || !started) return { scope: 'upcoming', rows: [], notPredicted: 0 }
+  const live = m.status === 'LIVE' || m.status === 'PAUSED'
+
+  // League roster, same visibility rule as the league leaderboard: admin-hidden
+  // members are dropped (except the viewer themselves), private profiles shown
+  // only when the viewer is entitled (a member or admin).
+  const visibility = and(
+    ...(opts.includePrivate ? [] : [eq(user.profilePrivate, false)]),
+    ...(opts.includeHidden ? [] : [eq(user.hiddenFromLeaderboard, false)]),
+  )
+  const members = await db
+    .select({ userId: leagueMember.userId, name: user.name, image: user.image })
+    .from(leagueMember)
+    .innerJoin(user, eq(user.id, leagueMember.userId))
+    // No visibility filter (member/admin view) means every member; otherwise the
+    // viewer is always kept on top of the visible set.
+    .where(and(eq(leagueMember.leagueId, opts.leagueId), visibility ? or(eq(user.id, opts.viewerId), visibility) : undefined))
+  const memberById = new Map(members.map((mem) => [mem.userId, mem]))
+
+  // Every locked prediction for the match feeds the crowd-rarity histogram: the
+  // bonus is always measured against the whole field, never just the league.
+  const field = await db
+    .select({
+      id: prediction.id,
+      userId: prediction.userId,
+      homeGoals: prediction.homeGoals,
+      awayGoals: prediction.awayGoals,
+      isJoker: prediction.isJoker,
+      totalPoints: prediction.totalPoints,
+      baseTier: prediction.baseTier,
+    })
+    .from(prediction)
+    .where(and(eq(prediction.matchId, m.id), isNotNull(prediction.lockedAt)))
+
+  const hasScore = m.fullTimeHome !== null && m.fullTimeAway !== null
+  // Score provisionally while live, or when a finished match hasn't been
+  // finalized yet (a member's pick still has null points): same engine, same
+  // rules as finalize, just not persisted.
+  const needsProvisional =
+    hasScore && (live || field.some((p) => memberById.has(p.userId) && p.totalPoints === null))
+  let provisional: Map<string, { points: number; tier: BaseTier }> | null = null
+  if (needsProvisional) {
+    const rules = opts.rules ?? (await getActiveScoringConfig(db)).rules
+    const actual = { home: m.fullTimeHome as number, away: m.fullTimeAway as number }
+    const actualOutcomeOdds =
+      rules.bonusSource === 'ODDS' ? await closingOddsForOutcome(db, m.id, m.kickoffTime, outcomeOf(actual)) : null
+    const scores = scorePredictions({
+      actual,
+      rules,
+      predictions: field.map((p) => ({ id: p.id, home: p.homeGoals, away: p.awayGoals, isJoker: p.isJoker })),
+      actualOutcomeOdds,
+      forceJoker: countsDouble(m.stage),
+    })
+    provisional = new Map(scores.map((s) => [s.id, { points: s.totalPoints, tier: s.baseTier }]))
+  }
+
+  type Scored = MatchStandingRow & { exact: number; outcome: number; gd: number }
+  const scored: Scored[] = []
+  for (const p of field) {
+    const mem = memberById.get(p.userId)
+    if (!mem) continue
+    const prov = provisional?.get(p.id)
+    const baseTier = (prov ? prov.tier : p.baseTier) as BaseTier | null
+    scored.push({
+      rank: 0,
+      userId: p.userId,
+      displayName: mem.name,
+      image: mem.image,
+      homeGoals: p.homeGoals,
+      awayGoals: p.awayGoals,
+      isJoker: p.isJoker,
+      points: prov ? prov.points : p.totalPoints ?? 0,
+      baseTier,
+      ...tierCounts(baseTier),
+    })
+  }
+
+  scored.sort((a, b) =>
+    compareLeaderboardRows(
+      { totalPoints: a.points, exactCount: a.exact, outcomeCount: a.outcome, gdCount: a.gd, userId: a.userId },
+      { totalPoints: b.points, exactCount: b.exact, outcomeCount: b.outcome, gdCount: b.gd, userId: b.userId },
+    ),
+  )
+
+  // Standard competition ranking ("1224"): ties share a rank, the next distinct
+  // row skips ahead.
+  let rank = 0
+  let prevKey: string | null = null
+  scored.forEach((r, i) => {
+    const key = `${r.points}|${r.exact}|${r.outcome}|${r.gd}`
+    if (key !== prevKey) {
+      rank = i + 1
+      prevKey = key
+    }
+    r.rank = rank
+  })
+
+  return {
+    scope: live ? 'live' : 'final',
+    rows: scored.map((r) => ({
+      rank: r.rank,
+      userId: r.userId,
+      displayName: r.displayName,
+      image: r.image,
+      homeGoals: r.homeGoals,
+      awayGoals: r.awayGoals,
+      isJoker: r.isJoker,
+      points: r.points,
+      baseTier: r.baseTier,
+    })),
+    notPredicted: members.length - scored.length,
+  }
+}
