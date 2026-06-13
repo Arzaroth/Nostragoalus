@@ -458,6 +458,7 @@
       "title": "Données",
       "hint": "Importer les matchs et déclencher les tâches scores en direct / clôture.",
       "import": "Importer les matchs",
+      "cronLink": "Tâches planifiées",
       "importTip": "Récupère et stocke tous les matchs des compétitions actives (premier lancement).",
       "refresh": "Actualiser les matchs",
       "refreshTip": "Re-synchronise les matchs depuis le fournisseur - complète les équipes qualifiées, sans jamais écraser un score terminé.",
@@ -581,6 +582,23 @@
     "available": "Une nouvelle version est disponible",
     "reload": "Recharger",
     "dismiss": "Ignorer"
+  },
+  "cron": {
+    "title": "Tâches planifiées",
+    "hint": "Les tâches de fond planifiées : planning, prochaine et dernière exécution, nombre d'exécutions et dernier résultat. Lancez-en une, ou cliquez un résultat pour voir sa sortie.",
+    "manual": "manuel",
+    "runNow": "Lancer maintenant",
+    "col": { "name": "Nom", "schedule": "Planning", "next": "Prochaine", "previous": "Précédente", "executions": "Exécutions", "result": "Résultat" },
+    "task": {
+      "scoresPoll": "Relevé des scores en direct",
+      "fixturesRefresh": "Calendrier & tableau",
+      "matchesFinalize": "Verrouillage & calcul des points",
+      "oddsRefresh": "Relevé des cotes",
+      "oddsBackfill": "Récupération des cotes (historique)"
+    },
+    "status": { "ok": "Dernière exécution réussie", "failed": "Dernière exécution échouée", "never": "Jamais exécutée" },
+    "tip": { "never": "Pas encore exécutée" },
+    "dialog": { "lastRun": "Dernière exécution", "lastFailure": "Dernier échec", "duration": "Durée", "output": "Dernière sortie", "error": "Dernière erreur", "noOutput": "Aucune sortie enregistrée." }
   },
   "footer": {
     "builtWith": "Fait avec ♥️ depuis la 🇫🇷",

@@ -458,6 +458,7 @@
       "title": "De'",
       "hint": "may'mey tIlIH 'ej DaH mI' / rIn Qu'mey yIchu'.",
       "import": "may'mey tIlIH",
+      "cronLink": "poH Qu'mey",
       "importTip": "Hoch 'aqtu'mey may'mey tIlIH 'ej tIchoq (wa'DIch lo').",
       "refresh": "may'mey yIchu'qa'",
       "refreshTip": "jabwI'vo' may'mey yIchu'qa' - ghommey chu' tIchel, rInpu'bogh mI'mey tIQaw'Qo'.",
@@ -581,6 +582,23 @@
     "available": "Segh chu' tu'lu'",
     "reload": "yItagh",
     "dismiss": "yIbuSQo'"
+  },
+  "cron": {
+    "title": "poH Qu'mey",
+    "hint": "Qu'mey So' poHbogh: poHmey, Qu' veb Qu' ramey je, mI', 'ej San. DaH yIqaSmoH, pagh San yISltlhej much DaleghmeH.",
+    "manual": "ghaH",
+    "runNow": "DaH yIqaSmoH",
+    "col": { "name": "pong", "schedule": "poH", "next": "veb", "previous": "ramey", "executions": "mI'", "result": "San" },
+    "task": {
+      "scoresPoll": "DaH mup Suq",
+      "fixturesRefresh": "may'mey chu'qa'",
+      "matchesFinalize": "may' SoQmoH 'ej tobtaH",
+      "oddsRefresh": "Suvluq Suq",
+      "oddsBackfill": "Suvluq tIq Suq"
+    },
+    "status": { "ok": "Qapchu' Qu' ramey", "failed": "luj Qu' ramey", "never": "qaSpu'be'" },
+    "tip": { "never": "qaSpu'be'" },
+    "dialog": { "lastRun": "Qu' ramey", "lastFailure": "luj ramey", "duration": "poH", "output": "much ramey", "error": "Qagh ramey", "noOutput": "much tu'lu'be'." }
   },
   "footer": {
     "builtWith": "🇫🇷 vo' ♥️ lo'taHvIS chenmoHlu'",
