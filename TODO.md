@@ -73,7 +73,7 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       were only verifiable by hand across local rebuilds - verify across two
       real prod deploys, and check iOS installed-PWA behavior specifically.
 
-## Landing banner intro (deferred from the feature pass)
+## Main page rework (deferred from the feature pass)
 
 - [ ] The cue path (tap to skip the intro) latches the banner slim and lands
       content reliably on every viewport. Manual scrubbing is not as clean on
