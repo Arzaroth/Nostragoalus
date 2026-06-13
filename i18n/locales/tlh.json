@@ -82,6 +82,10 @@
   "landing": {
     "badge": "qo' HIvje' 2026 - DaH qaSlI'",
     "scrollCue": "bIngDaq yIghoS",
+    "teaser": {
+      "players": "{n} QujwI'pu'",
+      "predictions": "{n} wIvmey"
+    },
     "heroA": "Hoch may' yInoH.",
     "heroB": "juppu'lI' tIjey.",
     "sub": "QI'D Quj moj QI'D 'aD - Nostragoalus lo'lu'DI', may' mI'mey DanoH, pup DanIDmo' QuQmey DaSuq, 'ej patlh DatoS.",
