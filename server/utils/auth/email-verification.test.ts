@@ -62,6 +62,18 @@ describe('email-verification flag', () => {
     expect(after[0]?.v).toBe(false)
   })
 
+  it('serves the cached value and schedules a refresh once the cache is stale', async () => {
+    await setEmailVerificationRequired(db, true)
+    // Jump past the 30s TTL: the next sync read returns the cached value and
+    // fires a background refresh (the stale-cache branch).
+    const real = Date.now()
+    const spy = vi.spyOn(Date, 'now').mockReturnValue(real + 31_000)
+    expect(emailVerificationRequiredSync(db)).toBe(true)
+    spy.mockRestore()
+    // Let the fire-and-forget refresh settle before the db closes.
+    await loadEmailVerificationFlag(db)
+  })
+
   it('reports SMTP availability from the env', () => {
     vi.stubEnv('NUXT_SMTP_URL', '')
     expect(isSmtpConfigured()).toBe(false)

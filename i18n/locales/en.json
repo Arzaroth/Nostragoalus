@@ -611,6 +611,7 @@
       "fixturesRefresh": "Fixtures & bracket refresh",
       "matchesFinalize": "Lock & score matches",
       "oddsRefresh": "Odds snapshots",
+      "pruneUnverified": "Prune unverified accounts",
       "oddsBackfill": "Odds backfill (historical)",
       "fixturesImport": "Import fixtures"
     },

@@ -28,6 +28,7 @@ const LABELS: Record<string, string> = {
   'fixtures:refresh': t('cron.task.fixturesRefresh'),
   'matches:finalize': t('cron.task.matchesFinalize'),
   'odds:refresh': t('cron.task.oddsRefresh'),
+  'users:prune-unverified': t('cron.task.pruneUnverified'),
   'odds:backfill': t('cron.task.oddsBackfill'),
   'fixtures:import': t('cron.task.fixturesImport'),
 }
