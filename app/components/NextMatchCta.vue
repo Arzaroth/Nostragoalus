@@ -113,7 +113,7 @@ function dismissLive() {
     <Transition name="next-cta">
       <div
         v-if="showLive"
-        class="flex items-center gap-3 rounded-2xl border px-4 py-2.5 shadow-lg text-sm whitespace-nowrap"
+        class="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 rounded-2xl border px-4 py-2.5 shadow-lg text-sm max-w-[calc(100vw-0.75rem)]"
         style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
         role="complementary"
         :aria-label="t('home.nextCta.live')"
@@ -122,7 +122,7 @@ function dismissLive() {
           <span class="w-1.5 h-1.5 rounded-full animate-pulse" style="background: var(--ng-danger)" />
           {{ t('home.nextCta.live') }}
         </span>
-        <span v-if="live" class="flex items-center gap-1.5 font-semibold">
+        <span v-if="live" class="flex flex-wrap items-center justify-center gap-1.5 font-semibold">
           <img v-if="flagUrl(live.homeTeamCode)" :src="flagUrl(live.homeTeamCode) || ''" class="w-5 h-3.5 rounded-sm object-cover" alt="" >
           {{ live.homeTeam }}
           <span>{{ live.fullTimeHome ?? 0 }} - {{ live.fullTimeAway ?? 0 }}</span>
@@ -138,13 +138,13 @@ function dismissLive() {
     <Transition name="next-cta">
       <div
         v-if="showNext && next"
-        class="flex items-center gap-3 rounded-2xl border px-4 py-2.5 shadow-lg text-sm whitespace-nowrap"
+        class="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 rounded-2xl border px-4 py-2.5 shadow-lg text-sm max-w-[calc(100vw-0.75rem)]"
         style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
         role="complementary"
         :aria-label="t('home.nextCta.title')"
       >
         <span class="font-medium" style="color: var(--p-text-muted-color)">{{ t('home.nextCta.title') }}</span>
-        <span class="flex items-center gap-1.5 font-semibold">
+        <span class="flex flex-wrap items-center justify-center gap-1.5 font-semibold">
           <img v-if="flagUrl(next.homeTeamCode)" :src="flagUrl(next.homeTeamCode) || ''" class="w-5 h-3.5 rounded-sm object-cover" alt="" >
           {{ next.homeTeam }}
           <span style="color: var(--p-text-muted-color)">-</span>
