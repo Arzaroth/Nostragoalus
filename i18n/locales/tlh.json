@@ -458,7 +458,7 @@
       "title": "De'",
       "hint": "may'mey tIlIH 'ej DaH mI' / rIn Qu'mey yIchu'.",
       "import": "may'mey tIlIH",
-      "cronLink": "poH Qu'mey",
+      "cronLink": "Qu'mey So'",
       "importTip": "Hoch 'aqtu'mey may'mey tIlIH 'ej tIchoq (wa'DIch lo').",
       "refresh": "may'mey yIchu'qa'",
       "refreshTip": "jabwI'vo' may'mey yIchu'qa' - ghommey chu' tIchel, rInpu'bogh mI'mey tIQaw'Qo'.",
@@ -584,8 +584,8 @@
     "dismiss": "yIbuSQo'"
   },
   "cron": {
-    "title": "poH Qu'mey",
-    "hint": "Qu'mey So' poHbogh: poHmey, Qu' veb Qu' ramey je, mI', 'ej San. DaH yIqaSmoH, pagh San yISltlhej much DaleghmeH.",
+    "title": "Qu'mey So'",
+    "hint": "Qu'mey So' - poHbogh DaqaSmoHlaHbogh je: poHmey, Qu' veb Qu' ramey je, mI', 'ej San. DaH yIqaSmoH, pagh San yISltlhej much DaleghmeH.",
     "manual": "ghaH",
     "runNow": "DaH yIqaSmoH",
     "col": { "name": "pong", "schedule": "poH", "next": "veb", "previous": "ramey", "executions": "mI'", "result": "San" },
@@ -594,7 +594,8 @@
       "fixturesRefresh": "may'mey chu'qa'",
       "matchesFinalize": "may' SoQmoH 'ej tobtaH",
       "oddsRefresh": "Suvluq Suq",
-      "oddsBackfill": "Suvluq tIq Suq"
+      "oddsBackfill": "Suvluq tIq Suq",
+      "fixturesImport": "may'mey tIlIH"
     },
     "status": { "ok": "Qapchu' Qu' ramey", "failed": "luj Qu' ramey", "never": "qaSpu'be'" },
     "tip": { "never": "qaSpu'be'" },

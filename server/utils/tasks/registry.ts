@@ -20,6 +20,8 @@ export const TASKS: TaskDef[] = [
   { name: 'odds:refresh', cron: '*/30 * * * *', fireAndForget: true },
   // One-shot historical odds backfill, manual only.
   { name: 'odds:backfill', cron: null, fireAndForget: true },
+  // One-shot fixture import from the providers, manual only.
+  { name: 'fixtures:import', cron: null, fireAndForget: true },
 ]
 
 const BY_NAME = new Map(TASKS.map((t) => [t.name, t]))

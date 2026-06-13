@@ -458,7 +458,7 @@
       "title": "Data",
       "hint": "Import fixtures and trigger live-score / finalize tasks.",
       "import": "Import fixtures",
-      "cronLink": "Cron tasks",
+      "cronLink": "Background tasks",
       "importTip": "Fetch and store every fixture of all active competitions (first-time setup).",
       "refresh": "Refresh fixtures",
       "refreshTip": "Re-sync fixtures from the provider - fills newly decided knockout teams, never overwrites finished scores.",
@@ -584,8 +584,8 @@
     "dismiss": "Dismiss"
   },
   "cron": {
-    "title": "Cron tasks",
-    "hint": "The scheduled background jobs: their schedule, next and last run, run count and last result. Run one now, or tap a result for its output.",
+    "title": "Background tasks",
+    "hint": "The background jobs - scheduled and on-demand: their schedule, next and last run, run count and last result. Run one now, or tap a result for its output.",
     "manual": "manual",
     "runNow": "Run now",
     "col": { "name": "Name", "schedule": "Schedule", "next": "Next run", "previous": "Previous run", "executions": "Executions", "result": "Result" },
@@ -594,7 +594,8 @@
       "fixturesRefresh": "Fixtures & bracket refresh",
       "matchesFinalize": "Lock & score matches",
       "oddsRefresh": "Odds snapshots",
-      "oddsBackfill": "Odds backfill (historical)"
+      "oddsBackfill": "Odds backfill (historical)",
+      "fixturesImport": "Import fixtures"
     },
     "status": { "ok": "Last run succeeded", "failed": "Last run failed", "never": "Never run" },
     "tip": { "never": "Has not run yet" },
