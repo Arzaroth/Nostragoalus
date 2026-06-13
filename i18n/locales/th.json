@@ -350,7 +350,10 @@
     "goal": "โกลลล!",
     "halfTime": "พักครึ่ง",
     "live": "สด",
-    "inContest": "แย่งบอล"
+    "inContest": "แย่งบอล",
+    "leagueTab": "ลีก",
+    "leagueNoPicks": "ยังไม่มีการทายผลในลีกสำหรับแมตช์นี้",
+    "leagueNoPick": "{n} สมาชิกไม่ได้ทายผล"
   },
   "auth": {
     "signIn": "เข้าสู่ระบบ",

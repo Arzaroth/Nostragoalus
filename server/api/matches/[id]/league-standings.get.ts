@@ -1,0 +1,60 @@
+import { db } from '../../../../db'
+import { getMatchLeagueStandings } from '../../../utils/leaderboard/match'
+import { isAdmin, requireUser } from '../../../utils/auth-guards'
+import { canViewLeague, getLeague, getMembership } from '../../../utils/leagues/service'
+
+export default defineEventHandler(async (event) => {
+  const matchId = getRouterParam(event, 'id') as string
+  const query = getQuery(event)
+  if (!query.league) throw createError({ statusCode: 400, statusMessage: 'league query parameter is required' })
+
+  const user = await requireUser(event)
+  const league = await getLeague(db, String(query.league))
+  if (!league) throw createError({ statusCode: 404, statusMessage: 'League not found' })
+  const membership = await getMembership(db, league.id, user.id)
+  const admin = membership ? false : await isAdmin(event)
+  if (!canViewLeague(league, membership, admin)) {
+    throw createError({ statusCode: 404, statusMessage: 'League not found' })
+  }
+
+  // League mates see each other's picks (post-kickoff) even with private
+  // profiles; outsiders browsing a public league's board don't.
+  const standings = await getMatchLeagueStandings(db, {
+    matchId,
+    leagueId: league.id,
+    viewerId: user.id,
+    includePrivate: !!membership || admin,
+  })
+  return { league: { id: league.id, name: league.name }, ...standings }
+})
+
+defineRouteMeta({
+  openAPI: {
+    tags: ['Matches'],
+    summary: 'League standings for a match',
+    description:
+      "Every member of the given league ranked by the points their pick earns on this one match. Live matches score at the current scoreline (provisional); finished matches use the scored points. Picks are hidden until kickoff (scope 'upcoming', no rows). Members with no locked pick are summarised in notPredicted.",
+    parameters: [
+      {
+        in: 'path',
+        name: 'id',
+        required: true,
+        description: 'Internal match id (UUID).',
+        schema: { type: 'string' },
+      },
+      {
+        in: 'query',
+        name: 'league',
+        required: true,
+        description: 'League id: rank that league\'s members (members, public leagues, or admins).',
+        schema: { type: 'string' },
+      },
+    ],
+    responses: {
+      '200': { description: "Ranked member picks with points, plus scope and notPredicted." },
+      '400': { description: 'Missing league query parameter.' },
+      '401': { description: 'Not signed in.' },
+      '404': { description: 'Unknown league, or private league the caller is not in.' },
+    },
+  },
+})

@@ -350,7 +350,10 @@
     "goal": "QAPLA'!",
     "halfTime": "botlh",
     "live": "DaH",
-    "inContest": "qab"
+    "inContest": "qab",
+    "leagueTab": "ghom",
+    "leagueNoPicks": "ghomvaD DoQ tu'lu'be'.",
+    "leagueNoPick": "DoQ Hutlh {n} | DoQ Hutlh {n}"
   },
   "auth": {
     "signIn": "yI'el",

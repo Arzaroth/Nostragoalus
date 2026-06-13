@@ -350,7 +350,10 @@
     "goal": "BUUUT !",
     "halfTime": "MT",
     "live": "EN DIRECT",
-    "inContest": "disputé"
+    "inContest": "disputé",
+    "leagueTab": "Ligue",
+    "leagueNoPicks": "Aucun pronostic de la ligue pour ce match.",
+    "leagueNoPick": "{n} membre sans pronostic | {n} membres sans pronostic"
   },
   "auth": {
     "signIn": "Connexion",
