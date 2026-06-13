@@ -75,12 +75,15 @@ async function run(name: string) {
   }
 }
 
-// Result cell -> dialog with the last output / error.
-const selected = ref<CronRow | null>(null)
+// Result cell -> dialog with the last output / error. Track by name and derive
+// the row from the live list, so a refresh (run-now / the 30s tick) updates the
+// open dialog instead of freezing it on the row captured at open time.
+const selectedName = ref<string | null>(null)
+const selected = computed(() => (selectedName.value ? tasks.value.find((t) => t.name === selectedName.value) ?? null : null))
 const dialogOpen = computed({
   get: () => selected.value !== null,
   set: (v: boolean) => {
-    if (!v) selected.value = null
+    if (!v) selectedName.value = null
   },
 })
 
@@ -164,7 +167,7 @@ function resultTooltip(r: CronRow): string {
                 :class="r.status === 'never' ? 'cursor-default' : 'cursor-pointer'"
                 :disabled="r.status === 'never'"
                 :aria-label="t(`cron.status.${r.status}`)"
-                @click="r.status !== 'never' && (selected = r)"
+                @click="r.status !== 'never' && (selectedName = r.name)"
               >
                 <i :class="resultIcon(r.status)" :style="`color: ${resultColor(r.status)}`" />
               </button>
