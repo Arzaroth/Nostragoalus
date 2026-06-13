@@ -119,6 +119,10 @@ export interface FinalizeResult {
   unlocked: number
   scored: number
   voided: number
+  // Matches whose points changed this tick (scored or voided), so the task can
+  // broadcast them - finalize is what sets the points, and clients need telling
+  // (scores:poll only broadcasts the FINISHED status, before finalize scores).
+  changedMatchIds: string[]
 }
 
 export async function finalizeMatches(db: AppDatabase, now: Date = new Date()): Promise<FinalizeResult> {
@@ -130,11 +134,15 @@ export async function finalizeMatches(db: AppDatabase, now: Date = new Date()): 
     const unlocked = await unlockFuturePredictions(tx, now)
     const context = await getActiveScoringConfig(tx)
 
+    const changedMatchIds: string[] = []
     const finished = await tx.select().from(match).where(eq(match.status, 'FINISHED'))
     let scored = 0
     for (const m of finished) {
       if (m.fullTimeHome === null || m.fullTimeAway === null) continue
-      if ((await scoreMatchRow(tx, m.id, context)) === 'scored') scored += 1
+      if ((await scoreMatchRow(tx, m.id, context)) === 'scored') {
+        scored += 1
+        changedMatchIds.push(m.id)
+      }
       // The champion bonus is awarded in the same transaction as the final's
       // scoring (it reads only the final's settled winner). The best-scorer
       // bonus is NOT here: it depends on goal_event, which the detail sync
@@ -153,8 +161,9 @@ export async function finalizeMatches(db: AppDatabase, now: Date = new Date()): 
       if (m.status === 'POSTPONED' && m.kickoffTime > new Date(now.getTime() - POSTPONED_VOID_AFTER_MS)) continue
       await voidMatch(tx, m.id)
       voided += 1
+      changedMatchIds.push(m.id)
     }
 
-    return { locked, unlocked, scored, voided }
+    return { locked, unlocked, scored, voided, changedMatchIds }
   })
 }
