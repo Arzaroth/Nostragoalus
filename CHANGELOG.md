@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- **Email verification for sign-ups** (admin-toggleable): admins can require new accounts to confirm their email before signing in, from a new Sign-ups section on the admin page. The toggle needs SMTP configured; turning it on marks all existing accounts as verified, so only new sign-ups are affected. Admins can also force-verify any account ("mail never arrived"), and never-confirmed accounts older than 7 days are cleaned up daily. SSO sign-ins are unaffected.
+
 ## [1.7.0] - 2026-06-14
 
 ### Added
