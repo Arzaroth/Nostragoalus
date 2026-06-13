@@ -168,10 +168,15 @@ describe('normalizeFifaTimeline', () => {
     expect(events[0]).toMatchObject({ kind: 'own-goal', side: 'HOME', homeScore: 1, awayScore: 0 })
   })
 
-  it('drops events with no type or no description, and defaults a missing minute', () => {
-    expect(normalizeFifaTimeline({ Event: [{ Type: 0, MatchMinute: "5'", EventDescription: [] }] })).toEqual([])
+  it('drops untyped events but keeps a curated event with no description (text empty)', () => {
+    // No mapped type -> dropped.
     expect(normalizeFifaTimeline({ Event: [{ EventDescription: desc('No type, dropped.') }] })).toEqual([])
     expect(normalizeFifaTimeline({})).toEqual([])
+    // Curated but description-less (e.g. a penalty award) is kept with empty
+    // text - the UI labels it by kind.
+    expect(normalizeFifaTimeline({ Event: [{ Type: 6, MatchMinute: "17'", IdTeam: 'H', EventDescription: [] }] }, 'H', 'A')).toEqual([
+      { kind: 'penalty-awarded', side: 'HOME', minute: "17'", text: '', homeScore: null, awayScore: null },
+    ])
     // A kept event with neither minute nor team id: minute null, side null.
     expect(normalizeFifaTimeline({ Event: [{ Type: 71, EventDescription: desc('VAR check.') }] })).toEqual([
       { kind: 'var', side: null, minute: null, text: 'VAR check.', homeScore: null, awayScore: null },
