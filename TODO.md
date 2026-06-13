@@ -117,6 +117,16 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       `[id]/join`, `[id]/leave`, `[id]/members/[userId].delete` and
       `[id]/regenerate-code` still aren't - so toHttpError + future hooks apply
       uniformly; the user-facing delete currently 500s on a vanished league.
+- [ ] "+N hidden" marker has two derivations that can drift: LeagueCard's roster
+      uses `memberCount - members.length` while the leaderboard and league-detail
+      pages use the server `hiddenCount` (useLeaderboardHiddenCount /
+      countLeagueMembersHiddenFromBoard). Feed both from one source (return
+      hiddenCount on the league-detail endpoint too).
+- [ ] Public invite-preview route `/api/leagues/invite/[token]` is unthrottled,
+      unlike the rate-limited accept/join routes. 96-bit tokens make brute force
+      infeasible, but the join-code fallback path is enumerable; IP-key a limiter
+      for parity. (Invite management routes also add 3 more copies of the
+      getMembership+canManageLeague guard - folds into the resolveLeagueView item.)
 - [ ] Share a LeaderboardRows component between /[competition]/leaderboard and
       /leagues/[id] - the league page copy dropped movement arrows + the
       champion crown (a feature gap: per-league movement is computed but unshown).
