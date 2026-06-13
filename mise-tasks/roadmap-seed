@@ -22,6 +22,7 @@ const ITEMS = [
   { status: 'SHIPPED', title: 'Auto-refresh on new version', description: 'A "new version available" prompt when the app updates, so you are never on a stale build.' },
   { status: 'IN_PROGRESS', title: 'League invite links', description: 'Share a link to join your league, with optional expiry and a max number of uses.' },
   { status: 'IN_PROGRESS', title: 'Email verification for sign-ups', description: 'Optionally confirm your email address when creating an account - turned on by the admins once mail is set up.' },
+  { status: 'IN_PROGRESS', title: 'Snappier landing-page intro', description: 'The home banner now slides up into a slim header bar - tap the cue beneath it, or just scroll - so the matches, your picks and the leaderboard come into view straight away instead of under a full-screen splash. It stays compact while you read, too.' },
   { status: 'PLANNED', title: 'New-since-last-visit changelog', description: 'A badge on the changelog highlighting what shipped since you last looked.' },
   { status: 'PLANNED', title: 'Calendar feed', description: 'Subscribe to fixtures and pick-lockout deadlines from your own calendar app (iCal).' },
   { status: 'PLANNED', title: 'Pick reminders & web push', description: 'Installable app with notifications: lockout reminders for missing picks and goal alerts on your matches.' },
