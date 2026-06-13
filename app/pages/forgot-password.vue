@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { authClient } from '../../lib/auth-client'
 
+definePageMeta({ layout: 'auth' })
+
 const { t } = useI18n()
 const route = useRoute()
 

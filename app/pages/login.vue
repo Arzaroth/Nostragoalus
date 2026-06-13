@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { authClient } from '../../lib/auth-client'
+
+definePageMeta({ layout: 'auth' })
+
 const { t } = useI18n()
 const { signIn } = useAuth()
 const router = useRouter()
@@ -11,6 +14,11 @@ const error = ref('')
 const loading = ref(false)
 const redirecting = ref(false)
 const passwordWrap = ref<HTMLElement | null>(null)
+// Set when a sign-in is blocked because the email isn't verified: the page then
+// offers a manual resend (the link is no longer auto-resent on each attempt).
+const unverified = ref(false)
+const resending = ref(false)
+const resent = ref(false)
 
 // /login?password=1 escape hatch: skips domain capture so a password account
 // (e.g. the admin) can still get in when the IdP is down.
@@ -24,6 +32,8 @@ const nextPath = computed(() => safeNext(route.query.next))
 // domain may be SSO-captured.
 watch(email, () => {
   if (!forcePassword) step.value = 'email'
+  unverified.value = false
+  resent.value = false
 })
 
 async function next() {
@@ -59,15 +69,38 @@ async function next() {
 async function submit() {
   loading.value = true
   error.value = ''
+  unverified.value = false
+  resent.value = false
   try {
     const { error: err } = await signIn.email({ email: email.value, password: password.value })
     if (err) {
+      // Unverified accounts are blocked here (better-auth returns 403). Show a
+      // dedicated state with a manual resend rather than a raw error string.
+      if (err.code === 'EMAIL_NOT_VERIFIED') {
+        unverified.value = true
+        return
+      }
       error.value = err.message ?? 'Sign in failed'
       return
     }
     await router.push(nextPath.value)
   } finally {
     loading.value = false
+  }
+}
+
+async function resendVerification() {
+  resending.value = true
+  error.value = ''
+  try {
+    const { error: err } = await authClient.sendVerificationEmail({ email: email.value, callbackURL: '/verify-email' })
+    if (err) {
+      error.value = err.message ?? t('auth.resendFailed')
+      return
+    }
+    resent.value = true
+  } finally {
+    resending.value = false
   }
 }
 
@@ -101,6 +134,12 @@ async function signInPasskey() {
     <img src="/brand/mark.svg" alt="Nostragoalus" class="w-20 mx-auto" >
     <h1 class="text-2xl font-bold">{{ t('auth.signIn') }}</h1>
     <Message v-if="error" severity="error">{{ error }}</Message>
+    <Message v-if="unverified" severity="warn">
+      <div class="flex flex-col gap-2">
+        <span>{{ resent ? t('auth.verificationResent') : t('auth.emailNotVerified') }}</span>
+        <Button v-if="!resent" :label="t('auth.resendVerification')" size="small" :loading="resending" @click="resendVerification" />
+      </div>
+    </Message>
     <Message v-if="redirecting" severity="info">{{ t('auth.ssoRedirect') }}</Message>
     <!-- A real form so Enter submits via native form semantics (works the same
          from any field) instead of per-input @keyup.enter handlers. -->
