@@ -43,10 +43,11 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
 - Knockout **bracket** and an interactive **world map** (Leaflet / OpenStreetMap)
 - Auth: identifier-first login with **SSO domain capture** - runtime-configurable OIDC / SAML /
   Google providers (several domains each, display names, envelope-encrypted secrets, in-place
-  editing, SP metadata for IdP setup); email + password (HIBP-checked) with mailed reset; **2FA**
-  (TOTP, email codes, single-use backup codes, trusted devices); **passkeys** (sudo-gated
-  registration). SSO-managed accounts hand credential management to the IdP (an SSO sign-in
-  removes any local password; admins are exempt as break-glass access)
+  editing, SP metadata for IdP setup); email + password (HIBP-checked) with mailed reset; optional
+  admin-required **email verification** for sign-ups (mailed link, force-verify + daily prune of
+  unconfirmed accounts); **2FA** (TOTP, email codes, single-use backup codes, trusted devices);
+  **passkeys** (sudo-gated registration). SSO-managed accounts hand credential management to the IdP
+  (an SSO sign-in removes any local password; admins are exempt as break-glass access)
 - Admin user management (roles, bans, leaderboard visibility, 2FA removal, SSO unlink); with SMTP
   configured, account deletion is confirmed through a mailed link
 - Admin **Background tasks** page: schedule, next/last run, run count and last result for every
