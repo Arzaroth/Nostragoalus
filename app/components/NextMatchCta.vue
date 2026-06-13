@@ -122,12 +122,16 @@ function dismissLive() {
           <span class="w-1.5 h-1.5 rounded-full animate-pulse" style="background: var(--ng-danger)" />
           {{ t('home.nextCta.live') }}
         </span>
-        <span v-if="live" class="flex flex-wrap items-center justify-center gap-1.5 font-semibold">
-          <img v-if="flagUrl(live.homeTeamCode)" :src="flagUrl(live.homeTeamCode) || ''" class="w-5 h-3.5 rounded-sm object-cover" alt="" >
-          {{ live.homeTeam }}
-          <span>{{ live.fullTimeHome ?? 0 }} - {{ live.fullTimeAway ?? 0 }}</span>
-          <img v-if="flagUrl(live.awayTeamCode)" :src="flagUrl(live.awayTeamCode) || ''" class="w-5 h-3.5 rounded-sm object-cover" alt="" >
-          {{ live.awayTeam }}
+        <span v-if="live" class="flex flex-col sm:flex-row items-center justify-center gap-x-1.5 font-semibold text-center">
+          <span class="flex items-center gap-1.5">
+            <img v-if="flagUrl(live.homeTeamCode)" :src="flagUrl(live.homeTeamCode) || ''" class="w-5 h-3.5 rounded-sm object-cover shrink-0" alt="" >
+            {{ live.homeTeam }}
+          </span>
+          <span class="tabular-nums">{{ live.fullTimeHome ?? 0 }} - {{ live.fullTimeAway ?? 0 }}</span>
+          <span class="flex items-center gap-1.5">
+            <img v-if="flagUrl(live.awayTeamCode)" :src="flagUrl(live.awayTeamCode) || ''" class="w-5 h-3.5 rounded-sm object-cover shrink-0" alt="" >
+            {{ live.awayTeam }}
+          </span>
         </span>
         <span v-else class="font-semibold">{{ t('home.nextCta.liveMany', { n: liveCount }) }}</span>
         <NuxtLink :to="liveLink" @click="dismissLive">
@@ -144,12 +148,16 @@ function dismissLive() {
         :aria-label="t('home.nextCta.title')"
       >
         <span class="font-medium" style="color: var(--p-text-muted-color)">{{ t('home.nextCta.title') }}</span>
-        <span class="flex flex-wrap items-center justify-center gap-1.5 font-semibold">
-          <img v-if="flagUrl(next.homeTeamCode)" :src="flagUrl(next.homeTeamCode) || ''" class="w-5 h-3.5 rounded-sm object-cover" alt="" >
-          {{ next.homeTeam }}
+        <span class="flex flex-col sm:flex-row items-center justify-center gap-x-1.5 font-semibold text-center">
+          <span class="flex items-center gap-1.5">
+            <img v-if="flagUrl(next.homeTeamCode)" :src="flagUrl(next.homeTeamCode) || ''" class="w-5 h-3.5 rounded-sm object-cover shrink-0" alt="" >
+            {{ next.homeTeam }}
+          </span>
           <span style="color: var(--p-text-muted-color)">-</span>
-          <img v-if="flagUrl(next.awayTeamCode)" :src="flagUrl(next.awayTeamCode) || ''" class="w-5 h-3.5 rounded-sm object-cover" alt="" >
-          {{ next.awayTeam }}
+          <span class="flex items-center gap-1.5">
+            <img v-if="flagUrl(next.awayTeamCode)" :src="flagUrl(next.awayTeamCode) || ''" class="w-5 h-3.5 rounded-sm object-cover shrink-0" alt="" >
+            {{ next.awayTeam }}
+          </span>
         </span>
         <Countdown :to="next.kickoffTime" />
         <NuxtLink :to="pickLink" @click="dismissNext">
