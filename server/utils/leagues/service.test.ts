@@ -25,6 +25,7 @@ import {
   joinPublicLeague,
   kickMember,
   leaveLeague,
+  countLeagueMembers,
   listLeagueMembers,
   listPublicLeagues,
   listUserLeagues,
@@ -254,6 +255,26 @@ describe('listLeagueMembers', () => {
     expect(outsiderView.map((m) => m.userId)).toEqual(['alice'])
     const memberView = await listLeagueMembers(db, id, { includePrivate: true })
     expect(memberView.map((m) => m.userId).sort()).toEqual(['alice', 'shy'])
+  })
+
+  it('hides admin-hidden members from league mates but shows them to admins and to themselves', async () => {
+    await makeUser(db, 'alice')
+    await makeUser(db, 'ghost')
+    const id = await makeLeague(db, { competitionId, ownerId: 'alice' })
+    await addLeagueMember(db, id, 'ghost')
+    await db.update(user).set({ hiddenFromLeaderboard: true }).where(eq(user.id, 'ghost'))
+
+    // League mate (includePrivate, no includeHidden): ghost is off the roster.
+    const mateView = await listLeagueMembers(db, id, { includePrivate: true, viewerId: 'alice' })
+    expect(mateView.map((m) => m.userId)).toEqual(['alice'])
+    // The hidden member still sees themselves.
+    const selfView = await listLeagueMembers(db, id, { includePrivate: true, viewerId: 'ghost' })
+    expect(selfView.map((m) => m.userId).sort()).toEqual(['alice', 'ghost'])
+    // Admin moderation view sees everyone.
+    const adminView = await listLeagueMembers(db, id, { includePrivate: true, includeHidden: true })
+    expect(adminView.map((m) => m.userId).sort()).toEqual(['alice', 'ghost'])
+    // The honest count stays at the full roster.
+    expect(await countLeagueMembers(db, id)).toBe(2)
   })
 })
 

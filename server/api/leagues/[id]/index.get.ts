@@ -2,7 +2,7 @@ import { db } from '../../../../db'
 import { isAdmin, requireUser } from '../../../utils/auth-guards'
 import { getCompetitionById } from '../../../utils/competitions/store'
 import { canSeeJoinCode } from '../../../utils/leagues/permissions'
-import { canViewLeague, getLeague, getMembership, listLeagueMembers } from '../../../utils/leagues/service'
+import { canViewLeague, countLeagueMembers, getLeague, getMembership, listLeagueMembers } from '../../../utils/leagues/service'
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
@@ -14,9 +14,12 @@ export default defineEventHandler(async (event) => {
   // Private leagues 404 (not 403) for outsiders so ids never leak existence.
   if (!canViewLeague(league, membership, admin)) throw createError({ statusCode: 404, statusMessage: 'League not found' })
   const includePrivate = !!membership || admin
-  const [competition, members] = await Promise.all([
+  const [competition, members, totalMembers] = await Promise.all([
     getCompetitionById(db, league.competitionId),
-    listLeagueMembers(db, id, { includePrivate }),
+    // Admin-hidden members are off the roster for everyone but site admins
+    // (and the hidden member themselves); the count below stays honest.
+    listLeagueMembers(db, id, { includePrivate, includeHidden: admin, viewerId: user.id }),
+    countLeagueMembers(db, id),
   ])
   return {
     league: {
@@ -24,7 +27,7 @@ export default defineEventHandler(async (event) => {
       name: league.name,
       visibility: league.visibility,
       role: membership?.role ?? null,
-      memberCount: members.length,
+      memberCount: totalMembers,
       competition: competition ? { id: competition.id, slug: competition.slug, name: competition.name } : null,
       ...(canSeeJoinCode(membership?.role) || admin ? { joinCode: league.joinCode } : {}),
     },

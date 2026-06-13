@@ -6,18 +6,40 @@ const emit = defineEmits<{ joined: [league: League] }>()
 
 const { t } = useI18n()
 const { join } = useLeagueActions()
+const router = useRouter()
 const code = ref('')
 const error = ref('')
+// Set when the field holds a pasted invite link rather than a join code; submit
+// then routes to the invite page instead of the join-by-code endpoint.
+const inviteToken = ref<string | null>(null)
 
 watch(visible, (open) => {
   if (open) {
     code.value = ''
     error.value = ''
+    inviteToken.value = null
+  }
+})
+
+// Pasting a full invite link is the common share path - pull the token out and
+// rewrite the field to just the token, so the input always shows what's used.
+watch(code, (v) => {
+  const m = v.match(/\/leagues\/join\/([A-Za-z0-9_-]+)/)
+  if (m) {
+    inviteToken.value = m[1]!
+    code.value = m[1]!
+  } else if (inviteToken.value && v !== inviteToken.value) {
+    inviteToken.value = null
   }
 })
 
 async function submit() {
   if (!code.value.trim()) return
+  if (inviteToken.value) {
+    visible.value = false
+    await router.push(`/leagues/join/${inviteToken.value}`)
+    return
+  }
   error.value = ''
   try {
     const league = await join.mutateAsync({ code: code.value })
@@ -38,7 +60,8 @@ async function submit() {
         :placeholder="t('leagues.joinCodePlaceholder')"
         autocomplete="off"
         autofocus
-        class="w-full uppercase"
+        class="w-full"
+        :class="{ uppercase: !inviteToken }"
       />
       <Message v-if="error" severity="error" size="small" variant="simple">{{ error }}</Message>
       <div class="flex justify-end gap-2 mt-1">
