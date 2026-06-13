@@ -98,8 +98,12 @@ const cuePointer = useTransform(t1, (v) => (cl(v) > 0.15 ? 'auto' : 'none'))
 // result never depends on hitting a magic scroll depth), then scroll the hero to
 // sit just under the slim bar - content-relative, so it lands the same on any
 // viewport.
+const cueScrolling = ref(false)
 function scrollPastIntro() {
   latched.value = true
+  // This scroll starts at the top, so it would trip the v<=16 unlatch (below)
+  // and cancel the latch before clearing the zone. Guard it until we're past 16.
+  cueScrolling.value = true
   const el = heroEl.value
   const heroOffset = el ? el.getBoundingClientRect().top + window.scrollY : SCRUB + PHASE2
   window.scrollTo({ top: Math.max(0, heroOffset - topPx.value - miniH.value - 16), behavior: 'smooth' })
@@ -145,6 +149,12 @@ onMounted(() => {
   // Latch once the manual scrubber reaches the docked end; release only back at
   // the very top. The wide gap (16 → SCRUB+PHASE2) keeps it from flickering.
   scrollY.on('change', (v) => {
+    // A cue scroll sets the latch then drives down from the top; don't let the
+    // v<=16 unlatch undo it. Drop the guard once we're clear of the unlatch zone.
+    if (cueScrolling.value) {
+      if (v > 16) cueScrolling.value = false
+      return
+    }
     if (v >= SCRUB + PHASE2) latched.value = true
     else if (v <= 16) latched.value = false
   })
