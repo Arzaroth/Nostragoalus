@@ -91,7 +91,7 @@
   When starting a feature, also seed it as IN_PROGRESS in
   `mise-tasks/roadmap-seed` and mention the public title/description so it
   can be added to the prod roadmap.
-- Both files live on `main`; update them there even when feature work happens
+- Both files live on `master`; update them there even when feature work happens
   in a worktree branch.
 - Surprise/secret features stay out of every committed doc (changelog,
   ROADMAP.md, seeds) - track them in session memory only.
