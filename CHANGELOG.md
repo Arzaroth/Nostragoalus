@@ -5,6 +5,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- **Background tasks** admin page: every scheduled and on-demand job (live score polling, fixture and bracket refresh, lock-and-score, odds snapshots/backfill, fixture import) with its schedule, next and last run, run count and result. Run any on the spot, and tap a result to see its last output or error.
+
+### Changed
+- Fixture import moved onto the Background tasks page (it was a standalone admin button), so all the manual data jobs live in one place.
+
 ## [1.6.0] - 2026-06-13
 
 ### Added

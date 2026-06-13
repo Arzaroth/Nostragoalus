@@ -54,6 +54,7 @@ const stack: { group: string; items: StackItem[] }[] = [
       { name: 'better-auth', logo: 'betterauth', logoColor: '8b8b8b', desc: 'Comprehensive authentication framework for TypeScript', url: 'https://better-auth.com', license: 'MIT', licenseUrl: 'https://github.com/better-auth/better-auth/blob/main/LICENSE.md' },
       { name: 'Nodemailer', logo: 'https://nodemailer.com/img/favicon.ico', desc: 'Send emails from Node.js', url: 'https://nodemailer.com', license: 'MIT-0', licenseUrl: 'https://github.com/nodemailer/nodemailer/blob/master/LICENSE' },
       { name: 'node-qrcode', icon: 'pi pi-qrcode', desc: 'QR code generator for JavaScript', url: 'https://github.com/soldair/node-qrcode', license: 'MIT', licenseUrl: 'https://github.com/soldair/node-qrcode/blob/master/license' },
+      { name: 'Croner', icon: 'pi pi-clock', desc: 'Trigger functions and evaluate cron expressions, dependency-free', url: 'https://croner.56k.guru', license: 'MIT', licenseUrl: 'https://github.com/Hexagon/croner/blob/master/LICENSE' },
     ],
   },
   {
