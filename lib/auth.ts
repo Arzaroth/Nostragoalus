@@ -15,22 +15,9 @@ import { emailVerificationRequiredSync, loadEmailVerificationFlag } from '../ser
 import { fetchAvatarDataUrl, isUnusableAvatarUrl } from '../server/utils/auth/avatar'
 import { autoJoinSsoLeagues } from '../server/utils/leagues/auto-join'
 import { symmetricDecrypt } from 'better-auth/crypto'
+import { sendMail } from './mail'
 
 type AuthDb = PgDatabase<PgQueryResultHKT, typeof schema>
-
-// Mail works only when an SMTP transport is configured (NUXT_SMTP_URL,
-// e.g. smtp://user:pass@host:587); TOTP authenticator 2FA needs nothing.
-async function sendMail(to: string, subject: string, text: string): Promise<void> {
-  const smtpUrl = process.env.NUXT_SMTP_URL
-  if (!smtpUrl) throw new Error('email unavailable: NUXT_SMTP_URL is not configured')
-  const { createTransport } = await import('nodemailer')
-  await createTransport(smtpUrl).sendMail({
-    from: process.env.NUXT_SMTP_FROM ?? 'Nostragoalus <no-reply@nostragoalus.local>',
-    to,
-    subject,
-    text,
-  })
-}
 
 // Exported so tests can run the exact production auth config against a pglite DB.
 export function buildAuthOptions(database: AuthDb) {
@@ -46,9 +33,9 @@ export function buildAuthOptions(database: AuthDb) {
       // Admin-toggled at runtime (no redeploy). better-auth reads this getter
       // synchronously on every sign-in/sign-up, so flipping the cached flag
       // takes effect immediately: sign-ups stop auto-signing-in and get a
-      // verification mail, and unverified password sign-ins are blocked (and
-      // the mail resent). SSO sign-ins use a different route, so they're
-      // unaffected (and SSO users arrive already verified).
+      // verification mail, and unverified password sign-ins are blocked (the
+      // login page offers a manual resend). SSO sign-ins use a different route,
+      // so they're unaffected (and SSO users arrive already verified).
       get requireEmailVerification() {
         return emailVerificationRequiredSync(database)
       },
@@ -59,24 +46,33 @@ export function buildAuthOptions(database: AuthDb) {
       // (better-auth creates the credential account on reset if missing).
       async sendResetPassword({ user: u, url }: { user: { id: string; email: string }; url: string }) {
         if (await isSsoManaged(database, u.id)) return
-        await sendMail(
-          u.email,
-          'Reset your Nostragoalus password',
-          `Someone (hopefully you) asked to reset the password for this account.\n\nSet a new password: ${url}\n\nThe link expires in 1 hour. If this wasn't you, ignore this mail.`,
-        )
+        await sendMail(u.email, 'Reset your Nostragoalus password', {
+          title: 'Reset your password',
+          intro: 'Someone (hopefully you) asked to reset the password for this account.',
+          button: { label: 'Set a new password', url },
+          footer: "The link expires in 1 hour. If this wasn't you, ignore this mail.",
+        })
       },
     },
     // Verification-mail infra. Always configured so the verify-email endpoints
-    // exist; whether it's enforced is the runtime getter above. sendOnSignIn
-    // resends the link when a blocked sign-in is attempted.
+    // exist; whether it's enforced is the runtime getter above. The link is
+    // mailed once on sign-up (better-auth's sendOnSignUp defaults to the
+    // requireEmailVerification flag). sendOnSignIn stays off so a blocked
+    // unverified sign-in does NOT fire a fresh mail every attempt - the login
+    // page exposes an explicit "resend" the stuck user triggers instead.
     emailVerification: {
-      sendOnSignIn: true,
+      // Clicking the link signs the user in and drops them on the callbackURL,
+      // instead of marking them verified but session-less and bouncing them to
+      // /login. (Reopening an already-used link still has no session to create,
+      // so a fresh browser lands on /login - that's expected.)
+      autoSignInAfterVerification: true,
       async sendVerificationEmail({ user: u, url }: { user: { email: string }; url: string }) {
-        await sendMail(
-          u.email,
-          'Confirm your Nostragoalus email',
-          `Welcome to Nostragoalus! Confirm this email address to activate your account.\n\nVerify: ${url}\n\nIf you didn't create an account, ignore this mail.`,
-        )
+        await sendMail(u.email, 'Confirm your Nostragoalus email', {
+          title: 'Confirm your email',
+          intro: 'Welcome to Nostragoalus! Confirm this email address to activate your account.',
+          button: { label: 'Verify email', url },
+          footer: "If you didn't create an account, you can ignore this mail.",
+        })
       },
     },
     // Let local users change their email (no verification email infra, so it applies directly).
@@ -90,11 +86,12 @@ export function buildAuthOptions(database: AuthDb) {
         ...(process.env.NUXT_SMTP_URL
           ? {
               async sendDeleteAccountVerification({ user: u, url }: { user: { email: string }; url: string }) {
-                await sendMail(
-                  u.email,
-                  'Confirm deleting your Nostragoalus account',
-                  `Someone (hopefully you) asked to permanently delete this account, including all its predictions.\n\nConfirm the deletion: ${url}\n\nThe link expires in 24 hours. If this wasn't you, ignore this mail.`,
-                )
+                await sendMail(u.email, 'Confirm deleting your Nostragoalus account', {
+                  title: 'Confirm account deletion',
+                  intro: 'Someone (hopefully you) asked to permanently delete this account, including all its predictions.',
+                  button: { label: 'Confirm deletion', url },
+                  footer: "The link expires in 24 hours. If this wasn't you, ignore this mail.",
+                })
               },
             }
           : {}),
@@ -215,7 +212,12 @@ export function buildAuthOptions(database: AuthDb) {
       twoFactor({
         otpOptions: {
           async sendOTP({ user: u, otp }: { user: { email: string }; otp: string }) {
-            await sendMail(u.email, 'Your Nostragoalus sign-in code', `Your verification code is: ${otp}\n\nIt expires in 5 minutes.`)
+            await sendMail(u.email, 'Your Nostragoalus sign-in code', {
+              title: 'Your sign-in code',
+              intro: 'Use this code to finish signing in:',
+              code: otp,
+              footer: "It expires in 5 minutes. If you didn't try to sign in, ignore this mail.",
+            })
           },
         },
       }),
