@@ -5,6 +5,7 @@ const props = defineProps<{
   leagueId: string
   myRole: LeagueRole | null
   members: LeagueMember[]
+  hiddenCount?: number
 }>()
 
 const { t } = useI18n()
@@ -72,6 +73,16 @@ function canKickRow(m: LeagueMember) {
         :aria-label="t('leagues.kick')"
         @click="confirmKick = m"
       />
+    </li>
+    <li
+      v-if="props.hiddenCount"
+      v-tooltip.top="{ value: t('leaderboard.hiddenTip'), pt: { text: 'text-xs max-w-64' } }"
+      class="flex items-center gap-1.5 py-2 text-xs cursor-help"
+      style="color: var(--p-text-muted-color)"
+    >
+      <i class="pi pi-eye-slash" style="font-size: 0.7rem" />
+      {{ t('leaderboard.hidden', { n: props.hiddenCount }, props.hiddenCount) }}
+      <i class="pi pi-info-circle" style="font-size: 0.7rem; opacity: 0.6" />
     </li>
   </ul>
 
