@@ -77,6 +77,11 @@ watch(scrollY, (y) => {
 
 const showNext = computed(() => authed.value && !!next.value && dismissedNextId.value !== next.value.id)
 const showLive = computed(() => authed.value && liveShown.value.length > 0)
+// Publish visibility so the landing page hides its scroll cue while a pill is up
+// (both share the bottom-center slot; the pill is the stronger affordance).
+const ctaVisible = useState('ng-cta-visible', () => false)
+watchEffect(() => (ctaVisible.value = showNext.value || showLive.value))
+onBeforeUnmount(() => (ctaVisible.value = false))
 const matchesLink = computed(() => `/${last.value}/matches`)
 // Land on the matches page scrolled to this fixture (rows carry match-<id>
 // anchors; the page re-scrolls once the async list renders).
