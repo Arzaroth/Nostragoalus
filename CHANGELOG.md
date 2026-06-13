@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Changed
+- When the home-page next-match/live prompt is too narrow to fit on one line, the two teams now stack vertically (home, separator, away) instead of wrapping awkwardly, and long team names wrap cleanly within the card.
+
 ## [1.5.1] - 2026-06-13
 
 ### Fixed
