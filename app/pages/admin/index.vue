@@ -119,73 +119,6 @@ async function syncSsoAutoJoin() {
   }
 }
 
-const syncMsg = ref('')
-const syncBusy = ref('')
-
-// Last run / failure per task, shown in the action tooltips.
-// blocking (not lazy): if this landed after hover, the reactive tooltip value
-// change would re-create and hide an already-open tooltip
-const { data: taskStatus, refresh: refreshTaskStatus } = await useFetch<{ tasks: any[] }>('/api/admin/task-status')
-function escapeHtml(v: string) {
-  return v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-}
-// Computed (cached object identity): the 1s next-run ticker re-renders this
-// component; a fresh inline tooltip object each render makes PrimeVue re-create
-// (and dismiss) an open tooltip every second.
-const importTooltip = computed(() => ({ value: taskTip('import-fixtures', t('admin.data.importTip')), escape: false }))
-
-// Turn the stored JSON result into readable "key: value" lines.
-function humanizeResult(json: string): string {
-  try {
-    const data = JSON.parse(json)
-    const root = data && typeof data === 'object' && 'result' in data ? data.result : data
-    if (root === null || typeof root !== 'object') return escapeHtml(String(root))
-    const lines: string[] = []
-    const walk = (v: unknown, path: string[]) => {
-      if (v === null || v === undefined) return
-      if (typeof v === 'object') {
-        for (const [k, x] of Object.entries(v as Record<string, unknown>)) walk(x, [...path, k])
-      } else if (!(typeof v === 'number' && v === 0)) {
-        lines.push(`${escapeHtml(path.join(' · '))}: <b>${escapeHtml(String(v))}</b>`)
-      }
-    }
-    walk(root, [])
-    if (!lines.length) return escapeHtml(t('admin.data.nothingToDo'))
-    return lines.slice(0, 8).join('<br>') + (lines.length > 8 ? '<br>…' : '')
-  } catch {
-    return escapeHtml(json)
-  }
-}
-function taskTip(name: string, base: string) {
-  const row = taskStatus.value?.tasks?.find((x) => x.taskName === name)
-  let html = escapeHtml(base)
-  if (row?.lastRunAt) {
-    html += `<br><br><b>${escapeHtml(t('admin.data.lastRun'))}:</b> ${new Date(row.lastRunAt).toLocaleString()} · ${row.lastDurationMs}ms`
-    if (row.lastResult) html += `<br><span style="opacity:.8">${humanizeResult(String(row.lastResult))}</span>`
-  }
-  if (row?.lastFailureAt) {
-    html += `<br><br><b style="color:#fca5a5">${escapeHtml(t('admin.data.lastFailure'))}:</b> ${new Date(row.lastFailureAt).toLocaleString()}<br><span style="opacity:.75">${escapeHtml(String(row.lastError ?? '').slice(0, 160))}</span>`
-  }
-  return html
-}
-
-// Import/sync change fixtures, scores, brackets and standings - drop the cached
-// server datasets so a previously-loaded (e.g. empty) competition isn't served
-// stale from the vue-query cache.
-function invalidateServerData() {
-  void queryClient.invalidateQueries()
-}
-
-async function runImport() {
-  syncBusy.value = 'import'
-  try {
-    syncMsg.value = JSON.stringify(await $fetch<unknown>('/api/admin/import-fixtures', { method: 'POST' }))
-  } finally {
-    syncBusy.value = ''
-    void refreshTaskStatus()
-    invalidateServerData()
-  }
-}
 // Users list lives in the query cache like every other server dataset:
 // mutations invalidate, the list re-derives.
 const { admin, session } = useAuth()
@@ -564,12 +497,10 @@ function createUser() {
             <p class="text-sm mt-1" style="color: var(--p-text-muted-color)">{{ t('admin.data.hint') }}</p>
           </div>
           <div class="md:col-span-2 flex flex-col gap-3 items-start">
-            <Button v-tooltip.left="importTooltip" :label="t('admin.data.import')" icon="pi pi-download" size="small" severity="info" class="w-56" :loading="syncBusy === 'import'" @click="runImport" />
-            <!-- the per-task triggers + run history live on their own page now -->
+            <!-- fixture import + the scheduled jobs all live on the tasks page now -->
             <NuxtLink to="/admin/cron" class="w-56">
               <Button :label="t('admin.data.cronLink')" icon="pi pi-clock" size="small" severity="secondary" outlined class="w-full" />
             </NuxtLink>
-            <pre v-if="syncMsg" class="text-xs p-2 rounded overflow-x-auto" style="background: color-mix(in srgb, var(--p-text-color) 6%, transparent)">{{ syncMsg }}</pre>
           </div>
         </div>
       </section>

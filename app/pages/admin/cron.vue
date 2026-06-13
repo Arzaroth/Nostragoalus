@@ -29,6 +29,7 @@ const LABELS: Record<string, string> = {
   'matches:finalize': t('cron.task.matchesFinalize'),
   'odds:refresh': t('cron.task.oddsRefresh'),
   'odds:backfill': t('cron.task.oddsBackfill'),
+  'fixtures:import': t('cron.task.fixturesImport'),
 }
 const labelOf = (name: string) => LABELS[name] ?? name
 
