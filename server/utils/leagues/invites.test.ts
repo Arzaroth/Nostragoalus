@@ -72,6 +72,18 @@ describe('league invites', () => {
     await expect(acceptInvite(db, { token: inv.token, userId: joiner })).rejects.toThrow(ConflictError)
   })
 
+  it('accepts an unlimited invite (maxUses null) repeatedly, incrementing uses', async () => {
+    const inv = await createInvite(db, { leagueId, createdBy: owner })
+    expect(inv.maxUses).toBeNull()
+    const a = await makeUser(db, 'unl-a')
+    const b = await makeUser(db, 'unl-b')
+    await acceptInvite(db, { token: inv.token, userId: a })
+    await acceptInvite(db, { token: inv.token, userId: b })
+    const [after] = (await listInvites(db, leagueId)).filter((r) => r.id === inv.id)
+    expect(after.uses).toBe(2)
+    expect(await getMembership(db, leagueId, b)).toBeTruthy()
+  })
+
   it('rejects an exhausted invite', async () => {
     const u1 = await makeUser(db, 'u1')
     const u2 = await makeUser(db, 'u2')
