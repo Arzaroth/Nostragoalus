@@ -23,6 +23,18 @@ effort buckets; order within a bucket is not priority.
       Reuses the existing addMembership join path (ownerless-league claim, opt-
       out clear). Kept the short join code too - the link is the easy path, the
       code the fallback.
+- [x] **Per-match league standings** (built on worktree-match-standings,
+      pending merge): a "League" tab on the match page ranks the selected
+      league's members by the points their pick scores on that one match.
+      Decisions: reuse the finalize scoring engine for live matches
+      (provisional, scored at the current scoreline), persisted points once
+      finished; the crowd-rarity bonus stays measured against the whole field,
+      only the displayed rows are league-scoped (mirrors the league crowd
+      totals). Picks hidden until kickoff (server scope 'upcoming', no rows) so
+      it can't leak picks - same copy-protection as everywhere else. League
+      leaderboard visibility rules (admin-hidden dropped except self, private
+      profiles for members/admins only); non-predictors shown as a muted count.
+      Refreshed off the existing live-score watch + 45s poll, no new socket.
 - [ ] **Changelog since-last-seen**: store last-seen version per user, badge
       dot on the changelog nav entry, highlight the delta section.
 - [ ] **Next-match CTA**: on the home banner when logged in; scrolling
