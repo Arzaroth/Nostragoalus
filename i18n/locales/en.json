@@ -251,7 +251,11 @@
     "preview": "not saved yet",
     "worth": "worth {points} pts",
     "fifaRank": "FIFA #{rank}",
-    "tag": "Champion"
+    "tag": "Champion",
+    "secondChanceOpen": "Second chance: switch your pick one last time before the knockouts - for half the points.",
+    "changePick": "Change pick",
+    "repickConfirm": "Switch your champion? This is permanent and halves the points for good - even if you switch back. Your original pick stays on show.",
+    "repickedNote": "Changed (half points). Originally: {team}."
   },
   "bestScorer": {
     "title": "Your best scorer",
@@ -261,7 +265,11 @@
     "noPick": "No best scorer picked - locked.",
     "lockedIn": "Locked in - good luck!",
     "preview": "not saved yet",
-    "tag": "Best scorer"
+    "tag": "Best scorer",
+    "secondChanceOpen": "Second chance: switch your pick one last time before the knockouts - for half the points.",
+    "changePick": "Change pick",
+    "repickConfirm": "Switch your Golden Boot pick? This is permanent and halves the points for good - even if you switch back. Your original pick stays on show.",
+    "repickedNote": "Changed (half points). Originally: {player}."
   },
   "leaderboard": {
     "title": "Ranking",

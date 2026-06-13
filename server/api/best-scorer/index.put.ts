@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { db } from '../../../db'
 import { resolveCompetition } from '../../utils/competitions/store'
-import { setBestScorerPick } from '../../utils/bestscorer/service'
+import { repickBestScorer, setBestScorerPick } from '../../utils/bestscorer/service'
 import { defineValidatedHandler } from '../../utils/validated-handler'
 
 const bodySchema = z.object({
@@ -10,20 +10,23 @@ const bodySchema = z.object({
   teamCode: z.string().min(1).max(8).nullable().optional(),
   teamName: z.string().min(1).max(64),
   competition: z.string().optional(),
+  // True = one-time second-chance switch (halves the points).
+  repick: z.boolean().optional(),
 })
 
 export default defineValidatedHandler({ body: bodySchema }, async ({ body, user }) => {
   const competition = await resolveCompetition(db, body.competition || null)
   if (!competition) throw createError({ statusCode: 404, statusMessage: 'competition not found' })
 
-  await setBestScorerPick(db, {
+  const input = {
     userId: user.id,
     competitionId: competition.id,
     playerId: body.playerId,
     playerName: body.playerName,
     teamCode: body.teamCode ?? null,
     teamName: body.teamName,
-  })
+  }
+  await (body.repick ? repickBestScorer(db, input) : setBestScorerPick(db, input))
   return { ok: true }
 })
 

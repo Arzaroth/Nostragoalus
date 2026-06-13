@@ -40,10 +40,16 @@ const squad = computed<any[]>(() =>
 function onTeamChange() {
   selectedPlayerId.value = null
 }
+const confirmRepick = ref(false)
+// During the window a switch is a re-pick (halves the points); a user with no
+// original can't use the window (the server rejects it), so don't offer it.
+const isRepick = computed(() => !!data.value?.locked)
+const showPickers = computed(() => !data.value?.locked || (data.value?.secondChance?.open && !!data.value?.myPick))
+
 function teamName(code: string | null) {
   return data.value?.teams?.find((tm: { code: string; name: string }) => tm.code === code)?.name ?? code
 }
-function save() {
+function save(repick = false) {
   const player = squad.value.find((p) => p.playerId === selectedPlayerId.value)
   if (player) {
     setPick.mutate({
@@ -51,6 +57,7 @@ function save() {
       playerName: player.name,
       teamCode: selectedTeamCode.value,
       teamName: teamName(selectedTeamCode.value) ?? '',
+      repick,
     })
   }
 }
@@ -113,7 +120,7 @@ const holo = computed(() => {
         <div class="flex items-center gap-2 font-semibold text-base mb-0.5"><GoldenBoot class="text-xl" /> {{ t('bestScorer.title') }}</div>
         <p class="text-sm mb-2" style="color: var(--p-text-muted-color)">{{ t('bestScorer.hint') }}</p>
 
-        <template v-if="data.locked">
+        <template v-if="!showPickers">
           <span v-if="!data.myPick" style="color: var(--p-text-muted-color)">{{ t('bestScorer.noPick') }}</span>
           <span v-else class="inline-flex items-center gap-2 text-sm" style="color: var(--p-text-muted-color)">
             <i class="pi pi-lock text-xs" /> {{ t('bestScorer.lockedIn') }}
@@ -121,6 +128,7 @@ const holo = computed(() => {
         </template>
 
         <template v-else>
+          <p v-if="isRepick" class="text-xs mb-2" style="color: var(--ng-star)"><i class="pi pi-sparkles text-xs" /> {{ t('bestScorer.secondChanceOpen') }}</p>
           <div class="flex flex-wrap items-center gap-3">
             <Select
               v-model="selectedTeamCode"
@@ -166,14 +174,18 @@ const holo = computed(() => {
               </template>
             </Select>
             <Button
-              :label="t('common.save')"
-              icon="pi pi-check"
+              :label="isRepick ? t('bestScorer.changePick') : t('common.save')"
+              :icon="isRepick ? 'pi pi-sync' : 'pi pi-check'"
+              :severity="isRepick ? 'warn' : undefined"
               :disabled="!selectedPlayerId || selectedPlayerId === data.myPick?.playerId"
               :loading="saving"
-              @click="save"
+              @click="isRepick ? (confirmRepick = true) : save(false)"
             />
           </div>
         </template>
+        <p v-if="data.myPick?.repicked" class="text-xs mt-2" style="color: var(--p-text-muted-color)">
+          {{ t('bestScorer.repickedNote', { player: formatPlayerName(data.myPick.originalPlayerName) }) }}
+        </p>
       </div>
 
       <!-- Golden boot showcase -->
@@ -228,5 +240,14 @@ const holo = computed(() => {
         </div>
       </div>
     </div>
+
+    <AppConfirmDialog
+      v-model:visible="confirmRepick"
+      :header="t('bestScorer.changePick')"
+      :message="t('bestScorer.repickConfirm')"
+      :confirm-label="t('bestScorer.changePick')"
+      severity="danger"
+      @confirm="save(true)"
+    />
   </div>
 </template>

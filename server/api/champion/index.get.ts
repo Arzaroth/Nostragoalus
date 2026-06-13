@@ -2,6 +2,7 @@ import { db } from '../../../db'
 import { requireUser } from '../../utils/auth-guards'
 import { resolveCompetition } from '../../utils/competitions/store'
 import { getChampionLockTime, getMyChampionPick, listCompetitionTeams } from '../../utils/champion/service'
+import { getSecondChanceWindow, isSecondChanceOpen } from '../../utils/picks/window'
 import { getFifaRanks } from '../../utils/champion/ranking'
 import { championPointsForRank } from '../../utils/scoring/config'
 import { getActiveScoringConfig } from '../../utils/scoring/store'
@@ -12,10 +13,11 @@ export default defineEventHandler(async (event) => {
   const competition = await resolveCompetition(db, (query.competition as string) || null)
   if (!competition) return { competition: null, teams: [], myPick: null, locked: true }
 
-  const [teams, myPick, lock, ranks, config] = await Promise.all([
+  const [teams, myPick, lock, window, ranks, config] = await Promise.all([
     listCompetitionTeams(db, competition.id),
     getMyChampionPick(db, user.id, competition.id),
     getChampionLockTime(db, competition.id),
+    getSecondChanceWindow(db, competition.id),
     getFifaRanks(),
     getActiveScoringConfig(db),
   ])
@@ -32,6 +34,8 @@ export default defineEventHandler(async (event) => {
     }),
     myPick,
     locked: !!lock && Date.now() >= new Date(lock).getTime(),
+    // Second chance: re-pick allowed (you must already have a pick) while open.
+    secondChance: { open: isSecondChanceOpen(window), closesAt: window.end },
   }
 })
 

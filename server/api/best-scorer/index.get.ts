@@ -3,6 +3,7 @@ import { requireUser } from '../../utils/auth-guards'
 import { resolveCompetition } from '../../utils/competitions/store'
 import { getChampionLockTime, listCompetitionTeams } from '../../utils/champion/service'
 import { getMyBestScorerPick } from '../../utils/bestscorer/service'
+import { getSecondChanceWindow, isSecondChanceOpen } from '../../utils/picks/window'
 import { getActiveScoringConfig } from '../../utils/scoring/store'
 
 export default defineEventHandler(async (event) => {
@@ -11,10 +12,11 @@ export default defineEventHandler(async (event) => {
   const competition = await resolveCompetition(db, (query.competition as string) || null)
   if (!competition) return { competition: null, teams: [], myPick: null, locked: true, bonus: 0 }
 
-  const [teams, myPick, lock, config] = await Promise.all([
+  const [teams, myPick, lock, window, config] = await Promise.all([
     listCompetitionTeams(db, competition.id),
     getMyBestScorerPick(db, user.id, competition.id),
     getChampionLockTime(db, competition.id),
+    getSecondChanceWindow(db, competition.id),
     getActiveScoringConfig(db),
   ])
 
@@ -29,6 +31,7 @@ export default defineEventHandler(async (event) => {
     teams,
     myPick,
     locked: !!lock && Date.now() >= new Date(lock).getTime(),
+    secondChance: { open: isSecondChanceOpen(window), closesAt: window.end },
   }
 })
 

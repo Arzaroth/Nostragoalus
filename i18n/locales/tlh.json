@@ -251,7 +251,11 @@
     "preview": "wej choqlu'",
     "worth": "{points} QuQ 'oH",
     "fifaRank": "FIFA mI' {rank}",
-    "tag": "Qa'wI'"
+    "tag": "Qa'wI'",
+    "secondChanceOpen": "DuH cha'DIch: noH SoQmoHpa', wa'logh wIvlIj yIchoH - QuQ bID.",
+    "changePick": "wIv yIchoH",
+    "repickConfirm": "che'wI' DachoH'a'? reH 'oH 'ej QuQ bID rurmoH reH - Dacheghchugh je. wIvlIj wa'DIch cha'taH.",
+    "repickedNote": "choHlu' (QuQ bID). wa'DIch: {team}."
   },
   "bestScorer": {
     "title": "qIchwI'lIj nIv",
@@ -261,7 +265,11 @@
     "noPick": "qIchwI' nIv wIvbe'lu' - SoQ.",
     "lockedIn": "SoQ - Qapla'!",
     "preview": "wej choqlu'",
-    "tag": "maQ pubwI'"
+    "tag": "maQ pubwI'",
+    "secondChanceOpen": "DuH cha'DIch: noH SoQmoHpa', wa'logh wIvlIj yIchoH - QuQ bID.",
+    "changePick": "wIv yIchoH",
+    "repickConfirm": "qIchwI' nIv DachoH'a'? reH 'oH 'ej QuQ bID rurmoH reH - Dacheghchugh je. wIvlIj wa'DIch cha'taH.",
+    "repickedNote": "choHlu' (QuQ bID). wa'DIch: {player}."
   },
   "leaderboard": {
     "title": "patlh",
