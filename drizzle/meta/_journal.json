@@ -162,6 +162,13 @@
       "when": 1781301959736,
       "tag": "0022_league_invite",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1781388217958,
+      "tag": "0023_handy_sheva_callister",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,1 @@
+ALTER TABLE "task_run" ADD COLUMN "executions" integer DEFAULT 0 NOT NULL;
