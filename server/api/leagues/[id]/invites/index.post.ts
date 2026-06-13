@@ -3,11 +3,12 @@ import { db } from '../../../../../db'
 import { defineValidatedHandler } from '../../../../utils/validated-handler'
 import { getMembership } from '../../../../utils/leagues/service'
 import { canManageLeague } from '../../../../utils/leagues/permissions'
-import { createInvite, listInvites } from '../../../../utils/leagues/invites'
+import { createInvite, inviteStatus, listInvites } from '../../../../utils/leagues/invites'
 
 const bodySchema = z.object({
-  // Hours keeps the API timezone-free; null/omitted = never expires.
-  expiresInHours: z.number().int().min(1).max(8760).nullish(),
+  // Hours keeps the API timezone-free; null/omitted = never expires. Capped at
+  // 30 days to match the UI and the documented range.
+  expiresInHours: z.number().int().min(1).max(720).nullish(),
   maxUses: z.number().int().min(1).max(1000).nullish(),
 })
 
@@ -35,6 +36,7 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ event, body
       maxUses: invite.maxUses,
       uses: invite.uses,
       createdAt: invite.createdAt,
+      status: inviteStatus(invite),
     },
   }
 })
@@ -51,7 +53,7 @@ defineRouteMeta({
           "schema": {
             "type": "object",
             "properties": {
-              "expiresInHours": { "type": "integer", "minimum": 1, "maximum": 8760, "nullable": true },
+              "expiresInHours": { "type": "integer", "minimum": 1, "maximum": 720, "nullable": true },
               "maxUses": { "type": "integer", "minimum": 1, "maximum": 1000, "nullable": true }
             }
           }

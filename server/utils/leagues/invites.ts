@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import { and, desc, eq, isNull, lt, or, sql } from 'drizzle-orm'
+import { and, desc, eq, isNull, lt, lte, or, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { competition, league, leagueInvite, leagueMember } from '../../../db/schema'
 import { ConflictError, NotFoundError } from '../errors'
@@ -76,7 +76,7 @@ export async function pruneSpentInvites(db: AppDatabase, leagueId: string, now: 
       and(
         eq(leagueInvite.leagueId, leagueId),
         or(
-          lt(leagueInvite.expiresAt, now),
+          lte(leagueInvite.expiresAt, now),
           and(sql`${leagueInvite.maxUses} is not null`, sql`${leagueInvite.uses} >= ${leagueInvite.maxUses}`),
         ),
       ),
@@ -108,7 +108,8 @@ export async function previewInvite(db: AppDatabase, token: string, now: Date = 
   return {
     status: inviteStatus(row.invite, now),
     league: { id: row.league.id, name: row.league.name, memberCount: count },
-    competition: row.comp ? { slug: row.comp.slug, name: row.comp.name } : null,
+    // competitionId is NOT NULL with an FK, so the left-joined competition always exists.
+    competition: { slug: row.comp!.slug, name: row.comp!.name },
   }
 }
 
@@ -150,19 +151,23 @@ export async function acceptInvite(
   if (inviteStatus(row.invite, now) === 'EXPIRED') throw new ConflictError('invite expired')
   // Membership first: an already-member click must not consume a use.
   if (await getMembership(db, row.league.id, opts.userId)) throw new ConflictError('already a member of this league')
-  // Conditional increment is the use-cap gate: two racing accepts of a
-  // last-use invite can't both pass (the second matches no row).
-  const consumed = await db
-    .update(leagueInvite)
-    .set({ uses: sql`${leagueInvite.uses} + 1` })
-    .where(
-      and(
-        eq(leagueInvite.id, row.invite.id),
-        or(isNull(leagueInvite.maxUses), lt(leagueInvite.uses, leagueInvite.maxUses)),
-      ),
-    )
-    .returning({ id: leagueInvite.id })
-  if (!consumed.length) throw new ConflictError('invite exhausted')
-  const role = await addMembership(db, row.league.id, opts.userId)
-  return { league: row.league, role }
+  // One transaction so a failed membership insert rolls the use back (a
+  // racing same-user double-click can trip the member PK after the increment).
+  return db.transaction(async (tx) => {
+    // Conditional increment is the use-cap gate: two racing accepts of a
+    // last-use invite can't both pass (the second matches no row).
+    const consumed = await tx
+      .update(leagueInvite)
+      .set({ uses: sql`${leagueInvite.uses} + 1` })
+      .where(
+        and(
+          eq(leagueInvite.id, row.invite.id),
+          or(isNull(leagueInvite.maxUses), lt(leagueInvite.uses, leagueInvite.maxUses)),
+        ),
+      )
+      .returning({ id: leagueInvite.id })
+    if (!consumed.length) throw new ConflictError('invite exhausted')
+    const role = await addMembership(tx, row.league.id, opts.userId)
+    return { league: row.league, role }
+  })
 }
