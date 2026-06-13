@@ -31,19 +31,25 @@ const tiers = [
   { pts: '0', key: 'miss' },
 ]
 
-// Banner journey (Motion for Vue), scrubbed by scroll in two phases:
+// Banner journey (Motion for Vue), scrubbed by scroll in two phases, then latched:
 //   phase 1 (0→SCRUB): screen-centered card over a dimmed page → docked full-bleed strip
-//   phase 2 (SCRUB→SCRUB+SCRUB2): the strip shrinks into a slim bar pinned under the header
+//   phase 2 (SCRUB→SCRUB+PHASE2): the strip shrinks into a slim bar pinned under the header
+//   latch: once docked (or the cue is clicked) the bar holds slim until the page
+//     scrolls back to the very top - so reading the content never re-expands it,
+//     and the slim landing is reliable on any viewport height.
 const SCRUB = 420
-const SCRUB2 = 360
+const PHASE2 = 300
 const MINI_H = 100
 const reduced = useReducedMotion()
+// Latched = intro is done; the bar holds its slim state regardless of scroll.
+const latched = ref(false)
 
 // Pinned-bar geometry, derived from the real layout instead of breakpoints:
 // - topPx: the bar pins flush under the (one- or two-row) header, measured.
 // - miniH: pinned-bar height, slimmer on phones, capped at MINI_H.
 const topPx = ref(64)
 const miniH = ref(MINI_H)
+const heroEl = ref<HTMLElement | null>(null)
 function layoutBanner() {
   const vw = window.innerWidth
   const header = document.querySelector('header')
@@ -55,12 +61,14 @@ function layoutBanner() {
 
 const { scrollY } = useScroll()
 const spring = { stiffness: 220, damping: 30 }
-const t1 = useSpring(useTransform(scrollY, [0, SCRUB], [1, 0]), spring) // 1 = centered
-const t2 = useSpring(useTransform(scrollY, [SCRUB, SCRUB + SCRUB2], [0, 1]), spring) // 1 = mini bar
 // The springs overshoot their [0,1] targets while settling; unclamped, that
 // overshoot scales with (viewport-sized) geometry - e.g. the bar height swings
 // by (40vh - miniH) * overshoot, a visible left-right wobble on big screens.
 const cl = (v: number) => Math.min(1, Math.max(0, v))
+// While latched the targets pin to the docked state (t1=0, t2=1); otherwise they
+// scrub with scroll. The functional form re-reads `latched` on every scroll tick.
+const t1 = useSpring(useTransform(scrollY, (v) => (latched.value ? 0 : cl(1 - v / SCRUB))), spring) // 1 = centered
+const t2 = useSpring(useTransform(scrollY, (v) => (latched.value ? 1 : cl((v - SCRUB) / PHASE2))), spring) // 1 = mini bar
 // Bumped by layoutBanner so px-baked transforms recompute on resize, not only
 // on the next scroll.
 const layoutTick = useMotionValue(0)
@@ -81,6 +89,23 @@ const bShadow = useTransform([t1, t2] as never, (values: never) => {
   return `0 ${(30 * a + 6 * b).toFixed(1)}px ${(90 * a + 18 * b).toFixed(1)}px rgba(8, 6, 24, ${(0.55 * a + 0.35 * b).toFixed(3)})`
 })
 const dimOpacity = useTransform(t1, (v) => 0.6 * cl(v))
+// Scroll cue: viewport-anchored (fixed bottom), so it invites scroll the same
+// on every screen height instead of relying on content peeking above the fold.
+// Fades out as the banner journey starts; click jumps past the intro.
+const cueOpacity = useTransform(t1, (v) => cl(v))
+const cuePointer = useTransform(t1, (v) => (cl(v) > 0.15 ? 'auto' : 'none'))
+// The cue is an explicit "skip the intro": latch the bar slim right away (so the
+// result never depends on hitting a magic scroll depth), then scroll the hero to
+// sit just under the slim bar - content-relative, so it lands the same on any
+// viewport.
+function scrollPastIntro() {
+  latched.value = true
+  const el = heroEl.value
+  const heroOffset = el ? el.getBoundingClientRect().top + window.scrollY : SCRUB + PHASE2
+  window.scrollTo({ top: Math.max(0, heroOffset - topPx.value - miniH.value - 16), behavior: 'smooth' })
+}
+// The next-match pill shares this bottom-center slot; hide the cue when it shows.
+const ctaVisible = useState('ng-cta-visible', () => false)
 // One INLINE artwork for the whole journey (no compact-banner swap - the two
 // artworks were composed differently, so any swap read as the title jumping
 // sideways). The svg is cover-fit and horizontally centered, so x never
@@ -117,6 +142,12 @@ onMounted(() => {
   t1.on('change', (v) => (starsFront.value = v > 0.04))
   t1.on('change', updateArt)
   t2.on('change', updateArt)
+  // Latch once the manual scrubber reaches the docked end; release only back at
+  // the very top. The wide gap (16 → SCRUB+PHASE2) keeps it from flickering.
+  scrollY.on('change', (v) => {
+    if (v >= SCRUB + PHASE2) latched.value = true
+    else if (v <= 16) latched.value = false
+  })
   layoutBanner()
   updateArt()
   window.addEventListener('resize', layoutBanner, { passive: true })
@@ -148,6 +179,16 @@ onBeforeUnmount(() => window.removeEventListener('resize', layoutBanner))
         <BannerArt :ball-scale="ballScale" :subtitle-opacity="subtitleOp" :title-scale="titleScale" :title-shift="titleShift" />
       </motion.div>
       <motion.div v-if="!reduced" class="fixed inset-0 z-30 pointer-events-none" :style="{ background: '#0b0a18', opacity: dimOpacity }" />
+      <motion.button
+        v-if="!reduced && !ctaVisible"
+        type="button"
+        :aria-label="t('landing.scrollCue')"
+        class="ng-scroll-cue fixed left-1/2 bottom-6 z-40 flex items-center justify-center w-11 h-11 rounded-full border backdrop-blur-sm"
+        :style="{ transform: 'translateX(-50%)', opacity: cueOpacity, pointerEvents: cuePointer, borderColor: 'rgba(255,255,255,0.18)', background: 'color-mix(in srgb, #171436 65%, transparent)', color: '#fff' }"
+        @click="scrollPastIntro"
+      >
+        <i class="pi pi-chevron-down ng-scroll-cue__icon text-lg" />
+      </motion.button>
       <template #fallback>
         <!-- static replica of the t=1 motion state so first paint matches hydration -->
         <div
@@ -168,7 +209,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', layoutBanner))
     </ClientOnly>
 
     <!-- Hero -->
-    <section class="text-center flex flex-col items-center gap-6">
+    <section ref="heroEl" class="text-center flex flex-col items-center gap-6">
       <div
         class="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium"
         style="border-color: var(--p-content-border-color); color: var(--p-text-muted-color)"
@@ -327,3 +368,19 @@ onBeforeUnmount(() => window.removeEventListener('resize', layoutBanner))
     <AppFooter />
   </div>
 </template>
+
+<style scoped>
+.ng-scroll-cue__icon {
+  animation: ng-cue-bob 1.6s ease-in-out infinite;
+}
+.ng-scroll-cue:hover {
+  background: color-mix(in srgb, #171436 85%, transparent) !important;
+}
+@keyframes ng-cue-bob {
+  0%, 100% { transform: translateY(-3px); }
+  50% { transform: translateY(3px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ng-scroll-cue__icon { animation: none; }
+}
+</style>
