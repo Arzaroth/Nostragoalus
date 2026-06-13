@@ -8,6 +8,7 @@ import { syncMatchDetails } from '../../utils/sync/details'
 import { awardBestScorerBonuses } from '../../utils/bestscorer/service'
 import { getActiveScoringConfig } from '../../utils/scoring/store'
 import { updateLeagueRankSnapshots, updateRankSnapshots } from '../../utils/leaderboard/snapshots'
+import { publishMatchUpdates } from '../../utils/live/hub'
 
 export default defineTask({
   meta: { name: 'matches:finalize', description: 'Lock due predictions, score finished matches, fetch match details' },
@@ -47,6 +48,12 @@ export default defineTask({
         // never fail the task over snapshots
       }
     }
+
+    // Finalize is what sets the points (and the champion/best-scorer bonuses
+    // above); tell connected clients so the fixtures points and the leaderboard
+    // refresh without a reload. scores:poll only broadcast the FINISHED status,
+    // before this scoring ran.
+    await publishMatchUpdates(db, result.changedMatchIds)
 
     return { result: { ...result, details } }
     })

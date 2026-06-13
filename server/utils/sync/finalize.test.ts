@@ -33,14 +33,14 @@ describe('finalizeMatches', () => {
     await makePrediction(db, { userId: u1, matchId: m, roundId, home: 2, away: 1 })
     await makePrediction(db, { userId: u2, matchId: m, roundId, home: 1, away: 1 })
 
-    expect(await finalizeMatches(db, NOW)).toMatchObject({ locked: 2, scored: 1 })
+    expect(await finalizeMatches(db, NOW)).toMatchObject({ locked: 2, scored: 1, changedMatchIds: [m] })
 
     let preds = await predsByUser(db)
     expect(preds.u1).toMatchObject({ baseTier: 'EXACT', totalPoints: 3 })
     expect(preds.u2).toMatchObject({ baseTier: 'MISS', totalPoints: 0 })
     expect((await db.select().from(match).where(eq(match.id, m)))[0].scoringState).toBe('SCORED')
 
-    expect((await finalizeMatches(db, NOW)).scored).toBe(0)
+    expect(await finalizeMatches(db, NOW)).toMatchObject({ scored: 0, changedMatchIds: [] })
 
     await db.update(match).set({ fullTimeHome: 1, fullTimeAway: 1 }).where(eq(match.id, m))
     expect((await finalizeMatches(db, NOW)).scored).toBe(1)
@@ -83,7 +83,7 @@ describe('finalizeMatches', () => {
     const pid = await makePrediction(db, { userId: u, matchId: m, roundId, home: 1, away: 0, isJoker: true, lockedAt: KICKOFF })
     await db.update(prediction).set({ totalPoints: 5 }).where(eq(prediction.id, pid))
 
-    expect((await finalizeMatches(db, NOW)).voided).toBe(1)
+    expect(await finalizeMatches(db, NOW)).toMatchObject({ voided: 1, changedMatchIds: [m] })
     const [p] = await db.select().from(prediction).where(eq(prediction.id, pid))
     expect(p.totalPoints).toBeNull()
     expect(p.isJoker).toBe(false)
