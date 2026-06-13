@@ -198,6 +198,17 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       a deploy/restart). [partial on the bot perf item: TTL cache added; SQL
       GROUP BY aggregation + the 10000-row rank cap still open.]
 
+## Second chance (deferred from the feature pass)
+
+- [ ] The re-pick window is defined on `round_kind` (last GROUP_MATCHDAY round
+      kickoff -> first KNOCKOUT kickoff). This assumes a future esports importer
+      maps Swiss/group stages to GROUP_MATCHDAY and the playoff bracket to
+      KNOCKOUT. If esports rounds get their own `round_kind`, revisit
+      `getSecondChanceWindow`. Also: Play-Ins would shift the champion-pick
+      *lock* (first kickoff) - separate decision when esports lands. And
+      best-scorer (Golden Boot) has no esports equivalent, so the second chance
+      there is football-only until an MVP-style meta-pick exists.
+
 ## Champion tiers (deferred from the merge review)
 
 - [x] ~~Pre-feature champion picks backfilled to potential_points=10~~ Moot
