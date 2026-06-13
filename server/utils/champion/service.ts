@@ -1,7 +1,8 @@
 import { and, eq, min, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { championPick, match } from '../../../db/schema'
-import { LockedError } from '../errors'
+import { LockedError, ValidationError } from '../errors'
+import { getSecondChanceWindow, isSecondChanceOpen } from '../picks/window'
 
 // Champion picks lock when the competition's first match kicks off.
 export async function getChampionLockTime(db: AppDatabase, competitionId: string): Promise<Date | null> {
@@ -79,8 +80,34 @@ export async function setChampionPick(db: AppDatabase, input: SetChampionInput, 
   }
 }
 
+// Second chance: switch the champion pick during the [last group round ->
+// knockouts] window. Latches `repicked` on the first switch (halving the award
+// for good, even if reverted) and snapshots the original pick for display.
+export async function repickChampion(db: AppDatabase, input: SetChampionInput, now: Date = new Date()): Promise<void> {
+  const window = await getSecondChanceWindow(db, input.competitionId)
+  if (!isSecondChanceOpen(window, now)) throw new LockedError('the second-chance window is not open')
+
+  const existing = await getMyChampionPick(db, input.userId, input.competitionId)
+  if (!existing) throw new ValidationError('no champion pick to change')
+
+  await db
+    .update(championPick)
+    .set({
+      teamCode: input.teamCode,
+      teamName: input.teamName,
+      fifaRank: input.fifaRank,
+      potentialPoints: input.potentialPoints,
+      repicked: true,
+      // First switch only: keep the pre-switch pick. Later switches don't
+      // overwrite it (and `repicked` already latched true).
+      ...(existing.repicked ? {} : { originalTeamCode: existing.teamCode, originalTeamName: existing.teamName }),
+    })
+    .where(eq(championPick.id, existing.id))
+}
+
 // Idempotent: reset all picks for the competition, then award each winner the
-// points locked in at pick time. Safe to run on every finalize tick.
+// points locked in at pick time - halved when the pick was switched in the
+// second-chance window. Safe to run on every finalize tick.
 export async function awardChampionBonuses(
   db: AppDatabase,
   competitionId: string,
@@ -91,7 +118,11 @@ export async function awardChampionBonuses(
 
   const updated = await db
     .update(championPick)
-    .set({ awardedPoints: sql`${championPick.potentialPoints}` })
+    // Integer division floors for positive values, so a re-picked 7-point pick
+    // pays 3, matching "half the points, rounded down".
+    .set({
+      awardedPoints: sql`CASE WHEN ${championPick.repicked} THEN ${championPick.potentialPoints} / 2 ELSE ${championPick.potentialPoints} END`,
+    })
     .where(and(eq(championPick.competitionId, competitionId), eq(championPick.teamCode, winnerCode)))
     .returning({ id: championPick.id })
   return updated.length
