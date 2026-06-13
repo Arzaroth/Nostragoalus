@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.5.2] - 2026-06-13
+
 ### Added
 - The match play-by-play now also shows fouls, and tags each event line with the relevant team's flag.
 
