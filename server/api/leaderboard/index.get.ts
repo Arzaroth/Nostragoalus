@@ -1,5 +1,5 @@
 import { db } from '../../../db'
-import { getLeaderboard } from '../../utils/leaderboard/service'
+import { countLeagueMembersHiddenFromBoard, getLeaderboard } from '../../utils/leaderboard/service'
 import { getLiveProvisionalPoints } from '../../utils/leaderboard/live'
 import { getLeagueRankMovements, getRankMovements } from '../../utils/leaderboard/snapshots'
 import { getCompetitionById, resolveCompetition } from '../../utils/competitions/store'
@@ -45,10 +45,16 @@ export default defineEventHandler(async (event) => {
     // Movement only for the full-member view: the outsider board excludes
     // private profiles, so snapshot ranks wouldn't line up with displayed ones.
     const movements = includePrivate ? await getLeagueRankMovements(db, league.id) : new Map<string, number>()
+    const hiddenCount = await countLeagueMembersHiddenFromBoard(db, {
+      leagueId: league.id,
+      includePrivate,
+      viewerId: user.id,
+    })
     return {
       competition: competition ? { id: competition.id, slug: competition.slug, name: competition.name } : null,
       league: { id: league.id, name: league.name },
       live: liveProvisional.size > 0,
+      hiddenCount,
       rows: rows.map((r) => ({ ...r, movement: movements.get(r.userId) ?? null })),
     }
   }

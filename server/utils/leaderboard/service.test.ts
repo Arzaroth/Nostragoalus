@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm'
 import { createTestDb, type TestDb } from '../../../tests/db'
 import { findRoundId } from '../sync/rounds'
 import { addLeagueMember, makeLeague, makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
-import { compareLeaderboardRows, getLeaderboard } from './service'
+import { compareLeaderboardRows, countLeagueMembersHiddenFromBoard, getLeaderboard } from './service'
 import { bestScorerPick, championPick, prediction, user } from '../../../db/schema'
 
 describe('compareLeaderboardRows', () => {
@@ -263,6 +263,29 @@ describe('getLeaderboard', () => {
     const page = await getLeaderboard(db, { competitionId, leagueId, limit: 1, offset: 1 })
     expect(page).toHaveLength(1)
     expect(page[0].rank).toBe(2)
+    await client.close()
+  })
+})
+
+describe('countLeagueMembersHiddenFromBoard', () => {
+  it('counts admin-hidden members, excludes the viewer, and honors includePrivate', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const owner = await makeUser(db, 'own', 'Owner')
+    const hidden = await makeUser(db, 'hid', 'Hidden')
+    const priv = await makeUser(db, 'prv', 'Private')
+    await db.update(user).set({ hiddenFromLeaderboard: true }).where(eq(user.id, hidden))
+    await db.update(user).set({ profilePrivate: true }).where(eq(user.id, priv))
+    const leagueId = await makeLeague(db, { competitionId, ownerId: owner })
+    await addLeagueMember(db, leagueId, hidden)
+    await addLeagueMember(db, leagueId, priv)
+
+    // Member viewer (includePrivate): only the admin-hidden one is off the board.
+    expect(await countLeagueMembersHiddenFromBoard(db, { leagueId, includePrivate: true, viewerId: owner })).toBe(1)
+    // Outsider (no includePrivate): private profile is excluded too.
+    expect(await countLeagueMembersHiddenFromBoard(db, { leagueId, includePrivate: false })).toBe(2)
+    // The viewer themselves never counts, even when hidden.
+    expect(await countLeagueMembersHiddenFromBoard(db, { leagueId, includePrivate: true, viewerId: hidden })).toBe(0)
     await client.close()
   })
 })

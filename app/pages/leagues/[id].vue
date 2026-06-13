@@ -6,6 +6,7 @@ const { t } = useI18n()
 const leagueId = computed<string | null>(() => (route.params.id as string) || null)
 const detail = useLeagueDetail(leagueId)
 const rows = useLeaderboard(ref(false), leagueId)
+const hiddenCount = useLeaderboardHiddenCount(leagueId)
 const { joinPublic, leave } = useLeagueActions()
 const { session } = useAuth()
 const meId = computed(() => session.value?.data?.user?.id)
@@ -83,6 +84,16 @@ function medal(rank: number) {
             <span class="text-xs ml-1" style="color: var(--p-text-muted-color)">{{ t('leaderboard.pts') }}</span>
           </div>
         </NuxtLink>
+        <div
+          v-if="hiddenCount.data.value"
+          v-tooltip.top="{ value: t('leaderboard.hiddenTip'), pt: { text: 'text-xs max-w-64' } }"
+          class="flex items-center justify-center gap-1.5 rounded-xl border border-dashed px-4 py-2 text-xs cursor-help"
+          style="border-color: var(--p-content-border-color); color: var(--p-text-muted-color)"
+        >
+          <i class="pi pi-eye-slash" style="font-size: 0.7rem" />
+          {{ t('leaderboard.hidden', { n: hiddenCount.data.value }, hiddenCount.data.value) }}
+          <i class="pi pi-info-circle" style="font-size: 0.7rem; opacity: 0.6" />
+        </div>
       </div>
 
       <AppConfirmDialog

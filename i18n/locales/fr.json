@@ -271,7 +271,9 @@
     "liveProvisional": "EN DIRECT",
     "live": "live",
     "livePointsHint": "Points provisoires des matchs en cours — mis à jour à chaque changement de score.",
-    "tiebreakHint": "Les joueurs à égalité de points sont départagés par les scores exacts, puis les bons résultats, puis la différence de buts. Toujours à égalité ? Ils partagent le rang, et la place suivante est sautée."
+    "tiebreakHint": "Les joueurs à égalité de points sont départagés par les scores exacts, puis les bons résultats, puis la différence de buts. Toujours à égalité ? Ils partagent le rang, et la place suivante est sautée.",
+    "hidden": "{n} joueur masqué | {n} joueurs masqués",
+    "hiddenTip": "Des membres qu'un admin a masqués du classement. Ils restent dans la ligue et leurs pronos comptent toujours dans les totaux du groupe ; ils n'apparaissent simplement pas au classement."
   },
   "bot": {
     "name": "Bot consensus",

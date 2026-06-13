@@ -1,4 +1,4 @@
-import { and, eq, isNotNull, or, sql } from 'drizzle-orm'
+import { and, eq, isNotNull, ne, or, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { bestScorerPick, championPick, leagueMember, match, prediction, user } from '../../../db/schema'
 
@@ -45,6 +45,33 @@ export function compareLeaderboardRows(a: RankableRow, b: RankableRow): number {
     b.gdCount - a.gdCount ||
     (a.userId < b.userId ? -1 : a.userId > b.userId ? 1 : 0)
   )
+}
+
+// How many league members the board leaves out for visibility reasons (mirrors
+// getLeaderboard's WHERE): admin-hidden always, private profiles when the
+// viewer isn't entitled to see them. The viewer themselves is never counted
+// (they're always shown via alwaysIncludeUserId), so "+N hidden" never includes
+// "you".
+export async function countLeagueMembersHiddenFromBoard(
+  db: AppDatabase,
+  opts: { leagueId: string; includePrivate?: boolean; viewerId?: string },
+): Promise<number> {
+  const visibilityExcluded = or(
+    eq(user.hiddenFromLeaderboard, true),
+    ...(opts.includePrivate ? [] : [eq(user.profilePrivate, true)]),
+  )
+  const [row] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(leagueMember)
+    .innerJoin(user, eq(user.id, leagueMember.userId))
+    .where(
+      and(
+        eq(leagueMember.leagueId, opts.leagueId),
+        visibilityExcluded,
+        ...(opts.viewerId ? [ne(user.id, opts.viewerId)] : []),
+      ),
+    )
+  return row?.n ?? 0
 }
 
 export async function getLeaderboard(

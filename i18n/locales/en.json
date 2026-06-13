@@ -271,7 +271,9 @@
     "liveProvisional": "LIVE",
     "live": "live",
     "livePointsHint": "Provisional points from matches in progress — updates as scores change.",
-    "tiebreakHint": "Players tied on points are split by exact scores, then correct results, then goal difference. Still level after that? They share the rank, and the next place is skipped."
+    "tiebreakHint": "Players tied on points are split by exact scores, then correct results, then goal difference. Still level after that? They share the rank, and the next place is skipped.",
+    "hidden": "{n} hidden player | {n} hidden players",
+    "hiddenTip": "Members an admin has hidden from the rankings. They're still in the league and their picks still count in the crowd totals; they just don't appear on the board."
   },
   "bot": {
     "name": "Crowd Bot",
