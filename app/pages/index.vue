@@ -239,6 +239,10 @@ onBeforeUnmount(() => window.removeEventListener('resize', layoutBanner))
           <Button :label="authed ? t('landing.browse') : t('nav.signIn')" size="large" severity="secondary" outlined />
         </NuxtLink>
       </div>
+      <!-- Signed-out social proof; signed-in users get the NextMatchCta pill instead. -->
+      <ClientOnly>
+        <LandingTeaser v-if="!authed" />
+      </ClientOnly>
     </section>
 
     <!-- Features -->
