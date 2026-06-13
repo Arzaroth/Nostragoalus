@@ -354,7 +354,16 @@
     "resetNew": "mu'wIj chu'",
     "resetSubmit": "mu'wIj chu' yIchenmoH",
     "resetDone": "mu'wIj choHlu'ta' - DaH yI'el.",
-    "resetInvalid": "leQvam qar be' pagh ngabpu'."
+    "resetInvalid": "leQvam qar be' pagh ngabpu'.",
+    "verifySent": "{email} qonta'pu'be'chugh, ngu'meH leQ ghoStaH. yIngu', ghIq yI'el. Doch'a' Daghaj'a'?",
+    "goToSignIn": "'elmeH yIghoS",
+    "emailNotVerified": "QIn ngu'be'lu'. ngu'meH leQ yISam.",
+    "resendVerification": "ngu'meH leQ yIngeHqa'",
+    "verificationResent": "ngu'meH leQ ngeHlu'ta' - jabbI'ID yIlaD.",
+    "resendFailed": "ngu'meH leQ ngeHqa'laHbe'. yInIDqa'.",
+    "verifyChecking": "jabbI'ID ngu'lI'…",
+    "verifyDone": "jabbI'ID ngu'lu'ta'. DaH yI'el.",
+    "verifyError": "ngu'meH leQvam qar be' pagh ngabpu'. leQ chu' netlh'a'meH yI'el."
   },
   "account": {
     "title": "Doch'a'",

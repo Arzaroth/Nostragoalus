@@ -354,7 +354,16 @@
     "resetNew": "Nouveau mot de passe",
     "resetSubmit": "Définir le nouveau mot de passe",
     "resetDone": "Mot de passe mis à jour - vous pouvez vous connecter.",
-    "resetInvalid": "Ce lien de réinitialisation est invalide ou a expiré."
+    "resetInvalid": "Ce lien de réinitialisation est invalide ou a expiré.",
+    "verifySent": "Si {email} n'est pas déjà enregistré, un lien de vérification est en route. Confirmez-le, puis connectez-vous. Vous avez déjà un compte ?",
+    "goToSignIn": "Aller à la connexion",
+    "emailNotVerified": "E-mail non vérifié. Consultez votre boîte de réception pour le lien de vérification.",
+    "resendVerification": "Renvoyer l'e-mail de vérification",
+    "verificationResent": "E-mail de vérification envoyé - consultez votre boîte de réception.",
+    "resendFailed": "Impossible de renvoyer l'e-mail de vérification. Veuillez réessayer.",
+    "verifyChecking": "Vérification de votre e-mail…",
+    "verifyDone": "Votre e-mail est vérifié. Vous pouvez vous connecter.",
+    "verifyError": "Ce lien de vérification est invalide ou a expiré. Connectez-vous pour en demander un nouveau."
   },
   "account": {
     "title": "Compte",

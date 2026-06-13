@@ -354,7 +354,16 @@
     "resetNew": "New password",
     "resetSubmit": "Set new password",
     "resetDone": "Password updated - you can sign in now.",
-    "resetInvalid": "This reset link is invalid or has expired."
+    "resetInvalid": "This reset link is invalid or has expired.",
+    "verifySent": "If {email} isn't already registered, a verification link is on its way. Confirm it, then sign in. Already have an account?",
+    "goToSignIn": "Go to sign in",
+    "emailNotVerified": "Email not verified. Check your inbox for the verification link.",
+    "resendVerification": "Resend verification email",
+    "verificationResent": "Verification email sent - check your inbox.",
+    "resendFailed": "Could not resend the verification email. Please try again.",
+    "verifyChecking": "Verifying your email…",
+    "verifyDone": "Your email is verified. You can sign in now.",
+    "verifyError": "This verification link is invalid or has expired. Sign in to request a new one."
   },
   "account": {
     "title": "Account",
