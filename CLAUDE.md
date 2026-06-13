@@ -47,6 +47,13 @@
 - Local stack: `mise run dev` (HMR) / `mise run preview` (prod-target build,
   what you use to demo a branch). Worktree previews need `.env` copied from
   the main checkout or auth 500s on the default secret.
+- Docker hygiene: `mise run docker-clean` reclaims this project's dangling
+  images + orphan build-artifact volumes (`--renew-anon-volumes` leftovers),
+  scoped by the compose project label and never touching pgdata. Leave the
+  build cache alone - it's a daemon-wide, content-addressed, cross-worktree
+  asset (shared pnpm-store mount + deps layers; identical lockfile across
+  worktrees = full cache hit). `docker builder prune` wipes it for every
+  worktree at once - only run it by hand, knowing it's global.
 - mise tasks must run on a prod host with only the built app (no `node_modules`):
   talk to Postgres via `docker compose exec -T db psql`, not the `pg` module.
   Never build SQL by string concat in a task - pass values as psql `-v` vars and

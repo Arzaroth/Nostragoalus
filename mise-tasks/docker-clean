@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+#MISE description="Reclaim this project's dangling Docker images + orphan build-artifact volumes (build cache left intact)"
+#USAGE flag "--dry-run" help="List what would be removed without removing it"
+
+# Scoped, neighbour-safe Docker hygiene for the dev/feature workflow.
+#
+# TOUCHES (only this compose project, label com.docker.compose.project=nostragoalus):
+#   - dangling images: old app:dev/:local layers from `mise run preview`/`dev` rebuilds.
+#   - orphan anon volumes: the /app/node_modules, /app/.nuxt, /app/.output volumes
+#     `mise run dev` abandons via --renew-anon-volumes. Only DANGLING (unused) ones,
+#     and pgdata is excluded by name on top of that, so the database volume can
+#     never be removed - even with the stack down.
+#
+# DELIBERATELY LEAVES ALONE:
+#   - build cache: a daemon-wide, content-addressed, cross-worktree asset (the shared
+#     pnpm-store mount + deps layers). Pruning it forces a cold rebuild in every
+#     worktree. If you must, run it yourself knowing it is global:
+#       docker builder prune --filter until=336h
+#   - other projects: every filter is scoped to this compose project.
+set -euo pipefail
+
+filter='label=com.docker.compose.project=nostragoalus'
+images=$(docker image ls -q -f dangling=true -f "$filter")
+# dangling=true already spares in-use volumes (pgdata while the stack is up); the
+# pgdata name check is the belt-and-braces guard for when the stack is down.
+volumes=$(docker volume ls -q -f dangling=true -f "$filter" | grep -v pgdata || true)
+
+if [ "${usage_dry_run:-}" = "true" ]; then
+  echo "[dry-run] dangling images: ${images:-none}"
+  echo "[dry-run] orphan volumes: ${volumes:-none}"
+  echo "[dry-run] build cache: left intact by design"
+  exit 0
+fi
+
+# Unquoted on purpose: split the newline-separated id/name lists into args.
+[ -n "$images" ] && docker image rm $images
+[ -n "$volumes" ] && docker volume rm $volumes
+echo "removed $(echo "${images}" | grep -c . || true) dangling image(s), $(echo "${volumes}" | grep -c . || true) orphan volume(s)"
+echo "build cache left intact (cross-worktree asset; prune manually if ever needed)"
