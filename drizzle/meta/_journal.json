@@ -169,6 +169,13 @@
       "when": 1781388217958,
       "tag": "0023_handy_sheva_callister",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1781389881997,
+      "tag": "0024_remarkable_human_torch",
+      "breakpoints": true
     }
   ]
 }
