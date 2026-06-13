@@ -22,7 +22,7 @@ export function renderMailText({ title, intro, button, code, footer }: MailConte
 }
 
 export function renderMailHtml({ title, intro, button, code, footer }: MailContent): string {
-  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
   const href = (u: string) => u.replace(/&/g, '&amp;').replace(/"/g, '%22')
   const buttonBlock = button
     ? `<tr><td style="padding:24px 32px 4px">

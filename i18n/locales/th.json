@@ -611,6 +611,7 @@
       "fixturesRefresh": "รีเฟรชโปรแกรมและสายแข่ง",
       "matchesFinalize": "ล็อกและคิดคะแนนแมตช์",
       "oddsRefresh": "บันทึกราคาต่อรอง",
+      "pruneUnverified": "ล้างบัญชีที่ยังไม่ยืนยัน",
       "oddsBackfill": "ดึงราคาย้อนหลัง",
       "fixturesImport": "นำเข้าตารางแข่ง"
     },

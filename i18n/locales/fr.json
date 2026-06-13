@@ -611,6 +611,7 @@
       "fixturesRefresh": "Calendrier & tableau",
       "matchesFinalize": "Verrouillage & calcul des points",
       "oddsRefresh": "Relevé des cotes",
+      "pruneUnverified": "Purge des comptes non confirmés",
       "oddsBackfill": "Récupération des cotes (historique)",
       "fixturesImport": "Importer les matchs"
     },
