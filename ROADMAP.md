@@ -27,19 +27,25 @@ effort buckets; order within a bucket is not priority.
       dot on the changelog nav entry, highlight the delta section.
 - [ ] **Next-match CTA**: on the home banner when logged in; scrolling
       dismisses it, and a dismissed match doesn't re-show (sessionStorage).
-- [ ] **Landing banner intro polish** (built on worktree-landing-banner-intro,
-      pending merge): the scroll-scrubbed banner journey (centered card ->
-      full-bleed strip -> slim pinned bar) buried the essentials below a
-      decorative banner, and the slim state existed only at a single scroll
-      position so reading the page re-expanded it. Adds a viewport-anchored
-      scroll cue (fixed bottom-center, reduced-motion safe, hidden while the
-      next-match pill shares that slot) that latches the banner slim and scrolls
-      the hero just under it - content-relative, so it lands the same on any
-      viewport. Once docked (cue or manual scroll) the bar holds slim until the
-      page returns to the very top. Deferred: on very small phones a manual
-      scrub still half-shrinks the strip over the content between content-
-      arrival and the dock point (the cue path is clean); a screen-aware phase
-      length or a mobile-simplified banner would close that.
+- [ ] **Main page rework** (in progress on worktree-main-page-rework): a rolling
+      refresh of the landing/home page so it gets you to the matches and your
+      picks faster and shows its best side. Multi-slice; the banner intro is the
+      first slice, more below.
+  - **Banner intro (done, pending merge)**: the scroll-scrubbed banner journey
+        (centered card -> full-bleed strip -> slim pinned bar) buried the
+        essentials below a decorative banner, and the slim state existed only at a
+        single scroll position so reading the page re-expanded it. Adds a
+        viewport-anchored scroll cue (fixed bottom-center, reduced-motion safe,
+        hidden while the next-match pill shares that slot) that latches the banner
+        slim and scrolls the hero just under it - content-relative, so it lands the
+        same on any viewport. Once docked (cue or manual scroll) the bar holds slim
+        until the page returns to the very top. Deferred: on very small phones a
+        manual scrub still half-shrinks the strip over the content; a screen-aware
+        phase length or a mobile-simplified banner would close that (TODO.md).
+  - **Planned slices** (from the product discussion, refine as we go): logged-out
+        value-prop + sign-up/login CTA in the hero; a live teaser even when signed
+        out (next-match card, leaderboard top 3, player count); conditional-by-auth
+        landing so returning users skip the big intro / start on a slim bar.
 - [ ] **iCal feed**: per-user calendar subscription with fixtures + pick
       lockout deadlines.
 - [ ] **"The Equalizer" bot mode**: always picks 1-1 (modal draw score) to
