@@ -52,4 +52,11 @@ describe('LeagueJoinDialog', () => {
     form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
     await vi.waitFor(() => expect(document.body.textContent).toContain("You're already in this league."))
   })
+
+  it('extracts the token from a pasted invite link and rewrites the field', async () => {
+    const { input } = await setup()
+    type(input, 'https://goal.example.com/leagues/join/AbC123_xyz-9')
+    await nextTick()
+    expect(input.value).toBe('AbC123_xyz-9')
+  })
 })

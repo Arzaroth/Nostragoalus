@@ -8,7 +8,11 @@ export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id')!
   const league = await getLeague(db, id)
   if (!league) throw createError({ statusCode: 404, statusMessage: 'League not found' })
-  const [competition, members] = await Promise.all([getCompetitionById(db, league.competitionId), listLeagueMembers(db, id)])
+  // Admin moderation view: see every member, hidden or private.
+  const [competition, members] = await Promise.all([
+    getCompetitionById(db, league.competitionId),
+    listLeagueMembers(db, id, { includePrivate: true, includeHidden: true }),
+  ])
   return {
     league: {
       id: league.id,

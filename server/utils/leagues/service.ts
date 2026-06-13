@@ -1,4 +1,4 @@
-import { and, asc, count, eq, inArray, sql } from 'drizzle-orm'
+import { and, asc, count, eq, inArray, or, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import type { AppDatabase } from '../../../db/types'
 import {
@@ -171,16 +171,29 @@ export async function listPublicLeagues(
   return rows.map((r) => ({ ...r, memberCount: Number(r.memberCount) }))
 }
 
+// Honest roster size: every member regardless of visibility. The header count
+// stays truthful while the listed roster hides admin-hidden members.
+export async function countLeagueMembers(db: AppDatabase, leagueId: string): Promise<number> {
+  return db.$count(leagueMember, eq(leagueMember.leagueId, leagueId))
+}
+
 export async function listLeagueMembers(
   db: AppDatabase,
   leagueId: string,
-  opts?: { includePrivate?: boolean },
+  opts?: { includePrivate?: boolean; includeHidden?: boolean; viewerId?: string },
 ): Promise<Array<{ userId: string; name: string; image: string | null; role: LeagueRole; joinedAt: Date }>> {
-  // profilePrivate users are visible to league mates/admins but not to
-  // outsiders browsing a public league (same rule as the league board).
-  const where = opts?.includePrivate
-    ? eq(leagueMember.leagueId, leagueId)
-    : and(eq(leagueMember.leagueId, leagueId), eq(user.profilePrivate, false))
+  // Same visibility rule as the league board: profilePrivate users hidden from
+  // outsiders, admin-hidden users hidden from everyone but site admins. The
+  // viewer always sees themselves (a hidden member still appears in their own
+  // league's roster).
+  const visibility = and(
+    ...(opts?.includePrivate ? [] : [eq(user.profilePrivate, false)]),
+    ...(opts?.includeHidden ? [] : [eq(user.hiddenFromLeaderboard, false)]),
+  )
+  const where = and(
+    eq(leagueMember.leagueId, leagueId),
+    opts?.viewerId ? or(eq(user.id, opts.viewerId), visibility) : visibility,
+  )
   const rows = await db
     .select({
       userId: leagueMember.userId,
