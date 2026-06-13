@@ -16,8 +16,12 @@ export interface ChampionData {
     fifaRank: number | null
     potentialPoints: number
     awardedPoints: number
+    repicked: boolean
+    originalTeamCode: string | null
+    originalTeamName: string | null
   } | null
   locked: boolean
+  secondChance: { open: boolean; closesAt: string | null }
 }
 
 export function useChampion() {
@@ -33,10 +37,10 @@ export function useChampion() {
   })
 
   const setPick = useMutation({
-    mutationFn: (team: ChampionTeam) =>
+    mutationFn: (input: ChampionTeam & { repick?: boolean }) =>
       $fetch<{ ok: boolean }>('/api/champion', {
         method: 'PUT',
-        body: { competition: slug.value, teamCode: team.code, teamName: team.name },
+        body: { competition: slug.value, teamCode: input.code, teamName: input.name, repick: input.repick },
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['champion'] })

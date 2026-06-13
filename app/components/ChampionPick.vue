@@ -12,12 +12,14 @@ watchEffect(() => {
   selectedCode.value = data.value?.myPick?.teamCode ?? null
 })
 
+const confirmRepick = ref(false)
+
 function teamName(code: string | null) {
   return data.value?.teams?.find((tm: ChampionTeam) => tm.code === code)?.name ?? code
 }
-function save() {
+function save(repick = false) {
   const team = data.value?.teams?.find((tm: ChampionTeam) => tm.code === selectedCode.value)
-  if (team) setPick.mutate(team)
+  if (team) setPick.mutate({ ...team, repick })
 }
 
 // Holographic hover: the card tilts toward the cursor and a light sweep
@@ -47,7 +49,9 @@ const isSaved = computed(() => !!data.value?.myPick && showcaseCode.value === da
 const showcaseWorth = computed<{ rank: number | null; points: number } | null>(() => {
   if (!showcaseCode.value) return null
   if (isSaved.value && data.value?.myPick) {
-    return { rank: data.value.myPick.fifaRank ?? null, points: data.value.myPick.potentialPoints }
+    // A re-picked pick is worth half (floored), and that's what it will pay.
+    const full = data.value.myPick.potentialPoints
+    return { rank: data.value.myPick.fifaRank ?? null, points: data.value.myPick.repicked ? Math.floor(full / 2) : full }
   }
   const team = data.value?.teams?.find((tm: ChampionTeam) => tm.code === showcaseCode.value)
   return team ? { rank: team.fifaRank, points: team.potentialPoints } : null
@@ -81,9 +85,54 @@ function worthLabel(rank: number | null, points: number) {
 
         <template v-if="data.locked">
           <span v-if="!data.myPick" style="color: var(--p-text-muted-color)">{{ t('champion.noPick') }}</span>
-          <span v-else class="inline-flex items-center gap-2 text-sm" style="color: var(--p-text-muted-color)">
-            <i class="pi pi-lock text-xs" /> {{ t('champion.lockedIn') }}
-          </span>
+          <template v-else>
+            <!-- Second chance: one switch allowed while the window is open. -->
+            <div v-if="data.secondChance.open" class="flex flex-col gap-2">
+              <p class="text-xs" style="color: var(--ng-star)"><i class="pi pi-sparkles text-xs" /> {{ t('champion.secondChanceOpen') }}</p>
+              <div class="flex flex-wrap items-center gap-3">
+                <Select
+                  v-model="selectedCode"
+                  :options="data.teams"
+                  option-label="name"
+                  option-value="code"
+                  filter
+                  :placeholder="t('champion.pick')"
+                  class="w-full sm:w-72"
+                >
+                  <template #value="{ value, placeholder }">
+                    <span v-if="value" class="flex items-center gap-2">
+                      <img v-if="flagUrl(value)" :src="flagUrl(value) || ''" class="w-5 h-5 rounded object-cover" alt="" >
+                      {{ teamName(value) }}
+                    </span>
+                    <span v-else>{{ placeholder }}</span>
+                  </template>
+                  <template #option="{ option }">
+                    <span class="flex items-center gap-2 w-full">
+                      <img v-if="flagUrl(option.code)" :src="flagUrl(option.code) || ''" class="w-5 h-5 rounded object-cover" alt="" >
+                      {{ option.name }}
+                      <span class="ml-auto text-xs whitespace-nowrap" style="color: var(--p-text-muted-color)">
+                        {{ worthLabel(option.fifaRank, option.potentialPoints) }}
+                      </span>
+                    </span>
+                  </template>
+                </Select>
+                <Button
+                  :label="t('champion.changePick')"
+                  icon="pi pi-sync"
+                  severity="warn"
+                  :disabled="!selectedCode || selectedCode === data.myPick.teamCode"
+                  :loading="saving"
+                  @click="confirmRepick = true"
+                />
+              </div>
+            </div>
+            <span v-else class="inline-flex items-center gap-2 text-sm" style="color: var(--p-text-muted-color)">
+              <i class="pi pi-lock text-xs" /> {{ t('champion.lockedIn') }}
+            </span>
+            <p v-if="data.myPick.repicked" class="text-xs mt-2" style="color: var(--p-text-muted-color)">
+              {{ t('champion.repickedNote', { team: data.myPick.originalTeamName }) }}
+            </p>
+          </template>
         </template>
 
         <template v-else>
@@ -119,7 +168,7 @@ function worthLabel(rank: number | null, points: number) {
               icon="pi pi-check"
               :disabled="!selectedCode || selectedCode === data.myPick?.teamCode"
               :loading="saving"
-              @click="save"
+              @click="save()"
             />
           </div>
         </template>
@@ -184,5 +233,14 @@ function worthLabel(rank: number | null, points: number) {
         </div>
       </div>
     </div>
+
+    <AppConfirmDialog
+      v-model:visible="confirmRepick"
+      :header="t('champion.changePick')"
+      :message="t('champion.repickConfirm')"
+      :confirm-label="t('champion.changePick')"
+      severity="danger"
+      @confirm="save(true)"
+    />
   </div>
 </template>

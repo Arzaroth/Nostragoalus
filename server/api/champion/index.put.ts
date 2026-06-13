@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { db } from '../../../db'
 import { resolveCompetition } from '../../utils/competitions/store'
-import { setChampionPick } from '../../utils/champion/service'
+import { repickChampion, setChampionPick } from '../../utils/champion/service'
 import { getFifaRanks } from '../../utils/champion/ranking'
 import { championPointsForRank } from '../../utils/scoring/config'
 import { getActiveScoringConfig } from '../../utils/scoring/store'
@@ -11,6 +11,9 @@ const bodySchema = z.object({
   teamCode: z.string().min(1).max(8),
   teamName: z.string().min(1).max(64),
   competition: z.string().optional(),
+  // True = use the one-time second-chance window (halves the points) instead
+  // of the normal pre-lock edit.
+  repick: z.boolean().optional(),
 })
 
 export default defineValidatedHandler({ body: bodySchema }, async ({ body, user }) => {
@@ -23,14 +26,15 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ body, user 
   // Ranking fetch failed (ranks null) -> flat fallback so a pick still saves.
   const potentialPoints = ranks ? championPointsForRank(fifaRank, config.rules) : config.rules.championBonus
 
-  await setChampionPick(db, {
+  const input = {
     userId: user.id,
     competitionId: competition.id,
     teamCode: body.teamCode,
     teamName: body.teamName,
     fifaRank,
     potentialPoints,
-  })
+  }
+  await (body.repick ? repickChampion(db, input) : setChampionPick(db, input))
   return { ok: true }
 })
 

@@ -10,8 +10,16 @@ export interface BestScorerPickInput {
 export interface BestScorerData {
   competition: { id: string; slug: string; name: string } | null
   teams: { code: string; name: string }[]
-  myPick: (BestScorerPickInput & { awardedPoints: number }) | null
+  myPick:
+    | (BestScorerPickInput & {
+        awardedPoints: number
+        repicked: boolean
+        originalPlayerName: string | null
+        originalTeamCode: string | null
+      })
+    | null
   locked: boolean
+  secondChance: { open: boolean; closesAt: string | null }
 }
 
 export function useBestScorer() {
@@ -27,7 +35,7 @@ export function useBestScorer() {
   })
 
   const setPick = useMutation({
-    mutationFn: (pick: BestScorerPickInput) =>
+    mutationFn: (pick: BestScorerPickInput & { repick?: boolean }) =>
       $fetch<{ ok: boolean }>('/api/best-scorer', {
         method: 'PUT',
         body: { competition: slug.value, ...pick },

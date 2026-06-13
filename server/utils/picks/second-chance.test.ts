@@ -57,6 +57,18 @@ describe('second-chance window', () => {
     expect(isSecondChanceOpen(w, DURING)).toBe(false)
     await client.close()
   })
+
+  it('has a null start when the last group round has no matches yet', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db) // rounds exist, no matches
+    const r32 = (await findRoundId(db, competitionId, 'R32', null))!
+    await makeMatch(db, { competitionId, roundId: r32, kickoffTime: WIN_END, stage: 'R32' })
+    const w = await getSecondChanceWindow(db, competitionId)
+    expect(w.start).toBeNull()
+    expect(w.end?.toISOString()).toBe(WIN_END.toISOString())
+    expect(isSecondChanceOpen(w, DURING)).toBe(false)
+    await client.close()
+  })
 })
 
 describe('repickChampion', () => {
@@ -152,6 +164,32 @@ describe('repickBestScorer', () => {
     await awardBestScorerBonuses(db, competitionId, 10)
     const me = await getMyBestScorerPick(db, userId, competitionId)
     expect(me?.awardedPoints).toBe(5) // floor(10 / 2)
+    await client.close()
+  })
+
+  it('a second switch keeps the first original and stays repicked', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await setupComp(db)
+    const userId = await makeUser(db, 'u')
+    await setBestScorerPick(db, { userId, competitionId, playerId: 'p1', playerName: 'Neymar', teamCode: 'BRA', teamName: 'Brazil' }, LOCK_MINUS)
+    await repickBestScorer(db, { userId, competitionId, playerId: 'p2', playerName: 'Messi', teamCode: 'ARG', teamName: 'Argentina' }, DURING)
+    await repickBestScorer(db, { userId, competitionId, playerId: 'p3', playerName: 'Haaland', teamCode: 'NOR', teamName: 'Norway' }, DURING)
+    const pick = await getMyBestScorerPick(db, userId, competitionId)
+    expect(pick).toMatchObject({ playerId: 'p3', repicked: true, originalPlayerName: 'Neymar' })
+    await client.close()
+  })
+
+  it('rejects outside the window and when there is no pick', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await setupComp(db)
+    const userId = await makeUser(db, 'u')
+    await expect(
+      repickBestScorer(db, { userId, competitionId, playerId: 'p2', playerName: 'Messi', teamCode: 'ARG', teamName: 'Argentina' }, DURING),
+    ).rejects.toThrow(ValidationError)
+    await setBestScorerPick(db, { userId, competitionId, playerId: 'p1', playerName: 'Neymar', teamCode: 'BRA', teamName: 'Brazil' }, LOCK_MINUS)
+    await expect(
+      repickBestScorer(db, { userId, competitionId, playerId: 'p2', playerName: 'Messi', teamCode: 'ARG', teamName: 'Argentina' }, LOCK_MINUS),
+    ).rejects.toThrow(LockedError)
     await client.close()
   })
 })
