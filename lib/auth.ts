@@ -11,6 +11,7 @@ import * as schema from '../db/schema'
 import { withEncryptedSSO } from '../server/utils/crypto/encrypted-adapter'
 import { verifyTotpCode } from '../server/utils/auth/totp'
 import { isSsoManaged } from '../server/utils/auth/sso-managed'
+import { emailVerificationRequiredSync, loadEmailVerificationFlag } from '../server/utils/auth/email-verification'
 import { fetchAvatarDataUrl, isUnusableAvatarUrl } from '../server/utils/auth/avatar'
 import { autoJoinSsoLeagues } from '../server/utils/leagues/auto-join'
 import { symmetricDecrypt } from 'better-auth/crypto'
@@ -42,6 +43,15 @@ export function buildAuthOptions(database: AuthDb) {
     ),
     emailAndPassword: {
       enabled: true,
+      // Admin-toggled at runtime (no redeploy). better-auth reads this getter
+      // synchronously on every sign-in/sign-up, so flipping the cached flag
+      // takes effect immediately: sign-ups stop auto-signing-in and get a
+      // verification mail, and unverified password sign-ins are blocked (and
+      // the mail resent). SSO sign-ins use a different route, so they're
+      // unaffected (and SSO users arrive already verified).
+      get requireEmailVerification() {
+        return emailVerificationRequiredSync(database)
+      },
       // Forgot-password mail. Silently skipped for SSO-managed accounts (their
       // IdP owns the credentials; the endpoint's response stays identical so
       // account existence is not revealed). Once a provider is deleted its
@@ -53,6 +63,19 @@ export function buildAuthOptions(database: AuthDb) {
           u.email,
           'Reset your Nostragoalus password',
           `Someone (hopefully you) asked to reset the password for this account.\n\nSet a new password: ${url}\n\nThe link expires in 1 hour. If this wasn't you, ignore this mail.`,
+        )
+      },
+    },
+    // Verification-mail infra. Always configured so the verify-email endpoints
+    // exist; whether it's enforced is the runtime getter above. sendOnSignIn
+    // resends the link when a blocked sign-in is attempted.
+    emailVerification: {
+      sendOnSignIn: true,
+      async sendVerificationEmail({ user: u, url }: { user: { email: string }; url: string }) {
+        await sendMail(
+          u.email,
+          'Confirm your Nostragoalus email',
+          `Welcome to Nostragoalus! Confirm this email address to activate your account.\n\nVerify: ${url}\n\nIf you didn't create an account, ignore this mail.`,
         )
       },
     },
@@ -121,8 +144,9 @@ export function buildAuthOptions(database: AuthDb) {
     account: {
       accountLinking: {
         enabled: true,
-        // Local accounts are never email-verified (no verification-mail infra), so the
-        // default requireLocalEmailVerified gate would block every link to them.
+        // Local accounts may be unverified (verification is an optional,
+        // admin-toggled gate), so don't let the default requireLocalEmailVerified
+        // gate block an SSO identity from linking to an existing local account.
         requireLocalEmailVerified: false,
         // SSO providers are registered by the instance admin only, so an identity the
         // IdP asserts is authoritative for its email: an SSO sign-in matching an
@@ -202,3 +226,7 @@ export function buildAuthOptions(database: AuthDb) {
 }
 
 export const auth = betterAuth(buildAuthOptions(db))
+
+// Warm the email-verification flag cache so the first sign-in after a restart
+// reads the real value instead of the default (false).
+void loadEmailVerificationFlag(db).catch(() => {})

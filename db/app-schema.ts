@@ -578,3 +578,16 @@ export const roadmapItem = pgTable(
   (t) => [index('roadmap_item_status_position_idx').on(t.status, t.position)],
 )
 
+// Generic runtime key-value settings (admin-toggled flags that must change
+// without a redeploy). Values are plain strings; typed accessors live in
+// server/utils/settings. Not for secrets - those go through the KEK-encrypted
+// SSO config path.
+export const appSetting = pgTable('app_setting', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+})
+
