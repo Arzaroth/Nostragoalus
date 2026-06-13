@@ -53,4 +53,20 @@ describe('buildCronTaskRows', () => {
     expect(row.previousRunAt).toBe('2026-06-13T12:00:00.000Z')
     expect(row.lastError).toBe('boom')
   })
+
+  it('is failed when a task has only ever failed (no successful run)', () => {
+    const row = buildCronTaskRows(
+      [record({ taskName: 'scores:poll', lastFailureAt: new Date('2026-06-13T12:00:00Z'), lastError: 'never worked' })],
+      NOW,
+    ).find((r) => r.name === 'scores:poll')!
+    expect(row.status).toBe('failed')
+    expect(row.lastRunAt).toBeNull()
+    expect(row.previousRunAt).toBe('2026-06-13T12:00:00.000Z')
+  })
+
+  it('yields a null next run for an unparseable cron expression', () => {
+    const [row] = buildCronTaskRows([], NOW, [{ name: 'bad', cron: 'not a cron', fireAndForget: false }])
+    expect(row.schedule).toBe('not a cron')
+    expect(row.nextRunAt).toBeNull()
+  })
 })

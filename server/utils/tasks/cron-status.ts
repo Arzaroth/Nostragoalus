@@ -1,5 +1,5 @@
 import { Cron } from 'croner'
-import { TASKS } from './registry'
+import { TASKS, type TaskDef } from './registry'
 
 // One row in the persisted task_run table (only the fields the view needs).
 export interface TaskRunRecord {
@@ -41,9 +41,9 @@ function nextRunOf(expr: string, now: Date): string | null {
 
 // Join the static registry with the persisted run history into the rows the
 // admin cron view renders. Tasks with no recorded run yet show as 'never'.
-export function buildCronTaskRows(runs: TaskRunRecord[], now: Date): CronTaskRow[] {
+export function buildCronTaskRows(runs: TaskRunRecord[], now: Date, tasks: TaskDef[] = TASKS): CronTaskRow[] {
   const byName = new Map(runs.map((r) => [r.taskName, r]))
-  return TASKS.map((t) => {
+  return tasks.map((t) => {
     const r = byName.get(t.name)
     const lastRunAt = r?.lastRunAt ?? null
     const lastFailureAt = r?.lastFailureAt ?? null
