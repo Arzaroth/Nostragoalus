@@ -148,6 +148,7 @@ function toggleVisibility() {
         :league-id="props.league.id"
         :my-role="props.league.role"
         :members="detail.data.value.members"
+        :hidden-count="detail.data.value.league.memberCount - detail.data.value.members.length"
       />
     </div>
 
