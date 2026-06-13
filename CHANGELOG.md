@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-06-13
+
 ### Added
 - **League invite links**: owners and moderators can mint shareable join links from the league card, with an optional expiry (24 hours to 30 days) and a cap on the number of uses. Opening a link shows the league and joins with one click; signed-out visitors are sent through login and land back on the league automatically.
 
