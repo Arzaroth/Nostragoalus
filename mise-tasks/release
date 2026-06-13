@@ -53,6 +53,6 @@ pnpm test:components
 git add CHANGELOG.md package.json
 git commit -m "chore(release): ${version}"
 git tag -a "v${version}" -m "Nostragoalus ${version}"
-git push origin main --follow-tags
+git push origin master --follow-tags
 echo
 echo "released v${version}"

@@ -1,6 +1,6 @@
 ---
 name: feature-treatment
-description: Ship a finished feature branch the full way - rebase onto main, run a max-effort multi-agent code review, fix everything confirmed, pass the gate, merge, and cut a release. Use when the user says "feature treatment", "treat this branch", "review and merge this feature", or names a worktree/branch to ship.
+description: Ship a finished feature branch the full way - rebase onto master, run a max-effort multi-agent code review, fix everything confirmed, pass the gate, merge, and cut a release. Use when the user says "feature treatment", "treat this branch", "review and merge this feature", or names a worktree/branch to ship.
 ---
 
 # Feature treatment
@@ -11,21 +11,21 @@ merges without an adversarial review and a green gate.
 
 The branch to treat comes from the argument (a branch or worktree name). If none
 given, find it: `git worktree list` and `git branch` - the feature branch is the
-non-`main` one, usually under `.claude/worktrees/<name>` with a `worktree-<name>`
+non-`master` one, usually under `.claude/worktrees/<name>` with a `worktree-<name>`
 branch. Confirm which one if ambiguous.
 
-## 1. Rebase onto main
+## 1. Rebase onto master
 
 ```bash
 cd .claude/worktrees/<name>          # work in the worktree
-git rebase main
+git rebase master
 ```
-Resolve conflicts if any. The branch must sit directly on top of `main` so the
+Resolve conflicts if any. The branch must sit directly on top of `master` so the
 review and the merge see only this feature's diff.
 
 ## 2. Max-effort review (parallel finders)
 
-Get the review diff: `git diff main...HEAD -- . ':(exclude)drizzle/meta/*'` (the
+Get the review diff: `git diff master...HEAD -- . ':(exclude)drizzle/meta/*'` (the
 drizzle meta snapshot is generated - exclude it; it's thousands of lines).
 
 Spawn **independent finder subagents in parallel** (one Agent tool call with
@@ -100,5 +100,5 @@ git branch -d worktree-<name>
 
 ## Done when
 
-The feature is on `main`, the gate was green, a tag is pushed, and the worktree
+The feature is on `master`, the gate was green, a tag is pushed, and the worktree
 is gone. Report the version and a one-line summary of what was fixed in review.

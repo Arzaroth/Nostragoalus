@@ -11,7 +11,7 @@ before it.
 
 ## 1. Pre-flight
 
-- Working tree clean, on `main`, up to date with origin.
+- Working tree clean, on `master`, up to date with origin.
 - Find the previous version: `git describe --tags --abbrev=0` (tags are `vX.Y.Z`).
 - Pick the next semver (minor bump for features, patch for fix-only).
 
