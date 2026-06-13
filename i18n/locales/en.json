@@ -388,6 +388,13 @@
   "admin": {
     "title": "Admin",
     "forbidden": "You don't have admin access.",
+    "signup": {
+      "title": "Sign-ups",
+      "hint": "Control how new accounts are created.",
+      "requireEmailVerification": "Require email verification for new sign-ups",
+      "smtpRequired": "Configure SMTP (NUXT_SMTP_URL) to enable this - without it the verification mail can't be sent.",
+      "grandfatherNote": "Turning this on marks all existing accounts as verified; only new sign-ups will need to confirm."
+    },
     "roadmap": {
       "title": "Roadmap",
       "hint": "Curate the public roadmap: add, edit, reorder and ship items.",
@@ -447,6 +454,7 @@
       "demote": "Remove admin",
       "delete": "Delete user",
       "remove2fa": "Remove 2FA from this account",
+      "verifyEmail": "Mark email verified",
       "ban": "Ban user",
       "unban": "Unban user",
       "hide": "Hide from leaderboard",

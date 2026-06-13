@@ -25,6 +25,10 @@ export async function loadEmailVerificationFlag(db: AppDatabase): Promise<boolea
   return value
 }
 
+// Authoritative async read (also refreshes the cache) - for admin/display
+// paths that can await, unlike the better-auth option getter.
+export const isEmailVerificationRequired = loadEmailVerificationFlag
+
 // Synchronous read for the better-auth option getter.
 export function emailVerificationRequiredSync(db: AppDatabase): boolean {
   if (Date.now() - cached.at > TTL_MS) {

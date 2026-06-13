@@ -6,6 +6,25 @@ const { t } = useI18n()
 const { data: status } = await useFetch<{ isAdmin: boolean }>('/api/admin/status')
 const isAdmin = computed(() => status.value?.isAdmin === true)
 
+const { data: settings, refresh: refreshSettings } = await useFetch<{ emailVerificationRequired: boolean; smtpConfigured: boolean }>(
+  '/api/admin/settings',
+  { default: () => ({ emailVerificationRequired: false, smtpConfigured: false }) },
+)
+const emailVerifBusy = ref(false)
+const emailVerifErr = ref('')
+async function toggleEmailVerification(enabled: boolean) {
+  emailVerifBusy.value = true
+  emailVerifErr.value = ''
+  try {
+    await $fetch('/api/admin/settings/email-verification', { method: 'POST', body: { enabled } })
+    await refreshSettings()
+  } catch (e: any) {
+    emailVerifErr.value = e?.data?.statusMessage || 'Failed to update'
+  } finally {
+    emailVerifBusy.value = false
+  }
+}
+
 interface SsoProviderRow {
   providerId: string
   domains: string[]
@@ -194,6 +213,12 @@ const unlinkSsoMutation = useMutation({
 })
 const unlinkSso = (u: any) => unlinkSsoMutation.mutate(u)
 
+const verifyEmailMutation = useMutation({
+  mutationFn: (u: any) => $fetch<unknown>(`/api/admin/users/${u.id}/verify-email`, { method: 'POST' }),
+  onSuccess: invalidateUsers,
+})
+const verifyEmail = (u: any) => verifyEmailMutation.mutate(u)
+
 // Per-user actions live in one popup menu - the inline button row stopped
 // scaling with the number of actions.
 const rowMenu = ref()
@@ -219,6 +244,7 @@ const rowMenuItems = computed(() => {
       command: () => toggleVisibility(u),
     },
     ...(u.twoFactorEnabled ? [{ label: t('admin.users.remove2fa'), icon: 'pi pi-shield', command: () => strip2fa(u) }] : []),
+    ...(u.emailVerified ? [] : [{ label: t('admin.users.verifyEmail'), icon: 'pi pi-envelope', command: () => verifyEmail(u) }]),
     ...(ssoLinks.value[u.id]?.length ? [{ label: t('admin.users.unlinkSso'), icon: 'pi pi-link', command: () => unlinkSso(u) }] : []),
     ...(u.id !== myId.value
       ? [
@@ -280,6 +306,29 @@ function createUser() {
     </div>
 
     <template v-else>
+      <!-- Sign-up settings -->
+      <section class="ng-card rounded-2xl border overflow-hidden" style="background: var(--p-content-background)">
+        <div class="grid md:grid-cols-3 gap-6 p-6">
+          <div>
+            <h2 class="font-semibold">{{ t('admin.signup.title') }}</h2>
+            <p class="text-sm mt-1" style="color: var(--p-text-muted-color)">{{ t('admin.signup.hint') }}</p>
+          </div>
+          <div class="md:col-span-2 flex flex-col gap-3">
+            <div class="flex items-center gap-3">
+              <ToggleSwitch
+                :model-value="settings.emailVerificationRequired"
+                :disabled="emailVerifBusy || (!settings.smtpConfigured && !settings.emailVerificationRequired)"
+                @update:model-value="toggleEmailVerification"
+              />
+              <span class="text-sm font-medium">{{ t('admin.signup.requireEmailVerification') }}</span>
+            </div>
+            <Message v-if="!settings.smtpConfigured" severity="warn" size="small">{{ t('admin.signup.smtpRequired') }}</Message>
+            <Message v-else-if="emailVerifErr" severity="error" size="small">{{ emailVerifErr }}</Message>
+            <p class="text-xs" style="color: var(--p-text-muted-color)">{{ t('admin.signup.grandfatherNote') }}</p>
+          </div>
+        </div>
+      </section>
+
       <!-- SSO -->
       <section class="ng-card rounded-2xl border overflow-hidden" style="background: var(--p-content-background)">
         <div class="grid md:grid-cols-3 gap-6 p-6">

@@ -18,6 +18,9 @@ export const TASKS: TaskDef[] = [
   { name: 'matches:finalize', cron: '*/5 * * * *', fireAndForget: false },
   // Odds snapshots self-gate on per-match staleness, so most ticks are no-ops.
   { name: 'odds:refresh', cron: '*/30 * * * *', fireAndForget: true },
+  // Daily cleanup of never-confirmed accounts (self-gates: no-op unless email
+  // verification is required).
+  { name: 'users:prune-unverified', cron: '17 4 * * *', fireAndForget: false },
   // One-shot historical odds backfill, manual only.
   { name: 'odds:backfill', cron: null, fireAndForget: true },
   // One-shot fixture import from the providers, manual only.
