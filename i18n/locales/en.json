@@ -81,6 +81,7 @@
   },
   "landing": {
     "badge": "Live for the 2026 World Cup",
+    "scrollCue": "Scroll to explore",
     "heroA": "Predict every match.",
     "heroB": "Outsmart your friends.",
     "sub": "Nostragoalus turns football tournaments into a prediction game - call the scores, earn points for how close you get, and climb the leaderboard.",

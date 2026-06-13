@@ -81,6 +81,7 @@
   },
   "landing": {
     "badge": "En direct pour la Coupe du Monde 2026",
+    "scrollCue": "Faites défiler pour découvrir",
     "heroA": "Pronostiquez chaque match.",
     "heroB": "Devancez vos amis.",
     "sub": "Nostragoalus transforme les tournois de foot en jeu de pronostics - pronostiquez les scores, marquez selon votre précision et grimpez au classement.",
