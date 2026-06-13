@@ -147,7 +147,10 @@ function dismissLive() {
         role="complementary"
         :aria-label="t('home.nextCta.title')"
       >
-        <span class="font-medium" style="color: var(--p-text-muted-color)">{{ t('home.nextCta.title') }}</span>
+        <span class="flex items-center gap-2">
+          <span class="font-medium" style="color: var(--p-text-muted-color)">{{ t('home.nextCta.title') }}</span>
+          <Countdown :to="next.kickoffTime" />
+        </span>
         <span class="flex flex-col sm:flex-row items-center justify-center gap-x-1.5 font-semibold text-center">
           <span class="flex items-center gap-1.5">
             <img v-if="flagUrl(next.homeTeamCode)" :src="flagUrl(next.homeTeamCode) || ''" class="w-5 h-3.5 rounded-sm object-cover shrink-0" alt="" >
@@ -159,7 +162,6 @@ function dismissLive() {
             {{ next.awayTeam }}
           </span>
         </span>
-        <Countdown :to="next.kickoffTime" />
         <NuxtLink :to="pickLink" @click="dismissNext">
           <Button :label="t('home.nextCta.pick')" size="small" icon="pi pi-arrow-right" icon-pos="right" />
         </NuxtLink>

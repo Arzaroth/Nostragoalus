@@ -6,7 +6,6 @@ const { enabled: crowdEnabled, totals: crowdTotals, leagueTotals, leagueActive }
 const oddsEnabled = useOddsPreference()
 const slug = useSelectedCompetition()
 const { data: matches, isLoading } = useMatches()
-useLiveMatches(matches)
 
 // Status filter buckets: all on by default, untick to hide. ?status=live
 // (comma list) pre-selects, e.g. the home CTA's "N matches in play" link.
@@ -58,11 +57,14 @@ const { upsert, setJoker } = usePredictionMutations()
 // Your standing (folded in from the removed My Picks page). Honors the league
 // pill: with a league selected, rank/players are within that league.
 const { leagueId } = useSelectedLeague()
-const { data: statsData } = await useFetch<{ stats: { rank: number | null; players: number; totalPoints: number; exact: number; predictions: number; jokers: number } | null }>(
+const { data: statsData, refresh: refreshStats } = await useFetch<{ stats: { rank: number | null; players: number; totalPoints: number; exact: number; predictions: number; jokers: number } | null }>(
   '/api/me/stats',
   { query: computed(() => (leagueId.value ? { league: leagueId.value } : slug.value ? { competition: slug.value } : {})) },
 )
 const stats = computed(() => statsData.value?.stats)
+// Patch the list live, and on a score change refresh the points/stats that the
+// patcher can't derive (full-time points, your rank).
+useLiveMatches(matches, () => refreshStats())
 
 const predByMatch = computed(() => {
   const map: Record<string, MyPrediction> = {}
