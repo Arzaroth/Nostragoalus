@@ -108,15 +108,23 @@ effort buckets; order within a bucket is not priority.
       one per matchday so nobody is dogpiled tournament-wide. Shameable =
       wrong outcome (a miss) AND max total goal error (|dHome| + |dAway|);
       right-outcome-huge-error is comedy, not shame. Jokered = bonus shame.
-- [ ] **Second chance for champion / best scorer**:
-  - Window: first kickoff -> R16 kickoff (long on purpose; group-end -> R16
-    can be under a day and we don't want daily-check pressure).
-  - First re-pick sets a permanent `repicked` flag -> points halved forever,
-    even if the user reverts to the original (changing back is on him).
-  - Confirm modal spells it out: "halves your champion points permanently,
-    reverting won't restore".
-  - Half points also prices the late-group info advantage.
-  - Same mechanic verbatim for best scorer.
+- [x] **Second chance for champion / best scorer** - built on
+      worktree-second-chance, pending merge:
+  - Window: **last group round -> first knockout** (option 2), not the whole
+    first-kickoff -> R16 span. The re-pick only has info value once the groups
+    have played out, and opening at the start of the last group round (WC26
+    MD3) still gives a multi-day window - sanity-checked it stays multi-day for
+    esports too (LoL Swiss->quarters, CS Legends->Champions, ~1-5 days).
+    Defined on `round_kind` (last GROUP_MATCHDAY round kickoff -> first KNOCKOUT
+    kickoff) so it adapts per competition shape; no window without group or
+    knockout rounds.
+  - First re-pick latches a permanent `repicked` flag -> award halved
+    (integer-floored) at finalize, even if the user reverts (changing back is
+    on him). The original* columns keep the pre-switch pick for display.
+  - Confirm modal spells out the permanence; the original shows beside the new
+    pick, and the worth display halves for a re-picked pick.
+  - Same mechanic for best scorer. Requires an existing pick (no original ->
+    no second chance); a user who never picked before lock can't use it.
 - [ ] **Roadmap v2 - user suggestions + upvotes** (MVP page is in "Up next"):
       suggestions feed the roadmap, roadmap items get user upvotes. One
       schema, two views. CLI pull command for suggestions. Spam guard: auth
