@@ -364,10 +364,9 @@ export function normalizeFifaTimeline(
   for (const e of response.Event ?? []) {
     const kind = e.Type == null ? undefined : FIFA_EVENT_KINDS[e.Type]
     if (!kind) continue
-    const text = e.EventDescription?.[0]?.Description?.trim()
-    // Period markers carry their own text; a curated event with no description
-    // (rare) is not worth a blank row.
-    if (!text) continue
+    // Most curated events carry their own commentary, but some (e.g. a penalty
+    // award) come with none - keep them anyway; the UI labels them by kind.
+    const text = e.EventDescription?.[0]?.Description?.trim() ?? ''
     const rawSide = e.IdTeam && e.IdTeam === homeTeamId ? 'HOME' : e.IdTeam && e.IdTeam === awayTeamId ? 'AWAY' : null
     // An own goal's IdTeam is the scorer's own team, but the goal counts for the
     // opponent (the side whose running score ticks up) - place it there, matching

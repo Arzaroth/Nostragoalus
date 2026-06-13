@@ -185,6 +185,33 @@ const TIMELINE_ICONS: Record<string, string> = {
   period: '⏱️',
 }
 const GOAL_KINDS = new Set(['goal', 'own-goal', 'penalty-goal'])
+// Fallback label when the feed gives an event no commentary of its own (e.g. a
+// penalty award), keyed by kind so the row is never blank.
+const KIND_LABEL_KEYS: Record<string, string> = {
+  goal: 'goal',
+  'own-goal': 'ownGoal',
+  'penalty-goal': 'penaltyGoal',
+  'penalty-missed': 'penaltyMissed',
+  'penalty-awarded': 'penaltyAwarded',
+  assist: 'assist',
+  yellow: 'yellow',
+  red: 'red',
+  'second-yellow': 'secondYellow',
+  sub: 'sub',
+  shot: 'shot',
+  var: 'var',
+  period: 'period',
+}
+function pbpText(e: { kind: string; text: string }): string {
+  if (e.text) return e.text
+  const key = KIND_LABEL_KEYS[e.kind]
+  return key ? t(`match.pbpKind.${key}`) : ''
+}
+// The flag of the team an event belongs to (null for neutral markers).
+function pbpFlag(e: { side: string | null }): string | null {
+  const code = e.side === 'HOME' ? m.value?.homeTeamCode : e.side === 'AWAY' ? m.value?.awayTeamCode : null
+  return flagUrl(code)
+}
 
 function cardEvents(side: 'HOME' | 'AWAY') {
   return (detail.value?.bookings ?? []).filter((b: any) => b.side === side)
@@ -601,7 +628,7 @@ function toggleFormInfo(side: string, i: number | string) {
               >
                 <span class="tabular-nums text-xs text-right" style="color: var(--p-text-muted-color)">{{ e.minute }}</span>
                 <span class="text-center leading-none">{{ TIMELINE_ICONS[e.kind] || '•' }}</span>
-                <span :style="e.side ? '' : 'color: var(--p-text-muted-color)'">{{ e.text }}</span>
+                <span :style="e.side ? '' : 'color: var(--p-text-muted-color)'"><img v-if="pbpFlag(e)" :src="pbpFlag(e) || ''" class="inline-block w-4 h-3 rounded-sm object-cover mr-1.5" style="vertical-align: -0.1em" alt="" >{{ pbpText(e) }}</span>
                 <span v-if="GOAL_KINDS.has(e.kind) && e.homeScore != null" class="tabular-nums text-xs px-1.5 py-0.5 rounded" style="background: var(--p-content-border-color)">{{ e.homeScore }}–{{ e.awayScore }}</span>
               </div>
             </div>

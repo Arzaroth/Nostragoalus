@@ -292,6 +292,7 @@
     "h2h": "Head-to-head",
     "playByPlay": "Play-by-play",
     "playByPlayEmpty": "No play-by-play for this match yet.",
+    "pbpKind": { "goal": "Goal", "ownGoal": "Own goal", "penaltyGoal": "Penalty goal", "penaltyMissed": "Penalty missed", "penaltyAwarded": "Penalty awarded", "assist": "Assist", "yellow": "Yellow card", "red": "Red card", "secondYellow": "Second yellow", "sub": "Substitution", "shot": "Shot", "var": "VAR", "period": "Period" },
     "scorers": "Top scorers",
     "players": "Players",
     "assists": "Top assists",
