@@ -73,6 +73,20 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       were only verifiable by hand across local rebuilds - verify across two
       real prod deploys, and check iOS installed-PWA behavior specifically.
 
+## Landing banner intro (deferred from the feature pass)
+
+- [ ] The cue path (tap to skip the intro) latches the banner slim and lands
+      content reliably on every viewport. Manual scrubbing is not as clean on
+      very small phones: phase 1 is a fixed 420px, but a short viewport reaches
+      the hero before that, so a hand-scroller sees the strip half-shrunk over
+      the content between content-arrival and the dock/latch point. Fix is a
+      screen-aware phase length (shorten SCRUB/PHASE2 on small viewports) or a
+      mobile-simplified banner (static slim band, no scrub). Not worth the extra
+      complexity until someone reports it.
+- [ ] The intro re-expands only at the very top (scrollY <= 16). If that edge
+      ever feels abrupt, widen it into a short easing band instead of a hard
+      threshold.
+
 ## Odds feature (deferred from the merge review)
 
 - [ ] Provider-scope `match.oddsEventRef` (or prefix it `sofascore:`): switching
