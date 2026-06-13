@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { LeagueInvite } from '../composables/useLeagueInvites'
 
-const props = defineProps<{ leagueId: string }>()
+const props = defineProps<{ leagueId: string; joinCode?: string }>()
 const visible = defineModel<boolean>('visible', { required: true })
 
 const { t, locale } = useI18n()
@@ -29,9 +29,9 @@ const maxUses = ref<number | null>(null)
 
 const inviteUrl = (token: string) => `${origin}/leagues/join/${token}`
 const copiedId = ref<string | null>(null)
-async function copyLink(invite: LeagueInvite) {
-  await copy(inviteUrl(invite.token))
-  copiedId.value = invite.id
+async function copyToken(token: string, id: string) {
+  await copy(inviteUrl(token))
+  copiedId.value = id
   setTimeout(() => (copiedId.value = null), 1500)
 }
 
@@ -67,9 +67,27 @@ function fmtUses(invite: LeagueInvite) {
         />
       </div>
 
-      <div v-if="query.isLoading.value" class="opacity-60 text-sm">{{ t('common.loading') }}</div>
-      <div v-else-if="!query.data.value?.length" class="opacity-60 text-sm">{{ t('invites.empty') }}</div>
-      <div v-else class="flex flex-col divide-y" style="border-color: var(--p-content-border-color)">
+      <div class="flex flex-col divide-y" style="border-color: var(--p-content-border-color)">
+        <!-- Evergreen link from the join code: never expires, unlimited, can't
+             be revoked - it lives as long as the code does. -->
+        <div v-if="props.joinCode" class="flex items-center gap-2 py-2 text-sm" style="border-color: var(--p-content-border-color)">
+          <div class="flex-1 min-w-0">
+            <code class="font-mono text-xs truncate block">/leagues/join/{{ props.joinCode }}</code>
+            <div class="text-xs mt-0.5 inline-flex items-center gap-1" style="color: var(--p-text-muted-color)">
+              <i class="pi pi-infinity" style="font-size: 0.65rem" />{{ t('invites.evergreen') }}
+            </div>
+          </div>
+          <Button
+            v-tooltip.top="copiedId === 'evergreen' ? t('leagues.codeCopied') : t('invites.copyLink')"
+            :icon="copiedId === 'evergreen' ? 'pi pi-check' : 'pi pi-copy'"
+            text
+            size="small"
+            :aria-label="t('invites.copyLink')"
+            @click="copyToken(props.joinCode, 'evergreen')"
+          />
+        </div>
+
+        <div v-if="query.isLoading.value" class="opacity-60 text-sm py-2">{{ t('common.loading') }}</div>
         <div
           v-for="invite in query.data.value"
           :key="invite.id"
@@ -88,7 +106,7 @@ function fmtUses(invite: LeagueInvite) {
             text
             size="small"
             :aria-label="t('invites.copyLink')"
-            @click="copyLink(invite)"
+            @click="copyToken(invite.token, invite.id)"
           />
           <Button
             v-tooltip.top="t('invites.revoke')"

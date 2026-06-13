@@ -4,7 +4,13 @@ import type { AppDatabase } from '../../../db/types'
 import { competition, league, leagueInvite, leagueMember } from '../../../db/schema'
 import { ConflictError, NotFoundError } from '../errors'
 import type { LeagueRole } from './permissions'
-import { addMembership, getMembership, type JoinResult } from './service'
+import {
+  addMembership,
+  findLeagueByCode,
+  getMembership,
+  joinLeagueByCode,
+  type JoinResult,
+} from './service'
 
 export type InviteStatus = 'VALID' | 'EXPIRED' | 'EXHAUSTED'
 
@@ -92,7 +98,9 @@ export async function previewInvite(db: AppDatabase, token: string, now: Date = 
     .where(eq(leagueInvite.token, token))
     .limit(1)
   const row = rows[0]
-  if (!row) return null
+  // Evergreen fallback: the join code doubles as a permanent, never-expiring,
+  // uncapped invite token (not a row in league_invite).
+  if (!row) return previewByJoinCode(db, token)
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(leagueMember)
@@ -101,6 +109,26 @@ export async function previewInvite(db: AppDatabase, token: string, now: Date = 
     status: inviteStatus(row.invite, now),
     league: { id: row.league.id, name: row.league.name, memberCount: count },
     competition: row.comp ? { slug: row.comp.slug, name: row.comp.name } : null,
+  }
+}
+
+async function previewByJoinCode(db: AppDatabase, code: string): Promise<InvitePreview | null> {
+  const lg = await findLeagueByCode(db, code)
+  if (!lg) return null
+  const [{ count }] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(leagueMember)
+    .where(eq(leagueMember.leagueId, lg.id))
+  // competitionId is NOT NULL with an FK, so the competition always exists.
+  const [comp] = await db
+    .select({ slug: competition.slug, name: competition.name })
+    .from(competition)
+    .where(eq(competition.id, lg.competitionId))
+    .limit(1)
+  return {
+    status: 'VALID',
+    league: { id: lg.id, name: lg.name, memberCount: count },
+    competition: { slug: comp!.slug, name: comp!.name },
   }
 }
 
@@ -116,7 +144,9 @@ export async function acceptInvite(
     .where(eq(leagueInvite.token, opts.token))
     .limit(1)
   const row = rows[0]
-  if (!row) throw new NotFoundError('invite not found')
+  // Evergreen fallback: accept the join code as a permanent invite (no use
+  // accounting, mirrors join-by-code exactly).
+  if (!row) return joinLeagueByCode(db, { userId: opts.userId, code: opts.token })
   if (inviteStatus(row.invite, now) === 'EXPIRED') throw new ConflictError('invite expired')
   // Membership first: an already-member click must not consume a use.
   if (await getMembership(db, row.league.id, opts.userId)) throw new ConflictError('already a member of this league')
