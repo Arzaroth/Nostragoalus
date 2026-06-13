@@ -388,6 +388,13 @@
   "admin": {
     "title": "loHwI'",
     "forbidden": "loHwI' DIb Daghajbe'.",
+    "signup": {
+      "title": "ghItlhmey",
+      "hint": "chu' raQ chenmoHlu'bogh yISeH.",
+      "requireEmailVerification": "chu' ghItlh: QIn DamuvlaHpa' QIn yI'ol",
+      "smtpRequired": "SMTP yIcher (NUXT_SMTP_URL) - 'oHbe'chugh, 'ol QIn ngeHlaHbe'lu'.",
+      "grandfatherNote": "Dachu'DI', Hoch raQ tu'lu'bogh 'ollu'pu' net wuq; chu' ghItlhmey neH 'ol poQ."
+    },
     "roadmap": {
       "title": "He nab",
       "hint": "He nab yIloH: yIchel, yIchoH, yIrar, yIrInmoH.",
@@ -447,6 +454,7 @@
       "demote": "loHwI' yIteq",
       "delete": "lo'wI' yIQaw'",
       "remove2fa": "Doch'a'vamvo' cha' 'ol yIteq",
+      "verifyEmail": "QIn 'ollu'pu' net per",
       "ban": "lo'wI' yIghIpDIj",
       "unban": "ghIpDIj yIteq",
       "hide": "patlh tetlhvo' yISo'",

@@ -388,6 +388,13 @@
   "admin": {
     "title": "Admin",
     "forbidden": "Vous n'avez pas l'accès administrateur.",
+    "signup": {
+      "title": "Inscriptions",
+      "hint": "Contrôlez la création des nouveaux comptes.",
+      "requireEmailVerification": "Exiger la vérification de l'e-mail à l'inscription",
+      "smtpRequired": "Configurez le SMTP (NUXT_SMTP_URL) pour activer ceci - sans lui, l'e-mail de vérification ne peut pas être envoyé.",
+      "grandfatherNote": "Activer ceci marque tous les comptes existants comme vérifiés ; seules les nouvelles inscriptions devront confirmer."
+    },
     "roadmap": {
       "title": "Feuille de route",
       "hint": "Gérez la feuille de route publique : ajout, édition, réorganisation et livraison.",
@@ -447,6 +454,7 @@
       "demote": "Retirer admin",
       "delete": "Supprimer l'utilisateur",
       "remove2fa": "Retirer la 2FA de ce compte",
+      "verifyEmail": "Marquer l'e-mail comme vérifié",
       "ban": "Bannir",
       "unban": "Débannir",
       "hide": "Masquer du classement",
