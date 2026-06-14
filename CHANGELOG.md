@@ -15,6 +15,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 - Dates now follow the selected language everywhere (fixtures, match view, bracket, map, team and profile pages) instead of the browser's locale.
 - The match status tags (Scheduled, Live, Full-time, ...), prediction result tiers (Exact score, Goal difference, Right result, Missed), the group labels and the bracket round names (incl. Champion / 3rd place) are now translated in every language.
 - The match play-by-play no longer stretches the whole page when it has a lot of events: on wider screens the timeline scrolls within a bounded area (the page keeps scrolling normally on mobile).
+- The match play-by-play no longer renders its first rows with the wrong (loading) layout or an uncapped height after a page refresh.
 - Switching tabs on the match view no longer jumps the page back to the top.
 
 ## [1.8.1] - 2026-06-14
