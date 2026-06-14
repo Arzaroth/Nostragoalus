@@ -125,34 +125,22 @@ watch(
 const isWide = useMediaQuery('(min-width: 768px)')
 const listEl = ref<HTMLElement | null>(null)
 const listMaxH = ref<string | undefined>(undefined)
-let scrollLocked = false
-function unlockScroll() {
-  if (scrollLocked) {
-    document.documentElement.style.removeProperty('overflow')
-    scrollLocked = false
-  }
-}
 function updateListHeight() {
-  const c = listEl.value
-  if (!c) return
+  // Mobile: no scroll region, the page scrolls normally.
   if (!isWide.value) {
     listMaxH.value = undefined
-    unlockScroll()
     return
   }
+  const c = listEl.value
+  if (!c) return
   const top = c.getBoundingClientRect().top
   const footerH = document.querySelector('footer')?.getBoundingClientRect().height ?? 0
-  // Reserve the footer (and main's pb-6) below the list so nothing needs a
-  // second, page-level scrollbar - the list is the only scroll region. Locking
-  // page overflow kills any sub-pixel leftover scroll.
+  // Reserve the footer (and main's pb-6) below the list so the page itself
+  // doesn't grow past the viewport and sprout a second scrollbar - the list is
+  // the only scroll region.
   listMaxH.value = `${Math.max(280, Math.floor(window.innerHeight - top - footerH - 24))}px`
-  if (!scrollLocked) {
-    document.documentElement.style.overflow = 'hidden'
-    scrollLocked = true
-  }
 }
 onMounted(() => useEventListener(window, 'resize', updateListHeight))
-onBeforeUnmount(unlockScroll)
 // The pick cards above the list grow from skeleton to full size after their
 // queries resolve, which shifts the list's top edge - remeasure when they do.
 const picksEl = ref<HTMLElement | null>(null)
