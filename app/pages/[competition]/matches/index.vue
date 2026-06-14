@@ -72,6 +72,27 @@ const predByMatch = computed(() => {
   return map
 })
 
+// Rounds whose one joker already sits on a locked (started/finished) match: it
+// can't be moved, so every other match in that round can't take the joker. We
+// disable those buttons rather than let the click fail server-side.
+const lockedById = computed(() => {
+  const map: Record<string, boolean> = {}
+  for (const m of matches.value ?? []) map[m.id] = m.isLocked
+  return map
+})
+const lockedJokerRounds = computed(() => {
+  const set = new Set<string>()
+  for (const p of predictions.value ?? []) {
+    if (p.isJoker && lockedById.value[p.matchId]) set.add(p.roundId)
+  }
+  return set
+})
+// True when this match can't take/drop the joker because the round's joker is
+// locked elsewhere (the match's own locked joker is already handled by m.isLocked).
+function jokerRoundLocked(m: MatchListItem): boolean {
+  return lockedJokerRounds.value.has(m.roundId) && !predByMatch.value[m.id]?.isJoker
+}
+
 // Immediate model for the field; the (debounced) value drives filtering.
 const searchRaw = ref('')
 const search = refDebounced(searchRaw, 200)
@@ -206,12 +227,21 @@ function openMatch(e: MouseEvent, id: string) {
   if ((e.target as HTMLElement).closest('a, button, input')) return
   navigateTo(`/${slug.value}/matches/${id}`)
 }
-const jokerErr = ref('')
+const toast = useToast()
 function toggleJoker(p: MyPrediction) {
-  jokerErr.value = ''
   setJoker.mutate(
     { matchId: p.matchId, isJoker: !p.isJoker },
-    { onError: (e: any) => (jokerErr.value = e?.data?.message || e?.data?.statusMessage || t('predictions.jokerError')) },
+    {
+      // Buttons are disabled when the round's joker is locked, so this is a rare
+      // edge (e.g. a race) - a transient toast, not a layout-shifting banner.
+      onError: (e: any) =>
+        toast.add({
+          severity: 'warn',
+          summary: t('predictions.jokerError'),
+          detail: e?.data?.message || e?.data?.statusMessage || undefined,
+          life: 5000,
+        }),
+    },
   )
 }
 function fmtTime(d: string) {
@@ -287,7 +317,6 @@ watch(searchOpen, () => nextTick(updateListHeight))
       <ChampionPick />
       <BestScorerPick />
     </div>
-    <Message v-if="jokerErr" severity="warn" class="mb-4">{{ jokerErr }}</Message>
     <!-- Hidden until opened (Mod+F or the title's search icon). On open it
          scrolls to the top (scroll-margin clears the header), then sticks there
          so it follows the scroll. -->
@@ -388,12 +417,13 @@ watch(searchOpen, () => nextTick(updateListHeight))
                 <span v-if="countsDouble(m.stage)" v-tooltip.top="t('predictions.finalDoubleHint')" class="text-xs font-semibold px-2 py-1 rounded-full" style="color: var(--ng-star); background: var(--ng-star-soft)">★ {{ t('predictions.finalDouble') }}</span>
                 <Button
                   v-else-if="!isSingleMatchStage(m.stage)"
+                  v-tooltip.top="jokerRoundLocked(m) ? t('predictions.jokerRoundLocked') : undefined"
                   :label="t('predictions.joker')"
                   :icon="predByMatch[m.id]?.isJoker ? 'pi pi-star-fill' : 'pi pi-star'"
                   :severity="predByMatch[m.id]?.isJoker ? 'warn' : 'secondary'"
                   :outlined="!predByMatch[m.id]?.isJoker"
                   size="small"
-                  :disabled="m.isLocked || !predByMatch[m.id]"
+                  :disabled="m.isLocked || !predByMatch[m.id] || jokerRoundLocked(m)"
                   @click="predByMatch[m.id] && toggleJoker(predByMatch[m.id])"
                 />
                 <span v-if="predByMatch[m.id]?.totalPoints != null" class="text-xs font-semibold" style="color: var(--p-primary-color)">

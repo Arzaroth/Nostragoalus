@@ -177,5 +177,6 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateNavFades))
     </main>
 
     <SiteFooter />
+    <Toast />
   </div>
 </template>

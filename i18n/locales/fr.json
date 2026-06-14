@@ -230,6 +230,7 @@
     "joker": "Joker",
     "makeJoker": "Définir joker ×2",
     "jokerError": "Impossible de déplacer le joker - un match a peut-être déjà commencé.",
+    "jokerRoundLocked": "Votre joker est déjà bloqué sur un autre match de cette journée.",
     "crowd": "le groupe",
     "finalDouble": "La finale compte double",
     "finalDoubleHint": "Chaque prono sur la finale rapporte le double - pas besoin de joker.",
