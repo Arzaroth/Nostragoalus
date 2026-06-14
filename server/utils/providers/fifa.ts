@@ -383,6 +383,9 @@ export function normalizeFifaTimeline(
   homeTeamId?: string | null,
   awayTeamId?: string | null,
   names?: Record<string, string>,
+  // Truthy when the response was fetched in a locale the feed localizes, so the
+  // VAR decision text is safe to surface; null/undefined keeps text out.
+  textLang?: string | null,
 ): TimelineEvent[] {
   const events: TimelineEvent[] = []
   const nameOf = (id?: string | null) => (id && names ? names[id] ?? null : null)
@@ -402,6 +405,9 @@ export function normalizeFifaTimeline(
     // the under-score timeline.
     const side = kind === 'own-goal' && rawSide ? (rawSide === 'HOME' ? 'AWAY' : 'HOME') : rawSide
     const isSub = kind === 'sub'
+    // VAR is the one kind we can't phrase from structure (the decision lives in
+    // the commentary), so keep the feed's localized text for it.
+    const text = textLang && kind === 'var' ? e.EventDescription?.[0]?.Description?.trim() || null : null
     events.push({
       kind,
       side,
@@ -410,6 +416,7 @@ export function normalizeFifaTimeline(
       playerInName: isSub ? nameOf(e.IdPlayer) : null,
       playerOutName: isSub ? nameOf(e.IdSubPlayer) : null,
       periodKind,
+      text,
       homeScore: e.HomeGoals ?? null,
       awayScore: e.AwayGoals ?? null,
     })
@@ -805,9 +812,11 @@ export function fifaProvider(options: FifaOptions): MatchDataProvider {
       )
       return normalizeFifaMatchDetail(detail)
     },
-    async getMatchTimeline({ matchId, homeTeamId, awayTeamId, playerNames }: { matchId: string; homeTeamId?: string | null; awayTeamId?: string | null; playerNames?: Record<string, string> }) {
-      const response = await getJson<FifaTimelineResponse>(`${baseUrl}/timelines/${matchId}?language=en`)
-      return normalizeFifaTimeline(response, homeTeamId, awayTeamId, playerNames)
+    async getMatchTimeline({ matchId, homeTeamId, awayTeamId, playerNames, language }: { matchId: string; homeTeamId?: string | null; awayTeamId?: string | null; playerNames?: Record<string, string>; language?: string | null }) {
+      // Fetch in the requested locale (for the VAR text); fall back to English so
+      // the request always succeeds even when the locale isn't surfaced.
+      const response = await getJson<FifaTimelineResponse>(`${baseUrl}/timelines/${matchId}?language=${language || 'en'}`)
+      return normalizeFifaTimeline(response, homeTeamId, awayTeamId, playerNames, language)
     },
     async getBracket() {
       return normalizeFifaBracket(

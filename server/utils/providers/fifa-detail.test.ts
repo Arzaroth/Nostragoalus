@@ -204,12 +204,24 @@ describe('normalizeFifaTimeline', () => {
     expect(normalizeFifaTimeline({ Event: [{ Type: 8, MatchMinute: "90'" }] })).toEqual([])
     // Penalty award: curated, no actor - kept, name fields null (the UI labels by kind).
     expect(normalizeFifaTimeline({ Event: [{ Type: 6, MatchMinute: "17'", IdTeam: 'H' }] }, 'H', 'A')).toEqual([
-      { kind: 'penalty-awarded', side: 'HOME', minute: "17'", playerName: null, playerInName: null, playerOutName: null, periodKind: null, homeScore: null, awayScore: null },
+      { kind: 'penalty-awarded', side: 'HOME', minute: "17'", playerName: null, playerInName: null, playerOutName: null, periodKind: null, text: null, homeScore: null, awayScore: null },
     ])
     // VAR with no minute, no team, no names map: everything null.
     expect(normalizeFifaTimeline({ Event: [{ Type: 71 }] })).toEqual([
-      { kind: 'var', side: null, minute: null, playerName: null, playerInName: null, playerOutName: null, periodKind: null, homeScore: null, awayScore: null },
+      { kind: 'var', side: null, minute: null, playerName: null, playerInName: null, playerOutName: null, periodKind: null, text: null, homeScore: null, awayScore: null },
     ])
+  })
+
+  it('keeps VAR commentary only when a feed-localized language is given', () => {
+    const varEvent = { Event: [{ Type: 71, MatchMinute: "82'", EventDescription: [{ Locale: 'fr-FR', Description: 'Carton rouge accordé' }] }] }
+    // With a language, the decision text is surfaced...
+    expect(normalizeFifaTimeline(varEvent, 'H', 'A', undefined, 'fr')[0]).toMatchObject({ kind: 'var', text: 'Carton rouge accordé' })
+    // ...without one, it stays null (we only show our generic label).
+    expect(normalizeFifaTimeline(varEvent, 'H', 'A')[0]).toMatchObject({ kind: 'var', text: null })
+    // A language but no description -> still null (not an empty string).
+    expect(normalizeFifaTimeline({ Event: [{ Type: 71, EventDescription: [] }] }, 'H', 'A', undefined, 'fr')[0]).toMatchObject({ text: null })
+    // A non-VAR event never carries text even with a language.
+    expect(normalizeFifaTimeline({ Event: [{ Type: 18, IdTeam: 'H', EventDescription: [{ Locale: 'fr', Description: 'faute' }] }] }, 'H', 'A', undefined, 'fr')[0]).toMatchObject({ kind: 'foul', text: null })
   })
 })
 
@@ -224,8 +236,21 @@ describe('fifaProvider.getMatchTimeline', () => {
     const provider = fifaProvider({ seasonId: '255711', competitionId: '17', fetchImpl, rateLimiter: noWait() })
     const events = await provider.getMatchTimeline!({ matchId: 'm1', homeTeamId: 'home-id', awayTeamId: 'away-id', playerNames: { p9: 'STRIKER' } })
     expect(events).toEqual([
-      { kind: 'goal', side: 'HOME', minute: "10'", playerName: 'STRIKER', playerInName: null, playerOutName: null, periodKind: null, homeScore: 1, awayScore: 0 },
+      { kind: 'goal', side: 'HOME', minute: "10'", playerName: 'STRIKER', playerInName: null, playerOutName: null, periodKind: null, text: null, homeScore: 1, awayScore: 0 },
     ])
+  })
+
+  it('passes the language through to the feed and surfaces VAR text', async () => {
+    const payload = { Event: [{ Type: 71, MatchMinute: "82'", EventDescription: [{ Locale: 'fr', Description: 'Carton rouge accordé' }] }] }
+    let url = ''
+    const fetchImpl = (async (u: string) => {
+      url = u
+      return new Response(JSON.stringify(payload), { status: 200 })
+    }) as unknown as typeof fetch
+    const provider = fifaProvider({ seasonId: '255711', competitionId: '17', fetchImpl, rateLimiter: noWait() })
+    const events = await provider.getMatchTimeline!({ matchId: 'm1', language: 'fr' })
+    expect(url).toContain('language=fr')
+    expect(events[0]).toMatchObject({ kind: 'var', text: 'Carton rouge accordé' })
   })
 })
 

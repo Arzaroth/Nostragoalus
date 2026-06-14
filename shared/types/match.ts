@@ -125,6 +125,10 @@ export interface TimelineEvent {
   playerOutName: string | null
   // Only set for the 'period' kind: which marker it is.
   periodKind: PeriodKind | null
+  // Provider's localized commentary, kept only for kinds we can't phrase from
+  // structure (VAR decisions) and only when the feed localizes the user's locale;
+  // null otherwise (the client labels by kind).
+  text: string | null
   // Running score at this point in the match (goals only carry it meaningfully).
   homeScore: number | null
   awayScore: number | null

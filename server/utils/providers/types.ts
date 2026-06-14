@@ -44,7 +44,7 @@ export interface MatchDataProvider {
   // Optional: curated play-by-play timeline (goals, cards, subs, shots, VAR…) -
   // FIFA exposes this keyless. homeTeamId/awayTeamId map each event to a side;
   // playerNames resolves the actor ids the feed carries to display names.
-  getMatchTimeline?(opts: { matchId: string; homeTeamId?: string | null; awayTeamId?: string | null; playerNames?: Record<string, string> }): Promise<TimelineEvent[]>
+  getMatchTimeline?(opts: { matchId: string; homeTeamId?: string | null; awayTeamId?: string | null; playerNames?: Record<string, string>; language?: string | null }): Promise<TimelineEvent[]>
 }
 
 export class ProviderRateLimitError extends Error {

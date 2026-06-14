@@ -11,9 +11,17 @@ import { resolveCompetitionSeason } from '../../../utils/sync/competition'
 const cache = new Map<string, { at: number; final: boolean; events: unknown }>()
 const TTL_MS = 60 * 1000
 
+// Locales the FIFA feed actually localizes its commentary for - only these get
+// the VAR decision text; others fall back to our generic "VAR" label. Cached per
+// language so one locale's text isn't served to another.
+const FIFA_PBP_LANGS = new Set(['en', 'fr'])
+
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id') as string
-  const cached = cache.get(id)
+  const locale = getCookie(event, 'ng_locale') || 'en'
+  const lang = FIFA_PBP_LANGS.has(locale) ? locale : null
+  const cacheKey = `${id}:${lang ?? 'none'}`
+  const cached = cache.get(cacheKey)
   if (cached && (cached.final || Date.now() - cached.at < TTL_MS)) return { events: cached.events }
 
   const rows = await db
@@ -40,10 +48,11 @@ export default defineEventHandler(async (event) => {
       homeTeamId: detail?.homeTeamId,
       awayTeamId: detail?.awayTeamId,
       playerNames: detail?.playerNames,
+      language: lang,
     })
     // Only freeze the cache for a finished match once it actually has events; a
     // transient empty result must stay refetchable rather than stick forever.
-    cache.set(id, { at: Date.now(), final: rows[0].status === 'FINISHED' && events.length > 0, events })
+    cache.set(cacheKey, { at: Date.now(), final: rows[0].status === 'FINISHED' && events.length > 0, events })
     return { events }
   } catch {
     return { events: [] }
