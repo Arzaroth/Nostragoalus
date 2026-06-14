@@ -110,12 +110,8 @@ function saveEdit() {
 
 <template>
   <section class="ng-card rounded-2xl border overflow-hidden" style="background: var(--p-content-background)">
-    <div class="grid md:grid-cols-3 gap-6 p-6">
-      <div>
-        <h2 class="font-semibold">{{ t('admin.roadmap.title') }}</h2>
-        <p class="text-sm mt-1" style="color: var(--p-text-muted-color)">{{ t('admin.roadmap.hint') }}</p>
-      </div>
-      <div class="md:col-span-2 flex flex-col gap-2">
+    <div class="p-6">
+      <div class="flex flex-col gap-2">
         <InputText v-model="newTitle" :placeholder="t('admin.roadmap.titleLabel')" />
         <Textarea v-model="newDescription" rows="2" :placeholder="t('admin.roadmap.descriptionLabel')" />
         <div class="flex items-center gap-2">

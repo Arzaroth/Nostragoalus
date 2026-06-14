@@ -13,13 +13,14 @@ interface CronRow {
   status: 'ok' | 'failed' | 'never'
 }
 
+const props = defineProps<{ isAdmin: boolean }>()
+
 const { t, locale } = useI18n()
-useHead({ title: () => t('cron.title') })
 
-const { data: status } = await useFetch<{ isAdmin: boolean }>('/api/admin/status')
-const isAdmin = computed(() => status.value?.isAdmin === true)
-
-const { data, refresh, status: fetchStatus } = await useFetch<{ tasks: CronRow[] }>('/api/admin/cron', { lazy: true })
+const { data, refresh, status: fetchStatus } = useFetch<{ tasks: CronRow[] }>('/api/admin/cron', {
+  lazy: true,
+  immediate: props.isAdmin,
+})
 const tasks = computed(() => data.value?.tasks ?? [])
 
 // Human label per task; the raw name (e.g. scores:poll) shows underneath.
@@ -107,25 +108,20 @@ function resultTooltip(r: CronRow): string {
 </script>
 
 <template>
-  <div class="max-w-4xl mx-auto flex flex-col gap-6">
-    <div class="flex items-center gap-3">
-      <NuxtLink to="/admin" class="text-sm inline-flex items-center gap-1 hover:underline" style="color: var(--p-text-muted-color)">
-        <i class="pi pi-arrow-left" /> {{ t('nav.admin') }}
-      </NuxtLink>
-    </div>
-    <div class="flex items-center justify-between gap-3 flex-wrap">
-      <div>
-        <h1 class="text-2xl font-bold">{{ t('cron.title') }}</h1>
-        <p class="text-sm mt-1" style="color: var(--p-text-muted-color)">{{ t('cron.hint') }}</p>
-      </div>
-      <Button :label="t('common.refresh')" icon="pi pi-refresh" size="small" severity="secondary" outlined :loading="fetchStatus === 'pending'" @click="() => refresh()" />
-    </div>
-
-    <div v-if="!isAdmin" class="ng-card rounded-2xl border p-6 opacity-70" style="background: var(--p-content-background)">
-      {{ t('admin.forbidden') }}
+  <div class="flex flex-col gap-3">
+    <div class="flex justify-end">
+      <Button
+        :label="t('common.refresh')"
+        icon="pi pi-refresh"
+        size="small"
+        severity="secondary"
+        outlined
+        :loading="fetchStatus === 'pending'"
+        @click="() => refresh()"
+      />
     </div>
 
-    <section v-else class="ng-card rounded-2xl border overflow-x-auto" style="background: var(--p-content-background)">
+    <section class="ng-card rounded-2xl border overflow-x-auto" style="background: var(--p-content-background)">
       <table class="w-full text-sm">
         <thead>
           <tr class="text-left" style="color: var(--p-text-muted-color); border-bottom: 1px solid var(--p-content-border-color)">
