@@ -1,39 +1,38 @@
-node_modules
-.nuxt
-.output
-.nitro
-.cache
-.data
-.git
-.github
-.env
-.env.*
-!.env.example
-coverage
-dist
-*.log
-.vscode
-.idea
-.DS_Store
+# Whitelist .dockerignore: ignore everything, then re-include only the build and
+# runtime inputs. Deliberately a whitelist (the leading `*`) so new top-level
+# junk - .claude worktrees, .pnpm-store, backups, caches - can never bloat the
+# build context again. The Dockerfile does `COPY . .`, so anything not
+# re-included below is invisible to the build (and to the dev/install layers).
+*
 
-# Not build/runtime inputs - exclude so editing them doesn't bust the COPY layer
-# (and to slim the build context). Keep: app/server/shared/lib/db/i18n/public/
-# drizzle + nuxt.config/tsconfig/uno.config/package files.
-# NOTE: LICENSE and CHANGELOG.md are imported (?raw) by license.vue / about.vue,
-# so they are build inputs - do NOT exclude them.
-Dockerfile
-.dockerignore
-compose.yaml
-compose.dev.yaml
-.mise.toml
-README.md
-TODO.md
-scripts
-tests
-vitest.config.ts
+# Source + framework config that `pnpm build` (nuxt) needs.
+!app
+!server
+!shared
+!lib
+!db
+!i18n
+!public
+!nuxt.config.ts
+!tsconfig.json
+!uno.config.ts
+!.nuxtrc
+
+# Committed migrations: the prod stage copies these from the build stage.
+!drizzle
+
+# Dependency manifests (pnpm fetch/install) + store/registry config.
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!.npmrc
+
+# Imported at build time via ?raw by license.vue / about.vue - keep these.
+!LICENSE
+!LICENSE-MIT
+!LICENSE-WTFPL
+!CHANGELOG.md
+
+# Colocated component tests (*.nuxt.test.ts) are not build inputs - re-exclude
+# them after pulling in app/server so they don't bust the COPY layer.
 **/*.test.ts
-.editorconfig
-.prettier*
-.eslint*
-mise-tasks
-backups
