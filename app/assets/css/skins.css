@@ -1,0 +1,103 @@
+/*
+ * Konami-unlocked cosmetic skins. Each skin restyles the whole app by
+ * overriding the PrimeVue primary palette: the preset emits semantic tokens
+ * (primary.color, highlight, focus ring) as `var(--p-primary-NNN)` references,
+ * so re-pointing the 50..950 ramp here recolors every primary surface in both
+ * light and dark mode at once.
+ *
+ * These selectors are intentionally OUTSIDE @layer primevue: unlayered rules
+ * win over the layered `:root` / `.app-dark` defaults regardless of order, so
+ * the override always lands. data-skin is set on <html> (see useSkin).
+ *
+ * Ramps are Tailwind palettes chosen to match each mane-cast pony.
+ */
+
+/* Twilight Sparkle - violet */
+[data-skin='twilight'] {
+  --p-primary-50: #f5f3ff;
+  --p-primary-100: #ede9fe;
+  --p-primary-200: #ddd6fe;
+  --p-primary-300: #c4b5fd;
+  --p-primary-400: #a78bfa;
+  --p-primary-500: #8b5cf6;
+  --p-primary-600: #7c3aed;
+  --p-primary-700: #6d28d9;
+  --p-primary-800: #5b21b6;
+  --p-primary-900: #4c1d95;
+  --p-primary-950: #2e1065;
+}
+
+/* Rainbow Dash - sky blue (the rainbow lives in the logo + picker chip) */
+[data-skin='rainbow'] {
+  --p-primary-50: #f0f9ff;
+  --p-primary-100: #e0f2fe;
+  --p-primary-200: #bae6fd;
+  --p-primary-300: #7dd3fc;
+  --p-primary-400: #38bdf8;
+  --p-primary-500: #0ea5e9;
+  --p-primary-600: #0284c7;
+  --p-primary-700: #0369a1;
+  --p-primary-800: #075985;
+  --p-primary-900: #0c4a6e;
+  --p-primary-950: #082f49;
+}
+
+/* Pinkie Pie - pink */
+[data-skin='pinkie'] {
+  --p-primary-50: #fdf2f8;
+  --p-primary-100: #fce7f3;
+  --p-primary-200: #fbcfe8;
+  --p-primary-300: #f9a8d4;
+  --p-primary-400: #f472b6;
+  --p-primary-500: #ec4899;
+  --p-primary-600: #db2777;
+  --p-primary-700: #be185d;
+  --p-primary-800: #9d174d;
+  --p-primary-900: #831843;
+  --p-primary-950: #500724;
+}
+
+/* Applejack - orange */
+[data-skin='applejack'] {
+  --p-primary-50: #fff7ed;
+  --p-primary-100: #ffedd5;
+  --p-primary-200: #fed7aa;
+  --p-primary-300: #fdba74;
+  --p-primary-400: #fb923c;
+  --p-primary-500: #f97316;
+  --p-primary-600: #ea580c;
+  --p-primary-700: #c2410c;
+  --p-primary-800: #9a3412;
+  --p-primary-900: #7c2d12;
+  --p-primary-950: #431407;
+}
+
+/* Rarity - magenta-leaning purple, distinct from Twilight's violet */
+[data-skin='rarity'] {
+  --p-primary-50: #faf5ff;
+  --p-primary-100: #f3e8ff;
+  --p-primary-200: #e9d5ff;
+  --p-primary-300: #d8b4fe;
+  --p-primary-400: #c084fc;
+  --p-primary-500: #a855f7;
+  --p-primary-600: #9333ea;
+  --p-primary-700: #7e22ce;
+  --p-primary-800: #6b21a8;
+  --p-primary-900: #581c87;
+  --p-primary-950: #3b0764;
+}
+
+/* Fluttershy - warm amber/yellow */
+[data-skin='fluttershy'] {
+  --p-primary-50: #fffbeb;
+  --p-primary-100: #fef3c7;
+  --p-primary-200: #fde68a;
+  --p-primary-300: #fcd34d;
+  --p-primary-400: #fbbf24;
+  --p-primary-500: #f59e0b;
+  --p-primary-600: #d97706;
+  --p-primary-700: #b45309;
+  --p-primary-800: #92400e;
+  --p-primary-900: #78350f;
+  --p-primary-950: #451a03;
+}

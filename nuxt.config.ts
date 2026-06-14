@@ -31,7 +31,7 @@ export default defineNuxtConfig({
       script: [
         {
           innerHTML:
-            "try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('app-dark')}catch(e){}",
+            "try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('app-dark');var s=localStorage.getItem('skin');if(s)document.documentElement.setAttribute('data-skin',s)}catch(e){}",
           tagPosition: 'head',
         },
       ],
@@ -105,7 +105,7 @@ export default defineNuxtConfig({
     detectBrowserLanguage: { useCookie: true, cookieKey: 'ng_locale', redirectOn: 'no prefix' },
   },
 
-  css: ['primeicons/primeicons.css', 'leaflet/dist/leaflet.css', '~/assets/css/main.css'],
+  css: ['primeicons/primeicons.css', 'leaflet/dist/leaflet.css', '~/assets/css/main.css', '~/assets/css/skins.css'],
 
   primevue: {
     options: {
