@@ -221,7 +221,9 @@ const PERIOD_KEYS: Record<string, string> = {
   kickoff: 'kickoff',
   'half-time': 'halfTime',
   'second-half': 'secondHalf',
+  'second-half-end': 'secondHalfEnd',
   'extra-time': 'extraTime',
+  'extra-time-end': 'extraTimeEnd',
   'full-time': 'fullTime',
 }
 type PbpEvent = { kind: string; playerName: string | null; playerInName: string | null; playerOutName: string | null; periodKind: string | null }

@@ -145,7 +145,7 @@ describe('normalizeFifaTimeline', () => {
           { Type: 2, MatchMinute: "30'", IdTeam: 'A', IdPlayer: 'p2' }, // yellow
           { Type: 5, MatchMinute: "60'", IdTeam: 'H', IdPlayer: 'on', IdSubPlayer: 'off' }, // sub: on/off
           { Type: 8, Period: 3, MatchMinute: "45'" }, // half-time
-          { Type: 8, Period: 5, MatchMinute: "90'" }, // end of 2nd half -> dropped (final whistle covers it)
+          { Type: 8, Period: 5, MatchMinute: "90'" }, // end of the second half
           { Type: 26, Period: 10, MatchMinute: "92'" }, // full-time
         ],
       },
@@ -155,6 +155,7 @@ describe('normalizeFifaTimeline', () => {
     )
     expect(events.map((e) => [e.kind, e.side, e.minute, e.periodKind])).toEqual([
       ['period', null, "92'", 'full-time'],
+      ['period', null, "90'", 'second-half-end'],
       ['period', null, "45'", 'half-time'],
       ['sub', 'HOME', "60'", null],
       ['yellow', 'AWAY', "30'", null],
@@ -169,9 +170,19 @@ describe('normalizeFifaTimeline', () => {
 
   it('maps period markers from the FIFA period codes', () => {
     const ev = (Type: number, Period: number) => ({ Type, Period, MatchMinute: "x" })
-    const got = normalizeFifaTimeline({ Event: [ev(7, 5), ev(7, 7), ev(7, 9), ev(8, 3)] }).map((e) => e.periodKind)
-    // reversed (newest first): 8/3 half-time, 7/9 ET, 7/7 ET, 7/5 second-half
-    expect(got).toEqual(['half-time', 'extra-time', 'extra-time', 'second-half'])
+    const got = normalizeFifaTimeline({
+      Event: [ev(7, 5), ev(7, 7), ev(7, 9), ev(8, 3), ev(8, 5), ev(8, 7), ev(8, 9)],
+    }).map((e) => e.periodKind)
+    // reversed (newest first)
+    expect(got).toEqual([
+      'extra-time-end',
+      'extra-time-end',
+      'second-half-end',
+      'half-time',
+      'extra-time',
+      'extra-time',
+      'second-half',
+    ])
   })
 
   it('places an own goal on the benefiting side, not the scorer team', () => {
@@ -189,8 +200,8 @@ describe('normalizeFifaTimeline', () => {
   it('drops untyped and unlabelled-period events; keeps a player-less curated one', () => {
     expect(normalizeFifaTimeline({ Event: [{}] })).toEqual([]) // no type -> dropped
     expect(normalizeFifaTimeline({})).toEqual([])
-    // End of the second half with no final whistle: unlabelled, dropped.
-    expect(normalizeFifaTimeline({ Event: [{ Type: 8, Period: 5, MatchMinute: "90'" }] })).toEqual([])
+    // A period-end with an unrecognized period code is unlabelled, so dropped.
+    expect(normalizeFifaTimeline({ Event: [{ Type: 8, MatchMinute: "90'" }] })).toEqual([])
     // Penalty award: curated, no actor - kept, name fields null (the UI labels by kind).
     expect(normalizeFifaTimeline({ Event: [{ Type: 6, MatchMinute: "17'", IdTeam: 'H' }] }, 'H', 'A')).toEqual([
       { kind: 'penalty-awarded', side: 'HOME', minute: "17'", playerName: null, playerInName: null, playerOutName: null, periodKind: null, homeScore: null, awayScore: null },
