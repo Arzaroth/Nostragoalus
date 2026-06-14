@@ -260,6 +260,14 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
 ## Second chance (deferred from the feature pass)
 
+- [ ] (feature-treatment) The `/api/champion` doc schema (server/utils/docs/
+      response-schemas.json) is stale: the GET now returns `secondChance` and
+      `myPick.repicked`/`original*`, not yet reflected. A bulk `node
+      scripts/gen-api-schemas.mjs` also rewrites ~15 other endpoints' example
+      values from current live data (drift), so do a controlled regen on a
+      stable dataset (or patch just the champion block) rather than bundling the
+      churn.
+
 - [ ] The re-pick window is defined on `round_kind` (last GROUP_MATCHDAY round
       kickoff -> first KNOCKOUT kickoff). This assumes a future esports importer
       maps Swiss/group stages to GROUP_MATCHDAY and the playoff bracket to
