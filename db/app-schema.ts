@@ -200,6 +200,33 @@ export const match = pgTable(
   ],
 )
 
+// Admin/bot-curated watch links per match. LIVE shows around kickoff, REPLAY +
+// HIGHLIGHTS once the match is FINISHED (see visibleMediaForStatus). `embeddable`
+// is a nullable override: null = inherit the host-whitelist default, true/false
+// = an explicit admin call (e.g. force-embed a non-whitelisted host, or demote a
+// whitelisted one to an external link).
+export const matchMediaKindEnum = pgEnum('match_media_kind', ['LIVE', 'REPLAY', 'HIGHLIGHTS'])
+
+export const matchMedia = pgTable(
+  'match_media',
+  {
+    id: pk(),
+    matchId: text('match_id')
+      .notNull()
+      .references(() => match.id, { onDelete: 'cascade' }),
+    kind: matchMediaKindEnum('kind').notNull(),
+    url: text('url').notNull(),
+    label: text('label'),
+    embeddable: boolean('embeddable'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [index('match_media_match_idx').on(t.matchId, t.kind)],
+)
+
 export const goalEvent = pgTable(
   'goal_event',
   {
@@ -395,6 +422,11 @@ export const matchRelations = relations(match, ({ one, many }) => ({
   round: one(round, { fields: [match.roundId], references: [round.id] }),
   predictions: many(prediction),
   scoreEvents: many(matchScoreEvent),
+  media: many(matchMedia),
+}))
+
+export const matchMediaRelations = relations(matchMedia, ({ one }) => ({
+  match: one(match, { fields: [matchMedia.matchId], references: [match.id] }),
 }))
 
 export const predictionRelations = relations(prediction, ({ one }) => ({
