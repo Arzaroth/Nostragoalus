@@ -12,6 +12,12 @@ export interface ChampionBackfillResult {
   changed: number
 }
 
+// A healthy FIFA table has ~211 entries. A much smaller live response is a
+// partial/garbage payload (a Cloudflare challenge that still parsed, a truncated
+// table); accepting it would blank every missing team to the catch-all tier, so
+// we treat it as a failure and use the complete bundled snapshot instead.
+const MIN_COMPLETE_RANKS = 100
+
 // Repair champion picks saved with a null FIFA rank: the live ranking fetch was
 // Cloudflare-blocked during the pick window, so they snapshotted no rank and got
 // the flat champion bonus instead of the rank-based tier. Re-resolve the ranking
@@ -25,7 +31,9 @@ export async function backfillChampionRanks(
   let ranks: Map<string, number>
   let source: 'live' | 'snapshot'
   try {
-    ranks = await provider.getRanks(FIFA_RANKING_SNAPSHOT.scheduleId)
+    const live = await provider.getRanks(FIFA_RANKING_SNAPSHOT.scheduleId)
+    if (live.size < MIN_COMPLETE_RANKS) throw new Error(`thin FIFA ranking response (${live.size} teams)`)
+    ranks = live
     source = 'live'
   } catch {
     // Same block that caused the bug can block this fetch too - fall back to the
