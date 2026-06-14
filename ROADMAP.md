@@ -101,9 +101,10 @@ effort buckets; order within a bucket is not priority.
       pre/in-match, replay+highlights once FINISHED. Public read
       (`GET /api/matches/[id]/media`) + admin write; grey-zone link sourcing
       stays out of the app, so liability sits with whoever sets the link.
-      Deferred: better-auth `apiKey` plugin + admin API-client UI for machine
-      auth, and a separate curation bot that fills links via the API (see
-      TODO.md).
+      Machine auth (the `apiKey` plugin + admin API-client UI) is now built on
+      feat/api-keys; the media routes opt into `apiKey:{media:['write']}` once
+      both branches merge. Still deferred: the separate curation bot that fills
+      links via the API (see TODO.md).
 - [ ] **Pick reminders + PWA + web push**: `@vite-pwa/nuxt`; install prompt,
       offline shell, web push (iOS >= 16.4 for installed PWAs). Push pays for
       itself twice: lockout reminders for missing picks + goal alerts on

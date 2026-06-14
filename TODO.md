@@ -261,15 +261,17 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
 ## Match watch links (deferred from the feature pass)
 
-- [ ] Machine auth: add the better-auth `apiKey` plugin (regenerate the table
-      via `@better-auth/cli generate` into db/auth-schema.ts, then `pnpm
-      db:generate` - do NOT hand-write it into app-schema.ts), and extend
-      `defineValidatedHandler` to accept an admin session OR an api key carrying
-      a `media:write` permission, so the curation bot can write without a human
-      session.
-- [ ] Admin API-client UI: a /admin page to mint/revoke scoped keys, showing
-      the plaintext key exactly once (better-auth stores it hashed), gated on
-      admin and ideally 2FA since minting a credential is high-value.
+- [x] Machine auth (built on feat/api-keys): @better-auth/api-key plugin (suite
+      bumped 1.6.14 -> 1.6.18; apikey table hand-authored in auth-schema since no
+      CLI was available, proven by an integration test). `defineValidatedHandler`
+      accepts `apiKey:{resource:[perms]}` - an x-api-key is verified, the owner
+      loaded, and required to be an admin for admin routes; session guards strip
+      x-api-key so a key never implicitly resolves a session. The media routes
+      still need to opt in with `apiKey:{media:['write']}` when feat/match-media
+      merges.
+- [x] Admin API-client UI (built on feat/api-keys): admin-page section to mint
+      scoped/expiring keys (plaintext shown once), list and revoke. NOT yet
+      2FA-gated for the mint action - revisit if minting needs step-up auth.
 - [ ] Curation bot (separate repo, keeps grey-zone sourcing out of this app):
       cron reads `/api/matches` for fixtures in the next N hours, finds links,
       POSTs them near kickoff (header-check X-Frame-Options before setting
