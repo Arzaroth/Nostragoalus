@@ -642,33 +642,45 @@ function toggleFormInfo(side: string, i: number | string) {
           </TabPanel>
 
           <TabPanel v-if="hasStarted" value="timeline">
-            <!-- Distinct keys per state: without them, swapping the skeleton (8
-                 rows) for the list after a hard-refresh hydration makes Vue reuse
-                 the skeleton container + its rows, so list rows inherit the
-                 skeleton's flex layout and the cap-less container. -->
-            <!-- skeleton on the first open; a live refresh keeps the list in place -->
-            <div v-if="timelineStatus === 'pending' && !playByPlay.length" key="pbp-skeleton" class="flex flex-col gap-2">
-              <div v-for="i in 8" :key="i" class="flex items-center gap-3 py-1">
-                <Skeleton width="2rem" height="0.9rem" />
-                <Skeleton width="1.25rem" height="1.25rem" shape="circle" />
-                <Skeleton :width="`${8 + (i % 4) * 2}rem`" height="0.9rem" />
+            <!-- Client-only with a skeleton SSR fallback: the timeline is fetched
+                 on the client, so a plain SSR-then-hydrate mismatches (server
+                 skeleton vs client list) and leaves a garbled, cap-less DOM after
+                 a hard refresh. ClientOnly keeps SSR and the first client render
+                 identical (the fallback), then mounts the real list fresh. -->
+            <ClientOnly>
+              <template #fallback>
+                <div class="flex flex-col gap-2">
+                  <div v-for="i in 8" :key="i" class="flex items-center gap-3 py-1">
+                    <Skeleton width="2rem" height="0.9rem" />
+                    <Skeleton width="1.25rem" height="1.25rem" shape="circle" />
+                    <Skeleton :width="`${8 + (i % 4) * 2}rem`" height="0.9rem" />
+                  </div>
+                </div>
+              </template>
+              <!-- skeleton on the first open; a live refresh keeps the list in place -->
+              <div v-if="timelineStatus === 'pending' && !playByPlay.length" class="flex flex-col gap-2">
+                <div v-for="i in 8" :key="i" class="flex items-center gap-3 py-1">
+                  <Skeleton width="2rem" height="0.9rem" />
+                  <Skeleton width="1.25rem" height="1.25rem" shape="circle" />
+                  <Skeleton :width="`${8 + (i % 4) * 2}rem`" height="0.9rem" />
+                </div>
               </div>
-            </div>
-            <div v-else-if="!playByPlay.length" key="pbp-empty" class="text-sm text-center py-4" style="color: var(--p-text-muted-color)">{{ t('match.playByPlayEmpty') }}</div>
-            <div v-else key="pbp-list" class="flex flex-col md:max-h-[60vh] md:overflow-y-auto md:overscroll-contain">
-              <div
-                v-for="(e, i) in playByPlay"
-                :key="i"
-                class="grid grid-cols-[2.25rem_1.5rem_1fr_auto] items-baseline gap-2 border-t py-2 pl-2"
-                :class="GOAL_KINDS.has(e.kind) ? 'font-semibold' : ''"
-                :style="`border-left: 2px solid ${e.side === 'HOME' ? 'var(--p-primary-color)' : e.side === 'AWAY' ? '#71717a' : 'transparent'}; border-top-color: var(--p-content-border-color)`"
-              >
-                <span class="tabular-nums text-xs text-right" style="color: var(--p-text-muted-color)">{{ e.minute }}</span>
-                <span class="text-center leading-none">{{ TIMELINE_ICONS[e.kind] || '•' }}</span>
-                <span :style="e.side ? '' : 'color: var(--p-text-muted-color)'"><img v-if="pbpFlag(e)" :src="pbpFlag(e) || ''" class="inline-block w-4 h-3 rounded-sm object-cover mr-1.5" style="vertical-align: -0.1em" alt="" >{{ pbpText(e) }}</span>
-                <span v-if="GOAL_KINDS.has(e.kind) && e.homeScore != null" class="tabular-nums text-xs px-1.5 py-0.5 rounded" style="background: var(--p-content-border-color)">{{ e.homeScore }}–{{ e.awayScore }}</span>
+              <div v-else-if="!playByPlay.length" class="text-sm text-center py-4" style="color: var(--p-text-muted-color)">{{ t('match.playByPlayEmpty') }}</div>
+              <div v-else class="flex flex-col md:max-h-[60vh] md:overflow-y-auto md:overscroll-contain">
+                <div
+                  v-for="(e, i) in playByPlay"
+                  :key="i"
+                  class="grid grid-cols-[2.25rem_1.5rem_1fr_auto] items-baseline gap-2 border-t py-2 pl-2"
+                  :class="GOAL_KINDS.has(e.kind) ? 'font-semibold' : ''"
+                  :style="`border-left: 2px solid ${e.side === 'HOME' ? 'var(--p-primary-color)' : e.side === 'AWAY' ? '#71717a' : 'transparent'}; border-top-color: var(--p-content-border-color)`"
+                >
+                  <span class="tabular-nums text-xs text-right" style="color: var(--p-text-muted-color)">{{ e.minute }}</span>
+                  <span class="text-center leading-none">{{ TIMELINE_ICONS[e.kind] || '•' }}</span>
+                  <span :style="e.side ? '' : 'color: var(--p-text-muted-color)'"><img v-if="pbpFlag(e)" :src="pbpFlag(e) || ''" class="inline-block w-4 h-3 rounded-sm object-cover mr-1.5" style="vertical-align: -0.1em" alt="" >{{ pbpText(e) }}</span>
+                  <span v-if="GOAL_KINDS.has(e.kind) && e.homeScore != null" class="tabular-nums text-xs px-1.5 py-0.5 rounded" style="background: var(--p-content-border-color)">{{ e.homeScore }}–{{ e.awayScore }}</span>
+                </div>
               </div>
-            </div>
+            </ClientOnly>
           </TabPanel>
 
           <TabPanel v-if="scorers.length" value="scorers">
