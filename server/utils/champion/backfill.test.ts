@@ -18,7 +18,24 @@ async function setup() {
 
 // Default champion tiers: rank <=8 -> 10, <=20 -> 15, <=40 -> 25, else (incl.
 // unranked) -> 40. Flat champion bonus is 10.
-function fakeProvider(ranks: Record<string, number>): FifaRankingProvider {
+
+// A healthy live response: the full bundled table (>= MIN_COMPLETE_RANKS) with
+// optional per-team overrides, so the backfill accepts it as the live source.
+function liveProvider(overrides: Record<string, number> = {}): FifaRankingProvider {
+  const ranks = new Map<string, number>([
+    ...Object.entries(FIFA_RANKING_SNAPSHOT.ranks),
+    ...Object.entries(overrides),
+  ])
+  return {
+    getLatestScheduleId: async () => 'id',
+    getRanks: async () => ranks,
+    getLatestRanks: async () => ({ scheduleId: 'id', ranks: new Map() }),
+  }
+}
+
+// A thin/partial response (too few teams): the backfill must reject it and fall
+// back to the bundled snapshot rather than blanking the missing teams.
+function thinProvider(ranks: Record<string, number>): FifaRankingProvider {
   return {
     getLatestScheduleId: async () => 'id',
     getRanks: async () => new Map(Object.entries(ranks)),
@@ -56,7 +73,7 @@ describe('backfillChampionRanks', () => {
     const { db, client, competitionId, userId } = await setup()
     await insertNullRankPick(db, competitionId, userId, 'BRA', 10)
 
-    const result = await backfillChampionRanks(db, fakeProvider({ BRA: 30 }))
+    const result = await backfillChampionRanks(db, liveProvider({ BRA: 30 }))
 
     expect(result).toEqual({ source: 'live', scanned: 1, changed: 1 })
     expect(await readPick(db, userId)).toMatchObject({ fifaRank: 30, potentialPoints: 25 })
@@ -82,7 +99,7 @@ describe('backfillChampionRanks', () => {
     const { db, client, competitionId, userId } = await setup()
     await insertNullRankPick(db, competitionId, userId, 'ZZZ', 10)
 
-    const result = await backfillChampionRanks(db, fakeProvider({}))
+    const result = await backfillChampionRanks(db, liveProvider({}))
 
     expect(result).toEqual({ source: 'live', scanned: 1, changed: 1 })
     expect(await readPick(db, userId)).toMatchObject({ fifaRank: null, potentialPoints: 40 })
@@ -94,7 +111,7 @@ describe('backfillChampionRanks', () => {
     // ESP at rank 2 -> <=8 tier (10 pts), which already equals the flat points.
     await insertNullRankPick(db, competitionId, userId, 'ESP', 10)
 
-    const result = await backfillChampionRanks(db, fakeProvider({ ESP: 2 }))
+    const result = await backfillChampionRanks(db, liveProvider({ ESP: 2 }))
 
     expect(result).toEqual({ source: 'live', scanned: 1, changed: 0 })
     expect(await readPick(db, userId)).toMatchObject({ fifaRank: 2, potentialPoints: 10 })
@@ -105,7 +122,7 @@ describe('backfillChampionRanks', () => {
     const { db, client, competitionId, userId } = await setup()
     await insertNullRankPick(db, competitionId, userId, 'ZZZ', 40)
 
-    const result = await backfillChampionRanks(db, fakeProvider({}))
+    const result = await backfillChampionRanks(db, liveProvider({}))
 
     expect(result).toEqual({ source: 'live', scanned: 1, changed: 0 })
     expect(await readPick(db, userId)).toMatchObject({ fifaRank: null, potentialPoints: 40 })
@@ -118,10 +135,24 @@ describe('backfillChampionRanks', () => {
       .insert(championPick)
       .values({ userId, competitionId, teamCode: null, teamName: 'Winner Group A', fifaRank: null, potentialPoints: 10 })
 
-    const result = await backfillChampionRanks(db, fakeProvider({ BRA: 1 }))
+    const result = await backfillChampionRanks(db, liveProvider({ BRA: 1 }))
 
     expect(result).toEqual({ source: 'live', scanned: 1, changed: 1 })
     expect(await readPick(db, userId)).toMatchObject({ fifaRank: null, potentialPoints: 40 })
+    await client.close()
+  })
+
+  it('rejects a thin live response and falls back to the snapshot', async () => {
+    const { db, client, competitionId, userId } = await setup()
+    await insertNullRankPick(db, competitionId, userId, 'BRA', 10)
+
+    // A truncated live map (1 team) must not be trusted: BRA would otherwise be
+    // blanked. Expect the snapshot's BRA rank instead.
+    const result = await backfillChampionRanks(db, thinProvider({ ARG: 1 }))
+
+    expect(result.source).toBe('snapshot')
+    expect(result.scanned).toBe(1)
+    expect(await readPick(db, userId)).toMatchObject({ fifaRank: FIFA_RANKING_SNAPSHOT.ranks.BRA })
     await client.close()
   })
 
@@ -131,7 +162,7 @@ describe('backfillChampionRanks', () => {
       .insert(championPick)
       .values({ userId, competitionId, teamCode: 'FRA', teamName: 'France', fifaRank: 5, potentialPoints: 10 })
 
-    const result = await backfillChampionRanks(db, fakeProvider({ FRA: 50 }))
+    const result = await backfillChampionRanks(db, liveProvider({ FRA: 50 }))
 
     expect(result).toEqual({ source: 'live', scanned: 0, changed: 0 })
     expect(await readPick(db, userId)).toMatchObject({ fifaRank: 5, potentialPoints: 10 })
