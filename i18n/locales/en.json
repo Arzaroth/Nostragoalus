@@ -637,7 +637,8 @@
       "oddsRefresh": "Odds snapshots",
       "pruneUnverified": "Prune unverified accounts",
       "oddsBackfill": "Odds backfill (historical)",
-      "fixturesImport": "Import fixtures"
+      "fixturesImport": "Import fixtures",
+      "championBackfillRanks": "Backfill champion ranks"
     },
     "status": { "ok": "Last run succeeded", "failed": "Last run failed", "never": "Never run" },
     "tip": { "never": "Has not run yet" },

@@ -637,7 +637,8 @@
       "oddsRefresh": "Relevé des cotes",
       "pruneUnverified": "Purge des comptes non confirmés",
       "oddsBackfill": "Récupération des cotes (historique)",
-      "fixturesImport": "Importer les matchs"
+      "fixturesImport": "Importer les matchs",
+      "championBackfillRanks": "Compléter les rangs des champions"
     },
     "status": { "ok": "Dernière exécution réussie", "failed": "Dernière exécution échouée", "never": "Jamais exécutée" },
     "tip": { "never": "Pas encore exécutée" },

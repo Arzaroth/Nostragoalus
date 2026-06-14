@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- Admins can re-run the champion FIFA-rank backfill from the Background tasks page. It repairs champion picks that saved without a FIFA rank (and so paid the flat bonus instead of the rank tier) when the ranking feed was unreachable during the pick window, restoring the rank and the correct potential points.
+
 ## [1.12.0] - 2026-06-14
 
 ### Added

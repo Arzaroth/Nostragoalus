@@ -25,6 +25,9 @@ export const TASKS: TaskDef[] = [
   { name: 'odds:backfill', cron: null, fireAndForget: true },
   // One-shot fixture import from the providers, manual only.
   { name: 'fixtures:import', cron: null, fireAndForget: true },
+  // One-shot champion FIFA-rank backfill, manual only. Awaited (one fetch + a
+  // batch update) so the run returns its summary to the admin result dialog.
+  { name: 'champion:backfill-ranks', cron: null, fireAndForget: false },
 ]
 
 const BY_NAME = new Map(TASKS.map((t) => [t.name, t]))

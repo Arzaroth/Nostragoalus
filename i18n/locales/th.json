@@ -637,7 +637,8 @@
       "oddsRefresh": "บันทึกราคาต่อรอง",
       "pruneUnverified": "ล้างบัญชีที่ยังไม่ยืนยัน",
       "oddsBackfill": "ดึงราคาย้อนหลัง",
-      "fixturesImport": "นำเข้าตารางแข่ง"
+      "fixturesImport": "นำเข้าตารางแข่ง",
+      "championBackfillRanks": "เติมอันดับแชมเปียน"
     },
     "status": { "ok": "การรันล่าสุดสำเร็จ", "failed": "การรันล่าสุดล้มเหลว", "never": "ยังไม่เคยรัน" },
     "tip": { "never": "ยังไม่เคยรัน" },
