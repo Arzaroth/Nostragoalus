@@ -22,8 +22,8 @@ effort buckets; order within a bucket is not priority.
       Reuses the existing addMembership join path (ownerless-league claim, opt-
       out clear). Kept the short join code too - the link is the easy path, the
       code the fallback.
-- [x] **Per-match league standings** (built on worktree-match-standings,
-      pending merge): a "League" tab on the match page ranks the selected
+- [x] **Per-match league standings** (shipped in 1.12.0): a "League" tab on the
+      match page ranks the selected
       league's members by the points their pick scores on that one match.
       Decisions: reuse the finalize scoring engine for live matches
       (provisional, scored at the current scoreline), persisted points once
@@ -157,8 +157,7 @@ effort buckets; order within a bucket is not priority.
       one per matchday so nobody is dogpiled tournament-wide. Shameable =
       wrong outcome (a miss) AND max total goal error (|dHome| + |dAway|);
       right-outcome-huge-error is comedy, not shame. Jokered = bonus shame.
-- [x] **Second chance for champion / best scorer** - built on
-      worktree-second-chance, pending merge:
+- [x] **Second chance for champion / best scorer** (shipped in 1.11.0):
   - Window: **last group round -> first knockout** (option 2), not the whole
     first-kickoff -> R16 span. The re-pick only has info value once the groups
     have played out, and opening at the start of the last group round (WC26
