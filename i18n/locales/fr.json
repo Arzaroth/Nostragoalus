@@ -441,6 +441,33 @@
     "deleteMailSent": "Mail de confirmation envoyé - le compte sera supprimé en ouvrant le lien."
   },
   "admin": {
+    "apiKeys": {
+      "title": "Clients API",
+      "hint": "Identifiants machine pour les intégrations (ex. le bot de liens de diffusion). Les clés sont limitées en portée et affichées une seule fois à la création.",
+      "createdWarn": "Copiez cette clé maintenant - elle est stockée hachée et ne sera plus affichée.",
+      "copy": "Copier",
+      "copied": "Copié",
+      "done": "Terminé",
+      "none": "Aucune clé API pour le moment.",
+      "colName": "Nom",
+      "colScopes": "Portées",
+      "colKey": "Clé",
+      "colExpires": "Expiration",
+      "colLastUsed": "Dernière utilisation",
+      "never": "Jamais",
+      "revoke": "Révoquer",
+      "addTitle": "Nouvelle clé",
+      "name": "Nom",
+      "namePlaceholder": "ex. bot liens de diffusion",
+      "scopeMediaWrite": "Liens de diffusion (écriture)",
+      "expiry": "Expiration",
+      "expiry_never": "Sans expiration",
+      "expiry_d30": "30 jours",
+      "expiry_d90": "90 jours",
+      "expiry_y1": "1 an",
+      "create": "Créer la clé",
+      "createFailed": "Échec de la création de la clé."
+    },
     "title": "Admin",
     "forbidden": "Vous n'avez pas l'accès administrateur.",
     "signup": {

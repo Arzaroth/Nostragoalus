@@ -441,6 +441,33 @@
     "deleteMailSent": "'olmeH QIn ngeHlu'ta' - leQ DapoSmoHDI' raQwI' Qaw'lu'."
   },
   "admin": {
+    "apiKeys": {
+      "title": "API jonwI'pu'",
+      "hint": "mIqta' ngoQ DoubmeH ngaq (QaQ: bejmeH lurDech bot). chetvI' Segh; wa'logh cha'lu'.",
+      "createdWarn": "DaH chetvI' yIqon - hash pollu', not cha'qa'lu'.",
+      "copy": "yIvel",
+      "copied": "velpu'",
+      "done": "rIn",
+      "none": "API chetvI' tu'lu'be'.",
+      "colName": "pong",
+      "colScopes": "Sep",
+      "colKey": "chetvI'",
+      "colExpires": "natlhpu'",
+      "colLastUsed": "Qel Qatlh",
+      "never": "not",
+      "revoke": "yIteq",
+      "addTitle": "chetvI' chu'",
+      "name": "pong",
+      "namePlaceholder": "QaQ: bejmeH bot",
+      "scopeMediaWrite": "bejmeH ngaQHa'ghach (ghItlh)",
+      "expiry": "natlhghach",
+      "expiry_never": "natlhbe'",
+      "expiry_d30": "jaj 30",
+      "expiry_d90": "jaj 90",
+      "expiry_y1": "DIS 1",
+      "create": "chetvI' yIchenmoH",
+      "createFailed": "chetvI' chenmoH luj."
+    },
     "title": "loHwI'",
     "forbidden": "loHwI' DIb Daghajbe'.",
     "signup": {
