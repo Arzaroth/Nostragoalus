@@ -50,6 +50,11 @@ const {
   execute: loadTimeline,
 } = await useFetch<{ events: any[] }>(`/api/matches/${id.value}/timeline`, { lazy: true, immediate: false })
 const playByPlay = computed<any[]>(() => timelineData.value?.events ?? [])
+// The VAR line is server-rendered in the user's locale (the rest is reactive via
+// t()), so refetch the timeline when the locale changes to update it live.
+watch(locale, () => {
+  if (timelineStatus.value !== 'idle') refreshTimeline()
+})
 
 // These FIFA-backed fetches can run for seconds; leaving the page aborts them.
 useCancelOnLeave(
