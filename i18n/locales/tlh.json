@@ -64,7 +64,8 @@
     "back": "may'meyDaq yIchegh",
     "refresh": "yIchu'qa'",
     "confirm": "yIchut",
-    "clear": "Qil"
+    "clear": "Qil",
+    "remove": "teq"
   },
   "home": {
     "tagline": "QujmeH qonwI' wIvmey yIqon, pup DanIDmo' QuQmey yISuq, 'ej patlhDaq juppu'lI' tIjey.",
@@ -500,7 +501,6 @@
       "hint": "may'mey tIlIH 'ej DaH mI' / rIn Qu'mey yIchu'.",
       "import": "may'mey tIlIH",
       "cronLink": "Qu'mey So'",
-      "scoringLink": "QuQ chutmey",
       "importTip": "Hoch 'aqtu'mey may'mey tIlIH 'ej tIchoq (wa'DIch lo').",
       "refresh": "may'mey yIchu'qa'",
       "refreshTip": "jabwI'vo' may'mey yIchu'qa' - ghommey chu' tIchel, rInpu'bogh mI'mey tIQaw'Qo'.",

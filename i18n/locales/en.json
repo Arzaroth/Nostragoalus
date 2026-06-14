@@ -64,7 +64,8 @@
     "back": "Back to fixtures",
     "refresh": "Refresh",
     "confirm": "Confirm",
-    "clear": "Clear"
+    "clear": "Clear",
+    "remove": "Remove"
   },
   "home": {
     "tagline": "Predict football scores, earn points for how close you get, and out-foresee your friends on the global ranking.",
@@ -500,7 +501,6 @@
       "hint": "Import fixtures and trigger live-score / finalize tasks.",
       "import": "Import fixtures",
       "cronLink": "Background tasks",
-      "scoringLink": "Scoring rules",
       "importTip": "Fetch and store every fixture of all active competitions (first-time setup).",
       "refresh": "Refresh fixtures",
       "refreshTip": "Re-sync fixtures from the provider - fills newly decided knockout teams, never overwrites finished scores.",

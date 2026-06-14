@@ -3,7 +3,7 @@ import type { AppDatabase } from '../../../db/types'
 import { leagueMember, match, prediction, user } from '../../../db/schema'
 import { countsDouble } from '../../../shared/types/match'
 import { closingOddsForOutcome } from '../odds/store'
-import { getActiveScoringConfig } from '../scoring/store'
+import { getScoringConfigFor } from '../scoring/store'
 import type { ScoringRules } from '../scoring/config'
 import { scorePredictions } from '../scoring/engine'
 import { outcomeOf, type BaseTier } from '../scoring/tiers'
@@ -114,7 +114,7 @@ export async function getMatchLeagueStandings(
     hasScore && (live || field.some((p) => memberById.has(p.userId) && p.totalPoints === null))
   let provisional: Map<string, { points: number; tier: BaseTier }> | null = null
   if (needsProvisional) {
-    const rules = opts.rules ?? (await getActiveScoringConfig(db)).rules
+    const rules = opts.rules ?? (await getScoringConfigFor(db, opts.competitionId)).rules
     const actual = { home: m.fullTimeHome as number, away: m.fullTimeAway as number }
     const actualOutcomeOdds =
       rules.bonusSource === 'ODDS' ? await closingOddsForOutcome(db, m.id, m.kickoffTime, outcomeOf(actual)) : null
