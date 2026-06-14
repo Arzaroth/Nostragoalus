@@ -13,6 +13,19 @@ watchEffect(() => {
 })
 
 const confirmRepick = ref(false)
+// In the re-pick window (or once already re-picked), every worth shown is the
+// halved value a switch would lock in.
+const repickMode = computed(() => !!(data.value?.locked && data.value?.secondChance?.open && data.value?.myPick))
+const halveWorth = computed(() => repickMode.value || !!data.value?.myPick?.repicked)
+const effPts = (points: number) => (halveWorth.value ? Math.floor(points / 2) : points)
+
+// First switch is the consequential one (it latches the permanent half); a
+// later switch by an already-re-picked user changes nothing about the penalty,
+// so it skips the warning modal.
+function onChangePick() {
+  if (data.value?.myPick?.repicked) save(true)
+  else confirmRepick.value = true
+}
 
 function teamName(code: string | null) {
   return data.value?.teams?.find((tm: ChampionTeam) => tm.code === code)?.name ?? code
@@ -49,12 +62,10 @@ const isSaved = computed(() => !!data.value?.myPick && showcaseCode.value === da
 const showcaseWorth = computed<{ rank: number | null; points: number } | null>(() => {
   if (!showcaseCode.value) return null
   if (isSaved.value && data.value?.myPick) {
-    // A re-picked pick is worth half (floored), and that's what it will pay.
-    const full = data.value.myPick.potentialPoints
-    return { rank: data.value.myPick.fifaRank ?? null, points: data.value.myPick.repicked ? Math.floor(full / 2) : full }
+    return { rank: data.value.myPick.fifaRank ?? null, points: effPts(data.value.myPick.potentialPoints) }
   }
   const team = data.value?.teams?.find((tm: ChampionTeam) => tm.code === showcaseCode.value)
-  return team ? { rank: team.fifaRank, points: team.potentialPoints } : null
+  return team ? { rank: team.fifaRank, points: effPts(team.potentialPoints) } : null
 })
 
 function worthLabel(rank: number | null, points: number) {
@@ -111,7 +122,7 @@ function worthLabel(rank: number | null, points: number) {
                       <img v-if="flagUrl(option.code)" :src="flagUrl(option.code) || ''" class="w-5 h-5 rounded object-cover" alt="" >
                       {{ option.name }}
                       <span class="ml-auto text-xs whitespace-nowrap" style="color: var(--p-text-muted-color)">
-                        {{ worthLabel(option.fifaRank, option.potentialPoints) }}
+                        {{ worthLabel(option.fifaRank, effPts(option.potentialPoints)) }}
                       </span>
                     </span>
                   </template>
@@ -122,7 +133,7 @@ function worthLabel(rank: number | null, points: number) {
                   severity="warn"
                   :disabled="!selectedCode || selectedCode === data.myPick.teamCode"
                   :loading="saving"
-                  @click="confirmRepick = true"
+                  @click="onChangePick"
                 />
               </div>
             </div>

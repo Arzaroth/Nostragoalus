@@ -255,7 +255,7 @@
     "secondChanceOpen": "Seconde chance : changez votre choix une dernière fois avant les phases finales - pour la moitié des points.",
     "changePick": "Changer de choix",
     "repickConfirm": "Changer de vainqueur ? C'est définitif et divise les points par deux pour de bon - même si vous revenez en arrière. Votre choix d'origine reste affiché.",
-    "repickedNote": "Modifié (demi-points). À l'origine : {team}."
+    "repickedNote": "Modifié (moitié des points). À l'origine : {team}."
   },
   "bestScorer": {
     "title": "Votre meilleur buteur",
@@ -269,7 +269,7 @@
     "secondChanceOpen": "Seconde chance : changez votre choix une dernière fois avant les phases finales - pour la moitié des points.",
     "changePick": "Changer de choix",
     "repickConfirm": "Changer de meilleur buteur ? C'est définitif et divise les points par deux pour de bon - même si vous revenez en arrière. Votre choix d'origine reste affiché.",
-    "repickedNote": "Modifié (demi-points). À l'origine : {player}."
+    "repickedNote": "Modifié (moitié des points). À l'origine : {player}."
   },
   "leaderboard": {
     "title": "Classement",
