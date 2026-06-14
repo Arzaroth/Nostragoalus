@@ -1,6 +1,6 @@
 import type { H3Event } from 'h3'
 import type { z, ZodType } from 'zod'
-import { requireAdmin, requireUser } from './auth-guards'
+import { requireAdmin, requireApiKey, requireUser } from './auth-guards'
 import { toHttpError } from './http'
 
 interface HandlerCtx<B> {
@@ -12,6 +12,10 @@ interface HandlerCtx<B> {
 interface Options<S extends ZodType> {
   body?: S
   admin?: boolean
+  // When set, the route ALSO accepts an x-api-key carrying these permissions
+  // (e.g. { media: ['write'] }); for admin routes the key's owner must be an
+  // admin too. Routes without this option are session-only and reject keys.
+  apiKey?: Record<string, string[]>
 }
 
 // One wrapper for mutating routes: enforce auth (user or admin), parse+validate
@@ -23,7 +27,16 @@ export function defineValidatedHandler<S extends ZodType>(
   handler: (ctx: HandlerCtx<S extends ZodType ? z.infer<S> : undefined>) => unknown | Promise<unknown>,
 ) {
   return defineEventHandler(async (event) => {
-    const user = options.admin ? await requireAdmin(event) : await requireUser(event)
+    const apiKeyHeader = event.headers?.get?.('x-api-key')
+    let user: HandlerCtx<unknown>['user']
+    if (apiKeyHeader) {
+      // A key is presented: only honour it where the route opted in, otherwise
+      // it's a session-only route and the key is rejected.
+      if (!options.apiKey) throw createError({ statusCode: 401, statusMessage: 'API key not accepted on this route' })
+      user = await requireApiKey(event, apiKeyHeader, options.apiKey, !!options.admin)
+    } else {
+      user = options.admin ? await requireAdmin(event) : await requireUser(event)
+    }
 
     let body: unknown
     if (options.body) {
