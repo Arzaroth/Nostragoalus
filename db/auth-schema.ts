@@ -15,6 +15,10 @@ export const user = pgTable("user", {
   theme: text("theme"),
   showCrowd: boolean("show_crowd"),
   showOdds: boolean("show_odds"),
+  // Cosmetic skin selection (null = default theme); skinsUnlocked gates the
+  // picker's visibility - flipped once the unlock easter egg is triggered.
+  skin: text("skin"),
+  skinsUnlocked: boolean("skins_unlocked").default(false).notNull(),
   // User-chosen: out of the global/competition rankings; profile visible only
   // to league mates and admins. League boards still rank them for co-members.
   profilePrivate: boolean("profile_private").default(false).notNull(),
