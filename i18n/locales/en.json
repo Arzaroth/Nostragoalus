@@ -51,6 +51,19 @@
     "odds": "Show bookmaker odds",
     "oddsHint": "Decimal 1X2 odds under each match: 1 = home win, X = draw, 2 = away win. Lower number = more likely. Snapshotted at kickoff."
   },
+  "skins": {
+    "title": "My Little Prono",
+    "hint": "You found it. Pick your pony - it restyles the whole app.",
+    "default": "Default",
+    "unlockedTitle": "My Little Prono unlocked!",
+    "unlockedHint": "Pick your pony in Preferences.",
+    "twilight": "Twilight Sparkle",
+    "rainbow": "Rainbow Dash",
+    "pinkie": "Pinkie Pie",
+    "applejack": "Applejack",
+    "rarity": "Rarity",
+    "fluttershy": "Fluttershy"
+  },
   "odds": {
     "title": "Bookmaker odds — 1: home win, X: draw, 2: away win. Decimal odds; the lower the number, the more likely the outcome.",
     "home": "Home win odds",

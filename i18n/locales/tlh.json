@@ -51,6 +51,19 @@
     "odds": "SuD mI'mey cha'",
     "oddsHint": "1X2 mI': 1 = juH Qap, X = rap, 2 = nIteb Qap. mI' machHa' law', DuH law'. may' taghDI' qon."
   },
+  "skins": {
+    "title": "My Little Prono",
+    "hint": "DaSamta'! Sargh yIwIv - naQ choHmoH.",
+    "default": "motlh",
+    "unlockedTitle": "My Little Prono poSmoHlu'!",
+    "unlockedHint": "wIvmeyDaq Sargh yIwIv.",
+    "twilight": "Twilight Sparkle",
+    "rainbow": "Rainbow Dash",
+    "pinkie": "Pinkie Pie",
+    "applejack": "Applejack",
+    "rarity": "Rarity",
+    "fluttershy": "Fluttershy"
+  },
   "odds": {
     "title": "bookmaker mI' — 1: juH Qap, X: rap, 2: nIteb Qap. mI' machHa' law', DuH law'.",
     "home": "juH Qap SuD mI'",
