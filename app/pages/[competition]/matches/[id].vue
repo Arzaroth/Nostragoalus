@@ -620,7 +620,7 @@ function toggleFormInfo(side: string, i: number | string) {
               </div>
             </div>
             <div v-else-if="!playByPlay.length" class="text-sm text-center py-4" style="color: var(--p-text-muted-color)">{{ t('match.playByPlayEmpty') }}</div>
-            <div v-else class="flex flex-col">
+            <div v-else class="flex flex-col md:max-h-[60vh] md:overflow-y-auto md:overscroll-contain">
               <div
                 v-for="(e, i) in playByPlay"
                 :key="i"
