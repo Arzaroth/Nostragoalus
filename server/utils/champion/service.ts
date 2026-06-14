@@ -52,24 +52,12 @@ export async function setChampionPick(db: AppDatabase, input: SetChampionInput, 
   const lock = await getChampionLockTime(db, input.competitionId)
   if (lock && now >= lock) throw new LockedError('champion pick is locked (the competition has started)')
 
-  const existing = await db
-    .select({ id: championPick.id })
-    .from(championPick)
-    .where(and(eq(championPick.userId, input.userId), eq(championPick.competitionId, input.competitionId)))
-    .limit(1)
-
-  if (existing.length > 0) {
-    await db
-      .update(championPick)
-      .set({
-        teamCode: input.teamCode,
-        teamName: input.teamName,
-        fifaRank: input.fifaRank,
-        potentialPoints: input.potentialPoints,
-      })
-      .where(eq(championPick.id, existing[0].id))
-  } else {
-    await db.insert(championPick).values({
+  // Upsert on the unique (user, competition) index - race-safe against a
+  // double-submit, "last write wins" (matches setBestScorerPick). Leaves
+  // repicked/original* untouched: they only matter in the window, after this lock.
+  await db
+    .insert(championPick)
+    .values({
       userId: input.userId,
       competitionId: input.competitionId,
       teamCode: input.teamCode,
@@ -77,7 +65,15 @@ export async function setChampionPick(db: AppDatabase, input: SetChampionInput, 
       fifaRank: input.fifaRank,
       potentialPoints: input.potentialPoints,
     })
-  }
+    .onConflictDoUpdate({
+      target: [championPick.userId, championPick.competitionId],
+      set: {
+        teamCode: input.teamCode,
+        teamName: input.teamName,
+        fifaRank: input.fifaRank,
+        potentialPoints: input.potentialPoints,
+      },
+    })
 }
 
 // Second chance: switch the champion pick during the [last group round ->
