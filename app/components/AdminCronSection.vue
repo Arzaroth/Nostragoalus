@@ -32,6 +32,7 @@ const LABELS: Record<string, string> = {
   'users:prune-unverified': t('cron.task.pruneUnverified'),
   'odds:backfill': t('cron.task.oddsBackfill'),
   'fixtures:import': t('cron.task.fixturesImport'),
+  'champion:backfill-ranks': t('cron.task.championBackfillRanks'),
 }
 const labelOf = (name: string) => LABELS[name] ?? name
 
