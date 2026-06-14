@@ -87,9 +87,9 @@ effort buckets; order within a bucket is not priority.
 
 ## Features
 
-- [x] **Editable scoring config + per-competition overrides** (built on
-      feat/scoring-config, pending merge): admin `/admin/scoring` page edits the
-      full ruleset; the DB row was previously seed-only with no UI. Decisions:
+- [x] **Editable scoring config + per-competition overrides** (shipped in
+      1.13.0): admin Scoring rules section (`/admin/scoring`) edits the full
+      ruleset; the DB row was previously seed-only with no UI. Decisions:
   - One **default** config (null `competition_id`) applies everywhere; an
     optional **override** row per competition supersedes it. Resolution is
     override-then-default (`getScoringConfigFor`). Active-row uniqueness is per
