@@ -258,3 +258,25 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 - [ ] Extract the shared provider getJson envelope (rate-limit + 429/403 +
       json-guard) now duplicated across fifa, sofascore and fifa-ranking; and a
       generic ordered-tier resolver for crowd/odds/champion tiers.
+
+## Match watch links (deferred from the feature pass)
+
+- [ ] Machine auth: add the better-auth `apiKey` plugin (regenerate the table
+      via `@better-auth/cli generate` into db/auth-schema.ts, then `pnpm
+      db:generate` - do NOT hand-write it into app-schema.ts), and extend
+      `defineValidatedHandler` to accept an admin session OR an api key carrying
+      a `media:write` permission, so the curation bot can write without a human
+      session.
+- [ ] Admin API-client UI: a /admin page to mint/revoke scoped keys, showing
+      the plaintext key exactly once (better-auth stores it hashed), gated on
+      admin and ideally 2FA since minting a credential is high-value.
+- [ ] Curation bot (separate repo, keeps grey-zone sourcing out of this app):
+      cron reads `/api/matches` for fixtures in the next N hours, finds links,
+      POSTs them near kickoff (header-check X-Frame-Options before setting
+      embeddable=true); after FINISHED, finds replay/highlights (more often on
+      whitelisted/legit hosts) and clears dead LIVE links.
+- [ ] No edit endpoint: media edits are delete + re-add. Add a PUT only if
+      inline relabel/retarget becomes worth the surface.
+- [ ] `embedSrcFor` falls back to the raw URL for a force-embedded
+      non-whitelist host - revisit if a sandboxed raw embed proves too hostile
+      (popunders/redirects); could restrict force-embed further.

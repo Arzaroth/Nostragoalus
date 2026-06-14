@@ -89,6 +89,21 @@ effort buckets; order within a bucket is not priority.
 
 ## Features
 
+- [ ] **Match watch links** (built on feat/match-media, pending merge): admin/
+      bot-curated Live / Replay / Highlights links per match, shown in a Watch
+      section on the match page. Decisions: a `match_media` child table (kind +
+      url + label + nullable `embeddable` override); a host whitelist
+      (YouTube/Twitch/Dailymotion/Vimeo) sets the embed default AND the
+      URL->embed-src transform, the override forces embed/link-only for any
+      host; whitelisted or force-embedded links play in a sandboxed iframe with
+      a permanent open-in-new-tab fallback (a host's X-Frame-Options can't be
+      overridden), everything else is an external button. LIVE shows
+      pre/in-match, replay+highlights once FINISHED. Public read
+      (`GET /api/matches/[id]/media`) + admin write; grey-zone link sourcing
+      stays out of the app, so liability sits with whoever sets the link.
+      Deferred: better-auth `apiKey` plugin + admin API-client UI for machine
+      auth, and a separate curation bot that fills links via the API (see
+      TODO.md).
 - [ ] **Pick reminders + PWA + web push**: `@vite-pwa/nuxt`; install prompt,
       offline shell, web push (iOS >= 16.4 for installed PWAs). Push pays for
       itself twice: lockout reminders for missing picks + goal alerts on
