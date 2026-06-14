@@ -104,7 +104,14 @@ export type TimelineEventKind =
 
 // Which period marker a 'period' event represents, so the client labels it in
 // its own language rather than echoing the provider's English commentary.
-export type PeriodKind = 'kickoff' | 'half-time' | 'second-half' | 'extra-time' | 'full-time'
+export type PeriodKind =
+  | 'kickoff'
+  | 'half-time'
+  | 'second-half'
+  | 'second-half-end'
+  | 'extra-time'
+  | 'extra-time-end'
+  | 'full-time'
 
 export interface TimelineEvent {
   kind: TimelineEventKind

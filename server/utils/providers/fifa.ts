@@ -363,9 +363,7 @@ const FIFA_EVENT_KINDS: Record<number, TimelineEventKind> = {
 }
 
 // FIFA period codes: 3 = first half, 5 = second half, 7/9 = extra-time halves.
-// Type 7 starts a period, 8 ends one, 26 is the final whistle. We only surface
-// the markers worth a line; an end-of-second-half (8 outside the first half) is
-// dropped because the final whistle (26) already marks full-time.
+// Type 7 starts a period, 8 ends one, 26 is the final whistle.
 function fifaPeriodKind(type: number, period: number | null): PeriodKind | null {
   if (type === 26) return 'full-time'
   if (type === 7) {
@@ -373,8 +371,11 @@ function fifaPeriodKind(type: number, period: number | null): PeriodKind | null 
     if (period === 7 || period === 9) return 'extra-time'
     return 'kickoff'
   }
-  // The only remaining period type is 8 (end of a period).
-  return period === 3 ? 'half-time' : null
+  // type === 8 (end of a period)
+  if (period === 3) return 'half-time'
+  if (period === 5) return 'second-half-end'
+  if (period === 7 || period === 9) return 'extra-time-end'
+  return null
 }
 
 export function normalizeFifaTimeline(
