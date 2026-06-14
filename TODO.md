@@ -68,10 +68,10 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       hand-redefined in NextMatchCta/map/matches[id] (a 4th, exclusion-based copy
       lives in useLiveMatches). Centralise the status -> bucket/severity/isLive
       facts in one place (format.ts) so they can't diverge.
-- [ ] PWA update flow (worktree-pwa-auto-refresh, once merged): the banner's
-      two paths (build-manifest poll, waiting SW + controllerchange reload)
-      were only verifiable by hand across local rebuilds - verify across two
-      real prod deploys, and check iOS installed-PWA behavior specifically.
+- [ ] PWA update flow (shipped in 1.5.0): the banner's two paths (build-manifest
+      poll, waiting SW + controllerchange reload) were only verifiable by hand
+      across local rebuilds - verify across two real prod deploys, and check iOS
+      installed-PWA behavior specifically.
 
 ## Main page rework (deferred from the feature pass)
 
