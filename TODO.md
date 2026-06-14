@@ -219,6 +219,15 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       TimelineEventKind union and FIFA_EVENT_KINDS goal set; a new/renamed kind
       silently falls back to the bullet and (for goals) loses bold + the score
       column. Share the kind list / goal-kind set from shared types.
+- [ ] (i18n pass) PBP_PLAYER_KEYS / KIND_LABEL_KEYS / PERIOD_KEYS in
+      matches/[id].vue are hand-maintained kebab->camel identity maps that can
+      drift (a kind added to KIND_LABEL_KEYS but missing from PBP_PLAYER_KEYS
+      silently renders the nameless fallback). Derive the camel key from the kind
+      instead of three lookup tables. Also: getMatchTimeline overloads `language`
+      as both the fetch param and the VAR-text gate - a caller passing a
+      feed-unsupported language would surface un-localized VAR text; the
+      en/fr allowlist lives only in the endpoint. Consider an explicit
+      { language, localizeText } or moving the allowlist into the provider.
 
 
 ## Done (post-merge correctness pass)
