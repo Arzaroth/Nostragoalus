@@ -8,6 +8,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 ### Changed
 - On the fixtures page, clicking anywhere on a match card opens the match, not just its title (the score inputs, joker button and team links still work as before).
 - The match play-by-play is now written in your own language (it previously echoed the data feed's English commentary), and each line drops the redundant country name since the team flag already shows the side.
+- Fouls in the play-by-play now show a referee whistle icon instead of a warning sign.
 
 ### Fixed
 - Joker buttons are now disabled for the rest of a round once that round's joker is locked on a started match (it can't be moved), with a tooltip explaining why - instead of letting the click fail. Any remaining error shows as a toast rather than an inline banner that pushed the page down and broke the match list's scroll area.
