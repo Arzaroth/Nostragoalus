@@ -42,8 +42,9 @@ export interface MatchDataProvider {
   // Optional: per-match team stats (attempts, passes, distance…) keyed by team id.
   getMatchStats?(opts: { ifesId: string }): Promise<Record<string, TeamMatchStats> | null>
   // Optional: curated play-by-play timeline (goals, cards, subs, shots, VAR…) -
-  // FIFA exposes this keyless. homeTeamId/awayTeamId map each event to a side.
-  getMatchTimeline?(opts: { matchId: string; homeTeamId?: string | null; awayTeamId?: string | null }): Promise<TimelineEvent[]>
+  // FIFA exposes this keyless. homeTeamId/awayTeamId map each event to a side;
+  // playerNames resolves the actor ids the feed carries to display names.
+  getMatchTimeline?(opts: { matchId: string; homeTeamId?: string | null; awayTeamId?: string | null; playerNames?: Record<string, string> }): Promise<TimelineEvent[]>
 }
 
 export class ProviderRateLimitError extends Error {

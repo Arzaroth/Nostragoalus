@@ -106,6 +106,7 @@ describe('normalizeFifaMatchDetail', () => {
       goals: [],
       bookings: [],
       substitutions: [],
+      playerNames: {},
       ifesId: null,
       homeTeamId: null,
       awayTeamId: null,
@@ -132,56 +133,71 @@ describe('normalizeFifaMatchDetail', () => {
 })
 
 describe('normalizeFifaTimeline', () => {
-  const desc = (s: string) => [{ Locale: 'en-GB', Description: s }]
-
-  it('keeps only curated events, maps sides, and reverses to newest-first', () => {
+  it('keeps curated events, maps sides, resolves names, reverses to newest-first', () => {
+    const names = { p1: 'SCORER', p2: 'BOOKED', on: 'BENCH GUY', off: 'TIRED GUY' }
     const events = normalizeFifaTimeline(
       {
         Event: [
-          { Type: 7, MatchMinute: "1'", EventDescription: desc('Kick-off.') },
-          { Type: 24, MatchMinute: "3'", IdTeam: 'H', EventDescription: desc('Throw-in.') }, // noise (throw-in), dropped
-          { Type: 18, MatchMinute: "5'", IdTeam: 'A', EventDescription: desc('PLAYER commits a foul.') },
-          { Type: 0, MatchMinute: "23'", IdTeam: 'H', HomeGoals: 1, AwayGoals: 0, EventDescription: desc('SCORER scores!') },
-          { Type: 2, MatchMinute: "30'", IdTeam: 'A', EventDescription: desc('BOOKED is booked.') },
-          { Type: 5, MatchMinute: "60'", IdTeam: 'X', EventDescription: desc('Sub for a neutral team.') },
+          { Type: 7, Period: 3, MatchMinute: "0'" }, // kickoff
+          { Type: 24, MatchMinute: "3'", IdTeam: 'H' }, // noise (throw-in), dropped
+          { Type: 18, MatchMinute: "5'", IdTeam: 'A', IdPlayer: 'unknown' }, // foul, name not in map -> null
+          { Type: 0, MatchMinute: "23'", IdTeam: 'H', IdPlayer: 'p1', HomeGoals: 1, AwayGoals: 0 }, // goal
+          { Type: 2, MatchMinute: "30'", IdTeam: 'A', IdPlayer: 'p2' }, // yellow
+          { Type: 5, MatchMinute: "60'", IdTeam: 'H', IdPlayer: 'on', IdSubPlayer: 'off' }, // sub: on/off
+          { Type: 8, Period: 3, MatchMinute: "45'" }, // half-time
+          { Type: 8, Period: 5, MatchMinute: "90'" }, // end of 2nd half -> dropped (final whistle covers it)
+          { Type: 26, Period: 10, MatchMinute: "92'" }, // full-time
         ],
       },
       'H',
       'A',
+      names,
     )
-    expect(events.map((e) => [e.kind, e.side, e.minute])).toEqual([
-      ['sub', null, "60'"], // IdTeam X matches neither home nor away -> null side
-      ['yellow', 'AWAY', "30'"],
-      ['goal', 'HOME', "23'"],
-      ['foul', 'AWAY', "5'"],
-      ['period', null, "1'"],
+    expect(events.map((e) => [e.kind, e.side, e.minute, e.periodKind])).toEqual([
+      ['period', null, "92'", 'full-time'],
+      ['period', null, "45'", 'half-time'],
+      ['sub', 'HOME', "60'", null],
+      ['yellow', 'AWAY', "30'", null],
+      ['goal', 'HOME', "23'", null],
+      ['foul', 'AWAY', "5'", null],
+      ['period', null, "0'", 'kickoff'],
     ])
-    expect(events.find((e) => e.kind === 'goal')).toMatchObject({ homeScore: 1, awayScore: 0, text: 'SCORER scores!' })
+    expect(events.find((e) => e.kind === 'goal')).toMatchObject({ playerName: 'SCORER', homeScore: 1, awayScore: 0 })
+    expect(events.find((e) => e.kind === 'foul')).toMatchObject({ playerName: null }) // unknown id -> null
+    expect(events.find((e) => e.kind === 'sub')).toMatchObject({ playerName: null, playerInName: 'BENCH GUY', playerOutName: 'TIRED GUY' })
+  })
+
+  it('maps period markers from the FIFA period codes', () => {
+    const ev = (Type: number, Period: number) => ({ Type, Period, MatchMinute: "x" })
+    const got = normalizeFifaTimeline({ Event: [ev(7, 5), ev(7, 7), ev(7, 9), ev(8, 3)] }).map((e) => e.periodKind)
+    // reversed (newest first): 8/3 half-time, 7/9 ET, 7/7 ET, 7/5 second-half
+    expect(got).toEqual(['half-time', 'extra-time', 'extra-time', 'second-half'])
   })
 
   it('places an own goal on the benefiting side, not the scorer team', () => {
     // FIFA tags an own goal with the scorer's own team (here the away team 'A'),
     // but it counts for the opponent - the home side's score ticks up.
     const events = normalizeFifaTimeline(
-      { Event: [{ Type: 34, MatchMinute: "40'", IdTeam: 'A', HomeGoals: 1, AwayGoals: 0, EventDescription: desc('DEFENDER scores an own goal!!') }] },
+      { Event: [{ Type: 34, MatchMinute: "40'", IdTeam: 'A', IdPlayer: 'd1', HomeGoals: 1, AwayGoals: 0 }] },
       'H',
       'A',
+      { d1: 'DEFENDER' },
     )
-    expect(events[0]).toMatchObject({ kind: 'own-goal', side: 'HOME', homeScore: 1, awayScore: 0 })
+    expect(events[0]).toMatchObject({ kind: 'own-goal', side: 'HOME', playerName: 'DEFENDER', homeScore: 1, awayScore: 0 })
   })
 
-  it('drops untyped events but keeps a curated event with no description (text empty)', () => {
-    // No mapped type -> dropped.
-    expect(normalizeFifaTimeline({ Event: [{ EventDescription: desc('No type, dropped.') }] })).toEqual([])
+  it('drops untyped and unlabelled-period events; keeps a player-less curated one', () => {
+    expect(normalizeFifaTimeline({ Event: [{}] })).toEqual([]) // no type -> dropped
     expect(normalizeFifaTimeline({})).toEqual([])
-    // Curated but description-less (e.g. a penalty award) is kept with empty
-    // text - the UI labels it by kind.
-    expect(normalizeFifaTimeline({ Event: [{ Type: 6, MatchMinute: "17'", IdTeam: 'H', EventDescription: [] }] }, 'H', 'A')).toEqual([
-      { kind: 'penalty-awarded', side: 'HOME', minute: "17'", text: '', homeScore: null, awayScore: null },
+    // End of the second half with no final whistle: unlabelled, dropped.
+    expect(normalizeFifaTimeline({ Event: [{ Type: 8, Period: 5, MatchMinute: "90'" }] })).toEqual([])
+    // Penalty award: curated, no actor - kept, name fields null (the UI labels by kind).
+    expect(normalizeFifaTimeline({ Event: [{ Type: 6, MatchMinute: "17'", IdTeam: 'H' }] }, 'H', 'A')).toEqual([
+      { kind: 'penalty-awarded', side: 'HOME', minute: "17'", playerName: null, playerInName: null, playerOutName: null, periodKind: null, homeScore: null, awayScore: null },
     ])
-    // A kept event with neither minute nor team id: minute null, side null.
-    expect(normalizeFifaTimeline({ Event: [{ Type: 71, EventDescription: desc('VAR check.') }] })).toEqual([
-      { kind: 'var', side: null, minute: null, text: 'VAR check.', homeScore: null, awayScore: null },
+    // VAR with no minute, no team, no names map: everything null.
+    expect(normalizeFifaTimeline({ Event: [{ Type: 71 }] })).toEqual([
+      { kind: 'var', side: null, minute: null, playerName: null, playerInName: null, playerOutName: null, periodKind: null, homeScore: null, awayScore: null },
     ])
   })
 })
@@ -189,16 +205,16 @@ describe('normalizeFifaTimeline', () => {
 describe('fifaProvider.getMatchTimeline', () => {
   const noWait = () => new RateLimiter(0)
 
-  it('fetches, normalizes and resolves sides from the passed team ids', async () => {
+  it('fetches, normalizes, resolves sides and player names', async () => {
     const payload = {
-      Event: [
-        { Type: 0, MatchMinute: "10'", IdTeam: 'home-id', HomeGoals: 1, AwayGoals: 0, EventDescription: [{ Locale: 'en', Description: 'Goal!' }] },
-      ],
+      Event: [{ Type: 0, MatchMinute: "10'", IdTeam: 'home-id', IdPlayer: 'p9', HomeGoals: 1, AwayGoals: 0 }],
     }
     const fetchImpl = (async () => new Response(JSON.stringify(payload), { status: 200 })) as unknown as typeof fetch
     const provider = fifaProvider({ seasonId: '255711', competitionId: '17', fetchImpl, rateLimiter: noWait() })
-    const events = await provider.getMatchTimeline!({ matchId: 'm1', homeTeamId: 'home-id', awayTeamId: 'away-id' })
-    expect(events).toEqual([{ kind: 'goal', side: 'HOME', minute: "10'", text: 'Goal!', homeScore: 1, awayScore: 0 }])
+    const events = await provider.getMatchTimeline!({ matchId: 'm1', homeTeamId: 'home-id', awayTeamId: 'away-id', playerNames: { p9: 'STRIKER' } })
+    expect(events).toEqual([
+      { kind: 'goal', side: 'HOME', minute: "10'", playerName: 'STRIKER', playerInName: null, playerOutName: null, periodKind: null, homeScore: 1, awayScore: 0 },
+    ])
   })
 })
 
@@ -225,6 +241,7 @@ describe('fifaProvider.getMatchDetail', () => {
       goals: [],
       bookings: [],
       substitutions: [],
+      playerNames: {},
       ifesId: null,
       homeTeamId: 'H',
       awayTeamId: 'A',

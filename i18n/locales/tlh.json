@@ -302,6 +302,7 @@
     "statusLabel": { "scheduled": "pIH", "live": "qaS", "halfTime": "botlh poH", "fullTime": "rIn", "postponed": "lumagh", "cancelled": "qIl", "suspended": "mevpu'", "awarded": "wuqlu'" },
     "playByPlayEmpty": "may'vam lutmey tu'lu'be' DaH.",
     "pbpKind": { "goal": "naQmoH", "ownGoal": "naQmoH'egh", "penaltyGoal": "bortaS naQmoH", "penaltyMissed": "bortaS luj", "penaltyAwarded": "bortaS nob", "assist": "QaH", "yellow": "letlh SuD", "red": "letlh Doq", "secondYellow": "letlh SuD cha'DIch", "sub": "choH", "shot": "bach", "foul": "qab", "var": "VAR", "period": "poH" },
+    "pbp": { "goal": "naQmoH {player}", "ownGoal": "naQmoH'egh {player}", "penaltyGoal": "bortaS naQmoH {player}", "penaltyMissed": "bortaS luj {player}", "assist": "QaH {player}", "yellow": "letlh SuD Suq {player}", "red": "lul1Daq chagh {player}", "secondYellow": "letlh SuD cha'DIch; chagh {player}", "shot": "bach {player}", "foul": "qab ta' {player}", "sub": "'el {playerIn}; mej {playerOut}", "period": { "kickoff": "tagh", "halfTime": "botlh poH", "secondHalf": "tagh poH cha'DIch", "extraTime": "poH nID", "fullTime": "rIn" } },
     "scorers": "bachwI' po'",
     "players": "QujwI'pu'",
     "assists": "qachwI' po'",

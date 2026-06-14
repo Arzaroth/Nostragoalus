@@ -102,11 +102,22 @@ export type TimelineEventKind =
   | 'var'
   | 'period'
 
+// Which period marker a 'period' event represents, so the client labels it in
+// its own language rather than echoing the provider's English commentary.
+export type PeriodKind = 'kickoff' | 'half-time' | 'second-half' | 'extra-time' | 'full-time'
+
 export interface TimelineEvent {
   kind: TimelineEventKind
   side: 'HOME' | 'AWAY' | null
   minute: string | null
-  text: string
+  // Resolved actor name(s) - we phrase the commentary ourselves (localized),
+  // never the provider's free text. playerName is the main actor; subs carry
+  // playerInName (on) and playerOutName (off).
+  playerName: string | null
+  playerInName: string | null
+  playerOutName: string | null
+  // Only set for the 'period' kind: which marker it is.
+  periodKind: PeriodKind | null
   // Running score at this point in the match (goals only carry it meaningfully).
   homeScore: number | null
   awayScore: number | null
@@ -151,6 +162,9 @@ export interface MatchDetail {
   goals: NormalizedGoal[]
   bookings: BookingEvent[]
   substitutions: SubstitutionEvent[]
+  // Roster id -> display name, so the timeline (which only carries player ids)
+  // can resolve actor names without refetching. Optional: only FIFA fills it.
+  playerNames?: Record<string, string>
   ifesId: string | null
   homeTeamId: string | null
   awayTeamId: string | null

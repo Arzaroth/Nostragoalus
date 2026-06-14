@@ -186,8 +186,8 @@ const TIMELINE_ICONS: Record<string, string> = {
   period: '⏱️',
 }
 const GOAL_KINDS = new Set(['goal', 'own-goal', 'penalty-goal'])
-// Fallback label when the feed gives an event no commentary of its own (e.g. a
-// penalty award), keyed by kind so the row is never blank.
+// Nameless fallback label per kind, so a row with no resolved actor (e.g. a
+// penalty award, a coach booking) is never blank.
 const KIND_LABEL_KEYS: Record<string, string> = {
   goal: 'goal',
   'own-goal': 'ownGoal',
@@ -204,10 +204,41 @@ const KIND_LABEL_KEYS: Record<string, string> = {
   var: 'var',
   period: 'period',
 }
-function pbpText(e: { kind: string; text: string }): string {
-  if (e.text) return e.text
-  const key = KIND_LABEL_KEYS[e.kind]
-  return key ? t(`match.pbpKind.${key}`) : ''
+// Player-actor kinds -> their templated key (carries a {player} placeholder).
+const PBP_PLAYER_KEYS: Record<string, string> = {
+  goal: 'goal',
+  'own-goal': 'ownGoal',
+  'penalty-goal': 'penaltyGoal',
+  'penalty-missed': 'penaltyMissed',
+  assist: 'assist',
+  yellow: 'yellow',
+  red: 'red',
+  'second-yellow': 'secondYellow',
+  shot: 'shot',
+  foul: 'foul',
+}
+const PERIOD_KEYS: Record<string, string> = {
+  kickoff: 'kickoff',
+  'half-time': 'halfTime',
+  'second-half': 'secondHalf',
+  'extra-time': 'extraTime',
+  'full-time': 'fullTime',
+}
+type PbpEvent = { kind: string; playerName: string | null; playerInName: string | null; playerOutName: string | null; periodKind: string | null }
+// We phrase the commentary ourselves (localized) from the resolved names - the
+// team is shown by the flag, so it never appears in the text. The flag already
+// conveys the side, so no "(Country)" suffix here.
+function pbpText(e: PbpEvent): string {
+  if (e.kind === 'period') return e.periodKind ? t(`match.pbp.period.${PERIOD_KEYS[e.periodKind] ?? ''}`) : ''
+  if (e.kind === 'sub') {
+    return e.playerInName && e.playerOutName
+      ? t('match.pbp.sub', { playerIn: formatPlayerName(e.playerInName), playerOut: formatPlayerName(e.playerOutName) })
+      : t('match.pbpKind.sub')
+  }
+  const tmpl = PBP_PLAYER_KEYS[e.kind]
+  if (tmpl && e.playerName) return t(`match.pbp.${tmpl}`, { player: formatPlayerName(e.playerName) })
+  const fallback = KIND_LABEL_KEYS[e.kind]
+  return fallback ? t(`match.pbpKind.${fallback}`) : ''
 }
 // The flag of the team an event belongs to (null for neutral markers).
 function pbpFlag(e: { side: string | null }): string | null {
