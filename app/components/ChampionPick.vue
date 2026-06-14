@@ -60,8 +60,8 @@ function worthLabel(rank: number | null, points: number) {
 </script>
 
 <template>
-  <div v-if="pending" class="ng-card rounded-2xl border p-4 h-full" style="background: var(--p-content-background)">
-    <div class="flex items-center gap-4">
+  <div v-if="pending" class="ng-card rounded-2xl border px-4 py-3 h-full" style="background: var(--p-content-background)">
+    <div class="flex items-center gap-3">
       <div class="flex-1 min-w-0 flex flex-col gap-2">
         <Skeleton width="9rem" height="1.25rem" />
         <Skeleton width="100%" height="0.75rem" />
@@ -73,11 +73,11 @@ function worthLabel(rank: number | null, points: number) {
       </div>
     </div>
   </div>
-  <div v-else-if="data && data.competition" class="ng-card rounded-2xl border p-4 h-full" style="background: var(--p-content-background)">
-    <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+  <div v-else-if="data && data.competition" class="ng-card rounded-2xl border px-4 py-3 h-full" style="background: var(--p-content-background)">
+    <div class="flex flex-col sm:flex-row sm:items-center gap-3">
       <div class="flex-1 min-w-0">
-        <div class="flex items-center gap-2 font-semibold text-base mb-1"><span class="text-xl">🏆</span> {{ t('champion.title') }}</div>
-        <p class="text-sm mb-3" style="color: var(--p-text-muted-color)">{{ t('champion.hint') }}</p>
+        <div class="flex items-center gap-2 font-semibold text-base mb-0.5"><span class="text-xl">🏆</span> {{ t('champion.title') }}</div>
+        <p class="text-sm mb-2" style="color: var(--p-text-muted-color)">{{ t('champion.hint') }}</p>
 
         <template v-if="data.locked">
           <span v-if="!data.myPick" style="color: var(--p-text-muted-color)">{{ t('champion.noPick') }}</span>
@@ -127,7 +127,7 @@ function worthLabel(rank: number | null, points: number) {
 
       <!-- Crowned champion showcase -->
       <div class="shrink-0 flex flex-col items-center gap-2 self-center sm:self-start sm:pr-2">
-        <component :is="showcaseCode ? NuxtLinkC : 'div'" :to="showcaseCode ? `/${slug}/teams/${showcaseCode}` : undefined" class="relative mt-3 block" :class="{ 'hover:opacity-90': showcaseCode }">
+        <component :is="showcaseCode ? NuxtLinkC : 'div'" :to="showcaseCode ? `/${slug}/teams/${showcaseCode}` : undefined" class="relative mt-1 block" :class="{ 'hover:opacity-90': showcaseCode }">
           <template v-if="showcaseCode">
             <div
               class="absolute -inset-4 rounded-full blur-xl pointer-events-none"
