@@ -54,6 +54,17 @@ function toggleBucket(b: StatusBucket) {
 const { data: predictions } = useMyPredictions()
 const { upsert, setJoker } = usePredictionMutations()
 
+// Defer the fixtures list until the champion/best-scorer pick cards above it
+// resolve: on mobile they grow from skeleton to full height once their queries
+// land, and if the list (and its first auto-scroll) renders before that, the
+// growth pushes the scroll target back below the fold. The cards still mount and
+// fetch immediately - only the list waits. Shares the cache with the cards' own
+// useChampion/useBestScorer, so it adds an observer, not a request. isPending
+// (not isLoading) so an errored pick query still releases the list.
+const { query: championQuery } = useChampion()
+const { query: bestScorerQuery } = useBestScorer()
+const picksReady = computed(() => !championQuery.isPending.value && !bestScorerQuery.isPending.value)
+
 // Your standing (folded in from the removed My Picks page). Honors the league
 // pill: with a league selected, rank/players are within that league.
 const { leagueId } = useSelectedLeague()
@@ -178,7 +189,7 @@ const picksEl = ref<HTMLElement | null>(null)
 useResizeObserver(picksEl, updateListHeight)
 // vue-query resolves after mount on a hard reload, so the list isn't in the DOM
 // at onMounted - (re)compute once it appears and on every relayout.
-watch([isLoading, grouped, pageMounted, isWide], () => nextTick(updateListHeight), { immediate: true, flush: 'post' })
+watch([isLoading, grouped, pageMounted, isWide, picksReady], () => nextTick(updateListHeight), { immediate: true, flush: 'post' })
 
 // On first load, bring the action into view inside the list: the first live
 // match, or failing that the next upcoming one. A hash anchor (home CTA) wins.
@@ -192,11 +203,12 @@ function autoScrollTargetId(): string | null {
   return next?.id ?? null
 }
 watch(
-  [grouped, pageMounted, predictions],
+  [grouped, pageMounted, predictions, picksReady],
   async () => {
     if (didAutoScroll || !pageMounted.value || route.hash.startsWith('#match-')) return
     // Wait for predictions too: finished rows above the target grow a points
     // line once they load, which would otherwise push the target below the fold.
+    // listEl only exists once picksReady (the pick cards stopped resizing the top).
     if (!grouped.value.length || !listEl.value || predictions.value === undefined) return
     const id = autoScrollTargetId()
     didAutoScroll = true
@@ -345,7 +357,7 @@ watch(searchOpen, () => nextTick(updateListHeight))
       </button>
     </div>
 
-    <div v-if="isLoading" class="opacity-60">{{ t('common.loading') }}</div>
+    <div v-if="isLoading || !picksReady" class="opacity-60">{{ t('common.loading') }}</div>
     <div v-else-if="!matches || !matches.length" class="opacity-60">{{ t('matches.empty') }}</div>
     <div v-else-if="!grouped.length" class="opacity-60">{{ t('matches.noResults') }}</div>
 
