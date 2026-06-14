@@ -119,16 +119,27 @@ watch(
   { immediate: true, flush: 'post' },
 )
 
-// The match list owns its own scroll region so the header/stats/picks/filters
-// stay put. Height is whatever is left below the list's top edge (measured at
-// rest, i.e. page not scrolled), recomputed on resize and when the search bar
-// opens/closes above it.
+// On md+ the match list owns its own scroll region so the header/stats/picks/
+// filters stay put. On mobile the content above already exceeds the viewport, so
+// the page scrolls normally instead (no region, no lock).
+const isWide = useMediaQuery('(min-width: 768px)')
 const listEl = ref<HTMLElement | null>(null)
 const listMaxH = ref<string | undefined>(undefined)
 let scrollLocked = false
+function unlockScroll() {
+  if (scrollLocked) {
+    document.documentElement.style.removeProperty('overflow')
+    scrollLocked = false
+  }
+}
 function updateListHeight() {
   const c = listEl.value
   if (!c) return
+  if (!isWide.value) {
+    listMaxH.value = undefined
+    unlockScroll()
+    return
+  }
   const top = c.getBoundingClientRect().top
   const footerH = document.querySelector('footer')?.getBoundingClientRect().height ?? 0
   // Reserve the footer (and main's pb-6) below the list so nothing needs a
@@ -141,16 +152,14 @@ function updateListHeight() {
   }
 }
 onMounted(() => useEventListener(window, 'resize', updateListHeight))
-onBeforeUnmount(() => {
-  if (scrollLocked) document.documentElement.style.removeProperty('overflow')
-})
+onBeforeUnmount(unlockScroll)
 // The pick cards above the list grow from skeleton to full size after their
 // queries resolve, which shifts the list's top edge - remeasure when they do.
 const picksEl = ref<HTMLElement | null>(null)
 useResizeObserver(picksEl, updateListHeight)
 // vue-query resolves after mount on a hard reload, so the list isn't in the DOM
 // at onMounted - (re)compute once it appears and on every relayout.
-watch([isLoading, grouped, pageMounted], () => nextTick(updateListHeight), { immediate: true, flush: 'post' })
+watch([isLoading, grouped, pageMounted, isWide], () => nextTick(updateListHeight), { immediate: true, flush: 'post' })
 
 // On first load, bring the action into view inside the list: the first live
 // match, or failing that the next upcoming one. A hash anchor (home CTA) wins.
@@ -178,9 +187,14 @@ watch(
     updateListHeight()
     await nextTick()
     const el = document.getElementById(`match-${id}`)
+    if (!el) return
     const c = listEl.value
-    if (!el || !c) return
-    c.scrollTo({ top: el.getBoundingClientRect().top - c.getBoundingClientRect().top + c.scrollTop, behavior: 'smooth' })
+    if (isWide.value && c) {
+      c.scrollTo({ top: el.getBoundingClientRect().top - c.getBoundingClientRect().top + c.scrollTop, behavior: 'smooth' })
+    } else {
+      // Mobile: no scroll region, scroll the page (row's scroll-margin clears the header).
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
   },
   { immediate: true, flush: 'post' },
 )
