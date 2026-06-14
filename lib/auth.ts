@@ -183,13 +183,17 @@ export function buildAuthOptions(database: AuthDb) {
     // and 2FA (TOTP authenticator + email OTP when SMTP is configured).
     plugins: [
       sso({
-        // Trust the IdP's email_verified claim. @better-auth/sso 1.6.x stopped
-        // honouring it by default (and hardcodes trustProviderByName:false, so
-        // accountLinking.trustedProviders no longer drives SSO link-trust);
-        // without this, an SSO sign-in matching an existing local account fails
-        // with "account not linked". Safe here: SSO providers are admin-
-        // registered, so the IdP is authoritative for its emails.
-        trustEmailVerified: true,
+        // @better-auth/sso 1.6.x hardcodes trustProviderByName:false, so our
+        // accountLinking.trustedProviders list no longer drives SSO link-trust;
+        // trust now comes from a per-provider `domainVerified` flag + an email
+        // domain match. Without it, an SSO sign-in matching an existing local
+        // account fails with "account not linked". We can't use the IdP's
+        // email_verified claim instead - Entra doesn't emit a usable one. So we
+        // enable the domainVerified mechanism and mark admin-registered
+        // providers verified for their configured domains (db column defaults
+        // true): a provider is trusted to own the email domains an admin
+        // assigned it, which is exactly the old trustedProviders intent.
+        domainVerification: { enabled: true },
         // A successful SSO sign-in makes the IdP authoritative for the account:
         // any local password is removed (the account becomes SSO-managed), so a
         // pre-existing password can't keep bypassing the IdP. Recovery path if

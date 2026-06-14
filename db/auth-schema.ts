@@ -135,6 +135,12 @@ export const ssoProvider = pgTable(
     providerId: text("provider_id").notNull().unique(),
     organizationId: text("organization_id"),
     domain: text("domain").notNull(),
+    // @better-auth/sso domainVerification field. Defaults true: an
+    // admin-registered provider is trusted to own the email domains the admin
+    // assigned it, which is what drives account-linking trust in 1.6.x (the old
+    // trustedProviders list is ignored). We never run the plugin's DNS-proof
+    // flow - admin registration IS the trust decision.
+    domainVerified: boolean("domain_verified").default(true).notNull(),
     // Ours, not the plugin's: human-readable name shown to end users
     // (e.g. the signup "this domain uses SSO" warning).
     displayName: text("display_name"),

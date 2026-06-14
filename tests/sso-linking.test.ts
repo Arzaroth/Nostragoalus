@@ -34,8 +34,11 @@ function mockFetch(input: RequestInfo | URL): Promise<Response> {
   }
   if (url.startsWith(`${IDP}/userinfo`)) {
     const u = idpUsers[lastTokenFor]
+    // No email_verified claim - simulates Entra ID, which emits none we can use.
+    // Linking to an existing local account must therefore work via the
+    // provider's domainVerified flag + email-domain match, not the claim.
     return Promise.resolve(
-      new Response(JSON.stringify({ sub: u.sub, email: u.email, email_verified: true, name: u.name }), {
+      new Response(JSON.stringify({ sub: u.sub, email: u.email, name: u.name }), {
         headers: { 'content-type': 'application/json' },
       }),
     )
