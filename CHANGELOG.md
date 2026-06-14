@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-06-14
+
 ### Changed
 - The admin panel is now organised around a left-hand menu instead of one long scroll: sign-ups, SSO, users, leagues, roadmap and scheduled tasks each get their own full-width page. The scheduled-tasks view folds in alongside the rest (the old `/admin/cron` link still works), and the page uses the full width of wider screens.
 
