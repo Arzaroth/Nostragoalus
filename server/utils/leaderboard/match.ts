@@ -47,12 +47,16 @@ export async function getMatchLeagueStandings(
   opts: {
     matchId: string
     leagueId: string
+    competitionId: string
     viewerId: string
     includePrivate?: boolean
     includeHidden?: boolean
     rules?: ScoringRules
   },
 ): Promise<MatchLeagueStandings> {
+  // Scope the match to the league's own competition: a member of one league must
+  // not be able to read picks for a match in another competition by passing its
+  // id (the league/prediction join is keyed only on matchId otherwise).
   const [m] = await db
     .select({
       id: match.id,
@@ -63,7 +67,7 @@ export async function getMatchLeagueStandings(
       fullTimeAway: match.fullTimeAway,
     })
     .from(match)
-    .where(eq(match.id, opts.matchId))
+    .where(and(eq(match.id, opts.matchId), eq(match.competitionId, opts.competitionId)))
     .limit(1)
   // Copy-protection: other members' picks stay hidden until the match is under
   // way, so the board has nothing to show (and nothing to score) before kickoff.
