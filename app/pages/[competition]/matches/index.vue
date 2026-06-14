@@ -77,16 +77,24 @@ const searchRaw = ref('')
 const search = refDebounced(searchRaw, 200)
 const grouped = computed(() => {
   const q = searchable(search.value.trim())
-  const groups = new Map<string, { label: string; sort: number; items: MatchListItem[] }>()
+  const groups = new Map<string, { id: string; label: string; sort: number; items: MatchListItem[] }>()
   for (const m of matches.value ?? []) {
     if (!activeBuckets.value.includes(bucketOf(m.status))) continue
     if (q && !searchable(`${m.homeTeam} ${m.awayTeam} ${m.homeTeamCode ?? ''} ${m.awayTeamCode ?? ''}`).includes(q)) continue
-    const g = groups.get(m.roundId) ?? { label: m.roundLabel, sort: m.roundSortOrder, items: [] }
+    const g = groups.get(m.roundId) ?? { id: m.roundId, label: m.roundLabel, sort: m.roundSortOrder, items: [] }
     g.items.push(m)
     groups.set(m.roundId, g)
   }
   return [...groups.values()].sort((a, b) => a.sort - b.sort)
 })
+
+// Rounds collapse independently (matchday 1, R16, ...); all open by default.
+const collapsedRounds = ref<Set<string>>(new Set())
+function toggleRound(id: string) {
+  const next = new Set(collapsedRounds.value)
+  next.has(id) ? next.delete(id) : next.add(id)
+  collapsedRounds.value = next
+}
 
 // Hash anchors (e.g. the home page's next-match CTA) point at rows that only
 // exist once the query resolves AND the page is mounted - the router's own
@@ -107,6 +115,50 @@ watch(
     if (!el) return
     scrolledHash = route.hash
     el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  },
+  { immediate: true, flush: 'post' },
+)
+
+// The match list owns its own scroll region so the header/stats/picks/filters
+// stay put. Height is whatever is left below the list's top edge (measured at
+// rest, i.e. page not scrolled), recomputed on resize and when the search bar
+// opens/closes above it.
+const listEl = ref<HTMLElement | null>(null)
+const listMaxH = ref<string | undefined>(undefined)
+function updateListHeight() {
+  if (!listEl.value) return
+  const top = listEl.value.getBoundingClientRect().top
+  listMaxH.value = `${Math.max(280, window.innerHeight - top - 24)}px`
+}
+onMounted(() => {
+  updateListHeight()
+  useEventListener(window, 'resize', updateListHeight)
+})
+
+// On first load, bring the action into view inside the list: the first live
+// match, or failing that the next upcoming one. A hash anchor (home CTA) wins.
+let didAutoScroll = false
+function autoScrollTargetId(): string | null {
+  const flat = grouped.value.flatMap((g) => g.items)
+  const live = flat.find((m) => (STATUS_BUCKETS.live as readonly string[]).includes(m.status))
+  if (live) return live.id
+  const now = Date.now()
+  const next = flat.find((m) => m.status === 'SCHEDULED' && new Date(m.kickoffTime).getTime() >= now)
+  return next?.id ?? null
+}
+watch(
+  [grouped, pageMounted],
+  async () => {
+    if (didAutoScroll || !pageMounted.value || route.hash.startsWith('#match-')) return
+    if (!grouped.value.length || !listEl.value) return
+    const id = autoScrollTargetId()
+    didAutoScroll = true
+    if (!id) return
+    await nextTick()
+    const el = document.getElementById(`match-${id}`)
+    const c = listEl.value
+    if (!el || !c) return
+    c.scrollTo({ top: el.getBoundingClientRect().top - c.getBoundingClientRect().top + c.scrollTop, behavior: 'smooth' })
   },
   { immediate: true, flush: 'post' },
 )
@@ -146,6 +198,8 @@ function toggleSearch() {
   searchOpen.value ? closeSearch() : openSearch()
 }
 useHotkey('Mod+F', openSearch)
+// The search bar sits above the list and shifts its top edge - remeasure.
+watch(searchOpen, () => nextTick(updateListHeight))
 </script>
 
 <template>
@@ -226,10 +280,19 @@ useHotkey('Mod+F', openSearch)
     <div v-else-if="!matches || !matches.length" class="opacity-60">{{ t('matches.empty') }}</div>
     <div v-else-if="!grouped.length" class="opacity-60">{{ t('matches.noResults') }}</div>
 
-    <div v-else class="flex flex-col gap-8">
-      <section v-for="g in grouped" :key="g.label">
-        <h2 class="text-xs uppercase tracking-wider font-semibold mb-3" style="color: var(--p-text-muted-color)">{{ g.label }}</h2>
-        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+    <div v-else ref="listEl" class="flex flex-col gap-8 overflow-y-auto overscroll-contain pr-1" :style="{ maxHeight: listMaxH }">
+      <section v-for="g in grouped" :key="g.id">
+        <button
+          type="button"
+          class="flex items-center justify-between w-full text-xs uppercase tracking-wider font-semibold mb-3 hover:opacity-80 transition"
+          style="color: var(--p-text-muted-color)"
+          :aria-expanded="!collapsedRounds.has(g.id)"
+          @click="toggleRound(g.id)"
+        >
+          <span>{{ g.label }}</span>
+          <i class="pi pi-chevron-down transition-transform" :class="{ '-rotate-90': collapsedRounds.has(g.id) }" style="font-size: 0.7rem" />
+        </button>
+        <div v-show="!collapsedRounds.has(g.id)" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <div
             v-for="m in g.items"
             :id="`match-${m.id}`"
