@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-06-14
+
 ### Changed
 - On the fixtures page, clicking anywhere on a match card opens the match, not just its title (the score inputs, joker button and team links still work as before).
 - The match play-by-play is now written in your own language (it previously echoed the data feed's English commentary), and each line drops the redundant country name since the team flag already shows the side.
