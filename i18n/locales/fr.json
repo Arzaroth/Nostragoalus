@@ -51,6 +51,19 @@
     "odds": "Afficher les cotes",
     "oddsHint": "Cotes décimales 1X2 sous chaque match : 1 = victoire domicile, X = nul, 2 = victoire extérieur. Plus le nombre est bas, plus c'est probable. Figées au coup d'envoi."
   },
+  "skins": {
+    "title": "My Little Prono",
+    "hint": "Vous l'avez trouvé. Choisissez votre poney - tout le site change de style.",
+    "default": "Défaut",
+    "unlockedTitle": "My Little Prono débloqué !",
+    "unlockedHint": "Choisissez votre poney dans les Préférences.",
+    "twilight": "Twilight Sparkle",
+    "rainbow": "Rainbow Dash",
+    "pinkie": "Pinkie Pie",
+    "applejack": "Applejack",
+    "rarity": "Rarity",
+    "fluttershy": "Fluttershy"
+  },
   "odds": {
     "title": "Cotes des bookmakers — 1 : victoire domicile, X : nul, 2 : victoire extérieur. Cotes décimales ; plus le nombre est bas, plus le résultat est probable.",
     "home": "Cote victoire domicile",

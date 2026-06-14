@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { showOddsEnabled } from '../utils/prefs'
+import { SKINS, type SkinId } from '../utils/skins'
 const { t, locale, setLocale } = useI18n()
 const { session, updateUser } = useAuth()
 const { preference, setPreference } = useTheme()
+const { skin, unlocked, setSkin } = useSkin()
 
 const saved = ref(false)
 let savedTimer: ReturnType<typeof setTimeout> | undefined
@@ -69,6 +71,20 @@ const themeOptions = computed(() => [
   { label: t('prefs.dark'), value: 'dark', icon: 'pi pi-moon' },
   { label: t('prefs.system'), value: 'system', icon: 'pi pi-desktop' },
 ])
+
+// Konami-unlocked cosmetic skins. '' is the default (un-skinned) theme.
+type SkinChoice = '' | SkinId
+const skinOptions = computed(() => [
+  { value: '' as SkinChoice, label: t('skins.default'), swatch: null as string | null, rainbow: false },
+  ...SKINS.map((s) => ({ value: s.id as SkinChoice, label: t(`skins.${s.id}`), swatch: s.swatch as string | null, rainbow: s.rainbow === true })),
+])
+const skinModel = computed({
+  get: (): SkinChoice => skin.value ?? '',
+  set: (v: SkinChoice) => {
+    setSkin(v || null)
+    persistFlash()
+  },
+})
 </script>
 
 <template>
@@ -93,6 +109,28 @@ const themeOptions = computed(() => [
                 <span class="flex items-center gap-2"><i :class="option.icon" />{{ option.label }}</span>
               </template>
             </SelectButton>
+          </div>
+          <div v-if="unlocked" class="flex flex-col gap-1" data-testid="skin-picker">
+            <label class="text-sm font-medium">{{ t('skins.title') }}</label>
+            <p class="text-xs" style="color: var(--p-text-muted-color)">{{ t('skins.hint') }}</p>
+            <div class="flex flex-wrap gap-2 mt-1">
+              <button
+                v-for="opt in skinOptions"
+                :key="opt.value"
+                type="button"
+                class="ng-skin-chip"
+                :class="{ 'ng-skin-chip--active': skinModel === opt.value }"
+                :aria-pressed="skinModel === opt.value"
+                @click="skinModel = opt.value"
+              >
+                <span
+                  class="ng-skin-dot"
+                  :class="{ 'ng-skin-dot--rainbow': opt.rainbow, 'ng-skin-dot--none': !opt.swatch }"
+                  :style="opt.swatch && !opt.rainbow ? { background: opt.swatch } : undefined"
+                />
+                {{ opt.label }}
+              </button>
+            </div>
           </div>
           <div class="h-4 text-xs" style="color: var(--p-primary-color)">
             <span v-if="saved"><i class="pi pi-check" /> {{ t('prefs.saved') }}</span>
@@ -123,3 +161,38 @@ const themeOptions = computed(() => [
     </section>
   </div>
 </template>
+
+<style scoped>
+.ng-skin-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid var(--p-content-border-color, #d8dcef);
+  padding: 0.35rem 0.85rem;
+  font-size: 0.85rem;
+  background: var(--p-content-background);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.ng-skin-chip:hover {
+  border-color: var(--p-primary-color);
+}
+.ng-skin-chip--active {
+  border-color: var(--p-primary-color);
+  box-shadow: inset 0 0 0 1px var(--p-primary-color);
+  font-weight: 600;
+}
+.ng-skin-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  flex: none;
+}
+.ng-skin-dot--none {
+  background: linear-gradient(135deg, #c7d2fe, #6366f1);
+}
+.ng-skin-dot--rainbow {
+  background: conic-gradient(#ff5a5a, #ffd23f, #4bbf5a, #3fb6ff, #8b5fd0, #ff5a5a);
+}
+</style>
