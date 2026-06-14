@@ -282,3 +282,18 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 - [ ] `embedSrcFor` falls back to the raw URL for a force-embedded
       non-whitelist host - revisit if a sandboxed raw embed proves too hostile
       (popunders/redirects); could restrict force-embed further.
+
+## SSO / better-auth 1.6.18 (deferred from the api-keys upgrade)
+
+- [ ] SSO domain ownership verification (DNS TXT): deliberately NOT added. SSO
+      providers are registered by site admins only, so domain-ownership proof
+      would gate an actor who's already fully trusted (single-tenant model) - it
+      buys nothing today. The plugin ships the primitives (domainVerification
+      token endpoint + verify flow). Add only if provider registration is ever
+      delegated to a less-trusted role or the app goes multi-tenant; then make
+      new providers start domainVerified=false and grandfather existing ones
+      (already default true). Cheaper interim guard against accidental capture
+      (admin fat-fingers a public domain): warn/block well-known freemail
+      domains (gmail.com, outlook.com, ...) at registration.
+- [ ] History: commit 6d8f8a7 (trustEmailVerified) is superseded by 3db9e9a
+      (domainVerified); squash the two during the feature-treatment rebase.
