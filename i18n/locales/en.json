@@ -441,6 +441,33 @@
     "deleteMailSent": "Confirmation mail sent - the account will be deleted when you open the link."
   },
   "admin": {
+    "apiKeys": {
+      "title": "API clients",
+      "hint": "Machine credentials for integrations (e.g. the watch-link bot). Keys are scoped and shown once at creation.",
+      "createdWarn": "Copy this key now - it is stored hashed and will not be shown again.",
+      "copy": "Copy",
+      "copied": "Copied",
+      "done": "Done",
+      "none": "No API keys yet.",
+      "colName": "Name",
+      "colScopes": "Scopes",
+      "colKey": "Key",
+      "colExpires": "Expires",
+      "colLastUsed": "Last used",
+      "never": "Never",
+      "revoke": "Revoke",
+      "addTitle": "New key",
+      "name": "Name",
+      "namePlaceholder": "e.g. watch-link bot",
+      "scopeMediaWrite": "Watch links (write)",
+      "expiry": "Expiry",
+      "expiry_never": "No expiry",
+      "expiry_d30": "30 days",
+      "expiry_d90": "90 days",
+      "expiry_y1": "1 year",
+      "create": "Create key",
+      "createFailed": "Failed to create the key."
+    },
     "title": "Admin",
     "forbidden": "You don't have admin access.",
     "signup": {

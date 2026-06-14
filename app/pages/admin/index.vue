@@ -327,6 +327,7 @@ const navItems = [
   { key: 'roadmap', icon: 'pi pi-map', label: 'admin.roadmap.title', hint: 'admin.roadmap.hint' },
   { key: 'cron', icon: 'pi pi-clock', label: 'cron.title', hint: 'cron.hint' },
   { key: 'scoring', icon: 'pi pi-calculator', label: 'admin.scoring.title', hint: 'admin.scoring.hint' },
+  { key: 'api-keys', icon: 'pi pi-key', label: 'admin.apiKeys.title', hint: 'admin.apiKeys.hint' },
 ] as const
 const navKeys = new Set<string>(navItems.map((i) => i.key))
 const active = computed<string>({
@@ -605,6 +606,9 @@ const counts = computed<Record<string, { total: number; loading: boolean }>>(() 
 
         <!-- Scoring config -->
         <AdminScoringSection v-show="active === 'scoring'" :is-admin="isAdmin" />
+
+        <!-- API clients (machine keys) -->
+        <AdminApiKeysSection v-show="active === 'api-keys'" :is-admin="isAdmin" />
       </div>
     </div>
   </div>
