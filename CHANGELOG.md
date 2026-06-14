@@ -8,6 +8,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 ### Added
 - **Second chance for champion & Golden Boot picks**: once the group stage is nearly over (from the last group round until the knockouts begin), you get one last chance to switch your tournament-winner and top-scorer picks - for half the points. The switch is permanent (reverting doesn't restore the full value), a confirmation spells that out, and your original pick stays on show beside the new one. A player who never picked can also make a late first pick during the window, for half.
 
+### Fixed
+- The Best scorer showcase now shows a player's official headshot when one exists only on the squad feed (some players, e.g. Edin Dzeko, had no image at the id-derived path we used and fell back to the team flag).
+- On mobile, the fixtures list now waits for the Champion and Best scorer cards above it to finish loading before it appears, so the on-load jump to the next match lands on the right row instead of stopping short once those cards grow.
+
 ## [1.10.0] - 2026-06-14
 
 ### Changed
