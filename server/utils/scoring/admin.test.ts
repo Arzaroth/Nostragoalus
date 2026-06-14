@@ -93,6 +93,43 @@ describe('saveScoringConfig', () => {
     await expect(saveScoringConfig(db, 'nope', withExact(10))).rejects.toThrow(/competition not found/)
     await client.close()
   })
+
+  it('skips competitions that have their own override when the default changes', async () => {
+    const { db, client } = await createTestDb()
+    await ensureDefaultScoringConfig(db)
+    const a = await seedScoredComp(db, 'aaa')
+    const b = await seedScoredComp(db, 'bbb')
+    await finalizeMatches(db, NOW)
+    await saveScoringConfig(db, a.competitionId, withExact(20))
+
+    const result = await saveScoringConfig(db, null, withExact(10))
+    // Only b uses the default; a keeps its override.
+    expect(result.recomputed).toBe(1)
+    expect(await pointsFor(db, a.matchId)).toBe(20)
+    expect(await pointsFor(db, b.matchId)).toBe(10)
+    await client.close()
+  })
+
+  it('recomputes nothing for finished matches without a usable score', async () => {
+    const { db, client } = await createTestDb()
+    await ensureDefaultScoringConfig(db)
+    const competitionId = await seedCompetition(db, { slug: 'nul', name: 'nul' })
+    const roundId = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+    // One missing both scores, one missing only the away score: neither scorable.
+    await makeMatch(db, { competitionId, roundId, kickoffTime: KICKOFF, status: 'FINISHED' })
+    await makeMatch(db, { competitionId, roundId, kickoffTime: KICKOFF, status: 'FINISHED', fullTimeHome: 1 })
+
+    const result = await saveScoringConfig(db, null, withExact(10))
+    expect(result.recomputed).toBe(0)
+    await client.close()
+  })
+
+  it('seeds version 1 when no config exists yet', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db, { slug: 'fresh', name: 'fresh' })
+    expect((await saveScoringConfig(db, competitionId, withExact(5))).version).toBe(1)
+    await client.close()
+  })
 })
 
 describe('deleteScoringConfigOverride', () => {
@@ -120,6 +157,13 @@ describe('deleteScoringConfigOverride', () => {
 })
 
 describe('listScoringConfigs', () => {
+  it('returns no entries when no default is seeded', async () => {
+    const { db, client } = await createTestDb()
+    const list = await listScoringConfigs(db)
+    expect(list.entries).toHaveLength(0)
+    await client.close()
+  })
+
   it('returns the default first, the overrides, and per-competition flags', async () => {
     const { db, client } = await createTestDb()
     await ensureDefaultScoringConfig(db)

@@ -52,9 +52,10 @@ export default defineNuxtConfig({
     checkOutdatedBuildInterval: 10 * 60 * 1000,
   },
 
-  // Scheduled tasks fold into the admin page's rail; keep the old path working.
+  // Scheduled tasks + scoring fold into the admin page's rail; keep the old paths working.
   routeRules: {
     '/admin/cron': { redirect: '/admin?section=cron' },
+    '/admin/scoring': { redirect: '/admin?section=scoring' },
   },
 
   pwa: {

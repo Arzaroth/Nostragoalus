@@ -309,6 +309,7 @@ const navItems = [
   { key: 'leagues', icon: 'pi pi-trophy', label: 'admin.leagues.title', hint: 'admin.leagues.hint' },
   { key: 'roadmap', icon: 'pi pi-map', label: 'admin.roadmap.title', hint: 'admin.roadmap.hint' },
   { key: 'cron', icon: 'pi pi-clock', label: 'cron.title', hint: 'cron.hint' },
+  { key: 'scoring', icon: 'pi pi-calculator', label: 'admin.scoring.title', hint: 'admin.scoring.hint' },
 ] as const
 const navKeys = new Set<string>(navItems.map((i) => i.key))
 const active = computed<string>({
@@ -579,6 +580,9 @@ const counts = computed<Record<string, { total: number; loading: boolean }>>(() 
 
         <!-- Scheduled tasks -->
         <AdminCronSection v-show="active === 'cron'" :is-admin="isAdmin" />
+
+        <!-- Scoring config -->
+        <AdminScoringSection v-show="active === 'scoring'" :is-admin="isAdmin" />
       </div>
     </div>
   </div>

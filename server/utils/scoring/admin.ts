@@ -33,10 +33,11 @@ export async function listScoringConfigs(db: AppDatabase): Promise<ScoringConfig
   }
   for (const r of rows) {
     if (r.competitionId === null) continue
-    const c = compById.get(r.competitionId)
+    // The competition is guaranteed present: the override FK cascades with it.
+    const c = compById.get(r.competitionId)!
     entries.push({
       competitionId: r.competitionId,
-      competition: c ? { id: c.id, slug: c.slug, name: c.name } : null,
+      competition: { id: c.id, slug: c.slug, name: c.name },
       version: r.version,
       rules: rulesFromConfigRow(r),
     })
@@ -69,10 +70,12 @@ function rowValuesFromRules(rules: ScoringRules) {
 }
 
 async function nextVersion(db: AppDatabase): Promise<number> {
+  // The aggregate always returns one row; coalesce makes max a number even when
+  // the table is empty, so no optional fallbacks are needed here.
   const [row] = await db
     .select({ max: sql<number>`coalesce(max(${scoringConfig.version}), 0)` })
     .from(scoringConfig)
-  return Number(row?.max ?? 0) + 1
+  return Number(row.max) + 1
 }
 
 // Re-score every finished match of a competition under its currently-resolved
