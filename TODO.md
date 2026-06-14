@@ -407,3 +407,35 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       transaction. Fine for a tournament's match count; if a competition grows
       large, batch the prediction updates or move the recompute off the request
       path (job + progress).
+
+### Deferred from the feature-treatment review
+
+- [ ] The rules->row WRITE mapping has two copies: `rowValuesFromRules`
+      (admin.ts) and the inline insert in `ensureDefaultScoringConfig`
+      (store.ts). They must stay identical; adding a scoring column means editing
+      both plus `rulesFromConfigRow` (config.ts). Extract one `rulesToRowValues`
+      helper beside `rulesFromConfigRow` and use it in both - else the seeded
+      default can silently drop a new column while overrides carry it.
+- [ ] `championPointsForRank` (config.ts) added a third hand-rolled copy of the
+      ordered-tier resolver (alongside `crowdBonus`/`oddsBonus`). Folds into the
+      already-listed generic ordered-tier resolver item above - boundary
+      comparisons differ (`<` vs `<=`) so they can drift.
+- [ ] `AdminScoringSection.vue` redeclares `CrowdTier`/`OddsTier`/`ChampionTier`
+      and a local `Rules` interface already exported as `ScoringRules` from
+      `shared/types/scoring.ts`, and hard-codes default tier literals from
+      config.ts. Import the shared types so a server-side shape change is caught
+      by the compiler instead of silently dropping a field on save.
+- [ ] `ScoringContext` (finalize.ts) is structurally identical to
+      `ActiveScoringConfig` (store.ts) (`{ version, rules }`); admin.ts passes an
+      `ActiveScoringConfig` where a `ScoringContext` is expected and it only
+      type-checks by coincidence. Share one type.
+- [ ] On a DEFAULT-config save, `recomputeCompetition` re-resolves
+      `getScoringConfigFor` once per competition inside the transaction even
+      though they all use the just-saved default. Pass the resolved default down
+      to avoid N config SELECTs (lock-hold time on large competition sets).
+- [ ] Empty tier arrays are accepted by the zod schema (length now capped at 50,
+      but `.min` is 0): an empty `crowdTiers` silently disables the crowd bonus
+      with no error. Either require `.min(1)` or document "empty = layer off".
+- [ ] The admin scoring mutations (PUT/DELETE) trigger a full recompute and have
+      no rate limit. Admin-only and transactional, so blast radius is a
+      self-inflicted DB load spike - revisit only if it bites.

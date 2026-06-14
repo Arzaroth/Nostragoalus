@@ -64,7 +64,8 @@
     "back": "Retour aux matchs",
     "refresh": "Actualiser",
     "confirm": "Confirmer",
-    "clear": "Effacer"
+    "clear": "Effacer",
+    "remove": "Supprimer"
   },
   "home": {
     "tagline": "Pronostiquez les scores, gagnez des points selon votre précision, et devancez vos amis au classement global.",
@@ -500,7 +501,6 @@
       "hint": "Importer les matchs et déclencher les tâches scores en direct / clôture.",
       "import": "Importer les matchs",
       "cronLink": "Tâches de fond",
-      "scoringLink": "Règles de score",
       "importTip": "Récupère et stocke tous les matchs des compétitions actives (premier lancement).",
       "refresh": "Actualiser les matchs",
       "refreshTip": "Re-synchronise les matchs depuis le fournisseur - complète les équipes qualifiées, sans jamais écraser un score terminé.",

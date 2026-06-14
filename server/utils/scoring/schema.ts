@@ -28,21 +28,23 @@ export const scoringRulesSchema = z.object({
   jokerMultiplier: z.number().min(1).max(99.99),
   jokerAppliesToBonus: z.boolean(),
   championBonus: z.number().int().min(0).max(1000),
-  championTiers: z.array(championTierSchema),
+  // Tier arrays are short by nature; cap the length so a hand-built payload
+  // can't bloat the JSONB or the per-score tier scan / recompute loop.
+  championTiers: z.array(championTierSchema).max(50),
   bestScorerBonus: z.number().int().min(0).max(1000),
   bonusSource: z.enum(['NONE', 'CROWD', 'ODDS']),
-  crowdTiers: z.array(crowdTierSchema),
-  crowdOutcomeTiers: z.array(crowdTierSchema).nullable(),
+  crowdTiers: z.array(crowdTierSchema).max(50),
+  crowdOutcomeTiers: z.array(crowdTierSchema).max(50).nullable(),
   crowdMatchBasis: z.enum(['EXACT', 'OUTCOME']),
   crowdMinDenominator: z.number().int().min(0).max(100000),
-  oddsTiers: z.array(oddsTierSchema).nullable(),
+  oddsTiers: z.array(oddsTierSchema).max(50).nullable(),
   oddsAppliesTo: z.enum(['EXACT', 'OUTCOME']),
-})
+}).strict()
 
 export const saveScoringConfigSchema = z.object({
   // Competition slug to override; null or omitted targets the default config.
   competition: z.string().min(1).nullable().optional(),
   rules: scoringRulesSchema,
-})
+}).strict()
 
 export type SaveScoringConfigBody = z.infer<typeof saveScoringConfigSchema>

@@ -5,7 +5,7 @@ import type { AppDatabase } from '../../../db/types'
 import { findRoundId } from '../sync/rounds'
 import { finalizeMatches } from '../sync/finalize'
 import { ensureDefaultScoringConfig } from './store'
-import { listScoringConfigs, saveScoringConfig, deleteScoringConfigOverride } from './admin'
+import { listScoringConfigs, saveScoringConfig, deleteScoringConfigOverride, recomputeCompetition } from './admin'
 import { DEFAULT_RULES } from './config'
 import { makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
 import { prediction } from '../../../db/schema'
@@ -121,6 +121,17 @@ describe('saveScoringConfig', () => {
 
     const result = await saveScoringConfig(db, null, withExact(10))
     expect(result.recomputed).toBe(0)
+    await client.close()
+  })
+
+  it('recomputeCompetition counts nothing when matches are already current (no version bump)', async () => {
+    const { db, client } = await createTestDb()
+    await ensureDefaultScoringConfig(db)
+    const a = await seedScoredComp(db, 'aaa')
+    await finalizeMatches(db, NOW)
+    // Called directly (no version bump): the finished match is already scored at
+    // the active version, so scoreMatchRow returns 'unchanged' and nothing counts.
+    expect(await recomputeCompetition(db, a.competitionId)).toBe(0)
     await client.close()
   })
 
