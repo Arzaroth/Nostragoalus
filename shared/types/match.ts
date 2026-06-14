@@ -203,6 +203,10 @@ export interface SquadPlayer {
   shirtNumber: number | null
   position: 'GK' | 'DF' | 'MF' | 'FW' | null
   captain: boolean
+  // The provider's own headshot URL when it ships one (FIFA's digitalhub URL
+  // carries an opaque per-player id we can't reconstruct from playerId). Null
+  // falls back to a constructed URL, then the team flag.
+  pictureUrl: string | null
 }
 
 // Tournament-wide aggregates for one team (decoded FIFA stat type codes).

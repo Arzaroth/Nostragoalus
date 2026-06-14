@@ -565,7 +565,7 @@ describe('normalizeFifaSquad', () => {
       [{ AwayTeam: { IdTeam: 'T2', Players: [{ IdPlayer: 'z', PlayerName: [{ Locale: 'en', Description: 'Away Guy' }], ShirtNumber: null, Position: 1 }] } }],
       'T2',
     )
-    expect(squad).toEqual([{ playerId: 'z', name: 'Away Guy', shirtNumber: null, position: 'DF', captain: false }])
+    expect(squad).toEqual([{ playerId: 'z', name: 'Away Guy', shirtNumber: null, position: 'DF', captain: false, pictureUrl: null }])
     expect(normalizeFifaSquad([], 'T2')).toEqual([])
   })
 })
@@ -851,7 +851,7 @@ describe('normalizeFifaSquadDoc + upperSurname', () => {
     const out = normalizeFifaSquadDoc(
       {
         Players: [
-          { IdPlayer: 's1', PlayerName: [{ Locale: 'en', Description: 'William SALIBA' }], JerseyNum: '17', Position: '1' },
+          { IdPlayer: 's1', PlayerName: [{ Locale: 'en', Description: 'William SALIBA' }], JerseyNum: '17', Position: '1', PlayerPicture: { PictureUrl: 'https://digitalhub.fifa.com/transform/g/SALIBA_s1' } },
           { IdPlayer: 's2', ShortName: [{ Locale: 'en', Description: 'LLORIS' }], JerseyNum: 1, Position: 0 },
           { IdPlayer: '', Position: 3 },
           { IdPlayer: 's3', JerseyNum: '', Position: 9 },
@@ -864,6 +864,9 @@ describe('normalizeFifaSquadDoc + upperSurname', () => {
       ['s1', 'DF', false],
       ['s3', null, false],
     ])
+    // PlayerPicture carries the headshot; absent -> null.
+    expect(out.squad.find((p) => p.playerId === 's1')?.pictureUrl).toBe('https://digitalhub.fifa.com/transform/g/SALIBA_s1')
+    expect(out.squad.find((p) => p.playerId === 's3')?.pictureUrl).toBeNull()
     expect(out.coach).toBeNull()
   })
 

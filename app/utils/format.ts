@@ -98,6 +98,16 @@ export function playerPhotoUrl(
   return `https://api.fifa.com/api/v3/picture/players-sq-3/${playerId}`
 }
 
+// A provider-supplied headshot URL, made square. FIFA's digitalhub URL needs a
+// transform query for the 1:1 crop; other URLs pass through untouched.
+export function squarePlayerPhoto(pictureUrl: string | null | undefined, size = 320): string | null {
+  if (!pictureUrl) return null
+  if (pictureUrl.includes('digitalhub.fifa.com')) {
+    return `${pictureUrl}?io=transform:fill,aspectratio:1x1,width:${size},gravity:top&quality=75`
+  }
+  return pictureUrl
+}
+
 // "4–2" when a shootout actually happened, else null (0–0 penalty rows are sync artifacts).
 export function pensResult(m: { penaltiesHome?: number | null; penaltiesAway?: number | null }): string | null {
   const h = m.penaltiesHome ?? null
