@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-06-14
+
 ### Added
 - **Second chance for champion & Golden Boot picks**: once the group stage is nearly over (from the last group round until the knockouts begin), you get one last chance to switch your tournament-winner and top-scorer picks - for half the points. The switch is permanent (reverting doesn't restore the full value), a confirmation spells that out, and your original pick stays on show beside the new one. A player who never picked can also make a late first pick during the window, for half.
 
