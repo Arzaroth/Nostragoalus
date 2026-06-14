@@ -61,6 +61,10 @@ defineRouteMeta({
               },
               "competition": {
                 "type": "string"
+              },
+              "repick": {
+                "type": "boolean",
+                "description": "Use the one-time second-chance window (halves the points) instead of the normal pre-lock edit."
               }
             },
             "required": [

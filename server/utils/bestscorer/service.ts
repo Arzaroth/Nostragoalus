@@ -55,16 +55,29 @@ export async function repickBestScorer(db: AppDatabase, input: SetBestScorerInpu
 
   const existing = await getMyBestScorerPick(db, input.userId, input.competitionId)
   // No original = a late first pick: born halved (repicked), no original.
+  // Upsert (like setBestScorerPick) so a double-submit can't break the unique index.
   if (!existing) {
-    await db.insert(bestScorerPick).values({
-      userId: input.userId,
-      competitionId: input.competitionId,
-      playerId: input.playerId,
-      playerName: input.playerName,
-      teamCode: input.teamCode,
-      teamName: input.teamName,
-      repicked: true,
-    })
+    await db
+      .insert(bestScorerPick)
+      .values({
+        userId: input.userId,
+        competitionId: input.competitionId,
+        playerId: input.playerId,
+        playerName: input.playerName,
+        teamCode: input.teamCode,
+        teamName: input.teamName,
+        repicked: true,
+      })
+      .onConflictDoUpdate({
+        target: [bestScorerPick.userId, bestScorerPick.competitionId],
+        set: {
+          playerId: input.playerId,
+          playerName: input.playerName,
+          teamCode: input.teamCode,
+          teamName: input.teamName,
+          repicked: true,
+        },
+      })
     return
   }
 
