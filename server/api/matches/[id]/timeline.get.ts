@@ -29,8 +29,9 @@ export default defineEventHandler(async (event) => {
   if (!provider.getMatchTimeline) return { events: [] }
 
   try {
-    // The timeline tags each event with a provider team id; the detail resolves
-    // which of those is home/away so the UI can lace events onto the right side.
+    // The timeline tags each event with a provider team id and player ids; the
+    // detail resolves home/away (to lace events onto the right side) and the
+    // roster names (to phrase the commentary ourselves, localized).
     const detail = provider.getMatchDetail
       ? await provider.getMatchDetail({ stageId: rows[0].providerStageId ?? undefined, matchId: rows[0].providerMatchId })
       : null
@@ -38,6 +39,7 @@ export default defineEventHandler(async (event) => {
       matchId: rows[0].providerMatchId,
       homeTeamId: detail?.homeTeamId,
       awayTeamId: detail?.awayTeamId,
+      playerNames: detail?.playerNames,
     })
     // Only freeze the cache for a finished match once it actually has events; a
     // transient empty result must stay refetchable rather than stick forever.

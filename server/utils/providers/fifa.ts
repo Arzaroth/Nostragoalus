@@ -9,6 +9,7 @@ import type {
   NormalizedBracket,
   NormalizedGoal,
   NormalizedMatch,
+  PeriodKind,
   Score,
   SquadPlayer,
   Team,
@@ -311,6 +312,7 @@ export function normalizeFifaMatchDetail(detail: FifaMatchDetailResponse): Match
     goals,
     bookings,
     substitutions,
+    playerNames: Object.fromEntries(names),
     ifesId: detail.Properties?.IdIFES ?? null,
     homeTeamId: detail.HomeTeam?.IdTeam ?? null,
     awayTeamId: detail.AwayTeam?.IdTeam ?? null,
@@ -322,6 +324,10 @@ export interface FifaTimelineEvent {
   MatchMinute?: string | null
   Period?: number | null
   IdTeam?: string | null
+  // Main actor id. For a substitution this is the player coming ON; IdSubPlayer
+  // is the one going OFF (verified against the match-detail Off/On ids).
+  IdPlayer?: string | null
+  IdSubPlayer?: string | null
   HomeGoals?: number | null
   AwayGoals?: number | null
   EventDescription?: FifaLocalized[] | null
@@ -356,28 +362,53 @@ const FIFA_EVENT_KINDS: Record<number, TimelineEventKind> = {
   26: 'period',
 }
 
+// FIFA period codes: 3 = first half, 5 = second half, 7/9 = extra-time halves.
+// Type 7 starts a period, 8 ends one, 26 is the final whistle. We only surface
+// the markers worth a line; an end-of-second-half (8 outside the first half) is
+// dropped because the final whistle (26) already marks full-time.
+function fifaPeriodKind(type: number, period: number | null): PeriodKind | null {
+  if (type === 26) return 'full-time'
+  if (type === 7) {
+    if (period === 5) return 'second-half'
+    if (period === 7 || period === 9) return 'extra-time'
+    return 'kickoff'
+  }
+  // The only remaining period type is 8 (end of a period).
+  return period === 3 ? 'half-time' : null
+}
+
 export function normalizeFifaTimeline(
   response: FifaTimelineResponse,
   homeTeamId?: string | null,
   awayTeamId?: string | null,
+  names?: Record<string, string>,
 ): TimelineEvent[] {
   const events: TimelineEvent[] = []
+  const nameOf = (id?: string | null) => (id && names ? names[id] ?? null : null)
   for (const e of response.Event ?? []) {
     const kind = e.Type == null ? undefined : FIFA_EVENT_KINDS[e.Type]
     if (!kind) continue
-    // Most curated events carry their own commentary, but some (e.g. a penalty
-    // award) come with none - keep them anyway; the UI labels them by kind.
-    const text = e.EventDescription?.[0]?.Description?.trim() ?? ''
+    // Resolve the period marker first; an unlabelled one (e.g. end of the second
+    // half, covered by the final whistle) is dropped.
+    let periodKind: PeriodKind | null = null
+    if (kind === 'period') {
+      periodKind = fifaPeriodKind(e.Type as number, e.Period ?? null)
+      if (!periodKind) continue
+    }
     const rawSide = e.IdTeam && e.IdTeam === homeTeamId ? 'HOME' : e.IdTeam && e.IdTeam === awayTeamId ? 'AWAY' : null
     // An own goal's IdTeam is the scorer's own team, but the goal counts for the
     // opponent (the side whose running score ticks up) - place it there, matching
     // the under-score timeline.
     const side = kind === 'own-goal' && rawSide ? (rawSide === 'HOME' ? 'AWAY' : 'HOME') : rawSide
+    const isSub = kind === 'sub'
     events.push({
       kind,
       side,
       minute: e.MatchMinute ?? null,
-      text,
+      playerName: isSub ? null : nameOf(e.IdPlayer),
+      playerInName: isSub ? nameOf(e.IdPlayer) : null,
+      playerOutName: isSub ? nameOf(e.IdSubPlayer) : null,
+      periodKind,
       homeScore: e.HomeGoals ?? null,
       awayScore: e.AwayGoals ?? null,
     })
@@ -773,9 +804,9 @@ export function fifaProvider(options: FifaOptions): MatchDataProvider {
       )
       return normalizeFifaMatchDetail(detail)
     },
-    async getMatchTimeline({ matchId, homeTeamId, awayTeamId }: { matchId: string; homeTeamId?: string | null; awayTeamId?: string | null }) {
+    async getMatchTimeline({ matchId, homeTeamId, awayTeamId, playerNames }: { matchId: string; homeTeamId?: string | null; awayTeamId?: string | null; playerNames?: Record<string, string> }) {
       const response = await getJson<FifaTimelineResponse>(`${baseUrl}/timelines/${matchId}?language=en`)
-      return normalizeFifaTimeline(response, homeTeamId, awayTeamId)
+      return normalizeFifaTimeline(response, homeTeamId, awayTeamId, playerNames)
     },
     async getBracket() {
       return normalizeFifaBracket(
