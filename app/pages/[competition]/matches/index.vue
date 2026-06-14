@@ -125,15 +125,28 @@ watch(
 // opens/closes above it.
 const listEl = ref<HTMLElement | null>(null)
 const listMaxH = ref<string | undefined>(undefined)
+let scrollLocked = false
 function updateListHeight() {
-  if (!listEl.value) return
-  const top = listEl.value.getBoundingClientRect().top
-  listMaxH.value = `${Math.max(280, window.innerHeight - top - 24)}px`
+  const c = listEl.value
+  if (!c) return
+  const top = c.getBoundingClientRect().top
+  const footerH = document.querySelector('footer')?.getBoundingClientRect().height ?? 0
+  // Reserve the footer (and main's pb-6) below the list so nothing needs a
+  // second, page-level scrollbar - the list is the only scroll region. Locking
+  // page overflow kills any sub-pixel leftover scroll.
+  listMaxH.value = `${Math.max(280, Math.floor(window.innerHeight - top - footerH - 24))}px`
+  if (!scrollLocked) {
+    document.documentElement.style.overflow = 'hidden'
+    scrollLocked = true
+  }
 }
-onMounted(() => {
-  updateListHeight()
-  useEventListener(window, 'resize', updateListHeight)
+onMounted(() => useEventListener(window, 'resize', updateListHeight))
+onBeforeUnmount(() => {
+  if (scrollLocked) document.documentElement.style.removeProperty('overflow')
 })
+// vue-query resolves after mount on a hard reload, so the list isn't in the DOM
+// at onMounted - (re)compute once it appears and on every relayout.
+watch([isLoading, grouped, pageMounted], () => nextTick(updateListHeight), { immediate: true, flush: 'post' })
 
 // On first load, bring the action into view inside the list: the first live
 // match, or failing that the next upcoming one. A hash anchor (home CTA) wins.
@@ -154,6 +167,9 @@ watch(
     const id = autoScrollTargetId()
     didAutoScroll = true
     if (!id) return
+    // Make sure the region is sized (and thus scrollable) before scrolling into
+    // it - the height watcher may not have applied its style yet on this tick.
+    updateListHeight()
     await nextTick()
     const el = document.getElementById(`match-${id}`)
     const c = listEl.value
