@@ -1,6 +1,7 @@
 #!/usr/bin/env -S node
 //MISE description="Seed the public roadmap with a curated starter set (idempotent)"
-//USAGE flag "--force" help="Insert even if the roadmap table is not empty"
+//USAGE flag "--force" help="Insert even if the roadmap table is not empty (appends)"
+//USAGE flag "--reset" help="Delete all existing roadmap items first, then seed (clean state)"
 
 // One-time bootstrap so a fresh deploy's /roadmap isn't empty. After this the
 // roadmap is managed from the admin panel - editing this seed only affects a
@@ -12,6 +13,7 @@
 import { execSync } from 'node:child_process'
 
 const force = process.env.usage_force === 'true'
+const reset = process.env.usage_reset === 'true'
 
 // Curated, public-facing subset of ROADMAP.md (internal notes stay internal).
 // Order within a status = display order (position).
@@ -46,9 +48,11 @@ const values = ITEMS.map((it) => {
 }).join(',\n  ')
 
 // The WHERE on the SELECT (from a VALUES list) makes it a no-op when the table
-// already has items, unless --force drops the guard.
-const guard = force ? '' : '\nWHERE (SELECT count(*) FROM roadmap_item) = 0'
-const sql = `INSERT INTO roadmap_item (id, title, description, status, position)
+// already has items, unless --force/--reset drops the guard. --reset first
+// wipes the table so the seed becomes the whole roadmap again (clean state).
+const guard = force || reset ? '' : '\nWHERE (SELECT count(*) FROM roadmap_item) = 0'
+const wipe = reset ? 'DELETE FROM roadmap_item;\n' : ''
+const sql = `${wipe}INSERT INTO roadmap_item (id, title, description, status, position)
 SELECT * FROM (VALUES
   ${values}
 ) AS v(id, title, description, status, position)${guard};`
@@ -59,4 +63,4 @@ const out = execSync('docker compose exec -T db psql -U nostragoalus -d nostrago
   shell: '/bin/sh',
 })
 const inserted = Number(/INSERT \d+ (\d+)/.exec(out)?.[1] ?? 0)
-console.log(inserted > 0 ? `seeded ${inserted} roadmap item(s)` : 'roadmap already has items - skipped (pass --force to seed anyway)')
+console.log(inserted > 0 ? `seeded ${inserted} roadmap item(s)` : 'roadmap already has items - skipped (pass --reset to wipe and reseed, or --force to append)')
