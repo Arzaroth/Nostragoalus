@@ -33,6 +33,15 @@ export async function getSecondChanceWindow(db: AppDatabase, competitionId: stri
     .where(and(eq(round.competitionId, competitionId), eq(round.kind, 'KNOCKOUT')))
   const end = ko[0]?.k == null ? null : new Date(ko[0].k as string | Date)
 
+  // start and end come from independent queries; bad fixture data (a knockout
+  // placeholder kicking off before the last group round) can invert them, which
+  // would silently keep the window shut. Surface it instead of failing quietly.
+  if (start && end && end <= start) {
+    console.warn(
+      `[second-chance] inverted window for competition ${competitionId}: start ${start.toISOString()} >= end ${end.toISOString()} - re-pick will never open; check fixture kickoff times.`,
+    )
+  }
+
   return { start, end }
 }
 
