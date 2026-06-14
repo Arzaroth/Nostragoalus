@@ -157,6 +157,12 @@ effort buckets; order within a bucket is not priority.
       one per matchday so nobody is dogpiled tournament-wide. Shameable =
       wrong outcome (a miss) AND max total goal error (|dHome| + |dAway|);
       right-outcome-huge-error is comedy, not shame. Jokered = bonus shame.
+- [x] **Champion rank backfill** (shipped in 1.13.0): an admin Background-tasks
+      entry that repairs champion picks saved with a null FIFA rank + the flat
+      bonus (the ranking feed was Cloudflare-blocked during the pick window),
+      re-resolving the pick-window publication (live fetch, bundled snapshot
+      fallback, thin-response guard) and recomputing each pick's rank tier.
+      Supersedes the prod-only mise CLI task.
 - [x] **Second chance for champion / best scorer** (shipped in 1.11.0):
   - Window: **last group round -> first knockout** (option 2), not the whole
     first-kickoff -> R16 span. The re-pick only has info value once the groups
