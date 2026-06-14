@@ -253,8 +253,11 @@
     "fifaRank": "FIFA #{rank}",
     "tag": "Champion",
     "secondChanceOpen": "Second chance: switch your pick one last time before the knockouts - for half the points.",
+    "secondChanceLate": "Second chance: make a late champion pick before the knockouts - for half the points.",
     "changePick": "Change pick",
+    "pickLate": "Pick for half",
     "repickConfirm": "Switch your champion? This is permanent and halves the points for good - even if you switch back. Your original pick stays on show.",
+    "pickLateConfirm": "Set this as your champion now, for half the points? You're picking after the deadline, so it can never be worth full points.",
     "repickedNote": "Changed (half points). Originally: {team}."
   },
   "bestScorer": {
@@ -267,8 +270,11 @@
     "preview": "not saved yet",
     "tag": "Best scorer",
     "secondChanceOpen": "Second chance: switch your pick one last time before the knockouts - for half the points.",
+    "secondChanceLate": "Second chance: make a late Golden Boot pick before the knockouts - for half the points.",
     "changePick": "Change pick",
+    "pickLate": "Pick for half",
     "repickConfirm": "Switch your Golden Boot pick? This is permanent and halves the points for good - even if you switch back. Your original pick stays on show.",
+    "pickLateConfirm": "Set this as your Golden Boot pick now, for half the points? You're picking after the deadline, so it can never be worth full points.",
     "repickedNote": "Changed (half points). Originally: {player}."
   },
   "leaderboard": {

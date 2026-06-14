@@ -253,8 +253,11 @@
     "fifaRank": "FIFA mI' {rank}",
     "tag": "Qa'wI'",
     "secondChanceOpen": "DuH cha'DIch: noH SoQmoHpa', wa'logh wIvlIj yIchoH - QuQ bID.",
+    "secondChanceLate": "DuH cha'DIch: noH SoQmoHpa', che'wI' yIwIv - QuQ bID.",
     "changePick": "wIv yIchoH",
+    "pickLate": "QuQ bID: yIwIv",
     "repickConfirm": "che'wI' DachoH'a'? reH 'oH 'ej QuQ bID rurmoH reH - Dacheghchugh je. wIvlIj wa'DIch cha'taH.",
+    "pickLateConfirm": "DaH che'wI'lI' yIwIv'a', QuQ bID? poH vuS pIq DawIv, vaj not QuQ naQ Suqlu'.",
     "repickedNote": "choHlu' (QuQ bID). wa'DIch: {team}."
   },
   "bestScorer": {
@@ -267,8 +270,11 @@
     "preview": "wej choqlu'",
     "tag": "maQ pubwI'",
     "secondChanceOpen": "DuH cha'DIch: noH SoQmoHpa', wa'logh wIvlIj yIchoH - QuQ bID.",
+    "secondChanceLate": "DuH cha'DIch: noH SoQmoHpa', qIchwI' nIv yIwIv - QuQ bID.",
     "changePick": "wIv yIchoH",
+    "pickLate": "QuQ bID: yIwIv",
     "repickConfirm": "qIchwI' nIv DachoH'a'? reH 'oH 'ej QuQ bID rurmoH reH - Dacheghchugh je. wIvlIj wa'DIch cha'taH.",
+    "pickLateConfirm": "DaH qIchwI' nIvlI' yIwIv'a', QuQ bID? poH vuS pIq DawIv, vaj not QuQ naQ Suqlu'.",
     "repickedNote": "choHlu' (QuQ bID). wa'DIch: {player}."
   },
   "leaderboard": {

@@ -1,7 +1,7 @@
 import { and, eq, min, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { championPick, match } from '../../../db/schema'
-import { LockedError, ValidationError } from '../errors'
+import { LockedError } from '../errors'
 import { getSecondChanceWindow, isSecondChanceOpen } from '../picks/window'
 
 // Champion picks lock when the competition's first match kicks off.
@@ -88,7 +88,19 @@ export async function repickChampion(db: AppDatabase, input: SetChampionInput, n
   if (!isSecondChanceOpen(window, now)) throw new LockedError('the second-chance window is not open')
 
   const existing = await getMyChampionPick(db, input.userId, input.competitionId)
-  if (!existing) throw new ValidationError('no champion pick to change')
+  // No original = a late first pick: born halved (repicked), no original to show.
+  if (!existing) {
+    await db.insert(championPick).values({
+      userId: input.userId,
+      competitionId: input.competitionId,
+      teamCode: input.teamCode,
+      teamName: input.teamName,
+      fifaRank: input.fifaRank,
+      potentialPoints: input.potentialPoints,
+      repicked: true,
+    })
+    return
+  }
 
   await db
     .update(championPick)

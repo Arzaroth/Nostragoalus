@@ -98,55 +98,56 @@ function worthLabel(rank: number | null, points: number) {
         <p class="text-sm mb-2" style="color: var(--p-text-muted-color)">{{ t('champion.hint') }}</p>
 
         <template v-if="data.locked">
-          <span v-if="!data.myPick" style="color: var(--p-text-muted-color)">{{ t('champion.noPick') }}</span>
-          <template v-else>
-            <!-- Second chance: one switch allowed while the window is open. -->
-            <div v-if="data.secondChance.open" class="flex flex-col gap-2">
-              <p class="text-xs" style="color: var(--ng-star)"><i class="pi pi-sparkles text-xs" /> {{ t('champion.secondChanceOpen') }}</p>
-              <div class="flex flex-wrap items-center gap-3">
-                <Select
-                  v-model="selectedCode"
-                  :options="data.teams"
-                  option-label="name"
-                  option-value="code"
-                  filter
-                  :placeholder="t('champion.pick')"
-                  class="w-full sm:w-72"
-                >
-                  <template #value="{ value, placeholder }">
-                    <span v-if="value" class="flex items-center gap-2">
-                      <img v-if="flagUrl(value)" :src="flagUrl(value) || ''" class="w-5 h-5 rounded object-cover" alt="" >
-                      {{ teamName(value) }}
-                    </span>
-                    <span v-else>{{ placeholder }}</span>
-                  </template>
-                  <template #option="{ option }">
-                    <span class="flex items-center gap-2 w-full">
-                      <img v-if="flagUrl(option.code)" :src="flagUrl(option.code) || ''" class="w-5 h-5 rounded object-cover" alt="" >
-                      {{ option.name }}
-                      <span class="ml-auto text-xs whitespace-nowrap" style="color: var(--p-text-muted-color)">
-                        {{ worthLabel(option.fifaRank, prospPts(option.potentialPoints)) }}
-                      </span>
-                    </span>
-                  </template>
-                </Select>
-                <Button
-                  :label="t('champion.changePick')"
-                  icon="pi pi-sync"
-                  severity="warn"
-                  :disabled="!selectedCode || selectedCode === data.myPick.teamCode"
-                  :loading="saving"
-                  @click="onChangePick"
-                />
-              </div>
-            </div>
-            <span v-else class="inline-flex items-center gap-2 text-sm" style="color: var(--p-text-muted-color)">
-              <i class="pi pi-lock text-xs" /> {{ t('champion.lockedIn') }}
-            </span>
-            <p v-if="data.myPick.repicked" class="text-xs mt-2" style="color: var(--p-text-muted-color)">
-              {{ t('champion.repickedNote', { team: data.myPick.originalTeamName }) }}
+          <!-- Second chance: switch an existing pick, or make a late first pick,
+               while the window is open - either way for half the points. -->
+          <div v-if="data.secondChance.open" class="flex flex-col gap-2">
+            <p class="text-xs" style="color: var(--ng-star)">
+              <i class="pi pi-sparkles text-xs" /> {{ data.myPick ? t('champion.secondChanceOpen') : t('champion.secondChanceLate') }}
             </p>
-          </template>
+            <div class="flex flex-wrap items-center gap-3">
+              <Select
+                v-model="selectedCode"
+                :options="data.teams"
+                option-label="name"
+                option-value="code"
+                filter
+                :placeholder="t('champion.pick')"
+                class="w-full sm:w-72"
+              >
+                <template #value="{ value, placeholder }">
+                  <span v-if="value" class="flex items-center gap-2">
+                    <img v-if="flagUrl(value)" :src="flagUrl(value) || ''" class="w-5 h-5 rounded object-cover" alt="" >
+                    {{ teamName(value) }}
+                  </span>
+                  <span v-else>{{ placeholder }}</span>
+                </template>
+                <template #option="{ option }">
+                  <span class="flex items-center gap-2 w-full">
+                    <img v-if="flagUrl(option.code)" :src="flagUrl(option.code) || ''" class="w-5 h-5 rounded object-cover" alt="" >
+                    {{ option.name }}
+                    <span class="ml-auto text-xs whitespace-nowrap" style="color: var(--p-text-muted-color)">
+                      {{ worthLabel(option.fifaRank, prospPts(option.potentialPoints)) }}
+                    </span>
+                  </span>
+                </template>
+              </Select>
+              <Button
+                :label="data.myPick ? t('champion.changePick') : t('champion.pickLate')"
+                icon="pi pi-sync"
+                severity="warn"
+                :disabled="!selectedCode || selectedCode === data.myPick?.teamCode"
+                :loading="saving"
+                @click="onChangePick"
+              />
+            </div>
+          </div>
+          <span v-else-if="!data.myPick" style="color: var(--p-text-muted-color)">{{ t('champion.noPick') }}</span>
+          <span v-else class="inline-flex items-center gap-2 text-sm" style="color: var(--p-text-muted-color)">
+            <i class="pi pi-lock text-xs" /> {{ t('champion.lockedIn') }}
+          </span>
+          <p v-if="data.myPick?.repicked && data.myPick?.originalTeamName" class="text-xs mt-2" style="color: var(--p-text-muted-color)">
+            {{ t('champion.repickedNote', { team: data.myPick.originalTeamName }) }}
+          </p>
         </template>
 
         <template v-else>
@@ -250,9 +251,9 @@ function worthLabel(rank: number | null, points: number) {
 
     <AppConfirmDialog
       v-model:visible="confirmRepick"
-      :header="t('champion.changePick')"
-      :message="t('champion.repickConfirm')"
-      :confirm-label="t('champion.changePick')"
+      :header="data?.myPick ? t('champion.changePick') : t('champion.pickLate')"
+      :message="data?.myPick ? t('champion.repickConfirm') : t('champion.pickLateConfirm')"
+      :confirm-label="data?.myPick ? t('champion.changePick') : t('champion.pickLate')"
       severity="danger"
       @confirm="save(true)"
     />

@@ -1,7 +1,7 @@
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { bestScorerPick, goalEvent, match } from '../../../db/schema'
-import { LockedError, ValidationError } from '../errors'
+import { LockedError } from '../errors'
 import { getChampionLockTime } from '../champion/service'
 import { getSecondChanceWindow, isSecondChanceOpen } from '../picks/window'
 
@@ -54,7 +54,19 @@ export async function repickBestScorer(db: AppDatabase, input: SetBestScorerInpu
   if (!isSecondChanceOpen(window, now)) throw new LockedError('the second-chance window is not open')
 
   const existing = await getMyBestScorerPick(db, input.userId, input.competitionId)
-  if (!existing) throw new ValidationError('no best scorer pick to change')
+  // No original = a late first pick: born halved (repicked), no original.
+  if (!existing) {
+    await db.insert(bestScorerPick).values({
+      userId: input.userId,
+      competitionId: input.competitionId,
+      playerId: input.playerId,
+      playerName: input.playerName,
+      teamCode: input.teamCode,
+      teamName: input.teamName,
+      repicked: true,
+    })
+    return
+  }
 
   await db
     .update(bestScorerPick)
