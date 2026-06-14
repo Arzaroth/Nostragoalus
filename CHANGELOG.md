@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.11.1] - 2026-06-14
+
 ### Fixed
 - During the second-chance window, the Champion and Best scorer cards now show the halved worth for a previewed pick, including a late first pick (it previously showed the full worth even though such a pick scores half).
 
