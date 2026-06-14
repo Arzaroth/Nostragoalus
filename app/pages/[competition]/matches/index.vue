@@ -304,7 +304,7 @@ watch(searchOpen, () => nextTick(updateListHeight))
     <div v-else-if="!matches || !matches.length" class="opacity-60">{{ t('matches.empty') }}</div>
     <div v-else-if="!grouped.length" class="opacity-60">{{ t('matches.noResults') }}</div>
 
-    <div v-else ref="listEl" class="flex flex-col gap-8 overflow-y-auto overscroll-contain pr-1" :style="{ maxHeight: listMaxH }">
+    <div v-else ref="listEl" class="flex flex-col gap-8" :class="isWide ? 'overflow-y-auto overscroll-contain pr-1' : ''" :style="{ maxHeight: listMaxH }">
       <section v-for="g in grouped" :key="g.id">
         <button
           type="button"
