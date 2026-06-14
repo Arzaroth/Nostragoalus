@@ -4,7 +4,7 @@ import { resolveCompetition } from '../../utils/competitions/store'
 import { getChampionLockTime, listCompetitionTeams } from '../../utils/champion/service'
 import { getMyBestScorerPick } from '../../utils/bestscorer/service'
 import { getSecondChanceWindow, isSecondChanceOpen } from '../../utils/picks/window'
-import { getActiveScoringConfig } from '../../utils/scoring/store'
+import { getScoringConfigFor } from '../../utils/scoring/store'
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
     getMyBestScorerPick(db, user.id, competition.id),
     getChampionLockTime(db, competition.id),
     getSecondChanceWindow(db, competition.id),
-    getActiveScoringConfig(db),
+    getScoringConfigFor(db, competition.id),
   ])
 
   return {

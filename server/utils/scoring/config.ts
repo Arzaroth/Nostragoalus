@@ -13,6 +13,7 @@ export interface ScoringRules {
   bestScorerBonus: number
   bonusSource: BonusSource
   crowdTiers: CrowdTier[]
+  crowdOutcomeTiers: CrowdTier[] | null
   crowdMatchBasis: MatchBasis
   crowdMinDenominator: number
   oddsTiers: OddsTier[] | null
@@ -28,6 +29,15 @@ export const DEFAULT_CROWD_TIERS: CrowdTier[] = [
   { maxShareExclusive: 0.12, bonus: 3 },
   { maxShareExclusive: 0.22, bonus: 2 },
   { maxShareExclusive: 0.35, bonus: 1 },
+]
+
+// Result-rarity layer (stacks on top of the exact-score crowd bonus when the
+// crowd basis is EXACT). Share = players who called the correct RESULT / whole
+// field. Deliberately small and shallow: a lone contrarian who reads an upset
+// gets a nudge, never a jackpot - the exact-score tiers stay the main prize.
+export const DEFAULT_CROWD_OUTCOME_TIERS: CrowdTier[] = [
+  { maxShareExclusive: 0.1, bonus: 2 },
+  { maxShareExclusive: 0.25, bonus: 1 },
 ]
 
 export const DEFAULT_ODDS_TIERS: OddsTier[] = [
@@ -69,6 +79,7 @@ export const DEFAULT_RULES: ScoringRules = {
   bestScorerBonus: 10,
   bonusSource: 'CROWD',
   crowdTiers: DEFAULT_CROWD_TIERS,
+  crowdOutcomeTiers: DEFAULT_CROWD_OUTCOME_TIERS,
   crowdMatchBasis: 'EXACT',
   crowdMinDenominator: 5,
   oddsTiers: DEFAULT_ODDS_TIERS,
@@ -87,6 +98,7 @@ export interface ScoringConfigRow {
   bestScorerBonus: number
   bonusSource: BonusSource
   crowdTiers: CrowdTier[]
+  crowdOutcomeTiers: CrowdTier[] | null | undefined
   crowdMatchBasis: MatchBasis
   crowdMinDenominator: number
   oddsTiers: OddsTier[] | null
@@ -103,6 +115,7 @@ export function rulesFromConfigRow(row: ScoringConfigRow): ScoringRules {
     bestScorerBonus: row.bestScorerBonus,
     bonusSource: row.bonusSource,
     crowdTiers: row.crowdTiers,
+    crowdOutcomeTiers: row.crowdOutcomeTiers ?? null,
     crowdMatchBasis: row.crowdMatchBasis,
     crowdMinDenominator: row.crowdMinDenominator,
     oddsTiers: row.oddsTiers,
