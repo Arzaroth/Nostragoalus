@@ -125,20 +125,30 @@ watch(
 const isWide = useMediaQuery('(min-width: 768px)')
 const listEl = ref<HTMLElement | null>(null)
 const listMaxH = ref<string | undefined>(undefined)
+// The list only becomes its own scroll region when it's wide AND there's enough
+// room left below the stuff above it. On mobile, or when the stats/picks already
+// fill the viewport (short/landscape tablets), the page scrolls normally.
+const contained = ref(false)
+const MIN_REGION = 360
 function updateListHeight() {
-  // Mobile: no scroll region, the page scrolls normally.
-  if (!isWide.value) {
+  const c = listEl.value
+  if (!isWide.value || !c) {
+    contained.value = false
     listMaxH.value = undefined
     return
   }
-  const c = listEl.value
-  if (!c) return
   const top = c.getBoundingClientRect().top
   const footerH = document.querySelector('footer')?.getBoundingClientRect().height ?? 0
-  // Reserve the footer (and main's pb-6) below the list so the page itself
-  // doesn't grow past the viewport and sprout a second scrollbar - the list is
-  // the only scroll region.
-  listMaxH.value = `${Math.max(280, Math.floor(window.innerHeight - top - footerH - 24))}px`
+  // Reserve the footer (and main's pb-6) below the list so the page doesn't grow
+  // past the viewport and sprout a second scrollbar.
+  const avail = Math.floor(window.innerHeight - top - footerH - 24)
+  if (avail < MIN_REGION) {
+    contained.value = false
+    listMaxH.value = undefined
+    return
+  }
+  contained.value = true
+  listMaxH.value = `${avail}px`
 }
 onMounted(() => useEventListener(window, 'resize', updateListHeight))
 // The pick cards above the list grow from skeleton to full size after their
@@ -177,10 +187,10 @@ watch(
     const el = document.getElementById(`match-${id}`)
     if (!el) return
     const c = listEl.value
-    if (isWide.value && c) {
+    if (contained.value && c) {
       c.scrollTo({ top: el.getBoundingClientRect().top - c.getBoundingClientRect().top + c.scrollTop, behavior: 'smooth' })
     } else {
-      // Mobile: no scroll region, scroll the page (row's scroll-margin clears the header).
+      // No scroll region: scroll the page itself (row's scroll-margin clears the header).
       el.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
   },
@@ -304,7 +314,7 @@ watch(searchOpen, () => nextTick(updateListHeight))
     <div v-else-if="!matches || !matches.length" class="opacity-60">{{ t('matches.empty') }}</div>
     <div v-else-if="!grouped.length" class="opacity-60">{{ t('matches.noResults') }}</div>
 
-    <div v-else ref="listEl" class="flex flex-col gap-8" :class="isWide ? 'overflow-y-auto overscroll-contain pr-1' : ''" :style="{ maxHeight: listMaxH }">
+    <div v-else ref="listEl" class="flex flex-col gap-8" :class="contained ? 'overflow-y-auto overscroll-contain pr-1' : ''" :style="{ maxHeight: listMaxH }">
       <section v-for="g in grouped" :key="g.id">
         <button
           type="button"
