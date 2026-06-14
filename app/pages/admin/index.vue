@@ -146,7 +146,7 @@ const queryClient = useQueryClient()
 const invalidateUsers = () => queryClient.invalidateQueries({ queryKey: ['admin-users'] })
 
 // Every league, for the SSO auto-join MultiSelect.
-const { data: allLeaguesData } = useQuery({
+const { data: allLeaguesData, isPending: leaguesLoading } = useQuery({
   queryKey: ['admin-leagues', 'options'],
   enabled: isAdmin,
   queryFn: ({ signal }) =>
@@ -157,6 +157,7 @@ const { data: allLeaguesData } = useQuery({
 const leagueOptions = computed(() =>
   (allLeaguesData.value ?? []).map((l) => ({ label: `${l.name} — ${l.competition.name}`, value: l.id })),
 )
+const leagueTotal = computed(() => allLeaguesData.value?.length ?? 0)
 
 const { data: usersData, isPending: usersLoading } = useQuery({
   queryKey: ['admin-users'],
@@ -318,6 +319,12 @@ const active = computed<string>({
 })
 const nav = computed(() => navItems.map((i) => ({ ...i, label: t(i.label), hint: t(i.hint) })))
 const activeItem = computed(() => nav.value.find((i) => i.key === active.value) ?? nav.value[0])
+
+// Rail badges: total count next to the categories that have one.
+const counts = computed<Record<string, { total: number; loading: boolean }>>(() => ({
+  users: { total: userTotal.value, loading: usersLoading.value },
+  leagues: { total: leagueTotal.value, loading: leaguesLoading.value },
+}))
 </script>
 
 <template>
@@ -345,7 +352,7 @@ const activeItem = computed(() => nav.value.find((i) => i.key === active.value) 
             >
               <i :class="item.icon" class="text-base" />
               <span class="flex-1 truncate">{{ item.label }}</span>
-              <Tag v-if="item.key === 'users' && !usersLoading" :value="String(userTotal)" severity="secondary" rounded />
+              <Tag v-if="counts[item.key] && !counts[item.key].loading" :value="String(counts[item.key].total)" severity="secondary" rounded />
             </button>
           </li>
         </ul>
