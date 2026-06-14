@@ -229,6 +229,27 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       en/fr allowlist lives only in the endpoint. Consider an explicit
       { language, localizeText } or moving the allowlist into the provider.
 
+## Admin panel redesign (deferred from the feature-treatment review)
+
+- [ ] Sections render with `v-show`, so all of them mount on `/admin` load and
+      every section's query fires eagerly (enabled: isAdmin) - including the now
+      folded-in `/api/admin/cron`, which used to fetch only when you visited
+      `/admin/cron`. Gate each section's fetch on being the active section (or
+      lazy-mount the hidden ones) so opening the default section doesn't fan out
+      6+ admin round-trips. AdminCronSection's 30s `useTimestamp` tick also runs
+      for the whole admin session even while hidden.
+- [ ] AdminCronSection uses `useFetch(..., { immediate: props.isAdmin })` - read
+      once, non-reactive, unlike the sibling sections' `enabled: computed(() =>
+      props.isAdmin)`. Fine today (parent awaits isAdmin before render) but
+      fragile to render-order changes; make it reactive for consistency.
+- [ ] The rail count badges use a `counts: Record<string, {total,loading}>`
+      keyed by nav key (only users/leagues populated); a key typo silently drops
+      a badge with no type error. Put total/loading on the navItems entries
+      instead. Also: the leagues badge total comes from a separate
+      ['admin-leagues','options'] query while AdminLeaguesSection runs its own
+      ['admin-leagues', slug] query - two fetches of /api/admin/leagues that can
+      diverge/stale after a create-delete if only one key is invalidated.
+
 
 ## Done (post-merge correctness pass)
 

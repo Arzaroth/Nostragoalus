@@ -2,6 +2,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 
 const { t } = useI18n()
+useHead({ title: t('admin.title') })
 
 const { data: status } = await useFetch<{ isAdmin: boolean }>('/api/admin/status')
 const isAdmin = computed(() => status.value?.isAdmin === true)
