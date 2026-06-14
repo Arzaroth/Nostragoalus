@@ -78,6 +78,13 @@ const showcase = computed(() => {
   return data.value?.myPick ?? null
 })
 const isSaved = computed(() => !!data.value?.myPick && showcase.value?.playerId === data.value.myPick.playerId)
+// Worth shown under the showcase: half when the saved pick was re-picked, or when
+// previewing a pick during the window (the server halves anything saved now).
+const worthPoints = computed(() => {
+  const bonus = data.value?.bonus ?? 0
+  const halve = isSaved.value ? !!data.value?.myPick?.repicked : !!(data.value?.locked && data.value?.secondChance?.open)
+  return halve ? halvePickPoints(bonus) : bonus
+})
 
 // Prefer the provider's own headshot (FIFA's digitalhub URL, which we can't
 // reconstruct from the id) from the loaded squad; fall back to a constructed
@@ -258,7 +265,7 @@ const holo = computed(() => {
             class="text-xs block mt-0.5"
             :class="{ invisible: !(showcase && data.bonus) }"
             style="color: var(--p-text-muted-color)"
-          >{{ data.bonus ? t('champion.worth', { points: isSaved && data.myPick?.repicked ? Math.floor(data.bonus / 2) : data.bonus }) : ' ' }}</span>
+          >{{ data.bonus ? t('champion.worth', { points: worthPoints }) : ' ' }}</span>
         </div>
       </div>
     </div>

@@ -283,26 +283,20 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       code never matches a winner, and the eventual top scorer isn't known at
       pick time), but validating against the real teams/squad would reject junk
       picks. Pre-existing on the base set paths; the repick paths inherit it.
-- [ ] (feature-treatment review) setChampionPick is select-then-update/insert
-      (not the race-safe onConflictDoUpdate that setBestScorerPick and now both
-      repick paths use); a double-submit could 500 on the (user, competition)
-      unique index. Align setChampionPick with the upsert pattern. The repick
-      update-branch original* snapshot is also a non-atomic read-modify-write
-      (harmless today - both racers write the same original).
-- [ ] (feature-treatment review) getSecondChanceWindow computes start (last
-      group matchday min kickoff) and end (first knockout min kickoff)
-      independently; bad/early provider data (a knockout placeholder kicking off
-      before the last group round) makes start >= end, silently disabling the
-      window with no log. Guard/log when end <= start.
-- [ ] (feature-treatment review) Second chance doubled the champion/best-scorer
-      clone the meta-pick item (above) already targets: repickChampion ==
-      repickBestScorer, the secondChance GET shape + repick PUT dispatch are
-      copy-pasted, and the half-points rule lives in ~6 spots (two award SQL
-      forms + Champion/BestScorerPick worth math) that can drift. Also the two
-      pickers gate the re-pick UI differently (champion `repickMode` vs
-      best-scorer `isRepick`/`showPickers`), so a previewed late first pick shows
-      full worth on champion but the server halves it. Fold into the meta-pick
-      generalization with one shared halve helper + worth display.
+- [x] setChampionPick now upserts (onConflictDoUpdate), race-safe like
+      setBestScorerPick and both repick paths. Remaining (low): the repick
+      update-branch original* snapshot is still a non-atomic read-modify-write -
+      harmless today since concurrent first-switches write the same original.
+- [x] getSecondChanceWindow now warns when end <= start (inverted window from
+      bad fixture data); isSecondChanceOpen already returns false, so the feature
+      no longer disables itself silently.
+- [x] (partial) The half-points rule is now one helper (`halvePickPoints` in
+      app/utils/format) behind both pickers' worth display, and both halve a
+      *previewed* pick during the window - champion's late-first-pick preview no
+      longer shows full worth while the server halves it. Remaining: the deeper
+      meta-pick generalization (repickChampion == repickBestScorer, the
+      secondChance GET shape + repick PUT dispatch, and the two award-SQL forms)
+      folds into the "Best scorer" meta-pick item above.
 
 ## Champion tiers (deferred from the merge review)
 

@@ -77,6 +77,13 @@ export function isLocked(kickoffTime: string | Date, now: number = Date.now()): 
   return new Date(kickoffTime).getTime() <= now
 }
 
+// A second-chance (re-picked) pick scores half, rounded down - the one source of
+// truth for the halving the champion/best-scorer pickers display. The award
+// itself halves server-side (per-row SQL for champion, flat for best scorer).
+export function halvePickPoints(points: number): number {
+  return Math.floor(points / 2)
+}
+
 // FIFA flag image derived from a team's tricode (e.g. MEX) - avoids storing crests.
 export function flagUrl(code: string | null | undefined): string | null {
   return code ? `https://api.fifa.com/api/v3/picture/flags-sq-3/${code}` : null

@@ -13,11 +13,11 @@ watchEffect(() => {
 })
 
 const confirmRepick = ref(false)
-// In the window, a *prospective* switch (dropdown option or a previewed new
-// pick) is worth half - but the current saved pick still pays full until you
-// actually switch (then it's halved for good).
-const repickMode = computed(() => !!(data.value?.locked && data.value?.secondChance?.open && data.value?.myPick))
-const prospPts = (points: number) => (repickMode.value ? Math.floor(points / 2) : points)
+// In the window, anything you'd save now is a re-pick worth half - a switch of an
+// existing pick OR a late first pick (the server halves both). The current saved
+// pick still pays full until you actually switch (then it's halved for good).
+const repickMode = computed(() => !!(data.value?.locked && data.value?.secondChance?.open))
+const prospPts = (points: number) => (repickMode.value ? halvePickPoints(points) : points)
 
 // First switch is the consequential one (it latches the permanent half); a
 // later switch by an already-re-picked user changes nothing about the penalty,
@@ -64,7 +64,7 @@ const showcaseWorth = computed<{ rank: number | null; points: number } | null>((
   if (isSaved.value && data.value?.myPick) {
     // The saved pick: full worth until it's actually re-picked, then half.
     const full = data.value.myPick.potentialPoints
-    return { rank: data.value.myPick.fifaRank ?? null, points: data.value.myPick.repicked ? Math.floor(full / 2) : full }
+    return { rank: data.value.myPick.fifaRank ?? null, points: data.value.myPick.repicked ? halvePickPoints(full) : full }
   }
   // A previewed (not-yet-saved) team in the window is a prospective switch.
   const team = data.value?.teams?.find((tm: ChampionTeam) => tm.code === showcaseCode.value)
