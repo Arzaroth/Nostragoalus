@@ -9,6 +9,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 - On the fixtures page, clicking anywhere on a match card opens the match, not just its title (the score inputs, joker button and team links still work as before).
 
 ### Fixed
+- Joker buttons are now disabled for the rest of a round once that round's joker is locked on a started match (it can't be moved), with a tooltip explaining why - instead of letting the click fail. Any remaining error shows as a toast rather than an inline banner that pushed the page down and broke the match list's scroll area.
 - Dates now follow the selected language everywhere (fixtures, match view, bracket, map, team and profile pages) instead of the browser's locale.
 - The match status tags (Scheduled, Live, Full-time, ...), prediction result tiers (Exact score, Goal difference, Right result, Missed), the group labels and the bracket round names (incl. Champion / 3rd place) are now translated in every language.
 - The match play-by-play no longer stretches the whole page when it has a lot of events: on wider screens the timeline scrolls within a bounded area (the page keeps scrolling normally on mobile).

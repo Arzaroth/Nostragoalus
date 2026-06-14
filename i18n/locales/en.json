@@ -230,6 +230,7 @@
     "joker": "Joker",
     "makeJoker": "Set ×2 joker",
     "jokerError": "Couldn't move the joker - a match may have already started.",
+    "jokerRoundLocked": "Your joker is locked on another match this round.",
     "crowd": "everyone",
     "finalDouble": "Final counts double",
     "finalDoubleHint": "Every prediction on the final earns double points - no joker needed.",
