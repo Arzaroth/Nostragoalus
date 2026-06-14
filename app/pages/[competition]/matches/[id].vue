@@ -517,6 +517,8 @@ function toggleFormInfo(side: string, i: number | string) {
       </div>
     </div>
 
+    <MatchMedia :match-id="id" :status="status" />
+
     <div v-if="insights" class="rounded-2xl border p-2 sm:p-4" style="background: var(--p-content-background); border-color: var(--p-content-border-color)">
       <Tabs v-model:value="activeTab">
         <TabList>
