@@ -12,11 +12,10 @@ effort buckets; order within a bucket is not priority.
 
 ## Quick wins
 
-- [ ] **Auto-refresh on new version**: Nuxt built-in (`app:manifest:update`
-      hook / `checkOutdatedBuildInterval`), toast "new version available,
-      reload?".
-- [x] **League invite links** (built on worktree-league-invite-links, pending
-      merge): 96-bit tokens, optional expiry + max-uses, owner/moderator mint/
+- [x] **Auto-refresh on new version** (shipped in 1.5.0): Nuxt built-in
+      (`app:manifest:update` hook / `checkOutdatedBuildInterval`), toast "new
+      version available, reload?".
+- [x] **League invite links** (shipped in 1.6.0): 96-bit tokens, optional expiry + max-uses, owner/moderator mint/
       revoke. Public `/leagues/join/[token]` previews the league signed-out and
       bounces through login via a same-origin-guarded `?next=`, auto-accepting
       on return. Accept is atomic (conditional use-increment gates the cap).
@@ -37,7 +36,7 @@ effort buckets; order within a bucket is not priority.
       Refreshed off the existing live-score watch + 45s poll, no new socket.
 - [ ] **Changelog since-last-seen**: store last-seen version per user, badge
       dot on the changelog nav entry, highlight the delta section.
-- [ ] **Next-match CTA**: on the home banner when logged in; scrolling
+- [x] **Next-match CTA** (shipped in 1.4.0): on the home banner when logged in; scrolling
       dismisses it, and a dismissed match doesn't re-show (sessionStorage).
 - [ ] **Main page rework** (in progress on worktree-main-page-rework): a rolling
       refresh of the landing/home page so it gets you to the matches and your
@@ -68,8 +67,7 @@ effort buckets; order within a bucket is not priority.
       score of every prediction; see how it fared. Draws are self-twins by
       design; one-line tooltip ("even your evil twin agrees") instead of a
       rules paragraph. Exact draw handling still TBD (swap vs crowd-derived).
-- [x] **Email verification for signups** (admin runtime toggle) - built on
-      worktree-email-verification, pending merge:
+- [x] **Email verification for signups** (admin runtime toggle, shipped in 1.8.0):
   - Flag in a new generic `app_setting` key-value table (the SSO config path
     is its own encrypted table; a plain boolean didn't need that). better-auth
     1.6.14 reads `requireEmailVerification` live per request (verified it's
@@ -105,10 +103,11 @@ effort buckets; order within a bucket is not priority.
       feat/api-keys; the media routes opt into `apiKey:{media:['write']}` once
       both branches merge. Still deferred: the separate curation bot that fills
       links via the API (see TODO.md).
-- [ ] **Pick reminders + PWA + web push**: `@vite-pwa/nuxt`; install prompt,
-      offline shell, web push (iOS >= 16.4 for installed PWAs). Push pays for
-      itself twice: lockout reminders for missing picks + goal alerts on
-      predicted matches. Ship before any native wrapper.
+- [ ] **Pick reminders + web push** (installable PWA + offline shell shipped in
+      1.5.0; install prompt and push still pending): `@vite-pwa/nuxt`; web push
+      (iOS >= 16.4 for installed PWAs). Push pays for itself twice: lockout
+      reminders for missing picks + goal alerts on predicted matches. Ship before
+      any native wrapper.
 - [ ] **Tournament Wrapped**: end-of-competition personal recap - best/worst
       pick, joker efficiency, percentile, biggest rarity bonus - with a
       shareable image card. Pure read-side work.
