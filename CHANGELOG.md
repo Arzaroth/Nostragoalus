@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-06-14
+
 ### Added
 - **League tab on the match page**: when you have a league picked, a match that has kicked off shows a "League" tab ranking your fellow members by the points their pick earns on that match. While the match is live the points update with the score (provisional, same scoring as full-time); once it finishes they settle to the final tally. Picks stay hidden until kickoff, and members who did not predict are summarised at the bottom.
 
