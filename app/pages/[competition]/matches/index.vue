@@ -189,8 +189,10 @@ useHotkey('Mod+F', openSearch)
         <div class="text-xs mt-0.5" style="color: var(--p-text-muted-color)">{{ t('picks.jokers', { n: stats.predictions }) }}</div>
       </div>
     </div>
-    <ChampionPick />
-    <BestScorerPick />
+    <div class="grid md:grid-cols-2 gap-4 mb-6">
+      <ChampionPick />
+      <BestScorerPick />
+    </div>
     <Message v-if="jokerErr" severity="warn" class="mb-4">{{ jokerErr }}</Message>
     <!-- Hidden until opened (Mod+F or the title's search icon). On open it
          scrolls to the top (scroll-margin clears the header), then sticks there
