@@ -200,6 +200,12 @@ watch(
 function save(matchId: string, value: { home: number; away: number }) {
   upsert.mutate({ matchId, ...value })
 }
+// The whole card opens the match, but inner controls (score inputs, the joker
+// button, the team links) keep handling their own clicks.
+function openMatch(e: MouseEvent, id: string) {
+  if ((e.target as HTMLElement).closest('a, button, input')) return
+  navigateTo(`/${slug.value}/matches/${id}`)
+}
 const jokerErr = ref('')
 function toggleJoker(p: MyPrediction) {
   jokerErr.value = ''
@@ -331,8 +337,9 @@ watch(searchOpen, () => nextTick(updateListHeight))
             v-for="m in g.items"
             :id="`match-${m.id}`"
             :key="m.id"
-            class="ng-card rounded-2xl border p-4 flex flex-col gap-3"
+            class="ng-card rounded-2xl border p-4 flex flex-col gap-3 cursor-pointer"
             style="background: var(--p-content-background); border-color: var(--p-content-border-color); scroll-margin-top: calc(var(--ng-header-h, 64px) + 16px)"
+            @click="openMatch($event, m.id)"
           >
             <NuxtLink :to="`/${slug}/matches/${m.id}`" class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 group">
               <div class="flex items-center gap-2 min-w-0">
