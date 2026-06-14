@@ -4,6 +4,7 @@ const NuxtLinkC = resolveComponent('NuxtLink')
 const slug = useSelectedCompetition()
 const { query, setPick } = useChampion()
 const data = computed<any>(() => query.data.value)
+const pending = query.isPending
 const selectedCode = ref<string | null>(null)
 const saving = setPick.isPending
 
@@ -59,11 +60,24 @@ function worthLabel(rank: number | null, points: number) {
 </script>
 
 <template>
-  <div v-if="data && data.competition" class="ng-card rounded-2xl border p-5 mb-6" style="background: var(--p-content-background)">
-    <div class="flex flex-col sm:flex-row sm:items-center gap-6">
+  <div v-if="pending" class="ng-card rounded-2xl border p-4 h-full" style="background: var(--p-content-background)">
+    <div class="flex items-center gap-4">
+      <div class="flex-1 min-w-0 flex flex-col gap-2">
+        <Skeleton width="9rem" height="1.25rem" />
+        <Skeleton width="100%" height="0.75rem" />
+        <Skeleton width="55%" height="0.75rem" />
+      </div>
+      <div class="shrink-0 flex flex-col items-center gap-2">
+        <Skeleton width="4rem" height="4rem" border-radius="0.75rem" />
+        <Skeleton width="5rem" height="0.85rem" />
+      </div>
+    </div>
+  </div>
+  <div v-else-if="data && data.competition" class="ng-card rounded-2xl border p-4 h-full" style="background: var(--p-content-background)">
+    <div class="flex flex-col sm:flex-row sm:items-center gap-4">
       <div class="flex-1 min-w-0">
-        <div class="flex items-center gap-2 font-semibold text-lg mb-1"><span class="text-2xl">🏆</span> {{ t('champion.title') }}</div>
-        <p class="text-sm mb-4" style="color: var(--p-text-muted-color)">{{ t('champion.hint') }}</p>
+        <div class="flex items-center gap-2 font-semibold text-base mb-1"><span class="text-xl">🏆</span> {{ t('champion.title') }}</div>
+        <p class="text-sm mb-3" style="color: var(--p-text-muted-color)">{{ t('champion.hint') }}</p>
 
         <template v-if="data.locked">
           <span v-if="!data.myPick" style="color: var(--p-text-muted-color)">{{ t('champion.noPick') }}</span>
@@ -112,22 +126,22 @@ function worthLabel(rank: number | null, points: number) {
       </div>
 
       <!-- Crowned champion showcase -->
-      <div class="shrink-0 flex flex-col items-center gap-2 self-center sm:self-start sm:pr-8">
+      <div class="shrink-0 flex flex-col items-center gap-2 self-center sm:self-start sm:pr-2">
         <component :is="showcaseCode ? NuxtLinkC : 'div'" :to="showcaseCode ? `/${slug}/teams/${showcaseCode}` : undefined" class="relative mt-3 block" :class="{ 'hover:opacity-90': showcaseCode }">
           <template v-if="showcaseCode">
             <div
-              class="absolute -inset-5 rounded-full blur-xl pointer-events-none"
+              class="absolute -inset-4 rounded-full blur-xl pointer-events-none"
               style="background: radial-gradient(circle, rgba(245, 179, 1, 0.4), transparent 70%)"
             />
             <span
-              class="absolute -top-4 -left-4 text-3xl z-10 select-none"
+              class="absolute -top-3 -left-3 text-2xl z-10 select-none"
               style="transform: rotate(-25deg); filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35))"
             >👑</span>
-            <span ref="showcaseEl" class="relative block w-20 h-20 rounded-2xl" style="transition: transform 0.25s ease" :style="{ transform: holo.transform }">
+            <span ref="showcaseEl" class="relative block w-16 h-16 rounded-2xl" style="transition: transform 0.25s ease" :style="{ transform: holo.transform }">
               <img
                 v-if="flagUrl(showcaseCode)"
                 :src="flagUrl(showcaseCode) || ''"
-                class="relative w-20 h-20 rounded-2xl object-cover"
+                class="relative w-16 h-16 rounded-2xl object-cover"
                 style="box-shadow: 0 0 0 3px rgba(245, 179, 1, 0.6), 0 10px 24px rgba(0, 0, 0, 0.3)"
                 alt=""
               >
@@ -142,14 +156,14 @@ function worthLabel(rank: number | null, points: number) {
             </span>
           </template>
           <template v-else>
-            <span class="absolute -top-4 -left-4 text-3xl z-10 opacity-30 grayscale select-none" style="transform: rotate(-25deg)">👑</span>
+            <span class="absolute -top-3 -left-3 text-2xl z-10 opacity-30 grayscale select-none" style="transform: rotate(-25deg)">👑</span>
             <div
-              class="w-20 h-20 rounded-2xl border-2 border-dashed flex items-center justify-center text-2xl"
+              class="w-16 h-16 rounded-2xl border-2 border-dashed flex items-center justify-center text-2xl"
               style="border-color: var(--p-content-border-color); color: var(--p-text-muted-color)"
             >?</div>
           </template>
         </component>
-        <div class="text-center w-28">
+        <div class="text-center w-24">
           <component :is="NuxtLinkC" v-if="showcaseCode" :to="`/${slug}/teams/${showcaseCode}`" class="hover:underline">
             <strong class="block leading-tight">{{ teamName(showcaseCode) }}</strong>
           </component>

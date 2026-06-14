@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Changed
+- The **Champion** and **Best scorer** picks now sit side by side in a tighter, more compact layout, with loading skeletons so they appear together instead of popping in one after the other.
+
 ## [1.8.0] - 2026-06-14
 
 ### Added
