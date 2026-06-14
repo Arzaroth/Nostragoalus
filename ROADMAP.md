@@ -87,6 +87,28 @@ effort buckets; order within a bucket is not priority.
 
 ## Features
 
+- [x] **Editable scoring config + per-competition overrides** (built on
+      feat/scoring-config, pending merge): admin `/admin/scoring` page edits the
+      full ruleset; the DB row was previously seed-only with no UI. Decisions:
+  - One **default** config (null `competition_id`) applies everywhere; an
+    optional **override** row per competition supersedes it. Resolution is
+    override-then-default (`getScoringConfigFor`). Active-row uniqueness is per
+    scope via a partial unique index on `coalesce(competition_id, '')`.
+  - **Every save forces a ladder recompute** in the same transaction: bump the
+    global config `version`, rescore each affected competition's finished
+    matches (the existing version-gate in `scoreMatchRow` does the work) and
+    refresh rank snapshots. A default change recomputes every competition
+    *without* an override; an override change (or its removal) recomputes just
+    that one.
+  - `version` stays **globally unique** across scopes so `scoredAtVersion`
+    equality can't collide when a competition switches default<->override.
+  - **Result-rarity layer** (`crowd_outcome_tiers`): a small bonus for a
+    rare-but-correct RESULT, stacked on the exact-score rarity. Only applied in
+    EXACT basis (OUTCOME basis already rewards a rare result). Folded into
+    `bonusPoints` (no prediction-schema change); `crowdShare` stays the exact
+    layer's share. On by default for fresh installs; existing installs keep the
+    column null (off) until an admin enables it - so an in-flight tournament's
+    standings don't shift without a deliberate, visible recompute.
 - [ ] **Match watch links** (built on feat/match-media, pending merge): admin/
       bot-curated Live / Replay / Highlights links per match, shown in a Watch
       section on the match page. Decisions: a `match_media` child table (kind +

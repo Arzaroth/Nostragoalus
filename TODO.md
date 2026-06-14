@@ -306,3 +306,29 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       domains (gmail.com, outlook.com, ...) at registration.
 - [ ] History: commit 6d8f8a7 (trustEmailVerified) is superseded by 3db9e9a
       (domainVerified); squash the two during the feature-treatment rebase.
+
+## Scoring config (deferred from the feature pass)
+
+- [ ] The result-rarity layer is folded into `prediction.bonusPoints` (no
+      schema change). If the UI ever needs to show the two layers separately
+      (exact-rarity vs result-rarity), persist the split - add a column rather
+      than re-deriving at read time.
+- [ ] A scoring save recomputes prediction points + rank snapshots, but
+      champion and best-scorer bonuses are pick-time snapshots and are NOT
+      retroactively re-valued by a config edit (changing `championTiers` /
+      `bestScorerBonus` only affects future picks / the next finalize award).
+      Decide if a config edit should also re-award those, or document it as
+      intended.
+- [ ] Existing installs get `crowd_outcome_tiers` = null on migration (layer
+      off); only fresh installs ship it on. There is no UI hint that the
+      default has the layer off - the admin discovers it by opening the page.
+      Consider a one-time "new: result-rarity layer" nudge, or a backfill if we
+      decide every deployment should get it.
+- [ ] No optimistic-lock / version check on the admin save: two admins editing
+      the same scope concurrently last-write-wins (each bumps the global
+      version, so no data corruption, just a lost edit). Add an "expected
+      version" guard if it ever matters.
+- [ ] `recomputeCompetition` rescores serially per match inside the save
+      transaction. Fine for a tournament's match count; if a competition grows
+      large, batch the prediction updates or move the recompute off the request
+      path (job + progress).
