@@ -184,6 +184,10 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       scores all locked picks for a match atomically, so it's all-or-nothing), but
       decouple per-row if partial finalize ever becomes reachable, so persisted
       final points are never overwritten by a recompute.
+- [ ] `/api/matches/[id]/league-standings` is left out of the sampled API
+      response-schemas (response-schemas.json): it's member/admin-gated and only
+      returns rows for a seeded league + live match, so the public docs sampler
+      can't reach it. Add it (with seed setup) if we ever document member routes.
 
 ## Crowd bot (deferred from the merge review)
 

@@ -34,7 +34,8 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   predictions; admins can hide any account from the rankings (hidden players still count in crowd totals)
 - **Private leagues**: spin up a league for friends, family or the office with per-league rankings
   and crowd totals; invite by join code or a shareable **invite link** (optional expiry and a cap on
-  uses); private-profile members stay hidden from the board
+  uses); private-profile members stay hidden from the board. A kicked-off match's view gains a
+  **League tab** ranking your members by the points their pick earns on that match (live then final)
 - Live scores over WebSocket with a pixel-art **goal celebration**; match view with possession,
   per-team match stats, goal timeline with cards (incl. touchline bookings) and substitutions,
   **all-time head-to-head** and cross-competition form (friendlies included, causally cut off at
