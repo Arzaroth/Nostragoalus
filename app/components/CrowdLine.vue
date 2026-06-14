@@ -30,8 +30,8 @@ function fmt(v: CrowdTotal | undefined) {
   >
     👥 <template v-if="props.label && !props.leagueActive">{{ t('predictions.crowd') }}: </template>
     <template v-if="props.leagueActive">
-      <span v-tooltip.top="t('leagues.crowdLeague')">{{ fmt(l) }}</span>
-      <span v-tooltip.top="t('predictions.crowd')" class="opacity-70"> · 🌐 {{ fmt(g) }}</span>
+      <span v-tooltip.bottom="t('leagues.crowdLeague')">{{ fmt(l) }}</span>
+      <span v-tooltip.bottom="t('predictions.crowd')" class="opacity-70"> · 🌐 {{ fmt(g) }}</span>
     </template>
     <template v-else>{{ fmt(g) }}</template>
   </span>
