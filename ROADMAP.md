@@ -172,8 +172,12 @@ effort buckets; order within a bucket is not priority.
     on him). The original* columns keep the pre-switch pick for display.
   - Confirm modal spells out the permanence; the original shows beside the new
     pick, and the worth display halves for a re-picked pick.
-  - Same mechanic for best scorer. Requires an existing pick (no original ->
-    no second chance); a user who never picked before lock can't use it.
+  - Same mechanic for best scorer.
+  - Late entry (decided 2026-06-14, during testing): a user with NO original
+    pick can make a first pick inside the window too, born halved (repicked,
+    no original). The half-points already prices the late-info edge, same as a
+    switcher, so locking out non-pickers entirely was needlessly punitive.
+    Pickers show in the window regardless of an existing pick ("Pick for half").
 - [ ] **Roadmap v2 - user suggestions + upvotes** (MVP page is in "Up next"):
       suggestions feed the roadmap, roadmap items get user upvotes. One
       schema, two views. CLI pull command for suggestions. Spam guard: auth
