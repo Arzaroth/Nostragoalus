@@ -144,6 +144,10 @@ onMounted(() => useEventListener(window, 'resize', updateListHeight))
 onBeforeUnmount(() => {
   if (scrollLocked) document.documentElement.style.removeProperty('overflow')
 })
+// The pick cards above the list grow from skeleton to full size after their
+// queries resolve, which shifts the list's top edge - remeasure when they do.
+const picksEl = ref<HTMLElement | null>(null)
+useResizeObserver(picksEl, updateListHeight)
 // vue-query resolves after mount on a hard reload, so the list isn't in the DOM
 // at onMounted - (re)compute once it appears and on every relayout.
 watch([isLoading, grouped, pageMounted], () => nextTick(updateListHeight), { immediate: true, flush: 'post' })
@@ -160,10 +164,12 @@ function autoScrollTargetId(): string | null {
   return next?.id ?? null
 }
 watch(
-  [grouped, pageMounted],
+  [grouped, pageMounted, predictions],
   async () => {
     if (didAutoScroll || !pageMounted.value || route.hash.startsWith('#match-')) return
-    if (!grouped.value.length || !listEl.value) return
+    // Wait for predictions too: finished rows above the target grow a points
+    // line once they load, which would otherwise push the target below the fold.
+    if (!grouped.value.length || !listEl.value || predictions.value === undefined) return
     const id = autoScrollTargetId()
     didAutoScroll = true
     if (!id) return
@@ -259,7 +265,7 @@ watch(searchOpen, () => nextTick(updateListHeight))
         <div class="text-xs mt-0.5" style="color: var(--p-text-muted-color)">{{ t('picks.jokers', { n: stats.predictions }) }}</div>
       </div>
     </div>
-    <div class="grid md:grid-cols-2 gap-4 mb-6">
+    <div ref="picksEl" class="grid md:grid-cols-2 gap-4 mb-6">
       <ChampionPick />
       <BestScorerPick />
     </div>
