@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { eq } from 'drizzle-orm'
 import { createTestDb } from '../../../tests/db'
 import { makeUser, makeCompetition, seedCompetition, makeMatch } from '../../../tests/factories'
@@ -66,6 +66,23 @@ describe('second-chance window', () => {
     const w = await getSecondChanceWindow(db, competitionId)
     expect(w.start).toBeNull()
     expect(w.end?.toISOString()).toBe(WIN_END.toISOString())
+    expect(isSecondChanceOpen(w, DURING)).toBe(false)
+    await client.close()
+  })
+
+  it('warns and never opens when the knockout kicks off before the last group round', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const md3 = (await findRoundId(db, competitionId, 'GROUP', 3))!
+    const r32 = (await findRoundId(db, competitionId, 'R32', null))!
+    // Bad data: the knockout (end) is scheduled before the last group round (start).
+    await makeMatch(db, { competitionId, roundId: r32, kickoffTime: WIN_START, stage: 'R32' })
+    await makeMatch(db, { competitionId, roundId: md3, kickoffTime: WIN_END, stage: 'GROUP' })
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const w = await getSecondChanceWindow(db, competitionId)
+    expect(warn).toHaveBeenCalledOnce()
+    warn.mockRestore()
+    expect(w.start! > w.end!).toBe(true)
     expect(isSecondChanceOpen(w, DURING)).toBe(false)
     await client.close()
   })
