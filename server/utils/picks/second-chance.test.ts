@@ -4,7 +4,7 @@ import { createTestDb } from '../../../tests/db'
 import { makeUser, makeCompetition, seedCompetition, makeMatch } from '../../../tests/factories'
 import { findRoundId } from '../sync/rounds'
 import { championPick, goalEvent } from '../../../db/schema'
-import { LockedError, ValidationError } from '../errors'
+import { LockedError } from '../errors'
 import {
   awardChampionBonuses,
   getMyChampionPick,
@@ -108,17 +108,24 @@ describe('repickChampion', () => {
     await client.close()
   })
 
-  it('rejects outside the window and when there is no pick', async () => {
+  it('rejects before the window opens', async () => {
     const { db, client } = await createTestDb()
     const competitionId = await setupComp(db)
     const userId = await makeUser(db, 'u')
-    await expect(
-      repickChampion(db, { userId, competitionId, teamCode: 'ARG', teamName: 'Argentina', fifaRank: 2, potentialPoints: 8 }, DURING),
-    ).rejects.toThrow(ValidationError) // no existing pick
     await setChampionPick(db, { userId, competitionId, teamCode: 'BRA', teamName: 'Brazil', fifaRank: 1, potentialPoints: 10 }, LOCK_MINUS)
     await expect(
       repickChampion(db, { userId, competitionId, teamCode: 'ARG', teamName: 'Argentina', fifaRank: 2, potentialPoints: 8 }, LOCK),
-    ).rejects.toThrow(LockedError) // before the window opens
+    ).rejects.toThrow(LockedError)
+    await client.close()
+  })
+
+  it('makes a late first pick (no original, born repicked) when the user had none', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await setupComp(db)
+    const userId = await makeUser(db, 'late')
+    await repickChampion(db, { userId, competitionId, teamCode: 'ARG', teamName: 'Argentina', fifaRank: 2, potentialPoints: 8 }, DURING)
+    const pick = await getMyChampionPick(db, userId, competitionId)
+    expect(pick).toMatchObject({ teamCode: 'ARG', repicked: true, originalTeamCode: null, originalTeamName: null })
     await client.close()
   })
 
@@ -179,17 +186,19 @@ describe('repickBestScorer', () => {
     await client.close()
   })
 
-  it('rejects outside the window and when there is no pick', async () => {
+  it('rejects before the window opens, but allows a late first pick inside it', async () => {
     const { db, client } = await createTestDb()
     const competitionId = await setupComp(db)
     const userId = await makeUser(db, 'u')
-    await expect(
-      repickBestScorer(db, { userId, competitionId, playerId: 'p2', playerName: 'Messi', teamCode: 'ARG', teamName: 'Argentina' }, DURING),
-    ).rejects.toThrow(ValidationError)
     await setBestScorerPick(db, { userId, competitionId, playerId: 'p1', playerName: 'Neymar', teamCode: 'BRA', teamName: 'Brazil' }, LOCK_MINUS)
     await expect(
       repickBestScorer(db, { userId, competitionId, playerId: 'p2', playerName: 'Messi', teamCode: 'ARG', teamName: 'Argentina' }, LOCK_MINUS),
     ).rejects.toThrow(LockedError)
+
+    const late = await makeUser(db, 'late')
+    await repickBestScorer(db, { userId: late, competitionId, playerId: 'p9', playerName: 'Haaland', teamCode: 'NOR', teamName: 'Norway' }, DURING)
+    const pick = await getMyBestScorerPick(db, late, competitionId)
+    expect(pick).toMatchObject({ playerId: 'p9', repicked: true, originalPlayerName: null })
     await client.close()
   })
 })
