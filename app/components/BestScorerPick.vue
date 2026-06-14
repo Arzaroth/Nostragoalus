@@ -172,7 +172,7 @@ const holo = computed(() => {
               :disabled="!selectedTeamCode"
               :loading="squadQuery.isFetching.value"
               :placeholder="t('bestScorer.pickPlayer')"
-              class="w-full sm:w-64"
+              class="w-full sm:w-72"
             >
               <template #option="{ option }">
                 <span class="flex items-center gap-2">
