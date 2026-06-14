@@ -45,10 +45,6 @@ const confirmRepick = ref(false)
 // original can't use the window (the server rejects it), so don't offer it.
 const isRepick = computed(() => !!data.value?.locked)
 const showPickers = computed(() => !data.value?.locked || (data.value?.secondChance?.open && !!data.value?.myPick))
-// Worth shown halves in the window or once already re-picked.
-const halveWorth = computed(
-  () => (!!data.value?.locked && data.value?.secondChance?.open && !!data.value?.myPick) || !!data.value?.myPick?.repicked,
-)
 // A user who already re-picked switches again with no fresh penalty -> no modal.
 function onChangePick() {
   if (data.value?.myPick?.repicked) save(true)
@@ -245,7 +241,7 @@ const holo = computed(() => {
             class="text-xs block mt-0.5"
             :class="{ invisible: !(showcase && data.bonus) }"
             style="color: var(--p-text-muted-color)"
-          >{{ data.bonus ? t('champion.worth', { points: halveWorth ? Math.floor(data.bonus / 2) : data.bonus }) : ' ' }}</span>
+          >{{ data.bonus ? t('champion.worth', { points: isSaved && data.myPick?.repicked ? Math.floor(data.bonus / 2) : data.bonus }) : ' ' }}</span>
         </div>
       </div>
     </div>

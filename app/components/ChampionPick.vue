@@ -13,11 +13,11 @@ watchEffect(() => {
 })
 
 const confirmRepick = ref(false)
-// In the re-pick window (or once already re-picked), every worth shown is the
-// halved value a switch would lock in.
+// In the window, a *prospective* switch (dropdown option or a previewed new
+// pick) is worth half - but the current saved pick still pays full until you
+// actually switch (then it's halved for good).
 const repickMode = computed(() => !!(data.value?.locked && data.value?.secondChance?.open && data.value?.myPick))
-const halveWorth = computed(() => repickMode.value || !!data.value?.myPick?.repicked)
-const effPts = (points: number) => (halveWorth.value ? Math.floor(points / 2) : points)
+const prospPts = (points: number) => (repickMode.value ? Math.floor(points / 2) : points)
 
 // First switch is the consequential one (it latches the permanent half); a
 // later switch by an already-re-picked user changes nothing about the penalty,
@@ -62,10 +62,13 @@ const isSaved = computed(() => !!data.value?.myPick && showcaseCode.value === da
 const showcaseWorth = computed<{ rank: number | null; points: number } | null>(() => {
   if (!showcaseCode.value) return null
   if (isSaved.value && data.value?.myPick) {
-    return { rank: data.value.myPick.fifaRank ?? null, points: effPts(data.value.myPick.potentialPoints) }
+    // The saved pick: full worth until it's actually re-picked, then half.
+    const full = data.value.myPick.potentialPoints
+    return { rank: data.value.myPick.fifaRank ?? null, points: data.value.myPick.repicked ? Math.floor(full / 2) : full }
   }
+  // A previewed (not-yet-saved) team in the window is a prospective switch.
   const team = data.value?.teams?.find((tm: ChampionTeam) => tm.code === showcaseCode.value)
-  return team ? { rank: team.fifaRank, points: effPts(team.potentialPoints) } : null
+  return team ? { rank: team.fifaRank, points: prospPts(team.potentialPoints) } : null
 })
 
 function worthLabel(rank: number | null, points: number) {
@@ -122,7 +125,7 @@ function worthLabel(rank: number | null, points: number) {
                       <img v-if="flagUrl(option.code)" :src="flagUrl(option.code) || ''" class="w-5 h-5 rounded object-cover" alt="" >
                       {{ option.name }}
                       <span class="ml-auto text-xs whitespace-nowrap" style="color: var(--p-text-muted-color)">
-                        {{ worthLabel(option.fifaRank, effPts(option.potentialPoints)) }}
+                        {{ worthLabel(option.fifaRank, prospPts(option.potentialPoints)) }}
                       </span>
                     </span>
                   </template>
