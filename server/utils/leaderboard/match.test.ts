@@ -27,7 +27,7 @@ describe('getMatchLeagueStandings', () => {
     const m = await makeMatch(db, { competitionId, roundId, kickoffTime: PAST, status: 'SCHEDULED' })
     await makePrediction(db, { userId: u, matchId: m, roundId, home: 1, away: 0, lockedAt: PAST })
 
-    const board = await getMatchLeagueStandings(db, { matchId: m, leagueId, viewerId: u })
+    const board = await getMatchLeagueStandings(db, { matchId: m, leagueId, competitionId, viewerId: u })
     expect(board.scope).toBe('upcoming')
     expect(board.rows).toEqual([])
     expect(board.notPredicted).toBe(0)
@@ -35,9 +35,33 @@ describe('getMatchLeagueStandings', () => {
   })
 
   it('returns upcoming for an unknown match id', async () => {
-    const { db, client, leagueId } = await setup()
-    const board = await getMatchLeagueStandings(db, { matchId: crypto.randomUUID(), leagueId, viewerId: 'nobody' })
+    const { db, client, competitionId, leagueId } = await setup()
+    const board = await getMatchLeagueStandings(db, { matchId: crypto.randomUUID(), leagueId, competitionId, viewerId: 'nobody' })
     expect(board.scope).toBe('upcoming')
+    await client.close()
+  })
+
+  it('does not surface a match from another competition (scoped to the league)', async () => {
+    const { db, client, competitionId, leagueId } = await setup()
+    const u = await makeUser(db, 'u', 'U')
+    await addLeagueMember(db, leagueId, u)
+    // A live match the member predicted, but in a different competition.
+    const otherComp = await seedCompetition(db)
+    const otherRound = (await findRoundId(db, otherComp, 'GROUP', 1)) as string
+    const otherMatch = await makeMatch(db, {
+      competitionId: otherComp,
+      roundId: otherRound,
+      kickoffTime: PAST,
+      status: 'LIVE',
+      fullTimeHome: 1,
+      fullTimeAway: 0,
+    })
+    await makePrediction(db, { userId: u, matchId: otherMatch, roundId: otherRound, home: 1, away: 0, lockedAt: PAST })
+
+    // Querying the league (competition A) with that match (competition B) leaks nothing.
+    const board = await getMatchLeagueStandings(db, { matchId: otherMatch, leagueId, competitionId, viewerId: u })
+    expect(board.scope).toBe('upcoming')
+    expect(board.rows).toEqual([])
     await client.close()
   })
 
@@ -57,7 +81,7 @@ describe('getMatchLeagueStandings', () => {
     await makePrediction(db, { userId: miss, matchId: m, roundId, home: 0, away: 2, lockedAt: PAST })
     await makePrediction(db, { userId: outsider, matchId: m, roundId, home: 2, away: 1, lockedAt: PAST })
 
-    const board = await getMatchLeagueStandings(db, { matchId: m, leagueId, viewerId: exact })
+    const board = await getMatchLeagueStandings(db, { matchId: m, leagueId, competitionId, viewerId: exact })
     expect(board.scope).toBe('live')
     expect(board.rows.map((r) => r.userId)).toEqual([exact, outcome, miss])
     expect(board.rows[0]).toMatchObject({ rank: 1, baseTier: 'EXACT', isJoker: false })
@@ -76,7 +100,7 @@ describe('getMatchLeagueStandings', () => {
     const m = await makeMatch(db, { competitionId, roundId, kickoffTime: PAST, status: 'PAUSED', fullTimeHome: 1, fullTimeAway: 1 })
     await makePrediction(db, { userId: u, matchId: m, roundId, home: 1, away: 1, lockedAt: PAST })
 
-    const board = await getMatchLeagueStandings(db, { matchId: m, leagueId, viewerId: u })
+    const board = await getMatchLeagueStandings(db, { matchId: m, leagueId, competitionId, viewerId: u })
     expect(board.scope).toBe('live')
     expect(board.rows[0].baseTier).toBe('EXACT')
     await client.close()
@@ -95,7 +119,7 @@ describe('getMatchLeagueStandings', () => {
     await db.update(prediction).set({ totalPoints: 7, baseTier: 'EXACT' }).where(eq(prediction.id, pa))
     await db.update(prediction).set({ totalPoints: 3, baseTier: 'OUTCOME' }).where(eq(prediction.id, pb))
 
-    const board = await getMatchLeagueStandings(db, { matchId: m, leagueId, viewerId: a })
+    const board = await getMatchLeagueStandings(db, { matchId: m, leagueId, competitionId, viewerId: a })
     expect(board.scope).toBe('final')
     expect(board.rows.map((r) => [r.userId, r.points])).toEqual([
       [a, 7],
@@ -111,7 +135,7 @@ describe('getMatchLeagueStandings', () => {
     const m = await makeMatch(db, { competitionId, roundId, kickoffTime: PAST, status: 'FINISHED', fullTimeHome: 2, fullTimeAway: 1 })
     await makePrediction(db, { userId: u, matchId: m, roundId, home: 2, away: 1, lockedAt: PAST })
 
-    const board = await getMatchLeagueStandings(db, { matchId: m, leagueId, viewerId: u })
+    const board = await getMatchLeagueStandings(db, { matchId: m, leagueId, competitionId, viewerId: u })
     expect(board.scope).toBe('final')
     expect(board.rows[0].baseTier).toBe('EXACT')
     expect(board.rows[0].points).toBeGreaterThan(0)
@@ -125,7 +149,7 @@ describe('getMatchLeagueStandings', () => {
     const m = await makeMatch(db, { competitionId, roundId, kickoffTime: PAST, status: 'LIVE' })
     await makePrediction(db, { userId: u, matchId: m, roundId, home: 1, away: 0, lockedAt: PAST })
 
-    const board = await getMatchLeagueStandings(db, { matchId: m, leagueId, viewerId: u })
+    const board = await getMatchLeagueStandings(db, { matchId: m, leagueId, competitionId, viewerId: u })
     expect(board.scope).toBe('live')
     expect(board.rows[0].points).toBe(0)
     expect(board.rows[0].baseTier).toBeNull()
@@ -139,7 +163,7 @@ describe('getMatchLeagueStandings', () => {
     const m = await makeMatch(db, { competitionId, roundId, kickoffTime: PAST, status: 'LIVE', fullTimeHome: 1, fullTimeAway: 0 })
     await makePrediction(db, { userId: u, matchId: m, roundId, home: 1, away: 0, lockedAt: null })
 
-    const board = await getMatchLeagueStandings(db, { matchId: m, leagueId, viewerId: u })
+    const board = await getMatchLeagueStandings(db, { matchId: m, leagueId, competitionId, viewerId: u })
     expect(board.rows).toEqual([])
     expect(board.notPredicted).toBe(1)
     await client.close()
@@ -157,7 +181,7 @@ describe('getMatchLeagueStandings', () => {
     await makePrediction(db, { userId: b, matchId: m, roundId, home: 2, away: 1, lockedAt: PAST })
     await makePrediction(db, { userId: c, matchId: m, roundId, home: 0, away: 3, lockedAt: PAST })
 
-    const board = await getMatchLeagueStandings(db, { matchId: m, leagueId, viewerId: a })
+    const board = await getMatchLeagueStandings(db, { matchId: m, leagueId, competitionId, viewerId: a })
     expect(board.rows[0].rank).toBe(1)
     expect(board.rows[1].rank).toBe(1)
     expect(board.rows[2].rank).toBe(3)
@@ -178,11 +202,11 @@ describe('getMatchLeagueStandings', () => {
 
     // Outsider view: private profiles excluded, admin-hidden excluded - but the
     // (hidden) viewer still sees their own row.
-    const outsider = await getMatchLeagueStandings(db, { matchId: m, leagueId, viewerId: viewer, includePrivate: false })
+    const outsider = await getMatchLeagueStandings(db, { matchId: m, leagueId, competitionId, viewerId: viewer, includePrivate: false })
     expect(outsider.rows.map((r) => r.userId).sort()).toEqual([viewer])
 
     // Member/admin view: private profiles included, hidden ones too.
-    const member = await getMatchLeagueStandings(db, { matchId: m, leagueId, viewerId: viewer, includePrivate: true, includeHidden: true })
+    const member = await getMatchLeagueStandings(db, { matchId: m, leagueId, competitionId, viewerId: viewer, includePrivate: true, includeHidden: true })
     expect(member.rows.map((r) => r.userId).sort()).toEqual([hidden, priv, viewer].sort())
     await client.close()
   })
@@ -197,6 +221,7 @@ describe('getMatchLeagueStandings', () => {
     const board = await getMatchLeagueStandings(db, {
       matchId: m,
       leagueId,
+      competitionId,
       viewerId: u,
       rules: { ...DEFAULT_RULES, bonusSource: 'ODDS' },
     })

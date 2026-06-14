@@ -164,6 +164,27 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 - [ ] Rate limiter is in-process per instance; multi-instance multiplies the
       join-code attempt budget (shared limiter / store needed if scaled out).
 
+## League match standings (deferred from the feature-treatment review)
+
+- [ ] `getMatchLeagueStandings` re-implements the league roster-with-visibility
+      query (server/utils/leaderboard/match.ts) that already lives in
+      `listLeagueMembers` (leagues/service.ts) - same private/hidden AND-clause and
+      viewer-on-top `or`. Two sources of truth for "who is a visible member": share
+      one helper so a visibility-rule change can't drift the per-match board from
+      the league page.
+- [ ] The "1224" rank-assignment loop in match.ts is a third copy of the inline
+      block in `getLeaderboard` (leaderboard/service.ts); `compareLeaderboardRows`
+      was extracted but this dense-skip step wasn't. Extract `assignRanks(rows)` so
+      a tie-handling change lands once.
+- [ ] The league-standings route adds another copy of the getLeague + membership +
+      admin guard - folds into the existing `resolveLeagueView(event, leagueId)`
+      helper item under the Leagues section.
+- [ ] `needsProvisional` is field-global: a finished match recomputes provisionally
+      for every member if any one still has null points. Safe today (finalize
+      scores all locked picks for a match atomically, so it's all-or-nothing), but
+      decouple per-row if partial finalize ever becomes reachable, so persisted
+      final points are never overwritten by a recompute.
+
 ## Crowd bot (deferred from the merge review)
 
 - [x] getBotOverview runs on every request with no caching: it scans all

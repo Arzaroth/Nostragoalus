@@ -634,7 +634,7 @@ function toggleFormInfo(side: string, i: number | string) {
                     <span v-if="r.userId === meId" class="text-xs font-normal" style="color: var(--p-primary-color)">{{ t('leaderboard.you') }}</span>
                   </div>
                   <div class="text-xs tabular-nums" style="color: var(--p-text-muted-color)">
-                    {{ r.homeGoals }}–{{ r.awayGoals }}<span v-if="r.isJoker" v-tooltip.top="t('predictions.joker')" style="color: var(--ng-star)"> ★</span><template v-if="r.baseTier"> · {{ tierLabel(r.baseTier) }}</template>
+                    {{ r.homeGoals }}–{{ r.awayGoals }}<span v-if="r.isJoker" v-tooltip.top="t('predictions.joker')" style="color: var(--ng-star)"> ★</span><template v-if="r.baseTier"> · {{ tierLabel(r.baseTier, t) }}</template>
                   </div>
                 </div>
                 <div class="text-right shrink-0">
