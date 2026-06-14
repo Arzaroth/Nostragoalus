@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { resizeToDataUrl } from '../utils/image'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const { session, changeEmail, changePassword, updateUser, deleteUser, signOut } = useAuth()
 const router = useRouter()
 
@@ -386,7 +386,7 @@ async function confirmDelete() {
             <div v-for="pk in passkeys" :key="pk.id" class="flex items-center gap-3 px-4 py-2.5 text-sm" style="border-color: var(--p-content-border-color)">
               <i class="pi pi-key" style="color: var(--p-primary-color)" />
               <span class="flex-1 truncate font-medium">{{ pk.name || t('passkeys.unnamed') }}</span>
-              <span class="text-xs" style="color: var(--p-text-muted-color)">{{ pk.createdAt ? new Date(pk.createdAt).toLocaleDateString() : '' }}</span>
+              <span class="text-xs" style="color: var(--p-text-muted-color)">{{ pk.createdAt ? new Date(pk.createdAt).toLocaleDateString(locale) : '' }}</span>
               <Button icon="pi pi-trash" size="small" severity="danger" text rounded :aria-label="t('passkeys.remove')" @click="removePasskey(pk.id)" />
             </div>
           </div>

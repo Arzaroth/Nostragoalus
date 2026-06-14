@@ -11,7 +11,9 @@
     "leagues": "boqmey"
   },
   "bracket": {
-    "empty": "wej may' He tu'lu'."
+    "empty": "wej may' He tu'lu'.",
+    "champion": "charghwI'",
+    "round": { "r32": "32 may'", "r16": "16 may'", "qf": "loS may'", "sf": "cha' may'", "third": "wejDIch Daq", "final": "Qav may'" }
   },
   "map": {
     "hint": "Sep yIwIv 'ej ghomDaj yIlegh.",
@@ -191,6 +193,7 @@
   },
   "matches": {
     "title": "may'mey",
+    "group": "ghom {group}",
     "empty": "wej may' tu'lu' - loHwI' pa'vo' tIlIH.",
     "search": "ghom yISam…",
     "noResults": "may' tu'be'lu'.",
@@ -231,6 +234,7 @@
     "finalDouble": "HevDaq cha'logh",
     "finalDoubleHint": "HevDaq Hoch wIv cha'logh QuQ.",
     "rarity": "le'",
+    "tier": { "exact": "naQ", "diff": "Qugh rap", "outcome": "Qap", "miss": "luj" },
     "rarityTip": "mI'vam pup wIvta' {pct}% neH - jaq wIvmey tev luSuq.",
     "rarityTipNoShare": "mI' pup le' tev chel.",
     "jokerHint": "Hovlij QuQ cha'logh (mung + le').",
@@ -294,6 +298,7 @@
     "next": "veb",
     "h2h": "qaD tlhol",
     "playByPlay": "may' lut",
+    "statusLabel": { "scheduled": "pIH", "live": "qaS", "halfTime": "botlh poH", "fullTime": "rIn", "postponed": "lumagh", "cancelled": "qIl", "suspended": "mevpu'", "awarded": "wuqlu'" },
     "playByPlayEmpty": "may'vam lutmey tu'lu'be' DaH.",
     "pbpKind": { "goal": "naQmoH", "ownGoal": "naQmoH'egh", "penaltyGoal": "bortaS naQmoH", "penaltyMissed": "bortaS luj", "penaltyAwarded": "bortaS nob", "assist": "QaH", "yellow": "letlh SuD", "red": "letlh Doq", "secondYellow": "letlh SuD cha'DIch", "sub": "choH", "shot": "bach", "foul": "qab", "var": "VAR", "period": "poH" },
     "scorers": "bachwI' po'",

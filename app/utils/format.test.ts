@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { flagUrl, playerPhotoUrl, formatPlayerName, isLocked, searchable, matchStatusLabel, pensResult, statusSeverity, tierLabel } from './format'
+import { flagUrl, playerPhotoUrl, formatPlayerName, isLocked, searchable, matchStatusLabel, pensResult, statusSeverity, tierLabel, roundLabel } from './format'
 import type { MatchStatus } from '../../shared/types/match'
 
 const STATUSES: MatchStatus[] = [
@@ -13,16 +13,19 @@ const STATUSES: MatchStatus[] = [
   'AWARDED',
 ]
 
+// Stub translator: echoes the key so we assert the mapping, not the copy.
+const tr = (key: string) => key
+
 describe('matchStatusLabel & statusSeverity', () => {
-  it('returns a label and a severity for every status', () => {
+  it('returns a label key and a severity for every status', () => {
     for (const status of STATUSES) {
-      expect(matchStatusLabel(status)).toBeTruthy()
+      expect(matchStatusLabel(status, tr)).toBeTruthy()
       expect(['success', 'info', 'warn', 'danger', 'secondary']).toContain(statusSeverity(status))
     }
   })
 
   it('maps representative statuses', () => {
-    expect(matchStatusLabel('FINISHED')).toBe('Full-time')
+    expect(matchStatusLabel('FINISHED', tr)).toBe('match.statusLabel.fullTime')
     expect(statusSeverity('LIVE')).toBe('danger')
     expect(statusSeverity('SCHEDULED')).toBe('info')
     expect(statusSeverity('CANCELLED')).toBe('secondary')
@@ -32,12 +35,25 @@ describe('matchStatusLabel & statusSeverity', () => {
 
 describe('tierLabel', () => {
   it('labels each tier and handles null', () => {
-    expect(tierLabel('EXACT')).toBe('Exact score')
-    expect(tierLabel('DIFF')).toBe('Goal difference')
-    expect(tierLabel('OUTCOME')).toBe('Right result')
-    expect(tierLabel('MISS')).toBe('Missed')
-    expect(tierLabel(null)).toBe('')
-    expect(tierLabel(undefined)).toBe('')
+    expect(tierLabel('EXACT', tr)).toBe('predictions.tier.exact')
+    expect(tierLabel('DIFF', tr)).toBe('predictions.tier.diff')
+    expect(tierLabel('OUTCOME', tr)).toBe('predictions.tier.outcome')
+    expect(tierLabel('MISS', tr)).toBe('predictions.tier.miss')
+    expect(tierLabel(null, tr)).toBe('')
+    expect(tierLabel(undefined, tr)).toBe('')
+  })
+})
+
+describe('roundLabel', () => {
+  it('maps known bracket round names (semi before final) and falls back to the raw name', () => {
+    expect(roundLabel('Round of 32', tr)).toBe('bracket.round.r32')
+    expect(roundLabel('Round of 16', tr)).toBe('bracket.round.r16')
+    expect(roundLabel('Quarter-finals', tr)).toBe('bracket.round.qf')
+    expect(roundLabel('Semi-finals', tr)).toBe('bracket.round.sf')
+    expect(roundLabel('Play-off for third place', tr)).toBe('bracket.round.third')
+    expect(roundLabel('Final', tr)).toBe('bracket.round.final')
+    expect(roundLabel('Group A', tr)).toBe('Group A')
+    expect(roundLabel(null, tr)).toBe('')
   })
 })
 

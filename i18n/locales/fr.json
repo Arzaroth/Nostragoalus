@@ -11,7 +11,9 @@
     "leagues": "Ligues"
   },
   "bracket": {
-    "empty": "Le tableau final n'est pas encore disponible."
+    "empty": "Le tableau final n'est pas encore disponible.",
+    "champion": "Champion",
+    "round": { "r32": "Seizièmes de finale", "r16": "Huitièmes de finale", "qf": "Quarts de finale", "sf": "Demi-finales", "third": "Petite finale", "final": "Finale" }
   },
   "map": {
     "hint": "Cliquez sur un pays pour voir son équipe.",
@@ -191,6 +193,7 @@
   },
   "matches": {
     "title": "Calendrier",
+    "group": "Groupe {group}",
     "empty": "Aucun match - importez-les depuis la page admin.",
     "search": "Rechercher une équipe…",
     "noResults": "Aucun match trouvé.",
@@ -231,6 +234,7 @@
     "finalDouble": "La finale compte double",
     "finalDoubleHint": "Chaque prono sur la finale rapporte le double - pas besoin de joker.",
     "rarity": "rareté",
+    "tier": { "exact": "Score exact", "diff": "Différence de buts", "outcome": "Bon résultat", "miss": "Manqué" },
     "rarityTip": "Seulement {pct}% des joueurs ont tenté ce score exact - les pronos audacieux rapportent un bonus.",
     "rarityTipNoShare": "Un score exact rare rapporte un bonus.",
     "jokerHint": "Votre joker a doublé les points de ce match (base + rareté).",
@@ -294,6 +298,7 @@
     "next": "À venir",
     "h2h": "Confrontations",
     "playByPlay": "Fil du match",
+    "statusLabel": { "scheduled": "Prévu", "live": "En direct", "halfTime": "Mi-temps", "fullTime": "Terminé", "postponed": "Reporté", "cancelled": "Annulé", "suspended": "Suspendu", "awarded": "Décidé" },
     "playByPlayEmpty": "Pas encore de fil du match pour cette rencontre.",
     "pbpKind": { "goal": "But", "ownGoal": "But contre son camp", "penaltyGoal": "But sur penalty", "penaltyMissed": "Penalty manqué", "penaltyAwarded": "Penalty accordé", "assist": "Passe décisive", "yellow": "Carton jaune", "red": "Carton rouge", "secondYellow": "Deuxième jaune", "sub": "Remplacement", "shot": "Tir", "foul": "Faute", "var": "VAR", "period": "Période" },
     "scorers": "Buteurs",

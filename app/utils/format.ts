@@ -1,24 +1,41 @@
 import type { MatchStatus } from '../../shared/types/match'
 
-export function matchStatusLabel(status: MatchStatus): string {
+// vue-i18n's translate function, narrowed to what these helpers use. Passing it
+// in keeps these pure/testable while the labels stay localized.
+export type Translate = (key: string, named?: Record<string, unknown>) => string
+
+export function matchStatusLabel(status: MatchStatus, t: Translate): string {
   switch (status) {
     case 'SCHEDULED':
-      return 'Scheduled'
+      return t('match.statusLabel.scheduled')
     case 'LIVE':
-      return 'Live'
+      return t('match.statusLabel.live')
     case 'PAUSED':
-      return 'Half-time'
+      return t('match.statusLabel.halfTime')
     case 'FINISHED':
-      return 'Full-time'
+      return t('match.statusLabel.fullTime')
     case 'POSTPONED':
-      return 'Postponed'
+      return t('match.statusLabel.postponed')
     case 'CANCELLED':
-      return 'Cancelled'
+      return t('match.statusLabel.cancelled')
     case 'SUSPENDED':
-      return 'Suspended'
+      return t('match.statusLabel.suspended')
     case 'AWARDED':
-      return 'Awarded'
+      return t('match.statusLabel.awarded')
   }
+}
+
+// Provider bracket round names arrive in English; map the known ones to a key,
+// else fall back to the raw name. Order matters: "semi-finals" contains "final".
+export function roundLabel(name: string | null | undefined, t: Translate): string {
+  const n = (name ?? '').toLowerCase()
+  if (/round of 32|last 32/.test(n)) return t('bracket.round.r32')
+  if (/round of 16|last 16/.test(n)) return t('bracket.round.r16')
+  if (/quarter/.test(n)) return t('bracket.round.qf')
+  if (/semi/.test(n)) return t('bracket.round.sf')
+  if (/third/.test(n)) return t('bracket.round.third')
+  if (/final/.test(n)) return t('bracket.round.final')
+  return name ?? ''
 }
 
 export type Severity = 'success' | 'info' | 'warn' | 'danger' | 'secondary'
@@ -41,16 +58,16 @@ export function statusSeverity(status: MatchStatus): Severity {
   }
 }
 
-export function tierLabel(tier: string | null | undefined): string {
+export function tierLabel(tier: string | null | undefined, t: Translate): string {
   switch (tier) {
     case 'EXACT':
-      return 'Exact score'
+      return t('predictions.tier.exact')
     case 'DIFF':
-      return 'Goal difference'
+      return t('predictions.tier.diff')
     case 'OUTCOME':
-      return 'Right result'
+      return t('predictions.tier.outcome')
     case 'MISS':
-      return 'Missed'
+      return t('predictions.tier.miss')
     default:
       return ''
   }

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 const slug = useSelectedCompetition()
+const { locale } = useI18n()
 defineProps<{ match: any }>()
 const NuxtLinkC = resolveComponent('NuxtLink')
 function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString([], { day: 'numeric', month: 'short' })
+  return new Date(d).toLocaleDateString(locale.value, { day: 'numeric', month: 'short' })
 }
 </script>
 

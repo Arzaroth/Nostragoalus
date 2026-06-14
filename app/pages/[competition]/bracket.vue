@@ -42,15 +42,15 @@ const sides = computed(() => {
         <div class="grid grid-rows-[1fr_auto_1fr] justify-items-center px-1 shrink-0">
           <div class="text-center self-end pb-4">
             <i class="pi pi-trophy text-4xl" style="color: #f5b301" />
-            <div class="text-xs uppercase tracking-widest font-bold mt-1">{{ bracket.winner ? bracket.winner.name : 'Champion' }}</div>
+            <div class="text-xs uppercase tracking-widest font-bold mt-1">{{ bracket.winner ? bracket.winner.name : t('bracket.champion') }}</div>
           </div>
           <div v-if="sides.final" class="text-center">
-            <div class="text-[10px] uppercase tracking-wider font-semibold mb-1" style="color: var(--p-primary-color)">{{ sides.final.name }}</div>
+            <div class="text-[10px] uppercase tracking-wider font-semibold mb-1" style="color: var(--p-primary-color)">{{ roundLabel(sides.final.name, t) }}</div>
             <BracketMatchCard v-for="(m, mi) in sides.final.matches" :key="mi" :match="m" />
           </div>
           <div v-else />
           <div v-if="sides.third" class="text-center opacity-80 self-start pt-4">
-            <div class="text-[10px] uppercase tracking-wider font-semibold mb-1" style="color: var(--p-text-muted-color)">3rd place</div>
+            <div class="text-[10px] uppercase tracking-wider font-semibold mb-1" style="color: var(--p-text-muted-color)">{{ t('bracket.round.third') }}</div>
             <BracketMatchCard v-for="(m, mi) in sides.third.matches" :key="mi" :match="m" />
           </div>
           <div v-else />

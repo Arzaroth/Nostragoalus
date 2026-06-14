@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useHotkey } from '@tanstack/vue-hotkeys'
-const { t } = useI18n()
+const { t, locale } = useI18n()
 useHead({ title: t('nav.matches') })
 const { enabled: crowdEnabled, totals: crowdTotals, leagueTotals, leagueActive } = useCrowdTotals()
 const oddsEnabled = useOddsPreference()
@@ -215,7 +215,7 @@ function toggleJoker(p: MyPrediction) {
   )
 }
 function fmtTime(d: string) {
-  return new Date(d).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+  return new Date(d).toLocaleString(locale.value, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
 // The filter is hidden until opened by Mod+F (Ctrl/Cmd, preventDefault on by
@@ -364,10 +364,10 @@ watch(searchOpen, () => nextTick(updateListHeight))
 
             <div class="flex items-center justify-between gap-2 text-xs" style="color: var(--p-text-muted-color)">
               <span class="flex items-center gap-2 min-w-0">
-                <span class="truncate">{{ fmtTime(m.kickoffTime) }}<template v-if="m.group"> · Grp {{ m.group }}</template></span>
+                <span class="truncate">{{ fmtTime(m.kickoffTime) }}<template v-if="m.group"> · {{ t('matches.group', { group: m.group }) }}</template></span>
                 <Countdown v-if="m.status === 'SCHEDULED'" :to="m.kickoffTime" />
               </span>
-              <Tag :value="matchStatusLabel(m.status)" :severity="statusSeverity(m.status)" />
+              <Tag :value="matchStatusLabel(m.status, t)" :severity="statusSeverity(m.status)" />
             </div>
 
             <div class="flex flex-col items-center gap-2 pt-3 border-t" style="border-color: var(--p-content-border-color)">
@@ -397,7 +397,7 @@ watch(searchOpen, () => nextTick(updateListHeight))
                   @click="predByMatch[m.id] && toggleJoker(predByMatch[m.id])"
                 />
                 <span v-if="predByMatch[m.id]?.totalPoints != null" class="text-xs font-semibold" style="color: var(--p-primary-color)">
-                  +{{ predByMatch[m.id].totalPoints }} pts · {{ tierLabel(predByMatch[m.id].baseTier) }}
+                  +{{ predByMatch[m.id].totalPoints }} pts · {{ tierLabel(predByMatch[m.id].baseTier, t) }}
                 </span>
                 <span
                   v-if="predByMatch[m.id]?.bonusPoints"

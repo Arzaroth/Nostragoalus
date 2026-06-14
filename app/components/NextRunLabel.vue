@@ -3,7 +3,7 @@
 // not the parent. (PrimeVue's tooltip directive unbinds on every host
 // re-render, so a ticking parent dismisses any open tooltip.)
 const props = defineProps<{ step: number | 'hourly' | null }>()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const nowTick = useTimestamp({ interval: 1000 })
 
@@ -18,7 +18,7 @@ const label = computed(() => {
   } else {
     next.setMinutes(d.getMinutes() + (props.step - (d.getMinutes() % props.step)))
   }
-  return next.toLocaleTimeString()
+  return next.toLocaleTimeString(locale.value)
 })
 </script>
 

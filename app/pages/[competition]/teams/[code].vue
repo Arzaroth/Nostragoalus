@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const route = useRoute()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const slug = useSelectedCompetition()
 const { data, status } = await useFetch<{
   team: { code: string; name: string } | null
@@ -63,7 +63,7 @@ function outcomeColor(o: string | null) {
   return o === 'W' ? 'var(--ng-success)' : o === 'L' ? 'var(--ng-danger)' : o === 'D' ? '#a1a1aa' : 'var(--p-content-border-color)'
 }
 function fmt(d: string) {
-  return new Date(d).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+  return new Date(d).toLocaleString(locale.value, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 </script>
 
@@ -115,7 +115,7 @@ function fmt(d: string) {
               class="w-5 h-5 rounded text-white text-[10px] flex items-center justify-center font-bold"
               :style="`background:${outcomeColor(outcome(m))}`"
             >{{ outcome(m) }}</span>
-            <Tag :value="matchStatusLabel(m.status)" :severity="statusSeverity(m.status)" />
+            <Tag :value="matchStatusLabel(m.status, t)" :severity="statusSeverity(m.status)" />
           </span>
         </div>
         <div class="flex items-center gap-2">
