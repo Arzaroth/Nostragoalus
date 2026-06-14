@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- The minute-by-minute play-by-play timeline now covers UEFA competition matches (the Euro), not only the World Cup - goals, cards, substitutions, shots, fouls, period markers and VAR decisions, in their own tab on the match page. Each line reads in your own language like the rest of the timeline; VAR decision text is shown in English where the feed provides it.
+
 ## [1.13.1] - 2026-06-15
 
 ### Fixed

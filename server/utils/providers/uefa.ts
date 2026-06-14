@@ -6,11 +6,14 @@ import type {
   MatchStatus,
   NormalizedGoal,
   NormalizedMatch,
+  PeriodKind,
   Score,
   SquadPlayer,
   Team,
   TeamMatchStats,
   TeamSeasonStats,
+  TimelineEvent,
+  TimelineEventKind,
   TopScorer,
   Winner,
 } from '../../../shared/types/match'
@@ -119,6 +122,11 @@ export interface UefaEvent {
   subType?: string | null
   phase?: string | null
   time?: { minute?: number | null; injuryMinute?: number | null } | null
+  // ISO instant - the only reliable chronological order (the final whistle and
+  // some markers carry no minute).
+  timestamp?: string | null
+  // VAR decision messages ride ADDITIONAL_INFORMATION events as free text.
+  freeText?: string | null
   primaryActor?: {
     type?: string | null
     person?: UefaEventPerson | null
@@ -224,6 +232,167 @@ export function aggregateUefaEvents(events: UefaEvent[], teamId: string | null):
     pressuresApplied: null,
     forcedTurnovers: null,
   }
+}
+
+// START_PHASE / END_PHASE name the half in `phase`; map each to the period
+// marker the localized client labels. CHANGE_PHASE duplicates START_PHASE at the
+// same minute, so it's dropped.
+const UEFA_PERIOD_START: Record<string, PeriodKind> = {
+  FIRST_HALF: 'kickoff',
+  SECOND_HALF: 'second-half',
+  EXTRA_TIME_FIRST_HALF: 'extra-time',
+  EXTRA_TIME_SECOND_HALF: 'extra-time',
+}
+const UEFA_PERIOD_END: Record<string, PeriodKind> = {
+  FIRST_HALF: 'half-time',
+  SECOND_HALF: 'second-half-end',
+  EXTRA_TIME_FIRST_HALF: 'extra-time-end',
+  EXTRA_TIME_SECOND_HALF: 'extra-time-end',
+}
+
+function uefaEventTs(e: UefaEvent): number {
+  const t = e.timestamp ? Date.parse(e.timestamp) : NaN
+  return Number.isNaN(t) ? 0 : t
+}
+
+// UEFA's events feed ships no ready commentary, so the client phrases each line
+// from the structured kind + names (the `pbp.*` i18n keys). The one exception is
+// the VAR decision, which can't be rebuilt from structure: it rides a separate
+// ADDITIONAL_INFORMATION event as free text (English-only), surfaced when the
+// request locale is English - mirroring the FIFA path. The bare VAR review-step
+// markers carry no text and would duplicate the decision, so they're dropped.
+export function normalizeUefaTimeline(
+  events: UefaEvent[],
+  homeId?: string | null,
+  awayId?: string | null,
+  language?: string | null,
+): TimelineEvent[] {
+  const sideOf = (e: UefaEvent): 'HOME' | 'AWAY' | null => {
+    const tid = e.primaryActor?.team?.id ?? null
+    if (tid && tid === homeId) return 'HOME'
+    if (tid && tid === awayId) return 'AWAY'
+    return null
+  }
+  const mk = (
+    kind: TimelineEventKind,
+    side: 'HOME' | 'AWAY' | null,
+    e: UefaEvent,
+    over: Partial<TimelineEvent> = {},
+  ): TimelineEvent => ({
+    kind,
+    side,
+    minute: eventMinute(e),
+    playerName: null,
+    playerInName: null,
+    playerOutName: null,
+    periodKind: null,
+    text: null,
+    homeScore: null,
+    awayScore: null,
+    ...over,
+  })
+
+  const out: TimelineEvent[] = []
+  let home = 0
+  let away = 0
+  const yellowsSeen = new Set<string>()
+  // Ascending so the running score and second-yellow tracking accrue correctly;
+  // reversed to newest-first at the end (what the UI renders). UEFA stamps the
+  // FINAL score on every goal, so the running score is counted here, not read.
+  for (const e of [...events].sort((x, y) => uefaEventTs(x) - uefaEventTs(y))) {
+    switch (e.type) {
+      case 'GOAL':
+      case 'OWN_GOAL': {
+        if (e.phase === 'PENALTY_SHOOTOUT') break
+        const actor = sideOf(e)
+        if (!actor) break
+        const own = e.type === 'OWN_GOAL' || e.subType === 'OWN'
+        const side = own ? (actor === 'HOME' ? 'AWAY' : 'HOME') : actor
+        if (side === 'HOME') home++
+        else away++
+        const kind: TimelineEventKind = own ? 'own-goal' : e.subType === 'PENALTY' ? 'penalty-goal' : 'goal'
+        out.push(mk(kind, side, e, { playerName: actorName(e.primaryActor?.person), homeScore: home, awayScore: away }))
+        break
+      }
+      case 'ASSIST': {
+        const side = sideOf(e)
+        if (side) out.push(mk('assist', side, e, { playerName: actorName(e.primaryActor?.person) }))
+        break
+      }
+      case 'YELLOW_CARD': {
+        const side = sideOf(e)
+        if (!side) break
+        const id = actorId(e.primaryActor?.person)
+        // A player's second booking is a sending-off even when the feed sends a
+        // plain YELLOW_CARD rather than the explicit second-yellow type.
+        let kind: TimelineEventKind = 'yellow'
+        if (id) {
+          if (yellowsSeen.has(id)) kind = 'second-yellow'
+          yellowsSeen.add(id)
+        }
+        out.push(mk(kind, side, e, { playerName: actorName(e.primaryActor?.person) }))
+        break
+      }
+      case 'YELLOW_CARD_SECOND': {
+        const side = sideOf(e)
+        if (side) out.push(mk('second-yellow', side, e, { playerName: actorName(e.primaryActor?.person) }))
+        break
+      }
+      case 'RED_CARD': {
+        const side = sideOf(e)
+        if (side) out.push(mk('red', side, e, { playerName: actorName(e.primaryActor?.person) }))
+        break
+      }
+      case 'SUBSTITUTION': {
+        const side = sideOf(e)
+        if (!side) break
+        // primaryActor is the player going off, secondaryActor the one coming on.
+        out.push(
+          mk('sub', side, e, {
+            playerOutName: actorName(e.primaryActor?.person),
+            playerInName: e.secondaryActor?.person ? actorName(e.secondaryActor.person) : null,
+          }),
+        )
+        break
+      }
+      case 'SHOT_ON_GOAL':
+      case 'SHOT_WIDE':
+      case 'SHOT_BLOCKED': {
+        const side = sideOf(e)
+        if (side) out.push(mk('shot', side, e, { playerName: actorName(e.primaryActor?.person) }))
+        break
+      }
+      case 'FOUL': {
+        const side = sideOf(e)
+        if (side) out.push(mk('foul', side, e, { playerName: actorName(e.primaryActor?.person) }))
+        break
+      }
+      case 'START_PHASE': {
+        const pk = UEFA_PERIOD_START[e.phase ?? '']
+        if (pk) out.push(mk('period', null, e, { periodKind: pk }))
+        break
+      }
+      case 'END_PHASE': {
+        const pk = UEFA_PERIOD_END[e.phase ?? '']
+        if (pk) out.push(mk('period', null, e, { periodKind: pk }))
+        break
+      }
+      case 'FULL_TIME': {
+        out.push(mk('period', null, e, { periodKind: 'full-time' }))
+        break
+      }
+      case 'ADDITIONAL_INFORMATION': {
+        const raw = (e.freeText ?? '').replace(/\s+/g, ' ').trim()
+        // The standing "VAR messages shown in grey" notice is not a decision.
+        if (!raw || raw.includes('SHOWN IN GREY')) break
+        out.push(mk('var', null, e, { text: language === 'en' ? raw : null }))
+        break
+      }
+      default:
+        break
+    }
+  }
+  return out.reverse()
 }
 
 function statValue(row: UefaRankingRow, name: string): number | null {
@@ -465,6 +634,24 @@ export function uefaProvider(options: UefaOptions): MatchDataProvider {
         homeTeamId: homeId,
         awayTeamId: awayId,
       }
+    },
+
+    async getMatchTimeline({
+      matchId,
+      homeTeamId,
+      awayTeamId,
+      language,
+    }: {
+      matchId: string
+      homeTeamId?: string | null
+      awayTeamId?: string | null
+      playerNames?: Record<string, string>
+      language?: string | null
+    }): Promise<TimelineEvent[]> {
+      // UEFA embeds actor names in each event, so the playerNames map FIFA needs
+      // to resolve ids is unused here.
+      const events = await fetchEvents(matchId)
+      return normalizeUefaTimeline(events, homeTeamId, awayTeamId, language)
     },
 
     async getMatchStats({ ifesId }: { ifesId: string }): Promise<Record<string, TeamMatchStats> | null> {

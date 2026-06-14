@@ -588,3 +588,133 @@ it('substitution without a secondary actor keeps a placeholder', async () => {
   const d = await provider.getMatchDetail!({ matchId: '900' })
   expect(d!.substitutions[0].playerOnName).toBe('?')
 })
+
+import { normalizeUefaTimeline } from './uefa'
+
+describe('normalizeUefaTimeline', () => {
+  it('maps kinds and sides, counts the running score itself, orders newest-first', () => {
+    const evs: UefaEvent[] = [
+      { type: 'START_PHASE', phase: 'FIRST_HALF', timestamp: '2024-01-01T00:00:00Z' },
+      // secondaryActor is the beaten keeper - the goal's scorer is the primary actor.
+      { type: 'GOAL', phase: 'FIRST_HALF', time: { minute: 10 }, timestamp: '2024-01-01T00:10:00Z', primaryActor: actor('1', 'p1', 'Striker'), secondaryActor: { person: { id: 'gk', internationalName: 'Keeper' } } },
+      { type: 'ASSIST', phase: 'FIRST_HALF', time: { minute: 10 }, timestamp: '2024-01-01T00:10:01Z', primaryActor: actor('1', 'p3', 'Passer') },
+      { type: 'GOAL', subType: 'PENALTY', phase: 'FIRST_HALF', time: { minute: 20 }, timestamp: '2024-01-01T00:20:00Z', primaryActor: actor('2', 'p2', 'Spotman') },
+      // own goal by an away player counts for, and ticks up, the home side
+      { type: 'GOAL', subType: 'OWN', phase: 'SECOND_HALF', time: { minute: 55 }, timestamp: '2024-01-01T00:55:00Z', primaryActor: actor('2', 'p9', 'Unlucky') },
+      { type: 'SUBSTITUTION', phase: 'SECOND_HALF', time: { minute: 60 }, timestamp: '2024-01-01T01:00:00Z', primaryActor: actor('1', 'pa', 'Off'), secondaryActor: { person: { id: 'pb', internationalName: 'On' } } },
+      { type: 'FULL_TIME', phase: 'SECOND_HALF', timestamp: '2024-01-01T01:40:00Z' },
+    ]
+    const tl = normalizeUefaTimeline(evs, '1', '2')
+    expect(tl.map((e) => [e.kind, e.side, e.minute, e.periodKind])).toEqual([
+      ['period', null, null, 'full-time'],
+      ['sub', 'HOME', "60'", null],
+      ['own-goal', 'HOME', "55'", null],
+      ['penalty-goal', 'AWAY', "20'", null],
+      ['assist', 'HOME', "10'", null],
+      ['goal', 'HOME', "10'", null],
+      ['period', null, null, 'kickoff'],
+    ])
+    expect(tl.find((e) => e.kind === 'goal')).toMatchObject({ playerName: 'Striker', homeScore: 1, awayScore: 0 })
+    expect(tl.find((e) => e.kind === 'penalty-goal')).toMatchObject({ homeScore: 1, awayScore: 1 })
+    expect(tl.find((e) => e.kind === 'own-goal')).toMatchObject({ playerName: 'Unlucky', homeScore: 2, awayScore: 1 })
+    expect(tl.find((e) => e.kind === 'assist')).toMatchObject({ playerName: 'Passer' })
+    expect(tl.find((e) => e.kind === 'sub')).toMatchObject({ playerOutName: 'Off', playerInName: 'On', playerName: null })
+  })
+
+  it('maps every period marker from the UEFA phase; drops change-phase and unknown phases', () => {
+    const at = (n: number) => `2024-01-01T00:00:${String(n).padStart(2, '0')}Z`
+    const evs: UefaEvent[] = [
+      { type: 'START_PHASE', phase: 'FIRST_HALF', timestamp: at(1) },
+      { type: 'END_PHASE', phase: 'FIRST_HALF', timestamp: at(2) },
+      { type: 'START_PHASE', phase: 'SECOND_HALF', timestamp: at(3) },
+      { type: 'END_PHASE', phase: 'SECOND_HALF', timestamp: at(4) },
+      { type: 'START_PHASE', phase: 'EXTRA_TIME_FIRST_HALF', timestamp: at(5) },
+      { type: 'END_PHASE', phase: 'EXTRA_TIME_SECOND_HALF', timestamp: at(6) },
+      { type: 'FULL_TIME', timestamp: at(7) },
+      { type: 'CHANGE_PHASE', phase: 'FIRST_HALF', timestamp: at(8) }, // duplicate marker, dropped
+      { type: 'START_PHASE', phase: 'WEIRD', timestamp: at(9) }, // unknown phase, dropped
+      { type: 'END_PHASE', phase: 'WEIRD', timestamp: at(10) }, // unknown phase, dropped
+      { type: 'END_PHASE', timestamp: at(11) }, // no phase at all, dropped
+      { type: 'START_PHASE', timestamp: at(12) }, // no phase at all, dropped
+    ]
+    expect(normalizeUefaTimeline(evs, '1', '2').map((e) => e.periodKind)).toEqual([
+      'full-time',
+      'extra-time-end',
+      'extra-time',
+      'second-half-end',
+      'second-half',
+      'half-time',
+      'kickoff',
+    ])
+  })
+
+  it('builds VAR from the decision message: English-only text, boilerplate and bare markers dropped', () => {
+    const at = (n: number) => `2024-01-01T00:00:${String(n).padStart(2, '0')}Z`
+    const evs: UefaEvent[] = [
+      { type: 'VAR', phase: 'FIRST_HALF', time: { minute: 16 }, timestamp: at(1) }, // bare marker, dropped
+      { type: 'VAR', phase: 'FIRST_HALF', time: { minute: 17 }, timestamp: at(2) }, // bare marker, dropped
+      { type: 'ADDITIONAL_INFORMATION', time: { minute: 2 }, timestamp: at(3), freeText: 'VAR TECHNICAL EXPLANATION MESSAGES WILL BE SHOWN IN GREY' },
+      { type: 'ADDITIONAL_INFORMATION', time: { minute: 17 }, timestamp: at(4), freeText: 'PENALTY - FOUL.\n  RECKLESS TACKLE' },
+      { type: 'ADDITIONAL_INFORMATION', time: { minute: 18 }, timestamp: at(5), freeText: '   ' }, // empty, dropped
+      { type: 'ADDITIONAL_INFORMATION', time: { minute: 19 }, timestamp: at(6) }, // no freeText at all, dropped
+    ]
+    const en = normalizeUefaTimeline(evs, '1', '2', 'en')
+    expect(en.map((e) => e.kind)).toEqual(['var'])
+    expect(en[0]).toMatchObject({ side: null, minute: "17'", text: 'PENALTY - FOUL. RECKLESS TACKLE' })
+    // A non-English request keeps the marker but suppresses the English-only text.
+    expect(normalizeUefaTimeline(evs, '1', '2', 'fr')[0].text).toBeNull()
+    expect(normalizeUefaTimeline(evs, '1', '2')[0].text).toBeNull()
+  })
+
+  it('drops noise and unknown-side actors; second yellows; sub without a replacement', () => {
+    const at = (n: number) => `2024-01-01T00:00:${String(n).padStart(2, '0')}Z`
+    const evs: UefaEvent[] = [
+      { type: 'GOAL', phase: 'PENALTY_SHOOTOUT', time: { minute: 120 }, timestamp: at(1), primaryActor: actor('1', 'p1', 'S') }, // shootout, excluded
+      { type: 'GOAL', time: { minute: 5 }, timestamp: at(2), primaryActor: { person: { id: 'x', internationalName: 'NoTeam' }, team: { id: '999' } } }, // unknown side
+      { type: 'YELLOW_CARD', time: { minute: 30 }, timestamp: at(3), primaryActor: actor('2', 'p7', 'Hacker') },
+      { type: 'YELLOW_CARD', time: { minute: 70 }, timestamp: at(4), primaryActor: actor('2', 'p7', 'Hacker') }, // repeat -> second yellow
+      { type: 'YELLOW_CARD_SECOND', time: { minute: 75 }, timestamp: at(5), primaryActor: actor('1', 'p8', 'Twice') },
+      { type: 'RED_CARD', time: { minute: 90, injuryMinute: 2 }, timestamp: at(6), primaryActor: actor('2', 'p9', 'Villain') },
+      { type: 'SHOT_ON_GOAL', time: { minute: 40 }, timestamp: at(7), primaryActor: actor('1', 'p1', 'S') },
+      { type: 'SHOT_WIDE', time: { minute: 41 }, timestamp: at(8), primaryActor: actor('1', 'p1', 'S') },
+      { type: 'SHOT_BLOCKED', time: { minute: 42 }, timestamp: at(9), primaryActor: actor('1', 'p1', 'S') },
+      { type: 'FOUL', time: { minute: 43 }, timestamp: at(10), primaryActor: actor('2', 'p7', 'Hacker') },
+      { type: 'CORNER', timestamp: at(11), primaryActor: actor('2', 'p8', 'W') }, // dropped
+      { type: 'SAVE', timestamp: at(12), primaryActor: { team: { id: null } } }, // dropped
+      { type: 'SUBSTITUTION', time: { minute: 46 }, timestamp: at(13), primaryActor: actor('1', 'pa', 'Off') }, // no replacement
+      { type: 'ASSIST', timestamp: at(14), primaryActor: { person: { id: 'q', internationalName: 'NoSide' }, team: { id: '999' } } }, // unknown side
+      { type: 'YELLOW_CARD', timestamp: at(15), primaryActor: { team: { id: null } } }, // no side
+      { type: undefined, timestamp: at(16) }, // no type
+      { type: 'SHOT_ON_GOAL', timestamp: at(17), primaryActor: { team: { id: '999' } } }, // unknown side, dropped
+      { type: 'FOUL', timestamp: at(18), primaryActor: { team: { id: null } } }, // no side, dropped
+    ]
+    const tl = normalizeUefaTimeline(evs, '1', '2')
+    expect(tl.map((e) => e.kind)).toEqual(['sub', 'foul', 'shot', 'shot', 'shot', 'red', 'second-yellow', 'second-yellow', 'yellow'])
+    expect(tl.find((e) => e.kind === 'red')).toMatchObject({ minute: "90'+2", playerName: 'Villain' })
+    expect(tl.filter((e) => e.kind === 'second-yellow').map((e) => e.playerName)).toEqual(['Twice', 'Hacker'])
+    expect(tl.find((e) => e.kind === 'sub')).toMatchObject({ playerOutName: 'Off', playerInName: null })
+  })
+
+  it('orders by timestamp, tolerating missing and invalid ones', () => {
+    const evs: UefaEvent[] = [
+      { type: 'FOUL', time: { minute: 1 }, timestamp: 'nope', primaryActor: actor('1', 'a', 'A') }, // invalid -> 0
+      { type: 'FOUL', time: { minute: 2 }, primaryActor: actor('1', 'b', 'B') }, // missing -> 0
+      { type: 'FOUL', time: { minute: 3 }, timestamp: '2024-01-01T00:00:05Z', primaryActor: actor('1', 'c', 'C') },
+    ]
+    expect(normalizeUefaTimeline(evs, '1', '2').map((e) => e.playerName)).toEqual(['C', 'B', 'A'])
+  })
+
+  it('getMatchTimeline fetches the events feed, ignores playerNames, and gates the VAR text on the language', async () => {
+    const events: UefaEvent[] = [
+      { type: 'GOAL', phase: 'FIRST_HALF', time: { minute: 10 }, timestamp: '2024-06-20T19:10:00Z', primaryActor: actor('1', 'p1', 'Striker') },
+      { type: 'ADDITIONAL_INFORMATION', time: { minute: 17 }, timestamp: '2024-06-20T19:17:00Z', freeText: 'PENALTY - FOUL' },
+    ]
+    const provider = uefaProvider({ seasonYear: '2024', rateLimiter: new RateLimiter(0), fetchImpl: detailFetch(FULL_MATCH, events) })
+    const en = await provider.getMatchTimeline!({ matchId: '900', homeTeamId: '1', awayTeamId: '2', playerNames: { ignored: 'x' }, language: 'en' })
+    expect(en.map((e) => e.kind)).toEqual(['var', 'goal'])
+    expect(en.find((e) => e.kind === 'var')!.text).toBe('PENALTY - FOUL')
+    expect(en.find((e) => e.kind === 'goal')).toMatchObject({ playerName: 'Striker', homeScore: 1, awayScore: 0 })
+    const fr = await provider.getMatchTimeline!({ matchId: '900', homeTeamId: '1', awayTeamId: '2', language: 'fr' })
+    expect(fr.find((e) => e.kind === 'var')!.text).toBeNull()
+  })
+})
