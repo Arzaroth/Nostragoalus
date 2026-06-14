@@ -153,12 +153,8 @@ const roleOptions = computed(() => [
 
 <template>
   <section class="ng-card rounded-2xl border overflow-hidden" style="background: var(--p-content-background)">
-    <div class="grid md:grid-cols-3 gap-6 p-6">
-      <div>
-        <h2 class="font-semibold">{{ t('admin.leagues.title') }}</h2>
-        <p class="text-sm mt-1" style="color: var(--p-text-muted-color)">{{ t('admin.leagues.hint') }}</p>
-      </div>
-      <div class="md:col-span-2 flex flex-col gap-4">
+    <div class="p-6">
+      <div class="flex flex-col gap-4">
         <div class="grid grid-cols-2 gap-3">
           <div class="flex flex-col gap-1">
             <label class="text-xs font-medium">{{ t('admin.leagues.name') }}</label>

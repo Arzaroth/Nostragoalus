@@ -52,6 +52,11 @@ export default defineNuxtConfig({
     checkOutdatedBuildInterval: 10 * 60 * 1000,
   },
 
+  // Scheduled tasks fold into the admin page's rail; keep the old path working.
+  routeRules: {
+    '/admin/cron': { redirect: '/admin?section=cron' },
+  },
+
   pwa: {
     // 'prompt': the update banner controls when the new SW takes over - an
     // auto-activating SW would swap assets mid-prediction.

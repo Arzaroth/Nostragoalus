@@ -295,25 +295,72 @@ function createUser() {
   createErr.value = ''
   createMutation.mutate()
 }
+
+// Left-rail navigation. The active section lives in the URL (?section=) so
+// /admin/cron can redirect here and bookmarks/links deep-link a section.
+const route = useRoute()
+const router = useRouter()
+const navItems = [
+  { key: 'signup', icon: 'pi pi-user-plus', label: 'admin.signup.title', hint: 'admin.signup.hint' },
+  { key: 'sso', icon: 'pi pi-shield', label: 'admin.sso.title', hint: 'admin.sso.hint' },
+  { key: 'users', icon: 'pi pi-users', label: 'admin.users.title', hint: 'admin.users.hint' },
+  { key: 'leagues', icon: 'pi pi-trophy', label: 'admin.leagues.title', hint: 'admin.leagues.hint' },
+  { key: 'roadmap', icon: 'pi pi-map', label: 'admin.roadmap.title', hint: 'admin.roadmap.hint' },
+  { key: 'cron', icon: 'pi pi-clock', label: 'cron.title', hint: 'cron.hint' },
+] as const
+const navKeys = new Set<string>(navItems.map((i) => i.key))
+const active = computed<string>({
+  get: () => {
+    const s = route.query.section
+    return typeof s === 'string' && navKeys.has(s) ? s : 'signup'
+  },
+  set: (v) => router.replace({ query: { ...route.query, section: v } }),
+})
+const nav = computed(() => navItems.map((i) => ({ ...i, label: t(i.label), hint: t(i.hint) })))
+const activeItem = computed(() => nav.value.find((i) => i.key === active.value) ?? nav.value[0])
 </script>
 
 <template>
-  <div class="max-w-3xl mx-auto flex flex-col gap-6">
+  <div class="max-w-6xl mx-auto flex flex-col gap-6">
     <h1 class="text-2xl font-bold">{{ t('admin.title') }}</h1>
 
     <div v-if="!isAdmin" class="ng-card rounded-2xl border p-6 opacity-70" style="background: var(--p-content-background)">
       {{ t('admin.forbidden') }}
     </div>
 
-    <template v-else>
-      <!-- Sign-up settings -->
-      <section class="ng-card rounded-2xl border overflow-hidden" style="background: var(--p-content-background)">
-        <div class="grid md:grid-cols-3 gap-6 p-6">
-          <div>
-            <h2 class="font-semibold">{{ t('admin.signup.title') }}</h2>
-            <p class="text-sm mt-1" style="color: var(--p-text-muted-color)">{{ t('admin.signup.hint') }}</p>
-          </div>
-          <div class="md:col-span-2 flex flex-col gap-3">
+    <div v-else class="flex flex-col md:flex-row gap-6 items-start">
+      <!-- Category rail (desktop) / dropdown (mobile) -->
+      <nav class="w-full md:w-56 md:shrink-0 md:sticky md:top-6">
+        <Select v-model="active" :options="nav" option-label="label" option-value="key" class="w-full md:hidden" />
+        <ul class="hidden md:flex flex-col gap-1">
+          <li v-for="item in nav" :key="item.key">
+            <button
+              type="button"
+              class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-left transition-colors"
+              :class="active === item.key ? 'font-semibold' : 'opacity-80 hover:opacity-100'"
+              :style="active === item.key
+                ? 'background: var(--p-highlight-background); color: var(--p-highlight-color)'
+                : 'color: var(--p-text-color)'"
+              @click="active = item.key"
+            >
+              <i :class="item.icon" class="text-base" />
+              <span class="flex-1 truncate">{{ item.label }}</span>
+              <Tag v-if="item.key === 'users' && !usersLoading" :value="String(userTotal)" severity="secondary" rounded />
+            </button>
+          </li>
+        </ul>
+      </nav>
+
+      <!-- Active section -->
+      <div class="flex-1 min-w-0 flex flex-col gap-4">
+        <header>
+          <h2 class="text-xl font-semibold flex items-center gap-2"><i :class="activeItem.icon" /> {{ activeItem.label }}</h2>
+          <p class="text-sm mt-1" style="color: var(--p-text-muted-color)">{{ activeItem.hint }}</p>
+        </header>
+
+        <!-- Sign-up settings -->
+        <section v-show="active === 'signup'" class="ng-card rounded-2xl border p-6" style="background: var(--p-content-background)">
+          <div class="flex flex-col gap-3">
             <div class="flex items-center gap-3">
               <ToggleSwitch
                 :model-value="settings.emailVerificationRequired"
@@ -326,17 +373,11 @@ function createUser() {
             <Message v-else-if="emailVerifErr" severity="error" size="small">{{ emailVerifErr }}</Message>
             <p class="text-xs" style="color: var(--p-text-muted-color)">{{ t('admin.signup.grandfatherNote') }}</p>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <!-- SSO -->
-      <section class="ng-card rounded-2xl border overflow-hidden" style="background: var(--p-content-background)">
-        <div class="grid md:grid-cols-3 gap-6 p-6">
-          <div>
-            <h2 class="font-semibold">{{ t('admin.sso.title') }}</h2>
-            <p class="text-sm mt-1" style="color: var(--p-text-muted-color)">{{ t('admin.sso.hint') }}</p>
-          </div>
-          <div class="md:col-span-2 flex flex-col gap-4">
+        <!-- SSO -->
+        <section v-show="active === 'sso'" class="ng-card rounded-2xl border overflow-hidden" style="background: var(--p-content-background)">
+          <div class="p-6 flex flex-col gap-4">
             <Message v-if="ssoEditing" severity="info" size="small">{{ t('admin.sso.editing', { id: ssoEditing }) }}</Message>
             <SelectButton v-if="!ssoEditing" v-model="form.type" :options="typeOptions" option-label="label" option-value="value" :allow-empty="false" size="small" />
 
@@ -427,62 +468,53 @@ function createUser() {
             <Message v-if="ssoErr" severity="error" size="small">{{ ssoErr }}</Message>
             <Message v-if="ssoMsg" severity="success" size="small">{{ ssoMsg }}</Message>
           </div>
-        </div>
-        <div class="border-t px-6 py-3 flex justify-end gap-2" style="border-color: var(--p-content-border-color)">
-          <Button v-if="ssoEditing" :label="t('common.cancel')" severity="secondary" outlined @click="cancelEditProvider" />
-          <Button
-            :label="ssoEditing ? t('admin.sso.save') : t('admin.sso.add')"
-            :loading="ssoLoading"
-            :disabled="(!form.providerId && form.type !== 'google') || !form.domains"
-            @click="saveProvider"
-          />
-        </div>
-
-        <div v-if="providers.length" class="border-t px-6 py-4 flex flex-col gap-2" style="border-color: var(--p-content-border-color)">
-          <div v-for="p in providers" :key="p.providerId" class="flex items-center gap-3 text-sm">
-            <Tag :value="p.type.toUpperCase()" :severity="p.type === 'saml' ? 'warn' : 'info'" />
-            <span class="font-medium">{{ p.name || p.providerId }}</span>
-            <span v-if="p.name" class="text-xs" style="color: var(--p-text-muted-color)">{{ p.providerId }}</span>
-            <span class="truncate" style="color: var(--p-text-muted-color)">{{ p.domains.join(', ') }}</span>
-            <span class="flex-1" />
-            <a
-              v-if="p.type === 'saml'"
-              v-tooltip.left="t('admin.sso.spMetadata')"
-              :href="spMetadataUrl(p.providerId)"
-              target="_blank"
-              rel="noopener"
-              class="p-button p-button-text p-button-rounded p-button-sm"
-              :aria-label="t('admin.sso.spMetadata')"
-            ><i class="pi pi-download text-sm" /></a>
-            <Button icon="pi pi-pencil" severity="secondary" text rounded size="small" :aria-label="t('admin.sso.edit')" @click="startEditProvider(p)" />
-            <Button icon="pi pi-trash" severity="danger" text rounded size="small" :aria-label="t('common.cancel')" @click="removeProvider(p.providerId)" />
-          </div>
-          <div v-if="providers.length" class="flex items-center gap-3 flex-wrap pt-2 border-t" style="border-color: var(--p-content-border-color)">
+          <div class="border-t px-6 py-3 flex justify-end gap-2" style="border-color: var(--p-content-border-color)">
+            <Button v-if="ssoEditing" :label="t('common.cancel')" severity="secondary" outlined @click="cancelEditProvider" />
             <Button
-              :label="t('admin.sso.syncAutoJoin')"
-              icon="pi pi-users"
-              size="small"
-              severity="help"
-              :loading="ssoSyncBusy"
-              @click="syncSsoAutoJoin"
+              :label="ssoEditing ? t('admin.sso.save') : t('admin.sso.add')"
+              :loading="ssoLoading"
+              :disabled="(!form.providerId && form.type !== 'google') || !form.domains"
+              @click="saveProvider"
             />
-            <span class="text-xs" style="color: var(--p-text-muted-color)">{{ t('admin.sso.syncAutoJoinHint') }}</span>
-            <span v-if="ssoSyncMsg" class="text-xs font-semibold" style="color: var(--ng-success)">{{ ssoSyncMsg }}</span>
           </div>
-        </div>
-      </section>
 
-      <!-- Users -->
-      <section class="ng-card rounded-2xl border overflow-hidden" style="background: var(--p-content-background)">
-        <div class="grid md:grid-cols-3 gap-6 p-6">
-          <div>
-            <h2 class="font-semibold flex items-center gap-2">
-              {{ t('admin.users.title') }}
-              <Tag v-if="!usersLoading" :value="String(userTotal)" severity="secondary" rounded />
-            </h2>
-            <p class="text-sm mt-1" style="color: var(--p-text-muted-color)">{{ t('admin.users.hint') }}</p>
+          <div v-if="providers.length" class="border-t px-6 py-4 flex flex-col gap-2" style="border-color: var(--p-content-border-color)">
+            <div v-for="p in providers" :key="p.providerId" class="flex items-center gap-3 text-sm">
+              <Tag :value="p.type.toUpperCase()" :severity="p.type === 'saml' ? 'warn' : 'info'" />
+              <span class="font-medium">{{ p.name || p.providerId }}</span>
+              <span v-if="p.name" class="text-xs" style="color: var(--p-text-muted-color)">{{ p.providerId }}</span>
+              <span class="truncate" style="color: var(--p-text-muted-color)">{{ p.domains.join(', ') }}</span>
+              <span class="flex-1" />
+              <a
+                v-if="p.type === 'saml'"
+                v-tooltip.left="t('admin.sso.spMetadata')"
+                :href="spMetadataUrl(p.providerId)"
+                target="_blank"
+                rel="noopener"
+                class="p-button p-button-text p-button-rounded p-button-sm"
+                :aria-label="t('admin.sso.spMetadata')"
+              ><i class="pi pi-download text-sm" /></a>
+              <Button icon="pi pi-pencil" severity="secondary" text rounded size="small" :aria-label="t('admin.sso.edit')" @click="startEditProvider(p)" />
+              <Button icon="pi pi-trash" severity="danger" text rounded size="small" :aria-label="t('common.cancel')" @click="removeProvider(p.providerId)" />
+            </div>
+            <div v-if="providers.length" class="flex items-center gap-3 flex-wrap pt-2 border-t" style="border-color: var(--p-content-border-color)">
+              <Button
+                :label="t('admin.sso.syncAutoJoin')"
+                icon="pi pi-users"
+                size="small"
+                severity="help"
+                :loading="ssoSyncBusy"
+                @click="syncSsoAutoJoin"
+              />
+              <span class="text-xs" style="color: var(--p-text-muted-color)">{{ t('admin.sso.syncAutoJoinHint') }}</span>
+              <span v-if="ssoSyncMsg" class="text-xs font-semibold" style="color: var(--ng-success)">{{ ssoSyncMsg }}</span>
+            </div>
           </div>
-          <div class="md:col-span-2 flex flex-col gap-3">
+        </section>
+
+        <!-- Users -->
+        <section v-show="active === 'users'" class="ng-card rounded-2xl border overflow-hidden" style="background: var(--p-content-background)">
+          <div class="p-6 flex flex-col gap-3">
             <div class="grid sm:grid-cols-2 gap-2">
               <InputText v-model="nu.name" :placeholder="t('account.displayName')" />
               <InputText v-model="nu.email" type="email" :placeholder="t('account.email')" />
@@ -494,65 +526,52 @@ function createUser() {
             </div>
             <Message v-if="createErr" severity="error" size="small">{{ createErr }}</Message>
           </div>
-        </div>
-        <div class="border-t" style="border-color: var(--p-content-border-color)">
-          <div v-if="usersLoading" class="px-6 py-4 opacity-60">{{ t('common.loading') }}</div>
-          <div v-for="u in users" :key="u.id" class="flex items-center gap-3 px-6 py-3 border-t text-sm" style="border-color: var(--p-content-border-color)">
-            <UserAvatar :image="u.image" />
-            <div class="flex-1 min-w-0">
-              <div class="font-medium truncate">{{ u.name }}</div>
-              <div class="text-xs truncate" style="color: var(--p-text-muted-color)">{{ u.email }}</div>
+          <div class="border-t" style="border-color: var(--p-content-border-color)">
+            <div v-if="usersLoading" class="px-6 py-4 opacity-60">{{ t('common.loading') }}</div>
+            <div v-for="u in users" :key="u.id" class="flex items-center gap-3 px-6 py-3 border-t text-sm" style="border-color: var(--p-content-border-color)">
+              <UserAvatar :image="u.image" />
+              <div class="flex-1 min-w-0">
+                <div class="font-medium truncate">{{ u.name }}</div>
+                <div class="text-xs truncate" style="color: var(--p-text-muted-color)">{{ u.email }}</div>
+              </div>
+              <i
+                v-if="u.hiddenFromLeaderboard"
+                v-tooltip.left="t('admin.users.hide')"
+                class="pi pi-eye-slash text-xs"
+                style="color: var(--p-text-muted-color)"
+              />
+              <i v-if="u.twoFactorEnabled" v-tooltip.left="'2FA'" class="pi pi-shield text-xs" style="color: var(--p-text-muted-color)" />
+              <i
+                v-if="ssoLinks[u.id]?.length"
+                v-tooltip.left="`SSO: ${ssoLinks[u.id].join(', ')}`"
+                class="pi pi-link text-xs"
+                style="color: var(--p-text-muted-color)"
+              />
+              <Tag v-if="u.banned" value="BANNED" severity="danger" />
+              <Tag v-if="u.role === 'admin'" value="ADMIN" severity="success" />
+              <Button
+                icon="pi pi-ellipsis-v"
+                size="small"
+                severity="secondary"
+                text
+                rounded
+                :aria-label="t('admin.users.actions')"
+                @click="openRowMenu($event, u)"
+              />
             </div>
-            <i
-              v-if="u.hiddenFromLeaderboard"
-              v-tooltip.left="t('admin.users.hide')"
-              class="pi pi-eye-slash text-xs"
-              style="color: var(--p-text-muted-color)"
-            />
-            <i v-if="u.twoFactorEnabled" v-tooltip.left="'2FA'" class="pi pi-shield text-xs" style="color: var(--p-text-muted-color)" />
-            <i
-              v-if="ssoLinks[u.id]?.length"
-              v-tooltip.left="`SSO: ${ssoLinks[u.id].join(', ')}`"
-              class="pi pi-link text-xs"
-              style="color: var(--p-text-muted-color)"
-            />
-            <Tag v-if="u.banned" value="BANNED" severity="danger" />
-            <Tag v-if="u.role === 'admin'" value="ADMIN" severity="success" />
-            <Button
-              icon="pi pi-ellipsis-v"
-              size="small"
-              severity="secondary"
-              text
-              rounded
-              :aria-label="t('admin.users.actions')"
-              @click="openRowMenu($event, u)"
-            />
           </div>
-        </div>
-        <Menu ref="rowMenu" :model="rowMenuItems" popup />
-      </section>
+          <Menu ref="rowMenu" :model="rowMenuItems" popup />
+        </section>
 
-      <!-- Leagues -->
-      <AdminLeaguesSection :is-admin="isAdmin" />
+        <!-- Leagues -->
+        <AdminLeaguesSection v-show="active === 'leagues'" :is-admin="isAdmin" />
 
-      <!-- Roadmap -->
-      <AdminRoadmapSection :is-admin="isAdmin" />
+        <!-- Roadmap -->
+        <AdminRoadmapSection v-show="active === 'roadmap'" :is-admin="isAdmin" />
 
-      <!-- Data -->
-      <section class="ng-card rounded-2xl border overflow-hidden" style="background: var(--p-content-background)">
-        <div class="grid md:grid-cols-3 gap-6 p-6">
-          <div>
-            <h2 class="font-semibold">{{ t('admin.data.title') }}</h2>
-            <p class="text-sm mt-1" style="color: var(--p-text-muted-color)">{{ t('admin.data.hint') }}</p>
-          </div>
-          <div class="md:col-span-2 flex flex-col gap-3 items-start">
-            <!-- fixture import + the scheduled jobs all live on the tasks page now -->
-            <NuxtLink to="/admin/cron" class="w-56">
-              <Button :label="t('admin.data.cronLink')" icon="pi pi-clock" size="small" severity="secondary" outlined class="w-full" />
-            </NuxtLink>
-          </div>
-        </div>
-      </section>
-    </template>
+        <!-- Scheduled tasks -->
+        <AdminCronSection v-show="active === 'cron'" :is-admin="isAdmin" />
+      </div>
+    </div>
   </div>
 </template>
