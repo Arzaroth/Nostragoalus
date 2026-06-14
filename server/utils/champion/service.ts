@@ -89,16 +89,29 @@ export async function repickChampion(db: AppDatabase, input: SetChampionInput, n
 
   const existing = await getMyChampionPick(db, input.userId, input.competitionId)
   // No original = a late first pick: born halved (repicked), no original to show.
+  // Upsert so a double-submit can't violate the (user, competition) unique index.
   if (!existing) {
-    await db.insert(championPick).values({
-      userId: input.userId,
-      competitionId: input.competitionId,
-      teamCode: input.teamCode,
-      teamName: input.teamName,
-      fifaRank: input.fifaRank,
-      potentialPoints: input.potentialPoints,
-      repicked: true,
-    })
+    await db
+      .insert(championPick)
+      .values({
+        userId: input.userId,
+        competitionId: input.competitionId,
+        teamCode: input.teamCode,
+        teamName: input.teamName,
+        fifaRank: input.fifaRank,
+        potentialPoints: input.potentialPoints,
+        repicked: true,
+      })
+      .onConflictDoUpdate({
+        target: [championPick.userId, championPick.competitionId],
+        set: {
+          teamCode: input.teamCode,
+          teamName: input.teamName,
+          fifaRank: input.fifaRank,
+          potentialPoints: input.potentialPoints,
+          repicked: true,
+        },
+      })
     return
   }
 

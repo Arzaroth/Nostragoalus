@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
   const query = getQuery(event)
   const competition = await resolveCompetition(db, (query.competition as string) || null)
-  if (!competition) return { competition: null, teams: [], myPick: null, locked: true, bonus: 0 }
+  if (!competition) return { competition: null, teams: [], myPick: null, locked: true, bonus: 0, secondChance: { open: false, closesAt: null } }
 
   const [teams, myPick, lock, window, config] = await Promise.all([
     listCompetitionTeams(db, competition.id),
@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
     teams,
     myPick,
     locked: !!lock && Date.now() >= new Date(lock).getTime(),
-    secondChance: { open: isSecondChanceOpen(window), closesAt: window.end },
+    secondChance: { open: isSecondChanceOpen(window), closesAt: window.end ? window.end.toISOString() : null },
   }
 })
 

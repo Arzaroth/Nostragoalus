@@ -152,10 +152,13 @@ describe('awardBestScorerBonuses', () => {
     await client.close()
   })
 
-  it('resets to zero when no goals decide a winner', async () => {
+  it('resets to zero when a final is decided but no goals are recorded', async () => {
     const { db, client, competitionId, userId } = await setup()
     await setBestScorerPick(db, { userId, competitionId, ...MBAPPE })
     await db.update(bestScorerPick).set({ awardedPoints: 10 })
+    // Decided final (away win) but zero goal_event rows -> no Golden Boot winner.
+    const finalRound = (await findRoundId(db, competitionId, 'FINAL', null)) as string
+    await makeMatch(db, { competitionId, roundId: finalRound, stage: 'FINAL', kickoffTime: PAST, status: 'FINISHED', winner: 'AWAY' })
     expect(await awardBestScorerBonuses(db, competitionId, 10)).toBe(0)
     expect((await db.select().from(bestScorerPick))[0].awardedPoints).toBe(0)
     await client.close()

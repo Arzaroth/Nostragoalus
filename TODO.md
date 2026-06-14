@@ -268,6 +268,33 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       *lock* (first kickoff) - separate decision when esports lands. And
       best-scorer (Golden Boot) has no esports equivalent, so the second chance
       there is football-only until an MVP-style meta-pick exists.
+- [ ] (feature-treatment review) Pick targets aren't validated against the
+      competition: champion `teamCode` and best-scorer `playerId`/`teamCode` are
+      only length-checked (zod), never cross-checked against listCompetitionTeams
+      / the squad, on both the set and repick paths. Low risk today (an unknown
+      code never matches a winner, and the eventual top scorer isn't known at
+      pick time), but validating against the real teams/squad would reject junk
+      picks. Pre-existing on the base set paths; the repick paths inherit it.
+- [ ] (feature-treatment review) setChampionPick is select-then-update/insert
+      (not the race-safe onConflictDoUpdate that setBestScorerPick and now both
+      repick paths use); a double-submit could 500 on the (user, competition)
+      unique index. Align setChampionPick with the upsert pattern. The repick
+      update-branch original* snapshot is also a non-atomic read-modify-write
+      (harmless today - both racers write the same original).
+- [ ] (feature-treatment review) getSecondChanceWindow computes start (last
+      group matchday min kickoff) and end (first knockout min kickoff)
+      independently; bad/early provider data (a knockout placeholder kicking off
+      before the last group round) makes start >= end, silently disabling the
+      window with no log. Guard/log when end <= start.
+- [ ] (feature-treatment review) Second chance doubled the champion/best-scorer
+      clone the meta-pick item (above) already targets: repickChampion ==
+      repickBestScorer, the secondChance GET shape + repick PUT dispatch are
+      copy-pasted, and the half-points rule lives in ~6 spots (two award SQL
+      forms + Champion/BestScorerPick worth math) that can drift. Also the two
+      pickers gate the re-pick UI differently (champion `repickMode` vs
+      best-scorer `isRepick`/`showPickers`), so a previewed late first pick shows
+      full worth on champion but the server halves it. Fold into the meta-pick
+      generalization with one shared halve helper + worth display.
 
 ## Champion tiers (deferred from the merge review)
 
