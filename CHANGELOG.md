@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.13.0] - 2026-06-15
+
 ### Added
 - **Scoring rules admin page** (`/admin/scoring`): edit the points, bonuses and rarity tiers from the app instead of the database. There is one default ruleset that applies everywhere, plus optional per-competition overrides - tune one tournament without touching the others. Saving recomputes every affected leaderboard right away, and a competition's override can be removed to fall back to the default.
 - **Result-rarity bonus**: on top of the existing exact-score rarity, a small bonus now rewards calling a rare but correct result (e.g. backing the underdog when most of the field picked the favourite). It is a tunable extra layer on the crowd bonus, on by default for new installs and configurable per competition.
