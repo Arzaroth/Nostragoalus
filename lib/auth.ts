@@ -4,6 +4,7 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { sso } from '@better-auth/sso'
 import { passkey } from '@better-auth/passkey'
 import { admin, haveIBeenPwned, twoFactor } from 'better-auth/plugins'
+import { apiKey } from '@better-auth/api-key'
 import { and, count, eq } from 'drizzle-orm'
 import type { PgDatabase, PgQueryResultHKT } from 'drizzle-orm/pg-core'
 import { db } from '../db'
@@ -238,6 +239,13 @@ export function buildAuthOptions(database: AuthDb) {
           },
         },
       }),
+      // Scoped machine credentials (e.g. the watch-link curation bot). Keys
+      // authenticate ONLY through the explicit api-key path in
+      // defineValidatedHandler (the plugin's x-api-key header is stripped from
+      // ordinary session guards, so a key never silently grants session access);
+      // each route declares the permission it requires and the key's owner must
+      // still be an admin for admin routes.
+      apiKey(),
     ],
     secret: process.env.BETTER_AUTH_SECRET ?? process.env.NUXT_BETTER_AUTH_SECRET,
     baseURL: process.env.BETTER_AUTH_URL ?? process.env.NUXT_PUBLIC_AUTH_URL,
