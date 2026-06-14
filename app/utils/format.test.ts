@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { flagUrl, playerPhotoUrl, squarePlayerPhoto, formatPlayerName, isLocked, searchable, matchStatusLabel, pensResult, statusSeverity, tierLabel, roundLabel } from './format'
+import { flagUrl, playerPhotoUrl, squarePlayerPhoto, formatPlayerName, isLocked, searchable, matchStatusLabel, pensResult, statusSeverity, tierLabel, roundLabel, halvePickPoints } from './format'
 import type { MatchStatus } from '../../shared/types/match'
 
 const STATUSES: MatchStatus[] = [
@@ -62,6 +62,15 @@ describe('isLocked', () => {
     const kickoff = '2026-06-11T16:00:00Z'
     expect(isLocked(kickoff, new Date('2026-06-11T16:00:01Z').getTime())).toBe(true)
     expect(isLocked(kickoff, new Date('2026-06-11T15:59:59Z').getTime())).toBe(false)
+  })
+})
+
+describe('halvePickPoints', () => {
+  it('floors the half (matching the server award)', () => {
+    expect(halvePickPoints(10)).toBe(5)
+    expect(halvePickPoints(7)).toBe(3)
+    expect(halvePickPoints(1)).toBe(0)
+    expect(halvePickPoints(0)).toBe(0)
   })
 })
 
