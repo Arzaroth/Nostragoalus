@@ -54,6 +54,9 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
 - Admin **Background tasks** page: schedule, next/last run, run count and last result for every
   scheduled and on-demand job (score polling, fixture refresh, finalize, odds, fixture import),
   each runnable on the spot with its last output a tap away
+- Admin **Scoring rules** page: edit base points, joker, bonus engine and rarity tiers from the app -
+  one default ruleset plus optional per-competition overrides; saving recomputes the affected
+  leaderboards immediately
 - Public **roadmap** page (in progress / planned / shipped), admin-curated with reordering, plus `mise run roadmap-add` / `roadmap-seed` CLIs
 - Four languages (EN / FR / TH / tlh), light/dark/system themes saved per account
 - Auto-generated **API docs** at `/docs/api` (OpenAPI + Scalar)
@@ -73,7 +76,10 @@ See the in-app **About** page for the full annotated list with licenses. Highlig
 ## Scoring
 
 Tiered base points (exact 3 / goal-difference 2 / outcome 1 / miss 0) + a rarity bonus + one ×2 joker
-per round, plus a champion-pick bonus. Penalty shootouts decide who advances, never your points.
+per round, plus a champion-pick bonus. The rarity bonus rewards a rare exact score and, as a small
+extra layer, a rare-but-correct result. Penalty shootouts decide who advances, never your points. All
+of it is tunable from the admin Scoring rules page - globally or per competition - and a change
+recomputes the standings.
 
 ## Running with Docker
 
