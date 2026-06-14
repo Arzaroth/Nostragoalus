@@ -226,12 +226,15 @@ const PERIOD_KEYS: Record<string, string> = {
   'extra-time-end': 'extraTimeEnd',
   'full-time': 'fullTime',
 }
-type PbpEvent = { kind: string; playerName: string | null; playerInName: string | null; playerOutName: string | null; periodKind: string | null }
+type PbpEvent = { kind: string; playerName: string | null; playerInName: string | null; playerOutName: string | null; periodKind: string | null; text: string | null }
 // We phrase the commentary ourselves (localized) from the resolved names - the
 // team is shown by the flag, so it never appears in the text. The flag already
 // conveys the side, so no "(Country)" suffix here.
 function pbpText(e: PbpEvent): string {
   if (e.kind === 'period') return e.periodKind ? t(`match.pbp.period.${PERIOD_KEYS[e.periodKind] ?? ''}`) : ''
+  // VAR's decision can't be rebuilt from structure - use the feed's localized
+  // text when we have it (en/fr), else the generic label.
+  if (e.kind === 'var') return e.text || t('match.pbpKind.var')
   if (e.kind === 'sub') {
     return e.playerInName && e.playerOutName
       ? t('match.pbp.sub', { playerIn: formatPlayerName(e.playerInName), playerOut: formatPlayerName(e.playerOutName) })
