@@ -7,7 +7,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ### Changed
 - The **Champion** and **Best scorer** picks now sit side by side in a tighter, more compact layout, with loading skeletons so they appear together instead of popping in one after the other.
-- The matches list now scrolls in its own region (the header, your stats, the picks and the filters stay put), jumps to the first live match (or the next upcoming one) on load, and each round (Matchday 1, Round of 16, ...) can be collapsed.
+- On wider screens the matches list scrolls in its own region so the header, your stats, the picks and the filters stay put (it falls back to normal page scrolling on smaller ones). On load it jumps to the first live match, or the next upcoming one, and each round (Matchday 1, Round of 16, ...) can be collapsed.
 
 ## [1.8.0] - 2026-06-14
 
