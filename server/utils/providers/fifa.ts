@@ -451,6 +451,8 @@ export function normalizeFifaSquad(details: FifaMatchDetailResponse[], teamRef: 
         shirtNumber: p.ShirtNumber != null && p.ShirtNumber !== '' ? Number(p.ShirtNumber) : null,
         position,
         captain: p.Captain === true || p.Captain === 'True',
+        // Match-day roster rows carry no headshot; the seasonal squad doc does.
+        pictureUrl: null,
       })
     }
   }
@@ -485,6 +487,9 @@ export interface FifaSquadDoc {
     ShortName?: FifaLocalized[]
     JerseyNum?: number | string | null
     Position?: number | string | null
+    // The real headshot lives here (digitalhub URL with an opaque GUID); the
+    // top-level PictureUrl is null for everyone.
+    PlayerPicture?: { PictureUrl?: string | null } | null
   }[]
   Officials?: { Name?: FifaLocalized[]; Role?: number | string | null }[]
 }
@@ -499,6 +504,7 @@ export function normalizeFifaSquadDoc(doc: FifaSquadDoc, captains: Set<string>):
       shirtNumber: p.JerseyNum != null && p.JerseyNum !== '' ? Number(p.JerseyNum) : null,
       position: FIFA_POSITIONS[Number(p.Position)] ?? null,
       captain: captains.has(p.IdPlayer),
+      pictureUrl: p.PlayerPicture?.PictureUrl ?? null,
     })
   }
   const order: Record<string, number> = { GK: 0, DF: 1, MF: 2, FW: 3 }

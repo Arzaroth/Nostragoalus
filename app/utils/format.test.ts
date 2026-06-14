@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { flagUrl, playerPhotoUrl, formatPlayerName, isLocked, searchable, matchStatusLabel, pensResult, statusSeverity, tierLabel, roundLabel } from './format'
+import { flagUrl, playerPhotoUrl, squarePlayerPhoto, formatPlayerName, isLocked, searchable, matchStatusLabel, pensResult, statusSeverity, tierLabel, roundLabel } from './format'
 import type { MatchStatus } from '../../shared/types/match'
 
 const STATUSES: MatchStatus[] = [
@@ -84,6 +84,16 @@ describe('playerPhotoUrl', () => {
     expect(playerPhotoUrl('250016833', { provider: 'uefa' })).toContain('img.uefa.com/imgml/TP/players/3/2024/')
     expect(playerPhotoUrl(null)).toBeNull()
     expect(playerPhotoUrl(undefined)).toBeNull()
+  })
+
+  it('squarePlayerPhoto adds a transform query for digitalhub urls only', () => {
+    expect(squarePlayerPhoto('https://digitalhub.fifa.com/transform/abc/DZEKO-Edin_300409')).toBe(
+      'https://digitalhub.fifa.com/transform/abc/DZEKO-Edin_300409?io=transform:fill,aspectratio:1x1,width:320,gravity:top&quality=75',
+    )
+    expect(squarePlayerPhoto('https://digitalhub.fifa.com/transform/abc/x', 640)).toContain('width:640')
+    expect(squarePlayerPhoto('https://example.com/p.jpg')).toBe('https://example.com/p.jpg')
+    expect(squarePlayerPhoto(null)).toBeNull()
+    expect(squarePlayerPhoto(undefined)).toBeNull()
   })
 })
 

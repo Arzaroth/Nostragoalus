@@ -565,6 +565,8 @@ export function uefaProvider(options: UefaOptions): MatchDataProvider {
               shirtNumber: p.nationalJerseyNumber != null && p.nationalJerseyNumber !== '' ? Number(p.nationalJerseyNumber) : null,
               position: mapUefaPosition(p.nationalFieldPosition ?? p.fieldPosition),
               captain: false,
+              // UEFA headshots are reconstructed from playerId (playerPhotoUrl).
+              pictureUrl: null,
             })),
         )
         if (page.length < pageSize) break

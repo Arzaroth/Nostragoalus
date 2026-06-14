@@ -79,14 +79,27 @@ const showcase = computed(() => {
 })
 const isSaved = computed(() => !!data.value?.myPick && showcase.value?.playerId === data.value.myPick.playerId)
 
-// FIFA has no headshot for every player - fall back to the team flag on 404.
+// Prefer the provider's own headshot (FIFA's digitalhub URL, which we can't
+// reconstruct from the id) from the loaded squad; fall back to a constructed
+// URL, then the team flag. The squad for the saved pick's team is loaded too,
+// so a saved pick gets its real headshot as well.
+const squadPhotoById = computed(() => {
+  const map = new Map<string, string | null>()
+  for (const p of squad.value) map.set(p.playerId, squarePlayerPhoto(p.pictureUrl))
+  return map
+})
+const resolvedPhoto = computed(() => {
+  const pid = showcase.value?.playerId
+  if (!pid) return null
+  return squadPhotoById.value.get(pid) ?? playerPhotoUrl(pid, { provider: data.value?.provider, season: data.value?.season })
+})
+// On 404 fall back to the team flag; a new resolved URL (e.g. the squad finished
+// loading and a real headshot replaced the constructed one) clears the failure.
 const photoFailed = ref(false)
-watch(() => showcase.value?.playerId, () => {
+watch(resolvedPhoto, () => {
   photoFailed.value = false
 })
-const photoSrc = computed(() =>
-  photoFailed.value ? null : playerPhotoUrl(showcase.value?.playerId, { provider: data.value?.provider, season: data.value?.season }),
-)
+const photoSrc = computed(() => (photoFailed.value ? null : resolvedPhoto.value))
 
 const NuxtLinkC = resolveComponent('NuxtLink')
 
