@@ -195,6 +195,14 @@ describe('normalizeFifaTimeline', () => {
       { d1: 'DEFENDER' },
     )
     expect(events[0]).toMatchObject({ kind: 'own-goal', side: 'HOME', playerName: 'DEFENDER', homeScore: 1, awayScore: 0 })
+    // ...and mirrored: a home-team scorer's own goal counts for the away side.
+    const mirrored = normalizeFifaTimeline(
+      { Event: [{ Type: 34, MatchMinute: "40'", IdTeam: 'H', IdPlayer: 'h1', HomeGoals: 0, AwayGoals: 1 }] },
+      'H',
+      'A',
+      { h1: 'KEEPER' },
+    )
+    expect(mirrored[0]).toMatchObject({ kind: 'own-goal', side: 'AWAY', playerName: 'KEEPER' })
   })
 
   it('drops untyped and unlabelled-period events; keeps a player-less curated one', () => {
