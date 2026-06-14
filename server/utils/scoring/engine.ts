@@ -54,7 +54,23 @@ function computeBonus(
     // slice of everyone. Outcome rarity stays measured against the full field.
     const pool = byExact ? hist.outcomeCount : hist.total
     const { bonus, share } = crowdBonus(hit, matchCount, pool, rules.crowdTiers, rules.crowdMinDenominator)
-    return { bonus, source: 'CROWD', share }
+
+    // Result-rarity layer: a small bonus for calling a rare-but-correct OUTCOME,
+    // stacked on the exact-score rarity above. Only applied in EXACT basis - in
+    // OUTCOME basis the primary tier already rewards a rare result, so adding it
+    // again would double-count. Measured against the whole field.
+    const outcomeBonus =
+      byExact && rules.crowdOutcomeTiers && rules.crowdOutcomeTiers.length > 0
+        ? crowdBonus(
+            predictionHits(pred, actual, false),
+            hist.outcomeCount,
+            hist.total,
+            rules.crowdOutcomeTiers,
+            rules.crowdMinDenominator,
+          ).bonus
+        : 0
+
+    return { bonus: bonus + outcomeBonus, source: 'CROWD', share }
   }
 
   if (rules.bonusSource === 'ODDS') {

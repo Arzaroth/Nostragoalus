@@ -67,6 +67,10 @@ export const scoringConfig = pgTable(
     id: pk(),
     version: integer('version').notNull(),
     isActive: boolean('is_active').notNull().default(false),
+    // null = the default config that applies to every competition without an
+    // override; a competition id = an override that supersedes the default for
+    // that competition only.
+    competitionId: text('competition_id').references(() => competition.id, { onDelete: 'cascade' }),
     ptsExact: integer('pts_exact').notNull().default(3),
     ptsDiff: integer('pts_diff').notNull().default(2),
     ptsOutcome: integer('pts_outcome').notNull().default(1),
@@ -77,6 +81,9 @@ export const scoringConfig = pgTable(
     bestScorerBonus: integer('best_scorer_bonus').notNull().default(10),
     bonusSource: bonusSourceEnum('bonus_source').notNull().default('CROWD'),
     crowdTiers: jsonb('crowd_tiers').$type<CrowdTier[]>().notNull(),
+    // Optional second rarity layer: rewards a correct but rare RESULT on top of
+    // the exact-score rarity above. Null = layer off (legacy behaviour).
+    crowdOutcomeTiers: jsonb('crowd_outcome_tiers').$type<CrowdTier[]>(),
     crowdMatchBasis: text('crowd_match_basis', { enum: ['EXACT', 'OUTCOME'] }).notNull().default('EXACT'),
     crowdMinDenominator: integer('crowd_min_denominator').notNull().default(5),
     oddsTiers: jsonb('odds_tiers').$type<OddsTier[]>(),
@@ -86,7 +93,11 @@ export const scoringConfig = pgTable(
   },
   (t) => [
     uniqueIndex('scoring_config_version_uq').on(t.version),
-    uniqueIndex('scoring_config_one_active_uq').on(t.isActive).where(sql`${t.isActive} = true`),
+    // One active config per scope: at most one active default (null competition,
+    // coalesced to '') and at most one active override per competition.
+    uniqueIndex('scoring_config_active_scope_uq')
+      .on(sql`coalesce(${t.competitionId}, '')`)
+      .where(sql`${t.isActive} = true`),
   ],
 )
 

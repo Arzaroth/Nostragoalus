@@ -76,6 +76,55 @@ describe('scorePredictions - crowd rarity bonus', () => {
   })
 })
 
+describe('scorePredictions - result-rarity layer (crowdOutcomeTiers)', () => {
+  const rules: ScoringRules = {
+    ...DEFAULT_RULES,
+    bonusSource: 'CROWD',
+    crowdMatchBasis: 'EXACT',
+    crowdMinDenominator: 1,
+    crowdTiers: [{ maxShareExclusive: 0.35, bonus: 1 }],
+    crowdOutcomeTiers: [
+      { maxShareExclusive: 0.1, bonus: 2 },
+      { maxShareExclusive: 0.25, bonus: 1 },
+    ],
+  }
+
+  it('stacks a result-rarity bonus on top of exact-score rarity', () => {
+    // 20 predictions; only three called the home win, one of them exact 2-1.
+    const rows: [string, number, number][] = [
+      ['exact', 2, 1],
+      ['win-a', 3, 1],
+      ['win-b', 4, 2],
+    ]
+    for (let i = 0; i < 17; i += 1) rows.push([`loss${i}`, 0, 1])
+    const scores = byId(scorePredictions({ actual: { home: 2, away: 1 }, rules, predictions: preds(...rows) }))
+    // exact share 1/3 < 0.35 => +1 exact; result share 3/20 = 0.15 < 0.25 => +1 result
+    expect(scores.exact).toMatchObject({ baseTier: 'EXACT', basePoints: 3, bonusPoints: 2, totalPoints: 5 })
+    expect(scores.exact.crowdShare).toBeCloseTo(1 / 3)
+    // Correct result, not exact: no exact bonus, still earns the +1 result rarity.
+    expect(scores['win-a']).toMatchObject({ baseTier: 'OUTCOME', basePoints: 1, bonusPoints: 1, crowdShare: null, totalPoints: 2 })
+    expect(scores.loss0).toMatchObject({ baseTier: 'MISS', bonusPoints: 0, totalPoints: 0 })
+  })
+
+  it('does not apply the result layer in OUTCOME basis (the primary already rewards it)', () => {
+    const outcomeRules: ScoringRules = { ...rules, crowdMatchBasis: 'OUTCOME' }
+    const rows: [string, number, number][] = [['win', 2, 1]]
+    for (let i = 0; i < 9; i += 1) rows.push([`loss${i}`, 0, 1])
+    const scores = byId(scorePredictions({ actual: { home: 2, away: 1 }, rules: outcomeRules, predictions: preds(...rows) }))
+    // outcome share 1/10 = 0.1 < 0.35 => primary +1 only, no stacked layer
+    expect(scores.win).toMatchObject({ bonusPoints: 1, totalPoints: 4 })
+  })
+
+  it('treats a null result layer as off (legacy behaviour)', () => {
+    const noLayer: ScoringRules = { ...rules, crowdOutcomeTiers: null }
+    const rows: [string, number, number][] = [['exact', 2, 1], ['win-a', 3, 1], ['win-b', 4, 2]]
+    for (let i = 0; i < 17; i += 1) rows.push([`loss${i}`, 0, 1])
+    const scores = byId(scorePredictions({ actual: { home: 2, away: 1 }, rules: noLayer, predictions: preds(...rows) }))
+    expect(scores.exact).toMatchObject({ bonusPoints: 1, totalPoints: 4 })
+    expect(scores['win-a']).toMatchObject({ bonusPoints: 0, totalPoints: 1 })
+  })
+})
+
 describe('scorePredictions - odds bonus', () => {
   it('rewards a correct outcome by the actual outcome odds', () => {
     const rules: ScoringRules = { ...DEFAULT_RULES, bonusSource: 'ODDS', oddsAppliesTo: 'OUTCOME' }

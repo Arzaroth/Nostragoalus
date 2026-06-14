@@ -5,7 +5,7 @@ import { countsDouble, isSingleMatchStage, type AppStage, type MatchStatus } fro
 import type { BaseTier } from '../scoring/tiers'
 import type { ScoringRules } from '../scoring/config'
 import { scoreSyntheticPrediction } from '../scoring/engine'
-import { getActiveScoringConfig } from '../scoring/store'
+import { getScoringConfigFor } from '../scoring/store'
 import { getLeaderboard } from '../leaderboard/service'
 import { closingOddsForOutcome } from '../odds/store'
 import { outcomeOf } from '../scoring/tiers'
@@ -281,7 +281,7 @@ export async function getBotOverview(
     jokerMatches.add(candidates[0].matchId)
   }
 
-  const { rules } = await getActiveScoringConfig(db)
+  const { rules } = await getScoringConfigFor(db, competitionId)
 
   const rows: BotMatchRow[] = []
   for (const m of matches) {

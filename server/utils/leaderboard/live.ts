@@ -3,7 +3,7 @@ import type { AppDatabase } from '../../../db/types'
 import { match, prediction } from '../../../db/schema'
 import { countsDouble } from '../../../shared/types/match'
 import { closingOddsForOutcome } from '../odds/store'
-import { getActiveScoringConfig } from '../scoring/store'
+import { getScoringConfigFor } from '../scoring/store'
 import type { ScoringRules } from '../scoring/config'
 import { scorePredictions } from '../scoring/engine'
 import { outcomeOf } from '../scoring/tiers'
@@ -45,7 +45,7 @@ export async function getLiveProvisionalPoints(
   const result = new Map<string, LiveProvisional>()
   if (liveMatches.length === 0) return result
 
-  const activeRules = rules ?? (await getActiveScoringConfig(db)).rules
+  const activeRules = rules ?? (await getScoringConfigFor(db, competitionId)).rules
   for (const m of liveMatches) {
     const locked = await db
       .select()

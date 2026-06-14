@@ -2,7 +2,7 @@ import { and, eq, inArray, isNotNull } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { match, matchScoreEvent, prediction } from '../../../db/schema'
 import { countsDouble } from '../../../shared/types/match'
-import { getActiveScoringConfig } from '../scoring/store'
+import { getActiveScoringConfig, getScoringConfigFor } from '../scoring/store'
 import { scorePredictions } from '../scoring/engine'
 import { outcomeOf } from '../scoring/tiers'
 import { closingOddsForOutcome } from '../odds/store'
@@ -30,7 +30,7 @@ export async function scoreMatchRow(
   const m = rows[0]
   if (m.status !== 'FINISHED' || m.fullTimeHome === null || m.fullTimeAway === null) return 'skipped'
 
-  const { version, rules } = context ?? (await getActiveScoringConfig(db))
+  const { version, rules } = context ?? (await getScoringConfigFor(db, m.competitionId))
   const hash = resultHashOf(m.status, m.fullTimeHome, m.fullTimeAway)
   if (m.scoringState === 'SCORED' && m.resultHash === hash && m.scoredAtVersion === version) {
     return 'unchanged'
@@ -132,14 +132,24 @@ export async function finalizeMatches(db: AppDatabase, now: Date = new Date()): 
   return db.transaction(async (tx) => {
     const locked = await lockDuePredictions(tx, now)
     const unlocked = await unlockFuturePredictions(tx, now)
-    const context = await getActiveScoringConfig(tx)
+
+    // Each competition can carry its own scoring override, so resolve (and
+    // memoize) the config per competition rather than once for the whole tick.
+    const configCache = new Map<string, ScoringContext>()
+    const configFor = async (competitionId: string): Promise<ScoringContext> => {
+      const cached = configCache.get(competitionId)
+      if (cached) return cached
+      const resolved = await getScoringConfigFor(tx, competitionId)
+      configCache.set(competitionId, resolved)
+      return resolved
+    }
 
     const changedMatchIds: string[] = []
     const finished = await tx.select().from(match).where(eq(match.status, 'FINISHED'))
     let scored = 0
     for (const m of finished) {
       if (m.fullTimeHome === null || m.fullTimeAway === null) continue
-      if ((await scoreMatchRow(tx, m.id, context)) === 'scored') {
+      if ((await scoreMatchRow(tx, m.id, await configFor(m.competitionId))) === 'scored') {
         scored += 1
         changedMatchIds.push(m.id)
       }

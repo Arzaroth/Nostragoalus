@@ -6,7 +6,7 @@ import { providerForCompetition } from '../../utils/providers'
 import { resolveCompetitionSeason } from '../../utils/sync/competition'
 import { syncMatchDetails } from '../../utils/sync/details'
 import { awardBestScorerBonuses } from '../../utils/bestscorer/service'
-import { getActiveScoringConfig } from '../../utils/scoring/store'
+import { getScoringConfigFor } from '../../utils/scoring/store'
 import { updateLeagueRankSnapshots, updateRankSnapshots } from '../../utils/leaderboard/snapshots'
 import { publishMatchUpdates } from '../../utils/live/hub'
 
@@ -17,8 +17,9 @@ export default defineTask({
     const result = await finalizeMatches(db)
 
     const details: Record<string, unknown> = {}
-    const { rules } = await getActiveScoringConfig(db)
     for (const competition of await listActiveCompetitions(db)) {
+      // Per-competition config so an override's best-scorer bonus is honoured.
+      const { rules } = await getScoringConfigFor(db, competition.id)
       try {
         const seasonId = await resolveCompetitionSeason(db, competition)
         const provider = providerForCompetition(competition, seasonId)
