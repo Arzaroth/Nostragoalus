@@ -127,6 +127,9 @@ export function buildAuthOptions(database: AuthDb) {
         showCrowd: { type: 'boolean' as const, required: false },
         // Opt-out: bookmaker odds under each match (null/undefined = shown).
         showOdds: { type: 'boolean' as const, required: false },
+        // Cosmetic skin selection + its unlock gate (both user-settable).
+        skin: { type: 'string' as const, required: false },
+        skinsUnlocked: { type: 'boolean' as const, required: false },
         // Opt-out of the global rankings; profile gated to league mates/admins.
         profilePrivate: { type: 'boolean' as const, required: false },
         // input: false - readable everywhere (session, admin listUsers) but never
