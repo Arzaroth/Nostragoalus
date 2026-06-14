@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+- In a league, hovering the crowd score under a match no longer stacks two overlapping tooltips: the league and everyone totals now show their labels below the line.
+
 ## [1.12.1] - 2026-06-14
 
 ### Added
