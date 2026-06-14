@@ -253,6 +253,18 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       feed-unsupported language would surface un-localized VAR text; the
       en/fr allowlist lives only in the endpoint. Consider an explicit
       { language, localizeText } or moving the allowlist into the provider.
+- [ ] (UEFA) VAR decision text is English-only: UEFA's events feed does not
+      localize freeText (verified - `&language=fr`/`&lang=fr` return identical
+      English), so fr/th/tlh fall back to the generic "VAR" label while en shows
+      the decision. Revisit if UEFA localizes it, or translate the common
+      decision phrases ourselves.
+- [ ] (UEFA) normalizeUefaTimeline drops free-kicks, corners, saves, offsides
+      and the bare VAR review-step markers (no TimelineEventKind for them). Add
+      'corner'/'save' kinds (icons + i18n) if wanted, and fold the VAR markers
+      into the decision line rather than dropping them.
+- [ ] (UEFA) getMatchTimeline re-fetches /events even though the route already
+      pulled the same feed via getMatchDetail; thread the events through (or
+      cache them) to avoid the double fetch.
 
 ## Admin panel redesign (deferred from the feature-treatment review)
 
