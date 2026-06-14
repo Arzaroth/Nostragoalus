@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { buildTimeline, h2hSummaryOf } from '../../../utils/match-view'
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const id = computed(() => route.params.id as string)
@@ -313,7 +313,7 @@ function formColor(r: string) {
   return r === 'W' ? 'var(--ng-success)' : r === 'L' ? 'var(--ng-danger)' : '#a1a1aa'
 }
 function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })
+  return new Date(d).toLocaleDateString(locale.value, { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 // Narrow form rows hide the competition behind the date; one open at a time.
@@ -346,8 +346,8 @@ function toggleFormInfo(side: string, i: number | string) {
 
     <div class="rounded-2xl border p-6" style="background: var(--p-content-background); border-color: var(--p-content-border-color)">
       <div class="flex items-center justify-between text-xs mb-4" style="color: var(--p-text-muted-color)">
-        <span>{{ m.roundLabel }}<template v-if="m.group"> · Group {{ m.group }}</template></span>
-        <Tag :value="matchStatusLabel(status)" :severity="statusSeverity(status)" />
+        <span>{{ m.roundLabel }}<template v-if="m.group"> · {{ t('matches.group', { group: m.group }) }}</template></span>
+        <Tag :value="matchStatusLabel(status, t)" :severity="statusSeverity(status)" />
       </div>
 
       <div class="flex items-center justify-around gap-4">
@@ -358,7 +358,7 @@ function toggleFormInfo(side: string, i: number | string) {
         <div class="text-center min-w-24">
           <div v-if="homeScore !== null" class="text-5xl font-extrabold tabular-nums">{{ homeScore }}–{{ awayScore }}</div>
           <div v-else class="text-sm flex flex-col items-center gap-1" style="color: var(--p-text-muted-color)">
-            <span>{{ new Date(m.kickoffTime).toLocaleString() }}</span>
+            <span>{{ new Date(m.kickoffTime).toLocaleString(locale) }}</span>
             <Countdown :to="m.kickoffTime" />
           </div>
           <div v-if="hadShootout" class="text-sm font-semibold mt-1" style="color: var(--p-text-muted-color)">{{ m.penaltiesHome }}–{{ m.penaltiesAway }} {{ t('match.pens') }}</div>
@@ -435,7 +435,7 @@ function toggleFormInfo(side: string, i: number | string) {
              crowd/odds display preferences (a v-else-if chain here once hid them). -->
         <template v-if="!canPredict && myPred">
           <span class="font-bold tabular-nums">{{ myPred.homeGoals }}–{{ myPred.awayGoals }}</span>
-          <span v-if="myPred.totalPoints !== null" class="text-xs font-semibold" style="color: var(--p-primary-color)">+{{ myPred.totalPoints }} pts · {{ tierLabel(myPred.baseTier) }}</span>
+          <span v-if="myPred.totalPoints !== null" class="text-xs font-semibold" style="color: var(--p-primary-color)">+{{ myPred.totalPoints }} pts · {{ tierLabel(myPred.baseTier, t) }}</span>
         </template>
         <CrowdLine v-if="crowdEnabled" :match-id="id" :totals="crowdTotals" :league-totals="leagueTotals" :league-active="leagueActive" count />
         <MatchOdds v-if="oddsEnabled" :odds="data?.odds ?? null" />
@@ -462,7 +462,7 @@ function toggleFormInfo(side: string, i: number | string) {
             </div>
             <div v-if="detail" class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs mb-4" style="color: var(--p-text-muted-color)">
               <span v-if="detail.stadium" class="inline-flex items-center gap-1"><i class="pi pi-map-marker" /> {{ detail.stadium }}</span>
-              <span v-if="detail.attendance" class="inline-flex items-center gap-1"><i class="pi pi-users" /> {{ detail.attendance.toLocaleString() }}</span>
+              <span v-if="detail.attendance" class="inline-flex items-center gap-1"><i class="pi pi-users" /> {{ detail.attendance.toLocaleString(locale) }}</span>
               <span class="inline-flex items-center gap-1"><span class="inline-block w-2.5 h-3.5 rounded-sm" style="background: #eab308" />{{ detail.cards.home.yellow }}–{{ detail.cards.away.yellow }}</span>
               <span v-if="detail.cards.home.red || detail.cards.away.red" class="inline-flex items-center gap-1"><span class="inline-block w-2.5 h-3.5 rounded-sm" style="background: var(--ng-danger)" />{{ detail.cards.home.red }}–{{ detail.cards.away.red }}</span>
             </div>

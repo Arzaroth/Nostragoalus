@@ -11,7 +11,9 @@
     "leagues": "Leagues"
   },
   "bracket": {
-    "empty": "The knockout bracket isn't available yet."
+    "empty": "The knockout bracket isn't available yet.",
+    "champion": "Champion",
+    "round": { "r32": "Round of 32", "r16": "Round of 16", "qf": "Quarter-finals", "sf": "Semi-finals", "third": "3rd place", "final": "Final" }
   },
   "map": {
     "hint": "Click a country on the map to see its team.",
@@ -191,6 +193,7 @@
   },
   "matches": {
     "title": "Fixtures",
+    "group": "Group {group}",
     "empty": "No fixtures yet - import them from the admin page.",
     "search": "Search a team…",
     "noResults": "No matches found.",
@@ -231,6 +234,7 @@
     "finalDouble": "Final counts double",
     "finalDoubleHint": "Every prediction on the final earns double points - no joker needed.",
     "rarity": "rarity",
+    "tier": { "exact": "Exact score", "diff": "Goal difference", "outcome": "Right result", "miss": "Missed" },
     "rarityTip": "Only {pct}% of players picked this exact score - bold calls earn a bonus.",
     "rarityTipNoShare": "A rare exact score earns a bonus on top.",
     "jokerHint": "Your joker doubled the points on this match (base + rarity).",
@@ -294,6 +298,7 @@
     "next": "Next",
     "h2h": "Head-to-head",
     "playByPlay": "Play-by-play",
+    "statusLabel": { "scheduled": "Scheduled", "live": "Live", "halfTime": "Half-time", "fullTime": "Full-time", "postponed": "Postponed", "cancelled": "Cancelled", "suspended": "Suspended", "awarded": "Awarded" },
     "playByPlayEmpty": "No play-by-play for this match yet.",
     "pbpKind": { "goal": "Goal", "ownGoal": "Own goal", "penaltyGoal": "Penalty goal", "penaltyMissed": "Penalty missed", "penaltyAwarded": "Penalty awarded", "assist": "Assist", "yellow": "Yellow card", "red": "Red card", "secondYellow": "Second yellow", "sub": "Substitution", "shot": "Shot", "foul": "Foul", "var": "VAR", "period": "Period" },
     "scorers": "Top scorers",

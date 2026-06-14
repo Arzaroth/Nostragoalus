@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const { enabled: crowdEnabled, totals: crowdTotals, leagueTotals, leagueActive } = useCrowdTotals()
 const { enabled: oddsEnabled, byMatch: oddsByMatch } = useMatchOdds()
 const slug = useSelectedCompetition()
@@ -8,7 +8,7 @@ defineProps<{ predictions: (MyPrediction & { consensusCount?: number; consensusT
 const emit = defineEmits<{ toggleJoker: [p: MyPrediction]; updateScore: [payload: { p: MyPrediction; home: number; away: number }] }>()
 
 function fmt(d: string) {
-  return new Date(d).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+  return new Date(d).toLocaleString(locale.value, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 function isLocked(p: MyPrediction) {
   return new Date(p.kickoffTime).getTime() <= Date.now()
@@ -70,7 +70,7 @@ function rarityTip(p: { crowdShare?: number | string | null }) {
       </div>
 
       <div v-if="p.totalPoints !== null" class="flex items-center justify-center gap-2 mt-3 text-xs">
-        <Tag :value="tierLabel(p.baseTier)" :severity="p.totalPoints > 0 ? 'success' : 'secondary'" />
+        <Tag :value="tierLabel(p.baseTier, t)" :severity="p.totalPoints > 0 ? 'success' : 'secondary'" />
         <span class="font-semibold" style="color: var(--p-primary-color)">+{{ p.totalPoints }} pts</span>
         <span
           v-if="p.bonusPoints"
