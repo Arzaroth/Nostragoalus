@@ -4,6 +4,9 @@
 useHead({
   titleTemplate: (title) => (title && title !== 'Nostragoalus' ? `${title} · Nostragoalus` : 'Nostragoalus'),
 })
+
+// The konami code listens app-wide and unlocks the cosmetic skins.
+useKonamiUnlock()
 </script>
 
 <template>
@@ -13,4 +16,5 @@ useHead({
     <NuxtPage />
   </NuxtLayout>
   <UpdateBanner />
+  <SkinUnlockCelebration />
 </template>
