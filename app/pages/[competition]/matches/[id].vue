@@ -642,16 +642,20 @@ function toggleFormInfo(side: string, i: number | string) {
           </TabPanel>
 
           <TabPanel v-if="hasStarted" value="timeline">
+            <!-- Distinct keys per state: without them, swapping the skeleton (8
+                 rows) for the list after a hard-refresh hydration makes Vue reuse
+                 the skeleton container + its rows, so list rows inherit the
+                 skeleton's flex layout and the cap-less container. -->
             <!-- skeleton on the first open; a live refresh keeps the list in place -->
-            <div v-if="timelineStatus === 'pending' && !playByPlay.length" class="flex flex-col gap-2">
+            <div v-if="timelineStatus === 'pending' && !playByPlay.length" key="pbp-skeleton" class="flex flex-col gap-2">
               <div v-for="i in 8" :key="i" class="flex items-center gap-3 py-1">
                 <Skeleton width="2rem" height="0.9rem" />
                 <Skeleton width="1.25rem" height="1.25rem" shape="circle" />
                 <Skeleton :width="`${8 + (i % 4) * 2}rem`" height="0.9rem" />
               </div>
             </div>
-            <div v-else-if="!playByPlay.length" class="text-sm text-center py-4" style="color: var(--p-text-muted-color)">{{ t('match.playByPlayEmpty') }}</div>
-            <div v-else class="flex flex-col md:max-h-[60vh] md:overflow-y-auto md:overscroll-contain">
+            <div v-else-if="!playByPlay.length" key="pbp-empty" class="text-sm text-center py-4" style="color: var(--p-text-muted-color)">{{ t('match.playByPlayEmpty') }}</div>
+            <div v-else key="pbp-list" class="flex flex-col md:max-h-[60vh] md:overflow-y-auto md:overscroll-contain">
               <div
                 v-for="(e, i) in playByPlay"
                 :key="i"
