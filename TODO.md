@@ -505,9 +505,17 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       didn't win" closure to the (many) losers is intentionally skipped for v1 -
       the `championLost` / `bestScorerLost` i18n strings and the `won:false`
       branch already exist; decide whether the closure is worth the volume.
-- [ ] No retention: `user_notification` grows unbounded. Add a
-      `notifications:prune` task (read AND older than N days, or cap rows per
-      user) once the table matters.
+- [x] Retention: the `notifications:prune` task (daily) drops read notifications
+      older than 7 days and caps each user to the newest 200; users can also
+      dismiss any notification individually (delete button, `POST
+      /api/notifications/delete`). PICK_REMINDER keeps its own self-prune.
+- [ ] The bell loads the newest 30 with no "load more" wired (the `before`
+      cursor exists in the service/API but the UI doesn't page), while
+      `countUnread` counts ALL unread - so >30 unread shows a badge larger than
+      the visible list until mark-all-read. Wire pagination or cap the badge.
+- [ ] "Clear all" is supported server-side (`POST /api/notifications/delete`
+      `{all:true}` -> `deleteAllNotifications`) but the bell only wires per-item
+      dismiss; add a clear-all control if wanted.
 - [ ] Goal-on-a-predicted-match alerts are deferred to the web-push feature (a
       push payload, scheduled and higher volume); slots in as a new
       `notification_type`. (MATCH_RESULT and PICK_REMINDER now ship in-app -
