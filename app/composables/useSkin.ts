@@ -65,12 +65,10 @@ export function useSkin() {
     }
   }
 
-  // Monotonic: once the wordmark is revealed it stays "My Little Prono"
-  // (client-only flourish, persisted in localStorage - not worth a DB field).
+  // Reveal the wordmark for this session only - it stays "My Little Prono"
+  // until a reload (not persisted), so the magic replays on the next visit.
   function revealProno() {
-    if (pronoRevealed.value) return
     pronoRevealed.value = true
-    if (import.meta.client) localStorage.setItem('pronoRevealed', '1')
   }
 
   return { skin, unlocked, celebrate, pronoRevealed, setSkin, unlock, apply, hydrate, revealProno }
