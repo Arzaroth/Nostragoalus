@@ -8,8 +8,12 @@ import { ProviderRateLimitError } from '../providers/types'
 import { backfillOdds, syncOdds } from './sync'
 import type { FetchedOdds, OddsEvent, OddsProvider } from './types'
 
-const NOW = new Date('2026-06-14T12:00:00Z')
-const KICKOFF = new Date('2026-06-15T18:00:00Z')
+// Anchored to real now so KICKOFF stays in the actual future: the insert-time
+// "fetched after kickoff" guard (fetchTarget) compares the wall clock, so a
+// fixed past date would wrongly mark every POLL late once that date elapses.
+// The 30h logical gap (NOW -> KICKOFF) mirrors the old fixed fixtures.
+const KICKOFF = new Date(Date.now() + 24 * 60 * 60 * 1000)
+const NOW = new Date(KICKOFF.getTime() - 30 * 60 * 60 * 1000)
 
 const TRIPLE = { home: 2.1, draw: 3.4, away: 3.6 }
 
