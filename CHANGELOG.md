@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.16.0] - 2026-06-15
+
 ### Added
 - The admin Users list has a debounced search (display name fuzzy, or email exact) and now shows each account's join date.
 
