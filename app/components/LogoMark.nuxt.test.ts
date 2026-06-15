@@ -17,27 +17,15 @@ describe('LogoMark', () => {
   it('renders the default crystal ball when no skin is active', async () => {
     const wrapper = await mountSuspended(LogoMark)
     expect(wrapper.html()).toContain('lm-orb')
+    expect(wrapper.find('img').exists()).toBe(false)
   })
 
-  it('swaps to the matching pony mark for the active skin', async () => {
+  it('renders the active pony head image for a skin', async () => {
     skin.value = 'pinkie'
     const wrapper = await mountSuspended(LogoMark)
-    expect(wrapper.html()).toContain('pp-orb')
+    const img = wrapper.find('img')
+    expect(img.exists()).toBe(true)
+    expect(img.attributes('src')).toBe('/skins/pinkie.png')
     expect(wrapper.html()).not.toContain('lm-orb')
-  })
-
-  it('renders a distinct mark per pony', async () => {
-    const marker: Record<string, string> = {
-      twilight: 'tw-orb',
-      rainbow: 'rd-orb',
-      applejack: 'aj-orb',
-      rarity: 'ra-orb',
-      fluttershy: 'fs-orb',
-    }
-    for (const [id, id2] of Object.entries(marker)) {
-      skin.value = id
-      const wrapper = await mountSuspended(LogoMark)
-      expect(wrapper.html()).toContain(id2)
-    }
   })
 })

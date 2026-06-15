@@ -25,7 +25,7 @@ describe('BannerArt planet', () => {
     skin.value = 'pinkie'
     const wrapper = await mountSuspended(BannerArt, { props })
     const html = wrapper.html()
-    expect(html).toContain('#e8489a') // Pinkie's magenta mane
+    expect(html).toContain('/skins/pinkie.png') // Pinkie's head image
     expect(html).not.toContain('url(#ball)')
   })
 })

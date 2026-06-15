@@ -1,32 +1,21 @@
 <script setup lang="ts">
-import type { Component } from 'vue'
-import type { SkinId } from '~/utils/skins'
 import LogoDefault from './logos/LogoDefault.vue'
-import LogoTwilight from './logos/LogoTwilight.vue'
-import LogoRainbow from './logos/LogoRainbow.vue'
-import LogoPinkie from './logos/LogoPinkie.vue'
-import LogoApplejack from './logos/LogoApplejack.vue'
-import LogoRarity from './logos/LogoRarity.vue'
-import LogoFluttershy from './logos/LogoFluttershy.vue'
 
-// The logo follows the active skin: each pony swaps in its own bespoke mark,
-// and the default (un-skinned) is the crystal ball. A single rendered <svg>
-// root means the sizing class the parent passes (e.g. h-12 w-auto) falls
-// through to it unchanged.
+// The header mark follows the active skin: an <img> of that pony's head, or the
+// default crystal ball when un-skinned. A plain <img> (rather than a dynamic
+// SVG component) keeps the swap robust - it can't drop out across hydration.
 const { skin } = useSkin()
-
-const PONY_LOGOS: Record<SkinId, Component> = {
-  twilight: LogoTwilight,
-  rainbow: LogoRainbow,
-  pinkie: LogoPinkie,
-  applejack: LogoApplejack,
-  rarity: LogoRarity,
-  fluttershy: LogoFluttershy,
-}
-
-const current = computed<Component>(() => (skin.value ? PONY_LOGOS[skin.value] : LogoDefault))
+const src = computed(() => (skin.value ? `/skins/${skin.value}.png` : null))
 </script>
 
 <template>
-  <component :is="current" />
+  <img v-if="src" :src="src" alt="" class="logo-mark-img" />
+  <LogoDefault v-else />
 </template>
+
+<style scoped>
+.logo-mark-img {
+  display: block;
+  object-fit: contain;
+}
+</style>

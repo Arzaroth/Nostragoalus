@@ -84,6 +84,9 @@ export default defineNuxtConfig({
       // The SW only precaches the build's static assets.
       navigateFallback: null,
       globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2}'],
+      // The konami pony art is a rarely-used easter egg; load it on demand
+      // instead of bloating every visitor's precache.
+      globIgnores: ['**/skins/**'],
       maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
     },
     client: {
