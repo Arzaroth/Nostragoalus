@@ -15,6 +15,7 @@ import { emailVerificationRequiredSync, loadEmailVerificationFlag } from '../ser
 import { fetchAvatarDataUrl, isUnusableAvatarUrl } from '../server/utils/auth/avatar'
 import { autoJoinSsoLeagues } from '../server/utils/leagues/auto-join'
 import { symmetricDecrypt } from 'better-auth/crypto'
+import { isSkinId } from '../app/utils/skins'
 import { sendMail } from './mail'
 
 type AuthDb = PgDatabase<PgQueryResultHKT, typeof schema>
@@ -138,6 +139,19 @@ export function buildAuthOptions(database: AuthDb) {
         // input: false - the onboarding dialog reads it from the session; only
         // the league service writes it (dismiss, or first join/create).
         leaguePromptDismissedAt: { type: 'date' as const, required: false, input: false },
+      },
+    },
+    // Constrain the cosmetic skin to the known set on write. The read side
+    // (resolveSkin) already sanitizes on render; this keeps an arbitrary value
+    // from ever landing in the column for any other reader.
+    databaseHooks: {
+      user: {
+        update: {
+          before: async (data: Record<string, unknown>) => {
+            if (typeof data.skin === 'string' && data.skin !== '' && !isSkinId(data.skin)) data.skin = null
+            return { data }
+          },
+        },
       },
     },
     // Google goes through the runtime SSO admin UI (one config path, secrets encrypted at rest).
