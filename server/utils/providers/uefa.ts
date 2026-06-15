@@ -250,11 +250,6 @@ const UEFA_PERIOD_END: Record<string, PeriodKind> = {
   EXTRA_TIME_SECOND_HALF: 'extra-time-end',
 }
 
-function uefaEventTs(e: UefaEvent): number {
-  const t = e.timestamp ? Date.parse(e.timestamp) : NaN
-  return Number.isNaN(t) ? 0 : t
-}
-
 // UEFA's events feed ships no ready commentary, so the client phrases each line
 // from the structured kind + names (the `pbp.*` i18n keys). The one exception is
 // the VAR decision, which can't be rebuilt from structure: it rides a separate
@@ -299,7 +294,20 @@ export function normalizeUefaTimeline(
   // Ascending so the running score and second-yellow tracking accrue correctly;
   // reversed to newest-first at the end (what the UI renders). UEFA stamps the
   // FINAL score on every goal, so the running score is counted here, not read.
-  for (const e of [...events].sort((x, y) => uefaEventTs(x) - uefaEventTs(y))) {
+  // Stable: an event with no parseable timestamp (the final whistle and some
+  // markers) carries the previous event's time so it holds its feed position
+  // instead of jumping to the front, and the feed index breaks ties so
+  // co-incident events (a goal and its assist) keep their feed order.
+  let carriedTs = 0
+  const ordered = events
+    .map((e, idx) => {
+      const t = e.timestamp ? Date.parse(e.timestamp) : NaN
+      const ts = Number.isNaN(t) ? carriedTs : (carriedTs = t)
+      return { e, ts, idx }
+    })
+    .sort((a, b) => a.ts - b.ts || a.idx - b.idx)
+    .map((d) => d.e)
+  for (const e of ordered) {
     switch (e.type) {
       case 'GOAL':
       case 'OWN_GOAL': {

@@ -687,12 +687,36 @@ describe('normalizeUefaTimeline', () => {
       { type: undefined, timestamp: at(16) }, // no type
       { type: 'SHOT_ON_GOAL', timestamp: at(17), primaryActor: { team: { id: '999' } } }, // unknown side, dropped
       { type: 'FOUL', timestamp: at(18), primaryActor: { team: { id: null } } }, // no side, dropped
+      { type: 'SUBSTITUTION', timestamp: at(19), primaryActor: { team: { id: '999' } } }, // unknown side, dropped
+      { type: 'RED_CARD', timestamp: at(20), primaryActor: { team: { id: null } } }, // no side, dropped
+      { type: 'YELLOW_CARD_SECOND', timestamp: at(21), primaryActor: { team: { id: '999' } } }, // unknown side, dropped
     ]
     const tl = normalizeUefaTimeline(evs, '1', '2')
     expect(tl.map((e) => e.kind)).toEqual(['sub', 'foul', 'shot', 'shot', 'shot', 'red', 'second-yellow', 'second-yellow', 'yellow'])
     expect(tl.find((e) => e.kind === 'red')).toMatchObject({ minute: "90'+2", playerName: 'Villain' })
     expect(tl.filter((e) => e.kind === 'second-yellow').map((e) => e.playerName)).toEqual(['Twice', 'Hacker'])
     expect(tl.find((e) => e.kind === 'sub')).toMatchObject({ playerOutName: 'Off', playerInName: null })
+  })
+
+  it('a home player own goal counts for, and ticks up, the away side', () => {
+    const evs: UefaEvent[] = [
+      { type: 'GOAL', subType: 'OWN', time: { minute: 30 }, timestamp: '2024-01-01T00:30:00Z', primaryActor: actor('1', 'h1', 'Home Back') },
+    ]
+    const tl = normalizeUefaTimeline(evs, '1', '2')
+    expect(tl[0]).toMatchObject({ kind: 'own-goal', side: 'AWAY', playerName: 'Home Back', homeScore: 0, awayScore: 1 })
+  })
+
+  it('keeps a goal with no timestamp in feed order so the running score stays correct', () => {
+    const evs: UefaEvent[] = [
+      { type: 'GOAL', time: { minute: 10 }, timestamp: '2024-01-01T00:10:00Z', primaryActor: actor('1', 'p1', 'First') },
+      // No timestamp: must hold its feed position after the 10' goal, not jump ahead.
+      { type: 'GOAL', time: { minute: 80 }, primaryActor: actor('1', 'p2', 'Second') },
+    ]
+    const tl = normalizeUefaTimeline(evs, '1', '2') // newest-first
+    expect(tl.map((e) => [e.playerName, e.homeScore])).toEqual([
+      ['Second', 2],
+      ['First', 1],
+    ])
   })
 
   it('orders by timestamp, tolerating missing and invalid ones', () => {
