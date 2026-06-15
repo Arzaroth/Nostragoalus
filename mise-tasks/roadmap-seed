@@ -34,6 +34,7 @@ const ITEMS = [
   { status: 'SHIPPED', title: 'League standings per match', description: 'On a match that has kicked off, a League tab ranks your league mates by the points their pick earns on that match - updating live with the score and settling at full-time.' },
   { status: 'SHIPPED', title: 'Champion points repaired after the ranking outage', description: 'Champion picks made while the FIFA ranking feed was down were stuck on the flat bonus with no rank shown; their proper rank-tier points have been restored.' },
   { status: 'IN_PROGRESS', title: 'Match watch links', description: 'Admin-curated Live, Replay and Highlights links on the match page - playing inline when the source allows it, otherwise opening in a new tab.' },
+  { status: 'IN_PROGRESS', title: 'Notification center', description: 'A bell in the header gathering what matters to you - league activity, and how your champion and Golden Boot picks finished - with an unread count and live updates as things happen.' },
   { status: 'PLANNED', title: 'New-since-last-visit changelog', description: 'A badge on the changelog highlighting what shipped since you last looked.' },
   { status: 'PLANNED', title: 'Calendar feed', description: 'Subscribe to fixtures and pick-lockout deadlines from your own calendar app (iCal).' },
   { status: 'PLANNED', title: 'Pick reminders & web push', description: 'Installable app with notifications: lockout reminders for missing picks and goal alerts on your matches.' },
