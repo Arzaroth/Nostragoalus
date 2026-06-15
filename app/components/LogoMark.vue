@@ -10,12 +10,10 @@ import LogoRarity from './logos/LogoRarity.vue'
 import LogoFluttershy from './logos/LogoFluttershy.vue'
 
 // The header mark follows the active skin: each pony swaps in its own
-// crystal-ball variant, the default is the original. The skin lives in
-// client-only state (localStorage), so the server can't know it - rendering
-// inside <ClientOnly> with the default as the SSR fallback means the dynamic
-// mark is mounted fresh on the client and never drops out to a hydration
-// mismatch.
-defineOptions({ inheritAttrs: false })
+// crystal-ball variant, the default is the original. The skin is cookie-backed
+// and read on the server too, so the right mark is rendered on the first paint
+// - no hydration mismatch, no default-then-skin flash. The parent's sizing
+// class (h-12 w-auto) falls through to the single <svg> root.
 const { skin } = useSkin()
 
 const PONY_LOGOS: Record<SkinId, Component> = {
@@ -30,10 +28,5 @@ const current = computed<Component>(() => (skin.value ? PONY_LOGOS[skin.value] :
 </script>
 
 <template>
-  <ClientOnly>
-    <component :is="current" v-bind="$attrs" />
-    <template #fallback>
-      <LogoDefault v-bind="$attrs" />
-    </template>
-  </ClientOnly>
+  <component :is="current" />
 </template>

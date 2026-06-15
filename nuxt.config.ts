@@ -31,7 +31,7 @@ export default defineNuxtConfig({
       script: [
         {
           innerHTML:
-            "try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('app-dark');var s=localStorage.getItem('skin');if(s)document.documentElement.setAttribute('data-skin',s)}catch(e){}",
+            "try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('app-dark')}catch(e){}",
           tagPosition: 'head',
         },
       ],
