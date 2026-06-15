@@ -7,6 +7,9 @@ const { skin } = useSkin()
 useHead({
   titleTemplate: (title) => (title && title !== 'Nostragoalus' ? `${title} · Nostragoalus` : 'Nostragoalus'),
   htmlAttrs: { 'data-skin': computed(() => skin.value || undefined) },
+  // Preload the active skin's banner head so it's ready on first paint instead
+  // of popping in after the raster loads.
+  link: computed(() => (skin.value ? [{ rel: 'preload', as: 'image', href: `/skins/${skin.value}.png` }] : [])),
 })
 
 // The konami code listens app-wide and unlocks the cosmetic skins.
