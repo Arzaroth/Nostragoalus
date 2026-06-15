@@ -492,3 +492,33 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 - [ ] The admin scoring mutations (PUT/DELETE) trigger a full recompute and have
       no rate limit. Admin-only and transactional, so blast radius is a
       self-inflicted DB load spike - revisit only if it bites.
+
+## Notification center (deferred from the feature pass)
+
+- [ ] SSO auto-join emits no LEAGUE_JOIN: the admin "apply now" back-fill
+      (`applyAllProviderAutoJoins`) calls `autoJoinSsoLeagues` for every matching
+      user, so emitting there would mass-notify owners. Wire a join notification
+      at the per-login call site only (the SSO provisionUser hook, using the
+      returned joined ids), not inside `autoJoinSsoLeagues`, so the back-fill
+      stays silent.
+- [ ] Result notifications only celebrate winners. A "your champion / Golden Boot
+      didn't win" closure to the (many) losers is intentionally skipped for v1 -
+      the `championLost` / `bestScorerLost` i18n strings and the `won:false`
+      branch already exist; decide whether the closure is worth the volume.
+- [ ] No retention: `user_notification` grows unbounded. Add a
+      `notifications:prune` task (read AND older than N days, or cap rows per
+      user) once the table matters.
+- [ ] Goal-on-a-predicted-match and pick-lockout reminders are deferred to the
+      web-push feature (they are the push payloads, scheduled and higher volume);
+      they slot into the center as two new `notification_type`s with their own
+      dedupe keys. A per-round "your round scored +N" summary belongs there too
+      (one-per-match would spam).
+- [ ] `useNotifications` opens its own `useReconnectingSocket` (like
+      `useLiveMatches` / `useCrowdTotals`), so a logged-in page holds several WS
+      connections. Unify the consumers onto one shared socket if the count bites.
+- [ ] `publishUserNotification` (hub.ts) has no unit test for its send branch -
+      consistent with the other publishers, but the WS fan-out is now load-bearing
+      for the bell; cover it if hub gets a test file.
+- [ ] `GET /api/notifications` and `POST /api/notifications/read` are not in the
+      sampled API response schemas (`response-schemas.json`); add them on the next
+      controlled regen (both inline `defineRouteMeta` OpenAPI already ship).
