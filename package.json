@@ -75,7 +75,9 @@
     "typescript": "^6.0.3",
     "unocss": "^66.7.0",
     "vitest": "^4.1.8",
-    "vue-tsc": "^3.3.3"
+    "vue-tsc": "^3.3.3",
+    "workbox-core": "^7.4.1",
+    "workbox-precaching": "^7.4.1"
   },
   "license": "(MIT OR WTFPL)"
 }

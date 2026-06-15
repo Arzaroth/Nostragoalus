@@ -62,8 +62,15 @@ export default defineNuxtConfig({
   },
 
   pwa: {
+    // injectManifest: we own the service worker (service-worker/sw.ts) so it can
+    // handle `push` / `notificationclick` on top of the Workbox precache. The
+    // precache + update behaviour is unchanged from the old generateSW setup.
+    strategies: 'injectManifest',
+    srcDir: 'service-worker',
+    filename: 'sw.ts',
     // 'prompt': the update banner controls when the new SW takes over - an
-    // auto-activating SW would swap assets mid-prediction.
+    // auto-activating SW would swap assets mid-prediction. The SW honours the
+    // SKIP_WAITING message the banner posts.
     registerType: 'prompt',
     manifest: {
       name: 'Nostragoalus',
@@ -79,10 +86,9 @@ export default defineNuxtConfig({
         { src: '/maskable-icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
       ],
     },
-    workbox: {
-      // SSR app: every navigation must hit the server (sessions, live data).
-      // The SW only precaches the build's static assets.
-      navigateFallback: null,
+    injectManifest: {
+      // SSR app: navigations always hit the server (sessions, live data); the SW
+      // only precaches the build's static assets, no navigation route.
       globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2}'],
       // The konami pony art is a rarely-used easter egg; load it on demand
       // instead of bloating every visitor's precache.
@@ -93,7 +99,7 @@ export default defineNuxtConfig({
       // Re-check the SW hourly so long-lived tabs/installed apps see deploys.
       periodicSyncForUpdates: 3600,
     },
-    devOptions: { enabled: false },
+    devOptions: { enabled: false, type: 'module' },
   },
 
   i18n: {
