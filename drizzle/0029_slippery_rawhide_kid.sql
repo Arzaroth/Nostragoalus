@@ -1,1 +1,0 @@
-ALTER TYPE "public"."notification_type" ADD VALUE 'PICK_REMINDER' BEFORE 'MATCH_RESULT';
