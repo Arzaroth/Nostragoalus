@@ -16,7 +16,22 @@ export function useSkin() {
     maxAge: 60 * 60 * 24 * 365,
     default: () => null,
   })
-  const skin = useState<SkinId | null>('skin', () => resolveSkin(skinCookie.value))
+  const skin = useState<SkinId | null>('skin', () => {
+    const fromCookie = resolveSkin(skinCookie.value)
+    if (fromCookie) return fromCookie
+    // Signed-in, no cookie yet: the server middleware seeded the account skin
+    // onto the request context. Adopt it and stamp the cookie so the next
+    // request renders straight from the cookie.
+    if (import.meta.server) {
+      const ctx = useRequestEvent()?.context as { skin?: unknown } | undefined
+      const next = resolveSkin(ctx?.skin)
+      if (next) {
+        skinCookie.value = next
+        return next
+      }
+    }
+    return null
+  })
   const unlocked = useState<boolean>('skins-unlocked', () => false)
   const celebrate = useState<number>('skins-celebrate', () => 0)
   // One-time, session-only (not persisted): the header wordmark has been
