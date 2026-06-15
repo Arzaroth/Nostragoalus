@@ -56,6 +56,9 @@ export default defineNuxtConfig({
   routeRules: {
     '/admin/cron': { redirect: '/admin?section=cron' },
     '/admin/scoring': { redirect: '/admin?section=scoring' },
+    // Public, unauthenticated landing widget: cache the two aggregate counts so a
+    // visitor flood can't turn it into a per-hit double table scan.
+    '/api/stats': { cache: { maxAge: 60 } },
   },
 
   pwa: {
