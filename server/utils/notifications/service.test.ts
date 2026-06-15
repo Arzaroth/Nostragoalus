@@ -58,6 +58,18 @@ describe('createNotification', () => {
     expect(await listNotifications(db, userId)).toHaveLength(2)
     await client.close()
   })
+
+  it('defers the live push into a collector instead of firing it, and a dedupe no-op adds nothing', async () => {
+    const { db, client, userId } = await setup()
+    const key = 'match-result:m1'
+    const collector: { userId: string; dto: { id: string } }[] = []
+    const dto = await createNotification(db, { userId, data: leagueJoin(), dedupeKey: key }, collector)
+    const dup = await createNotification(db, { userId, data: leagueJoin(), dedupeKey: key }, collector)
+    expect(dto).not.toBeNull()
+    expect(dup).toBeNull()
+    expect(collector).toEqual([{ userId, dto }])
+    await client.close()
+  })
 })
 
 describe('listNotifications', () => {

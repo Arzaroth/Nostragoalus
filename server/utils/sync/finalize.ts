@@ -8,6 +8,8 @@ import { outcomeOf } from '../scoring/tiers'
 import { closingOddsForOutcome } from '../odds/store'
 import { awardChampionBonuses } from '../champion/service'
 import { notifyMatchResults } from '../notifications/events'
+import type { PendingNotification } from '../notifications/service'
+import { publishUserNotification } from '../live/hub'
 import { resultHashOf } from './upsert-matches'
 import { lockDuePredictions, unlockFuturePredictions } from './live-window'
 
@@ -130,7 +132,11 @@ export async function finalizeMatches(db: AppDatabase, now: Date = new Date()): 
   // The whole tick is one transaction: lock/unlock, every match score, every
   // champion award and every void land together or roll back together. A crash
   // mid-tick leaves the previous consistent state, never a half-scored round.
-  return db.transaction(async (tx) => {
+  // Result/champion notifications created in the tx push live only AFTER it
+  // commits (collected here, flushed below) so a rolled-back tick can't leave
+  // the bell showing notifications whose rows never persisted.
+  const pending: PendingNotification[] = []
+  const result = await db.transaction(async (tx) => {
     const locked = await lockDuePredictions(tx, now)
     const unlocked = await unlockFuturePredictions(tx, now)
 
@@ -153,7 +159,7 @@ export async function finalizeMatches(db: AppDatabase, now: Date = new Date()): 
       if ((await scoreMatchRow(tx, m.id, await configFor(m.competitionId))) === 'scored') {
         scored += 1
         changedMatchIds.push(m.id)
-        await notifyMatchResults(tx, m.id)
+        await notifyMatchResults(tx, m.id, pending)
       }
       // The champion bonus is awarded in the same transaction as the final's
       // scoring (it reads only the final's settled winner). The best-scorer
@@ -162,7 +168,7 @@ export async function finalizeMatches(db: AppDatabase, now: Date = new Date()): 
       // once details are fresh.
       if (countsDouble(m.stage) && (m.winner === 'HOME' || m.winner === 'AWAY')) {
         const winnerCode = m.winner === 'HOME' ? m.homeTeamCode : m.awayTeamCode
-        await awardChampionBonuses(tx, m.competitionId, winnerCode)
+        await awardChampionBonuses(tx, m.competitionId, winnerCode, pending)
       }
     }
 
@@ -178,4 +184,8 @@ export async function finalizeMatches(db: AppDatabase, now: Date = new Date()): 
 
     return { locked, unlocked, scored, voided, changedMatchIds }
   })
+
+  // Committed: now it is safe to push the result/champion notifications live.
+  for (const p of pending) publishUserNotification(p.userId, p.dto)
+  return result
 }

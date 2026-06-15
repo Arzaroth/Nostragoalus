@@ -1,18 +1,9 @@
-import { z } from 'zod'
 import { db } from '../../../db'
 import { deleteAllNotifications, deleteNotifications } from '../../utils/notifications/service'
 import { defineValidatedHandler } from '../../utils/validated-handler'
+import { idsOrAllSchema } from './_schema'
 
-const bodySchema = z
-  .object({
-    ids: z.array(z.string()).max(200).optional(),
-    all: z.boolean().optional(),
-  })
-  .refine((b) => b.all === true || (b.ids !== undefined && b.ids.length > 0), {
-    message: 'Provide a non-empty ids array or all:true',
-  })
-
-export default defineValidatedHandler({ body: bodySchema }, async ({ body, user }) => {
+export default defineValidatedHandler({ body: idsOrAllSchema }, async ({ body, user }) => {
   const deleted = body.all ? await deleteAllNotifications(db, user.id) : await deleteNotifications(db, user.id, body.ids ?? [])
   return { deleted }
 })

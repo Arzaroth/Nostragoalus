@@ -15,6 +15,14 @@ interface NotificationRow {
   createdAt: Date
 }
 
+// A created notification awaiting its live push. Callers that create inside a DB
+// transaction collect into one of these and flush after commit, so a rolled-back
+// tick never leaves the bell showing a notification that does not exist.
+export interface PendingNotification {
+  userId: string
+  dto: NotificationDTO
+}
+
 function toDTO(row: NotificationRow): NotificationDTO {
   return {
     id: row.id,
@@ -28,10 +36,13 @@ function toDTO(row: NotificationRow): NotificationDTO {
 // Insert a notification and push it live to the user's open sockets. `dedupeKey`
 // (when set) makes the insert idempotent against the per-user partial unique
 // index, so a scheduled task re-running can't create a duplicate - the second
-// insert is a no-op and returns null (nothing new, nothing to push).
+// insert is a no-op and returns null (nothing new, nothing to push). Pass
+// `collector` when creating inside a transaction: the push is deferred into it
+// instead of fired now, so it only reaches sockets if the caller commits.
 export async function createNotification(
   db: AppDatabase,
   input: { userId: string; data: NotificationData; dedupeKey?: string },
+  collector?: PendingNotification[],
 ): Promise<NotificationDTO | null> {
   const inserted = await db
     .insert(userNotification)
@@ -49,7 +60,8 @@ export async function createNotification(
   const row = inserted[0] as NotificationRow | undefined
   if (!row) return null
   const dto = toDTO(row)
-  publishUserNotification(input.userId, dto)
+  if (collector) collector.push({ userId: input.userId, dto })
+  else publishUserNotification(input.userId, dto)
   return dto
 }
 
