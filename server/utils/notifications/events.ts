@@ -11,7 +11,7 @@ import {
   user,
   userProfile,
 } from '../../../db/schema'
-import { createNotification } from './service'
+import { createNotification, type PendingNotification } from './service'
 
 type LeagueRole = 'OWNER' | 'MODERATOR' | 'MEMBER'
 
@@ -82,9 +82,14 @@ export async function notifyLeagueRemoved(db: AppDatabase, leagueId: string, use
 
 // A match was scored at finalize: tell everyone who predicted it how their pick
 // fared, with the scoreline and the points it earned (0 for a miss). dedupeKey
-// is per match, so a rescore (config change) silently updates the stored points
-// without re-pinging.
-export async function notifyMatchResults(db: AppDatabase, matchId: string): Promise<void> {
+// is per match, so finalize re-runs don't re-ping. NOTE: onConflictDoNothing
+// keeps the FIRST notification - a later score correction or rescore does NOT
+// refresh the stored scoreline/points (see TODO.md).
+export async function notifyMatchResults(
+  db: AppDatabase,
+  matchId: string,
+  collector?: PendingNotification[],
+): Promise<void> {
   const rows = await db
     .select({
       homeTeam: match.homeTeam,
@@ -104,27 +109,36 @@ export async function notifyMatchResults(db: AppDatabase, matchId: string): Prom
     .from(prediction)
     .where(and(eq(prediction.matchId, matchId), isNotNull(prediction.totalPoints)))
   for (const p of predictors) {
-    await createNotification(db, {
-      userId: p.userId,
-      dedupeKey: `match-result:${matchId}`,
-      data: {
-        type: 'MATCH_RESULT',
-        matchId,
-        competitionSlug: m.slug,
-        homeTeam: m.homeTeam,
-        awayTeam: m.awayTeam,
-        homeScore: m.homeScore ?? 0,
-        awayScore: m.awayScore ?? 0,
-        points: p.points ?? 0,
+    await createNotification(
+      db,
+      {
+        userId: p.userId,
+        dedupeKey: `match-result:${matchId}`,
+        data: {
+          type: 'MATCH_RESULT',
+          matchId,
+          competitionSlug: m.slug,
+          homeTeam: m.homeTeam,
+          awayTeam: m.awayTeam,
+          homeScore: m.homeScore ?? 0,
+          awayScore: m.awayScore ?? 0,
+          points: p.points ?? 0,
+        },
       },
-    })
+      collector,
+    )
   }
 }
 
 // The final is decided: tell everyone whose champion pick won, with the points
 // they earned. dedupeKey is per competition, so re-running finalize never
 // re-notifies. v1 only celebrates winners; "didn't win" closure is deferred.
-export async function notifyChampionResult(db: AppDatabase, competitionId: string, winnerCode: string | null): Promise<void> {
+export async function notifyChampionResult(
+  db: AppDatabase,
+  competitionId: string,
+  winnerCode: string | null,
+  collector?: PendingNotification[],
+): Promise<void> {
   if (!winnerCode) return
   const comp = await competitionInfo(db, competitionId)
   if (!comp) return
@@ -133,18 +147,22 @@ export async function notifyChampionResult(db: AppDatabase, competitionId: strin
     .from(championPick)
     .where(and(eq(championPick.competitionId, competitionId), eq(championPick.teamCode, winnerCode)))
   for (const w of winners) {
-    await createNotification(db, {
-      userId: w.userId,
-      dedupeKey: `champion-result:${competitionId}`,
-      data: {
-        type: 'CHAMPION_RESULT',
-        competitionSlug: comp.slug,
-        competitionName: comp.name,
-        teamName: w.teamName,
-        points: w.points,
-        won: true,
+    await createNotification(
+      db,
+      {
+        userId: w.userId,
+        dedupeKey: `champion-result:${competitionId}`,
+        data: {
+          type: 'CHAMPION_RESULT',
+          competitionSlug: comp.slug,
+          competitionName: comp.name,
+          teamName: w.teamName,
+          points: w.points,
+          won: true,
+        },
       },
-    })
+      collector,
+    )
   }
 }
 

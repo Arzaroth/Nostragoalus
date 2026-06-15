@@ -3,6 +3,7 @@ import type { AppDatabase } from '../../../db/types'
 import { championPick, match } from '../../../db/schema'
 import { LockedError } from '../errors'
 import { notifyChampionResult } from '../notifications/events'
+import type { PendingNotification } from '../notifications/service'
 import { getSecondChanceWindow, isSecondChanceOpen } from '../picks/window'
 
 // Champion picks lock when the competition's first match kicks off.
@@ -134,6 +135,7 @@ export async function awardChampionBonuses(
   db: AppDatabase,
   competitionId: string,
   winnerCode: string | null,
+  collector?: PendingNotification[],
 ): Promise<number> {
   await db.update(championPick).set({ awardedPoints: 0 }).where(eq(championPick.competitionId, competitionId))
   if (!winnerCode) return 0
@@ -147,6 +149,6 @@ export async function awardChampionBonuses(
     })
     .where(and(eq(championPick.competitionId, competitionId), eq(championPick.teamCode, winnerCode)))
     .returning({ id: championPick.id })
-  await notifyChampionResult(db, competitionId, winnerCode)
+  await notifyChampionResult(db, competitionId, winnerCode, collector)
   return updated.length
 }
