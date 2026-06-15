@@ -265,6 +265,15 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 - [ ] (UEFA) getMatchTimeline re-fetches /events even though the route already
       pulled the same feed via getMatchDetail; thread the events through (or
       cache them) to avoid the double fetch.
+- [ ] normalizeUefaTimeline (uefa.ts) and normalizeFifaTimeline (fifa.ts) are now
+      two implementations of the same TimelineEvent contract (FIFA table-driven,
+      UEFA a hand-rolled switch). The cross-cutting rules - own-goal side flip,
+      VAR-text language gate, the trailing reverse-to-newest-first, drop-unmapped-
+      period - are encoded twice and can drift. Extract a shared buildTimelineEvent
+      + the policy helpers; keep the per-provider kind tables. Caveat for the
+      extractor: UEFA derives the running score and second-yellow locally (its feed
+      stamps only the final score), where FIFA reads them off the feed - the seam
+      needs a per-event derivation hook, not a 1:1 merge.
 
 ## Admin panel redesign (deferred from the feature-treatment review)
 
