@@ -14,6 +14,7 @@ const ICONS: Record<NotificationDTO['type'], string> = {
   LEAGUE_JOIN: 'pi pi-user-plus',
   LEAGUE_ROLE: 'pi pi-shield',
   LEAGUE_REMOVED: 'pi pi-user-minus',
+  PICK_REMINDER: 'pi pi-clock',
   MATCH_RESULT: 'pi pi-flag',
   CHAMPION_RESULT: 'pi pi-crown',
   BEST_SCORER_RESULT: 'pi pi-star',
@@ -30,6 +31,8 @@ function itemText(n: NotificationDTO): string {
       })
     case 'LEAGUE_REMOVED':
       return t('notifications.item.leagueRemoved', { league: d.leagueName })
+    case 'PICK_REMINDER':
+      return t('notifications.item.pickReminder', { home: d.homeTeam, away: d.awayTeam })
     case 'MATCH_RESULT':
       return t(d.points > 0 ? 'notifications.item.matchResult' : 'notifications.item.matchResultMiss', {
         home: d.homeTeam,
@@ -61,6 +64,7 @@ function linkFor(n: NotificationDTO): string {
       return `/leagues/${d.leagueId}`
     case 'LEAGUE_REMOVED':
       return '/leagues'
+    case 'PICK_REMINDER':
     case 'MATCH_RESULT':
       return `/${d.competitionSlug}/matches/${d.matchId}`
     case 'CHAMPION_RESULT':

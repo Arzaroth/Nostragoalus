@@ -707,6 +707,7 @@
       "matchesFinalize": "Lock & score matches",
       "oddsRefresh": "Odds snapshots",
       "pruneUnverified": "Prune unverified accounts",
+      "pickReminders": "Pick reminders",
       "oddsBackfill": "Odds backfill (historical)",
       "fixturesImport": "Import fixtures",
       "championBackfillRanks": "Backfill champion ranks"
@@ -882,6 +883,7 @@
       "leagueRolePromoted": "You're now a moderator of {league}.",
       "leagueRoleOwner": "You're now the owner of {league}.",
       "leagueRemoved": "You were removed from {league}.",
+      "pickReminder": "{home} v {away} kicks off soon - you haven't predicted yet.",
       "matchResult": "{home} {hs}-{as} {away} - your prediction scored +{points} pts.",
       "matchResultMiss": "{home} {hs}-{as} {away} - your prediction missed this one.",
       "championWon": "Your champion {team} won the {competition}! +{points} pts",

@@ -3,6 +3,7 @@ import type { AppDatabase } from '../../../db/types'
 import { competition as competitionTable, leagueMember, match, prediction, round } from '../../../db/schema'
 import { isSingleMatchStage } from '../../../shared/types/match'
 import { LockedError, NotFoundError, ValidationError } from '../errors'
+import { deletePickReminder } from '../notifications/reminders'
 
 // Aggregate counters for the "my stats" strip (points/rank come from the leaderboard).
 export async function getMyStats(db: AppDatabase, userId: string, competitionId: string) {
@@ -61,6 +62,8 @@ export async function upsertPrediction(
       set: { homeGoals: input.home, awayGoals: input.away },
     })
     .returning({ id: prediction.id })
+  // The pick is in: any missing-pick reminder for this match is now fulfilled.
+  await deletePickReminder(db, input.userId, input.matchId)
   return row.id
 }
 

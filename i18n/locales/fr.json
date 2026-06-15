@@ -707,6 +707,7 @@
       "matchesFinalize": "Verrouillage & calcul des points",
       "oddsRefresh": "Relevé des cotes",
       "pruneUnverified": "Purge des comptes non confirmés",
+      "pickReminders": "Rappels de pronostics",
       "oddsBackfill": "Récupération des cotes (historique)",
       "fixturesImport": "Importer les matchs",
       "championBackfillRanks": "Compléter les rangs des champions"
@@ -882,6 +883,7 @@
       "leagueRolePromoted": "Vous êtes désormais modérateur de {league}.",
       "leagueRoleOwner": "Vous êtes désormais propriétaire de {league}.",
       "leagueRemoved": "Vous avez été retiré de {league}.",
+      "pickReminder": "{home} v {away} commence bientôt - vous n'avez pas encore pronostiqué.",
       "matchResult": "{home} {hs}-{as} {away} - votre pronostic a marqué +{points} pts.",
       "matchResultMiss": "{home} {hs}-{as} {away} - votre pronostic est passé à côté.",
       "championWon": "Votre champion {team} a gagné {competition} ! +{points} pts",

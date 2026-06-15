@@ -707,6 +707,7 @@
       "matchesFinalize": "ล็อกและคิดคะแนนแมตช์",
       "oddsRefresh": "บันทึกราคาต่อรอง",
       "pruneUnverified": "ล้างบัญชีที่ยังไม่ยืนยัน",
+      "pickReminders": "เตือนให้ทายผล",
       "oddsBackfill": "ดึงราคาย้อนหลัง",
       "fixturesImport": "นำเข้าตารางแข่ง",
       "championBackfillRanks": "เติมอันดับแชมเปียน"
@@ -882,6 +883,7 @@
       "leagueRolePromoted": "คุณเป็นผู้ดูแลของ {league} แล้ว",
       "leagueRoleOwner": "คุณเป็นเจ้าของ {league} แล้ว",
       "leagueRemoved": "คุณถูกนำออกจาก {league}",
+      "pickReminder": "{home} v {away} กำลังจะเริ่ม - คุณยังไม่ได้ทายผล",
       "matchResult": "{home} {hs}-{as} {away} - คำทายของคุณได้ +{points} แต้ม",
       "matchResultMiss": "{home} {hs}-{as} {away} - คำทายของคุณพลาดนัดนี้",
       "championWon": "แชมป์ {team} ที่คุณเลือกชนะ {competition}! +{points} แต้ม",

@@ -618,6 +618,7 @@ export const notificationTypeEnum = pgEnum('notification_type', [
   'LEAGUE_JOIN',
   'LEAGUE_ROLE',
   'LEAGUE_REMOVED',
+  'PICK_REMINDER',
   'MATCH_RESULT',
   'CHAMPION_RESULT',
   'BEST_SCORER_RESULT',
