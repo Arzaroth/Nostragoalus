@@ -540,3 +540,31 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 - [ ] `GET /api/notifications` and `POST /api/notifications/read` are not in the
       sampled API response schemas (`response-schemas.json`); add them on the next
       controlled regen (both inline `defineRouteMeta` OpenAPI already ship).
+
+### Deferred from the feature-treatment review
+
+- [ ] Stale result on correction: MATCH_RESULT / CHAMPION_RESULT / BEST_SCORER_RESULT
+      dedupe on a per-event key with `onConflictDoNothing`, so a later score
+      correction or rescore does NOT refresh the stored scoreline/points - the bell
+      keeps the first (now-stale) figure while the board shows truth. Point-in-time
+      by design for v1; a refresh-on-correction would need an upsert keyed on
+      `dedupeKey` (and probably a "corrected" cue), weighed against re-pinging users.
+- [ ] Best-scorer transient winner: `awardBestScorerBonuses` is gated on a decided
+      FINAL and runs after the detail sync, so the Golden Boot is effectively settled
+      - but if `goal_event` for the final lags the same tick that settles it, a
+      transient leader can be crowned and the per-user `best-scorer-result:<comp>`
+      dedupe freezes that notification (a later re-award fixes the points but never
+      the notification). Acceptable given the ordering; harden by re-notifying when
+      the winner set changes (ties into the stale-on-correction item).
+- [ ] `listNotifications` orders by `createdAt desc` only, and `createdAt` is
+      `defaultNow()` = the transaction-start time, so every notification minted in
+      one finalize tick shares an identical timestamp. The `before` pagination cursor
+      (`lt(createdAt, …)`) at such a tie boundary can skip or repeat rows. Add `id`
+      as a stable secondary sort and make the cursor composite (createdAt, id).
+- [ ] The finalize task swallows `awardBestScorerBonuses` errors ("never fail the
+      task over the best-scorer award") with no log, so a best-scorer award OR its
+      notification write failing is invisible. Log the swallowed error at least
+      (mirrors the snapshot try/catch right below it).
+- [ ] `notifyChampionResult` and `notifyBestScorerResult` are near-identical
+      (per-competition dedupe, winners select, `won:true` loop) - folds into the
+      meta-pick generalization already tracked under "Best scorer".
