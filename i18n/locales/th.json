@@ -954,5 +954,18 @@
       "bestScorerWon": "{player} ที่คุณเลือกเป็นดาวซัลโวสูงสุด! +{points} แต้ม",
       "bestScorerLost": "{player} ที่คุณเลือกไม่ได้เป็นดาวซัลโวสูงสุด"
     }
+  },
+  "push": {
+    "reminder": { "title": "อย่าลืมทายผล", "body": "{home} v {away} กำลังจะเริ่ม" },
+    "kickoff": { "title": "เริ่มแล้ว", "body": "{home} v {away} เริ่มแล้ว" },
+    "goal": { "title": "ได้ประตู!", "body": "{home} {hs}-{as} {away}" },
+    "matchResult": { "title": "ผลของคุณ", "body": "{home} {hs}-{as} {away} - คุณได้ +{points} แต้ม" },
+    "matchResultMiss": { "title": "ผลของคุณ", "body": "{home} {hs}-{as} {away} - ไม่ได้แต้มในนัดนี้" },
+    "champion": { "title": "แชมป์!", "body": "แชมป์ {team} ที่คุณเลือกชนะ - +{points} แต้ม" },
+    "bestScorer": { "title": "ดาวซัลโว!", "body": "{player} ที่คุณเลือกเป็นดาวซัลโวสูงสุด - +{points} แต้ม" },
+    "leagueJoin": { "title": "สมาชิกใหม่", "body": "{name} เข้าร่วม {league}" },
+    "leagueRoleOwner": { "title": "อัปเดตลีก", "body": "คุณเป็นเจ้าของ {league} แล้ว" },
+    "leagueRolePromoted": { "title": "อัปเดตลีก", "body": "คุณเป็นผู้ดูแลของ {league} แล้ว" },
+    "leagueRemoved": { "title": "อัปเดตลีก", "body": "คุณถูกนำออกจาก {league}" }
   }
 }

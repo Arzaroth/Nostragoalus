@@ -10,6 +10,7 @@ import { awardChampionBonuses } from '../champion/service'
 import { notifyMatchResults } from '../notifications/events'
 import type { PendingNotification } from '../notifications/service'
 import { publishUserNotification } from '../live/hub'
+import { pushNotification } from '../push/send'
 import { resultHashOf } from './upsert-matches'
 import { lockDuePredictions, unlockFuturePredictions } from './live-window'
 
@@ -185,7 +186,11 @@ export async function finalizeMatches(db: AppDatabase, now: Date = new Date()): 
     return { locked, unlocked, scored, voided, changedMatchIds }
   })
 
-  // Committed: now it is safe to push the result/champion notifications live.
-  for (const p of pending) publishUserNotification(p.userId, p.dto)
+  // Committed: now it is safe to push the result/champion notifications live,
+  // and to fire their (best-effort) web pushes.
+  for (const p of pending) {
+    publishUserNotification(p.userId, p.dto)
+    void pushNotification(db, p.userId, p.dto.data).catch(() => {})
+  }
   return result
 }

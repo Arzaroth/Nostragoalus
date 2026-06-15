@@ -954,5 +954,18 @@
       "bestScorerWon": "Your Golden Boot pick {player} finished top scorer! +{points} pts",
       "bestScorerLost": "Your Golden Boot pick {player} didn't finish top scorer."
     }
+  },
+  "push": {
+    "reminder": { "title": "Don't forget to predict", "body": "{home} v {away} kicks off soon" },
+    "kickoff": { "title": "Kick-off", "body": "{home} v {away} has started" },
+    "goal": { "title": "GOAL!", "body": "{home} {hs}-{as} {away}" },
+    "matchResult": { "title": "Your result", "body": "{home} {hs}-{as} {away} - you scored +{points} pts" },
+    "matchResultMiss": { "title": "Your result", "body": "{home} {hs}-{as} {away} - no points this time" },
+    "champion": { "title": "Champion!", "body": "Your champion {team} won - +{points} pts" },
+    "bestScorer": { "title": "Golden Boot!", "body": "Your pick {player} finished top scorer - +{points} pts" },
+    "leagueJoin": { "title": "New league member", "body": "{name} joined {league}" },
+    "leagueRoleOwner": { "title": "League update", "body": "You're now the owner of {league}" },
+    "leagueRolePromoted": { "title": "League update", "body": "You're now a moderator of {league}" },
+    "leagueRemoved": { "title": "League update", "body": "You were removed from {league}" }
   }
 }
