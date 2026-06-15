@@ -37,7 +37,7 @@ const lang = computed({
       <div class="flex items-center gap-1">
         <span>{{ t('footer.version') }}:</span>
         <NuxtLink :to="`/about#v${config.public.version}`" class="hover:underline font-medium" style="color: var(--p-primary-color)">{{ config.public.version }}</NuxtLink>
-        <span v-if="pageMs != null" class="ml-2">{{ t('footer.page') }}: <b style="color: var(--p-text-color)">{{ pageMs }}ms</b></span>
+        <ClientOnly><span v-if="pageMs != null" class="ml-2">{{ t('footer.page') }}: <b style="color: var(--p-text-color)">{{ pageMs }}ms</b></span></ClientOnly>
       </div>
       <div class="flex items-center gap-2">
         <Select
@@ -53,15 +53,20 @@ const lang = computed({
             <span class="inline-flex items-center gap-1 text-xs"><i class="pi pi-globe" style="font-size: 0.75rem" />{{ locales.find((l) => l.code === value)?.name }}</span>
           </template>
         </Select>
-        <Button
-          :icon="isDark ? 'pi pi-sun' : 'pi pi-moon'"
-          text
-          rounded
-          severity="secondary"
-          size="small"
-          aria-label="Toggle theme"
-          @click="toggle"
-        />
+        <ClientOnly>
+          <Button
+            :icon="isDark ? 'pi pi-sun' : 'pi pi-moon'"
+            text
+            rounded
+            severity="secondary"
+            size="small"
+            aria-label="Toggle theme"
+            @click="toggle"
+          />
+          <template #fallback>
+            <Button icon="pi pi-moon" text rounded severity="secondary" size="small" aria-label="Toggle theme" disabled />
+          </template>
+        </ClientOnly>
         <NuxtLink to="/roadmap" class="hover:underline">{{ t('roadmap.title') }}</NuxtLink>
         <a href="/docs/api" target="_blank" rel="noopener" class="hover:underline">API</a>
       </div>
