@@ -1,6 +1,7 @@
 import { inArray } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { match } from '../../../db/schema'
+import type { NotificationDTO } from '../../../shared/types/notifications'
 
 export interface LiveSubscriber {
   matchIds: Set<string>
@@ -60,6 +61,20 @@ export function publishLeagueCrowdUpdate(
       // Distinct type so a pre-deploy client (which treats any crowd:update with
       // a matchId as global) can't fold league totals into its global map.
       sub.send({ type: 'crowd:league-update', leagueId, matchId, totals })
+      delivered += 1
+    }
+  }
+  return delivered
+}
+
+// Deliver a freshly created notification to every open socket of that one user
+// (mirrors the league-member gate above). Other users' sockets never see it, so
+// the bell can render it live without a refetch.
+export function publishUserNotification(userId: string, notification: NotificationDTO): number {
+  let delivered = 0
+  for (const sub of subscribers) {
+    if (sub.userId === userId) {
+      sub.send({ type: 'notification:new', notification })
       delivered += 1
     }
   }

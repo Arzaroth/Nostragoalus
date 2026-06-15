@@ -16,6 +16,7 @@ import {
 import { ssoProvider, user } from './auth-schema'
 import type { ChampionTier, CrowdTier, OddsTier } from '../shared/types/scoring'
 import type { OddsSnapshotKind, StoredBookmakerOdds } from '../shared/types/odds'
+import type { NotificationData } from '../shared/types/notifications'
 
 const pk = () => text('id').primaryKey().$defaultFn(() => randomUUID())
 
@@ -612,4 +613,42 @@ export const appSetting = pgTable('app_setting', {
     .defaultNow()
     .$onUpdate(() => new Date()),
 })
+
+export const notificationTypeEnum = pgEnum('notification_type', [
+  'LEAGUE_JOIN',
+  'LEAGUE_ROLE',
+  'LEAGUE_REMOVED',
+  'CHAMPION_RESULT',
+  'BEST_SCORER_RESULT',
+])
+
+// Per-user in-app notifications (the header bell). `type` mirrors `data.type`;
+// the typed `data` bag carries everything the row needs to render and deep-link.
+// `readAt` null = unread. `dedupeKey` makes scheduled-task triggers idempotent:
+// a finalize tick re-running can't insert a second copy (partial unique index
+// per user, createNotification does onConflictDoNothing).
+export const userNotification = pgTable(
+  'user_notification',
+  {
+    id: pk(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    type: notificationTypeEnum('type').notNull(),
+    data: jsonb('data').$type<NotificationData>().notNull(),
+    dedupeKey: text('dedupe_key'),
+    readAt: timestamp('read_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('user_notification_user_created_idx').on(t.userId, t.createdAt.desc()),
+    uniqueIndex('user_notification_user_dedupe_uq')
+      .on(t.userId, t.dedupeKey)
+      .where(sql`${t.dedupeKey} is not null`),
+  ],
+)
+
+export const userNotificationRelations = relations(userNotification, ({ one }) => ({
+  user: one(user, { fields: [userNotification.userId], references: [user.id] }),
+}))
 

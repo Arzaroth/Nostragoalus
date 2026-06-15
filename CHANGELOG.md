@@ -8,6 +8,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 ## [1.16.0] - 2026-06-15
 
 ### Added
+- **Notification center**: a bell in the header collects what matters to you - league activity (joins, role changes, being added or removed) and how your champion and Golden Boot picks finished - with an unread count and live updates as things happen. Open it to catch up, mark one or all as read, and tap a notification to jump straight to the league or competition it is about.
 - The admin Users list has a debounced search (display name fuzzy, or email exact) and now shows each account's join date.
 
 ### Changed
