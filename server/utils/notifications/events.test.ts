@@ -2,12 +2,22 @@ import { describe, it, expect } from 'vitest'
 import { eq } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { createTestDb } from '../../../tests/db'
-import { makeCompetition, makeUser } from '../../../tests/factories'
-import { bestScorerPick, championPick, league, leagueMember, userNotification, userProfile } from '../../../db/schema'
+import { makeCompetition, makeMatch, makeUser, seedCompetition } from '../../../tests/factories'
+import { findRoundId } from '../sync/rounds'
+import {
+  bestScorerPick,
+  championPick,
+  league,
+  leagueMember,
+  prediction,
+  userNotification,
+  userProfile,
+} from '../../../db/schema'
 import {
   notifyBestScorerResult,
   notifyChampionResult,
   notifyLeagueJoin,
+  notifyMatchResults,
   notifyLeagueRemoved,
   notifyLeagueRole,
 } from './events'
@@ -99,6 +109,79 @@ describe('notifyLeagueRemoved', () => {
     await notifyLeagueRemoved(db, 'missing', member)
     expect(await notifsFor(db, member)).toHaveLength(1)
     await client.close()
+  })
+})
+
+describe('notifyMatchResults', () => {
+  async function matchSetup() {
+    const ctx = await createTestDb()
+    const competitionId = await seedCompetition(ctx.db)
+    const roundId = (await findRoundId(ctx.db, competitionId, 'GROUP', 1)) as string
+    const exact = await makeUser(ctx.db, 'pexact')
+    const miss = await makeUser(ctx.db, 'pmiss')
+    const unscored = await makeUser(ctx.db, 'punscored')
+    const matchId = await makeMatch(ctx.db, {
+      competitionId,
+      roundId,
+      kickoffTime: new Date('2026-06-01T00:00:00Z'),
+      homeTeam: 'Brazil',
+      homeTeamCode: 'BRA',
+      awayTeam: 'Argentina',
+      awayTeamCode: 'ARG',
+      fullTimeHome: 2,
+      fullTimeAway: 1,
+      status: 'FINISHED',
+    })
+    await ctx.db.insert(prediction).values([
+      { userId: exact, matchId, roundId, homeGoals: 2, awayGoals: 1, totalPoints: 5 },
+      { userId: miss, matchId, roundId, homeGoals: 0, awayGoals: 0, totalPoints: 0 },
+      { userId: unscored, matchId, roundId, homeGoals: 1, awayGoals: 1, totalPoints: null },
+    ])
+    return { ...ctx, competitionId, roundId, matchId, exact, miss, unscored }
+  }
+
+  it('notifies every scored predictor with the scoreline and points, skips unscored, dedupes', async () => {
+    const { db, client, matchId, exact, miss, unscored } = await matchSetup()
+    await notifyMatchResults(db, matchId)
+    const e = await notifsFor(db, exact)
+    expect(e).toHaveLength(1)
+    expect(e[0]!.data).toMatchObject({
+      type: 'MATCH_RESULT',
+      homeTeam: 'Brazil',
+      awayTeam: 'Argentina',
+      homeScore: 2,
+      awayScore: 1,
+      points: 5,
+    })
+    expect((await notifsFor(db, miss))[0]!.data).toMatchObject({ points: 0 })
+    expect(await notifsFor(db, unscored)).toHaveLength(0)
+    await notifyMatchResults(db, matchId)
+    expect(await notifsFor(db, exact)).toHaveLength(1)
+    await client.close()
+  })
+
+  it('no-ops on an unknown match', async () => {
+    const { db, client, exact } = await matchSetup()
+    await notifyMatchResults(db, 'missing')
+    expect(await notifsFor(db, exact)).toHaveLength(0)
+    await client.close()
+  })
+
+  it('defaults a null scoreline to 0', async () => {
+    const ctx = await createTestDb()
+    const competitionId = await seedCompetition(ctx.db)
+    const roundId = (await findRoundId(ctx.db, competitionId, 'GROUP', 1)) as string
+    const u = await makeUser(ctx.db, 'pnull')
+    const matchId = await makeMatch(ctx.db, {
+      competitionId,
+      roundId,
+      kickoffTime: new Date('2026-06-01T00:00:00Z'),
+      status: 'FINISHED',
+    })
+    await ctx.db.insert(prediction).values({ userId: u, matchId, roundId, homeGoals: 0, awayGoals: 0, totalPoints: 1 })
+    await notifyMatchResults(ctx.db, matchId)
+    expect((await notifsFor(ctx.db, u))[0]!.data).toMatchObject({ homeScore: 0, awayScore: 0, points: 1 })
+    await ctx.client.close()
   })
 })
 
