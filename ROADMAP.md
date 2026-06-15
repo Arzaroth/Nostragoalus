@@ -125,6 +125,26 @@ effort buckets; order within a bucket is not priority.
       feat/api-keys; the media routes opt into `apiKey:{media:['write']}` once
       both branches merge. Still deferred: the separate curation bot that fills
       links via the API (see TODO.md).
+- [ ] **In-app notification center** (in progress on worktree-notifications): a
+      header bell with an unread count and a dropdown feed, live over the existing
+      WS. Decisions:
+  - `user_notification` table: `type` enum + a typed `payload` jsonb (data-driven
+    render, no per-type columns), `readAt` (null = unread), and a nullable
+    `dedupeKey` with a partial unique index per user so scheduled-task triggers
+    (finalize) are idempotent - `createNotification` does `onConflictDoNothing`.
+  - Live push: a `publishUserNotification(userId, dto)` in the live hub, mirroring
+    the league-member gate (send only to subscribers whose socket `userId`
+    matches); WS type `notification:new`. Client `useNotifications` invalidates /
+    prepends on receipt.
+  - v1 trigger set, deliberately sparse + high-signal: league social events
+    (join -> owner/mods, promote / transfer / kick / admin-add -> target) and the
+    champion + best-scorer result at finalize (dedupe-keyed). A tap deep-links
+    from the payload.
+  - **Deferred to the web-push feature** (they are the push payloads, and the
+    center takes new types trivially): goal-on-a-predicted-match and pick-lockout
+    reminders (scheduled, higher volume - needs noise tuning), plus a per-round
+    "your round scored +N" summary rather than one-per-match spam. Retention: a
+    prune task for read + old notifications is TODO, not v1.
 - [ ] **Pick reminders + web push** (installable PWA + offline shell shipped in
       1.5.0; install prompt and push still pending): `@vite-pwa/nuxt`; web push
       (iOS >= 16.4 for installed PWAs). Push pays for itself twice: lockout
