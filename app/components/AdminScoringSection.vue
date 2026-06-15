@@ -265,3 +265,17 @@ function errorMessage(e: unknown): string {
     </template>
   </div>
 </template>
+
+<style scoped>
+/* PrimeVue's InputNumber inner input is a flex child that won't shrink below its
+   content width, so the fixed widths on the roots (w-28 / w-24 / w-40) overflowed
+   and crammed the tier rows (eating the bonus/points labels, overlapping the
+   joker toggle). Let the input fill and shrink to the root's set width. */
+:deep(.p-inputnumber) {
+  min-width: 0;
+}
+:deep(.p-inputnumber-input) {
+  width: 100%;
+  min-width: 0;
+}
+</style>
