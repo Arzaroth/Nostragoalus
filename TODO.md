@@ -511,8 +511,9 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 - [ ] Goal-on-a-predicted-match and pick-lockout reminders are deferred to the
       web-push feature (they are the push payloads, scheduled and higher volume);
       they slot into the center as two new `notification_type`s with their own
-      dedupe keys. A per-round "your round scored +N" summary belongs there too
-      (one-per-match would spam).
+      dedupe keys. (MATCH_RESULT - one per finalized match you predicted, with the
+      scoreline and points - now ships in-app; a coarser per-round digest could
+      replace the per-match volume later if it proves noisy at scale.)
 - [ ] `useNotifications` opens its own `useReconnectingSocket` (like
       `useLiveMatches` / `useCrowdTotals`), so a logged-in page holds several WS
       connections. Unify the consumers onto one shared socket if the count bites.
