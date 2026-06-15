@@ -113,6 +113,11 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       wrongly zero out everyone when verification is off; excluding `banned` is
       safe if "joined" should mean active accounts. Left as count-all pending a
       product call.
+- [ ] Document the new public GET `/api/stats` in the sampled API response
+      schemas (`server/utils/docs/response-schemas.json` via
+      `scripts/gen-api-schemas.mjs` TARGETS). Deferred with the other endpoints
+      pending a controlled regen (sampling rewrites the whole file and pulls live
+      drift); the route already carries its inline `defineRouteMeta` OpenAPI.
 
 ## Email verification (deferred from the feature-treatment review)
 
