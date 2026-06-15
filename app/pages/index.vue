@@ -200,12 +200,15 @@ onBeforeUnmount(() => window.removeEventListener('resize', layoutBanner))
         <i class="pi pi-chevron-down ng-scroll-cue__icon text-lg" />
       </motion.button>
       <template #fallback>
-        <!-- static replica of the t=1 motion state so first paint matches hydration -->
+        <!-- static replica of the t=1 motion state so first paint matches
+             hydration. BannerArt (a plain SVG, not motion-v) is skin-aware, so
+             a skinned banner is already painted on the server - no default ->
+             pony pop-in. -->
         <div
           class="fixed left-1/2 top-16 z-40 overflow-hidden w-[88vw] rounded-[30px]"
           style="height: min(26.6vw, 40vh); transform: translateX(-50%) translateY(calc(50vh - 50% - 88px)); box-shadow: 0 30px 90px rgba(8, 6, 24, 0.55); background: #171436"
         >
-          <img src="/brand/banner-wide.svg" alt="Nostragoalus - the football oracle" class="absolute inset-0 w-full h-full object-cover" >
+          <BannerArt :ball-scale="1" :subtitle-opacity="1" :title-scale="1" :title-shift="0" />
         </div>
         <div class="fixed inset-0 z-30 pointer-events-none" style="background: #0b0a18; opacity: 0.6" />
       </template>
