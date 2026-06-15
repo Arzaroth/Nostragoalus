@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+- The admin Scoring rules page no longer renders cramped: the tier-row and joker inputs overflowed their set width and overlapped the labels and the joker toggle.
+
 ## [1.13.0] - 2026-06-15
 
 ### Added
