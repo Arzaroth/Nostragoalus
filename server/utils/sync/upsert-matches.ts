@@ -12,11 +12,27 @@ export function resultHashOf(
   return `${status}:${fullTimeHome ?? ''}:${fullTimeAway ?? ''}`
 }
 
+// A status/score change on an already-known match, carried out of the upsert so
+// the live triggers (kickoff, goal) can fire without re-querying. Only existing
+// matches produce one (a brand-new row has no previous state to compare).
+export interface MatchTransition {
+  matchId: string
+  homeTeam: string
+  awayTeam: string
+  prevStatus: string
+  status: string
+  prevHome: number | null
+  prevAway: number | null
+  home: number | null
+  away: number | null
+}
+
 export interface UpsertResult {
   inserted: number
   updated: number
   skipped: number
   changedMatchIds: string[]
+  transitions: MatchTransition[]
 }
 
 // Fields that may change between syncs. competitionId/roundId are intentionally
@@ -48,7 +64,7 @@ export async function upsertMatches(
   competitionId: string,
   matches: NormalizedMatch[],
 ): Promise<UpsertResult> {
-  const result: UpsertResult = { inserted: 0, updated: 0, skipped: 0, changedMatchIds: [] }
+  const result: UpsertResult = { inserted: 0, updated: 0, skipped: 0, changedMatchIds: [], transitions: [] }
 
   for (const m of matches) {
     const existing = await db
@@ -98,7 +114,20 @@ export async function upsertMatches(
       prev.status !== m.status ||
       prev.fullTimeHome !== m.score.fullTime.home ||
       prev.fullTimeAway !== m.score.fullTime.away
-    if (changed) result.changedMatchIds.push(prev.id)
+    if (changed) {
+      result.changedMatchIds.push(prev.id)
+      result.transitions.push({
+        matchId: prev.id,
+        homeTeam: m.homeTeam.name,
+        awayTeam: m.awayTeam.name,
+        prevStatus: prev.status,
+        status: m.status,
+        prevHome: prev.fullTimeHome,
+        prevAway: prev.fullTimeAway,
+        home: m.score.fullTime.home,
+        away: m.score.fullTime.away,
+      })
+    }
   }
 
   return result
