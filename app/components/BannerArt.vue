@@ -5,6 +5,8 @@
 // nudges down when the visible band gets slim. Regenerate from the source svg
 // if the artwork changes.
 defineProps<{ ballScale: number; subtitleOpacity: number; titleScale: number; titleShift: number }>()
+// An active skin swaps the football planet for that pony's head.
+const { skin } = useSkin()
 </script>
 
 <template>
@@ -331,6 +333,8 @@ defineProps<{ ballScale: number; subtitleOpacity: number; titleScale: number; ti
 
 <!-- planet football -->
 <g :transform="`translate(640 416) scale(${ballScale}) translate(-640 -416)`">
+<BannerPonyHead v-if="skin" :skin="skin" />
+<template v-else>
 <circle cx="640" cy="416" r="430" fill="url(#planetGlow)"/>
 <g transform="rotate(-14 640 416)">
   <path d="M 248 416 A 392 104 0 0 0 1032 416" stroke="url(#ringG)" stroke-width="13" fill="none" opacity="0.9"/>
@@ -358,6 +362,7 @@ defineProps<{ ballScale: number; subtitleOpacity: number; titleScale: number; ti
 </g>
 <circle cx="960" cy="221" r="26" fill="#cfc6f7" opacity="0.85"/>
 <circle cx="952" cy="215" r="9" fill="#ffffff" opacity="0.8"/>
+</template>
 </g>
 
 <!-- wordmark -->
