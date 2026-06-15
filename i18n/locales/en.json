@@ -327,6 +327,7 @@
     "players": "Players",
     "assists": "Top assists",
     "stats": "Stats",
+    "noStats": "No stats yet",
     "possession": "Possession",
     "attempts": "Attempts",
     "onTarget": "On target",

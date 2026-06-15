@@ -327,6 +327,7 @@
     "players": "Joueurs",
     "assists": "Passeurs",
     "stats": "Stats",
+    "noStats": "Pas encore de stats",
     "possession": "Possession",
     "attempts": "Tirs",
     "onTarget": "Tirs cadrés",
