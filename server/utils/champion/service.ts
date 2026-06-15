@@ -2,6 +2,7 @@ import { and, eq, min, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { championPick, match } from '../../../db/schema'
 import { LockedError } from '../errors'
+import { notifyChampionResult } from '../notifications/events'
 import { getSecondChanceWindow, isSecondChanceOpen } from '../picks/window'
 
 // Champion picks lock when the competition's first match kicks off.
@@ -146,5 +147,6 @@ export async function awardChampionBonuses(
     })
     .where(and(eq(championPick.competitionId, competitionId), eq(championPick.teamCode, winnerCode)))
     .returning({ id: championPick.id })
+  await notifyChampionResult(db, competitionId, winnerCode)
   return updated.length
 }

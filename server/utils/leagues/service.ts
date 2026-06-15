@@ -12,6 +12,7 @@ import {
   user,
 } from '../../../db/schema'
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors'
+import { notifyLeagueJoin, notifyLeagueRemoved, notifyLeagueRole } from '../notifications/events'
 import { generateJoinCode, normalizeJoinCode, type JoinCodeGenerator } from './code'
 import { canKick, canSeeJoinCode, type LeagueRole } from './permissions'
 
@@ -252,6 +253,7 @@ export async function joinLeagueByCode(db: AppDatabase, opts: { userId: string; 
   if (!row) throw new NotFoundError('no league matches this code')
   if (await getMembership(db, row.id, opts.userId)) throw new ConflictError('already a member of this league')
   const role = await addMembership(db, row.id, opts.userId)
+  await notifyLeagueJoin(db, row.id, opts.userId)
   return { league: row, role }
 }
 
@@ -261,6 +263,7 @@ export async function joinPublicLeague(db: AppDatabase, opts: { userId: string; 
   if (!row || row.visibility !== 'PUBLIC') throw new NotFoundError('league not found')
   if (await getMembership(db, row.id, opts.userId)) throw new ConflictError('already a member of this league')
   const role = await addMembership(db, row.id, opts.userId)
+  await notifyLeagueJoin(db, row.id, opts.userId)
   return { league: row, role }
 }
 
@@ -306,6 +309,7 @@ export async function kickMember(
   if (!target) throw new NotFoundError('not a member of this league')
   if (!canKick(actor?.role, target.role)) throw new ForbiddenError('insufficient league role')
   await removeMembership(db, opts.leagueId, opts.targetUserId)
+  await notifyLeagueRemoved(db, opts.leagueId, opts.targetUserId)
 }
 
 // Shared by leave, kick and admin removal: drop the row and remember the exit
@@ -334,6 +338,7 @@ export async function setMemberRole(
     .update(leagueMember)
     .set({ role: opts.role })
     .where(and(eq(leagueMember.leagueId, opts.leagueId), eq(leagueMember.userId, opts.targetUserId)))
+  await notifyLeagueRole(db, opts.leagueId, opts.targetUserId, opts.role)
 }
 
 export async function transferOwnership(
@@ -355,6 +360,7 @@ export async function transferOwnership(
       .returning({ userId: leagueMember.userId })
     if (promoted.length === 0) throw new NotFoundError('not a member of this league')
   })
+  await notifyLeagueRole(db, opts.leagueId, opts.toUserId, 'OWNER')
 }
 
 export async function regenerateJoinCode(db: AppDatabase, leagueId: string, codeGen?: JoinCodeGenerator): Promise<string> {
@@ -418,6 +424,7 @@ export async function adminAddMember(
     await tx.delete(leagueOptOut).where(and(eq(leagueOptOut.leagueId, opts.leagueId), eq(leagueOptOut.userId, opts.userId)))
   })
   await stampPromptDismissed(db, opts.userId)
+  await notifyLeagueJoin(db, opts.leagueId, opts.userId)
 }
 
 export async function setAdminMemberRole(
@@ -438,6 +445,7 @@ export async function setAdminMemberRole(
       .set({ role: opts.role })
       .where(and(eq(leagueMember.leagueId, opts.leagueId), eq(leagueMember.userId, opts.userId)))
   })
+  await notifyLeagueRole(db, opts.leagueId, opts.userId, opts.role)
 }
 
 export async function assertLeaguesExist(db: AppDatabase, leagueIds: string[]): Promise<void> {

@@ -3,6 +3,7 @@ import { and, desc, eq, isNull, lt, lte, or, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { competition, league, leagueInvite, leagueMember } from '../../../db/schema'
 import { ConflictError, NotFoundError } from '../errors'
+import { notifyLeagueJoin } from '../notifications/events'
 import type { LeagueRole } from './permissions'
 import {
   addMembership,
@@ -153,7 +154,7 @@ export async function acceptInvite(
   if (await getMembership(db, row.league.id, opts.userId)) throw new ConflictError('already a member of this league')
   // One transaction so a failed membership insert rolls the use back (a
   // racing same-user double-click can trip the member PK after the increment).
-  return db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     // Conditional increment is the use-cap gate: two racing accepts of a
     // last-use invite can't both pass (the second matches no row).
     const consumed = await tx
@@ -170,4 +171,8 @@ export async function acceptInvite(
     const role = await addMembership(tx, row.league.id, opts.userId)
     return { league: row.league, role }
   })
+  // After commit (the outer db, not the tx): a notification must not depend on
+  // the join transaction it reports.
+  await notifyLeagueJoin(db, row.league.id, opts.userId)
+  return result
 }
