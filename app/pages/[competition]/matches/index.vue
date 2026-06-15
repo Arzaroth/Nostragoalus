@@ -108,6 +108,9 @@ function jokerRoundLocked(m: MatchListItem): boolean {
 // distinct teams in the fixtures; the picker filters fuzzily (the folded `search`
 // field makes the typeahead case/diacritic-insensitive).
 const selectedCountries = ref<string[]>([])
+// Scope the filter to the selected competition: a country picked in one shouldn't
+// linger when you switch to another.
+watch(slug, () => { selectedCountries.value = [] })
 const teamOptions = computed(() => {
   const byCode = new Map<string, { code: string; name: string; search: string }>()
   for (const m of matches.value ?? []) {
@@ -273,8 +276,11 @@ function fmtTime(d: string) {
 // on by default) or the search icon in the filter row. Closing clears the
 // selection so the list returns to the full set.
 const searchOpen = ref(false)
+const countrySelect = ref<{ show?: () => void } | null>(null)
 function openSearch() {
   searchOpen.value = true
+  // Render the picker (v-if) then open its panel; the filter input autofocuses.
+  nextTick(() => countrySelect.value?.show?.())
 }
 function closeSearch() {
   searchOpen.value = false
@@ -340,12 +346,15 @@ watch(searchOpen, () => nextTick(updateListHeight))
       <div class="flex items-center gap-2 ml-auto">
         <MultiSelect
           v-if="searchOpen"
+          ref="countrySelect"
           v-model="selectedCountries"
           :options="teamOptions"
           option-label="name"
           option-value="code"
+          size="small"
           display="chip"
           filter
+          auto-filter-focus
           :filter-fields="['name', 'search']"
           :show-toggle-all="false"
           :placeholder="t('matches.search')"
