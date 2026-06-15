@@ -161,9 +161,9 @@ function errorMessage(e: unknown): string {
       <!-- Joker -->
       <section class="ng-card rounded-2xl border p-6 flex flex-col gap-4" style="background: var(--p-content-background)">
         <h2 class="font-semibold">{{ t('admin.scoring.joker') }}</h2>
-        <div class="flex flex-wrap items-center gap-6">
+        <div class="flex flex-wrap items-end gap-6">
           <label class="flex flex-col gap-1 text-xs font-medium">{{ t('admin.scoring.jokerMultiplier') }}<InputNumber v-model="form.jokerMultiplier" :min="1" :max="99.99" :max-fraction-digits="2" :step="0.25" show-buttons class="w-40" /></label>
-          <label class="flex items-center gap-2 text-sm"><ToggleSwitch v-model="form.jokerAppliesToBonus" /> {{ t('admin.scoring.jokerAppliesToBonus') }}</label>
+          <label class="flex items-center gap-2 text-sm h-10"><ToggleSwitch v-model="form.jokerAppliesToBonus" /> {{ t('admin.scoring.jokerAppliesToBonus') }}</label>
         </div>
       </section>
 
