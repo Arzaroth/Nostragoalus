@@ -1,7 +1,16 @@
 import { describe, it, expect } from 'vitest'
 import { createTestDb } from '../../../tests/db'
 import { makeUser } from '../../../tests/factories'
-import { countUnread, createNotification, listNotifications, markAllRead, markRead } from './service'
+import {
+  countUnread,
+  createNotification,
+  deleteAllNotifications,
+  deleteNotifications,
+  listNotifications,
+  markAllRead,
+  markRead,
+  pruneNotifications,
+} from './service'
 import { userNotification } from '../../../db/schema'
 import type { NotificationData } from '../../../shared/types/notifications'
 
@@ -130,6 +139,84 @@ describe('countUnread / markRead / markAllRead', () => {
     expect(await markAllRead(db, userId)).toBe(0)
     expect(await countUnread(db, userId)).toBe(0)
     expect(await countUnread(db, u2)).toBe(1)
+    await client.close()
+  })
+})
+
+describe('deleteNotifications / deleteAllNotifications', () => {
+  it('deletes the given ids for the owner only, ignoring empty input', async () => {
+    const { db, client, userId } = await setup()
+    const u2 = await makeUser(db, 'u2')
+    const a = await createNotification(db, { userId, data: leagueJoin() })
+    const b = await createNotification(db, { userId, data: leagueJoin() })
+    const other = await createNotification(db, { userId: u2, data: leagueJoin() })
+
+    expect(await deleteNotifications(db, userId, [])).toBe(0)
+    expect(await deleteNotifications(db, userId, [other!.id])).toBe(0)
+    expect(await deleteNotifications(db, userId, [a!.id])).toBe(1)
+    expect(await listNotifications(db, userId)).toHaveLength(1)
+    expect((await listNotifications(db, userId))[0]!.id).toBe(b!.id)
+    expect(await listNotifications(db, u2)).toHaveLength(1)
+    await client.close()
+  })
+
+  it('deleteAllNotifications clears the owner, leaving others', async () => {
+    const { db, client, userId } = await setup()
+    const u2 = await makeUser(db, 'u2')
+    await createNotification(db, { userId, data: leagueJoin() })
+    await createNotification(db, { userId, data: leagueJoin() })
+    await createNotification(db, { userId: u2, data: leagueJoin() })
+    expect(await deleteAllNotifications(db, userId)).toBe(2)
+    expect(await listNotifications(db, userId)).toHaveLength(0)
+    expect(await listNotifications(db, u2)).toHaveLength(1)
+    await client.close()
+  })
+})
+
+describe('pruneNotifications', () => {
+  const at = (iso: string) => new Date(iso)
+
+  it('ages out read notifications past the retention window, keeping unread and recent ones', async () => {
+    const { db, client, userId } = await setup()
+    await db.insert(userNotification).values([
+      // read + old -> deleted
+      { userId, type: 'LEAGUE_JOIN', data: leagueJoin(), createdAt: at('2026-06-01T00:00:00Z'), readAt: at('2026-06-01T01:00:00Z') },
+      // unread + old -> kept (only the cap bounds unread)
+      { userId, type: 'LEAGUE_JOIN', data: leagueJoin(), createdAt: at('2026-06-01T00:00:00Z') },
+      // read + recent -> kept
+      { userId, type: 'LEAGUE_JOIN', data: leagueJoin(), createdAt: at('2026-06-14T00:00:00Z'), readAt: at('2026-06-14T00:00:00Z') },
+    ])
+    const result = await pruneNotifications(db, at('2026-06-15T00:00:00Z'))
+    expect(result.aged).toBe(1)
+    expect(result.capped).toBe(0)
+    expect(await listNotifications(db, userId)).toHaveLength(2)
+    await client.close()
+  })
+
+  it('caps each user to the newest N, scoped per user', async () => {
+    const { db, client, userId } = await setup()
+    const u2 = await makeUser(db, 'u2')
+    for (let i = 0; i < 5; i++) {
+      await db.insert(userNotification).values({
+        userId,
+        type: 'LEAGUE_JOIN',
+        data: leagueJoin(),
+        createdAt: at(`2026-06-1${i}T00:00:00Z`),
+      })
+    }
+    await db.insert(userNotification).values({ userId: u2, type: 'LEAGUE_JOIN', data: leagueJoin() })
+
+    const result = await pruneNotifications(db, at('2026-06-20T00:00:00Z'), { perUserCap: 3 })
+    expect(result.capped).toBe(2)
+    const remaining = await listNotifications(db, userId)
+    expect(remaining).toHaveLength(3)
+    // The newest three survive.
+    expect(remaining.map((n) => n.createdAt)).toEqual([
+      '2026-06-14T00:00:00.000Z',
+      '2026-06-13T00:00:00.000Z',
+      '2026-06-12T00:00:00.000Z',
+    ])
+    expect(await listNotifications(db, u2)).toHaveLength(1)
     await client.close()
   })
 })

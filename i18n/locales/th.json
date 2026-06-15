@@ -708,6 +708,7 @@
       "oddsRefresh": "บันทึกราคาต่อรอง",
       "pruneUnverified": "ล้างบัญชีที่ยังไม่ยืนยัน",
       "pickReminders": "เตือนให้ทายผล",
+      "notifsPrune": "ล้างการแจ้งเตือน",
       "oddsBackfill": "ดึงราคาย้อนหลัง",
       "fixturesImport": "นำเข้าตารางแข่ง",
       "championBackfillRanks": "เติมอันดับแชมเปียน"
@@ -877,6 +878,7 @@
     "ariaLabel": "การแจ้งเตือน",
     "empty": "คุณอ่านครบทุกอย่างแล้ว",
     "markAllRead": "ทำเครื่องหมายอ่านทั้งหมด",
+    "dismiss": "ลบ",
     "loading": "กำลังโหลด…",
     "item": {
       "leagueJoin": "{name} เข้าร่วมลีก {league} ของคุณ",

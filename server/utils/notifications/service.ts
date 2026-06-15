@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull, lt, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNotNull, isNull, lt, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { userNotification } from '../../../db/schema'
 import type { NotificationData, NotificationDTO, NotificationType } from '../../../shared/types/notifications'
@@ -104,4 +104,73 @@ export async function markAllRead(db: AppDatabase, userId: string): Promise<numb
     .where(and(eq(userNotification.userId, userId), isNull(userNotification.readAt)))
     .returning({ id: userNotification.id })
   return updated.length
+}
+
+// Owner-scoped hard delete (the bell's per-item dismiss), so a user can't remove
+// another's rows. Returns how many were deleted.
+export async function deleteNotifications(db: AppDatabase, userId: string, ids: string[]): Promise<number> {
+  if (ids.length === 0) return 0
+  const deleted = await db
+    .delete(userNotification)
+    .where(and(eq(userNotification.userId, userId), inArray(userNotification.id, ids)))
+    .returning({ id: userNotification.id })
+  return deleted.length
+}
+
+export async function deleteAllNotifications(db: AppDatabase, userId: string): Promise<number> {
+  const deleted = await db
+    .delete(userNotification)
+    .where(eq(userNotification.userId, userId))
+    .returning({ id: userNotification.id })
+  return deleted.length
+}
+
+// Read notifications live this long before the retention sweep drops them; they
+// have been seen, so 7 days is plenty to glance back. Unread rows are never
+// aged out - only bounded by the per-user cap.
+export const READ_RETENTION_MS = 7 * 24 * 60 * 60 * 1000
+export const PER_USER_CAP = 200
+
+// Retention sweep (the notifications:prune task). PICK_REMINDER has its own
+// lifecycle (it self-prunes at kickoff/on pick), so this only bounds the rest.
+export async function pruneNotifications(
+  db: AppDatabase,
+  now: Date = new Date(),
+  opts: { readTtlMs?: number; perUserCap?: number } = {},
+): Promise<{ aged: number; capped: number }> {
+  const readTtlMs = opts.readTtlMs ?? READ_RETENTION_MS
+  const cap = opts.perUserCap ?? PER_USER_CAP
+
+  const readCutoff = new Date(now.getTime() - readTtlMs)
+  const aged = await db
+    .delete(userNotification)
+    .where(and(isNotNull(userNotification.readAt), lt(userNotification.createdAt, readCutoff)))
+    .returning({ id: userNotification.id })
+
+  // Keep only the newest `cap` per user; the bell never pages past ~100 anyway.
+  const ranked = db
+    .select({
+      id: userNotification.id,
+      rn: sql<number>`row_number() over (partition by ${userNotification.userId} order by ${userNotification.createdAt} desc)`.as(
+        'rn',
+      ),
+    })
+    .from(userNotification)
+    .as('ranked')
+  const overflow = await db.select({ id: ranked.id }).from(ranked).where(sql`${ranked.rn} > ${cap}`)
+  let capped = 0
+  if (overflow.length > 0) {
+    const removed = await db
+      .delete(userNotification)
+      .where(
+        inArray(
+          userNotification.id,
+          overflow.map((o) => o.id),
+        ),
+      )
+      .returning({ id: userNotification.id })
+    capped = removed.length
+  }
+
+  return { aged: aged.length, capped }
 }

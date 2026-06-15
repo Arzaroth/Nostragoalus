@@ -708,6 +708,7 @@
       "oddsRefresh": "Odds snapshots",
       "pruneUnverified": "Prune unverified accounts",
       "pickReminders": "Pick reminders",
+      "notifsPrune": "Notification cleanup",
       "oddsBackfill": "Odds backfill (historical)",
       "fixturesImport": "Import fixtures",
       "championBackfillRanks": "Backfill champion ranks"
@@ -877,6 +878,7 @@
     "ariaLabel": "Notifications",
     "empty": "You're all caught up.",
     "markAllRead": "Mark all read",
+    "dismiss": "Dismiss",
     "loading": "Loading…",
     "item": {
       "leagueJoin": "{name} joined your league {league}.",

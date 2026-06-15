@@ -708,6 +708,7 @@
       "oddsRefresh": "Relevé des cotes",
       "pruneUnverified": "Purge des comptes non confirmés",
       "pickReminders": "Rappels de pronostics",
+      "notifsPrune": "Nettoyage des notifications",
       "oddsBackfill": "Récupération des cotes (historique)",
       "fixturesImport": "Importer les matchs",
       "championBackfillRanks": "Compléter les rangs des champions"
@@ -877,6 +878,7 @@
     "ariaLabel": "Notifications",
     "empty": "Vous êtes à jour.",
     "markAllRead": "Tout marquer comme lu",
+    "dismiss": "Supprimer",
     "loading": "Chargement…",
     "item": {
       "leagueJoin": "{name} a rejoint votre ligue {league}.",

@@ -3,7 +3,7 @@ import type { NotificationDTO } from '../../shared/types/notifications'
 
 const { t, locale } = useI18n()
 const router = useRouter()
-const { notifications, unreadCount, isLoading, markRead, markAllRead } = useNotifications()
+const { notifications, unreadCount, isLoading, markRead, markAllRead, dismiss } = useNotifications()
 
 const panel = ref()
 function toggle(e: Event) {
@@ -138,28 +138,33 @@ async function onItem(n: NotificationDTO) {
           >
             {{ t('notifications.empty') }}
           </div>
-          <button
+          <div
             v-for="n in notifications"
             :key="n.id"
-            type="button"
-            class="w-full text-left px-3 py-2.5 flex items-start gap-2.5 hover:bg-black/5 dark:hover:bg-white/10 transition border-b last:border-b-0"
+            class="relative flex items-stretch border-b last:border-b-0 hover:bg-black/5 dark:hover:bg-white/10 transition"
             style="border-color: var(--p-content-border-color)"
-            :style="
-              n.read ? '' : 'background: color-mix(in srgb, var(--p-primary-color) 7%, transparent)'
-            "
-            @click="onItem(n)"
+            :style="n.read ? '' : 'background: color-mix(in srgb, var(--p-primary-color) 7%, transparent)'"
           >
-            <i :class="ICONS[n.type]" class="mt-0.5" :style="n.read ? '' : 'color: var(--p-primary-color)'" />
-            <span class="min-w-0 flex-1">
-              <span class="block text-sm leading-snug">{{ itemText(n) }}</span>
-              <span class="block text-xs mt-0.5" style="color: var(--p-text-muted-color)">{{ timeAgo(n.createdAt) }}</span>
-            </span>
-            <span
-              v-if="!n.read"
-              class="mt-1.5 w-2 h-2 rounded-full shrink-0"
-              style="background: var(--p-primary-color)"
-            />
-          </button>
+            <button
+              type="button"
+              class="flex-1 min-w-0 text-left px-3 py-2.5 pr-8 flex items-start gap-2.5"
+              @click="onItem(n)"
+            >
+              <i :class="ICONS[n.type]" class="mt-0.5" :style="n.read ? '' : 'color: var(--p-primary-color)'" />
+              <span class="min-w-0 flex-1">
+                <span class="block text-sm leading-snug">{{ itemText(n) }}</span>
+                <span class="block text-xs mt-0.5" style="color: var(--p-text-muted-color)">{{ timeAgo(n.createdAt) }}</span>
+              </span>
+            </button>
+            <button
+              type="button"
+              class="absolute top-1.5 right-1.5 w-6 h-6 flex items-center justify-center rounded-full opacity-60 hover:opacity-100 hover:bg-black/10 dark:hover:bg-white/15 transition"
+              :aria-label="t('notifications.dismiss')"
+              @click="dismiss.mutate(n.id)"
+            >
+              <i class="pi pi-times text-xs" />
+            </button>
+          </div>
         </div>
       </div>
     </Popover>
