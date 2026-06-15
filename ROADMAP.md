@@ -153,11 +153,30 @@ effort buckets; order within a bucket is not priority.
     read notifications older than 7 days and caps each user to the newest 200, and
     any notification can be dismissed individually (pick reminders also self-prune
     at kickoff).
-- [ ] **Pick reminders + web push** (installable PWA + offline shell shipped in
-      1.5.0; install prompt and push still pending): `@vite-pwa/nuxt`; web push
-      (iOS >= 16.4 for installed PWAs). Push pays for itself twice: lockout
-      reminders for missing picks + goal alerts on predicted matches. Ship before
-      any native wrapper.
+- [ ] **Web push** (in progress on worktree-web-push; installable PWA + offline
+      shell shipped in 1.5.0): `@vite-pwa/nuxt`; web push (iOS >= 16.4 for
+      installed PWAs). Browser opt-in is the master gate; on top of it, **every**
+      notification kind has a per-category push toggle in a new Notifications prefs
+      panel. Decisions:
+  - Push catalogue (each a toggle): pick reminders (default on), match kickoff
+    (new `MATCH_LIVE`, on), live goals (new `GOAL`, on), match results (on),
+    tournament results - champion + best scorer (on), league activity (off). All
+    toggleable; league social defaults off as low-urgency.
+  - **Scoped to your matches**: `MATCH_LIVE`, `GOAL` and `MATCH_RESULT` only push
+    to users who actually made a prediction on that match (keyed on a `prediction`
+    row). `MATCH_RESULT` already emits to predictors; goals/kickoff inherit the
+    same gate.
+  - `MATCH_LIVE` and `GOAL` are **push-only, transient** - never stored in the
+    bell (a goal-heavy match would flood the feed). The other categories reuse the
+    existing in-app notification rows; push is an opt-in delivery layer fired from
+    `createNotification` (gated by each user's subscription + category toggle).
+  - New triggers fire off the live score poll: a goal newly written to
+    `goal_event` -> `GOAL`; a match flipping SCHEDULED -> LIVE -> `MATCH_LIVE`.
+    Both must fire once (idempotency on the new-goal signal / status transition).
+  - Plumbing: a `push_subscription` table, per-category prefs (following the
+    existing preferences pattern), VAPID keys via runtimeConfig (new env), a
+    service-worker `push`/`notificationclick` handler, and a server `web-push`
+    send that prunes dead subscriptions (404/410). Ship before any native wrapper.
 - [ ] **Tournament Wrapped**: end-of-competition personal recap - best/worst
       pick, joker efficiency, percentile, biggest rarity bonus - with a
       shareable image card. Pure read-side work.
