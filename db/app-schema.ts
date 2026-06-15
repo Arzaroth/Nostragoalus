@@ -686,3 +686,30 @@ export const userNotificationRelations = relations(userNotification, ({ one }) =
   user: one(user, { fields: [userNotification.userId], references: [user.id] }),
 }))
 
+// Web-push subscriptions: one row per browser/device endpoint. The endpoint is
+// globally unique (a re-subscribe upserts it, reassigning to the current user);
+// p256dh/auth are the encryption keys the push send needs. Dead endpoints are
+// pruned when the push service returns 404/410.
+export const pushSubscription = pgTable(
+  'push_subscription',
+  {
+    id: pk(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    endpoint: text('endpoint').notNull(),
+    p256dh: text('p256dh').notNull(),
+    auth: text('auth').notNull(),
+    userAgent: text('user_agent'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('push_subscription_endpoint_uq').on(t.endpoint),
+    index('push_subscription_user_idx').on(t.userId),
+  ],
+)
+
+export const pushSubscriptionRelations = relations(pushSubscription, ({ one }) => ({
+  user: one(user, { fields: [pushSubscription.userId], references: [user.id] }),
+}))
+

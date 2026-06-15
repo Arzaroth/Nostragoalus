@@ -154,10 +154,16 @@ export default defineNuxtConfig({
     apiFootballKey: '',
     cronEnabled: 'true',
     adminEmails: '',
+    // Web push (VAPID). The private key signs pushes server-side; the public key
+    // is handed to the browser to create a subscription. Subject is a mailto:
+    // contact the push service can reach. Push is disabled when these are unset.
+    vapidPrivateKey: '',
+    vapidSubject: '',
     public: {
       authUrl: '',
       appName: 'Nostragoalus',
       version: pkg.version,
+      vapidPublicKey: '',
     },
   },
 

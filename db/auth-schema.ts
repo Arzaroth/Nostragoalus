@@ -22,6 +22,15 @@ export const user = pgTable("user", {
   // User-chosen: out of the global/competition rankings; profile visible only
   // to league mates and admins. League boards still rank them for co-members.
   profilePrivate: boolean("profile_private").default(false).notNull(),
+  // Per-category web-push toggles (null = the category default, resolved in
+  // server/utils/push/prefs). The browser permission + a push_subscription row
+  // is the master gate on top of these.
+  pushReminders: boolean("push_reminders"),
+  pushKickoff: boolean("push_kickoff"),
+  pushGoals: boolean("push_goals"),
+  pushMatchResults: boolean("push_match_results"),
+  pushTournament: boolean("push_tournament"),
+  pushLeague: boolean("push_league"),
   // Admin-managed (not a better-auth additionalField, so users cannot set it
   // through updateUser): excluded from leaderboards and rank snapshots.
   hiddenFromLeaderboard: boolean("hidden_from_leaderboard").default(false).notNull(),
