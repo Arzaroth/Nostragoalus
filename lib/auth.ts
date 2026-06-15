@@ -134,6 +134,13 @@ export function buildAuthOptions(database: AuthDb) {
         skinsUnlocked: { type: 'boolean' as const, required: false },
         // Opt-out of the global rankings; profile gated to league mates/admins.
         profilePrivate: { type: 'boolean' as const, required: false },
+        // Per-category web-push toggles (null = the category default).
+        pushReminders: { type: 'boolean' as const, required: false },
+        pushKickoff: { type: 'boolean' as const, required: false },
+        pushGoals: { type: 'boolean' as const, required: false },
+        pushMatchResults: { type: 'boolean' as const, required: false },
+        pushTournament: { type: 'boolean' as const, required: false },
+        pushLeague: { type: 'boolean' as const, required: false },
         // input: false - readable everywhere (session, admin listUsers) but never
         // settable through updateUser; only the admin visibility route writes it.
         hiddenFromLeaderboard: { type: 'boolean' as const, required: false, input: false },
