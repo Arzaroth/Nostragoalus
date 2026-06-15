@@ -6,6 +6,7 @@ import { listActiveCompetitions } from '../../utils/competitions/store'
 import { resolveCompetitionSeason, syncLive } from '../../utils/sync/competition'
 import { hasLiveWindow } from '../../utils/sync/live-window'
 import { publishMatchUpdates } from '../../utils/live/hub'
+import { notifyLiveMatchEvents } from '../../utils/push/live'
 
 export default defineTask({
   meta: { name: 'scores:poll', description: 'Poll live scores for active competitions while matches are live' },
@@ -21,6 +22,8 @@ export default defineTask({
         const provider = providerForCompetition(competition, seasonId)
         const res = await syncLive(db, competition.id, provider)
         changed.push(...res.changedMatchIds)
+        // Best-effort live push (kickoff/goal) to predictors; never blocks scores.
+        await notifyLiveMatchEvents(db, competition.slug, res.transitions).catch(() => {})
       } catch {
         // Skip competitions that error (rate-limited or missing provider token);
         // never let one break the others' live updates.

@@ -40,6 +40,35 @@ function render(entry: PushEntry, params: Record<string, string | number>): { ti
   return { title: interp(entry.title, params), body: interp(entry.body, params) }
 }
 
+interface LiveMatchParams {
+  matchId: string
+  homeTeam: string
+  awayTeam: string
+}
+
+// Push-only kickoff alert (a predicted match just went live).
+export function kickoffPushContent(slug: string, p: LiveMatchParams, locale: string | null | undefined): PushContent {
+  return {
+    ...render(messagesFor(locale).kickoff, { home: p.homeTeam, away: p.awayTeam }),
+    url: `/${slug}/matches/${p.matchId}`,
+    tag: `match:${p.matchId}`,
+  }
+}
+
+// Push-only goal alert. Live play has no scorer name (goal_event is only
+// persisted at full-time), so the body is the new scoreline.
+export function goalPushContent(
+  slug: string,
+  p: LiveMatchParams & { home: number | null; away: number | null },
+  locale: string | null | undefined,
+): PushContent {
+  return {
+    ...render(messagesFor(locale).goal, { home: p.homeTeam, away: p.awayTeam, hs: p.home ?? 0, as: p.away ?? 0 }),
+    url: `/${slug}/matches/${p.matchId}`,
+    tag: `match:${p.matchId}`,
+  }
+}
+
 // Build the push title/body/url/tag for a stored notification, in the user's
 // locale. GOAL/MATCH_LIVE are push-only and built by their own triggers.
 export function notificationPushContent(data: NotificationData, locale: string | null | undefined): PushContent {
