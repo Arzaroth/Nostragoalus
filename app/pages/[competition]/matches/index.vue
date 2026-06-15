@@ -104,15 +104,24 @@ function jokerRoundLocked(m: MatchListItem): boolean {
   return lockedJokerRounds.value.has(m.roundId) && !predByMatch.value[m.id]?.isJoker
 }
 
-// Immediate model for the field; the (debounced) value drives filtering.
-const searchRaw = ref('')
-const search = refDebounced(searchRaw, 200)
+// Country multiselect: keep matches involving any selected team. Options are the
+// distinct teams in the fixtures; the picker filters fuzzily (the folded `search`
+// field makes the typeahead case/diacritic-insensitive).
+const selectedCountries = ref<string[]>([])
+const teamOptions = computed(() => {
+  const byCode = new Map<string, { code: string; name: string; search: string }>()
+  for (const m of matches.value ?? []) {
+    if (m.homeTeamCode && !byCode.has(m.homeTeamCode)) byCode.set(m.homeTeamCode, { code: m.homeTeamCode, name: m.homeTeam, search: searchable(m.homeTeam) })
+    if (m.awayTeamCode && !byCode.has(m.awayTeamCode)) byCode.set(m.awayTeamCode, { code: m.awayTeamCode, name: m.awayTeam, search: searchable(m.awayTeam) })
+  }
+  return [...byCode.values()].sort((a, b) => a.name.localeCompare(b.name))
+})
 const grouped = computed(() => {
-  const q = searchable(search.value.trim())
+  const picked = selectedCountries.value
   const groups = new Map<string, { id: string; label: string; sort: number; items: MatchListItem[] }>()
   for (const m of matches.value ?? []) {
     if (!activeBuckets.value.includes(bucketOf(m.status))) continue
-    if (q && !searchable(`${m.homeTeam} ${m.awayTeam} ${m.homeTeamCode ?? ''} ${m.awayTeamCode ?? ''}`).includes(q)) continue
+    if (picked.length && !picked.includes(m.homeTeamCode ?? '') && !picked.includes(m.awayTeamCode ?? '')) continue
     const g = groups.get(m.roundId) ?? { id: m.roundId, label: m.roundLabel, sort: m.roundSortOrder, items: [] }
     g.items.push(m)
     groups.set(m.roundId, g)
@@ -260,27 +269,22 @@ function fmtTime(d: string) {
   return new Date(d).toLocaleString(locale.value, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
-// The filter is hidden until opened by Mod+F (Ctrl/Cmd, preventDefault on by
-// default) or the search icon by the title. Opening scrolls it to the top of
-// the viewport (below the header) and focuses it. Escape closes + clears.
+// The country picker is hidden until opened by Mod+F (Ctrl/Cmd, preventDefault
+// on by default) or the search icon in the filter row. Closing clears the
+// selection so the list returns to the full set.
 const searchOpen = ref(false)
-const searchInput = ref<{ $el?: HTMLInputElement } | null>(null)
-const searchBar = ref<HTMLElement | null>(null)
-async function openSearch() {
+function openSearch() {
   searchOpen.value = true
-  await nextTick()
-  searchBar.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  searchInput.value?.$el?.focus({ preventScroll: true })
 }
 function closeSearch() {
   searchOpen.value = false
-  searchRaw.value = ''
+  selectedCountries.value = []
 }
 function toggleSearch() {
   searchOpen.value ? closeSearch() : openSearch()
 }
 useHotkey('Mod+F', openSearch)
-// The search bar sits above the list and shifts its top edge - remeasure.
+// The picker shares the filter row and shifts its height - remeasure the list.
 watch(searchOpen, () => nextTick(updateListHeight))
 </script>
 
@@ -289,18 +293,6 @@ watch(searchOpen, () => nextTick(updateListHeight))
     <div class="flex items-center justify-between gap-3 flex-wrap mb-5">
       <div class="flex items-center gap-2">
         <h1 class="text-2xl font-bold">{{ t('matches.title') }}</h1>
-        <button
-          type="button"
-          v-tooltip.bottom="t('matches.search')"
-          class="inline-flex items-center justify-center w-8 h-8 rounded-full transition"
-          :class="searchOpen ? 'text-white' : 'hover:bg-black/5 dark:hover:bg-white/10'"
-          :style="searchOpen ? 'background: var(--p-primary-color)' : 'background: var(--p-content-border-color)'"
-          :aria-label="t('matches.search')"
-          :aria-pressed="searchOpen"
-          @click="toggleSearch"
-        >
-          <i class="pi pi-search" :style="searchOpen ? '' : 'color: var(--p-text-muted-color)'" />
-        </button>
       </div>
       <div class="flex items-center gap-2 flex-wrap">
         <CompetitionPill />
@@ -329,16 +321,6 @@ watch(searchOpen, () => nextTick(updateListHeight))
       <ChampionPick />
       <BestScorerPick />
     </div>
-    <!-- Hidden until opened (Mod+F or the title's search icon). On open it
-         scrolls to the top (scroll-margin clears the header), then sticks there
-         so it follows the scroll. -->
-    <div v-if="searchOpen" ref="searchBar" class="sticky z-30 py-1 mb-3" style="top: var(--ng-header-h, 4rem); scroll-margin-top: calc(var(--ng-header-h, 4rem) + 0.5rem)">
-      <IconField class="block w-full sm:w-96">
-        <InputIcon class="pi pi-search" />
-        <InputText ref="searchInput" v-model="searchRaw" :placeholder="t('matches.search')" class="w-full" @keydown.esc="closeSearch" />
-        <InputIcon v-if="searchRaw" class="pi pi-times cursor-pointer" :aria-label="t('common.clear')" @click="searchRaw = ''" />
-      </IconField>
-    </div>
     <div class="flex items-center gap-2 mb-4 flex-wrap">
       <button
         v-for="b in ALL_BUCKETS"
@@ -355,6 +337,33 @@ watch(searchOpen, () => nextTick(updateListHeight))
         <i :class="activeBuckets.includes(b) ? 'pi pi-check-circle' : 'pi pi-circle'" style="font-size: 0.7rem" />
         {{ t(`matches.filterStatus.${b}`) }}
       </button>
+      <div class="flex items-center gap-2 ml-auto">
+        <MultiSelect
+          v-if="searchOpen"
+          v-model="selectedCountries"
+          :options="teamOptions"
+          option-label="name"
+          option-value="code"
+          display="chip"
+          filter
+          :filter-fields="['name', 'search']"
+          :show-toggle-all="false"
+          :placeholder="t('matches.search')"
+          class="w-56 sm:w-72"
+        />
+        <button
+          type="button"
+          v-tooltip.bottom="t('matches.search')"
+          class="inline-flex items-center justify-center w-8 h-8 rounded-full transition shrink-0"
+          :class="searchOpen ? 'text-white' : 'hover:bg-black/5 dark:hover:bg-white/10'"
+          :style="searchOpen ? 'background: var(--p-primary-color)' : 'background: var(--p-content-border-color)'"
+          :aria-label="t('matches.search')"
+          :aria-pressed="searchOpen"
+          @click="toggleSearch"
+        >
+          <i class="pi pi-search" :style="searchOpen ? '' : 'color: var(--p-text-muted-color)'" />
+        </button>
+      </div>
     </div>
 
     <div v-if="isLoading || !picksReady" class="opacity-60">{{ t('common.loading') }}</div>
