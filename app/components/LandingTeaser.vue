@@ -44,8 +44,8 @@ const show = computed(() => !!next.value || players.value > 0 || predictions.val
       class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm"
       style="color: var(--p-text-muted-color)"
     >
-      <span v-if="players" class="flex items-center gap-1.5"><i class="pi pi-users" style="font-size: 0.8rem" />{{ t('landing.teaser.players', { n: players }) }}</span>
-      <span v-if="predictions" class="flex items-center gap-1.5"><i class="pi pi-bullseye" style="font-size: 0.8rem" />{{ t('landing.teaser.predictions', { n: predictions }) }}</span>
+      <span v-if="players" class="flex items-center gap-1.5"><i class="pi pi-users" style="font-size: 0.8rem" />{{ t('landing.teaser.players', { n: players }, players) }}</span>
+      <span v-if="predictions" class="flex items-center gap-1.5"><i class="pi pi-bullseye" style="font-size: 0.8rem" />{{ t('landing.teaser.predictions', { n: predictions }, predictions) }}</span>
     </div>
   </div>
 </template>

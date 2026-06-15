@@ -87,6 +87,33 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       ever feels abrupt, widen it into a short easing band instead of a hard
       threshold.
 
+### Deferred from the feature-treatment review
+
+- [ ] Short-page latch edge: `scrollPastIntro` sets `latched=true` then
+      `window.scrollTo(target)`, but the slim-bar transforms `t1`/`t2` are
+      `useTransform(scrollY, ...)` and only recompute on a scroll change. When the
+      target equals the current position (page too short to scroll, hero already
+      near top), no scroll fires, so the banner never visually docks despite
+      `latched`, and `cueScrolling` never clears (re-expand stays disabled for the
+      session). Drive the dock off `latched` directly rather than relying on a
+      scroll tick. Extends the short-viewport item above.
+- [ ] Extract the inline scroll/latch math from `app/pages/index.vue` (the
+      thresholds, latch/unlatch decision, `cueScrolling` guard, reduced-motion
+      branch) into `app/utils/landing.ts` so it sits under the 98% gate and is
+      testable without a DOM. Today only `pickNextMatch` is extracted; the
+      load-bearing latch logic ships untested (a page, outside the gate).
+- [ ] `index.vue` registers `scrollY.on('change')` / `t1.on` / `t2.on` in
+      `onMounted` but only removes the resize listener in `onBeforeUnmount`.
+      motion-v disposes scope-tied subscriptions so it's not a confirmed leak, but
+      capture and call the `.on` unsubscribers for symmetry (the repo has a history
+      of leaked-observer flakes).
+- [ ] Decide the `players` count population: `getPlatformStats` counts all `user`
+      rows, including unverified and banned accounts, so the public "N players"
+      teaser can exceed the visible player base. Filtering `emailVerified` would
+      wrongly zero out everyone when verification is off; excluding `banned` is
+      safe if "joined" should mean active accounts. Left as count-all pending a
+      product call.
+
 ## Email verification (deferred from the feature-treatment review)
 
 - [ ] The email-verification flag cache (`server/utils/auth/email-verification.ts`)
