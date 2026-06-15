@@ -55,6 +55,8 @@
     "title": "My Little Prono",
     "hint": "You found it. Pick your pony - it restyles the whole app.",
     "default": "Default",
+    "brand": "My Little Prono",
+    "brandTip": "Your picks are magic ✨",
     "unlockedTitle": "My Little Prono unlocked!",
     "unlockedHint": "Pick your pony in Preferences.",
     "twilight": "Twilight Sparkle",
