@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.15.0] - 2026-06-15
+
 ### Added
 - The landing banner now settles into its slim header bar reliably on every screen size and stays compact while you read, instead of re-expanding as you scroll back toward the top. A scroll cue beneath it glides the banner up and jumps straight to the matches and your picks; it steps aside while the next-match prompt is showing and respects reduced-motion.
 - A teaser on the signed-out landing page: the next fixture with a countdown, plus how many players have joined and predictions made so far. No names, and each part stays hidden until there's something worth showing.
