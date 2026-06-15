@@ -569,6 +569,9 @@ function toggleFormInfo(side: string, i: number | string) {
                 <span class="tabular-nums font-medium">{{ r.away }}</span>
               </div>
             </div>
+            <div v-else-if="detailStatus !== 'pending' && !possession" class="text-sm text-center py-4" style="color: var(--p-text-muted-color)">
+              {{ t('match.noStats') }}
+            </div>
 <!-- the chronological event list lives in the hero under both teams -->
 
           </TabPanel>

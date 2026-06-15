@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+- The match Stats tab now shows a "No stats yet" message when a match has started but no stats have come in, instead of a near-empty panel.
+
 ## [1.15.0] - 2026-06-15
 
 ### Added
