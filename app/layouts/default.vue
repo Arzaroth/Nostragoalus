@@ -12,8 +12,8 @@ const router = useRouter()
 const route = useRoute()
 const config = useRuntimeConfig()
 
-// With an MLP skin on, hovering the wordmark magically reveals (and keeps) the
-// "My Little Prono" name.
+// With an MLP skin on, hovering the wordmark magically reveals the "My Little
+// Prono" name (for the session - it replays on the next reload).
 const { skin, pronoRevealed, revealProno } = useSkin()
 const showProno = computed(() => !!skin.value && pronoRevealed.value)
 const brandName = computed(() => (showProno.value ? t('skins.brand') : config.public.appName))
@@ -22,7 +22,20 @@ function revealBrand() {
   if (!skin.value || pronoRevealed.value) return
   revealProno()
   brandMagic.value = true
-  setTimeout(() => (brandMagic.value = false), 800)
+  setTimeout(() => (brandMagic.value = false), 900)
+}
+// A burst of rainbow particles radiating out from the wordmark on reveal.
+const BRAND_PARTICLES = 16
+function particleStyle(i: number) {
+  const ang = (i / BRAND_PARTICLES) * 360
+  const rad = (ang * Math.PI) / 180
+  const dist = 32 + (i % 4) * 13
+  return {
+    '--dx': `${Math.round(Math.cos(rad) * dist)}px`,
+    '--dy': `${Math.round(Math.sin(rad) * dist)}px`,
+    background: `hsl(${Math.round((ang + 15) % 360)} 95% 62%)`,
+    animationDelay: `${(i % 3) * 0.05}s`,
+  } as Record<string, string>
 }
 
 const slug = useSelectedCompetition()
@@ -101,12 +114,17 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateNavFades))
         <div class="flex items-center min-w-0">
           <NuxtLink to="/" class="logo-home flex items-center gap-2 font-extrabold text-lg shrink-0">
             <LogoMark class="h-12 w-auto shrink-0" />
-            <span
-              v-tooltip.bottom="skin ? t('skins.brandTip') : ''"
-              class="ng-brand bg-gradient-to-r from-indigo-500 to-emerald-500 bg-clip-text text-transparent"
-              :class="{ 'ng-brand--prono': showProno, 'ng-brand--magic': brandMagic }"
-              @mouseenter="revealBrand"
-            >{{ brandName }}</span>
+            <span class="ng-brand-wrap">
+              <span
+                v-tooltip.bottom="skin ? t('skins.brandTip') : ''"
+                class="ng-brand bg-gradient-to-r from-indigo-500 to-emerald-500 bg-clip-text text-transparent"
+                :class="{ 'ng-brand--prono': showProno, 'ng-brand--magic': brandMagic }"
+                @mouseenter="revealBrand"
+              >{{ brandName }}</span>
+              <span v-if="brandMagic" class="ng-brand-burst" aria-hidden="true">
+                <i v-for="i in BRAND_PARTICLES" :key="i" class="ng-brand-particle" :style="particleStyle(i)" />
+              </span>
+            </span>
           </NuxtLink>
         </div>
 
@@ -198,9 +216,44 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateNavFades))
 </template>
 
 <style scoped>
+.ng-brand-wrap {
+  position: relative;
+  display: inline-block;
+}
 .ng-brand {
   display: inline-block;
   position: relative;
+}
+/* particle explosion radiating from the wordmark on reveal */
+.ng-brand-burst {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  pointer-events: none;
+}
+.ng-brand-particle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px;
+  border-radius: 9999px;
+  box-shadow: 0 0 7px rgba(255, 255, 255, 0.6);
+  animation: ng-brand-particle 0.75s cubic-bezier(0.15, 0.6, 0.3, 1) both;
+}
+@keyframes ng-brand-particle {
+  0% {
+    transform: translate(0, 0) scale(0.3);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx), var(--dy)) scale(1);
+    opacity: 0;
+  }
 }
 /* Revealed "My Little Prono": rainbow magic gradient (overrides the indigo->
    emerald utility via the higher-specificity scoped selector) that shimmers. */
@@ -263,7 +316,8 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateNavFades))
   .ng-brand--magic {
     animation: none;
   }
-  .ng-brand--magic::after {
+  .ng-brand--magic::after,
+  .ng-brand-burst {
     display: none;
   }
 }
