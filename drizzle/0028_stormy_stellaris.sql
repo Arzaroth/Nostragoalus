@@ -1,1 +1,0 @@
-ALTER TYPE "public"."notification_type" ADD VALUE 'MATCH_RESULT' BEFORE 'CHAMPION_RESULT';

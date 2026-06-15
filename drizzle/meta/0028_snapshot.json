@@ -1,6 +1,6 @@
 {
-  "id": "77f8efad-1d70-4b63-a9fb-e05f05728df8",
-  "prevId": "9ae07f86-1e42-4cd8-b9bf-4ad3214bcb09",
+  "id": "ed03cf44-622d-4b07-ad59-249fea7fc2fd",
+  "prevId": "4b27f97f-05d4-4c45-a239-a10f820c9c8b",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -604,6 +604,19 @@
           "type": "boolean",
           "primaryKey": false,
           "notNull": false
+        },
+        "skin": {
+          "name": "skin",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "skins_unlocked": {
+          "name": "skins_unlocked",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         },
         "profile_private": {
           "name": "profile_private",
@@ -3582,6 +3595,7 @@
         "LEAGUE_JOIN",
         "LEAGUE_ROLE",
         "LEAGUE_REMOVED",
+        "PICK_REMINDER",
         "MATCH_RESULT",
         "CHAMPION_RESULT",
         "BEST_SCORER_RESULT"
