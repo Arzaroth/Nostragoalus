@@ -40,6 +40,10 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   per-team match stats, goal timeline with cards (incl. touchline bookings) and substitutions,
   **all-time head-to-head** and cross-competition form (friendlies included, causally cut off at
   kickoff), penalty shootouts, and each team's top scorer / top assister
+- **Notification center**: a header bell gathering pick reminders before lockout, your match
+  results (scoreline + points), league activity (joins, role changes, add/remove) and how your
+  champion and Golden Boot picks finished - unread count, live push, mark-read, dismiss, and a
+  weekly tidy-up of read items
 - Per-team pages: official squads with positions, manager, season stats, competition switcher
 - Knockout **bracket** and an interactive **world map** (Leaflet / OpenStreetMap)
 - Auth: identifier-first login with **SSO domain capture** - runtime-configurable OIDC / SAML /

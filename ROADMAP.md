@@ -125,7 +125,7 @@ effort buckets; order within a bucket is not priority.
       feat/api-keys; the media routes opt into `apiKey:{media:['write']}` once
       both branches merge. Still deferred: the separate curation bot that fills
       links via the API (see TODO.md).
-- [ ] **In-app notification center** (in progress on worktree-notifications): a
+- [x] **In-app notification center** (shipped in 1.17.0): a
       header bell with an unread count and a dropdown feed, live over the existing
       WS. Decisions:
   - `user_notification` table: `type` enum + a typed `payload` jsonb (data-driven
@@ -149,8 +149,10 @@ effort buckets; order within a bucket is not priority.
     types trivially): goal-on-a-predicted-match alerts, and re-using the existing
     PICK_REMINDER / MATCH_RESULT data as push notifications. A coarser per-round
     digest could later replace the per-match reminder/result volume if it proves
-    noisy at scale. Retention: a general prune task for old read notifications is
-    still TODO (pick reminders already self-prune at kickoff).
+    noisy at scale. Retention shipped: the daily `notifications:prune` task drops
+    read notifications older than 7 days and caps each user to the newest 200, and
+    any notification can be dismissed individually (pick reminders also self-prune
+    at kickoff).
 - [ ] **Pick reminders + web push** (installable PWA + offline shell shipped in
       1.5.0; install prompt and push still pending): `@vite-pwa/nuxt`; web push
       (iOS >= 16.4 for installed PWAs). Push pays for itself twice: lockout
