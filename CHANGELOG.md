@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- The admin Users list has a debounced search (display name fuzzy, or email exact) and now shows each account's join date.
+
 ### Fixed
 - The match Stats tab now shows a "No stats yet" message when a match has started but no stats have come in, instead of a near-empty panel.
 

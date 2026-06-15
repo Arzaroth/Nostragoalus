@@ -500,7 +500,9 @@
       "hide": "Hide from leaderboard",
       "show": "Show on leaderboard",
       "unlinkSso": "Unlink from SSO",
-      "actions": "User actions"
+      "actions": "User actions",
+      "search": "Search name or email",
+      "noResults": "No matching users"
     },
     "data": {
       "title": "Data",

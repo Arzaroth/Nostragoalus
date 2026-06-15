@@ -500,7 +500,9 @@
       "hide": "patlh tetlhvo' yISo'",
       "show": "patlh tetlhDaq yIcha'",
       "unlinkSso": "SSO rarwI' yIteq",
-      "actions": "lo'wI' Qu'mey"
+      "actions": "lo'wI' Qu'mey",
+      "search": "pong ghap QIn yISam",
+      "noResults": "lo'wI' tu'be'lu'"
     },
     "data": {
       "title": "De'",
