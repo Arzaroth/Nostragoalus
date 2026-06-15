@@ -10,6 +10,8 @@ export function useSkin() {
   const skin = useState<SkinId | null>('skin', () => null)
   const unlocked = useState<boolean>('skins-unlocked', () => false)
   const celebrate = useState<number>('skins-celebrate', () => 0)
+  // One-time: the header wordmark has been hover-revealed as "My Little Prono".
+  const pronoRevealed = useState<boolean>('prono-revealed', () => false)
   const { updateUser } = useAuth()
 
   function apply() {
@@ -63,5 +65,13 @@ export function useSkin() {
     }
   }
 
-  return { skin, unlocked, celebrate, setSkin, unlock, apply, hydrate }
+  // Monotonic: once the wordmark is revealed it stays "My Little Prono"
+  // (client-only flourish, persisted in localStorage - not worth a DB field).
+  function revealProno() {
+    if (pronoRevealed.value) return
+    pronoRevealed.value = true
+    if (import.meta.client) localStorage.setItem('pronoRevealed', '1')
+  }
+
+  return { skin, unlocked, celebrate, pronoRevealed, setSkin, unlock, apply, hydrate, revealProno }
 }

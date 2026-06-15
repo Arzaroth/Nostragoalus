@@ -55,6 +55,8 @@
     "title": "My Little Prono",
     "hint": "คุณเจอแล้ว! เลือกโพนี่ของคุณ - เปลี่ยนสไตล์ทั้งแอป",
     "default": "ค่าเริ่มต้น",
+    "brand": "My Little Prono",
+    "brandTip": "การทายของคุณคือเวทมนตร์ ✨",
     "unlockedTitle": "ปลดล็อก My Little Prono แล้ว!",
     "unlockedHint": "เลือกโพนี่ของคุณในหน้าการตั้งค่า",
     "twilight": "ทไวไลต์ สปาร์เคิล",

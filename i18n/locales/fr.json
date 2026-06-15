@@ -55,6 +55,8 @@
     "title": "My Little Prono",
     "hint": "Vous l'avez trouvé. Choisissez votre poney - tout le site change de style.",
     "default": "Défaut",
+    "brand": "My Little Prono",
+    "brandTip": "Tes pronos sont magiques ✨",
     "unlockedTitle": "My Little Prono débloqué !",
     "unlockedHint": "Choisissez votre poney dans les Préférences.",
     "twilight": "Twilight Sparkle",

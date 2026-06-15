@@ -12,6 +12,19 @@ const router = useRouter()
 const route = useRoute()
 const config = useRuntimeConfig()
 
+// With an MLP skin on, hovering the wordmark magically reveals (and keeps) the
+// "My Little Prono" name.
+const { skin, pronoRevealed, revealProno } = useSkin()
+const showProno = computed(() => !!skin.value && pronoRevealed.value)
+const brandName = computed(() => (showProno.value ? t('skins.brand') : config.public.appName))
+const brandMagic = ref(false)
+function revealBrand() {
+  if (!skin.value || pronoRevealed.value) return
+  revealProno()
+  brandMagic.value = true
+  setTimeout(() => (brandMagic.value = false), 800)
+}
+
 const slug = useSelectedCompetition()
 const last = useLastCompetition()
 // Remember the competition you're browsing so "/" and legacy links return to it.
@@ -88,9 +101,12 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateNavFades))
         <div class="flex items-center min-w-0">
           <NuxtLink to="/" class="logo-home flex items-center gap-2 font-extrabold text-lg shrink-0">
             <LogoMark class="h-12 w-auto shrink-0" />
-            <span class="bg-gradient-to-r from-indigo-500 to-emerald-500 bg-clip-text text-transparent">
-              {{ config.public.appName }}
-            </span>
+            <span
+              v-tooltip.bottom="skin ? t('skins.brandTip') : ''"
+              class="ng-brand bg-gradient-to-r from-indigo-500 to-emerald-500 bg-clip-text text-transparent"
+              :class="{ 'ng-brand--prono': showProno, 'ng-brand--magic': brandMagic }"
+              @mouseenter="revealBrand"
+            >{{ brandName }}</span>
           </NuxtLink>
         </div>
 
@@ -180,3 +196,75 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateNavFades))
     <Toast />
   </div>
 </template>
+
+<style scoped>
+.ng-brand {
+  display: inline-block;
+  position: relative;
+}
+/* Revealed "My Little Prono": rainbow magic gradient (overrides the indigo->
+   emerald utility via the higher-specificity scoped selector) that shimmers. */
+.ng-brand--prono {
+  background-image: linear-gradient(90deg, #ff5d8f, #ffb347, #ffe66d, #6dffb5, #5db8ff, #b56dff, #ff5d8f);
+  background-size: 200% auto;
+  animation: ng-brand-shimmer 7s linear infinite;
+}
+@keyframes ng-brand-shimmer {
+  to {
+    background-position: 200% center;
+  }
+}
+/* one-shot magic pop the moment it reveals */
+.ng-brand--magic {
+  animation: ng-brand-shimmer 7s linear infinite, ng-brand-pop 0.8s ease;
+}
+@keyframes ng-brand-pop {
+  0% {
+    filter: blur(5px) brightness(2.2);
+    transform: scale(1.14);
+    opacity: 0.35;
+  }
+  45% {
+    filter: blur(0) brightness(1.5);
+    transform: scale(1.04);
+  }
+  100% {
+    filter: none;
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.ng-brand--magic::after {
+  content: '✨';
+  position: absolute;
+  top: -0.45em;
+  right: -0.7em;
+  font-size: 0.7em;
+  -webkit-text-fill-color: initial;
+  color: initial;
+  animation: ng-brand-spark 0.85s ease;
+}
+@keyframes ng-brand-spark {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(-30deg);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.3) rotate(12deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.8) rotate(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ng-brand--prono,
+  .ng-brand--magic {
+    animation: none;
+  }
+  .ng-brand--magic::after {
+    display: none;
+  }
+}
+</style>
