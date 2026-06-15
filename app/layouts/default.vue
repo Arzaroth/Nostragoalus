@@ -144,6 +144,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateNavFades))
         <div class="flex items-center gap-2 justify-end">
           <ClientOnly>
             <template v-if="session && session.data">
+              <NotificationBell />
               <button type="button" class="rounded-full shrink-0" :aria-label="t('account.title')" @click="(e) => userMenu.toggle(e)">
                 <Avatar
                   :image="session.data.user.image || '/brand/avatar.svg'"

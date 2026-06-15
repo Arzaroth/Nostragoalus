@@ -870,5 +870,22 @@
     "notFound": "ลิงก์เชิญนี้ไม่ถูกต้องหรือไม่มีอยู่แล้ว",
     "browseLeagues": "ดูลีกทั้งหมด",
     "joinFailed": "เข้าร่วมลีกไม่ได้ ลิงก์อาจเพิ่งหมดอายุ"
+  },
+  "notifications": {
+    "title": "การแจ้งเตือน",
+    "ariaLabel": "การแจ้งเตือน",
+    "empty": "คุณอ่านครบทุกอย่างแล้ว",
+    "markAllRead": "ทำเครื่องหมายอ่านทั้งหมด",
+    "loading": "กำลังโหลด…",
+    "item": {
+      "leagueJoin": "{name} เข้าร่วมลีก {league} ของคุณ",
+      "leagueRolePromoted": "คุณเป็นผู้ดูแลของ {league} แล้ว",
+      "leagueRoleOwner": "คุณเป็นเจ้าของ {league} แล้ว",
+      "leagueRemoved": "คุณถูกนำออกจาก {league}",
+      "championWon": "แชมป์ {team} ที่คุณเลือกชนะ {competition}! +{points} แต้ม",
+      "championLost": "ทีมแชมป์ {team} ที่คุณเลือกไม่ได้ชนะ {competition}",
+      "bestScorerWon": "{player} ที่คุณเลือกเป็นดาวซัลโวสูงสุด! +{points} แต้ม",
+      "bestScorerLost": "{player} ที่คุณเลือกไม่ได้เป็นดาวซัลโวสูงสุด"
+    }
   }
 }

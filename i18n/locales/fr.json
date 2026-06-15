@@ -870,5 +870,22 @@
     "notFound": "Ce lien d'invitation est invalide ou n'existe plus.",
     "browseLeagues": "Parcourir les ligues",
     "joinFailed": "Impossible de rejoindre la ligue. Le lien vient peut-être d'expirer."
+  },
+  "notifications": {
+    "title": "Notifications",
+    "ariaLabel": "Notifications",
+    "empty": "Vous êtes à jour.",
+    "markAllRead": "Tout marquer comme lu",
+    "loading": "Chargement…",
+    "item": {
+      "leagueJoin": "{name} a rejoint votre ligue {league}.",
+      "leagueRolePromoted": "Vous êtes désormais modérateur de {league}.",
+      "leagueRoleOwner": "Vous êtes désormais propriétaire de {league}.",
+      "leagueRemoved": "Vous avez été retiré de {league}.",
+      "championWon": "Votre champion {team} a gagné {competition} ! +{points} pts",
+      "championLost": "Votre pronostic champion {team} n'a pas gagné {competition}.",
+      "bestScorerWon": "Votre pari Soulier d'or {player} a fini meilleur buteur ! +{points} pts",
+      "bestScorerLost": "Votre pari Soulier d'or {player} n'a pas fini meilleur buteur."
+    }
   }
 }
