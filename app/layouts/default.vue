@@ -287,36 +287,11 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateNavFades))
     opacity: 1;
   }
 }
-.ng-brand--magic::after {
-  content: '✨';
-  position: absolute;
-  top: -0.45em;
-  right: -0.7em;
-  font-size: 0.7em;
-  -webkit-text-fill-color: initial;
-  color: initial;
-  animation: ng-brand-spark 0.85s ease;
-}
-@keyframes ng-brand-spark {
-  0% {
-    opacity: 0;
-    transform: scale(0) rotate(-30deg);
-  }
-  40% {
-    opacity: 1;
-    transform: scale(1.3) rotate(12deg);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(0.8) rotate(0);
-  }
-}
 @media (prefers-reduced-motion: reduce) {
   .ng-brand--prono,
   .ng-brand--magic {
     animation: none;
   }
-  .ng-brand--magic::after,
   .ng-brand-burst {
     display: none;
   }
