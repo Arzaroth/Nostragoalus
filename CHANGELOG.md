@@ -8,6 +8,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 ### Added
 - The admin Users list has a debounced search (display name fuzzy, or email exact) and now shows each account's join date.
 
+### Changed
+- On the fixtures page, the search now lives in the status-filter row (right-aligned, opened by its icon or Ctrl/Cmd+F) and is a country multiselect: pick one or more teams (fuzzy, accent-insensitive typeahead) to filter the fixtures to those, instead of a free-text box.
+
 ### Fixed
 - The match Stats tab now shows a "No stats yet" message when a match has started but no stats have come in, instead of a near-empty panel.
 
