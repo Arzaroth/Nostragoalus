@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- **Push notifications**: opt in from Preferences to get alerts on your phone or desktop, even with the app closed - pick reminders, a kickoff and live goal alerts for matches you predicted, your match and tournament results, and league activity. Each kind has its own on/off switch, and goal/kickoff alerts only reach people who predicted that match. Your browser asks for permission once when you enable it on a device.
+
 ## [1.20.1] - 2026-06-17
 
 ### Fixed
