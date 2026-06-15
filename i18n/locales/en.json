@@ -870,5 +870,22 @@
     "notFound": "This invite link is invalid or no longer exists.",
     "browseLeagues": "Browse leagues",
     "joinFailed": "Couldn't join the league. The link may have just expired."
+  },
+  "notifications": {
+    "title": "Notifications",
+    "ariaLabel": "Notifications",
+    "empty": "You're all caught up.",
+    "markAllRead": "Mark all read",
+    "loading": "Loading…",
+    "item": {
+      "leagueJoin": "{name} joined your league {league}.",
+      "leagueRolePromoted": "You're now a moderator of {league}.",
+      "leagueRoleOwner": "You're now the owner of {league}.",
+      "leagueRemoved": "You were removed from {league}.",
+      "championWon": "Your champion {team} won the {competition}! +{points} pts",
+      "championLost": "Your champion pick {team} didn't win the {competition}.",
+      "bestScorerWon": "Your Golden Boot pick {player} finished top scorer! +{points} pts",
+      "bestScorerLost": "Your Golden Boot pick {player} didn't finish top scorer."
+    }
   }
 }

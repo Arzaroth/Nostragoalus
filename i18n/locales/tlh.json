@@ -870,5 +870,22 @@
     "notFound": "lughbe' joq taHbe' muvmeH rIyvam.",
     "browseLeagues": "ghommey yIbej",
     "joinFailed": "ghom DamuvlaHbe'. DaH natlhpu' rIy 'e' DuH."
+  },
+  "notifications": {
+    "title": "QInmey",
+    "ariaLabel": "QInmey",
+    "empty": "QIn chu' tu'lu'be'.",
+    "markAllRead": "Hoch yIlaD",
+    "loading": "yISaH…",
+    "item": {
+      "leagueJoin": "ghomlIj {league} muvpu' {name}.",
+      "leagueRolePromoted": "DaH {league} che'wI' SoH.",
+      "leagueRoleOwner": "DaH {league} pIn SoH.",
+      "leagueRemoved": "{league} DatlhejHa'.",
+      "championWon": "Qappu' wInwI'lI' {team}! +{points}",
+      "championLost": "Qapbe' wInwI'lI' {team}.",
+      "bestScorerWon": "Qappu' DujwI'lI' {player}! +{points}",
+      "bestScorerLost": "Qapbe' DujwI'lI' {player}."
+    }
   }
 }
