@@ -48,6 +48,20 @@
     "crowdHint": "Hoch wIv bIngDaq, Hoch QujwI'pu' mI' boqlu'pu'.",
     "privateProfile": "De' pegh",
     "privateProfileHint": "patlh nIvvo' yImej. boqlIj boqwI'pu' (loHwI'pu' je) neH De'lIj lulegh; boq patlhDaq SoHtaH. ghom mImeyDaq QInmeylIj ratlh.",
+    "push": {
+      "title": "QInmey ngeH",
+      "hint": "lo'laHtaHvIS De'wI'vam QInmey yISuq, SoQpu'DI' app je.",
+      "enable": "De'wI'vamDaq ngeH yIchu'",
+      "enableHint": "Daj 'e' tlhob De'wI'.",
+      "unsupported": "QInmey ngeH ngaSbe' De'wI'vam.",
+      "denied": "QInmey botlu'. yIchaw', vaj yInID.",
+      "reminders": "qaw'moHmeH QInmey",
+      "kickoff": "taghmeH",
+      "goals": "yoHmey",
+      "matchResults": "ngugh Damiltlhtaghach",
+      "tournament": "lompuq Damiltlhtaghach",
+      "league": "ghom vum"
+    },
     "odds": "SuD mI'mey cha'",
     "oddsHint": "1X2 mI': 1 = juH Qap, X = rap, 2 = nIteb Qap. mI' machHa' law', DuH law'. may' taghDI' qon."
   },
