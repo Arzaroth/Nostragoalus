@@ -3,6 +3,7 @@ import type { AppDatabase } from '../../../db/types'
 import { userNotification } from '../../../db/schema'
 import type { NotificationData, NotificationDTO, NotificationType } from '../../../shared/types/notifications'
 import { publishUserNotification } from '../live/hub'
+import { pushNotification } from '../push/send'
 
 const FEED_LIMIT = 30
 const MAX_LIMIT = 100
@@ -60,8 +61,15 @@ export async function createNotification(
   const row = inserted[0] as NotificationRow | undefined
   if (!row) return null
   const dto = toDTO(row)
-  if (collector) collector.push({ userId: input.userId, dto })
-  else publishUserNotification(input.userId, dto)
+  if (collector) {
+    // Deferred to post-commit flush (which also sends the push).
+    collector.push({ userId: input.userId, dto })
+  } else {
+    publishUserNotification(input.userId, dto)
+    // Best-effort web push, fire-and-forget: no-op unless push is configured and
+    // the user opted into this category, so it never blocks or fails the insert.
+    void pushNotification(db, input.userId, dto.data).catch(() => {})
+  }
   return dto
 }
 

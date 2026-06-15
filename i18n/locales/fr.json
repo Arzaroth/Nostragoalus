@@ -954,5 +954,18 @@
       "bestScorerWon": "Votre pari Soulier d'or {player} a fini meilleur buteur ! +{points} pts",
       "bestScorerLost": "Votre pari Soulier d'or {player} n'a pas fini meilleur buteur."
     }
+  },
+  "push": {
+    "reminder": { "title": "N'oubliez pas de pronostiquer", "body": "{home} v {away} commence bientôt" },
+    "kickoff": { "title": "Coup d'envoi", "body": "{home} v {away} a commencé" },
+    "goal": { "title": "BUT !", "body": "{home} {hs}-{as} {away}" },
+    "matchResult": { "title": "Votre résultat", "body": "{home} {hs}-{as} {away} - vous marquez +{points} pts" },
+    "matchResultMiss": { "title": "Votre résultat", "body": "{home} {hs}-{as} {away} - aucun point cette fois" },
+    "champion": { "title": "Champion !", "body": "Votre champion {team} a gagné - +{points} pts" },
+    "bestScorer": { "title": "Soulier d'or !", "body": "Votre pari {player} a fini meilleur buteur - +{points} pts" },
+    "leagueJoin": { "title": "Nouveau membre", "body": "{name} a rejoint {league}" },
+    "leagueRoleOwner": { "title": "Mise à jour de ligue", "body": "Vous êtes désormais propriétaire de {league}" },
+    "leagueRolePromoted": { "title": "Mise à jour de ligue", "body": "Vous êtes désormais modérateur de {league}" },
+    "leagueRemoved": { "title": "Mise à jour de ligue", "body": "Vous avez été retiré de {league}" }
   }
 }

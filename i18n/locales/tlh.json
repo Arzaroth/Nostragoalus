@@ -954,5 +954,18 @@
       "bestScorerWon": "Qappu' DujwI'lI' {player}! +{points}",
       "bestScorerLost": "Qapbe' DujwI'lI' {player}."
     }
+  },
+  "push": {
+    "reminder": { "title": "yIqIp 'e' yIlIj 'e' yImev", "body": "tugh {home} {away}" },
+    "kickoff": { "title": "taghpu'", "body": "taghpu' {home} {away}" },
+    "goal": { "title": "yoH!", "body": "{home} {hs}-{as} {away}" },
+    "matchResult": { "title": "DamiltlhtaHghach", "body": "{home} {hs}-{as} {away} - +{points}" },
+    "matchResultMiss": { "title": "Damiltlhtaghach", "body": "{home} {hs}-{as} {away} - pugh" },
+    "champion": { "title": "Qapla'!", "body": "Qappu' wInwI'lI' {team} - +{points}" },
+    "bestScorer": { "title": "Qapla'!", "body": "Qappu' DujwI'lI' {player} - +{points}" },
+    "leagueJoin": { "title": "tlhejwI' chu'", "body": "{league} muvpu' {name}" },
+    "leagueRoleOwner": { "title": "ghom De'", "body": "DaH {league} pIn SoH" },
+    "leagueRolePromoted": { "title": "ghom De'", "body": "DaH {league} che'wI' SoH" },
+    "leagueRemoved": { "title": "ghom De'", "body": "{league} DatlhejHa'" }
   }
 }
