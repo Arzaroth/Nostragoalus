@@ -48,6 +48,20 @@
     "crowdHint": "Under each prediction, the combined score of all players (1-1 + 2-1 + 4-0 shows as 7-2).",
     "privateProfile": "Private profile",
     "privateProfileHint": "Step out of the global and competition rankings. Only members of your leagues (and admins) can see your profile; your league rankings still include you. Predictions stay in the anonymous crowd totals.",
+    "push": {
+      "title": "Push notifications",
+      "hint": "Get alerts on this device, even when the app is closed.",
+      "enable": "Enable push on this device",
+      "enableHint": "Your browser will ask for permission.",
+      "unsupported": "This browser doesn't support push notifications.",
+      "denied": "Notifications are blocked in your browser settings. Allow them, then try again.",
+      "reminders": "Pick reminders",
+      "kickoff": "Match kickoff",
+      "goals": "Live goals",
+      "matchResults": "Match results",
+      "tournament": "Tournament results",
+      "league": "League activity"
+    },
     "odds": "Show bookmaker odds",
     "oddsHint": "Decimal 1X2 odds under each match: 1 = home win, X = draw, 2 = away win. Lower number = more likely. Snapshotted at kickoff."
   },

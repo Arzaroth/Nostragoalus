@@ -48,6 +48,20 @@
     "crowdHint": "Sous chaque prono, le score cumulé de tous les joueurs (1-1 + 2-1 + 4-0 donne 7-2).",
     "privateProfile": "Profil privé",
     "privateProfileHint": "Sortez des classements généraux et par compétition. Seuls les membres de vos ligues (et les admins) voient votre profil ; vos classements de ligue vous incluent toujours. Vos pronos restent dans les totaux anonymes de la foule.",
+    "push": {
+      "title": "Notifications push",
+      "hint": "Recevez des alertes sur cet appareil, même quand l'app est fermée.",
+      "enable": "Activer le push sur cet appareil",
+      "enableHint": "Votre navigateur demandera l'autorisation.",
+      "unsupported": "Ce navigateur ne gère pas les notifications push.",
+      "denied": "Les notifications sont bloquées dans votre navigateur. Autorisez-les, puis réessayez.",
+      "reminders": "Rappels de pronostics",
+      "kickoff": "Coup d'envoi",
+      "goals": "Buts en direct",
+      "matchResults": "Résultats des matchs",
+      "tournament": "Résultats du tournoi",
+      "league": "Activité des ligues"
+    },
     "odds": "Afficher les cotes",
     "oddsHint": "Cotes décimales 1X2 sous chaque match : 1 = victoire domicile, X = nul, 2 = victoire extérieur. Plus le nombre est bas, plus c'est probable. Figées au coup d'envoi."
   },

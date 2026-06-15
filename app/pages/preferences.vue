@@ -60,6 +60,38 @@ function persistFlash() {
   savedTimer = setTimeout(() => (saved.value = false), 1500)
 }
 
+const {
+  supported: pushSupported,
+  permission: pushPermission,
+  subscribed: pushSubscribed,
+  busy: pushBusy,
+  subscribe: pushSubscribe,
+  unsubscribe: pushUnsubscribe,
+} = usePushNotifications()
+
+// Per-category push toggles; `def` mirrors the server-side PUSH_DEFAULTS (null
+// column = the default). League activity is off by default.
+const pushCategories = [
+  { key: 'pushReminders', label: 'prefs.push.reminders', def: true },
+  { key: 'pushKickoff', label: 'prefs.push.kickoff', def: true },
+  { key: 'pushGoals', label: 'prefs.push.goals', def: true },
+  { key: 'pushMatchResults', label: 'prefs.push.matchResults', def: true },
+  { key: 'pushTournament', label: 'prefs.push.tournament', def: true },
+  { key: 'pushLeague', label: 'prefs.push.league', def: false },
+] as const
+
+function pushGet(cat: { key: string; def: boolean }): boolean {
+  const v = (session.value?.data?.user as Record<string, unknown> | undefined)?.[cat.key]
+  return typeof v === 'boolean' ? v : cat.def
+}
+async function pushSet(cat: { key: string }, v: boolean) {
+  await (updateUser as (f: Record<string, unknown>) => Promise<unknown>)({ [cat.key]: v })
+  persistFlash()
+}
+function onMasterPush(v: boolean) {
+  void (v ? pushSubscribe() : pushUnsubscribe())
+}
+
 const langOptions = [
   { label: 'English', value: 'en' },
   { label: 'Français', value: 'fr' },
@@ -156,6 +188,62 @@ const skinModel = computed({
               <span class="text-xs" style="color: var(--p-text-muted-color)">{{ t('prefs.privateProfileHint') }}</span>
             </label>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section
+      v-if="session && session.data"
+      class="ng-card rounded-2xl border overflow-hidden"
+      style="background: var(--p-content-background)"
+    >
+      <div class="grid md:grid-cols-3 gap-6 p-6">
+        <div>
+          <h2 class="font-semibold">{{ t('prefs.push.title') }}</h2>
+          <p class="text-sm mt-1" style="color: var(--p-text-muted-color)">{{ t('prefs.push.hint') }}</p>
+        </div>
+        <div class="md:col-span-2 flex flex-col gap-5">
+          <ClientOnly>
+            <p v-if="!pushSupported" class="text-sm" style="color: var(--p-text-muted-color)">
+              {{ t('prefs.push.unsupported') }}
+            </p>
+            <template v-else>
+              <div class="flex items-start gap-3">
+                <ToggleSwitch
+                  :model-value="pushSubscribed"
+                  :disabled="pushBusy"
+                  input-id="push-enable"
+                  class="shrink-0 mt-0.5"
+                  @update:model-value="onMasterPush"
+                />
+                <label for="push-enable" class="flex flex-col cursor-pointer">
+                  <span class="text-sm font-medium">{{ t('prefs.push.enable') }}</span>
+                  <span class="text-xs" style="color: var(--p-text-muted-color)">{{ t('prefs.push.enableHint') }}</span>
+                </label>
+              </div>
+              <p v-if="pushPermission === 'denied'" class="text-xs" style="color: var(--ng-danger, #ef4444)">
+                {{ t('prefs.push.denied') }}
+              </p>
+              <div
+                v-if="pushSubscribed"
+                class="flex flex-col gap-3 border-l-2 pl-1"
+                style="border-color: var(--p-content-border-color)"
+              >
+                <div v-for="cat in pushCategories" :key="cat.key" class="flex items-center gap-3 pl-3">
+                  <ToggleSwitch
+                    :model-value="pushGet(cat)"
+                    :input-id="`pc-${cat.key}`"
+                    class="shrink-0"
+                    @update:model-value="(v) => pushSet(cat, v)"
+                  />
+                  <label :for="`pc-${cat.key}`" class="text-sm cursor-pointer">{{ t(cat.label) }}</label>
+                </div>
+              </div>
+            </template>
+            <template #fallback>
+              <p class="text-sm" style="color: var(--p-text-muted-color)">{{ t('prefs.push.hint') }}</p>
+            </template>
+          </ClientOnly>
         </div>
       </div>
     </section>
