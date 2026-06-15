@@ -3,6 +3,7 @@ import type { AppDatabase } from '../../../db/types'
 import { bestScorerPick, goalEvent, match } from '../../../db/schema'
 import { LockedError } from '../errors'
 import { getChampionLockTime } from '../champion/service'
+import { notifyBestScorerResult } from '../notifications/events'
 import { getSecondChanceWindow, isSecondChanceOpen } from '../picks/window'
 
 export async function getMyBestScorerPick(db: AppDatabase, userId: string, competitionId: string) {
@@ -141,5 +142,6 @@ export async function awardBestScorerBonuses(db: AppDatabase, competitionId: str
     })
     .where(and(eq(bestScorerPick.competitionId, competitionId), inArray(bestScorerPick.playerId, winners)))
     .returning({ id: bestScorerPick.id })
+  await notifyBestScorerResult(db, competitionId, winners)
   return updated.length
 }
