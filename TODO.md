@@ -508,12 +508,21 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 - [ ] No retention: `user_notification` grows unbounded. Add a
       `notifications:prune` task (read AND older than N days, or cap rows per
       user) once the table matters.
-- [ ] Goal-on-a-predicted-match and pick-lockout reminders are deferred to the
-      web-push feature (they are the push payloads, scheduled and higher volume);
-      they slot into the center as two new `notification_type`s with their own
-      dedupe keys. (MATCH_RESULT - one per finalized match you predicted, with the
-      scoreline and points - now ships in-app; a coarser per-round digest could
-      replace the per-match volume later if it proves noisy at scale.)
+- [ ] Goal-on-a-predicted-match alerts are deferred to the web-push feature (a
+      push payload, scheduled and higher volume); slots in as a new
+      `notification_type`. (MATCH_RESULT and PICK_REMINDER now ship in-app -
+      pick-lockout reminders via the `notifications:pick-reminders` task, per match
+      to active predictors only, self-pruning at kickoff and on pick. A coarser
+      per-round digest could replace the per-match reminder/result volume later if
+      it proves noisy at scale; the same data can also be re-used as web-push.)
+- [ ] PICK_REMINDER prune is eventual: `pruneStartedReminders` runs on the
+      `*/15` task cron and on prediction-save, so a stale reminder can linger up to
+      ~15 min after kickoff before the sweep removes it (and the client only drops
+      it on the next notifications refetch, since there's no `notification:removed`
+      WS event). Tighten with a removal push or a finalize-time prune if it bites.
+- [ ] The pick-reminder lead time (`REMINDER_LEAD_MS`, 3h) and the task cadence
+      (`*/15`) are hard-coded. Make them config/per-competition if tournaments
+      with very different kickoff spacing (esports, club comps) need it.
 - [ ] `useNotifications` opens its own `useReconnectingSocket` (like
       `useLiveMatches` / `useCrowdTotals`), so a logged-in page holds several WS
       connections. Unify the consumers onto one shared socket if the count bites.
