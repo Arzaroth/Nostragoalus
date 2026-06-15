@@ -1,0 +1,88 @@
+#!/usr/bin/env -S node
+//MISE description="Mint a machine API key (e.g. for the watch-link bot); prints it once"
+//USAGE arg "<name>" help="Label for the key, e.g. streamsniper"
+//USAGE flag "--permissions <perms>" help="Comma list of resource:action, e.g. media:write" default="media:write"
+//USAGE flag "--expires-in-days <days>" help="Expiry in days (default: never)"
+//USAGE flag "--owner <userId>" help="Owner user id (default: the oldest admin)"
+
+// Inserts an apikey row by hand so it needs no node_modules on a prod host
+// (psql via docker, like create-admin/db-backup). The key format mirrors
+// server/utils/api-keys/mint.ts - the tested source of truth - so a key minted
+// here verifies through @better-auth/api-key exactly like one from the admin UI:
+// the stored `key` is base64url(SHA-256(plaintext)) without padding.
+import { execFileSync } from 'node:child_process'
+import { createHash, randomBytes, randomUUID } from 'node:crypto'
+
+const name = (process.env.usage_name || '').trim()
+const permsArg = process.env.usage_permissions || 'media:write'
+const expiresInDays = process.env.usage_expires_in_days
+const owner = process.env.usage_owner || ''
+
+if (!name) {
+  console.error('usage: mise run create-api-key <name> [--permissions media:write] [--expires-in-days N] [--owner <userId>]')
+  process.exit(1)
+}
+
+const permissions = {}
+for (const entry of permsArg.split(',').map((s) => s.trim()).filter(Boolean)) {
+  const [resource, action] = entry.split(':')
+  if (!resource || !action) {
+    console.error(`bad permission "${entry}" - expected resource:action (e.g. media:write)`)
+    process.exit(1)
+  }
+  ;(permissions[resource] ??= []).push(action)
+}
+
+const PREFIX = 'ng_'
+const plaintext = PREFIX + randomBytes(48).toString('base64url')
+const keyHash = createHash('sha256').update(plaintext, 'utf8').digest('base64url')
+const id = randomUUID()
+const start = plaintext.slice(0, 6)
+const expires = expiresInDays ? new Date(Date.now() + Number(expiresInDays) * 86400000).toISOString() : ''
+
+// :'var' is psql's quoted-literal interpolation (no hand-built SQL); owner falls
+// back to the oldest admin. RETURNING + -tA prints the owner id on success.
+let ownerId
+try {
+  ownerId = execFileSync(
+    'docker',
+    [
+      'compose', 'exec', '-T', 'db',
+      'psql', '-U', 'nostragoalus', '-d', 'nostragoalus', '-tA',
+      '-v', 'ON_ERROR_STOP=1',
+      '-v', `id=${id}`,
+      '-v', `name=${name}`,
+      '-v', `start=${start}`,
+      '-v', `prefix=${PREFIX}`,
+      '-v', `keyhash=${keyHash}`,
+      '-v', `owner=${owner}`,
+      '-v', `permissions=${JSON.stringify(permissions)}`,
+      '-v', `expires=${expires}`,
+    ],
+    {
+      input: `INSERT INTO apikey (
+        id, name, start, prefix, key, reference_id, config_id,
+        enabled, rate_limit_enabled, request_count, permissions, expires_at, created_at, updated_at
+      ) VALUES (
+        :'id', :'name', :'start', :'prefix', :'keyhash',
+        COALESCE(NULLIF(:'owner', ''), (SELECT id FROM "user" WHERE role = 'admin' ORDER BY created_at LIMIT 1)),
+        'default', true, false, 0, :'permissions', NULLIF(:'expires', '')::timestamp, now(), now()
+      ) RETURNING reference_id;`,
+      encoding: 'utf8',
+    },
+  ).trim()
+} catch (e) {
+  console.error('failed to insert the key - is an admin user present? pass --owner <userId> if not.')
+  console.error(String(e.stderr || e.message || e).slice(0, 300))
+  process.exit(1)
+}
+
+if (!ownerId) {
+  console.error('no owner resolved (no admin user found) - pass --owner <userId>')
+  process.exit(1)
+}
+
+console.log(`API key "${name}" minted for owner ${ownerId} (permissions ${permsArg}${expires ? `, expires ${expires}` : ''})`)
+console.log('\nThis is shown once - store it now:\n')
+console.log(`  ${plaintext}\n`)
+console.log('For streamsniper, set:  STREAMSNIPER_API_KEY=' + plaintext)

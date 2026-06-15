@@ -6,7 +6,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 ## [Unreleased]
 
 ### Added
-- **API clients (admin)**: a new admin section to mint scoped, optionally expiring API keys for machine integrations and revoke them. The full key is shown once at creation (stored hashed afterwards). Routes can require a key carrying a specific permission, and a key never grants more than its scope - an admin route also checks the key owner is an admin.
+- **API clients (admin)**: a new admin section to mint scoped, optionally expiring API keys for machine integrations and revoke them. The full key is shown once at creation (stored hashed afterwards). Routes can require a key carrying a specific permission, and a key never grants more than its scope - an admin route also checks the key owner is an admin. Keys can also be minted headlessly from the CLI with `mise run create-api-key <name>` (for provisioning a bot on the server).
 
 ### Fixed
 - The notifications panel (and the account menu) now close when you scroll the page, instead of drifting away from the header and overlapping the fixtures below them.
