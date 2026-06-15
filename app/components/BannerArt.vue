@@ -333,7 +333,21 @@ const { skin } = useSkin()
 
 <!-- planet football -->
 <g :transform="`translate(640 416) scale(${ballScale}) translate(-640 -416)`">
-<BannerPonyHead v-if="skin" :skin="skin" />
+<g v-if="skin">
+  <defs>
+    <linearGradient id="ngHeadFade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" />
+      <stop offset="0.62" stop-color="#fff" />
+      <stop offset="0.92" stop-color="#fff" stop-opacity="0" />
+    </linearGradient>
+    <mask id="ngHeadMask" maskUnits="userSpaceOnUse" x="405" y="181" width="470" height="470">
+      <rect x="405" y="181" width="470" height="470" fill="url(#ngHeadFade)" />
+    </mask>
+  </defs>
+  <circle cx="640" cy="416" r="300" fill="var(--p-primary-color)" opacity="0.12" />
+  <ellipse cx="640" cy="452" rx="312" ry="92" fill="none" stroke="var(--p-primary-color)" stroke-width="14" opacity="0.4" transform="rotate(-14 640 452)" />
+  <image :href="`/skins/${skin}.png`" x="405" y="181" width="470" height="470" preserveAspectRatio="xMidYMid meet" mask="url(#ngHeadMask)" />
+</g>
 <template v-else>
 <circle cx="640" cy="416" r="430" fill="url(#planetGlow)"/>
 <g transform="rotate(-14 640 416)">
