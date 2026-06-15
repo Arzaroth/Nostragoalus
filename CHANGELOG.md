@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.17.0] - 2026-06-15
+
 ### Added
 - **Notification center**: a bell in the header collects what matters to you - a reminder for a match locking soon you haven't predicted, the result of each match you did predict (the scoreline and the points it earned), league activity (joins, role changes, being added or removed), and how your champion and Golden Boot picks finished - with an unread count and live updates as things happen. Reminders only go to players already in the competition, clear themselves once you make the pick or the match kicks off, and like the rest can be marked read or tapped to jump straight to the match, league or competition. Each notification has a dismiss button to remove it, and read ones are tidied away automatically after a week (with an overall cap per person) so the list never piles up.
 
