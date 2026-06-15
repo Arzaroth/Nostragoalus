@@ -21,6 +21,10 @@ export const TASKS: TaskDef[] = [
   // Daily cleanup of never-confirmed accounts (self-gates: no-op unless email
   // verification is required).
   { name: 'users:prune-unverified', cron: '17 4 * * *', fireAndForget: false },
+  // Remind active predictors of matches locking within ~3h they haven't picked,
+  // and prune reminders for matches that have kicked off. Cheap off-window (the
+  // windowed scan returns nothing), so a plain cron with no live-window gate.
+  { name: 'notifications:pick-reminders', cron: '*/15 * * * *', fireAndForget: false },
   // One-shot historical odds backfill, manual only.
   { name: 'odds:backfill', cron: null, fireAndForget: true },
   // One-shot fixture import from the providers, manual only.

@@ -707,6 +707,7 @@
       "matchesFinalize": "may' SoQmoH 'ej tobtaH",
       "oddsRefresh": "Suvluq Suq",
       "pruneUnverified": "lo'laHbe'bogh De'wI' tuq teq",
+      "pickReminders": "qaw'moHmeH QInmey",
       "oddsBackfill": "Suvluq tIq Suq",
       "fixturesImport": "may'mey tIlIH",
       "championBackfillRanks": "charghwI' patlh tI'"
@@ -882,6 +883,7 @@
       "leagueRolePromoted": "DaH {league} che'wI' SoH.",
       "leagueRoleOwner": "DaH {league} pIn SoH.",
       "leagueRemoved": "{league} DatlhejHa'.",
+      "pickReminder": "tugh {home} {away} - yIqIp!",
       "matchResult": "{home} {hs}-{as} {away}: Qap! +{points}",
       "matchResultMiss": "{home} {hs}-{as} {away}: Qapbe'.",
       "championWon": "Qappu' wInwI'lI' {team}! +{points}",
