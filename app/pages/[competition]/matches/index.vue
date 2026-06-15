@@ -343,7 +343,7 @@ watch(searchOpen, () => nextTick(updateListHeight))
         <i :class="activeBuckets.includes(b) ? 'pi pi-check-circle' : 'pi pi-circle'" style="font-size: 0.7rem" />
         {{ t(`matches.filterStatus.${b}`) }}
       </button>
-      <div class="flex items-center gap-2 ml-auto">
+      <div class="flex items-center gap-2 ml-auto min-h-[33px]">
         <MultiSelect
           v-if="searchOpen"
           ref="countrySelect"
