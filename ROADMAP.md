@@ -136,15 +136,21 @@ effort buckets; order within a bucket is not priority.
     the league-member gate (send only to subscribers whose socket `userId`
     matches); WS type `notification:new`. Client `useNotifications` invalidates /
     prepends on receipt.
-  - v1 trigger set, deliberately sparse + high-signal: league social events
-    (join -> owner/mods, promote / transfer / kick / admin-add -> target) and the
-    champion + best-scorer result at finalize (dedupe-keyed). A tap deep-links
-    from the payload.
-  - **Deferred to the web-push feature** (they are the push payloads, and the
-    center takes new types trivially): goal-on-a-predicted-match and pick-lockout
-    reminders (scheduled, higher volume - needs noise tuning), plus a per-round
-    "your round scored +N" summary rather than one-per-match spam. Retention: a
-    prune task for read + old notifications is TODO, not v1.
+  - v1 trigger set: league social events (join -> owner/mods, promote / transfer
+    / kick / admin-add -> target), the champion + best-scorer result at finalize
+    (dedupe-keyed), the **match result** on each match you predicted (scoreline +
+    points, from the finalize scoring tx), and a **pick reminder** (the first
+    time-based one): a scheduled `notifications:pick-reminders` task reminds
+    active predictors of a match locking within ~3h they haven't picked, per
+    match + active-predictors-only to keep volume sane. The reminder is pruned
+    when the pick window closes (kickoff) and when the user makes the pick. A tap
+    deep-links from the payload.
+  - **Deferred to the web-push feature** (push payloads; the center takes new
+    types trivially): goal-on-a-predicted-match alerts, and re-using the existing
+    PICK_REMINDER / MATCH_RESULT data as push notifications. A coarser per-round
+    digest could later replace the per-match reminder/result volume if it proves
+    noisy at scale. Retention: a general prune task for old read notifications is
+    still TODO (pick reminders already self-prune at kickoff).
 - [ ] **Pick reminders + web push** (installable PWA + offline shell shipped in
       1.5.0; install prompt and push still pending): `@vite-pwa/nuxt`; web push
       (iOS >= 16.4 for installed PWAs). Push pays for itself twice: lockout
