@@ -708,6 +708,7 @@
       "oddsRefresh": "Suvluq Suq",
       "pruneUnverified": "lo'laHbe'bogh De'wI' tuq teq",
       "pickReminders": "qaw'moHmeH QInmey",
+      "notifsPrune": "QInmey Say'moH",
       "oddsBackfill": "Suvluq tIq Suq",
       "fixturesImport": "may'mey tIlIH",
       "championBackfillRanks": "charghwI' patlh tI'"
@@ -877,6 +878,7 @@
     "ariaLabel": "QInmey",
     "empty": "QIn chu' tu'lu'be'.",
     "markAllRead": "Hoch yIlaD",
+    "dismiss": "teq",
     "loading": "yISaH…",
     "item": {
       "leagueJoin": "ghomlIj {league} muvpu' {name}.",

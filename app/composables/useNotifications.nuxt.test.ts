@@ -129,4 +129,13 @@ describe('useNotifications', () => {
       expect.objectContaining({ method: 'POST', body: { all: true } }),
     )
   })
+
+  it('dismiss deletes the id', async () => {
+    const { api } = await setup()
+    await api.dismiss.mutateAsync('n1')
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/notifications/delete',
+      expect.objectContaining({ method: 'POST', body: { ids: ['n1'] } }),
+    )
+  })
 })

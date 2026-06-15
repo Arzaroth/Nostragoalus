@@ -31,6 +31,7 @@ const LABELS: Record<string, string> = {
   'odds:refresh': t('cron.task.oddsRefresh'),
   'users:prune-unverified': t('cron.task.pruneUnverified'),
   'notifications:pick-reminders': t('cron.task.pickReminders'),
+  'notifications:prune': t('cron.task.notifsPrune'),
   'odds:backfill': t('cron.task.oddsBackfill'),
   'fixtures:import': t('cron.task.fixturesImport'),
   'champion:backfill-ranks': t('cron.task.championBackfillRanks'),

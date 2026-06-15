@@ -72,5 +72,19 @@ export function useNotifications() {
     onSettled: () => qc.invalidateQueries({ queryKey: FEED_KEY }),
   })
 
-  return { notifications, unreadCount, isLoading: query.isLoading, markRead, markAllRead }
+  const dismiss = useMutation({
+    mutationFn: (id: string) =>
+      $fetch<{ deleted: number }>('/api/notifications/delete', { method: 'POST', body: { ids: [id] } }),
+    onMutate: (id: string) =>
+      patchFeed((feed) => {
+        const target = feed.notifications.find((n) => n.id === id)
+        return {
+          notifications: feed.notifications.filter((n) => n.id !== id),
+          unreadCount: target && !target.read ? Math.max(0, feed.unreadCount - 1) : feed.unreadCount,
+        }
+      }),
+    onSettled: () => qc.invalidateQueries({ queryKey: FEED_KEY }),
+  })
+
+  return { notifications, unreadCount, isLoading: query.isLoading, markRead, markAllRead, dismiss }
 }

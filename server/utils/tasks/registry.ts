@@ -25,6 +25,9 @@ export const TASKS: TaskDef[] = [
   // and prune reminders for matches that have kicked off. Cheap off-window (the
   // windowed scan returns nothing), so a plain cron with no live-window gate.
   { name: 'notifications:pick-reminders', cron: '*/15 * * * *', fireAndForget: false },
+  // Daily notification retention: drop read notifications past the window and
+  // cap each user to the newest few hundred.
+  { name: 'notifications:prune', cron: '23 4 * * *', fireAndForget: false },
   // One-shot historical odds backfill, manual only.
   { name: 'odds:backfill', cron: null, fireAndForget: true },
   // One-shot fixture import from the providers, manual only.
