@@ -500,7 +500,9 @@
       "hide": "Masquer du classement",
       "show": "Afficher dans le classement",
       "unlinkSso": "Délier du SSO",
-      "actions": "Actions utilisateur"
+      "actions": "Actions utilisateur",
+      "search": "Rechercher nom ou e-mail",
+      "noResults": "Aucun utilisateur trouvé"
     },
     "data": {
       "title": "Données",

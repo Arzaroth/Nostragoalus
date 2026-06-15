@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import { searchable } from '../../utils/format'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 useHead({ title: t('admin.title') })
 
 const { data: status } = await useFetch<{ isAdmin: boolean }>('/api/admin/status')
@@ -171,6 +172,22 @@ const { data: usersData, isPending: usersLoading } = useQuery({
 })
 const users = computed(() => usersData.value?.users ?? [])
 const userTotal = computed(() => usersData.value?.total ?? 0)
+
+// Client-side filter over the already-loaded users: display name fuzzy
+// (case/diacritic-insensitive substring) OR email exact. The field is immediate;
+// the debounced value drives the filter.
+const userSearchRaw = ref('')
+const userSearch = refDebounced(userSearchRaw, 200)
+const filteredUsers = computed(() => {
+  const q = userSearch.value.trim()
+  if (!q) return users.value
+  const fuzzy = searchable(q)
+  const exact = q.toLowerCase()
+  return users.value.filter((u: any) => searchable(u.name).includes(fuzzy) || (u.email ?? '').toLowerCase() === exact)
+})
+function joinedAt(d: string | Date | null | undefined): string {
+  return d ? new Date(d).toLocaleDateString(locale.value, { day: 'numeric', month: 'short', year: 'numeric' }) : ''
+}
 
 // better-auth's listUsers has no account info; the SSO indicator and the
 // unlink action need to know who is actually linked. Key shares the
@@ -536,8 +553,11 @@ const counts = computed<Record<string, { total: number; loading: boolean }>>(() 
             <Message v-if="createErr" severity="error" size="small">{{ createErr }}</Message>
           </div>
           <div class="border-t" style="border-color: var(--p-content-border-color)">
+            <div class="px-6 py-3">
+              <InputText v-model="userSearchRaw" :placeholder="t('admin.users.search')" class="w-full" size="small" />
+            </div>
             <div v-if="usersLoading" class="px-6 py-4 opacity-60">{{ t('common.loading') }}</div>
-            <div v-for="u in users" :key="u.id" class="flex items-center gap-3 px-6 py-3 border-t text-sm" style="border-color: var(--p-content-border-color)">
+            <div v-for="u in filteredUsers" :key="u.id" class="flex items-center gap-3 px-6 py-3 border-t text-sm" style="border-color: var(--p-content-border-color)">
               <UserAvatar :image="u.image" />
               <div class="flex-1 min-w-0">
                 <div class="font-medium truncate">{{ u.name }}</div>
@@ -558,6 +578,7 @@ const counts = computed<Record<string, { total: number; loading: boolean }>>(() 
               />
               <Tag v-if="u.banned" value="BANNED" severity="danger" />
               <Tag v-if="u.role === 'admin'" value="ADMIN" severity="success" />
+              <span class="text-xs shrink-0 tabular-nums" style="color: var(--p-text-muted-color)">{{ joinedAt(u.createdAt) }}</span>
               <Button
                 icon="pi pi-ellipsis-v"
                 size="small"
@@ -568,6 +589,7 @@ const counts = computed<Record<string, { total: number; loading: boolean }>>(() 
                 @click="openRowMenu($event, u)"
               />
             </div>
+            <div v-if="!usersLoading && !filteredUsers.length" class="px-6 py-4 text-sm text-center" style="color: var(--p-text-muted-color)">{{ t('admin.users.noResults') }}</div>
           </div>
           <Menu ref="rowMenu" :model="rowMenuItems" popup />
         </section>
