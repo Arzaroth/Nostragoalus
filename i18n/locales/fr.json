@@ -882,6 +882,8 @@
       "leagueRolePromoted": "Vous êtes désormais modérateur de {league}.",
       "leagueRoleOwner": "Vous êtes désormais propriétaire de {league}.",
       "leagueRemoved": "Vous avez été retiré de {league}.",
+      "matchResult": "{home} {hs}-{as} {away} - votre pronostic a marqué +{points} pts.",
+      "matchResultMiss": "{home} {hs}-{as} {away} - votre pronostic est passé à côté.",
       "championWon": "Votre champion {team} a gagné {competition} ! +{points} pts",
       "championLost": "Votre pronostic champion {team} n'a pas gagné {competition}.",
       "bestScorerWon": "Votre pari Soulier d'or {player} a fini meilleur buteur ! +{points} pts",

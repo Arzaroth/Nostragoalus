@@ -882,6 +882,8 @@
       "leagueRolePromoted": "DaH {league} che'wI' SoH.",
       "leagueRoleOwner": "DaH {league} pIn SoH.",
       "leagueRemoved": "{league} DatlhejHa'.",
+      "matchResult": "{home} {hs}-{as} {away}: Qap! +{points}",
+      "matchResultMiss": "{home} {hs}-{as} {away}: Qapbe'.",
       "championWon": "Qappu' wInwI'lI' {team}! +{points}",
       "championLost": "Qapbe' wInwI'lI' {team}.",
       "bestScorerWon": "Qappu' DujwI'lI' {player}! +{points}",

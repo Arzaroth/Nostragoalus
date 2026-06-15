@@ -882,6 +882,8 @@
       "leagueRolePromoted": "You're now a moderator of {league}.",
       "leagueRoleOwner": "You're now the owner of {league}.",
       "leagueRemoved": "You were removed from {league}.",
+      "matchResult": "{home} {hs}-{as} {away} - your prediction scored +{points} pts.",
+      "matchResultMiss": "{home} {hs}-{as} {away} - your prediction missed this one.",
       "championWon": "Your champion {team} won the {competition}! +{points} pts",
       "championLost": "Your champion pick {team} didn't win the {competition}.",
       "bestScorerWon": "Your Golden Boot pick {player} finished top scorer! +{points} pts",

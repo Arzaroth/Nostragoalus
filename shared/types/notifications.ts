@@ -5,6 +5,7 @@ export type NotificationType =
   | 'LEAGUE_JOIN'
   | 'LEAGUE_ROLE'
   | 'LEAGUE_REMOVED'
+  | 'MATCH_RESULT'
   | 'CHAMPION_RESULT'
   | 'BEST_SCORER_RESULT'
 
@@ -12,6 +13,16 @@ export type NotificationData =
   | { type: 'LEAGUE_JOIN'; leagueId: string; leagueName: string; joinerName: string }
   | { type: 'LEAGUE_ROLE'; leagueId: string; leagueName: string; role: 'MODERATOR' | 'OWNER' }
   | { type: 'LEAGUE_REMOVED'; leagueId: string; leagueName: string }
+  | {
+      type: 'MATCH_RESULT'
+      matchId: string
+      competitionSlug: string
+      homeTeam: string
+      awayTeam: string
+      homeScore: number
+      awayScore: number
+      points: number
+    }
   | {
       type: 'CHAMPION_RESULT'
       competitionSlug: string

@@ -1,6 +1,16 @@
-import { and, eq, inArray, ne } from 'drizzle-orm'
+import { and, eq, inArray, isNotNull, ne } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
-import { bestScorerPick, championPick, competition, league, leagueMember, user, userProfile } from '../../../db/schema'
+import {
+  bestScorerPick,
+  championPick,
+  competition,
+  league,
+  leagueMember,
+  match,
+  prediction,
+  user,
+  userProfile,
+} from '../../../db/schema'
 import { createNotification } from './service'
 
 type LeagueRole = 'OWNER' | 'MODERATOR' | 'MEMBER'
@@ -68,6 +78,47 @@ export async function notifyLeagueRemoved(db: AppDatabase, leagueId: string, use
   const name = await leagueName(db, leagueId)
   if (!name) return
   await createNotification(db, { userId, data: { type: 'LEAGUE_REMOVED', leagueId, leagueName: name } })
+}
+
+// A match was scored at finalize: tell everyone who predicted it how their pick
+// fared, with the scoreline and the points it earned (0 for a miss). dedupeKey
+// is per match, so a rescore (config change) silently updates the stored points
+// without re-pinging.
+export async function notifyMatchResults(db: AppDatabase, matchId: string): Promise<void> {
+  const rows = await db
+    .select({
+      homeTeam: match.homeTeam,
+      awayTeam: match.awayTeam,
+      homeScore: match.fullTimeHome,
+      awayScore: match.fullTimeAway,
+      slug: competition.slug,
+    })
+    .from(match)
+    .innerJoin(competition, eq(competition.id, match.competitionId))
+    .where(eq(match.id, matchId))
+    .limit(1)
+  const m = rows[0]
+  if (!m) return
+  const predictors = await db
+    .select({ userId: prediction.userId, points: prediction.totalPoints })
+    .from(prediction)
+    .where(and(eq(prediction.matchId, matchId), isNotNull(prediction.totalPoints)))
+  for (const p of predictors) {
+    await createNotification(db, {
+      userId: p.userId,
+      dedupeKey: `match-result:${matchId}`,
+      data: {
+        type: 'MATCH_RESULT',
+        matchId,
+        competitionSlug: m.slug,
+        homeTeam: m.homeTeam,
+        awayTeam: m.awayTeam,
+        homeScore: m.homeScore ?? 0,
+        awayScore: m.awayScore ?? 0,
+        points: p.points ?? 0,
+      },
+    })
+  }
 }
 
 // The final is decided: tell everyone whose champion pick won, with the points

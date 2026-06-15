@@ -7,6 +7,7 @@ import { scorePredictions } from '../scoring/engine'
 import { outcomeOf } from '../scoring/tiers'
 import { closingOddsForOutcome } from '../odds/store'
 import { awardChampionBonuses } from '../champion/service'
+import { notifyMatchResults } from '../notifications/events'
 import { resultHashOf } from './upsert-matches'
 import { lockDuePredictions, unlockFuturePredictions } from './live-window'
 
@@ -152,6 +153,7 @@ export async function finalizeMatches(db: AppDatabase, now: Date = new Date()): 
       if ((await scoreMatchRow(tx, m.id, await configFor(m.competitionId))) === 'scored') {
         scored += 1
         changedMatchIds.push(m.id)
+        await notifyMatchResults(tx, m.id)
       }
       // The champion bonus is awarded in the same transaction as the final's
       // scoring (it reads only the final's settled winner). The best-scorer

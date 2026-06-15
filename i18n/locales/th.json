@@ -882,6 +882,8 @@
       "leagueRolePromoted": "คุณเป็นผู้ดูแลของ {league} แล้ว",
       "leagueRoleOwner": "คุณเป็นเจ้าของ {league} แล้ว",
       "leagueRemoved": "คุณถูกนำออกจาก {league}",
+      "matchResult": "{home} {hs}-{as} {away} - คำทายของคุณได้ +{points} แต้ม",
+      "matchResultMiss": "{home} {hs}-{as} {away} - คำทายของคุณพลาดนัดนี้",
       "championWon": "แชมป์ {team} ที่คุณเลือกชนะ {competition}! +{points} แต้ม",
       "championLost": "ทีมแชมป์ {team} ที่คุณเลือกไม่ได้ชนะ {competition}",
       "bestScorerWon": "{player} ที่คุณเลือกเป็นดาวซัลโวสูงสุด! +{points} แต้ม",
