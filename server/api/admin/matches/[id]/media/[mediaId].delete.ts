@@ -2,9 +2,10 @@ import { db } from '../../../../../../db'
 import { defineValidatedHandler } from '../../../../../utils/validated-handler'
 import { deleteMatchMedia } from '../../../../../utils/match-media/service'
 
-export default defineValidatedHandler({ admin: true }, async ({ event }) => {
+export default defineValidatedHandler({ admin: true, apiKey: { media: ['write'] } }, async ({ event }) => {
+  const matchId = getRouterParam(event, 'id') as string
   const mediaId = getRouterParam(event, 'mediaId') as string
-  await deleteMatchMedia(db, mediaId)
+  await deleteMatchMedia(db, matchId, mediaId)
   return { ok: true }
 })
 

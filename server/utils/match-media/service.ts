@@ -1,4 +1,4 @@
-import { asc, eq } from 'drizzle-orm'
+import { and, asc, eq } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { match, matchMedia } from '../../../db/schema'
 import { NotFoundError, ValidationError } from '../errors'
@@ -25,7 +25,7 @@ export async function listMatchMedia(db: AppDatabase, matchId: string): Promise<
     })
     .from(matchMedia)
     .where(eq(matchMedia.matchId, matchId))
-    .orderBy(asc(matchMedia.kind), asc(matchMedia.createdAt))
+    .orderBy(asc(matchMedia.kind), asc(matchMedia.createdAt), asc(matchMedia.id))
   return rows.map((r) => ({
     id: r.id,
     kind: r.kind,
@@ -52,7 +52,12 @@ export async function addMatchMedia(db: AppDatabase, input: AddMatchMediaInput) 
   return row
 }
 
-export async function deleteMatchMedia(db: AppDatabase, mediaId: string): Promise<void> {
-  const deleted = await db.delete(matchMedia).where(eq(matchMedia.id, mediaId)).returning({ id: matchMedia.id })
+// Scoped to the addressed match so a link can only be deleted through its own
+// match's route (the [id] path param is load-bearing, not decorative).
+export async function deleteMatchMedia(db: AppDatabase, matchId: string, mediaId: string): Promise<void> {
+  const deleted = await db
+    .delete(matchMedia)
+    .where(and(eq(matchMedia.id, mediaId), eq(matchMedia.matchId, matchId)))
+    .returning({ id: matchMedia.id })
   if (deleted.length === 0) throw new NotFoundError('media not found')
 }

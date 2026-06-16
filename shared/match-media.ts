@@ -44,7 +44,8 @@ const PROVIDERS: EmbedProvider[] = [
     toEmbedSrc: (u, host) => {
       const parts = u.pathname.split('/').filter(Boolean)
       // twitch.tv/videos/<id> is a VOD; twitch.tv/<channel> is the live channel.
-      if (parts[0] === 'videos' && parts[1]) return `https://player.twitch.tv/?video=${parts[1]}&parent=${host}`
+      // A bare /videos (no id) is neither, so it must not become channel=videos.
+      if (parts[0] === 'videos') return parts[1] ? `https://player.twitch.tv/?video=${parts[1]}&parent=${host}` : null
       if (parts.length === 1) return `https://player.twitch.tv/?channel=${parts[0]}&parent=${host}`
       return null
     },
@@ -103,21 +104,32 @@ export function resolveEmbeddable(url: string, override: boolean | null | undefi
   return override ?? isWhitelistedStreamHost(url)
 }
 
-// The src to load once we've decided to embed: the provider's transformed player
-// when whitelisted, otherwise the raw URL (an admin force-embedded a
-// non-whitelisted host - honoured, but sandboxed client-side). null only for a
-// URL we can't even parse.
-export function embedSrcFor(url: string, host: string): string | null {
-  const u = parseHttps(url)
-  if (!u) return null
-  const p = findProvider(u)
-  return p?.toEmbedSrc(u, host) ?? url
+export interface EmbedTarget {
+  src: string
+  // `trusted` is true for a recognised provider's player URL (safe to grant the
+  // player sandbox: allow-scripts + allow-same-origin). It is false for an
+  // admin-forced raw URL of an unrecognised host - the caller must then use a
+  // strict sandbox (no allow-same-origin) so a hostile page can't escape it.
+  trusted: boolean
 }
 
-// LIVE links belong to the build-up and the match itself; once FINISHED only the
-// replay/highlights stay relevant. Anything else (postponed, cancelled) keeps
-// the pre-match LIVE slot.
+// What to load once we've decided to embed. A recognised provider yields its
+// transformed player (trusted); an admin force-embedded non-whitelisted host
+// yields the raw URL (untrusted, must be strictly sandboxed). null only for a
+// URL we can't even parse.
+export function embedTargetFor(url: string, host: string): EmbedTarget | null {
+  const u = parseHttps(url)
+  if (!u) return null
+  const providerSrc = findProvider(u)?.toEmbedSrc(u, host)
+  return providerSrc ? { src: providerSrc, trusted: true } : { src: url, trusted: false }
+}
+
+// LIVE links belong to the build-up and the match itself; once the match is over
+// (FINISHED or AWARDED by walkover/forfeit) only the replay/highlights stay
+// relevant. Anything else (scheduled, live, suspended, postponed, cancelled)
+// keeps the pre-match/in-play LIVE slot.
 export function visibleMediaForStatus<T extends { kind: MatchMediaKind }>(media: T[], status: MatchStatus): T[] {
-  const allowed: MatchMediaKind[] = status === 'FINISHED' ? ['REPLAY', 'HIGHLIGHTS'] : ['LIVE']
+  const over = status === 'FINISHED' || status === 'AWARDED'
+  const allowed: MatchMediaKind[] = over ? ['REPLAY', 'HIGHLIGHTS'] : ['LIVE']
   return media.filter((m) => allowed.includes(m.kind))
 }

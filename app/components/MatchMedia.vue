@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { useQuery } from '@tanstack/vue-query'
 import type { MatchStatus } from '../../shared/types/match'
 import {
   MATCH_MEDIA_KINDS,
-  embedSrcFor,
+  embedTargetFor,
   isValidStreamUrl,
   visibleMediaForStatus,
   type MatchMediaKind,
@@ -17,11 +16,10 @@ const { data: media } = useMatchMedia(id)
 const { add, remove } = useMatchMediaActions(id)
 
 // Admin gate drives only the management panel - the watch area is for everyone.
-const { data: adminFlag } = useQuery({
-  queryKey: ['admin-status'],
-  queryFn: () => $fetch<{ isAdmin: boolean }>('/api/admin/status').then((r) => r.isAdmin),
-})
-const isAdmin = computed(() => adminFlag.value === true)
+// useFetch is URL-keyed, so this shares the layout's /api/admin/status fetch
+// instead of issuing a second request.
+const { data: adminStatus } = useFetch<{ isAdmin: boolean }>('/api/admin/status')
+const isAdmin = computed(() => adminStatus.value?.isAdmin === true)
 
 // Twitch's player rejects an embed without a matching `parent` host; this works
 // SSR and client.
@@ -29,9 +27,19 @@ const host = useRequestURL().host
 
 const visible = computed(() => visibleMediaForStatus(media.value ?? [], props.status))
 
-const KIND_KEY: Record<MatchMediaKind, string> = { LIVE: 'live', REPLAY: 'replay', HIGHLIGHTS: 'highlights' }
 function kindLabel(k: MatchMediaKind) {
-  return t(`media.${KIND_KEY[k]}`)
+  return t(`media.${k.toLowerCase()}`)
+}
+
+// A recognised provider's player gets the player sandbox; an admin force-embedded
+// raw host gets a strict one (no allow-same-origin) so a hostile page can't
+// reach our origin or break out of the frame.
+function embedAttrs(url: string): { src: string; sandbox: string } {
+  const target = embedTargetFor(url, host)
+  return {
+    src: target?.src ?? url,
+    sandbox: target?.trusted ? 'allow-scripts allow-same-origin allow-presentation' : 'allow-scripts allow-presentation',
+  }
 }
 
 const form = reactive({ kind: 'LIVE' as MatchMediaKind, url: '', label: '', embed: 'auto' as 'auto' | 'embed' | 'off' })
@@ -59,15 +67,15 @@ function submit() {
 
     <div v-for="item in visible" :key="item.id" class="flex flex-col gap-1.5">
       <template v-if="item.embeddable">
-        <!-- sandbox keeps popunders/redirects out; the player still needs
-             scripts + same-origin. The link below is a permanent fallback - some
-             hosts block framing outright (X-Frame-Options), with no error event. -->
+        <!-- Sandbox is per-host (see embedAttrs): trusted providers get the
+             player sandbox, a force-embedded raw host gets a strict one. The link
+             below is a permanent fallback - some hosts block framing outright
+             (X-Frame-Options), with no error event. -->
         <div class="aspect-video w-full overflow-hidden rounded-lg" style="background: #000">
           <iframe
-            :src="embedSrcFor(item.url, host) || item.url"
+            v-bind="embedAttrs(item.url)"
             :title="item.label || kindLabel(item.kind)"
             class="w-full h-full border-0"
-            sandbox="allow-scripts allow-same-origin allow-presentation"
             allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
             referrerpolicy="no-referrer"
             loading="lazy"
