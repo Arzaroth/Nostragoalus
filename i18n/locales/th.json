@@ -222,7 +222,13 @@
       "fulltime": "จบแล้ว",
       "live": "กำลังแข่ง",
       "upcoming": "ยังไม่แข่ง"
-    }
+    },
+    "view": "สลับมุมมอง",
+    "viewFixtures": "ตารางแข่ง",
+    "viewStandings": "ตารางคะแนน"
+  },
+  "standings": {
+    "team": "ทีม"
   },
   "team": {
     "notFound": "ไม่พบทีมนี้",

@@ -222,7 +222,13 @@
       "fulltime": "Full-time",
       "live": "Live",
       "upcoming": "Upcoming"
-    }
+    },
+    "view": "Switch view",
+    "viewFixtures": "Fixtures",
+    "viewStandings": "Standings"
+  },
+  "standings": {
+    "team": "Team"
   },
   "team": {
     "notFound": "Team not found.",

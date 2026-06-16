@@ -222,7 +222,13 @@
       "fulltime": "Terminés",
       "live": "En direct",
       "upcoming": "À venir"
-    }
+    },
+    "view": "Changer de vue",
+    "viewFixtures": "Calendrier",
+    "viewStandings": "Classement"
+  },
+  "standings": {
+    "team": "Équipe"
   },
   "team": {
     "notFound": "Équipe introuvable.",
