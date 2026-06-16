@@ -579,33 +579,7 @@ function toggleFormInfo(side: string, i: number | string) {
           </TabPanel>
 
           <TabPanel v-if="insights.standings" value="standings">
-            <table class="w-full text-sm">
-              <thead>
-                <tr style="color: var(--p-text-muted-color)" class="text-center">
-                  <th class="py-1 text-left">#</th>
-                  <th class="text-left">Team</th>
-                  <th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="(row, i) in insights.standings"
-                  :key="row.name"
-                  class="border-t text-center"
-                  :style="`border-color: var(--p-content-border-color)${row.code === m.homeTeamCode || row.code === m.awayTeamCode ? '; background: color-mix(in srgb, var(--p-primary-color) 14%, transparent)' : ''}`"
-                >
-                  <td class="py-2 text-left">{{ Number(i) + 1 }}</td>
-                  <td class="text-left">
-                    <component :is="row.code ? NuxtLinkC : 'span'" :to="row.code ? `/${selectedSlug}/teams/${row.code}` : undefined" class="flex items-center gap-2" :class="{ 'hover:underline': row.code }">
-                      <img v-if="flagUrl(row.code)" :src="flagUrl(row.code) || ''" class="w-5 h-5 rounded" alt="" >{{ row.name }}
-                    </component>
-                  </td>
-                  <td>{{ row.played }}</td><td>{{ row.won }}</td><td>{{ row.drawn }}</td><td>{{ row.lost }}</td>
-                  <td>{{ row.gd > 0 ? '+' : '' }}{{ row.gd }}</td>
-                  <td class="font-bold">{{ row.points }}</td>
-                </tr>
-              </tbody>
-            </table>
+            <StandingsTable :rows="insights.standings" :slug="selectedSlug" :highlight="[m.homeTeamCode, m.awayTeamCode]" />
           </TabPanel>
 
           <TabPanel v-if="leagueId && hasStarted" value="league">

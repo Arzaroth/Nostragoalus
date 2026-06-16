@@ -222,7 +222,13 @@
       "fulltime": "rInpu'",
       "live": "DaH qaSlI'",
       "upcoming": "pIq"
-    }
+    },
+    "view": "leghmeH choH",
+    "viewFixtures": "may'mey",
+    "viewStandings": "patmey"
+  },
+  "standings": {
+    "team": "ghom"
   },
   "team": {
     "notFound": "ghom tu'be'lu'.",

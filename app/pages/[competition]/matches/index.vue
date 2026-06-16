@@ -51,6 +51,28 @@ function toggleBucket(b: StatusBucket) {
   }
 }
 
+// View switch (Fixtures | Standings) in the filter row. Group tables come from
+// the competition's group-stage matches; the switch only shows when there are
+// groups, so a knockout-only tournament never offers an empty Standings view.
+const router = useRouter()
+const viewMode = ref<'fixtures' | 'standings'>(route.query.view === 'standings' ? 'standings' : 'fixtures')
+// Toggle visibility comes from the fixtures we already loaded - no extra request
+// just to decide whether to offer the view. The tables themselves load lazily,
+// only once Standings is actually open.
+const hasGroups = computed(() => (matches.value ?? []).some((m) => !!m.group))
+const { data: standings } = useStandings(() => viewMode.value === 'standings')
+const viewOptions = computed(() => [
+  { label: t('matches.viewFixtures'), value: 'fixtures' as const },
+  { label: t('matches.viewStandings'), value: 'standings' as const },
+])
+// Mirror the mode in the URL (shareable), dropping it for the default.
+watch(viewMode, (v) => router.replace({ query: { ...route.query, view: v === 'standings' ? 'standings' : undefined } }))
+// A competition with no group stage can't stay on Standings (e.g. switching to a
+// knockout-only tournament while the view is open).
+watch(hasGroups, (has) => {
+  if (!has && viewMode.value === 'standings') viewMode.value = 'fixtures'
+})
+
 const { data: predictions } = useMyPredictions()
 const { upsert, setJoker } = usePredictionMutations()
 
@@ -328,6 +350,17 @@ watch(searchOpen, () => nextTick(updateListHeight))
       <BestScorerPick />
     </div>
     <div class="flex items-center gap-2 mb-4 flex-wrap">
+      <SelectButton
+        v-if="hasGroups"
+        v-model="viewMode"
+        :options="viewOptions"
+        option-label="label"
+        option-value="value"
+        :allow-empty="false"
+        size="small"
+        :aria-label="t('matches.view')"
+      />
+      <template v-if="viewMode === 'fixtures'">
       <button
         v-for="b in ALL_BUCKETS"
         :key="b"
@@ -373,8 +406,25 @@ watch(searchOpen, () => nextTick(updateListHeight))
           <i class="pi pi-search" :style="searchOpen ? '' : 'color: var(--p-text-muted-color)'" />
         </button>
       </div>
+      </template>
     </div>
 
+    <template v-if="viewMode === 'standings'">
+      <div v-if="!standings" class="opacity-60">{{ t('common.loading') }}</div>
+      <div v-else class="grid gap-6 md:grid-cols-2">
+        <section
+          v-for="g in standings"
+          :key="g.group"
+          class="ng-card rounded-2xl border p-4"
+          style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
+        >
+          <h2 class="text-xs uppercase tracking-wider font-semibold mb-3" style="color: var(--p-text-muted-color)">{{ t('map.group') }} {{ g.group }}</h2>
+          <StandingsTable :rows="g.rows" :slug="slug ?? undefined" />
+        </section>
+      </div>
+    </template>
+
+    <template v-else>
     <div v-if="isLoading || !picksReady" class="opacity-60">{{ t('common.loading') }}</div>
     <div v-else-if="!matches || !matches.length" class="opacity-60">{{ t('matches.empty') }}</div>
     <div v-else-if="!grouped.length" class="opacity-60">{{ t('matches.noResults') }}</div>
@@ -471,5 +521,6 @@ watch(searchOpen, () => nextTick(updateListHeight))
         </div>
       </section>
     </div>
+    </template>
   </div>
 </template>
