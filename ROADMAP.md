@@ -109,7 +109,7 @@ effort buckets; order within a bucket is not priority.
     layer's share. On by default for fresh installs; existing installs keep the
     column null (off) until an admin enables it - so an in-flight tournament's
     standings don't shift without a deliberate, visible recompute.
-- [ ] **Match watch links** (built on feat/match-media, pending merge): admin/
+- [x] **Match watch links** (shipped in 1.19.0): admin/
       bot-curated Live / Replay / Highlights links per match, shown in a Watch
       section on the match page. Decisions: a `match_media` child table (kind +
       url + label + nullable `embeddable` override); a host whitelist
@@ -121,10 +121,11 @@ effort buckets; order within a bucket is not priority.
       pre/in-match, replay+highlights once FINISHED. Public read
       (`GET /api/matches/[id]/media`) + admin write; grey-zone link sourcing
       stays out of the app, so liability sits with whoever sets the link.
-      Machine auth (the `apiKey` plugin + admin API-client UI) is now built on
-      feat/api-keys; the media routes opt into `apiKey:{media:['write']}` once
-      both branches merge. Still deferred: the separate curation bot that fills
-      links via the API (see TODO.md).
+      Machine auth (the `apiKey` plugin + admin API-client UI) shipped in 1.18.0;
+      the media write routes opt into `apiKey:{media:['write']}` (1.19.0), so a
+      scoped key can POST/DELETE links. A forced raw (non-whitelist) embed runs in
+      a strict sandbox (no same-origin). Still deferred: the separate curation bot
+      that fills links via the API (see TODO.md).
 - [x] **In-app notification center** (shipped in 1.17.0): a
       header bell with an unread count and a dropdown feed, live over the existing
       WS. Decisions:

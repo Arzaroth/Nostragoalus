@@ -403,9 +403,9 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       CLI was available, proven by an integration test). `defineValidatedHandler`
       accepts `apiKey:{resource:[perms]}` - an x-api-key is verified, the owner
       loaded, and required to be an admin for admin routes; session guards strip
-      x-api-key so a key never implicitly resolves a session. The media routes
-      still need to opt in with `apiKey:{media:['write']}` when feat/match-media
-      merges.
+      x-api-key so a key never implicitly resolves a session. The media write
+      routes now opt into `apiKey:{media:['write']}` (shipped with feat/match-media
+      in 1.19.0), so the curation bot can POST/DELETE links with its scoped key.
 - [x] Admin API-client UI (feat/api-keys, rebuilt in feature-treatment): admin-page
       section to mint scoped/expiring keys (plaintext shown once), list and revoke.
       Minting goes through admin-gated server routes (`/api/admin/api-keys`) that mint
@@ -421,9 +421,23 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       whitelisted/legit hosts) and clears dead LIVE links.
 - [ ] No edit endpoint: media edits are delete + re-add. Add a PUT only if
       inline relabel/retarget becomes worth the surface.
-- [ ] `embedSrcFor` falls back to the raw URL for a force-embedded
-      non-whitelist host - revisit if a sandboxed raw embed proves too hostile
-      (popunders/redirects); could restrict force-embed further.
+- [x] `embedSrcFor` force-embed of a non-whitelist host (raw URL): hardened in the
+      1.19.0 feature-treatment. `embedTargetFor` now returns `{src, trusted}`; a
+      forced raw host renders in a STRICT sandbox (no `allow-same-origin`, no
+      top-navigation) so it can't escape the frame or framebust, while recognised
+      providers keep the player sandbox. Non-whitelist still opens in a new tab
+      unless an admin explicitly force-embeds.
+
+### Deferred from the feature-treatment review
+
+- [ ] The public GET `/api/matches/[id]/media` is not in the sampled API response
+      schemas (`response-schemas.json`); add it on the next controlled regen (its
+      inline `defineRouteMeta` OpenAPI already ships). It also returns `{media:[]}`
+      (200, not 404) for an unknown/garbage match id - intentional public-read
+      contract; add a zod-uuid guard only if a 400 is wanted.
+- [ ] `visibleMediaForStatus` is yet another bespoke MatchStatus grouping (now
+      handles FINISHED+AWARDED) - folds into the existing "centralise status ->
+      bucket/severity/isLive in format.ts" item under Roadmap/home CTA above.
 
 ## SSO / better-auth 1.6.18 (deferred from the api-keys upgrade)
 
@@ -452,11 +466,11 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 - [ ] Minted keys set `rateLimitEnabled: false`, so there is no per-key
       verification throttle (the plugin's default would be 10/24h). Fine given the
       48-byte key entropy; revisit if a public route ever consumes keys.
-- [ ] The consume side (`requireApiKey` + the `apiKey:` option on
-      `defineValidatedHandler`) ships UNUSED - no route opts in until feat/match-media
-      wires `apiKey:{media:['write']}` onto the media routes. The owner-must-be-admin
-      enforcement is unit-tested but not yet exercised by a live handler; verify it
-      end-to-end when the first route adopts it.
+- [x] The consume side (`requireApiKey` + the `apiKey:` option on
+      `defineValidatedHandler`) now has its first live consumers: the media
+      write routes opt into `apiKey:{media:['write']}` (1.19.0). The
+      owner-must-be-admin enforcement is unit-tested; a real end-to-end run with
+      an actual minted key + the curation bot is still worth doing once the bot exists.
 
 ## Scoring config (deferred from the feature pass)
 
