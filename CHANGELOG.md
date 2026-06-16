@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+- The notifications panel (and the account menu) now close when you scroll the page, instead of drifting away from the header and overlapping the fixtures below them.
+
 ## [1.17.0] - 2026-06-15
 
 ### Added
