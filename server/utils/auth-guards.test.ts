@@ -83,36 +83,36 @@ describe('requireApiKey', () => {
     const { requireApiKey } = await guards()
     verifyApiKey.mockResolvedValue({ valid: true, key: { referenceId: 'u1' } })
     dbLimit.mockResolvedValue([{ id: 'u1', email: 'a@b.c', role: 'admin' }])
-    expect(await requireApiKey(event, 'k', { media: ['write'] }, true)).toMatchObject({ id: 'u1' })
+    expect(await requireApiKey('k', { media: ['write'] },true)).toMatchObject({ id: 'u1' })
     expect(verifyApiKey).toHaveBeenCalledWith({ body: { key: 'k', permissions: { media: ['write'] } } })
   })
 
   it('401s when the key is invalid or the owner is gone', async () => {
     const { requireApiKey } = await guards()
     verifyApiKey.mockResolvedValue({ valid: false, key: null })
-    await expect(requireApiKey(event, 'k', { media: ['write'] }, false)).rejects.toMatchObject({ statusCode: 401 })
+    await expect(requireApiKey('k', { media: ['write'] },false)).rejects.toMatchObject({ statusCode: 401 })
 
     verifyApiKey.mockResolvedValue({ valid: true, key: { referenceId: 'ghost' } })
     dbLimit.mockResolvedValue([])
-    await expect(requireApiKey(event, 'k', { media: ['write'] }, false)).rejects.toMatchObject({ statusCode: 401 })
+    await expect(requireApiKey('k', { media: ['write'] },false)).rejects.toMatchObject({ statusCode: 401 })
   })
 
   it('403s on an admin route when the key owner is not an admin', async () => {
     const { requireApiKey } = await guards()
     verifyApiKey.mockResolvedValue({ valid: true, key: { referenceId: 'u2' } })
     dbLimit.mockResolvedValue([{ id: 'u2', email: 'user@x.y', role: 'user' }])
-    await expect(requireApiKey(event, 'k', { media: ['write'] }, true)).rejects.toMatchObject({ statusCode: 403 })
+    await expect(requireApiKey('k', { media: ['write'] },true)).rejects.toMatchObject({ statusCode: 403 })
   })
 
   it('allows a non-admin owner on a non-admin route, and an env-admin on an admin route', async () => {
     const { requireApiKey } = await guards()
     verifyApiKey.mockResolvedValue({ valid: true, key: { referenceId: 'u2' } })
     dbLimit.mockResolvedValue([{ id: 'u2', email: 'user@x.y', role: 'user' }])
-    expect(await requireApiKey(event, 'k', { media: ['write'] }, false)).toMatchObject({ id: 'u2' })
+    expect(await requireApiKey('k', { media: ['write'] },false)).toMatchObject({ id: 'u2' })
 
     adminEmails = 'boss@club.com'
     verifyApiKey.mockResolvedValue({ valid: true, key: { referenceId: 'u3' } })
     dbLimit.mockResolvedValue([{ id: 'u3', email: 'BOSS@club.com', role: 'user' }])
-    expect(await requireApiKey(event, 'k', { media: ['write'] }, true)).toMatchObject({ id: 'u3' })
+    expect(await requireApiKey('k', { media: ['write'] },true)).toMatchObject({ id: 'u3' })
   })
 })

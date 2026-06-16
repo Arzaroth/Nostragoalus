@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import { authClient } from '../../lib/auth-client'
 
 const props = defineProps<{ isAdmin: boolean }>()
 const { t } = useI18n()
@@ -11,27 +10,31 @@ interface KeyRow {
   id: string
   name: string | null
   start: string | null
-  enabled: boolean
+  enabled: boolean | null
   expiresAt: string | null
   lastRequest: string | null
   permissions: Record<string, string[]> | null
   createdAt: string
+  ownerEmail: string | null
 }
 
+// Minting goes through admin-gated server routes (/api/admin/api-keys), not the
+// better-auth plugin endpoints directly: the plugin forbids a client request
+// from setting scope/permissions, and its create/list/delete are session-only
+// (any user, own keys). The server routes enforce admin and act across owners.
 const { data: keys, isPending } = useQuery({
   queryKey: ['admin-api-keys'],
   enabled,
   queryFn: async () => {
-    const { data, error } = await authClient.apiKey.list()
-    if (error) throw new Error(error.message || 'Failed to load API keys')
-    // list() returns a paginated envelope { apiKeys, total, limit, offset }.
-    return ((data?.apiKeys ?? []) as unknown) as KeyRow[]
+    const { apiKeys } = await $fetch<{ apiKeys: KeyRow[] }>('/api/admin/api-keys')
+    return apiKeys
   },
 })
 const invalidate = () => queryClient.invalidateQueries({ queryKey: ['admin-api-keys'] })
 
 // The scopes an admin can grant. Today only the watch-link curation bot needs
-// one; new machine integrations add their permission here.
+// one; new machine integrations add their permission here (and to GRANTABLE_SCOPES
+// in server/utils/api-keys/service.ts).
 const SCOPES = [{ resource: 'media', action: 'write', labelKey: 'scopeMediaWrite' }] as const
 const EXPIRY = [
   { key: 'never', seconds: null },
@@ -46,31 +49,23 @@ const form = reactive({
   expiry: 'never' as (typeof EXPIRY)[number]['key'],
 })
 const createErr = ref('')
+const revokeErr = ref('')
 // The plaintext key, shown exactly once right after creation (it is stored
 // hashed and can never be retrieved again).
 const createdKey = ref<string | null>(null)
 
-function selectedPermissions(): Record<string, string[]> {
-  const perms: Record<string, string[]> = {}
-  for (const s of SCOPES) {
-    if (form.scopes[`${s.resource}:${s.action}`]) (perms[s.resource] ??= []).push(s.action)
-  }
-  return perms
+function selectedScopes(): string[] {
+  return SCOPES.map((s) => `${s.resource}:${s.action}`).filter((key) => form.scopes[key])
 }
-const canCreate = computed(() => form.name.trim().length > 0 && Object.keys(selectedPermissions()).length > 0)
+const canCreate = computed(() => form.name.trim().length > 0 && selectedScopes().length > 0)
 
 const createMutation = useMutation({
   mutationFn: async () => {
-    const expiresIn = EXPIRY.find((e) => e.key === form.expiry)?.seconds ?? null
-    const { data, error } = await authClient.apiKey.create({
-      name: form.name.trim(),
-      permissions: selectedPermissions(),
-      expiresIn,
-      // Machine cadence is governed by the integration, not a per-key quota.
-      rateLimitEnabled: false,
+    const expiresInSeconds = EXPIRY.find((e) => e.key === form.expiry)?.seconds ?? null
+    return $fetch<{ key: string }>('/api/admin/api-keys', {
+      method: 'POST',
+      body: { name: form.name.trim(), scopes: selectedScopes(), expiresInSeconds },
     })
-    if (error) throw new Error(error.message || 'Failed to create API key')
-    return data as { key: string }
   },
   onSuccess: (data) => {
     createdKey.value = data.key
@@ -79,16 +74,21 @@ const createMutation = useMutation({
     invalidate()
   },
   onError: (e: any) => {
-    createErr.value = e?.message || t('admin.apiKeys.createFailed')
+    createErr.value = e?.data?.message || e?.message || t('admin.apiKeys.createFailed')
   },
 })
 
 const revokeMutation = useMutation({
-  mutationFn: async (keyId: string) => {
-    const { error } = await authClient.apiKey.delete({ keyId })
-    if (error) throw new Error(error.message || 'Failed to revoke API key')
+  mutationFn: async (id: string) => {
+    await $fetch('/api/admin/api-keys/revoke', { method: 'POST', body: { id } })
   },
-  onSuccess: invalidate,
+  onSuccess: () => {
+    revokeErr.value = ''
+    invalidate()
+  },
+  onError: (e: any) => {
+    revokeErr.value = e?.data?.message || e?.message || t('admin.apiKeys.revokeFailed')
+  },
 })
 
 function scopeText(perms: Record<string, string[]> | null): string {
@@ -119,11 +119,6 @@ function dismissCreatedKey() {
 <template>
   <section v-if="isAdmin" class="ng-card rounded-2xl border overflow-hidden" style="background: var(--p-content-background)">
     <div class="p-6 flex flex-col gap-4">
-      <div>
-        <h2 class="font-semibold">{{ t('admin.apiKeys.title') }}</h2>
-        <p class="text-sm mt-1" style="color: var(--p-text-muted-color)">{{ t('admin.apiKeys.hint') }}</p>
-      </div>
-
       <!-- Shown once after minting: copy now or lose it. -->
       <Message v-if="createdKey" severity="success" :closable="false">
         <div class="flex flex-col gap-2">
@@ -144,6 +139,7 @@ function dismissCreatedKey() {
         <thead>
           <tr style="color: var(--p-text-muted-color)" class="text-left">
             <th class="py-1">{{ t('admin.apiKeys.colName') }}</th>
+            <th>{{ t('admin.apiKeys.colOwner') }}</th>
             <th>{{ t('admin.apiKeys.colScopes') }}</th>
             <th>{{ t('admin.apiKeys.colKey') }}</th>
             <th>{{ t('admin.apiKeys.colExpires') }}</th>
@@ -154,6 +150,7 @@ function dismissCreatedKey() {
         <tbody>
           <tr v-for="k in keys" :key="k.id" class="border-t" style="border-color: var(--p-content-border-color)">
             <td class="py-2">{{ k.name || '-' }}</td>
+            <td>{{ k.ownerEmail || '-' }}</td>
             <td>{{ scopeText(k.permissions) }}</td>
             <td><code class="text-xs">{{ k.start ? `${k.start}…` : '-' }}</code></td>
             <td>{{ fmtDate(k.expiresAt) }}</td>
@@ -167,9 +164,11 @@ function dismissCreatedKey() {
         </tbody>
       </table>
 
+      <span v-if="revokeErr" class="text-xs" style="color: var(--ng-danger)">{{ revokeErr }}</span>
+
       <form class="flex flex-col gap-2 border-t pt-4" style="border-color: var(--p-content-border-color)" @submit.prevent="createMutation.mutate()">
         <div class="text-xs font-semibold uppercase tracking-wider" style="color: var(--p-text-muted-color)">{{ t('admin.apiKeys.addTitle') }}</div>
-        <input v-model="form.name" type="text" :placeholder="t('admin.apiKeys.namePlaceholder')" :aria-label="t('admin.apiKeys.name')" class="rounded-lg border px-2 py-1.5 text-sm" style="background: var(--p-content-background); border-color: var(--p-content-border-color)" >
+        <input v-model="form.name" type="text" maxlength="64" :placeholder="t('admin.apiKeys.namePlaceholder')" :aria-label="t('admin.apiKeys.name')" class="rounded-lg border px-2 py-1.5 text-sm" style="background: var(--p-content-background); border-color: var(--p-content-border-color)" >
         <div class="flex flex-wrap gap-3 items-center">
           <label v-for="s in SCOPES" :key="`${s.resource}:${s.action}`" class="inline-flex items-center gap-1.5 text-sm">
             <input v-model="form.scopes[`${s.resource}:${s.action}`]" type="checkbox" >

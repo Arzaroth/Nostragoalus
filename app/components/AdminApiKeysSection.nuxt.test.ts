@@ -1,65 +1,101 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent } from 'vue'
+import { useQueryClient } from '@tanstack/vue-query'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import AdminApiKeysSection from './AdminApiKeysSection.vue'
 
-const list = vi.fn()
-const create = vi.fn()
-const del = vi.fn()
-// Mock the whole auth-client surface the app boots with (useSession is read by
-// the layout on mount), plus the apiKey methods this component drives.
+const KEY_ROW = {
+  id: 'k1',
+  name: 'watch bot',
+  start: 'ng_abc',
+  enabled: true,
+  expiresAt: null,
+  lastRequest: null,
+  permissions: { media: ['write'] },
+  createdAt: '2026-06-01T00:00:00Z',
+  ownerEmail: 'admin@example.com',
+}
+
+// The component now talks to the admin api-keys routes via $fetch (not the
+// better-auth plugin directly); mock that surface.
+let fetchMock: ReturnType<typeof vi.fn>
+
+// A boot plugin/layout reads useSession on mount; stub the auth-client surface.
 vi.mock('../../lib/auth-client', async () => {
   const { ref } = await import('vue')
   const session = ref({ data: null })
-  const authClient = {
-    apiKey: { list: (...a: unknown[]) => list(...a), create: (...a: unknown[]) => create(...a), delete: (...a: unknown[]) => del(...a) },
-    useSession: () => session,
-    signIn: {},
-    signUp: {},
-    signOut: () => {},
-  }
+  const authClient = { useSession: () => session, signIn: {}, signUp: {}, signOut: () => {} }
   return { authClient, signIn: authClient.signIn, signUp: authClient.signUp, signOut: authClient.signOut, useSession: authClient.useSession }
 })
 
+let wrapper: Awaited<ReturnType<typeof mountSuspended>> | null = null
+
 beforeEach(() => {
-  list.mockResolvedValue({ data: { apiKeys: [{ id: 'k1', name: 'watch bot', start: 'ng_abcd', enabled: true, expiresAt: null, lastRequest: null, permissions: { media: ['write'] }, createdAt: '2026-06-01T00:00:00Z' }], total: 1 }, error: null })
-  create.mockResolvedValue({ data: { key: 'ng_full-secret-value' }, error: null })
-  del.mockResolvedValue({ error: null })
+  document.body.innerHTML = ''
+  fetchMock = vi.fn(async (url: string, opts?: { method?: string }) => {
+    if (url === '/api/admin/api-keys' && opts?.method === 'POST') return { key: 'ng_full-secret-value' }
+    if (url === '/api/admin/api-keys/revoke') return { revoked: true }
+    return { apiKeys: [KEY_ROW] }
+  })
+  vi.stubGlobal('$fetch', fetchMock)
 })
-afterEach(() => vi.clearAllMocks())
+afterEach(() => {
+  // Unmount and clear the shared vue-query cache so a leaked observer + the 60s
+  // staleTime can't bleed into the next test (the repo's order-dependent flake).
+  wrapper?.unmount()
+  wrapper = null
+  vi.unstubAllGlobals()
+})
+
+async function setup(isAdmin = true) {
+  wrapper = await mountSuspended(
+    defineComponent({
+      components: { AdminApiKeysSection },
+      setup() {
+        useQueryClient().clear()
+      },
+      template: `<AdminApiKeysSection :is-admin="${isAdmin}" />`,
+    }),
+  )
+  return wrapper
+}
 
 describe('AdminApiKeysSection', () => {
-  it('lists keys with their scope and masked prefix', async () => {
-    const wrapper = await mountSuspended(AdminApiKeysSection, { props: { isAdmin: true } })
-    await vi.waitFor(() => expect(wrapper.text()).toContain('watch bot'))
-    expect(wrapper.text()).toContain('media:write')
-    expect(wrapper.text()).toContain('ng_abcd')
+  it('lists keys with their owner, scope and masked prefix', async () => {
+    const w = await setup(true)
+    await vi.waitFor(() => expect(w.text()).toContain('watch bot'))
+    expect(w.text()).toContain('admin@example.com')
+    expect(w.text()).toContain('media:write')
+    expect(w.text()).toContain('ng_abc')
+    expect(fetchMock).toHaveBeenCalledWith('/api/admin/api-keys')
   })
 
-  it('renders nothing for a non-admin', async () => {
-    const wrapper = await mountSuspended(AdminApiKeysSection, { props: { isAdmin: false } })
-    expect(wrapper.find('section').exists()).toBe(false)
-    expect(list).not.toHaveBeenCalled()
+  it('renders nothing and fetches nothing for a non-admin', async () => {
+    const w = await setup(false)
+    expect(w.find('section').exists()).toBe(false)
+    expect(fetchMock).not.toHaveBeenCalledWith('/api/admin/api-keys')
   })
 
-  it('creates a scoped key and shows the plaintext once', async () => {
-    const wrapper = await mountSuspended(AdminApiKeysSection, { props: { isAdmin: true } })
-    await vi.waitFor(() => expect(wrapper.find('form').exists()).toBe(true))
+  it('creates a scoped key via the admin route and shows the plaintext once', async () => {
+    const w = await setup(true)
+    await vi.waitFor(() => expect(w.find('form').exists()).toBe(true))
 
-    await wrapper.find('input[type="text"]').setValue('new bot')
-    await wrapper.find('form').trigger('submit')
+    await w.find('input[type="text"]').setValue('new bot')
+    await w.find('form').trigger('submit')
 
-    await vi.waitFor(() => expect(wrapper.text()).toContain('ng_full-secret-value'))
-    expect(create).toHaveBeenCalledWith(expect.objectContaining({
-      name: 'new bot',
-      permissions: { media: ['write'] },
-      rateLimitEnabled: false,
-    }))
+    await vi.waitFor(() => expect(w.text()).toContain('ng_full-secret-value'))
+    expect(fetchMock).toHaveBeenCalledWith('/api/admin/api-keys', {
+      method: 'POST',
+      body: { name: 'new bot', scopes: ['media:write'], expiresInSeconds: null },
+    })
   })
 
-  it('revokes a key by id', async () => {
-    const wrapper = await mountSuspended(AdminApiKeysSection, { props: { isAdmin: true } })
-    await vi.waitFor(() => expect(wrapper.find('button[aria-label="Revoke"]').exists()).toBe(true))
-    await wrapper.find('button[aria-label="Revoke"]').trigger('click')
-    expect(del).toHaveBeenCalledWith({ keyId: 'k1' })
+  it('revokes a key by id via the admin route', async () => {
+    const w = await setup(true)
+    await vi.waitFor(() => expect(w.find('button[aria-label="Revoke"]').exists()).toBe(true))
+    await w.find('button[aria-label="Revoke"]').trigger('click')
+    await vi.waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith('/api/admin/api-keys/revoke', { method: 'POST', body: { id: 'k1' } }),
+    )
   })
 })

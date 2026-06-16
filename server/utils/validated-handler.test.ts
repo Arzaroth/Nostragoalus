@@ -97,9 +97,9 @@ describe('defineValidatedHandler', () => {
     const res = await callWithKey(handler, undefined, 'secret-key')
     expect(res).toEqual({ by: 'bot' })
     const call = requireApiKey.mock.calls[0]
-    expect(call[1]).toBe('secret-key')
-    expect(call[2]).toEqual({ media: ['write'] })
-    expect(call[3]).toBe(true) // mustBeAdmin from admin:true
+    expect(call[0]).toBe('secret-key')
+    expect(call[1]).toEqual({ media: ['write'] })
+    expect(call[2]).toBe(true) // mustBeAdmin from admin:true
     expect(requireAdmin).not.toHaveBeenCalled()
     expect(requireUser).not.toHaveBeenCalled()
   })

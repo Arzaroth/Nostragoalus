@@ -450,6 +450,7 @@
       "done": "rIn",
       "none": "API chetvI' tu'lu'be'.",
       "colName": "pong",
+      "colOwner": "ghajwI'",
       "colScopes": "Sep",
       "colKey": "chetvI'",
       "colExpires": "natlhpu'",
@@ -466,7 +467,8 @@
       "expiry_d90": "jaj 90",
       "expiry_y1": "DIS 1",
       "create": "chetvI' yIchenmoH",
-      "createFailed": "chetvI' chenmoH luj."
+      "createFailed": "chetvI' chenmoH luj.",
+      "revokeFailed": "chetvI' teq luj."
     },
     "title": "loHwI'",
     "forbidden": "loHwI' DIb Daghajbe'.",
