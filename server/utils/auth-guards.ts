@@ -25,7 +25,6 @@ export interface ApiKeyActor {
 // itself be an admin - so a non-admin's self-minted key can never reach an admin
 // route even though anyone may create keys.
 export async function requireApiKey(
-  event: H3Event,
   key: string,
   permissions: Record<string, string[]>,
   mustBeAdmin: boolean,

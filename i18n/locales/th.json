@@ -450,6 +450,7 @@
       "done": "เสร็จ",
       "none": "ยังไม่มีคีย์ API",
       "colName": "ชื่อ",
+      "colOwner": "เจ้าของ",
       "colScopes": "ขอบเขต",
       "colKey": "คีย์",
       "colExpires": "หมดอายุ",
@@ -466,7 +467,8 @@
       "expiry_d90": "90 วัน",
       "expiry_y1": "1 ปี",
       "create": "สร้างคีย์",
-      "createFailed": "สร้างคีย์ไม่สำเร็จ"
+      "createFailed": "สร้างคีย์ไม่สำเร็จ",
+      "revokeFailed": "เพิกถอนคีย์ไม่สำเร็จ"
     },
     "title": "ผู้ดูแล",
     "forbidden": "คุณไม่มีสิทธิ์ผู้ดูแล",

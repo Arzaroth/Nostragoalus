@@ -450,6 +450,7 @@
       "done": "Done",
       "none": "No API keys yet.",
       "colName": "Name",
+      "colOwner": "Owner",
       "colScopes": "Scopes",
       "colKey": "Key",
       "colExpires": "Expires",
@@ -466,7 +467,8 @@
       "expiry_d90": "90 days",
       "expiry_y1": "1 year",
       "create": "Create key",
-      "createFailed": "Failed to create the key."
+      "createFailed": "Failed to create the key.",
+      "revokeFailed": "Failed to revoke the key."
     },
     "title": "Admin",
     "forbidden": "You don't have admin access.",

@@ -33,7 +33,7 @@ export function defineValidatedHandler<S extends ZodType>(
       // A key is presented: only honour it where the route opted in, otherwise
       // it's a session-only route and the key is rejected.
       if (!options.apiKey) throw createError({ statusCode: 401, statusMessage: 'API key not accepted on this route' })
-      user = await requireApiKey(event, apiKeyHeader, options.apiKey, !!options.admin)
+      user = await requireApiKey(apiKeyHeader, options.apiKey, !!options.admin)
     } else {
       user = options.admin ? await requireAdmin(event) : await requireUser(event)
     }

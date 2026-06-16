@@ -450,6 +450,7 @@
       "done": "Terminé",
       "none": "Aucune clé API pour le moment.",
       "colName": "Nom",
+      "colOwner": "Propriétaire",
       "colScopes": "Portées",
       "colKey": "Clé",
       "colExpires": "Expiration",
@@ -466,7 +467,8 @@
       "expiry_d90": "90 jours",
       "expiry_y1": "1 an",
       "create": "Créer la clé",
-      "createFailed": "Échec de la création de la clé."
+      "createFailed": "Échec de la création de la clé.",
+      "revokeFailed": "Échec de la révocation de la clé."
     },
     "title": "Admin",
     "forbidden": "Vous n'avez pas l'accès administrateur.",
