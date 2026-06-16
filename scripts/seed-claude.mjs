@@ -1,5 +1,5 @@
-// Seed test users with full WC2026 group-stage prediction sets. Two users, two
-// methods, so the leaderboard can compare predictors head to head:
+// Seed test users with full WC2026 group-stage prediction sets. Three users,
+// three methods, so the leaderboard can compare predictors head to head:
 //
 //   claude  - FIFA-points Poisson. Strength = each team's FIFA world-ranking
 //             points (clean: FIFA does not republish mid-tournament). Goal
@@ -10,6 +10,12 @@
 //             (0.45) + FIFA points (0.30) + last-10 form (0.25), with a per-fixture
 //             head-to-head nudge (last <=6 meetings, 2017-2026). Same Poisson
 //             engine: E=1.1*(zBlendH-zBlendA)+host+h2h -> matrix argmax.
+//
+//   claude3 - Eyeball. The first-pass heuristic before any model existed: hand
+//             scorelines from a mental strength tier per team (rough FIFA rank +
+//             squad quality + recent-tournament results), favourite -> 1-0/2-0,
+//             big mismatch -> 3-0/4-0, level tie -> 1-1. No data feed. Kept as the
+//             "gut" baseline the two models are measured against.
 //
 // Both use pre-tournament info only (no in-WC results). Joker per group-stage
 // round = the round's highest single-scoreline probability. Best scorer is a
@@ -61,12 +67,30 @@ const PRED_FULL = {
   ENG_CRO: [1, 0], GHA_PAN: [0, 2], ENG_GHA: [3, 0, true], PAN_CRO: [0, 2], CRO_GHA: [2, 0], PAN_ENG: [0, 2],
 }
 
+// claude3 - first-pass eyeball heuristic (no model, kept as the gut baseline).
+const PRED_EYEBALL = {
+  MEX_RSA: [2, 0], KOR_CZE: [1, 1], CZE_RSA: [1, 0], MEX_KOR: [1, 1], CZE_MEX: [1, 2], RSA_KOR: [0, 1],
+  CAN_BIH: [1, 1], QAT_SUI: [0, 2], SUI_BIH: [2, 0], CAN_QAT: [2, 0], SUI_CAN: [1, 1], BIH_QAT: [1, 1],
+  BRA_MAR: [2, 1], HAI_SCO: [0, 2], SCO_MAR: [1, 2], BRA_HAI: [3, 0, true], MAR_HAI: [2, 0], SCO_BRA: [0, 2],
+  USA_PAR: [1, 1], AUS_TUR: [1, 2], USA_AUS: [2, 1], TUR_PAR: [2, 1], PAR_AUS: [1, 1], TUR_USA: [1, 1],
+  GER_CUW: [4, 0, true], CIV_ECU: [1, 1], GER_CIV: [2, 1], ECU_CUW: [3, 0], CUW_CIV: [0, 3], ECU_GER: [1, 2],
+  NED_JPN: [2, 1], SWE_TUN: [2, 0], NED_SWE: [2, 1], TUN_JPN: [0, 1], TUN_NED: [0, 2], JPN_SWE: [1, 1],
+  BEL_EGY: [2, 1], IRN_NZL: [2, 0], BEL_IRN: [2, 0], NZL_EGY: [0, 2], NZL_BEL: [0, 2], EGY_IRN: [1, 1],
+  ESP_CPV: [3, 0], KSA_URU: [0, 2], ESP_KSA: [3, 0], URU_CPV: [2, 0], URU_ESP: [1, 2], CPV_KSA: [1, 1],
+  FRA_SEN: [2, 1], IRQ_NOR: [0, 2], FRA_IRQ: [3, 0], NOR_SEN: [1, 1], NOR_FRA: [1, 2], SEN_IRQ: [2, 0],
+  ARG_ALG: [2, 0], AUT_JOR: [2, 0], ARG_AUT: [2, 1], JOR_ALG: [0, 1], JOR_ARG: [0, 3, true], ALG_AUT: [1, 1],
+  POR_COD: [2, 0], UZB_COL: [0, 2], POR_UZB: [3, 0], COL_COD: [2, 0], COD_UZB: [1, 1], COL_POR: [1, 1],
+  ENG_CRO: [2, 0], GHA_PAN: [1, 1], ENG_GHA: [2, 0], PAN_CRO: [0, 2], CRO_GHA: [1, 1], PAN_ENG: [0, 2],
+}
+
 const USERS = [
   // FIFA #1 on the points used by this model: Argentina (1877.27), a whisker
   // above Spain (1874.71) and France (1870.70).
   { id: 'claude', name: 'claude', predictions: PRED_FIFA, champion: { code: 'ARG', name: 'Argentina' } },
   // Highest blended z (Elo+form+FIFA) is Spain, ahead of Argentina and France.
   { id: 'claude2', name: 'claude2', predictions: PRED_FULL, champion: { code: 'ESP', name: 'Spain' } },
+  // Gut call: reigning Euro 2024 winners, deepest squad, shortest pre-WC price.
+  { id: 'claude3', name: 'claude3', predictions: PRED_EYEBALL, champion: { code: 'ESP', name: 'Spain' } },
 ]
 
 const client = new pg.Client(process.env.DATABASE_URL ?? 'postgres://nostragoalus:nostragoalus@localhost:5432/nostragoalus')
