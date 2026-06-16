@@ -74,3 +74,27 @@ export function computeGroupStandings(
     (a, b) => b.points - a.points || b.gd - a.gd || b.gf - a.gf || a.name.localeCompare(b.name),
   )
 }
+
+export interface GroupStandings {
+  group: string
+  rows: StandingRow[]
+}
+
+// Split a competition's group-stage matches by their group letter and build a
+// table per group, in letter order. Matches without a group (knockout) drop out,
+// so a knockout-only tournament yields an empty list.
+export function computeAllGroupStandings(
+  matches: (StandingsInputMatch & { group: string | null })[],
+  opts: { includeLive?: boolean } = {},
+): GroupStandings[] {
+  const byGroup = new Map<string, StandingsInputMatch[]>()
+  for (const m of matches) {
+    if (!m.group) continue
+    const list = byGroup.get(m.group)
+    if (list) list.push(m)
+    else byGroup.set(m.group, [m])
+  }
+  return [...byGroup.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([group, ms]) => ({ group, rows: computeGroupStandings(ms, opts) }))
+}
