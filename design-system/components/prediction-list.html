@@ -1,0 +1,71 @@
+<!-- @dsCard group="Components" name="Prediction row" subtitle="ng-card pick row: round/time, joker star (amber), crowd total" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prediction row - Nostragoalus</title>
+<style>
+  :root{--p-primary-color:#4f46e5;--p-content-background:#fff;--p-content-border-color:#d8dcef;--p-text-color:#3a3f5b;--p-text-muted-color:#686e94;--ng-base:#e7e8f6;--ng-accent:#10b981;--ng-star:#f59e0b;--ng-font:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;}
+  .app-dark{--p-primary-color:#818cf8;--p-content-background:#18181b;--p-content-border-color:#3f3f46;--p-text-color:rgba(255,255,255,.87);--p-text-muted-color:#a1a1aa;--ng-base:#09090b;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:var(--ng-font);background:#0d0f1a;padding:24px;-webkit-font-smoothing:antialiased;}
+  .previews{display:flex;flex-wrap:wrap;gap:20px;}
+  .scheme{flex:1;min-width:360px;color:var(--p-text-color);padding:30px;border-radius:18px;
+    background:radial-gradient(900px 600px at 100% 0%,color-mix(in srgb,var(--ng-accent) 14%,transparent),transparent),radial-gradient(720px 560px at 50% 120%,color-mix(in srgb,var(--ng-star) 10%,transparent),transparent),radial-gradient(1150px 840px at 0% -10%,color-mix(in srgb,var(--p-primary-color) 28%,transparent),transparent),var(--ng-base);}
+  .lbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--p-text-muted-color);margin-bottom:18px;}
+  .ng-card{background:var(--p-content-background);border:1px solid var(--p-content-border-color);border-radius:1rem;padding:16px;margin-bottom:14px;}
+  .scheme:not(.app-dark) .ng-card{box-shadow:0 1px 2px rgba(30,27,75,.06),0 4px 12px rgba(30,27,75,.05);}
+  .top{display:flex;justify-content:space-between;align-items:center;font-size:.72rem;color:var(--p-text-muted-color);margin-bottom:10px;}
+  .joker{display:inline-flex;align-items:center;gap:.25rem;font-weight:600;color:var(--ng-star);}
+  .makejoker{color:var(--p-text-muted-color);font-weight:600;}
+  .teams{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .team{display:flex;align-items:center;gap:.5rem;min-width:0;font-weight:500;}
+  .flag{width:24px;height:24px;border-radius:4px;font-size:13px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--p-text-color) 8%,transparent);}
+  .sc{font-weight:700;font-variant-numeric:tabular-nums;font-size:1.125rem;}
+  .crowd{font-size:.7rem;color:var(--p-text-muted-color);text-align:center;margin-top:2px;}
+</style>
+</head>
+<body>
+  <div class="previews">
+    <section class="scheme">
+      <div class="lbl">Light</div>
+      <div class="ng-card">
+        <div class="top"><span>Group A &bull; Sat 18:00</span><span class="joker">&#9733; Joker</span></div>
+        <div class="teams">
+          <span class="team"><span class="flag">&#127467;&#127479;</span> France</span>
+          <span style="text-align:center"><span class="sc">2&ndash;1</span><div class="crowd">&#128101; 1.9&ndash;1.2</div></span>
+          <span class="team" style="justify-content:flex-end">Spain <span class="flag">&#127466;&#127480;</span></span>
+        </div>
+      </div>
+      <div class="ng-card">
+        <div class="top"><span>Group B &bull; Sun 15:00</span><span class="makejoker">&#9734; Make joker</span></div>
+        <div class="teams">
+          <span class="team"><span class="flag">&#127465;&#127466;</span> Germany</span>
+          <span class="sc">1&ndash;1</span>
+          <span class="team" style="justify-content:flex-end">Brazil <span class="flag">&#127463;&#127479;</span></span>
+        </div>
+      </div>
+    </section>
+    <section class="scheme app-dark">
+      <div class="lbl">Dark</div>
+      <div class="ng-card">
+        <div class="top"><span>Group A &bull; Sat 18:00</span><span class="joker">&#9733; Joker</span></div>
+        <div class="teams">
+          <span class="team"><span class="flag">&#127467;&#127479;</span> France</span>
+          <span style="text-align:center"><span class="sc">2&ndash;1</span><div class="crowd">&#128101; 1.9&ndash;1.2</div></span>
+          <span class="team" style="justify-content:flex-end">Spain <span class="flag">&#127466;&#127480;</span></span>
+        </div>
+      </div>
+      <div class="ng-card">
+        <div class="top"><span>Final &bull; Sun 20:00</span><span style="color:var(--ng-star);font-weight:600">&#9733; Final x2</span></div>
+        <div class="teams">
+          <span class="team"><span class="flag">&#127465;&#127466;</span> Germany</span>
+          <span class="sc">1&ndash;1</span>
+          <span class="team" style="justify-content:flex-end">Brazil <span class="flag">&#127463;&#127479;</span></span>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

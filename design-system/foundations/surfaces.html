@@ -1,0 +1,51 @@
+<!-- @dsCard group="Foundations" name="Surfaces & elevation" subtitle="Signature gradient backdrop, card elevation, radius scale" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Surfaces - Nostragoalus</title>
+<style>
+  :root{--p-primary-color:#4f46e5;--p-content-background:#fff;--p-content-border-color:#d8dcef;--p-text-color:#3a3f5b;--p-text-muted-color:#686e94;--ng-base:#e7e8f6;--ng-accent:#10b981;--ng-star:#f59e0b;--ng-font:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;}
+  .app-dark{--p-primary-color:#818cf8;--p-content-background:#18181b;--p-content-border-color:#3f3f46;--p-text-color:rgba(255,255,255,.87);--p-text-muted-color:#a1a1aa;--ng-base:#09090b;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:var(--ng-font);background:#0d0f1a;padding:24px;-webkit-font-smoothing:antialiased;}
+  .previews{display:flex;flex-wrap:wrap;gap:20px;}
+  .scheme{flex:1;min-width:340px;color:var(--p-text-color);padding:30px;border-radius:18px;
+    background:radial-gradient(900px 600px at 100% 0%,color-mix(in srgb,var(--ng-accent) 14%,transparent),transparent),radial-gradient(720px 560px at 50% 120%,color-mix(in srgb,var(--ng-star) 10%,transparent),transparent),radial-gradient(1150px 840px at 0% -10%,color-mix(in srgb,var(--p-primary-color) 28%,transparent),transparent),var(--ng-base);}
+  .lbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--p-text-muted-color);margin-bottom:18px;}
+  .ng-card{background:var(--p-content-background);border:1px solid var(--p-content-border-color);padding:18px 20px;}
+  .scheme:not(.app-dark) .ng-card{box-shadow:0 1px 2px rgba(30,27,75,.06),0 4px 12px rgba(30,27,75,.05);}
+  .ct{font-weight:600;margin-bottom:4px;}
+  .cs{font-size:.8rem;color:var(--p-text-muted-color);}
+  .radii{display:flex;gap:14px;flex-wrap:wrap;margin-top:6px;}
+  .rad{background:var(--p-primary-color);width:74px;height:54px;display:flex;align-items:flex-end;justify-content:center;color:#fff;font-size:.6rem;font-weight:600;padding-bottom:5px;}
+</style>
+</head>
+<body>
+  <div class="previews">
+    <section class="scheme">
+      <div class="lbl">Light - cards lift off the indigo-tinted page</div>
+      <div class="ng-card" style="border-radius:1rem;margin-bottom:14px"><div class="ct">Elevated card</div><div class="cs">white surface + soft indigo shadow over the <code>#e7e8f6</code> page tint</div></div>
+      <div style="font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--p-text-muted-color);margin:20px 0 10px">Radius scale</div>
+      <div class="radii">
+        <div class="rad" style="border-radius:9999px">full</div>
+        <div class="rad" style="border-radius:.5rem">md .5</div>
+        <div class="rad" style="border-radius:1rem">2xl 1</div>
+        <div class="rad" style="border-radius:1.5rem">3xl 1.5</div>
+      </div>
+    </section>
+    <section class="scheme app-dark">
+      <div class="lbl">Dark - border alone, no shadow</div>
+      <div class="ng-card" style="border-radius:1rem;margin-bottom:14px"><div class="ct">Elevated card</div><div class="cs">dark zinc surface, separated by border over the near-black page</div></div>
+      <div style="font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--p-text-muted-color);margin:20px 0 10px">Radius scale</div>
+      <div class="radii">
+        <div class="rad" style="border-radius:9999px">full</div>
+        <div class="rad" style="border-radius:.5rem">md .5</div>
+        <div class="rad" style="border-radius:1rem">2xl 1</div>
+        <div class="rad" style="border-radius:1.5rem">3xl 1.5</div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

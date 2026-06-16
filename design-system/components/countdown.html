@@ -1,0 +1,37 @@
+<!-- @dsCard group="Components" name="Countdown chip" subtitle="Primary-coloured clock chip until kickoff (hidden beyond ~6 weeks)" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Countdown - Nostragoalus</title>
+<style>
+  :root{--p-primary-color:#4f46e5;--p-content-background:#fff;--p-content-border-color:#d8dcef;--p-text-color:#3a3f5b;--p-text-muted-color:#686e94;--ng-base:#e7e8f6;--ng-accent:#10b981;--ng-star:#f59e0b;--ng-font:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;}
+  .app-dark{--p-primary-color:#818cf8;--p-content-background:#18181b;--p-content-border-color:#3f3f46;--p-text-color:rgba(255,255,255,.87);--p-text-muted-color:#a1a1aa;--ng-base:#09090b;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:var(--ng-font);background:#0d0f1a;padding:24px;-webkit-font-smoothing:antialiased;}
+  .previews{display:flex;flex-wrap:wrap;gap:20px;}
+  .scheme{flex:1;min-width:300px;color:var(--p-text-color);padding:30px;border-radius:18px;
+    background:radial-gradient(900px 600px at 100% 0%,color-mix(in srgb,var(--ng-accent) 14%,transparent),transparent),radial-gradient(720px 560px at 50% 120%,color-mix(in srgb,var(--ng-star) 10%,transparent),transparent),radial-gradient(1150px 840px at 0% -10%,color-mix(in srgb,var(--p-primary-color) 28%,transparent),transparent),var(--ng-base);}
+  .lbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--p-text-muted-color);margin-bottom:18px;}
+  .cd{display:inline-flex;align-items:center;gap:.35rem;font-size:.75rem;font-weight:600;color:var(--p-primary-color);white-space:nowrap;margin:0 14px 12px 0;}
+  .cd .clk{font-size:.7rem;}
+</style>
+</head>
+<body>
+  <div class="previews">
+    <section class="scheme">
+      <div class="lbl">Light</div>
+      <span class="cd"><span class="clk">&#128339;</span> 3d 4h</span>
+      <span class="cd"><span class="clk">&#128339;</span> 6h 12m</span>
+      <span class="cd"><span class="clk">&#128339;</span> 18m</span>
+    </section>
+    <section class="scheme app-dark">
+      <div class="lbl">Dark</div>
+      <span class="cd"><span class="clk">&#128339;</span> 3d 4h</span>
+      <span class="cd"><span class="clk">&#128339;</span> 6h 12m</span>
+      <span class="cd"><span class="clk">&#128339;</span> 18m</span>
+    </section>
+  </div>
+</body>
+</html>

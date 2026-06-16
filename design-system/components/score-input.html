@@ -1,0 +1,49 @@
+<!-- @dsCard group="Components" name="Score input" subtitle="Home/away stepper pair, auto-save state, locked readout" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Score input - Nostragoalus</title>
+<style>
+  :root{--p-primary-color:#4f46e5;--p-content-background:#fff;--p-content-border-color:#d8dcef;--p-text-color:#3a3f5b;--p-text-muted-color:#686e94;--ng-base:#e7e8f6;--ng-accent:#10b981;--ng-star:#f59e0b;--ng-success:#22c55e;--ng-font:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;}
+  .app-dark{--p-primary-color:#818cf8;--p-content-background:#18181b;--p-content-border-color:#3f3f46;--p-text-color:rgba(255,255,255,.87);--p-text-muted-color:#a1a1aa;--ng-base:#09090b;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:var(--ng-font);background:#0d0f1a;padding:24px;-webkit-font-smoothing:antialiased;}
+  .previews{display:flex;flex-wrap:wrap;gap:20px;}
+  .scheme{flex:1;min-width:340px;color:var(--p-text-color);padding:30px;border-radius:18px;
+    background:radial-gradient(900px 600px at 100% 0%,color-mix(in srgb,var(--ng-accent) 14%,transparent),transparent),radial-gradient(720px 560px at 50% 120%,color-mix(in srgb,var(--ng-star) 10%,transparent),transparent),radial-gradient(1150px 840px at 0% -10%,color-mix(in srgb,var(--p-primary-color) 28%,transparent),transparent),var(--ng-base);}
+  .lbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--p-text-muted-color);margin-bottom:18px;}
+  .cap{font-size:.72rem;color:var(--p-text-muted-color);margin:0 0 8px;font-weight:600;}
+  .si{display:inline-flex;align-items:center;gap:.4rem;margin-bottom:22px;}
+  .box{width:46px;height:46px;border:1px solid var(--p-content-border-color);border-radius:.5rem;background:var(--p-content-background);display:flex;align-items:center;justify-content:center;font-size:1.25rem;font-weight:700;font-variant-numeric:tabular-nums;color:var(--p-text-color);}
+  .box.focus{border-color:var(--p-primary-color);box-shadow:0 0 0 2px color-mix(in srgb,var(--p-primary-color) 30%,transparent);}
+  .dash{color:var(--p-text-muted-color);font-weight:700;}
+  .saved{color:var(--ng-success);font-size:.8rem;font-weight:600;}
+  .locked{font-weight:700;font-variant-numeric:tabular-nums;font-size:1.3rem;}
+  .ft{font-size:.75rem;color:var(--p-text-muted-color);}
+</style>
+</head>
+<body>
+  <div class="previews">
+    <section class="scheme">
+      <div class="lbl">Light</div>
+      <div class="cap">EDITING - debounced auto-save, no Save button</div>
+      <div class="si"><span class="box focus">2</span><span class="dash">&ndash;</span><span class="box">1</span></div>
+      <div class="cap">SAVED - brief confirmation</div>
+      <div class="si"><span class="box">2</span><span class="dash">&ndash;</span><span class="box">1</span> <span class="saved">&#10003; saved</span></div>
+      <div class="cap">LOCKED (kicked off) - read-only with full-time</div>
+      <div><span class="locked">2&ndash;1</span><div class="ft">FT 3&ndash;2 (4&ndash;2 pens)</div></div>
+    </section>
+    <section class="scheme app-dark">
+      <div class="lbl">Dark</div>
+      <div class="cap">EDITING - debounced auto-save, no Save button</div>
+      <div class="si"><span class="box focus">2</span><span class="dash">&ndash;</span><span class="box">1</span></div>
+      <div class="cap">SAVED - brief confirmation</div>
+      <div class="si"><span class="box">2</span><span class="dash">&ndash;</span><span class="box">1</span> <span class="saved">&#10003; saved</span></div>
+      <div class="cap">LOCKED (kicked off) - read-only with full-time</div>
+      <div><span class="locked">2&ndash;1</span><div class="ft">FT 3&ndash;2 (4&ndash;2 pens)</div></div>
+    </section>
+  </div>
+</body>
+</html>

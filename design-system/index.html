@@ -1,0 +1,32 @@
+<!-- @dsCard group="Overview" name="Nostragoalus Design System" subtitle="The football oracle - indigo + emerald, light & dark" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nostragoalus Design System</title>
+<style>
+  :root{--p-primary-color:#4f46e5;--ng-accent:#10b981;--ng-star:#f59e0b;--ng-font:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:var(--ng-font);-webkit-font-smoothing:antialiased;color:rgba(255,255,255,.92);
+    background:radial-gradient(900px 600px at 100% 0%,color-mix(in srgb,var(--ng-accent) 16%,transparent),transparent),radial-gradient(720px 560px at 50% 120%,color-mix(in srgb,var(--ng-star) 12%,transparent),transparent),radial-gradient(1150px 840px at 0% -10%,color-mix(in srgb,var(--p-primary-color) 34%,transparent),transparent),#0b0c1c;
+    min-height:100vh;padding:48px;}
+  h1{font-size:2.2rem;font-weight:800;margin:0 0 6px;background:linear-gradient(135deg,#a5b4fc,#10b981);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .tag{color:#9197bd;margin:0 0 32px;font-size:1rem;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;max-width:880px;}
+  .g{border:1px solid #2a2c44;border-radius:14px;padding:18px;background:rgba(20,21,40,.5);}
+  .g h3{margin:0 0 4px;font-size:.95rem;}
+  .g p{margin:0;font-size:.78rem;color:#9197bd;line-height:1.5;}
+  .dot{display:inline-block;width:10px;height:10px;border-radius:9999px;margin-right:6px;vertical-align:middle;}
+</style>
+</head>
+<body>
+  <h1>Nostragoalus Design System</h1>
+  <p class="tag">The football oracle. Vibrant indigo primary, emerald accent, amber for the special moments - over a layered-glow backdrop, in light and dark.</p>
+  <div class="grid">
+    <div class="g"><h3><span class="dot" style="background:#4f46e5"></span>Foundations</h3><p>Color scales, typography, surfaces &amp; elevation, radius.</p></div>
+    <div class="g"><h3><span class="dot" style="background:#10b981"></span>Components</h3><p>Buttons, cards, score input, competition pill, bracket cell, countdown, champion pick, password meter, prediction row.</p></div>
+    <div class="g"><h3><span class="dot" style="background:#f59e0b"></span>Brand</h3><p>Crystal-ball mark, wordmark, emblem, avatar, banner.</p></div>
+  </div>
+</body>
+</html>

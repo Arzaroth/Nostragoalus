@@ -1,0 +1,48 @@
+<!-- @dsCard group="Components" name="Bracket match card" subtitle="Two-team knockout cell, winner highlight, penalty superscript" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bracket match card - Nostragoalus</title>
+<style>
+  :root{--p-primary-color:#4f46e5;--p-content-background:#fff;--p-content-border-color:#d8dcef;--p-text-color:#3a3f5b;--p-text-muted-color:#686e94;--ng-base:#e7e8f6;--ng-accent:#10b981;--ng-star:#f59e0b;--ng-font:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;}
+  .app-dark{--p-primary-color:#818cf8;--p-content-background:#18181b;--p-content-border-color:#3f3f46;--p-text-color:rgba(255,255,255,.87);--p-text-muted-color:#a1a1aa;--ng-base:#09090b;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:var(--ng-font);background:#0d0f1a;padding:24px;-webkit-font-smoothing:antialiased;}
+  .previews{display:flex;flex-wrap:wrap;gap:20px;}
+  .scheme{flex:1;min-width:340px;color:var(--p-text-color);padding:30px;border-radius:18px;
+    background:radial-gradient(900px 600px at 100% 0%,color-mix(in srgb,var(--ng-accent) 14%,transparent),transparent),radial-gradient(720px 560px at 50% 120%,color-mix(in srgb,var(--ng-star) 10%,transparent),transparent),radial-gradient(1150px 840px at 0% -10%,color-mix(in srgb,var(--p-primary-color) 28%,transparent),transparent),var(--ng-base);}
+  .lbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--p-text-muted-color);margin-bottom:18px;}
+  .br-card{background:var(--p-content-background);border:1px solid var(--p-content-border-color);border-radius:.75rem;padding:10px 12px;width:230px;}
+  .scheme:not(.app-dark) .br-card{box-shadow:0 1px 2px rgba(30,27,75,.06),0 4px 12px rgba(30,27,75,.05);}
+  .br-row{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:3px 0;font-size:.85rem;color:var(--p-text-muted-color);}
+  .br-row.win{color:var(--p-text-color);font-weight:700;}
+  .br-team{display:flex;align-items:center;gap:.4rem;}
+  .flag{width:18px;height:18px;border-radius:3px;font-size:11px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--p-text-color) 8%,transparent);}
+  .num{font-variant-numeric:tabular-nums;}
+  .pens{font-size:.6em;color:var(--p-text-muted-color);vertical-align:super;}
+  .date{font-size:.65rem;color:var(--p-text-muted-color);text-align:center;margin-top:6px;border-top:1px solid var(--p-content-border-color);padding-top:5px;}
+</style>
+</head>
+<body>
+  <div class="previews">
+    <section class="scheme">
+      <div class="lbl">Light - Final, away win on penalties</div>
+      <div class="br-card">
+        <div class="br-row"><span class="br-team"><span class="flag">&#127467;&#127479;</span> FRA</span><span class="num">1</span></div>
+        <div class="br-row win"><span class="br-team"><span class="flag">&#127466;&#127480;</span> ESP</span><span class="num">1<span class="pens">(4)</span></span></div>
+        <div class="date">14 Jul</div>
+      </div>
+    </section>
+    <section class="scheme app-dark">
+      <div class="lbl">Dark - upcoming, teams TBD</div>
+      <div class="br-card">
+        <div class="br-row"><span class="br-team"><span class="flag">&#9651;</span> SF1 W</span><span class="num">&ndash;</span></div>
+        <div class="br-row"><span class="br-team"><span class="flag">&#9651;</span> SF2 W</span><span class="num">&ndash;</span></div>
+        <div class="date">14 Jul</div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

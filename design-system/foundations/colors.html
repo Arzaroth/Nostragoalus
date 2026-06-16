@@ -1,0 +1,85 @@
+<!-- @dsCard group="Foundations" name="Color palette" subtitle="Primary indigo, surface slate, brand accents - light & dark" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Colors - Nostragoalus</title>
+<style>
+  :root{
+    --p-primary-50:#eef2ff;--p-primary-100:#e0e7ff;--p-primary-200:#c7d2fe;--p-primary-300:#a5b4fc;--p-primary-400:#818cf8;--p-primary-500:#6366f1;--p-primary-600:#4f46e5;--p-primary-700:#4338ca;--p-primary-800:#3730a3;--p-primary-900:#312e81;--p-primary-950:#1e1b4b;
+    --p-surface-0:#ffffff;--p-surface-50:#f5f6fc;--p-surface-100:#ebedf7;--p-surface-200:#d8dcef;--p-surface-300:#bcc2e0;--p-surface-400:#9197bd;--p-surface-500:#686e94;--p-surface-600:#4c5275;--p-surface-700:#3a3f5b;--p-surface-800:#262a3f;--p-surface-900:#181b2b;--p-surface-950:#0d0f1a;
+    --p-content-background:#fff;--p-content-border-color:var(--p-surface-200);--p-text-color:var(--p-surface-700);--p-text-muted-color:var(--p-surface-500);
+    --ng-star:#f59e0b;--ng-danger:#ef4444;--ng-success:#22c55e;--ng-accent:#10b981;--ng-violet:#8b5cf6;--ng-cyan:#06b6d4;--ng-pink:#ec4899;--ng-blue:#3b82f6;
+    --ng-base:#e7e8f6;--ng-font:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  }
+  .app-dark{--p-content-background:#18181b;--p-content-border-color:#3f3f46;--p-text-color:rgba(255,255,255,.87);--p-text-muted-color:#a1a1aa;--ng-base:#09090b;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:var(--ng-font);background:#0d0f1a;color:#e7e8f6;padding:24px;-webkit-font-smoothing:antialiased;}
+  h1{font-size:1.25rem;margin:0 0 4px;}
+  .sub{color:#9197bd;font-size:.85rem;margin:0 0 24px;}
+  h2{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:#9197bd;margin:28px 0 12px;}
+  .scale{display:flex;border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.3);}
+  .scale .sw{flex:1;height:64px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;font-size:.62rem;font-weight:600;}
+  .swatches{display:flex;flex-wrap:wrap;gap:14px;}
+  .chip{width:130px;border-radius:12px;overflow:hidden;background:#18181b;border:1px solid #3f3f46;}
+  .chip .blk{height:64px;}
+  .chip .meta{padding:8px 10px;}
+  .chip .nm{font-size:.78rem;font-weight:600;color:#fff;}
+  .chip .hex{font-size:.68rem;color:#9197bd;font-family:ui-monospace,Menlo,monospace;}
+</style>
+</head>
+<body>
+  <h1>Color palette</h1>
+  <p class="sub">Indigo primary pairs with an emerald brand accent. Amber is the "special" colour (joker / final-double).</p>
+
+  <h2>Primary - indigo (50 &rarr; 950)</h2>
+  <div class="scale">
+    <div class="sw" style="background:#eef2ff;color:#1e1b4b">50</div>
+    <div class="sw" style="background:#e0e7ff;color:#1e1b4b">100</div>
+    <div class="sw" style="background:#c7d2fe;color:#1e1b4b">200</div>
+    <div class="sw" style="background:#a5b4fc;color:#1e1b4b">300</div>
+    <div class="sw" style="background:#818cf8;color:#1e1b4b">400</div>
+    <div class="sw" style="background:#6366f1;color:#fff">500</div>
+    <div class="sw" style="background:#4f46e5;color:#fff">600</div>
+    <div class="sw" style="background:#4338ca;color:#fff">700</div>
+    <div class="sw" style="background:#3730a3;color:#fff">800</div>
+    <div class="sw" style="background:#312e81;color:#fff">900</div>
+    <div class="sw" style="background:#1e1b4b;color:#fff">950</div>
+  </div>
+  <p class="sub" style="margin-top:8px">Light: primary = <code>600</code> &bull; Dark: primary = <code>400</code></p>
+
+  <h2>Surface - indigo-tinted slate (light scheme)</h2>
+  <div class="scale">
+    <div class="sw" style="background:#ffffff;color:#1e1b4b">0</div>
+    <div class="sw" style="background:#f5f6fc;color:#1e1b4b">50</div>
+    <div class="sw" style="background:#ebedf7;color:#1e1b4b">100</div>
+    <div class="sw" style="background:#d8dcef;color:#1e1b4b">200</div>
+    <div class="sw" style="background:#bcc2e0;color:#1e1b4b">300</div>
+    <div class="sw" style="background:#9197bd;color:#1e1b4b">400</div>
+    <div class="sw" style="background:#686e94;color:#fff">500</div>
+    <div class="sw" style="background:#4c5275;color:#fff">600</div>
+    <div class="sw" style="background:#3a3f5b;color:#fff">700</div>
+    <div class="sw" style="background:#262a3f;color:#fff">800</div>
+    <div class="sw" style="background:#181b2b;color:#fff">900</div>
+    <div class="sw" style="background:#0d0f1a;color:#fff">950</div>
+  </div>
+  <p class="sub" style="margin-top:8px">border = <code>200</code> &bull; text = <code>700</code> &bull; muted = <code>500</code>. Dark scheme falls back to Aura zinc.</p>
+
+  <h2>Brand accents</h2>
+  <div class="swatches">
+    <div class="chip"><div class="blk" style="background:#10b981"></div><div class="meta"><div class="nm">Emerald</div><div class="hex">--ng-accent #10b981</div></div></div>
+    <div class="chip"><div class="blk" style="background:#f59e0b"></div><div class="meta"><div class="nm">Amber / star</div><div class="hex">--ng-star #f59e0b</div></div></div>
+    <div class="chip"><div class="blk" style="background:#ef4444"></div><div class="meta"><div class="nm">Danger</div><div class="hex">--ng-danger #ef4444</div></div></div>
+    <div class="chip"><div class="blk" style="background:#22c55e"></div><div class="meta"><div class="nm">Success</div><div class="hex">--ng-success #22c55e</div></div></div>
+  </div>
+
+  <h2>Extended accents (landing feature tiles)</h2>
+  <div class="swatches">
+    <div class="chip"><div class="blk" style="background:#8b5cf6"></div><div class="meta"><div class="nm">Violet</div><div class="hex">#8b5cf6</div></div></div>
+    <div class="chip"><div class="blk" style="background:#06b6d4"></div><div class="meta"><div class="nm">Cyan</div><div class="hex">#06b6d4</div></div></div>
+    <div class="chip"><div class="blk" style="background:#ec4899"></div><div class="meta"><div class="nm">Pink</div><div class="hex">#ec4899</div></div></div>
+    <div class="chip"><div class="blk" style="background:#3b82f6"></div><div class="meta"><div class="nm">Blue</div><div class="hex">#3b82f6</div></div></div>
+  </div>
+</body>
+</html>
