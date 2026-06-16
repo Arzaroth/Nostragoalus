@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.19.0] - 2026-06-16
+
 ### Added
 - **Match watch links**: a new Watch section on the match page where admins can attach Live, Replay and Highlights links. Links from recognised hosts (YouTube, Twitch, Dailymotion, Vimeo) play inline in a sandboxed embed; anything else opens in a new tab, with an admin override to force-embed or force a link for any host. Live links appear around kickoff, replays and highlights once the match is finished. Embedded players always keep an "open in a new tab" fallback in case a host refuses to be framed.
 
