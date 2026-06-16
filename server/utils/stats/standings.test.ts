@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeGroupStandings, type StandingsInputMatch } from './standings'
+import { computeAllGroupStandings, computeGroupStandings, type StandingsInputMatch } from './standings'
 
 function m(
   home: string,
@@ -51,5 +51,36 @@ describe('computeGroupStandings', () => {
     // A and B both 1pt, gd 0, gf 1 → alphabetical.
     const byName = computeGroupStandings([m('B', 'A', 'FINISHED', 1, 1)])
     expect(byName.map((r) => r.name)).toEqual(['A', 'B'])
+  })
+})
+
+function gm(group: string | null, home: string, away: string, fh: number | null = null, fa: number | null = null) {
+  return { ...m(home, away, fh == null ? 'SCHEDULED' : 'FINISHED', fh, fa), group }
+}
+
+describe('computeAllGroupStandings', () => {
+  it('splits matches by group, in letter order, each its own table', () => {
+    const groups = computeAllGroupStandings([
+      gm('B', 'C', 'D', 0, 0),
+      gm('A', 'X', 'Y', 2, 0),
+      gm('A', 'X', 'Z', 1, 0),
+    ])
+    expect(groups.map((g) => g.group)).toEqual(['A', 'B'])
+    const a = groups[0]
+    // X wins both; Y (-2) and Z (-1) both 0pts, so Z edges Y on goal difference.
+    expect(a.rows.map((r) => r.name)).toEqual(['X', 'Z', 'Y'])
+    expect(a.rows[0]).toMatchObject({ name: 'X', played: 2, won: 2, points: 6, gd: 3 })
+    // Group B's draw is isolated - it never bleeds into A's table.
+    expect(groups[1].rows.every((r) => r.points <= 1)).toBe(true)
+  })
+
+  it('drops matches with no group, so a knockout-only set yields nothing', () => {
+    expect(computeAllGroupStandings([gm(null, 'A', 'B', 1, 0)])).toEqual([])
+  })
+
+  it('passes includeLive through to each group table', () => {
+    const live = [{ ...m('A', 'B', 'LIVE', 1, 0), group: 'A' }]
+    expect(computeAllGroupStandings(live)[0].rows[0].played).toBe(0)
+    expect(computeAllGroupStandings(live, { includeLive: true })[0].rows[0]).toMatchObject({ name: 'A', played: 1, points: 3 })
   })
 })
