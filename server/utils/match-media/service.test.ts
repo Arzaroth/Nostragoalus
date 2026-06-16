@@ -72,12 +72,17 @@ describe('listMatchMedia', () => {
 })
 
 describe('deleteMatchMedia', () => {
-  it('removes a link and 404s on a missing id', async () => {
-    const { db, client, matchId } = await setup()
+  it('removes a link scoped to its match and 404s on a missing id or wrong match', async () => {
+    const { db, client, competitionId, matchId } = await setup()
+    const roundId = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+    const other = await makeMatch(db, { competitionId, roundId, kickoffTime: new Date('2026-06-13T16:00:00Z') })
     const row = await addMatchMedia(db, { matchId, kind: 'LIVE', url: 'https://youtu.be/abc123' })
-    await deleteMatchMedia(db, row.id)
+    // The [id] path is load-bearing: deleting through the wrong match must 404.
+    await expect(deleteMatchMedia(db, other, row.id)).rejects.toBeInstanceOf(NotFoundError)
+    expect(await listMatchMedia(db, matchId)).toHaveLength(1)
+    await deleteMatchMedia(db, matchId, row.id)
     expect(await listMatchMedia(db, matchId)).toHaveLength(0)
-    await expect(deleteMatchMedia(db, row.id)).rejects.toBeInstanceOf(NotFoundError)
+    await expect(deleteMatchMedia(db, matchId, row.id)).rejects.toBeInstanceOf(NotFoundError)
     await client.close()
   })
 })

@@ -6,13 +6,15 @@ import { MATCH_MEDIA_KINDS, isValidStreamUrl } from '../../../../../../shared/ma
 
 const bodySchema = z.object({
   kind: z.enum(MATCH_MEDIA_KINDS),
-  url: z.string().refine(isValidStreamUrl, 'must be a valid https URL'),
+  url: z.string().max(2048).refine(isValidStreamUrl, 'must be a valid https URL'),
   label: z.string().trim().min(1).max(80).optional(),
   // null/omitted = inherit the host-whitelist default; true/false = admin override.
   embeddable: z.boolean().nullish(),
 })
 
-export default defineValidatedHandler({ admin: true, body: bodySchema }, async ({ event, body }) => {
+// admin session OR a media:write API key (the curation bot); requireApiKey still
+// requires the key's owner to be an admin since this is an admin route.
+export default defineValidatedHandler({ admin: true, apiKey: { media: ['write'] }, body: bodySchema }, async ({ event, body }) => {
   const matchId = getRouterParam(event, 'id') as string
   const row = await addMatchMedia(db, {
     matchId,
@@ -28,7 +30,7 @@ defineRouteMeta({
   openAPI: {
     tags: ['Admin (internal)'],
     summary: 'Add a match watch link',
-    description: 'Internal: attach a LIVE/REPLAY/HIGHLIGHTS link to a match. Used by admins and the curation bot (via API key, later).',
+    description: 'Internal: attach a LIVE/REPLAY/HIGHLIGHTS link to a match. Accepts an admin session or a media:write API key (the curation bot).',
     requestBody: {
       required: true,
       content: {

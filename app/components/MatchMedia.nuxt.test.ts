@@ -15,13 +15,19 @@ function stubFetch(media: Item[], isAdmin: boolean) {
 }
 
 // The vue-query client is a shared singleton across mounts; wipe it between
-// tests so a prior admin-status / media result can't leak (60s staleTime).
+// tests so a prior admin-status / media result can't leak (60s staleTime), and
+// unmount the component so its observers don't bleed into the next test.
 let qc: ReturnType<typeof useQueryClient>
+let wrapper: Awaited<ReturnType<typeof mountSuspended>> | null = null
 beforeEach(async () => {
   await mountSuspended({ setup() { qc = useQueryClient(); return () => null } })
   qc.clear()
 })
-afterEach(() => vi.unstubAllGlobals())
+afterEach(() => {
+  wrapper?.unmount()
+  wrapper = null
+  vi.unstubAllGlobals()
+})
 
 describe('MatchMedia', () => {
   it('embeds a finished-match replay and hides LIVE; no admin panel for guests', async () => {
@@ -32,7 +38,7 @@ describe('MatchMedia', () => {
       ],
       false,
     ))
-    const wrapper = await mountSuspended(MatchMedia, { props: { matchId: 'm1', status: 'FINISHED' } })
+    wrapper = await mountSuspended(MatchMedia, { props: { matchId: 'm1', status: 'FINISHED' } })
     await vi.waitFor(() => expect(wrapper.find('iframe').exists()).toBe(true))
 
     expect(wrapper.find('iframe').attributes('src')).toBe('https://www.youtube-nocookie.com/embed/rep1')
@@ -46,7 +52,7 @@ describe('MatchMedia', () => {
       [{ id: 'l1', kind: 'LIVE', url: 'https://grey.example/live', label: 'Mirror', embeddable: false }],
       false,
     ))
-    const wrapper = await mountSuspended(MatchMedia, { props: { matchId: 'm1', status: 'SCHEDULED' } })
+    wrapper = await mountSuspended(MatchMedia, { props: { matchId: 'm1', status: 'SCHEDULED' } })
     await vi.waitFor(() => expect(wrapper.find('a[href="https://grey.example/live"]').exists()).toBe(true))
 
     const link = wrapper.find('a[href="https://grey.example/live"]')
@@ -62,7 +68,7 @@ describe('MatchMedia', () => {
       true,
     )
     vi.stubGlobal('$fetch', fetchMock)
-    const wrapper = await mountSuspended(MatchMedia, { props: { matchId: 'm1', status: 'SCHEDULED' } })
+    wrapper = await mountSuspended(MatchMedia, { props: { matchId: 'm1', status: 'SCHEDULED' } })
     await vi.waitFor(() => expect(wrapper.find('form').exists()).toBe(true))
 
     // Remove the existing link.
