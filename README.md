@@ -40,6 +40,9 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   per-team match stats, goal timeline with cards (incl. touchline bookings) and substitutions,
   **all-time head-to-head** and cross-competition form (friendlies included, causally cut off at
   kickoff), penalty shootouts, and each team's top scorer / top assister
+- **Watch links**: admin-curated Live / Replay / Highlights links per match - recognised hosts
+  (YouTube, Twitch, Dailymotion, Vimeo) play inline in a sandboxed embed, anything else opens in a
+  new tab; live links show around kickoff, replays/highlights once the match is over
 - **Notification center**: a header bell gathering pick reminders before lockout, your match
   results (scoreline + points), league activity (joins, role changes, add/remove) and how your
   champion and Golden Boot picks finished - unread count, live push, mark-read, dismiss, and a
