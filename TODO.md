@@ -406,9 +406,14 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       x-api-key so a key never implicitly resolves a session. The media routes
       still need to opt in with `apiKey:{media:['write']}` when feat/match-media
       merges.
-- [x] Admin API-client UI (built on feat/api-keys): admin-page section to mint
-      scoped/expiring keys (plaintext shown once), list and revoke. NOT yet
-      2FA-gated for the mint action - revisit if minting needs step-up auth.
+- [x] Admin API-client UI (feat/api-keys, rebuilt in feature-treatment): admin-page
+      section to mint scoped/expiring keys (plaintext shown once), list and revoke.
+      Minting goes through admin-gated server routes (`/api/admin/api-keys`) that mint
+      in server context via `mintApiKey`, NOT the better-auth plugin's client
+      endpoints - the plugin 400s on a client-set scope (SERVER_ONLY_PROPERTY) and
+      its create/list/delete are session-only (any user, own keys), so the original
+      client-direct UI was both broken and not an admin boundary. NOT yet 2FA-gated
+      for the mint action - revisit if minting needs step-up auth.
 - [ ] Curation bot (separate repo, keeps grey-zone sourcing out of this app):
       cron reads `/api/matches` for fixtures in the next N hours, finds links,
       POSTs them near kickoff (header-check X-Frame-Options before setting
@@ -432,8 +437,26 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       (already default true). Cheaper interim guard against accidental capture
       (admin fat-fingers a public domain): warn/block well-known freemail
       domains (gmail.com, outlook.com, ...) at registration.
-- [ ] History: commit 6d8f8a7 (trustEmailVerified) is superseded by 3db9e9a
-      (domainVerified); squash the two during the feature-treatment rebase.
+- [x] History: the trust-email_verified commit was superseded by the
+      domainVerified one. Shipped UNSQUASHED in the feature-treatment merge -
+      interactive rebase isn't available in this environment and the two are
+      non-adjacent. The net code is correct (domainVerified-based); only the
+      history carries the flip-flop. Not worth a force-push rewrite now.
+
+### Deferred from the feature-treatment review
+
+- [ ] `@better-auth/api-key` is pinned to an exact `"1.6.18"` while `better-auth`,
+      `@better-auth/passkey` and `@better-auth/sso` use `"^1.6.18"`. Today all
+      resolve to 1.6.18, but a future `pnpm update` could float the others ahead
+      while api-key stays frozen. Align the range (via pnpm) on the next bump.
+- [ ] Minted keys set `rateLimitEnabled: false`, so there is no per-key
+      verification throttle (the plugin's default would be 10/24h). Fine given the
+      48-byte key entropy; revisit if a public route ever consumes keys.
+- [ ] The consume side (`requireApiKey` + the `apiKey:` option on
+      `defineValidatedHandler`) ships UNUSED - no route opts in until feat/match-media
+      wires `apiKey:{media:['write']}` onto the media routes. The owner-must-be-admin
+      enforcement is unit-tested but not yet exercised by a live handler; verify it
+      end-to-end when the first route adopts it.
 
 ## Scoring config (deferred from the feature pass)
 
