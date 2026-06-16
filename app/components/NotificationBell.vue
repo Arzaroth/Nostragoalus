@@ -6,6 +6,7 @@ const router = useRouter()
 const { notifications, unreadCount, isLoading, markRead, markAllRead, dismiss } = useNotifications()
 
 const panel = ref()
+const { onShow, onHide } = useHideOnScroll(panel)
 function toggle(e: Event) {
   panel.value?.toggle(e)
 }
@@ -106,7 +107,7 @@ async function onItem(n: NotificationDTO) {
         style="background: var(--ng-danger, #ef4444)"
       >{{ unreadCount > 9 ? '9+' : unreadCount }}</span>
     </button>
-    <Popover ref="panel">
+    <Popover ref="panel" @show="onShow" @hide="onHide">
       <div class="w-80 max-w-[90vw] -m-1">
         <div
           class="flex items-center justify-between px-3 py-2 border-b"
