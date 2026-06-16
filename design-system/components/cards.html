@@ -1,0 +1,61 @@
+<!-- @dsCard group="Components" name="Cards" subtitle="ng-card surfaces: feature tile, list row, primary-tinted panel" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cards - Nostragoalus</title>
+<style>
+  :root{--p-primary-color:#4f46e5;--p-content-background:#fff;--p-content-border-color:#d8dcef;--p-text-color:#3a3f5b;--p-text-muted-color:#686e94;--ng-base:#e7e8f6;--ng-accent:#10b981;--ng-star:#f59e0b;--ng-success:#22c55e;--ng-danger:#ef4444;--ng-font:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;}
+  .app-dark{--p-primary-color:#818cf8;--p-content-background:#18181b;--p-content-border-color:#3f3f46;--p-text-color:rgba(255,255,255,.87);--p-text-muted-color:#a1a1aa;--ng-base:#09090b;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:var(--ng-font);background:#0d0f1a;padding:24px;-webkit-font-smoothing:antialiased;}
+  .previews{display:flex;flex-wrap:wrap;gap:20px;}
+  .scheme{flex:1;min-width:340px;color:var(--p-text-color);padding:30px;border-radius:18px;
+    background:radial-gradient(900px 600px at 100% 0%,color-mix(in srgb,var(--ng-accent) 14%,transparent),transparent),radial-gradient(720px 560px at 50% 120%,color-mix(in srgb,var(--ng-star) 10%,transparent),transparent),radial-gradient(1150px 840px at 0% -10%,color-mix(in srgb,var(--p-primary-color) 28%,transparent),transparent),var(--ng-base);}
+  .lbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--p-text-muted-color);margin-bottom:18px;}
+  .ng-card{background:var(--p-content-background);border:1px solid var(--p-content-border-color);border-radius:1rem;}
+  .scheme:not(.app-dark) .ng-card{box-shadow:0 1px 2px rgba(30,27,75,.06),0 4px 12px rgba(30,27,75,.05);}
+  .feature{padding:24px;display:flex;flex-direction:column;gap:12px;margin-bottom:16px;}
+  .ficon{width:44px;height:44px;border-radius:.75rem;display:flex;align-items:center;justify-content:center;font-size:1.2rem;}
+  .feature h3{margin:0;font-size:1rem;font-weight:700;}
+  .feature p{margin:0;font-size:.85rem;line-height:1.5;color:var(--p-text-muted-color);}
+  .listrow{padding:16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .meta{font-size:.75rem;color:var(--p-text-muted-color);}
+  .score{font-weight:700;font-variant-numeric:tabular-nums;font-size:1.1rem;}
+  .panel{border:1px solid var(--p-content-border-color);border-radius:1.5rem;padding:24px;background:color-mix(in srgb,var(--p-primary-color) 7%,var(--p-content-background));}
+  .panel h3{margin:0 0 6px;font-size:1rem;font-weight:700;}
+  .panel p{margin:0;font-size:.85rem;color:var(--p-text-muted-color);}
+</style>
+</head>
+<body>
+  <div class="previews">
+    <section class="scheme">
+      <div class="lbl">Light</div>
+      <div class="ng-card feature">
+        <div class="ficon" style="background:color-mix(in srgb,var(--ng-star) 16%,transparent);color:var(--ng-star)">&#9733;</div>
+        <h3>Joker</h3>
+        <p>Double the points on one bold call each round.</p>
+      </div>
+      <div class="ng-card listrow">
+        <div><div class="meta">Matchday 3 &bull; Sat 18:00</div><div style="font-weight:600">France &ndash; Spain</div></div>
+        <div class="score">2&ndash;1</div>
+      </div>
+      <div class="panel"><h3>How scoring works</h3><p>Primary-tinted panel for the scoring explainer (7% primary over surface).</p></div>
+    </section>
+    <section class="scheme app-dark">
+      <div class="lbl">Dark</div>
+      <div class="ng-card feature">
+        <div class="ficon" style="background:color-mix(in srgb,var(--ng-star) 16%,transparent);color:var(--ng-star)">&#9733;</div>
+        <h3>Joker</h3>
+        <p>Double the points on one bold call each round.</p>
+      </div>
+      <div class="ng-card listrow">
+        <div><div class="meta">Matchday 3 &bull; Sat 18:00</div><div style="font-weight:600">France &ndash; Spain</div></div>
+        <div class="score">2&ndash;1</div>
+      </div>
+      <div class="panel"><h3>How scoring works</h3><p>Primary-tinted panel for the scoring explainer (7% primary over surface).</p></div>
+    </section>
+  </div>
+</body>
+</html>

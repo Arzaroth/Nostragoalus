@@ -1,0 +1,57 @@
+<!-- @dsCard group="Foundations" name="Typography" subtitle="system-ui stack, heading scale, muted & tabular numerals" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Typography - Nostragoalus</title>
+<style>
+  :root{--p-primary-color:#4f46e5;--p-content-background:#fff;--p-content-border-color:#d8dcef;--p-text-color:#3a3f5b;--p-text-muted-color:#686e94;--ng-base:#e7e8f6;--ng-accent:#10b981;--ng-star:#f59e0b;--ng-font:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;}
+  .app-dark{--p-primary-color:#818cf8;--p-content-background:#18181b;--p-content-border-color:#3f3f46;--p-text-color:rgba(255,255,255,.87);--p-text-muted-color:#a1a1aa;--ng-base:#09090b;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:var(--ng-font);background:#0d0f1a;padding:24px;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+  .previews{display:flex;flex-wrap:wrap;gap:20px;}
+  .scheme{flex:1;min-width:340px;color:var(--p-text-color);padding:30px;border-radius:18px;
+    background:radial-gradient(900px 600px at 100% 0%,color-mix(in srgb,var(--ng-accent) 14%,transparent),transparent),radial-gradient(720px 560px at 50% 120%,color-mix(in srgb,var(--ng-star) 10%,transparent),transparent),radial-gradient(1150px 840px at 0% -10%,color-mix(in srgb,var(--p-primary-color) 28%,transparent),transparent),var(--ng-base);}
+  .lbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--p-text-muted-color);margin-bottom:20px;}
+  .row{display:flex;align-items:baseline;gap:14px;margin:0 0 14px;}
+  .tag{font-family:ui-monospace,Menlo,monospace;font-size:.62rem;color:var(--p-text-muted-color);min-width:120px;}
+  .h-display{font-size:2.25rem;font-weight:800;line-height:1.1;}  /* text-4xl extrabold - CTA */
+  .h1{font-size:1.875rem;font-weight:700;}  /* text-3xl bold - section titles */
+  .h2{font-size:1.25rem;font-weight:700;}   /* text-xl bold */
+  .h3{font-size:1.125rem;font-weight:600;}  /* text-lg semibold */
+  .body{font-size:1rem;}
+  .small{font-size:.875rem;}
+  .muted{color:var(--p-text-muted-color);}
+  .xs{font-size:.75rem;}
+  .num{font-variant-numeric:tabular-nums;font-weight:700;font-size:1.125rem;}
+  .stack{font-family:ui-monospace,Menlo,monospace;font-size:.72rem;color:var(--p-text-muted-color);margin-top:18px;line-height:1.6;}
+</style>
+</head>
+<body>
+  <div class="previews">
+    <section class="scheme">
+      <div class="lbl">Light</div>
+      <div class="row"><span class="tag">3xl / 800</span><span class="h-display">Predict. Score. Win.</span></div>
+      <div class="row"><span class="tag">3xl / 700</span><span class="h1">How scoring works</span></div>
+      <div class="row"><span class="tag">xl / 700</span><span class="h2">Champion pick</span></div>
+      <div class="row"><span class="tag">lg / 600</span><span class="h3">Matchday 3</span></div>
+      <div class="row"><span class="tag">base / 400</span><span class="body">The football oracle.</span></div>
+      <div class="row"><span class="tag">sm / muted</span><span class="small muted">Outsmart your friends.</span></div>
+      <div class="row"><span class="tag">tabular-nums</span><span class="num">2&ndash;1</span> <span class="xs muted">scores align in columns</span></div>
+      <div class="stack">font-family: system-ui, -apple-system,<br>'Segoe UI', Roboto, sans-serif</div>
+    </section>
+    <section class="scheme app-dark">
+      <div class="lbl">Dark</div>
+      <div class="row"><span class="tag">3xl / 800</span><span class="h-display">Predict. Score. Win.</span></div>
+      <div class="row"><span class="tag">3xl / 700</span><span class="h1">How scoring works</span></div>
+      <div class="row"><span class="tag">xl / 700</span><span class="h2">Champion pick</span></div>
+      <div class="row"><span class="tag">lg / 600</span><span class="h3">Matchday 3</span></div>
+      <div class="row"><span class="tag">base / 400</span><span class="body">The football oracle.</span></div>
+      <div class="row"><span class="tag">sm / muted</span><span class="small muted">Outsmart your friends.</span></div>
+      <div class="row"><span class="tag">tabular-nums</span><span class="num">2&ndash;1</span> <span class="xs muted">scores align in columns</span></div>
+      <div class="stack">font-family: system-ui, -apple-system,<br>'Segoe UI', Roboto, sans-serif</div>
+    </section>
+  </div>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!-- @dsCard group="Components" name="Buttons" subtitle="Primary, outline, contrast CTA, sizes, icon - PrimeVue Button styling" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Buttons - Nostragoalus</title>
+<style>
+  :root{--p-primary-color:#4f46e5;--p-primary-contrast-color:#fff;--p-primary-hover-color:#4338ca;--p-content-background:#fff;--p-content-border-color:#d8dcef;--p-text-color:#3a3f5b;--p-text-muted-color:#686e94;--ng-base:#e7e8f6;--ng-accent:#10b981;--ng-star:#f59e0b;--ng-font:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;}
+  .app-dark{--p-primary-color:#818cf8;--p-primary-contrast-color:#1e1b4b;--p-primary-hover-color:#a5b4fc;--p-content-background:#18181b;--p-content-border-color:#3f3f46;--p-text-color:rgba(255,255,255,.87);--p-text-muted-color:#a1a1aa;--ng-base:#09090b;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:var(--ng-font);background:#0d0f1a;padding:24px;-webkit-font-smoothing:antialiased;}
+  .previews{display:flex;flex-wrap:wrap;gap:20px;}
+  .scheme{flex:1;min-width:340px;color:var(--p-text-color);padding:30px;border-radius:18px;
+    background:radial-gradient(900px 600px at 100% 0%,color-mix(in srgb,var(--ng-accent) 14%,transparent),transparent),radial-gradient(720px 560px at 50% 120%,color-mix(in srgb,var(--ng-star) 10%,transparent),transparent),radial-gradient(1150px 840px at 0% -10%,color-mix(in srgb,var(--p-primary-color) 28%,transparent),transparent),var(--ng-base);}
+  .lbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--p-text-muted-color);margin-bottom:18px;}
+  .grp{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:16px;}
+  .btn{display:inline-flex;align-items:center;gap:.5rem;font-family:inherit;font-weight:600;border:1px solid transparent;border-radius:6px;cursor:pointer;transition:background .12s;line-height:1;}
+  .sz-sm{font-size:.8rem;padding:.45rem .8rem;}
+  .sz-md{font-size:.9rem;padding:.6rem 1rem;}
+  .sz-lg{font-size:1.05rem;padding:.8rem 1.4rem;}
+  .primary{background:var(--p-primary-color);color:var(--p-primary-contrast-color);}
+  .primary:hover{background:var(--p-primary-hover-color);}
+  .outline{background:var(--p-content-background);color:var(--p-text-color);border-color:var(--p-content-border-color);}
+  .contrast{background:var(--p-text-color);color:var(--p-content-background);}
+  .icon{width:40px;height:40px;justify-content:center;padding:0;border-radius:9999px;background:var(--p-content-background);border-color:var(--p-content-border-color);color:var(--p-text-color);}
+  .cap{font-size:.7rem;color:var(--p-text-muted-color);margin:18px 0 8px;font-weight:600;letter-spacing:.04em;}
+  .arrow{font-size:.8em;}
+</style>
+</head>
+<body>
+  <div class="previews">
+    <section class="scheme">
+      <div class="lbl">Light</div>
+      <div class="cap">PRIMARY - sizes sm / md / lg</div>
+      <div class="grp">
+        <button class="btn primary sz-sm">Sign in</button>
+        <button class="btn primary sz-md">Save pick</button>
+        <button class="btn primary sz-lg">Get started <span class="arrow">&rarr;</span></button>
+      </div>
+      <div class="cap">SECONDARY (outline) &amp; CONTRAST (final CTA)</div>
+      <div class="grp">
+        <button class="btn outline sz-md">Cancel</button>
+        <button class="btn contrast sz-md">Get started <span class="arrow">&rarr;</span></button>
+        <button class="btn icon" aria-label="menu">&#9776;</button>
+      </div>
+    </section>
+    <section class="scheme app-dark">
+      <div class="lbl">Dark</div>
+      <div class="cap">PRIMARY - sizes sm / md / lg</div>
+      <div class="grp">
+        <button class="btn primary sz-sm">Sign in</button>
+        <button class="btn primary sz-md">Save pick</button>
+        <button class="btn primary sz-lg">Get started <span class="arrow">&rarr;</span></button>
+      </div>
+      <div class="cap">SECONDARY (outline) &amp; CONTRAST (final CTA)</div>
+      <div class="grp">
+        <button class="btn outline sz-md">Cancel</button>
+        <button class="btn contrast sz-md">Get started <span class="arrow">&rarr;</span></button>
+        <button class="btn icon" aria-label="menu">&#9776;</button>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

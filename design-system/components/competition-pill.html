@@ -1,0 +1,49 @@
+<!-- @dsCard group="Components" name="Competition pill" subtitle="Rounded trophy selector + popover menu, active item bold" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Competition pill - Nostragoalus</title>
+<style>
+  :root{--p-primary-color:#4f46e5;--p-content-background:#fff;--p-content-border-color:#d8dcef;--p-text-color:#3a3f5b;--p-text-muted-color:#686e94;--ng-base:#e7e8f6;--ng-accent:#10b981;--ng-star:#f59e0b;--ng-font:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;}
+  .app-dark{--p-primary-color:#818cf8;--p-content-background:#18181b;--p-content-border-color:#3f3f46;--p-text-color:rgba(255,255,255,.87);--p-text-muted-color:#a1a1aa;--ng-base:#09090b;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:var(--ng-font);background:#0d0f1a;padding:24px;-webkit-font-smoothing:antialiased;}
+  .previews{display:flex;flex-wrap:wrap;gap:20px;}
+  .scheme{flex:1;min-width:340px;color:var(--p-text-color);padding:30px;border-radius:18px;
+    background:radial-gradient(900px 600px at 100% 0%,color-mix(in srgb,var(--ng-accent) 14%,transparent),transparent),radial-gradient(720px 560px at 50% 120%,color-mix(in srgb,var(--ng-star) 10%,transparent),transparent),radial-gradient(1150px 840px at 0% -10%,color-mix(in srgb,var(--p-primary-color) 28%,transparent),transparent),var(--ng-base);}
+  .lbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--p-text-muted-color);margin-bottom:18px;}
+  .pill{display:inline-flex;align-items:center;gap:.5rem;border-radius:9999px;border:1px solid var(--p-content-border-color);background:var(--p-content-background);padding:.375rem .75rem;font-size:.875rem;font-weight:600;color:var(--p-text-color);cursor:pointer;}
+  .pill .tro{color:var(--p-primary-color);}
+  .pill .chev{font-size:.7rem;opacity:.6;}
+  .menu{margin-top:10px;width:240px;background:var(--p-content-background);border:1px solid var(--p-content-border-color);border-radius:.75rem;padding:4px;}
+  .scheme:not(.app-dark) .menu{box-shadow:0 8px 24px rgba(30,27,75,.14);}
+  .item{display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem;font-size:.875rem;border-radius:.5rem;color:var(--p-text-color);}
+  .item.active{font-weight:700;}
+  .item:hover{background:color-mix(in srgb,var(--p-text-color) 6%,transparent);}
+</style>
+</head>
+<body>
+  <div class="previews">
+    <section class="scheme">
+      <div class="lbl">Light</div>
+      <button class="pill"><span class="tro">&#127942;</span><span>World Cup 2026</span><span class="chev">&#9660;</span></button>
+      <div class="menu">
+        <div class="item active"><span>&#127942;</span> World Cup 2026</div>
+        <div class="item"><span>&#127942;</span> Euro 2028</div>
+        <div class="item"><span>&#127942;</span> Champions League</div>
+      </div>
+    </section>
+    <section class="scheme app-dark">
+      <div class="lbl">Dark</div>
+      <button class="pill"><span class="tro">&#127942;</span><span>World Cup 2026</span><span class="chev">&#9660;</span></button>
+      <div class="menu">
+        <div class="item active"><span>&#127942;</span> World Cup 2026</div>
+        <div class="item"><span>&#127942;</span> Euro 2028</div>
+        <div class="item"><span>&#127942;</span> Champions League</div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

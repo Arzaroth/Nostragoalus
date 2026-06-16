@@ -1,0 +1,101 @@
+/*
+ * Nostragoalus design tokens - the single source of truth, mirrored from the
+ * live app (lib/theme.ts PrimeVue Aura preset + app/assets/css/main.css).
+ *
+ * Each design-system preview card inlines an equivalent block so it renders
+ * standalone in the Claude Design pane. When the app theme changes, update
+ * lib/theme.ts / main.css first, then re-run the sync so this file and the
+ * cards follow.
+ */
+
+:root {
+  /* Primary - vibrant indigo (full scale, light & dark draw different rungs) */
+  --p-primary-50: #eef2ff;
+  --p-primary-100: #e0e7ff;
+  --p-primary-200: #c7d2fe;
+  --p-primary-300: #a5b4fc;
+  --p-primary-400: #818cf8;
+  --p-primary-500: #6366f1;
+  --p-primary-600: #4f46e5;
+  --p-primary-700: #4338ca;
+  --p-primary-800: #3730a3;
+  --p-primary-900: #312e81;
+  --p-primary-950: #1e1b4b;
+
+  /* Surface - indigo-tinted slate (light scheme; dark uses Aura zinc) */
+  --p-surface-0: #ffffff;
+  --p-surface-50: #f5f6fc;
+  --p-surface-100: #ebedf7;
+  --p-surface-200: #d8dcef;
+  --p-surface-300: #bcc2e0;
+  --p-surface-400: #9197bd;
+  --p-surface-500: #686e94;
+  --p-surface-600: #4c5275;
+  --p-surface-700: #3a3f5b;
+  --p-surface-800: #262a3f;
+  --p-surface-900: #181b2b;
+  --p-surface-950: #0d0f1a;
+
+  /* Semantic - resolved for the light scheme */
+  --p-primary-color: var(--p-primary-600);
+  --p-primary-contrast-color: #ffffff;
+  --p-primary-hover-color: var(--p-primary-700);
+  --p-primary-active-color: var(--p-primary-800);
+  --p-content-background: #ffffff;
+  --p-content-border-color: var(--p-surface-200);
+  --p-text-color: var(--p-surface-700);
+  --p-text-muted-color: var(--p-surface-500);
+  --p-highlight-background: var(--p-primary-50);
+  --p-highlight-color: var(--p-primary-700);
+
+  /* Brand accents - one source instead of hex literals across components */
+  --ng-star: #f59e0b;     /* amber: joker / star / final-double */
+  --ng-danger: #ef4444;   /* red: live / errors */
+  --ng-success: #22c55e;  /* green: success / competitions */
+  --ng-accent: #10b981;   /* emerald: secondary brand (gradients, CTA) */
+  --ng-star-soft: color-mix(in srgb, var(--ng-star) 12%, transparent);
+
+  /* Page base behind the gradient glows (soft indigo tint in light mode) */
+  --ng-base: #e7e8f6;
+
+  /* Extended accent palette - landing feature tiles */
+  --ng-violet: #8b5cf6;
+  --ng-cyan: #06b6d4;
+  --ng-pink: #ec4899;
+  --ng-blue: #3b82f6;
+
+  /* Radii actually used in the UI */
+  --ng-radius-chip: 9999px;  /* pills, avatars, score steppers */
+  --ng-radius-md: 0.5rem;    /* buttons, inputs */
+  --ng-radius-lg: 1rem;      /* rounded-2xl cards */
+  --ng-radius-xl: 1.5rem;    /* rounded-3xl panels, CTA */
+
+  --ng-font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Dark scheme keys off the same `.app-dark` class PrimeVue & UnoCSS use. */
+.app-dark {
+  --p-primary-color: var(--p-primary-400);
+  --p-primary-contrast-color: var(--p-surface-950);
+  --p-primary-hover-color: var(--p-primary-300);
+  --p-primary-active-color: var(--p-primary-200);
+  /* Dark surfaces fall back to Aura's zinc defaults (not overridden in theme.ts) */
+  --p-content-background: #18181b;
+  --p-content-border-color: #3f3f46;
+  --p-text-color: rgba(255, 255, 255, 0.87);
+  --p-text-muted-color: #a1a1aa;
+  --p-highlight-background: color-mix(in srgb, var(--p-primary-400), transparent 84%);
+  --p-highlight-color: rgba(255, 255, 255, 0.87);
+  --ng-base: #09090b;
+}
+
+/* Signature page background: emerald + amber + indigo glows over the base. */
+.ng-app-bg {
+  background:
+    radial-gradient(900px 600px at 100% 0%, color-mix(in srgb, var(--ng-accent) 14%, transparent), transparent),
+    radial-gradient(720px 560px at 50% 120%, color-mix(in srgb, var(--ng-star) 10%, transparent), transparent),
+    radial-gradient(1150px 840px at 0% -10%, color-mix(in srgb, var(--p-primary-color) 28%, transparent), transparent),
+    var(--ng-base);
+  background-attachment: fixed;
+  color: var(--p-text-color);
+}
