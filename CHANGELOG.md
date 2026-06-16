@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.18.0] - 2026-06-16
+
 ### Added
 - **API clients (admin)**: a new admin section - plus a `mise run create-api-key <name>` CLI - to mint scoped, optionally expiring API keys for machine integrations and revoke them. Any admin sees and can revoke every key (including CLI-minted bot keys); the full key is shown once at creation and stored hashed afterwards. Each key carries a permission scope and is bound to an admin owner, so it can be granted only the access an integration needs.
 
