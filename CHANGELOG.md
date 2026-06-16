@@ -7,6 +7,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ### Fixed
 - The notifications panel (and the account menu) now close when you scroll the page, instead of drifting away from the header and overlapping the fixtures below them.
+- The competition map now places a flag for every nation, not just the long-standing World Cup and Euro regulars: newcomers like Cape Verde and Curacao (and any other qualifier) were silently dropped before.
 
 ## [1.17.0] - 2026-06-15
 
