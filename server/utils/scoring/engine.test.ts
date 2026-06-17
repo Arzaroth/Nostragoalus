@@ -106,6 +106,24 @@ describe('scorePredictions - result-rarity layer (crowdOutcomeTiers)', () => {
     expect(scores.loss0).toMatchObject({ baseTier: 'MISS', bonusPoints: 0, totalPoints: 0 })
   })
 
+  it('drops crowdShare when only the result layer pays (a bold call the winners shared)', () => {
+    // Mirrors a real prod row: 25 picks, 5 called the home win, 3 of them exact
+    // 2-1. Exact share among winners 3/5 = 0.6 (>= 0.35, so no exact bonus), but
+    // the win itself was rare (5/25 = 0.2 < 0.25) so the result layer pays +1.
+    // That +1 is not an exact-score bonus, so crowdShare must not surface the 0.6
+    // and have the UI read "only 60% picked this exact score".
+    const rows: [string, number, number][] = [
+      ['e1', 2, 1],
+      ['e2', 2, 1],
+      ['e3', 2, 1],
+      ['w1', 3, 1],
+      ['w2', 4, 2],
+    ]
+    for (let i = 0; i < 20; i += 1) rows.push([`loss${i}`, 0, 1])
+    const scores = byId(scorePredictions({ actual: { home: 2, away: 1 }, rules, predictions: preds(...rows) }))
+    expect(scores.e1).toMatchObject({ baseTier: 'EXACT', basePoints: 3, bonusPoints: 1, bonusSource: 'CROWD', crowdShare: null, totalPoints: 4 })
+  })
+
   it('does not apply the result layer in OUTCOME basis (the primary already rewards it)', () => {
     const outcomeRules: ScoringRules = { ...rules, crowdMatchBasis: 'OUTCOME' }
     const rows: [string, number, number][] = [['win', 2, 1]]

@@ -70,7 +70,13 @@ function computeBonus(
           ).bonus
         : 0
 
-    return { bonus: bonus + outcomeBonus, source: 'CROWD', share }
+    // crowdShare drives the "only X% picked this exact score" tooltip. Drop it
+    // ONLY when the bonus came purely from the result-rarity layer (a bold but
+    // common-among-winners exact call: exact layer paid nothing, result layer
+    // did) - there the exact share would misread as "only 60% picked this".
+    // A common exact pick that earned no bonus still carries its real share.
+    const resultLayerOnly = bonus === 0 && outcomeBonus > 0
+    return { bonus: bonus + outcomeBonus, source: 'CROWD', share: resultLayerOnly ? null : share }
   }
 
   if (rules.bonusSource === 'ODDS') {

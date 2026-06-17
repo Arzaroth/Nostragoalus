@@ -264,7 +264,7 @@
     "rarity": "le'",
     "tier": { "exact": "naQ", "diff": "Qugh rap", "outcome": "Qap", "miss": "luj" },
     "rarityTip": "mI'vam pup wIvta' {pct}% neH - jaq wIvmey tev luSuq.",
-    "rarityTipNoShare": "mI' pup le' tev chel.",
+    "rarityTipNoShare": "jaq wIv tev luSuq.",
     "jokerHint": "Hovlij QuQ cha'logh (mung + le').",
     "adminUpcomingDivider": "qaStaHvIS lojmIt — admin neH lo'laHbe'"
   },
