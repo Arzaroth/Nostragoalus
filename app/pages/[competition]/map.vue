@@ -105,12 +105,11 @@ function fmt(d: string) {
     </div>
     <div class="grid lg:grid-cols-3 gap-4">
       <div class="lg:col-span-2">
-        <ClientOnly>
-          <WorldMap ref="mapRef" :teams="teams" @select="onSelect" />
-          <template #fallback>
-            <div class="rounded-2xl border" style="height: 70vh; border-color: var(--p-content-border-color)" />
-          </template>
-        </ClientOnly>
+        <!-- WorldMap is a .client component (Leaflet needs the browser); it is
+        already client-only by filename. Wrapping it in <ClientOnly> on top of
+        that left the fallback mounted and the map never hydrated in the prod
+        build - render it directly. -->
+        <WorldMap ref="mapRef" :teams="teams" @select="onSelect" />
       </div>
 
       <div class="ng-card rounded-2xl border p-5" style="background: var(--p-content-background)">
