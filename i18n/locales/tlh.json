@@ -996,5 +996,18 @@
     "leagueRoleOwner": { "title": "ghom De'", "body": "DaH {league} pIn SoH" },
     "leagueRolePromoted": { "title": "ghom De'", "body": "DaH {league} che'wI' SoH" },
     "leagueRemoved": { "title": "ghom De'", "body": "{league} DatlhejHa'" }
+  },
+  "reactions": {
+    "title": "QeHmey",
+    "signInHint": "yI'el",
+    "leagueHint": "Hoch QeHmey",
+    "label": {
+      "FIRE": "qul",
+      "GOAL": "Qap",
+      "WOW": "toH",
+      "LAUGH": "Hagh",
+      "SAD": "'IQ",
+      "ANGRY": "QeH"
+    }
   }
 }

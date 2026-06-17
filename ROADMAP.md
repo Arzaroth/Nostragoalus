@@ -221,9 +221,16 @@ effort buckets; order within a bucket is not priority.
       (alone against the crowd and right), wc champ (your champion won),
       wc overall champ (top of a competition ladder), playmaker (your best
       scorer won), averager.
-- [ ] **Match reactions**: fixed emoji palette (nothing to moderate), 1 per
-      user per match, counts league-scoped by default; global counts as a
-      possible later toggle.
+- [ ] **Match reactions** (IN_PROGRESS, worktree-reactions): fixed emoji palette
+      (nothing to moderate) - 🔥 GOAL ⚽ 😮 🤣 😢 😡 - one per user per match,
+      toggleable. Decisions made: global aggregate counts are the default and
+      public (read-only, no PII); a league-scoped breakdown rides alongside when
+      a league is selected (display only, members-only on the server, mirroring
+      crowd totals). Reactions open at kickoff and stay open after full-time (no
+      pre-match reactions). Live over the same WS as crowd/scores
+      (reaction:update + reaction:league-update). No notifications (too noisy).
+      Emoji stored as a key (DB enum), glyph rendered client-side so the palette
+      can grow/skin without a migration.
 - [ ] **League trash-talk threads**: only if leagues ask for it after
       reactions ship. Private leagues only, league owner + existing moderator
       role can delete/mute, no global surface ever.
