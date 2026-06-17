@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.20.1] - 2026-06-17
+
 ### Fixed
 - A live match score in the header now updates the moment a goal appears in the timeline, instead of trailing behind it - a match could read 0-0 with the scorer already listed below. The goal celebration now fires with that scoreline change (not a poll later) and stays up long enough to watch the goal land instead of cutting off mid-animation.
 - The competition Map renders again: it could come up blank in production, leaving an empty panel where the world map should be.
