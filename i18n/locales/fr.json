@@ -264,7 +264,7 @@
     "rarity": "rareté",
     "tier": { "exact": "Score exact", "diff": "Différence de buts", "outcome": "Bon résultat", "miss": "Manqué" },
     "rarityTip": "Seulement {pct}% des joueurs ont tenté ce score exact - les pronos audacieux rapportent un bonus.",
-    "rarityTipNoShare": "Un score exact rare rapporte un bonus.",
+    "rarityTipNoShare": "Un prono à contre-courant rapporte un bonus.",
     "jokerHint": "Votre joker a doublé les points de ce match (base + rareté).",
     "adminUpcomingDivider": "Matchs à venir ci-dessous — seuls les admins voient les pronos avant le coup d'envoi"
   },

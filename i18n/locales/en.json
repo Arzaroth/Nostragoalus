@@ -264,7 +264,7 @@
     "rarity": "rarity",
     "tier": { "exact": "Exact score", "diff": "Goal difference", "outcome": "Right result", "miss": "Missed" },
     "rarityTip": "Only {pct}% of players picked this exact score - bold calls earn a bonus.",
-    "rarityTipNoShare": "A rare exact score earns a bonus on top.",
+    "rarityTipNoShare": "A bold call against the crowd earns a bonus.",
     "jokerHint": "Your joker doubled the points on this match (base + rarity).",
     "adminUpcomingDivider": "Upcoming matches below — only admins see picks before kickoff"
   },

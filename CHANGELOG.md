@@ -5,6 +5,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+- A live match score in the header now updates the moment a goal appears in the timeline, instead of trailing behind it - a match could read 0-0 with the scorer already listed below. The goal celebration now fires with that scoreline change (not a poll later) and stays up long enough to watch the goal land instead of cutting off mid-animation.
+- The competition Map renders again: it could come up blank in production, leaving an empty panel where the world map should be.
+- The rarity bonus tooltip no longer misreports a common pick as rare. A bonus earned for a bold but correct result (one few players called) is now described as such, instead of being blamed on the exact-score share - which is why a pick shared by most could show "only 60% picked this exact score".
+
 ## [1.20.0] - 2026-06-17
 
 ### Added
