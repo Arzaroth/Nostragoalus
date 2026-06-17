@@ -218,6 +218,13 @@
       "when": 1781641070084,
       "tag": "0030_sad_rogue",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1781727583484,
+      "tag": "0031_bumpy_stryfe",
+      "breakpoints": true
     }
   ]
 }
