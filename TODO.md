@@ -141,9 +141,19 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
 ## Odds feature (deferred from the merge review)
 
-- [ ] Provider-scope `match.oddsEventRef` (or prefix it `sofascore:`): switching
-      a competition's odds provider would replay foreign ids into the new
-      provider's namespace. Procedural for now: clear refs when switching.
+- [x] Provider switch no longer replays foreign ids: `setCompetitionOddsProvider`
+      (1.22.0) clears every match's `oddsEventRef`/`oddsEventSwapped` for the
+      competition when the provider actually changes, so the new provider re-maps
+      from scratch. Remaining: `closingOddsForOutcome`/`latestOddsByMatch` still
+      read snapshots by `matchId` only, not scoped by `oddsSnapshot.provider`, so a
+      switch could mix an old provider's historical snapshots into a re-score. Scope
+      odds reads by provider (or stamp/clear snapshots on switch) for full safety.
+- [ ] The admin odds-provider enum is single-sourced at runtime
+      (`ODDS_PROVIDERS`), but the OpenAPI block in `odds/index.put.ts` hand-lists
+      `["sofascore","betexplorer"]` and `AdminOddsSection.vue` re-declares the
+      payload interfaces (provider typed as plain string) instead of importing the
+      shared `OddsProviderKey`/server row types - both can drift. Import the shared
+      types and derive the OpenAPI enum.
 - [ ] TEAM_NAME_ALIASES is in-code; a DB alias table (or an admin override to
       pin a match's event ref) would fix unmatchable names without a deploy.
 - [ ] Extract the provider JSON envelope (rate limit + status mapping + json)
