@@ -536,6 +536,9 @@ function toggleFormInfo(side: string, i: number | string) {
         <CrowdLine v-if="crowdEnabled" :match-id="id" :totals="crowdTotals" :league-totals="leagueTotals" :league-active="leagueActive" count />
         <MatchOdds v-if="oddsEnabled" :odds="data?.odds ?? null" />
       </div>
+
+      <!-- Reactions open at kickoff and stay open after full-time. -->
+      <ReactionBar v-if="hasStarted" :match-id="id" />
     </div>
 
     <MatchMedia :match-id="id" :status="status" />
