@@ -38,7 +38,7 @@ const ITEMS = [
   { status: 'SHIPPED', title: 'Group standings on the fixtures page', description: 'Flip the fixtures page to a live-aware table for every group at once (played, won, drawn, lost, goal difference, points), shareable via a link.' },
   { status: 'PLANNED', title: 'New-since-last-visit changelog', description: 'A badge on the changelog highlighting what shipped since you last looked.' },
   { status: 'PLANNED', title: 'Calendar feed', description: 'Subscribe to fixtures and pick-lockout deadlines from your own calendar app (iCal).' },
-  { status: 'IN_PROGRESS', title: 'Web push notifications', description: 'Opt in to push notifications on your phone or desktop: pick reminders, kickoff and live goal alerts on matches you predicted, your results, and league activity - each switchable on or off in your preferences.' },
+  { status: 'SHIPPED', title: 'Web push notifications', description: 'Opt in to push notifications on your phone or desktop: pick reminders, kickoff and live goal alerts on matches you predicted, your results, and league activity - each switchable on or off in your preferences.' },
   { status: 'PLANNED', title: 'Tournament Wrapped', description: 'An end-of-competition recap - best and worst pick, joker efficiency, your percentile - with a shareable card.' },
   { status: 'PLANNED', title: 'Personal & what-if stats', description: 'See where a joker would have helped, how you compare to the crowd, and your prediction biases.' },
 ]

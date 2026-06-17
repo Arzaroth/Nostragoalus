@@ -154,7 +154,7 @@ effort buckets; order within a bucket is not priority.
     read notifications older than 7 days and caps each user to the newest 200, and
     any notification can be dismissed individually (pick reminders also self-prune
     at kickoff).
-- [ ] **Web push** (in progress on worktree-web-push; installable PWA + offline
+- [x] **Web push** (shipped in 1.21.0; installable PWA + offline
       shell shipped in 1.5.0): `@vite-pwa/nuxt`; web push (iOS >= 16.4 for
       installed PWAs). Browser opt-in is the master gate; on top of it, **every**
       notification kind has a per-category push toggle in a new Notifications prefs
