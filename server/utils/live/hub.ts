@@ -2,6 +2,7 @@ import { inArray } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { match } from '../../../db/schema'
 import type { NotificationDTO } from '../../../shared/types/notifications'
+import type { ReactionTotals } from '../../../shared/reactions'
 
 export interface LiveSubscriber {
   matchIds: Set<string>
@@ -61,6 +62,38 @@ export function publishLeagueCrowdUpdate(
       // Distinct type so a pre-deploy client (which treats any crowd:update with
       // a matchId as global) can't fold league totals into its global map.
       sub.send({ type: 'crowd:league-update', leagueId, matchId, totals })
+      delivered += 1
+    }
+  }
+  return delivered
+}
+
+// A reaction changed: broadcast the match's new per-emoji counts to every
+// connected client. Mirrors publishCrowdUpdate - the client patches it only
+// when it's the match it's viewing.
+export function publishReactionUpdate(matchId: string, totals: ReactionTotals): number {
+  let delivered = 0
+  for (const sub of subscribers) {
+    sub.send({ type: 'reaction:update', matchId, totals })
+    delivered += 1
+  }
+  return delivered
+}
+
+// League-scoped reaction counts are members-only (private leagues): deliver to
+// that league's connected members alone, with a distinct type so a global
+// patch handler can't fold them into the global counts.
+export function publishLeagueReactionUpdate(
+  leagueId: string,
+  memberIds: readonly string[],
+  matchId: string,
+  totals: ReactionTotals,
+): number {
+  const members = new Set(memberIds)
+  let delivered = 0
+  for (const sub of subscribers) {
+    if (sub.userId && members.has(sub.userId)) {
+      sub.send({ type: 'reaction:league-update', leagueId, matchId, totals })
       delivered += 1
     }
   }

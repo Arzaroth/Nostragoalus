@@ -74,3 +74,33 @@ it('publishCrowdUpdate broadcasts to every subscriber regardless of match subscr
   expect(delivered).toBeGreaterThanOrEqual(1)
   expect(got.at(-1)).toEqual({ type: 'crowd:update', matchId: 'm1', totals: { home: 7, away: 2, count: 3 } })
 })
+
+it('publishReactionUpdate broadcasts per-emoji counts to every subscriber', async () => {
+  const { addLiveSubscriber, removeLiveSubscriber, publishReactionUpdate } = await import('./hub')
+  const totals = { FIRE: 3, GOAL: 1, WOW: 0, LAUGH: 0, SAD: 0, ANGRY: 2 }
+  const got: unknown[] = []
+  const sub = { matchIds: new Set<string>(), send: (p: unknown) => got.push(p) }
+  addLiveSubscriber(sub)
+  const delivered = publishReactionUpdate('m1', totals)
+  removeLiveSubscriber(sub)
+  expect(delivered).toBeGreaterThanOrEqual(1)
+  expect(got.at(-1)).toEqual({ type: 'reaction:update', matchId: 'm1', totals })
+})
+
+it('publishLeagueReactionUpdate reaches connected members only', async () => {
+  const { addLiveSubscriber, removeLiveSubscriber, publishLeagueReactionUpdate } = await import('./hub')
+  const totals = { FIRE: 1, GOAL: 0, WOW: 1, LAUGH: 0, SAD: 0, ANGRY: 0 }
+  const member = { matchIds: new Set<string>(), userId: 'm', send: vi.fn() }
+  const outsider = { matchIds: new Set<string>(), userId: 'o', send: vi.fn() }
+  const guest = { matchIds: new Set<string>(), userId: null, send: vi.fn() }
+  for (const s of [member, outsider, guest]) addLiveSubscriber(s)
+  try {
+    const delivered = publishLeagueReactionUpdate('lg', ['m'], 'm1', totals)
+    expect(delivered).toBe(1)
+    expect(member.send).toHaveBeenCalledWith({ type: 'reaction:league-update', leagueId: 'lg', matchId: 'm1', totals })
+    expect(outsider.send).not.toHaveBeenCalled()
+    expect(guest.send).not.toHaveBeenCalled()
+  } finally {
+    for (const s of [member, outsider, guest]) removeLiveSubscriber(s)
+  }
+})
