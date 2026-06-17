@@ -49,6 +49,8 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   weekly tidy-up of read items
 - Per-team pages: official squads with positions, manager, season stats, competition switcher
 - Knockout **bracket** and an interactive **world map** (Leaflet / OpenStreetMap)
+- **Group standings** on the fixtures page: a live-aware table per group (the same one the
+  match page shows), with team links and flags
 - Auth: identifier-first login with **SSO domain capture** - runtime-configurable OIDC / SAML /
   Google providers (several domains each, display names, envelope-encrypted secrets, in-place
   editing, SP metadata for IdP setup); email + password (HIBP-checked) with mailed reset; optional
