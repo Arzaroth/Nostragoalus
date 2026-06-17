@@ -43,9 +43,16 @@ export function usePushNotifications() {
         applicationServerKey: urlBase64ToUint8Array(vapidKey),
       })
       const json = sub.toJSON()
+      // A standards-compliant subscription always carries both keys; if a browser
+      // returns a key-less one, don't POST it (the server requires them) and tear
+      // the orphan browser subscription back down instead of leaving it dangling.
+      if (!json.keys?.p256dh || !json.keys?.auth) {
+        await sub.unsubscribe().catch(() => {})
+        return
+      }
       await $fetch('/api/push/subscribe', {
         method: 'POST',
-        body: { endpoint: sub.endpoint, keys: { p256dh: json.keys?.p256dh, auth: json.keys?.auth } },
+        body: { endpoint: sub.endpoint, keys: { p256dh: json.keys.p256dh, auth: json.keys.auth } },
       })
       subscribed.value = true
     } finally {

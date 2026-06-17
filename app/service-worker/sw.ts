@@ -47,7 +47,17 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  const url = (event.notification.data as { url?: string } | undefined)?.url ?? '/'
+  // Only ever navigate within our own origin. Server payloads always carry a
+  // relative path, but a system-notification click must never be able to open an
+  // arbitrary site, so resolve against our origin and fall back to '/' otherwise.
+  const raw = (event.notification.data as { url?: string } | undefined)?.url ?? '/'
+  let url = '/'
+  try {
+    const resolved = new URL(raw, self.location.origin)
+    if (resolved.origin === self.location.origin) url = resolved.pathname + resolved.search + resolved.hash
+  } catch {
+    // keep '/'
+  }
   event.waitUntil(
     (async () => {
       const clientList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })

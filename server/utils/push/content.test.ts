@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { notificationPushContent } from './content'
+import { goalPushContent, kickoffPushContent, notificationPushContent } from './content'
 import type { NotificationData } from '../../../shared/types/notifications'
 
 const reminder: NotificationData = {
@@ -63,5 +63,21 @@ describe('notificationPushContent', () => {
   it('falls back to English for an unknown or null locale', () => {
     expect(notificationPushContent(reminder, 'xx').body).toBe(notificationPushContent(reminder, 'en').body)
     expect(notificationPushContent(reminder, null).body).toBe(notificationPushContent(reminder, 'en').body)
+  })
+})
+
+describe('live-push builders', () => {
+  const p = { matchId: 'm1', homeTeam: 'Spain', awayTeam: 'Brazil' }
+
+  it('kickoff carries the match deep link and tag', () => {
+    expect(kickoffPushContent('wc', p, 'en')).toMatchObject({ url: '/wc/matches/m1', tag: 'match:m1' })
+  })
+
+  it('goal renders the scoreline', () => {
+    expect(goalPushContent('wc', { ...p, home: 2, away: 1 }, 'en').body).toContain('2')
+  })
+
+  it('treats a null live score as 0', () => {
+    expect(goalPushContent('wc', { ...p, home: null, away: null }, 'en').body).toContain('0')
   })
 })

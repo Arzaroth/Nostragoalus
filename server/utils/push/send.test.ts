@@ -97,4 +97,34 @@ describe('pushNotification', () => {
     expect(sendMock).toHaveBeenCalledTimes(1)
     await client.close()
   })
+
+  it('prunes a subscription reported as gone (404)', async () => {
+    setVapid(true)
+    const { db, client, u } = await setup()
+    sendMock.mockRejectedValueOnce(Object.assign(new Error('not found'), { statusCode: 404 }))
+    expect(await pushNotification(db, u, reminder)).toBe(0)
+    // Pruned: a second send finds no subscription.
+    expect(await pushNotification(db, u, reminder)).toBe(0)
+    expect(sendMock).toHaveBeenCalledTimes(1)
+    await client.close()
+  })
+
+  it('keeps the subscription on a transient (non-404/410) error', async () => {
+    setVapid(true)
+    const { db, client, u } = await setup()
+    sendMock.mockRejectedValueOnce(Object.assign(new Error('rate limited'), { statusCode: 429 }))
+    expect(await pushNotification(db, u, reminder)).toBe(0)
+    // Not pruned: the next attempt still has the subscription and succeeds.
+    expect(await pushNotification(db, u, reminder)).toBe(1)
+    expect(sendMock).toHaveBeenCalledTimes(2)
+    await client.close()
+  })
+
+  it('is a no-op for an unknown user (no prefs row)', async () => {
+    setVapid(true)
+    const ctx = await createTestDb()
+    expect(await pushNotification(ctx.db, 'ghost', reminder)).toBe(0)
+    expect(sendMock).not.toHaveBeenCalled()
+    await ctx.client.close()
+  })
 })
