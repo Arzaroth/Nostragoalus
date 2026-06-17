@@ -605,3 +605,24 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 - [ ] `notifyChampionResult` and `notifyBestScorerResult` are near-identical
       (per-competition dedupe, winners select, `won:true` loop) - folds into the
       meta-pick generalization already tracked under "Best scorer".
+
+## Group standings (deferred from the feature-treatment review)
+
+- [ ] The flag + team-link cell in `StandingsTable.vue` (NuxtLink-or-span + a
+      `flagUrl()` `<img>`) is hand-copied across the codebase: `matches/[id].vue`,
+      `BestScorerPick.vue`, `ChampionPick.vue` and now StandingsTable. `flagUrl` is
+      the only shared piece; extract a `TeamCell`/`TeamLink` component so a change
+      to team-page routing or flag rendering lands once. Cross-cutting (touches the
+      working pick cards), so do it as its own focused pass. (Also: `flagUrl` is
+      called twice per row - `v-if` then `:src` - a `TeamCell` would compute it once.)
+- [ ] `server/api/competitions/standings.get.ts`'s group-match projection (select
+      group/teams/codes/status/full-time, `stage = 'GROUP'`) near-duplicates the
+      per-group fetch in the insights service. Extract a shared
+      `selectGroupStandingsRows(db, competitionId, groupName?)` in `stats/standings.ts`
+      so the column list / `StandingsInputMatch` contract lives once and the
+      match-detail table can't drift from the fixtures-page table.
+- [ ] The public GET `/api/competitions/standings` is not in the sampled API
+      response schemas (`response-schemas.json`); add it on the next controlled
+      regen (its inline `defineRouteMeta` OpenAPI already ships). An unknown
+      competition returns `{groups:[]}` (200, not 404) - intentional, like the
+      sibling competition GETs.
