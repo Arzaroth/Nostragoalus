@@ -996,5 +996,18 @@
     "leagueRoleOwner": { "title": "Mise à jour de ligue", "body": "Vous êtes désormais propriétaire de {league}" },
     "leagueRolePromoted": { "title": "Mise à jour de ligue", "body": "Vous êtes désormais modérateur de {league}" },
     "leagueRemoved": { "title": "Mise à jour de ligue", "body": "Vous avez été retiré de {league}" }
+  },
+  "reactions": {
+    "title": "Réactions",
+    "signInHint": "Connectez-vous pour réagir",
+    "leagueHint": "Total des réactions, tous joueurs confondus",
+    "label": {
+      "FIRE": "En feu",
+      "GOAL": "Quel but",
+      "WOW": "Waouh",
+      "LAUGH": "Hilarant",
+      "SAD": "Crève-cœur",
+      "ANGRY": "Scandaleux"
+    }
   }
 }

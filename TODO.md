@@ -680,3 +680,26 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       `runtimeConfig` (deployer must set the `NUXT_*` env vars, not a non-env
       override); and the `MatchTransition` payload fields built in `upsert-matches.ts`
       have no direct assertion (a scoreline/team field swap would ship green).
+
+## Match reactions (deferred from the feature pass)
+
+- [ ] The reaction bar's visibility gate is status-based (`hasStarted` =
+      LIVE/PAUSED/FINISHED) while the server gate is time-based
+      (`now >= kickoffTime`). They can disagree briefly when a kicked-off match
+      still reads SCHEDULED (provider lag): the bar stays hidden though the API
+      would accept a reaction. Conservative and harmless, but the two gates
+      should share one source of truth.
+- [ ] Reaction counts update only via the WS push (the actor sees their own
+      count move a beat after the optimistic highlight). Fine on a live socket;
+      on a dropped/slow connection the count lags until the next refetch. A
+      local optimistic count patch (decrement old emoji, increment new) would
+      close the gap.
+- [ ] The two GET routes (`/api/reactions/[matchId]` global + `?league=`) are
+      not in the sampled API response schemas (`response-schemas.json`); add
+      them on the next controlled regen (the inline `defineRouteMeta` OpenAPI
+      already ships).
+- [ ] No "who reacted" breakdown or per-reaction list - aggregate counts only.
+      Revisit if leagues ask for it (pairs naturally with the trash-talk-threads
+      roadmap item).
+- [ ] Reactions deliberately raise no notifications (too noisy). Revisit only if
+      a digest-style "your match got N reactions" surface is wanted.

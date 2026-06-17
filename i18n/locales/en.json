@@ -996,5 +996,18 @@
     "leagueRoleOwner": { "title": "League update", "body": "You're now the owner of {league}" },
     "leagueRolePromoted": { "title": "League update", "body": "You're now a moderator of {league}" },
     "leagueRemoved": { "title": "League update", "body": "You were removed from {league}" }
+  },
+  "reactions": {
+    "title": "Reactions",
+    "signInHint": "Sign in to react",
+    "leagueHint": "Total reactions across everyone",
+    "label": {
+      "FIRE": "On fire",
+      "GOAL": "What a goal",
+      "WOW": "Wow",
+      "LAUGH": "Hilarious",
+      "SAD": "Heartbreak",
+      "ANGRY": "Outrageous"
+    }
   }
 }

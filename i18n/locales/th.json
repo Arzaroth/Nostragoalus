@@ -996,5 +996,18 @@
     "leagueRoleOwner": { "title": "อัปเดตลีก", "body": "คุณเป็นเจ้าของ {league} แล้ว" },
     "leagueRolePromoted": { "title": "อัปเดตลีก", "body": "คุณเป็นผู้ดูแลของ {league} แล้ว" },
     "leagueRemoved": { "title": "อัปเดตลีก", "body": "คุณถูกนำออกจาก {league}" }
+  },
+  "reactions": {
+    "title": "รีแอคชัน",
+    "signInHint": "เข้าสู่ระบบเพื่อรีแอค",
+    "leagueHint": "รีแอคชันรวมจากทุกคน",
+    "label": {
+      "FIRE": "สุดยอด",
+      "GOAL": "ประตูสวย",
+      "WOW": "ว้าว",
+      "LAUGH": "ฮาสุด",
+      "SAD": "ใจสลาย",
+      "ANGRY": "รับไม่ได้"
+    }
   }
 }
