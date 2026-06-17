@@ -27,7 +27,8 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
 - Optional **crowd totals** under every prediction (everyone's picks combined), updated live over WebSocket
 - **Bookmaker odds** (decimal 1X2, Sofascore feed) under every score input, frozen at kickoff;
   optional ODDS scoring mode awards the bonus from the closing odds of the actual outcome, and an
-  admin backfill recovers closing odds for past tournaments
+  admin backfill recovers closing odds for past tournaments. Admins pick the odds provider per
+  competition (switching clears the old provider's match mapping so it re-resolves cleanly)
 - Transparent scoring: base + rarity bonus + joker/final ×2 broken out on every pick, with the full formula in the FAQ
 - **Champion pick** bonus, locked at the first kickoff and shown beside every name on the rankings
 - Per-competition **and global** rankings with movement arrows; browse other players' (locked)
