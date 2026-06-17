@@ -105,4 +105,13 @@ describe('notifyLiveMatchEvents', () => {
     expect(sendMock).not.toHaveBeenCalled()
     await client.close()
   })
+
+  it('skips a kickoff/goal for a match nobody predicted', async () => {
+    setVapid(true)
+    const { db, client } = await setup()
+    // A real kickoff transition, but for a match with no predictions.
+    await notifyLiveMatchEvents(db, 'world-cup-2026', [transition({ matchId: 'unpredicted' })])
+    expect(sendMock).not.toHaveBeenCalled()
+    await client.close()
+  })
 })
