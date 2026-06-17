@@ -487,6 +487,21 @@
     "deleteMailSent": "Confirmation mail sent - the account will be deleted when you open the link."
   },
   "admin": {
+    "odds": {
+      "title": "Odds provider",
+      "hint": "Pick which provider prices each competition's matches.",
+      "intro": "Each competition fetches its 1X2 odds from one provider. Switching takes effect on the next odds poll; nothing is rescored.",
+      "none": "No competitions yet.",
+      "colCompetition": "Competition",
+      "colProvider": "Provider",
+      "colRef": "Event ref",
+      "provider_sofascore": "Sofascore",
+      "provider_betexplorer": "BetExplorer",
+      "noFetchWarn": "This provider only lists fixtures - it can't fetch odds over HTTP, so matches stay unpriced.",
+      "refPlaceholder": "e.g. 16",
+      "save": "Save",
+      "saveFailed": "Could not save the odds provider."
+    },
     "apiKeys": {
       "title": "API clients",
       "hint": "Machine credentials for integrations (e.g. the watch-link bot). Keys are scoped and shown once at creation.",

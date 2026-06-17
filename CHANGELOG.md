@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- Admin odds-provider switch: choose which provider prices each competition's matches (Sofascore, or BetExplorer for fixtures), from the admin panel.
+
 ## [1.21.0] - 2026-06-17
 
 ### Added

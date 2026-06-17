@@ -30,6 +30,9 @@ export type OddsProviderFactory = (key: string) => OddsProvider | null
 let sofascoreInstance: OddsProvider | null = null
 function defaultProviderFactory(key: string): OddsProvider | null {
   if (key === 'sofascore') return (sofascoreInstance ??= sofascoreProvider())
+  // 'betexplorer' is a selectable provider (admin odds switch) but ships its 1X2
+  // client-side only - no plain-HTTP odds endpoint - so there's no fetcher to
+  // return and the poll skips the competition until one exists.
   return null
 }
 
