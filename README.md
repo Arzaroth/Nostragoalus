@@ -47,6 +47,9 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   results (scoreline + points), league activity (joins, role changes, add/remove) and how your
   champion and Golden Boot picks finished - unread count, live push, mark-read, dismiss, and a
   weekly tidy-up of read items
+- **Web push**: opt in from Preferences to get the same alerts (pick reminders, kickoff and live
+  goal alerts on matches you predicted, results, league activity) on your phone or desktop with the
+  app closed - per-category toggles; needs VAPID keys set (`NUXT_*_VAPID_*`), otherwise it stays off
 - Per-team pages: official squads with positions, manager, season stats, competition switcher
 - Knockout **bracket** and an interactive **world map** (Leaflet / OpenStreetMap)
 - **Group standings** on the fixtures page: a live-aware table per group (the same one the
