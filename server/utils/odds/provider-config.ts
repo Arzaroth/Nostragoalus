@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import type { AppDatabase } from '../../../db/types'
-import { competition } from '../../../db/schema'
+import { competition, match } from '../../../db/schema'
 import { listCompetitions } from '../competitions/store'
 import { NotFoundError, ValidationError } from '../errors'
 import type { OddsProviderKey } from '../../../shared/types/odds'
@@ -64,12 +64,29 @@ export async function setCompetitionOddsProvider(
   providerRef: string | null,
 ): Promise<CompetitionOddsRow> {
   if (!ODDS_PROVIDER_KEYS.includes(provider)) throw new ValidationError(`unknown odds provider: ${provider}`)
+  const existing = await db
+    .select({ oddsProvider: competition.oddsProvider })
+    .from(competition)
+    .where(eq(competition.id, competitionId))
+    .limit(1)
+  if (!existing[0]) throw new NotFoundError('competition not found')
+  // The service is the contract layer (the route's zod min(1) coercion isn't the
+  // only caller), so normalise an empty/whitespace ref to null here too.
+  const ref = providerRef?.trim() || null
+  const providerChanged = existing[0].oddsProvider !== provider
+
   const updated = await db
     .update(competition)
-    .set({ oddsProvider: provider, oddsProviderRef: providerRef })
+    .set({ oddsProvider: provider, oddsProviderRef: ref })
     .where(eq(competition.id, competitionId))
     .returning({ id: competition.id, slug: competition.slug, name: competition.name, oddsProvider: competition.oddsProvider, oddsProviderRef: competition.oddsProviderRef })
-  const row = updated[0]
-  if (!row) throw new NotFoundError('competition not found')
-  return row
+
+  // Switching providers invalidates the per-match event mapping: oddsEventRef is
+  // the OLD provider's foreign id and would mis-resolve (or mis-orient via
+  // oddsEventSwapped) under the new one. Clear it so the next poll re-maps from
+  // scratch. A same-provider ref edit keeps the mapping (no needless re-map).
+  if (providerChanged) {
+    await db.update(match).set({ oddsEventRef: null, oddsEventSwapped: false }).where(eq(match.competitionId, competitionId))
+  }
+  return updated[0]!
 }

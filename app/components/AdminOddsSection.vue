@@ -81,7 +81,8 @@ const saveMutation = useMutation({
           </tr>
         </thead>
         <tbody>
-          <tr v-for="c in data.competitions" :key="c.id" class="border-t align-top" style="border-color: var(--p-content-border-color)">
+          <template v-for="c in data.competitions" :key="c.id">
+          <tr v-if="draft[c.id]" class="border-t align-top" style="border-color: var(--p-content-border-color)">
             <td class="py-2 pr-3">
               <div class="font-medium">{{ c.name }}</div>
               <code class="text-xs" style="color: var(--p-text-muted-color)">{{ c.slug }}</code>
@@ -110,6 +111,7 @@ const saveMutation = useMutation({
               </button>
             </td>
           </tr>
+          </template>
         </tbody>
       </table>
       <span v-if="err" class="text-xs" style="color: var(--ng-danger)">{{ err }}</span>
