@@ -17,6 +17,7 @@ import { ssoProvider, user } from './auth-schema'
 import type { ChampionTier, CrowdTier, OddsTier } from '../shared/types/scoring'
 import type { OddsSnapshotKind, StoredBookmakerOdds } from '../shared/types/odds'
 import type { NotificationData } from '../shared/types/notifications'
+import { REACTION_EMOJIS } from '../shared/reactions'
 
 const pk = () => text('id').primaryKey().$defaultFn(() => randomUUID())
 
@@ -296,6 +297,35 @@ export const prediction = pgTable(
   ],
 )
 
+export const reactionEmojiEnum = pgEnum('reaction_emoji', REACTION_EMOJIS)
+
+// One emoji reaction per user per match (changeable; clearing deletes the row).
+// Aggregate counts per emoji drive the live reaction bar; league scope reuses
+// leagueMember the same way crowd totals do (display only).
+export const matchReaction = pgTable(
+  'match_reaction',
+  {
+    id: pk(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    matchId: text('match_id')
+      .notNull()
+      .references(() => match.id, { onDelete: 'cascade' }),
+    emoji: reactionEmojiEnum('emoji').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [
+    uniqueIndex('match_reaction_user_match_uq').on(t.userId, t.matchId),
+    index('match_reaction_match_idx').on(t.matchId),
+    index('match_reaction_user_idx').on(t.userId),
+  ],
+)
+
 export const championPick = pgTable(
   'champion_pick',
   {
@@ -423,6 +453,7 @@ export const matchRelations = relations(match, ({ one, many }) => ({
   predictions: many(prediction),
   scoreEvents: many(matchScoreEvent),
   media: many(matchMedia),
+  reactions: many(matchReaction),
 }))
 
 export const matchMediaRelations = relations(matchMedia, ({ one }) => ({
@@ -437,6 +468,11 @@ export const predictionRelations = relations(prediction, ({ one }) => ({
 
 export const matchScoreEventRelations = relations(matchScoreEvent, ({ one }) => ({
   match: one(match, { fields: [matchScoreEvent.matchId], references: [match.id] }),
+}))
+
+export const matchReactionRelations = relations(matchReaction, ({ one }) => ({
+  user: one(user, { fields: [matchReaction.userId], references: [user.id] }),
+  match: one(match, { fields: [matchReaction.matchId], references: [match.id] }),
 }))
 
 export const oddsSnapshotRelations = relations(oddsSnapshot, ({ one }) => ({

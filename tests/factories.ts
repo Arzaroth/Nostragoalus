@@ -1,6 +1,7 @@
 import type { AppDatabase } from '../db/types'
-import { competition, league, leagueMember, match, prediction, user } from '../db/schema'
+import { competition, league, leagueMember, match, matchReaction, prediction, user } from '../db/schema'
 import type { AppStage, MatchStatus, NormalizedMatch } from '../shared/types/match'
+import type { ReactionEmoji } from '../shared/reactions'
 import { ensureRounds } from '../server/utils/sync/rounds'
 
 export async function makeUser(db: AppDatabase, id: string, name = id): Promise<string> {
@@ -147,4 +148,11 @@ export async function makePrediction(db: AppDatabase, opts: PredictionOptions): 
     })
     .returning({ id: prediction.id })
   return row.id
+}
+
+export async function makeReaction(
+  db: AppDatabase,
+  opts: { userId: string; matchId: string; emoji: ReactionEmoji },
+): Promise<void> {
+  await db.insert(matchReaction).values({ userId: opts.userId, matchId: opts.matchId, emoji: opts.emoji })
 }
