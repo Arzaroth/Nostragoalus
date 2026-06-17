@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest'
+import { eq } from 'drizzle-orm'
 import { createTestDb } from '../../../tests/db'
-import { makeCompetition } from '../../../tests/factories'
+import { makeCompetition, makeMatch, seedCompetition } from '../../../tests/factories'
+import { findRoundId } from '../sync/rounds'
+import { match } from '../../../db/schema'
 import { listCompetitionOddsProviders, setCompetitionOddsProvider, ODDS_PROVIDERS } from './provider-config'
 import { NotFoundError, ValidationError } from '../errors'
 
@@ -32,6 +35,43 @@ describe('odds provider config', () => {
     const id = await makeCompetition(db, { oddsProvider: 'sofascore', oddsProviderRef: '16' })
     const row = await setCompetitionOddsProvider(db, id, 'sofascore', null)
     expect(row.oddsProviderRef).toBeNull()
+    await client.close()
+  })
+
+  it('coerces an empty/whitespace ref to null', async () => {
+    const { db, client } = await createTestDb()
+    const id = await makeCompetition(db, { oddsProvider: 'sofascore', oddsProviderRef: '16' })
+    expect((await setCompetitionOddsProvider(db, id, 'sofascore', '   ')).oddsProviderRef).toBeNull()
+    await client.close()
+  })
+
+  it('clears the per-match event mapping when the provider changes', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db, { oddsProvider: 'sofascore', oddsProviderRef: '16' })
+    const roundId = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+    const matchId = await makeMatch(db, { competitionId, roundId, kickoffTime: new Date('2026-06-15T18:00:00Z') })
+    await db.update(match).set({ oddsEventRef: 'sofa-777', oddsEventSwapped: true }).where(eq(match.id, matchId))
+
+    await setCompetitionOddsProvider(db, competitionId, 'betexplorer', 'world-championship-2026')
+
+    const [m] = await db.select({ ref: match.oddsEventRef, swapped: match.oddsEventSwapped }).from(match).where(eq(match.id, matchId))
+    expect(m.ref).toBeNull()
+    expect(m.swapped).toBe(false)
+    await client.close()
+  })
+
+  it('keeps the per-match mapping when only the ref changes (same provider)', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db, { oddsProvider: 'sofascore', oddsProviderRef: '16' })
+    const roundId = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+    const matchId = await makeMatch(db, { competitionId, roundId, kickoffTime: new Date('2026-06-15T18:00:00Z') })
+    await db.update(match).set({ oddsEventRef: 'sofa-777', oddsEventSwapped: true }).where(eq(match.id, matchId))
+
+    await setCompetitionOddsProvider(db, competitionId, 'sofascore', '99')
+
+    const [m] = await db.select({ ref: match.oddsEventRef, swapped: match.oddsEventSwapped }).from(match).where(eq(match.id, matchId))
+    expect(m.ref).toBe('sofa-777')
+    expect(m.swapped).toBe(true)
     await client.close()
   })
 
