@@ -487,6 +487,21 @@
     "deleteMailSent": "'olmeH QIn ngeHlu'ta' - leQ DapoSmoHDI' raQwI' Qaw'lu'."
   },
   "admin": {
+    "odds": {
+      "title": "qI' tlhe'wI'",
+      "hint": "yIwIv: nuq tlhe'wI' qel Hoch qaj qI'.",
+      "intro": "wa' tlhe'wI'vo' qaj qI' SuqlaH Hoch qaj. poH veb qel chu'; qatlh law' qaSbe'.",
+      "none": "qaj tu'be'.",
+      "colCompetition": "qaj",
+      "colProvider": "tlhe'wI'",
+      "colRef": "wanI' nger",
+      "provider_sofascore": "Sofascore",
+      "provider_betexplorer": "BetExplorer",
+      "noFetchWarn": "qaj per neH tlhe'wI'vam; HTTP qI' SuqlaHbe'. qI' Hutlh qaj.",
+      "refPlaceholder": "ghu': 16",
+      "save": "choq",
+      "saveFailed": "tlhe'wI' choqlaHbe'."
+    },
     "apiKeys": {
       "title": "API jonwI'pu'",
       "hint": "mIqta' ngoQ DoubmeH ngaq (QaQ: bejmeH lurDech bot). chetvI' Segh; wa'logh cha'lu'.",

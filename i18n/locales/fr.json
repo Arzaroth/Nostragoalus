@@ -487,6 +487,21 @@
     "deleteMailSent": "Mail de confirmation envoyé - le compte sera supprimé en ouvrant le lien."
   },
   "admin": {
+    "odds": {
+      "title": "Fournisseur de cotes",
+      "hint": "Choisissez quel fournisseur cote les matchs de chaque compétition.",
+      "intro": "Chaque compétition récupère ses cotes 1X2 auprès d'un fournisseur. Le changement prend effet au prochain relevé des cotes ; aucun recalcul.",
+      "none": "Aucune compétition pour l'instant.",
+      "colCompetition": "Compétition",
+      "colProvider": "Fournisseur",
+      "colRef": "Réf. événement",
+      "provider_sofascore": "Sofascore",
+      "provider_betexplorer": "BetExplorer",
+      "noFetchWarn": "Ce fournisseur ne fait que lister les matchs : il ne peut pas récupérer les cotes en HTTP, les matchs restent sans cote.",
+      "refPlaceholder": "ex. 16",
+      "save": "Enregistrer",
+      "saveFailed": "Impossible d'enregistrer le fournisseur de cotes."
+    },
     "apiKeys": {
       "title": "Clients API",
       "hint": "Identifiants machine pour les intégrations (ex. le bot de liens de diffusion). Les clés sont limitées en portée et affichées une seule fois à la création.",
