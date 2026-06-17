@@ -97,22 +97,10 @@ const { live } = useLiveMatch(id)
 const { enabled: crowdEnabled, totals: crowdTotals, leagueTotals, leagueActive } = useCrowdTotals()
 const oddsEnabled = useOddsPreference()
 
-// A live score increase = somebody scored: run the pixel celebration.
+// A live score increase = somebody scored: run the pixel celebration. The
+// trigger lives below, watching the displayed score (see scoreTotal).
 const celebrating = ref(false)
 let celebrationTimer: ReturnType<typeof setTimeout> | undefined
-watch(live, (now, prev) => {
-  const total = (u: any) => (u?.fullTimeHome ?? 0) + (u?.fullTimeAway ?? 0)
-  const baseline = prev ?? { fullTimeHome: m.value?.fullTimeHome, fullTimeAway: m.value?.fullTimeAway }
-  if (now && now.status !== 'FINISHED' && total(now) > total(baseline)) {
-    celebrating.value = true
-    clearTimeout(celebrationTimer)
-    celebrationTimer = setTimeout(() => (celebrating.value = false), 3200)
-    // The score moved - pull fresh goals/cards/stats right away.
-    refreshInsights()
-    refreshDetail()
-    maybeLoadLeagueBoard()
-  }
-})
 onBeforeUnmount(() => clearTimeout(celebrationTimer))
 
 // Your pick, editable in place until kickoff.
@@ -125,9 +113,42 @@ function savePrediction(v: { home: number; away: number }) {
 }
 
 const status = computed(() => (live.value?.status ?? m.value?.status ?? 'SCHEDULED') as import('../../../../shared/types/match').MatchStatus)
-const homeScore = computed(() => live.value?.fullTimeHome ?? m.value?.fullTimeHome ?? null)
-const awayScore = computed(() => live.value?.fullTimeAway ?? m.value?.fullTimeAway ?? null)
 const isLive = computed(() => status.value === 'LIVE' || status.value === 'PAUSED')
+// While live, the header score patches over WS from the football-data poll, which
+// trails the FIFA detail feed driving the goal timeline - so a goal can show in the
+// event list while the score still reads the old value. Lead with whichever source
+// is ahead so the header never lags the goals it sits above; the stored result stays
+// authoritative once the match is finished.
+const homeScore = computed(() => {
+  const stored = live.value?.fullTimeHome ?? m.value?.fullTimeHome ?? null
+  return isLive.value ? Math.max(stored ?? 0, homeGoalEvents.value.length) : stored
+})
+const awayScore = computed(() => {
+  const stored = live.value?.fullTimeAway ?? m.value?.fullTimeAway ?? null
+  return isLive.value ? Math.max(stored ?? 0, awayGoalEvents.value.length) : stored
+})
+// Celebrate off the score the header actually shows (goal-feed-led, above) so
+// the pixel goal fires the moment the scoreline moves, not a WS poll later. The
+// first non-null reading just seeds the baseline, so opening a match already in
+// play doesn't set it off.
+const scoreTotal = computed(() => (homeScore.value == null || awayScore.value == null ? null : homeScore.value + awayScore.value))
+let lastScoreTotal: number | null = null
+watch(scoreTotal, (now) => {
+  if (now == null) return
+  const prev = lastScoreTotal
+  lastScoreTotal = now
+  if (prev != null && now > prev && status.value !== 'FINISHED') {
+    celebrating.value = true
+    clearTimeout(celebrationTimer)
+    // Two full 3s animation loops: the old 3.2s cut off mid second-kick, so the
+    // goal never visibly landed. This ends cleanly on a loop seam.
+    celebrationTimer = setTimeout(() => (celebrating.value = false), 6000)
+    // The score moved - pull fresh goals/cards/stats right away.
+    refreshInsights()
+    refreshDetail()
+    maybeLoadLeagueBoard()
+  }
+})
 // Live clock under the score: half-time, the provider's running minute (e.g.
 // "47'"), or a bare LIVE when the minute isn't exposed.
 const liveClock = computed(() =>
