@@ -626,3 +626,47 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       regen (its inline `defineRouteMeta` OpenAPI already ships). An unknown
       competition returns `{groups:[]}` (200, not 404) - intentional, like the
       sibling competition GETs.
+
+## Web push (deferred from the feature-treatment review)
+
+- [ ] Goal push has no event-level dedup: `notifyLiveMatchEvents` fires on any
+      increase in the summed live score between polls (`live.ts`). A provider score
+      correction (VAR award, an under-report then correction) can send a phantom or
+      duplicate GOAL push, which is non-revocable on the device. Track pushed goal
+      events (or last-pushed score per match) for true per-goal dedup.
+- [ ] Commit-then-push is not atomic in the live poll path: the score upsert
+      commits, then the push is sent (poll.ts). If the task crashes mid-send, the
+      next poll sees no delta and never re-pushes - the remaining predictors silently
+      miss that goal alert. Best-effort by design; add a replay/outbox if it matters.
+- [ ] Subscription endpoint upsert reassigns owner+keys to the caller
+      (`push/service.ts` onConflictDoUpdate on the unique endpoint). This is the
+      standard "device moved to another account" behaviour and is tested, but an
+      authenticated user who learns another user's endpoint URL could hijack the row
+      (silence the victim, redirect their pushes). Consider rejecting an endpoint
+      already owned by a different user, weighed against the legit shared-device case.
+- [ ] Per-category push prefs are account-wide, but the master subscribe toggle is
+      per-device, and the prefs copy ("enable push on this device") doesn't convey
+      that a category switch affects every device. Clarify the wording (4 locales).
+- [ ] `push/content.ts` re-derives the per-type title/body/url that the bell's
+      `NotificationBell.vue` itemText/linkFor already encode (drift risk: a new type
+      or a changed deep link must be edited in both). Share one `type -> {url, key}`
+      mapping between the bell and push.
+- [ ] The finalize post-commit flush (`finalize.ts`) and `createNotification`'s
+      non-collector branch (`notifications/service.ts`) both hand-pair
+      `publishUserNotification` + `pushNotification`. Extract one "deliver a
+      PendingNotification across channels" helper so a future channel can't be added
+      to one path and missed in the other. Also: nothing enforces that an in-tx
+      `createNotification` caller passes a collector - a future one that forgets
+      re-introduces the phantom-push-on-rollback bug the collector pattern prevents.
+- [ ] The post-commit flush fires one un-awaited `pushNotification` per pending
+      notification with no concurrency bound; a popular match's finalize can spawn
+      hundreds of concurrent push lookups (2 queries each). Bound the fan-out.
+- [ ] Minor push behaviours to revisit: a goal scored in the same poll that flips to
+      FINISHED gets no GOAL push (LIVE_STATUSES excludes FINISHED; MATCH_RESULT
+      covers it); the `match:<id>` notification tag collapses successive goals + the
+      result into one (only the latest shows); `preferences.vue` re-lists the 6 push
+      defaults instead of importing `PUSH_DEFAULTS`/`PUSH_COLUMN` (move them to a
+      shared module); `send.ts` reads VAPID from `process.env` while the client reads
+      `runtimeConfig` (deployer must set the `NUXT_*` env vars, not a non-env
+      override); and the `MatchTransition` payload fields built in `upsert-matches.ts`
+      have no direct assertion (a scoreline/team field swap would ship green).
