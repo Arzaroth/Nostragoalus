@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.20.0] - 2026-06-17
+
 ### Added
 - **Group standings on the fixtures page**: a Fixtures / Standings switch in the filter row flips the page to every group table at once (P, W, D, L, GD, Pts), live-aware so in-progress matches count at their current score. The switch only shows for tournaments with a group stage, and the view is shareable via a `?view=standings` link.
 
