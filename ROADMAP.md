@@ -185,6 +185,32 @@ effort buckets; order within a bucket is not priority.
       would have scored N vs your M" (reuses consensus-bot data).
 - [ ] **Personal analytics page**: bias detector - avg goals predicted vs
       real, favorite-team optimism, accuracy by group/team/round.
+- [ ] **Prediction share cards**: the lightweight, mid-tournament sibling of
+      Tournament Wrapped (which is the end-of-competition card). A shareable
+      image for a single pick or a whole round ("I called 3-1 - did you?"),
+      generated on the read side so it can ship while the tournament is live
+      and sharing peaks. Acquisition lever, not a points feature. Decisions to
+      make: card scope (per-pick vs per-round vs both), render path (server
+      OG-image vs client canvas), and whether picks stay copy-protected until
+      kickoff on a shared card (they must - same leak rule as everywhere).
+- [ ] **League rivalry / overtake alerts**: pick a rival inside a league you
+      share, get a push the moment they pass you (or you pass them) on that
+      league's board. Pure engagement multiplier on the web-push + leagues work
+      already shipped - a new `GOAL`-style transient push category gated on the
+      rival relationship, fired off the finalize rank-snapshot tick (the league
+      board already recomputes there). Decisions: one rival or many, mutual vs
+      one-sided (one-sided is simpler and fine), and whether it reuses the
+      league-activity toggle or gets its own.
+- [ ] **Live pick pulse** (maybe-drop - decide before building): a *field-wide*
+      live view, distinct from per-match league standings (1.12.0, which is
+      *your league's* members) and live points in the global ladder. The novel
+      kernel is the whole field's prediction distribution rendered against the
+      live score as it moves - "62% predicted this exact current scoreline and
+      are about to bank points; one more goal flips most of the field to
+      losers". Spectacle/data-viz over the crowd histogram + live-scoring engine
+      that already exist, not new data. Only worth it if that field-level
+      drama earns its keep; otherwise drop - the per-match league board and the
+      crowd totals already cover the per-member and aggregate angles.
 - [ ] **Bracket challenge**: predict the full knockout tree before R16 lock,
       separate points pot. Bracket rendering already exists.
 - [ ] **Survivor side game**: one team per matchday, must win, no team reuse,
