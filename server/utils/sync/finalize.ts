@@ -7,6 +7,7 @@ import { scorePredictions } from '../scoring/engine'
 import { outcomeOf } from '../scoring/tiers'
 import { closingOddsForOutcome } from '../odds/store'
 import { awardChampionBonuses } from '../champion/service'
+import { pruneLiveMediaForFinishedMatches } from '../match-media/service'
 import { notifyMatchResults } from '../notifications/events'
 import type { PendingNotification } from '../notifications/service'
 import { publishUserNotification } from '../live/hub'
@@ -172,6 +173,9 @@ export async function finalizeMatches(db: AppDatabase, now: Date = new Date()): 
         await awardChampionBonuses(tx, m.competitionId, winnerCode, pending)
       }
     }
+
+    // Finished matches shed their now-dead LIVE watch links.
+    await pruneLiveMediaForFinishedMatches(tx)
 
     const voidable = await tx.select().from(match).where(inArray(match.status, ['CANCELLED', 'POSTPONED']))
     let voided = 0

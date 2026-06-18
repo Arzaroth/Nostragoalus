@@ -3,7 +3,7 @@ import { createTestDb } from '../../../tests/db'
 import { findRoundId } from '../sync/rounds'
 import { makeMatch, seedCompetition } from '../../../tests/factories'
 import { NotFoundError, ValidationError } from '../errors'
-import { addMatchMedia, deleteMatchMedia, listMatchMedia } from './service'
+import { addMatchMedia, deleteMatchMedia, listMatchMedia, pruneLiveMediaForFinishedMatches } from './service'
 
 async function setup() {
   const ctx = await createTestDb()
@@ -109,6 +109,28 @@ describe('deleteMatchMedia', () => {
     await deleteMatchMedia(db, matchId, row.id)
     expect(await listMatchMedia(db, matchId)).toHaveLength(0)
     await expect(deleteMatchMedia(db, matchId, row.id)).rejects.toBeInstanceOf(NotFoundError)
+    await client.close()
+  })
+})
+
+describe('pruneLiveMediaForFinishedMatches', () => {
+  it('clears LIVE links on finished matches, keeps replays and live matches', async () => {
+    const { db, client, competitionId, matchId } = await setup() // matchId is SCHEDULED
+    const roundId = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+    const finished = await makeMatch(db, {
+      competitionId,
+      roundId,
+      kickoffTime: new Date('2026-06-11T16:00:00Z'),
+      status: 'FINISHED',
+    })
+    await addMatchMedia(db, { matchId: finished, kind: 'LIVE', url: 'https://youtu.be/dead' })
+    await addMatchMedia(db, { matchId: finished, kind: 'HIGHLIGHTS', url: 'https://youtu.be/high' })
+    await addMatchMedia(db, { matchId, kind: 'LIVE', url: 'https://youtu.be/live' })
+
+    expect(await pruneLiveMediaForFinishedMatches(db)).toBe(1)
+    expect((await listMatchMedia(db, finished)).map((m) => m.kind)).toEqual(['HIGHLIGHTS'])
+    expect((await listMatchMedia(db, matchId)).map((m) => m.kind)).toEqual(['LIVE'])
+    expect(await pruneLiveMediaForFinishedMatches(db)).toBe(0) // idempotent
     await client.close()
   })
 })

@@ -14,6 +14,7 @@ export interface MatchFilters {
 const matchColumns = {
   id: match.id,
   competitionId: match.competitionId,
+  providerMatchId: match.providerMatchId,
   stage: match.stage,
   group: match.groupName,
   homeTeam: match.homeTeam,
