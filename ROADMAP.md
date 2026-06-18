@@ -34,8 +34,11 @@ effort buckets; order within a bucket is not priority.
       leaderboard visibility rules (admin-hidden dropped except self, private
       profiles for members/admins only); non-predictors shown as a muted count.
       Refreshed off the existing live-score watch + 45s poll, no new socket.
-- [ ] **Changelog since-last-seen**: store last-seen version per user, badge
-      dot on the changelog nav entry, highlight the delta section.
+- [x] **Changelog since-last-seen** (shipped in 1.25.0): store last-seen version
+      per user, a badge dot on the account menu, and highlighted delta sections
+      on the About page. The marker rides a better-auth additionalField
+      (remembered across devices) and is baselined on first load, so the badge
+      fires on the next release rather than the whole back catalogue.
 - [x] **Next-match CTA** (shipped in 1.4.0): on the home banner when logged in; scrolling
       dismisses it, and a dismissed match doesn't re-show (sessionStorage).
 - [ ] **Main page rework** (in progress on worktree-main-page-rework): a rolling
