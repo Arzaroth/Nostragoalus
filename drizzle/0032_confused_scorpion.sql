@@ -1,0 +1,1 @@
+ALTER TABLE "user" ADD COLUMN "last_seen_changelog_version" text;

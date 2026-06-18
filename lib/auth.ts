@@ -141,6 +141,9 @@ export function buildAuthOptions(database: AuthDb) {
         pushMatchResults: { type: 'boolean' as const, required: false },
         pushTournament: { type: 'boolean' as const, required: false },
         pushLeague: { type: 'boolean' as const, required: false },
+        // Newest changelog version the user has viewed (settable: the client
+        // stamps it on first load and when the changelog is opened).
+        lastSeenChangelogVersion: { type: 'string' as const, required: false },
         // input: false - readable everywhere (session, admin listUsers) but never
         // settable through updateUser; only the admin visibility route writes it.
         hiddenFromLeaderboard: { type: 'boolean' as const, required: false, input: false },

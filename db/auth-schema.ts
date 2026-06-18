@@ -31,6 +31,11 @@ export const user = pgTable("user", {
   pushMatchResults: boolean("push_match_results"),
   pushTournament: boolean("push_tournament"),
   pushLeague: boolean("push_league"),
+  // Newest CHANGELOG version the user has viewed (null = not yet baselined).
+  // The client stamps it to the latest released version on first load and
+  // re-stamps when the changelog is opened; the delta drives the "what's new"
+  // badge + the highlighted sections.
+  lastSeenChangelogVersion: text("last_seen_changelog_version"),
   // Admin-managed (not a better-auth additionalField, so users cannot set it
   // through updateUser): excluded from leaderboards and rank snapshots.
   hiddenFromLeaderboard: boolean("hidden_from_leaderboard").default(false).notNull(),
