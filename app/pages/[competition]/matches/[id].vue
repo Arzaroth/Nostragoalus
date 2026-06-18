@@ -436,8 +436,8 @@ function toggleFormInfo(side: string, i: number | string) {
       <NuxtLink :to="`/${selectedSlug}/matches`" class="text-sm inline-flex items-center gap-1" style="color: var(--p-text-muted-color)">
         <i class="pi pi-arrow-left" /> {{ t('common.back') }}
       </NuxtLink>
-      <!-- Scopes the crowd line below (and the league crowd patches). -->
-      <LeaguePill v-if="crowdEnabled" />
+      <!-- Scopes the crowd line and the reaction bar below (and their league patches). -->
+      <LeaguePill v-if="crowdEnabled || hasStarted" />
     </div>
 
     <div class="rounded-2xl border p-6" style="background: var(--p-content-background); border-color: var(--p-content-border-color)">
