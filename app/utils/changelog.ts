@@ -41,18 +41,21 @@ export function parseChangelog(raw: string): ChangelogVersion[] {
 }
 
 // Compare dotted numeric versions ("1.9.0" < "1.10.0"). A non-numeric segment
-// (never expected from our changelog) falls back to a lexical compare so the
-// function still totally orders rather than throwing.
+// (never expected from our changelog) falls back to a lexical compare of that
+// segment - not of the whole string - so earlier numeric segments still order
+// first and the function totally orders rather than throwing.
 export function compareVersions(a: string, b: string): number {
   const pa = a.split('.')
   const pb = b.split('.')
   const len = Math.max(pa.length, pb.length)
   for (let i = 0; i < len; i++) {
-    const x = Number(pa[i] ?? 0)
-    const y = Number(pb[i] ?? 0)
+    const sa = pa[i] ?? '0'
+    const sb = pb[i] ?? '0'
+    const x = Number(sa)
+    const y = Number(sb)
     if (Number.isNaN(x) || Number.isNaN(y)) {
-      if (a === b) return 0
-      return a < b ? -1 : 1
+      if (sa === sb) continue
+      return sa < sb ? -1 : 1
     }
     if (x !== y) return x < y ? -1 : 1
   }

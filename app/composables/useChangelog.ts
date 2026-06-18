@@ -45,5 +45,5 @@ export function useChangelog() {
     await persist(latest)
   }
 
-  return { versions, latest, lastSeen, hasUnseen, markSeen, ensureBaseline }
+  return { versions, latest, user, lastSeen, hasUnseen, markSeen, ensureBaseline }
 }
