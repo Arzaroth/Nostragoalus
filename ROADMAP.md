@@ -221,7 +221,7 @@ effort buckets; order within a bucket is not priority.
       (alone against the crowd and right), wc champ (your champion won),
       wc overall champ (top of a competition ladder), playmaker (your best
       scorer won), averager.
-- [ ] **Match reactions** (IN_PROGRESS, worktree-reactions): fixed emoji palette
+- [x] **Match reactions** (shipped in 1.23.0): fixed emoji palette
       (nothing to moderate) - 🔥 GOAL ⚽ 😮 🤣 😢 😡 - one per user per match,
       toggleable. Decisions made: global aggregate counts are the default and
       public (read-only, no PII); a league-scoped breakdown rides alongside when
