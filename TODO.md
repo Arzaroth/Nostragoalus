@@ -703,3 +703,21 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       roadmap item).
 - [ ] Reactions deliberately raise no notifications (too noisy). Revisit only if
       a digest-style "your match got N reactions" surface is wanted.
+
+### Deferred from the feature-treatment review
+
+- [ ] Reactions mirror the crowd-totals stack almost verbatim: `live/league-reactions.ts`
+      clones `live/league-crowd.ts`, `hub.ts` `publishReactionUpdate`/`publishLeagueReactionUpdate`
+      clone `publishCrowdUpdate`/`publishLeagueCrowdUpdate`, `useMatchReactions` clones
+      `useCrowdTotals`, and `app/utils/reaction-patch.ts` clones `crowd-patch.ts`. The
+      privacy-critical league member-gate fan-out is now written 3+ times - a tightening
+      in one publisher could be missed in the other. Extract shared primitives (a generic
+      `publishLeagueAggregateUpdates(getTotals, publish)`, a `fanOut(memberIds, makePayload)`
+      hub helper, a two-scope live-counts composable, a parameterised `patchScope`). Touches
+      the working crowd code, so do it as its own focused pass.
+- [ ] `publishReactionUpdate` broadcasts the global frame to every subscriber (no
+      `sub.matchIds` filter, like `publishCrowdUpdate`); correct (client drops non-matching
+      frames) but chatty at scale - gate on the watched match if it bites.
+- [ ] The per-league reaction fan-out is fire-and-forget with a fully silent
+      `.catch(() => {})` (reactions/index.put.ts); a broken `listCoMemberIdsByLeague` would
+      stop live league counts with no signal. Log the swallowed error at least.
