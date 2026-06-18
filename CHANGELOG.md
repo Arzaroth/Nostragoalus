@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+- Opening a **live** match no longer shows an error page: the match view crashed while a match was in play and now loads its live score, timeline and stats as expected.
+
 ## [1.25.0] - 2026-06-18
 
 ### Added

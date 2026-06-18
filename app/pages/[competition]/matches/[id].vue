@@ -115,6 +115,15 @@ function savePrediction(v: { home: number; away: number }) {
 
 const status = computed(() => (live.value?.status ?? m.value?.status ?? 'SCHEDULED') as import('../../../../shared/types/match').MatchStatus)
 const isLive = computed(() => status.value === 'LIVE' || status.value === 'PAUSED')
+// Prefer the live FIFA detail goals (present during the match) over the DB
+// goal_event view (only synced at finalize, so empty for a live game). Declared
+// before homeScore on purpose: homeScore's live branch reads homeGoalEvents, and
+// the scoreTotal watch below evaluates that getter once at setup - if these came
+// later they'd be in the temporal dead zone and throw, a live-only 500 on the
+// whole page (non-live matches skip the branch, so it stayed latent until kickoff).
+const goals = computed<any[]>(() => (detail.value?.goals ?? insights.value?.goals ?? []) as any[])
+const homeGoalEvents = computed(() => goals.value.filter((g: any) => g.side === 'HOME'))
+const awayGoalEvents = computed(() => goals.value.filter((g: any) => g.side === 'AWAY'))
 // While live, the header score patches over WS from the football-data poll, which
 // trails the FIFA detail feed driving the goal timeline - so a goal can show in the
 // event list while the score still reads the old value. Lead with whichever source
@@ -210,11 +219,6 @@ function bestBy(side: 'home' | 'away', field: 'goals' | 'assists') {
     .slice()
     .sort((a, b) => (b[field] ?? 0) - (a[field] ?? 0))[0] ?? null
 }
-// Prefer the live FIFA detail goals (present during the match) over the DB
-// goal_event view (only synced at finalize, so empty for a live game).
-const goals = computed<any[]>(() => (detail.value?.goals ?? insights.value?.goals ?? []) as any[])
-const homeGoalEvents = computed(() => goals.value.filter((g: any) => g.side === 'HOME'))
-const awayGoalEvents = computed(() => goals.value.filter((g: any) => g.side === 'AWAY'))
 const hasStats = computed(
   () => homeGoalEvents.value.length > 0 || awayGoalEvents.value.length > 0 || insights.value?.possession?.home != null || !!detail.value,
 )
