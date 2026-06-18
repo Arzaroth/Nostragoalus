@@ -1,4 +1,6 @@
+import { eq } from 'drizzle-orm'
 import { db } from '../../../../db'
+import { match } from '../../../../db/schema'
 import { getMatchLeagueStandings } from '../../../utils/leaderboard/match'
 import { isAdmin, requireUser } from '../../../utils/auth-guards'
 import { getLeague, getMembership } from '../../../utils/leagues/service'
@@ -6,9 +8,18 @@ import { getLeague, getMembership } from '../../../utils/leagues/service'
 export default defineEventHandler(async (event) => {
   const matchId = getRouterParam(event, 'id') as string
   const query = getQuery(event)
-  if (!query.league) throw createError({ statusCode: 400, statusMessage: 'league query parameter is required' })
-
   const user = await requireUser(event)
+
+  // No league: the public per-match ranking - every visible user who picked
+  // (private/hidden excluded, picks still hidden until kickoff). Any signed-in
+  // user may read it, so no membership check; private picks stay out via the
+  // default visibility filter (includePrivate omitted).
+  if (!query.league) {
+    const [m] = await db.select({ competitionId: match.competitionId }).from(match).where(eq(match.id, matchId)).limit(1)
+    if (!m) return { scope: 'upcoming', rows: [], notPredicted: 0 }
+    return getMatchLeagueStandings(db, { matchId, competitionId: m.competitionId, viewerId: user.id })
+  }
+
   const league = await getLeague(db, String(query.league))
   if (!league) throw createError({ statusCode: 404, statusMessage: 'League not found' })
   const membership = await getMembership(db, league.id, user.id)
@@ -34,9 +45,9 @@ export default defineEventHandler(async (event) => {
 defineRouteMeta({
   openAPI: {
     tags: ['Matches'],
-    summary: 'League standings for a match',
+    summary: 'Standings for a match',
     description:
-      "Every member of the given league ranked by the points their pick earns on this one match. Live matches score at the current scoreline (provisional); finished matches use the scored points. Picks are hidden until kickoff (scope 'upcoming', no rows). Members with no locked pick are summarised in notPredicted.",
+      "Picks ranked by the points they earn on this one match. With ?league, that league's members (members/admins only). Without it, every visible user who picked (private/hidden excluded) - the public ranking. Live matches score at the current scoreline (provisional); finished matches use the scored points. Picks are hidden until kickoff (scope 'upcoming', no rows). League members with no locked pick are summarised in notPredicted.",
     parameters: [
       {
         in: 'path',
@@ -48,14 +59,13 @@ defineRouteMeta({
       {
         in: 'query',
         name: 'league',
-        required: true,
-        description: 'League id: rank that league\'s members. Caller must be a member of the league (or an admin).',
+        required: false,
+        description: 'Optional league id: rank that league\'s members (caller must be a member or an admin). Omit to rank every visible user who picked.',
         schema: { type: 'string' },
       },
     ],
     responses: {
-      '200': { description: "Ranked member picks with points, plus scope and notPredicted." },
-      '400': { description: 'Missing league query parameter.' },
+      '200': { description: "Ranked picks with points, plus scope and notPredicted." },
       '401': { description: 'Not signed in.' },
       '404': { description: 'Unknown league, or a league the caller is not a member of.' },
     },

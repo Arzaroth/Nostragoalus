@@ -38,15 +38,16 @@ function tierCounts(tier: BaseTier | null): { exact: number; outcome: number; gd
   }
 }
 
-// One match's standings within a league: every member who locked a pick, ranked
-// by the points that pick earns on this match. A live match scores at its
-// current scoreline (same engine as finalize, not persisted); a finished match
-// uses the persisted points. Picks are never revealed before kickoff.
+// One match's standings, ranked by the points each pick earns on this match. A
+// live match scores at its current scoreline (same engine as finalize, not
+// persisted); a finished match uses the persisted points. Picks are never
+// revealed before kickoff. With `leagueId`, ranks that league's members; without
+// it, ranks every visible user who picked (the public per-match ranking).
 export async function getMatchLeagueStandings(
   db: AppDatabase,
   opts: {
     matchId: string
-    leagueId: string
+    leagueId?: string
     competitionId: string
     viewerId: string
     includePrivate?: boolean
@@ -75,20 +76,27 @@ export async function getMatchLeagueStandings(
   if (!m || !started) return { scope: 'upcoming', rows: [], notPredicted: 0 }
   const live = m.status === 'LIVE' || m.status === 'PAUSED'
 
-  // League roster, same visibility rule as the league leaderboard: admin-hidden
-  // members are dropped (except the viewer themselves), private profiles shown
-  // only when the viewer is entitled (a member or admin).
+  // Visibility, same rule as the leaderboard: admin-hidden dropped, private
+  // profiles shown only when entitled - but the viewer is always kept on top of
+  // the visible set. (No filter at all = member/admin view, everyone shown.)
   const visibility = and(
     ...(opts.includePrivate ? [] : [eq(user.profilePrivate, false)]),
     ...(opts.includeHidden ? [] : [eq(user.hiddenFromLeaderboard, false)]),
   )
-  const members = await db
-    .select({ userId: leagueMember.userId, name: user.name, image: user.image })
-    .from(leagueMember)
-    .innerJoin(user, eq(user.id, leagueMember.userId))
-    // No visibility filter (member/admin view) means every member; otherwise the
-    // viewer is always kept on top of the visible set.
-    .where(and(eq(leagueMember.leagueId, opts.leagueId), visibility ? or(eq(user.id, opts.viewerId), visibility) : undefined))
+  const viewerOrVisible = visibility ? or(eq(user.id, opts.viewerId), visibility) : undefined
+  // The roster to rank: a league's members, or - with no league - every visible
+  // user who locked a pick on this match (the public per-match ranking).
+  const members = opts.leagueId
+    ? await db
+        .select({ userId: leagueMember.userId, name: user.name, image: user.image })
+        .from(leagueMember)
+        .innerJoin(user, eq(user.id, leagueMember.userId))
+        .where(and(eq(leagueMember.leagueId, opts.leagueId), viewerOrVisible))
+    : await db
+        .select({ userId: user.id, name: user.name, image: user.image })
+        .from(user)
+        .innerJoin(prediction, eq(prediction.userId, user.id))
+        .where(and(eq(prediction.matchId, m.id), isNotNull(prediction.lockedAt), viewerOrVisible))
   const memberById = new Map(members.map((mem) => [mem.userId, mem]))
 
   // Every locked prediction for the match feeds the crowd-rarity histogram: the
