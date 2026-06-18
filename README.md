@@ -77,6 +77,9 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
 - Admin **API clients**: mint scoped, optionally expiring machine keys for integrations (shown once,
   stored hashed), list and revoke them; also mintable headlessly with `mise run create-api-key`
 - Public **roadmap** page (in progress / planned / shipped), admin-curated with reordering, plus `mise run roadmap-add` / `roadmap-seed` CLIs
+- A **what's new** badge: a dot on your account menu when the changelog has versions
+  you have not seen, with those entries highlighted on the About page (remembered per
+  account, across devices)
 - Four languages (EN / FR / TH / tlh), light/dark/system themes saved per account
 - Auto-generated **API docs** at `/docs/api` (OpenAPI + Scalar)
 
