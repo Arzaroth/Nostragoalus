@@ -534,7 +534,7 @@ function toggleFormInfo(side: string, i: number | string) {
               <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${e.card === 'RED' ? 'var(--ng-danger)' : '#eab308'}`" />
             </template>
           </span>
-          <span class="tabular-nums text-center w-12 opacity-70">{{ e.minute }}</span>
+          <span class="tabular-nums text-center w-12 opacity-70">{{ e.minute === '' ? t('match.halfTime') : e.minute }}</span>
           <span class="w-4 flex justify-center">
             <template v-if="e.side === 'AWAY'">
               <template v-if="e.kind === 'goal'">⚽</template>
@@ -823,7 +823,7 @@ function toggleFormInfo(side: string, i: number | string) {
                   :class="GOAL_KINDS.has(e.kind) ? 'font-semibold' : ''"
                   :style="`border-left: 2px solid ${e.side === 'HOME' ? 'var(--p-primary-color)' : e.side === 'AWAY' ? '#71717a' : 'transparent'}; border-top-color: var(--p-content-border-color)`"
                 >
-                  <span class="tabular-nums text-xs text-right" style="color: var(--p-text-muted-color)">{{ e.minute }}</span>
+                  <span class="tabular-nums text-xs text-right" style="color: var(--p-text-muted-color)">{{ e.minute === '' ? t('match.halfTime') : e.minute }}</span>
                   <span class="text-center leading-none"><WhistleIcon v-if="e.kind === 'foul'" /><template v-else>{{ TIMELINE_ICONS[e.kind] || '•' }}</template></span>
                   <span :style="e.side ? '' : 'color: var(--p-text-muted-color)'"><img v-if="pbpFlag(e)" :src="pbpFlag(e) || ''" class="inline-block w-4 h-3 rounded-sm object-cover mr-1.5" style="vertical-align: -0.1em" alt="" >{{ pbpText(e) }}</span>
                   <span v-if="GOAL_KINDS.has(e.kind) && e.homeScore != null" class="tabular-nums text-xs px-1.5 py-0.5 rounded" style="background: var(--p-content-border-color)">{{ e.homeScore }}–{{ e.awayScore }}</span>
