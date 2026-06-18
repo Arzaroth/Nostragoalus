@@ -3,7 +3,13 @@ import { eq } from 'drizzle-orm'
 import { createTestDb } from '../../../tests/db'
 import { findRoundId } from '../sync/rounds'
 import { addLeagueMember, makeLeague, makeMatch, makeReaction, makeUser, seedCompetition } from '../../../tests/factories'
-import { getMatchReactionTotals, getMyReaction, setReaction } from './service'
+import {
+  getCompetitionReactionTotals,
+  getMatchReactionTotals,
+  getMyCompetitionReactions,
+  getMyReaction,
+  setReaction,
+} from './service'
 import { matchReaction } from '../../../db/schema'
 import { NotFoundError, ValidationError } from '../errors'
 
@@ -136,6 +142,87 @@ describe('getMyReaction', () => {
     const { db, client, competitionId, roundId, userId } = await setup()
     const m = await makeMatch(db, { competitionId, roundId, kickoffTime: STARTED })
     expect(await getMyReaction(db, userId, m)).toBeNull()
+    await client.close()
+  })
+})
+
+describe('getCompetitionReactionTotals', () => {
+  it('returns an empty map when nothing has been reacted to', async () => {
+    const { db, client, competitionId, roundId } = await setup()
+    await makeMatch(db, { competitionId, roundId, kickoffTime: STARTED })
+    expect(await getCompetitionReactionTotals(db, competitionId)).toEqual({})
+    await client.close()
+  })
+
+  it('groups counts per match, only for matches that have reactions', async () => {
+    const { db, client, competitionId, roundId, userId } = await setup()
+    const u2 = await makeUser(db, 'u2')
+    const m1 = await makeMatch(db, { competitionId, roundId, kickoffTime: STARTED })
+    const m2 = await makeMatch(db, { competitionId, roundId, kickoffTime: STARTED })
+    await makeMatch(db, { competitionId, roundId, kickoffTime: STARTED }) // no reactions
+    await makeReaction(db, { userId, matchId: m1, emoji: 'FIRE' })
+    await makeReaction(db, { userId: u2, matchId: m1, emoji: 'FIRE' })
+    await makeReaction(db, { userId, matchId: m2, emoji: 'WOW' })
+    const map = await getCompetitionReactionTotals(db, competitionId)
+    expect(Object.keys(map).sort()).toEqual([m1, m2].sort())
+    expect(map[m1].FIRE).toBe(2)
+    expect(map[m1].WOW).toBe(0)
+    expect(map[m2].WOW).toBe(1)
+    await client.close()
+  })
+
+  it('counts only league members when scoped to a league', async () => {
+    const { db, client, competitionId, roundId, userId } = await setup()
+    const u2 = await makeUser(db, 'u2')
+    const leagueId = await makeLeague(db, { competitionId, ownerId: userId })
+    await addLeagueMember(db, leagueId, u2)
+    const outsider = await makeUser(db, 'u3')
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: STARTED })
+    await makeReaction(db, { userId, matchId: m, emoji: 'FIRE' }) // member
+    await makeReaction(db, { userId: u2, matchId: m, emoji: 'WOW' }) // member
+    await makeReaction(db, { userId: outsider, matchId: m, emoji: 'FIRE' }) // not a member
+    expect((await getCompetitionReactionTotals(db, competitionId))[m].FIRE).toBe(2)
+    const scoped = await getCompetitionReactionTotals(db, competitionId, { leagueId })
+    expect(scoped[m].FIRE).toBe(1)
+    expect(scoped[m].WOW).toBe(1)
+    await client.close()
+  })
+
+  it('excludes reactions from other competitions', async () => {
+    const { db, client, competitionId, roundId, userId } = await setup()
+    const otherComp = await seedCompetition(db)
+    const otherRound = (await findRoundId(db, otherComp, 'GROUP', 1)) as string
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: STARTED })
+    const other = await makeMatch(db, { competitionId: otherComp, roundId: otherRound, kickoffTime: STARTED })
+    await makeReaction(db, { userId, matchId: m, emoji: 'FIRE' })
+    await makeReaction(db, { userId, matchId: other, emoji: 'WOW' })
+    const map = await getCompetitionReactionTotals(db, competitionId)
+    expect(Object.keys(map)).toEqual([m])
+    await client.close()
+  })
+})
+
+describe('getMyCompetitionReactions', () => {
+  it('maps each reacted match to the caller own emoji, this competition only', async () => {
+    const { db, client, competitionId, roundId, userId } = await setup()
+    const u2 = await makeUser(db, 'u2')
+    const otherComp = await seedCompetition(db)
+    const otherRound = (await findRoundId(db, otherComp, 'GROUP', 1)) as string
+    const m1 = await makeMatch(db, { competitionId, roundId, kickoffTime: STARTED })
+    const m2 = await makeMatch(db, { competitionId, roundId, kickoffTime: STARTED })
+    const other = await makeMatch(db, { competitionId: otherComp, roundId: otherRound, kickoffTime: STARTED })
+    await makeReaction(db, { userId, matchId: m1, emoji: 'FIRE' })
+    await makeReaction(db, { userId, matchId: m2, emoji: 'SAD' })
+    await makeReaction(db, { userId, matchId: other, emoji: 'WOW' }) // other competition
+    await makeReaction(db, { userId: u2, matchId: m1, emoji: 'ANGRY' }) // someone else
+    const mine = await getMyCompetitionReactions(db, userId, competitionId)
+    expect(mine).toEqual({ [m1]: 'FIRE', [m2]: 'SAD' })
+    await client.close()
+  })
+
+  it('returns an empty map when the caller has not reacted', async () => {
+    const { db, client, competitionId, userId } = await setup()
+    expect(await getMyCompetitionReactions(db, userId, competitionId)).toEqual({})
     await client.close()
   })
 })
