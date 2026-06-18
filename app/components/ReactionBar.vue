@@ -6,6 +6,19 @@ const props = defineProps<{ matchId: string }>()
 const { t } = useI18n()
 const { totals, leagueTotals, mine, leagueActive, signedIn, pending, react } = useMatchReactions(() => props.matchId)
 
+// With a pony skin active, the reaction faces turn into the mane six (one head
+// per reaction). Any active skin triggers it - skin is only ever set once the
+// konami easter egg is unlocked, so no extra gate is needed.
+const { skin } = useSkin()
+const PONY_FACE: Record<ReactionEmoji, string> = {
+  FIRE: 'rainbow',
+  GOAL: 'applejack',
+  WOW: 'twilight',
+  LAUGH: 'pinkie',
+  SAD: 'fluttershy',
+  ANGRY: 'rarity',
+}
+
 // Buttons show the active scope's count: the selected league's when one is
 // picked, otherwise the global count. The other scope's grand total rides in
 // the footer line for context.
@@ -36,7 +49,8 @@ const globalTotal = computed(() => REACTION_EMOJIS.reduce((sum, e) => sum + (tot
           : 'border-color: var(--p-content-border-color); color: var(--p-text-muted-color)'"
         @click="react(emoji)"
       >
-        <span aria-hidden="true">{{ REACTION_GLYPHS[emoji] }}</span>
+        <img v-if="skin" :src="`/skins/${PONY_FACE[emoji]}.png`" class="w-5 h-5 object-contain" alt="" aria-hidden="true">
+        <span v-else aria-hidden="true">{{ REACTION_GLYPHS[emoji] }}</span>
         <span v-if="count(emoji)">{{ count(emoji) }}</span>
       </button>
     </div>

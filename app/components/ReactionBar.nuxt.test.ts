@@ -21,6 +21,13 @@ vi.mock('../composables/useSelectedLeague', async () => {
 // Stub the socket: the initial fetch rides the immediate watch, not onOpen, so
 // the bar populates without a real WebSocket.
 vi.mock('../composables/useReconnectingSocket', () => ({ useReconnectingSocket: () => ({ send: () => {} }) }))
+// Skin defaults to null (un-skinned) so the palette renders as emoji; a test
+// flips it on to check the pony-face swap.
+vi.mock('../composables/useSkin', async () => {
+  const { ref } = await import('vue')
+  const skin = ref<string | null>(null)
+  return { useSkin: () => ({ skin }), __skin: skin }
+})
 
 async function setSigned(v: boolean) {
   ;((await import('../composables/useAuth')) as any).__signed.value = v
@@ -28,11 +35,15 @@ async function setSigned(v: boolean) {
 async function setLeague(v: string | null) {
   ;((await import('../composables/useSelectedLeague')) as any).__leagueId.value = v
 }
+async function setSkin(v: string | null) {
+  ;((await import('../composables/useSkin')) as any).__skin.value = v
+}
 
 let fetchMock: ReturnType<typeof vi.fn>
 beforeEach(async () => {
   await setSigned(true)
   await setLeague(null)
+  await setSkin(null)
   fetchMock = vi.fn(async (_url: string, opts: any) => {
     if (opts?.method === 'PUT') return { ok: true }
     if (opts?.query?.league) return { totals: { FIRE: 1, GOAL: 0, WOW: 0, LAUGH: 0, SAD: 0, ANGRY: 0 } }
@@ -96,5 +107,16 @@ describe('ReactionBar', () => {
     // League scope: FIRE shows the league count (1), not the global count (2).
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/reactions/m1', expect.objectContaining({ query: { league: 'l1' } })))
     await vi.waitFor(() => expect(wrapper.text()).toContain('🌐'))
+  })
+
+  it('swaps the emoji for pony faces when a skin is active', async () => {
+    await setSkin('pinkie')
+    const wrapper = await mount()
+    await vi.waitFor(() => expect(wrapper.findAll('img')).toHaveLength(6))
+    const srcs = wrapper.findAll('img').map((i) => i.attributes('src'))
+    expect(srcs).toContain('/skins/pinkie.png')
+    expect(srcs).toContain('/skins/rainbow.png')
+    // The plain emoji are gone.
+    expect(wrapper.text()).not.toContain('🔥')
   })
 })
