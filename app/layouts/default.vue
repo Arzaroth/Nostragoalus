@@ -57,6 +57,18 @@ watch(
 )
 const isAdmin = computed(() => (adminStatus.value as { isAdmin?: boolean } | null)?.isAdmin === true)
 
+// Changelog "since last seen": badge the menu when a newer version shipped, and
+// silently baseline a signed-in user with no marker yet (so the badge fires on
+// the next release, not the whole back catalogue).
+const { hasUnseen: hasUnseenChangelog, ensureBaseline: baselineChangelog } = useChangelog()
+watch(
+  () => session.value?.data?.user?.id,
+  (id) => {
+    if (id && import.meta.client) void baselineChangelog()
+  },
+  { immediate: true },
+)
+
 const navLinks = computed(() => {
   const c = slug.value
   return [
@@ -146,11 +158,17 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateNavFades))
           <ClientOnly>
             <template v-if="session && session.data">
               <NotificationBell />
-              <button type="button" class="rounded-full shrink-0" :aria-label="t('account.title')" @click="(e) => userMenu.toggle(e)">
+              <button type="button" class="relative rounded-full shrink-0" :aria-label="hasUnseenChangelog ? t('nav.whatsNewUnread') : t('account.title')" @click="(e) => userMenu.toggle(e)">
                 <Avatar
                   :image="session.data.user.image || '/brand/avatar.svg'"
                   shape="circle"
                   class="cursor-pointer overflow-hidden"
+                />
+                <span
+                  v-if="hasUnseenChangelog"
+                  class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ring-2 ring-[var(--p-content-background)]"
+                  style="background: var(--p-primary-color)"
+                  aria-hidden="true"
                 />
               </button>
               <Popover ref="userMenu" @show="onUserMenuShow" @hide="onUserMenuHide">
@@ -168,6 +186,10 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateNavFades))
                   </NuxtLink>
                   <NuxtLink to="/preferences" class="px-3 py-2 text-sm flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/10" @click="userMenu.hide()">
                     <i class="pi pi-sliders-h" />{{ t('prefs.title') }}
+                  </NuxtLink>
+                  <NuxtLink to="/about#changelog" class="px-3 py-2 text-sm flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/10" @click="userMenu.hide()">
+                    <i class="pi pi-megaphone" /><span class="flex-1">{{ t('nav.whatsNew') }}</span>
+                    <span v-if="hasUnseenChangelog" class="w-2 h-2 rounded-full shrink-0" style="background: var(--p-primary-color)" aria-hidden="true" />
                   </NuxtLink>
                   <button type="button" class="px-3 py-2 text-sm text-left flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/10" @click="onSignOut">
                     <i class="pi pi-sign-out" />{{ t('nav.signOut') }}

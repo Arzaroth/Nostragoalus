@@ -8,7 +8,9 @@
     "admin": "Admin",
     "signIn": "Sign in",
     "signOut": "Sign out",
-    "leagues": "Leagues"
+    "leagues": "Leagues",
+    "whatsNew": "What's new",
+    "whatsNewUnread": "New since your last visit"
   },
   "bracket": {
     "empty": "The knockout bracket isn't available yet.",
@@ -769,7 +771,8 @@
     "dataTitle": "Data sources",
     "dataText": "Match data comes from publicly accessible FIFA and UEFA endpoints (unofficial, read-only, politely rate-limited). Map tiles by OpenStreetMap contributors. This project is not affiliated with or endorsed by FIFA or UEFA.",
     "changelogTitle": "Changelog",
-    "sourceCta": "Read the source"
+    "sourceCta": "Read the source",
+    "newBadge": "New"
   },
   "roadmap": {
     "title": "Roadmap",
