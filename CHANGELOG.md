@@ -10,6 +10,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ### Fixed
 - Opening a **live** match no longer shows an error page: the match view crashed while a match was in play and now loads its live score, timeline and stats as expected.
+- **YouTube watch links** now play embedded instead of failing with "Video player configuration error": the player is sent the page origin it needs to authorise the embed.
 
 ## [1.25.0] - 2026-06-18
 
