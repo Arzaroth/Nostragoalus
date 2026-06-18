@@ -208,6 +208,10 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
 ## League match standings (deferred from the feature-treatment review)
 
+- [ ] Match Ranking tab (1.24.0): switching the league pill while the tab is open
+      shows the previous scope's rows for the in-flight fetch (the skeleton only
+      renders when there are no rows). Clear `leagueBoardData` on a `leagueId`
+      change so the skeleton shows during the refetch. Cosmetic, sub-second.
 - [ ] `getMatchLeagueStandings` re-implements the league roster-with-visibility
       query (server/utils/leaderboard/match.ts) that already lives in
       `listLeagueMembers` (leagues/service.ts) - same private/hidden AND-clause and
