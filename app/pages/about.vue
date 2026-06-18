@@ -1,11 +1,22 @@
 <script setup lang="ts">
 import { marked } from 'marked'
 import DOMPurify from 'isomorphic-dompurify'
-import changelogRaw from '../../CHANGELOG.md?raw'
+import { isUnseen } from '~/utils/changelog'
 
 const { t } = useI18n()
 useHead({ title: t('about.title') })
 const { isDark } = useTheme()
+
+// Parsed changelog + "since last seen" marker. Snapshot what the user had seen
+// BEFORE this visit marks everything read, so the newer entries stay
+// highlighted while they read; client-only, so SSR and the first client render
+// agree (both unhighlighted) and the highlight pops in after mount.
+const { versions: changelog, lastSeen, markSeen } = useChangelog()
+const seenBefore = ref<string | null>(null)
+onMounted(() => {
+  seenBefore.value = lastSeen.value
+  void markSeen()
+})
 
 function logoSrc(item: StackItem): string {
   const logo = (isDark.value && item.logoDark) || item.logo!
@@ -73,36 +84,6 @@ const stack: { group: string; items: StackItem[] }[] = [
     ],
   },
 ]
-
-// Minimal keepachangelog parser: versions -> categories -> bullets.
-interface ChangelogVersion {
-  version: string
-  date: string
-  sections: { title: string; items: string[] }[]
-}
-const changelog = computed<ChangelogVersion[]>(() => {
-  const versions: ChangelogVersion[] = []
-  let current: ChangelogVersion | null = null
-  let section: { title: string; items: string[] } | null = null
-  for (const line of changelogRaw.split('\n')) {
-    const v = /^## \[([^\]]+)\](?: - (.+))?/.exec(line)
-    if (v) {
-      current = { version: v[1], date: v[2] ?? '', sections: [] }
-      section = null
-      if (v[1].toLowerCase() !== 'unreleased') versions.push(current)
-      continue
-    }
-    const s = /^### (.+)/.exec(line)
-    if (s && current) {
-      section = { title: s[1], items: [] }
-      current.sections.push(section)
-      continue
-    }
-    const b = /^- (.+)/.exec(line)
-    if (b && section) section.items.push(b[1])
-  }
-  return versions
-})
 
 // Render the inline markdown our changelog bullets use (bold / `code` / italic
 // / links) with marked, then sanitize (marked's recommended defense). Links
@@ -176,13 +157,25 @@ const renderInline = (md: string): string =>
     </section>
 
     <!-- Changelog -->
-    <section>
+    <section id="changelog" style="scroll-margin-top: calc(var(--ng-header-h, 4rem) + 1rem)">
       <h2 class="font-semibold text-xl mb-5">{{ t('about.changelogTitle') }}</h2>
       <div class="flex flex-col gap-6">
-        <div v-for="v in changelog" :id="`v${v.version}`" :key="v.version" class="ng-card rounded-2xl border p-5" style="scroll-margin-top: calc(var(--ng-header-h, 4rem) + 1rem); background: var(--p-content-background)">
+        <div
+          v-for="v in changelog"
+          :id="`v${v.version}`"
+          :key="v.version"
+          class="ng-card rounded-2xl border p-5 transition-colors"
+          :class="{ 'ng-changelog-new': isUnseen(v.version, seenBefore) }"
+          style="scroll-margin-top: calc(var(--ng-header-h, 4rem) + 1rem); background: var(--p-content-background)"
+        >
           <div class="flex items-baseline gap-3 mb-3">
             <span class="font-bold text-lg" style="color: var(--p-primary-color)">{{ v.version }}</span>
             <span class="text-xs" style="color: var(--p-text-muted-color)">{{ v.date }}</span>
+            <span
+              v-if="isUnseen(v.version, seenBefore)"
+              class="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-full"
+              style="background: var(--p-primary-color); color: var(--p-primary-contrast-color)"
+            >{{ t('about.newBadge') }}</span>
           </div>
           <div v-for="s in v.sections" :key="s.title" class="mb-2">
             <div class="text-xs uppercase tracking-wider font-semibold mb-1" style="color: var(--p-text-muted-color)">{{ s.title }}</div>
@@ -196,3 +189,12 @@ const renderInline = (md: string): string =>
     </div>
   </PublicShell>
 </template>
+
+<style scoped>
+/* Entries newer than the user's last visit: a primary-colored left accent +
+   a tinted border, so the delta reads at a glance. */
+.ng-changelog-new {
+  border-color: color-mix(in srgb, var(--p-primary-color) 45%, var(--p-content-border-color));
+  box-shadow: inset 3px 0 0 0 var(--p-primary-color);
+}
+</style>

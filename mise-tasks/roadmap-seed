@@ -37,7 +37,7 @@ const ITEMS = [
   { status: 'SHIPPED', title: 'Notification center', description: 'A bell in the header gathering what matters to you - reminders for matches locking soon you have not picked, your match results, league activity, and how your champion and Golden Boot picks finished - with an unread count and live updates as things happen.' },
   { status: 'SHIPPED', title: 'Group standings on the fixtures page', description: 'Flip the fixtures page to a live-aware table for every group at once (played, won, drawn, lost, goal difference, points), shareable via a link.' },
   { status: 'SHIPPED', title: 'Match reactions', description: 'React to a match with a quick emoji once it kicks off - counts climb live for everyone watching, and you see how your league reacted next to the global tally when you have a league selected.' },
-  { status: 'PLANNED', title: 'New-since-last-visit changelog', description: 'A badge on the changelog highlighting what shipped since you last looked.' },
+  { status: 'IN_PROGRESS', title: 'New-since-last-visit changelog', description: 'A badge on the changelog highlighting what shipped since you last looked.' },
   { status: 'PLANNED', title: 'Calendar feed', description: 'Subscribe to fixtures and pick-lockout deadlines from your own calendar app (iCal).' },
   { status: 'SHIPPED', title: 'Web push notifications', description: 'Opt in to push notifications on your phone or desktop: pick reminders, kickoff and live goal alerts on matches you predicted, your results, and league activity - each switchable on or off in your preferences.' },
   { status: 'PLANNED', title: 'Tournament Wrapped', description: 'An end-of-competition recap - best and worst pick, joker efficiency, your percentile - with a shareable card.' },

@@ -8,7 +8,9 @@
     "admin": "loHwI'",
     "signIn": "yI'el",
     "signOut": "yImej",
-    "leagues": "boqmey"
+    "leagues": "boqmey",
+    "whatsNew": "chu'bogh",
+    "whatsNewUnread": "choH chu'"
   },
   "bracket": {
     "empty": "wej may' He tu'lu'.",
@@ -769,7 +771,8 @@
     "dataTitle": "De' mungmey",
     "dataText": "may' De' FIFA UEFA je naw'Daq vo' (official pagh, laD neH). qo' mIllogh OpenStreetMap vo'. FIFA UEFA joq projectvam luvoqbe'.",
     "changelogTitle": "choH tetlh",
-    "sourceCta": "ngoq mung yIlaD"
+    "sourceCta": "ngoq mung yIlaD",
+    "newBadge": "chu'"
   },
   "roadmap": {
     "title": "He nab",
