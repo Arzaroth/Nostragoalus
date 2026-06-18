@@ -31,14 +31,20 @@ function kindLabel(k: MatchMediaKind) {
   return t(`media.${k.toLowerCase()}`)
 }
 
-// A recognised provider's player gets the player sandbox; an admin force-embedded
-// raw host gets a strict one (no allow-same-origin) so a hostile page can't
-// reach our origin or break out of the frame.
-function embedAttrs(url: string): { src: string; sandbox: string } {
+// A recognised provider's player gets the player sandbox and keeps a same-origin
+// referrer: some players (YouTube) validate the embedding origin from the Referer
+// and otherwise fail with "Video player configuration error" (error 153), so we
+// send the origin only via strict-origin-when-cross-origin (what YouTube's own
+// embed code uses). An admin force-embedded raw host gets a strict sandbox (no
+// allow-same-origin) and no referrer, so a hostile page can't reach our origin or
+// learn where it was framed.
+function embedAttrs(url: string): { src: string; sandbox: string; referrerpolicy: string } {
   const target = embedTargetFor(url, host)
+  const trusted = target?.trusted ?? false
   return {
     src: target?.src ?? url,
-    sandbox: target?.trusted ? 'allow-scripts allow-same-origin allow-presentation' : 'allow-scripts allow-presentation',
+    sandbox: trusted ? 'allow-scripts allow-same-origin allow-presentation' : 'allow-scripts allow-presentation',
+    referrerpolicy: trusted ? 'strict-origin-when-cross-origin' : 'no-referrer',
   }
 }
 
@@ -77,7 +83,6 @@ function submit() {
             :title="item.label || kindLabel(item.kind)"
             class="w-full h-full border-0"
             allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-            referrerpolicy="no-referrer"
             loading="lazy"
           />
         </div>
