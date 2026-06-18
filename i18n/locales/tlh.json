@@ -423,7 +423,17 @@
     "none": "ngaQHa'ghach tu'lu'be'.",
     "invalidUrl": "https URL lugh yIghItlh.",
     "embeds": "Qap",
-    "linkOnly": "ngaQHa'ghach neH"
+    "linkOnly": "ngaQHa'ghach neH",
+    "urlOrIframe": "URL, ghap iframe yIlan",
+    "sandbox": "Qan",
+    "sandboxAuto": "tlhej'egh",
+    "sandboxOn": "Qap",
+    "sandboxOff": "Hutlh",
+    "sandboxOffWarning": "Qan Hutlh: QaperwI'Daq tlhetlh ghap poS chaw' Hatlh. voqlu'bogh host neH yIlo'.",
+    "allow": "chaw'",
+    "allowPlaceholder": "DaH not, QaQ: autoplay; encrypted-media",
+    "unsandboxed": "Qan Hutlh",
+    "unsandboxedHint": "Qan Hutlh QaperwI' (qumwI' ra')."
   },
   "auth": {
     "signIn": "yI'el",

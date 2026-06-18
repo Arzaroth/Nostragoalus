@@ -2,9 +2,11 @@
 import type { MatchStatus } from '../../shared/types/match'
 import {
   MATCH_MEDIA_KINDS,
-  embedTargetFor,
   isValidStreamUrl,
+  parseIframeEmbed,
+  resolveEmbedAttrs,
   visibleMediaForStatus,
+  type MatchMediaItem,
   type MatchMediaKind,
 } from '../../shared/match-media'
 
@@ -31,34 +33,57 @@ function kindLabel(k: MatchMediaKind) {
   return t(`media.${k.toLowerCase()}`)
 }
 
-// A recognised provider's player gets the player sandbox and keeps a same-origin
-// referrer: some players (YouTube) validate the embedding origin from the Referer
-// and otherwise fail with "Video player configuration error" (error 153), so we
-// send the origin only via strict-origin-when-cross-origin (what YouTube's own
-// embed code uses). An admin force-embedded raw host gets a strict sandbox (no
-// allow-same-origin) and no referrer, so a hostile page can't reach our origin or
-// learn where it was framed.
-function embedAttrs(url: string): { src: string; sandbox: string; referrerpolicy: string } {
-  const target = embedTargetFor(url, host)
-  const trusted = target?.trusted ?? false
-  return {
-    src: target?.src ?? url,
-    sandbox: trusted ? 'allow-scripts allow-same-origin allow-presentation' : 'allow-scripts allow-presentation',
-    referrerpolicy: trusted ? 'strict-origin-when-cross-origin' : 'no-referrer',
-  }
+// Final iframe attributes per link: resolveEmbedAttrs picks the provider player
+// src, the sandbox (per-trust default, or the admin's force-on / off override -
+// off emits no sandbox attribute, for hosts that refuse it), the allow policy and
+// the referrer policy (a recognised player keeps a same-origin referrer so it can
+// authorise the embed - YouTube otherwise fails with "configuration error" 153).
+// A `sandbox` of undefined drops the attribute entirely (v-bind omits it).
+function embedAttrs(item: MatchMediaItem) {
+  return resolveEmbedAttrs(item, host)
 }
 
-const form = reactive({ kind: 'LIVE' as MatchMediaKind, url: '', label: '', embed: 'auto' as 'auto' | 'embed' | 'off' })
+const form = reactive({
+  kind: 'LIVE' as MatchMediaKind,
+  url: '',
+  label: '',
+  embed: 'auto' as 'auto' | 'embed' | 'off',
+  // sandbox: auto = per-trust default, on = force the player sandbox, off = none.
+  sandbox: 'auto' as 'auto' | 'on' | 'off',
+  allow: '',
+})
 const urlValid = computed(() => isValidStreamUrl(form.url))
 const canAdd = computed(() => form.url.length > 0 && urlValid.value)
+
+// Paste a provider's "<iframe ...>" tag straight into the URL field: pull out the
+// src (and its allow policy) and keep just those, so the admin doesn't hand-strip
+// the tag. A plain URL is left untouched.
+watch(
+  () => form.url,
+  (v) => {
+    const parsed = parseIframeEmbed(v)
+    if (!parsed) return
+    form.url = parsed.url
+    if (parsed.allow) form.allow = parsed.allow
+  },
+)
 
 function submit() {
   if (!canAdd.value) return
   // 'auto' leaves the override null so the host whitelist decides.
   const embeddable = form.embed === 'auto' ? null : form.embed === 'embed'
+  const sandbox = form.sandbox === 'auto' ? null : form.sandbox === 'on'
   add.mutate(
-    { kind: form.kind, url: form.url, label: form.label || undefined, embeddable },
-    { onSuccess: () => { form.url = ''; form.label = '' } },
+    { kind: form.kind, url: form.url, label: form.label || undefined, embeddable, sandbox, allow: form.allow || null },
+    {
+      onSuccess: () => {
+        form.url = ''
+        form.label = ''
+        form.allow = ''
+        form.embed = 'auto'
+        form.sandbox = 'auto'
+      },
+    },
   )
 }
 </script>
@@ -79,10 +104,9 @@ function submit() {
              (X-Frame-Options), with no error event. -->
         <div class="aspect-video w-full overflow-hidden rounded-lg" style="background: #000">
           <iframe
-            v-bind="embedAttrs(item.url)"
+            v-bind="embedAttrs(item)"
             :title="item.label || kindLabel(item.kind)"
             class="w-full h-full border-0"
-            allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
             loading="lazy"
           />
         </div>
@@ -110,6 +134,7 @@ function submit() {
       <div v-for="item in media" :key="item.id" class="flex items-center gap-2 text-sm">
         <span class="px-1.5 py-0.5 rounded text-xs font-medium" style="background: var(--p-content-border-color)">{{ kindLabel(item.kind) }}</span>
         <span class="px-1.5 py-0.5 rounded text-xs" style="color: var(--p-text-muted-color)">{{ item.embeddable ? t('media.embeds') : t('media.linkOnly') }}</span>
+        <span v-if="item.embeddable && item.sandbox === false" v-tooltip.top="t('media.unsandboxedHint')" class="px-1.5 py-0.5 rounded text-xs font-medium" style="color: var(--ng-danger)">{{ t('media.unsandboxed') }}</span>
         <span class="truncate flex-1" style="color: var(--p-text-muted-color)">{{ item.label || item.url }}</span>
         <button type="button" class="shrink-0 p-1 rounded hover:opacity-70" :aria-label="t('media.remove')" @click="remove.mutate(item.id)">
           <i class="pi pi-trash" style="color: var(--ng-danger)" />
@@ -127,9 +152,22 @@ function submit() {
             <option value="off">{{ t('media.embedOff') }}</option>
           </select>
         </div>
-        <input v-model="form.url" type="url" :placeholder="t('media.url')" :aria-label="t('media.url')" class="rounded-lg border px-2 py-1.5 text-sm" style="background: var(--p-content-background); border-color: var(--p-content-border-color)" >
+        <input v-model="form.url" type="text" inputmode="url" :placeholder="t('media.urlOrIframe')" :aria-label="t('media.url')" class="rounded-lg border px-2 py-1.5 text-sm" style="background: var(--p-content-background); border-color: var(--p-content-border-color)" >
         <input v-model="form.label" type="text" :placeholder="t('media.labelPlaceholder')" :aria-label="t('media.label')" class="rounded-lg border px-2 py-1.5 text-sm" style="background: var(--p-content-background); border-color: var(--p-content-border-color)" >
         <span v-if="form.url && !urlValid" class="text-xs" style="color: var(--ng-danger)">{{ t('media.invalidUrl') }}</span>
+        <!-- Iframe sandboxing: a recognised player is auto-sandboxed; some hosts
+             (certain PPV players) refuse to run sandboxed, so an admin can drop it,
+             at the cost of letting that page navigate or pop up within our frame. -->
+        <div class="flex gap-2 flex-wrap items-center">
+          <label class="text-xs" style="color: var(--p-text-muted-color)">{{ t('media.sandbox') }}</label>
+          <select v-model="form.sandbox" :aria-label="t('media.sandbox')" class="rounded-lg border px-2 py-1.5 text-sm" style="background: var(--p-content-background); border-color: var(--p-content-border-color)">
+            <option value="auto">{{ t('media.sandboxAuto') }}</option>
+            <option value="on">{{ t('media.sandboxOn') }}</option>
+            <option value="off">{{ t('media.sandboxOff') }}</option>
+          </select>
+        </div>
+        <span v-if="form.sandbox === 'off'" class="text-xs" style="color: #eab308">{{ t('media.sandboxOffWarning') }}</span>
+        <input v-model="form.allow" type="text" :placeholder="t('media.allowPlaceholder')" :aria-label="t('media.allow')" class="rounded-lg border px-2 py-1.5 text-sm" style="background: var(--p-content-background); border-color: var(--p-content-border-color)" >
         <button
           type="submit"
           :disabled="!canAdd || add.isPending.value"

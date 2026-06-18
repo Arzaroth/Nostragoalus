@@ -14,7 +14,7 @@ export function useMatchMediaActions(id: Ref<string>) {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['match-media', id] })
 
   const add = useMutation({
-    mutationFn: (input: { kind: MatchMediaKind; url: string; label?: string; embeddable?: boolean | null }) =>
+    mutationFn: (input: { kind: MatchMediaKind; url: string; label?: string; embeddable?: boolean | null; sandbox?: boolean | null; allow?: string | null }) =>
       $fetch<{ id: string }>(`/api/admin/matches/${id.value}/media`, { method: 'POST', body: input }),
     onSuccess: invalidate,
   })

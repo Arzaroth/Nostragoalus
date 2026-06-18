@@ -423,7 +423,17 @@
     "none": "No watch links yet.",
     "invalidUrl": "Enter a valid https URL.",
     "embeds": "embeds",
-    "linkOnly": "link only"
+    "linkOnly": "link only",
+    "urlOrIframe": "URL, or paste an iframe embed tag",
+    "sandbox": "Sandbox",
+    "sandboxAuto": "Auto",
+    "sandboxOn": "Force on",
+    "sandboxOff": "Off",
+    "sandboxOffWarning": "No sandbox: this page can navigate or open pop-ups inside the embed. Use only for a host you trust that refuses to run sandboxed.",
+    "allow": "Allow",
+    "allowPlaceholder": "Optional iframe allow, e.g. autoplay; encrypted-media",
+    "unsandboxed": "no sandbox",
+    "unsandboxedHint": "Embedded without a sandbox (admin override)."
   },
   "auth": {
     "signIn": "Sign in",

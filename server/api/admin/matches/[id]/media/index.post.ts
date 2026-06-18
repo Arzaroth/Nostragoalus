@@ -10,6 +10,11 @@ const bodySchema = z.object({
   label: z.string().trim().min(1).max(80).optional(),
   // null/omitted = inherit the host-whitelist default; true/false = admin override.
   embeddable: z.boolean().nullish(),
+  // Per-link iframe overrides. sandbox: null = per-trust default, true = force the
+  // player sandbox, false = no sandbox attribute (a host that refuses sandboxing).
+  // allow: a custom feature-policy (sanitised to bare tokens in the service).
+  sandbox: z.boolean().nullish(),
+  allow: z.string().max(512).nullish(),
 })
 
 // admin session OR a media:write API key (the curation bot); requireApiKey still
@@ -22,6 +27,8 @@ export default defineValidatedHandler({ admin: true, apiKey: { media: ['write'] 
     url: body.url,
     label: body.label,
     embeddable: body.embeddable,
+    sandbox: body.sandbox,
+    allow: body.allow,
   })
   return { id: row.id }
 })
@@ -42,6 +49,8 @@ defineRouteMeta({
               url: { type: 'string', description: 'https URL of the stream/replay/highlights.' },
               label: { type: 'string', description: '1-80 chars, e.g. "FR commentary".' },
               embeddable: { type: 'boolean', nullable: true, description: 'Override the host-whitelist embed default.' },
+              sandbox: { type: 'boolean', nullable: true, description: 'null = per-trust default, true = force the player sandbox, false = no sandbox attribute (hosts that refuse sandboxing).' },
+              allow: { type: 'string', nullable: true, description: 'Custom iframe feature-policy (allow attribute); sanitised to bare tokens.' },
             },
             required: ['kind', 'url'],
           },

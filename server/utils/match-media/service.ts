@@ -2,7 +2,7 @@ import { and, asc, eq } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { match, matchMedia } from '../../../db/schema'
 import { NotFoundError, ValidationError } from '../errors'
-import { isValidStreamUrl, resolveEmbeddable, type MatchMediaItem, type MatchMediaKind } from '../../../shared/match-media'
+import { isValidStreamUrl, resolveEmbeddable, sanitizeAllow, type MatchMediaItem, type MatchMediaKind } from '../../../shared/match-media'
 
 export interface AddMatchMediaInput {
   matchId: string
@@ -10,6 +10,12 @@ export interface AddMatchMediaInput {
   url: string
   label?: string | null
   embeddable?: boolean | null
+  // Per-link iframe overrides (null = default): sandbox true = force the player
+  // sandbox, false = emit none (hosts that refuse sandboxing); allow = a custom
+  // feature-policy, sanitised to bare tokens here so the column never holds
+  // anything that could alter the iframe markup.
+  sandbox?: boolean | null
+  allow?: string | null
 }
 
 // Resolved for rendering: `embeddable` is override ?? whitelist default, so the
@@ -22,6 +28,8 @@ export async function listMatchMedia(db: AppDatabase, matchId: string): Promise<
       url: matchMedia.url,
       label: matchMedia.label,
       embeddable: matchMedia.embeddable,
+      sandbox: matchMedia.sandbox,
+      allow: matchMedia.allow,
     })
     .from(matchMedia)
     .where(eq(matchMedia.matchId, matchId))
@@ -32,6 +40,8 @@ export async function listMatchMedia(db: AppDatabase, matchId: string): Promise<
     url: r.url,
     label: r.label,
     embeddable: resolveEmbeddable(r.url, r.embeddable),
+    sandbox: r.sandbox,
+    allow: r.allow,
   }))
 }
 
@@ -47,6 +57,8 @@ export async function addMatchMedia(db: AppDatabase, input: AddMatchMediaInput) 
       url: input.url,
       label: input.label ?? null,
       embeddable: input.embeddable ?? null,
+      sandbox: input.sandbox ?? null,
+      allow: sanitizeAllow(input.allow),
     })
     .returning()
   return row
