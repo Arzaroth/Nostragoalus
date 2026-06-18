@@ -223,7 +223,10 @@ const picksEl = ref<HTMLElement | null>(null)
 useResizeObserver(picksEl, updateListHeight)
 // vue-query resolves after mount on a hard reload, so the list isn't in the DOM
 // at onMounted - (re)compute once it appears and on every relayout.
-watch([isLoading, grouped, pageMounted, isWide, picksReady], () => nextTick(updateListHeight), { immediate: true, flush: 'post' })
+// viewMode + standings in the deps so the Standings view (which reuses listEl
+// and the same contained-scroll region) remeasures when you switch to it and
+// once its group tables land.
+watch([isLoading, grouped, pageMounted, isWide, picksReady, viewMode, standings], () => nextTick(updateListHeight), { immediate: true, flush: 'post' })
 
 // On first load, bring the action into view inside the list: the first live
 // match, or failing that the next upcoming one. A hash anchor (home CTA) wins.
@@ -411,7 +414,13 @@ watch(searchOpen, () => nextTick(updateListHeight))
 
     <template v-if="viewMode === 'standings'">
       <div v-if="!standings" class="opacity-60">{{ t('common.loading') }}</div>
-      <div v-else class="grid gap-6 md:grid-cols-2">
+      <div
+        v-else
+        ref="listEl"
+        class="grid gap-6 md:grid-cols-2"
+        :class="contained ? 'overflow-y-auto overscroll-contain pr-1' : ''"
+        :style="{ maxHeight: listMaxH }"
+      >
         <section
           v-for="g in standings"
           :key="g.group"
