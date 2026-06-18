@@ -725,3 +725,19 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 - [ ] The per-league reaction fan-out is fire-and-forget with a fully silent
       `.catch(() => {})` (reactions/index.put.ts); a broken `listCoMemberIdsByLeague` would
       stop live league counts with no signal. Log the swallowed error at least.
+
+## Changelog since-last-seen (deferred from the feature-treatment review)
+
+- [ ] A signed-in user landing directly on `/about` with no marker yet triggers
+      two `updateUser` PATCHes for the same `lastSeenChangelogVersion=latest`:
+      the layout's `ensureBaseline` and the about page's `markSeen` both fire on
+      that tick. Idempotent (identical value, `persist` swallows errors), so
+      harmless today, but two uncoordinated writers for one logical "mark seen".
+      Collapse if the marker ever becomes non-idempotent (e.g. a seen-versions
+      list or a server-side don't-move-backwards check).
+- [ ] `lastSeenChangelogVersion` is a user-writable better-auth additionalField
+      (`updateUser`, no `input: false`) backed by a plain `text` column with no
+      length cap or format guard. Self-scoped and never rendered (consumed only
+      by `compareVersions`/`isUnseen`), so not exploitable, but a user could bloat
+      their own session/row with a multi-MB string. Add a `maxLength`/format
+      normalize in a `before` hook mirroring the `skin` field if it ever matters.
