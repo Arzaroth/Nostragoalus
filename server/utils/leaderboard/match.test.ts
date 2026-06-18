@@ -230,3 +230,40 @@ describe('getMatchLeagueStandings', () => {
     await client.close()
   })
 })
+
+describe('getMatchLeagueStandings - no league (public ranking)', () => {
+  it('ranks every visible picker, excluding private/hidden profiles and non-pickers', async () => {
+    const { db, client, competitionId, roundId } = await setup()
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: PAST, status: 'FINISHED', fullTimeHome: 2, fullTimeAway: 1 })
+    const alice = await makeUser(db, 'alice', 'Alice')
+    const bob = await makeUser(db, 'bob', 'Bob')
+    const priv = await makeUser(db, 'priv', 'Priv')
+    const hid = await makeUser(db, 'hid', 'Hid')
+    await makeUser(db, 'nopick', 'NoPick') // visible but never picked
+    await db.update(user).set({ profilePrivate: true }).where(eq(user.id, priv))
+    await db.update(user).set({ hiddenFromLeaderboard: true }).where(eq(user.id, hid))
+    await makePrediction(db, { userId: alice, matchId: m, roundId, home: 2, away: 1, lockedAt: PAST }) // exact
+    await makePrediction(db, { userId: bob, matchId: m, roundId, home: 1, away: 0, lockedAt: PAST }) // right result only
+    await makePrediction(db, { userId: priv, matchId: m, roundId, home: 2, away: 1, lockedAt: PAST })
+    await makePrediction(db, { userId: hid, matchId: m, roundId, home: 2, away: 1, lockedAt: PAST })
+
+    // No leagueId, viewer is an outsider who didn't pick.
+    const board = await getMatchLeagueStandings(db, { matchId: m, competitionId, viewerId: 'outsider' })
+    const ids = board.rows.map((r) => r.userId)
+    expect(ids).toEqual([alice, bob]) // exact ranks above outcome-only; private/hidden/non-picker dropped
+    expect(board.notPredicted).toBe(0)
+    await client.close()
+  })
+
+  it('keeps a private viewer in their own public ranking (viewer always on top of the visible set)', async () => {
+    const { db, client, competitionId, roundId } = await setup()
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: PAST, status: 'LIVE', fullTimeHome: 1, fullTimeAway: 1 })
+    const me = await makeUser(db, 'me', 'Me')
+    await db.update(user).set({ profilePrivate: true }).where(eq(user.id, me))
+    await makePrediction(db, { userId: me, matchId: m, roundId, home: 1, away: 1, lockedAt: PAST })
+
+    const board = await getMatchLeagueStandings(db, { matchId: m, competitionId, viewerId: me })
+    expect(board.rows.map((r) => r.userId)).toContain(me)
+    await client.close()
+  })
+})
