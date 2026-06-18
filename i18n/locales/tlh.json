@@ -393,8 +393,8 @@
     "halfTime": "botlh",
     "live": "DaH",
     "inContest": "qab",
-    "leagueTab": "ghom",
-    "leagueNoPicks": "ghomvaD DoQ tu'lu'be'.",
+    "rankingTab": "patlh",
+    "noPicks": "DoQ tu'lu'be'.",
     "leagueNoPick": "DoQ Hutlh {n} | DoQ Hutlh {n}"
   },
   "media": {

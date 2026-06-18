@@ -393,8 +393,8 @@
     "halfTime": "MT",
     "live": "EN DIRECT",
     "inContest": "disputé",
-    "leagueTab": "Ligue",
-    "leagueNoPicks": "Aucun pronostic de la ligue pour ce match.",
+    "rankingTab": "Classement",
+    "noPicks": "Aucun pronostic pour ce match.",
     "leagueNoPick": "{n} membre sans pronostic | {n} membres sans pronostic"
   },
   "media": {
