@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Changed
+- The **Standings** view on the fixtures page now scrolls inside the same contained area as the fixtures list, instead of growing the whole page - the two views feel consistent when you switch between them.
+
 ### Fixed
 - Opening a **live** match no longer shows an error page: the match view crashed while a match was in play and now loads its live score, timeline and stats as expected.
 
