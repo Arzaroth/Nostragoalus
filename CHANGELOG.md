@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.25.0] - 2026-06-18
+
 ### Added
 - **What's new badge**: the account menu now flags when the changelog has entries you haven't seen, and the About page highlights those new versions. Opening "What's new" clears the flag, and your spot is remembered across devices.
 
