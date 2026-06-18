@@ -232,6 +232,13 @@
       "when": 1781813512424,
       "tag": "0032_stormy_malcolm_colcord",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1781815537455,
+      "tag": "0033_freezing_lightspeed",
+      "breakpoints": true
     }
   ]
 }
