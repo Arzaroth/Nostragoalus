@@ -56,11 +56,12 @@ watch(locale, () => {
   if (timelineStatus.value !== 'idle') refreshTimeline()
 })
 
-// League standings for this match: every member ranked by the points their pick
-// earns here, live while the match is in play. The server hides picks until
-// kickoff (scope 'upcoming', no rows), so the tab only shows once a league is
-// picked and the match is under way. Manual-only fetch (watch: false) - an empty
-// leagueId would 400, so we drive it from maybeLoadLeagueBoard() instead.
+// Per-match ranking: picks ranked by the points they earn here, live while the
+// match is in play. With a league selected it ranks that league's members; with
+// none, every visible user who picked (an empty league sends '' and the server
+// returns the public ranking). The server hides picks until kickoff (scope
+// 'upcoming', no rows). Manual-only fetch (watch: false) - driven by
+// maybeLoadRanking() so it only loads once the tab is open and the match started.
 const { leagueId } = useSelectedLeague()
 const { session } = useAuth()
 const meId = computed(() => session.value?.data?.user?.id)
@@ -69,14 +70,14 @@ const {
   status: leagueBoardStatus,
   clear: clearLeagueBoard,
   refresh: refreshLeagueBoard,
-} = await useFetch<{ scope: string; rows: any[]; notPredicted: number; league: { id: string; name: string } }>(
+} = await useFetch<{ scope: string; rows: any[]; notPredicted: number; league?: { id: string; name: string } }>(
   `/api/matches/${id.value}/league-standings`,
   { query: computed(() => ({ league: leagueId.value ?? '' })), lazy: true, immediate: false, watch: false },
 )
 const leagueRows = computed<any[]>(() => leagueBoardData.value?.rows ?? [])
 const leagueBoardLive = computed(() => leagueBoardData.value?.scope === 'live')
-function maybeLoadLeagueBoard() {
-  if (leagueId.value && hasStarted.value && activeTab.value === 'league') refreshLeagueBoard()
+function maybeLoadRanking() {
+  if (hasStarted.value && activeTab.value === 'ranking') refreshLeagueBoard()
 }
 function medal(rank: number) {
   return rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null
@@ -146,7 +147,7 @@ watch(scoreTotal, (now) => {
     // The score moved - pull fresh goals/cards/stats right away.
     refreshInsights()
     refreshDetail()
-    maybeLoadLeagueBoard()
+    maybeLoadRanking()
   }
 })
 // Live clock under the score: half-time, the provider's running minute (e.g.
@@ -180,7 +181,7 @@ watch(
       liveStatsTimer = setInterval(() => {
         refreshInsights()
         refreshDetail()
-        maybeLoadLeagueBoard()
+        maybeLoadRanking()
         // Only keep the play-by-play warm once it has been opened.
         if (timelineStatus.value !== 'idle') refreshTimeline()
       }, 45_000)
@@ -372,9 +373,8 @@ watch(activeTab, (tab) => {
 watch(activeTab, (tab) => { if (tab === 'timeline' && timelineStatus.value === 'idle') loadTimeline() }, { immediate: true })
 // Load (and keep current) the league board when it's the open tab; a status
 // change (e.g. kickoff, or full-time) refetches so live flips to final.
-watch([activeTab, leagueId, hasStarted, status], maybeLoadLeagueBoard, { immediate: true })
-// The selected league was cleared while reading its board: fall back to stats.
-watch(leagueId, (id) => { if (!id && activeTab.value === 'league') activeTab.value = 'stats' })
+// leagueId in the deps so switching league <-> no-league refetches the right scope.
+watch([activeTab, leagueId, hasStarted, status], maybeLoadRanking, { immediate: true })
 
 // All-time head-to-head (FIFA's full calendar: friendlies, qualifiers,
 // championships) from the home side's perspective; our own data as fallback.
@@ -549,7 +549,7 @@ function toggleFormInfo(side: string, i: number | string) {
           <Tab v-if="hasStarted" value="timeline">{{ t('match.playByPlay') }}</Tab>
           <Tab v-if="hasStats || detailStatus === 'pending'" value="stats">{{ t('match.stats') }}</Tab>
           <Tab v-if="insights.standings" value="standings">{{ t('match.standings') }}</Tab>
-          <Tab v-if="leagueId && hasStarted" value="league">{{ t('match.leagueTab') }}</Tab>
+          <Tab v-if="hasStarted" value="ranking">{{ t('match.rankingTab') }}</Tab>
           <Tab value="form">{{ t('match.form') }}</Tab>
           <Tab value="next">{{ t('match.next') }}</Tab>
           <Tab value="h2h">{{ t('match.h2h') }}</Tab>
@@ -606,7 +606,7 @@ function toggleFormInfo(side: string, i: number | string) {
             <StandingsTable :rows="insights.standings" :slug="selectedSlug" :highlight="[m.homeTeamCode, m.awayTeamCode]" />
           </TabPanel>
 
-          <TabPanel v-if="leagueId && hasStarted" value="league">
+          <TabPanel v-if="hasStarted" value="ranking">
             <div v-if="leagueBoardLive" class="flex items-center gap-1.5 text-xs font-bold mb-3" style="color: var(--ng-danger)">
               <span class="w-1.5 h-1.5 rounded-full animate-pulse" style="background: var(--ng-danger)" />{{ t('leaderboard.liveProvisional') }}
             </div>
@@ -617,7 +617,7 @@ function toggleFormInfo(side: string, i: number | string) {
                 <Skeleton :width="`${6 + (i % 3) * 2}rem`" height="0.9rem" />
               </div>
             </div>
-            <div v-else-if="!leagueRows.length" class="text-sm text-center py-4" style="color: var(--p-text-muted-color)">{{ t('match.leagueNoPicks') }}</div>
+            <div v-else-if="!leagueRows.length" class="text-sm text-center py-4" style="color: var(--p-text-muted-color)">{{ t('match.noPicks') }}</div>
             <div v-else class="flex flex-col gap-2">
               <NuxtLink
                 v-for="r in leagueRows"

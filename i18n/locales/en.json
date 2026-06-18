@@ -393,8 +393,8 @@
     "halfTime": "HT",
     "live": "LIVE",
     "inContest": "in contest",
-    "leagueTab": "League",
-    "leagueNoPicks": "No league picks for this match yet.",
+    "rankingTab": "Ranking",
+    "noPicks": "No picks for this match yet.",
     "leagueNoPick": "{n} member made no pick | {n} members made no pick"
   },
   "media": {
