@@ -88,12 +88,16 @@ export interface WrappedKeyInput {
   wrappedKey: string
 }
 
-async function leagueMemberIds(db: AppDatabase, leagueId: string): Promise<Set<string>> {
+export async function getLeagueMemberIds(db: AppDatabase, leagueId: string): Promise<string[]> {
   const rows = await db
     .select({ userId: leagueMember.userId })
     .from(leagueMember)
     .where(eq(leagueMember.leagueId, leagueId))
-  return new Set(rows.map((r) => r.userId))
+  return rows.map((r) => r.userId)
+}
+
+async function leagueMemberIds(db: AppDatabase, leagueId: string): Promise<Set<string>> {
+  return new Set(await getLeagueMemberIds(db, leagueId))
 }
 
 // Enable chat for a league (OWNER/MODERATOR only). Bumps the key epoch and stores

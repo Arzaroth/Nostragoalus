@@ -26,6 +26,10 @@ export interface LeagueRow {
   joinCode: string
   createdBy: string | null
   createdAt: Date
+  chatEnabled: boolean
+  chatEnabledAt: Date | null
+  chatEnabledBy: string | null
+  chatKeyEpoch: number
 }
 
 export interface LeagueSummary {
