@@ -433,7 +433,10 @@
     "allow": "chaw'",
     "allowPlaceholder": "DaH not, QaQ: autoplay; encrypted-media",
     "unsandboxed": "Qan Hutlh",
-    "unsandboxedHint": "Qan Hutlh QaperwI' (qumwI' ra')."
+    "unsandboxedHint": "Qan Hutlh QaperwI' (qumwI' ra').",
+    "pin": "yI'ol",
+    "unpin": "yI'olHa'",
+    "pinHint": "latlh tabmey DaSuchtaHvIS Dung HaSta yIQaymoH"
   },
   "auth": {
     "signIn": "yI'el",

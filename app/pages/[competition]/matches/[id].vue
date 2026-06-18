@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { buildTimeline, h2hSummaryOf } from '../../../utils/match-view'
+import { visibleMediaForStatus, type MatchMediaKind } from '../../../../shared/match-media'
 const { t, locale } = useI18n()
 const route = useRoute()
 const router = useRouter()
@@ -380,6 +381,38 @@ watch(activeTab, (tab) => { if (tab === 'timeline' && timelineStatus.value === '
 // leagueId in the deps so switching league <-> no-league refetches the right scope.
 watch([activeTab, leagueId, hasStarted, status], maybeLoadRanking, { immediate: true })
 
+// Watch links shown as match-view tabs: LIVE before/at the match, REPLAY +
+// HIGHLIGHTS once it's over (visibleMediaForStatus), each only when a source for
+// it exists. A pin lifts the active stream above the tabs so it keeps playing
+// while you browse the rest.
+const { data: mediaData } = useMatchMedia(id)
+const visibleMedia = computed(() => visibleMediaForStatus(mediaData.value ?? [], status.value))
+const MEDIA_ORDER: MatchMediaKind[] = ['LIVE', 'REPLAY', 'HIGHLIGHTS']
+const mediaKinds = computed(() => {
+  const present = new Set(visibleMedia.value.map((mm) => mm.kind))
+  return MEDIA_ORDER.filter((k) => present.has(k))
+})
+const mediaByKind = (k: MatchMediaKind) => visibleMedia.value.filter((mm) => mm.kind === k)
+const mediaTabValue = (k: MatchMediaKind) => `media-${k.toLowerCase()}`
+const mediaKindLabel = (k: MatchMediaKind) => t(`media.${k.toLowerCase()}`)
+// A plain ref (resets per match view): when pinned the watch area moves above the
+// tabs, so the media tabs themselves drop out of the strip.
+const mediaPinned = ref(false)
+const mediaTabKinds = computed(() => (mediaPinned.value ? [] : mediaKinds.value))
+function togglePin() {
+  mediaPinned.value = !mediaPinned.value
+  // Pinning hides the media tab; leave it so the strip doesn't point at a tab
+  // that no longer exists (stats if there are any, else form).
+  if (mediaPinned.value && activeTab.value.startsWith('media-')) activeTab.value = hasStats.value ? 'stats' : 'form'
+}
+// Kickoff/full-time flips which media kinds are visible; if the open media tab
+// vanishes (e.g. LIVE -> over), fall back so the strip isn't left on a dead tab.
+watch(mediaKinds, (kinds) => {
+  if (activeTab.value.startsWith('media-') && !kinds.some((k) => mediaTabValue(k) === activeTab.value)) {
+    activeTab.value = hasStats.value ? 'stats' : 'form'
+  }
+})
+
 // All-time head-to-head (FIFA's full calendar: friendlies, qualifiers,
 // championships) from the home side's perspective; our own data as fallback.
 const h2hSummary = computed(() => h2hSummaryOf(insights.value?.h2hAll, insights.value?.headToHead, m.value?.homeTeam))
@@ -545,11 +578,22 @@ function toggleFormInfo(side: string, i: number | string) {
       <ReactionBar v-if="hasStarted" :match-id="id" />
     </div>
 
-    <MatchMedia :match-id="id" :status="status" />
+    <!-- Pinned watch area: lifts the stream above the tabs so it keeps playing
+         while you browse. Toggled from the media tab's pin button. -->
+    <div v-if="mediaPinned && visibleMedia.length" class="rounded-2xl border p-3 sm:p-4 flex flex-col gap-3" style="background: var(--p-content-background); border-color: var(--p-content-border-color)">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xs font-semibold uppercase tracking-wider" style="color: var(--p-text-muted-color)">{{ t('media.watchTitle') }}</h2>
+        <button type="button" class="inline-flex items-center gap-1 text-xs hover:opacity-80" style="color: var(--p-text-muted-color)" @click="togglePin">
+          <i class="pi pi-times text-[0.65rem]" /> {{ t('media.unpin') }}
+        </button>
+      </div>
+      <MatchMediaEmbed v-for="item in visibleMedia" :key="item.id" :item="item" />
+    </div>
 
     <div v-if="insights" class="rounded-2xl border p-2 sm:p-4" style="background: var(--p-content-background); border-color: var(--p-content-border-color)">
       <Tabs v-model:value="activeTab">
         <TabList>
+          <Tab v-for="k in mediaTabKinds" :key="k" :value="mediaTabValue(k)">{{ mediaKindLabel(k) }}</Tab>
           <Tab v-if="hasStarted" value="timeline">{{ t('match.playByPlay') }}</Tab>
           <Tab v-if="hasStats || detailStatus === 'pending'" value="stats">{{ t('match.stats') }}</Tab>
           <Tab v-if="insights.standings" value="standings">{{ t('match.standings') }}</Tab>
@@ -560,6 +604,14 @@ function toggleFormInfo(side: string, i: number | string) {
           <Tab v-if="scorers.length" value="scorers">{{ t('match.players') }}</Tab>
         </TabList>
         <TabPanels>
+          <TabPanel v-for="k in mediaTabKinds" :key="k" :value="mediaTabValue(k)">
+            <div class="flex justify-end mb-2">
+              <button type="button" v-tooltip.top="t('media.pinHint')" class="inline-flex items-center gap-1 text-xs hover:opacity-80" style="color: var(--p-text-muted-color)" @click="togglePin">
+                📌 {{ t('media.pin') }}
+              </button>
+            </div>
+            <MatchMediaEmbed v-for="item in mediaByKind(k)" :key="item.id" :item="item" />
+          </TabPanel>
           <TabPanel v-if="hasStats || detailStatus === 'pending'" value="stats">
             <!-- venue-line skeleton while the upstream-backed detail loads -->
             <div v-if="detailStatus === 'pending' && !detail" class="flex justify-center gap-4 mb-4">
@@ -808,6 +860,9 @@ function toggleFormInfo(side: string, i: number | string) {
         </TabPanels>
       </Tabs>
     </div>
+
+    <!-- Admin watch-link management: below the content, available at any status. -->
+    <MatchMedia :match-id="id" />
   </div>
   <div v-else class="opacity-60">Match not found.</div>
   </div>
