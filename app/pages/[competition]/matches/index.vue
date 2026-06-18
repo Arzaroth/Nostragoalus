@@ -3,6 +3,15 @@ import { useHotkey } from '@tanstack/vue-hotkeys'
 const { t, locale } = useI18n()
 useHead({ title: t('nav.matches') })
 const { enabled: crowdEnabled, totals: crowdTotals, leagueTotals, leagueActive } = useCrowdTotals()
+// Read-only reaction tallies per card, bulk-fetched once for the competition and
+// kept live (one instance owns the WS connection); a card click still navigates
+// to the match to react there.
+const {
+  totals: reactionTotals,
+  leagueTotals: reactionLeagueTotals,
+  leagueActive: reactionLeagueActive,
+  mine: reactionMine,
+} = useCompetitionReactions()
 const oddsEnabled = useOddsPreference()
 const slug = useSelectedCompetition()
 const { data: matches, isLoading } = useMatches()
@@ -500,6 +509,13 @@ watch(searchOpen, () => nextTick(updateListHeight))
                 <CrowdLine :match-id="m.id" :totals="crowdTotals" :league-totals="leagueTotals" :league-active="leagueActive" label count />
               </div>
               <MatchOdds v-if="oddsEnabled" :odds="m.odds" />
+              <MatchReactionsLine
+                :match-id="m.id"
+                :totals="reactionTotals"
+                :league-totals="reactionLeagueTotals"
+                :league-active="reactionLeagueActive"
+                :mine="reactionMine"
+              />
               <!-- Always rendered on open matches (disabled until a pick exists) so saving never resizes the card. -->
               <div v-if="!m.isLocked || predByMatch[m.id]" class="flex items-center gap-3">
                 <!-- single-match rounds: no joker to place; the final doubles for everyone -->
