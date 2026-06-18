@@ -433,7 +433,10 @@
     "allow": "Allow",
     "allowPlaceholder": "Attribut allow facultatif, ex. autoplay; encrypted-media",
     "unsandboxed": "sans bac à sable",
-    "unsandboxedHint": "Intégré sans bac à sable (forcé par l'admin)."
+    "unsandboxedHint": "Intégré sans bac à sable (forcé par l'admin).",
+    "pin": "Épingler",
+    "unpin": "Détacher",
+    "pinHint": "Gardez la lecture au-dessus pendant que vous parcourez les autres onglets"
   },
   "auth": {
     "signIn": "Connexion",

@@ -433,7 +433,10 @@
     "allow": "Allow",
     "allowPlaceholder": "แอตทริบิวต์ allow (ไม่บังคับ) เช่น autoplay; encrypted-media",
     "unsandboxed": "ไม่มีแซนด์บ็อกซ์",
-    "unsandboxedHint": "ฝังโดยไม่มีแซนด์บ็อกซ์ (แอดมินบังคับ)"
+    "unsandboxedHint": "ฝังโดยไม่มีแซนด์บ็อกซ์ (แอดมินบังคับ)",
+    "pin": "ปักหมุด",
+    "unpin": "เลิกปักหมุด",
+    "pinHint": "ให้เล่นด้านบนต่อไปขณะที่คุณดูแท็บอื่น"
   },
   "auth": {
     "signIn": "เข้าสู่ระบบ",

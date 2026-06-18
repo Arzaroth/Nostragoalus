@@ -433,7 +433,10 @@
     "allow": "Allow",
     "allowPlaceholder": "Optional iframe allow, e.g. autoplay; encrypted-media",
     "unsandboxed": "no sandbox",
-    "unsandboxedHint": "Embedded without a sandbox (admin override)."
+    "unsandboxedHint": "Embedded without a sandbox (admin override).",
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "pinHint": "Keep this playing above while you browse the other tabs"
   },
   "auth": {
     "signIn": "Sign in",

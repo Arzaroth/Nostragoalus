@@ -9,6 +9,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 - Admin watch links gained per-link iframe control: paste a provider's full embed code (the URL and its allow policy are pulled out for you), choose how the embed is sandboxed (auto, force on, or off), and set a custom allow policy. Turning the sandbox off lets players that refuse to run sandboxed (some PPV hosts) embed at all - it carries a warning, since an unsandboxed page can navigate or pop up within the embed.
 
 ### Changed
+- Match watch links now live in the match's own tabs instead of a block above them: a **Live** tab before and during the match, and separate **Replay** and **Highlights** tabs once it is over (each only when a source exists). A pin lifts the stream above the tabs so it keeps playing while you browse the rest of the match.
 - The **Standings** view on the fixtures page now scrolls inside the same contained area as the fixtures list, instead of growing the whole page - the two views feel consistent when you switch between them.
 
 ### Fixed
