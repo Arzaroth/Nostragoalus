@@ -1,9 +1,13 @@
 import { describe, it, expect } from 'vitest'
 import {
+  DEFAULT_EMBED_ALLOW,
   embedTargetFor,
   isValidStreamUrl,
   isWhitelistedStreamHost,
+  parseIframeEmbed,
   resolveEmbeddable,
+  resolveEmbedAttrs,
+  sanitizeAllow,
   visibleMediaForStatus,
   type MatchMediaItem,
 } from './match-media'
@@ -88,5 +92,75 @@ describe('visibleMediaForStatus', () => {
     expect(visibleMediaForStatus(media, 'LIVE').map((m) => m.kind)).toEqual(['LIVE'])
     expect(visibleMediaForStatus(media, 'FINISHED').map((m) => m.kind)).toEqual(['REPLAY', 'HIGHLIGHTS'])
     expect(visibleMediaForStatus(media, 'AWARDED').map((m) => m.kind)).toEqual(['REPLAY', 'HIGHLIGHTS'])
+  })
+})
+
+describe('sanitizeAllow', () => {
+  it('keeps bare feature tokens, lowercased and deduped', () => {
+    expect(sanitizeAllow('autoplay; encrypted-media; picture-in-picture')).toBe('autoplay; encrypted-media; picture-in-picture')
+    expect(sanitizeAllow('Autoplay; AUTOPLAY; fullscreen')).toBe('autoplay; fullscreen')
+  })
+  it('drops anything that is not a token (origins, quotes, markup, scripts)', () => {
+    expect(sanitizeAllow("autoplay; camera 'self'; <script>")).toBe('autoplay')
+    expect(sanitizeAllow('"><img src=x>')).toBeNull()
+  })
+  it('returns null for empty / nullish', () => {
+    expect(sanitizeAllow('')).toBeNull()
+    expect(sanitizeAllow(null)).toBeNull()
+    expect(sanitizeAllow(undefined)).toBeNull()
+  })
+  it('caps the length', () => {
+    // Distinct, digit-free tokens (the policy grammar is letters + dashes), so
+    // they all survive and overflow the cap.
+    const long = Array.from({ length: 60 }, (_, i) => 'a'.repeat(i + 2)).join('; ')
+    expect(sanitizeAllow(long)!.length).toBeLessThanOrEqual(200)
+  })
+})
+
+describe('parseIframeEmbed', () => {
+  it('extracts src and allow from a pasted iframe tag', () => {
+    const tag = '<iframe width="560" src="https://www.youtube.com/embed/abc?si=zz" title="x" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>'
+    expect(parseIframeEmbed(tag)).toEqual({ url: 'https://www.youtube.com/embed/abc?si=zz', allow: 'autoplay; encrypted-media; picture-in-picture' })
+  })
+  it('returns the src with null allow when there is no allow attribute', () => {
+    expect(parseIframeEmbed("<iframe src='https://ppv.example/embed/x'></iframe>")).toEqual({ url: 'https://ppv.example/embed/x', allow: null })
+  })
+  it('returns null for a plain URL or an iframe with no src', () => {
+    expect(parseIframeEmbed('https://www.youtube.com/watch?v=abc')).toBeNull()
+    expect(parseIframeEmbed('<iframe width="560"></iframe>')).toBeNull()
+  })
+})
+
+describe('resolveEmbedAttrs', () => {
+  const HOST = 'goal.arzaroth.com'
+  const item = (over: Partial<{ url: string; sandbox: boolean | null; allow: string | null }> = {}) => ({
+    url: 'https://www.youtube.com/watch?v=abc123',
+    sandbox: null,
+    allow: null,
+    ...over,
+  })
+
+  it('trusted player: nocookie src, player sandbox + same-origin referrer, default allow', () => {
+    expect(resolveEmbedAttrs(item(), HOST)).toEqual({
+      src: 'https://www.youtube-nocookie.com/embed/abc123',
+      sandbox: 'allow-scripts allow-same-origin allow-presentation',
+      allow: DEFAULT_EMBED_ALLOW,
+      referrerpolicy: 'strict-origin-when-cross-origin',
+    })
+  })
+  it('untrusted host: raw src, strict sandbox, no referrer', () => {
+    const r = resolveEmbedAttrs(item({ url: 'https://ppv.example/embed/x' }), HOST)
+    expect(r.src).toBe('https://ppv.example/embed/x')
+    expect(r.sandbox).toBe('allow-scripts allow-presentation')
+    expect(r.referrerpolicy).toBe('no-referrer')
+  })
+  it('sandbox=false drops the attribute entirely', () => {
+    expect(resolveEmbedAttrs(item({ url: 'https://ppv.example/embed/x', sandbox: false }), HOST).sandbox).toBeUndefined()
+  })
+  it('sandbox=true forces the player sandbox even on an untrusted host', () => {
+    expect(resolveEmbedAttrs(item({ url: 'https://ppv.example/embed/x', sandbox: true }), HOST).sandbox).toBe('allow-scripts allow-same-origin allow-presentation')
+  })
+  it('allow override is sanitised then used', () => {
+    expect(resolveEmbedAttrs(item({ allow: "autoplay; camera 'self'" }), HOST).allow).toBe('autoplay')
   })
 })

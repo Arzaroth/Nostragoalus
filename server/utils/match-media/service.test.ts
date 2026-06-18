@@ -39,6 +39,32 @@ describe('addMatchMedia', () => {
     await client.close()
   })
 
+  it('stores the per-link iframe overrides and sanitises the allow policy', async () => {
+    const { db, client, matchId } = await setup()
+    await addMatchMedia(db, {
+      matchId,
+      kind: 'LIVE',
+      url: 'https://ppv.example/embed/x',
+      embeddable: true,
+      sandbox: false,
+      allow: "autoplay; camera 'self'; <script>",
+    })
+    const [m] = await listMatchMedia(db, matchId)
+    expect(m.sandbox).toBe(false)
+    // "camera 'self'" and "<script>" are not bare tokens, so only autoplay survives.
+    expect(m.allow).toBe('autoplay')
+    await client.close()
+  })
+
+  it('leaves sandbox/allow null when not provided', async () => {
+    const { db, client, matchId } = await setup()
+    await addMatchMedia(db, { matchId, kind: 'LIVE', url: 'https://youtu.be/abc123' })
+    const [m] = await listMatchMedia(db, matchId)
+    expect(m.sandbox).toBeNull()
+    expect(m.allow).toBeNull()
+    await client.close()
+  })
+
   it('rejects a non-https url', async () => {
     const { db, client, matchId } = await setup()
     await expect(addMatchMedia(db, { matchId, kind: 'LIVE', url: 'http://insecure.example/x' })).rejects.toBeInstanceOf(ValidationError)

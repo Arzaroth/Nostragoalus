@@ -205,7 +205,11 @@ export const match = pgTable(
 // HIGHLIGHTS once the match is FINISHED (see visibleMediaForStatus). `embeddable`
 // is a nullable override: null = inherit the host-whitelist default, true/false
 // = an explicit admin call (e.g. force-embed a non-whitelisted host, or demote a
-// whitelisted one to an external link).
+// whitelisted one to an external link). `sandbox` and `allow` are nullable
+// per-link iframe overrides: sandbox null = the per-trust default, true = force
+// the strict player sandbox, false = emit NO sandbox attribute at all (some PPV
+// hosts refuse to run sandboxed); allow null = the default feature-policy string,
+// else an admin-supplied one (e.g. extracted from a pasted <iframe> tag).
 export const matchMediaKindEnum = pgEnum('match_media_kind', ['LIVE', 'REPLAY', 'HIGHLIGHTS'])
 
 export const matchMedia = pgTable(
@@ -219,6 +223,8 @@ export const matchMedia = pgTable(
     url: text('url').notNull(),
     label: text('label'),
     embeddable: boolean('embeddable'),
+    sandbox: boolean('sandbox'),
+    allow: text('allow'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true })
       .notNull()

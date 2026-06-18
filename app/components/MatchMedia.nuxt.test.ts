@@ -75,12 +75,29 @@ describe('MatchMedia', () => {
     await wrapper.find('button[aria-label="Remove"]').trigger('click')
     expect(fetchMock).toHaveBeenCalledWith('/api/admin/matches/m1/media/l1', expect.objectContaining({ method: 'DELETE' }))
 
-    // Add a new one.
-    await wrapper.find('input[type="url"]').setValue('https://youtu.be/new1')
+    // Add a new one (the URL field also accepts a pasted iframe tag, so it is a
+    // text input now - target it by its aria-label).
+    await wrapper.find('input[aria-label="URL"]').setValue('https://youtu.be/new1')
     await wrapper.find('form').trigger('submit')
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/admin/matches/m1/media',
       expect.objectContaining({ method: 'POST', body: expect.objectContaining({ kind: 'LIVE', url: 'https://youtu.be/new1', embeddable: null }) }),
+    )
+  })
+
+  it('extracts a pasted iframe tag and forwards the sandbox-off override', async () => {
+    const fetchMock = stubFetch([], true)
+    vi.stubGlobal('$fetch', fetchMock)
+    wrapper = await mountSuspended(MatchMedia, { props: { matchId: 'm1', status: 'SCHEDULED' } })
+    await vi.waitFor(() => expect(wrapper.find('form').exists()).toBe(true))
+
+    // Paste a provider's iframe tag: the URL field keeps just the src + allow.
+    await wrapper.find('input[aria-label="URL"]').setValue('<iframe src="https://ppv.example/embed/x" allow="autoplay; encrypted-media"></iframe>')
+    await wrapper.find('select[aria-label="Sandbox"]').setValue('off')
+    await wrapper.find('form').trigger('submit')
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/admin/matches/m1/media',
+      expect.objectContaining({ method: 'POST', body: expect.objectContaining({ url: 'https://ppv.example/embed/x', sandbox: false, allow: 'autoplay; encrypted-media' }) }),
     )
   })
 })

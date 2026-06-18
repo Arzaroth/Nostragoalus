@@ -423,7 +423,17 @@
     "none": "ยังไม่มีลิงก์รับชม",
     "invalidUrl": "กรุณาใส่ URL https ที่ถูกต้อง",
     "embeds": "ฝังได้",
-    "linkOnly": "ลิงก์เท่านั้น"
+    "linkOnly": "ลิงก์เท่านั้น",
+    "urlOrIframe": "URL หรือวางแท็ก iframe",
+    "sandbox": "แซนด์บ็อกซ์",
+    "sandboxAuto": "อัตโนมัติ",
+    "sandboxOn": "บังคับเปิด",
+    "sandboxOff": "ปิด",
+    "sandboxOffWarning": "ไม่มีแซนด์บ็อกซ์: หน้านี้อาจนำทางหรือเปิดป๊อปอัปภายในการฝังได้ ใช้เฉพาะกับโฮสต์ที่เชื่อถือได้ซึ่งไม่ยอมทำงานในแซนด์บ็อกซ์",
+    "allow": "Allow",
+    "allowPlaceholder": "แอตทริบิวต์ allow (ไม่บังคับ) เช่น autoplay; encrypted-media",
+    "unsandboxed": "ไม่มีแซนด์บ็อกซ์",
+    "unsandboxedHint": "ฝังโดยไม่มีแซนด์บ็อกซ์ (แอดมินบังคับ)"
   },
   "auth": {
     "signIn": "เข้าสู่ระบบ",

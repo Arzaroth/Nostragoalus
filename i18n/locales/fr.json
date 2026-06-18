@@ -423,7 +423,17 @@
     "none": "Aucun lien pour le moment.",
     "invalidUrl": "Saisissez une URL https valide.",
     "embeds": "intégré",
-    "linkOnly": "lien seul"
+    "linkOnly": "lien seul",
+    "urlOrIframe": "URL, ou collez une balise iframe",
+    "sandbox": "Bac à sable",
+    "sandboxAuto": "Auto",
+    "sandboxOn": "Forcer",
+    "sandboxOff": "Désactivé",
+    "sandboxOffWarning": "Sans bac à sable : cette page peut naviguer ou ouvrir des pop-ups dans l'intégration. À réserver à un hôte de confiance qui refuse de s'exécuter en bac à sable.",
+    "allow": "Allow",
+    "allowPlaceholder": "Attribut allow facultatif, ex. autoplay; encrypted-media",
+    "unsandboxed": "sans bac à sable",
+    "unsandboxedHint": "Intégré sans bac à sable (forcé par l'admin)."
   },
   "auth": {
     "signIn": "Connexion",
