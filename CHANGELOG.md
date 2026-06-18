@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Changed
+- The match page's **League** tab is now **Ranking** and shows even with no league selected: it ranks everyone who predicted that match by the points their pick earns (live then final), leaving out private profiles, leaderboard-hidden accounts and anyone who didn't pick. Pick a league and it still ranks just that league's members.
+
 ## [1.23.0] - 2026-06-18
 
 ### Added
