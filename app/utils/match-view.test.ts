@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildTimeline, h2hSummaryOf, minuteVal } from './match-view'
+import { buildTimeline, h2hSummaryOf, minuteVal, HALFTIME_VAL } from './match-view'
 
 describe('minuteVal', () => {
   it('orders regular and stoppage minutes; unknowns sort last', () => {
@@ -7,6 +7,14 @@ describe('minuteVal', () => {
     expect(minuteVal("45'+2")).toBeLessThan(minuteVal("46'"))
     expect(minuteVal(null)).toBe(Number.MAX_SAFE_INTEGER)
     expect(minuteVal('weird')).toBe(Number.MAX_SAFE_INTEGER)
+  })
+
+  it('slots empty-minute halftime subs at the interval, not at the end', () => {
+    // FIFA leaves halftime subs with an empty minute - they belong at the break.
+    expect(minuteVal('')).toBe(HALFTIME_VAL)
+    expect(minuteVal("45'+9")).toBeLessThan(minuteVal(''))
+    expect(minuteVal('')).toBeLessThan(minuteVal("46'"))
+    expect(minuteVal('')).toBeLessThan(minuteVal(null))
   })
 })
 
@@ -23,6 +31,22 @@ describe('buildTimeline', () => {
     expect(card).toMatchObject({ kind: 'card', teamCode: 'BRA' }) // away card -> away code
     const sub = t[2] as any
     expect(sub).toMatchObject({ kind: 'sub', playerName: 'On', offName: 'Off' })
+  })
+
+  it('places a halftime sub (empty minute) between first-half stoppage and the restart', () => {
+    const t = buildTimeline({
+      goals: [
+        { side: 'HOME', minute: "45'+2", playerName: 'StoppageGoal', ownGoal: false },
+        { side: 'AWAY', minute: "46'", playerName: 'RestartGoal', ownGoal: false },
+      ],
+      bookings: [],
+      substitutions: [{ side: 'HOME', minute: '', playerOnName: 'On', playerOffName: 'Off' }],
+      homeCode: 'FRA',
+      awayCode: 'BRA',
+      showBookings: true,
+      showSubs: true,
+    })
+    expect(t.map((e) => e.playerName)).toEqual(['StoppageGoal', 'On', 'RestartGoal'])
   })
 
   it('honors the visibility toggles', () => {
