@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Changed
+- A match's live watch link is now cleared automatically once the match finishes (replays and highlights stay), so a dead stream link never lingers.
+
 ## [1.28.0] - 2026-06-19
 
 ### Added

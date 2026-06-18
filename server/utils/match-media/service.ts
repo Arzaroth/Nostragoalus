@@ -1,4 +1,4 @@
-import { and, asc, eq } from 'drizzle-orm'
+import { and, asc, eq, inArray } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { match, matchMedia } from '../../../db/schema'
 import { NotFoundError, ValidationError } from '../errors'
@@ -72,4 +72,17 @@ export async function deleteMatchMedia(db: AppDatabase, matchId: string, mediaId
     .where(and(eq(matchMedia.id, mediaId), eq(matchMedia.matchId, matchId)))
     .returning({ id: matchMedia.id })
   if (deleted.length === 0) throw new NotFoundError('media not found')
+}
+
+// A LIVE link on a finished match is dead - the stream is over. Cleared on
+// finalize so it doesn't linger in the table (the UI already hides LIVE media on
+// finished matches; this is housekeeping that doesn't depend on the bot running).
+// Returns how many were removed.
+export async function pruneLiveMediaForFinishedMatches(db: AppDatabase): Promise<number> {
+  const finishedIds = db.select({ id: match.id }).from(match).where(eq(match.status, 'FINISHED'))
+  const deleted = await db
+    .delete(matchMedia)
+    .where(and(eq(matchMedia.kind, 'LIVE'), inArray(matchMedia.matchId, finishedIds)))
+    .returning({ id: matchMedia.id })
+  return deleted.length
 }
