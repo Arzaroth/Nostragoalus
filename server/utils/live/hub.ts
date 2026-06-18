@@ -3,6 +3,7 @@ import type { AppDatabase } from '../../../db/types'
 import { match } from '../../../db/schema'
 import type { NotificationDTO } from '../../../shared/types/notifications'
 import type { ReactionTotals } from '../../../shared/reactions'
+import type { ChatMessageDTO } from '../../../shared/types/chat'
 
 export interface LiveSubscriber {
   matchIds: Set<string>
@@ -94,6 +95,24 @@ export function publishLeagueReactionUpdate(
   for (const sub of subscribers) {
     if (sub.userId && members.has(sub.userId)) {
       sub.send({ type: 'reaction:league-update', leagueId, matchId, totals })
+      delivered += 1
+    }
+  }
+  return delivered
+}
+
+// A new encrypted chat message: deliver the ciphertext to the league's connected
+// members only (private leagues). The payload is opaque to the server.
+export function publishLeagueChatMessage(
+  leagueId: string,
+  memberIds: readonly string[],
+  message: ChatMessageDTO,
+): number {
+  const members = new Set(memberIds)
+  let delivered = 0
+  for (const sub of subscribers) {
+    if (sub.userId && members.has(sub.userId)) {
+      sub.send({ type: 'chat:new', leagueId, message })
       delivered += 1
     }
   }
