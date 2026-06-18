@@ -575,6 +575,14 @@ export const league = pgTable(
     joinCode: text('join_code').notNull(),
     createdBy: text('created_by').references(() => user.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    // End-to-end encrypted chat (off by default; only OWNER/MODERATOR enables,
+    // behind a legal-cover warning). The server only ever stores ciphertext.
+    // chatKeyEpoch 0 means never enabled; it is bumped on enable and on any
+    // future re-key, tying messages and wrapped group keys to the right key.
+    chatEnabled: boolean('chat_enabled').notNull().default(false),
+    chatEnabledAt: timestamp('chat_enabled_at', { withTimezone: true }),
+    chatEnabledBy: text('chat_enabled_by').references(() => user.id, { onDelete: 'set null' }),
+    chatKeyEpoch: integer('chat_key_epoch').notNull().default(0),
   },
   (t) => [uniqueIndex('league_join_code_uq').on(t.joinCode), index('league_competition_idx').on(t.competitionId)],
 )
@@ -813,4 +821,74 @@ export const pushSubscription = pgTable(
 export const pushSubscriptionRelations = relations(pushSubscription, ({ one }) => ({
   user: one(user, { fields: [pushSubscription.userId], references: [user.id] }),
 }))
+
+// === League chat (end-to-end encrypted) ===
+// The server is deliberately blind: it stores public keys, ciphertext blobs and
+// sealed (wrapped) group keys, never plaintext or any key it could unwrap. All
+// encryption/decryption happens client-side (see app/utils/e2ee).
+
+// A user's chat identity keypair. The public key is readable by co-members (to
+// seal the group key to them); the private key never reaches the server in the
+// clear. recoveryWrappedKey is an optional escrow: the private key encrypted
+// under a key derived from a generated recovery code (packed salt+nonce+ct),
+// letting the user restore history on a new device. Null until they save a code.
+export const chatIdentity = pgTable('chat_identity', {
+  userId: text('user_id')
+    .primaryKey()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  publicKey: text('public_key').notNull(),
+  recoveryWrappedKey: text('recovery_wrapped_key'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+})
+
+// The per-league group key, sealed to one member's public key (libsodium sealed
+// box), one row per (league, member, epoch). A member unwraps it with their
+// private key to read/write that league's chat. Re-keying bumps the epoch and
+// writes a fresh set of rows.
+export const leagueChatKey = pgTable(
+  'league_chat_key',
+  {
+    id: pk(),
+    leagueId: text('league_id')
+      .notNull()
+      .references(() => league.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    epoch: integer('epoch').notNull(),
+    wrappedKey: text('wrapped_key').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('league_chat_key_member_epoch_uq').on(t.leagueId, t.userId, t.epoch),
+    index('league_chat_key_league_epoch_idx').on(t.leagueId, t.epoch),
+  ],
+)
+
+// An encrypted chat message. matchId null = the league-global room; set = a
+// per-match thread. The server keeps the sender id, timestamp and the key epoch
+// (metadata it needs to order and route) but only ciphertext for the content
+// (secretbox under the group key, packed nonce+ct).
+export const chatMessage = pgTable(
+  'chat_message',
+  {
+    id: pk(),
+    leagueId: text('league_id')
+      .notNull()
+      .references(() => league.id, { onDelete: 'cascade' }),
+    matchId: text('match_id').references(() => match.id, { onDelete: 'cascade' }),
+    userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
+    epoch: integer('epoch').notNull(),
+    ciphertext: text('ciphertext').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('chat_message_room_idx').on(t.leagueId, t.matchId, t.createdAt),
+    index('chat_message_league_idx').on(t.leagueId, t.createdAt),
+  ],
+)
 

@@ -267,6 +267,13 @@
       "when": 1782170668146,
       "tag": "0037_dear_tigra",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1782241725241,
+      "tag": "0038_minor_wolfpack",
+      "breakpoints": true
     }
   ]
 }
