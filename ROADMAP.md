@@ -234,9 +234,30 @@ effort buckets; order within a bucket is not priority.
       (reaction:update + reaction:league-update). No notifications (too noisy).
       Emoji stored as a key (DB enum), glyph rendered client-side so the palette
       can grow/skin without a migration.
-- [ ] **League trash-talk threads**: only if leagues ask for it after
-      reactions ship. Private leagues only, league owner + existing moderator
-      role can delete/mute, no global surface ever.
+- [ ] **League chat (E2EE)** (in progress on feat/league-chat): per-league chat,
+      league-global room + per-match threads (one enable per league, threads
+      inherit the league key). **Disabled by default**; only OWNER/MODERATOR can
+      enable, behind a legal-cover warning modal (owner is server-blind, history
+      is unrecoverable if keys/recovery code are lost, owner cannot moderate).
+      Design (locked):
+      - **Group-key model** (not Signal: its forward-secrecy deletes keys, which
+        conflicts with durable cross-device history). Per-user X25519 identity
+        keypair; a random per-league group key is sealed (libsodium sealed box)
+        to each member's public key; messages are secretbox-encrypted with the
+        group key. Server stores only ciphertext + sender id + timestamp.
+      - **Silent device-bound enrollment**: keypair generated on first chat use,
+        private key non-extractable in IndexedDB - no password prompt.
+      - **Recovery code** (generated, shown once): an extractable copy of the
+        private key, wrapped under KDF(recovery code), escrowed server-side as
+        ciphertext. Restores full history on a new device / after a cache clear;
+        server stays blind. Lose all devices AND the code = history gone.
+      - **Key distribution**: enabler wraps the group key for current members
+        with a published public key; members holding the key lazily wrap it for
+        newcomers (eventually-consistent). Re-key by epoch on membership change.
+      - Owner-blind moderation: OWNER/MODs + client-side mute/block + leave; no
+        global surface, no server-side read path (would break the disclaimer).
+      - Transport: ciphertext over the members-only league WS channel + REST
+        history (ciphertext pages). Dep: libsodium-wrappers.
 - [ ] **Hall of shame (per pick, not per player)**: "shame of the round" -
       one per matchday so nobody is dogpiled tournament-wide. Shameable =
       wrong outcome (a miss) AND max total goal error (|dHome| + |dAway|);
