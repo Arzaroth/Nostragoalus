@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.23.0] - 2026-06-18
+
 ### Added
 - **Match reactions**: react to a match with a quick emoji - 🔥, ⚽, 😮, 🤣, 😢 or 😡 - from kickoff onward and for as long as you like after the final whistle. Counts update live for everyone watching the match, and when you have a league selected you see how your league reacted next to the global tally. One reaction each: tap another to change it, or tap the same one again to clear it.
 
