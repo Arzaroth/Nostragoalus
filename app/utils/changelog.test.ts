@@ -75,10 +75,13 @@ describe('compareVersions', () => {
     expect(compareVersions('1.2.1', '1.2')).toBe(1)
   })
 
-  it('falls back to a lexical compare on a non-numeric segment', () => {
+  it('falls back to a per-segment lexical compare on a non-numeric segment', () => {
     expect(compareVersions('1.2.x', '1.2.y')).toBe(-1)
     expect(compareVersions('1.2.y', '1.2.x')).toBe(1)
     expect(compareVersions('1.2.x', '1.2.x')).toBe(0)
+    // Earlier numeric segments still order first: 10 > 9 decides before the
+    // non-numeric tail is ever reached (a whole-string compare would invert it).
+    expect(compareVersions('1.10.x', '1.9.x')).toBe(1)
   })
 })
 

@@ -9,14 +9,25 @@ const { isDark } = useTheme()
 
 // Parsed changelog + "since last seen" marker. Snapshot what the user had seen
 // BEFORE this visit marks everything read, so the newer entries stay
-// highlighted while they read; client-only, so SSR and the first client render
-// agree (both unhighlighted) and the highlight pops in after mount.
-const { versions: changelog, lastSeen, markSeen } = useChangelog()
+// highlighted while they read. The better-auth session resolves asynchronously
+// on a cold load (no cookie cache), so capture off the user becoming available
+// rather than a one-shot onMounted: snapshotting in onMounted would read a null
+// marker before the session lands and silently suppress every highlight.
+// Client-only and one-shot, so SSR and the first client render agree (both
+// unhighlighted) and the highlight pops in once the session resolves.
+const { versions: changelog, user, lastSeen, markSeen } = useChangelog()
 const seenBefore = ref<string | null>(null)
-onMounted(() => {
-  seenBefore.value = lastSeen.value
-  void markSeen()
-})
+let captured = false
+watch(
+  user,
+  (u) => {
+    if (!u || captured || !import.meta.client) return
+    captured = true
+    seenBefore.value = lastSeen.value
+    void markSeen()
+  },
+  { immediate: true },
+)
 
 function logoSrc(item: StackItem): string {
   const logo = (isDark.value && item.logoDark) || item.logo!
