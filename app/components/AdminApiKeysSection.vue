@@ -166,15 +166,23 @@ function dismissCreatedKey() {
 
       <span v-if="revokeErr" class="text-xs" style="color: var(--ng-danger)">{{ revokeErr }}</span>
 
-      <form class="flex flex-col gap-2 border-t pt-4" style="border-color: var(--p-content-border-color)" @submit.prevent="createMutation.mutate()">
+      <form class="flex flex-col gap-3 border-t pt-4" style="border-color: var(--p-content-border-color)" @submit.prevent="createMutation.mutate()">
         <div class="text-xs font-semibold uppercase tracking-wider" style="color: var(--p-text-muted-color)">{{ t('admin.apiKeys.addTitle') }}</div>
         <input v-model="form.name" type="text" maxlength="64" :placeholder="t('admin.apiKeys.namePlaceholder')" :aria-label="t('admin.apiKeys.name')" class="rounded-lg border px-2 py-1.5 text-sm" style="background: var(--p-content-background); border-color: var(--p-content-border-color)" >
-        <div class="flex flex-wrap gap-3 items-center">
-          <label v-for="s in SCOPES" :key="`${s.resource}:${s.action}`" class="inline-flex items-center gap-1.5 text-sm">
-            <input v-model="form.scopes[`${s.resource}:${s.action}`]" type="checkbox" >
-            {{ t(`admin.apiKeys.${s.labelKey}`) }}
-          </label>
-          <select v-model="form.expiry" :aria-label="t('admin.apiKeys.expiry')" class="rounded-lg border px-2 py-1.5 text-sm" style="background: var(--p-content-background); border-color: var(--p-content-border-color)">
+        <!-- Scopes get their own block (they grow as integrations are added); expiry
+             sits on its own row so the two never crowd each other. -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-medium" style="color: var(--p-text-muted-color)">{{ t('admin.apiKeys.colScopes') }}</label>
+          <div class="flex flex-wrap gap-x-4 gap-y-1.5">
+            <label v-for="s in SCOPES" :key="`${s.resource}:${s.action}`" class="inline-flex items-center gap-1.5 text-sm">
+              <input v-model="form.scopes[`${s.resource}:${s.action}`]" type="checkbox" >
+              {{ t(`admin.apiKeys.${s.labelKey}`) }}
+            </label>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-xs font-medium" style="color: var(--p-text-muted-color)">{{ t('admin.apiKeys.expiry') }}</label>
+          <select v-model="form.expiry" :aria-label="t('admin.apiKeys.expiry')" class="rounded-lg border px-2 py-1.5 text-sm w-44" style="background: var(--p-content-background); border-color: var(--p-content-border-color)">
             <option v-for="e in EXPIRY" :key="e.key" :value="e.key">{{ t(`admin.apiKeys.expiry_${e.key}`) }}</option>
           </select>
         </div>

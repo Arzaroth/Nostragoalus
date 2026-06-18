@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Changed
+- Admin panels tidy-up: the odds-provider dropdown no longer collapses to a cramped width, and the API-key create form gives scopes and expiry their own rows instead of crowding them onto one line.
+
 ## [1.26.0] - 2026-06-19
 
 ### Added
