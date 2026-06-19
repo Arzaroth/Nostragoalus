@@ -24,6 +24,8 @@ describe('MatchMediaEmbed', () => {
     expect(f.attributes('sandbox')).toBeUndefined()
     expect(f.attributes('allow')).toBe('encrypted-media')
     expect(f.attributes('referrerpolicy')).toBe('no-referrer')
+    // fullscreen rides the static attribute even when allow omits the token.
+    expect(f.attributes('allowfullscreen')).toBeDefined()
     w.unmount()
   })
 
