@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- **Tamper-evident scores**: every prediction change is now sealed into an append-only, hash-chained ledger (commit-reveal). Picks stay hidden until kickoff, then their score and salt are revealed so anyone can re-open the seal. The new public **Verify scores** page (footer link) pulls the whole ledger and recomputes the chain in your own browser - if an admin ever retro-edited a pick, the chain would no longer match the head you can snapshot today. Predictors appear as an opaque hash, never their account.
+
 ## [1.32.1] - 2026-06-22
 
 ### Changed
