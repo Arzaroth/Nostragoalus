@@ -68,6 +68,7 @@ const lang = computed({
           </template>
         </ClientOnly>
         <NuxtLink to="/roadmap" class="hover:underline">{{ t('roadmap.title') }}</NuxtLink>
+        <NuxtLink to="/verify" class="hover:underline">{{ t('verify.title') }}</NuxtLink>
         <a href="/docs/api" target="_blank" rel="noopener" class="hover:underline">API</a>
       </div>
     </div>
