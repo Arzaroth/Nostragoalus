@@ -379,9 +379,19 @@ effort buckets; order within a bucket is not priority.
   - Electron / Neutralino / Electrobun ruled out (size / ecosystem /
     maturity).
 - [ ] **Tamper-evident / E2EE scores**:
-  - Ship first: **commit-reveal** - hash(prediction + salt) stored at pick
-    time, reveal at lock, anyone can verify admins didn't retro-edit. Keeps
-    the global leaderboard, no key-management UX.
+  - Phase 1 **commit-reveal** (IN_PROGRESS, worktree-tamper-evidence). Locked
+    design: an append-only `prediction_commitment` ledger, hash-chained like a
+    blockchain (no PoW/consensus) - each entry's hash folds in the prior head,
+    so a retro-edit forces rewriting every later entry. Anchor is **in-DB only**
+    (head exposed on the public `/verify` page to snapshot; an external anchor
+    like OpenTimestamps was considered and deferred). Scope is **score
+    predictions only** (champion + best-scorer picks deferred). The commitment
+    binds `subject = sha256(userId)`, never the raw id, so the public reveal
+    proves integrity without deanonymizing private profiles. A 256-bit salt
+    keeps picks hidden while the commitment is already public; the opening
+    (score + salt) is revealed only once the match kicks off. The whole ledger
+    is recomputed client-side on `/verify`, trusting its own math, not a server
+    flag. Keeps the global leaderboard, no key-management UX.
   - Opt-in per-league **E2EE tier** as the hardcore showcase: client-side
     scoring, league-shared key (HKDF-derived from a league master key).
     Known costs: key distribution on join, key loss bricks the league, and

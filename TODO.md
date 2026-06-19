@@ -754,3 +754,30 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       by `compareVersions`/`isUnseen`), so not exploitable, but a user could bloat
       their own session/row with a multi-MB string. Add a `maxLength`/format
       normalize in a `before` hook mirroring the `skin` field if it ever matters.
+
+## Tamper-evident scores / commit-reveal (deferred from the feature pass)
+
+- [ ] **Champion + best-scorer picks** have no commitments yet - phase 1 scoped
+      to score predictions only. Same ledger pattern fits both write paths
+      (`server/utils/champion`/`best-scorer` upserts); add when picked up.
+- [ ] **External anchor for the chain head.** In-DB-only anchoring means a full
+      DB+app-control operator could rewrite the entire chain and serve a clean
+      head; only an observer who snapshotted an earlier head detects it. Anchor
+      the head off-box (OpenTimestamps/Bitcoin, or a public gist/social post via
+      cron) to make a rewrite detectable by anyone, anytime.
+- [ ] **Chain-head write contention.** `appendPredictionCommitment` locks the
+      singleton `commitment_chain_head` FOR UPDATE, so every pick save serializes
+      through one row. Fine at WC single-instance scale; revisit before any
+      multi-instance deploy or high write burst (sharded sub-chains + a periodic
+      Merkle roll-up is the escape hatch).
+- [ ] **Cold-start seq race.** The very first commitment (empty head table) plus
+      two concurrent saves could both compute seq=1 and collide on the PK; the
+      loser 500s and it self-heals on the next save. Seed a genesis head row in a
+      migration, or catch-and-retry the unique violation, if it ever bites.
+- [ ] **Match-card badge.** `/verify` ships, but locked matches don't yet surface
+      a "tamper-evident" badge linking to it. Add once the verify story is proven.
+- [ ] **Ledger growth + full-chain client verify.** Append-only by design (no
+      pruning); autosave is de-duped to actual value changes, but heavy re-picking
+      still grows it unbounded, and `/verify` downloads the whole chain (paged
+      1000) to verify. Add checkpoint heads / incremental verification if the
+      table gets large.
