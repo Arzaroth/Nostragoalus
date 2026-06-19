@@ -409,6 +409,16 @@ effort buckets; order within a bucket is not priority.
     (score + salt) is revealed only once the match kicks off. The whole ledger
     is recomputed client-side on `/verify`, trusting its own math, not a server
     flag. Keeps the global leaderboard, no key-management UX.
+  - **Distributed witnessing (localStorage):** each browser pins the highest
+    head it verified in localStorage (never sent to the server) and on each load
+    fetches only the extension since its pin to prove the chain still extends it
+    (a Certificate-Transparency-style consistency proof). A retro-edit to
+    anything that device already saw is flagged automatically (footer warning +
+    `/verify` panel) - turning every visitor into a witness, so no one has to
+    save a hash by hand. Residual gap: split-view / equivocation (serving fork A
+    to one user, fork B to another) is NOT caught by per-device localStorage -
+    each fork is internally consistent. Closing that needs cross-client head
+    gossip, which is the same job as the deferred external anchor.
   - Opt-in per-league **E2EE tier** as the hardcore showcase: client-side
     scoring, league-shared key (HKDF-derived from a league master key).
     Known costs: key distribution on join, key loss bricks the league, and

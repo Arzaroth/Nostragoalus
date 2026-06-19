@@ -762,9 +762,16 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       (`server/utils/champion`/`best-scorer` upserts); add when picked up.
 - [ ] **External anchor for the chain head.** In-DB-only anchoring means a full
       DB+app-control operator could rewrite the entire chain and serve a clean
-      head; only an observer who snapshotted an earlier head detects it. Anchor
-      the head off-box (OpenTimestamps/Bitcoin, or a public gist/social post via
-      cron) to make a rewrite detectable by anyone, anytime.
+      head; only an observer who snapshotted an earlier head detects it. The
+      localStorage witness now makes every visitor such an observer for their OWN
+      device, but anchor the head off-box (OpenTimestamps/Bitcoin, or a public
+      gist/social post via cron) to make a rewrite detectable by anyone, anytime.
+- [ ] **Split-view / equivocation detection.** The localStorage witness proves
+      per-device continuity but can't catch a server serving fork A to one user
+      and fork B to another (each fork is internally consistent). Needs
+      cross-client head gossip - e.g. an endpoint where clients submit the head
+      they pinned and get told if it diverges from others', or fold it into the
+      external anchor above. Until then, equivocation is the named residual risk.
 - [ ] **Chain-head write contention.** `appendPredictionCommitment` locks the
       singleton `commitment_chain_head` FOR UPDATE, so every pick save serializes
       through one row. Fine at WC single-instance scale; revisit before any
