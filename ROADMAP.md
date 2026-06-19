@@ -214,6 +214,23 @@ effort buckets; order within a bucket is not priority.
       that already exist, not new data. Only worth it if that field-level
       drama earns its keep; otherwise drop - the per-match league board and the
       crowd totals already cover the per-member and aggregate angles.
+- [ ] **Predictive bracket** (in progress on feat/predictive-bracket): once a
+      group's teams have all played at least once, pre-fill the knockout slots
+      that group feeds with the currently-projected qualifiers from the live
+      group standings, clearly distinct from officially-decided teams. Decisions
+      (locked):
+      - **R16 only**, including best-third-placed slots (WC2026 has 8). Later
+        rounds stay TBD - they depend on knockout results, not group standings.
+      - **All three competitions** (WC2026 12-group + 8 thirds, WC2022 8-group
+        top-2, Euro2024 6-group + 4 thirds), each with its third-ranking +
+        slot-assignment table; graceful no-op if a slot placeholder can't be
+        parsed (show official only, never a wrong projection).
+      - Data: the provider already tags each TBD slot with a placeholder
+        (`PlaceHolderA/B`, e.g. "1A"/"Winner Group A"/third refs); resolve it
+        against `computeAllGroupStandings`. Official = the slot has a real team
+        code; projected = resolved from standings.
+      - Visual: official slots solid; projected slots dashed + a "projected"
+        chip (not color-only). Separate from the "Bracket challenge" game below.
 - [ ] **Bracket challenge**: predict the full knockout tree before R16 lock,
       separate points pot. Bracket rendering already exists.
 - [ ] **Survivor side game**: one team per matchday, must win, no team reuse,
