@@ -1,7 +1,7 @@
 // Pure derivations for the match view, extracted so the timeline assembly and
 // head-to-head tally are testable without mounting the 500-line page.
 
-import { EXTRA_TIME_BREAK_MINUTE } from '../../shared/types/match'
+import { EXTRA_TIME_BREAK_MINUTE } from '#shared/types/match'
 
 // FIFA stamps break substitutions with an empty minute (no running clock at the
 // break), so slot them at the interval - after the half's stoppage, before the

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { MATCH_MEDIA_KINDS, isValidStreamUrl, parseIframeEmbed, type MatchMediaKind } from '../../shared/match-media'
+import { MATCH_MEDIA_KINDS, isValidStreamUrl, parseIframeEmbed, type MatchMediaKind } from '#shared/match-media'
 
 const props = defineProps<{ matchId: string }>()
 const { t } = useI18n()

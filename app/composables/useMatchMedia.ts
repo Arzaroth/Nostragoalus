@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import type { MatchMediaItem, MatchMediaKind } from '../../shared/match-media'
+import type { MatchMediaItem, MatchMediaKind } from '#shared/match-media'
 
 export function useMatchMedia(id: Ref<string>) {
   return useQuery({

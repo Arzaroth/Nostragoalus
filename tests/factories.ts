@@ -1,7 +1,7 @@
 import type { AppDatabase } from '../db/types'
 import { competition, league, leagueMember, match, matchReaction, prediction, user } from '../db/schema'
-import type { AppStage, MatchStatus, NormalizedMatch } from '../shared/types/match'
-import type { ReactionEmoji } from '../shared/reactions'
+import type { AppStage, MatchStatus, NormalizedMatch } from '#shared/types/match'
+import type { ReactionEmoji } from '#shared/reactions'
 import { ensureRounds } from '../server/utils/sync/rounds'
 
 export async function makeUser(db: AppDatabase, id: string, name = id): Promise<string> {

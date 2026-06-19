@@ -1,4 +1,4 @@
-import type { OddsTriple } from '../../shared/types/odds'
+import type { OddsTriple } from '#shared/types/odds'
 import { showOddsEnabled } from '../utils/prefs'
 
 // The "show bookmaker odds" preference alone (default ON) - for pages that

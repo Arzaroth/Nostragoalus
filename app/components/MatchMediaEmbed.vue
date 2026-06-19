@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { resolveEmbedAttrs, type MatchMediaItem, type MatchMediaKind } from '../../shared/match-media'
+import { resolveEmbedAttrs, type MatchMediaItem, type MatchMediaKind } from '#shared/match-media'
 
 const props = defineProps<{ item: MatchMediaItem }>()
 const { t } = useI18n()

@@ -1,4 +1,4 @@
-import type { MatchStatus } from '../../shared/types/match'
+import type { MatchStatus } from '#shared/types/match'
 
 // vue-i18n's translate function, narrowed to what these helpers use. Passing it
 // in keeps these pure/testable while the labels stay localized.

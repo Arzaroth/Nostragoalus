@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { REACTION_EMOJIS, REACTION_GLYPHS, type ReactionEmoji } from '../../shared/reactions'
+import { REACTION_EMOJIS, REACTION_GLYPHS, type ReactionEmoji } from '#shared/reactions'
 
 const props = defineProps<{ matchId: string }>()
 

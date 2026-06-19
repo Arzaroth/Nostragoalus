@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/vue-query'
-import type { Serialized } from '../../shared/types/serialized'
+import type { Serialized } from '#shared/types/serialized'
 import type { listMatches } from '../../server/utils/matches/service'
 
 // Derived from the server query (+ isLocked, which the API computes per request).

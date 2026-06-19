@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { buildTimeline, h2hSummaryOf, minuteVal, HALFTIME_VAL, ET_HALFTIME_VAL } from './match-view'
-import { EXTRA_TIME_BREAK_MINUTE } from '../../shared/types/match'
+import { EXTRA_TIME_BREAK_MINUTE } from '#shared/types/match'
 
 describe('minuteVal', () => {
   it('orders regular and stoppage minutes; unknowns sort last', () => {
