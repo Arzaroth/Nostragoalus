@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.29.3] - 2026-06-20
+
 ### Fixed
 - The match page no longer shows two identically-named tabs in French (and Klingon): the team **group** standings tab is now distinct from the player **ranking** tab.
 - Your pick on the match page now locks the moment the match kicks off while you're watching it: the score inputs stayed editable if the match started after the page had loaded.
