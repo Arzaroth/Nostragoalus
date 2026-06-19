@@ -1,13 +1,19 @@
 // Pure derivations for the match view, extracted so the timeline assembly and
 // head-to-head tally are testable without mounting the 500-line page.
 
-// FIFA stamps halftime substitutions with an empty minute (no running clock at
-// the break), so slot them at the interval - after first-half stoppage, before
-// the restart - instead of dumping them at the very end of the timeline.
+import { EXTRA_TIME_BREAK_MINUTE } from '../../shared/types/match'
+
+// FIFA stamps break substitutions with an empty minute (no running clock at the
+// break), so slot them at the interval - after the half's stoppage, before the
+// restart - instead of dumping them at the very end of the timeline. The empty
+// string is the half-time break (~45'); the provider rewrites an extra-time-break
+// sub to a sentinel so it lands near 105' instead.
 export const HALFTIME_VAL = 4599
+export const ET_HALFTIME_VAL = 10599
 
 export function minuteVal(minute: string | null): number {
   if (minute === '') return HALFTIME_VAL
+  if (minute === EXTRA_TIME_BREAK_MINUTE) return ET_HALFTIME_VAL
   if (!minute) return Number.MAX_SAFE_INTEGER
   const m = /^(\d+)'(?:\+(\d+))?/.exec(minute)
   return m ? Number(m[1]) * 100 + Number(m[2] ?? 0) : Number.MAX_SAFE_INTEGER
