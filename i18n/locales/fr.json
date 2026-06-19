@@ -889,6 +889,8 @@
   "err": {
     "notFound": "Celle-ci est passée au-dessus de la barre - la page que vous cherchez s'est perdue dans les étoiles.",
     "generic": "Une erreur est survenue de notre côté.",
+    "teapot": "Je suis une théière. Vous lui demandez l'impossible : elle refuse, poliment.",
+    "serverError": "Quelque chose a cassé chez nous - le serveur a pris un carton rouge. Réessayez dans un instant.",
     "home": "Retour au terrain"
   },
   "leagues": {
