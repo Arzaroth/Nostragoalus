@@ -4,6 +4,7 @@ import { competition as competitionTable, leagueMember, match, prediction, round
 import { isSingleMatchStage } from '../../../shared/types/match'
 import { LockedError, NotFoundError, ValidationError } from '../errors'
 import { deletePickReminder } from '../notifications/reminders'
+import { appendPredictionCommitment } from '../commitment/service'
 
 // Aggregate counters for the "my stats" strip (points/rank come from the leaderboard).
 export async function getMyStats(db: AppDatabase, userId: string, competitionId: string) {
@@ -45,26 +46,47 @@ export async function upsertPrediction(
   // Knockout placeholders ("Winner Group A") aren't predictable until both teams are known.
   if (!rows[0].homeTeamCode || !rows[0].awayTeamCode) throw new ValidationError('teams not confirmed yet')
 
-  // Atomic upsert keyed on the prediction_user_match_uq index. A plain
-  // select-then-insert raced on concurrent double-submits (autosave + manual
-  // save, retries), with the loser hitting the unique constraint as a 500.
-  const [row] = await db
-    .insert(prediction)
-    .values({
-      userId: input.userId,
-      matchId: input.matchId,
-      roundId: rows[0].roundId,
-      homeGoals: input.home,
-      awayGoals: input.away,
-    })
-    .onConflictDoUpdate({
-      target: [prediction.userId, prediction.matchId],
-      set: { homeGoals: input.home, awayGoals: input.away },
-    })
-    .returning({ id: prediction.id })
-  // The pick is in: any missing-pick reminder for this match is now fulfilled.
-  await deletePickReminder(db, input.userId, input.matchId)
-  return row.id
+  // One transaction: the pick and its tamper-evidence commitment land or roll
+  // back together, so the ledger can never disagree with the stored prediction.
+  return db.transaction(async (tx) => {
+    const [existing] = await tx
+      .select({ homeGoals: prediction.homeGoals, awayGoals: prediction.awayGoals })
+      .from(prediction)
+      .where(and(eq(prediction.userId, input.userId), eq(prediction.matchId, input.matchId)))
+      .limit(1)
+
+    // Atomic upsert keyed on the prediction_user_match_uq index. A plain
+    // select-then-insert raced on concurrent double-submits (autosave + manual
+    // save, retries), with the loser hitting the unique constraint as a 500.
+    const [row] = await tx
+      .insert(prediction)
+      .values({
+        userId: input.userId,
+        matchId: input.matchId,
+        roundId: rows[0].roundId,
+        homeGoals: input.home,
+        awayGoals: input.away,
+      })
+      .onConflictDoUpdate({
+        target: [prediction.userId, prediction.matchId],
+        set: { homeGoals: input.home, awayGoals: input.away },
+      })
+      .returning({ id: prediction.id })
+
+    // Append a commitment only when the pick actually changed - autosave re-fires
+    // the same score, and that should not grow the ledger.
+    if (!existing || existing.homeGoals !== input.home || existing.awayGoals !== input.away) {
+      await appendPredictionCommitment(
+        tx,
+        { predictionId: row.id, userId: input.userId, matchId: input.matchId, homeGoals: input.home, awayGoals: input.away },
+        now,
+      )
+    }
+
+    // The pick is in: any missing-pick reminder for this match is now fulfilled.
+    await deletePickReminder(tx, input.userId, input.matchId)
+    return row.id
+  })
 }
 
 // Prediction joined with enough match/round context to render a readable list.
