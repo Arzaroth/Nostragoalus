@@ -889,6 +889,8 @@
   "err": {
     "notFound": "'er Dung juS - Hovmey HopDaq nav DaSambogh chIl.",
     "generic": "QaghmaH maQagh.",
+    "teapot": "tej jIH. vIchenmoHlaHbe'bogh Datlhob; jIlaj 'e' vImev.",
+    "serverError": "QaghmaH maQagh - Doq nav Hev De'wI'. tugh yInID.",
     "home": "yotlh chegh"
   },
   "leagues": {

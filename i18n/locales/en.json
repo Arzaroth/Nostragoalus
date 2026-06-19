@@ -889,6 +889,8 @@
   "err": {
     "notFound": "This one sailed over the bar - the page you're looking for is lost among the stars.",
     "generic": "Something went wrong on our side.",
+    "teapot": "I'm a teapot. You asked it to brew something it just can't - so it is, politely, refusing.",
+    "serverError": "Something broke on our side - the server got sent off. Give it a moment and try again.",
     "home": "Back to the pitch"
   },
   "leagues": {
