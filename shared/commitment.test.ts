@@ -5,8 +5,10 @@ import {
   computeEntryHash,
   computeSubject,
   type LedgerEntry,
+  type PinnedHead,
   sha256Hex,
   verifyLedger,
+  witnessExtension,
 } from './commitment'
 
 // Build a well-formed ledger entry from its opening so tests can then tamper one
@@ -103,5 +105,65 @@ describe('verifyLedger', () => {
     const e1 = await makeEntry(1, COMMITMENT_GENESIS, 'u1', 'm1', iso1, { homeGoals: 2, awayGoals: 1, salt: 'a' }, false)
     const tampered: LedgerEntry = { ...e1, commitment: 'f'.repeat(64) }
     expect(await verifyLedger([tampered])).toMatchObject({ ok: false, reason: 'entry-hash', failedSeq: 1 })
+  })
+})
+
+describe('witnessExtension', () => {
+  const iso1 = '2026-06-19T10:00:00.000Z'
+  const iso2 = '2026-06-19T11:00:00.000Z'
+
+  async function chain() {
+    const e1 = await makeEntry(1, COMMITMENT_GENESIS, 'u1', 'm1', iso1, { homeGoals: 1, awayGoals: 0, salt: 'a' })
+    const e2 = await makeEntry(2, e1.entryHash, 'u1', 'm2', iso2, { homeGoals: 2, awayGoals: 0, salt: 'b' })
+    const e3 = await makeEntry(3, e2.entryHash, 'u1', 'm3', iso1, { homeGoals: 0, awayGoals: 0, salt: 'c' })
+    const e4 = await makeEntry(4, e3.entryHash, 'u1', 'm4', iso2, { homeGoals: 1, awayGoals: 1, salt: 'd' })
+    return { e1, e2, e3, e4 }
+  }
+
+  it('trusts on first use when nothing is pinned', async () => {
+    const served: PinnedHead = { seq: 4, headHash: 'h' }
+    expect(await witnessExtension(null, [], served)).toEqual({ status: 'first-seen', head: served })
+  })
+
+  it('is consistent when the served head equals the pin', async () => {
+    const pin: PinnedHead = { seq: 2, headHash: 'h2' }
+    expect(await witnessExtension(pin, [], { seq: 2, headHash: 'h2' })).toEqual({ status: 'consistent', head: { seq: 2, headHash: 'h2' } })
+  })
+
+  it('flags tampering when the same-seq head differs', async () => {
+    const pin: PinnedHead = { seq: 2, headHash: 'h2' }
+    expect(await witnessExtension(pin, [], { seq: 2, headHash: 'evil' })).toEqual({ status: 'tampered', head: pin })
+  })
+
+  it('flags a rollback when the served head is behind the pin', async () => {
+    const pin: PinnedHead = { seq: 5, headHash: 'h5' }
+    expect(await witnessExtension(pin, [], { seq: 3, headHash: 'h3' })).toEqual({ status: 'rolled-back', head: pin })
+  })
+
+  it('accepts an extension that links from the pin to the served head', async () => {
+    const { e2, e3, e4 } = await chain()
+    const pin: PinnedHead = { seq: 2, headHash: e2.entryHash }
+    const served: PinnedHead = { seq: 4, headHash: e4.entryHash }
+    expect(await witnessExtension(pin, [e3, e4], served)).toEqual({ status: 'consistent', head: served })
+  })
+
+  it('flags an extension that does not link from the pin', async () => {
+    const { e3, e4 } = await chain()
+    const pin: PinnedHead = { seq: 2, headHash: 'not-the-real-head' }
+    const served: PinnedHead = { seq: 4, headHash: e4.entryHash }
+    expect(await witnessExtension(pin, [e3, e4], served)).toMatchObject({ status: 'tampered' })
+  })
+
+  it('flags an extension that does not reach the served head', async () => {
+    const { e2, e3, e4 } = await chain()
+    const pin: PinnedHead = { seq: 2, headHash: e2.entryHash }
+    expect(await witnessExtension(pin, [e3, e4], { seq: 4, headHash: 'wrong-head' })).toMatchObject({ status: 'tampered' })
+  })
+
+  it('flags a non-contiguous extension (a gap right after the pin)', async () => {
+    const { e2 } = await chain()
+    const pin: PinnedHead = { seq: 2, headHash: e2.entryHash }
+    const e5 = await makeEntry(5, e2.entryHash, 'u1', 'm5', iso1, { homeGoals: 3, awayGoals: 3, salt: 'z' })
+    expect(await witnessExtension(pin, [e5], { seq: 5, headHash: e5.entryHash })).toMatchObject({ status: 'tampered' })
   })
 })

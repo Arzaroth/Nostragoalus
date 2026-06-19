@@ -111,3 +111,48 @@ export async function verifyLedger(
   }
   return { ok: true, count: entries.length, head: prev }
 }
+
+// What a device remembers about the chain: the highest head it has personally
+// verified. Stored client-side (localStorage) so the user trusts their own eyes,
+// not a server flag.
+export interface PinnedHead {
+  seq: number
+  headHash: string
+}
+
+export type WitnessStatus = 'first-seen' | 'consistent' | 'tampered' | 'rolled-back'
+
+export interface WitnessResult {
+  status: WitnessStatus
+  // The head to pin going forward: advances on first-seen/consistent, holds on
+  // tampered/rolled-back (never trust a head that failed to extend the pin).
+  head: PinnedHead
+}
+
+// Prove the served chain still EXTENDS the head this device last pinned - a
+// consistency proof (Certificate-Transparency style). `extension` is the entries
+// after the pin (afterSeq = pin.seq). If the extension links from the pinned head
+// and walks to the served head, nothing at or before the pin could have been
+// rewritten (that would need a SHA-256 preimage of the pinned hash). No pin yet =
+// trust-on-first-use. A served head behind the pin = a rollback.
+export async function witnessExtension(
+  pin: PinnedHead | null,
+  extension: LedgerEntry[],
+  servedHead: PinnedHead,
+): Promise<WitnessResult> {
+  if (!pin) return { status: 'first-seen', head: servedHead }
+  if (servedHead.seq < pin.seq) return { status: 'rolled-back', head: pin }
+  if (servedHead.seq === pin.seq) {
+    return servedHead.headHash === pin.headHash
+      ? { status: 'consistent', head: servedHead }
+      : { status: 'tampered', head: pin }
+  }
+  // verifyLedger from the pinned head checks the first new entry links to it,
+  // every later link, and (below) that the walk reaches the served head.
+  const res = await verifyLedger(extension, pin.headHash)
+  const contiguous = extension.length > 0 && extension[0].seq === pin.seq + 1
+  if (!res.ok || !contiguous || res.head !== servedHead.headHash) {
+    return { status: 'tampered', head: pin }
+  }
+  return { status: 'consistent', head: servedHead }
+}
