@@ -33,6 +33,44 @@
       "rolled-back": "Entries are missing since your last visit"
     }
   },
+  "chat": {
+    "roomTitle": "League chat",
+    "threadTitle": "Match chat",
+    "e2ee": "E2EE",
+    "e2eeHint": "End-to-end encrypted: only league members can read this, not even the site owner.",
+    "off": "Chat is off for this league.",
+    "enable": "Enable chat",
+    "disable": "Turn chat off",
+    "send": "Send",
+    "placeholder": "Write a message",
+    "loading": "Loading messages...",
+    "settingUp": "Setting up your key...",
+    "empty": "No messages yet. Say something.",
+    "unknownUser": "Someone",
+    "cantDecrypt": "[encrypted - no key on this device]",
+    "mute": "Mute",
+    "setupRecovery": "Set up a recovery code",
+    "warning": {
+      "title": "Turn on end-to-end encrypted chat?",
+      "body1": "Messages are encrypted on members' devices. The site owner stores only scrambled text and cannot read this chat, moderate it, or recover it.",
+      "body2": "Only the league's owner and moderators can turn this on. What members say here is their own responsibility, not the site owner's.",
+      "body3": "If everyone loses their key and recovery code, the history is gone for good: there is no reset.",
+      "cancel": "Cancel",
+      "confirm": "I understand, enable chat"
+    },
+    "recovery": {
+      "title": "Save your recovery code",
+      "body": "This restores your chat on another device or after clearing your browser. It is shown once and cannot be retrieved. Keep it safe: anyone with it can read your chat.",
+      "copy": "Copy",
+      "saved": "I've saved it"
+    },
+    "restore": {
+      "body": "Enter your recovery code to read this league's chat on this device.",
+      "placeholder": "Recovery code",
+      "button": "Restore",
+      "error": "That code didn't work."
+    }
+  },
   "nav": {
     "matches": "Matches",
     "bracket": "Bracket",

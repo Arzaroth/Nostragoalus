@@ -96,6 +96,8 @@ function medal(rank: number) {
         </div>
       </div>
 
+      <ChatPanel v-if="isMember && leagueId" :league-id="leagueId" class="mt-6" />
+
       <AppConfirmDialog
         v-model:visible="confirmLeave"
         :header="t('leagues.leave')"

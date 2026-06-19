@@ -33,6 +33,44 @@
       "rolled-back": "Des entrées manquent depuis votre dernière visite"
     }
   },
+  "chat": {
+    "roomTitle": "Chat de la ligue",
+    "threadTitle": "Chat du match",
+    "e2ee": "E2EE",
+    "e2eeHint": "Chiffré de bout en bout : seuls les membres de la ligue peuvent lire ceci, pas même le propriétaire du site.",
+    "off": "Le chat est désactivé pour cette ligue.",
+    "enable": "Activer le chat",
+    "disable": "Désactiver le chat",
+    "send": "Envoyer",
+    "placeholder": "Écrire un message",
+    "loading": "Chargement des messages...",
+    "settingUp": "Préparation de votre clé...",
+    "empty": "Aucun message pour l'instant. Lancez-vous.",
+    "unknownUser": "Quelqu'un",
+    "cantDecrypt": "[chiffré - aucune clé sur cet appareil]",
+    "mute": "Masquer",
+    "setupRecovery": "Créer un code de récupération",
+    "warning": {
+      "title": "Activer le chat chiffré de bout en bout ?",
+      "body1": "Les messages sont chiffrés sur les appareils des membres. Le propriétaire du site ne stocke que du texte brouillé et ne peut ni lire, ni modérer, ni récupérer ce chat.",
+      "body2": "Seuls le propriétaire et les modérateurs de la ligue peuvent l'activer. Ce que les membres y disent relève de leur responsabilité, pas de celle du propriétaire du site.",
+      "body3": "Si tout le monde perd sa clé et son code de récupération, l'historique est perdu pour de bon : il n'y a pas de réinitialisation.",
+      "cancel": "Annuler",
+      "confirm": "J'ai compris, activer le chat"
+    },
+    "recovery": {
+      "title": "Enregistrez votre code de récupération",
+      "body": "Il restaure votre chat sur un autre appareil ou après l'effacement de votre navigateur. Il n'est affiché qu'une fois et ne peut pas être récupéré. Gardez-le en lieu sûr : quiconque le possède peut lire votre chat.",
+      "copy": "Copier",
+      "saved": "C'est enregistré"
+    },
+    "restore": {
+      "body": "Saisissez votre code de récupération pour lire le chat de cette ligue sur cet appareil.",
+      "placeholder": "Code de récupération",
+      "button": "Restaurer",
+      "error": "Ce code n'a pas fonctionné."
+    }
+  },
   "nav": {
     "matches": "Matchs",
     "bracket": "Tableau",
