@@ -1,11 +1,11 @@
 import { z } from 'zod'
 import { db } from '../../../../db'
 import { defineValidatedHandler } from '../../../utils/validated-handler'
-import { GRANTABLE_SCOPES, createApiKey } from '../../../utils/api-keys/service'
+import { createApiKey, isGrantableScope } from '../../../utils/api-keys/service'
 
 const bodySchema = z.object({
   name: z.string().trim().min(1).max(64),
-  scopes: z.array(z.enum(GRANTABLE_SCOPES)).min(1),
+  scopes: z.array(z.string().refine(isGrantableScope, 'unknown scope')).min(1),
   expiresInSeconds: z.number().int().positive().nullable().optional(),
 })
 

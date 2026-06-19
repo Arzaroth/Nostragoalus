@@ -81,6 +81,8 @@ describe('AdminApiKeysSection', () => {
     await vi.waitFor(() => expect(w.find('form').exists()).toBe(true))
 
     await w.find('input[type="text"]').setValue('new bot')
+    // Scopes are no longer pre-checked: the admin picks them explicitly.
+    await w.find('input[aria-label="media:write"]').setValue(true)
     await w.find('form').trigger('submit')
 
     await vi.waitFor(() => expect(w.text()).toContain('ng_full-secret-value'))

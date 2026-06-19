@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import { API_SCOPES, scopesByResource } from '../../shared/api-scopes'
 
 const props = defineProps<{ isAdmin: boolean }>()
 const { t } = useI18n()
@@ -32,10 +33,9 @@ const { data: keys, isPending } = useQuery({
 })
 const invalidate = () => queryClient.invalidateQueries({ queryKey: ['admin-api-keys'] })
 
-// The scopes an admin can grant. Today only the watch-link curation bot needs
-// one; new machine integrations add their permission here (and to GRANTABLE_SCOPES
-// in server/utils/api-keys/service.ts).
-const SCOPES = [{ resource: 'media', action: 'write', labelKey: 'scopeMediaWrite' }] as const
+// Scopes come from the shared registry (one source of truth with the server),
+// grouped by resource for the picker. A new scope is added there, not here.
+const scopeGroups = scopesByResource()
 const EXPIRY = [
   { key: 'never', seconds: null },
   { key: 'd30', seconds: 60 * 60 * 24 * 30 },
@@ -45,7 +45,7 @@ const EXPIRY = [
 
 const form = reactive({
   name: '',
-  scopes: { 'media:write': true } as Record<string, boolean>,
+  scopes: {} as Record<string, boolean>,
   expiry: 'never' as (typeof EXPIRY)[number]['key'],
 })
 const createErr = ref('')
@@ -55,7 +55,7 @@ const revokeErr = ref('')
 const createdKey = ref<string | null>(null)
 
 function selectedScopes(): string[] {
-  return SCOPES.map((s) => `${s.resource}:${s.action}`).filter((key) => form.scopes[key])
+  return API_SCOPES.map((s) => `${s.resource}:${s.action}`).filter((key) => form.scopes[key])
 }
 const canCreate = computed(() => form.name.trim().length > 0 && selectedScopes().length > 0)
 
@@ -171,11 +171,12 @@ function dismissCreatedKey() {
         <input v-model="form.name" type="text" maxlength="64" :placeholder="t('admin.apiKeys.namePlaceholder')" :aria-label="t('admin.apiKeys.name')" class="rounded-lg border px-2 py-1.5 text-sm" style="background: var(--p-content-background); border-color: var(--p-content-border-color)" >
         <!-- Scopes get their own block (they grow as integrations are added); expiry
              sits on its own row so the two never crowd each other. -->
-        <div class="flex flex-col gap-1.5">
+        <div class="flex flex-col gap-2">
           <label class="text-xs font-medium" style="color: var(--p-text-muted-color)">{{ t('admin.apiKeys.colScopes') }}</label>
-          <div class="flex flex-wrap gap-x-4 gap-y-1.5">
-            <label v-for="s in SCOPES" :key="`${s.resource}:${s.action}`" class="inline-flex items-center gap-1.5 text-sm">
-              <input v-model="form.scopes[`${s.resource}:${s.action}`]" type="checkbox" >
+          <div v-for="g in scopeGroups" :key="g.resource" class="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+            <span class="text-xs font-semibold uppercase tracking-wide w-24 shrink-0" style="color: var(--p-text-muted-color)">{{ t(`admin.apiKeys.scopeGroup_${g.resource}`) }}</span>
+            <label v-for="s in g.scopes" :key="`${s.resource}:${s.action}`" class="inline-flex items-center gap-1.5 text-sm">
+              <input v-model="form.scopes[`${s.resource}:${s.action}`]" type="checkbox" :aria-label="`${s.resource}:${s.action}`" >
               {{ t(`admin.apiKeys.${s.labelKey}`) }}
             </label>
           </div>

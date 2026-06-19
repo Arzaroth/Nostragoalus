@@ -2,12 +2,12 @@ import { desc, eq } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { apikey, user } from '../../../db/schema'
 import { mintApiKey } from './mint'
+// The grantable-scope list, validator and permission mapping live in the shared
+// registry (one source of truth for the server and the admin picker). Re-exported
+// so existing importers (the mint route, tests) keep their import path.
+import { GRANTABLE_SCOPES, isGrantableScope, permsFromScopes } from '../../../shared/api-scopes'
 
-// The scopes an admin may grant. A new machine integration adds its permission
-// here (and to the picker in AdminApiKeysSection.vue); the mint path validates
-// against this list so a key can never carry a scope the app doesn't recognise.
-export const GRANTABLE_SCOPES = ['media:write'] as const
-export type GrantableScope = (typeof GRANTABLE_SCOPES)[number]
+export { GRANTABLE_SCOPES, isGrantableScope, permsFromScopes }
 
 export interface ApiKeyView {
   id: string
@@ -19,16 +19,6 @@ export interface ApiKeyView {
   lastRequest: string | null
   createdAt: string
   ownerEmail: string | null
-}
-
-// `media:write` -> { media: ['write'] }, the shape the plugin's verifier expects.
-export function permsFromScopes(scopes: GrantableScope[]): Record<string, string[]> {
-  const perms: Record<string, string[]> = {}
-  for (const s of scopes) {
-    const [resource, action] = s.split(':')
-    ;(perms[resource] ??= []).push(action)
-  }
-  return perms
 }
 
 function parsePermissions(raw: string | null): Record<string, string[]> | null {
@@ -50,7 +40,7 @@ const iso = (d: Date | null): string | null => (d ? d.toISOString() : null)
 // returned ONCE - it is stored only as a hash and can never be retrieved again.
 export async function createApiKey(
   db: AppDatabase,
-  input: { name: string; scopes: GrantableScope[]; referenceId: string; expiresInSeconds?: number | null },
+  input: { name: string; scopes: string[]; referenceId: string; expiresInSeconds?: number | null },
 ): Promise<{ key: string }> {
   const minted = mintApiKey({
     name: input.name,

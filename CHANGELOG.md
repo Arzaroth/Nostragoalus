@@ -5,8 +5,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- API-key scopes are now a categorized, extensible list with a read-only **leaderboard:read** scope, so a machine integration can read the rankings without any broader access.
+
 ### Changed
 - Admin panels tidy-up: the odds-provider dropdown no longer collapses to a cramped width, and the API-key create form gives scopes and expiry their own rows instead of crowding them onto one line.
+
+### Security
+- The leaderboard API now requires a signed-in session (or a scoped API key): the global and per-competition rankings are no longer readable by anonymous callers hitting the endpoint directly.
 
 ## [1.26.0] - 2026-06-19
 
