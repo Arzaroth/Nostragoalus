@@ -452,6 +452,50 @@ export const matchScoreEvent = pgTable(
   (t) => [index('mse_match_idx').on(t.matchId)],
 )
 
+// Tamper-evident prediction ledger (commit-reveal). Every real change to a score
+// prediction appends one immutable row: a salted commitment to the picked score,
+// hash-chained to the prior entry (entryHash folds in the running head). Editing
+// or dropping any past row invalidates every later entryHash, so an admin
+// retro-edit is detectable by anyone holding an earlier head. The opening
+// (homeGoals/awayGoals/salt) is revealed only once the match kicks off; before
+// that the public sees the commitment + chain links but cannot derive the pick.
+// Deliberately NO foreign keys: the ledger must outlive a deleted user or
+// prediction and is never mutated, so a cascade delete would corrupt the chain.
+// userId is kept for the owner's own "verify mine" lookup; the public reveal
+// exposes only `subject` (sha256 of userId), never the raw id.
+export const predictionCommitment = pgTable(
+  'prediction_commitment',
+  {
+    seq: integer('seq').primaryKey(),
+    predictionId: text('prediction_id').notNull(),
+    userId: text('user_id').notNull(),
+    subject: text('subject').notNull(),
+    matchId: text('match_id').notNull(),
+    homeGoals: integer('home_goals').notNull(),
+    awayGoals: integer('away_goals').notNull(),
+    salt: text('salt').notNull(),
+    commitment: text('commitment').notNull(),
+    prevHash: text('prev_hash').notNull(),
+    entryHash: text('entry_hash').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    uniqueIndex('prediction_commitment_entry_hash_uq').on(t.entryHash),
+    index('prediction_commitment_match_idx').on(t.matchId),
+    index('prediction_commitment_user_idx').on(t.userId),
+  ],
+)
+
+// Singleton head of the commitment chain (id is always 'singleton'). Locked
+// FOR UPDATE while appending so concurrent saves serialize and the chain can
+// never fork; also the cheap source for the public "current head" read.
+export const commitmentChainHead = pgTable('commitment_chain_head', {
+  id: text('id').primaryKey(),
+  seq: integer('seq').notNull(),
+  headHash: text('head_hash').notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
+})
+
 export const userProfileRelations = relations(userProfile, ({ one }) => ({
   user: one(user, { fields: [userProfile.userId], references: [user.id] }),
 }))
