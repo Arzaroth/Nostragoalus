@@ -253,6 +253,13 @@
       "when": 1781999743302,
       "tag": "0035_loose_puck",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1782160739155,
+      "tag": "0036_dark_celestials",
+      "breakpoints": true
     }
   ]
 }
