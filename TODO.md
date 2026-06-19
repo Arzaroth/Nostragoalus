@@ -781,3 +781,20 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       still grows it unbounded, and `/verify` downloads the whole chain (paged
       1000) to verify. Add checkpoint heads / incremental verification if the
       table gets large.
+
+## Themed error pages (deferred from the feature-treatment review)
+
+- [ ] TeapotAnimation reduced-motion fallback positions the football via CSS
+      Motion Path (`offset-distance`); on browsers without SVG `offset-path`
+      support the ball renders at the SVG origin (top-left) instead of mid-pour.
+      Cosmetic, reduced-motion + old-browser only. Give the static pose a plain
+      transform fallback.
+- [ ] `/418` and `/500` are real, public, deliberately-failing routes with no
+      `noindex`/dev guard. Intended (changelog documents them as on-demand
+      triggers) and the error status mitigates indexing, but add a route-level
+      noindex if crawler exposure ever matters.
+- [ ] error.vue recomputes its copy from the status code, so the `statusMessage`
+      that 418.vue/500.vue pass into `createError` is dead for those codes.
+      Harmless but redundant wiring; drop it or wire it through. Also: the goal
+      animation reads reduced-motion via VueUse while the new SVGs use a CSS
+      `@media` query - they agree now but could drift if detection changes.
