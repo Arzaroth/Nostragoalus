@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+- The match page no longer shows two identically-named tabs in French (and Klingon): the team **group** standings tab is now distinct from the player **ranking** tab.
+
 ## [1.29.2] - 2026-06-19
 
 ### Changed
