@@ -42,9 +42,11 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   per-team match stats, goal timeline with cards (incl. touchline bookings) and substitutions,
   **all-time head-to-head** and cross-competition form (friendlies included, causally cut off at
   kickoff), penalty shootouts, and each team's top scorer / top assister
-- **Watch links**: admin-curated Live / Replay / Highlights links per match - recognised hosts
-  (YouTube, Twitch, Dailymotion, Vimeo) play inline in a sandboxed embed, anything else opens in a
-  new tab; live links show around kickoff, replays/highlights once the match is over
+- **Watch links**: admin-curated Live / Replay / Highlights links, in the match's own tabs (Live
+  before/during, Replay and Highlights once it's over) with a pin to keep a stream playing while you
+  browse. Recognised hosts (YouTube, Twitch, Dailymotion, Vimeo) play inline in a sandboxed embed;
+  admins can paste a provider's embed code and force-embed other hosts with per-link sandbox/allow
+  controls, anything else opens in a new tab
 - **Match reactions**: from kickoff on, react with an emoji (🔥 ⚽ 😮 🤣 😢 😡) - counts climb live
   for everyone watching, with your league's tally beside the global one when a league is selected;
   one reaction each, tap to change or clear
