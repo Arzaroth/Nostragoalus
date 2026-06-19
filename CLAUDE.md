@@ -10,7 +10,10 @@
   (`i18n/locales/{en,fr,th,tlh}.json`) - tlh is Klingon, keep it terse and
   in-character.
 - The gate before any merge: `pnpm typecheck`, `pnpm test:coverage` (98%
-  thresholds, enforced), `pnpm test:components`. Beware zsh pipelines masking
+  thresholds, enforced), `pnpm test:components`, `pnpm build`. The SSR/rollup
+  build catches unresolved-import link errors the others miss (import shared via
+  the `#shared` alias, not deep `../../../../shared/*`, from nested route pages).
+  Beware zsh pipelines masking
   exit codes (`typecheck | tail` reports success) - `set -o pipefail` or check
   steps separately. The 98% gate covers `server/utils`, `shared`, `app/utils`
   (not `server/api` routes or pages) - that's why logic lives in services: keep
