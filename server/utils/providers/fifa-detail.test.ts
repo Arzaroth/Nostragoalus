@@ -15,6 +15,7 @@ import {
   type FifaMatch,
 } from './fifa'
 import { RateLimiter } from './rate-limiter'
+import { EXTRA_TIME_BREAK_MINUTE } from '../../../shared/types/match'
 
 describe('normalizeFifaMatch providerStageId', () => {
   it('captures IdStage for later detail lookups', () => {
@@ -742,6 +743,52 @@ describe('new provider methods', () => {
       ["72'", 'ALMOEZ ALI', 'MOHAMMED MUNTARI', 'HOME'],
       [null, '?', '?', 'HOME'], // minute-less sorts last
     ])
+  })
+
+  it('keeps an empty-minute break sub as half-time when the match never reached extra time', async () => {
+    const detail = {
+      HomeTeam: {
+        IdTeam: 't1', TeamName: [{ Locale: 'en', Description: 'France' }], Players: [], Bookings: [],
+        Goals: [{ Minute: "30'", IdPlayer: 'g', IdTeam: 't1' }],
+        Substitutions: [
+          { Minute: "40'", IdPlayerOff: 'a', IdPlayerOn: 'b' },
+          { Minute: '', IdPlayerOff: 'c', IdPlayerOn: 'd' }, // FIFA leaves a half-time sub blank
+        ],
+      },
+      AwayTeam: { IdTeam: 't2', TeamName: [{ Locale: 'en', Description: 'Brazil' }], Players: [], Goals: [], Bookings: [], Substitutions: [] },
+      Properties: {},
+    }
+    const provider = fifaProvider({ seasonId: '1', competitionId: '17', rateLimiter: noWait(), fetchImpl: okJson(detail) })
+    const d = await provider.getMatchDetail!({ stageId: 's', matchId: 'm' })
+    expect(d!.substitutions.map((x) => x.minute)).toEqual(["40'", '']) // break sub stays the half-time blank
+  })
+
+  it('marks a break sub as the extra-time interval once the match reaches extra time', async () => {
+    const detail = {
+      HomeTeam: {
+        IdTeam: 't1', TeamName: [{ Locale: 'en', Description: 'France' }], Players: [], Bookings: [],
+        Goals: [{ Minute: "100'", IdPlayer: 'g', IdTeam: 't1' }], // extra time was played
+        Substitutions: [
+          { Minute: '', IdPlayerOff: 'h1', IdPlayerOn: 'h2' }, // half-time: nothing past 45' precedes it
+          { Minute: "70'", IdPlayerOff: 'a', IdPlayerOn: 'b' },
+          { Minute: '', IdPlayerOff: 'e1', IdPlayerOn: 'e2' }, // extra-time interval: the 70' sub precedes it
+        ],
+      },
+      AwayTeam: {
+        IdTeam: 't2', TeamName: [{ Locale: 'en', Description: 'Brazil' }], Players: [], Goals: [], Bookings: [],
+        Substitutions: [
+          { Minute: '', IdPlayerOff: 'a1', IdPlayerOn: 'a2' }, // first sub untimed, the next one is in extra time
+          { Minute: "100'", IdPlayerOff: 'a3', IdPlayerOn: 'a4' },
+        ],
+      },
+      Properties: {},
+    }
+    const provider = fifaProvider({ seasonId: '1', competitionId: '17', rateLimiter: noWait(), fetchImpl: okJson(detail) })
+    const d = await provider.getMatchDetail!({ stageId: 's', matchId: 'm' })
+    const byOff = Object.fromEntries(d!.substitutions.map((x) => [x.playerOffId, x.minute]))
+    expect(byOff.h1).toBe('') // half-time sub stays blank
+    expect(byOff.e1).toBe(EXTRA_TIME_BREAK_MINUTE) // after the 70' sub -> extra-time interval
+    expect(byOff.a1).toBe(EXTRA_TIME_BREAK_MINUTE) // no prior sub, next is the 100' sub -> extra-time
   })
 
   it('resolves sub names from the roster when the inline arrays are momentarily empty', async () => {

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { buildTimeline, h2hSummaryOf, minuteVal, HALFTIME_VAL } from './match-view'
+import { buildTimeline, h2hSummaryOf, minuteVal, HALFTIME_VAL, ET_HALFTIME_VAL } from './match-view'
+import { EXTRA_TIME_BREAK_MINUTE } from '../../shared/types/match'
 
 describe('minuteVal', () => {
   it('orders regular and stoppage minutes; unknowns sort last', () => {
@@ -15,6 +16,14 @@ describe('minuteVal', () => {
     expect(minuteVal("45'+9")).toBeLessThan(minuteVal(''))
     expect(minuteVal('')).toBeLessThan(minuteVal("46'"))
     expect(minuteVal('')).toBeLessThan(minuteVal(null))
+  })
+
+  it('slots an extra-time-break sub near 105, after the half-time break', () => {
+    expect(minuteVal(EXTRA_TIME_BREAK_MINUTE)).toBe(ET_HALFTIME_VAL)
+    expect(minuteVal('')).toBeLessThan(minuteVal(EXTRA_TIME_BREAK_MINUTE))
+    expect(minuteVal("105'+1")).toBeLessThan(minuteVal(EXTRA_TIME_BREAK_MINUTE))
+    expect(minuteVal(EXTRA_TIME_BREAK_MINUTE)).toBeLessThan(minuteVal("106'"))
+    expect(minuteVal(EXTRA_TIME_BREAK_MINUTE)).toBeLessThan(minuteVal(null))
   })
 })
 
@@ -47,6 +56,25 @@ describe('buildTimeline', () => {
       showSubs: true,
     })
     expect(t.map((e) => e.playerName)).toEqual(['StoppageGoal', 'On', 'RestartGoal'])
+  })
+
+  it('places an extra-time-break sub at ~105, between the half-time sub and extra-time play', () => {
+    const t = buildTimeline({
+      goals: [
+        { side: 'HOME', minute: "100'", playerName: 'Et1Goal', ownGoal: false },
+        { side: 'AWAY', minute: "110'", playerName: 'Et2Goal', ownGoal: false },
+      ],
+      bookings: [],
+      substitutions: [
+        { side: 'HOME', minute: '', playerOnName: 'HtOn', playerOffName: 'HtOff' },
+        { side: 'AWAY', minute: EXTRA_TIME_BREAK_MINUTE, playerOnName: 'EtOn', playerOffName: 'EtOff' },
+      ],
+      homeCode: 'FRA',
+      awayCode: 'BRA',
+      showBookings: true,
+      showSubs: true,
+    })
+    expect(t.map((e) => e.playerName)).toEqual(['HtOn', 'Et1Goal', 'EtOn', 'Et2Goal'])
   })
 
   it('honors the visibility toggles', () => {

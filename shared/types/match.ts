@@ -158,6 +158,11 @@ export interface SubstitutionEvent {
   playerOnName: string
 }
 
+// FIFA gives break substitutions an empty minute (no running clock at a break).
+// A regular half-time sub keeps that empty string; this sentinel marks one made
+// at the extra-time interval, so the timeline sorts it near 105' instead of 45'.
+export const EXTRA_TIME_BREAK_MINUTE = 'ET'
+
 export interface MatchDetail {
   // Live clock as the provider reports it, e.g. "47'" (null once final / for
   // providers that don't expose it).

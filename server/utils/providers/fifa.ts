@@ -20,6 +20,7 @@ import type {
   TopScorer,
   Winner,
 } from '../../../shared/types/match'
+import { EXTRA_TIME_BREAK_MINUTE } from '../../../shared/types/match'
 import { RateLimiter } from './rate-limiter'
 import { mapStageFromName, parseGroupLetter } from './stage'
 import { ProviderRateLimitError, ProviderUpstreamError, type ListFixturesOptions, type MatchDataProvider } from './types'
@@ -208,6 +209,21 @@ function countCards(bookings: FifaDetailBooking[] | undefined): { yellow: number
   return { yellow, red }
 }
 
+// Leading whole-minute number of a FIFA minute string ("90'+2" -> 90); null for
+// an empty or unparseable minute.
+function subBaseMinute(minute: string | null | undefined): number | null {
+  const m = minute ? /^(\d+)/.exec(minute) : null
+  return m ? Number(m[1]) : null
+}
+
+// Nearest non-null entry scanning out from `from` in `step` direction (+1/-1).
+function nearestBase(bases: (number | null)[], from: number, step: 1 | -1): number | null {
+  for (let i = from + step; i >= 0 && i < bases.length; i += step) {
+    if (bases[i] != null) return bases[i]
+  }
+  return null
+}
+
 export function normalizeFifaMatchDetail(detail: FifaMatchDetailResponse): MatchDetail {
   const names = new Map<string, string>()
   const homeIds = new Set<string>()
@@ -280,24 +296,46 @@ export function normalizeFifaMatchDetail(detail: FifaMatchDetailResponse): Match
   }
   bookings.sort((a, b) => minuteValue(a.minute) - minuteValue(b.minute))
 
+  // FIFA gives a break substitution an empty minute - there's no running clock at
+  // a break - which collapses half-time and the extra-time interval to the same
+  // blank. A break sub can only belong to the extra-time interval if the match
+  // actually reached extra time, so confirm that from any timed event first.
+  const reachedExtraTime =
+    goals.some((g) => (subBaseMinute(g.minute) ?? 0) > 90) ||
+    bookings.some((b) => (subBaseMinute(b.minute) ?? 0) > 90) ||
+    [detail.HomeTeam, detail.AwayTeam].some((t) => (t?.Substitutions ?? []).some((s) => (subBaseMinute(s.Minute) ?? 0) > 90))
+
   const substitutions: SubstitutionEvent[] = []
   for (const [side, team] of [
     ['HOME', detail.HomeTeam],
     ['AWAY', detail.AwayTeam],
   ] as const) {
-    for (const sub of team?.Substitutions ?? []) {
+    const teamSubs = team?.Substitutions ?? []
+    const bases = teamSubs.map((s) => subBaseMinute(s.Minute))
+    teamSubs.forEach((sub, i) => {
+      // A team's subs are chronological, so an untimed (break) sub's nearest
+      // timed team-mate subs bracket it: a preceding sub past 45' - or, lacking
+      // one, a following sub already in extra time - places it at the extra-time
+      // interval rather than half-time.
+      let minute = sub.Minute ?? null
+      if (sub.Minute === '') {
+        const prev = nearestBase(bases, i, -1)
+        const next = nearestBase(bases, i, 1)
+        const isExtraTime = reachedExtraTime && (prev != null ? prev > 45 : next != null && next > 90)
+        minute = isExtraTime ? EXTRA_TIME_BREAK_MINUTE : ''
+      }
       // FIFA briefly emits a fresh sub with empty inline name arrays before the
       // names attach; the bench player is already in the roster, so fall back to
       // that id->name map to avoid a transient "?".
       substitutions.push({
         side,
-        minute: sub.Minute ?? null,
+        minute,
         playerOffId: sub.IdPlayerOff ?? null,
         playerOffName: sub.PlayerOffName?.[0]?.Description || (sub.IdPlayerOff && names.get(sub.IdPlayerOff)) || '?',
         playerOnId: sub.IdPlayerOn ?? null,
         playerOnName: sub.PlayerOnName?.[0]?.Description || (sub.IdPlayerOn && names.get(sub.IdPlayerOn)) || '?',
       })
-    }
+    })
   }
   substitutions.sort((a, b) => minuteValue(a.minute) - minuteValue(b.minute))
 
