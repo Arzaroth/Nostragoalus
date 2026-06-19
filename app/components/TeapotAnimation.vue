@@ -1,25 +1,31 @@
 <script setup lang="ts">
-// 418 art: a pixel teapot tips and pours a tiny football into a cup, steam
-// rising. Pure CSS/SVG so it honours prefers-reduced-motion (the media query
-// below freezes it to a static pose). Decorative - aria-hidden.
+// 418 art: a teapot tips toward a cup and pours a tiny football out of its
+// spout, steam rising. The spout faces the cup so the pour reads correctly. Pure
+// CSS/SVG so it honours prefers-reduced-motion (the media query below freezes it
+// to a static mid-pour pose). Decorative - aria-hidden.
 </script>
 
 <template>
   <svg class="teapot" viewBox="0 0 130 96" role="img" aria-hidden="true">
-    <!-- steam wisps -->
+    <!-- steam wisps off the lid -->
     <g class="steam" fill="var(--p-text-muted-color)">
-      <rect class="s1" x="42" y="8" width="3" height="3" />
-      <rect class="s2" x="50" y="4" width="3" height="3" />
-      <rect class="s3" x="58" y="8" width="3" height="3" />
+      <rect class="s1" x="44" y="8" width="3" height="3" />
+      <rect class="s2" x="52" y="4" width="3" height="3" />
+      <rect class="s3" x="60" y="8" width="3" height="3" />
     </g>
 
-    <!-- teapot: tips toward the cup to pour -->
+    <!-- teapot: spout faces the cup (right), small handle on the left -->
     <g class="pot">
-      <path d="M72 32 q18 4 16 22 q-2 11 -12 13" fill="none" stroke="var(--p-primary-color)" stroke-width="6" />
-      <polygon points="30,36 8,42 12,49 30,49" fill="var(--p-primary-color)" />
-      <rect x="30" y="30" width="44" height="32" rx="9" fill="var(--p-primary-color)" />
+      <!-- handle (left, compact) -->
+      <path d="M31 34 q-12 2 -12 14 q0 8 9 10" fill="none" stroke="var(--p-primary-color)" stroke-width="5" />
+      <!-- body -->
+      <rect x="30" y="30" width="42" height="32" rx="9" fill="var(--p-primary-color)" />
+      <!-- spout, angled up toward the cup -->
+      <polygon points="70,33 92,27 91,39 70,46" fill="var(--p-primary-color)" />
+      <!-- lid + knob -->
       <rect x="36" y="23" width="32" height="9" rx="4" fill="var(--p-primary-color)" />
       <rect x="48" y="16" width="7" height="7" rx="2" fill="var(--p-primary-color)" />
+      <!-- highlight -->
       <rect x="38" y="37" width="6" height="12" rx="3" fill="rgba(255,255,255,0.35)" />
     </g>
 
@@ -46,16 +52,17 @@
 }
 .pot {
   transform-box: fill-box;
-  transform-origin: 60% 70%;
+  transform-origin: 46% 78%;
   animation: tip 3.2s ease-in-out infinite;
 }
+/* Tip toward the spout (clockwise) so the right-facing spout dips to pour. */
 @keyframes tip {
   0%, 28% { transform: rotate(0deg); }
-  44%, 68% { transform: rotate(-15deg); }
+  44%, 68% { transform: rotate(13deg); }
   84%, 100% { transform: rotate(0deg); }
 }
 .ball {
-  offset-path: path('M22 46 C 44 70, 70 78, 98 76');
+  offset-path: path('M90 36 C 96 50, 100 63, 98 72');
   offset-distance: 0%;
   opacity: 0;
   animation: pour 3.2s ease-in infinite;
@@ -79,6 +86,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .pot, .ball, .steam rect { animation: none; }
-  .ball { opacity: 1; offset-distance: 55%; }
+  .pot { transform: rotate(13deg); }
+  .ball { opacity: 1; offset-distance: 60%; }
 }
 </style>

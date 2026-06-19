@@ -5,6 +5,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Changed
+- Polished the themed error art: the **418** teapot now pours its football out of the spout into the cup (the spout faced the wrong way and the handle was oversized), and the **500** referee raises the red card from the shoulder (not the head) with an impact flash and a flinching, sweating server.
+
+### Fixed
+- The production build no longer fails to link: deep `shared/*` imports from nested route pages now go through the `#shared` alias so `pnpm build` succeeds (no user-visible behavior change).
+
 ## [1.29.1] - 2026-06-19
 
 ### Fixed
