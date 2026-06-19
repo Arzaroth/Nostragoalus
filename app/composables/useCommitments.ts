@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/vue-query'
-import { COMMITMENT_GENESIS, type LedgerEntry, type VerifyResult, verifyLedger } from '../../shared/commitment'
+import { COMMITMENT_GENESIS, type LedgerEntry, type VerifyResult, verifyLedger } from '#shared/commitment'
 
 export interface ChainHeadDTO {
   seq: number
