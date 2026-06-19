@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.26.0] - 2026-06-19
+
 ### Added
 - Admin watch links gained per-link iframe control: paste a provider's full embed code (the URL and its allow policy are pulled out for you), choose how the embed is sandboxed (auto, force on, or off), and set a custom allow policy. Turning the sandbox off lets players that refuse to run sandboxed (some PPV hosts) embed at all - it carries a warning, since an unsandboxed page can navigate or pop up within the embed.
 
