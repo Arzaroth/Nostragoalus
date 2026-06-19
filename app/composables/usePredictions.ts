@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import type { Serialized } from '../../shared/types/serialized'
+import type { Serialized } from '#shared/types/serialized'
 import type { getMyPredictions } from '../../server/utils/predictions/service'
 
 // Derived from the server query so it can never drift from the schema. The

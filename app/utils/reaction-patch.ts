@@ -1,4 +1,4 @@
-import type { ReactionTotals } from '../../shared/reactions'
+import type { ReactionTotals } from '#shared/reactions'
 
 export interface ReactionPatchMessage {
   type?: unknown

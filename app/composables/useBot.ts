@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/vue-query'
-import type { Serialized } from '../../shared/types/serialized'
+import type { Serialized } from '#shared/types/serialized'
 import type { BotChampion, BotMatchRow, BotSummary } from '../../server/utils/bot/service'
 
 // Lowercase on the wire; the server echoes the effective method back after

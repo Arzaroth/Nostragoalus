@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useQueryClient, type QueryClient } from '@tanstack/vue-query'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { useNotifications } from './useNotifications'
-import type { NotificationDTO } from '../../shared/types/notifications'
+import type { NotificationDTO } from '#shared/types/notifications'
 
 vi.mock('./useAuth', async () => {
   const { ref } = await import('vue')

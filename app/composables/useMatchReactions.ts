@@ -1,4 +1,4 @@
-import { emptyReactionTotals, type ReactionEmoji, type ReactionTotals } from '../../shared/reactions'
+import { emptyReactionTotals, type ReactionEmoji, type ReactionTotals } from '#shared/reactions'
 import { reactionPatchScope, type ReactionPatchMessage } from '../utils/reaction-patch'
 
 // One match's reaction counts, kept live. Global counts are public; league

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { REACTION_EMOJIS, REACTION_GLYPHS, type ReactionEmoji, type ReactionTotals } from '../../shared/reactions'
+import { REACTION_EMOJIS, REACTION_GLYPHS, type ReactionEmoji, type ReactionTotals } from '#shared/reactions'
 
 // Pure display: the parent owns the single useCompetitionReactions() instance
 // (it holds the WS connection) and passes the maps down. Read-only - a click

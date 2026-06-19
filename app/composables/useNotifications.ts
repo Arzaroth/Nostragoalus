@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import type { NotificationDTO } from '../../shared/types/notifications'
+import type { NotificationDTO } from '#shared/types/notifications'
 
 interface FeedResponse {
   notifications: NotificationDTO[]

@@ -14,10 +14,10 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/pg-core'
 import { ssoProvider, user } from './auth-schema'
-import type { ChampionTier, CrowdTier, OddsTier } from '../shared/types/scoring'
-import type { OddsSnapshotKind, StoredBookmakerOdds } from '../shared/types/odds'
-import type { NotificationData } from '../shared/types/notifications'
-import { REACTION_EMOJIS } from '../shared/reactions'
+import type { ChampionTier, CrowdTier, OddsTier } from '#shared/types/scoring'
+import type { OddsSnapshotKind, StoredBookmakerOdds } from '#shared/types/odds'
+import type { NotificationData } from '#shared/types/notifications'
+import { REACTION_EMOJIS } from '#shared/reactions'
 
 const pk = () => text('id').primaryKey().$defaultFn(() => randomUUID())
 

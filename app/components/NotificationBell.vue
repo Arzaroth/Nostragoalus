@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { NotificationDTO } from '../../shared/types/notifications'
+import type { NotificationDTO } from '#shared/types/notifications'
 
 const { t, locale } = useI18n()
 const router = useRouter()

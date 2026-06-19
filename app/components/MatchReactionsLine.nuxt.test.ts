@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import MatchReactionsLine from './MatchReactionsLine.vue'
-import { emptyReactionTotals, type ReactionTotals } from '../../shared/reactions'
+import { emptyReactionTotals, type ReactionTotals } from '#shared/reactions'
 
 // Skin defaults to null (un-skinned) so the palette renders as emoji; one test
 // flips it on to check the pony-face swap.

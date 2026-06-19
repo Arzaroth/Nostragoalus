@@ -1,4 +1,4 @@
-import type { ReactionEmoji, ReactionTotals } from '../../shared/reactions'
+import type { ReactionEmoji, ReactionTotals } from '#shared/reactions'
 import { reactionListPatchScope, type ReactionPatchMessage } from '../utils/reaction-patch'
 
 // Bulk reaction counts for the active competition's matches, kept live. The

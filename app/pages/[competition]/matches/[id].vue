@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { buildTimeline, h2hSummaryOf } from '../../../utils/match-view'
-import { visibleMediaForStatus, type MatchMediaKind } from '../../../../shared/match-media'
-import { EXTRA_TIME_BREAK_MINUTE } from '../../../../shared/types/match'
+import { visibleMediaForStatus, type MatchMediaKind } from '#shared/match-media'
+import { EXTRA_TIME_BREAK_MINUTE } from '#shared/types/match'
 const { t, locale } = useI18n()
 // FIFA leaves break subs without a minute; surface the half-time marker for both
 // the half-time (empty) and extra-time-interval (sentinel) breaks.

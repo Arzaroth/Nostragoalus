@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import { API_SCOPES, scopesByResource } from '../../shared/api-scopes'
+import { API_SCOPES, scopesByResource } from '#shared/api-scopes'
 
 const props = defineProps<{ isAdmin: boolean }>()
 const { t } = useI18n()

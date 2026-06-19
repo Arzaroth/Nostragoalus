@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { flagUrl, playerPhotoUrl, squarePlayerPhoto, formatPlayerName, isLocked, searchable, matchStatusLabel, pensResult, statusSeverity, tierLabel, roundLabel, halvePickPoints } from './format'
-import type { MatchStatus } from '../../shared/types/match'
+import type { MatchStatus } from '#shared/types/match'
 
 const STATUSES: MatchStatus[] = [
   'SCHEDULED',
