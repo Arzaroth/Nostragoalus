@@ -791,6 +791,28 @@ describe('new provider methods', () => {
     expect(byOff.a1).toBe(EXTRA_TIME_BREAK_MINUTE) // no prior sub, next is the 100' sub -> extra-time
   })
 
+  it('looks past an adjacent break sub to the nearest timed sub when classifying', async () => {
+    const detail = {
+      HomeTeam: {
+        IdTeam: 't1', TeamName: [{ Locale: 'en', Description: 'France' }], Players: [], Bookings: [],
+        Goals: [{ Minute: "100'", IdPlayer: 'g', IdTeam: 't1' }], // extra time was played
+        Substitutions: [
+          { Minute: '', IdPlayerOff: 'b1', IdPlayerOn: 'b2' }, // break sub; its nearest timed neighbour
+          { Minute: '', IdPlayerOff: 'b3', IdPlayerOn: 'b4' }, // is two positions away - the scan must skip this null
+          { Minute: "100'", IdPlayerOff: 'b5', IdPlayerOn: 'b6' },
+        ],
+      },
+      AwayTeam: { IdTeam: 't2', TeamName: [{ Locale: 'en', Description: 'Brazil' }], Players: [], Goals: [], Bookings: [], Substitutions: [] },
+      Properties: {},
+    }
+    const provider = fifaProvider({ seasonId: '1', competitionId: '17', rateLimiter: noWait(), fetchImpl: okJson(detail) })
+    const d = await provider.getMatchDetail!({ stageId: 's', matchId: 'm' })
+    const byOff = Object.fromEntries(d!.substitutions.map((x) => [x.playerOffId, x.minute]))
+    // Both break subs resolve to the extra-time interval via the 100' sub two slots over.
+    expect(byOff.b1).toBe(EXTRA_TIME_BREAK_MINUTE)
+    expect(byOff.b3).toBe(EXTRA_TIME_BREAK_MINUTE)
+  })
+
   it('resolves sub names from the roster when the inline arrays are momentarily empty', async () => {
     const detail = {
       HomeTeam: {
