@@ -33,6 +33,44 @@
       "rolled-back": "Such tlha' Qun chenbe'"
     }
   },
+  "chat": {
+    "roomTitle": "ghom ja'chuq",
+    "threadTitle": "qugh ja'chuq",
+    "e2ee": "E2EE",
+    "e2eeHint": "So'lu'bogh: ghom chaw'wI'pu' neH laD; pIn'a' je laDlaHbe'.",
+    "off": "ja'chuq chu'be'.",
+    "enable": "ja'chuq chu'",
+    "disable": "ja'chuq chu'Ha'",
+    "send": "ngeH",
+    "placeholder": "QIn ghItlh",
+    "loading": "QInmey luq...",
+    "settingUp": "ngaQHa'moHwI' cher...",
+    "empty": "QIn tu'lu'be'. yIjatlh.",
+    "unknownUser": "vay'",
+    "cantDecrypt": "[So'lu' - naDev ngaQHa'moHwI' tu'lu'be']",
+    "mute": "tam",
+    "setupRecovery": "chovnatlh Qaw'wI' cher",
+    "warning": {
+      "title": "ja'chuq So'lu'bogh yIchu''a'?",
+      "body1": "ghom Daq So'lu' QInmey. ghItlh So'lu'bogh neH pollu'; pIn'a' laDlaHbe', che'laHbe', tlhamlaHbe'.",
+      "body2": "ghom pIn moHwI'pu' je neH chu'laH. naDev jatlhlu'bogh: ghom Sup, pIn'a' Supbe'.",
+      "body3": "ngaQHa'moHwI' chovnatlh Qaw'wI' je chIlchugh Hoch, qun chImmoHlu' reH. tlhe'be'lu'.",
+      "cancel": "qIl",
+      "confirm": "jISov, ja'chuq yIchu'"
+    },
+    "recovery": {
+      "title": "chovnatlh Qaw'wI' yIpol",
+      "body": "latlh jan ja'chuq DachavmeH, ghap De'wI' Say'moHpu'DI'. wa'logh cha'lu' neH; tlhe'be'lu'. yIpol: ghaj net, ja'chuq laD.",
+      "copy": "velqa'",
+      "saved": "vIpollu'"
+    },
+    "restore": {
+      "body": "naDev ghom ja'chuq DalaDmeH chovnatlh Qaw'wI' yIghItlh.",
+      "placeholder": "chovnatlh Qaw'wI'",
+      "button": "chav",
+      "error": "Qaw'wI' lujpu'."
+    }
+  },
   "nav": {
     "matches": "may'mey",
     "bracket": "may' He",

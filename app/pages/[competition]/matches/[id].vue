@@ -635,6 +635,9 @@ function toggleFormInfo(side: string, i: number | string) {
 
       <!-- Reactions open at kickoff and stay open after full-time. -->
       <ReactionBar v-if="hasStarted" :match-id="id" />
+
+      <!-- Encrypted match thread, when a league is selected (members only). -->
+      <ChatPanel v-if="leagueId" :league-id="leagueId" :match-id="id" class="mt-4" />
     </div>
 
     <!-- Pinned watch area: lifts the stream above the tabs so it keeps playing
