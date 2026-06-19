@@ -520,7 +520,7 @@
     "apiKeys": {
       "title": "Clients API",
       "hint": "Identifiants machine pour les intégrations (ex. le bot de liens de diffusion). Les clés sont limitées en portée et affichées une seule fois à la création.",
-      "createdWarn": "Copiez cette clé maintenant - elle est stockée hachée et ne sera plus affichée.",
+      "createdWarn": "Copiez la clé complète maintenant - elle n'est affichée qu'une fois et stockée seulement sous forme de hachage. Seul le court préfixe de la colonne Clé est conservé, pour vous aider à l'identifier ensuite.",
       "copy": "Copier",
       "copied": "Copié",
       "done": "Terminé",
