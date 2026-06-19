@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.27.0] - 2026-06-19
+
 ### Added
 - API-key scopes are now a categorized, extensible list with a read-only **leaderboard:read** scope, so a machine integration can read the rankings without any broader access.
 
