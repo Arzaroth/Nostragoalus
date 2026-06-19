@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 import type { LedgerEntry } from '../../shared/commitment'
 import Verify from './verify.vue'
@@ -20,6 +20,19 @@ mockNuxtImport('useLedgerVerification', () => () => ({
   isError: ref(false),
   isFetching: ref(false),
   refetch,
+}))
+
+const witness = ref<{ status: string; pinnedSeq: number | null; headSeq: number | null; firstSeenAt: string | null; checkedAt: string | null }>({
+  status: 'consistent',
+  pinnedSeq: 1,
+  headSeq: 2,
+  firstSeenAt: '2026-06-19T00:00:00.000Z',
+  checkedAt: null,
+})
+mockNuxtImport('useTamperWatch', () => () => ({
+  state: witness,
+  check: vi.fn(),
+  tampered: computed(() => witness.value.status === 'tampered' || witness.value.status === 'rolled-back'),
 }))
 
 afterEach(() => vi.clearAllMocks())
@@ -59,6 +72,24 @@ describe('verify page', () => {
     const text = wrapper.text()
     expect(text).toContain('Chain broken')
     expect(text).toContain('#1')
+    wrapper.unmount()
+  })
+
+  it('shows this device consistent in the witness panel', async () => {
+    entries.value = [entry(1, true)]
+    result.value = { ok: true, count: 1, head: 'h' }
+    witness.value = { status: 'consistent', pinnedSeq: 1, headSeq: 2, firstSeenAt: '2026-06-19T00:00:00.000Z', checkedAt: null }
+    const wrapper = await mountSuspended(Verify)
+    expect(wrapper.text()).toContain('Consistent with your last visit')
+    wrapper.unmount()
+  })
+
+  it('flags a witnessed retro-edit in the witness panel', async () => {
+    entries.value = [entry(1, true)]
+    result.value = { ok: true, count: 1, head: 'h' }
+    witness.value = { status: 'tampered', pinnedSeq: 1, headSeq: 2, firstSeenAt: '2026-06-19T00:00:00.000Z', checkedAt: null }
+    const wrapper = await mountSuspended(Verify)
+    expect(wrapper.text()).toContain('History changed since your last visit')
     wrapper.unmount()
   })
 })

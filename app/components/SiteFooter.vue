@@ -4,6 +4,7 @@ const config = useRuntimeConfig()
 const nuxtApp = useNuxtApp()
 const router = useRouter()
 const { isDark, toggle } = useTheme()
+const { tampered: chainTampered } = useTamperWatch()
 
 // SSR pages ship their server render time in the payload; client-side
 // navigations are timed here instead.
@@ -68,6 +69,14 @@ const lang = computed({
           </template>
         </ClientOnly>
         <NuxtLink to="/roadmap" class="hover:underline">{{ t('roadmap.title') }}</NuxtLink>
+        <NuxtLink
+          v-if="chainTampered"
+          to="/verify"
+          class="inline-flex items-center gap-1 font-medium"
+          style="color: var(--p-red-500)"
+        >
+          <i class="pi pi-exclamation-triangle text-xs" />{{ t('verify.witness.warnChip') }}
+        </NuxtLink>
         <NuxtLink to="/verify" class="hover:underline">{{ t('verify.title') }}</NuxtLink>
         <a href="/docs/api" target="_blank" rel="noopener" class="hover:underline">API</a>
       </div>
