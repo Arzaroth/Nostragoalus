@@ -1,10 +1,25 @@
 <script setup lang="ts">
-import type { LedgerEntry } from '../../shared/commitment'
+import type { LedgerEntry } from '#shared/commitment'
 
 const { t } = useI18n()
 useHead({ title: t('verify.title') })
 
 const { data, isPending, isError, refetch, isFetching } = useLedgerVerification()
+const { state: witness, check: recheckWitness } = useTamperWatch()
+onMounted(() => void recheckWitness())
+
+const witnessSeverity = computed(() => {
+  switch (witness.value.status) {
+    case 'tampered':
+    case 'rolled-back':
+      return 'danger'
+    case 'consistent':
+      return 'success'
+    default:
+      return 'secondary'
+  }
+})
+const firstSeen = computed(() => (witness.value.firstSeenAt ? new Date(witness.value.firstSeenAt).toLocaleDateString() : ''))
 
 function short(hash: string): string {
   return `${hash.slice(0, 12)}…`
@@ -54,6 +69,22 @@ const recent = computed<LedgerEntry[]>(() => (data.value ? [...data.value.entrie
           <span class="mt-1" style="color: var(--p-text-muted-color)">{{ t('verify.snapshotHint') }}</span>
         </div>
       </template>
+    </section>
+
+    <section class="ng-card rounded-2xl border p-6 flex flex-col gap-3" style="background: var(--p-content-background)">
+      <span class="font-medium">{{ t('verify.witness.title') }}</span>
+      <div class="flex items-center gap-2 flex-wrap">
+        <Tag :severity="witnessSeverity" rounded>
+          <i
+            class="text-xs mr-1"
+            :class="witnessSeverity === 'danger' ? 'pi pi-exclamation-triangle' : witnessSeverity === 'success' ? 'pi pi-verified' : 'pi pi-eye'"
+          />{{ t(`verify.witness.${witness.status}`) }}
+        </Tag>
+        <span v-if="witness.status === 'consistent'" class="text-xs" style="color: var(--p-text-muted-color)">
+          {{ t('verify.witness.since', { date: firstSeen, from: witness.pinnedSeq ?? 0, to: witness.headSeq ?? 0 }) }}
+        </span>
+      </div>
+      <p class="text-xs whitespace-pre-line" style="color: var(--p-text-muted-color)">{{ t('verify.witness.explain') }}</p>
     </section>
 
     <section

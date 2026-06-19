@@ -20,7 +20,18 @@
     "head": "ngoqmey nach (seq {seq})",
     "snapshotHint": "ngoqvam yIQaw'Qo'. qaSpu'bogh choHlu'chugh, rarbe'choH.",
     "recent": "Qunmey SoQ tlha'",
-    "sealed": "SoQqu'"
+    "sealed": "SoQqu'",
+    "witness": {
+      "title": "De'wI'lIj 'aqroS",
+      "explain": "ngoqmey nach Qel De'wI'lIj, pa'DajDaq pollu', maHvaD ngeHbe'. Such Hoch: ngoqmey naDev tlhe'taHvIS, Qun choHlu'pu'bogh 'angbej, ngoq DapolHa'chugh je. De'wI' chu' pagh pa' teqlu'chugh, tagh'egh.",
+      "since": "{date} bID rar De'wI'vam legh (#{from} - #{to}).",
+      "warnChip": "Qun choHlu'",
+      "unknown": "toblu'be'pu'",
+      "first-seen": "De'wI'vam wa'DIch Such - waw' pollu'",
+      "consistent": "Such tlha' rar",
+      "tampered": "Such tlha' choH qun",
+      "rolled-back": "Such tlha' Qun chenbe'"
+    }
   },
   "nav": {
     "matches": "may'mey",

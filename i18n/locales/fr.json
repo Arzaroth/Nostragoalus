@@ -20,7 +20,18 @@
     "head": "Tête de chaîne (seq {seq})",
     "snapshotHint": "Gardez ce hachage. Si l'historique est réécrit, il cessera de correspondre.",
     "recent": "Derniers engagements",
-    "sealed": "Scellé"
+    "sealed": "Scellé",
+    "witness": {
+      "title": "Le témoin de votre appareil",
+      "explain": "Votre navigateur mémorise la dernière tête de chaîne vérifiée (en stockage local, jamais envoyée). À chaque visite, il vérifie que la chaîne prolonge toujours cette tête : un pronostic modifié depuis votre dernière visite apparaît ici, même sans avoir gardé le hachage vous-même. Un nouvel appareil ou un stockage effacé repart de zéro.",
+      "since": "Cohérent avec la vue de cet appareil depuis le {date} (#{from} à #{to}).",
+      "warnChip": "Scores altérés",
+      "unknown": "Pas encore vérifié",
+      "first-seen": "Première visite sur cet appareil - référence enregistrée",
+      "consistent": "Cohérent avec votre dernière visite",
+      "tampered": "L'historique a changé depuis votre dernière visite",
+      "rolled-back": "Des entrées manquent depuis votre dernière visite"
+    }
   },
   "nav": {
     "matches": "Matchs",

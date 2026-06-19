@@ -20,7 +20,18 @@
     "head": "Chain head (seq {seq})",
     "snapshotHint": "Save this hash. If the history is ever rewritten, it will stop matching.",
     "recent": "Latest commitments",
-    "sealed": "Sealed"
+    "sealed": "Sealed",
+    "witness": {
+      "title": "Your device's witness",
+      "explain": "Your browser remembers the last chain head it verified (in local storage, never sent to us). Each visit it checks the chain still extends that head - so a pick edited after you last saw it shows up here, even if you never kept the hash yourself. A fresh device or cleared storage starts over.",
+      "since": "Consistent with this device's view since {date} (#{from} to #{to}).",
+      "warnChip": "Scores tampered",
+      "unknown": "Not checked yet",
+      "first-seen": "First visit on this device - baseline pinned",
+      "consistent": "Consistent with your last visit",
+      "tampered": "History changed since your last visit",
+      "rolled-back": "Entries are missing since your last visit"
+    }
   },
   "nav": {
     "matches": "Matches",
