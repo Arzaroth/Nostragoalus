@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.28.0] - 2026-06-19
+
 ### Added
 - Themed error pages: a **418** shows a teapot pouring a football ("I'm a teapot"), and a **500** shows the referee sending the server off with a red card (the 404 still loses the ball among the stars). Both honour reduced-motion. New `/418` and `/500` routes trigger them on demand.
 
