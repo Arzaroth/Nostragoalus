@@ -114,7 +114,7 @@ describe('deleteMatchMedia', () => {
 })
 
 describe('pruneLiveMediaForFinishedMatches', () => {
-  it('clears LIVE links on finished matches, keeps replays and live matches', async () => {
+  it('clears LIVE links on over matches (finished or awarded), keeps replays and live matches', async () => {
     const { db, client, competitionId, matchId } = await setup() // matchId is SCHEDULED
     const roundId = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
     const finished = await makeMatch(db, {
@@ -123,12 +123,20 @@ describe('pruneLiveMediaForFinishedMatches', () => {
       kickoffTime: new Date('2026-06-11T16:00:00Z'),
       status: 'FINISHED',
     })
+    const awarded = await makeMatch(db, {
+      competitionId,
+      roundId,
+      kickoffTime: new Date('2026-06-11T16:00:00Z'),
+      status: 'AWARDED',
+    })
     await addMatchMedia(db, { matchId: finished, kind: 'LIVE', url: 'https://youtu.be/dead' })
     await addMatchMedia(db, { matchId: finished, kind: 'HIGHLIGHTS', url: 'https://youtu.be/high' })
+    await addMatchMedia(db, { matchId: awarded, kind: 'LIVE', url: 'https://youtu.be/awd' })
     await addMatchMedia(db, { matchId, kind: 'LIVE', url: 'https://youtu.be/live' })
 
-    expect(await pruneLiveMediaForFinishedMatches(db)).toBe(1)
+    expect(await pruneLiveMediaForFinishedMatches(db)).toBe(2)
     expect((await listMatchMedia(db, finished)).map((m) => m.kind)).toEqual(['HIGHLIGHTS'])
+    expect((await listMatchMedia(db, awarded)).map((m) => m.kind)).toEqual([])
     expect((await listMatchMedia(db, matchId)).map((m) => m.kind)).toEqual(['LIVE'])
     expect(await pruneLiveMediaForFinishedMatches(db)).toBe(0) // idempotent
     await client.close()

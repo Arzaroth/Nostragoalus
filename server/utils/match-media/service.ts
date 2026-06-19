@@ -74,12 +74,13 @@ export async function deleteMatchMedia(db: AppDatabase, matchId: string, mediaId
   if (deleted.length === 0) throw new NotFoundError('media not found')
 }
 
-// A LIVE link on a finished match is dead - the stream is over. Cleared on
-// finalize so it doesn't linger in the table (the UI already hides LIVE media on
-// finished matches; this is housekeeping that doesn't depend on the bot running).
+// A LIVE link on an over match is dead - the stream is gone. Cleared on finalize
+// so it doesn't linger in the table (the UI already hides LIVE media once a match
+// is over; this is housekeeping that doesn't depend on the bot running). "Over"
+// matches visibleMediaForStatus: FINISHED or AWARDED (walkover/forfeit).
 // Returns how many were removed.
 export async function pruneLiveMediaForFinishedMatches(db: AppDatabase): Promise<number> {
-  const finishedIds = db.select({ id: match.id }).from(match).where(eq(match.status, 'FINISHED'))
+  const finishedIds = db.select({ id: match.id }).from(match).where(inArray(match.status, ['FINISHED', 'AWARDED']))
   const deleted = await db
     .delete(matchMedia)
     .where(and(eq(matchMedia.kind, 'LIVE'), inArray(matchMedia.matchId, finishedIds)))
