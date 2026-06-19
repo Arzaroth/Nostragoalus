@@ -18,15 +18,19 @@ function kindLabel(k: MatchMediaKind) {
   <div class="flex flex-col gap-1.5">
     <template v-if="item.embeddable">
       <!-- Sandbox/allow/referrer come from resolveEmbedAttrs per link; a `sandbox`
-           of undefined drops the attribute (a host that refuses sandboxing). The
-           link below is a permanent fallback - some hosts block framing outright
-           (X-Frame-Options), with no error event. -->
+           of undefined drops the attribute (a host that refuses sandboxing).
+           allowfullscreen is static: a player whose `allow` omits the fullscreen
+           token (e.g. a PPV embed mirroring its own policy) still needs the
+           legacy attribute for its fullscreen button. The link below is a
+           permanent fallback - some hosts block framing outright (X-Frame-Options),
+           with no error event. -->
       <div class="aspect-video w-full overflow-hidden rounded-lg" style="background: #000">
         <iframe
           v-bind="attrs"
           :title="item.label || kindLabel(item.kind)"
           class="w-full h-full border-0"
           loading="lazy"
+          allowfullscreen
         />
       </div>
       <a :href="item.url" target="_blank" rel="noopener noreferrer" class="text-xs self-end hover:underline" style="color: var(--p-text-muted-color)">

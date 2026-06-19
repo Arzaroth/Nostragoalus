@@ -8,6 +8,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 ## [1.29.3] - 2026-06-20
 
 ### Fixed
+- Embedded watch-link players can now go fullscreen even when their feature-policy omits the fullscreen token (the player iframe always carries `allowfullscreen`).
 - The match page no longer shows two identically-named tabs in French (and Klingon): the team **group** standings tab is now distinct from the player **ranking** tab.
 - Your pick on the match page now locks the moment the match kicks off while you're watching it: the score inputs stayed editable if the match started after the page had loaded.
 
