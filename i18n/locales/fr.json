@@ -1,4 +1,27 @@
 {
+  "verify": {
+    "title": "Vérifier les scores",
+    "sub": "La preuve que les pronostics ne sont pas modifiés après le coup d'envoi.",
+    "how": "À chaque changement de pronostic, l'app ajoute un engagement scellé à un registre en ajout seul, chaîné par hachage au précédent. Modifier un ancien pronostic casserait tous les maillons suivants. Votre navigateur télécharge tout le registre et le recalcule ici : rien ne fait confiance au serveur.\nUn pronostic reste scellé jusqu'au coup d'envoi de son match ; ensuite, le score et son sel secret sont révélés pour que chacun puisse rouvrir l'engagement et le vérifier.",
+    "resultTitle": "Vérification de la chaîne",
+    "reverify": "Revérifier",
+    "running": "Vérification de la chaîne dans votre navigateur…",
+    "error": "Impossible de charger le registre.",
+    "ok": "Chaîne intacte",
+    "tampered": "Chaîne rompue",
+    "counts": "{total} entrées vérifiées, {opened} ouvertures rouvertes.",
+    "failedAt": "Rompue à l'entrée n°{seq} : {reason}.",
+    "reason": {
+      "sequence": "un trou dans la séquence",
+      "link": "un maillon rompu",
+      "commitment": "un pronostic qui ne correspond plus à son sceau",
+      "entry-hash": "un hachage d'entrée falsifié"
+    },
+    "head": "Tête de chaîne (seq {seq})",
+    "snapshotHint": "Gardez ce hachage. Si l'historique est réécrit, il cessera de correspondre.",
+    "recent": "Derniers engagements",
+    "sealed": "Scellé"
+  },
   "nav": {
     "matches": "Matchs",
     "bracket": "Tableau",

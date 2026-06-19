@@ -1,4 +1,27 @@
 {
+  "verify": {
+    "title": "Verify scores",
+    "sub": "Proof that predictions are not edited after kickoff.",
+    "how": "Every time a pick changes, the app appends a sealed commitment to an append-only ledger, hash-chained to the one before it. Editing any past pick would break every later link in the chain. Your browser pulls the whole ledger and recomputes it here - nothing trusts the server's word.\nA pick stays sealed until its match kicks off; after that, the score and its secret salt are revealed so anyone can re-open the commitment and check it.",
+    "resultTitle": "Chain verification",
+    "reverify": "Re-verify",
+    "running": "Verifying the chain in your browser…",
+    "error": "Could not load the ledger.",
+    "ok": "Chain intact",
+    "tampered": "Chain broken",
+    "counts": "{total} entries checked, {opened} openings re-opened.",
+    "failedAt": "Broken at entry #{seq}: {reason}.",
+    "reason": {
+      "sequence": "a gap in the sequence",
+      "link": "a broken chain link",
+      "commitment": "a pick that no longer matches its seal",
+      "entry-hash": "a forged entry hash"
+    },
+    "head": "Chain head (seq {seq})",
+    "snapshotHint": "Save this hash. If the history is ever rewritten, it will stop matching.",
+    "recent": "Latest commitments",
+    "sealed": "Sealed"
+  },
   "nav": {
     "matches": "Matches",
     "bracket": "Bracket",
