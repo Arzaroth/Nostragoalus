@@ -520,7 +520,7 @@
     "apiKeys": {
       "title": "API clients",
       "hint": "Machine credentials for integrations (e.g. the watch-link bot). Keys are scoped and shown once at creation.",
-      "createdWarn": "Copy this key now - it is stored hashed and will not be shown again.",
+      "createdWarn": "Copy the full key now - it is shown once and stored only as a hash. The short prefix in the Key column is all that is kept, to help you identify it later.",
       "copy": "Copy",
       "copied": "Copied",
       "done": "Done",
