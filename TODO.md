@@ -798,3 +798,20 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       Harmless but redundant wiring; drop it or wire it through. Also: the goal
       animation reads reduced-motion via VueUse while the new SVGs use a CSS
       `@media` query - they agree now but could drift if detection changes.
+
+## Timeline break-sub placement (deferred from the feature-treatment review)
+
+- [ ] The FIFA provider's own `substitutions` sort (`minuteValue` in
+      stats/insights.ts) sends both break-sub minutes (`''` half-time and the
+      `'ET'` sentinel) to the end of the array, while the client re-sorts with
+      `app/utils/match-view.ts minuteVal` (which slots them at 45/105). Today only
+      `buildTimeline` consumes the array (it rebuilds), so it's correct - but the
+      two orderings disagree and only the client one understands the sentinel. A
+      future consumer reading `MatchDetail.substitutions` in server order would
+      re-introduce the misplacement. Align the two minute-orderings (teach the
+      server sort about ''/'ET', or share one comparator).
+- [ ] Break-sub half-time-vs-extra-time classification is a positional heuristic
+      (FIFA gives no clock at breaks): a team's first sub at HT whose next timed
+      sub is in extra time is misread as the ET interval, and a lone ET-interval
+      sub with no other timed team sub falls back to HT. Rare and cosmetic (wrong
+      break label); inherent without provider clock data.
