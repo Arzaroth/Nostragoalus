@@ -44,11 +44,14 @@ tmp="$(mktemp)"
 jq --indent 2 --arg v "$version" '.version = $v' package.json > "$tmp"
 mv "$tmp" package.json
 
-echo "running the gate (typecheck + coverage + component tests)..."
+echo "running the gate (typecheck + coverage + component tests + prod build)..."
 export CI=true
 pnpm typecheck
 pnpm test:coverage
 pnpm test:components
+# Build last: catches SSR/rollup link errors (e.g. unresolved imports) that
+# typecheck and the unit/component suites miss, so a release tag always builds.
+pnpm build
 
 git add CHANGELOG.md package.json
 git commit -m "chore(release): ${version}"
