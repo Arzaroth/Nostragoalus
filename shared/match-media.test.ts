@@ -129,6 +129,12 @@ describe('parseIframeEmbed', () => {
     expect(parseIframeEmbed('https://www.youtube.com/watch?v=abc')).toBeNull()
     expect(parseIframeEmbed('<iframe width="560"></iframe>')).toBeNull()
   })
+  it('ignores a lazy-load data-src and takes the real src', () => {
+    expect(parseIframeEmbed('<iframe data-src="https://lazy.cdn/p" src="https://real.player/q"></iframe>')).toEqual({
+      url: 'https://real.player/q',
+      allow: null,
+    })
+  })
 })
 
 describe('resolveEmbedAttrs', () => {
@@ -162,5 +168,11 @@ describe('resolveEmbedAttrs', () => {
   })
   it('allow override is sanitised then used', () => {
     expect(resolveEmbedAttrs(item({ allow: "autoplay; camera 'self'" }), HOST).allow).toBe('autoplay')
+  })
+  it('falls back to the raw url + strict sandbox when the url cannot be parsed', () => {
+    const r = resolveEmbedAttrs(item({ url: '::::' }), HOST)
+    expect(r.src).toBe('::::')
+    expect(r.sandbox).toBe('allow-scripts allow-presentation')
+    expect(r.referrerpolicy).toBe('no-referrer')
   })
 })

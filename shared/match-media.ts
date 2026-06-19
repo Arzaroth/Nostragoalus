@@ -171,9 +171,11 @@ export function sanitizeAllow(raw: string | null | undefined): string | null {
 // null when the input isn't an iframe tag (the caller then treats it as a URL).
 export function parseIframeEmbed(input: string): { url: string; allow: string | null } | null {
   if (!/<iframe[\s>]/i.test(input)) return null
-  const src = input.match(/\bsrc\s*=\s*["']([^"']+)["']/i)?.[1]
+  // Anchor on a tag/space/quote boundary so a lazy-load `data-src` (or any
+  // `*-src`) can't be mistaken for the real `src`.
+  const src = input.match(/(?:^|[\s"'])src\s*=\s*["']([^"']+)["']/i)?.[1]
   if (!src) return null
-  const allow = input.match(/\ballow\s*=\s*["']([^"']*)["']/i)?.[1]
+  const allow = input.match(/(?:^|[\s"'])allow\s*=\s*["']([^"']*)["']/i)?.[1]
   return { url: src.trim(), allow: sanitizeAllow(allow) }
 }
 
