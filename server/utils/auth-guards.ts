@@ -48,6 +48,17 @@ export async function requireUser(event: H3Event) {
   return user
 }
 
+// A read route that should be reachable by a signed-in user OR a scoped machine
+// key, but not anonymously: an x-api-key header is checked against `permissions`
+// (a non-admin owner is fine - these are not admin routes), otherwise a session
+// is required. Closes a route that must not be world-readable while still letting
+// the app (cookie session) and integrations (scoped key) use it.
+export async function requireUserOrApiKey(event: H3Event, permissions: Record<string, string[]>) {
+  const apiKeyHeader = event.headers?.get?.('x-api-key')
+  if (apiKeyHeader) return requireApiKey(apiKeyHeader, permissions, false)
+  return requireUser(event)
+}
+
 function adminEmails(): string[] {
   return (useRuntimeConfig().adminEmails || '')
     .split(',')

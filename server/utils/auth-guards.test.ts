@@ -78,6 +78,25 @@ describe('auth guards', () => {
   })
 })
 
+describe('requireUserOrApiKey', () => {
+  it('falls back to the session when no api key is presented (401 if anonymous)', async () => {
+    const { requireUserOrApiKey } = await guards()
+    getSession.mockResolvedValue({ user: { id: 'u1', email: 'a@b.c' } })
+    expect(await requireUserOrApiKey(event, { leaderboard: ['read'] })).toMatchObject({ id: 'u1' })
+    getSession.mockResolvedValue(null)
+    await expect(requireUserOrApiKey(event, { leaderboard: ['read'] })).rejects.toMatchObject({ statusCode: 401 })
+  })
+
+  it('honours a scoped key (non-admin owner allowed) when the header is present', async () => {
+    const { requireUserOrApiKey } = await guards()
+    verifyApiKey.mockResolvedValue({ valid: true, key: { referenceId: 'u2' } })
+    dbLimit.mockResolvedValue([{ id: 'u2', email: 'bot@x.y', role: 'user' }])
+    const keyEvent = { headers: new Headers({ 'x-api-key': 'k' }) } as never
+    expect(await requireUserOrApiKey(keyEvent, { leaderboard: ['read'] })).toMatchObject({ id: 'u2' })
+    expect(verifyApiKey).toHaveBeenCalledWith({ body: { key: 'k', permissions: { leaderboard: ['read'] } } })
+  })
+})
+
 describe('requireApiKey', () => {
   it('returns the owner for a valid key with the required permission', async () => {
     const { requireApiKey } = await guards()

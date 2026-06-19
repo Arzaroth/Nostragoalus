@@ -3,17 +3,13 @@ import { countLeagueMembersHiddenFromBoard, getLeaderboard } from '../../utils/l
 import { getLiveProvisionalPoints } from '../../utils/leaderboard/live'
 import { getLeagueRankMovements, getRankMovements } from '../../utils/leaderboard/snapshots'
 import { getCompetitionById, resolveCompetition } from '../../utils/competitions/store'
-import { getSessionUser, isAdmin, requireUser } from '../../utils/auth-guards'
+import { isAdmin, requireUser, requireUserOrApiKey } from '../../utils/auth-guards'
 import { canViewLeague, getLeague, getMembership } from '../../utils/leagues/service'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const limit = query.limit ? Math.min(Number(query.limit), 200) : 100
   const offset = query.offset ? Math.max(Number(query.offset), 0) : 0
-  // Always keep the signed-in viewer on the board so a hidden/private account
-  // (e.g. an admin-hidden one) still sees its own row, even in its own league.
-  const viewer = await getSessionUser(event)
-
   // League-scoped ranking. The league fixes the competition; movement arrows
   // are global-rank deltas and don't translate to within-league positions.
   if (query.league) {
@@ -59,9 +55,16 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  // The non-league board ranks every visible player, so it must not be
+  // world-readable: require a session or a leaderboard:read key. App pages are
+  // already behind auth, so this only turns away anonymous direct API hits. The
+  // principal is also kept on the board (alwaysIncludeUserId) so a hidden/private
+  // account still sees its own row.
+  const principal = await requireUserOrApiKey(event, { leaderboard: ['read'] })
+
   // Global ranking across every competition.
   if (query.global === 'true') {
-    return { competition: null, rows: await getLeaderboard(db, { competitionId: null, limit, offset, alwaysIncludeUserId: viewer?.id }) }
+    return { competition: null, rows: await getLeaderboard(db, { competitionId: null, limit, offset, alwaysIncludeUserId: principal.id }) }
   }
 
   const competition = await resolveCompetition(db, (query.competition as string) || null)
@@ -70,7 +73,7 @@ export default defineEventHandler(async (event) => {
     getLiveProvisionalPoints(db, competition.id),
     getRankMovements(db, competition.id),
   ])
-  const rows = await getLeaderboard(db, { competitionId: competition.id, limit, offset, alwaysIncludeUserId: viewer?.id, liveProvisional })
+  const rows = await getLeaderboard(db, { competitionId: competition.id, limit, offset, alwaysIncludeUserId: principal.id, liveProvisional })
   return {
     competition: { id: competition.id, slug: competition.slug, name: competition.name },
     live: liveProvisional.size > 0,
