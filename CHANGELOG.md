@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.29.1] - 2026-06-19
+
 ### Fixed
 - **Break substitutions** (half-time, and the extra-time interval) in the match timeline no longer fall to the bottom out of order: they now sit at the right break with an "HT" marker instead of a blank minute.
 
