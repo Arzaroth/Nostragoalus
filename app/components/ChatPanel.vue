@@ -3,9 +3,13 @@
 // per-match thread. All crypto is client-side; the server only relays ciphertext.
 const props = withDefaults(defineProps<{ leagueId: string; matchId?: string | null }>(), { matchId: null })
 
-const { t, d } = useI18n()
+const { t } = useI18n()
 const { session } = useAuth()
 const meId = computed(() => session.value?.data?.user?.id ?? null)
+
+function fmtTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
 
 const chat = useLeagueChat(
   () => props.leagueId,
@@ -130,7 +134,7 @@ watch(
           <div v-for="m in messages" :key="m.id" class="text-sm flex flex-col">
             <div class="flex items-baseline gap-2">
               <span class="font-semibold" :style="m.userId === meId ? 'color: var(--p-primary-color)' : ''">{{ nameFor(m.userId) }}</span>
-              <span class="text-[10px]" style="color: var(--p-text-muted-color)">{{ d(new Date(m.createdAt), 'time') }}</span>
+              <span class="text-[10px]" style="color: var(--p-text-muted-color)">{{ fmtTime(m.createdAt) }}</span>
               <button v-if="m.userId && m.userId !== meId" type="button" class="text-[10px] underline opacity-60 hover:opacity-100" @click="chat.toggleMute(m.userId)">{{ t('chat.mute') }}</button>
             </div>
             <span v-if="m.text !== null" class="break-words">{{ m.text }}</span>
