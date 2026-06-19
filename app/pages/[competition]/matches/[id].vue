@@ -113,7 +113,16 @@ onBeforeUnmount(() => clearTimeout(celebrationTimer))
 // Your pick, editable in place until kickoff.
 const myPred = computed(() => data.value?.myPrediction ?? null)
 const predLocked = computed(() => data.value?.isLocked ?? true)
-const canPredict = computed(() => !predLocked.value && !!m.value?.homeTeamCode && !!m.value?.awayTeamCode)
+// Also gate on the live status, not just the fetched isLocked: the match can
+// kick off while this page is open (live poll flips the status), and the input
+// must lock then even though the initial isLocked was false.
+const canPredict = computed(
+  () =>
+    !predLocked.value &&
+    (live.value?.status ?? m.value?.status ?? 'SCHEDULED') === 'SCHEDULED' &&
+    !!m.value?.homeTeamCode &&
+    !!m.value?.awayTeamCode,
+)
 const { upsert } = usePredictionMutations()
 function savePrediction(v: { home: number; away: number }) {
   upsert.mutate({ matchId: id.value, home: v.home, away: v.away }, { onSuccess: () => refreshMatch() })
@@ -398,6 +407,10 @@ const mediaKinds = computed(() => {
   return MEDIA_ORDER.filter((k) => present.has(k))
 })
 const mediaByKind = (k: MatchMediaKind) => visibleMedia.value.filter((mm) => mm.kind === k)
+// Embeds (iframes) stack; plain links render as buttons that flow in a row.
+type MediaItem = (typeof visibleMedia.value)[number]
+const embedsOf = (items: MediaItem[]) => items.filter((mm) => mm.embeddable)
+const linksOf = (items: MediaItem[]) => items.filter((mm) => !mm.embeddable)
 const mediaTabValue = (k: MatchMediaKind) => `media-${k.toLowerCase()}`
 const mediaKindLabel = (k: MatchMediaKind) => t(`media.${k.toLowerCase()}`)
 // A plain ref (resets per match view): when pinned the watch area moves above the
@@ -592,7 +605,10 @@ function toggleFormInfo(side: string, i: number | string) {
           <i class="pi pi-times text-[0.65rem]" /> {{ t('media.unpin') }}
         </button>
       </div>
-      <MatchMediaEmbed v-for="item in visibleMedia" :key="item.id" :item="item" />
+      <MatchMediaEmbed v-for="item in embedsOf(visibleMedia)" :key="item.id" :item="item" />
+      <div v-if="linksOf(visibleMedia).length" class="flex flex-wrap gap-2">
+        <MatchMediaEmbed v-for="item in linksOf(visibleMedia)" :key="item.id" :item="item" />
+      </div>
     </div>
 
     <div v-if="insights" class="rounded-2xl border p-2 sm:p-4" style="background: var(--p-content-background); border-color: var(--p-content-border-color)">
@@ -615,7 +631,10 @@ function toggleFormInfo(side: string, i: number | string) {
                 📌 {{ t('media.pin') }}
               </button>
             </div>
-            <MatchMediaEmbed v-for="item in mediaByKind(k)" :key="item.id" :item="item" />
+            <MatchMediaEmbed v-for="item in embedsOf(mediaByKind(k))" :key="item.id" :item="item" />
+            <div v-if="linksOf(mediaByKind(k)).length" class="flex flex-wrap gap-2">
+              <MatchMediaEmbed v-for="item in linksOf(mediaByKind(k))" :key="item.id" :item="item" />
+            </div>
           </TabPanel>
           <TabPanel v-if="hasStats || detailStatus === 'pending'" value="stats">
             <!-- venue-line skeleton while the upstream-backed detail loads -->
