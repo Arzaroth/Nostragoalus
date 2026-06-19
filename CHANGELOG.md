@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.29.2] - 2026-06-19
+
 ### Changed
 - Polished the themed error art: the **418** teapot now pours its football out of the spout into the cup (the spout faced the wrong way and the handle was oversized), and the **500** referee raises the red card from the shoulder (not the head) with an impact flash and a flinching, sweating server.
 
