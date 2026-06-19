@@ -147,8 +147,11 @@ export const DEFAULT_EMBED_ALLOW = 'autoplay; fullscreen; encrypted-media; pictu
 // same-origin) vs an untrusted force-embedded host (no same-origin, so it can't
 // reach our origin). `null` from resolveEmbedAttrs.sandbox means: emit NO sandbox
 // attribute at all (a host that refuses to run sandboxed, e.g. some PPV players).
-const PLAYER_SANDBOX = 'allow-scripts allow-same-origin allow-presentation'
-const STRICT_SANDBOX = 'allow-scripts allow-presentation'
+// allow-fullscreen so a sandboxed player's fullscreen button works on engines
+// that gate it on the sandbox token (the legacy iframe allowfullscreen attribute
+// alone isn't enough there); it grants fullscreen only, no scripting/origin escape.
+const PLAYER_SANDBOX = 'allow-scripts allow-same-origin allow-presentation allow-fullscreen'
+const STRICT_SANDBOX = 'allow-scripts allow-presentation allow-fullscreen'
 
 // Keep an admin-supplied `allow` to bare feature tokens (e.g. "autoplay;
 // encrypted-media; picture-in-picture"): lowercase letters/dashes, separated by

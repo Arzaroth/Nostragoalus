@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+- Embedded watch-link players now have a working **fullscreen** button: the player iframe is granted fullscreen both ways (the legacy `allowfullscreen` attribute and the sandbox `allow-fullscreen` token), so it works across browsers and for sandboxed providers like YouTube and Twitch.
+
 ## [1.29.3] - 2026-06-20
 
 ### Fixed

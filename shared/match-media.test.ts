@@ -149,7 +149,7 @@ describe('resolveEmbedAttrs', () => {
   it('trusted player: nocookie src, player sandbox + same-origin referrer, default allow', () => {
     expect(resolveEmbedAttrs(item(), HOST)).toEqual({
       src: 'https://www.youtube-nocookie.com/embed/abc123',
-      sandbox: 'allow-scripts allow-same-origin allow-presentation',
+      sandbox: 'allow-scripts allow-same-origin allow-presentation allow-fullscreen',
       allow: DEFAULT_EMBED_ALLOW,
       referrerpolicy: 'strict-origin-when-cross-origin',
     })
@@ -157,14 +157,14 @@ describe('resolveEmbedAttrs', () => {
   it('untrusted host: raw src, strict sandbox, no referrer', () => {
     const r = resolveEmbedAttrs(item({ url: 'https://ppv.example/embed/x' }), HOST)
     expect(r.src).toBe('https://ppv.example/embed/x')
-    expect(r.sandbox).toBe('allow-scripts allow-presentation')
+    expect(r.sandbox).toBe('allow-scripts allow-presentation allow-fullscreen')
     expect(r.referrerpolicy).toBe('no-referrer')
   })
   it('sandbox=false drops the attribute entirely', () => {
     expect(resolveEmbedAttrs(item({ url: 'https://ppv.example/embed/x', sandbox: false }), HOST).sandbox).toBeUndefined()
   })
   it('sandbox=true forces the player sandbox even on an untrusted host', () => {
-    expect(resolveEmbedAttrs(item({ url: 'https://ppv.example/embed/x', sandbox: true }), HOST).sandbox).toBe('allow-scripts allow-same-origin allow-presentation')
+    expect(resolveEmbedAttrs(item({ url: 'https://ppv.example/embed/x', sandbox: true }), HOST).sandbox).toBe('allow-scripts allow-same-origin allow-presentation allow-fullscreen')
   })
   it('allow override is sanitised then used', () => {
     expect(resolveEmbedAttrs(item({ allow: "autoplay; camera 'self'" }), HOST).allow).toBe('autoplay')
@@ -172,7 +172,7 @@ describe('resolveEmbedAttrs', () => {
   it('falls back to the raw url + strict sandbox when the url cannot be parsed', () => {
     const r = resolveEmbedAttrs(item({ url: '::::' }), HOST)
     expect(r.src).toBe('::::')
-    expect(r.sandbox).toBe('allow-scripts allow-presentation')
+    expect(r.sandbox).toBe('allow-scripts allow-presentation allow-fullscreen')
     expect(r.referrerpolicy).toBe('no-referrer')
   })
 })
