@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.29.0] - 2026-06-19
+
 ### Added
 - **Reactions on the fixtures list**: each kicked-off match card now shows its reaction tally (your own reaction highlighted), so you can see the mood of the matchday at a glance. With a league selected the card shows your league's counts plus the global total, mirroring the crowd line. Tap the card to react on the match page.
 
