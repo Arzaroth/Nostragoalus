@@ -412,6 +412,19 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
 ## Match watch links (deferred from the feature pass)
 
+### Deferred from the feature-treatment review (feat/match-view-streams)
+
+- [ ] Embed sandbox is an admin-trusted footgun: per the force-embed design, an
+      admin (or a leaked `media:write` API key) can force-embed an arbitrary
+      non-whitelisted https host on the public match page with `sandbox=false`
+      (no sandbox attribute) or `sandbox=true` (grants `allow-same-origin` even to
+      an untrusted host, the documented sandbox-escape combo). Intended capability
+      and within the admin trust boundary, but the blast radius is every
+      unauthenticated viewer. Harden later: scope `allow-same-origin` to
+      whitelisted providers only, and/or keep `sandbox=false` to whitelisted
+      hosts. Protect the `media:write` key accordingly. (resolveEmbedAttrs in
+      shared/match-media.ts.)
+
 - [x] Machine auth (built on feat/api-keys): @better-auth/api-key plugin (suite
       bumped 1.6.14 -> 1.6.18; apikey table hand-authored in auth-schema since no
       CLI was available, proven by an integration test). `defineValidatedHandler`
