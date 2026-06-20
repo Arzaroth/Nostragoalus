@@ -16,6 +16,15 @@ function positionRows(startingXI: SquadPlayer[]): PitchRow[] {
   return ROWS.map((pos) => ({ pos, players: buckets[pos] })).filter((r) => r.players.length)
 }
 
+// Defence-first ordering for the outfield, so band-slicing fills from the back.
+// Self-contained rather than trusting the caller's order: the FIFA provider
+// already sorts this way, but a feed that delivered the XI in shirt order would
+// otherwise scatter players across the bands while still showing the right shape.
+const OUTFIELD_ORDER: Record<string, number> = { DF: 0, MF: 1, FW: 2 }
+const lineRank = (p: SquadPlayer) => OUTFIELD_ORDER[p.position ?? ''] ?? 3
+const shirtRank = (p: SquadPlayer) => p.shirtNumber ?? 99
+const byLine = (a: SquadPlayer, b: SquadPlayer) => lineRank(a) - lineRank(b) || shirtRank(a) - shirtRank(b)
+
 // Outfield band sizes from a formation string ("3-4-3" -> [3, 4, 3], defence
 // first). Null unless it is a clean run of two or more positive integers.
 function parseFormation(formation: string | null | undefined): number[] | null {
@@ -34,7 +43,7 @@ function parseFormation(formation: string | null | undefined): number[] | null {
 // that contradicts the chip beside it.
 export function pitchRows(team: TeamLineup): PitchRow[] {
   const gk = team.startingXI.filter((p) => p.position === 'GK')
-  const outfield = team.startingXI.filter((p) => p.position !== 'GK')
+  const outfield = team.startingXI.filter((p) => p.position !== 'GK').sort(byLine)
   const bands = parseFormation(team.formation)
   if (!bands || bands.reduce((sum, n) => sum + n, 0) !== outfield.length) return positionRows(team.startingXI)
   let offset = 0
