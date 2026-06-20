@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+- Leaderboard movement arrows now clear when your rank doesn't change after a round, instead of leaving a stale up/down indicator from an earlier change.
+- During a live match the movement arrow is measured against the live-inclusive rank shown (not the last settled standings), so the arrow and the rank you see agree.
+
 ## [1.31.1] - 2026-06-20
 
 ### Fixed
