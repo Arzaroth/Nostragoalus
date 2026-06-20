@@ -847,3 +847,20 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 - [ ] Verify the real provider PlaceHolderA/B strings against live data once a
       group stage is in progress. The parser degrades safely to official-only on
       anything it can't read, so confirm it actually projects (not just no-ops).
+
+## Match line-ups (deferred from the feature pass)
+
+- [ ] The pitch buckets the XI by position category (GK/DF/MF/FW), not by the
+      exact formation bands. A 4-2-3-1 collapses its holding pair and its three
+      attacking mids into one MF row, so the rendered shape can differ from the
+      formation chip. FIFA ships a Tactics string (and per-player LineupX/LineupY
+      coords, currently null in the feed); if real coords ever arrive, place
+      players by coordinate, otherwise parse the formation string into bands.
+- [ ] UEFA carries no captain flag in the lineups payload, so no captain is
+      marked for Euro matches (FIFA does). If UEFA exposes it elsewhere (or the
+      armband shows in the events feed), wire it in.
+- [ ] Players link to the team page, not a per-player page (none exists). If a
+      player detail page lands, deep-link the chips to it.
+- [ ] No live verification yet: confirm the tab against a real match in-browser
+      once a kickoff is ~1h out (FIFA WC2026 + a UEFA fixture), checking the
+      pre-announcement empty state, the photo/number fallback, and hydration.
