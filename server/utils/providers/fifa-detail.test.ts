@@ -11,6 +11,7 @@ import {
   normalizeFifaPlayerStats,
   normalizeFifaSquad,
   normalizeFifaCoach,
+  normalizeFifaMatchLineups,
   aggregateTeamMatchStats,
   type FifaMatch,
 } from './fifa'
@@ -1019,5 +1020,78 @@ describe('squad doc + fdh edge branches', () => {
     const provider = fifaProvider({ seasonId: '1', competitionId: '17', rateLimiter: new RateLimiter(0), fetchImpl: (async () => payloads.shift()!) as unknown as typeof fetch })
     const res = await provider.getTeamTournament!({ teamRef: 'AAA', matches: [{ stageId: 's', matchId: 'm' }] })
     expect(res.stats).toMatchObject({ yellowCards: 1, redCards: 1, attempts: null })
+  })
+})
+
+describe('normalizeFifaMatchLineups', () => {
+  const team = (over = {}) => ({
+    IdTeam: 'H',
+    Tactics: '4-3-3',
+    Coaches: [{ Name: [{ Locale: 'en', Description: 'Rafael marquez' }], Role: 0 }],
+    Players: [
+      { IdPlayer: 'gk', PlayerName: [{ Locale: 'en', Description: 'KEEPER' }], ShirtNumber: 1, Position: 0, Status: 1, Captain: true, PlayerPicture: { PictureUrl: 'gk.png' } },
+      { IdPlayer: 'd1', PlayerName: [{ Locale: 'en', Description: 'BACK' }], ShirtNumber: 4, Position: 1, Status: 1 },
+      { IdPlayer: 'm1', PlayerName: [{ Locale: 'en', Description: 'MID' }], ShirtNumber: 8, Position: 2, Status: 1 },
+      { IdPlayer: 'f1', PlayerName: [{ Locale: 'en', Description: 'FRONT' }], ShirtNumber: 9, Position: 3, Status: 1 },
+      { IdPlayer: 'b1', PlayerName: [{ Locale: 'en', Description: 'SUB' }], ShirtNumber: 12, Position: 0, Status: 2 },
+    ],
+    ...over,
+  })
+
+  it('splits the XI from the bench and reads formation, captain, position and coach', () => {
+    const res = normalizeFifaMatchLineups({ HomeTeam: team(), AwayTeam: team() } as never)
+    expect(res.available).toBe(true)
+    expect(res.home.formation).toBe('4-3-3')
+    expect(res.home.coach).toBe('Rafael MARQUEZ')
+    expect(res.home.startingXI.map((p) => p.playerId)).toEqual(['gk', 'd1', 'm1', 'f1'])
+    expect(res.home.startingXI[0]).toMatchObject({ position: 'GK', captain: true, pictureUrl: 'gk.png', shirtNumber: 1 })
+    expect(res.home.bench.map((p) => p.playerId)).toEqual(['b1'])
+    expect(res.home.bench[0].captain).toBe(false)
+  })
+
+  it('is unavailable until both sides field an XI', () => {
+    expect(normalizeFifaMatchLineups({ HomeTeam: team(), AwayTeam: null } as never).available).toBe(false)
+    expect(normalizeFifaMatchLineups({} as never).available).toBe(false)
+  })
+
+  it('falls back to the first coach and tolerates missing fields', () => {
+    const res = normalizeFifaMatchLineups({
+      HomeTeam: { Coaches: [{ Alias: [{ Locale: 'en', Description: 'someone else' }] }], Players: [{ IdPlayer: 'x', Status: 1 }] },
+      AwayTeam: { Players: [{ IdPlayer: 'y', Status: 1 }] },
+    } as never)
+    expect(res.home.coach).toBe('someone ELSE')
+    expect(res.home.formation).toBeNull()
+    expect(res.home.startingXI[0]).toMatchObject({ name: 'Unknown', shirtNumber: null, position: null, pictureUrl: null })
+    expect(res.away.coach).toBeNull()
+  })
+
+  it('sorts unknown-position and number-less players last', () => {
+    const res = normalizeFifaMatchLineups({
+      HomeTeam: {
+        Players: [
+          { IdPlayer: 'a', Position: 3, ShirtNumber: 9, Status: 1 },
+          { IdPlayer: 'np', Status: 1 },
+          { IdPlayer: 'b1', ShirtNumber: 12, Status: 2 },
+          { IdPlayer: 'b2', Status: 2 },
+        ],
+      },
+      AwayTeam: { Players: [{ IdPlayer: 'z', Status: 1 }] },
+    } as never)
+    expect(res.home.startingXI.map((p) => p.playerId)).toEqual(['a', 'np'])
+    expect(res.home.bench.map((p) => p.playerId)).toEqual(['b1', 'b2'])
+  })
+
+  it('provider getMatchLineups fetches the detail doc (keyed and bare urls)', async () => {
+    const urls: string[] = []
+    const fetchImpl = (async (url: string) => {
+      urls.push(url)
+      return new Response(JSON.stringify({ HomeTeam: team(), AwayTeam: team() }))
+    }) as unknown as typeof fetch
+    const provider = fifaProvider({ seasonId: '285023', competitionId: '17', rateLimiter: new RateLimiter(0), fetchImpl })
+    const keyed = await provider.getMatchLineups!({ stageId: 'st', matchId: 'm1' })
+    expect(keyed!.available).toBe(true)
+    expect(urls[0]).toContain('/live/football/17/285023/st/m1')
+    await provider.getMatchLineups!({ matchId: 'm2' })
+    expect(urls[1]).toContain('/live/football/m2')
   })
 })

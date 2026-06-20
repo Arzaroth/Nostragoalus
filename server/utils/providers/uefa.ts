@@ -2,6 +2,7 @@ import type {
   AppStage,
   BookingEvent,
   MatchDetail,
+  MatchLineups,
   SubstitutionEvent,
   MatchStatus,
   NormalizedGoal,
@@ -10,6 +11,7 @@ import type {
   Score,
   SquadPlayer,
   Team,
+  TeamLineup,
   TeamMatchStats,
   TeamSeasonStats,
   TimelineEvent,
@@ -208,6 +210,65 @@ export function mapUefaPosition(pos: string | null | undefined): SquadPlayer['po
     default:
       return null
   }
+}
+
+interface UefaLineupPerson {
+  id?: string | null
+  internationalName?: string | null
+  fieldPosition?: string | null
+  nationalFieldPosition?: string | null
+  nationalJerseyNumber?: string | null
+  imageUrl?: string | null
+  translations?: { name?: Record<string, string> | null; shortName?: Record<string, string> | null } | null
+}
+
+interface UefaLineupEntry {
+  jerseyNumber?: number | string | null
+  player?: UefaLineupPerson | null
+}
+
+interface UefaLineupTeam {
+  field?: UefaLineupEntry[] | null
+  bench?: UefaLineupEntry[] | null
+  coaches?: { person?: UefaLineupPerson | null }[] | null
+}
+
+export interface UefaLineupsResponse {
+  homeTeam?: UefaLineupTeam | null
+  awayTeam?: UefaLineupTeam | null
+  lineupStatus?: string | null
+}
+
+// UEFA serves the line-up from its own endpoint. It carries no formation string
+// or captain flag, so the pitch buckets the XI by player.fieldPosition and no
+// captain is marked. Available once both sides field a non-empty XI.
+export function normalizeUefaLineups(resp: UefaLineupsResponse): MatchLineups {
+  const toPlayer = (e: UefaLineupEntry): SquadPlayer => ({
+    playerId: e.player?.id ?? '',
+    name: e.player?.internationalName ?? '?',
+    shirtNumber:
+      e.jerseyNumber != null && e.jerseyNumber !== ''
+        ? Number(e.jerseyNumber)
+        : e.player?.nationalJerseyNumber != null && e.player.nationalJerseyNumber !== ''
+          ? Number(e.player.nationalJerseyNumber)
+          : null,
+    position: mapUefaPosition(e.player?.nationalFieldPosition ?? e.player?.fieldPosition),
+    captain: false,
+    pictureUrl: e.player?.imageUrl ?? null,
+  })
+  const teamLineup = (team: UefaLineupTeam | null | undefined): TeamLineup => {
+    const coachPerson = team?.coaches?.[0]?.person
+    const coach = coachPerson?.translations?.name?.EN ?? coachPerson?.internationalName ?? null
+    return {
+      formation: null,
+      coach,
+      startingXI: (team?.field ?? []).map(toPlayer),
+      bench: (team?.bench ?? []).map(toPlayer),
+    }
+  }
+  const home = teamLineup(resp.homeTeam)
+  const away = teamLineup(resp.awayTeam)
+  return { available: home.startingXI.length > 0 && away.startingXI.length > 0, home, away }
 }
 
 const SHOT_TYPES = new Set(['GOAL', 'OWN_GOAL', 'SHOT_ON_GOAL', 'SHOT_WIDE', 'SHOT_BLOCKED'])
@@ -647,6 +708,12 @@ export function uefaProvider(options: UefaOptions): MatchDataProvider {
         homeTeamId: homeId,
         awayTeamId: awayId,
       }
+    },
+
+    async getMatchLineups({ matchId }: { stageId?: string; matchId: string }): Promise<MatchLineups | null> {
+      const resp = await getJson<UefaLineupsResponse | null>(`${baseUrl}/v5/matches/${matchId}/lineups`)
+      if (!resp) return null
+      return normalizeUefaLineups(resp)
     },
 
     async getMatchTimeline({

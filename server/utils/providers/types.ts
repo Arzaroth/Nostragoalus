@@ -1,5 +1,6 @@
 import type {
   MatchDetail,
+  MatchLineups,
   NormalizedBracket,
   NormalizedMatch,
   SquadPlayer,
@@ -29,6 +30,11 @@ export interface MatchDataProvider {
   // Optional: per-match detail (goals, possession) - FIFA exposes this keyless.
   // stageId is optional; FIFA also resolves details from the bare match id.
   getMatchDetail?(opts: { stageId?: string; matchId: string }): Promise<MatchDetail | null>
+  // Optional: starting XI + bench (+ formation when the feed has it) for one
+  // match. FIFA carries it inside the same detail doc as getMatchDetail; UEFA
+  // has a dedicated lineups endpoint. Returns null/available:false until the
+  // official line-ups drop (~1h before kickoff).
+  getMatchLineups?(opts: { stageId?: string; matchId: string }): Promise<MatchLineups | null>
   // Optional: the knockout bracket projection - FIFA exposes this keyless.
   getBracket?(): Promise<NormalizedBracket | null>
   // Optional: official per-player stats (goals + assists) keyed by any team id in the season.

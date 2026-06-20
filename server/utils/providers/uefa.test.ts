@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { mapUefaStage, mapUefaStatus, normalizeUefaMatch, uefaProvider, type UefaMatch } from './uefa'
+import { mapUefaStage, mapUefaStatus, normalizeUefaLineups, normalizeUefaMatch, uefaProvider, type UefaMatch } from './uefa'
 import { RateLimiter } from './rate-limiter'
 
 const baseMatch = (over: Partial<UefaMatch> = {}): UefaMatch => ({
@@ -742,5 +742,55 @@ describe('normalizeUefaTimeline', () => {
     expect(en.find((e) => e.kind === 'goal')).toMatchObject({ playerName: 'Striker', homeScore: 1, awayScore: 0 })
     const fr = await provider.getMatchTimeline!({ matchId: '900', homeTeamId: '1', awayTeamId: '2', language: 'fr' })
     expect(fr.find((e) => e.kind === 'var')!.text).toBeNull()
+  })
+})
+
+describe('normalizeUefaLineups', () => {
+  const entry = (id: string, pos: string, jersey: number) => ({
+    jerseyNumber: jersey,
+    player: { id, internationalName: id.toUpperCase(), nationalFieldPosition: pos, imageUrl: `${id}.jpg` },
+  })
+  const team = (over = {}) => ({
+    field: [entry('gk', 'GOALKEEPER', 1), entry('d', 'DEFENDER', 4), entry('m', 'MIDFIELDER', 8)],
+    bench: [entry('s', 'GOALKEEPER', 13)],
+    coaches: [{ person: { translations: { name: { EN: 'Luis de la Fuente' } } } }],
+    ...over,
+  })
+
+  it('maps field/bench, position and coach, with no formation or captain', () => {
+    const res = normalizeUefaLineups({ homeTeam: team(), awayTeam: team(), lineupStatus: 'TACTICAL_AVAILABLE' } as never)
+    expect(res.available).toBe(true)
+    expect(res.home.formation).toBeNull()
+    expect(res.home.coach).toBe('Luis de la Fuente')
+    expect(res.home.startingXI.map((p) => p.position)).toEqual(['GK', 'DF', 'MF'])
+    expect(res.home.startingXI[0]).toMatchObject({ playerId: 'gk', name: 'GK', shirtNumber: 1, captain: false, pictureUrl: 'gk.jpg' })
+    expect(res.home.bench.map((p) => p.playerId)).toEqual(['s'])
+  })
+
+  it('falls back to the player jersey/name and is unavailable with an empty side', () => {
+    const res = normalizeUefaLineups({
+      homeTeam: { field: [{ player: { id: 'p', fieldPosition: 'FORWARD', nationalJerseyNumber: '7' } }, {}] },
+      awayTeam: {},
+    } as never)
+    expect(res.available).toBe(false)
+    expect(res.home.startingXI[0]).toMatchObject({ name: '?', shirtNumber: 7, position: 'FW' })
+    // A bare entry (no player) defaults its id and number.
+    expect(res.home.startingXI[1]).toMatchObject({ playerId: '', name: '?', shirtNumber: null })
+    expect(res.home.coach).toBeNull()
+    expect(res.away.startingXI).toEqual([])
+  })
+
+  it('provider getMatchLineups hits the lineups endpoint and returns null on an empty body', async () => {
+    const urls: string[] = []
+    const fetchImpl = (async (url: string) => {
+      urls.push(url)
+      return new Response(url.includes('/lineups') && !url.includes('none') ? JSON.stringify({ homeTeam: team(), awayTeam: team() }) : 'null')
+    }) as unknown as typeof fetch
+    const provider = uefaProvider({ seasonYear: '2024', rateLimiter: new RateLimiter(0), fetchImpl })
+    const res = await provider.getMatchLineups!({ matchId: '900' })
+    expect(res!.available).toBe(true)
+    expect(urls[0]).toContain('/v5/matches/900/lineups')
+    const provNull = uefaProvider({ seasonYear: '2024', rateLimiter: new RateLimiter(0), fetchImpl: (async () => new Response('null')) as unknown as typeof fetch })
+    expect(await provNull.getMatchLineups!({ matchId: 'none' })).toBeNull()
   })
 })

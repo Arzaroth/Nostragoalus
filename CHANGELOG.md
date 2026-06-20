@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- **Match line-ups**: a Line-ups tab on the match page shows each team's starting eleven on a formation pitch, plus the bench and head coach, with the formation when the feed provides it. Players link through to their team page. The tab appears once the official line-ups drop, about an hour before kickoff.
+
 ## [1.30.3] - 2026-06-20
 
 ### Added

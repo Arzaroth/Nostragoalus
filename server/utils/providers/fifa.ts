@@ -5,6 +5,7 @@ import type {
   BracketMatch,
   BracketRound,
   MatchDetail,
+  MatchLineups,
   MatchStatus,
   NormalizedBracket,
   NormalizedGoal,
@@ -13,6 +14,7 @@ import type {
   Score,
   SquadPlayer,
   Team,
+  TeamLineup,
   TeamMatchStats,
   TeamSeasonStats,
   TimelineEvent,
@@ -144,6 +146,11 @@ interface FifaDetailPlayer {
   ShirtNumber?: number | string | null
   Position?: number | string | null
   Captain?: boolean | string | null
+  // 1 = in the starting XI, 2 = on the bench. Only set on the detail roster.
+  Status?: number | string | null
+  // The match-day roster ships a headshot here (the seasonal squad doc's GUID
+  // URL); top-level PlayerPicture mirrors it.
+  PlayerPicture?: { PictureUrl?: string | null } | null
 }
 
 interface FifaDetailGoal {
@@ -186,6 +193,8 @@ interface FifaDetailTeam {
   Bookings?: FifaDetailBooking[]
   Substitutions?: FifaDetailSubstitution[]
   Coaches?: { Name?: FifaLocalized[]; Alias?: FifaLocalized[]; Role?: number | string | null }[]
+  // System of play for the starting XI, e.g. "4-3-3" (null before kickoff).
+  Tactics?: string | null
 }
 
 export interface FifaMatchDetailResponse {
@@ -465,6 +474,40 @@ export function normalizeFifaTimeline(
 }
 
 const FIFA_POSITIONS: Record<number, SquadPlayer['position']> = { 0: 'GK', 1: 'DF', 2: 'MF', 3: 'FW' }
+const POSITION_ORDER: Record<string, number> = { GK: 0, DF: 1, MF: 2, FW: 3 }
+const byPositionThenShirt = (a: SquadPlayer, b: SquadPlayer) =>
+  (POSITION_ORDER[a.position ?? ''] ?? 4) - (POSITION_ORDER[b.position ?? ''] ?? 4) ||
+  (a.shirtNumber ?? 99) - (b.shirtNumber ?? 99)
+const byShirt = (a: SquadPlayer, b: SquadPlayer) => (a.shirtNumber ?? 99) - (b.shirtNumber ?? 99)
+
+// FIFA carries the line-up inside the match detail doc: Players[].Status is 1 for
+// the starting XI and 2 for the bench, Position the GK/DF/MF/FW bucket and
+// Tactics the formation string. No extra request beyond the detail fetch.
+// Available only once the official XI drops (both rosters non-empty).
+export function normalizeFifaMatchLineups(detail: FifaMatchDetailResponse): MatchLineups {
+  const toPlayer = (p: FifaDetailPlayer): SquadPlayer => ({
+    playerId: p.IdPlayer,
+    name: p.PlayerName?.[0]?.Description || p.ShortName?.[0]?.Description || 'Unknown',
+    shirtNumber: p.ShirtNumber != null && p.ShirtNumber !== '' ? Number(p.ShirtNumber) : null,
+    position: FIFA_POSITIONS[Number(p.Position)] ?? null,
+    captain: p.Captain === true || p.Captain === 'True',
+    pictureUrl: p.PlayerPicture?.PictureUrl ?? null,
+  })
+  const teamLineup = (team: FifaDetailTeam | null | undefined): TeamLineup => {
+    const players = (team?.Players ?? []).filter((p) => p.IdPlayer)
+    const head = (team?.Coaches ?? []).find((c) => Number(c.Role ?? 0) === 0) ?? team?.Coaches?.[0]
+    const coach = head?.Name?.[0]?.Description || head?.Alias?.[0]?.Description
+    return {
+      formation: team?.Tactics || null,
+      coach: coach ? upperSurname(coach) : null,
+      startingXI: players.filter((p) => Number(p.Status) === 1).map(toPlayer).sort(byPositionThenShirt),
+      bench: players.filter((p) => Number(p.Status) === 2).map(toPlayer).sort(byShirt),
+    }
+  }
+  const home = teamLineup(detail.HomeTeam)
+  const away = teamLineup(detail.AwayTeam)
+  return { available: home.startingXI.length > 0 && away.startingXI.length > 0, home, away }
+}
 
 // A team's squad is the union of its match-day rosters (FIFA has no public
 // stand-alone squad endpoint we can reach keylessly). teamRef matches the FIFA
@@ -856,6 +899,15 @@ export function fifaProvider(options: FifaOptions): MatchDataProvider {
           : `${baseUrl}/live/football/${matchId}?language=en`,
       )
       return normalizeFifaMatchDetail(detail)
+    },
+    async getMatchLineups({ stageId, matchId }: { stageId?: string; matchId: string }) {
+      // The line-up rides inside the same detail doc as getMatchDetail.
+      const detail = await getJson<FifaMatchDetailResponse>(
+        stageId
+          ? `${baseUrl}/live/football/${options.competitionId}/${options.seasonId}/${stageId}/${matchId}?language=en`
+          : `${baseUrl}/live/football/${matchId}?language=en`,
+      )
+      return normalizeFifaMatchLineups(detail)
     },
     async getMatchTimeline({ matchId, homeTeamId, awayTeamId, playerNames, language }: { matchId: string; homeTeamId?: string | null; awayTeamId?: string | null; playerNames?: Record<string, string>; language?: string | null }) {
       // Fetch in the requested locale (for the VAR text); fall back to English so

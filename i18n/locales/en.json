@@ -358,6 +358,8 @@
     "next": "Next",
     "h2h": "Head-to-head",
     "playByPlay": "Play-by-play",
+    "lineups": "Line-ups",
+    "coach": "Coach",
     "statusLabel": { "scheduled": "Scheduled", "live": "Live", "halfTime": "Half-time", "fullTime": "Full-time", "postponed": "Postponed", "cancelled": "Cancelled", "suspended": "Suspended", "awarded": "Awarded" },
     "playByPlayEmpty": "No play-by-play for this match yet.",
     "pbpKind": { "goal": "Goal", "ownGoal": "Own goal", "penaltyGoal": "Penalty goal", "penaltyMissed": "Penalty missed", "penaltyAwarded": "Penalty awarded", "assist": "Assist", "yellow": "Yellow card", "red": "Red card", "secondYellow": "Second yellow", "sub": "Substitution", "shot": "Shot", "foul": "Foul", "corner": "Corner", "var": "VAR", "period": "Period" },
