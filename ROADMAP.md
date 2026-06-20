@@ -214,7 +214,7 @@ effort buckets; order within a bucket is not priority.
       that already exist, not new data. Only worth it if that field-level
       drama earns its keep; otherwise drop - the per-match league board and the
       crowd totals already cover the per-member and aggregate angles.
-- [ ] **Predictive bracket** (in progress on feat/predictive-bracket): once a
+- [x] **Predictive bracket** (shipped in 1.30.0): once a
       group's teams have all played at least once, pre-fill the knockout slots
       that group feeds with the currently-projected qualifiers from the live
       group standings, clearly distinct from officially-decided teams. Decisions
