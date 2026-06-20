@@ -825,12 +825,13 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
 ## Predictive bracket (deferred from the feature-treatment review)
 
-- [ ] Best-third SLOT assignment is a most-constrained-first greedy approximation,
-      not FIFA's fixed combination table (which 4/8 thirds advance maps to fixed
-      slots by the exact set of qualifying groups). The projected SET of best
-      thirds is correct (top-N by points/GD/GF); the slot each lands in may differ
-      from the official table, and greedy can still leave a slot empty in
-      adversarial eligibility graphs. Implement the per-format third-placed
+- [ ] Best-third SLOT assignment is a maximum bipartite matching (Kuhn) of slots
+      to qualifying thirds - it fills every fillable slot (the empty-slot
+      starvation that left 3DEIJL blank in 1.30.0 is fixed in 1.30.1) - but it is
+      still not FIFA's fixed combination table (which set of qualifying groups
+      maps to which slots). The projected SET of best thirds is correct (top-N by
+      points/GD/GF) and all slots fill, but the slot each third lands in may
+      differ from the official table. Implement the per-format third-placed
       combination tables (WC2026 8-of-12, Euro2024 4-of-6) for exact placement.
 - [ ] groupReady is "every team has played >= 1", read off the standings rows.
       A data gap (a group team's fixtures missing from the feed) can make a group
