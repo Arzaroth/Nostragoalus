@@ -15,6 +15,8 @@
   "bracket": {
     "empty": "The knockout bracket isn't available yet.",
     "champion": "Champion",
+    "projected": "Projected",
+    "projectedHint": "Projected from the current group standings - not yet official.",
     "round": { "r32": "Round of 32", "r16": "Round of 16", "qf": "Quarter-finals", "sf": "Semi-finals", "third": "3rd place", "final": "Final" }
   },
   "map": {

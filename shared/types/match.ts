@@ -238,6 +238,12 @@ export interface BracketMatch {
   homeCode: string | null
   awayTeam: string
   awayCode: string | null
+  // When a side has no official team yet, the team currently projected to fill it
+  // from the live group standings (display only, clearly marked as projected).
+  homeProjectedCode?: string | null
+  homeProjectedTeam?: string | null
+  awayProjectedCode?: string | null
+  awayProjectedTeam?: string | null
   homeScore: number | null
   awayScore: number | null
   homePens: number | null
