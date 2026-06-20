@@ -822,3 +822,27 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       sub is in extra time is misread as the ET interval, and a lone ET-interval
       sub with no other timed team sub falls back to HT. Rare and cosmetic (wrong
       break label); inherent without provider clock data.
+
+## Predictive bracket (deferred from the feature-treatment review)
+
+- [ ] Best-third SLOT assignment is a most-constrained-first greedy approximation,
+      not FIFA's fixed combination table (which 4/8 thirds advance maps to fixed
+      slots by the exact set of qualifying groups). The projected SET of best
+      thirds is correct (top-N by points/GD/GF); the slot each lands in may differ
+      from the official table, and greedy can still leave a slot empty in
+      adversarial eligibility graphs. Implement the per-format third-placed
+      combination tables (WC2026 8-of-12, Euro2024 4-of-6) for exact placement.
+- [ ] groupReady is "every team has played >= 1", read off the standings rows.
+      A data gap (a group team's fixtures missing from the feed) can make a group
+      read "ready" with too few rows, so rankThirds' rows[2] is the last of three
+      (really a runner-up), projecting a wrong third. Guard on the expected group
+      size if feed gaps ever occur.
+- [ ] thirdsToQualify is derived as the count of third-placeholder slots in the
+      provider bracket; a malformed feed (extra/missing third-slot) silently
+      changes how many thirds project. Tie it to the format if it bites.
+- [ ] Placeholder parser: a localized compact ordinal ("3e A/B") would mine a
+      spurious group letter (E). FIFA emits ASCII compact ("1A"/"2B"/"TBD"), so
+      speculative; tighten if a provider localizes the placeholders.
+- [ ] Verify the real provider PlaceHolderA/B strings against live data once a
+      group stage is in progress. The parser degrades safely to official-only on
+      anything it can't read, so confirm it actually projects (not just no-ops).
