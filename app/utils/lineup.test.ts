@@ -36,6 +36,20 @@ describe('pitchRows', () => {
     expect(rows.map((r) => r.players.length)).toEqual([1, 3, 2, 4, 1])
   })
 
+  it('sorts the outfield defence-first before banding, regardless of feed order', () => {
+    // shuffled, with a null-position outfielder and a null-shirt tie in midfield
+    const shuffled = [
+      p('m2', 'MF', null),
+      p('gk', 'GK', 1),
+      p('m1', 'MF', 7),
+      p('d', 'DF', 4),
+      p('x', null, 5),
+    ]
+    const rows = pitchRows(team('1-2-1', shuffled))
+    // defence-first: d (DF), then m1/m2 (MF, shirt tie -> null sorts last), then x (unknown)
+    expect(rows.map((r) => r.players.map((q) => q.playerId))).toEqual([['x'], ['m1', 'm2'], ['d'], ['gk']])
+  })
+
   it('falls back to position buckets when there is no formation string', () => {
     const xi = [p('gk', 'GK', 1), p('d', 'DF', 4), p('m', 'MF', 8), p('f', 'FW', 9), p('u', null, 6)]
     const rows = pitchRows(team(null, xi))
