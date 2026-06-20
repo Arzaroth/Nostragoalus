@@ -225,7 +225,13 @@ interface UefaLineupPerson {
 interface UefaLineupEntry {
   jerseyNumber?: number | string | null
   player?: UefaLineupPerson | null
+  // Pitch placement on a 0-1000 grid (x left to right, y own-goal to attack),
+  // self-relative per team. Only the field (XI) entries carry it.
+  fieldCoordinate?: { x?: number | null; y?: number | null } | null
 }
+
+// UEFA's 0-1000 pitch grid -> the 0-100 the lineup type uses.
+const uefaCoord = (v: number | null | undefined): number | null => (v == null ? null : Math.min(100, Math.max(0, v / 10)))
 
 interface UefaLineupTeam {
   field?: UefaLineupEntry[] | null
@@ -240,8 +246,8 @@ export interface UefaLineupsResponse {
 }
 
 // UEFA serves the line-up from its own endpoint. It carries no formation string
-// or captain flag, so the pitch buckets the XI by player.fieldPosition and no
-// captain is marked. Available once both sides field a non-empty XI.
+// or captain flag, but each field player ships a real pitch coordinate, so the
+// XI is placed exactly. Available once both sides field a non-empty XI.
 export function normalizeUefaLineups(resp: UefaLineupsResponse): MatchLineups {
   const toPlayer = (e: UefaLineupEntry): SquadPlayer => ({
     playerId: e.player?.id ?? '',
@@ -255,6 +261,8 @@ export function normalizeUefaLineups(resp: UefaLineupsResponse): MatchLineups {
     position: mapUefaPosition(e.player?.nationalFieldPosition ?? e.player?.fieldPosition),
     captain: false,
     pictureUrl: e.player?.imageUrl ?? null,
+    x: uefaCoord(e.fieldCoordinate?.x),
+    y: uefaCoord(e.fieldCoordinate?.y),
   })
   const teamLineup = (team: UefaLineupTeam | null | undefined): TeamLineup => {
     const coachPerson = team?.coaches?.[0]?.person

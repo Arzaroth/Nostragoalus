@@ -213,6 +213,11 @@ export interface SquadPlayer {
   // carries an opaque per-player id we can't reconstruct from playerId). Null
   // falls back to a constructed URL, then the team flag.
   pictureUrl: string | null
+  // Pitch placement (0-100): x left to right, y own-goal to attacking end. Set
+  // when a feed ships real coordinates (UEFA) or FIFA's XI is refined by
+  // Sofascore positions; absent falls the pitch back to formation-band rows.
+  x?: number | null
+  y?: number | null
 }
 
 // One team's starting eleven + bench for a single match. The player shape is the

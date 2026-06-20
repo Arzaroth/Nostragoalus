@@ -17,6 +17,7 @@ import { ssoProvider, user } from './auth-schema'
 import type { ChampionTier, CrowdTier, OddsTier } from '#shared/types/scoring'
 import type { OddsSnapshotKind, StoredBookmakerOdds } from '#shared/types/odds'
 import type { NotificationData } from '#shared/types/notifications'
+import type { MatchLineups } from '#shared/types/match'
 import { REACTION_EMOJIS } from '#shared/reactions'
 
 const pk = () => text('id').primaryKey().$defaultFn(() => randomUUID())
@@ -258,6 +259,19 @@ export const goalEvent = pgTable(
   },
   (t) => [index('goal_event_competition_idx').on(t.competitionId), index('goal_event_match_idx').on(t.matchId)],
 )
+
+// Persisted line-ups: one row per match. The XI is immutable once confirmed, so
+// a finished+available line-up is frozen and never re-fetched (notably from the
+// fragile Sofascore source used to refine FIFA positions). `data` always holds a
+// MatchLineups (available:false until the official XI drops).
+export const matchLineups = pgTable('match_lineups', {
+  matchId: text('match_id')
+    .primaryKey()
+    .references(() => match.id, { onDelete: 'cascade' }),
+  data: jsonb('data').$type<MatchLineups>().notNull(),
+  final: boolean('final').notNull().default(false),
+  fetchedAt: timestamp('fetched_at', { withTimezone: true }).notNull().defaultNow(),
+})
 
 export const prediction = pgTable(
   'prediction',
