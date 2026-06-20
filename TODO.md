@@ -864,3 +864,12 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 - [ ] No live verification yet: confirm the tab against a real match in-browser
       once a kickoff is ~1h out (FIFA WC2026 + a UEFA fixture), checking the
       pre-announcement empty state, the photo/number fallback, and hydration.
+- [ ] UEFA availability is gated only on a non-empty field[], not on the
+      `lineupStatus` the feed also ships (e.g. `TACTICAL_AVAILABLE`). If UEFA ever
+      populates field[] for a provisional/predicted XI, the tab would surface a
+      guessed side. Once the real lineupStatus enum is known, gate on a confirmed
+      value too (the field is already parsed into UefaLineupsResponse, just unused).
+- [ ] The lineups route catch swallows every provider error (rate-limit, upstream
+      5xx, parse) into `{ lineups: null }` with no log, indistinguishable from "no
+      XI yet" and not cached, so the next poll re-hits a throttled upstream. Add a
+      log + a short negative cache so a failing upstream isn't hammered every 60s.
