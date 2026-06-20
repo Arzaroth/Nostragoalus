@@ -337,9 +337,36 @@ effort buckets; order within a bucket is not priority.
     values (original points, changed points); league boards with the rule ON
     rank on the changed value, leagues with it OFF and the **global board
     always rank on the original** - global stays a pure pre-match game.
-- [ ] **Match line-ups**: starting XI + bench (+ formation if the feed has
-      it) on the match view, sourced from the existing data providers.
-      Squad/player pages already exist to link into.
+- [ ] **Match line-ups** (in progress on worktree-match-lineups): starting XI +
+      bench + formation on the match view, sourced from the existing data
+      providers. Squad/player pages already exist to link into. Decisions
+      (locked):
+  - **Display**: a formation pitch graphic (XI placed by formation rows) plus a
+    grouped list below (XI by position, bench, coach). Players link into the
+    existing player/team pages.
+  - **Pre-match**: empty "line-ups not announced yet" state until the feed
+    returns a real XI (~1h before kickoff); render only once available.
+  - **Data sources** (verified against the live feeds, no new schema):
+    - FIFA (WC22/26): the line-up is already inside the live-detail doc the app
+      fetches. `Team.Tactics` is the formation string ("4-1-2-3"); `Team.Players[]`
+      carries `Status` (1 = starting XI, 2 = bench), `Captain`, `ShirtNumber`,
+      `PlayerPicture`; `Team.Coaches[]` the coach. No extra request. Pitch
+      coords (`LineupX/LineupY`) come back null, so rows are derived from the
+      formation string, not real coordinates.
+    - UEFA (Euro24): one extra `GET /v5/matches/{id}/lineups` (reuse the existing
+      rate limiter) returns `homeTeam/awayTeam` with `field[]` (XI), `bench[]`,
+      `coaches[]`, `kitImageUrl`/`shirtColor`, and a `lineupStatus` gate; each
+      entry has `jerseyNumber`, `fieldPosition` (GK/DEF/MID/FWD) and a `player`
+      (id, name, image). No formation string, so rows are bucketed from the
+      position categories. NOT the `events?filter=LINEUP` URL - that is the
+      play-by-play endpoint and returns match events, no XI.
+    - football-data: no line-up data, returns null (graceful empty state).
+  - **Storage**: on-demand fetch + short cache, mirroring live-detail. The feeds
+    keep historical line-ups (WC2022 still returns them), so nothing to persist.
+  - **Architecture**: a `getMatchLineups()` on the provider interface (FIFA +
+    UEFA normalizers to a shared `MatchLineups` type), a thin
+    `GET /api/matches/[id]/lineups` over a service, a `useMatchLineups`
+    vue-query composable, and a `MatchLineups.vue` section on the match page.
 - [ ] **League rewards + "My fridge"**: league owner attaches real-world
       stakes to the season ("most exact scores -> bottle of Saint-Emilion").
   - Criteria from a **curated, auto-computed list only** (league winner,
