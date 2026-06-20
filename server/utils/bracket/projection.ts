@@ -131,24 +131,39 @@ export function projectSlots(
   const allReady = input.standings.length > 0 && input.standings.every((g) => input.groupReady[g.group])
   if (input.thirdsToQualify > 0 && allReady) {
     const qualifying = rankThirds(input).slice(0, input.thirdsToQualify)
-    const used = new Set<string>()
-    // Assign the most-constrained slots first (fewest eligible groups; an
-    // any-group slot last), so a slot that can only take group A's third isn't
-    // starved by a broader slot grabbing it - greedy in input order could leave
-    // a fillable slot empty. (Still an approximation of FIFA's fixed table; see
-    // TODO.md.)
-    const eligibility = (g: string[]) => (g.length === 0 ? Number.MAX_SAFE_INTEGER : g.length)
-    const thirdSlots = slots
-      .filter((s): s is { key: string; ref: Extract<SlotRef, { kind: 'third' }> } => s.ref.kind === 'third')
-      .sort((a, b) => eligibility(a.ref.groups) - eligibility(b.ref.groups))
-    for (const { key, ref } of thirdSlots) {
-      const pick = qualifying.find(
-        (t) => !used.has(t.code) && (ref.groups.length === 0 || ref.groups.includes(t.group)),
-      )
-      if (pick) {
-        used.add(pick.code)
-        out.set(key, { code: pick.code, name: pick.name })
+    const thirdSlots = slots.filter(
+      (s): s is { key: string; ref: Extract<SlotRef, { kind: 'third' }> } => s.ref.kind === 'third',
+    )
+    const eligible = (groups: string[], group: string) => groups.length === 0 || groups.includes(group)
+
+    // Maximum bipartite matching (Kuhn) of slots to qualifying thirds. A slot is
+    // often eligible for only ONE qualifying third - its other groups' thirds
+    // didn't make the cut - so plain greedy can let a broader slot grab that one
+    // option and starve it (real case: 3DEIJL where only D's third qualified).
+    // Augmenting paths fill every slot that can be filled.
+    const slotByKey = new Map(thirdSlots.map((s) => [s.key, s]))
+    const takenBy = new Map<string, string>() // third code -> slot key holding it
+    const augment = (slot: (typeof thirdSlots)[number], seen: Set<string>): boolean => {
+      for (const t of qualifying) {
+        if (!eligible(slot.ref.groups, t.group) || seen.has(t.code)) continue
+        seen.add(t.code)
+        const holder = takenBy.get(t.code)
+        if (holder === undefined || augment(slotByKey.get(holder)!, seen)) {
+          takenBy.set(t.code, slot.key)
+          return true
+        }
       }
+      return false
+    }
+    // Most-constrained first (fewest eligible qualifying thirds) keeps the result
+    // stable and the search short; Kuhn finds a maximum either way.
+    const options = (s: (typeof thirdSlots)[number]) => qualifying.filter((t) => eligible(s.ref.groups, t.group)).length
+    for (const slot of [...thirdSlots].sort((a, b) => options(a) - options(b))) augment(slot, new Set())
+
+    const byCode = new Map(qualifying.map((t) => [t.code, t]))
+    for (const [code, key] of takenBy) {
+      const t = byCode.get(code)!
+      out.set(key, { code: t.code, name: t.name })
     }
   }
 

@@ -116,6 +116,26 @@ describe('projectSlots', () => {
     expect(out.get('broad')).toEqual({ code: 'TB', name: 'TB' })
   })
 
+  it('fills a slot whose only qualifying third is contested by a broader slot (max matching)', () => {
+    // narrow lists 5 groups but only D's third qualified (E/I/J/L did not) - the
+    // real 3DEIJL case. A broader slot also wants D but has other options.
+    const std = [
+      grp('D', [row('D1', 9), row('D2', 6), row('TD', 4)]),
+      grp('F', [row('F1', 9), row('F2', 6), row('TF', 3)]),
+      grp('G', [row('G1', 9), row('G2', 6), row('TG', 2)]),
+    ]
+    const out = projectSlots(
+      [
+        { key: 'broad', ref: { kind: 'third', groups: ['D', 'F', 'G'] } }, // 3 options
+        { key: 'narrow', ref: { kind: 'third', groups: ['D', 'E', 'I', 'J', 'L'] } }, // only D qualifies
+      ],
+      { standings: std, groupReady: { D: true, F: true, G: true }, thirdsToQualify: 3 },
+    )
+    expect(out.get('narrow')).toEqual({ code: 'TD', name: 'TD' }) // keeps its sole option
+    expect(out.get('broad')?.code).toBeDefined()
+    expect(out.get('broad')?.code).not.toBe('TD') // pushed to F/G so narrow isn't starved
+  })
+
   it('picks the top qualifying third for an any-group slot', () => {
     const four = [
       grp('A', [row('ARG', 9), row('POL', 6), row('TA', 3)]),
@@ -163,9 +183,11 @@ describe('projectSlots', () => {
     expect(out.get('t')).toEqual({ code: 'TB', name: 'TB' })
   })
 
-  it('ranks thirds by goals-for then group letter when points and GD tie', () => {
-    // All three thirds: points 3, GD 1. TB has more GF; TA and TC tie fully, so
-    // the group letter (A before C) breaks it.
+  it('ranks thirds by goals-for then group letter at the qualification cut', () => {
+    // All three thirds tie on points(3) + GD(1). TB has more GF (top); TA and TC
+    // tie fully, so the group letter (A before C) orders them. With only 2 slots,
+    // the cut keeps TB + TA and drops TC - exercising both the GF and the
+    // group-letter tiebreaks. (Slot pairing is by matching, so assert the set.)
     const groups = [
       grp('A', [row('A1', 9), row('A2', 6), row('TA', 3, 1, 2)]),
       grp('B', [row('B1', 9), row('B2', 6), row('TB', 3, 1, 5)]),
@@ -175,11 +197,10 @@ describe('projectSlots', () => {
       [
         { key: 'p1', ref: { kind: 'third', groups: [] } },
         { key: 'p2', ref: { kind: 'third', groups: [] } },
-        { key: 'p3', ref: { kind: 'third', groups: [] } },
       ],
-      { standings: groups, groupReady: { A: true, B: true, C: true }, thirdsToQualify: 3 },
+      { standings: groups, groupReady: { A: true, B: true, C: true }, thirdsToQualify: 2 },
     )
-    expect([out.get('p1')?.code, out.get('p2')?.code, out.get('p3')?.code]).toEqual(['TB', 'TA', 'TC'])
+    expect([...out.values()].map((v) => v.code).sort()).toEqual(['TA', 'TB']) // TC dropped at the cut
   })
 
   it('projects nothing for an empty standings set', () => {
