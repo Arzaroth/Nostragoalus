@@ -3,12 +3,13 @@ import type { AppDatabase } from '../../../db/types'
 import { leaderboardRank, league, leagueLeaderboardRank } from '../../../db/schema'
 import { getLeaderboard, type LeaderboardRow } from './service'
 
-// Persist the current ranks in one upsert; prevRank is set to the old rank only
-// when the rank actually changed, so the leaderboard shows a movement arrow
-// until the next change. One statement for the whole board (no per-row N+1).
-// Rows for users no longer on the board (went private/hidden, deleted, left the
-// league) are dropped, so a departed user can't leave a phantom that shifts
-// everyone below them, and a returning user starts fresh (no resurrected arrow).
+// Persist the current ranks in one upsert; prevRank is always set to the rank
+// this snapshot replaces, so movement reflects the change at THIS update and
+// clears when a user didn't move (no stale arrow lingering from an older round).
+// One statement for the whole board (no per-row N+1). Rows for users no longer
+// on the board (went private/hidden, deleted, left the league) are dropped, so a
+// departed user can't leave a phantom that shifts everyone below them, and a
+// returning user starts fresh (no resurrected arrow).
 async function writeRankSnapshots(
   db: AppDatabase,
   table: typeof leaderboardRank | typeof leagueLeaderboardRank,
@@ -29,20 +30,37 @@ async function writeRankSnapshots(
       target: [scopeColumn, table.userId],
       set: {
         rank: sql`excluded.rank`,
-        // Keep the previous rank when nothing moved, so the arrow persists.
-        prevRank: sql`case when ${table.rank} <> excluded.rank then ${table.rank} else ${table.prevRank} end`,
+        // The rank being replaced becomes prevRank, every time - so an unchanged
+        // rank yields prevRank === rank, i.e. no movement.
+        prevRank: sql`${table.rank}`,
         updatedAt: new Date(),
       },
     })
   await db.delete(table).where(and(eq(scopeColumn, scopeValue), notInArray(table.userId, userIds)))
 }
 
-function movementsFrom(rows: { userId: string; rank: number; prevRank: number | null }[]): Map<string, number> {
-  const movements = new Map<string, number>()
-  for (const r of rows) {
-    if (r.prevRank != null && r.prevRank !== r.rank) movements.set(r.userId, r.prevRank - r.rank)
-  }
-  return movements
+export interface RankSnapshot {
+  rank: number
+  prevRank: number | null
+}
+
+function snapshotMap(rows: { userId: string; rank: number; prevRank: number | null }[]): Map<string, RankSnapshot> {
+  const map = new Map<string, RankSnapshot>()
+  for (const r of rows) map.set(r.userId, { rank: r.rank, prevRank: r.prevRank })
+  return map
+}
+
+// The movement arrow for one row. The displayed rank carries live (in-progress)
+// match points, so movement is measured against THAT rank, not the snapshot's
+// own settled rank, to stay consistent with the number on screen. While a match
+// is live the baseline is the last settled rank (snapshot.rank); on a settled
+// board it's the rank before this round (snapshot.prevRank). Null when there's
+// no baseline (first appearance) or no movement.
+export function rankMovement(snap: RankSnapshot | undefined, displayedRank: number, live: boolean): number | null {
+  if (!snap) return null
+  const baseline = live ? snap.rank : snap.prevRank
+  if (baseline == null || baseline === displayedRank) return null
+  return baseline - displayedRank
 }
 
 export async function updateRankSnapshots(db: AppDatabase, competitionId: string): Promise<void> {
@@ -50,9 +68,9 @@ export async function updateRankSnapshots(db: AppDatabase, competitionId: string
   await writeRankSnapshots(db, leaderboardRank, leaderboardRank.competitionId, { competitionId }, board)
 }
 
-export async function getRankMovements(db: AppDatabase, competitionId: string): Promise<Map<string, number>> {
+export async function getRankSnapshots(db: AppDatabase, competitionId: string): Promise<Map<string, RankSnapshot>> {
   const rows = await db.select().from(leaderboardRank).where(eq(leaderboardRank.competitionId, competitionId))
-  return movementsFrom(rows)
+  return snapshotMap(rows)
 }
 
 // Same per league of the competition. Snapshots rank the full member set
@@ -65,7 +83,7 @@ export async function updateLeagueRankSnapshots(db: AppDatabase, competitionId: 
   }
 }
 
-export async function getLeagueRankMovements(db: AppDatabase, leagueId: string): Promise<Map<string, number>> {
+export async function getLeagueRankSnapshots(db: AppDatabase, leagueId: string): Promise<Map<string, RankSnapshot>> {
   const rows = await db.select().from(leagueLeaderboardRank).where(eq(leagueLeaderboardRank.leagueId, leagueId))
-  return movementsFrom(rows)
+  return snapshotMap(rows)
 }

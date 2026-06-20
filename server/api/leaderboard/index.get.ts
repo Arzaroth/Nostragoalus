@@ -1,7 +1,7 @@
 import { db } from '../../../db'
 import { countLeagueMembersHiddenFromBoard, getLeaderboard } from '../../utils/leaderboard/service'
 import { getLiveProvisionalPoints } from '../../utils/leaderboard/live'
-import { getLeagueRankMovements, getRankMovements } from '../../utils/leaderboard/snapshots'
+import { getLeagueRankSnapshots, getRankSnapshots, rankMovement, type RankSnapshot } from '../../utils/leaderboard/snapshots'
 import { getCompetitionById, resolveCompetition } from '../../utils/competitions/store'
 import { isAdmin, requireUser, requireUserOrApiKey } from '../../utils/auth-guards'
 import { canViewLeague, getLeague, getMembership } from '../../utils/leagues/service'
@@ -40,7 +40,8 @@ export default defineEventHandler(async (event) => {
     })
     // Movement only for the full-member view: the outsider board excludes
     // private profiles, so snapshot ranks wouldn't line up with displayed ones.
-    const movements = includePrivate ? await getLeagueRankMovements(db, league.id) : new Map<string, number>()
+    const snapshots = includePrivate ? await getLeagueRankSnapshots(db, league.id) : new Map<string, RankSnapshot>()
+    const live = liveProvisional.size > 0
     const hiddenCount = await countLeagueMembersHiddenFromBoard(db, {
       leagueId: league.id,
       includePrivate,
@@ -49,9 +50,9 @@ export default defineEventHandler(async (event) => {
     return {
       competition: competition ? { id: competition.id, slug: competition.slug, name: competition.name } : null,
       league: { id: league.id, name: league.name },
-      live: liveProvisional.size > 0,
+      live,
       hiddenCount,
-      rows: rows.map((r) => ({ ...r, movement: movements.get(r.userId) ?? null })),
+      rows: rows.map((r) => ({ ...r, movement: rankMovement(snapshots.get(r.userId), r.rank, live) })),
     }
   }
 
@@ -69,15 +70,16 @@ export default defineEventHandler(async (event) => {
 
   const competition = await resolveCompetition(db, (query.competition as string) || null)
   if (!competition) return { competition: null, rows: [] }
-  const [liveProvisional, movements] = await Promise.all([
+  const [liveProvisional, snapshots] = await Promise.all([
     getLiveProvisionalPoints(db, competition.id),
-    getRankMovements(db, competition.id),
+    getRankSnapshots(db, competition.id),
   ])
   const rows = await getLeaderboard(db, { competitionId: competition.id, limit, offset, alwaysIncludeUserId: principal.id, liveProvisional })
+  const live = liveProvisional.size > 0
   return {
     competition: { id: competition.id, slug: competition.slug, name: competition.name },
-    live: liveProvisional.size > 0,
-    rows: rows.map((r) => ({ ...r, movement: movements.get(r.userId) ?? null })),
+    live,
+    rows: rows.map((r) => ({ ...r, movement: rankMovement(snapshots.get(r.userId), r.rank, live) })),
   }
 })
 
