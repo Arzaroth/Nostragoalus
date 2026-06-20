@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.30.0] - 2026-06-20
+
 ### Added
 - **Projected knockout bracket**: once every team in a group has played, the bracket fills that group's knockout slots with the teams currently on course to qualify (from the live group standings, best-third places included). Projected sides are dashed with a "projected" chip, clearly distinct from teams already officially through, and update live as scores change.
 
