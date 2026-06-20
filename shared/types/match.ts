@@ -99,6 +99,7 @@ export type TimelineEventKind =
   | 'sub'
   | 'shot'
   | 'foul'
+  | 'corner'
   | 'var'
   | 'period'
 

@@ -679,7 +679,7 @@ describe('normalizeUefaTimeline', () => {
       { type: 'SHOT_WIDE', time: { minute: 41 }, timestamp: at(8), primaryActor: actor('1', 'p1', 'S') },
       { type: 'SHOT_BLOCKED', time: { minute: 42 }, timestamp: at(9), primaryActor: actor('1', 'p1', 'S') },
       { type: 'FOUL', time: { minute: 43 }, timestamp: at(10), primaryActor: actor('2', 'p7', 'Hacker') },
-      { type: 'CORNER', timestamp: at(11), primaryActor: actor('2', 'p8', 'W') }, // dropped
+      { type: 'CORNER', timestamp: at(11), primaryActor: actor('2', 'p8', 'W') }, // corner: taker, away side
       { type: 'SAVE', timestamp: at(12), primaryActor: { team: { id: null } } }, // dropped
       { type: 'SUBSTITUTION', time: { minute: 46 }, timestamp: at(13), primaryActor: actor('1', 'pa', 'Off') }, // no replacement
       { type: 'ASSIST', timestamp: at(14), primaryActor: { person: { id: 'q', internationalName: 'NoSide' }, team: { id: '999' } } }, // unknown side
@@ -692,7 +692,8 @@ describe('normalizeUefaTimeline', () => {
       { type: 'YELLOW_CARD_SECOND', timestamp: at(21), primaryActor: { team: { id: '999' } } }, // unknown side, dropped
     ]
     const tl = normalizeUefaTimeline(evs, '1', '2')
-    expect(tl.map((e) => e.kind)).toEqual(['sub', 'foul', 'shot', 'shot', 'shot', 'red', 'second-yellow', 'second-yellow', 'yellow'])
+    expect(tl.map((e) => e.kind)).toEqual(['sub', 'corner', 'foul', 'shot', 'shot', 'shot', 'red', 'second-yellow', 'second-yellow', 'yellow'])
+    expect(tl.find((e) => e.kind === 'corner')).toMatchObject({ side: 'AWAY', playerName: 'W' })
     expect(tl.find((e) => e.kind === 'red')).toMatchObject({ minute: "90'+2", playerName: 'Villain' })
     expect(tl.filter((e) => e.kind === 'second-yellow').map((e) => e.playerName)).toEqual(['Twice', 'Hacker'])
     expect(tl.find((e) => e.kind === 'sub')).toMatchObject({ playerOutName: 'Off', playerInName: null })

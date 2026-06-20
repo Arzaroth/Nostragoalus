@@ -135,7 +135,7 @@ describe('normalizeFifaMatchDetail', () => {
 
 describe('normalizeFifaTimeline', () => {
   it('keeps curated events, maps sides, resolves names, reverses to newest-first', () => {
-    const names = { p1: 'SCORER', p2: 'BOOKED', on: 'BENCH GUY', off: 'TIRED GUY' }
+    const names = { p1: 'SCORER', p2: 'BOOKED', on: 'BENCH GUY', off: 'TIRED GUY', c1: 'KICKER' }
     const events = normalizeFifaTimeline(
       {
         Event: [
@@ -144,6 +144,7 @@ describe('normalizeFifaTimeline', () => {
           { Type: 18, MatchMinute: "5'", IdTeam: 'A', IdPlayer: 'unknown' }, // foul, name not in map -> null
           { Type: 0, MatchMinute: "23'", IdTeam: 'H', IdPlayer: 'p1', HomeGoals: 1, AwayGoals: 0 }, // goal
           { Type: 2, MatchMinute: "30'", IdTeam: 'A', IdPlayer: 'p2' }, // yellow
+          { Type: 16, MatchMinute: "33'", IdTeam: 'H', IdPlayer: 'c1' }, // corner: taker
           { Type: 5, MatchMinute: "60'", IdTeam: 'H', IdPlayer: 'on', IdSubPlayer: 'off' }, // sub: on/off
           { Type: 8, Period: 3, MatchMinute: "45'" }, // half-time
           { Type: 8, Period: 5, MatchMinute: "90'" }, // end of the second half
@@ -159,6 +160,7 @@ describe('normalizeFifaTimeline', () => {
       ['period', null, "90'", 'second-half-end'],
       ['period', null, "45'", 'half-time'],
       ['sub', 'HOME', "60'", null],
+      ['corner', 'HOME', "33'", null],
       ['yellow', 'AWAY', "30'", null],
       ['goal', 'HOME', "23'", null],
       ['foul', 'AWAY', "5'", null],
@@ -167,6 +169,7 @@ describe('normalizeFifaTimeline', () => {
     expect(events.find((e) => e.kind === 'goal')).toMatchObject({ playerName: 'SCORER', homeScore: 1, awayScore: 0 })
     expect(events.find((e) => e.kind === 'foul')).toMatchObject({ playerName: null }) // unknown id -> null
     expect(events.find((e) => e.kind === 'sub')).toMatchObject({ playerName: null, playerInName: 'BENCH GUY', playerOutName: 'TIRED GUY' })
+    expect(events.find((e) => e.kind === 'corner')).toMatchObject({ playerName: 'KICKER', side: 'HOME' })
   })
 
   it('maps period markers from the FIFA period codes', () => {

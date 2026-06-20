@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- The live play-by-play timeline now marks **corners**, with a corner-flag icon and the taker's name. Covers both the World Cup (FIFA) and UEFA feeds.
+
 ## [1.30.2] - 2026-06-20
 
 ### Fixed
