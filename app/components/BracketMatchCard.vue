@@ -9,13 +9,13 @@ function fmtDate(d: string) {
 
 // Per side: the official team if decided, else the projected qualifier (marked),
 // else the raw placeholder ("1A") as plain text.
-function side(code: string | null, team: string, projCode?: string | null, projTeam?: string | null) {
-  if (code) return { code, label: code || team, projected: false }
+function side(code: string | null, team: string, projCode?: string | null) {
+  if (code) return { code, label: code, projected: false }
   if (projCode) return { code: projCode, label: projCode, projected: true }
   return { code: null as string | null, label: team, projected: false }
 }
-const home = computed(() => side(props.match.homeCode, props.match.homeTeam, props.match.homeProjectedCode, props.match.homeProjectedTeam))
-const away = computed(() => side(props.match.awayCode, props.match.awayTeam, props.match.awayProjectedCode, props.match.awayProjectedTeam))
+const home = computed(() => side(props.match.homeCode, props.match.homeTeam, props.match.homeProjectedCode))
+const away = computed(() => side(props.match.awayCode, props.match.awayTeam, props.match.awayProjectedCode))
 const hasProjected = computed(() => home.value.projected || away.value.projected)
 </script>
 

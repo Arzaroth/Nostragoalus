@@ -62,7 +62,10 @@ export default defineEventHandler(async (event) => {
     }
     if (!base) return { bracket: null }
     return { bracket: projectBracket(base, await groupStandingsFor(competition.id)) }
-  } catch {
+  } catch (error) {
+    // Fail safe to "no bracket", but log so an outage isn't mistaken for the
+    // empty state.
+    console.error('[bracket] failed to build/project', error)
     return { bracket: null }
   }
 })

@@ -39,14 +39,17 @@ export function parseSlotPlaceholder(raw: string | null | undefined): SlotRef {
     // After the marker the groups are a clean list (e.g. "C/D/E/F"); take only
     // standalone single-letter tokens so a word like "PLACE" isn't mined for
     // letters.
-    const groups = groupTokens(up.replace(/^.*?(?:THIRD(?:\s+PLACED?)?|3RD)/, ''))
+    // After the marker the groups are a clean list (e.g. "C/D/E/F"); take only
+    // standalone single-letter tokens so a word like "PLACE" isn't mined for
+    // letters (this is also the path where the list can be empty).
+    const groups = uniqueMatches(up.replace(/^.*?(?:THIRD(?:\s+PLACED?)?|3RD)/, ''), /\b[A-L]\b/g)
     if (groups.length > 0) return { kind: 'third', groups }
   }
   // Compact third: a leading "3" then only group letters/separators ("3CDEF",
   // "3 C/D/E/F", "3A"). The leading-3 anchor keeps "Winner 3" out.
   const compactThird = up.match(/^3[\s/]*([A-L][A-L/\s]*)$/)
   // The regex guarantees at least one group letter, so the list is never empty.
-  if (compactThird) return { kind: 'third', groups: uniqueGroups(compactThird[1]) }
+  if (compactThird) return { kind: 'third', groups: uniqueMatches(compactThird[1], /[A-L]/g) }
 
   // Compact rank "1A" / "2 B".
   const compact = up.match(/^([12])\s*([A-L])$/)
@@ -64,17 +67,12 @@ function rankRef(rank: string, group: string): SlotRef {
   return rank === '2' ? { kind: 'runnerUp', group } : { kind: 'winner', group }
 }
 
-function uniqueGroups(text: string): string[] {
+// Unique matches of a group-letter pattern, in order. The compact path passes
+// /[A-L]/g (a packed run like "CDEF"); the worded path passes /\b[A-L]\b/g (only
+// standalone letters, so a word like "PLACE" isn't mined) and can match nothing.
+function uniqueMatches(text: string, re: RegExp): string[] {
   const out: string[] = []
-  for (const ch of text.match(/[A-L]/g) ?? []) if (!out.includes(ch)) out.push(ch)
-  return out
-}
-
-// Standalone single-letter group tokens (e.g. in "C/D/E/F"), so letters embedded
-// in a word ("PLACE") are ignored.
-function groupTokens(text: string): string[] {
-  const out: string[] = []
-  for (const m of text.match(/\b[A-L]\b/g) ?? []) if (!out.includes(m)) out.push(m)
+  for (const m of text.match(re) ?? []) if (!out.includes(m)) out.push(m)
   return out
 }
 
@@ -134,8 +132,16 @@ export function projectSlots(
   if (input.thirdsToQualify > 0 && allReady) {
     const qualifying = rankThirds(input).slice(0, input.thirdsToQualify)
     const used = new Set<string>()
-    for (const { key, ref } of slots) {
-      if (ref.kind !== 'third') continue
+    // Assign the most-constrained slots first (fewest eligible groups; an
+    // any-group slot last), so a slot that can only take group A's third isn't
+    // starved by a broader slot grabbing it - greedy in input order could leave
+    // a fillable slot empty. (Still an approximation of FIFA's fixed table; see
+    // TODO.md.)
+    const eligibility = (g: string[]) => (g.length === 0 ? Number.MAX_SAFE_INTEGER : g.length)
+    const thirdSlots = slots
+      .filter((s): s is { key: string; ref: Extract<SlotRef, { kind: 'third' }> } => s.ref.kind === 'third')
+      .sort((a, b) => eligibility(a.ref.groups) - eligibility(b.ref.groups))
+    for (const { key, ref } of thirdSlots) {
       const pick = qualifying.find(
         (t) => !used.has(t.code) && (ref.groups.length === 0 || ref.groups.includes(t.group)),
       )
