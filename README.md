@@ -39,7 +39,8 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   **Ranking tab** by the points each pick earns on that match (live then final): everyone who
   predicted by default, or just your league's members when a league is selected
 - Live scores over WebSocket with a pixel-art **goal celebration**; match view with possession,
-  per-team match stats, goal timeline with cards (incl. touchline bookings) and substitutions,
+  per-team match stats, team line-ups (formation, starting XI, bench and coach on a pitch),
+  goal timeline with cards (incl. touchline bookings) and substitutions,
   **all-time head-to-head** and cross-competition form (friendlies included, causally cut off at
   kickoff), penalty shootouts, and each team's top scorer / top assister
 - **Watch links**: admin-curated Live / Replay / Highlights links, in the match's own tabs (Live
