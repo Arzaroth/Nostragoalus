@@ -15,6 +15,8 @@
   "bracket": {
     "empty": "Le tableau final n'est pas encore disponible.",
     "champion": "Champion",
+    "projected": "Projeté",
+    "projectedHint": "Projeté d'après le classement actuel des groupes - pas encore officiel.",
     "round": { "r32": "Seizièmes de finale", "r16": "Huitièmes de finale", "qf": "Quarts de finale", "sf": "Demi-finales", "third": "Petite finale", "final": "Finale" }
   },
   "map": {

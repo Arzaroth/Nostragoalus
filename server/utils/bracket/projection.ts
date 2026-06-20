@@ -1,4 +1,5 @@
 import type { GroupStandings } from '../stats/standings'
+import type { NormalizedBracket } from '../../../shared/types/match'
 
 // Predictive bracket: resolve a knockout slot's placeholder (e.g. "1A", "Winner
 // Group B", "3rd C/D/E/F") to the team currently projected to fill it, from the
@@ -146,4 +147,45 @@ export function projectSlots(
   }
 
   return out
+}
+
+// Overlay projected teams onto a knockout bracket from the live group standings.
+// A side is projectable only when it has no official team yet (homeCode/awayCode
+// null) and its placeholder resolves to a group position; the projected team is
+// attached as homeProjectedCode/Team (the official fields stay untouched). A
+// group projects once all its teams have played; best-third slots once every
+// group has. thirdsToQualify is the number of third-placed slots in the bracket
+// (each takes one of the top-ranked qualifying thirds), so no per-format table is
+// hardcoded. Returns the bracket unchanged when nothing can be projected.
+export function projectBracket(bracket: NormalizedBracket, standings: GroupStandings[]): NormalizedBracket {
+  const groupReady: Record<string, boolean> = {}
+  for (const g of standings) groupReady[g.group] = g.rows.length > 0 && g.rows.every((r) => r.played >= 1)
+
+  const slots: { key: string; ref: SlotRef }[] = []
+  for (const round of bracket.rounds) {
+    for (const m of round.matches) {
+      if (!m.homeCode) slots.push({ key: `${m.providerMatchId}:home`, ref: parseSlotPlaceholder(m.homeTeam) })
+      if (!m.awayCode) slots.push({ key: `${m.providerMatchId}:away`, ref: parseSlotPlaceholder(m.awayTeam) })
+    }
+  }
+  const thirdsToQualify = slots.filter((s) => s.ref.kind === 'third').length
+  const proj = projectSlots(slots, { standings, groupReady, thirdsToQualify })
+  if (proj.size === 0) return bracket
+
+  return {
+    ...bracket,
+    rounds: bracket.rounds.map((round) => ({
+      ...round,
+      matches: round.matches.map((m) => {
+        const home = m.homeCode ? undefined : proj.get(`${m.providerMatchId}:home`)
+        const away = m.awayCode ? undefined : proj.get(`${m.providerMatchId}:away`)
+        if (!home && !away) return m
+        return {
+          ...m,
+          ...(home ? { homeProjectedCode: home.code, homeProjectedTeam: home.name } : {}),
+          ...(away ? { awayProjectedCode: away.code, awayProjectedTeam: away.name } : {}),
+        }
+      }),
+    })),
+  }
 }

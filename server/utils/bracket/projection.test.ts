@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { parseSlotPlaceholder, projectSlots, type SlotRef } from './projection'
+import { parseSlotPlaceholder, projectBracket, projectSlots, type SlotRef } from './projection'
 import type { GroupStandings, StandingRow } from '../stats/standings'
+import type { BracketMatch, NormalizedBracket } from '../../../shared/types/match'
 
 function row(code: string | null, points: number, gd = 0, gf = 0): StandingRow {
   return { code, name: code ?? 'TBD', played: 1, won: 0, drawn: 0, lost: 0, gf, ga: 0, gd, points }
@@ -179,5 +180,70 @@ describe('projectSlots', () => {
       thirdsToQualify: 1,
     })
     expect(out.size).toBe(0)
+  })
+})
+
+describe('projectBracket', () => {
+  function bm(providerMatchId: string, homeTeam: string, homeCode: string | null, awayTeam: string, awayCode: string | null): BracketMatch {
+    return {
+      providerMatchId,
+      homeTeam,
+      homeCode,
+      awayTeam,
+      awayCode,
+      homeScore: null,
+      awayScore: null,
+      homePens: null,
+      awayPens: null,
+      winner: null,
+      status: 'SCHEDULED',
+      kickoffTime: '2026-07-01',
+    }
+  }
+  const standings = [
+    grp('A', [row('ARG', 9), row('POL', 6), row('MEX', 3)]),
+    grp('B', [row('ENG', 9), row('USA', 6), row('IRN', 3)]),
+  ]
+
+  it('annotates TBD group slots, leaves official slots and match-winner refs alone', () => {
+    const bracket: NormalizedBracket = {
+      winner: null,
+      rounds: [
+        {
+          name: 'R16',
+          sequence: 1,
+          matches: [
+            bm('m1', '1A', null, '2B', null),
+            bm('m2', 'Brazil', 'BRA', 'Suisse', 'SUI'),
+            bm('m4', '1A', null, 'Brazil', 'BRA'), // home projected, away official
+            bm('m5', 'Brazil', 'BRA', '1B', null), // home official, away projected
+          ],
+        },
+        { name: 'QF', sequence: 2, matches: [bm('m3', 'Winner 49', null, 'Winner 50', null)] },
+      ],
+    }
+    const out = projectBracket(bracket, standings)
+    const m1 = out.rounds[0].matches[0]
+    expect(m1.homeProjectedCode).toBe('ARG') // winner A
+    expect(m1.awayProjectedCode).toBe('USA') // runner-up B
+    expect(m1.homeCode).toBeNull() // official untouched
+    const m2 = out.rounds[0].matches[1]
+    expect(m2.homeProjectedCode).toBeUndefined() // already official
+    const m4 = out.rounds[0].matches[2]
+    expect(m4.homeProjectedCode).toBe('ARG')
+    expect(m4.awayProjectedCode).toBeUndefined() // away already official
+    const m5 = out.rounds[0].matches[3]
+    expect(m5.homeProjectedCode).toBeUndefined() // home already official
+    expect(m5.awayProjectedCode).toBe('ENG') // winner B
+    const m3 = out.rounds[1].matches[0]
+    expect(m3.homeProjectedCode).toBeUndefined() // match-winner ref, not projectable
+  })
+
+  it('returns the bracket unchanged when nothing can be projected', () => {
+    const bracket: NormalizedBracket = {
+      winner: null,
+      rounds: [{ name: 'QF', sequence: 1, matches: [bm('m3', 'Winner 49', null, 'Winner 50', null)] }],
+    }
+    expect(projectBracket(bracket, standings)).toBe(bracket) // same reference, no copy
   })
 })
