@@ -1081,6 +1081,25 @@ describe('normalizeFifaMatchLineups', () => {
     expect(res.home.bench.map((p) => p.playerId)).toEqual(['b1', 'b2'])
   })
 
+  it('covers the shirt tie-break, short-name fallback, string captain flag, and id-less filter', () => {
+    const res = normalizeFifaMatchLineups({
+      HomeTeam: {
+        Players: [
+          { IdPlayer: 'd-late', PlayerName: [{ Locale: 'en', Description: 'LATE' }], ShirtNumber: 5, Position: 1, Status: 1 },
+          { IdPlayer: 'd-early', PlayerName: [{ Locale: 'en', Description: 'EARLY' }], ShirtNumber: 2, Position: 1, Status: 1, Captain: 'True' },
+          { IdPlayer: 'sh', ShortName: [{ Locale: 'en', Description: 'SHORTY' }], Position: 2, Status: 1 },
+          { Status: 1 }, // no IdPlayer -> filtered out
+        ],
+      },
+      AwayTeam: { Players: [{ IdPlayer: 'z', Status: 1 }] },
+    } as never)
+    // same-position defenders order by shirt number (2 before 5)
+    expect(res.home.startingXI.map((p) => p.playerId)).toEqual(['d-early', 'd-late', 'sh'])
+    expect(res.home.startingXI.find((p) => p.playerId === 'd-early')!.captain).toBe(true)
+    expect(res.home.startingXI.find((p) => p.playerId === 'sh')!.name).toBe('SHORTY')
+    expect(res.home.startingXI).toHaveLength(3)
+  })
+
   it('provider getMatchLineups fetches the detail doc (keyed and bare urls)', async () => {
     const urls: string[] = []
     const fetchImpl = (async (url: string) => {
@@ -1093,5 +1112,8 @@ describe('normalizeFifaMatchLineups', () => {
     expect(urls[0]).toContain('/live/football/17/285023/st/m1')
     await provider.getMatchLineups!({ matchId: 'm2' })
     expect(urls[1]).toContain('/live/football/m2')
+    // Unplayed match: FIFA answers 200 with a null body -> null, not a crash.
+    const provNull = fifaProvider({ seasonId: '285023', competitionId: '17', rateLimiter: new RateLimiter(0), fetchImpl: (async () => new Response('null')) as unknown as typeof fetch })
+    expect(await provNull.getMatchLineups!({ matchId: 'pending' })).toBeNull()
   })
 })

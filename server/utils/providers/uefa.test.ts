@@ -780,6 +780,14 @@ describe('normalizeUefaLineups', () => {
     expect(res.away.startingXI).toEqual([])
   })
 
+  it('uses the coach international name when no EN translation is present', () => {
+    const res = normalizeUefaLineups({
+      homeTeam: { field: [entry('p', 'FORWARD', 7)], coaches: [{ person: { internationalName: 'Coach Intl' } }] },
+      awayTeam: { field: [entry('q', 'DEFENDER', 4)] },
+    } as never)
+    expect(res.home.coach).toBe('Coach Intl')
+  })
+
   it('provider getMatchLineups hits the lineups endpoint and returns null on an empty body', async () => {
     const urls: string[] = []
     const fetchImpl = (async (url: string) => {

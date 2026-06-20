@@ -907,6 +907,9 @@ export function fifaProvider(options: FifaOptions): MatchDataProvider {
           ? `${baseUrl}/live/football/${options.competitionId}/${options.seasonId}/${stageId}/${matchId}?language=en`
           : `${baseUrl}/live/football/${matchId}?language=en`,
       )
+      // Unplayed matches answer 200 with a null body - the common pre-kickoff
+      // path this endpoint polls; treat it as "no line-up yet", not a crash.
+      if (!detail) return null
       return normalizeFifaMatchLineups(detail)
     },
     async getMatchTimeline({ matchId, homeTeamId, awayTeamId, playerNames, language }: { matchId: string; homeTeamId?: string | null; awayTeamId?: string | null; playerNames?: Record<string, string>; language?: string | null }) {
