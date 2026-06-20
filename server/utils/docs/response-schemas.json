@@ -1303,6 +1303,18 @@
                         "awayCode": {
                           "type": "string"
                         },
+                        "homeProjectedCode": {
+                          "type": "string"
+                        },
+                        "homeProjectedTeam": {
+                          "type": "string"
+                        },
+                        "awayProjectedCode": {
+                          "type": "string"
+                        },
+                        "awayProjectedTeam": {
+                          "type": "string"
+                        },
                         "homeScore": {
                           "type": "integer"
                         },

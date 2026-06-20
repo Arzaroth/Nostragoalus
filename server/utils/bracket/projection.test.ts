@@ -98,6 +98,24 @@ describe('projectSlots', () => {
     expect(out.has('t3')).toBe(false) // only TC/TA qualified, neither in {D}
   })
 
+  it('fills a narrowly-eligible third slot instead of starving it (most-constrained first)', () => {
+    const four = [
+      grp('A', [row('ARG', 9), row('POL', 6), row('TA', 5)]), // A's third ranks above B's
+      grp('B', [row('ENG', 9), row('USA', 6), row('TB', 3)]),
+    ]
+    const out = projectSlots(
+      [
+        { key: 'broad', ref: { kind: 'third', groups: ['A', 'B'] } }, // listed first
+        { key: 'narrow', ref: { kind: 'third', groups: ['A'] } }, // only A's third fits
+      ],
+      { standings: four, groupReady: { A: true, B: true }, thirdsToQualify: 2 },
+    )
+    // Input order would give broad->TA, starving narrow. Most-constrained-first
+    // gives narrow->TA, broad->TB, filling both.
+    expect(out.get('narrow')).toEqual({ code: 'TA', name: 'TA' })
+    expect(out.get('broad')).toEqual({ code: 'TB', name: 'TB' })
+  })
+
   it('picks the top qualifying third for an any-group slot', () => {
     const four = [
       grp('A', [row('ARG', 9), row('POL', 6), row('TA', 3)]),
