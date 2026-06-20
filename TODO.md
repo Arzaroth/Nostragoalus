@@ -850,12 +850,15 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
 ## Match line-ups (deferred from the feature pass)
 
-- [ ] The pitch buckets the XI by position category (GK/DF/MF/FW), not by the
+- [x] The pitch buckets the XI by position category (GK/DF/MF/FW), not by the
       exact formation bands. A 4-2-3-1 collapses its holding pair and its three
       attacking mids into one MF row, so the rendered shape can differ from the
-      formation chip. FIFA ships a Tactics string (and per-player LineupX/LineupY
-      coords, currently null in the feed); if real coords ever arrive, place
-      players by coordinate, otherwise parse the formation string into bands.
+      formation chip. Resolved: `pitchRows` (app/utils/lineup) now slices the ten
+      outfield players into the formation's bands when the feed ships a usable
+      formation string (FIFA's Tactics), falling back to position grouping when
+      it doesn't (UEFA ships none). Per-player FIFA `Position` is only the coarse
+      0-3 category and `LineupX/LineupY` come back null, so exact-coordinate
+      placement still isn't possible - the formation string is the best signal.
 - [ ] UEFA carries no captain flag in the lineups payload, so no captain is
       marked for Euro matches (FIFA does). If UEFA exposes it elsewhere (or the
       armband shows in the events feed), wire it in.
