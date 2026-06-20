@@ -337,7 +337,7 @@ effort buckets; order within a bucket is not priority.
     values (original points, changed points); league boards with the rule ON
     rank on the changed value, leagues with it OFF and the **global board
     always rank on the original** - global stays a pure pre-match game.
-- [ ] **Match line-ups** (in progress on worktree-match-lineups): starting XI +
+- [x] **Match line-ups** (shipped in 1.31.0): starting XI +
       bench + formation on the match view, sourced from the existing data
       providers. Squad/player pages already exist to link into. Decisions
       (locked):
