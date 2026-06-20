@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.30.1] - 2026-06-20
+
 ### Fixed
 - The projected knockout bracket now fills **every** best-third slot. A slot whose only currently-qualifying third had been claimed by another slot could be left blank (e.g. the "3rd D/E/I/J/L" slot when only group D's third was among the eight best); the projection now matches slots to thirds so each fillable slot gets a team.
 
