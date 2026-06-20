@@ -358,6 +358,8 @@
     "next": "นัดถัดไป",
     "h2h": "สถิติเจอกัน",
     "playByPlay": "เหตุการณ์ในเกม",
+    "lineups": "ผู้เล่นตัวจริง",
+    "coach": "ผู้ฝึกสอน",
     "statusLabel": { "scheduled": "ตามกำหนด", "live": "สด", "halfTime": "พักครึ่ง", "fullTime": "จบเกม", "postponed": "เลื่อน", "cancelled": "ยกเลิก", "suspended": "ระงับ", "awarded": "ตัดสินผล" },
     "playByPlayEmpty": "ยังไม่มีเหตุการณ์ในเกมสำหรับแมตช์นี้",
     "pbpKind": { "goal": "ประตู", "ownGoal": "ทำเข้าประตูตัวเอง", "penaltyGoal": "ประตูจุดโทษ", "penaltyMissed": "ยิงจุดโทษพลาด", "penaltyAwarded": "ได้จุดโทษ", "assist": "แอสซิสต์", "yellow": "ใบเหลือง", "red": "ใบแดง", "secondYellow": "ใบเหลืองใบที่สอง", "sub": "เปลี่ยนตัว", "shot": "ยิง", "foul": "ฟาวล์", "corner": "เตะมุม", "var": "VAR", "period": "ช่วงเวลา" },

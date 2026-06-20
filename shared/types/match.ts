@@ -215,6 +215,26 @@ export interface SquadPlayer {
   pictureUrl: string | null
 }
 
+// One team's starting eleven + bench for a single match. The player shape is the
+// same SquadPlayer the team page already renders. `formation` is the feed's
+// system-of-play string ("4-3-3") when it ships one (FIFA's Tactics); UEFA gives
+// none, so the pitch falls back to bucketing the XI by position.
+export interface TeamLineup {
+  formation: string | null
+  coach: string | null
+  startingXI: SquadPlayer[]
+  bench: SquadPlayer[]
+}
+
+// Both teams' line-ups for a match. `available` is false until the feed returns
+// a real XI (the official line-ups drop ~1h before kickoff); the UI shows
+// nothing until then rather than a stale or guessed side.
+export interface MatchLineups {
+  available: boolean
+  home: TeamLineup
+  away: TeamLineup
+}
+
 // Tournament-wide aggregates for one team (decoded FIFA stat type codes).
 export interface TeamSeasonStats {
   goals: number | null

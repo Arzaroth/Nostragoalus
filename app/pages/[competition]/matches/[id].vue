@@ -403,6 +403,10 @@ watch([activeTab, leagueId, hasStarted, status], maybeLoadRanking, { immediate: 
 // while you browse the rest.
 const { data: mediaData } = useMatchMedia(id)
 const visibleMedia = computed(() => visibleMediaForStatus(mediaData.value ?? [], status.value))
+
+// Line-ups surface their tab only once the official XI has dropped (~1h before
+// kickoff); until then the feed answers available:false and no tab shows.
+const { data: lineupsData } = useMatchLineups(id)
 const MEDIA_ORDER: MatchMediaKind[] = ['LIVE', 'REPLAY', 'HIGHLIGHTS']
 const mediaKinds = computed(() => {
   const present = new Set(visibleMedia.value.map((mm) => mm.kind))
@@ -618,6 +622,7 @@ function toggleFormInfo(side: string, i: number | string) {
         <TabList>
           <Tab v-for="k in mediaTabKinds" :key="k" :value="mediaTabValue(k)">{{ mediaKindLabel(k) }}</Tab>
           <Tab v-if="hasStarted" value="timeline">{{ t('match.playByPlay') }}</Tab>
+          <Tab v-if="lineupsData?.available" value="lineups">{{ t('match.lineups') }}</Tab>
           <Tab v-if="hasStats || detailStatus === 'pending'" value="stats">{{ t('match.stats') }}</Tab>
           <Tab v-if="insights.standings" value="standings">{{ t('match.standings') }}</Tab>
           <Tab v-if="hasStarted" value="ranking">{{ t('match.rankingTab') }}</Tab>
@@ -682,6 +687,17 @@ function toggleFormInfo(side: string, i: number | string) {
             </div>
 <!-- the chronological event list lives in the hero under both teams -->
 
+          </TabPanel>
+
+          <TabPanel v-if="lineupsData?.available" value="lineups">
+            <MatchLineups
+              :lineups="lineupsData"
+              :home="m.homeTeam"
+              :away="m.awayTeam"
+              :home-code="m.homeTeamCode"
+              :away-code="m.awayTeamCode"
+              :slug="selectedSlug"
+            />
           </TabPanel>
 
           <TabPanel v-if="insights.standings" value="standings">

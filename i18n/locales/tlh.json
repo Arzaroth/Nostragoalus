@@ -358,6 +358,8 @@
     "next": "veb",
     "h2h": "qaD tlhol",
     "playByPlay": "may' lut",
+    "lineups": "mangghom",
+    "coach": "ghojmoHwI'",
     "statusLabel": { "scheduled": "pIH", "live": "qaS", "halfTime": "botlh poH", "fullTime": "rIn", "postponed": "lumagh", "cancelled": "qIl", "suspended": "mevpu'", "awarded": "wuqlu'" },
     "playByPlayEmpty": "may'vam lutmey tu'lu'be' DaH.",
     "pbpKind": { "goal": "naQmoH", "ownGoal": "naQmoH'egh", "penaltyGoal": "bortaS naQmoH", "penaltyMissed": "bortaS luj", "penaltyAwarded": "bortaS nob", "assist": "QaH", "yellow": "letlh SuD", "red": "letlh Doq", "secondYellow": "letlh SuD cha'DIch", "sub": "choH", "shot": "bach", "foul": "qab", "corner": "Dop pup", "var": "VAR", "period": "poH" },
