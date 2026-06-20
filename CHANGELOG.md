@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+- The projected knockout bracket never pairs a group's projected third-placed team against that same group's winner or runner-up - a group-stage rematch that can't actually happen.
+
 ## [1.30.1] - 2026-06-20
 
 ### Fixed

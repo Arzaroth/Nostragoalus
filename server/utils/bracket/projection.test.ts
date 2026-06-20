@@ -136,6 +136,18 @@ describe('projectSlots', () => {
     expect(out.get('broad')?.code).not.toBe('TD') // pushed to F/G so narrow isn't starved
   })
 
+  it('never assigns a third from the slot opponent group (excludeGroup)', () => {
+    const std = [
+      grp('A', [row('A1', 9), row('A2', 6), row('TA', 5)]), // A's third ranks top
+      grp('B', [row('B1', 9), row('B2', 6), row('TB', 3)]),
+    ]
+    const out = projectSlots(
+      [{ key: 's', ref: { kind: 'third', groups: ['A', 'B'], excludeGroup: 'A' } }],
+      { standings: std, groupReady: { A: true, B: true }, thirdsToQualify: 2 },
+    )
+    expect(out.get('s')).toEqual({ code: 'TB', name: 'TB' }) // TA excluded (would be a rematch)
+  })
+
   it('picks the top qualifying third for an any-group slot', () => {
     const four = [
       grp('A', [row('ARG', 9), row('POL', 6), row('TA', 3)]),
@@ -276,6 +288,32 @@ describe('projectBracket', () => {
     expect(m5.awayProjectedCode).toBe('ENG') // winner B
     const m3 = out.rounds[1].matches[0]
     expect(m3.homeProjectedCode).toBeUndefined() // match-winner ref, not projectable
+  })
+
+  it('projects thirds that avoid a rematch with their group winner', () => {
+    // Both third-slots list A and B; each faces one group's winner, so its third
+    // must come from the OTHER group.
+    const bracket: NormalizedBracket = {
+      winner: null,
+      rounds: [
+        {
+          name: 'R16',
+          sequence: 1,
+          matches: [bm('m1', '1A', null, '3AB', null), bm('m2', '1B', null, '3AB', null)],
+        },
+      ],
+    }
+    const std = [
+      grp('A', [row('ARG', 9), row('POL', 6), row('TA', 5)]),
+      grp('B', [row('ENG', 9), row('USA', 6), row('TB', 3)]),
+    ]
+    const out = projectBracket(bracket, std)
+    const m1 = out.rounds[0].matches[0]
+    const m2 = out.rounds[0].matches[1]
+    expect(m1.homeProjectedCode).toBe('ARG') // winner A
+    expect(m1.awayProjectedCode).toBe('TB') // third from B (NOT A's TA - no rematch)
+    expect(m2.homeProjectedCode).toBe('ENG') // winner B
+    expect(m2.awayProjectedCode).toBe('TA') // third from A (NOT B's TB - no rematch)
   })
 
   it('returns the bracket unchanged when nothing can be projected', () => {
