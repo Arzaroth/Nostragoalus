@@ -375,6 +375,11 @@ export function normalizeUefaTimeline(
         if (side) out.push(mk('foul', side, e, { playerName: actorName(e.primaryActor?.person) }))
         break
       }
+      case 'CORNER': {
+        const side = sideOf(e)
+        if (side) out.push(mk('corner', side, e, { playerName: actorName(e.primaryActor?.person) }))
+        break
+      }
       case 'START_PHASE': {
         const pk = UEFA_PERIOD_START[e.phase ?? '']
         if (pk) out.push(mk('period', null, e, { periodKind: pk }))
