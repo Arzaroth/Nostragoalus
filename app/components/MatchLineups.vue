@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { MatchLineups, SquadPlayer, TeamLineup } from '#shared/types/match'
+import type { MatchLineups } from '#shared/types/match'
 
 const props = defineProps<{
   lineups: MatchLineups
@@ -13,15 +13,8 @@ const props = defineProps<{
 const { t } = useI18n()
 const NuxtLinkC = resolveComponent('NuxtLink')
 
-// Pitch rows, top (attack) to bottom (own goal). A player with an unknown
-// position joins the midfield row so the pitch never renders a stray empty line.
-const ROWS = ['FW', 'MF', 'DF', 'GK'] as const
-
-function pitchRows(team: TeamLineup) {
-  const buckets: Record<string, SquadPlayer[]> = { GK: [], DF: [], MF: [], FW: [] }
-  for (const p of team.startingXI) (buckets[p.position ?? 'MF'] ?? buckets.MF).push(p)
-  return ROWS.map((pos) => ({ pos, players: buckets[pos] })).filter((r) => r.players.length)
-}
+// pitchRows (app/utils/lineup) lays the XI out by the formation bands when the
+// feed ships one, falling back to grouping by each player's position otherwise.
 
 const sides = computed(() => [
   { team: props.lineups.home, name: props.home, code: props.homeCode },

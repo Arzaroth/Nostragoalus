@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+- The line-ups pitch now follows the team's declared formation (e.g. a back three stays a back three) instead of grouping players by their feed position category, so the shape on the pitch matches the formation shown beside it.
+
 ## [1.31.0] - 2026-06-20
 
 ### Added
