@@ -13,7 +13,9 @@ export type SlotRef =
   | { kind: 'runnerUp'; group: string }
   // A best-third slot: the eligible groups its third-placed team is drawn from
   // (the provider lists them, e.g. "3rd C/D/E/F"). Empty = any group.
-  | { kind: 'third'; groups: string[] }
+  // excludeGroup is the group of the opponent this slot faces (its winner/
+  // runner-up), set by projectBracket so a third never plays its own group again.
+  | { kind: 'third'; groups: string[]; excludeGroup?: string }
   // A match-winner reference ("Winner 49") or anything we can't read: not
   // projectable from group standings.
   | { kind: 'other' }
@@ -134,7 +136,11 @@ export function projectSlots(
     const thirdSlots = slots.filter(
       (s): s is { key: string; ref: Extract<SlotRef, { kind: 'third' }> } => s.ref.kind === 'third',
     )
-    const eligible = (groups: string[], group: string) => groups.length === 0 || groups.includes(group)
+    // A third is eligible for a slot if its group is listed (or any) AND it isn't
+    // the slot's opponent group - so a third never plays its own group's
+    // winner/runner-up again (no rematch).
+    const eligible = (ref: Extract<SlotRef, { kind: 'third' }>, group: string) =>
+      (ref.groups.length === 0 || ref.groups.includes(group)) && group !== ref.excludeGroup
 
     // Maximum bipartite matching (Kuhn) of slots to qualifying thirds. A slot is
     // often eligible for only ONE qualifying third - its other groups' thirds
@@ -145,7 +151,7 @@ export function projectSlots(
     const takenBy = new Map<string, string>() // third code -> slot key holding it
     const augment = (slot: (typeof thirdSlots)[number], seen: Set<string>): boolean => {
       for (const t of qualifying) {
-        if (!eligible(slot.ref.groups, t.group) || seen.has(t.code)) continue
+        if (!eligible(slot.ref, t.group) || seen.has(t.code)) continue
         seen.add(t.code)
         const holder = takenBy.get(t.code)
         if (holder === undefined || augment(slotByKey.get(holder)!, seen)) {
@@ -157,7 +163,7 @@ export function projectSlots(
     }
     // Most-constrained first (fewest eligible qualifying thirds) keeps the result
     // stable and the search short; Kuhn finds a maximum either way.
-    const options = (s: (typeof thirdSlots)[number]) => qualifying.filter((t) => eligible(s.ref.groups, t.group)).length
+    const options = (s: (typeof thirdSlots)[number]) => qualifying.filter((t) => eligible(s.ref, t.group)).length
     for (const slot of [...thirdSlots].sort((a, b) => options(a) - options(b))) augment(slot, new Set())
 
     const byCode = new Map(qualifying.map((t) => [t.code, t]))
@@ -182,11 +188,19 @@ export function projectBracket(bracket: NormalizedBracket, standings: GroupStand
   const groupReady: Record<string, boolean> = {}
   for (const g of standings) groupReady[g.group] = g.rows.length > 0 && g.rows.every((r) => r.played >= 1)
 
+  // The group a slot's opponent comes from (its winner/runner-up), so a third
+  // facing it isn't drawn from that same group (no rematch).
+  const opponentGroup = (ref: SlotRef) => (ref.kind === 'winner' || ref.kind === 'runnerUp' ? ref.group : undefined)
+  const withExclude = (ref: SlotRef, oppGroup: string | undefined): SlotRef =>
+    ref.kind === 'third' && oppGroup ? { ...ref, excludeGroup: oppGroup } : ref
+
   const slots: { key: string; ref: SlotRef }[] = []
   for (const round of bracket.rounds) {
     for (const m of round.matches) {
-      if (!m.homeCode) slots.push({ key: `${m.providerMatchId}:home`, ref: parseSlotPlaceholder(m.homeTeam) })
-      if (!m.awayCode) slots.push({ key: `${m.providerMatchId}:away`, ref: parseSlotPlaceholder(m.awayTeam) })
+      const homeRef = parseSlotPlaceholder(m.homeTeam)
+      const awayRef = parseSlotPlaceholder(m.awayTeam)
+      if (!m.homeCode) slots.push({ key: `${m.providerMatchId}:home`, ref: withExclude(homeRef, opponentGroup(awayRef)) })
+      if (!m.awayCode) slots.push({ key: `${m.providerMatchId}:away`, ref: withExclude(awayRef, opponentGroup(homeRef)) })
     }
   }
   const thirdsToQualify = slots.filter((s) => s.ref.kind === 'third').length
