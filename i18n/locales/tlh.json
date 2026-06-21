@@ -1034,5 +1034,38 @@
       "SAD": "'IQ",
       "ANGRY": "QeH"
     }
+  },
+  "share": {
+    "action": "yIngeH",
+    "sharePick": "wuq yIngeH",
+    "shareResult": "Qap yIngeH",
+    "shareSealed": "wuq So'lu'bogh yIngeH",
+    "revealScore": "QuQwIj yI'ang",
+    "copyLink": "QumwI' yIvel",
+    "copied": "vellu'pu'",
+    "download": "yIHot",
+    "creating": "chenmoHlu'…",
+    "failed": "QumwI' chenmoHlaHbe'",
+    "card": {
+      "fullTime": "rIn",
+      "kickedOff": "taghpu'",
+      "myCall": "wuqwIj",
+      "sealed": "wuq So'lu'bogh",
+      "sealedSub": "taghDI' poSlu'",
+      "kickoffSoon": "tugh tagh",
+      "joker": "Soj",
+      "pts": "QuQ",
+      "rarity": "QuQ rapvam wIvpu' {pct}% neH",
+      "tagline": "QuQmey yIwuq. juplI' yIqul."
+    },
+    "landing": {
+      "resultTitle": "{score} wuq {name}",
+      "liveTitle": "{score} wuq {name}",
+      "revealTitle": "wuq {name}: {score}",
+      "sealedTitle": "wuq So' {name}",
+      "subtitle": "Nostragoalus: QuQmey yIwuq, QuQmey yISuq, juplI' yIqul.",
+      "cta": "wuqlI' yIchel",
+      "viewMatch": "qaSbogh yIbej"
+    }
   }
 }

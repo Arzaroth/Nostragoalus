@@ -1,6 +1,6 @@
 import { and, eq, lte, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
-import { competition as competitionTable, leagueMember, match, prediction, round } from '../../../db/schema'
+import { competition as competitionTable, leagueMember, match, prediction, round, user as userTable } from '../../../db/schema'
 import { isSingleMatchStage } from '../../../shared/types/match'
 import { LockedError, NotFoundError, ValidationError } from '../errors'
 import { deletePickReminder } from '../notifications/reminders'
@@ -95,6 +95,28 @@ const predictionView = {
   penaltiesAway: match.penaltiesAway,
   roundLabel: round.label,
   roundSort: round.sortOrder,
+}
+
+// A single prediction with the match/competition/owner context a share card
+// needs. No ownership filter here - the caller (mint) checks ownership before
+// signing a token, and the public render trusts the signed token.
+export async function getPredictionForShare(db: AppDatabase, predictionId: string) {
+  const rows = await db
+    .select({
+      ...predictionView,
+      group: match.groupName,
+      competitionSlug: competitionTable.slug,
+      competitionName: competitionTable.name,
+      ownerName: userTable.name,
+    })
+    .from(prediction)
+    .innerJoin(match, eq(match.id, prediction.matchId))
+    .innerJoin(round, eq(round.id, prediction.roundId))
+    .innerJoin(competitionTable, eq(competitionTable.id, match.competitionId))
+    .innerJoin(userTable, eq(userTable.id, prediction.userId))
+    .where(eq(prediction.id, predictionId))
+    .limit(1)
+  return rows[0] ?? null
 }
 
 export async function getMyPredictions(db: AppDatabase, userId: string, competitionId?: string) {
