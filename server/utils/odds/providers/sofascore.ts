@@ -1,4 +1,4 @@
-import { Agent, fetch as undiciFetch } from 'undici'
+import { SOFASCORE_BASE_URL, SOFASCORE_UA, sofascoreFetch } from '../../providers/sofascore-http'
 import { RateLimiter } from '../../providers/rate-limiter'
 import { ProviderRateLimitError, ProviderUpstreamError } from '../../providers/types'
 import { fractionalToDecimal } from '../fractional'
@@ -38,23 +38,7 @@ interface SofaMarket {
 // Module-level so TypeScript treats it as a unique symbol (narrows unions).
 const NOT_FOUND = Symbol('not_found')
 
-const DEFAULT_BASE_URL = 'https://api.sofascore.com'
-const BROWSER_UA = 'Mozilla/5.0 (X11; Linux x86_64; rv:139.0) Gecko/20100101 Firefox/139.0'
 const FULL_TIME_MARKET_ID = 1
-
-// Sofascore's CDN fingerprints the TLS ClientHello: Node's trimmed default
-// cipher list is answered with 403 regardless of headers or HTTP version,
-// while OpenSSL's stock list ('DEFAULT') passes. Lazy singleton so importing
-// the module (tests, builds) never constructs a dispatcher.
-let tlsSpoofedFetch: typeof fetch | null = null
-function defaultSofascoreFetch(): typeof fetch {
-  if (!tlsSpoofedFetch) {
-    const dispatcher = new Agent({ connect: { ciphers: 'DEFAULT' } })
-    tlsSpoofedFetch = ((input: Parameters<typeof undiciFetch>[0], init?: Parameters<typeof undiciFetch>[1]) =>
-      undiciFetch(input, { ...init, dispatcher })) as unknown as typeof fetch
-  }
-  return tlsSpoofedFetch
-}
 
 export interface SofascoreOptions {
   baseUrl?: string
@@ -63,15 +47,15 @@ export interface SofascoreOptions {
 }
 
 export function sofascoreProvider(options: SofascoreOptions = {}): OddsProvider {
-  const baseUrl = options.baseUrl ?? DEFAULT_BASE_URL
-  const doFetch = options.fetchImpl ?? defaultSofascoreFetch()
+  const baseUrl = options.baseUrl ?? SOFASCORE_BASE_URL
+  const doFetch = options.fetchImpl ?? sofascoreFetch()
   // 5s spacing: well under scraping-forum guidance for bulk pulls, and the
   // sync layer additionally caps calls per run.
   const limiter = options.rateLimiter ?? new RateLimiter(5000)
 
   async function getJson<T>(path: string): Promise<T | typeof NOT_FOUND> {
     await limiter.acquire()
-    const response = await doFetch(`${baseUrl}/api/v1${path}`, { headers: { 'user-agent': BROWSER_UA } })
+    const response = await doFetch(`${baseUrl}/api/v1${path}`, { headers: { 'user-agent': SOFASCORE_UA } })
     // Cloudflare answers 403 when it decides we're a bot - same back-off as 429.
     if (response.status === 429 || response.status === 403) throw new ProviderRateLimitError()
     if (response.status === 404) return NOT_FOUND
