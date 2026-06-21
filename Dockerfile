@@ -32,7 +32,13 @@ RUN pnpm build
 # Minimal production runtime: only the Nitro output + committed migrations.
 FROM base AS prod
 ENV NODE_ENV=production
+# cycletls ships a glibc-linked Go helper for its uTLS engine (Sofascore's CDN
+# fingerprints TLS, so odds + line-ups go through it); gcompat is the musl shim.
+RUN apk add --no-cache gcompat libstdc++
 COPY --from=build /app/.output ./.output
+# Nitro traces cycletls' JS but not its spawned Go helper binary; add the linux
+# build so the uTLS engine can start at runtime.
+COPY --from=build /app/node_modules/cycletls/dist/index ./.output/server/node_modules/cycletls/dist/index
 COPY --from=build /app/drizzle ./drizzle
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
