@@ -17,13 +17,13 @@ const headShot = computed(() => (props.player.pictureUrl?.includes('digitalhub.f
         :src="player.pictureUrl"
         loading="lazy"
         :alt="player.name"
-        class="w-10 h-10 rounded-full object-cover border-2"
+        class="w-12 h-12 rounded-full object-cover border-2"
         :class="headShot"
         style="border-color: var(--p-content-background); background: var(--p-content-background)"
       />
       <div
         v-else
-        class="w-10 h-10 rounded-full grid place-items-center text-sm font-bold tabular-nums border-2"
+        class="w-12 h-12 rounded-full grid place-items-center text-sm font-bold tabular-nums border-2"
         style="border-color: var(--p-content-background); background: var(--p-content-background); color: var(--p-text-color)"
       >{{ player.shirtNumber ?? '?' }}</div>
       <span
