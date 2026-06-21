@@ -62,6 +62,14 @@ describe('buildShareCardElement', () => {
     expect(textOf(makeCard({ tier: 'WEIRD' }))).toContain('+14 pts')
   })
 
+  it('result: renders the shootout under the score when the tie was decided on penalties', () => {
+    const text = textOf(makeCard({ actualHome: 1, actualAway: 1, pensHome: 4, pensAway: 2 }))
+    expect(text).toContain('1 - 1')
+    expect(text).toContain(`(4-2 ${t('match.pens')})`)
+    // No shootout line when there were no penalties.
+    expect(textOf(makeCard())).not.toContain(t('match.pens'))
+  })
+
   it('reveal / live / sealed render their own bodies', () => {
     expect(textOf(makeCard({ state: 'reveal' }))).toContain('Kicks off soon')
     expect(textOf(makeCard({ state: 'live' }))).toContain('Kicked off')

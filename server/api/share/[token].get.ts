@@ -24,7 +24,7 @@ defineRouteMeta({
     tags: ['Share'],
     summary: 'Share-card summary',
     description:
-      'Resolves a signed share token to the card data (leak-safe: a sealed pick exposes no score) plus the match it links back to. Powers the public /s/[token] landing page. 404 on a bad or expired token.',
+      'Resolves a signed share token to the card data (leak-safe: a sealed pick exposes no score) plus the match it links back to. Powers the public /s/[token] landing page. 404 on an unknown or invalid token.',
     parameters: [{ name: 'token', in: 'path', required: true, schema: { type: 'string' } }],
     responses: {
       '200': { description: 'The card summary and link target.' },

@@ -40,6 +40,11 @@ describe('share token', () => {
     expect(verifyShareToken(SECRET, '.sig')).toBeNull()
   })
 
+  it('rejects an oversized token before doing any HMAC work (DoS guard)', () => {
+    const huge = `${'a'.repeat(2000)}.${'b'.repeat(2000)}`
+    expect(verifyShareToken(SECRET, huge)).toBeNull()
+  })
+
   it('rejects MAC-valid tokens with an invalid payload shape', () => {
     const bad: unknown[] = [
       null,

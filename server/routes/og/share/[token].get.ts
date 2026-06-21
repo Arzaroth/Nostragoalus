@@ -1,3 +1,4 @@
+import { flagUrl } from '../../../../shared/share-card'
 import { db } from '../../../../db'
 import { getPredictionForShare } from '../../../utils/predictions/service'
 import { buildShareCardData } from '../../../utils/share/card'
@@ -50,12 +51,13 @@ function loadMark(): Promise<string | null> {
 // flaky CDN never breaks the render.
 const flagCache = new Map<string, Promise<string | null>>()
 function loadFlag(code: string | null): Promise<string | null> {
-  if (!code) return Promise.resolve(null)
+  const url = flagUrl(code)
+  if (!url || !code) return Promise.resolve(null)
   let cached = flagCache.get(code)
   if (!cached) {
     cached = (async () => {
       try {
-        const res = await fetch(`https://api.fifa.com/api/v3/picture/flags-sq-3/${code}`)
+        const res = await fetch(url)
         if (!res.ok) return null
         const type = res.headers.get('content-type') || 'image/png'
         const buf = Buffer.from(await res.arrayBuffer())
@@ -70,7 +72,7 @@ function loadFlag(code: string | null): Promise<string | null> {
 }
 
 // Public, crawler-facing OG image. The signed token is the only authorization -
-// no session - so a forged or stale token simply 404s.
+// no session - so a forged token (or one whose prediction is gone) simply 404s.
 export default defineEventHandler(async (event) => {
   const token = getRouterParam(event, 'token')
   const secret = useRuntimeConfig(event).betterAuthSecret
