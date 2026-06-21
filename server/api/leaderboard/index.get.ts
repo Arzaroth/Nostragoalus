@@ -11,7 +11,8 @@ export default defineEventHandler(async (event) => {
   const limit = query.limit ? Math.min(Number(query.limit), 200) : 100
   const offset = query.offset ? Math.max(Number(query.offset), 0) : 0
   // League-scoped ranking. The league fixes the competition; movement arrows
-  // are global-rank deltas and don't translate to within-league positions.
+  // come from per-league snapshots, so they are within-league deltas (members
+  // and admins only - the outsider board has no snapshot to compare against).
   if (query.league) {
     const user = await requireUser(event)
     const league = await getLeague(db, String(query.league))
