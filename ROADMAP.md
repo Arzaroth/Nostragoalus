@@ -188,14 +188,32 @@ effort buckets; order within a bucket is not priority.
       would have scored N vs your M" (reuses consensus-bot data).
 - [ ] **Personal analytics page**: bias detector - avg goals predicted vs
       real, favorite-team optimism, accuracy by group/team/round.
-- [ ] **Prediction share cards**: the lightweight, mid-tournament sibling of
-      Tournament Wrapped (which is the end-of-competition card). A shareable
-      image for a single pick or a whole round ("I called 3-1 - did you?"),
-      generated on the read side so it can ship while the tournament is live
-      and sharing peaks. Acquisition lever, not a points feature. Decisions to
-      make: card scope (per-pick vs per-round vs both), render path (server
-      OG-image vs client canvas), and whether picks stay copy-protected until
-      kickoff on a shared card (they must - same leak rule as everywhere).
+- [ ] **Prediction share cards** (IN_PROGRESS on feat/share-cards): the
+      lightweight, mid-tournament sibling of Tournament Wrapped (which is the
+      end-of-competition card). A shareable image for a single pick, generated
+      on the read side so it can ship while the tournament is live and sharing
+      peaks. Acquisition lever, not a points feature. Decisions (locked):
+  - **Scope: per-pick** for v1 (per-round recap folds into Tournament Wrapped /
+    a later round-recap card). Three card states: post-match **result**
+    ("I called 3-1, EXACT, +14"), pre-match **sealed** (matchup + challenge,
+    no score), pre-match **reveal** (the sharer opts to expose their own
+    predicted score before kickoff).
+  - **Render: server OG-image**, hand-rolled satori (HTML/CSS -> SVG) +
+    @resvg/resvg-js (SVG -> PNG), not the nuxt-og-image module. Gives real
+    social link unfurls (the acquisition lever) plus a downloadable PNG; one
+    template renders the unfurl (1.91:1) and a square (stories). Vendored woff
+    fonts (Inter Latin + Noto Sans Thai) so the localized card has full glyph
+    coverage. Layout: "ticket stub".
+  - **Copy-protection holds**: the field's picks stay hidden until kickoff.
+    Share links are **owner-minted signed tokens** (stateless HMAC, no schema):
+    minting requires the session + ownership of the pick, and a `reveal` token
+    can only be minted by the pick owner. A third party can't forge a token or
+    enumerate prediction ids to unseal someone else's pre-kickoff pick. The
+    sharer voluntarily publishing their OWN pick is their choice; result mode is
+    post-kickoff so the score is already public.
+  - **Share flow**: Web Share API (native sheet on mobile) -> copy-link +
+    download-PNG fallback. Button on the match-page pick row + in
+    PredictionList. Pre-match button offers the sealed/reveal choice.
 - [ ] **League rivalry / overtake alerts**: pick a rival inside a league you
       share, get a push the moment they pass you (or you pass them) on that
       league's board. Pure engagement multiplier on the web-push + leagues work
