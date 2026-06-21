@@ -877,6 +877,25 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       XI yet" and not cached, so the next poll re-hits a throttled upstream. Add a
       log + a short negative cache so a failing upstream isn't hammered every 60s.
 
+### Precise placement (deferred from the feature-treatment review, 1.31.3)
+
+- [ ] `parseBands` (server `sofascore-positions.ts`) duplicates `parseFormation`
+      (`app/utils/lineup.ts`) - the same formation-string grammar in two layers.
+      Extract one pure helper to `shared/` so the band-row fallback and the
+      Sofascore coordinate path can't drift on which formations are valid.
+- [ ] The cycletls Go uTLS helper is spawned once (`sofascore-http.ts`) and never
+      reaped - no `.exit()` / shutdown hook. Benign in a container (the child dies
+      with the process), but a dev HMR reload or a multi-instance setup can orphan
+      it. Add a Nitro `close` hook that calls the instance's `.exit()`.
+- [ ] Supply-chain: cycletls ships a prebuilt Go binary trusted on faith (pinned
+      to an exact version, runs in-container, opens a localhost-only control
+      socket). Consider vendoring/building it from source in CI, or auditing each
+      bump.
+- [ ] `applyCoords` is all-or-nothing per team and returns the team untouched when
+      it can't place every starter - fine today (FIFA ships no coords, UEFA ships
+      all). If a future provider ever ships PARTIAL native coords, `placed()`
+      would drop the whole side to bands and discard the real coords it had.
+
 ## Share cards (deferred from the feature pass)
 
 - [ ] Share button only on the match-page pick block. The matches grid
