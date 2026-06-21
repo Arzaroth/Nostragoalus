@@ -540,6 +540,7 @@ watch(searchOpen, () => nextTick(updateListHeight))
                   class="text-xs font-semibold px-1.5 py-0.5 rounded-full cursor-help"
                   style="color: var(--ng-star); background: var(--ng-star-soft)"
                 >+{{ predByMatch[m.id].bonusPoints }} {{ t('predictions.rarity') }}</span>
+                <SharePickButton v-if="predByMatch[m.id]" :match-id="m.id" :kickoff-time="m.kickoffTime" />
               </div>
             </div>
           </div>
