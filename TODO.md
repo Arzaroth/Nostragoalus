@@ -898,11 +898,13 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
 ## Share cards (deferred from the feature pass)
 
-- [ ] Share button only on the match-page pick block. The matches grid
-      (`matches/index.vue`, the inline-pick surface) and any future "My picks"
-      list don't carry it. `SharePickButton` keys off `matchId` + `kickoffTime`
-      and mints by the viewer's own userId, so it drops straight into any
-      surface where the viewer owns the pick - add it there.
+- [x] Share button on the match-page pick block AND on each predicted card in
+      the fixtures list (`matches/index.vue`, beside the joker toggle, gated on
+      `predByMatch[m.id]`). `SharePickButton` keys off `matchId` + `kickoffTime`
+      and mints by the viewer's own userId, so it drops into any surface where
+      the viewer owns the pick. Remaining: a user's profile shows their own
+      picks via `PredictionList` with no share (see the next item - that path is
+      owner-independent by design).
 - [ ] `PredictionList` (bot consensus + another user's profile) deliberately has
       NO share button: mint resolves the pick by the caller's userId, so a
       non-owner mint 404s. A "share someone else's pick" surface would need a
