@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import type { SquadPlayer } from '#shared/types/match'
 
-defineProps<{ player: SquadPlayer }>()
+const props = defineProps<{ player: SquadPlayer }>()
 const { t } = useI18n()
+
+// FIFA ships full-body shots (digitalhub); frame the head by anchoring the crop
+// to the top. UEFA/Sofascore head-shots stay centred.
+const headShot = computed(() => (props.player.pictureUrl?.includes('digitalhub.fifa.com') ? 'object-top' : 'object-center'))
 </script>
 
 <template>
-  <div class="flex flex-col items-center gap-1 w-16">
+  <div class="flex flex-col items-center gap-0.5 w-16">
     <div class="relative">
       <img
         v-if="player.pictureUrl"
@@ -14,6 +18,7 @@ const { t } = useI18n()
         loading="lazy"
         :alt="player.name"
         class="w-10 h-10 rounded-full object-cover border-2"
+        :class="headShot"
         style="border-color: var(--p-content-background); background: var(--p-content-background)"
       />
       <div
@@ -28,8 +33,8 @@ const { t } = useI18n()
         style="background: var(--p-primary-color); color: var(--p-primary-contrast-color)"
       >C</span>
     </div>
-    <span class="text-[11px] text-center leading-tight w-full truncate" :title="player.name">
-      <span class="tabular-nums opacity-70">{{ player.shirtNumber }}</span> {{ formatPlayerName(player.name) }}
+    <span class="text-[11px] text-center leading-tight w-[4.5rem]">
+      <span class="tabular-nums opacity-70">{{ player.shirtNumber }}</span> {{ lineupName(player.name) }}
     </span>
   </div>
 </template>

@@ -51,12 +51,12 @@ describe('MatchLineups', () => {
   it('renders the XI, bench, coach and formation for both sides', async () => {
     const wrapper = await mount()
     const text = wrapper.text()
-    expect(text).toContain('Keeper One')
-    expect(text).toContain('No Slot')
-    expect(text).toContain('Sub Twelve')
+    expect(text).toContain('K. One') // XI: first initial + last name
+    expect(text).toContain('N. Slot')
+    expect(text).toContain('Sub Twelve') // bench keeps the full name
     expect(text).toContain('4-3-3')
     expect(text).toContain('Rafael MARQUEZ')
-    expect(text).toContain('Away Keeper')
+    expect(text).toContain('A. Keeper')
   })
 
   it('links each team to its team page when a code is present', async () => {

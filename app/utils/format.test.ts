@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { flagUrl, playerPhotoUrl, squarePlayerPhoto, formatPlayerName, isLocked, searchable, matchStatusLabel, pensResult, statusSeverity, tierLabel, roundLabel, halvePickPoints } from './format'
+import { flagUrl, playerPhotoUrl, squarePlayerPhoto, formatPlayerName, lineupName, isLocked, searchable, matchStatusLabel, pensResult, statusSeverity, tierLabel, roundLabel, halvePickPoints } from './format'
 import type { MatchStatus } from '#shared/types/match'
 
 const STATUSES: MatchStatus[] = [
@@ -129,6 +129,18 @@ describe('formatPlayerName', () => {
     expect(formatPlayerName('McTominay')).toBe('McTominay')
     expect(formatPlayerName(null)).toBe('')
     expect(formatPlayerName('A')).toBe('A')
+  })
+})
+
+describe('lineupName', () => {
+  it('reduces to first initial + last name, title-cased', () => {
+    expect(lineupName('JOSHUA KIMMICH')).toBe('J. Kimmich')
+    expect(lineupName('Aleksandar PAVLOVIĆ')).toBe('A. Pavlović')
+    expect(lineupName('Virgil van Dijk')).toBe('V. van Dijk')
+  })
+  it('keeps a single-word nickname whole and handles empty input', () => {
+    expect(lineupName('Raphinha')).toBe('Raphinha')
+    expect(lineupName(null)).toBe('')
   })
 })
 

@@ -25,6 +25,11 @@ export interface Coord {
   y: number
 }
 
+export interface SidePlacement {
+  formation: string
+  coords: Map<number, Coord>
+}
+
 // 0-100 pitch, y from own goal (keeper) to the attacking end, matching UEFA.
 const GK_Y = 7
 const DEFENCE_Y = 24
@@ -55,17 +60,18 @@ const shirtOf = (p: SofaLineupPlayer): number | null => {
 // or garbled formation, a line that doesn't fit the XI, or a missing shirt). The
 // caller then leaves that team to its formation-band fallback rather than show a
 // half-placed pitch.
-function sideCoords(side: SofaLineupSide | null | undefined): Map<number, Coord> | null {
+function sideCoords(side: SofaLineupSide | null | undefined): SidePlacement | null {
   const xi = (side?.players ?? []).filter((p) => !p.substitute)
   const gk = xi.filter((p) => p.position === 'G')
   const outfield = xi.filter((p) => p.position !== 'G')
-  const bands = parseBands(side?.formation, outfield.length)
+  const formation = side?.formation
+  const bands = parseBands(formation, outfield.length)
   if (!bands || gk.length === 0) return null
-  const map = new Map<number, Coord>()
+  const coords = new Map<number, Coord>()
   for (const g of gk) {
     const s = shirtOf(g)
     if (s == null) return null
-    map.set(s, { x: 50, y: GK_Y })
+    coords.set(s, { x: 50, y: GK_Y })
   }
   let idx = 0
   for (let b = 0; b < bands.length; b++) {
@@ -73,30 +79,33 @@ function sideCoords(side: SofaLineupSide | null | undefined): Map<number, Coord>
     for (let j = 0; j < bands[b]; j++) {
       const s = shirtOf(outfield[idx++])
       if (s == null) return null
-      map.set(s, { x: spreadX(j, bands[b]), y })
+      // Sofascore lists each line right-back first, so index 0 is the right side.
+      coords.set(s, { x: 100 - spreadX(j, bands[b]), y })
     }
   }
-  return map
+  return { formation: formation as string, coords }
 }
 
-// Overlay a shirt -> coordinate map onto a team's XI (FIFA's roster stays the
-// source of truth - only x/y is added). All-or-nothing: if any starter is left
-// without a coordinate the team is returned untouched, so the pitch never shows
-// a half-placed XI and falls back cleanly to formation-band rows.
-export function applyCoords(team: TeamLineup, coords: Map<number, Coord> | null): TeamLineup {
-  if (!coords) return team
+// Overlay a side's placement onto FIFA's XI by shirt. FIFA stays the source of
+// truth for who plays; the placement (x/y AND the formation) comes from
+// Sofascore, since both are its reading of the shape - showing FIFA's formation
+// chip over Sofascore positions would contradict the pitch. All-or-nothing: if
+// any starter is left unplaced the team is returned untouched, so the pitch
+// never shows a half-placed XI and falls back to formation-band rows.
+export function applyCoords(team: TeamLineup, placement: SidePlacement | null): TeamLineup {
+  if (!placement) return team
   const placed = team.startingXI.map((p) => {
-    const c = p.shirtNumber == null ? undefined : coords.get(p.shirtNumber)
+    const c = p.shirtNumber == null ? undefined : placement.coords.get(p.shirtNumber)
     return c ? { ...p, x: c.x, y: c.y } : p
   })
   if (placed.some((p) => p.x == null || p.y == null)) return team
-  return { ...team, startingXI: placed }
+  return { ...team, formation: placement.formation, startingXI: placed }
 }
 
 export function deriveSofascorePositions(resp: SofaLineupsResponse): {
   confirmed: boolean
-  home: Map<number, Coord> | null
-  away: Map<number, Coord> | null
+  home: SidePlacement | null
+  away: SidePlacement | null
 } {
   return {
     confirmed: resp.confirmed === true,
