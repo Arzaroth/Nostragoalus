@@ -65,6 +65,18 @@ describe('storeLineups', () => {
     await client.close()
   })
 
+  it('freezes a finished line-up once refined, but retries while an anchor is unrefined', async () => {
+    const { db, client, matchId } = await setup()
+    // refine succeeds -> coordinates landed -> frozen
+    await storeLineups(db, matchId, base(), { ...META, status: 'FINISHED' }, { sofascore: { fetchImpl: sofaFetch(sofaResp()) }, now: 1 })
+    expect((await rowFor(db, matchId)).final).toBe(true)
+    // refine misses while the Sofascore anchor exists -> NOT frozen, so a later
+    // fetch (transport recovered) can still add positions
+    await storeLineups(db, matchId, base(), { ...META, status: 'FINISHED' }, { sofascore: { fetchImpl: sofaFetch({}, false) }, now: 2 })
+    expect((await rowFor(db, matchId)).final).toBe(false)
+    await client.close()
+  })
+
   it('does not refine an unavailable line-up', async () => {
     const { db, client, matchId } = await setup()
     const out = await storeLineups(db, matchId, base({ available: false }), { ...META, status: 'FINISHED' }, { sofascore: { fetchImpl: sofaFetch(sofaResp()) }, now: 1 })

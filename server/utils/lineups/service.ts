@@ -60,7 +60,13 @@ export async function storeLineups(
       lineups = { ...lineups, home: applyCoords(lineups.home, homeCoords), away: applyCoords(lineups.away, awayCoords) }
     }
   }
-  const final = meta.status === 'FINISHED' && lineups.available
+  // Freeze a finished line-up only once it's as good as it will get: refined
+  // (coordinates landed) or not refinable at all (no Sofascore anchor). A
+  // finished-but-unrefined line-up that HAS an anchor stays unfrozen, so a later
+  // fetch can still add positions once the (fragile) Sofascore transport recovers.
+  const refinable = meta.oddsProvider === 'sofascore' && !!meta.oddsEventRef
+  const refined = lineups.home.startingXI.some((p) => p.x != null)
+  const final = meta.status === 'FINISHED' && lineups.available && (refined || !refinable)
   const fetchedAt = new Date(now)
   await db
     .insert(matchLineups)

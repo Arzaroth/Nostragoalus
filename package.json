@@ -37,6 +37,7 @@
     "@vueuse/nuxt": "^14.3.0",
     "better-auth": "^1.6.18",
     "croner": "^10.0.1",
+    "cycletls": "^2.0.5",
     "drizzle-orm": "^0.45.2",
     "isomorphic-dompurify": "^3.16.0",
     "leaflet": "^1.9.4",
