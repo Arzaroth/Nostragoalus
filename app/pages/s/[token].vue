@@ -19,9 +19,11 @@ const token = computed(() => String(route.params.token))
 
 const { data, error } = await useFetch<ShareSummary>(() => `/api/share/${token.value}`)
 
-// useRequestURL resolves on both server and client, so the OG image URL is
-// absolute - what social crawlers need to unfurl the card.
-const imageUrl = computed(() => `${useRequestURL().origin}/og/share/${token.value}`)
+// Resolve the origin once at setup (useRequestURL needs the Nuxt instance, so it
+// can't be called lazily inside the useSeoMeta getters). Absolute URL is what
+// social crawlers need to unfurl the card.
+const origin = useRequestURL().origin
+const imageUrl = computed(() => `${origin}/og/share/${token.value}`)
 const matchLink = computed(() => (data.value ? `/${data.value.competitionSlug}/matches/${data.value.matchId}` : '/'))
 
 const card = computed(() => data.value?.card ?? null)
