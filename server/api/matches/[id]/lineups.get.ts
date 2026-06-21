@@ -1,12 +1,45 @@
+import { eq } from 'drizzle-orm'
+import type { MatchLineups } from '#shared/types/match'
 import { db } from '../../../../db'
-import { getMatchLineups } from '../../../utils/lineups/service'
+import { match } from '../../../../db/schema'
+import { providerForCompetition } from '../../../utils/providers'
+import { getCompetitionById } from '../../../utils/competitions/store'
+import { resolveCompetitionSeason } from '../../../utils/sync/competition'
+import { getStoredLineups, storeLineups } from '../../../utils/lineups/service'
 
-// Thin: the service resolves the provider line-up, refines positions from
-// Sofascore where possible, and persists the result (the match_lineups row is
-// the cache - frozen once final, refreshed each minute while pending).
+// The match_lineups row is the cache (the service freezes it once final). On a
+// miss, resolve the provider line-up (FIFA is the source of truth), then the
+// service refines positions from Sofascore where it can and persists.
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id') as string
-  return { lineups: await getMatchLineups(db, id) }
+  const stored = await getStoredLineups(db, id)
+  if (stored.hit) return { lineups: stored.data ?? null }
+
+  const rows = await db
+    .select({ providerMatchId: match.providerMatchId, providerStageId: match.providerStageId, competitionId: match.competitionId, status: match.status, oddsEventRef: match.oddsEventRef, oddsEventSwapped: match.oddsEventSwapped })
+    .from(match)
+    .where(eq(match.id, id))
+    .limit(1)
+  if (rows.length === 0) return { lineups: null }
+  const m = rows[0]
+  const competition = await getCompetitionById(db, m.competitionId)
+  if (!competition) return { lineups: null }
+  const provider = providerForCompetition(competition, await resolveCompetitionSeason(db, competition))
+  if (!provider.getMatchLineups) return { lineups: null }
+
+  let base: MatchLineups | null
+  try {
+    base = await provider.getMatchLineups({ stageId: m.providerStageId ?? undefined, matchId: m.providerMatchId })
+  } catch {
+    return { lineups: null }
+  }
+  const lineups = await storeLineups(db, id, base, {
+    status: m.status,
+    oddsProvider: competition.oddsProvider,
+    oddsEventRef: m.oddsEventRef,
+    oddsEventSwapped: m.oddsEventSwapped,
+  })
+  return { lineups }
 })
 
 defineRouteMeta({
