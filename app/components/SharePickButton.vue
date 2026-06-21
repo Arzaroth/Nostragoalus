@@ -8,6 +8,14 @@ const menu = ref()
 // the user chooses to keep the pick sealed or to reveal their own score.
 const locked = computed(() => isLocked(props.kickoffTime))
 
+// The native share sheet (mobile) already offers copy/save, so "Share" and
+// "Copy link" would duplicate on desktop. Show the native Share only where it
+// exists, and fall back to an explicit Copy link otherwise.
+const canShare = ref(false)
+onMounted(() => {
+  canShare.value = typeof navigator !== 'undefined' && typeof navigator.share === 'function'
+})
+
 function pick(fn: () => void) {
   menu.value?.hide()
   fn()
@@ -32,11 +40,11 @@ const itemClass =
   <Popover ref="menu">
     <div class="flex flex-col w-56 -m-1">
       <template v-if="locked">
-        <button type="button" :class="itemClass" :disabled="busy" @click="pick(() => share(props.matchId, 'result'))">
+        <button v-if="canShare" type="button" :class="itemClass" :disabled="busy" @click="pick(() => share(props.matchId, 'result'))">
           <i class="pi pi-share-alt" style="color: var(--p-primary-color)" /> {{ t('share.shareResult') }}
         </button>
-        <button type="button" :class="itemClass" :disabled="busy" @click="pick(() => copy(props.matchId, 'result'))">
-          <i class="pi pi-link opacity-60" /> {{ t('share.copyLink') }}
+        <button v-else type="button" :class="itemClass" :disabled="busy" @click="pick(() => copy(props.matchId, 'result'))">
+          <i class="pi pi-link" style="color: var(--p-primary-color)" /> {{ t('share.copyLink') }}
         </button>
         <button type="button" :class="itemClass" :disabled="busy" @click="pick(() => download(props.matchId, 'result'))">
           <i class="pi pi-download opacity-60" /> {{ t('share.download') }}
