@@ -17,6 +17,8 @@ const FONTS: ShareFont[] = [
 ]
 
 const MARK = `data:image/svg+xml;base64,${readFileSync(new URL('../public/brand/mark.svg', import.meta.url)).toString('base64')}`
+// 1x1 transparent PNG - exercises the flag-image path through satori without a network fetch.
+const FLAG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC'
 
 const base: ShareCardInput = {
   homeGoals: 3,
@@ -61,7 +63,7 @@ describe('share card render', () => {
       { name: 'thai', card: buildShareCardData(base, { mode: 'result', locale: 'th' }, POST) },
     ]
     for (const s of states) {
-      const el = buildShareCardElement(s.card, { host: 'goal.arzaroth.com', markDataUri: MARK }, shareTranslator(s.card.locale))
+      const el = buildShareCardElement(s.card, { host: 'goal.arzaroth.com', markDataUri: MARK, homeFlag: FLAG, awayFlag: FLAG }, shareTranslator(s.card.locale))
       const png = await renderShareCardPng(el, FONTS)
       expect(isPng(png)).toBe(true)
       cases.push({ name: s.name, el })
@@ -70,7 +72,7 @@ describe('share card render', () => {
       const out = '/tmp/share-cards'
       mkdirSync(out, { recursive: true })
       for (const s of states) {
-        const el = buildShareCardElement(s.card, { host: 'goal.arzaroth.com', markDataUri: MARK }, shareTranslator(s.card.locale))
+        const el = buildShareCardElement(s.card, { host: 'goal.arzaroth.com', markDataUri: MARK, homeFlag: FLAG, awayFlag: FLAG }, shareTranslator(s.card.locale))
         writeFileSync(`${out}/${s.name}.png`, await renderShareCardPng(el, FONTS))
       }
     }

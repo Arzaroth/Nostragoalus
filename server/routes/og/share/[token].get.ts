@@ -44,6 +44,31 @@ function loadMark(): Promise<string | null> {
   return markPromise
 }
 
+// satori can't fetch remote images, so the FIFA flag (static per team code) is
+// fetched here, inlined as a data URI, and cached for the process. A failed
+// fetch resolves to null and the card falls back to the code pill alone, so a
+// flaky CDN never breaks the render.
+const flagCache = new Map<string, Promise<string | null>>()
+function loadFlag(code: string | null): Promise<string | null> {
+  if (!code) return Promise.resolve(null)
+  let cached = flagCache.get(code)
+  if (!cached) {
+    cached = (async () => {
+      try {
+        const res = await fetch(`https://api.fifa.com/api/v3/picture/flags-sq-3/${code}`)
+        if (!res.ok) return null
+        const type = res.headers.get('content-type') || 'image/png'
+        const buf = Buffer.from(await res.arrayBuffer())
+        return `data:${type};base64,${buf.toString('base64')}`
+      } catch {
+        return null
+      }
+    })()
+    flagCache.set(code, cached)
+  }
+  return cached
+}
+
 // Public, crawler-facing OG image. The signed token is the only authorization -
 // no session - so a forged or stale token simply 404s.
 export default defineEventHandler(async (event) => {
@@ -62,8 +87,17 @@ export default defineEventHandler(async (event) => {
   }
 
   const card = buildShareCardData(row, { mode: payload.m, locale: payload.l })
-  const [fonts, markDataUri] = await Promise.all([loadFonts(), loadMark()])
-  const element = buildShareCardElement(card, { host: getRequestURL(event).host, markDataUri }, shareTranslator(payload.l))
+  const [fonts, markDataUri, homeFlag, awayFlag] = await Promise.all([
+    loadFonts(),
+    loadMark(),
+    loadFlag(card.homeTeamCode),
+    loadFlag(card.awayTeamCode),
+  ])
+  const element = buildShareCardElement(
+    card,
+    { host: getRequestURL(event).host, markDataUri, homeFlag, awayFlag },
+    shareTranslator(payload.l),
+  )
   const png = await renderShareCardPng(element, fonts)
 
   setResponseHeader(event, 'content-type', 'image/png')
