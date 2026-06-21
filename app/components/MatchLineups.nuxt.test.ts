@@ -80,4 +80,26 @@ describe('MatchLineups', () => {
     expect(wrapper.html()).toContain('>C<')
     expect(wrapper.text()).toContain('©')
   })
+
+  it('places the XI absolutely on a pitch when every starter has coordinates', async () => {
+    const placedLineups: MatchLineupsType = {
+      available: true,
+      home: {
+        formation: '1-1',
+        coach: null,
+        startingXI: [
+          p({ playerId: 'g', name: 'Keeper', shirtNumber: 1, position: 'GK', x: 50, y: 7 }),
+          p({ playerId: 'd', name: 'Defender', shirtNumber: 2, position: 'DF', x: 50, y: 24 }),
+          p({ playerId: 'f', name: 'Forward', shirtNumber: 9, position: 'FW', x: 50, y: 92 }),
+        ],
+        bench: [],
+      },
+      away: { formation: null, coach: null, startingXI: [], bench: [] },
+    }
+    const wrapper = await mountSuspended(MatchLineups, { props: { lineups: placedLineups, home: 'A', away: 'B', slug: 'wc' } })
+    mounted.push(wrapper)
+    expect(wrapper.find('svg.pitch-half').exists()).toBe(true)
+    expect(wrapper.html()).toContain('bottom: 92%') // the forward, placed by coordinate
+    expect(wrapper.text()).toContain('Forward')
+  })
 })

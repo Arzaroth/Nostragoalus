@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { MatchLineups } from '#shared/types/match'
+import type { MatchLineups, TeamLineup } from '#shared/types/match'
 
 const props = defineProps<{
   lineups: MatchLineups
@@ -13,13 +13,18 @@ const props = defineProps<{
 const { t } = useI18n()
 const NuxtLinkC = resolveComponent('NuxtLink')
 
-// pitchRows (app/utils/lineup) lays the XI out by the formation bands when the
-// feed ships one, falling back to grouping by each player's position otherwise.
+// Place the XI on a real pitch when every starter has a coordinate (UEFA's feed,
+// or FIFA refined by Sofascore); otherwise pitchRows (app/utils/lineup) lays it
+// out by formation bands.
+const placed = (team: TeamLineup) => team.startingXI.length > 0 && team.startingXI.every((p) => p.x != null && p.y != null)
 
 const sides = computed(() => [
   { team: props.lineups.home, name: props.home, code: props.homeCode },
   { team: props.lineups.away, name: props.away, code: props.awayCode },
 ])
+
+const PITCH_BG =
+  'linear-gradient(170deg, color-mix(in srgb, var(--ng-success) 22%, var(--p-content-background)), color-mix(in srgb, var(--ng-success) 10%, var(--p-content-background)))'
 
 const teamLink = (code?: string | null) => (code ? `/${props.slug}/teams/${code}` : undefined)
 </script>
@@ -41,37 +46,28 @@ const teamLink = (code?: string | null) => (code ? `/${props.slug}/teams/${code}
         >{{ side.team.formation }}</span>
       </div>
 
+      <!-- real pitch placement when we have coordinates for the whole XI -->
       <div
-        class="rounded-2xl py-4 px-1 flex flex-col gap-4"
-        style="background: linear-gradient(170deg, color-mix(in srgb, var(--ng-success) 22%, var(--p-content-background)), color-mix(in srgb, var(--ng-success) 10%, var(--p-content-background)))"
+        v-if="placed(side.team)"
+        class="relative rounded-2xl overflow-hidden"
+        style="aspect-ratio: 3 / 4"
+        :style="{ background: PITCH_BG }"
       >
+        <PitchHalf />
+        <div
+          v-for="p in side.team.startingXI"
+          :key="p.playerId"
+          class="absolute"
+          :style="`left: ${p.x}%; bottom: ${p.y}%; transform: translate(-50%, 50%)`"
+        >
+          <LineupPlayer :player="p" />
+        </div>
+      </div>
+
+      <!-- fallback: formation-band rows when no coordinates -->
+      <div v-else class="rounded-2xl py-4 px-1 flex flex-col gap-4" :style="{ background: PITCH_BG }">
         <div v-for="row in pitchRows(side.team)" :key="row.pos" class="flex justify-around items-start">
-          <div v-for="p in row.players" :key="p.playerId" class="flex flex-col items-center gap-1 w-16">
-            <div class="relative">
-              <img
-                v-if="p.pictureUrl"
-                :src="p.pictureUrl"
-                loading="lazy"
-                :alt="p.name"
-                class="w-10 h-10 rounded-full object-cover border-2"
-                style="border-color: var(--p-content-background); background: var(--p-content-background)"
-              />
-              <div
-                v-else
-                class="w-10 h-10 rounded-full grid place-items-center text-sm font-bold tabular-nums border-2"
-                style="border-color: var(--p-content-background); background: var(--p-content-background); color: var(--p-text-color)"
-              >{{ p.shirtNumber ?? '?' }}</div>
-              <span
-                v-if="p.captain"
-                v-tooltip.top="t('team.captain')"
-                class="absolute -right-1 -top-1 w-4 h-4 grid place-items-center text-[9px] font-bold rounded-full"
-                style="background: var(--p-primary-color); color: var(--p-primary-contrast-color)"
-              >C</span>
-            </div>
-            <span class="text-[11px] text-center leading-tight w-full truncate" :title="p.name">
-              <span class="tabular-nums opacity-70">{{ p.shirtNumber }}</span> {{ formatPlayerName(p.name) }}
-            </span>
-          </div>
+          <LineupPlayer v-for="p in row.players" :key="p.playerId" :player="p" />
         </div>
       </div>
 
