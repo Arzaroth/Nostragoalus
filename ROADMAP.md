@@ -379,8 +379,26 @@ effort buckets; order within a bucket is not priority.
       position categories. NOT the `events?filter=LINEUP` URL - that is the
       play-by-play endpoint and returns match events, no XI.
     - football-data: no line-up data, returns null (graceful empty state).
-  - **Storage**: on-demand fetch + short cache, mirroring live-detail. The feeds
-    keep historical line-ups (WC2022 still returns them), so nothing to persist.
+  - **Storage**: on-demand fetch + short cache, mirroring live-detail. Once a
+    match is FINISHED with a resolved XI the line-ups are persisted to the
+    `match_lineups` table (jsonb + `final` flag) and served from there - the
+    feeds keep historical line-ups too, but persisting freezes the
+    Sofascore-refined coords so a finished match never re-fetches or drifts.
+  - **Precise placement** (shipped in 1.31.3): players are placed by real pitch
+    coordinates (`x`/`y` 0-100, half-pitch graphic) instead of formation rows,
+    where coords exist. UEFA carries native `fieldCoordinate`. FIFA stays the
+    source of truth for WHO starts; Sofascore refines WHERE (formation +
+    per-shirt positions), overlaid by shirt number, all-or-nothing, only when
+    Sofascore `confirmed` the XI. Sofascore is reached through the cycletls
+    transport (below) - the same client that repaired the odds fetch.
+  - **Sofascore transport** (shipped in 1.31.3): Sofascore sits behind Cloudflare
+    that 403s on the TLS JA3 fingerprint, not the IP or headers - undici, node
+    fetch, node-libcurl and alpine-curl all fail; host curl 8.15 passes (CCM
+    ciphers + `compress_certificate` ext). Reached via `cycletls` (Go uTLS
+    engine) with an allow-listed host-curl JA3 and an honest `curl/8.15.0` UA.
+    Alpine prod image needs `gcompat libstdc++` (musl shim) and the Go binary
+    copied into `.output` (Nitro traces JS, not the native binary) for both
+    arches.
   - **Architecture**: a `getMatchLineups()` on the provider interface (FIFA +
     UEFA normalizers to a shared `MatchLineups` type), a thin
     `GET /api/matches/[id]/lineups` over a service, a `useMatchLineups`
