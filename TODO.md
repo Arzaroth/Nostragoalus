@@ -876,3 +876,41 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       5xx, parse) into `{ lineups: null }` with no log, indistinguishable from "no
       XI yet" and not cached, so the next poll re-hits a throttled upstream. Add a
       log + a short negative cache so a failing upstream isn't hammered every 60s.
+
+## Share cards (deferred from the feature pass)
+
+- [ ] Share button only on the match-page pick block. The matches grid
+      (`matches/index.vue`, the inline-pick surface) and any future "My picks"
+      list don't carry it. `SharePickButton` keys off `matchId` + `kickoffTime`
+      and mints by the viewer's own userId, so it drops straight into any
+      surface where the viewer owns the pick - add it there.
+- [ ] `PredictionList` (bot consensus + another user's profile) deliberately has
+      NO share button: mint resolves the pick by the caller's userId, so a
+      non-owner mint 404s. A "share someone else's pick" surface would need a
+      different (owner-independent) token model - out of scope by design.
+- [ ] The card renders team CODES in pills, not flag images: satori doesn't
+      fetch remote images, and inlining FIFA-CDN flags at render adds a network
+      dependency + failure mode. Pre-fetch + cache flags as data URIs (or vendor
+      a flag set) if the card should show crests.
+- [ ] Only the 1.91:1 unfurl size renders. A square (1:1) / portrait (9:16)
+      variant for Instagram/stories would need a size param on the render route
+      + a stories-oriented layout in the template.
+- [ ] Round-recap / whole-round card (the "per-round" scope) is deferred: folds
+      into Tournament Wrapped or a later multi-pick card. v1 is per-pick only.
+- [ ] `/og/share/[token]` has no negative cache and no render-error guard: a bad
+      token 404s cheaply (no DB), but a valid token whose satori/resvg render
+      throws would 500 on every hit. Catch render errors (fallback image or a
+      short-cached 500) and add a tiny negative cache if a hot bad token bites.
+- [ ] The three share endpoints (`POST /api/share/mint`, `GET /api/share/[token]`,
+      and the non-/api `GET /og/share/[token]`) aren't in the sampled API
+      response schemas (`response-schemas.json`); add the two `/api` ones on the
+      next controlled regen (their inline `defineRouteMeta` OpenAPI already ships).
+- [ ] No live cross-platform verification yet: once deployed, confirm the link
+      actually unfurls (X, Facebook, WhatsApp, Discord, iMessage) and the OG
+      image renders for a real token, plus the sealed/reveal/result states in a
+      real browser. (Same lesson as line-ups: build-green is not unfurl-green.)
+- [ ] `server/assets/fonts/SOURCE.md` bundles into the nitro raw chunks
+      (harmless ~1KB `SOURCE.mjs`). Move the provenance doc out of `server/assets`
+      if the stray chunk ever bothers.
+- [ ] Klingon (tlh) share strings are best-effort terse forms, not verified
+      canonical tlhIngan Hol - revisit if a fluent reviewer is available.
