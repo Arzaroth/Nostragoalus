@@ -1,3 +1,5 @@
+import type { TeamLineup } from '#shared/types/match'
+
 // Sofascore lists the starting XI in formation-grid order (keeper first, then
 // each line from defence to attack). We don't trust it for who is playing - FIFA
 // is the source of truth - only for WHERE each shirt sits, to refine FIFA's
@@ -75,6 +77,20 @@ function sideCoords(side: SofaLineupSide | null | undefined): Map<number, Coord>
     }
   }
   return map
+}
+
+// Overlay a shirt -> coordinate map onto a team's XI (FIFA's roster stays the
+// source of truth - only x/y is added). All-or-nothing: if any starter is left
+// without a coordinate the team is returned untouched, so the pitch never shows
+// a half-placed XI and falls back cleanly to formation-band rows.
+export function applyCoords(team: TeamLineup, coords: Map<number, Coord> | null): TeamLineup {
+  if (!coords) return team
+  const placed = team.startingXI.map((p) => {
+    const c = p.shirtNumber == null ? undefined : coords.get(p.shirtNumber)
+    return c ? { ...p, x: c.x, y: c.y } : p
+  })
+  if (placed.some((p) => p.x == null || p.y == null)) return team
+  return { ...team, startingXI: placed }
 }
 
 export function deriveSofascorePositions(resp: SofaLineupsResponse): {
