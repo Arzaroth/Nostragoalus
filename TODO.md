@@ -898,6 +898,30 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
 ## Share cards (deferred from the feature pass)
 
+### Deferred from the feature-treatment review
+
+- [ ] The card-summary shape is hand-declared three times: `ShareCard` in
+      `ShareCardView.vue`, `ShareSummary.card` in `s/[token].vue`, and the server
+      `ShareCardData` in `server/utils/share/card.ts`. Adding a field means editing
+      three interfaces and a miss is a silent mismatch (the API route's return is
+      outside the coverage gate). Hoist a single `shared/` card-summary type and
+      import it in all three. (Round/tier/score/flag helpers were unified into
+      `shared/share-card.ts` in the review; the type wasn't.)
+- [ ] `s/[token].vue` `downloadImage()`/`copyLink()` re-inline the blob-fetch ->
+      object-URL -> anchor-click -> revoke dance (and the clipboard + toast) that
+      `useShareCard` already implements. Extract a shared `downloadImage(url)` /
+      `copyLink(url)` so the landing page and the composable share one path
+      (neither file is gate-covered, so the dup is invisible to the gate).
+- [ ] `ShareTranslate` (i18n.ts) and `Translate` (app/utils/format.ts) are the
+      same `(key, params?) => string` contract under two names. Unifying them
+      would let `roundLabel`/`tierLabel` be called directly by the OG renderer
+      instead of the key-returning `roundLabelKey` shim added in the review.
+- [ ] Share tokens are permanent capabilities (no `exp`, payload is versioned but
+      time-unbounded). A leaked `/s/` or `/og/share/` link resolves forever; the
+      only revocation lever is rotating `betterAuthSecret`, which breaks every
+      session site-wide. If link-leak becomes a concern, add an `exp` to the v1
+      payload (verify already rejects on shape, so bumping is cheap).
+
 - [x] Share button on the match-page pick block AND on each predicted card in
       the fixtures list (`matches/index.vue`, beside the joker toggle, gated on
       `predByMatch[m.id]`). `SharePickButton` keys off `matchId` + `kickoffTime`

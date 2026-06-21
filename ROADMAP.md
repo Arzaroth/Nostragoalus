@@ -188,7 +188,7 @@ effort buckets; order within a bucket is not priority.
       would have scored N vs your M" (reuses consensus-bot data).
 - [ ] **Personal analytics page**: bias detector - avg goals predicted vs
       real, favorite-team optimism, accuracy by group/team/round.
-- [ ] **Prediction share cards** (IN_PROGRESS on feat/share-cards): the
+- [x] **Prediction share cards** (shipped 1.32.0): the
       lightweight, mid-tournament sibling of Tournament Wrapped (which is the
       end-of-competition card). A shareable image for a single pick, generated
       on the read side so it can ship while the tournament is live and sharing
