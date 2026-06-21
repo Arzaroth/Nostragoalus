@@ -78,6 +78,8 @@ const stack: { group: string; items: StackItem[] }[] = [
       { name: 'Nodemailer', logo: 'https://nodemailer.com/img/favicon.ico', desc: 'Send emails from Node.js', url: 'https://nodemailer.com', license: 'MIT-0', licenseUrl: 'https://github.com/nodemailer/nodemailer/blob/master/LICENSE' },
       { name: 'node-qrcode', icon: 'pi pi-qrcode', desc: 'QR code generator for JavaScript', url: 'https://github.com/soldair/node-qrcode', license: 'MIT', licenseUrl: 'https://github.com/soldair/node-qrcode/blob/master/license' },
       { name: 'Croner', icon: 'pi pi-clock', desc: 'Trigger functions and evaluate cron expressions, dependency-free', url: 'https://croner.56k.guru', license: 'MIT', licenseUrl: 'https://github.com/Hexagon/croner/blob/master/LICENSE' },
+      { name: 'Satori', icon: 'pi pi-palette', desc: 'Enlightened library to convert HTML and CSS to SVG', url: 'https://github.com/vercel/satori', license: 'MPL-2.0', licenseUrl: 'https://github.com/vercel/satori/blob/main/LICENSE' },
+      { name: 'resvg-js', icon: 'pi pi-image', desc: 'A high-performance SVG renderer and toolkit, powered by Rust', url: 'https://github.com/yisibl/resvg-js', license: 'MPL-2.0', licenseUrl: 'https://github.com/yisibl/resvg-js/blob/main/LICENSE' },
     ],
   },
   {
