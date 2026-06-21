@@ -1034,5 +1034,38 @@
       "SAD": "Crève-cœur",
       "ANGRY": "Scandaleux"
     }
+  },
+  "share": {
+    "action": "Partager",
+    "sharePick": "Partager le pronostic",
+    "shareResult": "Partager le résultat",
+    "shareSealed": "Partager le pronostic scellé",
+    "revealScore": "Révéler mon score",
+    "copyLink": "Copier le lien",
+    "copied": "Lien copié",
+    "download": "Télécharger l'image",
+    "creating": "Création du lien…",
+    "failed": "Impossible de créer le lien de partage",
+    "card": {
+      "fullTime": "Fin du match",
+      "kickedOff": "Coup d'envoi donné",
+      "myCall": "Mon pronostic",
+      "sealed": "Pronostic scellé",
+      "sealedSub": "Verrouillé jusqu'au coup d'envoi",
+      "kickoffSoon": "Bientôt le coup d'envoi",
+      "joker": "Joker",
+      "pts": "pts",
+      "rarity": "Seulement {pct}% des joueurs ont trouvé ce score",
+      "tagline": "Pronostiquez les scores. Soyez plus visionnaire que vos amis."
+    },
+    "landing": {
+      "resultTitle": "{name} a pronostiqué {score}",
+      "liveTitle": "{name} a pronostiqué {score}",
+      "revealTitle": "Le pronostic de {name} : {score}",
+      "sealedTitle": "{name} a scellé un pronostic",
+      "subtitle": "Nostragoalus est un jeu de pronostics football : pronostiquez les scores, gagnez des points, soyez plus visionnaire que vos amis.",
+      "cta": "Faites votre propre pronostic",
+      "viewMatch": "Voir le match"
+    }
   }
 }

@@ -1034,5 +1034,38 @@
       "SAD": "Heartbreak",
       "ANGRY": "Outrageous"
     }
+  },
+  "share": {
+    "action": "Share",
+    "sharePick": "Share pick",
+    "shareResult": "Share result",
+    "shareSealed": "Share sealed pick",
+    "revealScore": "Reveal my score",
+    "copyLink": "Copy link",
+    "copied": "Link copied",
+    "download": "Download image",
+    "creating": "Creating link…",
+    "failed": "Couldn't create the share link",
+    "card": {
+      "fullTime": "Full time",
+      "kickedOff": "Kicked off",
+      "myCall": "My call",
+      "sealed": "Sealed pick",
+      "sealedSub": "Locked in until kickoff",
+      "kickoffSoon": "Kicks off soon",
+      "joker": "Joker",
+      "pts": "pts",
+      "rarity": "Only {pct}% of players called this scoreline",
+      "tagline": "Predict the scores. Out-foresee your friends."
+    },
+    "landing": {
+      "resultTitle": "{name} called {score}",
+      "liveTitle": "{name} called {score}",
+      "revealTitle": "{name}'s call: {score}",
+      "sealedTitle": "{name} sealed a pick",
+      "subtitle": "Nostragoalus is a football prediction game: call the scores, earn points, out-foresee your friends.",
+      "cta": "Make your own prediction",
+      "viewMatch": "View the match"
+    }
   }
 }
