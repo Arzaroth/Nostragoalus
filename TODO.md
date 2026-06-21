@@ -907,10 +907,12 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       NO share button: mint resolves the pick by the caller's userId, so a
       non-owner mint 404s. A "share someone else's pick" surface would need a
       different (owner-independent) token model - out of scope by design.
-- [ ] The card renders team CODES in pills, not flag images: satori doesn't
-      fetch remote images, and inlining FIFA-CDN flags at render adds a network
-      dependency + failure mode. Pre-fetch + cache flags as data URIs (or vendor
-      a flag set) if the card should show crests.
+- [x] The card now shows team flags above the code pills. satori can't fetch
+      remote images, so the render route fetches each FIFA flag, inlines it as a
+      data URI, and caches it per code for the process; a failed fetch resolves
+      to null and the block falls back to the code pill alone (so a flaky CDN
+      never breaks the render). Remaining: the cache is unbounded (one entry per
+      team code, fine at tournament scale) and per-instance.
 - [ ] Only the 1.91:1 unfurl size renders. A square (1:1) / portrait (9:16)
       variant for Instagram/stories would need a size param on the render route
       + a stories-oriented layout in the template.
