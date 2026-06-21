@@ -49,24 +49,27 @@ export async function storeLineups(
   if (!base) return null
   const now = opts.now ?? Date.now()
   let lineups = base
-  const needsCoords = lineups.available && lineups.home.startingXI.some((p) => p.x == null)
+  // Either side may still need coordinates (FIFA ships none; UEFA ships both).
+  const refinable = meta.oddsProvider === 'sofascore' && !!meta.oddsEventRef
+  const needsCoords = lineups.available && [...lineups.home.startingXI, ...lineups.away.startingXI].some((p) => p.x == null)
+  // `resolved` = the placement is as good as it will get: nothing to refine
+  // (placed natively, or no Sofascore anchor), or a CONFIRMED Sofascore line-up
+  // came back and we applied it. A failed or still-unconfirmed refine leaves it
+  // unresolved, so a finished match keeps retrying rather than freezing on the
+  // band fallback - and we never overlay Sofascore's provisional/predicted XI.
+  let resolved = !needsCoords || !refinable
   if (needsCoords && meta.oddsProvider === 'sofascore' && meta.oddsEventRef) {
     const resp = await fetchSofascoreLineups(meta.oddsEventRef, opts.sofascore)
-    if (resp) {
-      const pos = deriveSofascorePositions(resp)
+    const pos = resp ? deriveSofascorePositions(resp) : null
+    if (pos?.confirmed) {
+      resolved = true
       // oddsEventSwapped: Sofascore lists our away team as its home side.
-      const homeCoords = meta.oddsEventSwapped ? pos.away : pos.home
-      const awayCoords = meta.oddsEventSwapped ? pos.home : pos.away
-      lineups = { ...lineups, home: applyCoords(lineups.home, homeCoords), away: applyCoords(lineups.away, awayCoords) }
+      const homePlacement = meta.oddsEventSwapped ? pos.away : pos.home
+      const awayPlacement = meta.oddsEventSwapped ? pos.home : pos.away
+      lineups = { ...lineups, home: applyCoords(lineups.home, homePlacement), away: applyCoords(lineups.away, awayPlacement) }
     }
   }
-  // Freeze a finished line-up only once it's as good as it will get: refined
-  // (coordinates landed) or not refinable at all (no Sofascore anchor). A
-  // finished-but-unrefined line-up that HAS an anchor stays unfrozen, so a later
-  // fetch can still add positions once the (fragile) Sofascore transport recovers.
-  const refinable = meta.oddsProvider === 'sofascore' && !!meta.oddsEventRef
-  const refined = lineups.home.startingXI.some((p) => p.x != null)
-  const final = meta.status === 'FINISHED' && lineups.available && (refined || !refinable)
+  const final = meta.status === 'FINISHED' && lineups.available && resolved
   const fetchedAt = new Date(now)
   await db
     .insert(matchLineups)

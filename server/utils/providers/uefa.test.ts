@@ -767,6 +767,18 @@ describe('normalizeUefaLineups', () => {
     expect(res.home.bench.map((p) => p.playerId)).toEqual(['s'])
   })
 
+  it('maps fieldCoordinate (0-1000) to x/y (0-100), clamping out-of-range, null without one', () => {
+    const withCoord = (x: number | null, y: number | null) => ({ jerseyNumber: 1, player: { id: 'p', internationalName: 'P', nationalFieldPosition: 'GOALKEEPER' }, fieldCoordinate: { x, y } })
+    const res = normalizeUefaLineups({
+      homeTeam: { field: [withCoord(501, 51), withCoord(1200, -50)] },
+      awayTeam: { field: [{ player: { id: 'q', internationalName: 'Q', fieldPosition: 'FORWARD' } }] },
+    } as never)
+    expect(res.home.startingXI[0]).toMatchObject({ x: 50.1, y: 5.1 }) // 501/10, 51/10
+    expect(res.home.startingXI[1]).toMatchObject({ x: 100, y: 0 }) // clamped to [0,100]
+    expect(res.away.startingXI[0].x).toBeNull() // no fieldCoordinate
+    expect(res.away.startingXI[0].y).toBeNull()
+  })
+
   it('falls back to the player jersey/name and is unavailable with an empty side', () => {
     const res = normalizeUefaLineups({
       homeTeam: { field: [{ player: { id: 'p', fieldPosition: 'FORWARD', nationalJerseyNumber: '7' } }, {}] },

@@ -84,6 +84,32 @@ describe('storeLineups', () => {
     expect((await rowFor(db, matchId)).final).toBe(false) // available:false never freezes
     await client.close()
   })
+
+  it('does not overlay an unconfirmed (predicted) Sofascore line-up, and keeps retrying', async () => {
+    const { db, client, matchId } = await setup()
+    const unconfirmed = { confirmed: false, home: sofaSide('1-1'), away: sofaSide('1-1') }
+    const out = await storeLineups(db, matchId, base(), { ...META, status: 'FINISHED' }, { sofascore: { fetchImpl: sofaFetch(unconfirmed) }, now: 1 })
+    expect(out!.home.startingXI[0].x == null).toBe(true) // provisional XI not applied
+    expect((await rowFor(db, matchId)).final).toBe(false) // unresolved -> retries, not frozen on bands
+    await client.close()
+  })
+
+  it('freezes a finished line-up with no Sofascore anchor (provider set but no event ref)', async () => {
+    const { db, client, matchId } = await setup()
+    const out = await storeLineups(db, matchId, base(), { ...META, status: 'FINISHED', oddsEventRef: null }, { sofascore: { fetchImpl: sofaFetch(sofaResp()) }, now: 1 })
+    expect(out!.home.startingXI[0].x == null).toBe(true) // no anchor -> never fetched
+    expect((await rowFor(db, matchId)).final).toBe(true) // not refinable -> resolved -> frozen
+    await client.close()
+  })
+
+  it('skips refinement and freezes a line-up that already carries coordinates (UEFA)', async () => {
+    const { db, client, matchId } = await setup()
+    const placed = (): TeamLineup => ({ formation: '1-1', coach: null, startingXI: [{ ...player(1, 'GK'), x: 50, y: 7 }, { ...player(2, 'DF'), x: 50, y: 24 }, { ...player(3, 'FW'), x: 50, y: 92 }], bench: [] })
+    const out = await storeLineups(db, matchId, { available: true, home: placed(), away: placed() }, { ...META, status: 'FINISHED' }, { sofascore: { fetchImpl: sofaFetch(sofaResp()) }, now: 1 })
+    expect(out!.home.startingXI[0].x).toBe(50) // native coords kept, no refetch
+    expect((await rowFor(db, matchId)).final).toBe(true) // already placed -> resolved -> frozen
+    await client.close()
+  })
 })
 
 describe('getStoredLineups', () => {
