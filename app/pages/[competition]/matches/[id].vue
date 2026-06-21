@@ -27,6 +27,7 @@ const { data, refresh: refreshMatch } = await useFetch<{
     penaltiesAway: number | null
     group: string | null
     roundLabel: string
+    stage: string
   }
   myPrediction: { homeGoals: number; awayGoals: number; isJoker: boolean; totalPoints: number | null; baseTier: string | null } | null
   odds: { home: number; draw: number; away: number; fetchedAt: string } | null
@@ -123,9 +124,27 @@ const canPredict = computed(
     !!m.value?.homeTeamCode &&
     !!m.value?.awayTeamCode,
 )
-const { upsert } = usePredictionMutations()
+const { upsert, setJoker } = usePredictionMutations()
+const toast = useToast()
 function savePrediction(v: { home: number; away: number }) {
   upsert.mutate({ matchId: id.value, home: v.home, away: v.away }, { onSuccess: () => refreshMatch() })
+}
+// The joker moves within a round server-side (one per round); a kicked-off
+// round match (409) or a single-match round (422) is surfaced as a toast.
+function toggleJoker() {
+  if (!myPred.value) return
+  setJoker.mutate(
+    { matchId: id.value, isJoker: !myPred.value.isJoker },
+    {
+      onSuccess: () => refreshMatch(),
+      onError: (e: unknown) =>
+        toast.add({
+          severity: 'warn',
+          summary: (e as { data?: { statusMessage?: string } })?.data?.statusMessage || t('predictions.jokerRoundLocked'),
+          life: 3000,
+        }),
+    },
+  )
 }
 
 const status = computed(() => (live.value?.status ?? m.value?.status ?? 'SCHEDULED') as import('../../../../shared/types/match').MatchStatus)
@@ -588,6 +607,20 @@ function toggleFormInfo(side: string, i: number | string) {
           {{ t('match.yourPick') }}<span v-if="myPred?.isJoker" v-tooltip.top="t('predictions.joker')" style="color: var(--ng-star)"> ★</span>
         </span>
         <ScoreInput v-if="canPredict" :home="myPred?.homeGoals ?? null" :away="myPred?.awayGoals ?? null" @update="savePrediction" />
+        <!-- Joker: editable until kickoff, like the score. Hidden on single-match rounds; the final auto-doubles. -->
+        <template v-if="canPredict">
+          <span v-if="countsDouble(m?.stage)" v-tooltip.top="t('predictions.finalDoubleHint')" class="text-xs font-semibold" style="color: var(--ng-star)">★ {{ t('predictions.finalDouble') }}</span>
+          <Button
+            v-else-if="!isSingleMatchStage(m?.stage)"
+            :label="t('predictions.joker')"
+            :icon="myPred?.isJoker ? 'pi pi-star-fill' : 'pi pi-star'"
+            :severity="myPred?.isJoker ? 'warn' : 'secondary'"
+            :outlined="!myPred?.isJoker"
+            size="small"
+            :disabled="!myPred"
+            @click="toggleJoker"
+          />
+        </template>
         <!-- Independent lines: the locked pick + points must never depend on the
              crowd/odds display preferences (a v-else-if chain here once hid them). -->
         <template v-if="!canPredict && myPred">
