@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { deriveSofascorePositions, type SofaLineupSide } from './sofascore-positions'
+import type { SquadPlayer, TeamLineup } from '#shared/types/match'
+import { applyCoords, deriveSofascorePositions, type Coord, type SofaLineupSide } from './sofascore-positions'
 
 const pl = (shirtNumber: number | string | null, position: string, substitute = false) => ({ shirtNumber, position, substitute })
 // 1 GK + 10 outfield in formation-grid order.
@@ -57,5 +58,25 @@ describe('deriveSofascorePositions', () => {
     expect(res.confirmed).toBe(false)
     expect(res.home).toBeNull()
     expect(res.away).toBeNull()
+  })
+})
+
+describe('applyCoords', () => {
+  const sp = (shirtNumber: number | null): SquadPlayer => ({ playerId: `p${shirtNumber}`, name: `P${shirtNumber}`, shirtNumber, position: 'MF', captain: false, pictureUrl: null })
+  const team = (shirts: (number | null)[]): TeamLineup => ({ formation: '4-3-3', coach: null, startingXI: shirts.map(sp), bench: [] })
+  const coords = (entries: [number, Coord][]): Map<number, Coord> => new Map(entries)
+
+  it('overlays coordinates by shirt when every starter is placed', () => {
+    const out = applyCoords(team([1, 2]), coords([[1, { x: 50, y: 7 }], [2, { x: 20, y: 24 }]]))
+    expect(out.startingXI.map((p) => [p.shirtNumber, p.x, p.y])).toEqual([[1, 50, 7], [2, 20, 24]])
+  })
+
+  it('leaves the team untouched when coords are absent, partial, or a shirt is missing', () => {
+    const base = team([1, 2])
+    expect(applyCoords(base, null)).toBe(base)
+    // shirt 2 has no coordinate -> incomplete -> untouched
+    expect(applyCoords(base, coords([[1, { x: 50, y: 7 }]])).startingXI.every((p) => p.x == null)).toBe(true)
+    // a starter with no shirt can't be matched -> untouched
+    expect(applyCoords(team([1, null]), coords([[1, { x: 50, y: 7 }]])).startingXI.every((p) => p.x == null)).toBe(true)
   })
 })
