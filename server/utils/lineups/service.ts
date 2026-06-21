@@ -1,10 +1,7 @@
 import { eq } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import type { MatchLineups } from '#shared/types/match'
-import { match, matchLineups } from '../../../db/schema'
-import { providerForCompetition } from '../providers'
-import { getCompetitionById } from '../competitions/store'
-import { resolveCompetitionSeason } from '../sync/competition'
+import { matchLineups } from '../../../db/schema'
 import { applyCoords, deriveSofascorePositions } from './sofascore-positions'
 import { fetchSofascoreLineups, type SofascoreLineupsOptions } from './sofascore-lineups'
 
@@ -13,60 +10,57 @@ import { fetchSofascoreLineups, type SofascoreLineupsOptions } from './sofascore
 // forever (notably so we stop re-hitting the fragile Sofascore refiner).
 const TTL_MS = 60 * 1000
 
-export interface LineupsServiceOptions {
+export interface StoredLineups {
+  hit: boolean
+  data?: MatchLineups | null
+}
+
+// The match_lineups row is the cache: served forever once final, else within the
+// TTL while the XI can still change. A miss (no row, or a stale pending one)
+// returns hit:false so the route fetches fresh.
+export async function getStoredLineups(db: AppDatabase, matchId: string, now = Date.now()): Promise<StoredLineups> {
+  const stored = (await db.select().from(matchLineups).where(eq(matchLineups.matchId, matchId)).limit(1))[0]
+  if (stored && (stored.final || now - stored.fetchedAt.getTime() < TTL_MS)) return { hit: true, data: stored.data }
+  return { hit: false }
+}
+
+export interface LineupMeta {
+  status: string
+  oddsProvider: string | null
+  oddsEventRef: string | null
+  oddsEventSwapped: boolean
+}
+
+export interface StoreLineupsOptions {
   sofascore?: SofascoreLineupsOptions
   now?: number
 }
 
-export async function getMatchLineups(db: AppDatabase, matchId: string, opts: LineupsServiceOptions = {}): Promise<MatchLineups | null> {
+// Refine a provider line-up with Sofascore positions (when the base feed shipped
+// none and the match has a Sofascore odds anchor) and persist it. FIFA stays the
+// source of truth for the XI; Sofascore only adds coordinates, by shirt.
+export async function storeLineups(
+  db: AppDatabase,
+  matchId: string,
+  base: MatchLineups | null,
+  meta: LineupMeta,
+  opts: StoreLineupsOptions = {},
+): Promise<MatchLineups | null> {
+  if (!base) return null
   const now = opts.now ?? Date.now()
-  const stored = await db.select().from(matchLineups).where(eq(matchLineups.matchId, matchId)).limit(1)
-  const cached = stored[0]
-  if (cached && (cached.final || now - cached.fetchedAt.getTime() < TTL_MS)) return cached.data
-
-  const rows = await db
-    .select({
-      providerMatchId: match.providerMatchId,
-      providerStageId: match.providerStageId,
-      competitionId: match.competitionId,
-      status: match.status,
-      oddsEventRef: match.oddsEventRef,
-      oddsEventSwapped: match.oddsEventSwapped,
-    })
-    .from(match)
-    .where(eq(match.id, matchId))
-    .limit(1)
-  if (rows.length === 0) return null
-  const m = rows[0]
-  const competition = await getCompetitionById(db, m.competitionId)
-  if (!competition) return cached?.data ?? null
-  const provider = providerForCompetition(competition, await resolveCompetitionSeason(db, competition))
-  if (!provider.getMatchLineups) return cached?.data ?? null
-
-  let lineups: MatchLineups | null
-  try {
-    lineups = await provider.getMatchLineups({ stageId: m.providerStageId ?? undefined, matchId: m.providerMatchId })
-  } catch {
-    // Upstream hiccup: keep whatever we last stored rather than blanking the tab.
-    return cached?.data ?? null
-  }
-  if (!lineups) return cached?.data ?? null
-
-  // Refine the coarse FIFA position buckets with Sofascore's real placement when
-  // the base feed shipped no coordinates and this match has a Sofascore anchor.
+  let lineups = base
   const needsCoords = lineups.available && lineups.home.startingXI.some((p) => p.x == null)
-  if (needsCoords && competition.oddsProvider === 'sofascore' && m.oddsEventRef) {
-    const resp = await fetchSofascoreLineups(m.oddsEventRef, opts.sofascore)
+  if (needsCoords && meta.oddsProvider === 'sofascore' && meta.oddsEventRef) {
+    const resp = await fetchSofascoreLineups(meta.oddsEventRef, opts.sofascore)
     if (resp) {
       const pos = deriveSofascorePositions(resp)
       // oddsEventSwapped: Sofascore lists our away team as its home side.
-      const homeCoords = m.oddsEventSwapped ? pos.away : pos.home
-      const awayCoords = m.oddsEventSwapped ? pos.home : pos.away
+      const homeCoords = meta.oddsEventSwapped ? pos.away : pos.home
+      const awayCoords = meta.oddsEventSwapped ? pos.home : pos.away
       lineups = { ...lineups, home: applyCoords(lineups.home, homeCoords), away: applyCoords(lineups.away, awayCoords) }
     }
   }
-
-  const final = m.status === 'FINISHED' && lineups.available
+  const final = meta.status === 'FINISHED' && lineups.available
   const fetchedAt = new Date(now)
   await db
     .insert(matchLineups)
