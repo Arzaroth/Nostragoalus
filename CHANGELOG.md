@@ -11,6 +11,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 ### Changed
 - Line-ups are now stored once confirmed, so a finished match's XI loads instantly and survives a restart instead of being re-fetched from the feed.
 
+### Fixed
+- Odds (and the rare-result bonus that uses them) are flowing again - the odds feed had begun rejecting the app's requests, leaving recent matches unpriced.
+
 ## [1.31.2] - 2026-06-21
 
 ### Fixed
