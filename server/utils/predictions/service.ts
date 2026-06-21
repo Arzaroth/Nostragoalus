@@ -119,6 +119,19 @@ export async function getPredictionForShare(db: AppDatabase, predictionId: strin
   return rows[0] ?? null
 }
 
+// Resolve the caller's OWN prediction for a match to the ref the share-mint
+// route needs. Querying by userId makes ownership intrinsic: you can only mint a
+// token for a pick that is yours.
+export async function getOwnPredictionRef(db: AppDatabase, userId: string, matchId: string) {
+  const rows = await db
+    .select({ id: prediction.id, kickoffTime: match.kickoffTime })
+    .from(prediction)
+    .innerJoin(match, eq(match.id, prediction.matchId))
+    .where(and(eq(prediction.userId, userId), eq(prediction.matchId, matchId)))
+    .limit(1)
+  return rows[0] ?? null
+}
+
 export async function getMyPredictions(db: AppDatabase, userId: string, competitionId?: string) {
   return db
     .select(predictionView)
