@@ -7,6 +7,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ### Added
 - **Shareable prediction cards**: a share button on your pick turns it into an image you can post anywhere, with a link that unfurls into the card on social apps. After kickoff it shows your result - the scoreline, your call, the points and how rare it was. Before kickoff you can share a sealed teaser or choose to reveal your own predicted score. The card reads in your own language.
+- **Joker straight from the match view**: toggle your joker on a fixture's pick row without leaving the match page; single-match rounds (which double for everyone) show the reason instead.
 
 ## [1.31.3] - 2026-06-21
 
