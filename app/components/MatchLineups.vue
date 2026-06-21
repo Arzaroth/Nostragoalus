@@ -23,8 +23,10 @@ const sides = computed(() => [
   { team: props.lineups.away, name: props.away, code: props.awayCode },
 ])
 
+// Faint mown stripes over a grass gradient; PitchHalf draws the white markings.
 const PITCH_BG =
-  'linear-gradient(170deg, color-mix(in srgb, var(--ng-success) 22%, var(--p-content-background)), color-mix(in srgb, var(--ng-success) 10%, var(--p-content-background)))'
+  'repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 12%, transparent 12% 24%), ' +
+  'linear-gradient(170deg, color-mix(in srgb, var(--ng-success) 24%, var(--p-content-background)), color-mix(in srgb, var(--ng-success) 12%, var(--p-content-background)))'
 
 const teamLink = (code?: string | null) => (code ? `/${props.slug}/teams/${code}` : undefined)
 </script>
@@ -46,28 +48,24 @@ const teamLink = (code?: string | null) => (code ? `/${props.slug}/teams/${code}
         >{{ side.team.formation }}</span>
       </div>
 
-      <!-- real pitch placement when we have coordinates for the whole XI -->
-      <div
-        v-if="placed(side.team)"
-        class="relative rounded-2xl overflow-hidden"
-        style="aspect-ratio: 3 / 4"
-        :style="{ background: PITCH_BG }"
-      >
+      <div class="relative rounded-2xl overflow-hidden" style="aspect-ratio: 3 / 4" :style="{ background: PITCH_BG }">
         <PitchHalf />
-        <div
-          v-for="p in side.team.startingXI"
-          :key="p.playerId"
-          class="absolute"
-          :style="`left: ${p.x}%; bottom: ${p.y}%; transform: translate(-50%, 50%)`"
-        >
-          <LineupPlayer :player="p" />
-        </div>
-      </div>
-
-      <!-- fallback: formation-band rows when no coordinates -->
-      <div v-else class="rounded-2xl py-4 px-1 flex flex-col gap-4" :style="{ background: PITCH_BG }">
-        <div v-for="row in pitchRows(side.team)" :key="row.pos" class="flex justify-around items-start">
-          <LineupPlayer v-for="p in row.players" :key="p.playerId" :player="p" />
+        <!-- real pitch placement when we have coordinates for the whole XI -->
+        <template v-if="placed(side.team)">
+          <div
+            v-for="p in side.team.startingXI"
+            :key="p.playerId"
+            class="absolute"
+            :style="`left: ${p.x}%; bottom: ${p.y}%; transform: translate(-50%, 50%)`"
+          >
+            <LineupPlayer :player="p" />
+          </div>
+        </template>
+        <!-- fallback: formation-band rows, spread over the pitch -->
+        <div v-else class="relative h-full flex flex-col justify-around py-3">
+          <div v-for="row in pitchRows(side.team)" :key="row.pos" class="flex justify-around items-start">
+            <LineupPlayer v-for="p in row.players" :key="p.playerId" :player="p" />
+          </div>
         </div>
       </div>
 

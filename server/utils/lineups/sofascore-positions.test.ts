@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { SquadPlayer, TeamLineup } from '#shared/types/match'
-import { applyCoords, deriveSofascorePositions, type Coord, type SofaLineupSide } from './sofascore-positions'
+import { applyCoords, deriveSofascorePositions, type Coord, type SidePlacement, type SofaLineupSide } from './sofascore-positions'
 
 const pl = (shirtNumber: number | string | null, position: string, substitute = false) => ({ shirtNumber, position, substitute })
 // 1 GK + 10 outfield in formation-grid order.
@@ -17,23 +17,24 @@ const side = (formation: string | null, over: Partial<SofaLineupSide> = {}): Sof
 })
 
 describe('deriveSofascorePositions', () => {
-  it('places the XI from formation grid order, keeper to attack', () => {
+  it('places the XI from formation grid order, keeper to attack, right line first', () => {
     const { confirmed, home } = deriveSofascorePositions({ confirmed: true, home: side('4-2-3-1') })
     expect(confirmed).toBe(true)
-    expect(home!.size).toBe(11)
-    expect(home!.get(1)).toEqual({ x: 50, y: 7 }) // keeper, centred at the back
-    expect(home!.get(2)).toEqual({ x: 20, y: 24 }) // back four, leftmost
-    expect(home!.get(5)).toEqual({ x: 80, y: 24 }) // back four, rightmost
-    expect(home!.get(11)).toEqual({ x: 50, y: 92 }) // lone striker, top centre
+    expect(home!.formation).toBe('4-2-3-1')
+    expect(home!.coords.size).toBe(11)
+    expect(home!.coords.get(1)).toEqual({ x: 50, y: 7 }) // keeper, centred at the back
+    expect(home!.coords.get(2)).toEqual({ x: 80, y: 24 }) // back four, listed right-back first
+    expect(home!.coords.get(5)).toEqual({ x: 20, y: 24 }) // back four, left-back last
+    expect(home!.coords.get(11)).toEqual({ x: 50, y: 92 }) // lone striker, top centre
     // the 4 bands climb the pitch
-    expect(home!.get(6)!.y).toBeGreaterThan(home!.get(2)!.y)
-    expect(home!.get(8)!.y).toBeGreaterThan(home!.get(6)!.y)
+    expect(home!.coords.get(6)!.y).toBeGreaterThan(home!.coords.get(2)!.y)
+    expect(home!.coords.get(8)!.y).toBeGreaterThan(home!.coords.get(6)!.y)
   })
 
   it('honours a three-band formation too', () => {
     const { home } = deriveSofascorePositions({ home: side('4-3-3') })
-    expect(home!.size).toBe(11)
-    expect(home!.get(9)).toEqual({ x: 25, y: 92 }) // front three, leftmost at the top
+    expect(home!.coords.size).toBe(11)
+    expect(home!.coords.get(9)).toEqual({ x: 75, y: 92 }) // front three, right-winger first
   })
 
   it('returns null for a side it cannot place fully', () => {
@@ -64,19 +65,22 @@ describe('deriveSofascorePositions', () => {
 describe('applyCoords', () => {
   const sp = (shirtNumber: number | null): SquadPlayer => ({ playerId: `p${shirtNumber}`, name: `P${shirtNumber}`, shirtNumber, position: 'MF', captain: false, pictureUrl: null })
   const team = (shirts: (number | null)[]): TeamLineup => ({ formation: '4-3-3', coach: null, startingXI: shirts.map(sp), bench: [] })
-  const coords = (entries: [number, Coord][]): Map<number, Coord> => new Map(entries)
+  const placement = (entries: [number, Coord][], formation = '3-4-3'): SidePlacement => ({ formation, coords: new Map(entries) })
 
-  it('overlays coordinates by shirt when every starter is placed', () => {
-    const out = applyCoords(team([1, 2]), coords([[1, { x: 50, y: 7 }], [2, { x: 20, y: 24 }]]))
+  it('overlays coordinates by shirt and adopts the Sofascore formation', () => {
+    const out = applyCoords(team([1, 2]), placement([[1, { x: 50, y: 7 }], [2, { x: 20, y: 24 }]]))
     expect(out.startingXI.map((p) => [p.shirtNumber, p.x, p.y])).toEqual([[1, 50, 7], [2, 20, 24]])
+    expect(out.formation).toBe('3-4-3') // chip follows the placement
   })
 
-  it('leaves the team untouched when coords are absent, partial, or a shirt is missing', () => {
+  it('leaves the team untouched when placement is absent, partial, or a shirt is missing', () => {
     const base = team([1, 2])
     expect(applyCoords(base, null)).toBe(base)
-    // shirt 2 has no coordinate -> incomplete -> untouched
-    expect(applyCoords(base, coords([[1, { x: 50, y: 7 }]])).startingXI.every((p) => p.x == null)).toBe(true)
+    // shirt 2 has no coordinate -> incomplete -> untouched, keeps its own formation
+    const partial = applyCoords(base, placement([[1, { x: 50, y: 7 }]]))
+    expect(partial.startingXI.every((p) => p.x == null)).toBe(true)
+    expect(partial.formation).toBe('4-3-3')
     // a starter with no shirt can't be matched -> untouched
-    expect(applyCoords(team([1, null]), coords([[1, { x: 50, y: 7 }]])).startingXI.every((p) => p.x == null)).toBe(true)
+    expect(applyCoords(team([1, null]), placement([[1, { x: 50, y: 7 }]])).startingXI.every((p) => p.x == null)).toBe(true)
   })
 })

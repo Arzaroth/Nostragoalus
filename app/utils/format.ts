@@ -141,6 +141,16 @@ export function formatPlayerName(name: string | null | undefined): string {
     .join(' ')
 }
 
+// Compact name for a line-up chip: first initial + the rest ("Joshua Kimmich"
+// -> "J. Kimmich", keeping particles like "van Dijk"). A single-word name
+// (a nickname, e.g. many Brazilians) is left whole.
+export function lineupName(name: string | null | undefined): string {
+  const full = formatPlayerName(name)
+  if (!full) return ''
+  const [first, ...rest] = full.split(' ')
+  return rest.length ? `${first[0]}. ${rest.join(' ')}` : first
+}
+
 // Accent-insensitive search matching: "Tur" finds "Türkiye", "FRA" finds France.
 export function searchable(text: string | null | undefined): string {
   return (text ?? '')
