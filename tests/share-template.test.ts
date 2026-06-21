@@ -4,7 +4,7 @@ import { shareTranslator } from '../server/utils/share/i18n'
 import { buildShareCardElement, type VNode } from '../server/utils/share/template'
 
 const t = shareTranslator('en')
-const ctx = { host: 'goal.arzaroth.com', markDataUri: 'data:image/svg+xml;base64,AAAA' }
+const ctx = { host: 'goal.arzaroth.com', markDataUri: 'data:image/svg+xml;base64,AAAA', homeFlag: 'data:image/png;base64,AA', awayFlag: 'data:image/png;base64,AA' }
 
 function makeCard(over: Partial<ShareCardData> = {}): ShareCardData {
   return {
@@ -83,7 +83,7 @@ describe('buildShareCardElement', () => {
 
   it('derives a team code from the name when none is set, and renders without a mark', () => {
     const text = collectText(
-      buildShareCardElement(makeCard({ homeTeamCode: null }), { host: 'h', markDataUri: null }, t),
+      buildShareCardElement(makeCard({ homeTeamCode: null }), { host: 'h', markDataUri: null, homeFlag: null, awayFlag: null }, t),
     )
     expect(text).toContain('ENG') // 'Eng' -> upper 'ENG' from 'England'
   })

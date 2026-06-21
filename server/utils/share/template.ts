@@ -68,8 +68,20 @@ function pill(text: string): VNode {
   )
 }
 
-function teamBlock(code: string, name: string): VNode {
+// Flags are inlined as data URIs by the route (satori can't fetch remote
+// images); null when unavailable, in which case the block is just the code pill.
+export interface TeamFlags {
+  home: string | null
+  away: string | null
+}
+
+function flagImg(src: string): VNode {
+  return { type: 'img', props: { style: { display: 'flex', width: 56, height: 56, borderRadius: 10 }, src } }
+}
+
+function teamBlock(code: string, name: string, flag: string | null): VNode {
   return el('div', { flexDirection: 'column', alignItems: 'center', gap: 12, width: 320 }, [
+    flag ? flagImg(flag) : null,
     pill(code),
     el('div', { fontSize: 26, color: MUTED, maxWidth: 300, overflow: 'hidden' }, name),
   ])
@@ -90,11 +102,11 @@ function centerScore(big: string, label: string): VNode {
   ])
 }
 
-function matchupRow(card: ShareCardData, center: VNode): VNode {
+function matchupRow(card: ShareCardData, center: VNode, flags: TeamFlags): VNode {
   return el('div', { alignItems: 'center', justifyContent: 'space-between', width: '100%' }, [
-    teamBlock(teamCode(card.homeTeamCode, card.homeTeam), card.homeTeam),
+    teamBlock(teamCode(card.homeTeamCode, card.homeTeam), card.homeTeam, flags.home),
     center,
-    teamBlock(teamCode(card.awayTeamCode, card.awayTeam), card.awayTeam),
+    teamBlock(teamCode(card.awayTeamCode, card.awayTeam), card.awayTeam, flags.away),
   ])
 }
 
@@ -102,7 +114,7 @@ function score(a: number | null, b: number | null): string {
   return `${a ?? 0} - ${b ?? 0}`
 }
 
-function resultBody(card: ShareCardData, t: ShareTranslate): VNode[] {
+function resultBody(card: ShareCardData, t: ShareTranslate, flags: TeamFlags): VNode[] {
   const myCall = `${t('share.card.myCall')} ${score(card.predHome, card.predAway)}`
   // state === 'result' guarantees totalPoints is set; tier can still be absent.
   const meta: VNode[] = [chip(myCall, 'rgba(255,255,255,0.07)')]
@@ -111,7 +123,7 @@ function resultBody(card: ShareCardData, t: ShareTranslate): VNode[] {
   if (card.isJoker) meta.push(chip(t('share.card.joker'), '#7c3aed'))
 
   const rows: VNode[] = [
-    matchupRow(card, centerScore(score(card.actualHome, card.actualAway), t('share.card.fullTime'))),
+    matchupRow(card, centerScore(score(card.actualHome, card.actualAway), t('share.card.fullTime')), flags),
     el('div', { gap: 16, alignItems: 'center', flexWrap: 'wrap', marginTop: 8 }, meta),
   ]
   if (card.crowdSharePct != null) {
@@ -120,23 +132,23 @@ function resultBody(card: ShareCardData, t: ShareTranslate): VNode[] {
   return rows
 }
 
-function revealBody(card: ShareCardData, t: ShareTranslate): VNode[] {
+function revealBody(card: ShareCardData, t: ShareTranslate, flags: TeamFlags): VNode[] {
   return [
-    matchupRow(card, centerScore(score(card.predHome, card.predAway), t('share.card.myCall'))),
+    matchupRow(card, centerScore(score(card.predHome, card.predAway), t('share.card.myCall')), flags),
     el('div', { justifyContent: 'center', marginTop: 4 }, [
       chip(t('share.card.kickoffSoon'), 'rgba(255,255,255,0.07)', MUTED),
     ]),
   ]
 }
 
-function liveBody(card: ShareCardData, t: ShareTranslate): VNode[] {
+function liveBody(card: ShareCardData, t: ShareTranslate, flags: TeamFlags): VNode[] {
   return [
-    matchupRow(card, centerScore(score(card.predHome, card.predAway), t('share.card.myCall'))),
+    matchupRow(card, centerScore(score(card.predHome, card.predAway), t('share.card.myCall')), flags),
     el('div', { justifyContent: 'center', marginTop: 4 }, [chip(t('share.card.kickedOff'), '#ef4444')]),
   ]
 }
 
-function sealedBody(card: ShareCardData, t: ShareTranslate): VNode[] {
+function sealedBody(card: ShareCardData, t: ShareTranslate, flags: TeamFlags): VNode[] {
   return [
     matchupRow(
       card,
@@ -144,20 +156,21 @@ function sealedBody(card: ShareCardData, t: ShareTranslate): VNode[] {
         el('div', { fontSize: 56, fontWeight: 700, color: INK }, t('share.card.sealed')),
         el('div', { fontSize: 26, color: MUTED }, t('share.card.sealedSub')),
       ]),
+      flags,
     ),
   ]
 }
 
-function body(card: ShareCardData, t: ShareTranslate): VNode[] {
+function body(card: ShareCardData, t: ShareTranslate, flags: TeamFlags): VNode[] {
   switch (card.state) {
     case 'result':
-      return resultBody(card, t)
+      return resultBody(card, t, flags)
     case 'reveal':
-      return revealBody(card, t)
+      return revealBody(card, t, flags)
     case 'live':
-      return liveBody(card, t)
+      return liveBody(card, t, flags)
     case 'sealed':
-      return sealedBody(card, t)
+      return sealedBody(card, t, flags)
   }
 }
 
@@ -165,6 +178,9 @@ export interface ShareCardContext {
   host: string
   // Inlined brand mark as a data URI; null falls back to the wordmark only.
   markDataUri: string | null
+  // Inlined team flags as data URIs; null falls back to the code pill alone.
+  homeFlag: string | null
+  awayFlag: string | null
 }
 
 export function buildShareCardElement(card: ShareCardData, ctx: ShareCardContext, t: ShareTranslate): VNode {
@@ -200,6 +216,6 @@ export function buildShareCardElement(card: ShareCardData, ctx: ShareCardContext
       color: INK,
       fontFamily: 'Inter, "Noto Sans Thai"',
     },
-    [header, el('div', { flexDirection: 'column', justifyContent: 'center', flexGrow: 1, gap: 28 }, body(card, t)), footer],
+    [header, el('div', { flexDirection: 'column', justifyContent: 'center', flexGrow: 1, gap: 28 }, body(card, t, { home: ctx.homeFlag, away: ctx.awayFlag })), footer],
   )
 }
