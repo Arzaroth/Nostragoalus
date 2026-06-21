@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { roundLabelKey, shareScore, TIER_COLOR } from '#shared/share-card'
+
 interface ShareCard {
   state: 'result' | 'live' | 'reveal' | 'sealed'
   ownerName: string
@@ -26,8 +28,6 @@ const { t } = useI18n()
 
 // Brand-consistent with the OG image (the ticket stub), but live HTML: themed
 // text, real flags, team links, no raster scaling.
-const TIER_COLOR: Record<string, string> = { EXACT: '#22c55e', DIFF: '#3b82f6', OUTCOME: '#eab308', MISS: '#64748b' }
-
 const c = computed(() => props.card)
 function code(side: 'home' | 'away') {
   const v = side === 'home' ? c.value.homeTeamCode : c.value.awayTeamCode
@@ -40,17 +40,11 @@ function teamLink(side: 'home' | 'away') {
 }
 const roundText = computed(() => {
   if (c.value.group) return c.value.group
-  const n = c.value.roundLabel.toLowerCase()
-  if (/round of 32|last 32/.test(n)) return t('bracket.round.r32')
-  if (/round of 16|last 16/.test(n)) return t('bracket.round.r16')
-  if (/quarter/.test(n)) return t('bracket.round.qf')
-  if (/semi/.test(n)) return t('bracket.round.sf')
-  if (/third/.test(n)) return t('bracket.round.third')
-  if (/final/.test(n)) return t('bracket.round.final')
-  return c.value.roundLabel
+  const key = roundLabelKey(c.value.roundLabel)
+  return key ? t(key) : c.value.roundLabel
 })
-const predScore = computed(() => `${c.value.predHome ?? 0} - ${c.value.predAway ?? 0}`)
-const actualScore = computed(() => `${c.value.actualHome ?? 0} - ${c.value.actualAway ?? 0}`)
+const predScore = computed(() => shareScore(c.value.predHome, c.value.predAway))
+const actualScore = computed(() => shareScore(c.value.actualHome, c.value.actualAway))
 </script>
 
 <template>

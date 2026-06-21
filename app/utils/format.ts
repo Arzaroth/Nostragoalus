@@ -1,4 +1,9 @@
 import type { MatchStatus } from '#shared/types/match'
+import { roundLabelKey } from '#shared/share-card'
+
+// The flag URL builder lives in #shared so the server OG renderer reuses it;
+// re-exported here so the app keeps its app/utils auto-import.
+export { flagUrl } from '#shared/share-card'
 
 // vue-i18n's translate function, narrowed to what these helpers use. Passing it
 // in keeps these pure/testable while the labels stay localized.
@@ -26,16 +31,10 @@ export function matchStatusLabel(status: MatchStatus, t: Translate): string {
 }
 
 // Provider bracket round names arrive in English; map the known ones to a key,
-// else fall back to the raw name. Order matters: "semi-finals" contains "final".
+// else fall back to the raw name.
 export function roundLabel(name: string | null | undefined, t: Translate): string {
-  const n = (name ?? '').toLowerCase()
-  if (/round of 32|last 32/.test(n)) return t('bracket.round.r32')
-  if (/round of 16|last 16/.test(n)) return t('bracket.round.r16')
-  if (/quarter/.test(n)) return t('bracket.round.qf')
-  if (/semi/.test(n)) return t('bracket.round.sf')
-  if (/third/.test(n)) return t('bracket.round.third')
-  if (/final/.test(n)) return t('bracket.round.final')
-  return name ?? ''
+  const key = roundLabelKey(name)
+  return key ? t(key) : (name ?? '')
 }
 
 export type Severity = 'success' | 'info' | 'warn' | 'danger' | 'secondary'
@@ -82,11 +81,6 @@ export function isLocked(kickoffTime: string | Date, now: number = Date.now()): 
 // itself halves server-side (per-row SQL for champion, flat for best scorer).
 export function halvePickPoints(points: number): number {
   return Math.floor(points / 2)
-}
-
-// FIFA flag image derived from a team's tricode (e.g. MEX) - avoids storing crests.
-export function flagUrl(code: string | null | undefined): string | null {
-  return code ? `https://api.fifa.com/api/v3/picture/flags-sq-3/${code}` : null
 }
 
 // Player headshot from the FIXTURES provider's picture CDN, keyed by that

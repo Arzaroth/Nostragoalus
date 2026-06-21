@@ -1,3 +1,4 @@
+import { roundLabelKey, shareScore, TIER_COLOR } from '../../../shared/share-card'
 import type { ShareCardData } from './card'
 import type { ShareTranslate } from './i18n'
 
@@ -18,13 +19,6 @@ const INK = '#f5f3ff'
 const MUTED = '#a5b4fc'
 const ACCENT = '#818cf8'
 
-const TIER_COLOR: Record<string, string> = {
-  EXACT: '#22c55e',
-  DIFF: '#3b82f6',
-  OUTCOME: '#eab308',
-  MISS: '#64748b',
-}
-
 function el(type: string, style: Record<string, unknown>, children?: VChildren): VNode {
   return { type, props: { style: { display: 'flex', ...style }, children } }
 }
@@ -38,17 +32,10 @@ function teamCode(code: string | null, team: string): string {
 }
 
 // Group letter ("Group F") when present, else a localized knockout round name.
-// The provider round label is English; map the known ones to a bracket.round key.
 function roundContext(card: ShareCardData, t: ShareTranslate): string {
   if (card.group) return card.group
-  const n = card.roundLabel.toLowerCase()
-  if (/round of 32|last 32/.test(n)) return t('bracket.round.r32')
-  if (/round of 16|last 16/.test(n)) return t('bracket.round.r16')
-  if (/quarter/.test(n)) return t('bracket.round.qf')
-  if (/semi/.test(n)) return t('bracket.round.sf')
-  if (/third/.test(n)) return t('bracket.round.third')
-  if (/final/.test(n)) return t('bracket.round.final')
-  return card.roundLabel
+  const key = roundLabelKey(card.roundLabel)
+  return key ? t(key) : card.roundLabel
 }
 
 function pill(text: string): VNode {
@@ -95,10 +82,11 @@ function chip(text: string, bg: string, color = INK): VNode {
   )
 }
 
-function centerScore(big: string, label: string): VNode {
+function centerScore(big: string, label: string, sub?: string | null): VNode {
   return el('div', { flexDirection: 'column', alignItems: 'center', gap: 6, flexGrow: 1 }, [
     el('div', { fontSize: 24, color: MUTED, textTransform: 'uppercase', letterSpacing: 3 }, label),
     el('div', { fontSize: 88, fontWeight: 700, color: INK }, big),
+    sub ? el('div', { fontSize: 26, color: MUTED }, sub) : null,
   ])
 }
 
@@ -110,20 +98,19 @@ function matchupRow(card: ShareCardData, center: VNode, flags: TeamFlags): VNode
   ])
 }
 
-function score(a: number | null, b: number | null): string {
-  return `${a ?? 0} - ${b ?? 0}`
-}
-
 function resultBody(card: ShareCardData, t: ShareTranslate, flags: TeamFlags): VNode[] {
-  const myCall = `${t('share.card.myCall')} ${score(card.predHome, card.predAway)}`
+  const myCall = `${t('share.card.myCall')} ${shareScore(card.predHome, card.predAway)}`
   // state === 'result' guarantees totalPoints is set; tier can still be absent.
   const meta: VNode[] = [chip(myCall, 'rgba(255,255,255,0.07)')]
   if (card.tier) meta.push(chip(t(`predictions.tier.${card.tier.toLowerCase()}`), TIER_COLOR[card.tier] ?? '#64748b'))
   meta.push(chip(`+${card.totalPoints ?? 0} ${t('share.card.pts')}`, ACCENT, '#1e1b4b'))
   if (card.isJoker) meta.push(chip(t('share.card.joker'), '#7c3aed'))
 
+  // A penalty-decided knockout shows the shootout under the 90-min score (the
+  // unfurled image must not present a 1-1 pens win as a plain draw).
+  const pens = card.pensHome != null && card.pensAway != null ? `(${card.pensHome}-${card.pensAway} ${t('match.pens')})` : null
   const rows: VNode[] = [
-    matchupRow(card, centerScore(score(card.actualHome, card.actualAway), t('share.card.fullTime')), flags),
+    matchupRow(card, centerScore(shareScore(card.actualHome, card.actualAway), t('share.card.fullTime'), pens), flags),
     el('div', { gap: 16, alignItems: 'center', flexWrap: 'wrap', marginTop: 8 }, meta),
   ]
   if (card.crowdSharePct != null) {
@@ -134,7 +121,7 @@ function resultBody(card: ShareCardData, t: ShareTranslate, flags: TeamFlags): V
 
 function revealBody(card: ShareCardData, t: ShareTranslate, flags: TeamFlags): VNode[] {
   return [
-    matchupRow(card, centerScore(score(card.predHome, card.predAway), t('share.card.myCall')), flags),
+    matchupRow(card, centerScore(shareScore(card.predHome, card.predAway), t('share.card.myCall')), flags),
     el('div', { justifyContent: 'center', marginTop: 4 }, [
       chip(t('share.card.kickoffSoon'), 'rgba(255,255,255,0.07)', MUTED),
     ]),
@@ -143,7 +130,7 @@ function revealBody(card: ShareCardData, t: ShareTranslate, flags: TeamFlags): V
 
 function liveBody(card: ShareCardData, t: ShareTranslate, flags: TeamFlags): VNode[] {
   return [
-    matchupRow(card, centerScore(score(card.predHome, card.predAway), t('share.card.myCall')), flags),
+    matchupRow(card, centerScore(shareScore(card.predHome, card.predAway), t('share.card.myCall')), flags),
     el('div', { justifyContent: 'center', marginTop: 4 }, [chip(t('share.card.kickedOff'), '#ef4444')]),
   ]
 }

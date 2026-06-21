@@ -1037,14 +1037,12 @@
   },
   "share": {
     "action": "yIngeH",
-    "sharePick": "wuq yIngeH",
     "shareResult": "Qap yIngeH",
     "shareSealed": "wuq So'lu'bogh yIngeH",
     "revealScore": "QuQwIj yI'ang",
     "copyLink": "QumwI' yIvel",
     "copied": "vellu'pu'",
     "download": "yIHot",
-    "creating": "chenmoHlu'…",
     "failed": "QumwI' chenmoHlaHbe'",
     "card": {
       "fullTime": "rIn",
@@ -1064,8 +1062,7 @@
       "revealTitle": "wuq {name}: {score}",
       "sealedTitle": "wuq So' {name}",
       "subtitle": "Nostragoalus: QuQmey yIwuq, QuQmey yISuq, juplI' yIqul.",
-      "cta": "wuqlI' yIchel",
-      "viewMatch": "qaSbogh yIbej"
+      "cta": "wuqlI' yIchel"
     }
   }
 }

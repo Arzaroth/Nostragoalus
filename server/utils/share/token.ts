@@ -62,8 +62,13 @@ function isValidPayload(value: unknown): value is ShareTokenPayload {
 // Returns the payload only when the signature matches AND the shape is valid;
 // any tampering, truncation, or unknown field shape yields null (-> 404 at the
 // route). Never throws on attacker-controlled input.
+// A real token is ~130 chars (small JSON body + 43-char MAC); cap well above that
+// so an anonymous caller can't force an unbounded HMAC over a multi-megabyte
+// string on these keyless public routes.
+const MAX_TOKEN_LENGTH = 512
+
 export function verifyShareToken(secret: string, token: string | undefined): ShareTokenPayload | null {
-  if (!token) return null
+  if (!token || token.length > MAX_TOKEN_LENGTH) return null
   const dot = token.indexOf('.')
   if (dot <= 0) return null
   const body = token.slice(0, dot)
