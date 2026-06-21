@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.31.3] - 2026-06-21
+
 ### Added
 - **Line-ups on a real pitch**: the XI now sits in its true positions on a half-pitch graphic - exact for UEFA matches, and refined from Sofascore for the World Cup (so a back three reads as a back three, full-backs out wide). Where no positions are available it falls back to the formation-row layout.
 
