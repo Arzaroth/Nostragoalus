@@ -58,6 +58,9 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
 - **Web push**: opt in from Preferences to get the same alerts (pick reminders, kickoff and live
   goal alerts on matches you predicted, results, league activity) on your phone or desktop with the
   app closed - per-category toggles; needs VAPID keys set (`NUXT_*_VAPID_*`), otherwise it stays off
+- **Shareable prediction cards**: turn any pick into a social image (server-rendered OG card via
+  satori + resvg, localized) with a link that unfurls in chats - result, sealed teaser, or an
+  owner-only score reveal; signed stateless tokens keep the field's picks hidden until kickoff
 - Per-team pages: official squads with positions, manager, season stats, competition switcher
 - Knockout **bracket** and an interactive **world map** (Leaflet / OpenStreetMap)
 - **Group standings** on the fixtures page: a live-aware table per group (the same one the
