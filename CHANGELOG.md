@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.32.1] - 2026-06-22
+
 ### Changed
 - Notification bell: opening it now clears the unread count for you, and the bulk action is "Delete all" (wipes the list) instead of "Mark all read". Per-item dismiss is unchanged.
 
