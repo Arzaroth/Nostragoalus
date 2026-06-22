@@ -237,8 +237,9 @@ useResizeObserver(picksEl, updateListHeight)
 // once its group tables land.
 watch([isLoading, grouped, pageMounted, isWide, picksReady, viewMode, standings], () => nextTick(updateListHeight), { immediate: true, flush: 'post' })
 
-// On first load, bring the action into view inside the list: the first live
-// match, or failing that the next upcoming one. A hash anchor (home CTA) wins.
+// On first load - and again whenever the user returns to the Fixtures view -
+// bring the action into view inside the list: the first live match, or failing
+// that the next upcoming one. A hash anchor (home CTA) wins.
 let didAutoScroll = false
 function autoScrollTargetId(): string | null {
   const flat = grouped.value.flatMap((g) => g.items)
@@ -249,8 +250,14 @@ function autoScrollTargetId(): string | null {
   return next?.id ?? null
 }
 watch(
-  [grouped, pageMounted, predictions, picksReady],
+  [grouped, pageMounted, predictions, picksReady, viewMode],
   async () => {
+    // Standings reuses listEl, so never scroll it; leaving Fixtures re-arms the
+    // one-shot so switching back re-scrolls to the first upcoming match.
+    if (viewMode.value !== 'fixtures') {
+      didAutoScroll = false
+      return
+    }
     if (didAutoScroll || !pageMounted.value || route.hash.startsWith('#match-')) return
     // Wait for predictions too: finished rows above the target grow a points
     // line once they load, which would otherwise push the target below the fold.
