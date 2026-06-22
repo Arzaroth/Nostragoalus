@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.33.1] - 2026-06-23
+
 ### Fixed
 - Interrupted matches: a match the referee halts mid-play now shows as "Interrupted" instead of slipping back to "Scheduled" as if it had never kicked off. Abandoned, postponed and cancelled World Cup matches now read correctly too. A halted match keeps its per-match ranking and play-by-play, the same as a live one, so you do not lose the tabs while play is stopped, and its provisional points keep counting on the live leaderboard.
 
