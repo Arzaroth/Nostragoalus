@@ -119,6 +119,92 @@ describe('orderBracketFeeders', () => {
     const half = (slot: string) => Math.floor(r32.findIndex((m) => m.homeTeam === slot || m.awayTeam === slot) / 8)
     expect(half('1I')).not.toBe(half('2I'))
   })
+
+  it('maps "RU{n}" references the same as "W{n}"', () => {
+    const und = (id: string, home: string, away: string): BracketMatch => ({
+      ...bm(id, home, away, null),
+      homeCode: null,
+      awayCode: null,
+    })
+    const bracket: NormalizedBracket = {
+      winner: null,
+      rounds: [
+        { name: 'feeders', sequence: 1, matches: [und('9', 'TBD', 'TBD'), und('5', 'TBD', 'TBD')] },
+        { name: 'consolation', sequence: 2, matches: [und('99', 'RU1', 'RU2')] },
+      ],
+    }
+    // refs [1,2] sorted onto feeders by id [5,9]: RU1 -> 5, RU2 -> 9.
+    expect(orderBracketFeeders(bracket).rounds[0].matches.map((m) => m.providerMatchId)).toEqual(['5', '9'])
+  })
+
+  it('mixes decided feeders (matched by code) with undecided ones (matched by ref)', () => {
+    const und = (id: string, kickoff: string): BracketMatch => ({
+      ...bm(id, 'TBD', 'TBD', null, kickoff),
+      homeCode: null,
+      awayCode: null,
+    })
+    // Once a feeder is decided, the provider swaps its parent placeholder for the
+    // winner's code (so that slot matches by code); the rest stay "W{n}". Both
+    // signals coexist and the bijection still holds (refs == undecided feeders).
+    const bracket: NormalizedBracket = {
+      winner: null,
+      rounds: [
+        {
+          name: 'feeders',
+          sequence: 1,
+          matches: [
+            und('40', '2026-01-04'),
+            bm('10', 'ARG', 'OPP', 'HOME', '2026-01-01'),
+            und('30', '2026-01-03'),
+            und('20', '2026-01-02'),
+          ],
+        },
+        {
+          name: 'parents',
+          sequence: 2,
+          matches: [
+            { ...bm('p1', 'ARG', 'W20', null), homeCode: 'ARG', awayCode: null },
+            { ...bm('p2', 'W30', 'W40', null), homeCode: null, awayCode: null },
+          ],
+        },
+      ],
+    }
+    expect(orderBracketFeeders(bracket).rounds[0].matches.map((m) => m.providerMatchId)).toEqual([
+      '10',
+      '20',
+      '30',
+      '40',
+    ])
+  })
+
+  it('falls back to kickoff order when refs and feeders are not a clean bijection', () => {
+    const und = (id: string, kickoff: string): BracketMatch => ({
+      ...bm(id, 'TBD', 'TBD', null, kickoff),
+      homeCode: null,
+      awayCode: null,
+    })
+    const bracket: NormalizedBracket = {
+      winner: null,
+      rounds: [
+        // Three feeders but four parent references - the count mismatch bails the
+        // ref map, so the feeders keep kickoff order.
+        {
+          name: 'feeders',
+          sequence: 1,
+          matches: [und('300', '2026-01-03'), und('100', '2026-01-01'), und('200', '2026-01-02')],
+        },
+        {
+          name: 'parents',
+          sequence: 2,
+          matches: [
+            { ...bm('p1', 'W1', 'W2', null), homeCode: null, awayCode: null },
+            { ...bm('p2', 'W3', 'W4', null), homeCode: null, awayCode: null },
+          ],
+        },
+      ],
+    }
+    expect(orderBracketFeeders(bracket).rounds[0].matches.map((m) => m.providerMatchId)).toEqual(['100', '200', '300'])
+  })
 })
 
 it('kickoff fallback tolerates missing dates', () => {

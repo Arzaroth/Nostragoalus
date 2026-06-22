@@ -849,6 +849,13 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 - [ ] Placeholder parser: a localized compact ordinal ("3e A/B") would mine a
       spurious group letter (E). FIFA emits ASCII compact ("1A"/"2B"/"TBD"), so
       speculative; tighten if a provider localizes the placeholders.
+- [ ] `orderBracketFeeders` recovers number -> feeder for "W{n}"/"RU{n}" parent
+      references by assuming providerMatchId is monotonic in match number within a
+      round (sort-and-zip). Holds for FIFA (the only provider emitting W-refs;
+      UEFA's bracket carries team names/codes so the ref path never engages). If a
+      future provider emits W-refs with numeric ids unrelated to match order, the
+      zip mispairs silently with no guard. Tie the number to a real provider field
+      (a MatchNumber) if one becomes available.
 - [ ] Verify the real provider PlaceHolderA/B strings against live data once a
       group stage is in progress. The parser degrades safely to official-only on
       anything it can't read, so confirm it actually projects (not just no-ops).
