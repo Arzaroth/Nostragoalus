@@ -5,6 +5,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Changed
+- Notification bell: opening it now clears the unread count for you, and the bulk action is "Delete all" (wipes the list) instead of "Mark all read". Per-item dismiss is unchanged.
+
+### Fixed
+- Knockout bracket: group winners and runners-up are no longer drawn on the wrong sides before the games are played. The tree now follows the official match order, so the projected path (and who you might meet) is right from the start.
+- Fixtures view: switching to Standings and back to Fixtures now jumps you to the first upcoming match again, the same as on load.
+- Push notifications: the required VAPID keys are now documented in `.env.example`. Without them the push toggle stays hidden and nothing is delivered, which is why notifications never arrived.
+
 ## [1.32.0] - 2026-06-21
 
 ### Added
