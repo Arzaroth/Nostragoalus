@@ -782,10 +782,47 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       through one row. Fine at WC single-instance scale; revisit before any
       multi-instance deploy or high write burst (sharded sub-chains + a periodic
       Merkle roll-up is the escape hatch).
-- [ ] **Cold-start seq race.** The very first commitment (empty head table) plus
-      two concurrent saves could both compute seq=1 and collide on the PK; the
-      loser 500s and it self-heals on the next save. Seed a genesis head row in a
-      migration, or catch-and-retry the unique violation, if it ever bites.
+- [x] **Cold-start seq race** (fixed in review). `appendPredictionCommitment` now
+      seeds the singleton head row with `onConflictDoNothing` before the FOR
+      UPDATE select, so two concurrent genesis saves serialize on the insert
+      conflict instead of both claiming seq=1 and one 500ing. No migration seed
+      needed, so schema changes stay generator-only.
+- [ ] **Ledger <-> live prediction binding.** The ledger seals pick changes made
+      through `upsertPrediction`, but `/verify` reads scores from the
+      `prediction_commitment` rows, never cross-checked against the live
+      `prediction` table that scoring uses. A malicious admin doing a raw
+      `UPDATE prediction SET ...` changes points while the chain still verifies
+      "intact" (the original pick stays sealed, so the evidence is preserved, but
+      nothing auto-flags the divergence). Close it with a DB trigger that appends
+      a commitment on any prediction write, or a periodic job that diffs the
+      live table against the latest sealed opening and raises an alert.
+- [ ] **Subject pseudonym hardening.** `computeSubject` is an unkeyed
+      `sha256('ngc-subject-v1:' + userId)`. userIds are `randomUUID` (not
+      enumerable), so mass de-anon isn't feasible, but anyone who learns a
+      specific userId can confirm that account's whole pick history off the public
+      ledger. A server-only HMAC pepper (never shipped to the browser) folded into
+      the subject would make it a true one-way blind - the browser verifier takes
+      `subject` as given, so this doesn't break public verification. Costs a new
+      secret in the deploy contract, hence deferred.
+- [ ] **Canonical hash serialization.** `computeCommitment` / `computeEntryHash`
+      join fields with `':'` and no length-prefix/escaping. Safe today (matchId is
+      a uuid, subject/salt are hex), but a field that could contain `':'` would
+      make two distinct openings collide on one preimage. Switch to a
+      length-prefixed or fixed-key-order JSON encoding if a free-form field ever
+      enters the hash input.
+- [ ] **Rate-limit the public ledger endpoints.** `/api/commitments` and
+      `/api/commitments/head` are intentionally public and per-request bounded
+      (limit hard-capped to 1000, indexed `seq > afterSeq`), but unlike
+      `leagues/join` they have no `createRateLimiter`, so the whole ledger is
+      cheap to scrape/hammer repeatedly. Add a light limiter if abuse shows up.
+- [ ] **Witness/paginator composable coverage.** `useTamperWatch` and
+      `useCommitments` (fetch plumbing + the read-skew-safe paged-head walk) have
+      no unit tests - the gated crypto core (`shared/commitment.ts`,
+      `witnessExtension`/`verifyLedger`) is fully covered, but the client wiring
+      and the snapshot-consistency fix are only exercised end-to-end. The
+      concurrency that the read-skew fix guards can't be reproduced on pglite
+      (single connection, serial), so the serialization + snapshot guarantees have
+      no automated test against real Postgres. Cover with an integration/e2e pass.
 - [ ] **Match-card badge.** `/verify` ships, but locked matches don't yet surface
       a "tamper-evident" badge linking to it. Add once the verify story is proven.
 - [ ] **Ledger growth + full-chain client verify.** Append-only by design (no
