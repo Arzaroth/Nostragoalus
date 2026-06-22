@@ -27,6 +27,8 @@ export function matchStatusLabel(status: MatchStatus, t: Translate): string {
       return t('match.statusLabel.suspended')
     case 'AWARDED':
       return t('match.statusLabel.awarded')
+    case 'INTERRUPTED':
+      return t('match.statusLabel.interrupted')
   }
 }
 
@@ -49,6 +51,7 @@ export function statusSeverity(status: MatchStatus): Severity {
       return 'success'
     case 'POSTPONED':
     case 'SUSPENDED':
+    case 'INTERRUPTED':
       return 'warn'
     case 'CANCELLED':
       return 'secondary'

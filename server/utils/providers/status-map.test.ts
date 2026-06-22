@@ -63,6 +63,7 @@ describe('mapApiFootballStatus', () => {
   it.each([
     ['NS', 'SCHEDULED'],
     ['1H', 'LIVE'],
+    ['INT', 'INTERRUPTED'],
     ['HT', 'PAUSED'],
     ['FT', 'FINISHED'],
     ['AET', 'FINISHED'],

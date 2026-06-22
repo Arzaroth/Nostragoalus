@@ -394,7 +394,7 @@
     "playByPlay": "Play-by-play",
     "lineups": "Line-ups",
     "coach": "Coach",
-    "statusLabel": { "scheduled": "Scheduled", "live": "Live", "halfTime": "Half-time", "fullTime": "Full-time", "postponed": "Postponed", "cancelled": "Cancelled", "suspended": "Suspended", "awarded": "Awarded" },
+    "statusLabel": { "scheduled": "Scheduled", "live": "Live", "halfTime": "Half-time", "fullTime": "Full-time", "postponed": "Postponed", "cancelled": "Cancelled", "suspended": "Suspended", "awarded": "Awarded", "interrupted": "Interrupted" },
     "playByPlayEmpty": "No play-by-play for this match yet.",
     "pbpKind": { "goal": "Goal", "ownGoal": "Own goal", "penaltyGoal": "Penalty goal", "penaltyMissed": "Penalty missed", "penaltyAwarded": "Penalty awarded", "assist": "Assist", "yellow": "Yellow card", "red": "Red card", "secondYellow": "Second yellow", "sub": "Substitution", "shot": "Shot", "foul": "Foul", "corner": "Corner", "var": "VAR", "period": "Period" },
     "pbp": { "goal": "{player} scores", "ownGoal": "{player} scores an own goal", "penaltyGoal": "{player} scores from the penalty spot", "penaltyMissed": "{player} misses a penalty", "assist": "Assisted by {player}", "yellow": "{player} is booked", "red": "{player} is sent off", "secondYellow": "{player} is sent off (second yellow)", "shot": "{player} has a shot", "foul": "{player} commits a foul", "corner": "{player} takes a corner", "sub": "{playerIn} replaces {playerOut}", "period": { "kickoff": "Kick-off", "halfTime": "Half-time", "secondHalf": "Second half under way", "secondHalfEnd": "End of the second half", "extraTime": "Extra time", "extraTimeEnd": "End of extra time", "fullTime": "Full-time" } },

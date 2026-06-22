@@ -394,7 +394,7 @@
     "playByPlay": "Fil du match",
     "lineups": "Compositions",
     "coach": "Entraîneur",
-    "statusLabel": { "scheduled": "Prévu", "live": "En direct", "halfTime": "Mi-temps", "fullTime": "Terminé", "postponed": "Reporté", "cancelled": "Annulé", "suspended": "Suspendu", "awarded": "Décidé" },
+    "statusLabel": { "scheduled": "Prévu", "live": "En direct", "halfTime": "Mi-temps", "fullTime": "Terminé", "postponed": "Reporté", "cancelled": "Annulé", "suspended": "Suspendu", "awarded": "Décidé", "interrupted": "Interrompu" },
     "playByPlayEmpty": "Pas encore de fil du match pour cette rencontre.",
     "pbpKind": { "goal": "But", "ownGoal": "But contre son camp", "penaltyGoal": "But sur penalty", "penaltyMissed": "Penalty manqué", "penaltyAwarded": "Penalty accordé", "assist": "Passe décisive", "yellow": "Carton jaune", "red": "Carton rouge", "secondYellow": "Deuxième jaune", "sub": "Remplacement", "shot": "Tir", "foul": "Faute", "corner": "Corner", "var": "VAR", "period": "Période" },
     "pbp": { "goal": "{player} marque", "ownGoal": "{player} marque contre son camp", "penaltyGoal": "{player} marque sur penalty", "penaltyMissed": "{player} manque son penalty", "assist": "Passe décisive de {player}", "yellow": "{player} reçoit un carton jaune", "red": "{player} est expulsé", "secondYellow": "{player} est expulsé (deuxième jaune)", "shot": "{player} tente sa chance", "foul": "Faute de {player}", "corner": "{player} tire un corner", "sub": "{playerIn} remplace {playerOut}", "period": { "kickoff": "Coup d'envoi", "halfTime": "Mi-temps", "secondHalf": "Reprise de la seconde période", "secondHalfEnd": "Fin de la seconde période", "extraTime": "Prolongation", "extraTimeEnd": "Fin de la prolongation", "fullTime": "Fin du match" } },

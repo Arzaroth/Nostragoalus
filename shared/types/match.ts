@@ -7,6 +7,22 @@ export type MatchStatus =
   | 'CANCELLED'
   | 'SUSPENDED'
   | 'AWARDED'
+  | 'INTERRUPTED'
+
+// Statuses where the match has kicked off: picks are revealed, the per-match
+// ranking and play-by-play show. Excludes the never-played terminals
+// (POSTPONED/CANCELLED) and pre-kickoff SCHEDULED. SUSPENDED/INTERRUPTED count
+// as under way - the match was being played, just halted.
+export const STARTED_STATUSES: MatchStatus[] = [
+  'LIVE',
+  'PAUSED',
+  'SUSPENDED',
+  'INTERRUPTED',
+  'FINISHED',
+]
+export function matchHasStarted(status: MatchStatus): boolean {
+  return STARTED_STATUSES.includes(status)
+}
 
 export type AppStage = 'GROUP' | 'R32' | 'R16' | 'QF' | 'SF' | 'THIRD_PLACE' | 'FINAL'
 

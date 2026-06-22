@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { buildTimeline, h2hSummaryOf } from '../../../utils/match-view'
 import { visibleMediaForStatus, type MatchMediaKind } from '#shared/match-media'
-import { EXTRA_TIME_BREAK_MINUTE } from '#shared/types/match'
+import { EXTRA_TIME_BREAK_MINUTE, matchHasStarted } from '#shared/types/match'
 const { t, locale } = useI18n()
 // FIFA leaves break subs without a minute; surface the half-time marker for both
 // the half-time (empty) and extra-time-interval (sentinel) breaks.
@@ -258,8 +258,9 @@ const hasStats = computed(
 )
 const hadShootout = computed(() => ((m.value?.penaltiesHome ?? 0) + (m.value?.penaltiesAway ?? 0)) > 0)
 // The play-by-play tab is offered once the match is under way (the feed is empty
-// before kickoff); on finished matches it stays for the full record.
-const hasStarted = computed(() => isLive.value || status.value === 'FINISHED')
+// before kickoff); on finished matches it stays for the full record. Covers the
+// halted-mid-play states (SUSPENDED/INTERRUPTED) too, so their rankings show.
+const hasStarted = computed(() => matchHasStarted(status.value))
 
 // Emoji per play-by-play event kind; goals/own-goals/penalties read as the loud
 // moments, the rest are quieter markers.

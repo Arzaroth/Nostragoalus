@@ -260,6 +260,13 @@
       "when": 1782160739155,
       "tag": "0036_dark_celestials",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1782170668146,
+      "tag": "0037_dear_tigra",
+      "breakpoints": true
     }
   ]
 }
