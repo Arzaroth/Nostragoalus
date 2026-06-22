@@ -249,6 +249,19 @@ describe('fifaProvider', () => {
     }
   })
 
+  it('keeps an interrupted match in the live feed so its resume is caught', async () => {
+    const payload = {
+      Results: [
+        groupMatch({ IdMatch: 'int', MatchStatus: 11, Date: '2026-06-11T20:00:00Z' }),
+        groupMatch({ IdMatch: 'sched', MatchStatus: 1, Date: '2026-06-12T18:00:00Z' }),
+      ],
+    }
+    const provider = fifaProvider({ seasonId: '285023', fetchImpl: (async () => jsonResponse(payload)) as unknown as typeof fetch, rateLimiter: noWait() })
+    const ids = (await provider.getLiveMatches()).map((m) => m.providerMatchId)
+    expect(ids).toContain('int')
+    expect(ids).not.toContain('sched')
+  })
+
   it('handles empty payloads and upstream errors', async () => {
     const rate = fifaProvider({ seasonId: '1', fetchImpl: (async () => new Response('', { status: 429 })) as unknown as typeof fetch, rateLimiter: noWait() })
     await expect(rate.listFixtures({ season: '2026' })).rejects.toBeInstanceOf(ProviderRateLimitError)

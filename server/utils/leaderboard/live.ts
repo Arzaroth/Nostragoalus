@@ -1,7 +1,7 @@
 import { and, eq, inArray, isNotNull } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { match, prediction } from '../../../db/schema'
-import { countsDouble } from '../../../shared/types/match'
+import { countsDouble, IN_PLAY_STATUSES } from '../../../shared/types/match'
 import { closingOddsForOutcome } from '../odds/store'
 import { getScoringConfigFor } from '../scoring/store'
 import type { ScoringRules } from '../scoring/config'
@@ -37,7 +37,7 @@ export async function getLiveProvisionalPoints(
     .where(
       and(
         eq(match.competitionId, competitionId),
-        inArray(match.status, ['LIVE', 'PAUSED']),
+        inArray(match.status, IN_PLAY_STATUSES),
         isNotNull(match.fullTimeHome),
         isNotNull(match.fullTimeAway),
       ),
