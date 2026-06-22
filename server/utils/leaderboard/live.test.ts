@@ -43,6 +43,18 @@ describe('getLiveProvisionalPoints', () => {
     await client.close()
   })
 
+  it.each(['INTERRUPTED', 'SUSPENDED'] as const)('scores a halted %s match at its frozen scoreline', async (status) => {
+    const { db, client, competitionId, roundId } = await setup()
+    const u = await makeUser(db, 'u', 'U')
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: PAST, status, fullTimeHome: 2, fullTimeAway: 1 })
+    await makePrediction(db, { userId: u, matchId: m, roundId, home: 2, away: 1, lockedAt: PAST })
+
+    const live = await getLiveProvisionalPoints(db, competitionId)
+    expect(live.get(u)!.exact).toBe(1)
+    expect(live.get(u)!.points).toBeGreaterThan(0)
+    await client.close()
+  })
+
   it('ignores unlocked predictions', async () => {
     const { db, client, competitionId, roundId } = await setup()
     const u = await makeUser(db, 'u', 'U')

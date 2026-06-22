@@ -9,17 +9,19 @@ export type MatchStatus =
   | 'AWARDED'
   | 'INTERRUPTED'
 
-// Statuses where the match has kicked off: picks are revealed, the per-match
-// ranking and play-by-play show. Excludes the never-played terminals
-// (POSTPONED/CANCELLED) and pre-kickoff SCHEDULED. SUSPENDED/INTERRUPTED count
-// as under way - the match was being played, just halted.
-export const STARTED_STATUSES: MatchStatus[] = [
-  'LIVE',
-  'PAUSED',
-  'SUSPENDED',
-  'INTERRUPTED',
-  'FINISHED',
-]
+// In play: kicked off but not yet final. The scoreline can be partial or frozen
+// (PAUSED at the break, SUSPENDED/INTERRUPTED halted mid-play). These rank
+// provisionally and keep the live boards refreshing.
+export const IN_PLAY_STATUSES: MatchStatus[] = ['LIVE', 'PAUSED', 'SUSPENDED', 'INTERRUPTED']
+export function matchIsInPlay(status: MatchStatus): boolean {
+  return IN_PLAY_STATUSES.includes(status)
+}
+
+// Started: kicked off at all, in play or finished - picks are revealed, the
+// per-match ranking and play-by-play show. Excludes never-played terminals
+// (POSTPONED/CANCELLED), pre-kickoff SCHEDULED, and AWARDED walkovers (which can
+// carry null scores, so they have no board - see TODO).
+export const STARTED_STATUSES: MatchStatus[] = [...IN_PLAY_STATUSES, 'FINISHED']
 export function matchHasStarted(status: MatchStatus): boolean {
   return STARTED_STATUSES.includes(status)
 }

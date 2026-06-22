@@ -116,6 +116,7 @@ describe('getMatchLeagueStandings', () => {
     const board = await getMatchLeagueStandings(db, { matchId: m, leagueId, competitionId, viewerId: u })
     expect(board.scope).toBe('live')
     expect(board.rows[0].baseTier).toBe('EXACT')
+    expect(board.rows[0].points).toBeGreaterThan(0)
     await client.close()
   })
 
