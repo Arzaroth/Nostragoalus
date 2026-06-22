@@ -21,6 +21,11 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 - [ ] Admin SSO routes (register/edit conflict checks, sp-metadata for
       drafts, visibility, unlink-sso, sso-links): thin but admin-facing;
       a handler-level test file with a pglite db would cover the lot.
+- [ ] NotificationBell "mark all read on open": only the composable side
+      (markAllRead/deleteAll mutations) is covered. The panel `@show` hook
+      can't be exercised - PrimeVue's Popover doesn't emit show on a
+      programmatic toggle under happy-dom (the existing bell tests never
+      open the panel for the same reason). Needs a real-browser/e2e check.
 
 ### E2E (the only one today is `pnpm e2e:smtp`)
 
