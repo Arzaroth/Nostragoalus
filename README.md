@@ -61,6 +61,11 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
 - **Shareable prediction cards**: turn any pick into a social image (server-rendered OG card via
   satori + resvg, localized) with a link that unfurls in chats - result, sealed teaser, or an
   owner-only score reveal; signed stateless tokens keep the field's picks hidden until kickoff
+- **Tamper-evident scores**: every pick change is sealed into an append-only, hash-chained
+  commit-reveal ledger - picks stay hidden until kickoff, then the score and salt are revealed so
+  anyone can re-open the seal. A public **Verify scores** page recomputes the whole chain in your
+  own browser, and your device remembers the last head it saw (localStorage, never sent) so a later
+  edit to anything you already checked raises a site-wide warning - no hash to save by hand
 - Per-team pages: official squads with positions, manager, season stats, competition switcher
 - Knockout **bracket** and an interactive **world map** (Leaflet / OpenStreetMap)
 - **Group standings** on the fixtures page: a live-aware table per group (the same one the
