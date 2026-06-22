@@ -27,12 +27,19 @@ export interface AppendCommitmentInput {
 // Append one immutable, hash-chained commitment for a pick change. MUST run in
 // the same transaction as the prediction write so the pick and its commitment
 // commit (or roll back) together. The head row is locked FOR UPDATE so
-// concurrent saves serialize and the chain can never fork.
+// concurrent saves serialize and the chain can never fork - including the very
+// first append, which seeds the singleton head row first so FOR UPDATE always
+// has a row to lock (otherwise two genesis saves would both read no head, both
+// claim seq 1, and the loser would hard-fail on the seq primary key).
 export async function appendPredictionCommitment(
   db: AppDatabase,
   input: AppendCommitmentInput,
   now: Date = new Date(),
 ): Promise<void> {
+  await db
+    .insert(commitmentChainHead)
+    .values({ id: HEAD_ID, seq: 0, headHash: COMMITMENT_GENESIS, updatedAt: now })
+    .onConflictDoNothing()
   const [head] = await db
     .select()
     .from(commitmentChainHead)
@@ -104,29 +111,38 @@ export async function getCommitmentChain(
 ): Promise<ChainPage> {
   const limit = Math.min(Math.max(opts.limit ?? DEFAULT_PAGE, 1), MAX_PAGE)
   const afterSeq = opts.afterSeq ?? 0
-  const rows = await db
-    .select({
-      seq: predictionCommitment.seq,
-      prevHash: predictionCommitment.prevHash,
-      commitment: predictionCommitment.commitment,
-      entryHash: predictionCommitment.entryHash,
-      subject: predictionCommitment.subject,
-      matchId: predictionCommitment.matchId,
-      createdAt: predictionCommitment.createdAt,
-      homeGoals: predictionCommitment.homeGoals,
-      awayGoals: predictionCommitment.awayGoals,
-      salt: predictionCommitment.salt,
-      kickoffTime: match.kickoffTime,
-    })
-    .from(predictionCommitment)
-    .leftJoin(match, eq(match.id, predictionCommitment.matchId))
-    .where(gt(predictionCommitment.seq, afterSeq))
-    .orderBy(asc(predictionCommitment.seq))
-    .limit(limit + 1)
+  // Read the page rows and the chain head in one read-only snapshot. Otherwise a
+  // commitment appended between the two reads would leave the served head ahead
+  // of the entries, and the client (which compares its walked head to the served
+  // head) would flag a perfectly honest, concurrently-growing ledger as tampered.
+  const { rows, head } = await db.transaction(
+    async (tx) => {
+      const rows = await tx
+        .select({
+          seq: predictionCommitment.seq,
+          prevHash: predictionCommitment.prevHash,
+          commitment: predictionCommitment.commitment,
+          entryHash: predictionCommitment.entryHash,
+          subject: predictionCommitment.subject,
+          matchId: predictionCommitment.matchId,
+          createdAt: predictionCommitment.createdAt,
+          homeGoals: predictionCommitment.homeGoals,
+          awayGoals: predictionCommitment.awayGoals,
+          salt: predictionCommitment.salt,
+          kickoffTime: match.kickoffTime,
+        })
+        .from(predictionCommitment)
+        .leftJoin(match, eq(match.id, predictionCommitment.matchId))
+        .where(gt(predictionCommitment.seq, afterSeq))
+        .orderBy(asc(predictionCommitment.seq))
+        .limit(limit + 1)
+      return { rows, head: await getChainHead(tx) }
+    },
+    { isolationLevel: 'repeatable read', accessMode: 'read only' },
+  )
 
   const pageRows = rows.slice(0, limit)
   const nextSeq = rows.length > limit ? pageRows[pageRows.length - 1].seq : null
-  const head = await getChainHead(db)
   const entries = pageRows.map((r): LedgerEntry => {
     const opened = r.kickoffTime !== null && r.kickoffTime <= now
     const entry: LedgerEntry = {
@@ -167,15 +183,19 @@ export async function verifyChainServer(
   let afterSeq = 0
   let prev = COMMITMENT_GENESIS
   let verified = 0
+  // The head taken from each page is snapshot-consistent with that page's
+  // entries (getCommitmentChain reads both together), so the last page's head is
+  // the one the walk must reproduce - no separate, skew-prone head read.
+  let head = COMMITMENT_GENESIS
   for (;;) {
-    const { entries, nextSeq } = await getCommitmentChain(db, { afterSeq, limit: pageSize }, now)
-    const res = await verifyLedger(entries, prev)
+    const page = await getCommitmentChain(db, { afterSeq, limit: pageSize }, now)
+    const res = await verifyLedger(page.entries, prev)
     if (!res.ok) return { ok: false, verified, head: prev, failedSeq: res.failedSeq, reason: res.reason }
     verified += res.count
     prev = res.head
-    if (nextSeq === null) break
-    afterSeq = nextSeq
+    head = page.head.headHash
+    if (page.nextSeq === null) break
+    afterSeq = page.nextSeq
   }
-  const head = await getChainHead(db)
-  return { ok: prev === head.headHash, verified, head: head.headHash }
+  return { ok: prev === head, verified, head }
 }

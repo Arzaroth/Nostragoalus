@@ -1,5 +1,5 @@
 import { type LedgerEntry, type PinnedHead, type WitnessStatus, witnessExtension } from '#shared/commitment'
-import type { ChainHeadDTO, ChainPageDTO } from './useCommitments'
+import { fetchLedgerPages, type ChainHeadDTO } from './useCommitments'
 
 const PIN_KEY = 'ng-tamper-pin'
 
@@ -33,18 +33,6 @@ function writePin(pin: StoredPin): void {
   }
 }
 
-async function fetchEntriesAfter(afterSeq: number, signal?: AbortSignal): Promise<LedgerEntry[]> {
-  const entries: LedgerEntry[] = []
-  let cursor = afterSeq
-  for (;;) {
-    const page = await $fetch<ChainPageDTO>('/api/commitments', { params: { afterSeq: cursor, limit: 1000 }, signal })
-    entries.push(...page.entries)
-    if (page.nextSeq === null) break
-    cursor = page.nextSeq
-  }
-  return entries
-}
-
 export interface TamperWatchState {
   status: WitnessStatus | 'unknown'
   pinnedSeq: number | null
@@ -71,9 +59,20 @@ export function useTamperWatch() {
     const stored = readPin()
     const pin: PinnedHead | null = stored ? { seq: stored.seq, headHash: stored.headHash } : null
     try {
-      const head = await $fetch<ChainHeadDTO>('/api/commitments/head')
-      const servedHead: PinnedHead = { seq: head.seq, headHash: head.headHash }
-      const extension = pin && servedHead.seq > pin.seq ? await fetchEntriesAfter(pin.seq) : []
+      let servedHead: PinnedHead
+      let extension: LedgerEntry[] = []
+      if (pin) {
+        // Walk from the pin and take the served head from that SAME paged walk, so
+        // a commitment appended mid-walk can't desync head and entries into a
+        // false tamper verdict (the served head stays consistent with what we read).
+        const walk = await fetchLedgerPages(pin.seq)
+        extension = walk.entries
+        servedHead = walk.head
+      } else {
+        // First visit: nothing to compare against, just snapshot the current head.
+        const head = await $fetch<ChainHeadDTO>('/api/commitments/head')
+        servedHead = { seq: head.seq, headHash: head.headHash }
+      }
       const result = await witnessExtension(pin, extension, servedHead)
       const firstSeenAt = stored?.firstSeenAt ?? new Date().toISOString()
       // Only advance the pin when the chain proved consistent - never adopt a head

@@ -4,7 +4,7 @@ import { createTestDb } from '../../../tests/db'
 import { findRoundId } from '../sync/rounds'
 import { makeMatch, makeUser, seedCompetition } from '../../../tests/factories'
 import { upsertPrediction } from '../predictions/service'
-import { predictionCommitment } from '../../../db/schema'
+import { commitmentChainHead, predictionCommitment } from '../../../db/schema'
 import { COMMITMENT_GENESIS, verifyLedger } from '../../../shared/commitment'
 import { appendPredictionCommitment, getChainHead, getCommitmentChain, verifyChainServer } from './service'
 
@@ -69,6 +69,19 @@ describe('upsertPrediction commitments', () => {
     const head = await getChainHead(db)
     const rows = await ledgerRows(db)
     expect(head.headHash).toBe(rows[1].entryHash)
+    await client.close()
+  })
+
+  it('appends when only one score axis changes', async () => {
+    const { db, client, competitionId, roundId, userId } = await setup()
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: FUTURE })
+
+    await upsertPrediction(db, { userId, matchId: m, home: 2, away: 1 }, NOW)
+    expect(await ledgerRows(db)).toHaveLength(1)
+
+    // Same home, different away - the change still seals a new commitment.
+    await upsertPrediction(db, { userId, matchId: m, home: 2, away: 3 }, NOW)
+    expect(await ledgerRows(db)).toHaveLength(2)
     await client.close()
   })
 })
@@ -154,6 +167,18 @@ describe('verifyChainServer', () => {
   it('confirms an empty ledger against the genesis head', async () => {
     const { db, client } = await setup()
     expect(await verifyChainServer(db, NOW)).toMatchObject({ ok: true, verified: 0, head: COMMITMENT_GENESIS })
+    await client.close()
+  })
+
+  it('flags a rewritten head pointer even when the entries verify', async () => {
+    const { db, client, competitionId, roundId, userId } = await setup()
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: FUTURE })
+    await upsertPrediction(db, { userId, matchId: m, home: 1, away: 0 }, NOW)
+
+    // Every entry still chains cleanly, but the published head is swapped: the
+    // walk's head no longer matches the served head, so the audit must fail.
+    await db.update(commitmentChainHead).set({ headHash: 'f'.repeat(64) })
+    expect((await verifyChainServer(db, NOW)).ok).toBe(false)
     await client.close()
   })
 })

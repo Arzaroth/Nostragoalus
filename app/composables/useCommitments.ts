@@ -20,16 +20,24 @@ export function useCommitmentHead() {
   })
 }
 
-async function fetchAllEntries(signal?: AbortSignal) {
+// Page the ledger from afterSeq to the tail, returning every entry plus the head
+// reported by the LAST page. That head is snapshot-consistent with the entries
+// (the server reads both together), so a caller can compare its walked head to it
+// without a concurrent append producing a false mismatch. Shared by the verify
+// page (from genesis) and the per-device witness (from its pin).
+export async function fetchLedgerPages(
+  afterSeq: number,
+  signal?: AbortSignal,
+): Promise<{ entries: LedgerEntry[]; head: { seq: number; headHash: string } }> {
   const entries: LedgerEntry[] = []
-  let afterSeq = 0
   let head = { seq: 0, headHash: COMMITMENT_GENESIS }
+  let cursor = afterSeq
   for (;;) {
-    const page = await $fetch<ChainPageDTO>('/api/commitments', { params: { afterSeq, limit: 1000 }, signal })
+    const page = await $fetch<ChainPageDTO>('/api/commitments', { params: { afterSeq: cursor, limit: 1000 }, signal })
     entries.push(...page.entries)
     head = page.head
     if (page.nextSeq === null) break
-    afterSeq = page.nextSeq
+    cursor = page.nextSeq
   }
   return { entries, head }
 }
@@ -48,8 +56,11 @@ export interface LedgerVerification {
 export function useLedgerVerification() {
   return useQuery({
     queryKey: ['commitments', 'verify'],
+    // An explicit "recompute it yourself" action: never serve a stale verdict, so
+    // a remount or reverify always re-pulls and re-walks the live ledger.
+    staleTime: 0,
     queryFn: async ({ signal }): Promise<LedgerVerification> => {
-      const { entries, head } = await fetchAllEntries(signal)
+      const { entries, head } = await fetchLedgerPages(0, signal)
       const result = await verifyLedger(entries)
       const openedCount = entries.filter((e) => e.opened).length
       return { entries, head, result: { ...result, ok: result.ok && result.head === head.headHash }, openedCount }
