@@ -992,7 +992,7 @@
     "title": "Notifications",
     "ariaLabel": "Notifications",
     "empty": "Vous êtes à jour.",
-    "markAllRead": "Tout marquer comme lu",
+    "deleteAll": "Tout supprimer",
     "dismiss": "Supprimer",
     "loading": "Chargement…",
     "item": {

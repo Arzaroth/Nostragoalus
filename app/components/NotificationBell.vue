@@ -3,12 +3,18 @@ import type { NotificationDTO } from '#shared/types/notifications'
 
 const { t, locale } = useI18n()
 const router = useRouter()
-const { notifications, unreadCount, isLoading, markRead, markAllRead, dismiss } = useNotifications()
+const { notifications, unreadCount, isLoading, markRead, markAllRead, dismiss, deleteAll } = useNotifications()
 
 const panel = ref()
 const { onShow, onHide } = useHideOnScroll(panel)
 function toggle(e: Event) {
   panel.value?.toggle(e)
+}
+// Opening the panel is the acknowledgement: clear the unread badge right away.
+// The list stays until the user wipes it with "delete all" or dismisses items.
+function onPanelShow() {
+  onShow()
+  if (unreadCount.value > 0) markAllRead.mutate()
 }
 
 const ICONS: Record<NotificationDTO['type'], string> = {
@@ -107,7 +113,7 @@ async function onItem(n: NotificationDTO) {
         style="background: var(--ng-danger, #ef4444)"
       >{{ unreadCount > 9 ? '9+' : unreadCount }}</span>
     </button>
-    <Popover ref="panel" @show="onShow" @hide="onHide">
+    <Popover ref="panel" @show="onPanelShow" @hide="onHide">
       <div class="w-80 max-w-[90vw] -m-1">
         <div
           class="flex items-center justify-between px-3 py-2 border-b"
@@ -115,13 +121,13 @@ async function onItem(n: NotificationDTO) {
         >
           <span class="font-semibold text-sm">{{ t('notifications.title') }}</span>
           <button
-            v-if="unreadCount > 0"
+            v-if="notifications.length > 0"
             type="button"
             class="text-xs hover:underline"
             style="color: var(--p-primary-color)"
-            @click="markAllRead.mutate()"
+            @click="deleteAll.mutate()"
           >
-            {{ t('notifications.markAllRead') }}
+            {{ t('notifications.deleteAll') }}
           </button>
         </div>
         <div class="max-h-96 overflow-y-auto">
