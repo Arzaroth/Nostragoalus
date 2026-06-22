@@ -6,8 +6,8 @@ const winnerCode = (m: BracketMatch) =>
 // A still-undecided feeder slot reads as a match-number reference ("W73", the
 // winner of match 73; "RU101", that match's runner-up for the third-place tie).
 // Returns the referenced match number, or null for a code/group/worded slot.
-function feederRefNumber(placeholder: string | null | undefined): number | null {
-  const m = (placeholder ?? '').trim().match(/^(?:W|RU)\s*(\d+)$/i)
+function feederRefNumber(placeholder: string): number | null {
+  const m = placeholder.trim().match(/^(?:W|RU)\s*(\d+)$/i)
   return m ? Number(m[1]) : null
 }
 
