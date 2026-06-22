@@ -86,5 +86,11 @@ export function useNotifications() {
     onSettled: () => qc.invalidateQueries({ queryKey: FEED_KEY }),
   })
 
-  return { notifications, unreadCount, isLoading: query.isLoading, markRead, markAllRead, dismiss }
+  const deleteAll = useMutation({
+    mutationFn: () => $fetch<{ deleted: number }>('/api/notifications/delete', { method: 'POST', body: { all: true } }),
+    onMutate: () => patchFeed(() => ({ notifications: [], unreadCount: 0 })),
+    onSettled: () => qc.invalidateQueries({ queryKey: FEED_KEY }),
+  })
+
+  return { notifications, unreadCount, isLoading: query.isLoading, markRead, markAllRead, dismiss, deleteAll }
 }
