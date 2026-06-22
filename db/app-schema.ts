@@ -35,6 +35,7 @@ export const matchStatusEnum = pgEnum('match_status', [
   'CANCELLED',
   'SUSPENDED',
   'AWARDED',
+  'INTERRUPTED',
 ])
 
 export const matchScoringStateEnum = pgEnum('match_scoring_state', ['PENDING', 'SCORED', 'VOID', 'STALE'])

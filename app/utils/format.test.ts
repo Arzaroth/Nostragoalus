@@ -11,6 +11,7 @@ const STATUSES: MatchStatus[] = [
   'CANCELLED',
   'SUSPENDED',
   'AWARDED',
+  'INTERRUPTED',
 ]
 
 // Stub translator: echoes the key so we assert the mapping, not the copy.
@@ -30,6 +31,8 @@ describe('matchStatusLabel & statusSeverity', () => {
     expect(statusSeverity('SCHEDULED')).toBe('info')
     expect(statusSeverity('CANCELLED')).toBe('secondary')
     expect(statusSeverity('POSTPONED')).toBe('warn')
+    expect(matchStatusLabel('INTERRUPTED', tr)).toBe('match.statusLabel.interrupted')
+    expect(statusSeverity('INTERRUPTED')).toBe('warn')
   })
 })
 

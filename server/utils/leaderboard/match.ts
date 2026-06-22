@@ -1,7 +1,7 @@
 import { and, eq, isNotNull, or } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { leagueMember, match, prediction, user } from '../../../db/schema'
-import { countsDouble } from '../../../shared/types/match'
+import { countsDouble, matchHasStarted } from '../../../shared/types/match'
 import { closingOddsForOutcome } from '../odds/store'
 import { getScoringConfigFor } from '../scoring/store'
 import type { ScoringRules } from '../scoring/config'
@@ -72,9 +72,10 @@ export async function getMatchLeagueStandings(
     .limit(1)
   // Copy-protection: other members' picks stay hidden until the match is under
   // way, so the board has nothing to show (and nothing to score) before kickoff.
-  const started = m && (m.status === 'LIVE' || m.status === 'PAUSED' || m.status === 'FINISHED')
-  if (!m || !started) return { scope: 'upcoming', rows: [], notPredicted: 0 }
-  const live = m.status === 'LIVE' || m.status === 'PAUSED'
+  if (!m || !matchHasStarted(m.status)) return { scope: 'upcoming', rows: [], notPredicted: 0 }
+  // Under way but not yet final (LIVE/PAUSED/SUSPENDED/INTERRUPTED): rank
+  // provisionally and keep the board on the live scope so it refreshes.
+  const live = m.status !== 'FINISHED'
 
   // Visibility, same rule as the leaderboard: admin-hidden dropped, private
   // profiles shown only when entitled - but the viewer is always kept on top of

@@ -67,7 +67,15 @@ export function mapFifaStatus(code: number): MatchStatus {
       return 'FINISHED'
     case 3:
       return 'LIVE'
-    case 1:
+    case 4: // abandoned: started then called off, no valid result
+    case 8: // cancelled: called off before kick-off
+      return 'CANCELLED'
+    case 7:
+      return 'POSTPONED'
+    case 11: // interrupted: halted mid-play, expected to resume
+      return 'INTERRUPTED'
+    case 1: // fixture, not yet started
+    case 12: // line-ups posted, still pre-kickoff
     default:
       return 'SCHEDULED'
   }
@@ -888,6 +896,9 @@ export function fifaProvider(options: FifaOptions): MatchDataProvider {
         (m) =>
           m.status === 'LIVE' ||
           m.status === 'PAUSED' ||
+          // Keep polling an interrupted match so its resume (or final whistle) is
+          // caught on the fast feed, not only the hourly fixtures refresh.
+          m.status === 'INTERRUPTED' ||
           (m.status === 'FINISHED' && new Date(m.kickoffTime).getTime() >= finishedCutoff),
       )
     },

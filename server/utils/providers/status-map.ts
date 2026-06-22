@@ -31,7 +31,7 @@ const API_FOOTBALL_STATUS: Record<string, MatchStatus> = {
   BT: 'LIVE',
   P: 'LIVE',
   LIVE: 'LIVE',
-  INT: 'LIVE',
+  INT: 'INTERRUPTED',
   HT: 'PAUSED',
   FT: 'FINISHED',
   AET: 'FINISHED',

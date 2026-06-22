@@ -22,7 +22,7 @@ const route = useRoute()
 // Chip order is a past->future timeline, mirroring the page (oldest first).
 const STATUS_BUCKETS = {
   fulltime: ['FINISHED', 'AWARDED'],
-  live: ['LIVE', 'PAUSED', 'SUSPENDED'],
+  live: ['LIVE', 'PAUSED', 'SUSPENDED', 'INTERRUPTED'],
   upcoming: ['SCHEDULED', 'POSTPONED', 'CANCELLED'],
 } as const
 type StatusBucket = keyof typeof STATUS_BUCKETS

@@ -3,6 +3,22 @@
 Deferred work, queued behind feature development.
 Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
+## Match status: interrupted (deferred from the feature pass)
+
+- No auto-void safety net for a match stuck `INTERRUPTED` that never resolves.
+  It relies on FIFA flipping the code to FINISHED (resumed) or to an abandoned
+  code (-> CANCELLED, which `finalize` voids). If the feed strands a match on 11
+  forever, it sits in limbo. `POSTPONED` has a `POSTPONED_VOID_AFTER_MS` guard;
+  consider an equivalent for INTERRUPTED.
+- `AWARDED` matches still do not surface the per-match ranking
+  (`matchHasStarted` excludes them) - a walkover can carry null scores, so this
+  was left as-is. Revisit if forfeit handling ever needs a board.
+- No "match interrupted" notification/push - the interruption is silent
+  (kickoff/goal pushes exist, this transition does not fire one).
+- FIFA code 11 is undocumented in the public enum; mapped to INTERRUPTED from
+  the FRA-IRQ (2026-06-22) observation. If FIFA reuses 11 for something else,
+  revisit `mapFifaStatus`.
+
 ## Test debt
 
 ### Unit / handler coverage

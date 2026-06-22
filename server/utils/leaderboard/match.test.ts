@@ -106,6 +106,19 @@ describe('getMatchLeagueStandings', () => {
     await client.close()
   })
 
+  it.each(['INTERRUPTED', 'SUSPENDED'] as const)('reveals the ranking for a halted %s match', async (status) => {
+    const { db, client, competitionId, roundId, leagueId } = await setup()
+    const u = await makeUser(db, 'u', 'U')
+    await addLeagueMember(db, leagueId, u)
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: PAST, status, fullTimeHome: 1, fullTimeAway: 1 })
+    await makePrediction(db, { userId: u, matchId: m, roundId, home: 1, away: 1, lockedAt: PAST })
+
+    const board = await getMatchLeagueStandings(db, { matchId: m, leagueId, competitionId, viewerId: u })
+    expect(board.scope).toBe('live')
+    expect(board.rows[0].baseTier).toBe('EXACT')
+    await client.close()
+  })
+
   it('uses persisted points for a finished, finalized match', async () => {
     const { db, client, competitionId, roundId, leagueId } = await setup()
     const a = await makeUser(db, 'a', 'A')
