@@ -58,6 +58,67 @@ describe('orderBracketFeeders', () => {
     }
     expect(orderBracketFeeders(tbd).rounds[0].matches.map((m) => m.providerMatchId)).toEqual(['a', 'b'])
   })
+
+  it('orders TBD feeders by their "W{n}" references (WC2026 R32, 1I/2I on opposite halves)', () => {
+    const und = (id: string, home: string, away: string, kickoff?: string): BracketMatch => ({
+      ...bm(id, home, away, null, kickoff),
+      homeCode: null,
+      awayCode: null,
+    })
+    // R32 as the provider lists it (kickoff order); each R16 slot references its
+    // R32 feeder by match number ("W73"). Group I's winner (1I) and runner-up
+    // (2I) must land in opposite halves - they can only meet in the final.
+    const bracket: NormalizedBracket = {
+      winner: null,
+      rounds: [
+        {
+          name: 'Round of 32',
+          sequence: 2,
+          matches: [
+            und('400021518', '2A', '2B', '2026-06-28T19:00'),
+            und('400021516', '1C', '2F', '2026-06-29T17:00'),
+            und('400021513', 'Germany', '3ABCDF', '2026-06-29T20:30'),
+            und('400021522', '1F', '2C', '2026-06-30T01:00'),
+            und('400021514', '2E', '2I', '2026-06-30T17:00'),
+            und('400021523', '1I', '3CDFGH', '2026-06-30T21:00'),
+            und('400021520', 'Mexico', '3CEFHI', '2026-07-01T01:00'),
+            und('400021512', '1L', '3EHIJK', '2026-07-01T16:00'),
+            und('400021525', '1G', '3AEHIJ', '2026-07-01T20:00'),
+            und('400021524', 'USA', '3BEFIJ', '2026-07-02T00:00'),
+            und('400021519', '1H', '2J', '2026-07-02T19:00'),
+            und('400021526', '2K', '2L', '2026-07-02T23:00'),
+            und('400021527', '1B', '3EFGIJ', '2026-07-03T03:00'),
+            und('400021515', '2D', '2G', '2026-07-03T18:00'),
+            und('400021521', '1J', '2H', '2026-07-03T22:00'),
+            und('400021517', '1K', '3DEIJL', '2026-07-04T01:30'),
+          ],
+        },
+        {
+          name: 'Round of 16',
+          sequence: 3,
+          matches: [
+            und('400021530', 'W73', 'W75'),
+            und('400021533', 'W74', 'W77'),
+            und('400021532', 'W76', 'W78'),
+            und('400021531', 'W79', 'W80'),
+            und('400021529', 'W83', 'W84'),
+            und('400021534', 'W81', 'W82'),
+            und('400021528', 'W86', 'W88'),
+            und('400021535', 'W85', 'W87'),
+          ],
+        },
+      ],
+    }
+    const r32 = orderBracketFeeders(bracket).rounds[0].matches
+    expect(r32.map((m) => m.providerMatchId)).toEqual([
+      '400021512', '400021514', '400021513', '400021516',
+      '400021515', '400021517', '400021518', '400021519',
+      '400021522', '400021523', '400021520', '400021521',
+      '400021525', '400021527', '400021524', '400021526',
+    ])
+    const half = (slot: string) => Math.floor(r32.findIndex((m) => m.homeTeam === slot || m.awayTeam === slot) / 8)
+    expect(half('1I')).not.toBe(half('2I'))
+  })
 })
 
 it('kickoff fallback tolerates missing dates', () => {

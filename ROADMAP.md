@@ -249,6 +249,13 @@ effort buckets; order within a bucket is not priority.
         code; projected = resolved from standings.
       - Visual: official slots solid; projected slots dashed + a "projected"
         chip (not color-only). Separate from the "Bracket challenge" game below.
+      - **Fix (1.32.x)**: `orderBracketFeeders` could only pair feeders under a
+        parent by following decided winner codes, so a pre-kickoff (all-TBD)
+        bracket fell back to kickoff-time order and drew the sides wrong (e.g. 1I
+        and 2I landing under the same R16 match). It now reads the parent round's
+        `W{n}`/`RU{n}` match-number references and maps them to feeders by
+        provider-id order (monotonic in match number), reconstructing the true
+        tree before any game is played.
 - [ ] **Bracket challenge**: predict the full knockout tree before R16 lock,
       separate points pot. Bracket rendering already exists.
 - [ ] **Survivor side game**: one team per matchday, must win, no team reuse,
