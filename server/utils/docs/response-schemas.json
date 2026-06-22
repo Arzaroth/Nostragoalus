@@ -72,12 +72,20 @@
     "example": {
       "items": [
         {
-          "id": "8ca308ad-700c-444f-940b-63629272ed4d",
-          "title": "Mobile app",
-          "description": "Native iOS and Android client",
-          "status": "IN_PROGRESS",
+          "id": "15d00ef8-0fc6-4150-9441-b6c23d0acf3b",
+          "title": "Auto-refresh on new version",
+          "description": "A \"new version available\" prompt when the app updates, so you are never on a stale build.",
+          "status": "PLANNED",
           "position": 0,
-          "updatedAt": "2026-06-12T01:34:05.162Z"
+          "updatedAt": "2026-06-12T02:14:00.993Z"
+        },
+        {
+          "id": "360a170e-570a-4fce-b5ad-10a646f153cf",
+          "title": "League invite links",
+          "description": "Share a link to join your league, with optional expiry and a max number of uses.",
+          "status": "PLANNED",
+          "position": 1,
+          "updatedAt": "2026-06-12T02:14:00.993Z"
         }
       ]
     }
@@ -109,6 +117,9 @@
                 "type": "string"
               },
               "competitionId": {
+                "type": "string"
+              },
+              "providerMatchId": {
                 "type": "string"
               },
               "stage": {
@@ -189,6 +200,7 @@
         {
           "id": "6d2a9a60-ecff-4caa-9ce0-ff359c082d05",
           "competitionId": "b8d3f79e-cb18-40fe-b6de-a3522e388d7a",
+          "providerMatchId": "400128082",
           "stage": "GROUP",
           "group": "A",
           "homeTeam": "Qatar",
@@ -213,6 +225,7 @@
         {
           "id": "b0afbdb7-97f1-484f-acbc-33b2f18bce73",
           "competitionId": "b8d3f79e-cb18-40fe-b6de-a3522e388d7a",
+          "providerMatchId": "400235458",
           "stage": "GROUP",
           "group": "B",
           "homeTeam": "England",
@@ -248,6 +261,9 @@
               "type": "string"
             },
             "competitionId": {
+              "type": "string"
+            },
+            "providerMatchId": {
               "type": "string"
             },
             "stage": {
@@ -325,6 +341,7 @@
       "match": {
         "id": "6d2a9a60-ecff-4caa-9ce0-ff359c082d05",
         "competitionId": "b8d3f79e-cb18-40fe-b6de-a3522e388d7a",
+        "providerMatchId": "400128082",
         "stage": "GROUP",
         "group": "A",
         "homeTeam": "Qatar",
@@ -681,6 +698,12 @@
         "detail": {
           "type": "object",
           "properties": {
+            "minute": {
+              "type": "string"
+            },
+            "halfTime": {
+              "type": "boolean"
+            },
             "possessionHome": {
               "type": "number"
             },
@@ -815,6 +838,167 @@
                 }
               }
             },
+            "playerNames": {
+              "type": "object",
+              "properties": {
+                "284087": {
+                  "type": "string"
+                },
+                "284190": {
+                  "type": "string"
+                },
+                "303419": {
+                  "type": "string"
+                },
+                "332827": {
+                  "type": "string"
+                },
+                "336523": {
+                  "type": "string"
+                },
+                "345059": {
+                  "type": "string"
+                },
+                "351121": {
+                  "type": "string"
+                },
+                "351129": {
+                  "type": "string"
+                },
+                "353251": {
+                  "type": "string"
+                },
+                "354861": {
+                  "type": "string"
+                },
+                "373400": {
+                  "type": "string"
+                },
+                "380053": {
+                  "type": "string"
+                },
+                "385067": {
+                  "type": "string"
+                },
+                "385068": {
+                  "type": "string"
+                },
+                "385070": {
+                  "type": "string"
+                },
+                "386347": {
+                  "type": "string"
+                },
+                "386348": {
+                  "type": "string"
+                },
+                "386356": {
+                  "type": "string"
+                },
+                "386366": {
+                  "type": "string"
+                },
+                "386380": {
+                  "type": "string"
+                },
+                "386385": {
+                  "type": "string"
+                },
+                "386415": {
+                  "type": "string"
+                },
+                "389782": {
+                  "type": "string"
+                },
+                "389784": {
+                  "type": "string"
+                },
+                "389799": {
+                  "type": "string"
+                },
+                "394776": {
+                  "type": "string"
+                },
+                "397870": {
+                  "type": "string"
+                },
+                "402974": {
+                  "type": "string"
+                },
+                "402979": {
+                  "type": "string"
+                },
+                "404275": {
+                  "type": "string"
+                },
+                "407377": {
+                  "type": "string"
+                },
+                "407381": {
+                  "type": "string"
+                },
+                "416051": {
+                  "type": "string"
+                },
+                "416056": {
+                  "type": "string"
+                },
+                "419002": {
+                  "type": "string"
+                },
+                "419003": {
+                  "type": "string"
+                },
+                "419008": {
+                  "type": "string"
+                },
+                "419020": {
+                  "type": "string"
+                },
+                "419441": {
+                  "type": "string"
+                },
+                "419449": {
+                  "type": "string"
+                },
+                "419473": {
+                  "type": "string"
+                },
+                "419475": {
+                  "type": "string"
+                },
+                "424031": {
+                  "type": "string"
+                },
+                "425532": {
+                  "type": "string"
+                },
+                "428885": {
+                  "type": "string"
+                },
+                "428904": {
+                  "type": "string"
+                },
+                "433406": {
+                  "type": "string"
+                },
+                "441236": {
+                  "type": "string"
+                },
+                "441237": {
+                  "type": "string"
+                },
+                "448290": {
+                  "type": "string"
+                },
+                "448303": {
+                  "type": "string"
+                },
+                "448310": {
+                  "type": "string"
+                }
+              }
+            },
             "ifesId": {
               "type": "string"
             },
@@ -917,6 +1101,8 @@
     },
     "example": {
       "detail": {
+        "minute": "0'",
+        "halfTime": false,
         "possessionHome": 47.088547,
         "possessionAway": 52.911457,
         "attendance": "67372",
@@ -995,6 +1181,60 @@
             "playerOnName": "MOHAMMED MUNTARI"
           }
         ],
+        "playerNames": {
+          "284087": "SAAD ALSHEEB",
+          "284190": "HASSAN ALHAYDOS",
+          "303419": "Alexander DOMINGUEZ",
+          "332827": "Carlos GRUEZO",
+          "336523": "Eduar PRECIADO",
+          "345059": "ABDULAZIZ HATEM",
+          "351121": "ALI ASSADALLA",
+          "351129": "ABDELKARIM HASSAN",
+          "353251": "AHMED ALAAELDIN",
+          "354861": "KARIM BOUDIAF",
+          "373400": "Enner VALENCIA",
+          "380053": "Angel MENA",
+          "385067": "BOUALEM KHOUKHI",
+          "385068": "ISMAIL MOHAMAD",
+          "385070": "MOHAMMED MUNTARI",
+          "386347": "AKRAM AFIF",
+          "386348": "ASSIM MADIBO",
+          "386356": "YOUSOF HASSAN",
+          "386366": "ALMOEZ ALI",
+          "386380": "SALEM AL HAJRI",
+          "386385": "TAREK SALMAN",
+          "386415": "BASSAM HISHAM",
+          "389782": "Pervis ESTUPINAN",
+          "389784": "Alan FRANCO",
+          "389799": "Diego PALACIOS",
+          "394776": "Robert ARBOLEDA",
+          "397870": "MUSAAB KHIDIR",
+          "402974": "Angelo PRECIADO",
+          "402979": "Felix TORRES",
+          "404275": "Michael ESTRADA",
+          "407377": "Romario IBARRA",
+          "407381": "Xavier ARREAGA",
+          "416051": "PEDRO MIGUEL",
+          "416056": "MESHAAL BARSHAM",
+          "419002": "Moises RAMIREZ",
+          "419003": "Jackson POROZO",
+          "419008": "Jose CIFUENTES",
+          "419020": "Gonzalo PLATA",
+          "419441": "HOMAM AHMED",
+          "419449": "MOHAMMED WAAD",
+          "419473": "JASSEM GABER",
+          "419475": "NAIF ABDULRAHEEM",
+          "424031": "Piero HINCAPIE",
+          "425532": "MOUSTAFA TAREK",
+          "428885": "Moises CAICEDO",
+          "428904": "Jhegson MENDEZ",
+          "433406": "KHALID MUNEER",
+          "441236": "Hernan GALINDEZ",
+          "441237": "Jeremy SARMIENTO",
+          "448290": "William PACHO",
+          "448303": "Djorkaeff REASCO",
+          "448310": "Kevin RODRIGUEZ"
+        },
         "ifesId": "128084",
         "homeTeamId": "43834",
         "awayTeamId": "43927",
@@ -1303,18 +1543,6 @@
                         "awayCode": {
                           "type": "string"
                         },
-                        "homeProjectedCode": {
-                          "type": "string"
-                        },
-                        "homeProjectedTeam": {
-                          "type": "string"
-                        },
-                        "awayProjectedCode": {
-                          "type": "string"
-                        },
-                        "awayProjectedTeam": {
-                          "type": "string"
-                        },
                         "homeScore": {
                           "type": "integer"
                         },
@@ -1461,6 +1689,9 @@
                 "type": "string"
               },
               "competitionId": {
+                "type": "string"
+              },
+              "providerMatchId": {
                 "type": "string"
               },
               "stage": {
@@ -1675,6 +1906,9 @@
               "captain": {
                 "type": "boolean"
               },
+              "pictureUrl": {
+                "type": "string"
+              },
               "goals": {
                 "type": "integer"
               },
@@ -1716,6 +1950,7 @@
         {
           "id": "a82444f2-873e-4c39-b95c-ce01c1e9ab16",
           "competitionId": "b8d3f79e-cb18-40fe-b6de-a3522e388d7a",
+          "providerMatchId": "400235470",
           "stage": "GROUP",
           "group": "D",
           "homeTeam": "France",
@@ -1738,6 +1973,7 @@
         {
           "id": "798cbeea-9b74-41dc-aada-0ec128431387",
           "competitionId": "b8d3f79e-cb18-40fe-b6de-a3522e388d7a",
+          "providerMatchId": "400235467",
           "stage": "GROUP",
           "group": "D",
           "homeTeam": "France",
@@ -1823,6 +2059,7 @@
           "shirtNumber": 1,
           "position": "GK",
           "captain": true,
+          "pictureUrl": "https://digitalhub.fifa.com/transform/14a6f35e-6853-4bbc-bcc7-eb7b4774f226/1442232958",
           "goals": 0,
           "assists": 0
         },
@@ -1832,6 +2069,7 @@
           "shirtNumber": 16,
           "position": "GK",
           "captain": false,
+          "pictureUrl": "https://digitalhub.fifa.com/transform/c7c5a9eb-81bc-4d06-aee3-8c6ea3cb0b03/1442233046",
           "goals": 0,
           "assists": 0
         }
@@ -1984,21 +2222,21 @@
           "homeGoals": 2,
           "awayGoals": 3,
           "isJoker": false,
-          "baseTier": null,
-          "totalPoints": null,
-          "basePoints": null,
-          "bonusPoints": null,
+          "baseTier": "MISS",
+          "totalPoints": 0,
+          "basePoints": 0,
+          "bonusPoints": 0,
           "crowdShare": null,
-          "jokerMultiplierApplied": null,
+          "jokerMultiplierApplied": "1.00",
           "homeTeam": "Korea Republic",
           "awayTeam": "Czechia",
           "homeTeamCode": "KOR",
           "awayTeamCode": "CZE",
           "kickoffTime": "2026-06-12T02:00:00.000Z",
-          "status": "SCHEDULED",
+          "status": "FINISHED",
           "stage": "GROUP",
-          "fullTimeHome": null,
-          "fullTimeAway": null,
+          "fullTimeHome": 2,
+          "fullTimeAway": 1,
           "penaltiesHome": null,
           "penaltiesAway": null,
           "roundLabel": "Group Matchday 1",
@@ -2064,14 +2302,24 @@
               "type": "string"
             },
             "fifaRank": {
-              "type": "string",
-              "nullable": true
+              "type": "integer"
             },
             "potentialPoints": {
               "type": "integer"
             },
             "awardedPoints": {
               "type": "integer"
+            },
+            "repicked": {
+              "type": "boolean"
+            },
+            "originalTeamCode": {
+              "type": "string",
+              "nullable": true
+            },
+            "originalTeamName": {
+              "type": "string",
+              "nullable": true
             },
             "createdAt": {
               "type": "string"
@@ -2083,6 +2331,17 @@
         },
         "locked": {
           "type": "boolean"
+        },
+        "secondChance": {
+          "type": "object",
+          "properties": {
+            "open": {
+              "type": "boolean"
+            },
+            "closesAt": {
+              "type": "string"
+            }
+          }
         }
       }
     },
@@ -2112,13 +2371,20 @@
         "competitionId": "bc4da63c-691d-40ff-8093-cb7c9d812864",
         "teamCode": "FRA",
         "teamName": "France",
-        "fifaRank": null,
+        "fifaRank": 3,
         "potentialPoints": 10,
         "awardedPoints": 0,
+        "repicked": false,
+        "originalTeamCode": null,
+        "originalTeamName": null,
         "createdAt": "2026-06-05T18:57:04.202Z",
-        "updatedAt": "2026-06-07T13:36:35.218Z"
+        "updatedAt": "2026-06-14T23:58:00.941Z"
       },
-      "locked": true
+      "locked": true,
+      "secondChance": {
+        "open": false,
+        "closesAt": "2026-06-28T19:00:00.000Z"
+      }
     }
   },
   "/api/me/stats": {
@@ -2157,12 +2423,12 @@
     "example": {
       "stats": {
         "rank": null,
-        "players": 27,
-        "totalPoints": 1,
-        "exact": 0,
-        "outcome": 1,
-        "predictions": 9,
-        "jokers": 2
+        "players": 32,
+        "totalPoints": 9,
+        "exact": 1,
+        "outcome": 4,
+        "predictions": 10,
+        "jokers": 3
       }
     }
   },
@@ -2628,7 +2894,7 @@
                 }
               }
             },
-            "e8743cef-549a-49bf-8eb5-4357e7d9a225": {
+            "36323f9f-de26-4bcb-a879-23b598030b72": {
               "type": "object",
               "properties": {
                 "home": {
@@ -2642,7 +2908,7 @@
                 }
               }
             },
-            "36323f9f-de26-4bcb-a879-23b598030b72": {
+            "e8743cef-549a-49bf-8eb5-4357e7d9a225": {
               "type": "object",
               "properties": {
                 "home": {
@@ -3251,14 +3517,14 @@
     "example": {
       "totals": {
         "84319173-de28-41cb-b88c-479dcb24a058": {
-          "home": 26,
+          "home": 33,
           "away": 19,
-          "count": 20
+          "count": 23
         },
         "8f88ae29-8388-499f-b02f-2d20d226b302": {
           "home": 33,
-          "away": 13,
-          "count": 19
+          "away": 21,
+          "count": 22
         }
       }
     }
@@ -3459,21 +3725,21 @@
           "homeGoals": 2,
           "awayGoals": 3,
           "isJoker": false,
-          "baseTier": null,
-          "totalPoints": null,
-          "basePoints": null,
-          "bonusPoints": null,
+          "baseTier": "MISS",
+          "totalPoints": 0,
+          "basePoints": 0,
+          "bonusPoints": 0,
           "crowdShare": null,
-          "jokerMultiplierApplied": null,
+          "jokerMultiplierApplied": "1.00",
           "homeTeam": "Korea Republic",
           "awayTeam": "Czechia",
           "homeTeamCode": "KOR",
           "awayTeamCode": "CZE",
           "kickoffTime": "2026-06-12T02:00:00.000Z",
-          "status": "SCHEDULED",
+          "status": "FINISHED",
           "stage": "GROUP",
-          "fullTimeHome": null,
-          "fullTimeAway": null,
+          "fullTimeHome": 2,
+          "fullTimeAway": 1,
           "penaltiesHome": null,
           "penaltiesAway": null,
           "roundLabel": "Group Matchday 1",
@@ -3482,6 +3748,62 @@
           "competitionName": "FIFA World Cup 2026"
         }
       ]
+    }
+  },
+  "/api/commitments": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "entries": {
+          "type": "array",
+          "items": {}
+        },
+        "head": {
+          "type": "object",
+          "properties": {
+            "seq": {
+              "type": "integer"
+            },
+            "headHash": {
+              "type": "string"
+            }
+          }
+        },
+        "nextSeq": {
+          "type": "string",
+          "nullable": true
+        }
+      }
+    },
+    "example": {
+      "entries": [],
+      "head": {
+        "seq": 0,
+        "headHash": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "nextSeq": null
+    }
+  },
+  "/api/commitments/head": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "seq": {
+          "type": "integer"
+        },
+        "headHash": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string",
+          "nullable": true
+        }
+      }
+    },
+    "example": {
+      "seq": 0,
+      "headHash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "updatedAt": null
     }
   }
 }
