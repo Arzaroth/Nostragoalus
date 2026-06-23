@@ -76,6 +76,17 @@
       "body": "Tous les membres de la ligue reçoivent désormais une nouvelle clé. Les personnes que vous avez retirées perdent l'accès aux nouveaux messages ; les anciens messages restent lisibles pour ceux qui les avaient déjà. À utiliser après avoir retiré quelqu'un, ou si un membre ne peut pas lire le chat.",
       "confirm": "Renouveler la clé",
       "cancel": "Annuler"
+    },
+    "verify": {
+      "show": "Vérifier les clés",
+      "intro": "Comparez ces numéros avec chaque membre en personne ou via un canal de confiance. Si le numéro d'un membre ne correspond pas, sa clé a peut-être été falsifiée.",
+      "your": "Votre numéro de sécurité",
+      "verified": "Vérifié",
+      "markVerified": "Marquer comme vérifié",
+      "changed": "Clé modifiée",
+      "acknowledge": "Accepter la nouvelle clé",
+      "changedWarn": "La clé d'un membre a changé depuis la dernière fois - vérifiez-la avant de faire confiance au chat.",
+      "empty": "Aucun autre membre n'a encore de clé sur cet appareil."
     }
   },
   "nav": {

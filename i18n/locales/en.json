@@ -76,6 +76,17 @@
       "body": "Everyone in the league gets a fresh key from now on. Anyone you have removed loses access to new messages; past messages stay readable for members who already had them. Use this after removing someone, or if a member cannot read the chat.",
       "confirm": "Rotate key",
       "cancel": "Cancel"
+    },
+    "verify": {
+      "show": "Verify keys",
+      "intro": "Compare these numbers with each member in person or over a channel you trust. If a member's number does not match, their key may have been tampered with.",
+      "your": "Your safety number",
+      "verified": "Verified",
+      "markVerified": "Mark verified",
+      "changed": "Key changed",
+      "acknowledge": "Accept new key",
+      "changedWarn": "A member's key changed since you last saw it - verify it before you trust the chat.",
+      "empty": "No other members have a key on this device yet."
     }
   },
   "nav": {

@@ -227,6 +227,7 @@ export function useLeagueChat(
     loading,
     sending,
     messages: visibleMessages,
+    memberKeys,
     muted,
     toggleMute,
     identityStatus,

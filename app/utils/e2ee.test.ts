@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   decryptMessage,
   encryptMessage,
+  fingerprint,
   generateGroupKey,
   generateIdentity,
   generateRecoveryCode,
@@ -36,6 +37,15 @@ describe('e2ee identity + group key', () => {
     const mallory = await generateIdentity()
     const wrapped = await sealGroupKey(groupKey, alice.publicKey)
     await expect(openGroupKey(wrapped, mallory)).rejects.toThrow()
+  })
+
+  it('derives a stable safety-number fingerprint that differs per key', async () => {
+    const alice = await generateIdentity()
+    const bob = await generateIdentity()
+    const fpA = await fingerprint(alice.publicKey)
+    expect(fpA).toMatch(/^(\d{5} ){5}\d{5}$/) // six groups of five digits
+    expect(await fingerprint(alice.publicKey)).toBe(fpA) // deterministic
+    expect(await fingerprint(bob.publicKey)).not.toBe(fpA) // key-specific
   })
 })
 
