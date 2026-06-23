@@ -165,6 +165,26 @@ export function publishChatStateChanged(leagueId: string, memberIds: readonly st
   return delivered
 }
 
+// A message's reaction counts changed: push the new per-emoji totals to that
+// league's connected members (members-only, like the messages themselves). The
+// emoji counts are plaintext; the message content stays opaque.
+export function publishChatReactionUpdate(
+  leagueId: string,
+  memberIds: readonly string[],
+  messageId: string,
+  totals: ReactionTotals,
+): number {
+  const members = new Set(memberIds)
+  let delivered = 0
+  for (const sub of subscribers) {
+    if (sub.userId && members.has(sub.userId)) {
+      sub.send({ type: 'chat:reaction', leagueId, messageId, totals })
+      delivered += 1
+    }
+  }
+  return delivered
+}
+
 // Deliver a freshly created notification to every open socket of that one user
 // (mirrors the league-member gate above). Other users' sockets never see it, so
 // the bell can render it live without a refetch.

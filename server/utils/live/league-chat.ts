@@ -1,7 +1,14 @@
 import type { AppDatabase } from '../../../db/types'
 import type { ChatMessageDTO } from '../../../shared/types/chat'
 import { getLeagueMemberIds } from '../chat/service'
-import { publishChatKeysAdded, publishChatRekeyRequest, publishChatStateChanged, publishLeagueChatMessage } from './hub'
+import { getMessageReactionTotals } from '../chat/reactions'
+import {
+  publishChatKeysAdded,
+  publishChatReactionUpdate,
+  publishChatRekeyRequest,
+  publishChatStateChanged,
+  publishLeagueChatMessage,
+} from './hub'
 
 // A new chat message: push the ciphertext to that league's connected members
 // only (the room is members-only, like league crowd/reaction pushes).
@@ -27,4 +34,13 @@ export function publishKeysAdded(leagueId: string, recipientIds: readonly string
 export async function publishStateChanged(db: AppDatabase, leagueId: string): Promise<number> {
   const memberIds = await getLeagueMemberIds(db, leagueId)
   return publishChatStateChanged(leagueId, memberIds)
+}
+
+// A message's reactions changed: push its fresh per-emoji totals to the members.
+export async function publishChatReaction(db: AppDatabase, leagueId: string, messageId: string): Promise<number> {
+  const [memberIds, totals] = await Promise.all([
+    getLeagueMemberIds(db, leagueId),
+    getMessageReactionTotals(db, messageId),
+  ])
+  return publishChatReactionUpdate(leagueId, memberIds, messageId, totals)
 }

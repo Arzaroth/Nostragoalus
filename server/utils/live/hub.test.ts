@@ -155,3 +155,20 @@ it('publishChatStateChanged nudges connected members only', async () => {
     for (const s of [member, outsider, guest]) removeLiveSubscriber(s)
   }
 })
+
+it('publishChatReactionUpdate delivers a message totals patch to members only', async () => {
+  const { addLiveSubscriber, removeLiveSubscriber, publishChatReactionUpdate } = await import('./hub')
+  const { emptyReactionTotals } = await import('../../../shared/reactions')
+  const totals = { ...emptyReactionTotals(), FIRE: 3 }
+  const member = { matchIds: new Set<string>(), userId: 'm', send: vi.fn() }
+  const outsider = { matchIds: new Set<string>(), userId: 'o', send: vi.fn() }
+  for (const s of [member, outsider]) addLiveSubscriber(s)
+  try {
+    const delivered = publishChatReactionUpdate('lg', ['m'], 'msg1', totals)
+    expect(delivered).toBe(1)
+    expect(member.send).toHaveBeenCalledWith({ type: 'chat:reaction', leagueId: 'lg', messageId: 'msg1', totals })
+    expect(outsider.send).not.toHaveBeenCalled()
+  } finally {
+    for (const s of [member, outsider]) removeLiveSubscriber(s)
+  }
+})

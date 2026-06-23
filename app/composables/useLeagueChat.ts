@@ -7,6 +7,7 @@ import {
   sealGroupKey,
 } from '~/utils/e2ee'
 import { chatKeyPins, isKeyTrusted } from '~/composables/useChatKeyPins'
+import { emptyReactionTotals, type ReactionEmoji, type ReactionTotals } from '#shared/reactions'
 import type { ChatMessageDTO } from '#shared/types/chat'
 
 export interface DecryptedMessage {
@@ -15,6 +16,8 @@ export interface DecryptedMessage {
   matchId: string | null
   text: string | null // null = could not decrypt (wrong/absent key)
   createdAt: string
+  reactions: ReactionTotals
+  myReaction: ReactionEmoji | null
 }
 
 interface ChatStatus {
@@ -84,7 +87,15 @@ export function useLeagueChat(
         text = null
       }
     }
-    return { id: r.id, userId: r.userId, matchId: r.matchId, text, createdAt: r.createdAt }
+    return {
+      id: r.id,
+      userId: r.userId,
+      matchId: r.matchId,
+      text,
+      createdAt: r.createdAt,
+      reactions: r.reactions ?? emptyReactionTotals(),
+      myReaction: r.myReaction ?? null,
+    }
   }
 
   async function loadMessages(): Promise<void> {
@@ -215,6 +226,29 @@ export function useLeagueChat(
     }
   }
 
+  function patchMessage(id: string, patch: Partial<DecryptedMessage>): void {
+    messages.value = messages.value.map((m) => (m.id === id ? { ...m, ...patch } : m))
+  }
+
+  // Toggle the caller's emoji reaction on a message (tap the active one to clear).
+  // Optimistic: adjust counts locally, then PUT; the server pushes authoritative
+  // totals (chat:reaction) to everyone, which corrects our optimistic guess.
+  async function react(messageId: string, emoji: ReactionEmoji): Promise<void> {
+    const msg = messages.value.find((m) => m.id === messageId)
+    if (!msg) return
+    const prev = msg.myReaction
+    const next: ReactionEmoji | null = prev === emoji ? null : emoji
+    const reactions = { ...msg.reactions }
+    if (prev) reactions[prev] = Math.max(0, reactions[prev] - 1)
+    if (next) reactions[next] = reactions[next] + 1
+    patchMessage(messageId, { reactions, myReaction: next })
+    try {
+      await $fetch(`/api/leagues/${lid()}/chat/react`, { method: 'PUT', body: { messageId, emoji: next } })
+    } catch {
+      await loadMessages()
+    }
+  }
+
   // Enable chat for the whole league (OWNER/MODERATOR). Generates the group key
   // and seals it to every member who has a chat identity (the caller included,
   // after ensure() registers theirs).
@@ -282,6 +316,13 @@ export function useLeagueChat(
         void load()
         return
       }
+      // A message's reaction counts changed: patch its totals in place (our own
+      // myReaction is kept - the push only carries the shared per-emoji counts).
+      if (msg.type === 'chat:reaction') {
+        const rm = data as { messageId?: string; totals?: ReactionTotals }
+        if (rm.messageId && rm.totals) patchMessage(rm.messageId, { reactions: rm.totals })
+        return
+      }
       if (msg.type !== 'chat:new' || !msg.message) return
       if ((msg.message.matchId ?? null) !== mid()) return
       if (messages.value.some((m) => m.id === msg.message!.id)) return
@@ -309,6 +350,7 @@ export function useLeagueChat(
     identityStatus,
     load,
     send,
+    react,
     enableChat,
     disableChat,
     rotateKey,

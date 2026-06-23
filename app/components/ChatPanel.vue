@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { REACTION_EMOJIS, type ReactionEmoji } from '#shared/reactions'
 // End-to-end encrypted league chat. The league-global room (matchId null) or a
 // per-match thread. All crypto is client-side; the server only relays ciphertext.
 // `flat` drops the outer card chrome so the panel can sit inside the chat dock,
@@ -26,6 +27,17 @@ const { enabled, isAdmin, ready, awaitingKey, loading, sending, messages, member
 // hide itself the moment an admin toggles chat, without its own status fetch.
 const emit = defineEmits<{ 'update:enabled': [boolean] }>()
 watch(enabled, (v) => emit('update:enabled', v), { immediate: true })
+
+// Emoji reactions, mirroring match reactions (one per member per message). The
+// picker (all glyphs) opens for one message at a time.
+const pickerFor = ref<string | null>(null)
+function reactWith(messageId: string, emoji: ReactionEmoji) {
+  pickerFor.value = null
+  void chat.react(messageId, emoji)
+}
+function emojisWithCount(reactions: Record<ReactionEmoji, number>): ReactionEmoji[] {
+  return REACTION_EMOJIS.filter((e) => reactions[e] > 0)
+}
 const { identity, hasRecovery, setupRecovery, restore } = useChatIdentity()
 
 // Key verification: per-member safety numbers + trust-on-first-use pinning, so a
@@ -175,6 +187,51 @@ watch(
             </div>
             <span v-if="m.text !== null" class="break-words">{{ m.text }}</span>
             <span v-else class="italic" style="color: var(--p-text-muted-color)">{{ t('chat.cantDecrypt') }}</span>
+
+            <!-- Reactions: existing counts plus a picker, mirroring match reactions. -->
+            <div class="flex flex-wrap items-center gap-1 mt-0.5">
+              <button
+                v-for="e in emojisWithCount(m.reactions)"
+                :key="e"
+                type="button"
+                :aria-label="t(`reactions.label.${e}`)"
+                :aria-pressed="m.myReaction === e"
+                class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border text-xs tabular-nums transition"
+                :style="m.myReaction === e
+                  ? 'border-color: var(--p-primary-color); background: color-mix(in srgb, var(--p-primary-color) 15%, transparent); color: var(--p-primary-color)'
+                  : 'border-color: var(--p-content-border-color); color: var(--p-text-muted-color)'"
+                @click="reactWith(m.id, e)"
+              >
+                <ReactionGlyph :emoji="e" />
+                <span>{{ m.reactions[e] }}</span>
+              </button>
+              <div class="relative inline-flex">
+                <button
+                  type="button"
+                  class="inline-flex items-center justify-center w-6 h-6 rounded-full opacity-50 hover:opacity-100"
+                  :aria-label="t('chat.react.add')"
+                  @click="pickerFor = pickerFor === m.id ? null : m.id"
+                >
+                  <i class="pi pi-face-smile text-xs" />
+                </button>
+                <div
+                  v-if="pickerFor === m.id"
+                  class="absolute bottom-7 left-0 z-10 flex items-center gap-1 p-1 rounded-full border shadow-lg"
+                  style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
+                >
+                  <button
+                    v-for="e in REACTION_EMOJIS"
+                    :key="e"
+                    type="button"
+                    :aria-label="t(`reactions.label.${e}`)"
+                    class="inline-flex items-center justify-center w-7 h-7 rounded-full hover:scale-110 transition-transform"
+                    @click="reactWith(m.id, e)"
+                  >
+                    <ReactionGlyph :emoji="e" />
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

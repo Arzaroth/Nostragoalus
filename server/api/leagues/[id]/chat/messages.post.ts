@@ -3,6 +3,7 @@ import { db } from '../../../../../db'
 import { postMessage } from '../../../../utils/chat/service'
 import { publishChatMessage } from '../../../../utils/live/league-chat'
 import { defineValidatedHandler } from '../../../../utils/validated-handler'
+import { emptyReactionTotals } from '../../../../../shared/reactions'
 import type { ChatMessageDTO } from '../../../../../shared/types/chat'
 
 const bodySchema = z.object({
@@ -30,6 +31,8 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ body, user,
     epoch: row.epoch,
     ciphertext: row.ciphertext,
     createdAt: row.createdAt.toISOString(),
+    reactions: emptyReactionTotals(),
+    myReaction: null,
   }
   // Fire-and-forget fan-out so a delivery hiccup can't fail the post itself.
   void publishChatMessage(db, message).catch(() => {})

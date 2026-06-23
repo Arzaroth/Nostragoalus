@@ -54,6 +54,7 @@
     "cantDecrypt": "[So'lu' - naDev ngaQHa'moHwI' tu'lu'be']",
     "mute": "tam",
     "muted": { "show": "tammoHpu' ({n})", "intro": "QInmeychaj Daleghbe'. 'ach QInlIj lulegh.", "unmute": "tammoHHa'" },
+    "react": { "add": "jang chel" },
     "setupRecovery": "chovnatlh Qaw'wI' cher",
     "warning": {
       "title": "ja'chuq So'lu'bogh yIchu''a'?",

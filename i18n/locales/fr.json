@@ -54,6 +54,7 @@
     "cantDecrypt": "[chiffré - aucune clé sur cet appareil]",
     "mute": "Masquer",
     "muted": { "show": "Masqués ({n})", "intro": "Vous ne verrez plus les messages de ces membres. Ils voient toujours les vôtres.", "unmute": "Réafficher" },
+    "react": { "add": "Ajouter une réaction" },
     "setupRecovery": "Créer un code de récupération",
     "warning": {
       "title": "Activer le chat chiffré de bout en bout ?",
