@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.34.0] - 2026-06-23
+
 ### Added
 - **League chat (end-to-end encrypted)**: a private chat for your league - a general room on the league page plus a per-match thread on each match. Off by default; only a league owner or moderator can turn it on, behind a warning that spells out the trade-offs. Messages are encrypted on your device, so no one else can read them - not even the site owner, who stores only scrambled text and cannot moderate or recover it. Your key enrolls silently on first use (no extra password); save the one-time recovery code to read your history on another device or after clearing your browser. You can mute another member locally.
 
