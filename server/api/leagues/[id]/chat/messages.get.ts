@@ -2,6 +2,7 @@ import { db } from '../../../../../db'
 import { requireUser } from '../../../../utils/auth-guards'
 import { listMessages } from '../../../../utils/chat/service'
 import { getMyReactions, getReactionTotals } from '../../../../utils/chat/reactions'
+import { getAttachmentMessageIds } from '../../../../utils/chat/attachments'
 import { emptyReactionTotals } from '../../../../../shared/reactions'
 import { toHttpError } from '../../../../utils/http'
 import type { ChatMessageDTO } from '../../../../../shared/types/chat'
@@ -23,7 +24,11 @@ export default defineEventHandler(async (event) => {
       limit: limit && !Number.isNaN(limit) ? limit : undefined,
     })
     const ids = rows.map((r) => r.id)
-    const [totals, mine] = await Promise.all([getReactionTotals(db, ids), getMyReactions(db, user.id, ids)])
+    const [totals, mine, withImage] = await Promise.all([
+      getReactionTotals(db, ids),
+      getMyReactions(db, user.id, ids),
+      getAttachmentMessageIds(db, ids),
+    ])
     const messages: ChatMessageDTO[] = rows.map((r) => ({
       id: r.id,
       leagueId,
@@ -33,6 +38,7 @@ export default defineEventHandler(async (event) => {
       epoch: r.epoch,
       ciphertext: r.ciphertext,
       createdAt: r.createdAt.toISOString(),
+      hasAttachment: withImage.has(r.id),
       reactions: totals[r.id] ?? emptyReactionTotals(),
       myReaction: mine[r.id] ?? null,
     }))

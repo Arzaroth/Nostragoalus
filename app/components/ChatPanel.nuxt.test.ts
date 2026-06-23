@@ -6,7 +6,7 @@ import { chatKeyPins } from '../composables/useChatKeyPins'
 import { emptyReactionTotals } from '#shared/reactions'
 
 function msg(over: Record<string, unknown> = {}) {
-  return { id: 'a', userId: 'other', matchId: null, parentId: null, text: 'hi', createdAt: '2026-06-10T10:00:00.000Z', reactions: emptyReactionTotals(), myReaction: null, ...over }
+  return { id: 'a', userId: 'other', matchId: null, parentId: null, text: 'hi', createdAt: '2026-06-10T10:00:00.000Z', hasAttachment: false, reactions: emptyReactionTotals(), myReaction: null, ...over }
 }
 
 // Drive the panel via mocked composables (the crypto/network live in those and
@@ -32,6 +32,8 @@ vi.mock('../composables/useLeagueChat', async () => {
     load: vi.fn(),
     requestRekey: vi.fn(),
     react: vi.fn(),
+    sendImage: vi.fn(),
+    loadAttachment: vi.fn(),
   }
   return { useLeagueChat: () => state, __state: state }
 })

@@ -1,6 +1,6 @@
 import { and, desc, eq, isNull, lt } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
-import { chatIdentity, chatMessage, league, leagueChatKey, leagueMember, match } from '../../../db/schema'
+import { chatAttachment, chatIdentity, chatMessage, league, leagueChatKey, leagueMember, match } from '../../../db/schema'
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors'
 import { getLeague, getMembership } from '../leagues/service'
 
@@ -9,6 +9,9 @@ import { getLeague, getMembership } from '../leagues/service'
 // a key it could unwrap. See app/utils/e2ee.ts for the crypto.
 
 const MAX_CIPHERTEXT = 16_384 // generous cap on one encrypted message blob (base64)
+// Encrypted image blob cap (base64). A 5MB original compresses to webp then
+// encrypts; this leaves generous headroom while bounding one row's weight.
+const MAX_ATTACHMENT = 9_000_000
 const DEFAULT_PAGE = 50
 const MAX_PAGE = 100
 
@@ -329,10 +332,19 @@ export interface ChatMessageRow {
 
 export async function postMessage(
   db: AppDatabase,
-  opts: { leagueId: string; matchId?: string | null; parentId?: string | null; userId: string; ciphertext: string; epoch: number },
-): Promise<ChatMessageRow> {
+  opts: {
+    leagueId: string
+    matchId?: string | null
+    parentId?: string | null
+    userId: string
+    ciphertext: string
+    epoch: number
+    image?: { ciphertext: string; byteSize: number } | null
+  },
+): Promise<ChatMessageRow & { hasAttachment: boolean }> {
   if (!opts.ciphertext) throw new ValidationError('empty message')
   if (opts.ciphertext.length > MAX_CIPHERTEXT) throw new ValidationError('message too large')
+  if (opts.image && opts.image.ciphertext.length > MAX_ATTACHMENT) throw new ValidationError('image too large')
   const rows = await db
     .select({ enabled: league.chatEnabled, epoch: league.chatKeyEpoch, competitionId: league.competitionId })
     .from(league)
@@ -365,26 +377,36 @@ export async function postMessage(
       throw new ValidationError('reply target is not in this room')
     }
   }
-  const inserted = await db
-    .insert(chatMessage)
-    .values({
-      leagueId: opts.leagueId,
-      matchId: opts.matchId ?? null,
-      parentId: opts.parentId ?? null,
-      userId: opts.userId,
-      epoch: opts.epoch,
-      ciphertext: opts.ciphertext,
-    })
-    .returning({
-      id: chatMessage.id,
-      userId: chatMessage.userId,
-      matchId: chatMessage.matchId,
-      parentId: chatMessage.parentId,
-      epoch: chatMessage.epoch,
-      ciphertext: chatMessage.ciphertext,
-      createdAt: chatMessage.createdAt,
-    })
-  return inserted[0]
+  const row = await db.transaction(async (tx) => {
+    const inserted = await tx
+      .insert(chatMessage)
+      .values({
+        leagueId: opts.leagueId,
+        matchId: opts.matchId ?? null,
+        parentId: opts.parentId ?? null,
+        userId: opts.userId,
+        epoch: opts.epoch,
+        ciphertext: opts.ciphertext,
+      })
+      .returning({
+        id: chatMessage.id,
+        userId: chatMessage.userId,
+        matchId: chatMessage.matchId,
+        parentId: chatMessage.parentId,
+        epoch: chatMessage.epoch,
+        ciphertext: chatMessage.ciphertext,
+        createdAt: chatMessage.createdAt,
+      })
+    if (opts.image) {
+      await tx.insert(chatAttachment).values({
+        messageId: inserted[0].id,
+        ciphertext: opts.image.ciphertext,
+        byteSize: opts.image.byteSize,
+      })
+    }
+    return inserted[0]
+  })
+  return { ...row, hasAttachment: !!opts.image }
 }
 
 // A page of ciphertext for one room (matchId null = the league-global room),

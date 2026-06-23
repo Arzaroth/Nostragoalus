@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { REACTION_EMOJIS, type ReactionEmoji } from '#shared/reactions'
+import { ACCEPTED_IMAGE_TYPES } from '~/composables/useChatImage'
 import type { DecryptedMessage } from '~/composables/useLeagueChat'
 // End-to-end encrypted league chat. The league-global room (matchId null) or a
 // per-match thread. All crypto is client-side; the server only relays ciphertext.
@@ -80,6 +81,42 @@ async function submit() {
   draft.value = ''
   replyTo.value = null
   await chat.send(text, parentId)
+}
+
+// Images: drop, paste or pick. The current draft rides along as the caption and
+// the reply target as the parent; rejected files (wrong type / too big) restore
+// the draft so nothing is lost.
+const acceptImages = ACCEPTED_IMAGE_TYPES.join(',')
+const fileInput = ref<HTMLInputElement | null>(null)
+const dragOver = ref(false)
+const imageError = ref(false)
+async function sendImageFile(file: File) {
+  const caption = draft.value
+  const parentId = replyTo.value?.id ?? null
+  draft.value = ''
+  replyTo.value = null
+  imageError.value = false
+  const ok = await chat.sendImage(file, caption, parentId)
+  if (!ok) {
+    draft.value = caption
+    imageError.value = true
+  }
+}
+function onFilePicked(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (file) void sendImageFile(file)
+  input.value = ''
+}
+function onDrop(e: DragEvent) {
+  dragOver.value = false
+  const file = Array.from(e.dataTransfer?.files ?? []).find((f) => f.type.startsWith('image/'))
+  if (file) void sendImageFile(file)
+}
+function onPaste(e: ClipboardEvent) {
+  const item = Array.from(e.clipboardData?.items ?? []).find((i) => i.type.startsWith('image/'))
+  const file = item?.getAsFile()
+  if (file) void sendImageFile(file)
 }
 
 // Enable flow (admins), behind the legal-cover warning.
@@ -190,7 +227,21 @@ watch(
       </div>
       <div v-else-if="!ready" class="text-sm" style="color: var(--p-text-muted-color)">{{ t('chat.settingUp') }}</div>
       <template v-else>
-        <div ref="listEl" class="flex flex-col gap-2 overflow-y-auto" style="max-height: 22rem">
+        <div
+          ref="listEl"
+          class="relative flex flex-col gap-2 overflow-y-auto"
+          style="max-height: 22rem"
+          @dragover.prevent="dragOver = true"
+          @dragleave="dragOver = false"
+          @drop.prevent="onDrop"
+        >
+          <div
+            v-if="dragOver"
+            class="absolute inset-0 z-10 flex items-center justify-center rounded-lg border-2 border-dashed text-sm font-semibold"
+            style="border-color: var(--p-primary-color); background: color-mix(in srgb, var(--p-primary-color) 12%, var(--p-content-background))"
+          >
+            {{ t('chat.image.dropHere') }}
+          </div>
           <p v-if="!messages.length" class="text-sm py-6 text-center" style="color: var(--p-text-muted-color)">{{ t('chat.empty') }}</p>
           <div v-for="m in messages" :key="m.id" class="text-sm flex flex-col">
             <div class="flex items-baseline gap-2">
@@ -208,8 +259,9 @@ watch(
               <span class="font-semibold">{{ nameFor(parentOf(m)!.userId) }}</span>
               <span class="ml-1">{{ parentOf(m)!.text ?? t('chat.cantDecrypt') }}</span>
             </div>
-            <span v-if="m.text !== null" class="break-words">{{ m.text }}</span>
-            <span v-else class="italic" style="color: var(--p-text-muted-color)">{{ t('chat.cantDecrypt') }}</span>
+            <span v-if="m.text" class="break-words">{{ m.text }}</span>
+            <span v-else-if="m.text === null && !m.hasAttachment" class="italic" style="color: var(--p-text-muted-color)">{{ t('chat.cantDecrypt') }}</span>
+            <ChatImage v-if="m.hasAttachment" :load="() => chat.loadAttachment(m.id)" />
 
             <!-- Reactions: existing counts plus a picker, mirroring match reactions. -->
             <div class="flex flex-wrap items-center gap-1 mt-0.5">
@@ -269,8 +321,11 @@ watch(
             <span class="truncate flex-1" style="color: var(--p-text-muted-color)">{{ replyTo.text ?? t('chat.cantDecrypt') }}</span>
             <button type="button" class="opacity-70 hover:opacity-100" :aria-label="t('chat.reply.cancel')" @click="replyTo = null"><i class="pi pi-times text-xs" /></button>
           </div>
+          <small v-if="imageError" style="color: var(--ng-danger)">{{ t('chat.image.rejected') }}</small>
           <form class="flex items-end gap-2" @submit.prevent="submit">
-            <Textarea v-model="draft" :placeholder="t('chat.placeholder')" rows="1" autoResize class="flex-1" @keydown.enter.exact.prevent="submit" />
+            <input ref="fileInput" type="file" :accept="acceptImages" class="hidden" @change="onFilePicked">
+            <Button type="button" icon="pi pi-image" severity="secondary" text :disabled="sending" :aria-label="t('chat.image.attach')" @click="fileInput?.click()" />
+            <Textarea v-model="draft" :placeholder="t('chat.placeholder')" rows="1" autoResize class="flex-1" @keydown.enter.exact.prevent="submit" @paste="onPaste" />
             <Button type="submit" icon="pi pi-send" :loading="sending" :disabled="!draft.trim()" :aria-label="t('chat.send')" />
           </form>
         </div>

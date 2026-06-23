@@ -11,6 +11,8 @@ const bodySchema = z.object({
   parentId: z.string().uuid().nullable().optional(),
   ciphertext: z.string().min(1).max(16_384),
   epoch: z.number().int().positive(),
+  // Optional encrypted webp attachment (base64 ciphertext) and its original size.
+  image: z.object({ ciphertext: z.string().min(1).max(9_000_000), byteSize: z.number().int().positive() }).nullable().optional(),
 })
 
 // Post one encrypted message (server stores ciphertext only) and push it live to
@@ -24,6 +26,7 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ body, user,
     parentId: body.parentId ?? null,
     ciphertext: body.ciphertext,
     epoch: body.epoch,
+    image: body.image ?? null,
   })
   const message: ChatMessageDTO = {
     id: row.id,
@@ -34,6 +37,7 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ body, user,
     epoch: row.epoch,
     ciphertext: row.ciphertext,
     createdAt: row.createdAt.toISOString(),
+    hasAttachment: row.hasAttachment,
     reactions: emptyReactionTotals(),
     myReaction: null,
   }
