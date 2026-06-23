@@ -12,6 +12,7 @@ vi.mock('../composables/useLeagueChat', async () => {
     enabled: ref(false),
     isAdmin: ref(false),
     ready: ref(false),
+    awaitingKey: ref(false),
     loading: ref(false),
     sending: ref(false),
     messages: ref<Array<{ id: string; userId: string | null; matchId: string | null; text: string | null; createdAt: string }>>([]),
@@ -23,6 +24,7 @@ vi.mock('../composables/useLeagueChat', async () => {
     disableChat: vi.fn(),
     rotateKey: vi.fn(),
     load: vi.fn(),
+    requestRekey: vi.fn(),
   }
   return { useLeagueChat: () => state, __state: state }
 })
@@ -52,6 +54,7 @@ beforeEach(async () => {
   s.enabled.value = false
   s.isAdmin.value = false
   s.ready.value = false
+  s.awaitingKey.value = false
   s.messages.value = []
   s.memberKeys.value = []
   s.identityStatus.value = 'ready'
@@ -107,6 +110,15 @@ describe('ChatPanel', () => {
     s.messages.value = [{ id: 'a', userId: 'other', matchId: null, text: null, createdAt: '2026-06-10T10:00:00.000Z' }]
     const wrapper = await mount()
     await vi.waitFor(() => expect(wrapper.text()).toContain('no key on this device'))
+  })
+
+  it('shows the waiting-to-be-let-in notice when enabled but keyless', async () => {
+    const s = await chatState()
+    s.enabled.value = true
+    s.awaitingKey.value = true
+    const wrapper = await mount()
+    expect(wrapper.text()).toContain('Waiting to be let in')
+    expect(wrapper.text()).not.toContain('Setting up your key')
   })
 
   it('prompts to restore when the device lacks the key', async () => {

@@ -15,7 +15,7 @@ const chat = useLeagueChat(
   () => props.leagueId,
   () => props.matchId ?? null,
 )
-const { enabled, isAdmin, ready, loading, sending, messages, memberKeys, identityStatus } = chat
+const { enabled, isAdmin, ready, awaitingKey, loading, sending, messages, memberKeys, identityStatus } = chat
 const { identity, hasRecovery, setupRecovery, restore } = useChatIdentity()
 
 // Key verification: per-member safety numbers + trust-on-first-use pinning, so a
@@ -144,6 +144,10 @@ watch(
     <!-- Enabled. -->
     <template v-else>
       <div v-if="loading" class="text-sm" style="color: var(--p-text-muted-color)">{{ t('chat.loading') }}</div>
+      <div v-else-if="awaitingKey" class="text-sm flex flex-col gap-1" style="color: var(--p-text-muted-color)">
+        <p class="inline-flex items-center gap-2"><i class="pi pi-spin pi-spinner text-xs" />{{ t('chat.awaitingKey') }}</p>
+        <p class="text-xs opacity-80">{{ t('chat.awaitingKeyHint') }}</p>
+      </div>
       <div v-else-if="!ready" class="text-sm" style="color: var(--p-text-muted-color)">{{ t('chat.settingUp') }}</div>
       <template v-else>
         <div ref="listEl" class="flex flex-col gap-2 overflow-y-auto" style="max-height: 22rem">
