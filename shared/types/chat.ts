@@ -14,6 +14,7 @@ export interface ChatMessageDTO {
   epoch: number
   ciphertext: string
   createdAt: string
+  hasAttachment: boolean
   reactions: ReactionTotals
   myReaction: ReactionEmoji | null
 }

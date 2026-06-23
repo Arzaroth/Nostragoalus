@@ -100,6 +100,24 @@ export async function decryptMessage(packed: string, groupKey: Uint8Array): Prom
   return s.to_string(s.crypto_secretbox_open_easy(ct, nonce, groupKey))
 }
 
+// Encrypt raw bytes (an image attachment) under the group key. Same nonce-packed
+// layout as encryptMessage but binary in/out, so there is no UTF-8 round-trip
+// that would corrupt the bytes. Returns base64 ciphertext for storage/transport.
+export async function encryptBytes(bytes: Uint8Array, groupKey: Uint8Array): Promise<string> {
+  const s = await sodium()
+  const nonce = s.randombytes_buf(s.crypto_secretbox_NONCEBYTES)
+  const ct = s.crypto_secretbox_easy(bytes, nonce, groupKey)
+  return b64encode(s, concat(nonce, ct))
+}
+
+export async function decryptBytes(packed: string, groupKey: Uint8Array): Promise<Uint8Array> {
+  const s = await sodium()
+  const raw = b64decode(s, packed)
+  const nonce = raw.slice(0, s.crypto_secretbox_NONCEBYTES)
+  const ct = raw.slice(s.crypto_secretbox_NONCEBYTES)
+  return s.crypto_secretbox_open_easy(ct, nonce, groupKey)
+}
+
 // A generated high-entropy recovery code, grouped for readability. It is never
 // chosen by the user (no weak passwords) and shown once.
 export async function generateRecoveryCode(): Promise<string> {

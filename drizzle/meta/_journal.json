@@ -288,6 +288,13 @@
       "when": 1782257509008,
       "tag": "0040_gray_the_professor",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1782257972281,
+      "tag": "0041_bouncy_psynapse",
+      "breakpoints": true
     }
   ]
 }

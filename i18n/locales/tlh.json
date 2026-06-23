@@ -56,6 +56,7 @@
     "muted": { "show": "tammoHpu' ({n})", "intro": "QInmeychaj Daleghbe'. 'ach QInlIj lulegh.", "unmute": "tammoHHa'" },
     "react": { "add": "jang chel" },
     "reply": { "button": "jang", "replyingTo": "{name} jang", "cancel": "jang qIl" },
+    "image": { "attach": "mIllogh chel", "dropHere": "naDev mIllogh yIlan", "rejected": "mIllogh neH, 5MB bIng.", "failed": "mIllogh tu'be'", "alt": "mIllogh", "copy": "rapmoH", "download": "tlhap", "share": "ngeH", "close": "SoQmoH" },
     "setupRecovery": "chovnatlh Qaw'wI' cher",
     "warning": {
       "title": "ja'chuq So'lu'bogh yIchu''a'?",

@@ -922,3 +922,16 @@ export const chatMessageReaction = pgTable(
   ],
 )
 
+// The encrypted image attached to a message (one per message). Kept out of the
+// message row so listing a room stays light - the multi-megabyte ciphertext is
+// fetched on demand when the image is actually rendered. The server only ever
+// holds the encrypted webp; it never sees the picture.
+export const chatAttachment = pgTable('chat_attachment', {
+  messageId: text('message_id')
+    .primaryKey()
+    .references(() => chatMessage.id, { onDelete: 'cascade' }),
+  ciphertext: text('ciphertext').notNull(),
+  byteSize: integer('byte_size').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+

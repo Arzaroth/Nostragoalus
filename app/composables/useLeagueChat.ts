@@ -1,11 +1,14 @@
 import { useStorage } from '@vueuse/core'
 import {
+  decryptBytes,
   decryptMessage,
+  encryptBytes,
   encryptMessage,
   generateGroupKey,
   openGroupKey,
   sealGroupKey,
 } from '~/utils/e2ee'
+import { compressToWebp } from '~/composables/useChatImage'
 import { chatKeyPins, isKeyTrusted } from '~/composables/useChatKeyPins'
 import { emptyReactionTotals, type ReactionEmoji, type ReactionTotals } from '#shared/reactions'
 import type { ChatMessageDTO } from '#shared/types/chat'
@@ -17,6 +20,7 @@ export interface DecryptedMessage {
   parentId: string | null
   text: string | null // null = could not decrypt (wrong/absent key)
   createdAt: string
+  hasAttachment: boolean
   reactions: ReactionTotals
   myReaction: ReactionEmoji | null
 }
@@ -95,6 +99,7 @@ export function useLeagueChat(
       parentId: r.parentId ?? null,
       text,
       createdAt: r.createdAt,
+      hasAttachment: r.hasAttachment ?? false,
       reactions: r.reactions ?? emptyReactionTotals(),
       myReaction: r.myReaction ?? null,
     }
@@ -232,6 +237,49 @@ export function useLeagueChat(
     messages.value = messages.value.map((m) => (m.id === id ? { ...m, ...patch } : m))
   }
 
+  // Send an image: compress to webp, encrypt the bytes under the group key, and
+  // post it as an attachment alongside an (optional) encrypted caption. The blob
+  // never leaves the device in the clear. Returns false if the file is rejected.
+  async function sendImage(file: File, caption = '', parentId?: string | null): Promise<boolean> {
+    const ck = currentKey.value
+    if (!ck || sending.value) return false
+    const compressed = await compressToWebp(file)
+    if (!compressed) return false
+    sending.value = true
+    try {
+      const [captionCt, imageCt] = await Promise.all([encryptMessage(caption.trim(), ck), encryptBytes(compressed.bytes, ck)])
+      const { message } = await $fetch<{ message: ChatMessageDTO }>(`/api/leagues/${lid()}/chat/messages`, {
+        method: 'POST',
+        body: {
+          matchId: mid(),
+          parentId: parentId ?? null,
+          ciphertext: captionCt,
+          epoch: epoch.value,
+          image: { ciphertext: imageCt, byteSize: compressed.byteSize },
+        },
+      })
+      if (message && !messages.value.some((m) => m.id === message.id)) {
+        messages.value = [...messages.value, await decryptRow(message)]
+      }
+      return true
+    } finally {
+      sending.value = false
+    }
+  }
+
+  // Fetch and decrypt a message's image, returning raw webp bytes (the caller
+  // turns them into a blob URL). Null if it can't be fetched/decrypted.
+  async function loadAttachment(messageId: string): Promise<Uint8Array | null> {
+    const ck = currentKey.value
+    if (!ck) return null
+    try {
+      const { ciphertext } = await $fetch<{ ciphertext: string }>(`/api/leagues/${lid()}/chat/attachments/${messageId}`)
+      return await decryptBytes(ciphertext, ck)
+    } catch {
+      return null
+    }
+  }
+
   // Toggle the caller's emoji reaction on a message (tap the active one to clear).
   // Optimistic: adjust counts locally, then PUT; the server pushes authoritative
   // totals (chat:reaction) to everyone, which corrects our optimistic guess.
@@ -352,6 +400,8 @@ export function useLeagueChat(
     identityStatus,
     load,
     send,
+    sendImage,
+    loadAttachment,
     react,
     enableChat,
     disableChat,

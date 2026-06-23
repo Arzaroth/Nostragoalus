@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
+  decryptBytes,
   decryptMessage,
+  encryptBytes,
   encryptMessage,
   fingerprint,
   generateGroupKey,
@@ -60,6 +62,14 @@ describe('e2ee messages', () => {
   it('fails to decrypt under the wrong group key', async () => {
     const packed = await encryptMessage('secret', await generateGroupKey())
     await expect(decryptMessage(packed, await generateGroupKey())).rejects.toThrow()
+  })
+
+  it('round-trips raw bytes (an image) through the group key', async () => {
+    const groupKey = await generateGroupKey()
+    const bytes = new Uint8Array([0, 255, 1, 254, 128, 0, 0, 42])
+    const packed = await encryptBytes(bytes, groupKey)
+    expect(await decryptBytes(packed, groupKey)).toEqual(bytes)
+    await expect(decryptBytes(packed, await generateGroupKey())).rejects.toThrow()
   })
 })
 

@@ -56,6 +56,7 @@
     "muted": { "show": "Masqués ({n})", "intro": "Vous ne verrez plus les messages de ces membres. Ils voient toujours les vôtres.", "unmute": "Réafficher" },
     "react": { "add": "Ajouter une réaction" },
     "reply": { "button": "Répondre", "replyingTo": "Réponse à {name}", "cancel": "Annuler la réponse" },
+    "image": { "attach": "Joindre une image", "dropHere": "Déposez l'image pour l'envoyer", "rejected": "Images de 5 Mo maximum uniquement.", "failed": "Image indisponible", "alt": "Image du chat", "copy": "Copier", "download": "Télécharger", "share": "Partager", "close": "Fermer" },
     "setupRecovery": "Créer un code de récupération",
     "warning": {
       "title": "Activer le chat chiffré de bout en bout ?",
