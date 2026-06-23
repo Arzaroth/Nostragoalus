@@ -21,6 +21,11 @@ const chat = useLeagueChat(
   () => props.matchId ?? null,
 )
 const { enabled, isAdmin, ready, awaitingKey, loading, sending, messages, memberKeys, muted, identityStatus } = chat
+
+// Let a host (the floating dock) follow the live on/off state so it can show or
+// hide itself the moment an admin toggles chat, without its own status fetch.
+const emit = defineEmits<{ 'update:enabled': [boolean] }>()
+watch(enabled, (v) => emit('update:enabled', v), { immediate: true })
 const { identity, hasRecovery, setupRecovery, restore } = useChatIdentity()
 
 // Key verification: per-member safety numbers + trust-on-first-use pinning, so a
