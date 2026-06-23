@@ -6,7 +6,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 ## [Unreleased]
 
 ### Added
-- **League chat key verification**: a "Verify keys" panel in chat shows a short safety number for every member (and your own) that you can compare in person or over a trusted channel, so a tampered or substituted key is caught. Your device also remembers each member's key the first time it sees it and warns you site-wide if it ever changes, with a one-tap accept or mark-verified.
+- **League chat key verification**: a "Verify keys" panel in chat shows a short safety number for every member (and your own) that you can compare in person or over a trusted channel to confirm no key was tampered with. Your device remembers each member's key the first time it sees it and warns you site-wide if it ever changes, and a keyholder will not hand the group key to a member whose key changed until you accept it, with a one-tap accept or mark-verified.
 - **League chat key rotation**: a league owner or moderator can rotate the chat key from the panel. Everyone currently in the league gets a fresh key, so anyone who has been removed loses access to new messages, while past messages stay readable for members who already had them. It also recovers a member who somehow ended up unable to read the chat.
 
 ## [1.34.0] - 2026-06-23

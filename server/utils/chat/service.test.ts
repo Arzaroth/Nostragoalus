@@ -226,6 +226,16 @@ describe('rotateLeagueChatKey', () => {
     await client.close()
   })
 
+  it('rotates with no wraps (bumps the epoch, stores nothing new)', async () => {
+    const { db, client, owner, leagueId } = await setup()
+    await enableWith(db, leagueId, owner, [owner]) // epoch 1, wk-owner
+    const r = await rotateLeagueChatKey(db, { leagueId, actorId: owner, wraps: [] })
+    expect(r.epoch).toBe(2)
+    expect((await db.select().from(league).where(eq(league.id, leagueId)))[0].chatKeyEpoch).toBe(2)
+    expect(await getMyWrappedKeys(db, leagueId, owner)).toEqual([{ epoch: 1, wrappedKey: 'wk-owner' }])
+    await client.close()
+  })
+
   it('revokes a member left out of the rotation (no new-epoch key)', async () => {
     const { db, client, owner, leagueId } = await setup()
     const u2 = await makeUser(db, 'u2')
