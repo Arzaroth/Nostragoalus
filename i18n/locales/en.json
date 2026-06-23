@@ -53,6 +53,7 @@
     "unknownUser": "Someone",
     "cantDecrypt": "[encrypted - no key on this device]",
     "mute": "Mute",
+    "muted": { "show": "Muted ({n})", "intro": "You won't see messages from these members. They can still see yours.", "unmute": "Unmute" },
     "setupRecovery": "Set up a recovery code",
     "warning": {
       "title": "Turn on end-to-end encrypted chat?",

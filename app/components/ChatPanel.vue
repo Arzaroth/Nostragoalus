@@ -20,7 +20,7 @@ const chat = useLeagueChat(
   () => props.leagueId,
   () => props.matchId ?? null,
 )
-const { enabled, isAdmin, ready, awaitingKey, loading, sending, messages, memberKeys, identityStatus } = chat
+const { enabled, isAdmin, ready, awaitingKey, loading, sending, messages, memberKeys, muted, identityStatus } = chat
 const { identity, hasRecovery, setupRecovery, restore } = useChatIdentity()
 
 // Key verification: per-member safety numbers + trust-on-first-use pinning, so a
@@ -28,6 +28,7 @@ const { identity, hasRecovery, setupRecovery, restore } = useChatIdentity()
 const verify = useChatKeyVerification(memberKeys, computed(() => identity.value?.publicKey ?? null))
 const { entries: keyEntries, myFingerprint, changedCount } = verify
 const showVerify = ref(false)
+const showMuted = ref(false)
 // Show peers only; the caller's own number is shown once as "your safety number".
 const peerEntries = computed(() => keyEntries.value.filter((e) => e.userId !== meId.value))
 
@@ -184,6 +185,7 @@ watch(
               <span v-if="changedCount > 0" style="color: var(--ng-danger)">({{ changedCount }})</span>
             </button>
             <button v-if="!hasRecovery" type="button" class="text-xs underline" style="color: var(--p-primary-color)" :disabled="recoveryBusy" @click="openRecoverySetup">{{ t('chat.setupRecovery') }}</button>
+            <button v-if="muted.length" type="button" class="text-xs underline opacity-70 hover:opacity-100" @click="showMuted = !showMuted">{{ t('chat.muted.show', { n: muted.length }) }}</button>
           </div>
           <div v-if="isAdmin" class="flex items-center gap-3">
             <button type="button" class="text-xs underline opacity-70 hover:opacity-100" @click="showRotate = true">{{ t('chat.rotate.button') }}</button>
@@ -210,6 +212,15 @@ watch(
               <button v-if="e.changed" type="button" class="text-xs underline" style="color: var(--ng-danger)" @click="verify.acknowledgeChange(e.userId)">{{ t('chat.verify.acknowledge') }}</button>
               <button v-if="!e.verified" type="button" class="text-xs underline" style="color: var(--p-primary-color)" @click="verify.markVerified(e.userId)">{{ t('chat.verify.markVerified') }}</button>
             </div>
+          </div>
+        </div>
+
+        <!-- Muted members: local-only, so this is the one place to unmute them. -->
+        <div v-if="showMuted && muted.length" class="flex flex-col gap-2 text-sm border-t pt-3" style="border-color: var(--p-content-border-color)">
+          <p style="color: var(--p-text-muted-color)">{{ t('chat.muted.intro') }}</p>
+          <div v-for="uid in muted" :key="uid" class="flex items-center justify-between gap-2">
+            <span class="font-semibold">{{ nameFor(uid) }}</span>
+            <button type="button" class="text-xs underline" style="color: var(--p-primary-color)" @click="chat.toggleMute(uid)">{{ t('chat.muted.unmute') }}</button>
           </div>
         </div>
       </template>

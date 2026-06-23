@@ -17,6 +17,7 @@ vi.mock('../composables/useLeagueChat', async () => {
     sending: ref(false),
     messages: ref<Array<{ id: string; userId: string | null; matchId: string | null; text: string | null; createdAt: string }>>([]),
     memberKeys: ref<Array<{ userId: string; publicKey: string }>>([]),
+    muted: ref<string[]>([]),
     identityStatus: ref('ready'),
     send: vi.fn(),
     toggleMute: vi.fn(),
@@ -57,6 +58,7 @@ beforeEach(async () => {
   s.awaitingKey.value = false
   s.messages.value = []
   s.memberKeys.value = []
+  s.muted.value = []
   s.identityStatus.value = 'ready'
 })
 afterEach(() => {
@@ -135,6 +137,20 @@ describe('ChatPanel', () => {
     s.isAdmin.value = true
     const wrapper = await mount()
     expect(wrapper.text()).toContain('Rotate key')
+  })
+
+  it('lists muted members and offers an unmute', async () => {
+    const s = await chatState()
+    s.enabled.value = true
+    s.ready.value = true
+    s.muted.value = ['other']
+    const wrapper = await mount()
+    const show = wrapper.findAll('button').find((b) => b.text().includes('Muted (1)'))!
+    await show.trigger('click')
+    expect(wrapper.text()).toContain('Sam')
+    const unmute = wrapper.findAll('button').find((b) => b.text() === 'Unmute')!
+    await unmute.trigger('click')
+    expect(s.toggleMute).toHaveBeenCalledWith('other')
   })
 
   it('hides the rotate-key control from non-admins', async () => {
