@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { relations, sql } from 'drizzle-orm'
 import {
+  type AnyPgColumn,
   boolean,
   index,
   integer,
@@ -882,6 +883,9 @@ export const chatMessage = pgTable(
       .references(() => league.id, { onDelete: 'cascade' }),
     matchId: text('match_id').references(() => match.id, { onDelete: 'cascade' }),
     userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
+    // The message this one replies to (same room). Set null if the parent is hard
+    // deleted, so a reply survives as a plain message rather than dangling.
+    parentId: text('parent_id').references((): AnyPgColumn => chatMessage.id, { onDelete: 'set null' }),
     epoch: integer('epoch').notNull(),
     ciphertext: text('ciphertext').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
