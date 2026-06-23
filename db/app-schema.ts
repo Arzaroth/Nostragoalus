@@ -892,3 +892,29 @@ export const chatMessage = pgTable(
   ],
 )
 
+// One emoji reaction per member per message (changeable), mirroring matchReaction.
+// The emoji itself is plaintext - the server learns a member reacted with a glyph,
+// never the encrypted message content it sits on.
+export const chatMessageReaction = pgTable(
+  'chat_message_reaction',
+  {
+    id: pk(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    messageId: text('message_id')
+      .notNull()
+      .references(() => chatMessage.id, { onDelete: 'cascade' }),
+    emoji: reactionEmojiEnum('emoji').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [
+    uniqueIndex('chat_message_reaction_user_message_uq').on(t.userId, t.messageId),
+    index('chat_message_reaction_message_idx').on(t.messageId),
+  ],
+)
+

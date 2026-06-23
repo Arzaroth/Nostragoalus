@@ -2,7 +2,10 @@ import { describe, it, expect, vi } from 'vitest'
 import { createTestDb } from '../../../tests/db'
 import { addLeagueMember, makeLeague, makeUser, seedCompetition } from '../../../tests/factories'
 import { addLiveSubscriber, removeLiveSubscriber, type LiveSubscriber } from './hub'
-import { publishChatMessage, publishKeysAdded, publishRekeyRequest, publishStateChanged } from './league-chat'
+import { chatMessage } from '../../../db/schema'
+import { setChatReaction } from '../chat/reactions'
+import { emptyReactionTotals } from '../../../shared/reactions'
+import { publishChatMessage, publishChatReaction, publishKeysAdded, publishRekeyRequest, publishStateChanged } from './league-chat'
 
 function sub(userId: string | null): LiveSubscriber & { send: ReturnType<typeof vi.fn> } {
   return { matchIds: new Set(), userId, send: vi.fn() }
@@ -111,6 +114,32 @@ describe('publishStateChanged', () => {
       expect(carolSub.send).not.toHaveBeenCalled()
     } finally {
       for (const s of [aliceSub, bobSub, carolSub]) removeLiveSubscriber(s)
+      await client.close()
+    }
+  })
+})
+
+describe('publishChatReaction', () => {
+  it('pushes a message fresh totals to the league members', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const alice = await makeUser(db, 'alice')
+    const bob = await makeUser(db, 'bob')
+    const leagueId = await makeLeague(db, { competitionId, ownerId: alice })
+    await addLeagueMember(db, leagueId, bob)
+    const [{ id: messageId }] = await db.insert(chatMessage).values({ leagueId, userId: alice, epoch: 1, ciphertext: 'c' }).returning({ id: chatMessage.id })
+    await setChatReaction(db, { leagueId, messageId, userId: alice, emoji: 'WOW' })
+
+    const aliceSub = sub(alice)
+    const bobSub = sub(bob)
+    for (const s of [aliceSub, bobSub]) addLiveSubscriber(s)
+    try {
+      expect(await publishChatReaction(db, leagueId, messageId)).toBe(2)
+      const expected = { type: 'chat:reaction', leagueId, messageId, totals: { ...emptyReactionTotals(), WOW: 1 } }
+      expect(aliceSub.send).toHaveBeenCalledWith(expected)
+      expect(bobSub.send).toHaveBeenCalledWith(expected)
+    } finally {
+      for (const s of [aliceSub, bobSub] as const) removeLiveSubscriber(s)
       await client.close()
     }
   })

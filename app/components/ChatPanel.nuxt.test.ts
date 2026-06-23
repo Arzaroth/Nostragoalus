@@ -3,6 +3,11 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import ChatPanel from './ChatPanel.vue'
 import { generateIdentity } from '../utils/e2ee'
 import { chatKeyPins } from '../composables/useChatKeyPins'
+import { emptyReactionTotals } from '#shared/reactions'
+
+function msg(over: Record<string, unknown> = {}) {
+  return { id: 'a', userId: 'other', matchId: null, text: 'hi', createdAt: '2026-06-10T10:00:00.000Z', reactions: emptyReactionTotals(), myReaction: null, ...over }
+}
 
 // Drive the panel via mocked composables (the crypto/network live in those and
 // are tested separately). The mock state objects are mutated per test.
@@ -26,6 +31,7 @@ vi.mock('../composables/useLeagueChat', async () => {
     rotateKey: vi.fn(),
     load: vi.fn(),
     requestRekey: vi.fn(),
+    react: vi.fn(),
   }
   return { useLeagueChat: () => state, __state: state }
 })
@@ -95,8 +101,8 @@ describe('ChatPanel', () => {
     s.enabled.value = true
     s.ready.value = true
     s.messages.value = [
-      { id: 'a', userId: 'me', matchId: null, text: 'hi all', createdAt: '2026-06-10T10:00:00.000Z' },
-      { id: 'b', userId: 'other', matchId: null, text: 'evening', createdAt: '2026-06-10T10:01:00.000Z' },
+      msg({ id: 'a', userId: 'me', text: 'hi all' }),
+      msg({ id: 'b', userId: 'other', text: 'evening', createdAt: '2026-06-10T10:01:00.000Z' }),
     ]
     const wrapper = await mount()
     await vi.waitFor(() => expect(wrapper.text()).toContain('hi all'))
@@ -109,7 +115,7 @@ describe('ChatPanel', () => {
     const s = await chatState()
     s.enabled.value = true
     s.ready.value = true
-    s.messages.value = [{ id: 'a', userId: 'other', matchId: null, text: null, createdAt: '2026-06-10T10:00:00.000Z' }]
+    s.messages.value = [msg({ id: 'a', userId: 'other', text: null })]
     const wrapper = await mount()
     await vi.waitFor(() => expect(wrapper.text()).toContain('no key on this device'))
   })
@@ -121,6 +127,20 @@ describe('ChatPanel', () => {
     const wrapper = await mount()
     expect(wrapper.text()).toContain('Waiting to be let in')
     expect(wrapper.text()).not.toContain('Setting up your key')
+  })
+
+  it('shows reaction counts and toggles on click', async () => {
+    const s = await chatState()
+    s.enabled.value = true
+    s.ready.value = true
+    s.messages.value = [msg({ id: 'a', userId: 'other', text: 'hi', reactions: { ...emptyReactionTotals(), FIRE: 2 }, myReaction: 'FIRE' })]
+    const wrapper = await mount()
+    await vi.waitFor(() => expect(wrapper.text()).toContain('2'))
+    // The existing-count pill is the one marked pressed (myReaction === FIRE).
+    const pill = wrapper.find('button[aria-pressed="true"]')
+    expect(pill.exists()).toBe(true)
+    await pill.trigger('click')
+    expect(s.react).toHaveBeenCalledWith('a', 'FIRE')
   })
 
   it('prompts to restore when the device lacks the key', async () => {
