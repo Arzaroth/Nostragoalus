@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- **League chat key rotation**: a league owner or moderator can rotate the chat key from the panel. Everyone currently in the league gets a fresh key, so anyone who has been removed loses access to new messages, while past messages stay readable for members who already had them. It also recovers a member who somehow ended up unable to read the chat.
+
 ## [1.34.0] - 2026-06-23
 
 ### Added

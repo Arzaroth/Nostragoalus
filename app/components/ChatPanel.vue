@@ -86,6 +86,19 @@ async function doRestore() {
   }
 }
 
+// Key rotation (admins): a fresh key for current members, revoking anyone removed.
+const showRotate = ref(false)
+const rotating = ref(false)
+async function confirmRotate() {
+  rotating.value = true
+  try {
+    await chat.rotateKey()
+    showRotate.value = false
+  } finally {
+    rotating.value = false
+  }
+}
+
 const listEl = ref<HTMLElement | null>(null)
 watch(
   messages,
@@ -145,7 +158,10 @@ watch(
         <div class="flex items-center justify-between">
           <button v-if="!hasRecovery" type="button" class="text-xs underline" style="color: var(--p-primary-color)" :disabled="recoveryBusy" @click="openRecoverySetup">{{ t('chat.setupRecovery') }}</button>
           <span v-else />
-          <button v-if="isAdmin" type="button" class="text-xs underline opacity-70 hover:opacity-100" @click="chat.disableChat()">{{ t('chat.disable') }}</button>
+          <div v-if="isAdmin" class="flex items-center gap-3">
+            <button type="button" class="text-xs underline opacity-70 hover:opacity-100" @click="showRotate = true">{{ t('chat.rotate.button') }}</button>
+            <button type="button" class="text-xs underline opacity-70 hover:opacity-100" @click="chat.disableChat()">{{ t('chat.disable') }}</button>
+          </div>
         </div>
       </template>
     </template>
@@ -160,6 +176,15 @@ watch(
       <template #footer>
         <Button :label="t('chat.warning.cancel')" severity="secondary" text @click="showWarning = false" />
         <Button :label="t('chat.warning.confirm')" :loading="enabling" @click="confirmEnable" />
+      </template>
+    </Dialog>
+
+    <!-- Rotate-key confirm (admins). -->
+    <Dialog v-model:visible="showRotate" modal :header="t('chat.rotate.title')" :style="{ width: '30rem', maxWidth: '92vw' }">
+      <p class="text-sm">{{ t('chat.rotate.body') }}</p>
+      <template #footer>
+        <Button :label="t('chat.rotate.cancel')" severity="secondary" text @click="showRotate = false" />
+        <Button :label="t('chat.rotate.confirm')" :loading="rotating" @click="confirmRotate" />
       </template>
     </Dialog>
 

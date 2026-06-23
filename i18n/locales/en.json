@@ -69,6 +69,13 @@
       "placeholder": "Recovery code",
       "button": "Restore",
       "error": "That code didn't work."
+    },
+    "rotate": {
+      "button": "Rotate key",
+      "title": "Rotate the chat key?",
+      "body": "Everyone in the league gets a fresh key from now on. Anyone you have removed loses access to new messages; past messages stay readable for members who already had them. Use this after removing someone, or if a member cannot read the chat.",
+      "confirm": "Rotate key",
+      "cancel": "Cancel"
     }
   },
   "nav": {

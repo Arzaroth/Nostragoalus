@@ -20,7 +20,7 @@ interface ChatStatus {
   enabled: boolean
   epoch: number
   role: 'OWNER' | 'MODERATOR' | 'MEMBER'
-  myWrappedKey: string | null
+  myWrappedKeys: { epoch: number; wrappedKey: string }[]
   missingKeys: { userId: string; publicKey: string }[]
   memberKeys: { userId: string; publicKey: string }[]
 }
@@ -37,14 +37,17 @@ export function useLeagueChat(
   const enabled = ref(false)
   const epoch = ref(0)
   const role = ref<ChatStatus['role'] | null>(null)
-  const groupKey = ref<Uint8Array | null>(null)
+  // The group key for every epoch the caller can open, so old history stays
+  // readable after a re-key. Each message is decrypted with its own epoch's key.
+  const keys = ref<Map<number, Uint8Array>>(new Map())
   const messages = ref<DecryptedMessage[]>([])
   const memberKeys = ref<{ userId: string; publicKey: string }[]>([])
   const loading = ref(false)
   const sending = ref(false)
 
   const isAdmin = computed(() => role.value === 'OWNER' || role.value === 'MODERATOR')
-  const ready = computed(() => enabled.value && !!groupKey.value)
+  const currentKey = computed<Uint8Array | null>(() => keys.value.get(epoch.value) ?? null)
+  const ready = computed(() => enabled.value && !!currentKey.value)
 
   // Client-side mute list (per device): the owner is server-blind, so abuse
   // handling is the member's own mute plus league-admin action.
@@ -65,9 +68,10 @@ export function useLeagueChat(
 
   async function decryptRow(r: ChatMessageDTO): Promise<DecryptedMessage> {
     let text: string | null = null
-    if (groupKey.value && r.epoch === epoch.value) {
+    const key = keys.value.get(r.epoch)
+    if (key) {
       try {
-        text = await decryptMessage(r.ciphertext, groupKey.value)
+        text = await decryptMessage(r.ciphertext, key)
       } catch {
         text = null
       }
@@ -84,11 +88,12 @@ export function useLeagueChat(
     messages.value = await Promise.all([...rows].reverse().map(decryptRow))
   }
 
-  // Keyholders seal the group key for members who don't have it at this epoch.
+  // Keyholders seal the current group key for members who don't have it yet.
   async function reconcileKeys(missing: { userId: string; publicKey: string }[]): Promise<void> {
-    if (!groupKey.value || missing.length === 0) return
+    const ck = currentKey.value
+    if (!ck || missing.length === 0) return
     const wraps = await Promise.all(
-      missing.map(async (m) => ({ userId: m.userId, wrappedKey: await sealGroupKey(groupKey.value!, m.publicKey) })),
+      missing.map(async (m) => ({ userId: m.userId, wrappedKey: await sealGroupKey(ck, m.publicKey) })),
     )
     await $fetch(`/api/leagues/${lid()}/chat/keys`, { method: 'POST', body: { epoch: epoch.value, wraps } }).catch(() => {})
   }
@@ -103,7 +108,7 @@ export function useLeagueChat(
       } catch {
         // Not a member (404) or transient error: nothing to show.
         enabled.value = false
-        groupKey.value = null
+        keys.value = new Map()
         messages.value = []
         return
       }
@@ -111,16 +116,20 @@ export function useLeagueChat(
       epoch.value = status.epoch
       role.value = status.role
       memberKeys.value = status.memberKeys
-      groupKey.value = null
+      keys.value = new Map()
       messages.value = []
       if (!status.enabled) return
       await ensure()
-      if (status.myWrappedKey && identity.value) {
-        try {
-          groupKey.value = await openGroupKey(status.myWrappedKey, identity.value)
-        } catch {
-          groupKey.value = null
+      if (identity.value && status.myWrappedKeys.length > 0) {
+        const map = new Map<number, Uint8Array>()
+        for (const wk of status.myWrappedKeys) {
+          try {
+            map.set(wk.epoch, await openGroupKey(wk.wrappedKey, identity.value))
+          } catch {
+            // Skip an epoch we cannot open (e.g. a stuck/foreign wrap); others still work.
+          }
         }
+        keys.value = map
       }
       await reconcileKeys(status.missingKeys)
       await loadMessages()
@@ -131,10 +140,11 @@ export function useLeagueChat(
 
   async function send(text: string): Promise<void> {
     const body = text.trim()
-    if (!body || !groupKey.value || sending.value) return
+    const ck = currentKey.value
+    if (!body || !ck || sending.value) return
     sending.value = true
     try {
-      const ciphertext = await encryptMessage(body, groupKey.value)
+      const ciphertext = await encryptMessage(body, ck)
       const { message } = await $fetch<{ message: ChatMessageDTO }>(`/api/leagues/${lid()}/chat/messages`, {
         method: 'POST',
         body: { matchId: mid(), ciphertext, epoch: epoch.value },
@@ -175,6 +185,22 @@ export function useLeagueChat(
     await load()
   }
 
+  // Rotate the league group key (OWNER/MODERATOR): a fresh key sealed to the
+  // current members, bumping the epoch. Members no longer in the league lose
+  // access to new messages; old history stays readable for whoever kept the old
+  // key. Also the recovery path for a member stuck with an unopenable wrap.
+  async function rotateKey(): Promise<void> {
+    await ensure()
+    if (!identity.value) throw new Error('chat identity not ready')
+    const fresh = await $fetch<ChatStatus>(`/api/leagues/${lid()}/chat`)
+    const gk = await generateGroupKey()
+    const wraps = await Promise.all(
+      fresh.memberKeys.map(async (m) => ({ userId: m.userId, wrappedKey: await sealGroupKey(gk, m.publicKey) })),
+    )
+    await $fetch(`/api/leagues/${lid()}/chat/rotate`, { method: 'POST', body: { wraps } })
+    await load()
+  }
+
   useReconnectingSocket({
     onOpen: () => {
       void load()
@@ -208,5 +234,6 @@ export function useLeagueChat(
     send,
     enableChat,
     disableChat,
+    rotateKey,
   }
 }

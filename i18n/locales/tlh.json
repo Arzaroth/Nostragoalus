@@ -69,6 +69,13 @@
       "placeholder": "chovnatlh Qaw'wI'",
       "button": "chav",
       "error": "Qaw'wI' lujpu'."
+    },
+    "rotate": {
+      "button": "ngaQHa'moHwI' chu'",
+      "title": "ngaQHa'moHwI' chu' yIchu''a'?",
+      "body": "DaH Hoch Sep nuvpu' ngaQHa'moHwI' chu' luHev. nuv DatebpvI' QInmey chu' laDlaHbe'; QIn qan laD nuvpu' ghajbogh. nuv Dateb pagh laDlaHbe' nuv, yIlo'.",
+      "confirm": "ngaQHa'moHwI' chu' yIchu'",
+      "cancel": "qIl"
     }
   },
   "nav": {

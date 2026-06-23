@@ -69,6 +69,13 @@
       "placeholder": "Code de récupération",
       "button": "Restaurer",
       "error": "Ce code n'a pas fonctionné."
+    },
+    "rotate": {
+      "button": "Renouveler la clé",
+      "title": "Renouveler la clé du chat ?",
+      "body": "Tous les membres de la ligue reçoivent désormais une nouvelle clé. Les personnes que vous avez retirées perdent l'accès aux nouveaux messages ; les anciens messages restent lisibles pour ceux qui les avaient déjà. À utiliser après avoir retiré quelqu'un, ou si un membre ne peut pas lire le chat.",
+      "confirm": "Renouveler la clé",
+      "cancel": "Annuler"
     }
   },
   "nav": {
