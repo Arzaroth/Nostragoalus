@@ -295,9 +295,14 @@ effort buckets; order within a bucket is not priority.
         server stays blind. Lose all devices AND the code = history gone.
       - **Key distribution**: enabler wraps the group key for current members
         with a published public key; members holding the key lazily wrap it for
-        newcomers (eventually-consistent). Epoch scaffolding is in place but
-        re-key on membership change is deferred (no rotation on removal yet -
-        tracked in TODO.md); re-enabling a disabled league reuses the key.
+        newcomers (eventually-consistent). Admin **Rotate key** (shipped 1.35.0)
+        bumps the epoch and re-wraps for current members, revoking anyone removed;
+        clients hold an epoch->key map so old history stays readable. Re-enabling
+        a disabled league reuses the key. Auto-rotate on removal is still manual.
+      - **Key verification** (shipped 1.35.0): per-member safety-number
+        fingerprints + trust-on-first-use pinning; keyholders refuse to wrap the
+        group key to a changed key until the user accepts it. Residual gap: a
+        first-contact substitution (before a key is ever pinned) is trusted.
       - Owner-blind moderation: OWNER/MODs + client-side mute/block + leave; no
         global surface, no server-side read path (would break the disclaimer).
       - Transport: ciphertext over the members-only league WS channel + REST
