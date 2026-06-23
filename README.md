@@ -38,6 +38,11 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   uses); private-profile members stay hidden from the board. A kicked-off match's view gains a
   **Ranking tab** by the points each pick earns on that match (live then final): everyone who
   predicted by default, or just your league's members when a league is selected
+- **League chat (end-to-end encrypted)**: a private chat per league - a general room plus a
+  per-match thread - that a league owner or moderator turns on (off by default, behind a
+  trade-offs warning). Messages are encrypted on members' devices with a libsodium group key, so the
+  server only ever stores ciphertext and cannot read, moderate or recover them; keys enroll silently
+  on first use, with a one-time recovery code to restore history on another device, plus a local mute
 - Live scores over WebSocket with a pixel-art **goal celebration**; match view with possession,
   per-team match stats, team line-ups (formation, starting XI, bench and coach on a pitch),
   goal timeline with cards (incl. touchline bookings) and substitutions,
@@ -102,6 +107,7 @@ See the in-app **About** page for the full annotated list with licenses. Highlig
   **motion-v**, **Nuxt I18n**
 - **TanStack Vue Query** (client) + Nuxt `useFetch` (SSR)
 - **better-auth** (sessions, 2FA, passkeys, SSO, admin)
+- **libsodium** for the end-to-end-encrypted league chat (client-side group-key crypto; the server stores only ciphertext)
 - **Drizzle ORM** + **PostgreSQL** (PGlite for hermetic tests)
 - Provider-agnostic match data: keyless **FIFA** and **UEFA** public APIs
 - In-process scheduled tasks (Croner) for fixtures / live scores / finalize
