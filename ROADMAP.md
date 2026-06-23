@@ -276,7 +276,7 @@ effort buckets; order within a bucket is not priority.
       (reaction:update + reaction:league-update). No notifications (too noisy).
       Emoji stored as a key (DB enum), glyph rendered client-side so the palette
       can grow/skin without a migration.
-- [ ] **League chat (E2EE)** (in progress on feat/league-chat): per-league chat,
+- [x] **League chat (E2EE)** (shipped in 1.34.0): per-league chat,
       league-global room + per-match threads (one enable per league, threads
       inherit the league key). **Disabled by default**; only OWNER/MODERATOR can
       enable, behind a legal-cover warning modal (owner is server-blind, history
@@ -295,7 +295,9 @@ effort buckets; order within a bucket is not priority.
         server stays blind. Lose all devices AND the code = history gone.
       - **Key distribution**: enabler wraps the group key for current members
         with a published public key; members holding the key lazily wrap it for
-        newcomers (eventually-consistent). Re-key by epoch on membership change.
+        newcomers (eventually-consistent). Epoch scaffolding is in place but
+        re-key on membership change is deferred (no rotation on removal yet -
+        tracked in TODO.md); re-enabling a disabled league reuses the key.
       - Owner-blind moderation: OWNER/MODs + client-side mute/block + leave; no
         global surface, no server-side read path (would break the disclaimer).
       - Transport: ciphertext over the members-only league WS channel + REST
