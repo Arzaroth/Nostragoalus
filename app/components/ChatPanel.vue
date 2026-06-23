@@ -18,19 +18,14 @@ const chat = useLeagueChat(
 const { enabled, isAdmin, ready, loading, sending, messages, identityStatus } = chat
 const { hasRecovery, setupRecovery, restore } = useChatIdentity()
 
-// Member names for display (the messages carry only user ids).
-const names = ref<Record<string, string>>({})
-async function loadNames() {
-  try {
-    const r = await $fetch<{ members: { userId: string; name: string }[] }>(`/api/leagues/${props.leagueId}`)
-    const map: Record<string, string> = {}
-    for (const m of r.members) map[m.userId] = m.name
-    names.value = map
-  } catch {
-    // names are best-effort
-  }
-}
-watch(() => props.leagueId, loadNames, { immediate: true })
+// Member names for display (the messages carry only user ids). Reuses the shared
+// league-detail query so we don't re-fetch the roster the page already cached.
+const detail = useLeagueDetail(computed<string | null>(() => props.leagueId))
+const names = computed<Record<string, string>>(() => {
+  const map: Record<string, string> = {}
+  for (const m of detail.data.value?.members ?? []) map[m.userId] = m.name
+  return map
+})
 function nameFor(uid: string | null): string {
   if (!uid) return t('chat.unknownUser')
   return names.value[uid] ?? t('chat.unknownUser')

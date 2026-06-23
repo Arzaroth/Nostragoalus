@@ -1,7 +1,7 @@
 import { db } from '../../../../db'
 import { requireUser } from '../../../utils/auth-guards'
-import { getLeague, getMembership } from '../../../utils/leagues/service'
-import { getMemberPublicKeys, getMembersMissingKey, getMyWrappedKey } from '../../../utils/chat/service'
+import { getChatStatus } from '../../../utils/chat/service'
+import { toHttpError } from '../../../utils/http'
 
 // Chat status for a league member: whether chat is on, the current key epoch, the
 // caller's sealed group key (to unwrap locally), members still missing a key (so
@@ -10,17 +10,11 @@ import { getMemberPublicKeys, getMembersMissingKey, getMyWrappedKey } from '../.
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
   const leagueId = getRouterParam(event, 'id') as string
-  const membership = await getMembership(db, leagueId, user.id)
-  const lg = await getLeague(db, leagueId)
-  if (!membership || !lg) throw createError({ statusCode: 404, statusMessage: 'League not found' })
-
-  const epoch = lg.chatKeyEpoch
-  const [myWrappedKey, missingKeys, memberKeys] = await Promise.all([
-    lg.chatEnabled ? getMyWrappedKey(db, leagueId, user.id, epoch) : Promise.resolve(null),
-    lg.chatEnabled ? getMembersMissingKey(db, leagueId, epoch) : Promise.resolve([]),
-    getMemberPublicKeys(db, leagueId),
-  ])
-  return { enabled: lg.chatEnabled, epoch, role: membership.role, myWrappedKey, missingKeys, memberKeys }
+  try {
+    return await getChatStatus(db, leagueId, user.id)
+  } catch (err) {
+    throw toHttpError(err)
+  }
 })
 
 defineRouteMeta({

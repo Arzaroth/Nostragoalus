@@ -6,7 +6,7 @@ import {
   openGroupKey,
   sealGroupKey,
 } from '~/utils/e2ee'
-import type { ChatMessageDTO } from '../../shared/types/chat'
+import type { ChatMessageDTO } from '#shared/types/chat'
 
 export interface DecryptedMessage {
   id: string
@@ -135,11 +135,15 @@ export function useLeagueChat(
     sending.value = true
     try {
       const ciphertext = await encryptMessage(body, groupKey.value)
-      await $fetch(`/api/leagues/${lid()}/chat/messages`, {
+      const { message } = await $fetch<{ message: ChatMessageDTO }>(`/api/leagues/${lid()}/chat/messages`, {
         method: 'POST',
         body: { matchId: mid(), ciphertext, epoch: epoch.value },
       })
-      // The message comes back over the WS (chat:new) and is appended there.
+      // Append our own message from the POST response; the WS echo (chat:new)
+      // dedupes on id, so we don't depend on it to see what we just sent.
+      if (message && !messages.value.some((m) => m.id === message.id)) {
+        messages.value = [...messages.value, await decryptRow(message)]
+      }
     } finally {
       sending.value = false
     }
@@ -152,10 +156,16 @@ export function useLeagueChat(
     await ensure()
     if (!identity.value) throw new Error('chat identity not ready')
     const fresh = await $fetch<ChatStatus>(`/api/leagues/${lid()}/chat`)
-    const gk = await generateGroupKey()
-    const wraps = await Promise.all(
-      fresh.memberKeys.map(async (m) => ({ userId: m.userId, wrappedKey: await sealGroupKey(gk, m.publicKey) })),
-    )
+    // Only the first enable (epoch 0) generates and distributes a group key.
+    // Re-enabling a league that was turned off reuses the existing key so prior
+    // history stays decryptable, so no new key is generated here.
+    let wraps: { userId: string; wrappedKey: string }[] = []
+    if (fresh.epoch === 0) {
+      const gk = await generateGroupKey()
+      wraps = await Promise.all(
+        fresh.memberKeys.map(async (m) => ({ userId: m.userId, wrappedKey: await sealGroupKey(gk, m.publicKey) })),
+      )
+    }
     await $fetch(`/api/leagues/${lid()}/chat/enable`, { method: 'POST', body: { wraps } })
     await load()
   }

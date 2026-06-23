@@ -1026,3 +1026,45 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       if the stray chunk ever bothers.
 - [ ] Klingon (tlh) share strings are best-effort terse forms, not verified
       canonical tlhIngan Hol - revisit if a fluent reviewer is available.
+
+## League chat / E2EE (deferred from the feature-treatment review)
+
+- [ ] Key-substitution / no TOFU pinning: `chat.get` hands the keyholder client
+      every member's public key straight from the DB, and the client seals the
+      group key to whatever it gets (`useLeagueChat.ts` reconcile + enable paths).
+      An active or compromised server could substitute its own X25519 public key
+      for a member, receive the group key wrapped to a key it controls, and read
+      the chat - defeating the server-blind claim. No fingerprint, pinning or
+      out-of-band verification today. Mitigation is a real feature: surface a
+      key fingerprint members can compare (safety-number UI), or pin first-seen
+      keys client-side and warn on change. Until then the threat model is
+      "honest-but-curious server", which is worth stating in the warning copy.
+- [ ] No re-key / forward secrecy on membership change: removing a member does
+      not bump the epoch or rotate the group key, so a removed member who cached
+      the key (or can restore it via recovery escrow) still decrypts retained
+      history and any same-epoch future message. The epoch machinery exists but
+      is only ever bumped on the first enable. Add an admin "rotate key" action
+      (or auto-rotate on member removal) that bumps the epoch and re-wraps for
+      the remaining members; old ciphertext stays at the old epoch by design.
+- [ ] `addWrappedKeys` is first-write-wins with `onConflictDoNothing`: any member
+      (not just a genuine keyholder) can POST a junk `wrappedKey` for another
+      member at the current epoch, and the real keyholder's later wrap is then
+      silently dropped - a per-member denial-of-decryption with no surfaced
+      error. A robust fix needs proof the actor holds the group key (hard while
+      server-blind); a cheap partial mitigation is to require the actor to
+      already have a key row at the epoch (a keyholder), raising the bar to
+      members who can read the chat themselves.
+- [ ] `listMessages` backward pagination (`before:` -> `lt(createdAt)`) has no
+      compound cursor, so two messages sharing a `createdAt` at a page boundary
+      can be dropped/duplicated. Currently dead code (the client never passes
+      `before`/`limit`); `ORDER BY` now has an `id` tiebreaker for a deterministic
+      page, but wire a `(createdAt, id)` keyset cursor before any client paginates.
+- [ ] `getMemberPublicKeys` (chat status payload) lists every member's userId +
+      public key with no profile-private / admin-hidden filter, unlike
+      `listLeagueMembers`. Exposure is limited to fellow league members and is
+      arguably required for E2EE key-wrapping, but it leaks the existence of a
+      roster-hidden member to peers; reconcile the two visibility rules if hidden
+      membership becomes load-bearing.
+- [ ] `ChatPanel` `fmtTime` uses `toLocaleTimeString` with no explicit timezone:
+      render-env locale/tz dependent and an SSR/hydrate mismatch in theory
+      (mitigated today because the list is behind client-only ready state).

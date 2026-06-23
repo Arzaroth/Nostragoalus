@@ -9,6 +9,7 @@ import {
   disableLeagueChat,
   enableLeagueChat,
   getChatIdentity,
+  getChatStatus,
   getMemberPublicKeys,
   getMembersMissingKey,
   getMyWrappedKey,
@@ -136,6 +137,54 @@ describe('enableLeagueChat', () => {
     const { db, client, owner, leagueId } = await setup()
     const stranger = await makeUser(db, 'stranger')
     await expect(enableWith(db, leagueId, owner, [stranger])).rejects.toBeInstanceOf(ValidationError)
+    await client.close()
+  })
+
+  it('re-enabling keeps the same epoch and keys (no re-key)', async () => {
+    const { db, client, owner, leagueId } = await setup()
+    await enableWith(db, leagueId, owner, [owner]) // epoch 1, key wk-owner
+    await disableLeagueChat(db, { leagueId, actorId: owner })
+    // Re-enable with empty wraps: the existing key is reused, not regenerated.
+    const r = await enableLeagueChat(db, { leagueId, actorId: owner, wraps: [] })
+    expect(r.epoch).toBe(1)
+    const lg = (await db.select().from(league).where(eq(league.id, leagueId)))[0]
+    expect(lg.chatEnabled).toBe(true)
+    expect(lg.chatKeyEpoch).toBe(1)
+    expect(await getMyWrappedKey(db, leagueId, owner, 1)).toBe('wk-owner')
+    await client.close()
+  })
+})
+
+describe('getChatStatus', () => {
+  it('throws NotFound for a non-member or unknown league', async () => {
+    const { db, client, owner, leagueId } = await setup()
+    const stranger = await makeUser(db, 'stranger')
+    await expect(getChatStatus(db, leagueId, stranger)).rejects.toBeInstanceOf(NotFoundError)
+    await expect(getChatStatus(db, 'nope', owner)).rejects.toBeInstanceOf(NotFoundError)
+    await client.close()
+  })
+
+  it('reports disabled chat with member keys but no epoch material', async () => {
+    const { db, client, owner, leagueId } = await setup()
+    await addIdentity(db, owner)
+    const s = await getChatStatus(db, leagueId, owner)
+    expect(s).toMatchObject({ enabled: false, epoch: 0, role: 'OWNER', myWrappedKey: null, missingKeys: [] })
+    expect(s.memberKeys).toEqual([{ userId: owner, publicKey: 'pk-owner' }])
+    await client.close()
+  })
+
+  it('reports enabled chat with the caller key and members still missing one', async () => {
+    const { db, client, owner, leagueId } = await setup()
+    await addIdentity(db, owner)
+    await enableWith(db, leagueId, owner, [owner])
+    const u2 = await makeUser(db, 'u2')
+    await addLeagueMember(db, leagueId, u2)
+    await addIdentity(db, u2) // identity, no key yet
+    const s = await getChatStatus(db, leagueId, owner)
+    expect(s.enabled).toBe(true)
+    expect(s.epoch).toBe(1)
+    expect(s.myWrappedKey).toBe('wk-owner')
+    expect(s.missingKeys).toEqual([{ userId: u2, publicKey: 'pk-u2' }])
     await client.close()
   })
 })
@@ -287,6 +336,18 @@ describe('listMessages', () => {
     expect(older.map((r) => r.ciphertext)).toEqual(['m1'])
     const thread = await listMessages(db, { leagueId, userId: owner, matchId: m })
     expect(thread.map((r) => r.ciphertext)).toEqual(['thread'])
+    await client.close()
+  })
+
+  it('clamps the page size into [1, MAX_PAGE]', async () => {
+    const { db, client, owner, leagueId } = await setup()
+    const t = (s: number) => new Date(`2026-06-10T10:0${s}:00Z`)
+    await db.insert(chatMessage).values([
+      { leagueId, userId: owner, epoch: 1, ciphertext: 'm1', createdAt: t(1) },
+      { leagueId, userId: owner, epoch: 1, ciphertext: 'm2', createdAt: t(2) },
+    ])
+    expect((await listMessages(db, { leagueId, userId: owner, limit: 0 })).length).toBe(1) // clamped up to 1
+    expect((await listMessages(db, { leagueId, userId: owner, limit: 9999 })).map((r) => r.ciphertext)).toEqual(['m2', 'm1']) // clamped down, all returned
     await client.close()
   })
 })
