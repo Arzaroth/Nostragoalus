@@ -13,10 +13,12 @@ import {
   getMemberPublicKeys,
   getMembersMissingKey,
   getMyWrappedKey,
+  getMyWrappedKeys,
   getRecoveryBlob,
   listMessages,
   postMessage,
   registerChatIdentity,
+  rotateLeagueChatKey,
   setRecoveryBlob,
 } from './service'
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors'
@@ -168,12 +170,12 @@ describe('getChatStatus', () => {
     const { db, client, owner, leagueId } = await setup()
     await addIdentity(db, owner)
     const s = await getChatStatus(db, leagueId, owner)
-    expect(s).toMatchObject({ enabled: false, epoch: 0, role: 'OWNER', myWrappedKey: null, missingKeys: [] })
+    expect(s).toMatchObject({ enabled: false, epoch: 0, role: 'OWNER', myWrappedKeys: [], missingKeys: [] })
     expect(s.memberKeys).toEqual([{ userId: owner, publicKey: 'pk-owner' }])
     await client.close()
   })
 
-  it('reports enabled chat with the caller key and members still missing one', async () => {
+  it('reports enabled chat with the caller keys (all epochs) and members still missing one', async () => {
     const { db, client, owner, leagueId } = await setup()
     await addIdentity(db, owner)
     await enableWith(db, leagueId, owner, [owner])
@@ -183,8 +185,55 @@ describe('getChatStatus', () => {
     const s = await getChatStatus(db, leagueId, owner)
     expect(s.enabled).toBe(true)
     expect(s.epoch).toBe(1)
-    expect(s.myWrappedKey).toBe('wk-owner')
+    expect(s.myWrappedKeys).toEqual([{ epoch: 1, wrappedKey: 'wk-owner' }])
     expect(s.missingKeys).toEqual([{ userId: u2, publicKey: 'pk-u2' }])
+    await client.close()
+  })
+})
+
+describe('rotateLeagueChatKey', () => {
+  it('throws NotFound, forbids non-admins, and refuses a disabled chat', async () => {
+    const { db, client, owner, leagueId } = await setup()
+    await expect(rotateLeagueChatKey(db, { leagueId: 'nope', actorId: owner, wraps: [] })).rejects.toBeInstanceOf(NotFoundError)
+    // Enabled-but-non-admin and disabled-chat paths.
+    await expect(rotateLeagueChatKey(db, { leagueId, actorId: owner, wraps: [] })).rejects.toBeInstanceOf(ForbiddenError) // chat off
+    const member = await makeUser(db, 'member')
+    await addLeagueMember(db, leagueId, member)
+    await enableWith(db, leagueId, owner, [owner])
+    await expect(rotateLeagueChatKey(db, { leagueId, actorId: member, wraps: [] })).rejects.toBeInstanceOf(ForbiddenError) // not admin
+    await client.close()
+  })
+
+  it('rejects wrapping the new key for a non-member', async () => {
+    const { db, client, owner, leagueId } = await setup()
+    await enableWith(db, leagueId, owner, [owner])
+    const stranger = await makeUser(db, 'stranger')
+    await expect(rotateLeagueChatKey(db, { leagueId, actorId: owner, wraps: wrapsFor([stranger]) })).rejects.toBeInstanceOf(ValidationError)
+    await client.close()
+  })
+
+  it('bumps the epoch, keeps old-epoch keys, and stores the fresh ones', async () => {
+    const { db, client, owner, leagueId } = await setup()
+    await enableWith(db, leagueId, owner, [owner]) // epoch 1, wk-owner
+    const r = await rotateLeagueChatKey(db, { leagueId, actorId: owner, wraps: [{ userId: owner, wrappedKey: 'wk2-owner' }] })
+    expect(r.epoch).toBe(2)
+    expect((await db.select().from(league).where(eq(league.id, leagueId)))[0].chatKeyEpoch).toBe(2)
+    // Both epochs are retained for the caller (old history stays decryptable).
+    expect(await getMyWrappedKeys(db, leagueId, owner)).toEqual([
+      { epoch: 1, wrappedKey: 'wk-owner' },
+      { epoch: 2, wrappedKey: 'wk2-owner' },
+    ])
+    await client.close()
+  })
+
+  it('revokes a member left out of the rotation (no new-epoch key)', async () => {
+    const { db, client, owner, leagueId } = await setup()
+    const u2 = await makeUser(db, 'u2')
+    await addLeagueMember(db, leagueId, u2)
+    await enableWith(db, leagueId, owner, [owner, u2]) // both keyed at epoch 1
+    await rotateLeagueChatKey(db, { leagueId, actorId: owner, wraps: [{ userId: owner, wrappedKey: 'wk2-owner' }] }) // u2 left out
+    expect(await getMyWrappedKey(db, leagueId, u2, 2)).toBeNull()
+    expect(await getMyWrappedKeys(db, leagueId, u2)).toEqual([{ epoch: 1, wrappedKey: 'wk-u2' }])
     await client.close()
   })
 })
