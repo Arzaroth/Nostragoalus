@@ -6,6 +6,7 @@ import {
   openGroupKey,
   sealGroupKey,
 } from '~/utils/e2ee'
+import { chatKeyPins, isKeyTrusted } from '~/composables/useChatKeyPins'
 import type { ChatMessageDTO } from '#shared/types/chat'
 
 export interface DecryptedMessage {
@@ -88,12 +89,22 @@ export function useLeagueChat(
     messages.value = await Promise.all([...rows].reverse().map(decryptRow))
   }
 
+  const pins = chatKeyPins()
+  // Never hand the group key to a member whose identity key changed under our pin
+  // until the user accepts it (verify/acknowledge). First-seen and unchanged keys
+  // are trusted (TOFU); this turns the verify panel from detection into prevention
+  // of an automatic key leak to a substituted key.
+  function trustedTargets(list: { userId: string; publicKey: string }[]) {
+    return list.filter((m) => isKeyTrusted(pins.value, m.userId, m.publicKey))
+  }
+
   // Keyholders seal the current group key for members who don't have it yet.
   async function reconcileKeys(missing: { userId: string; publicKey: string }[]): Promise<void> {
     const ck = currentKey.value
-    if (!ck || missing.length === 0) return
+    const targets = trustedTargets(missing)
+    if (!ck || targets.length === 0) return
     const wraps = await Promise.all(
-      missing.map(async (m) => ({ userId: m.userId, wrappedKey: await sealGroupKey(ck, m.publicKey) })),
+      targets.map(async (m) => ({ userId: m.userId, wrappedKey: await sealGroupKey(ck, m.publicKey) })),
     )
     await $fetch(`/api/leagues/${lid()}/chat/keys`, { method: 'POST', body: { epoch: epoch.value, wraps } }).catch(() => {})
   }
@@ -173,7 +184,7 @@ export function useLeagueChat(
     if (fresh.epoch === 0) {
       const gk = await generateGroupKey()
       wraps = await Promise.all(
-        fresh.memberKeys.map(async (m) => ({ userId: m.userId, wrappedKey: await sealGroupKey(gk, m.publicKey) })),
+        trustedTargets(fresh.memberKeys).map(async (m) => ({ userId: m.userId, wrappedKey: await sealGroupKey(gk, m.publicKey) })),
       )
     }
     await $fetch(`/api/leagues/${lid()}/chat/enable`, { method: 'POST', body: { wraps } })
@@ -195,7 +206,7 @@ export function useLeagueChat(
     const fresh = await $fetch<ChatStatus>(`/api/leagues/${lid()}/chat`)
     const gk = await generateGroupKey()
     const wraps = await Promise.all(
-      fresh.memberKeys.map(async (m) => ({ userId: m.userId, wrappedKey: await sealGroupKey(gk, m.publicKey) })),
+      trustedTargets(fresh.memberKeys).map(async (m) => ({ userId: m.userId, wrappedKey: await sealGroupKey(gk, m.publicKey) })),
     )
     await $fetch(`/api/leagues/${lid()}/chat/rotate`, { method: 'POST', body: { wraps } })
     await load()

@@ -1,5 +1,6 @@
 import { useStorage } from '@vueuse/core'
 import { fingerprint } from '~/utils/e2ee'
+import { chatKeyPins } from '~/composables/useChatKeyPins'
 
 export interface KeyEntry {
   userId: string
@@ -18,12 +19,17 @@ export function useChatKeyVerification(
   members: MaybeRefOrGetter<{ userId: string; publicKey: string }[]>,
   myPublicKey: MaybeRefOrGetter<string | null>,
 ) {
-  const pins = useStorage<Record<string, string>>('ng-chat-keypins', {})
+  const pins = chatKeyPins()
   const verified = useStorage<Record<string, string>>('ng-chat-keyverified', {})
   const entries = ref<KeyEntry[]>([])
   const myFingerprint = ref('')
+  // Only the latest recompute may commit: overlapping async runs (the deep watch
+  // firing twice, or a verify click landing mid-run) must not let a stale snapshot
+  // clobber a newer one and re-pin a key that was just flagged as changed.
+  let runSeq = 0
 
   async function recompute(): Promise<void> {
+    const mine = ++runSeq
     const list: KeyEntry[] = []
     const nextPins = { ...pins.value }
     for (const m of toValue(members)) {
@@ -38,10 +44,12 @@ export function useChatKeyVerification(
         changed,
       })
     }
+    const me = toValue(myPublicKey)
+    const myFp = me ? await fingerprint(me) : ''
+    if (mine !== runSeq) return // a newer run superseded this one
     pins.value = nextPins
     entries.value = list
-    const mine = toValue(myPublicKey)
-    myFingerprint.value = mine ? await fingerprint(mine) : ''
+    myFingerprint.value = myFp
   }
 
   // Accept the member's current key as verified (matches their safety number).

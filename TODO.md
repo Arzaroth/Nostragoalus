@@ -1029,31 +1029,34 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
 ## League chat / E2EE (deferred from the feature-treatment review)
 
-- [ ] Key-substitution / no TOFU pinning: `chat.get` hands the keyholder client
-      every member's public key straight from the DB, and the client seals the
-      group key to whatever it gets (`useLeagueChat.ts` reconcile + enable paths).
-      An active or compromised server could substitute its own X25519 public key
-      for a member, receive the group key wrapped to a key it controls, and read
-      the chat - defeating the server-blind claim. No fingerprint, pinning or
-      out-of-band verification today. Mitigation is a real feature: surface a
-      key fingerprint members can compare (safety-number UI), or pin first-seen
-      keys client-side and warn on change. Until then the threat model is
-      "honest-but-curious server", which is worth stating in the warning copy.
-- [ ] No re-key / forward secrecy on membership change: removing a member does
-      not bump the epoch or rotate the group key, so a removed member who cached
-      the key (or can restore it via recovery escrow) still decrypts retained
-      history and any same-epoch future message. The epoch machinery exists but
-      is only ever bumped on the first enable. Add an admin "rotate key" action
-      (or auto-rotate on member removal) that bumps the epoch and re-wraps for
-      the remaining members; old ciphertext stays at the old epoch by design.
-- [ ] `addWrappedKeys` is first-write-wins with `onConflictDoNothing`: any member
-      (not just a genuine keyholder) can POST a junk `wrappedKey` for another
-      member at the current epoch, and the real keyholder's later wrap is then
-      silently dropped - a per-member denial-of-decryption with no surfaced
-      error. A robust fix needs proof the actor holds the group key (hard while
-      server-blind); a cheap partial mitigation is to require the actor to
-      already have a key row at the epoch (a keyholder), raising the bar to
-      members who can read the chat themselves.
+- [x] Key-substitution / TOFU pinning (shipped in 1.35.0): a "Verify keys" panel
+      shows a safety-number fingerprint per member for out-of-band comparison, the
+      client pins each member's key on first sight and warns site-wide if it
+      changes, and keyholders no longer auto-wrap the group key to a changed key
+      until the user accepts it (detection plus prevention of the automatic leak).
+      Residual gap below.
+- [ ] First-contact TOFU window: a server that substitutes a member's identity
+      key BEFORE this device has ever pinned it (the member's first appearance, or
+      a brand-new member) is trusted blindly - pinning only catches a key that
+      changes after first sight. Closing this needs an out-of-band key channel
+      (compare the safety number, which the UI offers but cannot force). State the
+      "verify before you trust a new member" expectation in the warning copy.
+- [x] Re-key / revocation on membership change (shipped in 1.35.0): an admin
+      "Rotate key" action bumps the epoch and re-wraps a fresh group key for the
+      current members; removed members get no new key and the server gates both
+      old and new ciphertext on current membership, so rotation is real
+      revocation. Old ciphertext stays at the old epoch and the client holds an
+      epoch->key map so prior history stays readable. Auto-rotate on member
+      removal is still manual-only (an admin must click Rotate key).
+- [ ] `addWrappedKeys` first-write-wins (`onConflictDoNothing`): a member can
+      still plant a junk `wrappedKey` for a peer, silently dropping the real
+      keyholder's later wrap - a per-member denial-of-decryption. Rotate-key now
+      gives a recovery path (the stuck member gets a clean key at the new epoch),
+      but the grief itself is not prevented. A robust fix needs proof the actor
+      holds the group key (hard while server-blind).
+- [ ] `useChatKeyVerification` pins/verified grow unbounded in localStorage (one
+      entry per userId ever seen, across all leagues, never pruned). Harmless but
+      no eviction; prune to current co-members if it ever matters.
 - [ ] `listMessages` backward pagination (`before:` -> `lt(createdAt)`) has no
       compound cursor, so two messages sharing a `createdAt` at a page boundary
       can be dropped/duplicated. Currently dead code (the client never passes

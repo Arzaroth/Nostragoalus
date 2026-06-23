@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import ChatPanel from './ChatPanel.vue'
 import { generateIdentity } from '../utils/e2ee'
+import { chatKeyPins } from '../composables/useChatKeyPins'
 
 // Drive the panel via mocked composables (the crypto/network live in those and
 // are tested separately). The mock state objects are mutated per test.
@@ -58,6 +59,10 @@ beforeEach(async () => {
 afterEach(() => {
   for (const w of mounted) w.unmount()
   mounted = []
+  // The key-verification pins persist in localStorage (useStorage); reset the
+  // shared store so pinned/verified state can't leak between tests.
+  chatKeyPins().value = {}
+  localStorage.clear()
 })
 
 async function mount() {
