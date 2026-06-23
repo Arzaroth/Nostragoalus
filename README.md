@@ -42,7 +42,10 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   per-match thread - that a league owner or moderator turns on (off by default, behind a
   trade-offs warning). Messages are encrypted on members' devices with a libsodium group key, so the
   server only ever stores ciphertext and cannot read, moderate or recover them; keys enroll silently
-  on first use, with a one-time recovery code to restore history on another device, plus a local mute
+  on first use, with a one-time recovery code to restore history on another device, plus a local mute.
+  A **Verify keys** panel shows per-member safety numbers to compare out-of-band (with first-seen key
+  pinning and a warning if a key changes), and an admin can **rotate the key** to revoke a removed
+  member while past messages stay readable
 - Live scores over WebSocket with a pixel-art **goal celebration**; match view with possession,
   per-team match stats, team line-ups (formation, starting XI, bench and coach on a pitch),
   goal timeline with cards (incl. touchline bookings) and substitutions,
