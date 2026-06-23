@@ -27,6 +27,11 @@ vi.mock('../composables/useChatIdentity', async () => {
   const s = { hasRecovery: ref(true), setupRecovery: vi.fn(), restore: vi.fn() }
   return { useChatIdentity: () => s, __id: s }
 })
+vi.mock('../composables/useLeagues', async () => {
+  const { ref } = await import('vue')
+  const data = ref({ members: [{ userId: 'me', name: 'Me' }, { userId: 'other', name: 'Sam' }] })
+  return { useLeagueDetail: () => ({ data }) }
+})
 vi.mock('../composables/useAuth', async () => {
   const { ref } = await import('vue')
   return { useAuth: () => ({ session: ref({ data: { user: { id: 'me' } } }) }) }
@@ -44,12 +49,10 @@ beforeEach(async () => {
   s.ready.value = false
   s.messages.value = []
   s.identityStatus.value = 'ready'
-  vi.stubGlobal('$fetch', vi.fn(async () => ({ members: [{ userId: 'me', name: 'Me' }, { userId: 'other', name: 'Sam' }] })))
 })
 afterEach(() => {
   for (const w of mounted) w.unmount()
   mounted = []
-  vi.unstubAllGlobals()
 })
 
 async function mount() {

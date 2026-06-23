@@ -2,7 +2,7 @@ import { and, desc, eq, isNull, lt } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { chatIdentity, chatMessage, league, leagueChatKey, leagueMember, match } from '../../../db/schema'
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors'
-import { getMembership } from '../leagues/service'
+import { getLeague, getMembership } from '../leagues/service'
 
 // All chat content is end-to-end encrypted client-side; this service only ever
 // moves ciphertext, public keys and sealed (wrapped) group keys. It never holds
@@ -81,6 +81,32 @@ export async function getMemberPublicKeys(db: AppDatabase, leagueId: string): Pr
     .where(eq(leagueMember.leagueId, leagueId))
 }
 
+export interface ChatStatus {
+  enabled: boolean
+  epoch: number
+  role: string
+  myWrappedKey: string | null
+  missingKeys: MemberKey[]
+  memberKeys: MemberKey[]
+}
+
+// Chat status for a league member: whether chat is on, the current key epoch, the
+// caller's sealed group key (to unwrap locally), members still missing a key (so a
+// keyholder can wrap for them) and every member's public key. Members only - a
+// missing membership or league throws NotFound so the route can 404 (hiding the
+// league from non-members).
+export async function getChatStatus(db: AppDatabase, leagueId: string, userId: string): Promise<ChatStatus> {
+  const [membership, lg] = await Promise.all([getMembership(db, leagueId, userId), getLeague(db, leagueId)])
+  if (!membership || !lg) throw new NotFoundError('league not found')
+  const epoch = lg.chatKeyEpoch
+  const [myWrappedKey, missingKeys, memberKeys] = await Promise.all([
+    lg.chatEnabled ? getMyWrappedKey(db, leagueId, userId, epoch) : Promise.resolve(null),
+    lg.chatEnabled ? getMembersMissingKey(db, leagueId, epoch) : Promise.resolve<MemberKey[]>([]),
+    getMemberPublicKeys(db, leagueId),
+  ])
+  return { enabled: lg.chatEnabled, epoch, role: membership.role, myWrappedKey, missingKeys, memberKeys }
+}
+
 // --- enable / disable ---
 
 export interface WrappedKeyInput {
@@ -100,9 +126,12 @@ async function leagueMemberIds(db: AppDatabase, leagueId: string): Promise<Set<s
   return new Set(await getLeagueMemberIds(db, leagueId))
 }
 
-// Enable chat for a league (OWNER/MODERATOR only). Bumps the key epoch and stores
-// the group key sealed to each provided member. The actor's client generated the
-// group key and supplies the wraps; the server only persists them.
+// Enable chat for a league (OWNER/MODERATOR only). The FIRST enable bumps the key
+// epoch from 0 and stores the group key sealed to each provided member (the
+// actor's client generated it and supplies the wraps; the server only persists
+// them). Re-enabling a league that was turned off keeps the existing epoch and
+// keys so prior history stays decryptable - it does not re-key, matching what
+// disableLeagueChat promises, and any supplied wraps are ignored.
 export async function enableLeagueChat(
   db: AppDatabase,
   opts: { leagueId: string; actorId: string; wraps: WrappedKeyInput[] },
@@ -115,11 +144,14 @@ export async function enableLeagueChat(
   if (rows.length === 0) throw new NotFoundError('league not found')
   assertLeagueAdmin(await getMembership(db, opts.leagueId, opts.actorId))
   if (rows[0].enabled) throw new ConflictError('chat already enabled')
-  const epoch = rows[0].epoch + 1
+  const firstEnable = rows[0].epoch === 0
+  const epoch = firstEnable ? rows[0].epoch + 1 : rows[0].epoch
 
-  const members = await leagueMemberIds(db, opts.leagueId)
-  for (const w of opts.wraps) {
-    if (!members.has(w.userId)) throw new ValidationError('cannot wrap the key for a non-member')
+  if (firstEnable) {
+    const members = await leagueMemberIds(db, opts.leagueId)
+    for (const w of opts.wraps) {
+      if (!members.has(w.userId)) throw new ValidationError('cannot wrap the key for a non-member')
+    }
   }
 
   await db.transaction(async (tx) => {
@@ -127,7 +159,7 @@ export async function enableLeagueChat(
       .update(league)
       .set({ chatEnabled: true, chatEnabledAt: new Date(), chatEnabledBy: opts.actorId, chatKeyEpoch: epoch })
       .where(eq(league.id, opts.leagueId))
-    if (opts.wraps.length > 0) {
+    if (firstEnable && opts.wraps.length > 0) {
       await tx
         .insert(leagueChatKey)
         .values(opts.wraps.map((w) => ({ leagueId: opts.leagueId, userId: w.userId, epoch, wrappedKey: w.wrappedKey })))
@@ -288,6 +320,6 @@ export async function listMessages(
     })
     .from(chatMessage)
     .where(and(eq(chatMessage.leagueId, opts.leagueId), room, cursor))
-    .orderBy(desc(chatMessage.createdAt))
+    .orderBy(desc(chatMessage.createdAt), desc(chatMessage.id))
     .limit(limit)
 }
