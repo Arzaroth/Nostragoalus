@@ -18,6 +18,7 @@ vi.mock('../composables/useLeagueChat', async () => {
     toggleMute: vi.fn(),
     enableChat: vi.fn(),
     disableChat: vi.fn(),
+    rotateKey: vi.fn(),
     load: vi.fn(),
   }
   return { useLeagueChat: () => state, __state: state }
@@ -104,5 +105,22 @@ describe('ChatPanel', () => {
     s.identityStatus.value = 'needs-restore'
     const wrapper = await mount()
     expect(wrapper.text()).toContain('Restore')
+  })
+
+  it('offers admins a rotate-key control on a ready chat', async () => {
+    const s = await chatState()
+    s.enabled.value = true
+    s.ready.value = true
+    s.isAdmin.value = true
+    const wrapper = await mount()
+    expect(wrapper.text()).toContain('Rotate key')
+  })
+
+  it('hides the rotate-key control from non-admins', async () => {
+    const s = await chatState()
+    s.enabled.value = true
+    s.ready.value = true
+    const wrapper = await mount()
+    expect(wrapper.text()).not.toContain('Rotate key')
   })
 })
