@@ -47,6 +47,8 @@
     "settingUp": "ngaQHa'moHwI' cher...",
     "awaitingKey": "'elmeH loS...",
     "awaitingKeyHint": "So'lu'bogh QIn. ngaQHa'meH narghnIS jup 'elpu'bogh. nIteb qaS. naDev yIloS.",
+    "dock": { "open": "QIn poSmoH", "collapse": "QIn machmoH", "title": "ghom QIn" },
+    "scope": { "global": "ghom", "match": "may'vam" },
     "empty": "QIn tu'lu'be'. yIjatlh.",
     "unknownUser": "vay'",
     "cantDecrypt": "[So'lu' - naDev ngaQHa'moHwI' tu'lu'be']",
