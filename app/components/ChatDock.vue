@@ -2,9 +2,11 @@
 // Floating, collapsible league chat. Bottom-right, collapsed by default, shown
 // on competition pages once a league is selected and its chat is enabled. The
 // league detail page keeps its own inline panel, so the dock stays out of its
-// way. The panel is kept mounted (v-show, not v-if) while collapsed so its live
-// socket stays open - that is how a keyholder re-seals the group key for a
-// newcomer without having to open the chat first.
+// way there. Whenever a league is resolved the inner ChatPanel is kept mounted
+// (its container is only hidden, never torn down) so its live socket stays open:
+// that is what lets a keyholder re-seal the group key for a newcomer without
+// opening the chat first, and what makes an admin's enable/disable reflect live
+// for everyone - the panel reports its on/off state up via update:enabled.
 const { t } = useI18n()
 const route = useRoute()
 const { leagueId: selectedLeagueId } = useSelectedLeague()
@@ -18,9 +20,7 @@ const matchId = computed<string | null>(() =>
   String(route.name) === 'competition-matches-id' ? (route.params.id as string) : null,
 )
 
-const { enabled } = useLeagueChatStatus(leagueId)
-const visible = computed(() => !!leagueId.value && enabled.value)
-
+const enabled = ref(false)
 const collapsed = ref(true)
 const scope = ref<'global' | 'match'>('global')
 // Off a match page there is no match room: pin scope to global and hide the toggle.
@@ -31,10 +31,10 @@ const scopedMatchId = computed<string | null>(() => (scope.value === 'match' ? m
 </script>
 
 <template>
-  <div v-if="visible" class="fixed bottom-4 right-4 z-40 flex flex-col items-end" style="max-width: 92vw">
-    <!-- Collapsed: a chat bubble. -->
+  <div v-if="leagueId" class="fixed bottom-4 right-4 z-40 flex flex-col items-end" style="max-width: 92vw">
+    <!-- Collapsed: a chat bubble (only once chat is on). -->
     <button
-      v-show="collapsed"
+      v-show="enabled && collapsed"
       type="button"
       class="rounded-full w-14 h-14 shadow-lg flex items-center justify-center transition-transform hover:scale-105"
       style="background: var(--p-primary-color); color: var(--p-primary-contrast-color)"
@@ -44,9 +44,9 @@ const scopedMatchId = computed<string | null>(() => (scope.value === 'match' ? m
       <i class="pi pi-comments text-xl" />
     </button>
 
-    <!-- Expanded: the window. ChatPanel stays mounted while collapsed (v-show). -->
+    <!-- The window. Kept mounted while collapsed/off (v-show) to hold the socket. -->
     <div
-      v-show="!collapsed"
+      v-show="enabled && !collapsed"
       class="ng-card rounded-2xl border shadow-2xl flex flex-col overflow-hidden"
       style="width: 22rem; max-width: 92vw; background: var(--p-content-background); border-color: var(--p-content-border-color)"
     >
@@ -84,7 +84,7 @@ const scopedMatchId = computed<string | null>(() => (scope.value === 'match' ? m
       </div>
 
       <div class="p-3 overflow-y-auto" style="max-height: 70vh">
-        <ChatPanel :league-id="leagueId!" :match-id="scopedMatchId" flat />
+        <ChatPanel :league-id="leagueId" :match-id="scopedMatchId" flat @update:enabled="enabled = $event" />
       </div>
     </div>
   </div>

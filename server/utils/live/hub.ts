@@ -150,6 +150,21 @@ export function publishChatKeysAdded(leagueId: string, recipientIds: readonly st
   return delivered
 }
 
+// Chat was turned on/off or re-keyed: nudge the league's connected members to
+// reload, so the change (the dock appearing/disappearing, a fresh key epoch)
+// reflects live instead of waiting for a refresh. Carries no key material.
+export function publishChatStateChanged(leagueId: string, memberIds: readonly string[]): number {
+  const members = new Set(memberIds)
+  let delivered = 0
+  for (const sub of subscribers) {
+    if (sub.userId && members.has(sub.userId)) {
+      sub.send({ type: 'chat:state-changed', leagueId })
+      delivered += 1
+    }
+  }
+  return delivered
+}
+
 // Deliver a freshly created notification to every open socket of that one user
 // (mirrors the league-member gate above). Other users' sockets never see it, so
 // the bell can render it live without a refetch.

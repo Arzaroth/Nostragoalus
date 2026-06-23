@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { db } from '../../../../../db'
 import { enableLeagueChat } from '../../../../utils/chat/service'
+import { publishStateChanged } from '../../../../utils/live/league-chat'
 import { defineValidatedHandler } from '../../../../utils/validated-handler'
 
 const bodySchema = z.object({
@@ -12,7 +13,9 @@ const bodySchema = z.object({
 // the group key, and supplies the per-member wraps; the server only persists them.
 export default defineValidatedHandler({ body: bodySchema }, async ({ body, user, event }) => {
   const leagueId = getRouterParam(event, 'id') as string
-  return enableLeagueChat(db, { leagueId, actorId: user.id, wraps: body.wraps })
+  const res = await enableLeagueChat(db, { leagueId, actorId: user.id, wraps: body.wraps })
+  void publishStateChanged(db, leagueId).catch(() => {})
+  return res
 })
 
 defineRouteMeta({

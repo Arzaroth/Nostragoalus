@@ -276,6 +276,12 @@ export function useLeagueChat(
         if (!currentKey.value) void load()
         return
       }
+      // Chat was turned on/off or re-keyed by an admin: reload so the change (the
+      // dock appearing/disappearing, a fresh key epoch) reflects without a refresh.
+      if (msg.type === 'chat:state-changed') {
+        void load()
+        return
+      }
       if (msg.type !== 'chat:new' || !msg.message) return
       if ((msg.message.matchId ?? null) !== mid()) return
       if (messages.value.some((m) => m.id === msg.message!.id)) return

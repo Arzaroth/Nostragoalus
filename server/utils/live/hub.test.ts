@@ -138,3 +138,20 @@ it('publishChatKeysAdded reaches the named recipients only', async () => {
     for (const s of [newcomer, other, guest]) removeLiveSubscriber(s)
   }
 })
+
+it('publishChatStateChanged nudges connected members only', async () => {
+  const { addLiveSubscriber, removeLiveSubscriber, publishChatStateChanged } = await import('./hub')
+  const member = { matchIds: new Set<string>(), userId: 'm', send: vi.fn() }
+  const outsider = { matchIds: new Set<string>(), userId: 'o', send: vi.fn() }
+  const guest = { matchIds: new Set<string>(), userId: null, send: vi.fn() }
+  for (const s of [member, outsider, guest]) addLiveSubscriber(s)
+  try {
+    const delivered = publishChatStateChanged('lg', ['m'])
+    expect(delivered).toBe(1)
+    expect(member.send).toHaveBeenCalledWith({ type: 'chat:state-changed', leagueId: 'lg' })
+    expect(outsider.send).not.toHaveBeenCalled()
+    expect(guest.send).not.toHaveBeenCalled()
+  } finally {
+    for (const s of [member, outsider, guest]) removeLiveSubscriber(s)
+  }
+})

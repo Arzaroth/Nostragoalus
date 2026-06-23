@@ -1,7 +1,7 @@
 import type { AppDatabase } from '../../../db/types'
 import type { ChatMessageDTO } from '../../../shared/types/chat'
 import { getLeagueMemberIds } from '../chat/service'
-import { publishChatKeysAdded, publishChatRekeyRequest, publishLeagueChatMessage } from './hub'
+import { publishChatKeysAdded, publishChatRekeyRequest, publishChatStateChanged, publishLeagueChatMessage } from './hub'
 
 // A new chat message: push the ciphertext to that league's connected members
 // only (the room is members-only, like league crowd/reaction pushes).
@@ -20,4 +20,11 @@ export async function publishRekeyRequest(db: AppDatabase, leagueId: string): Pr
 // A keyholder sealed the key for these members: tell them to reload and open it.
 export function publishKeysAdded(leagueId: string, recipientIds: readonly string[]): number {
   return publishChatKeysAdded(leagueId, recipientIds)
+}
+
+// Chat was enabled/disabled/rotated: nudge the league's connected members to
+// reload so the change shows live.
+export async function publishStateChanged(db: AppDatabase, leagueId: string): Promise<number> {
+  const memberIds = await getLeagueMemberIds(db, leagueId)
+  return publishChatStateChanged(leagueId, memberIds)
 }

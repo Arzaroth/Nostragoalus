@@ -11,6 +11,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 ### Fixed
 - **Joining a chat no longer leaves you stuck**: a member who joined a league with chat already on used to sit on "Setting up your key..." forever unless someone already in the chat happened to reopen it. Your device now asks the group for your key automatically and unlocks the moment a member who holds it is online, showing a clear "waiting to be let in" message until then.
 - **Unmute**: muting a member used to be permanent with no way back. Chat now has a "Muted" list where you can unmute anyone you previously hid.
+- **Live chat on/off**: turning chat on, off or rotating its key now updates for everyone instantly - the chat window appears or disappears for other members without a refresh, instead of going stale until they reloaded.
 
 ## [1.35.0] - 2026-06-23
 
