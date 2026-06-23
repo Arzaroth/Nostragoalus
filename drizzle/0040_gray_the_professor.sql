@@ -1,0 +1,2 @@
+ALTER TABLE "chat_message" ADD COLUMN "parent_id" text;--> statement-breakpoint
+ALTER TABLE "chat_message" ADD CONSTRAINT "chat_message_parent_id_chat_message_id_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."chat_message"("id") ON DELETE set null ON UPDATE no action;

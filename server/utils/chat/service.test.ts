@@ -357,6 +357,21 @@ describe('postMessage', () => {
     await client.close()
   })
 
+  it('threads a reply to a same-room parent and rejects a cross-room parent', async () => {
+    const { db, client, owner, leagueId, competitionId, roundId } = await setup()
+    await enableWith(db, leagueId, owner, [owner])
+    const parent = await postMessage(db, { leagueId, userId: owner, ciphertext: 'p', epoch: 1 })
+    const reply = await postMessage(db, { leagueId, userId: owner, ciphertext: 'r', epoch: 1, parentId: parent.id })
+    expect(reply.parentId).toBe(parent.id)
+    // A match-thread message can't be quoted from the league room.
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: new Date('2026-06-10T10:00:00Z') })
+    const threadMsg = await postMessage(db, { leagueId, userId: owner, matchId: m, ciphertext: 't', epoch: 1 })
+    await expect(
+      postMessage(db, { leagueId, userId: owner, ciphertext: 'x', epoch: 1, parentId: threadMsg.id }),
+    ).rejects.toBeInstanceOf(ValidationError)
+    await client.close()
+  })
+
   it('rejects a match thread for an unknown or cross-competition match', async () => {
     const { db, client, owner, leagueId } = await setup()
     await enableWith(db, leagueId, owner, [owner])

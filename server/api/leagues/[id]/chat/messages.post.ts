@@ -8,6 +8,7 @@ import type { ChatMessageDTO } from '../../../../../shared/types/chat'
 
 const bodySchema = z.object({
   matchId: z.string().uuid().nullable().optional(),
+  parentId: z.string().uuid().nullable().optional(),
   ciphertext: z.string().min(1).max(16_384),
   epoch: z.number().int().positive(),
 })
@@ -20,6 +21,7 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ body, user,
     leagueId,
     userId: user.id,
     matchId: body.matchId ?? null,
+    parentId: body.parentId ?? null,
     ciphertext: body.ciphertext,
     epoch: body.epoch,
   })
@@ -27,6 +29,7 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ body, user,
     id: row.id,
     leagueId,
     matchId: row.matchId,
+    parentId: row.parentId,
     userId: row.userId,
     epoch: row.epoch,
     ciphertext: row.ciphertext,

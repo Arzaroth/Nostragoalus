@@ -14,6 +14,7 @@ export interface DecryptedMessage {
   id: string
   userId: string | null
   matchId: string | null
+  parentId: string | null
   text: string | null // null = could not decrypt (wrong/absent key)
   createdAt: string
   reactions: ReactionTotals
@@ -91,6 +92,7 @@ export function useLeagueChat(
       id: r.id,
       userId: r.userId,
       matchId: r.matchId,
+      parentId: r.parentId ?? null,
       text,
       createdAt: r.createdAt,
       reactions: r.reactions ?? emptyReactionTotals(),
@@ -205,7 +207,7 @@ export function useLeagueChat(
     }
   }
 
-  async function send(text: string): Promise<void> {
+  async function send(text: string, parentId?: string | null): Promise<void> {
     const body = text.trim()
     const ck = currentKey.value
     if (!body || !ck || sending.value) return
@@ -214,7 +216,7 @@ export function useLeagueChat(
       const ciphertext = await encryptMessage(body, ck)
       const { message } = await $fetch<{ message: ChatMessageDTO }>(`/api/leagues/${lid()}/chat/messages`, {
         method: 'POST',
-        body: { matchId: mid(), ciphertext, epoch: epoch.value },
+        body: { matchId: mid(), parentId: parentId ?? null, ciphertext, epoch: epoch.value },
       })
       // Append our own message from the POST response; the WS echo (chat:new)
       // dedupes on id, so we don't depend on it to see what we just sent.

@@ -6,7 +6,7 @@ import { chatKeyPins } from '../composables/useChatKeyPins'
 import { emptyReactionTotals } from '#shared/reactions'
 
 function msg(over: Record<string, unknown> = {}) {
-  return { id: 'a', userId: 'other', matchId: null, text: 'hi', createdAt: '2026-06-10T10:00:00.000Z', reactions: emptyReactionTotals(), myReaction: null, ...over }
+  return { id: 'a', userId: 'other', matchId: null, parentId: null, text: 'hi', createdAt: '2026-06-10T10:00:00.000Z', reactions: emptyReactionTotals(), myReaction: null, ...over }
 }
 
 // Drive the panel via mocked composables (the crypto/network live in those and
@@ -141,6 +141,27 @@ describe('ChatPanel', () => {
     expect(pill.exists()).toBe(true)
     await pill.trigger('click')
     expect(s.react).toHaveBeenCalledWith('a', 'FIRE')
+  })
+
+  it('quotes the parent on a reply and sends with its id', async () => {
+    const s = await chatState()
+    s.enabled.value = true
+    s.ready.value = true
+    s.messages.value = [
+      msg({ id: 'p', userId: 'other', text: 'the original' }),
+      msg({ id: 'c', userId: 'me', text: 'the answer', parentId: 'p' }),
+    ]
+    const wrapper = await mount()
+    await vi.waitFor(() => expect(wrapper.text()).toContain('the answer'))
+    // The reply renders a quoted preview of its parent.
+    expect(wrapper.text()).toContain('the original')
+    // Replying then sending threads the parent id.
+    const reply = wrapper.findAll('button').find((b) => b.text() === 'Reply')!
+    await reply.trigger('click')
+    const ta = wrapper.find('textarea')
+    await ta.setValue('me too')
+    await wrapper.find('form').trigger('submit')
+    expect(s.send).toHaveBeenCalledWith('me too', 'p')
   })
 
   it('prompts to restore when the device lacks the key', async () => {

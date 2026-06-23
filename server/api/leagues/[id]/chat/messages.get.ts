@@ -28,6 +28,7 @@ export default defineEventHandler(async (event) => {
       id: r.id,
       leagueId,
       matchId: r.matchId,
+      parentId: r.parentId,
       userId: r.userId,
       epoch: r.epoch,
       ciphertext: r.ciphertext,

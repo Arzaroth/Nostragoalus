@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { REACTION_EMOJIS, type ReactionEmoji } from '#shared/reactions'
+import type { DecryptedMessage } from '~/composables/useLeagueChat'
 // End-to-end encrypted league chat. The league-global room (matchId null) or a
 // per-match thread. All crypto is client-side; the server only relays ciphertext.
 // `flat` drops the outer card chrome so the panel can sit inside the chat dock,
@@ -62,11 +63,23 @@ function nameFor(uid: string | null): string {
   return names.value[uid] ?? t('chat.unknownUser')
 }
 
+// Reply: the message being answered. Its decrypted text is quoted above the
+// composer and a compact preview is shown over the sent reply.
+const replyTo = ref<DecryptedMessage | null>(null)
+function startReply(m: DecryptedMessage) {
+  replyTo.value = m
+}
+function parentOf(m: DecryptedMessage): DecryptedMessage | undefined {
+  return m.parentId ? messages.value.find((x) => x.id === m.parentId) : undefined
+}
+
 const draft = ref('')
 async function submit() {
   const text = draft.value
+  const parentId = replyTo.value?.id ?? null
   draft.value = ''
-  await chat.send(text)
+  replyTo.value = null
+  await chat.send(text, parentId)
 }
 
 // Enable flow (admins), behind the legal-cover warning.
@@ -183,7 +196,17 @@ watch(
             <div class="flex items-baseline gap-2">
               <span class="font-semibold" :style="m.userId === meId ? 'color: var(--p-primary-color)' : ''">{{ nameFor(m.userId) }}</span>
               <span class="text-[10px]" style="color: var(--p-text-muted-color)">{{ fmtTime(m.createdAt) }}</span>
+              <button type="button" class="text-[10px] underline opacity-60 hover:opacity-100" @click="startReply(m)">{{ t('chat.reply.button') }}</button>
               <button v-if="m.userId && m.userId !== meId" type="button" class="text-[10px] underline opacity-60 hover:opacity-100" @click="chat.toggleMute(m.userId)">{{ t('chat.mute') }}</button>
+            </div>
+            <!-- Quoted parent, shown over a reply (when it's still in view). -->
+            <div
+              v-if="parentOf(m)"
+              class="text-xs rounded px-2 py-1 mb-0.5 border-l-2 opacity-80"
+              style="border-color: var(--p-primary-color); background: color-mix(in srgb, var(--p-text-color) 5%, transparent)"
+            >
+              <span class="font-semibold">{{ nameFor(parentOf(m)!.userId) }}</span>
+              <span class="ml-1">{{ parentOf(m)!.text ?? t('chat.cantDecrypt') }}</span>
             </div>
             <span v-if="m.text !== null" class="break-words">{{ m.text }}</span>
             <span v-else class="italic" style="color: var(--p-text-muted-color)">{{ t('chat.cantDecrypt') }}</span>
@@ -235,10 +258,22 @@ watch(
           </div>
         </div>
 
-        <form class="flex items-end gap-2" @submit.prevent="submit">
-          <Textarea v-model="draft" :placeholder="t('chat.placeholder')" rows="1" autoResize class="flex-1" @keydown.enter.exact.prevent="submit" />
-          <Button type="submit" icon="pi pi-send" :loading="sending" :disabled="!draft.trim()" :aria-label="t('chat.send')" />
-        </form>
+        <div class="flex flex-col gap-1">
+          <!-- Reply target preview, with a cancel. -->
+          <div
+            v-if="replyTo"
+            class="flex items-center gap-2 text-xs rounded px-2 py-1 border-l-2"
+            style="border-color: var(--p-primary-color); background: color-mix(in srgb, var(--p-text-color) 5%, transparent)"
+          >
+            <span class="opacity-70">{{ t('chat.reply.replyingTo', { name: nameFor(replyTo.userId) }) }}</span>
+            <span class="truncate flex-1" style="color: var(--p-text-muted-color)">{{ replyTo.text ?? t('chat.cantDecrypt') }}</span>
+            <button type="button" class="opacity-70 hover:opacity-100" :aria-label="t('chat.reply.cancel')" @click="replyTo = null"><i class="pi pi-times text-xs" /></button>
+          </div>
+          <form class="flex items-end gap-2" @submit.prevent="submit">
+            <Textarea v-model="draft" :placeholder="t('chat.placeholder')" rows="1" autoResize class="flex-1" @keydown.enter.exact.prevent="submit" />
+            <Button type="submit" icon="pi pi-send" :loading="sending" :disabled="!draft.trim()" :aria-label="t('chat.send')" />
+          </form>
+        </div>
 
         <div class="flex items-center justify-between gap-3">
           <div class="flex items-center gap-3">

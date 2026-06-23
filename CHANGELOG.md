@@ -8,6 +8,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 ### Added
 - **League chat, front and center**: chat now rides along as a collapsible window in the bottom-right corner of competition and match pages (collapsed by default), so it is no longer tucked away on the league page where nobody found it. On a match it gains a Global/Match toggle to flip between the league room and that match's thread. The league page keeps its full inline chat.
 - **Message reactions**: react to any chat message with an emoji, the same set as match reactions. Counts update live for everyone, and tapping your own reaction again removes it.
+- **Reply to messages**: reply to any message and the original is quoted above your answer (and above the composer while you write it), so a thread is easy to follow. The quote is decrypted on your device like everything else.
 
 ### Fixed
 - **Joining a chat no longer leaves you stuck**: a member who joined a league with chat already on used to sit on "Setting up your key..." forever unless someone already in the chat happened to reopen it. Your device now asks the group for your key automatically and unlocks the moment a member who holds it is online, showing a clear "waiting to be let in" message until then.

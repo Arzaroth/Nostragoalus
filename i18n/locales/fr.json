@@ -55,6 +55,7 @@
     "mute": "Masquer",
     "muted": { "show": "Masqués ({n})", "intro": "Vous ne verrez plus les messages de ces membres. Ils voient toujours les vôtres.", "unmute": "Réafficher" },
     "react": { "add": "Ajouter une réaction" },
+    "reply": { "button": "Répondre", "replyingTo": "Réponse à {name}", "cancel": "Annuler la réponse" },
     "setupRecovery": "Créer un code de récupération",
     "warning": {
       "title": "Activer le chat chiffré de bout en bout ?",

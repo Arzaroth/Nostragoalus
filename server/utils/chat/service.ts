@@ -321,6 +321,7 @@ export interface ChatMessageRow {
   id: string
   userId: string | null
   matchId: string | null
+  parentId: string | null
   epoch: number
   ciphertext: string
   createdAt: Date
@@ -328,7 +329,7 @@ export interface ChatMessageRow {
 
 export async function postMessage(
   db: AppDatabase,
-  opts: { leagueId: string; matchId?: string | null; userId: string; ciphertext: string; epoch: number },
+  opts: { leagueId: string; matchId?: string | null; parentId?: string | null; userId: string; ciphertext: string; epoch: number },
 ): Promise<ChatMessageRow> {
   if (!opts.ciphertext) throw new ValidationError('empty message')
   if (opts.ciphertext.length > MAX_CIPHERTEXT) throw new ValidationError('message too large')
@@ -352,13 +353,33 @@ export async function postMessage(
       throw new ValidationError('match is not in this league competition')
     }
   }
+  // A reply must point at a message in the same room (league + match thread), so a
+  // quote can never leak across rooms or leagues.
+  if (opts.parentId) {
+    const p = await db
+      .select({ leagueId: chatMessage.leagueId, matchId: chatMessage.matchId })
+      .from(chatMessage)
+      .where(eq(chatMessage.id, opts.parentId))
+      .limit(1)
+    if (p.length === 0 || p[0].leagueId !== opts.leagueId || (p[0].matchId ?? null) !== (opts.matchId ?? null)) {
+      throw new ValidationError('reply target is not in this room')
+    }
+  }
   const inserted = await db
     .insert(chatMessage)
-    .values({ leagueId: opts.leagueId, matchId: opts.matchId ?? null, userId: opts.userId, epoch: opts.epoch, ciphertext: opts.ciphertext })
+    .values({
+      leagueId: opts.leagueId,
+      matchId: opts.matchId ?? null,
+      parentId: opts.parentId ?? null,
+      userId: opts.userId,
+      epoch: opts.epoch,
+      ciphertext: opts.ciphertext,
+    })
     .returning({
       id: chatMessage.id,
       userId: chatMessage.userId,
       matchId: chatMessage.matchId,
+      parentId: chatMessage.parentId,
       epoch: chatMessage.epoch,
       ciphertext: chatMessage.ciphertext,
       createdAt: chatMessage.createdAt,
@@ -382,6 +403,7 @@ export async function listMessages(
       id: chatMessage.id,
       userId: chatMessage.userId,
       matchId: chatMessage.matchId,
+      parentId: chatMessage.parentId,
       epoch: chatMessage.epoch,
       ciphertext: chatMessage.ciphertext,
       createdAt: chatMessage.createdAt,

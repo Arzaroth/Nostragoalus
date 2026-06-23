@@ -9,6 +9,7 @@ export interface ChatMessageDTO {
   id: string
   leagueId: string
   matchId: string | null
+  parentId: string | null
   userId: string | null
   epoch: number
   ciphertext: string
