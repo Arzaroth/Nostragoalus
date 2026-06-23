@@ -49,6 +49,13 @@ export function useLeagueChat(
   const isAdmin = computed(() => role.value === 'OWNER' || role.value === 'MODERATOR')
   const currentKey = computed<Uint8Array | null>(() => keys.value.get(epoch.value) ?? null)
   const ready = computed(() => enabled.value && !!currentKey.value)
+  // Chat is on and loaded, but no keyholder has sealed the current key to us yet
+  // (we just joined, or our wrap is stuck): we wait for one to come online and
+  // re-seal. Distinct from the brief initial load and from needs-restore (which
+  // has its own UI), so the panel can show an explicit "waiting" message.
+  const awaitingKey = computed(
+    () => enabled.value && !loading.value && !currentKey.value && identityStatus.value !== 'needs-restore',
+  )
 
   // Client-side mute list (per device): the owner is server-blind, so abuse
   // handling is the member's own mute plus league-admin action.
@@ -109,8 +116,44 @@ export function useLeagueChat(
     await $fetch(`/api/leagues/${lid()}/chat/keys`, { method: 'POST', body: { epoch: epoch.value, wraps } }).catch(() => {})
   }
 
+  // A keyholder, nudged that someone is missing the key, re-fetches the roster and
+  // seals the current key for whoever still lacks it. No-op without a key in hand.
+  async function reconcileMissing(): Promise<void> {
+    if (!currentKey.value) return
+    try {
+      const status = await $fetch<ChatStatus>(`/api/leagues/${lid()}/chat`)
+      await reconcileKeys(status.missingKeys)
+    } catch {
+      // transient: a later message/reconnect reconciles
+    }
+  }
+
+  // We have no current key: ask the league's connected keyholders to seal it for
+  // us. Best-effort and self-limiting (one request in flight); if nobody is online
+  // it's a no-op and a keyholder will seal on their next load, pushing keys-added.
+  let rekeyInFlight = false
+  async function requestRekey(): Promise<void> {
+    if (rekeyInFlight) return
+    rekeyInFlight = true
+    try {
+      await $fetch(`/api/leagues/${lid()}/chat/request-key`, { method: 'POST' })
+    } catch {
+      // best effort
+    } finally {
+      rekeyInFlight = false
+    }
+  }
+
   async function load(): Promise<void> {
     if (!import.meta.client) return
+    // No league resolved yet (e.g. the global dock on a page with no selection):
+    // nothing to load, present as "off" without hitting the API.
+    if (!lid()) {
+      enabled.value = false
+      keys.value = new Map()
+      messages.value = []
+      return
+    }
     loading.value = true
     try {
       let status: ChatStatus
@@ -144,6 +187,8 @@ export function useLeagueChat(
       }
       await reconcileKeys(status.missingKeys)
       await loadMessages()
+      // Still keyless after loading: nudge connected keyholders to seal it for us.
+      if (!currentKey.value) void requestRekey()
     } finally {
       loading.value = false
     }
@@ -218,7 +263,20 @@ export function useLeagueChat(
     },
     onMessage: (data) => {
       const msg = data as { type?: string; leagueId?: string; message?: ChatMessageDTO }
-      if (msg.type !== 'chat:new' || msg.leagueId !== lid() || !msg.message) return
+      if (!msg.type || msg.leagueId !== lid()) return
+      // A member is missing the current key (league-scoped, not per-room): if we
+      // hold it, seal it for whoever still needs it. Non-keyholders no-op.
+      if (msg.type === 'chat:rekey-request') {
+        void reconcileMissing()
+        return
+      }
+      // A keyholder sealed a key for some member: if we're the one still waiting,
+      // reload to open our fresh wrap (clears the awaiting-key state live).
+      if (msg.type === 'chat:keys-added') {
+        if (!currentKey.value) void load()
+        return
+      }
+      if (msg.type !== 'chat:new' || !msg.message) return
       if ((msg.message.matchId ?? null) !== mid()) return
       if (messages.value.some((m) => m.id === msg.message!.id)) return
       void decryptRow(msg.message).then((m) => {
@@ -235,6 +293,7 @@ export function useLeagueChat(
     role,
     isAdmin,
     ready,
+    awaitingKey,
     loading,
     sending,
     messages: visibleMessages,
@@ -247,5 +306,6 @@ export function useLeagueChat(
     enableChat,
     disableChat,
     rotateKey,
+    requestRekey,
   }
 }

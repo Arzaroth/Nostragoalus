@@ -45,6 +45,8 @@
     "placeholder": "QIn ghItlh",
     "loading": "QInmey luq...",
     "settingUp": "ngaQHa'moHwI' cher...",
+    "awaitingKey": "'elmeH loS...",
+    "awaitingKeyHint": "So'lu'bogh QIn. ngaQHa'meH narghnIS jup 'elpu'bogh. nIteb qaS. naDev yIloS.",
     "empty": "QIn tu'lu'be'. yIjatlh.",
     "unknownUser": "vay'",
     "cantDecrypt": "[So'lu' - naDev ngaQHa'moHwI' tu'lu'be']",
