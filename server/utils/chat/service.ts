@@ -81,30 +81,35 @@ export async function getMemberPublicKeys(db: AppDatabase, leagueId: string): Pr
     .where(eq(leagueMember.leagueId, leagueId))
 }
 
+export interface EpochKey {
+  epoch: number
+  wrappedKey: string
+}
+
 export interface ChatStatus {
   enabled: boolean
   epoch: number
   role: string
-  myWrappedKey: string | null
+  myWrappedKeys: EpochKey[]
   missingKeys: MemberKey[]
   memberKeys: MemberKey[]
 }
 
 // Chat status for a league member: whether chat is on, the current key epoch, the
-// caller's sealed group key (to unwrap locally), members still missing a key (so a
-// keyholder can wrap for them) and every member's public key. Members only - a
-// missing membership or league throws NotFound so the route can 404 (hiding the
-// league from non-members).
+// caller's sealed group key for every epoch (so old history stays decryptable
+// across re-keys), members still missing the current key (so a keyholder can wrap
+// for them) and every member's public key. Members only - a missing membership or
+// league throws NotFound so the route can 404 (hiding the league from non-members).
 export async function getChatStatus(db: AppDatabase, leagueId: string, userId: string): Promise<ChatStatus> {
   const [membership, lg] = await Promise.all([getMembership(db, leagueId, userId), getLeague(db, leagueId)])
   if (!membership || !lg) throw new NotFoundError('league not found')
   const epoch = lg.chatKeyEpoch
-  const [myWrappedKey, missingKeys, memberKeys] = await Promise.all([
-    lg.chatEnabled ? getMyWrappedKey(db, leagueId, userId, epoch) : Promise.resolve(null),
+  const [myWrappedKeys, missingKeys, memberKeys] = await Promise.all([
+    lg.chatEnabled ? getMyWrappedKeys(db, leagueId, userId) : Promise.resolve<EpochKey[]>([]),
     lg.chatEnabled ? getMembersMissingKey(db, leagueId, epoch) : Promise.resolve<MemberKey[]>([]),
     getMemberPublicKeys(db, leagueId),
   ])
-  return { enabled: lg.chatEnabled, epoch, role: membership.role, myWrappedKey, missingKeys, memberKeys }
+  return { enabled: lg.chatEnabled, epoch, role: membership.role, myWrappedKeys, missingKeys, memberKeys }
 }
 
 // --- enable / disable ---
@@ -180,6 +185,41 @@ export async function disableLeagueChat(
   await db.update(league).set({ chatEnabled: false }).where(eq(league.id, opts.leagueId))
 }
 
+// Rotate the league group key (OWNER/MODERATOR only). Bumps the epoch and stores a
+// fresh group key sealed to the current members (the actor's client generated it).
+// Old ciphertext stays at the old epoch and is still readable by whoever holds the
+// old key; members who lost access (removed, or a stuck wrap) get a clean key at
+// the new epoch, and anyone no longer a member is left without the new key.
+export async function rotateLeagueChatKey(
+  db: AppDatabase,
+  opts: { leagueId: string; actorId: string; wraps: WrappedKeyInput[] },
+): Promise<{ epoch: number }> {
+  const rows = await db
+    .select({ epoch: league.chatKeyEpoch, enabled: league.chatEnabled })
+    .from(league)
+    .where(eq(league.id, opts.leagueId))
+    .limit(1)
+  if (rows.length === 0) throw new NotFoundError('league not found')
+  assertLeagueAdmin(await getMembership(db, opts.leagueId, opts.actorId))
+  if (!rows[0].enabled) throw new ForbiddenError('chat is not enabled for this league')
+  const epoch = rows[0].epoch + 1
+
+  const members = await leagueMemberIds(db, opts.leagueId)
+  for (const w of opts.wraps) {
+    if (!members.has(w.userId)) throw new ValidationError('cannot wrap the key for a non-member')
+  }
+
+  await db.transaction(async (tx) => {
+    await tx.update(league).set({ chatKeyEpoch: epoch }).where(eq(league.id, opts.leagueId))
+    if (opts.wraps.length > 0) {
+      await tx
+        .insert(leagueChatKey)
+        .values(opts.wraps.map((w) => ({ leagueId: opts.leagueId, userId: w.userId, epoch, wrappedKey: w.wrappedKey })))
+    }
+  })
+  return { epoch }
+}
+
 // --- key distribution ---
 
 // The caller's sealed group key for an epoch (null if none yet - a keyholder
@@ -196,6 +236,17 @@ export async function getMyWrappedKey(
     .where(and(eq(leagueChatKey.leagueId, leagueId), eq(leagueChatKey.userId, userId), eq(leagueChatKey.epoch, epoch)))
     .limit(1)
   return rows[0]?.wrappedKey ?? null
+}
+
+// Every epoch's sealed group key for the caller, oldest first. The client opens
+// each into an epoch->key map and decrypts each message with its own epoch's key,
+// so a re-key (rotateLeagueChatKey) never makes prior history undecryptable.
+export async function getMyWrappedKeys(db: AppDatabase, leagueId: string, userId: string): Promise<EpochKey[]> {
+  return db
+    .select({ epoch: leagueChatKey.epoch, wrappedKey: leagueChatKey.wrappedKey })
+    .from(leagueChatKey)
+    .where(and(eq(leagueChatKey.leagueId, leagueId), eq(leagueChatKey.userId, userId)))
+    .orderBy(leagueChatKey.epoch)
 }
 
 // Members who have a chat identity but no sealed key yet at this epoch - a
