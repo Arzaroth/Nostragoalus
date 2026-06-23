@@ -298,6 +298,23 @@ export async function addWrappedKeys(
   return { added: res.length }
 }
 
+// A member with no sealed key at the current epoch (just joined, or a stuck wrap)
+// wants a keyholder to re-seal it. Returns whether a request is warranted: a
+// member, chat on, and actually missing the current key - so the route only
+// broadcasts a rekey prompt when it would help. Non-members (or an absent league)
+// 404 to keep the league hidden, matching getChatStatus.
+export async function requestChatRekey(
+  db: AppDatabase,
+  leagueId: string,
+  userId: string,
+): Promise<{ requested: boolean; epoch: number }> {
+  const [membership, lg] = await Promise.all([getMembership(db, leagueId, userId), getLeague(db, leagueId)])
+  if (!membership || !lg) throw new NotFoundError('league not found')
+  if (!lg.chatEnabled) return { requested: false, epoch: lg.chatKeyEpoch }
+  const existing = await getMyWrappedKey(db, leagueId, userId, lg.chatKeyEpoch)
+  return { requested: existing === null, epoch: lg.chatKeyEpoch }
+}
+
 // --- messages ---
 
 export interface ChatMessageRow {

@@ -104,3 +104,37 @@ it('publishLeagueReactionUpdate reaches connected members only', async () => {
     for (const s of [member, outsider, guest]) removeLiveSubscriber(s)
   }
 })
+
+it('publishChatRekeyRequest nudges connected members only, with no key material', async () => {
+  const { addLiveSubscriber, removeLiveSubscriber, publishChatRekeyRequest } = await import('./hub')
+  const member = { matchIds: new Set<string>(), userId: 'm', send: vi.fn() }
+  const outsider = { matchIds: new Set<string>(), userId: 'o', send: vi.fn() }
+  const guest = { matchIds: new Set<string>(), userId: null, send: vi.fn() }
+  for (const s of [member, outsider, guest]) addLiveSubscriber(s)
+  try {
+    const delivered = publishChatRekeyRequest('lg', ['m'])
+    expect(delivered).toBe(1)
+    expect(member.send).toHaveBeenCalledWith({ type: 'chat:rekey-request', leagueId: 'lg' })
+    expect(outsider.send).not.toHaveBeenCalled()
+    expect(guest.send).not.toHaveBeenCalled()
+  } finally {
+    for (const s of [member, outsider, guest]) removeLiveSubscriber(s)
+  }
+})
+
+it('publishChatKeysAdded reaches the named recipients only', async () => {
+  const { addLiveSubscriber, removeLiveSubscriber, publishChatKeysAdded } = await import('./hub')
+  const newcomer = { matchIds: new Set<string>(), userId: 'n', send: vi.fn() }
+  const other = { matchIds: new Set<string>(), userId: 'x', send: vi.fn() }
+  const guest = { matchIds: new Set<string>(), userId: null, send: vi.fn() }
+  for (const s of [newcomer, other, guest]) addLiveSubscriber(s)
+  try {
+    const delivered = publishChatKeysAdded('lg', ['n'])
+    expect(delivered).toBe(1)
+    expect(newcomer.send).toHaveBeenCalledWith({ type: 'chat:keys-added', leagueId: 'lg' })
+    expect(other.send).not.toHaveBeenCalled()
+    expect(guest.send).not.toHaveBeenCalled()
+  } finally {
+    for (const s of [newcomer, other, guest]) removeLiveSubscriber(s)
+  }
+})

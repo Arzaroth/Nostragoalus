@@ -18,6 +18,7 @@ import {
   listMessages,
   postMessage,
   registerChatIdentity,
+  requestChatRekey,
   rotateLeagueChatKey,
   setRecoveryBlob,
 } from './service'
@@ -407,6 +408,32 @@ describe('listMessages', () => {
     ])
     expect((await listMessages(db, { leagueId, userId: owner, limit: 0 })).length).toBe(1) // clamped up to 1
     expect((await listMessages(db, { leagueId, userId: owner, limit: 9999 })).map((r) => r.ciphertext)).toEqual(['m2', 'm1']) // clamped down, all returned
+    await client.close()
+  })
+})
+
+describe('requestChatRekey', () => {
+  it('throws NotFound for a non-member or an unknown league', async () => {
+    const { db, client, leagueId } = await setup()
+    const stranger = await makeUser(db, 'stranger')
+    await expect(requestChatRekey(db, leagueId, stranger)).rejects.toBeInstanceOf(NotFoundError)
+    await expect(requestChatRekey(db, 'nope', stranger)).rejects.toBeInstanceOf(NotFoundError)
+    await client.close()
+  })
+
+  it('does not request while chat is disabled', async () => {
+    const { db, client, owner, leagueId } = await setup()
+    expect(await requestChatRekey(db, leagueId, owner)).toEqual({ requested: false, epoch: 0 })
+    await client.close()
+  })
+
+  it('requests only when the member is missing the current key', async () => {
+    const { db, client, owner, leagueId } = await setup()
+    const newbie = await makeUser(db, 'newbie')
+    await addLeagueMember(db, leagueId, newbie)
+    await enableWith(db, leagueId, owner, [owner]) // seals the key to the owner only, epoch 1
+    expect(await requestChatRekey(db, leagueId, owner)).toEqual({ requested: false, epoch: 1 }) // owner holds it
+    expect(await requestChatRekey(db, leagueId, newbie)).toEqual({ requested: true, epoch: 1 }) // newbie has none
     await client.close()
   })
 })

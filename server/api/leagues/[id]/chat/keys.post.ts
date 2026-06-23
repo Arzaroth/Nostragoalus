@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { db } from '../../../../../db'
 import { addWrappedKeys } from '../../../../utils/chat/service'
+import { publishKeysAdded } from '../../../../utils/live/league-chat'
 import { defineValidatedHandler } from '../../../../utils/validated-handler'
 
 const bodySchema = z.object({
@@ -11,7 +12,11 @@ const bodySchema = z.object({
 // Any keyholding member seals the group key for newcomers and uploads the wraps.
 export default defineValidatedHandler({ body: bodySchema }, async ({ body, user, event }) => {
   const leagueId = getRouterParam(event, 'id') as string
-  return addWrappedKeys(db, { leagueId, actorId: user.id, epoch: body.epoch, wraps: body.wraps })
+  const res = await addWrappedKeys(db, { leagueId, actorId: user.id, epoch: body.epoch, wraps: body.wraps })
+  // Tell the freshly-sealed members to reload and open their new key, clearing
+  // their "waiting for a key" state without a manual refresh.
+  if (res.added > 0) publishKeysAdded(leagueId, body.wraps.map((w) => w.userId))
+  return res
 })
 
 defineRouteMeta({

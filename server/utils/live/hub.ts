@@ -119,6 +119,37 @@ export function publishLeagueChatMessage(
   return delivered
 }
 
+// A member is missing the current group key (just joined, or a stuck wrap):
+// nudge the league's connected members to re-seal. The payload carries no key
+// material, only a prompt - just a keyholding client can act on it. Mirrors the
+// chat:new members-only gate so non-members never learn a league exists.
+export function publishChatRekeyRequest(leagueId: string, memberIds: readonly string[]): number {
+  const members = new Set(memberIds)
+  let delivered = 0
+  for (const sub of subscribers) {
+    if (sub.userId && members.has(sub.userId)) {
+      sub.send({ type: 'chat:rekey-request', leagueId })
+      delivered += 1
+    }
+  }
+  return delivered
+}
+
+// A keyholder just sealed the group key for these members: tell each of them to
+// reload so their client opens the new wrap (clears the "waiting for a key"
+// state). Delivered only to the named recipients' own sockets.
+export function publishChatKeysAdded(leagueId: string, recipientIds: readonly string[]): number {
+  const recipients = new Set(recipientIds)
+  let delivered = 0
+  for (const sub of subscribers) {
+    if (sub.userId && recipients.has(sub.userId)) {
+      sub.send({ type: 'chat:keys-added', leagueId })
+      delivered += 1
+    }
+  }
+  return delivered
+}
+
 // Deliver a freshly created notification to every open socket of that one user
 // (mirrors the league-member gate above). Other users' sockets never see it, so
 // the bell can render it live without a refetch.
