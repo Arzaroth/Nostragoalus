@@ -48,6 +48,22 @@ export async function generateIdentity(): Promise<Identity> {
   return { publicKey: b64encode(s, kp.publicKey), privateKey: kp.privateKey }
 }
 
+// A short, human-comparable fingerprint of a public key (a "safety number").
+// Members read it aloud or compare it out-of-band to catch a substituted key: if
+// the server swapped someone's public key, the numbers will not match. Six groups
+// of five digits, derived deterministically from the key.
+export async function fingerprint(publicKey: string): Promise<string> {
+  const s = await sodium()
+  const digest = s.crypto_generichash(30, b64decode(s, publicKey), null)
+  const groups: string[] = []
+  for (let i = 0; i < 6; i++) {
+    let n = 0
+    for (let j = 0; j < 5; j++) n = (n * 256 + digest[i * 5 + j]) % 100000
+    groups.push(n.toString().padStart(5, '0'))
+  }
+  return groups.join(' ')
+}
+
 // A fresh random group key for a league's chat.
 export async function generateGroupKey(): Promise<Uint8Array> {
   const s = await sodium()

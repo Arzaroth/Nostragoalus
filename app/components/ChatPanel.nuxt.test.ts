@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import ChatPanel from './ChatPanel.vue'
+import { generateIdentity } from '../utils/e2ee'
 
 // Drive the panel via mocked composables (the crypto/network live in those and
 // are tested separately). The mock state objects are mutated per test.
@@ -13,6 +14,7 @@ vi.mock('../composables/useLeagueChat', async () => {
     loading: ref(false),
     sending: ref(false),
     messages: ref<Array<{ id: string; userId: string | null; matchId: string | null; text: string | null; createdAt: string }>>([]),
+    memberKeys: ref<Array<{ userId: string; publicKey: string }>>([]),
     identityStatus: ref('ready'),
     send: vi.fn(),
     toggleMute: vi.fn(),
@@ -25,7 +27,8 @@ vi.mock('../composables/useLeagueChat', async () => {
 })
 vi.mock('../composables/useChatIdentity', async () => {
   const { ref } = await import('vue')
-  const s = { hasRecovery: ref(true), setupRecovery: vi.fn(), restore: vi.fn() }
+  const { generateIdentity } = await import('../utils/e2ee')
+  const s = { identity: ref(await generateIdentity()), hasRecovery: ref(true), setupRecovery: vi.fn(), restore: vi.fn() }
   return { useChatIdentity: () => s, __id: s }
 })
 vi.mock('../composables/useLeagues', async () => {
@@ -49,6 +52,7 @@ beforeEach(async () => {
   s.isAdmin.value = false
   s.ready.value = false
   s.messages.value = []
+  s.memberKeys.value = []
   s.identityStatus.value = 'ready'
 })
 afterEach(() => {
@@ -122,5 +126,20 @@ describe('ChatPanel', () => {
     s.ready.value = true
     const wrapper = await mount()
     expect(wrapper.text()).not.toContain('Rotate key')
+  })
+
+  it('shows peer safety numbers in the verify panel', async () => {
+    const me = await generateIdentity()
+    const other = await generateIdentity()
+    const s = await chatState()
+    s.enabled.value = true
+    s.ready.value = true
+    s.memberKeys.value = [{ userId: 'me', publicKey: me.publicKey }, { userId: 'other', publicKey: other.publicKey }]
+    const wrapper = await mount()
+    const toggle = wrapper.findAll('button').find((b) => b.text().includes('Verify keys'))!
+    await toggle.trigger('click')
+    await vi.waitFor(() => expect(wrapper.text()).toMatch(/\d{5} \d{5} \d{5} \d{5} \d{5} \d{5}/))
+    expect(wrapper.text()).toContain('Your safety number')
+    expect(wrapper.text()).toContain('Sam') // the peer's name
   })
 })

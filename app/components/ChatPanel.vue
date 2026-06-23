@@ -15,8 +15,16 @@ const chat = useLeagueChat(
   () => props.leagueId,
   () => props.matchId ?? null,
 )
-const { enabled, isAdmin, ready, loading, sending, messages, identityStatus } = chat
-const { hasRecovery, setupRecovery, restore } = useChatIdentity()
+const { enabled, isAdmin, ready, loading, sending, messages, memberKeys, identityStatus } = chat
+const { identity, hasRecovery, setupRecovery, restore } = useChatIdentity()
+
+// Key verification: per-member safety numbers + trust-on-first-use pinning, so a
+// substituted public key is caught.
+const verify = useChatKeyVerification(memberKeys, computed(() => identity.value?.publicKey ?? null))
+const { entries: keyEntries, myFingerprint, changedCount } = verify
+const showVerify = ref(false)
+// Show peers only; the caller's own number is shown once as "your safety number".
+const peerEntries = computed(() => keyEntries.value.filter((e) => e.userId !== meId.value))
 
 // Member names for display (the messages carry only user ids). Reuses the shared
 // league-detail query so we don't re-fetch the roster the page already cached.
@@ -116,6 +124,7 @@ watch(
       <i class="pi pi-lock" style="color: var(--p-primary-color)" />
       <span class="font-semibold">{{ props.matchId ? t('chat.threadTitle') : t('chat.roomTitle') }}</span>
       <span v-tooltip.top="t('chat.e2eeHint')" class="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-full" style="background: var(--ng-star-soft); color: var(--ng-star)">{{ t('chat.e2ee') }}</span>
+      <span v-if="changedCount > 0" v-tooltip.top="t('chat.verify.changedWarn')" class="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-full inline-flex items-center gap-1" style="border: 1px solid var(--ng-danger); color: var(--ng-danger)"><i class="pi pi-exclamation-triangle text-[10px]" />{{ t('chat.verify.changed') }}</span>
     </div>
 
     <!-- This device has no key for an existing identity: restore. -->
@@ -155,12 +164,39 @@ watch(
           <Button type="submit" icon="pi pi-send" :loading="sending" :disabled="!draft.trim()" :aria-label="t('chat.send')" />
         </form>
 
-        <div class="flex items-center justify-between">
-          <button v-if="!hasRecovery" type="button" class="text-xs underline" style="color: var(--p-primary-color)" :disabled="recoveryBusy" @click="openRecoverySetup">{{ t('chat.setupRecovery') }}</button>
-          <span v-else />
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <button type="button" class="text-xs underline opacity-70 hover:opacity-100 inline-flex items-center gap-1" @click="showVerify = !showVerify">
+              {{ t('chat.verify.show') }}
+              <span v-if="changedCount > 0" style="color: var(--ng-danger)">({{ changedCount }})</span>
+            </button>
+            <button v-if="!hasRecovery" type="button" class="text-xs underline" style="color: var(--p-primary-color)" :disabled="recoveryBusy" @click="openRecoverySetup">{{ t('chat.setupRecovery') }}</button>
+          </div>
           <div v-if="isAdmin" class="flex items-center gap-3">
             <button type="button" class="text-xs underline opacity-70 hover:opacity-100" @click="showRotate = true">{{ t('chat.rotate.button') }}</button>
             <button type="button" class="text-xs underline opacity-70 hover:opacity-100" @click="chat.disableChat()">{{ t('chat.disable') }}</button>
+          </div>
+        </div>
+
+        <!-- Safety-number verification: compare these out-of-band to detect a swapped key. -->
+        <div v-if="showVerify" class="flex flex-col gap-2 text-sm border-t pt-3" style="border-color: var(--p-content-border-color)">
+          <p style="color: var(--p-text-muted-color)">{{ t('chat.verify.intro') }}</p>
+          <div class="flex flex-col gap-0.5">
+            <span class="text-xs font-semibold">{{ t('chat.verify.your') }}</span>
+            <code class="font-mono text-xs break-all">{{ myFingerprint }}</code>
+          </div>
+          <p v-if="!peerEntries.length" class="text-xs" style="color: var(--p-text-muted-color)">{{ t('chat.verify.empty') }}</p>
+          <div v-for="e in peerEntries" :key="e.userId" class="flex flex-col gap-1 border-t pt-2" style="border-color: var(--p-content-border-color)">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-semibold">{{ nameFor(e.userId) }}</span>
+              <span v-if="e.changed" class="text-[10px] px-1.5 py-0.5 rounded-full" style="border: 1px solid var(--ng-danger); color: var(--ng-danger)">{{ t('chat.verify.changed') }}</span>
+              <span v-else-if="e.verified" class="text-[10px] px-1.5 py-0.5 rounded-full" style="background: var(--ng-star-soft); color: var(--ng-star)">{{ t('chat.verify.verified') }}</span>
+            </div>
+            <code class="font-mono text-xs break-all" :style="e.changed ? 'color: var(--ng-danger)' : ''">{{ e.fingerprint }}</code>
+            <div class="flex items-center gap-3">
+              <button v-if="e.changed" type="button" class="text-xs underline" style="color: var(--ng-danger)" @click="verify.acknowledgeChange(e.userId)">{{ t('chat.verify.acknowledge') }}</button>
+              <button v-if="!e.verified" type="button" class="text-xs underline" style="color: var(--p-primary-color)" @click="verify.markVerified(e.userId)">{{ t('chat.verify.markVerified') }}</button>
+            </div>
           </div>
         </div>
       </template>
