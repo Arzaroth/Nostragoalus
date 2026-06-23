@@ -1,7 +1,12 @@
 <script setup lang="ts">
 // End-to-end encrypted league chat. The league-global room (matchId null) or a
 // per-match thread. All crypto is client-side; the server only relays ciphertext.
-const props = withDefaults(defineProps<{ leagueId: string; matchId?: string | null }>(), { matchId: null })
+// `flat` drops the outer card chrome so the panel can sit inside the chat dock,
+// which supplies its own window frame.
+const props = withDefaults(defineProps<{ leagueId: string; matchId?: string | null; flat?: boolean }>(), {
+  matchId: null,
+  flat: false,
+})
 
 const { t } = useI18n()
 const { session } = useAuth()
@@ -119,7 +124,11 @@ watch(
 </script>
 
 <template>
-  <div class="ng-card rounded-2xl border p-4 flex flex-col gap-3" style="background: var(--p-content-background); border-color: var(--p-content-border-color)">
+  <div
+    class="flex flex-col gap-3"
+    :class="props.flat ? '' : 'ng-card rounded-2xl border p-4'"
+    :style="props.flat ? '' : 'background: var(--p-content-background); border-color: var(--p-content-border-color)'"
+  >
     <div class="flex items-center gap-2">
       <i class="pi pi-lock" style="color: var(--p-primary-color)" />
       <span class="font-semibold">{{ props.matchId ? t('chat.threadTitle') : t('chat.roomTitle') }}</span>

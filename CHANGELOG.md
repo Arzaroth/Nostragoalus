@@ -5,6 +5,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- **League chat, front and center**: chat now rides along as a collapsible window in the bottom-right corner of competition and match pages (collapsed by default), so it is no longer tucked away on the league page where nobody found it. On a match it gains a Global/Match toggle to flip between the league room and that match's thread. The league page keeps its full inline chat.
+
+### Fixed
+- **Joining a chat no longer leaves you stuck**: a member who joined a league with chat already on used to sit on "Setting up your key..." forever unless someone already in the chat happened to reopen it. Your device now asks the group for your key automatically and unlocks the moment a member who holds it is online, showing a clear "waiting to be let in" message until then.
+
 ## [1.35.0] - 2026-06-23
 
 ### Added
