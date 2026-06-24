@@ -185,6 +185,26 @@ export function publishChatReactionUpdate(
   return delivered
 }
 
+// A message's moderation state changed (auto-pending, removed or restored): tell
+// the league's connected members so they hide/tombstone or reveal it live. No
+// content travels - clients that lack it refetch.
+export function publishChatModeration(
+  leagueId: string,
+  memberIds: readonly string[],
+  messageId: string,
+  state: 'VISIBLE' | 'PENDING' | 'REMOVED',
+): number {
+  const members = new Set(memberIds)
+  let delivered = 0
+  for (const sub of subscribers) {
+    if (sub.userId && members.has(sub.userId)) {
+      sub.send({ type: 'chat:moderation', leagueId, messageId, state })
+      delivered += 1
+    }
+  }
+  return delivered
+}
+
 // Deliver a freshly created notification to every open socket of that one user
 // (mirrors the league-member gate above). Other users' sockets never see it, so
 // the bell can render it live without a refetch.

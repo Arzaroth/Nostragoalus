@@ -40,6 +40,32 @@ function reactWith(messageId: string, emoji: ReactionEmoji) {
 function emojisWithCount(reactions: Record<ReactionEmoji, number>): ReactionEmoji[] {
   return REACTION_EMOJIS.filter((e) => reactions[e] > 0)
 }
+
+// Moderation: a removed message is a tombstone for all; a pending one is hidden
+// from non-moderators. Moderators still see pending content so they can rule.
+function contentVisible(m: DecryptedMessage): boolean {
+  if (m.moderation === 'REMOVED') return false
+  if (m.moderation === 'PENDING' && !isAdmin.value) return false
+  return true
+}
+
+// Reports queue (owner/moderator), opened on demand.
+const showReports = ref(false)
+const reports = ref<Awaited<ReturnType<typeof chat.fetchReports>>>([])
+const reportsLoading = ref(false)
+async function openReports() {
+  showReports.value = true
+  reportsLoading.value = true
+  try {
+    reports.value = await chat.fetchReports()
+  } finally {
+    reportsLoading.value = false
+  }
+}
+async function resolveReport(id: string, action: 'remove' | 'restore') {
+  await chat.moderate(id, action)
+  reports.value = reports.value.filter((r) => r.id !== id)
+}
 const { identity, hasRecovery, setupRecovery, restore } = useChatIdentity()
 
 // Key verification: per-member safety numbers + trust-on-first-use pinning, so a
@@ -247,8 +273,15 @@ watch(
             <div class="flex items-baseline gap-2">
               <span class="font-semibold" :style="m.userId === meId ? 'color: var(--p-primary-color)' : ''">{{ nameFor(m.userId) }}</span>
               <span class="text-[10px]" style="color: var(--p-text-muted-color)">{{ fmtTime(m.createdAt) }}</span>
-              <button type="button" class="text-[10px] underline opacity-60 hover:opacity-100" @click="startReply(m)">{{ t('chat.reply.button') }}</button>
-              <button v-if="m.userId && m.userId !== meId" type="button" class="text-[10px] underline opacity-60 hover:opacity-100" @click="chat.toggleMute(m.userId)">{{ t('chat.mute') }}</button>
+              <span v-if="m.moderation === 'PENDING'" class="text-[10px] uppercase tracking-wider font-semibold px-1 rounded" style="border: 1px solid var(--ng-danger); color: var(--ng-danger)">{{ t('chat.moderation.pendingTag') }}</span>
+              <template v-if="m.moderation !== 'REMOVED'">
+                <button type="button" class="text-[10px] underline opacity-60 hover:opacity-100" @click="startReply(m)">{{ t('chat.reply.button') }}</button>
+                <button v-if="m.userId && m.userId !== meId" type="button" class="text-[10px] underline opacity-60 hover:opacity-100" @click="chat.toggleMute(m.userId)">{{ t('chat.mute') }}</button>
+                <button v-if="m.userId && m.userId !== meId && !m.reported" type="button" class="text-[10px] underline opacity-60 hover:opacity-100" @click="chat.report(m.id)">{{ t('chat.moderation.report') }}</button>
+                <span v-else-if="m.userId && m.userId !== meId" class="text-[10px] opacity-50">{{ t('chat.moderation.reported') }}</span>
+                <button v-if="isAdmin" type="button" class="text-[10px] underline" style="color: var(--ng-danger)" @click="chat.moderate(m.id, 'remove')">{{ t('chat.moderation.remove') }}</button>
+                <button v-if="isAdmin && m.moderation === 'PENDING'" type="button" class="text-[10px] underline" style="color: var(--p-primary-color)" @click="chat.moderate(m.id, 'restore')">{{ t('chat.moderation.restore') }}</button>
+              </template>
             </div>
             <!-- Quoted parent, shown over a reply (when it's still in view). -->
             <div
@@ -259,12 +292,15 @@ watch(
               <span class="font-semibold">{{ nameFor(parentOf(m)!.userId) }}</span>
               <span class="ml-1">{{ parentOf(m)!.text ?? t('chat.cantDecrypt') }}</span>
             </div>
-            <span v-if="m.text" class="break-words">{{ m.text }}</span>
-            <span v-else-if="m.text === null && !m.hasAttachment" class="italic" style="color: var(--p-text-muted-color)">{{ t('chat.cantDecrypt') }}</span>
-            <ChatImage v-if="m.hasAttachment" :load="() => chat.loadAttachment(m.id)" />
+            <span v-if="!contentVisible(m)" class="italic" style="color: var(--p-text-muted-color)">{{ m.moderation === 'REMOVED' ? t('chat.moderation.removed') : t('chat.moderation.pendingHidden') }}</span>
+            <template v-else>
+              <span v-if="m.text" class="break-words">{{ m.text }}</span>
+              <span v-else-if="m.text === null && !m.hasAttachment" class="italic" style="color: var(--p-text-muted-color)">{{ t('chat.cantDecrypt') }}</span>
+              <ChatImage v-if="m.hasAttachment" :load="() => chat.loadAttachment(m.id)" />
+            </template>
 
             <!-- Reactions: existing counts plus a picker, mirroring match reactions. -->
-            <div class="flex flex-wrap items-center gap-1 mt-0.5">
+            <div v-if="contentVisible(m)" class="flex flex-wrap items-center gap-1 mt-0.5">
               <button
                 v-for="e in emojisWithCount(m.reactions)"
                 :key="e"
@@ -340,6 +376,7 @@ watch(
             <button v-if="muted.length" type="button" class="text-xs underline opacity-70 hover:opacity-100" @click="showMuted = !showMuted">{{ t('chat.muted.show', { n: muted.length }) }}</button>
           </div>
           <div v-if="isAdmin" class="flex items-center gap-3">
+            <button type="button" class="text-xs underline opacity-70 hover:opacity-100" @click="openReports">{{ t('chat.moderation.queue') }}</button>
             <button type="button" class="text-xs underline opacity-70 hover:opacity-100" @click="showRotate = true">{{ t('chat.rotate.button') }}</button>
             <button type="button" class="text-xs underline opacity-70 hover:opacity-100" @click="chat.disableChat()">{{ t('chat.disable') }}</button>
           </div>
@@ -397,6 +434,29 @@ watch(
       <template #footer>
         <Button :label="t('chat.rotate.cancel')" severity="secondary" text @click="showRotate = false" />
         <Button :label="t('chat.rotate.confirm')" :loading="rotating" @click="confirmRotate" />
+      </template>
+    </Dialog>
+
+    <!-- Reports queue (owner/moderator): read each, then keep or remove. -->
+    <Dialog v-model:visible="showReports" modal :header="t('chat.moderation.queueTitle')" :style="{ width: '34rem', maxWidth: '92vw' }">
+      <div v-if="reportsLoading" class="text-sm" style="color: var(--p-text-muted-color)">{{ t('chat.loading') }}</div>
+      <p v-else-if="!reports.length" class="text-sm py-4 text-center" style="color: var(--p-text-muted-color)">{{ t('chat.moderation.empty') }}</p>
+      <div v-else class="flex flex-col gap-3">
+        <div v-for="r in reports" :key="r.id" class="flex flex-col gap-1 border-b pb-2 text-sm" style="border-color: var(--p-content-border-color)">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="font-semibold">{{ nameFor(r.userId) }}</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded-full" style="border: 1px solid var(--ng-danger); color: var(--ng-danger)">{{ t('chat.moderation.reportCount', { n: r.reports }) }}</span>
+            <span v-if="r.moderation === 'PENDING'" class="text-[10px] uppercase tracking-wider" style="color: var(--ng-danger)">{{ t('chat.moderation.pendingTag') }}</span>
+          </div>
+          <span class="break-words">{{ r.text ?? t('chat.cantDecrypt') }}</span>
+          <div class="flex items-center gap-3">
+            <button type="button" class="text-xs underline" style="color: var(--p-primary-color)" @click="resolveReport(r.id, 'restore')">{{ t('chat.moderation.ignore') }}</button>
+            <button type="button" class="text-xs underline" style="color: var(--ng-danger)" @click="resolveReport(r.id, 'remove')">{{ t('chat.moderation.confirm') }}</button>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <Button :label="t('chat.moderation.done')" severity="secondary" text @click="showReports = false" />
       </template>
     </Dialog>
 

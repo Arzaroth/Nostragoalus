@@ -4,11 +4,13 @@ import { getLeagueMemberIds } from '../chat/service'
 import { getMessageReactionTotals } from '../chat/reactions'
 import {
   publishChatKeysAdded,
+  publishChatModeration,
   publishChatReactionUpdate,
   publishChatRekeyRequest,
   publishChatStateChanged,
   publishLeagueChatMessage,
 } from './hub'
+import type { ChatModerationState } from '../../../shared/types/chat'
 
 // A new chat message: push the ciphertext to that league's connected members
 // only (the room is members-only, like league crowd/reaction pushes).
@@ -43,4 +45,15 @@ export async function publishChatReaction(db: AppDatabase, leagueId: string, mes
     getMessageReactionTotals(db, messageId),
   ])
   return publishChatReactionUpdate(leagueId, memberIds, messageId, totals)
+}
+
+// A message was auto-hidden, removed or restored: tell the members to update it.
+export async function publishModeration(
+  db: AppDatabase,
+  leagueId: string,
+  messageId: string,
+  state: ChatModerationState,
+): Promise<number> {
+  const memberIds = await getLeagueMemberIds(db, leagueId)
+  return publishChatModeration(leagueId, memberIds, messageId, state)
 }

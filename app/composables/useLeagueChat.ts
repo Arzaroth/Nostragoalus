@@ -11,7 +11,7 @@ import {
 import { compressToWebp } from '~/composables/useChatImage'
 import { chatKeyPins, isKeyTrusted } from '~/composables/useChatKeyPins'
 import { emptyReactionTotals, type ReactionEmoji, type ReactionTotals } from '#shared/reactions'
-import type { ChatMessageDTO } from '#shared/types/chat'
+import type { ChatMessageDTO, ChatModerationState } from '#shared/types/chat'
 
 export interface DecryptedMessage {
   id: string
@@ -21,8 +21,19 @@ export interface DecryptedMessage {
   text: string | null // null = could not decrypt (wrong/absent key)
   createdAt: string
   hasAttachment: boolean
+  moderation: ChatModerationState
+  reported: boolean
   reactions: ReactionTotals
   myReaction: ReactionEmoji | null
+}
+
+export interface ReportedMessage {
+  id: string
+  userId: string | null
+  text: string | null
+  reports: number
+  moderation: ChatModerationState
+  createdAt: string
 }
 
 interface ChatStatus {
@@ -100,6 +111,8 @@ export function useLeagueChat(
       text,
       createdAt: r.createdAt,
       hasAttachment: r.hasAttachment ?? false,
+      moderation: r.moderation ?? 'VISIBLE',
+      reported: r.reported ?? false,
       reactions: r.reactions ?? emptyReactionTotals(),
       myReaction: r.myReaction ?? null,
     }
@@ -267,6 +280,53 @@ export function useLeagueChat(
     }
   }
 
+  // Report a message for moderation. Optimistic on the reporter's own view; the
+  // server decides whether enough reports flip it to PENDING.
+  async function report(messageId: string): Promise<void> {
+    patchMessage(messageId, { reported: true })
+    try {
+      const res = await $fetch<{ state: ChatModerationState }>(`/api/leagues/${lid()}/chat/report`, {
+        method: 'POST',
+        body: { messageId },
+      })
+      patchMessage(messageId, { moderation: res.state })
+    } catch {
+      patchMessage(messageId, { reported: false })
+    }
+  }
+
+  // Owner/moderator: remove (tombstone) or restore a message. Reload after so the
+  // restored ciphertext (which the list strips while hidden) comes back.
+  async function moderate(messageId: string, action: 'remove' | 'restore'): Promise<void> {
+    const res = await $fetch<{ state: ChatModerationState }>(`/api/leagues/${lid()}/chat/moderate`, {
+      method: 'POST',
+      body: { messageId, action },
+    })
+    if (action === 'restore') await load()
+    else patchMessage(messageId, { moderation: res.state })
+  }
+
+  // The moderation queue (owner/moderator), decrypted for display.
+  async function fetchReports(): Promise<ReportedMessage[]> {
+    const { reports } = await $fetch<{
+      reports: { id: string; userId: string | null; epoch: number; ciphertext: string; moderation: ChatModerationState; reports: number; createdAt: string }[]
+    }>(`/api/leagues/${lid()}/chat/reports`)
+    return Promise.all(
+      reports.map(async (r) => {
+        const key = keys.value.get(r.epoch)
+        let text: string | null = null
+        if (key) {
+          try {
+            text = await decryptMessage(r.ciphertext, key)
+          } catch {
+            text = null
+          }
+        }
+        return { id: r.id, userId: r.userId, text, reports: r.reports, moderation: r.moderation, createdAt: r.createdAt }
+      }),
+    )
+  }
+
   // Fetch and decrypt a message's image, returning raw webp bytes (the caller
   // turns them into a blob URL). Null if it can't be fetched/decrypted.
   async function loadAttachment(messageId: string): Promise<Uint8Array | null> {
@@ -373,6 +433,13 @@ export function useLeagueChat(
         if (rm.messageId && rm.totals) patchMessage(rm.messageId, { reactions: rm.totals })
         return
       }
+      // A message was moderated: patch its state so it hides/tombstones or reveals
+      // live. The render decides what to show from the state and the viewer role.
+      if (msg.type === 'chat:moderation') {
+        const mm = data as { messageId?: string; state?: ChatModerationState }
+        if (mm.messageId && mm.state) patchMessage(mm.messageId, { moderation: mm.state })
+        return
+      }
       if (msg.type !== 'chat:new' || !msg.message) return
       if ((msg.message.matchId ?? null) !== mid()) return
       if (messages.value.some((m) => m.id === msg.message!.id)) return
@@ -403,6 +470,9 @@ export function useLeagueChat(
     sendImage,
     loadAttachment,
     react,
+    report,
+    moderate,
+    fetchReports,
     enableChat,
     disableChat,
     rotateKey,

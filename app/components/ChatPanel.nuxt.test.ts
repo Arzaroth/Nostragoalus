@@ -6,7 +6,7 @@ import { chatKeyPins } from '../composables/useChatKeyPins'
 import { emptyReactionTotals } from '#shared/reactions'
 
 function msg(over: Record<string, unknown> = {}) {
-  return { id: 'a', userId: 'other', matchId: null, parentId: null, text: 'hi', createdAt: '2026-06-10T10:00:00.000Z', hasAttachment: false, reactions: emptyReactionTotals(), myReaction: null, ...over }
+  return { id: 'a', userId: 'other', matchId: null, parentId: null, text: 'hi', createdAt: '2026-06-10T10:00:00.000Z', hasAttachment: false, moderation: 'VISIBLE', reported: false, reactions: emptyReactionTotals(), myReaction: null, ...over }
 }
 
 // Drive the panel via mocked composables (the crypto/network live in those and
@@ -34,6 +34,9 @@ vi.mock('../composables/useLeagueChat', async () => {
     react: vi.fn(),
     sendImage: vi.fn(),
     loadAttachment: vi.fn(),
+    report: vi.fn(),
+    moderate: vi.fn(),
+    fetchReports: vi.fn(async () => []),
   }
   return { useLeagueChat: () => state, __state: state }
 })
@@ -164,6 +167,39 @@ describe('ChatPanel', () => {
     await ta.setValue('me too')
     await wrapper.find('form').trigger('submit')
     expect(s.send).toHaveBeenCalledWith('me too', 'p')
+  })
+
+  it('reports another member message', async () => {
+    const s = await chatState()
+    s.enabled.value = true
+    s.ready.value = true
+    s.messages.value = [msg({ id: 'x', userId: 'other', text: 'spam' })]
+    const wrapper = await mount()
+    await vi.waitFor(() => expect(wrapper.text()).toContain('spam'))
+    const report = wrapper.findAll('button').find((b) => b.text() === 'Report')!
+    await report.trigger('click')
+    expect(s.report).toHaveBeenCalledWith('x')
+  })
+
+  it('tombstones a removed message and hides its content', async () => {
+    const s = await chatState()
+    s.enabled.value = true
+    s.ready.value = true
+    s.messages.value = [msg({ id: 'x', userId: 'other', text: 'was here', moderation: 'REMOVED' })]
+    const wrapper = await mount()
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Message removed'))
+    expect(wrapper.text()).not.toContain('was here')
+  })
+
+  it('hides a pending message from a non-moderator', async () => {
+    const s = await chatState()
+    s.enabled.value = true
+    s.ready.value = true
+    s.isAdmin.value = false
+    s.messages.value = [msg({ id: 'x', userId: 'other', text: 'under review', moderation: 'PENDING' })]
+    const wrapper = await mount()
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Hidden, pending review'))
+    expect(wrapper.text()).not.toContain('under review')
   })
 
   it('prompts to restore when the device lacks the key', async () => {

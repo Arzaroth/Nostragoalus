@@ -57,6 +57,7 @@
     "react": { "add": "jang chel" },
     "reply": { "button": "jang", "replyingTo": "{name} jang", "cancel": "jang qIl" },
     "image": { "attach": "mIllogh chel", "dropHere": "naDev mIllogh yIlan", "rejected": "mIllogh neH, 5MB bIng.", "failed": "mIllogh tu'be'", "alt": "mIllogh", "copy": "rapmoH", "download": "tlhap", "share": "ngeH", "close": "SoQmoH" },
+    "moderation": { "report": "ghoH", "reported": "ghoHlu'pu'", "remove": "teq", "restore": "chu'qa'", "removed": "QIn teqlu'pu'", "pendingHidden": "So'lu', nuDnIS", "pendingTag": "loS", "queue": "ghoHmey", "queueTitle": "QInmey ghoHlu'pu'", "empty": "ghoH tu'be'.", "reportCount": "{n} ghoH", "ignore": "buSHa'", "confirm": "teq", "done": "rIn" },
     "setupRecovery": "chovnatlh Qaw'wI' cher",
     "warning": {
       "title": "ja'chuq So'lu'bogh yIchu''a'?",

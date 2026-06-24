@@ -57,6 +57,7 @@
     "react": { "add": "Add reaction" },
     "reply": { "button": "Reply", "replyingTo": "Replying to {name}", "cancel": "Cancel reply" },
     "image": { "attach": "Attach image", "dropHere": "Drop image to send", "rejected": "Only images up to 5 MB.", "failed": "Image unavailable", "alt": "Chat image", "copy": "Copy", "download": "Download", "share": "Share", "close": "Close" },
+    "moderation": { "report": "Report", "reported": "Reported", "remove": "Remove", "restore": "Restore", "removed": "Message removed", "pendingHidden": "Hidden, pending review", "pendingTag": "Pending", "queue": "Reports", "queueTitle": "Reported messages", "empty": "Nothing reported.", "reportCount": "{n} reports", "ignore": "Ignore", "confirm": "Remove", "done": "Done" },
     "setupRecovery": "Set up a recovery code",
     "warning": {
       "title": "Turn on end-to-end encrypted chat?",
