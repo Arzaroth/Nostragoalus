@@ -38,6 +38,8 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ body, user,
     ciphertext: row.ciphertext,
     createdAt: row.createdAt.toISOString(),
     hasAttachment: row.hasAttachment,
+    moderation: 'VISIBLE',
+    reported: false,
     reactions: emptyReactionTotals(),
     myReaction: null,
   }

@@ -320,6 +320,8 @@ export async function requestChatRekey(
 
 // --- messages ---
 
+import type { ChatModerationState } from '../../../shared/types/chat'
+
 export interface ChatMessageRow {
   id: string
   userId: string | null
@@ -327,6 +329,7 @@ export interface ChatMessageRow {
   parentId: string | null
   epoch: number
   ciphertext: string
+  moderationState: ChatModerationState
   createdAt: Date
 }
 
@@ -395,6 +398,7 @@ export async function postMessage(
         parentId: chatMessage.parentId,
         epoch: chatMessage.epoch,
         ciphertext: chatMessage.ciphertext,
+        moderationState: chatMessage.moderationState,
         createdAt: chatMessage.createdAt,
       })
     if (opts.image) {
@@ -428,6 +432,7 @@ export async function listMessages(
       parentId: chatMessage.parentId,
       epoch: chatMessage.epoch,
       ciphertext: chatMessage.ciphertext,
+      moderationState: chatMessage.moderationState,
       createdAt: chatMessage.createdAt,
     })
     .from(chatMessage)

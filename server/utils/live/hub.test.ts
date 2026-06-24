@@ -172,3 +172,18 @@ it('publishChatReactionUpdate delivers a message totals patch to members only', 
     for (const s of [member, outsider]) removeLiveSubscriber(s)
   }
 })
+
+it('publishChatModeration patches a message state for members only', async () => {
+  const { addLiveSubscriber, removeLiveSubscriber, publishChatModeration } = await import('./hub')
+  const member = { matchIds: new Set<string>(), userId: 'm', send: vi.fn() }
+  const outsider = { matchIds: new Set<string>(), userId: 'o', send: vi.fn() }
+  for (const s of [member, outsider]) addLiveSubscriber(s)
+  try {
+    const delivered = publishChatModeration('lg', ['m'], 'msg1', 'REMOVED')
+    expect(delivered).toBe(1)
+    expect(member.send).toHaveBeenCalledWith({ type: 'chat:moderation', leagueId: 'lg', messageId: 'msg1', state: 'REMOVED' })
+    expect(outsider.send).not.toHaveBeenCalled()
+  } finally {
+    for (const s of [member, outsider]) removeLiveSubscriber(s)
+  }
+})

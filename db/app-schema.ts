@@ -870,6 +870,12 @@ export const leagueChatKey = pgTable(
   ],
 )
 
+// Message moderation lifecycle. VISIBLE is normal; PENDING is auto-set once
+// enough distinct members report it (content hidden from non-moderators until an
+// owner/moderator rules); REMOVED is a moderator tombstone (content gone for
+// everyone, the row kept so replies don't dangle).
+export const chatModerationStateEnum = pgEnum('chat_moderation_state', ['VISIBLE', 'PENDING', 'REMOVED'])
+
 // An encrypted chat message. matchId null = the league-global room; set = a
 // per-match thread. The server keeps the sender id, timestamp and the key epoch
 // (metadata it needs to order and route) but only ciphertext for the content
@@ -888,11 +894,34 @@ export const chatMessage = pgTable(
     parentId: text('parent_id').references((): AnyPgColumn => chatMessage.id, { onDelete: 'set null' }),
     epoch: integer('epoch').notNull(),
     ciphertext: text('ciphertext').notNull(),
+    moderationState: chatModerationStateEnum('moderation_state').notNull().default('VISIBLE'),
+    moderatedBy: text('moderated_by').references(() => user.id, { onDelete: 'set null' }),
+    moderatedAt: timestamp('moderated_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     index('chat_message_room_idx').on(t.leagueId, t.matchId, t.createdAt),
     index('chat_message_league_idx').on(t.leagueId, t.createdAt),
+  ],
+)
+
+// A member's report of a message (one per member per message). Enough distinct
+// reports flip the message to PENDING; a moderator then removes or restores it.
+export const chatMessageReport = pgTable(
+  'chat_message_report',
+  {
+    id: pk(),
+    messageId: text('message_id')
+      .notNull()
+      .references(() => chatMessage.id, { onDelete: 'cascade' }),
+    reporterId: text('reporter_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('chat_message_report_message_reporter_uq').on(t.messageId, t.reporterId),
+    index('chat_message_report_message_idx').on(t.messageId),
   ],
 )
 

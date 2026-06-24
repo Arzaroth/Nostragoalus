@@ -5,7 +5,7 @@ import { addLiveSubscriber, removeLiveSubscriber, type LiveSubscriber } from './
 import { chatMessage } from '../../../db/schema'
 import { setChatReaction } from '../chat/reactions'
 import { emptyReactionTotals } from '../../../shared/reactions'
-import { publishChatMessage, publishChatReaction, publishKeysAdded, publishRekeyRequest, publishStateChanged } from './league-chat'
+import { publishChatMessage, publishChatReaction, publishKeysAdded, publishModeration, publishRekeyRequest, publishStateChanged } from './league-chat'
 
 function sub(userId: string | null): LiveSubscriber & { send: ReturnType<typeof vi.fn> } {
   return { matchIds: new Set(), userId, send: vi.fn() }
@@ -136,6 +136,30 @@ describe('publishChatReaction', () => {
     try {
       expect(await publishChatReaction(db, leagueId, messageId)).toBe(2)
       const expected = { type: 'chat:reaction', leagueId, messageId, totals: { ...emptyReactionTotals(), WOW: 1 } }
+      expect(aliceSub.send).toHaveBeenCalledWith(expected)
+      expect(bobSub.send).toHaveBeenCalledWith(expected)
+    } finally {
+      for (const s of [aliceSub, bobSub] as const) removeLiveSubscriber(s)
+      await client.close()
+    }
+  })
+})
+
+describe('publishModeration', () => {
+  it('pushes the new message state to the league members', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const alice = await makeUser(db, 'alice')
+    const bob = await makeUser(db, 'bob')
+    const leagueId = await makeLeague(db, { competitionId, ownerId: alice })
+    await addLeagueMember(db, leagueId, bob)
+
+    const aliceSub = sub(alice)
+    const bobSub = sub(bob)
+    for (const s of [aliceSub, bobSub] as const) addLiveSubscriber(s)
+    try {
+      expect(await publishModeration(db, leagueId, 'msg1', 'PENDING')).toBe(2)
+      const expected = { type: 'chat:moderation', leagueId, messageId: 'msg1', state: 'PENDING' }
       expect(aliceSub.send).toHaveBeenCalledWith(expected)
       expect(bobSub.send).toHaveBeenCalledWith(expected)
     } finally {

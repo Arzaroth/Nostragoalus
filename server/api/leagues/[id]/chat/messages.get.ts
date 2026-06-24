@@ -3,6 +3,8 @@ import { requireUser } from '../../../../utils/auth-guards'
 import { listMessages } from '../../../../utils/chat/service'
 import { getMyReactions, getReactionTotals } from '../../../../utils/chat/reactions'
 import { getAttachmentMessageIds } from '../../../../utils/chat/attachments'
+import { getMyReports } from '../../../../utils/chat/moderation'
+import { getMembership } from '../../../../utils/leagues/service'
 import { emptyReactionTotals } from '../../../../../shared/reactions'
 import { toHttpError } from '../../../../utils/http'
 import type { ChatMessageDTO } from '../../../../../shared/types/chat'
@@ -24,24 +26,34 @@ export default defineEventHandler(async (event) => {
       limit: limit && !Number.isNaN(limit) ? limit : undefined,
     })
     const ids = rows.map((r) => r.id)
-    const [totals, mine, withImage] = await Promise.all([
+    const membership = await getMembership(db, leagueId, user.id)
+    const isAdmin = membership?.role === 'OWNER' || membership?.role === 'MODERATOR'
+    const [totals, mine, withImage, reported] = await Promise.all([
       getReactionTotals(db, ids),
       getMyReactions(db, user.id, ids),
       getAttachmentMessageIds(db, ids),
+      getMyReports(db, user.id, ids),
     ])
-    const messages: ChatMessageDTO[] = rows.map((r) => ({
-      id: r.id,
-      leagueId,
-      matchId: r.matchId,
-      parentId: r.parentId,
-      userId: r.userId,
-      epoch: r.epoch,
-      ciphertext: r.ciphertext,
-      createdAt: r.createdAt.toISOString(),
-      hasAttachment: withImage.has(r.id),
-      reactions: totals[r.id] ?? emptyReactionTotals(),
-      myReaction: mine[r.id] ?? null,
-    }))
+    const messages: ChatMessageDTO[] = rows.map((r) => {
+      // Strip content for a tombstoned message (everyone) or a pending one (from
+      // non-moderators), so the server never hands out what should be hidden.
+      const hidden = r.moderationState === 'REMOVED' || (r.moderationState === 'PENDING' && !isAdmin)
+      return {
+        id: r.id,
+        leagueId,
+        matchId: r.matchId,
+        parentId: r.parentId,
+        userId: r.userId,
+        epoch: r.epoch,
+        ciphertext: hidden ? '' : r.ciphertext,
+        createdAt: r.createdAt.toISOString(),
+        hasAttachment: !hidden && withImage.has(r.id),
+        moderation: r.moderationState,
+        reported: reported.has(r.id),
+        reactions: totals[r.id] ?? emptyReactionTotals(),
+        myReaction: mine[r.id] ?? null,
+      }
+    })
     return { messages }
   } catch (error) {
     throw toHttpError(error)
