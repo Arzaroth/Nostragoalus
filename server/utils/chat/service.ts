@@ -1,6 +1,6 @@
 import { and, desc, eq, isNull, lt } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
-import { chatAttachment, chatIdentity, chatMessage, league, leagueChatKey, leagueMember, match } from '../../../db/schema'
+import { chatAttachment, chatIdentity, chatMessage, league, leagueChatKey, leagueMember, match, user } from '../../../db/schema'
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors'
 import { getLeague, getMembership } from '../leagues/service'
 
@@ -72,15 +72,20 @@ export async function getRecoveryBlob(db: AppDatabase, userId: string): Promise<
 export interface MemberKey {
   userId: string
   publicKey: string
+  // Display name for chat. Chat is members-only and opt-in, so participants are
+  // named here even when they are hidden from the public leaderboard/roster -
+  // otherwise fellow members would just see "Someone" against their messages.
+  name: string
 }
 
 // Public keys of every league member who has a chat identity (so a keyholder can
 // seal the group key to them).
 export async function getMemberPublicKeys(db: AppDatabase, leagueId: string): Promise<MemberKey[]> {
   return db
-    .select({ userId: leagueMember.userId, publicKey: chatIdentity.publicKey })
+    .select({ userId: leagueMember.userId, publicKey: chatIdentity.publicKey, name: user.name })
     .from(leagueMember)
     .innerJoin(chatIdentity, eq(chatIdentity.userId, leagueMember.userId))
+    .innerJoin(user, eq(user.id, leagueMember.userId))
     .where(eq(leagueMember.leagueId, leagueId))
 }
 
@@ -260,9 +265,10 @@ export async function getMembersMissingKey(
   epoch: number,
 ): Promise<MemberKey[]> {
   return db
-    .select({ userId: leagueMember.userId, publicKey: chatIdentity.publicKey })
+    .select({ userId: leagueMember.userId, publicKey: chatIdentity.publicKey, name: user.name })
     .from(leagueMember)
     .innerJoin(chatIdentity, eq(chatIdentity.userId, leagueMember.userId))
+    .innerJoin(user, eq(user.id, leagueMember.userId))
     .leftJoin(
       leagueChatKey,
       and(

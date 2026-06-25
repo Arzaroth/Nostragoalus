@@ -161,8 +161,8 @@ describe('ChatPanel', () => {
     // The reply renders a quoted preview of its parent.
     expect(wrapper.text()).toContain('the original')
     // Replying then sending threads the parent id.
-    const reply = wrapper.findAll('button').find((b) => b.text() === 'Reply')!
-    await reply.trigger('click')
+    const reply = wrapper.findAll('button[aria-label="Reply"]')
+    await reply[0].trigger('click')
     const ta = wrapper.find('textarea')
     await ta.setValue('me too')
     await wrapper.find('form').trigger('submit')
@@ -176,7 +176,7 @@ describe('ChatPanel', () => {
     s.messages.value = [msg({ id: 'x', userId: 'other', text: 'spam' })]
     const wrapper = await mount()
     await vi.waitFor(() => expect(wrapper.text()).toContain('spam'))
-    const report = wrapper.findAll('button').find((b) => b.text() === 'Report')!
+    const report = wrapper.find('button[aria-label="Report"]')
     await report.trigger('click')
     expect(s.report).toHaveBeenCalledWith('x')
   })

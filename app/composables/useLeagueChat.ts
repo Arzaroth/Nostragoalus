@@ -41,8 +41,8 @@ interface ChatStatus {
   epoch: number
   role: 'OWNER' | 'MODERATOR' | 'MEMBER'
   myWrappedKeys: { epoch: number; wrappedKey: string }[]
-  missingKeys: { userId: string; publicKey: string }[]
-  memberKeys: { userId: string; publicKey: string }[]
+  missingKeys: { userId: string; publicKey: string; name: string }[]
+  memberKeys: { userId: string; publicKey: string; name: string }[]
 }
 
 // One chat room: the league-global room (matchId null) or a per-match thread.
@@ -61,7 +61,7 @@ export function useLeagueChat(
   // readable after a re-key. Each message is decrypted with its own epoch's key.
   const keys = ref<Map<number, Uint8Array>>(new Map())
   const messages = ref<DecryptedMessage[]>([])
-  const memberKeys = ref<{ userId: string; publicKey: string }[]>([])
+  const memberKeys = ref<{ userId: string; publicKey: string; name: string }[]>([])
   const loading = ref(false)
   const sending = ref(false)
 
