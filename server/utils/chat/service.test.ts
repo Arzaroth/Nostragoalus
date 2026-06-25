@@ -84,7 +84,7 @@ describe('chat identity', () => {
     const u2 = await makeUser(db, 'u2')
     await addLeagueMember(db, leagueId, u2)
     await addIdentity(db, owner)
-    expect(await getMemberPublicKeys(db, leagueId)).toEqual([{ userId: owner, publicKey: 'pk-owner' }])
+    expect(await getMemberPublicKeys(db, leagueId)).toEqual([{ userId: owner, publicKey: 'pk-owner', name: owner }])
     await addIdentity(db, u2)
     expect((await getMemberPublicKeys(db, leagueId)).map((m) => m.userId).sort()).toEqual([owner, u2].sort())
     await client.close()
@@ -172,7 +172,7 @@ describe('getChatStatus', () => {
     await addIdentity(db, owner)
     const s = await getChatStatus(db, leagueId, owner)
     expect(s).toMatchObject({ enabled: false, epoch: 0, role: 'OWNER', myWrappedKeys: [], missingKeys: [] })
-    expect(s.memberKeys).toEqual([{ userId: owner, publicKey: 'pk-owner' }])
+    expect(s.memberKeys).toEqual([{ userId: owner, publicKey: 'pk-owner', name: owner }])
     await client.close()
   })
 
@@ -187,7 +187,7 @@ describe('getChatStatus', () => {
     expect(s.enabled).toBe(true)
     expect(s.epoch).toBe(1)
     expect(s.myWrappedKeys).toEqual([{ epoch: 1, wrappedKey: 'wk-owner' }])
-    expect(s.missingKeys).toEqual([{ userId: u2, publicKey: 'pk-u2' }])
+    expect(s.missingKeys).toEqual([{ userId: u2, publicKey: 'pk-u2', name: u2 }])
     await client.close()
   })
 })
@@ -289,7 +289,7 @@ describe('key distribution', () => {
     await addIdentity(db, u2) // identity, no key
     const u3 = await makeUser(db, 'u3')
     await addLeagueMember(db, leagueId, u3) // no identity -> excluded
-    expect(await getMembersMissingKey(db, leagueId, 1)).toEqual([{ userId: u2, publicKey: 'pk-u2' }])
+    expect(await getMembersMissingKey(db, leagueId, 1)).toEqual([{ userId: u2, publicKey: 'pk-u2', name: u2 }])
     await client.close()
   })
 

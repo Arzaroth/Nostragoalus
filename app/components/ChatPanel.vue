@@ -82,7 +82,10 @@ const peerEntries = computed(() => keyEntries.value.filter((e) => e.userId !== m
 const detail = useLeagueDetail(computed<string | null>(() => props.leagueId))
 const names = computed<Record<string, string>>(() => {
   const map: Record<string, string> = {}
+  // Roster first, then chat members - so a participant hidden from the public
+  // roster (but in this members-only chat) still shows their name, not "Someone".
   for (const m of detail.data.value?.members ?? []) map[m.userId] = m.name
+  for (const m of memberKeys.value) if (m.name) map[m.userId] = m.name
   return map
 })
 function nameFor(uid: string | null): string {
@@ -206,15 +209,45 @@ async function confirmRotate() {
   }
 }
 
+// Scroll handling: only follow the bottom when the reader is already there. New
+// messages while scrolled up raise a "new messages" nudge instead of yanking the
+// view down; in-place patches (reactions, mute, moderation) never scroll at all.
 const listEl = ref<HTMLElement | null>(null)
+const atBottom = ref(true)
+const hasNew = ref(false)
+function onScroll() {
+  const el = listEl.value
+  if (!el) return
+  atBottom.value = el.scrollHeight - el.scrollTop - el.clientHeight < 48
+  if (atBottom.value) hasNew.value = false
+}
+function scrollToBottom() {
+  nextTick(() => {
+    if (listEl.value) listEl.value.scrollTop = listEl.value.scrollHeight
+    hasNew.value = false
+  })
+}
+// React to count changes only (a real new message), not to every patch.
 watch(
-  messages,
-  () =>
-    nextTick(() => {
-      if (listEl.value) listEl.value.scrollTop = listEl.value.scrollHeight
-    }),
-  { deep: true },
+  () => messages.value.length,
+  (n, prev) => {
+    if (n <= prev) return
+    if (atBottom.value) scrollToBottom()
+    else hasNew.value = true
+  },
 )
+
+// Jump to a quoted parent and flash it, so a reply visibly references its post.
+const flashId = ref<string | null>(null)
+function jumpTo(id: string) {
+  const el = listEl.value?.querySelector(`[data-mid="${id}"]`) as HTMLElement | null
+  if (!el) return
+  el.scrollIntoView({ block: 'center' })
+  flashId.value = id
+  setTimeout(() => {
+    if (flashId.value === id) flashId.value = null
+  }, 1200)
+}
 </script>
 
 <template>
@@ -253,10 +286,12 @@ watch(
       </div>
       <div v-else-if="!ready" class="text-sm" style="color: var(--p-text-muted-color)">{{ t('chat.settingUp') }}</div>
       <template v-else>
+        <div class="relative">
         <div
           ref="listEl"
           class="relative flex flex-col gap-2 overflow-y-auto"
-          style="max-height: 22rem"
+          :style="`max-height: ${props.flat ? '60vh' : '22rem'}`"
+          @scroll="onScroll"
           @dragover.prevent="dragOver = true"
           @dragleave="dragOver = false"
           @drop.prevent="onDrop"
@@ -269,29 +304,39 @@ watch(
             {{ t('chat.image.dropHere') }}
           </div>
           <p v-if="!messages.length" class="text-sm py-6 text-center" style="color: var(--p-text-muted-color)">{{ t('chat.empty') }}</p>
-          <div v-for="m in messages" :key="m.id" class="text-sm flex flex-col">
-            <div class="flex items-baseline gap-2">
+          <div
+            v-for="m in messages"
+            :key="m.id"
+            :data-mid="m.id"
+            class="group text-sm flex flex-col rounded px-1 -mx-1 transition-colors"
+            :style="flashId === m.id ? 'background: color-mix(in srgb, var(--p-primary-color) 18%, transparent)' : ''"
+          >
+            <div class="flex items-center gap-2">
               <span class="font-semibold" :style="m.userId === meId ? 'color: var(--p-primary-color)' : ''">{{ nameFor(m.userId) }}</span>
               <span class="text-[10px]" style="color: var(--p-text-muted-color)">{{ fmtTime(m.createdAt) }}</span>
               <span v-if="m.moderation === 'PENDING'" class="text-[10px] uppercase tracking-wider font-semibold px-1 rounded" style="border: 1px solid var(--ng-danger); color: var(--ng-danger)">{{ t('chat.moderation.pendingTag') }}</span>
-              <template v-if="m.moderation !== 'REMOVED'">
-                <button type="button" class="text-[10px] underline opacity-60 hover:opacity-100" @click="startReply(m)">{{ t('chat.reply.button') }}</button>
-                <button v-if="m.userId && m.userId !== meId" type="button" class="text-[10px] underline opacity-60 hover:opacity-100" @click="chat.toggleMute(m.userId)">{{ t('chat.mute') }}</button>
-                <button v-if="m.userId && m.userId !== meId && !m.reported" type="button" class="text-[10px] underline opacity-60 hover:opacity-100" @click="chat.report(m.id)">{{ t('chat.moderation.report') }}</button>
-                <span v-else-if="m.userId && m.userId !== meId" class="text-[10px] opacity-50">{{ t('chat.moderation.reported') }}</span>
-                <button v-if="isAdmin" type="button" class="text-[10px] underline" style="color: var(--ng-danger)" @click="chat.moderate(m.id, 'remove')">{{ t('chat.moderation.remove') }}</button>
-                <button v-if="isAdmin && m.moderation === 'PENDING'" type="button" class="text-[10px] underline" style="color: var(--p-primary-color)" @click="chat.moderate(m.id, 'restore')">{{ t('chat.moderation.restore') }}</button>
-              </template>
+              <!-- Per-message actions, icon-only, revealed on hover. -->
+              <span v-if="m.moderation !== 'REMOVED'" class="ml-auto flex items-center gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                <button type="button" v-tooltip.top="t('chat.reply.button')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.reply.button')" @click="startReply(m)"><i class="pi pi-reply text-xs" /></button>
+                <button v-if="m.userId && m.userId !== meId" type="button" v-tooltip.top="t('chat.mute')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.mute')" @click="chat.toggleMute(m.userId)"><i class="pi pi-volume-off text-xs" /></button>
+                <button v-if="m.userId && m.userId !== meId && !m.reported" type="button" v-tooltip.top="t('chat.moderation.report')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.moderation.report')" @click="chat.report(m.id)"><i class="pi pi-flag text-xs" /></button>
+                <i v-else-if="m.userId && m.userId !== meId" v-tooltip.top="t('chat.moderation.reported')" class="pi pi-flag-fill text-xs opacity-50" style="color: var(--ng-danger)" />
+                <button v-if="isAdmin" type="button" v-tooltip.top="t('chat.moderation.remove')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.moderation.remove')" style="color: var(--ng-danger)" @click="chat.moderate(m.id, 'remove')"><i class="pi pi-trash text-xs" /></button>
+                <button v-if="isAdmin && m.moderation === 'PENDING'" type="button" v-tooltip.top="t('chat.moderation.restore')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.moderation.restore')" style="color: var(--p-primary-color)" @click="chat.moderate(m.id, 'restore')"><i class="pi pi-undo text-xs" /></button>
+              </span>
             </div>
-            <!-- Quoted parent, shown over a reply (when it's still in view). -->
-            <div
+            <!-- Quoted parent: click to jump to the post this replies to. -->
+            <button
               v-if="parentOf(m)"
-              class="text-xs rounded px-2 py-1 mb-0.5 border-l-2 opacity-80"
+              type="button"
+              class="text-left text-xs rounded px-2 py-1 mb-0.5 border-l-2 opacity-80 hover:opacity-100"
               style="border-color: var(--p-primary-color); background: color-mix(in srgb, var(--p-text-color) 5%, transparent)"
+              @click="jumpTo(m.parentId!)"
             >
+              <i class="pi pi-reply text-[10px] mr-1" style="color: var(--p-primary-color)" />
               <span class="font-semibold">{{ nameFor(parentOf(m)!.userId) }}</span>
               <span class="ml-1">{{ parentOf(m)!.text ?? t('chat.cantDecrypt') }}</span>
-            </div>
+            </button>
             <span v-if="!contentVisible(m)" class="italic" style="color: var(--p-text-muted-color)">{{ m.moderation === 'REMOVED' ? t('chat.moderation.removed') : t('chat.moderation.pendingHidden') }}</span>
             <template v-else>
               <span v-if="m.text" class="break-words">{{ m.text }}</span>
@@ -344,6 +389,16 @@ watch(
               </div>
             </div>
           </div>
+        </div>
+          <button
+            v-if="hasNew"
+            type="button"
+            class="absolute bottom-2 left-1/2 -translate-x-1/2 z-20 text-xs font-semibold px-3 py-1 rounded-full shadow-lg inline-flex items-center gap-1"
+            style="background: var(--p-primary-color); color: var(--p-primary-contrast-color)"
+            @click="scrollToBottom"
+          >
+            {{ t('chat.newMessages') }}<i class="pi pi-arrow-down text-[10px]" />
+          </button>
         </div>
 
         <div class="flex flex-col gap-1">

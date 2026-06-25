@@ -22,6 +22,7 @@ const matchId = computed<string | null>(() =>
 
 const enabled = ref(false)
 const collapsed = ref(true)
+const expanded = ref(false)
 const scope = ref<'global' | 'match'>('global')
 // Off a match page there is no match room: pin scope to global and hide the toggle.
 watch(matchId, (m) => {
@@ -48,7 +49,7 @@ const scopedMatchId = computed<string | null>(() => (scope.value === 'match' ? m
     <div
       v-show="enabled && !collapsed"
       class="ng-card rounded-2xl border shadow-2xl flex flex-col overflow-hidden"
-      style="width: 22rem; max-width: 92vw; background: var(--p-content-background); border-color: var(--p-content-border-color)"
+      :style="`width: ${expanded ? 'min(42rem, 92vw)' : '22rem'}; max-width: 92vw; background: var(--p-content-background); border-color: var(--p-content-border-color)`"
     >
       <div
         class="flex items-center gap-2 px-3 py-2 border-b"
@@ -76,6 +77,14 @@ const scopedMatchId = computed<string | null>(() => (scope.value === 'match' ? m
         <button
           type="button"
           class="ml-auto opacity-70 hover:opacity-100"
+          :aria-label="t(expanded ? 'chat.dock.shrink' : 'chat.dock.expand')"
+          @click="expanded = !expanded"
+        >
+          <i :class="expanded ? 'pi pi-window-minimize' : 'pi pi-window-maximize'" />
+        </button>
+        <button
+          type="button"
+          class="opacity-70 hover:opacity-100"
           :aria-label="t('chat.dock.collapse')"
           @click="collapsed = true"
         >
@@ -83,7 +92,7 @@ const scopedMatchId = computed<string | null>(() => (scope.value === 'match' ? m
         </button>
       </div>
 
-      <div class="p-3 overflow-y-auto" style="max-height: 70vh">
+      <div class="p-3">
         <ChatPanel :league-id="leagueId" :match-id="scopedMatchId" flat @update:enabled="enabled = $event" />
       </div>
     </div>
