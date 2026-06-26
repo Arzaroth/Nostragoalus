@@ -39,13 +39,16 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   **Ranking tab** by the points each pick earns on that match (live then final): everyone who
   predicted by default, or just your league's members when a league is selected
 - **League chat (end-to-end encrypted)**: a private chat per league - a general room plus a
-  per-match thread - that a league owner or moderator turns on (off by default, behind a
-  trade-offs warning). Messages are encrypted on members' devices with a libsodium group key, so the
-  server only ever stores ciphertext and cannot read, moderate or recover them; keys enroll silently
-  on first use, with a one-time recovery code to restore history on another device, plus a local mute.
-  A **Verify keys** panel shows per-member safety numbers to compare out-of-band (with first-seen key
-  pinning and a warning if a key changes), and an admin can **rotate the key** to revoke a removed
-  member while past messages stay readable
+  per-match thread - in a collapsible window that follows you across the competition, turned on by a
+  league owner or moderator (off by default, behind a trade-offs warning). Messages, replies and images
+  are encrypted on members' devices with a libsodium group key, so the server only ever stores
+  ciphertext and cannot read it; keys enroll silently on first use, with a one-time recovery code to
+  restore history on another device. React with emoji, reply with a quoted preview, edit or delete your
+  own messages, drop or paste images, and mute or report others. A **Verify keys** panel shows
+  per-member safety numbers to compare out-of-band (first-seen pinning, change warning), an admin can
+  **rotate the key** to revoke a removed member, and members can flag a message - enough reports
+  auto-hide it pending an owner/moderator's call (moderation acts on message ids and report counts,
+  never on the unreadable content)
 - Live scores over WebSocket with a pixel-art **goal celebration**; match view with possession,
   per-team match stats, team line-ups (formation, starting XI, bench and coach on a pitch),
   goal timeline with cards (incl. touchline bookings) and substitutions,
