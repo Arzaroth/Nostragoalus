@@ -93,7 +93,7 @@ const scopedMatchId = computed<string | null>(() => (scope.value === 'match' ? m
       </div>
 
       <div class="p-3">
-        <ChatPanel :league-id="leagueId" :match-id="scopedMatchId" flat :tall="expanded" @update:enabled="enabled = $event" />
+        <ChatPanel :league-id="leagueId" :match-id="scopedMatchId" flat :tall="expanded" :active="enabled && !collapsed" @update:enabled="enabled = $event" />
       </div>
     </div>
   </div>

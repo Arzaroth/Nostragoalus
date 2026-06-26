@@ -6,10 +6,11 @@ import type { DecryptedMessage } from '~/composables/useLeagueChat'
 // per-match thread. All crypto is client-side; the server only relays ciphertext.
 // `flat` drops the outer card chrome so the panel can sit inside the chat dock,
 // which supplies its own window frame. `tall` grows the message list (the dock's
-// expanded mode); without it the list keeps its compact height.
+// expanded mode). `active` is false while the dock is collapsed - the list is
+// hidden then, so we re-scroll to the bottom when it becomes visible again.
 const props = withDefaults(
-  defineProps<{ leagueId: string; matchId?: string | null; flat?: boolean; tall?: boolean }>(),
-  { matchId: null, flat: false, tall: false },
+  defineProps<{ leagueId: string; matchId?: string | null; flat?: boolean; tall?: boolean; active?: boolean }>(),
+  { matchId: null, flat: false, tall: false, active: true },
 )
 
 const { t } = useI18n()
@@ -278,6 +279,18 @@ watch(
     hasNew.value = false
   },
 )
+// Becoming visible (the dock expands): the list had no height while hidden, so an
+// earlier scroll-to-bottom did nothing. Jump now that it is laid out.
+watch(
+  () => props.active,
+  (on) => {
+    if (on) {
+      forceBottom.value = true
+      scrollToBottom()
+    }
+  },
+  { immediate: true },
+)
 
 // Jump to a quoted parent and flash it, so a reply visibly references its post.
 const flashId = ref<string | null>(null)
@@ -331,7 +344,7 @@ function jumpTo(id: string) {
         <div class="relative">
         <div
           ref="listEl"
-          class="relative flex flex-col gap-2 overflow-y-auto overflow-x-hidden"
+          class="relative flex flex-col gap-2 overflow-y-auto overflow-x-hidden overscroll-contain"
           :style="`max-height: ${props.tall ? '60vh' : '22rem'}`"
           @scroll="onScroll"
           @dragover.prevent="dragOver = true"
