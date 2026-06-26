@@ -251,23 +251,45 @@ function onScroll() {
   atBottom.value = el.scrollHeight - el.scrollTop - el.clientHeight < 48
   if (atBottom.value) hasNew.value = false
 }
+// Only consume forceBottom once we actually scroll a present list. While the
+// chat is (re)loading the list is replaced by a spinner (v-if="loading"), so a
+// scroll attempt then is a no-op and the flag must survive until the list is back.
 function scrollToBottom() {
   nextTick(() => {
-    if (listEl.value) listEl.value.scrollTop = listEl.value.scrollHeight
+    const el = listEl.value
+    if (!el) return
+    el.scrollTop = el.scrollHeight
     hasNew.value = false
+    forceBottom.value = false
   })
 }
-// React to count changes only (a real new message), not to every patch.
+// Watch the list itself (not just its length): a room reload swaps the whole
+// array - possibly to the same length - so a length-only watch can miss it. A
+// pending forceBottom (room switch / became visible) jumps as soon as there is
+// content; otherwise a genuine new message follows the bottom or raises the nudge.
+let prevLen = 0
 watch(
-  () => messages.value.length,
-  (n, prev) => {
-    if (n <= prev) return
-    if (forceBottom.value || atBottom.value) {
-      forceBottom.value = false
+  messages,
+  (cur) => {
+    const grew = cur.length > prevLen
+    prevLen = cur.length
+    if (forceBottom.value) {
       scrollToBottom()
-    } else {
-      hasNew.value = true
+      return
     }
+    if (grew) {
+      if (atBottom.value) scrollToBottom()
+      else hasNew.value = true
+    }
+  },
+)
+// The list reappears after a (re)load finishes: this is when a switch/open can
+// finally scroll, since the list had no DOM while loading. ready && !loading is
+// exactly when the message list is mounted.
+watch(
+  () => ready.value && !loading.value,
+  (shown) => {
+    if (shown && forceBottom.value) scrollToBottom()
   },
 )
 // Switching room (Global <-> Match) reloads the list: land at the latest, just
