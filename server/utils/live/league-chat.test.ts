@@ -5,7 +5,7 @@ import { addLiveSubscriber, removeLiveSubscriber, type LiveSubscriber } from './
 import { chatMessage } from '../../../db/schema'
 import { setChatReaction } from '../chat/reactions'
 import { emptyReactionTotals } from '../../../shared/reactions'
-import { publishChatMessage, publishChatReaction, publishEdit, publishKeysAdded, publishModeration, publishRekeyRequest, publishStateChanged } from './league-chat'
+import { publishChatMessage, publishChatReaction, publishEdit, publishKeysAdded, publishModeration, publishRekeyRequest, publishStateChanged, publishTyping } from './league-chat'
 
 function sub(userId: string | null): LiveSubscriber & { send: ReturnType<typeof vi.fn> } {
   return { matchIds: new Set(), userId, send: vi.fn() }
@@ -158,12 +158,51 @@ describe('publishEdit', () => {
     const bobSub = sub(bob)
     for (const s of [aliceSub, bobSub] as const) addLiveSubscriber(s)
     try {
-      expect(await publishEdit(db, leagueId, 'msg1', 'NEWCT', '2026-06-10T10:00:00.000Z')).toBe(2)
-      const expected = { type: 'chat:edit', leagueId, messageId: 'msg1', ciphertext: 'NEWCT', editedAt: '2026-06-10T10:00:00.000Z' }
+      const attachments = [{ idx: 0, epoch: 1 }]
+      expect(await publishEdit(db, leagueId, 'msg1', 'NEWCT', '2026-06-10T10:00:00.000Z', attachments)).toBe(2)
+      const expected = { type: 'chat:edit', leagueId, messageId: 'msg1', ciphertext: 'NEWCT', editedAt: '2026-06-10T10:00:00.000Z', attachments }
       expect(aliceSub.send).toHaveBeenCalledWith(expected)
       expect(bobSub.send).toHaveBeenCalledWith(expected)
     } finally {
       for (const s of [aliceSub, bobSub] as const) removeLiveSubscriber(s)
+      await client.close()
+    }
+  })
+})
+
+describe('publishTyping', () => {
+  it('tells the other members someone is typing, never the typer or a stranger', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const alice = await makeUser(db, 'alice')
+    const bob = await makeUser(db, 'bob')
+    await makeUser(db, 'carol')
+    const leagueId = await makeLeague(db, { competitionId, ownerId: alice })
+    await addLeagueMember(db, leagueId, bob)
+
+    const aliceSub = sub(alice)
+    const bobSub = sub(bob)
+    const carolSub = sub('carol')
+    for (const s of [aliceSub, bobSub, carolSub]) addLiveSubscriber(s)
+    try {
+      // Alice types in the global room: only Bob (the other member) is told.
+      expect(await publishTyping(db, { leagueId, matchId: null, userId: alice, nowMs: 1000 })).toBe(true)
+      const expected = { type: 'chat:typing', leagueId, matchId: null, userId: alice }
+      expect(bobSub.send).toHaveBeenCalledWith(expected)
+      expect(aliceSub.send).not.toHaveBeenCalled() // never the typer
+      expect(carolSub.send).not.toHaveBeenCalled() // not a member
+
+      // Second call inside the cache TTL still delivers (member set reused).
+      expect(await publishTyping(db, { leagueId, matchId: 'match-x', userId: bob, nowMs: 2000 })).toBe(true)
+      expect(aliceSub.send).toHaveBeenCalledWith({ type: 'chat:typing', leagueId, matchId: 'match-x', userId: bob })
+
+      // A non-member typer is a no-op (no fan-out).
+      expect(await publishTyping(db, { leagueId, matchId: null, userId: 'carol', nowMs: 3000 })).toBe(false)
+
+      // A call past the cache TTL refreshes the member set and still delivers.
+      expect(await publishTyping(db, { leagueId, matchId: null, userId: alice, nowMs: 1_000_000 })).toBe(true)
+    } finally {
+      for (const s of [aliceSub, bobSub, carolSub]) removeLiveSubscriber(s)
       await client.close()
     }
   })
