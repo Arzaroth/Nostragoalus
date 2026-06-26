@@ -7,16 +7,30 @@ import { defineValidatedHandler } from '../../../../utils/validated-handler'
 const bodySchema = z.object({
   messageId: z.string().uuid(),
   ciphertext: z.string().min(1).max(16_384),
+  // Images to append (sealed under the current epoch) and idxs of images to drop.
+  addImages: z
+    .array(z.object({ ciphertext: z.string().min(1).max(9_000_000), byteSize: z.number().int().positive() }))
+    .max(6)
+    .optional(),
+  removeIdxs: z.array(z.number().int().nonnegative()).optional(),
 })
 
-// The author edits their own message: store the re-encrypted text, stamp the edit
-// time, and push the new ciphertext to the league's members so they re-decrypt it.
+// The author edits their own message: store the re-encrypted text, drop/append
+// images, stamp the edit time, and push the new ciphertext + attachment set to the
+// league's members so they re-decrypt it in place.
 export default defineValidatedHandler({ body: bodySchema }, async ({ body, user, event }) => {
   const leagueId = getRouterParam(event, 'id') as string
-  const { editedAt } = await editMessage(db, { leagueId, messageId: body.messageId, userId: user.id, ciphertext: body.ciphertext })
+  const { editedAt, attachments } = await editMessage(db, {
+    leagueId,
+    messageId: body.messageId,
+    userId: user.id,
+    ciphertext: body.ciphertext,
+    addImages: body.addImages,
+    removeIdxs: body.removeIdxs,
+  })
   const iso = editedAt.toISOString()
-  void publishEdit(db, leagueId, body.messageId, body.ciphertext, iso).catch(() => {})
-  return { editedAt: iso }
+  void publishEdit(db, leagueId, body.messageId, body.ciphertext, iso, attachments).catch(() => {})
+  return { editedAt: iso, attachments }
 })
 
 defineRouteMeta({

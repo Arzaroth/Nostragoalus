@@ -3,7 +3,7 @@ import type { AppDatabase } from '../../../db/types'
 import { match } from '../../../db/schema'
 import type { NotificationDTO } from '../../../shared/types/notifications'
 import type { ReactionTotals } from '../../../shared/reactions'
-import type { ChatMessageDTO } from '../../../shared/types/chat'
+import type { ChatAttachmentDTO, ChatMessageDTO } from '../../../shared/types/chat'
 
 export interface LiveSubscriber {
   matchIds: Set<string>
@@ -187,8 +187,9 @@ export function publishChatEdit(
   messageId: string,
   ciphertext: string,
   editedAt: string,
+  attachments: ChatAttachmentDTO[],
 ): number {
-  return deliverToMembers(memberIds, { type: 'chat:edit', leagueId, messageId, ciphertext, editedAt })
+  return deliverToMembers(memberIds, { type: 'chat:edit', leagueId, messageId, ciphertext, editedAt, attachments })
 }
 
 // Deliver a freshly created notification to every open socket of that one user

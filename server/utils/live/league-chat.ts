@@ -1,5 +1,5 @@
 import type { AppDatabase } from '../../../db/types'
-import type { ChatMessageDTO } from '../../../shared/types/chat'
+import type { ChatAttachmentDTO, ChatMessageDTO } from '../../../shared/types/chat'
 import { getLeagueMemberIds } from '../chat/service'
 import { getMessageReactionTotals } from '../chat/reactions'
 import {
@@ -59,14 +59,16 @@ export async function publishModeration(
   return publishChatModeration(leagueId, memberIds, messageId, state)
 }
 
-// A message was edited by its author: push the new ciphertext + edit time.
+// A message was edited by its author: push the new ciphertext + edit time + the
+// resulting attachment set (descriptors only - the bytes are fetched on demand).
 export async function publishEdit(
   db: AppDatabase,
   leagueId: string,
   messageId: string,
   ciphertext: string,
   editedAt: string,
+  attachments: ChatAttachmentDTO[],
 ): Promise<number> {
   const memberIds = await getLeagueMemberIds(db, leagueId)
-  return publishChatEdit(leagueId, memberIds, messageId, ciphertext, editedAt)
+  return publishChatEdit(leagueId, memberIds, messageId, ciphertext, editedAt, attachments)
 }

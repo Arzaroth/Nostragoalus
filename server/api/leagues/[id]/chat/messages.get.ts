@@ -2,7 +2,7 @@ import { db } from '../../../../../db'
 import { requireUser } from '../../../../utils/auth-guards'
 import { listMessages } from '../../../../utils/chat/service'
 import { getMyReactions, getReactionTotals } from '../../../../utils/chat/reactions'
-import { getAttachmentMessageIds } from '../../../../utils/chat/attachments'
+import { getMessageAttachments } from '../../../../utils/chat/attachments'
 import { getMyReports } from '../../../../utils/chat/moderation'
 import { getMembership } from '../../../../utils/leagues/service'
 import { emptyReactionTotals } from '../../../../../shared/reactions'
@@ -28,10 +28,10 @@ export default defineEventHandler(async (event) => {
     const ids = rows.map((r) => r.id)
     const membership = await getMembership(db, leagueId, user.id)
     const isAdmin = membership?.role === 'OWNER' || membership?.role === 'MODERATOR'
-    const [totals, mine, withImage, reported] = await Promise.all([
+    const [totals, mine, attachmentsByMessage, reported] = await Promise.all([
       getReactionTotals(db, ids),
       getMyReactions(db, user.id, ids),
-      getAttachmentMessageIds(db, ids),
+      getMessageAttachments(db, ids),
       getMyReports(db, user.id, ids),
     ])
     const messages: ChatMessageDTO[] = rows.map((r) => {
@@ -48,7 +48,7 @@ export default defineEventHandler(async (event) => {
         ciphertext: hidden ? '' : r.ciphertext,
         createdAt: r.createdAt.toISOString(),
         editedAt: r.editedAt ? r.editedAt.toISOString() : null,
-        hasAttachment: !hidden && withImage.has(r.id),
+        attachments: hidden ? [] : (attachmentsByMessage.get(r.id) ?? []),
         moderation: r.moderationState,
         reported: reported.has(r.id),
         reactions: totals[r.id] ?? emptyReactionTotals(),

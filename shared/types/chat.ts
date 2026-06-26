@@ -2,6 +2,15 @@ import type { ReactionEmoji, ReactionTotals } from '../reactions'
 
 export type ChatModerationState = 'VISIBLE' | 'PENDING' | 'REMOVED'
 
+// One encrypted image on a message. idx is its order within the message (stable,
+// gaps allowed after a remove); epoch is the group-key epoch the bytes were sealed
+// under, so the client decrypts each with its own epoch's key. The (messageId,
+// idx) pair identifies the row server-side; the ciphertext is fetched on demand.
+export interface ChatAttachmentDTO {
+  idx: number
+  epoch: number
+}
+
 // Wire shape for an encrypted chat message. The server fills everything except
 // the plaintext: ciphertext stays opaque to it. matchId null = the league-global
 // room, set = a per-match thread. createdAt is an ISO string over the wire.
@@ -17,11 +26,21 @@ export interface ChatMessageDTO {
   ciphertext: string
   createdAt: string
   editedAt: string | null
-  hasAttachment: boolean
+  // The message's images, ordered by idx (empty if none, or stripped when hidden).
+  attachments: ChatAttachmentDTO[]
   // Moderation lifecycle; PENDING/REMOVED strip the ciphertext for non-moderators.
   moderation: ChatModerationState
   // Whether the caller has already reported this message (own messages: false).
   reported: boolean
   reactions: ReactionTotals
   myReaction: ReactionEmoji | null
+}
+
+// One image in a room's media gallery: which message it belongs to plus its
+// idx/epoch (so the lightbox can fetch + decrypt it) and when it was posted.
+export interface ChatMediaItemDTO {
+  messageId: string
+  idx: number
+  epoch: number
+  createdAt: string
 }
