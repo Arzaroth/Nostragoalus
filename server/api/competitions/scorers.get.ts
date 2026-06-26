@@ -43,9 +43,14 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // Local goal-event aggregation (goals only).
+  // Local goal-event aggregation (goals + assists). This is the live path while
+  // FIFA's official aggregate is empty, so cache it like the official one - the
+  // empty official result used to populate the cache and no longer does.
   const local = await getCompetitionTopScorers(db, competition.id)
-  if (local.length > 0) return { scorers: local }
+  if (local.length > 0) {
+    cache.set(competition.id, { at: Date.now(), scorers: local })
+    return { scorers: local }
+  }
 
   // A provider that exposes scorers directly (e.g. football-data).
   if (provider.getTopScorers) {
