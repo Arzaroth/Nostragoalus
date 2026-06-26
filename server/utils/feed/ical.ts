@@ -44,9 +44,11 @@ function formatUtc(d: Date): string {
   )
 }
 
-// RFC 5545 3.3.11 TEXT escaping: backslash, semicolon, comma and newline.
+// RFC 5545 3.3.11 TEXT escaping: backslash, semicolon, comma and newline. A lone
+// CR is normalised to the same escaped newline so it can't slip through as a raw
+// line break.
 function escapeText(s: string): string {
-  return s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n')
+  return s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r\n|\r|\n/g, '\\n')
 }
 
 // RFC 5545 3.1 content-line folding at 75 octets, never splitting a multi-byte

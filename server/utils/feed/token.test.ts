@@ -46,10 +46,19 @@ describe('feed token', () => {
     expect(verifyFeedToken(SECRET, token)).toBeNull()
   })
 
+  it('returns null when the body is valid JSON but not an object', () => {
+    for (const raw of ['null', '5', '"str"']) {
+      const body = b64url(raw)
+      const token = `${body}.${signFeedBody(SECRET, body)}`
+      expect(verifyFeedToken(SECRET, token)).toBeNull()
+    }
+  })
+
   it('returns null on an authentic MAC over a shape-invalid payload', () => {
     const cases = [
       { u: 'user-1', l: 'en' }, // missing v
       { u: 'user-1', l: 'klingon', v: 1 }, // unknown locale
+      { u: 'user-1', l: 5, v: 1 }, // non-string locale
       { u: '', l: 'en', v: 1 }, // empty user
       { u: 1, l: 'en', v: 1 }, // non-string user
       { l: 'en', v: 1 }, // missing user
