@@ -1,100 +1,81 @@
 <script setup lang="ts">
-// One encrypted chat image. The bytes are fetched and decrypted on demand via the
-// provided loader (which holds the group key), turned into a local blob URL, and
-// shown as a thumbnail that opens a lightbox with copy / download / share. The
-// plaintext image only ever exists in this browser.
-const props = defineProps<{ load: () => Promise<Uint8Array | null> }>()
+// The image thumbnails on one chat message. Each attachment's bytes are fetched
+// and decrypted on demand via the provided loader (which holds the group key) and
+// shown as a small thumbnail; clicking one asks the parent to open the shared
+// lightbox at that image. The plaintext only ever exists in this browser.
+import type { ChatAttachmentDTO } from '#shared/types/chat'
+
+const props = defineProps<{
+  messageId: string
+  attachments: ChatAttachmentDTO[]
+  load: (messageId: string, idx: number, epoch: number) => Promise<Uint8Array | null>
+}>()
+const emit = defineEmits<{ open: [idx: number] }>()
 const { t } = useI18n()
 
-const src = ref<string | null>(null)
-const loading = ref(true)
-const failed = ref(false)
-const open = ref(false)
-let blob: Blob | null = null
-// The list is torn down on every room switch / reload, so the component can
-// unmount while props.load() is still decrypting. Track that so we don't leak the
-// object URL (and the decrypted plaintext blob) onto a dead component.
+interface Thumb {
+  idx: number
+  src: string | null
+  loading: boolean
+  failed: boolean
+}
+
+const thumbs = ref<Thumb[]>([])
 let alive = true
+const urls: string[] = []
 
-const canShare = computed(
-  () => import.meta.client && !!navigator.canShare && !!blob && navigator.canShare({ files: [new File([blob], 'image.webp', { type: 'image/webp' })] }),
+async function loadAll(): Promise<void> {
+  thumbs.value = props.attachments.map((a) => ({ idx: a.idx, src: null, loading: true, failed: false }))
+  await Promise.all(
+    props.attachments.map(async (a, i) => {
+      const bytes = await props.load(props.messageId, a.idx, a.epoch).catch(() => null)
+      if (!alive) return
+      const thumb = thumbs.value[i]
+      if (!thumb) return
+      if (!bytes) {
+        thumb.failed = true
+        thumb.loading = false
+        return
+      }
+      const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'image/webp' }))
+      urls.push(url)
+      thumb.src = url
+      thumb.loading = false
+    }),
+  )
+}
+
+function revoke(): void {
+  for (const u of urls.splice(0)) URL.revokeObjectURL(u)
+}
+
+onMounted(loadAll)
+// Re-load when the attachment set changes (an edit added/removed images).
+watch(
+  () => props.attachments.map((a) => `${a.idx}:${a.epoch}`).join(','),
+  () => {
+    revoke()
+    void loadAll()
+  },
 )
-
-onMounted(async () => {
-  try {
-    const bytes = await props.load()
-    if (!alive) return // unmounted while decrypting - drop the bytes, leak nothing
-    if (!bytes) {
-      failed.value = true
-      return
-    }
-    blob = new Blob([bytes as BlobPart], { type: 'image/webp' })
-    src.value = URL.createObjectURL(blob)
-  } catch {
-    if (alive) failed.value = true
-  } finally {
-    if (alive) loading.value = false
-  }
-})
 onUnmounted(() => {
   alive = false
-  blob = null
-  if (src.value) URL.revokeObjectURL(src.value)
+  revoke()
 })
-
-async function copy() {
-  if (!blob || !navigator.clipboard?.write) return
-  try {
-    await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })])
-  } catch {
-    // clipboard image write unsupported - ignore
-  }
-}
-function download() {
-  if (!src.value) return
-  const a = document.createElement('a')
-  a.href = src.value
-  a.download = 'chat-image.webp'
-  a.click()
-}
-async function share() {
-  if (!blob) return
-  try {
-    await navigator.share({ files: [new File([blob], 'chat-image.webp', { type: blob.type })] })
-  } catch {
-    // cancelled or unsupported - ignore
-  }
-}
 </script>
 
 <template>
-  <div class="mt-1">
-    <div v-if="loading" class="w-40 h-24 rounded-lg animate-pulse" style="background: color-mix(in srgb, var(--p-text-color) 10%, transparent)" />
-    <span v-else-if="failed" class="text-xs italic" style="color: var(--p-text-muted-color)">{{ t('chat.image.failed') }}</span>
-    <img
-      v-else-if="src"
-      :src="src"
-      :alt="t('chat.image.alt')"
-      class="max-w-[12rem] max-h-48 rounded-lg cursor-zoom-in object-cover"
-      @click="open = true"
-    >
-
-    <!-- Lightbox -->
-    <Teleport to="body">
-      <div
-        v-if="open && src"
-        class="fixed inset-0 z-[60] flex flex-col items-center justify-center p-4"
-        style="background: rgba(0,0,0,0.8)"
-        @click.self="open = false"
+  <div v-if="attachments.length" class="mt-1 flex flex-wrap gap-1.5">
+    <template v-for="thumb in thumbs" :key="thumb.idx">
+      <div v-if="thumb.loading" class="w-28 h-20 rounded-lg animate-pulse" style="background: color-mix(in srgb, var(--p-text-color) 10%, transparent)" />
+      <span v-else-if="thumb.failed" class="text-xs italic self-center" style="color: var(--p-text-muted-color)">{{ t('chat.image.failed') }}</span>
+      <img
+        v-else-if="thumb.src"
+        :src="thumb.src"
+        :alt="t('chat.image.alt')"
+        class="w-28 h-20 rounded-lg cursor-zoom-in object-cover"
+        @click="emit('open', thumb.idx)"
       >
-        <img :src="src" :alt="t('chat.image.alt')" class="max-w-full max-h-[80vh] rounded-lg object-contain">
-        <div class="flex items-center gap-2 mt-3">
-          <Button icon="pi pi-copy" :label="t('chat.image.copy')" size="small" severity="secondary" @click="copy" />
-          <Button icon="pi pi-download" :label="t('chat.image.download')" size="small" severity="secondary" @click="download" />
-          <Button v-if="canShare" icon="pi pi-share-alt" :label="t('chat.image.share')" size="small" severity="secondary" @click="share" />
-          <Button icon="pi pi-times" :label="t('chat.image.close')" size="small" text @click="open = false" />
-        </div>
-      </div>
-    </Teleport>
+    </template>
   </div>
 </template>

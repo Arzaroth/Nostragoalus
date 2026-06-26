@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { REACTION_EMOJIS, type ReactionEmoji } from '#shared/reactions'
-import { ACCEPTED_IMAGE_TYPES } from '~/composables/useChatImage'
-import type { DecryptedMessage } from '~/composables/useLeagueChat'
+import { ACCEPTED_IMAGE_TYPES, compressToWebp } from '~/composables/useChatImage'
+import type { DecryptedMessage, PendingImage } from '~/composables/useLeagueChat'
 // End-to-end encrypted league chat. The league-global room (matchId null) or a
 // per-match thread. All crypto is client-side; the server only relays ciphertext.
 // `flat` drops the outer card chrome so the panel can sit inside the chat dock,
@@ -9,9 +9,12 @@ import type { DecryptedMessage } from '~/composables/useLeagueChat'
 // expanded mode). `active` is false while the dock is collapsed - the list is
 // hidden then, so we re-scroll to the bottom when it becomes visible again.
 const props = withDefaults(
-  defineProps<{ leagueId: string; matchId?: string | null; flat?: boolean; tall?: boolean; active?: boolean }>(),
-  { matchId: null, flat: false, tall: false, active: true },
+  defineProps<{ leagueId: string; matchId?: string | null; matchLabel?: string; flat?: boolean; tall?: boolean; active?: boolean }>(),
+  { matchId: null, matchLabel: '', flat: false, tall: false, active: true },
 )
+
+// Up to this many images on one message (mirrors the server cap).
+const MAX_IMAGES = 6
 
 const { t } = useI18n()
 const { session } = useAuth()
@@ -94,30 +97,124 @@ function nameFor(uid: string | null): string {
   if (!uid) return t('chat.unknownUser')
   return names.value[uid] ?? t('chat.unknownUser')
 }
+const leagueName = computed(() => detail.data.value?.league.name ?? '')
+
+// Shared image lightbox: a list of {messageId, idx, epoch} plus an index. Opened
+// from a message's thumbnails (that message's images) or from the media gallery
+// button (every image in the room).
+const lbVisible = ref(false)
+const lbItems = ref<{ messageId: string; idx: number; epoch: number }[]>([])
+const lbIndex = ref(0)
+function openMessageImages(m: DecryptedMessage, startIdx: number) {
+  lbItems.value = m.attachments.map((a) => ({ messageId: m.id, idx: a.idx, epoch: a.epoch }))
+  const at = m.attachments.findIndex((a) => a.idx === startIdx)
+  lbIndex.value = at < 0 ? 0 : at
+  lbVisible.value = true
+}
+const mediaLoading = ref(false)
+async function openMedia() {
+  mediaLoading.value = true
+  try {
+    const media = await chat.roomMedia()
+    if (!media.length) return
+    lbItems.value = media.map((x) => ({ messageId: x.messageId, idx: x.idx, epoch: x.epoch }))
+    lbIndex.value = 0
+    lbVisible.value = true
+  } finally {
+    mediaLoading.value = false
+  }
+}
 
 // Reply: the message being answered. Its decrypted text is quoted above the
 // composer and a compact preview is shown over the sent reply.
 const replyTo = ref<DecryptedMessage | null>(null)
 function startReply(m: DecryptedMessage) {
   replyTo.value = m
+  focusComposer()
 }
 
-// Inline edit of your own message.
+// Inline edit of your own message: the text plus the ability to drop existing
+// images (toggle) and append new buffered ones - the same "edited" state covers a
+// changed image set as it does changed text.
+interface ExistingEdit {
+  idx: number
+  epoch: number
+  url: string | null
+  removed: boolean
+}
 const editingId = ref<string | null>(null)
 const editDraft = ref('')
+const editTextarea = ref<{ $el?: HTMLElement } | null>(null)
+const editExisting = ref<ExistingEdit[]>([])
+const editAdd = ref<PendingImage[]>([])
+const editAddUrls = ref<string[]>([])
+
+function revokeEditUrls() {
+  for (const e of editExisting.value) if (e.url) URL.revokeObjectURL(e.url)
+  for (const u of editAddUrls.value) URL.revokeObjectURL(u)
+  editAddUrls.value = []
+}
 function startEdit(m: DecryptedMessage) {
+  revokeEditUrls()
   editingId.value = m.id
   editDraft.value = m.text ?? ''
+  editAdd.value = []
+  editExisting.value = m.attachments.map((a) => ({ idx: a.idx, epoch: a.epoch, url: null, removed: false }))
+  // Load each existing image's preview (decrypted locally) for the remove toggles.
+  for (const a of m.attachments) {
+    void chat.loadAttachment(m.id, a.idx, a.epoch).then((bytes) => {
+      if (!bytes || editingId.value !== m.id) return
+      const e = editExisting.value.find((x) => x.idx === a.idx)
+      if (e) e.url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'image/webp' }))
+    })
+  }
+  // Focus the edit field so the user can type right away.
+  nextTick(() => editTextarea.value?.$el?.querySelector('textarea')?.focus())
 }
 function cancelEdit() {
+  revokeEditUrls()
   editingId.value = null
+}
+function toggleRemoveExisting(idx: number) {
+  const e = editExisting.value.find((x) => x.idx === idx)
+  if (e) e.removed = !e.removed
+}
+const editKept = computed(() => editExisting.value.filter((e) => !e.removed).length + editAdd.value.length)
+async function onEditFiles(files: File[]) {
+  for (const file of files) {
+    if (editKept.value >= MAX_IMAGES) break
+    const compressed = await compressToWebp(file)
+    if (!compressed) {
+      imageError.value = true
+      continue
+    }
+    editAdd.value = [...editAdd.value, { bytes: compressed.bytes, byteSize: compressed.byteSize }]
+    editAddUrls.value = [...editAddUrls.value, URL.createObjectURL(new Blob([compressed.bytes as BlobPart], { type: 'image/webp' }))]
+  }
+}
+function removeEditAdd(i: number) {
+  const url = editAddUrls.value[i]
+  if (url) URL.revokeObjectURL(url)
+  editAdd.value = editAdd.value.filter((_, j) => j !== i)
+  editAddUrls.value = editAddUrls.value.filter((_, j) => j !== i)
+}
+const editFileInput = ref<HTMLInputElement | null>(null)
+function onEditFilePicked(e: Event) {
+  const input = e.target as HTMLInputElement
+  void onEditFiles(imageFilesFrom(input.files))
+  input.value = ''
 }
 async function saveEdit() {
   const id = editingId.value
   if (!id) return
   const text = editDraft.value
+  const removeIdxs = editExisting.value.filter((e) => e.removed).map((e) => e.idx)
+  // A message must keep some content: text, a surviving image or a new one.
+  if (!text.trim() && editKept.value === 0) return
+  const addImages = editAdd.value
+  revokeEditUrls()
   editingId.value = null
-  if (text.trim()) await chat.editMessage(id, text)
+  await chat.editMessage(id, text, { addImages, removeIdxs })
 }
 function parentOf(m: DecryptedMessage): DecryptedMessage | undefined {
   return m.parentId ? messages.value.find((x) => x.id === m.parentId) : undefined
@@ -130,49 +227,83 @@ function quoteText(p: DecryptedMessage): string {
 }
 
 const draft = ref('')
-async function submit() {
-  const text = draft.value
-  const parentId = replyTo.value?.id ?? null
-  draft.value = ''
-  replyTo.value = null
-  await chat.send(text, parentId)
+const composer = ref<{ $el?: HTMLElement } | null>(null)
+function focusComposer() {
+  nextTick(() => composer.value?.$el?.querySelector('textarea')?.focus())
 }
 
-// Images: drop, paste or pick. The current draft rides along as the caption and
-// the reply target as the parent; rejected files (wrong type / too big) restore
-// the draft so nothing is lost.
+// Images are buffered before send: each is compressed locally and previewed in a
+// tray; hitting send posts the caption plus every buffered image as one message.
 const acceptImages = ACCEPTED_IMAGE_TYPES.join(',')
 const fileInput = ref<HTMLInputElement | null>(null)
 const dragOver = ref(false)
 const imageError = ref(false)
-async function sendImageFile(file: File) {
-  const caption = draft.value
-  const parentId = replyTo.value?.id ?? null
-  draft.value = ''
-  replyTo.value = null
+const pending = ref<PendingImage[]>([])
+const pendingUrls = ref<string[]>([])
+
+function imageFilesFrom(list: FileList | File[] | null | undefined): File[] {
+  return Array.from(list ?? []).filter((f) => f.type.startsWith('image/'))
+}
+async function addFiles(files: File[]) {
   imageError.value = false
-  const ok = await chat.sendImage(file, caption, parentId)
-  if (!ok) {
-    draft.value = caption
-    imageError.value = true
+  for (const file of files) {
+    if (pending.value.length >= MAX_IMAGES) break
+    const compressed = await compressToWebp(file)
+    if (!compressed) {
+      imageError.value = true
+      continue
+    }
+    pending.value = [...pending.value, { bytes: compressed.bytes, byteSize: compressed.byteSize }]
+    pendingUrls.value = [...pendingUrls.value, URL.createObjectURL(new Blob([compressed.bytes as BlobPart], { type: 'image/webp' }))]
   }
 }
+function removePending(i: number) {
+  const url = pendingUrls.value[i]
+  if (url) URL.revokeObjectURL(url)
+  pending.value = pending.value.filter((_, j) => j !== i)
+  pendingUrls.value = pendingUrls.value.filter((_, j) => j !== i)
+}
+function clearPending() {
+  for (const u of pendingUrls.value) URL.revokeObjectURL(u)
+  pending.value = []
+  pendingUrls.value = []
+}
+
+async function submit() {
+  const text = draft.value
+  const parentId = replyTo.value?.id ?? null
+  const images = pending.value
+  if (!text.trim() && images.length === 0) return
+  draft.value = ''
+  replyTo.value = null
+  const urls = pendingUrls.value
+  pending.value = []
+  pendingUrls.value = []
+  await chat.send(text, { parentId, images })
+  for (const u of urls) URL.revokeObjectURL(u)
+}
+
 function onFilePicked(e: Event) {
   const input = e.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (file) void sendImageFile(file)
+  void addFiles(imageFilesFrom(input.files))
   input.value = ''
 }
 function onDrop(e: DragEvent) {
   dragOver.value = false
-  const file = Array.from(e.dataTransfer?.files ?? []).find((f) => f.type.startsWith('image/'))
-  if (file) void sendImageFile(file)
+  void addFiles(imageFilesFrom(e.dataTransfer?.files))
 }
 function onPaste(e: ClipboardEvent) {
-  const item = Array.from(e.clipboardData?.items ?? []).find((i) => i.type.startsWith('image/'))
-  const file = item?.getAsFile()
-  if (file) void sendImageFile(file)
+  const files = Array.from(e.clipboardData?.items ?? [])
+    .filter((i) => i.type.startsWith('image/'))
+    .map((i) => i.getAsFile())
+    .filter((f): f is File => !!f)
+  if (files.length) void addFiles(files)
 }
+
+onUnmounted(() => {
+  clearPending()
+  revokeEditUrls()
+})
 
 // Enable flow (admins), behind the legal-cover warning.
 const showWarning = ref(false)
@@ -338,6 +469,9 @@ function jumpTo(id: string) {
       <span class="font-semibold">{{ props.matchId ? t('chat.threadTitle') : t('chat.roomTitle') }}</span>
       <span v-tooltip.top="t('chat.e2eeHint')" class="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-full" style="background: var(--ng-star-soft); color: var(--ng-star)">{{ t('chat.e2ee') }}</span>
       <span v-if="changedCount > 0" v-tooltip.top="t('chat.verify.changedWarn')" class="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-full inline-flex items-center gap-1" style="border: 1px solid var(--ng-danger); color: var(--ng-danger)"><i class="pi pi-exclamation-triangle text-[10px]" />{{ t('chat.verify.changed') }}</span>
+      <button v-if="ready" type="button" v-tooltip.top="t('chat.media.button')" class="ml-auto opacity-70 hover:opacity-100 inline-flex items-center" :aria-label="t('chat.media.button')" :disabled="mediaLoading" @click="openMedia">
+        <i class="pi pi-images" />
+      </button>
     </div>
 
     <!-- This device has no key for an existing identity: restore. -->
@@ -424,18 +558,43 @@ function jumpTo(id: string) {
               <span class="ml-1">{{ quoteText(parentOf(m)!) }}</span>
             </button>
             <span v-if="!contentVisible(m)" class="italic" style="color: var(--p-text-muted-color)">{{ m.moderation === 'REMOVED' ? t('chat.moderation.removed') : t('chat.moderation.pendingHidden') }}</span>
-            <!-- Inline edit of your own message. -->
+            <!-- Inline edit of your own message: text plus image add/remove. -->
             <div v-else-if="editingId === m.id" class="flex flex-col gap-1">
-              <Textarea v-model="editDraft" rows="1" autoResize class="w-full" @keydown.enter.exact.prevent="saveEdit" @keydown.esc="cancelEdit" />
+              <Textarea ref="editTextarea" v-model="editDraft" rows="1" autoResize class="w-full" @keydown.enter.exact.prevent="saveEdit" @keydown.esc="cancelEdit" />
+              <div v-if="editExisting.length || editAdd.length" class="flex flex-wrap gap-1.5">
+                <!-- Existing images: tap the x to mark for removal (re-tap to keep). -->
+                <div v-for="e in editExisting" :key="`ex-${e.idx}`" class="relative">
+                  <div v-if="!e.url" class="w-16 h-16 rounded-lg animate-pulse" style="background: color-mix(in srgb, var(--p-text-color) 10%, transparent)" />
+                  <img v-else :src="e.url" :alt="t('chat.image.alt')" class="w-16 h-16 rounded-lg object-cover" :style="e.removed ? 'opacity: 0.35; filter: grayscale(1)' : ''">
+                  <button type="button" class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center shadow" :style="`background: ${e.removed ? 'var(--p-primary-color)' : 'var(--ng-danger)'}; color: #fff`" :aria-label="e.removed ? t('chat.image.keep') : t('chat.image.remove')" @click="toggleRemoveExisting(e.idx)">
+                    <i :class="e.removed ? 'pi pi-undo' : 'pi pi-times'" class="text-[10px]" />
+                  </button>
+                </div>
+                <!-- Newly added images for this edit. -->
+                <div v-for="(url, i) in editAddUrls" :key="`add-${i}`" class="relative">
+                  <img :src="url" :alt="t('chat.image.alt')" class="w-16 h-16 rounded-lg object-cover">
+                  <button type="button" class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center shadow" style="background: var(--ng-danger); color: #fff" :aria-label="t('chat.image.remove')" @click="removeEditAdd(i)">
+                    <i class="pi pi-times text-[10px]" />
+                  </button>
+                </div>
+              </div>
+              <input ref="editFileInput" type="file" :accept="acceptImages" multiple class="hidden" @change="onEditFilePicked">
               <div class="flex items-center gap-3 text-xs">
                 <button type="button" class="underline" style="color: var(--p-primary-color)" @click="saveEdit">{{ t('chat.edit.save') }}</button>
+                <button type="button" class="underline opacity-70 hover:opacity-100" :disabled="editKept >= MAX_IMAGES" @click="editFileInput?.click()">{{ t('chat.image.add') }}</button>
                 <button type="button" class="underline opacity-70 hover:opacity-100" @click="cancelEdit">{{ t('chat.edit.cancel') }}</button>
               </div>
             </div>
             <template v-else>
-              <span v-if="m.text" class="break-words">{{ m.text }}</span>
-              <span v-else-if="m.text === null && !m.hasAttachment" class="italic" style="color: var(--p-text-muted-color)">{{ t('chat.cantDecrypt') }}</span>
-              <ChatImage v-if="m.hasAttachment" :load="() => chat.loadAttachment(m.id)" />
+              <span v-if="m.text" class="whitespace-pre-wrap break-words">{{ m.text }}</span>
+              <span v-else-if="m.text === null && m.attachments.length === 0" class="italic" style="color: var(--p-text-muted-color)">{{ t('chat.cantDecrypt') }}</span>
+              <ChatImage
+                v-if="m.attachments.length"
+                :message-id="m.id"
+                :attachments="m.attachments"
+                :load="chat.loadAttachment"
+                @open="(idx) => openMessageImages(m, idx)"
+              />
             </template>
 
             <!-- Reactions: existing counts plus a picker, mirroring match reactions. -->
@@ -507,11 +666,20 @@ function jumpTo(id: string) {
             <button type="button" class="opacity-70 hover:opacity-100" :aria-label="t('chat.reply.cancel')" @click="replyTo = null"><i class="pi pi-times text-xs" /></button>
           </div>
           <small v-if="imageError" style="color: var(--ng-danger)">{{ t('chat.image.rejected') }}</small>
+          <!-- Buffered images, shown before send; tap the x to drop one. -->
+          <div v-if="pendingUrls.length" class="flex flex-wrap gap-1.5">
+            <div v-for="(url, i) in pendingUrls" :key="i" class="relative">
+              <img :src="url" :alt="t('chat.image.alt')" class="w-16 h-16 rounded-lg object-cover">
+              <button type="button" class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center shadow" style="background: var(--ng-danger); color: #fff" :aria-label="t('chat.image.remove')" @click="removePending(i)">
+                <i class="pi pi-times text-[10px]" />
+              </button>
+            </div>
+          </div>
           <form class="flex items-end gap-2" @submit.prevent="submit">
-            <input ref="fileInput" type="file" :accept="acceptImages" class="hidden" @change="onFilePicked">
-            <Button type="button" icon="pi pi-image" severity="secondary" text :disabled="sending" :aria-label="t('chat.image.attach')" @click="fileInput?.click()" />
-            <Textarea v-model="draft" :placeholder="t('chat.placeholder')" rows="1" autoResize class="flex-1" @keydown.enter.exact.prevent="submit" @paste="onPaste" />
-            <Button type="submit" icon="pi pi-send" :loading="sending" :disabled="!draft.trim()" :aria-label="t('chat.send')" />
+            <input ref="fileInput" type="file" :accept="acceptImages" multiple class="hidden" @change="onFilePicked">
+            <Button type="button" icon="pi pi-image" severity="secondary" text :disabled="sending || pending.length >= MAX_IMAGES" :aria-label="t('chat.image.attach')" @click="fileInput?.click()" />
+            <Textarea ref="composer" v-model="draft" :placeholder="t('chat.placeholder')" rows="1" autoResize class="flex-1" @keydown.enter.exact.prevent="submit" @paste="onPaste" />
+            <Button type="submit" icon="pi pi-send" :loading="sending" :disabled="!draft.trim() && !pending.length" :aria-label="t('chat.send')" />
           </form>
         </div>
 
@@ -620,5 +788,17 @@ function jumpTo(id: string) {
         <Button :label="t('chat.recovery.saved')" @click="showRecovery = false" />
       </template>
     </Dialog>
+
+    <!-- Shared image viewer: cycles a message's images, or the room media gallery. -->
+    <ChatLightbox
+      v-model:visible="lbVisible"
+      v-model:index="lbIndex"
+      :items="lbItems"
+      :messages="messages"
+      :load="chat.loadAttachment"
+      :react="chat.react"
+      :league="leagueName"
+      :match="props.matchLabel"
+    />
   </div>
 </template>

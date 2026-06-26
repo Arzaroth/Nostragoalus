@@ -329,7 +329,7 @@ export async function requestChatRekey(
 
 // --- messages ---
 
-import type { ChatModerationState } from '../../../shared/types/chat'
+import type { ChatAttachmentDTO, ChatModerationState } from '../../../shared/types/chat'
 
 export interface ChatMessageRow {
   id: string
@@ -348,11 +348,6 @@ export interface AttachmentInput {
   byteSize: number
 }
 
-export interface AttachmentRef {
-  idx: number
-  epoch: number
-}
-
 export async function postMessage(
   db: AppDatabase,
   opts: {
@@ -364,7 +359,7 @@ export async function postMessage(
     epoch: number
     images?: AttachmentInput[] | null
   },
-): Promise<ChatMessageRow & { attachments: AttachmentRef[] }> {
+): Promise<ChatMessageRow & { attachments: ChatAttachmentDTO[] }> {
   if (!opts.ciphertext) throw new ValidationError('empty message')
   if (opts.ciphertext.length > MAX_CIPHERTEXT) throw new ValidationError('message too large')
   const images = opts.images ?? []
@@ -439,7 +434,7 @@ export async function postMessage(
     }
     return inserted[0]
   })
-  const attachments: AttachmentRef[] = images.map((_, idx) => ({ idx, epoch: opts.epoch }))
+  const attachments: ChatAttachmentDTO[] = images.map((_, idx) => ({ idx, epoch: opts.epoch }))
   return { ...row, attachments }
 }
 
@@ -458,7 +453,7 @@ export async function editMessage(
     addImages?: AttachmentInput[]
     removeIdxs?: number[]
   },
-): Promise<{ editedAt: Date; attachments: AttachmentRef[] }> {
+): Promise<{ editedAt: Date; attachments: ChatAttachmentDTO[] }> {
   if (!opts.ciphertext) throw new ValidationError('empty message')
   if (opts.ciphertext.length > MAX_CIPHERTEXT) throw new ValidationError('message too large')
   const addImages = opts.addImages ?? []
@@ -509,7 +504,7 @@ export async function editMessage(
     // New images append after the surviving ones, keeping idx stable for the kept
     // images (gaps from a removal are fine - idx is an identity, not a position).
     let nextIdx = survivors.reduce((max, a) => Math.max(max, a.idx), -1) + 1
-    const added: AttachmentRef[] = []
+    const added: ChatAttachmentDTO[] = []
     if (addImages.length > 0) {
       await tx.insert(chatAttachment).values(
         addImages.map((img) => {
