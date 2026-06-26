@@ -181,7 +181,9 @@ watch(scoreTotal, (now) => {
   if (now == null) return
   const prev = lastScoreTotal
   lastScoreTotal = now
-  if (prev != null && now > prev && status.value !== 'FINISHED') {
+  // Don't fire the pixel goal while an embedded live stream is on-screen - the
+  // full-screen overlay would cover the broadcast the user is watching.
+  if (prev != null && now > prev && status.value !== 'FINISHED' && !liveStreamPlaying.value) {
     celebrating.value = true
     clearTimeout(celebrationTimer)
     // Two full 3s animation loops: the old 3.2s cut off mid second-kick, so the
@@ -443,6 +445,13 @@ const mediaKindLabel = (k: MatchMediaKind) => t(`media.${k.toLowerCase()}`)
 // tabs, so the media tabs themselves drop out of the strip.
 const mediaPinned = ref(false)
 const mediaTabKinds = computed(() => (mediaPinned.value ? [] : mediaKinds.value))
+// A live stream counts as "playing" when its embed is actually on-screen: pinned
+// above the tabs, or the LIVE tab is the open one (inactive TabPanels don't
+// render). Used to suppress the full-screen goal overlay so it never buries the
+// broadcast (which is delayed, so the overlay would also spoil the goal early).
+const liveStreamPlaying = computed(
+  () => embedsOf(mediaByKind('LIVE')).length > 0 && (mediaPinned.value || activeTab.value === mediaTabValue('LIVE')),
+)
 function togglePin() {
   mediaPinned.value = !mediaPinned.value
   // Pinning hides the media tab; leave it so the strip doesn't point at a tab
