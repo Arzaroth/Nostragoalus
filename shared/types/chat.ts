@@ -2,6 +2,11 @@ import type { ReactionEmoji, ReactionTotals } from '../reactions'
 
 export type ChatModerationState = 'VISIBLE' | 'PENDING' | 'REMOVED'
 
+// Max plaintext length of a chat message. The server only ever sees ciphertext,
+// so this is a client-enforced limit (the composer blocks a send past it); the
+// 16 KB ciphertext cap in the post route is the server-side backstop.
+export const MAX_MESSAGE_TEXT_LENGTH = 2000
+
 // One encrypted image on a message. idx is its order within the message (stable,
 // gaps allowed after a remove); epoch is the group-key epoch the bytes were sealed
 // under, so the client decrypts each with its own epoch's key. The (messageId,
