@@ -5,6 +5,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- **Filter the world map by crowd lean**: the map's lean legend (Underdog / Even / Favoured, and Eliminated) is now clickable - tap a label to hide that group of flags, tap again to bring them back, just like the fixtures filters.
+
+### Fixed
+- **Teams already out on head-to-head are now greyed on the map**: a team that can at most draw level on points with the side above it but has already lost the decisive head-to-head was still shown as alive. The mid-group elimination check now resolves these ties by head-to-head for the competitions that rank it first (2026 World Cup, Euro 2024), so such teams (e.g. a side sitting fourth behind a head-to-head it lost) grey out correctly. It stays cautious where only goal difference could decide, so nothing is greyed by mistake.
+
 ## [1.40.0] - 2026-06-26
 
 ### Added
