@@ -78,6 +78,30 @@ describe('buildFeedCalendar', () => {
     expect(out).not.toContain('locks at kickoff')
   })
 
+  it('treats a half-populated score as not finished (no scoreline shown)', () => {
+    const out = unfold(
+      build([base({ status: 'FINISHED', kickoffTime: new Date('2026-06-20T18:00:00Z'), fullTimeHome: 1, fullTimeAway: null })]),
+    )
+    expect(out).toContain('SUMMARY:France - Brazil')
+  })
+
+  it('omits penalties when only one side has a shootout score', () => {
+    const out = unfold(
+      build([
+        base({
+          status: 'FINISHED',
+          kickoffTime: new Date('2026-06-20T18:00:00Z'),
+          fullTimeHome: 1,
+          fullTimeAway: 1,
+          penaltiesHome: 4,
+          penaltiesAway: null,
+        }),
+      ]),
+    )
+    expect(out).toContain('SUMMARY:France 1-1 Brazil')
+    expect(out).not.toContain('pens')
+  })
+
   it('does not alarm a fixture whose kickoff is already in the past even if SCHEDULED', () => {
     const out = unfold(build([base({ kickoffTime: new Date('2026-06-25T18:00:00Z') })]))
     expect(out).not.toContain('BEGIN:VALARM')

@@ -30,7 +30,8 @@ export async function getFeedMatches(db: AppDatabase, userId: string, now: Date)
     .innerJoin(round, eq(match.roundId, round.id))
     .innerJoin(competition, eq(match.competitionId, competition.id))
     .where(and(eq(competition.isActive, true), gte(match.kickoffTime, cutoff)))
-    .orderBy(asc(match.kickoffTime))
+    // id as a stable secondary key so same-kickoff fixtures order deterministically.
+    .orderBy(asc(match.kickoffTime), asc(match.id))
 
   if (rows.length === 0) return []
 

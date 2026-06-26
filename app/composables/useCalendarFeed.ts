@@ -27,9 +27,23 @@ export function useCalendarFeed() {
   async function copy() {
     const url = data.value?.url
     if (!url || typeof navigator === 'undefined' || !navigator.clipboard) return
-    await navigator.clipboard.writeText(url)
-    toast.add({ severity: 'success', summary: t('feed.copied'), life: 2500 })
+    try {
+      await navigator.clipboard.writeText(url)
+      toast.add({ severity: 'success', summary: t('feed.copied'), life: 2500 })
+    } catch {
+      toast.add({ severity: 'error', summary: t('feed.failed'), life: 3000 })
+    }
   }
+
+  // The token is locale-specific (its event text is rendered in that language);
+  // switching language while the link is revealed re-mints it so the shown/copied
+  // URL matches the current locale instead of keeping the stale one.
+  watch(locale, () => {
+    if (data.value) {
+      data.value = null
+      void load()
+    }
+  })
 
   return { data, busy, load, copy }
 }

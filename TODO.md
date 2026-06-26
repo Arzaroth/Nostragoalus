@@ -3,6 +3,23 @@
 Deferred work, queued behind feature development.
 Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
+## Calendar feed (deferred from the feature-treatment review)
+
+- [ ] `server/utils/feed/token.ts` is a near-verbatim clone of
+      `server/utils/share/token.ts` (b64url, sign-body/sign-token, the
+      `MAX_TOKEN_LENGTH = 512` cap and the whole timing-safe verify path); only
+      the domain string and payload shape differ, and feed already imports
+      `SHARE_LOCALES` from share. Extract one shared signed-token codec so a
+      future hardening of the verify path can't land on one keyless public route
+      and miss the other.
+- [ ] `FeedMatch.kickoffTime` is typed `Date | string` but every caller passes a
+      Date (drizzle `timestamp` mode). A timezone-naive string would be parsed as
+      local time by `new Date()` and shift the emitted UTC instant. Narrow to
+      `Date`, or normalise on input, if a string source ever appears.
+- [ ] The feed token is stateless, so it can only be revoked by rotating the app
+      secret (which invalidates every user's link at once). If per-user feed
+      revocation is ever wanted, fold a per-user salt/version into the payload.
+
 ## Match status: interrupted (deferred from the feature pass)
 
 - No auto-void safety net for a match stuck `INTERRUPTED` that never resolves.
