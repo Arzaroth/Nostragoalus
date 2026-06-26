@@ -51,6 +51,20 @@ const DATA_CENTRE_URL = 'https://inside.fifa.com/api/data-centre/matches'
 const nameOf = (name: { description?: string }[] | null | undefined, code: string | null | undefined) =>
   name?.[0]?.description ?? code ?? '?'
 
+// FIFA's matchDate is the venue's LOCAL calendar day, while the cutoff is a UTC
+// instant from the viewed match's kickoff - the two can sit a day apart (a US
+// evening kickoff is already the next UTC day). Step the cutoff back one day so
+// the viewed match (and anything later) is always excluded from its own
+// history; two senior internationals are never a single day apart, so no
+// genuine earlier meeting is lost. The '9999' sentinel (no cutoff) passes
+// through untouched.
+function cutoffDay(before: string): string {
+  if (before.length < 10) return before
+  const d = new Date(`${before.slice(0, 10)}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() - 1)
+  return d.toISOString().slice(0, 10)
+}
+
 // A row of a match that was actually played (both scores present). The type
 // guard narrows so the decode helpers never need a `?? 0` on the scores.
 type PlayedRow = DataCentreRow & { teamAScore: number; teamBScore: number }
@@ -132,9 +146,9 @@ export async function getTeamRecentResults(
     const ids = await teamIdMap(fetchImpl, now)
     const teamId = ids.get(code)
     if (!teamId) return null
-    // matchDate is a calendar day (YYYY-MM-DD); compare against the day of the
-    // cutoff so a same-day match (the one being viewed) is never counted.
-    const day = before.slice(0, 10)
+    // matchDate is a local calendar day; the cutoff steps back a day so the
+    // viewed match (which can sit on either side of its UTC day) is never counted.
+    const day = cutoffDay(before)
     const rows = (await teamCalendar(teamId, fetchImpl, now))
       .filter(isPlayed)
       .filter((m) => (m.matchDate ?? '') < day)
@@ -205,9 +219,9 @@ export async function getAllTimeHeadToHead(
     const perspective = ids.get(codeA) ? codeA : codeB
     if (teamId) {
       const opponent = perspective === codeA ? codeB : codeA
-      // matchDate is a calendar day; compare against the cutoff's day so the
-      // viewed match (same day) never shows up in its own history.
-      const day = before.slice(0, 10)
+      // matchDate is a local calendar day; the cutoff steps back a day so the
+      // viewed match never shows up in its own history (see cutoffDay).
+      const day = cutoffDay(before)
       const rows = (await teamCalendar(teamId, fetchImpl, now))
         .filter(isPlayed)
         .filter(
