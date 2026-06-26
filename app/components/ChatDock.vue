@@ -49,7 +49,7 @@ const scopedMatchId = computed<string | null>(() => (scope.value === 'match' ? m
     <div
       v-show="enabled && !collapsed"
       class="ng-card rounded-2xl border shadow-2xl flex flex-col overflow-hidden"
-      :style="`width: ${expanded ? 'min(42rem, 92vw)' : '22rem'}; max-width: 92vw; background: var(--p-content-background); border-color: var(--p-content-border-color)`"
+      :style="`width: ${expanded ? 'min(48rem, 94vw)' : '22rem'}; max-width: 94vw; background: var(--p-content-background); border-color: var(--p-content-border-color)`"
     >
       <div
         class="flex items-center gap-2 px-3 py-2 border-b"
@@ -93,7 +93,7 @@ const scopedMatchId = computed<string | null>(() => (scope.value === 'match' ? m
       </div>
 
       <div class="p-3">
-        <ChatPanel :league-id="leagueId" :match-id="scopedMatchId" flat @update:enabled="enabled = $event" />
+        <ChatPanel :league-id="leagueId" :match-id="scopedMatchId" flat :tall="expanded" @update:enabled="enabled = $event" />
       </div>
     </div>
   </div>

@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, ne, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { chatMessage, chatMessageReport, leagueMember } from '../../../db/schema'
 import { ForbiddenError, NotFoundError, ValidationError } from '../errors'
@@ -58,6 +58,27 @@ export async function reportMessage(
     state = 'PENDING'
   }
   return { state, reports }
+}
+
+// Withdraw the caller's own report. Never changes the moderation state - a message
+// already pushed to PENDING stays there until a moderator rules, so a coordinated
+// un-report cannot quietly un-hide it.
+export async function unreportMessage(
+  db: AppDatabase,
+  opts: { leagueId: string; messageId: string; userId: string },
+): Promise<{ state: ChatModerationState; reports: number }> {
+  const rows = await db
+    .select({ leagueId: chatMessage.leagueId, state: chatMessage.moderationState })
+    .from(chatMessage)
+    .where(eq(chatMessage.id, opts.messageId))
+    .limit(1)
+  if (!rows[0] || rows[0].leagueId !== opts.leagueId) throw new NotFoundError('message not found')
+  const membership = await getMembership(db, opts.leagueId, opts.userId)
+  if (!membership) throw new ForbiddenError('not a league member')
+  await db
+    .delete(chatMessageReport)
+    .where(and(eq(chatMessageReport.messageId, opts.messageId), eq(chatMessageReport.reporterId, opts.userId)))
+  return { state: rows[0].state as ChatModerationState, reports: await reportCount(db, opts.messageId) }
 }
 
 // Owner/moderator rules on a message: 'remove' tombstones it (content gone for
@@ -120,7 +141,8 @@ export async function listReports(
     })
     .from(chatMessage)
     .innerJoin(chatMessageReport, eq(chatMessageReport.messageId, chatMessage.id))
-    .where(eq(chatMessage.leagueId, opts.leagueId))
+    // A removed message is already dealt with - drop it from the queue.
+    .where(and(eq(chatMessage.leagueId, opts.leagueId), ne(chatMessage.moderationState, 'REMOVED')))
     .groupBy(chatMessage.id)
     .orderBy(desc(sql`count(${chatMessageReport.id})`), desc(chatMessage.createdAt))
   return rows.map((r) => ({ ...r, moderationState: r.moderationState as ChatModerationState }))
