@@ -42,6 +42,7 @@
     "enable": "Enable chat",
     "disable": "Turn chat off",
     "send": "Send",
+    "copyText": "Copy text",
     "placeholder": "Write a message",
     "loading": "Loading messages...",
     "settingUp": "Setting up your key...",

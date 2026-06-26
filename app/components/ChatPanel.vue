@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { REACTION_EMOJIS, type ReactionEmoji } from '#shared/reactions'
 import { ACCEPTED_IMAGE_TYPES, compressToWebp } from '~/composables/useChatImage'
+import { linkify } from '~/utils/linkify'
 import type { DecryptedMessage, PendingImage } from '~/composables/useLeagueChat'
 // End-to-end encrypted league chat. The league-global room (matchId null) or a
 // per-match thread. All crypto is client-side; the server only relays ciphertext.
@@ -97,7 +98,27 @@ function nameFor(uid: string | null): string {
   if (!uid) return t('chat.unknownUser')
   return names.value[uid] ?? t('chat.unknownUser')
 }
+const avatars = computed<Record<string, string | null>>(() => {
+  const map: Record<string, string | null> = {}
+  for (const m of detail.data.value?.members ?? []) map[m.userId] = m.image
+  return map
+})
+function avatarFor(uid: string | null): string | null {
+  return uid ? avatars.value[uid] ?? null : null
+}
 const leagueName = computed(() => detail.data.value?.league.name ?? '')
+
+// Copy a message's text to the clipboard (the text component only, not images).
+function copyText(m: DecryptedMessage) {
+  if (m.text) void navigator.clipboard?.writeText(m.text).catch(() => {})
+}
+// A subtle SMS-style bubble: your own messages tinted with the brand colour, the
+// rest neutral, so consecutive posts read as distinct.
+function bubbleStyle(m: DecryptedMessage): string {
+  return m.userId === meId.value
+    ? 'background: color-mix(in srgb, var(--p-primary-color) 16%, var(--p-content-background)); border: 1px solid color-mix(in srgb, var(--p-primary-color) 30%, transparent)'
+    : 'background: color-mix(in srgb, var(--p-text-color) 6%, var(--p-content-background)); border: 1px solid var(--p-content-border-color)'
+}
 
 // Shared image lightbox: a list of {messageId, idx, epoch} plus an index. Opened
 // from a message's thumbnails (that message's images) or from the media gallery
@@ -523,6 +544,7 @@ function jumpTo(id: string) {
             :style="flashId === m.id ? 'background: color-mix(in srgb, var(--p-primary-color) 18%, transparent)' : ''"
           >
             <div class="flex items-center gap-2">
+              <UserAvatar :image="avatarFor(m.userId)" style="width: 1.35rem; height: 1.35rem; font-size: 0.7rem" />
               <span class="font-semibold" :style="m.userId === meId ? 'color: var(--p-primary-color)' : ''">{{ nameFor(m.userId) }}</span>
               <span class="text-[10px]" style="color: var(--p-text-muted-color)">{{ fmtTime(m.createdAt) }}</span>
               <span v-if="m.editedAt" v-tooltip.bottom="t('chat.edit.at', { time: fmtTime(m.editedAt) })" class="text-[10px] italic" style="color: var(--p-text-muted-color)">{{ t('chat.edit.edited') }}</span>
@@ -530,6 +552,26 @@ function jumpTo(id: string) {
               <!-- Per-message actions, icon-only, revealed on hover. -->
               <span v-if="m.moderation !== 'REMOVED'" class="ml-auto flex items-center gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                 <button type="button" v-tooltip.bottom="t('chat.reply.button')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.reply.button')" @click="startReply(m)"><i class="pi pi-reply text-xs" /></button>
+                <span v-if="contentVisible(m)" class="relative inline-flex">
+                  <button type="button" v-tooltip.bottom="t('chat.react.add')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.react.add')" @click="pickerFor = pickerFor === m.id ? null : m.id"><i class="pi pi-face-smile text-xs" /></button>
+                  <div
+                    v-if="pickerFor === m.id"
+                    class="absolute top-6 right-0 z-20 flex items-center gap-1 p-1 rounded-full border shadow-lg"
+                    style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
+                  >
+                    <button
+                      v-for="e in REACTION_EMOJIS"
+                      :key="e"
+                      type="button"
+                      :aria-label="t(`reactions.label.${e}`)"
+                      class="inline-flex items-center justify-center w-7 h-7 rounded-full hover:scale-110 transition-transform"
+                      @click="reactWith(m.id, e)"
+                    >
+                      <ReactionGlyph :emoji="e" />
+                    </button>
+                  </div>
+                </span>
+                <button v-if="m.text" type="button" v-tooltip.bottom="t('chat.copyText')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.copyText')" @click="copyText(m)"><i class="pi pi-copy text-xs" /></button>
                 <button v-if="m.userId === meId && m.moderation === 'VISIBLE'" type="button" v-tooltip.bottom="t('chat.edit.button')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.edit.button')" @click="startEdit(m)"><i class="pi pi-pencil text-xs" /></button>
                 <button v-if="m.userId && m.userId !== meId" type="button" v-tooltip.bottom="t('chat.mute')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.mute')" @click="chat.toggleMute(m.userId)"><i class="pi pi-volume-off text-xs" /></button>
                 <button
@@ -586,7 +628,8 @@ function jumpTo(id: string) {
               </div>
             </div>
             <template v-else>
-              <span v-if="m.text" class="whitespace-pre-wrap break-words">{{ m.text }}</span>
+              <!-- eslint-disable-next-line vue/no-v-html - linkify() escapes the text and only emits http(s) anchors -->
+              <div v-if="m.text" class="self-start inline-block rounded-2xl px-3 py-1.5 max-w-full whitespace-pre-wrap break-words" :style="bubbleStyle(m)" v-html="linkify(m.text)" />
               <span v-else-if="m.text === null && m.attachments.length === 0" class="italic" style="color: var(--p-text-muted-color)">{{ t('chat.cantDecrypt') }}</span>
               <ChatImage
                 v-if="m.attachments.length"
@@ -597,8 +640,8 @@ function jumpTo(id: string) {
               />
             </template>
 
-            <!-- Reactions: existing counts plus a picker, mirroring match reactions. -->
-            <div v-if="contentVisible(m)" class="flex flex-wrap items-center gap-1 mt-0.5">
+            <!-- Reaction counts (the add-reaction picker lives in the action row). -->
+            <div v-if="contentVisible(m) && emojisWithCount(m.reactions).length" class="flex flex-wrap items-center gap-1 mt-0.5">
               <button
                 v-for="e in emojisWithCount(m.reactions)"
                 :key="e"
@@ -614,32 +657,6 @@ function jumpTo(id: string) {
                 <ReactionGlyph :emoji="e" />
                 <span>{{ m.reactions[e] }}</span>
               </button>
-              <div class="relative inline-flex">
-                <button
-                  type="button"
-                  class="inline-flex items-center justify-center w-6 h-6 rounded-full opacity-50 hover:opacity-100"
-                  :aria-label="t('chat.react.add')"
-                  @click="pickerFor = pickerFor === m.id ? null : m.id"
-                >
-                  <i class="pi pi-face-smile text-xs" />
-                </button>
-                <div
-                  v-if="pickerFor === m.id"
-                  class="absolute bottom-7 left-0 z-10 flex items-center gap-1 p-1 rounded-full border shadow-lg"
-                  style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
-                >
-                  <button
-                    v-for="e in REACTION_EMOJIS"
-                    :key="e"
-                    type="button"
-                    :aria-label="t(`reactions.label.${e}`)"
-                    class="inline-flex items-center justify-center w-7 h-7 rounded-full hover:scale-110 transition-transform"
-                    @click="reactWith(m.id, e)"
-                  >
-                    <ReactionGlyph :emoji="e" />
-                  </button>
-                </div>
-              </div>
             </div>
           </div>
         </div>
