@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { REACTION_EMOJIS, type ReactionEmoji } from '#shared/reactions'
+import { MAX_MESSAGE_TEXT_LENGTH } from '#shared/types/chat'
 import { ACCEPTED_IMAGE_TYPES, compressToWebp } from '~/composables/useChatImage'
 import { linkify } from '~/utils/linkify'
 import type { DecryptedMessage, PendingImage } from '~/composables/useLeagueChat'
@@ -218,6 +219,32 @@ function cancelEdit() {
   revokeEditUrls()
   editingId.value = null
 }
+// Up-arrow editing, like a terminal history: from the empty composer, jump
+// straight into editing your most recent message; while editing, walk back to
+// the previous one (and off the top, close the editor). Only your own still-
+// visible messages are editable, so those are what we step through.
+function myEditable(): DecryptedMessage[] {
+  return messages.value.filter((m) => m.userId === meId.value && m.moderation === 'VISIBLE')
+}
+function onComposerUp(e: KeyboardEvent) {
+  if (draft.value) return // typing: let the caret move through the draft
+  const list = myEditable()
+  const last = list[list.length - 1]
+  if (!last) return
+  e.preventDefault()
+  startEdit(last)
+}
+function onEditUp(e: KeyboardEvent) {
+  const ta = e.target as HTMLTextAreaElement
+  // Only hijack Up at the very start of the field, so multi-line editing still
+  // navigates within the text.
+  if (ta.selectionStart !== 0 || ta.selectionEnd !== 0) return
+  const list = myEditable()
+  const i = list.findIndex((m) => m.id === editingId.value)
+  e.preventDefault()
+  if (i > 0) startEdit(list[i - 1])
+  else cancelEdit()
+}
 function toggleRemoveExisting(idx: number) {
   const e = editExisting.value.find((x) => x.idx === idx)
   if (e) e.removed = !e.removed
@@ -254,6 +281,7 @@ async function saveEdit() {
   const removeIdxs = editExisting.value.filter((e) => e.removed).map((e) => e.idx)
   // A message must keep some content: text, a surviving image or a new one.
   if (!text.trim() && editKept.value === 0) return
+  if (editOverLimit.value) return
   const addImages = editAdd.value
   revokeEditUrls()
   editingId.value = null
@@ -270,6 +298,10 @@ function quoteText(p: DecryptedMessage): string {
 }
 
 const draft = ref('')
+// Plaintext length cap, enforced client-side (the server only sees ciphertext):
+// past it the composer/edit blocks the send and the counter turns red.
+const overLimit = computed(() => draft.value.length > MAX_MESSAGE_TEXT_LENGTH)
+const editOverLimit = computed(() => editDraft.value.length > MAX_MESSAGE_TEXT_LENGTH)
 const composer = ref<{ $el?: HTMLElement } | null>(null)
 function focusComposer() {
   // A PrimeVue Textarea's $el is the <textarea> itself (no nested one).
@@ -322,6 +354,7 @@ async function submit() {
   const parentId = replyTo.value?.id ?? null
   const images = pending.value
   if (!text.trim() && images.length === 0) return
+  if (overLimit.value) return
   draft.value = ''
   replyTo.value = null
   const urls = pendingUrls.value
@@ -659,7 +692,7 @@ function jumpTo(id: string) {
             class="group text-sm flex flex-col rounded transition-colors min-w-0"
             :style="flashId === m.id ? 'background: color-mix(in srgb, var(--p-primary-color) 18%, transparent)' : ''"
           >
-            <div class="flex items-center gap-2 mb-0.5">
+            <div class="flex items-center gap-2 mb-0.5" :class="m.userId === meId ? 'flex-row-reverse' : ''">
               <NuxtLink
                 v-if="profileLink(m.userId)"
                 :to="profileLink(m.userId)!"
@@ -718,6 +751,7 @@ function jumpTo(id: string) {
               v-if="parentOf(m)"
               type="button"
               class="text-left text-xs rounded px-2 py-1 mb-0.5 border-l-2 opacity-80 hover:opacity-100 max-w-full overflow-hidden"
+              :class="m.userId === meId ? 'self-end' : 'self-start'"
               style="border-color: var(--p-primary-color); background: color-mix(in srgb, var(--p-text-color) 5%, transparent)"
               @click="jumpTo(m.parentId!)"
             >
@@ -728,7 +762,7 @@ function jumpTo(id: string) {
             <span v-if="!contentVisible(m)" class="italic" style="color: var(--p-text-muted-color)">{{ m.moderation === 'REMOVED' ? t('chat.moderation.removed') : t('chat.moderation.pendingHidden') }}</span>
             <!-- Inline edit of your own message: text plus image add/remove. -->
             <div v-else-if="editingId === m.id" class="flex flex-col gap-1">
-              <Textarea v-model="editDraft" rows="1" autoResize class="w-full" @keydown.enter.exact.prevent="saveEdit" @keydown.esc="cancelEdit" />
+              <Textarea v-model="editDraft" rows="1" autoResize class="w-full" @keydown.enter.exact.prevent="saveEdit" @keydown.esc="cancelEdit" @keydown.up="onEditUp" />
               <div v-if="editExisting.length || editAdd.length" class="flex flex-wrap gap-1.5">
                 <!-- Existing images: tap the x to mark for removal (re-tap to keep). -->
                 <div v-for="e in editExisting" :key="`ex-${e.idx}`" class="relative">
@@ -747,17 +781,19 @@ function jumpTo(id: string) {
                 </div>
               </div>
               <div class="flex items-center gap-3 text-xs">
-                <button type="button" class="underline" style="color: var(--p-primary-color)" @click="saveEdit">{{ t('chat.edit.save') }}</button>
+                <button type="button" class="underline disabled:opacity-40 disabled:no-underline" style="color: var(--p-primary-color)" :disabled="editOverLimit" @click="saveEdit">{{ t('chat.edit.save') }}</button>
                 <button type="button" class="underline opacity-70 hover:opacity-100" :disabled="editKept >= MAX_IMAGES" @click="editFileInput?.click()">{{ t('chat.image.add') }}</button>
                 <button type="button" class="underline opacity-70 hover:opacity-100" @click="cancelEdit">{{ t('chat.edit.cancel') }}</button>
+                <span v-if="editDraft.length > MAX_MESSAGE_TEXT_LENGTH - 200" class="ml-auto tabular-nums" :style="editOverLimit ? 'color: var(--ng-danger)' : 'color: var(--p-text-muted-color)'">{{ t('chat.limit.counter', { n: editDraft.length, max: MAX_MESSAGE_TEXT_LENGTH }) }}</span>
               </div>
             </div>
             <template v-else>
               <!-- eslint-disable-next-line vue/no-v-html - linkify() escapes the text and only emits http(s) anchors -->
-              <div v-if="m.text" class="self-start inline-block rounded-2xl px-3 py-1.5 mt-0.5 max-w-full whitespace-pre-wrap break-words" :style="bubbleStyle(m)" v-html="linkify(m.text)" />
-              <span v-else-if="m.text === null && m.attachments.length === 0" class="italic" style="color: var(--p-text-muted-color)">{{ t('chat.cantDecrypt') }}</span>
+              <div v-if="m.text" class="inline-block rounded-2xl px-3 py-1.5 mt-0.5 max-w-full whitespace-pre-wrap break-words" :class="m.userId === meId ? 'self-end' : 'self-start'" :style="bubbleStyle(m)" v-html="linkify(m.text)" />
+              <span v-else-if="m.text === null && m.attachments.length === 0" class="italic" :class="m.userId === meId ? 'self-end' : 'self-start'" style="color: var(--p-text-muted-color)">{{ t('chat.cantDecrypt') }}</span>
               <ChatImage
                 v-if="m.attachments.length"
+                :class="m.userId === meId ? 'self-end' : 'self-start'"
                 :message-id="m.id"
                 :attachments="m.attachments"
                 :load="chat.loadAttachment"
@@ -766,7 +802,7 @@ function jumpTo(id: string) {
             </template>
 
             <!-- Reaction counts (the add-reaction picker lives in the action row). -->
-            <div v-if="contentVisible(m) && emojisWithCount(m.reactions).length" class="flex flex-wrap items-center gap-1 mt-0.5">
+            <div v-if="contentVisible(m) && emojisWithCount(m.reactions).length" class="flex flex-wrap items-center gap-1 mt-0.5" :class="m.userId === meId ? 'self-end' : ''">
               <button
                 v-for="e in emojisWithCount(m.reactions)"
                 :key="e"
@@ -809,6 +845,11 @@ function jumpTo(id: string) {
           </div>
           <small v-if="typingText" class="italic h-4" style="color: var(--p-text-muted-color)">{{ typingText }}</small>
           <small v-if="imageError" style="color: var(--ng-danger)">{{ t('chat.image.rejected') }}</small>
+          <!-- Length cap: warn as it nears the limit, block the send past it. -->
+          <div v-if="draft.length > MAX_MESSAGE_TEXT_LENGTH - 200" class="flex items-center gap-2">
+            <small v-if="overLimit" class="flex-1" style="color: var(--ng-danger)">{{ t('chat.limit.tooLong', { max: MAX_MESSAGE_TEXT_LENGTH }) }}</small>
+            <small class="ml-auto tabular-nums" :style="overLimit ? 'color: var(--ng-danger)' : 'color: var(--p-text-muted-color)'">{{ t('chat.limit.counter', { n: draft.length, max: MAX_MESSAGE_TEXT_LENGTH }) }}</small>
+          </div>
           <!-- Buffered images, shown before send; tap the x to drop one. -->
           <div v-if="pendingUrls.length" class="flex flex-wrap gap-1.5">
             <div v-for="(url, i) in pendingUrls" :key="i" class="relative">
@@ -824,8 +865,8 @@ function jumpTo(id: string) {
           <form class="flex items-end gap-2" @submit.prevent="submit">
             <input ref="fileInput" type="file" :accept="acceptImages" multiple class="hidden" @change="onFilePicked">
             <Button type="button" icon="pi pi-image" severity="secondary" text :disabled="sending || pending.length >= MAX_IMAGES" :aria-label="t('chat.image.attach')" @click="fileInput?.click()" />
-            <Textarea ref="composer" v-model="draft" :placeholder="t('chat.placeholder')" rows="1" autoResize class="flex-1" @keydown.enter.exact.prevent="submit" @input="chat.sendTyping()" @paste="onPaste" />
-            <Button type="submit" icon="pi pi-send" :loading="sending" :disabled="!draft.trim() && !pending.length" :aria-label="t('chat.send')" />
+            <Textarea ref="composer" v-model="draft" :placeholder="t('chat.placeholder')" rows="1" autoResize class="flex-1" @keydown.enter.exact.prevent="submit" @keydown.up="onComposerUp" @input="chat.sendTyping()" @paste="onPaste" />
+            <Button type="submit" icon="pi pi-send" :loading="sending" :disabled="(!draft.trim() && !pending.length) || overLimit" v-tooltip.top="overLimit ? t('chat.limit.tooLong', { max: MAX_MESSAGE_TEXT_LENGTH }) : ''" :aria-label="t('chat.send')" />
           </form>
         </div>
 

@@ -104,8 +104,20 @@
       "changed": "choHlu'",
       "acknowledge": "chu' yIlaj",
       "changedWarn": "ghot ngaQHa'moHwI' choHlu'. yInub.",
-      "empty": "latlh ghot ngaQHa'moHwI' tu'lu'be'."
-    }
+      "empty": "latlh ghot ngaQHa'moHwI' tu'lu'be'.",
+      "title": "ngaQHa'moHwI' yInub",
+      "done": "rIn"
+    },
+    "limit": { "counter": "{n}/{max}", "tooLong": "QInDaq {max} mu'wIj neH." },
+    "emoji": {
+      "button": "qabHom",
+      "search": "qabHom yISam",
+      "none": "qabHom tu'be'",
+      "cat": { "smileys": "monmey", "people": "nuvpu'", "animals": "Ha'DIbaHmey", "food": "Soj", "activities": "Qu'mey", "travel": "Daqmey", "objects": "Dochmey", "symbols": "degh", "flags": "joqwI'mey" }
+    },
+    "mention": { "title": "ghot yIpong", "unread": "{n} pong laDbe'lu'", "unreadOne": "wa' pong laDbe'lu'" },
+    "embed": { "hideImage": "mIllogh yISo'", "showImage": "mIllogh yI'ang", "preview": "rar nuD", "hidePreview": "nuD yISo'", "showPreview": "nuD yI'ang" },
+    "thread": { "count": "{n} jangmey", "one": "wa' jang", "reply": "ghantoHDaq yIjang", "collapse": "jangmey yISo'", "placeholder": "ghantoHDaq yIjang", "empty": "jang tu'be'." }
   },
   "nav": {
     "matches": "may'mey",

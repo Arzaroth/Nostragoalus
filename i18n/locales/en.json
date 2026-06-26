@@ -104,8 +104,20 @@
       "changed": "Key changed",
       "acknowledge": "Accept new key",
       "changedWarn": "A member's key changed since you last saw it - verify it before you trust the chat.",
-      "empty": "No other members have a key on this device yet."
-    }
+      "empty": "No other members have a key on this device yet.",
+      "title": "Verify keys",
+      "done": "Done"
+    },
+    "limit": { "counter": "{n}/{max}", "tooLong": "Messages are limited to {max} characters." },
+    "emoji": {
+      "button": "Emoji",
+      "search": "Search emoji",
+      "none": "No emoji found",
+      "cat": { "smileys": "Smileys", "people": "People", "animals": "Animals & nature", "food": "Food & drink", "activities": "Activities", "travel": "Travel & places", "objects": "Objects", "symbols": "Symbols", "flags": "Flags" }
+    },
+    "mention": { "title": "Mention someone", "unread": "{n} unread mentions", "unreadOne": "1 unread mention" },
+    "embed": { "hideImage": "Hide image", "showImage": "Show image", "preview": "Link preview", "hidePreview": "Hide preview", "showPreview": "Show preview" },
+    "thread": { "count": "{n} replies", "one": "1 reply", "reply": "Reply in thread", "collapse": "Hide replies", "placeholder": "Reply to thread", "empty": "No replies yet." }
   },
   "nav": {
     "matches": "Matches",

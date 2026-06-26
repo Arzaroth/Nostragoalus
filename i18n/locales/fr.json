@@ -104,8 +104,20 @@
       "changed": "Clé modifiée",
       "acknowledge": "Accepter la nouvelle clé",
       "changedWarn": "La clé d'un membre a changé depuis la dernière fois - vérifiez-la avant de faire confiance au chat.",
-      "empty": "Aucun autre membre n'a encore de clé sur cet appareil."
-    }
+      "empty": "Aucun autre membre n'a encore de clé sur cet appareil.",
+      "title": "Vérifier les clés",
+      "done": "Terminé"
+    },
+    "limit": { "counter": "{n}/{max}", "tooLong": "Les messages sont limités à {max} caractères." },
+    "emoji": {
+      "button": "Emoji",
+      "search": "Rechercher un emoji",
+      "none": "Aucun emoji trouvé",
+      "cat": { "smileys": "Smileys", "people": "Personnes", "animals": "Animaux et nature", "food": "Nourriture et boissons", "activities": "Activités", "travel": "Voyage et lieux", "objects": "Objets", "symbols": "Symboles", "flags": "Drapeaux" }
+    },
+    "mention": { "title": "Mentionner quelqu'un", "unread": "{n} mentions non lues", "unreadOne": "1 mention non lue" },
+    "embed": { "hideImage": "Masquer l'image", "showImage": "Afficher l'image", "preview": "Aperçu du lien", "hidePreview": "Masquer l'aperçu", "showPreview": "Afficher l'aperçu" },
+    "thread": { "count": "{n} réponses", "one": "1 réponse", "reply": "Répondre dans le fil", "collapse": "Masquer les réponses", "placeholder": "Répondre au fil", "empty": "Aucune réponse pour l'instant." }
   },
   "nav": {
     "matches": "Matchs",
