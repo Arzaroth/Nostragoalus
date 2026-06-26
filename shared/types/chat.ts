@@ -51,6 +51,9 @@ export interface ChatMessageDTO {
   reported: boolean
   reactions: ReactionTotals
   myReaction: ReactionEmoji | null
+  // Number of replies in this message's thread (top-level messages only; a reply
+  // itself reports 0). Replies live in the thread, not the main list.
+  replyCount: number
 }
 
 // One image in a room's media gallery: which message it belongs to plus its

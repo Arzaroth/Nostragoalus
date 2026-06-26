@@ -165,12 +165,24 @@ async function openMedia() {
   }
 }
 
-// Reply: the message being answered. Its decrypted text is quoted above the
-// composer and a compact preview is shown over the sent reply.
-const replyTo = ref<DecryptedMessage | null>(null)
-function startReply(m: DecryptedMessage) {
-  replyTo.value = m
-  focusComposer()
+// Threads: replies live in a message's thread, not the main list. Opening a
+// thread loads its replies and reveals an inline reply composer under the message.
+const { threadParentId, threadMessages, threadLoading } = chat
+const threadDraft = ref('')
+const threadOverLimit = computed(() => threadDraft.value.length > MAX_MESSAGE_TEXT_LENGTH)
+function openThreadFor(m: DecryptedMessage) {
+  void chat.openThread(m.id)
+  nextTick(() => {
+    const ta = listEl.value?.querySelector(`[data-thread="${m.id}"] textarea`) as HTMLTextAreaElement | null
+    ta?.focus()
+  })
+}
+async function submitThreadReply() {
+  const parentId = threadParentId.value
+  const text = threadDraft.value
+  if (!parentId || !text.trim() || threadOverLimit.value) return
+  threadDraft.value = ''
+  await chat.send(text, { parentId, mentions: extractMentions(text) })
 }
 
 // Inline edit of your own message: the text plus the ability to drop existing
@@ -287,15 +299,6 @@ async function saveEdit() {
   editingId.value = null
   await chat.editMessage(id, text, { addImages, removeIdxs })
 }
-function parentOf(m: DecryptedMessage): DecryptedMessage | undefined {
-  return m.parentId ? messages.value.find((x) => x.id === m.parentId) : undefined
-}
-// Quote text for a parent: a removed parent reads "message removed", not the
-// generic can't-decrypt placeholder.
-function quoteText(p: DecryptedMessage): string {
-  if (p.moderation === 'REMOVED') return t('chat.moderation.removed')
-  return p.text ?? t('chat.cantDecrypt')
-}
 
 const draft = ref('')
 // Plaintext length cap, enforced client-side (the server only sees ciphertext):
@@ -307,9 +310,6 @@ function composerTextarea(): HTMLTextAreaElement | null {
   // A PrimeVue Textarea's $el is the <textarea> itself (no nested one).
   const el = composer.value?.$el as HTMLElement | undefined
   return (el?.tagName === 'TEXTAREA' ? el : el?.querySelector?.('textarea')) as HTMLTextAreaElement | null
-}
-function focusComposer() {
-  nextTick(() => composerTextarea()?.focus())
 }
 
 // Emoji quick-insert: splice the glyph in at the caret (replacing any selection)
@@ -447,18 +447,16 @@ function clearPending() {
 
 async function submit() {
   const text = draft.value
-  const parentId = replyTo.value?.id ?? null
   const images = pending.value
   if (!text.trim() && images.length === 0) return
   if (overLimit.value) return
   const mentions = extractMentions(text)
   mentionQuery.value = null
   draft.value = ''
-  replyTo.value = null
   const urls = pendingUrls.value
   pending.value = []
   pendingUrls.value = []
-  await chat.send(text, { parentId, images, mentions })
+  await chat.send(text, { images, mentions })
   for (const u of urls) URL.revokeObjectURL(u)
 }
 
@@ -662,18 +660,6 @@ watch(
   },
   { immediate: true },
 )
-
-// Jump to a quoted parent and flash it, so a reply visibly references its post.
-const flashId = ref<string | null>(null)
-function jumpTo(id: string) {
-  const el = listEl.value?.querySelector(`[data-mid="${id}"]`) as HTMLElement | null
-  if (!el) return
-  el.scrollIntoView({ block: 'center' })
-  flashId.value = id
-  setTimeout(() => {
-    if (flashId.value === id) flashId.value = null
-  }, 1200)
-}
 </script>
 
 <template>
@@ -788,7 +774,6 @@ function jumpTo(id: string) {
             :key="m.id"
             :data-mid="m.id"
             class="group text-sm flex flex-col rounded transition-colors min-w-0"
-            :style="flashId === m.id ? 'background: color-mix(in srgb, var(--p-primary-color) 18%, transparent)' : ''"
           >
             <div class="flex items-center gap-2 mb-0.5" :class="m.userId === meId ? 'flex-row-reverse' : ''">
               <NuxtLink
@@ -808,7 +793,7 @@ function jumpTo(id: string) {
               <span v-if="m.moderation === 'PENDING'" class="text-[10px] uppercase tracking-wider font-semibold px-1 rounded" style="border: 1px solid var(--ng-danger); color: var(--ng-danger)">{{ t('chat.moderation.pendingTag') }}</span>
               <!-- Per-message actions, icon-only, revealed on hover. -->
               <span v-if="m.moderation !== 'REMOVED'" class="ml-auto flex items-center gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                <button type="button" v-tooltip.bottom="t('chat.reply.button')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.reply.button')" @click="startReply(m)"><i class="pi pi-reply text-xs" /></button>
+                <button type="button" v-tooltip.bottom="t('chat.reply.button')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.reply.button')" @click="openThreadFor(m)"><i class="pi pi-reply text-xs" /></button>
                 <span v-if="contentVisible(m)" class="relative inline-flex">
                   <button type="button" v-tooltip.bottom="t('chat.react.add')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.react.add')" @click="pickerFor = pickerFor === m.id ? null : m.id"><i class="pi pi-face-smile text-xs" /></button>
                   <div
@@ -844,19 +829,6 @@ function jumpTo(id: string) {
                 <button v-if="isAdmin && m.moderation === 'PENDING'" type="button" v-tooltip.bottom="t('chat.moderation.restore')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.moderation.restore')" style="color: var(--p-primary-color)" @click="chat.moderate(m.id, 'restore')"><i class="pi pi-undo text-xs" /></button>
               </span>
             </div>
-            <!-- Quoted parent: click to jump to the post this replies to. -->
-            <button
-              v-if="parentOf(m)"
-              type="button"
-              class="text-left text-xs rounded px-2 py-1 mb-0.5 border-l-2 opacity-80 hover:opacity-100 max-w-full overflow-hidden"
-              :class="m.userId === meId ? 'self-end' : 'self-start'"
-              style="border-color: var(--p-primary-color); background: color-mix(in srgb, var(--p-text-color) 5%, transparent)"
-              @click="jumpTo(m.parentId!)"
-            >
-              <i class="pi pi-reply text-[10px] mr-1" style="color: var(--p-primary-color)" />
-              <span class="font-semibold">{{ nameFor(parentOf(m)!.userId) }}</span>
-              <span class="ml-1">{{ quoteText(parentOf(m)!) }}</span>
-            </button>
             <span v-if="!contentVisible(m)" class="italic" style="color: var(--p-text-muted-color)">{{ m.moderation === 'REMOVED' ? t('chat.moderation.removed') : t('chat.moderation.pendingHidden') }}</span>
             <!-- Inline edit of your own message: text plus image add/remove. -->
             <div v-else-if="editingId === m.id" class="flex flex-col gap-1">
@@ -924,6 +896,56 @@ function jumpTo(id: string) {
                 <span>{{ m.reactions[e] }}</span>
               </button>
             </div>
+
+            <!-- Thread: a reply count opens the thread; replies live there, never
+                 in the main list. -->
+            <button
+              v-if="m.replyCount > 0 && threadParentId !== m.id"
+              type="button"
+              class="inline-flex items-center gap-1 text-xs underline opacity-70 hover:opacity-100 mt-0.5"
+              :class="m.userId === meId ? 'self-end' : 'self-start'"
+              @click="openThreadFor(m)"
+            >
+              <i class="pi pi-comments text-[10px]" />{{ m.replyCount === 1 ? t('chat.thread.one') : t('chat.thread.count', { n: m.replyCount }) }}
+            </button>
+
+            <!-- Open thread: its replies plus an inline reply composer. -->
+            <div
+              v-if="threadParentId === m.id"
+              :data-thread="m.id"
+              class="self-stretch mt-1 ml-3 pl-3 border-l-2 flex flex-col gap-2"
+              style="border-color: var(--p-primary-color)"
+            >
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold" style="color: var(--p-text-muted-color)">{{ t('chat.thread.reply') }}</span>
+                <button type="button" class="text-xs underline opacity-70 hover:opacity-100" @click="chat.closeThread()">{{ t('chat.thread.collapse') }}</button>
+              </div>
+              <p v-if="threadLoading" class="text-xs" style="color: var(--p-text-muted-color)">{{ t('chat.loading') }}</p>
+              <p v-else-if="!threadMessages.length" class="text-xs" style="color: var(--p-text-muted-color)">{{ t('chat.thread.empty') }}</p>
+              <div v-for="r in threadMessages" :key="r.id" :data-mid="r.id" class="group flex flex-col text-sm min-w-0" :class="r.userId === meId ? 'items-end' : 'items-start'">
+                <div class="flex items-center gap-2 self-stretch" :class="r.userId === meId ? 'flex-row-reverse' : ''">
+                  <UserAvatar :image="avatarFor(r.userId)" class="!w-5 !h-5 shrink-0 text-[0.5rem]" />
+                  <NuxtLink v-if="profileLink(r.userId)" :to="profileLink(r.userId)!" class="font-semibold truncate text-xs hover:underline" :style="r.userId === meId ? 'color: var(--p-primary-color)' : ''">{{ nameFor(r.userId) }}</NuxtLink>
+                  <span v-else class="font-semibold truncate text-xs" :style="r.userId === meId ? 'color: var(--p-primary-color)' : ''">{{ nameFor(r.userId) }}</span>
+                  <span class="text-[10px]" style="color: var(--p-text-muted-color)">{{ fmtTime(r.createdAt) }}</span>
+                  <span v-if="r.editedAt" class="text-[10px] italic" style="color: var(--p-text-muted-color)">{{ t('chat.edit.edited') }}</span>
+                  <span class="ml-auto flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button v-if="contentVisible(r) && r.userId && r.userId !== meId" type="button" v-tooltip.bottom="r.reported ? t('chat.moderation.unreport') : t('chat.moderation.report')" class="opacity-60 hover:opacity-100" :aria-label="r.reported ? t('chat.moderation.unreport') : t('chat.moderation.report')" :style="r.reported ? 'color: var(--ng-danger)' : ''" @click="chat.report(r.id)"><i :class="r.reported ? 'pi pi-flag-fill' : 'pi pi-flag'" class="text-[10px]" /></button>
+                    <button v-if="isAdmin || r.userId === meId" type="button" v-tooltip.bottom="r.userId === meId ? t('chat.delete') : t('chat.moderation.remove')" class="opacity-60 hover:opacity-100" :aria-label="r.userId === meId ? t('chat.delete') : t('chat.moderation.remove')" style="color: var(--ng-danger)" @click="chat.moderate(r.id, 'remove')"><i class="pi pi-trash text-[10px]" /></button>
+                  </span>
+                </div>
+                <span v-if="!contentVisible(r)" class="italic text-xs" style="color: var(--p-text-muted-color)">{{ r.moderation === 'REMOVED' ? t('chat.moderation.removed') : t('chat.moderation.pendingHidden') }}</span>
+                <template v-else>
+                  <ChatMessageContent v-if="r.text" :text="r.text" :names="names" :profile-link="profileLink" :own="r.userId === meId" :bubble-style="bubbleStyle(r)" />
+                  <span v-else-if="r.text === null && r.attachments.length === 0" class="italic text-xs" style="color: var(--p-text-muted-color)">{{ t('chat.cantDecrypt') }}</span>
+                  <ChatImage v-if="r.attachments.length" :class="r.userId === meId ? 'self-end' : 'self-start'" :message-id="r.id" :attachments="r.attachments" :load="chat.loadAttachment" @open="(idx) => openMessageImages(r, idx)" />
+                </template>
+              </div>
+              <form class="flex items-end gap-2" @submit.prevent="submitThreadReply">
+                <Textarea v-model="threadDraft" :placeholder="t('chat.thread.placeholder')" rows="1" autoResize class="flex-1" @keydown.enter.exact.prevent="submitThreadReply" />
+                <Button type="submit" icon="pi pi-send" :loading="sending" :disabled="!threadDraft.trim() || threadOverLimit" :aria-label="t('chat.send')" />
+              </form>
+            </div>
           </div>
         </div>
           <button
@@ -938,16 +960,6 @@ function jumpTo(id: string) {
         </div>
 
         <div class="flex flex-col gap-1">
-          <!-- Reply target preview, with a cancel. -->
-          <div
-            v-if="replyTo"
-            class="flex items-center gap-2 text-xs rounded px-2 py-1 border-l-2"
-            style="border-color: var(--p-primary-color); background: color-mix(in srgb, var(--p-text-color) 5%, transparent)"
-          >
-            <span class="opacity-70">{{ t('chat.reply.replyingTo', { name: nameFor(replyTo.userId) }) }}</span>
-            <span class="truncate flex-1" style="color: var(--p-text-muted-color)">{{ replyTo.text ?? t('chat.cantDecrypt') }}</span>
-            <button type="button" class="opacity-70 hover:opacity-100" :aria-label="t('chat.reply.cancel')" @click="replyTo = null"><i class="pi pi-times text-xs" /></button>
-          </div>
           <small v-if="typingText" class="italic h-4" style="color: var(--p-text-muted-color)">{{ typingText }}</small>
           <small v-if="imageError" style="color: var(--ng-danger)">{{ t('chat.image.rejected') }}</small>
           <!-- Length cap: warn as it nears the limit, block the send past it. -->

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNull, lt } from 'drizzle-orm'
+import { and, asc, count, desc, eq, inArray, isNull, lt, not } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { chatAttachment, chatIdentity, chatMessage, league, leagueChatKey, leagueMember, match, user } from '../../../db/schema'
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors'
@@ -520,17 +520,21 @@ export async function editMessage(
 }
 
 // A page of ciphertext for one room (matchId null = the league-global room),
-// newest first. `before` pages backwards through history.
+// newest first. `before` pages backwards through history. By default this returns
+// only top-level messages (replies live in their thread); pass `thread` (a parent
+// message id) to list that thread's replies instead, oldest-first.
 export async function listMessages(
   db: AppDatabase,
-  opts: { leagueId: string; matchId?: string | null; userId: string; before?: Date; limit?: number },
+  opts: { leagueId: string; matchId?: string | null; userId: string; before?: Date; limit?: number; thread?: string | null },
 ): Promise<ChatMessageRow[]> {
   const membership = await getMembership(db, opts.leagueId, opts.userId)
   if (!membership) throw new ForbiddenError('not a league member')
   const limit = Math.min(Math.max(opts.limit ?? DEFAULT_PAGE, 1), MAX_PAGE)
   const room = opts.matchId ? eq(chatMessage.matchId, opts.matchId) : isNull(chatMessage.matchId)
+  // Thread mode: this parent's replies, oldest-first. Room mode: top-level only.
+  const scope = opts.thread ? eq(chatMessage.parentId, opts.thread) : isNull(chatMessage.parentId)
   const cursor = opts.before ? lt(chatMessage.createdAt, opts.before) : undefined
-  return db
+  const rows = await db
     .select({
       id: chatMessage.id,
       userId: chatMessage.userId,
@@ -543,7 +547,27 @@ export async function listMessages(
       createdAt: chatMessage.createdAt,
     })
     .from(chatMessage)
-    .where(and(eq(chatMessage.leagueId, opts.leagueId), room, cursor))
+    .where(and(eq(chatMessage.leagueId, opts.leagueId), room, scope, cursor))
     .orderBy(desc(chatMessage.createdAt), desc(chatMessage.id))
     .limit(limit)
+  return opts.thread ? rows.reverse() : rows
+}
+
+// Reply counts (replies that are not removed) for a set of parent message ids, so
+// the main list can show a "N replies" affordance. Missing ids have no replies.
+export async function getReplyCounts(db: AppDatabase, parentIds: string[]): Promise<Record<string, number>> {
+  if (parentIds.length === 0) return {}
+  const rows = await db
+    .select({ parentId: chatMessage.parentId, n: count() })
+    .from(chatMessage)
+    .where(
+      and(
+        inArray(chatMessage.parentId, parentIds),
+        not(eq(chatMessage.moderationState, 'REMOVED')),
+      ),
+    )
+    .groupBy(chatMessage.parentId)
+  const out: Record<string, number> = {}
+  for (const r of rows) if (r.parentId) out[r.parentId] = Number(r.n)
+  return out
 }

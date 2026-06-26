@@ -1,6 +1,6 @@
 import { db } from '../../../../../db'
 import { requireUser } from '../../../../utils/auth-guards'
-import { listMessages } from '../../../../utils/chat/service'
+import { getReplyCounts, listMessages } from '../../../../utils/chat/service'
 import { getMyReactions, getReactionTotals } from '../../../../utils/chat/reactions'
 import { getMessageAttachments } from '../../../../utils/chat/attachments'
 import { getMyReports } from '../../../../utils/chat/moderation'
@@ -17,6 +17,7 @@ export default defineEventHandler(async (event) => {
   const q = getQuery(event)
   const before = typeof q.before === 'string' ? new Date(q.before) : undefined
   const limit = typeof q.limit === 'string' ? Number(q.limit) : undefined
+  const thread = typeof q.thread === 'string' ? q.thread : null
   try {
     const rows = await listMessages(db, {
       leagueId,
@@ -24,15 +25,18 @@ export default defineEventHandler(async (event) => {
       matchId: typeof q.matchId === 'string' ? q.matchId : null,
       before: before && !Number.isNaN(before.getTime()) ? before : undefined,
       limit: limit && !Number.isNaN(limit) ? limit : undefined,
+      thread,
     })
     const ids = rows.map((r) => r.id)
     const membership = await getMembership(db, leagueId, user.id)
     const isAdmin = membership?.role === 'OWNER' || membership?.role === 'MODERATOR'
-    const [totals, mine, attachmentsByMessage, reported] = await Promise.all([
+    const [totals, mine, attachmentsByMessage, reported, replyCounts] = await Promise.all([
       getReactionTotals(db, ids),
       getMyReactions(db, user.id, ids),
       getMessageAttachments(db, ids),
       getMyReports(db, user.id, ids),
+      // Reply counts only matter for the top-level list, not within a thread.
+      thread ? Promise.resolve<Record<string, number>>({}) : getReplyCounts(db, ids),
     ])
     const messages: ChatMessageDTO[] = rows.map((r) => {
       // Strip content for a tombstoned message (everyone) or a pending one (from
@@ -53,6 +57,7 @@ export default defineEventHandler(async (event) => {
         reported: reported.has(r.id),
         reactions: totals[r.id] ?? emptyReactionTotals(),
         myReaction: mine[r.id] ?? null,
+        replyCount: replyCounts[r.id] ?? 0,
       }
     })
     return { messages }
@@ -71,6 +76,7 @@ defineRouteMeta({
       { in: 'query', name: 'matchId', required: false, schema: { type: 'string' } },
       { in: 'query', name: 'before', required: false, schema: { type: 'string', format: 'date-time' } },
       { in: 'query', name: 'limit', required: false, schema: { type: 'integer' } },
+      { in: 'query', name: 'thread', required: false, schema: { type: 'string' }, description: 'A parent message id: list that thread\'s replies instead of top-level messages.' },
     ],
     responses: { '200': { description: '{ messages: ChatMessageDTO[] }.' }, '403': { description: 'Not a member.' } },
   },
