@@ -252,13 +252,15 @@ effort buckets; order within a bucket is not priority.
       that already exist, not new data. Only worth it if that field-level
       drama earns its keep; otherwise drop - the per-match league board and the
       crowd totals already cover the per-member and aggregate angles.
-- [ ] **Prediction-lean world map** (IN_PROGRESS): the cheap, map-anchored cousin
-      of Live pick pulse. The interactive Leaflet map already places a marker per
-      nation; tint each by the crowd's lean on that team's next (or live) fixture -
-      the share of the field backing them to win, derived from the existing crowd
-      prediction distribution, no new data. A colour scale + legend + per-team
-      tooltip; live-aware off the same WS the map's standings already use. Reuses
-      the crowd-totals aggregation rather than the maybe-drop field-wide data-viz.
+- [x] **Prediction-lean world map** (shipped in 1.38.0): the cheap, map-anchored
+      cousin of Live pick pulse. Each nation's flag ring is tinted by the crowd's
+      lean on that team's current (in-play, else next) fixture - blue favoured, red
+      underdog, pale even - normalised from the existing crowd prediction
+      distribution, no new data or schema. Colour scale + legend; gated on the
+      "show everyone's totals" preference and live off the same crowd WS patches.
+      The lean math lives in a tested `app/utils/crowd-lean.ts`. Deferred: a
+      per-team % tooltip, and folding the live-else-next match pick into one shared
+      helper (TODO.md).
 - [x] **Predictive bracket** (shipped in 1.30.0): once a
       group's teams have all played at least once, pre-fill the knockout slots
       that group feeds with the currently-projected qualifiers from the live
