@@ -29,7 +29,7 @@ const chat = useLeagueChat(
   () => props.leagueId,
   () => props.matchId ?? null,
 )
-const { enabled, isAdmin, ready, awaitingKey, loading, sending, messages, memberKeys, muted, identityStatus } = chat
+const { enabled, isAdmin, ready, awaitingKey, loading, sending, hasMore, loadingOlder, messages, memberKeys, muted, identityStatus } = chat
 
 // Let a host (the floating dock) follow the live on/off state so it can show or
 // hide itself the moment an admin toggles chat, without its own status fetch.
@@ -397,6 +397,25 @@ const hasNew = ref(false)
 // The next time messages populate we force the view to the bottom, regardless of
 // the (transient) scroll position the reload leaves behind.
 const forceBottom = ref(false)
+// True while older history is being prepended, so the growth watcher neither
+// jumps to the bottom nor raises the "new messages" nudge for backfill.
+const prepending = ref(false)
+async function loadOlder() {
+  const el = listEl.value
+  const before = el?.scrollHeight ?? 0
+  prepending.value = true
+  try {
+    await chat.loadOlder()
+  } finally {
+    // Keep the viewport anchored: the list grew at the top, so push the scroll
+    // down by exactly the added height.
+    nextTick(() => {
+      const e = listEl.value
+      if (e) e.scrollTop += e.scrollHeight - before
+      prepending.value = false
+    })
+  }
+}
 function onScroll() {
   const el = listEl.value
   if (!el) return
@@ -425,6 +444,8 @@ watch(
   (cur) => {
     const grew = cur.length > prevLen
     prevLen = cur.length
+    // Backfill (load-older) handles its own scroll anchoring; don't fight it.
+    if (prepending.value) return
     if (forceBottom.value) {
       scrollToBottom()
       return
@@ -535,6 +556,15 @@ function jumpTo(id: string) {
           >
             {{ t('chat.image.dropHere') }}
           </div>
+          <button
+            v-if="hasMore"
+            type="button"
+            class="self-center text-xs underline opacity-70 hover:opacity-100 py-1"
+            :disabled="loadingOlder"
+            @click="loadOlder"
+          >
+            {{ loadingOlder ? t('chat.loading') : t('chat.loadMore') }}
+          </button>
           <p v-if="!messages.length" class="text-sm py-6 text-center" style="color: var(--p-text-muted-color)">{{ t('chat.empty') }}</p>
           <div
             v-for="m in messages"

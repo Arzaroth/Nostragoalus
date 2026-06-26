@@ -126,13 +126,40 @@ export function useLeagueChat(
     }
   }
 
+  // The server pages newest-first at this size; a full page means there may be
+  // older history behind it, surfaced as a "load more" control.
+  const PAGE = 50
+  const hasMore = ref(false)
+  const loadingOlder = ref(false)
+
   async function loadMessages(): Promise<void> {
     const m = mid()
     const { messages: rows } = await $fetch<{ messages: ChatMessageDTO[] }>(`/api/leagues/${lid()}/chat/messages`, {
       query: m ? { matchId: m } : {},
     })
+    hasMore.value = rows.length >= PAGE
     // The API returns newest-first; show oldest-first.
     messages.value = await Promise.all([...rows].reverse().map(decryptRow))
+  }
+
+  // Page backwards from the oldest loaded message, prepending the older ones.
+  async function loadOlder(): Promise<void> {
+    if (loadingOlder.value || !hasMore.value || messages.value.length === 0) return
+    loadingOlder.value = true
+    try {
+      const m = mid()
+      const before = messages.value[0].createdAt
+      const { messages: rows } = await $fetch<{ messages: ChatMessageDTO[] }>(`/api/leagues/${lid()}/chat/messages`, {
+        query: m ? { matchId: m, before } : { before },
+      })
+      hasMore.value = rows.length >= PAGE
+      const older = await Promise.all([...rows].reverse().map(decryptRow))
+      const seen = new Set(messages.value.map((x) => x.id))
+      const fresh = older.filter((o) => !seen.has(o.id))
+      if (fresh.length) messages.value = [...fresh, ...messages.value]
+    } finally {
+      loadingOlder.value = false
+    }
   }
 
   const pins = chatKeyPins()
@@ -161,6 +188,7 @@ export function useLeagueChat(
     if (!currentKey.value) return
     try {
       const status = await $fetch<ChatStatus>(`/api/leagues/${lid()}/chat`)
+      memberKeys.value = status.memberKeys
       await reconcileKeys(status.missingKeys)
     } catch {
       // transient: a later message/reconnect reconciles
@@ -183,8 +211,27 @@ export function useLeagueChat(
     }
   }
 
-  async function load(): Promise<void> {
+  // Refresh just the member roster (names + keys). Cheap, and used when a message
+  // arrives from someone we don't have a name for yet (a fresh joiner): it pulls
+  // their name in live so they stop showing as "Someone" without a page reload.
+  async function refreshRoster(): Promise<void> {
+    if (!lid()) return
+    try {
+      const status = await $fetch<ChatStatus>(`/api/leagues/${lid()}/chat`)
+      memberKeys.value = status.memberKeys
+    } catch {
+      // transient: a later message/reconnect refreshes it
+    }
+  }
+
+  // background = a socket reconnect / tab refocus refresh, NOT an initial open or
+  // room switch. In background mode we keep the message list mounted (no loading
+  // spinner) and never clear it, so the reader's scroll position survives - the
+  // list is replaced atomically at the end by loadMessages. A foreground load
+  // (room switch / explicit) shows the spinner and resets, as before.
+  async function load(opts: { background?: boolean } = {}): Promise<void> {
     if (!import.meta.client) return
+    const bg = !!opts.background
     // No league resolved yet (e.g. the global dock on a page with no selection):
     // nothing to load, present as "off" without hitting the API.
     if (!lid()) {
@@ -193,7 +240,7 @@ export function useLeagueChat(
       messages.value = []
       return
     }
-    loading.value = true
+    if (!bg) loading.value = true
     try {
       let status: ChatStatus
       try {
@@ -209,9 +256,14 @@ export function useLeagueChat(
       epoch.value = status.epoch
       role.value = status.role
       memberKeys.value = status.memberKeys
-      keys.value = new Map()
-      messages.value = []
-      if (!status.enabled) return
+      if (!bg) {
+        keys.value = new Map()
+        messages.value = []
+      }
+      if (!status.enabled) {
+        if (bg) messages.value = []
+        return
+      }
       await ensure()
       if (identity.value && status.myWrappedKeys.length > 0) {
         const map = new Map<number, Uint8Array>()
@@ -229,7 +281,7 @@ export function useLeagueChat(
       // Still keyless after loading: nudge connected keyholders to seal it for us.
       if (!currentKey.value) void requestRekey()
     } finally {
-      loading.value = false
+      if (!bg) loading.value = false
     }
   }
 
@@ -460,7 +512,9 @@ export function useLeagueChat(
 
   useReconnectingSocket({
     onOpen: () => {
-      void load()
+      // A reconnect / tab refocus: refresh in the background so the open message
+      // list and the reader's scroll position are not thrown away.
+      void load({ background: true })
     },
     onMessage: (data) => {
       const msg = data as { type?: string; leagueId?: string; message?: ChatMessageDTO }
@@ -530,6 +584,10 @@ export function useLeagueChat(
       if (msg.type !== 'chat:new' || !msg.message) return
       if ((msg.message.matchId ?? null) !== mid()) return
       if (messages.value.some((m) => m.id === msg.message!.id)) return
+      // A message from someone we have no name for yet (a fresh joiner): pull the
+      // roster so they stop reading as "Someone" without a reload.
+      const author = msg.message.userId
+      if (author && !memberKeys.value.some((k) => k.userId === author)) void refreshRoster()
       void decryptRow(msg.message).then((m) => {
         messages.value = [...messages.value, m]
       })
@@ -547,6 +605,9 @@ export function useLeagueChat(
     awaitingKey,
     loading,
     sending,
+    hasMore,
+    loadingOlder,
+    loadOlder,
     messages: visibleMessages,
     memberKeys,
     muted,

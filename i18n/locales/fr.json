@@ -44,6 +44,7 @@
     "send": "Envoyer",
     "copyText": "Copier le texte",
     "placeholder": "Écrire un message",
+    "loadMore": "Charger les messages précédents",
     "loading": "Chargement des messages...",
     "settingUp": "Préparation de votre clé...",
     "awaitingKey": "En attente d'accès...",
