@@ -8,6 +8,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 ### Changed
 - The full-screen goal celebration no longer pops over a live stream you're watching: while an embedded live broadcast is on-screen in the match view (pinned or on the Live tab), a goal updates the score quietly instead of throwing up the overlay - which used to cover the stream and spoil the goal before the delayed feed reached it.
 
+### Fixed
+- **Player rankings now show assists**: the match Players tab and the top-scorer lists read assists again - they had been stuck at zero because FIFA's official aggregate stats aren't published mid-tournament and the per-match feed lists the beaten goalkeeper as the "assist", not the passer. Assists are now read from the match timelines, and a player who only assists (no goals of their own) now appears in the rankings and as a team's top assister.
+
 ## [1.39.1] - 2026-06-26
 
 ### Fixed

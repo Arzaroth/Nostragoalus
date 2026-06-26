@@ -30,8 +30,13 @@ export default defineEventHandler(async (event) => {
     if (teamId) {
       try {
         const scorers = await provider.getPlayerStats({ teamId })
-        cache.set(competition.id, { at: Date.now(), scorers })
-        return { scorers }
+        // FIFA hasn't published aggregated player stats for an in-progress edition
+        // (the array comes back empty); fall through to the local goal-event
+        // aggregation rather than blanking the rankings.
+        if (scorers.length > 0) {
+          cache.set(competition.id, { at: Date.now(), scorers })
+          return { scorers }
+        }
       } catch {
         // fall through to local / football-data
       }

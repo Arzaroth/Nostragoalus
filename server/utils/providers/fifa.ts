@@ -481,6 +481,37 @@ export function normalizeFifaTimeline(
   return events.reverse()
 }
 
+// FIFA's match-detail goals carry the beaten goalkeeper as IdAssistPlayer, never
+// the passer, so the detail doc has no usable assist. The timeline does: an
+// open-play goal event (Type 0/39) names the assister in IdSubPlayer. Match each
+// back to its match-detail goal by scorer + minute and attach the assist in place.
+// Penalties (41) and own goals (34) have no assister and are skipped by the Type
+// filter; a solo goal simply has no IdSubPlayer and stays unassisted.
+export function mergeTimelineAssists(
+  goals: NormalizedGoal[],
+  timeline: FifaTimelineResponse,
+  detail: FifaMatchDetailResponse,
+): void {
+  const names = new Map<string, string>()
+  for (const t of [detail.HomeTeam, detail.AwayTeam]) {
+    for (const p of t?.Players ?? []) {
+      if (p.IdPlayer) names.set(p.IdPlayer, p.PlayerName?.[0]?.Description || p.ShortName?.[0]?.Description || 'Unknown')
+    }
+  }
+  const assistBy = new Map<string, string>()
+  for (const e of timeline.Event ?? []) {
+    if ((e.Type !== 0 && e.Type !== 39) || !e.IdPlayer || !e.IdSubPlayer) continue
+    assistBy.set(`${e.IdPlayer}|${e.MatchMinute ?? ''}`, e.IdSubPlayer)
+  }
+  for (const g of goals) {
+    if (g.ownGoal || !g.playerId) continue
+    const assistId = assistBy.get(`${g.playerId}|${g.minute ?? ''}`)
+    if (!assistId || assistId === g.playerId) continue
+    g.assistPlayerId = assistId
+    g.assistPlayerName = names.get(assistId) ?? null
+  }
+}
+
 const FIFA_POSITIONS: Record<number, SquadPlayer['position']> = { 0: 'GK', 1: 'DF', 2: 'MF', 3: 'FW' }
 const POSITION_ORDER: Record<string, number> = { GK: 0, DF: 1, MF: 2, FW: 3 }
 const byPositionThenShirt = (a: SquadPlayer, b: SquadPlayer) =>
@@ -909,7 +940,19 @@ export function fifaProvider(options: FifaOptions): MatchDataProvider {
           ? `${baseUrl}/live/football/${options.competitionId}/${options.seasonId}/${stageId}/${matchId}?language=en`
           : `${baseUrl}/live/football/${matchId}?language=en`,
       )
-      return normalizeFifaMatchDetail(detail)
+      const normalized = normalizeFifaMatchDetail(detail)
+      // The detail doc has no real assists - they live in the timeline. One extra
+      // fetch, only when there are goals to enrich; a timeline miss leaves goals
+      // unassisted rather than sinking the detail sync.
+      if (normalized.goals.length > 0) {
+        try {
+          const timeline = await getJson<FifaTimelineResponse>(`${baseUrl}/timelines/${matchId}?language=en`)
+          mergeTimelineAssists(normalized.goals, timeline, detail)
+        } catch {
+          // timeline unavailable - keep the goals without assist data
+        }
+      }
+      return normalized
     },
     async getMatchLineups({ stageId, matchId }: { stageId?: string; matchId: string }) {
       // The line-up rides inside the same detail doc as getMatchDetail.
