@@ -5,6 +5,19 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- **Threads**: reply to a message and the conversation moves into its own thread instead of cluttering the room. Each message shows a "N replies" link that opens the thread inline, with its own reply box; the room list stays just the top-level messages.
+- **Mentions**: type `@` in the composer to pick a league member - their name is inserted as a tag that links to their profile and keeps working even if they later rename. When someone mentions you, the minimized chat bubble shows a distinct badge (still counted in the overall unread total) and the rooms menu flags which room it's in.
+- **Emoji picker**: an emoji button next to the image button opens a searchable, categorized picker that drops the emoji into your message.
+- **GIFs and inline images**: paste an image or GIF link and it renders (and animates) right in the message - nothing is uploaded or stored, and each can be collapsed.
+- **Link previews**: the first link in a message unfurls into a collapsible card with the page's title, description and image.
+- **Edit with the up arrow**: press Up in an empty message box to edit your last message; press Up again while editing to step back to the one before.
+- **Message length limit**: messages are capped at 2000 characters, with a live counter that warns as you approach it and blocks send past it, explaining why.
+
+### Changed
+- **Your own messages now align to the right** of the chat, like a typical messenger, with everyone else's on the left.
+- **Key verification moved into a dialog**: the safety-number panel opens as a modal from the chat menu, so it no longer crowds the narrow chat dock.
+
 ## [1.41.0] - 2026-06-26
 
 ### Added
