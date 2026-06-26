@@ -92,6 +92,8 @@ function onMasterPush(v: boolean) {
   void (v ? pushSubscribe() : pushUnsubscribe())
 }
 
+const { data: feedData, busy: feedBusy, load: feedLoad, copy: feedCopy } = useCalendarFeed()
+
 const langOptions = [
   { label: 'English', value: 'en' },
   { label: 'Français', value: 'fr' },
@@ -242,6 +244,50 @@ const skinModel = computed({
             </template>
             <template #fallback>
               <p class="text-sm" style="color: var(--p-text-muted-color)">{{ t('prefs.push.hint') }}</p>
+            </template>
+          </ClientOnly>
+        </div>
+      </div>
+    </section>
+
+    <section
+      v-if="session && session.data"
+      class="ng-card rounded-2xl border overflow-hidden"
+      style="background: var(--p-content-background)"
+    >
+      <div class="grid md:grid-cols-3 gap-6 p-6">
+        <div>
+          <h2 class="font-semibold">{{ t('feed.title') }}</h2>
+          <p class="text-sm mt-1" style="color: var(--p-text-muted-color)">{{ t('feed.hint') }}</p>
+        </div>
+        <div class="md:col-span-2 flex flex-col gap-4">
+          <ClientOnly>
+            <Button
+              v-if="!feedData"
+              :label="t('feed.reveal')"
+              :loading="feedBusy"
+              icon="pi pi-calendar"
+              size="small"
+              class="self-start"
+              @click="feedLoad()"
+            />
+            <template v-else>
+              <InputText
+                :model-value="feedData.url"
+                readonly
+                class="w-full text-xs font-mono"
+                @focus="(e: FocusEvent) => (e.target as HTMLInputElement).select()"
+              />
+              <div class="flex flex-wrap gap-2">
+                <Button :label="t('feed.copy')" icon="pi pi-copy" size="small" @click="feedCopy()" />
+                <a :href="feedData.webcalUrl" class="contents">
+                  <Button :label="t('feed.add')" icon="pi pi-calendar-plus" size="small" severity="secondary" outlined />
+                </a>
+              </div>
+              <p class="text-xs" style="color: var(--p-text-muted-color)">{{ t('feed.instructions') }}</p>
+            </template>
+            <template #fallback>
+              <p class="text-sm" style="color: var(--p-text-muted-color)">{{ t('feed.hint') }}</p>
             </template>
           </ClientOnly>
         </div>

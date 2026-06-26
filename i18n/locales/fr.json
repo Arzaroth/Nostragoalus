@@ -1137,6 +1137,21 @@
       "ANGRY": "Scandaleux"
     }
   },
+  "feed": {
+    "title": "Flux calendrier",
+    "hint": "Abonnez-vous dans votre application d'agenda pour voir chaque match et chaque date limite de pronostic, mis à jour automatiquement.",
+    "reveal": "Afficher mon lien calendrier",
+    "copy": "Copier le lien",
+    "add": "Ajouter au calendrier",
+    "copied": "Lien copié",
+    "failed": "Impossible de charger votre lien calendrier",
+    "instructions": "Collez ce lien dans l'option « s'abonner par URL » de votre agenda (Google Agenda, Calendrier Apple, Outlook, Thunderbird). Gardez-le privé : toute personne disposant du lien peut voir votre flux.",
+    "calendarName": "Matchs Nostragoalus",
+    "predicted": "✓ Pronostic enregistré",
+    "notPredicted": "⚠ Pas encore de pronostic - verrouillé au coup d'envoi",
+    "pens": "t.a.b.",
+    "alarm": "Pronostiquez {home} - {away} avant le coup d'envoi"
+  },
   "share": {
     "action": "Partager",
     "shareResult": "Partager le résultat",

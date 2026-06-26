@@ -1137,6 +1137,21 @@
       "ANGRY": "Outrageous"
     }
   },
+  "feed": {
+    "title": "Calendar feed",
+    "hint": "Subscribe in your calendar app to see every fixture and pick deadline, kept up to date automatically.",
+    "reveal": "Show my calendar link",
+    "copy": "Copy link",
+    "add": "Add to calendar",
+    "copied": "Link copied",
+    "failed": "Couldn't load your calendar link",
+    "instructions": "Paste this link into your calendar app's \"subscribe by URL\" option (Google Calendar, Apple Calendar, Outlook, Thunderbird). Keep it private - anyone with the link can see your feed.",
+    "calendarName": "Nostragoalus fixtures",
+    "predicted": "✓ Prediction locked in",
+    "notPredicted": "⚠ No prediction yet - locks at kickoff",
+    "pens": "pens",
+    "alarm": "Predict {home} - {away} before kickoff"
+  },
   "share": {
     "action": "Share",
     "shareResult": "Share result",

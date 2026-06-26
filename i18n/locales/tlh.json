@@ -1137,6 +1137,21 @@
       "ANGRY": "QeH"
     }
   },
+  "feed": {
+    "title": "jajmey tetlh",
+    "hint": "jajmey De'wI'Daq yIghon: Hoch qaywI' 'ej wuq poH yIlegh. nIteb chu'choH.",
+    "reveal": "jajmey ghItlhwIj 'angID",
+    "copy": "ghItlh velqa'",
+    "add": "jajmeyDaq yIchel",
+    "copied": "velqa'ta'",
+    "failed": "jajmey ghItlh laD luj",
+    "instructions": "jajmey De'wI' \"URL yIghon\" Daq ghItlhvam yIlan. pegh yI'ol: ghItlh ghajbogh nuv, tetlhlIj legh.",
+    "calendarName": "Nostragoalus qaywI'",
+    "predicted": "✓ wuqta'",
+    "notPredicted": "⚠ wuqbe' - QochDI' SoQchoH",
+    "pens": "qaD",
+    "alarm": "QochDI'pa' {home} - {away} yIwuq"
+  },
   "share": {
     "action": "yIngeH",
     "shareResult": "Qap yIngeH",
