@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.41.0] - 2026-06-26
+
 ### Added
 - **Filter the world map by crowd lean**: the map's lean legend (Underdog / Even / Favoured, and Eliminated) is now clickable - tap a label to hide that group of flags, tap again to bring them back, just like the fixtures filters.
 
