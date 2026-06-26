@@ -953,16 +953,29 @@ export const chatMessageReaction = pgTable(
   ],
 )
 
-// The encrypted image attached to a message (one per message). Kept out of the
-// message row so listing a room stays light - the multi-megabyte ciphertext is
-// fetched on demand when the image is actually rendered. The server only ever
+// The encrypted images attached to a message (several, ordered by idx). Kept out
+// of the message row so listing a room stays light - the multi-megabyte ciphertext
+// is fetched on demand when an image is actually rendered. The server only ever
 // holds the encrypted webp; it never sees the picture.
-export const chatAttachment = pgTable('chat_attachment', {
-  messageId: text('message_id')
-    .primaryKey()
-    .references(() => chatMessage.id, { onDelete: 'cascade' }),
-  ciphertext: text('ciphertext').notNull(),
-  byteSize: integer('byte_size').notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-})
+//
+// epoch is the group-key epoch the bytes were sealed under: a message can gather
+// images across epochs (an edit after a re-key adds new ones at the current epoch
+// while the kept ones keep theirs), so each attachment is decrypted with its own
+// epoch's key, mirroring how a message row carries its epoch. The idx/epoch
+// defaults exist only to backfill the rows that predate multi-image (one image,
+// idx 0, first epoch); every insert sets both explicitly.
+export const chatAttachment = pgTable(
+  'chat_attachment',
+  {
+    messageId: text('message_id')
+      .notNull()
+      .references(() => chatMessage.id, { onDelete: 'cascade' }),
+    idx: integer('idx').notNull().default(0),
+    epoch: integer('epoch').notNull().default(1),
+    ciphertext: text('ciphertext').notNull(),
+    byteSize: integer('byte_size').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.messageId, t.idx] })],
+)
 
