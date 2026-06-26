@@ -130,6 +130,7 @@
   "map": {
     "lean": {
       "title": "Crowd lean",
+      "filterHint": "Click a label to filter the map",
       "favored": "Favoured",
       "neutral": "Even",
       "underdog": "Underdog",
