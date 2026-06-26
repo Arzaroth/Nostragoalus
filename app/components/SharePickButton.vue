@@ -1,8 +1,27 @@
 <script setup lang="ts">
+import { compressToWebp } from '~/composables/useChatImage'
 const props = defineProps<{ matchId: string; kickoffTime: string }>()
 const { t } = useI18n()
-const { share, copy, download, busy } = useShareCard()
+const toast = useToast()
+const { mint, run, share, copy, download, busy } = useShareCard()
 const menu = ref()
+
+// "Share to chat" is offered when a league is selected: it drops the rendered
+// pick card into that league's chat composer (global room) for the user to send.
+const { leagueId } = useSelectedLeague()
+const inbox = useChatShareInbox()
+async function shareToChat(mode: 'result' | 'reveal') {
+  menu.value?.hide()
+  await run(async () => {
+    const res = await mint(props.matchId, mode)
+    const blob = await (await fetch(res.imageUrl)).blob()
+    const compressed = await compressToWebp(new File([blob], 'pick.png', { type: blob.type || 'image/png' }))
+    if (!compressed) throw new Error('compress failed')
+    inbox.offer({ image: { bytes: compressed.bytes, byteSize: compressed.byteSize }, caption: '' })
+    toast.add({ severity: 'success', summary: t('share.toChatQueued'), life: 2500 })
+    return res
+  })
+}
 
 // Post-kickoff the score is public, so the result is shareable; before kickoff
 // the user chooses to keep the pick sealed or to reveal their own score.
@@ -49,6 +68,9 @@ const itemClass =
         <button type="button" :class="itemClass" :disabled="busy" @click="pick(() => download(props.matchId, 'result'))">
           <i class="pi pi-download opacity-60" /> {{ t('share.download') }}
         </button>
+        <button v-if="leagueId" type="button" :class="itemClass" :disabled="busy" @click="shareToChat('result')">
+          <i class="pi pi-comments" style="color: var(--p-primary-color)" /> {{ t('share.toChat') }}
+        </button>
       </template>
       <template v-else>
         <button type="button" :class="itemClass" :disabled="busy" @click="pick(() => share(props.matchId, 'sealed'))">
@@ -56,6 +78,9 @@ const itemClass =
         </button>
         <button type="button" :class="itemClass" :disabled="busy" @click="pick(() => share(props.matchId, 'reveal'))">
           <i class="pi pi-eye opacity-60" /> {{ t('share.revealScore') }}
+        </button>
+        <button v-if="leagueId" type="button" :class="itemClass" :disabled="busy" @click="shareToChat('reveal')">
+          <i class="pi pi-comments" style="color: var(--p-primary-color)" /> {{ t('share.toChat') }}
         </button>
       </template>
     </div>

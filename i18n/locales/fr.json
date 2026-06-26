@@ -1174,6 +1174,8 @@
     "copyLink": "Copier le lien",
     "copied": "Lien copié",
     "download": "Télécharger l'image",
+    "toChat": "Partager dans le chat",
+    "toChatQueued": "Ajouté au champ de message",
     "failed": "Impossible de créer le lien de partage",
     "card": {
       "fullTime": "Fin du match",

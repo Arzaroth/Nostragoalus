@@ -1175,6 +1175,8 @@
     "copied": "Link copied",
     "download": "Download image",
     "failed": "Couldn't create the share link",
+    "toChat": "Share to chat",
+    "toChatQueued": "Added to the chat composer",
     "card": {
       "fullTime": "Full time",
       "kickedOff": "Kicked off",
