@@ -2,23 +2,26 @@
 const { t, locale } = useI18n()
 useHead({ title: t('nav.map') })
 const slug = useSelectedCompetition()
-const { data: teamsData } = await useFetch<{ teams: { code: string; name: string }[] }>('/api/competitions/teams', {
-  query: computed(() => (slug.value ? { competition: slug.value } : {})),
-})
-const teams = computed(() => teamsData.value?.teams ?? [])
-
 // Crowd-lean overlay: tint each nation by where the field expects its current
 // match to go. Reuses the same aggregate crowd totals (and live WS patches) as
 // the "show everyone's totals" preference, so it is gated on that same opt-in.
+// These composables register effect scope + lifecycle hooks (vue-query, the
+// reconnecting socket), so they MUST run before the awaited fetch below: after an
+// await the active component instance is gone, the wiring fails to register, and
+// the client mount of the .client <WorldMap> breaks (blank map in the prod build).
 const { data: allMatches } = useMatches()
-// Subscribe the match list to live updates here too: without this the map page
-// holds page-load statuses, so a match finishing mid-session would keep tinting
-// its teams instead of advancing them to their next fixture.
+// Subscribe the match list to live updates here too, so a match finishing
+// mid-session advances its teams to their next fixture instead of staying tinted.
 useLiveMatches(allMatches)
 const { totals: crowdTotals, enabled: crowdEnabled } = useCrowdTotals()
 const teamLean = computed(() =>
   crowdEnabled.value ? computeTeamLean(allMatches.value ?? [], crowdTotals.value) : {},
 )
+
+const { data: teamsData } = await useFetch<{ teams: { code: string; name: string }[] }>('/api/competitions/teams', {
+  query: computed(() => (slug.value ? { competition: slug.value } : {})),
+})
+const teams = computed(() => teamsData.value?.teams ?? [])
 
 const route = useRoute()
 const router = useRouter()

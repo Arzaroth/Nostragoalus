@@ -67,12 +67,13 @@ export function computeTeamLean(matches: LeanMatch[], totals: CrowdTotals): Reco
 }
 
 // A diverging colour scale for the flag ring: blue when the crowd favours the
-// team, red when it backs the opponent, pale/neutral near even.
+// team, red when it backs the opponent, muted neutral near even. Kept saturated
+// and mid-dark (not pale) so the ring reads against the flags around it.
 export function leanColor(v: number): string {
   const c = Math.max(-1, Math.min(1, v))
   const mag = Math.abs(c)
-  const hue = c >= 0 ? 212 : 6
-  const sat = Math.round(20 + 70 * mag)
-  const light = Math.round(82 - 36 * mag)
+  const hue = c >= 0 ? 212 : 2
+  const sat = Math.round(30 + 60 * mag)
+  const light = Math.round(64 - 18 * mag)
   return `hsl(${hue}, ${sat}%, ${light}%)`
 }
