@@ -7,6 +7,15 @@ const { data: teamsData } = await useFetch<{ teams: { code: string; name: string
 })
 const teams = computed(() => teamsData.value?.teams ?? [])
 
+// Crowd-lean overlay: tint each nation by where the field expects its current
+// match to go. Reuses the same aggregate crowd totals (and live WS patches) as
+// the "show everyone's totals" preference, so it is gated on that same opt-in.
+const { data: allMatches } = useMatches()
+const { totals: crowdTotals, enabled: crowdEnabled } = useCrowdTotals()
+const teamLean = computed(() =>
+  crowdEnabled.value ? computeTeamLean(allMatches.value ?? [], crowdTotals.value) : {},
+)
+
 const route = useRoute()
 const router = useRouter()
 const mapRef = ref<{ centerOn: (code: string) => void } | null>(null)
@@ -109,7 +118,15 @@ function fmt(d: string) {
         already client-only by filename. Wrapping it in <ClientOnly> on top of
         that left the fallback mounted and the map never hydrated in the prod
         build - render it directly. -->
-        <WorldMap ref="mapRef" :teams="teams" @select="onSelect" />
+        <WorldMap ref="mapRef" :teams="teams" :team-lean="teamLean" @select="onSelect" />
+        <NuxtLink
+          v-if="!crowdEnabled"
+          to="/preferences"
+          class="block text-xs mt-2 hover:underline"
+          style="color: var(--p-text-muted-color)"
+        >
+          <i class="pi pi-info-circle" /> {{ t('map.lean.hint') }}
+        </NuxtLink>
       </div>
 
       <div class="ng-card rounded-2xl border p-5" style="background: var(--p-content-background)">
