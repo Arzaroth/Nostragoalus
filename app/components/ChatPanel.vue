@@ -39,6 +39,8 @@ watch(enabled, (v) => emit('update:enabled', v), { immediate: true })
 // Emoji reactions, mirroring match reactions (one per member per message). The
 // picker (all glyphs) opens for one message at a time.
 const pickerFor = ref<string | null>(null)
+// Overflow (kebab) menu under the chat: verify, key backup, admin actions.
+const menuOpen = ref(false)
 function reactWith(messageId: string, emoji: ReactionEmoji) {
   pickerFor.value = null
   void chat.react(messageId, emoji)
@@ -740,19 +742,50 @@ function jumpTo(id: string) {
           </form>
         </div>
 
-        <div class="flex items-center justify-between gap-3">
-          <div class="flex items-center gap-3">
-            <button type="button" class="text-xs underline opacity-70 hover:opacity-100 inline-flex items-center gap-1" @click="showVerify = !showVerify">
-              {{ t('chat.verify.show') }}
-              <span v-if="changedCount > 0" style="color: var(--ng-danger)">({{ changedCount }})</span>
+        <!-- Overflow menu: tucks verify, key backup and admin actions away so they
+             are deliberate, not a mis-click next to the composer. -->
+        <div class="flex items-center justify-end">
+          <div class="relative">
+            <button
+              type="button"
+              class="relative opacity-70 hover:opacity-100 inline-flex items-center"
+              :aria-label="t('chat.menu.button')"
+              @click="menuOpen = !menuOpen"
+            >
+              <i class="pi pi-ellipsis-h" />
+              <span v-if="changedCount > 0" class="absolute -top-1 -right-1 w-2 h-2 rounded-full" style="background: var(--ng-danger)" />
             </button>
-            <button v-if="!hasRecovery" type="button" class="text-xs underline" style="color: var(--p-primary-color)" :disabled="recoveryBusy" @click="openRecoverySetup">{{ t('chat.setupRecovery') }}</button>
-            <button v-if="muted.length" type="button" class="text-xs underline opacity-70 hover:opacity-100" @click="showMuted = !showMuted">{{ t('chat.muted.show', { n: muted.length }) }}</button>
-          </div>
-          <div v-if="isAdmin" class="flex items-center gap-3">
-            <button type="button" class="text-xs underline opacity-70 hover:opacity-100" @click="openReports">{{ t('chat.moderation.queue') }}</button>
-            <button type="button" class="text-xs underline opacity-70 hover:opacity-100" @click="showRotate = true">{{ t('chat.rotate.button') }}</button>
-            <button type="button" class="text-xs underline opacity-70 hover:opacity-100" @click="chat.disableChat()">{{ t('chat.disable') }}</button>
+            <div
+              v-if="menuOpen"
+              class="absolute right-0 bottom-7 z-30 w-56 rounded-lg border shadow-lg py-1 text-sm"
+              style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
+            >
+              <button type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-left opacity-90 hover:opacity-100" @click="showVerify = !showVerify; menuOpen = false">
+                <i class="pi pi-shield text-xs" style="color: var(--p-primary-color)" />
+                <span class="flex-1">{{ t('chat.verify.show') }}</span>
+                <span v-if="changedCount > 0" class="text-xs font-bold" style="color: var(--ng-danger)">{{ changedCount }}</span>
+              </button>
+              <button v-if="!hasRecovery" type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-left opacity-90 hover:opacity-100" :disabled="recoveryBusy" @click="menuOpen = false; openRecoverySetup()">
+                <i class="pi pi-key text-xs" style="color: var(--p-primary-color)" />
+                <span class="flex-1">{{ t('chat.setupRecovery') }}</span>
+              </button>
+              <button v-if="muted.length" type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-left opacity-90 hover:opacity-100" @click="showMuted = !showMuted; menuOpen = false">
+                <i class="pi pi-volume-off text-xs" />
+                <span class="flex-1">{{ t('chat.muted.show', { n: muted.length }) }}</span>
+              </button>
+              <template v-if="isAdmin">
+                <div class="my-1 border-t" style="border-color: var(--p-content-border-color)" />
+                <button type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-left opacity-90 hover:opacity-100" @click="menuOpen = false; openReports()">
+                  <i class="pi pi-flag text-xs" /><span class="flex-1">{{ t('chat.moderation.queue') }}</span>
+                </button>
+                <button type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-left opacity-90 hover:opacity-100" @click="showRotate = true; menuOpen = false">
+                  <i class="pi pi-sync text-xs" /><span class="flex-1">{{ t('chat.rotate.button') }}</span>
+                </button>
+                <button type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-left opacity-90 hover:opacity-100" style="color: var(--ng-danger)" @click="menuOpen = false; chat.disableChat()">
+                  <i class="pi pi-power-off text-xs" /><span class="flex-1">{{ t('chat.disable') }}</span>
+                </button>
+              </template>
+            </div>
           </div>
         </div>
 

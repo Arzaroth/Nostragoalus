@@ -67,6 +67,7 @@
     "delete": "Delete",
     "edit": { "button": "Edit", "save": "Save", "cancel": "Cancel", "edited": "edited", "at": "Edited at {time}" },
     "setupRecovery": "Set up a recovery code",
+    "menu": { "button": "More options" },
     "warning": {
       "title": "Turn on end-to-end encrypted chat?",
       "body1": "Messages are encrypted on members' devices. The site owner stores only scrambled text and cannot read this chat, moderate it, or recover it.",

@@ -67,6 +67,7 @@
     "delete": "Supprimer",
     "edit": { "button": "Modifier", "save": "Enregistrer", "cancel": "Annuler", "edited": "modifié", "at": "Modifié à {time}" },
     "setupRecovery": "Créer un code de récupération",
+    "menu": { "button": "Plus d'options" },
     "warning": {
       "title": "Activer le chat chiffré de bout en bout ?",
       "body1": "Les messages sont chiffrés sur les appareils des membres. Le propriétaire du site ne stocke que du texte brouillé et ne peut ni lire, ni modérer, ni récupérer ce chat.",
