@@ -280,8 +280,10 @@ describe('ChatPanel', () => {
     await wrapper.get('button[aria-label="More options"]').trigger('click')
     const toggle = wrapper.findAll('button').find((b) => b.text().includes('Verify keys'))!
     await toggle.trigger('click')
-    await vi.waitFor(() => expect(wrapper.text()).toMatch(/\d{5} \d{5} \d{5} \d{5} \d{5} \d{5}/))
-    expect(wrapper.text()).toContain('Your safety number')
-    expect(wrapper.text()).toContain('Sam') // the peer's name
+    // The verify panel is a modal dialog now (teleported to body), so assert
+    // against the document rather than the component's own subtree.
+    await vi.waitFor(() => expect(document.body.textContent).toMatch(/\d{5} \d{5} \d{5} \d{5} \d{5} \d{5}/))
+    expect(document.body.textContent).toContain('Your safety number')
+    expect(document.body.textContent).toContain('Sam') // the peer's name
   })
 })

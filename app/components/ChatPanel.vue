@@ -1000,28 +1000,6 @@ function jumpTo(id: string) {
           </form>
         </div>
 
-        <!-- Safety-number verification: compare these out-of-band to detect a swapped key. -->
-        <div v-if="showVerify" class="flex flex-col gap-2 text-sm border-t pt-3" style="border-color: var(--p-content-border-color)">
-          <p style="color: var(--p-text-muted-color)">{{ t('chat.verify.intro') }}</p>
-          <div class="flex flex-col gap-0.5">
-            <span class="text-xs font-semibold">{{ t('chat.verify.your') }}</span>
-            <code class="font-mono text-xs break-all">{{ myFingerprint }}</code>
-          </div>
-          <p v-if="!peerEntries.length" class="text-xs" style="color: var(--p-text-muted-color)">{{ t('chat.verify.empty') }}</p>
-          <div v-for="e in peerEntries" :key="e.userId" class="flex flex-col gap-1 border-t pt-2" style="border-color: var(--p-content-border-color)">
-            <div class="flex items-center gap-2 flex-wrap">
-              <span class="font-semibold">{{ nameFor(e.userId) }}</span>
-              <span v-if="e.changed" class="text-[10px] px-1.5 py-0.5 rounded-full" style="border: 1px solid var(--ng-danger); color: var(--ng-danger)">{{ t('chat.verify.changed') }}</span>
-              <span v-else-if="e.verified" class="text-[10px] px-1.5 py-0.5 rounded-full" style="background: var(--ng-star-soft); color: var(--ng-star)">{{ t('chat.verify.verified') }}</span>
-            </div>
-            <code class="font-mono text-xs break-all" :style="e.changed ? 'color: var(--ng-danger)' : ''">{{ e.fingerprint }}</code>
-            <div class="flex items-center gap-3">
-              <button v-if="e.changed" type="button" class="text-xs underline" style="color: var(--ng-danger)" @click="verify.acknowledgeChange(e.userId)">{{ t('chat.verify.acknowledge') }}</button>
-              <button v-if="!e.verified" type="button" class="text-xs underline" style="color: var(--p-primary-color)" @click="verify.markVerified(e.userId)">{{ t('chat.verify.markVerified') }}</button>
-            </div>
-          </div>
-        </div>
-
         <!-- Muted members: local-only, so this is the one place to unmute them. -->
         <div v-if="showMuted && muted.length" class="flex flex-col gap-2 text-sm border-t pt-3" style="border-color: var(--p-content-border-color)">
           <p style="color: var(--p-text-muted-color)">{{ t('chat.muted.intro') }}</p>
@@ -1043,6 +1021,34 @@ function jumpTo(id: string) {
       <template #footer>
         <Button :label="t('chat.warning.cancel')" severity="secondary" text @click="showWarning = false" />
         <Button :label="t('chat.warning.confirm')" :loading="enabling" @click="confirmEnable" />
+      </template>
+    </Dialog>
+
+    <!-- Safety-number verification (modal so it never fights the chat for width):
+         compare these out-of-band to detect a swapped key. -->
+    <Dialog v-model:visible="showVerify" modal :header="t('chat.verify.title')" :style="{ width: '30rem', maxWidth: '92vw' }">
+      <div class="flex flex-col gap-2 text-sm">
+        <p style="color: var(--p-text-muted-color)">{{ t('chat.verify.intro') }}</p>
+        <div class="flex flex-col gap-0.5">
+          <span class="text-xs font-semibold">{{ t('chat.verify.your') }}</span>
+          <code class="font-mono text-xs break-all">{{ myFingerprint }}</code>
+        </div>
+        <p v-if="!peerEntries.length" class="text-xs" style="color: var(--p-text-muted-color)">{{ t('chat.verify.empty') }}</p>
+        <div v-for="e in peerEntries" :key="e.userId" class="flex flex-col gap-1 border-t pt-2" style="border-color: var(--p-content-border-color)">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="font-semibold">{{ nameFor(e.userId) }}</span>
+            <span v-if="e.changed" class="text-[10px] px-1.5 py-0.5 rounded-full" style="border: 1px solid var(--ng-danger); color: var(--ng-danger)">{{ t('chat.verify.changed') }}</span>
+            <span v-else-if="e.verified" class="text-[10px] px-1.5 py-0.5 rounded-full" style="background: var(--ng-star-soft); color: var(--ng-star)">{{ t('chat.verify.verified') }}</span>
+          </div>
+          <code class="font-mono text-xs break-all" :style="e.changed ? 'color: var(--ng-danger)' : ''">{{ e.fingerprint }}</code>
+          <div class="flex items-center gap-3">
+            <button v-if="e.changed" type="button" class="text-xs underline" style="color: var(--ng-danger)" @click="verify.acknowledgeChange(e.userId)">{{ t('chat.verify.acknowledge') }}</button>
+            <button v-if="!e.verified" type="button" class="text-xs underline" style="color: var(--p-primary-color)" @click="verify.markVerified(e.userId)">{{ t('chat.verify.markVerified') }}</button>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <Button :label="t('chat.verify.done')" severity="secondary" text @click="showVerify = false" />
       </template>
     </Dialog>
 
