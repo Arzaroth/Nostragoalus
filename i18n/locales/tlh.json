@@ -67,6 +67,7 @@
     "delete": "Qaw'",
     "edit": { "button": "choH", "save": "pol", "cancel": "qIl", "edited": "choHlu'pu'", "at": "{time} choHlu'pu'" },
     "setupRecovery": "chovnatlh Qaw'wI' cher",
+    "menu": { "button": "latlh" },
     "warning": {
       "title": "ja'chuq So'lu'bogh yIchu''a'?",
       "body1": "ghom Daq So'lu' QInmey. ghItlh So'lu'bogh neH pollu'; pIn'a' laDlaHbe', che'laHbe', tlhamlaHbe'.",
