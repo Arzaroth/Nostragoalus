@@ -5,6 +5,27 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- **Several images per message, buffered before you send**: attach, paste or drop more than one image and they wait in a tray under the composer - reorder your thoughts, drop any you change your mind about, then send the caption and every image as one message. Editing a message can now drop its images or add new ones too, and that counts as an edit just like changing the text.
+- **A better image viewer**: tap any image to open it full-screen, then step through every image on that message with the on-screen arrows or your keyboard's left/right keys. The caption and reactions show beneath the picture. Copy, download (a properly named PNG, e.g. `nostragoalus-chat-myleague-eng-v-fra-2026-06-26.png`) and, on mobile, share to any app.
+- **Per-chat media gallery**: a media button in the chat header opens every image posted in that room, to browse and cycle through.
+- **Share a pick straight to chat**: the share menu on a prediction gains "Share to chat", which drops the pick card into your league chat composer to review and send.
+- **See who's typing**: a transient "X is typing…" hint appears while others are composing.
+- **Know which rooms have activity**: the collapsed chat bubble shows an unread count, the Global/Match toggle dots when the other room has new messages, and a rooms menu lists every room with unread and jumps to it.
+- **Load earlier messages**: chat history is paged - a "Load earlier messages" button pulls older posts in, so you can scroll all the way back.
+- **Undock the chat**: pop the chat window out into a draggable, resizable panel you can place anywhere; it remembers where you left it.
+- **Copy a message's text**, and **profiles from chat**: tap a name or avatar to open that member's profile.
+
+### Changed
+- **Chat messages now sit in bubbles** with the author's avatar inline, your own messages tinted, and line breaks and links preserved (links open safely in a new tab).
+- **Tidier chat controls**: verify keys, recovery-code setup and the admin actions (reports, rotate key, turn off) moved into an overflow menu so they are deliberate, not a mis-click next to the composer. The add-reaction button now sits in the row with reply.
+
+### Fixed
+- New members no longer show as "Someone" until you reload - their name fills in live as soon as they speak.
+- The chat no longer jumps to the top when you switch browser tabs and come back; your scroll position is kept.
+- Clicking reply or edit now focuses the message box so you can type right away.
+- Copying an image to the clipboard works now (it is converted to PNG, which the clipboard accepts), and a zoomed image is no longer painted over by the world map underneath it.
+
 ## [1.39.2] - 2026-06-26
 
 ### Changed
