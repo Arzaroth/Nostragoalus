@@ -31,7 +31,7 @@ export async function getCompetitionTopScorers(
   // The assist credits the assisting player, who is on the scoring team - so a
   // pure assister (no goals of their own) still earns a ranking row.
   for (const r of rows) {
-    if (r.assistPlayerId) ensure(r.assistPlayerId, r.assistPlayerName ?? 'Unknown', r.teamName, r.teamCode).assists += 1
+    if (r.assistPlayerId) ensure(r.assistPlayerId, r.assistPlayerName || 'Unknown', r.teamName, r.teamCode).assists += 1
   }
 
   return [...players.values()]

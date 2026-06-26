@@ -483,24 +483,20 @@ export function normalizeFifaTimeline(
 
 // FIFA's match-detail goals carry the beaten goalkeeper as IdAssistPlayer, never
 // the passer, so the detail doc has no usable assist. The timeline does: an
-// open-play goal event (Type 0/39) names the assister in IdSubPlayer. Match each
-// back to its match-detail goal by scorer + minute and attach the assist in place.
-// Penalties (41) and own goals (34) have no assister and are skipped by the Type
-// filter; a solo goal simply has no IdSubPlayer and stays unassisted.
+// open-play goal event names the assister in IdSubPlayer. Match each back to its
+// match-detail goal by scorer + minute and attach the assist in place. Penalties
+// and own goals carry no assister and are excluded by the goal-kind filter (which
+// reuses FIFA_EVENT_KINDS, so a stringified Type still resolves); a solo goal has
+// no IdSubPlayer and stays unassisted. `names` is the detail roster id->name map
+// that normalizeFifaMatchDetail already built (passed as its playerNames).
 export function mergeTimelineAssists(
   goals: NormalizedGoal[],
   timeline: FifaTimelineResponse,
-  detail: FifaMatchDetailResponse,
+  names: Record<string, string>,
 ): void {
-  const names = new Map<string, string>()
-  for (const t of [detail.HomeTeam, detail.AwayTeam]) {
-    for (const p of t?.Players ?? []) {
-      if (p.IdPlayer) names.set(p.IdPlayer, p.PlayerName?.[0]?.Description || p.ShortName?.[0]?.Description || 'Unknown')
-    }
-  }
   const assistBy = new Map<string, string>()
   for (const e of timeline.Event ?? []) {
-    if ((e.Type !== 0 && e.Type !== 39) || !e.IdPlayer || !e.IdSubPlayer) continue
+    if (e.Type == null || FIFA_EVENT_KINDS[e.Type] !== 'goal' || !e.IdPlayer || !e.IdSubPlayer) continue
     assistBy.set(`${e.IdPlayer}|${e.MatchMinute ?? ''}`, e.IdSubPlayer)
   }
   for (const g of goals) {
@@ -508,7 +504,7 @@ export function mergeTimelineAssists(
     const assistId = assistBy.get(`${g.playerId}|${g.minute ?? ''}`)
     if (!assistId || assistId === g.playerId) continue
     g.assistPlayerId = assistId
-    g.assistPlayerName = names.get(assistId) ?? null
+    g.assistPlayerName = names[assistId] ?? null
   }
 }
 
@@ -947,9 +943,12 @@ export function fifaProvider(options: FifaOptions): MatchDataProvider {
       if (normalized.goals.length > 0) {
         try {
           const timeline = await getJson<FifaTimelineResponse>(`${baseUrl}/timelines/${matchId}?language=en`)
-          mergeTimelineAssists(normalized.goals, timeline, detail)
-        } catch {
-          // timeline unavailable - keep the goals without assist data
+          mergeTimelineAssists(normalized.goals, timeline, normalized.playerNames ?? {})
+        } catch (e) {
+          // A rate limit must propagate so the match stays unfetched and retries
+          // later - swallowing it would bake in the missing assists permanently.
+          if (e instanceof ProviderRateLimitError) throw e
+          // Any other timeline miss: keep the goals without assist data.
         }
       }
       return normalized

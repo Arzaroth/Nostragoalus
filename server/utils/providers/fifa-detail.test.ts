@@ -351,6 +351,18 @@ describe('fifaProvider.getMatchDetail', () => {
     const d = await provider.getMatchDetail!({ stageId: 'st1', matchId: 'm1' })
     expect(d!.goals[0]).toMatchObject({ playerId: 's1', assistPlayerId: null, assistPlayerName: null })
   })
+
+  it('propagates a rate limit from the timeline fetch so the match retries later', async () => {
+    const detail = {
+      MatchTime: "90'",
+      HomeTeam: { IdTeam: 'H', Players: [{ IdPlayer: 's1' }], Goals: [{ Type: 1, IdPlayer: 's1', Minute: "23'", IdTeam: 'H' }] },
+      AwayTeam: { IdTeam: 'A', Players: [], Goals: [] },
+    }
+    const fetchImpl = (async (url: string) =>
+      url.includes('/timelines/') ? new Response('', { status: 429 }) : new Response(JSON.stringify(detail), { status: 200 })) as unknown as typeof fetch
+    const provider = fifaProvider({ seasonId: '255711', competitionId: '17', fetchImpl, rateLimiter: noWait() })
+    await expect(provider.getMatchDetail!({ stageId: 'st1', matchId: 'm1' })).rejects.toThrow()
+  })
 })
 
 describe('mergeTimelineAssists', () => {
@@ -368,7 +380,7 @@ describe('mergeTimelineAssists', () => {
     assistPlayerName: null,
     ...over,
   })
-  const detail = { HomeTeam: { Players: [{ IdPlayer: 'a1', PlayerName: [{ Locale: 'en', Description: 'Assister' }] }] }, AwayTeam: { Players: [] } }
+  const names = { a1: 'Assister' }
 
   it('attaches an open-play assist, skips own goals, penalties, solo and self assists', () => {
     const goals = [
@@ -386,7 +398,7 @@ describe('mergeTimelineAssists', () => {
         { Type: 0, IdPlayer: 's5', IdSubPlayer: 's5', MatchMinute: "50'" }, // self assist - ignored
       ],
     }
-    mergeTimelineAssists(goals, timeline, detail)
+    mergeTimelineAssists(goals, timeline, names)
     expect(goals.map((g) => [g.playerId, g.assistPlayerId, g.assistPlayerName])).toEqual([
       ['s1', 'a1', 'Assister'],
       ['s2', null, null],
@@ -398,8 +410,27 @@ describe('mergeTimelineAssists', () => {
 
   it('sets the assist id with a null name when the assister is off the roster', () => {
     const goals = [goal({ playerId: 's1', minute: "10'" })]
-    mergeTimelineAssists(goals, { Event: [{ Type: 39, IdPlayer: 's1', IdSubPlayer: 'ghost', MatchMinute: "10'" }] }, detail)
+    mergeTimelineAssists(goals, { Event: [{ Type: 39, IdPlayer: 's1', IdSubPlayer: 'ghost', MatchMinute: "10'" }] }, names)
     expect(goals[0]).toMatchObject({ assistPlayerId: 'ghost', assistPlayerName: null })
+  })
+
+  it('matches added-time goals (both feeds share the minute format) and a stringified Type', () => {
+    const goals = [goal({ playerId: 's1', minute: "45'+5'" })]
+    // FIFA sometimes serialises numeric codes as strings; the goal-kind lookup
+    // must still resolve "0" to a goal, or assists silently vanish again.
+    mergeTimelineAssists(
+      goals,
+      { Event: [{ Type: '0' as unknown as number, IdPlayer: 's1', IdSubPlayer: 'a1', MatchMinute: "45'+5'" }] },
+      names,
+    )
+    expect(goals[0]).toMatchObject({ assistPlayerId: 'a1', assistPlayerName: 'Assister' })
+  })
+
+  it('is a no-op on an empty timeline, a non-goal event, or a goal missing the assister id', () => {
+    const goals = [goal({ playerId: 's1', minute: "10'" }), goal({ playerId: null, minute: "20'" })]
+    mergeTimelineAssists(goals, { Event: [{ Type: 12, IdPlayer: 's1', IdSubPlayer: 'a1', MatchMinute: "10'" }, { Type: 0, IdPlayer: 's1', MatchMinute: "10'" }] }, names)
+    mergeTimelineAssists([goal({ playerId: 's9', minute: "9'" })], {}, names)
+    expect(goals.every((g) => g.assistPlayerId === null)).toBe(true)
   })
 })
 
