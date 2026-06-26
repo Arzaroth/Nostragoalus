@@ -89,7 +89,8 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
 - Knockout **bracket** and an interactive **world map** (Leaflet / OpenStreetMap); with crowd
   totals enabled, the map tints each nation by where the field expects its current match to go
   (blue favoured, red underdog), updating live; teams out of the tournament (knockout losers,
-  group non-qualifiers, and teams mathematically eliminated mid-group) are greyed out
+  group non-qualifiers, and teams mathematically eliminated mid-group - head-to-head included)
+  are greyed out, and the lean legend doubles as a filter to hide each group of flags
 - **Group standings** on the fixtures page: a live-aware table per group (the same one the
   match page shows), with team links and flags, ranked by each competition's official
   tiebreakers (head-to-head first for WC2026 / Euro2024, goal difference first for WC2022)
