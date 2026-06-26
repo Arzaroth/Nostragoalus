@@ -51,6 +51,7 @@
     "awaitingKeyHint": "So'lu'bogh QIn. ngaQHa'meH narghnIS jup 'elpu'bogh. nIteb qaS. naDev yIloS.",
     "dock": { "open": "QIn poSmoH", "collapse": "QIn machmoH", "title": "ghom QIn", "expand": "tInmoH", "shrink": "machqa'moH" },
     "scope": { "global": "ghom", "match": "may'vam" },
+    "rooms": { "button": "pa'mey vum", "title": "pa'mey vum", "none": "vum chu' tu'be'" },
     "empty": "QIn tu'lu'be'. yIjatlh.",
     "unknownUser": "vay'",
     "cantDecrypt": "[So'lu' - naDev ngaQHa'moHwI' tu'lu'be']",
