@@ -240,6 +240,10 @@ async function confirmRotate() {
 const listEl = ref<HTMLElement | null>(null)
 const atBottom = ref(true)
 const hasNew = ref(false)
+// Set on a room switch: the reload happens async, so we cannot scroll right away.
+// The next time messages populate we force the view to the bottom, regardless of
+// the (transient) scroll position the reload leaves behind.
+const forceBottom = ref(false)
 function onScroll() {
   const el = listEl.value
   if (!el) return
@@ -257,18 +261,21 @@ watch(
   () => messages.value.length,
   (n, prev) => {
     if (n <= prev) return
-    if (atBottom.value) scrollToBottom()
-    else hasNew.value = true
+    if (forceBottom.value || atBottom.value) {
+      forceBottom.value = false
+      scrollToBottom()
+    } else {
+      hasNew.value = true
+    }
   },
 )
 // Switching room (Global <-> Match) reloads the list: land at the latest, just
-// like opening the chat does.
+// like opening the chat does. Flag it; the reload's repopulate triggers the jump.
 watch(
   () => props.matchId,
   () => {
-    atBottom.value = true
+    forceBottom.value = true
     hasNew.value = false
-    scrollToBottom()
   },
 )
 
