@@ -69,6 +69,11 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
 - **Web push**: opt in from Preferences to get the same alerts (pick reminders, kickoff and live
   goal alerts on matches you predicted, results, league activity) on your phone or desktop with the
   app closed - per-category toggles; needs VAPID keys set (`NUXT_*_VAPID_*`), otherwise it stays off
+- **Calendar feed**: subscribe to your fixtures and pick-lockout deadlines from your own calendar
+  app (Google Calendar, Apple Calendar, Outlook, Thunderbird) - a personal signed link (https +
+  webcal) revealed in Preferences that stays up to date on its own, with a reminder three hours
+  before each match you haven't predicted; it carries fixtures and results but never your predicted
+  score, so it's safe to hand to a calendar service
 - **Shareable prediction cards**: turn any pick into a social image (server-rendered OG card via
   satori + resvg, localized) with a link that unfurls in chats - result, sealed teaser, or an
   owner-only score reveal; signed stateless tokens keep the field's picks hidden until kickoff
