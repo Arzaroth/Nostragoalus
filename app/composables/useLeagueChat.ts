@@ -8,10 +8,16 @@ import {
   openGroupKey,
   sealGroupKey,
 } from '~/utils/e2ee'
-import { compressToWebp } from '~/composables/useChatImage'
 import { chatKeyPins, isKeyTrusted } from '~/composables/useChatKeyPins'
 import { emptyReactionTotals, type ReactionEmoji, type ReactionTotals } from '#shared/reactions'
-import type { ChatMessageDTO, ChatModerationState } from '#shared/types/chat'
+import type { ChatAttachmentDTO, ChatMediaItemDTO, ChatMessageDTO, ChatModerationState } from '#shared/types/chat'
+
+// A pre-compressed image waiting to be sent (the composer buffers these before the
+// user hits send, and edits append them); bytes are the webp the composable seals.
+export interface PendingImage {
+  bytes: Uint8Array
+  byteSize: number
+}
 
 export interface DecryptedMessage {
   id: string
@@ -21,7 +27,7 @@ export interface DecryptedMessage {
   text: string | null // null = could not decrypt (wrong/absent key)
   createdAt: string
   editedAt: string | null
-  hasAttachment: boolean
+  attachments: ChatAttachmentDTO[]
   moderation: ChatModerationState
   reported: boolean
   reactions: ReactionTotals
@@ -112,7 +118,7 @@ export function useLeagueChat(
       text,
       createdAt: r.createdAt,
       editedAt: r.editedAt ?? null,
-      hasAttachment: r.hasAttachment ?? false,
+      attachments: r.attachments ?? [],
       moderation: r.moderation ?? 'VISIBLE',
       reported: r.reported ?? false,
       reactions: r.reactions ?? emptyReactionTotals(),
@@ -227,16 +233,29 @@ export function useLeagueChat(
     }
   }
 
-  async function send(text: string, parentId?: string | null): Promise<void> {
+  // Send a message: an (optional) caption plus any buffered images, as one post.
+  // The caption and each image are sealed under the current epoch; the blobs never
+  // leave the device in the clear. A message must carry text or at least one image.
+  async function send(text: string, opts: { parentId?: string | null; images?: PendingImage[] } = {}): Promise<void> {
     const body = text.trim()
+    const images = opts.images ?? []
     const ck = currentKey.value
-    if (!body || !ck || sending.value) return
+    if ((!body && images.length === 0) || !ck || sending.value) return
     sending.value = true
     try {
-      const ciphertext = await encryptMessage(body, ck)
+      const [ciphertext, imageCts] = await Promise.all([
+        encryptMessage(body, ck),
+        Promise.all(images.map((img) => encryptBytes(img.bytes, ck))),
+      ])
       const { message } = await $fetch<{ message: ChatMessageDTO }>(`/api/leagues/${lid()}/chat/messages`, {
         method: 'POST',
-        body: { matchId: mid(), parentId: parentId ?? null, ciphertext, epoch: epoch.value },
+        body: {
+          matchId: mid(),
+          parentId: opts.parentId ?? null,
+          ciphertext,
+          epoch: epoch.value,
+          images: images.map((img, i) => ({ ciphertext: imageCts[i], byteSize: img.byteSize })),
+        },
       })
       // Append our own message from the POST response; the WS echo (chat:new)
       // dedupes on id, so we don't depend on it to see what we just sent.
@@ -252,47 +271,50 @@ export function useLeagueChat(
     messages.value = messages.value.map((m) => (m.id === id ? { ...m, ...patch } : m))
   }
 
-  // The author edits their own message: re-encrypt under the current key and
-  // patch the text + edit time. The server moves the stored epoch to match.
-  async function editMessage(messageId: string, text: string): Promise<void> {
+  // The author edits their own message: re-encrypt the text under the current key,
+  // optionally dropping some images (removeIdxs) and appending new ones (sealed
+  // under the current epoch). Patch the text, edit time and attachment set from the
+  // server's authoritative response. The message must keep text or an image.
+  async function editMessage(
+    messageId: string,
+    text: string,
+    opts: { addImages?: PendingImage[]; removeIdxs?: number[] } = {},
+  ): Promise<void> {
     const body = text.trim()
+    const addImages = opts.addImages ?? []
+    const removeIdxs = opts.removeIdxs ?? []
     const ck = currentKey.value
-    if (!body || !ck) return
-    const ciphertext = await encryptMessage(body, ck)
-    const { editedAt } = await $fetch<{ editedAt: string }>(`/api/leagues/${lid()}/chat/edit`, {
-      method: 'POST',
-      body: { messageId, ciphertext },
-    })
-    patchMessage(messageId, { text: body, editedAt })
-  }
-
-  // Send an image: compress to webp, encrypt the bytes under the group key, and
-  // post it as an attachment alongside an (optional) encrypted caption. The blob
-  // never leaves the device in the clear. Returns false if the file is rejected.
-  async function sendImage(file: File, caption = '', parentId?: string | null): Promise<boolean> {
-    const ck = currentKey.value
-    if (!ck || sending.value) return false
-    const compressed = await compressToWebp(file)
-    if (!compressed) return false
-    sending.value = true
-    try {
-      const [captionCt, imageCt] = await Promise.all([encryptMessage(caption.trim(), ck), encryptBytes(compressed.bytes, ck)])
-      const { message } = await $fetch<{ message: ChatMessageDTO }>(`/api/leagues/${lid()}/chat/messages`, {
+    if (!ck) return
+    const [ciphertext, addCts] = await Promise.all([
+      encryptMessage(body, ck),
+      Promise.all(addImages.map((img) => encryptBytes(img.bytes, ck))),
+    ])
+    const { editedAt, attachments } = await $fetch<{ editedAt: string; attachments: ChatAttachmentDTO[] }>(
+      `/api/leagues/${lid()}/chat/edit`,
+      {
         method: 'POST',
         body: {
-          matchId: mid(),
-          parentId: parentId ?? null,
-          ciphertext: captionCt,
-          epoch: epoch.value,
-          image: { ciphertext: imageCt, byteSize: compressed.byteSize },
+          messageId,
+          ciphertext,
+          addImages: addImages.map((img, i) => ({ ciphertext: addCts[i], byteSize: img.byteSize })),
+          removeIdxs,
         },
+      },
+    )
+    patchMessage(messageId, { text: body, editedAt, attachments })
+  }
+
+  // Every image in this room (newest first), for the media gallery. Descriptors
+  // only - the bytes are fetched per image on demand via loadAttachment.
+  async function roomMedia(): Promise<ChatMediaItemDTO[]> {
+    const m = mid()
+    try {
+      const { media } = await $fetch<{ media: ChatMediaItemDTO[] }>(`/api/leagues/${lid()}/chat/media`, {
+        query: m ? { matchId: m } : {},
       })
-      if (message && !messages.value.some((m) => m.id === message.id)) {
-        messages.value = [...messages.value, await decryptRow(message)]
-      }
-      return true
-    } finally {
-      sending.value = false
+      return media
+    } catch {
+      return []
     }
   }
 
@@ -345,14 +367,31 @@ export function useLeagueChat(
     )
   }
 
-  // Fetch and decrypt a message's image, returning raw webp bytes (the caller
-  // turns them into a blob URL). Null if it can't be fetched/decrypted.
-  async function loadAttachment(messageId: string): Promise<Uint8Array | null> {
-    const ck = currentKey.value
-    if (!ck) return null
+  // Fetch and decrypt one image (message + idx), returning raw webp bytes (the
+  // caller turns them into a blob URL). The hinted epoch picks the key; if that one
+  // is absent or fails (a re-key, or a legacy row whose epoch was backfilled), we
+  // fall back to trying every key we hold, so the image still opens. Null if it
+  // can't be fetched or no key decrypts it.
+  async function loadAttachment(messageId: string, idx = 0, hintEpoch?: number): Promise<Uint8Array | null> {
     try {
-      const { ciphertext } = await $fetch<{ ciphertext: string }>(`/api/leagues/${lid()}/chat/attachments/${messageId}`)
-      return await decryptBytes(ciphertext, ck)
+      const { ciphertext, epoch: serverEpoch } = await $fetch<{ ciphertext: string; epoch: number }>(
+        `/api/leagues/${lid()}/chat/attachments/${messageId}`,
+        { query: { idx } },
+      )
+      const tryEpochs = [hintEpoch ?? serverEpoch, ...keys.value.keys()]
+      const seen = new Set<number>()
+      for (const ep of tryEpochs) {
+        if (seen.has(ep)) continue
+        seen.add(ep)
+        const key = keys.value.get(ep)
+        if (!key) continue
+        try {
+          return await decryptBytes(ciphertext, key)
+        } catch {
+          // wrong key for this epoch - try the next one we hold
+        }
+      }
+      return null
     } catch {
       return null
     }
@@ -454,7 +493,7 @@ export function useLeagueChat(
       // A message was edited by its author: re-decrypt the new ciphertext (it is
       // re-encrypted under the current key) and patch the text + edit time.
       if (msg.type === 'chat:edit') {
-        const em = data as { messageId?: string; ciphertext?: string; editedAt?: string }
+        const em = data as { messageId?: string; ciphertext?: string; editedAt?: string; attachments?: ChatAttachmentDTO[] }
         if (em.messageId && em.ciphertext) {
           const key = currentKey.value
           void (async () => {
@@ -466,7 +505,9 @@ export function useLeagueChat(
                 text = null
               }
             }
-            patchMessage(em.messageId!, { text, editedAt: em.editedAt ?? null })
+            const patch: Partial<DecryptedMessage> = { text, editedAt: em.editedAt ?? null }
+            if (em.attachments) patch.attachments = em.attachments
+            patchMessage(em.messageId!, patch)
           })()
         }
         return
@@ -481,7 +522,7 @@ export function useLeagueChat(
           patchMessage(mm.messageId, { moderation: mm.state })
           if (mm.state === 'VISIBLE') {
             const m = messages.value.find((x) => x.id === mm.messageId)
-            if (m && m.text === null && !m.hasAttachment) void load()
+            if (m && m.text === null && m.attachments.length === 0) void load()
           }
         }
         return
@@ -514,7 +555,7 @@ export function useLeagueChat(
     load,
     send,
     editMessage,
-    sendImage,
+    roomMedia,
     loadAttachment,
     react,
     report,
