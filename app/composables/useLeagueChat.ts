@@ -288,7 +288,10 @@ export function useLeagueChat(
   // Send a message: an (optional) caption plus any buffered images, as one post.
   // The caption and each image are sealed under the current epoch; the blobs never
   // leave the device in the clear. A message must carry text or at least one image.
-  async function send(text: string, opts: { parentId?: string | null; images?: PendingImage[] } = {}): Promise<void> {
+  async function send(
+    text: string,
+    opts: { parentId?: string | null; images?: PendingImage[]; mentions?: string[] } = {},
+  ): Promise<void> {
     const body = text.trim()
     const images = opts.images ?? []
     const ck = currentKey.value
@@ -307,6 +310,8 @@ export function useLeagueChat(
           ciphertext,
           epoch: epoch.value,
           images: images.map((img, i) => ({ ciphertext: imageCts[i], byteSize: img.byteSize })),
+          // Plaintext mention ids for the unread-mention badge (see messages.post).
+          mentions: opts.mentions ?? [],
         },
       })
       // Append our own message from the POST response; the WS echo (chat:new)

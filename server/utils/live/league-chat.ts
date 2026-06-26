@@ -15,10 +15,16 @@ import {
 import type { ChatModerationState } from '../../../shared/types/chat'
 
 // A new chat message: push the ciphertext to that league's connected members
-// only (the room is members-only, like league crowd/reaction pushes).
-export async function publishChatMessage(db: AppDatabase, message: ChatMessageDTO): Promise<number> {
+// only (the room is members-only, like league crowd/reaction pushes). `mentions`
+// is the plaintext list of @-mentioned user ids, relayed for the unread-mention
+// badge - it never carries message content.
+export async function publishChatMessage(
+  db: AppDatabase,
+  message: ChatMessageDTO,
+  mentions: readonly string[] = [],
+): Promise<number> {
   const memberIds = await getLeagueMemberIds(db, message.leagueId)
-  return publishLeagueChatMessage(message.leagueId, memberIds, message)
+  return publishLeagueChatMessage(message.leagueId, memberIds, message, mentions)
 }
 
 // A member without the current key asks the league's keyholders to re-seal it.

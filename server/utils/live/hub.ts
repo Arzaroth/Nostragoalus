@@ -128,8 +128,11 @@ export function publishLeagueChatMessage(
   leagueId: string,
   memberIds: readonly string[],
   message: ChatMessageDTO,
+  // Plaintext user ids the sender @-mentioned, carried alongside (never inside)
+  // the ciphertext so a recipient can badge an unread mention without decrypting.
+  mentions: readonly string[],
 ): number {
-  return deliverToMembers(memberIds, { type: 'chat:new', leagueId, message })
+  return deliverToMembers(memberIds, { type: 'chat:new', leagueId, message, mentions })
 }
 
 // A member is missing the current group key (just joined, or a stuck wrap):

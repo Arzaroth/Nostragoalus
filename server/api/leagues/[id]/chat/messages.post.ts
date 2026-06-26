@@ -17,6 +17,9 @@ const bodySchema = z.object({
     .array(z.object({ ciphertext: z.string().min(1).max(9_000_000), byteSize: z.number().int().positive() }))
     .max(6)
     .optional(),
+  // Plaintext ids the sender @-mentioned (derived client-side from the cleartext).
+  // Relayed on the live push for the unread-mention badge; never stored.
+  mentions: z.array(z.string().max(64)).max(64).optional(),
 })
 
 // Post one encrypted message (server stores ciphertext only) and push it live to
@@ -49,7 +52,7 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ body, user,
     myReaction: null,
   }
   // Fire-and-forget fan-out so a delivery hiccup can't fail the post itself.
-  void publishChatMessage(db, message).catch(() => {})
+  void publishChatMessage(db, message, body.mentions ?? []).catch(() => {})
   return { message }
 })
 

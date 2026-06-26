@@ -172,7 +172,7 @@ describe('ChatPanel', () => {
     const ta = wrapper.find('textarea')
     await ta.setValue('me too')
     await wrapper.find('form').trigger('submit')
-    expect(s.send).toHaveBeenCalledWith('me too', { parentId: 'p', images: [] })
+    expect(s.send).toHaveBeenCalledWith('me too', { parentId: 'p', images: [], mentions: [] })
   })
 
   it('reports another member message', async () => {
