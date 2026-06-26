@@ -19,7 +19,14 @@ export function useChatActivity(
   leagueId: MaybeRefOrGetter<string | null>,
   opts: { activeRoom: MaybeRefOrGetter<string | null>; viewing: MaybeRefOrGetter<boolean> },
 ) {
+  const { session } = useAuth()
+  const myId = computed(() => session.value?.data?.user?.id ?? null)
+
   const unread = ref<Record<string, number>>({})
+  // Unread messages that @-mention the reader, tracked separately so the dock can
+  // badge them distinctly. The chat is E2EE, so we can't read the text here - the
+  // sender ships the mentioned ids as plaintext on the push (see publishChatMessage).
+  const unreadMentions = ref<Record<string, number>>({})
 
   function markSeen(roomKey: string): void {
     if (unread.value[roomKey]) {
@@ -27,20 +34,35 @@ export function useChatActivity(
       delete next[roomKey]
       unread.value = next
     }
+    if (unreadMentions.value[roomKey]) {
+      const next = { ...unreadMentions.value }
+      delete next[roomKey]
+      unreadMentions.value = next
+    }
   }
 
   useReconnectingSocket({
     onMessage: (data) => {
-      const msg = data as { type?: string; leagueId?: string; message?: { matchId?: string | null; userId?: string } }
+      const msg = data as {
+        type?: string
+        leagueId?: string
+        message?: { matchId?: string | null; userId?: string }
+        mentions?: string[]
+      }
       if (msg.type !== 'chat:new' || msg.leagueId !== toValue(leagueId) || !msg.message) return
       const rk = roomKeyOf(msg.message.matchId ?? null)
       // The room the user is actively viewing is never unread.
       if (toValue(opts.viewing) && toValue(opts.activeRoom) === rk) return
       unread.value = { ...unread.value, [rk]: (unread.value[rk] ?? 0) + 1 }
+      const me = myId.value
+      if (me && msg.message.userId !== me && msg.mentions?.includes(me)) {
+        unreadMentions.value = { ...unreadMentions.value, [rk]: (unreadMentions.value[rk] ?? 0) + 1 }
+      }
     },
   })
 
   const total = computed(() => Object.values(unread.value).reduce((a, b) => a + b, 0))
+  const totalMentions = computed(() => Object.values(unreadMentions.value).reduce((a, b) => a + b, 0))
   const activeRooms = computed<ActiveRoom[]>(() =>
     Object.entries(unread.value)
       .filter(([, c]) => c > 0)
@@ -48,6 +70,9 @@ export function useChatActivity(
   )
   function unreadFor(roomKey: string): number {
     return unread.value[roomKey] ?? 0
+  }
+  function mentionsFor(roomKey: string): number {
+    return unreadMentions.value[roomKey] ?? 0
   }
 
   // Whatever room is being viewed clears as it is shown (and stays clear).
@@ -60,5 +85,5 @@ export function useChatActivity(
     { immediate: true },
   )
 
-  return { unread, total, activeRooms, unreadFor, markSeen }
+  return { unread, total, totalMentions, activeRooms, unreadFor, mentionsFor, markSeen }
 }

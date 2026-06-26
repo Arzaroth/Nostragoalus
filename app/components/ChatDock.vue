@@ -126,6 +126,14 @@ async function openRoom(roomMatchId: string | null) {
         class="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full text-xs font-bold flex items-center justify-center tabular-nums"
         style="background: var(--ng-danger); color: #fff"
       >{{ activity.total.value > 99 ? '99+' : activity.total.value }}</span>
+      <!-- Unread @mentions get their own badge (distinct colour), still counted in
+           the global total above. -->
+      <span
+        v-if="activity.totalMentions.value"
+        v-tooltip.left="activity.totalMentions.value === 1 ? t('chat.mention.unreadOne') : t('chat.mention.unread', { n: activity.totalMentions.value })"
+        class="absolute -top-1 -left-1 min-w-5 h-5 px-1 rounded-full text-xs font-bold flex items-center justify-center"
+        style="background: var(--ng-star); color: #000"
+      >@</span>
     </button>
 
     <!-- The window. Kept mounted while collapsed/off (v-show) to hold the socket. -->
@@ -190,6 +198,7 @@ async function openRoom(roomMatchId: string | null) {
             >
               <i :class="r.matchId ? 'pi pi-flag' : 'pi pi-hashtag'" class="text-xs" style="color: var(--p-primary-color)" />
               <span class="flex-1 truncate">{{ matchLabel(r.matchId) }}</span>
+              <span v-if="activity.mentionsFor(r.roomKey)" class="w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center" style="background: var(--ng-star); color: #000">@</span>
               <span class="min-w-5 h-5 px-1 rounded-full text-xs font-bold flex items-center justify-center tabular-nums" style="background: var(--ng-danger); color: #fff">{{ r.count }}</span>
             </button>
           </div>
