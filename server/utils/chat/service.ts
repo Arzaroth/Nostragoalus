@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, lt } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNull, lt } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { chatAttachment, chatIdentity, chatMessage, league, leagueChatKey, leagueMember, match, user } from '../../../db/schema'
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors'
@@ -12,6 +12,9 @@ const MAX_CIPHERTEXT = 16_384 // generous cap on one encrypted message blob (bas
 // Encrypted image blob cap (base64). A 5MB original compresses to webp then
 // encrypts; this leaves generous headroom while bounding one row's weight.
 const MAX_ATTACHMENT = 9_000_000
+// How many images one message may carry (send or after an edit). Keeps a single
+// bubble bounded and the per-message attachment fan-out small.
+const MAX_IMAGES = 6
 const DEFAULT_PAGE = 50
 const MAX_PAGE = 100
 
@@ -340,6 +343,16 @@ export interface ChatMessageRow {
   createdAt: Date
 }
 
+export interface AttachmentInput {
+  ciphertext: string
+  byteSize: number
+}
+
+export interface AttachmentRef {
+  idx: number
+  epoch: number
+}
+
 export async function postMessage(
   db: AppDatabase,
   opts: {
@@ -349,12 +362,16 @@ export async function postMessage(
     userId: string
     ciphertext: string
     epoch: number
-    image?: { ciphertext: string; byteSize: number } | null
+    images?: AttachmentInput[] | null
   },
-): Promise<ChatMessageRow & { hasAttachment: boolean }> {
+): Promise<ChatMessageRow & { attachments: AttachmentRef[] }> {
   if (!opts.ciphertext) throw new ValidationError('empty message')
   if (opts.ciphertext.length > MAX_CIPHERTEXT) throw new ValidationError('message too large')
-  if (opts.image && opts.image.ciphertext.length > MAX_ATTACHMENT) throw new ValidationError('image too large')
+  const images = opts.images ?? []
+  if (images.length > MAX_IMAGES) throw new ValidationError('too many images')
+  for (const img of images) {
+    if (img.ciphertext.length > MAX_ATTACHMENT) throw new ValidationError('image too large')
+  }
   const rows = await db
     .select({ enabled: league.chatEnabled, epoch: league.chatKeyEpoch, competitionId: league.competitionId })
     .from(league)
@@ -409,27 +426,46 @@ export async function postMessage(
         editedAt: chatMessage.editedAt,
         createdAt: chatMessage.createdAt,
       })
-    if (opts.image) {
-      await tx.insert(chatAttachment).values({
-        messageId: inserted[0].id,
-        ciphertext: opts.image.ciphertext,
-        byteSize: opts.image.byteSize,
-      })
+    if (images.length > 0) {
+      await tx.insert(chatAttachment).values(
+        images.map((img, idx) => ({
+          messageId: inserted[0].id,
+          idx,
+          epoch: opts.epoch,
+          ciphertext: img.ciphertext,
+          byteSize: img.byteSize,
+        })),
+      )
     }
     return inserted[0]
   })
-  return { ...row, hasAttachment: !!opts.image }
+  const attachments: AttachmentRef[] = images.map((_, idx) => ({ idx, epoch: opts.epoch }))
+  return { ...row, attachments }
 }
 
-// The author replaces their own message text (re-encrypted client-side) and the
-// edit is stamped. Author only, and only while the message is visible (a removed
-// or pending message cannot be edited). Returns the new edit time.
+// The author replaces their own message text (re-encrypted client-side), and may
+// drop some of its images (removeIdxs) and/or append new ones (addImages, sealed
+// under the current epoch). The edit is stamped. Author only, and only while the
+// message is visible (a removed or pending message cannot be edited). Returns the
+// new edit time and the message's resulting attachments (idx order).
 export async function editMessage(
   db: AppDatabase,
-  opts: { leagueId: string; messageId: string; userId: string; ciphertext: string },
-): Promise<{ editedAt: Date }> {
+  opts: {
+    leagueId: string
+    messageId: string
+    userId: string
+    ciphertext: string
+    addImages?: AttachmentInput[]
+    removeIdxs?: number[]
+  },
+): Promise<{ editedAt: Date; attachments: AttachmentRef[] }> {
   if (!opts.ciphertext) throw new ValidationError('empty message')
   if (opts.ciphertext.length > MAX_CIPHERTEXT) throw new ValidationError('message too large')
+  const addImages = opts.addImages ?? []
+  for (const img of addImages) {
+    if (img.ciphertext.length > MAX_ATTACHMENT) throw new ValidationError('image too large')
+  }
+  const removeIdxs = new Set(opts.removeIdxs ?? [])
   const rows = await db
     .select({
       leagueId: chatMessage.leagueId,
@@ -444,15 +480,48 @@ export async function editMessage(
   if (!rows[0] || rows[0].leagueId !== opts.leagueId) throw new NotFoundError('message not found')
   if (rows[0].userId !== opts.userId) throw new ForbiddenError('only the author can edit this message')
   if (rows[0].state !== 'VISIBLE') throw new ValidationError('this message cannot be edited')
+  const currentEpoch = rows[0].epoch
   const editedAt = new Date()
-  // The new ciphertext is encrypted under the current group key, so move the
-  // stored epoch to match - otherwise a later reload would decrypt with the old
-  // key and fail.
-  await db
-    .update(chatMessage)
-    .set({ ciphertext: opts.ciphertext, epoch: rows[0].epoch, editedAt })
-    .where(eq(chatMessage.id, opts.messageId))
-  return { editedAt }
+
+  const attachments = await db.transaction(async (tx) => {
+    const existing = await tx
+      .select({ idx: chatAttachment.idx, epoch: chatAttachment.epoch })
+      .from(chatAttachment)
+      .where(eq(chatAttachment.messageId, opts.messageId))
+      .orderBy(asc(chatAttachment.idx))
+    const survivors = existing.filter((a) => !removeIdxs.has(a.idx))
+    if (survivors.length + addImages.length > MAX_IMAGES) throw new ValidationError('too many images')
+
+    // The new text is sealed under the current group key, so move the stored epoch
+    // to match - otherwise a later reload would decrypt with the old key and fail.
+    // Kept images stay at their own epoch (the client decrypts each accordingly).
+    await tx
+      .update(chatMessage)
+      .set({ ciphertext: opts.ciphertext, epoch: currentEpoch, editedAt })
+      .where(eq(chatMessage.id, opts.messageId))
+
+    if (removeIdxs.size > 0) {
+      await tx
+        .delete(chatAttachment)
+        .where(and(eq(chatAttachment.messageId, opts.messageId), inArray(chatAttachment.idx, [...removeIdxs])))
+    }
+
+    // New images append after the surviving ones, keeping idx stable for the kept
+    // images (gaps from a removal are fine - idx is an identity, not a position).
+    let nextIdx = survivors.reduce((max, a) => Math.max(max, a.idx), -1) + 1
+    const added: AttachmentRef[] = []
+    if (addImages.length > 0) {
+      await tx.insert(chatAttachment).values(
+        addImages.map((img) => {
+          const idx = nextIdx++
+          added.push({ idx, epoch: currentEpoch })
+          return { messageId: opts.messageId, idx, epoch: currentEpoch, ciphertext: img.ciphertext, byteSize: img.byteSize }
+        }),
+      )
+    }
+    return [...survivors, ...added].sort((a, b) => a.idx - b.idx)
+  })
+  return { editedAt, attachments }
 }
 
 // A page of ciphertext for one room (matchId null = the league-global room),
