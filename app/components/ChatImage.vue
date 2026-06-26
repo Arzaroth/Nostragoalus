@@ -22,14 +22,18 @@ interface Thumb {
 
 const thumbs = ref<Thumb[]>([])
 let alive = true
+// Bumped on each (re)load so a stale in-flight decrypt from a previous attachment
+// set can't write the wrong thumbnail or leak its URL after an edit reorders them.
+let runId = 0
 const urls: string[] = []
 
 async function loadAll(): Promise<void> {
+  const run = ++runId
   thumbs.value = props.attachments.map((a) => ({ idx: a.idx, src: null, loading: true, failed: false }))
   await Promise.all(
     props.attachments.map(async (a, i) => {
       const bytes = await props.load(props.messageId, a.idx, a.epoch).catch(() => null)
-      if (!alive) return
+      if (!alive || run !== runId) return
       const thumb = thumbs.value[i]
       if (!thumb) return
       if (!bytes) {

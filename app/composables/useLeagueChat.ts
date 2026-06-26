@@ -337,6 +337,11 @@ export function useLeagueChat(
     const removeIdxs = opts.removeIdxs ?? []
     const ck = currentKey.value
     if (!ck) return
+    // The message must keep some content: text, a surviving image, or a new one -
+    // an edit that strips everything would leave a ghost message.
+    const msg = messages.value.find((m) => m.id === messageId)
+    const keptCount = (msg ? msg.attachments.filter((a) => !removeIdxs.includes(a.idx)).length : 0) + addImages.length
+    if (!body && keptCount === 0) return
     const [ciphertext, addCts] = await Promise.all([
       encryptMessage(body, ck),
       Promise.all(addImages.map((img) => encryptBytes(img.bytes, ck))),
@@ -533,6 +538,10 @@ export function useLeagueChat(
     lastTypingSent = now
     socket.send({ type: 'chat:typing', leagueId: lid(), matchId: mid() })
   }
+  onScopeDispose(() => {
+    for (const tmr of typingTimers.values()) clearTimeout(tmr)
+    typingTimers.clear()
+  })
 
   const socket = useReconnectingSocket({
     onOpen: () => {
