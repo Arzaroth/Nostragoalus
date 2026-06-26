@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.40.0] - 2026-06-26
+
 ### Added
 - **Several images per message, buffered before you send**: attach, paste or drop more than one image and they wait in a tray under the composer - reorder your thoughts, drop any you change your mind about, then send the caption and every image as one message. Editing a message can now drop its images or add new ones too, and that counts as an edit just like changing the text.
 - **A better image viewer**: tap any image to open it full-screen, then step through every image on that message with the on-screen arrows or your keyboard's left/right keys. The caption and reactions show beneath the picture. Copy, download (a properly named PNG, e.g. `nostragoalus-chat-myleague-eng-v-fra-2026-06-26.png`) and, on mobile, share to any app.
