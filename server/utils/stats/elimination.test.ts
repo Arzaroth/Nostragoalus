@@ -73,6 +73,49 @@ describe('computeEliminatedTeams - mid-group brute force', () => {
   })
 })
 
+describe('computeEliminatedTeams - mid-group head-to-head tiebreak', () => {
+  // A1 and B1 are clear on 6. C1 has 3 and is done; D1 has 0 with one game left
+  // (vs A1). D1 can at most reach 3 - level with C1 - but C1 won their decisive
+  // head-to-head, so D1 is 4th in every remaining outcome. The old points-only
+  // check left D1 "alive" because only two teams are strictly above it on points;
+  // resolving the tie by head-to-head greys it. (The Panama / Jordan case.)
+  const tiedButLostH2H = [
+    gm('A', 'C1', 'D1', 1, 0), // C1 beat D1 - the decisive head-to-head
+    gm('A', 'B1', 'D1', 1, 0),
+    gm('A', 'A1', 'B1', 1, 0),
+    gm('A', 'A1', 'C1', 1, 0),
+    gm('A', 'B1', 'C1', 1, 0),
+    sched('A', 'A1', 'D1'),
+  ]
+  it('greys a team that can only tie the cut but lost the head-to-head (WC2026)', () => {
+    const out = set(tiedButLostH2H, 'world-cup-2026')
+    expect(out.has('D1')).toBe(true)
+    expect(out.has('A1')).toBe(false)
+    expect(out.has('B1')).toBe(false)
+    expect(out.has('C1')).toBe(false) // C1 wins the tie, can still be third
+  })
+  it('applies the same head-to-head-first resolution for Euro 2024', () => {
+    expect(set(tiedButLostH2H, 'euro-2024').has('D1')).toBe(true)
+  })
+
+  // The same shape, but the C1-D1 head-to-head was a DRAW: their head-to-head
+  // points are level, so the tie hinges on goal difference we don't enumerate.
+  // D1 must stay alive - it could still pip C1 on goals (no false elimination).
+  const tiedH2HLevel = [
+    gm('A', 'C1', 'D1', 1, 1), // drawn head-to-head
+    gm('A', 'A1', 'C1', 1, 0),
+    gm('A', 'A1', 'D1', 1, 0),
+    gm('A', 'B1', 'C1', 1, 0),
+    gm('A', 'B1', 'D1', 1, 0),
+    sched('A', 'A1', 'B1'),
+  ]
+  it('does NOT grey a tie that head-to-head cannot break (stays optimistic)', () => {
+    const out = set(tiedH2HLevel, 'world-cup-2026')
+    expect(out.has('D1')).toBe(false)
+    expect(out.has('C1')).toBe(false)
+  })
+})
+
 describe('computeEliminatedTeams - edge cases', () => {
   it('ignores draws, cancelled, scoreless-finished, and undecided knockout matches', () => {
     const matches: ElimMatch[] = [
