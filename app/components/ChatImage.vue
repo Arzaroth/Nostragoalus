@@ -23,7 +23,7 @@ onMounted(async () => {
       failed.value = true
       return
     }
-    blob = new Blob([bytes], { type: 'image/webp' })
+    blob = new Blob([bytes as BlobPart], { type: 'image/webp' })
     src.value = URL.createObjectURL(blob)
   } catch {
     failed.value = true
