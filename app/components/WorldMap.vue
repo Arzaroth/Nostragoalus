@@ -1,7 +1,12 @@
 <script setup lang="ts">
-import L from 'leaflet'
+import type * as Leaflet from 'leaflet'
 import { COUNTRY_CENTROIDS as COORDS } from '../utils/country-centroids'
 import { leanColor } from '../utils/crowd-lean'
+
+// A regular (SSR-hydrated) component, NOT a .client one: a .client component's
+// template ref stays null in onMounted in the prod/SSR build, so L.map() never
+// ran and the map came up blank. Leaflet touches `window` at import, so it is
+// imported dynamically inside onMounted (client-only) instead of at module top.
 
 const { t } = useI18n()
 const props = defineProps<{
@@ -15,20 +20,25 @@ const emit = defineEmits<{ select: [team: { code: string; name: string }] }>()
 const hasLean = computed(() => !!props.teamLean && Object.keys(props.teamLean).length > 0)
 
 const el = ref<HTMLElement>()
-let map: L.Map | null = null
-let markers: L.LayerGroup | null = null
+let L: typeof Leaflet | null = null
+let map: Leaflet.Map | null = null
+let markers: Leaflet.LayerGroup | null = null
 // Keyed so a lean change can re-tint rings in place instead of tearing down and
 // rebuilding every marker (a live match patches crowd totals frequently).
-let markerByCode: Record<string, L.Marker> = {}
+let markerByCode: Record<string, Leaflet.Marker> = {}
 
 function ringShadow(code: string): string {
   const lean = props.teamLean?.[code]
-  const ring = lean === undefined ? '#fff' : leanColor(lean)
-  return `0 0 0 3px ${ring}, 0 2px 6px rgba(0, 0, 0, 0.35)`
+  // No lean (overlay off / no data): the plain white-ringed marker.
+  if (lean === undefined) return '0 0 0 2px #fff, 0 2px 6px rgba(0, 0, 0, 0.35)'
+  // Lean: a white separator, a thick colour band, and a soft glow of the same
+  // colour so the tint is legible against neighbouring flags.
+  const c = leanColor(lean)
+  return `0 0 0 2px #fff, 0 0 0 5px ${c}, 0 0 11px 3px ${c}`
 }
 
 function drawMarkers() {
-  if (!map) return
+  if (!map || !L) return
   if (!markers) markers = L.layerGroup().addTo(map)
   markers.clearLayers()
   markerByCode = {}
@@ -66,8 +76,10 @@ function centerOn(code: string) {
 }
 defineExpose({ centerOn })
 
-onMounted(() => {
+onMounted(async () => {
   if (!el.value) return
+  const mod = await import('leaflet')
+  L = mod.default ?? (mod as unknown as typeof Leaflet)
   map = L.map(el.value, { center: [25, 10], zoom: 2, minZoom: 1, maxZoom: 6, worldCopyJump: true })
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap',
@@ -88,6 +100,7 @@ onBeforeUnmount(() => {
   map?.remove()
   map = null
   markers = null
+  L = null
 })
 </script>
 

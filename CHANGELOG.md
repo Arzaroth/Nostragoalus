@@ -5,6 +5,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+- The world map renders again on the built site: it was coming up blank - no tiles, no countries - because the map component's element reference never bound in production. The map now loads its tiles, country flags and the crowd-lean tint as expected.
+
+### Changed
+- The crowd-lean tint on the world map is now far more visible: each nation's flag carries a thicker coloured ring and a soft glow (blue when the crowd favours it, red for the underdog), instead of a thin pale outline.
+
 ## [1.38.0] - 2026-06-26
 
 ### Added

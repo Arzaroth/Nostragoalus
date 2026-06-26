@@ -85,11 +85,11 @@ describe('computeTeamLean', () => {
 describe('leanColor', () => {
   it('returns a blue tint for a favoured team and red for an underdog', () => {
     expect(leanColor(1)).toBe('hsl(212, 90%, 46%)')
-    expect(leanColor(-1)).toBe('hsl(6, 90%, 46%)')
+    expect(leanColor(-1)).toBe('hsl(2, 90%, 46%)')
   })
 
-  it('is pale and neutral near zero, and clamps out-of-range input', () => {
-    expect(leanColor(0)).toBe('hsl(212, 20%, 82%)')
+  it('is muted-neutral near zero, and clamps out-of-range input', () => {
+    expect(leanColor(0)).toBe('hsl(212, 30%, 64%)')
     expect(leanColor(5)).toBe(leanColor(1))
     expect(leanColor(-5)).toBe(leanColor(-1))
   })
