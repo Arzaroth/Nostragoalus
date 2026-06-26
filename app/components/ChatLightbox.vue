@@ -34,6 +34,9 @@ const hasNext = computed(() => index.value < props.items.length - 1)
 // viewer is open and revoked on close so the plaintext never lingers.
 const cache = new Map<string, { blob: Blob; url: string }>()
 const src = ref<string | null>(null)
+// The current image's blob, mirrored as a ref so copy/download/share + canShare
+// react when it loads (the cache is a plain Map and would not trigger them).
+const currentBlob = ref<Blob | null>(null)
 const loading = ref(false)
 const failed = ref(false)
 let token = 0
@@ -49,6 +52,7 @@ async function showCurrent(): Promise<void> {
   const hit = cache.get(k)
   if (hit) {
     src.value = hit.url
+    currentBlob.value = hit.blob
     failed.value = false
     loading.value = false
     return
@@ -57,6 +61,7 @@ async function showCurrent(): Promise<void> {
   loading.value = true
   failed.value = false
   src.value = null
+  currentBlob.value = null
   const bytes = await props.load(it.messageId, it.idx, it.epoch)
   if (mine !== token) return // moved on while decrypting
   if (!bytes) {
@@ -68,6 +73,7 @@ async function showCurrent(): Promise<void> {
   const url = URL.createObjectURL(blob)
   cache.set(k, { blob, url })
   src.value = url
+  currentBlob.value = blob
   loading.value = false
 }
 
@@ -93,6 +99,7 @@ watch(visible, (v) => {
   if (!v) {
     token++
     src.value = null
+    currentBlob.value = null
     clearCache()
   }
 })
@@ -109,7 +116,6 @@ onUnmounted(() => {
   clearCache()
 })
 
-const currentBlob = computed(() => (current.value ? cache.get(keyOf(current.value))?.blob ?? null : null))
 const canShare = computed(
   () =>
     import.meta.client &&
