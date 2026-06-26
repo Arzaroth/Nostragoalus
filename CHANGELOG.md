@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.36.0] - 2026-06-26
+
 ### Added
 - **League chat, front and center**: chat now rides along as a collapsible window in the bottom-right corner of competition and match pages (collapsed by default), so it is no longer tucked away on the league page where nobody found it. The window can be expanded for a roomier view. On a match it gains a Global/Match toggle to flip between the league room and that match's thread. The league page keeps its full inline chat.
 - **Message reactions**: react to any chat message with an emoji, the same set as match reactions. Counts update live for everyone, and tapping your own reaction again removes it.
