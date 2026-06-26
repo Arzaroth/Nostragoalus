@@ -127,6 +127,7 @@
       "favored": "Favori",
       "neutral": "Équilibré",
       "underdog": "Outsider",
+      "eliminated": "Éliminé",
       "hint": "Activez « Afficher les totaux de tous » dans les Préférences pour colorer la carte selon la tendance des pronostics."
     },
     "hint": "Cliquez sur un pays pour voir son équipe.",

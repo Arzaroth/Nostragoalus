@@ -1,38 +1,38 @@
-import { and, eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { db } from '../../../db'
 import { match } from '../../../db/app-schema'
 import { resolveCompetition } from '../../utils/competitions/store'
-import { computeAllGroupStandings } from '../../utils/stats/standings'
-import { tiebreakersForCompetition } from '../../utils/stats/tiebreakers'
+import { computeEliminatedTeams } from '../../utils/stats/elimination'
 
+// Team codes that are out of the tournament beyond any doubt (knockout losers,
+// group non-qualifiers, and teams mathematically eliminated mid-group), for greying
+// them on the world map. Public read - it exposes only fixture-derived facts.
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const competition = await resolveCompetition(db, (query.competition as string) || null)
-  if (!competition) return { groups: [] }
+  if (!competition) return { codes: [] }
   const rows = await db
     .select({
+      stage: match.stage,
       group: match.groupName,
-      homeTeam: match.homeTeam,
-      awayTeam: match.awayTeam,
       homeTeamCode: match.homeTeamCode,
       awayTeamCode: match.awayTeamCode,
       status: match.status,
       fullTimeHome: match.fullTimeHome,
       fullTimeAway: match.fullTimeAway,
+      winner: match.winner,
     })
     .from(match)
-    .where(and(eq(match.competitionId, competition.id), eq(match.stage, 'GROUP')))
-  // includeLive: the table tracks in-progress matches at their live scoreline,
-  // matching the provisional table the match detail view shows.
-  const tb = tiebreakersForCompetition(competition.slug)
-  return { groups: computeAllGroupStandings(rows, { includeLive: true, tiebreakers: tb.withinGroup }) }
+    .where(eq(match.competitionId, competition.id))
+  return { codes: computeEliminatedTeams(rows, competition.slug) }
 })
 
 defineRouteMeta({
   openAPI: {
     tags: ['Competitions'],
-    summary: 'Group standings',
-    description: 'Every group-stage table for the competition (provisional: in-progress matches count live). Empty for knockout-only tournaments.',
+    summary: 'Eliminated teams',
+    description:
+      'Team codes certainly out of the tournament: knockout losers, group non-qualifiers, and teams mathematically eliminated mid-group (per the competition’s tiebreaker rules). Empty for a competition with no decided eliminations yet.',
     parameters: [
       {
         in: 'query',
@@ -43,7 +43,7 @@ defineRouteMeta({
       },
     ],
     responses: {
-      '200': { description: 'Standings grouped by group letter.' },
+      '200': { description: 'Array of eliminated team codes.' },
     },
   },
 })

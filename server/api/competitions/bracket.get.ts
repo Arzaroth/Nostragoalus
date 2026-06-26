@@ -6,6 +6,7 @@ import { orderBracketFeeders } from '../../utils/providers/bracket-order'
 import { resolveCompetition } from '../../utils/competitions/store'
 import { resolveCompetitionSeason } from '../../utils/sync/competition'
 import { computeAllGroupStandings } from '../../utils/stats/standings'
+import { tiebreakersForCompetition, type Criterion } from '../../utils/stats/tiebreakers'
 import { projectBracket } from '../../utils/bracket/projection'
 import type { NormalizedBracket } from '../../../shared/types/match'
 
@@ -28,7 +29,7 @@ async function buildBaseBracket(competitionId: string, provider: ReturnType<type
   return bracket
 }
 
-async function groupStandingsFor(competitionId: string) {
+async function groupStandingsFor(competitionId: string, tiebreakers: Criterion[]) {
   const rows = await db
     .select({
       group: match.groupName,
@@ -42,7 +43,7 @@ async function groupStandingsFor(competitionId: string) {
     })
     .from(match)
     .where(and(eq(match.competitionId, competitionId), eq(match.stage, 'GROUP')))
-  return computeAllGroupStandings(rows, { includeLive: true })
+  return computeAllGroupStandings(rows, { includeLive: true, tiebreakers })
 }
 
 export default defineEventHandler(async (event) => {
@@ -61,7 +62,8 @@ export default defineEventHandler(async (event) => {
       cache.set(competition.id, { at: Date.now(), bracket: base })
     }
     if (!base) return { bracket: null }
-    return { bracket: projectBracket(base, await groupStandingsFor(competition.id)) }
+    const tb = tiebreakersForCompetition(competition.slug)
+    return { bracket: projectBracket(base, await groupStandingsFor(competition.id, tb.withinGroup), tb.bestThird) }
   } catch (error) {
     // Fail safe to "no bracket", but log so an outage isn't mistaken for the
     // empty state.

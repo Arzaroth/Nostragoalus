@@ -7,8 +7,7 @@ const slug = useSelectedCompetition()
 // the "show everyone's totals" preference, so it is gated on that same opt-in.
 // These composables register effect scope + lifecycle hooks (vue-query, the
 // reconnecting socket), so they MUST run before the awaited fetch below: after an
-// await the active component instance is gone, the wiring fails to register, and
-// the client mount of the .client <WorldMap> breaks (blank map in the prod build).
+// await the active component instance is gone and the wiring fails to register.
 const { data: allMatches } = useMatches()
 // Subscribe the match list to live updates here too, so a match finishing
 // mid-session advances its teams to their next fixture instead of staying tinted.
@@ -16,6 +15,17 @@ useLiveMatches(allMatches)
 const { totals: crowdTotals, enabled: crowdEnabled } = useCrowdTotals()
 const teamLean = computed(() =>
   crowdEnabled.value ? computeTeamLean(allMatches.value ?? [], crowdTotals.value) : {},
+)
+// Teams certainly out of the tournament are greyed on the map (server-computed
+// from the competition's group tiebreaker rules + knockout results). Refetched as
+// results land - the match list is live-patched here via useLiveMatches.
+const { data: elimData, refresh: refreshEliminated } = useFetch<{ codes: string[] }>('/api/competitions/eliminated', {
+  query: computed(() => (slug.value ? { competition: slug.value } : {})),
+})
+const eliminated = computed(() => new Set(elimData.value?.codes ?? []))
+watch(
+  () => (allMatches.value ?? []).map((m) => m.status).join(','),
+  () => refreshEliminated(),
 )
 
 const { data: teamsData } = await useFetch<{ teams: { code: string; name: string }[] }>('/api/competitions/teams', {
@@ -125,7 +135,7 @@ function fmt(d: string) {
         already client-only by filename. Wrapping it in <ClientOnly> on top of
         that left the fallback mounted and the map never hydrated in the prod
         build - render it directly. -->
-        <WorldMap ref="mapRef" :teams="teams" :team-lean="teamLean" @select="onSelect" />
+        <WorldMap ref="mapRef" :teams="teams" :team-lean="teamLean" :eliminated="eliminated" @select="onSelect" />
         <NuxtLink
           v-if="!crowdEnabled"
           to="/preferences"

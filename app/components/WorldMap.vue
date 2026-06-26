@@ -14,10 +14,13 @@ const props = defineProps<{
   // Optional per-team crowd lean in [-1, 1]; tints each flag's ring. Absent = the
   // plain white-ringed map.
   teamLean?: Record<string, number>
+  // Team codes that are out of the tournament; their flags are greyed out.
+  eliminated?: Set<string>
 }>()
 const emit = defineEmits<{ select: [team: { code: string; name: string }] }>()
 
 const hasLean = computed(() => !!props.teamLean && Object.keys(props.teamLean).length > 0)
+const hasEliminated = computed(() => !!props.eliminated && props.eliminated.size > 0)
 
 const el = ref<HTMLElement>()
 let L: typeof Leaflet | null = null
@@ -27,14 +30,19 @@ let markers: Leaflet.LayerGroup | null = null
 // rebuilding every marker (a live match patches crowd totals frequently).
 let markerByCode: Record<string, Leaflet.Marker> = {}
 
-function ringShadow(code: string): string {
+// The full inline <img> style for a marker: a greyed-out frame for an eliminated
+// team, otherwise the (optionally lean-tinted) ring.
+function markerImgStyle(code: string): string {
+  if (props.eliminated?.has(code)) {
+    return 'box-shadow: 0 0 0 2px rgba(190, 190, 200, 0.55), 0 2px 6px rgba(0, 0, 0, 0.3); filter: grayscale(1); opacity: 0.45'
+  }
   const lean = props.teamLean?.[code]
   // No lean (overlay off / no data): the plain white-ringed marker.
-  if (lean === undefined) return '0 0 0 2px #fff, 0 2px 6px rgba(0, 0, 0, 0.35)'
+  if (lean === undefined) return 'box-shadow: 0 0 0 2px #fff, 0 2px 6px rgba(0, 0, 0, 0.35)'
   // Lean: a white separator, a thick colour band, and a soft glow of the same
   // colour so the tint is legible against neighbouring flags.
   const c = leanColor(lean)
-  return `0 0 0 2px #fff, 0 0 0 5px ${c}, 0 0 11px 3px ${c}`
+  return `box-shadow: 0 0 0 2px #fff, 0 0 0 5px ${c}, 0 0 11px 3px ${c}`
 }
 
 function drawMarkers() {
@@ -47,7 +55,7 @@ function drawMarkers() {
     if (!coord) continue
     const icon = L.divIcon({
       className: 'ng-flag-marker',
-      html: `<img src="https://api.fifa.com/api/v3/picture/flags-sq-3/${team.code}" alt="" style="box-shadow: ${ringShadow(team.code)}" />`,
+      html: `<img src="https://api.fifa.com/api/v3/picture/flags-sq-3/${team.code}" alt="" style="${markerImgStyle(team.code)}" />`,
       iconSize: [28, 28],
       iconAnchor: [14, 14],
     })
@@ -61,12 +69,14 @@ function drawMarkers() {
   }
 }
 
-// Re-tint existing markers' rings without rebuilding them - only the box-shadow
-// changes, so the flag <img> and click handlers stay put (no flicker).
+// Re-tint existing markers' rings without rebuilding them - only the inline style
+// changes, so the flag <img> and click handlers stay put (no flicker). Eliminated
+// markers keep their grey style (their lean never changes), set at draw time.
 function retintMarkers() {
   for (const [code, marker] of Object.entries(markerByCode)) {
+    if (props.eliminated?.has(code)) continue
     const img = marker.getElement()?.querySelector('img')
-    if (img) (img as HTMLElement).style.boxShadow = ringShadow(code)
+    if (img) (img as HTMLElement).style.cssText = markerImgStyle(code)
   }
 }
 
@@ -95,6 +105,9 @@ onMounted(async () => {
 // shallow watch fires).
 watch(() => props.teams, drawMarkers, { deep: true })
 watch(() => props.teamLean, retintMarkers)
+// Elimination changes rarely (a knockout result, end of groups) - a full rebuild
+// is fine and re-bakes the grey style.
+watch(() => props.eliminated, drawMarkers)
 
 onBeforeUnmount(() => {
   map?.remove()
@@ -107,15 +120,21 @@ onBeforeUnmount(() => {
 <template>
   <div class="relative">
     <div ref="el" class="w-full rounded-2xl border" style="height: 70vh; border-color: var(--p-content-border-color)" />
-    <div v-if="hasLean" class="ng-lean-legend">
-      <div class="font-semibold mb-1">{{ t('map.lean.title') }}</div>
-      <div class="flex items-center gap-1.5">
-        <span class="ng-lean-swatch" :style="{ background: leanColor(-1) }" />
-        <span>{{ t('map.lean.underdog') }}</span>
-        <span class="ng-lean-swatch" :style="{ background: leanColor(0) }" />
-        <span>{{ t('map.lean.neutral') }}</span>
-        <span class="ng-lean-swatch" :style="{ background: leanColor(1) }" />
-        <span>{{ t('map.lean.favored') }}</span>
+    <div v-if="hasLean || hasEliminated" class="ng-lean-legend">
+      <template v-if="hasLean">
+        <div class="font-semibold mb-1">{{ t('map.lean.title') }}</div>
+        <div class="flex items-center gap-1.5">
+          <span class="ng-lean-swatch" :style="{ background: leanColor(-1) }" />
+          <span>{{ t('map.lean.underdog') }}</span>
+          <span class="ng-lean-swatch" :style="{ background: leanColor(0) }" />
+          <span>{{ t('map.lean.neutral') }}</span>
+          <span class="ng-lean-swatch" :style="{ background: leanColor(1) }" />
+          <span>{{ t('map.lean.favored') }}</span>
+        </div>
+      </template>
+      <div v-if="hasEliminated" class="flex items-center gap-1.5" :class="{ 'mt-1.5': hasLean }">
+        <span class="ng-lean-swatch ng-out-swatch" />
+        <span>{{ t('map.lean.eliminated') }}</span>
       </div>
     </div>
   </div>
@@ -161,5 +180,9 @@ onBeforeUnmount(() => {
   border-radius: 9999px;
   border: 1px solid rgba(0, 0, 0, 0.15);
   flex: none;
+}
+.ng-out-swatch {
+  background: rgba(190, 190, 200, 0.55);
+  filter: grayscale(1);
 }
 </style>
