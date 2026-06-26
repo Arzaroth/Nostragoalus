@@ -1,4 +1,5 @@
-import type { GroupStandings } from '../stats/standings'
+import { compareByCriteria, type GroupStandings, type StandingRow } from '../stats/standings'
+import type { Criterion } from '../stats/tiebreakers'
 import type { NormalizedBracket } from '../../../shared/types/match'
 
 // Predictive bracket: resolve a knockout slot's placeholder (e.g. "1A", "Winner
@@ -84,20 +85,23 @@ export interface ProjectInput {
   groupReady: Record<string, boolean>
   // Best thirds that advance (8 for WC2026, 4 for Euro2024, 0 for top-2 formats).
   thirdsToQualify: number
+  // Per-competition cross-group third-place criteria (no head-to-head - the teams
+  // never met). Defaults to the classic points/GD/GF order.
+  bestThird?: Criterion[]
 }
 
-// Cross-group ranking of third-placed teams (FIFA order: points, then goal
-// difference, then goals for); group letter breaks any remaining tie so the
-// projection is deterministic.
+// Cross-group ranking of third-placed teams by the competition's best-third
+// criteria; group letter breaks any remaining tie so the projection is deterministic.
 function rankThirds(input: ProjectInput): { code: string; name: string; group: string }[] {
   // Only called once every group is ready, so no per-group readiness check here.
-  const thirds = []
+  const thirds: (StandingRow & { group: string })[] = []
   for (const gs of input.standings) {
     const row = gs.rows[2]
-    if (row?.code) thirds.push({ ...row, code: row.code, group: gs.group })
+    if (row?.code) thirds.push({ ...row, group: gs.group })
   }
-  thirds.sort((a, b) => b.points - a.points || b.gd - a.gd || b.gf - a.gf || a.group.localeCompare(b.group))
-  return thirds.map((t) => ({ code: t.code, name: t.name, group: t.group }))
+  const cmp = compareByCriteria(input.bestThird ?? ['points', 'gd', 'gf'])
+  thirds.sort((a, b) => cmp(a, b) || a.group.localeCompare(b.group))
+  return thirds.map((t) => ({ code: t.code!, name: t.name, group: t.group }))
 }
 
 // Resolve each keyed slot to its currently-projected team. Group slots resolve
@@ -184,7 +188,11 @@ export function projectSlots(
 // group has. thirdsToQualify is the number of third-placed slots in the bracket
 // (each takes one of the top-ranked qualifying thirds), so no per-format table is
 // hardcoded. Returns the bracket unchanged when nothing can be projected.
-export function projectBracket(bracket: NormalizedBracket, standings: GroupStandings[]): NormalizedBracket {
+export function projectBracket(
+  bracket: NormalizedBracket,
+  standings: GroupStandings[],
+  bestThird?: Criterion[],
+): NormalizedBracket {
   const groupReady: Record<string, boolean> = {}
   for (const g of standings) groupReady[g.group] = g.rows.length > 0 && g.rows.every((r) => r.played >= 1)
 
@@ -204,7 +212,7 @@ export function projectBracket(bracket: NormalizedBracket, standings: GroupStand
     }
   }
   const thirdsToQualify = slots.filter((s) => s.ref.kind === 'third').length
-  const proj = projectSlots(slots, { standings, groupReady, thirdsToQualify })
+  const proj = projectSlots(slots, { standings, groupReady, thirdsToQualify, bestThird })
   if (proj.size === 0) return bracket
 
   return {

@@ -127,6 +127,7 @@
       "favored": "Favoured",
       "neutral": "Even",
       "underdog": "Underdog",
+      "eliminated": "Eliminated",
       "hint": "Turn on \"Show everyone's totals\" in Preferences to colour the map by where the crowd is leaning."
     },
     "hint": "Click a country on the map to see its team.",
