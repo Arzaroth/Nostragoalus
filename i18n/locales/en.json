@@ -51,6 +51,7 @@
     "awaitingKeyHint": "Chat is end-to-end encrypted. A member who is already in the chat has to come online to hand you the key. This happens automatically - leave this open and it will unlock.",
     "dock": { "open": "Open league chat", "collapse": "Minimize chat", "title": "League chat", "expand": "Expand", "shrink": "Shrink" },
     "scope": { "global": "League", "match": "This match" },
+    "rooms": { "button": "Rooms with activity", "title": "Rooms with activity", "none": "No new activity" },
     "empty": "No messages yet. Say something.",
     "unknownUser": "Someone",
     "cantDecrypt": "[encrypted - no key on this device]",

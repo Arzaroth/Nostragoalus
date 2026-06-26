@@ -51,6 +51,7 @@
     "awaitingKeyHint": "Le chat est chiffré de bout en bout. Un membre déjà présent dans le chat doit se connecter pour vous transmettre la clé. Cela se fait automatiquement : laissez cette fenêtre ouverte et le chat se déverrouillera.",
     "dock": { "open": "Ouvrir le chat de la ligue", "collapse": "Réduire le chat", "title": "Chat de la ligue", "expand": "Agrandir", "shrink": "Rétrécir" },
     "scope": { "global": "Ligue", "match": "Ce match" },
+    "rooms": { "button": "Salons actifs", "title": "Salons actifs", "none": "Aucune nouvelle activité" },
     "empty": "Aucun message pour l'instant. Lancez-vous.",
     "unknownUser": "Quelqu'un",
     "cantDecrypt": "[chiffré - aucune clé sur cet appareil]",
