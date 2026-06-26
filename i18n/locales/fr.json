@@ -42,6 +42,7 @@
     "enable": "Activer le chat",
     "disable": "Désactiver le chat",
     "send": "Envoyer",
+    "copyText": "Copier le texte",
     "placeholder": "Écrire un message",
     "loading": "Chargement des messages...",
     "settingUp": "Préparation de votre clé...",
