@@ -419,6 +419,17 @@ describe('editMessage', () => {
     await expect(editMessage(db, { leagueId, messageId: m.id, userId: owner, ciphertext: 'x' })).rejects.toBeInstanceOf(ValidationError)
     await client.close()
   })
+
+  it('rejects an empty or oversized edit ciphertext', async () => {
+    const { db, client, owner, leagueId } = await setup()
+    await enableWith(db, leagueId, owner, [owner])
+    const m = await postMessage(db, { leagueId, userId: owner, ciphertext: 'orig', epoch: 1 })
+    await expect(editMessage(db, { leagueId, messageId: m.id, userId: owner, ciphertext: '' })).rejects.toBeInstanceOf(ValidationError)
+    await expect(
+      editMessage(db, { leagueId, messageId: m.id, userId: owner, ciphertext: 'x'.repeat(16_385) }),
+    ).rejects.toBeInstanceOf(ValidationError)
+    await client.close()
+  })
 })
 
 describe('listMessages', () => {

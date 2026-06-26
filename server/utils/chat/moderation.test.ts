@@ -24,7 +24,7 @@ async function setup(extraMembers = 0) {
     await addLeagueMember(ctx.db, leagueId, u)
     members.push(u)
   }
-  return { ...ctx, owner, leagueId, members }
+  return { ...ctx, competitionId, owner, leagueId, members }
 }
 
 describe('pendingThreshold', () => {
@@ -109,6 +109,19 @@ describe('moderateMessage', () => {
     await expect(moderateMessage(db, { leagueId, messageId: theirs, actorId: members[0], action: 'remove' })).rejects.toBeInstanceOf(ForbiddenError)
     // Author cannot restore (moderator only).
     await expect(moderateMessage(db, { leagueId, messageId: mine, actorId: members[0], action: 'restore' })).rejects.toBeInstanceOf(ForbiddenError)
+    await client.close()
+  })
+
+  it('404s an unknown or cross-league message', async () => {
+    const { db, client, owner, leagueId, competitionId } = await setup(1)
+    await expect(
+      moderateMessage(db, { leagueId, messageId: '00000000-0000-0000-0000-000000000000', actorId: owner, action: 'remove' }),
+    ).rejects.toBeInstanceOf(NotFoundError)
+    // A message in a different league cannot be moderated through this league's id.
+    const other = await makeUser(db, 'other-owner')
+    const otherLeague = await makeLeague(db, { competitionId, ownerId: other })
+    const foreign = await addMessage(db, otherLeague, other)
+    await expect(moderateMessage(db, { leagueId, messageId: foreign, actorId: owner, action: 'remove' })).rejects.toBeInstanceOf(NotFoundError)
     await client.close()
   })
 

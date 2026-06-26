@@ -396,7 +396,7 @@ function jumpTo(id: string) {
               <!-- Per-message actions, icon-only, revealed on hover. -->
               <span v-if="m.moderation !== 'REMOVED'" class="ml-auto flex items-center gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                 <button type="button" v-tooltip.bottom="t('chat.reply.button')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.reply.button')" @click="startReply(m)"><i class="pi pi-reply text-xs" /></button>
-                <button v-if="m.userId === meId" type="button" v-tooltip.bottom="t('chat.edit.button')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.edit.button')" @click="startEdit(m)"><i class="pi pi-pencil text-xs" /></button>
+                <button v-if="m.userId === meId && m.moderation === 'VISIBLE'" type="button" v-tooltip.bottom="t('chat.edit.button')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.edit.button')" @click="startEdit(m)"><i class="pi pi-pencil text-xs" /></button>
                 <button v-if="m.userId && m.userId !== meId" type="button" v-tooltip.bottom="t('chat.mute')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.mute')" @click="chat.toggleMute(m.userId)"><i class="pi pi-volume-off text-xs" /></button>
                 <button
                   v-if="m.userId && m.userId !== meId"

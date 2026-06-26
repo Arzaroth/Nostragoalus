@@ -101,6 +101,27 @@ export function publishLeagueReactionUpdate(
   return delivered
 }
 
+// Deliver one payload to every connected socket whose user is in `memberIds`,
+// guarding each send so a single socket mid-close (which throws synchronously)
+// cannot abort the fan-out to the rest. Returns how many sockets received it.
+// This members-only gate is the privacy boundary for every chat/league push, so
+// it lives in exactly one place.
+function deliverToMembers(memberIds: readonly string[], payload: unknown): number {
+  const members = new Set(memberIds)
+  let delivered = 0
+  for (const sub of subscribers) {
+    if (sub.userId && members.has(sub.userId)) {
+      try {
+        sub.send(payload)
+        delivered += 1
+      } catch {
+        // socket is closing/closed; skip it and keep delivering to the others
+      }
+    }
+  }
+  return delivered
+}
+
 // A new encrypted chat message: deliver the ciphertext to the league's connected
 // members only (private leagues). The payload is opaque to the server.
 export function publishLeagueChatMessage(
@@ -108,15 +129,7 @@ export function publishLeagueChatMessage(
   memberIds: readonly string[],
   message: ChatMessageDTO,
 ): number {
-  const members = new Set(memberIds)
-  let delivered = 0
-  for (const sub of subscribers) {
-    if (sub.userId && members.has(sub.userId)) {
-      sub.send({ type: 'chat:new', leagueId, message })
-      delivered += 1
-    }
-  }
-  return delivered
+  return deliverToMembers(memberIds, { type: 'chat:new', leagueId, message })
 }
 
 // A member is missing the current group key (just joined, or a stuck wrap):
@@ -124,45 +137,21 @@ export function publishLeagueChatMessage(
 // material, only a prompt - just a keyholding client can act on it. Mirrors the
 // chat:new members-only gate so non-members never learn a league exists.
 export function publishChatRekeyRequest(leagueId: string, memberIds: readonly string[]): number {
-  const members = new Set(memberIds)
-  let delivered = 0
-  for (const sub of subscribers) {
-    if (sub.userId && members.has(sub.userId)) {
-      sub.send({ type: 'chat:rekey-request', leagueId })
-      delivered += 1
-    }
-  }
-  return delivered
+  return deliverToMembers(memberIds, { type: 'chat:rekey-request', leagueId })
 }
 
 // A keyholder just sealed the group key for these members: tell each of them to
 // reload so their client opens the new wrap (clears the "waiting for a key"
 // state). Delivered only to the named recipients' own sockets.
 export function publishChatKeysAdded(leagueId: string, recipientIds: readonly string[]): number {
-  const recipients = new Set(recipientIds)
-  let delivered = 0
-  for (const sub of subscribers) {
-    if (sub.userId && recipients.has(sub.userId)) {
-      sub.send({ type: 'chat:keys-added', leagueId })
-      delivered += 1
-    }
-  }
-  return delivered
+  return deliverToMembers(recipientIds, { type: 'chat:keys-added', leagueId })
 }
 
 // Chat was turned on/off or re-keyed: nudge the league's connected members to
 // reload, so the change (the dock appearing/disappearing, a fresh key epoch)
 // reflects live instead of waiting for a refresh. Carries no key material.
 export function publishChatStateChanged(leagueId: string, memberIds: readonly string[]): number {
-  const members = new Set(memberIds)
-  let delivered = 0
-  for (const sub of subscribers) {
-    if (sub.userId && members.has(sub.userId)) {
-      sub.send({ type: 'chat:state-changed', leagueId })
-      delivered += 1
-    }
-  }
-  return delivered
+  return deliverToMembers(memberIds, { type: 'chat:state-changed', leagueId })
 }
 
 // A message's reaction counts changed: push the new per-emoji totals to that
@@ -174,15 +163,7 @@ export function publishChatReactionUpdate(
   messageId: string,
   totals: ReactionTotals,
 ): number {
-  const members = new Set(memberIds)
-  let delivered = 0
-  for (const sub of subscribers) {
-    if (sub.userId && members.has(sub.userId)) {
-      sub.send({ type: 'chat:reaction', leagueId, messageId, totals })
-      delivered += 1
-    }
-  }
-  return delivered
+  return deliverToMembers(memberIds, { type: 'chat:reaction', leagueId, messageId, totals })
 }
 
 // A message's moderation state changed (auto-pending, removed or restored): tell
@@ -194,15 +175,7 @@ export function publishChatModeration(
   messageId: string,
   state: 'VISIBLE' | 'PENDING' | 'REMOVED',
 ): number {
-  const members = new Set(memberIds)
-  let delivered = 0
-  for (const sub of subscribers) {
-    if (sub.userId && members.has(sub.userId)) {
-      sub.send({ type: 'chat:moderation', leagueId, messageId, state })
-      delivered += 1
-    }
-  }
-  return delivered
+  return deliverToMembers(memberIds, { type: 'chat:moderation', leagueId, messageId, state })
 }
 
 // A message was edited by its author: push the new ciphertext + edit time to the
@@ -215,15 +188,7 @@ export function publishChatEdit(
   ciphertext: string,
   editedAt: string,
 ): number {
-  const members = new Set(memberIds)
-  let delivered = 0
-  for (const sub of subscribers) {
-    if (sub.userId && members.has(sub.userId)) {
-      sub.send({ type: 'chat:edit', leagueId, messageId, ciphertext, editedAt })
-      delivered += 1
-    }
-  }
-  return delivered
+  return deliverToMembers(memberIds, { type: 'chat:edit', leagueId, messageId, ciphertext, editedAt })
 }
 
 // Deliver a freshly created notification to every open socket of that one user

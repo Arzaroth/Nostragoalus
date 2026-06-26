@@ -11,6 +11,10 @@ const loading = ref(true)
 const failed = ref(false)
 const open = ref(false)
 let blob: Blob | null = null
+// The list is torn down on every room switch / reload, so the component can
+// unmount while props.load() is still decrypting. Track that so we don't leak the
+// object URL (and the decrypted plaintext blob) onto a dead component.
+let alive = true
 
 const canShare = computed(
   () => import.meta.client && !!navigator.canShare && !!blob && navigator.canShare({ files: [new File([blob], 'image.webp', { type: 'image/webp' })] }),
@@ -19,6 +23,7 @@ const canShare = computed(
 onMounted(async () => {
   try {
     const bytes = await props.load()
+    if (!alive) return // unmounted while decrypting - drop the bytes, leak nothing
     if (!bytes) {
       failed.value = true
       return
@@ -26,12 +31,14 @@ onMounted(async () => {
     blob = new Blob([bytes as BlobPart], { type: 'image/webp' })
     src.value = URL.createObjectURL(blob)
   } catch {
-    failed.value = true
+    if (alive) failed.value = true
   } finally {
-    loading.value = false
+    if (alive) loading.value = false
   }
 })
 onUnmounted(() => {
+  alive = false
+  blob = null
   if (src.value) URL.revokeObjectURL(src.value)
 })
 

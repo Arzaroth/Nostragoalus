@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { createTestDb } from '../../../tests/db'
 import { addLeagueMember, makeLeague, makeUser, seedCompetition } from '../../../tests/factories'
-import { league } from '../../../db/schema'
+import { chatMessage, league } from '../../../db/schema'
 import { eq } from 'drizzle-orm'
 import { enableLeagueChat, postMessage } from './service'
 import { getAttachmentCiphertext, getAttachmentMessageIds } from './attachments'
@@ -40,6 +40,21 @@ describe('chat attachments', () => {
     await expect(getAttachmentCiphertext(db, m.id, stranger)).rejects.toBeInstanceOf(ForbiddenError)
     const plain = await postMessage(db, { leagueId, userId: owner, ciphertext: 'hi', epoch: 1 })
     await expect(getAttachmentCiphertext(db, plain.id, owner)).rejects.toBeInstanceOf(NotFoundError)
+    await client.close()
+  })
+
+  it('withholds the image of a removed or pending message like messages.get does', async () => {
+    const { db, client, owner, member, leagueId } = await setup()
+    const removed = await postMessage(db, { leagueId, userId: owner, ciphertext: 'c', epoch: 1, image: { ciphertext: 'IMG1', byteSize: 9 } })
+    const pending = await postMessage(db, { leagueId, userId: owner, ciphertext: 'c', epoch: 1, image: { ciphertext: 'IMG2', byteSize: 9 } })
+    await db.update(chatMessage).set({ moderationState: 'REMOVED' }).where(eq(chatMessage.id, removed.id))
+    await db.update(chatMessage).set({ moderationState: 'PENDING' }).where(eq(chatMessage.id, pending.id))
+    // Removed: hidden from everyone, including a moderator.
+    await expect(getAttachmentCiphertext(db, removed.id, owner)).rejects.toBeInstanceOf(NotFoundError)
+    await expect(getAttachmentCiphertext(db, removed.id, member)).rejects.toBeInstanceOf(NotFoundError)
+    // Pending: hidden from a non-moderator member, still served to the owner.
+    await expect(getAttachmentCiphertext(db, pending.id, member)).rejects.toBeInstanceOf(NotFoundError)
+    expect(await getAttachmentCiphertext(db, pending.id, owner)).toBe('IMG2')
     await client.close()
   })
 

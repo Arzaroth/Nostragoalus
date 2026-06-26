@@ -21,7 +21,7 @@ vi.mock('../composables/useLeagueChat', async () => {
     loading: ref(false),
     sending: ref(false),
     messages: ref<Array<{ id: string; userId: string | null; matchId: string | null; text: string | null; createdAt: string }>>([]),
-    memberKeys: ref<Array<{ userId: string; publicKey: string }>>([]),
+    memberKeys: ref<Array<{ userId: string; publicKey: string; name: string }>>([]),
     muted: ref<string[]>([]),
     identityStatus: ref('ready'),
     send: vi.fn(),
@@ -268,7 +268,7 @@ describe('ChatPanel', () => {
     const s = await chatState()
     s.enabled.value = true
     s.ready.value = true
-    s.memberKeys.value = [{ userId: 'me', publicKey: me.publicKey }, { userId: 'other', publicKey: other.publicKey }]
+    s.memberKeys.value = [{ userId: 'me', publicKey: me.publicKey, name: 'Me' }, { userId: 'other', publicKey: other.publicKey, name: 'Sam' }]
     const wrapper = await mount()
     const toggle = wrapper.findAll('button').find((b) => b.text().includes('Verify keys'))!
     await toggle.trigger('click')
