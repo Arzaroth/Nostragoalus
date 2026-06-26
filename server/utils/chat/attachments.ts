@@ -3,11 +3,7 @@ import type { AppDatabase } from '../../../db/types'
 import { chatAttachment, chatMessage } from '../../../db/schema'
 import { ForbiddenError, NotFoundError } from '../errors'
 import { getMembership } from '../leagues/service'
-
-export interface AttachmentRef {
-  idx: number
-  epoch: number
-}
+import type { ChatAttachmentDTO } from '../../../shared/types/chat'
 
 // The images on each of these messages (idx-ordered), so a room listing can
 // describe them without hauling the multi-megabyte ciphertext along. Messages
@@ -15,8 +11,8 @@ export interface AttachmentRef {
 export async function getMessageAttachments(
   db: AppDatabase,
   messageIds: string[],
-): Promise<Map<string, AttachmentRef[]>> {
-  const out = new Map<string, AttachmentRef[]>()
+): Promise<Map<string, ChatAttachmentDTO[]>> {
+  const out = new Map<string, ChatAttachmentDTO[]>()
   if (messageIds.length === 0) return out
   const rows = await db
     .select({ messageId: chatAttachment.messageId, idx: chatAttachment.idx, epoch: chatAttachment.epoch })
