@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.39.0] - 2026-06-26
+
 ### Added
 - **Eliminated teams greyed on the world map**: nations out of the tournament are now greyed out - knockout losers, teams that didn't qualify from their group, and teams already mathematically out mid-group (they can't reach a qualifying place whatever the remaining results work out to). A legend marks them.
 
