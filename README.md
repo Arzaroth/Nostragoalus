@@ -83,7 +83,9 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   own browser, and your device remembers the last head it saw (localStorage, never sent) so a later
   edit to anything you already checked raises a site-wide warning - no hash to save by hand
 - Per-team pages: official squads with positions, manager, season stats, competition switcher
-- Knockout **bracket** and an interactive **world map** (Leaflet / OpenStreetMap)
+- Knockout **bracket** and an interactive **world map** (Leaflet / OpenStreetMap); with crowd
+  totals enabled, the map tints each nation by where the field expects its current match to go
+  (blue favoured, red underdog), updating live
 - **Group standings** on the fixtures page: a live-aware table per group (the same one the
   match page shows), with team links and flags
 - Auth: identifier-first login with **SSO domain capture** - runtime-configurable OIDC / SAML /
