@@ -62,12 +62,14 @@ effort buckets; order within a bucket is not priority.
         auth-conditional landing that lets returning users skip the big banner
         intro / start on the slim bar (the intro still plays for everyone). The
         very-small-phone manual-scrub half-shrink polish also stays open (TODO.md).
-- [ ] **iCal feed** (IN_PROGRESS): per-user calendar subscription with fixtures +
-      pick lockout deadlines. A stateless per-user signed token (HMAC, reuse the
-      share-card minting pattern, no schema) keys an unauthenticated `.ics`
-      endpoint so a calendar client with no session can fetch it. One VEVENT per
-      fixture (kickoff = start, pick-lock deadline noted), regenerated per request;
-      subscribe URL surfaced in Preferences.
+- [x] **iCal feed** (shipped in 1.37.0): per-user calendar subscription with
+      fixtures + pick lockout deadlines. A stateless per-user signed token (HMAC,
+      reuses the share-card token pattern, no schema) keys an unauthenticated
+      `.ics` endpoint so a calendar client with no session can fetch it. One VEVENT
+      per fixture (kickoff = start), a VALARM 3h before kickoff on each upcoming
+      match the user hasn't predicted, scoped to active competitions within a
+      7-day-back window. Carries fixtures + results + a predicted/not flag, never
+      the predicted score. Subscribe URL (https + webcal) revealed in Preferences.
 - [ ] **Profile scroll-to-next-match**: opening someone's profile (or your own)
       lands on the upcoming fixtures rather than the top of their pick history. A
       "now" separator sits between played and upcoming matches and scrolls into the
