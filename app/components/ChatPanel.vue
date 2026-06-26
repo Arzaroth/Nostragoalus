@@ -29,7 +29,7 @@ const chat = useLeagueChat(
   () => props.leagueId,
   () => props.matchId ?? null,
 )
-const { enabled, isAdmin, ready, awaitingKey, loading, sending, hasMore, loadingOlder, messages, memberKeys, muted, identityStatus } = chat
+const { enabled, isAdmin, ready, awaitingKey, loading, sending, hasMore, loadingOlder, typingUserIds, messages, memberKeys, muted, identityStatus } = chat
 
 // Let a host (the floating dock) follow the live on/off state so it can show or
 // hide itself the moment an admin toggles chat, without its own status fetch.
@@ -112,6 +112,15 @@ const leagueName = computed(() => detail.data.value?.league.name ?? '')
 function copyText(m: DecryptedMessage) {
   if (m.text) void navigator.clipboard?.writeText(m.text).catch(() => {})
 }
+
+// "Someone is typing" hint for the current room.
+const typingText = computed(() => {
+  const who = typingUserIds.value.map(nameFor)
+  if (who.length === 0) return ''
+  if (who.length === 1) return t('chat.typing.one', { name: who[0] })
+  if (who.length === 2) return t('chat.typing.two', { a: who[0], b: who[1] })
+  return t('chat.typing.many', { n: who.length })
+})
 // A subtle SMS-style bubble: your own messages tinted with the brand colour, the
 // rest neutral, so consecutive posts read as distinct.
 function bubbleStyle(m: DecryptedMessage): string {
@@ -712,6 +721,7 @@ function jumpTo(id: string) {
             <span class="truncate flex-1" style="color: var(--p-text-muted-color)">{{ replyTo.text ?? t('chat.cantDecrypt') }}</span>
             <button type="button" class="opacity-70 hover:opacity-100" :aria-label="t('chat.reply.cancel')" @click="replyTo = null"><i class="pi pi-times text-xs" /></button>
           </div>
+          <small v-if="typingText" class="italic h-4" style="color: var(--p-text-muted-color)">{{ typingText }}</small>
           <small v-if="imageError" style="color: var(--ng-danger)">{{ t('chat.image.rejected') }}</small>
           <!-- Buffered images, shown before send; tap the x to drop one. -->
           <div v-if="pendingUrls.length" class="flex flex-wrap gap-1.5">
@@ -725,7 +735,7 @@ function jumpTo(id: string) {
           <form class="flex items-end gap-2" @submit.prevent="submit">
             <input ref="fileInput" type="file" :accept="acceptImages" multiple class="hidden" @change="onFilePicked">
             <Button type="button" icon="pi pi-image" severity="secondary" text :disabled="sending || pending.length >= MAX_IMAGES" :aria-label="t('chat.image.attach')" @click="fileInput?.click()" />
-            <Textarea ref="composer" v-model="draft" :placeholder="t('chat.placeholder')" rows="1" autoResize class="flex-1" @keydown.enter.exact.prevent="submit" @paste="onPaste" />
+            <Textarea ref="composer" v-model="draft" :placeholder="t('chat.placeholder')" rows="1" autoResize class="flex-1" @keydown.enter.exact.prevent="submit" @input="chat.sendTyping()" @paste="onPaste" />
             <Button type="submit" icon="pi pi-send" :loading="sending" :disabled="!draft.trim() && !pending.length" :aria-label="t('chat.send')" />
           </form>
         </div>

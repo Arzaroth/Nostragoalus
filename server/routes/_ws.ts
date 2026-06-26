@@ -1,6 +1,7 @@
 import { auth } from '../../lib/auth'
 import { db } from '../../db'
 import { addLiveSubscriber, removeLiveSubscriber, sendMatchSnapshot, type LiveSubscriber } from '../utils/live/hub'
+import { publishTyping } from '../utils/live/league-chat'
 
 const peers = new WeakMap<object, LiveSubscriber>()
 
@@ -35,6 +36,10 @@ export default defineWebSocketHandler({
         // Converge this client immediately: a transition it missed while
         // disconnected (e.g. full-time) would otherwise stick until reload.
         await sendMatchSnapshot(db, subscriber)
+      } else if (data?.type === 'chat:typing' && typeof data.leagueId === 'string' && subscriber.userId) {
+        // Ephemeral typing hint - members only (publishTyping checks membership).
+        const matchId = typeof data.matchId === 'string' ? data.matchId : null
+        await publishTyping(db, { leagueId: data.leagueId, matchId, userId: subscriber.userId, nowMs: Date.now() })
       }
     } catch {
       // ignore malformed client messages

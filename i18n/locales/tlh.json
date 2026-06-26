@@ -57,6 +57,7 @@
     "mute": "tam",
     "muted": { "show": "tammoHpu' ({n})", "intro": "QInmeychaj Daleghbe'. 'ach QInlIj lulegh.", "unmute": "tammoHHa'" },
     "react": { "add": "jang chel" },
+    "typing": { "one": "{name} ghItlh…", "two": "{a} {b} je ghItlh…", "many": "{n} ghItlh…" },
     "reply": { "button": "jang", "replyingTo": "{name} jang", "cancel": "jang qIl" },
     "image": { "attach": "mIllogh chel", "dropHere": "naDev mIllogh yIlan", "rejected": "mIllogh neH, 5MB bIng.", "failed": "mIllogh tu'be'", "alt": "mIllogh", "copy": "rapmoH", "download": "tlhap", "share": "ngeH", "close": "SoQmoH", "prev": "mIllogh wa'Hu'", "next": "mIllogh veb", "remove": "teq", "keep": "pol", "add": "mIllogh chel" },
     "media": { "button": "mIlloghmey", "empty": "mIllogh tu'be'" },
