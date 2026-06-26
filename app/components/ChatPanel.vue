@@ -183,7 +183,6 @@ interface ExistingEdit {
 }
 const editingId = ref<string | null>(null)
 const editDraft = ref('')
-const editTextarea = ref<{ $el?: HTMLElement } | null>(null)
 const editExisting = ref<ExistingEdit[]>([])
 const editAdd = ref<PendingImage[]>([])
 const editAddUrls = ref<string[]>([])
@@ -207,8 +206,13 @@ function startEdit(m: DecryptedMessage) {
       if (e) e.url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'image/webp' }))
     })
   }
-  // Focus the edit field so the user can type right away.
-  nextTick(() => editTextarea.value?.$el?.querySelector('textarea')?.focus())
+  // Focus the edit field so the user can type right away. The edit box lives
+  // inside the v-for, so its template ref would be an array - query the DOM by the
+  // message id instead.
+  nextTick(() => {
+    const ta = listEl.value?.querySelector(`[data-mid="${m.id}"] textarea`) as HTMLTextAreaElement | null
+    ta?.focus()
+  })
 }
 function cancelEdit() {
   revokeEditUrls()
@@ -268,7 +272,12 @@ function quoteText(p: DecryptedMessage): string {
 const draft = ref('')
 const composer = ref<{ $el?: HTMLElement } | null>(null)
 function focusComposer() {
-  nextTick(() => composer.value?.$el?.querySelector('textarea')?.focus())
+  // A PrimeVue Textarea's $el is the <textarea> itself (no nested one).
+  nextTick(() => {
+    const el = composer.value?.$el as HTMLElement | undefined
+    const ta = (el?.tagName === 'TEXTAREA' ? el : el?.querySelector?.('textarea')) as HTMLTextAreaElement | null | undefined
+    ta?.focus()
+  })
 }
 
 // Images are buffered before send: each is compressed locally and previewed in a
@@ -547,9 +556,50 @@ function jumpTo(id: string) {
       <span class="font-semibold">{{ props.matchId ? t('chat.threadTitle') : t('chat.roomTitle') }}</span>
       <span v-tooltip.top="t('chat.e2eeHint')" class="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-full" style="background: var(--ng-star-soft); color: var(--ng-star)">{{ t('chat.e2ee') }}</span>
       <span v-if="changedCount > 0" v-tooltip.top="t('chat.verify.changedWarn')" class="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-full inline-flex items-center gap-1" style="border: 1px solid var(--ng-danger); color: var(--ng-danger)"><i class="pi pi-exclamation-triangle text-[10px]" />{{ t('chat.verify.changed') }}</span>
-      <button v-if="ready" type="button" v-tooltip.top="t('chat.media.button')" class="ml-auto opacity-70 hover:opacity-100 inline-flex items-center" :aria-label="t('chat.media.button')" :disabled="mediaLoading" @click="openMedia">
-        <i class="pi pi-images" />
-      </button>
+      <div v-if="ready" class="ml-auto flex items-center gap-3">
+        <button type="button" v-tooltip.top="t('chat.media.button')" class="opacity-70 hover:opacity-100 inline-flex items-center" :aria-label="t('chat.media.button')" :disabled="mediaLoading" @click="openMedia">
+          <i class="pi pi-images" />
+        </button>
+        <!-- Overflow menu: verify, key backup and admin actions, tucked away so
+             they are deliberate and don't crowd the composer. -->
+        <div class="relative">
+          <button type="button" class="relative opacity-70 hover:opacity-100 inline-flex items-center" :aria-label="t('chat.menu.button')" @click="menuOpen = !menuOpen">
+            <i class="pi pi-ellipsis-h" />
+            <span v-if="changedCount > 0" class="absolute -top-1 -right-1 w-2 h-2 rounded-full" style="background: var(--ng-danger)" />
+          </button>
+          <div
+            v-if="menuOpen"
+            class="absolute right-0 top-7 z-30 w-56 rounded-lg border shadow-lg py-1 text-sm"
+            style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
+          >
+            <button type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-left opacity-90 hover:opacity-100" @click="showVerify = !showVerify; menuOpen = false">
+              <i class="pi pi-shield text-xs" style="color: var(--p-primary-color)" />
+              <span class="flex-1">{{ t('chat.verify.show') }}</span>
+              <span v-if="changedCount > 0" class="text-xs font-bold" style="color: var(--ng-danger)">{{ changedCount }}</span>
+            </button>
+            <button v-if="!hasRecovery" type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-left opacity-90 hover:opacity-100" :disabled="recoveryBusy" @click="menuOpen = false; openRecoverySetup()">
+              <i class="pi pi-key text-xs" style="color: var(--p-primary-color)" />
+              <span class="flex-1">{{ t('chat.setupRecovery') }}</span>
+            </button>
+            <button v-if="muted.length" type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-left opacity-90 hover:opacity-100" @click="showMuted = !showMuted; menuOpen = false">
+              <i class="pi pi-volume-off text-xs" />
+              <span class="flex-1">{{ t('chat.muted.show', { n: muted.length }) }}</span>
+            </button>
+            <template v-if="isAdmin">
+              <div class="my-1 border-t" style="border-color: var(--p-content-border-color)" />
+              <button type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-left opacity-90 hover:opacity-100" @click="menuOpen = false; openReports()">
+                <i class="pi pi-flag text-xs" /><span class="flex-1">{{ t('chat.moderation.queue') }}</span>
+              </button>
+              <button type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-left opacity-90 hover:opacity-100" @click="showRotate = true; menuOpen = false">
+                <i class="pi pi-sync text-xs" /><span class="flex-1">{{ t('chat.rotate.button') }}</span>
+              </button>
+              <button type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-left opacity-90 hover:opacity-100" style="color: var(--ng-danger)" @click="menuOpen = false; chat.disableChat()">
+                <i class="pi pi-power-off text-xs" /><span class="flex-1">{{ t('chat.disable') }}</span>
+              </button>
+            </template>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- This device has no key for an existing identity: restore. -->
@@ -609,16 +659,19 @@ function jumpTo(id: string) {
             class="group text-sm flex flex-col rounded transition-colors min-w-0"
             :style="flashId === m.id ? 'background: color-mix(in srgb, var(--p-primary-color) 18%, transparent)' : ''"
           >
-            <div class="flex items-center gap-2">
-              <component
-                :is="profileLink(m.userId) ? 'NuxtLink' : 'span'"
-                :to="profileLink(m.userId) ?? undefined"
-                class="flex items-center gap-2 min-w-0"
-                :class="profileLink(m.userId) ? 'hover:underline' : ''"
+            <div class="flex items-center gap-2 mb-0.5">
+              <NuxtLink
+                v-if="profileLink(m.userId)"
+                :to="profileLink(m.userId)!"
+                class="flex items-center gap-2 min-w-0 hover:underline"
               >
-                <UserAvatar :image="avatarFor(m.userId)" style="width: 1.35rem; height: 1.35rem; font-size: 0.7rem" />
+                <UserAvatar :image="avatarFor(m.userId)" class="!w-6 !h-6 shrink-0 text-[0.6rem]" />
                 <span class="font-semibold truncate" :style="m.userId === meId ? 'color: var(--p-primary-color)' : ''">{{ nameFor(m.userId) }}</span>
-              </component>
+              </NuxtLink>
+              <span v-else class="flex items-center gap-2 min-w-0">
+                <UserAvatar :image="avatarFor(m.userId)" class="!w-6 !h-6 shrink-0 text-[0.6rem]" />
+                <span class="font-semibold truncate" :style="m.userId === meId ? 'color: var(--p-primary-color)' : ''">{{ nameFor(m.userId) }}</span>
+              </span>
               <span class="text-[10px]" style="color: var(--p-text-muted-color)">{{ fmtTime(m.createdAt) }}</span>
               <span v-if="m.editedAt" v-tooltip.bottom="t('chat.edit.at', { time: fmtTime(m.editedAt) })" class="text-[10px] italic" style="color: var(--p-text-muted-color)">{{ t('chat.edit.edited') }}</span>
               <span v-if="m.moderation === 'PENDING'" class="text-[10px] uppercase tracking-wider font-semibold px-1 rounded" style="border: 1px solid var(--ng-danger); color: var(--ng-danger)">{{ t('chat.moderation.pendingTag') }}</span>
@@ -675,7 +728,7 @@ function jumpTo(id: string) {
             <span v-if="!contentVisible(m)" class="italic" style="color: var(--p-text-muted-color)">{{ m.moderation === 'REMOVED' ? t('chat.moderation.removed') : t('chat.moderation.pendingHidden') }}</span>
             <!-- Inline edit of your own message: text plus image add/remove. -->
             <div v-else-if="editingId === m.id" class="flex flex-col gap-1">
-              <Textarea ref="editTextarea" v-model="editDraft" rows="1" autoResize class="w-full" @keydown.enter.exact.prevent="saveEdit" @keydown.esc="cancelEdit" />
+              <Textarea v-model="editDraft" rows="1" autoResize class="w-full" @keydown.enter.exact.prevent="saveEdit" @keydown.esc="cancelEdit" />
               <div v-if="editExisting.length || editAdd.length" class="flex flex-wrap gap-1.5">
                 <!-- Existing images: tap the x to mark for removal (re-tap to keep). -->
                 <div v-for="e in editExisting" :key="`ex-${e.idx}`" class="relative">
@@ -693,7 +746,6 @@ function jumpTo(id: string) {
                   </button>
                 </div>
               </div>
-              <input ref="editFileInput" type="file" :accept="acceptImages" multiple class="hidden" @change="onEditFilePicked">
               <div class="flex items-center gap-3 text-xs">
                 <button type="button" class="underline" style="color: var(--p-primary-color)" @click="saveEdit">{{ t('chat.edit.save') }}</button>
                 <button type="button" class="underline opacity-70 hover:opacity-100" :disabled="editKept >= MAX_IMAGES" @click="editFileInput?.click()">{{ t('chat.image.add') }}</button>
@@ -702,7 +754,7 @@ function jumpTo(id: string) {
             </div>
             <template v-else>
               <!-- eslint-disable-next-line vue/no-v-html - linkify() escapes the text and only emits http(s) anchors -->
-              <div v-if="m.text" class="self-start inline-block rounded-2xl px-3 py-1.5 max-w-full whitespace-pre-wrap break-words" :style="bubbleStyle(m)" v-html="linkify(m.text)" />
+              <div v-if="m.text" class="self-start inline-block rounded-2xl px-3 py-1.5 mt-0.5 max-w-full whitespace-pre-wrap break-words" :style="bubbleStyle(m)" v-html="linkify(m.text)" />
               <span v-else-if="m.text === null && m.attachments.length === 0" class="italic" style="color: var(--p-text-muted-color)">{{ t('chat.cantDecrypt') }}</span>
               <ChatImage
                 v-if="m.attachments.length"
@@ -766,59 +818,15 @@ function jumpTo(id: string) {
               </button>
             </div>
           </div>
+          <!-- Shared (outside the message loop) so the edit "add image" button's
+               ref isn't collected into a per-row array. -->
+          <input ref="editFileInput" type="file" :accept="acceptImages" multiple class="hidden" @change="onEditFilePicked">
           <form class="flex items-end gap-2" @submit.prevent="submit">
             <input ref="fileInput" type="file" :accept="acceptImages" multiple class="hidden" @change="onFilePicked">
             <Button type="button" icon="pi pi-image" severity="secondary" text :disabled="sending || pending.length >= MAX_IMAGES" :aria-label="t('chat.image.attach')" @click="fileInput?.click()" />
             <Textarea ref="composer" v-model="draft" :placeholder="t('chat.placeholder')" rows="1" autoResize class="flex-1" @keydown.enter.exact.prevent="submit" @input="chat.sendTyping()" @paste="onPaste" />
             <Button type="submit" icon="pi pi-send" :loading="sending" :disabled="!draft.trim() && !pending.length" :aria-label="t('chat.send')" />
           </form>
-        </div>
-
-        <!-- Overflow menu: tucks verify, key backup and admin actions away so they
-             are deliberate, not a mis-click next to the composer. -->
-        <div class="flex items-center justify-end">
-          <div class="relative">
-            <button
-              type="button"
-              class="relative opacity-70 hover:opacity-100 inline-flex items-center"
-              :aria-label="t('chat.menu.button')"
-              @click="menuOpen = !menuOpen"
-            >
-              <i class="pi pi-ellipsis-h" />
-              <span v-if="changedCount > 0" class="absolute -top-1 -right-1 w-2 h-2 rounded-full" style="background: var(--ng-danger)" />
-            </button>
-            <div
-              v-if="menuOpen"
-              class="absolute right-0 bottom-7 z-30 w-56 rounded-lg border shadow-lg py-1 text-sm"
-              style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
-            >
-              <button type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-left opacity-90 hover:opacity-100" @click="showVerify = !showVerify; menuOpen = false">
-                <i class="pi pi-shield text-xs" style="color: var(--p-primary-color)" />
-                <span class="flex-1">{{ t('chat.verify.show') }}</span>
-                <span v-if="changedCount > 0" class="text-xs font-bold" style="color: var(--ng-danger)">{{ changedCount }}</span>
-              </button>
-              <button v-if="!hasRecovery" type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-left opacity-90 hover:opacity-100" :disabled="recoveryBusy" @click="menuOpen = false; openRecoverySetup()">
-                <i class="pi pi-key text-xs" style="color: var(--p-primary-color)" />
-                <span class="flex-1">{{ t('chat.setupRecovery') }}</span>
-              </button>
-              <button v-if="muted.length" type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-left opacity-90 hover:opacity-100" @click="showMuted = !showMuted; menuOpen = false">
-                <i class="pi pi-volume-off text-xs" />
-                <span class="flex-1">{{ t('chat.muted.show', { n: muted.length }) }}</span>
-              </button>
-              <template v-if="isAdmin">
-                <div class="my-1 border-t" style="border-color: var(--p-content-border-color)" />
-                <button type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-left opacity-90 hover:opacity-100" @click="menuOpen = false; openReports()">
-                  <i class="pi pi-flag text-xs" /><span class="flex-1">{{ t('chat.moderation.queue') }}</span>
-                </button>
-                <button type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-left opacity-90 hover:opacity-100" @click="showRotate = true; menuOpen = false">
-                  <i class="pi pi-sync text-xs" /><span class="flex-1">{{ t('chat.rotate.button') }}</span>
-                </button>
-                <button type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-left opacity-90 hover:opacity-100" style="color: var(--ng-danger)" @click="menuOpen = false; chat.disableChat()">
-                  <i class="pi pi-power-off text-xs" /><span class="flex-1">{{ t('chat.disable') }}</span>
-                </button>
-              </template>
-            </div>
-          </div>
         </div>
 
         <!-- Safety-number verification: compare these out-of-band to detect a swapped key. -->
