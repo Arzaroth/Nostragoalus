@@ -1,31 +1,50 @@
 import { beforeEach, describe, it, expect } from 'vitest'
 import { getAllTimeHeadToHead, resetAllTimeH2hCaches } from './alltime-h2h'
 
-const row = (date: string, comp: string, home: [string, string], away: [string, string], hs: number | null, as: number | null) => ({
-  Date: date,
-  CompetitionName: [{ Description: comp }],
-  HomeTeamScore: hs,
-  AwayTeamScore: as,
-  Home: { IdTeam: home[0], Abbreviation: home[1], TeamName: [{ Description: home[1] === 'GER' ? 'Germany' : 'Scotland' }] },
-  Away: { IdTeam: away[0], Abbreviation: away[1], TeamName: [{ Description: away[1] === 'GER' ? 'Germany' : 'Scotland' }] },
+// A Data Centre match row: team A is home, team B is away. matchDate is a
+// calendar day (YYYY-MM-DD).
+const row = (
+  matchDate: string | null,
+  comp: string | null,
+  a: [code: string | null, name: string | null],
+  b: [code: string | null, name: string | null],
+  as_: number | null,
+  bs: number | null,
+) => ({
+  matchDate,
+  competitionName: comp == null ? null : [{ description: comp }],
+  teamAScore: as_,
+  teamBScore: bs,
+  teamACountryCode: a[0],
+  teamBCountryCode: b[0],
+  teamAName: a[1] == null ? null : [{ description: a[1] }],
+  teamBName: b[1] == null ? null : [{ description: b[1] }],
 })
 
-const SEASON_ROWS = [row('2024-06-14T19:00:00Z', 'UEFA European Championship', ['43948', 'GER'], ['43967', 'SCO'], 5, 1)]
-const TEAM_ROWS = [
-  row('2024-06-14T19:00:00Z', 'UEFA European Championship', ['43948', 'GER'], ['43967', 'SCO'], 5, 1),
-  row('2015-09-07T19:00:00Z', 'UEFA Euro Qualifier', ['43948', 'GER'], ['43967', 'SCO'], 3, 2),
-  row('2014-09-07T19:00:00Z', 'Friendlies', ['43967', 'SCO'], ['43948', 'GER'], 2, 2),
-  row('2013-09-07T19:00:00Z', 'Friendlies', ['43967', 'SCO'], ['43948', 'GER'], 1, 0), // SCO win
-  row('2026-07-07T19:00:00Z', 'FIFA World Cup', ['43948', 'GER'], ['43967', 'SCO'], null, null), // unplayed - skipped
-  row('2022-11-23T19:00:00Z', 'FIFA World Cup', ['43948', 'GER'], ['43960', 'JPN'], 1, 2), // other opponent
+// Season-calendar rows only carry the code -> numeric id mapping. The second
+// row (no IdTeam, null away side) exercises the id-map skip branch.
+const SEASON_ROWS = [
+  { Home: { IdTeam: '43948', Abbreviation: 'GER' }, Away: { IdTeam: '43967', Abbreviation: 'SCO' } },
+  { Home: { Abbreviation: 'NIR' }, Away: null },
 ]
 
+const TEAM_ROWS = [
+  row('2024-06-14', 'UEFA European Championship', ['GER', 'Germany'], ['SCO', 'Scotland'], 5, 1),
+  row('2015-09-07', 'UEFA Euro Qualifier', ['GER', 'Germany'], ['SCO', 'Scotland'], 3, 2),
+  row('2014-09-07', 'Friendlies', ['SCO', 'Scotland'], ['GER', 'Germany'], 2, 2),
+  row('2013-09-07', 'Friendlies', ['SCO', 'Scotland'], ['GER', 'Germany'], 1, 0), // SCO win
+  row('2026-07-07', 'FIFA World Cup', ['GER', 'Germany'], ['SCO', 'Scotland'], null, null), // unplayed - skipped
+  row('2022-11-23', 'FIFA World Cup', ['GER', 'Germany'], ['JPN', 'Japan'], 1, 2), // other opponent
+]
+
+// teamId= -> the Data Centre archive (a bare array). Anything else -> the v3
+// season calendar used to harvest ids (a { Results } envelope).
 function mockFetch(failTeam = false) {
   return (async (url: string) => {
     const u = String(url)
-    if (u.includes('idTeam=')) {
+    if (u.includes('teamId=')) {
       if (failTeam) return new Response('down', { status: 500 })
-      return new Response(JSON.stringify({ Results: TEAM_ROWS }), { status: 200 })
+      return new Response(JSON.stringify(TEAM_ROWS), { status: 200 })
     }
     return new Response(JSON.stringify({ Results: SEASON_ROWS }), { status: 200 })
   }) as unknown as typeof fetch
@@ -38,7 +57,7 @@ describe('getAllTimeHeadToHead', () => {
     const h2h = await getAllTimeHeadToHead('GER', 'SCO', mockFetch(), 1000)
     expect(h2h).toMatchObject({ wins: 2, draws: 1, losses: 1, goalsFor: 10, goalsAgainst: 6 })
     expect(h2h!.meetings).toHaveLength(4)
-    expect(h2h!.meetings[0]).toMatchObject({ date: '2024-06-14T19:00:00Z', competition: 'UEFA European Championship', homeScore: 5 })
+    expect(h2h!.meetings[0]).toMatchObject({ date: '2024-06-14', competition: 'UEFA European Championship', homeScore: 5 })
     expect(h2h!.meetings.at(-1)).toMatchObject({ homeTeam: 'Scotland', homeScore: 1 })
   })
 
@@ -62,17 +81,24 @@ describe('getAllTimeHeadToHead', () => {
     resetAllTimeH2hCaches()
     expect(await getAllTimeHeadToHead('GER', 'SCO', mockFetch(true), 1000)).toBeNull()
   })
+
+  it('skips a failing id source and resolves from the rest', async () => {
+    const f = (async (url: string) => {
+      const u = String(url)
+      if (u.includes('255711')) return new Response('boom', { status: 500 }) // one season source down
+      if (u.includes('teamId=')) return new Response(JSON.stringify(TEAM_ROWS), { status: 200 })
+      return new Response(JSON.stringify({ Results: SEASON_ROWS }), { status: 200 })
+    }) as unknown as typeof fetch
+    const h2h = await getAllTimeHeadToHead('GER', 'SCO', f, 1000)
+    expect(h2h!.meetings).toHaveLength(4)
+  })
 })
 
 it('covers cache reuse of the id map, sparse rows, and Results-less payloads', async () => {
-  const sparse = {
-    Date: null, CompetitionName: null, HomeTeamScore: 1, AwayTeamScore: 0,
-    Home: { IdTeam: '43948', Abbreviation: 'GER', TeamName: null },
-    Away: { IdTeam: '43967', Abbreviation: 'SCO', TeamName: null },
-  }
+  const sparse = row(null, null, ['GER', null], ['SCO', null], 1, 0)
   const fetchImpl = (async (url: string) => {
     const u = String(url)
-    if (u.includes('idTeam=')) return new Response(JSON.stringify({ Results: [sparse] }), { status: 200 })
+    if (u.includes('teamId=')) return new Response(JSON.stringify([sparse]), { status: 200 })
     if (u.includes('255711')) return new Response(JSON.stringify({}), { status: 200 }) // no Results key
     return new Response(JSON.stringify({ Results: SEASON_ROWS }), { status: 200 })
   }) as unknown as typeof fetch
@@ -86,9 +112,9 @@ it('covers cache reuse of the id map, sparse rows, and Results-less payloads', a
 
 it('getTeamRecentResults: last results before a date, both venues, unknown code null', async () => {
   const { getTeamRecentResults } = await import('./alltime-h2h')
-  const form = await getTeamRecentResults('GER', '2024-06-15T00:00:00Z', mockFetch(), 1000)
+  const form = await getTeamRecentResults('GER', '2024-06-15', mockFetch(), 1000)
   expect(form!.map((f) => [f.result, f.score])).toEqual([
-    ['W', '5–1'], // euro opener (before the cutoff date... 2024-06-14 < 2024-06-15)
+    ['W', '5–1'], // euro opener (2024-06-14 < 2024-06-15)
     ['L', '1–2'], // vs JPN
     ['W', '3–2'],
     ['D', '2–2'], // away at SCO
@@ -105,44 +131,35 @@ it('h2h respects the before cutoff (a past match never sees its own or later res
   expect(h2h!.meetings[0].date.slice(0, 4)).toBe('2015')
 })
 
-it('covers calendar cache hits, dateless rows and fully-anonymous sides', async () => {
-  const weird = {
-    Date: null, CompetitionName: undefined, HomeTeamScore: 2, AwayTeamScore: 2,
-    Home: { IdTeam: '43948', Abbreviation: null, TeamName: null },
-    Away: { IdTeam: '43967', Abbreviation: 'SCO', TeamName: [{ Description: 'Scotland' }] },
-  }
-  const okRow = row('2020-01-01T19:00:00Z', 'Friendlies', ['43948', 'GER'], ['43967', 'SCO'], 1, 0)
+it('covers cache hits, dateless rows and fully-anonymous sides', async () => {
+  const weird = row(null, null, [null, null], ['SCO', 'Scotland'], 2, 2) // anonymous home, competition null
+  const okRow = row('2020-01-01', 'Friendlies', ['GER', 'Germany'], ['SCO', 'Scotland'], 1, 0)
   const fetchImpl = (async (url: string) => {
     const u = String(url)
-    if (u.includes('idTeam=')) return new Response(JSON.stringify({ Results: [weird, okRow] }), { status: 200 })
+    if (u.includes('teamId=')) return new Response(JSON.stringify([weird, okRow]), { status: 200 })
     return new Response(JSON.stringify({ Results: SEASON_ROWS }), { status: 200 })
   }) as unknown as typeof fetch
-  // anonymous-home row is dropped from h2h (no abbreviation match) but the ok row counts
+  // anonymous-home row is dropped from h2h (no code match) but the ok row counts
   const h2h = await getAllTimeHeadToHead('GER', 'SCO', fetchImpl, 1000)
   expect(h2h!.meetings).toHaveLength(1)
-  // form for SCO: the weird row matches via away side; null date sorts last and renders ''
+  // form for SCO: the weird row matches via the away side; null date sorts last and renders ''
   const { getTeamRecentResults } = await import('./alltime-h2h')
   const form = await getTeamRecentResults('SCO', '2024-01-01', fetchImpl, 1000)
   expect(form).toHaveLength(2)
   expect(form![1]).toMatchObject({ result: 'D', opponent: '?', date: '', competition: '' })
-  // calendar cache hit: a second call within the TTL reuses rows
-  const before = (h2h as any)
+  // h2h cache hit: a second call within the TTL reuses the result
   const again = await getAllTimeHeadToHead('GER', 'SCO', fetchImpl, 2000)
   expect(again!.meetings).toHaveLength(1)
 })
 
-it('expired calendar cache refetches; anonymous away side in h2h meeting fields', async () => {
-  const anonAway = {
-    Date: '2021-05-05T19:00:00Z', CompetitionName: [{ Description: 'Friendlies' }], HomeTeamScore: 0, AwayTeamScore: 3,
-    Home: { IdTeam: '43948', Abbreviation: 'GER', TeamName: [{ Description: 'Germany' }] },
-    Away: { IdTeam: '43967', Abbreviation: 'SCO', TeamName: null },
-  }
+it('expired calendar cache refetches; anonymous away name falls back to its code', async () => {
+  const anonAway = row('2021-05-05', 'Friendlies', ['GER', 'Germany'], ['SCO', null], 0, 3)
   let teamCalls = 0
   const fetchImpl = (async (url: string) => {
     const u = String(url)
-    if (u.includes('idTeam=')) {
+    if (u.includes('teamId=')) {
       teamCalls++
-      return new Response(JSON.stringify({ Results: [anonAway] }), { status: 200 })
+      return new Response(JSON.stringify([anonAway]), { status: 200 })
     }
     return new Response(JSON.stringify({ Results: SEASON_ROWS }), { status: 200 })
   }) as unknown as typeof fetch
@@ -154,40 +171,39 @@ it('expired calendar cache refetches; anonymous away side in h2h meeting fields'
   expect(teamCalls).toBe(2)
 })
 
-it('branch fill: team calendar with no Results key, and a dateless row in the sort', async () => {
-  const dateless = { Date: null, CompetitionName: null, HomeTeamScore: 2, AwayTeamScore: 0, Home: { IdTeam: '43948', Abbreviation: 'GER' }, Away: { IdTeam: '9', Abbreviation: 'XX' } }
+it('branch fill: dateless calendar rows, and a non-array calendar payload', async () => {
+  // two dateless rows so the sort comparator coalesces a null on both sides
+  const dateless = row(null, null, ['GER', 'Germany'], ['XX', null], 2, 0)
+  const dateless2 = row(null, 'Friendlies', ['GER', 'Germany'], ['YY', null], 1, 1)
   const f = (async (url: string) => {
     const u = String(url)
-    if (u.includes('idTeam=43948')) return new Response(JSON.stringify({ Results: [dateless] }), { status: 200 }) // wait, need no-Results case too
-    if (u.includes('idTeam=')) return new Response(JSON.stringify({}), { status: 200 })
+    if (u.includes('teamId=43948')) return new Response(JSON.stringify([dateless, dateless2]), { status: 200 })
     return new Response(JSON.stringify({ Results: SEASON_ROWS }), { status: 200 })
   }) as unknown as typeof fetch
   const { getTeamRecentResults } = await import('./alltime-h2h')
   const form = await getTeamRecentResults('GER', '2024-01-01', f, 6100)
-  expect(form!.length).toBe(1) // dateless row still included, sorts fine
-  // a team whose own calendar has no Results key -> [] (the ?? [] branch)
+  expect(form!.length).toBe(2) // dateless rows still included, sort handles null dates
+  // a team whose calendar payload is not an array -> [] (the Array.isArray branch)
   resetAllTimeH2hCaches()
   const none = (async (url: string) => {
-    if (String(url).includes('idTeam=43948')) return new Response(JSON.stringify({}), { status: 200 })
+    if (String(url).includes('teamId=43948')) return new Response(JSON.stringify({}), { status: 200 })
     return new Response(JSON.stringify({ Results: SEASON_ROWS }), { status: 200 })
   }) as unknown as typeof fetch
   expect(await getTeamRecentResults('GER', '2024-01-01', none, 6200)).toEqual([])
 })
 
 it('branch fill: calendar cache reuse, anon codes, getTeamRecentResults failure', async () => {
-  const anon = {
-    Date: '2019-01-01T00:00:00Z', CompetitionName: [{ Description: 'Friendlies' }], HomeTeamScore: 1, AwayTeamScore: 0,
-    Home: { IdTeam: '43948', TeamName: null }, // no Abbreviation -> homeCode null
-    Away: { IdTeam: '43967', TeamName: null }, // no Abbreviation -> awayCode null
-  }
+  const anon = row('2019-01-01', 'Friendlies', [null, null], [null, null], 1, 0) // no codes -> ? opponent
   let teamCalls = 0
   const fetchImpl = (async (url: string) => {
     const u = String(url)
-    if (u.includes('idTeam=43948')) { teamCalls++; return new Response(JSON.stringify({ Results: [anon] }), { status: 200 }) }
-    if (u.includes('idTeam=')) return new Response(JSON.stringify({}), { status: 200 }) // no Results key
+    if (u.includes('teamId=43948')) {
+      teamCalls++
+      return new Response(JSON.stringify([anon]), { status: 200 })
+    }
     return new Response(JSON.stringify({ Results: SEASON_ROWS }), { status: 200 })
   }) as unknown as typeof fetch
-  // anon abbreviations: perspective never matches, so 0 meetings, but exercises the decode fallbacks via form
+  // anon codes: perspective never matches as home, decode falls back via the away side
   const { getTeamRecentResults } = await import('./alltime-h2h')
   const form = await getTeamRecentResults('GER', '2024-01-01', fetchImpl, 5000)
   expect(form).not.toBeNull()
@@ -197,7 +213,7 @@ it('branch fill: calendar cache reuse, anon codes, getTeamRecentResults failure'
 
   // a thrown calendar fetch -> null
   const boom = (async (url: string) => {
-    if (String(url).includes('idTeam=43948')) return new Response('x', { status: 500 })
+    if (String(url).includes('teamId=43948')) return new Response('x', { status: 500 })
     return new Response(JSON.stringify({ Results: SEASON_ROWS }), { status: 200 })
   }) as unknown as typeof fetch
   resetAllTimeH2hCaches()
