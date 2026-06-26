@@ -57,6 +57,7 @@
     "mute": "Mute",
     "muted": { "show": "Muted ({n})", "intro": "You won't see messages from these members. They can still see yours.", "unmute": "Unmute" },
     "react": { "add": "Add reaction" },
+    "typing": { "one": "{name} is typing…", "two": "{a} and {b} are typing…", "many": "{n} people are typing…" },
     "reply": { "button": "Reply", "replyingTo": "Replying to {name}", "cancel": "Cancel reply" },
     "image": { "attach": "Attach image", "dropHere": "Drop images to send", "rejected": "Only images up to 5 MB.", "failed": "Image unavailable", "alt": "Chat image", "copy": "Copy", "download": "Download", "share": "Share", "close": "Close", "prev": "Previous image", "next": "Next image", "remove": "Remove", "keep": "Keep", "add": "Add image" },
     "media": { "button": "Media", "empty": "No images yet" },

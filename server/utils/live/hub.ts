@@ -192,6 +192,18 @@ export function publishChatEdit(
   return deliverToMembers(memberIds, { type: 'chat:edit', leagueId, messageId, ciphertext, editedAt, attachments })
 }
 
+// A member is typing in a room: tell the other connected members so they can show
+// a transient "typing" hint. Ephemeral - nothing is stored, no content travels,
+// only who is typing where. Never delivered back to the typer.
+export function publishChatTyping(
+  leagueId: string,
+  recipientIds: readonly string[],
+  matchId: string | null,
+  userId: string,
+): number {
+  return deliverToMembers(recipientIds, { type: 'chat:typing', leagueId, matchId: matchId ?? null, userId })
+}
+
 // Deliver a freshly created notification to every open socket of that one user
 // (mirrors the league-member gate above). Other users' sockets never see it, so
 // the bell can render it live without a refetch.

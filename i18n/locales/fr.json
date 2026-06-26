@@ -57,6 +57,7 @@
     "mute": "Masquer",
     "muted": { "show": "Masqués ({n})", "intro": "Vous ne verrez plus les messages de ces membres. Ils voient toujours les vôtres.", "unmute": "Réafficher" },
     "react": { "add": "Ajouter une réaction" },
+    "typing": { "one": "{name} écrit…", "two": "{a} et {b} écrivent…", "many": "{n} personnes écrivent…" },
     "reply": { "button": "Répondre", "replyingTo": "Réponse à {name}", "cancel": "Annuler la réponse" },
     "image": { "attach": "Joindre une image", "dropHere": "Déposez les images pour les envoyer", "rejected": "Images de 5 Mo maximum uniquement.", "failed": "Image indisponible", "alt": "Image du chat", "copy": "Copier", "download": "Télécharger", "share": "Partager", "close": "Fermer", "prev": "Image précédente", "next": "Image suivante", "remove": "Retirer", "keep": "Garder", "add": "Ajouter une image" },
     "media": { "button": "Médias", "empty": "Aucune image pour l'instant" },

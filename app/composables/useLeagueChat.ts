@@ -510,7 +510,31 @@ export function useLeagueChat(
     await load()
   }
 
-  useReconnectingSocket({
+  // Transient "who is typing" presence for the current room. Each ping refreshes
+  // a short expiry; a sender's typing clears when their message lands.
+  const typingUserIds = ref<string[]>([])
+  const typingTimers = new Map<string, ReturnType<typeof setTimeout>>()
+  function clearTyping(userId: string): void {
+    const tmr = typingTimers.get(userId)
+    if (tmr) clearTimeout(tmr)
+    typingTimers.delete(userId)
+    typingUserIds.value = typingUserIds.value.filter((u) => u !== userId)
+  }
+  function noteTyping(userId: string): void {
+    const existing = typingTimers.get(userId)
+    if (existing) clearTimeout(existing)
+    if (!typingUserIds.value.includes(userId)) typingUserIds.value = [...typingUserIds.value, userId]
+    typingTimers.set(userId, setTimeout(() => clearTyping(userId), 5000))
+  }
+  let lastTypingSent = 0
+  function sendTyping(): void {
+    const now = Date.now()
+    if (now - lastTypingSent < 3000 || !ready.value) return
+    lastTypingSent = now
+    socket.send({ type: 'chat:typing', leagueId: lid(), matchId: mid() })
+  }
+
+  const socket = useReconnectingSocket({
     onOpen: () => {
       // A reconnect / tab refocus: refresh in the background so the open message
       // list and the reader's scroll position are not thrown away.
@@ -581,12 +605,19 @@ export function useLeagueChat(
         }
         return
       }
+      // A member is typing in this room: show the transient hint.
+      if (msg.type === 'chat:typing') {
+        const tm = data as { matchId?: string | null; userId?: string }
+        if ((tm.matchId ?? null) === mid() && tm.userId) noteTyping(tm.userId)
+        return
+      }
       if (msg.type !== 'chat:new' || !msg.message) return
       if ((msg.message.matchId ?? null) !== mid()) return
       if (messages.value.some((m) => m.id === msg.message!.id)) return
       // A message from someone we have no name for yet (a fresh joiner): pull the
       // roster so they stop reading as "Someone" without a reload.
       const author = msg.message.userId
+      if (author) clearTyping(author)
       if (author && !memberKeys.value.some((k) => k.userId === author)) void refreshRoster()
       void decryptRow(msg.message).then((m) => {
         messages.value = [...messages.value, m]
@@ -608,6 +639,8 @@ export function useLeagueChat(
     hasMore,
     loadingOlder,
     loadOlder,
+    typingUserIds,
+    sendTyping,
     messages: visibleMessages,
     memberKeys,
     muted,
