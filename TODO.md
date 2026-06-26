@@ -1134,3 +1134,29 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 - [ ] `ChatPanel` `fmtTime` uses `toLocaleTimeString` with no explicit timezone:
       render-env locale/tz dependent and an SSR/hydrate mismatch in theory
       (mitigated today because the list is behind client-only ready state).
+
+## Chat: threads / mentions / embeds (deferred from the feature pass)
+
+- [ ] Thread reply composer is text-only: no image attach, emoji picker or `@`
+      autocomplete (a typed `@<id>` token still works and mentions are still
+      extracted on send). Fold the main composer's affordances into the thread
+      composer, or extract a shared composer component.
+- [ ] Threads are one level deep by design (a reply to a reply points at the
+      thread root). No nested/quoted replies within a thread.
+- [ ] `replyCount` and unread-mention counts are in-memory/per-session and ride
+      the live push; a hard reload re-derives counts from the room page but loses
+      accrued unread-mention badges (consistent with the existing unread model).
+      The live reply count can drift if a `chat:new` echo is missed (reconciled
+      on the next room load).
+- [ ] Link unfurl cache is a per-instance in-memory Map (no shared/persistent
+      cache); multi-instance deploys re-fetch per instance. Move to a shared cache
+      (or a small table) if previews get heavy.
+- [ ] Inline external images and unfurl images are loaded by the reader's browser
+      (referrer stripped) - this leaks the reader's IP to the third-party host.
+      Accepted under the "auto + collapsible" choice; revisit if a privacy toggle
+      is wanted.
+- [ ] Mention list filters league members by name substring only (no fuzzy match,
+      no recency ranking) and caps at 6; no keyboard-less mobile affordance beyond
+      tapping a candidate.
+- [ ] The hand-rolled emoji dataset is a curated subset, not the full Unicode set;
+      extend or swap for a generated dataset if coverage gaps show up.
