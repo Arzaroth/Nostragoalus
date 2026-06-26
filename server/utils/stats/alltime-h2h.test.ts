@@ -112,9 +112,9 @@ it('covers cache reuse of the id map, sparse rows, and Results-less payloads', a
 
 it('getTeamRecentResults: last results before a date, both venues, unknown code null', async () => {
   const { getTeamRecentResults } = await import('./alltime-h2h')
-  const form = await getTeamRecentResults('GER', '2024-06-15', mockFetch(), 1000)
+  const form = await getTeamRecentResults('GER', '2024-06-16', mockFetch(), 1000)
   expect(form!.map((f) => [f.result, f.score])).toEqual([
-    ['W', '5–1'], // euro opener (2024-06-14 < 2024-06-15)
+    ['W', '5–1'], // euro opener (2024-06-14, a clear day before the 2024-06-16 cutoff)
     ['L', '1–2'], // vs JPN
     ['W', '3–2'],
     ['D', '2–2'], // away at SCO
@@ -122,6 +122,21 @@ it('getTeamRecentResults: last results before a date, both venues, unknown code 
   ])
   expect(form![3].opponent).toBe('Scotland')
   expect(await getTeamRecentResults('XXX', '2024-01-01', mockFetch(), 1000)).toBeNull()
+})
+
+it('counts a 0-0 draw and skips a half-scored row', async () => {
+  const rows = [
+    row('2020-01-01', 'Friendlies', ['GER', 'Germany'], ['SCO', 'Scotland'], 0, 0), // genuine 0-0 draw
+    row('2019-01-01', 'Friendlies', ['GER', 'Germany'], ['SCO', 'Scotland'], 1, null), // half-played -> skipped
+  ]
+  const f = (async (url: string) => {
+    const u = String(url)
+    if (u.includes('teamId=')) return new Response(JSON.stringify(rows), { status: 200 })
+    return new Response(JSON.stringify({ Results: SEASON_ROWS }), { status: 200 })
+  }) as unknown as typeof fetch
+  const h2h = await getAllTimeHeadToHead('GER', 'SCO', f, 1000)
+  expect(h2h).toMatchObject({ wins: 0, draws: 1, losses: 0, goalsFor: 0, goalsAgainst: 0 }) // 0-0 is a draw, not a skip
+  expect(h2h!.meetings).toHaveLength(1) // the half-scored row is dropped
 })
 
 it('h2h respects the before cutoff (a past match never sees its own or later results)', async () => {

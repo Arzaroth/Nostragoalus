@@ -490,7 +490,11 @@ function formColor(r: string) {
   return r === 'W' ? 'var(--ng-success)' : r === 'L' ? 'var(--ng-danger)' : '#a1a1aa'
 }
 function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString(locale.value, { day: 'numeric', month: 'short', year: 'numeric' })
+  // All-time h2h/form dates arrive as a bare local day (YYYY-MM-DD); parse at
+  // local noon so toLocaleDateString never rolls back a day in a UTC-negative
+  // zone. Full timestamps (kickoffTime) pass through unchanged.
+  const at = /^\d{4}-\d{2}-\d{2}$/.test(d) ? new Date(`${d}T12:00:00`) : new Date(d)
+  return at.toLocaleDateString(locale.value, { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 // Narrow form rows hide the competition behind the date; one open at a time.
