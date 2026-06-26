@@ -85,9 +85,11 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
 - Per-team pages: official squads with positions, manager, season stats, competition switcher
 - Knockout **bracket** and an interactive **world map** (Leaflet / OpenStreetMap); with crowd
   totals enabled, the map tints each nation by where the field expects its current match to go
-  (blue favoured, red underdog), updating live
+  (blue favoured, red underdog), updating live; teams out of the tournament (knockout losers,
+  group non-qualifiers, and teams mathematically eliminated mid-group) are greyed out
 - **Group standings** on the fixtures page: a live-aware table per group (the same one the
-  match page shows), with team links and flags
+  match page shows), with team links and flags, ranked by each competition's official
+  tiebreakers (head-to-head first for WC2026 / Euro2024, goal difference first for WC2022)
 - Auth: identifier-first login with **SSO domain capture** - runtime-configurable OIDC / SAML /
   Google providers (several domains each, display names, envelope-encrypted secrets, in-place
   editing, SP metadata for IdP setup); email + password (HIBP-checked) with mailed reset; optional
