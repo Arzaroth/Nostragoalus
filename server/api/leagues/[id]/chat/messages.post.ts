@@ -50,6 +50,7 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ body, user,
     reported: false,
     reactions: emptyReactionTotals(),
     myReaction: null,
+    replyCount: 0,
   }
   // Fire-and-forget fan-out so a delivery hiccup can't fail the post itself.
   void publishChatMessage(db, message, body.mentions ?? []).catch(() => {})

@@ -32,6 +32,7 @@ export interface DecryptedMessage {
   reported: boolean
   reactions: ReactionTotals
   myReaction: ReactionEmoji | null
+  replyCount: number
 }
 
 export interface ReportedMessage {
@@ -71,6 +72,12 @@ export function useLeagueChat(
   const memberKeys = ref<{ userId: string; publicKey: string; name: string }[]>([])
   const loading = ref(false)
   const sending = ref(false)
+  // Thread view: the open thread's root message id and its decrypted replies.
+  // Replies live here, never in the main `messages` list (the server keeps them
+  // out of the room page); each top-level message carries a replyCount instead.
+  const threadParentId = ref<string | null>(null)
+  const threadMessages = ref<DecryptedMessage[]>([])
+  const threadLoading = ref(false)
 
   const isAdmin = computed(() => role.value === 'OWNER' || role.value === 'MODERATOR')
   const currentKey = computed<Uint8Array | null>(() => keys.value.get(epoch.value) ?? null)
@@ -123,6 +130,7 @@ export function useLeagueChat(
       reported: r.reported ?? false,
       reactions: r.reactions ?? emptyReactionTotals(),
       myReaction: r.myReaction ?? null,
+      replyCount: r.replyCount ?? 0,
     }
   }
 
@@ -315,9 +323,18 @@ export function useLeagueChat(
         },
       })
       // Append our own message from the POST response; the WS echo (chat:new)
-      // dedupes on id, so we don't depend on it to see what we just sent.
-      if (message && !messages.value.some((m) => m.id === message.id)) {
-        messages.value = [...messages.value, await decryptRow(message)]
+      // dedupes on id, so we don't depend on it to see what we just sent. A reply
+      // lands in the open thread (its replyCount bump rides the echo, so it isn't
+      // double-counted here); a top-level message lands in the main list.
+      if (message) {
+        const dec = await decryptRow(message)
+        if (opts.parentId) {
+          if (!threadMessages.value.some((m) => m.id === message.id)) {
+            threadMessages.value = [...threadMessages.value, dec]
+          }
+        } else if (!messages.value.some((m) => m.id === message.id)) {
+          messages.value = [...messages.value, dec]
+        }
       }
     } finally {
       sending.value = false
@@ -326,6 +343,33 @@ export function useLeagueChat(
 
   function patchMessage(id: string, patch: Partial<DecryptedMessage>): void {
     messages.value = messages.value.map((m) => (m.id === id ? { ...m, ...patch } : m))
+    // Mirror into the open thread so an edit/reaction/moderation on a reply (or on
+    // a parent shown in both places) reflects live wherever it is rendered.
+    threadMessages.value = threadMessages.value.map((m) => (m.id === id ? { ...m, ...patch } : m))
+  }
+  // Adjust a parent's reply count (clamped at zero) when a reply is added/removed.
+  function bumpReplyCount(parentId: string, delta: number): void {
+    const m = messages.value.find((x) => x.id === parentId)
+    if (m) patchMessage(parentId, { replyCount: Math.max(0, m.replyCount + delta) })
+  }
+  // Open a message's thread: fetch + decrypt its replies (server returns them
+  // oldest-first). Close clears the view.
+  async function openThread(parentId: string): Promise<void> {
+    threadParentId.value = parentId
+    threadLoading.value = true
+    try {
+      const m = mid()
+      const { messages: rows } = await $fetch<{ messages: ChatMessageDTO[] }>(`/api/leagues/${lid()}/chat/messages`, {
+        query: m ? { matchId: m, thread: parentId } : { thread: parentId },
+      })
+      threadMessages.value = await Promise.all(rows.map(decryptRow))
+    } finally {
+      threadLoading.value = false
+    }
+  }
+  function closeThread(): void {
+    threadParentId.value = null
+    threadMessages.value = []
   }
 
   // The author edits their own message: re-encrypt the text under the current key,
@@ -344,7 +388,7 @@ export function useLeagueChat(
     if (!ck) return
     // The message must keep some content: text, a surviving image, or a new one -
     // an edit that strips everything would leave a ghost message.
-    const msg = messages.value.find((m) => m.id === messageId)
+    const msg = messages.value.find((m) => m.id === messageId) ?? threadMessages.value.find((m) => m.id === messageId)
     const keptCount = (msg ? msg.attachments.filter((a) => !removeIdxs.includes(a.idx)).length : 0) + addImages.length
     if (!body && keptCount === 0) return
     const [ciphertext, addCts] = await Promise.all([
@@ -383,7 +427,8 @@ export function useLeagueChat(
   // Toggle the caller's report on a message (report, or withdraw it). Optimistic;
   // the server decides whether enough reports flip it to PENDING.
   async function report(messageId: string): Promise<void> {
-    const current = messages.value.find((m) => m.id === messageId)?.reported ?? false
+    const found = messages.value.find((m) => m.id === messageId) ?? threadMessages.value.find((m) => m.id === messageId)
+    const current = found?.reported ?? false
     const next = !current
     patchMessage(messageId, { reported: next })
     try {
@@ -463,7 +508,7 @@ export function useLeagueChat(
   // Optimistic: adjust counts locally, then PUT; the server pushes authoritative
   // totals (chat:reaction) to everyone, which corrects our optimistic guess.
   async function react(messageId: string, emoji: ReactionEmoji): Promise<void> {
-    const msg = messages.value.find((m) => m.id === messageId)
+    const msg = messages.value.find((m) => m.id === messageId) ?? threadMessages.value.find((m) => m.id === messageId)
     if (!msg) return
     const prev = msg.myReaction
     const next: ReactionEmoji | null = prev === emoji ? null : emoji
@@ -627,19 +672,46 @@ export function useLeagueChat(
       }
       if (msg.type !== 'chat:new' || !msg.message) return
       if ((msg.message.matchId ?? null) !== mid()) return
-      if (messages.value.some((m) => m.id === msg.message!.id)) return
+      const incoming = msg.message
       // A message from someone we have no name for yet (a fresh joiner): pull the
       // roster so they stop reading as "Someone" without a reload.
-      const author = msg.message.userId
+      const author = incoming.userId
       if (author) clearTyping(author)
       if (author && !memberKeys.value.some((k) => k.userId === author)) void refreshRoster()
-      void decryptRow(msg.message).then((m) => {
+      // A reply: bump its parent's count and, if that thread is open, append it.
+      // The count rides the echo (not the optimistic send) so it isn't doubled.
+      if (incoming.parentId) {
+        bumpReplyCount(incoming.parentId, 1)
+        if (threadParentId.value === incoming.parentId && !threadMessages.value.some((m) => m.id === incoming.id)) {
+          void decryptRow(incoming).then((m) => {
+            threadMessages.value = [...threadMessages.value, m]
+          })
+        }
+        return
+      }
+      // A top-level message: append unless we already have it (our own echo).
+      if (messages.value.some((m) => m.id === incoming.id)) return
+      void decryptRow(incoming).then((m) => {
         messages.value = [...messages.value, m]
       })
     },
   })
 
-  watch(() => [toValue(leagueId), toValue(matchId)], () => void load(), { immediate: true })
+  // Switching room (or league) closes any open thread - it belonged to the room
+  // we're leaving - then reloads the new room.
+  watch(
+    () => [toValue(leagueId), toValue(matchId)],
+    () => {
+      closeThread()
+      void load()
+    },
+    { immediate: true },
+  )
+
+  // Thread replies, muted authors filtered like the main list.
+  const visibleThread = computed(() =>
+    threadMessages.value.filter((m) => !m.userId || !muted.value.includes(m.userId)),
+  )
 
   return {
     enabled,
@@ -673,5 +745,10 @@ export function useLeagueChat(
     disableChat,
     rotateKey,
     requestRekey,
+    threadParentId,
+    threadMessages: visibleThread,
+    threadLoading,
+    openThread,
+    closeThread,
   }
 }

@@ -16,6 +16,7 @@ import {
   getMyWrappedKey,
   getMyWrappedKeys,
   getRecoveryBlob,
+  getReplyCounts,
   listMessages,
   postMessage,
   registerChatIdentity,
@@ -524,6 +525,38 @@ describe('listMessages', () => {
     ])
     expect((await listMessages(db, { leagueId, userId: owner, limit: 0 })).length).toBe(1) // clamped up to 1
     expect((await listMessages(db, { leagueId, userId: owner, limit: 9999 })).map((r) => r.ciphertext)).toEqual(['m2', 'm1']) // clamped down, all returned
+    await client.close()
+  })
+
+  it('hides replies from the room list and returns them in thread mode (oldest-first)', async () => {
+    const { db, client, owner, leagueId } = await setup()
+    await enableWith(db, leagueId, owner, [owner])
+    const parent = await postMessage(db, { leagueId, userId: owner, ciphertext: 'p', epoch: 1 })
+    await postMessage(db, { leagueId, userId: owner, ciphertext: 'r1', epoch: 1, parentId: parent.id })
+    await postMessage(db, { leagueId, userId: owner, ciphertext: 'r2', epoch: 1, parentId: parent.id })
+
+    const room = await listMessages(db, { leagueId, userId: owner })
+    expect(room.map((r) => r.ciphertext)).toEqual(['p']) // replies excluded
+    const thread = await listMessages(db, { leagueId, userId: owner, thread: parent.id })
+    expect(thread.map((r) => r.ciphertext)).toEqual(['r1', 'r2']) // oldest-first
+    await client.close()
+  })
+})
+
+describe('getReplyCounts', () => {
+  it('counts non-removed replies per parent, ignoring parents with none', async () => {
+    const { db, client, owner, leagueId } = await setup()
+    await enableWith(db, leagueId, owner, [owner])
+    const a = await postMessage(db, { leagueId, userId: owner, ciphertext: 'a', epoch: 1 })
+    const b = await postMessage(db, { leagueId, userId: owner, ciphertext: 'b', epoch: 1 })
+    await postMessage(db, { leagueId, userId: owner, ciphertext: 'a-r1', epoch: 1, parentId: a.id })
+    const removed = await postMessage(db, { leagueId, userId: owner, ciphertext: 'a-r2', epoch: 1, parentId: a.id })
+    await db.update(chatMessage).set({ moderationState: 'REMOVED' }).where(eq(chatMessage.id, removed.id))
+
+    const counts = await getReplyCounts(db, [a.id, b.id])
+    expect(counts[a.id]).toBe(1) // the removed reply is not counted
+    expect(counts[b.id]).toBeUndefined() // no replies
+    expect(await getReplyCounts(db, [])).toEqual({})
     await client.close()
   })
 })
