@@ -5,11 +5,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- **Prediction lean on the world map**: with "Show everyone's totals" enabled, each nation on the map is now tinted by where the crowd expects its current match to go - blue when the field backs that team to win, red when it backs the opponent, pale when it's even. It reads from the live match (or the next one), updates as predictions and scores come in, and a legend explains the scale. Turn it on from Preferences.
+
 ## [1.37.0] - 2026-06-26
 
 ### Added
 - **Calendar feed**: subscribe to your fixtures and pick deadlines from your own calendar app. Preferences has a "Calendar feed" section with a personal subscribe link (and a one-tap webcal button) you add to Google Calendar, Apple Calendar, Outlook or Thunderbird; it then stays up to date on its own. Each upcoming match you haven't predicted carries a reminder three hours before kickoff. The feed shows fixtures and final scores but never your predicted score, so the link stays safe to hand to a calendar service.
-
 ## [1.36.0] - 2026-06-26
 
 ### Added

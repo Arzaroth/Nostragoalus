@@ -122,6 +122,13 @@
     "round": { "r32": "32 may'", "r16": "16 may'", "qf": "loS may'", "sf": "cha' may'", "third": "wejDIch Daq", "final": "Qav may'" }
   },
   "map": {
+    "lean": {
+      "title": "qaywI' wuq",
+      "favored": "pop",
+      "neutral": "rap",
+      "underdog": "lujwI'",
+      "hint": "DaH \"Hoch mI' 'ang\" yIchu' 'ej qaywI' rItlh Sep legh."
+    },
     "hint": "Sep yIwIv 'ej ghomDaj yIlegh.",
     "live": "DaH",
     "next": "may' veb",

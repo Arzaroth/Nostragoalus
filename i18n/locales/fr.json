@@ -122,6 +122,13 @@
     "round": { "r32": "Seizièmes de finale", "r16": "Huitièmes de finale", "qf": "Quarts de finale", "sf": "Demi-finales", "third": "Petite finale", "final": "Finale" }
   },
   "map": {
+    "lean": {
+      "title": "Tendance des pronostics",
+      "favored": "Favori",
+      "neutral": "Équilibré",
+      "underdog": "Outsider",
+      "hint": "Activez « Afficher les totaux de tous » dans les Préférences pour colorer la carte selon la tendance des pronostics."
+    },
     "hint": "Cliquez sur un pays pour voir son équipe.",
     "live": "En direct",
     "next": "Prochain match",

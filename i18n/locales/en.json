@@ -122,6 +122,13 @@
     "round": { "r32": "Round of 32", "r16": "Round of 16", "qf": "Quarter-finals", "sf": "Semi-finals", "third": "3rd place", "final": "Final" }
   },
   "map": {
+    "lean": {
+      "title": "Crowd lean",
+      "favored": "Favoured",
+      "neutral": "Even",
+      "underdog": "Underdog",
+      "hint": "Turn on \"Show everyone's totals\" in Preferences to colour the map by where the crowd is leaning."
+    },
     "hint": "Click a country on the map to see its team.",
     "live": "Live",
     "next": "Next match",
