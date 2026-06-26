@@ -337,6 +337,24 @@ onUnmounted(() => {
   revokeEditUrls()
 })
 
+// A pick shared "to chat" lands in this (global) room's composer tray for review.
+const shareInbox = useChatShareInbox()
+watch(
+  shareInbox.pending,
+  (p) => {
+    if (!p || props.matchId !== null) return // only the league (global) room takes it
+    const taken = shareInbox.take()
+    if (!taken) return
+    pending.value = [...pending.value, taken.image]
+    pendingUrls.value = [
+      ...pendingUrls.value,
+      URL.createObjectURL(new Blob([taken.image.bytes as BlobPart], { type: 'image/webp' })),
+    ]
+    if (taken.caption && !draft.value.trim()) draft.value = taken.caption
+  },
+  { immediate: true },
+)
+
 // Enable flow (admins), behind the legal-cover warning.
 const showWarning = ref(false)
 const enabling = ref(false)

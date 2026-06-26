@@ -81,6 +81,14 @@ const panelStyle = computed(() => {
   return `width: ${expanded.value ? 'min(48rem, 94vw)' : '22rem'}; ${base}`
 })
 
+// "Share a pick to chat" asks the dock to open the global room; the panel there
+// picks the queued image into its composer tray.
+const shareInbox = useChatShareInbox()
+watch(shareInbox.requestOpen, () => {
+  collapsed.value = false
+  scope.value = 'global'
+})
+
 const roomsOpen = ref(false)
 async function openRoom(roomMatchId: string | null) {
   roomsOpen.value = false

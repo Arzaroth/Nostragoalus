@@ -84,5 +84,5 @@ export function useShareCard() {
     })
   }
 
-  return { share, copy, download, busy }
+  return { mint, run, share, copy, download, busy }
 }
