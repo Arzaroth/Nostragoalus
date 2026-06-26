@@ -22,7 +22,11 @@ export interface ElimMatch {
 }
 
 const isFinished = (s: string): boolean => s === 'FINISHED' || s === 'AWARDED'
-const isUndecided = (s: string): boolean => s === 'SCHEDULED' || s === 'LIVE' || s === 'PAUSED'
+// Only a voided match is truly off the board; everything else not yet finished
+// (scheduled, live, paused, postponed, suspended, interrupted) is still a winnable
+// game, so it must be enumerated rather than dropped (dropping it would under-count
+// a team's possible points and could falsely eliminate it).
+const isVoid = (s: string): boolean => s === 'CANCELLED'
 
 export function computeEliminatedTeams(matches: ElimMatch[], competitionSlug: string | null | undefined): string[] {
   const tb = tiebreakersForCompetition(competitionSlug)
@@ -39,16 +43,21 @@ export function computeEliminatedTeams(matches: ElimMatch[], competitionSlug: st
 
   const groupMatches = matches.filter((m) => m.stage === 'GROUP')
 
-  // 2. Cross-group non-qualifiers, once every group match is finished and the
-  // knockout slots carry real team codes.
+  // 2. Cross-group non-qualifiers, once every group match is finished AND the
+  // knockout slots carry every qualifier's real code. The full-coverage guard
+  // matters because a provider may fill knockout codes incrementally: a half-
+  // populated bracket would otherwise grey advancing teams as "non-qualifiers".
   const groupDone = groupMatches.length > 0 && groupMatches.every((m) => isFinished(m.status))
+  const groupLetters = new Set<string>()
+  for (const m of groupMatches) if (m.group) groupLetters.add(m.group)
+  const expectedQualifiers = groupLetters.size * tb.advancePerGroup + tb.bestThirds
   const knockoutCodes = new Set<string>()
   for (const m of matches) {
     if (m.stage === 'GROUP') continue
     if (m.homeTeamCode) knockoutCodes.add(m.homeTeamCode)
     if (m.awayTeamCode) knockoutCodes.add(m.awayTeamCode)
   }
-  if (groupDone && knockoutCodes.size > 0) {
+  if (groupDone && expectedQualifiers > 0 && knockoutCodes.size >= expectedQualifiers) {
     for (const m of groupMatches) {
       for (const code of [m.homeTeamCode, m.awayTeamCode]) {
         if (code && !knockoutCodes.has(code)) eliminated.add(code)
@@ -93,8 +102,9 @@ function midGroupEliminated(matches: ElimMatch[], eligibleRank: number): string[
         base.set(m.homeTeamCode, base.get(m.homeTeamCode)! + 1)
         base.set(m.awayTeamCode, base.get(m.awayTeamCode)! + 1)
       }
-    } else if (isUndecided(m.status)) {
-      // A live match isn't final either - treat it as an open outcome.
+    } else if (!isVoid(m.status)) {
+      // Not finished and not voided: a still-winnable game (incl. postponed /
+      // suspended / interrupted) - enumerate its outcomes.
       remaining.push({ home: m.homeTeamCode, away: m.awayTeamCode })
     }
   }

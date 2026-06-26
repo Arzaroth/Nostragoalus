@@ -76,46 +76,65 @@ function overallValue(row: StandingRow, crit: Criterion): number {
   }
 }
 
-function h2hValue(h: H2H | undefined, crit: Criterion): number {
-  if (!h) return 0
+function h2hValue(h: H2H, crit: Criterion): number {
   if (crit === 'h2h-points') return h.points
   if (crit === 'h2h-gd') return h.gf - h.ga
   return h.gf // h2h-gf
 }
 
-// Order a set of teams level on points by the criteria list. Head-to-head criteria
-// are recomputed among the *current* subset, so when a criterion splits the set the
-// subsets are ranked from the top of the list again (this is the regulations'
-// "re-apply head-to-head to the still-level teams" rule). When nothing separates
-// them, fall back to a deterministic name sort.
-function rankCluster(
+// Split a set into ordered buckets of equal value (highest first).
+function bucketByValue(teams: StandingRow[], valueOf: (t: StandingRow) => number): StandingRow[][] {
+  const sorted = [...teams].sort((a, b) => valueOf(b) - valueOf(a))
+  const buckets: StandingRow[][] = []
+  for (const t of sorted) {
+    const last = buckets[buckets.length - 1]
+    if (last && valueOf(last[0]) === valueOf(t)) last.push(t)
+    else buckets.push([t])
+  }
+  return buckets
+}
+
+// Order teams by the criteria list, following the regulations precisely:
+//  - A run of head-to-head criteria is ONE block, evaluated among the "teams in
+//    question" (the set entering the block, NOT progressively shrunk across a-c).
+//  - If the block leaves a subset still level, the WHOLE block is re-applied to
+//    that (smaller) subset only - the regs' "re-apply head-to-head to the still-
+//    level teams" rule - with head-to-head recomputed among just them.
+//  - An overall criterion (GD/GF/wins) splits the set and ranking CONTINUES with
+//    the next criterion; head-to-head is never reintroduced once ranking has
+//    descended into overall criteria.
+// Exhausting the list leaves a true tie, broken deterministically by name.
+function rankTied(
   teams: StandingRow[],
   matches: StandingsInputMatch[],
   includeLive: boolean,
   criteria: Criterion[],
 ): StandingRow[] {
-  if (teams.length <= 1) return teams.slice()
-  const names = new Set(teams.map((t) => t.name))
-  for (const crit of criteria) {
-    let valueOf: (t: StandingRow) => number
-    if (isH2H(crit)) {
-      const h = h2hStats(names, matches, includeLive)
-      valueOf = (t) => h2hValue(h.get(t.name), crit)
-    } else {
-      valueOf = (t) => overallValue(t, crit)
+  const applyFrom = (group: StandingRow[], idx: number): StandingRow[] => {
+    if (group.length <= 1) return group
+    if (idx >= criteria.length) return [...group].sort((a, b) => a.name.localeCompare(b.name))
+
+    if (isH2H(criteria[idx])) {
+      let end = idx
+      while (end < criteria.length && isH2H(criteria[end])) end++
+      // Head-to-head among this exact set, held constant across the block (a-c).
+      const h = h2hStats(new Set(group.map((t) => t.name)), matches, includeLive)
+      let parts: StandingRow[][] = [group]
+      for (let i = idx; i < end; i++) {
+        parts = parts.flatMap((p) => bucketByValue(p, (t) => h2hValue(h.get(t.name)!, criteria[i])))
+      }
+      // The block separated no one: fall through to the overall criteria.
+      if (parts.length === 1) return applyFrom(group, end)
+      // Re-apply the whole list from the block start to any still-level subset
+      // (head-to-head recomputed among the smaller set); singletons stay put.
+      return parts.flatMap((p) => (p.length > 1 ? applyFrom(p, idx) : p))
     }
-    const sorted = [...teams].sort((a, b) => valueOf(b) - valueOf(a))
-    const buckets: StandingRow[][] = []
-    for (const t of sorted) {
-      const last = buckets[buckets.length - 1]
-      if (last && valueOf(last[0]) === valueOf(t)) last.push(t)
-      else buckets.push([t])
-    }
-    if (buckets.length > 1) {
-      return buckets.flatMap((b) => rankCluster(b, matches, includeLive, criteria))
-    }
+
+    // Overall criterion: split, then continue with the NEXT criterion.
+    const parts = bucketByValue(group, (t) => overallValue(t, criteria[idx]))
+    return parts.flatMap((p) => (p.length > 1 ? applyFrom(p, idx + 1) : p))
   }
-  return [...teams].sort((a, b) => a.name.localeCompare(b.name))
+  return applyFrom(teams, 0)
 }
 
 // A comparator over overall stats only (no head-to-head), for ranking teams that
@@ -181,7 +200,7 @@ export function computeGroupStandings(matches: StandingsInputMatch[], opts: Stan
 
   for (const row of table.values()) row.gd = row.gf - row.ga
 
-  return rankCluster([...table.values()], matches, !!opts.includeLive, opts.tiebreakers ?? DEFAULT_CRITERIA)
+  return rankTied([...table.values()], matches, !!opts.includeLive, opts.tiebreakers ?? DEFAULT_CRITERIA)
 }
 
 export interface GroupStandings {

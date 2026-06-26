@@ -22,7 +22,15 @@ const teamLean = computed(() =>
 const { data: elimData, refresh: refreshEliminated } = useFetch<{ codes: string[] }>('/api/competitions/eliminated', {
   query: computed(() => (slug.value ? { competition: slug.value } : {})),
 })
-const eliminated = computed(() => new Set(elimData.value?.codes ?? []))
+// Only swap the Set when the codes actually change, so a refetch that returns the
+// same set doesn't churn a full marker rebuild (and flag-image reload) in WorldMap.
+const eliminated = ref<Set<string>>(new Set())
+watch(
+  () => [...(elimData.value?.codes ?? [])].sort().join(','),
+  (sig) => (eliminated.value = new Set(sig ? sig.split(',') : [])),
+  { immediate: true },
+)
+// A finished match can change who's out; refetch when any match's status flips.
 watch(
   () => (allMatches.value ?? []).map((m) => m.status).join(','),
   () => refreshEliminated(),

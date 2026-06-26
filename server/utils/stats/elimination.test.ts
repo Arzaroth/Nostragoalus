@@ -112,17 +112,54 @@ describe('computeEliminatedTeams - edge cases', () => {
 })
 
 describe('computeEliminatedTeams - cross-group non-qualifiers', () => {
-  it('greys a group team absent from the knockout once the groups are over', () => {
-    const matches = [
-      gm('A', 'FRA', 'AUS', 2, 0),
-      gm('A', 'DEN', 'FRA', 1, 0),
-      gm('A', 'DEN', 'AUS', 1, 0),
-      gm('A', 'FRA', 'DEN', 1, 0),
-      gm('A', 'AUS', 'DEN', 1, 0),
-      gm('A', 'AUS', 'FRA', 1, 0),
-      ko('R32', 'FRA', 'DEN', 'HOME'), // FRA and DEN advanced; AUS did not
-    ]
-    const out = set(matches, 'world-cup-2026')
+  // A finished WC2022 group (top 2 only, no thirds): FRA & DEN qualify, AUS & TUN
+  // do not, and the knockout has both qualifiers, so the non-qualifiers are greyed.
+  const finishedGroup = [
+    gm('A', 'FRA', 'AUS', 2, 0),
+    gm('A', 'FRA', 'TUN', 1, 0),
+    gm('A', 'FRA', 'DEN', 0, 0),
+    gm('A', 'DEN', 'AUS', 1, 0),
+    gm('A', 'DEN', 'TUN', 1, 0),
+    gm('A', 'AUS', 'TUN', 1, 0),
+  ]
+  it('greys group teams absent from a fully-populated knockout (WC2022)', () => {
+    const out = set([...finishedGroup, ko('R32', 'FRA', 'DEN', 'HOME')], 'world-cup-2022')
     expect(out.has('AUS')).toBe(true)
+    expect(out.has('TUN')).toBe(true)
+  })
+
+  it('does NOT grey a third-placed team while the knockout slots are only partly filled (WC2026)', () => {
+    // WC2026 expects 12*2 + 8 = far more qualifier codes than this single group can
+    // show; with the knockout barely populated the cross-group signal must stay off,
+    // and the mid-group brute force keeps the 3rd-placed AUS alive (it could be a best third).
+    const out = set([...finishedGroup, ko('R32', 'FRA', 'ZZZ', 'HOME')], 'world-cup-2026')
+    expect(out.has('AUS')).toBe(false) // 3rd place, still a possible best third
+    expect(out.has('TUN')).toBe(true) // last place, certainly out
+  })
+})
+
+describe('computeEliminatedTeams - postponed / malformed', () => {
+  it('keeps a team alive when a postponed match could still earn it the points it needs (WC2026)', () => {
+    const matches: ElimMatch[] = [
+      gm('A', 'A1', 'B1', 1, 0),
+      gm('A', 'A1', 'C1', 1, 0),
+      gm('A', 'A1', 'D1', 1, 0), // A1 wins all -> 9
+      gm('A', 'C1', 'B1', 1, 0), // C1 beat B1 -> C1 has 3
+      gm('A', 'B1', 'D1', 1, 0), // B1 beat D1 -> B1 has 3
+      { stage: 'GROUP', group: 'A', homeTeamCode: 'C1', awayTeamCode: 'D1', status: 'POSTPONED', fullTimeHome: null, fullTimeAway: null, winner: null },
+    ]
+    // D1 has 0 and only the postponed C1-D1 left. Dropping that game would leave 3
+    // teams above D1 (it would be greyed); counting it as still-winnable keeps D1 alive.
+    expect(set(matches, 'world-cup-2026').has('D1')).toBe(false)
+  })
+
+  it('tolerates null codes and null groups without crashing or false eliminations', () => {
+    const matches: ElimMatch[] = [
+      { stage: 'R32', group: null, homeTeamCode: null, awayTeamCode: null, status: 'SCHEDULED', fullTimeHome: null, fullTimeAway: null, winner: null },
+      { stage: 'GROUP', group: null, homeTeamCode: 'X1', awayTeamCode: 'Y1', status: 'FINISHED', fullTimeHome: 1, fullTimeAway: 0, winner: null },
+      { stage: 'GROUP', group: 'A', homeTeamCode: null, awayTeamCode: 'A2', status: 'SCHEDULED', fullTimeHome: null, fullTimeAway: null, winner: null },
+      { stage: 'GROUP', group: 'A', homeTeamCode: 'A1', awayTeamCode: null, status: 'SCHEDULED', fullTimeHome: null, fullTimeAway: null, winner: null },
+    ]
+    expect(computeEliminatedTeams(matches, 'world-cup-2026')).toEqual([])
   })
 })

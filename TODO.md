@@ -34,6 +34,32 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       model; if marker rendering ever changes, prefer rebuilding the divIcon for the
       changed teams only (diff old vs new lean) over the direct DOM poke.
 
+## Group tiebreakers + elimination (deferred from the feature-treatment review)
+
+- [ ] The group-standings row select (`group, homeTeam, awayTeam, *Code, status,
+      fullTime*` WHERE `stage='GROUP'`) is now hand-written in THREE places:
+      `standings.get.ts`, `bracket.get.ts:groupStandingsFor`, and the insights
+      service. Extend the existing deferred `selectGroupStandingsRows` extraction
+      to cover `bracket.get.ts` too. `eliminated.get.ts` selects a different shape
+      (adds `stage`+`winner`, drops names, no `stage` filter) and intentionally
+      does not share it.
+- [ ] The classic `['points', 'gd', 'gf']` criteria triple is repeated ~5x
+      (tiebreakers.ts default + WC2026 best-third, standings.ts `DEFAULT_CRITERIA`,
+      projection.ts `rankThirds` fallback). Extract one exported `CLASSIC` const.
+- [ ] `GET /api/competitions/eliminated` (and `/standings`) are not in the sampled
+      API response schemas (`response-schemas.json`); add on the next controlled
+      regen (the inline `defineRouteMeta` OpenAPI already ships).
+- [ ] `/api/competitions/eliminated` recomputes from scratch each call (scans all
+      competition matches + brute-forces each group). Bounded and cheap (3^n with
+      n<=6 per 4-team group, n>8 capped), so left uncached unlike the bracket
+      endpoint; add a short TTL cache if it ever shows on a profile.
+- [ ] Mid-group elimination is group-internal: it greys a team that cannot reach a
+      qualifying-eligible group rank (top-2, or top-3 where best thirds exist). A
+      3rd-placed team that is mathematically out of the *best-third* race across
+      groups is only greyed once the group stage finishes (the cross-group signal),
+      not the instant it becomes certain. Closing that needs a cross-group
+      best-third enumeration; deferred as rare and combinatorially heavier.
+
 ## Match status: interrupted (deferred from the feature pass)
 
 - No auto-void safety net for a match stuck `INTERRUPTED` that never resolves.
