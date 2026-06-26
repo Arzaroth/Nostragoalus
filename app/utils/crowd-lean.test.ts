@@ -39,6 +39,15 @@ describe('computeTeamLean', () => {
     expect(computeTeamLean(matches, totals).FRA).toBeCloseTo(-1) // still from the live match
   })
 
+  it('treats a suspended/interrupted match as in-play, not skipped for a future fixture', () => {
+    const matches = [
+      m({ id: 'halted', homeTeamCode: 'FRA', awayTeamCode: 'BRA', status: 'SUSPENDED', kickoffTime: '2026-06-28T18:00:00Z' }),
+      m({ id: 'next', homeTeamCode: 'FRA', awayTeamCode: 'GER', status: 'SCHEDULED', kickoffTime: '2026-07-01T18:00:00Z' }),
+    ]
+    const totals: CrowdTotals = { halted: { home: 30, away: 10, count: 20 }, next: { home: 5, away: 5, count: 5 } }
+    expect(computeTeamLean(matches, totals).FRA).toBeCloseTo(0.5) // from the halted (in-play) match
+  })
+
   it('picks the earliest upcoming match when none are live', () => {
     const matches = [
       m({ id: 'later', homeTeamCode: 'FRA', awayTeamCode: 'GER', kickoffTime: '2026-07-05T18:00:00Z' }),

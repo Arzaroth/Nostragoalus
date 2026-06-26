@@ -1,3 +1,5 @@
+import { IN_PLAY_STATUSES, type MatchStatus } from '#shared/types/match'
+
 // Derives a per-team "crowd lean" for the world map from the aggregate crowd
 // prediction totals (the same data the "show everyone's totals" preference
 // exposes - summed predicted goals per match side, no individual picks). For each
@@ -10,23 +12,26 @@ export interface LeanMatch {
   homeTeamCode: string | null
   awayTeamCode: string | null
   kickoffTime: string | Date
-  status: string
+  status: MatchStatus
 }
 
 export type CrowdTotals = Record<string, { home: number; away: number; count: number }>
 
-const LIVE_STATUSES = new Set(['LIVE', 'PAUSED'])
+// "In play" follows the shared definition (LIVE/PAUSED/SUSPENDED/INTERRUPTED), so
+// a halted-but-ongoing match still counts as the team's current one rather than
+// being skipped in favour of a future fixture.
+const inPlay = (s: MatchStatus): boolean => IN_PLAY_STATUSES.includes(s)
 
 function kickoff(m: LeanMatch): number {
   return new Date(m.kickoffTime).getTime()
 }
 
-// A team's "current" match: any live match it plays (earliest if several), else
+// A team's "current" match: any in-play match it plays (earliest if several), else
 // its earliest upcoming one. Finished/cancelled matches are ignored.
 function pickCurrentMatches(matches: LeanMatch[]): Record<string, LeanMatch> {
   const current: Record<string, LeanMatch> = {}
   for (const m of matches) {
-    const live = LIVE_STATUSES.has(m.status)
+    const live = inPlay(m.status)
     if (!live && m.status !== 'SCHEDULED') continue
     for (const code of [m.homeTeamCode, m.awayTeamCode]) {
       if (!code) continue
@@ -35,7 +40,7 @@ function pickCurrentMatches(matches: LeanMatch[]): Record<string, LeanMatch> {
         current[code] = m
         continue
       }
-      const curLive = LIVE_STATUSES.has(cur.status)
+      const curLive = inPlay(cur.status)
       if (live && !curLive) current[code] = m
       else if (live === curLive && kickoff(m) < kickoff(cur)) current[code] = m
     }

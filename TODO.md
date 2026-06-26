@@ -20,6 +20,20 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       secret (which invalidates every user's link at once). If per-user feed
       revocation is ever wanted, fold a per-user salt/version into the payload.
 
+## Prediction-lean map (deferred from the feature-treatment review)
+
+- [ ] The "live-else-next" current-match pick (`pickCurrentMatches` in
+      `app/utils/crowd-lean.ts`) is a 4th copy of the same status-pick micro-pattern
+      already inline in `map.vue` (`live`/`next`), `NextMatchCta.vue` and
+      `matches/index.vue`. crowd-lean now aligns to the shared `IN_PLAY_STATUSES`,
+      but the other three still hardcode `LIVE`/`PAUSED` and so disagree on
+      SUSPENDED/INTERRUPTED. Extract one shared `currentMatchForTeam` /
+      live-else-next helper so the in-play set lives in one place.
+- [ ] `WorldMap.client.vue` re-tints rings by writing `box-shadow` directly on each
+      marker's `<img>` via `getElement()`. Works, but reaches around Leaflet's icon
+      model; if marker rendering ever changes, prefer rebuilding the divIcon for the
+      changed teams only (diff old vs new lean) over the direct DOM poke.
+
 ## Match status: interrupted (deferred from the feature pass)
 
 - No auto-void safety net for a match stuck `INTERRUPTED` that never resolves.
