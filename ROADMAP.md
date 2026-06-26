@@ -41,11 +41,10 @@ effort buckets; order within a bucket is not priority.
       fires on the next release rather than the whole back catalogue.
 - [x] **Next-match CTA** (shipped in 1.4.0): on the home banner when logged in; scrolling
       dismisses it, and a dismissed match doesn't re-show (sessionStorage).
-- [ ] **Main page rework** (in progress on worktree-main-page-rework): a rolling
-      refresh of the landing/home page so it gets you to the matches and your
-      picks faster and shows its best side. Multi-slice; the banner intro is the
-      first slice, more below.
-  - **Banner intro (done, pending merge)**: the scroll-scrubbed banner journey
+- [x] **Main page rework** (shipped in 1.15.0): a rolling refresh of the
+      landing/home page so it gets you to the matches and your picks faster and
+      shows its best side. Shipped slices:
+  - **Banner intro** (1.15.0): the scroll-scrubbed banner journey
         (centered card -> full-bleed strip -> slim pinned bar) buried the
         essentials below a decorative banner, and the slim state existed only at a
         single scroll position so reading the page re-expanded it. Adds a
@@ -53,15 +52,26 @@ effort buckets; order within a bucket is not priority.
         hidden while the next-match pill shares that slot) that latches the banner
         slim and scrolls the hero just under it - content-relative, so it lands the
         same on any viewport. Once docked (cue or manual scroll) the bar holds slim
-        until the page returns to the very top. Deferred: on very small phones a
-        manual scrub still half-shrinks the strip over the content; a screen-aware
-        phase length or a mobile-simplified banner would close that (TODO.md).
-  - **Planned slices** (from the product discussion, refine as we go): logged-out
-        value-prop + sign-up/login CTA in the hero; a live teaser even when signed
-        out (next-match card, leaderboard top 3, player count); conditional-by-auth
-        landing so returning users skip the big intro / start on a slim bar.
-- [ ] **iCal feed**: per-user calendar subscription with fixtures + pick
-      lockout deadlines.
+        until the page returns to the very top.
+  - **Signed-out teaser + auth-conditional hero** (1.15.0): `LandingTeaser`
+        shows the soonest fixture with a countdown plus name-free player /
+        prediction counts (public `/api/stats`), and the hero CTA buttons swap on
+        auth (Get started / Sign in for guests, Go to matches / Browse for
+        members); signed-in users get the `NextMatchCta` pill instead of the teaser.
+  - **Deferred (never shipped)**: leaderboard top-3 in the signed-out teaser; an
+        auth-conditional landing that lets returning users skip the big banner
+        intro / start on the slim bar (the intro still plays for everyone). The
+        very-small-phone manual-scrub half-shrink polish also stays open (TODO.md).
+- [ ] **iCal feed** (IN_PROGRESS): per-user calendar subscription with fixtures +
+      pick lockout deadlines. A stateless per-user signed token (HMAC, reuse the
+      share-card minting pattern, no schema) keys an unauthenticated `.ics`
+      endpoint so a calendar client with no session can fetch it. One VEVENT per
+      fixture (kickoff = start, pick-lock deadline noted), regenerated per request;
+      subscribe URL surfaced in Preferences.
+- [ ] **Profile scroll-to-next-match**: opening someone's profile (or your own)
+      lands on the upcoming fixtures rather than the top of their pick history. A
+      "now" separator sits between played and upcoming matches and scrolls into the
+      middle of the viewport on load, mirroring the fixtures page's jump-to-next.
 - [ ] **"The Equalizer" bot mode**: always picks 1-1 (modal draw score) to
       leverage the draws-score-something floor. Verify the "draw pick always
       >= 2 pts" premise against the tier table first; if outcome-miss = 0 the
@@ -214,6 +224,14 @@ effort buckets; order within a bucket is not priority.
   - **Share flow**: Web Share API (native sheet on mobile) -> copy-link +
     download-PNG fallback. Button on the match-page pick row + in
     PredictionList. Pre-match button offers the sealed/reveal choice.
+- [ ] **Share a set of picks (round / day / selection)**: extends the per-pick
+      share card (1.32.0) to a multi-match card - a whole round, a matchday, or a
+      hand-picked selection - rendered through the same satori+resvg OG stack. One
+      token seals the set (same owner-minted HMAC, same copy-protection: sealed
+      until each match kicks off, result mode post-kickoff per match). Open
+      questions: layout for N picks (a results grid / "scorecard" vs a carousel of
+      stubs), how to mix sealed and revealed picks in one card, and whether a round
+      recap folds into Tournament Wrapped instead of standing alone.
 - [ ] **League rivalry / overtake alerts**: pick a rival inside a league you
       share, get a push the moment they pass you (or you pass them) on that
       league's board. Pure engagement multiplier on the web-push + leagues work
@@ -232,6 +250,13 @@ effort buckets; order within a bucket is not priority.
       that already exist, not new data. Only worth it if that field-level
       drama earns its keep; otherwise drop - the per-match league board and the
       crowd totals already cover the per-member and aggregate angles.
+- [ ] **Prediction-lean world map** (IN_PROGRESS): the cheap, map-anchored cousin
+      of Live pick pulse. The interactive Leaflet map already places a marker per
+      nation; tint each by the crowd's lean on that team's next (or live) fixture -
+      the share of the field backing them to win, derived from the existing crowd
+      prediction distribution, no new data. A colour scale + legend + per-team
+      tooltip; live-aware off the same WS the map's standings already use. Reuses
+      the crowd-totals aggregation rather than the maybe-drop field-wide data-viz.
 - [x] **Predictive bracket** (shipped in 1.30.0): once a
       group's teams have all played at least once, pre-fill the knockout slots
       that group feeds with the currently-projected qualifiers from the live
@@ -345,6 +370,19 @@ effort buckets; order within a bucket is not priority.
       status (planned / in progress / shipped) instead of stacked sections;
       admins drag cards between columns and reorder within one (replaces the
       up/down buttons). Public view read-only.
+- [ ] **Localized roadmap + changelog**: the whole app chrome is i18n'd in four
+      locales but the roadmap items (DB content) and the About-page changelog are
+      English-only (the chrome around them is translated, the body is not).
+      Resolves the existing TODO note. Options:
+  - **Roadmap**: per-locale fields on the roadmap item (title/description per
+    locale) with EN fallback, or a translation table keyed by item id; admin UI
+    grows a locale tab. Decide vs accepting EN-only.
+  - **Changelog**: separate `CHANGELOG.{en,fr,th,tlh}.md` rendered per active
+    locale (EN stays the source of truth and the release-gate input; the others
+    are translations that can lag). The release flow / docs sweep would need to
+    fan the `[Unreleased]` move across all four, or translate on cut. Weigh the
+    per-release translation cost (every entry, four locales) against value before
+    committing - a machine-assisted pass at release time may be the pragmatic form.
 - [ ] **Half-time prediction change ("the VAR")**: overturn your own call on
       a live match before the second half kicks off.
   - League house rule behind a new per-league **difficulty setting**; off by
