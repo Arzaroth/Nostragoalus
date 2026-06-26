@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.39.2] - 2026-06-26
+
 ### Changed
 - The full-screen goal celebration no longer pops over a live stream you're watching: while an embedded live broadcast is on-screen in the match view (pinned or on the Live tab), a goal updates the score quietly instead of throwing up the overlay - which used to cover the stream and spoil the goal before the delayed feed reached it.
 
