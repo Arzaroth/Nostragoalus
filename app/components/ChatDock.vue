@@ -7,6 +7,7 @@
 // that is what lets a keyholder re-seal the group key for a newcomer without
 // opening the chat first, and what makes an admin's enable/disable reflect live
 // for everyone - the panel reports its on/off state up via update:enabled.
+import { useDraggable, useStorage } from '@vueuse/core'
 import { GLOBAL_ROOM, roomKeyOf, useChatActivity } from '~/composables/useChatActivity'
 
 const { t } = useI18n()
@@ -46,6 +47,39 @@ function matchLabel(id: string | null): string {
   if (!m) return t('chat.threadTitle')
   return `${m.homeTeamCode ?? m.homeTeam} v ${m.awayTeamCode ?? m.awayTeam}`
 }
+
+// Undock: detach the window into a draggable, resizable floating panel. Its
+// undocked state and last position persist per device. Dragged by the header,
+// resized by the CSS corner handle (see the panel style below).
+const undocked = useStorage('ng-chat-undocked', false)
+const pos = useStorage('ng-chat-pos', { x: 0, y: 0 })
+const dockEl = ref<HTMLElement | null>(null)
+const handleEl = ref<HTMLElement | null>(null)
+const { x, y, style: dragStyle } = useDraggable(dockEl, {
+  handle: handleEl,
+  initialValue: pos,
+  preventDefault: true,
+})
+watch([x, y], () => {
+  if (undocked.value) pos.value = { x: x.value, y: y.value }
+})
+function toggleUndock() {
+  if (!undocked.value && (pos.value.x === 0 && pos.value.y === 0) && import.meta.client) {
+    // First undock: seed a sensible spot near the docked corner.
+    x.value = Math.max(8, window.innerWidth - 380)
+    y.value = Math.max(8, window.innerHeight - 620)
+  }
+  undocked.value = !undocked.value
+}
+// When undocked, the panel is fixed-positioned at the dragged point and resizable;
+// docked, it keeps its place in the bottom-right wrapper.
+const panelStyle = computed(() => {
+  const base = `max-width: 94vw; background: var(--p-content-background); border-color: var(--p-content-border-color)`
+  if (undocked.value) {
+    return `${dragStyle.value}; position: fixed; z-index: 50; width: ${expanded.value ? '40rem' : '22rem'}; height: 32rem; resize: both; overflow: hidden; ${base}`
+  }
+  return `width: ${expanded.value ? 'min(48rem, 94vw)' : '22rem'}; ${base}`
+})
 
 const roomsOpen = ref(false)
 async function openRoom(roomMatchId: string | null) {
@@ -89,11 +123,14 @@ async function openRoom(roomMatchId: string | null) {
     <!-- The window. Kept mounted while collapsed/off (v-show) to hold the socket. -->
     <div
       v-show="enabled && !collapsed"
+      ref="dockEl"
       class="ng-card rounded-2xl border shadow-2xl flex flex-col overflow-hidden"
-      :style="`width: ${expanded ? 'min(48rem, 94vw)' : '22rem'}; max-width: 94vw; background: var(--p-content-background); border-color: var(--p-content-border-color)`"
+      :style="panelStyle"
     >
       <div
+        ref="handleEl"
         class="flex items-center gap-2 px-3 py-2 border-b"
+        :class="undocked ? 'cursor-move select-none' : ''"
         style="border-color: var(--p-content-border-color); background: var(--p-content-background)"
       >
         <div v-if="matchId" class="flex items-center rounded-lg overflow-hidden text-xs" style="border: 1px solid var(--p-content-border-color)">
@@ -150,6 +187,14 @@ async function openRoom(roomMatchId: string | null) {
           </div>
         </div>
 
+        <button
+          type="button"
+          class="opacity-70 hover:opacity-100"
+          :aria-label="t(undocked ? 'chat.dock.redock' : 'chat.dock.undock')"
+          @click="toggleUndock"
+        >
+          <i :class="undocked ? 'pi pi-thumbtack' : 'pi pi-external-link'" />
+        </button>
         <button
           type="button"
           class="opacity-70 hover:opacity-100"

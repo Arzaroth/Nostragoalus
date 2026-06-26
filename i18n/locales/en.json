@@ -49,7 +49,7 @@
     "settingUp": "Setting up your key...",
     "awaitingKey": "Waiting to be let in...",
     "awaitingKeyHint": "Chat is end-to-end encrypted. A member who is already in the chat has to come online to hand you the key. This happens automatically - leave this open and it will unlock.",
-    "dock": { "open": "Open league chat", "collapse": "Minimize chat", "title": "League chat", "expand": "Expand", "shrink": "Shrink" },
+    "dock": { "open": "Open league chat", "collapse": "Minimize chat", "title": "League chat", "expand": "Expand", "shrink": "Shrink", "undock": "Undock", "redock": "Dock" },
     "scope": { "global": "League", "match": "This match" },
     "rooms": { "button": "Rooms with activity", "title": "Rooms with activity", "none": "No new activity" },
     "empty": "No messages yet. Say something.",
