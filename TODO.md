@@ -1116,9 +1116,15 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       no eviction; prune to current co-members if it ever matters.
 - [ ] `listMessages` backward pagination (`before:` -> `lt(createdAt)`) has no
       compound cursor, so two messages sharing a `createdAt` at a page boundary
-      can be dropped/duplicated. Currently dead code (the client never passes
-      `before`/`limit`); `ORDER BY` now has an `id` tiebreaker for a deterministic
-      page, but wire a `(createdAt, id)` keyset cursor before any client paginates.
+      can be dropped/duplicated. The chat "Load earlier messages" control now
+      drives this (client passes `before`), and the composable dedupes prepended
+      pages by id so a duplicate is dropped, but a message could still be SKIPPED
+      at a 50-message boundary that splits a same-millisecond pair. `ORDER BY` has
+      an `id` tiebreaker; wire a `(createdAt, id)` keyset cursor to fully close it.
+- [ ] Chat: the ~1px vertical jitter while typing (rare, not reproducible on
+      command) is unfixed - likely the autoResize `Textarea` oscillating its
+      height by a subpixel near a line boundary, or a message-list reflow. Pin a
+      stable line-height/min-height once it can be reproduced.
 - [ ] `getMemberPublicKeys` (chat status payload) lists every member's userId +
       public key with no profile-private / admin-hidden filter, unlike
       `listLeagueMembers`. Exposure is limited to fellow league members and is
