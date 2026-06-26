@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- **Calendar feed**: subscribe to your fixtures and pick deadlines from your own calendar app. Preferences has a "Calendar feed" section with a personal subscribe link (and a one-tap webcal button) you add to Google Calendar, Apple Calendar, Outlook or Thunderbird; it then stays up to date on its own. Each upcoming match you haven't predicted carries a reminder three hours before kickoff. The feed shows fixtures and final scores but never your predicted score, so the link stays safe to hand to a calendar service.
+
 ## [1.36.0] - 2026-06-26
 
 ### Added
@@ -21,7 +24,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 - **Live chat on/off**: turning chat on, off or rotating its key now updates for everyone instantly - the chat window appears or disappears for other members without a refresh, instead of going stale until they reloaded.
 - **Names of hidden members in chat**: a member hidden from the public leaderboard now shows their name in the league chat they belong to, instead of appearing as "Someone".
 - **Chat scrolling**: reacting, muting or moderating no longer yanks the view to the latest message. New messages while you have scrolled up raise a "new messages" jump button instead of forcing you down.
-
 ## [1.35.0] - 2026-06-23
 
 ### Added
