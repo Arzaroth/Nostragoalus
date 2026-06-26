@@ -12,35 +12,35 @@ export async function getCompetitionTopScorers(
 ): Promise<TopScorer[]> {
   const rows = await db.select().from(goalEvent).where(eq(goalEvent.competitionId, competitionId))
 
-  const assistsByPlayer = new Map<string, number>()
-  for (const r of rows) {
-    if (r.assistPlayerId) assistsByPlayer.set(r.assistPlayerId, (assistsByPlayer.get(r.assistPlayerId) ?? 0) + 1)
+  type Tally = { playerId: string; playerName: string; teamName: string; teamCode: string | null; goals: number; assists: number }
+  const players = new Map<string, Tally>()
+  const ensure = (id: string, name: string, teamName: string, teamCode: string | null) => {
+    let p = players.get(id)
+    if (!p) {
+      p = { playerId: id, playerName: name, teamName, teamCode, goals: 0, assists: 0 }
+      players.set(id, p)
+    }
+    return p
   }
 
-  const scorers = new Map<string, TopScorer & { playerId: string }>()
+  // Score goals first so a player's own name is authoritative; an assister seen
+  // before they score must not get stuck with the assist-row placeholder name.
   for (const r of rows) {
-    if (r.ownGoal || !r.playerId) continue
-    const existing = scorers.get(r.playerId)
-    if (existing) existing.goals += 1
-    else
-      scorers.set(r.playerId, {
-        playerId: r.playerId,
-        playerName: r.playerName,
-        teamName: r.teamName,
-        teamCode: r.teamCode,
-        goals: 1,
-        assists: 0,
-        penalties: null,
-      })
+    if (!r.ownGoal && r.playerId) ensure(r.playerId, r.playerName, r.teamName, r.teamCode).goals += 1
+  }
+  // The assist credits the assisting player, who is on the scoring team - so a
+  // pure assister (no goals of their own) still earns a ranking row.
+  for (const r of rows) {
+    if (r.assistPlayerId) ensure(r.assistPlayerId, r.assistPlayerName ?? 'Unknown', r.teamName, r.teamCode).assists += 1
   }
 
-  return [...scorers.values()]
+  return [...players.values()]
     .map((s) => ({
       playerName: s.playerName,
       teamName: s.teamName,
       teamCode: s.teamCode,
       goals: s.goals,
-      assists: assistsByPlayer.get(s.playerId) ?? 0,
+      assists: s.assists,
       penalties: null,
     }))
     .sort((a, b) => b.goals - a.goals || b.assists - a.assists || a.playerName.localeCompare(b.playerName))

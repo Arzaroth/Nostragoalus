@@ -7,6 +7,7 @@ import {
   normalizeFifaBracket,
   normalizeFifaMatch,
   normalizeFifaMatchDetail,
+  mergeTimelineAssists,
   normalizeFifaTimeline,
   normalizeFifaPlayerStats,
   normalizeFifaSquad,
@@ -315,6 +316,90 @@ describe('fifaProvider.getMatchDetail', () => {
       rateLimiter: noWait(),
     })
     await expect(provider.getMatchDetail!({ stageId: 's', matchId: 'm' })).rejects.toThrow()
+  })
+
+  it('enriches goals with assists from the timeline', async () => {
+    const detail = {
+      MatchTime: "90'",
+      HomeTeam: {
+        IdTeam: 'H',
+        Players: [
+          { IdPlayer: 's1', PlayerName: [{ Locale: 'en', Description: 'SCORER ONE' }] },
+          { IdPlayer: 'a1', PlayerName: [{ Locale: 'en', Description: 'ASSIST ONE' }] },
+        ],
+        Goals: [{ Type: 1, IdPlayer: 's1', Minute: "23'", IdTeam: 'H' }],
+      },
+      AwayTeam: { IdTeam: 'A', Players: [], Goals: [] },
+    }
+    const timeline = { Event: [{ Type: 0, IdPlayer: 's1', IdSubPlayer: 'a1', MatchMinute: "23'", IdTeam: 'H' }] }
+    const fetchImpl = (async (url: string) =>
+      new Response(JSON.stringify(url.includes('/timelines/') ? timeline : detail), { status: 200 })) as unknown as typeof fetch
+    const provider = fifaProvider({ seasonId: '255711', competitionId: '17', fetchImpl, rateLimiter: noWait() })
+    const d = await provider.getMatchDetail!({ stageId: 'st1', matchId: 'm1' })
+    expect(d!.goals[0]).toMatchObject({ playerId: 's1', assistPlayerId: 'a1', assistPlayerName: 'ASSIST ONE' })
+  })
+
+  it('keeps goals unassisted when the timeline fetch fails', async () => {
+    const detail = {
+      MatchTime: "90'",
+      HomeTeam: { IdTeam: 'H', Players: [{ IdPlayer: 's1' }], Goals: [{ Type: 1, IdPlayer: 's1', Minute: "23'", IdTeam: 'H' }] },
+      AwayTeam: { IdTeam: 'A', Players: [], Goals: [] },
+    }
+    const fetchImpl = (async (url: string) =>
+      url.includes('/timelines/') ? new Response('x', { status: 500 }) : new Response(JSON.stringify(detail), { status: 200 })) as unknown as typeof fetch
+    const provider = fifaProvider({ seasonId: '255711', competitionId: '17', fetchImpl, rateLimiter: noWait() })
+    const d = await provider.getMatchDetail!({ stageId: 'st1', matchId: 'm1' })
+    expect(d!.goals[0]).toMatchObject({ playerId: 's1', assistPlayerId: null, assistPlayerName: null })
+  })
+})
+
+describe('mergeTimelineAssists', () => {
+  const goal = (over: Partial<import('../../../shared/types/match').NormalizedGoal>) => ({
+    side: 'HOME' as const,
+    teamId: 'H',
+    teamName: 'Norway',
+    teamCode: 'NOR',
+    playerId: 's',
+    playerName: 'Scorer',
+    minute: "10'",
+    goalType: null,
+    ownGoal: false,
+    assistPlayerId: null,
+    assistPlayerName: null,
+    ...over,
+  })
+  const detail = { HomeTeam: { Players: [{ IdPlayer: 'a1', PlayerName: [{ Locale: 'en', Description: 'Assister' }] }] }, AwayTeam: { Players: [] } }
+
+  it('attaches an open-play assist, skips own goals, penalties, solo and self assists', () => {
+    const goals = [
+      goal({ playerId: 's1', minute: "10'" }),
+      goal({ playerId: 's2', minute: "20'", ownGoal: true }),
+      goal({ playerId: 's3', minute: "30'" }),
+      goal({ playerId: 's4', minute: "40'" }),
+      goal({ playerId: 's5', minute: "50'" }),
+    ]
+    const timeline = {
+      Event: [
+        { Type: 0, IdPlayer: 's1', IdSubPlayer: 'a1', MatchMinute: "10'" },
+        { Type: 34, IdPlayer: 's2', IdSubPlayer: 'a1', MatchMinute: "20'" }, // own goal kind - ignored
+        { Type: 41, IdPlayer: 's4', IdSubPlayer: 'a1', MatchMinute: "40'" }, // penalty - ignored
+        { Type: 0, IdPlayer: 's5', IdSubPlayer: 's5', MatchMinute: "50'" }, // self assist - ignored
+      ],
+    }
+    mergeTimelineAssists(goals, timeline, detail)
+    expect(goals.map((g) => [g.playerId, g.assistPlayerId, g.assistPlayerName])).toEqual([
+      ['s1', 'a1', 'Assister'],
+      ['s2', null, null],
+      ['s3', null, null],
+      ['s4', null, null],
+      ['s5', null, null],
+    ])
+  })
+
+  it('sets the assist id with a null name when the assister is off the roster', () => {
+    const goals = [goal({ playerId: 's1', minute: "10'" })]
+    mergeTimelineAssists(goals, { Event: [{ Type: 39, IdPlayer: 's1', IdSubPlayer: 'ghost', MatchMinute: "10'" }] }, detail)
+    expect(goals[0]).toMatchObject({ assistPlayerId: 'ghost', assistPlayerName: null })
   })
 })
 
