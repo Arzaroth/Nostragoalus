@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.39.1] - 2026-06-26
+
 ### Fixed
 - **Head-to-head now shows the full history**: the all-time meetings on a match's Head-to-head tab (and each team's recent form) were drawn from a FIFA feed that only carried World Cups, qualifiers and friendlies since 2021, so older friendlies and European Championship matches were silently missing - for example Norway vs France's 2010 and 2014 friendlies, or France vs Spain's Euro meetings in 1984, 1996, 2000 and 2012. They now come from FIFA's full archive going back to the early 1900s, friendlies and continental finals included.
 
