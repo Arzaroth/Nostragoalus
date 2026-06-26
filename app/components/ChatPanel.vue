@@ -5,11 +5,12 @@ import type { DecryptedMessage } from '~/composables/useLeagueChat'
 // End-to-end encrypted league chat. The league-global room (matchId null) or a
 // per-match thread. All crypto is client-side; the server only relays ciphertext.
 // `flat` drops the outer card chrome so the panel can sit inside the chat dock,
-// which supplies its own window frame.
-const props = withDefaults(defineProps<{ leagueId: string; matchId?: string | null; flat?: boolean }>(), {
-  matchId: null,
-  flat: false,
-})
+// which supplies its own window frame. `tall` grows the message list (the dock's
+// expanded mode); without it the list keeps its compact height.
+const props = withDefaults(
+  defineProps<{ leagueId: string; matchId?: string | null; flat?: boolean; tall?: boolean }>(),
+  { matchId: null, flat: false, tall: false },
+)
 
 const { t } = useI18n()
 const { session } = useAuth()
@@ -101,6 +102,12 @@ function startReply(m: DecryptedMessage) {
 }
 function parentOf(m: DecryptedMessage): DecryptedMessage | undefined {
   return m.parentId ? messages.value.find((x) => x.id === m.parentId) : undefined
+}
+// Quote text for a parent: a removed parent reads "message removed", not the
+// generic can't-decrypt placeholder.
+function quoteText(p: DecryptedMessage): string {
+  if (p.moderation === 'REMOVED') return t('chat.moderation.removed')
+  return p.text ?? t('chat.cantDecrypt')
 }
 
 const draft = ref('')
@@ -236,6 +243,16 @@ watch(
     else hasNew.value = true
   },
 )
+// Switching room (Global <-> Match) reloads the list: land at the latest, just
+// like opening the chat does.
+watch(
+  () => props.matchId,
+  () => {
+    atBottom.value = true
+    hasNew.value = false
+    scrollToBottom()
+  },
+)
 
 // Jump to a quoted parent and flash it, so a reply visibly references its post.
 const flashId = ref<string | null>(null)
@@ -289,8 +306,8 @@ function jumpTo(id: string) {
         <div class="relative">
         <div
           ref="listEl"
-          class="relative flex flex-col gap-2 overflow-y-auto"
-          :style="`max-height: ${props.flat ? '60vh' : '22rem'}`"
+          class="relative flex flex-col gap-2 overflow-y-auto overflow-x-hidden"
+          :style="`max-height: ${props.tall ? '60vh' : '22rem'}`"
           @scroll="onScroll"
           @dragover.prevent="dragOver = true"
           @dragleave="dragOver = false"
@@ -308,7 +325,7 @@ function jumpTo(id: string) {
             v-for="m in messages"
             :key="m.id"
             :data-mid="m.id"
-            class="group text-sm flex flex-col rounded px-1 -mx-1 transition-colors"
+            class="group text-sm flex flex-col rounded transition-colors min-w-0"
             :style="flashId === m.id ? 'background: color-mix(in srgb, var(--p-primary-color) 18%, transparent)' : ''"
           >
             <div class="flex items-center gap-2">
@@ -317,25 +334,32 @@ function jumpTo(id: string) {
               <span v-if="m.moderation === 'PENDING'" class="text-[10px] uppercase tracking-wider font-semibold px-1 rounded" style="border: 1px solid var(--ng-danger); color: var(--ng-danger)">{{ t('chat.moderation.pendingTag') }}</span>
               <!-- Per-message actions, icon-only, revealed on hover. -->
               <span v-if="m.moderation !== 'REMOVED'" class="ml-auto flex items-center gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                <button type="button" v-tooltip.top="t('chat.reply.button')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.reply.button')" @click="startReply(m)"><i class="pi pi-reply text-xs" /></button>
-                <button v-if="m.userId && m.userId !== meId" type="button" v-tooltip.top="t('chat.mute')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.mute')" @click="chat.toggleMute(m.userId)"><i class="pi pi-volume-off text-xs" /></button>
-                <button v-if="m.userId && m.userId !== meId && !m.reported" type="button" v-tooltip.top="t('chat.moderation.report')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.moderation.report')" @click="chat.report(m.id)"><i class="pi pi-flag text-xs" /></button>
-                <i v-else-if="m.userId && m.userId !== meId" v-tooltip.top="t('chat.moderation.reported')" class="pi pi-flag-fill text-xs opacity-50" style="color: var(--ng-danger)" />
-                <button v-if="isAdmin" type="button" v-tooltip.top="t('chat.moderation.remove')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.moderation.remove')" style="color: var(--ng-danger)" @click="chat.moderate(m.id, 'remove')"><i class="pi pi-trash text-xs" /></button>
-                <button v-if="isAdmin && m.moderation === 'PENDING'" type="button" v-tooltip.top="t('chat.moderation.restore')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.moderation.restore')" style="color: var(--p-primary-color)" @click="chat.moderate(m.id, 'restore')"><i class="pi pi-undo text-xs" /></button>
+                <button type="button" v-tooltip.bottom="t('chat.reply.button')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.reply.button')" @click="startReply(m)"><i class="pi pi-reply text-xs" /></button>
+                <button v-if="m.userId && m.userId !== meId" type="button" v-tooltip.bottom="t('chat.mute')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.mute')" @click="chat.toggleMute(m.userId)"><i class="pi pi-volume-off text-xs" /></button>
+                <button
+                  v-if="m.userId && m.userId !== meId"
+                  type="button"
+                  v-tooltip.bottom="m.reported ? t('chat.moderation.unreport') : t('chat.moderation.report')"
+                  class="opacity-60 hover:opacity-100"
+                  :aria-label="m.reported ? t('chat.moderation.unreport') : t('chat.moderation.report')"
+                  :style="m.reported ? 'color: var(--ng-danger)' : ''"
+                  @click="chat.report(m.id)"
+                ><i :class="m.reported ? 'pi pi-flag-fill' : 'pi pi-flag'" class="text-xs" /></button>
+                <button v-if="isAdmin" type="button" v-tooltip.bottom="t('chat.moderation.remove')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.moderation.remove')" style="color: var(--ng-danger)" @click="chat.moderate(m.id, 'remove')"><i class="pi pi-trash text-xs" /></button>
+                <button v-if="isAdmin && m.moderation === 'PENDING'" type="button" v-tooltip.bottom="t('chat.moderation.restore')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.moderation.restore')" style="color: var(--p-primary-color)" @click="chat.moderate(m.id, 'restore')"><i class="pi pi-undo text-xs" /></button>
               </span>
             </div>
             <!-- Quoted parent: click to jump to the post this replies to. -->
             <button
               v-if="parentOf(m)"
               type="button"
-              class="text-left text-xs rounded px-2 py-1 mb-0.5 border-l-2 opacity-80 hover:opacity-100"
+              class="text-left text-xs rounded px-2 py-1 mb-0.5 border-l-2 opacity-80 hover:opacity-100 max-w-full overflow-hidden"
               style="border-color: var(--p-primary-color); background: color-mix(in srgb, var(--p-text-color) 5%, transparent)"
               @click="jumpTo(m.parentId!)"
             >
               <i class="pi pi-reply text-[10px] mr-1" style="color: var(--p-primary-color)" />
               <span class="font-semibold">{{ nameFor(parentOf(m)!.userId) }}</span>
-              <span class="ml-1">{{ parentOf(m)!.text ?? t('chat.cantDecrypt') }}</span>
+              <span class="ml-1">{{ quoteText(parentOf(m)!) }}</span>
             </button>
             <span v-if="!contentVisible(m)" class="italic" style="color: var(--p-text-muted-color)">{{ m.moderation === 'REMOVED' ? t('chat.moderation.removed') : t('chat.moderation.pendingHidden') }}</span>
             <template v-else>

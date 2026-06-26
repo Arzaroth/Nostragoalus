@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { createTestDb } from '../../../tests/db'
 import { addLeagueMember, makeLeague, makeUser, seedCompetition } from '../../../tests/factories'
 import { chatMessage } from '../../../db/schema'
-import { listReports, moderateMessage, pendingThreshold, reportMessage, getMyReports } from './moderation'
+import { listReports, moderateMessage, pendingThreshold, reportMessage, unreportMessage, getMyReports } from './moderation'
 import { ForbiddenError, NotFoundError, ValidationError } from '../errors'
 
 type Db = Awaited<ReturnType<typeof createTestDb>>['db']
@@ -63,6 +63,29 @@ describe('reportMessage', () => {
   })
 })
 
+describe('unreportMessage', () => {
+  it('withdraws the caller report but leaves a pending message pending', async () => {
+    const { db, client, owner, leagueId, members } = await setup(11) // threshold 3
+    const messageId = await addMessage(db, leagueId, owner)
+    await reportMessage(db, { leagueId, messageId, userId: members[0] })
+    await reportMessage(db, { leagueId, messageId, userId: members[1] })
+    expect((await reportMessage(db, { leagueId, messageId, userId: members[2] })).state).toBe('PENDING')
+    // Withdrawing drops the count but does not un-hide it.
+    expect(await unreportMessage(db, { leagueId, messageId, userId: members[0] })).toEqual({ state: 'PENDING', reports: 2 })
+    expect(await getMyReports(db, members[0], [messageId])).toEqual(new Set())
+    await client.close()
+  })
+
+  it('forbids non-members and 404s an unknown message', async () => {
+    const { db, client, owner, leagueId } = await setup(1)
+    const messageId = await addMessage(db, leagueId, owner)
+    const stranger = await makeUser(db, 'stranger')
+    await expect(unreportMessage(db, { leagueId, messageId, userId: stranger })).rejects.toBeInstanceOf(ForbiddenError)
+    await expect(unreportMessage(db, { leagueId, messageId: '00000000-0000-0000-0000-000000000000', userId: owner })).rejects.toBeInstanceOf(NotFoundError)
+    await client.close()
+  })
+})
+
 describe('moderateMessage', () => {
   it('removes (tombstones) and restores, clearing reports on restore', async () => {
     const { db, client, owner, leagueId, members } = await setup(3)
@@ -101,6 +124,16 @@ describe('listReports + getMyReports', () => {
     expect(await getMyReports(db, members[1], [a, b])).toEqual(new Set([b]))
     expect(await getMyReports(db, members[2], [a, b])).toEqual(new Set())
     expect(await getMyReports(db, members[0], [])).toEqual(new Set())
+    await client.close()
+  })
+
+  it('drops removed messages from the queue', async () => {
+    const { db, client, owner, leagueId, members } = await setup(3)
+    const a = await addMessage(db, leagueId, owner, 'a')
+    await reportMessage(db, { leagueId, messageId: a, userId: members[0] })
+    expect((await listReports(db, { leagueId, actorId: owner })).map((r) => r.id)).toEqual([a])
+    await moderateMessage(db, { leagueId, messageId: a, actorId: owner, action: 'remove' })
+    expect(await listReports(db, { leagueId, actorId: owner })).toEqual([])
     await client.close()
   })
 })

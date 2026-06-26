@@ -1,15 +1,17 @@
 import { z } from 'zod'
 import { db } from '../../../../../db'
-import { reportMessage } from '../../../../utils/chat/moderation'
+import { reportMessage, unreportMessage } from '../../../../utils/chat/moderation'
 import { publishModeration } from '../../../../utils/live/league-chat'
 import { defineValidatedHandler } from '../../../../utils/validated-handler'
 
-const bodySchema = z.object({ messageId: z.string().uuid() })
+// reported=false withdraws the caller's own report (toggle off).
+const bodySchema = z.object({ messageId: z.string().uuid(), reported: z.boolean().default(true) })
 
-// Report a message. Members only; you cannot report your own. Once enough distinct
-// members report it the message auto-flips to PENDING and that is pushed live.
+// Report a message, or withdraw your report. Members only; you cannot report your
+// own. Enough distinct reports auto-flip it to PENDING, which is pushed live.
 export default defineValidatedHandler({ body: bodySchema }, async ({ body, user, event }) => {
   const leagueId = getRouterParam(event, 'id') as string
+  if (!body.reported) return unreportMessage(db, { leagueId, messageId: body.messageId, userId: user.id })
   const res = await reportMessage(db, { leagueId, messageId: body.messageId, userId: user.id })
   if (res.state === 'PENDING') void publishModeration(db, leagueId, body.messageId, res.state).catch(() => {})
   return res

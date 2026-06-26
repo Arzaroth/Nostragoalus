@@ -280,30 +280,32 @@ export function useLeagueChat(
     }
   }
 
-  // Report a message for moderation. Optimistic on the reporter's own view; the
-  // server decides whether enough reports flip it to PENDING.
+  // Toggle the caller's report on a message (report, or withdraw it). Optimistic;
+  // the server decides whether enough reports flip it to PENDING.
   async function report(messageId: string): Promise<void> {
-    patchMessage(messageId, { reported: true })
+    const current = messages.value.find((m) => m.id === messageId)?.reported ?? false
+    const next = !current
+    patchMessage(messageId, { reported: next })
     try {
       const res = await $fetch<{ state: ChatModerationState }>(`/api/leagues/${lid()}/chat/report`, {
         method: 'POST',
-        body: { messageId },
+        body: { messageId, reported: next },
       })
       patchMessage(messageId, { moderation: res.state })
     } catch {
-      patchMessage(messageId, { reported: false })
+      patchMessage(messageId, { reported: current })
     }
   }
 
-  // Owner/moderator: remove (tombstone) or restore a message. Reload after so the
-  // restored ciphertext (which the list strips while hidden) comes back.
+  // Owner/moderator: remove (tombstone) or restore a message. Patch in place so the
+  // moderator's own view does not jump; a member who had the content stripped
+  // refetches it when the chat:moderation push lands (see the socket handler).
   async function moderate(messageId: string, action: 'remove' | 'restore'): Promise<void> {
     const res = await $fetch<{ state: ChatModerationState }>(`/api/leagues/${lid()}/chat/moderate`, {
       method: 'POST',
       body: { messageId, action },
     })
-    if (action === 'restore') await load()
-    else patchMessage(messageId, { moderation: res.state })
+    patchMessage(messageId, { moderation: res.state })
   }
 
   // The moderation queue (owner/moderator), decrypted for display.
@@ -435,9 +437,17 @@ export function useLeagueChat(
       }
       // A message was moderated: patch its state so it hides/tombstones or reveals
       // live. The render decides what to show from the state and the viewer role.
+      // If it became visible but our copy had the content stripped (we were a
+      // non-moderator while it was pending), refetch to get the plaintext back.
       if (msg.type === 'chat:moderation') {
         const mm = data as { messageId?: string; state?: ChatModerationState }
-        if (mm.messageId && mm.state) patchMessage(mm.messageId, { moderation: mm.state })
+        if (mm.messageId && mm.state) {
+          patchMessage(mm.messageId, { moderation: mm.state })
+          if (mm.state === 'VISIBLE') {
+            const m = messages.value.find((x) => x.id === mm.messageId)
+            if (m && m.text === null && !m.hasAttachment) void load()
+          }
+        }
         return
       }
       if (msg.type !== 'chat:new' || !msg.message) return
