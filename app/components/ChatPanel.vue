@@ -303,12 +303,31 @@ const draft = ref('')
 const overLimit = computed(() => draft.value.length > MAX_MESSAGE_TEXT_LENGTH)
 const editOverLimit = computed(() => editDraft.value.length > MAX_MESSAGE_TEXT_LENGTH)
 const composer = ref<{ $el?: HTMLElement } | null>(null)
-function focusComposer() {
+function composerTextarea(): HTMLTextAreaElement | null {
   // A PrimeVue Textarea's $el is the <textarea> itself (no nested one).
+  const el = composer.value?.$el as HTMLElement | undefined
+  return (el?.tagName === 'TEXTAREA' ? el : el?.querySelector?.('textarea')) as HTMLTextAreaElement | null
+}
+function focusComposer() {
+  nextTick(() => composerTextarea()?.focus())
+}
+
+// Emoji quick-insert: splice the glyph in at the caret (replacing any selection)
+// and restore focus just after it, so the user can keep typing or add more.
+const emojiOpen = ref(false)
+function insertEmoji(emoji: string) {
+  const ta = composerTextarea()
+  if (!ta) {
+    draft.value += emoji
+    return
+  }
+  const start = ta.selectionStart ?? draft.value.length
+  const end = ta.selectionEnd ?? draft.value.length
+  draft.value = draft.value.slice(0, start) + emoji + draft.value.slice(end)
   nextTick(() => {
-    const el = composer.value?.$el as HTMLElement | undefined
-    const ta = (el?.tagName === 'TEXTAREA' ? el : el?.querySelector?.('textarea')) as HTMLTextAreaElement | null | undefined
-    ta?.focus()
+    ta.focus()
+    const pos = start + emoji.length
+    ta.setSelectionRange(pos, pos)
   })
 }
 
@@ -865,6 +884,12 @@ function jumpTo(id: string) {
           <form class="flex items-end gap-2" @submit.prevent="submit">
             <input ref="fileInput" type="file" :accept="acceptImages" multiple class="hidden" @change="onFilePicked">
             <Button type="button" icon="pi pi-image" severity="secondary" text :disabled="sending || pending.length >= MAX_IMAGES" :aria-label="t('chat.image.attach')" @click="fileInput?.click()" />
+            <div class="relative">
+              <Button type="button" icon="pi pi-face-smile" severity="secondary" text :aria-label="t('chat.emoji.button')" @click="emojiOpen = !emojiOpen" />
+              <div v-if="emojiOpen" class="absolute bottom-full left-0 mb-2 z-30">
+                <EmojiPicker @select="insertEmoji" @close="emojiOpen = false" />
+              </div>
+            </div>
             <Textarea ref="composer" v-model="draft" :placeholder="t('chat.placeholder')" rows="1" autoResize class="flex-1" @keydown.enter.exact.prevent="submit" @keydown.up="onComposerUp" @input="chat.sendTyping()" @paste="onPaste" />
             <Button type="submit" icon="pi pi-send" :loading="sending" :disabled="(!draft.trim() && !pending.length) || overLimit" v-tooltip.top="overLimit ? t('chat.limit.tooLong', { max: MAX_MESSAGE_TEXT_LENGTH }) : ''" :aria-label="t('chat.send')" />
           </form>
