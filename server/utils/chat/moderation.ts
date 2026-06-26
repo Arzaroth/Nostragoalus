@@ -81,19 +81,27 @@ export async function unreportMessage(
   return { state: rows[0].state as ChatModerationState, reports: await reportCount(db, opts.messageId) }
 }
 
-// Owner/moderator rules on a message: 'remove' tombstones it (content gone for
-// everyone), 'restore' clears the reports and makes it VISIBLE again (dismiss).
+// Remove or restore a message. 'remove' tombstones it (content gone for everyone)
+// and is allowed for an owner/moderator OR the message's own author (a user can
+// delete their own post). 'restore' clears the reports and makes it VISIBLE again
+// and is owner/moderator only - a user cannot un-delete past a moderator.
 export async function moderateMessage(
   db: AppDatabase,
   opts: { leagueId: string; messageId: string; actorId: string; action: 'remove' | 'restore' },
 ): Promise<{ state: ChatModerationState }> {
   const rows = await db
-    .select({ leagueId: chatMessage.leagueId })
+    .select({ leagueId: chatMessage.leagueId, userId: chatMessage.userId })
     .from(chatMessage)
     .where(eq(chatMessage.id, opts.messageId))
     .limit(1)
   if (!rows[0] || rows[0].leagueId !== opts.leagueId) throw new NotFoundError('message not found')
-  assertAdmin(await getMembership(db, opts.leagueId, opts.actorId))
+  const membership = await getMembership(db, opts.leagueId, opts.actorId)
+  const isAdmin = membership?.role === 'OWNER' || membership?.role === 'MODERATOR'
+  if (opts.action === 'remove') {
+    if (!isAdmin && rows[0].userId !== opts.actorId) throw new ForbiddenError('cannot remove this message')
+  } else {
+    assertAdmin(membership)
+  }
   const state: ChatModerationState = opts.action === 'remove' ? 'REMOVED' : 'VISIBLE'
   await db.transaction(async (tx) => {
     await tx

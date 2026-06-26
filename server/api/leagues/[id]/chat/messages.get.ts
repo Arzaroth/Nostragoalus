@@ -47,6 +47,7 @@ export default defineEventHandler(async (event) => {
         epoch: r.epoch,
         ciphertext: hidden ? '' : r.ciphertext,
         createdAt: r.createdAt.toISOString(),
+        editedAt: r.editedAt ? r.editedAt.toISOString() : null,
         hasAttachment: !hidden && withImage.has(r.id),
         moderation: r.moderationState,
         reported: reported.has(r.id),

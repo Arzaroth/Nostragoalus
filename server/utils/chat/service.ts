@@ -336,6 +336,7 @@ export interface ChatMessageRow {
   epoch: number
   ciphertext: string
   moderationState: ChatModerationState
+  editedAt: Date | null
   createdAt: Date
 }
 
@@ -405,6 +406,7 @@ export async function postMessage(
         epoch: chatMessage.epoch,
         ciphertext: chatMessage.ciphertext,
         moderationState: chatMessage.moderationState,
+        editedAt: chatMessage.editedAt,
         createdAt: chatMessage.createdAt,
       })
     if (opts.image) {
@@ -417,6 +419,40 @@ export async function postMessage(
     return inserted[0]
   })
   return { ...row, hasAttachment: !!opts.image }
+}
+
+// The author replaces their own message text (re-encrypted client-side) and the
+// edit is stamped. Author only, and only while the message is visible (a removed
+// or pending message cannot be edited). Returns the new edit time.
+export async function editMessage(
+  db: AppDatabase,
+  opts: { leagueId: string; messageId: string; userId: string; ciphertext: string },
+): Promise<{ editedAt: Date }> {
+  if (!opts.ciphertext) throw new ValidationError('empty message')
+  if (opts.ciphertext.length > MAX_CIPHERTEXT) throw new ValidationError('message too large')
+  const rows = await db
+    .select({
+      leagueId: chatMessage.leagueId,
+      userId: chatMessage.userId,
+      state: chatMessage.moderationState,
+      epoch: league.chatKeyEpoch,
+    })
+    .from(chatMessage)
+    .innerJoin(league, eq(league.id, chatMessage.leagueId))
+    .where(eq(chatMessage.id, opts.messageId))
+    .limit(1)
+  if (!rows[0] || rows[0].leagueId !== opts.leagueId) throw new NotFoundError('message not found')
+  if (rows[0].userId !== opts.userId) throw new ForbiddenError('only the author can edit this message')
+  if (rows[0].state !== 'VISIBLE') throw new ValidationError('this message cannot be edited')
+  const editedAt = new Date()
+  // The new ciphertext is encrypted under the current group key, so move the
+  // stored epoch to match - otherwise a later reload would decrypt with the old
+  // key and fail.
+  await db
+    .update(chatMessage)
+    .set({ ciphertext: opts.ciphertext, epoch: rows[0].epoch, editedAt })
+    .where(eq(chatMessage.id, opts.messageId))
+  return { editedAt }
 }
 
 // A page of ciphertext for one room (matchId null = the league-global room),
@@ -439,6 +475,7 @@ export async function listMessages(
       epoch: chatMessage.epoch,
       ciphertext: chatMessage.ciphertext,
       moderationState: chatMessage.moderationState,
+      editedAt: chatMessage.editedAt,
       createdAt: chatMessage.createdAt,
     })
     .from(chatMessage)

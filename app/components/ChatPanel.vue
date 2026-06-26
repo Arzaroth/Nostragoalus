@@ -100,6 +100,24 @@ const replyTo = ref<DecryptedMessage | null>(null)
 function startReply(m: DecryptedMessage) {
   replyTo.value = m
 }
+
+// Inline edit of your own message.
+const editingId = ref<string | null>(null)
+const editDraft = ref('')
+function startEdit(m: DecryptedMessage) {
+  editingId.value = m.id
+  editDraft.value = m.text ?? ''
+}
+function cancelEdit() {
+  editingId.value = null
+}
+async function saveEdit() {
+  const id = editingId.value
+  if (!id) return
+  const text = editDraft.value
+  editingId.value = null
+  if (text.trim()) await chat.editMessage(id, text)
+}
 function parentOf(m: DecryptedMessage): DecryptedMessage | undefined {
   return m.parentId ? messages.value.find((x) => x.id === m.parentId) : undefined
 }
@@ -331,10 +349,12 @@ function jumpTo(id: string) {
             <div class="flex items-center gap-2">
               <span class="font-semibold" :style="m.userId === meId ? 'color: var(--p-primary-color)' : ''">{{ nameFor(m.userId) }}</span>
               <span class="text-[10px]" style="color: var(--p-text-muted-color)">{{ fmtTime(m.createdAt) }}</span>
+              <span v-if="m.editedAt" v-tooltip.bottom="t('chat.edit.at', { time: fmtTime(m.editedAt) })" class="text-[10px] italic" style="color: var(--p-text-muted-color)">{{ t('chat.edit.edited') }}</span>
               <span v-if="m.moderation === 'PENDING'" class="text-[10px] uppercase tracking-wider font-semibold px-1 rounded" style="border: 1px solid var(--ng-danger); color: var(--ng-danger)">{{ t('chat.moderation.pendingTag') }}</span>
               <!-- Per-message actions, icon-only, revealed on hover. -->
               <span v-if="m.moderation !== 'REMOVED'" class="ml-auto flex items-center gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                 <button type="button" v-tooltip.bottom="t('chat.reply.button')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.reply.button')" @click="startReply(m)"><i class="pi pi-reply text-xs" /></button>
+                <button v-if="m.userId === meId" type="button" v-tooltip.bottom="t('chat.edit.button')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.edit.button')" @click="startEdit(m)"><i class="pi pi-pencil text-xs" /></button>
                 <button v-if="m.userId && m.userId !== meId" type="button" v-tooltip.bottom="t('chat.mute')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.mute')" @click="chat.toggleMute(m.userId)"><i class="pi pi-volume-off text-xs" /></button>
                 <button
                   v-if="m.userId && m.userId !== meId"
@@ -345,7 +365,7 @@ function jumpTo(id: string) {
                   :style="m.reported ? 'color: var(--ng-danger)' : ''"
                   @click="chat.report(m.id)"
                 ><i :class="m.reported ? 'pi pi-flag-fill' : 'pi pi-flag'" class="text-xs" /></button>
-                <button v-if="isAdmin" type="button" v-tooltip.bottom="t('chat.moderation.remove')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.moderation.remove')" style="color: var(--ng-danger)" @click="chat.moderate(m.id, 'remove')"><i class="pi pi-trash text-xs" /></button>
+                <button v-if="isAdmin || m.userId === meId" type="button" v-tooltip.bottom="m.userId === meId ? t('chat.delete') : t('chat.moderation.remove')" class="opacity-60 hover:opacity-100" :aria-label="m.userId === meId ? t('chat.delete') : t('chat.moderation.remove')" style="color: var(--ng-danger)" @click="chat.moderate(m.id, 'remove')"><i class="pi pi-trash text-xs" /></button>
                 <button v-if="isAdmin && m.moderation === 'PENDING'" type="button" v-tooltip.bottom="t('chat.moderation.restore')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.moderation.restore')" style="color: var(--p-primary-color)" @click="chat.moderate(m.id, 'restore')"><i class="pi pi-undo text-xs" /></button>
               </span>
             </div>
@@ -362,6 +382,14 @@ function jumpTo(id: string) {
               <span class="ml-1">{{ quoteText(parentOf(m)!) }}</span>
             </button>
             <span v-if="!contentVisible(m)" class="italic" style="color: var(--p-text-muted-color)">{{ m.moderation === 'REMOVED' ? t('chat.moderation.removed') : t('chat.moderation.pendingHidden') }}</span>
+            <!-- Inline edit of your own message. -->
+            <div v-else-if="editingId === m.id" class="flex flex-col gap-1">
+              <Textarea v-model="editDraft" rows="1" autoResize class="w-full" @keydown.enter.exact.prevent="saveEdit" @keydown.esc="cancelEdit" />
+              <div class="flex items-center gap-3 text-xs">
+                <button type="button" class="underline" style="color: var(--p-primary-color)" @click="saveEdit">{{ t('chat.edit.save') }}</button>
+                <button type="button" class="underline opacity-70 hover:opacity-100" @click="cancelEdit">{{ t('chat.edit.cancel') }}</button>
+              </div>
+            </div>
             <template v-else>
               <span v-if="m.text" class="break-words">{{ m.text }}</span>
               <span v-else-if="m.text === null && !m.hasAttachment" class="italic" style="color: var(--p-text-muted-color)">{{ t('chat.cantDecrypt') }}</span>

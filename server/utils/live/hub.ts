@@ -205,6 +205,27 @@ export function publishChatModeration(
   return delivered
 }
 
+// A message was edited by its author: push the new ciphertext + edit time to the
+// league's connected members so they re-decrypt it in place. The content stays
+// opaque to the server.
+export function publishChatEdit(
+  leagueId: string,
+  memberIds: readonly string[],
+  messageId: string,
+  ciphertext: string,
+  editedAt: string,
+): number {
+  const members = new Set(memberIds)
+  let delivered = 0
+  for (const sub of subscribers) {
+    if (sub.userId && members.has(sub.userId)) {
+      sub.send({ type: 'chat:edit', leagueId, messageId, ciphertext, editedAt })
+      delivered += 1
+    }
+  }
+  return delivered
+}
+
 // Deliver a freshly created notification to every open socket of that one user
 // (mirrors the league-member gate above). Other users' sockets never see it, so
 // the bell can render it live without a refetch.
