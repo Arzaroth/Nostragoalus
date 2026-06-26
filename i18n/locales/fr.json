@@ -133,6 +133,7 @@
       "favored": "Favori",
       "neutral": "Équilibré",
       "underdog": "Outsider",
+      "filterHint": "Cliquez un libellé pour filtrer la carte",
       "eliminated": "Éliminé",
       "hint": "Activez « Afficher les totaux de tous » dans les Préférences pour colorer la carte selon la tendance des pronostics."
     },

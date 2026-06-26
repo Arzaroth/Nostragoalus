@@ -22,6 +22,35 @@ const emit = defineEmits<{ select: [team: { code: string; name: string }] }>()
 const hasLean = computed(() => !!props.teamLean && Object.keys(props.teamLean).length > 0)
 const hasEliminated = computed(() => !!props.eliminated && props.eliminated.size > 0)
 
+// Legend filtering: each legend entry is a toggle that hides/shows the flags in
+// its bucket, like the fixtures-view filters. Eliminated takes precedence over a
+// team's lean; the dead-band around zero is "even".
+type Bucket = 'underdog' | 'even' | 'favoured' | 'eliminated'
+const EVEN_BAND = 0.15
+function teamBucket(code: string): Bucket {
+  if (props.eliminated?.has(code)) return 'eliminated'
+  const lean = props.teamLean?.[code]
+  if (lean === undefined || Math.abs(lean) <= EVEN_BAND) return 'even'
+  return lean > 0 ? 'favoured' : 'underdog'
+}
+// Active buckets (all on by default). A bucket only filters when its legend toggle
+// is actually shown (lean buckets need the overlay; eliminated needs out teams).
+const activeBuckets = ref<Set<Bucket>>(new Set<Bucket>(['underdog', 'even', 'favoured', 'eliminated']))
+function bucketShown(b: Bucket): boolean {
+  return b === 'eliminated' ? hasEliminated.value : hasLean.value
+}
+function teamVisible(code: string): boolean {
+  const b = teamBucket(code)
+  if (!bucketShown(b)) return true
+  return activeBuckets.value.has(b)
+}
+function toggleBucket(b: Bucket) {
+  const next = new Set(activeBuckets.value)
+  next.has(b) ? next.delete(b) : next.add(b)
+  activeBuckets.value = next
+  drawMarkers()
+}
+
 const el = ref<HTMLElement>()
 let L: typeof Leaflet | null = null
 let map: Leaflet.Map | null = null
@@ -53,6 +82,7 @@ function drawMarkers() {
   for (const team of props.teams) {
     const coord = COORDS[team.code]
     if (!coord) continue
+    if (!teamVisible(team.code)) continue
     const icon = L.divIcon({
       className: 'ng-flag-marker',
       html: `<img src="https://api.fifa.com/api/v3/picture/flags-sq-3/${team.code}" alt="" style="${markerImgStyle(team.code)}" />`,
@@ -122,20 +152,22 @@ onBeforeUnmount(() => {
     <div ref="el" class="w-full rounded-2xl border" style="height: 70vh; border-color: var(--p-content-border-color)" />
     <div v-if="hasLean || hasEliminated" class="ng-lean-legend">
       <template v-if="hasLean">
-        <div class="font-semibold mb-1">{{ t('map.lean.title') }}</div>
-        <div class="flex items-center gap-1.5">
-          <span class="ng-lean-swatch" :style="{ background: leanColor(-1) }" />
-          <span>{{ t('map.lean.underdog') }}</span>
-          <span class="ng-lean-swatch" :style="{ background: leanColor(0) }" />
-          <span>{{ t('map.lean.neutral') }}</span>
-          <span class="ng-lean-swatch" :style="{ background: leanColor(1) }" />
-          <span>{{ t('map.lean.favored') }}</span>
+        <div v-tooltip.top="t('map.lean.filterHint')" class="font-semibold mb-1">{{ t('map.lean.title') }}</div>
+        <div class="flex items-center gap-2">
+          <button type="button" class="ng-lean-item" :class="{ 'ng-lean-off': !activeBuckets.has('underdog') }" :aria-pressed="activeBuckets.has('underdog')" @click="toggleBucket('underdog')">
+            <span class="ng-lean-swatch" :style="{ background: leanColor(-1) }" />{{ t('map.lean.underdog') }}
+          </button>
+          <button type="button" class="ng-lean-item" :class="{ 'ng-lean-off': !activeBuckets.has('even') }" :aria-pressed="activeBuckets.has('even')" @click="toggleBucket('even')">
+            <span class="ng-lean-swatch" :style="{ background: leanColor(0) }" />{{ t('map.lean.neutral') }}
+          </button>
+          <button type="button" class="ng-lean-item" :class="{ 'ng-lean-off': !activeBuckets.has('favoured') }" :aria-pressed="activeBuckets.has('favoured')" @click="toggleBucket('favoured')">
+            <span class="ng-lean-swatch" :style="{ background: leanColor(1) }" />{{ t('map.lean.favored') }}
+          </button>
         </div>
       </template>
-      <div v-if="hasEliminated" class="flex items-center gap-1.5" :class="{ 'mt-1.5': hasLean }">
-        <span class="ng-lean-swatch ng-out-swatch" />
-        <span>{{ t('map.lean.eliminated') }}</span>
-      </div>
+      <button v-if="hasEliminated" type="button" class="ng-lean-item" :class="{ 'ng-lean-off': !activeBuckets.has('eliminated'), 'mt-1.5': hasLean }" :aria-pressed="activeBuckets.has('eliminated')" @click="toggleBucket('eliminated')">
+        <span class="ng-lean-swatch ng-out-swatch" />{{ t('map.lean.eliminated') }}
+      </button>
     </div>
   </div>
 </template>
@@ -172,6 +204,26 @@ onBeforeUnmount(() => {
   border: 1px solid var(--p-content-border-color);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
   backdrop-filter: blur(4px);
+}
+.ng-lean-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  pointer-events: auto;
+  cursor: pointer;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  transition: opacity 0.12s ease;
+}
+.ng-lean-item:hover {
+  opacity: 0.85;
+}
+.ng-lean-off {
+  opacity: 0.4;
+  text-decoration: line-through;
 }
 .ng-lean-swatch {
   display: inline-block;
