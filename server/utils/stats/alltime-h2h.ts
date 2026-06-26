@@ -1,6 +1,9 @@
-// All-time head-to-head from FIFA's public calendar, which records every
-// international match (World Cups, qualifiers, continental championships,
-// friendlies) back to 1908. Team-based, so it works before kickoff too.
+// All-time head-to-head from FIFA's public Data Centre archive, which records
+// every senior men's international (World Cups, qualifiers, continental
+// championships AND friendlies) back to the early 1900s. The older v3 calendar
+// endpoint only carried FIFA-organised competitions plus friendlies since ~2021,
+// so historic friendlies (e.g. Norway-France 2010, 2014) were silently missing.
+// Team-based, so it works before kickoff too.
 
 export interface AllTimeMeeting {
   date: string
@@ -23,38 +26,49 @@ export interface AllTimeH2H {
   meetings: AllTimeMeeting[]
 }
 
-interface FifaCalendarRow {
-  Date?: string | null
-  CompetitionName?: { Description?: string }[] | null
-  HomeTeamScore?: number | null
-  AwayTeamScore?: number | null
-  Home?: { IdTeam?: string | null; Abbreviation?: string | null; TeamName?: { Description?: string }[] | null } | null
-  Away?: { IdTeam?: string | null; Abbreviation?: string | null; TeamName?: { Description?: string }[] | null } | null
+// A Data Centre match row. Team A is home, team B is away.
+interface DataCentreRow {
+  matchDate?: string | null
+  competitionName?: { description?: string }[] | null
+  teamAScore?: number | null
+  teamBScore?: number | null
+  teamACountryCode?: string | null
+  teamBCountryCode?: string | null
+  teamAName?: { description?: string }[] | null
+  teamBName?: { description?: string }[] | null
 }
 
-const BASE_URL = 'https://api.fifa.com/api/v3'
+// A season-calendar row, used only to harvest team ids (the Data Centre archive
+// is queried by numeric team id, which is not otherwise searchable).
+interface FifaSeasonRow {
+  Home?: { IdTeam?: string | null; Abbreviation?: string | null } | null
+  Away?: { IdTeam?: string | null; Abbreviation?: string | null } | null
+}
 
-type FifaSide = NonNullable<FifaCalendarRow['Home']>
-const sideName = (s: FifaSide | null | undefined) => s?.TeamName?.[0]?.Description ?? s?.Abbreviation ?? '?'
+const V3_URL = 'https://api.fifa.com/api/v3'
+const DATA_CENTRE_URL = 'https://inside.fifa.com/api/data-centre/matches'
+
+const nameOf = (name: { description?: string }[] | null | undefined, code: string | null | undefined) =>
+  name?.[0]?.description ?? code ?? '?'
 
 // A row of a match that was actually played (both scores present). The type
 // guard narrows so the decode helpers never need a `?? 0` on the scores.
-type PlayedRow = FifaCalendarRow & { HomeTeamScore: number; AwayTeamScore: number }
-const isPlayed = (m: FifaCalendarRow): m is PlayedRow => m.HomeTeamScore != null && m.AwayTeamScore != null
+type PlayedRow = DataCentreRow & { teamAScore: number; teamBScore: number }
+const isPlayed = (m: DataCentreRow): m is PlayedRow => m.teamAScore != null && m.teamBScore != null
 
 // Decode a played row from one team's perspective.
 function rowFromPerspective(m: PlayedRow, code: string) {
-  const isHome = m.Home?.Abbreviation === code
-  const forGoals = isHome ? m.HomeTeamScore : m.AwayTeamScore
-  const against = isHome ? m.AwayTeamScore : m.HomeTeamScore
+  const isHome = m.teamACountryCode === code
+  const forGoals = isHome ? m.teamAScore : m.teamBScore
+  const against = isHome ? m.teamBScore : m.teamAScore
   return {
     isHome,
     forGoals,
     against,
     result: (forGoals > against ? 'W' : forGoals < against ? 'L' : 'D') as 'W' | 'D' | 'L',
-    opponentName: sideName(isHome ? m.Away : m.Home),
-    competition: m.CompetitionName?.[0]?.Description ?? '',
-    date: m.Date ?? '',
+    opponentName: isHome ? nameOf(m.teamBName, m.teamBCountryCode) : nameOf(m.teamAName, m.teamACountryCode),
+    competition: m.competitionName?.[0]?.description ?? '',
+    date: m.matchDate ?? '',
   }
 }
 
@@ -75,7 +89,7 @@ interface Cache<T> {
 
 let idMapCache: Cache<Map<string, string>> | null = null
 const h2hCache = new Map<string, Cache<AllTimeH2H | null>>()
-const calendarCache = new Map<string, Cache<FifaCalendarRow[]>>()
+const calendarCache = new Map<string, Cache<DataCentreRow[]>>()
 
 export function resetAllTimeH2hCaches() {
   idMapCache = null
@@ -83,14 +97,16 @@ export function resetAllTimeH2hCaches() {
   calendarCache.clear()
 }
 
-async function teamCalendar(teamId: string, fetchImpl: typeof fetch, now: number): Promise<FifaCalendarRow[]> {
+async function teamCalendar(teamId: string, fetchImpl: typeof fetch, now: number): Promise<DataCentreRow[]> {
   const cached = calendarCache.get(teamId)
   if (cached && now - cached.at < DAY_MS) return cached.value
-  const data = await getJson<{ Results?: FifaCalendarRow[] }>(
-    `${BASE_URL}/calendar/matches?idTeam=${teamId}&language=en&count=500`,
+  // The archive caps a response at 1000 rows, newest first; that drops only the
+  // pre-1920s tail for the few nations with >1000 caps - irrelevant to h2h.
+  const data = await getJson<DataCentreRow[]>(
+    `${DATA_CENTRE_URL}?gender=1&teamId=${teamId}&language=en&count=1000`,
     fetchImpl,
   )
-  const rows = data.Results ?? []
+  const rows = Array.isArray(data) ? data : []
   calendarCache.set(teamId, { at: now, value: rows })
   return rows
 }
@@ -116,10 +132,13 @@ export async function getTeamRecentResults(
     const ids = await teamIdMap(fetchImpl, now)
     const teamId = ids.get(code)
     if (!teamId) return null
+    // matchDate is a calendar day (YYYY-MM-DD); compare against the day of the
+    // cutoff so a same-day match (the one being viewed) is never counted.
+    const day = before.slice(0, 10)
     const rows = (await teamCalendar(teamId, fetchImpl, now))
       .filter(isPlayed)
-      .filter((m) => (m.Date ?? '') < before)
-      .sort((a, b) => (b.Date ?? '').localeCompare(a.Date ?? ''))
+      .filter((m) => (m.matchDate ?? '') < day)
+      .sort((a, b) => (b.matchDate ?? '').localeCompare(a.matchDate ?? ''))
       .slice(0, count)
     return rows.map((m) => {
       const v = rowFromPerspective(m, code)
@@ -137,8 +156,10 @@ export async function getTeamRecentResults(
 }
 
 async function getJson<T>(url: string, fetchImpl: typeof fetch): Promise<T> {
-  const res = await fetchImpl(url, { headers: { 'user-agent': 'Mozilla/5.0' } })
-  if (!res.ok) throw new Error(`fifa calendar ${res.status}`)
+  const res = await fetchImpl(url, {
+    headers: { accept: 'application/json', 'user-agent': 'Mozilla/5.0' },
+  })
+  if (!res.ok) throw new Error(`fifa fetch ${res.status}`)
   return (await res.json()) as T
 }
 
@@ -147,8 +168,8 @@ async function teamIdMap(fetchImpl: typeof fetch, now: number): Promise<Map<stri
   const map = new Map<string, string>()
   for (const source of ID_SOURCES) {
     try {
-      const data = await getJson<{ Results?: FifaCalendarRow[] }>(
-        `${BASE_URL}/calendar/matches?${source}&language=en&count=500`,
+      const data = await getJson<{ Results?: FifaSeasonRow[] }>(
+        `${V3_URL}/calendar/matches?${source}&language=en&count=500`,
         fetchImpl,
       )
       for (const m of data.Results ?? []) {
@@ -184,13 +205,16 @@ export async function getAllTimeHeadToHead(
     const perspective = ids.get(codeA) ? codeA : codeB
     if (teamId) {
       const opponent = perspective === codeA ? codeB : codeA
+      // matchDate is a calendar day; compare against the cutoff's day so the
+      // viewed match (same day) never shows up in its own history.
+      const day = before.slice(0, 10)
       const rows = (await teamCalendar(teamId, fetchImpl, now))
         .filter(isPlayed)
         .filter(
           (m) =>
-            (m.Date ?? '') < before &&
-            ((m.Home?.Abbreviation === perspective && m.Away?.Abbreviation === opponent) ||
-              (m.Home?.Abbreviation === opponent && m.Away?.Abbreviation === perspective)),
+            (m.matchDate ?? '') < day &&
+            ((m.teamACountryCode === perspective && m.teamBCountryCode === opponent) ||
+              (m.teamACountryCode === opponent && m.teamBCountryCode === perspective)),
         )
       const h2h: AllTimeH2H = { wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0, meetings: [] }
       for (const m of rows) {
@@ -203,12 +227,12 @@ export async function getAllTimeHeadToHead(
         h2h.meetings.push({
           date: v.date,
           competition: v.competition,
-          homeTeam: sideName(m.Home),
-          awayTeam: sideName(m.Away),
-          homeCode: m.Home?.Abbreviation ?? null,
-          awayCode: m.Away?.Abbreviation ?? null,
-          homeScore: m.HomeTeamScore,
-          awayScore: m.AwayTeamScore,
+          homeTeam: nameOf(m.teamAName, m.teamACountryCode),
+          awayTeam: nameOf(m.teamBName, m.teamBCountryCode),
+          homeCode: m.teamACountryCode ?? null,
+          awayCode: m.teamBCountryCode ?? null,
+          homeScore: m.teamAScore,
+          awayScore: m.teamBScore,
         })
       }
       h2h.meetings.sort((a, b) => b.date.localeCompare(a.date))
