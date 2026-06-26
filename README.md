@@ -44,7 +44,10 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   are encrypted on members' devices with a libsodium group key, so the server only ever stores
   ciphertext and cannot read it; keys enroll silently on first use, with a one-time recovery code to
   restore history on another device. React with emoji, reply with a quoted preview, edit or delete your
-  own messages, drop or paste images, and mute or report others. A **Verify keys** panel shows
+  own messages (text and images), buffer and send several images at once, open any image full-screen to
+  cycle, copy, download (named PNG) or share it, browse a room's media gallery, see who is typing, page
+  back through older history, share a pick card straight to chat, undock the window into a draggable
+  panel, and mute or report others. A **Verify keys** panel shows
   per-member safety numbers to compare out-of-band (first-seen pinning, change warning), an admin can
   **rotate the key** to revoke a removed member, and members can flag a message - enough reports
   auto-hide it pending an owner/moderator's call (moderation acts on message ids and report counts,
