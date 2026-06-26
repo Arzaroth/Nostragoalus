@@ -7,6 +7,18 @@ export type ChatModerationState = 'VISIBLE' | 'PENDING' | 'REMOVED'
 // 16 KB ciphertext cap in the post route is the server-side backstop.
 export const MAX_MESSAGE_TEXT_LENGTH = 2000
 
+// Open-graph-ish metadata for a link unfurl. The client extracts a URL from a
+// (locally decrypted) message and asks the server to fetch this for it - the URL
+// reaches the server, but never the message text. All fields are null when the
+// page had no usable metadata.
+export interface LinkPreviewDTO {
+  url: string
+  title: string | null
+  description: string | null
+  image: string | null
+  siteName: string | null
+}
+
 // One encrypted image on a message. idx is its order within the message (stable,
 // gaps allowed after a remove); epoch is the group-key epoch the bytes were sealed
 // under, so the client decrypts each with its own epoch's key. The (messageId,

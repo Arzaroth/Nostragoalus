@@ -2,7 +2,6 @@
 import { REACTION_EMOJIS, type ReactionEmoji } from '#shared/reactions'
 import { MAX_MESSAGE_TEXT_LENGTH } from '#shared/types/chat'
 import { ACCEPTED_IMAGE_TYPES, compressToWebp } from '~/composables/useChatImage'
-import { linkify } from '~/utils/linkify'
 import type { DecryptedMessage, PendingImage } from '~/composables/useLeagueChat'
 // End-to-end encrypted league chat. The league-global room (matchId null) or a
 // per-match thread. All crypto is client-side; the server only relays ciphertext.
@@ -807,8 +806,15 @@ function jumpTo(id: string) {
               </div>
             </div>
             <template v-else>
-              <!-- eslint-disable-next-line vue/no-v-html - linkify() escapes the text and only emits http(s) anchors -->
-              <div v-if="m.text" class="inline-block rounded-2xl px-3 py-1.5 mt-0.5 max-w-full whitespace-pre-wrap break-words" :class="m.userId === meId ? 'self-end' : 'self-start'" :style="bubbleStyle(m)" v-html="linkify(m.text)" />
+              <ChatMessageContent
+                v-if="m.text"
+                class="mt-0.5"
+                :text="m.text"
+                :names="names"
+                :profile-link="profileLink"
+                :own="m.userId === meId"
+                :bubble-style="bubbleStyle(m)"
+              />
               <span v-else-if="m.text === null && m.attachments.length === 0" class="italic" :class="m.userId === meId ? 'self-end' : 'self-start'" style="color: var(--p-text-muted-color)">{{ t('chat.cantDecrypt') }}</span>
               <ChatImage
                 v-if="m.attachments.length"
