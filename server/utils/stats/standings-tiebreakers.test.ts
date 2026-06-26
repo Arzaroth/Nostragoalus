@@ -83,6 +83,32 @@ describe('per-competition group tiebreakers', () => {
     expect(o.indexOf('B')).toBeLessThan(o.indexOf('A'))
   })
 
+  it('does NOT reintroduce head-to-head after an overall-GD split (WC2026)', () => {
+    // A,B,C are a perfect 1-0 cycle (head-to-head fully level) and all beat D.
+    // Overall GD drops C; A and B remain level on GD, so overall GOALS must decide
+    // (B 4 > A 3). Head-to-head (A beat B) must NOT be re-applied here.
+    const cyc = [
+      fm('A', 'B', 1, 0),
+      fm('B', 'C', 1, 0),
+      fm('C', 'A', 1, 0),
+      fm('A', 'D', 2, 0),
+      fm('B', 'D', 3, 1),
+      fm('C', 'D', 1, 0),
+    ]
+    expect(order(computeGroupStandings(cyc, { tiebreakers: wc26 }))).toEqual(['B', 'A', 'C', 'D'])
+  })
+
+  it('counts a paused match (includeLive) and ignores an unplayed head-to-head match', () => {
+    // A and B each beat C (A's via a PAUSED live game) and their own match is
+    // unplayed, so the head-to-head mini-table can't separate them.
+    const ms: StandingsInputMatch[] = [
+      { homeTeam: 'A', awayTeam: 'C', homeTeamCode: 'A', awayTeamCode: 'C', status: 'PAUSED', fullTimeHome: 1, fullTimeAway: 0 },
+      { homeTeam: 'B', awayTeam: 'C', homeTeamCode: 'B', awayTeamCode: 'C', status: 'FINISHED', fullTimeHome: 1, fullTimeAway: 0 },
+      { homeTeam: 'A', awayTeam: 'B', homeTeamCode: 'A', awayTeamCode: 'B', status: 'SCHEDULED', fullTimeHome: null, fullTimeAway: null },
+    ]
+    expect(order(computeGroupStandings(ms, { includeLive: true, tiebreakers: wc26 }))).toEqual(['A', 'B', 'C'])
+  })
+
   it('uses the default rules for an unknown or missing competition', () => {
     expect(tiebreakersForCompetition(null).withinGroup).toEqual(['points', 'gd', 'gf'])
     expect(tiebreakersForCompetition('nope').bestThirds).toBe(0)
