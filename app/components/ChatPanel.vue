@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { REACTION_EMOJIS, type ReactionEmoji } from '#shared/reactions'
 import { MAX_MESSAGE_TEXT_LENGTH } from '#shared/types/chat'
+import { extractMentions } from '~/utils/chat-content'
 import { ACCEPTED_IMAGE_TYPES, compressToWebp } from '~/composables/useChatImage'
 import type { DecryptedMessage, PendingImage } from '~/composables/useLeagueChat'
 // End-to-end encrypted league chat. The league-global room (matchId null) or a
@@ -330,6 +331,83 @@ function insertEmoji(emoji: string) {
   })
 }
 
+// @mention autocomplete: when the caret sits in an `@partial` run, offer matching
+// league members; picking inserts a stable `@<id>` token that renders as their
+// current name. Arrow/Enter/Tab/Escape drive it from the composer keydown.
+const mentionQuery = ref<string | null>(null)
+const mentionStart = ref(0)
+const mentionIndex = ref(0)
+const mentionCandidates = computed(() => {
+  if (mentionQuery.value === null) return []
+  const q = mentionQuery.value.toLowerCase()
+  return (detail.data.value?.members ?? []).filter((m) => m.name.toLowerCase().includes(q)).slice(0, 6)
+})
+function detectMention() {
+  const ta = composerTextarea()
+  if (!ta) {
+    mentionQuery.value = null
+    return
+  }
+  const caret = ta.selectionStart ?? draft.value.length
+  const m = draft.value.slice(0, caret).match(/(?:^|\s)@([^\s@]*)$/)
+  if (m) {
+    mentionQuery.value = m[1]!
+    mentionStart.value = caret - m[1]!.length - 1
+    mentionIndex.value = 0
+  } else {
+    mentionQuery.value = null
+  }
+}
+function applyMention(member: { userId: string; name: string }) {
+  const ta = composerTextarea()
+  const caret = ta?.selectionStart ?? draft.value.length
+  const before = draft.value.slice(0, mentionStart.value)
+  const after = draft.value.slice(caret)
+  const token = `@<${member.userId}> `
+  draft.value = before + token + after
+  mentionQuery.value = null
+  nextTick(() => {
+    ta?.focus()
+    const pos = (before + token).length
+    ta?.setSelectionRange(pos, pos)
+  })
+}
+function onComposerInput() {
+  chat.sendTyping()
+  detectMention()
+}
+function onComposerKey(e: KeyboardEvent) {
+  const list = mentionCandidates.value
+  if (mentionQuery.value !== null && list.length) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      mentionIndex.value = (mentionIndex.value + 1) % list.length
+      return
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      mentionIndex.value = (mentionIndex.value - 1 + list.length) % list.length
+      return
+    }
+    if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault()
+      applyMention(list[mentionIndex.value]!)
+      return
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      mentionQuery.value = null
+      return
+    }
+  }
+  if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    e.preventDefault()
+    void submit()
+    return
+  }
+  if (e.key === 'ArrowUp') onComposerUp(e)
+}
+
 // Images are buffered before send: each is compressed locally and previewed in a
 // tray; hitting send posts the caption plus every buffered image as one message.
 const acceptImages = ACCEPTED_IMAGE_TYPES.join(',')
@@ -373,12 +451,14 @@ async function submit() {
   const images = pending.value
   if (!text.trim() && images.length === 0) return
   if (overLimit.value) return
+  const mentions = extractMentions(text)
+  mentionQuery.value = null
   draft.value = ''
   replyTo.value = null
   const urls = pendingUrls.value
   pending.value = []
   pendingUrls.value = []
-  await chat.send(text, { parentId, images })
+  await chat.send(text, { parentId, images, mentions })
   for (const u of urls) URL.revokeObjectURL(u)
 }
 
@@ -887,7 +967,26 @@ function jumpTo(id: string) {
           <!-- Shared (outside the message loop) so the edit "add image" button's
                ref isn't collected into a per-row array. -->
           <input ref="editFileInput" type="file" :accept="acceptImages" multiple class="hidden" @change="onEditFilePicked">
-          <form class="flex items-end gap-2" @submit.prevent="submit">
+          <form class="relative flex items-end gap-2" @submit.prevent="submit">
+            <!-- @mention autocomplete, anchored above the composer. -->
+            <div
+              v-if="mentionQuery !== null && mentionCandidates.length"
+              class="absolute bottom-full left-0 mb-2 z-30 w-64 max-w-full rounded-lg border shadow-lg py-1 overflow-hidden"
+              style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
+            >
+              <button
+                v-for="(c, i) in mentionCandidates"
+                :key="c.userId"
+                type="button"
+                class="w-full flex items-center gap-2 px-3 py-1.5 text-left"
+                :style="i === mentionIndex ? 'background: color-mix(in srgb, var(--p-primary-color) 14%, transparent)' : ''"
+                @mousedown.prevent="applyMention(c)"
+                @mouseenter="mentionIndex = i"
+              >
+                <UserAvatar :image="c.image" class="!w-5 !h-5 shrink-0 text-[0.5rem]" />
+                <span class="truncate text-sm">{{ c.name }}</span>
+              </button>
+            </div>
             <input ref="fileInput" type="file" :accept="acceptImages" multiple class="hidden" @change="onFilePicked">
             <Button type="button" icon="pi pi-image" severity="secondary" text :disabled="sending || pending.length >= MAX_IMAGES" :aria-label="t('chat.image.attach')" @click="fileInput?.click()" />
             <div class="relative">
@@ -896,7 +995,7 @@ function jumpTo(id: string) {
                 <EmojiPicker @select="insertEmoji" @close="emojiOpen = false" />
               </div>
             </div>
-            <Textarea ref="composer" v-model="draft" :placeholder="t('chat.placeholder')" rows="1" autoResize class="flex-1" @keydown.enter.exact.prevent="submit" @keydown.up="onComposerUp" @input="chat.sendTyping()" @paste="onPaste" />
+            <Textarea ref="composer" v-model="draft" :placeholder="t('chat.placeholder')" rows="1" autoResize class="flex-1" @keydown="onComposerKey" @input="onComposerInput" @paste="onPaste" />
             <Button type="submit" icon="pi pi-send" :loading="sending" :disabled="(!draft.trim() && !pending.length) || overLimit" v-tooltip.top="overLimit ? t('chat.limit.tooLong', { max: MAX_MESSAGE_TEXT_LENGTH }) : ''" :aria-label="t('chat.send')" />
           </form>
         </div>

@@ -38,13 +38,41 @@ describe('publishChatMessage', () => {
       }
       const delivered = await publishChatMessage(db, message)
       expect(delivered).toBe(2)
-      const expected = { type: 'chat:new', leagueId, message }
+      const expected = { type: 'chat:new', leagueId, message, mentions: [] }
       expect(aliceSub.send).toHaveBeenCalledWith(expected)
       expect(bobSub.send).toHaveBeenCalledWith(expected)
       expect(carolSub.send).not.toHaveBeenCalled() // not a member
       expect(guestSub.send).not.toHaveBeenCalled() // guest
     } finally {
       for (const s of [aliceSub, bobSub, carolSub, guestSub]) removeLiveSubscriber(s)
+      await client.close()
+    }
+  })
+
+  it('relays the plaintext mention list alongside the message', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const alice = await makeUser(db, 'alice')
+    const bob = await makeUser(db, 'bob')
+    const leagueId = await makeLeague(db, { competitionId, ownerId: alice })
+    await addLeagueMember(db, leagueId, bob)
+
+    const bobSub = sub(bob)
+    addLiveSubscriber(bobSub)
+    try {
+      const message = {
+        id: 'm2',
+        leagueId,
+        matchId: null,
+        userId: alice,
+        epoch: 1,
+        ciphertext: 'opaque',
+        createdAt: '2026-06-10T10:00:00.000Z',
+      }
+      await publishChatMessage(db, message, [bob])
+      expect(bobSub.send).toHaveBeenCalledWith({ type: 'chat:new', leagueId, message, mentions: [bob] })
+    } finally {
+      removeLiveSubscriber(bobSub)
       await client.close()
     }
   })
