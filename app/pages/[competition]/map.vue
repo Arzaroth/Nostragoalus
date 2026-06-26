@@ -11,6 +11,10 @@ const teams = computed(() => teamsData.value?.teams ?? [])
 // match to go. Reuses the same aggregate crowd totals (and live WS patches) as
 // the "show everyone's totals" preference, so it is gated on that same opt-in.
 const { data: allMatches } = useMatches()
+// Subscribe the match list to live updates here too: without this the map page
+// holds page-load statuses, so a match finishing mid-session would keep tinting
+// its teams instead of advancing them to their next fixture.
+useLiveMatches(allMatches)
 const { totals: crowdTotals, enabled: crowdEnabled } = useCrowdTotals()
 const teamLean = computed(() =>
   crowdEnabled.value ? computeTeamLean(allMatches.value ?? [], crowdTotals.value) : {},

@@ -17,28 +17,46 @@ const hasLean = computed(() => !!props.teamLean && Object.keys(props.teamLean).l
 const el = ref<HTMLElement>()
 let map: L.Map | null = null
 let markers: L.LayerGroup | null = null
+// Keyed so a lean change can re-tint rings in place instead of tearing down and
+// rebuilding every marker (a live match patches crowd totals frequently).
+let markerByCode: Record<string, L.Marker> = {}
+
+function ringShadow(code: string): string {
+  const lean = props.teamLean?.[code]
+  const ring = lean === undefined ? '#fff' : leanColor(lean)
+  return `0 0 0 3px ${ring}, 0 2px 6px rgba(0, 0, 0, 0.35)`
+}
 
 function drawMarkers() {
   if (!map) return
   if (!markers) markers = L.layerGroup().addTo(map)
   markers.clearLayers()
+  markerByCode = {}
   for (const team of props.teams) {
     const coord = COORDS[team.code]
     if (!coord) continue
-    const lean = props.teamLean?.[team.code]
-    const ring = lean === undefined ? '#fff' : leanColor(lean)
     const icon = L.divIcon({
       className: 'ng-flag-marker',
-      html: `<img src="https://api.fifa.com/api/v3/picture/flags-sq-3/${team.code}" alt="" style="box-shadow: 0 0 0 3px ${ring}, 0 2px 6px rgba(0, 0, 0, 0.35)" />`,
+      html: `<img src="https://api.fifa.com/api/v3/picture/flags-sq-3/${team.code}" alt="" style="box-shadow: ${ringShadow(team.code)}" />`,
       iconSize: [28, 28],
       iconAnchor: [14, 14],
     })
-    L.marker(coord, { icon, title: team.name })
+    const marker = L.marker(coord, { icon, title: team.name })
       .on('click', () => {
         emit('select', team)
         centerOn(team.code)
       })
       .addTo(markers)
+    markerByCode[team.code] = marker
+  }
+}
+
+// Re-tint existing markers' rings without rebuilding them - only the box-shadow
+// changes, so the flag <img> and click handlers stay put (no flicker).
+function retintMarkers() {
+  for (const [code, marker] of Object.entries(markerByCode)) {
+    const img = marker.getElement()?.querySelector('img')
+    if (img) (img as HTMLElement).style.boxShadow = ringShadow(code)
   }
 }
 
@@ -60,10 +78,11 @@ onMounted(() => {
   setTimeout(() => map?.invalidateSize(), 150)
 })
 
-// Redraw markers when the competition (teams) changes, or when the crowd lean
-// shifts (live crowd patches re-tint the rings without a full reload).
+// Rebuild markers when the competition (teams) changes; a crowd-lean shift only
+// re-tints the existing rings (teamLean is a fresh object each patch, so a
+// shallow watch fires).
 watch(() => props.teams, drawMarkers, { deep: true })
-watch(() => props.teamLean, drawMarkers, { deep: true })
+watch(() => props.teamLean, retintMarkers)
 
 onBeforeUnmount(() => {
   map?.remove()
