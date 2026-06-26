@@ -6,7 +6,7 @@ import { chatKeyPins } from '../composables/useChatKeyPins'
 import { emptyReactionTotals } from '#shared/reactions'
 
 function msg(over: Record<string, unknown> = {}) {
-  return { id: 'a', userId: 'other', matchId: null, parentId: null, text: 'hi', createdAt: '2026-06-10T10:00:00.000Z', hasAttachment: false, moderation: 'VISIBLE', reported: false, reactions: emptyReactionTotals(), myReaction: null, ...over }
+  return { id: 'a', userId: 'other', matchId: null, parentId: null, text: 'hi', createdAt: '2026-06-10T10:00:00.000Z', editedAt: null, hasAttachment: false, moderation: 'VISIBLE', reported: false, reactions: emptyReactionTotals(), myReaction: null, ...over }
 }
 
 // Drive the panel via mocked composables (the crypto/network live in those and
@@ -34,6 +34,7 @@ vi.mock('../composables/useLeagueChat', async () => {
     react: vi.fn(),
     sendImage: vi.fn(),
     loadAttachment: vi.fn(),
+    editMessage: vi.fn(),
     report: vi.fn(),
     moderate: vi.fn(),
     fetchReports: vi.fn(async () => []),
@@ -179,6 +180,27 @@ describe('ChatPanel', () => {
     const report = wrapper.find('button[aria-label="Report"]')
     await report.trigger('click')
     expect(s.report).toHaveBeenCalledWith('x')
+  })
+
+  it('lets the author edit and delete their own message', async () => {
+    const s = await chatState()
+    s.enabled.value = true
+    s.ready.value = true
+    s.messages.value = [msg({ id: 'x', userId: 'me', text: 'mine', editedAt: '2026-06-10T10:05:00.000Z' })]
+    const wrapper = await mount()
+    await vi.waitFor(() => expect(wrapper.text()).toContain('mine'))
+    // The "edited" marker shows for an edited message.
+    expect(wrapper.text()).toContain('edited')
+    // Edit -> change text -> save calls editMessage.
+    await wrapper.get('button[aria-label="Edit"]').trigger('click')
+    const ta = wrapper.find('textarea')
+    await ta.setValue('mine v2')
+    const save = wrapper.findAll('button').find((b) => b.text() === 'Save')!
+    await save.trigger('click')
+    expect(s.editMessage).toHaveBeenCalledWith('x', 'mine v2')
+    // Delete calls moderate(remove).
+    await wrapper.get('button[aria-label="Delete"]').trigger('click')
+    expect(s.moderate).toHaveBeenCalledWith('x', 'remove')
   })
 
   it('tombstones a removed message and hides its content', async () => {

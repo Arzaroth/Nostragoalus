@@ -59,6 +59,8 @@
     "image": { "attach": "แนบรูปภาพ", "dropHere": "วางรูปเพื่อส่ง", "rejected": "เฉพาะรูปภาพไม่เกิน 5 MB", "failed": "ไม่มีรูปภาพ", "alt": "รูปภาพแชต", "copy": "คัดลอก", "download": "ดาวน์โหลด", "share": "แชร์", "close": "ปิด" },
     "moderation": { "report": "รายงาน", "reported": "รายงานแล้ว", "unreport": "ยกเลิกการรายงาน", "remove": "ลบ", "restore": "คืนค่า", "removed": "ข้อความถูกลบ", "pendingHidden": "ซ่อนไว้ รอตรวจสอบ", "pendingTag": "รอตรวจสอบ", "queue": "รายงาน", "queueTitle": "ข้อความที่ถูกรายงาน", "empty": "ไม่มีรายงาน", "reportCount": "{n} รายงาน", "ignore": "เพิกเฉย", "confirm": "ลบ", "done": "เสร็จ" },
     "newMessages": "ข้อความใหม่",
+    "delete": "ลบ",
+    "edit": { "button": "แก้ไข", "save": "บันทึก", "cancel": "ยกเลิก", "edited": "แก้ไขแล้ว", "at": "แก้ไขเมื่อ {time}" },
     "setupRecovery": "ตั้งรหัสกู้คืน",
     "warning": {
       "title": "เปิดแชทเข้ารหัสแบบต้นทางถึงปลายทางหรือไม่?",

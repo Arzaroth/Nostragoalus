@@ -897,6 +897,8 @@ export const chatMessage = pgTable(
     moderationState: chatModerationStateEnum('moderation_state').notNull().default('VISIBLE'),
     moderatedBy: text('moderated_by').references(() => user.id, { onDelete: 'set null' }),
     moderatedAt: timestamp('moderated_at', { withTimezone: true }),
+    // Set when the author edits the message; the UI shows it next to the send time.
+    editedAt: timestamp('edited_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

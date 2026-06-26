@@ -99,6 +99,19 @@ describe('moderateMessage', () => {
     await client.close()
   })
 
+  it('lets a member remove their own message but not another member', async () => {
+    const { db, client, leagueId, members } = await setup(2)
+    const mine = await addMessage(db, leagueId, members[0])
+    const theirs = await addMessage(db, leagueId, members[1])
+    // Author removes their own.
+    expect(await moderateMessage(db, { leagueId, messageId: mine, actorId: members[0], action: 'remove' })).toEqual({ state: 'REMOVED' })
+    // Non-author, non-admin cannot remove someone else's.
+    await expect(moderateMessage(db, { leagueId, messageId: theirs, actorId: members[0], action: 'remove' })).rejects.toBeInstanceOf(ForbiddenError)
+    // Author cannot restore (moderator only).
+    await expect(moderateMessage(db, { leagueId, messageId: mine, actorId: members[0], action: 'restore' })).rejects.toBeInstanceOf(ForbiddenError)
+    await client.close()
+  })
+
   it('only an owner/moderator can moderate or list reports', async () => {
     const { db, client, owner, leagueId, members } = await setup(2)
     const messageId = await addMessage(db, leagueId, owner)

@@ -16,6 +16,7 @@ export interface ChatMessageDTO {
   epoch: number
   ciphertext: string
   createdAt: string
+  editedAt: string | null
   hasAttachment: boolean
   // Moderation lifecycle; PENDING/REMOVED strip the ciphertext for non-moderators.
   moderation: ChatModerationState

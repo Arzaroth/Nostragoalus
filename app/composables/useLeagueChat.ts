@@ -20,6 +20,7 @@ export interface DecryptedMessage {
   parentId: string | null
   text: string | null // null = could not decrypt (wrong/absent key)
   createdAt: string
+  editedAt: string | null
   hasAttachment: boolean
   moderation: ChatModerationState
   reported: boolean
@@ -110,6 +111,7 @@ export function useLeagueChat(
       parentId: r.parentId ?? null,
       text,
       createdAt: r.createdAt,
+      editedAt: r.editedAt ?? null,
       hasAttachment: r.hasAttachment ?? false,
       moderation: r.moderation ?? 'VISIBLE',
       reported: r.reported ?? false,
@@ -248,6 +250,20 @@ export function useLeagueChat(
 
   function patchMessage(id: string, patch: Partial<DecryptedMessage>): void {
     messages.value = messages.value.map((m) => (m.id === id ? { ...m, ...patch } : m))
+  }
+
+  // The author edits their own message: re-encrypt under the current key and
+  // patch the text + edit time. The server moves the stored epoch to match.
+  async function editMessage(messageId: string, text: string): Promise<void> {
+    const body = text.trim()
+    const ck = currentKey.value
+    if (!body || !ck) return
+    const ciphertext = await encryptMessage(body, ck)
+    const { editedAt } = await $fetch<{ editedAt: string }>(`/api/leagues/${lid()}/chat/edit`, {
+      method: 'POST',
+      body: { messageId, ciphertext },
+    })
+    patchMessage(messageId, { text: body, editedAt })
   }
 
   // Send an image: compress to webp, encrypt the bytes under the group key, and
@@ -435,6 +451,26 @@ export function useLeagueChat(
         if (rm.messageId && rm.totals) patchMessage(rm.messageId, { reactions: rm.totals })
         return
       }
+      // A message was edited by its author: re-decrypt the new ciphertext (it is
+      // re-encrypted under the current key) and patch the text + edit time.
+      if (msg.type === 'chat:edit') {
+        const em = data as { messageId?: string; ciphertext?: string; editedAt?: string }
+        if (em.messageId && em.ciphertext) {
+          const key = currentKey.value
+          void (async () => {
+            let text: string | null = null
+            if (key) {
+              try {
+                text = await decryptMessage(em.ciphertext!, key)
+              } catch {
+                text = null
+              }
+            }
+            patchMessage(em.messageId!, { text, editedAt: em.editedAt ?? null })
+          })()
+        }
+        return
+      }
       // A message was moderated: patch its state so it hides/tombstones or reveals
       // live. The render decides what to show from the state and the viewer role.
       // If it became visible but our copy had the content stripped (we were a
@@ -477,6 +513,7 @@ export function useLeagueChat(
     identityStatus,
     load,
     send,
+    editMessage,
     sendImage,
     loadAttachment,
     react,

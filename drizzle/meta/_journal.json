@@ -302,6 +302,13 @@
       "when": 1782258659693,
       "tag": "0042_nebulous_namorita",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1782472322537,
+      "tag": "0043_faulty_inhumans",
+      "breakpoints": true
     }
   ]
 }

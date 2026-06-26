@@ -7,6 +7,7 @@ import { chatIdentity, chatMessage, league } from '../../../db/schema'
 import {
   addWrappedKeys,
   disableLeagueChat,
+  editMessage,
   enableLeagueChat,
   getChatIdentity,
   getChatStatus,
@@ -380,6 +381,42 @@ describe('postMessage', () => {
     const otherRound = (await findRoundId(db, otherComp, 'GROUP', 1)) as string
     const otherMatch = await makeMatch(db, { competitionId: otherComp, roundId: otherRound, kickoffTime: new Date('2026-06-10T10:00:00Z') })
     await expect(postMessage(db, { leagueId, userId: owner, matchId: otherMatch, ciphertext: 'c', epoch: 1 })).rejects.toBeInstanceOf(ValidationError)
+    await client.close()
+  })
+})
+
+describe('editMessage', () => {
+  it('edits the author own visible message and stamps editedAt', async () => {
+    const { db, client, owner, leagueId } = await setup()
+    await enableWith(db, leagueId, owner, [owner])
+    const m = await postMessage(db, { leagueId, userId: owner, ciphertext: 'orig', epoch: 1 })
+    const res = await editMessage(db, { leagueId, messageId: m.id, userId: owner, ciphertext: 'edited-ct' })
+    expect(res.editedAt).toBeInstanceOf(Date)
+    const row = (await listMessages(db, { leagueId, userId: owner })).find((r) => r.id === m.id)!
+    expect(row.ciphertext).toBe('edited-ct')
+    expect(row.editedAt).not.toBeNull()
+    await client.close()
+  })
+
+  it('forbids editing another member message and 404s an unknown one', async () => {
+    const { db, client, owner, leagueId } = await setup()
+    await enableWith(db, leagueId, owner, [owner])
+    const m = await postMessage(db, { leagueId, userId: owner, ciphertext: 'orig', epoch: 1 })
+    const other = await makeUser(db, 'other2')
+    await addLeagueMember(db, leagueId, other)
+    await expect(editMessage(db, { leagueId, messageId: m.id, userId: other, ciphertext: 'x' })).rejects.toBeInstanceOf(ForbiddenError)
+    await expect(
+      editMessage(db, { leagueId, messageId: '00000000-0000-0000-0000-000000000000', userId: owner, ciphertext: 'x' }),
+    ).rejects.toBeInstanceOf(NotFoundError)
+    await client.close()
+  })
+
+  it('rejects editing a removed message', async () => {
+    const { db, client, owner, leagueId } = await setup()
+    await enableWith(db, leagueId, owner, [owner])
+    const m = await postMessage(db, { leagueId, userId: owner, ciphertext: 'orig', epoch: 1 })
+    await db.update(chatMessage).set({ moderationState: 'REMOVED' }).where(eq(chatMessage.id, m.id))
+    await expect(editMessage(db, { leagueId, messageId: m.id, userId: owner, ciphertext: 'x' })).rejects.toBeInstanceOf(ValidationError)
     await client.close()
   })
 })

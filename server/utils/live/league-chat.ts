@@ -3,6 +3,7 @@ import type { ChatMessageDTO } from '../../../shared/types/chat'
 import { getLeagueMemberIds } from '../chat/service'
 import { getMessageReactionTotals } from '../chat/reactions'
 import {
+  publishChatEdit,
   publishChatKeysAdded,
   publishChatModeration,
   publishChatReactionUpdate,
@@ -56,4 +57,16 @@ export async function publishModeration(
 ): Promise<number> {
   const memberIds = await getLeagueMemberIds(db, leagueId)
   return publishChatModeration(leagueId, memberIds, messageId, state)
+}
+
+// A message was edited by its author: push the new ciphertext + edit time.
+export async function publishEdit(
+  db: AppDatabase,
+  leagueId: string,
+  messageId: string,
+  ciphertext: string,
+  editedAt: string,
+): Promise<number> {
+  const memberIds = await getLeagueMemberIds(db, leagueId)
+  return publishChatEdit(leagueId, memberIds, messageId, ciphertext, editedAt)
 }
