@@ -20,6 +20,13 @@ const MAX_IMAGES = 6
 const { t } = useI18n()
 const { session } = useAuth()
 const meId = computed(() => session.value?.data?.user?.id ?? null)
+const slug = useSelectedCompetition()
+
+// A chat author's profile page (same destination as a leaderboard row), or null
+// when there is no competition context (the global dock with nothing selected).
+function profileLink(uid: string | null): string | null {
+  return uid && slug.value ? `/${slug.value}/users/${uid}` : null
+}
 
 function fmtTime(iso: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -108,7 +115,7 @@ const avatars = computed<Record<string, string | null>>(() => {
 function avatarFor(uid: string | null): string | null {
   return uid ? avatars.value[uid] ?? null : null
 }
-const leagueName = computed(() => detail.data.value?.league.name ?? '')
+const leagueName = computed(() => detail.data.value?.league?.name ?? '')
 
 // Copy a message's text to the clipboard (the text component only, not images).
 function copyText(m: DecryptedMessage) {
@@ -603,8 +610,15 @@ function jumpTo(id: string) {
             :style="flashId === m.id ? 'background: color-mix(in srgb, var(--p-primary-color) 18%, transparent)' : ''"
           >
             <div class="flex items-center gap-2">
-              <UserAvatar :image="avatarFor(m.userId)" style="width: 1.35rem; height: 1.35rem; font-size: 0.7rem" />
-              <span class="font-semibold" :style="m.userId === meId ? 'color: var(--p-primary-color)' : ''">{{ nameFor(m.userId) }}</span>
+              <component
+                :is="profileLink(m.userId) ? 'NuxtLink' : 'span'"
+                :to="profileLink(m.userId) ?? undefined"
+                class="flex items-center gap-2 min-w-0"
+                :class="profileLink(m.userId) ? 'hover:underline' : ''"
+              >
+                <UserAvatar :image="avatarFor(m.userId)" style="width: 1.35rem; height: 1.35rem; font-size: 0.7rem" />
+                <span class="font-semibold truncate" :style="m.userId === meId ? 'color: var(--p-primary-color)' : ''">{{ nameFor(m.userId) }}</span>
+              </component>
               <span class="text-[10px]" style="color: var(--p-text-muted-color)">{{ fmtTime(m.createdAt) }}</span>
               <span v-if="m.editedAt" v-tooltip.bottom="t('chat.edit.at', { time: fmtTime(m.editedAt) })" class="text-[10px] italic" style="color: var(--p-text-muted-color)">{{ t('chat.edit.edited') }}</span>
               <span v-if="m.moderation === 'PENDING'" class="text-[10px] uppercase tracking-wider font-semibold px-1 rounded" style="border: 1px solid var(--ng-danger); color: var(--ng-danger)">{{ t('chat.moderation.pendingTag') }}</span>
