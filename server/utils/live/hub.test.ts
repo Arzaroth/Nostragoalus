@@ -188,15 +188,31 @@ it('publishChatModeration patches a message state for members only', async () =>
   }
 })
 
-it('publishChatEdit pushes the new ciphertext to members only', async () => {
+it('publishChatEdit pushes the new ciphertext + attachments to members only', async () => {
   const { addLiveSubscriber, removeLiveSubscriber, publishChatEdit } = await import('./hub')
   const member = { matchIds: new Set<string>(), userId: 'm', send: vi.fn() }
   const outsider = { matchIds: new Set<string>(), userId: 'o', send: vi.fn() }
   for (const s of [member, outsider]) addLiveSubscriber(s)
   try {
-    const delivered = publishChatEdit('lg', ['m'], 'msg1', 'CT', '2026-06-10T10:00:00.000Z')
+    const attachments = [{ idx: 0, epoch: 2 }]
+    const delivered = publishChatEdit('lg', ['m'], 'msg1', 'CT', '2026-06-10T10:00:00.000Z', attachments)
     expect(delivered).toBe(1)
-    expect(member.send).toHaveBeenCalledWith({ type: 'chat:edit', leagueId: 'lg', messageId: 'msg1', ciphertext: 'CT', editedAt: '2026-06-10T10:00:00.000Z' })
+    expect(member.send).toHaveBeenCalledWith({ type: 'chat:edit', leagueId: 'lg', messageId: 'msg1', ciphertext: 'CT', editedAt: '2026-06-10T10:00:00.000Z', attachments })
+    expect(outsider.send).not.toHaveBeenCalled()
+  } finally {
+    for (const s of [member, outsider]) removeLiveSubscriber(s)
+  }
+})
+
+it('publishChatTyping pushes a typing hint to the named recipients only', async () => {
+  const { addLiveSubscriber, removeLiveSubscriber, publishChatTyping } = await import('./hub')
+  const member = { matchIds: new Set<string>(), userId: 'm', send: vi.fn() }
+  const outsider = { matchIds: new Set<string>(), userId: 'o', send: vi.fn() }
+  for (const s of [member, outsider]) addLiveSubscriber(s)
+  try {
+    const delivered = publishChatTyping('lg', ['m'], 'match-1', 'typer')
+    expect(delivered).toBe(1)
+    expect(member.send).toHaveBeenCalledWith({ type: 'chat:typing', leagueId: 'lg', matchId: 'match-1', userId: 'typer' })
     expect(outsider.send).not.toHaveBeenCalled()
   } finally {
     for (const s of [member, outsider]) removeLiveSubscriber(s)

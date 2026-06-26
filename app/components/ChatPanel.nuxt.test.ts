@@ -6,7 +6,7 @@ import { chatKeyPins } from '../composables/useChatKeyPins'
 import { emptyReactionTotals } from '#shared/reactions'
 
 function msg(over: Record<string, unknown> = {}) {
-  return { id: 'a', userId: 'other', matchId: null, parentId: null, text: 'hi', createdAt: '2026-06-10T10:00:00.000Z', editedAt: null, hasAttachment: false, moderation: 'VISIBLE', reported: false, reactions: emptyReactionTotals(), myReaction: null, ...over }
+  return { id: 'a', userId: 'other', matchId: null, parentId: null, text: 'hi', createdAt: '2026-06-10T10:00:00.000Z', editedAt: null, attachments: [], moderation: 'VISIBLE', reported: false, reactions: emptyReactionTotals(), myReaction: null, ...over }
 }
 
 // Drive the panel via mocked composables (the crypto/network live in those and
@@ -24,15 +24,20 @@ vi.mock('../composables/useLeagueChat', async () => {
     memberKeys: ref<Array<{ userId: string; publicKey: string; name: string }>>([]),
     muted: ref<string[]>([]),
     identityStatus: ref('ready'),
+    hasMore: ref(false),
+    loadingOlder: ref(false),
+    typingUserIds: ref<string[]>([]),
     send: vi.fn(),
     toggleMute: vi.fn(),
     enableChat: vi.fn(),
     disableChat: vi.fn(),
     rotateKey: vi.fn(),
     load: vi.fn(),
+    loadOlder: vi.fn(),
     requestRekey: vi.fn(),
     react: vi.fn(),
-    sendImage: vi.fn(),
+    sendTyping: vi.fn(),
+    roomMedia: vi.fn(async () => []),
     loadAttachment: vi.fn(),
     editMessage: vi.fn(),
     report: vi.fn(),
@@ -167,7 +172,7 @@ describe('ChatPanel', () => {
     const ta = wrapper.find('textarea')
     await ta.setValue('me too')
     await wrapper.find('form').trigger('submit')
-    expect(s.send).toHaveBeenCalledWith('me too', 'p')
+    expect(s.send).toHaveBeenCalledWith('me too', { parentId: 'p', images: [] })
   })
 
   it('reports another member message', async () => {
@@ -197,7 +202,7 @@ describe('ChatPanel', () => {
     await ta.setValue('mine v2')
     const save = wrapper.findAll('button').find((b) => b.text() === 'Save')!
     await save.trigger('click')
-    expect(s.editMessage).toHaveBeenCalledWith('x', 'mine v2')
+    expect(s.editMessage).toHaveBeenCalledWith('x', 'mine v2', { addImages: [], removeIdxs: [] })
     // Delete calls moderate(remove).
     await wrapper.get('button[aria-label="Delete"]').trigger('click')
     expect(s.moderate).toHaveBeenCalledWith('x', 'remove')
@@ -237,6 +242,7 @@ describe('ChatPanel', () => {
     s.ready.value = true
     s.isAdmin.value = true
     const wrapper = await mount()
+    await wrapper.get('button[aria-label="More options"]').trigger('click')
     expect(wrapper.text()).toContain('Rotate key')
   })
 
@@ -246,6 +252,7 @@ describe('ChatPanel', () => {
     s.ready.value = true
     s.muted.value = ['other']
     const wrapper = await mount()
+    await wrapper.get('button[aria-label="More options"]').trigger('click')
     const show = wrapper.findAll('button').find((b) => b.text().includes('Muted (1)'))!
     await show.trigger('click')
     expect(wrapper.text()).toContain('Sam')
@@ -270,6 +277,7 @@ describe('ChatPanel', () => {
     s.ready.value = true
     s.memberKeys.value = [{ userId: 'me', publicKey: me.publicKey, name: 'Me' }, { userId: 'other', publicKey: other.publicKey, name: 'Sam' }]
     const wrapper = await mount()
+    await wrapper.get('button[aria-label="More options"]').trigger('click')
     const toggle = wrapper.findAll('button').find((b) => b.text().includes('Verify keys'))!
     await toggle.trigger('click')
     await vi.waitFor(() => expect(wrapper.text()).toMatch(/\d{5} \d{5} \d{5} \d{5} \d{5} \d{5}/))
