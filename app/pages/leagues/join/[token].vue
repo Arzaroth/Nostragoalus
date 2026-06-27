@@ -41,12 +41,9 @@ async function accept() {
   }
 }
 
-// Returning from login with a valid invite: accept without a second click.
-onMounted(() => {
-  if (preview.value?.authenticated && preview.value.status === 'VALID' && !preview.value.alreadyMember) {
-    void accept()
-  }
-})
+function decline() {
+  void router.push('/leagues')
+}
 
 useHead({ title: t('invites.joinTitle') })
 </script>
@@ -87,14 +84,17 @@ useHead({ title: t('invites.joinTitle') })
 
       <template v-else>
         <Message v-if="joinError" severity="error" size="small">{{ joinError }}</Message>
-        <Button
-          :label="preview.authenticated ? t('invites.accept') : t('invites.signInToJoin')"
-          class="w-full"
-          icon="pi pi-check"
-          icon-pos="right"
-          :loading="joining"
-          @click="accept"
-        />
+        <div class="flex flex-col gap-2">
+          <Button
+            :label="preview.authenticated ? t('invites.accept') : t('invites.signInToJoin')"
+            class="w-full"
+            icon="pi pi-check"
+            icon-pos="right"
+            :loading="joining"
+            @click="accept"
+          />
+          <Button :label="t('invites.decline')" class="w-full" severity="secondary" text :disabled="joining" @click="decline" />
+        </div>
       </template>
     </div>
   </div>

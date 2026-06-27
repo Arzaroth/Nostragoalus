@@ -1109,6 +1109,7 @@
     "memberCount": "{n} members",
     "accept": "Join league",
     "signInToJoin": "Sign in to join",
+    "decline": "Not now",
     "goToLeague": "Go to league",
     "alreadyMember": "You're already a member of this league.",
     "expired": "This invite link has expired.",
