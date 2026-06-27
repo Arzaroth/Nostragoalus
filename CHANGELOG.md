@@ -29,6 +29,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 - **Non-Latin usernames render in the share image** instead of showing empty boxes.
 - **More links get a preview**: sites that refused our old request (e.g. 9gag) now unfurl.
 
+### Security
+- **Link previews are fetched safely**: the preview fetcher refuses private/internal hosts and pins each request to the address it validated, so a crafted link can't reach internal services through the server (SSRF protection).
+
 ## [1.41.0] - 2026-06-26
 
 ### Added
