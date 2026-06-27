@@ -28,6 +28,68 @@ export function liveSubscriberCount(): number {
   return subscribers.size
 }
 
+// --- presence ---
+// A connected user is 'active' (interacting) or 'idle' (connected but no input for
+// a while, reported by the client); a user with no open connection is offline.
+// State is per-process in-memory; one entry per user, ref-counted by connections.
+export type PresenceStatus = 'active' | 'idle'
+const presence = new Map<string, { connections: number; idle: boolean }>()
+
+// Presence is mild, app-wide info (it shows on avatars everywhere), so a change is
+// broadcast to every connected socket, guarded like the members fan-out.
+function broadcastPresence(payload: unknown): void {
+  for (const sub of subscribers) {
+    try {
+      sub.send(payload)
+    } catch {
+      // socket closing; skip
+    }
+  }
+}
+
+// A user opened a connection. The first one brings them online (broadcast active);
+// a second tab just bumps the ref-count.
+export function presenceConnect(userId: string): void {
+  const cur = presence.get(userId)
+  if (cur) {
+    cur.connections += 1
+    return
+  }
+  presence.set(userId, { connections: 1, idle: false })
+  broadcastPresence({ type: 'presence:update', userId, status: 'active' satisfies PresenceStatus })
+}
+
+// A connection closed. The last one takes the user offline (broadcast).
+export function presenceDisconnect(userId: string): void {
+  const cur = presence.get(userId)
+  if (!cur) return
+  cur.connections -= 1
+  if (cur.connections <= 0) {
+    presence.delete(userId)
+    broadcastPresence({ type: 'presence:update', userId, status: 'offline' })
+  }
+}
+
+// The client reported its active/idle state; broadcast only on an actual change.
+export function presenceSetIdle(userId: string, idle: boolean): void {
+  const cur = presence.get(userId)
+  if (!cur || cur.idle === idle) return
+  cur.idle = idle
+  broadcastPresence({ type: 'presence:update', userId, status: idle ? 'idle' : 'active' })
+}
+
+// Everyone currently online and their status, for a freshly-connected client.
+export function presenceSnapshot(): Record<string, PresenceStatus> {
+  const out: Record<string, PresenceStatus> = {}
+  for (const [userId, p] of presence) out[userId] = p.idle ? 'idle' : 'active'
+  return out
+}
+
+// Exposed for tests: drop all presence state.
+export function __resetPresence(): void {
+  presence.clear()
+}
+
 const liveColumns = {
   id: match.id,
   status: match.status,

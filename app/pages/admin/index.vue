@@ -560,7 +560,7 @@ const counts = computed<Record<string, { total: number; loading: boolean }>>(() 
             </div>
             <div v-if="usersLoading" class="px-6 py-4 opacity-60">{{ t('common.loading') }}</div>
             <div v-for="u in filteredUsers" :key="u.id" class="flex items-center gap-3 px-6 py-3 border-t text-sm" style="border-color: var(--p-content-border-color)">
-              <UserAvatar :image="u.image" />
+              <UserAvatar :image="u.image" :user-id="u.id" />
               <div class="flex-1 min-w-0">
                 <div class="font-medium truncate">{{ u.name }}</div>
                 <div class="text-xs truncate" style="color: var(--p-text-muted-color)">{{ u.email }}</div>

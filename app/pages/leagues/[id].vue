@@ -69,7 +69,7 @@ function medal(rank: number) {
             <span v-if="medal(r.rank)">{{ medal(r.rank) }}</span>
             <span v-else style="color: var(--p-text-muted-color)">{{ r.rank }}</span>
           </div>
-          <UserAvatar :image="r.image" />
+          <UserAvatar :image="r.image" :user-id="r.userId" />
           <div class="flex-1 min-w-0">
             <div class="font-semibold truncate">
               {{ r.displayName }}

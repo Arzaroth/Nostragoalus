@@ -120,6 +120,7 @@
     "thread": { "count": "{n} jangmey", "one": "wa' jang", "reply": "ghantoHDaq yIjang", "collapse": "jangmey yISo'", "placeholder": "ghantoHDaq yIjang", "empty": "jang tu'be'." },
     "search": { "button": "QInmey yISam", "placeholder": "QInmey ngImlu'pu' yISam", "results": "{n} rar", "one": "wa' rar", "none": "rar tu'be'", "deeper": "QInmey qan yISammeH yItoD", "close": "Sam yISoQmoH" }
   },
+  "presence": { "active": "vumtaH", "idle": "Qotbe'" },
   "nav": {
     "matches": "may'mey",
     "bracket": "may' He",

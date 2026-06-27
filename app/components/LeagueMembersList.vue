@@ -31,7 +31,7 @@ function canKickRow(m: LeagueMember) {
 <template>
   <ul class="flex flex-col divide-y" style="border-color: var(--p-content-border-color)">
     <li v-for="m in props.members" :key="m.userId" class="flex items-center gap-3 py-2">
-      <UserAvatar :image="m.image" />
+      <UserAvatar :image="m.image" :user-id="m.userId" />
       <span class="flex-1 min-w-0 truncate text-sm font-medium">{{ m.name }}</span>
       <Tag :value="roleLabel(m.role)" :severity="m.role === 'OWNER' ? 'warn' : m.role === 'MODERATOR' ? 'info' : 'secondary'" />
       <template v-if="props.myRole === 'OWNER' && m.userId !== meId">
