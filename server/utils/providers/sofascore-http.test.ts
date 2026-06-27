@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { CycleTLSResponse } from 'cycletls'
-import { SOFASCORE_BASE_URL, SOFASCORE_UA, sofascoreFetch, withOk } from './sofascore-http'
+import { SOFASCORE_BASE_URL, SOFASCORE_UA, sofascoreFetch } from './sofascore-http'
+import { withOk } from './cycle-tls'
 
 const fakeRes = (status: number): CycleTLSResponse =>
   ({ status, headers: {}, json: async () => ({ a: 1 }), text: async () => 'body', arrayBuffer: async () => new ArrayBuffer(0), blob: async () => new Blob() }) as unknown as CycleTLSResponse

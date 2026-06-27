@@ -5,6 +5,10 @@ FROM node:${NODE_VERSION}-alpine AS base
 ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH
 RUN corepack enable
+# cycletls ships a glibc-linked Go uTLS helper (Sofascore odds + line-ups, and chat
+# link unfurls go through it); gcompat is the musl shim it needs. In base so every
+# stage that runs the app - dev and prod alike - has it.
+RUN apk add --no-cache gcompat libstdc++
 WORKDIR /app
 
 # Fetch dependencies into the pnpm store (cached on lockfile changes only).
@@ -32,9 +36,6 @@ RUN pnpm build
 # Minimal production runtime: only the Nitro output + committed migrations.
 FROM base AS prod
 ENV NODE_ENV=production
-# cycletls ships a glibc-linked Go helper for its uTLS engine (Sofascore's CDN
-# fingerprints TLS, so odds + line-ups go through it); gcompat is the musl shim.
-RUN apk add --no-cache gcompat libstdc++
 COPY --from=build /app/.output ./.output
 # Nitro traces cycletls' JS but not its spawned Go helper binary; add the linux
 # builds (x64 + arm64) so the uTLS engine starts whichever arch this runs on.

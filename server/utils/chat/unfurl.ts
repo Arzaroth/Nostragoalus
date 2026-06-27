@@ -1,5 +1,6 @@
 import { promises as dns } from 'node:dns'
 import { isIP } from 'node:net'
+import { CHROME_JA3, CHROME_UA, cycleGet, cycleHeader } from '../providers/cycle-tls'
 import type { LinkPreviewDTO } from '../../../shared/types/chat'
 
 // Server-side link unfurl for chat previews. The chat is end-to-end encrypted, so
@@ -10,6 +11,11 @@ import type { LinkPreviewDTO } from '../../../shared/types/chat'
 // points at a private/loopback/link-local address, redirects are followed by hand
 // (so a public host can't bounce us to an internal one), the response is capped,
 // and only text/html is read. Results (including misses) are cached in memory.
+//
+// The fetch goes through the shared cycletls uTLS engine with a browser JA3, not
+// Node's fetch: many sites (Cloudflare-class WAFs, e.g. 9gag) fingerprint the TLS
+// handshake and 403 node/undici no matter the headers, while a browser handshake
+// passes. Same reason the Sofascore client uses cycletls.
 
 const CACHE_TTL = 60 * 60 * 1000 // 1h for a real result
 // A miss (nothing useful, e.g. a transient block or a timeout) is cached only
@@ -17,7 +23,6 @@ const CACHE_TTL = 60 * 60 * 1000 // 1h for a real result
 // than sticking for an hour.
 const MISS_TTL = 60 * 1000 // 1m
 const CACHE_MAX = 500
-const FETCH_TIMEOUT = 5000
 const MAX_BYTES = 512 * 1024
 const MAX_REDIRECTS = 3
 
@@ -74,61 +79,31 @@ async function assertPublicHost(hostname: string): Promise<void> {
   for (const a of addrs) if (isBlockedAddress(a.address)) throw new Error('blocked address')
 }
 
-async function readCapped(res: Response): Promise<string> {
-  const reader = res.body?.getReader()
-  if (!reader) return (await res.text()).slice(0, MAX_BYTES)
-  const chunks: Uint8Array[] = []
-  let received = 0
-  while (received < MAX_BYTES) {
-    const { done, value } = await reader.read()
-    if (done) break
-    chunks.push(value)
-    received += value.length
-  }
-  try {
-    await reader.cancel()
-  } catch {
-    // already closed
-  }
-  return Buffer.concat(chunks.map((c) => Buffer.from(c))).toString('utf8')
-}
-
 async function safeFetchHtml(initial: string): Promise<{ finalUrl: string; html: string } | null> {
   let current = initial
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
     const u = new URL(current)
     if (u.protocol !== 'http:' && u.protocol !== 'https:') return null
     await assertPublicHost(u.hostname)
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT)
-    let res: Response
-    try {
-      res = await fetch(current, {
-        redirect: 'manual',
-        signal: controller.signal,
-        // A real browser UA + a full Accept header: some sites (e.g. 9gag) answer
-        // a bot UA - or a too-minimal Accept - with 403 or strip their og tags.
-        // (Sending sec-fetch-*/accept-language here actually trips 9gag's WAF, so
-        // we deliberately keep the header set lean.) undici decompresses the body.
-        headers: {
-          'user-agent':
-            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
-          accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        },
-      })
-    } finally {
-      clearTimeout(timer)
-    }
+    // Redirects are not followed by cycletls (disableRedirect) so we validate each
+    // hop's host ourselves; the engine has its own request timeout.
+    const res = await cycleGet(current, {
+      ja3: CHROME_JA3,
+      userAgent: CHROME_UA,
+      headers: { accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' },
+      disableRedirect: true,
+    })
+    const headers = res.headers as Record<string, unknown> | undefined
     if (res.status >= 300 && res.status < 400) {
-      const loc = res.headers.get('location')
+      const loc = cycleHeader(headers, 'location')
       if (!loc) return null
       current = new URL(loc, current).toString()
       continue
     }
-    if (!res.ok) return null
-    const ct = res.headers.get('content-type') ?? ''
+    if (res.status < 200 || res.status >= 300) return null
+    const ct = cycleHeader(headers, 'content-type') ?? ''
     if (!ct.includes('text/html') && !ct.includes('application/xhtml')) return null
-    return { finalUrl: current, html: await readCapped(res) }
+    return { finalUrl: current, html: (await res.text()).slice(0, MAX_BYTES) }
   }
   return null // too many redirects
 }
