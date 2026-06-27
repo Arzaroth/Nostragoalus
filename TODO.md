@@ -1177,6 +1177,39 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       them), bounded only by the 5 MB original cap; large GIFs ride the 9 MB
       ciphertext cap. No server-side transcode/size optimization.
 
+### Deferred from the feature-treatment review (worktree-chat-more)
+
+- [ ] Link-unfurl response is byte-capped only AFTER cycletls buffers the whole
+      body (`(await res.text()).slice(0, MAX_BYTES)`): MAX_BYTES bounds what we
+      parse, not what we download, so a huge text/html response is fully resident
+      in memory first. cycletls has no streaming/size cap, so a true fix needs a
+      `Content-Length` pre-check or a different fetch engine; the 30s request
+      timeout is the only current bound. Also add a per-user rate limit on
+      `/api/chat/unfurl` (none today) to blunt repeated large fetches and the
+      internal port-scan timing oracle.
+- [ ] `typingMembersCache` (league-chat) and `fallbackFontCache` (og share) are
+      module-level Maps with no eviction/size cap: one entry per league that ever
+      typed, one per distinct non-Latin name segment ever rendered. Bounded by
+      distinct leagues / names but monotonic for the process lifetime - add an LRU
+      or TTL sweep if memory creep is observed.
+- [ ] Thread-reply moderation does not decrement the root's live `threadCount`
+      (`bumpThreadCount` is only ever +1 on the chat:new echo; the chat:moderation
+      push carries no `threadId`). "N replies" stays inflated until a room reload
+      (`getThreadCounts` excludes REMOVED). Send `threadId` on the moderation push
+      and decrement, or refetch counts.
+- [ ] Thread @mentions don't badge: a mention inside a thread reply is now ignored
+      by `useChatActivity` (was: badged then silently cleared on room open). Proper
+      behavior is a thread-scoped unread/mention badge that clears when the THREAD
+      is opened. Needs per-thread unread tracking.
+- [ ] Duplicated UI primitives: a full-screen image-zoom overlay (Esc + fixed
+      overlay) is re-implemented in `ChatMessageContent.vue` and `ChatPanel.vue`
+      while `ChatLightbox.vue` already exists; the "resolve the input/textarea
+      inside a PrimeVue component `$el`" cast is copied in three places. Hoist an
+      `<ImageZoom>` primitive and an `inputElOf` helper.
+- [ ] Several chat server files still import `shared/types/*` via deep relative
+      paths instead of the `#shared` alias (the two new unfurl files were fixed in
+      review). Type-only so no build break, but reconcile the rest.
+
 ## Presence (deferred from the feature pass)
 
 - [ ] Idle is a single per-user flag (last ping wins), not per-connection: with
@@ -1185,7 +1218,9 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 - [ ] Presence broadcasts to ALL connected sockets on every status transition
       (global, not scoped to who can see the user). Fine for a pool-sized app;
       O(users) per transition. Scope to relevant viewers (shared leagues) if it
-      grows.
+      grows. Note this also reaches fully-unauthenticated guest sockets, disclosing
+      which (publicly-identifiable) user ids are online/idle in real time to
+      anonymous clients - gate to authed sockets if presence privacy matters.
 - [ ] Presence is in-memory per process (single-instance assumption, like the rest
       of the live hub). Multi-instance would need a shared presence store / pub-sub.
 - [ ] No "last seen" timestamp - offline is just absence; a "last active 5m ago"
