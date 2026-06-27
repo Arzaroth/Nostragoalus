@@ -1,5 +1,5 @@
 // Flags a stale client when Nuxt's build-manifest poll sees a new deploy;
-// the UpdateBanner offers the reload instead of forcing one mid-prediction.
+// the PwaBanner offers the reload instead of forcing one mid-prediction.
 export default defineNuxtPlugin((nuxtApp) => {
   const outdated = useState('outdated-build', () => false)
   const dismissed = useState('update-dismissed', () => false)

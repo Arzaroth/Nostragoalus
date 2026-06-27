@@ -22,6 +22,6 @@ useKonamiUnlock()
   <NuxtLayout>
     <NuxtPage />
   </NuxtLayout>
-  <UpdateBanner />
+  <PwaBanner />
   <SkinUnlockCelebration />
 </template>
