@@ -6,6 +6,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 ## [Unreleased]
 
 ### Added
+- **Online status on avatars**: a dot shows whether someone is around - green when they're active, amber when they're online but idle, nothing when offline - everywhere their avatar appears.
 - **Threads**: open a message's thread to reply in a focused side conversation that stays out of the main room; a "N replies" link shows when a thread has activity. This is separate from a plain reply, which still quotes the message inline in the room.
 - **Mentions**: type `@` in the composer to pick a league member - their name shows while you type and edit, links to their profile, and keeps working even if they later rename. When someone mentions you, the minimized chat bubble shows a distinct badge (still counted in the overall unread total) and the rooms menu flags which room it's in.
 - **Emoji picker**: an emoji button next to the image button opens a searchable, categorized picker that drops the emoji into your message.

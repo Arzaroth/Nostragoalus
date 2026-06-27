@@ -1176,3 +1176,17 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 - [ ] Animated GIF uploads are stored uncompressed (canvas re-encode would flatten
       them), bounded only by the 5 MB original cap; large GIFs ride the 9 MB
       ciphertext cap. No server-side transcode/size optimization.
+
+## Presence (deferred from the feature pass)
+
+- [ ] Idle is a single per-user flag (last ping wins), not per-connection: with
+      two tabs, one going idle can show the user idle even if the other is active.
+      Track idle per-subscriber and OR them if it matters.
+- [ ] Presence broadcasts to ALL connected sockets on every status transition
+      (global, not scoped to who can see the user). Fine for a pool-sized app;
+      O(users) per transition. Scope to relevant viewers (shared leagues) if it
+      grows.
+- [ ] Presence is in-memory per process (single-instance assumption, like the rest
+      of the live hub). Multi-instance would need a shared presence store / pub-sub.
+- [ ] No "last seen" timestamp - offline is just absence; a "last active 5m ago"
+      would need persistence.
