@@ -34,7 +34,7 @@ const upcoming = computed(() => (data.value?.predictions ?? []).filter((p) => ne
     </NuxtLink>
     <div class="flex items-center justify-between gap-3 flex-wrap mt-3 mb-1">
       <div class="flex items-center gap-3 min-w-0">
-        <UserAvatar :image="data.user.image" size="large" />
+        <UserAvatar :image="data.user.image" :user-id="data.user.id" size="large" />
         <h1 class="text-2xl font-bold truncate">{{ data.user.name }}</h1>
         <span v-if="data.champion?.teamCode && flagUrl(data.champion.teamCode)" v-tooltip.top="`${t('champion.tag')}: ${data.champion.teamName}`" class="relative shrink-0 inline-flex items-center gap-1.5">
           <img :src="flagUrl(data.champion.teamCode) || ''" class="w-6 h-6 rounded object-cover" alt="" >

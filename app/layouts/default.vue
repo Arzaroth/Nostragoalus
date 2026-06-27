@@ -2,6 +2,10 @@
 const { session, signOut } = useAuth()
 const { t } = useI18n()
 
+// Start the shared presence socket app-wide (always-mounted layout), so we report
+// our own online/idle state and receive others' even on pages with no avatar.
+usePresence()
+
 // Expose the sticky header's (variable, taller on mobile) height as a CSS var
 // so page-level sticky bars can pin right below it.
 const headerEl = ref<HTMLElement | null>(null)

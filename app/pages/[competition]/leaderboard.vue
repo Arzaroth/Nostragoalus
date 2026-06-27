@@ -139,7 +139,7 @@ const hasLive = computed(() => displayRows.value.some((r) => r.livePoints))
           </div>
         </div>
         <span v-if="r.isBot" class="shrink-0 text-2xl leading-none w-8 h-8 inline-flex items-center justify-center">🤖</span>
-        <UserAvatar v-else :image="r.image" />
+        <UserAvatar v-else :image="r.image" :user-id="r.userId" />
         <div class="flex-1 min-w-0">
           <div class="font-semibold truncate flex items-center gap-2.5">
             <span class="truncate">{{ r.displayName }}</span>

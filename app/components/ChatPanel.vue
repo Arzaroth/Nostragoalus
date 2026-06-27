@@ -942,11 +942,11 @@ watch(
                 :to="profileLink(m.userId)!"
                 class="flex items-center gap-2 min-w-0 hover:underline"
               >
-                <UserAvatar :image="avatarFor(m.userId)" class="!w-6 !h-6 shrink-0 text-[0.6rem]" />
+                <UserAvatar :image="avatarFor(m.userId)" :user-id="m.userId" class="!w-6 !h-6 shrink-0 text-[0.6rem]" />
                 <span class="font-semibold truncate" :style="m.userId === meId ? 'color: var(--p-primary-color)' : ''">{{ nameFor(m.userId) }}</span>
               </NuxtLink>
               <span v-else class="flex items-center gap-2 min-w-0">
-                <UserAvatar :image="avatarFor(m.userId)" class="!w-6 !h-6 shrink-0 text-[0.6rem]" />
+                <UserAvatar :image="avatarFor(m.userId)" :user-id="m.userId" class="!w-6 !h-6 shrink-0 text-[0.6rem]" />
                 <span class="font-semibold truncate" :style="m.userId === meId ? 'color: var(--p-primary-color)' : ''">{{ nameFor(m.userId) }}</span>
               </span>
               <span class="text-[10px]" style="color: var(--p-text-muted-color)">{{ fmtTime(m.createdAt) }}</span>
@@ -1099,7 +1099,7 @@ watch(
               <p v-else-if="!threadMessages.length" class="text-xs" style="color: var(--p-text-muted-color)">{{ t('chat.thread.empty') }}</p>
               <div v-for="r in threadMessages" :key="r.id" :data-mid="r.id" class="group flex flex-col text-sm min-w-0" :class="r.userId === meId ? 'items-end' : 'items-start'">
                 <div class="flex items-center gap-2 self-stretch" :class="r.userId === meId ? 'flex-row-reverse' : ''">
-                  <UserAvatar :image="avatarFor(r.userId)" class="!w-5 !h-5 shrink-0 text-[0.5rem]" />
+                  <UserAvatar :image="avatarFor(r.userId)" :user-id="r.userId" class="!w-5 !h-5 shrink-0 text-[0.5rem]" />
                   <NuxtLink v-if="profileLink(r.userId)" :to="profileLink(r.userId)!" class="font-semibold truncate text-xs hover:underline" :style="r.userId === meId ? 'color: var(--p-primary-color)' : ''">{{ nameFor(r.userId) }}</NuxtLink>
                   <span v-else class="font-semibold truncate text-xs" :style="r.userId === meId ? 'color: var(--p-primary-color)' : ''">{{ nameFor(r.userId) }}</span>
                   <span class="text-[10px]" style="color: var(--p-text-muted-color)">{{ fmtTime(r.createdAt) }}</span>
@@ -1180,7 +1180,7 @@ watch(
                 @mousedown.prevent="applyMention(c)"
                 @mouseenter="mentionIndex = i"
               >
-                <UserAvatar :image="c.image" class="!w-5 !h-5 shrink-0 text-[0.5rem]" />
+                <UserAvatar :image="c.image" :user-id="c.userId" class="!w-5 !h-5 shrink-0 text-[0.5rem]" />
                 <span class="truncate text-sm">{{ c.name }}</span>
               </button>
             </div>

@@ -1,6 +1,15 @@
 import { auth } from '../../lib/auth'
 import { db } from '../../db'
-import { addLiveSubscriber, removeLiveSubscriber, sendMatchSnapshot, type LiveSubscriber } from '../utils/live/hub'
+import {
+  addLiveSubscriber,
+  presenceConnect,
+  presenceDisconnect,
+  presenceSetIdle,
+  presenceSnapshot,
+  removeLiveSubscriber,
+  sendMatchSnapshot,
+  type LiveSubscriber,
+} from '../utils/live/hub'
 import { publishTyping } from '../utils/live/league-chat'
 
 const peers = new WeakMap<object, LiveSubscriber>()
@@ -24,6 +33,12 @@ export default defineWebSocketHandler({
     } catch {
       // anonymous connection
     }
+    // Mark this user online (broadcast to all) and hand the new client the current
+    // presence of everyone else.
+    if (subscriber.userId) {
+      presenceConnect(subscriber.userId)
+      subscriber.send({ type: 'presence:snapshot', users: presenceSnapshot() })
+    }
   },
 
   async message(peer, message) {
@@ -40,6 +55,9 @@ export default defineWebSocketHandler({
         // Ephemeral typing hint - members only (publishTyping checks membership).
         const matchId = typeof data.matchId === 'string' ? data.matchId : null
         await publishTyping(db, { leagueId: data.leagueId, matchId, userId: subscriber.userId, nowMs: Date.now() })
+      } else if (data?.type === 'presence:ping' && subscriber.userId) {
+        // The client reports active/idle (it tracks its own 15-min idle timer).
+        presenceSetIdle(subscriber.userId, data.active === false)
       }
     } catch {
       // ignore malformed client messages
@@ -49,6 +67,7 @@ export default defineWebSocketHandler({
   close(peer) {
     const subscriber = peers.get(peer)
     if (subscriber) {
+      if (subscriber.userId) presenceDisconnect(subscriber.userId)
       removeLiveSubscriber(subscriber)
       peers.delete(peer)
     }

@@ -120,6 +120,7 @@
     "thread": { "count": "{n} replies", "one": "1 reply", "reply": "Reply in thread", "collapse": "Hide replies", "placeholder": "Reply to thread", "empty": "No replies yet." },
     "search": { "button": "Search messages", "placeholder": "Search loaded messages", "results": "{n} matches", "one": "1 match", "none": "No matches", "deeper": "Load earlier messages to search further", "close": "Close search" }
   },
+  "presence": { "active": "Active", "idle": "Away" },
   "nav": {
     "matches": "Matches",
     "bracket": "Bracket",

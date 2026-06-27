@@ -274,7 +274,7 @@ const roleOptions = computed(() => [
       </div>
       <ul class="flex flex-col divide-y" style="border-color: var(--p-content-border-color)">
         <li v-for="m in detail?.members ?? []" :key="m.userId" class="flex items-center gap-3 py-2">
-          <UserAvatar :image="m.image" />
+          <UserAvatar :image="m.image" :user-id="m.userId" />
           <span class="flex-1 min-w-0 truncate text-sm font-medium">{{ m.name }}</span>
           <Select
             :model-value="m.role"
