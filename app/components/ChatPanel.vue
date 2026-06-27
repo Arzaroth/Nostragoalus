@@ -200,6 +200,7 @@ async function submitThreadReply() {
   if (!threadId || !threadDraft.value.trim() || threadOverLimit.value) return
   const text = encodeMentions(threadDraft.value)
   threadDraft.value = ''
+  threadScrolls.value = false
   await chat.send(text, { threadId, mentions: extractMentions(text) })
 }
 // Scroll to the message a quote points at.
@@ -248,6 +249,7 @@ function startEdit(m: DecryptedMessage) {
   nextTick(() => {
     const ta = listEl.value?.querySelector(`[data-mid="${m.id}"] textarea`) as HTMLTextAreaElement | null
     ta?.focus()
+    editScrolls.value = capScroll(ta)
   })
 }
 function cancelEdit() {
@@ -349,6 +351,19 @@ function composerTextarea(): HTMLTextAreaElement | null {
   return (el?.tagName === 'TEXTAREA' ? el : el?.querySelector?.('textarea')) as HTMLTextAreaElement | null
 }
 
+// The autoResize textareas grow to fit, then cap at ~3 lines. We only switch on
+// the scrollbar once the content actually exceeds that cap: leaving overflow:auto
+// on always shows a perpetual scrollbar (the field's border makes the content a
+// couple px taller than the auto-sized height). `scrollHeight` is content-based,
+// so this reads true regardless of when autoResize set the height.
+const TEXTAREA_CAP_PX = 120
+const composerScrolls = ref(false)
+const editScrolls = ref(false)
+const threadScrolls = ref(false)
+function capScroll(ta: HTMLTextAreaElement | null): boolean {
+  return !!ta && ta.scrollHeight > TEXTAREA_CAP_PX
+}
+
 // Emoji quick-insert: splice the glyph in at the caret (replacing any selection)
 // and restore focus just after it, so the user can keep typing or add more.
 const emojiOpen = ref(false)
@@ -432,6 +447,7 @@ function decodeMentions(text: string): string {
 function onComposerInput() {
   chat.sendTyping()
   detectMention()
+  composerScrolls.value = capScroll(composerTextarea())
 }
 function onComposerKey(e: KeyboardEvent) {
   const list = mentionCandidates.value
@@ -511,6 +527,7 @@ async function submit() {
   const mentions = extractMentions(text)
   mentionQuery.value = null
   draft.value = ''
+  composerScrolls.value = false
   replyTo.value = null
   const urls = pendingUrls.value
   pending.value = []
@@ -524,7 +541,23 @@ function onFilePicked(e: Event) {
   void addFiles(imageFilesFrom(input.files))
   input.value = ''
 }
+// Drag state via an enter/leave depth counter so moving over child elements
+// doesn't flicker the dropzone overlay off.
+let dragDepth = 0
+function dragHasFiles(e: DragEvent): boolean {
+  return Array.from(e.dataTransfer?.items ?? []).some((i) => i.kind === 'file')
+}
+function onDragEnter(e: DragEvent) {
+  if (!dragHasFiles(e)) return
+  dragDepth++
+  dragOver.value = true
+}
+function onDragLeave() {
+  dragDepth = Math.max(0, dragDepth - 1)
+  if (dragDepth === 0) dragOver.value = false
+}
 function onDrop(e: DragEvent) {
+  dragDepth = 0
   dragOver.value = false
   void addFiles(imageFilesFrom(e.dataTransfer?.files))
 }
@@ -747,10 +780,25 @@ watch(
 
 <template>
   <div
-    class="flex flex-col gap-3"
+    class="relative flex flex-col gap-3"
     :class="props.flat ? '' : 'ng-card rounded-2xl border p-4'"
     :style="props.flat ? '' : 'background: var(--p-content-background); border-color: var(--p-content-border-color)'"
+    @dragenter.prevent="onDragEnter"
+    @dragover.prevent
+    @dragleave.prevent="onDragLeave"
+    @drop.prevent="onDrop"
   >
+    <!-- Drag-and-drop image dropzone, covering the whole panel so a drop anywhere
+         on the chat is caught, with a clear overlay. pointer-events:none so the
+         drag events stay on the panel root (the depth counter tracks enter/leave). -->
+    <div
+      v-if="ready && dragOver"
+      class="pointer-events-none absolute inset-0 z-40 flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed text-sm font-semibold"
+      style="border-color: var(--p-primary-color); background: color-mix(in srgb, var(--p-primary-color) 14%, var(--p-content-background)); color: var(--p-primary-color)"
+    >
+      <i class="pi pi-image text-2xl" />
+      {{ t('chat.image.dropHere') }}
+    </div>
     <div class="flex items-center gap-2">
       <i class="pi pi-lock" style="color: var(--p-primary-color)" />
       <span class="font-semibold">{{ props.matchId ? t('chat.threadTitle') : t('chat.roomTitle') }}</span>
@@ -846,17 +894,7 @@ watch(
           class="relative flex flex-col gap-2 overflow-y-auto overflow-x-hidden overscroll-contain"
           :style="`max-height: ${props.tall ? '60vh' : '22rem'}`"
           @scroll="onScroll"
-          @dragover.prevent="dragOver = true"
-          @dragleave="dragOver = false"
-          @drop.prevent="onDrop"
         >
-          <div
-            v-if="dragOver"
-            class="absolute inset-0 z-10 flex items-center justify-center rounded-lg border-2 border-dashed text-sm font-semibold"
-            style="border-color: var(--p-primary-color); background: color-mix(in srgb, var(--p-primary-color) 12%, var(--p-content-background))"
-          >
-            {{ t('chat.image.dropHere') }}
-          </div>
           <button
             v-if="hasMore"
             type="button"
@@ -871,6 +909,22 @@ watch(
           <div
             v-for="m in displayMessages"
             :key="m.id"
+            v-memo="[
+              m.id, m.userId, m.text, m.editedAt, m.moderation, m.reported, m.myReaction, m.reactions, m.threadCount, m.attachments, m.parentId,
+              names, avatars,
+              pickerFor === m.id,
+              editingId === m.id,
+              editingId === m.id ? editDraft : '',
+              editingId === m.id ? editAddUrls : 0,
+              editingId === m.id ? editOverLimit : false,
+              editingId === m.id ? editScrolls : false,
+              editingId === m.id ? editExisting.map((e) => (e.removed ? 1 : 0) + (e.url ?? '')).join('|') : '',
+              threadParentId === m.id,
+              threadParentId === m.id ? threadDraft : '',
+              threadParentId === m.id ? threadMessages : 0,
+              threadParentId === m.id ? threadLoading : false,
+              threadParentId === m.id ? threadScrolls : false,
+            ]"
             :data-mid="m.id"
             class="group text-sm flex flex-col rounded transition-colors min-w-0"
           >
@@ -945,7 +999,7 @@ watch(
             <span v-if="!contentVisible(m)" class="italic" style="color: var(--p-text-muted-color)">{{ m.moderation === 'REMOVED' ? t('chat.moderation.removed') : t('chat.moderation.pendingHidden') }}</span>
             <!-- Inline edit of your own message: text plus image add/remove. -->
             <div v-else-if="editingId === m.id" class="flex flex-col gap-1">
-              <Textarea v-model="editDraft" rows="1" autoResize class="w-full" style="max-height: 7.5rem; overflow-y: auto" @keydown.enter.exact.prevent="saveEdit" @keydown.esc="cancelEdit" @keydown.up="onEditUp" @keydown.down="onEditDown" />
+              <Textarea v-model="editDraft" rows="1" autoResize class="w-full" :style="{ maxHeight: '7.5rem', overflowY: editScrolls ? 'auto' : 'hidden' }" @input="(e) => (editScrolls = capScroll(e.target as HTMLTextAreaElement))" @keydown.enter.exact.prevent="saveEdit" @keydown.esc="cancelEdit" @keydown.up="onEditUp" @keydown.down="onEditDown" />
               <div v-if="editExisting.length || editAdd.length" class="flex flex-wrap gap-1.5">
                 <!-- Existing images: tap the x to mark for removal (re-tap to keep). -->
                 <div v-for="e in editExisting" :key="`ex-${e.idx}`" class="relative">
@@ -1055,7 +1109,7 @@ watch(
                 </template>
               </div>
               <form class="flex items-end gap-2" @submit.prevent="submitThreadReply">
-                <Textarea v-model="threadDraft" :placeholder="t('chat.thread.placeholder')" rows="1" autoResize class="flex-1" style="max-height: 7.5rem; overflow-y: auto" @keydown.enter.exact.prevent="submitThreadReply" />
+                <Textarea v-model="threadDraft" :placeholder="t('chat.thread.placeholder')" rows="1" autoResize class="flex-1" :style="{ maxHeight: '7.5rem', overflowY: threadScrolls ? 'auto' : 'hidden' }" @input="(e) => (threadScrolls = capScroll(e.target as HTMLTextAreaElement))" @keydown.enter.exact.prevent="submitThreadReply" />
                 <Button type="submit" icon="pi pi-send" :loading="sending" :disabled="!threadDraft.trim() || threadOverLimit" :aria-label="t('chat.send')" />
               </form>
             </div>
@@ -1130,7 +1184,7 @@ watch(
                 <EmojiPicker @select="insertEmoji" @close="emojiOpen = false" />
               </div>
             </div>
-            <Textarea ref="composer" v-model="draft" :placeholder="t('chat.placeholder')" rows="1" autoResize class="flex-1" style="max-height: 7.5rem; overflow-y: auto" @keydown="onComposerKey" @input="onComposerInput" @paste="onPaste" />
+            <Textarea ref="composer" v-model="draft" :placeholder="t('chat.placeholder')" rows="1" autoResize class="flex-1" :style="{ maxHeight: '7.5rem', overflowY: composerScrolls ? 'auto' : 'hidden' }" @keydown="onComposerKey" @input="onComposerInput" @paste="onPaste" />
             <Button type="submit" icon="pi pi-send" :loading="sending" :disabled="(!draft.trim() && !pending.length) || overLimit" v-tooltip.top="overLimit ? t('chat.limit.tooLong', { max: MAX_MESSAGE_TEXT_LENGTH }) : ''" :aria-label="t('chat.send')" />
           </form>
         </div>
