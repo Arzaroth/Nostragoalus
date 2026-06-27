@@ -102,7 +102,14 @@ async function safeFetchHtml(initial: string): Promise<{ finalUrl: string; html:
       res = await fetch(current, {
         redirect: 'manual',
         signal: controller.signal,
-        headers: { 'user-agent': 'NostragoalusBot/1.0 (+link-preview)', accept: 'text/html,application/xhtml+xml' },
+        // A real browser UA: some sites (e.g. 9gag) answer a bot UA with 403 or
+        // strip og tags. undici transparently decompresses the body stream.
+        headers: {
+          'user-agent':
+            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          accept: 'text/html,application/xhtml+xml',
+          'accept-language': 'en;q=0.9',
+        },
       })
     } finally {
       clearTimeout(timer)
