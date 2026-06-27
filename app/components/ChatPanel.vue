@@ -197,8 +197,8 @@ function openThreadFor(m: DecryptedMessage) {
 }
 async function submitThreadReply() {
   const threadId = threadParentId.value
-  const text = threadDraft.value
-  if (!threadId || !text.trim() || threadOverLimit.value) return
+  if (!threadId || !threadDraft.value.trim() || threadOverLimit.value) return
+  const text = encodeMentions(threadDraft.value)
   threadDraft.value = ''
   await chat.send(text, { threadId, mentions: extractMentions(text) })
 }
@@ -231,7 +231,7 @@ function revokeEditUrls() {
 function startEdit(m: DecryptedMessage) {
   revokeEditUrls()
   editingId.value = m.id
-  editDraft.value = m.text ?? ''
+  editDraft.value = decodeMentions(m.text ?? '')
   editAdd.value = []
   editExisting.value = m.attachments.map((a) => ({ idx: a.idx, epoch: a.epoch, url: null, removed: false }))
   // Load each existing image's preview (decrypted locally) for the remove toggles.
@@ -280,6 +280,20 @@ function onEditUp(e: KeyboardEvent) {
   if (i > 0) startEdit(list[i - 1])
   else cancelEdit()
 }
+function onEditDown(e: KeyboardEvent) {
+  const ta = e.target as HTMLTextAreaElement
+  // Only hijack Down at the very end of the field. Past the newest message, close
+  // the editor and drop back into the composer.
+  if (ta.selectionStart !== ta.value.length || ta.selectionEnd !== ta.value.length) return
+  const list = myEditable()
+  const i = list.findIndex((m) => m.id === editingId.value)
+  e.preventDefault()
+  if (i >= 0 && i < list.length - 1) startEdit(list[i + 1])
+  else {
+    cancelEdit()
+    nextTick(() => composerTextarea()?.focus())
+  }
+}
 function toggleRemoveExisting(idx: number) {
   const e = editExisting.value.find((x) => x.idx === idx)
   if (e) e.removed = !e.removed
@@ -312,11 +326,11 @@ function onEditFilePicked(e: Event) {
 async function saveEdit() {
   const id = editingId.value
   if (!id) return
-  const text = editDraft.value
   const removeIdxs = editExisting.value.filter((e) => e.removed).map((e) => e.idx)
   // A message must keep some content: text, a surviving image or a new one.
-  if (!text.trim() && editKept.value === 0) return
+  if (!editDraft.value.trim() && editKept.value === 0) return
   if (editOverLimit.value) return
+  const text = encodeMentions(editDraft.value)
   const addImages = editAdd.value
   revokeEditUrls()
   editingId.value = null
@@ -386,7 +400,9 @@ function applyMention(member: { userId: string; name: string }) {
   const caret = ta?.selectionStart ?? draft.value.length
   const before = draft.value.slice(0, mentionStart.value)
   const after = draft.value.slice(caret)
-  const token = `@<${member.userId}> `
+  // Insert the display name so the composer reads naturally; encodeMentions maps
+  // it back to a stable @<id> token at send time.
+  const token = `@${member.name} `
   draft.value = before + token + after
   mentionQuery.value = null
   nextTick(() => {
@@ -394,6 +410,24 @@ function applyMention(member: { userId: string; name: string }) {
     const pos = (before + token).length
     ta?.setSelectionRange(pos, pos)
   })
+}
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+// Composer text is written/displayed with @DisplayName mentions; map each one back
+// to a stable @<id> token (rename-proof) for the wire/stored form. Longest names
+// first so "@John Doe" wins over "@John".
+function encodeMentions(text: string): string {
+  const members = [...(detail.data.value?.members ?? [])].sort((a, b) => b.name.length - a.name.length)
+  let out = text
+  for (const m of members) {
+    out = out.replace(new RegExp(`(^|\\s)@${escapeRegExp(m.name)}(?=\\s|$|[^\\w])`, 'g'), `$1@<${m.userId}>`)
+  }
+  return out
+}
+// The inverse, for putting a stored message back into the edit box as @DisplayName.
+function decodeMentions(text: string): string {
+  return text.replace(/@<([^\s<>@]+)>/g, (_, id) => `@${names.value[id] ?? t('chat.unknownUser')}`)
 }
 function onComposerInput() {
   chat.sendTyping()
@@ -469,11 +503,11 @@ function clearPending() {
 }
 
 async function submit() {
-  const text = draft.value
   const images = pending.value
   const parentId = replyTo.value?.id ?? null
-  if (!text.trim() && images.length === 0) return
+  if (!draft.value.trim() && images.length === 0) return
   if (overLimit.value) return
+  const text = encodeMentions(draft.value)
   const mentions = extractMentions(text)
   mentionQuery.value = null
   draft.value = ''
@@ -871,7 +905,7 @@ watch(
             <span v-if="!contentVisible(m)" class="italic" style="color: var(--p-text-muted-color)">{{ m.moderation === 'REMOVED' ? t('chat.moderation.removed') : t('chat.moderation.pendingHidden') }}</span>
             <!-- Inline edit of your own message: text plus image add/remove. -->
             <div v-else-if="editingId === m.id" class="flex flex-col gap-1">
-              <Textarea v-model="editDraft" rows="1" autoResize class="w-full" @keydown.enter.exact.prevent="saveEdit" @keydown.esc="cancelEdit" @keydown.up="onEditUp" />
+              <Textarea v-model="editDraft" rows="1" autoResize class="w-full" style="max-height: 7.5rem; overflow-y: auto" @keydown.enter.exact.prevent="saveEdit" @keydown.esc="cancelEdit" @keydown.up="onEditUp" @keydown.down="onEditDown" />
               <div v-if="editExisting.length || editAdd.length" class="flex flex-wrap gap-1.5">
                 <!-- Existing images: tap the x to mark for removal (re-tap to keep). -->
                 <div v-for="e in editExisting" :key="`ex-${e.idx}`" class="relative">
@@ -981,7 +1015,7 @@ watch(
                 </template>
               </div>
               <form class="flex items-end gap-2" @submit.prevent="submitThreadReply">
-                <Textarea v-model="threadDraft" :placeholder="t('chat.thread.placeholder')" rows="1" autoResize class="flex-1" @keydown.enter.exact.prevent="submitThreadReply" />
+                <Textarea v-model="threadDraft" :placeholder="t('chat.thread.placeholder')" rows="1" autoResize class="flex-1" style="max-height: 7.5rem; overflow-y: auto" @keydown.enter.exact.prevent="submitThreadReply" />
                 <Button type="submit" icon="pi pi-send" :loading="sending" :disabled="!threadDraft.trim() || threadOverLimit" :aria-label="t('chat.send')" />
               </form>
             </div>
@@ -1056,7 +1090,7 @@ watch(
                 <EmojiPicker @select="insertEmoji" @close="emojiOpen = false" />
               </div>
             </div>
-            <Textarea ref="composer" v-model="draft" :placeholder="t('chat.placeholder')" rows="1" autoResize class="flex-1" @keydown="onComposerKey" @input="onComposerInput" @paste="onPaste" />
+            <Textarea ref="composer" v-model="draft" :placeholder="t('chat.placeholder')" rows="1" autoResize class="flex-1" style="max-height: 7.5rem; overflow-y: auto" @keydown="onComposerKey" @input="onComposerInput" @paste="onPaste" />
             <Button type="submit" icon="pi pi-send" :loading="sending" :disabled="(!draft.trim() && !pending.length) || overLimit" v-tooltip.top="overLimit ? t('chat.limit.tooLong', { max: MAX_MESSAGE_TEXT_LENGTH }) : ''" :aria-label="t('chat.send')" />
           </form>
         </div>

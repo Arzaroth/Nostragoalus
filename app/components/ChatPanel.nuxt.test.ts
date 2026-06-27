@@ -198,6 +198,17 @@ describe('ChatPanel', () => {
     expect(s.send).toHaveBeenCalledWith('me too', { threadId: 'p', mentions: [] })
   })
 
+  it('encodes an @mention display name to a stable id token on send', async () => {
+    const s = await chatState()
+    s.enabled.value = true
+    s.ready.value = true
+    const wrapper = await mount()
+    // The composer shows the member's name; it is encoded to @<id> on the wire.
+    await wrapper.find('textarea').setValue('hi @Sam')
+    await wrapper.find('form').trigger('submit')
+    expect(s.send).toHaveBeenCalledWith('hi @<other>', { parentId: null, images: [], mentions: ['other'] })
+  })
+
   it('reports another member message', async () => {
     const s = await chatState()
     s.enabled.value = true
