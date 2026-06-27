@@ -1109,6 +1109,7 @@
     "memberCount": "{n} membres",
     "accept": "Rejoindre la ligue",
     "signInToJoin": "Connectez-vous pour rejoindre",
+    "decline": "Pas maintenant",
     "goToLeague": "Aller à la ligue",
     "alreadyMember": "Vous êtes déjà membre de cette ligue.",
     "expired": "Ce lien d'invitation a expiré.",
