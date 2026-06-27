@@ -937,7 +937,10 @@
   "update": {
     "available": "Segh chu' tu'lu'",
     "reload": "yItagh",
-    "dismiss": "yIbuSQo'"
+    "dismiss": "yIbuSQo'",
+    "downloading": "lucheltaH",
+    "install": "yIchel",
+    "installPrompt": "lo'meH yIchel"
   },
   "cron": {
     "title": "Qu'mey So'",

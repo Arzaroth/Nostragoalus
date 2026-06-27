@@ -937,7 +937,10 @@
   "update": {
     "available": "A new version is available",
     "reload": "Reload",
-    "dismiss": "Dismiss"
+    "dismiss": "Dismiss",
+    "downloading": "Downloading update…",
+    "install": "Install",
+    "installPrompt": "Install the app for quick, full-screen access"
   },
   "cron": {
     "title": "Background tasks",

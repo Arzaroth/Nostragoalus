@@ -937,7 +937,10 @@
   "update": {
     "available": "Une nouvelle version est disponible",
     "reload": "Recharger",
-    "dismiss": "Ignorer"
+    "dismiss": "Ignorer",
+    "downloading": "Téléchargement de la mise à jour…",
+    "install": "Installer",
+    "installPrompt": "Installez l'application pour un accès rapide en plein écran"
   },
   "cron": {
     "title": "Tâches de fond",
