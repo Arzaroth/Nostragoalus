@@ -1,6 +1,6 @@
 import { requireUser } from '../../utils/auth-guards'
 import { unfurlLink } from '../../utils/chat/unfurl'
-import type { LinkPreviewDTO } from '../../../shared/types/chat'
+import type { LinkPreviewDTO } from '#shared/types/chat'
 
 // Fetch open-graph metadata for a URL the client pulled out of a (locally
 // decrypted) chat message, so it can show a collapsible link preview. Auth-gated

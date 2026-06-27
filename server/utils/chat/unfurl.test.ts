@@ -31,13 +31,21 @@ describe('isBlockedAddress', () => {
     expect(isBlockedAddress('172.32.0.1')).toBe(false) // just outside 172.16/12
   })
   it('blocks IPv6 loopback, link-local, unique-local and mapped private', () => {
-    for (const ip of ['::1', '::', 'fe80::1', 'fc00::1', 'fd12::3', '::ffff:127.0.0.1']) {
+    for (const ip of ['::1', '::', 'fe80::1', 'fea0::1', 'fc00::1', 'fd12::3', '::ffff:127.0.0.1']) {
       expect(isBlockedAddress(ip)).toBe(true)
     }
   })
-  it('allows a public IPv6 and a mapped public IPv4', () => {
+  it('blocks IPv4-mapped/compatible private addresses in non-dotted spellings', () => {
+    // The same loopback as ::ffff:127.0.0.1 written hex, fully expanded, and as a
+    // bare IPv4-compatible address - all must be caught, not just the dotted form.
+    for (const ip of ['::ffff:7f00:1', '0:0:0:0:0:ffff:127.0.0.1', '::127.0.0.1', '::ffff:10.0.0.1']) {
+      expect(isBlockedAddress(ip)).toBe(true)
+    }
+  })
+  it('allows a public IPv6 and a mapped public IPv4 (dotted and hex)', () => {
     expect(isBlockedAddress('2606:2800:220:1:248:1893:25c8:1946')).toBe(false)
     expect(isBlockedAddress('::ffff:93.184.216.34')).toBe(false)
+    expect(isBlockedAddress('::ffff:5db8:d822')).toBe(false) // hex spelling of 93.184.216.34
   })
   it('blocks anything unparseable (fail closed)', () => {
     expect(isBlockedAddress('not-an-ip')).toBe(true)
@@ -81,6 +89,17 @@ describe('parseLinkMeta', () => {
     expect(parseLinkMeta(html, 'https://x.test/', 'https://x.test/').title).toBe("A's ❤ <b>")
   })
 
+  it('decodes a generic decimal entity that is not the apostrophe special-case', () => {
+    const html = `<meta property="og:title" content="&#65;&#66;C">`
+    expect(parseLinkMeta(html, 'https://x.test/', 'https://x.test/').title).toBe('ABC')
+  })
+
+  it('drops an og:image whose URL fails to parse', () => {
+    // `http://[` throws in new URL(), exercising the image catch -> null path.
+    const html = `<meta property="og:image" content="http://[">`
+    expect(parseLinkMeta(html, 'https://x.test/', 'https://x.test/').image).toBeNull()
+  })
+
   it('clamps long fields', () => {
     const long = 'x'.repeat(500)
     const out = parseLinkMeta(`<meta property="og:title" content="${long}">`, 'https://x.test/', 'https://x.test/')
@@ -99,6 +118,31 @@ describe('unfurlLink', () => {
     cycleGet.mockResolvedValue(res('<meta property="og:title" content="Hi">'))
     const out = await unfurlLink('https://example.com/p')
     expect(out.title).toBe('Hi')
+  })
+
+  it('connects to the validated IP, carrying the hostname as SNI and Host', async () => {
+    cycleGet.mockResolvedValue(res('<title>Pinned</title>'))
+    await unfurlLink('https://example.com/p?q=1')
+    expect(cycleGet).toHaveBeenCalledWith(
+      'https://93.184.216.34/p?q=1',
+      expect.objectContaining({ serverName: 'example.com', headers: expect.objectContaining({ Host: 'example.com' }) }),
+    )
+  })
+
+  it('brackets an IPv6 connect host and still pins by IP', async () => {
+    lookup.mockResolvedValue([{ address: '2606:2800:220:1:248:1893:25c8:1946', family: 6 }])
+    cycleGet.mockResolvedValue(res('<title>v6</title>'))
+    await unfurlLink('https://v6.test/p')
+    expect(cycleGet).toHaveBeenCalledWith(
+      'https://[2606:2800:220:1:248:1893:25c8:1946]/p',
+      expect.objectContaining({ serverName: 'v6.test' }),
+    )
+  })
+
+  it('does not set an SNI override for a literal IP host', async () => {
+    cycleGet.mockResolvedValue(res('<title>IP</title>'))
+    await unfurlLink('http://93.184.216.34/p')
+    expect(cycleGet).toHaveBeenCalledWith('http://93.184.216.34/p', expect.objectContaining({ serverName: undefined }))
   })
 
   it('follows a redirect to a final page', async () => {

@@ -1,16 +1,19 @@
 import { promises as dns } from 'node:dns'
 import { isIP } from 'node:net'
 import { CHROME_JA3, CHROME_UA, cycleGet, cycleHeader } from '../providers/cycle-tls'
-import type { LinkPreviewDTO } from '../../../shared/types/chat'
+import type { LinkPreviewDTO } from '#shared/types/chat'
 
 // Server-side link unfurl for chat previews. The chat is end-to-end encrypted, so
 // the client extracts a URL from a message it decrypted locally and asks us to
 // fetch the page's open-graph metadata: the URL reaches the server, never the
 // message text. Because we fetch an attacker-influenced URL, this is an SSRF sink
 // and is guarded accordingly - every hop's host is resolved and rejected if it
-// points at a private/loopback/link-local address, redirects are followed by hand
-// (so a public host can't bounce us to an internal one), the response is capped,
-// and only text/html is read. Results (including misses) are cached in memory.
+// points at a private/loopback/link-local address, and we then connect to the very
+// IP we validated (SNI + Host carry the original name so vhosts still resolve) so a
+// DNS rebind can't swap in an internal target between the check and the fetch.
+// Redirects are followed by hand (so a public host can't bounce us to an internal
+// one), the buffered body is truncated, and only text/html is read. Results
+// (including misses) are cached in memory.
 //
 // The fetch goes through the shared cycletls uTLS engine with a browser JA3, not
 // Node's fetch: many sites (Cloudflare-class WAFs, e.g. 9gag) fingerprint the TLS
@@ -46,13 +49,34 @@ function isPrivateIPv4(ip: string): boolean {
   return false
 }
 
+// Expand a (valid) IPv6 address - only reached for net.isIP === 6 - into its eight
+// 16-bit hextets, normalising the compressed `::` form and any embedded dotted-IPv4
+// tail. Normalising first means an alternate spelling of the same address (e.g.
+// `::ffff:7f00:1` vs `::ffff:127.0.0.1`) can't dodge the range checks below.
+function expandIPv6(ip: string): number[] {
+  let a = ip.toLowerCase()
+  // A trailing dotted IPv4 (mapped/compatible forms) -> two hextets.
+  const v4 = a.match(/(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/)
+  if (v4) {
+    const o = v4.slice(1, 5).map(Number)
+    a = a.slice(0, v4.index) + ((o[0]! << 8) | o[1]!).toString(16) + ':' + ((o[2]! << 8) | o[3]!).toString(16)
+  }
+  const [head, tail] = a.split('::')
+  const left = head ? head.split(':') : []
+  const right = tail ? tail.split(':') : []
+  const groups = tail !== undefined ? [...left, ...Array(8 - left.length - right.length).fill('0'), ...right] : left
+  return groups.map((g) => parseInt(g, 16))
+}
+
 function isPrivateIPv6(ip: string): boolean {
-  const a = ip.toLowerCase()
-  if (a === '::1' || a === '::') return true
-  if (a.startsWith('fe8') || a.startsWith('fe9') || a.startsWith('fea') || a.startsWith('feb')) return true // fe80::/10
-  if (a.startsWith('fc') || a.startsWith('fd')) return true // unique-local fc00::/7
-  const mapped = a.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/)
-  if (mapped) return isPrivateIPv4(mapped[1]!)
+  const g = expandIPv6(ip)
+  // IPv4-mapped (::ffff:a.b.c.d) and IPv4-compatible/loopback (::a.b.c.d, ::1, ::):
+  // defer to the IPv4 ranges (which already block 0.0.0.0 and 127/8).
+  if (g.slice(0, 5).every((x) => x === 0) && (g[5] === 0xffff || g[5] === 0)) {
+    return isPrivateIPv4(`${g[6]! >> 8}.${g[6]! & 0xff}.${g[7]! >> 8}.${g[7]! & 0xff}`)
+  }
+  if ((g[0]! & 0xffc0) === 0xfe80) return true // fe80::/10 link-local
+  if ((g[0]! & 0xfe00) === 0xfc00) return true // fc00::/7 unique-local
   return false
 }
 
@@ -65,18 +89,27 @@ export function isBlockedAddress(ip: string): boolean {
   return true
 }
 
-async function assertPublicHost(hostname: string): Promise<void> {
+// Resolve a host to one validated public IP, or throw if it (or any address it
+// resolves to) is private/blocked. Returns the IP to connect to so the fetch hits
+// the exact address the guard approved - not a re-resolution that could differ.
+async function resolvePublicAddress(hostname: string): Promise<{ ip: string; family: number; literal: boolean }> {
   const host = hostname.toLowerCase()
   if (host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local') || host.endsWith('.internal')) {
     throw new Error('blocked host')
   }
-  if (isIP(hostname)) {
+  const literalFamily = isIP(hostname)
+  if (literalFamily) {
     if (isBlockedAddress(hostname)) throw new Error('blocked address')
-    return
+    return { ip: hostname, family: literalFamily, literal: true }
   }
   const addrs = await dns.lookup(hostname, { all: true })
   if (!addrs.length) throw new Error('unresolved host')
+  // Validate every address the name resolves to (fail closed), then connect to one
+  // of them by IP below - so a low-TTL rebind can't return a public IP here and a
+  // private one to the fetch.
   for (const a of addrs) if (isBlockedAddress(a.address)) throw new Error('blocked address')
+  const chosen = addrs[0]!
+  return { ip: chosen.address, family: chosen.family, literal: false }
 }
 
 async function safeFetchHtml(initial: string): Promise<{ finalUrl: string; html: string } | null> {
@@ -84,13 +117,19 @@ async function safeFetchHtml(initial: string): Promise<{ finalUrl: string; html:
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
     const u = new URL(current)
     if (u.protocol !== 'http:' && u.protocol !== 'https:') return null
-    await assertPublicHost(u.hostname)
     // Redirects are not followed by cycletls (disableRedirect) so we validate each
     // hop's host ourselves; the engine has its own request timeout.
-    const res = await cycleGet(current, {
+    const { ip, family, literal } = await resolvePublicAddress(u.hostname)
+    // Connect to the validated IP. For a resolved name, the original hostname rides
+    // along as SNI (cert match) and as the Host header (vhost routing) so the fetch
+    // is identical to one aimed at the name - minus the rebind window.
+    const connectHost = family === 6 ? `[${ip}]` : ip
+    const connectUrl = `${u.protocol}//${connectHost}${u.port ? `:${u.port}` : ''}${u.pathname}${u.search}`
+    const res = await cycleGet(connectUrl, {
       ja3: CHROME_JA3,
       userAgent: CHROME_UA,
-      headers: { accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' },
+      headers: { accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', Host: u.host },
+      serverName: literal ? undefined : u.hostname,
       disableRedirect: true,
     })
     const headers = res.headers as Record<string, unknown> | undefined
