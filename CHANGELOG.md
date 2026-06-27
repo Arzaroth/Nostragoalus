@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+- **Link previews work again**: a change in 1.42.0 made the server fetch previews in a way that many sites (Cloudflare-fronted ones like 9gag) reject, so previews silently came back blank. They now load again, and the private/internal-host protection stays in place.
+
 ## [1.42.0] - 2026-06-28
 
 ### Added

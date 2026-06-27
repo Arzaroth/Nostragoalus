@@ -1179,6 +1179,17 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
 ### Deferred from the feature-treatment review (worktree-chat-more)
 
+- [ ] Link-unfurl has a DNS-rebinding TOCTOU: `assertPublicHost` resolves the
+      hostname and rejects private addresses, but cycletls re-resolves the hostname
+      itself when it connects, so a low-TTL attacker domain can pass the guard as
+      public and resolve to an internal IP at fetch time. Pinning to the validated
+      IP was tried (1.42.0) and reverted (1.42.1): cycletls ignores a Host override
+      and CDN/vhost edges 403 a direct-IP request, breaking previews for the
+      Cloudflare-class sites this feature targets. Closing it needs an IP-pinning
+      fetch engine that ALSO defeats TLS fingerprinting (cycletls has neither a
+      connect-by-IP option nor Host-header support); reassess if such an engine
+      appears, or front the unfurl fetch with an egress proxy that blocks RFC1918.
+      The literal-IP and resolve-time private-host blocks still hold.
 - [ ] Link-unfurl response is byte-capped only AFTER cycletls buffers the whole
       body (`(await res.text()).slice(0, MAX_BYTES)`): MAX_BYTES bounds what we
       parse, not what we download, so a huge text/html response is fully resident
