@@ -36,6 +36,7 @@
     "@vueuse/core": "^14.3.0",
     "@vueuse/integrations": "^14.3.0",
     "@vueuse/nuxt": "^14.3.0",
+    "aws4fetch": "^1.0.20",
     "better-auth": "^1.6.18",
     "croner": "^10.0.1",
     "cycletls": "2.0.5",
