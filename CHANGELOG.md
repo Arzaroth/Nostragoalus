@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [1.42.0] - 2026-06-28
+
 ### Added
 - **Online status on avatars**: a dot shows whether someone is around - green when they're active, amber when they're online but idle, nothing when offline - everywhere their avatar appears.
 - **Threads**: open a message's thread to reply in a focused side conversation that stays out of the main room; a "N replies" link shows when a thread has activity. This is separate from a plain reply, which still quotes the message inline in the room.
