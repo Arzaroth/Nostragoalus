@@ -4,6 +4,8 @@ import { chatAttachment, chatMessage } from '../../../db/schema'
 import { ForbiddenError, NotFoundError } from '../errors'
 import { getMembership } from '../leagues/service'
 import type { ChatAttachmentDTO } from '../../../shared/types/chat'
+import type { StorageDriver } from '../storage/driver'
+import { getChatImage, resolveStorage } from '../storage'
 
 // The images on each of these messages (idx-ordered), so a room listing can
 // describe them without hauling the multi-megabyte ciphertext along. Messages
@@ -38,11 +40,13 @@ export async function getAttachmentCiphertext(
   messageId: string,
   idx: number,
   userId: string,
+  driver?: StorageDriver,
 ): Promise<{ ciphertext: string; epoch: number }> {
   const rows = await db
     .select({
       leagueId: chatMessage.leagueId,
       ciphertext: chatAttachment.ciphertext,
+      storageKey: chatAttachment.storageKey,
       epoch: chatAttachment.epoch,
       moderation: chatMessage.moderationState,
     })
@@ -57,7 +61,10 @@ export async function getAttachmentCiphertext(
   if (rows[0].moderation === 'REMOVED' || (rows[0].moderation === 'PENDING' && !isAdmin)) {
     throw new NotFoundError('attachment not found')
   }
-  return { ciphertext: rows[0].ciphertext, epoch: rows[0].epoch }
+  // Legacy rows keep the ciphertext in the column; migrated rows hold a storage key
+  // (the CHECK guarantees exactly one). The returned wire shape is identical either way.
+  const ciphertext = rows[0].ciphertext ?? new TextDecoder().decode(await getChatImage(resolveStorage(driver), rows[0].storageKey!))
+  return { ciphertext, epoch: rows[0].epoch }
 }
 
 export interface RoomMediaItem {

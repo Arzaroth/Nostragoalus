@@ -3,6 +3,7 @@ import { relations, sql } from 'drizzle-orm'
 import {
   type AnyPgColumn,
   boolean,
+  check,
   index,
   integer,
   jsonb,
@@ -978,10 +979,17 @@ export const chatAttachment = pgTable(
       .references(() => chatMessage.id, { onDelete: 'cascade' }),
     idx: integer('idx').notNull().default(0),
     epoch: integer('epoch').notNull().default(1),
-    ciphertext: text('ciphertext').notNull(),
+    // Exactly one holds the encrypted image: ciphertext is the legacy in-DB blob;
+    // storageKey points at the object in the storage backend (fs/s3). The CHECK
+    // enforces the one-of in both the legacy and migrated states.
+    ciphertext: text('ciphertext'),
+    storageKey: text('storage_key'),
     byteSize: integer('byte_size').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [primaryKey({ columns: [t.messageId, t.idx] })],
+  (t) => [
+    primaryKey({ columns: [t.messageId, t.idx] }),
+    check('chat_attachment_blob_xor', sql`num_nonnulls(${t.ciphertext}, ${t.storageKey}) = 1`),
+  ],
 )
 
