@@ -223,6 +223,14 @@ describe('unfurlLink', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
+  it('caches a miss too (briefly), so it is not re-fetched immediately', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(res('nope', { status: 404 }))
+    vi.stubGlobal('fetch', fetchMock)
+    expect((await unfurlLink('https://example.com/miss')).title).toBeNull()
+    expect((await unfurlLink('https://example.com/miss')).title).toBeNull()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
   it('evicts the oldest entry once the cache is full', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(res('<title>x</title>')))
     for (let i = 0; i < 501; i++) await unfurlLink(`https://example.com/p${i}`)
