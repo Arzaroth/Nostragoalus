@@ -2,7 +2,7 @@
 import { REACTION_EMOJIS, type ReactionEmoji } from '#shared/reactions'
 import { MAX_MESSAGE_TEXT_LENGTH } from '#shared/types/chat'
 import { extractMentions } from '~/utils/chat-content'
-import { ACCEPTED_IMAGE_TYPES, compressToWebp } from '~/composables/useChatImage'
+import { ACCEPTED_IMAGE_TYPES, compressToWebp, imageMimeForBytes } from '~/composables/useChatImage'
 import type { DecryptedMessage, PendingImage } from '~/composables/useLeagueChat'
 // End-to-end encrypted league chat. The league-global room (matchId null) or a
 // per-match thread. All crypto is client-side; the server only relays ciphertext.
@@ -239,7 +239,7 @@ function startEdit(m: DecryptedMessage) {
     void chat.loadAttachment(m.id, a.idx, a.epoch).then((bytes) => {
       if (!bytes || editingId.value !== m.id) return
       const e = editExisting.value.find((x) => x.idx === a.idx)
-      if (e) e.url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'image/webp' }))
+      if (e) e.url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: imageMimeForBytes(bytes) }))
     })
   }
   // Focus the edit field so the user can type right away. The edit box lives
@@ -308,7 +308,7 @@ async function onEditFiles(files: File[]) {
       continue
     }
     editAdd.value = [...editAdd.value, { bytes: compressed.bytes, byteSize: compressed.byteSize }]
-    editAddUrls.value = [...editAddUrls.value, URL.createObjectURL(new Blob([compressed.bytes as BlobPart], { type: 'image/webp' }))]
+    editAddUrls.value = [...editAddUrls.value, URL.createObjectURL(new Blob([compressed.bytes as BlobPart], { type: imageMimeForBytes(compressed.bytes) }))]
   }
 }
 function removeEditAdd(i: number) {
@@ -487,7 +487,7 @@ async function addFiles(files: File[]) {
       continue
     }
     pending.value = [...pending.value, { bytes: compressed.bytes, byteSize: compressed.byteSize }]
-    pendingUrls.value = [...pendingUrls.value, URL.createObjectURL(new Blob([compressed.bytes as BlobPart], { type: 'image/webp' }))]
+    pendingUrls.value = [...pendingUrls.value, URL.createObjectURL(new Blob([compressed.bytes as BlobPart], { type: imageMimeForBytes(compressed.bytes) }))]
   }
 }
 function removePending(i: number) {
@@ -541,23 +541,23 @@ onUnmounted(() => {
   revokeEditUrls()
 })
 
-// A pick shared "to chat" lands in this (global) room's composer tray for review.
+// A pick shared "to chat" lands in the ACTIVE room's composer tray for review, so
+// it honors whichever tab is open (league or a match) rather than always the
+// league room. The dock shows one panel at a time, so only its visible room takes
+// it; re-checks when the panel becomes active (the dock was opened by the share).
 const shareInbox = useChatShareInbox()
-watch(
-  shareInbox.pending,
-  (p) => {
-    if (!p || props.matchId !== null) return // only the league (global) room takes it
-    const taken = shareInbox.take()
-    if (!taken) return
-    pending.value = [...pending.value, taken.image]
-    pendingUrls.value = [
-      ...pendingUrls.value,
-      URL.createObjectURL(new Blob([taken.image.bytes as BlobPart], { type: 'image/webp' })),
-    ]
-    if (taken.caption && !draft.value.trim()) draft.value = taken.caption
-  },
-  { immediate: true },
-)
+function tryTakeShare() {
+  if (!shareInbox.pending.value || !props.active) return
+  const taken = shareInbox.take()
+  if (!taken) return
+  pending.value = [...pending.value, taken.image]
+  pendingUrls.value = [
+    ...pendingUrls.value,
+    URL.createObjectURL(new Blob([taken.image.bytes as BlobPart], { type: imageMimeForBytes(taken.image.bytes) })),
+  ]
+  if (taken.caption && !draft.value.trim()) draft.value = taken.caption
+}
+watch([shareInbox.pending, () => props.active], tryTakeShare, { immediate: true })
 
 // Enable flow (admins), behind the legal-cover warning.
 const showWarning = ref(false)

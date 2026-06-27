@@ -2,6 +2,7 @@
 import { REACTION_EMOJIS, type ReactionEmoji } from '#shared/reactions'
 import type { DecryptedMessage } from '~/composables/useLeagueChat'
 import { chatImageFilename, toPng } from '~/utils/image'
+import { imageMimeForBytes } from '~/composables/useChatImage'
 
 // A full-screen image viewer shared by the message thumbnails and the room media
 // gallery. It is driven by a list of {messageId, idx, epoch} plus an index, so it
@@ -69,7 +70,7 @@ async function showCurrent(): Promise<void> {
     loading.value = false
     return
   }
-  const blob = new Blob([bytes as BlobPart], { type: 'image/webp' })
+  const blob = new Blob([bytes as BlobPart], { type: imageMimeForBytes(bytes) })
   const url = URL.createObjectURL(blob)
   cache.set(k, { blob, url })
   src.value = url
