@@ -82,11 +82,11 @@ const panelStyle = computed(() => {
 })
 
 // "Share a pick to chat" asks the dock to open the global room; the panel there
-// picks the queued image into its composer tray.
+// picks the queued image into its composer tray. Keep the current scope so a pick
+// shared while the Match tab is open lands in the match room, not the league one.
 const shareInbox = useChatShareInbox()
 watch(shareInbox.requestOpen, () => {
   collapsed.value = false
-  scope.value = 'global'
 })
 
 const roomsOpen = ref(false)

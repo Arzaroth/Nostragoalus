@@ -4,6 +4,7 @@
 // shown as a small thumbnail; clicking one asks the parent to open the shared
 // lightbox at that image. The plaintext only ever exists in this browser.
 import type { ChatAttachmentDTO } from '#shared/types/chat'
+import { imageMimeForBytes } from '~/composables/useChatImage'
 
 const props = defineProps<{
   messageId: string
@@ -41,7 +42,7 @@ async function loadAll(): Promise<void> {
         thumb.loading = false
         return
       }
-      const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'image/webp' }))
+      const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: imageMimeForBytes(bytes) }))
       urls.push(url)
       thumb.src = url
       thumb.loading = false

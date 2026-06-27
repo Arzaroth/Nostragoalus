@@ -28,10 +28,21 @@ function loadImage(file: File): Promise<HTMLImageElement> {
   })
 }
 
-// Returns the webp bytes (ready to encrypt) and the original byte size, or null if
-// the file is not an acceptable image.
+// The blob mime for decrypted attachment bytes: GIFs are stored unchanged (to keep
+// them animated), everything else is webp. Sniffs the GIF magic ("GIF8").
+export function imageMimeForBytes(bytes: Uint8Array): string {
+  return bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x38 ? 'image/gif' : 'image/webp'
+}
+
+// Returns the prepared bytes (ready to encrypt) and the original byte size, or null
+// if the file is not an acceptable image. Most images are downscaled + re-encoded
+// to webp; animated GIFs are kept as-is, since a canvas re-encode would flatten
+// the animation to a single frame.
 export async function compressToWebp(file: File): Promise<{ bytes: Uint8Array; byteSize: number } | null> {
   if (!isAcceptedImage(file)) return null
+  if (file.type === 'image/gif') {
+    return { bytes: new Uint8Array(await file.arrayBuffer()), byteSize: file.size }
+  }
   const img = await loadImage(file)
   const scale = Math.min(1, MAX_DIMENSION / Math.max(img.width, img.height))
   const canvas = document.createElement('canvas')
