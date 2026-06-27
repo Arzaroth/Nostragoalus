@@ -71,6 +71,59 @@ function loadFlag(code: string | null): Promise<string | null> {
   return cached
 }
 
+// Bundled fonts cover Latin/Cyrillic/Greek (Inter) and Thai; a username in another
+// script (CJK, Arabic, Hebrew, Indic...) would render as tofu boxes. satori asks
+// for a font per uncovered script via loadAdditionalAsset; fetch the matching Noto
+// subset from Google Fonts (just the needed glyphs), cached for the process. A
+// failure resolves to no font (the glyph tofus, as before) - never a broken render.
+const SCRIPT_FAMILY: Record<string, string> = {
+  ja: 'Noto Sans JP',
+  ko: 'Noto Sans KR',
+  zh: 'Noto Sans SC',
+  'zh-tw': 'Noto Sans TC',
+  'zh-hk': 'Noto Sans HK',
+  th: 'Noto Sans Thai',
+  ar: 'Noto Sans Arabic',
+  he: 'Noto Sans Hebrew',
+  hi: 'Noto Sans Devanagari',
+  bn: 'Noto Sans Bengali',
+  ta: 'Noto Sans Tamil',
+  unknown: 'Noto Sans',
+}
+const fallbackFontCache = new Map<string, Promise<ShareFont[]>>()
+async function fetchGoogleFont(family: string, text: string): Promise<Buffer | null> {
+  try {
+    // No browser UA, so Google serves a TrueType src (satori can't parse woff2).
+    const css = await fetch(
+      `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}&text=${encodeURIComponent(text)}`,
+    ).then((r) => (r.ok ? r.text() : ''))
+    const url = css.match(/src:\s*url\(([^)]+)\)/)?.[1]
+    if (!url) return null
+    const res = await fetch(url)
+    if (!res.ok) return null
+    return Buffer.from(await res.arrayBuffer())
+  } catch {
+    return null
+  }
+}
+function loadFallbackFont(code: string, text: string): Promise<ShareFont[]> {
+  const family = SCRIPT_FAMILY[code.toLowerCase()] ?? SCRIPT_FAMILY[code.split('-')[0]!.toLowerCase()] ?? 'Noto Sans'
+  const key = `${family}::${text}`
+  let cached = fallbackFontCache.get(key)
+  if (!cached) {
+    cached = (async () => {
+      const data = await fetchGoogleFont(family, text)
+      return data ? [{ name: family, data, weight: 400 as const, style: 'normal' as const }] : []
+    })()
+    fallbackFontCache.set(key, cached)
+  }
+  return cached
+}
+async function shareLoadAdditionalAsset(code: string, segment: string): Promise<ShareFont[]> {
+  if (code === 'emoji' || !segment.trim()) return []
+  return loadFallbackFont(code, segment)
+}
+
 // Public, crawler-facing OG image. The signed token is the only authorization -
 // no session - so a forged token (or one whose prediction is gone) simply 404s.
 export default defineEventHandler(async (event) => {
@@ -100,7 +153,7 @@ export default defineEventHandler(async (event) => {
     { host: getRequestURL(event).host, markDataUri, homeFlag, awayFlag },
     shareTranslator(payload.l),
   )
-  const png = await renderShareCardPng(element, fonts)
+  const png = await renderShareCardPng(element, fonts, undefined, undefined, shareLoadAdditionalAsset)
 
   setResponseHeader(event, 'content-type', 'image/png')
   // A finished result is immutable; a pre-kickoff/live card can change soon (a
