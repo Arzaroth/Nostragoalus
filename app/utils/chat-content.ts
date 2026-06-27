@@ -14,7 +14,7 @@ export type ChatToken =
 // A mention token `@<id>` (id: anything but whitespace, angle brackets or @), or
 // an http(s) URL run.
 const TOKEN_RE = /(@<[^\s<>@]+>)|(\bhttps?:\/\/[^\s<]+)/gi
-// Trailing prose punctuation pulled back out of a URL, as in the old linkify.
+// Trailing prose punctuation pulled back out of a URL.
 const TRAILING = /[.,!?;:'")\]}]+$/
 const IMAGE_EXT = /\.(png|jpe?g|gif|webp|avif|bmp|svg)$/i
 
@@ -61,4 +61,25 @@ export function extractMentions(text: string): string[] {
   const ids = new Set<string>()
   for (const m of text.matchAll(/@<([^\s<>@]+)>/g)) ids.add(m[1]!)
   return [...ids]
+}
+
+export function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+// Composer text is written/displayed with @DisplayName mentions; map each one back
+// to a stable @<id> token (rename-proof) for the wire/stored form. Longest names
+// first so "@John Doe" wins over "@John". The inverse of decodeMentions.
+export function encodeMentions(text: string, members: readonly { userId: string; name: string }[]): string {
+  let out = text
+  for (const m of [...members].sort((a, b) => b.name.length - a.name.length)) {
+    out = out.replace(new RegExp(`(^|\\s)@${escapeRegExp(m.name)}(?=\\s|$|[^\\w])`, 'g'), `$1@<${m.userId}>`)
+  }
+  return out
+}
+
+// Put a stored message back into the edit box as @DisplayName (and used by search
+// so a query matches the visible name). Unknown ids fall back to unknownLabel.
+export function decodeMentions(text: string, names: Record<string, string>, unknownLabel: string): string {
+  return text.replace(/@<([^\s<>@]+)>/g, (_, id) => `@${names[id] ?? unknownLabel}`)
 }

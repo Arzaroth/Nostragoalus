@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseChatContent, firstPreviewLink, extractMentions } from './chat-content'
+import { parseChatContent, firstPreviewLink, extractMentions, encodeMentions, decodeMentions, escapeRegExp } from './chat-content'
 
 describe('parseChatContent', () => {
   it('returns a single text token for plain text', () => {
@@ -81,5 +81,44 @@ describe('extractMentions', () => {
 
   it('returns an empty array when there are no mentions', () => {
     expect(extractMentions('nobody here')).toEqual([])
+  })
+})
+
+describe('escapeRegExp', () => {
+  it('escapes regex metacharacters', () => {
+    expect(escapeRegExp('a.b*c+(d)')).toBe('a\\.b\\*c\\+\\(d\\)')
+  })
+})
+
+describe('encodeMentions', () => {
+  const members = [
+    { userId: 'u1', name: 'John' },
+    { userId: 'u2', name: 'John Doe' },
+  ]
+
+  it('maps a display-name mention to its stable @<id> token', () => {
+    expect(encodeMentions('hi @John bye', members)).toBe('hi @<u1> bye')
+  })
+
+  it('prefers the longest matching name', () => {
+    expect(encodeMentions('@John Doe rocks', members)).toBe('@<u2> rocks')
+  })
+
+  it('escapes regex characters in a name', () => {
+    expect(encodeMentions('ping @A.B!', [{ userId: 'u3', name: 'A.B' }])).toBe('ping @<u3>!')
+  })
+
+  it('returns the text unchanged when no member matches', () => {
+    expect(encodeMentions('hello @Nobody', members)).toBe('hello @Nobody')
+  })
+})
+
+describe('decodeMentions', () => {
+  it('renders @<id> tokens back to @DisplayName', () => {
+    expect(decodeMentions('hi @<u1>', { u1: 'John' }, '?')).toBe('hi @John')
+  })
+
+  it('falls back to the unknown label for an unmapped id', () => {
+    expect(decodeMentions('hi @<u9>', { u1: 'John' }, 'Someone')).toBe('hi @Someone')
   })
 })

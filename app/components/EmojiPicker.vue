@@ -18,7 +18,9 @@ const shown = computed<EmojiItem[]>(() => {
   return EMOJI_CATEGORIES.find((c) => c.key === activeCat.value)?.items ?? []
 })
 
-onClickOutside(root, () => emit('close'))
+// Ignore the toggle button: without this its own click would re-open the picker
+// right after onClickOutside closes it, so the button could never close it.
+onClickOutside(root, () => emit('close'), { ignore: ['[data-emoji-toggle]'] })
 onMounted(() => {
   nextTick(() => {
     const el = searchEl.value?.$el

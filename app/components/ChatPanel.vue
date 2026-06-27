@@ -2,7 +2,7 @@
 import { onKeyStroke } from '@vueuse/core'
 import { REACTION_EMOJIS, type ReactionEmoji } from '#shared/reactions'
 import { MAX_MESSAGE_TEXT_LENGTH } from '#shared/types/chat'
-import { extractMentions } from '~/utils/chat-content'
+import { decodeMentions, encodeMentions, extractMentions } from '~/utils/chat-content'
 import { ACCEPTED_IMAGE_TYPES, compressToWebp, imageMimeForBytes } from '~/composables/useChatImage'
 import type { DecryptedMessage, PendingImage } from '~/composables/useLeagueChat'
 // End-to-end encrypted league chat. The league-global room (matchId null) or a
@@ -199,7 +199,7 @@ function openThreadFor(m: DecryptedMessage) {
 async function submitThreadReply() {
   const threadId = threadParentId.value
   if (!threadId || !threadDraft.value.trim() || threadOverLimit.value) return
-  const text = encodeMentions(threadDraft.value)
+  const text = encodeMentions(threadDraft.value, detail.data.value?.members ?? [])
   threadDraft.value = ''
   threadScrolls.value = false
   await chat.send(text, { threadId, mentions: extractMentions(text) })
@@ -233,7 +233,7 @@ function revokeEditUrls() {
 function startEdit(m: DecryptedMessage) {
   revokeEditUrls()
   editingId.value = m.id
-  editDraft.value = decodeMentions(m.text ?? '')
+  editDraft.value = decodeMentions(m.text ?? '', names.value, t('chat.unknownUser'))
   editAdd.value = []
   editExisting.value = m.attachments.map((a) => ({ idx: a.idx, epoch: a.epoch, url: null, removed: false }))
   // Load each existing image's preview (decrypted locally) for the remove toggles.
@@ -333,7 +333,7 @@ async function saveEdit() {
   // A message must keep some content: text, a surviving image or a new one.
   if (!editDraft.value.trim() && editKept.value === 0) return
   if (editOverLimit.value) return
-  const text = encodeMentions(editDraft.value)
+  const text = encodeMentions(editDraft.value, detail.data.value?.members ?? [])
   const addImages = editAdd.value
   revokeEditUrls()
   editingId.value = null
@@ -427,24 +427,6 @@ function applyMention(member: { userId: string; name: string }) {
     ta?.setSelectionRange(pos, pos)
   })
 }
-function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-// Composer text is written/displayed with @DisplayName mentions; map each one back
-// to a stable @<id> token (rename-proof) for the wire/stored form. Longest names
-// first so "@John Doe" wins over "@John".
-function encodeMentions(text: string): string {
-  const members = [...(detail.data.value?.members ?? [])].sort((a, b) => b.name.length - a.name.length)
-  let out = text
-  for (const m of members) {
-    out = out.replace(new RegExp(`(^|\\s)@${escapeRegExp(m.name)}(?=\\s|$|[^\\w])`, 'g'), `$1@<${m.userId}>`)
-  }
-  return out
-}
-// The inverse, for putting a stored message back into the edit box as @DisplayName.
-function decodeMentions(text: string): string {
-  return text.replace(/@<([^\s<>@]+)>/g, (_, id) => `@${names.value[id] ?? t('chat.unknownUser')}`)
-}
 function onComposerInput() {
   chat.sendTyping()
   detectMention()
@@ -531,7 +513,7 @@ async function submit() {
   const parentId = replyTo.value?.id ?? null
   if (!draft.value.trim() && images.length === 0) return
   if (overLimit.value) return
-  const text = encodeMentions(draft.value)
+  const text = encodeMentions(draft.value, detail.data.value?.members ?? [])
   const mentions = extractMentions(text)
   mentionQuery.value = null
   draft.value = ''
@@ -684,7 +666,7 @@ const searchEl = ref<{ $el?: HTMLElement } | null>(null)
 const displayMessages = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
   if (!searchOpen.value || !q) return messages.value
-  return messages.value.filter((m) => m.text && decodeMentions(m.text).toLowerCase().includes(q))
+  return messages.value.filter((m) => m.text && decodeMentions(m.text, names.value, t('chat.unknownUser')).toLowerCase().includes(q))
 })
 function toggleSearch() {
   searchOpen.value = !searchOpen.value
@@ -1187,7 +1169,7 @@ watch(
             <input ref="fileInput" type="file" :accept="acceptImages" multiple class="hidden" @change="onFilePicked">
             <Button type="button" icon="pi pi-image" severity="secondary" text :disabled="sending || pending.length >= MAX_IMAGES" :aria-label="t('chat.image.attach')" @click="fileInput?.click()" />
             <div class="relative">
-              <Button type="button" icon="pi pi-face-smile" severity="secondary" text :aria-label="t('chat.emoji.button')" @click="emojiOpen = !emojiOpen" />
+              <Button type="button" data-emoji-toggle icon="pi pi-face-smile" severity="secondary" text :aria-label="t('chat.emoji.button')" @click="emojiOpen = !emojiOpen" />
               <div v-if="emojiOpen" class="absolute bottom-full left-0 mb-2 z-30">
                 <EmojiPicker @select="insertEmoji" @close="emojiOpen = false" />
               </div>
