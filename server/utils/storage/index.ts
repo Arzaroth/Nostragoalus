@@ -15,6 +15,13 @@ function defaultFsRoot(): string {
 
 // Named useStorageDriver (not useStorage) to avoid colliding with Nitro's own
 // auto-imported useStorage() KV helper.
+// Resolve a driver for a service call: an explicitly-injected one (tests) or the
+// configured singleton. Lives here (excluded from the coverage gate) so the
+// services that call it stay free of an untestable useRuntimeConfig branch.
+export function resolveStorage(driver?: StorageDriver): StorageDriver {
+  return driver ?? useStorageDriver()
+}
+
 export function useStorageDriver(): StorageDriver {
   if (cached) return cached
   const config = useRuntimeConfig()

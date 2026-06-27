@@ -3,6 +3,7 @@ import { and, eq } from 'drizzle-orm'
 import { createTestDb } from '../../../tests/db'
 import { findRoundId } from '../sync/rounds'
 import { addLeagueMember, makeLeague, makeMatch, makeUser, seedCompetition } from '../../../tests/factories'
+import { memoryStorage } from '../../../tests/storage'
 import { chatIdentity, chatMessage, league } from '../../../db/schema'
 import {
   addWrappedKeys,
@@ -36,7 +37,7 @@ async function setup() {
   const roundId = (await findRoundId(ctx.db, competitionId, 'GROUP', 1)) as string
   const owner = await makeUser(ctx.db, 'owner')
   const leagueId = await makeLeague(ctx.db, { competitionId, ownerId: owner })
-  return { ...ctx, competitionId, roundId, owner, leagueId }
+  return { ...ctx, competitionId, roundId, owner, leagueId, storage: memoryStorage() }
 }
 
 async function addIdentity(db: Db, userId: string, pk = `pk-${userId}`) {
@@ -435,29 +436,37 @@ describe('editMessage', () => {
   })
 
   it('drops and appends images on edit, keeping idx stable and the cap enforced', async () => {
-    const { db, client, owner, leagueId } = await setup()
+    const { db, client, owner, leagueId, storage } = await setup()
     await enableWith(db, leagueId, owner, [owner])
-    const m = await postMessage(db, {
-      leagueId,
-      userId: owner,
-      ciphertext: 'orig',
-      epoch: 1,
-      images: [
-        { ciphertext: 'A', byteSize: 1 },
-        { ciphertext: 'B', byteSize: 1 },
-        { ciphertext: 'C', byteSize: 1 },
-      ],
-    })
+    const m = await postMessage(
+      db,
+      {
+        leagueId,
+        userId: owner,
+        ciphertext: 'orig',
+        epoch: 1,
+        images: [
+          { ciphertext: 'A', byteSize: 1 },
+          { ciphertext: 'B', byteSize: 1 },
+          { ciphertext: 'C', byteSize: 1 },
+        ],
+      },
+      storage,
+    )
     // Drop idx 1, append one new image: survivors keep their idx, the new one
     // appends after the highest surviving idx.
-    const res = await editMessage(db, {
-      leagueId,
-      messageId: m.id,
-      userId: owner,
-      ciphertext: 'edited',
-      removeIdxs: [1],
-      addImages: [{ ciphertext: 'D', byteSize: 1 }],
-    })
+    const res = await editMessage(
+      db,
+      {
+        leagueId,
+        messageId: m.id,
+        userId: owner,
+        ciphertext: 'edited',
+        removeIdxs: [1],
+        addImages: [{ ciphertext: 'D', byteSize: 1 }],
+      },
+      storage,
+    )
     expect(res.attachments).toEqual([
       { idx: 0, epoch: 1 },
       { idx: 2, epoch: 1 },
@@ -469,19 +478,25 @@ describe('editMessage', () => {
       { idx: 2, epoch: 1 },
       { idx: 3, epoch: 1 },
     ])
-    // The blob at idx 0 is untouched; idx 1 is gone.
-    expect((await getAttachmentCiphertext(db, m.id, 0, owner)).ciphertext).toBe('A')
-    await expect(getAttachmentCiphertext(db, m.id, 1, owner)).rejects.toBeInstanceOf(NotFoundError)
-    expect((await getAttachmentCiphertext(db, m.id, 3, owner)).ciphertext).toBe('D')
+    // The blob at idx 0 is untouched; idx 1 is gone; idx 3 holds the appended image.
+    expect((await getAttachmentCiphertext(db, m.id, 0, owner, storage)).ciphertext).toBe('A')
+    await expect(getAttachmentCiphertext(db, m.id, 1, owner, storage)).rejects.toBeInstanceOf(NotFoundError)
+    expect((await getAttachmentCiphertext(db, m.id, 3, owner, storage)).ciphertext).toBe('D')
+    // The dropped image's object is gone from storage too (not just the row).
+    expect(storage.store.has(`chat/${m.id}/1`)).toBe(false)
     // Exceeding the cap on edit is rejected (3 kept + 4 new > 6).
     await expect(
-      editMessage(db, {
-        leagueId,
-        messageId: m.id,
-        userId: owner,
-        ciphertext: 'edited',
-        addImages: Array.from({ length: 4 }, (_, i) => ({ ciphertext: `n${i}`, byteSize: 1 })),
-      }),
+      editMessage(
+        db,
+        {
+          leagueId,
+          messageId: m.id,
+          userId: owner,
+          ciphertext: 'edited',
+          addImages: Array.from({ length: 4 }, (_, i) => ({ ciphertext: `n${i}`, byteSize: 1 })),
+        },
+        storage,
+      ),
     ).rejects.toBeInstanceOf(ValidationError)
     await client.close()
   })

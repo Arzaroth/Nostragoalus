@@ -1,8 +1,12 @@
+import { randomUUID } from 'node:crypto'
 import { and, asc, count, desc, eq, inArray, isNull, lt, not } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { chatAttachment, chatIdentity, chatMessage, league, leagueChatKey, leagueMember, match, user } from '../../../db/schema'
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors'
 import { getLeague, getMembership } from '../leagues/service'
+import type { StorageDriver } from '../storage/driver'
+import { deleteChatImage, putChatImage, resolveStorage } from '../storage'
+import { chatImageKey } from '../storage/keys'
 
 // All chat content is end-to-end encrypted client-side; this service only ever
 // moves ciphertext, public keys and sealed (wrapped) group keys. It never holds
@@ -371,6 +375,7 @@ export async function postMessage(
     epoch: number
     images?: AttachmentInput[] | null
   },
+  driver?: StorageDriver,
 ): Promise<ChatMessageRow & { attachments: ChatAttachmentDTO[] }> {
   if (!opts.ciphertext) throw new ValidationError('empty message')
   if (opts.ciphertext.length > MAX_CIPHERTEXT) throw new ValidationError('message too large')
@@ -412,10 +417,32 @@ export async function postMessage(
       throw new ValidationError('reply target is not in this room')
     }
   }
+  // Pre-generate the id so each image's ciphertext can be written to the storage
+  // backend BEFORE the row insert (storage I/O must not run inside the db
+  // transaction). The bytes are the opaque base64 ciphertext stored verbatim; keys
+  // are chat/{messageId}/{idx}. Storage-before-row means a reader never finds a row
+  // pointing at a missing object.
+  const messageId = randomUUID()
+  const attachmentRows: {
+    messageId: string
+    idx: number
+    epoch: number
+    storageKey: string
+    ciphertext: null
+    byteSize: number
+  }[] = []
+  if (images.length > 0) {
+    const store = resolveStorage(driver)
+    for (let idx = 0; idx < images.length; idx += 1) {
+      const storageKey = await putChatImage(store, messageId, idx, new TextEncoder().encode(images[idx].ciphertext))
+      attachmentRows.push({ messageId, idx, epoch: opts.epoch, storageKey, ciphertext: null, byteSize: images[idx].byteSize })
+    }
+  }
   const row = await db.transaction(async (tx) => {
     const inserted = await tx
       .insert(chatMessage)
       .values({
+        id: messageId,
         leagueId: opts.leagueId,
         matchId: opts.matchId ?? null,
         parentId: opts.parentId ?? null,
@@ -436,16 +463,8 @@ export async function postMessage(
         editedAt: chatMessage.editedAt,
         createdAt: chatMessage.createdAt,
       })
-    if (images.length > 0) {
-      await tx.insert(chatAttachment).values(
-        images.map((img, idx) => ({
-          messageId: inserted[0].id,
-          idx,
-          epoch: opts.epoch,
-          ciphertext: img.ciphertext,
-          byteSize: img.byteSize,
-        })),
-      )
+    if (attachmentRows.length > 0) {
+      await tx.insert(chatAttachment).values(attachmentRows)
     }
     return inserted[0]
   })
@@ -468,6 +487,7 @@ export async function editMessage(
     addImages?: AttachmentInput[]
     removeIdxs?: number[]
   },
+  driver?: StorageDriver,
 ): Promise<{ editedAt: Date; attachments: ChatAttachmentDTO[] }> {
   if (!opts.ciphertext) throw new ValidationError('empty message')
   if (opts.ciphertext.length > MAX_CIPHERTEXT) throw new ValidationError('message too large')
@@ -493,15 +513,33 @@ export async function editMessage(
   const currentEpoch = rows[0].epoch
   const editedAt = new Date()
 
-  const attachments = await db.transaction(async (tx) => {
-    const existing = await tx
-      .select({ idx: chatAttachment.idx, epoch: chatAttachment.epoch })
-      .from(chatAttachment)
-      .where(eq(chatAttachment.messageId, opts.messageId))
-      .orderBy(asc(chatAttachment.idx))
-    const survivors = existing.filter((a) => !removeIdxs.has(a.idx))
-    if (survivors.length + addImages.length > MAX_IMAGES) throw new ValidationError('too many images')
+  // Read the current attachments outside the tx so new images can be written to the
+  // storage backend before the row insert (storage I/O must not run inside a db
+  // transaction). editMessage is author-only, so a concurrent change to this
+  // message's attachments is pathological; the (messageId, idx) PK still guards an
+  // idx collision (the insert would error and the edit retries).
+  const existing = await db
+    .select({ idx: chatAttachment.idx, epoch: chatAttachment.epoch })
+    .from(chatAttachment)
+    .where(eq(chatAttachment.messageId, opts.messageId))
+    .orderBy(asc(chatAttachment.idx))
+  const survivors = existing.filter((a) => !removeIdxs.has(a.idx))
+  if (survivors.length + addImages.length > MAX_IMAGES) throw new ValidationError('too many images')
 
+  // New images append after the surviving ones, keeping idx stable for the kept
+  // images (gaps from a removal are fine - idx is an identity, not a position).
+  let nextIdx = survivors.reduce((max, a) => Math.max(max, a.idx), -1) + 1
+  const added: { idx: number; epoch: number; storageKey: string; byteSize: number }[] = []
+  if (addImages.length > 0) {
+    const store = resolveStorage(driver)
+    for (const img of addImages) {
+      const idx = nextIdx++
+      const storageKey = await putChatImage(store, opts.messageId, idx, new TextEncoder().encode(img.ciphertext))
+      added.push({ idx, epoch: currentEpoch, storageKey, byteSize: img.byteSize })
+    }
+  }
+
+  const attachments = await db.transaction(async (tx) => {
     // The new text is sealed under the current group key, so move the stored epoch
     // to match - otherwise a later reload would decrypt with the old key and fail.
     // Kept images stay at their own epoch (the client decrypts each accordingly).
@@ -516,21 +554,25 @@ export async function editMessage(
         .where(and(eq(chatAttachment.messageId, opts.messageId), inArray(chatAttachment.idx, [...removeIdxs])))
     }
 
-    // New images append after the surviving ones, keeping idx stable for the kept
-    // images (gaps from a removal are fine - idx is an identity, not a position).
-    let nextIdx = survivors.reduce((max, a) => Math.max(max, a.idx), -1) + 1
-    const added: ChatAttachmentDTO[] = []
-    if (addImages.length > 0) {
+    if (added.length > 0) {
       await tx.insert(chatAttachment).values(
-        addImages.map((img) => {
-          const idx = nextIdx++
-          added.push({ idx, epoch: currentEpoch })
-          return { messageId: opts.messageId, idx, epoch: currentEpoch, ciphertext: img.ciphertext, byteSize: img.byteSize }
-        }),
+        added.map((a) => ({ messageId: opts.messageId, idx: a.idx, epoch: a.epoch, storageKey: a.storageKey, ciphertext: null, byteSize: a.byteSize })),
       )
     }
-    return [...survivors, ...added].sort((a, b) => a.idx - b.idx)
+    return [
+      ...survivors.map((s) => ({ idx: s.idx, epoch: s.epoch })),
+      ...added.map((a) => ({ idx: a.idx, epoch: a.epoch })),
+    ].sort((a, b) => a.idx - b.idx)
   })
+
+  // The removed images' objects are now unreferenced - drop them best-effort (a
+  // legacy in-DB attachment simply has no object, so the delete is a harmless no-op).
+  if (removeIdxs.size > 0) {
+    const store = resolveStorage(driver)
+    for (const idx of removeIdxs) {
+      await deleteChatImage(store, chatImageKey(opts.messageId, idx)).catch(() => {})
+    }
+  }
   return { editedAt, attachments }
 }
 
