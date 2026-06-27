@@ -43,15 +43,23 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   league owner or moderator (off by default, behind a trade-offs warning). Messages, replies and images
   are encrypted on members' devices with a libsodium group key, so the server only ever stores
   ciphertext and cannot read it; keys enroll silently on first use, with a one-time recovery code to
-  restore history on another device. React with emoji, reply with a quoted preview, edit or delete your
-  own messages (text and images), buffer and send several images at once, open any image full-screen to
-  cycle, copy, download (named PNG) or share it, browse a room's media gallery, see who is typing, page
+  restore history on another device. React with emoji, reply with a quoted preview, or open a message's
+  **thread** for a focused side-conversation kept out of the main room. **@mention** league members with
+  autocomplete (rename-proof, links to their profile, with a distinct unread badge on the dock), drop in
+  emoji from a searchable picker, and paste links or images to render them inline - **link-preview cards**
+  (fetched server-side, SSRF-guarded), inline images and animated GIFs. Edit or delete your
+  own messages (text and images, with arrow-key edit and a length limit), buffer and send several images
+  at once, open any image full-screen to
+  cycle, copy, download (named PNG) or share it, browse a room's media gallery, search the loaded
+  messages, see who is typing, page
   back through older history, share a pick card straight to chat, undock the window into a draggable
   panel, and mute or report others. A **Verify keys** panel shows
   per-member safety numbers to compare out-of-band (first-seen pinning, change warning), an admin can
   **rotate the key** to revoke a removed member, and members can flag a message - enough reports
   auto-hide it pending an owner/moderator's call (moderation acts on message ids and report counts,
   never on the unreadable content)
+- **Online presence**: a live dot on every avatar shows whether someone is active (green), online but
+  idle (amber) or offline, over the same WebSocket
 - Live scores over WebSocket with a pixel-art **goal celebration**; match view with possession,
   per-team match stats, team line-ups (formation, starting XI, bench and coach on a pitch),
   goal timeline with cards (incl. touchline bookings) and substitutions,
