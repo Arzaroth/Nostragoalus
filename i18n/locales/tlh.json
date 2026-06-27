@@ -117,7 +117,8 @@
     },
     "mention": { "title": "ghot yIpong", "unread": "{n} pong laDbe'lu'", "unreadOne": "wa' pong laDbe'lu'" },
     "embed": { "hideImage": "mIllogh yISo'", "showImage": "mIllogh yI'ang", "preview": "rar nuD", "hidePreview": "nuD yISo'", "showPreview": "nuD yI'ang" },
-    "thread": { "count": "{n} jangmey", "one": "wa' jang", "reply": "ghantoHDaq yIjang", "collapse": "jangmey yISo'", "placeholder": "ghantoHDaq yIjang", "empty": "jang tu'be'." }
+    "thread": { "count": "{n} jangmey", "one": "wa' jang", "reply": "ghantoHDaq yIjang", "collapse": "jangmey yISo'", "placeholder": "ghantoHDaq yIjang", "empty": "jang tu'be'." },
+    "search": { "button": "QInmey yISam", "placeholder": "QInmey ngImlu'pu' yISam", "results": "{n} rar", "one": "wa' rar", "none": "rar tu'be'", "deeper": "QInmey qan yISammeH yItoD", "close": "Sam yISoQmoH" }
   },
   "nav": {
     "matches": "may'mey",
