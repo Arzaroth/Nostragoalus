@@ -8,11 +8,14 @@ import type { LinkPreviewDTO } from '#shared/types/chat'
 // fetch the page's open-graph metadata: the URL reaches the server, never the
 // message text. Because we fetch an attacker-influenced URL, this is an SSRF sink
 // and is guarded accordingly - every hop's host is resolved and rejected if it
-// points at a private/loopback/link-local address, and we then connect to the very
-// IP we validated (SNI + Host carry the original name so vhosts still resolve) so a
-// DNS rebind can't swap in an internal target between the check and the fetch.
-// Redirects are followed by hand (so a public host can't bounce us to an internal
-// one), the buffered body is truncated, and only text/html is read. Results
+// points at a private/loopback/link-local address, redirects are followed by hand
+// (so a public host can't bounce us to an internal one), the buffered body is
+// truncated, and only text/html is read. We fetch by hostname (not by a pinned IP):
+// the uTLS engine ignores a Host override and CDN/vhost edges 403 a direct-IP
+// request, so pinning would break previews for exactly the Cloudflare-class sites
+// this exists for. That leaves a DNS-rebinding TOCTOU window (tracked in TODO) we
+// can't close without an IP-pinning fetcher that also defeats TLS fingerprinting.
+// Results
 // (including misses) are cached in memory.
 //
 // The fetch goes through the shared cycletls uTLS engine with a browser JA3, not
@@ -89,27 +92,22 @@ export function isBlockedAddress(ip: string): boolean {
   return true
 }
 
-// Resolve a host to one validated public IP, or throw if it (or any address it
-// resolves to) is private/blocked. Returns the IP to connect to so the fetch hits
-// the exact address the guard approved - not a re-resolution that could differ.
-async function resolvePublicAddress(hostname: string): Promise<{ ip: string; family: number; literal: boolean }> {
+// Throw if a host (or any address it resolves to) is private/blocked. Validates
+// every resolved address and fails closed. Note this is a separate resolution from
+// the one the uTLS engine does when it connects (it re-resolves the hostname), so a
+// low-TTL rebind between the two is not closed here - see the file header and TODO.
+async function assertPublicHost(hostname: string): Promise<void> {
   const host = hostname.toLowerCase()
   if (host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local') || host.endsWith('.internal')) {
     throw new Error('blocked host')
   }
-  const literalFamily = isIP(hostname)
-  if (literalFamily) {
+  if (isIP(hostname)) {
     if (isBlockedAddress(hostname)) throw new Error('blocked address')
-    return { ip: hostname, family: literalFamily, literal: true }
+    return
   }
   const addrs = await dns.lookup(hostname, { all: true })
   if (!addrs.length) throw new Error('unresolved host')
-  // Validate every address the name resolves to (fail closed), then connect to one
-  // of them by IP below - so a low-TTL rebind can't return a public IP here and a
-  // private one to the fetch.
   for (const a of addrs) if (isBlockedAddress(a.address)) throw new Error('blocked address')
-  const chosen = addrs[0]!
-  return { ip: chosen.address, family: chosen.family, literal: false }
 }
 
 async function safeFetchHtml(initial: string): Promise<{ finalUrl: string; html: string } | null> {
@@ -119,17 +117,11 @@ async function safeFetchHtml(initial: string): Promise<{ finalUrl: string; html:
     if (u.protocol !== 'http:' && u.protocol !== 'https:') return null
     // Redirects are not followed by cycletls (disableRedirect) so we validate each
     // hop's host ourselves; the engine has its own request timeout.
-    const { ip, family, literal } = await resolvePublicAddress(u.hostname)
-    // Connect to the validated IP. For a resolved name, the original hostname rides
-    // along as SNI (cert match) and as the Host header (vhost routing) so the fetch
-    // is identical to one aimed at the name - minus the rebind window.
-    const connectHost = family === 6 ? `[${ip}]` : ip
-    const connectUrl = `${u.protocol}//${connectHost}${u.port ? `:${u.port}` : ''}${u.pathname}${u.search}`
-    const res = await cycleGet(connectUrl, {
+    await assertPublicHost(u.hostname)
+    const res = await cycleGet(current, {
       ja3: CHROME_JA3,
       userAgent: CHROME_UA,
-      headers: { accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', Host: u.host },
-      serverName: literal ? undefined : u.hostname,
+      headers: { accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' },
       disableRedirect: true,
     })
     const headers = res.headers as Record<string, unknown> | undefined

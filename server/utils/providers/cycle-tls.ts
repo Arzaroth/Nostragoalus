@@ -16,9 +16,6 @@ export interface CycleGetOptions {
   ja3: string
   userAgent: string
   headers?: Record<string, string>
-  // TLS SNI to send. Lets a caller dial a URL whose host is a literal IP while
-  // still presenting the real hostname (cert match), for IP-pinned SSRF-safe fetch.
-  serverName?: string
   // Return a 3xx instead of following it - so a caller fetching arbitrary URLs
   // can validate each redirect hop itself (SSRF guard).
   disableRedirect?: boolean
@@ -31,7 +28,6 @@ export async function cycleGet(url: string, opts: CycleGetOptions): Promise<Cycl
     ja3: opts.ja3,
     userAgent: opts.userAgent,
     headers: opts.headers ?? {},
-    serverName: opts.serverName,
     disableRedirect: opts.disableRedirect,
   })
 }
