@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { onKeyStroke } from '@vueuse/core'
 import { REACTION_EMOJIS, type ReactionEmoji } from '#shared/reactions'
 import { MAX_MESSAGE_TEXT_LENGTH } from '#shared/types/chat'
 import { extractMentions } from '~/utils/chat-content'
@@ -489,6 +490,13 @@ const dragOver = ref(false)
 const imageError = ref(false)
 const pending = ref<PendingImage[]>([])
 const pendingUrls = ref<string[]>([])
+
+// Click a buffered/edit image thumbnail to preview it full-screen (image only),
+// the same way sent inline images preview. Esc or a click closes it.
+const imagePreview = ref<string | null>(null)
+onKeyStroke('Escape', () => {
+  if (imagePreview.value) imagePreview.value = null
+})
 
 function imageFilesFrom(list: FileList | File[] | null | undefined): File[] {
   return Array.from(list ?? []).filter((f) => f.type.startsWith('image/'))
@@ -996,7 +1004,7 @@ watch(
               <span class="font-semibold">{{ nameFor(parentOf(m)!.userId) }}</span>
               <span class="ml-1">{{ quoteText(parentOf(m)!) }}</span>
             </button>
-            <span v-if="!contentVisible(m)" class="italic" style="color: var(--p-text-muted-color)">{{ m.moderation === 'REMOVED' ? t('chat.moderation.removed') : t('chat.moderation.pendingHidden') }}</span>
+            <span v-if="!contentVisible(m)" class="italic" :class="m.userId === meId ? 'self-end' : 'self-start'" style="color: var(--p-text-muted-color)">{{ m.moderation === 'REMOVED' ? t('chat.moderation.removed') : t('chat.moderation.pendingHidden') }}</span>
             <!-- Inline edit of your own message: text plus image add/remove. -->
             <div v-else-if="editingId === m.id" class="flex flex-col gap-1">
               <Textarea v-model="editDraft" rows="1" autoResize class="w-full" :style="{ maxHeight: '7.5rem', overflowY: editScrolls ? 'auto' : 'hidden' }" @input="(e) => (editScrolls = capScroll(e.target as HTMLTextAreaElement))" @keydown.enter.exact.prevent="saveEdit" @keydown.esc="cancelEdit" @keydown.up="onEditUp" @keydown.down="onEditDown" />
@@ -1004,14 +1012,14 @@ watch(
                 <!-- Existing images: tap the x to mark for removal (re-tap to keep). -->
                 <div v-for="e in editExisting" :key="`ex-${e.idx}`" class="relative">
                   <div v-if="!e.url" class="w-16 h-16 rounded-lg animate-pulse" style="background: color-mix(in srgb, var(--p-text-color) 10%, transparent)" />
-                  <img v-else :src="e.url" :alt="t('chat.image.alt')" class="w-16 h-16 rounded-lg object-cover" :style="e.removed ? 'opacity: 0.35; filter: grayscale(1)' : ''">
+                  <img v-else :src="e.url" :alt="t('chat.image.alt')" class="w-16 h-16 rounded-lg object-cover cursor-zoom-in" :style="e.removed ? 'opacity: 0.35; filter: grayscale(1)' : ''" @click="imagePreview = e.url">
                   <button type="button" class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center shadow" :style="`background: ${e.removed ? 'var(--p-primary-color)' : 'var(--ng-danger)'}; color: #fff`" :aria-label="e.removed ? t('chat.image.keep') : t('chat.image.remove')" @click="toggleRemoveExisting(e.idx)">
                     <i :class="e.removed ? 'pi pi-undo' : 'pi pi-times'" class="text-[10px]" />
                   </button>
                 </div>
                 <!-- Newly added images for this edit. -->
                 <div v-for="(url, i) in editAddUrls" :key="`add-${i}`" class="relative">
-                  <img :src="url" :alt="t('chat.image.alt')" class="w-16 h-16 rounded-lg object-cover">
+                  <img :src="url" :alt="t('chat.image.alt')" class="w-16 h-16 rounded-lg object-cover cursor-zoom-in" @click="imagePreview = url">
                   <button type="button" class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center shadow" style="background: var(--ng-danger); color: #fff" :aria-label="t('chat.image.remove')" @click="removeEditAdd(i)">
                     <i class="pi pi-times text-[10px]" />
                   </button>
@@ -1147,7 +1155,7 @@ watch(
           <!-- Buffered images, shown before send; tap the x to drop one. -->
           <div v-if="pendingUrls.length" class="flex flex-wrap gap-1.5">
             <div v-for="(url, i) in pendingUrls" :key="i" class="relative">
-              <img :src="url" :alt="t('chat.image.alt')" class="w-16 h-16 rounded-lg object-cover">
+              <img :src="url" :alt="t('chat.image.alt')" class="w-16 h-16 rounded-lg object-cover cursor-zoom-in" @click="imagePreview = url">
               <button type="button" class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center shadow" style="background: var(--ng-danger); color: #fff" :aria-label="t('chat.image.remove')" @click="removePending(i)">
                 <i class="pi pi-times text-[10px]" />
               </button>
@@ -1296,5 +1304,18 @@ watch(
       :league="leagueName"
       :match="props.matchLabel"
     />
+
+    <!-- Clean full-screen preview of a buffered/edit image (no actions, no text). -->
+    <Teleport to="body">
+      <div
+        v-if="imagePreview"
+        class="fixed inset-0 z-[2000] flex items-center justify-center p-4 cursor-zoom-out"
+        style="background: rgba(0, 0, 0, 0.85)"
+        role="dialog"
+        @click="imagePreview = null"
+      >
+        <img :src="imagePreview" :alt="t('chat.image.alt')" class="max-h-full max-w-full object-contain rounded-lg">
+      </div>
+    </Teleport>
   </div>
 </template>
