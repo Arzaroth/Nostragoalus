@@ -1,3 +1,7 @@
+import type { StorageDriver } from '../storage/driver'
+import { putAvatar } from '../storage/service'
+import { ValidationError } from '../errors'
+
 // Some IdPs map a profile picture that a browser <img> can never load - e.g.
 // Microsoft Graph's `me/photo/$value`, which needs the user's OAuth token, so
 // it 401s and shows as a broken avatar. We fetch it server-side once (with the
@@ -36,4 +40,24 @@ export async function fetchAvatarDataUrl(
   } catch {
     return null
   }
+}
+
+// A base64 data: URL, e.g. `data:image/jpeg;base64,...`. Avatars only ever arrive
+// base64 (client canvas export, or fetchAvatarDataUrl above), so a url-encoded
+// data URL is rejected rather than mis-parsed.
+const DATA_URL_RE = /^data:([^;,]+);base64,(.+)$/s
+
+// Move an avatar data URL's bytes into object storage and return the serving URL to
+// keep in user.image. The single place a data: avatar (client upload, or an inlined
+// IdP photo) is turned into a stored object - called from the better-auth update
+// hook and from provisionUser.
+export async function storeAvatarFromDataUrl(driver: StorageDriver, dataUrl: string): Promise<string> {
+  const m = DATA_URL_RE.exec(dataUrl)
+  if (!m) throw new ValidationError('avatar must be a base64 data URL')
+  const contentType = m[1]
+  if (!contentType.startsWith('image/')) throw new ValidationError('avatar must be an image')
+  const bytes = new Uint8Array(Buffer.from(m[2], 'base64'))
+  if (bytes.length === 0 || bytes.length > MAX_AVATAR_BYTES) throw new ValidationError('avatar is empty or too large')
+  const { url } = await putAvatar(driver, bytes, contentType)
+  return url
 }

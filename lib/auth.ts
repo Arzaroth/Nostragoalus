@@ -13,7 +13,8 @@ import { withEncryptedSSO } from '../server/utils/crypto/encrypted-adapter'
 import { verifyTotpCode } from '../server/utils/auth/totp'
 import { isSsoManaged } from '../server/utils/auth/sso-managed'
 import { emailVerificationRequiredSync, loadEmailVerificationFlag } from '../server/utils/auth/email-verification'
-import { fetchAvatarDataUrl, isUnusableAvatarUrl } from '../server/utils/auth/avatar'
+import { fetchAvatarDataUrl, isUnusableAvatarUrl, storeAvatarFromDataUrl } from '../server/utils/auth/avatar'
+import { useStorageDriver } from '../server/utils/storage'
 import { autoJoinSsoLeagues } from '../server/utils/leagues/auto-join'
 import { publishMemberNameChanged } from '../server/utils/live/league-chat'
 import { symmetricDecrypt } from 'better-auth/crypto'
@@ -161,6 +162,13 @@ export function buildAuthOptions(database: AuthDb) {
         update: {
           before: async (data: Record<string, unknown>) => {
             if (typeof data.skin === 'string' && data.skin !== '' && !isSkinId(data.skin)) data.skin = null
+            // A client avatar upload arrives as a data: URL on user.image; move the
+            // bytes into object storage and swap in the serving URL before the write,
+            // so the blob never lands in Postgres. External CDN/https images pass
+            // through untouched.
+            if (typeof data.image === 'string' && data.image.startsWith('data:')) {
+              data.image = await storeAvatarFromDataUrl(useStorageDriver(), data.image)
+            }
             return { data }
           },
           // A display-name change should show in league chat rosters live, without
@@ -236,7 +244,10 @@ export function buildAuthOptions(database: AuthDb) {
               .limit(1)
             if (acct[0]?.token) {
               const dataUrl = await fetchAvatarDataUrl(rows[0]!.image!, acct[0].token)
-              await database.update(schema.user).set({ image: dataUrl }).where(eq(schema.user.id, u.id))
+              // Store the fetched photo as an object and keep only the serving URL;
+              // a failed fetch nulls it so the placeholder shows.
+              const image = dataUrl ? await storeAvatarFromDataUrl(useStorageDriver(), dataUrl) : null
+              await database.update(schema.user).set({ image }).where(eq(schema.user.id, u.id))
             }
           }
           if (rows[0]?.role !== 'admin') {
