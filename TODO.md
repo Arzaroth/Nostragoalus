@@ -1138,15 +1138,15 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 ## Chat: threads / mentions / embeds (deferred from the feature pass)
 
 - [ ] Thread reply composer is text-only: no image attach, emoji picker or `@`
-      autocomplete (a typed `@<id>` token still works and mentions are still
-      extracted on send). Fold the main composer's affordances into the thread
-      composer, or extract a shared composer component.
-- [ ] Threads are one level deep by design (a reply to a reply points at the
-      thread root). No nested/quoted replies within a thread.
-- [ ] `replyCount` and unread-mention counts are in-memory/per-session and ride
+      autocomplete (mentions are still extracted on send). Fold the main composer's
+      affordances into the thread composer, or extract a shared composer component.
+- [ ] Threads are one level deep by design (`threadId` is the thread root; a reply
+      to a reply points at the same root). No nested threads. `parentId` (quote) is
+      a separate relation that does still show in the main list.
+- [ ] `threadCount` and unread-mention counts are in-memory/per-session and ride
       the live push; a hard reload re-derives counts from the room page but loses
       accrued unread-mention badges (consistent with the existing unread model).
-      The live reply count can drift if a `chat:new` echo is missed (reconciled
+      The live thread count can drift if a `chat:new` echo is missed (reconciled
       on the next room load).
 - [ ] Link unfurl cache is a per-instance in-memory Map (no shared/persistent
       cache); multi-instance deploys re-fetch per instance. Move to a shared cache
@@ -1158,5 +1158,21 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 - [ ] Mention list filters league members by name substring only (no fuzzy match,
       no recency ranking) and caps at 6; no keyboard-less mobile affordance beyond
       tapping a candidate.
+- [ ] Mention encode/decode is heuristic: the composer maps `@DisplayName` back to
+      `@<id>` by matching league-member names (longest first). Two members with the
+      same display name resolve to one id; a name that collides with arbitrary
+      typed text could over-match. Switch to an inline token model if it bites.
 - [ ] The hand-rolled emoji dataset is a curated subset, not the full Unicode set;
       extend or swap for a generated dataset if coverage gaps show up.
+- [ ] Chat search is client-side over the LOADED page only (E2EE - the server
+      can't search ciphertext); deep history needs "load earlier" first. No
+      match highlighting or jump-to-result yet.
+- [ ] Live display-name update: the better-auth `user.update` after-hook fires on
+      ANY user update, so it re-broadcasts the name even on a skin/avatar change.
+      Cheap (profile edits are rare) but could be gated to actual name changes.
+- [ ] Share-image font fallback fetches Noto subsets from Google Fonts at render
+      time (cached per process); offline/blocked it degrades to tofu as before.
+      Consider bundling the common scripts if the network dep is a problem.
+- [ ] Animated GIF uploads are stored uncompressed (canvas re-encode would flatten
+      them), bounded only by the 5 MB original cap; large GIFs ride the 9 MB
+      ciphertext cap. No server-side transcode/size optimization.
