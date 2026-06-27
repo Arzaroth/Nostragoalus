@@ -1,14 +1,20 @@
 #!/usr/bin/env -S node
-//MISE description="Dump the dockerized Postgres to backups/ (pg_dump custom format)"
+//MISE description="Back up the dockerized Postgres + image object storage to backups/"
 //USAGE arg "[outdir]" help="Destination directory (default: ./backups)"
-//USAGE flag "--keep <n>" help="Keep only the newest N dumps (env BACKUP_KEEP; 0 = unlimited)"
-//USAGE flag "--max-age-days <d>" help="Delete dumps older than D days (env BACKUP_MAX_AGE_DAYS; 0 = unlimited)"
+//USAGE flag "--keep <n>" help="Keep only the newest N backups (env BACKUP_KEEP; 0 = unlimited)"
+//USAGE flag "--max-age-days <d>" help="Delete backups older than D days (env BACKUP_MAX_AGE_DAYS; 0 = unlimited)"
+//USAGE flag "--no-media" help="Skip the object-storage (image) backup, e.g. an fs-driver deploy (env BACKUP_SKIP_MEDIA)"
 
-// Equivalent raw command:
+// Equivalent raw commands:
 //   docker compose exec -T db pg_dump -U nostragoalus -Fc nostragoalus > backups/nostragoalus-<stamp>.dump
-// Custom format (-Fc) is compressed and restorable table-by-table with pg_restore.
-import { execSync } from 'node:child_process'
-import { mkdirSync, statSync, readdirSync, unlinkSync } from 'node:fs'
+//   docker compose --profile tools run --rm -v <outdir>:/backups mc mirror --overwrite --remove ng/<bucket> /backups/media-<stamp>
+// The DB dump (custom format, -Fc) is compressed and restorable table-by-table.
+// The media mirror copies the image bucket object-for-object (consistent, unlike
+// tarring a live store), AFTER the dump - so the image set is a superset of the
+// DB's references and a restore never finds a row pointing at a missing image.
+import { execSync, execFileSync } from 'node:child_process'
+import { mkdirSync, statSync, readdirSync, unlinkSync, rmSync } from 'node:fs'
+import { resolve } from 'node:path'
 
 const outdir = process.env.usage_outdir || 'backups'
 mkdirSync(outdir, { recursive: true })
@@ -28,26 +34,47 @@ if (size < 1024) {
 }
 console.log(`wrote ${file} (${(size / 1024 / 1024).toFixed(1)} MiB)`)
 
-// Retention: prune old dumps by count and/or age. Both default to unlimited, so
-// without flags/env nothing is deleted (the long-standing behaviour). CLI flags
+// Image object storage. Skipped for an fs-driver deploy (--no-media / env var).
+// execFileSync (no shell) so the bucket/paths can't inject anything.
+const skipMedia = Boolean(process.env.usage_no_media || process.env.BACKUP_SKIP_MEDIA)
+if (!skipMedia) {
+  const bucket = process.env.NUXT_STORAGE_S3_BUCKET || 'nostragoalus'
+  console.log(`mirroring bucket ${bucket} -> ${outdir}/media-${stamp}`)
+  execFileSync(
+    'docker',
+    [
+      'compose', '--profile', 'tools', 'run', '--rm', '-v', `${resolve(outdir)}:/backups`, 'mc',
+      'mirror', '--overwrite', '--remove', `ng/${bucket}`, `/backups/media-${stamp}`,
+    ],
+    { stdio: ['ignore', 'inherit', 'inherit'] },
+  )
+}
+
+// Retention: prune old DB dumps and their paired media dirs by count and/or age.
+// Both default to unlimited, so without flags/env nothing is deleted. CLI flags
 // win over env vars.
 const keep = Number(process.env.usage_keep || process.env.BACKUP_KEEP || 0)
 const maxAgeDays = Number(process.env.usage_max_age_days || process.env.BACKUP_MAX_AGE_DAYS || 0)
 if (keep > 0 || maxAgeDays > 0) {
   const dumps = readdirSync(outdir)
     .filter((f) => /^nostragoalus-.*\.dump$/.test(f))
-    .map((f) => ({ path: `${outdir}/${f}`, mtime: statSync(`${outdir}/${f}`).mtimeMs }))
+    .map((f) => ({
+      stamp: f.slice('nostragoalus-'.length, -'.dump'.length),
+      path: `${outdir}/${f}`,
+      mtime: statSync(`${outdir}/${f}`).mtimeMs,
+    }))
     .sort((a, b) => b.mtime - a.mtime) // newest first
-  const doomed = new Set()
-  if (keep > 0) dumps.slice(keep).forEach((d) => doomed.add(d.path))
+  const doomed = new Map()
+  if (keep > 0) dumps.slice(keep).forEach((d) => doomed.set(d.path, d.stamp))
   if (maxAgeDays > 0) {
     const cutoff = Date.now() - maxAgeDays * 86_400_000
-    dumps.forEach((d) => d.mtime < cutoff && doomed.add(d.path))
+    dumps.forEach((d) => d.mtime < cutoff && doomed.set(d.path, d.stamp))
   }
   doomed.delete(file) // never prune the dump we just wrote
-  for (const path of doomed) {
+  for (const [path, st] of doomed) {
     unlinkSync(path)
     console.log(`pruned ${path}`)
+    rmSync(`${outdir}/media-${st}`, { recursive: true, force: true }) // its paired media, if any
   }
 }
 

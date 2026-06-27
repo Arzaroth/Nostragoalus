@@ -81,6 +81,8 @@ const stack: { group: string; items: StackItem[] }[] = [
       { name: 'Croner', icon: 'pi pi-clock', desc: 'Trigger functions and evaluate cron expressions, dependency-free', url: 'https://croner.56k.guru', license: 'MIT', licenseUrl: 'https://github.com/Hexagon/croner/blob/master/LICENSE' },
       { name: 'Satori', icon: 'pi pi-palette', desc: 'Enlightened library to convert HTML and CSS to SVG', url: 'https://github.com/vercel/satori', license: 'MPL-2.0', licenseUrl: 'https://github.com/vercel/satori/blob/main/LICENSE' },
       { name: 'resvg-js', icon: 'pi pi-image', desc: 'A high-performance SVG renderer and toolkit, powered by Rust', url: 'https://github.com/yisibl/resvg-js', license: 'MPL-2.0', licenseUrl: 'https://github.com/yisibl/resvg-js/blob/main/LICENSE' },
+      { name: 'aws4fetch', icon: 'pi pi-cloud', desc: 'A compact AWS request signer (SigV4) for fetch', url: 'https://github.com/mhart/aws4fetch', license: 'MIT', licenseUrl: 'https://github.com/mhart/aws4fetch/blob/master/LICENSE' },
+      { name: 'RustFS', icon: 'pi pi-database', desc: 'A high-performance, S3-compatible distributed object storage', url: 'https://rustfs.com', license: 'Apache-2.0', licenseUrl: 'https://github.com/rustfs/rustfs/blob/main/LICENSE' },
     ],
   },
   {
