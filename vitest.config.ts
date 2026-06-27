@@ -22,6 +22,7 @@ export default defineConfig(async () => ({
         '**/*.test.ts',
         '**/types/**',
         'server/utils/providers/index.ts',
+        'server/utils/storage/index.ts', // useRuntimeConfig glue - the logic is in factory/service/drivers
         'server/utils/http.ts',
         'app/utils/image.ts', // canvas/Image DOM glue - no headless canvas to exercise it
       ],

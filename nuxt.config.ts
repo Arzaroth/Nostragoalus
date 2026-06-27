@@ -165,6 +165,15 @@ export default defineNuxtConfig({
     // contact the push service can reach. Push is disabled when these are unset.
     vapidPrivateKey: '',
     vapidSubject: '',
+    // Image storage backend. driver 'fs' (default) writes under storageFsRoot;
+    // driver 's3' talks to any S3-compatible endpoint (the deploy runs rustfs).
+    storageDriver: 'fs',
+    storageFsRoot: '',
+    storageS3Endpoint: '',
+    storageS3Region: '',
+    storageS3Bucket: '',
+    storageS3AccessKeyId: '',
+    storageS3SecretAccessKey: '',
     public: {
       authUrl: '',
       appName: 'Nostragoalus',

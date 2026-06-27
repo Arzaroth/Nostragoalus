@@ -39,3 +39,13 @@ export class ForbiddenError extends Error {
     this.name = 'ForbiddenError'
   }
 }
+
+// A storage backend (fs/s3) failed or holds a blob the DB expects to be present.
+// Infra-level, so it maps to 500 - distinct from a NotFoundError (a 404 a client
+// can act on).
+export class StorageError extends Error {
+  constructor(message = 'storage error') {
+    super(message)
+    this.name = 'StorageError'
+  }
+}
