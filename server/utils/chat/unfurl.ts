@@ -11,7 +11,11 @@ import type { LinkPreviewDTO } from '../../../shared/types/chat'
 // (so a public host can't bounce us to an internal one), the response is capped,
 // and only text/html is read. Results (including misses) are cached in memory.
 
-const CACHE_TTL = 60 * 60 * 1000 // 1h
+const CACHE_TTL = 60 * 60 * 1000 // 1h for a real result
+// A miss (nothing useful, e.g. a transient block or a timeout) is cached only
+// briefly, so a flaky fetch or a stale empty entry heals on the next view rather
+// than sticking for an hour.
+const MISS_TTL = 60 * 1000 // 1m
 const CACHE_MAX = 500
 const FETCH_TIMEOUT = 5000
 const MAX_BYTES = 512 * 1024
@@ -192,9 +196,13 @@ export function parseLinkMeta(html: string, finalUrl: string, requestedUrl: stri
 
 const EMPTY = (url: string): LinkPreviewDTO => ({ url, title: null, description: null, image: null, siteName: null })
 
+function isEmptyPreview(v: LinkPreviewDTO): boolean {
+  return !v.title && !v.description && !v.image && !v.siteName
+}
+
 export async function unfurlLink(rawUrl: string): Promise<LinkPreviewDTO> {
   const hit = cache.get(rawUrl)
-  if (hit && Date.now() - hit.at < CACHE_TTL) return hit.value
+  if (hit && Date.now() - hit.at < (isEmptyPreview(hit.value) ? MISS_TTL : CACHE_TTL)) return hit.value
   let value = EMPTY(rawUrl)
   try {
     const fetched = await safeFetchHtml(rawUrl)
