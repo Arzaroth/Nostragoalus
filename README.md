@@ -136,6 +136,7 @@ See the in-app **About** page for the full annotated list with licenses. Highlig
 - **better-auth** (sessions, 2FA, passkeys, SSO, admin)
 - **libsodium** for the end-to-end-encrypted league chat (client-side group-key crypto; the server stores only ciphertext)
 - **Drizzle ORM** + **PostgreSQL** (PGlite for hermetic tests)
+- Configurable **image storage** (avatars, chat images) - a filesystem path or any S3-compatible service (the Docker stack runs **rustfs**), signed with **aws4fetch**
 - Provider-agnostic match data: keyless **FIFA** and **UEFA** public APIs
 - In-process scheduled tasks (Croner) for fixtures / live scores / finalize
 
@@ -162,6 +163,20 @@ mise run down          # stop everything
 ```
 
 (Equivalent raw commands live in `.mise.toml`.)
+
+### Image storage & backups
+
+Images (avatars, chat images) live out of the database in object storage. The stack
+runs **rustfs** (S3-compatible) and the app writes to it by default; set
+`NUXT_STORAGE_S3_ACCESS_KEY_ID` / `NUXT_STORAGE_S3_SECRET_ACCESS_KEY` for a real
+deploy (the defaults are `rustfsadmin`). To use a plain filesystem path instead, set
+`NUXT_STORAGE_DRIVER=fs` and `NUXT_STORAGE_FS_ROOT` (and mount a volume for it).
+
+`mise run db-backup` dumps Postgres **and** mirrors the image bucket, paired by
+timestamp; `mise run db-restore <dump>` restores both (add `--no-media` to skip the
+image side). Upgrading from a database-only deploy: after this release, run the
+**`media:migrate-blobs`** task from the admin Background-tasks page until it reports
+zero, to move existing images into storage.
 
 ## Local development
 

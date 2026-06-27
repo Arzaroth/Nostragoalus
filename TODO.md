@@ -128,6 +128,26 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       refuses its default secret, auth 500s): `mise run preview` could copy
       `.env` from the main checkout when missing, or at least fail loudly.
 
+## Image storage (deferred from the feature pass)
+
+- [ ] **Orphan-object GC**: a deleted league cascade-deletes its chat_message /
+      chat_attachment rows in the DB, but the storage backend keeps the objects.
+      A sweep task could list `chat/*` keys with no row and delete them (also
+      cleans objects orphaned by a storage-write that the later tx rolled back -
+      keys are deterministic so a retry overwrites, but a permanent rollback
+      leaves one).
+- [ ] **Takedown deletes the object**: a REMOVED chat image stays in storage
+      (just unserved). A true moderation takedown should also delete the object.
+- [ ] **Drop the legacy columns**: once `media:migrate-blobs` has run to zero in
+      prod, a follow-up migration can drop `chat_attachment.ciphertext` and tighten
+      `storage_key` to NOT NULL (the CHECK already enforces exactly-one meanwhile).
+- [ ] **Avatar serving**: served behind the app (session-gated). A CDN / public
+      cache in front of `/api/media/avatar/*` would offload it (URLs are immutable,
+      content-addressed) - left simple for now.
+- [ ] **Multi-node backup**: the combined backup mirrors the bucket from one host.
+      A multi-instance deploy would want object lifecycle / SSE on the store itself
+      rather than a host-local `mc mirror`.
+
 ## Roadmap / home CTA / PWA (deferred from the feature passes)
 
 - [ ] Roadmap admin reorder is two sequential PUTs from the client (swap with

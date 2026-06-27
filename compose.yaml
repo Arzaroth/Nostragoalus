@@ -23,6 +23,45 @@ services:
       timeout: 5s
       retries: 10
 
+  # S3-compatible object storage for images (avatars, chat images). The app's
+  # storage driver defaults to s3 here and points at this service in-network.
+  # Credentials default to rustfsadmin/rustfsadmin - override for a real deploy
+  # via NUXT_STORAGE_S3_ACCESS_KEY_ID / _SECRET_ACCESS_KEY in .env.
+  rustfs:
+    image: rustfs/rustfs:latest
+    restart: unless-stopped
+    environment:
+      RUSTFS_ACCESS_KEY: ${NUXT_STORAGE_S3_ACCESS_KEY_ID:-rustfsadmin}
+      RUSTFS_SECRET_KEY: ${NUXT_STORAGE_S3_SECRET_ACCESS_KEY:-rustfsadmin}
+    # No published port in prod: the app reaches it as rustfs:9000 in-network.
+    # compose.dev.yaml publishes the S3 API + console (9001) on loopback.
+    volumes:
+      - nostragoalus_media:/data
+
+  # One-shot: rustfs does not auto-create buckets, so make the app's bucket once
+  # it is reachable (idempotent: mc mb -p succeeds if it already exists).
+  rustfs-init:
+    image: minio/mc
+    restart: 'no'
+    depends_on:
+      rustfs:
+        condition: service_started
+    environment:
+      MC_HOST_ng: http://${NUXT_STORAGE_S3_ACCESS_KEY_ID:-rustfsadmin}:${NUXT_STORAGE_S3_SECRET_ACCESS_KEY:-rustfsadmin}@rustfs:9000
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - 'until mc ls ng >/dev/null 2>&1; do echo "waiting for rustfs..."; sleep 1; done; mc mb -p ng/${NUXT_STORAGE_S3_BUCKET:-nostragoalus}; echo "bucket ready"'
+
+  # Ephemeral mc client for backup/restore (mise run db-backup / db-restore).
+  # Not started normally - run under the `tools` profile via `docker compose run`,
+  # which mounts the backup dir at run time (-v) so media pairs with the dump.
+  mc:
+    image: minio/mc
+    profiles: ['tools']
+    entrypoint: ['mc']
+    environment:
+      MC_HOST_ng: http://${NUXT_STORAGE_S3_ACCESS_KEY_ID:-rustfsadmin}:${NUXT_STORAGE_S3_SECRET_ACCESS_KEY:-rustfsadmin}@rustfs:9000
+
   app:
     build:
       context: .
@@ -37,6 +76,14 @@ services:
       RUN_MIGRATIONS: 'true'
       DATABASE_URL: postgres://nostragoalus:nostragoalus@db:5432/nostragoalus
       NUXT_DATABASE_URL: postgres://nostragoalus:nostragoalus@db:5432/nostragoalus
+      # Images live in the rustfs bucket. Override the driver to 'fs' in .env to
+      # write to a mounted path instead (then a media volume mount is also needed).
+      NUXT_STORAGE_DRIVER: ${NUXT_STORAGE_DRIVER:-s3}
+      NUXT_STORAGE_S3_ENDPOINT: http://rustfs:9000
+      NUXT_STORAGE_S3_REGION: ${NUXT_STORAGE_S3_REGION:-us-east-1}
+      NUXT_STORAGE_S3_BUCKET: ${NUXT_STORAGE_S3_BUCKET:-nostragoalus}
+      NUXT_STORAGE_S3_ACCESS_KEY_ID: ${NUXT_STORAGE_S3_ACCESS_KEY_ID:-rustfsadmin}
+      NUXT_STORAGE_S3_SECRET_ACCESS_KEY: ${NUXT_STORAGE_S3_SECRET_ACCESS_KEY:-rustfsadmin}
     # Bound to loopback: put a reverse proxy (TLS, the public BETTER_AUTH_URL host)
     # in front. Change to '3000:3000' only if exposing the app directly.
     ports:
@@ -44,6 +91,9 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      rustfs-init:
+        condition: service_completed_successfully
 
 volumes:
   nostragoalus_pgdata:
+  nostragoalus_media:

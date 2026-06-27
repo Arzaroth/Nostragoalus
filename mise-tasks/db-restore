@@ -1,13 +1,16 @@
 #!/usr/bin/env -S node
-//MISE description="Restore a pg_dump custom-format backup into the dockerized Postgres (DESTRUCTIVE)"
+//MISE description="Restore a Postgres dump and its paired image backup (DESTRUCTIVE)"
 //USAGE arg "<file>" help="Backup file produced by db-backup (.dump)"
+//USAGE flag "--no-media" help="Skip restoring the object-storage (image) backup"
 
-// Equivalent raw command:
+// Equivalent raw commands:
 //   docker compose exec -T db pg_restore -U nostragoalus -d nostragoalus --clean --if-exists < backups/<file>
-// --clean --if-exists drops and recreates objects, so the database ends up
-// exactly as dumped. Stop the app first if it is mid-write.
-import { execSync } from 'node:child_process'
-import { existsSync } from 'node:fs'
+//   docker compose --profile tools run --rm -v <dir>:/backups mc mirror --overwrite --remove /backups/media-<stamp> ng/<bucket>
+// --clean --if-exists drops and recreates DB objects; the media mirror (--remove)
+// makes the bucket match the backup exactly. Stop the app first if it is mid-write.
+import { execSync, execFileSync } from 'node:child_process'
+import { existsSync, statSync } from 'node:fs'
+import { basename, dirname, resolve } from 'node:path'
 import { createInterface } from 'node:readline/promises'
 
 const file = process.env.usage_file
@@ -16,9 +19,17 @@ if (!file || !existsSync(file)) {
   process.exit(1)
 }
 
+// The paired image backup sits next to the dump as media-<stamp>/.
+const skipMedia = Boolean(process.env.usage_no_media)
+const stamp = basename(file).match(/^nostragoalus-(.+)\.dump$/)?.[1] ?? null
+const mediaDir = stamp ? `${dirname(file)}/media-${stamp}` : null
+const hasMedia = !skipMedia && mediaDir != null && existsSync(mediaDir) && statSync(mediaDir).isDirectory()
+
 if (process.stdin.isTTY) {
   const rl = createInterface({ input: process.stdin, output: process.stdout })
-  const answer = await rl.question(`This OVERWRITES the current database with ${file}. Type "yes" to continue: `)
+  const answer = await rl.question(
+    `This OVERWRITES the current database${hasMedia ? ' and image storage' : ''} with ${file}${hasMedia ? ` and ${mediaDir}` : ''}. Type "yes" to continue: `,
+  )
   rl.close()
   if (answer.trim() !== 'yes') {
     console.error('aborted')
@@ -31,3 +42,19 @@ execSync(`docker compose exec -T db pg_restore -U nostragoalus -d nostragoalus -
   shell: '/bin/sh',
 })
 console.log(`restored ${file}`)
+
+if (hasMedia) {
+  const bucket = process.env.NUXT_STORAGE_S3_BUCKET || 'nostragoalus'
+  console.log(`mirroring ${mediaDir} -> bucket ${bucket}`)
+  execFileSync(
+    'docker',
+    [
+      'compose', '--profile', 'tools', 'run', '--rm', '-v', `${resolve(dirname(file))}:/backups`, 'mc',
+      'mirror', '--overwrite', '--remove', `/backups/media-${stamp}`, `ng/${bucket}`,
+    ],
+    { stdio: ['ignore', 'inherit', 'inherit'] },
+  )
+  console.log(`restored images from ${mediaDir}`)
+} else if (!skipMedia && stamp) {
+  console.log(`note: no paired image backup (media-${stamp}) next to the dump - database restored without images`)
+}
