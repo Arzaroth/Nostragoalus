@@ -198,6 +198,22 @@ describe('ChatPanel', () => {
     expect(s.send).toHaveBeenCalledWith('me too', { threadId: 'p', mentions: [] })
   })
 
+  it('filters the loaded messages by a search query', async () => {
+    const s = await chatState()
+    s.enabled.value = true
+    s.ready.value = true
+    s.messages.value = [
+      msg({ id: 'a', userId: 'other', text: 'hello world' }),
+      msg({ id: 'b', userId: 'me', text: 'goodbye moon' }),
+    ]
+    const wrapper = await mount()
+    await vi.waitFor(() => expect(wrapper.text()).toContain('hello world'))
+    await wrapper.get('button[aria-label="Search messages"]').trigger('click')
+    await wrapper.find('input').setValue('moon')
+    await vi.waitFor(() => expect(wrapper.text()).toContain('goodbye moon'))
+    expect(wrapper.text()).not.toContain('hello world')
+  })
+
   it('encodes an @mention display name to a stable id token on send', async () => {
     const s = await chatState()
     s.enabled.value = true

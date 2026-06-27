@@ -633,6 +633,30 @@ const forceBottom = ref(false)
 // True while older history is being prepended, so the growth watcher neither
 // jumps to the bottom nor raises the "new messages" nudge for backfill.
 const prepending = ref(false)
+
+// Client-side search (the server only holds ciphertext): filter the loaded,
+// decrypted messages by text, matching mention display names too. Older history
+// is searchable by loading more first.
+const searchOpen = ref(false)
+const searchQuery = ref('')
+const searchEl = ref<{ $el?: HTMLElement } | null>(null)
+const displayMessages = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  if (!searchOpen.value || !q) return messages.value
+  return messages.value.filter((m) => m.text && decodeMentions(m.text).toLowerCase().includes(q))
+})
+function toggleSearch() {
+  searchOpen.value = !searchOpen.value
+  if (searchOpen.value) {
+    nextTick(() => {
+      const el = searchEl.value?.$el
+      const inp = (el?.tagName === 'INPUT' ? el : el?.querySelector?.('input')) as HTMLInputElement | undefined
+      inp?.focus()
+    })
+  } else {
+    searchQuery.value = ''
+  }
+}
 async function loadOlder() {
   const el = listEl.value
   const before = el?.scrollHeight ?? 0
@@ -733,6 +757,9 @@ watch(
       <span v-tooltip.top="t('chat.e2eeHint')" class="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-full" style="background: var(--ng-star-soft); color: var(--ng-star)">{{ t('chat.e2ee') }}</span>
       <span v-if="changedCount > 0" v-tooltip.top="t('chat.verify.changedWarn')" class="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-full inline-flex items-center gap-1" style="border: 1px solid var(--ng-danger); color: var(--ng-danger)"><i class="pi pi-exclamation-triangle text-[10px]" />{{ t('chat.verify.changed') }}</span>
       <div v-if="ready" class="ml-auto flex items-center gap-3">
+        <button type="button" v-tooltip.top="t('chat.search.button')" class="opacity-70 hover:opacity-100 inline-flex items-center" :class="searchOpen ? 'opacity-100' : ''" :style="searchOpen ? 'color: var(--p-primary-color)' : ''" :aria-label="t('chat.search.button')" @click="toggleSearch">
+          <i class="pi pi-search" />
+        </button>
         <button type="button" v-tooltip.top="t('chat.media.button')" class="opacity-70 hover:opacity-100 inline-flex items-center" :aria-label="t('chat.media.button')" :disabled="mediaLoading" @click="openMedia">
           <i class="pi pi-images" />
         </button>
@@ -802,6 +829,18 @@ watch(
       <div v-else-if="!ready" class="text-sm" style="color: var(--p-text-muted-color)">{{ t('chat.settingUp') }}</div>
       <template v-else>
         <div class="relative">
+        <!-- Client-side message search over the loaded (decrypted) messages. -->
+        <div v-if="searchOpen" class="flex flex-col gap-1 mb-2">
+          <div class="flex items-center gap-2">
+            <span class="relative flex-1">
+              <i class="pi pi-search absolute left-2 top-1/2 -translate-y-1/2 text-xs" style="color: var(--p-text-muted-color)" />
+              <InputText ref="searchEl" v-model="searchQuery" :placeholder="t('chat.search.placeholder')" class="w-full !pl-7" size="small" />
+            </span>
+            <small v-if="searchQuery.trim()" class="tabular-nums whitespace-nowrap" style="color: var(--p-text-muted-color)">{{ displayMessages.length === 1 ? t('chat.search.one') : t('chat.search.results', { n: displayMessages.length }) }}</small>
+            <button type="button" class="opacity-70 hover:opacity-100" :aria-label="t('chat.search.close')" @click="toggleSearch"><i class="pi pi-times text-xs" /></button>
+          </div>
+          <small v-if="hasMore" class="opacity-70" style="color: var(--p-text-muted-color)">{{ t('chat.search.deeper') }}</small>
+        </div>
         <div
           ref="listEl"
           class="relative flex flex-col gap-2 overflow-y-auto overflow-x-hidden overscroll-contain"
@@ -828,8 +867,9 @@ watch(
             {{ loadingOlder ? t('chat.loading') : t('chat.loadMore') }}
           </button>
           <p v-if="!messages.length" class="text-sm py-6 text-center" style="color: var(--p-text-muted-color)">{{ t('chat.empty') }}</p>
+          <p v-else-if="searchOpen && searchQuery.trim() && !displayMessages.length" class="text-sm py-6 text-center" style="color: var(--p-text-muted-color)">{{ t('chat.search.none') }}</p>
           <div
-            v-for="m in messages"
+            v-for="m in displayMessages"
             :key="m.id"
             :data-mid="m.id"
             class="group text-sm flex flex-col rounded transition-colors min-w-0"
