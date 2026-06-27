@@ -363,15 +363,22 @@ export function useLeagueChat(
   // oldest-first). Close clears the view. threadParentId holds the thread ROOT id.
   async function openThread(rootId: string): Promise<void> {
     threadParentId.value = rootId
+    // Clear the previous thread's replies up front so they don't flash under the
+    // newly-opened one while this fetch is in flight.
+    threadMessages.value = []
     threadLoading.value = true
     try {
       const m = mid()
       const { messages: rows } = await $fetch<{ messages: ChatMessageDTO[] }>(`/api/leagues/${lid()}/chat/messages`, {
         query: m ? { matchId: m, thread: rootId } : { thread: rootId },
       })
-      threadMessages.value = await Promise.all(rows.map(decryptRow))
+      const decrypted = await Promise.all(rows.map(decryptRow))
+      // A newer openThread/closeThread won the race while we awaited - drop this
+      // stale result so it can't land under the wrong (or a closed) thread.
+      if (threadParentId.value !== rootId) return
+      threadMessages.value = decrypted
     } finally {
-      threadLoading.value = false
+      if (threadParentId.value === rootId) threadLoading.value = false
     }
   }
   function closeThread(): void {

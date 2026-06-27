@@ -46,10 +46,14 @@ export function useChatActivity(
       const msg = data as {
         type?: string
         leagueId?: string
-        message?: { matchId?: string | null; userId?: string }
+        message?: { matchId?: string | null; userId?: string; threadId?: string | null }
         mentions?: string[]
       }
       if (msg.type !== 'chat:new' || msg.leagueId !== toValue(leagueId) || !msg.message) return
+      // Thread replies live inside a collapsed thread, not the main list. Counting
+      // them as room unread (or as an unread mention) would badge the room, then
+      // markSeen would clear it on open without the reply ever being shown.
+      if (msg.message.threadId) return
       const rk = roomKeyOf(msg.message.matchId ?? null)
       // The room the user is actively viewing is never unread.
       if (toValue(opts.viewing) && toValue(opts.activeRoom) === rk) return

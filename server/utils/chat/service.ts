@@ -586,6 +586,8 @@ export async function getThreadCounts(db: AppDatabase, rootIds: string[]): Promi
     )
     .groupBy(chatMessage.threadId)
   const out: Record<string, number> = {}
-  for (const r of rows) if (r.threadId) out[r.threadId] = Number(r.n)
+  // Every row is grouped by a non-null threadId (the inArray filter excludes
+  // nulls), so the id is always present.
+  for (const r of rows) out[r.threadId!] = Number(r.n)
   return out
 }
