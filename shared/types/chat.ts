@@ -38,6 +38,7 @@ export interface ChatMessageDTO {
   leagueId: string
   matchId: string | null
   parentId: string | null
+  threadId: string | null
   userId: string | null
   epoch: number
   ciphertext: string
@@ -51,9 +52,9 @@ export interface ChatMessageDTO {
   reported: boolean
   reactions: ReactionTotals
   myReaction: ReactionEmoji | null
-  // Number of replies in this message's thread (top-level messages only; a reply
-  // itself reports 0). Replies live in the thread, not the main list.
-  replyCount: number
+  // Number of replies in this message's thread (main-list messages only; a thread
+  // reply itself reports 0). Thread replies live in the thread, not the main list.
+  threadCount: number
 }
 
 // One image in a room's media gallery: which message it belongs to plus its

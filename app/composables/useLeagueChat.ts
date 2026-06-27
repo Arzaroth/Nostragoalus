@@ -23,7 +23,8 @@ export interface DecryptedMessage {
   id: string
   userId: string | null
   matchId: string | null
-  parentId: string | null
+  parentId: string | null // quoted message (stays in main list)
+  threadId: string | null // thread root this is a reply IN (hidden from main list)
   text: string | null // null = could not decrypt (wrong/absent key)
   createdAt: string
   editedAt: string | null
@@ -32,7 +33,7 @@ export interface DecryptedMessage {
   reported: boolean
   reactions: ReactionTotals
   myReaction: ReactionEmoji | null
-  replyCount: number
+  threadCount: number
 }
 
 export interface ReportedMessage {
@@ -122,6 +123,7 @@ export function useLeagueChat(
       userId: r.userId,
       matchId: r.matchId,
       parentId: r.parentId ?? null,
+      threadId: r.threadId ?? null,
       text,
       createdAt: r.createdAt,
       editedAt: r.editedAt ?? null,
@@ -130,7 +132,7 @@ export function useLeagueChat(
       reported: r.reported ?? false,
       reactions: r.reactions ?? emptyReactionTotals(),
       myReaction: r.myReaction ?? null,
-      replyCount: r.replyCount ?? 0,
+      threadCount: r.threadCount ?? 0,
     }
   }
 
@@ -298,7 +300,7 @@ export function useLeagueChat(
   // leave the device in the clear. A message must carry text or at least one image.
   async function send(
     text: string,
-    opts: { parentId?: string | null; images?: PendingImage[]; mentions?: string[] } = {},
+    opts: { parentId?: string | null; threadId?: string | null; images?: PendingImage[]; mentions?: string[] } = {},
   ): Promise<void> {
     const body = text.trim()
     const images = opts.images ?? []
@@ -315,6 +317,7 @@ export function useLeagueChat(
         body: {
           matchId: mid(),
           parentId: opts.parentId ?? null,
+          threadId: opts.threadId ?? null,
           ciphertext,
           epoch: epoch.value,
           images: images.map((img, i) => ({ ciphertext: imageCts[i], byteSize: img.byteSize })),
@@ -323,12 +326,13 @@ export function useLeagueChat(
         },
       })
       // Append our own message from the POST response; the WS echo (chat:new)
-      // dedupes on id, so we don't depend on it to see what we just sent. A reply
-      // lands in the open thread (its replyCount bump rides the echo, so it isn't
-      // double-counted here); a top-level message lands in the main list.
+      // dedupes on id, so we don't depend on it to see what we just sent. A thread
+      // reply lands in the open thread (its threadCount bump rides the echo, so it
+      // isn't double-counted here); everything else (incl. a quote) lands in the
+      // main list.
       if (message) {
         const dec = await decryptRow(message)
-        if (opts.parentId) {
+        if (opts.threadId) {
           if (!threadMessages.value.some((m) => m.id === message.id)) {
             threadMessages.value = [...threadMessages.value, dec]
           }
@@ -347,20 +351,21 @@ export function useLeagueChat(
     // a parent shown in both places) reflects live wherever it is rendered.
     threadMessages.value = threadMessages.value.map((m) => (m.id === id ? { ...m, ...patch } : m))
   }
-  // Adjust a parent's reply count (clamped at zero) when a reply is added/removed.
-  function bumpReplyCount(parentId: string, delta: number): void {
-    const m = messages.value.find((x) => x.id === parentId)
-    if (m) patchMessage(parentId, { replyCount: Math.max(0, m.replyCount + delta) })
+  // Adjust a root message's thread count (clamped at zero) when a thread reply is
+  // added/removed.
+  function bumpThreadCount(rootId: string, delta: number): void {
+    const m = messages.value.find((x) => x.id === rootId)
+    if (m) patchMessage(rootId, { threadCount: Math.max(0, m.threadCount + delta) })
   }
   // Open a message's thread: fetch + decrypt its replies (server returns them
-  // oldest-first). Close clears the view.
-  async function openThread(parentId: string): Promise<void> {
-    threadParentId.value = parentId
+  // oldest-first). Close clears the view. threadParentId holds the thread ROOT id.
+  async function openThread(rootId: string): Promise<void> {
+    threadParentId.value = rootId
     threadLoading.value = true
     try {
       const m = mid()
       const { messages: rows } = await $fetch<{ messages: ChatMessageDTO[] }>(`/api/leagues/${lid()}/chat/messages`, {
-        query: m ? { matchId: m, thread: parentId } : { thread: parentId },
+        query: m ? { matchId: m, thread: rootId } : { thread: rootId },
       })
       threadMessages.value = await Promise.all(rows.map(decryptRow))
     } finally {
@@ -678,18 +683,19 @@ export function useLeagueChat(
       const author = incoming.userId
       if (author) clearTyping(author)
       if (author && !memberKeys.value.some((k) => k.userId === author)) void refreshRoster()
-      // A reply: bump its parent's count and, if that thread is open, append it.
-      // The count rides the echo (not the optimistic send) so it isn't doubled.
-      if (incoming.parentId) {
-        bumpReplyCount(incoming.parentId, 1)
-        if (threadParentId.value === incoming.parentId && !threadMessages.value.some((m) => m.id === incoming.id)) {
+      // A thread reply: bump its root's count and, if that thread is open, append
+      // it. The count rides the echo (not the optimistic send) so it isn't doubled.
+      if (incoming.threadId) {
+        bumpThreadCount(incoming.threadId, 1)
+        if (threadParentId.value === incoming.threadId && !threadMessages.value.some((m) => m.id === incoming.id)) {
           void decryptRow(incoming).then((m) => {
             threadMessages.value = [...threadMessages.value, m]
           })
         }
         return
       }
-      // A top-level message: append unless we already have it (our own echo).
+      // A main-list message (top-level or a quote): append unless we already have
+      // it (our own echo).
       if (messages.value.some((m) => m.id === incoming.id)) return
       void decryptRow(incoming).then((m) => {
         messages.value = [...messages.value, m]
