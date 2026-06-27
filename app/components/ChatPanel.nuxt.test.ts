@@ -6,7 +6,7 @@ import { chatKeyPins } from '../composables/useChatKeyPins'
 import { emptyReactionTotals } from '#shared/reactions'
 
 function msg(over: Record<string, unknown> = {}) {
-  return { id: 'a', userId: 'other', matchId: null, parentId: null, text: 'hi', createdAt: '2026-06-10T10:00:00.000Z', editedAt: null, attachments: [], moderation: 'VISIBLE', reported: false, reactions: emptyReactionTotals(), myReaction: null, replyCount: 0, ...over }
+  return { id: 'a', userId: 'other', matchId: null, parentId: null, threadId: null, text: 'hi', createdAt: '2026-06-10T10:00:00.000Z', editedAt: null, attachments: [], moderation: 'VISIBLE', reported: false, reactions: emptyReactionTotals(), myReaction: null, threadCount: 0, ...over }
 }
 
 // Drive the panel via mocked composables (the crypto/network live in those and
@@ -164,24 +164,38 @@ describe('ChatPanel', () => {
     expect(s.react).toHaveBeenCalledWith('a', 'FIRE')
   })
 
-  it('opens a thread from a message and sends a reply with its parent id', async () => {
+  it('quotes a message in the main list and sends with its parent id', async () => {
     const s = await chatState()
     s.enabled.value = true
     s.ready.value = true
-    s.messages.value = [msg({ id: 'p', userId: 'other', text: 'the original', replyCount: 1 })]
+    s.messages.value = [msg({ id: 'p', userId: 'other', text: 'the original' })]
     const wrapper = await mount()
     await vi.waitFor(() => expect(wrapper.text()).toContain('the original'))
-    // The reply action opens that message's thread (replies live there, not inline).
+    // The Reply action quotes the message (stays in the main list).
     await wrapper.findAll('button[aria-label="Reply"]')[0].trigger('click')
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Replying to'))
+    await wrapper.find('textarea').setValue('me too')
+    await wrapper.find('form').trigger('submit')
+    expect(s.send).toHaveBeenCalledWith('me too', { parentId: 'p', images: [], mentions: [] })
+  })
+
+  it('opens a thread and sends a reply with its thread id', async () => {
+    const s = await chatState()
+    s.enabled.value = true
+    s.ready.value = true
+    s.messages.value = [msg({ id: 'p', userId: 'other', text: 'the original', threadCount: 1 })]
+    const wrapper = await mount()
+    await vi.waitFor(() => expect(wrapper.text()).toContain('the original'))
+    // The thread action opens that message's thread (replies live there, not inline).
+    await wrapper.findAll('button[aria-label="Reply in thread"]')[0].trigger('click')
     expect(s.openThread).toHaveBeenCalledWith('p')
-    // With the thread open, its replies render and the thread composer threads the
-    // parent id on send.
+    // With the thread open, its replies render and the thread composer threads it.
     s.threadParentId.value = 'p'
     s.threadMessages.value = [msg({ id: 'c', userId: 'me', text: 'the answer' })]
     await vi.waitFor(() => expect(wrapper.text()).toContain('the answer'))
     await wrapper.find('[data-thread="p"] textarea').setValue('me too')
     await wrapper.find('[data-thread="p"] form').trigger('submit')
-    expect(s.send).toHaveBeenCalledWith('me too', { parentId: 'p', mentions: [] })
+    expect(s.send).toHaveBeenCalledWith('me too', { threadId: 'p', mentions: [] })
   })
 
   it('reports another member message', async () => {

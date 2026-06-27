@@ -336,6 +336,7 @@ export interface ChatMessageRow {
   userId: string | null
   matchId: string | null
   parentId: string | null
+  threadId: string | null
   epoch: number
   ciphertext: string
   moderationState: ChatModerationState
@@ -354,6 +355,7 @@ export async function postMessage(
     leagueId: string
     matchId?: string | null
     parentId?: string | null
+    threadId?: string | null
     userId: string
     ciphertext: string
     epoch: number
@@ -387,13 +389,14 @@ export async function postMessage(
       throw new ValidationError('match is not in this league competition')
     }
   }
-  // A reply must point at a message in the same room (league + match thread), so a
-  // quote can never leak across rooms or leagues.
-  if (opts.parentId) {
+  // A quote (parentId) or a thread reply (threadId) must point at a message in
+  // the same room (league + match thread), so neither can leak across rooms.
+  for (const targetId of [opts.parentId, opts.threadId]) {
+    if (!targetId) continue
     const p = await db
       .select({ leagueId: chatMessage.leagueId, matchId: chatMessage.matchId })
       .from(chatMessage)
-      .where(eq(chatMessage.id, opts.parentId))
+      .where(eq(chatMessage.id, targetId))
       .limit(1)
     if (p.length === 0 || p[0].leagueId !== opts.leagueId || (p[0].matchId ?? null) !== (opts.matchId ?? null)) {
       throw new ValidationError('reply target is not in this room')
@@ -406,6 +409,7 @@ export async function postMessage(
         leagueId: opts.leagueId,
         matchId: opts.matchId ?? null,
         parentId: opts.parentId ?? null,
+        threadId: opts.threadId ?? null,
         userId: opts.userId,
         epoch: opts.epoch,
         ciphertext: opts.ciphertext,
@@ -415,6 +419,7 @@ export async function postMessage(
         userId: chatMessage.userId,
         matchId: chatMessage.matchId,
         parentId: chatMessage.parentId,
+        threadId: chatMessage.threadId,
         epoch: chatMessage.epoch,
         ciphertext: chatMessage.ciphertext,
         moderationState: chatMessage.moderationState,
@@ -521,8 +526,8 @@ export async function editMessage(
 
 // A page of ciphertext for one room (matchId null = the league-global room),
 // newest first. `before` pages backwards through history. By default this returns
-// only top-level messages (replies live in their thread); pass `thread` (a parent
-// message id) to list that thread's replies instead, oldest-first.
+// the room's main list (top-level + quoted messages, but NOT thread replies);
+// pass `thread` (a root message id) to list that thread's replies, oldest-first.
 export async function listMessages(
   db: AppDatabase,
   opts: { leagueId: string; matchId?: string | null; userId: string; before?: Date; limit?: number; thread?: string | null },
@@ -531,8 +536,9 @@ export async function listMessages(
   if (!membership) throw new ForbiddenError('not a league member')
   const limit = Math.min(Math.max(opts.limit ?? DEFAULT_PAGE, 1), MAX_PAGE)
   const room = opts.matchId ? eq(chatMessage.matchId, opts.matchId) : isNull(chatMessage.matchId)
-  // Thread mode: this parent's replies, oldest-first. Room mode: top-level only.
-  const scope = opts.thread ? eq(chatMessage.parentId, opts.thread) : isNull(chatMessage.parentId)
+  // Thread mode: this root's replies, oldest-first. Room mode: everything that is
+  // not a thread reply (quotes stay in the main list).
+  const scope = opts.thread ? eq(chatMessage.threadId, opts.thread) : isNull(chatMessage.threadId)
   const cursor = opts.before ? lt(chatMessage.createdAt, opts.before) : undefined
   const rows = await db
     .select({
@@ -540,6 +546,7 @@ export async function listMessages(
       userId: chatMessage.userId,
       matchId: chatMessage.matchId,
       parentId: chatMessage.parentId,
+      threadId: chatMessage.threadId,
       epoch: chatMessage.epoch,
       ciphertext: chatMessage.ciphertext,
       moderationState: chatMessage.moderationState,
@@ -553,21 +560,22 @@ export async function listMessages(
   return opts.thread ? rows.reverse() : rows
 }
 
-// Reply counts (replies that are not removed) for a set of parent message ids, so
-// the main list can show a "N replies" affordance. Missing ids have no replies.
-export async function getReplyCounts(db: AppDatabase, parentIds: string[]): Promise<Record<string, number>> {
-  if (parentIds.length === 0) return {}
+// Thread reply counts (replies that are not removed) for a set of root message
+// ids, so the main list can show a "N replies in thread" affordance. Missing ids
+// have no thread.
+export async function getThreadCounts(db: AppDatabase, rootIds: string[]): Promise<Record<string, number>> {
+  if (rootIds.length === 0) return {}
   const rows = await db
-    .select({ parentId: chatMessage.parentId, n: count() })
+    .select({ threadId: chatMessage.threadId, n: count() })
     .from(chatMessage)
     .where(
       and(
-        inArray(chatMessage.parentId, parentIds),
+        inArray(chatMessage.threadId, rootIds),
         not(eq(chatMessage.moderationState, 'REMOVED')),
       ),
     )
-    .groupBy(chatMessage.parentId)
+    .groupBy(chatMessage.threadId)
   const out: Record<string, number> = {}
-  for (const r of rows) if (r.parentId) out[r.parentId] = Number(r.n)
+  for (const r of rows) if (r.threadId) out[r.threadId] = Number(r.n)
   return out
 }

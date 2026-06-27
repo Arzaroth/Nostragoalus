@@ -889,9 +889,14 @@ export const chatMessage = pgTable(
       .references(() => league.id, { onDelete: 'cascade' }),
     matchId: text('match_id').references(() => match.id, { onDelete: 'cascade' }),
     userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
-    // The message this one replies to (same room). Set null if the parent is hard
-    // deleted, so a reply survives as a plain message rather than dangling.
+    // The message this one quotes (same room). Set null if the parent is hard
+    // deleted, so a quote survives as a plain message rather than dangling. A
+    // quoted message still shows in the main room list.
     parentId: text('parent_id').references((): AnyPgColumn => chatMessage.id, { onDelete: 'set null' }),
+    // The thread root this message is a reply IN - a separate relation from the
+    // quote above. When set, the message lives in that thread and is kept OUT of
+    // the main room list; null for top-level and quote messages.
+    threadId: text('thread_id').references((): AnyPgColumn => chatMessage.id, { onDelete: 'set null' }),
     epoch: integer('epoch').notNull(),
     ciphertext: text('ciphertext').notNull(),
     moderationState: chatModerationStateEnum('moderation_state').notNull().default('VISIBLE'),
@@ -904,6 +909,7 @@ export const chatMessage = pgTable(
   (t) => [
     index('chat_message_room_idx').on(t.leagueId, t.matchId, t.createdAt),
     index('chat_message_league_idx').on(t.leagueId, t.createdAt),
+    index('chat_message_thread_idx').on(t.threadId, t.createdAt),
   ],
 )
 

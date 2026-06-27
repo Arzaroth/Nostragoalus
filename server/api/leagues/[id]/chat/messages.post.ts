@@ -8,7 +8,10 @@ import type { ChatMessageDTO } from '../../../../../shared/types/chat'
 
 const bodySchema = z.object({
   matchId: z.string().uuid().nullable().optional(),
+  // parentId = a quoted message (stays in the main list); threadId = the thread
+  // root this is a reply IN (kept out of the main list). Distinct relations.
   parentId: z.string().uuid().nullable().optional(),
+  threadId: z.string().uuid().nullable().optional(),
   ciphertext: z.string().min(1).max(16_384),
   epoch: z.number().int().positive(),
   // Optional encrypted webp attachments (base64 ciphertext) and their original
@@ -31,6 +34,7 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ body, user,
     userId: user.id,
     matchId: body.matchId ?? null,
     parentId: body.parentId ?? null,
+    threadId: body.threadId ?? null,
     ciphertext: body.ciphertext,
     epoch: body.epoch,
     images: body.images ?? null,
@@ -40,6 +44,7 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ body, user,
     leagueId,
     matchId: row.matchId,
     parentId: row.parentId,
+    threadId: row.threadId,
     userId: row.userId,
     epoch: row.epoch,
     ciphertext: row.ciphertext,
@@ -50,7 +55,7 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ body, user,
     reported: false,
     reactions: emptyReactionTotals(),
     myReaction: null,
-    replyCount: 0,
+    threadCount: 0,
   }
   // Fire-and-forget fan-out so a delivery hiccup can't fail the post itself.
   void publishChatMessage(db, message, body.mentions ?? []).catch(() => {})

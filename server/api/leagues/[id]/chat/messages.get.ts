@@ -1,6 +1,6 @@
 import { db } from '../../../../../db'
 import { requireUser } from '../../../../utils/auth-guards'
-import { getReplyCounts, listMessages } from '../../../../utils/chat/service'
+import { getThreadCounts, listMessages } from '../../../../utils/chat/service'
 import { getMyReactions, getReactionTotals } from '../../../../utils/chat/reactions'
 import { getMessageAttachments } from '../../../../utils/chat/attachments'
 import { getMyReports } from '../../../../utils/chat/moderation'
@@ -30,13 +30,13 @@ export default defineEventHandler(async (event) => {
     const ids = rows.map((r) => r.id)
     const membership = await getMembership(db, leagueId, user.id)
     const isAdmin = membership?.role === 'OWNER' || membership?.role === 'MODERATOR'
-    const [totals, mine, attachmentsByMessage, reported, replyCounts] = await Promise.all([
+    const [totals, mine, attachmentsByMessage, reported, threadCounts] = await Promise.all([
       getReactionTotals(db, ids),
       getMyReactions(db, user.id, ids),
       getMessageAttachments(db, ids),
       getMyReports(db, user.id, ids),
-      // Reply counts only matter for the top-level list, not within a thread.
-      thread ? Promise.resolve<Record<string, number>>({}) : getReplyCounts(db, ids),
+      // Thread counts only matter for the main list, not within a thread.
+      thread ? Promise.resolve<Record<string, number>>({}) : getThreadCounts(db, ids),
     ])
     const messages: ChatMessageDTO[] = rows.map((r) => {
       // Strip content for a tombstoned message (everyone) or a pending one (from
@@ -47,6 +47,7 @@ export default defineEventHandler(async (event) => {
         leagueId,
         matchId: r.matchId,
         parentId: r.parentId,
+        threadId: r.threadId,
         userId: r.userId,
         epoch: r.epoch,
         ciphertext: hidden ? '' : r.ciphertext,
@@ -57,7 +58,7 @@ export default defineEventHandler(async (event) => {
         reported: reported.has(r.id),
         reactions: totals[r.id] ?? emptyReactionTotals(),
         myReaction: mine[r.id] ?? null,
-        replyCount: replyCounts[r.id] ?? 0,
+        threadCount: threadCounts[r.id] ?? 0,
       }
     })
     return { messages }
