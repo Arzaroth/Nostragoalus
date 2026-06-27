@@ -102,13 +102,14 @@ async function safeFetchHtml(initial: string): Promise<{ finalUrl: string; html:
       res = await fetch(current, {
         redirect: 'manual',
         signal: controller.signal,
-        // A real browser UA: some sites (e.g. 9gag) answer a bot UA with 403 or
-        // strip og tags. undici transparently decompresses the body stream.
+        // A real browser UA + a full Accept header: some sites (e.g. 9gag) answer
+        // a bot UA - or a too-minimal Accept - with 403 or strip their og tags.
+        // (Sending sec-fetch-*/accept-language here actually trips 9gag's WAF, so
+        // we deliberately keep the header set lean.) undici decompresses the body.
         headers: {
           'user-agent':
-            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-          accept: 'text/html,application/xhtml+xml',
-          'accept-language': 'en;q=0.9',
+            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
+          accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         },
       })
     } finally {
