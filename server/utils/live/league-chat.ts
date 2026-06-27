@@ -1,6 +1,6 @@
 import type { AppDatabase } from '../../../db/types'
 import type { ChatAttachmentDTO, ChatMessageDTO } from '../../../shared/types/chat'
-import { getLeagueMemberIds } from '../chat/service'
+import { getLeagueMemberIds, getUserLeagueIds } from '../chat/service'
 import { getMessageReactionTotals } from '../chat/reactions'
 import {
   publishChatEdit,
@@ -8,6 +8,7 @@ import {
   publishChatModeration,
   publishChatReactionUpdate,
   publishChatRekeyRequest,
+  publishChatRoster,
   publishChatStateChanged,
   publishChatTyping,
   publishLeagueChatMessage,
@@ -25,6 +26,19 @@ export async function publishChatMessage(
 ): Promise<number> {
   const memberIds = await getLeagueMemberIds(db, message.leagueId)
   return publishLeagueChatMessage(message.leagueId, memberIds, message, mentions)
+}
+
+// A member changed their display name: fan a roster update out to every league
+// they belong to, so other members' chat shows the new name without a refresh.
+// No-op for a user in no leagues.
+export async function publishMemberNameChanged(db: AppDatabase, userId: string, name: string): Promise<number> {
+  const leagueIds = await getUserLeagueIds(db, userId)
+  if (leagueIds.length === 0) return 0
+  const recipients = new Set<string>()
+  for (const leagueId of leagueIds) {
+    for (const id of await getLeagueMemberIds(db, leagueId)) recipients.add(id)
+  }
+  return publishChatRoster([...recipients], leagueIds, userId, name)
 }
 
 // A member without the current key asks the league's keyholders to re-seal it.

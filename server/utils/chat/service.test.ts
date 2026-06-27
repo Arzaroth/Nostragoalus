@@ -17,6 +17,7 @@ import {
   getMyWrappedKeys,
   getRecoveryBlob,
   getThreadCounts,
+  getUserLeagueIds,
   listMessages,
   postMessage,
   registerChatIdentity,
@@ -541,6 +542,17 @@ describe('listMessages', () => {
     expect(room.map((r) => r.ciphertext).sort()).toEqual(['quote', 'root']) // thread replies excluded
     const thread = await listMessages(db, { leagueId, userId: owner, thread: root.id })
     expect(thread.map((r) => r.ciphertext)).toEqual(['t1', 't2']) // oldest-first
+    await client.close()
+  })
+})
+
+describe('getUserLeagueIds', () => {
+  it('returns the leagues a user belongs to, and nothing for a stranger', async () => {
+    const { db, client, owner, leagueId, competitionId } = await setup()
+    const second = await makeLeague(db, { competitionId, ownerId: owner })
+    expect((await getUserLeagueIds(db, owner)).sort()).toEqual([leagueId, second].sort())
+    const stranger = await makeUser(db, 'stranger')
+    expect(await getUserLeagueIds(db, stranger)).toEqual([])
     await client.close()
   })
 })

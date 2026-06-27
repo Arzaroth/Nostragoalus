@@ -8,6 +8,7 @@ import {
   openGroupKey,
   sealGroupKey,
 } from '~/utils/e2ee'
+import { useQueryClient } from '@tanstack/vue-query'
 import { chatKeyPins, isKeyTrusted } from '~/composables/useChatKeyPins'
 import { emptyReactionTotals, type ReactionEmoji, type ReactionTotals } from '#shared/reactions'
 import type { ChatAttachmentDTO, ChatMediaItemDTO, ChatMessageDTO, ChatModerationState } from '#shared/types/chat'
@@ -62,6 +63,7 @@ export function useLeagueChat(
   matchId?: MaybeRefOrGetter<string | null>,
 ) {
   const { identity, ensure, status: identityStatus } = useChatIdentity()
+  const queryClient = useQueryClient()
 
   const enabled = ref(false)
   const epoch = ref(0)
@@ -606,7 +608,22 @@ export function useLeagueChat(
     },
     onMessage: (data) => {
       const msg = data as { type?: string; leagueId?: string; message?: ChatMessageDTO }
-      if (!msg.type || msg.leagueId !== lid()) return
+      if (!msg.type) return
+      // A member changed their display name: patch the chat roster and refresh the
+      // league-detail query so their name updates live wherever it shows. This
+      // event is keyed on leagueIds (not a single leagueId), so handle it before
+      // the per-room guard below.
+      if (msg.type === 'chat:roster') {
+        const rm = data as { leagueIds?: string[]; userId?: string; name?: string }
+        if (rm.userId && typeof rm.name === 'string' && rm.leagueIds?.includes(lid())) {
+          const uid = rm.userId
+          const name = rm.name
+          memberKeys.value = memberKeys.value.map((k) => (k.userId === uid ? { ...k, name } : k))
+          void queryClient.invalidateQueries({ queryKey: ['leagues', 'detail', lid()] })
+        }
+        return
+      }
+      if (msg.leagueId !== lid()) return
       // A member is missing the current key (league-scoped, not per-room): if we
       // hold it, seal it for whoever still needs it. Non-keyholders no-op.
       if (msg.type === 'chat:rekey-request') {
