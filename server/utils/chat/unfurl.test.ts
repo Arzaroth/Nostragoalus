@@ -120,29 +120,10 @@ describe('unfurlLink', () => {
     expect(out.title).toBe('Hi')
   })
 
-  it('connects to the validated IP, carrying the hostname as SNI and Host', async () => {
-    cycleGet.mockResolvedValue(res('<title>Pinned</title>'))
+  it('fetches by hostname (no IP rewrite), so vhost/CDN edges still serve it', async () => {
+    cycleGet.mockResolvedValue(res('<title>By name</title>'))
     await unfurlLink('https://example.com/p?q=1')
-    expect(cycleGet).toHaveBeenCalledWith(
-      'https://93.184.216.34/p?q=1',
-      expect.objectContaining({ serverName: 'example.com', headers: expect.objectContaining({ Host: 'example.com' }) }),
-    )
-  })
-
-  it('brackets an IPv6 connect host and still pins by IP', async () => {
-    lookup.mockResolvedValue([{ address: '2606:2800:220:1:248:1893:25c8:1946', family: 6 }])
-    cycleGet.mockResolvedValue(res('<title>v6</title>'))
-    await unfurlLink('https://v6.test/p')
-    expect(cycleGet).toHaveBeenCalledWith(
-      'https://[2606:2800:220:1:248:1893:25c8:1946]/p',
-      expect.objectContaining({ serverName: 'v6.test' }),
-    )
-  })
-
-  it('does not set an SNI override for a literal IP host', async () => {
-    cycleGet.mockResolvedValue(res('<title>IP</title>'))
-    await unfurlLink('http://93.184.216.34/p')
-    expect(cycleGet).toHaveBeenCalledWith('http://93.184.216.34/p', expect.objectContaining({ serverName: undefined }))
+    expect(cycleGet).toHaveBeenCalledWith('https://example.com/p?q=1', expect.anything())
   })
 
   it('follows a redirect to a final page', async () => {
