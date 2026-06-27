@@ -15,6 +15,7 @@ import { isSsoManaged } from '../server/utils/auth/sso-managed'
 import { emailVerificationRequiredSync, loadEmailVerificationFlag } from '../server/utils/auth/email-verification'
 import { fetchAvatarDataUrl, isUnusableAvatarUrl } from '../server/utils/auth/avatar'
 import { autoJoinSsoLeagues } from '../server/utils/leagues/auto-join'
+import { publishMemberNameChanged } from '../server/utils/live/league-chat'
 import { symmetricDecrypt } from 'better-auth/crypto'
 import { isSkinId } from '../app/utils/skins'
 import { sendMail } from './mail'
@@ -161,6 +162,13 @@ export function buildAuthOptions(database: AuthDb) {
           before: async (data: Record<string, unknown>) => {
             if (typeof data.skin === 'string' && data.skin !== '' && !isSkinId(data.skin)) data.skin = null
             return { data }
+          },
+          // A display-name change should show in league chat rosters live, without
+          // a refresh. Fire-and-forget so it never blocks the update response.
+          after: async (user: Record<string, unknown>) => {
+            if (typeof user?.id === 'string' && typeof user?.name === 'string') {
+              void publishMemberNameChanged(db, user.id, user.name).catch(() => {})
+            }
           },
         },
       },

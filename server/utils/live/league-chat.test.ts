@@ -5,7 +5,7 @@ import { addLiveSubscriber, removeLiveSubscriber, type LiveSubscriber } from './
 import { chatMessage } from '../../../db/schema'
 import { setChatReaction } from '../chat/reactions'
 import { emptyReactionTotals } from '../../../shared/reactions'
-import { publishChatMessage, publishChatReaction, publishEdit, publishKeysAdded, publishModeration, publishRekeyRequest, publishStateChanged, publishTyping } from './league-chat'
+import { publishChatMessage, publishChatReaction, publishEdit, publishKeysAdded, publishMemberNameChanged, publishModeration, publishRekeyRequest, publishStateChanged, publishTyping } from './league-chat'
 
 function sub(userId: string | null): LiveSubscriber & { send: ReturnType<typeof vi.fn> } {
   return { matchIds: new Set(), userId, send: vi.fn() }
@@ -75,6 +75,37 @@ describe('publishChatMessage', () => {
       removeLiveSubscriber(bobSub)
       await client.close()
     }
+  })
+})
+
+describe('publishMemberNameChanged', () => {
+  it('fans a roster update to every league the renamed user is in', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const alice = await makeUser(db, 'alice')
+    const bob = await makeUser(db, 'bob')
+    const leagueId = await makeLeague(db, { competitionId, ownerId: alice })
+    await addLeagueMember(db, leagueId, bob)
+
+    const aliceSub = sub(alice)
+    const bobSub = sub(bob)
+    for (const s of [aliceSub, bobSub]) addLiveSubscriber(s)
+    try {
+      expect(await publishMemberNameChanged(db, bob, 'Bobby')).toBe(2)
+      const expected = { type: 'chat:roster', leagueIds: [leagueId], userId: bob, name: 'Bobby' }
+      expect(aliceSub.send).toHaveBeenCalledWith(expected)
+      expect(bobSub.send).toHaveBeenCalledWith(expected)
+    } finally {
+      for (const s of [aliceSub, bobSub]) removeLiveSubscriber(s)
+      await client.close()
+    }
+  })
+
+  it('no-ops for a user in no leagues', async () => {
+    const { db, client } = await createTestDb()
+    const loner = await makeUser(db, 'loner')
+    expect(await publishMemberNameChanged(db, loner, 'X')).toBe(0)
+    await client.close()
   })
 })
 

@@ -138,6 +138,16 @@ export async function getLeagueMemberIds(db: AppDatabase, leagueId: string): Pro
   return rows.map((r) => r.userId)
 }
 
+// The ids of every league a user belongs to - used to fan a roster/name change out
+// to all the leagues whose chats show that user.
+export async function getUserLeagueIds(db: AppDatabase, userId: string): Promise<string[]> {
+  const rows = await db
+    .select({ leagueId: leagueMember.leagueId })
+    .from(leagueMember)
+    .where(eq(leagueMember.userId, userId))
+  return rows.map((r) => r.leagueId)
+}
+
 async function leagueMemberIds(db: AppDatabase, leagueId: string): Promise<Set<string>> {
   return new Set(await getLeagueMemberIds(db, leagueId))
 }

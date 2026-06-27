@@ -195,6 +195,19 @@ export function publishChatEdit(
   return deliverToMembers(memberIds, { type: 'chat:edit', leagueId, messageId, ciphertext, editedAt, attachments })
 }
 
+// A member changed their display name: tell every connected member of the leagues
+// they belong to, so chat rosters update the name live (no message content). The
+// recipients are the union of those leagues' members; leagueIds lets each client
+// know which of its rooms to refresh.
+export function publishChatRoster(
+  memberIds: readonly string[],
+  leagueIds: readonly string[],
+  userId: string,
+  name: string,
+): number {
+  return deliverToMembers(memberIds, { type: 'chat:roster', leagueIds, userId, name })
+}
+
 // A member is typing in a room: tell the other connected members so they can show
 // a transient "typing" hint. Ephemeral - nothing is stored, no content travels,
 // only who is typing where. Never delivered back to the typer.
