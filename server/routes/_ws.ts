@@ -33,11 +33,19 @@ export default defineWebSocketHandler({
     } catch {
       // anonymous connection
     }
+    // The peer may have closed while the session lookup was awaiting; close() ran
+    // with userId still null, so bringing the user online now would leak a
+    // ref-count that never gets decremented. Bail before touching presence.
+    if (subscriber.closed) return
     // Mark this user online (broadcast to all) and hand the new client the current
     // presence of everyone else.
     if (subscriber.userId) {
       presenceConnect(subscriber.userId)
-      subscriber.send({ type: 'presence:snapshot', users: presenceSnapshot() })
+      try {
+        subscriber.send({ type: 'presence:snapshot', users: presenceSnapshot() })
+      } catch {
+        // socket already closing; the close hook will undo the presence bump
+      }
     }
   },
 
@@ -67,6 +75,7 @@ export default defineWebSocketHandler({
   close(peer) {
     const subscriber = peers.get(peer)
     if (subscriber) {
+      subscriber.closed = true
       if (subscriber.userId) presenceDisconnect(subscriber.userId)
       removeLiveSubscriber(subscriber)
       peers.delete(peer)

@@ -10,6 +10,10 @@ export interface LiveSubscriber {
   // Resolved from the session cookie at WS open; null for guests. Lets
   // league-scoped pushes go to members only.
   userId?: string | null
+  // Set when the peer closes. The open hook awaits the session lookup, so a peer
+  // that closes mid-await must not be brought online afterwards (it would leak a
+  // ref-count that never decrements).
+  closed?: boolean
   send: (payload: unknown) => void
 }
 
