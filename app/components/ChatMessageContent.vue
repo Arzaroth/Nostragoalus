@@ -3,6 +3,7 @@
 // a coloured bubble, then any image URLs as collapsible inline images, then a
 // collapsible preview for the first plain link. No v-html - text is interpolated
 // (Vue escapes it) and only http(s) URLs become a link/image src.
+import { onKeyStroke } from '@vueuse/core'
 import { parseChatContent, firstPreviewLink } from '~/utils/chat-content'
 
 const props = defineProps<{
@@ -22,6 +23,12 @@ const hasInline = computed(() =>
 )
 const previewHref = computed(() => firstPreviewLink(tokens.value))
 const hiddenImages = reactive<Record<number, boolean>>({})
+// Click an inline image to preview it full-screen (image only - no actions, no
+// text), like a regular image viewer. Esc or a click closes it.
+const preview = ref<string | null>(null)
+onKeyStroke('Escape', () => {
+  if (preview.value) preview.value = null
+})
 
 function mentionName(id: string): string {
   return props.names[id] ?? t('chat.unknownUser')
@@ -47,9 +54,7 @@ function mentionName(id: string): string {
     <!-- Image URLs rendered dynamically (animated gifs included); never stored. -->
     <template v-for="(tok, i) in tokens" :key="`img-${i}`">
       <div v-if="tok.type === 'image'" class="flex flex-col gap-0.5" :class="own ? 'items-end' : 'items-start'">
-        <a v-if="!hiddenImages[i]" :href="tok.href" target="_blank" rel="noopener noreferrer nofollow">
-          <img :src="tok.href" :alt="t('chat.image.alt')" loading="lazy" referrerpolicy="no-referrer" class="rounded-lg max-h-60 max-w-full object-contain border" style="border-color: var(--p-content-border-color)">
-        </a>
+        <img v-if="!hiddenImages[i]" :src="tok.href" :alt="t('chat.image.alt')" loading="lazy" referrerpolicy="no-referrer" class="rounded-lg max-h-60 max-w-full object-contain border cursor-zoom-in" style="border-color: var(--p-content-border-color)" @click="preview = tok.href">
         <button
           type="button"
           class="text-[10px] underline opacity-60 hover:opacity-100 inline-flex items-center gap-1"
@@ -62,5 +67,18 @@ function mentionName(id: string): string {
     </template>
 
     <ChatLinkPreview v-if="previewHref" :href="previewHref" :align-end="own" />
+
+    <!-- Clean full-screen preview of an inline image (no actions, no caption). -->
+    <Teleport to="body">
+      <div
+        v-if="preview"
+        class="fixed inset-0 z-[2000] flex items-center justify-center p-4 cursor-zoom-out"
+        style="background: rgba(0, 0, 0, 0.85)"
+        role="dialog"
+        @click="preview = null"
+      >
+        <img :src="preview" :alt="t('chat.image.alt')" referrerpolicy="no-referrer" class="max-h-full max-w-full object-contain rounded-lg">
+      </div>
+    </Teleport>
   </div>
 </template>
