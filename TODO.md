@@ -148,6 +148,44 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       A multi-instance deploy would want object lifecycle / SSE on the store itself
       rather than a host-local `mc mirror`.
 
+### Deferred from the feature-treatment review
+
+- [ ] **fs-driver media is not in the combined backup**: `db-backup`/`db-restore`
+      only mirror the s3/rustfs bucket via `mc`. An `NUXT_STORAGE_DRIVER=fs` deploy
+      is told to use `--no-media`, so the files under `NUXT_STORAGE_FS_ROOT` are
+      backed up by nothing. Either add an fs-root tar/copy into `media-<stamp>` when
+      the driver is fs, or document loudly that fs deployers must back the root up
+      themselves. (The shipped Docker stack defaults to s3, which IS covered.)
+- [ ] **Pin the storage images**: `rustfs/rustfs:latest` (pre-1.0 beta) and
+      `minio/mc` (backup/restore) are unpinned while the rest of the stack is
+      version-pinned. A `docker compose pull` can swap in a breaking backend/mc.
+      Pin both to a known-good tag.
+- [ ] **Don't ship usable default object-store creds in prod**: `compose.yaml`
+      falls back to `rustfsadmin/rustfsadmin` via `:-`. rustfs has no published
+      prod port (in-network only), so the risk is modest, but a hardened deploy
+      should require `NUXT_STORAGE_S3_ACCESS_KEY_ID/_SECRET_ACCESS_KEY` (fail loud)
+      with the defaults living only in `compose.dev.yaml`.
+- [ ] **Backup/restore are not atomic across the two stores**: a live `db-backup`
+      can record an attachment row in the dump and then miss its object if the image
+      is deleted in the window before `mc mirror` (the inverse of the additions case
+      the comment guarantees); and `db-restore` does the destructive `pg_restore
+      --clean` before the media mirror, so a media-step failure leaves a fresh DB
+      against the old bucket. A pre-flight reachability check on the store + a note
+      that the app should be stopped would tighten this.
+- [ ] **Signed-out avatars on public pages**: `/api/media/avatar/[key]` is
+      `requireUser`-gated, so migrated (formerly inline `data:`) avatars now 404 for
+      signed-out viewers of public surfaces (`/leagues/join/*`, `/s/*`); UserAvatar
+      degrades to the brand placeholder. Decide whether avatars (content-addressed,
+      non-enumerable) should be public to restore the prior behavior.
+- [ ] **Storage driver contract tidy-up**: `put`'s `contentType` is a no-op for the
+      fs driver (type is derived from the key on read) but load-bearing for s3, and
+      `fsDriver.exists` swallows a path-escape `StorageError` into `false` unlike
+      get/put/delete. Document the contentType contract and make `exists` consistent.
+- [ ] **De-duplicate the chat-image encode/decode**: `putChatImage` takes a
+      `Uint8Array` and `getChatImage` returns one, so all four call sites wrap them
+      in `TextEncoder`/`TextDecoder` (service.ts x2, migrate.ts, attachments.ts).
+      Moving the conversion inside those two helpers (string in/out) collapses it.
+
 ## Roadmap / home CTA / PWA (deferred from the feature passes)
 
 - [ ] Roadmap admin reorder is two sequential PUTs from the client (swap with
