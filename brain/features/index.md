@@ -10,6 +10,7 @@ early on). Back to the root map: [../BRAIN.md](../BRAIN.md).
 | [Predictions & scoring](predictions-and-scoring.md) | The core loop: predict scores, lock at kickoff, earn tiered points + bonuses | core | `prediction`, `match_score_event`, `scoring_config`; `server/utils/scoring/*` |
 | [Champion pick](champion-pick.md) | Per-competition winner pick, FIFA-rank tier points snapshotted at pick time | core | `champion_pick`; `server/utils/champion/*` |
 | [Best scorer](best-scorer.md) | Golden Boot pick from team squads, goal-event-derived award | core | `best_scorer_pick`; `server/utils/bestscorer/*` |
+| [Stats](stats.md) | Player rankings tab in the matches view: top scorers + top assists, side by side | 2.2.0 | `useScorers.ts`, `PlayerRankingTable.vue`, `competitions/scorers.get.ts` |
 | [Leagues](leagues.md) | Competition-scoped player groups, roles, public/private, SSO auto-join | core | `league`, `league_member`, `league_opt_out`, `league_leaderboard_rank` |
 | [Crowd bot](crowd-bot.md) | Synthetic consensus participant (MODE/MEAN) on the scoreboard | core | `'__bot__'`; `server/utils/scoring/*`, `predictions/crowd.get.ts` |
 | [Odds](odds.md) | Decimal 1X2 bookmaker odds (Sofascore primary, BetExplorer backup) | core | `odds_snapshot`; `server/utils/odds/*` |

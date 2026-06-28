@@ -53,6 +53,7 @@ use the indexes.
 | [predictions-and-scoring.md](features/predictions-and-scoring.md) | The core loop: predict, lock, finalize, score. |
 | [champion-pick.md](features/champion-pick.md) | Per-competition winner pick, FIFA-rank tier payouts. |
 | [best-scorer.md](features/best-scorer.md) | Golden Boot pick, goal-event-derived award. |
+| [stats.md](features/stats.md) | Player rankings tab: top scorers + top assists. |
 | [leagues.md](features/leagues.md) | Competition-scoped groups, roles, visibility, SSO auto-join. |
 | [crowd-bot.md](features/crowd-bot.md) | The consensus "ghost" participant (MODE/MEAN). |
 | [odds.md](features/odds.md) | 1X2 decimal odds (Sofascore + BetExplorer). |
