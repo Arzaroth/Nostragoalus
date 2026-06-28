@@ -31,6 +31,10 @@
 - Never assume the deployed/prod version or state - the user runs the deploy and
   you have no server access. Check `https://goal.arzaroth.com/about` for the live
   version, or ask. Don't claim "prod is behind".
+- The `brain/` knowledge base must stay true to the code. A change that makes a
+  brain doc wrong fixes that doc in the same commit/PR; an inconsistency you spot
+  gets fixed with the code as source of truth. See "The brain" below and start
+  from `brain/BRAIN.md`.
 
 ## Conventions (match the existing shape)
 
@@ -96,5 +100,29 @@
   can be added to the prod roadmap.
 - Both files live on `master`; update them there even when feature work happens
   in a worktree branch.
-- Surprise/secret features stay out of every committed doc (changelog,
-  ROADMAP.md, seeds) - track them in session memory only.
+- Surprise/secret features stay out of every user-facing public doc (changelog,
+  ROADMAP.md, roadmap-seed, about page) so the surprise survives. They MAY be
+  documented in the `brain/` (it's internal dev documentation) and tracked in
+  session memory - e.g. the easter eggs live in `brain/features/easter-eggs.md`.
+
+## The brain (knowledge base)
+
+`brain/` is the committed knowledge base describing how the app works:
+architecture, features, decisions, glossary. It exists so a developer or AI can
+understand the app **without reading the source**. `brain/BRAIN.md` is the entry
+index - it links to the `architecture/` and `features/` sub-indexes, which link
+to leaf docs. Read it before hunting for where something lives, and navigate via
+the indexes rather than grepping the whole tree.
+
+- It is load-bearing: keep it TRUE to the code. When a change makes a brain doc
+  wrong, fix the doc in the same commit/PR (same discipline as the planning docs).
+- The code is the source of truth. If the brain disagrees with reality, reality
+  wins: correct the brain.
+- New feature -> add `brain/features/<name>.md`, plus a row in
+  `brain/features/index.md` and the catalog table in `brain/BRAIN.md`. New
+  cross-cutting tech or subsystem -> add or update a `brain/architecture/*.md`.
+- Capture the WHY in `brain/decisions.md` and new terms in `brain/glossary.md` as
+  they happen - decisions not written down are lost.
+- Don't restate code: link to source paths and cross-link sibling docs with
+  relative markdown links. Match the existing dense, skimmable style, no
+  em-dashes.

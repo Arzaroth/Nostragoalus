@@ -1,0 +1,94 @@
+# BRAIN - Nostragoalus knowledge base
+
+The map of the codebase, written so a developer or AI can understand the app
+**without reading the source**. Start here, follow the links, stop when you have
+the answer. Every leaf doc cites the real source files if you need to go deeper.
+
+> Product: **Nostragoalus** (repo dir `mpp`) - a football score-prediction game.
+> Friends predict match scores, earn points by closeness, ranked per competition.
+> Stack snapshot in [stack.md](stack.md); current version is **2.1.0**.
+
+## How to use this
+
+1. Know the topic? Jump straight to its file via the indexes below.
+2. Have a question, not a topic? Scan **Find by question** first.
+3. Need a term defined? See [glossary.md](glossary.md).
+4. Want the "why" behind a design? See [decisions.md](decisions.md).
+
+The brain is a tree: this file -> two folder indexes
+([architecture/index.md](architecture/index.md),
+[features/index.md](features/index.md)) -> leaf docs. Don't grep the whole tree;
+use the indexes.
+
+## Top-level docs
+
+| Doc | What's here |
+|---|---|
+| [stack.md](stack.md) | Exact technologies + versions (Nuxt, Vue, Drizzle, better-auth, ...). |
+| [operations.md](operations.md) | mise tasks, Docker, the gate, releases, backups, env vars, deploy. |
+| [glossary.md](glossary.md) | Domain + technical terms in one place. |
+| [decisions.md](decisions.md) | The non-obvious design decisions and their rationale. |
+
+## Architecture (the how) - [architecture/index.md](architecture/index.md)
+
+| Doc | What's here |
+|---|---|
+| [overview.md](architecture/overview.md) | Layering rule, request lifecycle, the four code surfaces. Read first. |
+| [server.md](architecture/server.md) | Routes, services, errors, `defineValidatedHandler`, tasks, plugins. |
+| [client.md](architecture/client.md) | Nuxt config, pages/routing, vue-query composables, components, footguns. |
+| [database.md](architecture/database.md) | Schema groups, enums, migrations, the shared-dev-DB caveat, test DB. |
+| [auth.md](architecture/auth.md) | better-auth, SSO (encrypted), passkeys, 2FA, API keys, admin model. |
+| [realtime.md](architecture/realtime.md) | WebSocket hub, live event types, presence, reconnecting client. |
+| [storage.md](architecture/storage.md) | Pluggable fs/s3 blob storage, avatars, chat ciphertext, migration. |
+| [rendering.md](architecture/rendering.md) | satori/resvg share images + PWA service worker, the SSR footguns. |
+| [providers.md](architecture/providers.md) | FIFA match data, Sofascore odds, FIFA ranking, the cycletls engine. |
+| [testing.md](architecture/testing.md) | The 98% gate, vitest projects, pglite, factories. |
+| [i18n.md](architecture/i18n.md) | Four locales (en/fr/th/tlh), the all-four rule. |
+
+## Features (the what) - [features/index.md](features/index.md)
+
+| Doc | What's here |
+|---|---|
+| [competitions.md](features/competitions.md) | Multi-competition model + the `/[competition]/` routing. |
+| [predictions-and-scoring.md](features/predictions-and-scoring.md) | The core loop: predict, lock, finalize, score. |
+| [champion-pick.md](features/champion-pick.md) | Per-competition winner pick, FIFA-rank tier payouts. |
+| [best-scorer.md](features/best-scorer.md) | Golden Boot pick, goal-event-derived award. |
+| [leagues.md](features/leagues.md) | Competition-scoped groups, roles, visibility, SSO auto-join. |
+| [crowd-bot.md](features/crowd-bot.md) | The consensus "ghost" participant (MODE/MEAN). |
+| [odds.md](features/odds.md) | 1X2 decimal odds (Sofascore + BetExplorer). |
+| [reactions.md](features/reactions.md) | Match + chat emoji reactions. |
+| [notifications.md](features/notifications.md) | In-app notification center (the bell). |
+| [web-push.md](features/web-push.md) | VAPID push, per-category toggles, live goal/kickoff. |
+| [chat.md](features/chat.md) | E2E-encrypted league chat (threads, mentions, moderation, images). |
+| [tamper-evidence.md](features/tamper-evidence.md) | Commit-reveal hash-chain ledger + `/verify`. |
+| [share-images.md](features/share-images.md) | Prediction share cards. |
+| [pwa.md](features/pwa.md) | Install + update UX. |
+| [image-storage.md](features/image-storage.md) | Blobs out of Postgres (feature view). |
+| [easter-eggs.md](features/easter-eggs.md) | MLP skins, pony reactions, the Klingon locale. |
+
+## Find by question
+
+| If you're asking... | Go to |
+|---|---|
+| Where does business logic go? Why are routes thin? | [architecture/overview.md](architecture/overview.md) |
+| How do I add a validated mutation route? | [architecture/server.md](architecture/server.md) |
+| What error maps to which HTTP status? | [architecture/server.md](architecture/server.md) |
+| How is a prediction scored? When does it lock? | [features/predictions-and-scoring.md](features/predictions-and-scoring.md) |
+| How does the crowd/bot get its scoreline? | [features/crowd-bot.md](features/crowd-bot.md) |
+| Why did my new column not appear in dev? | [architecture/database.md](architecture/database.md) |
+| How do I add a user-facing string? | [architecture/i18n.md](architecture/i18n.md) |
+| How does live update reach the client? | [architecture/realtime.md](architecture/realtime.md) |
+| Where are images stored, and how do I migrate them? | [architecture/storage.md](architecture/storage.md), [features/image-storage.md](features/image-storage.md) |
+| How is SSO configured and kept secret-safe? | [architecture/auth.md](architecture/auth.md) |
+| How do I cut a release? What bumps major? | [operations.md](operations.md) |
+| Why Sofascore / FIFA ranking and not odds? | [decisions.md](decisions.md) |
+| What's the konami easter egg? | [features/easter-eggs.md](features/easter-eggs.md) |
+
+## Maintaining the brain
+
+This brain is **load-bearing documentation**: it must stay true to the code.
+When a change makes a brain doc wrong, fix the doc in the same change. When you
+discover the brain disagrees with reality, the code wins - correct the brain and
+note it. The enforceable version of this rule lives in the repo's `CLAUDE.md`
+("Keep the brain current"). New feature -> new `features/<name>.md` + a row in
+[features/index.md](features/index.md) + a row here.

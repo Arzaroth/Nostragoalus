@@ -1,13 +1,13 @@
 ---
 name: feature-treatment
-description: Ship a finished feature branch the full way - rebase onto master, run a max-effort multi-agent code review, fix everything confirmed, pass the gate, merge, and cut a release. Use when the user says "feature treatment", "treat this branch", "review and merge this feature", or names a worktree/branch to ship.
+description: Ship a finished feature branch the full way - rebase onto master, run a max-effort multi-agent code review, fix everything confirmed, update the brain/ knowledge base, pass the gate, merge, and cut a release. Use when the user says "feature treatment", "treat this branch", "review and merge this feature", or names a worktree/branch to ship.
 ---
 
 # Feature treatment
 
 The pipeline a finished feature branch goes through before it lands: **rebase →
-max review → fix → gate → merge → release → clean up**. The point is that nothing
-merges without an adversarial review and a green gate.
+max review → fix → update brain → gate → merge → release → clean up**. The point
+is that nothing merges without an adversarial review and a green gate.
 
 The branch to treat comes from the argument (a branch or worktree name). If none
 given, find it: `git worktree list` and `git branch` - the feature branch is the
@@ -62,7 +62,31 @@ worthwhile quality ones. For anything real-but-out-of-scope, add a `TODO.md`
 line rather than dropping it. Re-verify a claim before fixing - finders surface
 plausible-but-wrong items too.
 
-## 4. Gate (must be green before merge)
+## 4. Update the brain
+
+Bring the `brain/` knowledge base in line with what this feature changed - it
+ships in the SAME merge, not as a follow-up. Apply the **brain** skill (it has the
+full navigate / maintain / audit checklist); the essentials:
+
+- New feature -> add `brain/features/<name>.md` (dense, present-tense, ends with a
+  `## Sources` list of real code paths), then a row in `brain/features/index.md`
+  and the catalog table in `brain/BRAIN.md`.
+- Changed an existing feature -> update its `brain/features/*.md`. Changed
+  cross-cutting tech (schema, auth, realtime, storage, providers, build) -> update
+  the matching `brain/architecture/*.md` (and `database.md` tables/enums if the
+  schema moved).
+- New non-obvious decision (from the build or surfaced in review) -> append it to
+  `brain/decisions.md` with its WHY. New term -> `brain/glossary.md`.
+- Secret/easter-egg features go in the brain too (e.g.
+  `brain/features/easter-eggs.md`), just not in the public CHANGELOG/ROADMAP.
+- Style: normal prose, no em-dashes, relative cross-links, link source paths
+  rather than restate code.
+
+Commit the brain changes on the branch with the feature (or fold them into the
+review-fix commit) so the gate and the merge carry them. Quick check before
+committing: every relative link in a touched brain doc resolves to a real file.
+
+## 5. Gate (must be green before merge)
 
 ```bash
 pnpm exec nuxt typecheck
@@ -73,14 +97,14 @@ New branches you added (services, reorder/edge cases) must be covered or the
 coverage gate fails. Commit the review fixes on the branch:
 `fix(<area>): max-review fixes - <one-line summary>`.
 
-## 5. Merge
+## 6. Merge
 
 ```bash
 cd <main repo root>
 git merge --ff-only worktree-<name>      # fast-forward; the rebase made this clean
 ```
 
-## 6. Release
+## 7. Release
 
 Run the **release** skill. Pick the bump: **minor** for a user-facing feature,
 **patch** for fix-only. That skill does the docs sweep (CHANGELOG, README, API
@@ -91,7 +115,7 @@ with the library's own tagline) and
 `app-dev` container first**, and stash any unrelated dirty files (e.g. the user's
 `TODO.md`/`ROADMAP.md`) so the tree is clean, then restore them after.
 
-## 7. Clean up
+## 8. Clean up
 
 ```bash
 git worktree remove .claude/worktrees/<name>
@@ -100,5 +124,6 @@ git branch -d worktree-<name>
 
 ## Done when
 
-The feature is on `master`, the gate was green, a tag is pushed, and the worktree
-is gone. Report the version and a one-line summary of what was fixed in review.
+The feature is on `master`, the brain reflects the change, the gate was green, a
+tag is pushed, and the worktree is gone. Report the version and a one-line summary
+of what was fixed in review.
