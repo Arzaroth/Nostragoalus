@@ -1,6 +1,7 @@
 import { AwsClient } from 'aws4fetch'
 import type { StorageDriver } from '../driver'
 import { StorageError } from '../../errors'
+import { assertSafeKey } from '../keys'
 
 export interface S3DriverOptions {
   endpoint: string
@@ -32,8 +33,11 @@ export function s3Driver(options: S3DriverOptions): StorageDriver {
   }
 
   // Sign then fetch with the (injectable) fetch, rather than client.fetch, so tests
-  // can intercept the signed request.
+  // can intercept the signed request. Validate the key here too: the fs driver
+  // contains traversal via pathFor, but the s3 driver only string-concats into the
+  // URL, so this is its own backstop against a key escaping the bucket path.
   async function send(key: string, init: RequestInit): Promise<Response> {
+    assertSafeKey(key)
     const signed = await client.sign(urlFor(key), init)
     return doFetch(signed)
   }

@@ -80,6 +80,13 @@ describe('s3Driver', () => {
     expect(await d.exists('chat/none/0')).toBe(false)
     await expect(s3Driver(opts(status(500))).exists('a')).rejects.toBeInstanceOf(StorageError)
   })
+  it('rejects an unsafe key before signing or fetching (traversal backstop)', async () => {
+    const f = fakeS3()
+    const d = s3Driver(opts(f.fetchImpl))
+    await expect(d.get('../other-bucket/secret')).rejects.toBeInstanceOf(StorageError)
+    await expect(d.put('a/../../b', new Uint8Array([1]), 'image/png')).rejects.toBeInstanceOf(StorageError)
+    expect(f.calls).toHaveLength(0)
+  })
   it('delete tolerates 204 and 404 but throws on 5xx', async () => {
     const f = fakeS3()
     const d = s3Driver(opts(f.fetchImpl))

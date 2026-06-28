@@ -7,7 +7,9 @@ export function toHttpError(error: unknown): unknown {
   if (error instanceof ConflictError) return createError({ statusCode: 409, statusMessage: error.message })
   if (error instanceof ForbiddenError) return createError({ statusCode: 403, statusMessage: error.message })
   if (error instanceof ValidationError) return createError({ statusCode: 400, statusMessage: error.message })
-  if (error instanceof StorageError) return createError({ statusCode: 500, statusMessage: error.message })
+  // Generic client message: a StorageError's own message can carry the backend's
+  // internal path/key, so keep that out of the response (cause stays server-side).
+  if (error instanceof StorageError) return createError({ statusCode: 500, statusMessage: 'Storage error', cause: error })
   // A raw unique violation reaching here is a lost write race (e.g. two
   // concurrent joins hitting the membership PK): a conflict, not a 500.
   if (isUniqueViolation(error)) return createError({ statusCode: 409, statusMessage: 'Conflicting concurrent request' })
