@@ -185,6 +185,12 @@ export const match = pgTable(
     // Last odds fetch ATTEMPT (priced or not) - drives the polling cadence.
     oddsCheckedAt: timestamp('odds_checked_at', { withTimezone: true }),
     detailsFetchedAt: timestamp('details_fetched_at', { withTimezone: true }),
+    // High-water of the scoreline already announced as a live GOAL push (per
+    // side). A live goal pushes only when the score exceeds this, so a VAR
+    // disallow that dips the scoreline and then returns to an already-announced
+    // level can't fire a duplicate, non-revocable goal alert. Null = none pushed.
+    lastGoalPushHome: integer('last_goal_push_home'),
+    lastGoalPushAway: integer('last_goal_push_away'),
     scoringState: matchScoringStateEnum('scoring_state').notNull().default('PENDING'),
     scoredAtVersion: integer('scored_at_version'),
     scoredAt: timestamp('scored_at', { withTimezone: true }),

@@ -48,6 +48,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 - **Pinned the object-storage images**: the bundled rustfs and minio/mc images are now pinned to specific digests, so rebuilding or re-pulling the stack can't silently swap in a different storage backend or backup client.
 
 ### Fixed
+- **No more duplicate goal alerts**: a goal push now fires only when the live score climbs past the highest score already announced, so a VAR-disallowed goal that briefly drops the scoreline and then returns no longer pushes the same goal twice.
 - **Chat history no longer skips messages**: loading older messages could drop or repeat a message when several were sent in the same instant, right at a page boundary. Paging now uses a stable tiebreaker so every message shows exactly once. The same fix applies to the notifications feed.
 
 ### Security
