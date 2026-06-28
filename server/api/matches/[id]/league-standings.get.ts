@@ -3,7 +3,8 @@ import { db } from '../../../../db'
 import { match } from '../../../../db/schema'
 import { getMatchLeagueStandings } from '../../../utils/leaderboard/match'
 import { isAdmin, requireUser } from '../../../utils/auth-guards'
-import { getLeague, getMembership } from '../../../utils/leagues/service'
+import { resolveLeagueView } from '../../../utils/leagues/service'
+import { toHttpError } from '../../../utils/http'
 
 export default defineEventHandler(async (event) => {
   const matchId = getRouterParam(event, 'id') as string
@@ -20,16 +21,19 @@ export default defineEventHandler(async (event) => {
     return getMatchLeagueStandings(db, { matchId, competitionId: m.competitionId, viewerId: user.id })
   }
 
-  const league = await getLeague(db, String(query.league))
-  if (!league) throw createError({ statusCode: 404, statusMessage: 'League not found' })
-  const membership = await getMembership(db, league.id, user.id)
   // Members/admins only: this exposes each member's per-match pick, the same
   // sensitivity the crowd endpoint and the WS league channel restrict. A public
   // league's board would otherwise leak individual picks to any outsider.
-  const admin = membership ? false : await isAdmin(event)
-  if (!membership && !admin) {
-    throw createError({ statusCode: 404, statusMessage: 'League not found' })
+  let resolved
+  try {
+    resolved = await resolveLeagueView(db, String(query.league), user.id, {
+      membersOnly: true,
+      resolveAdmin: () => isAdmin(event),
+    })
+  } catch (error) {
+    throw toHttpError(error)
   }
+  const { league } = resolved
 
   // League mates see each other's picks (post-kickoff) even with private profiles.
   const standings = await getMatchLeagueStandings(db, {

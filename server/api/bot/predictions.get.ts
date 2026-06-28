@@ -3,7 +3,8 @@ import { BOT_USER_ID, type ConsensusMethod } from '../../../shared/types/bot'
 import { getBotOverviewCached } from '../../utils/bot/service'
 import { getCompetitionById, resolveCompetition } from '../../utils/competitions/store'
 import { isAdmin, requireUser } from '../../utils/auth-guards'
-import { canViewLeague, getLeague, getMembership, type LeagueRow } from '../../utils/leagues/service'
+import { resolveLeagueView, type LeagueRow } from '../../utils/leagues/service'
+import { toHttpError } from '../../utils/http'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
@@ -18,13 +19,14 @@ export default defineEventHandler(async (event) => {
   let includePrivate = false
   if (query.league) {
     const user = await requireUser(event)
-    league = await getLeague(db, String(query.league))
-    if (!league) throw createError({ statusCode: 404, statusMessage: 'League not found' })
-    const membership = await getMembership(db, league.id, user.id)
-    if (!canViewLeague(league, membership, membership ? false : admin)) {
-      throw createError({ statusCode: 404, statusMessage: 'League not found' })
+    let resolved
+    try {
+      resolved = await resolveLeagueView(db, String(query.league), user.id, { resolveAdmin: () => admin })
+    } catch (error) {
+      throw toHttpError(error)
     }
-    includePrivate = !!membership || admin
+    league = resolved.league
+    includePrivate = !!resolved.membership || admin
     competition = await getCompetitionById(db, league.competitionId)
   } else {
     competition = await resolveCompetition(db, (query.competition as string) || null)

@@ -21,6 +21,8 @@ import {
   findLeagueByCode,
   getLeague,
   getMembership,
+  resolveLeagueView,
+  resolveLeagueManage,
   joinLeagueByCode,
   joinPublicLeague,
   kickMember,
@@ -63,6 +65,94 @@ async function optOutExists(leagueId: string, userId: string): Promise<boolean> 
     .where(and(eq(leagueOptOut.leagueId, leagueId), eq(leagueOptOut.userId, userId)))
   return rows.length > 0
 }
+
+describe('resolveLeagueView', () => {
+  it('lets a member view a private league and hides it from a non-member', async () => {
+    await makeUser(db, 'owner')
+    await makeUser(db, 'stranger')
+    const id = await makeLeague(db, { competitionId, ownerId: 'owner', visibility: 'PRIVATE' })
+    const seen = await resolveLeagueView(db, id, 'owner')
+    expect(seen.membership?.role).toBe('OWNER')
+    // A non-member gets NotFound (-> 404), never Forbidden - existence stays hidden.
+    await expect(resolveLeagueView(db, id, 'stranger')).rejects.toBeInstanceOf(NotFoundError)
+  })
+
+  it('lets anyone view a public league unless membersOnly is set', async () => {
+    await makeUser(db, 'owner')
+    await makeUser(db, 'stranger')
+    const id = await makeLeague(db, { competitionId, ownerId: 'owner', visibility: 'PUBLIC' })
+    const view = await resolveLeagueView(db, id, 'stranger')
+    expect(view.membership).toBeNull()
+    await expect(resolveLeagueView(db, id, 'stranger', { membersOnly: true })).rejects.toBeInstanceOf(NotFoundError)
+  })
+
+  it('falls back to a lazily-resolved admin, but never resolves admin for a member', async () => {
+    await makeUser(db, 'owner')
+    await makeUser(db, 'admin')
+    const id = await makeLeague(db, { competitionId, ownerId: 'owner', visibility: 'PRIVATE' })
+    const adminView = await resolveLeagueView(db, id, 'admin', { resolveAdmin: () => true })
+    expect(adminView.membership).toBeNull()
+
+    let called = false
+    await resolveLeagueView(db, id, 'owner', {
+      resolveAdmin: () => {
+        called = true
+        return true
+      },
+    })
+    expect(called).toBe(false)
+  })
+
+  it('throws NotFound for a missing league', async () => {
+    await makeUser(db, 'owner')
+    await expect(resolveLeagueView(db, 'nope', 'owner', { resolveAdmin: () => true })).rejects.toBeInstanceOf(
+      NotFoundError,
+    )
+  })
+})
+
+describe('resolveLeagueManage', () => {
+  async function seed(visibility: 'PRIVATE' | 'PUBLIC' = 'PRIVATE') {
+    await makeUser(db, 'owner')
+    await makeUser(db, 'mod')
+    await makeUser(db, 'member')
+    await makeUser(db, 'stranger')
+    const id = await makeLeague(db, { competitionId, ownerId: 'owner', visibility })
+    await addLeagueMember(db, id, 'mod', 'MODERATOR')
+    await addLeagueMember(db, id, 'member', 'MEMBER')
+    return id
+  }
+
+  it('allows the manage roles and forbids a plain member', async () => {
+    const id = await seed()
+    expect((await resolveLeagueManage(db, id, 'owner')).membership?.role).toBe('OWNER')
+    expect((await resolveLeagueManage(db, id, 'mod')).membership?.role).toBe('MODERATOR')
+    await expect(resolveLeagueManage(db, id, 'member')).rejects.toBeInstanceOf(ForbiddenError)
+  })
+
+  it('honors requiredRole OWNER (a moderator is forbidden)', async () => {
+    const id = await seed()
+    expect((await resolveLeagueManage(db, id, 'owner', { requiredRole: 'OWNER' })).membership?.role).toBe('OWNER')
+    await expect(resolveLeagueManage(db, id, 'mod', { requiredRole: 'OWNER' })).rejects.toBeInstanceOf(ForbiddenError)
+  })
+
+  it('NotFounds a non-member (existence hidden) rather than leaking Forbidden, even on a public league', async () => {
+    const id = await seed('PUBLIC')
+    // The leak fix: a mutation guard hides existence from a non-member (-> 404).
+    await expect(resolveLeagueManage(db, id, 'stranger')).rejects.toBeInstanceOf(NotFoundError)
+  })
+
+  it('lets a site admin act when resolveAdmin is provided', async () => {
+    const id = await seed()
+    const out = await resolveLeagueManage(db, id, 'stranger', { requiredRole: 'OWNER', resolveAdmin: () => true })
+    expect(out.membership).toBeNull()
+  })
+
+  it('throws NotFound for a missing league', async () => {
+    await makeUser(db, 'owner')
+    await expect(resolveLeagueManage(db, 'nope', 'owner')).rejects.toBeInstanceOf(NotFoundError)
+  })
+})
 
 describe('createLeague', () => {
   it('creates the league with an OWNER membership and stamps the prompt flag', async () => {

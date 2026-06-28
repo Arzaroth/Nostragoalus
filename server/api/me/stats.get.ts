@@ -2,8 +2,9 @@ import { db } from '../../../db'
 import { isAdmin, requireUser } from '../../utils/auth-guards'
 import { getCompetitionById, resolveCompetition } from '../../utils/competitions/store'
 import { getLeaderboard } from '../../utils/leaderboard/service'
-import { canViewLeague, getLeague, getMembership } from '../../utils/leagues/service'
+import { resolveLeagueView } from '../../utils/leagues/service'
 import { getMyStats } from '../../utils/predictions/service'
+import { toHttpError } from '../../utils/http'
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
@@ -12,11 +13,14 @@ export default defineEventHandler(async (event) => {
   // League scope: rank/players are within that league (members see private
   // mates); the caller's own counters stay competition-wide.
   if (query.league) {
-    const league = await getLeague(db, String(query.league))
-    if (!league) throw createError({ statusCode: 404, statusMessage: 'League not found' })
-    const membership = await getMembership(db, league.id, user.id)
+    let resolved
+    try {
+      resolved = await resolveLeagueView(db, String(query.league), user.id, { resolveAdmin: () => isAdmin(event) })
+    } catch (error) {
+      throw toHttpError(error)
+    }
+    const { league, membership } = resolved
     const admin = membership ? false : await isAdmin(event)
-    if (!canViewLeague(league, membership, admin)) throw createError({ statusCode: 404, statusMessage: 'League not found' })
     const competition = await getCompetitionById(db, league.competitionId)
     if (!competition) return { stats: null }
     const [board, counters] = await Promise.all([

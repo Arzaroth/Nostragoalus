@@ -4,7 +4,8 @@ import { getLiveProvisionalPoints } from '../../utils/leaderboard/live'
 import { getLeagueRankSnapshots, getRankSnapshots, rankMovement, type RankSnapshot } from '../../utils/leaderboard/snapshots'
 import { getCompetitionById, resolveCompetition } from '../../utils/competitions/store'
 import { isAdmin, requireUser, requireUserOrApiKey } from '../../utils/auth-guards'
-import { canViewLeague, getLeague, getMembership } from '../../utils/leagues/service'
+import { resolveLeagueView } from '../../utils/leagues/service'
+import { toHttpError } from '../../utils/http'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
@@ -15,13 +16,14 @@ export default defineEventHandler(async (event) => {
   // and admins only - the outsider board has no snapshot to compare against).
   if (query.league) {
     const user = await requireUser(event)
-    const league = await getLeague(db, String(query.league))
-    if (!league) throw createError({ statusCode: 404, statusMessage: 'League not found' })
-    const membership = await getMembership(db, league.id, user.id)
-    const admin = membership ? false : await isAdmin(event)
-    if (!canViewLeague(league, membership, admin)) {
-      throw createError({ statusCode: 404, statusMessage: 'League not found' })
+    let resolved
+    try {
+      resolved = await resolveLeagueView(db, String(query.league), user.id, { resolveAdmin: () => isAdmin(event) })
+    } catch (error) {
+      throw toHttpError(error)
     }
+    const { league, membership } = resolved
+    const admin = membership ? false : await isAdmin(event)
     const competition = await getCompetitionById(db, league.competitionId)
     if (query.competition && competition && query.competition !== competition.slug) {
       throw createError({ statusCode: 400, statusMessage: 'League belongs to another competition' })
