@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-06-28
+
 ### Added
 - **Player stats tab**: the matches view has a new "Stats" tab next to Fixtures and Standings, showing the competition's top scorers and top assists side by side. Room to grow into team boards (best attack/defense) later.
 
