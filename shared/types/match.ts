@@ -72,6 +72,13 @@ export interface TopScorer {
   penalties: number | null
 }
 
+// The two Stats boards, each ranked and sliced on its own metric so a
+// high-assist/low-goal player isn't dropped by the goals ranking.
+export interface PlayerRankings {
+  scorers: TopScorer[]
+  assists: TopScorer[]
+}
+
 export interface NormalizedMatch {
   providerMatchId: string
   providerStageId?: string | null

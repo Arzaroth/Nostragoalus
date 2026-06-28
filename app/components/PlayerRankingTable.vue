@@ -7,11 +7,13 @@ const props = withDefaults(
 )
 const { t } = useI18n()
 
-// The endpoint sorts by goals; for the assist board we re-rank the same set by
-// assists and drop zero rows so it isn't padded with players who never assisted.
-// Ties break on the other metric then name, matching the endpoint's own order.
-const ranked = computed(() =>
-  props.rows
+// Rank by the board's metric, drop zero rows, and slice. Ties break on the other
+// metric then name (matching the endpoint's order); the displayed rank, though,
+// is standard competition ranking ("1224") - players level on the metric share a
+// rank and the next distinct value skips, so e.g. four players on 4 goals all
+// read joint-2nd and the next is 6th.
+const ranked = computed(() => {
+  const sorted = props.rows
     .map((r) => ({
       row: r,
       flag: flagUrl(r.teamCode),
@@ -20,8 +22,16 @@ const ranked = computed(() =>
     }))
     .filter((e) => e.value > 0)
     .sort((a, b) => b.value - a.value || b.tiebreak - a.tiebreak || a.row.playerName.localeCompare(b.row.playerName))
-    .slice(0, props.limit),
-)
+    .slice(0, props.limit)
+  let prevValue: number | null = null
+  let prevRank = 0
+  return sorted.map((e, i) => {
+    const rank = e.value === prevValue ? prevRank : i + 1
+    prevValue = e.value
+    prevRank = rank
+    return { ...e, rank }
+  })
+})
 </script>
 
 <template>
@@ -38,12 +48,12 @@ const ranked = computed(() =>
         <td colspan="3" class="py-3 text-center" style="color: var(--p-text-muted-color)">{{ t('stats.empty') }}</td>
       </tr>
       <tr
-        v-for="(e, i) in ranked"
+        v-for="e in ranked"
         :key="`${e.row.playerName}-${e.row.teamCode ?? ''}`"
         class="border-t"
         style="border-color: var(--p-content-border-color)"
       >
-        <td class="py-2 text-left tabular-nums" style="color: var(--p-text-muted-color)">{{ i + 1 }}</td>
+        <td class="py-2 text-left tabular-nums" style="color: var(--p-text-muted-color)">{{ e.rank }}</td>
         <td class="text-left">
           <span class="flex items-center gap-2">
             <img v-if="e.flag" :src="e.flag || ''" class="w-5 h-5 rounded" alt="" >

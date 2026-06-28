@@ -1,21 +1,23 @@
 import { eq } from 'drizzle-orm'
 import { db } from '../../../db'
+import type { PlayerRankings } from '../../../shared/types/match'
 import { providerForCompetition } from '../../utils/providers'
 import { resolveCompetition } from '../../utils/competitions/store'
 import { resolveCompetitionSeason } from '../../utils/sync/competition'
-import { getCompetitionTopScorers } from '../../utils/stats/scorers'
+import { getCompetitionPlayerRankings, rankPlayers } from '../../utils/stats/scorers'
 import { goalEvent } from '../../../db/schema'
 
-const cache = new Map<string, { at: number; scorers: unknown[] }>()
+const EMPTY: PlayerRankings = { scorers: [], assists: [] }
+const cache = new Map<string, { at: number; rankings: PlayerRankings }>()
 const TTL_MS = 10 * 60 * 1000
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async (event): Promise<PlayerRankings> => {
   const query = getQuery(event)
   const competition = await resolveCompetition(db, (query.competition as string) || null)
-  if (!competition) return { scorers: [] }
+  if (!competition) return EMPTY
 
   const cached = cache.get(competition.id)
-  if (cached && Date.now() - cached.at < TTL_MS) return { scorers: cached.scorers }
+  if (cached && Date.now() - cached.at < TTL_MS) return cached.rankings
 
   const provider = providerForCompetition(competition, await resolveCompetitionSeason(db, competition))
 
@@ -29,13 +31,14 @@ export default defineEventHandler(async (event) => {
     const teamId = teamRow[0]?.teamId
     if (teamId) {
       try {
-        const scorers = await provider.getPlayerStats({ teamId })
+        const players = await provider.getPlayerStats({ teamId })
         // FIFA hasn't published aggregated player stats for an in-progress edition
         // (the array comes back empty); fall through to the local goal-event
         // aggregation rather than blanking the rankings.
-        if (scorers.length > 0) {
-          cache.set(competition.id, { at: Date.now(), scorers })
-          return { scorers }
+        if (players.length > 0) {
+          const rankings = rankPlayers(players)
+          cache.set(competition.id, { at: Date.now(), rankings })
+          return rankings
         }
       } catch {
         // fall through to local / football-data
@@ -46,24 +49,24 @@ export default defineEventHandler(async (event) => {
   // Local goal-event aggregation (goals + assists). This is the live path while
   // FIFA's official aggregate is empty, so cache it like the official one - the
   // empty official result used to populate the cache and no longer does.
-  const local = await getCompetitionTopScorers(db, competition.id)
-  if (local.length > 0) {
-    cache.set(competition.id, { at: Date.now(), scorers: local })
-    return { scorers: local }
+  const local = await getCompetitionPlayerRankings(db, competition.id)
+  if (local.scorers.length > 0 || local.assists.length > 0) {
+    cache.set(competition.id, { at: Date.now(), rankings: local })
+    return local
   }
 
-  // A provider that exposes scorers directly (e.g. football-data).
+  // A provider that exposes scorers directly (e.g. football-data); goals only.
   if (provider.getTopScorers) {
     try {
-      const scorers = await provider.getTopScorers({ season: competition.seasonHint ?? '' })
-      cache.set(competition.id, { at: Date.now(), scorers })
-      return { scorers }
+      const rankings = rankPlayers(await provider.getTopScorers({ season: competition.seasonHint ?? '' }))
+      cache.set(competition.id, { at: Date.now(), rankings })
+      return rankings
     } catch {
-      return { scorers: [] }
+      return EMPTY
     }
   }
 
-  return { scorers: [] }
+  return EMPTY
 })
 
 defineRouteMeta({
@@ -72,7 +75,7 @@ defineRouteMeta({
       "Competitions"
     ],
     "summary": "Player rankings",
-    "description": "Per-player goals and assists for the competition, from official sources (FIFA player stats or UEFA rankings).",
+    "description": "Top scorers and top assists for the competition, each ranked on its own metric, from official sources (FIFA player stats or UEFA rankings) with a local goal-event fallback.",
     "parameters": [
       {
         "in": "query",
@@ -86,7 +89,7 @@ defineRouteMeta({
     ],
     "responses": {
       "200": {
-        "description": "Array of {playerName, teamName, teamCode, goals, assists}."
+        "description": "{ scorers, assists }, each an array of {playerName, teamName, teamCode, goals, assists}."
       }
     }
   },

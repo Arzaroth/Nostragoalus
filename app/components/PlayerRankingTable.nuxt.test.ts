@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
+import type { DOMWrapper } from '@vue/test-utils'
 import PlayerRankingTable from './PlayerRankingTable.vue'
 import type { TopScorer } from '#shared/types/match'
 
@@ -73,5 +74,20 @@ describe('PlayerRankingTable', () => {
     // Alpha has more assists, so it leads despite the later name.
     expect(body[0].text()).toContain('Alpha')
     expect(body[1].text()).toContain('Zeta')
+  })
+
+  it('shares the rank for players level on the metric and skips after a tie', async () => {
+    const rows: TopScorer[] = [
+      { playerName: 'Lead', teamName: 'A', teamCode: 'AAA', goals: 6, assists: 0, penalties: null },
+      { playerName: 'Tie One', teamName: 'B', teamCode: 'BBB', goals: 4, assists: 2, penalties: null },
+      { playerName: 'Tie Two', teamName: 'C', teamCode: 'CCC', goals: 4, assists: 1, penalties: null },
+      { playerName: 'Tie Three', teamName: 'D', teamCode: 'DDD', goals: 4, assists: 0, penalties: null },
+      { playerName: 'Trailer', teamName: 'E', teamCode: 'EEE', goals: 3, assists: 0, penalties: null },
+    ]
+    wrapper = await mountSuspended(PlayerRankingTable, { props: { rows, metric: 'goals' } })
+    // Drop the header row; the first cell of each body row is the rank:
+    // 1, then joint-2nd x3, then 5th.
+    const ranks = wrapper.findAll('tr').slice(1).map((tr: DOMWrapper<Element>) => tr.findAll('td')[0].text())
+    expect(ranks).toEqual(['1', '2', '2', '2', '5'])
   })
 })
