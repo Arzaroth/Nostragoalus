@@ -14,7 +14,7 @@ import {
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors'
 import { notifyLeagueJoin, notifyLeagueRemoved, notifyLeagueRole } from '../notifications/events'
 import { generateJoinCode, normalizeJoinCode, type JoinCodeGenerator } from './code'
-import { canKick, canSeeJoinCode, type LeagueRole } from './permissions'
+import { canKick, canManageLeague, canSeeJoinCode, type LeagueRole } from './permissions'
 
 export type LeagueVisibility = 'PRIVATE' | 'PUBLIC'
 
@@ -91,6 +91,56 @@ export function canViewLeague(
   isAdmin = false,
 ): boolean {
   return membership !== null || row.visibility === 'PUBLIC' || isAdmin
+}
+
+export type ResolvedLeague = { league: LeagueRow; membership: { role: LeagueRole; joinedAt: Date } | null }
+
+// One guard for a SCOPED READ. Throws NotFoundError (-> 404, never a 403, via
+// toHttpError) when the league is missing OR not viewable, so a read can't reveal
+// that a league it isn't allowed to see exists. `membersOnly` drops the
+// PUBLIC-visible path (league-scoped crowd / reactions / per-match standings are
+// members-only even for a public league). `resolveAdmin` is awaited lazily, only
+// when membership and the public path don't already grant view, so a member read
+// never pays for the admin check. Callers map the throw with toHttpError (or use
+// defineValidatedHandler).
+export async function resolveLeagueView(
+  db: AppDatabase,
+  leagueId: string,
+  userId: string,
+  opts: { membersOnly?: boolean; resolveAdmin?: () => boolean | Promise<boolean> } = {},
+): Promise<ResolvedLeague> {
+  const league = await getLeague(db, leagueId)
+  if (!league) throw new NotFoundError('league not found')
+  const membership = await getMembership(db, leagueId, userId)
+  if (membership) return { league, membership }
+  if (!opts.membersOnly && league.visibility === 'PUBLIC') return { league, membership }
+  if (opts.resolveAdmin && (await opts.resolveAdmin())) return { league, membership }
+  throw new NotFoundError('league not found')
+}
+
+// One guard for a MUTATION / manage action. A non-member non-admin gets a 404 (the
+// same as a read would, so a mutation can't be used to probe whether a private
+// league exists), while a member who lacks the required role gets a 403 (they
+// already know it exists). `requiredRole` defaults to the manage set (OWNER or
+// MODERATOR); pass 'OWNER' for owner-only actions. Provide `resolveAdmin` only on
+// the routes that let a site admin act in a league they don't belong to.
+export async function resolveLeagueManage(
+  db: AppDatabase,
+  leagueId: string,
+  userId: string,
+  opts: { requiredRole?: 'OWNER' | 'MANAGE'; resolveAdmin?: () => boolean | Promise<boolean> } = {},
+): Promise<ResolvedLeague> {
+  const league = await getLeague(db, leagueId)
+  if (!league) throw new NotFoundError('league not found')
+  const membership = await getMembership(db, leagueId, userId)
+  const admin = opts.resolveAdmin ? await opts.resolveAdmin() : false
+  // A non-member non-admin gets a 404 (hide existence, same as a read) rather than
+  // a 403, so a mutation can't be used to probe a private league's existence.
+  if (!membership && !admin) throw new NotFoundError('league not found')
+  const roleOk =
+    admin || (opts.requiredRole === 'OWNER' ? membership?.role === 'OWNER' : canManageLeague(membership?.role))
+  if (!roleOk) throw new ForbiddenError('insufficient league role')
+  return { league, membership }
 }
 
 export interface CreateLeagueOptions {

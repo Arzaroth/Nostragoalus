@@ -2,17 +2,20 @@ import { db } from '../../../../db'
 import { isAdmin, requireUser } from '../../../utils/auth-guards'
 import { getCompetitionById } from '../../../utils/competitions/store'
 import { canSeeJoinCode } from '../../../utils/leagues/permissions'
-import { canViewLeague, countLeagueMembers, getLeague, getMembership, listLeagueMembers } from '../../../utils/leagues/service'
+import { countLeagueMembers, listLeagueMembers, resolveLeagueView } from '../../../utils/leagues/service'
+import { toHttpError } from '../../../utils/http'
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
   const id = getRouterParam(event, 'id')!
-  const league = await getLeague(db, id)
-  if (!league) throw createError({ statusCode: 404, statusMessage: 'League not found' })
-  const membership = await getMembership(db, id, user.id)
+  let resolved
+  try {
+    resolved = await resolveLeagueView(db, id, user.id, { resolveAdmin: () => isAdmin(event) })
+  } catch (error) {
+    throw toHttpError(error)
+  }
+  const { league, membership } = resolved
   const admin = membership ? false : await isAdmin(event)
-  // Private leagues 404 (not 403) for outsiders so ids never leak existence.
-  if (!canViewLeague(league, membership, admin)) throw createError({ statusCode: 404, statusMessage: 'League not found' })
   const includePrivate = !!membership || admin
   const [competition, members, totalMembers] = await Promise.all([
     getCompetitionById(db, league.competitionId),

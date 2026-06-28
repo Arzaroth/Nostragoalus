@@ -2,7 +2,8 @@ import { db } from '../../../db'
 import { getCompetitionById, resolveCompetition } from '../../utils/competitions/store'
 import { getCrowdTotals } from '../../utils/predictions/service'
 import { isAdmin, requireUser } from '../../utils/auth-guards'
-import { getLeague, getMembership } from '../../utils/leagues/service'
+import { resolveLeagueView } from '../../utils/leagues/service'
+import { toHttpError } from '../../utils/http'
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
@@ -10,15 +11,19 @@ export default defineEventHandler(async (event) => {
 
   // League crowd is display-only; the scoring bonus always uses everyone.
   if (query.league) {
-    const league = await getLeague(db, String(query.league))
-    if (!league) throw createError({ statusCode: 404, statusMessage: 'League not found' })
-    const membership = await getMembership(db, league.id, user.id)
     // Members/admins only: the live crowd consensus is a members feature (the
     // WS league channel is members-only too), and folding private-profile
     // members into a small public league's totals would deanonymize them.
-    if (!membership && !(await isAdmin(event))) {
-      throw createError({ statusCode: 404, statusMessage: 'League not found' })
+    let resolved
+    try {
+      resolved = await resolveLeagueView(db, String(query.league), user.id, {
+        membersOnly: true,
+        resolveAdmin: () => isAdmin(event),
+      })
+    } catch (error) {
+      throw toHttpError(error)
     }
+    const { league } = resolved
     const competition = await getCompetitionById(db, league.competitionId)
     if (query.competition && competition && query.competition !== competition.slug) {
       throw createError({ statusCode: 400, statusMessage: 'League belongs to another competition' })

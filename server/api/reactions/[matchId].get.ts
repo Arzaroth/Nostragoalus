@@ -1,7 +1,8 @@
 import { db } from '../../../db'
 import { getSessionUser, isAdmin } from '../../utils/auth-guards'
-import { getLeague, getMembership } from '../../utils/leagues/service'
+import { resolveLeagueView } from '../../utils/leagues/service'
 import { getMatchReactionTotals, getMyReaction } from '../../utils/reactions/service'
+import { toHttpError } from '../../utils/http'
 
 // Global reaction counts are public (read-only aggregates, no PII): the bar
 // renders for guests too, just without a highlighted "mine". League-scoped
@@ -13,12 +14,16 @@ export default defineEventHandler(async (event) => {
 
   if (query.league) {
     if (!user) throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
-    const league = await getLeague(db, String(query.league))
-    if (!league) throw createError({ statusCode: 404, statusMessage: 'League not found' })
-    const membership = await getMembership(db, league.id, user.id)
-    if (!membership && !(await isAdmin(event))) {
-      throw createError({ statusCode: 404, statusMessage: 'League not found' })
+    let resolved
+    try {
+      resolved = await resolveLeagueView(db, String(query.league), user.id, {
+        membersOnly: true,
+        resolveAdmin: () => isAdmin(event),
+      })
+    } catch (error) {
+      throw toHttpError(error)
     }
+    const { league } = resolved
     return {
       totals: await getMatchReactionTotals(db, matchId, { leagueId: league.id }),
       mine: await getMyReaction(db, user.id, matchId),

@@ -2,7 +2,8 @@ import { db } from '../../../db'
 import { resolveCompetition } from '../../utils/competitions/store'
 import { getCompetitionReactionTotals, getMyCompetitionReactions } from '../../utils/reactions/service'
 import { getSessionUser, isAdmin } from '../../utils/auth-guards'
-import { getLeague, getMembership } from '../../utils/leagues/service'
+import { resolveLeagueView } from '../../utils/leagues/service'
+import { toHttpError } from '../../utils/http'
 
 // Bulk reaction counts for a whole competition's matches, keyed by match id: the
 // fixtures list fetches once instead of one request per card. Global counts are
@@ -15,12 +16,16 @@ export default defineEventHandler(async (event) => {
 
   if (query.league) {
     if (!user) throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
-    const league = await getLeague(db, String(query.league))
-    if (!league) throw createError({ statusCode: 404, statusMessage: 'League not found' })
-    const membership = await getMembership(db, league.id, user.id)
-    if (!membership && !(await isAdmin(event))) {
-      throw createError({ statusCode: 404, statusMessage: 'League not found' })
+    let resolved
+    try {
+      resolved = await resolveLeagueView(db, String(query.league), user.id, {
+        membersOnly: true,
+        resolveAdmin: () => isAdmin(event),
+      })
+    } catch (error) {
+      throw toHttpError(error)
     }
+    const { league } = resolved
     return {
       totals: await getCompetitionReactionTotals(db, league.competitionId, { leagueId: league.id }),
       mine: await getMyCompetitionReactions(db, user.id, league.competitionId),
