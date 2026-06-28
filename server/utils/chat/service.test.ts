@@ -500,6 +500,50 @@ describe('editMessage', () => {
     ).rejects.toBeInstanceOf(ValidationError)
     await client.close()
   })
+
+  it('keeps a new image when the edit removes the highest idx (no key reuse)', async () => {
+    const { db, client, owner, leagueId, storage } = await setup()
+    await enableWith(db, leagueId, owner, [owner])
+    const m = await postMessage(
+      db,
+      {
+        leagueId,
+        userId: owner,
+        ciphertext: 'orig',
+        epoch: 1,
+        images: [
+          { ciphertext: 'A', byteSize: 1 },
+          { ciphertext: 'B', byteSize: 1 },
+        ],
+      },
+      storage,
+    )
+    // Remove the top idx (1) and append a new image in the same edit. The new idx
+    // must not reuse 1, or the post-tx cleanup would delete the just-written object.
+    const res = await editMessage(
+      db,
+      {
+        leagueId,
+        messageId: m.id,
+        userId: owner,
+        ciphertext: 'edited',
+        removeIdxs: [1],
+        addImages: [{ ciphertext: 'NEW', byteSize: 1 }],
+      },
+      storage,
+    )
+    expect(res.attachments).toEqual([
+      { idx: 0, epoch: 1 },
+      { idx: 2, epoch: 1 },
+    ])
+    expect((await getAttachmentCiphertext(db, m.id, 0, owner, storage)).ciphertext).toBe('A')
+    await expect(getAttachmentCiphertext(db, m.id, 1, owner, storage)).rejects.toBeInstanceOf(NotFoundError)
+    // The appended image survives - its object was not wiped by the removal cleanup.
+    expect((await getAttachmentCiphertext(db, m.id, 2, owner, storage)).ciphertext).toBe('NEW')
+    expect(storage.store.has(`chat/${m.id}/2`)).toBe(true)
+    expect(storage.store.has(`chat/${m.id}/1`)).toBe(false)
+    await client.close()
+  })
 })
 
 describe('listMessages', () => {
