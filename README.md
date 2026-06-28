@@ -123,6 +123,9 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
 - A **what's new** badge: a dot on your account menu when the changelog has versions
   you have not seen, with those entries highlighted on the About page (remembered per
   account, across devices)
+- **Install as an app**: an in-app banner surfaces the browser's install prompt (add to home
+  screen, full-screen launch), with a clearer update flow that shows a downloading step before
+  the reload prompt and sits full-width along the bottom on phones
 - Four languages (EN / FR / TH / tlh), light/dark/system themes saved per account
 - Auto-generated **API docs** at `/docs/api` (OpenAPI + Scalar)
 
