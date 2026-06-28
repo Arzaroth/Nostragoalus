@@ -156,10 +156,10 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       backed up by nothing. Either add an fs-root tar/copy into `media-<stamp>` when
       the driver is fs, or document loudly that fs deployers must back the root up
       themselves. (The shipped Docker stack defaults to s3, which IS covered.)
-- [ ] **Pin the storage images**: `rustfs/rustfs:latest` (pre-1.0 beta) and
-      `minio/mc` (backup/restore) are unpinned while the rest of the stack is
-      version-pinned. A `docker compose pull` can swap in a breaking backend/mc.
-      Pin both to a known-good tag.
+- [x] **Pin the storage images**: rustfs and minio/mc are now pinned by
+      `tag@sha256` to the digests proven in prod (rustfs `1.0.0-beta.8`, mc
+      `RELEASE.2025-08-13T08-35-41Z`), so a `docker compose pull` can't swap in a
+      breaking backend/mc.
 - [ ] **Don't ship usable default object-store creds in prod**: `compose.yaml`
       falls back to `rustfsadmin/rustfsadmin` via `:-`. rustfs has no published
       prod port (in-network only), so the risk is modest, but a hardened deploy
