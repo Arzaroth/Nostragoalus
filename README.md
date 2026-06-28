@@ -102,6 +102,8 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
 - **Group standings** on the fixtures page: a live-aware table per group (the same one the
   match page shows), with team links and flags, ranked by each competition's official
   tiebreakers (head-to-head first for WC2026 / Euro2024, goal difference first for WC2022)
+- **Player stats** tab on the matches view, beside Fixtures and Standings: side-by-side top
+  scorers and top assists for the competition, with team flags
 - Auth: identifier-first login with **SSO domain capture** - runtime-configurable OIDC / SAML /
   Google providers (several domains each, display names, envelope-encrypted secrets, in-place
   editing, SP metadata for IdP setup); email + password (HIBP-checked) with mailed reset; optional
