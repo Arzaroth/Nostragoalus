@@ -26,6 +26,10 @@ export interface MatchTransition {
   prevAway: number | null
   home: number | null
   away: number | null
+  // Per-side high-water of the scoreline already pushed as a live goal alert,
+  // carried from the existing row so the goal-push dedup needs no extra query.
+  lastGoalPushHome: number | null
+  lastGoalPushAway: number | null
 }
 
 export interface UpsertResult {
@@ -134,6 +138,8 @@ export async function upsertMatches(
         prevAway: prev.fullTimeAway,
         home: m.score.fullTime.home,
         away: m.score.fullTime.away,
+        lastGoalPushHome: prev.lastGoalPushHome,
+        lastGoalPushAway: prev.lastGoalPushAway,
       })
     }
   }

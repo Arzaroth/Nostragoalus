@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { eq } from 'drizzle-orm'
 import { createTestDb } from '../../../tests/db'
+import { match } from '../../../db/schema'
 import { makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
 import { findRoundId } from '../sync/rounds'
 import type { MatchTransition } from '../sync/upsert-matches'
@@ -35,6 +37,8 @@ function transition(over: Partial<MatchTransition>): MatchTransition {
     prevAway: null,
     home: null,
     away: null,
+    lastGoalPushHome: null,
+    lastGoalPushAway: null,
     ...over,
   }
 }
@@ -85,6 +89,36 @@ describe('notifyLiveMatchEvents', () => {
     ])
     expect(sendMock).toHaveBeenCalledTimes(1)
     expect(JSON.parse(sendMock.mock.calls[0]![1] as string).title).toMatch(/GOAL/i)
+    await client.close()
+  })
+
+  it('records a per-side high-water and never re-pushes an already-announced scoreline', async () => {
+    setVapid(true)
+    const { db, client, matchId } = await setup()
+    // First real goal: pushes and persists the high-water on the match row.
+    await notifyLiveMatchEvents(db, 'world-cup-2026', [
+      transition({ matchId, prevStatus: 'LIVE', status: 'LIVE', prevHome: 0, prevAway: 0, home: 1, away: 0 }),
+    ])
+    expect(sendMock).toHaveBeenCalledTimes(1)
+    const [row] = await db
+      .select({ h: match.lastGoalPushHome, a: match.lastGoalPushAway })
+      .from(match)
+      .where(eq(match.id, matchId))
+    expect(row).toMatchObject({ h: 1, a: 0 })
+
+    // VAR disallows (score dipped) then returns to 1-0: the transition carries the
+    // persisted high-water, so the same scoreline does not re-push.
+    sendMock.mockClear()
+    await notifyLiveMatchEvents(db, 'world-cup-2026', [
+      transition({ matchId, prevStatus: 'LIVE', status: 'LIVE', prevHome: 0, prevAway: 0, home: 1, away: 0, lastGoalPushHome: 1, lastGoalPushAway: 0 }),
+    ])
+    expect(sendMock).not.toHaveBeenCalled()
+
+    // A genuinely new goal beyond the high-water still pushes.
+    await notifyLiveMatchEvents(db, 'world-cup-2026', [
+      transition({ matchId, prevStatus: 'LIVE', status: 'LIVE', prevHome: 1, prevAway: 0, home: 2, away: 0, lastGoalPushHome: 1, lastGoalPushAway: 0 }),
+    ])
+    expect(sendMock).toHaveBeenCalledTimes(1)
     await client.close()
   })
 
