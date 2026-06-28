@@ -526,9 +526,11 @@ export async function editMessage(
   const survivors = existing.filter((a) => !removeIdxs.has(a.idx))
   if (survivors.length + addImages.length > MAX_IMAGES) throw new ValidationError('too many images')
 
-  // New images append after the surviving ones, keeping idx stable for the kept
-  // images (gaps from a removal are fine - idx is an identity, not a position).
-  let nextIdx = survivors.reduce((max, a) => Math.max(max, a.idx), -1) + 1
+  // New images append after the highest idx that ever existed on this message
+  // (not just the survivors) - a removed idx must never be reused, or a new image
+  // written to that key would be wiped by the post-tx cleanup that deletes the
+  // removed idxs' objects. Gaps are fine: idx is an identity, not a position.
+  let nextIdx = existing.reduce((max, a) => Math.max(max, a.idx), -1) + 1
   const added: { idx: number; epoch: number; storageKey: string; byteSize: number }[] = []
   if (addImages.length > 0) {
     const store = resolveStorage(driver)
