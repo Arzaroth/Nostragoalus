@@ -8,10 +8,24 @@
 //   docker compose --profile tools run --rm -v <dir>:/backups mc mirror --overwrite --remove /backups/media-<stamp> ng/<bucket>
 // --clean --if-exists drops and recreates DB objects; the media mirror (--remove)
 // makes the bucket match the backup exactly. Stop the app first if it is mid-write.
-import { execSync, execFileSync } from 'node:child_process'
-import { existsSync, statSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { existsSync, statSync, openSync, closeSync, readFileSync } from 'node:fs'
 import { basename, dirname, resolve } from 'node:path'
 import { createInterface } from 'node:readline/promises'
+
+// Resolve the S3 bucket the way docker compose does (from .env), since mise does
+// not autoload .env into this process - otherwise a customized bucket that is not
+// exported to the shell would silently fall back to the default and mistarget.
+function s3Bucket() {
+  if (process.env.NUXT_STORAGE_S3_BUCKET) return process.env.NUXT_STORAGE_S3_BUCKET
+  try {
+    const m = readFileSync('.env', 'utf8').match(/^\s*NUXT_STORAGE_S3_BUCKET\s*=\s*(.+?)\s*$/m)
+    if (m) return m[1].replace(/^["']|["']$/g, '')
+  } catch {
+    // no .env (or unreadable) - fall through to the default
+  }
+  return 'nostragoalus'
+}
 
 const file = process.env.usage_file
 if (!file || !existsSync(file)) {
@@ -23,7 +37,15 @@ if (!file || !existsSync(file)) {
 const skipMedia = Boolean(process.env.usage_no_media)
 const stamp = basename(file).match(/^nostragoalus-(.+)\.dump$/)?.[1] ?? null
 const mediaDir = stamp ? `${dirname(file)}/media-${stamp}` : null
-const hasMedia = !skipMedia && mediaDir != null && existsSync(mediaDir) && statSync(mediaDir).isDirectory()
+const hasMedia = mediaDir != null && existsSync(mediaDir) && statSync(mediaDir).isDirectory()
+
+// Preflight before the destructive DB restore: refuse to drop+recreate the DB if
+// its paired image backup is expected but absent (--no-media not set), since that
+// would leave a restored DB whose rows reference images that are not there.
+if (!skipMedia && !hasMedia) {
+  console.error(`no paired image backup next to ${file} (expected media-${stamp ?? '<stamp>'}/). Pass --no-media to restore the database alone.`)
+  process.exit(1)
+}
 
 if (process.stdin.isTTY) {
   const rl = createInterface({ input: process.stdin, output: process.stdout })
@@ -37,14 +59,20 @@ if (process.stdin.isTTY) {
   }
 }
 
-execSync(`docker compose exec -T db pg_restore -U nostragoalus -d nostragoalus --clean --if-exists < ${JSON.stringify(file)}`, {
-  stdio: ['ignore', 'inherit', 'inherit'],
-  shell: '/bin/sh',
-})
+// No shell: the dump is fed to pg_restore on stdin via an fd, so the file path
+// (a user-supplied arg) is never parsed by a shell.
+const restoreFd = openSync(file, 'r')
+try {
+  execFileSync('docker', ['compose', 'exec', '-T', 'db', 'pg_restore', '-U', 'nostragoalus', '-d', 'nostragoalus', '--clean', '--if-exists'], {
+    stdio: [restoreFd, 'inherit', 'inherit'],
+  })
+} finally {
+  closeSync(restoreFd)
+}
 console.log(`restored ${file}`)
 
-if (hasMedia) {
-  const bucket = process.env.NUXT_STORAGE_S3_BUCKET || 'nostragoalus'
+if (!skipMedia && hasMedia) {
+  const bucket = s3Bucket()
   console.log(`mirroring ${mediaDir} -> bucket ${bucket}`)
   execFileSync(
     'docker',
@@ -55,6 +83,4 @@ if (hasMedia) {
     { stdio: ['ignore', 'inherit', 'inherit'] },
   )
   console.log(`restored images from ${mediaDir}`)
-} else if (!skipMedia && stamp) {
-  console.log(`note: no paired image backup (media-${stamp}) next to the dump - database restored without images`)
 }

@@ -12,9 +12,23 @@
 // The media mirror copies the image bucket object-for-object (consistent, unlike
 // tarring a live store), AFTER the dump - so the image set is a superset of the
 // DB's references and a restore never finds a row pointing at a missing image.
-import { execSync, execFileSync } from 'node:child_process'
-import { mkdirSync, statSync, readdirSync, unlinkSync, rmSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { mkdirSync, statSync, readdirSync, unlinkSync, rmSync, openSync, closeSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+
+// Resolve the S3 bucket the way docker compose does (from .env), since mise does
+// not autoload .env into this process - otherwise a customized bucket that is not
+// exported to the shell would silently fall back to the default and mistarget.
+function s3Bucket() {
+  if (process.env.NUXT_STORAGE_S3_BUCKET) return process.env.NUXT_STORAGE_S3_BUCKET
+  try {
+    const m = readFileSync('.env', 'utf8').match(/^\s*NUXT_STORAGE_S3_BUCKET\s*=\s*(.+?)\s*$/m)
+    if (m) return m[1].replace(/^["']|["']$/g, '')
+  } catch {
+    // no .env (or unreadable) - fall through to the default
+  }
+  return 'nostragoalus'
+}
 
 const outdir = process.env.usage_outdir || 'backups'
 mkdirSync(outdir, { recursive: true })
@@ -22,10 +36,16 @@ mkdirSync(outdir, { recursive: true })
 const stamp = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19)
 const file = `${outdir}/nostragoalus-${stamp}.dump`
 
-execSync(`docker compose exec -T db pg_dump -U nostragoalus -Fc nostragoalus > ${JSON.stringify(file)}`, {
-  stdio: ['ignore', 'inherit', 'inherit'],
-  shell: '/bin/sh',
-})
+// No shell: pg_dump's stdout is redirected to the dump file via an fd, so the path
+// (which can come from the [outdir] arg) is never parsed by a shell.
+const dumpFd = openSync(file, 'w')
+try {
+  execFileSync('docker', ['compose', 'exec', '-T', 'db', 'pg_dump', '-U', 'nostragoalus', '-Fc', 'nostragoalus'], {
+    stdio: ['ignore', dumpFd, 'inherit'],
+  })
+} finally {
+  closeSync(dumpFd)
+}
 
 const size = statSync(file).size
 if (size < 1024) {
@@ -38,7 +58,7 @@ console.log(`wrote ${file} (${(size / 1024 / 1024).toFixed(1)} MiB)`)
 // execFileSync (no shell) so the bucket/paths can't inject anything.
 const skipMedia = Boolean(process.env.usage_no_media || process.env.BACKUP_SKIP_MEDIA)
 if (!skipMedia) {
-  const bucket = process.env.NUXT_STORAGE_S3_BUCKET || 'nostragoalus'
+  const bucket = s3Bucket()
   console.log(`mirroring bucket ${bucket} -> ${outdir}/media-${stamp}`)
   execFileSync(
     'docker',
