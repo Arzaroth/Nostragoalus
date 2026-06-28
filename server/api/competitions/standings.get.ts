@@ -1,27 +1,13 @@
-import { and, eq } from 'drizzle-orm'
 import { db } from '../../../db'
-import { match } from '../../../db/app-schema'
 import { resolveCompetition } from '../../utils/competitions/store'
-import { computeAllGroupStandings } from '../../utils/stats/standings'
+import { computeAllGroupStandings, selectGroupStandingsRows } from '../../utils/stats/standings'
 import { tiebreakersForCompetition } from '../../utils/stats/tiebreakers'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const competition = await resolveCompetition(db, (query.competition as string) || null)
   if (!competition) return { groups: [] }
-  const rows = await db
-    .select({
-      group: match.groupName,
-      homeTeam: match.homeTeam,
-      awayTeam: match.awayTeam,
-      homeTeamCode: match.homeTeamCode,
-      awayTeamCode: match.awayTeamCode,
-      status: match.status,
-      fullTimeHome: match.fullTimeHome,
-      fullTimeAway: match.fullTimeAway,
-    })
-    .from(match)
-    .where(and(eq(match.competitionId, competition.id), eq(match.stage, 'GROUP')))
+  const rows = await selectGroupStandingsRows(db, competition.id)
   // includeLive: the table tracks in-progress matches at their live scoreline,
   // matching the provisional table the match detail view shows.
   const tb = tiebreakersForCompetition(competition.slug)
