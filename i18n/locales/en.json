@@ -374,7 +374,14 @@
     },
     "view": "Switch view",
     "viewFixtures": "Fixtures",
-    "viewStandings": "Standings"
+    "viewStandings": "Standings",
+    "viewStats": "Stats"
+  },
+  "stats": {
+    "player": "Player",
+    "topScorers": "Top scorers",
+    "topAssists": "Top assists",
+    "empty": "No data yet"
   },
   "standings": {
     "team": "Team"

@@ -64,22 +64,27 @@ function toggleBucket(b: StatusBucket) {
 // the competition's group-stage matches; the switch only shows when there are
 // groups, so a knockout-only tournament never offers an empty Standings view.
 const router = useRouter()
-const viewMode = ref<'fixtures' | 'standings'>(route.query.view === 'standings' ? 'standings' : 'fixtures')
+type ViewMode = 'fixtures' | 'standings' | 'stats'
+const parseView = (v: unknown): ViewMode => (v === 'standings' || v === 'stats' ? v : 'fixtures')
+const viewMode = ref<ViewMode>(parseView(route.query.view))
 // Toggle visibility comes from the fixtures we already loaded - no extra request
 // just to decide whether to offer the view. The tables themselves load lazily,
-// only once Standings is actually open.
+// only once Standings/Stats is actually open.
 const hasGroups = computed(() => (matches.value ?? []).some((m) => !!m.group))
 const { data: standings } = useStandings(() => viewMode.value === 'standings')
+const { data: scorers } = useScorers(() => viewMode.value === 'stats')
 const viewOptions = computed(() => [
   { label: t('matches.viewFixtures'), value: 'fixtures' as const },
   { label: t('matches.viewStandings'), value: 'standings' as const },
+  { label: t('matches.viewStats'), value: 'stats' as const },
 ])
 // Mirror the mode in the URL (shareable), dropping it for the default.
-watch(viewMode, (v) => router.replace({ query: { ...route.query, view: v === 'standings' ? 'standings' : undefined } }))
-// A competition with no group stage can't stay on Standings (e.g. switching to a
-// knockout-only tournament while the view is open).
+watch(viewMode, (v) => router.replace({ query: { ...route.query, view: v === 'fixtures' ? undefined : v } }))
+// The view toggle only renders alongside group standings, so a competition with
+// no group stage can't stay on a non-fixtures view (e.g. switching to a
+// knockout-only tournament while Standings/Stats is open).
 watch(hasGroups, (has) => {
-  if (!has && viewMode.value === 'standings') viewMode.value = 'fixtures'
+  if (!has && viewMode.value !== 'fixtures') viewMode.value = 'fixtures'
 })
 
 const { data: predictions } = useMyPredictions()
@@ -445,6 +450,27 @@ watch(searchOpen, () => nextTick(updateListHeight))
         >
           <h2 class="text-xs uppercase tracking-wider font-semibold mb-3" style="color: var(--p-text-muted-color)">{{ t('map.group') }} {{ g.group }}</h2>
           <StandingsTable :rows="g.rows" :slug="slug ?? undefined" />
+        </section>
+      </div>
+    </template>
+
+    <template v-else-if="viewMode === 'stats'">
+      <div v-if="!scorers" class="opacity-60">{{ t('common.loading') }}</div>
+      <div v-else-if="!scorers.length" class="opacity-60">{{ t('stats.empty') }}</div>
+      <div v-else class="grid gap-6 md:grid-cols-2">
+        <section
+          class="ng-card rounded-2xl border p-4"
+          style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
+        >
+          <h2 class="text-xs uppercase tracking-wider font-semibold mb-3" style="color: var(--p-text-muted-color)">{{ t('stats.topScorers') }}</h2>
+          <PlayerRankingTable :rows="scorers" metric="goals" />
+        </section>
+        <section
+          class="ng-card rounded-2xl border p-4"
+          style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
+        >
+          <h2 class="text-xs uppercase tracking-wider font-semibold mb-3" style="color: var(--p-text-muted-color)">{{ t('stats.topAssists') }}</h2>
+          <PlayerRankingTable :rows="scorers" metric="assists" />
         </section>
       </div>
     </template>
