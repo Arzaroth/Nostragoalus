@@ -6,11 +6,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 ## [Unreleased]
 
 ### Added
-- **Install the app from inside it**: when your browser offers to install Nostragoalus, a banner now surfaces it with an Install button instead of the offer being buried. Dismissing it remembers your choice so it won't keep asking.
 - **Real image storage**: avatars and chat images now live in a configurable storage backend - a filesystem path, or any S3-compatible service - instead of inside the database. The Docker stack ships an S3 service (rustfs) and points the app at it by default. A one-time migration (the `media:migrate-blobs` task on the admin Background-tasks page) moves existing images out of the database; run it until both counts reach zero.
 
 ### Changed
-- **Clearer update flow**: the new-version banner now shows a "downloading update" step while the next build is being fetched, so the reload prompt arrives as the end of something visible rather than popping up out of nowhere. On phones it sits full-width along the bottom instead of as a cramped strip up top.
 - **Backups now include images**: `mise run db-backup` dumps the database and mirrors the image storage together, paired by timestamp, and `mise run db-restore` restores both in one go (pass `--no-media` to skip the image side on an fs-only deploy).
 
 ## [1.42.1] - 2026-06-28
