@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNotNull, isNull, lt, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNotNull, isNull, lt, or, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { userNotification } from '../../../db/schema'
 import type { NotificationData, NotificationDTO, NotificationType } from '../../../shared/types/notifications'
@@ -76,17 +76,25 @@ export async function createNotification(
 export async function listNotifications(
   db: AppDatabase,
   userId: string,
-  opts: { limit?: number; before?: Date } = {},
+  opts: { limit?: number; before?: Date; beforeId?: string } = {},
 ): Promise<NotificationDTO[]> {
   const limit = Math.min(opts.limit ?? FEED_LIMIT, MAX_LIMIT)
-  const scope = opts.before
-    ? and(eq(userNotification.userId, userId), lt(userNotification.createdAt, opts.before))
-    : eq(userNotification.userId, userId)
+  // createdAt defaults to the transaction-start time, so every notification minted
+  // in one finalize tick shares a timestamp. The id tiebreaker (in both the cursor
+  // and the sort) keeps a same-tick page boundary from skipping or repeating rows.
+  const cursor = opts.before
+    ? opts.beforeId
+      ? or(
+          lt(userNotification.createdAt, opts.before),
+          and(eq(userNotification.createdAt, opts.before), lt(userNotification.id, opts.beforeId)),
+        )
+      : lt(userNotification.createdAt, opts.before)
+    : undefined
   const rows = await db
     .select()
     .from(userNotification)
-    .where(scope)
-    .orderBy(desc(userNotification.createdAt))
+    .where(and(eq(userNotification.userId, userId), cursor))
+    .orderBy(desc(userNotification.createdAt), desc(userNotification.id))
     .limit(limit)
   return (rows as NotificationRow[]).map(toDTO)
 }

@@ -11,6 +11,7 @@ export default defineEventHandler(async (event) => {
     listNotifications(db, user.id, {
       limit: limit !== undefined && Number.isFinite(limit) ? limit : undefined,
       before: beforeRaw && !Number.isNaN(beforeRaw.getTime()) ? beforeRaw : undefined,
+      beforeId: typeof query.beforeId === 'string' ? query.beforeId : undefined,
     }),
     countUnread(db, user.id),
   ])
@@ -42,6 +43,15 @@ defineRouteMeta({
         "schema": {
           "type": "string",
           "format": "date-time"
+        }
+      },
+      {
+        "in": "query",
+        "name": "beforeId",
+        "required": false,
+        "description": "Pair with `before`: the last seen row's id, to break ties when several notifications share a timestamp.",
+        "schema": {
+          "type": "string"
         }
       }
     ],

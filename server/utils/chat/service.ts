@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { and, asc, count, desc, eq, inArray, isNull, lt, not } from 'drizzle-orm'
+import { and, asc, count, desc, eq, inArray, isNull, lt, not, or } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { chatAttachment, chatIdentity, chatMessage, league, leagueChatKey, leagueMember, match, user } from '../../../db/schema'
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors'
@@ -584,7 +584,15 @@ export async function editMessage(
 // pass `thread` (a root message id) to list that thread's replies, oldest-first.
 export async function listMessages(
   db: AppDatabase,
-  opts: { leagueId: string; matchId?: string | null; userId: string; before?: Date; limit?: number; thread?: string | null },
+  opts: {
+    leagueId: string
+    matchId?: string | null
+    userId: string
+    before?: Date
+    beforeId?: string
+    limit?: number
+    thread?: string | null
+  },
 ): Promise<ChatMessageRow[]> {
   const membership = await getMembership(db, opts.leagueId, opts.userId)
   if (!membership) throw new ForbiddenError('not a league member')
@@ -593,7 +601,17 @@ export async function listMessages(
   // Thread mode: this root's replies, oldest-first. Room mode: everything that is
   // not a thread reply (quotes stay in the main list).
   const scope = opts.thread ? eq(chatMessage.threadId, opts.thread) : isNull(chatMessage.threadId)
-  const cursor = opts.before ? lt(chatMessage.createdAt, opts.before) : undefined
+  // Compound keyset cursor matching the (createdAt desc, id desc) sort: with the
+  // id tiebreaker, a same-millisecond pair split across a page boundary is never
+  // skipped or repeated. Falls back to createdAt-only if the caller has no id yet.
+  const cursor = opts.before
+    ? opts.beforeId
+      ? or(
+          lt(chatMessage.createdAt, opts.before),
+          and(eq(chatMessage.createdAt, opts.before), lt(chatMessage.id, opts.beforeId)),
+        )
+      : lt(chatMessage.createdAt, opts.before)
+    : undefined
   const rows = await db
     .select({
       id: chatMessage.id,

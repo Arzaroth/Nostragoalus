@@ -99,6 +99,28 @@ describe('listNotifications', () => {
     await client.close()
   })
 
+  it('pages past a same-timestamp tick with the (before, beforeId) compound cursor', async () => {
+    const { db, client, userId } = await setup()
+    // Every notification minted in one finalize tick shares createdAt (defaultNow
+    // = tx-start), the exact case the id tiebreaker exists for.
+    const same = new Date('2026-06-02T00:00:00Z')
+    await db.insert(userNotification).values(
+      Array.from({ length: 4 }, () => ({ userId, type: 'LEAGUE_JOIN' as const, data: leagueJoin(), createdAt: same })),
+    )
+    const all = await listNotifications(db, userId)
+    expect(all).toHaveLength(4)
+
+    // before alone drops the whole tick - the rest are skipped.
+    expect(await listNotifications(db, userId, { before: same })).toHaveLength(0)
+
+    // Compound cursor: first page, then the rest by id, disjoint and complete.
+    const page1 = await listNotifications(db, userId, { limit: 2 })
+    const rest = await listNotifications(db, userId, { before: same, beforeId: page1[1]!.id, limit: 2 })
+    expect(rest.map((n) => n.id)).toEqual([all[2]!.id, all[3]!.id])
+    expect(new Set([...page1, ...rest].map((n) => n.id)).size).toBe(4)
+    await client.close()
+  })
+
   it('is scoped to the owner', async () => {
     const { db, client, userId } = await setup()
     const u2 = await makeUser(db, 'u2')
