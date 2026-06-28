@@ -72,17 +72,18 @@ const viewMode = ref<ViewMode>(parseView(route.query.view))
 // only once Standings/Stats is actually open.
 const hasGroups = computed(() => (matches.value ?? []).some((m) => !!m.group))
 const { data: standings } = useStandings(() => viewMode.value === 'standings')
-const { data: scorers } = useScorers(() => viewMode.value === 'stats')
+const { data: rankings } = useScorers(() => viewMode.value === 'stats')
 const viewOptions = computed(() => [
   { label: t('matches.viewFixtures'), value: 'fixtures' as const },
   { label: t('matches.viewStandings'), value: 'standings' as const },
   { label: t('matches.viewStats'), value: 'stats' as const },
 ])
-// Both Stats boards share the same card chrome and source set; only the heading
-// and metric differ, so render them from one list (mirrors the standings v-for).
+// Both Stats boards share the same card chrome; only the heading and which
+// ranked list they draw from differ, so render them from one v-for (mirrors the
+// standings v-for). Each list is already ranked/sliced server-side per metric.
 const statBoards = [
-  { title: 'stats.topScorers', metric: 'goals' as const },
-  { title: 'stats.topAssists', metric: 'assists' as const },
+  { title: 'stats.topScorers', metric: 'goals' as const, key: 'scorers' as const },
+  { title: 'stats.topAssists', metric: 'assists' as const, key: 'assists' as const },
 ]
 // Mirror the mode in the URL (shareable), dropping it for the default.
 watch(viewMode, (v) => router.replace({ query: { ...route.query, view: v === 'fixtures' ? undefined : v } }))
@@ -461,8 +462,8 @@ watch(searchOpen, () => nextTick(updateListHeight))
     </template>
 
     <template v-else-if="viewMode === 'stats'">
-      <div v-if="!scorers" class="opacity-60">{{ t('common.loading') }}</div>
-      <div v-else-if="!scorers.length" class="opacity-60">{{ t('stats.empty') }}</div>
+      <div v-if="!rankings" class="opacity-60">{{ t('common.loading') }}</div>
+      <div v-else-if="!rankings.scorers.length && !rankings.assists.length" class="opacity-60">{{ t('stats.empty') }}</div>
       <div v-else class="grid gap-6 md:grid-cols-2">
         <section
           v-for="b in statBoards"
@@ -471,7 +472,7 @@ watch(searchOpen, () => nextTick(updateListHeight))
           style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
         >
           <h2 class="text-xs uppercase tracking-wider font-semibold mb-3" style="color: var(--p-text-muted-color)">{{ t(b.title) }}</h2>
-          <PlayerRankingTable :rows="scorers" :metric="b.metric" />
+          <PlayerRankingTable :rows="rankings[b.key]" :metric="b.metric" />
         </section>
       </div>
     </template>

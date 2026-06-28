@@ -1437,6 +1437,33 @@
               }
             }
           }
+        },
+        "assists": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "playerName": {
+                "type": "string"
+              },
+              "teamName": {
+                "type": "string"
+              },
+              "teamCode": {
+                "type": "string"
+              },
+              "goals": {
+                "type": "integer"
+              },
+              "assists": {
+                "type": "integer"
+              },
+              "penalties": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          }
         }
       }
     },
@@ -1455,6 +1482,24 @@
           "teamName": "Argentina",
           "teamCode": "ARG",
           "goals": 7,
+          "assists": 3,
+          "penalties": null
+        }
+      ],
+      "assists": [
+        {
+          "playerName": "Lionel MESSI",
+          "teamName": "Argentina",
+          "teamCode": "ARG",
+          "goals": 7,
+          "assists": 3,
+          "penalties": null
+        },
+        {
+          "playerName": "Antoine GRIEZMANN",
+          "teamName": "France",
+          "teamCode": "FRA",
+          "goals": 0,
           "assists": 3,
           "penalties": null
         }
