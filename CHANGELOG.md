@@ -47,6 +47,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 ### Changed
 - **Pinned the object-storage images**: the bundled rustfs and minio/mc images are now pinned to specific digests, so rebuilding or re-pulling the stack can't silently swap in a different storage backend or backup client.
 
+### Fixed
+- **Chat history no longer skips messages**: loading older messages could drop or repeat a message when several were sent in the same instant, right at a page boundary. Paging now uses a stable tiebreaker so every message shows exactly once. The same fix applies to the notifications feed.
+
 ### Security
 - **Push subscriptions can't be hijacked**: a browser's push endpoint is no longer reassigned to a different account on re-subscribe, so someone who learns your device's push endpoint can't take it over to silence your notifications or redirect them.
 - **Link previews are rate-limited**: the chat link-preview fetcher now caps how often it runs per account and overall, and refuses an over-large response before reading it, shrinking its use as a fetch-amplification or scraping vector.

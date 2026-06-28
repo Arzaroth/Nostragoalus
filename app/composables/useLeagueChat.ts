@@ -161,8 +161,9 @@ export function useLeagueChat(
     try {
       const m = mid()
       const before = messages.value[0].createdAt
+      const beforeId = messages.value[0].id
       const { messages: rows } = await $fetch<{ messages: ChatMessageDTO[] }>(`/api/leagues/${lid()}/chat/messages`, {
-        query: m ? { matchId: m, before } : { before },
+        query: m ? { matchId: m, before, beforeId } : { before, beforeId },
       })
       hasMore.value = rows.length >= PAGE
       const older = await Promise.all([...rows].reverse().map(decryptRow))

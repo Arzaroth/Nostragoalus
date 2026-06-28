@@ -576,6 +576,28 @@ describe('listMessages', () => {
     await client.close()
   })
 
+  it('pages past a same-millisecond tie with the (before, beforeId) compound cursor', async () => {
+    const { db, client, owner, leagueId } = await setup()
+    const same = new Date('2026-06-10T10:00:00Z')
+    await db.insert(chatMessage).values([
+      { leagueId, userId: owner, epoch: 1, ciphertext: 'a', createdAt: same },
+      { leagueId, userId: owner, epoch: 1, ciphertext: 'b', createdAt: same },
+      { leagueId, userId: owner, epoch: 1, ciphertext: 'c', createdAt: same },
+    ])
+    const all = await listMessages(db, { leagueId, userId: owner })
+    expect(all).toHaveLength(3)
+
+    // before alone excludes every row at that timestamp - the remaining rows are skipped.
+    expect(await listMessages(db, { leagueId, userId: owner, before: same })).toHaveLength(0)
+
+    // The compound cursor walks the id tiebreaker: first page, then the rest, no overlap.
+    const page1 = await listMessages(db, { leagueId, userId: owner, limit: 2 })
+    const rest = await listMessages(db, { leagueId, userId: owner, before: same, beforeId: page1[1]!.id, limit: 2 })
+    expect(rest.map((r) => r.id)).toEqual([all[2]!.id])
+    expect(new Set([...page1, ...rest].map((r) => r.id)).size).toBe(3)
+    await client.close()
+  })
+
   it('clamps the page size into [1, MAX_PAGE]', async () => {
     const { db, client, owner, leagueId } = await setup()
     const t = (s: number) => new Date(`2026-06-10T10:0${s}:00Z`)

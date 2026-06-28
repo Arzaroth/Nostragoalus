@@ -24,6 +24,7 @@ export default defineEventHandler(async (event) => {
       userId: user.id,
       matchId: typeof q.matchId === 'string' ? q.matchId : null,
       before: before && !Number.isNaN(before.getTime()) ? before : undefined,
+      beforeId: typeof q.beforeId === 'string' ? q.beforeId : undefined,
       limit: limit && !Number.isNaN(limit) ? limit : undefined,
       thread,
     })
@@ -76,6 +77,7 @@ defineRouteMeta({
       { in: 'path', name: 'id', required: true, schema: { type: 'string' } },
       { in: 'query', name: 'matchId', required: false, schema: { type: 'string' } },
       { in: 'query', name: 'before', required: false, schema: { type: 'string', format: 'date-time' } },
+      { in: 'query', name: 'beforeId', required: false, schema: { type: 'string' }, description: 'Pair with ?before=: the last seen message id, to break createdAt ties at a page boundary.' },
       { in: 'query', name: 'limit', required: false, schema: { type: 'integer' } },
       { in: 'query', name: 'thread', required: false, schema: { type: 'string' }, description: 'A parent message id: list that thread\'s replies instead of top-level messages.' },
     ],
