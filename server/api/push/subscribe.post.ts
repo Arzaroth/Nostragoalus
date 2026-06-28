@@ -40,6 +40,7 @@ defineRouteMeta({
     "responses": {
       "200": { "description": "Subscription stored." },
       "401": { "description": "Not signed in." },
+      "409": { "description": "Endpoint already registered to another account." },
       "422": { "description": "Invalid subscription body." }
     }
   },

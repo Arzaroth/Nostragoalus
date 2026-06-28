@@ -47,6 +47,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 ### Changed
 - **Pinned the object-storage images**: the bundled rustfs and minio/mc images are now pinned to specific digests, so rebuilding or re-pulling the stack can't silently swap in a different storage backend or backup client.
 
+### Security
+- **Push subscriptions can't be hijacked**: a browser's push endpoint is no longer reassigned to a different account on re-subscribe, so someone who learns your device's push endpoint can't take it over to silence your notifications or redirect them.
+
 ## [2.1.0] - 2026-06-28
 
 ### Added
