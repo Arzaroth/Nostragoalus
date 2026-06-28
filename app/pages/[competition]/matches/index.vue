@@ -78,6 +78,12 @@ const viewOptions = computed(() => [
   { label: t('matches.viewStandings'), value: 'standings' as const },
   { label: t('matches.viewStats'), value: 'stats' as const },
 ])
+// Both Stats boards share the same card chrome and source set; only the heading
+// and metric differ, so render them from one list (mirrors the standings v-for).
+const statBoards = [
+  { title: 'stats.topScorers', metric: 'goals' as const },
+  { title: 'stats.topAssists', metric: 'assists' as const },
+]
 // Mirror the mode in the URL (shareable), dropping it for the default.
 watch(viewMode, (v) => router.replace({ query: { ...route.query, view: v === 'fixtures' ? undefined : v } }))
 // The view toggle only renders alongside group standings, so a competition with
@@ -459,18 +465,13 @@ watch(searchOpen, () => nextTick(updateListHeight))
       <div v-else-if="!scorers.length" class="opacity-60">{{ t('stats.empty') }}</div>
       <div v-else class="grid gap-6 md:grid-cols-2">
         <section
+          v-for="b in statBoards"
+          :key="b.metric"
           class="ng-card rounded-2xl border p-4"
           style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
         >
-          <h2 class="text-xs uppercase tracking-wider font-semibold mb-3" style="color: var(--p-text-muted-color)">{{ t('stats.topScorers') }}</h2>
-          <PlayerRankingTable :rows="scorers" metric="goals" />
-        </section>
-        <section
-          class="ng-card rounded-2xl border p-4"
-          style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
-        >
-          <h2 class="text-xs uppercase tracking-wider font-semibold mb-3" style="color: var(--p-text-muted-color)">{{ t('stats.topAssists') }}</h2>
-          <PlayerRankingTable :rows="scorers" metric="assists" />
+          <h2 class="text-xs uppercase tracking-wider font-semibold mb-3" style="color: var(--p-text-muted-color)">{{ t(b.title) }}</h2>
+          <PlayerRankingTable :rows="scorers" :metric="b.metric" />
         </section>
       </div>
     </template>
