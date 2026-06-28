@@ -5,6 +5,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- **Install the app from inside it**: when your browser offers to install Nostragoalus, a banner now surfaces it with an Install button instead of the offer being buried. Dismissing it remembers your choice so it won't keep asking.
+
+### Changed
+- **Clearer update flow**: the new-version banner now shows a "downloading update" step while the next build is being fetched, so the reload prompt arrives as the end of something visible rather than popping up out of nowhere. On phones it sits full-width along the bottom instead of as a cramped strip up top.
+
 ## [2.0.0] - 2026-06-28
 
 ### Added
