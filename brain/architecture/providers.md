@@ -1,0 +1,81 @@
+# Providers (external data)
+
+Match data, odds and FIFA rankings come from external sources behind
+provider-agnostic adapters. All of these are keyless and somewhat fragile (they
+are unofficial or undocumented endpoints), so the quirks below are load-bearing.
+
+## Match data: FIFA (default, keyless)
+
+`api.fifa.com/v3` is the default provider. It needs no key.
+
+- **Season resolution:** via `/seasons`, resolved by hint or date and cached on
+  the `competition` row.
+- **Group matchday:** FIFA's `MatchDay` field is null, so the group matchday is
+  derived by date-within-group.
+- **Per-match detail:** `/live/football/{comp}/{season}/{stage}/{match}` gives the
+  goal timeline and possession. It needs the match's `providerStageId`, which
+  must be captured at fixtures sync. Two traps: exclude **Period 11**
+  (penalty-shootout goals) from the score, and the goal feed's `IdAssistPlayer`
+  is the **beaten keeper, NOT an assister** - ignore it.
+- **Knockout bracket:** `/seasonbracket/season/{id}`.
+- **Player stats (top scorers + assists):** the team-statistics endpoint is
+  tournament-wide despite its per-team path; `Type 1 = goals`, `Type 219 =
+  assists`. It needs any team id, taken from a stored `goal_event` row.
+
+`matches:finalize` fetches match details (bounded) into `goal_event` and
+`match.possession*`. A football-data.org adapter exists as a fallback (its
+`/scorers` needs a token; FIFA is keyless). An api-football adapter is mapped but
+not implemented.
+
+This feeds [../features/predictions-and-scoring.md](../features/predictions-and-scoring.md)
+and [../features/best-scorer.md](../features/best-scorer.md).
+
+## Odds: Sofascore (primary), BetExplorer (backup)
+
+- **Sofascore** unofficial JSON API is the primary odds provider (chosen
+  explicitly over The Odds API: keyless and retroactive on finished matches, so
+  historical seasons backfill). Verified ids: World Cup `uniqueTournament=16`
+  (2026 season `58210`, 2022 `41087`), Euro `uniqueTournament=1`. Pattern:
+  `/unique-tournament/{id}/season/{sid}/events/{next|last}/{page}` then
+  `/event/{eid}/odds/1/all` (marketId 1 = Full time, 1/X/2). Display is decimal
+  only.
+- **BetExplorer** (plain server-rendered HTML) is the backup provider, used for
+  bookmaker averages. Median/consensus does not apply to the single Sofascore
+  feed.
+
+See [../features/odds.md](../features/odds.md).
+
+## FIFA ranking (for champion-pick tiers)
+
+Used to snapshot a picked team's tier (see
+[../features/champion-pick.md](../features/champion-pick.md)).
+
+- `GET inside.fifa.com/api/ranking-overview?locale=en&dateId=idNNNNN` returns the
+  full 211-team table (`rankings[].rankingItem.{countryCode,rank}`). The
+  `www.fifa.com` host is dead (returns HTML); use `inside.fifa.com`.
+- Historical `idNNNNN` ids work back to the 1990s, but the table is empty for the
+  newer `FRS_Male_Football_YYYYMMDD` ids and when `dateId` is omitted.
+- To get the latest publication's id:
+  `GET inside.fifa.com/api/rankings/by-country?gender=male&countryCode=BRA&...`
+  -> `rankings[0].IdSchedule`. A browser User-Agent header is required.
+
+## The shared HTTP engine (cycletls)
+
+Cloudflare-class WAFs (Sofascore, and many link-unfurl targets like 9gag) block
+Node's default TLS by JA3 fingerprint. The shared engine
+`server/utils/providers/cycle-tls.ts` uses **cycletls** (uTLS) with a Chrome JA3
+to pass, exposing `cycleGet` / `withOk` / `cycleHeader`. It is used by both the
+odds client and the chat link unfurl (see [../features/chat.md](../features/chat.md)).
+
+Operational gotcha: cycletls' Go helper is glibc-linked, so the Alpine images
+need `gcompat` (and `libstdc++`). It is installed in the Docker **base** stage so
+dev, build and prod images all inherit it. If odds or unfurl return null in a
+container, check that the running image actually has `gcompat` before blaming the
+provider.
+
+## Sources
+
+- `server/utils/providers/**` (FIFA, football-data adapters, `cycle-tls.ts`)
+- `server/utils/odds/providers/{sofascore,betexplorer}.ts`
+- `server/utils/champion/ranking.ts`
+- `server/tasks/**` (`matches:finalize`, `fixtures:refresh`, `scores:poll`, `odds:*`)
