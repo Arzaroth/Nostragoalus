@@ -9,11 +9,17 @@ const { t } = useI18n()
 
 // The endpoint sorts by goals; for the assist board we re-rank the same set by
 // assists and drop zero rows so it isn't padded with players who never assisted.
+// Ties break on the other metric then name, matching the endpoint's own order.
 const ranked = computed(() =>
   props.rows
-    .map((r) => ({ row: r, value: props.metric === 'goals' ? r.goals ?? 0 : r.assists ?? 0 }))
+    .map((r) => ({
+      row: r,
+      flag: flagUrl(r.teamCode),
+      value: props.metric === 'goals' ? r.goals ?? 0 : r.assists ?? 0,
+      tiebreak: props.metric === 'goals' ? r.assists ?? 0 : r.goals ?? 0,
+    }))
     .filter((e) => e.value > 0)
-    .sort((a, b) => b.value - a.value || a.row.playerName.localeCompare(b.row.playerName))
+    .sort((a, b) => b.value - a.value || b.tiebreak - a.tiebreak || a.row.playerName.localeCompare(b.row.playerName))
     .slice(0, props.limit),
 )
 </script>
@@ -40,7 +46,7 @@ const ranked = computed(() =>
         <td class="py-2 text-left tabular-nums" style="color: var(--p-text-muted-color)">{{ i + 1 }}</td>
         <td class="text-left">
           <span class="flex items-center gap-2">
-            <img v-if="flagUrl(e.row.teamCode)" :src="flagUrl(e.row.teamCode) || ''" class="w-5 h-5 rounded" alt="" >
+            <img v-if="e.flag" :src="e.flag || ''" class="w-5 h-5 rounded" alt="" >
             <span class="truncate">{{ formatPlayerName(e.row.playerName) }}</span>
           </span>
         </td>

@@ -48,4 +48,30 @@ describe('PlayerRankingTable', () => {
     expect(body.length).toBe(1)
     expect(body[0].find('td[colspan="3"]').exists()).toBe(true)
   })
+
+  it('omits the flag for a null teamCode and treats null assists as zero', async () => {
+    const rows: TopScorer[] = [
+      { playerName: 'No Flag', teamName: '', teamCode: null, goals: 2, assists: null, penalties: null },
+    ]
+    wrapper = await mountSuspended(PlayerRankingTable, { props: { rows, metric: 'goals' } })
+    expect(wrapper.findAll('tbody tr').length).toBe(1) // 2 goals qualifies
+    expect(wrapper.find('tbody img').exists()).toBe(false) // no flag without a teamCode
+
+    wrapper.unmount()
+    wrapper = await mountSuspended(PlayerRankingTable, { props: { rows, metric: 'assists' } })
+    // null assists coalesces to 0, so the row drops and the empty state shows
+    expect(wrapper.find('td[colspan="3"]').exists()).toBe(true)
+  })
+
+  it('breaks goal ties by assists then name, matching the endpoint order', async () => {
+    const tied: TopScorer[] = [
+      { playerName: 'Zeta Striker', teamName: 'A', teamCode: 'AAA', goals: 3, assists: 0, penalties: null },
+      { playerName: 'Alpha Striker', teamName: 'B', teamCode: 'BBB', goals: 3, assists: 2, penalties: null },
+    ]
+    wrapper = await mountSuspended(PlayerRankingTable, { props: { rows: tied, metric: 'goals' } })
+    const body = wrapper.findAll('tbody tr')
+    // Alpha has more assists, so it leads despite the later name.
+    expect(body[0].text()).toContain('Alpha')
+    expect(body[1].text()).toContain('Zeta')
+  })
 })
