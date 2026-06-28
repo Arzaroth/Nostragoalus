@@ -21,10 +21,24 @@ const { data, error } = await useFetch<{
   query: computed(() => ({ competition: global.value ? 'global' : (slug.value ?? undefined) })),
 })
 
-// Admin view includes not-yet-kicked-off picks; split them off behind a divider.
+// Split picks at "now": played (kicked-off) above, any still-upcoming below.
+// Only admins ever receive upcoming rows (picks stay private until kickoff), so
+// for everyone else `upcoming` is empty and the anchor simply sits after the
+// last played match.
 const now = Date.now()
 const kickedOff = computed(() => (data.value?.predictions ?? []).filter((p) => new Date(p.kickoffTime).getTime() <= now))
 const upcoming = computed(() => (data.value?.predictions ?? []).filter((p) => new Date(p.kickoffTime).getTime() > now))
+
+// A profile fills with played rows as the tournament runs, so the top is rarely
+// the useful spot. On load, center the "now" boundary so the latest action is in
+// view, mirroring the fixtures page's jump-to-next. Skipped when nothing has
+// kicked off yet (nothing to scroll past) or when the URL already targets an
+// anchor. onMounted is client-only, so this never runs during SSR.
+const nowAnchor = ref<HTMLElement | null>(null)
+onMounted(() => {
+  if (route.hash || !kickedOff.value.length) return
+  void nextTick(() => nowAnchor.value?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
+})
 </script>
 
 <template>
@@ -51,16 +65,18 @@ const upcoming = computed(() => (data.value?.predictions ?? []).filter((p) => ne
       <SelectButton v-model="global" :options="scopeOptions" option-label="label" option-value="value" :allow-empty="false" size="small" />
     </div>
     <p class="text-sm mb-5" style="color: var(--p-text-muted-color)">{{ t('predictions.publicNote') }}</p>
-    <template v-if="data.adminView && upcoming.length">
-      <PredictionList :predictions="kickedOff" />
-      <div class="flex items-center gap-3 my-4 text-xs font-semibold" style="color: var(--p-text-muted-color)">
+    <PredictionList :predictions="kickedOff" />
+    <!-- The "now" boundary: played picks above, still-upcoming (admin-only) below.
+         Also the scroll anchor centered on load. Invisible when there's nothing
+         upcoming to introduce. -->
+    <div ref="nowAnchor" style="scroll-margin-top: calc(var(--ng-header-h, 4rem) + 1rem)">
+      <div v-if="upcoming.length" class="flex items-center gap-3 my-4 text-xs font-semibold" style="color: var(--p-text-muted-color)">
         <span class="flex-1 border-t" style="border-color: var(--p-content-border-color)" />
         <span class="inline-flex items-center gap-1.5"><i class="pi pi-eye-slash" />{{ t('predictions.adminUpcomingDivider') }}</span>
         <span class="flex-1 border-t" style="border-color: var(--p-content-border-color)" />
       </div>
-      <PredictionList :predictions="upcoming" />
-    </template>
-    <PredictionList v-else :predictions="data.predictions" />
+    </div>
+    <PredictionList v-if="upcoming.length" :predictions="upcoming" />
     <div v-if="!data.predictions.length" class="opacity-60">{{ t('predictions.none') }}</div>
   </div>
   <!-- Unknown user or a private profile the viewer doesn't share a league with. -->

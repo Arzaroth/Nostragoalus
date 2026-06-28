@@ -27,7 +27,11 @@ The active competition is a **URL path prefix**. See
 [../features/competitions.md](../features/competitions.md) for the full model.
 
 - `app/pages/[competition]/` - matches (list + detail), bracket, map (Leaflet),
-  leaderboard, predictions/bot, teams/[code], users/[id].
+  leaderboard, predictions/bot, teams/[code], users/[id]. The fixtures list
+  auto-scrolls on load to the live (else next upcoming) match; the `users/[id]`
+  profile splits picks at "now" (played above, admin-only upcoming below) and
+  centers that boundary anchor on load, so it opens on the latest action rather
+  than the top of a long history.
 - Un-prefixed global pages - `/`, login, signup, 2FA, verify-email, account,
   preferences, about, license, roadmap, leagues (discover + join), error pages.
 - Global middleware: `app/middleware/auth.global.ts` (redirect to /login unless
