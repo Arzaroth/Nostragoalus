@@ -1,11 +1,11 @@
-import { and, eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { db } from '../../../db'
 import { match } from '../../../db/schema'
 import { providerForCompetition } from '../../utils/providers'
 import { orderBracketFeeders } from '../../utils/providers/bracket-order'
 import { resolveCompetition } from '../../utils/competitions/store'
 import { resolveCompetitionSeason } from '../../utils/sync/competition'
-import { computeAllGroupStandings } from '../../utils/stats/standings'
+import { computeAllGroupStandings, selectGroupStandingsRows } from '../../utils/stats/standings'
 import { tiebreakersForCompetition, type Criterion } from '../../utils/stats/tiebreakers'
 import { projectBracket } from '../../utils/bracket/projection'
 import { getCachedBracket, setCachedBracket } from '../../utils/bracket/cache'
@@ -24,19 +24,7 @@ async function buildBaseBracket(competitionId: string, provider: ReturnType<type
 }
 
 async function groupStandingsFor(competitionId: string, tiebreakers: Criterion[]) {
-  const rows = await db
-    .select({
-      group: match.groupName,
-      homeTeam: match.homeTeam,
-      awayTeam: match.awayTeam,
-      homeTeamCode: match.homeTeamCode,
-      awayTeamCode: match.awayTeamCode,
-      status: match.status,
-      fullTimeHome: match.fullTimeHome,
-      fullTimeAway: match.fullTimeAway,
-    })
-    .from(match)
-    .where(and(eq(match.competitionId, competitionId), eq(match.stage, 'GROUP')))
+  const rows = await selectGroupStandingsRows(db, competitionId)
   return computeAllGroupStandings(rows, { includeLive: true, tiebreakers })
 }
 

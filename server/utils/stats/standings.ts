@@ -1,3 +1,6 @@
+import { and, eq } from 'drizzle-orm'
+import { match } from '../../../db/schema'
+import type { AppDatabase } from '../../../db/types'
 import type { Criterion } from './tiebreakers'
 
 export interface StandingsInputMatch {
@@ -225,4 +228,25 @@ export function computeAllGroupStandings(
   return [...byGroup.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([group, ms]) => ({ group, rows: computeGroupStandings(ms, opts) }))
+}
+
+export type GroupStandingsRow = StandingsInputMatch & { group: string | null }
+
+// The exact projection feeding computeAllGroupStandings for a competition's group
+// stage. Single source so the fixtures-page table, the bracket projection and any
+// other group-standings consumer can't drift on columns or filter.
+export async function selectGroupStandingsRows(db: AppDatabase, competitionId: string): Promise<GroupStandingsRow[]> {
+  return db
+    .select({
+      group: match.groupName,
+      homeTeam: match.homeTeam,
+      awayTeam: match.awayTeam,
+      homeTeamCode: match.homeTeamCode,
+      awayTeamCode: match.awayTeamCode,
+      status: match.status,
+      fullTimeHome: match.fullTimeHome,
+      fullTimeAway: match.fullTimeAway,
+    })
+    .from(match)
+    .where(and(eq(match.competitionId, competitionId), eq(match.stage, 'GROUP')))
 }
