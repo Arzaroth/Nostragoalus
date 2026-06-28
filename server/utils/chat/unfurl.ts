@@ -134,6 +134,12 @@ async function safeFetchHtml(initial: string): Promise<{ finalUrl: string; html:
     if (res.status < 200 || res.status >= 300) return null
     const ct = cycleHeader(headers, 'content-type') ?? ''
     if (!ct.includes('text/html') && !ct.includes('application/xhtml')) return null
+    // Bail before decoding/parsing an over-large body. cycletls has no streaming
+    // size cap, so a lying or absent Content-Length still buffers in the engine
+    // (the slice below is the hard bound on what we keep); this short-circuits the
+    // common honest case where a host advertises a multi-megabyte page.
+    const len = Number(cycleHeader(headers, 'content-length'))
+    if (Number.isFinite(len) && len > MAX_BYTES) return null
     return { finalUrl: current, html: (await res.text()).slice(0, MAX_BYTES) }
   }
   return null // too many redirects

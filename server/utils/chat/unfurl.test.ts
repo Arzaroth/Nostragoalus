@@ -7,9 +7,10 @@ vi.mock('node:dns', () => ({ promises: { lookup } }))
 vi.mock('../providers/cycle-tls', async (orig) => ({ ...(await orig<object>()), cycleGet }))
 
 // A cycletls-shaped response (status, headers object, text()) for the unfurl path.
-function res(html: string, opts: { status?: number; ct?: string; location?: string } = {}) {
+function res(html: string, opts: { status?: number; ct?: string; location?: string; contentLength?: number } = {}) {
   const headers: Record<string, string> = { 'content-type': opts.ct ?? 'text/html; charset=utf-8' }
   if (opts.location) headers.location = opts.location
+  if (opts.contentLength !== undefined) headers['content-length'] = String(opts.contentLength)
   return { status: opts.status ?? 200, headers, text: async () => html }
 }
 
@@ -159,6 +160,22 @@ describe('unfurlLink', () => {
     cycleGet.mockResolvedValue(res('<title>' + 'a'.repeat(600 * 1024) + '</title>'))
     // Drives the byte-cap slice; parsing still succeeds here.
     expect((await unfurlLink('https://example.com/x')).url).toBe('https://example.com/x')
+  })
+
+  it('rejects a body that advertises a Content-Length over the cap, without parsing it', async () => {
+    const spy = vi.fn(async () => '<title>huge</title>')
+    cycleGet.mockResolvedValue({
+      status: 200,
+      headers: { 'content-type': 'text/html', 'content-length': String(600 * 1024) },
+      text: spy,
+    })
+    expect((await unfurlLink('https://example.com/big')).title).toBeNull()
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('serves a normal preview when Content-Length is within the cap', async () => {
+    cycleGet.mockResolvedValue(res('<title>OK</title>', { contentLength: 1024 }))
+    expect((await unfurlLink('https://example.com/ok')).title).toBe('OK')
   })
 
   it('refuses a literal private IP host without fetching', async () => {
