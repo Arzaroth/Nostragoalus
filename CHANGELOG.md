@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-06-28
+
 ### Added
 - **Real image storage**: avatars and chat images now live in a configurable storage backend - a filesystem path, or any S3-compatible service - instead of inside the database. The Docker stack ships an S3 service (rustfs) and points the app at it by default. A one-time migration (the `media:migrate-blobs` task on the admin Background-tasks page) moves existing images out of the database; run it until both counts reach zero.
 
