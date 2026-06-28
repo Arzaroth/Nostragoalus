@@ -49,6 +49,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ### Security
 - **Push subscriptions can't be hijacked**: a browser's push endpoint is no longer reassigned to a different account on re-subscribe, so someone who learns your device's push endpoint can't take it over to silence your notifications or redirect them.
+- **Link previews are rate-limited**: the chat link-preview fetcher now caps how often it runs per account and overall, and refuses an over-large response before reading it, shrinking its use as a fetch-amplification or scraping vector.
 
 ## [2.1.0] - 2026-06-28
 
