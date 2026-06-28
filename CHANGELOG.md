@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- **Player stats tab**: the matches view has a new "Stats" tab next to Fixtures and Standings, showing the competition's top scorers and top assists side by side. Room to grow into team boards (best attack/defense) later.
+
 ### Changed
 - **Pinned the object-storage images**: the bundled rustfs and minio/mc images are now pinned to specific digests, so rebuilding or re-pulling the stack can't silently swap in a different storage backend or backup client.
 

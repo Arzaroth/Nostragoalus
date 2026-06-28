@@ -3,6 +3,21 @@
 Deferred work, queued behind feature development.
 Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
+## Stats tab (deferred from the feature pass)
+
+- [ ] The assist board re-ranks the `/api/competitions/scorers` result, which the
+      endpoint sorts and slices to 20 by goals. A player with many assists but few
+      goals can fall outside that slice and never reach the assist board. Fix:
+      expose an assist-sorted variant from `getCompetitionTopScorers` /
+      `scorers.get.ts`, or return a larger / metric-agnostic set for the Stats view.
+- [ ] The view toggle (Fixtures / Standings / Stats) only renders when the
+      competition has group standings (`hasGroups` in
+      `app/pages/[competition]/matches/index.vue`), so a knockout-only competition
+      shows no Stats tab even when scorer data exists. Decouple the Stats tab's
+      visibility from group presence if such a competition is added.
+- [ ] Team-level boards (best attack/defense, clean sheets) were scoped out; the
+      `TeamSeasonStats` shape (`shared/types/match.ts`) already exists to feed them.
+
 ## Calendar feed (deferred from the feature-treatment review)
 
 - [ ] `server/utils/feed/token.ts` is a near-verbatim clone of
