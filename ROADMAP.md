@@ -15,12 +15,11 @@ effort buckets; order within a bucket is not priority.
 - [x] **Player stats tab** (shipped in 2.2.0): a "Stats" tab in the matches view,
       beside Fixtures and Standings, with top scorers and top assists side by side
       for the competition. Reuses the existing `/api/competitions/scorers`
-      endpoint (goals + assists already aggregated); the assist board re-ranks the
-      goals-sorted top set client-side. Built to grow into team boards (best
-      attack/defense). Deferred (TODO.md): a dedicated assist-ranked query so a
-      high-assist/low-goal player outside the goals top-N isn't dropped, and a
-      Stats tab for knockout-only competitions (the toggle is gated on group
-      standings).
+      endpoint, which returns `{scorers, assists}` ranked and sliced per metric
+      so a high-assist/low-goal player isn't dropped, with tied players sharing a
+      rank. Built to grow into team boards (best attack/defense). Deferred
+      (TODO.md): a Stats tab for knockout-only competitions (the toggle is gated
+      on group standings).
 - [x] **Auto-refresh on new version** (shipped in 1.5.0): Nuxt built-in
       (`app:manifest:update` hook / `checkOutdatedBuildInterval`), toast "new
       version available, reload?".

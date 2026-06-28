@@ -5,11 +5,11 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
 ## Stats tab (deferred from the feature pass)
 
-- [ ] The assist board re-ranks the `/api/competitions/scorers` result, which the
-      endpoint sorts and slices to 20 by goals. A player with many assists but few
-      goals can fall outside that slice and never reach the assist board. Fix:
-      expose an assist-sorted variant from `getCompetitionTopScorers` /
-      `scorers.get.ts`, or return a larger / metric-agnostic set for the Stats view.
+- [x] The assist board re-ranked the goals-sliced `/api/competitions/scorers`
+      result, so a high-assist/low-goal player could fall outside the goals top-N
+      and never reach the assist board. Fixed: the endpoint now returns
+      `{scorers, assists}` (`PlayerRankings`), each ranked and sliced on its own
+      metric via `rankPlayers` in `scorers.get.ts` / `scorers.ts`.
 - [ ] The view toggle (Fixtures / Standings / Stats) only renders when the
       competition has group standings (`hasGroups` in
       `app/pages/[competition]/matches/index.vue`), so a knockout-only competition
