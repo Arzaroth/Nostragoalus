@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-06-28
+
 ### Added
 - **Install the app from inside it**: when your browser offers to install Nostragoalus, a banner now surfaces it with an Install button instead of the offer being buried. Dismissing it remembers your choice so it won't keep asking.
 
