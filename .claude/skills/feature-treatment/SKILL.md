@@ -103,20 +103,51 @@ must be added to each `i18n/changelogs/{fr,th,tlh}.md` or the changelog check
 fails. Commit the review fixes on the branch:
 `fix(<area>): max-review fixes - <one-line summary>`.
 
-## 6. Merge
+## 6. Regenerate API response schemas (only if a public GET endpoint changed)
+
+If this feature added or changed a **public GET** endpoint, refresh the sampled
+docs now, on the branch, so the change ships with its docs instead of becoming
+another "add on the next controlled regen" TODO line. Skip entirely if no public
+GET shape moved.
+
+The regen samples a **running stack against the seeded dev DB**
+(`scripts/gen-api-schemas.mjs`), so the only way it's deterministic - no drift in
+the ~20 unrelated endpoint examples - is to run it against the **canonical seed**,
+not a hand-mutated or prod-like DB.
+
+```bash
+# 1. Add any NEW endpoint to the TARGETS map in scripts/gen-api-schemas.mjs first
+#    (docPath -> live sample path; reuse the world-cup-2022 / 2026 seed slugs).
+# 2. Bring the stack up on a freshly-seeded DB so the samples are the seed's
+#    canonical values, then regen:
+mise run dev          # or preview; needs the seeded DB + verify@example.com admin
+node scripts/gen-api-schemas.mjs
+```
+
+Review `git diff server/utils/docs/response-schemas.json`: the new/changed
+endpoint blocks are the intended change. If unrelated blocks also moved, they
+drifted because the running DB wasn't the canonical seed - reseed and re-run
+rather than committing live drift (or, if only the intended blocks are wanted,
+`git checkout -p` to keep just those). Commit on the branch with the feature.
+
+This is also where the backlog of deferred "not in the sampled schemas" endpoints
+gets cleared - if any are now seed-reachable, add them to `TARGETS` in the same
+pass and tick their TODO.md lines.
+
+## 7. Merge
 
 ```bash
 cd <main repo root>
 git merge --ff-only worktree-<name>      # fast-forward; the rebase made this clean
 ```
 
-## 7. Release
+## 8. Release
 
 Run the **release** skill. Pick the bump: **minor** for a user-facing feature,
-**patch** for fix-only. That skill does the docs sweep (CHANGELOG, README, API
-response schemas for any new public GET endpoint, and the about-page tech-stack
-list - if the feature added a dependency, add it there, one entry per project
-with the library's own tagline) and
+**patch** for fix-only. That skill does the docs sweep (CHANGELOG, README, and the
+about-page tech-stack list - if the feature added a dependency, add it there, one
+entry per project with the library's own tagline; the API response schemas were
+already regenerated in step 6) and
 `mise run release <x.y.z>` (gate + tag + push). Remember its gotchas: **stop the
 `app-dev` container first**, and stash any unrelated dirty files (e.g. the user's
 `TODO.md`/`ROADMAP.md`) so the tree is clean, then restore them after.
