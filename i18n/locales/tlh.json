@@ -374,7 +374,14 @@
     },
     "view": "leghmeH choH",
     "viewFixtures": "may'mey",
-    "viewStandings": "patmey"
+    "viewStandings": "patmey",
+    "viewStats": "mI'mey"
+  },
+  "stats": {
+    "player": "QujwI'",
+    "topScorers": "bachwI' po'",
+    "topAssists": "qachwI' po'",
+    "empty": "De' tu'be'lu'"
   },
   "standings": {
     "team": "ghom"

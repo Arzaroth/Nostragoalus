@@ -374,7 +374,14 @@
     },
     "view": "สลับมุมมอง",
     "viewFixtures": "ตารางแข่ง",
-    "viewStandings": "ตารางคะแนน"
+    "viewStandings": "ตารางคะแนน",
+    "viewStats": "สถิติ"
+  },
+  "stats": {
+    "player": "ผู้เล่น",
+    "topScorers": "ดาวซัลโว",
+    "topAssists": "แอสซิสต์สูงสุด",
+    "empty": "ยังไม่มีข้อมูล"
   },
   "standings": {
     "team": "ทีม"

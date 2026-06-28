@@ -374,7 +374,14 @@
     },
     "view": "Changer de vue",
     "viewFixtures": "Calendrier",
-    "viewStandings": "Classement"
+    "viewStandings": "Classement",
+    "viewStats": "Stats"
+  },
+  "stats": {
+    "player": "Joueur",
+    "topScorers": "Meilleurs buteurs",
+    "topAssists": "Meilleurs passeurs",
+    "empty": "Aucune donnée"
   },
   "standings": {
     "team": "Équipe"
