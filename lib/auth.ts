@@ -198,7 +198,13 @@ export function buildAuthOptions(database: AuthDb) {
         // are picked up without a restart.
         async trustedProviders() {
           try {
-            const rows = await database.select({ id: schema.ssoProvider.providerId }).from(schema.ssoProvider)
+            // Only live providers are trusted for implicit linking - a draft or
+            // disabled one must not link accounts (it also can't complete a
+            // sign-in; see the catch-all callback gate).
+            const rows = await database
+              .select({ id: schema.ssoProvider.providerId })
+              .from(schema.ssoProvider)
+              .where(eq(schema.ssoProvider.status, 'enabled'))
             return rows.map((r) => r.id)
           } catch {
             // Degrade to "no implicit linking" rather than failing the auth request.

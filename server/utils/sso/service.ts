@@ -33,6 +33,18 @@ export async function setProviderStatus(db: AppDatabase, providerId: string, nex
   await db.update(ssoProvider).set({ status: next }).where(eq(ssoProvider.providerId, providerId))
 }
 
+// True only when the provider is live ('enabled'). The catch-all uses this to
+// reject sign-in callbacks for draft/disabled providers (existing sessions are
+// untouched - the gate only sits on the session-minting callback paths).
+export async function isProviderEnabled(db: AppDatabase, providerId: string): Promise<boolean> {
+  const rows = await db
+    .select({ status: ssoProvider.status })
+    .from(ssoProvider)
+    .where(eq(ssoProvider.providerId, providerId))
+    .limit(1)
+  return rows[0]?.status === 'enabled'
+}
+
 // ---- Connection test ------------------------------------------------------
 
 // Runs automated pre-flight checks and persists the outcome. This is the gate to

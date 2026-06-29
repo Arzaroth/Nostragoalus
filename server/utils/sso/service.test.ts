@@ -13,6 +13,7 @@ const { sealConfig } = await import('./config')
 const {
   setProviderStatus,
   testConnection,
+  isProviderEnabled,
   getDomainVerificationInstructions,
   verifyDomainDns,
   bypassDomainVerification,
@@ -88,6 +89,21 @@ describe('setProviderStatus', () => {
     await setProviderStatus(db, 'acme', 'draft')
     const [row] = await db.select({ status: ssoProvider.status }).from(ssoProvider).where(eq(ssoProvider.providerId, 'acme'))
     expect(row!.status).toBe('draft')
+  })
+})
+
+describe('isProviderEnabled', () => {
+  let db: TestDb
+  beforeEach(async () => {
+    db = (await createTestDb()).db
+  })
+
+  it('is true only for an enabled provider', async () => {
+    await insertProvider(db, { providerId: 'live', status: 'enabled' })
+    await insertProvider(db, { providerId: 'draft', status: 'draft' })
+    expect(await isProviderEnabled(db, 'live')).toBe(true)
+    expect(await isProviderEnabled(db, 'draft')).toBe(false)
+    expect(await isProviderEnabled(db, 'ghost')).toBe(false)
   })
 })
 

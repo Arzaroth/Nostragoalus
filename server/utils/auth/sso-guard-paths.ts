@@ -22,8 +22,32 @@ export const SSO_ADMIN_ONLY_PATHS = [
   '/api/auth/sso/delete-provider',
 ] as const
 
+// SSO callback endpoints that carry the providerId as the final path segment.
+// These are where a session is actually issued, so gating them stops a draft or
+// disabled provider from ever minting one - even via a hand-crafted sign-in that
+// skips the (already provider-filtered) login form. The providerId lives in the
+// URL, so the gate never has to read the request body (which auth.handler needs).
+const SSO_CALLBACK_PREFIXES = [
+  '/api/auth/sso/callback/',
+  '/api/auth/sso/saml2/callback/',
+  '/api/auth/sso/saml2/sp/acs/',
+] as const
+
 function matchesAny(paths: readonly string[], path: string): boolean {
   return paths.some((p) => path === p || path.startsWith(`${p}?`))
+}
+
+// The providerId targeted by an SSO callback request, or null if the path is not
+// a provider callback (e.g. the SP metadata endpoint, which has no providerId).
+export function ssoCallbackProviderId(path: string): string | null {
+  const clean = path.split('?')[0]!
+  for (const prefix of SSO_CALLBACK_PREFIXES) {
+    if (clean.startsWith(prefix)) {
+      const segment = clean.slice(prefix.length).split('/')[0]
+      return segment ? decodeURIComponent(segment) : null
+    }
+  }
+  return null
 }
 
 // Plugin provider-management endpoint reachable over HTTP - block entirely.

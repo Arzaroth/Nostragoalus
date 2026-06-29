@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isSsoAdminOnlyPath, isSsoLockedPath } from './sso-guard-paths'
+import { isSsoAdminOnlyPath, isSsoLockedPath, ssoCallbackProviderId } from './sso-guard-paths'
 
 describe('isSsoAdminOnlyPath', () => {
   it('matches the plugin provider-management endpoints, with or without a query', () => {
@@ -27,5 +27,22 @@ describe('isSsoLockedPath', () => {
     expect(isSsoLockedPath('/api/auth/change-password')).toBe(false)
     expect(isSsoLockedPath('/api/auth/two-factor/disable')).toBe(false)
     expect(isSsoLockedPath('/api/auth/change-email-extra')).toBe(false)
+  })
+})
+
+describe('ssoCallbackProviderId', () => {
+  it('extracts the providerId from OIDC and SAML callback paths', () => {
+    expect(ssoCallbackProviderId('/api/auth/sso/callback/acme')).toBe('acme')
+    expect(ssoCallbackProviderId('/api/auth/sso/saml2/callback/acme')).toBe('acme')
+    expect(ssoCallbackProviderId('/api/auth/sso/saml2/sp/acs/acme')).toBe('acme')
+  })
+  it('ignores a trailing query string and decodes the segment', () => {
+    expect(ssoCallbackProviderId('/api/auth/sso/callback/acme?code=xyz')).toBe('acme')
+    expect(ssoCallbackProviderId('/api/auth/sso/callback/my%20idp')).toBe('my idp')
+  })
+  it('returns null for non-callback or providerless paths', () => {
+    expect(ssoCallbackProviderId('/api/auth/sign-in/sso')).toBeNull()
+    expect(ssoCallbackProviderId('/api/auth/sso/saml2/sp/metadata')).toBeNull()
+    expect(ssoCallbackProviderId('/api/auth/sso/callback/')).toBeNull()
   })
 })
