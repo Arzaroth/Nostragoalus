@@ -348,6 +348,14 @@ effort buckets; order within a bucket is not priority.
         global surface, no server-side read path (would break the disclaimer).
       - Transport: ciphertext over the members-only league WS channel + REST
         history (ciphertext pages). Dep: libsodium-wrappers.
+      - **Cross-league unread inbox + mention alerts** (shipped in 2.3.0): the
+        dock's "rooms with activity" list now spans every league you belong to and
+        survives a reload, backed by a per-room read marker (`chat_room_read`) and
+        `GET /api/chat/unread` (counts floored at league join, mention counts read
+        off the durable bell rows). An @mention fires a cross-league web push +
+        header-bell `CHAT_MENTION`: the mentioned ids ride as a plaintext sidecar
+        (validated against real members, sender dropped), and the alert carries
+        room context only, never the E2EE message text.
 - [ ] **Hall of shame (per pick, not per player)**: "shame of the round" -
       one per matchday so nobody is dogpiled tournament-wide. Shameable =
       wrong outcome (a miss) AND max total goal error (|dHome| + |dAway|);
