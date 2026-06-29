@@ -1,4 +1,4 @@
-import { and, eq, isNull, ne, sql } from 'drizzle-orm'
+import { and, eq, isNull, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { chatMessage, chatRoomRead, competition, league, leagueMember, match, userNotification } from '../../../db/schema'
 import { GLOBAL_ROOM, roomKeyFor, type ChatUnreadRoomDTO } from '../../../shared/types/chat'
@@ -37,7 +37,9 @@ async function unreadMessageRooms(db: AppDatabase, userId: string) {
     .where(
       and(
         eq(leagueMember.userId, userId),
-        ne(chatMessage.userId, userId),
+        // `is distinct from` (not `<>`) so a message whose author was deleted
+        // (user_id -> null) still counts, matching the live tracker.
+        sql`${chatMessage.userId} is distinct from ${userId}`,
         isNull(chatMessage.threadId),
         eq(chatMessage.moderationState, 'VISIBLE'),
         sql`${chatMessage.createdAt} > coalesce(${chatRoomRead.lastReadAt}, ${leagueMember.joinedAt})`,
@@ -129,7 +131,10 @@ export async function getUnreadRooms(db: AppDatabase, userId: string): Promise<C
     }
   }
 
-  return [...byKey.values()].sort((a, b) => (b.lastAt ?? '').localeCompare(a.lastAt ?? ''))
+  // Newest activity first; leagueId+roomKey is the deterministic tiebreaker so two
+  // rooms sharing a lastAt never reorder across reloads. lastAt is always set here.
+  const sortKey = (r: ChatUnreadRoomDTO) => `${r.lastAt}|${r.leagueId}|${r.roomKey}`
+  return [...byKey.values()].sort((a, b) => sortKey(b).localeCompare(sortKey(a)))
 }
 
 // Mark a room read up to now (server clock - never trust a client timestamp). Also

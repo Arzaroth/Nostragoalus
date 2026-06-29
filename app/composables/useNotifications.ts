@@ -42,6 +42,13 @@ export function useNotifications() {
     qc.setQueryData<FeedResponse>(FEED_KEY, (old) => fn(old ?? { notifications: [], unreadCount: 0 }))
   }
 
+  // Reading or clearing notifications can touch CHAT_MENTION rows, which also drive
+  // the chat inbox's per-room mention badges; refresh both so they never disagree.
+  function settle() {
+    qc.invalidateQueries({ queryKey: FEED_KEY })
+    qc.invalidateQueries({ queryKey: ['chat', 'unread'] })
+  }
+
   useReconnectingSocket({
     // A reconnect may have missed a push (deploy/restart): refetch to converge.
     onOpen: () => {
@@ -62,14 +69,14 @@ export function useNotifications() {
     mutationFn: (ids: string[]) =>
       $fetch<{ marked: number }>('/api/notifications/read', { method: 'POST', body: { ids } }),
     onMutate: (ids: string[]) => patchFeed((feed) => markIdsRead(feed, ids)),
-    onSettled: () => qc.invalidateQueries({ queryKey: FEED_KEY }),
+    onSettled: settle,
   })
 
   const markAllRead = useMutation({
     mutationFn: () => $fetch<{ marked: number }>('/api/notifications/read', { method: 'POST', body: { all: true } }),
     onMutate: () =>
       patchFeed((feed) => ({ notifications: feed.notifications.map((n) => ({ ...n, read: true })), unreadCount: 0 })),
-    onSettled: () => qc.invalidateQueries({ queryKey: FEED_KEY }),
+    onSettled: settle,
   })
 
   const dismiss = useMutation({
@@ -83,13 +90,13 @@ export function useNotifications() {
           unreadCount: target && !target.read ? Math.max(0, feed.unreadCount - 1) : feed.unreadCount,
         }
       }),
-    onSettled: () => qc.invalidateQueries({ queryKey: FEED_KEY }),
+    onSettled: settle,
   })
 
   const deleteAll = useMutation({
     mutationFn: () => $fetch<{ deleted: number }>('/api/notifications/delete', { method: 'POST', body: { all: true } }),
     onMutate: () => patchFeed(() => ({ notifications: [], unreadCount: 0 })),
-    onSettled: () => qc.invalidateQueries({ queryKey: FEED_KEY }),
+    onSettled: settle,
   })
 
   return { notifications, unreadCount, isLoading: query.isLoading, markRead, markAllRead, dismiss, deleteAll }

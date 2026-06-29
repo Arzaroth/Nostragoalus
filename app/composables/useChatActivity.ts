@@ -28,7 +28,12 @@ export function useChatActivity(opts: {
     enabled,
   })
 
-  const rooms = computed<ChatUnreadRoomDTO[]>(() => query.data.value ?? [])
+  // Sort client-side (newest activity first, mirroring the server's tiebreaker) so
+  // the in-place live patches below never leave the list out of order between fetches.
+  const sortKey = (r: ChatUnreadRoomDTO) => `${r.lastAt}|${r.leagueId}|${r.roomKey}`
+  const rooms = computed<ChatUnreadRoomDTO[]>(() =>
+    [...(query.data.value ?? [])].sort((a, b) => sortKey(b).localeCompare(sortKey(a))),
+  )
 
   function patch(fn: (list: ChatUnreadRoomDTO[]) => ChatUnreadRoomDTO[]): void {
     qc.setQueryData<ChatUnreadRoomDTO[]>(UNREAD_KEY, (old) => fn(old ?? []))
@@ -38,11 +43,16 @@ export function useChatActivity(opts: {
   }
 
   // Persist the read marker for a room and converge the list with the server.
+  // Marking a room read also clears its CHAT_MENTION bell rows, so refresh the
+  // notification feed too or the bell's unread count goes stale.
   function postRead(leagueId: string, roomKey: string): Promise<unknown> {
     return $fetch('/api/chat/read', { method: 'POST', body: { leagueId, roomKey } })
       .catch(() => {})
       .finally(() => {
-        if (enabled.value) qc.invalidateQueries({ queryKey: UNREAD_KEY })
+        if (enabled.value) {
+          qc.invalidateQueries({ queryKey: UNREAD_KEY })
+          qc.invalidateQueries({ queryKey: ['notifications', 'feed'] })
+        }
       })
   }
 

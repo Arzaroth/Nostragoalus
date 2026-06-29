@@ -207,7 +207,7 @@ async function openRoom(r: ChatUnreadRoomDTO) {
             @click="roomsOpen = !roomsOpen"
           >
             <i class="pi pi-inbox" />
-            <span v-if="activity.total.value" class="absolute -top-1 -right-1 w-2 h-2 rounded-full" style="background: var(--ng-danger)" />
+            <span v-if="activity.total.value || activity.totalMentions.value" class="absolute -top-1 -right-1 w-2 h-2 rounded-full" style="background: var(--ng-danger)" />
           </button>
           <div
             v-if="roomsOpen"
