@@ -220,7 +220,14 @@
     "title": "bookmaker mI' — 1: juH Qap, X: rap, 2: nIteb Qap. mI' machHa' law', DuH law'.",
     "home": "juH Qap SuD mI'",
     "draw": "rap SuD mI'",
-    "away": "lengwI' Qap SuD mI'"
+    "away": "lengwI' Qap SuD mI'",
+    "opening": "taghbogh mI'",
+    "bookmakers": "bookmakerpu'",
+    "shortened": "machchoH {delta}",
+    "drifted": "tInchoH {delta}",
+    "unchanged": "choHbe'",
+    "showBreakdown": "mI'mey 'ang",
+    "hideBreakdown": "mI'mey So'"
   },
   "common": {
     "loading": "yIloS…",
