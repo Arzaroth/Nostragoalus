@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { NotificationDTO } from '#shared/types/notifications'
+import { chatMentionPath, type NotificationDTO } from '#shared/types/notifications'
 
 const { t, locale } = useI18n()
 const router = useRouter()
@@ -25,6 +25,7 @@ const ICONS: Record<NotificationDTO['type'], string> = {
   MATCH_RESULT: 'pi pi-flag',
   CHAMPION_RESULT: 'pi pi-crown',
   BEST_SCORER_RESULT: 'pi pi-star',
+  CHAT_MENTION: 'pi pi-at',
 }
 
 function itemText(n: NotificationDTO): string {
@@ -60,6 +61,10 @@ function itemText(n: NotificationDTO): string {
         competition: d.competitionName,
         points: d.points,
       })
+    case 'CHAT_MENTION':
+      return d.matchId
+        ? t('notifications.item.mentionMatch', { name: d.senderName, home: d.homeTeam ?? '', away: d.awayTeam ?? '' })
+        : t('notifications.item.mention', { name: d.senderName, league: d.leagueName })
   }
 }
 
@@ -77,6 +82,8 @@ function linkFor(n: NotificationDTO): string {
     case 'CHAMPION_RESULT':
     case 'BEST_SCORER_RESULT':
       return `/${d.competitionSlug}/leaderboard`
+    case 'CHAT_MENTION':
+      return chatMentionPath(d)
   }
 }
 

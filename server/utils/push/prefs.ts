@@ -3,12 +3,20 @@ import type { NotificationType } from '../../../shared/types/notifications'
 // The push categories shown as toggles in preferences. GOAL/MATCH_LIVE are
 // push-only (not stored notification types), so they map straight to a category
 // in their trigger code; the rest derive their category from the stored type.
-export type PushCategory = 'reminders' | 'kickoff' | 'goals' | 'matchResults' | 'tournament' | 'league'
+export type PushCategory =
+  | 'reminders'
+  | 'kickoff'
+  | 'goals'
+  | 'matchResults'
+  | 'tournament'
+  | 'league'
+  | 'mentions'
 
-export const PUSH_CATEGORIES: PushCategory[] = ['reminders', 'kickoff', 'goals', 'matchResults', 'tournament', 'league']
+export const PUSH_CATEGORIES: PushCategory[] = ['reminders', 'kickoff', 'goals', 'matchResults', 'tournament', 'league', 'mentions']
 
 // Default-on for the time-sensitive and result categories; league social is
-// off by default (low urgency). null on a column means "use this default".
+// off by default (low urgency). Mentions are directed at the recipient by name,
+// so they are default-on. null on a column means "use this default".
 export const PUSH_DEFAULTS: Record<PushCategory, boolean> = {
   reminders: true,
   kickoff: true,
@@ -16,6 +24,7 @@ export const PUSH_DEFAULTS: Record<PushCategory, boolean> = {
   matchResults: true,
   tournament: true,
   league: false,
+  mentions: true,
 }
 
 // The user column backing each category (the better-auth additionalFields).
@@ -26,6 +35,7 @@ export const PUSH_COLUMN: Record<PushCategory, keyof PushPrefs> = {
   matchResults: 'pushMatchResults',
   tournament: 'pushTournament',
   league: 'pushLeague',
+  mentions: 'pushMentions',
 }
 
 export interface PushPrefs {
@@ -35,6 +45,7 @@ export interface PushPrefs {
   pushMatchResults: boolean | null
   pushTournament: boolean | null
   pushLeague: boolean | null
+  pushMentions: boolean | null
 }
 
 export function isPushEnabled(prefs: PushPrefs | null | undefined, category: PushCategory): boolean {
@@ -51,6 +62,7 @@ const TYPE_CATEGORY: Record<NotificationType, PushCategory> = {
   LEAGUE_JOIN: 'league',
   LEAGUE_ROLE: 'league',
   LEAGUE_REMOVED: 'league',
+  CHAT_MENTION: 'mentions',
 }
 
 export function categoryForType(type: NotificationType): PushCategory {

@@ -765,6 +765,7 @@ export const notificationTypeEnum = pgEnum('notification_type', [
   'MATCH_RESULT',
   'CHAMPION_RESULT',
   'BEST_SCORER_RESULT',
+  'CHAT_MENTION',
 ])
 
 // Per-user in-app notifications (the header bell). `type` mirrors `data.type`;

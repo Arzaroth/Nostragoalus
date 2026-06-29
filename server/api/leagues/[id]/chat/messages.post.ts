@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { db } from '../../../../../db'
 import { postMessage } from '../../../../utils/chat/service'
+import { notifyMentions } from '../../../../utils/chat/mentions'
 import { publishChatMessage } from '../../../../utils/live/league-chat'
 import { defineValidatedHandler } from '../../../../utils/validated-handler'
 import { emptyReactionTotals } from '../../../../../shared/reactions'
@@ -59,6 +60,14 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ body, user,
   }
   // Fire-and-forget fan-out so a delivery hiccup can't fail the post itself.
   void publishChatMessage(db, message, body.mentions ?? []).catch(() => {})
+  // Durable cross-league mention alert (bell + web push); same fire-and-forget.
+  void notifyMentions(db, {
+    leagueId,
+    matchId: row.matchId,
+    messageId: row.id,
+    senderId: user.id,
+    mentions: body.mentions ?? [],
+  }).catch(() => {})
   return { message }
 })
 

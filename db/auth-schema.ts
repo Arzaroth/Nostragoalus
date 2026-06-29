@@ -31,6 +31,7 @@ export const user = pgTable("user", {
   pushMatchResults: boolean("push_match_results"),
   pushTournament: boolean("push_tournament"),
   pushLeague: boolean("push_league"),
+  pushMentions: boolean("push_mentions"),
   // Newest CHANGELOG version the user has viewed (null = not yet baselined).
   // The client stamps it to the latest released version on first load and
   // re-stamps when the changelog is opened; the delta drives the "what's new"

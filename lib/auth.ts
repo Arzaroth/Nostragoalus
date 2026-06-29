@@ -143,6 +143,8 @@ export function buildAuthOptions(database: AuthDb) {
         pushMatchResults: { type: 'boolean' as const, required: false },
         pushTournament: { type: 'boolean' as const, required: false },
         pushLeague: { type: 'boolean' as const, required: false },
+        // @mentioned in a league chat (any league/match). Default-on (prefs.ts).
+        pushMentions: { type: 'boolean' as const, required: false },
         // Newest changelog version the user has viewed (settable: the client
         // stamps it on first load and when the changelog is opened).
         lastSeenChangelogVersion: { type: 'string' as const, required: false },

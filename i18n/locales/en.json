@@ -195,7 +195,8 @@
       "goals": "Live goals",
       "matchResults": "Match results",
       "tournament": "Tournament results",
-      "league": "League activity"
+      "league": "League activity",
+      "mentions": "Chat mentions"
     },
     "odds": "Show bookmaker odds",
     "oddsHint": "Decimal 1X2 odds under each match: 1 = home win, X = draw, 2 = away win. Lower number = more likely. Snapshotted at kickoff."
@@ -1148,10 +1149,14 @@
       "championWon": "Your champion {team} won the {competition}! +{points} pts",
       "championLost": "Your champion pick {team} didn't win the {competition}.",
       "bestScorerWon": "Your Golden Boot pick {player} finished top scorer! +{points} pts",
-      "bestScorerLost": "Your Golden Boot pick {player} didn't finish top scorer."
+      "bestScorerLost": "Your Golden Boot pick {player} didn't finish top scorer.",
+      "mention": "{name} mentioned you in {league}.",
+      "mentionMatch": "{name} mentioned you in {home} v {away}."
     }
   },
   "push": {
+    "mention": { "title": "New mention", "body": "{name} mentioned you in {league}" },
+    "mentionMatch": { "title": "New mention", "body": "{name} mentioned you in {home} v {away}" },
     "reminder": { "title": "Don't forget to predict", "body": "{home} v {away} kicks off soon" },
     "kickoff": { "title": "Kick-off", "body": "{home} v {away} has started" },
     "goal": { "title": "GOAL!", "body": "{home} {hs}-{as} {away}" },
