@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-06-30
+
 ### chelpu'
 - **HollIj jatlh choHmey qun**: DaH app qoDDaq choHmey De' ("chu'bogh" 'ay', About ghItlh je) HollIj DawIvbogh laDlu'; mughbe'lu'taHbogh DIvI' Hol cheghlu', reH DIvI' Hol law'be'.
 - **Daqvetlh poSmoH ngoDmey**: DaH QujwI' ngoDmey qun nungDaq SopmoH - wIvmey Qav, DaH wIvmey je - wIvmey qun nI' 'eDDaq taghbe'.
