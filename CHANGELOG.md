@@ -5,6 +5,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- **Cross-league chat inbox**: the chat dock's "rooms with activity" list now gathers unread rooms from every league you belong to, not just the one you are viewing, and it survives a page reload (it no longer resets to empty when you refresh). Picking a room jumps straight to it, switching league if needed.
+- **Mention alerts**: being @mentioned in any league chat now sends you a web push and a header-bell notification, regardless of which league or match it was in, with a link straight to that room. Toggle it under Preferences, in the push notifications list.
+- **Full timestamp on hover**: hovering a chat message's send time now reveals its full date and time.
+
 ## [2.3.0] - 2026-06-30
 
 ### Added

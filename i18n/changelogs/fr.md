@@ -5,6 +5,11 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Ajouté
+- **Boîte de réception du chat inter-ligues** : la liste des « salons avec activité » du dock de chat rassemble désormais les salons non lus de toutes les ligues auxquelles vous appartenez, et non plus seulement celle que vous consultez, et elle survit à un rechargement de page (elle ne se réinitialise plus à vide quand vous actualisez). Choisir un salon y saute directement, en changeant de ligue si nécessaire.
+- **Alertes de mention** : être @mentionné dans le chat d'une ligue vous envoie désormais une notification push web et une notification dans la cloche d'en-tête, quelle que soit la ligue ou le match concerné, avec un lien direct vers ce salon. Activez-les dans les Préférences, dans la liste des notifications push.
+- **Horodatage complet au survol** : survoler l'heure d'envoi d'un message de chat révèle désormais sa date et son heure complètes.
+
 ## [2.3.0] - 2026-06-30
 
 ### Ajouté
