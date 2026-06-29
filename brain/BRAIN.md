@@ -59,6 +59,7 @@ use the indexes.
 | [crowd-bot.md](features/crowd-bot.md) | The consensus "ghost" participant (MODE/MEAN). |
 | [odds.md](features/odds.md) | 1X2 decimal odds (Sofascore + BetExplorer). |
 | [reactions.md](features/reactions.md) | Match + chat emoji reactions. |
+| [live-viewers.md](features/live-viewers.md) | Real-time "N watching now" per-match viewer count. |
 | [notifications.md](features/notifications.md) | In-app notification center (the bell). |
 | [web-push.md](features/web-push.md) | VAPID push, per-category toggles, live goal/kickoff. |
 | [chat.md](features/chat.md) | E2E-encrypted league chat (threads, mentions, moderation, images). |
@@ -83,6 +84,7 @@ use the indexes.
 | Why did my new column not appear in dev? | [architecture/database.md](architecture/database.md) |
 | How do I add a user-facing string? | [architecture/i18n.md](architecture/i18n.md) |
 | How does live update reach the client? | [architecture/realtime.md](architecture/realtime.md) |
+| How is "N watching now" counted per match? | [features/live-viewers.md](features/live-viewers.md) |
 | Where are images stored, and how do I migrate them? | [architecture/storage.md](architecture/storage.md), [features/image-storage.md](features/image-storage.md) |
 | How is SSO configured and kept secret-safe? | [architecture/auth.md](architecture/auth.md) |
 | How do I cut a release? What bumps major? | [operations.md](operations.md) |

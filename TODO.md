@@ -112,6 +112,24 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       the scoreline can visibly jump mid-decision. Keep `editing` true while the
       confirm is up if it proves distracting.
 
+## Live viewers ("N watching now", deferred from the feature pass)
+
+- [ ] **Multi-node undercount**: the viewer rooms live in `server/utils/live/viewers.ts`
+      as in-process maps, so across a multi-instance deploy each node counts only
+      its own sockets and the page shows an undercount (same limit as the rest of
+      the in-process hub - the app is single-instance today). Scaling out needs a
+      shared store / pub-sub for the rooms (Redis or similar): publish join/leave,
+      sum the count across nodes, and fan `viewers:update` cluster-wide. Do it with
+      (or after) the broader hub multi-node work, not standalone.
+- [ ] `useMatchPresence` opens its own `useReconnectingSocket` (like `useLiveMatch`
+      / `useCrowdTotals` / `useNotifications`), so the match page now holds yet
+      another WS connection. Folds into the already-tracked "unify the WS consumers
+      onto one shared socket" item under Notifications.
+- [ ] The count is socket-level (one tab = one viewer, by design - the spec's
+      de-dupe is per-socket), so one person with two tabs on the same match counts
+      as two. If "people" semantics are ever wanted, ref-count by `userId` like
+      presence does (guests would still need a per-socket fallback).
+
 ## Calendar feed (deferred from the feature-treatment review)
 
 - [ ] `server/utils/feed/token.ts` is a near-verbatim clone of

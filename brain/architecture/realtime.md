@@ -26,6 +26,7 @@ fire-and-forget after a successful mutation or during a scheduled task.
 | `publishLeagueReactionUpdate(...)` | league members | [../features/chat.md](../features/chat.md), reactions |
 | `publishMemberNameChanged(...)` | affected leagues (`chat:roster`) | [../features/chat.md](../features/chat.md) |
 | presence broadcasts | all sockets / a new socket | presence, below |
+| `syncMatchViewers` / `dropMatchViewer` | a match's viewer room (`viewers:update`) | [../features/live-viewers.md](../features/live-viewers.md) |
 | score/match updates | the live match view | `scores:poll`, [providers.md](providers.md) |
 
 ## Live event types (client message names)
@@ -38,6 +39,10 @@ fire-and-forget after a successful mutation or during a scheduled task.
 - `presence:update` (a user's online/idle state changed), `presence:snapshot`
   (full state sent to a freshly connected socket), `presence:ping` (client ->
   server idle keepalive).
+- `viewing` (client -> server: the one match this socket is on) and
+  `viewers:update` (server -> a match's viewer room: the new "N watching now"
+  count). Per-match presence, distinct from the global `presence:*` and from the
+  `subscribe` score frame - see [../features/live-viewers.md](../features/live-viewers.md).
 - crowd totals update and live score/match updates.
 
 ## Client side
@@ -68,6 +73,6 @@ everyone else. Both paths converge on the same vue-query cache keys (see
 ## Sources
 
 - `server/routes/_ws.ts`
-- `server/utils/live/hub.ts`, `server/utils/live/presence.ts`
-- `app/composables/useReconnectingSocket.ts`, `app/composables/usePresence.ts`
-- `app/components/UserAvatar.vue` (presence dot)
+- `server/utils/live/hub.ts`, `server/utils/live/presence.ts`, `server/utils/live/viewers.ts`
+- `app/composables/useReconnectingSocket.ts`, `app/composables/usePresence.ts`, `app/composables/useMatchPresence.ts`
+- `app/components/UserAvatar.vue` (presence dot), `app/components/MatchViewers.vue` ("N watching now")
