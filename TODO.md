@@ -381,7 +381,16 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 - [ ] RateLimiter.acquire is check-then-sleep; concurrent callers can fire
       together. A promise-chain queue would make the host spacing a guarantee.
 
-## Leagues feature (deferred from the merge review)
+## Odds movement / breakdown (deferred from the feature pass)
+
+- [ ] The per-bookmaker breakdown is plumbed end-to-end (store -> payload ->
+      `MatchOdds.vue` expand), but no shipping provider populates
+      `oddsSnapshot.bookmakers`: Sofascore is a single aggregated feed and stores
+      null, so the expand currently only shows the opening prices. A multi-book
+      provider (a working BetExplorer fetcher) would light up the breakdown.
+- [ ] `MatchOdds.vue` reads opening/bookmakers from the latest snapshot only.
+      For a richer movement view it could read the full snapshot series
+      (sparkline / open->close timeline) rather than just open-vs-current.
 
 - [x] Dedup the rank-snapshot pair: updateLeagueRankSnapshots/getLeagueRankMovements
       are verbatim copies of the global ones (snapshots.ts) - parameterize by
