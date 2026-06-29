@@ -13,6 +13,10 @@ export default defineEventHandler(async (event) => {
       domain: ssoProvider.domain,
       displayName: ssoProvider.displayName,
       saml: ssoProvider.samlConfig,
+      status: ssoProvider.status,
+      domainVerified: ssoProvider.domainVerified,
+      lastTestedAt: ssoProvider.lastTestedAt,
+      lastTestResult: ssoProvider.lastTestResult,
     })
     .from(ssoProvider)
   const autoJoin = await listProviderAutoJoinLeagues(db)
@@ -25,6 +29,12 @@ export default defineEventHandler(async (event) => {
       domains: r.domain.split(',').map((d) => d.trim()).filter(Boolean),
       type: r.saml ? ('saml' as const) : ('oidc' as const),
       autoJoinLeagueIds: autoJoin.get(r.providerId) ?? [],
+      status: r.status,
+      domainVerified: r.domainVerified,
+      lastTestedAt: r.lastTestedAt,
+      // Surface only the boolean outcome here; the full per-check detail comes
+      // back from the test-connection endpoint when the admin runs it.
+      lastTestOk: r.lastTestResult?.ok ?? null,
     })),
   }
 })

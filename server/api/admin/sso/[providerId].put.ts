@@ -1,25 +1,14 @@
 import { eq } from 'drizzle-orm'
 import { db } from '../../../../db'
 import { ssoProvider } from '../../../../db/schema'
-import { requireAdmin } from '../../../utils/auth-guards'
-import { decryptSecret, encryptSecret, isSealed } from '../../../utils/crypto/envelope'
+import { defineValidatedHandler } from '../../../utils/validated-handler'
+import { openConfig, sealConfig } from '../../../utils/sso/config'
 import { findDomainConflicts, parseDomainList } from '../../../utils/auth/sso-domains'
-
-function openConfig(raw: string | null): Record<string, unknown> {
-  if (!raw) return {}
-  const parsed = JSON.parse(raw)
-  return JSON.parse(isSealed(parsed) ? decryptSecret(parsed) : raw)
-}
-
-function sealConfig(config: Record<string, unknown>): string {
-  return JSON.stringify(encryptSecret(JSON.stringify(config)))
-}
 
 // Edits a registered SSO provider in place. The provider type (OIDC/SAML) and
 // providerId are immutable - the providerId is baked into the IdP-side callback
 // URL. Secret fields left blank keep their stored value.
-export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
+export default defineValidatedHandler({ admin: true }, async ({ event }) => {
   const providerId = getRouterParam(event, 'providerId') as string
   const rows = await db.select().from(ssoProvider).where(eq(ssoProvider.providerId, providerId)).limit(1)
   const existing = rows[0]

@@ -2,13 +2,13 @@ import { eq } from 'drizzle-orm'
 import { auth } from '../../../../lib/auth'
 import { db } from '../../../../db'
 import { ssoProvider } from '../../../../db/schema'
-import { requireAdmin } from '../../../utils/auth-guards'
+import { defineValidatedHandler } from '../../../utils/validated-handler'
 import { findDomainConflicts, parseDomainList } from '../../../utils/auth/sso-domains'
 
 // Registers an SSO provider (OIDC / Google / SAML). Secrets are envelope-encrypted
-// at rest by the adapter wrapper when better-auth persists the config.
-export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
+// at rest by the adapter wrapper when better-auth persists the config. New
+// providers always start as 'draft': the admin tests + verifies before enabling.
+export default defineValidatedHandler({ admin: true }, async ({ event }) => {
   const b = await readBody(event)
   const providerId = String(b?.providerId || '').trim()
   const domains = parseDomainList(b?.domains ?? b?.domain)
@@ -80,11 +80,15 @@ export default defineEventHandler(async (event) => {
     // body is built dynamically per provider type; better-auth's union body type
     // can't be narrowed from Record<string, unknown>, so assert at the call.
     const result = await auth.api.registerSSOProvider({ body: body as never, headers: event.headers })
-    // displayName is our column, not a plugin field - written after registration.
+    // status and displayName are our columns, not plugin fields - written after
+    // registration. The provider lands as 'draft' (and the plugin already forces
+    // domainVerified false), so it isn't live until the admin tests, verifies and
+    // enables it.
     const displayName = String(b?.name || '').trim()
-    if (displayName) {
-      await db.update(ssoProvider).set({ displayName }).where(eq(ssoProvider.providerId, providerId))
-    }
+    await db
+      .update(ssoProvider)
+      .set({ status: 'draft', ...(displayName ? { displayName } : {}) })
+      .where(eq(ssoProvider.providerId, providerId))
     return { ok: true, providerId, result }
   } catch (error) {
     throw createError({ statusCode: 400, statusMessage: (error as Error)?.message || 'Failed to register provider' })
