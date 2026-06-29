@@ -107,24 +107,6 @@ watch(resolvedPhoto, () => {
   photoFailed.value = false
 })
 const photoSrc = computed(() => (photoFailed.value ? null : resolvedPhoto.value))
-
-const NuxtLinkC = resolveComponent('NuxtLink')
-
-// Holographic hover, identical to the champion showcase: the picture tilts
-// toward the cursor with a light sweep.
-const showcaseEl = ref<HTMLElement | null>(null)
-const { elementX, elementY, elementWidth, elementHeight, isOutside } = useMouseInElement(showcaseEl)
-const holo = computed(() => {
-  if (isOutside.value || !elementWidth.value) return { transform: '', sheen: 0, sx: 50, sy: 50 }
-  const px = elementX.value / elementWidth.value
-  const py = elementY.value / elementHeight.value
-  return {
-    transform: `perspective(420px) rotateY(${(px - 0.5) * 22}deg) rotateX(${(0.5 - py) * 22}deg) scale(1.06)`,
-    sheen: 1,
-    sx: px * 100,
-    sy: py * 100,
-  }
-})
 </script>
 
 <template>
@@ -218,44 +200,14 @@ const holo = computed(() => {
       </div>
 
       <!-- Golden boot showcase -->
-      <div class="shrink-0 flex flex-col items-center gap-2 self-center sm:self-start sm:pr-2">
-        <component :is="showcase?.teamCode ? NuxtLinkC : 'div'" :to="showcase?.teamCode ? `/${slug}/teams/${showcase.teamCode}` : undefined" class="relative mt-1 block" :class="{ 'hover:opacity-90': showcase?.teamCode }">
-          <template v-if="showcase">
-            <div
-              class="absolute -inset-4 rounded-full blur-xl pointer-events-none"
-              style="background: radial-gradient(circle, rgba(245, 179, 1, 0.4), transparent 70%)"
-            />
-            <span
-              class="absolute -top-3 -left-3 text-2xl z-10 select-none"
-              style="transform: rotate(-25deg); filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35))"
-            ><GoldenBoot /></span>
-            <span ref="showcaseEl" class="relative block w-16 h-16 rounded-2xl" style="transition: transform 0.25s ease" :style="{ transform: holo.transform }">
-              <img
-                :src="photoSrc || flagUrl(showcase.teamCode) || ''"
-                class="relative w-16 h-16 rounded-2xl object-cover"
-                style="box-shadow: 0 0 0 3px rgba(245, 179, 1, 0.6), 0 10px 24px rgba(0, 0, 0, 0.3)"
-                alt=""
-                @error="photoFailed = true"
-              >
-              <span
-                class="absolute inset-0 rounded-2xl pointer-events-none"
-                style="transition: opacity 0.25s ease; mix-blend-mode: screen"
-                :style="{
-                  opacity: holo.sheen * 0.75,
-                  background: `radial-gradient(140px circle at ${holo.sx}% ${holo.sy}%, rgba(255,255,255,0.55), rgba(245,179,1,0.18) 45%, transparent 70%)`,
-                }"
-              />
-            </span>
-          </template>
-          <template v-else>
-            <span class="absolute -top-3 -left-3 text-2xl z-10 opacity-30 grayscale select-none" style="transform: rotate(-25deg)"><GoldenBoot /></span>
-            <div
-              class="w-16 h-16 rounded-2xl border-2 border-dashed flex items-center justify-center text-2xl"
-              style="border-color: var(--p-content-border-color); color: var(--p-text-muted-color)"
-            >?</div>
-          </template>
-        </component>
-        <div class="text-center w-24">
+      <MetaPickShowcase
+        :present="!!showcase"
+        :image-url="showcase ? photoSrc || flagUrl(showcase.teamCode) || null : null"
+        :link-to="showcase?.teamCode ? `/${slug}/teams/${showcase.teamCode}` : null"
+        @image-error="photoFailed = true"
+      >
+        <template #emblem><GoldenBoot /></template>
+        <template #caption>
           <strong v-if="showcase" class="block leading-tight">{{ formatPlayerName(showcase.playerName) }}</strong>
           <span v-else class="block text-sm leading-tight" style="color: var(--p-text-muted-color)">{{ t('bestScorer.pickPlayer') }}</span>
           <!-- one reserved line: awarded points / worth (preview or locked) / spacer - the card never resizes -->
@@ -265,9 +217,9 @@ const holo = computed(() => {
             class="text-xs block mt-0.5"
             :class="{ invisible: !(showcase && data.bonus) }"
             style="color: var(--p-text-muted-color)"
-          >{{ data.bonus ? t('champion.worth', { points: worthPoints }) : ' ' }}</span>
-        </div>
-      </div>
+          >{{ data.bonus ? t('champion.worth', { points: worthPoints }) : ' ' }}</span>
+        </template>
+      </MetaPickShowcase>
     </div>
 
     <AppConfirmDialog
