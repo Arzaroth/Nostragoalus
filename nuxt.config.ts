@@ -15,7 +15,6 @@ export default defineNuxtConfig({
   app: {
     head: {
       title: 'Nostragoalus',
-      htmlAttrs: { lang: 'en' },
       link: [
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
         { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
@@ -110,6 +109,7 @@ export default defineNuxtConfig({
       { code: 'fr', name: 'Français', file: 'fr.json' },
       { code: 'th', name: 'ไทย (Thai)', file: 'th.json' },
       { code: 'tlh', name: 'tlhIngan Hol (Klingon)', file: 'tlh.json' },
+      { code: 'ar', name: 'العربية (Arabic)', file: 'ar.json', dir: 'rtl', language: 'ar' },
     ],
     detectBrowserLanguage: { useCookie: true, cookieKey: 'ng_locale', redirectOn: 'no prefix' },
   },

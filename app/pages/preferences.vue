@@ -18,7 +18,7 @@ async function persist(fields: Record<string, string>) {
 const lang = computed({
   get: () => locale.value,
   set: (v: string) => {
-    void setLocale(v as 'en' | 'fr' | 'th' | 'tlh')
+    void setLocale(v as typeof locale.value)
     void persist({ locale: v })
   },
 })
@@ -100,6 +100,7 @@ const langOptions = [
   { label: 'Français', value: 'fr' },
   { label: 'ไทย (Thai)', value: 'th' },
   { label: 'tlhIngan Hol (Klingon)', value: 'tlh' },
+  { label: 'العربية (Arabic)', value: 'ar' },
 ]
 const themeOptions = computed(() => [
   { label: t('prefs.light'), value: 'light', icon: 'pi pi-sun' },

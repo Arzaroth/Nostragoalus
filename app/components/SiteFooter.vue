@@ -24,7 +24,7 @@ router.afterEach(() => {
 const lang = computed({
   get: () => locale.value,
   set: (v: string) => {
-    void setLocale(v as 'en' | 'fr' | 'th' | 'tlh')
+    void setLocale(v as typeof locale.value)
   },
 })
 </script>
