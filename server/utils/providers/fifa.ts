@@ -849,7 +849,8 @@ export function gamedayStoryUrl(group: string, seasonId: string, stat: string, p
   return `${GAMEDAY_BASE_URL}/stories?query=${encodeURIComponent(query)}&skip=0&limit=1&sort=${encodeURIComponent(sort)}`
 }
 
-const gamedayTag = (a: GamedayActor, suffix: string) => a.tags?.find((t) => t.name.endsWith(suffix))?.value
+const gamedayTag = (a: GamedayActor, suffix: string) =>
+  a.tags?.find((t) => typeof t.name === 'string' && t.name.endsWith(suffix))?.value
 function gamedayStat(a: GamedayActor, suffix: string): number | null {
   const v = gamedayTag(a, suffix)
   const n = typeof v === 'number' ? v : Number(v)

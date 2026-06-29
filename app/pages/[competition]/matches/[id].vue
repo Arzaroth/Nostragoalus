@@ -38,11 +38,20 @@ const { data, refresh: refreshMatch } = await useFetch<{
 const { data: insights, status: insightsStatus, clear: clearInsights, refresh: refreshInsights } = await useFetch<any>(`/api/matches/${id.value}/insights`, { lazy: true })
 
 const selectedSlug = useSelectedCompetition()
-const { data: scorersData, status: scorersStatus, clear: clearScorers } = await useFetch<{ scorers: any[] }>('/api/competitions/scorers', {
+const { data: scorersData, status: scorersStatus, clear: clearScorers } = await useFetch<{ scorers: any[]; assists: any[] }>('/api/competitions/scorers', {
   query: computed(() => (selectedSlug.value ? { competition: selectedSlug.value } : {})),
   lazy: true,
 })
-const scorers = computed<any[]>(() => scorersData.value?.scorers ?? [])
+// The endpoint splits players into a goals board and an assists board; a pure
+// assister (no goals) is only on the latter. Union them so this page's per-team
+// contributor list and top-assister line see every scorer and assister.
+const scorers = computed<any[]>(() => {
+  const data = scorersData.value
+  if (!data) return []
+  const byKey = new Map<string, any>()
+  for (const p of [...(data.scorers ?? []), ...(data.assists ?? [])]) byKey.set(`${p.playerName}|${p.teamCode ?? ''}`, p)
+  return [...byKey.values()]
+})
 
 const { data: detailData, status: detailStatus, clear: clearDetail, refresh: refreshDetail } = await useFetch<{ detail: any }>(`/api/matches/${id.value}/live-detail`, { lazy: true })
 const detail = computed(() => detailData.value?.detail)
