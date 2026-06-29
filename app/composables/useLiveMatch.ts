@@ -3,6 +3,8 @@ export interface LiveMatchUpdate {
   status: string
   fullTimeHome: number | null
   fullTimeAway: number | null
+  penaltiesHome: number | null
+  penaltiesAway: number | null
   winner: string | null
 }
 

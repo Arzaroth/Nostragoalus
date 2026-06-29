@@ -446,6 +446,11 @@ export function normalizeFifaTimeline(
 ): TimelineEvent[] {
   const events: TimelineEvent[] = []
   const nameOf = (id?: string | null) => (id && names ? names[id] ?? null : null)
+  // The feed's running HomeGoals/AwayGoals freeze at the regulation result once
+  // the shootout (Period 11) starts, so a converted spot-kick would badge "1-1"
+  // forever. Tally the shootout ourselves and badge each conversion with it.
+  let shootoutHome = 0
+  let shootoutAway = 0
   for (const e of response.Event ?? []) {
     const kind = e.Type == null ? undefined : FIFA_EVENT_KINDS[e.Type]
     if (!kind) continue
@@ -465,6 +470,11 @@ export function normalizeFifaTimeline(
     // VAR is the one kind we can't phrase from structure (the decision lives in
     // the commentary), so keep the feed's localized text for it.
     const text = textLang && kind === 'var' ? e.EventDescription?.[0]?.Description?.trim() || null : null
+    const shootoutGoal = e.Period === FIFA_SHOOTOUT_PERIOD && kind === 'penalty-goal' && side != null
+    if (shootoutGoal) {
+      if (side === 'HOME') shootoutHome += 1
+      else shootoutAway += 1
+    }
     events.push({
       kind,
       side,
@@ -474,8 +484,8 @@ export function normalizeFifaTimeline(
       playerOutName: isSub ? nameOf(e.IdSubPlayer) : null,
       periodKind,
       text,
-      homeScore: e.HomeGoals ?? null,
-      awayScore: e.AwayGoals ?? null,
+      homeScore: shootoutGoal ? shootoutHome : e.HomeGoals ?? null,
+      awayScore: shootoutGoal ? shootoutAway : e.AwayGoals ?? null,
     })
   }
   // Feed is chronological; the UI wants newest first.

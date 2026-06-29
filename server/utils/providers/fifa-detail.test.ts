@@ -174,6 +174,37 @@ describe('normalizeFifaTimeline', () => {
     expect(events.find((e) => e.kind === 'corner')).toMatchObject({ playerName: 'KICKER', side: 'HOME' })
   })
 
+  it('badges shootout conversions with the running pen tally, not the frozen regulation score', () => {
+    const events = normalizeFifaTimeline(
+      {
+        Event: [
+          // The feed keeps reporting the 1-1 regulation result on every kick.
+          { Type: 41, Period: 11, MatchMinute: "120'", IdTeam: 'H', IdPlayer: 'p1', HomeGoals: 1, AwayGoals: 1 }, // 1-0
+          { Type: 51, Period: 11, MatchMinute: "120'", IdTeam: 'A', IdPlayer: 'p2', HomeGoals: 1, AwayGoals: 1 }, // miss, no badge
+          { Type: 41, Period: 11, MatchMinute: "120'", IdTeam: 'A', IdPlayer: 'p3', HomeGoals: 1, AwayGoals: 1 }, // 1-1
+          { Type: 41, Period: 11, MatchMinute: "120'", IdTeam: 'H', IdPlayer: 'p4', HomeGoals: 1, AwayGoals: 1 }, // 2-1
+        ],
+      },
+      'H',
+      'A',
+    )
+    // newest-first after reverse: the running shootout score, not 1-1 each time.
+    expect(events.filter((e) => e.kind === 'penalty-goal').map((e) => [e.homeScore, e.awayScore])).toEqual([
+      [2, 1],
+      [1, 1],
+      [1, 0],
+    ])
+  })
+
+  it('leaves a regulation penalty score untouched (only Period 11 is the shootout)', () => {
+    const [pen] = normalizeFifaTimeline(
+      { Event: [{ Type: 41, Period: 5, MatchMinute: "70'", IdTeam: 'H', IdPlayer: 'p1', HomeGoals: 2, AwayGoals: 1 }] },
+      'H',
+      'A',
+    )
+    expect(pen).toMatchObject({ kind: 'penalty-goal', homeScore: 2, awayScore: 1 })
+  })
+
   it('maps period markers from the FIFA period codes', () => {
     const ev = (Type: number, Period: number) => ({ Type, Period, MatchMinute: "x" })
     const got = normalizeFifaTimeline({
