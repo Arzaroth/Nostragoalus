@@ -10,6 +10,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 - **Catch fat-finger scores**: entering a wildly high scoreline (8 or more goals for one side, or 12 or more in total) now asks you to confirm before it saves, so a slip like 1-33 doesn't get locked in by mistake. You can still confirm it on purpose.
 - **Odds line movement and bookmaker breakdown**: the small odds display now shows how each price has moved since it opened - a marker per outcome for shortened, drifted or unchanged, with the size of the move - and you can tap it to expand the opening prices and the per-bookmaker 1X2 (when the provider supplies them). Decimal odds throughout, as before.
 - **"An earlier pick of yours nailed it"**: on a match you have predicted, once it kicks off, the match page can tell you when a score you had picked earlier and then changed would have scored better than the one you kept - "your earlier 1-0 would have scored, the one you swapped off." While the match is live it is provisional and updates with the score, settling at full-time. If the winning earlier pick was 0-0, it gets a cheekier line. Only ever shows your own past picks, to you.
+- **See who else is watching**: a live match page now shows "N watching now" - a real-time count of how many people are on that match right now, updating as they come and go.
 
 ## [2.4.0] - 2026-06-30
 

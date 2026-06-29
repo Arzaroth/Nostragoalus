@@ -16,6 +16,7 @@ early on). Back to the root map: [../BRAIN.md](../BRAIN.md).
 | [Crowd bot](crowd-bot.md) | Synthetic consensus participant (MODE/MEAN) on the scoreboard | core | `'__bot__'`; `server/utils/scoring/*`, `predictions/crowd.get.ts` |
 | [Odds](odds.md) | Decimal 1X2 bookmaker odds (Sofascore primary, BetExplorer backup) | core | `odds_snapshot`; `server/utils/odds/*` |
 | [Reactions](reactions.md) | Six-emoji match reactions, reused by chat | core | `match_reaction`; `ReactionBar.vue` |
+| [Live viewers](live-viewers.md) | Real-time "N watching now" per-match viewer count over the WS hub | Unreleased | `server/utils/live/viewers.ts`, `useMatchPresence.ts`, `MatchViewers.vue` |
 | [Notifications](notifications.md) | In-app notification center (header bell), live push, 7 trigger types | core | `user_notification`; `NotificationBell.vue` |
 | [Web push](web-push.md) | VAPID web push with per-category toggles, goal/kickoff triggers | core | `push_subscription`, `push*` user cols; `server/utils/push/*` |
 | [Chat](chat.md) | E2E-encrypted league chat: threads, mentions, reactions, images, moderation | 1.36.0, 1.42.0 | `chat_message`, `chat_attachment`, `chat_identity`, `league_chat_key`, `chat_message_report` |
