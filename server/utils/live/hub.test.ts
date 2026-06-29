@@ -218,3 +218,71 @@ it('publishChatTyping pushes a typing hint to the named recipients only', async 
     for (const s of [member, outsider]) removeLiveSubscriber(s)
   }
 })
+
+describe('per-match viewer counts', () => {
+  it('pushes the live count to everyone in the match room as viewers join and leave', async () => {
+    const { syncMatchViewers, dropMatchViewer } = await import('./hub')
+    const { __resetViewers } = await import('./viewers')
+    __resetViewers()
+    const a = { matchIds: new Set<string>(), send: vi.fn() }
+    const b = { matchIds: new Set<string>(), send: vi.fn() }
+    try {
+      syncMatchViewers(a, ['m1'])
+      expect(a.send).toHaveBeenLastCalledWith({ type: 'viewers:update', matchId: 'm1', count: 1 })
+
+      syncMatchViewers(b, ['m1'])
+      // Both viewers learn the new total of 2.
+      expect(a.send).toHaveBeenLastCalledWith({ type: 'viewers:update', matchId: 'm1', count: 2 })
+      expect(b.send).toHaveBeenLastCalledWith({ type: 'viewers:update', matchId: 'm1', count: 2 })
+
+      b.send.mockClear()
+      a.send.mockClear()
+      dropMatchViewer(b)
+      // The remaining viewer is decremented; the one that left is not notified.
+      expect(a.send).toHaveBeenLastCalledWith({ type: 'viewers:update', matchId: 'm1', count: 1 })
+      expect(b.send).not.toHaveBeenCalled()
+    } finally {
+      __resetViewers()
+    }
+  })
+
+  it('a viewer reporting the same match twice does not re-broadcast (socket de-dupe)', async () => {
+    const { syncMatchViewers } = await import('./hub')
+    const { __resetViewers } = await import('./viewers')
+    __resetViewers()
+    const a = { matchIds: new Set<string>(), send: vi.fn() }
+    try {
+      syncMatchViewers(a, ['m1'])
+      a.send.mockClear()
+      syncMatchViewers(a, ['m1'])
+      expect(a.send).not.toHaveBeenCalled()
+    } finally {
+      __resetViewers()
+    }
+  })
+
+  it('keeps fanning out when one viewer socket send throws', async () => {
+    const { syncMatchViewers } = await import('./hub')
+    const { __resetViewers } = await import('./viewers')
+    __resetViewers()
+    const bad = { matchIds: new Set<string>(), send: () => { throw new Error('closing') } }
+    const good = { matchIds: new Set<string>(), send: vi.fn() }
+    try {
+      syncMatchViewers(bad, ['m1'])
+      syncMatchViewers(good, ['m1'])
+      expect(good.send).toHaveBeenLastCalledWith({ type: 'viewers:update', matchId: 'm1', count: 2 })
+    } finally {
+      __resetViewers()
+    }
+  })
+
+  it('dropping an unknown viewer broadcasts nothing', async () => {
+    const { dropMatchViewer } = await import('./hub')
+    const { __resetViewers } = await import('./viewers')
+    __resetViewers()
+    const a = { matchIds: new Set<string>(), send: vi.fn() }
+    dropMatchViewer(a)
+    expect(a.send).not.toHaveBeenCalled()
+    __resetViewers()
+  })
+})

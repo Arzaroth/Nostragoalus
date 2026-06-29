@@ -2,12 +2,14 @@ import { auth } from '../../lib/auth'
 import { db } from '../../db'
 import {
   addLiveSubscriber,
+  dropMatchViewer,
   presenceConnect,
   presenceDisconnect,
   presenceSetIdle,
   presenceSnapshot,
   removeLiveSubscriber,
   sendMatchSnapshot,
+  syncMatchViewers,
   type LiveSubscriber,
 } from '../utils/live/hub'
 import { publishTyping } from '../utils/live/league-chat'
@@ -66,6 +68,13 @@ export default defineWebSocketHandler({
       } else if (data?.type === 'presence:ping' && subscriber.userId) {
         // The client reports active/idle (it tracks its own 15-min idle timer).
         presenceSetIdle(subscriber.userId, data.active === false)
+      } else if (data?.type === 'viewing') {
+        // The match page reports the one match this socket is watching, so its
+        // per-match "N watching now" room counts it (and only it - distinct from
+        // the `subscribe` frame the fixtures list sends for every visible match).
+        // A missing/blank matchId clears this socket from its room.
+        const matchId = typeof data.matchId === 'string' && data.matchId ? data.matchId : null
+        syncMatchViewers(subscriber, matchId ? [matchId] : [])
       }
     } catch {
       // ignore malformed client messages
@@ -78,6 +87,9 @@ export default defineWebSocketHandler({
       subscriber.closed = true
       if (subscriber.userId) presenceDisconnect(subscriber.userId)
       removeLiveSubscriber(subscriber)
+      // Drop it from its viewer room after leaving the subscriber set, so the
+      // decremented "N watching now" reaches the remaining viewers, not itself.
+      dropMatchViewer(subscriber)
       peers.delete(peer)
     }
   },

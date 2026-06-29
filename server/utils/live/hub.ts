@@ -4,6 +4,7 @@ import { match } from '../../../db/schema'
 import type { NotificationDTO } from '../../../shared/types/notifications'
 import type { ReactionTotals } from '../../../shared/reactions'
 import type { ChatAttachmentDTO, ChatMessageDTO } from '../../../shared/types/chat'
+import { removeViewer, setViewing, viewerCount, viewersOf } from './viewers'
 
 export interface LiveSubscriber {
   matchIds: Set<string>
@@ -30,6 +31,39 @@ export function removeLiveSubscriber(sub: LiveSubscriber): void {
 
 export function liveSubscriberCount(): number {
   return subscribers.size
+}
+
+// --- per-match viewer rooms ("N watching now") ---
+// The counting lives in ./viewers (pure, covered); the hub owns the fan-out. The
+// count is per-process, so it undercounts across a multi-node deploy - the same
+// in-process limit as the rest of the hub (see brain/features/live-viewers.md).
+
+// Push the current viewer count of each changed match to everyone in that
+// match's room. A match whose last viewer just left has an empty room, so no one
+// is notified - which is correct.
+function broadcastViewerCounts(changedMatchIds: readonly string[]): void {
+  for (const matchId of changedMatchIds) {
+    const payload = { type: 'viewers:update', matchId, count: viewerCount(matchId) }
+    for (const token of viewersOf(matchId)) {
+      try {
+        ;(token as LiveSubscriber).send(payload)
+      } catch {
+        // socket closing; skip
+      }
+    }
+  }
+}
+
+// A socket reported the match it is viewing (the detail page's `viewing` frame).
+// Counts it into that match's room (de-duped by socket) and pushes the new
+// "N watching now" to that room. An empty list clears its membership.
+export function syncMatchViewers(sub: LiveSubscriber, matchIds: Iterable<string>): void {
+  broadcastViewerCounts(setViewing(sub, matchIds))
+}
+
+// A socket disconnected: drop it from every viewer room and tell the others.
+export function dropMatchViewer(sub: LiveSubscriber): void {
+  broadcastViewerCounts(removeViewer(sub))
 }
 
 // --- presence ---
