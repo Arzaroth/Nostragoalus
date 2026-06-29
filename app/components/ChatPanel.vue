@@ -34,6 +34,11 @@ function fmtTime(iso: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
+// Full date + time for the timestamp's hover tooltip (the inline label is just HH:MM).
+function fmtFull(iso: string): string {
+  return new Date(iso).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
+}
+
 const chat = useLeagueChat(
   () => props.leagueId,
   () => props.matchId ?? null,
@@ -931,7 +936,7 @@ watch(
                 <UserAvatar :image="avatarFor(m.userId)" :user-id="m.userId" class="!w-6 !h-6 shrink-0 text-[0.6rem]" />
                 <span class="font-semibold truncate" :style="m.userId === meId ? 'color: var(--p-primary-color)' : ''">{{ nameFor(m.userId) }}</span>
               </span>
-              <span class="text-[10px]" style="color: var(--p-text-muted-color)">{{ fmtTime(m.createdAt) }}</span>
+              <span v-tooltip.top="fmtFull(m.createdAt)" class="text-[10px]" style="color: var(--p-text-muted-color)">{{ fmtTime(m.createdAt) }}</span>
               <span v-if="m.editedAt" v-tooltip.bottom="t('chat.edit.at', { time: fmtTime(m.editedAt) })" class="text-[10px] italic" style="color: var(--p-text-muted-color)">{{ t('chat.edit.edited') }}</span>
               <span v-if="m.moderation === 'PENDING'" class="text-[10px] uppercase tracking-wider font-semibold px-1 rounded" style="border: 1px solid var(--ng-danger); color: var(--ng-danger)">{{ t('chat.moderation.pendingTag') }}</span>
               <!-- Per-message actions, icon-only, revealed on hover. -->
@@ -1084,7 +1089,7 @@ watch(
                   <UserAvatar :image="avatarFor(r.userId)" :user-id="r.userId" class="!w-5 !h-5 shrink-0 text-[0.5rem]" />
                   <NuxtLink v-if="profileLink(r.userId)" :to="profileLink(r.userId)!" class="font-semibold truncate text-xs hover:underline" :style="r.userId === meId ? 'color: var(--p-primary-color)' : ''">{{ nameFor(r.userId) }}</NuxtLink>
                   <span v-else class="font-semibold truncate text-xs" :style="r.userId === meId ? 'color: var(--p-primary-color)' : ''">{{ nameFor(r.userId) }}</span>
-                  <span class="text-[10px]" style="color: var(--p-text-muted-color)">{{ fmtTime(r.createdAt) }}</span>
+                  <span v-tooltip.top="fmtFull(r.createdAt)" class="text-[10px]" style="color: var(--p-text-muted-color)">{{ fmtTime(r.createdAt) }}</span>
                   <span v-if="r.editedAt" class="text-[10px] italic" style="color: var(--p-text-muted-color)">{{ t('chat.edit.edited') }}</span>
                   <span class="ml-auto flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button v-if="contentVisible(r) && r.userId && r.userId !== meId" type="button" v-tooltip.bottom="r.reported ? t('chat.moderation.unreport') : t('chat.moderation.report')" class="opacity-60 hover:opacity-100" :aria-label="r.reported ? t('chat.moderation.unreport') : t('chat.moderation.report')" :style="r.reported ? 'color: var(--ng-danger)' : ''" @click="chat.report(r.id)"><i :class="r.reported ? 'pi pi-flag-fill' : 'pi pi-flag'" class="text-[10px]" /></button>
