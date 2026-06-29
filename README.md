@@ -45,15 +45,17 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   ciphertext and cannot read it; keys enroll silently on first use, with a one-time recovery code to
   restore history on another device. React with emoji, reply with a quoted preview, or open a message's
   **thread** for a focused side-conversation kept out of the main room. **@mention** league members with
-  autocomplete (rename-proof, links to their profile, with a distinct unread badge on the dock), drop in
+  autocomplete (rename-proof, links to their profile, with a distinct unread badge on the dock, plus a
+  cross-league header-bell and web-push alert wherever it lands), drop in
   emoji from a searchable picker, and paste links or images to render them inline - **link-preview cards**
   (fetched server-side, SSRF-guarded), inline images and animated GIFs. Edit or delete your
   own messages (text and images, with arrow-key edit and a length limit), buffer and send several images
   at once, open any image full-screen to
   cycle, copy, download (named PNG) or share it, browse a room's media gallery, search the loaded
   messages, see who is typing, page
-  back through older history, share a pick card straight to chat, undock the window into a draggable
-  panel, and mute or report others. A **Verify keys** panel shows
+  back through older history, share a pick card straight to chat, jump to any room with unread activity
+  across every league you belong to from a cross-league inbox that survives a reload, undock the window
+  into a draggable panel, and mute or report others. A **Verify keys** panel shows
   per-member safety numbers to compare out-of-band (first-seen pinning, change warning), an admin can
   **rotate the key** to revoke a removed member, and members can flag a message - enough reports
   auto-hide it pending an owner/moderator's call (moderation acts on message ids and report counts,
@@ -74,12 +76,13 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   for everyone watching, with your league's tally beside the global one when a league is selected;
   one reaction each, tap to change or clear
 - **Notification center**: a header bell gathering pick reminders before lockout, your match
-  results (scoreline + points), league activity (joins, role changes, add/remove) and how your
-  champion and Golden Boot picks finished - unread count, live push, mark-read, dismiss, and a
-  weekly tidy-up of read items
+  results (scoreline + points), league activity (joins, role changes, add/remove), @mentions in any
+  league chat and how your champion and Golden Boot picks finished - unread count, live push,
+  mark-read, dismiss, and a weekly tidy-up of read items
 - **Web push**: opt in from Preferences to get the same alerts (pick reminders, kickoff and live
-  goal alerts on matches you predicted, results, league activity) on your phone or desktop with the
-  app closed - per-category toggles; needs VAPID keys set (`NUXT_*_VAPID_*`), otherwise it stays off
+  goal alerts on matches you predicted, results, league activity, chat @mentions) on your phone or
+  desktop with the app closed - per-category toggles; needs VAPID keys set (`NUXT_*_VAPID_*`),
+  otherwise it stays off
 - **Calendar feed**: subscribe to your fixtures and pick-lockout deadlines from your own calendar
   app (Google Calendar, Apple Calendar, Outlook, Thunderbird) - a personal signed link (https +
   webcal) revealed in Preferences that stays up to date on its own, with a reminder three hours
