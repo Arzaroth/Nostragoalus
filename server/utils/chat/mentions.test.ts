@@ -111,4 +111,13 @@ describe('notifyMentions', () => {
     expect(await notifyMentions(db, { leagueId, matchId: null, messageId, senderId: sender, mentions: [] })).toBe(0)
     await client.close()
   })
+
+  it('no-ops when every mention is the sender or a non-member', async () => {
+    const { db, client, sender, leagueId } = await setup()
+    const stranger = await makeUser(db, 'stranger', 'Stranger')
+    const messageId = await addMessage(db, leagueId, sender)
+    const sent = await notifyMentions(db, { leagueId, matchId: null, messageId, senderId: sender, mentions: [sender, stranger] })
+    expect(sent).toBe(0)
+    await client.close()
+  })
 })

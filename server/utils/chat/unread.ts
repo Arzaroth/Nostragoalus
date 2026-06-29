@@ -98,7 +98,8 @@ export async function getUnreadRooms(db: AppDatabase, userId: string): Promise<C
       awayTeam: r.awayTeam,
       unread: r.unread,
       mentions: 0,
-      lastAt: r.lastAt ? new Date(r.lastAt).toISOString() : null,
+      // A grouped room always has at least one message, so max() is never null.
+      lastAt: new Date(r.lastAt).toISOString(),
     })
   }
 
@@ -122,7 +123,8 @@ export async function getUnreadRooms(db: AppDatabase, userId: string): Promise<C
         awayTeam: m.awayTeam,
         unread: 0,
         mentions: m.mentions,
-        lastAt: m.lastAt ? new Date(m.lastAt).toISOString() : null,
+        // Grouped over at least one unread mention row, so max() is never null.
+        lastAt: new Date(m.lastAt).toISOString(),
       })
     }
   }

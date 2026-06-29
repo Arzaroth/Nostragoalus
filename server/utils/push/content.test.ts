@@ -77,6 +77,11 @@ describe('notificationPushContent', () => {
     const match = notificationPushContent({ ...base, matchId: 'm9', homeTeam: 'France', awayTeam: 'Brazil' }, 'en')
     expect(match.body).toContain('France')
     expect(match).toMatchObject({ url: '/wc/matches/m9?ngLeague=l1&chat=m9', tag: 'mention:l1:m9' })
+
+    // A match room with no resolved teams still renders (empty team slots).
+    const blank = notificationPushContent({ ...base, matchId: 'm9', homeTeam: null, awayTeam: null }, 'en')
+    expect(blank.body).toContain('Alice')
+    expect(blank.url).toBe('/wc/matches/m9?ngLeague=l1&chat=m9')
   })
 
   it('falls back to English for an unknown or null locale', () => {
