@@ -1,8 +1,10 @@
 # Bookmaker odds
 
 Match odds power the optional odds scoring bonus and a small odds display on the
-match view. Odds are 1X2 (home / draw / away) in decimal format only - no US
-moneyline, by deliberate choice.
+match view (fixture list, match detail, and prediction rows). Odds are 1X2
+(home / draw / away) in decimal format only - no fractional or US moneyline, by
+deliberate choice. The display also shows opening-vs-current line movement and,
+on tap, the per-bookmaker breakdown - see [Display](#display).
 
 ## Providers
 
@@ -13,18 +15,45 @@ moneyline, by deliberate choice.
   World Cup (season `58210` for 2026, `41087` for 2022), `uniqueTournament 1` =
   Euro. The full request chain is in
   [../architecture/providers.md](../architecture/providers.md).
-- **BetExplorer** (backup): plain server-rendered HTML, used for bookmaker
-  averages and as a fallback.
+- **BetExplorer**: a selectable provider (`ODDS_PROVIDERS` in
+  `provider-config.ts`) but `fetchesOdds: false` - it renders its 1X2
+  client-side only, with no plain-HTTP odds endpoint, so picking it lists
+  fixtures yet never prices them without a headless browser. No fetcher ships
+  for it today.
 
-Sofascore is a single feed, so median/consensus across books does not apply to
-it; BetExplorer supplies cross-book averages.
+Sofascore is a single aggregated feed, so a per-bookmaker breakdown does not
+apply to it - its snapshots store `bookmakers: null`. The `bookmakers` column
+exists for a future multi-book provider; the display surfaces it when populated.
 
 ## Storage and refresh
 
 - `odds_snapshot` rows store a snapshot per match: `provider`, `eventRef`, the
-  `OddsTriple` (`oddsHome`/`oddsDraw`/`oddsAway`), and a `kind` of `POLL` (live
-  polling) or `BACKFILL` (historical import).
+  current `OddsTriple` (`oddsHome`/`oddsDraw`/`oddsAway`), the opening prices
+  (`initialHome`/`initialDraw`/`initialAway`, null when the provider exposes no
+  open), a `bookmakers` jsonb (`StoredBookmakerOdds[]`, null for aggregating
+  feeds like Sofascore), and a `kind` of `POLL` (live polling) or `BACKFILL`
+  (historical import).
 - The `odds:refresh` task runs every 30 minutes, fire-and-forget.
+- `latestOddsByMatch` (`server/utils/odds/store.ts`) reads the newest snapshot
+  per match and surfaces current + opening + bookmakers as `MatchOddsView`; the
+  match list/detail services attach it as `match.odds`.
+
+## Display
+
+The compact `MatchOdds.vue` renders the current 1X2 plus a movement marker per
+outcome:
+
+- `oddsMovement(initial, current)` (`app/utils/odds-movement.ts`) is a pure
+  helper returning per-outcome `{ direction, delta }` where direction is `in`
+  (shortened: current < opening), `out` (drifted: current > opening) or `flat`.
+  The drift is rounded to the two decimals shown, so the marker never
+  contradicts the number; a missing opening price yields all-`flat`,
+  `hasInitial: false`.
+- Tapping the row expands the opening prices and the per-bookmaker 1X2 (only
+  when present - Sofascore stores no `bookmakers`, so that block is empty until a
+  multi-book provider populates it).
+- `useMatchOdds.ts` carries the full `MatchOddsView` to prediction rows (it no
+  longer flattens to a bare triple).
 
 ## Scoring
 
@@ -41,8 +70,10 @@ JA3 fingerprint gets past the Cloudflare-class WAF. See
 
 ## Sources
 
-- `server/utils/odds/providers/sofascore.ts`, `server/utils/odds/providers/betexplorer.ts`
-- `server/utils/odds/service.ts`
+- `server/utils/odds/providers/sofascore.ts` (the only plain-HTTP fetcher today)
+- `server/utils/odds/store.ts` (`latestOddsByMatch`, `MatchOddsView`), `sync.ts`, `provider-config.ts`, `matcher.ts`
+- `server/utils/matches/service.ts` (attaches `match.odds`)
+- `app/utils/odds-movement.ts`, `app/composables/useMatchOdds.ts`, `app/components/MatchOdds.vue`
 - `shared/types/odds.ts` (`OddsTriple`, `StoredBookmakerOdds`)
 - `db/app-schema.ts` (`odds_snapshot`, `odds_kind` enum)
 - `server/utils/providers/cycle-tls.ts`
