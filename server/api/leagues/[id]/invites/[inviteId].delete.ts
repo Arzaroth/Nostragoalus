@@ -1,14 +1,12 @@
 import { db } from '../../../../../db'
 import { defineValidatedHandler } from '../../../../utils/validated-handler'
-import { getMembership } from '../../../../utils/leagues/service'
-import { canManageLeague } from '../../../../utils/leagues/permissions'
+import { resolveLeagueManage } from '../../../../utils/leagues/service'
 import { revokeInvite } from '../../../../utils/leagues/invites'
 
 export default defineValidatedHandler({}, async ({ event, user }) => {
   const id = getRouterParam(event, 'id')!
   const inviteId = getRouterParam(event, 'inviteId')!
-  const membership = await getMembership(db, id, user.id)
-  if (!canManageLeague(membership?.role)) throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
+  await resolveLeagueManage(db, id, user.id)
   await revokeInvite(db, id, inviteId)
   return { ok: true }
 })

@@ -1,14 +1,14 @@
 import { db } from '../../../../../db'
 import { requireUser } from '../../../../utils/auth-guards'
 import { toHttpError } from '../../../../utils/http'
-import { getLeague, kickMember } from '../../../../utils/leagues/service'
+import { kickMember, resolveLeagueManage } from '../../../../utils/leagues/service'
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
   const id = getRouterParam(event, 'id')!
   const targetUserId = getRouterParam(event, 'userId')!
-  if (!(await getLeague(db, id))) throw createError({ statusCode: 404, statusMessage: 'League not found' })
   try {
+    await resolveLeagueManage(db, id, user.id)
     await kickMember(db, { leagueId: id, actorUserId: user.id, targetUserId })
     return { ok: true }
   } catch (error) {
