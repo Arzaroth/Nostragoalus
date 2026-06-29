@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
-import { pgTable, text, timestamp, boolean, index, integer } from "drizzle-orm/pg-core";
+import { pgTable, pgEnum, text, timestamp, boolean, jsonb, index, integer } from "drizzle-orm/pg-core";
+import type { SsoConnectionTestResult } from "#shared/types/sso";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -137,6 +138,11 @@ export const verification = pgTable(
   (table) => [index("verification_identifier_idx").on(table.identifier)],
 );
 
+// Provider lifecycle (ours, not the plugin's). See #shared/types/sso.
+// Default 'enabled' so an ADD COLUMN grandfathers pre-existing rows live; the
+// register route downgrades new providers to 'draft' right after creation.
+export const ssoProviderStatusEnum = pgEnum("sso_provider_status", ["draft", "enabled", "disabled"])
+
 // @better-auth/sso plugin table. oidcConfig / samlConfig hold the provider
 // config JSON (incl. secrets) - envelope-encrypted at rest by the adapter wrapper.
 export const ssoProvider = pgTable(
@@ -150,15 +156,24 @@ export const ssoProvider = pgTable(
     providerId: text("provider_id").notNull().unique(),
     organizationId: text("organization_id"),
     domain: text("domain").notNull(),
-    // @better-auth/sso domainVerification field. Defaults true: an
-    // admin-registered provider is trusted to own the email domains the admin
-    // assigned it, which is what drives account-linking trust in 1.6.x (the old
-    // trustedProviders list is ignored). We never run the plugin's DNS-proof
-    // flow - admin registration IS the trust decision.
+    // @better-auth/sso domainVerification field, the account-linking trust flag
+    // (1.6.x ignores the old trustedProviders list). The plugin forces this
+    // false when it creates a provider, so a new provider is untrusted until the
+    // admin runs the DNS-TXT check or bypasses it (see server/utils/sso/service).
+    // The column default stays true only to grandfather pre-1.6.x rows already
+    // in the DB and to keep direct-insert test fixtures trusted by default; it is
+    // never relied on by the live register path (the plugin overrides it).
     domainVerified: boolean("domain_verified").default(true).notNull(),
     // Ours, not the plugin's: human-readable name shown to end users
     // (e.g. the signup "this domain uses SSO" warning).
     displayName: text("display_name"),
+    // Onboarding lifecycle: only an 'enabled' (+ domainVerified) provider is
+    // offered on login and links accounts; 'draft'/'disabled' are hidden.
+    status: ssoProviderStatusEnum("status").default("enabled").notNull(),
+    // Result of the last automated connection test (the draft -> enabled gate);
+    // null until the admin runs it. lastTestResult.ok must be true to enable.
+    lastTestedAt: timestamp("last_tested_at"),
+    lastTestResult: jsonb("last_test_result").$type<SsoConnectionTestResult>(),
   },
   (table) => [index("sso_provider_domain_idx").on(table.domain)],
 )
