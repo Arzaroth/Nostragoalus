@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { matchIsInPlay } from '#shared/types/match'
+
 const { t, locale } = useI18n()
 useHead({ title: t('nav.map') })
 const slug = useSelectedCompetition()
@@ -95,7 +97,7 @@ watch(
 )
 
 const matches = computed<any[]>(() => info.value?.matches ?? [])
-const live = computed(() => matches.value.find((m) => m.status === 'LIVE' || m.status === 'PAUSED'))
+const live = computed(() => matches.value.find((m) => matchIsInPlay(m.status)))
 const next = computed(() => matches.value.find((m) => m.status === 'SCHEDULED'))
 
 function teamResult(m: any) {

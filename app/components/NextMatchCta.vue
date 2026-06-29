@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useQuery } from '@tanstack/vue-query'
+import { matchIsInPlay } from '#shared/types/match'
 import { flagUrl } from '../utils/format'
 import type { MatchListItem } from '../composables/useMatches'
 
@@ -9,7 +10,7 @@ const last = useLastCompetition()
 
 const authed = computed(() => !!session.value?.data)
 
-const isLive = (m: MatchListItem) => m.status === 'LIVE' || m.status === 'PAUSED'
+const isLive = (m: MatchListItem) => matchIsInPlay(m.status)
 
 // The landing page has no competition route param, so this can't reuse
 // useMatches (route-derived slug); same endpoint, last-used competition.

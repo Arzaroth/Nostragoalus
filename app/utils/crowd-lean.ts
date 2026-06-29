@@ -1,4 +1,4 @@
-import { IN_PLAY_STATUSES, type MatchStatus } from '#shared/types/match'
+import { matchIsInPlay, type MatchStatus } from '#shared/types/match'
 
 // Derives a per-team "crowd lean" for the world map from the aggregate crowd
 // prediction totals (the same data the "show everyone's totals" preference
@@ -20,7 +20,7 @@ export type CrowdTotals = Record<string, { home: number; away: number; count: nu
 // "In play" follows the shared definition (LIVE/PAUSED/SUSPENDED/INTERRUPTED), so
 // a halted-but-ongoing match still counts as the team's current one rather than
 // being skipped in favour of a future fixture.
-const inPlay = (s: MatchStatus): boolean => IN_PLAY_STATUSES.includes(s)
+const inPlay = matchIsInPlay
 
 function kickoff(m: LeanMatch): number {
   return new Date(m.kickoffTime).getTime()

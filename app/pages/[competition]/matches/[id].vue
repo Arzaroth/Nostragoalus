@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { buildTimeline, h2hSummaryOf } from '../../../utils/match-view'
 import { visibleMediaForStatus, type MatchMediaKind } from '#shared/match-media'
-import { EXTRA_TIME_BREAK_MINUTE, matchHasStarted } from '#shared/types/match'
+import { EXTRA_TIME_BREAK_MINUTE, matchHasStarted, matchIsInPlay } from '#shared/types/match'
 const { t, locale } = useI18n()
 // FIFA leaves break subs without a minute; surface the half-time marker for both
 // the half-time (empty) and extra-time-interval (sentinel) breaks.
@@ -165,7 +165,7 @@ function toggleJoker() {
 }
 
 const status = computed(() => (live.value?.status ?? m.value?.status ?? 'SCHEDULED') as import('../../../../shared/types/match').MatchStatus)
-const isLive = computed(() => status.value === 'LIVE' || status.value === 'PAUSED')
+const isLive = computed(() => matchIsInPlay(status.value))
 // Prefer the live FIFA detail goals (present during the match) over the DB
 // goal_event view (only synced at finalize, so empty for a live game). Declared
 // before homeScore on purpose: homeScore's live branch reads homeGoalEvents, and
