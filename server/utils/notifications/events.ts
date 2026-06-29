@@ -12,6 +12,7 @@ import {
   userProfile,
 } from '../../../db/schema'
 import { createNotification, type PendingNotification } from './service'
+import type { NotificationData } from '../../../shared/types/notifications'
 
 type LeagueRole = 'OWNER' | 'MODERATOR' | 'MEMBER'
 
@@ -130,9 +131,27 @@ export async function notifyMatchResults(
   }
 }
 
-// The final is decided: tell everyone whose champion pick won, with the points
-// they earned. dedupeKey is per competition, so re-running finalize never
-// re-notifies. v1 only celebrates winners; "didn't win" closure is deferred.
+// Shared result-notification shape for a "meta pick" (champion, best scorer):
+// resolve the competition, fetch the winning pickers (each feature owns its own
+// typed query + payload, since the tables and payload fields differ), and fan
+// out one deduped notification each. dedupeKey is per competition, so re-running
+// finalize never re-notifies. v1 only celebrates winners.
+async function notifyMetaResult(
+  db: AppDatabase,
+  competitionId: string,
+  dedupeKey: string,
+  fetchWinners: () => Promise<{ userId: string; name: string; points: number }[]>,
+  buildData: (winner: { name: string; points: number }, comp: { slug: string; name: string }) => NotificationData,
+  collector?: PendingNotification[],
+): Promise<void> {
+  const comp = await competitionInfo(db, competitionId)
+  if (!comp) return
+  for (const w of await fetchWinners()) {
+    await createNotification(db, { userId: w.userId, dedupeKey, data: buildData(w, comp) }, collector)
+  }
+}
+
+// Tell everyone whose champion pick won, with the points they earned.
 export async function notifyChampionResult(
   db: AppDatabase,
   competitionId: string,
@@ -140,30 +159,25 @@ export async function notifyChampionResult(
   collector?: PendingNotification[],
 ): Promise<void> {
   if (!winnerCode) return
-  const comp = await competitionInfo(db, competitionId)
-  if (!comp) return
-  const winners = await db
-    .select({ userId: championPick.userId, teamName: championPick.teamName, points: championPick.awardedPoints })
-    .from(championPick)
-    .where(and(eq(championPick.competitionId, competitionId), eq(championPick.teamCode, winnerCode)))
-  for (const w of winners) {
-    await createNotification(
-      db,
-      {
-        userId: w.userId,
-        dedupeKey: `champion-result:${competitionId}`,
-        data: {
-          type: 'CHAMPION_RESULT',
-          competitionSlug: comp.slug,
-          competitionName: comp.name,
-          teamName: w.teamName,
-          points: w.points,
-          won: true,
-        },
-      },
-      collector,
-    )
-  }
+  await notifyMetaResult(
+    db,
+    competitionId,
+    `champion-result:${competitionId}`,
+    () =>
+      db
+        .select({ userId: championPick.userId, name: championPick.teamName, points: championPick.awardedPoints })
+        .from(championPick)
+        .where(and(eq(championPick.competitionId, competitionId), eq(championPick.teamCode, winnerCode))),
+    (w, comp) => ({
+      type: 'CHAMPION_RESULT',
+      competitionSlug: comp.slug,
+      competitionName: comp.name,
+      teamName: w.name,
+      points: w.points,
+      won: true,
+    }),
+    collector,
+  )
 }
 
 // Mirror of the champion result for the Golden Boot pickers who backed a top
@@ -174,24 +188,22 @@ export async function notifyBestScorerResult(
   winnerPlayerIds: string[],
 ): Promise<void> {
   if (winnerPlayerIds.length === 0) return
-  const comp = await competitionInfo(db, competitionId)
-  if (!comp) return
-  const winners = await db
-    .select({ userId: bestScorerPick.userId, playerName: bestScorerPick.playerName, points: bestScorerPick.awardedPoints })
-    .from(bestScorerPick)
-    .where(and(eq(bestScorerPick.competitionId, competitionId), inArray(bestScorerPick.playerId, winnerPlayerIds)))
-  for (const w of winners) {
-    await createNotification(db, {
-      userId: w.userId,
-      dedupeKey: `best-scorer-result:${competitionId}`,
-      data: {
-        type: 'BEST_SCORER_RESULT',
-        competitionSlug: comp.slug,
-        competitionName: comp.name,
-        playerName: w.playerName,
-        points: w.points,
-        won: true,
-      },
-    })
-  }
+  await notifyMetaResult(
+    db,
+    competitionId,
+    `best-scorer-result:${competitionId}`,
+    () =>
+      db
+        .select({ userId: bestScorerPick.userId, name: bestScorerPick.playerName, points: bestScorerPick.awardedPoints })
+        .from(bestScorerPick)
+        .where(and(eq(bestScorerPick.competitionId, competitionId), inArray(bestScorerPick.playerId, winnerPlayerIds))),
+    (w, comp) => ({
+      type: 'BEST_SCORER_RESULT',
+      competitionSlug: comp.slug,
+      competitionName: comp.name,
+      playerName: w.name,
+      points: w.points,
+      won: true,
+    }),
+  )
 }
