@@ -34,8 +34,11 @@ and routes by message id and metadata, never by reading content.
   frame) and, via `server/utils/chat/mentions.ts` `notifyMentions` at post time, a
   durable `CHAT_MENTION` [notification](notifications.md) (header bell) plus a
   [web push](web-push.md) - regardless of which league or match. The ids are
-  intersected with the league's real members and the sender is dropped, so a
-  crafted client cannot push-spam. The push/bell deep-links cross-league via
+  intersected with the league's real members and the sender is dropped, which
+  stops cross-league and self spam; it cannot stop a co-member fabricating a
+  mention the visible text never named (the body is E2EE, so the server can't
+  check the sidecar), and the recipient's own `pushMentions` toggle is the
+  backstop there (see TODO). The push/bell deep-links cross-league via
   `chatMentionPath` (`?ngLeague=&chat=`), interpreted by the `chat-deeplink`
   client plugin.
 - Reactions reuse the [match reaction set](reactions.md) (plaintext emoji, so the
@@ -93,10 +96,17 @@ leagues, not just the selected one, and it survives a reload.
   and clears that room's unread mention rows, so opening a room clears both
   counters at once (reload parity with the live tracker).
 - `useChatActivity` is backed by the unread query (keyed per `leagueId::roomKey`),
-  patched optimistically from the live `chat:new` socket between fetches. Opening
-  a foreign-league room points the `ng-league` cookie at its competition and
-  navigates there (`ChatDock.openRoom`); the mention deep link reaches a room the
-  same way via `useChatDockOpen` + the `chat-deeplink` plugin.
+  patched optimistically from the live `chat:new` socket between fetches, then
+  re-sorted client-side (newest first, `leagueId+roomKey` tiebreaker) so the patches
+  never leave it out of order. Opening a foreign-league room points the `ng-league`
+  cookie at its competition and navigates there (`ChatDock.openRoom`); the mention
+  deep link reaches a room the same way via `useChatDockOpen` + the `chat-deeplink`
+  plugin.
+- The inbox's mention counts and the [bell](notifications.md)'s unread count read
+  the same `CHAT_MENTION` rows, so the two mutate each other's state: marking a room
+  read clears its mention rows (bell drops) and reading/clearing in the bell clears
+  mention rows (inbox badges drop). `useChatActivity` and `useNotifications`
+  cross-invalidate each other's query on those writes so neither view goes stale.
 
 ## History
 

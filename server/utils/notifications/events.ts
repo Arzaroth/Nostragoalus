@@ -29,7 +29,7 @@ async function leagueName(db: AppDatabase, leagueId: string): Promise<string | n
   return rows[0]?.name ?? null
 }
 
-async function displayName(db: AppDatabase, userId: string): Promise<string> {
+export async function displayName(db: AppDatabase, userId: string): Promise<string> {
   const rows = await db
     .select({ display: userProfile.displayName, name: user.name })
     .from(user)

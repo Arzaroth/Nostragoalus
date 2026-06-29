@@ -3,6 +3,26 @@
 Deferred work, queued behind feature development.
 Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
+## Cross-league chat inbox (deferred from the feature-treatment review)
+
+- [ ] **Fabricated-mention abuse**: the `mentions[]` sidecar on `messages.post` is
+      client-supplied and now drives a durable `CHAT_MENTION` bell row + web push
+      (`server/utils/chat/mentions.ts`). `notifyMentions` drops the sender and
+      intersects with league members, so it can't spam cross-league or self - but a
+      co-member can fabricate a mention of someone the visible (E2EE) text never
+      named, and there's no rate limit on `messages.post`. The body is encrypted, so
+      the server can't verify the sidecar; the recipient's `pushMentions` toggle is
+      the only backstop. If it bites, add a per-sender post/mention rate limit (the
+      proper fix needs server-visible mention truth, which E2EE precludes).
+- [ ] **New-room mention badge lag**: when a room's first-ever activity is an
+      @mention of you, the live `chat:new` frame triggers a `['chat','unread']`
+      refetch (`useChatActivity`, the room isn't cached yet to patch) that can race
+      ahead of the fire-and-forget `notifyMentions` insert, so the room briefly shows
+      `unread=1, mentions=0` until a later refetch picks up the committed bell row.
+      Harmless and self-heals; fixing it cleanly needs `notifyMentions` to commit
+      before the post responds (giving up the fire-and-forget) or a mention-aware
+      live frame the client can seed labels from.
+
 ## Stats tab (deferred from the feature pass)
 
 - [x] The assist board re-ranked the goals-sliced `/api/competitions/scorers`

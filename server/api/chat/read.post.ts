@@ -1,12 +1,14 @@
 import { z } from 'zod'
 import { db } from '../../../db'
+import { GLOBAL_ROOM } from '../../../shared/types/chat'
 import { markRoomRead } from '../../utils/chat/unread'
 import { defineValidatedHandler } from '../../utils/validated-handler'
 
 const bodySchema = z.object({
   leagueId: z.string().min(1),
-  // The match thread's matchId, or '__global__' for the league room.
-  roomKey: z.string().min(1).max(64),
+  // A real room key is the match thread's matchId (a uuid) or the global sentinel;
+  // constrain to those so junk keys can't accrue dead rows in chat_room_read.
+  roomKey: z.union([z.literal(GLOBAL_ROOM), z.string().uuid()]),
 })
 
 export default defineValidatedHandler({ body: bodySchema }, async ({ body, user }) => {
