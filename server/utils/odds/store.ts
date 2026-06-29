@@ -39,6 +39,10 @@ export async function insertOddsSnapshots(db: AppDatabase, rows: OddsSnapshotIns
 
 export interface MatchOddsView extends OddsTriple {
   fetchedAt: Date
+  // Opening 1X2 of this snapshot; null when the provider exposed no open price.
+  initial: OddsTriple | null
+  // Per-bookmaker 1X2 (aggregating providers like Sofascore store null).
+  bookmakers: StoredBookmakerOdds[] | null
 }
 
 // Newest snapshot per match. POLL rows are only ever written pre-kickoff, so
@@ -51,6 +55,10 @@ export async function latestOddsByMatch(db: AppDatabase, matchIds: string[]): Pr
       oddsHome: oddsSnapshot.oddsHome,
       oddsDraw: oddsSnapshot.oddsDraw,
       oddsAway: oddsSnapshot.oddsAway,
+      initialHome: oddsSnapshot.initialHome,
+      initialDraw: oddsSnapshot.initialDraw,
+      initialAway: oddsSnapshot.initialAway,
+      bookmakers: oddsSnapshot.bookmakers,
       fetchedAt: oddsSnapshot.fetchedAt,
     })
     .from(oddsSnapshot)
@@ -59,11 +67,17 @@ export async function latestOddsByMatch(db: AppDatabase, matchIds: string[]): Pr
 
   const out: Record<string, MatchOddsView> = {}
   for (const row of rows) {
+    const initial =
+      row.initialHome !== null && row.initialDraw !== null && row.initialAway !== null
+        ? { home: Number(row.initialHome), draw: Number(row.initialDraw), away: Number(row.initialAway) }
+        : null
     out[row.matchId] = {
       home: Number(row.oddsHome),
       draw: Number(row.oddsDraw),
       away: Number(row.oddsAway),
       fetchedAt: row.fetchedAt,
+      initial,
+      bookmakers: row.bookmakers ?? null,
     }
   }
   return out
