@@ -220,7 +220,14 @@
     "title": "Cotes des bookmakers — 1 : victoire domicile, X : nul, 2 : victoire extérieur. Cotes décimales ; plus le nombre est bas, plus le résultat est probable.",
     "home": "Cote victoire domicile",
     "draw": "Cote match nul",
-    "away": "Cote victoire extérieur"
+    "away": "Cote victoire extérieur",
+    "opening": "Ouverture",
+    "bookmakers": "Bookmakers",
+    "shortened": "Resserrée de {delta}",
+    "drifted": "Élargie de {delta}",
+    "unchanged": "Inchangée",
+    "showBreakdown": "Afficher le détail des cotes",
+    "hideBreakdown": "Masquer le détail des cotes"
   },
   "common": {
     "loading": "Chargement…",
