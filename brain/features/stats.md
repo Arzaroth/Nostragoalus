@@ -12,9 +12,12 @@ top assists. Built to grow into team-level boards (best attack/defense) later.
   (`{scorers, assists}`, each a `TopScorer[]` of
   `{playerName, teamName, teamCode, goals, assists, penalties}`), 10-minute
   cached per competition.
-- The endpoint prefers official FIFA player stats, then the local `goal_event`
-  aggregation, then a provider's own list - then splits whichever source it used
-  into the two boards with `rankPlayers` (`server/utils/stats/scorers.ts`). Each
+- The endpoint prefers official player stats (FIFA `getPlayerStats`: the live
+  edition's gameday stories, else the finished-edition aggregate - see
+  [../architecture/providers.md](../architecture/providers.md); UEFA's full
+  `player-ranking`), then the local `goal_event` aggregation, then a provider's
+  own list - then splits whichever source it used into the two boards with
+  `rankPlayers` (`server/utils/stats/scorers.ts`). Each
   board is sorted and sliced on its **own** metric (goals desc / assists desc,
   the other metric then name as tie-break), so a high-assist/low-goal player
   isn't capped out by the goals ranking. The local path uses

@@ -7,7 +7,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ### Fixed
 - **Knockout bracket pairings**: the bracket now wires each round-of-16 (and later) match to the correct feeder matches. Previously every pairing could be mismatched - it assumed the provider listed matches in match-number order, which the 2026 World Cup feed does not - so the tree showed teams meeting in the wrong slots. It now follows the official FIFA match numbers.
-- **Top assists now ranks every player**: the Stats tab's assist board was drawn from the top-scorers list, so a playmaker with lots of assists but few goals never showed up. Assists are now ranked on their own, independently of goals.
+- **Correct top assists**: the Stats tab's assist board now matches the official figures. It used to be built from the top-scorers list (so a playmaker with lots of assists but few goals never showed up) and, for an in-progress World Cup, fell back to approximate locally-derived assists. Assists are now ranked on their own and, while a World Cup is running, taken from FIFA's official live player stats.
 - **Tied players share a rank**: in the Stats boards, players level on goals (or assists) now show the same position number, with the next player skipping ahead (1, 2, 2, 2, 2, 6...), instead of being numbered off arbitrarily.
 
 ## [2.2.0] - 2026-06-28

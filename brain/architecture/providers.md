@@ -18,9 +18,20 @@ are unofficial or undocumented endpoints), so the quirks below are load-bearing.
   (penalty-shootout goals) from the score, and the goal feed's `IdAssistPlayer`
   is the **beaten keeper, NOT an assister** - ignore it.
 - **Knockout bracket:** `/seasonbracket/season/{id}`.
-- **Player stats (top scorers + assists):** the team-statistics endpoint is
-  tournament-wide despite its per-team path; `Type 1 = goals`, `Type 219 =
-  assists`. It needs any team id, taken from a stored `goal_event` row.
+- **Player stats (top scorers + assists):** `getPlayerStats` has two sources.
+  For the **live** edition it reads FIFA's "gameday" stats stories
+  (`gameday-prod.fifa.mangodev.co.uk`): mint an anonymous ~24h Bearer token from
+  the open `cxm-api.fifa.com/.../external/gameDay/token`, then fetch two
+  ranked-page stories - `gcp_top_scorer:goals` (goals + assists) and
+  `gcp_attack:assists` - and merge their actors by player id (`mergeGamedayStories`
+  in `fifa.ts`). Stat values ride as `urn:gd:tag:football:stats:*` tags; the team
+  code is the `team:abbreviation` tag. These stories 404 once an edition ends, so
+  `getPlayerStats` then falls back to the **team-statistics** aggregate
+  (`/statistics/teams/{id}`, tournament-wide despite the per-team path, needing
+  any stored `goal_event` team id; `Type 1 = goals`, `Type 219 = assists`), which
+  only publishes for a finished edition. Behind both, the `/api/competitions/scorers`
+  route still falls back to the local `goal_event` aggregation. Both gameday hosts
+  are CloudFront WAFs reached through the shared [cycletls engine](#the-shared-http-engine-cycletls).
 
 `matches:finalize` fetches match details (bounded) into `goal_event` and
 `match.possession*`. A football-data.org adapter exists as a fallback (its

@@ -2,16 +2,24 @@ import { describe, it, expect, vi } from 'vitest'
 import {
   assignGroupMatchdays,
   fifaProvider,
+  gamedayStoryUrl,
   mapFifaStage,
   mapFifaStatus,
+  mergeGamedayStories,
   normalizeFifaMatch,
+  normalizeFifaPlayerStats,
+  parseGamedayActors,
   parseFifaGroup,
   pickFifaSeason,
   resolveFifaSeasonId,
   type FifaMatch,
+  type GamedayStoriesResponse,
 } from './fifa'
 import { RateLimiter } from './rate-limiter'
 import { ProviderRateLimitError, ProviderUpstreamError } from './types'
+import { cycleGet } from './cycle-tls'
+
+vi.mock('./cycle-tls', () => ({ CHROME_JA3: 'ja3', CHROME_UA: 'ua', cycleGet: vi.fn() }))
 
 function groupMatch(over: Partial<FifaMatch> = {}): FifaMatch {
   return {
@@ -325,5 +333,121 @@ describe('resolveFifaSeasonId', () => {
   it('throws on an upstream error', async () => {
     const fetchImpl = (async () => new Response('boom', { status: 500 })) as unknown as typeof fetch
     await expect(resolveFifaSeasonId({ competitionId: '17', fetchImpl })).rejects.toBeInstanceOf(ProviderUpstreamError)
+  })
+})
+
+function gdActor(name: string, team: string, code: string, stats: Record<string, number>) {
+  return {
+    key: { _externalSportsPersonId: name },
+    name: { eng: name },
+    tags: [
+      { name: 'urn:gd:tag:story:team:name:eng', value: team },
+      { name: 'urn:gd:tag:story:team:abbreviation', value: code },
+      ...Object.entries(stats).map(([k, v]) => ({ name: `urn:gd:tag:football:stats:${k}`, value: v })),
+    ],
+  }
+}
+const gdStory = (actors: ReturnType<typeof gdActor>[]): GamedayStoriesResponse => ({ items: [{ actors }] })
+
+describe('parseGamedayActors', () => {
+  it('reads player, team and stats from actor tags', () => {
+    const out = parseGamedayActors(gdStory([gdActor('Bruno', 'Brazil', 'BRA', { assists: 4, goals: 0 })]))
+    expect(out).toEqual([{ playerId: 'Bruno', playerName: 'Bruno', teamName: 'Brazil', teamCode: 'BRA', goals: 0, assists: 4 }])
+  })
+
+  it('returns nothing for an empty (404-shaped) story', () => {
+    expect(parseGamedayActors({ items: [] })).toEqual([])
+    expect(parseGamedayActors({})).toEqual([])
+  })
+})
+
+describe('mergeGamedayStories', () => {
+  it('merges goals and assists boards, surfacing a low-goal assister', () => {
+    const scorers = gdStory([gdActor('Messi', 'Argentina', 'ARG', { goals: 6, assists: 0 }), gdActor('Mbappe', 'France', 'FRA', { goals: 4, assists: 2 })])
+    const assists = gdStory([gdActor('Bruno', 'Brazil', 'BRA', { assists: 4 }), gdActor('Mbappe', 'France', 'FRA', { assists: 2 })])
+    const merged = mergeGamedayStories(scorers, assists)
+    expect(merged).toContainEqual({ playerName: 'Messi', teamName: 'Argentina', teamCode: 'ARG', goals: 6, assists: 0, penalties: null })
+    expect(merged).toContainEqual({ playerName: 'Mbappe', teamName: 'France', teamCode: 'FRA', goals: 4, assists: 2, penalties: null })
+    // Bruno is only in the assists story (no goals) yet still appears.
+    expect(merged.find((p) => p.playerName === 'Bruno')).toMatchObject({ goals: 0, assists: 4 })
+  })
+})
+
+describe('gamedayStoryUrl', () => {
+  it('encodes the classification external id with group, season and stat', () => {
+    const url = gamedayStoryUrl('gcp_attack', '285023', 'assists')
+    const decoded = decodeURIComponent(url)
+    expect(decoded).toContain('classification:gcp_attack:competitionId:285023:assists:rank_asc:page:1')
+    expect(url).toContain('gameday-prod.fifa.mangodev.co.uk')
+  })
+})
+
+describe('fifaProvider.getPlayerStats', () => {
+  const noWait = () => new RateLimiter(0)
+
+  it('returns the gameday rankings for a live edition', async () => {
+    const gamedayFetch = async (url: string) => {
+      if (url.includes('gameDay/token')) return { token: 'tok' }
+      if (url.includes('gcp_top_scorer')) return gdStory([gdActor('Messi', 'Argentina', 'ARG', { goals: 6, assists: 0 })])
+      return gdStory([gdActor('Bruno', 'Brazil', 'BRA', { assists: 4 })])
+    }
+    const provider = fifaProvider({ seasonId: '285023', gamedayFetch, rateLimiter: noWait() })
+    const out = await provider.getPlayerStats!({ teamId: '43911' })
+    expect(out.map((p) => p.playerName).sort()).toEqual(['Bruno', 'Messi'])
+    expect(out.find((p) => p.playerName === 'Bruno')).toMatchObject({ assists: 4, goals: 0 })
+  })
+
+  it('falls back to the official aggregate when gameday has no token (finished edition)', async () => {
+    const aggregate = {
+      AggregatedTeamStats: [{ IdTeam: 't1', TeamName: [{ Locale: 'en-GB', Description: 'France' }], IdCountry: 'FRA' }],
+      AggregatedPlayerStats: [
+        { IdTeam: 't1', PlayerName: [{ Locale: 'en-GB', Description: 'Mbappe' }], Statistic: [{ Type: 1, Value: 8 }, { Type: 219, Value: 2 }] },
+        { IdTeam: 't1', PlayerName: [{ Locale: 'en-GB', Description: 'NoStat' }], Statistic: [{ Type: 1, Value: 0 }, { Type: 219, Value: 0 }] },
+      ],
+    }
+    const fetchImpl = (async () => jsonResponse(aggregate)) as unknown as typeof fetch
+    const provider = fifaProvider({ seasonId: '1', gamedayFetch: async () => ({}), fetchImpl, rateLimiter: noWait() })
+    const out = await provider.getPlayerStats!({ teamId: 't1' })
+    // The 0/0 player is dropped; the scorer carries goals + assists.
+    expect(out).toEqual([{ playerName: 'Mbappe', teamName: 'France', teamCode: 'FRA', goals: 8, assists: 2, penalties: null }])
+  })
+
+  it('falls back to the aggregate when the gameday fetch throws', async () => {
+    const fetchImpl = (async () => jsonResponse({ AggregatedTeamStats: [], AggregatedPlayerStats: [] })) as unknown as typeof fetch
+    const provider = fifaProvider({
+      seasonId: '1',
+      gamedayFetch: async () => {
+        throw new Error('gameday down')
+      },
+      fetchImpl,
+      rateLimiter: noWait(),
+    })
+    expect(await provider.getPlayerStats!({ teamId: 't1' })).toEqual([])
+  })
+
+  it('default gameday fetcher reads through the cycletls engine', async () => {
+    vi.mocked(cycleGet).mockImplementation((async (url: string) => ({
+      data: url.includes('token') ? { token: 'x' } : gdStory([gdActor('Messi', 'Argentina', 'ARG', { goals: 6, assists: 0 })]),
+    })) as unknown as typeof cycleGet)
+    // No gamedayFetch injected -> exercises defaultGamedayFetch (the cycletls path).
+    const provider = fifaProvider({ seasonId: '285023', rateLimiter: noWait() })
+    const out = await provider.getPlayerStats!({ teamId: '43911' })
+    expect(out.find((p) => p.playerName === 'Messi')).toMatchObject({ goals: 6 })
+    expect(vi.mocked(cycleGet)).toHaveBeenCalled()
+  })
+})
+
+describe('normalizeFifaPlayerStats', () => {
+  it('keeps players with a goal or assist and sorts by goals then assists then name', () => {
+    const out = normalizeFifaPlayerStats({
+      AggregatedTeamStats: [{ IdTeam: 't', TeamName: [{ Locale: 'en', Description: 'Spain' }], IdCountry: 'ESP' }],
+      AggregatedPlayerStats: [
+        { IdTeam: 't', PlayerName: [{ Locale: 'en', Description: 'Zero' }], Statistic: [{ Type: 1, Value: 0 }, { Type: 219, Value: 0 }] },
+        { IdTeam: 't', PlayerName: [{ Locale: 'en', Description: 'Passer' }], Statistic: [{ Type: 219, Value: 3 }] },
+        { IdTeam: 'unknown', PlayerName: [{ Locale: 'en', Description: 'Scorer' }], Statistic: [{ Type: 1, Value: 2 }] },
+      ],
+    })
+    expect(out.map((p) => p.playerName)).toEqual(['Scorer', 'Passer'])
+    expect(out[0]).toMatchObject({ goals: 2, assists: 0, teamName: '', teamCode: null })
   })
 })
