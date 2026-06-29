@@ -1,17 +1,18 @@
 import { db } from '../../../../db'
 import { isAdmin, requireUser } from '../../../utils/auth-guards'
-import { deleteLeague, getLeague, getMembership } from '../../../utils/leagues/service'
+import { toHttpError } from '../../../utils/http'
+import { deleteLeague, resolveLeagueManage } from '../../../utils/leagues/service'
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
   const id = getRouterParam(event, 'id')!
-  if (!(await getLeague(db, id))) throw createError({ statusCode: 404, statusMessage: 'League not found' })
-  const membership = await getMembership(db, id, user.id)
-  if (membership?.role !== 'OWNER' && !(await isAdmin(event))) {
-    throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
+  try {
+    await resolveLeagueManage(db, id, user.id, { requiredRole: 'OWNER', resolveAdmin: () => isAdmin(event) })
+    await deleteLeague(db, id)
+    return { ok: true }
+  } catch (error) {
+    throw toHttpError(error)
   }
-  await deleteLeague(db, id)
-  return { ok: true }
 })
 
 defineRouteMeta({

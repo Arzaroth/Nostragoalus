@@ -1,8 +1,7 @@
 import { z } from 'zod'
 import { db } from '../../../../db'
 import { defineValidatedHandler } from '../../../utils/validated-handler'
-import { canManageLeague } from '../../../utils/leagues/permissions'
-import { getLeague, getMembership, renameLeague, setLeagueVisibility } from '../../../utils/leagues/service'
+import { renameLeague, resolveLeagueManage, setLeagueVisibility } from '../../../utils/leagues/service'
 
 const bodySchema = z
   .object({
@@ -13,10 +12,8 @@ const bodySchema = z
 
 export default defineValidatedHandler({ body: bodySchema }, async ({ event, body, user }) => {
   const id = getRouterParam(event, 'id')!
-  if (!(await getLeague(db, id))) throw createError({ statusCode: 404, statusMessage: 'League not found' })
-  const membership = await getMembership(db, id, user.id)
+  const { membership } = await resolveLeagueManage(db, id, user.id)
   if (body.name !== undefined) {
-    if (!canManageLeague(membership?.role)) throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
     await renameLeague(db, id, body.name)
   }
   if (body.visibility !== undefined) {

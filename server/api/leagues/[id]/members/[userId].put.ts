@@ -1,16 +1,14 @@
 import { z } from 'zod'
 import { db } from '../../../../../db'
 import { defineValidatedHandler } from '../../../../utils/validated-handler'
-import { getLeague, getMembership, setMemberRole } from '../../../../utils/leagues/service'
+import { resolveLeagueManage, setMemberRole } from '../../../../utils/leagues/service'
 
 const bodySchema = z.object({ role: z.enum(['MEMBER', 'MODERATOR']) })
 
 export default defineValidatedHandler({ body: bodySchema }, async ({ event, body, user }) => {
   const id = getRouterParam(event, 'id')!
   const targetUserId = getRouterParam(event, 'userId')!
-  if (!(await getLeague(db, id))) throw createError({ statusCode: 404, statusMessage: 'League not found' })
-  const membership = await getMembership(db, id, user.id)
-  if (membership?.role !== 'OWNER') throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
+  await resolveLeagueManage(db, id, user.id, { requiredRole: 'OWNER' })
   await setMemberRole(db, { leagueId: id, targetUserId, role: body.role })
   return { ok: true }
 })

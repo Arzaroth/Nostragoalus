@@ -1,16 +1,13 @@
 import { db } from '../../../../db'
 import { requireUser } from '../../../utils/auth-guards'
 import { toHttpError } from '../../../utils/http'
-import { canManageLeague } from '../../../utils/leagues/permissions'
-import { getLeague, getMembership, regenerateJoinCode } from '../../../utils/leagues/service'
+import { regenerateJoinCode, resolveLeagueManage } from '../../../utils/leagues/service'
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
   const id = getRouterParam(event, 'id')!
-  if (!(await getLeague(db, id))) throw createError({ statusCode: 404, statusMessage: 'League not found' })
-  const membership = await getMembership(db, id, user.id)
-  if (!canManageLeague(membership?.role)) throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
   try {
+    await resolveLeagueManage(db, id, user.id)
     return { joinCode: await regenerateJoinCode(db, id) }
   } catch (error) {
     throw toHttpError(error)

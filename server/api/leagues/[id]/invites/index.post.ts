@@ -1,8 +1,7 @@
 import { z } from 'zod'
 import { db } from '../../../../../db'
 import { defineValidatedHandler } from '../../../../utils/validated-handler'
-import { getMembership } from '../../../../utils/leagues/service'
-import { canManageLeague } from '../../../../utils/leagues/permissions'
+import { resolveLeagueManage } from '../../../../utils/leagues/service'
 import { createInvite, inviteStatus, listInvites } from '../../../../utils/leagues/invites'
 
 const bodySchema = z.object({
@@ -17,8 +16,7 @@ const MAX_ACTIVE_INVITES = 20
 
 export default defineValidatedHandler({ body: bodySchema }, async ({ event, body, user }) => {
   const id = getRouterParam(event, 'id')!
-  const membership = await getMembership(db, id, user.id)
-  if (!canManageLeague(membership?.role)) throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
+  await resolveLeagueManage(db, id, user.id)
   if ((await listInvites(db, id)).length >= MAX_ACTIVE_INVITES) {
     throw createError({ statusCode: 409, statusMessage: 'Too many active invites for this league' })
   }
@@ -64,6 +62,7 @@ defineRouteMeta({
       "200": { "description": "The minted invite (token included)." },
       "401": { "description": "Not signed in." },
       "403": { "description": "Not an owner or moderator of this league." },
+      "404": { "description": "Unknown league." },
       "409": { "description": "Too many active invites." },
       "422": { "description": "Invalid body." }
     }
