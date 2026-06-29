@@ -11,7 +11,7 @@ export function useLiveMatches(matches: Ref<MatchListItem[] | undefined>, onScor
   const { send } = useReconnectingSocket({
     onOpen: () => subscribe(),
     onMessage: (data) => {
-      const msg = data as { type?: string; match?: { id: string; status: string; fullTimeHome: number | null; fullTimeAway: number | null; winner: string | null } }
+      const msg = data as { type?: string; match?: { id: string; status: string; fullTimeHome: number | null; fullTimeAway: number | null; penaltiesHome: number | null; penaltiesAway: number | null; winner: string | null } }
       // A score moved (or a match finished): refresh the points/lock-bearing
       // queries the patcher can't derive - prediction points land at full-time,
       // the personal stats follow.
@@ -34,6 +34,8 @@ export function useLiveMatches(matches: Ref<MatchListItem[] | undefined>, onScor
                 isLocked: m.isLocked || u.status !== 'SCHEDULED',
                 fullTimeHome: u.fullTimeHome,
                 fullTimeAway: u.fullTimeAway,
+                penaltiesHome: u.penaltiesHome,
+                penaltiesAway: u.penaltiesAway,
                 winner: u.winner as MatchListItem['winner'],
               }
             : m,

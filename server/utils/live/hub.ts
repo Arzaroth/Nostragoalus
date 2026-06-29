@@ -133,6 +133,8 @@ const liveColumns = {
   status: match.status,
   fullTimeHome: match.fullTimeHome,
   fullTimeAway: match.fullTimeAway,
+  penaltiesHome: match.penaltiesHome,
+  penaltiesAway: match.penaltiesAway,
   winner: match.winner,
   kickoffTime: match.kickoffTime,
 }

@@ -19,6 +19,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 - **Mention alerts**: being @mentioned in any league chat now sends you a web push and a header-bell notification, regardless of which league or match it was in, with a link straight to that room. Toggle it under Preferences, in the push notifications list.
 - **Full timestamp on hover**: hovering a chat message's send time now reveals its full date and time.
 
+### Fixed
+- **Live penalty shootouts**: the shootout score under a match now ticks up as the kicks are taken, on both the match page and the fixtures list, instead of staying blank or frozen until you reloaded. The regular-time score above it is unchanged.
+- **Play-by-play shootout score**: each converted spot-kick in the play-by-play now shows the running shootout tally (1-0, 1-1, 2-1...) instead of repeating the frozen regulation score on every line.
+
 ## [2.3.0] - 2026-06-30
 
 ### Added

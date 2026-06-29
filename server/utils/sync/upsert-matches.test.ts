@@ -53,6 +53,24 @@ describe('upsertMatches', () => {
     await client.close()
   })
 
+  it('flags a shootout score change even while full-time is frozen', async () => {
+    const { db, client } = await createTestDb()
+    const cid = await seedCompetition(db)
+    const live = { status: 'LIVE', score: { fullTime: { home: 1, away: 1 } } } as const
+    await upsertMatches(db, cid, [normalized(live)])
+    // Full-time stays 1-1; only the shootout ticks up.
+    const res = await upsertMatches(db, cid, [
+      normalized({ ...live, score: { fullTime: { home: 1, away: 1 }, penalties: { home: 1, away: 0 } } }),
+    ])
+    expect(res.changedMatchIds).toHaveLength(1)
+    // A second poll with the same shootout score is not a change.
+    const again = await upsertMatches(db, cid, [
+      normalized({ ...live, score: { fullTime: { home: 1, away: 1 }, penalties: { home: 1, away: 0 } } }),
+    ])
+    expect(again.changedMatchIds).toHaveLength(0)
+    await client.close()
+  })
+
   it('does not flag an unchanged update', async () => {
     const { db, client } = await createTestDb()
     const cid = await seedCompetition(db)

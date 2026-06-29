@@ -110,10 +110,16 @@ export async function upsertMatches(
       .where(eq(match.id, prev.id))
     result.updated += 1
 
+    // Penalties move while full-time stays frozen during a shootout, so a
+    // pen-only change must still flag the match or the live header never
+    // refreshes the shootout line. The transition it rides is a no-op for the
+    // goal/kickoff push (status and full-time are unchanged), so no false alert.
     const changed =
       prev.status !== m.status ||
       prev.fullTimeHome !== m.score.fullTime.home ||
-      prev.fullTimeAway !== m.score.fullTime.away
+      prev.fullTimeAway !== m.score.fullTime.away ||
+      prev.penaltiesHome !== (m.score.penalties?.home ?? null) ||
+      prev.penaltiesAway !== (m.score.penalties?.away ?? null)
     if (changed) {
       result.changedMatchIds.push(prev.id)
       result.transitions.push({

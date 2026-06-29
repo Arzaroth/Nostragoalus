@@ -275,7 +275,11 @@ function bestBy(side: 'home' | 'away', field: 'goals' | 'assists') {
 const hasStats = computed(
   () => homeGoalEvents.value.length > 0 || awayGoalEvents.value.length > 0 || insights.value?.possession?.home != null || !!detail.value,
 )
-const hadShootout = computed(() => ((m.value?.penaltiesHome ?? 0) + (m.value?.penaltiesAway ?? 0)) > 0)
+// Shootout score patches over WS just like the full-time score - lead with the
+// live value so the pens line ticks up during the shootout, not only on reload.
+const penaltiesHome = computed(() => live.value?.penaltiesHome ?? m.value?.penaltiesHome ?? null)
+const penaltiesAway = computed(() => live.value?.penaltiesAway ?? m.value?.penaltiesAway ?? null)
+const hadShootout = computed(() => ((penaltiesHome.value ?? 0) + (penaltiesAway.value ?? 0)) > 0)
 // The play-by-play tab is offered once the match is under way (the feed is empty
 // before kickoff); on finished matches it stays for the full record. Covers the
 // halted-mid-play states (SUSPENDED/INTERRUPTED) too, so their rankings show.
@@ -568,7 +572,7 @@ function toggleFormInfo(side: string, i: number | string) {
             <span>{{ new Date(m.kickoffTime).toLocaleString(locale) }}</span>
             <Countdown :to="m.kickoffTime" />
           </div>
-          <div v-if="hadShootout" class="text-sm font-semibold mt-1" style="color: var(--p-text-muted-color)">{{ m.penaltiesHome }}–{{ m.penaltiesAway }} {{ t('match.pens') }}</div>
+          <div v-if="hadShootout" class="text-sm font-semibold mt-1" style="color: var(--p-text-muted-color)">{{ penaltiesHome }}–{{ penaltiesAway }} {{ t('match.pens') }}</div>
           <!-- live indicator + clock, under the score -->
           <div v-if="isLive" class="flex items-center justify-center gap-1.5 mt-1.5 text-sm font-semibold tabular-nums" style="color: var(--ng-danger)">
             <span class="w-2 h-2 rounded-full animate-pulse" style="background: var(--ng-danger)" />{{ liveClock }}
