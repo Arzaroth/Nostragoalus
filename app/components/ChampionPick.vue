@@ -35,22 +35,6 @@ function save(repick = false) {
   if (team) setPick.mutate({ ...team, repick })
 }
 
-// Holographic hover: the card tilts toward the cursor and a light sweep
-// follows it (the one emotional pick in the game deserves some sparkle).
-const showcaseEl = ref<HTMLElement | null>(null)
-const { elementX, elementY, elementWidth, elementHeight, isOutside } = useMouseInElement(showcaseEl)
-const holo = computed(() => {
-  if (isOutside.value || !elementWidth.value) return { transform: '', sheen: 0, sx: 50, sy: 50 }
-  const px = elementX.value / elementWidth.value
-  const py = elementY.value / elementHeight.value
-  return {
-    transform: `perspective(420px) rotateY(${(px - 0.5) * 22}deg) rotateX(${(0.5 - py) * 22}deg) scale(1.06)`,
-    sheen: 1,
-    sx: px * 100,
-    sy: py * 100,
-  }
-})
-
 // What the crown showcase displays: the live selection (preview) or the saved pick.
 const showcaseCode = computed(() =>
   data.value?.locked ? (data.value?.myPick?.teamCode ?? null) : (selectedCode.value ?? data.value?.myPick?.teamCode ?? null),
@@ -190,44 +174,13 @@ function worthLabel(rank: number | null, points: number) {
       </div>
 
       <!-- Crowned champion showcase -->
-      <div class="shrink-0 flex flex-col items-center gap-2 self-center sm:self-start sm:pr-2">
-        <component :is="showcaseCode ? NuxtLinkC : 'div'" :to="showcaseCode ? `/${slug}/teams/${showcaseCode}` : undefined" class="relative mt-1 block" :class="{ 'hover:opacity-90': showcaseCode }">
-          <template v-if="showcaseCode">
-            <div
-              class="absolute -inset-4 rounded-full blur-xl pointer-events-none"
-              style="background: radial-gradient(circle, rgba(245, 179, 1, 0.4), transparent 70%)"
-            />
-            <span
-              class="absolute -top-3 -left-3 text-2xl z-10 select-none"
-              style="transform: rotate(-25deg); filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35))"
-            >👑</span>
-            <span ref="showcaseEl" class="relative block w-16 h-16 rounded-2xl" style="transition: transform 0.25s ease" :style="{ transform: holo.transform }">
-              <img
-                v-if="flagUrl(showcaseCode)"
-                :src="flagUrl(showcaseCode) || ''"
-                class="relative w-16 h-16 rounded-2xl object-cover"
-                style="box-shadow: 0 0 0 3px rgba(245, 179, 1, 0.6), 0 10px 24px rgba(0, 0, 0, 0.3)"
-                alt=""
-              >
-              <span
-                class="absolute inset-0 rounded-2xl pointer-events-none"
-                style="transition: opacity 0.25s ease; mix-blend-mode: screen"
-                :style="{
-                  opacity: holo.sheen * 0.75,
-                  background: `radial-gradient(140px circle at ${holo.sx}% ${holo.sy}%, rgba(255,255,255,0.55), rgba(245,179,1,0.18) 45%, transparent 70%)`,
-                }"
-              />
-            </span>
-          </template>
-          <template v-else>
-            <span class="absolute -top-3 -left-3 text-2xl z-10 opacity-30 grayscale select-none" style="transform: rotate(-25deg)">👑</span>
-            <div
-              class="w-16 h-16 rounded-2xl border-2 border-dashed flex items-center justify-center text-2xl"
-              style="border-color: var(--p-content-border-color); color: var(--p-text-muted-color)"
-            >?</div>
-          </template>
-        </component>
-        <div class="text-center w-24">
+      <MetaPickShowcase
+        :present="!!showcaseCode"
+        :image-url="showcaseCode ? flagUrl(showcaseCode) || null : null"
+        :link-to="showcaseCode ? `/${slug}/teams/${showcaseCode}` : null"
+      >
+        <template #emblem>👑</template>
+        <template #caption>
           <component :is="NuxtLinkC" v-if="showcaseCode" :to="`/${slug}/teams/${showcaseCode}`" class="hover:underline">
             <strong class="block leading-tight">{{ teamName(showcaseCode) }}</strong>
           </component>
@@ -244,9 +197,9 @@ function worthLabel(rank: number | null, points: number) {
             class="text-xs block mt-0.5"
             :class="{ invisible: !(showcaseCode && showcaseWorth) }"
             style="color: var(--p-text-muted-color)"
-          >{{ showcaseWorth ? worthLabel(showcaseWorth.rank, showcaseWorth.points) : ' ' }}</span>
-        </div>
-      </div>
+          >{{ showcaseWorth ? worthLabel(showcaseWorth.rank, showcaseWorth.points) : ' ' }}</span>
+        </template>
+      </MetaPickShowcase>
     </div>
 
     <AppConfirmDialog
