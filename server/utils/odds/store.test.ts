@@ -53,9 +53,33 @@ describe('odds store snapshots', () => {
       snapshot(m2, new Date(KICKOFF.getTime() - 5 * HOUR), { current: { home: 5, draw: 4, away: 1.6 } }),
     ])
     const latest = await latestOddsByMatch(db, [m1, m2])
-    expect(latest[m1]).toEqual({ home: 1.9, draw: 3.5, away: 4, fetchedAt: new Date(KICKOFF.getTime() - 2 * HOUR) })
-    expect(latest[m2]).toMatchObject({ home: 5, draw: 4, away: 1.6 })
+    // The newest m1 snapshot opened with no initial price, so it carries null.
+    expect(latest[m1]).toEqual({ home: 1.9, draw: 3.5, away: 4, fetchedAt: new Date(KICKOFF.getTime() - 2 * HOUR), initial: null, bookmakers: null })
+    // m2 keeps its opening 1X2 alongside the current price.
+    expect(latest[m2]).toMatchObject({ home: 5, draw: 4, away: 1.6, initial: { home: 2, draw: 3.3, away: 3.8 }, bookmakers: null })
     expect(await latestOddsByMatch(db, [])).toEqual({})
+    await client.close()
+  })
+
+  it('carries opening prices and the per-bookmaker breakdown', async () => {
+    const { db, client, competitionId, roundId } = await setup()
+    const m1 = await makeMatch(db, { competitionId, roundId, kickoffTime: KICKOFF })
+    await insertOddsSnapshots(db, [
+      snapshot(m1, new Date(KICKOFF.getTime() - 3 * HOUR), {
+        current: { home: 1.8, draw: 3.6, away: 4.2 },
+        initial: { home: 2.2, draw: 3.3, away: 3.5 },
+        bookmakers: [
+          { key: 'bet365', title: 'bet365', home: 1.8, draw: 3.6, away: 4.2 },
+          { key: 'pinnacle', title: 'Pinnacle', home: 1.83, draw: 3.55, away: 4.1 },
+        ],
+      }),
+    ])
+    const latest = await latestOddsByMatch(db, [m1])
+    expect(latest[m1].initial).toEqual({ home: 2.2, draw: 3.3, away: 3.5 })
+    expect(latest[m1].bookmakers).toEqual([
+      { key: 'bet365', title: 'bet365', home: 1.8, draw: 3.6, away: 4.2 },
+      { key: 'pinnacle', title: 'Pinnacle', home: 1.83, draw: 3.55, away: 4.1 },
+    ])
     await client.close()
   })
 
