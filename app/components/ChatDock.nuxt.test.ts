@@ -7,14 +7,17 @@ import ChatDock from './ChatDock.vue'
 // assert the dock's gating and the scope-toggle wiring. ChatPanel is stubbed; we
 // drive its on/off emit explicitly, which is what the dock keys visibility off.
 const selectedLeagueId = ref<string | null>('L1')
-const route = ref<{ name: string; path: string; params: Record<string, string> }>({
+const leagueSelections = ref<Record<string, string>>({})
+const route = ref<{ name: string; path: string; params: Record<string, string>; query: Record<string, string> }>({
   name: 'competition-home',
   path: '/world-cup-2026',
   params: {},
+  query: {},
 })
 
 vi.mock('../composables/useSelectedLeague', () => ({
   useSelectedLeague: () => ({ leagueId: selectedLeagueId }),
+  useLeagueSelections: () => leagueSelections,
 }))
 mockNuxtImport('useRoute', () => () => route.value as never)
 
@@ -40,7 +43,8 @@ const bubble = (w: Awaited<ReturnType<typeof mount>>) => w.find('button[aria-lab
 
 beforeEach(() => {
   selectedLeagueId.value = 'L1'
-  route.value = { name: 'competition-home', path: '/world-cup-2026', params: {} }
+  leagueSelections.value = {}
+  route.value = { name: 'competition-home', path: '/world-cup-2026', params: {}, query: {} }
 })
 afterEach(() => {
   for (const w of mounted) w.unmount()
@@ -49,7 +53,7 @@ afterEach(() => {
 
 describe('ChatDock', () => {
   it('renders nothing on the league pages (the inline panel owns it there)', async () => {
-    route.value = { name: 'leagues-id', path: '/leagues/L1', params: { id: 'L1' } }
+    route.value = { name: 'leagues-id', path: '/leagues/L1', params: { id: 'L1' }, query: {} }
     const w = await mount()
     expect(w.find('.chat-panel-stub').exists()).toBe(false)
   })
@@ -70,7 +74,7 @@ describe('ChatDock', () => {
     const home = await mount(true)
     expect(home.text()).not.toContain('This match')
 
-    route.value = { name: 'competition-matches-id', path: '/world-cup-2026/matches/M1', params: { id: 'M1' } }
+    route.value = { name: 'competition-matches-id', path: '/world-cup-2026/matches/M1', params: { id: 'M1' }, query: {} }
     const match = await mount(true)
     expect(match.text()).toContain('This match')
     expect(match.text()).toContain('League')
