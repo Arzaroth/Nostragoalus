@@ -78,10 +78,11 @@ effort buckets; order within a bucket is not priority.
       match the user hasn't predicted, scoped to active competitions within a
       7-day-back window. Carries fixtures + results + a predicted/not flag, never
       the predicted score. Subscribe URL (https + webcal) revealed in Preferences.
-- [ ] **Profile scroll-to-next-match**: opening someone's profile (or your own)
-      lands on the upcoming fixtures rather than the top of their pick history. A
-      "now" separator sits between played and upcoming matches and scrolls into the
-      middle of the viewport on load, mirroring the fixtures page's jump-to-next.
+- [x] **Profile scroll-to-next-match** (shipped in 2.3.0): opening someone's
+      profile (or your own) centers the "now" boundary on load rather than the top
+      of their pick history. The separator only shows for admins (the only viewers
+      who receive not-yet-kicked-off picks); for everyone else the anchor sits after
+      the last played match. Mirrors the fixtures page's jump-to-next.
 - [ ] **"The Equalizer" bot mode**: always picks 1-1 (modal draw score) to
       leverage the draws-score-something floor. Verify the "draw pick always
       >= 2 pts" premise against the tier table first; if outcome-miss = 0 the
@@ -392,12 +393,12 @@ effort buckets; order within a bucket is not priority.
   - **Roadmap**: per-locale fields on the roadmap item (title/description per
     locale) with EN fallback, or a translation table keyed by item id; admin UI
     grows a locale tab. Decide vs accepting EN-only.
-  - **Changelog**: separate `CHANGELOG.{en,fr,th,tlh}.md` rendered per active
-    locale (EN stays the source of truth and the release-gate input; the others
-    are translations that can lag). The release flow / docs sweep would need to
-    fan the `[Unreleased]` move across all four, or translate on cut. Weigh the
-    per-release translation cost (every entry, four locales) against value before
-    committing - a machine-assisted pass at release time may be the pragmatic form.
+  - **Changelog** (shipped in 2.3.0): `i18n/changelogs/{fr,th,tlh}.md` mirror
+    `CHANGELOG.md` (EN stays the source of truth and the release-gate input);
+    `useChangelog` overlays the active locale per version with EN fallback.
+    `mise run changelog promote` fans the `[Unreleased]` move across all four and
+    `mise run changelog check` enforces structural parity in the gate. Roadmap-item
+    localization (below) is still open, so this parent item stays open.
 - [ ] **Half-time prediction change ("the VAR")**: overturn your own call on
       a live match before the second half kicks off.
   - League house rule behind a new per-league **difficulty setting**; off by
