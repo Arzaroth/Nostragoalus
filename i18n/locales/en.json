@@ -556,7 +556,8 @@
     "inContest": "in contest",
     "rankingTab": "Ranking",
     "noPicks": "No picks for this match yet.",
-    "leagueNoPick": "{n} member made no pick | {n} members made no pick"
+    "leagueNoPick": "{n} member made no pick | {n} members made no pick",
+    "watching": "1 watching now | {n} watching now"
   },
   "pastPick": {
     "final": "Your earlier {score} would have scored - the one you swapped off.",
