@@ -1,5 +1,3 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-
 export interface ChampionTeam {
   code: string
   name: string
@@ -25,28 +23,9 @@ export interface ChampionData {
 }
 
 export function useChampion() {
-  const slug = useSelectedCompetition()
-  const queryClient = useQueryClient()
-
-  // Explicit response generic keeps $fetch off its route-literal inference path
-  // (which recurses to "excessive stack depth" on these endpoints).
-  const query = useQuery({
-    queryKey: ['champion', slug],
-    queryFn: ({ signal }) =>
-      $fetch<ChampionData>('/api/champion', { query: slug.value ? { competition: slug.value } : {}, signal }),
+  return useMetaPick<ChampionData, ChampionTeam & { repick?: boolean }>({
+    key: 'champion',
+    endpoint: '/api/champion',
+    buildBody: (input) => ({ teamCode: input.code, teamName: input.name, repick: input.repick }),
   })
-
-  const setPick = useMutation({
-    mutationFn: (input: ChampionTeam & { repick?: boolean }) =>
-      $fetch<{ ok: boolean }>('/api/champion', {
-        method: 'PUT',
-        body: { competition: slug.value, teamCode: input.code, teamName: input.name, repick: input.repick },
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['champion'] })
-      queryClient.invalidateQueries({ queryKey: ['leaderboard'] })
-    },
-  })
-
-  return { query, setPick }
 }
