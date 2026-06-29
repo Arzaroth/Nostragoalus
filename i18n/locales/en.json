@@ -376,7 +376,11 @@
     "view": "Switch view",
     "viewFixtures": "Fixtures",
     "viewStandings": "Standings",
-    "viewStats": "Stats"
+    "viewStats": "Stats",
+    "outstanding": {
+      "label": "{n} match needs a pick before the next lockout | {n} matches need a pick before the next lockout",
+      "jump": "Jump to first"
+    }
   },
   "stats": {
     "player": "Player",
@@ -423,6 +427,11 @@
     "rarityTip": "Only {pct}% of players picked this exact score - bold calls earn a bonus.",
     "rarityTipNoShare": "A bold call against the crowd earns a bonus.",
     "jokerHint": "Your joker doubled the points on this match (base + rarity).",
+    "outlandish": {
+      "title": "Unusual scoreline",
+      "body": "Save {home}-{away}? That's a wildly high score - double-check it's what you meant.",
+      "confirm": "Save anyway"
+    },
     "adminUpcomingDivider": "Upcoming matches below — only admins see picks before kickoff"
   },
   "champion": {
