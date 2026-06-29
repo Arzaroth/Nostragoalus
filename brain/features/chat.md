@@ -28,9 +28,16 @@ and routes by message id and metadata, never by reading content.
   are a separate relation shown oldest-first with their own scoped composer, and
   `getThreadCounts` feeds the per-message thread count.
 - `@mentions` - the composer holds `@DisplayName`; on send it is encoded to an
-  `@<id>` token, and the mentioned ids are relayed as plaintext `mentions[]` on
-  the `chat:new` push (never stored). `useChatActivity` badges unread mentions
-  distinctly.
+  `@<id>` token, and the mentioned ids ride as a plaintext `mentions[]` sidecar
+  (the body stays E2EE, so the ids are never decrypted server-side and are not
+  stored on the message). They drive the live unread-mention badge (the `chat:new`
+  frame) and, via `server/utils/chat/mentions.ts` `notifyMentions` at post time, a
+  durable `CHAT_MENTION` [notification](notifications.md) (header bell) plus a
+  [web push](web-push.md) - regardless of which league or match. The ids are
+  intersected with the league's real members and the sender is dropped, so a
+  crafted client cannot push-spam. The push/bell deep-links cross-league via
+  `chatMentionPath` (`?ngLeague=&chat=`), interpreted by the `chat-deeplink`
+  client plugin.
 - Reactions reuse the [match reaction set](reactions.md) (plaintext emoji, so the
   server sees the emoji but not the message).
 - A hand-rolled emoji picker inserts raw unicode at the caret.
@@ -67,6 +74,30 @@ built in. Live events on the WebSocket: `chat:new`, `chat:moderation`,
 `chat:roster` (display-name changes), and `chat:state-changed` (chat on/off and
 key rotation). See [../architecture/realtime.md](../architecture/realtime.md).
 
+## Unread inbox (cross-league)
+
+The dock's ROOMS WITH ACTIVITY popover lists every room - global room or match
+thread - with unread messages and/or unread mentions across ALL the user's
+leagues, not just the selected one, and it survives a reload.
+
+- Read state is a per-room marker, `chat_room_read (userId, leagueId, roomKey)`
+  with `lastReadAt` - deliberately NOT a per-message "seen by" receipt. `roomKey`
+  is the matchId, or the `__global__` sentinel (`shared/types/chat.ts` `roomKeyFor`).
+- `GET /api/chat/unread` (`server/utils/chat/unread.ts` `getUnreadRooms`) counts,
+  per room across the user's leagues, messages newer than the marker - floored at
+  `league_member.joinedAt` when there is no marker, so pre-join history never
+  shows - excluding own, thread-reply and non-visible messages. Unread-mention
+  counts are read off the unread `CHAT_MENTION` bell rows (the durable mention
+  store), so they survive reload too.
+- `POST /api/chat/read` (`markRoomRead`) upserts the marker to the server clock
+  and clears that room's unread mention rows, so opening a room clears both
+  counters at once (reload parity with the live tracker).
+- `useChatActivity` is backed by the unread query (keyed per `leagueId::roomKey`),
+  patched optimistically from the live `chat:new` socket between fetches. Opening
+  a foreign-league room points the `ng-league` cookie at its competition and
+  navigates there (`ChatDock.openRoom`); the mention deep link reaches a room the
+  same way via `useChatDockOpen` + the `chat-deeplink` plugin.
+
 ## History
 
 The bulk of these features shipped in 1.36.0 (dock, reactions, reply/quote,
@@ -80,8 +111,11 @@ the pony-head glyph swap from the match reaction stack.
 ## Sources
 
 - `db/app-schema.ts` (`chat_message`, `chat_attachment`, `chat_identity`,
-  `league_chat_key`, `chat_message_report`, `chat_moderation_state`)
-- `server/utils/chat/*` (service, unfurl), `shared/types/chat.ts`,
+  `league_chat_key`, `chat_message_report`, `chat_moderation_state`,
+  `chat_room_read`)
+- `server/utils/chat/*` (service, unfurl, `mentions`, `unread`),
+  `server/api/chat/{unread.get,read.post}.ts`, `shared/types/chat.ts`,
   `shared/reactions.ts`
 - `app/utils/chat-content.ts`, `app/components/Chat*.vue`,
-  `app/composables/useLeagueChat.ts`, `useChatActivity.ts`
+  `app/composables/useLeagueChat.ts`, `useChatActivity.ts`, `useChatDockOpen.ts`,
+  `app/plugins/chat-deeplink.client.ts`

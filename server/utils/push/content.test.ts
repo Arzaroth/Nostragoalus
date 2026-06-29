@@ -60,6 +60,25 @@ describe('notificationPushContent', () => {
     expect(notificationPushContent({ type: 'LEAGUE_REMOVED', leagueId: 'l1', leagueName: 'F' }, 'en').url).toBe('/leagues')
   })
 
+  it('builds the mention copy and cross-league deep link (global and match rooms)', () => {
+    const base = {
+      type: 'CHAT_MENTION',
+      leagueId: 'l1',
+      leagueName: 'Friends',
+      competitionSlug: 'wc',
+      senderId: 'u1',
+      senderName: 'Alice',
+    } as const
+    const global = notificationPushContent({ ...base, matchId: null, homeTeam: null, awayTeam: null }, 'en')
+    expect(global.body).toContain('Alice')
+    expect(global.body).toContain('Friends')
+    expect(global).toMatchObject({ url: '/wc?ngLeague=l1&chat=global', tag: 'mention:l1:global' })
+
+    const match = notificationPushContent({ ...base, matchId: 'm9', homeTeam: 'France', awayTeam: 'Brazil' }, 'en')
+    expect(match.body).toContain('France')
+    expect(match).toMatchObject({ url: '/wc/matches/m9?ngLeague=l1&chat=m9', tag: 'mention:l1:m9' })
+  })
+
   it('falls back to English for an unknown or null locale', () => {
     expect(notificationPushContent(reminder, 'xx').body).toBe(notificationPushContent(reminder, 'en').body)
     expect(notificationPushContent(reminder, null).body).toBe(notificationPushContent(reminder, 'en').body)

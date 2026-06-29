@@ -66,6 +66,13 @@ the code. Alphabetical.
   -> fix -> gate -> merge -> release -> remove worktree.
 - **Epoch (chat)** - the key-version counter on E2E chat; rotating the league key
   bumps the epoch. See [features/chat.md](features/chat.md).
+- **Room key** - a chat room's id for unread tracking: the `matchId` of a match
+  thread, or the `__global__` sentinel for the league room (`roomKeyFor`). The
+  cross-league inbox keys unread per `leagueId::roomKey`. See
+  [features/chat.md](features/chat.md).
+- **Read marker** - the per-room "last read" timestamp (`chat_room_read`) that
+  makes chat unread persistent and cross-league; there is no per-message read
+  receipt. See [features/chat.md](features/chat.md).
 - **Provider** - an external data source (FIFA match data, Sofascore odds, FIFA
   ranking), accessed provider-agnostically. See
   [architecture/providers.md](architecture/providers.md).

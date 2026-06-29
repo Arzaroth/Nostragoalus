@@ -17,10 +17,10 @@ One table, `user_notification`:
   `createNotification` does `onConflictDoNothing` on `(userId, dedupeKey)` when
   the key is not null.
 
-The seven `notification_type` values:
+The eight `notification_type` values:
 
 `LEAGUE_JOIN`, `LEAGUE_ROLE`, `LEAGUE_REMOVED`, `PICK_REMINDER`, `MATCH_RESULT`,
-`CHAMPION_RESULT`, `BEST_SCORER_RESULT`.
+`CHAMPION_RESULT`, `BEST_SCORER_RESULT`, `CHAT_MENTION`.
 
 (The transient push-only `MATCH_LIVE` and `GOAL` kinds are NOT in this enum or
 the bell - see [web push](web-push.md).)
@@ -62,6 +62,11 @@ directly). Strings are i18n'd in all four locales.
 - League activity - `LEAGUE_JOIN` (to owner + mods), `LEAGUE_ROLE`
   (promote/transfer, to the member), `LEAGUE_REMOVED` (kick, to the member). See
   [leagues](leagues.md).
+- `CHAT_MENTION` - someone @mentioned the recipient in league [chat](chat.md),
+  fired from the post path (`server/utils/chat/mentions.ts`), cross-league. Data
+  carries room context only (sender name + league/match), never message text (the
+  chat is E2EE). Dedupe `mention:{messageId}:{userId}`. Marking the room read
+  clears these rows (see chat's cross-league inbox).
 
 ## Retention
 

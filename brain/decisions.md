@@ -106,6 +106,26 @@ feature/architecture doc that implements it.
   push-only/transient and predictor-scoped. See
   [features/notifications.md](features/notifications.md) and
   [features/web-push.md](features/web-push.md).
+- **A chat @mention notifies cross-league without the server reading the message.**
+  The chat is E2EE, so the mentioned ids ride as a plaintext `mentions[]` sidecar
+  on the post; the server intersects them with the league's real members (and
+  drops the sender, so a crafted client cannot push-spam) and fires a
+  `CHAT_MENTION` bell + web push from that alone - copy carries room context only,
+  never message text. The bell row doubles as the durable mention store (mentions
+  are not a message column), which is what lets the unread-mention badge survive a
+  reload. See [features/chat.md](features/chat.md).
+
+## Chat unread / inbox
+
+- **Chat unread is a per-room "last read" marker, not a per-message receipt.**
+  `chat_room_read (userId, leagueId, roomKey -> lastReadAt)` keeps the inbox
+  O(rooms), avoids a read-receipt's per-message x member write amplification and
+  privacy surface, and lets unread be recomputed on load (it survives reload)
+  rather than living only in a session counter. The inbox is cross-league: one
+  global socket already delivers every league's `chat:new`, so single-league was
+  only ever a client filter. An unmarked room counts messages since the user's
+  league join (backlog-from-join), so the day-one count is truthful rather than
+  silently zeroed. See [features/chat.md](features/chat.md).
 
 ## Operations
 
