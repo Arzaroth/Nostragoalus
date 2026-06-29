@@ -48,6 +48,7 @@ const ITEMS = [
   { status: 'SHIPPED', title: 'Calendar feed', description: 'Subscribe to fixtures and pick-lockout deadlines from your own calendar app (iCal) - a personal link that stays up to date on its own, with a reminder before each match you have not predicted.' },
   { status: 'SHIPPED', title: 'Prediction lean on the world map', description: 'The world map tints each nation by where the crowd expects its current match to go - blue when the field backs that team, red when it backs the opponent - so you can read the mood of the tournament at a glance.' },
   { status: 'SHIPPED', title: 'Web push notifications', description: 'Opt in to push notifications on your phone or desktop: pick reminders, kickoff and live goal alerts on matches you predicted, your results, and league activity - each switchable on or off in your preferences.' },
+  { status: 'IN_PROGRESS', title: 'Arabic & right-to-left support', description: 'A full Arabic translation with the whole interface mirrored to read right-to-left, from the menus to the knockout bracket - our first right-to-left language.' },
   { status: 'PLANNED', title: 'Tournament Wrapped', description: 'An end-of-competition recap - best and worst pick, joker efficiency, your percentile - with a shareable card.' },
   { status: 'PLANNED', title: 'Personal & what-if stats', description: 'See where a joker would have helped, how you compare to the crowd, and your prediction biases.' },
 ]

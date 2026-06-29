@@ -407,6 +407,29 @@ effort buckets; order within a bucket is not priority.
     `mise run changelog promote` fans the `[Unreleased]` move across all four and
     `mise run changelog check` enforces structural parity in the gate. Roadmap-item
     localization (below) is still open, so this parent item stays open.
+- [ ] **RTL support + Arabic locale** (IN_PROGRESS, worktree-rtl-arabic): add
+      Arabic (`ar`) as the fifth locale and the first right-to-left language,
+      proving the app's layout is direction-agnostic. Decisions (locked):
+  - **Why Arabic**: widest RTL reach and a real WC-2026 fit (Morocco, Tunisia,
+    Algeria, Egypt, Saudi, Qatar contend), and the hardest script (cursive
+    joining, contextual shaping, Arabic-Indic digits) so it's the strongest
+    proof RTL truly works. Japanese was ruled out (vertical tategaki is not
+    RTL); Hebrew/Persian/Urdu are weaker fits (no WC tie-in or smaller reach).
+  - **Direction infra**: `@nuxtjs/i18n` per-locale `dir:'rtl'` + `language:'ar'`;
+    `useLocaleHead()` drives `<html lang/dir>` off the active locale (replacing
+    the hard-coded `lang:'en'`). `fallbackLocale:'en'` so a missing key reads
+    English instead of a raw key.
+  - **CSS**: full-app mirror. UnoCSS physical utilities migrated to logical
+    (`ms/me/ps/pe`, `text-start/end`, `border-s/e`); the ~22 directional icons
+    and `translateX` animations sign-flipped; genuinely-visual positioning (the
+    world map geography) left unmirrored.
+  - **Bracket**: the knockout bracket mirrors fully under RTL (the whole tree
+    flips, the final stays centered, connectors point inward from both sides),
+    matching FIFA's own Arabic bracket.
+  - **Translation**: a machine-translated full pass of `ar.json` plus the server
+    share/push dicts and `i18n/changelogs/ar.md`, marked for human review.
+  - **Share cards**: bundle a Noto Arabic woff so satori-rendered cards show
+    Arabic glyphs (no tofu), and verify satori's RTL shaping.
 - [ ] **Half-time prediction change ("the VAR")**: overturn your own call on
       a live match before the second half kicks off.
   - League house rule behind a new per-league **difficulty setting**; off by
