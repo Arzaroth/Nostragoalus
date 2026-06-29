@@ -376,7 +376,11 @@
     "view": "leghmeH choH",
     "viewFixtures": "may'mey",
     "viewStandings": "patmey",
-    "viewStats": "mI'mey"
+    "viewStats": "mI'mey",
+    "outstanding": {
+      "label": "{n} may' wIvbe'lu' - taghpa' tIwIv | {n} may' wIvbe'lu' - taghpa' tIwIv",
+      "jump": "wa'DIch may'Daq yIjaH"
+    }
   },
   "stats": {
     "player": "QujwI'",
@@ -423,6 +427,11 @@
     "rarityTip": "mI'vam pup wIvta' {pct}% neH - jaq wIvmey tev luSuq.",
     "rarityTipNoShare": "jaq wIv tev luSuq.",
     "jokerHint": "Hovlij QuQ cha'logh (mung + le').",
+    "outlandish": {
+      "title": "mI' motlhbe'",
+      "body": "{home}-{away} yIchoq'a'? mI' tIn law' - yIlegh.",
+      "confirm": "vaj yIchoq"
+    },
     "adminUpcomingDivider": "qaStaHvIS lojmIt — admin neH lo'laHbe'"
   },
   "champion": {

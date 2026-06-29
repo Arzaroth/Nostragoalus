@@ -376,7 +376,11 @@
     "view": "Changer de vue",
     "viewFixtures": "Calendrier",
     "viewStandings": "Classement",
-    "viewStats": "Stats"
+    "viewStats": "Stats",
+    "outstanding": {
+      "label": "{n} match attend un prono avant le prochain verrouillage | {n} matchs attendent un prono avant le prochain verrouillage",
+      "jump": "Aller au premier"
+    }
   },
   "stats": {
     "player": "Joueur",
@@ -423,6 +427,11 @@
     "rarityTip": "Seulement {pct}% des joueurs ont tenté ce score exact - les pronos audacieux rapportent un bonus.",
     "rarityTipNoShare": "Un prono à contre-courant rapporte un bonus.",
     "jokerHint": "Votre joker a doublé les points de ce match (base + rareté).",
+    "outlandish": {
+      "title": "Score inhabituel",
+      "body": "Enregistrer {home}-{away} ? C'est un score très élevé - vérifiez que c'est bien voulu.",
+      "confirm": "Enregistrer quand même"
+    },
     "adminUpcomingDivider": "Matchs à venir ci-dessous — seuls les admins voient les pronos avant le coup d'envoi"
   },
   "champion": {
