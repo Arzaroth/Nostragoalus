@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useHotkey } from '@tanstack/vue-hotkeys'
+import { IN_PLAY_STATUSES } from '#shared/types/match'
 const { t, locale } = useI18n()
 useHead({ title: t('nav.matches') })
 const { enabled: crowdEnabled, totals: crowdTotals, leagueTotals, leagueActive } = useCrowdTotals()
@@ -22,7 +23,9 @@ const route = useRoute()
 // Chip order is a past->future timeline, mirroring the page (oldest first).
 const STATUS_BUCKETS = {
   fulltime: ['FINISHED', 'AWARDED'],
-  live: ['LIVE', 'PAUSED', 'SUSPENDED', 'INTERRUPTED'],
+  // Sourced from the shared in-play set so the live bucket can't drift from the
+  // rest of the app (crowd-lean, the per-match isLive, the started gate).
+  live: IN_PLAY_STATUSES,
   upcoming: ['SCHEDULED', 'POSTPONED', 'CANCELLED'],
 } as const
 type StatusBucket = keyof typeof STATUS_BUCKETS
