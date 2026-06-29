@@ -9,12 +9,15 @@
 // for everyone - the panel reports its on/off state up via update:enabled.
 import { useDraggable, useStorage } from '@vueuse/core'
 import { GLOBAL_ROOM, roomKeyOf, useChatActivity } from '~/composables/useChatActivity'
+import { withLeagueSelection } from '~/utils/league-cookie'
+import type { ChatUnreadRoomDTO } from '#shared/types/chat'
 
 const { t } = useI18n()
 const route = useRoute()
 const slug = useSelectedCompetition()
 const matches = useMatches()
 const { leagueId: selectedLeagueId } = useSelectedLeague()
+const selections = useLeagueSelections()
 
 // The league detail/list pages render the chat inline; don't double it there.
 const onLeaguePages = computed(() => route.path === '/leagues' || route.path.startsWith('/leagues/'))
@@ -39,13 +42,21 @@ const scopedMatchId = computed<string | null>(() => (scope.value === 'match' ? m
 // accrues so we can badge the bubble, the scope toggle and the rooms list.
 const viewing = computed(() => enabled.value && !collapsed.value)
 const activeRoomKey = computed(() => roomKeyOf(scopedMatchId.value))
-const activity = useChatActivity(leagueId, { activeRoom: activeRoomKey, viewing })
+const activity = useChatActivity({ activeLeagueId: leagueId, activeRoom: activeRoomKey, viewing })
 
 function matchLabel(id: string | null): string {
   if (!id) return t('chat.scope.global')
   const m = matches.data.value?.find((x) => x.id === id)
   if (!m) return t('chat.threadTitle')
   return `${m.homeTeamCode ?? m.homeTeam} v ${m.awayTeamCode ?? m.awayTeam}`
+}
+
+// The inbox spans leagues, so a row labels itself from its own DTO (the current
+// competition's match list does not cover other leagues' rooms). Match thread =
+// the two teams; the league-global room = the league name.
+function roomTitle(r: ChatUnreadRoomDTO): string {
+  if (!r.matchId) return r.leagueName
+  return r.homeTeam && r.awayTeam ? `${r.homeTeam} v ${r.awayTeam}` : t('chat.threadTitle')
 }
 
 // Undock: detach the window into a draggable, resizable floating panel. Its
@@ -89,22 +100,38 @@ watch(shareInbox.requestOpen, () => {
   collapsed.value = false
 })
 
+// A mention deep link (push/bell click) asks the dock to open to a room scope.
+// The league cookie was already set by the deep-link plugin, so by now this dock
+// is bound to the right league; just uncollapse and select the scope. Immediate,
+// to catch a request that fired before this dock mounted.
+const dockOpen = useChatDockOpen()
+watch(
+  dockOpen.requestOpen,
+  () => {
+    const want = dockOpen.take()
+    if (!want) return
+    collapsed.value = false
+    scope.value = want === 'match' && matchId.value ? 'match' : 'global'
+  },
+  { immediate: true },
+)
+
 const roomsOpen = ref(false)
-async function openRoom(roomMatchId: string | null) {
+// Open any inbox room, including one in another league/competition: point the
+// ng-league cookie at that room's league for its competition, navigate there if
+// it is not already the current page, then select the right scope. The dock
+// re-resolves its league from the cookie once the page settles.
+async function openRoom(r: ChatUnreadRoomDTO) {
   roomsOpen.value = false
   collapsed.value = false
-  if (!roomMatchId) {
+  selections.value = withLeagueSelection(selections.value, r.competitionSlug, r.leagueId)
+  const sameComp = r.competitionSlug === slug.value
+  if (r.matchId) {
+    if (!sameComp || r.matchId !== matchId.value) await navigateTo(`/${r.competitionSlug}/matches/${r.matchId}`)
+    scope.value = 'match'
+  } else {
+    if (!sameComp) await navigateTo(`/${r.competitionSlug}`)
     scope.value = 'global'
-    return
-  }
-  if (roomMatchId === matchId.value) {
-    scope.value = 'match'
-    return
-  }
-  // A different match's thread: navigate to that match, where its chat lives.
-  if (slug.value) {
-    await navigateTo(`/${slug.value}/matches/${roomMatchId}`)
-    scope.value = 'match'
   }
 }
 </script>
@@ -157,7 +184,7 @@ async function openRoom(roomMatchId: string | null) {
             @click="scope = 'global'"
           >
             {{ t('chat.scope.global') }}
-            <span v-if="scope !== 'global' && activity.unreadFor(GLOBAL_ROOM)" class="absolute top-0.5 right-0.5 w-2 h-2 rounded-full" style="background: var(--ng-danger)" />
+            <span v-if="scope !== 'global' && activity.unreadFor(leagueId, GLOBAL_ROOM)" class="absolute top-0.5 right-0.5 w-2 h-2 rounded-full" style="background: var(--ng-danger)" />
           </button>
           <button
             type="button"
@@ -166,7 +193,7 @@ async function openRoom(roomMatchId: string | null) {
             @click="scope = 'match'"
           >
             {{ t('chat.scope.match') }}
-            <span v-if="scope !== 'match' && matchId && activity.unreadFor(matchId)" class="absolute top-0.5 right-0.5 w-2 h-2 rounded-full" style="background: var(--ng-danger)" />
+            <span v-if="scope !== 'match' && matchId && activity.unreadFor(leagueId, matchId)" class="absolute top-0.5 right-0.5 w-2 h-2 rounded-full" style="background: var(--ng-danger)" />
           </button>
         </div>
         <span v-else class="text-sm font-semibold">{{ t('chat.dock.title') }}</span>
@@ -184,22 +211,27 @@ async function openRoom(roomMatchId: string | null) {
           </button>
           <div
             v-if="roomsOpen"
-            class="absolute right-0 top-7 z-10 w-56 rounded-lg border shadow-lg py-1 text-sm"
+            class="absolute right-0 top-7 z-10 w-64 rounded-lg border shadow-lg py-1 text-sm"
             style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
           >
             <p class="px-3 py-1 text-xs font-semibold uppercase tracking-wider" style="color: var(--p-text-muted-color)">{{ t('chat.rooms.title') }}</p>
-            <p v-if="!activity.activeRooms.value.length" class="px-3 py-2 text-xs" style="color: var(--p-text-muted-color)">{{ t('chat.rooms.none') }}</p>
+            <p v-if="!activity.rooms.value.length" class="px-3 py-2 text-xs" style="color: var(--p-text-muted-color)">{{ t('chat.rooms.none') }}</p>
+            <!-- Cross-league: each row names its room and its league, and may jump to
+                 another competition. -->
             <button
-              v-for="r in activity.activeRooms.value"
-              :key="r.roomKey"
+              v-for="r in activity.rooms.value"
+              :key="`${r.leagueId}:${r.roomKey}`"
               type="button"
               class="w-full flex items-center gap-2 px-3 py-1.5 hover:opacity-100 opacity-90 text-left"
-              @click="openRoom(r.matchId)"
+              @click="openRoom(r)"
             >
-              <i :class="r.matchId ? 'pi pi-flag' : 'pi pi-hashtag'" class="text-xs" style="color: var(--p-primary-color)" />
-              <span class="flex-1 truncate">{{ matchLabel(r.matchId) }}</span>
-              <span v-if="activity.mentionsFor(r.roomKey)" class="w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center" style="background: var(--ng-star); color: #000">@</span>
-              <span class="min-w-5 h-5 px-1 rounded-full text-xs font-bold flex items-center justify-center tabular-nums" style="background: var(--ng-danger); color: #fff">{{ r.count }}</span>
+              <i :class="r.matchId ? 'pi pi-flag' : 'pi pi-hashtag'" class="text-xs shrink-0" style="color: var(--p-primary-color)" />
+              <span class="flex-1 min-w-0">
+                <span class="block truncate">{{ roomTitle(r) }}</span>
+                <span class="block truncate text-xs" style="color: var(--p-text-muted-color)">{{ r.leagueName }}</span>
+              </span>
+              <span v-if="r.mentions" class="w-5 h-5 shrink-0 rounded-full text-xs font-bold flex items-center justify-center" style="background: var(--ng-star); color: #000">@</span>
+              <span v-if="r.unread" class="min-w-5 h-5 px-1 shrink-0 rounded-full text-xs font-bold flex items-center justify-center tabular-nums" style="background: var(--ng-danger); color: #fff">{{ r.unread > 99 ? '99+' : r.unread }}</span>
             </button>
           </div>
         </div>
