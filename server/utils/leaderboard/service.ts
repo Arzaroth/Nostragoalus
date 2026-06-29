@@ -74,6 +74,28 @@ export async function countLeagueMembersHiddenFromBoard(
   return row?.n ?? 0
 }
 
+// Fold a competition's meta-pick rows (champion or best scorer) into the per-user
+// maps the leaderboard merge needs: points summed across competitions (for the
+// global view, where a user may have several picks), and the code/name kept only
+// when scoped to a single competition (a single pick's identity is meaningless
+// summed across competitions).
+function collectMetaBonus(
+  rows: { userId: string; points: number; code: string | null; name: string | null }[],
+  scopedToCompetition: boolean,
+): { points: Map<string, number>; code: Map<string, string | null>; name: Map<string, string | null> } {
+  const points = new Map<string, number>()
+  const code = new Map<string, string | null>()
+  const name = new Map<string, string | null>()
+  for (const r of rows) {
+    points.set(r.userId, (points.get(r.userId) ?? 0) + r.points)
+    if (scopedToCompetition) {
+      code.set(r.userId, r.code)
+      name.set(r.userId, r.name)
+    }
+  }
+  return { points, code, name }
+}
+
 export async function getLeaderboard(
   db: AppDatabase,
   opts: {
@@ -136,38 +158,23 @@ export async function getLeaderboard(
     )
     .groupBy(user.id, user.name, user.image)
 
-  const champions = await db
-    .select({ userId: championPick.userId, points: championPick.awardedPoints, teamCode: championPick.teamCode, teamName: championPick.teamName })
-    .from(championPick)
-    .where(opts.competitionId ? eq(championPick.competitionId, opts.competitionId) : undefined)
-  // Sum across competitions for the global view (a user may have several picks).
-  const championByUser = new Map<string, number>()
-  const championCodeByUser = new Map<string, string | null>()
-  const championNameByUser = new Map<string, string | null>()
-  for (const c of champions) {
-    championByUser.set(c.userId, (championByUser.get(c.userId) ?? 0) + c.points)
-    // the flag only makes sense scoped to one competition
-    if (opts.competitionId) {
-      championCodeByUser.set(c.userId, c.teamCode)
-      championNameByUser.set(c.userId, c.teamName)
-    }
-  }
-
-  const bestScorers = await db
-    .select({ userId: bestScorerPick.userId, points: bestScorerPick.awardedPoints, playerName: bestScorerPick.playerName, teamCode: bestScorerPick.teamCode })
-    .from(bestScorerPick)
-    .where(opts.competitionId ? eq(bestScorerPick.competitionId, opts.competitionId) : undefined)
-  const bestScorerByUser = new Map<string, number>()
-  const bestScorerNameByUser = new Map<string, string | null>()
-  const bestScorerCodeByUser = new Map<string, string | null>()
-  for (const b of bestScorers) {
-    bestScorerByUser.set(b.userId, (bestScorerByUser.get(b.userId) ?? 0) + b.points)
-    // the name/team only make sense scoped to one competition
-    if (opts.competitionId) {
-      bestScorerNameByUser.set(b.userId, b.playerName)
-      bestScorerCodeByUser.set(b.userId, b.teamCode)
-    }
-  }
+  // Champion and best-scorer bonuses fold identically (sum points; keep one
+  // pick's code/name only when competition-scoped) - the only difference is the
+  // table and which column is the display "name" (team vs player).
+  const championBonus = collectMetaBonus(
+    await db
+      .select({ userId: championPick.userId, points: championPick.awardedPoints, code: championPick.teamCode, name: championPick.teamName })
+      .from(championPick)
+      .where(opts.competitionId ? eq(championPick.competitionId, opts.competitionId) : undefined),
+    !!opts.competitionId,
+  )
+  const bestScorerBonus = collectMetaBonus(
+    await db
+      .select({ userId: bestScorerPick.userId, points: bestScorerPick.awardedPoints, code: bestScorerPick.teamCode, name: bestScorerPick.playerName })
+      .from(bestScorerPick)
+      .where(opts.competitionId ? eq(bestScorerPick.competitionId, opts.competitionId) : undefined),
+    !!opts.competitionId,
+  )
 
   // Bonus points are merged in JS (a SQL join would fan out the per-prediction
   // rows). totalPoints / exactCount / ... are the SCORED (confirmed) figures the
@@ -175,19 +182,19 @@ export async function getLeaderboard(
   // as "+N live". Ranking, though, is provisional: rows sort by scored + live so
   // the standings reflect what's happening on the pitch.
   const merged = base.map((r) => {
-    const championPoints = championByUser.get(r.userId) ?? 0
-    const bestScorerPoints = bestScorerByUser.get(r.userId) ?? 0
+    const championPoints = championBonus.points.get(r.userId) ?? 0
+    const bestScorerPoints = bestScorerBonus.points.get(r.userId) ?? 0
     const live = opts.liveProvisional?.get(r.userId)
     const totalPoints = r.predictionPoints + championPoints + bestScorerPoints
     const livePoints = live?.points ?? 0
     return {
       ...r,
       championPoints,
-      championCode: championCodeByUser.get(r.userId) ?? null,
-      championName: championNameByUser.get(r.userId) ?? null,
+      championCode: championBonus.code.get(r.userId) ?? null,
+      championName: championBonus.name.get(r.userId) ?? null,
       bestScorerPoints,
-      bestScorerName: bestScorerNameByUser.get(r.userId) ?? null,
-      bestScorerCode: bestScorerCodeByUser.get(r.userId) ?? null,
+      bestScorerName: bestScorerBonus.name.get(r.userId) ?? null,
+      bestScorerCode: bestScorerBonus.code.get(r.userId) ?? null,
       livePoints,
       totalPoints, // scored only - the live delta is added for ranking, not display
       rankTotal: totalPoints + livePoints,
