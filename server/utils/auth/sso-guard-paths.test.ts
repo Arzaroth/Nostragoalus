@@ -7,11 +7,19 @@ describe('isSsoAdminOnlyPath', () => {
     expect(isSsoAdminOnlyPath('/api/auth/sso/update-provider?x=1')).toBe(true)
     expect(isSsoAdminOnlyPath('/api/auth/sso/delete-provider')).toBe(true)
   })
-  it('does not match the user-facing SSO sign-in / callback paths', () => {
+  it('also blocks the session-only SCIM management endpoints over HTTP', () => {
+    expect(isSsoAdminOnlyPath('/api/auth/scim/generate-token')).toBe(true)
+    expect(isSsoAdminOnlyPath('/api/auth/scim/delete-provider-connection?x=1')).toBe(true)
+    expect(isSsoAdminOnlyPath('/api/auth/scim/get-provider-connection')).toBe(true)
+  })
+
+  it('does not match the user-facing SSO sign-in / callback or the SCIM data plane', () => {
     expect(isSsoAdminOnlyPath('/api/auth/sign-in/sso')).toBe(false)
     expect(isSsoAdminOnlyPath('/api/auth/sso/callback/acme')).toBe(false)
     // not a prefix-only match: a longer path that merely starts with the name
     expect(isSsoAdminOnlyPath('/api/auth/sso/register-extra')).toBe(false)
+    // the bearer-authed SCIM data plane stays open for the IdP
+    expect(isSsoAdminOnlyPath('/api/auth/scim/v2/Users')).toBe(false)
   })
 })
 

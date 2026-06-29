@@ -2,6 +2,7 @@ import { betterAuth } from 'better-auth'
 import { APIError } from 'better-auth/api'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { sso } from '@better-auth/sso'
+import { scim } from '@better-auth/scim'
 import { passkey } from '@better-auth/passkey'
 import { admin, haveIBeenPwned, twoFactor } from 'better-auth/plugins'
 import { apiKey } from '@better-auth/api-key'
@@ -271,6 +272,14 @@ export function buildAuthOptions(database: AuthDb) {
         },
       }),
       admin(),
+      // SCIM 2.0 user provisioning/deprovisioning for enterprise IdPs. The bearer
+      // token is stored hashed (shown once at generation, mirrors the api-key
+      // precedent), so the encrypted-adapter doesn't need to cover it. active:false
+      // maps to the admin plugin's ban (block login + revoke sessions) and keeps
+      // the user's data; active:true reactivates. The session-only management
+      // endpoints (generate-token, *-provider-connection) are blocked over HTTP in
+      // the catch-all and exposed only through our admin routes.
+      scim({ storeSCIMToken: 'hashed' }),
       // Reject passwords found in known breaches (HIBP k-anonymity API, no key needed).
       haveIBeenPwned(),
       // WebAuthn passkeys (rpID/origin derive from baseURL).
