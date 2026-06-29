@@ -9,6 +9,18 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 - **Le journal des modifications parle votre langue** : les notes de version dans l'app (l'entrée « Quoi de neuf » et la page À propos) se lisent désormais dans la langue que vous avez choisie, retombant sur l'anglais pour tout ce qui n'est pas encore traduit, au lieu d'être toujours en anglais.
 - **Les profils s'ouvrent sur l'action** : le profil d'un joueur défile désormais là où son historique rejoint le présent - les derniers pronos et ceux en direct - au lieu de commencer en haut d'un long historique de pronos.
 
+## [2.2.1] - 2026-06-30
+
+### Corrigé
+- **Appariements du tableau à élimination directe** : le tableau relie désormais chaque match des huitièmes (et au-delà) aux bons matchs sources. Auparavant chaque appariement pouvait être erroné - il supposait que le fournisseur listait les matchs dans l'ordre des numéros de match, ce que le flux de la Coupe du monde 2026 ne fait pas - de sorte que l'arbre montrait des équipes se rencontrant aux mauvais endroits. Il suit maintenant les numéros de match officiels de la FIFA.
+- **Meilleurs passeurs corrects** : le classement des passes décisives de l'onglet Stats correspond désormais aux chiffres officiels. Il était auparavant construit à partir de la liste des meilleurs buteurs (de sorte qu'un meneur de jeu avec beaucoup de passes mais peu de buts n'apparaissait jamais) et, pour une Coupe du monde en cours, se rabattait sur des passes approximatives calculées localement. Les passes décisives sont maintenant classées séparément et, pendant une Coupe du monde, tirées des statistiques officielles des joueurs en direct de la FIFA.
+- **Les joueurs à égalité partagent un rang** : dans les classements Stats, les joueurs à égalité de buts (ou de passes) affichent désormais le même numéro de position, le joueur suivant sautant en avant (1, 2, 2, 2, 2, 6...), au lieu d'être numérotés arbitrairement.
+
+## [2.2.0] - 2026-06-28
+
+### Ajouté
+- **Onglet statistiques des joueurs** : la vue des matchs a un nouvel onglet « Stats » à côté de Calendrier et Classement, montrant côte à côte les meilleurs buteurs et les meilleurs passeurs de la compétition. De la place pour évoluer vers des classements d'équipes (meilleure attaque/défense) plus tard.
+
 ### Modifié
 - **Images de stockage objet épinglées** : les images rustfs et minio/mc fournies sont désormais épinglées à des empreintes précises, de sorte que reconstruire ou re-télécharger la stack ne peut plus remplacer silencieusement le backend de stockage ou le client de sauvegarde.
 

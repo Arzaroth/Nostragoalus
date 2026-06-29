@@ -38,6 +38,11 @@ if [[ "$dry_run" == "true" ]]; then
   exit 0
 fi
 
+# Validate translation parity on the clean tree first: a divergence aborts here,
+# before promote mutates CHANGELOG.md + the locale files, so a failure leaves the
+# working tree untouched and recoverable rather than half-promoted.
+mise run changelog check
+
 # Move [Unreleased] -> dated section (changelog task) and bump the version (jq).
 mise run changelog promote "$version" "$date"
 tmp="$(mktemp)"

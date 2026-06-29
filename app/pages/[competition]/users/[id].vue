@@ -23,11 +23,18 @@ const { data, error } = await useFetch<{
 
 // Split picks at "now": played (kicked-off) above, any still-upcoming below.
 // Only admins ever receive upcoming rows (picks stay private until kickoff), so
-// for everyone else `upcoming` is empty and the anchor simply sits after the
-// last played match.
+// the split is admin-only: everyone else gets every returned pick as played,
+// and the anchor simply sits after the last one. Gating on `adminView` (not the
+// client clock) also keeps a just-kicked-off pick from being misfiled under the
+// admin-only divider when a viewer's clock lags the server.
 const now = Date.now()
-const kickedOff = computed(() => (data.value?.predictions ?? []).filter((p) => new Date(p.kickoffTime).getTime() <= now))
-const upcoming = computed(() => (data.value?.predictions ?? []).filter((p) => new Date(p.kickoffTime).getTime() > now))
+const kickedOff = computed(() => {
+  const all = data.value?.predictions ?? []
+  return data.value?.adminView ? all.filter((p) => new Date(p.kickoffTime).getTime() <= now) : all
+})
+const upcoming = computed(() =>
+  data.value?.adminView ? (data.value.predictions ?? []).filter((p) => new Date(p.kickoffTime).getTime() > now) : [],
+)
 
 // A profile fills with played rows as the tournament runs, so the top is rarely
 // the useful spot. On load, center the "now" boundary so the latest action is in
