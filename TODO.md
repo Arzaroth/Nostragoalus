@@ -17,6 +17,16 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       visibility from group presence if such a competition is added.
 - [ ] Team-level boards (best attack/defense, clean sheets) were scoped out; the
       `TeamSeasonStats` shape (`shared/types/match.ts`) already exists to feed them.
+- [ ] The FIFA gameday player-stats path (`getPlayerStats` in
+      `providers/fifa.ts`) and the `scorers.get.ts` source chain swallow all
+      upstream failures (incl. `ProviderRateLimitError`) to fall back silently -
+      acceptable for a 10-min-cached read endpoint, but there's no log/signal
+      when the official source is down, so it can serve approximate local assists
+      indefinitely unnoticed. Add an observability log on the fallback.
+- [ ] `scorers.get.ts` calls `resolveCompetitionSeason` outside any try/catch
+      (pre-existing, shared by other provider routes): a FIFA `/seasons` failure
+      500s the public endpoint instead of falling back. Guard it (or make
+      season-resolution resilient) so the Stats endpoint degrades gracefully.
 
 ## Calendar feed (deferred from the feature-treatment review)
 
