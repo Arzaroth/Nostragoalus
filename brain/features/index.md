@@ -22,6 +22,7 @@ early on). Back to the root map: [../BRAIN.md](../BRAIN.md).
 | [Share images](share-images.md) | Server-rendered OG/share cards (satori + resvg), signed tokens | core | `server/utils/share/*`, `routes/og/share/[token].get.ts` |
 | [PWA](pwa.md) | Installable app + install/download/reload UX | v2.1.0 | `PwaBanner.vue`, `pwa-status.client.ts` |
 | [Image storage](image-storage.md) | Pluggable fs/s3 backend; avatars + chat blobs out of Postgres | v2.0.0 | `server/utils/storage/*`, `media:migrate-blobs` |
+| [Changelog](changelog.md) | In-app release history (`/about`) + "What's new" badge, rendered in the active locale | core | `CHANGELOG.md`, `i18n/changelogs/*`, `useChangelog.ts` |
 | [Easter eggs](easter-eggs.md) | Konami "My Little Prono" skins, pony reactions, Klingon locale | hidden | `app/utils/skins.ts`, `public/skins/*`, `ng-skin` cookie |
 
 ## Cross-cutting architecture

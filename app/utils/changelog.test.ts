@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseChangelog, compareVersions, latestVersion, isUnseen } from './changelog'
+import { parseChangelog, compareVersions, latestVersion, isUnseen, selectLocaleChangelog } from './changelog'
 
 const SAMPLE = `# Changelog
 
@@ -114,5 +114,37 @@ describe('isUnseen', () => {
     expect(isUnseen('1.10.0', null)).toBe(false)
     expect(isUnseen('1.10.0', undefined)).toBe(false)
     expect(isUnseen('1.10.0', '')).toBe(false)
+  })
+})
+
+describe('selectLocaleChangelog', () => {
+  const base = [
+    { version: '1.10.0', date: '2026-06-17', sections: [{ title: 'Added', items: ['en feature'] }] },
+    { version: '1.9.0', date: '2026-06-10', sections: [{ title: 'Changed', items: ['en change'] }] },
+  ]
+
+  it('returns the base unchanged when there is no localized list', () => {
+    expect(selectLocaleChangelog(base, undefined)).toBe(base)
+    expect(selectLocaleChangelog(base, [])).toBe(base)
+  })
+
+  it('overlays translated entries and keeps base order and completeness', () => {
+    const localized = [
+      { version: '1.10.0', date: '2026-06-17', sections: [{ title: 'Ajouté', items: ['fonctionnalité'] }] },
+    ]
+    const out = selectLocaleChangelog(base, localized)
+    expect(out.map((v) => v.version)).toEqual(['1.10.0', '1.9.0'])
+    // Translated version swapped in...
+    expect(out[0].sections[0].title).toBe('Ajouté')
+    // ...untranslated version falls back to the English entry.
+    expect(out[1]).toBe(base[1])
+  })
+
+  it('ignores localized versions absent from the base (English owns the list)', () => {
+    const localized = [
+      { version: '0.0.1', date: '2020-01-01', sections: [{ title: 'X', items: ['stray'] }] },
+    ]
+    const out = selectLocaleChangelog(base, localized)
+    expect(out).toEqual(base)
   })
 })

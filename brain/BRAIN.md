@@ -65,6 +65,7 @@ use the indexes.
 | [share-images.md](features/share-images.md) | Prediction share cards. |
 | [pwa.md](features/pwa.md) | Install + update UX. |
 | [image-storage.md](features/image-storage.md) | Blobs out of Postgres (feature view). |
+| [changelog.md](features/changelog.md) | In-app release history + "What's new" badge, rendered by locale. |
 | [easter-eggs.md](features/easter-eggs.md) | MLP skins, pony reactions, the Klingon locale. |
 
 ## Find by question
