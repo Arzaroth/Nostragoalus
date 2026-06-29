@@ -1,5 +1,3 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-
 export interface BestScorerPickInput {
   playerId: string
   playerName: string
@@ -23,28 +21,9 @@ export interface BestScorerData {
 }
 
 export function useBestScorer() {
-  const slug = useSelectedCompetition()
-  const queryClient = useQueryClient()
-
-  // Explicit response generic keeps $fetch off its route-literal inference path
-  // (which recurses to "excessive stack depth" on these endpoints).
-  const query = useQuery({
-    queryKey: ['bestScorer', slug],
-    queryFn: ({ signal }) =>
-      $fetch<BestScorerData>('/api/best-scorer', { query: slug.value ? { competition: slug.value } : {}, signal }),
+  return useMetaPick<BestScorerData, BestScorerPickInput & { repick?: boolean }>({
+    key: 'bestScorer',
+    endpoint: '/api/best-scorer',
+    buildBody: (input) => ({ ...input }),
   })
-
-  const setPick = useMutation({
-    mutationFn: (pick: BestScorerPickInput & { repick?: boolean }) =>
-      $fetch<{ ok: boolean }>('/api/best-scorer', {
-        method: 'PUT',
-        body: { competition: slug.value, ...pick },
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bestScorer'] })
-      queryClient.invalidateQueries({ queryKey: ['leaderboard'] })
-    },
-  })
-
-  return { query, setPick }
 }
