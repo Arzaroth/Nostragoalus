@@ -1,35 +1,29 @@
 import { requireAdmin } from '../../../utils/auth-guards'
-
-function xmlEscape(v: string): string {
-  return v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-}
+import { toHttpError } from '../../../utils/http'
+import { buildSpMetadata } from '../../../utils/auth/sp-metadata'
 
 // SP metadata for a provider that is NOT registered yet: IdP setup usually
 // needs the SP descriptor before the IdP side exists, which is before the
 // provider can be saved here (chicken and egg). Registered providers also have
 // the plugin's public endpoint (/api/auth/sso/saml2/sp/metadata) that IdPs can
-// poll; this one is admin-only and works from just the form values.
+// poll; this one is admin-only and works from just the form values. The build
+// (validation + XML) lives in a tested util.
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)
   const q = getQuery(event)
-  const providerId = String(q.providerId ?? '').trim()
-  if (!/^[a-zA-Z0-9_-]+$/.test(providerId)) {
-    throw createError({ statusCode: 400, statusMessage: 'A valid providerId is required' })
+  let result
+  try {
+    result = buildSpMetadata({
+      providerId: String(q.providerId ?? ''),
+      entityId: q.entityId != null ? String(q.entityId) : undefined,
+      origin: getRequestURL(event).origin,
+    })
+  } catch (error) {
+    throw toHttpError(error)
   }
-  const origin = getRequestURL(event).origin
-  const entityId = String(q.entityId ?? '').trim() || origin
-  const acs = `${origin}/api/auth/sso/saml2/callback/${providerId}`
-
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<EntityDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata" entityID="${xmlEscape(entityId)}">
-  <SPSSODescriptor AuthnRequestsSigned="false" WantAssertionsSigned="true" protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
-    <AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="${xmlEscape(acs)}" index="0" isDefault="true"/>
-  </SPSSODescriptor>
-</EntityDescriptor>
-`
   setHeader(event, 'content-type', 'application/xml')
-  setHeader(event, 'content-disposition', `attachment; filename="nostragoalus-sp-${providerId}.xml"`)
-  return xml
+  setHeader(event, 'content-disposition', `attachment; filename="${result.filename}"`)
+  return result.xml
 })
 
 defineRouteMeta({
