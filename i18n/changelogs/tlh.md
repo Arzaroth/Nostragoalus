@@ -9,6 +9,18 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 - **HollIj jatlh choHmey qun**: DaH app qoDDaq choHmey De' ("chu'bogh" 'ay', About ghItlh je) HollIj DawIvbogh laDlu'; mughbe'lu'taHbogh DIvI' Hol cheghlu', reH DIvI' Hol law'be'.
 - **Daqvetlh poSmoH ngoDmey**: DaH QujwI' ngoDmey qun nungDaq SopmoH - wIvmey Qav, DaH wIvmey je - wIvmey qun nI' 'eDDaq taghbe'.
 
+## [2.2.1] - 2026-06-30
+
+### tI'pu'
+- **qaD-tlhol rarmey tI'pu'**: DaH qaD-tlhol Hoch wa'maH-jav-ghom may' (vabDot veb) qaywI' may' lughDaq rar. wa'Hu' Hoch rar lughbe'law' - provider may' mI' Surchav 'e' pIH 'ach qo' HIvje' 2026 feed vaj rurbe' - vaj qaD-tlholDaq Daq lughbe'Daq ghompu' ghotpu' 'ang. DaH FIFA may' mI' tlha'.
+- **Dop QaH lugh**: DaH "Stats" 'ay' QaH tetlh mI' lugh tlha'. wa'Hu' Dop pupwI' tetlhvo' chenlu' (vaj QaH law' 'ach Qap puS ghajbogh QujwI' not 'ang) 'ej qo' HIvje' qaStaHvIS, naQbe'bogh QaH Daq-Daq juvbogh lo'. DaH QaH mob noH, 'ej qo' HIvje' qaStaHvIS, FIFA QujwI' De' yIn tlha'.
+- **rap ghotpu' patlh rap lo'**: "Stats" tetlhmeyDaq, Qap (ghap QaH) rapbogh QujwI'pu' DaH patlh mI' rap 'ang, veb QujwI' Sup (1, 2, 2, 2, 2, 6...), Sumbe'taHvIS mI'be'lu'.
+
+## [2.2.0] - 2026-06-28
+
+### chelpu'
+- **QujwI' patlhmey 'ay'**: may' legh chu' "Stats" 'ay' ghaj, Fixtures Standings retlh, qaq Dop pupwI'pu' Dop QaHwI'pu' je retlh 'ang. ghom tetlhmey (Suv pov/Hub pov) chelmeH yav tu'lu'.
+
 ### choHpu'
 - **lan-storage HaStamey 'uchlu'**: rustfs minio/mc HaStamey je digest pagh 'uchlu', vaj chenqa'DI' Suqqa'DI' je storage latlh ghap backup Doch tamtaH choHbe'.
 

@@ -66,9 +66,10 @@ errors the others miss. Beware zsh pipelines masking exit codes. See
 2. Move CHANGELOG `[Unreleased]` into a dated `[x.y.z] - YYYY-MM-DD` section
    (`mise run changelog promote`, which moves the same block in every
    `i18n/changelogs/*.md` too); abort if the canonical `[Unreleased]` is empty.
-   The gate also runs `mise run changelog check` so a release can't tag a version
-   whose translations are out of step. See
-   [architecture/i18n.md](architecture/i18n.md).
+   Parity is checked twice with `mise run changelog check`: once on the clean
+   tree before promote (so a divergence aborts without half-mutating the files),
+   and again in the gate after promote, so a release can't tag a version whose
+   translations are out of step. See [architecture/i18n.md](architecture/i18n.md).
 3. Bump `package.json`.
 4. Run the full gate with `CI=true`.
 5. Commit `chore(release): x.y.z`, annotated tag `vx.y.z`, push
