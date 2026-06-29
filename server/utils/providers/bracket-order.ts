@@ -11,13 +11,14 @@ function feederRefNumber(placeholder: string): number | null {
   return m ? Number(m[1]) : null
 }
 
-// Map each parent's "W{n}" reference to the feeder it points at. The feeder
-// match carries no number of its own, but a provider's match ids are monotonic
-// in match number within a round, so the undecided feeders sorted by id line up
-// one-for-one with the referenced numbers sorted ascending - recovering
-// number -> feeder without hardcoding a tournament-specific base. Empty (so the
-// caller falls back) unless the references and undecided feeders form a clean
-// bijection over numeric ids.
+// Map each parent's "W{n}" reference to the feeder it points at. When the
+// provider tags each feeder with its own match number, "W{n}" resolves directly
+// to the feeder numbered n - exact, no positional assumption. Otherwise fall
+// back: a provider's match ids are often monotonic in match number within a
+// round, so the undecided feeders sorted by id line up one-for-one with the
+// referenced numbers sorted ascending - recovering number -> feeder without a
+// tournament-specific base. Empty (so the caller falls back further) unless the
+// references resolve cleanly.
 function refToFeeder(parents: BracketMatch[], pool: BracketMatch[]): Map<number, BracketMatch> {
   const refs: number[] = []
   for (const p of parents) {
@@ -28,6 +29,16 @@ function refToFeeder(parents: BracketMatch[], pool: BracketMatch[]): Map<number,
   }
   const map = new Map<number, BracketMatch>()
   if (refs.length === 0) return map
+
+  // Exact path: feeders carry their own match number.
+  const byNumber = new Map<number, BracketMatch>()
+  for (const m of pool) if (m.matchNumber != null) byNumber.set(m.matchNumber, m)
+  if (refs.every((n) => byNumber.has(n))) {
+    for (const n of refs) map.set(n, byNumber.get(n) as BracketMatch)
+    return map
+  }
+
+  // Fallback: assume provider ids are monotonic in match number.
   const undecided = pool.filter((m) => winnerCode(m) == null && /^\d+$/.test(m.providerMatchId))
   if (undecided.length !== refs.length) return map
   refs.sort((a, b) => a - b)

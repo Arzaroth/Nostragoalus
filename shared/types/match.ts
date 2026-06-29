@@ -278,6 +278,10 @@ export interface TeamSeasonStats {
 export interface BracketMatch {
   id?: string | null
   providerMatchId: string
+  // The tournament match number (FIFA "MatchNumber"), used to resolve "W{n}"
+  // feeder references to the exact match they point at. Null for providers that
+  // don't expose one - those fall back to provider-id ordering.
+  matchNumber?: number | null
   homeTeam: string
   homeCode: string | null
   awayTeam: string

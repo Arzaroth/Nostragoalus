@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+- **Knockout bracket pairings**: the bracket now wires each round-of-16 (and later) match to the correct feeder matches. Previously every pairing could be mismatched - it assumed the provider listed matches in match-number order, which the 2026 World Cup feed does not - so the tree showed teams meeting in the wrong slots. It now follows the official FIFA match numbers.
+
 ## [2.2.0] - 2026-06-28
 
 ### Added
