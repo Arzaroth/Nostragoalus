@@ -994,3 +994,27 @@ export const chatAttachment = pgTable(
   ],
 )
 
+// Per-user, per-room "last read" marker driving the cross-league chat inbox.
+// roomKey is the match thread's matchId, or the global sentinel ('__global__')
+// for the league room. A room's unread = messages newer than lastReadAt, floored
+// at the user's league join when no row exists yet. This is the ONLY chat read
+// state: there is deliberately no per-message "seen by" receipt.
+export const chatRoomRead = pgTable(
+  'chat_room_read',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    leagueId: text('league_id')
+      .notNull()
+      .references(() => league.id, { onDelete: 'cascade' }),
+    roomKey: text('room_key').notNull(),
+    lastReadAt: timestamp('last_read_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.leagueId, t.roomKey] })],
+)
+

@@ -2,6 +2,17 @@ import type { ReactionEmoji, ReactionTotals } from '../reactions'
 
 export type ChatModerationState = 'VISIBLE' | 'PENDING' | 'REMOVED'
 
+// Room key for the league-global room (matchId null). Match threads key on their
+// matchId. Shared by the client activity tracker, the read-marker store and the
+// unread/mention aggregation so the three never drift on the sentinel.
+export const GLOBAL_ROOM = '__global__'
+
+// The room a message/marker belongs to: the matchId for a match thread, else the
+// global sentinel. One place so server and client agree on the key.
+export function roomKeyFor(matchId: string | null | undefined): string {
+  return matchId ?? GLOBAL_ROOM
+}
+
 // Max plaintext length of a chat message. The server only ever sees ciphertext,
 // so this is a client-enforced limit (the composer blocks a send past it); the
 // 16 KB ciphertext cap in the post route is the server-side backstop.
@@ -55,6 +66,24 @@ export interface ChatMessageDTO {
   // Number of replies in this message's thread (main-list messages only; a thread
   // reply itself reports 0). Thread replies live in the thread, not the main list.
   threadCount: number
+}
+
+// One room with unread chat activity, for the cross-league inbox. roomKey is the
+// matchId (a match thread) or GLOBAL_ROOM (the league room); home/away name the
+// match when it is a thread. `unread` is the message count since the user's read
+// marker (floored at their league join); `mentions` is how many of those are
+// unread @mentions of them. lastAt = newest unread message (ISO), for sorting.
+export interface ChatUnreadRoomDTO {
+  leagueId: string
+  leagueName: string
+  competitionSlug: string
+  roomKey: string
+  matchId: string | null
+  homeTeam: string | null
+  awayTeam: string | null
+  unread: number
+  mentions: number
+  lastAt: string | null
 }
 
 // One image in a room's media gallery: which message it belongs to plus its
