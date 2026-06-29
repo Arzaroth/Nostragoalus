@@ -195,7 +195,8 @@
       "goals": "Buts en direct",
       "matchResults": "Résultats des matchs",
       "tournament": "Résultats du tournoi",
-      "league": "Activité des ligues"
+      "league": "Activité des ligues",
+      "mentions": "Mentions dans le chat"
     },
     "odds": "Afficher les cotes",
     "oddsHint": "Cotes décimales 1X2 sous chaque match : 1 = victoire domicile, X = nul, 2 = victoire extérieur. Plus le nombre est bas, plus c'est probable. Figées au coup d'envoi."
@@ -1148,10 +1149,14 @@
       "championWon": "Votre champion {team} a gagné {competition} ! +{points} pts",
       "championLost": "Votre pronostic champion {team} n'a pas gagné {competition}.",
       "bestScorerWon": "Votre pari Soulier d'or {player} a fini meilleur buteur ! +{points} pts",
-      "bestScorerLost": "Votre pari Soulier d'or {player} n'a pas fini meilleur buteur."
+      "bestScorerLost": "Votre pari Soulier d'or {player} n'a pas fini meilleur buteur.",
+      "mention": "{name} vous a mentionné dans {league}.",
+      "mentionMatch": "{name} vous a mentionné dans {home} v {away}."
     }
   },
   "push": {
+    "mention": { "title": "Nouvelle mention", "body": "{name} vous a mentionné dans {league}" },
+    "mentionMatch": { "title": "Nouvelle mention", "body": "{name} vous a mentionné dans {home} v {away}" },
     "reminder": { "title": "N'oubliez pas de pronostiquer", "body": "{home} v {away} commence bientôt" },
     "kickoff": { "title": "Coup d'envoi", "body": "{home} v {away} a commencé" },
     "goal": { "title": "BUT !", "body": "{home} {hs}-{as} {away}" },

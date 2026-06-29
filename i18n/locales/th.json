@@ -195,7 +195,8 @@
       "goals": "ประตูสด",
       "matchResults": "ผลการแข่งขัน",
       "tournament": "ผลรายการแข่งขัน",
-      "league": "กิจกรรมในลีก"
+      "league": "กิจกรรมในลีก",
+      "mentions": "การกล่าวถึงในแชต"
     },
     "odds": "แสดงราคาต่อรอง",
     "oddsHint": "ราคาต่อรองทศนิยม 1X2 ใต้แต่ละแมตช์: 1 = เจ้าบ้านชนะ, X = เสมอ, 2 = ทีมเยือนชนะ ตัวเลขยิ่งต่ำยิ่งมีโอกาส บันทึกตอนเริ่มแข่ง"
@@ -1148,10 +1149,14 @@
       "championWon": "แชมป์ {team} ที่คุณเลือกชนะ {competition}! +{points} แต้ม",
       "championLost": "ทีมแชมป์ {team} ที่คุณเลือกไม่ได้ชนะ {competition}",
       "bestScorerWon": "{player} ที่คุณเลือกเป็นดาวซัลโวสูงสุด! +{points} แต้ม",
-      "bestScorerLost": "{player} ที่คุณเลือกไม่ได้เป็นดาวซัลโวสูงสุด"
+      "bestScorerLost": "{player} ที่คุณเลือกไม่ได้เป็นดาวซัลโวสูงสุด",
+      "mention": "{name} กล่าวถึงคุณใน {league}",
+      "mentionMatch": "{name} กล่าวถึงคุณใน {home} v {away}"
     }
   },
   "push": {
+    "mention": { "title": "การกล่าวถึงใหม่", "body": "{name} กล่าวถึงคุณใน {league}" },
+    "mentionMatch": { "title": "การกล่าวถึงใหม่", "body": "{name} กล่าวถึงคุณใน {home} v {away}" },
     "reminder": { "title": "อย่าลืมทายผล", "body": "{home} v {away} กำลังจะเริ่ม" },
     "kickoff": { "title": "เริ่มแล้ว", "body": "{home} v {away} เริ่มแล้ว" },
     "goal": { "title": "ได้ประตู!", "body": "{home} {hs}-{as} {away}" },

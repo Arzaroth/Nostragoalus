@@ -1,4 +1,4 @@
-import type { NotificationData } from '../../../shared/types/notifications'
+import { chatMentionPath, type NotificationData } from '../../../shared/types/notifications'
 import en from '../../../i18n/locales/en.json'
 import fr from '../../../i18n/locales/fr.json'
 import th from '../../../i18n/locales/th.json'
@@ -121,6 +121,16 @@ export function notificationPushContent(data: NotificationData, locale: string |
         ...render(m.leagueRemoved, { league: data.leagueName }),
         url: '/leagues',
         tag: `league:${data.leagueId}`,
+      }
+    case 'CHAT_MENTION':
+      // Room context only, never message text (chat is E2EE). The tag collapses
+      // repeat mentions in the same room into one notification.
+      return {
+        ...(data.matchId
+          ? render(m.mentionMatch, { name: data.senderName, home: data.homeTeam ?? '', away: data.awayTeam ?? '' })
+          : render(m.mention, { name: data.senderName, league: data.leagueName })),
+        url: chatMentionPath(data),
+        tag: `mention:${data.leagueId}:${data.matchId ?? 'global'}`,
       }
   }
 }

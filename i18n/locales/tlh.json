@@ -195,7 +195,8 @@
       "goals": "yoHmey",
       "matchResults": "ngugh Damiltlhtaghach",
       "tournament": "lompuq Damiltlhtaghach",
-      "league": "ghom vum"
+      "league": "ghom vum",
+      "mentions": "QIn pong"
     },
     "odds": "SuD mI'mey cha'",
     "oddsHint": "1X2 mI': 1 = juH Qap, X = rap, 2 = nIteb Qap. mI' machHa' law', DuH law'. may' taghDI' qon."
@@ -1148,10 +1149,14 @@
       "championWon": "Qappu' wInwI'lI' {team}! +{points}",
       "championLost": "Qapbe' wInwI'lI' {team}.",
       "bestScorerWon": "Qappu' DujwI'lI' {player}! +{points}",
-      "bestScorerLost": "Qapbe' DujwI'lI' {player}."
+      "bestScorerLost": "Qapbe' DujwI'lI' {player}.",
+      "mention": "{league}Daq {name} pong.",
+      "mentionMatch": "{home}-{away}Daq {name} pong."
     }
   },
   "push": {
+    "mention": { "title": "ponglu'", "body": "{league}Daq {name} pong" },
+    "mentionMatch": { "title": "ponglu'", "body": "{home}-{away}Daq {name} pong" },
     "reminder": { "title": "yIqIp 'e' yIlIj 'e' yImev", "body": "tugh {home} {away}" },
     "kickoff": { "title": "taghpu'", "body": "taghpu' {home} {away}" },
     "goal": { "title": "yoH!", "body": "{home} {hs}-{as} {away}" },

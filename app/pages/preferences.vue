@@ -78,6 +78,7 @@ const pushCategories = [
   { key: 'pushMatchResults', label: 'prefs.push.matchResults', def: true },
   { key: 'pushTournament', label: 'prefs.push.tournament', def: true },
   { key: 'pushLeague', label: 'prefs.push.league', def: false },
+  { key: 'pushMentions', label: 'prefs.push.mentions', def: true },
 ] as const
 
 function pushGet(cat: { key: string; def: boolean }): boolean {
