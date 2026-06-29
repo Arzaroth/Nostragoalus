@@ -53,8 +53,8 @@ Logical names are the Drizzle TS exports; the SQL tables are snake_case
   `league_invite` (sso provider link), `league_leaderboard_rank`. See
   [../features/leagues.md](../features/leagues.md).
 - **Chat (E2E):** `chat_message`, `chat_attachment` (ciphertext XOR storage_key),
-  `chat_identity`, `league_chat_key`, plus moderation tables. See
-  [../features/chat.md](../features/chat.md).
+  `chat_identity`, `league_chat_key`, `chat_room_read` (per-room unread marker),
+  plus moderation tables. See [../features/chat.md](../features/chat.md).
 - **Notifications / push:** `user_notification` (typed jsonb + dedupeKey),
   `push_subscription`. See [../features/notifications.md](../features/notifications.md).
 - **Media / settings:** `match_media`, `app_setting`, `user_profile`.
@@ -67,9 +67,10 @@ Logical names are the Drizzle TS exports; the SQL tables are snake_case
 (SCHEDULED/LIVE/PAUSED/FINISHED/POSTPONED/CANCELLED/SUSPENDED/AWARDED),
 `match_scoring_state` (PENDING/SCORED/VOID/STALE), `league_role`
 (OWNER/MODERATOR/MEMBER), `league_visibility` (PRIVATE/PUBLIC),
-`chat_moderation_state` (VISIBLE/PENDING/REMOVED), `notification_type` (7 values:
+`chat_moderation_state` (VISIBLE/PENDING/REMOVED), `notification_type` (8 values:
 LEAGUE_JOIN, LEAGUE_ROLE, LEAGUE_REMOVED, PICK_REMINDER, MATCH_RESULT,
-CHAMPION_RESULT, BEST_SCORER_RESULT), `match_media_kind` (LIVE/REPLAY/HIGHLIGHTS),
+CHAMPION_RESULT, BEST_SCORER_RESULT, CHAT_MENTION),
+`match_media_kind` (LIVE/REPLAY/HIGHLIGHTS),
 `roadmap_status` (PLANNED/IN_PROGRESS/SHIPPED).
 
 All foreign keys use ON DELETE CASCADE, except the tamper-evidence ledger which

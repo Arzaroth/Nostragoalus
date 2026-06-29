@@ -7,7 +7,7 @@ toggle.
 
 ## Preferences model
 
-Six nullable `push*` boolean columns live on the better-auth `user` table
+Seven nullable `push*` boolean columns live on the better-auth `user` table
 (additionalFields). Null means "use the category default", resolved in
 `server/utils/push/prefs.ts`. Catalogue and defaults:
 
@@ -19,10 +19,14 @@ Six nullable `push*` boolean columns live on the better-auth `user` table
 | Match results | results | on |
 | Tournament (champion / best scorer) | tournament | on |
 | League activity | league | off |
+| Chat mentions (`CHAT_MENTION`) | mentions | on |
 
 `MATCH_LIVE` and `GOAL` are push-only and transient: they are NOT stored in the
 bell or the [notification enum](notifications.md). `MATCH_LIVE`, `GOAL`, and
 `MATCH_RESULT` only push to users who actually predicted that match.
+`CHAT_MENTION` is a stored bell type (so it also pushes through
+`createNotification`), fired from the [chat](chat.md) post path - cross-league,
+to the mentioned members only.
 
 ## Subscriptions + keys
 
