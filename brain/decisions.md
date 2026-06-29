@@ -56,6 +56,15 @@ feature/architecture doc that implements it.
   fingerprint is 403'd by Cloudflare-class WAFs (Sofascore, some unfurl targets);
   one shared uTLS engine with a Chrome JA3 gets through. It needs `gcompat` in the
   Docker base stage. See [architecture/providers.md](architecture/providers.md).
+- **Live player stats from FIFA's gameday stories, not the official aggregate.**
+  FIFA's `/statistics/teams` aggregate stays empty for an in-progress edition, so
+  the Stats tab's assists were wrong (derived from the lossy local `goal_event`
+  timeline). The fifa.com stats page is fed by a separate "gameday" API
+  (`gameday-prod.fifa.mangodev.co.uk`, anonymous ~24h Bearer token from
+  `cxm-api.fifa.com`) that publishes the exact official rankings in-tournament;
+  `getPlayerStats` uses it for the live edition and falls back to the aggregate
+  once an edition ends (the stories 404). Both hosts are WAF-guarded so they go
+  through cycletls. See [architecture/providers.md](architecture/providers.md).
 
 ## Tamper-evidence
 

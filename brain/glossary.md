@@ -71,6 +71,10 @@ the code. Alphabetical.
   [architecture/providers.md](architecture/providers.md).
 - **cycletls / JA3** - a uTLS HTTP engine that mimics a browser's TLS fingerprint
   so Cloudflare-class WAFs don't 403 the request (odds + link unfurl).
+- **Gameday stories** - FIFA's in-tournament stats feed (`gameday-prod.fifa.mangodev.co.uk`)
+  behind an anonymous ~24h Bearer token; the source of the live edition's top
+  scorers + assists when the official aggregate is still empty. See
+  [architecture/providers.md](architecture/providers.md).
 - **VAPID** - the keypair scheme that authorizes web-push to a browser endpoint.
 - **Storage driver** - the pluggable `fs`/`s3` blob backend for avatars + chat
   images. See [architecture/storage.md](architecture/storage.md).

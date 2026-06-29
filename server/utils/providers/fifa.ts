@@ -27,6 +27,7 @@ import { RateLimiter } from './rate-limiter'
 import { mapStageFromName, parseGroupLetter } from './stage'
 import { ProviderRateLimitError, ProviderUpstreamError, type ListFixturesOptions, type MatchDataProvider } from './types'
 import { minuteValue } from '../stats/insights'
+import { CHROME_JA3, CHROME_UA, cycleGet } from './cycle-tls'
 
 interface FifaLocalized {
   Locale: string
@@ -822,12 +823,98 @@ export function normalizeFifaPlayerStats(data: FifaTeamStatsResponse): TopScorer
     .sort((a, b) => b.goals - a.goals || b.assists - a.assists || a.playerName.localeCompare(b.playerName))
 }
 
+// FIFA's "gameday" stats stories carry the live edition's player rankings (the
+// official /statistics aggregate stays empty until an edition ends, but these
+// publish in-tournament and 404 once it has). One story = one ranked page of up
+// to 50 actors, each carrying its football stats as tags.
+const GAMEDAY_BASE_URL = 'https://gameday-prod.fifa.mangodev.co.uk/1-0'
+const GAMEDAY_TOKEN_URL = 'https://cxm-api.fifa.com/fifaplusweb/api/external/gameDay/token'
+
+interface GamedayActor {
+  key?: { _externalSportsPersonId?: string | null }
+  name?: { eng?: string }
+  tags?: { name: string; value: unknown }[]
+}
+export interface GamedayStoriesResponse {
+  items?: { actors?: GamedayActor[] }[]
+}
+// Fetch one gameday URL, returning parsed JSON (the auth token, or a story page).
+export type GamedayFetch = (url: string, headers?: Record<string, string>) => Promise<unknown>
+
+// The page-1 story for a stat group ranked by a single stat, ascending rank.
+export function gamedayStoryUrl(group: string, seasonId: string, stat: string, page = 1): string {
+  const externalId = `urn:gd:story:classification:${group}:competitionId:${seasonId}:${stat}:rank_asc:page:${page}`
+  const query = `(and resourceStatus==\`urn:gd:resourceStatus:active\` _externalId~\`${externalId}$\`)`
+  const sort = 'tags.name==urn:gd:tag:story:fifa:column_number:asc'
+  return `${GAMEDAY_BASE_URL}/stories?query=${encodeURIComponent(query)}&skip=0&limit=1&sort=${encodeURIComponent(sort)}`
+}
+
+const gamedayTag = (a: GamedayActor, suffix: string) => a.tags?.find((t) => t.name.endsWith(suffix))?.value
+function gamedayStat(a: GamedayActor, suffix: string): number | null {
+  const v = gamedayTag(a, suffix)
+  const n = typeof v === 'number' ? v : Number(v)
+  return Number.isFinite(n) ? n : null
+}
+
+interface GamedayPlayer {
+  playerId: string | null
+  playerName: string
+  teamName: string
+  teamCode: string | null
+  goals: number | null
+  assists: number | null
+}
+export function parseGamedayActors(resp: GamedayStoriesResponse): GamedayPlayer[] {
+  return (resp?.items?.[0]?.actors ?? []).map((a) => ({
+    playerId: a.key?._externalSportsPersonId ?? null,
+    playerName: a.name?.eng ?? 'Unknown',
+    teamName: String(gamedayTag(a, ':team:name:eng') ?? ''),
+    teamCode: (gamedayTag(a, ':team:abbreviation') as string | undefined) ?? null,
+    goals: gamedayStat(a, ':football:stats:goals'),
+    assists: gamedayStat(a, ':football:stats:assists'),
+  }))
+}
+
+// Merge the goals-ranked and assists-ranked stories into one per-player tally:
+// the goals story carries goals + assists for the top scorers, the assists story
+// adds the high-assist players who never made the goals top-N.
+export function mergeGamedayStories(scorers: GamedayStoriesResponse, assists: GamedayStoriesResponse): TopScorer[] {
+  const byKey = new Map<string, TopScorer>()
+  const ensure = (p: GamedayPlayer) => {
+    const key = p.playerId || `${p.playerName}|${p.teamCode ?? ''}`
+    let e = byKey.get(key)
+    if (!e) {
+      e = { playerName: p.playerName, teamName: p.teamName, teamCode: p.teamCode, goals: 0, assists: 0, penalties: null }
+      byKey.set(key, e)
+    }
+    return e
+  }
+  for (const p of [...parseGamedayActors(scorers), ...parseGamedayActors(assists)]) {
+    const e = ensure(p)
+    if (p.goals != null) e.goals = p.goals
+    if (p.assists != null) e.assists = p.assists
+  }
+  return [...byKey.values()]
+}
+
+// cycletls (browser JA3) gets past the gameday CloudFront WAF; identity encoding
+// so the body comes back as parsed JSON rather than undecoded gzip.
+const defaultGamedayFetch: GamedayFetch = async (url, headers) =>
+  (
+    await cycleGet(url, {
+      ja3: CHROME_JA3,
+      userAgent: CHROME_UA,
+      headers: { Accept: 'application/json', 'Accept-Encoding': 'identity', ...headers },
+    })
+  ).data
+
 export interface FifaOptions {
   seasonId: string
   competitionId?: string
   baseUrl?: string
   fdhBaseUrl?: string
   fetchImpl?: typeof fetch
+  gamedayFetch?: GamedayFetch
   rateLimiter?: RateLimiter
 }
 
@@ -887,7 +974,23 @@ export function fifaProvider(options: FifaOptions): MatchDataProvider {
   const baseUrl = options.baseUrl ?? DEFAULT_BASE_URL
   const fdhBaseUrl = options.fdhBaseUrl ?? DEFAULT_FDH_BASE_URL
   const doFetch = options.fetchImpl ?? fetch
+  const gamedayFetch = options.gamedayFetch ?? defaultGamedayFetch
   const limiter = options.rateLimiter ?? new RateLimiter(1000)
+
+  // The live edition's official top scorers + assists, from the gameday stories
+  // (an anonymous ~24h token, then the two ranked-page stories). The route caches
+  // the result for 10 min, so minting a fresh token each call is fine. Empty on a
+  // finished edition - the stories 404 and the caller falls back to the aggregate.
+  async function gamedayPlayerStats(): Promise<TopScorer[]> {
+    const tok = (await gamedayFetch(GAMEDAY_TOKEN_URL)) as { token?: string }
+    if (!tok?.token) return []
+    const auth = { Authorization: `Bearer ${tok.token}` }
+    const [scorers, assists] = await Promise.all([
+      gamedayFetch(gamedayStoryUrl('gcp_top_scorer', options.seasonId, 'goals'), auth),
+      gamedayFetch(gamedayStoryUrl('gcp_attack', options.seasonId, 'assists'), auth),
+    ])
+    return mergeGamedayStories(scorers as GamedayStoriesResponse, assists as GamedayStoriesResponse)
+  }
 
   // The throw-on-error envelope (rate-limit + ok-check + json), shared by the
   // call sites that want it. The sweep sites that skip/return-null on a missing
@@ -979,6 +1082,15 @@ export function fifaProvider(options: FifaOptions): MatchDataProvider {
       )
     },
     async getPlayerStats({ teamId }: { teamId: string }) {
+      // Live edition: the gameday stories carry goals + assists with the exact
+      // FIFA ranking. They 404 once the edition ends (and any transient error
+      // shouldn't blank the board), so fall back to the published aggregate.
+      try {
+        const live = await gamedayPlayerStats()
+        if (live.length > 0) return live
+      } catch {
+        // fall through to the official aggregate
+      }
       return normalizeFifaPlayerStats(
         await getJson<FifaTeamStatsResponse>(
           `${baseUrl}/statistics/teams/${teamId}?idSeason=${options.seasonId}&idCompetition=${options.competitionId}&language=en`,
