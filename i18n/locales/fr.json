@@ -556,7 +556,8 @@
     "inContest": "disputé",
     "rankingTab": "Classement",
     "noPicks": "Aucun pronostic pour ce match.",
-    "leagueNoPick": "{n} membre sans pronostic | {n} membres sans pronostic"
+    "leagueNoPick": "{n} membre sans pronostic | {n} membres sans pronostic",
+    "watching": "1 spectateur | {n} spectateurs"
   },
   "pastPick": {
     "final": "Ton pronostic précédent {score} aurait marqué - celui que tu as changé.",

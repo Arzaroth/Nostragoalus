@@ -118,6 +118,7 @@ useCancelOnLeave(
 const m = computed(() => data.value?.match)
 useHead({ title: () => (m.value ? `${m.value.homeTeam} – ${m.value.awayTeam}` : t('nav.matches')) })
 const { live } = useLiveMatch(id)
+const { count: viewerCount } = useMatchPresence(id)
 const { enabled: crowdEnabled, totals: crowdTotals, leagueTotals, leagueActive } = useCrowdTotals()
 const oddsEnabled = useOddsPreference()
 
@@ -577,6 +578,11 @@ function toggleFormInfo(side: string, i: number | string) {
           <img v-if="flagUrl(m.awayTeamCode)" :src="flagUrl(m.awayTeamCode) || ''" class="w-16 h-16 rounded-lg object-cover" alt="" >
           <component :is="m.awayTeamCode ? NuxtLinkC : 'span'" :to="m.awayTeamCode ? `/${selectedSlug}/teams/${m.awayTeamCode}` : undefined" class="font-bold text-center hover:underline" :title="m.awayTeam">{{ m.awayTeam }}</component>
         </div>
+      </div>
+
+      <!-- Live viewer count: only while the match is in play and someone is here. -->
+      <div v-if="isLive && viewerCount > 0" class="mt-3 flex justify-center">
+        <MatchViewers :count="viewerCount" />
       </div>
 
       <!-- One laced timeline: each event is a row, on its team's side - the whole

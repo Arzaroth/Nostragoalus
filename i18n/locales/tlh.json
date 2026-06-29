@@ -556,7 +556,8 @@
     "inContest": "qab",
     "rankingTab": "patlh",
     "noPicks": "DoQ tu'lu'be'.",
-    "leagueNoPick": "DoQ Hutlh {n} | DoQ Hutlh {n}"
+    "leagueNoPick": "DoQ Hutlh {n} | DoQ Hutlh {n}",
+    "watching": "{n} bejwI' | {n} bejwI'pu'"
   },
   "pastPick": {
     "final": "{score} DaHIchpu'bogh Qapta' - 'ach DaweHpu'.",
