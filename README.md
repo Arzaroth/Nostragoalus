@@ -124,7 +124,7 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
 - Public **roadmap** page (in progress / planned / shipped), admin-curated with reordering, plus `mise run roadmap-add` / `roadmap-seed` CLIs
 - A **what's new** badge: a dot on your account menu when the changelog has versions
   you have not seen, with those entries highlighted on the About page (remembered per
-  account, across devices)
+  account, across devices) and the release notes rendered in your selected language
 - **Install as an app**: an in-app banner surfaces the browser's install prompt (add to home
   screen, full-screen launch), with a clearer update flow that shows a downloading step before
   the reload prompt and sits full-width along the bottom on phones
