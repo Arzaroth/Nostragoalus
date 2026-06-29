@@ -1,7 +1,7 @@
 #!/usr/bin/env -S node
 //MISE description="(internal) CHANGELOG.md surgery for the release task"
 //MISE hide=true
-//USAGE arg "<mode>" help="read | promote"
+//USAGE arg "<mode>" help="read | promote | check"
 //USAGE arg "[version]"
 //USAGE arg "[date]"
 
@@ -10,23 +10,104 @@
 // resolves from the project root - no path math in the caller. Builtins only.
 //   mise run changelog read                      -> print the [Unreleased] body
 //   mise run changelog promote <version> <date>  -> move it into a dated section
+//                                                   (CHANGELOG.md AND every
+//                                                   translated i18n/changelogs/*)
+//   mise run changelog check                     -> assert the translations stay
+//                                                   structurally in step with the
+//                                                   canonical English changelog
 import { readFileSync, writeFileSync } from 'node:fs'
 
 const mode = process.env.usage_mode
 const version = process.env.usage_version
 const date = process.env.usage_date
-const PATH = 'CHANGELOG.md'
-const changelog = readFileSync(PATH, 'utf8')
-const pending = (changelog.match(/## \[Unreleased\]\n([\s\S]*?)(?=\n## \[)/)?.[1] ?? '').trim()
+
+// CHANGELOG.md is the canonical English source (Keep a Changelog); the locale
+// files mirror it bullet-for-bullet so the about page can render the changelog
+// in the active locale. See app/composables/useChangelog.ts.
+const CANONICAL = 'CHANGELOG.md'
+const LOCALES = ['i18n/changelogs/fr.md', 'i18n/changelogs/th.md', 'i18n/changelogs/tlh.md']
+
+const pendingOf = (text) => (text.match(/## \[Unreleased\]\n([\s\S]*?)(?=\n## \[)/)?.[1] ?? '').trim()
+
+// The structural shape of a changelog file: an ordered list of versions, each
+// carrying the bullet count of each of its sections. Section titles are
+// translated, so the check compares shape (which versions, how many sections,
+// how many bullets each) rather than text.
+function fingerprint(text) {
+  const versions = []
+  let cur = null
+  for (const line of text.split('\n')) {
+    const v = /^## \[([^\]]+)\]/.exec(line)
+    if (v) {
+      cur = { version: v[1], sections: [] }
+      versions.push(cur)
+      continue
+    }
+    if (/^### /.test(line) && cur) cur.sections.push(0)
+    else if (/^- /.test(line) && cur && cur.sections.length) cur.sections[cur.sections.length - 1]++
+  }
+  return versions
+}
 
 if (mode === 'read') {
-  process.stdout.write(pending)
+  process.stdout.write(pendingOf(readFileSync(CANONICAL, 'utf8')))
 } else if (mode === 'promote') {
-  writeFileSync(
-    PATH,
-    changelog.replace(/## \[Unreleased\]\n[\s\S]*?(?=\n## \[)/, `## [Unreleased]\n\n## [${version}] - ${date}\n\n${pending}\n`),
-  )
+  if (!version || !date) {
+    console.error('usage: mise run changelog promote <version> <date>')
+    process.exit(1)
+  }
+  // Move [Unreleased] -> a dated section in the canonical file and in every
+  // locale file in lockstep, so a release tags the same version everywhere.
+  for (const path of [CANONICAL, ...LOCALES]) {
+    let text
+    try {
+      text = readFileSync(path, 'utf8')
+    } catch {
+      continue // a locale file may be absent on an older tree; skip it.
+    }
+    const pending = pendingOf(text)
+    writeFileSync(
+      path,
+      text.replace(/## \[Unreleased\]\n[\s\S]*?(?=\n## \[)/, `## [Unreleased]\n\n## [${version}] - ${date}\n\n${pending}\n`),
+    )
+  }
+} else if (mode === 'check') {
+  const canon = fingerprint(readFileSync(CANONICAL, 'utf8'))
+  const problems = []
+  for (const path of LOCALES) {
+    let text
+    try {
+      text = readFileSync(path, 'utf8')
+    } catch {
+      problems.push(`${path}: missing`)
+      continue
+    }
+    const byVersion = new Map(fingerprint(text).map((v) => [v.version, v]))
+    for (const cv of canon) {
+      const lv = byVersion.get(cv.version)
+      if (!lv) {
+        problems.push(`${path}: missing version [${cv.version}]`)
+        continue
+      }
+      if (lv.sections.length !== cv.sections.length) {
+        problems.push(`${path} [${cv.version}]: ${lv.sections.length} section(s), expected ${cv.sections.length}`)
+        continue
+      }
+      cv.sections.forEach((n, i) => {
+        if (lv.sections[i] !== n) {
+          problems.push(`${path} [${cv.version}] section ${i + 1}: ${lv.sections[i]} bullet(s), expected ${n}`)
+        }
+      })
+    }
+  }
+  if (problems.length) {
+    console.error('Changelog translations are out of step with CHANGELOG.md:')
+    for (const p of problems) console.error(`  - ${p}`)
+    console.error('\nEvery version/section/bullet in CHANGELOG.md must be mirrored in each i18n/changelogs/*.md.')
+    process.exit(1)
+  }
+  console.log(`Changelog locales in step with CHANGELOG.md (${canon.length} versions).`)
 } else {
-  console.error('usage: mise run changelog read | promote <version> <date>')
+  console.error('usage: mise run changelog read | promote <version> <date> | check')
   process.exit(1)
 }

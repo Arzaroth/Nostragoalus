@@ -64,7 +64,11 @@ errors the others miss. Beware zsh pipelines masking exit codes. See
 
 1. Validate semver + clean working tree + tag does not already exist.
 2. Move CHANGELOG `[Unreleased]` into a dated `[x.y.z] - YYYY-MM-DD` section
-   (`mise run changelog`); abort if `[Unreleased]` is empty.
+   (`mise run changelog promote`, which moves the same block in every
+   `i18n/changelogs/*.md` too); abort if the canonical `[Unreleased]` is empty.
+   The gate also runs `mise run changelog check` so a release can't tag a version
+   whose translations are out of step. See
+   [architecture/i18n.md](architecture/i18n.md).
 3. Bump `package.json`.
 4. Run the full gate with `CI=true`.
 5. Commit `chore(release): x.y.z`, annotated tag `vx.y.z`, push
@@ -111,6 +115,8 @@ about-page tech stack) is encoded in the `release` skill.
 ## Planning docs (kept current as work happens)
 
 - `CHANGELOG.md` - Keep a Changelog; `[Unreleased]` stays populated as you work.
+  Translated mirrors live in `i18n/changelogs/{fr,th,tlh}.md` - a new entry goes
+  in all of them (the changelog check enforces it).
 - `ROADMAP.md` - feature backlog + design decisions (decisions not written down
   are lost). Tick items when they ship with the release version.
 - `TODO.md` - tech debt + deferred work; tick what a change resolves, add what it

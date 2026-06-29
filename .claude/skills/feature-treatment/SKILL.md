@@ -39,8 +39,11 @@ count to the feature (4-6 is typical):
   enforce the guard the rest of the repo uses? input validation (length caps,
   enums), XSS (`v-html`?), data leaks in public endpoints, IDOR, SQL injection,
   shell injection in any CLI/mise task.
-- **Integration / i18n** - every i18n key used exists in ALL locale files; new
-  public routes are in `PUBLIC_ROUTES`; composable types match the endpoint;
+- **Integration / i18n** - every i18n key used exists in ALL locale files; any
+  new `CHANGELOG.md` entry is mirrored bullet-for-bullet in every
+  `i18n/changelogs/*.md` (the about page renders the changelog in the active
+  locale; `mise run changelog check` enforces structural parity); new public
+  routes are in `PUBLIC_ROUTES`; composable types match the endpoint;
   footer/admin wiring; migration journal sequence.
 - **Reuse / simplify / altitude** - does new code re-implement an existing
   helper/pattern? copy-paste across sibling endpoints? fragile special-cases
@@ -90,11 +93,14 @@ committing: every relative link in a touched brain doc resolves to a real file.
 
 ```bash
 pnpm exec nuxt typecheck
-pnpm test:coverage      # >=98% branches (server/utils, shared, app/utils)
-pnpm test:components    # Nuxt-runtime component/composable tests
+mise run changelog check  # translated changelogs mirror CHANGELOG.md (all locales)
+pnpm test:coverage        # >=98% branches (server/utils, shared, app/utils)
+pnpm test:components      # Nuxt-runtime component/composable tests
 ```
 New branches you added (services, reorder/edge cases) must be covered or the
-coverage gate fails. Commit the review fixes on the branch:
+coverage gate fails. If the feature touched `CHANGELOG.md`, the same entries
+must be added to each `i18n/changelogs/{fr,th,tlh}.md` or the changelog check
+fails. Commit the review fixes on the branch:
 `fix(<area>): max-review fixes - <one-line summary>`.
 
 ## 6. Merge

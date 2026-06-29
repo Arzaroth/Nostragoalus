@@ -40,6 +40,20 @@ export function parseChangelog(raw: string): ChangelogVersion[] {
   return versions
 }
 
+// Overlay a locale's parsed changelog onto the canonical (English) one. The
+// English file owns which versions exist and their order; for each version we
+// swap in the locale's translated sections when present, and fall back to the
+// English entry when that version isn't translated yet. An empty/missing locale
+// list yields the English changelog untouched.
+export function selectLocaleChangelog(
+  base: ChangelogVersion[],
+  localized: ChangelogVersion[] | undefined,
+): ChangelogVersion[] {
+  if (!localized?.length) return base
+  const byVersion = new Map(localized.map((v) => [v.version, v]))
+  return base.map((v) => byVersion.get(v.version) ?? v)
+}
+
 // Compare dotted numeric versions ("1.9.0" < "1.10.0"). A non-numeric segment
 // (never expected from our changelog) falls back to a lexical compare of that
 // segment - not of the whole string - so earlier numeric segments still order

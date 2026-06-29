@@ -47,13 +47,15 @@ mv "$tmp" package.json
 echo "running the gate (typecheck + coverage + component tests + prod build)..."
 export CI=true
 pnpm typecheck
+# Translated changelogs must mirror CHANGELOG.md, including the block just promoted.
+mise run changelog check
 pnpm test:coverage
 pnpm test:components
 # Build last: catches SSR/rollup link errors (e.g. unresolved imports) that
 # typecheck and the unit/component suites miss, so a release tag always builds.
 pnpm build
 
-git add CHANGELOG.md package.json
+git add CHANGELOG.md i18n/changelogs/*.md package.json
 git commit -m "chore(release): ${version}"
 git tag -a "v${version}" -m "Nostragoalus ${version}"
 git push origin master --follow-tags

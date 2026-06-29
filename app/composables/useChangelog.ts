@@ -1,10 +1,21 @@
-import changelogRaw from '../../CHANGELOG.md?raw'
-import { parseChangelog, latestVersion, isUnseen } from '~/utils/changelog'
+import enRaw from '../../CHANGELOG.md?raw'
+import frRaw from '../../i18n/changelogs/fr.md?raw'
+import thRaw from '../../i18n/changelogs/th.md?raw'
+import tlhRaw from '../../i18n/changelogs/tlh.md?raw'
+import { parseChangelog, latestVersion, isUnseen, selectLocaleChangelog, type ChangelogVersion } from '~/utils/changelog'
 
-// The changelog is a build-time constant, so parse it once at module load and
-// share the result across every consumer (header badge, about page).
-const versions = parseChangelog(changelogRaw)
-const latest = latestVersion(versions)
+// The changelog is a build-time constant, so parse each locale once at module
+// load and share the result across every consumer (header badge, about page).
+// English (CHANGELOG.md) is canonical: it owns the version list, the ordering,
+// and the "latest" used by the badge - all locale-independent (the headers are
+// identical across files). The translated files only supply per-version copy.
+const enVersions = parseChangelog(enRaw)
+const localized: Record<string, ChangelogVersion[]> = {
+  fr: parseChangelog(frRaw),
+  th: parseChangelog(thRaw),
+  tlh: parseChangelog(tlhRaw),
+}
+const latest = latestVersion(enVersions)
 
 interface SeenUser {
   lastSeenChangelogVersion?: string | null
@@ -16,6 +27,10 @@ interface SeenUser {
 // is no marker and nothing to badge.
 export function useChangelog() {
   const { session, updateUser } = useAuth()
+  const { locale } = useI18n()
+
+  // Render the active locale's changelog, English entries filling any gaps.
+  const versions = computed(() => selectLocaleChangelog(enVersions, localized[locale.value]))
 
   const user = computed(() => session.value?.data?.user as SeenUser | undefined)
   const lastSeen = computed(() => user.value?.lastSeenChangelogVersion ?? null)
