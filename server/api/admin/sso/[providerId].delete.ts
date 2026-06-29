@@ -1,10 +1,9 @@
 import { eq } from 'drizzle-orm'
 import { db } from '../../../../db'
 import { ssoProvider } from '../../../../db/schema'
-import { requireAdmin } from '../../../utils/auth-guards'
+import { defineValidatedHandler } from '../../../utils/validated-handler'
 
-export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
+export default defineValidatedHandler({ admin: true }, async ({ event }) => {
   const id = getRouterParam(event, 'providerId') as string
   await db.delete(ssoProvider).where(eq(ssoProvider.providerId, id))
   return { ok: true }
