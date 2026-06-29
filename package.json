@@ -30,6 +30,7 @@
   "dependencies": {
     "@better-auth/api-key": "1.6.18",
     "@better-auth/passkey": "^1.6.18",
+    "@better-auth/scim": "1.6.18",
     "@better-auth/sso": "^1.6.18",
     "@primeuix/themes": "^2.0.3",
     "@resvg/resvg-js": "^2.6.2",

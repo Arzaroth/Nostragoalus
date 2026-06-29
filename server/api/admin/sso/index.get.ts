@@ -1,11 +1,13 @@
 import { db } from '../../../../db'
-import { ssoProvider } from '../../../../db/schema'
+import { scimProvider, ssoProvider } from '../../../../db/schema'
 import { requireAdmin } from '../../../utils/auth-guards'
 import { listProviderAutoJoinLeagues } from '../../../utils/leagues/service'
 
 // Lists registered SSO providers without exposing the (encrypted) config.
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)
+  const scimRows = await db.select({ providerId: scimProvider.providerId }).from(scimProvider)
+  const scimEnabled = new Set(scimRows.map((r) => r.providerId))
   const rows = await db
     .select({
       providerId: ssoProvider.providerId,
@@ -35,6 +37,7 @@ export default defineEventHandler(async (event) => {
       // Surface only the boolean outcome here; the full per-check detail comes
       // back from the test-connection endpoint when the admin runs it.
       lastTestOk: r.lastTestResult?.ok ?? null,
+      scimEnabled: scimEnabled.has(r.providerId),
     })),
   }
 })

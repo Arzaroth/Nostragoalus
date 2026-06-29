@@ -178,6 +178,21 @@ export const ssoProvider = pgTable(
   (table) => [index("sso_provider_domain_idx").on(table.domain)],
 )
 
+// @better-auth/scim plugin table. Field (property) names must match the plugin's
+// schema exactly so the drizzle adapter resolves them. One row per provisioned
+// provider; scim_token holds the HASH (storeSCIMToken: 'hashed'), never the bearer
+// the IdP holds. organizationId is a plugin field, unused here (single-tenant).
+export const scimProvider = pgTable(
+  "scim_provider",
+  {
+    id: text("id").primaryKey(),
+    providerId: text("provider_id").notNull().unique(),
+    scimToken: text("scim_token").notNull().unique(),
+    organizationId: text("organization_id"),
+  },
+  (t) => [index("scim_provider_provider_id_idx").on(t.providerId)],
+)
+
 // @better-auth/api-key plugin table. Field (property) names must match the
 // plugin's schema exactly so the drizzle adapter resolves them; `key` holds the
 // hash (never the plaintext), `referenceId` is the owning user id. Defaults

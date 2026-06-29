@@ -22,6 +22,18 @@ export const SSO_ADMIN_ONLY_PATHS = [
   '/api/auth/sso/delete-provider',
 ] as const
 
+// @better-auth/scim ships its management endpoints gated only by a session, so any
+// signed-in user could otherwise mint or revoke a provider-restricted provisioning
+// bearer. Block them over HTTP; our /api/admin/sso/*/scim-token routes call
+// auth.api directly behind an admin guard. (The /scim/v2/* data plane stays open -
+// it's bearer-authenticated by the IdP.)
+export const SCIM_ADMIN_ONLY_PATHS = [
+  '/api/auth/scim/generate-token',
+  '/api/auth/scim/list-provider-connections',
+  '/api/auth/scim/get-provider-connection',
+  '/api/auth/scim/delete-provider-connection',
+] as const
+
 // SSO callback endpoints that carry the providerId as the final path segment.
 // These are where a session is actually issued, so gating them stops a draft or
 // disabled provider from ever minting one - even via a hand-crafted sign-in that
@@ -52,7 +64,7 @@ export function ssoCallbackProviderId(path: string): string | null {
 
 // Plugin provider-management endpoint reachable over HTTP - block entirely.
 export function isSsoAdminOnlyPath(path: string): boolean {
-  return matchesAny(SSO_ADMIN_ONLY_PATHS, path)
+  return matchesAny(SSO_ADMIN_ONLY_PATHS, path) || matchesAny(SCIM_ADMIN_ONLY_PATHS, path)
 }
 
 // Credential-management endpoint to deny for SSO-managed sessions.
