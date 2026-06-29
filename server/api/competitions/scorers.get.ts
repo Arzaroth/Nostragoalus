@@ -18,6 +18,10 @@ export default defineEventHandler(async (event): Promise<PlayerRankings> => {
 
   const cached = cache.get(competition.id)
   if (cached && Date.now() - cached.at < TTL_MS) return cached.rankings
+  const remember = (rankings: PlayerRankings) => {
+    cache.set(competition.id, { at: Date.now(), rankings })
+    return rankings
+  }
 
   const provider = providerForCompetition(competition, await resolveCompetitionSeason(db, competition))
 
@@ -35,11 +39,7 @@ export default defineEventHandler(async (event): Promise<PlayerRankings> => {
         // FIFA hasn't published aggregated player stats for an in-progress edition
         // (the array comes back empty); fall through to the local goal-event
         // aggregation rather than blanking the rankings.
-        if (players.length > 0) {
-          const rankings = rankPlayers(players)
-          cache.set(competition.id, { at: Date.now(), rankings })
-          return rankings
-        }
+        if (players.length > 0) return remember(rankPlayers(players))
       } catch {
         // fall through to local / football-data
       }
@@ -50,17 +50,12 @@ export default defineEventHandler(async (event): Promise<PlayerRankings> => {
   // FIFA's official aggregate is empty, so cache it like the official one - the
   // empty official result used to populate the cache and no longer does.
   const local = await getCompetitionPlayerRankings(db, competition.id)
-  if (local.scorers.length > 0 || local.assists.length > 0) {
-    cache.set(competition.id, { at: Date.now(), rankings: local })
-    return local
-  }
+  if (local.scorers.length > 0 || local.assists.length > 0) return remember(local)
 
   // A provider that exposes scorers directly (e.g. football-data); goals only.
   if (provider.getTopScorers) {
     try {
-      const rankings = rankPlayers(await provider.getTopScorers({ season: competition.seasonHint ?? '' }))
-      cache.set(competition.id, { at: Date.now(), rankings })
-      return rankings
+      return remember(rankPlayers(await provider.getTopScorers({ season: competition.seasonHint ?? '' })))
     } catch {
       return EMPTY
     }
