@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- **Arabic, right-to-left**: Nostragoalus is now available in Arabic, with the whole interface mirrored to read right-to-left - menus, layouts, and the knockout bracket included. Pick it from the language selector.
+
 ## [2.6.0] - 2026-06-30
 
 ### Added
