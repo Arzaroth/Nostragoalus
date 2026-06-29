@@ -41,11 +41,22 @@ export function domainMatchesList(domain: string, csv: string | null): boolean {
     .some((d) => domain === d || domain.endsWith(`.${d}`))
 }
 
+// Only an 'enabled' + domain-verified provider is offered for login: a draft or
+// disabled provider (or one whose domain isn't verified) must not capture a
+// sign-in, so the login form falls back to a password instead. Domain conflicts
+// (findDomainConflicts) stay status-agnostic - a draft still reserves its domain.
 export async function resolveSsoProviderId(db: AppDatabase, domain: string): Promise<string | null> {
   const rows = await db
-    .select({ providerId: ssoProvider.providerId, domain: ssoProvider.domain })
+    .select({
+      providerId: ssoProvider.providerId,
+      domain: ssoProvider.domain,
+      status: ssoProvider.status,
+      domainVerified: ssoProvider.domainVerified,
+    })
     .from(ssoProvider)
-  return rows.find((r) => domainMatchesList(domain, r.domain))?.providerId ?? null
+  return (
+    rows.find((r) => r.status === 'enabled' && r.domainVerified && domainMatchesList(domain, r.domain))?.providerId ?? null
+  )
 }
 
 // Domains already captured by another provider - first-come-first-served.

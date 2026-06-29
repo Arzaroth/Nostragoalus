@@ -90,6 +90,20 @@ describe('db-backed resolution', () => {
     expect(await resolveSsoProviderId(db, 'nowhere.test')).toBeNull()
   })
 
+  it('hides draft, disabled and unverified providers from the login resolver', async () => {
+    const fresh = (await createTestDb()).db
+    await fresh.insert(ssoProvider).values([
+      { id: 'd1', issuer: 'https://i.test', providerId: 'live', domain: 'live.test', status: 'enabled', domainVerified: true },
+      { id: 'd2', issuer: 'https://i.test', providerId: 'draft', domain: 'draft.test', status: 'draft', domainVerified: true },
+      { id: 'd3', issuer: 'https://i.test', providerId: 'paused', domain: 'paused.test', status: 'disabled', domainVerified: true },
+      { id: 'd4', issuer: 'https://i.test', providerId: 'unverified', domain: 'unverified.test', status: 'enabled', domainVerified: false },
+    ])
+    expect(await resolveSsoProviderId(fresh, 'live.test')).toBe('live')
+    expect(await resolveSsoProviderId(fresh, 'draft.test')).toBeNull()
+    expect(await resolveSsoProviderId(fresh, 'paused.test')).toBeNull()
+    expect(await resolveSsoProviderId(fresh, 'unverified.test')).toBeNull()
+  })
+
   it('flags domains captured by another provider', async () => {
     expect(await findDomainConflicts(db, 'globex', ['corp.fr', 'globex.test'])).toEqual(['corp.fr'])
   })
