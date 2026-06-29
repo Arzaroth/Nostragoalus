@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-06-30
+
 ### Ajouté
 - **Le journal des modifications parle votre langue** : les notes de version dans l'app (l'entrée « Quoi de neuf » et la page À propos) se lisent désormais dans la langue que vous avez choisie, retombant sur l'anglais pour tout ce qui n'est pas encore traduit, au lieu d'être toujours en anglais.
 - **Les profils s'ouvrent sur l'action** : le profil d'un joueur défile désormais là où son historique rejoint le présent - les derniers pronos et ceux en direct - au lieu de commencer en haut d'un long historique de pronos.

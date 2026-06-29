@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-06-30
+
 ### Added
 - **The changelog speaks your language**: the in-app release notes (the "What's new" entry and the About page) now read in your selected language, falling back to English for anything not yet translated, instead of always being English.
 - **Profiles open on the action**: a player's profile now scrolls to where its history meets now - the latest and any live picks - instead of starting at the top of a long pick history.
