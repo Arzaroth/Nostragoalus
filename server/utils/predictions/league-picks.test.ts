@@ -121,6 +121,21 @@ describe('upsertLeaguePrediction', () => {
       upsertLeaguePrediction(db, { leagueId, userId: 'u1', matchId: b, home: 1, away: 0, wager: 5 }, NOW),
     ).rejects.toBeInstanceOf(ValidationError)
   })
+
+  it('counts base stakes against the override budget (effective)', async () => {
+    const leagueId = await makeLeague(db, { competitionId, ownerId: 'u1', mode: 'HARD' })
+    const a = await openMatch()
+    const b = await openMatch() // round now has 2 matches -> budget 6
+    // Base stake 4 on A (rides the base budget), then override stake on B: the
+    // effective round total must count A's base stake.
+    await upsertPrediction(db, { userId: 'u1', matchId: a, home: 1, away: 0, wager: 4 }, NOW)
+    await expect(
+      upsertLeaguePrediction(db, { leagueId, userId: 'u1', matchId: b, home: 1, away: 0, wager: 3 }, NOW),
+    ).rejects.toBeInstanceOf(ValidationError) // 4 + 3 = 7 > 6
+    await expect(
+      upsertLeaguePrediction(db, { leagueId, userId: 'u1', matchId: b, home: 1, away: 0, wager: 2 }, NOW),
+    ).resolves.toBeTruthy() // 4 + 2 = 6
+  })
 })
 
 describe('setLeaguePicksSynced', () => {

@@ -399,20 +399,23 @@ export async function upsertLeaguePrediction(
 
   return db.transaction(async (tx) => {
     if (input.wager != null && input.wager > 0) {
-      // Budget across this league's own override stakes in the round. Stakes that
-      // fall through to the base pick ride the base budget instead (see TODO.md
-      // for full per-league effective-budget precision).
+      // Budget across this league's EFFECTIVE stakes in the round: per match, the
+      // override stake when present, else the base stake. Walks the round's
+      // matches so a member mixing base + override picks can't exceed the true
+      // per-round budget.
       const [{ other }] = await tx
-        .select({ other: sql<number>`coalesce(sum(${leaguePrediction.wager}), 0)`.mapWith(Number) })
-        .from(leaguePrediction)
-        .where(
+        .select({ other: sql<number>`coalesce(sum(coalesce(${leaguePrediction.wager}, ${prediction.wager})), 0)`.mapWith(Number) })
+        .from(match)
+        .leftJoin(
+          leaguePrediction,
           and(
-            eq(leaguePrediction.leagueId, input.leagueId),
+            eq(leaguePrediction.matchId, match.id),
             eq(leaguePrediction.userId, input.userId),
-            eq(leaguePrediction.roundId, matchRow.roundId),
-            ne(leaguePrediction.matchId, input.matchId),
+            eq(leaguePrediction.leagueId, input.leagueId),
           ),
         )
+        .leftJoin(prediction, and(eq(prediction.matchId, match.id), eq(prediction.userId, input.userId)))
+        .where(and(eq(match.roundId, matchRow.roundId), ne(match.id, input.matchId)))
       await assertWagerWithinBudget(tx, matchRow.roundId, input.wager, other)
     }
 

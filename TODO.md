@@ -862,11 +862,6 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
 - [ ] **Moded leagues have no movement arrows**: `updateLeagueRankSnapshots` skips
       non-NORMAL leagues (their base-total ranks would be wrong), and the mode board
       ranks live with no `prevRank`. Add per-mode snapshots if arrows are wanted.
-- [ ] **HARD override budget is approximate**: `upsertLeaguePrediction` checks a
-      stake against the league's own override stakes in the round only; stakes that
-      fall through to the base pick ride the base budget separately, so a custom
-      member mixing base + override picks can exceed the true per-round effective
-      budget. Sum effective (override ?? base) stakes for exact enforcement.
 - [ ] **Tamper-evidence doesn't cover overrides**: the commitment ledger commits the
       base pick only (global board integrity). A moded league's board depends on
       overrides that aren't in the chain, so a league-board dispute can't be proven
