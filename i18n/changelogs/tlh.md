@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.6.0] - 2026-06-30
+
 ### chelpu'
 - **SSO IdP juHDaq vu'lu'bogh**: SSO nob qoj juHDaq vu'lu'bogh, pegh HeHDaq token Daq tu'lu'chugh, DaH vumlaH - NUXT_SSO_TRUSTED_ORIGINS-Daq HeH yIqon, vaj voqmoH 'el, 'ach Hubwl' tlhab nob pegh Daq lajbe'. Google rur nob tlhab choHbe'.
 

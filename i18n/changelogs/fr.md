@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [2.6.0] - 2026-06-30
+
 ### Ajouté
 - **Fournisseurs d'identité SSO auto-hébergés** : un fournisseur SSO interne ou auto-hébergé dont le point de terminaison de jeton se trouve sur un réseau privé fonctionne désormais - définissez NUXT_SSO_TRUSTED_ORIGINS sur son origine et le flux de connexion lui fait confiance, là où la protection intégrée refuse autrement un fournisseur à adresse privée. Les fournisseurs publics comme Google ne changent rien.
 
