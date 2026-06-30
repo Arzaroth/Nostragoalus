@@ -74,6 +74,17 @@ const Single = defineComponent({
   template: `<div><ScoreInput :home="null" :away="null" @update="updates.push($event)" /></div>`,
 })
 
+// Same as Single but pre-loaded with a saved 2-2 scoreline, so cancelling an
+// outlandish edit must restore to 2-2 (not wipe to empty).
+const SingleSaved = defineComponent({
+  components: { ScoreInput },
+  setup() {
+    const updates = ref<{ home: number; away: number }[]>([])
+    return { updates }
+  },
+  template: `<div><ScoreInput :home="2" :away="2" @update="updates.push($event)" /></div>`,
+})
+
 describe('ScoreInput outlandish confirm', () => {
   // The confirm Dialog teleports to body, so unmount and clear it between cases.
   const mounted: Array<{ unmount: () => void }> = []
@@ -140,5 +151,40 @@ describe('ScoreInput outlandish confirm', () => {
     await nextTick()
     expect(findButton('Save anyway')).toBeFalsy()
     expect(cmp.emitted('update')![0][0]).toEqual({ home: 3, away: 2 })
+  })
+
+  it('reverts to the previously saved score, not to empty, when cancelled', async () => {
+    const wrapper = await mountSuspended(SingleSaved, { attachTo: document.body })
+    mounted.push(wrapper)
+    const cmp = wrapper.findComponent(ScoreInput)
+    const vm = cmp.vm as unknown as { home: number | null; away: number | null }
+    vm.home = 9
+    vm.away = 0
+    await commitViaEnter(cmp)
+    await nextTick()
+    findButton('Cancel')!.click()
+    await nextTick()
+    expect(cmp.emitted('update')).toBeFalsy()
+    expect(vm.home).toBe(2)
+    expect(vm.away).toBe(2)
+  })
+
+  it('does not advance to the next match while the confirm is open', async () => {
+    const wrapper = await mountSuspended(Pair, { attachTo: document.body })
+    mounted.push(wrapper)
+    const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('input.ng-score-input'))
+    const scores = wrapper.findAllComponents(ScoreInput)
+    const vm = scores[0].vm as unknown as { home: number | null; away: number | null }
+    vm.home = 9
+    vm.away = 0
+    await nextTick()
+    inputs[0].focus()
+    inputs[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    // Synchronously, before the confirm dialog mounts and grabs focus itself, the
+    // no-advance guard must have stopped onAdvanceKey from hopping to the next
+    // match's input - so focus is still on this match's input, not inputs[2].
+    expect(document.activeElement).toBe(inputs[0])
+    await nextTick()
+    expect(findButton('Save anyway')).toBeTruthy()
   })
 })
