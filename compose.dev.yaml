@@ -47,6 +47,9 @@ services:
   app:
     environment:
       NUXT_SMTP_URL: smtp://maildev:1025
+      # Trust the dev-only Keycloak IdP (compose `e2e` profile) so the SSO plugin's
+      # SSRF guard accepts its private-network token endpoint. No effect without it.
+      NUXT_SSO_TRUSTED_ORIGINS: http://keycloak:8080
     env_file:
       - path: .env
         required: false
@@ -76,6 +79,8 @@ services:
       DATABASE_URL: postgres://nostragoalus:nostragoalus@db:5432/nostragoalus
       NUXT_DATABASE_URL: postgres://nostragoalus:nostragoalus@db:5432/nostragoalus
       NUXT_SMTP_URL: smtp://maildev:1025
+      # Trust the dev-only Keycloak IdP (compose `e2e` profile) for the SSO e2e.
+      NUXT_SSO_TRUSTED_ORIGINS: http://keycloak:8080
       # nuxi's dep check runs pnpm install on start; when the node_modules volume
       # is stale vs the lockfile it wants to purge, and with no TTY it aborts.
       # CI=true makes the purge+reinstall non-interactive (the npm_config_/.npmrc
