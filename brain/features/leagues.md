@@ -39,6 +39,17 @@ Join codes are 4 - 16 characters, case/dash/space-insensitive, unique
 (collision-retried), and the join-code endpoint is rate-limited by an in-process
 sliding window (`server/utils/rate-limit.ts`).
 
+## Access guards
+
+Two shared helpers in `server/utils/leagues/service.ts` enforce access uniformly
+so no endpoint hand-rolls the membership/role lookup: `resolveLeagueView` for
+scoped reads (the PUBLIC view path, or members-only when `membersOnly`, with a
+site-admin override) and `resolveLeagueManage` for mutations (role-gated). Both
+return the SAME "not found" for a missing league and for an outsider on a private
+one, so neither a read nor a management action leaks a private league's existence
+(an outsider cannot tell "does not exist" from "you are not in it"). A member with
+too low a role gets a distinct "forbidden" - they already know it exists.
+
 ## SSO auto-join
 
 Members of an identity provider can be auto-added to a league. This runs in the

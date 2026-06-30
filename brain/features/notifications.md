@@ -35,8 +35,10 @@ bumps the badge, and refetches on reconnect. See
 
 ## API + UI
 
-- `GET /api/notifications` - the feed plus `unreadCount`, paged with a `before`
-  cursor.
+- `GET /api/notifications` - the feed plus `unreadCount`, paged with a compound
+  `(before, beforeId)` keyset cursor (the `id` tiebreaks rows that share a
+  `createdAt`, since a whole finalize tick is minted at the transaction-start
+  time - see `keysetBefore` in `server/utils/keyset.ts`, shared with chat).
 - `POST /api/notifications/read` - `{ids}` or `{all}`.
 - `POST /api/notifications/delete` - per-item dismiss `{ids}` (and a server-only
   `{all}` clear).
