@@ -73,6 +73,7 @@ function toggleVisibility() {
         :severity="props.league.role === 'OWNER' ? 'warn' : props.league.role === 'MODERATOR' ? 'info' : 'secondary'"
       />
       <Tag v-if="props.league.visibility === 'PUBLIC'" :value="t('leagues.public')" severity="success" />
+      <LeagueModeBadge :mode="props.league.mode" :lives="props.league.lives" />
       <span class="text-xs" style="color: var(--p-text-muted-color)">{{ t('leagues.memberCount', { n: props.league.memberCount }, props.league.memberCount) }}</span>
       <span class="flex-1" />
       <template v-if="isOwner">

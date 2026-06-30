@@ -845,6 +845,37 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
       returns rows for a seeded league + live match, so the public docs sampler
       can't reach it. Add it (with seed setup) if we ever document member routes.
 
+## League modes (deferred from the feature pass)
+
+- [ ] **Two same-mode leagues can't diverge**: per-league overrides
+      (`leaguePrediction`) are gated to moded leagues only (`upsertLeaguePrediction`
+      rejects NORMAL). A NORMAL board re-score can't reproduce the global crowd-rarity
+      bonus + champion/best-scorer/live the canonical engine bakes into stored
+      totals, so two NORMAL leagues always share the base pick. To support it, either
+      re-score NORMAL overrides through the full engine (needs a per-league histogram
+      decision, against the global-bonus invariant) or accept base-tier-only scoring
+      for NORMAL overrides.
+- [ ] **Moded boards drop champion/best-scorer/live + crowd bonus**:
+      `getLeagueModeBoard` scores easy/hard self-contained from effective picks only.
+      Decide whether the competition's champion/best-scorer awards and in-progress
+      live points should count in moded leagues, and wire them if so.
+- [ ] **Moded leagues have no movement arrows**: `updateLeagueRankSnapshots` skips
+      non-NORMAL leagues (their base-total ranks would be wrong), and the mode board
+      ranks live with no `prevRank`. Add per-mode snapshots if arrows are wanted.
+- [ ] **HARD override budget is approximate**: `upsertLeaguePrediction` checks a
+      stake against the league's own override stakes in the round only; stakes that
+      fall through to the base pick ride the base budget separately, so a custom
+      member mixing base + override picks can exceed the true per-round effective
+      budget. Sum effective (override ?? base) stakes for exact enforcement.
+- [ ] **Tamper-evidence doesn't cover overrides**: the commitment ledger commits the
+      base pick only (global board integrity). A moded league's board depends on
+      overrides that aren't in the chain, so a league-board dispute can't be proven
+      from the ledger. Extend the ledger per-league if league-board verification is
+      wanted.
+- [ ] **Admin create-league mode parity**: `adminCreateLeague`'s ownerless branch
+      inserts directly and ignores mode/lives (always NORMAL), and skips the
+      running guard. Thread mode through if admins should make moded leagues.
+
 ## Crowd bot (deferred from the merge review)
 
 - [x] getBotOverview runs on every request with no caching: it scans all
