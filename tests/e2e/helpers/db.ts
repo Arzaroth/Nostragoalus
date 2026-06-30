@@ -21,6 +21,18 @@ export async function closeDb(): Promise<void> {
   pool = null
 }
 
+// finalize/scoring needs an active default scoring_config, but a freshly-migrated
+// e2e DB has none (it is normally seeded by the fixtures import, which the
+// isolated stack never runs). Seed a minimal one - base points only, no crowd or
+// odds bonus - so matches:finalize can score the predict spec's pick. Idempotent.
+export async function seedDefaultScoringConfig(): Promise<void> {
+  await db().query(`
+    insert into scoring_config (id, version, is_active, competition_id, bonus_source, crowd_tiers)
+    select gen_random_uuid(), 1, true, null, 'NONE', '[]'::jsonb
+    where not exists (select 1 from scoring_config where competition_id is null and is_active = true)
+  `)
+}
+
 export interface SeededFixture {
   competitionId: string
   matchId: string
