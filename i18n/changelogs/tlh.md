@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-06-30
+
 ### chelpu'
 - **ghom-Hav Hop chat inbox**: DaH chat dock "vumtaHbogh pa'mey" tetlh, ghom-Hav Hoch Daq SoH ngaQbogh laDbe'bogh pa'mey boSlu', neH DaH DabejtaHbogh ghom-Hav pa'mey neHbe'; 'ej ghItlh chu'qa'DI' taHtaH (chImmoHqa'be'). pa' wIvlu'DI' pa'vetlhDaq Sup, poQDI' ghom-Hav choHlu'.
 - **pong ghISmey**: ghom-Hav chat SoHvaD @pong lo'lu'DI', DaH web push 'ej nav 'och bell ghIS Hoch, ghom-Hav may' je qelbe'lu', pa'vetlhDaq rarbogh rarwI' tlhej. Preferences-Daq, push ghISmey tetlhDaq yIchu'.
