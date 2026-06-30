@@ -291,6 +291,14 @@ export function buildAuthOptions(database: AuthDb) {
     ],
     secret: process.env.BETTER_AUTH_SECRET ?? process.env.NUXT_BETTER_AUTH_SECRET,
     baseURL: process.env.BETTER_AUTH_URL ?? process.env.NUXT_PUBLIC_AUTH_URL,
+    // Extra trusted origins (comma-separated). Needed for an internal or
+    // self-hosted SSO IdP whose token endpoint resolves to a private address:
+    // the SSO plugin's SSRF guard refuses such a host unless its origin is
+    // trusted here. Public IdPs need nothing. Also covers the dockerized Keycloak
+    // the SSO e2e runs against (http://keycloak:8080).
+    ...(process.env.NUXT_SSO_TRUSTED_ORIGINS
+      ? { trustedOrigins: process.env.NUXT_SSO_TRUSTED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean) }
+      : {}),
   }
 }
 

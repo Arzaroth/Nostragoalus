@@ -37,6 +37,10 @@ run = "pnpm test:coverage"
 description = "E2E: email-OTP flow through the running stack + maildev"
 run = "pnpm e2e:smtp"
 
+[tasks.e2e]
+description = "Browser e2e (Playwright) against the running stack - predict/finalize/leaderboard + mail flows. See tests/e2e/README.md (SSO is opt-in via E2E_SSO=1)."
+run = "pnpm e2e"
+
 
 [tasks.seed-demo]
 description = "Fill the DB with demo players/predictions, then re-score (needs the stack up)"

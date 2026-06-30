@@ -1,0 +1,32 @@
+{
+  "realm": "nostragoalus-e2e",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "clients": [
+    {
+      "clientId": "nostragoalus-app",
+      "name": "Nostragoalus (e2e)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "e2e-keycloak-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": ["http://localhost:3000/*"],
+      "webOrigins": ["http://localhost:3000"],
+      "attributes": { "post.logout.redirect.uris": "http://localhost:3000/*" }
+    }
+  ],
+  "users": [
+    {
+      "username": "ssouser",
+      "email": "ssouser@e2e-sso.test",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "SSO",
+      "lastName": "User",
+      "credentials": [{ "type": "password", "value": "ssoPassword123", "temporary": false }]
+    }
+  ]
+}

@@ -16,6 +16,27 @@ services:
       - '127.0.0.1:1080:1080'
       - '127.0.0.1:1025:1025'
 
+  # OIDC IdP for the SSO e2e (and future SCIM). Opt-in via the `e2e` profile so a
+  # plain `mise run dev` doesn't pay the JVM. The issuer is http://keycloak:8080:
+  # the app reaches it by this service name on the compose network, and the e2e
+  # browser resolves `keycloak` -> 127.0.0.1 via Playwright's host-resolver-rules,
+  # so both sides of the OIDC dance use one URL (no /etc/hosts edit needed).
+  keycloak:
+    profiles: ['e2e']
+    image: quay.io/keycloak/keycloak:26.0
+    command: ['start-dev', '--import-realm']
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HOSTNAME: http://keycloak:8080
+      KC_HOSTNAME_STRICT: 'false'
+      KC_HTTP_ENABLED: 'true'
+      KC_HEALTH_ENABLED: 'true'
+    ports:
+      - '127.0.0.1:8080:8080'
+    volumes:
+      - ./tests/e2e/keycloak/realm-export.json:/opt/keycloak/data/import/realm.json:ro
+
   # Loopback publish of the rustfs S3 API + console (default creds rustfsadmin),
   # for host tooling and poking the bucket during dev.
   rustfs:
