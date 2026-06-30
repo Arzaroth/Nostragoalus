@@ -130,6 +130,35 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       as two. If "people" semantics are ever wanted, ref-count by `userId` like
       presence does (guests would still need a per-socket fallback).
 
+### Deferred from the feature-treatment review
+
+- [ ] **Rate-limit the WS message handler (hub-wide)**: no frame in
+      `server/routes/_ws.ts` is throttled. `viewing` is the sharpest case - each
+      count change re-broadcasts `viewers:update` to the whole room
+      (`broadcastViewerCounts` in `server/utils/live/hub.ts`), so one socket
+      rapidly toggling its viewed match (join/leave/join) fans out N messages per
+      toggle with N = room size. `subscribe` is also un-throttled and runs a DB
+      query (`sendMatchSnapshot`) per frame. The proper fix is a per-socket frame
+      budget / min-interval applied across the handler, not a one-off on
+      `viewing`. Repeat-same-match is already a no-op (idempotent `setViewing`),
+      so only toggling amplifies; matchId is length-capped to 64. Single-instance
+      today; do this with the broader hub hardening.
+- [ ] **Viewer count is spoofable upward**: the `viewing` frame has no auth gate
+      (unlike `chat:typing` / `presence:ping`, which require `subscriber.userId`)
+      because the count is meant to include guests. De-dupe is per-socket, so an
+      attacker opening many anonymous sockets can inflate "N watching now". It is
+      a soft vanity metric; the realistic mitigation is connection-level rate
+      limiting (above), not auth-gating (which would drop genuine guest viewers).
+- [ ] **Collapse the viewer rooms onto the subscriber registry**: `viewers.ts`
+      keeps two parallel maps (`rooms`, `viewing`) and the hub fans out over them
+      separately, while every other channel iterates the single `subscribers` set
+      with an inline membership filter. Since a socket views exactly one match, a
+      `viewingMatchId?: string | null` field on `LiveSubscriber` would let the
+      count and fan-out reuse that pattern and make disconnect cleanup inherent
+      (drop the subscriber -> drop the viewer), deleting both maps, the
+      `ViewerToken` type, and the multi-match `setViewing` generality the callers
+      never use. Correct as-is; this is a simplification, not a bug.
+
 ## Calendar feed (deferred from the feature-treatment review)
 
 - [ ] `server/utils/feed/token.ts` is a near-verbatim clone of

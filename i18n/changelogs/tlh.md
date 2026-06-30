@@ -10,6 +10,7 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 - **mI' Doch yISam**: mI' tIn law' (wa' ghom 8 latlh, qoj Hoch 12 latlh) 'angDI', polpa' yIqIm 'e' poQlu', vaj 1-33 rur Qagh wIvbe'lu' chu'be'. DaneHchugh, yIchoq.
 - **cha' choH je bookmaker tlhegh**: DaH cha' mach 'angwI' 'angtaH chay' Hoch beq choHpu' poSchoHDI' - Doch ngoq per: runchoHpu', tInchoHpu', qoj choHbe', choH tIq je - 'ej DaqIp'a' poSmoHlu' poS cha' je bookmaker 1X2 (provider nobDI'). decimal cha' Hoch, rurtaH.
 - **"wa'DIch wIvlIj lo'laH"**: may' DawIvpu'bogh taghDI', wIv So' DaweghHa'pu'bogh 'ej DachoHpu'bogh QaplaH law' 'e' 'anglaH may' QInHom - "wa'DIch 1-0lIj Qapla', DaweghHa'bogh." yIntaHvIS ration 'oH, mI' tlhej choHtaH, may' rInDI' rIn. 0-0 Qapchugh, qIvon mu' tlhej. SoH wIvmey qan neH, SoHvaD neH 'ang.
+- **bejwI' DaleghlaH**: DaH may' DuH QInHom 'angtaH "DaH N bejwI'" - chovnatlh poH HochDI' may'vam Daq nuv mI', 'elDI' mejDI' je choHtaH.
 
 ## [2.4.0] - 2026-06-30
 
