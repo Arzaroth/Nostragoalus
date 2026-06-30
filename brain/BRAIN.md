@@ -63,6 +63,7 @@ use the indexes.
 | [web-push.md](features/web-push.md) | VAPID push, per-category toggles, live goal/kickoff. |
 | [chat.md](features/chat.md) | E2E-encrypted league chat (threads, mentions, moderation, images). |
 | [tamper-evidence.md](features/tamper-evidence.md) | Commit-reveal hash-chain ledger + `/verify`. |
+| [past-pick-counterfactual.md](features/past-pick-counterfactual.md) | Owner-only "an earlier pick of yours would have scored", live + full-time. |
 | [share-images.md](features/share-images.md) | Prediction share cards. |
 | [pwa.md](features/pwa.md) | Install + update UX. |
 | [image-storage.md](features/image-storage.md) | Blobs out of Postgres (feature view). |
@@ -77,6 +78,7 @@ use the indexes.
 | How do I add a validated mutation route? | [architecture/server.md](architecture/server.md) |
 | What error maps to which HTTP status? | [architecture/server.md](architecture/server.md) |
 | How is a prediction scored? When does it lock? | [features/predictions-and-scoring.md](features/predictions-and-scoring.md) |
+| How does "an earlier pick of yours would have scored" work? | [features/past-pick-counterfactual.md](features/past-pick-counterfactual.md) |
 | How does the crowd/bot get its scoreline? | [features/crowd-bot.md](features/crowd-bot.md) |
 | Why did my new column not appear in dev? | [architecture/database.md](architecture/database.md) |
 | How do I add a user-facing string? | [architecture/i18n.md](architecture/i18n.md) |
