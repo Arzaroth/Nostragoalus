@@ -1,0 +1,32 @@
+# Isolated e2e stack. Brought up as its OWN compose project so it never shares the
+# dev DB / volumes / ports:
+#
+#   docker compose -p ng-e2e -f compose.yaml -f compose.dev.yaml -f compose.e2e.yaml \
+#     --profile dev --profile e2e up -d --build
+#
+# (mise run e2e-up / e2e / e2e-down wrap this.) Its own fresh Postgres volume means
+# every run starts from an empty, migrated DB; the app boots from the checked-out
+# code (so the SSO trustedOrigins fix is in). Ports are shifted off the dev stack's
+# so both can run at once. Tear down with `-p ng-e2e ... down -v` to drop the DB.
+
+services:
+  db:
+    ports: !override
+      - '127.0.0.1:5433:5432'
+
+  maildev:
+    ports: !override
+      - '127.0.0.1:1081:1080'
+      - '127.0.0.1:1026:1025'
+
+  # keycloak (from compose.dev.yaml, profile e2e) keeps host 8080 - the dev stack
+  # runs no IdP, so there's no clash, and the issuer http://keycloak:8080 stays
+  # valid for the browser's host-resolver mapping.
+
+  app-dev:
+    ports: !override
+      - '127.0.0.1:3100:3000'
+    environment:
+      # The app's own URL on the shifted port, so auth redirects/origins line up.
+      NUXT_PUBLIC_AUTH_URL: http://localhost:3100
+      BETTER_AUTH_URL: http://localhost:3100

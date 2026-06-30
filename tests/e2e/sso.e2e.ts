@@ -70,8 +70,9 @@ test('OIDC SSO login via Keycloak', async ({ page }) => {
   await typeInto(page.locator('#password'), SSO_USER.password)
   await page.locator('#kc-login').click()
 
-  // Back in the app with a session for the SSO user.
-  await page.waitForURL((url) => url.host === 'localhost:3000' && !url.pathname.startsWith('/login'), { timeout: 20_000 })
+  // Back in the app (its own host - may be the shifted e2e port) with a session.
+  const appHost = new URL(APP).host
+  await page.waitForURL((url) => url.host === appHost && !url.pathname.startsWith('/login'), { timeout: 20_000 })
   const sess = await page.request.get('/api/auth/get-session')
   const body = (await sess.json()) as { user?: { email?: string } } | null
   expect(body?.user?.email).toBe(SSO_USER.email)

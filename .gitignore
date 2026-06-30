@@ -22,6 +22,9 @@ pnpm-debug.log*
 .env.*
 !.env.example
 !.env.dev.example
+# the e2e stack URLs/ports (no secrets) are version-controlled so e2e targets the
+# isolated stack by default
+!.env.e2e
 
 # OS / editor
 .DS_Store

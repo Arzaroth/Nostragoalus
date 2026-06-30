@@ -5,6 +5,7 @@ import {
   closeDb,
   finishMatch,
   getMatchPrediction,
+  getPredictionScore,
   seedCompetitionWithMatch,
   type SeededFixture,
 } from './helpers/db'
@@ -55,9 +56,13 @@ test('predict -> finalize -> leaderboard', async ({ page }) => {
     data: { email: ADMIN.email, password: ADMIN.password },
   })
   expect(signin.ok(), 'admin sign-in').toBeTruthy()
-  const finalize = await adminApi.post('/api/admin/run-task', { data: { name: 'matches:finalize' } })
+  // Generous timeout: against the HMR dev server this route compiles on first hit.
+  const finalize = await adminApi.post('/api/admin/run-task', { data: { name: 'matches:finalize' }, timeout: 60_000 })
   expect(finalize.ok(), 'finalize run-task').toBeTruthy()
   await adminApi.dispose()
+
+  // Finalize should have locked + scored the exact pick.
+  expect(await getPredictionScore(fixture.matchId), 'prediction scored by finalize').toMatchObject({ baseTier: 'EXACT' })
 
   // The leaderboard now ranks the predictor with the points the exact pick scored.
   await page.goto(`/${fixture.slug}/leaderboard`)

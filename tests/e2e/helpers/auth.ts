@@ -33,10 +33,17 @@ export async function signUp(page: Page, user: Credentials): Promise<void> {
   await typeInto(page.locator('input[type="password"]').first(), user.password)
   await page.getByRole('button', { name: 'Create account' }).click()
 
-  const mail = await waitForMail(user.email, { subjectIncludes: 'Confirm', timeoutMs: 20_000 })
-  await page.goto(linkFromMail(mail, 'verify-email'))
-  // verify-email verifies + auto-signs-in, then redirects off the verify page.
-  await page.waitForURL((url) => !url.pathname.startsWith('/verify-email'), { timeout: 20_000 })
+  // Email verification off (a fresh DB's default): sign-up signs in and leaves
+  // /signup. On: it stays, mails a link, and that link auto-signs-in. Handle both.
+  const signedIn = await page
+    .waitForURL((url) => !url.pathname.startsWith('/signup'), { timeout: 6_000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!signedIn) {
+    const mail = await waitForMail(user.email, { subjectIncludes: 'Confirm', timeoutMs: 20_000 })
+    await page.goto(linkFromMail(mail, 'verify-email'))
+    await page.waitForURL((url) => !url.pathname.startsWith('/verify-email'), { timeout: 20_000 })
+  }
   await dismissOnboarding(page)
 }
 
