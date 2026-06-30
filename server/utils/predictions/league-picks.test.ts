@@ -100,6 +100,14 @@ describe('upsertLeaguePrediction', () => {
     ).rejects.toBeInstanceOf(ValidationError)
   })
 
+  it('rejects an override in a NORMAL league', async () => {
+    const leagueId = await makeLeague(db, { competitionId, ownerId: 'u1', mode: 'NORMAL' })
+    const m = await openMatch()
+    await expect(
+      upsertLeaguePrediction(db, { leagueId, userId: 'u1', matchId: m, home: 1, away: 0 }, NOW),
+    ).rejects.toBeInstanceOf(ValidationError)
+  })
+
   it('rejects an invalid wager and one over the round budget', async () => {
     const leagueId = await makeLeague(db, { competitionId, ownerId: 'u1', mode: 'HARD' })
     const a = await openMatch()
@@ -130,6 +138,15 @@ describe('setLeaguePicksSynced', () => {
       .from(leaguePrediction)
       .where(eq(leaguePrediction.leagueId, leagueId))
     expect(remaining).toEqual([{ matchId: locked }])
+  })
+
+  it('switching to custom keeps overrides and flips the flag', async () => {
+    const leagueId = await makeLeague(db, { competitionId, ownerId: 'u1', mode: 'EASY' })
+    const open = await openMatch()
+    await makeLeaguePrediction(db, { leagueId, userId: 'u1', matchId: open, roundId, home: 1, away: 0 })
+    await setLeaguePicksSynced(db, { leagueId, userId: 'u1', synced: false }, NOW)
+    expect(await picksSynced(leagueId, 'u1')).toBe(false)
+    expect(await getLeagueOverrides(db, leagueId, 'u1')).toHaveLength(1)
   })
 
   it('rejects a non-member', async () => {
@@ -177,6 +194,13 @@ describe('getLeagueCompleteness', () => {
 
     const [c] = await getLeagueCompleteness(db, 'u1', competitionId, NOW)
     expect(c.summary).toMatchObject({ total: 1, complete: 1 })
+  })
+
+  it('returns empty summaries when no match is open to predict', async () => {
+    await makeLeague(db, { competitionId, ownerId: 'u1', mode: 'NORMAL' })
+    await makeMatch(db, { competitionId, roundId, kickoffTime: PAST }) // locked, not predictable
+    const [c] = await getLeagueCompleteness(db, 'u1', competitionId, NOW)
+    expect(c.summary).toEqual({ total: 0, complete: 0, incomplete: 0, missing: 0, needsExact: 0, needsStake: 0 })
   })
 
   it('counts a missing pick and returns [] with no leagues', async () => {

@@ -125,6 +125,70 @@ describe('getLeagueModeBoard - HARDCORE', () => {
   })
 })
 
+describe('getLeagueModeBoard - edge cases', () => {
+  it('scores zero before any match is decided', async () => {
+    await makeUser(db, 'a')
+    const leagueId = await makeLeague(db, { competitionId, ownerId: 'a', mode: 'EASY' })
+    const board = await getLeagueModeBoard(db, { leagueId, mode: 'EASY', competitionId })
+    expect(rowsOf(board).a).toMatchObject({ rank: 1, points: 0 })
+  })
+
+  it('shares a rank when members tie on points', async () => {
+    await makeUser(db, 'a')
+    await makeUser(db, 'b')
+    const leagueId = await makeLeague(db, { competitionId, ownerId: 'a', mode: 'EASY' })
+    await addLeagueMember(db, leagueId, 'b')
+    const m = await scoredMatch(2, 1) // HOME
+    await makePrediction(db, { userId: 'a', matchId: m, roundId, home: 1, away: 0 })
+    await makePrediction(db, { userId: 'b', matchId: m, roundId, home: 3, away: 0 })
+    const by = rowsOf(await getLeagueModeBoard(db, { leagueId, mode: 'EASY', competitionId }))
+    expect(by.a.rank).toBe(1)
+    expect(by.b.rank).toBe(1)
+  })
+
+  it('defaults hardcore lives to 1 when unset', async () => {
+    await makeUser(db, 'a')
+    const leagueId = await makeLeague(db, { competitionId, ownerId: 'a', mode: 'HARDCORE', lives: 1 })
+    const m = await scoredMatch(2, 1)
+    await makePrediction(db, { userId: 'a', matchId: m, roundId, home: 0, away: 1 }) // wrong
+    // lives omitted -> defaults to 1, so one miss eliminates.
+    const by = rowsOf(await getLeagueModeBoard(db, { leagueId, mode: 'HARDCORE', competitionId })) as Record<string, SurvivalRow>
+    expect(by.a).toMatchObject({ alive: false })
+  })
+
+  it('ranks survivors, the eliminated by depth, and ties together', async () => {
+    for (const u of ['a', 'b', 'c', 'd', 'e']) await makeUser(db, u)
+    const leagueId = await makeLeague(db, { competitionId, ownerId: 'a', mode: 'HARDCORE', lives: 2 })
+    for (const u of ['b', 'c', 'd', 'e']) await addLeagueMember(db, leagueId, u)
+    const m1 = await scoredMatch(2, 1) // HOME
+    const m2 = await scoredMatch(1, 1) // DRAW
+    const m3 = await scoredMatch(0, 1) // AWAY
+    // A: all correct -> alive, survived 3, lives 2
+    await makePrediction(db, { userId: 'a', matchId: m1, roundId, home: 1, away: 0 })
+    await makePrediction(db, { userId: 'a', matchId: m2, roundId, home: 2, away: 2 })
+    await makePrediction(db, { userId: 'a', matchId: m3, roundId, home: 0, away: 3 })
+    // B: wrong m1 (absorbed), correct m2/m3 -> alive, survived 2, lives 1
+    await makePrediction(db, { userId: 'b', matchId: m1, roundId, home: 0, away: 1 })
+    await makePrediction(db, { userId: 'b', matchId: m2, roundId, home: 2, away: 2 })
+    await makePrediction(db, { userId: 'b', matchId: m3, roundId, home: 0, away: 3 })
+    // C: wrong m1 and m2 -> out at m2 (index 1), survived 0
+    await makePrediction(db, { userId: 'c', matchId: m1, roundId, home: 0, away: 1 })
+    await makePrediction(db, { userId: 'c', matchId: m2, roundId, home: 2, away: 0 })
+    // D: no picks at all -> missing m1 and m2 -> out at m2 (index 1), survived 0
+    // E: correct m1, wrong m2 and m3 -> out at m3 (index 2), survived 1
+    await makePrediction(db, { userId: 'e', matchId: m1, roundId, home: 1, away: 0 })
+    await makePrediction(db, { userId: 'e', matchId: m2, roundId, home: 2, away: 0 })
+    await makePrediction(db, { userId: 'e', matchId: m3, roundId, home: 5, away: 5 })
+
+    const by = rowsOf(await getLeagueModeBoard(db, { leagueId, mode: 'HARDCORE', competitionId, lives: 2 })) as Record<string, SurvivalRow>
+    expect(by.a).toMatchObject({ rank: 1, alive: true, survived: 3, livesLeft: 2 })
+    expect(by.b).toMatchObject({ rank: 1, alive: true, survived: 2, livesLeft: 1 })
+    expect(by.e).toMatchObject({ rank: 3, alive: false })
+    expect(by.c).toMatchObject({ rank: 4, alive: false })
+    expect(by.d).toMatchObject({ rank: 4, alive: false, survived: 0 })
+  })
+})
+
 describe('getLeagueModeBoard - visibility', () => {
   it('hides private profiles unless entitled', async () => {
     await makeUser(db, 'a')
@@ -141,5 +205,18 @@ describe('getLeagueModeBoard - visibility', () => {
 
     const self = await getLeagueModeBoard(db, { leagueId, mode: 'EASY', competitionId, alwaysIncludeUserId: 'b' })
     expect(self.rows.map((r) => r.userId).sort()).toEqual(['a', 'b'])
+  })
+
+  it('hides admin-hidden members unless includeHidden', async () => {
+    await makeUser(db, 'a')
+    await makeUser(db, 'c')
+    await db.update(user).set({ hiddenFromLeaderboard: true }).where(eq(user.id, 'c'))
+    const leagueId = await makeLeague(db, { competitionId, ownerId: 'a', mode: 'EASY' })
+    await addLeagueMember(db, leagueId, 'c')
+
+    const hidden = await getLeagueModeBoard(db, { leagueId, mode: 'EASY', competitionId })
+    expect(hidden.rows.map((r) => r.userId)).toEqual(['a'])
+    const shown = await getLeagueModeBoard(db, { leagueId, mode: 'EASY', competitionId, includeHidden: true })
+    expect(shown.rows.map((r) => r.userId).sort()).toEqual(['a', 'c'])
   })
 })
