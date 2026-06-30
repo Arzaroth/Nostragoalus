@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- **Self-hosted SSO identity providers**: an internal or self-hosted SSO provider whose token endpoint sits on a private network now works - set NUXT_SSO_TRUSTED_ORIGINS to its origin and the login flow trusts it, where the built-in guard otherwise refuses a private-address provider. Public providers like Google need no change.
+
 ### Fixed
 - **No more duplicate goal alerts**: a goal push now fires only when the live score climbs past the highest score already announced, so a VAR-disallowed goal that briefly drops the scoreline and then returns no longer pushes the same goal twice.
 - **Suspended matches count as live**: a match halted mid-play (suspended or interrupted) is now treated as live on the home banner, the world map and the match page, the same as on the fixtures list, instead of looking like it hasn't started.

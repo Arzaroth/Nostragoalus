@@ -120,7 +120,8 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   scorers and top assists for the competition, with team flags
 - Auth: identifier-first login with **SSO domain capture** - runtime-configurable OIDC / SAML /
   Google providers (several domains each, display names, envelope-encrypted secrets, in-place
-  editing, SP metadata for IdP setup); email + password (HIBP-checked) with mailed reset; optional
+  editing, SP metadata for IdP setup; an internal or private-network IdP needs its origin in
+  `NUXT_SSO_TRUSTED_ORIGINS`); email + password (HIBP-checked) with mailed reset; optional
   admin-required **email verification** for sign-ups (mailed link, force-verify + daily prune of
   unconfirmed accounts); **2FA** (TOTP, email codes, single-use backup codes, trusted devices);
   **passkeys** (sudo-gated registration). SSO-managed accounts hand credential management to the IdP

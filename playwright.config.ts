@@ -13,10 +13,10 @@ try {
   // no .env.e2e: fall back to the defaults baked into the helpers (dev stack)
 }
 
-// Browser e2e runs against an already-running stack (like the e2e:smtp script):
-// bring it up with `mise run preview` (app + db + maildev + keycloak), then
-// `pnpm e2e`. The app is on :3000, maildev's HTTP inbox on :1080, Keycloak on
-// :8081 - overridable for CI via the E2E_* env vars.
+// Browser e2e runs against an already-running stack: `mise run e2e` brings up the
+// isolated ng-e2e stack (via e2e-up) and runs `pnpm e2e`. With .env.e2e loaded
+// above, the app is on :3100, maildev's HTTP inbox on :1081 and Keycloak on :8080
+// - all overridable via the E2E_* env vars (the defaults below are the dev stack).
 const APP = process.env.E2E_APP_URL ?? 'http://localhost:3000'
 
 export default defineConfig({

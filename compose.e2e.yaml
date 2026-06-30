@@ -30,3 +30,6 @@ services:
       # The app's own URL on the shifted port, so auth redirects/origins line up.
       NUXT_PUBLIC_AUTH_URL: http://localhost:3100
       BETTER_AUTH_URL: http://localhost:3100
+      # The e2e admin (created by global-setup) must actually be an admin for the
+      # finalize/SSO specs, so pin it here instead of leaning on the host .env.
+      NUXT_ADMIN_EMAILS: verify@example.com

@@ -5,6 +5,9 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### chelpu'
+- **SSO IdP juHDaq vu'lu'bogh**: SSO nob qoj juHDaq vu'lu'bogh, pegh HeHDaq token Daq tu'lu'chugh, DaH vumlaH - NUXT_SSO_TRUSTED_ORIGINS-Daq HeH yIqon, vaj voqmoH 'el, 'ach Hubwl' tlhab nob pegh Daq lajbe'. Google rur nob tlhab choHbe'.
+
 ### tI'pu'
 - **wIgh QInHom cha'logh ngeHbe'qa'**: mI' Dun law' toblu'pu'bogh mI' Dun law' tlholDI' neH wIgh QInHom ngeHlu', vaj VAR luSuqHa'bogh wIgh, mI' poDmoHbogh 'ej cheghbogh, wIgh rap cha'logh ngeHbe'qa'.
 - **may' mevlu'pu'bogh DuH rur**: may' qaStaHvIS mevlu'bogh (mevlu' qoj 'IpchoHlu') DaH juH 'echlet, qo' chITlh, may' QInHom je DuH rur, may'mey tetlh rur, taghpu'be' rurbe'.
