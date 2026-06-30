@@ -81,5 +81,14 @@ export function useLeaguePickMutations() {
     onSuccess: invalidate,
   })
 
-  return { upsertOverride, setPicksSynced }
+  const setOverrideJoker = useMutation({
+    mutationFn: (input: { leagueId: string; matchId: string; isJoker: boolean }) =>
+      $fetch<{ ok: boolean }>(`/api/leagues/${input.leagueId}/joker`, {
+        method: 'PUT',
+        body: { matchId: input.matchId, isJoker: input.isJoker },
+      }),
+    onSuccess: invalidate,
+  })
+
+  return { upsertOverride, setPicksSynced, setOverrideJoker }
 }

@@ -868,9 +868,11 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
       on the matches page. A per-(match, league) chip on each card (`✓ done here /
       ⚠ needs a score there`) would be finer-grained; deferred to keep the card
       uncluttered.
-- [ ] **Override joker**: the per-league override carries `is_joker`, but the
-      matches-page joker toggle only writes the base pick, so a custom league
-      can't joker a different match. Wire override-joker if wanted.
+- [ ] **Joker round-lock in custom leagues**: `jokerRoundLocked` (the client
+      button-disable) is derived from base-pick jokers, so in a custom moded league
+      it can mis-disable the joker button for a round whose override joker sits on a
+      locked match. The server still enforces it (a toast on the rare race); refine
+      the client check to consider override jokers if it bites.
 - [ ] **Real-browser verification**: the moded prediction flow (stake stepper,
       W/D/L quick-pick, follow/customize toggle, nudge) passed typecheck +
       component tests + build but was not driven in a real browser (auth needed).

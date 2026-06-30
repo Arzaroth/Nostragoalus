@@ -16,6 +16,7 @@ import { ForbiddenError, LockedError, NotFoundError, ValidationError } from '../
 import {
   getLeagueCompleteness,
   getLeagueOverrides,
+  setLeagueJoker,
   setLeaguePicksSynced,
   upsertLeaguePrediction,
   upsertPrediction,
@@ -182,6 +183,41 @@ describe('base upsertPrediction with mode fields', () => {
     await expect(
       upsertPrediction(db, { userId: 'u1', matchId: b, home: 0, away: 1, wager: 5 }, NOW),
     ).rejects.toBeInstanceOf(ValidationError)
+  })
+})
+
+describe('setLeagueJoker', () => {
+  it('jokers an override (creating it from base) and moves within the round', async () => {
+    const leagueId = await makeLeague(db, { competitionId, ownerId: 'u1', mode: 'EASY' })
+    const a = await openMatch()
+    const b = await openMatch()
+    await makePrediction(db, { userId: 'u1', matchId: a, roundId, home: 1, away: 0 })
+    await makePrediction(db, { userId: 'u1', matchId: b, roundId, home: 2, away: 1 })
+
+    await setLeagueJoker(db, { leagueId, userId: 'u1', matchId: a, isJoker: true }, NOW)
+    expect(await picksSynced(leagueId, 'u1')).toBe(false)
+    let ovs = await getLeagueOverrides(db, leagueId, 'u1')
+    expect(ovs.find((o) => o.matchId === a)?.isJoker).toBe(true)
+
+    // Move it to B: A clears, B sets (one joker per league per round).
+    await setLeagueJoker(db, { leagueId, userId: 'u1', matchId: b, isJoker: true }, NOW)
+    ovs = await getLeagueOverrides(db, leagueId, 'u1')
+    expect(ovs.find((o) => o.matchId === a)?.isJoker).toBe(false)
+    expect(ovs.find((o) => o.matchId === b)?.isJoker).toBe(true)
+  })
+
+  it('rejects missing match, locked, single-match, non-member, no pick', async () => {
+    const leagueId = await makeLeague(db, { competitionId, ownerId: 'u1', mode: 'EASY' })
+    await makeUser(db, 'outsider')
+    await expect(setLeagueJoker(db, { leagueId, userId: 'u1', matchId: 'nope', isJoker: true }, NOW)).rejects.toBeInstanceOf(NotFoundError)
+    const locked = await makeMatch(db, { competitionId, roundId, kickoffTime: PAST })
+    await expect(setLeagueJoker(db, { leagueId, userId: 'u1', matchId: locked, isJoker: true }, NOW)).rejects.toBeInstanceOf(LockedError)
+    const finalRound = (await findRoundId(db, competitionId, 'FINAL', null)) as string
+    const finalM = await makeMatch(db, { competitionId, roundId: finalRound, stage: 'FINAL', kickoffTime: FUTURE })
+    await expect(setLeagueJoker(db, { leagueId, userId: 'u1', matchId: finalM, isJoker: true }, NOW)).rejects.toBeInstanceOf(ValidationError)
+    const open = await openMatch()
+    await expect(setLeagueJoker(db, { leagueId, userId: 'outsider', matchId: open, isJoker: true }, NOW)).rejects.toBeInstanceOf(ForbiddenError)
+    await expect(setLeagueJoker(db, { leagueId, userId: 'u1', matchId: open, isJoker: true }, NOW)).rejects.toBeInstanceOf(NotFoundError)
   })
 })
 

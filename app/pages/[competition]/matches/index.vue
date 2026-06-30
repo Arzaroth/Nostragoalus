@@ -151,7 +151,7 @@ const showQuickPick = computed(() =>
   pilledLeague.value ? pilledLeague.value.mode === 'EASY' || pilledLeague.value.mode === 'HARDCORE' : hasOutcomeLeague.value,
 )
 
-const { upsertOverride, setPicksSynced } = useLeaguePickMutations()
+const { upsertOverride, setPicksSynced, setOverrideJoker } = useLeaguePickMutations()
 const overridesQ = useLeagueOverrides(leagueId, customLeague)
 const overrideByMatch = computed(() => overridesQ.data.value ?? {})
 
@@ -425,21 +425,27 @@ function openMatch(e: MouseEvent, id: string) {
   navigateTo(`/${slug.value}/matches/${id}`)
 }
 const toast = useToast()
-function toggleJoker(p: MyPrediction) {
-  setJoker.mutate(
-    { matchId: p.matchId, isJoker: !p.isJoker },
-    {
+// Joker targets the league override when editing a custom moded league, else the
+// base pick. effJoker reads the effective pick's current joker state.
+function effJoker(matchId: string): boolean {
+  return !!effective(matchId)?.isJoker
+}
+function toggleJoker(matchId: string) {
+  const onError = (e: any) =>
+    toast.add({
       // Buttons are disabled when the round's joker is locked, so this is a rare
       // edge (e.g. a race) - a transient toast, not a layout-shifting banner.
-      onError: (e: any) =>
-        toast.add({
-          severity: 'warn',
-          summary: t('predictions.jokerError'),
-          detail: e?.data?.message || e?.data?.statusMessage || undefined,
-          life: 5000,
-        }),
-    },
-  )
+      severity: 'warn',
+      summary: t('predictions.jokerError'),
+      detail: e?.data?.message || e?.data?.statusMessage || undefined,
+      life: 5000,
+    })
+  const next = !effJoker(matchId)
+  if (customLeague.value && leagueId.value) {
+    setOverrideJoker.mutate({ leagueId: leagueId.value, matchId, isJoker: next }, { onError })
+  } else {
+    setJoker.mutate({ matchId, isJoker: next }, { onError })
+  }
 }
 function fmtTime(d: string) {
   return new Date(d).toLocaleString(locale.value, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
@@ -729,12 +735,12 @@ watch(searchOpen, () => nextTick(updateListHeight))
                   v-else-if="!isSingleMatchStage(m.stage)"
                   v-tooltip.top="jokerRoundLocked(m) ? t('predictions.jokerRoundLocked') : undefined"
                   :label="t('predictions.joker')"
-                  :icon="predByMatch[m.id]?.isJoker ? 'pi pi-star-fill' : 'pi pi-star'"
-                  :severity="predByMatch[m.id]?.isJoker ? 'warn' : 'secondary'"
-                  :outlined="!predByMatch[m.id]?.isJoker"
+                  :icon="effJoker(m.id) ? 'pi pi-star-fill' : 'pi pi-star'"
+                  :severity="effJoker(m.id) ? 'warn' : 'secondary'"
+                  :outlined="!effJoker(m.id)"
                   size="small"
-                  :disabled="m.isLocked || !predByMatch[m.id] || jokerRoundLocked(m)"
-                  @click="predByMatch[m.id] && toggleJoker(predByMatch[m.id])"
+                  :disabled="m.isLocked || !effective(m.id) || jokerRoundLocked(m)"
+                  @click="effective(m.id) && toggleJoker(m.id)"
                 />
                 <span v-if="predByMatch[m.id]?.totalPoints != null" class="text-xs font-semibold" style="color: var(--p-primary-color)">
                   +{{ predByMatch[m.id].totalPoints }} pts · {{ tierLabel(predByMatch[m.id].baseTier, t) }}

@@ -486,6 +486,89 @@ export async function setLeaguePicksSynced(
   })
 }
 
+export interface SetLeagueJokerInput {
+  leagueId: string
+  userId: string
+  matchId: string
+  isJoker: boolean
+}
+
+// Place/clear the joker on a league override (custom leagues only). Mirrors
+// setJoker but per-league: the joker rides the override row, so a custom league
+// can joker a different match than the base pick. Creates an override from the
+// base pick if the league still mirrors it. One joker per (league, round).
+export async function setLeagueJoker(db: AppDatabase, input: SetLeagueJokerInput, now: Date = new Date()): Promise<void> {
+  await assertLeagueMembership(db, input.leagueId, input.userId)
+  const [m] = await db.select().from(match).where(eq(match.id, input.matchId)).limit(1)
+  if (!m) throw new NotFoundError('match not found')
+  if (now >= m.kickoffTime) throw new LockedError()
+  if (isSingleMatchStage(m.stage)) throw new ValidationError('no joker on single-match rounds')
+  if (!m.homeTeamCode || !m.awayTeamCode) throw new ValidationError('teams not confirmed yet')
+
+  await db.transaction(async (tx) => {
+    let [ov] = await tx
+      .select({ id: leaguePrediction.id })
+      .from(leaguePrediction)
+      .where(
+        and(
+          eq(leaguePrediction.leagueId, input.leagueId),
+          eq(leaguePrediction.userId, input.userId),
+          eq(leaguePrediction.matchId, input.matchId),
+        ),
+      )
+      .limit(1)
+    if (!ov) {
+      // Carry the joker on a fresh override copied from the base pick.
+      const [base] = await tx
+        .select()
+        .from(prediction)
+        .where(and(eq(prediction.userId, input.userId), eq(prediction.matchId, input.matchId)))
+        .limit(1)
+      if (!base) throw new NotFoundError('prediction not found')
+      await tx
+        .update(leagueMember)
+        .set({ picksSynced: false })
+        .where(and(eq(leagueMember.leagueId, input.leagueId), eq(leagueMember.userId, input.userId)))
+      ;[ov] = await tx
+        .insert(leaguePrediction)
+        .values({
+          leagueId: input.leagueId,
+          userId: input.userId,
+          matchId: input.matchId,
+          roundId: m.roundId,
+          homeGoals: base.homeGoals,
+          awayGoals: base.awayGoals,
+          isOutcomeOnly: base.isOutcomeOnly,
+          wager: base.wager,
+        })
+        .returning({ id: leaguePrediction.id })
+    }
+
+    if (input.isJoker) {
+      // Move the league's joker off the round's current joker match (if open).
+      const current = await tx
+        .select({ id: leaguePrediction.id, kickoffTime: match.kickoffTime })
+        .from(leaguePrediction)
+        .innerJoin(match, eq(match.id, leaguePrediction.matchId))
+        .where(
+          and(
+            eq(leaguePrediction.leagueId, input.leagueId),
+            eq(leaguePrediction.userId, input.userId),
+            eq(leaguePrediction.roundId, m.roundId),
+            eq(leaguePrediction.isJoker, true),
+          ),
+        )
+        .limit(1)
+      if (current.length > 0 && current[0].id !== ov.id) {
+        if (now >= current[0].kickoffTime) throw new LockedError()
+        await tx.update(leaguePrediction).set({ isJoker: false }).where(eq(leaguePrediction.id, current[0].id))
+      }
+    }
+
+    await tx.update(leaguePrediction).set({ isJoker: input.isJoker }).where(eq(leaguePrediction.id, ov.id))
+  })
+}
+
 // A member's override picks in a league (for the per-league pick editor).
 export async function getLeagueOverrides(db: AppDatabase, leagueId: string, userId: string) {
   return db
