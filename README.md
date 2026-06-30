@@ -23,13 +23,20 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
 ## Features
 
 - Score predictions with closeness-tiered points, a rarity bonus, and one ×2 **joker** per round;
-  Enter/space hops between score inputs so a whole matchday can be typed without the mouse
+  Enter/space hops between score inputs so a whole matchday can be typed without the mouse, a banner
+  counts how many matches still need a pick before the next lockout (with a jump to the soonest), and
+  a wildly high scoreline asks you to confirm before it saves
 - Optional **crowd totals** under every prediction (everyone's picks combined), updated live over WebSocket
 - **Bookmaker odds** (decimal 1X2, Sofascore feed) under every score input, frozen at kickoff;
   optional ODDS scoring mode awards the bonus from the closing odds of the actual outcome, and an
   admin backfill recovers closing odds for past tournaments. Admins pick the odds provider per
-  competition (switching clears the old provider's match mapping so it re-resolves cleanly)
+  competition (switching clears the old provider's match mapping so it re-resolves cleanly). A marker
+  shows how each price has moved since it opened (shortened, drifted or flat), expandable to the
+  opening prices and the per-bookmaker 1X2 when the provider supplies them
 - Transparent scoring: base + rarity bonus + joker/final ×2 broken out on every pick, with the full formula in the FAQ
+- **Earlier-pick regret**: once a match you predicted kicks off, the match page can show you when a
+  score you had picked earlier and swapped off would have scored better than the one you kept (live
+  and provisional, settling at full-time, with a cheekier line for a winning 0-0) - your own past picks only
 - **Champion pick** bonus, locked at the first kickoff and shown beside every name on the rankings
 - Per-competition **and global** rankings with movement arrows; browse other players' (locked)
   predictions; admins can hide any account from the rankings (hidden players still count in crowd totals)
@@ -75,6 +82,8 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
 - **Match reactions**: from kickoff on, react with an emoji (🔥 ⚽ 😮 🤣 😢 😡) - counts climb live
   for everyone watching, with your league's tally beside the global one when a league is selected;
   one reaction each, tap to change or clear
+- **Live viewer count**: a live match page shows "N watching now", a real-time count of how many
+  people are on that match, updating as they come and go
 - **Notification center**: a header bell gathering pick reminders before lockout, your match
   results (scoreline + points), league activity (joins, role changes, add/remove), @mentions in any
   league chat and how your champion and Golden Boot picks finished - unread count, live push,
@@ -97,7 +106,9 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   own browser, and your device remembers the last head it saw (localStorage, never sent) so a later
   edit to anything you already checked raises a site-wide warning - no hash to save by hand
 - Per-team pages: official squads with positions, manager, season stats, competition switcher
-- Knockout **bracket** and an interactive **world map** (Leaflet / OpenStreetMap); with crowd
+- Knockout **bracket** that updates live as matches play - scores, penalty shootouts and winners
+  advancing into the next round without a reload - and an interactive **world map** (Leaflet /
+  OpenStreetMap); with crowd
   totals enabled, the map tints each nation by where the field expects its current match to go
   (blue favoured, red underdog), updating live; teams out of the tournament (knockout losers,
   group non-qualifiers, and teams mathematically eliminated mid-group - head-to-head included)
