@@ -31,7 +31,6 @@ export interface PastPickOptions {
 export async function getPastPickCounterfactual(
   db: AppDatabase,
   opts: PastPickOptions,
-  now: Date = new Date(),
 ): Promise<PastPickCounterfactual> {
   const [m] = await db
     .select({

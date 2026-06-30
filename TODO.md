@@ -25,6 +25,20 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
 ## Past-pick counterfactual (deferred from the feature pass)
 
+- [ ] **Extract a shared `buildMatchScoreInput` / score-the-locked-field helper**
+      (deferred from the feature-treatment review). The `ScoreMatchInput`
+      assembly in `server/utils/past-pick/service.ts` (the locked-field query +
+      `actualOutcomeOdds` ODDS lookup + `forceJoker: countsDouble(stage)` +
+      `scorePredictions`) is now a 4th verbatim copy of the same glue in
+      `server/utils/leaderboard/live.ts`, `leaderboard/match.ts` and
+      `sync/finalize.ts`. The scoring math is already shared; only this
+      input-building glue is duplicated. A future scoring-input change (a new
+      `bonusSource` needing its own lookup, a different field-lock predicate)
+      must be edited in all four sites in lockstep or past-pick's replay silently
+      diverges from what the live boards and finalize actually score. Out of
+      scope here (touches three other gated services); extract once and adopt it
+      in all four.
+
 - [ ] Unify the past-pick counterfactual with the planned "evil twin" and
       "what-if stats" into a single "counterfactuals" surface, instead of three
       one-off lines/widgets. `server/utils/past-pick/service.ts` already replays a
