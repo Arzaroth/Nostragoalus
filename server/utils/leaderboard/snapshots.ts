@@ -1,7 +1,8 @@
 import { and, eq, notInArray, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { leaderboardRank, league, leagueLeaderboardRank } from '../../../db/schema'
-import { getLeaderboard, type LeaderboardRow } from './service'
+import { getLeaderboard } from './service'
+import { getLeagueModeBoard } from './modes'
 
 // Persist the current ranks in one upsert; prevRank is always set to the rank
 // this snapshot replaces, so movement reflects the change at THIS update and
@@ -15,7 +16,7 @@ async function writeRankSnapshots(
   table: typeof leaderboardRank | typeof leagueLeaderboardRank,
   scopeColumn: typeof leaderboardRank.competitionId | typeof leagueLeaderboardRank.leagueId,
   scope: { competitionId: string } | { leagueId: string },
-  board: LeaderboardRow[],
+  board: { userId: string; rank: number }[],
 ): Promise<void> {
   const scopeValue = 'competitionId' in scope ? scope.competitionId : scope.leagueId
   const userIds = board.map((row) => row.userId)
@@ -74,18 +75,21 @@ export async function getRankSnapshots(db: AppDatabase, competitionId: string): 
 }
 
 // Same per league of the competition. Snapshots rank the full member set
-// (private profiles included) - they're served to members/admins only. Only
-// NORMAL leagues: moded leagues (easy/hard/hardcore) re-score from effective
-// picks and rank live, so a base-total snapshot would be wrong for them (their
-// movement arrows are deferred - see TODO.md).
+// (private profiles included) - they're served to members/admins only. NORMAL
+// leagues snapshot the standard board; moded leagues snapshot their re-scored
+// mode board (points rank, or survival rank for hardcore) so they too get
+// movement arrows.
 export async function updateLeagueRankSnapshots(db: AppDatabase, competitionId: string): Promise<void> {
   const leagues = await db
-    .select({ id: league.id })
+    .select({ id: league.id, mode: league.mode, lives: league.lives })
     .from(league)
-    .where(and(eq(league.competitionId, competitionId), eq(league.mode, 'NORMAL')))
+    .where(eq(league.competitionId, competitionId))
   for (const l of leagues) {
-    const board = await getLeaderboard(db, { competitionId, leagueId: l.id, includePrivate: true, limit: 1000 })
-    await writeRankSnapshots(db, leagueLeaderboardRank, leagueLeaderboardRank.leagueId, { leagueId: l.id }, board)
+    const rows =
+      l.mode === 'NORMAL'
+        ? await getLeaderboard(db, { competitionId, leagueId: l.id, includePrivate: true, limit: 1000 })
+        : (await getLeagueModeBoard(db, { leagueId: l.id, mode: l.mode, competitionId, lives: l.lives, includePrivate: true })).rows
+    await writeRankSnapshots(db, leagueLeaderboardRank, leagueLeaderboardRank.leagueId, { leagueId: l.id }, rows)
   }
 }
 

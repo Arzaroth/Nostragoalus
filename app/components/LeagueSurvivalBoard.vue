@@ -19,9 +19,14 @@ function medal(rank: number) {
       :class="{ 'opacity-60': !r.alive }"
       :style="`background: var(--p-content-background); border-color: ${r.userId === props.meId ? 'var(--p-primary-color)' : 'var(--p-content-border-color)'}; border-width: ${r.userId === props.meId ? '2px' : '1px'}`"
     >
-      <div class="w-8 text-center shrink-0 font-bold tabular-nums text-lg">
-        <span v-if="r.alive && medal(r.rank)">{{ medal(r.rank) }}</span>
-        <span v-else style="color: var(--p-text-muted-color)">{{ r.rank }}</span>
+      <div class="w-8 text-center shrink-0">
+        <div class="font-bold tabular-nums text-lg">
+          <span v-if="r.alive && medal(r.rank)">{{ medal(r.rank) }}</span>
+          <span v-else style="color: var(--p-text-muted-color)">{{ r.rank }}</span>
+        </div>
+        <div v-if="r.movement" class="text-[10px] font-bold leading-none" :style="`color: ${r.movement > 0 ? 'var(--ng-success)' : 'var(--ng-danger)'}`">
+          {{ r.movement > 0 ? '▲' : '▼' }}{{ Math.abs(r.movement) }}
+        </div>
       </div>
       <UserAvatar :image="r.image" :user-id="r.userId" />
       <div class="flex-1 min-w-0">

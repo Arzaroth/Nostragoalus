@@ -363,8 +363,8 @@ function buildSurvivalBoard(
 }
 
 export type LeagueModeBoard =
-  | { kind: 'points'; mode: LeagueMode; rows: ModePointsRow[] }
-  | { kind: 'survival'; mode: 'HARDCORE'; rows: SurvivalRow[] }
+  | { kind: 'points'; mode: LeagueMode; rows: ModePointsRow[]; live: boolean }
+  | { kind: 'survival'; mode: 'HARDCORE'; rows: SurvivalRow[]; live: boolean }
 
 export interface LeagueModeBoardOptions extends BoardOptions {
   leagueId: string
@@ -389,7 +389,7 @@ export async function getLeagueModeBoard(db: AppDatabase, opts: LeagueModeBoardO
   )
 
   if (opts.mode === 'HARDCORE') {
-    return { kind: 'survival', mode: 'HARDCORE', rows: buildSurvivalBoard(members, scored, picks, opts.lives ?? 1) }
+    return { kind: 'survival', mode: 'HARDCORE', live: live.length > 0, rows: buildSurvivalBoard(members, scored, picks, opts.lives ?? 1) }
   }
 
   const [champion, bestScorer] = await Promise.all([
@@ -400,6 +400,7 @@ export async function getLeagueModeBoard(db: AppDatabase, opts: LeagueModeBoardO
   return {
     kind: 'points',
     mode: opts.mode,
+    live: live.length > 0,
     rows: buildPointsBoard(members, scored, live, picks, champion, bestScorer, opts.mode, ctx, rules),
   }
 }

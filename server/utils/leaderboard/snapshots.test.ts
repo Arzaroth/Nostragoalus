@@ -6,6 +6,7 @@ import { addLeagueMember, makeLeague, makeMatch, makePrediction, makeUser, seedC
 import { getLeagueRankSnapshots, getRankSnapshots, rankMovement, updateLeagueRankSnapshots, updateRankSnapshots } from './snapshots'
 import { leaderboardRank, prediction, user } from '../../../db/schema'
 import { removeMembership } from '../leagues/service'
+import { ensureDefaultScoringConfig } from '../scoring/store'
 
 async function score(db: TestDb, predId: string, totalPoints: number) {
   await db
@@ -151,6 +152,34 @@ describe('league rank snapshots', () => {
     // Fresh snapshot row: no movement for the re-joined member.
     const snaps = await getLeagueRankSnapshots(db, leagueId)
     expect(rankMovement(snaps.get(bob), snaps.get(bob)!.rank, false)).toBeNull()
+    await client.close()
+  })
+
+  it('snapshots moded league ranks from the mode board', async () => {
+    const { db, client } = await createTestDb()
+    await ensureDefaultScoringConfig(db)
+    const competitionId = await seedCompetition(db)
+    const roundId = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+    await makeUser(db, 'alice', 'Alice')
+    await makeUser(db, 'bob', 'Bob')
+    const leagueId = await makeLeague(db, { competitionId, ownerId: 'alice', mode: 'EASY' })
+    await addLeagueMember(db, leagueId, 'bob')
+    const m = await makeMatch(db, {
+      competitionId,
+      roundId,
+      kickoffTime: new Date('2026-06-11T16:00:00Z'),
+      status: 'FINISHED',
+      fullTimeHome: 2,
+      fullTimeAway: 1,
+      scoringState: 'SCORED',
+    })
+    await makePrediction(db, { userId: 'alice', matchId: m, roundId, home: 1, away: 0 }) // HOME correct
+    await makePrediction(db, { userId: 'bob', matchId: m, roundId, home: 0, away: 1 }) // wrong
+
+    await updateLeagueRankSnapshots(db, competitionId)
+    const snaps = await getLeagueRankSnapshots(db, leagueId)
+    expect(snaps.get('alice')?.rank).toBe(1)
+    expect(snaps.get('bob')?.rank).toBe(2)
     await client.close()
   })
 })

@@ -2,6 +2,7 @@ import { db } from '../../../../db'
 import { isAdmin, requireUser } from '../../../utils/auth-guards'
 import { canViewLeague, getLeague, getMembership } from '../../../utils/leagues/service'
 import { getLeagueModeBoard } from '../../../utils/leaderboard/modes'
+import { getLeagueRankSnapshots, rankMovement } from '../../../utils/leaderboard/snapshots'
 
 // Read-time board for a moded league (easy/hard points, or hardcore survival).
 // NORMAL leagues use the standard leaderboard endpoint instead.
@@ -25,7 +26,11 @@ export default defineEventHandler(async (event) => {
     includePrivate,
     alwaysIncludeUserId: user.id,
   })
-  return { board, mode: league.mode, lives: league.lives }
+  // Movement arrows from the per-league snapshot (written at finalize). Measured
+  // against the live rank while a match is in play, else the settled prev rank.
+  const snaps = await getLeagueRankSnapshots(db, id)
+  const rows = board.rows.map((r) => ({ ...r, movement: rankMovement(snaps.get(r.userId), r.rank, board.live) }))
+  return { board: { ...board, rows }, mode: league.mode, lives: league.lives }
 })
 
 defineRouteMeta({

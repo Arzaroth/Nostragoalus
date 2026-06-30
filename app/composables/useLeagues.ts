@@ -191,6 +191,8 @@ export interface ModePointsRow {
   livePoints: number
   exactCount: number
   outcomeCount: number
+  // Rank movement since the last snapshot (positive = climbed); null = no move.
+  movement: number | null
 }
 
 export interface SurvivalRow {
@@ -202,6 +204,7 @@ export interface SurvivalRow {
   livesLeft: number
   survived: number
   eliminatedRoundLabel: string | null
+  movement: number | null
 }
 
 export type ModeBoard =

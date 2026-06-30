@@ -76,9 +76,10 @@ reusing the engine's `computeBonus` against the global histogram - EASY only,
 HARD stays pure stake), the champion + best-scorer awards, and provisional
 **live** points from in-play matches (shown as "+N"). HARDCORE survival has no
 points, so those don't apply (and its elimination is on finalized matches only -
-no provisional live elimination). Moded leagues still have no rank snapshots, so
-no movement arrows - `updateLeagueRankSnapshots` skips them. NORMAL leagues keep
-the standard `getLeaderboard` path.
+no provisional live elimination). `updateLeagueRankSnapshots` snapshots moded
+leagues too (the mode-board rank, or survival rank for hardcore), so they get
+movement arrows - the mode-board route appends `movement` via `rankMovement`.
+NORMAL leagues keep the standard `getLeaderboard` path.
 
 - Endpoint: `GET /api/leagues/[id]/mode-board` (member/admin gated, 400 for
   NORMAL). Client: `useLeagueModeBoard`, rendered by `LeagueModePointsBoard.vue`
@@ -119,6 +120,4 @@ need a score or stake. Composables: `useLeaguePicks.ts` (`useLeagueOverrides`,
 
 Intentional v1 tradeoffs, not missing wiring: NORMAL-league override scoring
 (can't reproduce the global crowd bonus + champion/best-scorer/live per league),
-moded movement arrows, exact HARD effective-budget across base+override,
-tamper-evidence over overrides, admin moded-create, and provisional live
-elimination for HARDCORE.
+tamper-evidence over overrides, and provisional live elimination for HARDCORE.

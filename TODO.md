@@ -859,9 +859,6 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
       points + champion/best-scorer + the configured bonus, but HARDCORE elimination
       stays on finalized matches only (no provisional "at risk"/live elimination), to
       avoid flickering eliminations mid-match.
-- [ ] **Moded leagues have no movement arrows**: `updateLeagueRankSnapshots` skips
-      non-NORMAL leagues (their base-total ranks would be wrong), and the mode board
-      ranks live with no `prevRank`. Add per-mode snapshots if arrows are wanted.
 - [ ] **Tamper-evidence doesn't cover overrides**: the commitment ledger commits the
       base pick only (global board integrity). A moded league's board depends on
       overrides that aren't in the chain, so a league-board dispute can't be proven
