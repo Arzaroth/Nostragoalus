@@ -4,7 +4,6 @@ import { createTestDb, type TestDb } from '../../../tests/db'
 import { makeCompetition, makeMatch, seedCompetition } from '../../../tests/factories'
 import { findRoundId } from '../sync/rounds'
 import { DEFAULT_BASE_POINTS } from '../scoring/tiers'
-import { DEFAULT_ODDS_TIERS } from '../scoring/config'
 import { ConflictError } from '../errors'
 import {
   CANONICAL_SCORELINE,
@@ -31,7 +30,7 @@ import {
   usesWager,
 } from './modes'
 
-const CTX: ModeScoreContext = { base: DEFAULT_BASE_POINTS, jokerMultiplier: 2, oddsTiers: DEFAULT_ODDS_TIERS }
+const CTX: ModeScoreContext = { base: DEFAULT_BASE_POINTS, jokerMultiplier: 2 }
 
 function pick(over: Partial<EffectivePick> = {}): EffectivePick {
   return { home: 1, away: 0, isOutcomeOnly: false, wager: null, isJoker: false, ...over }
@@ -80,24 +79,20 @@ describe('predictedOutcomeMatches', () => {
 })
 
 describe('easyPoints', () => {
-  it('pays a base plus the odds tier for a correct longshot', () => {
-    expect(easyPoints(pick({ home: 1, away: 0 }), { home: 2, away: 1 }, 7, CTX)).toBe(EASY_CORRECT_BASE + 5)
+  it('pays a base plus the caller-supplied bonus for a correct pick', () => {
+    expect(easyPoints(pick({ home: 1, away: 0 }), { home: 2, away: 1 }, 5, 2)).toBe(EASY_CORRECT_BASE + 5)
   })
 
-  it('pays only the base for a correct favourite below all odds tiers', () => {
-    expect(easyPoints(pick(), { home: 2, away: 1 }, 1.5, CTX)).toBe(EASY_CORRECT_BASE)
-  })
-
-  it('pays the base when no odds were captured', () => {
-    expect(easyPoints(pick(), { home: 2, away: 1 }, null, CTX)).toBe(EASY_CORRECT_BASE)
+  it('pays only the base when the bonus is zero', () => {
+    expect(easyPoints(pick(), { home: 2, away: 1 }, 0, 2)).toBe(EASY_CORRECT_BASE)
   })
 
   it('pays nothing for a wrong outcome', () => {
-    expect(easyPoints(pick({ home: 0, away: 1 }), { home: 2, away: 1 }, 7, CTX)).toBe(0)
+    expect(easyPoints(pick({ home: 0, away: 1 }), { home: 2, away: 1 }, 5, 2)).toBe(0)
   })
 
   it('doubles a correct joker pick', () => {
-    expect(easyPoints(pick({ isJoker: true }), { home: 2, away: 1 }, 2.5, CTX)).toBe((EASY_CORRECT_BASE + 2) * 2)
+    expect(easyPoints(pick({ isJoker: true }), { home: 2, away: 1 }, 2, 2)).toBe((EASY_CORRECT_BASE + 2) * 2)
   })
 })
 
@@ -147,10 +142,11 @@ describe('normalPoints', () => {
 describe('modePoints dispatch', () => {
   it('delegates by mode and returns zero for hardcore', () => {
     const actual = { home: 2, away: 1 }
-    expect(modePoints('EASY', pick(), actual, null, CTX)).toBe(EASY_CORRECT_BASE)
-    expect(modePoints('HARD', pick({ wager: 4 }), actual, null, CTX)).toBe(4)
-    expect(modePoints('NORMAL', pick({ home: 2, away: 1 }), actual, null, CTX)).toBe(DEFAULT_BASE_POINTS.exact)
-    expect(modePoints('HARDCORE', pick(), actual, null, CTX)).toBe(0)
+    expect(modePoints('EASY', pick(), actual, 0, CTX)).toBe(EASY_CORRECT_BASE)
+    // HARD ignores the bonus (pure stake).
+    expect(modePoints('HARD', pick({ wager: 4 }), actual, 99, CTX)).toBe(4)
+    expect(modePoints('NORMAL', pick({ home: 2, away: 1 }), actual, 99, CTX)).toBe(DEFAULT_BASE_POINTS.exact)
+    expect(modePoints('HARDCORE', pick(), actual, 0, CTX)).toBe(0)
   })
 })
 

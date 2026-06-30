@@ -70,10 +70,15 @@ W/D/L quick-pick stores a canonical scoreline).
 
 `server/utils/leaderboard/modes.ts:getLeagueModeBoard` serves moded boards,
 re-scoring effective picks for the visible members (same visibility rules as the
-normal board). It is **self-contained**: no champion/best-scorer/crowd/live, and
-no rank snapshots (moded leagues rank live, so they have no movement arrows -
-`updateLeagueRankSnapshots` skips them). NORMAL leagues keep the standard
-`getLeaderboard` path.
+normal board). EASY/HARD points boards mirror the normal board's richness: the
+per-pick scoring adds the competition's configured bonus (crowd rarity or odds,
+reusing the engine's `computeBonus` against the global histogram - EASY only,
+HARD stays pure stake), the champion + best-scorer awards, and provisional
+**live** points from in-play matches (shown as "+N"). HARDCORE survival has no
+points, so those don't apply (and its elimination is on finalized matches only -
+no provisional live elimination). Moded leagues still have no rank snapshots, so
+no movement arrows - `updateLeagueRankSnapshots` skips them. NORMAL leagues keep
+the standard `getLeaderboard` path.
 
 - Endpoint: `GET /api/leagues/[id]/mode-board` (member/admin gated, 400 for
   NORMAL). Client: `useLeagueModeBoard`, rendered by `LeagueModePointsBoard.vue`
@@ -114,6 +119,6 @@ need a score or stake. Composables: `useLeaguePicks.ts` (`useLeagueOverrides`,
 
 Intentional v1 tradeoffs, not missing wiring: NORMAL-league override scoring
 (can't reproduce the global crowd bonus + champion/best-scorer/live per league),
-champion/best-scorer/live in moded boards, moded movement arrows, exact HARD
-effective-budget across base+override, tamper-evidence over overrides, and admin
-moded-create.
+moded movement arrows, exact HARD effective-budget across base+override,
+tamper-evidence over overrides, admin moded-create, and provisional live
+elimination for HARDCORE.

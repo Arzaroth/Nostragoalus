@@ -1,17 +1,13 @@
 import { and, asc, eq, inArray, isNotNull, or } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
-import { leaguePrediction, match, prediction, round, user } from '../../../db/schema'
-import { leagueMember } from '../../../db/schema'
+import { bestScorerPick, championPick, leagueMember, leaguePrediction, match, prediction, round, user } from '../../../db/schema'
+import { IN_PLAY_STATUSES } from '../../../shared/types/match'
 import { outcomeOf, type Outcome, type Scoreline } from '../scoring/tiers'
 import { getScoringConfigFor } from '../scoring/store'
 import { closingOddsForOutcome } from '../odds/store'
-import {
-  hardcoreSurvives,
-  modePoints,
-  type EffectivePick,
-  type LeagueMode,
-  type ModeScoreContext,
-} from '../leagues/modes'
+import { buildHistogram, computeBonus, type Histogram } from '../scoring/engine'
+import type { ScoringRules } from '../scoring/config'
+import { hardcoreSurvives, modePoints, type EffectivePick, type LeagueMode, type ModeScoreContext } from '../leagues/modes'
 import { compareLeaderboardRows } from './service'
 
 interface BoardMember {
@@ -45,17 +41,27 @@ async function loadVisibleMembers(db: AppDatabase, leagueId: string, opts: Board
     )
 }
 
-interface ScoredMatch {
+interface BoardMatch {
   matchId: string
   roundLabel: string
   actual: Scoreline
   actualOutcome: Outcome
+  // Closing odds of the actual outcome, resolved only when the configured bonus
+  // source is ODDS (mirrors the engine).
   actualOdds: number | null
+  // Global histogram of everyone's base picks for this match, for the crowd bonus
+  // (the bonus is always measured against the whole field, not the league).
+  histogram: Histogram
 }
 
-// Scored matches of a competition in chronological order, each with its final
-// scoreline, outcome and the closing odds of that outcome (for EASY payouts).
-async function loadScoredMatches(db: AppDatabase, competitionId: string): Promise<ScoredMatch[]> {
+// Scored (finalized) and in-play matches of a competition, each with its
+// scoreline, outcome, optional closing odds, and the global pick histogram. Live
+// matches are scored provisionally at their current scoreline.
+async function loadModeMatches(
+  db: AppDatabase,
+  competitionId: string,
+  rules: ScoringRules,
+): Promise<{ scored: BoardMatch[]; live: BoardMatch[] }> {
   const rows = await db
     .select({
       matchId: match.id,
@@ -63,27 +69,48 @@ async function loadScoredMatches(db: AppDatabase, competitionId: string): Promis
       kickoffTime: match.kickoffTime,
       home: match.fullTimeHome,
       away: match.fullTimeAway,
+      scoringState: match.scoringState,
     })
     .from(match)
     .innerJoin(round, eq(round.id, match.roundId))
     .where(
       and(
         eq(match.competitionId, competitionId),
-        eq(match.scoringState, 'SCORED'),
         isNotNull(match.fullTimeHome),
         isNotNull(match.fullTimeAway),
+        or(eq(match.scoringState, 'SCORED'), inArray(match.status, IN_PLAY_STATUSES)),
       ),
     )
     .orderBy(asc(match.kickoffTime), asc(match.id))
 
-  const out: ScoredMatch[] = []
+  const matchIds = rows.map((r) => r.matchId)
+  const allPreds = matchIds.length
+    ? await db
+        .select({ matchId: prediction.matchId, home: prediction.homeGoals, away: prediction.awayGoals })
+        .from(prediction)
+        .where(inArray(prediction.matchId, matchIds))
+    : []
+  const predsByMatch = new Map<string, { home: number; away: number }[]>()
+  for (const p of allPreds) {
+    const list = predsByMatch.get(p.matchId)
+    if (list) list.push(p)
+    else predsByMatch.set(p.matchId, [p])
+  }
+
+  const scored: BoardMatch[] = []
+  const live: BoardMatch[] = []
   for (const r of rows) {
     const actual: Scoreline = { home: r.home as number, away: r.away as number }
     const actualOutcome = outcomeOf(actual)
-    const actualOdds = await closingOddsForOutcome(db, r.matchId, r.kickoffTime, actualOutcome)
-    out.push({ matchId: r.matchId, roundLabel: r.roundLabel, actual, actualOutcome, actualOdds })
+    const actualOdds =
+      rules.bonusSource === 'ODDS' ? await closingOddsForOutcome(db, r.matchId, r.kickoffTime, actualOutcome) : null
+    const field = (predsByMatch.get(r.matchId) ?? []).map((p, i) => ({ id: String(i), home: p.home, away: p.away, isJoker: false }))
+    const histogram = buildHistogram(actual, field)
+    const bm: BoardMatch = { matchId: r.matchId, roundLabel: r.roundLabel, actual, actualOutcome, actualOdds, histogram }
+    if (r.scoringState === 'SCORED') scored.push(bm)
+    else live.push(bm)
   }
-  return out
+  return { scored, live }
 }
 
 function toPick(row: { homeGoals: number; awayGoals: number; isOutcomeOnly: boolean; wager: number | null; isJoker: boolean }): EffectivePick {
@@ -142,55 +169,120 @@ async function loadEffectivePicks(
   return map
 }
 
+// Sum of a competition's champion (or best-scorer) awarded points per user.
+async function loadAwardPoints(
+  db: AppDatabase,
+  competitionId: string,
+  table: typeof championPick | typeof bestScorerPick,
+): Promise<Map<string, number>> {
+  const rows = await db
+    .select({ userId: table.userId, points: table.awardedPoints })
+    .from(table)
+    .where(eq(table.competitionId, competitionId))
+  const map = new Map<string, number>()
+  for (const r of rows) map.set(r.userId, (map.get(r.userId) ?? 0) + (r.points ?? 0))
+  return map
+}
+
+interface PickTally {
+  points: number
+  exact: number
+  outcome: number
+}
+
+// Score one member's picks over a set of matches (scored or live). EASY adds the
+// competition's configured bonus (crowd/odds); HARD is pure stake; HARDCORE is
+// scored separately (survival).
+function tally(
+  userPicks: Map<string, EffectivePick> | undefined,
+  matches: BoardMatch[],
+  mode: LeagueMode,
+  ctx: ModeScoreContext,
+  rules: ScoringRules,
+): PickTally {
+  let points = 0
+  let exact = 0
+  let outcome = 0
+  for (const bm of matches) {
+    const pick = userPicks?.get(bm.matchId)
+    if (!pick) continue
+    const bonus =
+      mode === 'EASY' ? computeBonus({ home: pick.home, away: pick.away }, bm.actual, rules, bm.histogram, bm.actualOdds).bonus : 0
+    points += modePoints(mode, pick, bm.actual, bonus, ctx)
+    if (pick.home === bm.actual.home && pick.away === bm.actual.away) exact += 1
+    if (outcomeOf({ home: pick.home, away: pick.away }) === bm.actualOutcome) outcome += 1
+  }
+  return { points, exact, outcome }
+}
+
 export interface ModePointsRow {
   rank: number
   userId: string
   displayName: string
   image: string | null
   points: number
+  livePoints: number
   exactCount: number
   outcomeCount: number
 }
 
 function buildPointsBoard(
   members: BoardMember[],
-  scored: ScoredMatch[],
+  scored: BoardMatch[],
+  live: BoardMatch[],
   picks: Map<string, Map<string, EffectivePick>>,
+  champion: Map<string, number>,
+  bestScorer: Map<string, number>,
   mode: LeagueMode,
   ctx: ModeScoreContext,
+  rules: ScoringRules,
 ): ModePointsRow[] {
-  const rows = members.map((mem) => {
+  const merged = members.map((mem) => {
     const userPicks = picks.get(mem.userId)
-    let points = 0
-    let exactCount = 0
-    let outcomeCount = 0
-    for (const sm of scored) {
-      const pick = userPicks?.get(sm.matchId)
-      if (!pick) continue
-      points += modePoints(mode, pick, sm.actual, sm.actualOdds, ctx)
-      if (pick.home === sm.actual.home && pick.away === sm.actual.away) exactCount += 1
-      if (outcomeOf({ home: pick.home, away: pick.away }) === sm.actualOutcome) outcomeCount += 1
+    const sc = tally(userPicks, scored, mode, ctx, rules)
+    const lv = tally(userPicks, live, mode, ctx, rules)
+    // Champion + best-scorer are competition-wide awards, mode-independent.
+    const points = sc.points + (champion.get(mem.userId) ?? 0) + (bestScorer.get(mem.userId) ?? 0)
+    return {
+      ...mem,
+      points,
+      livePoints: lv.points,
+      exactCount: sc.exact,
+      outcomeCount: sc.outcome,
+      // Ranking is provisional: scored + live so in-progress points move players.
+      rankTotal: points + lv.points,
+      rankExact: sc.exact + lv.exact,
+      rankOutcome: sc.outcome + lv.outcome,
+      rank: 0,
     }
-    return { ...mem, points, exactCount, outcomeCount, rank: 0 }
   })
 
-  rows.sort((a, b) =>
+  merged.sort((a, b) =>
     compareLeaderboardRows(
-      { totalPoints: a.points, exactCount: a.exactCount, outcomeCount: a.outcomeCount, gdCount: 0, userId: a.userId },
-      { totalPoints: b.points, exactCount: b.exactCount, outcomeCount: b.outcomeCount, gdCount: 0, userId: b.userId },
+      { totalPoints: a.rankTotal, exactCount: a.rankExact, outcomeCount: a.rankOutcome, gdCount: 0, userId: a.userId },
+      { totalPoints: b.rankTotal, exactCount: b.rankExact, outcomeCount: b.rankOutcome, gdCount: 0, userId: b.userId },
     ),
   )
   let rank = 0
   let prevKey: string | null = null
-  rows.forEach((r, i) => {
-    const key = `${r.points}|${r.exactCount}|${r.outcomeCount}`
+  merged.forEach((r, i) => {
+    const key = `${r.rankTotal}|${r.rankExact}|${r.rankOutcome}`
     if (key !== prevKey) {
       rank = i + 1
       prevKey = key
     }
     r.rank = rank
   })
-  return rows
+  return merged.map((r) => ({
+    rank: r.rank,
+    userId: r.userId,
+    displayName: r.displayName,
+    image: r.image,
+    points: r.points,
+    livePoints: r.livePoints,
+    exactCount: r.exactCount,
+    outcomeCount: r.outcomeCount,
+  }))
 }
 
 export interface SurvivalRow {
@@ -207,10 +299,11 @@ export interface SurvivalRow {
 // Last-man-standing: walk scored matches in order, burn a life on each wrong (or
 // missing) outcome, eliminate at zero. Survivors are co-winners (all rank 1);
 // the eliminated rank by how far they got (later elimination = better), with a
-// shared rank for everyone knocked out at the same match.
+// shared rank for everyone knocked out at the same match. Elimination is on
+// finalized matches only - no provisional live elimination (see TODO.md).
 function buildSurvivalBoard(
   members: BoardMember[],
-  scored: ScoredMatch[],
+  scored: BoardMatch[],
   picks: Map<string, Map<string, EffectivePick>>,
   startingLives: number,
 ): SurvivalRow[] {
@@ -251,7 +344,6 @@ function buildSurvivalBoard(
   let rank = 0
   let prevKey: string | null = null
   return state.map((s, i) => {
-    // Survivors share rank 1; the eliminated tie by the match they fell at.
     const key = s.alive ? 'ALIVE' : `OUT|${s.eliminatedIndex}`
     if (key !== prevKey) {
       rank = i + 1
@@ -281,24 +373,33 @@ export interface LeagueModeBoardOptions extends BoardOptions {
   lives?: number | null
 }
 
-// Read-time board for a moded league. EASY/HARD produce a points board scored
-// from effective picks (no champion/best-scorer/crowd/live - moded leagues score
-// self-contained); HARDCORE produces a survival board.
+// Read-time board for a moded league. EASY/HARD produce a points board re-scored
+// from effective picks, including the configured per-pick bonus, champion +
+// best-scorer awards, and provisional live points. HARDCORE produces a survival
+// board (no points - champion/best-scorer/live/crowd don't apply).
 export async function getLeagueModeBoard(db: AppDatabase, opts: LeagueModeBoardOptions): Promise<LeagueModeBoard> {
   const members = await loadVisibleMembers(db, opts.leagueId, opts)
-  const scored = await loadScoredMatches(db, opts.competitionId)
+  const { rules } = await getScoringConfigFor(db, opts.competitionId)
+  const { scored, live } = await loadModeMatches(db, opts.competitionId, rules)
   const picks = await loadEffectivePicks(
     db,
     opts.leagueId,
     members.map((m) => m.userId),
-    scored.map((s) => s.matchId),
+    [...scored, ...live].map((m) => m.matchId),
   )
 
   if (opts.mode === 'HARDCORE') {
     return { kind: 'survival', mode: 'HARDCORE', rows: buildSurvivalBoard(members, scored, picks, opts.lives ?? 1) }
   }
 
-  const { rules } = await getScoringConfigFor(db, opts.competitionId)
-  const ctx: ModeScoreContext = { base: rules.base, jokerMultiplier: rules.jokerMultiplier, oddsTiers: rules.oddsTiers }
-  return { kind: 'points', mode: opts.mode, rows: buildPointsBoard(members, scored, picks, opts.mode, ctx) }
+  const [champion, bestScorer] = await Promise.all([
+    loadAwardPoints(db, opts.competitionId, championPick),
+    loadAwardPoints(db, opts.competitionId, bestScorerPick),
+  ])
+  const ctx: ModeScoreContext = { base: rules.base, jokerMultiplier: rules.jokerMultiplier }
+  return {
+    kind: 'points',
+    mode: opts.mode,
+    rows: buildPointsBoard(members, scored, live, picks, champion, bestScorer, opts.mode, ctx, rules),
+  }
 }
