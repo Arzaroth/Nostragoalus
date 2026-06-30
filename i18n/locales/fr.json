@@ -558,6 +558,12 @@
     "noPicks": "Aucun pronostic pour ce match.",
     "leagueNoPick": "{n} membre sans pronostic | {n} membres sans pronostic"
   },
+  "pastPick": {
+    "final": "Ton pronostic précédent {score} aurait marqué - celui que tu as changé.",
+    "finalCheeky": "Ton pronostic précédent a gagné... mais ça ne valait sûrement pas le coup d'œil.",
+    "live": "Ton pronostic précédent {score} est en tête pour l'instant - celui que tu as changé. Match en cours.",
+    "liveCheeky": "Ton 0-0 précédent est en tête pour l'instant... pas vraiment un régal. Match en cours."
+  },
   "media": {
     "watchTitle": "Regarder",
     "live": "Direct",
