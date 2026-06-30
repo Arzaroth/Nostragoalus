@@ -26,6 +26,7 @@ function setVapid(on: boolean) {
 function transition(over: Partial<MatchTransition>): MatchTransition {
   return {
     matchId: 'm1',
+    stage: 'GROUP',
     homeTeam: 'Spain',
     awayTeam: 'Brazil',
     prevStatus: 'SCHEDULED',

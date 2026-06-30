@@ -50,6 +50,9 @@ describe('upsertMatches', () => {
     ])
     expect(res).toMatchObject({ inserted: 0, updated: 1, skipped: 0 })
     expect(res.changedMatchIds).toHaveLength(1)
+    // The transition carries the stage so the poll can bust the bracket cache
+    // only for knockout finishes.
+    expect(res.transitions[0]).toMatchObject({ stage: 'GROUP', status: 'FINISHED' })
     await client.close()
   })
 

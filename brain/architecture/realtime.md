@@ -27,7 +27,7 @@ fire-and-forget after a successful mutation or during a scheduled task.
 | `publishMemberNameChanged(...)` | affected leagues (`chat:roster`) | [../features/chat.md](../features/chat.md) |
 | presence broadcasts | all sockets / a new socket | presence, below |
 | `syncMatchViewers` / `dropMatchViewer` | a match's viewer room (`viewers:update`) | [../features/live-viewers.md](../features/live-viewers.md) |
-| score/match updates | the live match view | `scores:poll`, [providers.md](providers.md) |
+| score/match updates | the live match view, fixtures list and knockout bracket | `scores:poll`, [providers.md](providers.md) |
 
 ## Live event types (client message names)
 
@@ -43,7 +43,14 @@ fire-and-forget after a successful mutation or during a scheduled task.
   `viewers:update` (server -> a match's viewer room: the new "N watching now"
   count). Per-match presence, distinct from the global `presence:*` and from the
   `subscribe` score frame - see [../features/live-viewers.md](../features/live-viewers.md).
-- crowd totals update and live score/match updates.
+- crowd totals update and live score/match updates. Three views patch
+  `match:update` frames: the match detail (`useLiveMatch`), the fixtures list
+  (`useLiveMatches`, into the `['matches', slug]` cache) and the knockout bracket
+  (`useLiveBracket`). The bracket's scores live in a cached provider base (10-min
+  TTL, `server/utils/bracket/cache.ts`), so it overlays the WS frame on top
+  (freshest) and refetches `['bracket']` on `scores:changed` for advancement and
+  live group-qualifier projections; a knockout match finishing busts that cache
+  from `scores:poll` so the next slot fills without waiting out the TTL.
 
 ## Client side
 

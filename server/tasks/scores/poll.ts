@@ -7,6 +7,8 @@ import { resolveCompetitionSeason, syncLive } from '../../utils/sync/competition
 import { hasLiveWindow } from '../../utils/sync/live-window'
 import { publishMatchUpdates } from '../../utils/live/hub'
 import { notifyLiveMatchEvents } from '../../utils/push/live'
+import { invalidateBracketCache } from '../../utils/bracket/cache'
+import { isKnockout } from '../../../shared/types/match'
 
 export default defineTask({
   meta: { name: 'scores:poll', description: 'Poll live scores for active competitions while matches are live' },
@@ -22,6 +24,13 @@ export default defineTask({
         const provider = providerForCompetition(competition, seasonId)
         const res = await syncLive(db, competition.id, provider)
         changed.push(...res.changedMatchIds)
+        // A knockout match finishing advances the winner into the next bracket
+        // slot, which lives in the cached provider base - drop it so the next
+        // bracket request rebuilds with the advancement instead of waiting out
+        // the TTL. The live scoreline itself rides the WS patch, not this.
+        if (res.transitions.some((t) => t.status === 'FINISHED' && isKnockout(t.stage))) {
+          invalidateBracketCache(competition.id)
+        }
         // Best-effort live push (kickoff/goal) to predictors; never blocks scores.
         await notifyLiveMatchEvents(db, competition.slug, res.transitions).catch(() => {})
       } catch {

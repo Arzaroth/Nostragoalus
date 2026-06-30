@@ -17,6 +17,7 @@ function side(code: string | null, team: string, projCode?: string | null) {
 const home = computed(() => side(props.match.homeCode, props.match.homeTeam, props.match.homeProjectedCode))
 const away = computed(() => side(props.match.awayCode, props.match.awayTeam, props.match.awayProjectedCode))
 const hasProjected = computed(() => home.value.projected || away.value.projected)
+const isLive = computed(() => props.match.status === 'LIVE' || props.match.status === 'PAUSED')
 </script>
 
 <template>
@@ -42,7 +43,8 @@ const hasProjected = computed(() => home.value.projected || away.value.projected
         <img v-if="flagUrl(away.code)" :src="flagUrl(away.code) || ''" class="br-flag" alt="" ><i v-else class="pi pi-shield br-shield" />
       </span>
     </div>
-    <div v-if="match.kickoffTime" class="br-date">{{ fmtDate(match.kickoffTime) }}</div>
+    <div v-if="isLive" class="br-live"><span class="br-live-dot" />{{ t('match.live') }}</div>
+    <div v-else-if="match.kickoffTime" class="br-date">{{ fmtDate(match.kickoffTime) }}</div>
   </component>
 </template>
 
@@ -112,5 +114,29 @@ a.br-card:hover {
   font-size: 0.58rem;
   color: var(--p-text-muted-color);
   text-align: center;
+}
+.br-live {
+  margin-top: 0.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ng-danger);
+}
+.br-live-dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: var(--ng-danger);
+  animation: br-pulse 1.4s ease-in-out infinite;
+}
+@keyframes br-pulse {
+  50% {
+    opacity: 0.35;
+  }
 }
 </style>

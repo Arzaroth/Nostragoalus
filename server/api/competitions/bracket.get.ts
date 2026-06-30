@@ -8,13 +8,7 @@ import { resolveCompetitionSeason } from '../../utils/sync/competition'
 import { computeAllGroupStandings } from '../../utils/stats/standings'
 import { tiebreakersForCompetition, type Criterion } from '../../utils/stats/tiebreakers'
 import { projectBracket } from '../../utils/bracket/projection'
-import type { NormalizedBracket } from '../../../shared/types/match'
-
-// The provider structure is expensive and changes rarely, so it's cached. The
-// projection rides the live group standings, so it's recomputed per request
-// (cheap) and overlaid on the cached base - never cached itself.
-const cache = new Map<string, { at: number; bracket: NormalizedBracket | null }>()
-const TTL_MS = 10 * 60 * 1000
+import { getCachedBracket, setCachedBracket } from '../../utils/bracket/cache'
 
 async function buildBaseBracket(competitionId: string, provider: ReturnType<typeof providerForCompetition>) {
   let bracket = await provider.getBracket!()
@@ -52,14 +46,11 @@ export default defineEventHandler(async (event) => {
   if (!competition) return { bracket: null }
 
   try {
-    let base: NormalizedBracket | null
-    const cached = cache.get(competition.id)
-    if (cached && Date.now() - cached.at < TTL_MS) {
-      base = cached.bracket
-    } else {
+    let base = getCachedBracket(competition.id, Date.now())
+    if (base === undefined) {
       const provider = providerForCompetition(competition, await resolveCompetitionSeason(db, competition))
       base = provider.getBracket ? await buildBaseBracket(competition.id, provider) : null
-      cache.set(competition.id, { at: Date.now(), bracket: base })
+      setCachedBracket(competition.id, Date.now(), base)
     }
     if (!base) return { bracket: null }
     const tb = tiebreakersForCompetition(competition.slug)
