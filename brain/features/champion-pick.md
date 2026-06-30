@@ -51,3 +51,8 @@ winner is known, and a `CHAMPION_RESULT` notification goes to the winners.
 - `app/composables/useChampion.ts`, `server/api/champion/index.put.ts`
 - `server/utils/champion/ranking.ts` (`championPointsForRank`, `getFifaRanks`)
 - `server/utils/scoring/config.ts` (`DEFAULT_CHAMPION_TIERS`, `getChampionLockTime`)
+- Shares its picker showcase, query/mutation plumbing, leaderboard bonus merge
+  and result notification with the [best-scorer pick](best-scorer.md):
+  `app/components/MetaPickShowcase.vue`, `app/composables/useMetaPick.ts`,
+  `collectMetaBonus` (`server/utils/leaderboard/service.ts`) and `notifyMetaResult`
+  (`server/utils/notifications/events.ts`).

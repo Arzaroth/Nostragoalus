@@ -621,13 +621,22 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
 ## Best scorer (deferred from the merge review)
 
-- [ ] Champion and best-scorer are near-identical clones at every layer (pick
-      service lock+upsert, idempotent award, the two leaderboard bonus-merge
-      blocks, the picker SFC, the composable, both endpoints). Generalize into
-      one "meta pick" mechanism (upsertMetaPick / awardBonuses(winnerWhere) /
-      mergeBonus / <MetaPickCard> / useMetaPick) so a third bonus is config, not
-      copy-paste. High-churn, touches the working champion feature - do as its
-      own focused pass.
+- [ ] Champion and best-scorer were near-identical clones at every layer. The
+      meta-pick refactor shared the read/display/notify plumbing (`useMetaPick`,
+      `MetaPickShowcase`, `collectMetaBonus`, `notifyMetaResult`). What remains
+      cloned is the stateful write/award core (`setChampionPick`/`setBestScorerPick`
+      lock+upsert, `repick*`, and the `awardChampionBonuses`/`awardBestScorerBonuses`
+      half-points-on-repick SQL) and the whole-card wrapper - the pending-state
+      skeleton is still duplicated byte-for-byte in BestScorerPick/ChampionPick, so
+      extract a `<MetaPickCard>` over MetaPickShowcase that owns it. Finish so a
+      third bonus is config, not copy-paste. High-churn, touches the working
+      champion feature - own focused pass.
+- [ ] `notifyMetaResult` takes an optional `collector?: PendingNotification[]`;
+      `notifyChampionResult` threads it through but `notifyBestScorerResult` omits
+      it (pre-existing asymmetry the shared helper now makes obvious). If a
+      batched/live-push path ever drains that collector at finalize, best-scorer
+      result notifications write straight through and miss the batch. Thread the
+      collector through best-scorer for symmetry, or document why it differs.
 - [ ] topScorerPlayerIds drops goals with a null playerId; if a real top
       scorer's goals are partly unattributed the tie can be miscomputed. Picks
       match by playerId so it self-limits, but consider a playerName fallback or
