@@ -34,7 +34,13 @@ interface SsoProviderRow {
   name: string | null
   type: 'oidc' | 'saml'
   autoJoinLeagueIds: string[]
+  status: 'draft' | 'enabled' | 'disabled'
+  domainVerified: boolean
+  lastTestedAt: string | null
+  lastTestOk: boolean | null
+  scimEnabled: boolean
 }
+interface ConnectionCheck { name: string; ok: boolean; detail?: string }
 const { data: ssoData, refresh: refreshSso } = await useFetch<{ providers: SsoProviderRow[] }>(
   '/api/admin/sso',
   { default: () => ({ providers: [] }) },
@@ -70,6 +76,9 @@ const draftSpMetadataUrl = computed(
   () => `${origin}/api/admin/sso/sp-metadata?providerId=${encodeURIComponent(form.providerId.trim())}&entityId=${encodeURIComponent(form.entityId.trim())}`,
 )
 const formSpMetadataUrl = computed(() => (ssoEditing.value ? spMetadataUrl(form.providerId) : draftSpMetadataUrl.value))
+// Dedicated redirect for the dry-run test sign-in - the admin registers it at the
+// IdP alongside the live one so a test never collides with a real session.
+const testCallbackUri = `${origin}/api/sso/test-callback`
 
 function startEditProvider(p: SsoProviderRow) {
   ssoErr.value = ''
@@ -125,6 +134,108 @@ async function removeProvider(id: string) {
   await $fetch<unknown>(`/api/admin/sso/${id}`, { method: 'DELETE' })
   await refreshSso()
 }
+
+// Per-provider onboarding panel (test -> verify -> enable, plus SCIM). Only one
+// provider is expanded at a time; its transient state is reset on open.
+const manageId = ref<string | null>(null)
+const mgmtBusy = ref('')
+const mgmtErr = ref('')
+const testResult = ref<{ ok: boolean; checks: ConnectionCheck[] } | null>(null)
+const domainInfo = ref<{ host: string; value: string; verified: boolean } | null>(null)
+const domainCheck = ref<{ ok: boolean; found: string[] } | null>(null)
+const scimToken = ref<string | null>(null)
+const scimBaseUrl = ref<string | null>(null)
+const claimPreview = ref<{ rawClaims: Record<string, unknown>; mapped: Record<string, string | null> } | null>(null)
+const pendingTest = ref<{ testId: string; providerId: string } | null>(null)
+
+function statusSeverity(s: SsoProviderRow['status']): string {
+  return s === 'enabled' ? 'success' : s === 'disabled' ? 'warn' : 'secondary'
+}
+
+async function openManage(p: SsoProviderRow) {
+  if (manageId.value === p.providerId) {
+    manageId.value = null
+    return
+  }
+  manageId.value = p.providerId
+  mgmtErr.value = ''
+  testResult.value = null
+  domainCheck.value = null
+  domainInfo.value = null
+  scimToken.value = null
+  claimPreview.value = null
+  if (!p.domainVerified) await loadDomainInfo(p.providerId)
+}
+
+async function mgmt<T>(key: string, run: () => Promise<T>): Promise<T | undefined> {
+  mgmtBusy.value = key
+  mgmtErr.value = ''
+  try {
+    return await run()
+  } catch (e: any) {
+    mgmtErr.value = e?.data?.statusMessage || e?.data?.message || 'Action failed'
+  } finally {
+    mgmtBusy.value = ''
+  }
+}
+
+async function runTest(id: string) {
+  testResult.value = (await mgmt('test', () => $fetch<{ ok: boolean; checks: ConnectionCheck[] }>(`/api/admin/sso/${id}/test-connection`, { method: 'POST' }))) ?? null
+  await refreshSso()
+}
+async function setStatus(id: string, status: SsoProviderRow['status']) {
+  await mgmt('status', () => $fetch<unknown>(`/api/admin/sso/${id}/status`, { method: 'PUT', body: { status } }))
+  await refreshSso()
+}
+async function loadDomainInfo(id: string) {
+  domainInfo.value = (await mgmt('domain', () => $fetch<{ host: string; value: string; verified: boolean }>(`/api/admin/sso/${id}/verify-domain`))) ?? null
+}
+async function checkDomain(id: string) {
+  domainCheck.value = (await mgmt('domaincheck', () => $fetch<{ ok: boolean; found: string[] }>(`/api/admin/sso/${id}/verify-domain`, { method: 'POST' }))) ?? null
+  if (domainCheck.value?.ok) {
+    await Promise.all([refreshSso(), loadDomainInfo(id)])
+  }
+}
+async function bypassDomain(id: string) {
+  await mgmt('bypass', () => $fetch<unknown>(`/api/admin/sso/${id}/bypass-domain`, { method: 'POST' }))
+  await Promise.all([refreshSso(), loadDomainInfo(id)])
+}
+async function runTestSignIn(id: string) {
+  claimPreview.value = null
+  const r = await mgmt('signin', () => $fetch<{ testId: string; url: string }>(`/api/admin/sso/${id}/test-signin`, { method: 'POST' }))
+  if (!r) return
+  pendingTest.value = { testId: r.testId, providerId: id }
+  window.open(r.url, 'sso-test-signin', 'width=520,height=680')
+}
+async function generateScim(id: string) {
+  const r = await mgmt('scim', () => $fetch<{ scimToken: string; baseUrl: string }>(`/api/admin/sso/${id}/scim-token`, { method: 'POST' }))
+  if (!r) return
+  scimToken.value = r.scimToken
+  scimBaseUrl.value = r.baseUrl
+  await refreshSso()
+}
+async function revokeScim(id: string) {
+  await mgmt('scimrevoke', () => $fetch<unknown>(`/api/admin/sso/${id}/scim-token`, { method: 'DELETE' }))
+  scimToken.value = null
+  await refreshSso()
+}
+
+// The test sign-in popup posts its result back; pull the captured claims through
+// the admin-gated result route (claims never ride the popup message).
+function onTestSignInMessage(ev: MessageEvent) {
+  if (ev.origin !== origin) return
+  const data = ev.data as { type?: string; testId?: string }
+  if (data?.type !== 'sso-test-result' || !pendingTest.value || data.testId !== pendingTest.value.testId) return
+  const { providerId, testId } = pendingTest.value
+  pendingTest.value = null
+  $fetch<{ result: typeof claimPreview.value }>(`/api/admin/sso/${providerId}/test-signin-result`, { query: { testId } })
+    .then((r) => {
+      claimPreview.value = r.result
+    })
+    .catch(() => {})
+}
+onMounted(() => window.addEventListener('message', onTestSignInMessage))
+onUnmounted(() => window.removeEventListener('message', onTestSignInMessage))
 
 // Back-fill provider league auto-join for all existing domain-matched users.
 const ssoSyncBusy = ref(false)
@@ -479,6 +590,7 @@ const counts = computed<Record<string, { total: number; loading: boolean }>>(() 
               <div class="font-medium" style="color: var(--p-text-color)">{{ t('admin.sso.setupTitle') }}</div>
               <template v-if="form.type !== 'saml'">
                 <div>{{ t('admin.sso.redirectUri') }}: <code class="select-all">{{ oidcRedirectUri }}</code></div>
+                <div>{{ t('admin.sso.testRedirectUri') }}: <code class="select-all">{{ testCallbackUri }}</code></div>
                 <div>{{ t('admin.sso.scopes') }}: <code>openid email profile</code></div>
                 <div>{{ t('admin.sso.claims') }}: <code>sub, email</code> · {{ t('admin.sso.claimsOptional') }}: <code>name, picture, email_verified</code></div>
               </template>
@@ -506,24 +618,100 @@ const counts = computed<Record<string, { total: number; loading: boolean }>>(() 
             />
           </div>
 
-          <div v-if="providers.length" class="border-t px-6 py-4 flex flex-col gap-2" style="border-color: var(--p-content-border-color)">
-            <div v-for="p in providers" :key="p.providerId" class="flex items-center gap-3 text-sm">
-              <Tag :value="p.type.toUpperCase()" :severity="p.type === 'saml' ? 'warn' : 'info'" />
-              <span class="font-medium">{{ p.name || p.providerId }}</span>
-              <span v-if="p.name" class="text-xs" style="color: var(--p-text-muted-color)">{{ p.providerId }}</span>
-              <span class="truncate" style="color: var(--p-text-muted-color)">{{ p.domains.join(', ') }}</span>
-              <span class="flex-1" />
-              <a
-                v-if="p.type === 'saml'"
-                v-tooltip.left="t('admin.sso.spMetadata')"
-                :href="spMetadataUrl(p.providerId)"
-                target="_blank"
-                rel="noopener"
-                class="p-button p-button-text p-button-rounded p-button-sm"
-                :aria-label="t('admin.sso.spMetadata')"
-              ><i class="pi pi-download text-sm" /></a>
-              <Button icon="pi pi-pencil" severity="secondary" text rounded size="small" :aria-label="t('admin.sso.edit')" @click="startEditProvider(p)" />
-              <Button icon="pi pi-trash" severity="danger" text rounded size="small" :aria-label="t('common.cancel')" @click="removeProvider(p.providerId)" />
+          <div v-if="providers.length" class="border-t px-6 py-4 flex flex-col gap-3" style="border-color: var(--p-content-border-color)">
+            <div v-for="p in providers" :key="p.providerId" class="flex flex-col gap-2 rounded-lg border p-3" style="border-color: var(--p-content-border-color)">
+              <div class="flex items-center gap-2 text-sm flex-wrap">
+                <Tag :value="p.type.toUpperCase()" :severity="p.type === 'saml' ? 'warn' : 'info'" />
+                <Tag :value="t(`admin.sso.status.${p.status}`)" :severity="statusSeverity(p.status)" />
+                <Tag
+                  :value="p.domainVerified ? t('admin.sso.domainVerifiedTag') : t('admin.sso.domainUnverifiedTag')"
+                  :severity="p.domainVerified ? 'success' : 'warn'"
+                  :icon="p.domainVerified ? 'pi pi-check' : 'pi pi-exclamation-triangle'"
+                />
+                <Tag v-if="p.scimEnabled" value="SCIM" severity="info" icon="pi pi-sync" />
+                <span class="font-medium">{{ p.name || p.providerId }}</span>
+                <span v-if="p.name" class="text-xs" style="color: var(--p-text-muted-color)">{{ p.providerId }}</span>
+                <span class="truncate" style="color: var(--p-text-muted-color)">{{ p.domains.join(', ') }}</span>
+                <span class="flex-1" />
+                <Button
+                  icon="pi pi-cog"
+                  :label="t('admin.sso.manage')"
+                  size="small"
+                  severity="secondary"
+                  :outlined="manageId !== p.providerId"
+                  @click="openManage(p)"
+                />
+                <a
+                  v-if="p.type === 'saml'"
+                  v-tooltip.left="t('admin.sso.spMetadata')"
+                  :href="spMetadataUrl(p.providerId)"
+                  target="_blank"
+                  rel="noopener"
+                  class="p-button p-button-text p-button-rounded p-button-sm"
+                  :aria-label="t('admin.sso.spMetadata')"
+                ><i class="pi pi-download text-sm" /></a>
+                <Button icon="pi pi-pencil" severity="secondary" text rounded size="small" :aria-label="t('admin.sso.edit')" @click="startEditProvider(p)" />
+                <Button icon="pi pi-trash" severity="danger" text rounded size="small" :aria-label="t('common.cancel')" @click="removeProvider(p.providerId)" />
+              </div>
+
+              <div v-if="manageId === p.providerId" class="flex flex-col gap-4 pt-2 border-t text-sm" style="border-color: var(--p-content-border-color)">
+                <Message v-if="mgmtErr" severity="error" size="small">{{ mgmtErr }}</Message>
+
+                <div class="flex flex-col gap-2">
+                  <div class="text-xs font-medium uppercase tracking-wide" style="color: var(--p-text-muted-color)">{{ t('admin.sso.lifecycle') }}</div>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <Button :label="t('admin.sso.testConnection')" icon="pi pi-bolt" size="small" :loading="mgmtBusy === 'test'" @click="runTest(p.providerId)" />
+                    <Button v-if="p.type === 'oidc'" :label="t('admin.sso.testSignIn')" icon="pi pi-id-card" size="small" severity="help" :loading="mgmtBusy === 'signin'" @click="runTestSignIn(p.providerId)" />
+                    <Button v-if="p.status !== 'enabled'" :label="t('admin.sso.enable')" icon="pi pi-check" size="small" severity="success" :disabled="!p.lastTestOk || !p.domainVerified" :loading="mgmtBusy === 'status'" @click="setStatus(p.providerId, 'enabled')" />
+                    <Button v-else :label="t('admin.sso.disable')" icon="pi pi-pause" size="small" severity="warn" :loading="mgmtBusy === 'status'" @click="setStatus(p.providerId, 'disabled')" />
+                    <Button v-if="p.status === 'disabled'" :label="t('admin.sso.toDraft')" size="small" text :loading="mgmtBusy === 'status'" @click="setStatus(p.providerId, 'draft')" />
+                    <span v-if="p.status !== 'enabled' && (!p.lastTestOk || !p.domainVerified)" class="text-xs" style="color: var(--p-text-muted-color)">{{ t('admin.sso.enableHint') }}</span>
+                  </div>
+                  <div v-if="testResult" class="rounded-lg border p-2 flex flex-col gap-1 text-xs" style="border-color: var(--p-content-border-color)">
+                    <div v-for="c in testResult.checks" :key="c.name" class="flex items-start gap-2">
+                      <i :class="c.ok ? 'pi pi-check-circle' : 'pi pi-times-circle'" :style="{ color: c.ok ? 'var(--ng-success)' : 'var(--p-red-500)' }" />
+                      <span class="font-medium">{{ c.name }}</span>
+                      <span style="color: var(--p-text-muted-color)">{{ c.detail }}</span>
+                    </div>
+                  </div>
+                  <div v-if="claimPreview" class="rounded-lg border p-2 flex flex-col gap-1 text-xs" style="border-color: var(--p-content-border-color)">
+                    <div class="font-medium">{{ t('admin.sso.claimPreviewTitle') }}</div>
+                    <div v-for="(v, k) in claimPreview.mapped" :key="k"><code>{{ k }}</code> → {{ v ?? '—' }}</div>
+                    <details class="mt-1">
+                      <summary class="cursor-pointer" style="color: var(--p-text-muted-color)">{{ t('admin.sso.rawClaims') }}</summary>
+                      <pre class="whitespace-pre-wrap break-all mt-1">{{ JSON.stringify(claimPreview.rawClaims, null, 2) }}</pre>
+                    </details>
+                  </div>
+                </div>
+
+                <div v-if="!p.domainVerified" class="flex flex-col gap-2">
+                  <div class="text-xs font-medium uppercase tracking-wide" style="color: var(--p-text-muted-color)">{{ t('admin.sso.domainVerification') }}</div>
+                  <div v-if="domainInfo" class="text-xs flex flex-col gap-1">
+                    <div>{{ t('admin.sso.txtRecordHint', { domain: p.domains[0] }) }}</div>
+                    <div>{{ t('admin.sso.txtHost') }}: <code class="select-all break-all">{{ domainInfo.host }}</code></div>
+                    <div>{{ t('admin.sso.txtValue') }}: <code class="select-all break-all">{{ domainInfo.value }}</code></div>
+                  </div>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <Button :label="t('admin.sso.checkDns')" icon="pi pi-search" size="small" :loading="mgmtBusy === 'domaincheck'" @click="checkDomain(p.providerId)" />
+                    <Button :label="t('admin.sso.bypass')" icon="pi pi-shield" size="small" severity="secondary" outlined :loading="mgmtBusy === 'bypass'" @click="bypassDomain(p.providerId)" />
+                    <span v-if="domainCheck && !domainCheck.ok" class="text-xs" style="color: var(--p-red-500)">{{ t('admin.sso.dnsNotFound') }}</span>
+                  </div>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                  <div class="text-xs font-medium uppercase tracking-wide" style="color: var(--p-text-muted-color)">{{ t('admin.sso.scim') }}</div>
+                  <div class="text-xs" style="color: var(--p-text-muted-color)">{{ t('admin.sso.scimHint') }}</div>
+                  <div v-if="scimToken" class="rounded-lg border p-2 flex flex-col gap-1 text-xs" style="border-color: var(--p-content-border-color)">
+                    <div>{{ t('admin.sso.scimBaseUrl') }}: <code class="select-all break-all">{{ scimBaseUrl }}</code></div>
+                    <div>{{ t('admin.sso.scimToken') }}: <code class="select-all break-all">{{ scimToken }}</code></div>
+                    <div style="color: var(--p-orange-500)">{{ t('admin.sso.scimTokenOnce') }}</div>
+                  </div>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <Button :label="p.scimEnabled ? t('admin.sso.scimRotate') : t('admin.sso.scimGenerate')" icon="pi pi-key" size="small" :loading="mgmtBusy === 'scim'" @click="generateScim(p.providerId)" />
+                    <Button v-if="p.scimEnabled" :label="t('admin.sso.scimRevoke')" icon="pi pi-ban" size="small" severity="danger" outlined :loading="mgmtBusy === 'scimrevoke'" @click="revokeScim(p.providerId)" />
+                  </div>
+                </div>
+              </div>
             </div>
             <div v-if="providers.length" class="flex items-center gap-3 flex-wrap pt-2 border-t" style="border-color: var(--p-content-border-color)">
               <Button
