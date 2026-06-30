@@ -558,6 +558,12 @@
     "noPicks": "No picks for this match yet.",
     "leagueNoPick": "{n} member made no pick | {n} members made no pick"
   },
+  "pastPick": {
+    "final": "Your earlier {score} would have scored - the one you swapped off.",
+    "finalCheeky": "Your previous pick won... but it probably was not worth watching.",
+    "live": "Your earlier {score} is leading right now - the one you swapped off. Still in play.",
+    "liveCheeky": "Your earlier 0-0 is winning right now... not exactly must-see. Still in play."
+  },
   "media": {
     "watchTitle": "Watch",
     "live": "Live stream",

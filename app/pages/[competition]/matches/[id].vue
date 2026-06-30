@@ -657,6 +657,9 @@ function toggleFormInfo(side: string, i: number | string) {
           <span class="font-bold tabular-nums">{{ myPred.homeGoals }}–{{ myPred.awayGoals }}</span>
           <span v-if="myPred.totalPoints !== null" class="text-xs font-semibold" style="color: var(--p-primary-color)">+{{ myPred.totalPoints }} pts · {{ tierLabel(myPred.baseTier, t) }}</span>
         </template>
+        <!-- Owner-only: an earlier pick of yours would have scored better. Live
+             while the match is in play, resolving to the full-time line at the end. -->
+        <PastPickHint v-if="myPred && hasStarted" :match-id="id" :started="hasStarted" :live="isLive" :live-key="scoreTotal" />
         <SharePickButton v-if="myPred && m" :match-id="id" :kickoff-time="m.kickoffTime" />
         <CrowdLine v-if="crowdEnabled" :match-id="id" :totals="crowdTotals" :league-totals="leagueTotals" :league-active="leagueActive" count />
         <MatchOdds v-if="oddsEnabled" :odds="data?.odds ?? null" />

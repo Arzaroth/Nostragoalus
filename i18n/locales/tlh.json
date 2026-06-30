@@ -558,6 +558,12 @@
     "noPicks": "DoQ tu'lu'be'.",
     "leagueNoPick": "DoQ Hutlh {n} | DoQ Hutlh {n}"
   },
+  "pastPick": {
+    "final": "{score} DaHIchpu'bogh Qapta' - 'ach DaweHpu'.",
+    "finalCheeky": "Qapta' DoQ wa'Hu'... 'ach DaleghnISbe'.",
+    "live": "DaH Qap {score} DaHIchpu'bogh - DaweHpu'bogh. SuvtaH.",
+    "liveCheeky": "DaH Qap 0-0... Dajbe'. SuvtaH."
+  },
   "media": {
     "watchTitle": "yIbej",
     "live": "DaH HaSta",
