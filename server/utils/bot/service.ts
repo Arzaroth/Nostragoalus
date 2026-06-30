@@ -86,6 +86,8 @@ export interface BotMatchRow {
   roundId: string
   homeGoals: number
   awayGoals: number
+  isOutcomeOnly: boolean
+  wager: number | null
   isJoker: boolean
   baseTier: BaseTier | null
   totalPoints: number | null
@@ -411,6 +413,10 @@ export async function getBotOverview(
       roundId: m.roundId,
       homeGoals: pick.home,
       awayGoals: pick.away,
+      // The bot never stakes or plays outcome-only; these keep its row shape in
+      // step with a real prediction (it feeds the same PredictionList).
+      isOutcomeOnly: false,
+      wager: null,
       isJoker,
       baseTier: score?.baseTier ?? null,
       totalPoints: score?.totalPoints ?? null,
