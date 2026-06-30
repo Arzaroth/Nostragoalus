@@ -30,6 +30,8 @@ export default defineEventHandler(async (event) => {
       name: league.name,
       visibility: league.visibility,
       description: league.description,
+      mode: league.mode,
+      lives: league.lives,
       role: membership?.role ?? null,
       memberCount: totalMembers,
       competition: competition ? { id: competition.id, slug: competition.slug, name: competition.name } : null,
