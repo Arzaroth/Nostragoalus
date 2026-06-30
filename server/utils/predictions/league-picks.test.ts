@@ -54,7 +54,7 @@ async function picksSynced(leagueId: string, userId: string): Promise<boolean> {
 
 describe('upsertLeaguePrediction', () => {
   it('writes an override and switches the league off sync', async () => {
-    const leagueId = await makeLeague(db, { competitionId, ownerId: 'u1', mode: 'NORMAL' })
+    const leagueId = await makeLeague(db, { competitionId, ownerId: 'u1', mode: 'EASY' })
     const m = await openMatch()
     const id = await upsertLeaguePrediction(db, { leagueId, userId: 'u1', matchId: m, home: 2, away: 1 }, NOW)
     expect(id).toBeTruthy()
@@ -169,10 +169,11 @@ describe('getLeagueCompleteness', () => {
   })
 
   it('prefers a league override over the base pick', async () => {
-    const normal = await makeLeague(db, { competitionId, ownerId: 'u1', mode: 'NORMAL' })
+    // Base pick has no stake (HARD -> incomplete); the override adds one.
+    const hard = await makeLeague(db, { competitionId, ownerId: 'u1', mode: 'HARD' })
     const m = await openMatch()
-    await makePrediction(db, { userId: 'u1', matchId: m, roundId, home: 1, away: 0, isOutcomeOnly: true })
-    await makeLeaguePrediction(db, { leagueId: normal, userId: 'u1', matchId: m, roundId, home: 2, away: 1, isOutcomeOnly: false })
+    await makePrediction(db, { userId: 'u1', matchId: m, roundId, home: 1, away: 0 })
+    await makeLeaguePrediction(db, { leagueId: hard, userId: 'u1', matchId: m, roundId, home: 2, away: 1, wager: 3 })
 
     const [c] = await getLeagueCompleteness(db, 'u1', competitionId, NOW)
     expect(c.summary).toMatchObject({ total: 1, complete: 1 })

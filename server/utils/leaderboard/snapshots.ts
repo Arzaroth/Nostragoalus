@@ -74,9 +74,15 @@ export async function getRankSnapshots(db: AppDatabase, competitionId: string): 
 }
 
 // Same per league of the competition. Snapshots rank the full member set
-// (private profiles included) - they're served to members/admins only.
+// (private profiles included) - they're served to members/admins only. Only
+// NORMAL leagues: moded leagues (easy/hard/hardcore) re-score from effective
+// picks and rank live, so a base-total snapshot would be wrong for them (their
+// movement arrows are deferred - see TODO.md).
 export async function updateLeagueRankSnapshots(db: AppDatabase, competitionId: string): Promise<void> {
-  const leagues = await db.select({ id: league.id }).from(league).where(eq(league.competitionId, competitionId))
+  const leagues = await db
+    .select({ id: league.id })
+    .from(league)
+    .where(and(eq(league.competitionId, competitionId), eq(league.mode, 'NORMAL')))
   for (const l of leagues) {
     const board = await getLeaderboard(db, { competitionId, leagueId: l.id, includePrivate: true, limit: 1000 })
     await writeRankSnapshots(db, leagueLeaderboardRank, leagueLeaderboardRank.leagueId, { leagueId: l.id }, board)
