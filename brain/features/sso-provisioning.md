@@ -60,9 +60,14 @@ this doc is the feature-level map.
 
 ## SCIM provisioning
 
-- `@better-auth/scim` with `storeSCIMToken: 'hashed'`. `scim_provider` holds one
-  row per provisioned provider (providerId + hashed token; no `userId` -
+- `@better-auth/scim` (1.6.23 - 1.6.18 only provisions, `active:false -> ban`
+  lands in 1.6.2x) with `storeSCIMToken: 'hashed'`. `scim_provider` holds one row
+  per provisioned provider (providerId + hashed token; no `userId` -
   `providerOwnership` is off). The bearer is shown once at generation.
+- The SCIM connection id is a derived `{providerId}-scim` (`scimProviderId()` in
+  the service): 1.6.23 makes SSO and SCIM provider ids mutually exclusive.
+  Provisioned users still link to their SSO login by email, so the distinct id is
+  invisible to the end user.
 - `active:false` -> admin ban (block login + revoke sessions), data kept;
   `active:true` reactivates. The data plane `/api/auth/scim/v2/*` is open
   (bearer-authed); the session-only management endpoints are blocked over HTTP

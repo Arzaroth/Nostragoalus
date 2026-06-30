@@ -96,18 +96,17 @@ test('SCIM provisions a user and active:false deprovisions (ban, data kept)', as
   const { scimToken, baseUrl } = (await tokenRes.json()) as { scimToken: string; baseUrl: string }
   expect(scimToken.length).toBeGreaterThan(10)
 
-  const scim = await request.newContext({
-    baseURL: baseUrl,
-    extraHTTPHeaders: { authorization: `Bearer ${scimToken}`, 'content-type': 'application/scim+json' },
-  })
+  const scim = await request.newContext({ baseURL: baseUrl, extraHTTPHeaders: { authorization: `Bearer ${scimToken}` } })
+  // SCIM requires application/scim+json; pass the body as a string so Playwright
+  // doesn't override the content-type with application/json.
+  const scimReq = (method: 'post' | 'patch', path: string, body: unknown) =>
+    scim.fetch(path, { method, headers: { 'content-type': 'application/scim+json' }, data: JSON.stringify(body) })
 
-  const create = await scim.post('/Users', {
-    data: {
-      schemas: ['urn:ietf:params:scim:schemas:core:2.0:User'],
-      userName: SCIM_EMAIL,
-      emails: [{ value: SCIM_EMAIL, primary: true }],
-      active: true,
-    },
+  const create = await scimReq('post', '/Users', {
+    schemas: ['urn:ietf:params:scim:schemas:core:2.0:User'],
+    userName: SCIM_EMAIL,
+    emails: [{ value: SCIM_EMAIL, primary: true }],
+    active: true,
   })
   expect(create.ok()).toBeTruthy()
   const userId = ((await create.json()) as { id: string }).id
@@ -117,22 +116,18 @@ test('SCIM provisions a user and active:false deprovisions (ban, data kept)', as
   expect(user?.banned).toBe(false)
 
   // Deprovision -> banned, data kept.
-  const off = await scim.patch(`/Users/${userId}`, {
-    data: {
-      schemas: ['urn:ietf:params:scim:api:messages:2.0:PatchOp'],
-      Operations: [{ op: 'replace', path: 'active', value: false }],
-    },
+  const off = await scimReq('patch', `/Users/${userId}`, {
+    schemas: ['urn:ietf:params:scim:api:messages:2.0:PatchOp'],
+    Operations: [{ op: 'replace', path: 'active', value: false }],
   })
   expect(off.ok()).toBeTruthy()
   user = await getUserByEmail(SCIM_EMAIL)
   expect(user?.banned).toBe(true)
 
   // Reactivate.
-  const on = await scim.patch(`/Users/${userId}`, {
-    data: {
-      schemas: ['urn:ietf:params:scim:api:messages:2.0:PatchOp'],
-      Operations: [{ op: 'replace', path: 'active', value: true }],
-    },
+  const on = await scimReq('patch', `/Users/${userId}`, {
+    schemas: ['urn:ietf:params:scim:api:messages:2.0:PatchOp'],
+    Operations: [{ op: 'replace', path: 'active', value: true }],
   })
   expect(on.ok()).toBeTruthy()
   expect((await getUserByEmail(SCIM_EMAIL))?.banned).toBe(false)
