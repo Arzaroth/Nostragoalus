@@ -855,10 +855,10 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
       re-score NORMAL overrides through the full engine (needs a per-league histogram
       decision, against the global-bonus invariant) or accept base-tier-only scoring
       for NORMAL overrides.
-- [ ] **Moded boards drop champion/best-scorer/live + crowd bonus**:
-      `getLeagueModeBoard` scores easy/hard self-contained from effective picks only.
-      Decide whether the competition's champion/best-scorer awards and in-progress
-      live points should count in moded leagues, and wire them if so.
+- [ ] **HARDCORE has no live**: easy/hard points boards now carry provisional live
+      points + champion/best-scorer + the configured bonus, but HARDCORE elimination
+      stays on finalized matches only (no provisional "at risk"/live elimination), to
+      avoid flickering eliminations mid-match.
 - [ ] **Moded leagues have no movement arrows**: `updateLeagueRankSnapshots` skips
       non-NORMAL leagues (their base-total ranks would be wrong), and the mode board
       ranks live with no `prevRank`. Add per-mode snapshots if arrows are wanted.

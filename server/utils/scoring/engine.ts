@@ -30,14 +30,14 @@ export interface ScoreMatchInput {
   forceJoker?: boolean
 }
 
-interface Histogram {
+export interface Histogram {
   exactCount: number
   outcomeCount: number
   total: number
   actualOutcome: Outcome
 }
 
-function computeBonus(
+export function computeBonus(
   pred: Scoreline,
   actual: Scoreline,
   rules: ScoringRules,
@@ -117,7 +117,7 @@ function scoreOne(input: ScoreMatchInput, hist: Histogram, p: PredictionInput): 
   }
 }
 
-function buildHistogram(actual: Scoreline, predictions: PredictionInput[]): Histogram {
+export function buildHistogram(actual: Scoreline, predictions: PredictionInput[]): Histogram {
   let exactCount = 0
   let outcomeCount = 0
   for (const p of predictions) {

@@ -188,6 +188,7 @@ export interface ModePointsRow {
   displayName: string
   image: string | null
   points: number
+  livePoints: number
   exactCount: number
   outcomeCount: number
 }

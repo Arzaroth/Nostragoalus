@@ -34,6 +34,7 @@ function medal(rank: number) {
       </div>
       <div class="text-right shrink-0">
         <span class="text-xl font-bold tabular-nums">{{ r.points }}</span>
+        <span v-if="r.livePoints" class="text-xs font-bold ml-1" style="color: var(--ng-danger)">+{{ r.livePoints }}</span>
         <span class="text-xs ml-1" style="color: var(--p-text-muted-color)">{{ t('leagues.pointsLabel') }}</span>
       </div>
     </NuxtLink>

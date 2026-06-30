@@ -12,7 +12,7 @@ import {
 } from '../../../tests/factories'
 import { findRoundId } from '../sync/rounds'
 import { ensureDefaultScoringConfig } from '../scoring/store'
-import { user } from '../../../db/schema'
+import { bestScorerPick, championPick, user } from '../../../db/schema'
 import { eq } from 'drizzle-orm'
 import { getLeagueModeBoard, type ModePointsRow, type SurvivalRow } from './modes'
 
@@ -75,6 +75,35 @@ describe('getLeagueModeBoard - EASY', () => {
 
     const board = await getLeagueModeBoard(db, { leagueId, mode: 'EASY', competitionId })
     expect(rowsOf(board).a).toMatchObject({ points: 1 })
+  })
+})
+
+describe('getLeagueModeBoard - rich easy board', () => {
+  it('adds the configured bonus, champion + best-scorer, and live points', async () => {
+    for (const u of ['u1', 'u2', 'u3', 'u4', 'u5']) await makeUser(db, u)
+    const leagueId = await makeLeague(db, { competitionId, ownerId: 'u1', mode: 'EASY' })
+    // Scored HOME (2-1); only u1 called HOME (1 of 5) -> result-rarity bonus.
+    const scored = await scoredMatch(2, 1)
+    await makePrediction(db, { userId: 'u1', matchId: scored, roundId, home: 1, away: 0 })
+    for (const u of ['u2', 'u3', 'u4', 'u5']) await makePrediction(db, { userId: u, matchId: scored, roundId, home: 0, away: 1 })
+    // Competition-wide awards for u1.
+    await db.insert(championPick).values({ userId: 'u1', competitionId, teamName: 'France', awardedPoints: 10 })
+    await db.insert(bestScorerPick).values({ userId: 'u1', competitionId, playerId: 'p1', playerName: 'M', teamName: 'France', awardedPoints: 8 })
+    // In-play match: u1 calls it right -> provisional live points.
+    kickoff += 1
+    const live = await makeMatch(db, {
+      competitionId,
+      roundId,
+      kickoffTime: new Date(Date.UTC(2026, 5, 11, kickoff)),
+      status: 'LIVE',
+      fullTimeHome: 1,
+      fullTimeAway: 0,
+    })
+    await makePrediction(db, { userId: 'u1', matchId: live, roundId, home: 1, away: 0 })
+
+    const by = rowsOf(await getLeagueModeBoard(db, { leagueId, mode: 'EASY', competitionId }))
+    // scored: base 1 + crowd result-rarity 1 = 2; + champion 10 + best-scorer 8 = 20. live: base 1.
+    expect(by.u1).toMatchObject({ points: 20, livePoints: 1, rank: 1 })
   })
 })
 

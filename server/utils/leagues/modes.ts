@@ -1,9 +1,7 @@
 import { and, eq, lte } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { match } from '../../../db/schema'
-import { oddsBonus } from '../scoring/bonus'
 import { basePointsFor, classifyTier, outcomeOf, type BasePoints, type Outcome, type Scoreline } from '../scoring/tiers'
-import type { OddsTier } from '../../../shared/types/scoring'
 import { ConflictError } from '../errors'
 
 export type LeagueMode = 'NORMAL' | 'EASY' | 'HARD' | 'HARDCORE'
@@ -59,11 +57,11 @@ export interface EffectivePick {
 }
 
 // Competition-level knobs a per-mode scorer needs, taken from the active
-// scoring rules so NORMAL overrides match the live config.
+// scoring rules. The bonus (crowd/odds) is computed by the caller (which holds
+// the histogram) and passed in, so the scorer stays pure.
 export interface ModeScoreContext {
   base: BasePoints
   jokerMultiplier: number
-  oddsTiers: OddsTier[] | null
 }
 
 // A correct EASY call is always worth at least this, with the configured odds
@@ -88,12 +86,13 @@ export function predictedOutcomeMatches(pick: Pick<EffectivePick, 'home' | 'away
   return outcomeOf({ home: pick.home, away: pick.away }) === outcomeOf(actual)
 }
 
-// EASY: a correct outcome pays a flat base plus an odds bonus (longshots pay
-// more); a wrong outcome pays nothing. Joker doubles the lot.
-export function easyPoints(pick: EffectivePick, actual: Scoreline, actualOutcomeOdds: number | null, ctx: ModeScoreContext): number {
+// EASY: a correct outcome pays a flat base plus the competition's configured
+// per-pick bonus (crowd rarity or odds, computed by the caller); a wrong outcome
+// pays nothing. Joker doubles the lot.
+export function easyPoints(pick: EffectivePick, actual: Scoreline, bonus: number, jokerMultiplier: number): number {
   if (!predictedOutcomeMatches(pick, actual)) return 0
-  const pts = EASY_CORRECT_BASE + oddsBonus(true, actualOutcomeOdds, ctx.oddsTiers)
-  return pick.isJoker ? pts * ctx.jokerMultiplier : pts
+  const pts = EASY_CORRECT_BASE + bonus
+  return pick.isJoker ? pts * jokerMultiplier : pts
 }
 
 // HARD: a correct outcome pays your stake; nailing the exact score pays it
@@ -116,18 +115,20 @@ export function normalPoints(pick: EffectivePick, actual: Scoreline, ctx: ModeSc
   return pick.isJoker ? pts * ctx.jokerMultiplier : pts
 }
 
-// Read-time points for a moded league (or a NORMAL league override). HARDCORE
-// carries no points - its board is survival, built separately.
+// Read-time points for a moded league (or a NORMAL league override). `bonus` is
+// the configured crowd/odds bonus the caller computed for this pick (applied to
+// EASY only; HARD is pure stake, HARDCORE carries no points - its board is
+// survival, built separately).
 export function modePoints(
   mode: LeagueMode,
   pick: EffectivePick,
   actual: Scoreline,
-  actualOutcomeOdds: number | null,
+  bonus: number,
   ctx: ModeScoreContext,
 ): number {
   switch (mode) {
     case 'EASY':
-      return easyPoints(pick, actual, actualOutcomeOdds, ctx)
+      return easyPoints(pick, actual, bonus, ctx.jokerMultiplier)
     case 'HARD':
       return hardPoints(pick, actual)
     case 'NORMAL':
