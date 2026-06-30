@@ -864,9 +864,6 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
       overrides that aren't in the chain, so a league-board dispute can't be proven
       from the ledger. Extend the ledger per-league if league-board verification is
       wanted.
-- [ ] **Admin create-league mode parity**: `adminCreateLeague`'s ownerless branch
-      inserts directly and ignores mode/lives (always NORMAL), and skips the
-      running guard. Thread mode through if admins should make moded leagues.
 - [ ] **Per-match completeness chips**: the nudge is a per-league summary banner
       on the matches page. A per-(match, league) chip on each card (`✓ done here /
       ⚠ needs a score there`) would be finer-grained; deferred to keep the card
