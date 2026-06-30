@@ -24,11 +24,13 @@ export default defineTask({
         const provider = providerForCompetition(competition, seasonId)
         const res = await syncLive(db, competition.id, provider)
         changed.push(...res.changedMatchIds)
-        // A knockout match finishing advances the winner into the next bracket
-        // slot, which lives in the cached provider base - drop it so the next
-        // bracket request rebuilds with the advancement instead of waiting out
-        // the TTL. The live scoreline itself rides the WS patch, not this.
-        if (res.transitions.some((t) => t.status === 'FINISHED' && isKnockout(t.stage))) {
+        // A knockout match reaching a terminal result advances the winner into
+        // the next bracket slot, which lives in the cached provider base - drop
+        // it so the next bracket request rebuilds with the advancement instead of
+        // waiting out the TTL. FINISHED is the common path; AWARDED (a walkover)
+        // also sets a winner that advances. The live scoreline itself rides the
+        // WS patch, not this.
+        if (res.transitions.some((t) => (t.status === 'FINISHED' || t.status === 'AWARDED') && isKnockout(t.stage))) {
           invalidateBracketCache(competition.id)
         }
         // Best-effort live push (kickoff/goal) to predictors; never blocks scores.

@@ -159,6 +159,36 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       `ViewerToken` type, and the multi-match `setViewing` generality the callers
       never use. Correct as-is; this is a simplification, not a bug.
 
+## Live bracket / penalty shootouts (deferred from the feature-treatment review)
+
+- [ ] **Bracket cache bust misses the non-poll path**: `scores:poll` busts the
+      bracket cache on a knockout terminal transition (now FINISHED or AWARDED),
+      but a knockout finish observed only by the hourly fixtures refresh (not the
+      live poll) never calls `invalidateBracketCache`, so the advancement waits
+      out the full 10-min TTL. Wire the same invalidation into the hourly sync
+      path. Separately, if the provider `/seasonbracket` endpoint lags the live
+      feed, the post-bust rebuild can re-cache a not-yet-advanced bracket and pin
+      it for the TTL; the WS winner-highlight overlay + `scores:changed` refetch
+      mask the visible part, and advancement is eventually consistent.
+- [ ] **Shootout side attribution falls back silently**: `normalizeFifaTimeline`
+      (`server/utils/providers/fifa.ts`) derives the kick's `side` by matching
+      `IdTeam` against the home/away team ids; if those ids are absent the
+      Period-11 penalty-goal isn't counted and the badge falls back to the frozen
+      regulation score - the exact bug this feature fixes. Unreachable in practice
+      (a match at penalties always has both teams resolved), so it is defensive,
+      but a guard / log would make the degradation explicit.
+- [ ] **Unify the live-subscribe machinery**: `useLiveBracket`, `useLiveMatches`
+      and `useLiveMatch` each roll their own `useReconnectingSocket` +
+      `subscribe()` + re-subscribe `watch` + `match:update` overlay. Extract a
+      shared `useLiveMatchSubscription(liveIds, { onUpdate, onScoresChanged })`
+      so a protocol change lands in one place. Folds into the broader
+      "unify the WS consumers onto one shared socket" item under Notifications.
+- [ ] **Extract a shared `ttlCache<T>` helper**: `server/utils/bracket/cache.ts`
+      is the ~7th hand-rolled `Map<string, { at, value }>` + TTL (see
+      `bot/service.ts`, `chat/unfurl.ts`, `stats/alltime-h2h.ts`,
+      `live/league-chat.ts`, `auth/email-verification.ts`). A single
+      `ttlCache` with get/set/invalidate/evict would replace all of them.
+
 ## Calendar feed (deferred from the feature-treatment review)
 
 - [ ] `server/utils/feed/token.ts` is a near-verbatim clone of

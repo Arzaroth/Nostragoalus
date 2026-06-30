@@ -11,6 +11,11 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 - **Mouvement des cotes et détail par bookmaker** : le petit affichage des cotes montre désormais comment chaque cote a évolué depuis son ouverture - un repère par issue selon qu'elle a raccourci, dérivé ou est restée inchangée, avec l'ampleur du mouvement - et vous pouvez le toucher pour déplier les cotes d'ouverture et le 1X2 par bookmaker (quand le fournisseur les communique). Cotes décimales partout, comme avant.
 - **« Un de vos anciens pronostics visait juste »** : sur un match que vous avez pronostiqué, une fois qu'il a commencé, la page du match peut vous dire qu'un score choisi plus tôt puis changé aurait mieux marqué que celui que vous avez gardé - « votre ancien 1-0 aurait marqué, celui que vous avez abandonné. » Pendant le direct c'est provisoire et se met à jour avec le score, se figeant au coup de sifflet final. Si le pronostic antérieur gagnant était 0-0, il a droit à une réplique plus taquine. Ne montre jamais que vos propres anciens pronostics, à vous seul.
 - **Voyez qui regarde aussi** : une page de match en direct affiche désormais « N spectateurs en ce moment » - un compte en temps réel du nombre de personnes sur ce match à l'instant, qui se met à jour quand elles arrivent et repartent.
+- **Tableau à élimination en direct** : le tableau se met désormais à jour au fil des matchs - les scores et les séances de tirs au but évoluent sur place, un marqueur DIRECT apparaît sur les confrontations en cours, et les vainqueurs avancent au tour suivant sans rechargement.
+
+### Corrigé
+- **Tirs au but en direct** : le score de la séance de tirs au but sous un match s'incrémente désormais à mesure que les tirs sont tentés, sur la page du match comme sur la liste des matchs, au lieu de rester vide ou figé jusqu'au rechargement. Le score du temps réglementaire au-dessus reste inchangé.
+- **Score des tirs au but dans le fil** : chaque tir au but converti dans le fil play-by-play affiche désormais le décompte courant de la séance (1-0, 1-1, 2-1...) au lieu de répéter le score réglementaire figé à chaque ligne.
 
 ## [2.4.0] - 2026-06-30
 

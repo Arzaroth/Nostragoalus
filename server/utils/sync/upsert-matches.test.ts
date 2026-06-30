@@ -56,6 +56,18 @@ describe('upsertMatches', () => {
     await client.close()
   })
 
+  it('carries a knockout stage on the transition so the bracket bust can target it', async () => {
+    const { db, client } = await createTestDb()
+    const cid = await seedCompetition(db)
+    const ko = normalized({ providerMatchId: 'pko', stage: 'R16', group: null, matchday: null })
+    await upsertMatches(db, cid, [ko])
+    const res = await upsertMatches(db, cid, [
+      normalized({ ...ko, status: 'FINISHED', score: { fullTime: { home: 2, away: 1 } }, winner: 'HOME' }),
+    ])
+    expect(res.transitions[0]).toMatchObject({ stage: 'R16', status: 'FINISHED' })
+    await client.close()
+  })
+
   it('flags a shootout score change even while full-time is frozen', async () => {
     const { db, client } = await createTestDb()
     const cid = await seedCompetition(db)
