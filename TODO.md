@@ -875,21 +875,17 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
 - [ ] **Admin create-league mode parity**: `adminCreateLeague`'s ownerless branch
       inserts directly and ignores mode/lives (always NORMAL), and skips the
       running guard. Thread mode through if admins should make moded leagues.
-- [ ] **HARD in-grid stake input (client)**: the server supports the wager
-      end-to-end (`prediction.wager`, budget guard in `upsertPrediction`, HARD
-      scoring + board), and the prediction PUT route accepts it, but the
-      prediction grid has no stake stepper + per-round budget indicator yet. Until
-      it lands, HARD leagues are creatable and their board renders, but every stake
-      is null so members score 0. Add the stepper (expose `wager` on
-      `getMyPredictions`/`MyPrediction`, send it from `usePredictionMutations`),
-      and verify in a real browser.
-- [ ] **Divergence + nudge UI (client)**: the override layer is fully server-side
-      (`upsertLeaguePrediction`, `setLeaguePicksSynced`, `getLeagueOverrides`,
-      `getLeagueCompleteness`) but has no client. Build the W/D/L quick-pick
-      (stores `is_outcome_only`), the per-league override editor + "follow my main
-      picks" sync toggle, and the per-(match, league) completeness nudge chips
-      (`✓ done here / ⚠ needs a score there`). Needs new endpoints for override
-      write + sync + completeness, then real-browser verification.
+- [ ] **Per-match completeness chips**: the nudge is a per-league summary banner
+      on the matches page. A per-(match, league) chip on each card (`✓ done here /
+      ⚠ needs a score there`) would be finer-grained; deferred to keep the card
+      uncluttered.
+- [ ] **Override joker**: the per-league override carries `is_joker`, but the
+      matches-page joker toggle only writes the base pick, so a custom league
+      can't joker a different match. Wire override-joker if wanted.
+- [ ] **Real-browser verification**: the moded prediction flow (stake stepper,
+      W/D/L quick-pick, follow/customize toggle, nudge) passed typecheck +
+      component tests + build but was not driven in a real browser (auth needed).
+      Smoke-test on a preview before release.
 
 ## Crowd bot (deferred from the merge review)
 
