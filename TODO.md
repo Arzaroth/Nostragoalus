@@ -23,6 +23,20 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       before the post responds (giving up the fire-and-forget) or a mention-aware
       live frame the client can seed labels from.
 
+## Past-pick counterfactual (deferred from the feature pass)
+
+- [ ] Unify the past-pick counterfactual with the planned "evil twin" and
+      "what-if stats" into a single "counterfactuals" surface, instead of three
+      one-off lines/widgets. `server/utils/past-pick/service.ts` already replays a
+      user's own swapped-off picks through the scoring engine; the shared shape
+      (`shared/types/past-pick.ts`) and the synthetic-against-the-field scoring
+      approach are the seam to build that surface on.
+- [ ] The earlier picks are scored as synthetic predictions against the field as
+      it locked (the kept pick stays in the crowd denominator, the earlier one is
+      not), mirroring the consensus bot. A truer "if I had kept that pick instead"
+      would swap the kept pick out of the histogram for the earlier one. Revisit
+      if the crowd-rarity bonus ever makes the approximation visibly wrong.
+
 ## Stats tab (deferred from the feature pass)
 
 - [x] The assist board re-ranked the goals-sliced `/api/competitions/scorers`
