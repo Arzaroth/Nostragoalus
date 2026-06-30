@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-06-30
+
 ### chelpu'
 - **wIv lIjHa'be'**: DaH may'mey tetlh 'angtaH 'ar may'mey qaStaHvIS wIvbe'lu'bogh, So'choHpa' veb. "wa'DIch yIghoS" button tlhej, wIvbe'lu'bogh may' QIb Daq Sup.
 - **mI' Doch yISam**: mI' tIn law' (wa' ghom 8 latlh, qoj Hoch 12 latlh) 'angDI', polpa' yIqIm 'e' poQlu', vaj 1-33 rur Qagh wIvbe'lu' chu'be'. DaneHchugh, yIchoq.
