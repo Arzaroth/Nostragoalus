@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.6.0] - 2026-06-30
+
 ### Added
 - **Self-hosted SSO identity providers**: an internal or self-hosted SSO provider whose token endpoint sits on a private network now works - set NUXT_SSO_TRUSTED_ORIGINS to its origin and the login flow trusts it, where the built-in guard otherwise refuses a private-address provider. Public providers like Google need no change.
 
