@@ -21,6 +21,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "e2e:smtp": "node tests/e2e/smtp-otp.e2e.mjs",
+    "e2e": "playwright test",
+    "e2e:report": "playwright show-report",
     "badge": "node scripts/coverage-badge.mjs",
     "test:components": "vitest run --project nuxt",
     "create-admin": "node scripts/create-admin.mjs"
@@ -62,6 +64,7 @@
     "@electric-sql/pglite": "^0.5.1",
     "@nuxt/test-utils": "^4.0.3",
     "@nuxtjs/i18n": "^10.4.0",
+    "@playwright/test": "^1.61.1",
     "@primevue/nuxt-module": "^4.5.5",
     "@types/leaflet": "^1.9.21",
     "@types/libsodium-wrappers-sumo": "^0.8.2",
