@@ -4,15 +4,20 @@
 // Mirror the active skin onto <html data-skin> on the server too (it's read
 // from the cookie), so the skin palette + logo are correct on the first paint.
 const { skin } = useSkin()
-// The active locale drives <html lang> and, for Arabic, <html dir="rtl"> - both
-// must be right on the server's first paint so RTL doesn't flip in after hydration.
-const i18nHead = useLocaleHead()
+// The active locale drives <html lang> and, for Arabic, <html dir="rtl">. Bind both
+// straight off the locale object: its code/language/dir all ride the SSR payload, so
+// server and client agree. (useLocaleHead emits dir only on the server, so it gets
+// dropped on hydration - the attribute flips off after first paint.)
+const { locale, locales } = useI18n()
+const activeLocale = computed(() =>
+  (locales.value as { code: string; language?: string; dir?: 'ltr' | 'rtl' | 'auto' }[]).find((l) => l.code === locale.value),
+)
 useHead({
   titleTemplate: (title) => (title && title !== 'Nostragoalus' ? `${title} · Nostragoalus` : 'Nostragoalus'),
   htmlAttrs: {
     'data-skin': computed(() => skin.value || undefined),
-    lang: computed(() => i18nHead.value.htmlAttrs?.lang),
-    dir: computed(() => i18nHead.value.htmlAttrs?.dir as 'ltr' | 'rtl' | 'auto' | undefined),
+    lang: computed(() => activeLocale.value?.language ?? locale.value),
+    dir: computed(() => activeLocale.value?.dir ?? 'ltr'),
   },
   // Preload the active skin's banner head so it's ready on first paint instead
   // of popping in after the raster loads.
