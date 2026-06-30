@@ -134,9 +134,9 @@ export function useLeagueActions() {
           lives: input.lives,
         },
       }),
-    // A mode swap re-scores every league board.
-    onSuccess: () => {
-      invalidate(true)
+    // Only a mode swap re-scores the boards; a rename/visibility change does not.
+    onSuccess: (_data, input) => {
+      invalidate(input.mode !== undefined)
       // The featured team drives the TEAM_SPECIALIST prize standings.
       queryClient.invalidateQueries({ queryKey: ['leagueRewards'] })
     },
