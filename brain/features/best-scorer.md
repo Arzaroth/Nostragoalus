@@ -42,3 +42,8 @@ notification to the winners.
 - `server/utils/bestscorer/service.ts`
 - `app/utils/format.ts` (`playerPhotoUrl`)
 - `drizzle/0016_*.sql`
+- Shares its picker showcase, query/mutation plumbing, leaderboard bonus merge
+  and result notification with the [champion pick](champion-pick.md):
+  `app/components/MetaPickShowcase.vue`, `app/composables/useMetaPick.ts`,
+  `collectMetaBonus` (`server/utils/leaderboard/service.ts`) and `notifyMetaResult`
+  (`server/utils/notifications/events.ts`).
