@@ -319,8 +319,33 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       programmatic toggle under happy-dom (the existing bell tests never
       open the panel for the same reason). Needs a real-browser/e2e check.
 
-### E2E (the only one today is `pnpm e2e:smtp`)
+### E2E (Playwright harness `mise run e2e` + the `pnpm e2e:smtp` script)
 
+The Playwright harness now ships predict->finalize->leaderboard, the
+password-reset / delete-account mail flows and an SSO/OIDC flow against a
+dockerized Keycloak. Its runnability fixes below were found in the
+feature-treatment review but could NOT be executed there (no Docker) - run
+`mise run e2e` and confirm before ticking:
+
+- [ ] **Seed a default `scoring_config` for the isolated e2e DB**: a fresh,
+      migrated e2e DB has no `scoring_config` row (it is only seeded by
+      `fixtures:import`/`refresh`), so `matches:finalize` throws "no active scoring
+      config" and the predict->finalize->leaderboard spec fails from empty. Seed a
+      default config (mirror `ensureDefaultScoringConfig` - it carries the jsonb
+      `crowdTiers`/`championTiers`/`oddsTiers`, so an app-side seed-on-boot in
+      `warm-settings.ts`, or a run-task, is cleaner than hand-writing the SQL).
+- [ ] **Wait for Keycloak readiness in the SSO spec**: `global-setup` polls only
+      the app, and `e2e-up` starts Keycloak with `up -d` (returns immediately);
+      KC `start-dev --import-realm` takes ~30-60s. The sso `beforeAll` can fire the
+      provider-registration POST (which fetches the IdP discovery doc) before KC is
+      up - cold-start flake. Poll the issuer's `.well-known/openid-configuration`
+      before registering.
+- [ ] **e2e helpers default to the dev stack when `E2E_*` is unset**: `helpers/db.ts`
+      / maildev / APP fall back to :5432/:1080/:3000. Mitigated by
+      `playwright.config.ts` loading `.env.e2e` and by fully namespaced cleanup (no
+      catastrophic wipe), but importing the helpers outside Playwright would
+      seed/delete `e2e-cup` in the dev DB. Make the helpers refuse to run without
+      an explicit e2e target.
 - [ ] Identifier-first login: password reveal for local accounts, SSO
       redirect for captured domains, `/login?password=1` escape hatch.
 - [ ] Signup domain-capture warning (continue anyway / use SSO).

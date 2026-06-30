@@ -42,7 +42,7 @@ use the indexes.
 | [storage.md](architecture/storage.md) | Pluggable fs/s3 blob storage, avatars, chat ciphertext, migration. |
 | [rendering.md](architecture/rendering.md) | satori/resvg share images + PWA service worker, the SSR footguns. |
 | [providers.md](architecture/providers.md) | FIFA match data, Sofascore odds, FIFA ranking, the cycletls engine. |
-| [testing.md](architecture/testing.md) | The 98% gate, vitest projects, pglite, factories. |
+| [testing.md](architecture/testing.md) | The 98% gate, vitest projects, pglite, factories, and the out-of-band Playwright e2e harness. |
 | [i18n.md](architecture/i18n.md) | Four locales (en/fr/th/tlh), the all-four rule. |
 
 ## Features (the what) - [features/index.md](features/index.md)

@@ -18,6 +18,7 @@ How the app is built, run locally, tested, released, and deployed. Task runner i
 | `mise run seed-demo` | Fill the DB with demo players/predictions, then re-score |
 | `mise run shots` | Retake landing screenshots (headless Firefox) |
 | `mise run e2e-smtp` | Email-OTP flow end-to-end through the stack + maildev |
+| `mise run e2e` | Browser e2e (Playwright): predict/finalize/leaderboard + mail + SSO against the isolated `ng-e2e` stack (`e2e-up` / `e2e-down` manage its own DB/maildev/keycloak); see `tests/e2e/README.md` |
 
 Worktree previews need `.env` copied from the main checkout, or auth 500s on the
 default secret.
@@ -108,6 +109,10 @@ about-page tech stack) is encoded in the `release` skill.
 - `NUXT_ADMIN_EMAILS` - comma-separated admin emails.
 - `NUXT_SSO_KEK` - 32-byte base64 KEK for SSO secret encryption (required to
   register providers).
+- `NUXT_SSO_TRUSTED_ORIGINS` - comma-separated extra trusted origins for an
+  internal or private-address SSO IdP (the SSO SSRF guard refuses a private-network
+  token endpoint otherwise; public IdPs need nothing). See
+  [architecture/auth.md](architecture/auth.md).
 - `NUXT_PUBLIC_VAPID_PUBLIC_KEY` / `NUXT_VAPID_PRIVATE_KEY` / `NUXT_VAPID_SUBJECT`
   - web push (prod must generate its own).
 - `NUXT_STORAGE_DRIVER` (`fs`|`s3`) + `NUXT_STORAGE_FS_ROOT` / `NUXT_STORAGE_S3_*`

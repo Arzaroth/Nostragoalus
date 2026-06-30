@@ -5,6 +5,9 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Ajouté
+- **Fournisseurs d'identité SSO auto-hébergés** : un fournisseur SSO interne ou auto-hébergé dont le point de terminaison de jeton se trouve sur un réseau privé fonctionne désormais - définissez NUXT_SSO_TRUSTED_ORIGINS sur son origine et le flux de connexion lui fait confiance, là où la protection intégrée refuse autrement un fournisseur à adresse privée. Les fournisseurs publics comme Google ne changent rien.
+
 ### Corrigé
 - **Fini les alertes de but en double** : une notification de but n'est désormais envoyée que lorsque le score en direct dépasse le plus haut score déjà annoncé, si bien qu'un but refusé par la VAR qui fait brièvement baisser le score avant qu'il ne remonte ne pousse plus deux fois le même but.
 - **Les matchs suspendus comptent comme en direct** : un match interrompu en cours de jeu (suspendu ou interrompu) est désormais traité comme en direct sur la bannière d'accueil, la carte du monde et la page du match, comme sur la liste des matchs, au lieu de paraître pas encore commencé.

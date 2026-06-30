@@ -58,7 +58,21 @@ that prevent order-dependent flakes:
   60s `staleTime` (see [client.md](client.md)) have both caused flakes where a
   later test reads a previous test's cached data.
 
+## End-to-end (Playwright)
+
+A browser e2e suite runs OUT-OF-BAND from the 98% merge gate: it needs a Docker
+stack, so it is not part of `mise run check` / `pnpm test:coverage`. Run it with
+`mise run e2e` (which brings the stack up via `e2e-up` and tears it down with
+`e2e-down`); specs live under `tests/e2e/**`, configured by `playwright.config.ts`.
+It exercises full flows the unit and component tests cannot: predict -> finalize
+-> leaderboard, the password-reset and delete-account mail flows (against maildev),
+and SSO/OIDC login (against a dockerized Keycloak IdP, trusted via
+`NUXT_SSO_TRUSTED_ORIGINS` - see [auth.md](auth.md)). It runs against an isolated,
+disposable stack - the `ng-e2e` compose project with shifted ports and its OWN
+empty database - so it never touches dev pgdata.
+
 ## Sources
 
 - `vitest.config.ts`, `package.json` (scripts), `mise-tasks/release`, `.mise.toml` (`check`)
 - `tests/db.ts`, `tests/factories.ts`, `tests/storage.ts`
+- `playwright.config.ts`, `tests/e2e/**` (incl. `tests/e2e/README.md`), `.env.e2e`, `compose.e2e.yaml`

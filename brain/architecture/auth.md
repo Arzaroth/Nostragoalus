@@ -87,6 +87,12 @@ for SSO league auto-join.
   `oidcConfig.skipDiscovery: true` (note: `skipDiscovery` lives inside
   `oidcConfig`, not top-level). Google is OIDC with issuer
   `https://accounts.google.com`.
+- A self-hosted or internal SSO IdP whose token endpoint resolves to a private
+  address is refused by the plugin's SSRF guard unless its origin is trusted.
+  `buildAuthOptions` (`lib/auth.ts`) reads `NUXT_SSO_TRUSTED_ORIGINS`
+  (comma-separated, trimmed) into better-auth's `trustedOrigins` for exactly that;
+  public IdPs need nothing. The SSO e2e uses it to trust its dockerized Keycloak
+  (`http://keycloak:8080`).
 
 ### Identifier-first login
 
