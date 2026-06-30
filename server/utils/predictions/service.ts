@@ -170,6 +170,8 @@ const predictionView = {
   roundId: prediction.roundId,
   homeGoals: prediction.homeGoals,
   awayGoals: prediction.awayGoals,
+  isOutcomeOnly: prediction.isOutcomeOnly,
+  wager: prediction.wager,
   isJoker: prediction.isJoker,
   baseTier: prediction.baseTier,
   totalPoints: prediction.totalPoints,
