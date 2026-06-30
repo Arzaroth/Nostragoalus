@@ -11,6 +11,11 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 - **cha' choH je bookmaker tlhegh**: DaH cha' mach 'angwI' 'angtaH chay' Hoch beq choHpu' poSchoHDI' - Doch ngoq per: runchoHpu', tInchoHpu', qoj choHbe', choH tIq je - 'ej DaqIp'a' poSmoHlu' poS cha' je bookmaker 1X2 (provider nobDI'). decimal cha' Hoch, rurtaH.
 - **"wa'DIch wIvlIj lo'laH"**: may' DawIvpu'bogh taghDI', wIv So' DaweghHa'pu'bogh 'ej DachoHpu'bogh QaplaH law' 'e' 'anglaH may' QInHom - "wa'DIch 1-0lIj Qapla', DaweghHa'bogh." yIntaHvIS ration 'oH, mI' tlhej choHtaH, may' rInDI' rIn. 0-0 Qapchugh, qIvon mu' tlhej. SoH wIvmey qan neH, SoHvaD neH 'ang.
 - **bejwI' DaleghlaH**: DaH may' DuH QInHom 'angtaH "DaH N bejwI'" - chovnatlh poH HochDI' may'vam Daq nuv mI', 'elDI' mejDI' je choHtaH.
+- **yIntaH ghantoH tetlh**: DaH may'mey qaSDI' tetlh choHtaH - mI' qaywI' mI' je So'choHtaH, qaStaHvIS may' "LIVE" DIvI' 'angtaH, 'ej Qapbogh ghaH veb DaqDaq jaHtaH, choHqa'be'lu'taHvIS.
+
+### tI'pu'
+- **yIntaH qaywI' mI'**: DaH may' bIngDaq qaywI' mI' chevtaH qaywI' qaSDI', may' QInHom tetlh je, chImtaHbe' qoj taHtaHbe' choHqa'pa'. Dung poH motlh mI' choHbe'.
+- **play-by-play qaywI' mI'**: play-by-play-Daq qaywI' Qap Hoch, DaH qaywI' mI' qaStaH 'angtaH (1-0, 1-1, 2-1...), Hoch tlhegh poH motlh mI' qaSta'bogh qonqa'be'.
 
 ## [2.4.0] - 2026-06-30
 

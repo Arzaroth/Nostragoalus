@@ -11,7 +11,11 @@ const TTL_MS = 10 * 60 * 1000
 // bracket" - is distinguishable from "not cached").
 export function getCachedBracket(competitionId: string, now: number): NormalizedBracket | null | undefined {
   const entry = cache.get(competitionId)
-  if (entry && now - entry.at < TTL_MS) return entry.bracket
+  if (!entry) return undefined
+  if (now - entry.at < TTL_MS) return entry.bracket
+  // Past the TTL: evict the stale entry instead of leaving it to linger in the
+  // map until the next populate.
+  cache.delete(competitionId)
   return undefined
 }
 

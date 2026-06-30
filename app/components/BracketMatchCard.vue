@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { matchIsInPlay } from '#shared/types/match'
+
 const slug = useSelectedCompetition()
 const { t, locale } = useI18n()
 const props = defineProps<{ match: any }>()
@@ -17,7 +19,7 @@ function side(code: string | null, team: string, projCode?: string | null) {
 const home = computed(() => side(props.match.homeCode, props.match.homeTeam, props.match.homeProjectedCode))
 const away = computed(() => side(props.match.awayCode, props.match.awayTeam, props.match.awayProjectedCode))
 const hasProjected = computed(() => home.value.projected || away.value.projected)
-const isLive = computed(() => props.match.status === 'LIVE' || props.match.status === 'PAUSED')
+const isLive = computed(() => matchIsInPlay(props.match.status))
 </script>
 
 <template>
