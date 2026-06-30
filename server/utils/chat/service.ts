@@ -1,9 +1,10 @@
 import { randomUUID } from 'node:crypto'
-import { and, asc, count, desc, eq, inArray, isNull, lt, not, or } from 'drizzle-orm'
+import { and, asc, count, desc, eq, inArray, isNull, lt, not } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { chatAttachment, chatIdentity, chatMessage, league, leagueChatKey, leagueMember, match, user } from '../../../db/schema'
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors'
 import { getLeague, getMembership } from '../leagues/service'
+import { keysetBefore } from '../keyset'
 import type { StorageDriver } from '../storage/driver'
 import { deleteChatImage, putChatImage, resolveStorage } from '../storage'
 import { chatImageKey } from '../storage/keys'
@@ -604,14 +605,7 @@ export async function listMessages(
   // Compound keyset cursor matching the (createdAt desc, id desc) sort: with the
   // id tiebreaker, a same-millisecond pair split across a page boundary is never
   // skipped or repeated. Falls back to createdAt-only if the caller has no id yet.
-  const cursor = opts.before
-    ? opts.beforeId
-      ? or(
-          lt(chatMessage.createdAt, opts.before),
-          and(eq(chatMessage.createdAt, opts.before), lt(chatMessage.id, opts.beforeId)),
-        )
-      : lt(chatMessage.createdAt, opts.before)
-    : undefined
+  const cursor = keysetBefore(chatMessage.createdAt, chatMessage.id, opts.before, opts.beforeId)
   const rows = await db
     .select({
       id: chatMessage.id,

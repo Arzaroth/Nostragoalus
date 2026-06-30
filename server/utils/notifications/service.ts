@@ -1,9 +1,10 @@
-import { and, desc, eq, inArray, isNotNull, isNull, lt, or, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNotNull, isNull, lt, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { userNotification } from '../../../db/schema'
 import type { NotificationData, NotificationDTO, NotificationType } from '../../../shared/types/notifications'
 import { publishUserNotification } from '../live/hub'
 import { pushNotification } from '../push/send'
+import { keysetBefore } from '../keyset'
 
 const FEED_LIMIT = 30
 const MAX_LIMIT = 100
@@ -82,14 +83,7 @@ export async function listNotifications(
   // createdAt defaults to the transaction-start time, so every notification minted
   // in one finalize tick shares a timestamp. The id tiebreaker (in both the cursor
   // and the sort) keeps a same-tick page boundary from skipping or repeating rows.
-  const cursor = opts.before
-    ? opts.beforeId
-      ? or(
-          lt(userNotification.createdAt, opts.before),
-          and(eq(userNotification.createdAt, opts.before), lt(userNotification.id, opts.beforeId)),
-        )
-      : lt(userNotification.createdAt, opts.before)
-    : undefined
+  const cursor = keysetBefore(userNotification.createdAt, userNotification.id, opts.before, opts.beforeId)
   const rows = await db
     .select()
     .from(userNotification)

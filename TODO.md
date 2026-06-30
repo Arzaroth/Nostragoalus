@@ -189,6 +189,39 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       `live/league-chat.ts`, `auth/email-verification.ts`). A single
       `ttlCache` with get/set/invalidate/evict would replace all of them.
 
+## Live hardening (deferred from the feature-treatment review)
+
+- [ ] **Chat mutations still leak league existence**: the `resolveLeagueManage`
+      existence-leak fix (404 for both missing and outsider, never a 403 that
+      confirms a private league is real) was applied to the league-management
+      endpoints but NOT to the parallel chat mutations
+      (`server/utils/chat/service.ts` postMessage / enableLeagueChat /
+      disableLeagueChat / rotateLeagueChatKey / addWrappedKeys), which still do
+      the split `NotFoundError` then `ForbiddenError`. Low risk (league.id is a
+      random UUID, so blind enumeration is infeasible), but migrate them to the
+      same combined-404 shape for consistency.
+- [ ] **Goal pushes skip SUSPENDED/INTERRUPTED**: `push/live.ts` keeps its own
+      narrow `LIVE_STATUSES = {LIVE, PAUSED}` and was not folded into the shared
+      `matchIsInPlay` taxonomy, so a goal observed only while a match reads
+      SUSPENDED/INTERRUPTED and then goes FINISHED never fires a live GOAL alert
+      (the high-water dedup is otherwise correct). Decide whether a goal during a
+      stoppage should alert (it may be under review) and align with the taxonomy.
+- [ ] **Redundant membership / isAdmin lookups**: `leagues/[id]/chat/messages.get`
+      re-fetches `getMembership` purely for `isAdmin` although `listMessages`
+      already fetched it, and `me/stats.get` evaluates `isAdmin(event)` twice for
+      a non-member admin (once inside `resolveLeagueView`, once standalone).
+      Surface the role/admin-grant from the helper so the caller need not recompute.
+- [ ] **Link-preview size cap is honest-header-only**: `chat/unfurl.ts` caps an
+      oversized body via Content-Length, but an absent or lying Content-Length
+      still buffers the full body in cycletls before the `.slice` (no streaming
+      cap), so the memory-DoS path is only partially mitigated. Needs a streaming
+      read cap if cycletls grows one.
+- [ ] **Push re-subscribe can silently no-op under a race**: `push/service.ts`
+      `setWhere(eq(userId, ...))` race-proofs the hijack guard, but if another
+      account claims the endpoint between the SELECT pre-check and the upsert, a
+      legitimate same-account re-subscribe updates 0 rows and returns success
+      while that device receives no pushes. Detect the 0-row case and retry/throw.
+
 ## Calendar feed (deferred from the feature-treatment review)
 
 - [ ] `server/utils/feed/token.ts` is a near-verbatim clone of

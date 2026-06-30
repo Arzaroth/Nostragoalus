@@ -5,6 +5,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+- **No more duplicate goal alerts**: a goal push now fires only when the live score climbs past the highest score already announced, so a VAR-disallowed goal that briefly drops the scoreline and then returns no longer pushes the same goal twice.
+- **Suspended matches count as live**: a match halted mid-play (suspended or interrupted) is now treated as live on the home banner, the world map and the match page, the same as on the fixtures list, instead of looking like it hasn't started.
+- **Chat history no longer skips messages**: loading older messages could drop or repeat a message when several were sent in the same instant, right at a page boundary. Paging now uses a stable tiebreaker so every message shows exactly once. The same fix applies to the notifications feed.
+
+### Security
+- **Push subscriptions can't be hijacked**: a browser's push endpoint is no longer reassigned to a different account on re-subscribe, so someone who learns your device's push endpoint can't take it over to silence your notifications or redirect them.
+- **League existence stays private**: trying to manage a private league you're not in now returns the same "not found" as a league that doesn't exist, instead of a "forbidden" that confirmed it was real.
+- **Link previews are rate-limited**: the chat link-preview fetcher now caps how often it runs per account and overall, and refuses an over-large response before reading it, shrinking its use as a fetch-amplification or scraping vector.
+
 ## [2.5.0] - 2026-06-30
 
 ### Added
@@ -46,16 +56,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ### Changed
 - **Pinned the object-storage images**: the bundled rustfs and minio/mc images are now pinned to specific digests, so rebuilding or re-pulling the stack can't silently swap in a different storage backend or backup client.
-
-### Fixed
-- **No more duplicate goal alerts**: a goal push now fires only when the live score climbs past the highest score already announced, so a VAR-disallowed goal that briefly drops the scoreline and then returns no longer pushes the same goal twice.
-- **Suspended matches count as live**: a match halted mid-play (suspended or interrupted) is now treated as live on the home banner, the world map and the match page, the same as on the fixtures list, instead of looking like it hasn't started.
-- **Chat history no longer skips messages**: loading older messages could drop or repeat a message when several were sent in the same instant, right at a page boundary. Paging now uses a stable tiebreaker so every message shows exactly once. The same fix applies to the notifications feed.
-
-### Security
-- **Push subscriptions can't be hijacked**: a browser's push endpoint is no longer reassigned to a different account on re-subscribe, so someone who learns your device's push endpoint can't take it over to silence your notifications or redirect them.
-- **League existence stays private**: trying to manage a private league you're not in now returns the same "not found" as a league that doesn't exist, instead of a "forbidden" that confirmed it was real.
-- **Link previews are rate-limited**: the chat link-preview fetcher now caps how often it runs per account and overall, and refuses an over-large response before reading it, shrinking its use as a fetch-amplification or scraping vector.
 
 ## [2.1.0] - 2026-06-28
 

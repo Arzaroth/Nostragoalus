@@ -5,6 +5,16 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### tI'pu'
+- **wIgh QInHom cha'logh ngeHbe'qa'**: mI' Dun law' toblu'pu'bogh mI' Dun law' tlholDI' neH wIgh QInHom ngeHlu', vaj VAR luSuqHa'bogh wIgh, mI' poDmoHbogh 'ej cheghbogh, wIgh rap cha'logh ngeHbe'qa'.
+- **may' mevlu'pu'bogh DuH rur**: may' qaStaHvIS mevlu'bogh (mevlu' qoj 'IpchoHlu') DaH juH 'echlet, qo' chITlh, may' QInHom je DuH rur, may'mey tetlh rur, taghpu'be' rurbe'.
+- **chat qun QIn chIlbe'qa'**: QIn qan laDDI', rap poH ngeHlu'bogh QInmey law' tu'lu'chugh, nav HeH-Daq QIn chIl qoj boghqa'. DaH nav per nIvbogh lo'lu' tlhegh, vaj Hoch QIn wa'logh neH 'anglu'. notification tetlhvaD rar tI' rar.
+
+### Hung
+- **push lObwI'mey nIHlu'laHbe'**: De'wI' push HeH latlh lo'wI'Daq jIbe'qa'lu' chu'qa'DI', vaj De'wI'lI' push HeH Sovbogh nuv, QInHommey teqmeH qoj choHmeH nIHlaHbe'.
+- **ghom-Hav tu'lu'bogh So'lu'taH**: ghom-Hav pegh DaSeHmeH nIDDI', ghob'a'be'chugh SoH, "tu'be'lu'" rur jangbogh tu'lu', ghom-Hav tu'be'lu'bogh rur, "tlhoblu'" jangbe' tu'lu'.
+- **QuQ 'angghach poH per**: chat QuQ 'angghach So'wI', DaH lObwI' boch poH per 'ej Hoch poH per, 'ej jang tInqu' laDpa' lajbe', amplification qoj scraping Dochmey luchoplu'.
+
 ## [2.5.0] - 2026-06-30
 
 ### chelpu'

@@ -5,6 +5,16 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Corrigé
+- **Fini les alertes de but en double** : une notification de but n'est désormais envoyée que lorsque le score en direct dépasse le plus haut score déjà annoncé, si bien qu'un but refusé par la VAR qui fait brièvement baisser le score avant qu'il ne remonte ne pousse plus deux fois le même but.
+- **Les matchs suspendus comptent comme en direct** : un match interrompu en cours de jeu (suspendu ou interrompu) est désormais traité comme en direct sur la bannière d'accueil, la carte du monde et la page du match, comme sur la liste des matchs, au lieu de paraître pas encore commencé.
+- **L'historique du chat ne saute plus de messages** : charger d'anciens messages pouvait en perdre ou en répéter un quand plusieurs étaient envoyés au même instant, juste à une limite de page. La pagination utilise désormais un départage stable pour que chaque message apparaisse exactement une fois. Le même correctif s'applique au fil des notifications.
+
+### Sécurité
+- **Les abonnements push ne peuvent plus être détournés** : le point de terminaison push d'un navigateur n'est plus réattribué à un autre compte lors d'un nouvel abonnement, de sorte que quelqu'un qui découvre le point de terminaison de votre appareil ne peut pas le détourner pour faire taire vos notifications ou les rediriger.
+- **L'existence d'une ligue reste privée** : tenter de gérer une ligue privée dont vous ne faites pas partie renvoie désormais le même « introuvable » qu'une ligue qui n'existe pas, au lieu d'un « interdit » qui confirmait son existence.
+- **Les aperçus de liens sont limités** : le récupérateur d'aperçus de liens du chat plafonne désormais sa fréquence par compte et au global, et refuse une réponse trop volumineuse avant de la lire, réduisant son usage comme vecteur d'amplification de requêtes ou de scraping.
+
 ## [2.5.0] - 2026-06-30
 
 ### Ajouté
