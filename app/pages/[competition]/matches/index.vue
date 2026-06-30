@@ -113,7 +113,7 @@ const picksReady = computed(() => !championQuery.isPending.value && !bestScorerQ
 
 // Your standing (folded in from the removed My Picks page). Honors the league
 // pill: with a league selected, rank/players are within that league.
-const { leagueId } = useSelectedLeague()
+const { leagueId, league: pilledLeague, leagues: myLeagues } = useSelectedLeague()
 const { data: statsData, refresh: refreshStats } = await useFetch<{ stats: { rank: number | null; players: number; totalPoints: number; exact: number; predictions: number; jokers: number } | null }>(
   '/api/me/stats',
   { query: computed(() => (leagueId.value ? { league: leagueId.value } : slug.value ? { competition: slug.value } : {})) },
@@ -135,6 +135,62 @@ const predByMatch = computed(() => {
 // so firstOutstandingPickId is the soonest one.
 const predictedIds = computed(() => new Set(Object.keys(predByMatch.value)))
 const outstandingCount = computed(() => countOutstandingPicks(matches.value ?? [], predictedIds.value))
+
+// League-mode pick context. The pilled league decides the editing target: when a
+// moded league is pilled and switched to custom, score/stake saves land on that
+// league's override; otherwise they land on the shared base pick.
+const HARD_BUDGET_PER_MATCH = 3
+const isModedPilled = computed(() => !!pilledLeague.value && pilledLeague.value.mode !== 'NORMAL')
+const customLeague = computed(() => isModedPilled.value && !pilledLeague.value!.picksSynced)
+const hasHardLeague = computed(() => myLeagues.value?.some((l) => l.mode === 'HARD') ?? false)
+const hasOutcomeLeague = computed(() => myLeagues.value?.some((l) => l.mode === 'EASY' || l.mode === 'HARDCORE') ?? false)
+// Stake stepper shows when a HARD context is relevant; quick-pick when an
+// outcome-only context is.
+const showStake = computed(() => pilledLeague.value?.mode === 'HARD' || (!isModedPilled.value && hasHardLeague.value))
+const showQuickPick = computed(() =>
+  pilledLeague.value ? pilledLeague.value.mode === 'EASY' || pilledLeague.value.mode === 'HARDCORE' : hasOutcomeLeague.value,
+)
+
+const { upsertOverride, setPicksSynced } = useLeaguePickMutations()
+const overridesQ = useLeagueOverrides(leagueId, customLeague)
+const overrideByMatch = computed(() => overridesQ.data.value ?? {})
+
+// Effective pick for a card: the override when editing a custom league, else base.
+function effective(matchId: string) {
+  if (customLeague.value && overrideByMatch.value[matchId]) return overrideByMatch.value[matchId]
+  return predByMatch.value[matchId]
+}
+function effHome(id: string): number | null {
+  return effective(id)?.homeGoals ?? null
+}
+function effAway(id: string): number | null {
+  return effective(id)?.awayGoals ?? null
+}
+function effWager(id: string): number | null {
+  return effective(id)?.wager ?? null
+}
+
+function roundBudget(roundId: string): number {
+  return (matches.value ?? []).filter((m) => m.roundId === roundId).length * HARD_BUDGET_PER_MATCH
+}
+function roundUsed(roundId: string): number {
+  let used = 0
+  for (const m of matches.value ?? []) if (m.roundId === roundId) used += effWager(m.id) ?? 0
+  return used
+}
+
+// The completeness nudge: leagues with picks still missing or needing more.
+const completenessQ = useLeagueCompleteness(slug)
+const incompleteLeagues = computed(() =>
+  (completenessQ.data.value ?? []).filter((c) => c.summary.incomplete + c.summary.missing > 0),
+)
+function nudgeText(c: { summary: { missing: number; needsExact: number; needsStake: number } }): string {
+  const parts: string[] = []
+  if (c.summary.missing) parts.push(t('leagues.nudgeMissing', { n: c.summary.missing }))
+  if (c.summary.needsExact) parts.push(t('leagues.nudgeNeedsExact', { n: c.summary.needsExact }))
+  if (c.summary.needsStake) parts.push(t('leagues.nudgeNeedsStake', { n: c.summary.needsStake }))
+  return parts.join(' · ')
+}
 
 // Rounds whose one joker already sits on a locked (started/finished) match: it
 // can't be moved, so every other match in that round can't take the joker. We
@@ -332,8 +388,35 @@ function jumpToFirstUnpicked() {
   nextTick(() => scrollToMatch(id))
 }
 
-function save(matchId: string, value: { home: number; away: number }) {
-  upsert.mutate({ matchId, ...value })
+function pickError(e: any) {
+  toast.add({
+    severity: 'warn',
+    summary: t('predictions.saveError'),
+    detail: e?.data?.message || e?.data?.statusMessage || undefined,
+    life: 5000,
+  })
+}
+// A save lands on the pilled custom league's override, or on the shared base pick.
+function save(matchId: string, value: { home: number; away: number; isOutcomeOnly: boolean }) {
+  if (customLeague.value && leagueId.value) {
+    upsertOverride.mutate({ leagueId: leagueId.value, matchId, ...value }, { onError: pickError })
+  } else {
+    upsert.mutate({ matchId, ...value }, { onError: pickError })
+  }
+}
+// Staking re-sends the current score with the new wager (same target as the score).
+function saveStake(matchId: string, wager: number) {
+  const e = effective(matchId)
+  if (!e) return
+  if (customLeague.value && leagueId.value) {
+    upsertOverride.mutate({ leagueId: leagueId.value, matchId, home: e.homeGoals, away: e.awayGoals, wager }, { onError: pickError })
+  } else {
+    upsert.mutate({ matchId, home: e.homeGoals, away: e.awayGoals, wager }, { onError: pickError })
+  }
+}
+function toggleSync() {
+  if (!leagueId.value || !pilledLeague.value) return
+  setPicksSynced.mutate({ leagueId: leagueId.value, synced: !pilledLeague.value.picksSynced }, { onError: pickError })
 }
 // The whole card opens the match, but inner controls (score inputs, the joker
 // button, the team links) keep handling their own clicks.
@@ -526,6 +609,36 @@ watch(searchOpen, () => nextTick(updateListHeight))
     </template>
 
     <template v-else>
+    <div
+      v-if="isModedPilled"
+      class="mb-4 flex items-center gap-3 flex-wrap rounded-xl border px-4 py-2 text-sm"
+      style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
+    >
+      <i class="pi pi-sliders-h" style="color: var(--p-primary-color)" />
+      <span>{{ t('leagues.editingFor', { name: pilledLeague!.name }) }}</span>
+      <LeagueModeBadge :mode="pilledLeague!.mode" :lives="pilledLeague!.lives" />
+      <span class="flex-1" />
+      <Button
+        size="small"
+        :outlined="customLeague"
+        :severity="customLeague ? 'secondary' : undefined"
+        :label="customLeague ? t('leagues.followMain') : t('leagues.customize')"
+        :loading="setPicksSynced.isPending.value"
+        @click="toggleSync"
+      />
+    </div>
+
+    <div
+      v-if="incompleteLeagues.length"
+      class="mb-4 rounded-xl border border-dashed px-4 py-2 text-xs"
+      style="border-color: var(--ng-star)"
+    >
+      <div class="font-semibold mb-1" style="color: var(--ng-star)"><i class="pi pi-exclamation-circle" /> {{ t('leagues.nudgeTitle') }}</div>
+      <div v-for="c in incompleteLeagues" :key="c.leagueId" style="color: var(--p-text-muted-color)">
+        <span class="font-medium">{{ c.name }}</span> · {{ nudgeText(c) }}
+      </div>
+    </div>
+
     <div v-if="isLoading || !picksReady" class="opacity-60">{{ t('common.loading') }}</div>
     <div v-else-if="!matches || !matches.length" class="opacity-60">{{ t('matches.empty') }}</div>
     <div v-else-if="!grouped.length" class="opacity-60">{{ t('matches.noResults') }}</div>
@@ -582,11 +695,19 @@ watch(searchOpen, () => nextTick(updateListHeight))
             </div>
 
             <div class="flex flex-col items-center gap-2 pt-3 border-t" style="border-color: var(--p-content-border-color)">
-              <ScoreInput
-                :home="predByMatch[m.id]?.homeGoals ?? null"
-                :away="predByMatch[m.id]?.awayGoals ?? null"
+              <MatchPickControls
+                :home="effHome(m.id)"
+                :away="effAway(m.id)"
+                :wager="effWager(m.id)"
                 :disabled="!isMatchPickable(m)"
-                @update="(v) => save(m.id, v)"
+                :show-quick-pick="showQuickPick"
+                :show-stake="showStake"
+                :home-code="m.homeTeamCode"
+                :away-code="m.awayTeamCode"
+                :budget-used="showStake ? roundUsed(m.roundId) : undefined"
+                :budget-total="showStake ? roundBudget(m.roundId) : undefined"
+                @save="(v) => save(m.id, v)"
+                @save-stake="(w) => saveStake(m.id, w)"
               />
               <!-- Reserved whenever the preference is on, so cards never resize. -->
               <div v-if="crowdEnabled">
