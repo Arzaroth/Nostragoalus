@@ -72,8 +72,11 @@ export default defineWebSocketHandler({
         // The match page reports the one match this socket is watching, so its
         // per-match "N watching now" room counts it (and only it - distinct from
         // the `subscribe` frame the fixtures list sends for every visible match).
-        // A missing/blank matchId clears this socket from its room.
-        const matchId = typeof data.matchId === 'string' && data.matchId ? data.matchId : null
+        // A missing/blank matchId clears this socket from its room. Cap the
+        // length so a hostile frame can't mint a giant room-map key (ids are
+        // short uuids; an over-long value is junk and just clears instead).
+        const raw = data.matchId
+        const matchId = typeof raw === 'string' && raw && raw.length <= 64 ? raw : null
         syncMatchViewers(subscriber, matchId ? [matchId] : [])
       }
     } catch {

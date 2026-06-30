@@ -19,8 +19,11 @@ const rooms = new Map<string, Set<ViewerToken>>()
 const viewing = new Map<ViewerToken, Set<string>>()
 
 function leaveRoom(matchId: string, token: ViewerToken): void {
-  const room = rooms.get(matchId)
-  if (!room) return
+  // Invariant: a matchId in a socket's `viewing` set always has that socket in
+  // rooms[matchId], so the room is present whenever this runs (the only callers
+  // iterate a token's own `viewing` set). The two maps are only ever mutated
+  // together, which keeps that true.
+  const room = rooms.get(matchId)!
   room.delete(token)
   // Drop empty rooms so viewerCount falls back to 0 and the map doesn't grow
   // unbounded over a tournament.
