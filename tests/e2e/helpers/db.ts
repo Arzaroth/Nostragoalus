@@ -124,6 +124,20 @@ export async function verifySsoDomain(providerId: string): Promise<void> {
   await db().query(`update sso_provider set domain_verified = true where provider_id = $1`, [providerId])
 }
 
+// A user's id + ban state, for asserting SCIM deprovisioning (active:false -> ban).
+export async function getUserByEmail(email: string): Promise<{ id: string; banned: boolean } | null> {
+  const { rows } = await db().query<{ id: string; banned: boolean | null }>(
+    `select id, banned from "user" where email = $1 limit 1`,
+    [email],
+  )
+  return rows[0] ? { id: rows[0].id, banned: rows[0].banned ?? false } : null
+}
+
+// Remove a SCIM-provisioned test user (and its accounts) so re-runs start clean.
+export async function deleteUserByEmail(email: string): Promise<void> {
+  await db().query(`delete from "user" where email = $1`, [email])
+}
+
 // Remove the e2e competition and everything hanging off it. Predictions reference
 // the match, so clear them first, then matches, rounds, and the competition.
 export async function cleanup(): Promise<void> {

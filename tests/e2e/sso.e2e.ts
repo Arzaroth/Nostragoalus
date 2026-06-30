@@ -42,9 +42,15 @@ test.beforeAll(async () => {
     },
   })
   if (!res.ok()) throw new Error(`register sso provider failed: ${res.status()} ${await res.text()}`)
-  await admin.dispose()
+  // Onboarding gate: a provider lands as a draft and is only offered for login
+  // once it passes a connection test AND its domain is verified, then is enabled.
+  const tc = await admin.post(`/api/admin/sso/${PROVIDER_ID}/test-connection`)
+  if (!tc.ok()) throw new Error(`sso test-connection failed: ${tc.status()} ${await tc.text()}`)
   // sso/check only routes a *verified* domain to its provider.
   await verifySsoDomain(PROVIDER_ID)
+  const enable = await admin.put(`/api/admin/sso/${PROVIDER_ID}/status`, { data: { status: 'enabled' } })
+  if (!enable.ok()) throw new Error(`enable sso provider failed: ${enable.status()} ${await enable.text()}`)
+  await admin.dispose()
 })
 
 test.afterAll(async () => {
