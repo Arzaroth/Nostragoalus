@@ -961,10 +961,11 @@ landed alongside it (verified by running the stack):
 
 ### Deferred from the feature-treatment review
 
-- [ ] `@better-auth/api-key` is pinned to an exact `"1.6.18"` while `better-auth`,
-      `@better-auth/passkey` and `@better-auth/sso` use `"^1.6.18"`. Today all
-      resolve to 1.6.18, but a future `pnpm update` could float the others ahead
-      while api-key stays frozen. Align the range (via pnpm) on the next bump.
+- [x] `@better-auth/api-key` was pinned exact while the rest used carets. The
+      family was bumped in lockstep to 1.6.23 (to unlock SCIM `active:false`
+      deprovisioning) with `@better-auth/scim` + `@better-auth/api-key` exact and
+      `better-auth`/`@better-auth/sso`/`@better-auth/passkey` on `^1.6.23` - the
+      version-skew floats only the back-compatible patch range.
 - [ ] Minted keys set `rateLimitEnabled: false`, so there is no per-key
       verification throttle (the plugin's default would be 10/24h). Fine given the
       48-byte key entropy; revisit if a public route ever consumes keys.

@@ -1,6 +1,6 @@
 # Auth
 
-Authentication and authorization run on **better-auth** 1.6.18, configured in
+Authentication and authorization run on **better-auth** 1.6.23, configured in
 `lib/auth.ts` (`buildAuthOptions`). The Nitro catch-all `server/api/auth/[...all].ts`
 mounts all better-auth routes. This file covers the local auth surface, the admin
 model, passkeys/2FA/API keys, and the runtime SSO subsystem.
