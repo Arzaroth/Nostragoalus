@@ -8,19 +8,26 @@ const bodySchema = z.object({
   competition: z.string().min(1),
   name: z.string().trim().min(3).max(50),
   visibility: z.enum(['PRIVATE', 'PUBLIC']).optional(),
+  mode: z.enum(['NORMAL', 'EASY', 'HARD', 'HARDCORE']).optional(),
+  lives: z.number().int().min(1).max(99).optional(),
   ownerId: z.string().optional(),
 })
 
 export default defineValidatedHandler({ admin: true, body: bodySchema }, async ({ body }) => {
   const competition = await getCompetitionBySlug(db, body.competition)
   if (!competition) throw createError({ statusCode: 404, statusMessage: 'Unknown competition' })
+  // Admin has full capability: a moded league can be made even mid-competition.
   const league = await adminCreateLeague(db, {
     competitionId: competition.id,
     name: body.name,
     visibility: body.visibility,
+    mode: body.mode,
+    lives: body.lives,
     ownerId: body.ownerId,
   })
-  return { league: { id: league.id, name: league.name, visibility: league.visibility, joinCode: league.joinCode } }
+  return {
+    league: { id: league.id, name: league.name, visibility: league.visibility, mode: league.mode, lives: league.lives, joinCode: league.joinCode },
+  }
 })
 
 defineRouteMeta({

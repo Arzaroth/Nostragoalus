@@ -829,4 +829,26 @@ describe('league modes', () => {
     const liveLeague = await makeLeague(db, { competitionId: running, ownerId: 'alice' })
     await expect(setLeagueMode(db, liveLeague, 'EASY')).rejects.toBeInstanceOf(ConflictError)
   })
+
+  it('lets an admin create a moded league mid-competition (bypass)', async () => {
+    const running = await seedCompetition(db, { slug: 'admin-running' })
+    const roundId = (await findRoundId(db, running, 'GROUP', 1)) as string
+    await makeMatch(db, { competitionId: running, roundId, kickoffTime: new Date('2020-01-01T00:00:00Z') })
+    await makeUser(db, 'alice')
+    const owned = await adminCreateLeague(db, { competitionId: running, name: 'Admin Easy', mode: 'EASY', ownerId: 'alice' })
+    expect(owned.mode).toBe('EASY')
+    const ownerless = await adminCreateLeague(db, { competitionId: running, name: 'Admin HC', mode: 'HARDCORE', lives: 4 })
+    expect(ownerless).toMatchObject({ mode: 'HARDCORE', lives: 4 })
+  })
+
+  it('lets setLeagueMode bypass the running guard for admins', async () => {
+    const running = await seedCompetition(db, { slug: 'admin-swap' })
+    const roundId = (await findRoundId(db, running, 'GROUP', 1)) as string
+    await makeMatch(db, { competitionId: running, roundId, kickoffTime: new Date('2020-01-01T00:00:00Z') })
+    await makeUser(db, 'alice')
+    const id = await makeLeague(db, { competitionId: running, ownerId: 'alice' })
+    await setLeagueMode(db, id, 'EASY', undefined, true)
+    expect((await getLeague(db, id))?.mode).toBe('EASY')
+    await expect(setLeagueMode(db, id, 'HARD')).rejects.toBeInstanceOf(ConflictError)
+  })
 })

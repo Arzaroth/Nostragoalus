@@ -168,6 +168,9 @@ export interface CreateLeagueOptions {
   visibility?: LeagueVisibility
   mode?: LeagueMode
   lives?: number | null
+  // Admin bypass: skip the "competition not running" guard so an admin can make a
+  // moded league at any time.
+  skipRunningGuard?: boolean
   codeGen?: JoinCodeGenerator
 }
 
@@ -176,8 +179,9 @@ export async function createLeague(db: AppDatabase, opts: CreateLeagueOptions): 
   const mode = opts.mode ?? 'NORMAL'
   const lives = normalizeLives(mode, opts.lives)
   // A moded league fixes the rules for the whole competition, so it can only be
-  // created before kickoff. A plain NORMAL league can be made any time.
-  if (mode !== 'NORMAL') await assertCompetitionNotRunning(db, opts.competitionId)
+  // created before kickoff (admins bypass). A plain NORMAL league can be made any
+  // time.
+  if (mode !== 'NORMAL' && !opts.skipRunningGuard) await assertCompetitionNotRunning(db, opts.competitionId)
 
   for (let attempt = 1; ; attempt++) {
     try {
@@ -508,6 +512,8 @@ export async function setLeagueMode(
   leagueId: string,
   mode: LeagueMode,
   lives?: number | null,
+  // Admin bypass: swap the mode even after the competition has started.
+  skipRunningGuard = false,
 ): Promise<void> {
   const [row] = await db
     .select({ competitionId: league.competitionId })
@@ -515,7 +521,7 @@ export async function setLeagueMode(
     .where(eq(league.id, leagueId))
     .limit(1)
   if (!row) throw new NotFoundError('league not found')
-  await assertCompetitionNotRunning(db, row.competitionId)
+  if (!skipRunningGuard) await assertCompetitionNotRunning(db, row.competitionId)
   await db
     .update(league)
     .set({ mode, lives: normalizeLives(mode, lives) })
@@ -694,12 +700,23 @@ export async function listLeaguesAdmin(db: AppDatabase, competitionId?: string):
 // without an OWNER; moderation falls to site admins).
 export async function adminCreateLeague(
   db: AppDatabase,
-  opts: { competitionId: string; name: string; visibility?: LeagueVisibility; ownerId?: string; codeGen?: JoinCodeGenerator },
+  opts: {
+    competitionId: string
+    name: string
+    visibility?: LeagueVisibility
+    mode?: LeagueMode
+    lives?: number | null
+    ownerId?: string
+    codeGen?: JoinCodeGenerator
+  },
 ): Promise<LeagueRow> {
+  const mode = opts.mode ?? 'NORMAL'
+  const lives = normalizeLives(mode, opts.lives)
   if (opts.ownerId) {
     const owner = await db.select({ id: user.id }).from(user).where(eq(user.id, opts.ownerId)).limit(1)
     if (!owner[0]) throw new NotFoundError('user not found')
-    return createLeague(db, { ...opts, ownerId: opts.ownerId })
+    // Admin has full capability: a moded league can be made even mid-competition.
+    return createLeague(db, { ...opts, ownerId: opts.ownerId, skipRunningGuard: true })
   }
   const codeGen = opts.codeGen ?? generateJoinCode
   for (let attempt = 1; ; attempt++) {
@@ -710,6 +727,8 @@ export async function adminCreateLeague(
           competitionId: opts.competitionId,
           name: opts.name,
           visibility: opts.visibility ?? 'PRIVATE',
+          mode,
+          lives,
           joinCode: codeGen(),
         })
         .returning()
