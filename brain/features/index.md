@@ -15,6 +15,7 @@ early on). Back to the root map: [../BRAIN.md](../BRAIN.md).
 | [Leagues](leagues.md) | Competition-scoped player groups, roles, public/private, SSO auto-join | core | `league`, `league_member`, `league_opt_out`, `league_leaderboard_rank` |
 | [Onboarding tour](onboarding-tour.md) | One-time spotlight walk-through of the core actions for new players; replayable from the account menu | unreleased | `onboardingTourDismissedAt`; `OnboardingTour.vue`, `useOnboardingTour.ts`, `server/utils/onboarding/*` |
 | [Bot personas](crowd-bot.md) | Synthetic ghost bots: consensus, evil twin, equalizer | core | `botUserId`; `server/utils/bot/service.ts`, `server/api/bot/*` |
+| [League modes](league-modes.md) | Per-league scoring: easy (odds), hard (confidence stakes), hardcore (survival); base pick + per-league override | (unreleased) | `league.mode`, `league.lives`, `league_prediction`; `server/utils/leagues/modes.ts`, `server/utils/leaderboard/modes.ts` |
 | [Odds](odds.md) | Decimal 1X2 bookmaker odds (Sofascore primary, BetExplorer backup) | core | `odds_snapshot`; `server/utils/odds/*` |
 | [Reactions](reactions.md) | Six-emoji match reactions, reused by chat | core | `match_reaction`; `ReactionBar.vue` |
 | [Live viewers](live-viewers.md) | Real-time "N watching now" per-match viewer count over the WS hub | 2.5.0 | `server/utils/live/viewers.ts`, `useMatchPresence.ts`, `MatchViewers.vue` |

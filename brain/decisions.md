@@ -211,6 +211,25 @@ feature/architecture doc that implements it.
   `userId`, no subscribe frame), like the notification push. See
   [features/dms.md](features/dms.md).
 
+## League modes
+
+- **Modes are a read-time scoring lens, not a new prediction model.** Picks stay
+  (user, match)-centric; an easy/hard/hardcore league re-scores the same effective
+  picks at read time (`server/utils/leaderboard/modes.ts`), so tamper-evidence,
+  the global crowd histogram and the bot keep one canonical pick per user. See
+  [features/league-modes.md](features/league-modes.md).
+- **Base pick + per-league override, synced by default.** To let a player diverge
+  per league without a per-league prediction rewrite, a moded league may hold an
+  optional `league_prediction` override (effective = override ?? base). NORMAL
+  leagues are excluded: their score carries the global crowd bonus +
+  champion/best-scorer/live that a per-league re-score can't reproduce, so
+  same-mode divergence is deferred (`TODO.md`).
+- **Strict completeness.** An outcome-only pick is INCOMPLETE for a NORMAL league
+  (you said "home", not a scoreline), HARD needs a stake, easy/hardcore accept any
+  outcome. The nudge surfaces where a pick is done and where it is not.
+- **Mode frozen at kickoff.** No moded create or swap once any match has started,
+  so the rules can't shift mid-tournament (`assertCompetitionNotRunning`).
+
 ## Operations
 
 - **Shared dev pgdata + a timestamp-ordering migrator** means a stale branch's

@@ -1,9 +1,16 @@
 # Leagues
 
 Leagues are competition-scoped player groups. They filter the views (leaderboard,
-crowd totals, chat) to a subset of players. They deliberately do **not** scope
-predictions: a user has one set of predictions per competition, shared across
-every league they are in. Leagues are a lens, not a separate game.
+crowd totals, chat) to a subset of players. By default they deliberately do
+**not** scope predictions: a user has one set of predictions per competition,
+shared across every league they are in. A plain `NORMAL` league is a lens, not a
+separate game.
+
+That changes with [league modes](league-modes.md): an easy/hard/hardcore league
+re-scores those same picks under different rules, and may hold its own per-league
+**override** picks (`league_prediction`) so a player can play one league safe and
+another for the upset. The base (user, match) pick still drives the global board,
+crowd, bot and tamper-evidence; overrides are a moded-league-only layer on top.
 
 ## Selection: a cookie, not the URL
 

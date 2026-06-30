@@ -875,6 +875,21 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
 - [ ] **Admin create-league mode parity**: `adminCreateLeague`'s ownerless branch
       inserts directly and ignores mode/lives (always NORMAL), and skips the
       running guard. Thread mode through if admins should make moded leagues.
+- [ ] **HARD in-grid stake input (client)**: the server supports the wager
+      end-to-end (`prediction.wager`, budget guard in `upsertPrediction`, HARD
+      scoring + board), and the prediction PUT route accepts it, but the
+      prediction grid has no stake stepper + per-round budget indicator yet. Until
+      it lands, HARD leagues are creatable and their board renders, but every stake
+      is null so members score 0. Add the stepper (expose `wager` on
+      `getMyPredictions`/`MyPrediction`, send it from `usePredictionMutations`),
+      and verify in a real browser.
+- [ ] **Divergence + nudge UI (client)**: the override layer is fully server-side
+      (`upsertLeaguePrediction`, `setLeaguePicksSynced`, `getLeagueOverrides`,
+      `getLeagueCompleteness`) but has no client. Build the W/D/L quick-pick
+      (stores `is_outcome_only`), the per-league override editor + "follow my main
+      picks" sync toggle, and the per-(match, league) completeness nudge chips
+      (`✓ done here / ⚠ needs a score there`). Needs new endpoints for override
+      write + sync + completeness, then real-browser verification.
 
 ## Crowd bot (deferred from the merge review)
 
