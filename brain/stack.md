@@ -33,7 +33,8 @@ Sources of truth: `package.json`, `pnpm-workspace.yaml`, `nuxt.config.ts`,
 
 ## Auth
 
-- **better-auth** 1.6.18 with plugins, all pinned to 1.6.18:
+- **better-auth** 1.6.23 with plugins, all in lockstep at 1.6.23 (`scim` +
+  `api-key` exact-pinned, the rest `^1.6.23`):
   - `@better-auth/sso` (OIDC + SAML, SAML via `samlify`)
   - `@better-auth/passkey`
   - `@better-auth/api-key`

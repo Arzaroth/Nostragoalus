@@ -28,10 +28,10 @@
     "create-admin": "node scripts/create-admin.mjs"
   },
   "dependencies": {
-    "@better-auth/api-key": "1.6.18",
-    "@better-auth/passkey": "^1.6.18",
-    "@better-auth/scim": "1.6.18",
-    "@better-auth/sso": "^1.6.18",
+    "@better-auth/api-key": "1.6.23",
+    "@better-auth/passkey": "^1.6.23",
+    "@better-auth/scim": "1.6.23",
+    "@better-auth/sso": "^1.6.23",
     "@primeuix/themes": "^2.0.3",
     "@resvg/resvg-js": "^2.6.2",
     "@tanstack/vue-hotkeys": "^0.10.0",
@@ -40,7 +40,7 @@
     "@vueuse/integrations": "^14.3.0",
     "@vueuse/nuxt": "^14.3.0",
     "aws4fetch": "^1.0.20",
-    "better-auth": "^1.6.18",
+    "better-auth": "^1.6.23",
     "croner": "^10.0.1",
     "cycletls": "2.0.5",
     "drizzle-orm": "^0.45.2",
