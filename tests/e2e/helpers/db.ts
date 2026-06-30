@@ -84,6 +84,13 @@ export async function finishMatch(matchId: string, home: number, away: number): 
   )
 }
 
+// Mark an SSO provider's domain verified, so sso/check routes that domain to it.
+// Domain ownership verification is out of scope in this single-tenant model (the
+// admin who registers a provider is trusted), so the e2e does what an admin would.
+export async function verifySsoDomain(providerId: string): Promise<void> {
+  await db().query(`update sso_provider set domain_verified = true where provider_id = $1`, [providerId])
+}
+
 // Remove the e2e competition and everything hanging off it. Predictions reference
 // the match, so clear them first, then matches, rounds, and the competition.
 export async function cleanup(): Promise<void> {

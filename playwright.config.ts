@@ -33,5 +33,16 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     actionTimeout: 15_000,
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    {
+      name: 'chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        // The OIDC issuer is http://keycloak:8080 (so the app reaches Keycloak by
+        // its compose service name); make the browser resolve `keycloak` to the
+        // host's published port too, so one issuer URL works for both sides.
+        launchOptions: { args: ['--host-resolver-rules=MAP keycloak 127.0.0.1'] },
+      },
+    },
+  ],
 })
