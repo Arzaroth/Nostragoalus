@@ -34,11 +34,14 @@ export function usePredictionMutations() {
   const queryClient = useQueryClient()
 
   const upsert = useMutation({
-    mutationFn: (input: { matchId: string; home: number; away: number }) =>
+    mutationFn: (input: { matchId: string; home: number; away: number; isOutcomeOnly?: boolean; wager?: number | null }) =>
       $fetch<{ id: string }>('/api/predictions', { method: 'PUT', body: input }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['predictions'] })
       queryClient.invalidateQueries({ queryKey: ['matches'] })
+      // A base-pick change re-scores synced moded boards and shifts completeness.
+      queryClient.invalidateQueries({ queryKey: ['leagues', 'mode-board'] })
+      queryClient.invalidateQueries({ queryKey: ['leagues', 'completeness'] })
     },
   })
 
