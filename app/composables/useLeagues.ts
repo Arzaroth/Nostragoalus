@@ -2,11 +2,16 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 
 export type LeagueRole = 'OWNER' | 'MODERATOR' | 'MEMBER'
 export type LeagueVisibility = 'PRIVATE' | 'PUBLIC'
+export type LeagueMode = 'NORMAL' | 'EASY' | 'HARD' | 'HARDCORE'
+
+export const LEAGUE_MODES: LeagueMode[] = ['NORMAL', 'EASY', 'HARD', 'HARDCORE']
 
 export interface League {
   id: string
   name: string
   visibility: LeagueVisibility
+  mode: LeagueMode
+  lives: number | null
   role: LeagueRole
   memberCount: number
   // The owner/moderator-authored markdown blurb. Present on the league detail
@@ -86,7 +91,7 @@ export function useLeagueActions() {
   }
 
   const create = useMutation({
-    mutationFn: (input: { competition: string; name: string; visibility?: LeagueVisibility }) =>
+    mutationFn: (input: { competition: string; name: string; visibility?: LeagueVisibility; mode?: LeagueMode; lives?: number }) =>
       $fetch<{ league: League }>('/api/leagues', { method: 'POST', body: input }).then((r) => r.league),
     onSuccess: () => invalidate(true),
   })
@@ -115,6 +120,8 @@ export function useLeagueActions() {
       visibility?: LeagueVisibility
       description?: string | null
       featuredTeamCode?: string | null
+      mode?: LeagueMode
+      lives?: number
     }) =>
       $fetch<{ ok: boolean }>(`/api/leagues/${input.leagueId}`, {
         method: 'PUT',
@@ -123,10 +130,13 @@ export function useLeagueActions() {
           visibility: input.visibility,
           description: input.description,
           featuredTeamCode: input.featuredTeamCode,
+          mode: input.mode,
+          lives: input.lives,
         },
       }),
+    // A mode swap re-scores every league board.
     onSuccess: () => {
-      invalidate(false)
+      invalidate(true)
       // The featured team drives the TEAM_SPECIALIST prize standings.
       queryClient.invalidateQueries({ queryKey: ['leagueRewards'] })
     },
@@ -168,4 +178,44 @@ export function useLeagueActions() {
   })
 
   return { create, join, joinPublic, leave, update, regenerateCode, setRole, kick, transferOwnership, remove }
+}
+
+export interface ModePointsRow {
+  rank: number
+  userId: string
+  displayName: string
+  image: string | null
+  points: number
+  exactCount: number
+  outcomeCount: number
+}
+
+export interface SurvivalRow {
+  rank: number
+  userId: string
+  displayName: string
+  image: string | null
+  alive: boolean
+  livesLeft: number
+  survived: number
+  eliminatedRoundLabel: string | null
+}
+
+export type ModeBoard =
+  | { kind: 'points'; mode: LeagueMode; rows: ModePointsRow[] }
+  | { kind: 'survival'; mode: 'HARDCORE'; rows: SurvivalRow[] }
+
+// The re-scored board for a moded league (easy/hard points or hardcore survival).
+// Disabled for NORMAL leagues, which use the standard leaderboard instead.
+export function useLeagueModeBoard(leagueId: Ref<string | null>, mode: Ref<LeagueMode | undefined>) {
+  const { session } = useAuth()
+  return useQuery({
+    queryKey: ['leagues', 'mode-board', leagueId],
+    queryFn: ({ signal }) =>
+      $fetch<{ board: ModeBoard; mode: LeagueMode; lives: number | null }>(
+        `/api/leagues/${leagueId.value}/mode-board`,
+        { signal },
+      ),
+    enabled: computed(() => !!session.value?.data && !!leagueId.value && !!mode.value && mode.value !== 'NORMAL'),
+  })
 }
