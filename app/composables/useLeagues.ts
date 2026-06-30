@@ -12,6 +12,8 @@ export interface League {
   visibility: LeagueVisibility
   mode: LeagueMode
   lives: number | null
+  // Whether this league mirrors the user's base picks (vs keeps overrides).
+  picksSynced: boolean
   role: LeagueRole
   memberCount: number
   // The owner/moderator-authored markdown blurb. Present on the league detail

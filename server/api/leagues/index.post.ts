@@ -31,6 +31,7 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ body, user 
       visibility: league.visibility,
       mode: league.mode,
       lives: league.lives,
+      picksSynced: true,
       joinCode: league.joinCode,
       role: 'OWNER',
       memberCount: 1,

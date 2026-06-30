@@ -46,6 +46,8 @@ export interface LeagueSummary {
   mode: LeagueMode
   lives: number | null
   role: LeagueRole
+  // Whether this membership mirrors the user's base picks (vs keeping overrides).
+  picksSynced: boolean
   memberCount: number
   chatEnabled: boolean
   competition: { id: string; slug: string; name: string }
@@ -214,6 +216,7 @@ export async function listUserLeagues(db: AppDatabase, userId: string, competiti
       visibility: league.visibility,
       mode: league.mode,
       lives: league.lives,
+      picksSynced: leagueMember.picksSynced,
       joinCode: league.joinCode,
       role: leagueMember.role,
       memberCount,
@@ -237,6 +240,7 @@ export async function listUserLeagues(db: AppDatabase, userId: string, competiti
     visibility: r.visibility as LeagueVisibility,
     mode: r.mode as LeagueMode,
     lives: r.lives,
+    picksSynced: r.picksSynced,
     role: r.role as LeagueRole,
     memberCount: Number(r.memberCount),
     chatEnabled: r.chatEnabled,
