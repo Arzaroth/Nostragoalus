@@ -98,10 +98,22 @@ no rank snapshots (moded leagues rank live, so they have no movement arrows -
   `server/utils/leaderboard/modes.ts`, override functions in
   `server/utils/predictions/service.ts`.
 
+## Client surfaces
+
+The matches page (`app/pages/[competition]/matches/index.vue`) adapts to the
+pilled league: `MatchPickControls.vue` adds a W/D/L quick-pick (easy/hardcore)
+and a HARD stake stepper bounded by the per-round budget, a banner toggles
+follow-main vs customize (`setPicksSynced`), and in custom mode score/stake saves
+target the league override. A completeness nudge lists leagues whose picks still
+need a score or stake. Composables: `useLeaguePicks.ts` (`useLeagueOverrides`,
+`useLeagueCompleteness`, `useLeaguePickMutations`). Endpoints: `PUT
+/api/leagues/[id]/predictions/[matchId]`, `POST /api/leagues/[id]/picks-sync`,
+`GET /api/leagues/[id]/overrides`, `GET /api/leagues/completeness`.
+
 ## Deferred (see `TODO.md`)
 
-The client divergence UI (W/D/L quick-pick, per-league override editor + sync
-toggle, completeness nudge chips) and the HARD in-grid stake input are not built
-yet; the server supports all of it. Also deferred: NORMAL-league override
-scoring, champion/live in moded boards, moded movement arrows, exact HARD
-effective-budget, tamper-evidence over overrides, admin moded-create.
+Intentional v1 tradeoffs, not missing wiring: NORMAL-league override scoring
+(can't reproduce the global crowd bonus + champion/best-scorer/live per league),
+champion/best-scorer/live in moded boards, moded movement arrows, exact HARD
+effective-budget across base+override, tamper-evidence over overrides, and admin
+moded-create.
