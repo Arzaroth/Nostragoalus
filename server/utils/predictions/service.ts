@@ -15,7 +15,7 @@ import { ForbiddenError, LockedError, NotFoundError, ValidationError } from '../
 import { deletePickReminder } from '../notifications/reminders'
 import { appendPredictionCommitment } from '../commitment/service'
 import { hardRoundBudget, type LeagueMode } from '../leagues/modes'
-import { pickCompleteness, summarizeCompleteness, type CompletenessSummary } from '../leagues/completeness'
+import { pickCompleteness, summarizeCompleteness, type CompletenessSummary, type IncompleteReason } from '../leagues/completeness'
 
 // Aggregate counters for the "my stats" strip (points/rank come from the leaderboard).
 export async function getMyStats(db: AppDatabase, userId: string, competitionId: string) {
@@ -589,6 +589,8 @@ export interface LeagueCompleteness {
   name: string
   mode: LeagueMode
   summary: CompletenessSummary
+  // Per-match issues (not COMPLETE), for the per-card chips.
+  issues: { matchId: string; reason: IncompleteReason }[]
 }
 
 // Per-league completeness of the caller's picks for the matches still open to
@@ -621,7 +623,7 @@ export async function getLeagueCompleteness(
     )
   const matchIds = matches.map((m) => m.id)
   if (matchIds.length === 0) {
-    return leagues.map((l) => ({ leagueId: l.id, name: l.name, mode: l.mode, summary: summarizeCompleteness([]) }))
+    return leagues.map((l) => ({ leagueId: l.id, name: l.name, mode: l.mode, summary: summarizeCompleteness([]), issues: [] }))
   }
 
   const basePicks = await db
@@ -653,10 +655,13 @@ export async function getLeagueCompleteness(
   )
 
   return leagues.map((l) => {
+    const issues: { matchId: string; reason: IncompleteReason }[] = []
     const statuses = matchIds.map((mid) => {
       const eff = overrideByLeagueMatch.get(`${l.id}:${mid}`) ?? baseByMatch.get(mid) ?? null
-      return pickCompleteness(eff, l.mode)
+      const status = pickCompleteness(eff, l.mode)
+      if (status.state !== 'COMPLETE' && status.reason) issues.push({ matchId: mid, reason: status.reason })
+      return status
     })
-    return { leagueId: l.id, name: l.name, mode: l.mode, summary: summarizeCompleteness(statuses) }
+    return { leagueId: l.id, name: l.name, mode: l.mode, summary: summarizeCompleteness(statuses), issues }
   })
 }

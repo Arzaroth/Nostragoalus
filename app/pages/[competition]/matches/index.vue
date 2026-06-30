@@ -191,6 +191,27 @@ function nudgeText(c: { summary: { missing: number; needsExact: number; needsSta
   if (c.summary.needsStake) parts.push(t('leagues.nudgeNeedsStake', { n: c.summary.needsStake }))
   return parts.join(' · ')
 }
+// Per-match completeness chips: which of the user's leagues still need this
+// match's pick fixed (a missing pick, a real score, or a stake).
+const issuesByMatch = computed(() => {
+  const map = new Map<string, { name: string; reason: string }[]>()
+  for (const c of completenessQ.data.value ?? []) {
+    for (const iss of c.issues) {
+      const entry = { name: c.name, reason: iss.reason }
+      const list = map.get(iss.matchId)
+      if (list) list.push(entry)
+      else map.set(iss.matchId, [entry])
+    }
+  }
+  return map
+})
+function reasonLabel(reason: string): string {
+  return reason === 'NEEDS_EXACT'
+    ? t('leagues.reasonScore')
+    : reason === 'NEEDS_STAKE'
+      ? t('leagues.reasonStake')
+      : t('leagues.reasonPick')
+}
 
 // Rounds whose one joker already sits on a locked (started/finished) match: it
 // can't be moved, so every other match in that round can't take the joker. We
@@ -715,6 +736,18 @@ watch(searchOpen, () => nextTick(updateListHeight))
                 @save="(v) => save(m.id, v)"
                 @save-stake="(w) => saveStake(m.id, w)"
               />
+              <!-- Per-league completeness chips: leagues where this match's pick
+                   still needs attention. -->
+              <div v-if="issuesByMatch.get(m.id)?.length" class="flex flex-wrap justify-center gap-1">
+                <span
+                  v-for="(iss, idx) in issuesByMatch.get(m.id)"
+                  :key="idx"
+                  class="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full"
+                  style="color: var(--ng-star); background: var(--ng-star-soft)"
+                >
+                  <i class="pi pi-exclamation-circle" style="font-size: 0.6rem" />{{ iss.name }}: {{ reasonLabel(iss.reason) }}
+                </span>
+              </div>
               <!-- Reserved whenever the preference is on, so cards never resize. -->
               <div v-if="crowdEnabled">
                 <CrowdLine :match-id="m.id" :totals="crowdTotals" :league-totals="leagueTotals" :league-active="leagueActive" label count />

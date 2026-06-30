@@ -20,11 +20,14 @@ export interface LeagueCompletenessSummary {
   needsStake: number
 }
 
+export type IncompleteReason = 'NEEDS_PICK' | 'NEEDS_EXACT' | 'NEEDS_STAKE'
+
 export interface LeagueCompleteness {
   leagueId: string
   name: string
   mode: LeagueMode
   summary: LeagueCompletenessSummary
+  issues: { matchId: string; reason: IncompleteReason }[]
 }
 
 // The caller's override picks in a moded league, keyed by matchId for the editor.

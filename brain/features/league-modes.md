@@ -111,8 +111,9 @@ pilled league: `MatchPickControls.vue` adds a W/D/L quick-pick (easy/hardcore)
 and a HARD stake stepper bounded by the per-round budget, a banner toggles
 follow-main vs customize (`setPicksSynced`), and in custom mode score/stake/joker
 saves target the league override (`setLeagueJoker` places the joker per league
-per round). A completeness nudge lists leagues whose picks still
-need a score or stake. Composables: `useLeaguePicks.ts` (`useLeagueOverrides`,
+per round). A completeness nudge banner lists leagues whose picks still need a
+score or stake, and per-card chips flag, per match, which leagues still need that
+match fixed (`getLeagueCompleteness` returns per-league `issues`). Composables: `useLeaguePicks.ts` (`useLeagueOverrides`,
 `useLeagueCompleteness`, `useLeaguePickMutations`). Endpoints: `PUT
 /api/leagues/[id]/predictions/[matchId]`, `POST /api/leagues/[id]/picks-sync`,
 `GET /api/leagues/[id]/overrides`, `GET /api/leagues/completeness`.

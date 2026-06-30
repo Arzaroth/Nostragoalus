@@ -864,10 +864,6 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
       overrides that aren't in the chain, so a league-board dispute can't be proven
       from the ledger. Extend the ledger per-league if league-board verification is
       wanted.
-- [ ] **Per-match completeness chips**: the nudge is a per-league summary banner
-      on the matches page. A per-(match, league) chip on each card (`✓ done here /
-      ⚠ needs a score there`) would be finer-grained; deferred to keep the card
-      uncluttered.
 - [ ] **Joker round-lock in custom leagues**: `jokerRoundLocked` (the client
       button-disable) is derived from base-pick jokers, so in a custom moded league
       it can mis-disable the joker button for a round whose override joker sits on a

@@ -234,6 +234,10 @@ describe('getLeagueCompleteness', () => {
     expect(byId[easy].summary).toMatchObject({ total: 1, complete: 1 })
     expect(byId[normal].summary).toMatchObject({ total: 1, incomplete: 1, needsExact: 1 })
     expect(byId[hard].summary).toMatchObject({ total: 1, incomplete: 1, needsStake: 1 })
+    // Per-match issues for the card chips.
+    expect(byId[easy].issues).toEqual([])
+    expect(byId[normal].issues).toEqual([{ matchId: m, reason: 'NEEDS_EXACT' }])
+    expect(byId[hard].issues).toEqual([{ matchId: m, reason: 'NEEDS_STAKE' }])
   })
 
   it('prefers a league override over the base pick', async () => {
