@@ -641,9 +641,12 @@ effort buckets; order within a bucket is not priority.
     scoring, league-shared key (HKDF-derived from a league master key).
     Known costs: key distribution on join, key loss bricks the league, and
     server-blind leagues lose crowd totals / bot / global board.
-- [ ] **SCIM provisioning**: pairs with the SSO story (deprovisioning is the
-      real enterprise ask). Survey the better-auth ecosystem before
-      hand-rolling. Low priority until an actual IdP user exists.
+- [x] **SCIM provisioning** (built with the guided SSO onboarding flow): SCIM 2.0
+      user provisioning/deprovisioning via `@better-auth/scim` rather than
+      hand-rolled. Per-provider hashed token generated from the admin console;
+      `active:false` maps to a ban (block sign-in + revoke sessions, data kept).
+      Ships with the lifecycle (draft/enabled/disabled), connection test, OIDC
+      test-sign-in claim preview, and DNS-TXT domain verification with admin bypass.
 
 ## Dropped / rethink
 

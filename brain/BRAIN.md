@@ -57,6 +57,7 @@ use the indexes.
 | [best-scorer.md](features/best-scorer.md) | Golden Boot pick, goal-event-derived award. |
 | [stats.md](features/stats.md) | Player rankings tab: top scorers + top assists. |
 | [leagues.md](features/leagues.md) | Competition-scoped groups, roles, visibility, SSO auto-join. |
+| [sso-provisioning.md](features/sso-provisioning.md) | SSO onboarding lifecycle, connection test, OIDC test-sign-in claim preview, DNS domain verify + bypass, SCIM provisioning. |
 | [crowd-bot.md](features/crowd-bot.md) | The consensus "ghost" participant (MODE/MEAN). |
 | [odds.md](features/odds.md) | 1X2 decimal odds (Sofascore + BetExplorer). |
 | [reactions.md](features/reactions.md) | Match + chat emoji reactions. |
@@ -88,6 +89,7 @@ use the indexes.
 | How is "N watching now" counted per match? | [features/live-viewers.md](features/live-viewers.md) |
 | Where are images stored, and how do I migrate them? | [architecture/storage.md](architecture/storage.md), [features/image-storage.md](features/image-storage.md) |
 | How is SSO configured and kept secret-safe? | [architecture/auth.md](architecture/auth.md) |
+| How does an admin onboard an SSO provider (test/verify) or use SCIM? | [features/sso-provisioning.md](features/sso-provisioning.md) |
 | How do I cut a release? What bumps major? | [operations.md](operations.md) |
 | Why Sofascore / FIFA ranking and not odds? | [decisions.md](decisions.md) |
 | What's the konami easter egg? | [features/easter-eggs.md](features/easter-eggs.md) |

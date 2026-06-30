@@ -34,9 +34,11 @@ source of truth; migrations are generated, never hand-written.
 Logical names are the Drizzle TS exports; the SQL tables are snake_case
 (`chatMessage` -> `chat_message`). Full column lists live in `db/app-schema.ts`.
 
-- **Auth:** `user`, `session`, `account`, `verification`, `sso_provider`,
-  `apikey`. `user` carries app additionalFields (push* toggles, profilePrivate,
-  skin/skinsUnlocked). See [auth.md](auth.md).
+- **Auth:** `user`, `session`, `account`, `verification`, `sso_provider`
+  (lifecycle `status` + `last_tested_at`/`last_test_result` + `domainVerified`),
+  `scim_provider` (per-provider hashed SCIM token), `apikey`. `user` carries app
+  additionalFields (push* toggles, profilePrivate, skin/skinsUnlocked). See
+  [auth.md](auth.md) and [../features/sso-provisioning.md](../features/sso-provisioning.md).
 - **Competition core:** `competition`, `round` (kind, stage, kickoffAt), `match`
   (status, fullTimeScore), `goal_event` (side, player, minute, ownGoal). See
   [../features/competitions.md](../features/competitions.md).
@@ -71,7 +73,8 @@ Logical names are the Drizzle TS exports; the SQL tables are snake_case
 LEAGUE_JOIN, LEAGUE_ROLE, LEAGUE_REMOVED, PICK_REMINDER, MATCH_RESULT,
 CHAMPION_RESULT, BEST_SCORER_RESULT, CHAT_MENTION),
 `match_media_kind` (LIVE/REPLAY/HIGHLIGHTS),
-`roadmap_status` (PLANNED/IN_PROGRESS/SHIPPED).
+`roadmap_status` (PLANNED/IN_PROGRESS/SHIPPED), `sso_provider_status`
+(draft/enabled/disabled).
 
 All foreign keys use ON DELETE CASCADE, except the tamper-evidence ledger which
 deliberately has none (it must outlive deleted rows).

@@ -917,21 +917,47 @@ landed alongside it (verified by running the stack):
 
 ## SSO / better-auth 1.6.18 (deferred from the api-keys upgrade)
 
-- [ ] SSO domain ownership verification (DNS TXT): deliberately NOT added. SSO
-      providers are registered by site admins only, so domain-ownership proof
-      would gate an actor who's already fully trusted (single-tenant model) - it
-      buys nothing today. The plugin ships the primitives (domainVerification
-      token endpoint + verify flow). Add only if provider registration is ever
-      delegated to a less-trusted role or the app goes multi-tenant; then make
-      new providers start domainVerified=false and grandfather existing ones
-      (already default true). Cheaper interim guard against accidental capture
-      (admin fat-fingers a public domain): warn/block well-known freemail
-      domains (gmail.com, outlook.com, ...) at registration.
+- [x] SSO domain ownership verification (DNS TXT): added with the guided
+      onboarding flow. New providers start as `draft` + `domainVerified=false`
+      (the plugin already forces the latter on register); the admin runs the
+      hand-rolled DNS-TXT check (`server/utils/sso/service.ts`, matching the
+      plugin's `_better-auth-token-{providerId}` identifier so it isn't gated by
+      the plugin's registering-admin-only owner check) or bypasses it (trusted,
+      single-tenant). Only an `enabled` + verified provider is offered for login
+      and links accounts. The freemail-domain guard is still not added - low
+      value now that domains are explicitly verified or bypassed.
 - [x] History: the trust-email_verified commit was superseded by the
       domainVerified one. Shipped UNSQUASHED in the feature-treatment merge -
       interactive rebase isn't available in this environment and the two are
       non-adjacent. The net code is correct (domainVerified-based); only the
       history carries the flip-flop. Not worth a force-push rewrite now.
+
+### Guided SSO onboarding + SCIM (deferred)
+
+- [ ] Admin SSO routes still have no handler-level tests, and the guided flow
+      added several (status, test-connection, verify-domain GET/POST,
+      bypass-domain, test-signin start/result, scim-token POST/DELETE). All logic
+      lives in the covered `server/utils/sso/*` service; the thin routes are
+      exercised only by typecheck + build. A pglite handler harness (the
+      sso-linking pattern) would cover the auth guards + param wiring. Supersedes
+      the "Admin SSO routes" item above.
+- [ ] Extract `app/components/admin/SsoProviders.vue` + a `useSso` composable: the
+      SSO admin section nearly doubled and is still inline in
+      `app/pages/admin/index.vue` with `$fetch`. Extracting would thin the page and
+      let a `*.nuxt.test.ts` cover the badges / enable-gating / claim preview.
+- [ ] SCIM provisioning E2E: generate a token, then exercise `POST /scim/v2/Users`
+      (create) and `PATCH active:false`/`true` against a real (or dockerized) IdP
+      and assert the ban + session revoke + data retention. The plugin behaviour
+      is better-auth's; only our wiring (schema, hashed token, HTTP block) is
+      unit-checked today.
+- [ ] Live-browser verification of the onboarding UI (Manage panel, the
+      test-sign-in popup + postMessage claim capture, the domain TXT card, the
+      reveal-once SCIM token) - built and typecheck/build-clean, not yet driven in
+      a real browser against a running stack.
+- [ ] SAML live test sign-in: only OIDC captures live claims; SAML uses the static
+      bindings preview + the connection test. A live SAML assertion capture needs
+      a test ACS pre-registered at the IdP (most IdPs only POST to the registered
+      ACS), so it was deliberately scoped out. Add if a SAML user asks for it.
 
 ### Deferred from the feature-treatment review
 

@@ -91,3 +91,22 @@ the code. Alphabetical.
   an easter egg.
 - **ar** - the Arabic locale code; the first right-to-left locale. See
   [architecture/rtl.md](architecture/rtl.md).
+
+## Auth / SSO
+
+- **SSO provider lifecycle** - `draft` (configuring) / `enabled` (live) /
+  `disabled` (paused) on `sso_provider.status`. Only `enabled` is offered for
+  login and links accounts; disabling never revokes existing sessions. See
+  [features/sso-provisioning.md](features/sso-provisioning.md).
+- **Connection test** - the automated OIDC (discovery/JWKS) / SAML (cert/entry
+  point) pre-flight; a passing result is the gate to enable a provider.
+- **Test sign-in (dry-run)** - a real OIDC round-trip that previews the claims an
+  IdP returns, mapped to our fields, without creating a user/session or running
+  `provisionUser`.
+- **Domain verification / bypass** - proving ownership of a provider's email
+  domain via a DNS TXT record (`_better-auth-token-{providerId}`), or an admin
+  bypass (single-tenant, trusted).
+- **SCIM** - System for Cross-domain Identity Management; the IdP-driven protocol
+  that provisions/deprovisions users over `/api/auth/scim/v2/*`.
+- **Deprovision** - SCIM `active:false`: ban the user (block login + revoke
+  sessions) while keeping their data; `active:true` reactivates.

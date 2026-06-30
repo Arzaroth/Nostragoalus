@@ -15,7 +15,8 @@ model, passkeys/2FA/API keys, and the runtime SSO subsystem.
 
 ## Plugins enabled
 
-`sso`, `passkey`, `apiKey`, plus better-auth's built-in `twoFactor` and `admin`.
+`sso`, `scim`, `passkey`, `apiKey`, plus better-auth's built-in `twoFactor` and
+`admin`.
 
 ## Session guards
 
@@ -101,15 +102,19 @@ for SSO league auto-join.
   redirects through `signIn.sso({ providerId })` or reveals the password field.
 - `/login?password=1` is the escape hatch for an IdP outage.
 - Multi-domain is a CSV in `sso_provider.domain` (native plugin support, matches
-  subdomains). Conflicts across providers are rejected first-come-first-served.
+  subdomains). Conflicts across providers are rejected first-come-first-served
+  (status-agnostic: a draft still reserves its domain).
+- The resolver only returns `enabled` + `domainVerified` providers, so a
+  draft/disabled/unverified provider never captures a login (the password field
+  is revealed instead).
 
 ### Account linking and managed accounts
 
 - Because local accounts are never email-verified, better-auth's defaults
   refused SSO -> local links. `buildAuthOptions` sets
   `requireLocalEmailVerified: false` plus a dynamic `trustedProviders()` that
-  returns every registered SSO providerId (admin-registered IdPs are
-  authoritative).
+  returns every `enabled` SSO providerId (admin-registered IdPs are
+  authoritative; a draft/disabled provider is not trusted for implicit linking).
 - SSO-managed accounts (no local `credential` account row) hide
   email/password/2FA/passkeys in `/account`; the auth catch-all 403s
   change-email, passkey registration and 2FA enable server-side.
@@ -121,11 +126,60 @@ for SSO league auto-join.
   login: it stores IdP avatars (see [storage.md](storage.md)) and performs SSO
   league auto-join via `sso_provider_league`.
 
+### Onboarding lifecycle (draft -> test -> verify -> enable)
+
+- A provider has a `status` (`draft` / `enabled` / `disabled`) on `sso_provider`.
+  The register route lands new providers as `draft`; the column default is
+  `enabled` only so the `ADD COLUMN` migration grandfathers pre-existing rows.
+  Only `enabled` providers are live (login resolver + `trustedProviders` +
+  callback gate). Disabling is non-disruptive: existing sessions keep working
+  because the catch-all gate sits only on the sign-in callback paths, never on
+  session validation.
+- Logic lives in the covered `server/utils/sso/service.ts`; the admin routes
+  (`server/api/admin/sso/[providerId]/{status,test-connection,verify-domain,
+  bypass-domain,scim-token}`) stay thin.
+- **Connection test** (`testConnection`): automated checks - OIDC fetches the
+  discovery endpoints + a JWKS with keys; SAML parses the X.509 cert and reaches
+  the entry point. The result (`last_test_result.ok`) is the gate to enable.
+- **Test sign-in** (`server/utils/sso/test-signin.ts`, OIDC only): a real PKCE
+  round-trip that captures the IdP's claims and maps them to our fields WITHOUT
+  creating a user/session (it never runs `provisionUser`). A single-use 256-bit
+  nonce ticket lives in the `verification` table (5-min TTL); the public callback
+  `GET /api/sso/test-callback` is secured by that nonce (the IdP redirect is
+  cookieless), captures claims server-side, and posts only `{testId, ok}` back to
+  the opener. The admin reads the claims through the admin-gated result route.
+  SAML uses the static bindings preview (ACS / entityID / NameID / attributes)
+  plus the connection test instead - a live SAML ACS must be pre-registered at the
+  IdP.
+- **Domain verification**: new providers are `domainVerified=false` (the plugin
+  forces this on register). The admin publishes a DNS TXT record and runs
+  `verifyDomainDns`, or `bypassDomainVerification` (admin-trusted, single-tenant).
+  Hand-rolled rather than `auth.api.verifyDomain` so it isn't gated by the
+  plugin's registering-admin-only owner check, but it matches the plugin's
+  `_better-auth-token-{providerId}` identifier + TXT format.
+
+### SCIM provisioning
+
+- `@better-auth/scim` (`scim({ storeSCIMToken: 'hashed' })`) exposes SCIM 2.0
+  user provisioning under `/api/auth/scim/v2/*` (bearer-authed by the IdP). The
+  token is stored hashed in `scim_provider` (shown once at generation, like
+  `apikey`), so the encrypted-adapter does not cover it.
+- `active:false` maps to the admin plugin's ban (block login + revoke sessions)
+  and keeps the user's data; `active:true` reactivates.
+- The session-only management endpoints (`generate-token`,
+  `*-provider-connection`) are blocked over HTTP by the catch-all
+  (`isSsoAdminOnlyPath`) - any signed-in user could otherwise mint a provisioning
+  bearer - and exposed only through the admin `scim-token` routes (generate/
+  rotate, revoke). Provider delete drops the `scim_provider` row by hand (no FK).
+
 ## Sources
 
 - `lib/auth.ts`, `server/api/auth/[...all].ts`
 - `server/utils/auth-guards.ts`, `server/utils/validated-handler.ts`
 - `server/plugins/warm-settings.ts`, `server/middleware/passkey-guard.ts`
 - `server/utils/crypto/envelope.ts`, `server/utils/crypto/encrypted-adapter.ts`
-- `server/utils/auth/sso-domains.ts`, `server/api/admin/sso/**`
+- `server/utils/auth/sso-domains.ts`, `server/utils/auth/sso-guard-paths.ts`
+- `server/utils/sso/{service,config,test-signin}.ts`, `server/api/admin/sso/**`
+- `server/api/sso/{check,test-callback}.get.ts`
+- See [../features/sso-provisioning.md](../features/sso-provisioning.md)
 - `db/auth-schema.ts` (`user`, `session`, `account`, `ssoProvider`, `apikey`)
