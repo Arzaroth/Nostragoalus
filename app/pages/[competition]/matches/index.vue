@@ -126,6 +126,13 @@ const predByMatch = computed(() => {
   return map
 })
 
+// Fixtures still open (kickoff ahead, both teams known) that the user hasn't
+// predicted - the "needs a pick before the next lockout" nudge. Derived from the
+// matches/predictions already on the page; the matches list is kickoff-ordered,
+// so firstOutstandingPickId is the soonest one.
+const predictedIds = computed(() => new Set(Object.keys(predByMatch.value)))
+const outstandingCount = computed(() => countOutstandingPicks(matches.value ?? [], predictedIds.value))
+
 // Rounds whose one joker already sits on a locked (started/finished) match: it
 // can't be moved, so every other match in that round can't take the joker. We
 // disable those buttons rather than let the click fail server-side.
@@ -261,6 +268,24 @@ function autoScrollTargetId(): string | null {
   const next = flat.find((m) => m.status === 'SCHEDULED' && new Date(m.kickoffTime).getTime() >= now)
   return next?.id ?? null
 }
+// Scroll a match row into view, honoring the contained scroll region when the
+// list owns one (otherwise scroll the page; the row's scroll-margin clears the
+// header). Shared by the first-upcoming auto-scroll and the outstanding-picks
+// jump action.
+async function scrollToMatch(id: string) {
+  // Make sure the region is sized (and thus scrollable) before scrolling into
+  // it - the height watcher may not have applied its style yet on this tick.
+  updateListHeight()
+  await nextTick()
+  const el = document.getElementById(`match-${id}`)
+  if (!el) return
+  const c = listEl.value
+  if (contained.value && c) {
+    c.scrollTo({ top: el.getBoundingClientRect().top - c.getBoundingClientRect().top + c.scrollTop, behavior: 'smooth' })
+  } else {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+}
 watch(
   [grouped, pageMounted, predictions, picksReady, viewMode],
   async () => {
@@ -278,22 +303,21 @@ watch(
     const id = autoScrollTargetId()
     didAutoScroll = true
     if (!id) return
-    // Make sure the region is sized (and thus scrollable) before scrolling into
-    // it - the height watcher may not have applied its style yet on this tick.
-    updateListHeight()
-    await nextTick()
-    const el = document.getElementById(`match-${id}`)
-    if (!el) return
-    const c = listEl.value
-    if (contained.value && c) {
-      c.scrollTo({ top: el.getBoundingClientRect().top - c.getBoundingClientRect().top + c.scrollTop, behavior: 'smooth' })
-    } else {
-      // No scroll region: scroll the page itself (row's scroll-margin clears the header).
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
+    await scrollToMatch(id)
   },
   { immediate: true, flush: 'post' },
 )
+
+// "Jump to first" on the outstanding-picks nudge. The soonest unpicked fixture
+// may be hidden by the status/country filters, so reveal upcoming and clear the
+// country filter before scrolling to it.
+function jumpToFirstUnpicked() {
+  const id = firstOutstandingPickId(matches.value ?? [], predictedIds.value)
+  if (!id) return
+  if (!activeBuckets.value.includes('upcoming')) activeBuckets.value = [...activeBuckets.value, 'upcoming']
+  if (selectedCountries.value.length) selectedCountries.value = []
+  nextTick(() => scrollToMatch(id))
+}
 
 function save(matchId: string, value: { home: number; away: number }) {
   upsert.mutate({ matchId, ...value })
@@ -375,6 +399,17 @@ watch(searchOpen, () => nextTick(updateListHeight))
         <div class="text-2xl font-extrabold tabular-nums">{{ stats.jokers }}</div>
         <div class="text-xs mt-0.5" style="color: var(--p-text-muted-color)">{{ t('picks.jokers', { n: stats.predictions }) }}</div>
       </div>
+    </div>
+    <div
+      v-if="outstandingCount > 0"
+      class="flex items-center justify-between gap-3 mb-5 rounded-2xl border px-4 py-3"
+      style="background: color-mix(in srgb, var(--p-primary-color) 8%, var(--p-content-background)); border-color: var(--p-primary-color)"
+    >
+      <div class="flex items-center gap-2 text-sm">
+        <i class="pi pi-exclamation-circle" style="color: var(--p-primary-color)" />
+        <span>{{ t('matches.outstanding.label', { n: outstandingCount }, outstandingCount) }}</span>
+      </div>
+      <Button size="small" :label="t('matches.outstanding.jump')" icon="pi pi-arrow-down" severity="primary" text @click="jumpToFirstUnpicked" />
     </div>
     <div ref="picksEl" class="grid md:grid-cols-2 gap-4 mb-6">
       <ChampionPick />
