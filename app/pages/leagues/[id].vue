@@ -11,6 +11,14 @@ const { joinPublic, leave } = useLeagueActions()
 const { session } = useAuth()
 const meId = computed(() => session.value?.data?.user?.id)
 
+const mode = computed(() => detail.data.value?.league.mode ?? 'NORMAL')
+const isModed = computed(() => mode.value !== 'NORMAL')
+const slug = computed(() => detail.data.value?.league.competition?.slug ?? '')
+// Moded leagues (easy/hard/hardcore) re-score from effective picks server-side.
+const modeBoard = useLeagueModeBoard(leagueId, mode)
+const board = computed(() => modeBoard.data.value?.board)
+const MODE_KEY = { NORMAL: 'Normal', EASY: 'Easy', HARD: 'Hard', HARDCORE: 'Hardcore' } as const
+
 const confirmLeave = ref(false)
 const isMember = computed(() => !!detail.data.value?.league.role)
 const canManage = computed(() => {
@@ -37,6 +45,7 @@ function medal(rank: number) {
           <i class="pi pi-users text-xl" style="color: var(--p-primary-color)" />
           <h1 class="text-2xl font-bold truncate">{{ detail.data.value.league.name }}</h1>
           <Tag v-if="detail.data.value.league.visibility === 'PUBLIC'" :value="t('leagues.public')" severity="success" />
+          <LeagueModeBadge :mode="detail.data.value.league.mode" :lives="detail.data.value.league.lives" />
           <span class="text-sm" style="color: var(--p-text-muted-color)">
             {{ detail.data.value.league.competition?.name }} ·
             {{ t('leagues.memberCount', { n: detail.data.value.league.memberCount }, detail.data.value.league.memberCount) }}
@@ -59,6 +68,18 @@ function medal(rank: number) {
         />
       </div>
 
+      <p v-if="isModed" class="text-sm mb-3" style="color: var(--p-text-muted-color)">
+        {{ t(`leagues.mode${MODE_KEY[mode]}Desc`) }}
+      </p>
+
+      <template v-if="isModed">
+        <div v-if="modeBoard.isLoading.value" class="opacity-60">{{ t('common.loading') }}</div>
+        <div v-else-if="!board || !board.rows.length" class="opacity-60">{{ t('leagues.modeBoardEmpty') }}</div>
+        <LeagueSurvivalBoard v-else-if="board.kind === 'survival'" :rows="board.rows" :slug="slug" :me-id="meId" />
+        <LeagueModePointsBoard v-else :rows="board.rows" :slug="slug" :me-id="meId" />
+      </template>
+
+      <template v-else>
       <div v-if="rows.isLoading.value" class="opacity-60">{{ t('common.loading') }}</div>
       <div v-else-if="!rows.data.value?.length" class="opacity-60">{{ t('leaderboard.empty') }}</div>
       <div v-else class="flex flex-col gap-2">
@@ -100,6 +121,7 @@ function medal(rank: number) {
           <i class="pi pi-info-circle" style="font-size: 0.7rem; opacity: 0.6" />
         </div>
       </div>
+      </template>
 
       <LeagueDescription
         v-if="leagueId"
