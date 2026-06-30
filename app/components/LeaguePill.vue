@@ -43,7 +43,7 @@ function onCreated(created: League) {
         <div class="flex flex-col w-64 -m-1">
           <button
             type="button"
-            class="px-3 py-2 text-sm text-left flex items-center gap-2 transition hover:bg-black/5 dark:hover:bg-white/10"
+            class="px-3 py-2 text-sm text-start flex items-center gap-2 transition hover:bg-black/5 dark:hover:bg-white/10"
             :class="{ 'font-bold': !leagueId }"
             @click="select(null)"
           >
@@ -55,7 +55,7 @@ function onCreated(created: League) {
             v-for="l in leagues ?? []"
             :key="l.id"
             type="button"
-            class="px-3 py-2 text-sm text-left flex items-center gap-2 transition hover:bg-black/5 dark:hover:bg-white/10"
+            class="px-3 py-2 text-sm text-start flex items-center gap-2 transition hover:bg-black/5 dark:hover:bg-white/10"
             :class="{ 'font-bold': l.id === leagueId }"
             @click="select(l.id)"
           >
@@ -66,7 +66,7 @@ function onCreated(created: League) {
           <div class="my-1 border-t" style="border-color: var(--p-content-border-color)" />
           <button
             type="button"
-            class="px-3 py-2 text-sm text-left flex items-center gap-2 transition hover:bg-black/5 dark:hover:bg-white/10"
+            class="px-3 py-2 text-sm text-start flex items-center gap-2 transition hover:bg-black/5 dark:hover:bg-white/10"
             @click="menu?.hide?.(); joinOpen = true"
           >
             <i class="pi pi-sign-in text-xs opacity-60" />
@@ -74,7 +74,7 @@ function onCreated(created: League) {
           </button>
           <button
             type="button"
-            class="px-3 py-2 text-sm text-left flex items-center gap-2 transition hover:bg-black/5 dark:hover:bg-white/10"
+            class="px-3 py-2 text-sm text-start flex items-center gap-2 transition hover:bg-black/5 dark:hover:bg-white/10"
             @click="menu?.hide?.(); createOpen = true"
           >
             <i class="pi pi-plus text-xs opacity-60" />
@@ -82,7 +82,7 @@ function onCreated(created: League) {
           </button>
           <NuxtLink
             to="/leagues"
-            class="px-3 py-2 text-sm text-left flex items-center gap-2 transition hover:bg-black/5 dark:hover:bg-white/10"
+            class="px-3 py-2 text-sm text-start flex items-center gap-2 transition hover:bg-black/5 dark:hover:bg-white/10"
             @click="menu?.hide?.()"
           >
             <i class="pi pi-search text-xs opacity-60" />

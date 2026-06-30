@@ -600,7 +600,7 @@ function toggleFormInfo(side: string, i: number | string) {
            Substitutions are two lines: player on above player off, arrows first. -->
       <div v-if="eventsReady && timeline.length" class="grid grid-cols-[1fr_auto_auto_auto_1fr] gap-x-1.5 gap-y-1 mt-2 pt-3 border-t text-xs items-center" style="color: var(--p-text-muted-color); border-color: var(--p-content-border-color)">
         <template v-for="(e, i) in timeline" :key="i">
-          <span class="min-w-0 text-right">
+          <span class="min-w-0 text-end">
             <template v-if="e.side === 'HOME'">
               <span v-if="e.kind === 'sub'" class="flex flex-col items-end">
                 <span><span style="color: var(--ng-success)">▲</span> {{ formatPlayerName(e.playerName) }}</span>
@@ -755,7 +755,7 @@ function toggleFormInfo(side: string, i: number | string) {
             </div>
             <div v-if="statRows.length" class="flex flex-col text-sm mb-4">
               <div v-for="r in statRows" :key="r.label" class="grid grid-cols-[1fr_auto_1fr] items-center gap-3 border-t py-1.5" style="border-color: var(--p-content-border-color)">
-                <span class="text-right tabular-nums font-medium">{{ r.home }}</span>
+                <span class="text-end tabular-nums font-medium">{{ r.home }}</span>
                 <span class="text-xs text-center min-w-32" style="color: var(--p-text-muted-color)">{{ r.label }}</span>
                 <span class="tabular-nums font-medium">{{ r.away }}</span>
               </div>
@@ -816,9 +816,9 @@ function toggleFormInfo(side: string, i: number | string) {
                     {{ r.homeGoals }}–{{ r.awayGoals }}<span v-if="r.isJoker" v-tooltip.top="t('predictions.joker')" style="color: var(--ng-star)"> ★</span><template v-if="r.baseTier"> · {{ tierLabel(r.baseTier, t) }}</template>
                   </div>
                 </div>
-                <div class="text-right shrink-0">
+                <div class="text-end shrink-0">
                   <span class="text-lg font-bold tabular-nums" :style="leagueBoardLive ? 'color: var(--ng-danger)' : ''">{{ r.points > 0 ? '+' : '' }}{{ r.points }}</span>
-                  <span class="text-xs ml-1" style="color: var(--p-text-muted-color)">{{ t('leaderboard.pts') }}</span>
+                  <span class="text-xs ms-1" style="color: var(--p-text-muted-color)">{{ t('leaderboard.pts') }}</span>
                 </div>
               </NuxtLink>
               <div v-if="leagueBoardData?.notPredicted" class="text-xs text-center pt-1" style="color: var(--p-text-muted-color)">
@@ -842,14 +842,14 @@ function toggleFormInfo(side: string, i: number | string) {
                            that tapping it reveals the competition. -->
                       <button
                         type="button"
-                        class="text-xs ml-auto text-right shrink-0 whitespace-nowrap sm:hidden underline decoration-dotted underline-offset-2"
+                        class="text-xs ms-auto text-end shrink-0 whitespace-nowrap sm:hidden underline decoration-dotted underline-offset-2"
                         style="color: var(--p-text-muted-color)"
                         :title="f.competition"
                         @click="toggleFormInfo(side, i)"
                       >{{ fmtDate(f.date) }}</button>
-                      <span class="text-xs ml-auto text-right shrink-0 hidden sm:inline" style="color: var(--p-text-muted-color)">{{ f.competition }} · {{ fmtDate(f.date) }}</span>
+                      <span class="text-xs ms-auto text-end shrink-0 hidden sm:inline" style="color: var(--p-text-muted-color)">{{ f.competition }} · {{ fmtDate(f.date) }}</span>
                     </div>
-                    <div v-if="openFormInfo === `${side}-${i}`" class="sm:hidden text-xs pl-7 -mt-1" style="color: var(--p-text-muted-color)">{{ f.competition }}</div>
+                    <div v-if="openFormInfo === `${side}-${i}`" class="sm:hidden text-xs ps-7 -mt-1" style="color: var(--p-text-muted-color)">{{ f.competition }}</div>
                   </template>
                 </div>
                 <div v-else-if="insights.form[side].length" class="flex flex-col gap-1.5">
@@ -877,7 +877,7 @@ function toggleFormInfo(side: string, i: number | string) {
                     <img v-if="flagUrl(n.opponentCode)" :src="flagUrl(n.opponentCode) || ''" class="w-4 h-4 rounded" alt="" >
                     <span class="truncate">{{ n.opponent }}</span>
                     <span v-if="n.score" class="font-medium tabular-nums">{{ n.score }}</span>
-                    <span v-if="n.result" class="text-xs ml-auto shrink-0" style="color: var(--p-text-muted-color)">{{ fmtDate(n.kickoffTime) }}</span>
+                    <span v-if="n.result" class="text-xs ms-auto shrink-0" style="color: var(--p-text-muted-color)">{{ fmtDate(n.kickoffTime) }}</span>
                   </NuxtLink>
                 </div>
                 <div v-else class="text-sm" style="color: var(--p-text-muted-color)">{{ t('match.noUpcoming') }}</div>
@@ -939,13 +939,13 @@ function toggleFormInfo(side: string, i: number | string) {
                 <div
                   v-for="(e, i) in playByPlay"
                   :key="i"
-                  class="grid grid-cols-[2.25rem_1.5rem_1fr_auto] items-baseline gap-2 border-t py-2 pl-2"
+                  class="grid grid-cols-[2.25rem_1.5rem_1fr_auto] items-baseline gap-2 border-t py-2 ps-2"
                   :class="GOAL_KINDS.has(e.kind) ? 'font-semibold' : ''"
                   :style="`border-left: 2px solid ${e.side === 'HOME' ? 'var(--p-primary-color)' : e.side === 'AWAY' ? '#71717a' : 'transparent'}; border-top-color: var(--p-content-border-color)`"
                 >
-                  <span class="tabular-nums text-xs text-right" style="color: var(--p-text-muted-color)">{{ minuteLabel(e.minute) }}</span>
+                  <span class="tabular-nums text-xs text-end" style="color: var(--p-text-muted-color)">{{ minuteLabel(e.minute) }}</span>
                   <span class="text-center leading-none"><WhistleIcon v-if="e.kind === 'foul'" /><CornerFlagIcon v-else-if="e.kind === 'corner'" /><template v-else>{{ TIMELINE_ICONS[e.kind] || '•' }}</template></span>
-                  <span :style="e.side ? '' : 'color: var(--p-text-muted-color)'"><img v-if="pbpFlag(e)" :src="pbpFlag(e) || ''" class="inline-block w-4 h-3 rounded-sm object-cover mr-1.5" style="vertical-align: -0.1em" alt="" >{{ pbpText(e) }}</span>
+                  <span :style="e.side ? '' : 'color: var(--p-text-muted-color)'"><img v-if="pbpFlag(e)" :src="pbpFlag(e) || ''" class="inline-block w-4 h-3 rounded-sm object-cover me-1.5" style="vertical-align: -0.1em" alt="" >{{ pbpText(e) }}</span>
                   <span v-if="GOAL_KINDS.has(e.kind) && e.homeScore != null" class="tabular-nums text-xs px-1.5 py-0.5 rounded" style="background: var(--p-content-border-color)">{{ e.homeScore }}–{{ e.awayScore }}</span>
                 </div>
               </div>

@@ -35,7 +35,7 @@ useHead({ title: t('roadmap.title') })
       >
         <div class="px-6 py-4 flex items-center gap-2 border-b" style="border-color: var(--p-content-border-color)">
           <Tag :severity="section.severity" rounded>
-            <i :class="section.icon" class="text-xs mr-1" />{{ t(section.key) }}
+            <i :class="section.icon" class="text-xs me-1" />{{ t(section.key) }}
           </Tag>
           <span class="text-xs" style="color: var(--p-text-muted-color)">{{ byStatus[section.status].length }}</span>
         </div>

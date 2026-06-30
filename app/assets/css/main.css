@@ -134,3 +134,19 @@ html:not(.app-dark) .ng-card:hover {
 .p-accordioncontent-content > :first-child {
   margin-top: 0;
 }
+
+/* RTL: mirror directional navigation glyphs (back/forward arrows, chevrons,
+   carets) so a "back" arrow points the right way in Arabic. The icons are font
+   glyphs, so a horizontal flip is the cleanest mirror; inline-block makes the
+   transform apply. */
+[dir='rtl'] .pi-arrow-left,
+[dir='rtl'] .pi-arrow-right,
+[dir='rtl'] .pi-chevron-left,
+[dir='rtl'] .pi-chevron-right,
+[dir='rtl'] .pi-angle-left,
+[dir='rtl'] .pi-angle-right,
+[dir='rtl'] .pi-caret-left,
+[dir='rtl'] .pi-caret-right {
+  display: inline-block;
+  transform: scaleX(-1);
+}

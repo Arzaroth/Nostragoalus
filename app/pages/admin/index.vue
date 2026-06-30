@@ -364,7 +364,7 @@ const counts = computed<Record<string, { total: number; loading: boolean }>>(() 
           <li v-for="item in nav" :key="item.key">
             <button
               type="button"
-              class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-left transition-colors"
+              class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-start transition-colors"
               :class="active === item.key ? 'font-semibold' : 'opacity-80 hover:opacity-100'"
               :style="active === item.key
                 ? 'background: var(--p-highlight-background); color: var(--p-highlight-color)'

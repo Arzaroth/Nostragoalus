@@ -46,7 +46,7 @@ function rarityTip(p: { crowdShare?: number | string | null }) {
       <!-- grid with symmetric 1fr sides keeps the score block dead-center regardless of name lengths -->
       <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
         <div class="flex items-center gap-2 min-w-0 justify-end">
-          <span class="truncate font-medium text-right" :title="p.homeTeam">{{ p.homeTeam }}</span>
+          <span class="truncate font-medium text-end" :title="p.homeTeam">{{ p.homeTeam }}</span>
           <img v-if="flagUrl(p.homeTeamCode)" :src="flagUrl(p.homeTeamCode) || ''" class="w-6 h-6 rounded object-cover" alt="" >
         </div>
         <div class="text-center shrink-0 px-2">

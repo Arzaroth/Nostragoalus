@@ -109,7 +109,7 @@ function worthLabel(rank: number | null, points: number) {
                   <span class="flex items-center gap-2 w-full">
                     <img v-if="flagUrl(option.code)" :src="flagUrl(option.code) || ''" class="w-5 h-5 rounded object-cover" alt="" >
                     {{ option.name }}
-                    <span class="ml-auto text-xs whitespace-nowrap" style="color: var(--p-text-muted-color)">
+                    <span class="ms-auto text-xs whitespace-nowrap" style="color: var(--p-text-muted-color)">
                       {{ worthLabel(option.fifaRank, prospPts(option.potentialPoints)) }}
                     </span>
                   </span>
@@ -156,7 +156,7 @@ function worthLabel(rank: number | null, points: number) {
                 <span class="flex items-center gap-2 w-full">
                   <img v-if="flagUrl(option.code)" :src="flagUrl(option.code) || ''" class="w-5 h-5 rounded object-cover" alt="" >
                   {{ option.name }}
-                  <span class="ml-auto text-xs whitespace-nowrap" style="color: var(--p-text-muted-color)">
+                  <span class="ms-auto text-xs whitespace-nowrap" style="color: var(--p-text-muted-color)">
                     {{ worthLabel(option.fifaRank, option.potentialPoints) }}
                   </span>
                 </span>

@@ -127,13 +127,13 @@ function resultTooltip(r: CronRow): string {
     <section class="ng-card rounded-2xl border overflow-x-auto" style="background: var(--p-content-background)">
       <table class="w-full text-sm">
         <thead>
-          <tr class="text-left" style="color: var(--p-text-muted-color); border-bottom: 1px solid var(--p-content-border-color)">
+          <tr class="text-start" style="color: var(--p-text-muted-color); border-bottom: 1px solid var(--p-content-border-color)">
             <th class="p-3 font-medium w-10" />
             <th class="p-3 font-medium">{{ t('cron.col.name') }}</th>
             <th class="p-3 font-medium">{{ t('cron.col.schedule') }}</th>
             <th class="p-3 font-medium">{{ t('cron.col.next') }}</th>
             <th class="p-3 font-medium">{{ t('cron.col.previous') }}</th>
-            <th class="p-3 font-medium text-right">{{ t('cron.col.executions') }}</th>
+            <th class="p-3 font-medium text-end">{{ t('cron.col.executions') }}</th>
             <th class="p-3 font-medium text-center">{{ t('cron.col.result') }}</th>
           </tr>
         </thead>
@@ -158,7 +158,7 @@ function resultTooltip(r: CronRow): string {
             <td class="p-3"><code v-if="r.schedule" class="text-xs">{{ r.schedule }}</code><span v-else style="color: var(--p-text-muted-color)">{{ t('cron.manual') }}</span></td>
             <td class="p-3"><span v-if="r.nextRunAt" v-tooltip.top="absolute(r.nextRunAt)" class="cursor-help">{{ relative(r.nextRunAt) }}</span><span v-else style="color: var(--p-text-muted-color)">-</span></td>
             <td class="p-3"><span v-if="r.previousRunAt" v-tooltip.top="absolute(r.previousRunAt)" class="cursor-help">{{ relative(r.previousRunAt) }}</span><span v-else style="color: var(--p-text-muted-color)">-</span></td>
-            <td class="p-3 text-right tabular-nums">{{ r.executions }}</td>
+            <td class="p-3 text-end tabular-nums">{{ r.executions }}</td>
             <td class="p-3 text-center">
               <button
                 v-tooltip.left="resultTooltip(r)"

@@ -73,15 +73,15 @@ function medal(rank: number) {
           <div class="flex-1 min-w-0">
             <div class="font-semibold truncate">
               {{ r.displayName }}
-              <span v-if="r.userId === meId" class="text-xs font-normal ml-1" style="color: var(--p-primary-color)">{{ t('leaderboard.you') }}</span>
+              <span v-if="r.userId === meId" class="text-xs font-normal ms-1" style="color: var(--p-primary-color)">{{ t('leaderboard.you') }}</span>
             </div>
             <div class="text-xs" style="color: var(--p-text-muted-color)">
               {{ r.exactCount }} {{ t('leaderboard.exact') }} · {{ r.outcomeCount }} {{ t('leaderboard.correct') }}<template v-if="r.championPoints"> · 👑 +{{ r.championPoints }}</template>
             </div>
           </div>
-          <div class="text-right shrink-0">
+          <div class="text-end shrink-0">
             <span class="text-xl font-bold tabular-nums">{{ r.totalPoints }}</span>
-            <span class="text-xs ml-1" style="color: var(--p-text-muted-color)">{{ t('leaderboard.pts') }}</span>
+            <span class="text-xs ms-1" style="color: var(--p-text-muted-color)">{{ t('leaderboard.pts') }}</span>
           </div>
         </NuxtLink>
         <div

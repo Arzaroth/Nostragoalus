@@ -41,7 +41,7 @@ function pick(fn: () => void) {
 }
 
 const itemClass =
-  'px-3 py-2 text-sm text-left flex items-center gap-2 transition hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-50'
+  'px-3 py-2 text-sm text-start flex items-center gap-2 transition hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-50'
 </script>
 
 <template>

@@ -455,7 +455,7 @@ watch(searchOpen, () => nextTick(updateListHeight))
         <i :class="activeBuckets.includes(b) ? 'pi pi-check-circle' : 'pi pi-circle'" style="font-size: 0.7rem" />
         {{ t(`matches.filterStatus.${b}`) }}
       </button>
-      <div class="flex items-center gap-2 ml-auto min-h-[33px]">
+      <div class="flex items-center gap-2 ms-auto min-h-[33px]">
         <MultiSelect
           v-if="searchOpen"
           ref="countrySelect"
@@ -494,7 +494,7 @@ watch(searchOpen, () => nextTick(updateListHeight))
         v-else
         ref="listEl"
         class="grid gap-6 md:grid-cols-2"
-        :class="contained ? 'overflow-y-auto overscroll-contain pr-1' : ''"
+        :class="contained ? 'overflow-y-auto overscroll-contain pe-1' : ''"
         :style="{ maxHeight: listMaxH }"
       >
         <section
@@ -530,7 +530,7 @@ watch(searchOpen, () => nextTick(updateListHeight))
     <div v-else-if="!matches || !matches.length" class="opacity-60">{{ t('matches.empty') }}</div>
     <div v-else-if="!grouped.length" class="opacity-60">{{ t('matches.noResults') }}</div>
 
-    <div v-else ref="listEl" class="flex flex-col gap-8" :class="contained ? 'overflow-y-auto overscroll-contain pr-1' : ''" :style="{ maxHeight: listMaxH }">
+    <div v-else ref="listEl" class="flex flex-col gap-8" :class="contained ? 'overflow-y-auto overscroll-contain pe-1' : ''" :style="{ maxHeight: listMaxH }">
       <section v-for="g in grouped" :key="g.id">
         <button
           type="button"
@@ -567,7 +567,7 @@ watch(searchOpen, () => nextTick(updateListHeight))
                 </div>
               </div>
               <div class="flex items-center gap-2 min-w-0 justify-end">
-                <span class="truncate font-medium text-right group-hover:underline" :title="m.awayTeam">{{ m.awayTeam }}</span>
+                <span class="truncate font-medium text-end group-hover:underline" :title="m.awayTeam">{{ m.awayTeam }}</span>
                 <img v-if="flagUrl(m.awayTeamCode)" :src="flagUrl(m.awayTeamCode) || ''" class="w-6 h-6 rounded object-cover" alt="" >
               </div>
             </NuxtLink>

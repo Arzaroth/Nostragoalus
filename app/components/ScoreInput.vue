@@ -97,7 +97,7 @@ function onAdvanceKey(e: KeyboardEvent) {
     <InputNumber v-model="home" :min="0" :max="99" :disabled="disabled" placeholder="–" input-class="ng-score-input" :input-style="{ width: '2.6rem', textAlign: 'center' }" @input="home = (typeof $event.value === 'number' ? $event.value : null); scheduleCommit()" @focus="editing = true" @blur="editing = false; commit()" />
     <span class="font-bold opacity-60">:</span>
     <InputNumber v-model="away" :min="0" :max="99" :disabled="disabled" placeholder="–" input-class="ng-score-input" :input-style="{ width: '2.6rem', textAlign: 'center' }" @input="away = (typeof $event.value === 'number' ? $event.value : null); scheduleCommit()" @focus="editing = true" @blur="editing = false; commit()" />
-    <span class="absolute left-full ml-1.5 top-1/2 -translate-y-1/2 leading-none" style="color: var(--p-primary-color)">
+    <span class="absolute left-full ms-1.5 top-1/2 -translate-y-1/2 leading-none" style="color: var(--p-primary-color)">
       <i v-if="saved" class="pi pi-check" style="font-size: 0.72rem" />
     </span>
     <AppConfirmDialog

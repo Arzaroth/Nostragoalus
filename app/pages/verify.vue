@@ -51,10 +51,10 @@ const recent = computed<LedgerEntry[]>(() => (data.value ? [...data.value.entrie
       <template v-else-if="data">
         <div class="flex items-center gap-2 flex-wrap">
           <Tag v-if="data.result.ok" severity="success" rounded>
-            <i class="pi pi-shield text-xs mr-1" />{{ t('verify.ok') }}
+            <i class="pi pi-shield text-xs me-1" />{{ t('verify.ok') }}
           </Tag>
           <Tag v-else severity="danger" rounded>
-            <i class="pi pi-exclamation-triangle text-xs mr-1" />{{ t('verify.tampered') }}
+            <i class="pi pi-exclamation-triangle text-xs me-1" />{{ t('verify.tampered') }}
           </Tag>
           <span class="text-xs" style="color: var(--p-text-muted-color)">
             {{ t('verify.counts', { total: data.result.count, opened: data.openedCount }) }}
@@ -76,7 +76,7 @@ const recent = computed<LedgerEntry[]>(() => (data.value ? [...data.value.entrie
       <div class="flex items-center gap-2 flex-wrap">
         <Tag :severity="witnessSeverity" rounded>
           <i
-            class="text-xs mr-1"
+            class="text-xs me-1"
             :class="witnessSeverity === 'danger' ? 'pi pi-exclamation-triangle' : witnessSeverity === 'success' ? 'pi pi-verified' : 'pi pi-eye'"
           />{{ t(`verify.witness.${witness.status}`) }}
         </Tag>
@@ -106,7 +106,7 @@ const recent = computed<LedgerEntry[]>(() => (data.value ? [...data.value.entrie
         <span class="flex-1 truncate font-mono" style="color: var(--p-text-muted-color)">{{ short(e.commitment) }}</span>
         <Tag v-if="e.opened" severity="secondary" rounded>{{ e.homeGoals }} - {{ e.awayGoals }}</Tag>
         <Tag v-else severity="contrast" rounded>
-          <i class="pi pi-lock text-xs mr-1" />{{ t('verify.sealed') }}
+          <i class="pi pi-lock text-xs me-1" />{{ t('verify.sealed') }}
         </Tag>
       </div>
     </section>

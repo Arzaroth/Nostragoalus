@@ -190,14 +190,14 @@ function fmt(d: string) {
                     :style="row.code === selected.code ? 'background: color-mix(in srgb, var(--p-primary-color) 14%, transparent)' : ''"
                     @click="row.code && row.code !== selected.code && selectByCode(row.code)"
                   >
-                    <td class="py-0.5 pl-1 w-4" style="color: var(--p-text-muted-color)">{{ i + 1 }}</td>
+                    <td class="py-0.5 ps-1 w-4" style="color: var(--p-text-muted-color)">{{ i + 1 }}</td>
                     <td class="py-0.5">
                       <span class="flex items-center gap-1">
                         <img v-if="flagUrl(row.code)" :src="flagUrl(row.code) || ''" class="w-3.5 h-3.5 rounded" alt="" >{{ row.code || row.name }}
                       </span>
                     </td>
-                    <td class="py-0.5 text-right tabular-nums" style="color: var(--p-text-muted-color)">{{ row.played }}</td>
-                    <td class="py-0.5 pr-1 text-right tabular-nums font-bold">{{ row.points }}</td>
+                    <td class="py-0.5 text-end tabular-nums" style="color: var(--p-text-muted-color)">{{ row.played }}</td>
+                    <td class="py-0.5 pe-1 text-end tabular-nums font-bold">{{ row.points }}</td>
                   </tr>
                 </tbody>
               </table>
