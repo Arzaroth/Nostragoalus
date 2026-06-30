@@ -18,6 +18,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 - **Cross-league chat inbox**: the chat dock's "rooms with activity" list now gathers unread rooms from every league you belong to, not just the one you are viewing, and it survives a page reload (it no longer resets to empty when you refresh). Picking a room jumps straight to it, switching league if needed.
 - **Mention alerts**: being @mentioned in any league chat now sends you a web push and a header-bell notification, regardless of which league or match it was in, with a link straight to that room. Toggle it under Preferences, in the push notifications list.
 - **Full timestamp on hover**: hovering a chat message's send time now reveals its full date and time.
+- **Live knockout bracket**: the bracket now updates as matches play - scores and penalty shootouts tick in place, a LIVE marker shows on in-progress ties, and winners advance into the next round without a reload.
 
 ### Fixed
 - **Live penalty shootouts**: the shootout score under a match now ticks up as the kicks are taken, on both the match page and the fixtures list, instead of staying blank or frozen until you reloaded. The regular-time score above it is unchanged.

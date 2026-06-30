@@ -17,6 +17,7 @@ export function resultHashOf(
 // matches produce one (a brand-new row has no previous state to compare).
 export interface MatchTransition {
   matchId: string
+  stage: string
   homeTeam: string
   awayTeam: string
   prevStatus: string
@@ -124,6 +125,7 @@ export async function upsertMatches(
       result.changedMatchIds.push(prev.id)
       result.transitions.push({
         matchId: prev.id,
+        stage: m.stage,
         homeTeam: m.homeTeam.name,
         awayTeam: m.awayTeam.name,
         prevStatus: prev.status,
