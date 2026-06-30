@@ -1370,7 +1370,10 @@
     "nudgeTitle": "QInlIj yIrInmoH",
     "nudgeMissing": "{n} ngab",
     "nudgeNeedsExact": "{n} mI' Hutlh",
-    "nudgeNeedsStake": "{n} nID Hutlh"
+    "nudgeNeedsStake": "{n} nID Hutlh",
+    "reasonPick": "QInHutlh",
+    "reasonScore": "mI' Hutlh",
+    "reasonStake": "nID Hutlh"
   },
   "invites": {
     "title": "rIymey muvmeH",

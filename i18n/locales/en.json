@@ -1374,7 +1374,10 @@
     "nudgeTitle": "Finish your picks",
     "nudgeMissing": "{n} missing",
     "nudgeNeedsExact": "{n} need a score",
-    "nudgeNeedsStake": "{n} need a stake"
+    "nudgeNeedsStake": "{n} need a stake",
+    "reasonPick": "needs a pick",
+    "reasonScore": "needs a score",
+    "reasonStake": "needs a stake"
   },
   "invites": {
     "title": "Invite links",
