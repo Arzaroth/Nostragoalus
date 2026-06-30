@@ -30,7 +30,14 @@ const { data, refresh: refreshMatch } = await useFetch<{
     stage: string
   }
   myPrediction: { homeGoals: number; awayGoals: number; isJoker: boolean; totalPoints: number | null; baseTier: string | null } | null
-  odds: { home: number; draw: number; away: number; fetchedAt: string } | null
+  odds: {
+    home: number
+    draw: number
+    away: number
+    fetchedAt: string
+    initial: { home: number; draw: number; away: number } | null
+    bookmakers: { key: string; title: string; home: number; draw: number; away: number }[] | null
+  } | null
   isLocked: boolean
 }>(`/api/matches/${id.value}`)
 // lazy: the page navigates immediately on the core match fetch; insight/stat

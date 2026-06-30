@@ -217,7 +217,7 @@
     "fluttershy": "Fluttershy"
   },
   "odds": {
-    "title": "Cotes des bookmakers — 1 : victoire domicile, X : nul, 2 : victoire extérieur. Cotes décimales ; plus le nombre est bas, plus le résultat est probable.",
+    "title": "Cotes des bookmakers - 1 : victoire domicile, X : nul, 2 : victoire extérieur. Cotes décimales ; plus le nombre est bas, plus le résultat est probable.",
     "home": "Cote victoire domicile",
     "draw": "Cote match nul",
     "away": "Cote victoire extérieur",

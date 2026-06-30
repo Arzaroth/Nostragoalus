@@ -8,6 +8,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 ### Ajouté
 - **Ne manquez plus un pronostic** : la page des matchs indique désormais combien de matchs à venir attendent encore un score avant le prochain verrouillage, avec un bouton « Aller au premier » qui défile droit vers le match non pronostiqué le plus proche.
 - **Repérer les scores aberrants** : saisir un score extravagant (8 buts ou plus pour une équipe, ou 12 ou plus au total) vous demande désormais de confirmer avant l'enregistrement, pour qu'une faute de frappe comme 1-33 ne soit pas verrouillée par erreur. Vous pouvez toujours confirmer volontairement.
+- **Mouvement des cotes et détail par bookmaker** : le petit affichage des cotes montre désormais comment chaque cote a évolué depuis son ouverture - un repère par issue selon qu'elle a raccourci, dérivé ou est restée inchangée, avec l'ampleur du mouvement - et vous pouvez le toucher pour déplier les cotes d'ouverture et le 1X2 par bookmaker (quand le fournisseur les communique). Cotes décimales partout, comme avant.
 
 ## [2.4.0] - 2026-06-30
 

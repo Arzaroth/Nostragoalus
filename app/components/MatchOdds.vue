@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { OddsTriple, StoredBookmakerOdds } from '#shared/types/odds'
-import { oddsMovement, type OddsDirection } from '../utils/odds-movement'
+import { oddsMovement, ODDS_DECIMALS, type OddsDirection } from '../utils/odds-movement'
 
 const { t } = useI18n()
 const props = defineProps<{
@@ -13,7 +13,17 @@ const props = defineProps<{
     | undefined
 }>()
 
-const fmt = (v: number) => v.toFixed(2)
+// Guard against a malformed provider jsonb (a future multi-book feed) handing us
+// a non-numeric price: render a dash rather than throwing on .toFixed and taking
+// the whole prediction row down.
+const fmt = (v: number) => (Number.isFinite(v) ? v.toFixed(ODDS_DECIMALS) : '–')
+
+// The plain 1X2 row shared by the opening and per-bookmaker breakdown lines.
+const triple = (o: { home: number; draw: number; away: number }) => [
+  { code: '1', value: o.home },
+  { code: 'X', value: o.draw },
+  { code: '2', value: o.away },
+]
 
 // Current 1X2 paired with its opening-vs-current drift, for the inline row.
 const outcomes = computed(() => {
@@ -37,8 +47,8 @@ const expanded = ref(false)
 const GLYPH: Record<OddsDirection, string> = { in: '▾', out: '▴', flat: '' }
 
 function driftLabel(direction: OddsDirection, delta: number) {
-  if (direction === 'in') return t('odds.shortened', { delta: Math.abs(delta).toFixed(2) })
-  if (direction === 'out') return t('odds.drifted', { delta: Math.abs(delta).toFixed(2) })
+  if (direction === 'in') return t('odds.shortened', { delta: Math.abs(delta).toFixed(ODDS_DECIMALS) })
+  if (direction === 'out') return t('odds.drifted', { delta: Math.abs(delta).toFixed(ODDS_DECIMALS) })
   return t('odds.unchanged')
 }
 
@@ -84,22 +94,20 @@ function driftColor(direction: OddsDirection) {
     <div v-if="expanded && hasBreakdown" class="mt-1 flex flex-col gap-1">
       <div v-if="odds.initial" class="flex items-center gap-2">
         <span class="font-semibold uppercase tracking-wide" style="opacity: 0.7">{{ t('odds.opening') }}</span>
-        <span><span class="font-semibold">1</span> {{ fmt(odds.initial.home) }}</span>
-        <span aria-hidden="true">·</span>
-        <span><span class="font-semibold">X</span> {{ fmt(odds.initial.draw) }}</span>
-        <span aria-hidden="true">·</span>
-        <span><span class="font-semibold">2</span> {{ fmt(odds.initial.away) }}</span>
+        <template v-for="(c, i) in triple(odds.initial)" :key="c.code">
+          <span v-if="i > 0" aria-hidden="true">·</span>
+          <span><span class="font-semibold">{{ c.code }}</span> {{ fmt(c.value) }}</span>
+        </template>
       </div>
 
       <div v-if="odds.bookmakers && odds.bookmakers.length" class="flex flex-col gap-0.5">
         <span class="font-semibold uppercase tracking-wide" style="opacity: 0.7">{{ t('odds.bookmakers') }}</span>
         <div v-for="b in odds.bookmakers" :key="b.key" class="flex items-center gap-2">
           <span class="truncate" style="min-width: 5rem">{{ b.title }}</span>
-          <span><span class="font-semibold">1</span> {{ fmt(b.home) }}</span>
-          <span aria-hidden="true">·</span>
-          <span><span class="font-semibold">X</span> {{ fmt(b.draw) }}</span>
-          <span aria-hidden="true">·</span>
-          <span><span class="font-semibold">2</span> {{ fmt(b.away) }}</span>
+          <template v-for="(c, i) in triple(b)" :key="c.code">
+            <span v-if="i > 0" aria-hidden="true">·</span>
+            <span><span class="font-semibold">{{ c.code }}</span> {{ fmt(c.value) }}</span>
+          </template>
         </div>
       </div>
     </div>

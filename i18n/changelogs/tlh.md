@@ -8,6 +8,7 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 ### chelpu'
 - **wIv lIjHa'be'**: DaH may'mey tetlh 'angtaH 'ar may'mey qaStaHvIS wIvbe'lu'bogh, So'choHpa' veb. "wa'DIch yIghoS" button tlhej, wIvbe'lu'bogh may' QIb Daq Sup.
 - **mI' Doch yISam**: mI' tIn law' (wa' ghom 8 latlh, qoj Hoch 12 latlh) 'angDI', polpa' yIqIm 'e' poQlu', vaj 1-33 rur Qagh wIvbe'lu' chu'be'. DaneHchugh, yIchoq.
+- **cha' choH je bookmaker tlhegh**: DaH cha' mach 'angwI' 'angtaH chay' Hoch beq choHpu' poSchoHDI' - Doch ngoq per: runchoHpu', tInchoHpu', qoj choHbe', choH tIq je - 'ej DaqIp'a' poSmoHlu' poS cha' je bookmaker 1X2 (provider nobDI'). decimal cha' Hoch, rurtaH.
 
 ## [2.4.0] - 2026-06-30
 

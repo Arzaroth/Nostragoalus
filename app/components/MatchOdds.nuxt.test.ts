@@ -68,4 +68,48 @@ describe('MatchOdds', () => {
     expect(text).toContain('1.83')
     wrapper.unmount()
   })
+
+  it('expands the per-bookmaker breakdown even when there is no opening price', async () => {
+    const wrapper = await mountSuspended(MatchOdds, {
+      props: {
+        odds: {
+          home: 1.8,
+          draw: 3.6,
+          away: 4.2,
+          initial: null,
+          bookmakers: [{ key: 'bet365', title: 'bet365', home: 1.81, draw: 3.62, away: 4.15 }],
+        },
+      },
+    })
+    const toggle = wrapper.find('button')
+    expect(toggle.exists()).toBe(true)
+    await toggle.trigger('click')
+    const text = wrapper.text().replace(/\s+/g, ' ')
+    expect(text).toContain('bet365')
+    expect(text).toContain('1.81')
+    // No opening price was supplied, so no Opening row.
+    expect(text).not.toContain('Opening')
+    wrapper.unmount()
+  })
+
+  it('renders a dash instead of crashing on a non-numeric bookmaker price', async () => {
+    const wrapper = await mountSuspended(MatchOdds, {
+      props: {
+        odds: {
+          home: 1.8,
+          draw: 3.6,
+          away: 4.2,
+          initial: null,
+          // A malformed/changed provider feed delivers a price as a string.
+          bookmakers: [{ key: 'x', title: 'BadFeed', home: 'oops' as unknown as number, draw: 3.6, away: 4.2 }],
+        },
+      },
+    })
+    await wrapper.find('button').trigger('click')
+    const text = wrapper.text().replace(/\s+/g, ' ')
+    expect(text).toContain('BadFeed')
+    expect(text).toContain('–')
+    expect(text).toContain('3.60')
+    wrapper.unmount()
+  })
 })

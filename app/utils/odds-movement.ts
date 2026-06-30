@@ -20,10 +20,20 @@ export interface OddsMovement {
 
 const FLAT: OutcomeMovement = { direction: 'flat', delta: 0 }
 
-// Round to the displayed precision so the arrow can never contradict the number:
-// a sub-0.005 wobble reads as flat, exactly as the two-decimal price does.
+// The decimals the odds UI prints; movement is judged at this precision (and the
+// component formats with the same constant) so the arrow can never contradict
+// the number it sits next to.
+export const ODDS_DECIMALS = 2
+const roundToDisplay = (v: number) => {
+  const f = 10 ** ODDS_DECIMALS
+  return Math.round(v * f) / f
+}
+
+// Compare the prices as they are shown (each rounded to the displayed precision),
+// then re-round the difference to shed float noise. Two prices that print the
+// same read flat; a marker only appears when the printed numbers actually differ.
 function outcomeMovement(initial: number, current: number): OutcomeMovement {
-  const delta = Math.round((current - initial) * 100) / 100
+  const delta = roundToDisplay(roundToDisplay(current) - roundToDisplay(initial))
   if (delta < 0) return { direction: 'in', delta }
   if (delta > 0) return { direction: 'out', delta }
   return { ...FLAT }

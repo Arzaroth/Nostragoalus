@@ -63,7 +63,7 @@ export async function latestOddsByMatch(db: AppDatabase, matchIds: string[]): Pr
     })
     .from(oddsSnapshot)
     .where(inArray(oddsSnapshot.matchId, matchIds))
-    .orderBy(oddsSnapshot.matchId, desc(oddsSnapshot.fetchedAt))
+    .orderBy(oddsSnapshot.matchId, desc(oddsSnapshot.fetchedAt), desc(oddsSnapshot.id))
 
   const out: Record<string, MatchOddsView> = {}
   for (const row of rows) {

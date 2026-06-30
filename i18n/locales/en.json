@@ -217,7 +217,7 @@
     "fluttershy": "Fluttershy"
   },
   "odds": {
-    "title": "Bookmaker odds — 1: home win, X: draw, 2: away win. Decimal odds; the lower the number, the more likely the outcome.",
+    "title": "Bookmaker odds - 1: home win, X: draw, 2: away win. Decimal odds; the lower the number, the more likely the outcome.",
     "home": "Home win odds",
     "draw": "Draw odds",
     "away": "Away win odds",
