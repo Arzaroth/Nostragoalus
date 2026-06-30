@@ -297,6 +297,15 @@ export const prediction = pgTable(
       .references(() => round.id),
     homeGoals: integer('home_goals').notNull(),
     awayGoals: integer('away_goals').notNull(),
+    // true = the pick was entered as an outcome only (W/D/L quick-pick stored as
+    // a canonical scoreline). Such a pick satisfies EASY/HARDCORE leagues but is
+    // INCOMPLETE for NORMAL/HARD, which want a real exact score (strict
+    // completeness - see server/utils/leagues/completeness.ts).
+    isOutcomeOnly: boolean('is_outcome_only').notNull().default(false),
+    // Confidence stake for HARD leagues; null until the user assigns one. Shared
+    // across all the user's HARD leagues (base pick); a fixed per-round budget
+    // keeps it consistent.
+    wager: integer('wager'),
     isJoker: boolean('is_joker').notNull().default(false),
     lockedAt: timestamp('locked_at', { withTimezone: true }),
     basePoints: integer('base_points'),
@@ -708,6 +717,13 @@ export const leagueRewardCriterionEnum = pgEnum('league_reward_criterion', [
   'TEAM_SPECIALIST', // most EXACT scorelines on the league's featured team (multi-winner)
 ])
 
+// How a league scores. NORMAL = exact-score tiers (default, the original game).
+// EASY/HARDCORE read only the outcome of a pick; HARD layers a confidence wager.
+// Set at creation, swappable only while the competition has not kicked off
+// (assertCompetitionNotRunning). Modes are a read-time scoring/display lens over
+// the same base predictions - see server/utils/leagues/modes.ts.
+export const leagueModeEnum = pgEnum('league_mode', ['NORMAL', 'EASY', 'HARD', 'HARDCORE'])
+
 export const league = pgTable(
   'league',
   {
@@ -717,6 +733,11 @@ export const league = pgTable(
       .references(() => competition.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     visibility: leagueVisibilityEnum('visibility').notNull().default('PRIVATE'),
+    mode: leagueModeEnum('mode').notNull().default('NORMAL'),
+    // HARDCORE only: how many wrong outcomes a member may survive before
+    // elimination. Owner-set at creation, immutable once the competition runs.
+    // Null for every other mode.
+    lives: integer('lives'),
     joinCode: text('join_code').notNull(),
     // Owner/moderator-authored league blurb (intro, rules, ...). Markdown source;
     // rendered client-side through marked + isomorphic-dompurify. Null = none.
@@ -781,6 +802,10 @@ export const leagueMember = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
     role: leagueRoleEnum('role').notNull().default('MEMBER'),
+    // true = this league mirrors the member's base predictions (pick once,
+    // reused everywhere). false = the member keeps league-specific overrides
+    // (leaguePrediction), seeded from their effective picks when they switch.
+    picksSynced: boolean('picks_synced').notNull().default(true),
     joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -791,6 +816,54 @@ export const leagueMember = pgTable(
     uniqueIndex('league_member_one_owner_uq').on(t.leagueId).where(sql`${t.role} = 'OWNER'`),
   ],
 )
+
+// Per-league prediction override. Absent = the member's base prediction is used
+// (picksSynced). Present = this league sees a different pick, letting a player
+// play one league safe and another for the upset. Carries the same pick inputs
+// as the base row (no scored columns - moded leagues re-score at read time).
+export const leaguePrediction = pgTable(
+  'league_prediction',
+  {
+    id: pk(),
+    leagueId: text('league_id')
+      .notNull()
+      .references(() => league.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    matchId: text('match_id')
+      .notNull()
+      .references(() => match.id, { onDelete: 'cascade' }),
+    roundId: text('round_id')
+      .notNull()
+      .references(() => round.id),
+    homeGoals: integer('home_goals').notNull(),
+    awayGoals: integer('away_goals').notNull(),
+    isOutcomeOnly: boolean('is_outcome_only').notNull().default(false),
+    wager: integer('wager'),
+    isJoker: boolean('is_joker').notNull().default(false),
+    lockedAt: timestamp('locked_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [
+    uniqueIndex('league_prediction_league_user_match_uq').on(t.leagueId, t.userId, t.matchId),
+    uniqueIndex('league_prediction_league_user_round_joker_uq')
+      .on(t.leagueId, t.userId, t.roundId)
+      .where(sql`${t.isJoker} = true`),
+    index('league_prediction_match_idx').on(t.matchId),
+    index('league_prediction_league_user_idx').on(t.leagueId, t.userId),
+  ],
+)
+
+export const leaguePredictionRelations = relations(leaguePrediction, ({ one }) => ({
+  league: one(league, { fields: [leaguePrediction.leagueId], references: [league.id] }),
+  user: one(user, { fields: [leaguePrediction.userId], references: [user.id] }),
+  match: one(match, { fields: [leaguePrediction.matchId], references: [match.id] }),
+}))
 
 // Shareable join links, minted by owners/moderators. Unlike the join code
 // (a guessable short secret), tokens are 96-bit random and individually
@@ -866,6 +939,7 @@ export const leagueLeaderboardRank = pgTable(
 export const leagueRelations = relations(league, ({ one, many }) => ({
   competition: one(competition, { fields: [league.competitionId], references: [competition.id] }),
   members: many(leagueMember),
+  predictions: many(leaguePrediction),
 }))
 
 export const leagueMemberRelations = relations(leagueMember, ({ one }) => ({
