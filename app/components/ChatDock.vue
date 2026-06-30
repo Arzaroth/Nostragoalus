@@ -199,7 +199,7 @@ async function openRoom(r: ChatUnreadRoomDTO) {
         <span v-else class="text-sm font-semibold">{{ t('chat.dock.title') }}</span>
 
         <!-- Rooms with activity: jump to whichever room has unread. -->
-        <div class="relative ml-auto">
+        <div class="relative ms-auto">
           <button
             type="button"
             class="relative opacity-70 hover:opacity-100"
@@ -222,7 +222,7 @@ async function openRoom(r: ChatUnreadRoomDTO) {
               v-for="r in activity.rooms.value"
               :key="`${r.leagueId}:${r.roomKey}`"
               type="button"
-              class="w-full flex items-center gap-2 px-3 py-1.5 hover:opacity-100 opacity-90 text-left"
+              class="w-full flex items-center gap-2 px-3 py-1.5 hover:opacity-100 opacity-90 text-start"
               @click="openRoom(r)"
             >
               <i :class="r.matchId ? 'pi pi-flag' : 'pi pi-hashtag'" class="text-xs shrink-0" style="color: var(--p-primary-color)" />

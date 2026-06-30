@@ -137,7 +137,7 @@ function dismissCreatedKey() {
       <div v-else-if="!keys || !keys.length" class="text-sm" style="color: var(--p-text-muted-color)">{{ t('admin.apiKeys.none') }}</div>
       <table v-else class="w-full text-sm">
         <thead>
-          <tr style="color: var(--p-text-muted-color)" class="text-left">
+          <tr style="color: var(--p-text-muted-color)" class="text-start">
             <th class="py-1">{{ t('admin.apiKeys.colName') }}</th>
             <th>{{ t('admin.apiKeys.colOwner') }}</th>
             <th>{{ t('admin.apiKeys.colScopes') }}</th>
@@ -155,7 +155,7 @@ function dismissCreatedKey() {
             <td><code class="text-xs">{{ k.start ? `${k.start}…` : '-' }}</code></td>
             <td>{{ fmtDate(k.expiresAt) }}</td>
             <td>{{ fmtDate(k.lastRequest) }}</td>
-            <td class="text-right">
+            <td class="text-end">
               <button type="button" class="p-1 rounded hover:opacity-70" :aria-label="t('admin.apiKeys.revoke')" @click="revokeMutation.mutate(k.id)">
                 <i class="pi pi-trash" style="color: var(--ng-danger)" />
               </button>

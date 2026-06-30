@@ -38,8 +38,8 @@ const ranked = computed(() => {
   <table class="w-full text-sm">
     <thead>
       <tr style="color: var(--p-text-muted-color)">
-        <th class="py-1 text-left">#</th>
-        <th class="text-left">{{ t('stats.player') }}</th>
+        <th class="py-1 text-start">#</th>
+        <th class="text-start">{{ t('stats.player') }}</th>
         <th class="text-center">{{ metric === 'goals' ? '⚽' : '👟' }}</th>
       </tr>
     </thead>
@@ -53,8 +53,8 @@ const ranked = computed(() => {
         class="border-t"
         style="border-color: var(--p-content-border-color)"
       >
-        <td class="py-2 text-left tabular-nums" style="color: var(--p-text-muted-color)">{{ e.rank }}</td>
-        <td class="text-left">
+        <td class="py-2 text-start tabular-nums" style="color: var(--p-text-muted-color)">{{ e.rank }}</td>
+        <td class="text-start">
           <span class="flex items-center gap-2">
             <img v-if="e.flag" :src="e.flag || ''" class="w-5 h-5 rounded" alt="" >
             <span class="truncate">{{ formatPlayerName(e.row.playerName) }}</span>

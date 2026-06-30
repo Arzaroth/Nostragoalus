@@ -195,7 +195,7 @@ const renderInline = (md: string): string =>
           </div>
           <div v-for="s in v.sections" :key="s.title" class="mb-2">
             <div class="text-xs uppercase tracking-wider font-semibold mb-1" style="color: var(--p-text-muted-color)">{{ s.title }}</div>
-            <ul class="text-sm flex flex-col gap-1 list-disc pl-5 [&_code]:bg-[var(--p-content-border-color)] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-[0.85em]">
+            <ul class="text-sm flex flex-col gap-1 list-disc ps-5 [&_code]:bg-[var(--p-content-border-color)] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-[0.85em]">
               <li v-for="(item, i) in s.items" :key="i" v-html="renderInline(item)" />
             </ul>
           </div>

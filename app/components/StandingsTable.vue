@@ -11,8 +11,8 @@ const NuxtLinkC = resolveComponent('NuxtLink')
   <table class="w-full text-sm">
     <thead>
       <tr class="text-center" style="color: var(--p-text-muted-color)">
-        <th class="py-1 text-left">#</th>
-        <th class="text-left">{{ t('standings.team') }}</th>
+        <th class="py-1 text-start">#</th>
+        <th class="text-start">{{ t('standings.team') }}</th>
         <th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th>
       </tr>
     </thead>
@@ -23,8 +23,8 @@ const NuxtLinkC = resolveComponent('NuxtLink')
         class="border-t text-center"
         :style="`border-color: var(--p-content-border-color)${highlight && row.code && highlight.includes(row.code) ? '; background: color-mix(in srgb, var(--p-primary-color) 14%, transparent)' : ''}`"
       >
-        <td class="py-2 text-left">{{ i + 1 }}</td>
-        <td class="text-left">
+        <td class="py-2 text-start">{{ i + 1 }}</td>
+        <td class="text-start">
           <component
             :is="slug && row.code ? NuxtLinkC : 'span'"
             :to="slug && row.code ? `/${slug}/teams/${row.code}` : undefined"

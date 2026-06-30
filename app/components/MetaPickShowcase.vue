@@ -24,7 +24,7 @@ const holo = computed(() => {
 </script>
 
 <template>
-  <div class="shrink-0 flex flex-col items-center gap-2 self-center sm:self-start sm:pr-2">
+  <div class="shrink-0 flex flex-col items-center gap-2 self-center sm:self-start sm:pe-2">
     <component :is="linkTo ? NuxtLinkC : 'div'" :to="linkTo || undefined" class="relative mt-1 block" :class="{ 'hover:opacity-90': linkTo }">
       <template v-if="present">
         <div

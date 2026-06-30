@@ -42,7 +42,7 @@ function switchTo(s: string) {
         v-for="c in competitions"
         :key="c.slug"
         type="button"
-        class="px-3 py-2 text-sm text-left flex items-center gap-2 transition hover:bg-black/5 dark:hover:bg-white/10"
+        class="px-3 py-2 text-sm text-start flex items-center gap-2 transition hover:bg-black/5 dark:hover:bg-white/10"
         :class="{ 'font-bold': c.slug === slug }"
         @click="switchTo(c.slug)"
       >

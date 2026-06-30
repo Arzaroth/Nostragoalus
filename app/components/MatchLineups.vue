@@ -74,7 +74,7 @@ const teamLink = (code?: string | null) => (code ? `/${props.slug}/teams/${code}
         <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm">
           <span v-for="p in side.team.bench" :key="p.playerId">
             <span class="tabular-nums" style="color: var(--p-text-muted-color)">{{ p.shirtNumber ?? '–' }}</span>
-            {{ formatPlayerName(p.name) }}<span v-if="p.captain" class="ml-0.5 text-xs" style="color: var(--p-primary-color)">©</span>
+            {{ formatPlayerName(p.name) }}<span v-if="p.captain" class="ms-0.5 text-xs" style="color: var(--p-primary-color)">©</span>
           </span>
         </div>
       </div>

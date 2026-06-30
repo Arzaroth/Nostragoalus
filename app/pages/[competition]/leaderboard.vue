@@ -158,10 +158,10 @@ const hasLive = computed(() => displayRows.value.some((r) => r.livePoints))
             {{ r.exactCount }} {{ t('leaderboard.exact') }} · {{ r.outcomeCount }} {{ t('leaderboard.correct') }}<template v-if="r.championPoints"> · 👑 +{{ r.championPoints }}</template><template v-if="r.bestScorerPoints"> · <GoldenBoot /> +{{ r.bestScorerPoints }}</template>
           </div>
         </div>
-        <div class="text-right shrink-0">
+        <div class="text-end shrink-0">
           <div>
             <span class="text-xl font-bold tabular-nums">{{ r.totalPoints }}</span>
-            <span class="text-xs ml-1" style="color: var(--p-text-muted-color)">{{ t('leaderboard.pts') }}</span>
+            <span class="text-xs ms-1" style="color: var(--p-text-muted-color)">{{ t('leaderboard.pts') }}</span>
           </div>
           <div v-if="r.livePoints" v-tooltip.left="t('leaderboard.livePointsHint')" class="text-[10px] font-bold leading-none tabular-nums" style="color: var(--ng-danger)">+{{ r.livePoints }} {{ t('leaderboard.live') }}</div>
         </div>

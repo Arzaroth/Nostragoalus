@@ -195,7 +195,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateNavFades))
                     <i class="pi pi-megaphone" /><span class="flex-1">{{ t('nav.whatsNew') }}</span>
                     <span v-if="hasUnseenChangelog" class="w-2 h-2 rounded-full shrink-0" style="background: var(--p-primary-color)" aria-hidden="true" />
                   </NuxtLink>
-                  <button type="button" class="px-3 py-2 text-sm text-left flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/10" @click="onSignOut">
+                  <button type="button" class="px-3 py-2 text-sm text-start flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/10" @click="onSignOut">
                     <i class="pi pi-sign-out" />{{ t('nav.signOut') }}
                   </button>
                 </div>

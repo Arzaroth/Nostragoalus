@@ -57,7 +57,7 @@ const actualScore = computed(() => shareScore(c.value.actualHome, c.value.actual
         <img src="/brand/mark.svg" alt="" class="w-7 h-7" >
         <span class="font-bold text-lg">Nostragoalus</span>
       </div>
-      <div class="flex flex-col items-end text-right leading-tight">
+      <div class="flex flex-col items-end text-end leading-tight">
         <span class="text-sm" style="color: #a5b4fc">{{ c.competitionName }}</span>
         <span class="text-sm font-semibold" style="color: #818cf8">{{ roundText }}</span>
       </div>

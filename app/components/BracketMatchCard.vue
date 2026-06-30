@@ -38,10 +38,10 @@ const isLive = computed(() => matchIsInPlay(props.match.status))
     <div class="flex items-center justify-between gap-1">
       <span class="br-team" :class="{ win: match.winner === 'HOME', 'br-proj': home.projected }">
         <img v-if="flagUrl(home.code)" :src="flagUrl(home.code) || ''" class="br-flag" alt="" ><i v-else class="pi pi-shield br-shield" />
-        <span class="truncate">{{ home.label }}</span><b v-if="match.homeScore !== null" class="ml-1 tabular-nums">{{ match.homeScore }}<sup v-if="match.homePens !== null" class="br-pens">({{ match.homePens }})</sup></b>
+        <span class="truncate">{{ home.label }}</span><b v-if="match.homeScore !== null" class="ms-1 tabular-nums">{{ match.homeScore }}<sup v-if="match.homePens !== null" class="br-pens">({{ match.homePens }})</sup></b>
       </span>
       <span class="br-team justify-end" :class="{ win: match.winner === 'AWAY', 'br-proj': away.projected }">
-        <b v-if="match.awayScore !== null" class="mr-1 tabular-nums"><sup v-if="match.awayPens !== null" class="br-pens">({{ match.awayPens }})</sup>{{ match.awayScore }}</b><span class="truncate">{{ away.label }}</span>
+        <b v-if="match.awayScore !== null" class="me-1 tabular-nums"><sup v-if="match.awayPens !== null" class="br-pens">({{ match.awayPens }})</sup>{{ match.awayScore }}</b><span class="truncate">{{ away.label }}</span>
         <img v-if="flagUrl(away.code)" :src="flagUrl(away.code) || ''" class="br-flag" alt="" ><i v-else class="pi pi-shield br-shield" />
       </span>
     </div>

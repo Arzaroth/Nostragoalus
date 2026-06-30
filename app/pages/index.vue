@@ -312,7 +312,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', layoutBanner))
             <div class="font-bold truncate">{{ c.name }}</div>
             <div class="text-xs" style="color: var(--p-text-muted-color)">{{ t('landing.viewComp') }}</div>
           </div>
-          <i class="pi pi-arrow-right ml-auto shrink-0" style="color: var(--p-primary-color)" />
+          <i class="pi pi-arrow-right ms-auto shrink-0" style="color: var(--p-primary-color)" />
         </NuxtLink>
       </div>
     </section>
@@ -334,7 +334,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', layoutBanner))
             <div class="rounded-xl overflow-hidden border shadow-xl" style="border-color: var(--p-content-border-color)">
               <div class="flex items-center gap-1.5 px-3 py-2" style="background: var(--p-content-background); border-bottom: 1px solid var(--p-content-border-color)">
                 <span class="w-2.5 h-2.5 rounded-full" style="background: #f87171" /><span class="w-2.5 h-2.5 rounded-full" style="background: #fbbf24" /><span class="w-2.5 h-2.5 rounded-full" style="background: #34d399" />
-                <span class="ml-2 text-xs font-semibold">{{ t(`landing.shot.${shot}.t`) }}</span>
+                <span class="ms-2 text-xs font-semibold">{{ t(`landing.shot.${shot}.t`) }}</span>
               </div>
               <!-- Fixed aspect so every slide is the same height (no gap before
                    the caption); the content shots fill it exactly, the wide

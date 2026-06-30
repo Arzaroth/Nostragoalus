@@ -38,7 +38,7 @@ const lang = computed({
       <div class="flex items-center gap-1">
         <span>{{ t('footer.version') }}:</span>
         <NuxtLink :to="`/about#v${config.public.version}`" class="hover:underline font-medium" style="color: var(--p-primary-color)">{{ config.public.version }}</NuxtLink>
-        <ClientOnly><span v-if="pageMs != null" class="ml-2">{{ t('footer.page') }}: <b style="color: var(--p-text-color)">{{ pageMs }}ms</b></span></ClientOnly>
+        <ClientOnly><span v-if="pageMs != null" class="ms-2">{{ t('footer.page') }}: <b style="color: var(--p-text-color)">{{ pageMs }}ms</b></span></ClientOnly>
       </div>
       <div class="flex items-center gap-2">
         <Select

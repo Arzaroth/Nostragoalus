@@ -73,7 +73,7 @@ const saveMutation = useMutation({
       <div v-else-if="!data || !data.competitions.length" class="text-sm" style="color: var(--p-text-muted-color)">{{ t('admin.odds.none') }}</div>
       <table v-else class="w-full text-sm">
         <thead>
-          <tr style="color: var(--p-text-muted-color)" class="text-left">
+          <tr style="color: var(--p-text-muted-color)" class="text-start">
             <th class="py-1">{{ t('admin.odds.colCompetition') }}</th>
             <th>{{ t('admin.odds.colProvider') }}</th>
             <th>{{ t('admin.odds.colRef') }}</th>
@@ -83,11 +83,11 @@ const saveMutation = useMutation({
         <tbody>
           <template v-for="c in data.competitions" :key="c.id">
           <tr v-if="draft[c.id]" class="border-t align-top" style="border-color: var(--p-content-border-color)">
-            <td class="py-2 pr-3">
+            <td class="py-2 pe-3">
               <div class="font-medium">{{ c.name }}</div>
               <code class="text-xs" style="color: var(--p-text-muted-color)">{{ c.slug }}</code>
             </td>
-            <td class="pr-3">
+            <td class="pe-3">
               <select v-model="draft[c.id].provider" :aria-label="t('admin.odds.colProvider')" class="rounded-lg border px-2 py-1.5 text-sm w-40" style="background: var(--p-content-background); border-color: var(--p-content-border-color)">
                 <option v-for="p in data.providers" :key="p.key" :value="p.key">{{ t(`admin.odds.provider_${p.key}`) }}</option>
               </select>
@@ -96,10 +96,10 @@ const saveMutation = useMutation({
                 <span>{{ t('admin.odds.noFetchWarn') }}</span>
               </div>
             </td>
-            <td class="pr-3">
+            <td class="pe-3">
               <input v-model="draft[c.id].providerRef" type="text" maxlength="64" :placeholder="t('admin.odds.refPlaceholder')" :aria-label="t('admin.odds.colRef')" class="rounded-lg border px-2 py-1.5 text-sm w-28" style="background: var(--p-content-background); border-color: var(--p-content-border-color)" >
             </td>
-            <td class="text-right">
+            <td class="text-end">
               <button
                 type="button"
                 :disabled="!draft[c.id].provider || saveMutation.isPending.value"

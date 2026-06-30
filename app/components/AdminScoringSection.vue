@@ -190,7 +190,7 @@ function errorMessage(e: unknown): string {
             <div v-for="(tier, i) in form.crowdTiers" :key="`ct${i}`" class="flex items-center gap-2">
               <span class="text-xs w-24" style="color: var(--p-text-muted-color)">{{ t('admin.scoring.maxShare') }}</span>
               <InputNumber v-model="tier.maxShareExclusive" :min="0" :max="1" :max-fraction-digits="3" :step="0.01" class="w-28" />
-              <span class="text-xs w-16 text-right" style="color: var(--p-text-muted-color)">{{ t('admin.scoring.bonus') }}</span>
+              <span class="text-xs w-16 text-end" style="color: var(--p-text-muted-color)">{{ t('admin.scoring.bonus') }}</span>
               <InputNumber v-model="tier.bonus" :min="0" :max="100" class="w-24" />
               <Button icon="pi pi-trash" rounded text severity="danger" size="small" :aria-label="t('common.remove')" @click="removeAt(form.crowdTiers, i)" />
             </div>
@@ -204,7 +204,7 @@ function errorMessage(e: unknown): string {
               <div v-for="(tier, i) in form.crowdOutcomeTiers" :key="`ot${i}`" class="flex items-center gap-2">
                 <span class="text-xs w-24" style="color: var(--p-text-muted-color)">{{ t('admin.scoring.maxShare') }}</span>
                 <InputNumber v-model="tier.maxShareExclusive" :min="0" :max="1" :max-fraction-digits="3" :step="0.01" class="w-28" />
-                <span class="text-xs w-16 text-right" style="color: var(--p-text-muted-color)">{{ t('admin.scoring.bonus') }}</span>
+                <span class="text-xs w-16 text-end" style="color: var(--p-text-muted-color)">{{ t('admin.scoring.bonus') }}</span>
                 <InputNumber v-model="tier.bonus" :min="0" :max="100" class="w-24" />
                 <Button icon="pi pi-trash" rounded text severity="danger" size="small" :aria-label="t('common.remove')" @click="removeAt(form.crowdOutcomeTiers, i)" />
               </div>
@@ -224,7 +224,7 @@ function errorMessage(e: unknown): string {
             <div v-for="(tier, i) in form.oddsTiers" :key="`od${i}`" class="flex items-center gap-2">
               <span class="text-xs w-24" style="color: var(--p-text-muted-color)">{{ t('admin.scoring.minOdds') }}</span>
               <InputNumber v-model="tier.minDecimalOdds" :min="1" :max="1000" :max-fraction-digits="2" :step="0.1" class="w-28" />
-              <span class="text-xs w-16 text-right" style="color: var(--p-text-muted-color)">{{ t('admin.scoring.bonus') }}</span>
+              <span class="text-xs w-16 text-end" style="color: var(--p-text-muted-color)">{{ t('admin.scoring.bonus') }}</span>
               <InputNumber v-model="tier.bonus" :min="0" :max="100" class="w-24" />
               <Button icon="pi pi-trash" rounded text severity="danger" size="small" :aria-label="t('common.remove')" @click="removeAt(form.oddsTiers, i)" />
             </div>
@@ -243,7 +243,7 @@ function errorMessage(e: unknown): string {
             <span class="text-xs w-24" style="color: var(--p-text-muted-color)">{{ t('admin.scoring.maxRank') }}</span>
             <InputNumber v-if="tier.maxRank !== null" v-model="tier.maxRank" :min="1" :max="500" class="w-28" />
             <span v-else class="text-xs w-28" style="color: var(--p-text-muted-color)">{{ t('admin.scoring.catchAll') }}</span>
-            <span class="text-xs w-16 text-right" style="color: var(--p-text-muted-color)">{{ t('admin.scoring.points') }}</span>
+            <span class="text-xs w-16 text-end" style="color: var(--p-text-muted-color)">{{ t('admin.scoring.points') }}</span>
             <InputNumber v-model="tier.points" :min="0" :max="1000" class="w-24" />
             <Button icon="pi pi-trash" rounded text severity="danger" size="small" :aria-label="t('common.remove')" @click="removeAt(form.championTiers, i)" />
           </div>

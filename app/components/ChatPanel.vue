@@ -799,7 +799,7 @@ watch(
       <span class="font-semibold">{{ props.matchId ? t('chat.threadTitle') : t('chat.roomTitle') }}</span>
       <span v-tooltip.top="t('chat.e2eeHint')" class="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-full" style="background: var(--ng-star-soft); color: var(--ng-star)">{{ t('chat.e2ee') }}</span>
       <span v-if="changedCount > 0" v-tooltip.top="t('chat.verify.changedWarn')" class="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-full inline-flex items-center gap-1" style="border: 1px solid var(--ng-danger); color: var(--ng-danger)"><i class="pi pi-exclamation-triangle text-[10px]" />{{ t('chat.verify.changed') }}</span>
-      <div v-if="ready" class="ml-auto flex items-center gap-3">
+      <div v-if="ready" class="ms-auto flex items-center gap-3">
         <button type="button" v-tooltip.top="t('chat.search.button')" class="opacity-70 hover:opacity-100 inline-flex items-center" :class="searchOpen ? 'opacity-100' : ''" :style="searchOpen ? 'color: var(--p-primary-color)' : ''" :aria-label="t('chat.search.button')" @click="toggleSearch">
           <i class="pi pi-search" />
         </button>
@@ -818,28 +818,28 @@ watch(
             class="absolute right-0 top-7 z-30 w-56 rounded-lg border shadow-lg py-1 text-sm"
             style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
           >
-            <button type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-left opacity-90 hover:opacity-100" @click="showVerify = !showVerify; menuOpen = false">
+            <button type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-start opacity-90 hover:opacity-100" @click="showVerify = !showVerify; menuOpen = false">
               <i class="pi pi-shield text-xs" style="color: var(--p-primary-color)" />
               <span class="flex-1">{{ t('chat.verify.show') }}</span>
               <span v-if="changedCount > 0" class="text-xs font-bold" style="color: var(--ng-danger)">{{ changedCount }}</span>
             </button>
-            <button v-if="!hasRecovery" type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-left opacity-90 hover:opacity-100" :disabled="recoveryBusy" @click="menuOpen = false; openRecoverySetup()">
+            <button v-if="!hasRecovery" type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-start opacity-90 hover:opacity-100" :disabled="recoveryBusy" @click="menuOpen = false; openRecoverySetup()">
               <i class="pi pi-key text-xs" style="color: var(--p-primary-color)" />
               <span class="flex-1">{{ t('chat.setupRecovery') }}</span>
             </button>
-            <button v-if="muted.length" type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-left opacity-90 hover:opacity-100" @click="showMuted = !showMuted; menuOpen = false">
+            <button v-if="muted.length" type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-start opacity-90 hover:opacity-100" @click="showMuted = !showMuted; menuOpen = false">
               <i class="pi pi-volume-off text-xs" />
               <span class="flex-1">{{ t('chat.muted.show', { n: muted.length }) }}</span>
             </button>
             <template v-if="isAdmin">
               <div class="my-1 border-t" style="border-color: var(--p-content-border-color)" />
-              <button type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-left opacity-90 hover:opacity-100" @click="menuOpen = false; openReports()">
+              <button type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-start opacity-90 hover:opacity-100" @click="menuOpen = false; openReports()">
                 <i class="pi pi-flag text-xs" /><span class="flex-1">{{ t('chat.moderation.queue') }}</span>
               </button>
-              <button type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-left opacity-90 hover:opacity-100" @click="showRotate = true; menuOpen = false">
+              <button type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-start opacity-90 hover:opacity-100" @click="showRotate = true; menuOpen = false">
                 <i class="pi pi-sync text-xs" /><span class="flex-1">{{ t('chat.rotate.button') }}</span>
               </button>
-              <button type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-left opacity-90 hover:opacity-100" style="color: var(--ng-danger)" @click="menuOpen = false; chat.disableChat()">
+              <button type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-start opacity-90 hover:opacity-100" style="color: var(--ng-danger)" @click="menuOpen = false; chat.disableChat()">
                 <i class="pi pi-power-off text-xs" /><span class="flex-1">{{ t('chat.disable') }}</span>
               </button>
             </template>
@@ -877,7 +877,7 @@ watch(
           <div class="flex items-center gap-2">
             <span class="relative flex-1">
               <i class="pi pi-search absolute left-2 top-1/2 -translate-y-1/2 text-xs" style="color: var(--p-text-muted-color)" />
-              <InputText ref="searchEl" v-model="searchQuery" :placeholder="t('chat.search.placeholder')" class="w-full !pl-7" size="small" />
+              <InputText ref="searchEl" v-model="searchQuery" :placeholder="t('chat.search.placeholder')" class="w-full !ps-7" size="small" />
             </span>
             <small v-if="searchQuery.trim()" class="tabular-nums whitespace-nowrap" style="color: var(--p-text-muted-color)">{{ displayMessages.length === 1 ? t('chat.search.one') : t('chat.search.results', { n: displayMessages.length }) }}</small>
             <button type="button" class="opacity-70 hover:opacity-100" :aria-label="t('chat.search.close')" @click="toggleSearch"><i class="pi pi-times text-xs" /></button>
@@ -940,7 +940,7 @@ watch(
               <span v-if="m.editedAt" v-tooltip.bottom="t('chat.edit.at', { time: fmtTime(m.editedAt) })" class="text-[10px] italic" style="color: var(--p-text-muted-color)">{{ t('chat.edit.edited') }}</span>
               <span v-if="m.moderation === 'PENDING'" class="text-[10px] uppercase tracking-wider font-semibold px-1 rounded" style="border: 1px solid var(--ng-danger); color: var(--ng-danger)">{{ t('chat.moderation.pendingTag') }}</span>
               <!-- Per-message actions, icon-only, revealed on hover. -->
-              <span v-if="m.moderation !== 'REMOVED'" class="ml-auto flex items-center gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+              <span v-if="m.moderation !== 'REMOVED'" class="ms-auto flex items-center gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                 <button type="button" v-tooltip.bottom="t('chat.reply.button')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.reply.button')" @click="startReply(m)"><i class="pi pi-reply text-xs" /></button>
                 <button type="button" v-tooltip.bottom="t('chat.thread.reply')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.thread.reply')" @click="openThreadFor(m)"><i class="pi pi-comments text-xs" /></button>
                 <span v-if="contentVisible(m)" class="relative inline-flex">
@@ -982,14 +982,14 @@ watch(
             <button
               v-if="parentOf(m)"
               type="button"
-              class="text-left text-xs rounded px-2 py-1 mb-0.5 border-l-2 opacity-80 hover:opacity-100 max-w-full overflow-hidden"
+              class="text-start text-xs rounded px-2 py-1 mb-0.5 border-s-2 opacity-80 hover:opacity-100 max-w-full overflow-hidden"
               :class="m.userId === meId ? 'self-end' : 'self-start'"
               style="border-color: var(--p-primary-color); background: color-mix(in srgb, var(--p-text-color) 5%, transparent)"
               @click="jumpTo(m.parentId!)"
             >
-              <i class="pi pi-reply text-[10px] mr-1" style="color: var(--p-primary-color)" />
+              <i class="pi pi-reply text-[10px] me-1" style="color: var(--p-primary-color)" />
               <span class="font-semibold">{{ nameFor(parentOf(m)!.userId) }}</span>
-              <span class="ml-1">{{ quoteText(parentOf(m)!) }}</span>
+              <span class="ms-1">{{ quoteText(parentOf(m)!) }}</span>
             </button>
             <span v-if="!contentVisible(m)" class="italic" :class="m.userId === meId ? 'self-end' : 'self-start'" style="color: var(--p-text-muted-color)">{{ m.moderation === 'REMOVED' ? t('chat.moderation.removed') : t('chat.moderation.pendingHidden') }}</span>
             <!-- Inline edit of your own message: text plus image add/remove. -->
@@ -1016,7 +1016,7 @@ watch(
                 <button type="button" class="underline disabled:opacity-40 disabled:no-underline" style="color: var(--p-primary-color)" :disabled="editOverLimit" @click="saveEdit">{{ t('chat.edit.save') }}</button>
                 <button type="button" class="underline opacity-70 hover:opacity-100" :disabled="editKept >= MAX_IMAGES" @click="editFileInput?.click()">{{ t('chat.image.add') }}</button>
                 <button type="button" class="underline opacity-70 hover:opacity-100" @click="cancelEdit">{{ t('chat.edit.cancel') }}</button>
-                <span v-if="editDraft.length > MAX_MESSAGE_TEXT_LENGTH - 200" class="ml-auto tabular-nums" :style="editOverLimit ? 'color: var(--ng-danger)' : 'color: var(--p-text-muted-color)'">{{ t('chat.limit.counter', { n: editDraft.length, max: MAX_MESSAGE_TEXT_LENGTH }) }}</span>
+                <span v-if="editDraft.length > MAX_MESSAGE_TEXT_LENGTH - 200" class="ms-auto tabular-nums" :style="editOverLimit ? 'color: var(--ng-danger)' : 'color: var(--p-text-muted-color)'">{{ t('chat.limit.counter', { n: editDraft.length, max: MAX_MESSAGE_TEXT_LENGTH }) }}</span>
               </div>
             </div>
             <template v-else>
@@ -1075,7 +1075,7 @@ watch(
             <div
               v-if="threadParentId === m.id"
               :data-thread="m.id"
-              class="self-stretch mt-1 ml-3 pl-3 border-l-2 flex flex-col gap-2"
+              class="self-stretch mt-1 ms-3 ps-3 border-s-2 flex flex-col gap-2"
               style="border-color: var(--p-primary-color)"
             >
               <div class="flex items-center justify-between">
@@ -1091,7 +1091,7 @@ watch(
                   <span v-else class="font-semibold truncate text-xs" :style="r.userId === meId ? 'color: var(--p-primary-color)' : ''">{{ nameFor(r.userId) }}</span>
                   <span v-tooltip.top="fmtFull(r.createdAt)" class="text-[10px]" style="color: var(--p-text-muted-color)">{{ fmtTime(r.createdAt) }}</span>
                   <span v-if="r.editedAt" class="text-[10px] italic" style="color: var(--p-text-muted-color)">{{ t('chat.edit.edited') }}</span>
-                  <span class="ml-auto flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span class="ms-auto flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button v-if="contentVisible(r) && r.userId && r.userId !== meId" type="button" v-tooltip.bottom="r.reported ? t('chat.moderation.unreport') : t('chat.moderation.report')" class="opacity-60 hover:opacity-100" :aria-label="r.reported ? t('chat.moderation.unreport') : t('chat.moderation.report')" :style="r.reported ? 'color: var(--ng-danger)' : ''" @click="chat.report(r.id)"><i :class="r.reported ? 'pi pi-flag-fill' : 'pi pi-flag'" class="text-[10px]" /></button>
                     <button v-if="isAdmin || r.userId === meId" type="button" v-tooltip.bottom="r.userId === meId ? t('chat.delete') : t('chat.moderation.remove')" class="opacity-60 hover:opacity-100" :aria-label="r.userId === meId ? t('chat.delete') : t('chat.moderation.remove')" style="color: var(--ng-danger)" @click="chat.moderate(r.id, 'remove')"><i class="pi pi-trash text-[10px]" /></button>
                   </span>
@@ -1125,7 +1125,7 @@ watch(
           <!-- Quote target preview, with a cancel. -->
           <div
             v-if="replyTo"
-            class="flex items-center gap-2 text-xs rounded px-2 py-1 border-l-2"
+            class="flex items-center gap-2 text-xs rounded px-2 py-1 border-s-2"
             style="border-color: var(--p-primary-color); background: color-mix(in srgb, var(--p-text-color) 5%, transparent)"
           >
             <span class="opacity-70">{{ t('chat.reply.replyingTo', { name: nameFor(replyTo.userId) }) }}</span>
@@ -1137,7 +1137,7 @@ watch(
           <!-- Length cap: warn as it nears the limit, block the send past it. -->
           <div v-if="draft.length > MAX_MESSAGE_TEXT_LENGTH - 200" class="flex items-center gap-2">
             <small v-if="overLimit" class="flex-1" style="color: var(--ng-danger)">{{ t('chat.limit.tooLong', { max: MAX_MESSAGE_TEXT_LENGTH }) }}</small>
-            <small class="ml-auto tabular-nums" :style="overLimit ? 'color: var(--ng-danger)' : 'color: var(--p-text-muted-color)'">{{ t('chat.limit.counter', { n: draft.length, max: MAX_MESSAGE_TEXT_LENGTH }) }}</small>
+            <small class="ms-auto tabular-nums" :style="overLimit ? 'color: var(--ng-danger)' : 'color: var(--p-text-muted-color)'">{{ t('chat.limit.counter', { n: draft.length, max: MAX_MESSAGE_TEXT_LENGTH }) }}</small>
           </div>
           <!-- Buffered images, shown before send; tap the x to drop one. -->
           <div v-if="pendingUrls.length" class="flex flex-wrap gap-1.5">
@@ -1162,7 +1162,7 @@ watch(
                 v-for="(c, i) in mentionCandidates"
                 :key="c.userId"
                 type="button"
-                class="w-full flex items-center gap-2 px-3 py-1.5 text-left"
+                class="w-full flex items-center gap-2 px-3 py-1.5 text-start"
                 :style="i === mentionIndex ? 'background: color-mix(in srgb, var(--p-primary-color) 14%, transparent)' : ''"
                 @mousedown.prevent="applyMention(c)"
                 @mouseenter="mentionIndex = i"

@@ -178,7 +178,7 @@ const photoSrc = computed(() => (photoFailed.value ? null : resolvedPhoto.value)
             >
               <template #option="{ option }">
                 <span class="flex items-center gap-2">
-                  <span class="w-6 text-right tabular-nums" style="color: var(--p-text-muted-color)">{{ option.shirtNumber ?? '–' }}</span>
+                  <span class="w-6 text-end tabular-nums" style="color: var(--p-text-muted-color)">{{ option.shirtNumber ?? '–' }}</span>
                   {{ formatPlayerName(option.name) }}
                   <span v-if="option.position" class="text-xs" style="color: var(--p-text-muted-color)">{{ option.position }}</span>
                 </span>

@@ -161,7 +161,7 @@ async function onItem(n: NotificationDTO) {
           >
             <button
               type="button"
-              class="flex-1 min-w-0 text-left px-3 py-2.5 pr-8 flex items-start gap-2.5"
+              class="flex-1 min-w-0 text-start px-3 py-2.5 pe-8 flex items-start gap-2.5"
               @click="onItem(n)"
             >
               <i :class="ICONS[n.type]" class="mt-0.5" :style="n.read ? '' : 'color: var(--p-primary-color)'" />

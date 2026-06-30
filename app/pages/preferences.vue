@@ -230,10 +230,10 @@ const skinModel = computed({
               </p>
               <div
                 v-if="pushSubscribed"
-                class="flex flex-col gap-3 border-l-2 pl-1"
+                class="flex flex-col gap-3 border-s-2 ps-1"
                 style="border-color: var(--p-content-border-color)"
               >
-                <div v-for="cat in pushCategories" :key="cat.key" class="flex items-center gap-3 pl-3">
+                <div v-for="cat in pushCategories" :key="cat.key" class="flex items-center gap-3 ps-3">
                   <ToggleSwitch
                     :model-value="pushGet(cat)"
                     :input-id="`pc-${cat.key}`"
