@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- **Guided SSO onboarding**: registering an identity provider now walks through draft -> test -> verify -> enable instead of going live the instant it is saved. You can run an automated connection test (OIDC discovery/JWKS, SAML certificate and endpoint reachability), do a real OIDC "test sign-in" that previews the exact claims the IdP returns mapped to our fields, and verify ownership of the email domain with a DNS TXT record - or bypass that as an admin. Providers can be enabled, temporarily disabled or kept as drafts; disabling blocks new sign-ins but leaves existing sessions working.
+- **SCIM provisioning**: identity providers can create, update and deactivate users automatically over SCIM 2.0. Generate a per-provider token from the admin console (shown once); deactivating a user from the IdP blocks their sign-in and ends their sessions while keeping their leagues, predictions and history intact, and reactivating restores access.
+
 ## [2.8.1] - 2026-07-02
 
 ### Fixed

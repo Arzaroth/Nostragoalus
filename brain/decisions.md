@@ -141,3 +141,28 @@ feature/architecture doc that implements it.
 - **Feature work starts in a worktree + branch by default**, and ships only
   through feature-treatment (adversarial review + green gate). Nothing merges
   without it.
+
+## SSO onboarding + SCIM
+
+- **The onboarding flow reverses the old single-tenant "DNS verify buys nothing"
+  call.** New providers go draft -> connection test -> domain verify (DNS TXT) or
+  admin bypass -> enable, so a half-configured provider can't go live. Bypass is
+  the admin's easy path; the DNS proof is there for a future delegated/multi-tenant
+  world. `domainVerified` defaults true in the schema only to grandfather
+  pre-1.6.x rows - the plugin forces it false on register, so the live path never
+  relies on the default.
+- **The OIDC test sign-in is hand-rolled as a dry-run** (the plugin offers no
+  non-provisioning round-trip): a nonce-secured public callback captures the
+  claims without ever creating a user/session or running `provisionUser`. SAML
+  gets a static bindings preview instead - a live SAML ACS must be pre-registered
+  at the IdP, which most IdPs require.
+- **The SCIM token is stored hashed, not envelope-encrypted.** The plugin's
+  `storeSCIMToken: 'hashed'` mirrors the api-key precedent (shown once, hashed
+  compare), so the encrypted-adapter need not grow a model->fields map. The
+  session-only SCIM management endpoints are blocked over HTTP because any
+  signed-in user could otherwise mint a provider-restricted provisioning bearer.
+- **Domain verification is hand-rolled, not `auth.api.verifyDomain`**, to dodge
+  the plugin's registering-admin-only owner gate (multi-admin safe), while keeping
+  the plugin's `_better-auth-token-{providerId}` identifier + TXT format so the
+  plugin's own endpoint stays compatible. See
+  [features/sso-provisioning.md](features/sso-provisioning.md).
