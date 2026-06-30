@@ -37,9 +37,19 @@ run = "pnpm test:coverage"
 description = "E2E: email-OTP flow through the running stack + maildev"
 run = "pnpm e2e:smtp"
 
+[tasks.e2e-up]
+description = "Bring up the isolated, disposable e2e stack (own DB/maildev/keycloak on shifted ports; never touches the dev DB)."
+# Name the services so the prod `app` (host :3000) isn't started alongside.
+run = "docker compose -p ng-e2e -f compose.yaml -f compose.dev.yaml -f compose.e2e.yaml --profile dev --profile e2e up -d --build db maildev keycloak app-dev"
+
 [tasks.e2e]
-description = "Browser e2e (Playwright) against the running stack - predict/finalize/leaderboard + mail flows. See tests/e2e/README.md (SSO is opt-in via E2E_SSO=1)."
+description = "Browser e2e (Playwright): predict/finalize/leaderboard + mail + SSO against the isolated e2e stack (own empty DB). See tests/e2e/README.md."
+depends = ["e2e-up"]
 run = "pnpm e2e"
+
+[tasks.e2e-down]
+description = "Tear down the isolated e2e stack and drop its DB volume."
+run = "docker compose -p ng-e2e -f compose.yaml -f compose.dev.yaml -f compose.e2e.yaml --profile dev --profile e2e down -v"
 
 
 [tasks.seed-demo]

@@ -71,17 +71,38 @@ export async function getMatchPrediction(matchId: string): Promise<{ home: numbe
   return rows[0] ? { home: rows[0].home_goals, away: rows[0].away_goals } : null
 }
 
+// The scored figures for a match's (single) prediction, to assert finalize ran.
+export async function getPredictionScore(
+  matchId: string,
+): Promise<{ totalPoints: number; baseTier: string | null; lockedAt: string | null } | null> {
+  const { rows } = await db().query<{ total_points: number; base_tier: string | null; locked_at: string | null }>(
+    `select total_points, base_tier, locked_at from prediction where match_id = $1 limit 1`,
+    [matchId],
+  )
+  return rows[0]
+    ? { totalPoints: rows[0].total_points, baseTier: rows[0].base_tier, lockedAt: rows[0].locked_at }
+    : null
+}
+
 // Flip the seeded match to a finished result with a past kickoff, so finalize
 // will lock the predictions and score them.
 export async function finishMatch(matchId: string, home: number, away: number): Promise<void> {
   const winner = home > away ? 'HOME' : home < away ? 'AWAY' : 'DRAW'
+  // details_fetched_at is set so finalize doesn't try to provider-sync details for
+  // this synthetic match (the fake competition has no real upstream, which hangs).
   await db().query(
     `update match
      set status = 'FINISHED', full_time_home = $2, full_time_away = $3, winner = $4,
-         kickoff_time = now() - interval '3 hours'
+         kickoff_time = now() - interval '3 hours', details_fetched_at = now()
      where id = $1`,
     [matchId, home, away, winner],
   )
+}
+
+// Mark a user's email verified, so they can sign in regardless of the instance's
+// email-verification setting (used to make the admin account usable in setup).
+export async function markUserVerified(email: string): Promise<void> {
+  await db().query(`update "user" set email_verified = true where email = $1`, [email])
 }
 
 // Mark an SSO provider's domain verified, so sso/check routes that domain to it.

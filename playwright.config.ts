@@ -1,4 +1,17 @@
+import { readFileSync } from 'node:fs'
 import { defineConfig, devices } from '@playwright/test'
+
+// Load .env.e2e (the isolated-stack ports/URLs) if present, without overriding an
+// explicit env. So `mise run e2e` targets the disposable e2e stack by default,
+// while E2E_* env vars still let you point at any other stack.
+try {
+  for (const line of readFileSync(new URL('.env.e2e', import.meta.url), 'utf8').split('\n')) {
+    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/)
+    if (m && process.env[m[1]] === undefined) process.env[m[1]] = m[2]
+  }
+} catch {
+  // no .env.e2e: fall back to the defaults baked into the helpers (dev stack)
+}
 
 // Browser e2e runs against an already-running stack (like the e2e:smtp script):
 // bring it up with `mise run preview` (app + db + maildev + keycloak), then
@@ -26,6 +39,7 @@ export default defineConfig({
   // first hit).
   timeout: 120_000,
   expect: { timeout: 15_000 },
+  globalSetup: './tests/e2e/global-setup.ts',
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {
     baseURL: APP,

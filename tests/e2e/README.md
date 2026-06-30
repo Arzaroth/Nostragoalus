@@ -1,73 +1,71 @@
 # Browser e2e (Playwright)
 
-End-to-end specs that drive the real app in a browser, against a **running
-stack** (app + db + maildev), the same way `pnpm e2e:smtp` does. They are not part
-of the unit/coverage gate.
+End-to-end specs that drive the real app in a browser. They run against an
+**isolated, disposable stack** so they never touch your dev database. Not part of
+the unit/coverage gate.
 
 ## Run
 
 ```bash
-mise run dev        # or: mise run preview   (brings up app + db + maildev on :3000 / :1080)
-pnpm e2e            # runs tests/e2e/*.e2e.ts (Chromium)
-pnpm e2e:report     # open the last HTML report
+mise run e2e          # brings up the isolated stack (if needed) + runs all specs
+mise run e2e-down     # tear the stack down and drop its DB volume
+pnpm e2e:report       # open the last HTML report
 ```
 
-Specs in the default run:
+`mise run e2e` brings up a separate compose project (`ng-e2e`) with its **own**
+Postgres, maildev and Keycloak on shifted ports, so it coexists with `mise run
+dev` and leaves the dev DB alone:
 
-- **predict-finalize-leaderboard** - sign up (confirm via the mailed link, which
-  auto-signs-in), predict an exact score, finish the match + run finalize as an
-  admin, assert the leaderboard reflects the scored pick.
-- **mail-flows** - forgot-password (request -> mailed link -> new password -> sign
-  in) and delete-account (trigger -> mailed link -> account can no longer sign in),
-  reading mail from maildev's HTTP inbox.
+| service | dev stack | e2e stack |
+| --- | --- | --- |
+| app | :3000 | :3100 |
+| postgres | :5432 | :5433 |
+| maildev | :1080 | :1081 |
+| keycloak | - | :8080 |
 
-These seed their own namespaced data (an `e2e-cup` competition) directly in
-Postgres and clean it up; they need an admin account (`verify@example.com` by
-default) for finalize.
+The e2e Postgres is a fresh volume each time it's created, so the suite starts
+from an empty, migrated DB. `tests/e2e/global-setup.ts` ensures the admin account
+exists (nothing else creates it); each spec seeds its own namespaced data and
+cleans up. `mise run e2e-down` drops the volume for a truly clean slate.
 
-## SSO (Keycloak OIDC) - opt-in
+## Specs
 
-The `sso` spec is skipped unless `E2E_SSO=1`, because it needs the Keycloak IdP up
-and one app-config flag:
+- **predict-finalize-leaderboard** - sign up, predict an exact score, finish the
+  match + run finalize as admin, assert the leaderboard reflects the scored pick.
+- **mail-flows** - forgot-password and delete-account, end to end via maildev.
+- **sso** - register the dockerized Keycloak as an OIDC provider, drive its login
+  form, assert the SSO session. Gated on `E2E_SSO=1` (set in `.env.e2e`). The
+  issuer is `http://keycloak:8080`: the app reaches Keycloak by compose service
+  name, the browser resolves `keycloak` -> 127.0.0.1 via `--host-resolver-rules`,
+  so one URL serves both sides. The app trusts that internal origin via
+  `NUXT_SSO_TRUSTED_ORIGINS` (set on the e2e app in `compose.dev.yaml`). Realm:
+  `tests/e2e/keycloak/realm-export.json` (client `nostragoalus-app` /
+  `e2e-keycloak-secret`, user `ssouser` / `ssoPassword123`).
 
-```bash
-# 1. bring up the stack WITH Keycloak (the `e2e` compose profile):
-docker compose -f compose.yaml -f compose.dev.yaml --profile dev --profile e2e up -d --wait
+## Config (`.env.e2e`)
 
-# 2. the app must trust the internal IdP origin (better-auth's SSO SSRF guard
-#    refuses a token endpoint that resolves to a private address otherwise):
-#    start the app with  NUXT_SSO_TRUSTED_ORIGINS=http://keycloak:8080
-#    (read by lib/auth.ts; no effect when unset).
+`playwright.config.ts` loads `.env.e2e` (no secrets - just where the e2e stack
+lives), unless a var is already set, so the suite targets the isolated stack by
+default. Override any `E2E_*` to point at another stack:
 
-# 3. run:
-E2E_SSO=1 pnpm e2e
-```
-
-The issuer is `http://keycloak:8080`: the app reaches Keycloak by its compose
-service name, and the browser resolves `keycloak` -> 127.0.0.1 via the
-`--host-resolver-rules` launch arg in `playwright.config.ts`, so one issuer URL
-works for both sides of the OIDC dance (no `/etc/hosts` edit needed).
-
-The spec registers Keycloak as an OIDC provider (admin API), marks its domain
-verified, drives the login through Keycloak's form, and asserts the SSO session.
-Realm (`tests/e2e/keycloak/realm-export.json`): realm `nostragoalus-e2e`, client
-`nostragoalus-app` / secret `e2e-keycloak-secret`, test user `ssouser` /
-`ssoPassword123` (email `ssouser@e2e-sso.test`).
-
-## Env overrides
-
-| var | default |
+| var | `.env.e2e` |
 | --- | --- |
-| `E2E_APP_URL` | `http://localhost:3000` |
-| `E2E_MAILDEV_URL` | `http://localhost:1080` |
-| `E2E_DATABASE_URL` | `postgres://nostragoalus:nostragoalus@localhost:5432/nostragoalus` |
-| `E2E_ADMIN_EMAIL` / `E2E_ADMIN_PASSWORD` | `verify@example.com` / `password123` |
+| `E2E_APP_URL` | `http://localhost:3100` |
+| `E2E_MAILDEV_URL` | `http://localhost:1081` |
+| `E2E_DATABASE_URL` | `...@localhost:5433/nostragoalus` |
 | `E2E_KC_ISSUER` | `http://keycloak:8080/realms/nostragoalus-e2e` |
-| `PLAYWRIGHT_OUTPUT_DIR` | `/tmp/ng-e2e-results` (kept out of the worktree, which the dev app-dev bind-mounts) |
+| `E2E_SSO` | `1` |
+| `E2E_ADMIN_EMAIL` / `E2E_ADMIN_PASSWORD` | `verify@example.com` / a strong password (a fresh DB rejects breached ones) |
+| `PLAYWRIGHT_OUTPUT_DIR` | `/tmp/ng-e2e-results` (kept out of the worktree, which app-dev bind-mounts) |
+
+To run against an already-running stack instead (e.g. `mise run dev` on :3000),
+set the `E2E_*` vars yourself and `E2E_SSO=` to skip SSO (no Keycloak there).
 
 ## Notes
 
 - PrimeVue inputs only register real keystrokes, so the helpers type with
   `pressSequentially`, not `.fill()`.
+- The signup helper handles both email-verification states (off: signed in
+  immediately; on: confirm via the mailed link).
 - Specs run serially (shared DB), output goes outside the worktree so it can't
-  thrash the dev stack's file watcher.
+  thrash a stack's file watcher.
