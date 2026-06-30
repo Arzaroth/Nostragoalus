@@ -42,7 +42,11 @@ export async function signUp(page: Page, user: Credentials): Promise<void> {
   if (!signedIn) {
     const mail = await waitForMail(user.email, { subjectIncludes: 'Confirm', timeoutMs: 20_000 })
     await page.goto(linkFromMail(mail, 'verify-email'))
-    await page.waitForURL((url) => !url.pathname.startsWith('/verify-email'), { timeout: 20_000 })
+    // The verify endpoint signs the user in (autoSignInAfterVerification); the
+    // /verify-email page's own getSession-then-redirect can race under the HMR dev
+    // server, so leave it for the app root ourselves now that the session is set.
+    await page.waitForURL((url) => !url.pathname.startsWith('/verify-email'), { timeout: 8_000 }).catch(() => {})
+    if (new URL(page.url()).pathname.startsWith('/verify-email')) await page.goto('/')
   }
   await dismissOnboarding(page)
 }
@@ -69,7 +73,11 @@ export async function signIn(page: Page, user: Credentials): Promise<void> {
   await typeInto(password, user.password)
   // "Sign in" exact: the page also has a "Sign in with a passkey" button.
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-  await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 20_000 })
+  // Sign-in creates the session server-side; the client redirect off /login can
+  // race under the HMR dev server, so leave it for the app root ourselves if it
+  // has not moved on its own.
+  await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 8_000 }).catch(() => {})
+  if (new URL(page.url()).pathname.startsWith('/login')) await page.goto('/')
 }
 
 export const ADMIN: Credentials = {

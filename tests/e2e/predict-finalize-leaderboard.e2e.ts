@@ -28,11 +28,11 @@ test('predict -> finalize -> leaderboard', async ({ page }) => {
   const user = freshUser()
   await signUp(page, user)
 
-  // Predict the seeded match: an exact 2-1.
+  // Predict the seeded match: an exact 2-1. (No networkidle wait: the matches page
+  // holds a live WebSocket, so the network never idles - wait on the card.)
   await page.goto(`/${fixture.slug}/matches`)
-  await page.waitForLoadState('networkidle')
   const card = page.locator(`#match-${fixture.matchId}`)
-  await expect(card).toBeVisible()
+  await expect(card).toBeVisible({ timeout: 20_000 })
   // PrimeVue InputNumber ignores .fill() for its model, but the list animates so a
   // bare .click() won't stabilise. fill('') focuses + clears (lenient on
   // stability), then real keystrokes set the value.

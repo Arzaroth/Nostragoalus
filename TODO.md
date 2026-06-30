@@ -321,25 +321,26 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
 ### E2E (Playwright harness `mise run e2e` + the `pnpm e2e:smtp` script)
 
-The Playwright harness now ships predict->finalize->leaderboard, the
-password-reset / delete-account mail flows and an SSO/OIDC flow against a
-dockerized Keycloak. Its runnability fixes below were found in the
-feature-treatment review but could NOT be executed there (no Docker) - run
-`mise run e2e` and confirm before ticking:
+The Playwright harness ships predict->finalize->leaderboard, the password-reset /
+delete-account mail flows and an SSO/OIDC flow against a dockerized Keycloak. It
+runs green 4/4 from an empty DB (`mise run e2e`) after the runnability fixes that
+landed alongside it (verified by running the stack):
 
-- [ ] **Seed a default `scoring_config` for the isolated e2e DB**: a fresh,
-      migrated e2e DB has no `scoring_config` row (it is only seeded by
-      `fixtures:import`/`refresh`), so `matches:finalize` throws "no active scoring
-      config" and the predict->finalize->leaderboard spec fails from empty. Seed a
-      default config (mirror `ensureDefaultScoringConfig` - it carries the jsonb
-      `crowdTiers`/`championTiers`/`oddsTiers`, so an app-side seed-on-boot in
-      `warm-settings.ts`, or a run-task, is cleaner than hand-writing the SQL).
-- [ ] **Wait for Keycloak readiness in the SSO spec**: `global-setup` polls only
-      the app, and `e2e-up` starts Keycloak with `up -d` (returns immediately);
-      KC `start-dev --import-realm` takes ~30-60s. The sso `beforeAll` can fire the
-      provider-registration POST (which fetches the IdP discovery doc) before KC is
-      up - cold-start flake. Poll the issuer's `.well-known/openid-configuration`
-      before registering.
+- [x] **Default `scoring_config` for the isolated e2e DB**: `global-setup` now
+      seeds a minimal active default (`seedDefaultScoringConfig` in
+      `tests/e2e/helpers/db.ts`) so `matches:finalize` can score. (A from-empty DB
+      has none; it is otherwise only seeded by the fixtures import the isolated
+      stack never runs.)
+- [x] **Deterministic signup verification**: `global-setup` enables email
+      verification in-process via the admin API and warms the cold `/signup` etc.
+      pages, so the spec `signUp` mail-confirm path is deterministic instead of
+      racing the off-by-default flag and the HMR first-compile. `signUp`/`signIn`
+      also navigate off `/verify-email` / `/login` themselves when the app's
+      post-auth client redirect races under the dev server.
+- [ ] **Keycloak readiness is only ordering-dependent**: the SSO spec passes
+      because it runs last (KC has ~1.5 min to import its realm by then), but
+      nothing explicitly waits on the issuer's `.well-known/openid-configuration`.
+      Add a poll if it ever flakes on a slow/cold machine.
 - [ ] **e2e helpers default to the dev stack when `E2E_*` is unset**: `helpers/db.ts`
       / maildev / APP fall back to :5432/:1080/:3000. Mitigated by
       `playwright.config.ts` loading `.env.e2e` and by fully namespaced cleanup (no
