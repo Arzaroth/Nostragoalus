@@ -17,6 +17,7 @@ import { notifyLeagueJoin, notifyLeagueRemoved, notifyLeagueRole } from '../noti
 import { generateJoinCode, normalizeJoinCode, type JoinCodeGenerator } from './code'
 import { canKick, canManageLeague, canSeeJoinCode, type LeagueRole } from './permissions'
 import { stampUserFlagOnce } from '../user-flags/service'
+import { assertCompetitionNotRunning, type LeagueMode } from './modes'
 
 export type LeagueVisibility = 'PRIVATE' | 'PUBLIC'
 
@@ -25,6 +26,8 @@ export interface LeagueRow {
   competitionId: string
   name: string
   visibility: LeagueVisibility
+  mode: LeagueMode
+  lives: number | null
   joinCode: string
   description: string | null
   featuredTeamCode: string | null
@@ -40,11 +43,22 @@ export interface LeagueSummary {
   id: string
   name: string
   visibility: LeagueVisibility
+  mode: LeagueMode
+  lives: number | null
   role: LeagueRole
   memberCount: number
   chatEnabled: boolean
   competition: { id: string; slug: string; name: string }
   joinCode?: string
+}
+
+// HARDCORE needs a lives count (1-99); every other mode forces lives to null.
+export function normalizeLives(mode: LeagueMode, lives: number | null | undefined): number | null {
+  if (mode !== 'HARDCORE') return null
+  if (lives == null || !Number.isInteger(lives) || lives < 1 || lives > 99) {
+    throw new ValidationError('hardcore leagues need a lives count between 1 and 99')
+  }
+  return lives
 }
 
 const MAX_CODE_ATTEMPTS = 5
@@ -150,11 +164,19 @@ export interface CreateLeagueOptions {
   name: string
   ownerId: string
   visibility?: LeagueVisibility
+  mode?: LeagueMode
+  lives?: number | null
   codeGen?: JoinCodeGenerator
 }
 
 export async function createLeague(db: AppDatabase, opts: CreateLeagueOptions): Promise<LeagueRow> {
   const codeGen = opts.codeGen ?? generateJoinCode
+  const mode = opts.mode ?? 'NORMAL'
+  const lives = normalizeLives(mode, opts.lives)
+  // A moded league fixes the rules for the whole competition, so it can only be
+  // created before kickoff. A plain NORMAL league can be made any time.
+  if (mode !== 'NORMAL') await assertCompetitionNotRunning(db, opts.competitionId)
+
   for (let attempt = 1; ; attempt++) {
     try {
       // One transaction: a failure after the league row must not leave an
@@ -166,6 +188,8 @@ export async function createLeague(db: AppDatabase, opts: CreateLeagueOptions): 
             competitionId: opts.competitionId,
             name: opts.name,
             visibility: opts.visibility ?? 'PRIVATE',
+            mode,
+            lives,
             joinCode: codeGen(),
             createdBy: opts.ownerId,
           })
@@ -188,6 +212,8 @@ export async function listUserLeagues(db: AppDatabase, userId: string, competiti
       id: league.id,
       name: league.name,
       visibility: league.visibility,
+      mode: league.mode,
+      lives: league.lives,
       joinCode: league.joinCode,
       role: leagueMember.role,
       memberCount,
@@ -209,6 +235,8 @@ export async function listUserLeagues(db: AppDatabase, userId: string, competiti
     id: r.id,
     name: r.name,
     visibility: r.visibility as LeagueVisibility,
+    mode: r.mode as LeagueMode,
+    lives: r.lives,
     role: r.role as LeagueRole,
     memberCount: Number(r.memberCount),
     chatEnabled: r.chatEnabled,
@@ -467,6 +495,27 @@ export async function setLeagueFeaturedTeam(db: AppDatabase, leagueId: string, c
     if (!teams.some((t) => t.code === code)) throw new ValidationError('team not in competition')
   }
   await db.update(league).set({ featuredTeamCode: code }).where(eq(league.id, leagueId))
+}
+
+// Swap a league's mode (and lives for HARDCORE). Frozen once the competition has
+// kicked off - the game can't shift under players mid-tournament.
+export async function setLeagueMode(
+  db: AppDatabase,
+  leagueId: string,
+  mode: LeagueMode,
+  lives?: number | null,
+): Promise<void> {
+  const [row] = await db
+    .select({ competitionId: league.competitionId })
+    .from(league)
+    .where(eq(league.id, leagueId))
+    .limit(1)
+  if (!row) throw new NotFoundError('league not found')
+  await assertCompetitionNotRunning(db, row.competitionId)
+  await db
+    .update(league)
+    .set({ mode, lives: normalizeLives(mode, lives) })
+    .where(eq(league.id, leagueId))
 }
 
 export async function deleteLeague(db: AppDatabase, leagueId: string): Promise<void> {

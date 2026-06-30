@@ -8,6 +8,9 @@ const bodySchema = z.object({
   competition: z.string().min(1),
   name: z.string().trim().min(3).max(50),
   visibility: z.enum(['PRIVATE', 'PUBLIC']).optional(),
+  mode: z.enum(['NORMAL', 'EASY', 'HARD', 'HARDCORE']).optional(),
+  // HARDCORE only; ignored for every other mode.
+  lives: z.number().int().min(1).max(99).optional(),
 })
 
 export default defineValidatedHandler({ body: bodySchema }, async ({ body, user }) => {
@@ -17,6 +20,8 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ body, user 
     competitionId: competition.id,
     name: body.name,
     visibility: body.visibility,
+    mode: body.mode,
+    lives: body.lives,
     ownerId: user.id,
   })
   return {
@@ -24,6 +29,8 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ body, user 
       id: league.id,
       name: league.name,
       visibility: league.visibility,
+      mode: league.mode,
+      lives: league.lives,
       joinCode: league.joinCode,
       role: 'OWNER',
       memberCount: 1,
@@ -46,7 +53,9 @@ defineRouteMeta({
             "properties": {
               "competition": { "type": "string", "description": "Competition slug." },
               "name": { "type": "string", "description": "3-50 chars." },
-              "visibility": { "type": "string", "enum": ["PRIVATE", "PUBLIC"] }
+              "visibility": { "type": "string", "enum": ["PRIVATE", "PUBLIC"] },
+              "mode": { "type": "string", "enum": ["NORMAL", "EASY", "HARD", "HARDCORE"], "description": "Scoring mode. Non-NORMAL only before kickoff." },
+              "lives": { "type": "integer", "minimum": 1, "maximum": 99, "description": "HARDCORE only: wrong outcomes a member survives." }
             },
             "required": ["competition", "name"]
           }

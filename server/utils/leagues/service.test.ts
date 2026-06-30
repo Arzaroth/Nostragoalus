@@ -3,6 +3,7 @@ import { and, eq } from 'drizzle-orm'
 import { createTestDb, type TestDb } from '../../../tests/db'
 import { addLeagueMember, makeCompetition, makeLeague, makeMatch, makeUser, seedCompetition } from '../../../tests/factories'
 import { league, leagueMember, leagueOptOut, round, ssoProvider, ssoProviderLeague, user } from '../../../db/schema'
+import { findRoundId } from '../sync/rounds'
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors'
 import {
   adminAddMember,
@@ -37,8 +38,10 @@ import {
   setAdminMemberRole,
   setLeagueDescription,
   setLeagueFeaturedTeam,
+  setLeagueMode,
   setLeagueVisibility,
   setMemberRole,
+  normalizeLives,
   transferOwnership,
 } from './service'
 
@@ -773,5 +776,57 @@ describe('setLeagueFeaturedTeam', () => {
     // can always resolve.
     await expect(setLeagueFeaturedTeam(db, id, 'XXX')).rejects.toBeInstanceOf(ValidationError)
     await expect(setLeagueFeaturedTeam(db, 'nope', 'FRA')).rejects.toBeInstanceOf(NotFoundError)
+  })
+})
+
+describe('league modes', () => {
+  it('normalizeLives requires a valid count for HARDCORE and nulls others', () => {
+    expect(normalizeLives('HARDCORE', 3)).toBe(3)
+    expect(normalizeLives('NORMAL', 3)).toBeNull()
+    expect(normalizeLives('EASY', null)).toBeNull()
+    expect(() => normalizeLives('HARDCORE', null)).toThrow(ValidationError)
+    expect(() => normalizeLives('HARDCORE', 0)).toThrow(ValidationError)
+    expect(() => normalizeLives('HARDCORE', 1.5)).toThrow(ValidationError)
+  })
+
+  it('createLeague stores the mode and HARDCORE lives', async () => {
+    await makeUser(db, 'alice')
+    const hardcore = await createLeague(db, { competitionId, name: 'HC League', ownerId: 'alice', mode: 'HARDCORE', lives: 3 })
+    expect(hardcore).toMatchObject({ mode: 'HARDCORE', lives: 3 })
+    const easy = await createLeague(db, { competitionId, name: 'Easy League', ownerId: 'alice', mode: 'EASY', lives: 5 })
+    expect(easy).toMatchObject({ mode: 'EASY', lives: null })
+    await expect(
+      createLeague(db, { competitionId, name: 'Bad HC', ownerId: 'alice', mode: 'HARDCORE' }),
+    ).rejects.toBeInstanceOf(ValidationError)
+  })
+
+  it('blocks creating a moded league once the competition is running', async () => {
+    const running = await seedCompetition(db, { slug: 'running' })
+    const roundId = (await findRoundId(db, running, 'GROUP', 1)) as string
+    await makeMatch(db, { competitionId: running, roundId, kickoffTime: new Date('2020-01-01T00:00:00Z') })
+    await makeUser(db, 'alice')
+    await expect(
+      createLeague(db, { competitionId: running, name: 'Late Easy', ownerId: 'alice', mode: 'EASY' }),
+    ).rejects.toBeInstanceOf(ConflictError)
+    // A plain NORMAL league can still be created.
+    const normal = await createLeague(db, { competitionId: running, name: 'Late Normal', ownerId: 'alice' })
+    expect(normal.mode).toBe('NORMAL')
+  })
+
+  it('setLeagueMode swaps before kickoff and is frozen after', async () => {
+    await makeUser(db, 'alice')
+    const id = await makeLeague(db, { competitionId, ownerId: 'alice', mode: 'NORMAL' })
+    await setLeagueMode(db, id, 'HARDCORE', 2)
+    expect(await getLeague(db, id)).toMatchObject({ mode: 'HARDCORE', lives: 2 })
+    await setLeagueMode(db, id, 'EASY')
+    expect(await getLeague(db, id)).toMatchObject({ mode: 'EASY', lives: null })
+
+    await expect(setLeagueMode(db, 'missing', 'EASY')).rejects.toBeInstanceOf(NotFoundError)
+
+    const running = await seedCompetition(db, { slug: 'running2' })
+    const roundId = (await findRoundId(db, running, 'GROUP', 1)) as string
+    await makeMatch(db, { competitionId: running, roundId, kickoffTime: new Date('2020-01-01T00:00:00Z') })
+    const liveLeague = await makeLeague(db, { competitionId: running, ownerId: 'alice' })
+    await expect(setLeagueMode(db, liveLeague, 'EASY')).rejects.toBeInstanceOf(ConflictError)
   })
 })
