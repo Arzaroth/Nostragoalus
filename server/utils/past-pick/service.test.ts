@@ -113,6 +113,27 @@ describe('getPastPickCounterfactual', () => {
     await client.close()
   })
 
+  it('returns none on a half-synced scoreline (one side still null)', async () => {
+    const { db, client, competitionId, roundId } = await setup()
+    const u = await makeUser(db, 'u')
+    // Started but only one side of the score has landed - not replayable yet.
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: PAST, status: 'LIVE', fullTimeHome: 1 })
+    await seedOwnerHistory(db, { userId: u, matchId: m, roundId, history: [[1, 0], [2, 2]] })
+    expect(await getPastPickCounterfactual(db, { matchId: m, userId: u, rules: RULES })).toEqual({ scope: 'none' })
+    await client.close()
+  })
+
+  it('stays silent when the best earlier pick only ties the kept one', async () => {
+    const { db, client, competitionId, roundId } = await setup()
+    const u = await makeUser(db, 'u')
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: PAST, status: 'FINISHED', fullTimeHome: 2, fullTimeAway: 1 })
+    // actual 2-1: earlier 3-2 and kept 1-0 both score the home win by one (DIFF,
+    // 2). The earlier pick equals, never beats, the kept one - so nothing surfaces.
+    await seedOwnerHistory(db, { userId: u, matchId: m, roundId, history: [[3, 2], [1, 0]] })
+    expect(await getPastPickCounterfactual(db, { matchId: m, userId: u, rules: RULES })).toEqual({ scope: 'none' })
+    await client.close()
+  })
+
   it('shows the cheeky line for a winning 0-0 earlier pick and dedups repeats', async () => {
     const { db, client, competitionId, roundId } = await setup()
     const u = await makeUser(db, 'u')
