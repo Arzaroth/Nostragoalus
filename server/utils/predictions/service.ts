@@ -389,6 +389,12 @@ export async function upsertLeaguePrediction(
   const matchRow = await loadOpenMatch(db, input.matchId, now)
   await assertLeagueMembership(db, input.leagueId, input.userId)
 
+  // Overrides only exist in moded leagues. A NORMAL league always mirrors the
+  // base pick (its scoring carries the global crowd bonus + champion/best-scorer
+  // that a per-league re-score can't reproduce - see TODO.md).
+  const [lg] = await db.select({ mode: league.mode }).from(league).where(eq(league.id, input.leagueId)).limit(1)
+  if (lg?.mode === 'NORMAL') throw new ValidationError('per-league picks are only available in easy, hard and hardcore leagues')
+
   return db.transaction(async (tx) => {
     if (input.wager != null && input.wager > 0) {
       // Budget across this league's own override stakes in the round. Stakes that

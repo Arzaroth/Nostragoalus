@@ -75,6 +75,7 @@ export interface MatchOptions {
   homeTeamCode?: string | null
   awayTeamCode?: string | null
   winner?: 'HOME' | 'AWAY' | 'DRAW' | null
+  scoringState?: 'PENDING' | 'SCORED' | 'VOID' | 'STALE'
 }
 
 export async function makeMatch(db: AppDatabase, opts: MatchOptions): Promise<string> {
@@ -97,6 +98,7 @@ export async function makeMatch(db: AppDatabase, opts: MatchOptions): Promise<st
       fullTimeHome: opts.fullTimeHome ?? null,
       fullTimeAway: opts.fullTimeAway ?? null,
       winner: opts.winner ?? null,
+      scoringState: opts.scoringState ?? 'PENDING',
     })
     .returning({ id: match.id })
   return row.id
