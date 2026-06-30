@@ -41,6 +41,11 @@ feature/architecture doc that implements it.
 - **Best-scorer winner comes from stored goal events, not a finalize-time HTTP
   call.** Own goals excluded, ties all win, awarded inside the finalize
   transaction. See [features/best-scorer.md](features/best-scorer.md).
+- **The outlandish-score confirm uses a flat absolute cap, not a sigma/z-score
+  model.** A score is flagged when `home > 7 || away > 7 || home + away > 11`.
+  Goal counts are low-count and Poisson-ish, so a variance-based bound
+  miscalibrates; a fixed ceiling stays predictable and identical for every
+  fixture. It's a confirm, not a block. See [features/pick-guard.md](features/pick-guard.md).
 
 ## External data
 

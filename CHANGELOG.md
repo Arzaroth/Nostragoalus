@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- **Never miss a pick**: the fixtures page now shows how many upcoming matches still need a score before the next lockout, with a "Jump to first" button that scrolls straight to the soonest unpicked match.
+- **Catch fat-finger scores**: entering a wildly high scoreline (8 or more goals for one side, or 12 or more in total) now asks you to confirm before it saves, so a slip like 1-33 doesn't get locked in by mistake. You can still confirm it on purpose.
+
 ## [2.4.0] - 2026-06-30
 
 ### Added

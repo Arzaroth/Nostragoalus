@@ -48,6 +48,17 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       500s the public endpoint instead of falling back. Guard it (or make
       season-resolution resilient) so the Stats endpoint degrades gracefully.
 
+## Pick guard (deferred from the feature pass)
+
+- [ ] No component test exercises the outstanding-picks banner / "Jump to first"
+      in `app/pages/[competition]/matches/index.vue` - the page pulls in
+      `useFetch('/api/me/stats')`, `useMatches`, `useMyPredictions`,
+      `useCrowdTotals` and the contained-scroll measuring, so mounting it under
+      happy-dom is heavy and brittle. The counting/first-id logic is fully unit
+      tested in `app/utils/outstanding-picks.ts`; cover the banner render + jump
+      wiring if the page gets a test harness (or extract the banner into its own
+      small component that can be mounted in isolation).
+
 ## Calendar feed (deferred from the feature-treatment review)
 
 - [ ] `server/utils/feed/token.ts` is a near-verbatim clone of
