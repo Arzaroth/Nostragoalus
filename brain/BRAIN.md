@@ -59,6 +59,7 @@ use the indexes.
 | [leagues.md](features/leagues.md) | Competition-scoped groups, roles, visibility, SSO auto-join. |
 | [onboarding-tour.md](features/onboarding-tour.md) | One-time spotlight walk-through of the core actions for new players; replayable from the account menu. |
 | [sso-provisioning.md](features/sso-provisioning.md) | SSO onboarding lifecycle, connection test, OIDC test-sign-in claim preview, DNS domain verify + bypass, SCIM provisioning. |
+| [league-modes.md](features/league-modes.md) | Per-league scoring modes (easy/hard/hardcore) + base pick / override. |
 | [crowd-bot.md](features/crowd-bot.md) | The "ghost" bot personas: consensus 🤖, evil twin 😈, equalizer ⚖️. |
 | [odds.md](features/odds.md) | 1X2 decimal odds (Sofascore + BetExplorer). |
 | [reactions.md](features/reactions.md) | Match + chat emoji reactions. |

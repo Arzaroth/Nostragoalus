@@ -47,6 +47,17 @@ the code. Alphabetical.
 - **League** - a competition-scoped group of players that filters the views
   (leaderboard, chat). Predictions stay global/user-scoped. See
   [features/leagues.md](features/leagues.md).
+- **League mode** - how a league scores: `NORMAL` (exact score, the classic
+  game), `EASY` (outcome + odds), `HARD` (outcome + a confidence stake), or
+  `HARDCORE` (survival). Frozen once the competition kicks off. See
+  [features/league-modes.md](features/league-modes.md).
+- **Override pick** - a moded league's optional per-(league, user, match) pick
+  (`league_prediction`) used instead of the base pick. Effective pick = override
+  ?? base; lets a player play one league differently from another.
+- **Confidence wager** - a HARD-mode stake spread across a round's matches; a
+  correct call pays the stake (exact score doubles it).
+- **Survival board** - the HARDCORE standings: alive members (co-winners) above
+  the eliminated, who rank by how far they got.
 - **Opt-out** - a `league_opt_out` row meaning "never auto-re-add me" (so SSO
   auto-join respects a deliberate leave).
 - **Leaderboard / standings** - the per-competition (or per-league) ranking.
