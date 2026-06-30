@@ -1,5 +1,15 @@
 import type { AppDatabase } from '../db/types'
-import { competition, league, leagueMember, match, matchReaction, prediction, user } from '../db/schema'
+import {
+  competition,
+  league,
+  leagueMember,
+  leaguePrediction,
+  match,
+  matchReaction,
+  prediction,
+  user,
+} from '../db/schema'
+import type { LeagueMode } from '../server/utils/leagues/modes'
 import type { AppStage, MatchStatus, NormalizedMatch } from '#shared/types/match'
 import type { ReactionEmoji } from '#shared/reactions'
 import { ensureRounds } from '../server/utils/sync/rounds'
@@ -98,6 +108,8 @@ export interface LeagueOptions {
   name?: string
   joinCode?: string
   visibility?: 'PRIVATE' | 'PUBLIC'
+  mode?: LeagueMode
+  lives?: number | null
 }
 
 export async function makeLeague(db: AppDatabase, opts: LeagueOptions): Promise<string> {
@@ -108,6 +120,8 @@ export async function makeLeague(db: AppDatabase, opts: LeagueOptions): Promise<
       name: opts.name ?? 'Test League',
       joinCode: opts.joinCode ?? `CODE${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
       visibility: opts.visibility ?? 'PRIVATE',
+      mode: opts.mode ?? 'NORMAL',
+      lives: opts.lives ?? null,
       createdBy: opts.ownerId ?? null,
     })
     .returning({ id: league.id })
@@ -120,8 +134,9 @@ export async function addLeagueMember(
   leagueId: string,
   userId: string,
   role: 'OWNER' | 'MODERATOR' | 'MEMBER' = 'MEMBER',
+  picksSynced = true,
 ): Promise<void> {
-  await db.insert(leagueMember).values({ leagueId, userId, role })
+  await db.insert(leagueMember).values({ leagueId, userId, role, picksSynced })
 }
 
 export interface PredictionOptions {
@@ -131,6 +146,8 @@ export interface PredictionOptions {
   home: number
   away: number
   isJoker?: boolean
+  isOutcomeOnly?: boolean
+  wager?: number | null
   lockedAt?: Date | null
 }
 
@@ -144,9 +161,41 @@ export async function makePrediction(db: AppDatabase, opts: PredictionOptions): 
       homeGoals: opts.home,
       awayGoals: opts.away,
       isJoker: opts.isJoker ?? false,
+      isOutcomeOnly: opts.isOutcomeOnly ?? false,
+      wager: opts.wager ?? null,
       lockedAt: opts.lockedAt ?? null,
     })
     .returning({ id: prediction.id })
+  return row.id
+}
+
+export interface LeaguePredictionOptions {
+  leagueId: string
+  userId: string
+  matchId: string
+  roundId: string
+  home: number
+  away: number
+  isJoker?: boolean
+  isOutcomeOnly?: boolean
+  wager?: number | null
+}
+
+export async function makeLeaguePrediction(db: AppDatabase, opts: LeaguePredictionOptions): Promise<string> {
+  const [row] = await db
+    .insert(leaguePrediction)
+    .values({
+      leagueId: opts.leagueId,
+      userId: opts.userId,
+      matchId: opts.matchId,
+      roundId: opts.roundId,
+      homeGoals: opts.home,
+      awayGoals: opts.away,
+      isJoker: opts.isJoker ?? false,
+      isOutcomeOnly: opts.isOutcomeOnly ?? false,
+      wager: opts.wager ?? null,
+    })
+    .returning({ id: leaguePrediction.id })
   return row.id
 }
 
