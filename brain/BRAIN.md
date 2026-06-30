@@ -51,6 +51,7 @@ use the indexes.
 |---|---|
 | [competitions.md](features/competitions.md) | Multi-competition model + the `/[competition]/` routing. |
 | [predictions-and-scoring.md](features/predictions-and-scoring.md) | The core loop: predict, lock, finalize, score. |
+| [pick-guard.md](features/pick-guard.md) | Outstanding-picks nudge + outlandish-score confirm. |
 | [champion-pick.md](features/champion-pick.md) | Per-competition winner pick, FIFA-rank tier payouts. |
 | [best-scorer.md](features/best-scorer.md) | Golden Boot pick, goal-event-derived award. |
 | [stats.md](features/stats.md) | Player rankings tab: top scorers + top assists. |
