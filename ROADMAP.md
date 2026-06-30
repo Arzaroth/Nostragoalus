@@ -91,6 +91,29 @@ effort buckets; order within a bucket is not priority.
       score of every prediction; see how it fared. Draws are self-twins by
       design; one-line tooltip ("even your evil twin agrees") instead of a
       rules paragraph. Exact draw handling still TBD (swap vs crowd-derived).
+- [ ] **Outstanding-picks nudge + outlandish-pick guard** (IN_PROGRESS,
+      worktree-pick-guard): the fixtures stats strip shows "N matches need a pick
+      before the next lockout" with a jump-to-first-unpicked; and ScoreInput asks
+      for confirmation before saving an implausible scoreline. Outlandish
+      threshold (locked): a flat absolute cap (`home > 7 || away > 7 ||
+      home+away > 11`), not a sigma/z-score - goal counts are low and Poisson-ish,
+      so a standard-deviation rule miscalibrates. Confirm, not block. The count is
+      derived client-side from the loaded matches + the user's picks; logic lives
+      in tested `app/utils` helpers (the page stays outside the coverage gate).
+- [ ] **Odds movement** (IN_PROGRESS, worktree-odds-movement): surface the
+      opening-vs-current line drift already stored in `oddsSnapshot.initial*`
+      (only the current 1X2 is shown today) - a per-outcome shortened/drifted/flat
+      marker plus a tap-to-expand opening-prices + per-bookmaker panel. Decimal
+      display only. The bookmaker breakdown is plumbed end-to-end but dormant in
+      prod (Sofascore is one aggregated feed, `bookmakers` is null); it lights up
+      when a multi-book provider populates the column.
+- [ ] **Live viewer count** (IN_PROGRESS, worktree-live-viewers): "N watching
+      now" on a live match page. A new per-match viewer room in the in-process WS
+      hub, fed by a dedicated `viewing` frame (not the score-`subscribe` frame, so
+      browsing the fixtures list does not inflate the count) and a `viewers:update`
+      event. In-process, so a multi-node deploy undercounts (a shared store is
+      needed to scale out) - documented, same single-instance model as the rest of
+      the hub.
 - [x] **Email verification for signups** (admin runtime toggle, shipped in 1.8.0):
   - Flag in a new generic `app_setting` key-value table (the SSO config path
     is its own encrypted table; a plain boolean didn't need that). better-auth
@@ -210,6 +233,15 @@ effort buckets; order within a bucket is not priority.
       shareable image card. Pure read-side work.
 - [ ] **What-if stats**: "joker on match X = +14 pts", "following the crowd
       would have scored N vs your M" (reuses consensus-bot data).
+- [ ] **Past-pick counterfactual** (IN_PROGRESS, worktree-past-pick): on a match
+      you predicted, surface (owner-only) when a score you picked earlier and then
+      swapped off would have out-scored the one you kept - live and provisional
+      while it plays, settled at full-time, with a cheeky line for a winning 0-0
+      ("won, but probably was not worth watching"). Replays the user's own revealed
+      commitment-ledger picks through the scoring engine (synthetic, outside the
+      crowd-rarity denominator like the bot; scored against the field as it locked,
+      a documented approximation). Future: fold together with Evil twin + What-if
+      into one "counterfactuals" surface.
 - [ ] **Personal analytics page**: bias detector - avg goals predicted vs
       real, favorite-team optimism, accuracy by group/team/round.
 - [x] **Prediction share cards** (shipped 1.32.0): the
