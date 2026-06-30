@@ -2,6 +2,7 @@ import { db } from '../../../../db'
 import { scimProvider, ssoProvider } from '../../../../db/schema'
 import { requireAdmin } from '../../../utils/auth-guards'
 import { listProviderAutoJoinLeagues } from '../../../utils/leagues/service'
+import { scimProviderId } from '../../../utils/sso/service'
 
 // Lists registered SSO providers without exposing the (encrypted) config.
 export default defineEventHandler(async (event) => {
@@ -37,7 +38,7 @@ export default defineEventHandler(async (event) => {
       // Surface only the boolean outcome here; the full per-check detail comes
       // back from the test-connection endpoint when the admin runs it.
       lastTestOk: r.lastTestResult?.ok ?? null,
-      scimEnabled: scimEnabled.has(r.providerId),
+      scimEnabled: scimEnabled.has(scimProviderId(r.providerId)),
     })),
   }
 })

@@ -33,6 +33,13 @@ export async function setProviderStatus(db: AppDatabase, providerId: string, nex
   await db.update(ssoProvider).set({ status: next }).where(eq(ssoProvider.providerId, providerId))
 }
 
+// The SCIM connection id for an SSO provider. @better-auth/scim refuses a token
+// whose providerId collides with a registered ssoProvider, so the SCIM directory
+// gets its own id; provisioned users still link to SSO logins by email.
+export function scimProviderId(providerId: string): string {
+  return `${providerId}-scim`
+}
+
 // True only when the provider is live ('enabled'). The catch-all uses this to
 // reject sign-in callbacks for draft/disabled providers (existing sessions are
 // untouched - the gate only sits on the session-minting callback paths).

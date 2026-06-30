@@ -2,13 +2,14 @@ import { eq } from 'drizzle-orm'
 import { db } from '../../../../db'
 import { scimProvider, ssoProvider } from '../../../../db/schema'
 import { defineValidatedHandler } from '../../../utils/validated-handler'
+import { scimProviderId } from '../../../utils/sso/service'
 
 export default defineValidatedHandler({ admin: true }, async ({ event }) => {
   const id = getRouterParam(event, 'providerId') as string
   await db.delete(ssoProvider).where(eq(ssoProvider.providerId, id))
   // No FK from scim_provider, so drop the provisioning row by hand to avoid an
   // orphaned (and still-valid) SCIM token.
-  await db.delete(scimProvider).where(eq(scimProvider.providerId, id))
+  await db.delete(scimProvider).where(eq(scimProvider.providerId, scimProviderId(id)))
   return { ok: true }
 })
 

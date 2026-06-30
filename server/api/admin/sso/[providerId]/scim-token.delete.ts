@@ -2,12 +2,13 @@ import { eq } from 'drizzle-orm'
 import { db } from '../../../../../db'
 import { scimProvider } from '../../../../../db/schema'
 import { defineValidatedHandler } from '../../../../utils/validated-handler'
+import { scimProviderId } from '../../../../utils/sso/service'
 
 // Revokes SCIM provisioning for a provider by dropping its connection row: the
 // IdP's stored bearer no longer resolves, so provisioning calls 401.
 export default defineValidatedHandler({ admin: true }, async ({ event }) => {
   const providerId = getRouterParam(event, 'providerId')!
-  await db.delete(scimProvider).where(eq(scimProvider.providerId, providerId))
+  await db.delete(scimProvider).where(eq(scimProvider.providerId, scimProviderId(providerId)))
   return { ok: true }
 })
 

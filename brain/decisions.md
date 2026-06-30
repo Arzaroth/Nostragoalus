@@ -166,3 +166,9 @@ feature/architecture doc that implements it.
   the plugin's `_better-auth-token-{providerId}` identifier + TXT format so the
   plugin's own endpoint stays compatible. See
   [features/sso-provisioning.md](features/sso-provisioning.md).
+- **SCIM deprovisioning forced the better-auth family from 1.6.18 to 1.6.23.**
+  1.6.18's `@better-auth/scim` only provisions (it parses `active` but never maps
+  it); `active:false -> ban` lands in 1.6.2x. The whole family moves in lockstep
+  (shared `@better-auth/core`). 1.6.23 also makes an SSO and a SCIM provider id
+  mutually exclusive, so the SCIM connection uses a derived `{providerId}-scim`
+  id; provisioned users still link to their SSO login by email.

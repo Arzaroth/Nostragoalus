@@ -14,10 +14,17 @@ const {
   setProviderStatus,
   testConnection,
   isProviderEnabled,
+  scimProviderId,
   getDomainVerificationInstructions,
   verifyDomainDns,
   bypassDomainVerification,
 } = await import('./service')
+
+describe('scimProviderId', () => {
+  it('derives a distinct SCIM id so it cannot collide with the SSO providerId', () => {
+    expect(scimProviderId('acme')).toBe('acme-scim')
+  })
+})
 
 // A throwaway self-signed cert (bare base64 body, no PEM headers) to exercise the
 // header-wrapping branch of the certificate check.

@@ -945,15 +945,27 @@ landed alongside it (verified by running the stack):
       SSO admin section nearly doubled and is still inline in
       `app/pages/admin/index.vue` with `$fetch`. Extracting would thin the page and
       let a `*.nuxt.test.ts` cover the badges / enable-gating / claim preview.
-- [ ] SCIM provisioning E2E: generate a token, then exercise `POST /scim/v2/Users`
-      (create) and `PATCH active:false`/`true` against a real (or dockerized) IdP
-      and assert the ban + session revoke + data retention. The plugin behaviour
-      is better-auth's; only our wiring (schema, hashed token, HTTP block) is
-      unit-checked today.
+- [x] SCIM provisioning is covered two ways: `tests/scim-provisioning.test.ts`
+      (pglite, production auth options) drives mint -> provision -> `active:false`
+      ban (data kept) -> reactivate, and `tests/e2e/sso-onboarding.e2e.ts` does the
+      same over real HTTP against the dockerized stack + Keycloak. The lifecycle
+      gate, login resolver, and the SCIM-management HTTP block are covered there too.
+- [ ] Full clean `pnpm e2e` run of `sso-onboarding.e2e.ts` end to end: the
+      lifecycle/Keycloak/management specs pass against the branch build, and the
+      SCIM round-trip was verified piece by piece (token via the `-scim` id,
+      `POST /Users` 201, ban on `active:false`), but a single all-green run was
+      blocked by the shared `ng-e2e` compose project colliding with another
+      worktree's active e2e (see the harness gotcha below). Re-run when the e2e
+      stack is free, or after the project-name fix.
+- [ ] e2e harness: `mise run e2e-up`/`e2e` hardcode `-p ng-e2e`, so two worktrees
+      running the e2e at once fight over the same containers (the app-dev bind
+      mount flips to whichever worktree ran `up` last, and routes from the other
+      branch 404). Parameterize the compose project name per worktree (e.g.
+      `ng-e2e-${branch}`) or document that the e2e stack is single-tenant per host.
 - [ ] Live-browser verification of the onboarding UI (Manage panel, the
       test-sign-in popup + postMessage claim capture, the domain TXT card, the
-      reveal-once SCIM token) - built and typecheck/build-clean, not yet driven in
-      a real browser against a running stack.
+      reveal-once SCIM token) - the API flow is e2e-covered, but the admin UI
+      itself has not been driven in a real browser yet.
 - [ ] SAML live test sign-in: only OIDC captures live claims; SAML uses the static
       bindings preview + the connection test. A live SAML assertion capture needs
       a test ACS pre-registered at the IdP (most IdPs only POST to the registered
