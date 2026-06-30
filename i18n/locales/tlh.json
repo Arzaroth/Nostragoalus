@@ -582,6 +582,7 @@
     "joker": "Hov",
     "makeJoker": "Hov ×2 yIQeq",
     "jokerError": "Hov vIHmoHlaHbe' - chaq may' taghpu'.",
+    "saveError": "QInlIj vIQonlaHbe'.",
     "jokerRoundLocked": "latlh may'Daq Sergh joker; choH laH'be'.",
     "crowd": "Hoch",
     "finalDouble": "HevDaq cha'logh",
@@ -1359,7 +1360,17 @@
     "survivalWinner": "taHwI'",
     "wagerLabel": "nID",
     "wagerBudget": "{used}/{total} nID",
-    "pointsLabel": "naghmey"
+    "pointsLabel": "naghmey",
+    "quickHome": "juH Qap",
+    "quickDraw": "rar",
+    "quickAway": "Haw' Qap",
+    "editingFor": "{name} QIn",
+    "followMain": "QIn potlh yItlha'",
+    "customize": "boqvam yIchoH",
+    "nudgeTitle": "QInlIj yIrInmoH",
+    "nudgeMissing": "{n} ngab",
+    "nudgeNeedsExact": "{n} mI' Hutlh",
+    "nudgeNeedsStake": "{n} nID Hutlh"
   },
   "invites": {
     "title": "rIymey muvmeH",

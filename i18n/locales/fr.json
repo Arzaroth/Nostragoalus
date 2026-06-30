@@ -582,6 +582,7 @@
     "joker": "Joker",
     "makeJoker": "Définir joker ×2",
     "jokerError": "Impossible de déplacer le joker - un match a peut-être déjà commencé.",
+    "saveError": "Impossible d'enregistrer votre pronostic.",
     "jokerRoundLocked": "Votre joker est déjà bloqué sur un autre match de cette journée.",
     "crowd": "le groupe",
     "finalDouble": "La finale compte double",
@@ -1359,7 +1360,17 @@
     "survivalWinner": "Survivant",
     "wagerLabel": "Mise",
     "wagerBudget": "{used}/{total} misés cette journée",
-    "pointsLabel": "pts"
+    "pointsLabel": "pts",
+    "quickHome": "Victoire domicile",
+    "quickDraw": "Nul",
+    "quickAway": "Victoire extérieur",
+    "editingFor": "Pronostics pour {name}",
+    "followMain": "Suivre mes pronostics principaux",
+    "customize": "Personnaliser pour cette ligue",
+    "nudgeTitle": "Complétez vos pronostics",
+    "nudgeMissing": "{n} manquant(s)",
+    "nudgeNeedsExact": "{n} sans score",
+    "nudgeNeedsStake": "{n} sans mise"
   },
   "invites": {
     "title": "Liens d'invitation",

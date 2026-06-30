@@ -582,6 +582,7 @@
     "joker": "โจ๊กเกอร์",
     "makeJoker": "ตั้งโจ๊กเกอร์ ×2",
     "jokerError": "ย้ายโจ๊กเกอร์ไม่ได้ - อาจมีแมตช์ที่เริ่มไปแล้ว",
+    "saveError": "บันทึกคำทายไม่ได้",
     "jokerRoundLocked": "โจ๊กเกอร์ของคุณถูกล็อกไว้กับอีกแมตช์ในรอบนี้แล้ว",
     "crowd": "ทุกคน",
     "finalDouble": "นัดชิงนับสองเท่า",
@@ -1359,7 +1360,17 @@
     "survivalWinner": "ผู้รอด",
     "wagerLabel": "เดิมพัน",
     "wagerBudget": "วางแล้ว {used}/{total} รอบนี้",
-    "pointsLabel": "แต้ม"
+    "pointsLabel": "แต้ม",
+    "quickHome": "เจ้าบ้านชนะ",
+    "quickDraw": "เสมอ",
+    "quickAway": "ทีมเยือนชนะ",
+    "editingFor": "คำทายของ {name}",
+    "followMain": "ใช้คำทายหลักของฉัน",
+    "customize": "ปรับเฉพาะลีกนี้",
+    "nudgeTitle": "ทายให้ครบ",
+    "nudgeMissing": "ขาด {n}",
+    "nudgeNeedsExact": "{n} ยังไม่มีสกอร์",
+    "nudgeNeedsStake": "{n} ยังไม่วางเดิมพัน"
   },
   "invites": {
     "title": "ลิงก์เชิญ",

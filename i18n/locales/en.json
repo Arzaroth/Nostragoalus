@@ -586,6 +586,7 @@
     "joker": "Joker",
     "makeJoker": "Set ×2 joker",
     "jokerError": "Couldn't move the joker - a match may have already started.",
+    "saveError": "Couldn't save your pick.",
     "jokerRoundLocked": "Your joker is locked on another match this round.",
     "crowd": "everyone",
     "finalDouble": "Final counts double",
@@ -1363,7 +1364,17 @@
     "survivalWinner": "Survivor",
     "wagerLabel": "Stake",
     "wagerBudget": "{used}/{total} staked this round",
-    "pointsLabel": "pts"
+    "pointsLabel": "pts",
+    "quickHome": "Home win",
+    "quickDraw": "Draw",
+    "quickAway": "Away win",
+    "editingFor": "Picks for {name}",
+    "followMain": "Follow my main picks",
+    "customize": "Customize for this league",
+    "nudgeTitle": "Finish your picks",
+    "nudgeMissing": "{n} missing",
+    "nudgeNeedsExact": "{n} need a score",
+    "nudgeNeedsStake": "{n} need a stake"
   },
   "invites": {
     "title": "Invite links",
