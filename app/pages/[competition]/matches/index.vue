@@ -308,14 +308,24 @@ watch(
   { immediate: true, flush: 'post' },
 )
 
-// "Jump to first" on the outstanding-picks nudge. The soonest unpicked fixture
-// may be hidden by the status/country filters, so reveal upcoming and clear the
-// country filter before scrolling to it.
+// "Jump to first" on the outstanding-picks nudge. The fixtures list is the only
+// view that renders the rows, and the soonest unpicked one may be hidden by the
+// active view, the status/country filters, or a collapsed round - reveal all of
+// those before scrolling to it. Claim the one-shot auto-scroll so switching back
+// to fixtures doesn't fight this jump for the scroll position.
 function jumpToFirstUnpicked() {
   const id = firstOutstandingPickId(matches.value ?? [], predictedIds.value)
   if (!id) return
+  if (viewMode.value !== 'fixtures') viewMode.value = 'fixtures'
   if (!activeBuckets.value.includes('upcoming')) activeBuckets.value = [...activeBuckets.value, 'upcoming']
   if (selectedCountries.value.length) selectedCountries.value = []
+  const roundId = (matches.value ?? []).find((m) => m.id === id)?.roundId
+  if (roundId && collapsedRounds.value.has(roundId)) {
+    const next = new Set(collapsedRounds.value)
+    next.delete(roundId)
+    collapsedRounds.value = next
+  }
+  didAutoScroll = true
   nextTick(() => scrollToMatch(id))
 }
 
@@ -571,7 +581,7 @@ watch(searchOpen, () => nextTick(updateListHeight))
               <ScoreInput
                 :home="predByMatch[m.id]?.homeGoals ?? null"
                 :away="predByMatch[m.id]?.awayGoals ?? null"
-                :disabled="m.isLocked || !m.homeTeamCode || !m.awayTeamCode"
+                :disabled="!isMatchPickable(m)"
                 @update="(v) => save(m.id, v)"
               />
               <!-- Reserved whenever the preference is on, so cards never resize. -->

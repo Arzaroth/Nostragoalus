@@ -59,6 +59,31 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       wiring if the page gets a test harness (or extract the banner into its own
       small component that can be mounted in isolation).
 
+### Deferred from the feature-treatment review
+
+- [ ] **Non-finite score bypasses the confirm**: `isOutlandishScore`
+      (`app/utils/prediction-sanity.ts`) compares with `>`, so `NaN`/`Infinity`
+      evaluate false and skip the confirm. ScoreInput's `@input` handler keeps a
+      value when `typeof $event.value === 'number'`, and `typeof NaN === 'number'`,
+      so a NaN could in principle auto-commit with no prompt. InputNumber is bounded
+      `:min="0" :max="99"` and emits `null` not `NaN` in normal use, so this is
+      defense-in-depth only - add a `Number.isFinite` backstop in the `@input`
+      handler if PrimeVue ever starts emitting non-finite values.
+- [ ] **Jump-to-first relies on endpoint ordering**: `firstOutstandingPickId`
+      returns the first pickable-unpredicted match in list order, and the matches
+      page feeds it `matches.value` raw, trusting it is kickoff-ascending (it is:
+      the endpoint sorts `asc(kickoffTime)`). The "soonest" guarantee lives only in
+      a comment - if the endpoint/`useMatches` ordering ever changes, the jump
+      targets a non-soonest fixture with no test catching it. Sort defensively in
+      the helper or assert the order in a page-level test if one is added.
+- [ ] **Confirm-open refetch repaints the inputs**: opening the outlandish confirm
+      blurs the input, clearing `editing`, which re-arms the props watcher in
+      `ScoreInput.vue`. A background predictions refetch (live / 60s staleTime) can
+      then overwrite the visible home/away under the open dialog. Accept still saves
+      the right value (`acceptOutlandish` reads `pending`), so it is cosmetic, but
+      the scoreline can visibly jump mid-decision. Keep `editing` true while the
+      confirm is up if it proves distracting.
+
 ## Calendar feed (deferred from the feature-treatment review)
 
 - [ ] `server/utils/feed/token.ts` is a near-verbatim clone of

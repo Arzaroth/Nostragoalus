@@ -21,10 +21,13 @@ the user has not predicted yet. The logic is a pure helper so it lands under the
   already-predicted match ids.
 
 Both are derived on the page from the `useMatches` / `useMyPredictions` data
-already loaded, so the nudge adds no extra request. "Jump to first" reveals the
-upcoming bucket and clears the country filter (the soonest unpicked match may be
-filtered out), then scrolls via the shared `scrollToMatch` helper - the same one
-the first-upcoming auto-scroll uses.
+already loaded, so the nudge adds no extra request. The soonest unpicked match may
+be hidden by the active view, the filters, or a collapsed round, so "Jump to
+first" switches to the fixtures view, reveals the upcoming bucket, clears the
+country filter, and expands the target's round before scrolling via the shared
+`scrollToMatch` helper - the same one the first-upcoming auto-scroll uses. It also
+claims that one-shot auto-scroll so switching back to fixtures does not fight the
+jump for the scroll position.
 
 ## Outlandish-score confirm
 
