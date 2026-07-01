@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildTimeline, h2hSummaryOf, minuteVal, HALFTIME_VAL, ET_HALFTIME_VAL } from './match-view'
+import { buildTimeline, h2hSummaryOf, minuteVal, HALFTIME_VAL, ET_HALFTIME_VAL, pbpIcon, isGoalKind, pbpTextSpec, pbpFlagCode } from './match-view'
 import { EXTRA_TIME_BREAK_MINUTE } from '#shared/types/match'
 
 describe('minuteVal', () => {
@@ -130,5 +130,66 @@ describe('match-view branch fill', () => {
     // a meeting Spain lost (away team won)
     const s = h2hSummaryOf(null, [{ homeTeam: 'Spain', homeScore: 0, awayScore: 2, awayTeam: 'Italy' }], 'Spain')
     expect(s).toMatchObject({ homeWins: 0, awayWins: 1 })
+  })
+})
+
+describe('pbpIcon', () => {
+  it('maps known kinds to an emoji and unknown kinds to empty', () => {
+    expect(pbpIcon('goal')).toBe('⚽')
+    expect(pbpIcon('var')).toBe('📺')
+    expect(pbpIcon('foul')).toBe('') // no whistle emoji - view draws the icon
+    expect(pbpIcon('nonsense')).toBe('')
+  })
+})
+
+describe('isGoalKind', () => {
+  it('is true only for scoring kinds', () => {
+    expect(isGoalKind('goal')).toBe(true)
+    expect(isGoalKind('own-goal')).toBe(true)
+    expect(isGoalKind('penalty-goal')).toBe(true)
+    expect(isGoalKind('penalty-missed')).toBe(false)
+    expect(isGoalKind('yellow')).toBe(false)
+  })
+})
+
+describe('pbpTextSpec', () => {
+  it('resolves period markers by key, and empty when the period is unknown/absent', () => {
+    expect(pbpTextSpec({ kind: 'period', periodKind: 'half-time' })).toEqual({ key: 'match.pbp.period.halfTime' })
+    // unknown periodKind still yields a (trailing-dot) key, matching prior behavior
+    expect(pbpTextSpec({ kind: 'period', periodKind: 'mystery' })).toEqual({ key: 'match.pbp.period.' })
+    expect(pbpTextSpec({ kind: 'period', periodKind: null })).toEqual({ key: '' })
+  })
+
+  it('renders VAR feed text as a literal, else the generic label', () => {
+    expect(pbpTextSpec({ kind: 'var', text: 'Goal awarded after review' })).toEqual({ key: '', literal: 'Goal awarded after review' })
+    expect(pbpTextSpec({ kind: 'var', text: '' })).toEqual({ key: 'match.pbpKind.var' })
+    expect(pbpTextSpec({ kind: 'var' })).toEqual({ key: 'match.pbpKind.var' })
+  })
+
+  it('builds a sub line from both names (title-cased), else the generic label', () => {
+    expect(pbpTextSpec({ kind: 'sub', playerInName: 'Kylian MBAPPÉ', playerOutName: 'Olivier GIROUD' })).toEqual({
+      key: 'match.pbp.sub',
+      params: { playerIn: 'Kylian Mbappé', playerOut: 'Olivier Giroud' },
+    })
+    expect(pbpTextSpec({ kind: 'sub', playerInName: 'A', playerOutName: null })).toEqual({ key: 'match.pbpKind.sub' })
+  })
+
+  it('templates a player-actor kind with the name, else falls back to the nameless label', () => {
+    expect(pbpTextSpec({ kind: 'goal', playerName: 'Lionel MESSI' })).toEqual({ key: 'match.pbp.goal', params: { player: 'Lionel Messi' } })
+    expect(pbpTextSpec({ kind: 'yellow', playerName: null })).toEqual({ key: 'match.pbpKind.yellow' })
+    // a kind with a label but no player template (e.g. a penalty award)
+    expect(pbpTextSpec({ kind: 'penalty-awarded' })).toEqual({ key: 'match.pbpKind.penaltyAwarded' })
+    // a kind we don't recognize at all
+    expect(pbpTextSpec({ kind: 'nonsense' })).toEqual({ key: '' })
+  })
+})
+
+describe('pbpFlagCode', () => {
+  it('picks the side code, null for neutral markers or missing codes', () => {
+    expect(pbpFlagCode('HOME', 'FRA', 'ARG')).toBe('FRA')
+    expect(pbpFlagCode('AWAY', 'FRA', 'ARG')).toBe('ARG')
+    expect(pbpFlagCode(null, 'FRA', 'ARG')).toBeNull()
+    expect(pbpFlagCode('HOME', null, 'ARG')).toBeNull()
+    expect(pbpFlagCode('AWAY', 'FRA', undefined)).toBeNull()
   })
 })

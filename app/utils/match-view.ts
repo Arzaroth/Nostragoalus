@@ -2,6 +2,7 @@
 // head-to-head tally are testable without mounting the 500-line page.
 
 import { EXTRA_TIME_BREAK_MINUTE } from '#shared/types/match'
+import { formatPlayerName } from './format'
 
 // FIFA stamps break substitutions with an empty minute (no running clock at the
 // break), so slot them at the interval - after the half's stoppage, before the
@@ -88,4 +89,119 @@ export function h2hSummaryOf(
     else out.awayWins++
   }
   return out
+}
+
+// Emoji per play-by-play event kind; goals/own-goals/penalties read as the loud
+// moments, the rest are quieter markers. `foul` has no entry - the view renders a
+// real referee whistle (WhistleIcon) since no whistle emoji exists.
+export const TIMELINE_ICONS: Record<string, string> = {
+  goal: '⚽',
+  'own-goal': '⚽',
+  'penalty-goal': '⚽',
+  'penalty-missed': '❌',
+  'penalty-awarded': '🎯',
+  assist: '👟',
+  yellow: '🟨',
+  red: '🟥',
+  'second-yellow': '🟥',
+  sub: '🔄',
+  shot: '🥅',
+  var: '📺',
+  period: '⏱️',
+}
+const GOAL_KINDS = new Set(['goal', 'own-goal', 'penalty-goal'])
+// Nameless fallback label per kind, so a row with no resolved actor (e.g. a
+// penalty award, a coach booking) is never blank.
+const KIND_LABEL_KEYS: Record<string, string> = {
+  goal: 'goal',
+  'own-goal': 'ownGoal',
+  'penalty-goal': 'penaltyGoal',
+  'penalty-missed': 'penaltyMissed',
+  'penalty-awarded': 'penaltyAwarded',
+  assist: 'assist',
+  yellow: 'yellow',
+  red: 'red',
+  'second-yellow': 'secondYellow',
+  sub: 'sub',
+  shot: 'shot',
+  foul: 'foul',
+  corner: 'corner',
+  var: 'var',
+  period: 'period',
+}
+// Player-actor kinds -> their templated key (carries a {player} placeholder).
+const PBP_PLAYER_KEYS: Record<string, string> = {
+  goal: 'goal',
+  'own-goal': 'ownGoal',
+  'penalty-goal': 'penaltyGoal',
+  'penalty-missed': 'penaltyMissed',
+  assist: 'assist',
+  yellow: 'yellow',
+  red: 'red',
+  'second-yellow': 'secondYellow',
+  shot: 'shot',
+  foul: 'foul',
+  corner: 'corner',
+}
+const PERIOD_KEYS: Record<string, string> = {
+  kickoff: 'kickoff',
+  'half-time': 'halfTime',
+  'second-half': 'secondHalf',
+  'second-half-end': 'secondHalfEnd',
+  'extra-time': 'extraTime',
+  'extra-time-end': 'extraTimeEnd',
+  'full-time': 'fullTime',
+}
+
+export function pbpIcon(kind: string): string {
+  return TIMELINE_ICONS[kind] ?? ''
+}
+export function isGoalKind(kind: string): boolean {
+  return GOAL_KINDS.has(kind)
+}
+
+export interface PbpEventInput {
+  kind: string
+  playerName?: string | null
+  playerInName?: string | null
+  playerOutName?: string | null
+  periodKind?: string | null
+  text?: string | null
+}
+
+// A localizable spec instead of a rendered string: the view calls
+// `t(spec.key, spec.params)`, or renders `spec.literal` as-is (VAR's decision text
+// arrives pre-localized from the feed and can't be rebuilt from structure). `key`
+// is '' when there is nothing to show. Keeping `t()` out of here makes the
+// branching pure and unit-testable.
+export interface PbpTextSpec {
+  key: string
+  params?: Record<string, string>
+  literal?: string
+}
+
+// We phrase the commentary ourselves (localized) from the resolved names - the
+// team is shown by the flag, so the country never appears in the text.
+export function pbpTextSpec(e: PbpEventInput): PbpTextSpec {
+  if (e.kind === 'period') return { key: e.periodKind ? `match.pbp.period.${PERIOD_KEYS[e.periodKind] ?? ''}` : '' }
+  if (e.kind === 'var') return e.text ? { key: '', literal: e.text } : { key: 'match.pbpKind.var' }
+  if (e.kind === 'sub') {
+    return e.playerInName && e.playerOutName
+      ? { key: 'match.pbp.sub', params: { playerIn: formatPlayerName(e.playerInName), playerOut: formatPlayerName(e.playerOutName) } }
+      : { key: 'match.pbpKind.sub' }
+  }
+  const tmpl = PBP_PLAYER_KEYS[e.kind]
+  if (tmpl && e.playerName) return { key: `match.pbp.${tmpl}`, params: { player: formatPlayerName(e.playerName) } }
+  const fallback = KIND_LABEL_KEYS[e.kind]
+  return { key: fallback ? `match.pbpKind.${fallback}` : '' }
+}
+
+// The team code an event belongs to (null for neutral markers); the view resolves
+// it to a flag via flagUrl().
+export function pbpFlagCode(
+  side: string | null | undefined,
+  homeCode: string | null | undefined,
+  awayCode: string | null | undefined,
+): string | null {
+  return side === 'HOME' ? (homeCode ?? null) : side === 'AWAY' ? (awayCode ?? null) : null
 }

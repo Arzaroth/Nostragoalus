@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { buildTimeline, h2hSummaryOf } from '../../../utils/match-view'
+import { buildTimeline, h2hSummaryOf, TIMELINE_ICONS, isGoalKind, pbpTextSpec, pbpFlagCode, type PbpEventInput } from '../../../utils/match-view'
 import { visibleMediaForStatus, type MatchMediaKind } from '#shared/match-media'
 import { EXTRA_TIME_BREAK_MINUTE, matchHasStarted, matchIsInPlay } from '#shared/types/match'
 const { t, locale } = useI18n()
@@ -285,90 +285,14 @@ const hadShootout = computed(() => ((penaltiesHome.value ?? 0) + (penaltiesAway.
 // halted-mid-play states (SUSPENDED/INTERRUPTED) too, so their rankings show.
 const hasStarted = computed(() => matchHasStarted(status.value))
 
-// Emoji per play-by-play event kind; goals/own-goals/penalties read as the loud
-// moments, the rest are quieter markers.
-const TIMELINE_ICONS: Record<string, string> = {
-  goal: '⚽',
-  'own-goal': '⚽',
-  'penalty-goal': '⚽',
-  'penalty-missed': '❌',
-  'penalty-awarded': '🎯',
-  assist: '👟',
-  yellow: '🟨',
-  red: '🟥',
-  'second-yellow': '🟥',
-  sub: '🔄',
-  shot: '🥅',
-  var: '📺',
-  period: '⏱️',
-  // foul -> a real referee whistle (WhistleIcon); no whistle emoji exists.
+// PBP icon/goal-kind tables + text/flag mapping now live in the tested match-view
+// util; here we only bind t()/flagUrl() to those pure specs.
+function pbpText(e: PbpEventInput): string {
+  const spec = pbpTextSpec(e)
+  return spec.literal ?? (spec.key ? t(spec.key, spec.params ?? {}) : '')
 }
-const GOAL_KINDS = new Set(['goal', 'own-goal', 'penalty-goal'])
-// Nameless fallback label per kind, so a row with no resolved actor (e.g. a
-// penalty award, a coach booking) is never blank.
-const KIND_LABEL_KEYS: Record<string, string> = {
-  goal: 'goal',
-  'own-goal': 'ownGoal',
-  'penalty-goal': 'penaltyGoal',
-  'penalty-missed': 'penaltyMissed',
-  'penalty-awarded': 'penaltyAwarded',
-  assist: 'assist',
-  yellow: 'yellow',
-  red: 'red',
-  'second-yellow': 'secondYellow',
-  sub: 'sub',
-  shot: 'shot',
-  foul: 'foul',
-  corner: 'corner',
-  var: 'var',
-  period: 'period',
-}
-// Player-actor kinds -> their templated key (carries a {player} placeholder).
-const PBP_PLAYER_KEYS: Record<string, string> = {
-  goal: 'goal',
-  'own-goal': 'ownGoal',
-  'penalty-goal': 'penaltyGoal',
-  'penalty-missed': 'penaltyMissed',
-  assist: 'assist',
-  yellow: 'yellow',
-  red: 'red',
-  'second-yellow': 'secondYellow',
-  shot: 'shot',
-  foul: 'foul',
-  corner: 'corner',
-}
-const PERIOD_KEYS: Record<string, string> = {
-  kickoff: 'kickoff',
-  'half-time': 'halfTime',
-  'second-half': 'secondHalf',
-  'second-half-end': 'secondHalfEnd',
-  'extra-time': 'extraTime',
-  'extra-time-end': 'extraTimeEnd',
-  'full-time': 'fullTime',
-}
-type PbpEvent = { kind: string; playerName: string | null; playerInName: string | null; playerOutName: string | null; periodKind: string | null; text: string | null }
-// We phrase the commentary ourselves (localized) from the resolved names - the
-// team is shown by the flag, so it never appears in the text. The flag already
-// conveys the side, so no "(Country)" suffix here.
-function pbpText(e: PbpEvent): string {
-  if (e.kind === 'period') return e.periodKind ? t(`match.pbp.period.${PERIOD_KEYS[e.periodKind] ?? ''}`) : ''
-  // VAR's decision can't be rebuilt from structure - use the feed's localized
-  // text when we have it (en/fr), else the generic label.
-  if (e.kind === 'var') return e.text || t('match.pbpKind.var')
-  if (e.kind === 'sub') {
-    return e.playerInName && e.playerOutName
-      ? t('match.pbp.sub', { playerIn: formatPlayerName(e.playerInName), playerOut: formatPlayerName(e.playerOutName) })
-      : t('match.pbpKind.sub')
-  }
-  const tmpl = PBP_PLAYER_KEYS[e.kind]
-  if (tmpl && e.playerName) return t(`match.pbp.${tmpl}`, { player: formatPlayerName(e.playerName) })
-  const fallback = KIND_LABEL_KEYS[e.kind]
-  return fallback ? t(`match.pbpKind.${fallback}`) : ''
-}
-// The flag of the team an event belongs to (null for neutral markers).
 function pbpFlag(e: { side: string | null }): string | null {
-  const code = e.side === 'HOME' ? m.value?.homeTeamCode : e.side === 'AWAY' ? m.value?.awayTeamCode : null
-  return flagUrl(code)
+  return flagUrl(pbpFlagCode(e.side, m.value?.homeTeamCode, m.value?.awayTeamCode))
 }
 
 function cardEvents(side: 'HOME' | 'AWAY') {
@@ -940,13 +864,13 @@ function toggleFormInfo(side: string, i: number | string) {
                   v-for="(e, i) in playByPlay"
                   :key="i"
                   class="grid grid-cols-[2.25rem_1.5rem_1fr_auto] items-baseline gap-2 border-t py-2 ps-2"
-                  :class="GOAL_KINDS.has(e.kind) ? 'font-semibold' : ''"
+                  :class="isGoalKind(e.kind) ? 'font-semibold' : ''"
                   :style="`border-inline-start: 2px solid ${e.side === 'HOME' ? 'var(--p-primary-color)' : e.side === 'AWAY' ? '#71717a' : 'transparent'}; border-top-color: var(--p-content-border-color)`"
                 >
                   <span class="tabular-nums text-xs text-end" style="color: var(--p-text-muted-color)">{{ minuteLabel(e.minute) }}</span>
                   <span class="text-center leading-none"><WhistleIcon v-if="e.kind === 'foul'" /><CornerFlagIcon v-else-if="e.kind === 'corner'" /><template v-else>{{ TIMELINE_ICONS[e.kind] || '•' }}</template></span>
                   <span :style="e.side ? '' : 'color: var(--p-text-muted-color)'"><img v-if="pbpFlag(e)" :src="pbpFlag(e) || ''" class="inline-block w-4 h-3 rounded-sm object-cover me-1.5" style="vertical-align: -0.1em" alt="" >{{ pbpText(e) }}</span>
-                  <span v-if="GOAL_KINDS.has(e.kind) && e.homeScore != null" class="tabular-nums text-xs px-1.5 py-0.5 rounded" style="background: var(--p-content-border-color)">{{ e.homeScore }}–{{ e.awayScore }}</span>
+                  <span v-if="isGoalKind(e.kind) && e.homeScore != null" class="tabular-nums text-xs px-1.5 py-0.5 rounded" style="background: var(--p-content-border-color)">{{ e.homeScore }}–{{ e.awayScore }}</span>
                 </div>
               </div>
             </ClientOnly>
