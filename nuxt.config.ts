@@ -182,6 +182,26 @@ export default defineNuxtConfig({
     },
   },
 
+  // Pre-bundle the client deps Vite would otherwise discover on the first route
+  // that imports them and respond to with a full page reload. That mid-session
+  // reload drops any in-flight request (a sign-up POST, a verify-email
+  // navigation), which is a real first-load hazard and made the browser e2e flaky.
+  vite: {
+    optimizeDeps: {
+      include: [
+        '@better-auth/api-key/client',
+        '@better-auth/passkey/client',
+        '@better-auth/sso/client',
+        '@tanstack/vue-hotkeys',
+        '@tanstack/vue-query',
+        'better-auth/client/plugins',
+        'better-auth/vue',
+        'motion-v',
+        'libsodium-wrappers-sumo',
+      ],
+    },
+  },
+
   typescript: {
     strict: true,
   },
