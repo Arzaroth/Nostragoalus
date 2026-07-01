@@ -1,12 +1,17 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { createTestDb } from '../../../tests/db'
+import { makeUser } from '../../../tests/factories'
 import { NotFoundError, ValidationError } from '../errors'
 import {
   ROADMAP_STATUSES,
+  SUGGESTION_TITLE_MAX,
+  SUGGESTION_TITLE_MIN,
   createRoadmapItem,
+  createSuggestion,
   deleteRoadmapItem,
   listRoadmapItems,
   reorderRoadmapItem,
+  toggleVote,
   updateRoadmapItem,
 } from './service'
 
@@ -24,8 +29,8 @@ describe('roadmap service', () => {
     await client.close()
   })
 
-  it('exposes the three statuses', () => {
-    expect(ROADMAP_STATUSES).toEqual(['PLANNED', 'IN_PROGRESS', 'SHIPPED'])
+  it('exposes the four statuses including the SUGGESTED community bucket', () => {
+    expect(ROADMAP_STATUSES).toEqual(['PLANNED', 'IN_PROGRESS', 'SHIPPED', 'SUGGESTED'])
   })
 
   it('creates with defaults, trims, and appends per-status positions', async () => {
@@ -138,5 +143,94 @@ describe('roadmap service', () => {
 
   it('reorder throws NotFoundError for a missing item', async () => {
     await expect(reorderRoadmapItem(db, 'nope', 'up')).rejects.toThrow(NotFoundError)
+  })
+
+  it('creates a suggestion: SUGGESTED, APPROVED, authored, trimmed, appended', async () => {
+    const { db: d, client: c } = await createTestDb()
+    const u = await makeUser(d, 'u1')
+    const s = await createSuggestion(d, { authorId: u, title: '  Dark mode  ', description: '  please  ' })
+    expect(s.status).toBe('SUGGESTED')
+    expect(s.moderationStatus).toBe('APPROVED')
+    expect(s.authorId).toBe(u)
+    expect(s.title).toBe('Dark mode')
+    expect(s.description).toBe('please')
+    expect(s.position).toBe(0)
+
+    const s2 = await createSuggestion(d, { authorId: u, title: 'Light mode' })
+    expect(s2.position).toBe(1) // appended within the SUGGESTED column
+    expect(s2.description).toBeNull()
+    await c.close()
+  })
+
+  it('rejects a too-short or too-long suggestion title, accepts the boundaries', async () => {
+    const { db: d, client: c } = await createTestDb()
+    const u = await makeUser(d, 'u1')
+    await expect(createSuggestion(d, { authorId: u, title: 'ab' })).rejects.toThrow(ValidationError)
+    await expect(
+      createSuggestion(d, { authorId: u, title: 'x'.repeat(SUGGESTION_TITLE_MAX + 1) }),
+    ).rejects.toThrow(ValidationError)
+    const min = await createSuggestion(d, { authorId: u, title: 'x'.repeat(SUGGESTION_TITLE_MIN) })
+    expect(min.title.length).toBe(SUGGESTION_TITLE_MIN)
+    await c.close()
+  })
+
+  it('toggles an upvote and derives the count from the vote rows', async () => {
+    const { db: d, client: c } = await createTestDb()
+    const u1 = await makeUser(d, 'u1')
+    const u2 = await makeUser(d, 'u2')
+    const item = await createRoadmapItem(d, { title: 'Votable' })
+
+    expect(await toggleVote(d, { itemId: item.id, userId: u1 })).toEqual({ voted: true, voteCount: 1 })
+    expect(await toggleVote(d, { itemId: item.id, userId: u2 })).toEqual({ voted: true, voteCount: 2 })
+    // The same user again removes their own vote.
+    expect(await toggleVote(d, { itemId: item.id, userId: u1 })).toEqual({ voted: false, voteCount: 1 })
+    await c.close()
+  })
+
+  it('refuses to vote on a missing or hidden item', async () => {
+    const { db: d, client: c } = await createTestDb()
+    const u = await makeUser(d, 'u1')
+    await expect(toggleVote(d, { itemId: 'nope', userId: u })).rejects.toThrow(NotFoundError)
+    const item = await createRoadmapItem(d, { title: 'Spam' })
+    await updateRoadmapItem(d, item.id, { moderationStatus: 'REJECTED' })
+    await expect(toggleVote(d, { itemId: item.id, userId: u })).rejects.toThrow(NotFoundError)
+    await c.close()
+  })
+
+  it('folds vote counts and the viewer flag into the list, hiding rejected unless asked', async () => {
+    const { db: d, client: c } = await createTestDb()
+    const u1 = await makeUser(d, 'u1')
+    const u2 = await makeUser(d, 'u2')
+    const a = await createRoadmapItem(d, { title: 'A' })
+    const b = await createRoadmapItem(d, { title: 'B' })
+    await toggleVote(d, { itemId: a.id, userId: u1 })
+    await toggleVote(d, { itemId: a.id, userId: u2 })
+    await toggleVote(d, { itemId: b.id, userId: u1 })
+
+    const anon = await listRoadmapItems(d)
+    const anonA = anon.find((i) => i.id === a.id)!
+    expect(anonA.voteCount).toBe(2)
+    expect(anonA.viewerHasVoted).toBe(false)
+
+    const asU1 = await listRoadmapItems(d, { viewerId: u1 })
+    expect(asU1.find((i) => i.id === a.id)!.viewerHasVoted).toBe(true)
+    expect(asU1.find((i) => i.id === b.id)!.viewerHasVoted).toBe(true)
+
+    await updateRoadmapItem(d, b.id, { moderationStatus: 'REJECTED' })
+    expect((await listRoadmapItems(d)).find((i) => i.id === b.id)).toBeUndefined()
+    expect((await listRoadmapItems(d, { includeHidden: true })).find((i) => i.id === b.id)).toBeDefined()
+    await c.close()
+  })
+
+  it('promotes a suggestion onto the roadmap and can set moderation state', async () => {
+    const { db: d, client: c } = await createTestDb()
+    const u = await makeUser(d, 'u1')
+    const s = await createSuggestion(d, { authorId: u, title: 'Great idea' })
+    const promoted = await updateRoadmapItem(d, s.id, { status: 'PLANNED' })
+    expect(promoted.status).toBe('PLANNED')
+    expect(promoted.position).toBe(0) // appended into the empty PLANNED column
+    const hidden = await updateRoadmapItem(d, s.id, { moderationStatus: 'REJECTED' })
+    expect(hidden.moderationStatus).toBe('REJECTED')
+    await c.close()
   })
 })
