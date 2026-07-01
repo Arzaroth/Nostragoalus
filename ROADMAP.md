@@ -134,6 +134,18 @@ effort buckets; order within a bucket is not priority.
 
 ## Features
 
+- [ ] **Achievements: trophy cabinet + "my fridge"** (IN_PROGRESS,
+      worktree-achievements): per-competition trophies derived at finalize into
+      `competition_award` - best overall (the leaderboard winner), best in the
+      group phase, best in the knockouts, most exact scores ("Madame Irma"), and
+      best predictor of a configurable featured team (`competition.featuredTeamCode`,
+      default France). Plus ~20 milestone badges (bronze/silver/gold) from a code
+      catalog in `user_achievement`, evaluated each finalize tick. A trophy cabinet
+      (earned + locked) and a curated "fridge" (max 6 pins) on the profile, with
+      TROPHY_AWARDED / ACHIEVEMENT_UNLOCKED notifications. Decisions: catalog in
+      code not a DB table; trophies derived not stored (reconciled, ties share);
+      the France prize generalized to one featured-team trophy; per-competition
+      scope (global badges still surface in each cabinet).
 - [x] **Editable scoring config + per-competition overrides** (shipped in
       1.13.0): admin Scoring rules section (`/admin/scoring`) edits the full
       ruleset; the DB row was previously seed-only with no UI. Decisions:
