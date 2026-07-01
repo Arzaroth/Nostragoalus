@@ -19,6 +19,7 @@ useHead({ title: t('multiview.title') })
 
 const route = useRoute()
 const router = useRouter()
+const mvFocus = useMultiviewFocus()
 
 // The URL query is the single source of truth: state is derived from it, and every
 // change is written back with router.replace (no history spam), so a view is
@@ -66,6 +67,18 @@ const viewModes = reactive<Record<string, 'tile' | 'stream'>>({})
 function setViewMode(id: string, mode: 'tile' | 'stream') {
   viewModes[id] = mode
 }
+
+// Publish the grid's focus + present cells so the single ChatDock follows them,
+// and so an inbox click can focus a cell instead of navigating. Clear on leave so
+// the dock reverts to its route-based match thread.
+watch([cells, focus], () => {
+  mvFocus.setPresent(cells.value)
+  mvFocus.setFocus(focus.value)
+}, { immediate: true })
+onBeforeUnmount(() => {
+  mvFocus.setPresent([])
+  mvFocus.setFocus(null)
+})
 </script>
 
 <template>
