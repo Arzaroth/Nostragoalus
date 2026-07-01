@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { buildTimeline, h2hSummaryOf, TIMELINE_ICONS, isGoalKind, pbpTextSpec, pbpFlagCode, type PbpEventInput } from '../../../utils/match-view'
+import { buildTimeline, h2hSummaryOf } from '../../../utils/match-view'
 import { visibleMediaForStatus, type MatchMediaKind } from '#shared/match-media'
 import { EXTRA_TIME_BREAK_MINUTE, matchHasStarted, matchIsInPlay } from '#shared/types/match'
 const { t, locale } = useI18n()
@@ -284,16 +284,6 @@ const hadShootout = computed(() => ((penaltiesHome.value ?? 0) + (penaltiesAway.
 // before kickoff); on finished matches it stays for the full record. Covers the
 // halted-mid-play states (SUSPENDED/INTERRUPTED) too, so their rankings show.
 const hasStarted = computed(() => matchHasStarted(status.value))
-
-// PBP icon/goal-kind tables + text/flag mapping now live in the tested match-view
-// util; here we only bind t()/flagUrl() to those pure specs.
-function pbpText(e: PbpEventInput): string {
-  const spec = pbpTextSpec(e)
-  return spec.literal ?? (spec.key ? t(spec.key, spec.params ?? {}) : '')
-}
-function pbpFlag(e: { side: string | null }): string | null {
-  return flagUrl(pbpFlagCode(e.side, m.value?.homeTeamCode, m.value?.awayTeamCode))
-}
 
 function cardEvents(side: 'HOME' | 'AWAY') {
   return (detail.value?.bookings ?? []).filter((b: any) => b.side === side)
@@ -841,38 +831,8 @@ function toggleFormInfo(side: string, i: number | string) {
                  a hard refresh. ClientOnly keeps SSR and the first client render
                  identical (the fallback), then mounts the real list fresh. -->
             <ClientOnly>
-              <template #fallback>
-                <div class="flex flex-col gap-2">
-                  <div v-for="i in 8" :key="i" class="flex items-center gap-3 py-1">
-                    <Skeleton width="2rem" height="0.9rem" />
-                    <Skeleton width="1.25rem" height="1.25rem" shape="circle" />
-                    <Skeleton :width="`${8 + (i % 4) * 2}rem`" height="0.9rem" />
-                  </div>
-                </div>
-              </template>
-              <!-- skeleton on the first open; a live refresh keeps the list in place -->
-              <div v-if="timelineStatus === 'pending' && !playByPlay.length" class="flex flex-col gap-2">
-                <div v-for="i in 8" :key="i" class="flex items-center gap-3 py-1">
-                  <Skeleton width="2rem" height="0.9rem" />
-                  <Skeleton width="1.25rem" height="1.25rem" shape="circle" />
-                  <Skeleton :width="`${8 + (i % 4) * 2}rem`" height="0.9rem" />
-                </div>
-              </div>
-              <div v-else-if="!playByPlay.length" class="text-sm text-center py-4" style="color: var(--p-text-muted-color)">{{ t('match.playByPlayEmpty') }}</div>
-              <div v-else class="flex flex-col md:max-h-[60vh] md:overflow-y-auto md:overscroll-contain">
-                <div
-                  v-for="(e, i) in playByPlay"
-                  :key="i"
-                  class="grid grid-cols-[2.25rem_1.5rem_1fr_auto] items-baseline gap-2 border-t py-2 ps-2"
-                  :class="isGoalKind(e.kind) ? 'font-semibold' : ''"
-                  :style="`border-inline-start: 2px solid ${e.side === 'HOME' ? 'var(--p-primary-color)' : e.side === 'AWAY' ? '#71717a' : 'transparent'}; border-top-color: var(--p-content-border-color)`"
-                >
-                  <span class="tabular-nums text-xs text-end" style="color: var(--p-text-muted-color)">{{ minuteLabel(e.minute) }}</span>
-                  <span class="text-center leading-none"><WhistleIcon v-if="e.kind === 'foul'" /><CornerFlagIcon v-else-if="e.kind === 'corner'" /><template v-else>{{ TIMELINE_ICONS[e.kind] || '•' }}</template></span>
-                  <span :style="e.side ? '' : 'color: var(--p-text-muted-color)'"><img v-if="pbpFlag(e)" :src="pbpFlag(e) || ''" class="inline-block w-4 h-3 rounded-sm object-cover me-1.5" style="vertical-align: -0.1em" alt="" >{{ pbpText(e) }}</span>
-                  <span v-if="isGoalKind(e.kind) && e.homeScore != null" class="tabular-nums text-xs px-1.5 py-0.5 rounded" style="background: var(--p-content-border-color)">{{ e.homeScore }}–{{ e.awayScore }}</span>
-                </div>
-              </div>
+              <template #fallback><MatchPlayByPlay :events="[]" pending /></template>
+              <MatchPlayByPlay :events="playByPlay" :pending="timelineStatus === 'pending'" :home-code="m?.homeTeamCode" :away-code="m?.awayTeamCode" />
             </ClientOnly>
           </TabPanel>
 
