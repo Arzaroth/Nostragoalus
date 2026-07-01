@@ -803,7 +803,10 @@
       "delete": "yIQaw'",
       "moveUp": "yISal",
       "moveDown": "yIghIr",
-      "actionFailed": "Qagh - yInID."
+      "actionFailed": "Qagh - yInID.",
+      "userSuggestion": "lo'wI' qeS",
+      "hide": "yISo'",
+      "restore": "yIchegh"
     },
     "sso": {
       "title": "SSO",
@@ -1060,7 +1063,22 @@
     "inProgress": "chenmoHlu'taH",
     "shipped": "rInpu'",
     "empty": "pagh naDev tu'lu'.",
-    "error": "DaH He vI'ang laHbe'."
+    "error": "DaH He vI'ang laHbe'.",
+    "suggested": "ghom qeSmey",
+    "upvote": "yIwuq",
+    "upvoteRemove": "wuq yIteq",
+    "signInToVote": "wuqmeH yI'el",
+    "votes": "{n} wuqmey",
+    "suggest": {
+      "titleLabel": "qeSlIj",
+      "descriptionLabel": "QIj (DuHbe')",
+      "submit": "yIqeS",
+      "thanks": "qatlho' - yIn qeSlIj.",
+      "failed": "Qagh - yInID.",
+      "signInHint": "qeSlIj'a'?",
+      "signInCta": "qeSmeH yI'el",
+      "empty": "pagh qeSmey - yIqeSchoH."
+    }
   },
   "update": {
     "available": "Segh chu' tu'lu'",
