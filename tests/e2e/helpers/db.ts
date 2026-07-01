@@ -148,5 +148,48 @@ export async function cleanup(): Promise<void> {
   )
   await db().query(`delete from match where competition_id in (select id from competition where slug = $1)`, [E2E_SLUG])
   await db().query(`delete from round where competition_id in (select id from competition where slug = $1)`, [E2E_SLUG])
+  // competition_award / user_achievement / fridge_pin all cascade off this delete.
   await db().query(`delete from competition where slug = $1`, [E2E_SLUG])
+}
+
+// The signed-up user's id, so award/achievement/fridge rows can be seeded for them
+// (signUp/freshUser don't expose the created id).
+export async function getUserIdByEmail(email: string): Promise<string> {
+  const { rows } = await db().query<{ id: string }>(`select id from "user" where email = $1 limit 1`, [email])
+  return rows[0].id
+}
+
+// Seed a competition-end trophy for a user (default: the overall winner).
+export async function seedTrophy(competitionId: string, userId: string, type = 'OVERALL', value = 42): Promise<void> {
+  await db().query(
+    `insert into competition_award (id, competition_id, user_id, type, value)
+     values (gen_random_uuid(), $1, $2, $3, $4)`,
+    [competitionId, userId, type, value],
+  )
+}
+
+// Seed an earned achievement badge for a user in a competition.
+export async function seedAchievement(
+  userId: string,
+  competitionId: string,
+  key: string,
+  tier = 'BRONZE',
+): Promise<void> {
+  await db().query(
+    `insert into user_achievement (id, user_id, competition_id, key, tier, progress)
+     values (gen_random_uuid(), $1, $2, $3, $4, 1)`,
+    [userId, competitionId, key, tier],
+  )
+}
+
+// The user's saved fridge pins (ordered), to assert the arrange-and-save flow.
+export async function getFridgePins(
+  userId: string,
+  competitionId: string,
+): Promise<{ itemType: string; itemKey: string }[]> {
+  const { rows } = await db().query<{ item_type: string; item_key: string }>(
+    `select item_type, item_key from fridge_pin where user_id = $1 and competition_id = $2 order by slot`,
+    [userId, competitionId],
+  )
+  return rows.map((r) => ({ itemType: r.item_type, itemKey: r.item_key }))
 }
