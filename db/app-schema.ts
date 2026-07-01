@@ -504,6 +504,35 @@ export const predictionCommitment = pgTable(
   ],
 )
 
+// SEPARATE ledger for per-league override picks (moded leagues). Same hash-chain
+// mechanics as prediction_commitment but binds the leagueId, so a moded league
+// board's overrides are tamper-evident the way the base chain covers the global
+// board. Its own seq sequence; its head is the commitment_chain_head row id
+// 'league'.
+export const leaguePredictionCommitment = pgTable(
+  'league_prediction_commitment',
+  {
+    seq: integer('seq').primaryKey(),
+    leaguePredictionId: text('league_prediction_id').notNull(),
+    leagueId: text('league_id').notNull(),
+    userId: text('user_id').notNull(),
+    subject: text('subject').notNull(),
+    matchId: text('match_id').notNull(),
+    homeGoals: integer('home_goals').notNull(),
+    awayGoals: integer('away_goals').notNull(),
+    salt: text('salt').notNull(),
+    commitment: text('commitment').notNull(),
+    prevHash: text('prev_hash').notNull(),
+    entryHash: text('entry_hash').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    uniqueIndex('league_prediction_commitment_entry_hash_uq').on(t.entryHash),
+    index('league_prediction_commitment_match_idx').on(t.matchId),
+    index('league_prediction_commitment_league_idx').on(t.leagueId),
+  ],
+)
+
 // Singleton head of the commitment chain (id is always 'singleton'). Locked
 // FOR UPDATE while appending so concurrent saves serialize and the chain can
 // never fork; also the cheap source for the public "current head" read.

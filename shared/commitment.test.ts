@@ -3,10 +3,14 @@ import {
   COMMITMENT_GENESIS,
   computeCommitment,
   computeEntryHash,
+  computeLeagueCommitment,
+  computeLeagueEntryHash,
   computeSubject,
+  type LeagueLedgerEntry,
   type LedgerEntry,
   type PinnedHead,
   sha256Hex,
+  verifyLeagueLedger,
   verifyLedger,
   witnessExtension,
 } from './commitment'
@@ -165,5 +169,60 @@ describe('witnessExtension', () => {
     const pin: PinnedHead = { seq: 2, headHash: e2.entryHash }
     const e5 = await makeEntry(5, e2.entryHash, 'u1', 'm5', iso1, { homeGoals: 3, awayGoals: 3, salt: 'z' })
     expect(await witnessExtension(pin, [e5], { seq: 5, headHash: e5.entryHash })).toMatchObject({ status: 'tampered' })
+  })
+})
+
+async function makeLeagueEntry(
+  seq: number,
+  prevHash: string,
+  userId: string,
+  leagueId: string,
+  matchId: string,
+  createdAt: string,
+  opening: { homeGoals: number; awayGoals: number; salt: string },
+  opened = true,
+): Promise<LeagueLedgerEntry> {
+  const subject = await computeSubject(userId)
+  const commitment = await computeLeagueCommitment({ subject, leagueId, matchId, ...opening })
+  const entryHash = await computeLeagueEntryHash({ seq, prevHash, commitment, subject, leagueId, matchId, createdAt })
+  return { seq, prevHash, commitment, subject, leagueId, matchId, createdAt, entryHash, opened, ...opening }
+}
+
+describe('computeLeagueCommitment', () => {
+  it('binds the leagueId and is domain-separated from the base commitment', async () => {
+    const base = { subject: 's', matchId: 'm', homeGoals: 2, awayGoals: 1, salt: 'pepper' }
+    const a = await computeLeagueCommitment({ ...base, leagueId: 'L1' })
+    expect(await computeLeagueCommitment({ ...base, leagueId: 'L1' })).toBe(a)
+    expect(await computeLeagueCommitment({ ...base, leagueId: 'L2' })).not.toBe(a)
+    expect(await computeCommitment(base)).not.toBe(a)
+  })
+})
+
+describe('verifyLeagueLedger', () => {
+  const iso1 = '2026-06-19T10:00:00.000Z'
+  const iso2 = '2026-06-19T11:00:00.000Z'
+
+  it('accepts an empty slice and echoes the expected head', async () => {
+    expect(await verifyLeagueLedger([])).toEqual({ ok: true, count: 0, head: COMMITMENT_GENESIS })
+  })
+
+  it('verifies a valid chain mixing opened and unopened entries', async () => {
+    const e1 = await makeLeagueEntry(1, COMMITMENT_GENESIS, 'u1', 'L1', 'm1', iso1, { homeGoals: 2, awayGoals: 1, salt: 'a' })
+    const e2 = await makeLeagueEntry(2, e1.entryHash, 'u2', 'L1', 'm2', iso2, { homeGoals: 0, awayGoals: 0, salt: 'b' }, false)
+    expect(await verifyLeagueLedger([e1, e2])).toMatchObject({ ok: true, count: 2, head: e2.entryHash })
+  })
+
+  it('flags a sequence gap, a broken link, a bad opening, and a forged entryHash', async () => {
+    const e1 = await makeLeagueEntry(1, COMMITMENT_GENESIS, 'u1', 'L1', 'm1', iso1, { homeGoals: 1, awayGoals: 0, salt: 'a' })
+    const e3 = await makeLeagueEntry(3, e1.entryHash, 'u1', 'L1', 'm2', iso2, { homeGoals: 1, awayGoals: 0, salt: 'b' })
+    expect(await verifyLeagueLedger([e1, e3])).toMatchObject({ ok: false, reason: 'sequence', failedSeq: 3 })
+
+    const eBadLink = await makeLeagueEntry(2, 'wrong', 'u1', 'L1', 'm2', iso2, { homeGoals: 1, awayGoals: 0, salt: 'b' })
+    expect(await verifyLeagueLedger([e1, eBadLink])).toMatchObject({ ok: false, reason: 'link', failedSeq: 2 })
+
+    expect(await verifyLeagueLedger([{ ...e1, homeGoals: 9 }])).toMatchObject({ ok: false, reason: 'commitment', failedSeq: 1 })
+
+    const eClosed = await makeLeagueEntry(1, COMMITMENT_GENESIS, 'u1', 'L1', 'm1', iso1, { homeGoals: 2, awayGoals: 1, salt: 'a' }, false)
+    expect(await verifyLeagueLedger([{ ...eClosed, commitment: 'f'.repeat(64) }])).toMatchObject({ ok: false, reason: 'entry-hash', failedSeq: 1 })
   })
 })

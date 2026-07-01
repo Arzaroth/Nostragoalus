@@ -98,11 +98,17 @@ NORMAL leagues keep the standard `getLeaderboard` path.
 ## Key tables / files
 
 - Schema: `league.mode`, `league.lives`, `league_member.picks_synced`,
-  `prediction.is_outcome_only`, `prediction.wager`, `league_prediction`
-  (`db/app-schema.ts`).
+  `prediction.is_outcome_only`, `prediction.wager`, `league_prediction`,
+  `league_prediction_commitment` (`db/app-schema.ts`).
 - Server: `server/utils/leagues/modes.ts`, `completeness.ts`,
   `server/utils/leaderboard/modes.ts`, override functions in
   `server/utils/predictions/service.ts`.
+- Tamper-evidence: override score changes append to a **separate** hash chain
+  (`league_prediction_commitment`, head id `league`), domain-separated from the
+  base chain and binding the leagueId - `appendLeaguePredictionCommitment` +
+  `verifyLeagueChainServer` (`server/utils/commitment/service.ts`),
+  `computeLeagueCommitment`/`verifyLeagueLedger` (`shared/commitment.ts`). See
+  [tamper-evidence](tamper-evidence.md).
 
 ## Client surfaces
 
@@ -122,4 +128,6 @@ match fixed (`getLeagueCompleteness` returns per-league `issues`). Composables: 
 
 Intentional v1 tradeoffs, not missing wiring: NORMAL-league override scoring
 (can't reproduce the global crowd bonus + champion/best-scorer/live per league),
-tamper-evidence over overrides, and provisional live elimination for HARDCORE.
+provisional live elimination for HARDCORE, and the public `/verify`-page UI for
+the league override chain (the chain + server self-audit exist; only the
+public-facing page tab is deferred).

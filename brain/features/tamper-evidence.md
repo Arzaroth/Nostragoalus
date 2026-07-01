@@ -5,6 +5,12 @@ phase 1 of the ROADMAP "Tamper-evident / E2EE scores" item: a commit-reveal,
 in-database hash chain. It covers SCORE predictions only; champion and
 best-scorer picks are deferred to a later phase.
 
+[League modes](league-modes.md) add a **separate, parallel chain** for per-league
+override picks (`league_prediction_commitment`, head id `league`): same mechanics
+below, domain-separated and binding the leagueId
+(`appendLeaguePredictionCommitment` / `verifyLeagueChainServer`). The public
+`/verify` page still covers only the base chain for now.
+
 ## How it works
 
 Every real score-pick change appends an immutable row to `prediction_commitment`,
