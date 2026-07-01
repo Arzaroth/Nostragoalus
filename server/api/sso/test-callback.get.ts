@@ -1,6 +1,18 @@
 import { db } from '../../../db'
 import { completeOidcTestSignIn } from '../../utils/sso/test-signin'
 
+// JSON for embedding inside an inline <script>. JSON.stringify alone leaves
+// `</script>` intact, so the attacker-controlled `state` reflected below would
+// otherwise break out of the script element (reflected XSS on this public,
+// unauthenticated endpoint). Neutralise the three HTML-significant characters
+// that can end the script context.
+function scriptSafeJson(value: unknown): string {
+  return JSON.stringify(value)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+}
+
 // Public OIDC redirect target for the admin test sign-in. It's secured by the
 // single-use state nonce, NOT an admin session: the IdP redirect is a top-level
 // popup navigation with no guaranteed cookies. It captures the claims server-side
@@ -24,7 +36,7 @@ export default defineEventHandler(async (event) => {
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>SSO test sign-in</title></head><body><script>
 (function () {
   try {
-    if (window.opener) window.opener.postMessage({ type: 'sso-test-result', testId: ${JSON.stringify(state)}, ok: ${ok ? 'true' : 'false'} }, ${JSON.stringify(origin)});
+    if (window.opener) window.opener.postMessage({ type: 'sso-test-result', testId: ${scriptSafeJson(state)}, ok: ${ok ? 'true' : 'false'} }, ${scriptSafeJson(origin)});
   } catch (e) {}
   window.close();
 })();

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeAll } from 'vitest'
 import { toHttpError } from './http'
-import { ConflictError, ForbiddenError, NotFoundError, StorageError, ValidationError } from './errors'
+import { ConflictError, ForbiddenError, NotFoundError, SsoNotReadyError, StorageError, ValidationError } from './errors'
 
 beforeAll(() => {
   vi.stubGlobal('createError', (e: { statusCode: number; statusMessage: string }) => e)
@@ -12,6 +12,7 @@ describe('toHttpError', () => {
     expect((toHttpError(new ConflictError('x')) as { statusCode: number }).statusCode).toBe(409)
     expect((toHttpError(new ForbiddenError('x')) as { statusCode: number }).statusCode).toBe(403)
     expect((toHttpError(new ValidationError('x')) as { statusCode: number }).statusCode).toBe(400)
+    expect((toHttpError(new SsoNotReadyError('x')) as { statusCode: number }).statusCode).toBe(409)
   })
 
   it('maps a raw unique violation (direct or nested cause) to 409', () => {

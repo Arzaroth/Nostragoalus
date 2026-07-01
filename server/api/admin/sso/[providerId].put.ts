@@ -24,9 +24,15 @@ export default defineValidatedHandler({ admin: true }, async ({ event }) => {
 
   const origin = getRequestURL(event).origin
   // The plugin natively supports several captured domains as a CSV list.
+  const nextDomain = domains.join(',')
   const update: Partial<typeof ssoProvider.$inferInsert> = {
-    domain: domains.join(','),
+    domain: nextDomain,
     displayName: String(b?.name || '').trim() || null,
+    // The plugin's own update-provider resets domainVerified when the domain
+    // changes; that path is blocked over HTTP (sso-guard-paths), so mirror it
+    // here. Otherwise a newly added/changed domain inherits the old DNS proof
+    // and becomes trusted for login/account-linking without ever being verified.
+    ...(nextDomain !== existing.domain ? { domainVerified: false } : {}),
   }
 
   if (existing.samlConfig) {

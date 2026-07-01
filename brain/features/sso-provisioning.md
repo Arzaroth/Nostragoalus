@@ -57,6 +57,10 @@ this doc is the feature-level map.
   registering admin), but it matches the plugin's `_better-auth-token-{providerId}`
   identifier and `identifier=value` TXT format, so the plugin's own endpoint stays
   compatible.
+- Editing a provider's domain (`server/api/admin/sso/[providerId].put.ts`) resets
+  `domainVerified=false`, mirroring the plugin's blocked `update-provider`: a newly
+  added domain must be re-verified (or re-bypassed) before it's trusted for login,
+  so the DNS proof can't be inherited by a domain that was never checked.
 
 ## SCIM provisioning
 

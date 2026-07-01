@@ -187,4 +187,60 @@ describe('completeOidcTestSignIn', () => {
     await completeOidcTestSignIn(db, testId, 'code')
     expect((await getTestSignInResult(db, testId))?.mapped).toEqual({ email: 'u@corp.test', name: 'User', image: 'p.png' })
   })
+
+  it('returns false when the provider is deleted between start and callback', async () => {
+    await insertOidc(db)
+    const { testId } = await startTestSignIn(db, 'acme', 'admin-1', 'https://app.test')
+    await db.delete(ssoProvider).where(eq(ssoProvider.providerId, 'acme'))
+    mockIdpFetch({ email: 'a@corp.test' }, null)
+    expect(await completeOidcTestSignIn(db, testId, 'code')).toBe(false)
+    expect(await getTestSignInResult(db, testId)).toBeNull()
+  })
+
+  it('skips userinfo when the token response omits the access token', async () => {
+    await insertOidc(db)
+    const { testId } = await startTestSignIn(db, 'acme', 'admin-1', 'https://app.test')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input instanceof Request ? input.url : input)
+        // No access_token, so userinfo must never be fetched.
+        if (url.includes('/token')) return jsonResponse({ id_token: idToken({ email: 'noat@corp.test' }) })
+        throw new Error(`unexpected fetch: ${url}`)
+      }),
+    )
+    await completeOidcTestSignIn(db, testId, 'code')
+    expect((await getTestSignInResult(db, testId))?.mapped.email).toBe('noat@corp.test')
+  })
+
+  it('skips userinfo when the provider config has no userinfo endpoint', async () => {
+    await insertOidc(db, { oidcConfig: sealConfig({ ...OIDC_CONFIG, userInfoEndpoint: undefined }) })
+    const { testId } = await startTestSignIn(db, 'acme', 'admin-1', 'https://app.test')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input instanceof Request ? input.url : input)
+        if (url.includes('/token')) return jsonResponse({ id_token: idToken({ email: 'noep@corp.test' }), access_token: 'at' })
+        throw new Error(`unexpected fetch: ${url}`)
+      }),
+    )
+    await completeOidcTestSignIn(db, testId, 'code')
+    expect((await getTestSignInResult(db, testId))?.mapped.email).toBe('noep@corp.test')
+  })
+
+  it('ignores a non-2xx userinfo response and maps from the id_token', async () => {
+    await insertOidc(db)
+    const { testId } = await startTestSignIn(db, 'acme', 'admin-1', 'https://app.test')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input instanceof Request ? input.url : input)
+        if (url.includes('/token')) return jsonResponse({ id_token: idToken({ email: 'e@corp.test' }), access_token: 'at' })
+        if (url.includes('/userinfo')) return jsonResponse({ picture: 'https://idp.test/leak.png' }, 500)
+        throw new Error(`unexpected fetch: ${url}`)
+      }),
+    )
+    await completeOidcTestSignIn(db, testId, 'code')
+    expect((await getTestSignInResult(db, testId))?.mapped).toEqual({ email: 'e@corp.test', name: 'e@corp.test', image: null })
+  })
 })
