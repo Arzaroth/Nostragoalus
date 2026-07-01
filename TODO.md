@@ -859,11 +859,11 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
       points + champion/best-scorer + the configured bonus, but HARDCORE elimination
       stays on finalized matches only (no provisional "at risk"/live elimination), to
       avoid flickering eliminations mid-match.
-- [ ] **Tamper-evidence doesn't cover overrides**: the commitment ledger commits the
-      base pick only (global board integrity). A moded league's board depends on
-      overrides that aren't in the chain, so a league-board dispute can't be proven
-      from the ledger. Extend the ledger per-league if league-board verification is
-      wanted.
+- [ ] **League-chain public /verify UI**: override picks now append to a separate
+      tamper-evident chain (`league_prediction_commitment`) with a server self-audit
+      (`verifyLeagueChainServer`), but the public `/verify` page + API + the
+      client witness/pin logic only cover the base chain. Add a league-chain tab so
+      the public can verify a moded league board, not just the global board.
 - [ ] **Joker round-lock in custom leagues**: `jokerRoundLocked` (the client
       button-disable) is derived from base-pick jokers, so in a custom moded league
       it can mis-disable the joker button for a round whose override joker sits on a

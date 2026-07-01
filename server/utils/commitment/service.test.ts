@@ -2,11 +2,20 @@ import { describe, expect, it } from 'vitest'
 import { eq } from 'drizzle-orm'
 import { createTestDb } from '../../../tests/db'
 import { findRoundId } from '../sync/rounds'
-import { makeMatch, makeUser, seedCompetition } from '../../../tests/factories'
-import { upsertPrediction } from '../predictions/service'
-import { commitmentChainHead, predictionCommitment } from '../../../db/schema'
+import { makeLeague, makeMatch, makeUser, seedCompetition } from '../../../tests/factories'
+import { upsertLeaguePrediction, upsertPrediction } from '../predictions/service'
+import { commitmentChainHead, leaguePredictionCommitment, predictionCommitment } from '../../../db/schema'
 import { COMMITMENT_GENESIS, verifyLedger } from '../../../shared/commitment'
-import { appendPredictionCommitment, getChainHead, getCommitmentChain, verifyChainServer } from './service'
+import {
+  appendLeaguePredictionCommitment,
+  appendPredictionCommitment,
+  getChainHead,
+  getCommitmentChain,
+  getLeagueChainHead,
+  getLeagueCommitmentChain,
+  verifyChainServer,
+  verifyLeagueChainServer,
+} from './service'
 
 const NOW = new Date('2026-06-10T00:00:00Z')
 const FUTURE = new Date('2026-06-11T16:00:00Z')
@@ -179,6 +188,39 @@ describe('verifyChainServer', () => {
     // walk's head no longer matches the served head, so the audit must fail.
     await db.update(commitmentChainHead).set({ headHash: 'f'.repeat(64) })
     expect((await verifyChainServer(db, NOW)).ok).toBe(false)
+    await client.close()
+  })
+})
+
+describe('league override chain', () => {
+  it('chains override commitments, grows on upsert, self-audits, and catches tampering', async () => {
+    const { db, client, competitionId, roundId, userId } = await setup()
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: FUTURE })
+    const leagueId = await makeLeague(db, { competitionId, ownerId: userId, mode: 'EASY' })
+
+    await appendLeaguePredictionCommitment(db, { leaguePredictionId: 'lp1', leagueId, userId, matchId: m, homeGoals: 1, awayGoals: 0 }, NOW)
+    expect((await getLeagueChainHead(db)).seq).toBe(1)
+
+    // A new override score grows the league chain; an identical save does not.
+    await upsertLeaguePrediction(db, { leagueId, userId, matchId: m, home: 2, away: 1 }, NOW)
+    expect((await getLeagueChainHead(db)).seq).toBe(2)
+    await upsertLeaguePrediction(db, { leagueId, userId, matchId: m, home: 2, away: 1 }, NOW)
+    expect((await getLeagueChainHead(db)).seq).toBe(2)
+
+    // Before kickoff the opening is hidden; the chain still paginates.
+    const hidden = await getLeagueCommitmentChain(db, { limit: 1 }, NOW)
+    expect(hidden.entries[0].opened).toBe(false)
+    expect(hidden.entries[0].homeGoals).toBeUndefined()
+    expect(hidden.nextSeq).toBe(1)
+
+    // Self-audit passes after kickoff (the openings verify), across pages.
+    const audit = await verifyLeagueChainServer(db, AFTER_KICKOFF, 1)
+    expect(audit).toMatchObject({ ok: true, verified: 2 })
+
+    // Tampering with a stored score breaks the commitment check.
+    const rows = await db.select().from(leaguePredictionCommitment).orderBy(leaguePredictionCommitment.seq)
+    await db.update(leaguePredictionCommitment).set({ homeGoals: 9 }).where(eq(leaguePredictionCommitment.seq, rows[0].seq))
+    expect((await verifyLeagueChainServer(db, AFTER_KICKOFF)).ok).toBe(false)
     await client.close()
   })
 })

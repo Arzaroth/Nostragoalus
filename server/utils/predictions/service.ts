@@ -13,7 +13,7 @@ import {
 import { isSingleMatchStage } from '../../../shared/types/match'
 import { ForbiddenError, LockedError, NotFoundError, ValidationError } from '../errors'
 import { deletePickReminder } from '../notifications/reminders'
-import { appendPredictionCommitment } from '../commitment/service'
+import { appendLeaguePredictionCommitment, appendPredictionCommitment } from '../commitment/service'
 import { hardRoundBudget, type LeagueMode } from '../leagues/modes'
 import { pickCompleteness, summarizeCompleteness, type CompletenessSummary, type IncompleteReason } from '../leagues/completeness'
 
@@ -419,6 +419,18 @@ export async function upsertLeaguePrediction(
       await assertWagerWithinBudget(tx, matchRow.roundId, input.wager, other)
     }
 
+    const [existing] = await tx
+      .select({ homeGoals: leaguePrediction.homeGoals, awayGoals: leaguePrediction.awayGoals })
+      .from(leaguePrediction)
+      .where(
+        and(
+          eq(leaguePrediction.leagueId, input.leagueId),
+          eq(leaguePrediction.userId, input.userId),
+          eq(leaguePrediction.matchId, input.matchId),
+        ),
+      )
+      .limit(1)
+
     await tx
       .update(leagueMember)
       .set({ picksSynced: false })
@@ -446,6 +458,23 @@ export async function upsertLeaguePrediction(
         },
       })
       .returning({ id: leaguePrediction.id })
+
+    // Append to the separate league ledger only when the override score actually
+    // changed (mirrors the base chain; autosave re-fires shouldn't grow it).
+    if (!existing || existing.homeGoals !== input.home || existing.awayGoals !== input.away) {
+      await appendLeaguePredictionCommitment(
+        tx,
+        {
+          leaguePredictionId: row.id,
+          leagueId: input.leagueId,
+          userId: input.userId,
+          matchId: input.matchId,
+          homeGoals: input.home,
+          awayGoals: input.away,
+        },
+        now,
+      )
+    }
     return row.id
   })
 }

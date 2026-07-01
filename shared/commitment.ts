@@ -9,6 +9,10 @@ export const COMMITMENT_GENESIS = '0'.repeat(64)
 const SUBJECT_PREFIX = 'ngc-subject-v1:'
 const COMMIT_PREFIX = 'ngc-commit-v1:'
 const CHAIN_PREFIX = 'ngc-chain-v1:'
+// Domain-separated prefixes for the SEPARATE league-override ledger, so an entry
+// from one chain can never be replayed into the other.
+const LEAGUE_COMMIT_PREFIX = 'ngc-lcommit-v1:'
+const LEAGUE_CHAIN_PREFIX = 'ngc-lchain-v1:'
 
 export async function sha256Hex(input: string): Promise<string> {
   const data = new TextEncoder().encode(input)
@@ -103,6 +107,66 @@ export async function verifyLedger(
       }
     }
     const entryHash = await computeEntryHash(e)
+    if (entryHash !== e.entryHash) {
+      return { ok: false, count: entries.length, head: prev, failedSeq: e.seq, reason: 'entry-hash' }
+    }
+    prev = e.entryHash
+    expectedSeq = e.seq + 1
+  }
+  return { ok: true, count: entries.length, head: prev }
+}
+
+// --- League-override ledger: a SEPARATE chain, identical mechanics but
+// domain-separated and binding the leagueId, so it proves a moded league board's
+// override picks the same way the base chain proves the global board. ---
+
+export interface LeagueCommitmentOpening extends CommitmentOpening {
+  leagueId: string
+}
+
+export async function computeLeagueCommitment(o: LeagueCommitmentOpening): Promise<string> {
+  return sha256Hex(LEAGUE_COMMIT_PREFIX + [o.subject, o.leagueId, o.matchId, o.homeGoals, o.awayGoals, o.salt].join(':'))
+}
+
+export interface LeagueChainLink extends ChainLink {
+  leagueId: string
+}
+
+export async function computeLeagueEntryHash(l: LeagueChainLink): Promise<string> {
+  return sha256Hex(LEAGUE_CHAIN_PREFIX + [l.seq, l.prevHash, l.commitment, l.subject, l.leagueId, l.matchId, l.createdAt].join(':'))
+}
+
+export interface LeagueLedgerEntry extends LedgerEntry {
+  leagueId: string
+}
+
+export async function verifyLeagueLedger(
+  entries: LeagueLedgerEntry[],
+  expectedPrev: string = COMMITMENT_GENESIS,
+): Promise<VerifyResult> {
+  let prev = expectedPrev
+  let expectedSeq: number | null = null
+  for (const e of entries) {
+    if (expectedSeq !== null && e.seq !== expectedSeq) {
+      return { ok: false, count: entries.length, head: prev, failedSeq: e.seq, reason: 'sequence' }
+    }
+    if (e.prevHash !== prev) {
+      return { ok: false, count: entries.length, head: prev, failedSeq: e.seq, reason: 'link' }
+    }
+    if (e.opened) {
+      const commitment = await computeLeagueCommitment({
+        subject: e.subject,
+        leagueId: e.leagueId,
+        matchId: e.matchId,
+        homeGoals: e.homeGoals as number,
+        awayGoals: e.awayGoals as number,
+        salt: e.salt as string,
+      })
+      if (commitment !== e.commitment) {
+        return { ok: false, count: entries.length, head: prev, failedSeq: e.seq, reason: 'commitment' }
+      }
+    }
+    const entryHash = await computeLeagueEntryHash(e)
     if (entryHash !== e.entryHash) {
       return { ok: false, count: entries.length, head: prev, failedSeq: e.seq, reason: 'entry-hash' }
     }
