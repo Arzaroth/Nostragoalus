@@ -9,9 +9,7 @@ const { skin } = useSkin()
 // server and client agree. (useLocaleHead emits dir only on the server, so it gets
 // dropped on hydration - the attribute flips off after first paint.)
 const { locale, locales } = useI18n()
-const activeLocale = computed(() =>
-  (locales.value as { code: string; language?: string; dir?: 'ltr' | 'rtl' | 'auto' }[]).find((l) => l.code === locale.value),
-)
+const activeLocale = computed(() => locales.value.find((l) => l.code === locale.value))
 useHead({
   titleTemplate: (title) => (title && title !== 'Nostragoalus' ? `${title} · Nostragoalus` : 'Nostragoalus'),
   htmlAttrs: {

@@ -184,7 +184,7 @@ async function openRoom(r: ChatUnreadRoomDTO) {
             @click="scope = 'global'"
           >
             {{ t('chat.scope.global') }}
-            <span v-if="scope !== 'global' && activity.unreadFor(leagueId, GLOBAL_ROOM)" class="absolute top-0.5 end-0.5 w-2 h-2 rounded-full" style="background: var(--ng-danger)" />
+            <span v-if="scope !== 'global' && activity.unreadFor(leagueId, GLOBAL_ROOM)" class="absolute top-0.5 right-0.5 w-2 h-2 rounded-full" style="background: var(--ng-danger)" />
           </button>
           <button
             type="button"
@@ -193,7 +193,7 @@ async function openRoom(r: ChatUnreadRoomDTO) {
             @click="scope = 'match'"
           >
             {{ t('chat.scope.match') }}
-            <span v-if="scope !== 'match' && matchId && activity.unreadFor(leagueId, matchId)" class="absolute top-0.5 end-0.5 w-2 h-2 rounded-full" style="background: var(--ng-danger)" />
+            <span v-if="scope !== 'match' && matchId && activity.unreadFor(leagueId, matchId)" class="absolute top-0.5 right-0.5 w-2 h-2 rounded-full" style="background: var(--ng-danger)" />
           </button>
         </div>
         <span v-else class="text-sm font-semibold">{{ t('chat.dock.title') }}</span>

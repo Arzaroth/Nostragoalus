@@ -941,7 +941,7 @@ function toggleFormInfo(side: string, i: number | string) {
                   :key="i"
                   class="grid grid-cols-[2.25rem_1.5rem_1fr_auto] items-baseline gap-2 border-t py-2 ps-2"
                   :class="GOAL_KINDS.has(e.kind) ? 'font-semibold' : ''"
-                  :style="`border-left: 2px solid ${e.side === 'HOME' ? 'var(--p-primary-color)' : e.side === 'AWAY' ? '#71717a' : 'transparent'}; border-top-color: var(--p-content-border-color)`"
+                  :style="`border-inline-start: 2px solid ${e.side === 'HOME' ? 'var(--p-primary-color)' : e.side === 'AWAY' ? '#71717a' : 'transparent'}; border-top-color: var(--p-content-border-color)`"
                 >
                   <span class="tabular-nums text-xs text-end" style="color: var(--p-text-muted-color)">{{ minuteLabel(e.minute) }}</span>
                   <span class="text-center leading-none"><WhistleIcon v-if="e.kind === 'foul'" /><CornerFlagIcon v-else-if="e.kind === 'corner'" /><template v-else>{{ TIMELINE_ICONS[e.kind] || '•' }}</template></span>
