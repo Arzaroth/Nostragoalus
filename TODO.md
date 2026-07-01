@@ -969,6 +969,47 @@ landed alongside it (verified by running the stack):
       a test ACS pre-registered at the IdP (most IdPs only POST to the registered
       ACS), so it was deliberately scoped out. Add if a SAML user asks for it.
 
+### Deferred from the feature-treatment review (onboarding + SCIM)
+
+- [ ] SSRF (accepted, admin-only): the onboarding fetches admin-supplied provider
+      URLs (OIDC discovery in `index.post`/`[providerId].put`; JWKS + reachability
+      in `service.ts`; token + userinfo in `test-signin.ts`) with no private-address
+      guard, unlike `server/utils/chat/unfurl.ts`. Intentional - self-hosted SSO
+      (shipped 2.6.0) needs private-network token endpoints, and every trigger is
+      behind `admin: true` in the single-tenant model (the admin has bypass-domain
+      anyway). Add an allowlist/guard only if SSO ever becomes multi-tenant.
+- [ ] Multi-domain DNS proof only covers the FIRST CSV domain
+      (`service.ts` `firstDomain`), but the login resolver trusts every configured
+      domain (`sso-domains.ts` `domainMatchesList`). Harmless single-tenant (bypass
+      exists), but for a future delegated/multi-tenant world either verify each
+      domain or gate the resolver per-domain. No test covers a multi-domain provider
+      through verify + resolve.
+- [ ] Schema defaults `sso_provider.status='enabled'` + `domainVerified=true`
+      (`db/auth-schema.ts`); the "verify before trust" gate leans entirely on
+      `index.post` overriding to `draft`. Any future insert path that skips that
+      override lands a provider live + trusted with no DNS proof. Consider flipping
+      the column defaults to `draft`/`false` so safety is the default, not the
+      override.
+- [ ] Reuse: `service.ts` and `test-signin.ts` each hand-roll the same TTL'd
+      `verification`-row logic (select-by-identifier, expiry compare,
+      delete-then-insert). Extract a `verification-token` helper
+      (`putToken`/`readToken`/`consumeToken`) so the TTL/single-use shape lives once
+      and gets one test point. Same file also repeats the load-provider-by-id +
+      `NotFoundError` boilerplate ~6x (a `loadProvider(db, id, cols)` helper).
+- [ ] Reuse/coverage: provider deletion does its two-table cleanup (drop
+      `sso_provider`, then the orphan `scim_provider` row via `scimProviderId`)
+      inline in the untested `[providerId].delete` route. The "no FK, delete the
+      scim row by hand" invariant is load-bearing (a stale row leaves a still-valid
+      SCIM bearer working after the provider is gone) - move it to a
+      `deleteProvider(db, id)` service fn so a pglite test covers the cleanup.
+- [ ] Reuse: the DNS-TXT host/value format is composed independently in
+      `getDomainVerificationInstructions` and `verifyDomainDns` - a
+      `domainTxtRecord(providerId, domain, token)` helper keeps the mint and verify
+      sides byte-compatible with the plugin's identifier format.
+- [ ] Pre-existing (surfaced by the i18n sweep, not this feature): `chat.dock.undock`
+      / `chat.dock.redock` exist in en/th/tlh but are missing from `fr.json`, so
+      French users see the raw keys on the chat dock control.
+
 ### Deferred from the feature-treatment review
 
 - [x] `@better-auth/api-key` was pinned exact while the rest used carets. The

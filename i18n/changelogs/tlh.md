@@ -5,6 +5,10 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### chelpu'
+- **SSO taghmeH Dev**: nob qonDI', SIbI' yImoHbe'; ghItlh -> wa'DIch -> ngu' -> chu'moH tlha'. rar wa'DIch (OIDC/JWKS, SAML teywI' Sum) DalaHlaH, OIDC "wa'DIch 'el" DalaHlaH ('Iv 'oS IdP cha'lu'bogh), DNS TXT De' lo'taHvIS pat Doy'moHlaH - qoj che'wI' 'oH DachaghlaH. nob chu'moHlaH, loQ chu'Ha'moHlaH, qoj ghItlh polaH; chu'Ha'moHDI' 'el chu' botlu', 'ach 'el ngoDmey vumtaH.
+- **SCIM nobHa'ghach**: SCIM 2.0 lo'taHvIS IdP lo'wI' chenmoH, choH, chu'Ha'moH. che'wI' pa'vo' nob HablI' chenmoH (wa'logh 'agh); IdP-vo' lo'wI' chu'Ha'moHDI' 'elmeH botlu' 'ej 'el ngoDmey rInmoHlu', 'ach ghommey, poj, qun je pollu'; chu'qa'moHDI' 'el chergh.
+
 ## [2.8.1] - 2026-07-02
 
 ### tI'pu'
