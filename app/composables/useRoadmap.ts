@@ -1,6 +1,7 @@
-import { useQuery } from '@tanstack/vue-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 
-export type RoadmapStatus = 'PLANNED' | 'IN_PROGRESS' | 'SHIPPED'
+export type RoadmapStatus = 'PLANNED' | 'IN_PROGRESS' | 'SHIPPED' | 'SUGGESTED'
+export type RoadmapModeration = 'PENDING' | 'APPROVED' | 'REJECTED'
 
 export interface RoadmapItem {
   id: string
@@ -8,13 +9,32 @@ export interface RoadmapItem {
   description: string | null
   status: RoadmapStatus
   position: number
+  voteCount: number
+  viewerHasVoted: boolean
+  updatedAt: string
+}
+
+// Admin triage view: carries author + moderation state alongside the vote tally,
+// but not the per-viewer flag (an admin triages, they don't vote from here).
+export interface AdminRoadmapItem {
+  id: string
+  title: string
+  description: string | null
+  status: RoadmapStatus
+  position: number
+  authorId: string | null
+  moderationStatus: RoadmapModeration
+  voteCount: number
   updatedAt: string
 }
 
 // Bucket items into their status columns (shared by the public page and the
-// admin editor so the grouping logic lives in one place).
-export function groupByStatus(items: RoadmapItem[] | undefined): Record<RoadmapStatus, RoadmapItem[]> {
-  const groups: Record<RoadmapStatus, RoadmapItem[]> = { PLANNED: [], IN_PROGRESS: [], SHIPPED: [] }
+// admin editor so the grouping logic lives in one place). Generic so the admin
+// item shape (with moderation/author fields) buckets the same way.
+export function groupByStatus<T extends { status: RoadmapStatus }>(
+  items: T[] | undefined,
+): Record<RoadmapStatus, T[]> {
+  const groups: Record<RoadmapStatus, T[]> = { PLANNED: [], IN_PROGRESS: [], SHIPPED: [], SUGGESTED: [] }
   for (const item of items ?? []) groups[item.status].push(item)
   return groups
 }
@@ -24,4 +44,26 @@ export function useRoadmap() {
     queryKey: ['roadmap'],
     queryFn: ({ signal }) => $fetch<{ items: RoadmapItem[] }>('/api/roadmap', { signal }).then((r) => r.items),
   })
+}
+
+// Public write actions: submit a suggestion and toggle an upvote. Both refetch
+// the roadmap on success (the derived vote counts and viewer flags live only in
+// the list response, so a refetch is the source of truth).
+export function useRoadmapActions() {
+  const queryClient = useQueryClient()
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['roadmap'] })
+
+  const submit = useMutation({
+    mutationFn: (input: { title: string; description?: string }) =>
+      $fetch<unknown>('/api/roadmap/suggestions', { method: 'POST', body: input }),
+    onSuccess: () => invalidate(),
+  })
+
+  const vote = useMutation({
+    mutationFn: (id: string) =>
+      $fetch<{ voted: boolean; voteCount: number }>(`/api/roadmap/${id}/vote`, { method: 'POST' }),
+    onSuccess: () => invalidate(),
+  })
+
+  return { submit, vote }
 }

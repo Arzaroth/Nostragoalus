@@ -807,7 +807,10 @@
       "delete": "Delete",
       "moveUp": "Move up",
       "moveDown": "Move down",
-      "actionFailed": "That action failed - try again."
+      "actionFailed": "That action failed - try again.",
+      "userSuggestion": "User suggestion",
+      "hide": "Hide",
+      "restore": "Restore"
     },
     "sso": {
       "title": "Single Sign-On",
@@ -1064,7 +1067,22 @@
     "inProgress": "In progress",
     "shipped": "Shipped",
     "empty": "Nothing here yet - watch this space.",
-    "error": "Couldn't load the roadmap right now."
+    "error": "Couldn't load the roadmap right now.",
+    "suggested": "Community suggestions",
+    "upvote": "Upvote",
+    "upvoteRemove": "Remove upvote",
+    "signInToVote": "Sign in to vote",
+    "votes": "{n} votes",
+    "suggest": {
+      "titleLabel": "Your idea in a few words",
+      "descriptionLabel": "Add detail (optional)",
+      "submit": "Suggest",
+      "thanks": "Thanks - your suggestion is live.",
+      "failed": "Couldn't submit that - try again.",
+      "signInHint": "Have an idea?",
+      "signInCta": "Sign in to suggest",
+      "empty": "No suggestions yet - be the first."
+    }
   },
   "update": {
     "available": "A new version is available",

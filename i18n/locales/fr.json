@@ -803,7 +803,10 @@
       "delete": "Supprimer",
       "moveUp": "Monter",
       "moveDown": "Descendre",
-      "actionFailed": "L'action a échoué - réessaie."
+      "actionFailed": "L'action a échoué - réessaie.",
+      "userSuggestion": "Suggestion d'utilisateur",
+      "hide": "Masquer",
+      "restore": "Restaurer"
     },
     "sso": {
       "title": "Authentification unique (SSO)",
@@ -1060,7 +1063,22 @@
     "inProgress": "En cours",
     "shipped": "Livré",
     "empty": "Rien ici pour l'instant.",
-    "error": "Impossible de charger la feuille de route pour le moment."
+    "error": "Impossible de charger la feuille de route pour le moment.",
+    "suggested": "Suggestions de la communauté",
+    "upvote": "Voter",
+    "upvoteRemove": "Retirer le vote",
+    "signInToVote": "Connecte-toi pour voter",
+    "votes": "{n} votes",
+    "suggest": {
+      "titleLabel": "Ton idée en quelques mots",
+      "descriptionLabel": "Ajoute des détails (optionnel)",
+      "submit": "Proposer",
+      "thanks": "Merci - ta suggestion est en ligne.",
+      "failed": "Envoi impossible - réessaie.",
+      "signInHint": "Une idée ?",
+      "signInCta": "Connecte-toi pour proposer",
+      "empty": "Aucune suggestion pour l'instant - sois le premier."
+    }
   },
   "update": {
     "available": "Une nouvelle version est disponible",
