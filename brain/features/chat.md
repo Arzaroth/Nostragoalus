@@ -74,7 +74,9 @@ known residual is the DNS-rebind TOCTOU window (documented in TODO).
 The floating, collapsible `ChatDock` (Global / Match scope) coexists with the
 inline `ChatPanel` on the league page. Its header carries a league switcher
 (change league without the competition pill) that names the current league, so a
-switch - including opening a foreign-league inbox room - is visible. Presence
+switch - including opening a foreign-league inbox room - is visible; each league
+in the switcher list shows a dot when it has any unread chat, whether in its
+global room or a match thread (`useChatActivity.hasUnreadInLeague`). Presence
 dots and client-side search are built in. Live events on the WebSocket: `chat:new`, `chat:moderation`,
 `chat:roster` (display-name changes), and `chat:state-changed` (chat on/off and
 key rotation). See [../architecture/realtime.md](../architecture/realtime.md).
@@ -101,7 +103,10 @@ leagues, not just the selected one, and it survives a reload.
   key (`ChatPanel` emits `update:readable`, the dock gates its receipt on it). So
   switching into a league this device cannot decrypt yet (no recovery key, or the
   key was never sealed to you) does NOT mark it read; it stays unread and clears
-  on the readable flip once the messages decrypt.
+  on the readable flip once the messages decrypt. The dock drops that readable
+  flag the instant the active league/room changes (the panel stays mounted and
+  re-emits a tick later), so a switch never marks the new, not-yet-decrypted room
+  read off the previous room's readiness.
 - A room open draws a **last-read divider**. `GET /api/chat/messages` returns the
   caller's `readMarker` for the room (`getRoomReadMarker` in `unread.ts`);
   `useLeagueChat` freezes it on a foreground open - captured before the receipt

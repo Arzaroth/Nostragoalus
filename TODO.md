@@ -42,6 +42,13 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       Harmless and self-heals; fixing it cleanly needs `notifyMentions` to commit
       before the post responds (giving up the fire-and-forget) or a mention-aware
       live frame the client can seed labels from.
+- [ ] **Hand-rolled chat popovers duplicate a shell**: the in-chat league switcher
+      (`ChatDock.vue`) is a third copy of the same absolute-positioned popover shell
+      already used by the dock's "rooms with activity" popover and `ChatPanel`'s
+      overflow menu, and it re-implements `LeaguePill.vue`'s league list. All three
+      dock popovers also lack outside-click-to-close (PrimeVue's `<Popover>` on
+      LeaguePill gets that for free). Extract a shared popover-shell (or reuse
+      `<Popover>`) so the three stop drifting and gain click-outside dismissal.
 
 ## Past-pick counterfactual (deferred from the feature pass)
 
