@@ -123,7 +123,11 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
 - Auth: identifier-first login with **SSO domain capture** - runtime-configurable OIDC / SAML /
   Google providers (several domains each, display names, envelope-encrypted secrets, in-place
   editing, SP metadata for IdP setup; an internal or private-network IdP needs its origin in
-  `NUXT_SSO_TRUSTED_ORIGINS`); email + password (HIBP-checked) with mailed reset; optional
+  `NUXT_SSO_TRUSTED_ORIGINS`), guided onboarding (draft -> test -> verify -> enable, with an
+  automated connection test, a live OIDC test sign-in that previews the mapped claims, and DNS
+  domain verification or an admin bypass), plus **SCIM 2.0** provisioning/deprovisioning (per-provider
+  token, `active:false` deactivates a user and ends their sessions while keeping their data);
+  email + password (HIBP-checked) with mailed reset; optional
   admin-required **email verification** for sign-ups (mailed link, force-verify + daily prune of
   unconfirmed accounts); **2FA** (TOTP, email codes, single-use backup codes, trusted devices);
   **passkeys** (sudo-gated registration). SSO-managed accounts hand credential management to the IdP
