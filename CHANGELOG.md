@@ -9,6 +9,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ### Added
 - **Arabic, right-to-left**: Nostragoalus is now available in Arabic, with the whole interface mirrored to read right-to-left - menus, layouts, and the knockout bracket included. Pick it from the language selector.
+- **Switch league from inside the chat**: the chat window now shows which league you're reading and lets you change league right there, without scrolling up to the league pill. Its list flags any league with unread chat.
+- **"New messages" line in chat**: opening a chat room draws a divider at the point you last read, so you can see at a glance where you left off. It stays put while you catch up and clears once everything is read.
+
+### Fixed
+- **Chat no longer marks unread as read before you can read it**: opening or switching into a league whose messages this device can't decrypt yet (you haven't entered your recovery key, or the key hasn't reached you) no longer clears its unread badge. It stays unread and clears only once the messages actually become readable.
 
 ## [2.6.0] - 2026-06-30
 

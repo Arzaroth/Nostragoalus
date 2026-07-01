@@ -72,8 +72,10 @@ known residual is the DNS-rebind TOCTOU window (documented in TODO).
 ## Surfaces + live
 
 The floating, collapsible `ChatDock` (Global / Match scope) coexists with the
-inline `ChatPanel` on the league page. Presence dots and client-side search are
-built in. Live events on the WebSocket: `chat:new`, `chat:moderation`,
+inline `ChatPanel` on the league page. Its header carries a league switcher
+(change league without the competition pill) that names the current league, so a
+switch - including opening a foreign-league inbox room - is visible. Presence
+dots and client-side search are built in. Live events on the WebSocket: `chat:new`, `chat:moderation`,
 `chat:roster` (display-name changes), and `chat:state-changed` (chat on/off and
 key rotation). See [../architecture/realtime.md](../architecture/realtime.md).
 
@@ -94,7 +96,18 @@ leagues, not just the selected one, and it survives a reload.
   store), so they survive reload too.
 - `POST /api/chat/read` (`markRoomRead`) upserts the marker to the server clock
   and clears that room's unread mention rows, so opening a room clears both
-  counters at once (reload parity with the live tracker).
+  counters at once (reload parity with the live tracker). The client only sends
+  it once the room is actually READABLE - the panel is loaded AND holds the group
+  key (`ChatPanel` emits `update:readable`, the dock gates its receipt on it). So
+  switching into a league this device cannot decrypt yet (no recovery key, or the
+  key was never sealed to you) does NOT mark it read; it stays unread and clears
+  on the readable flip once the messages decrypt.
+- A room open draws a **last-read divider**. `GET /api/chat/messages` returns the
+  caller's `readMarker` for the room (`getRoomReadMarker` in `unread.ts`);
+  `useLeagueChat` freezes it on a foreground open - captured before the receipt
+  above advances it - and `ChatPanel` renders a "new messages" line before the
+  first message newer than the marker that is not the reader's own. Frozen, so it
+  holds position while you catch up and is gone on the next open.
 - `useChatActivity` is backed by the unread query (keyed per `leagueId::roomKey`),
   patched optimistically from the live `chat:new` socket between fetches, then
   re-sorted client-side (newest first, `leagueId+roomKey` tiebreaker) so the patches

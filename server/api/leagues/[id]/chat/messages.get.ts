@@ -4,10 +4,11 @@ import { getThreadCounts, listMessages } from '../../../../utils/chat/service'
 import { getMyReactions, getReactionTotals } from '../../../../utils/chat/reactions'
 import { getMessageAttachments } from '../../../../utils/chat/attachments'
 import { getMyReports } from '../../../../utils/chat/moderation'
+import { getRoomReadMarker } from '../../../../utils/chat/unread'
 import { getMembership } from '../../../../utils/leagues/service'
 import { emptyReactionTotals } from '../../../../../shared/reactions'
+import { roomKeyFor, type ChatMessageDTO } from '../../../../../shared/types/chat'
 import { toHttpError } from '../../../../utils/http'
-import type { ChatMessageDTO } from '../../../../../shared/types/chat'
 
 // A page of ciphertext for one room (matchId omitted = league-global room),
 // newest first. before= pages backwards. Members only (service enforces).
@@ -18,11 +19,12 @@ export default defineEventHandler(async (event) => {
   const before = typeof q.before === 'string' ? new Date(q.before) : undefined
   const limit = typeof q.limit === 'string' ? Number(q.limit) : undefined
   const thread = typeof q.thread === 'string' ? q.thread : null
+  const matchId = typeof q.matchId === 'string' ? q.matchId : null
   try {
     const rows = await listMessages(db, {
       leagueId,
       userId: user.id,
-      matchId: typeof q.matchId === 'string' ? q.matchId : null,
+      matchId,
       before: before && !Number.isNaN(before.getTime()) ? before : undefined,
       beforeId: typeof q.beforeId === 'string' ? q.beforeId : undefined,
       limit: limit && !Number.isNaN(limit) ? limit : undefined,
@@ -62,7 +64,10 @@ export default defineEventHandler(async (event) => {
         threadCount: threadCounts[r.id] ?? 0,
       }
     })
-    return { messages }
+    // Only the initial main-list page needs the read marker (for the "new
+    // messages" divider); thread views and backward paging never draw it.
+    const readMarker = thread || before ? null : await getRoomReadMarker(db, user.id, leagueId, roomKeyFor(matchId))
+    return { messages, readMarker }
   } catch (error) {
     throw toHttpError(error)
   }
@@ -81,6 +86,6 @@ defineRouteMeta({
       { in: 'query', name: 'limit', required: false, schema: { type: 'integer' } },
       { in: 'query', name: 'thread', required: false, schema: { type: 'string' }, description: 'A parent message id: list that thread\'s replies instead of top-level messages.' },
     ],
-    responses: { '200': { description: '{ messages: ChatMessageDTO[] }.' }, '403': { description: 'Not a member.' } },
+    responses: { '200': { description: '{ messages: ChatMessageDTO[], readMarker: string | null }. readMarker is the caller\'s last-read time for the room (ISO), null on thread/paged fetches or an unopened room.' }, '403': { description: 'Not a member.' } },
   },
 })

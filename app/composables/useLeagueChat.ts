@@ -75,6 +75,11 @@ export function useLeagueChat(
   const memberKeys = ref<{ userId: string; publicKey: string; name: string }[]>([])
   const loading = ref(false)
   const sending = ref(false)
+  // The caller's last-read time for this room (ISO), frozen when the room is
+  // opened so a "new messages" divider can mark the boundary. It is captured
+  // before the read marker is advanced, and only refreshed on a foreground room
+  // open (not a background reconnect reload), so the line stays put while reading.
+  const readMarker = ref<string | null>(null)
   // Thread view: the open thread's root message id and its decrypted replies.
   // Replies live here, never in the main `messages` list (the server keeps them
   // out of the room page); each top-level message carries a replyCount instead.
@@ -144,14 +149,18 @@ export function useLeagueChat(
   const hasMore = ref(false)
   const loadingOlder = ref(false)
 
-  async function loadMessages(): Promise<void> {
+  async function loadMessages(opts: { resetMarker?: boolean } = {}): Promise<void> {
     const m = mid()
-    const { messages: rows } = await $fetch<{ messages: ChatMessageDTO[] }>(`/api/leagues/${lid()}/chat/messages`, {
-      query: m ? { matchId: m } : {},
-    })
+    const { messages: rows, readMarker: marker } = await $fetch<{ messages: ChatMessageDTO[]; readMarker: string | null }>(
+      `/api/leagues/${lid()}/chat/messages`,
+      { query: m ? { matchId: m } : {} },
+    )
     hasMore.value = rows.length >= PAGE
     // The API returns newest-first; show oldest-first.
     messages.value = await Promise.all([...rows].reverse().map(decryptRow))
+    // Freeze the divider boundary only on a foreground open, so a background
+    // reconnect reload (marker already advanced by the read receipt) never wipes it.
+    if (opts.resetMarker) readMarker.value = marker
   }
 
   // Page backwards from the oldest loaded message, prepending the older ones.
@@ -290,7 +299,7 @@ export function useLeagueChat(
         keys.value = map
       }
       await reconcileKeys(status.missingKeys)
-      await loadMessages()
+      await loadMessages({ resetMarker: !bg })
       // Still keyless after loading: nudge connected keyholders to seal it for us.
       if (!currentKey.value) void requestRekey()
     } finally {
@@ -753,6 +762,7 @@ export function useLeagueChat(
     awaitingKey,
     loading,
     sending,
+    readMarker,
     hasMore,
     loadingOlder,
     loadOlder,

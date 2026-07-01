@@ -4,7 +4,7 @@ import { createTestDb } from '../../../tests/db'
 import { makeLeague, makeMatch, makeUser, seedCompetition } from '../../../tests/factories'
 import { findRoundId } from '../sync/rounds'
 import { chatMessage, chatRoomRead, leagueMember, userNotification } from '../../../db/schema'
-import { getUnreadRooms, markRoomRead } from './unread'
+import { getRoomReadMarker, getUnreadRooms, markRoomRead } from './unread'
 import { ForbiddenError } from '../errors'
 import type { NotificationData } from '../../../shared/types/notifications'
 
@@ -141,6 +141,33 @@ describe('getUnreadRooms', () => {
     const rooms = await getUnreadRooms(db, me)
     expect(rooms).toHaveLength(1)
     expect(rooms[0]).toMatchObject({ leagueId: l1, roomKey: '__global__', unread: 0, mentions: 1 })
+    await client.close()
+  })
+})
+
+describe('getRoomReadMarker', () => {
+  it('is null before the room is opened, then the marker time after', async () => {
+    const { db, client, me, l1 } = await setup()
+    expect(await getRoomReadMarker(db, me, l1, '__global__')).toBeNull()
+    await markRoomRead(db, me, { leagueId: l1, roomKey: '__global__' })
+    const marker = await getRoomReadMarker(db, me, l1, '__global__')
+    expect(marker).not.toBeNull()
+    expect(new Date(marker!).getTime()).not.toBeNaN()
+    await client.close()
+  })
+
+  it('is scoped per room and per user', async () => {
+    const { db, client, competitionId, me, other, l1 } = await setup()
+    const roundId = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+    const matchId = await makeMatch(db, { competitionId, roundId, kickoffTime: JOIN })
+    await db
+      .insert(chatRoomRead)
+      .values({ userId: me, leagueId: l1, roomKey: matchId, lastReadAt: T('2026-02-05T00:00:00Z') })
+    // Right room for me.
+    expect(await getRoomReadMarker(db, me, l1, matchId)).toBe(T('2026-02-05T00:00:00Z').toISOString())
+    // A different room I never opened, and another user, are both null.
+    expect(await getRoomReadMarker(db, me, l1, '__global__')).toBeNull()
+    expect(await getRoomReadMarker(db, other, l1, matchId)).toBeNull()
     await client.close()
   })
 })

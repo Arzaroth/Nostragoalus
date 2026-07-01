@@ -20,6 +20,7 @@ vi.mock('../composables/useLeagueChat', async () => {
     awaitingKey: ref(false),
     loading: ref(false),
     sending: ref(false),
+    readMarker: ref<string | null>(null),
     messages: ref<Array<{ id: string; userId: string | null; matchId: string | null; text: string | null; createdAt: string }>>([]),
     memberKeys: ref<Array<{ userId: string; publicKey: string; name: string }>>([]),
     muted: ref<string[]>([]),
@@ -78,6 +79,7 @@ beforeEach(async () => {
   s.isAdmin.value = false
   s.ready.value = false
   s.awaitingKey.value = false
+  s.readMarker.value = null
   s.messages.value = []
   s.memberKeys.value = []
   s.muted.value = []
@@ -130,6 +132,32 @@ describe('ChatPanel', () => {
     expect(wrapper.text()).toContain('evening')
     expect(wrapper.text()).toContain('Me')
     expect(wrapper.text()).toContain('Sam')
+  })
+
+  it('draws a new-messages divider at the last-read boundary', async () => {
+    const s = await chatState()
+    s.enabled.value = true
+    s.ready.value = true
+    // Read up to 10:00:30; the 10:01 message from another member is the first unread.
+    s.readMarker.value = '2026-06-10T10:00:30.000Z'
+    s.messages.value = [
+      msg({ id: 'a', userId: 'other', text: 'seen already', createdAt: '2026-06-10T10:00:00.000Z' }),
+      msg({ id: 'b', userId: 'other', text: 'brand new', createdAt: '2026-06-10T10:01:00.000Z' }),
+    ]
+    const wrapper = await mount()
+    await vi.waitFor(() => expect(wrapper.text()).toContain('brand new'))
+    expect(wrapper.text()).toContain('New messages')
+  })
+
+  it('shows no divider once everything is read', async () => {
+    const s = await chatState()
+    s.enabled.value = true
+    s.ready.value = true
+    s.readMarker.value = '2026-06-10T11:00:00.000Z'
+    s.messages.value = [msg({ id: 'a', userId: 'other', text: 'seen', createdAt: '2026-06-10T10:00:00.000Z' })]
+    const wrapper = await mount()
+    await vi.waitFor(() => expect(wrapper.text()).toContain('seen'))
+    expect(wrapper.text()).not.toContain('New messages')
   })
 
   it('flags messages it cannot decrypt', async () => {
