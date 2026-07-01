@@ -137,6 +137,26 @@ export async function getUnreadRooms(db: AppDatabase, userId: string): Promise<C
   return [...byKey.values()].sort((a, b) => sortKey(b).localeCompare(sortKey(a)))
 }
 
+// The caller's read marker for one room (ISO), or null if they have never opened
+// it. The client freezes this when it opens a room, so it can draw a "new
+// messages" divider at the last-read boundary - captured before markRoomRead
+// advances the marker to now.
+export async function getRoomReadMarker(
+  db: AppDatabase,
+  userId: string,
+  leagueId: string,
+  roomKey: string,
+): Promise<string | null> {
+  const [row] = await db
+    .select({ lastReadAt: chatRoomRead.lastReadAt })
+    .from(chatRoomRead)
+    .where(
+      and(eq(chatRoomRead.userId, userId), eq(chatRoomRead.leagueId, leagueId), eq(chatRoomRead.roomKey, roomKey)),
+    )
+    .limit(1)
+  return row ? row.lastReadAt.toISOString() : null
+}
+
 // Mark a room read up to now (server clock - never trust a client timestamp). Also
 // clears that room's unread @mention bell rows, so opening the room dismisses the
 // mention everywhere at once and a reload shows the room fully clear (parity with

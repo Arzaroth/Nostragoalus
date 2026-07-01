@@ -43,12 +43,25 @@ const chat = useLeagueChat(
   () => props.leagueId,
   () => props.matchId ?? null,
 )
-const { enabled, isAdmin, ready, awaitingKey, loading, sending, hasMore, loadingOlder, typingUserIds, messages, memberKeys, muted, identityStatus } = chat
+const { enabled, isAdmin, ready, awaitingKey, loading, sending, readMarker, hasMore, loadingOlder, typingUserIds, messages, memberKeys, muted, identityStatus } = chat
 
 // Let a host (the floating dock) follow the live on/off state so it can show or
 // hide itself the moment an admin toggles chat, without its own status fetch.
-const emit = defineEmits<{ 'update:enabled': [boolean] }>()
+// `readable` = the room is loaded AND decrypted; the dock gates its read receipt
+// on it so a room we cannot decrypt is never silently marked read.
+const emit = defineEmits<{ 'update:enabled': [boolean]; 'update:readable': [boolean] }>()
 watch(enabled, (v) => emit('update:enabled', v), { immediate: true })
+const readable = computed(() => ready.value && !loading.value)
+watch(readable, (v) => emit('update:readable', v), { immediate: true })
+
+// The first message the reader has not seen (newer than their frozen read marker,
+// and not their own), for the "new messages" divider. Stable as live messages
+// append, because the marker is frozen at room-open; clears when nothing is new.
+const firstUnreadId = computed<string | null>(() => {
+  const marker = readMarker.value
+  if (!marker) return null
+  return messages.value.find((m) => m.userId !== meId.value && m.createdAt > marker)?.id ?? null
+})
 
 // Emoji reactions, mirroring match reactions (one per member per message). The
 // picker (all glyphs) opens for one message at a time.
@@ -901,12 +914,21 @@ watch(
           </button>
           <p v-if="!messages.length" class="text-sm py-6 text-center" style="color: var(--p-text-muted-color)">{{ t('chat.empty') }}</p>
           <p v-else-if="searchOpen && searchQuery.trim() && !displayMessages.length" class="text-sm py-6 text-center" style="color: var(--p-text-muted-color)">{{ t('chat.search.none') }}</p>
-          <div
+          <template
             v-for="m in displayMessages"
             :key="m.id"
+          >
+          <!-- Last-read boundary: everything below arrived since you last read. -->
+          <div v-if="!searchOpen && m.id === firstUnreadId" class="flex items-center gap-2 py-0.5 select-none">
+            <span class="flex-1 h-px" style="background: color-mix(in srgb, var(--p-primary-color) 45%, transparent)" />
+            <span class="text-[10px] uppercase tracking-wider font-semibold" style="color: var(--p-primary-color)">{{ t('chat.newMessagesDivider') }}</span>
+            <span class="flex-1 h-px" style="background: color-mix(in srgb, var(--p-primary-color) 45%, transparent)" />
+          </div>
+          <div
             v-memo="[
               m.id, m.userId, m.text, m.editedAt, m.moderation, m.reported, m.myReaction, m.reactions, m.threadCount, m.attachments, m.parentId,
               names, avatars,
+              m.id === firstUnreadId,
               pickerFor === m.id,
               editingId === m.id,
               editingId === m.id ? editDraft : '',
@@ -1109,6 +1131,7 @@ watch(
               </form>
             </div>
           </div>
+          </template>
         </div>
           <button
             v-if="hasNew"

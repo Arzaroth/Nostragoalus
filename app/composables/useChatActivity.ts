@@ -15,7 +15,11 @@ const UNREAD_KEY = ['chat', 'unread']
 export function useChatActivity(opts: {
   activeLeagueId: MaybeRefOrGetter<string | null>
   activeRoom: MaybeRefOrGetter<string | null>
-  viewing: MaybeRefOrGetter<boolean>
+  // The open room is actually READABLE (uncollapsed AND decrypted). A room whose
+  // messages we cannot decrypt yet - no recovery key, key not sealed to us - is
+  // not "read" just by being on screen, so it keeps accruing unread until it
+  // decrypts. That gates the mark-read below.
+  readable: MaybeRefOrGetter<boolean>
 }) {
   const qc = useQueryClient()
   const { session } = useAuth()
@@ -62,7 +66,7 @@ export function useChatActivity(opts: {
   const touchActive = useDebounceFn(() => {
     const leagueId = toValue(opts.activeLeagueId)
     const room = toValue(opts.activeRoom)
-    if (toValue(opts.viewing) && leagueId && room) void postRead(leagueId, room)
+    if (toValue(opts.readable) && leagueId && room) void postRead(leagueId, room)
   }, 1500)
 
   useReconnectingSocket({
@@ -85,8 +89,10 @@ export function useChatActivity(opts: {
       const me = myId.value
       // My own messages never count.
       if (me && msg.message.userId === me) return
-      // The room being actively viewed is already read: just keep its marker fresh.
-      if (toValue(opts.viewing) && toValue(opts.activeLeagueId) === leagueId && toValue(opts.activeRoom) === rk) {
+      // The room being actively read (decrypted) is already caught up: just keep
+      // its marker fresh. If it's open but not yet decrypted, fall through so the
+      // message still accrues as unread until the reader can actually see it.
+      if (toValue(opts.readable) && toValue(opts.activeLeagueId) === leagueId && toValue(opts.activeRoom) === rk) {
         touchActive()
         return
       }
@@ -134,13 +140,15 @@ export function useChatActivity(opts: {
     void postRead(leagueId, roomKey)
   }
 
-  // The room being viewed clears as it is shown (and the marker persists it).
+  // The room being read clears as it is shown (and the marker persists it). Gated
+  // on `readable`, so switching into a room we cannot decrypt does not mark it
+  // read; it clears once the key arrives and this fires on the readable flip.
   watch(
-    [() => toValue(opts.activeLeagueId), () => toValue(opts.activeRoom), () => toValue(opts.viewing)],
+    [() => toValue(opts.activeLeagueId), () => toValue(opts.activeRoom), () => toValue(opts.readable)],
     () => {
       const leagueId = toValue(opts.activeLeagueId)
       const room = toValue(opts.activeRoom)
-      if (toValue(opts.viewing) && leagueId && room) markSeen(leagueId, room)
+      if (toValue(opts.readable) && leagueId && room) markSeen(leagueId, room)
     },
     { immediate: true },
   )

@@ -16,7 +16,7 @@ const { t } = useI18n()
 const route = useRoute()
 const slug = useSelectedCompetition()
 const matches = useMatches()
-const { leagueId: selectedLeagueId } = useSelectedLeague()
+const { leagueId: selectedLeagueId, league: selectedLeague, leagues: myLeagues } = useSelectedLeague()
 const selections = useLeagueSelections()
 
 // The league detail/list pages render the chat inline; don't double it there.
@@ -31,6 +31,9 @@ const matchId = computed<string | null>(() =>
 const enabled = ref(false)
 const collapsed = ref(true)
 const expanded = ref(false)
+// The inner panel is loaded AND decrypted (its `readable` emit). We only mark a
+// room read when this is true, so a room we cannot decrypt is not silently read.
+const panelReadable = ref(false)
 const scope = ref<'global' | 'match'>('global')
 // Off a match page there is no match room: pin scope to global and hide the toggle.
 watch(matchId, (m) => {
@@ -42,7 +45,10 @@ const scopedMatchId = computed<string | null>(() => (scope.value === 'match' ? m
 // accrues so we can badge the bubble, the scope toggle and the rooms list.
 const viewing = computed(() => enabled.value && !collapsed.value)
 const activeRoomKey = computed(() => roomKeyOf(scopedMatchId.value))
-const activity = useChatActivity({ activeLeagueId: leagueId, activeRoom: activeRoomKey, viewing })
+// Read receipts require the room to be both open and decrypted, so switching into
+// a room we cannot read yet does not mark it read (it clears once it decrypts).
+const readable = computed(() => viewing.value && panelReadable.value)
+const activity = useChatActivity({ activeLeagueId: leagueId, activeRoom: activeRoomKey, readable })
 
 function matchLabel(id: string | null): string {
   if (!id) return t('chat.scope.global')
@@ -117,6 +123,15 @@ watch(
 )
 
 const roomsOpen = ref(false)
+// Switch league without leaving the chat (otherwise you'd scroll to the pill up
+// top). Lists this competition's leagues; picking one repoints the ng-league
+// cookie for the current competition, which re-resolves the dock's room live.
+const leaguesOpen = ref(false)
+function switchLeague(id: string): void {
+  leaguesOpen.value = false
+  selectedLeagueId.value = id
+}
+
 // Open any inbox room, including one in another league/competition: point the
 // ng-league cookie at that room's league for its competition, navigate there if
 // it is not already the current page, then select the right scope. The dock
@@ -176,6 +191,40 @@ async function openRoom(r: ChatUnreadRoomDTO) {
         :class="undocked ? 'cursor-move select-none' : ''"
         style="border-color: var(--p-content-border-color); background: var(--p-content-background)"
       >
+        <!-- League switcher: change league without scrolling up to the pill. Shows
+             the current league name so a switch (incl. from the inbox) is visible. -->
+        <div class="relative">
+          <button
+            type="button"
+            class="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold max-w-[9rem] hover:bg-black/5 dark:hover:bg-white/10"
+            :aria-label="t('chat.league.switch')"
+            @click="leaguesOpen = !leaguesOpen"
+          >
+            <i class="pi pi-users text-xs" style="color: var(--p-primary-color)" />
+            <span class="truncate">{{ selectedLeague?.name ?? t('chat.dock.title') }}</span>
+            <i class="pi pi-chevron-down text-[10px] opacity-60" />
+          </button>
+          <div
+            v-if="leaguesOpen"
+            class="absolute left-0 top-7 z-10 w-56 rounded-lg border shadow-lg py-1 text-sm"
+            style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
+          >
+            <p class="px-3 py-1 text-xs font-semibold uppercase tracking-wider" style="color: var(--p-text-muted-color)">{{ t('chat.league.title') }}</p>
+            <button
+              v-for="l in myLeagues ?? []"
+              :key="l.id"
+              type="button"
+              class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:opacity-100 opacity-90"
+              :class="{ 'font-bold': l.id === selectedLeagueId }"
+              @click="switchLeague(l.id)"
+            >
+              <i class="pi pi-users text-xs" :style="l.id === selectedLeagueId ? 'color: var(--p-primary-color)' : 'opacity:0.4'" />
+              <span class="flex-1 truncate">{{ l.name }}</span>
+              <span v-if="activity.unreadFor(l.id, GLOBAL_ROOM)" class="w-2 h-2 shrink-0 rounded-full" style="background: var(--ng-danger)" />
+              <i v-if="l.id === selectedLeagueId" class="pi pi-check text-xs" style="color: var(--p-primary-color)" />
+            </button>
+          </div>
+        </div>
         <div v-if="matchId" class="flex items-center rounded-lg overflow-hidden text-xs" style="border: 1px solid var(--p-content-border-color)">
           <button
             type="button"
@@ -196,7 +245,6 @@ async function openRoom(r: ChatUnreadRoomDTO) {
             <span v-if="scope !== 'match' && matchId && activity.unreadFor(leagueId, matchId)" class="absolute top-0.5 right-0.5 w-2 h-2 rounded-full" style="background: var(--ng-danger)" />
           </button>
         </div>
-        <span v-else class="text-sm font-semibold">{{ t('chat.dock.title') }}</span>
 
         <!-- Rooms with activity: jump to whichever room has unread. -->
         <div class="relative ms-auto">
@@ -263,7 +311,7 @@ async function openRoom(r: ChatUnreadRoomDTO) {
       </div>
 
       <div class="p-3">
-        <ChatPanel :league-id="leagueId" :match-id="scopedMatchId" :match-label="scopedMatchId ? matchLabel(scopedMatchId) : ''" flat :tall="expanded" :active="enabled && !collapsed" @update:enabled="enabled = $event" />
+        <ChatPanel :league-id="leagueId" :match-id="scopedMatchId" :match-label="scopedMatchId ? matchLabel(scopedMatchId) : ''" flat :tall="expanded" :active="enabled && !collapsed" @update:enabled="enabled = $event" @update:readable="panelReadable = $event" />
       </div>
     </div>
   </div>
