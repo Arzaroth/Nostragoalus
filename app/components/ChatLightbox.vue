@@ -184,7 +184,7 @@ function reactWith(emoji: ReactionEmoji): void {
       <button
         v-if="hasPrev"
         type="button"
-        class="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full flex items-center justify-center text-white"
+        class="absolute start-2 sm:start-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full flex items-center justify-center text-white"
         style="background: rgba(255,255,255,0.12)"
         :aria-label="t('chat.image.prev')"
         @click="prev"
@@ -194,7 +194,7 @@ function reactWith(emoji: ReactionEmoji): void {
       <button
         v-if="hasNext"
         type="button"
-        class="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full flex items-center justify-center text-white"
+        class="absolute end-2 sm:end-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full flex items-center justify-center text-white"
         style="background: rgba(255,255,255,0.12)"
         :aria-label="t('chat.image.next')"
         @click="next"

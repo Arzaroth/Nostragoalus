@@ -105,7 +105,7 @@ function fmt(d: string) {
         :key="m.id"
         :to="`/${slug}/matches/${m.id}`"
         class="ng-card block rounded-2xl border p-4"
-        :style="`background: var(--p-content-background); border-left: 4px solid ${outcomeColor(outcome(m))}`"
+        :style="`background: var(--p-content-background); border-inline-start: 4px solid ${outcomeColor(outcome(m))}`"
       >
         <div class="flex items-center justify-between gap-2 text-xs mb-2" style="color: var(--p-text-muted-color)">
           <span>{{ m.roundLabel }} · {{ fmt(m.kickoffTime) }}</span>

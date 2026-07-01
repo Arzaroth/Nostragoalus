@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { showOddsEnabled } from '../utils/prefs'
 import { SKINS, type SkinId } from '../utils/skins'
-const { t, locale, setLocale } = useI18n()
+const { t, locale, locales, setLocale } = useI18n()
 const { session, updateUser } = useAuth()
 const { preference, setPreference } = useTheme()
 const { skin, unlocked, setSkin } = useSkin()
@@ -95,13 +95,6 @@ function onMasterPush(v: boolean) {
 
 const { data: feedData, busy: feedBusy, load: feedLoad, copy: feedCopy } = useCalendarFeed()
 
-const langOptions = [
-  { label: 'English', value: 'en' },
-  { label: 'Français', value: 'fr' },
-  { label: 'ไทย (Thai)', value: 'th' },
-  { label: 'tlhIngan Hol (Klingon)', value: 'tlh' },
-  { label: 'العربية (Arabic)', value: 'ar' },
-]
 const themeOptions = computed(() => [
   { label: t('prefs.light'), value: 'light', icon: 'pi pi-sun' },
   { label: t('prefs.dark'), value: 'dark', icon: 'pi pi-moon' },
@@ -136,7 +129,7 @@ const skinModel = computed({
         <div class="md:col-span-2 flex flex-col gap-5">
           <div class="flex flex-col gap-1">
             <label class="text-sm font-medium">{{ t('prefs.language') }}</label>
-            <Select v-model="lang" :options="langOptions" option-label="label" option-value="value" class="w-full sm:w-60" />
+            <Select v-model="lang" :options="locales" option-label="name" option-value="code" class="w-full sm:w-60" />
           </div>
           <div class="flex flex-col gap-1">
             <label class="text-sm font-medium">{{ t('prefs.theme') }}</label>

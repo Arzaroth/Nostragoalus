@@ -77,7 +77,7 @@ universal convention). Arabic **glyphs** still render: the card's font fallback
 (`server/routes/og/share/[token].get.ts`, `SCRIPT_FAMILY`) already fetches Noto
 Sans Arabic on demand for Arabic text. Bundling `NotoSansArabic-*.woff` alongside
 the Thai fonts (for offline reliability, like Thai) is a deferred nicety (see
-[../../TODO.md]).
+[TODO.md](../../TODO.md)).
 
 ## Tests
 

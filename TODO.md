@@ -14,10 +14,11 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 - [ ] **Seeded visual RTL pass on data-gated views**: the app chrome, bracket and
       translation are browser-verified, but views that need signed-in/seeded data
       weren't screenshotted in Arabic. The chat dock's edge-anchored menus/popovers
-      were converted to logical props blind (correct by construction); still open
-      to eyeball: the lightbox carousel prev/next arrows (RTL swap nuance), the
-      decorative crown/Golden-Boot emblems (`-left-*` + rotate), and badge-dot
-      mirror consistency. Seed a league + chat + fixtures and confirm.
+      and search were converted to logical props without a signed-in screenshot
+      (correct by construction, but unconfirmed). Seed a league + chat + fixtures and
+      eyeball them. The decorative crown/Golden-Boot emblems (`-left-*` + rotate) and
+      the corner count badges stay physical (cosmetic, a common RTL exception); flip
+      them if a reviewer wants them mirrored.
 - [ ] **Human review of the machine-translated Arabic**: `i18n/locales/ar.json`
       and `i18n/changelogs/ar.md` are a machine-translation full pass (MSA). A
       native reviewer should polish tone/terminology before it's treated as final.

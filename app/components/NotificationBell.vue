@@ -172,7 +172,7 @@ async function onItem(n: NotificationDTO) {
             </button>
             <button
               type="button"
-              class="absolute top-1.5 right-1.5 w-6 h-6 flex items-center justify-center rounded-full opacity-60 hover:opacity-100 hover:bg-black/10 dark:hover:bg-white/15 transition"
+              class="absolute top-1.5 end-1.5 w-6 h-6 flex items-center justify-center rounded-full opacity-60 hover:opacity-100 hover:bg-black/10 dark:hover:bg-white/15 transition"
               :aria-label="t('notifications.dismiss')"
               @click="dismiss.mutate(n.id)"
             >
