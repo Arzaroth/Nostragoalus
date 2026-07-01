@@ -763,10 +763,11 @@ watch(
     if (shown && forceBottom.value) scrollToBottom()
   },
 )
-// Switching room (Global <-> Match) reloads the list: land at the latest, just
-// like opening the chat does. Flag it; the reload's repopulate triggers the jump.
+// Switching room (Global <-> Match) or league reloads the list, which unmounts it
+// while loading and remounts it scrolled to the top: land at the latest, just like
+// opening the chat does. Flag it; the reload's repopulate triggers the jump.
 watch(
-  () => props.matchId,
+  () => [props.leagueId, props.matchId],
   () => {
     forceBottom.value = true
     hasNew.value = false
