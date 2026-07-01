@@ -30,7 +30,7 @@ const sides = computed(() => {
     <div v-if="isLoading" class="opacity-60">{{ t('common.loading') }}</div>
     <div v-else-if="!sides" class="opacity-60">{{ t('bracket.empty') }}</div>
 
-    <div v-else class="overflow-x-auto pb-4" style="width: 100vw; margin-left: calc(50% - 50vw)">
+    <div v-else class="overflow-x-auto pb-4" style="width: 100vw; margin-inline-start: calc(50% - 50vw)">
       <div class="br w-max mx-auto flex items-stretch gap-8 px-6">
         <!-- left side -->
         <div class="flex items-stretch gap-8 br-left">
@@ -95,7 +95,7 @@ const sides = computed(() => {
 .br-left .br-col[data-tail='true'] .br-cell::after {
   content: '';
   position: absolute;
-  left: 100%;
+  inset-inline-start: 100%;
   top: 50%;
   width: 0.75rem;
   border-top: 2px solid var(--line);
@@ -103,21 +103,21 @@ const sides = computed(() => {
 .br-left .br-col[data-advance='true'] .br-cell:nth-child(odd)::before {
   content: '';
   position: absolute;
-  left: calc(100% + 0.75rem);
+  inset-inline-start: calc(100% + 0.75rem);
   top: 50%;
   height: 50%;
   width: 1.25rem;
-  border-left: 2px solid var(--line);
+  border-inline-start: 2px solid var(--line);
   border-bottom: 2px solid var(--line);
 }
 .br-left .br-col[data-advance='true'] .br-cell:nth-child(even)::before {
   content: '';
   position: absolute;
-  left: calc(100% + 0.75rem);
+  inset-inline-start: calc(100% + 0.75rem);
   bottom: 50%;
   height: 50%;
   width: 1.25rem;
-  border-left: 2px solid var(--line);
+  border-inline-start: 2px solid var(--line);
   border-top: 2px solid var(--line);
 }
 
@@ -126,7 +126,7 @@ const sides = computed(() => {
 .br-right .br-col[data-tail='true'] .br-cell::after {
   content: '';
   position: absolute;
-  right: 100%;
+  inset-inline-end: 100%;
   top: 50%;
   width: 0.75rem;
   border-top: 2px solid var(--line);
@@ -134,21 +134,21 @@ const sides = computed(() => {
 .br-right .br-col[data-advance='true'] .br-cell:nth-child(odd)::before {
   content: '';
   position: absolute;
-  right: calc(100% + 0.75rem);
+  inset-inline-end: calc(100% + 0.75rem);
   top: 50%;
   height: 50%;
   width: 1.25rem;
-  border-right: 2px solid var(--line);
+  border-inline-end: 2px solid var(--line);
   border-bottom: 2px solid var(--line);
 }
 .br-right .br-col[data-advance='true'] .br-cell:nth-child(even)::before {
   content: '';
   position: absolute;
-  right: calc(100% + 0.75rem);
+  inset-inline-end: calc(100% + 0.75rem);
   bottom: 50%;
   height: 50%;
   width: 1.25rem;
-  border-right: 2px solid var(--line);
+  border-inline-end: 2px solid var(--line);
   border-top: 2px solid var(--line);
 }
 </style>
