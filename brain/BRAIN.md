@@ -62,6 +62,7 @@ use the indexes.
 | [odds.md](features/odds.md) | 1X2 decimal odds (Sofascore + BetExplorer). |
 | [reactions.md](features/reactions.md) | Match + chat emoji reactions. |
 | [live-viewers.md](features/live-viewers.md) | Real-time "N watching now" per-match viewer count. |
+| [multiview.md](features/multiview.md) | Configurable grid of live match tiles/streams, URL-persisted, focus-following chat. |
 | [notifications.md](features/notifications.md) | In-app notification center (the bell). |
 | [web-push.md](features/web-push.md) | VAPID push, per-category toggles, live goal/kickoff. |
 | [chat.md](features/chat.md) | E2E-encrypted league chat (threads, mentions, moderation, images). |

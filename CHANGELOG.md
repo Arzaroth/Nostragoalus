@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- **Multi-view**: watch several matches at once in a configurable grid (1, 2x1, 2x2 or 3x3). Each cell shows a live tile - score, clock, goal scorers and play-by-play - or switches to the match's video stream when one is available. The matches and layout you pick live in the URL, so a multi-view is shareable and survives a reload. The chat dock follows whichever cell you focus, and clicking a match in the chat inbox jumps to its cell instead of leaving the grid.
+
 ## [2.10.0] - 2026-07-02
 
 ### Added

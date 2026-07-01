@@ -18,6 +18,7 @@ early on). Back to the root map: [../BRAIN.md](../BRAIN.md).
 | [Reactions](reactions.md) | Six-emoji match reactions, reused by chat | core | `match_reaction`; `ReactionBar.vue` |
 | [Live viewers](live-viewers.md) | Real-time "N watching now" per-match viewer count over the WS hub | Unreleased | `server/utils/live/viewers.ts`, `useMatchPresence.ts`, `MatchViewers.vue` |
 | [SSO onboarding + SCIM](sso-provisioning.md) | Provider lifecycle (draft/enabled/disabled), connection test, OIDC test-sign-in claim preview, DNS domain verification + admin bypass, SCIM 2.0 provisioning | Unreleased | `sso_provider` (status, last_test_*), `scim_provider`; `server/utils/sso/*`, `server/api/admin/sso/**` |
+| [Multi-view](multiview.md) | Configurable grid (1/2x1/2x2/3x3) of live match tiles or streams, URL-persisted, one focus-following chat | Unreleased | `app/utils/multiview.ts`, `app/components/multiview/*`, `useMultiviewFocus.ts` |
 | [Notifications](notifications.md) | In-app notification center (header bell), live push, 7 trigger types | core | `user_notification`; `NotificationBell.vue` |
 | [Web push](web-push.md) | VAPID web push with per-category toggles, goal/kickoff triggers | core | `push_subscription`, `push*` user cols; `server/utils/push/*` |
 | [Chat](chat.md) | E2E-encrypted league chat: threads, mentions, reactions, images, moderation | 1.36.0, 1.42.0 | `chat_message`, `chat_attachment`, `chat_identity`, `league_chat_key`, `chat_message_report` |

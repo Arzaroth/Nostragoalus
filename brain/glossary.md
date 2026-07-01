@@ -98,6 +98,9 @@ the code. Alphabetical.
 - **VAPID** - the keypair scheme that authorizes web-push to a browser endpoint.
 - **Storage driver** - the pluggable `fs`/`s3` blob backend for avatars + chat
   images. See [architecture/storage.md](architecture/storage.md).
+- **Multi-view** - the `/[competition]/multiview` grid that shows several match
+  tiles or streams at once; layout, cells and focus persist in the URL. See
+  [features/multiview.md](features/multiview.md).
 - **Skin** - a cosmetic theme orthogonal to light/dark; the unlockable ones are
   the MLP easter egg. See [features/easter-eggs.md](features/easter-eggs.md).
 - **tlh** - the Klingon locale code; one of the five required locales and itself
