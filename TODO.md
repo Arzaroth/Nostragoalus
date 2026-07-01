@@ -3,6 +3,25 @@
 Deferred work, queued behind feature development.
 Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
+## RTL / Arabic (deferred from the feature pass)
+
+- [ ] **Bundle Noto Sans Arabic for share cards**: Arabic glyphs on the satori
+      share card currently come from the on-demand Google-Fonts fallback
+      (`SCRIPT_FAMILY.ar` in `server/routes/og/share/[token].get.ts`). Thai is
+      bundled (`server/assets/fonts/`) for offline reliability; do the same for
+      Arabic (`NotoSansArabic-{400,700}.woff` + the `FONTS` array + `fontFamily`)
+      so an Arabic card never depends on a live font fetch.
+- [ ] **Seeded visual RTL pass on data-gated views**: the app chrome, bracket and
+      translation are browser-verified, but views that need signed-in/seeded data
+      weren't screenshotted in Arabic. The chat dock's edge-anchored menus/popovers
+      were converted to logical props blind (correct by construction); still open
+      to eyeball: the lightbox carousel prev/next arrows (RTL swap nuance), the
+      decorative crown/Golden-Boot emblems (`-left-*` + rotate), and badge-dot
+      mirror consistency. Seed a league + chat + fixtures and confirm.
+- [ ] **Human review of the machine-translated Arabic**: `i18n/locales/ar.json`
+      and `i18n/changelogs/ar.md` are a machine-translation full pass (MSA). A
+      native reviewer should polish tone/terminology before it's treated as final.
+
 ## Cross-league chat inbox (deferred from the feature-treatment review)
 
 - [ ] **Fabricated-mention abuse**: the `mentions[]` sidecar on `messages.post` is

@@ -6,8 +6,8 @@
   `package.json`.
 - DB schema changes go through `db/app-schema.ts` + `pnpm db:generate` - never
   hand-write migration SQL into `drizzle/`.
-- Every user-facing string gets i18n keys in **all four locales**
-  (`i18n/locales/{en,fr,th,tlh}.json`) - tlh is Klingon, keep it terse and
+- Every user-facing string gets i18n keys in **all five locales**
+  (`i18n/locales/{en,fr,th,tlh,ar}.json`) - tlh is Klingon, keep it terse and
   in-character.
 - The gate before any merge: `pnpm typecheck`, `pnpm test:coverage` (98%
   thresholds, enforced), `pnpm test:components`, `pnpm build`. The SSR/rollup

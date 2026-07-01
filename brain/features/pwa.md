@@ -38,7 +38,7 @@ tabs / installed instances notice deploys hourly, and
 
 Mobile gets a full-width bottom banner (`inset-x-3 bottom-3`); desktop gets a
 centered top card (`sm:top-4 sm:mx-auto sm:w-max sm:max-w-md`). The transition is
-translateY-only. i18n keys under `update.*` in all four locales.
+translateY-only. i18n keys under `update.*` in all five locales.
 
 Shipped in v2.1.0. The live install and the real download -> ready progression
 are flagged for a real-browser verify pass.

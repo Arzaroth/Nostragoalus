@@ -43,7 +43,8 @@ use the indexes.
 | [rendering.md](architecture/rendering.md) | satori/resvg share images + PWA service worker, the SSR footguns. |
 | [providers.md](architecture/providers.md) | FIFA match data, Sofascore odds, FIFA ranking, the cycletls engine. |
 | [testing.md](architecture/testing.md) | The 98% gate, vitest projects, pglite, factories, and the out-of-band Playwright e2e harness. |
-| [i18n.md](architecture/i18n.md) | Four locales (en/fr/th/tlh), the all-four rule. |
+| [i18n.md](architecture/i18n.md) | Five locales (en/fr/th/tlh/ar), the all-locales rule. |
+| [rtl.md](architecture/rtl.md) | Right-to-left: dynamic `<html dir>`, logical CSS, the mirrored bracket, icon flipping (Arabic). |
 
 ## Features (the what) - [features/index.md](features/index.md)
 

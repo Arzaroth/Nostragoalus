@@ -16,7 +16,8 @@ Back to the root map: [../BRAIN.md](../BRAIN.md).
 | [rendering.md](rendering.md) | Server-rendered OG/share images (satori+resvg) and the PWA service worker | satori, resvg, og, woff, injectManifest, service-worker |
 | [providers.md](providers.md) | External data: FIFA match data, odds, FIFA ranking, the cycletls engine | FIFA, sofascore, betexplorer, cycletls, JA3, ranking |
 | [testing.md](testing.md) | The merge gate, coverage rules, pglite test DB, factories, Playwright e2e | vitest, coverage, 98%, pglite, factories, nuxt.test, e2e, playwright |
-| [i18n.md](i18n.md) | The four locales and the all-locales rule | i18n, locales, en fr th tlh, Klingon |
+| [i18n.md](i18n.md) | The five locales and the all-locales rule | i18n, locales, en fr th tlh ar, Klingon |
+| [rtl.md](rtl.md) | Right-to-left mechanics: html dir, logical CSS, mirrored bracket, icon flip | rtl, right-to-left, Arabic, ar, dir, logical properties, mirror |
 
 ## How to use this folder
 

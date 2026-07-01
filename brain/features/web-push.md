@@ -48,7 +48,7 @@ handlers). See [../architecture/rendering.md](../architecture/rendering.md) and
 `server/utils/push/send.ts` (`pushNotification` / `pushToUser`) gates on the
 config plus the category toggle, delivers to all of a user's subscriptions, and
 prunes dead ones (404 / 410). Push copy is rendered server-side in
-`server/utils/push/content.ts` with `push.*` i18n keys in all four locales (the
+`server/utils/push/content.ts` with `push.*` i18n keys in all five locales (the
 bell's client-side item text cannot run server-side). The send is hooked
 fire-and-forget into `createNotification` and the finalize post-commit flush.
 
