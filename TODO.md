@@ -1643,3 +1643,31 @@ landed alongside it (verified by running the stack):
 - [ ] Test debt: no `*.nuxt.test.ts` for `MultiviewSlotEmpty`, `CellStream`,
       `CellViewers`, or the page shell itself (URL round-trip is covered at the
       util level in `multiview.test.ts`; the page wiring is not).
+
+## Achievements / trophy cabinet (deferred from the feature pass)
+
+- [ ] **Human review of the machine-translated achievements copy**: the
+      `achievements.*` strings (and the two `notifications.item` + `push` keys) in
+      `i18n/locales/{th,ar,tlh}.json` were machine-translated. A native reviewer
+      should polish tone/terminology (tlh should read terse and in-character).
+- [ ] **Not browser-verified**: `TrophyCabinet.vue` / `CabinetTile.vue` and the
+      fridge arrange/save flow weren't driven in a real browser yet - only unit +
+      component tests. Seed a user with a trophy + a badge and eyeball the cabinet,
+      the locked/greyed badges, and pinning to the fridge (per the verify-in-browser
+      rule).
+- [ ] **Team-specialist trophy shows the team CODE, not its full name, in the
+      notification text**: `notifyTrophyAwarded` resolves the team name for the
+      cabinet, but the bell/push interpolate `{team}` with the code
+      (`achievements.trophy.TEAM_SPECIALIST.name` in `NotificationBell`/`content.ts`).
+      Resolve the display name there too if it reads poorly.
+- [ ] **Locked achievements show no progress value**: the cabinet greys a locked
+      badge with a hint but no "22/30 exact" style progress. `user_achievement`
+      only gets a row once earned; a progress bar for the next tier would need the
+      live metric surfaced on the cabinet DTO.
+- [ ] **Deferred badges**: a comeback / rank-climb badge (needs the
+      `leaderboard_rank` prevRank delta) was scoped but not shipped. Per-team
+      specialist trophies (one per participating team) were dropped in favour of a
+      single configurable featured team.
+- [ ] **No global cross-competition cabinet**: the cabinet/fridge are
+      per-competition. A profile-level "all competitions" showcase could come later
+      (global badges already span competitions).
