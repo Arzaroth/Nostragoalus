@@ -119,6 +119,9 @@ export const competition = pgTable(
     seasonHint: text('season_hint'),
     oddsProvider: text('odds_provider'),
     oddsProviderRef: text('odds_provider_ref'),
+    // Team the per-competition "specialist" trophy tracks (best predictor of this
+    // team's matches). Null = no featured-team trophy for this competition.
+    featuredTeamCode: text('featured_team_code'),
     isActive: boolean('is_active').notNull().default(true),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -567,6 +570,122 @@ export const goalEventRelations = relations(goalEvent, ({ one }) => ({
   competition: one(competition, { fields: [goalEvent.competitionId], references: [competition.id] }),
 }))
 
+// === Achievements & trophies ===
+// Two artifact kinds. TROPHIES are the rare, competition-end awards derived at
+// finalize from the leaderboard / prediction aggregates (competitionAward);
+// ACHIEVEMENTS are the milestone badges earned during play from a code-defined
+// catalog (userAchievement). The FRIDGE is a user's curated public showcase of
+// pinned items (fridgePin). See brain/features/achievements.md.
+
+// The five v1 trophy categories (see server/utils/awards). Ties share a trophy:
+// one row per (competition, user, type), so several users can hold the same type.
+export const competitionAwardTypeEnum = pgEnum('competition_award_type', [
+  'OVERALL', // best total predictor = the leaderboard winner
+  'GROUP_PHASE', // best predictor summed over GROUP matches only
+  'KNOCKOUT_PHASE', // best predictor summed over knockout matches only
+  'MADAME_IRMA', // most EXACT scorelines across the competition
+  'TEAM_SPECIALIST', // best predictor of the competition's featuredTeam matches
+])
+
+export const competitionAward = pgTable(
+  'competition_award',
+  {
+    id: pk(),
+    competitionId: text('competition_id')
+      .notNull()
+      .references(() => competition.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    type: competitionAwardTypeEnum('type').notNull(),
+    // The winning metric shown on the trophy: points for OVERALL/phase trophies,
+    // EXACT count for MADAME_IRMA. teamCode is set only for TEAM_SPECIALIST.
+    value: integer('value').notNull().default(0),
+    teamCode: text('team_code'),
+    awardedAt: timestamp('awarded_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('competition_award_user_type_uq').on(t.competitionId, t.userId, t.type),
+    index('competition_award_competition_type_idx').on(t.competitionId, t.type),
+    index('competition_award_user_idx').on(t.userId),
+  ],
+)
+
+// Optional graded tier for tiered achievements (Sharpshooter, Prophet, ...).
+// Single-shot badges leave it null.
+export const achievementTierEnum = pgEnum('achievement_tier', ['BRONZE', 'SILVER', 'GOLD'])
+
+// One row per (user, competition, key) once the badge is first earned. The
+// catalog itself lives in code (server/utils/achievements/catalog.ts), not here.
+// competitionId is null for GLOBAL badges that span competitions (e.g. the hidden
+// pony unlock), so the unique index coalesces it to '' to keep a single row.
+export const userAchievement = pgTable(
+  'user_achievement',
+  {
+    id: pk(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    competitionId: text('competition_id').references(() => competition.id, { onDelete: 'cascade' }),
+    key: text('key').notNull(),
+    tier: achievementTierEnum('tier'),
+    // The metric value stored at the last evaluation (e.g. EXACT count), so a
+    // tiered badge can show progress toward the next tier.
+    progress: integer('progress').notNull().default(0),
+    unlockedAt: timestamp('unlocked_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [
+    uniqueIndex('user_achievement_user_comp_key_uq').on(t.userId, sql`coalesce(${t.competitionId}, '')`, t.key),
+    index('user_achievement_user_idx').on(t.userId),
+  ],
+)
+
+export const fridgeItemTypeEnum = pgEnum('fridge_item_type', ['TROPHY', 'ACHIEVEMENT'])
+
+// A user's curated "fridge": the ordered subset of their trophies/achievements
+// they choose to display, per competition (slot 0..N). itemKey is the trophy type
+// (competitionAwardType) or the achievement key. Both a per-slot and a per-item
+// unique index stop double-pinning and slot collisions.
+export const fridgePin = pgTable(
+  'fridge_pin',
+  {
+    id: pk(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    competitionId: text('competition_id')
+      .notNull()
+      .references(() => competition.id, { onDelete: 'cascade' }),
+    itemType: fridgeItemTypeEnum('item_type').notNull(),
+    itemKey: text('item_key').notNull(),
+    slot: integer('slot').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('fridge_pin_user_comp_slot_uq').on(t.userId, t.competitionId, t.slot),
+    uniqueIndex('fridge_pin_user_comp_item_uq').on(t.userId, t.competitionId, t.itemType, t.itemKey),
+  ],
+)
+
+export const competitionAwardRelations = relations(competitionAward, ({ one }) => ({
+  competition: one(competition, { fields: [competitionAward.competitionId], references: [competition.id] }),
+  user: one(user, { fields: [competitionAward.userId], references: [user.id] }),
+}))
+
+export const userAchievementRelations = relations(userAchievement, ({ one }) => ({
+  user: one(user, { fields: [userAchievement.userId], references: [user.id] }),
+  competition: one(competition, { fields: [userAchievement.competitionId], references: [competition.id] }),
+}))
+
+export const fridgePinRelations = relations(fridgePin, ({ one }) => ({
+  user: one(user, { fields: [fridgePin.userId], references: [user.id] }),
+  competition: one(competition, { fields: [fridgePin.competitionId], references: [competition.id] }),
+}))
+
 export const leagueRoleEnum = pgEnum('league_role', ['OWNER', 'MODERATOR', 'MEMBER'])
 
 export const leagueVisibilityEnum = pgEnum('league_visibility', ['PRIVATE', 'PUBLIC'])
@@ -771,6 +890,8 @@ export const notificationTypeEnum = pgEnum('notification_type', [
   'MATCH_RESULT',
   'CHAMPION_RESULT',
   'BEST_SCORER_RESULT',
+  'TROPHY_AWARDED',
+  'ACHIEVEMENT_UNLOCKED',
   'CHAT_MENTION',
 ])
 
