@@ -172,3 +172,24 @@ feature/architecture doc that implements it.
   (shared `@better-auth/core`). 1.6.23 also makes an SSO and a SCIM provider id
   mutually exclusive, so the SCIM connection uses a derived `{providerId}-scim`
   id; provisioned users still link to their SSO login by email.
+
+## Achievements and trophies
+
+- **The achievement catalog lives in code, not the DB.** `user_achievement` only
+  records what was unlocked; the badge list, thresholds and presentation are a
+  code catalog (`server/utils/achievements/catalog.ts`). Badges are behaviour, not
+  content: they track the scoring logic, want type-safety + review, and never need
+  runtime editing - a data table would only add migration ceremony.
+- **Trophies are derived, never stored as truth.** `awardCompetitionTrophies`
+  recomputes the winners from the settled leaderboard/prediction state each
+  finalize tick and reconciles `competition_award`, mirroring the champion /
+  best-scorer "derive, don't mutate" award. Reconciling (not delete + reinsert)
+  keeps `awardedAt` stable and lets only genuinely-new trophies notify. Ties share.
+- **The France prize is generalized to a configurable "featured team".** The
+  source contest awarded the best predictor of France's matches; the app is
+  multi-team and multi-locale, so `competition.featuredTeamCode` (default `FRA`)
+  drives one team-specialist trophy that names its team, instead of hard-coding
+  France or minting a trophy per participating team.
+- **Cabinet + fridge are per-competition**, matching every other page's
+  `/[competition]/` scope; global badges like the secret unlock still surface in
+  each competition's cabinet. See [features/achievements.md](features/achievements.md).
