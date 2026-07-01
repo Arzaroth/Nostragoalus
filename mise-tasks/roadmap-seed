@@ -53,6 +53,7 @@ const ITEMS = [
   { status: 'IN_PROGRESS', title: 'Odds movement', description: 'The match odds now show how the line has moved since it opened - which way the market has swung on each result - with a tap to see the opening prices.' },
   { status: 'IN_PROGRESS', title: 'Your earlier picks, revisited', description: 'On a match you predicted, see when a score you picked earlier and then changed away from would have done better than the one you kept - live as it plays out, or at full-time.' },
   { status: 'IN_PROGRESS', title: 'See who is watching', description: 'A live count of how many people are on a match right now while it plays.' },
+  { status: 'IN_PROGRESS', title: 'Multi-view', description: 'Watch several matches at once in a grid you arrange (one, two or up to nine at a time). Each panel shows the live score, clock, goalscorers and play-by-play, or switches to the video stream when one is available. Your line-up and layout live in the link, so you can share or reopen the exact set-up, and the chat follows whichever match you focus.' },
   { status: 'PLANNED', title: 'Tournament Wrapped', description: 'An end-of-competition recap - best and worst pick, joker efficiency, your percentile - with a shareable card.' },
   { status: 'PLANNED', title: 'Personal & what-if stats', description: 'See where a joker would have helped, how you compare to the crowd, and your prediction biases.' },
 ]

@@ -1617,3 +1617,29 @@ landed alongside it (verified by running the stack):
       of the live hub). Multi-instance would need a shared presence store / pub-sub.
 - [ ] No "last seen" timestamp - offline is just absence; a "last active 5m ago"
       would need persistence.
+
+## Multi-view (deferred from the feature pass)
+
+- [ ] Per-cell Tile|Stream mode is ephemeral (not in the URL), so a shared/reloaded
+      multi-view always comes back on tiles. Persist it as `&streams=<ids>` if the
+      chosen streams should survive a reload.
+- [ ] Deep-link straight to a focused cell: extend the chat-mention deep link
+      (`chat-deeplink.client.ts`) with `?...&chat=match&cell=<id>` that calls
+      `useMultiviewFocus().tryFocus` on the multiview route. Today the inbox path is
+      the fully-wired case; a cold deep link still lands on the match detail page.
+- [ ] Switching competition carries the `cells` query over, but those match ids
+      belong to the previous competition, so their tiles render the "not found"
+      placeholder. Consider dropping `cells`/`focus` on a competition switch (in
+      `CompetitionPill.targetPath`/`switchTo` or the page) rather than showing dead
+      cells.
+- [ ] The live clock/minute in a tile comes from `useMatchLiveDetail`, refreshed
+      only on `scores:changed`. Between goals the minute can lag (the WS
+      `match:update` frame carries score/status, not the clock). A modest
+      `refetchInterval` for in-play visible cells (or a clock frame) would keep it
+      ticking.
+- [ ] Non-focused live cells intentionally show no viewer count / reaction bar
+      (those ride per-match sockets, gated to the focused cell). If a lighter
+      always-on indicator is wanted, it needs a socket-free source.
+- [ ] Test debt: no `*.nuxt.test.ts` for `MultiviewSlotEmpty`, `CellStream`,
+      `CellViewers`, or the page shell itself (URL round-trip is covered at the
+      util level in `multiview.test.ts`; the page wiring is not).
