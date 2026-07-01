@@ -61,7 +61,9 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   cycle, copy, download (named PNG) or share it, browse a room's media gallery, search the loaded
   messages, see who is typing, page
   back through older history, share a pick card straight to chat, jump to any room with unread activity
-  across every league you belong to from a cross-league inbox that survives a reload, undock the window
+  across every league you belong to from a cross-league inbox that survives a reload, switch league from
+  inside the chat window, pick up where you left off at a "new messages" line drawn at your last-read
+  point, undock the window
   into a draggable panel, and mute or report others. A **Verify keys** panel shows
   per-member safety numbers to compare out-of-band (first-seen pinning, change warning), an admin can
   **rotate the key** to revoke a removed member, and members can flag a message - enough reports
