@@ -86,7 +86,7 @@ a.br-card:hover {
 .br-proj-chip {
   position: absolute;
   top: -0.5rem;
-  right: 0.4rem;
+  inset-inline-end: 0.4rem;
   font-size: 0.5rem;
   font-weight: 700;
   text-transform: uppercase;
