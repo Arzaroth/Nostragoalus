@@ -179,6 +179,7 @@
     "addMatch": "เพิ่มแมตช์",
     "changeMatch": "เปลี่ยนแมตช์",
     "remove": "นำออก",
+    "filterAll": "ทั้งหมด",
     "layoutAria": "สลับเป็นเลย์เอาต์ {layout}",
     "view": {
       "tile": "ไทล์",
