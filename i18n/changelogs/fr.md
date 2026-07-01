@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-07-01
+
 ### Ajouté
 - **Arabe, de droite à gauche** : Nostragoalus est désormais disponible en arabe, avec toute l'interface inversée pour se lire de droite à gauche - menus, mises en page et tableau à élimination directe compris. Choisissez-le dans le sélecteur de langue.
 

@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-07-01
+
 ### chelpu'
 - **ʼarab Hol, poS-nIH**: DaH ʼarab Hol lo'laH Nostragoalus, poSvo' nIHDaq laDlu' - raQpo', mID, ghItlh je. Hol wIvwI'Daq yIwIv.
 
