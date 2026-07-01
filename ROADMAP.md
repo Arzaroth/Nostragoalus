@@ -173,6 +173,18 @@ effort buckets; order within a bucket is not priority.
       scoped key can POST/DELETE links. A forced raw (non-whitelist) embed runs in
       a strict sandbox (no same-origin). Still deferred: the separate curation bot
       that fills links via the API (see TODO.md).
+- [ ] **Multi-view** (IN_PROGRESS, worktree-multiview): a configurable grid
+      (1/2x1/2x2/3x3) to watch several matches at once. Decisions: each cell is a
+      live tile (score/clock, goal-scorer chips, play-by-play) with a per-cell
+      Tile|Stream toggle that reuses the curated `match_media` embed when a match
+      has one (else disabled); one concurrent stream cap. Cells + layout + focus
+      persist in the URL (`?cells=&layout=&focus=`) so a view is shareable. One
+      shared `useLiveMatches` socket feeds the whole grid; the heavier per-match
+      sockets (presence, reactions) and the play-by-play mount for the focused
+      cell only. Chat stays a single dock that follows the focused cell (chat is
+      per-league E2E, so per-cell chat was rejected); an inbox click on a gridded
+      match focuses the cell instead of navigating. Deferred: stream persistence
+      in the URL, a deep-link straight to a focused cell (see TODO.md).
 - [x] **In-app notification center** (shipped in 1.17.0): a
       header bell with an unread count and a dropdown feed, live over the existing
       WS. Decisions:
