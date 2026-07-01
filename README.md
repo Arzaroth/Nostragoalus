@@ -143,7 +143,7 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
 - **Install as an app**: an in-app banner surfaces the browser's install prompt (add to home
   screen, full-screen launch), with a clearer update flow that shows a downloading step before
   the reload prompt and sits full-width along the bottom on phones
-- Four languages (EN / FR / TH / tlh), light/dark/system themes saved per account
+- Five languages (EN / FR / TH / tlh / AR - the whole UI mirrors right-to-left for Arabic), light/dark/system themes saved per account
 - Auto-generated **API docs** at `/docs/api` (OpenAPI + Scalar)
 
 ## Stack
