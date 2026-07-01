@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.8.0] - 2026-07-02
+
 ### chelpu'
 - **QIn qoDvo' ghom choH**: DaH ghom laDbogh 'agh QIn Qorwagh; pIv HopDaq lengHa'be'taHvIS ghom choHlaH. QIn laDbe' ngasbogh ghommey tagh.
 - **"QInmey chu'" tlhegh**: QIn pa' poSlu'DI', Qav laDpu'bogh Daq tlhegh chen. laD taghtaHvIS ratlh; Hoch laDlu'DI' ngab.

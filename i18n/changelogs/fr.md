@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [2.8.0] - 2026-07-02
+
 ### Ajouté
 - **Changer de ligue depuis le chat** : la fenêtre de chat indique désormais quelle ligue vous lisez et vous permet d'en changer directement, sans remonter jusqu'à la pastille de ligue. Sa liste signale toute ligue ayant des messages non lus.
 - **Ligne « Nouveaux messages » dans le chat** : ouvrir un salon trace un séparateur à l'endroit de votre dernière lecture, pour voir d'un coup d'œil où vous en étiez. Il reste en place pendant que vous rattrapez votre retard et disparaît une fois tout lu.

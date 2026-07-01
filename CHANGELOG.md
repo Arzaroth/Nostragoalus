@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.8.0] - 2026-07-02
+
 ### Added
 - **Switch league from inside the chat**: the chat window now shows which league you're reading and lets you change league right there, without scrolling up to the league pill. Its list flags any league with unread chat.
 - **"New messages" line in chat**: opening a chat room draws a divider at the point you last read, so you can see at a glance where you left off. It stays put while you catch up and clears once everything is read.
