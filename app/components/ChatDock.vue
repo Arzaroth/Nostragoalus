@@ -41,13 +41,21 @@ watch(matchId, (m) => {
 })
 const scopedMatchId = computed<string | null>(() => (scope.value === 'match' ? matchId.value : null))
 
-// Cross-room unread: the room being viewed (when open) clears; everything else
-// accrues so we can badge the bubble, the scope toggle and the rooms list.
+// Cross-room unread: the room being read (open AND decrypted) clears; everything
+// else accrues so we can badge the bubble, the scope toggle and the rooms list.
 const viewing = computed(() => enabled.value && !collapsed.value)
 const activeRoomKey = computed(() => roomKeyOf(scopedMatchId.value))
 // Read receipts require the room to be both open and decrypted, so switching into
 // a room we cannot read yet does not mark it read (it clears once it decrypts).
 const readable = computed(() => viewing.value && panelReadable.value)
+// The panel stays mounted across a league/room switch, so `panelReadable` still
+// holds the previous room's value until the panel reloads and re-emits. Drop it
+// the instant the target changes - this watch is registered before useChatActivity
+// so it runs first in the same flush - or a switch would mark the new, not-yet-
+// decrypted room read off the old room's readiness.
+watch([leagueId, activeRoomKey], () => {
+  panelReadable.value = false
+})
 const activity = useChatActivity({ activeLeagueId: leagueId, activeRoom: activeRoomKey, readable })
 
 function matchLabel(id: string | null): string {
@@ -220,7 +228,7 @@ async function openRoom(r: ChatUnreadRoomDTO) {
             >
               <i class="pi pi-users text-xs" :style="l.id === selectedLeagueId ? 'color: var(--p-primary-color)' : 'opacity:0.4'" />
               <span class="flex-1 truncate">{{ l.name }}</span>
-              <span v-if="activity.unreadFor(l.id, GLOBAL_ROOM)" class="w-2 h-2 shrink-0 rounded-full" style="background: var(--ng-danger)" />
+              <span v-if="activity.hasUnreadInLeague(l.id)" class="w-2 h-2 shrink-0 rounded-full" style="background: var(--ng-danger)" />
               <i v-if="l.id === selectedLeagueId" class="pi pi-check text-xs" style="color: var(--p-primary-color)" />
             </button>
           </div>

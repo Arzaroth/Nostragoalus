@@ -160,6 +160,22 @@ describe('ChatPanel', () => {
     expect(wrapper.text()).not.toContain('New messages')
   })
 
+  it('does not draw the divider before the reader\'s own message', async () => {
+    const s = await chatState()
+    s.enabled.value = true
+    s.ready.value = true
+    // The only message newer than the marker is the reader's own: no divider, so a
+    // room you just posted in does not show a spurious "new messages" line on reopen.
+    s.readMarker.value = '2026-06-10T10:00:30.000Z'
+    s.messages.value = [
+      msg({ id: 'a', userId: 'other', text: 'seen already', createdAt: '2026-06-10T10:00:00.000Z' }),
+      msg({ id: 'b', userId: 'me', text: 'my own reply', createdAt: '2026-06-10T10:01:00.000Z' }),
+    ]
+    const wrapper = await mount()
+    await vi.waitFor(() => expect(wrapper.text()).toContain('my own reply'))
+    expect(wrapper.text()).not.toContain('New messages')
+  })
+
   it('flags messages it cannot decrypt', async () => {
     const s = await chatState()
     s.enabled.value = true

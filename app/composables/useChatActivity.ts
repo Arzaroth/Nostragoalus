@@ -130,6 +130,13 @@ export function useChatActivity(opts: {
     if (!leagueId) return 0
     return find(rooms.value, leagueId, roomKey)?.mentions ?? 0
   }
+  // Any unread across ALL of a league's rooms (global room + match threads), for
+  // the switcher's per-league dot - a league is flagged whether the unread sits in
+  // its global chat or in a match thread.
+  function hasUnreadInLeague(leagueId: string | null): boolean {
+    if (!leagueId) return false
+    return rooms.value.some((r) => r.leagueId === leagueId && r.unread > 0)
+  }
 
   // Mark a room read: drop it locally for instant feedback, then persist + converge.
   function markSeen(leagueId: string | null, roomKey: string): void {
@@ -153,5 +160,5 @@ export function useChatActivity(opts: {
     { immediate: true },
   )
 
-  return { rooms, total, totalMentions, unreadFor, mentionsFor, markSeen, refetch: () => query.refetch() }
+  return { rooms, total, totalMentions, unreadFor, mentionsFor, hasUnreadInLeague, markSeen, refetch: () => query.refetch() }
 }
