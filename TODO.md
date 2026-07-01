@@ -369,6 +369,15 @@ landed alongside it (verified by running the stack):
       deploy, before any `fixtures:import`) is usable straight away. `global-setup`
       also seeds one directly (`seedDefaultScoringConfig` in `tests/e2e/helpers/db.ts`)
       as belt-and-braces, since the boot hook swallows its own errors.
+- [ ] **Test-side seed can theoretically race the boot seed**: `seedDefaultScoringConfig`
+      (`helpers/db.ts`) is an unguarded `insert ... where not exists` with no
+      try/catch, and `global-setup` does not wrap the call. If it ran concurrently
+      with the app boot hook's `ensureDefaultScoringConfig`, the loser would violate
+      `scoring_config_active_scope_uq` and abort `globalSetup`. In practice the app
+      finishes its Nitro plugins (and the seed) before it serves `/login`, which is
+      what the readiness poll waits on, so the row already exists by the time
+      `global-setup` runs - no race in the current ordering. Harden the insert
+      (swallow 23505, or `on conflict do nothing`) if the ordering ever changes.
 - [x] **Deterministic signup verification**: `global-setup` enables email
       verification in-process via the admin API and warms the cold `/signup` etc.
       pages, so the spec `signUp` mail-confirm path is deterministic instead of
@@ -996,6 +1005,16 @@ landed alongside it (verified by running the stack):
 - [ ] The admin scoring mutations (PUT/DELETE) trigger a full recompute and have
       no rate limit. Admin-only and transactional, so blast radius is a
       self-inflicted DB load spike - revisit only if it bites.
+- [ ] `ensureDefaultScoringConfig` (store.ts) inserts a hard-coded `version: 1`,
+      but `scoring_config_version_uq` is a GLOBAL unique on `version`. On a fresh
+      DB this is fine, but on a DB that already holds a non-active `version 1` row
+      (a deactivated default or a version-1 override) the guard sees no active
+      default, proceeds, and the insert throws a unique violation. The boot hook
+      (`warm-settings.ts`, now calling this on every start) swallows it with
+      `.catch(() => {})`, so scoring routes keep 500ing with no seed. Latent -
+      never fires on the fresh-migrated DB the boot seed targets. Make the seed
+      pick `max(version)+1` (or `on conflict do nothing` scoped to the active-default
+      index) if it ever bites a non-fresh install.
 
 ## Notification center (deferred from the feature pass)
 
