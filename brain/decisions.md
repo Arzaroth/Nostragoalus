@@ -131,6 +131,16 @@ feature/architecture doc that implements it.
   only ever a client filter. An unmarked room counts messages since the user's
   league join (backlog-from-join), so the day-one count is truthful rather than
   silently zeroed. See [features/chat.md](features/chat.md).
+- **Multi-view keeps one chat that follows focus, not per-cell chats.** Chat is
+  per-league end-to-end encrypted and each `useLeagueChat` opens its own socket
+  and decrypts independently, so N per-cell chats would multiply sockets and
+  redundant decryption, and the singleton route-driven dock can't render several
+  threads. The multiview publishes its focused match to an app-level channel
+  (`useMultiviewFocus`) that the single dock follows; an inbox/deep-link click on
+  a gridded match focuses the cell rather than navigating. For the same reason the
+  play-by-play, presence and reaction sockets mount for the focused cell only, and
+  scores ride one `useLiveMatches` subscription for the whole grid. See
+  [features/multiview.md](features/multiview.md).
 
 ## Operations
 
