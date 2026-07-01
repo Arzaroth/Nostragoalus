@@ -184,7 +184,7 @@ async function openRoom(r: ChatUnreadRoomDTO) {
             @click="scope = 'global'"
           >
             {{ t('chat.scope.global') }}
-            <span v-if="scope !== 'global' && activity.unreadFor(leagueId, GLOBAL_ROOM)" class="absolute top-0.5 right-0.5 w-2 h-2 rounded-full" style="background: var(--ng-danger)" />
+            <span v-if="scope !== 'global' && activity.unreadFor(leagueId, GLOBAL_ROOM)" class="absolute top-0.5 end-0.5 w-2 h-2 rounded-full" style="background: var(--ng-danger)" />
           </button>
           <button
             type="button"
@@ -193,7 +193,7 @@ async function openRoom(r: ChatUnreadRoomDTO) {
             @click="scope = 'match'"
           >
             {{ t('chat.scope.match') }}
-            <span v-if="scope !== 'match' && matchId && activity.unreadFor(leagueId, matchId)" class="absolute top-0.5 right-0.5 w-2 h-2 rounded-full" style="background: var(--ng-danger)" />
+            <span v-if="scope !== 'match' && matchId && activity.unreadFor(leagueId, matchId)" class="absolute top-0.5 end-0.5 w-2 h-2 rounded-full" style="background: var(--ng-danger)" />
           </button>
         </div>
         <span v-else class="text-sm font-semibold">{{ t('chat.dock.title') }}</span>
@@ -211,7 +211,7 @@ async function openRoom(r: ChatUnreadRoomDTO) {
           </button>
           <div
             v-if="roomsOpen"
-            class="absolute right-0 top-7 z-10 w-64 rounded-lg border shadow-lg py-1 text-sm"
+            class="absolute end-0 top-7 z-10 w-64 rounded-lg border shadow-lg py-1 text-sm"
             style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
           >
             <p class="px-3 py-1 text-xs font-semibold uppercase tracking-wider" style="color: var(--p-text-muted-color)">{{ t('chat.rooms.title') }}</p>
