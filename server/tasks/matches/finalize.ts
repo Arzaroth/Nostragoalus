@@ -7,6 +7,7 @@ import { resolveCompetitionSeason } from '../../utils/sync/competition'
 import { syncMatchDetails } from '../../utils/sync/details'
 import { awardBestScorerBonuses } from '../../utils/bestscorer/service'
 import { awardCompetitionTrophies } from '../../utils/awards/service'
+import { evaluateAchievements } from '../../utils/achievements/service'
 import { getScoringConfigFor } from '../../utils/scoring/store'
 import { updateLeagueRankSnapshots, updateRankSnapshots } from '../../utils/leaderboard/snapshots'
 import { publishMatchUpdates } from '../../utils/live/hub'
@@ -56,6 +57,14 @@ export default defineTask({
         }
       } catch {
         // never fail the task over snapshots
+      }
+      try {
+        // Milestone badges only move when scoring does. Runs after the trophy
+        // award so treble/podium see this tick's trophies. Idempotent; new
+        // unlocks are notified separately.
+        if (result.scored > 0) await evaluateAchievements(db, competition.id)
+      } catch {
+        // never fail the task over achievements
       }
     }
 
