@@ -950,18 +950,16 @@ landed alongside it (verified by running the stack):
       ban (data kept) -> reactivate, and `tests/e2e/sso-onboarding.e2e.ts` does the
       same over real HTTP against the dockerized stack + Keycloak. The lifecycle
       gate, login resolver, and the SCIM-management HTTP block are covered there too.
-- [ ] Full clean `pnpm e2e` run of `sso-onboarding.e2e.ts` end to end: the
-      lifecycle/Keycloak/management specs pass against the branch build, and the
-      SCIM round-trip was verified piece by piece (token via the `-scim` id,
-      `POST /Users` 201, ban on `active:false`), but a single all-green run was
-      blocked by the shared `ng-e2e` compose project colliding with another
-      worktree's active e2e (see the harness gotcha below). Re-run when the e2e
-      stack is free, or after the project-name fix.
-- [ ] e2e harness: `mise run e2e-up`/`e2e` hardcode `-p ng-e2e`, so two worktrees
-      running the e2e at once fight over the same containers (the app-dev bind
-      mount flips to whichever worktree ran `up` last, and routes from the other
-      branch 404). Parameterize the compose project name per worktree (e.g.
-      `ng-e2e-${branch}`) or document that the e2e stack is single-tenant per host.
+- [x] Full clean `pnpm e2e` run of `sso-onboarding.e2e.ts` all green against the
+      isolated Keycloak stack (lifecycle gate, resolver, SCIM provision ->
+      `active:false` ban (data kept) -> reactivate, SCIM-management HTTP block, and
+      the OIDC browser login).
+- [x] e2e harness: `mise run e2e-up`/`e2e-down` derive the compose project name
+      per worktree (`ng-e2e-${PWD##*/}`) so two worktrees no longer share one stack
+      (the app-dev bind mount used to flip to whichever ran `up` last, 404ing the
+      other branch's routes). Ports are still shared, so only one e2e stack runs
+      per host at a time; per-worktree ports would also need dynamic Keycloak
+      redirect URIs (the realm export pins `:3000`/`:3100`), deferred.
 - [ ] Live-browser verification of the onboarding UI (Manage panel, the
       test-sign-in popup + postMessage claim capture, the domain TXT card, the
       reveal-once SCIM token) - the API flow is e2e-covered, but the admin UI
