@@ -193,6 +193,14 @@ describe('verifyChainServer', () => {
 })
 
 describe('league override chain', () => {
+  it('reports a genesis head and default-page reads on an empty chain', async () => {
+    const { db, client } = await setup()
+    expect(await getLeagueChainHead(db)).toEqual({ seq: 0, headHash: COMMITMENT_GENESIS, updatedAt: null })
+    // No limit -> the default page size path; empty chain -> no entries.
+    expect((await getLeagueCommitmentChain(db)).entries).toEqual([])
+    await client.close()
+  })
+
   it('chains override commitments, grows on upsert, self-audits, and catches tampering', async () => {
     const { db, client, competitionId, roundId, userId } = await setup()
     const m = await makeMatch(db, { competitionId, roundId, kickoffTime: FUTURE })
