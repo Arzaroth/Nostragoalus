@@ -84,6 +84,44 @@ describe('notificationPushContent', () => {
     expect(blank.url).toBe('/wc/matches/m9?ngLeague=l1&chat=m9')
   })
 
+  it('renders trophy and achievement pushes with the cabinet deep link', () => {
+    const overall = notificationPushContent(
+      { type: 'TROPHY_AWARDED', competitionSlug: 'wc', competitionName: 'World Cup', userId: 'u1', trophyType: 'OVERALL', teamName: null },
+      'en',
+    )
+    expect(overall.body).toContain('Grand Champion')
+    expect(overall.body).toContain('World Cup')
+    expect(overall).toMatchObject({ url: '/wc/users/u1', tag: 'trophy:wc:OVERALL' })
+
+    // Team specialist interpolates the team; a null team uses the generic name.
+    const spec = notificationPushContent(
+      { type: 'TROPHY_AWARDED', competitionSlug: 'wc', competitionName: 'World Cup', userId: 'u1', trophyType: 'TEAM_SPECIALIST', teamName: 'France' },
+      'en',
+    )
+    expect(spec.body).toContain('France')
+    expect(
+      notificationPushContent(
+        { type: 'TROPHY_AWARDED', competitionSlug: 'wc', competitionName: 'World Cup', userId: 'u1', trophyType: 'TEAM_SPECIALIST', teamName: null },
+        'en',
+      ).body,
+    ).toContain('Team Specialist')
+
+    const badge = notificationPushContent(
+      { type: 'ACHIEVEMENT_UNLOCKED', competitionSlug: 'wc', competitionName: 'World Cup', userId: 'u1', key: 'first-blood', tier: 'BRONZE' },
+      'en',
+    )
+    expect(badge.body).toContain('First Blood')
+    expect(badge).toMatchObject({ url: '/wc/users/u1', tag: 'achv:first-blood' })
+
+    // A global badge (no competition) links home.
+    expect(
+      notificationPushContent(
+        { type: 'ACHIEVEMENT_UNLOCKED', competitionSlug: null, competitionName: null, userId: 'u1', key: 'the-magic-word', tier: 'GOLD' },
+        'en',
+      ).url,
+    ).toBe('/')
+  })
+
   it('falls back to English for an unknown or null locale', () => {
     expect(notificationPushContent(reminder, 'xx').body).toBe(notificationPushContent(reminder, 'en').body)
     expect(notificationPushContent(reminder, null).body).toBe(notificationPushContent(reminder, 'en').body)

@@ -13,6 +13,8 @@ import {
 } from '../../../db/schema'
 import { createNotification, type PendingNotification } from './service'
 import type { NotificationData } from '../../../shared/types/notifications'
+import type { AchievementTier } from '../../../shared/types/achievements'
+import type { TrophyAward } from '../awards/service'
 
 type LeagueRole = 'OWNER' | 'MODERATOR' | 'MEMBER'
 
@@ -206,4 +208,91 @@ export async function notifyBestScorerResult(
       won: true,
     }),
   )
+}
+
+// Resolve a team's display name from its code within a competition (for the
+// team-specialist trophy). Kept local so events.ts avoids importing champion
+// service, which imports back into this module.
+async function teamNameByCode(db: AppDatabase, competitionId: string, code: string): Promise<string | null> {
+  const rows = await db
+    .select({ hc: match.homeTeamCode, hn: match.homeTeam, ac: match.awayTeamCode, an: match.awayTeam })
+    .from(match)
+    .where(eq(match.competitionId, competitionId))
+  for (const r of rows) {
+    if (r.hc === code) return r.hn
+    if (r.ac === code) return r.an
+  }
+  return null
+}
+
+// Tell the winners of the freshly-awarded competition-end trophies. dedupeKey is
+// per (competition, trophy type), so a finalize re-run never re-pings.
+export async function notifyTrophyAwarded(
+  db: AppDatabase,
+  competitionId: string,
+  awards: TrophyAward[],
+  collector?: PendingNotification[],
+): Promise<void> {
+  if (awards.length === 0) return
+  const comp = await competitionInfo(db, competitionId)
+  if (!comp) return
+  for (const a of awards) {
+    const teamName = a.teamCode ? await teamNameByCode(db, competitionId, a.teamCode) : null
+    await createNotification(
+      db,
+      {
+        userId: a.userId,
+        dedupeKey: `trophy:${competitionId}:${a.type}`,
+        data: {
+          type: 'TROPHY_AWARDED',
+          competitionSlug: comp.slug,
+          competitionName: comp.name,
+          userId: a.userId,
+          trophyType: a.type,
+          teamName,
+        },
+      },
+      collector,
+    )
+  }
+}
+
+// Tell users about badges they just earned (or graded up). dedupeKey folds in the
+// tier so each grade celebrates once; competitionId null = a global badge.
+export async function notifyAchievementUnlocked(
+  db: AppDatabase,
+  unlocks: { userId: string; competitionId: string | null; key: string; tier: AchievementTier | null }[],
+  collector?: PendingNotification[],
+): Promise<void> {
+  if (unlocks.length === 0) return
+  const compCache = new Map<string, { slug: string; name: string } | null>()
+  for (const u of unlocks) {
+    let slug: string | null = null
+    let name: string | null = null
+    if (u.competitionId) {
+      let info = compCache.get(u.competitionId)
+      if (info === undefined) {
+        info = await competitionInfo(db, u.competitionId)
+        compCache.set(u.competitionId, info)
+      }
+      slug = info?.slug ?? null
+      name = info?.name ?? null
+    }
+    await createNotification(
+      db,
+      {
+        userId: u.userId,
+        dedupeKey: `achievement:${u.competitionId ?? 'global'}:${u.key}:${u.tier ?? '_'}`,
+        data: {
+          type: 'ACHIEVEMENT_UNLOCKED',
+          competitionSlug: slug,
+          competitionName: name,
+          userId: u.userId,
+          key: u.key,
+          tier: u.tier,
+        },
+      },
+      collector,
+    )
+  }
 }

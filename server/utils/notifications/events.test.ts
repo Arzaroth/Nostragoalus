@@ -10,16 +10,20 @@ import {
   league,
   leagueMember,
   prediction,
+  round,
   userNotification,
   userProfile,
 } from '../../../db/schema'
+import type { NotificationData } from '#shared/types/notifications'
 import {
+  notifyAchievementUnlocked,
   notifyBestScorerResult,
   notifyChampionResult,
   notifyLeagueJoin,
   notifyMatchResults,
   notifyLeagueRemoved,
   notifyLeagueRole,
+  notifyTrophyAwarded,
 } from './events'
 
 async function setup() {
@@ -240,6 +244,115 @@ describe('notifyBestScorerResult', () => {
     await notifyBestScorerResult(db, competitionId, [])
     await notifyBestScorerResult(db, 'missing', ['p9'])
     expect(await notifsFor(db, owner)).toHaveLength(0)
+    await client.close()
+  })
+})
+
+function dataOf<T extends NotificationData['type']>(
+  rows: { data: NotificationData }[],
+  type: T,
+): Extract<NotificationData, { type: T }>[] {
+  return rows.map((r) => r.data).filter((d): d is Extract<NotificationData, { type: T }> => d.type === type)
+}
+
+describe('notifyTrophyAwarded', () => {
+  it('notifies each winner and resolves the specialist team name; dedupes on re-run', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const alice = await makeUser(db, 'alice')
+    const [r] = await db.select().from(round).where(eq(round.competitionId, competitionId)).limit(1)
+    await makeMatch(db, {
+      competitionId,
+      roundId: r!.id,
+      stage: 'GROUP',
+      homeTeam: 'France',
+      homeTeamCode: 'FRA',
+      kickoffTime: new Date('2026-06-11T12:00:00Z'),
+    })
+
+    const awards = [
+      { type: 'OVERALL' as const, userId: alice, value: 8, teamCode: null },
+      { type: 'TEAM_SPECIALIST' as const, userId: alice, value: 6, teamCode: 'FRA' },
+    ]
+    await notifyTrophyAwarded(db, competitionId, awards)
+    let rows = await notifsFor(db, alice)
+    expect(rows).toHaveLength(2)
+    const trophies = dataOf(rows, 'TROPHY_AWARDED')
+    expect(trophies.find((d) => d.trophyType === 'OVERALL')?.teamName).toBeNull()
+    expect(trophies.find((d) => d.trophyType === 'TEAM_SPECIALIST')?.teamName).toBe('France')
+
+    // Re-run: per-(competition,type) dedupeKey means no duplicate pings.
+    await notifyTrophyAwarded(db, competitionId, awards)
+    rows = await notifsFor(db, alice)
+    expect(rows).toHaveLength(2)
+    await client.close()
+  })
+
+  it('no-ops on empty awards or unknown competition', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const alice = await makeUser(db, 'alice')
+    await notifyTrophyAwarded(db, competitionId, [])
+    await notifyTrophyAwarded(db, 'missing', [{ type: 'OVERALL', userId: alice, value: 1, teamCode: null }])
+    expect(await notifsFor(db, alice)).toHaveLength(0)
+    await client.close()
+  })
+
+  it('leaves teamName null when the code has no match', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const alice = await makeUser(db, 'alice')
+    await notifyTrophyAwarded(db, competitionId, [{ type: 'TEAM_SPECIALIST', userId: alice, value: 5, teamCode: 'ZZZ' }])
+    const [data] = dataOf(await notifsFor(db, alice), 'TROPHY_AWARDED')
+    expect(data!.teamName).toBeNull()
+    await client.close()
+  })
+
+  it('resolves the specialist team from the away side too', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const alice = await makeUser(db, 'alice')
+    const [r] = await db.select().from(round).where(eq(round.competitionId, competitionId)).limit(1)
+    await makeMatch(db, {
+      competitionId,
+      roundId: r!.id,
+      stage: 'GROUP',
+      homeTeam: 'Spain',
+      homeTeamCode: 'ESP',
+      awayTeam: 'Japan',
+      awayTeamCode: 'JPN',
+      kickoffTime: new Date('2026-06-11T12:00:00Z'),
+    })
+    await notifyTrophyAwarded(db, competitionId, [{ type: 'TEAM_SPECIALIST', userId: alice, value: 3, teamCode: 'JPN' }])
+    const [data] = dataOf(await notifsFor(db, alice), 'TROPHY_AWARDED')
+    expect(data!.teamName).toBe('Japan')
+    await client.close()
+  })
+})
+
+describe('notifyAchievementUnlocked', () => {
+  it('notifies for competition-scoped and global badges', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const alice = await makeUser(db, 'alice')
+    await notifyAchievementUnlocked(db, [
+      { userId: alice, competitionId, key: 'first-blood', tier: 'BRONZE' },
+      // Second badge in the same competition exercises the comp-info cache hit.
+      { userId: alice, competitionId, key: 'sharpshooter', tier: 'SILVER' },
+      { userId: alice, competitionId: null, key: 'the-magic-word', tier: 'GOLD' },
+    ])
+    const badges = dataOf(await notifsFor(db, alice), 'ACHIEVEMENT_UNLOCKED')
+    expect(badges).toHaveLength(3)
+    expect(badges.find((d) => d.key === 'first-blood')?.competitionSlug).not.toBeNull()
+    expect(badges.find((d) => d.key === 'the-magic-word')?.competitionSlug).toBeNull()
+    await client.close()
+  })
+
+  it('no-ops on an empty list', async () => {
+    const { db, client } = await createTestDb()
+    const alice = await makeUser(db, 'alice')
+    await notifyAchievementUnlocked(db, [])
+    expect(await notifsFor(db, alice)).toHaveLength(0)
     await client.close()
   })
 })

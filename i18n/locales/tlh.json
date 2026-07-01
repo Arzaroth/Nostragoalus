@@ -1,4 +1,54 @@
 {
+  "achievements": {
+    "cabinetTitle": "Qapla' pa'",
+    "fridgeTitle": "bIrmoHwI'wIj",
+    "trophiesHeading": "Qapla'mey",
+    "badgesHeading": "ta'mey",
+    "empty": "wej Qapla' ta' je tu'lu'.",
+    "fridgeEmpty": "bIrmoHwI'Daq pagh tu'lu'.",
+    "fridgeEmptyOwn": "Qapla' ta' Dun law' naDev yIcher.",
+    "locked": "ngaQ",
+    "lockedHint": "vam poSmeH yISuvtaH.",
+    "viewCabinet": "Qapla' pa' yIlegh.",
+    "editFridge": "bIrmoHwI' yIchenmoH.",
+    "doneEditing": "pItlh",
+    "pin": "bIrmoHwI'Daq yIcher",
+    "unpin": "bIrmoHwI'vo' yIteq",
+    "fridgeFull": "buy' bIrmoHwI'lIj ({max} Daq).",
+    "saved": "bIrmoHwI' pollu'.",
+    "earnedOn": "{date} Suqlu'",
+    "tier": { "BRONZE": "baS Doq", "SILVER": "baS chIS", "GOLD": "baS SuD" },
+    "trophy": {
+      "OVERALL": { "name": "charghwI' 'utlh", "desc": "Hoch Daq nach SoH." },
+      "GROUP_PHASE": { "name": "ghom may' pIn", "desc": "ghom may' qIpwI' pov." },
+      "KNOCKOUT_PHASE": { "name": "Qaw' may' pIn", "desc": "Qaw' may' qIpwI' pov." },
+      "MADAME_IRMA": { "name": "joH irma", "desc": "mI' pup law'qu' DaqIp." },
+      "TEAM_SPECIALIST": { "name": "{team} po'wI'", "desc": "{team} may' qIpwI' pov." },
+      "TEAM_SPECIALIST_GENERIC": { "name": "ghom po'wI'", "desc": "ghom may' qIpwI' pov." }
+    },
+    "badge": {
+      "first-blood": { "name": "'Iw wa'DIch", "desc": "wa'DIch mI' pup DaqIp." },
+      "sharpshooter": { "name": "baHwI' pov", "desc": "mI' pup yIqIp - law' QaQ." },
+      "prophet": { "name": "leghwI'", "desc": "qIpmey law' yIchel." },
+      "century": { "name": "vatlh ra'wI'", "desc": "QuQ vatlhmey yISuq." },
+      "perfect-round": { "name": "pupqu'", "desc": "may' Hoch pup DaqIp." },
+      "hot-streak": { "name": "qul tlhegh", "desc": "mI' pup yIrar." },
+      "on-fire": { "name": "meQtaH", "desc": "may' tlha' may' Daqap." },
+      "contrarian": { "name": "latlh He", "desc": "ghom Dajey - tev pIm DaSuq." },
+      "lone-wolf": { "name": "nIteb SuvwI'", "desc": "mI' pup DaqIp - SoH neH." },
+      "joker-hero": { "name": "maQ yoH", "desc": "mI' pupDaq maQ Qap." },
+      "early-bird": { "name": "po bo'Degh", "desc": "may' taghpa' tIq yIqIp." },
+      "night-owl": { "name": "ram bo'Degh", "desc": "ram botlhDaq yIqIp." },
+      "deadline-dancer": { "name": "poH vuS SuvwI'", "desc": "taghpa' vagh tup yIqIp." },
+      "completionist": { "name": "naQmoHwI'", "desc": "Hoch may' DaqIp." },
+      "champion-oracle": { "name": "ta' chenmoHwI'", "desc": "Qappu' wInwI'lI'." },
+      "golden-touch": { "name": "baS SuD ghop", "desc": "Qappu' DujwI'lI'." },
+      "underdog-whisperer": { "name": "Do'Ha' wInwI'", "desc": "puj wInwI'lI' Qap." },
+      "treble": { "name": "wej Qapla'", "desc": "wej Qapla' Daghaj." },
+      "podium": { "name": "patlh wej", "desc": "Hoch wej nIvDaq SoH." },
+      "the-magic-word": { "name": "rItlh mu'", "desc": "mu' So' Dajatlh. rItlh mach QIHbe'." }
+    }
+  },
   "verify": {
     "title": "Qun tob",
     "sub": "may' taghpu'DI' choHbe' Qunmey 'e' toblu'.",
@@ -1205,7 +1255,9 @@
       "bestScorerWon": "Qappu' DujwI'lI' {player}! +{points}",
       "bestScorerLost": "Qapbe' DujwI'lI' {player}.",
       "mention": "{league}Daq {name} pong.",
-      "mentionMatch": "{home}-{away}Daq {name} pong."
+      "mentionMatch": "{home}-{away}Daq {name} pong.",
+      "trophyAwarded": "{competition}Daq {trophy} Qapla' DaSuq!",
+      "achievementUnlocked": "ta' poSlu': {achievement}."
     }
   },
   "push": {
@@ -1218,6 +1270,8 @@
     "matchResultMiss": { "title": "Damiltlhtaghach", "body": "{home} {hs}-{as} {away} - pugh" },
     "champion": { "title": "Qapla'!", "body": "Qappu' wInwI'lI' {team} - +{points}" },
     "bestScorer": { "title": "Qapla'!", "body": "Qappu' DujwI'lI' {player} - +{points}" },
+    "trophy": { "title": "Qapla' DaSuq!", "body": "{competition}Daq {trophy} Qapla' DaSuq" },
+    "achievement": { "title": "ta' poSlu'!", "body": "{achievement} DaSuqpu'" },
     "leagueJoin": { "title": "tlhejwI' chu'", "body": "{league} muvpu' {name}" },
     "leagueRoleOwner": { "title": "ghom De'", "body": "DaH {league} pIn SoH" },
     "leagueRolePromoted": { "title": "ghom De'", "body": "DaH {league} che'wI' SoH" },
