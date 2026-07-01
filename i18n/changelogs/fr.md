@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [2.8.1] - 2026-07-02
+
 ### Corrigé
 - **Une installation toute neuve fonctionne avant tout import de matchs** : une base de données fraîchement migrée reçoit désormais une configuration de score par défaut au démarrage, si bien que les sélecteurs de champion et de meilleur buteur (et la finalisation des matchs) fonctionnent immédiatement, au lieu d'échouer avec « aucune configuration de score active » jusqu'à ce que le premier import de matchs en crée une.
 
