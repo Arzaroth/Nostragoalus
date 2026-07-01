@@ -173,8 +173,23 @@
     "search": { "button": "Rechercher des messages", "placeholder": "Rechercher dans les messages chargés", "results": "{n} résultats", "one": "1 résultat", "none": "Aucun résultat", "deeper": "Chargez d'anciens messages pour chercher plus loin", "close": "Fermer la recherche" }
   },
   "presence": { "active": "Actif", "idle": "Absent" },
+  "multiview": {
+    "title": "Multi-vue",
+    "subtitle": "Regardez plusieurs matchs à la fois",
+    "addMatch": "Ajouter un match",
+    "changeMatch": "Changer de match",
+    "remove": "Retirer",
+    "layoutAria": "Passer à la disposition {layout}",
+    "view": {
+      "tile": "Vignette",
+      "stream": "Direct"
+    },
+    "streamUnavailable": "Aucun direct pour ce match",
+    "streamCapReached": "{count} direct à la fois"
+  },
   "nav": {
     "matches": "Matchs",
+    "multiview": "Multi-vue",
     "bracket": "Tableau",
     "map": "Carte",
     "ranking": "Classement",

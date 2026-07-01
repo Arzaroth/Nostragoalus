@@ -77,6 +77,7 @@ const navLinks = computed(() => {
   const c = slug.value
   return [
     { to: `/${c}/matches`, key: 'nav.matches', icon: 'pi pi-calendar' },
+    { to: `/${c}/multiview`, key: 'nav.multiview', icon: 'pi pi-th-large' },
     { to: `/${c}/bracket`, key: 'nav.bracket', icon: 'pi pi-sitemap' },
     { to: `/${c}/map`, key: 'nav.map', icon: 'pi pi-map' },
     { to: `/${c}/leaderboard`, key: 'nav.ranking', icon: 'pi pi-trophy' },
@@ -234,7 +235,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateNavFades))
       </div>
     </header>
 
-    <main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6">
+    <main class="flex-1 w-full mx-auto px-4 sm:px-6 py-6" :class="route.name === 'competition-multiview' ? 'max-w-none 2xl:px-8' : 'max-w-7xl'">
       <slot />
     </main>
 

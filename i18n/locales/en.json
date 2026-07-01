@@ -177,8 +177,23 @@
     "search": { "button": "Search messages", "placeholder": "Search loaded messages", "results": "{n} matches", "one": "1 match", "none": "No matches", "deeper": "Load earlier messages to search further", "close": "Close search" }
   },
   "presence": { "active": "Active", "idle": "Away" },
+  "multiview": {
+    "title": "Multi-view",
+    "subtitle": "Watch several matches at once",
+    "addMatch": "Add match",
+    "changeMatch": "Change match",
+    "remove": "Remove",
+    "layoutAria": "Switch to {layout} layout",
+    "view": {
+      "tile": "Tile",
+      "stream": "Stream"
+    },
+    "streamUnavailable": "No stream for this match",
+    "streamCapReached": "Only {count} stream at a time"
+  },
   "nav": {
     "matches": "Matches",
+    "multiview": "Multi-view",
     "bracket": "Bracket",
     "map": "Map",
     "ranking": "Ranking",

@@ -173,8 +173,23 @@
     "search": { "button": "QInmey yISam", "placeholder": "QInmey ngImlu'pu' yISam", "results": "{n} rar", "one": "wa' rar", "none": "rar tu'be'", "deeper": "QInmey qan yISammeH yItoD", "close": "Sam yISoQmoH" }
   },
   "presence": { "active": "vumtaH", "idle": "Qotbe'" },
+  "multiview": {
+    "title": "may' law'",
+    "subtitle": "may' law' bejlu'",
+    "addMatch": "may' chel",
+    "changeMatch": "may' choH",
+    "remove": "teq",
+    "layoutAria": "{layout} wIv",
+    "view": {
+      "tile": "De'",
+      "stream": "HaSta"
+    },
+    "streamUnavailable": "HaSta tu'be'lu'",
+    "streamCapReached": "{count} HaSta neH"
+  },
   "nav": {
     "matches": "may'mey",
+    "multiview": "may' law'",
     "bracket": "may' He",
     "map": "qo' mIllogh",
     "ranking": "patlh",
