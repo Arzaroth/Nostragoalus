@@ -32,6 +32,14 @@ preferences. The name is a My Little Pony pun on "Mon Petit Prono".
 
 Added via migration 0027.
 
+Unlocking the skins also grants a hidden, GLOBAL [achievement](achievements.md)
+(`the-magic-word`): the better-auth `user.update` `after` hook in `lib/auth.ts`
+calls `grantAchievement` when `skinsUnlocked` first turns true (idempotent, fires
+one `ACHIEVEMENT_UNLOCKED`). It is `hidden` in the catalog, so it never shows as a
+locked slot in anyone's cabinet - only once earned - and its i18n copy is kept
+cryptic so the trigger isn't spoiled. Like the rest of this page, it stays out of
+the public changelog/roadmap/about.
+
 ## Pony match reactions
 
 When a skin is active, `ReactionBar.vue` swaps the six [match reaction](reactions.md)

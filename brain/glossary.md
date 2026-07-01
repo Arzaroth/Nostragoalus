@@ -18,6 +18,19 @@ the code. Alphabetical.
   (SCHEDULED -> LIVE -> FINISHED, plus POSTPONED/CANCELLED/SUSPENDED/AWARDED).
 - **Prediction** - a user's home/away score guess for a match, locked at kickoff.
 - **Joker** - a single ×2 multiplier a user spends on one prediction per round.
+- **Trophy** - a rare, competition-end award (OVERALL, GROUP_PHASE,
+  KNOCKOUT_PHASE, MADAME_IRMA, TEAM_SPECIALIST), derived at finalize and stored in
+  `competition_award`. See [features/achievements.md](features/achievements.md).
+- **Achievement (badge)** - a milestone unlocked during play from a code-defined
+  catalog, graded bronze/silver/gold (`user_achievement`).
+- **Trophy cabinet** - a user's full gallery of trophies + achievements on their
+  profile (earned lit, locked greyed).
+- **Fridge** - the curated subset of the cabinet a user pins to show off, per
+  competition (max 6 slots). The "kid's-drawings-on-the-fridge" showcase.
+- **Madame Irma** - the trophy for the most exact scorelines (a fortune-teller
+  pun; from the source contest's "most exact scores" prize).
+- **Featured team** - `competition.featuredTeamCode`, the team the
+  TEAM_SPECIALIST trophy tracks (default France for the World Cup).
 - **Champion pick** - a per-competition guess of the tournament winner; pays a
   FIFA-rank-tiered bonus snapshotted at pick time. See
   [features/champion-pick.md](features/champion-pick.md).
