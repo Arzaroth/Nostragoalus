@@ -360,11 +360,15 @@ delete-account mail flows and an SSO/OIDC flow against a dockerized Keycloak. It
 runs green 4/4 from an empty DB (`mise run e2e`) after the runnability fixes that
 landed alongside it (verified by running the stack):
 
-- [x] **Default `scoring_config` for the isolated e2e DB**: `global-setup` now
-      seeds a minimal active default (`seedDefaultScoringConfig` in
-      `tests/e2e/helpers/db.ts`) so `matches:finalize` can score. (A from-empty DB
-      has none; it is otherwise only seeded by the fixtures import the isolated
-      stack never runs.)
+- [x] **Default `scoring_config` for the isolated e2e DB**: a fresh, migrated DB
+      has no `scoring_config` row (only `fixtures:import`/`refresh` seed one), so
+      every scoring-dependent route (the champion/best-scorer pickers,
+      `matches:finalize`) threw "no active scoring config" from empty. Fixed
+      app-side: `server/plugins/warm-settings.ts` calls the idempotent
+      `ensureDefaultScoringConfig` on boot, so a fresh DB (e2e or a brand-new
+      deploy, before any `fixtures:import`) is usable straight away. `global-setup`
+      also seeds one directly (`seedDefaultScoringConfig` in `tests/e2e/helpers/db.ts`)
+      as belt-and-braces, since the boot hook swallows its own errors.
 - [x] **Deterministic signup verification**: `global-setup` enables email
       verification in-process via the admin API and warms the cold `/signup` etc.
       pages, so the spec `signUp` mail-confirm path is deterministic instead of
@@ -374,7 +378,10 @@ landed alongside it (verified by running the stack):
 - [ ] **Keycloak readiness is only ordering-dependent**: the SSO spec passes
       because it runs last (KC has ~1.5 min to import its realm by then), but
       nothing explicitly waits on the issuer's `.well-known/openid-configuration`.
-      Add a poll if it ever flakes on a slow/cold machine.
+      `e2e-up` starts Keycloak with `up -d` (returns immediately) and KC
+      `start-dev --import-realm` takes ~30-60s, so a cold/slow machine could fire
+      the provider-registration POST before the IdP discovery doc is up. Add a poll
+      on `.well-known/openid-configuration` before registering if it ever flakes.
 - [ ] **e2e helpers default to the dev stack when `E2E_*` is unset**: `helpers/db.ts`
       / maildev / APP fall back to :5432/:1080/:3000. Mitigated by
       `playwright.config.ts` loading `.env.e2e` and by fully namespaced cleanup (no

@@ -115,7 +115,10 @@ request body, responses). This drives the generated docs at
   node-postgres migrator against `./drizzle` on boot. See
   [database.md](database.md) for the shared-dev-DB migrator caveat.
 - `server/plugins/warm-settings.ts` - pre-loads the email-verification flag from
-  the DB so sign-in/sign-up see the correct state immediately.
+  the DB so sign-in/sign-up see the correct state immediately, and seeds a default
+  `scoring_config` (idempotent `ensureDefaultScoringConfig`) so a freshly migrated
+  DB is usable before any `fixtures:import` (the scoring-dependent routes would
+  otherwise throw "no active scoring config").
 
 ## Request middleware
 
