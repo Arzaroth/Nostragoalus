@@ -35,6 +35,9 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
   for (const path of ['/signup', '/login', '/forgot-password', '/verify-email']) {
     await api.get(path, { failOnStatusCode: false, maxRedirects: 0 }).catch(() => {})
   }
+  // The signup form's submit() awaits /api/sso/check before creating the account;
+  // warm its first-hit compile too so the first spec's signup doesn't race it.
+  await api.get('/api/sso/check?email=warm@example.com', { failOnStatusCode: false, maxRedirects: 0 }).catch(() => {})
 
   const signIn = () =>
     api.post('/api/auth/sign-in/email', {
@@ -70,7 +73,8 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
   await api.dispose()
 
   // The isolated DB never runs the fixtures import, so seed the default scoring
-  // config finalize needs.
+  // config finalize needs. The app-side warm-settings boot hook also seeds one,
+  // but it swallows its own errors, so this stays as an explicit safety net.
   await seedDefaultScoringConfig()
   await closeDb()
 }

@@ -33,13 +33,23 @@ export async function signUp(page: Page, user: Credentials): Promise<void> {
   await typeInto(page.locator('input[type="password"]').first(), user.password)
   await page.getByRole('button', { name: 'Create account' }).click()
 
-  // Email verification off (a fresh DB's default): sign-up signs in and leaves
-  // /signup. On: it stays, mails a link, and that link auto-signs-in. Handle both.
-  const signedIn = await page
-    .waitForURL((url) => !url.pathname.startsWith('/signup'), { timeout: 6_000 })
-    .then(() => true)
-    .catch(() => false)
-  if (!signedIn) {
+  // Two outcomes to tell apart: verification off (a fresh DB's default) signs in
+  // and navigates away from /signup; verification on stays put and shows a
+  // "verification sent" success Message, then the mailed link auto-signs-in.
+  // Decide on whichever lands first rather than racing a fixed short timeout -
+  // the HMR dev server can reload mid-redirect (Vite optimizing a route's deps on
+  // first hit), which a tight URL-only race would misread as the verify path.
+  const leftSignup = page
+    .waitForURL((url) => !url.pathname.startsWith('/signup'), { timeout: 30_000 })
+    .then(() => 'in' as const)
+    .catch(() => 'none' as const)
+  const verifySent = page
+    .locator('.p-message-success')
+    .waitFor({ state: 'visible', timeout: 30_000 })
+    .then(() => 'verify' as const)
+    .catch(() => 'none' as const)
+  const outcome = await Promise.race([leftSignup, verifySent])
+  if (outcome === 'verify') {
     const mail = await waitForMail(user.email, { subjectIncludes: 'Confirm', timeoutMs: 20_000 })
     await page.goto(linkFromMail(mail, 'verify-email'))
     // The verify endpoint signs the user in (autoSignInAfterVerification); the
