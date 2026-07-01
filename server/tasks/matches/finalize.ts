@@ -6,6 +6,7 @@ import { providerForCompetition } from '../../utils/providers'
 import { resolveCompetitionSeason } from '../../utils/sync/competition'
 import { syncMatchDetails } from '../../utils/sync/details'
 import { awardBestScorerBonuses } from '../../utils/bestscorer/service'
+import { awardCompetitionTrophies } from '../../utils/awards/service'
 import { getScoringConfigFor } from '../../utils/scoring/store'
 import { updateLeagueRankSnapshots, updateRankSnapshots } from '../../utils/leaderboard/snapshots'
 import { publishMatchUpdates } from '../../utils/live/hub'
@@ -34,6 +35,14 @@ export default defineTask({
         await awardBestScorerBonuses(db, competition.id, rules.bestScorerBonus)
       } catch {
         // never fail the task over the best-scorer award
+      }
+      try {
+        // After the best-scorer bonus so the OVERALL trophy reflects the final
+        // leaderboard (which folds in that bonus). Self-gated on a decided final
+        // and idempotent. Notifications for new trophies are wired separately.
+        await awardCompetitionTrophies(db, competition.id)
+      } catch {
+        // never fail the task over trophies
       }
       try {
         // Only re-baseline rank snapshots when scoring actually changed this
