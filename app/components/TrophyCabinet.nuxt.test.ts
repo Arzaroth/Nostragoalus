@@ -72,7 +72,9 @@ describe('TrophyCabinet', () => {
     await clearCache()
     wrapper = await mountSuspended(TrophyCabinet, { props: { userId: 'u1' } })
     await vi.waitFor(() => expect(wrapper!.text()).toContain('Grand Champion'))
-    const arrange = wrapper.findAll('button').find((b) => b.text().includes('Arrange fridge'))
+    const arrange = wrapper!
+      .findAll('button')
+      .find((b: { text: () => string; trigger: (e: string) => Promise<void> }) => b.text().includes('Arrange fridge'))
     await arrange!.trigger('click')
     expect(wrapper.text()).toContain('Done')
   })
