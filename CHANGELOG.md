@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.8.1] - 2026-07-02
+
 ### Fixed
 - **A brand-new install works before any fixtures are imported**: a freshly migrated database now gets a default scoring configuration on startup, so the champion and best-scorer pickers (and match finalisation) work straight away instead of erroring with "no active scoring config" until the first fixtures import created one.
 

@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.8.1] - 2026-07-02
+
 ### tI'pu'
 - **may'mey chelpa' vumlaH chu' chenmoH**: DaH taghDI' De'wI' chu' choqmeH chut motlh Suq, vaj charghwI' vongwI' wIvwI'mey (may' rInmoH je) SIbI' vum; may'mey chelmeH wa'DIch chut chenpa' "choqmeH chut vumtaH tu'lu'be'" ghItlhbe'.
 
