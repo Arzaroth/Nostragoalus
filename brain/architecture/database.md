@@ -73,7 +73,8 @@ Logical names are the Drizzle TS exports; the SQL tables are snake_case
 LEAGUE_JOIN, LEAGUE_ROLE, LEAGUE_REMOVED, PICK_REMINDER, MATCH_RESULT,
 CHAMPION_RESULT, BEST_SCORER_RESULT, CHAT_MENTION),
 `match_media_kind` (LIVE/REPLAY/HIGHLIGHTS),
-`roadmap_status` (PLANNED/IN_PROGRESS/SHIPPED), `sso_provider_status`
+`roadmap_status` (PLANNED/IN_PROGRESS/SHIPPED/SUGGESTED),
+`roadmap_moderation` (PENDING/APPROVED/REJECTED), `sso_provider_status`
 (draft/enabled/disabled).
 
 All foreign keys use ON DELETE CASCADE, except the tamper-evidence ledger which
