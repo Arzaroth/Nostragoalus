@@ -66,6 +66,24 @@ describe('getLeagueModeBoard - EASY', () => {
     expect(by.b).toMatchObject({ rank: 2, points: 0, outcomeCount: 0 })
   })
 
+  it('scores an override-only member, skips a member with no pick, and a match nobody picked', async () => {
+    await makeUser(db, 'a')
+    await makeUser(db, 'b')
+    await makeUser(db, 'c')
+    const leagueId = await makeLeague(db, { competitionId, ownerId: 'a', mode: 'EASY' })
+    await addLeagueMember(db, leagueId, 'b')
+    await addLeagueMember(db, leagueId, 'c')
+    const m = await scoredMatch(2, 1) // HOME
+    await scoredMatch(0, 0) // a scored match nobody predicted
+    await makePrediction(db, { userId: 'a', matchId: m, roundId, home: 1, away: 0 }) // base correct
+    await makeLeaguePrediction(db, { leagueId, userId: 'c', matchId: m, roundId, home: 1, away: 0 }) // override-only, correct
+    // b has no pick at all.
+    const by = rowsOf(await getLeagueModeBoard(db, { leagueId, mode: 'EASY', competitionId }))
+    expect(by.a).toMatchObject({ points: 1 })
+    expect(by.c).toMatchObject({ points: 1 })
+    expect(by.b).toMatchObject({ points: 0 })
+  })
+
   it('uses the league override over the base pick', async () => {
     await makeUser(db, 'a')
     const leagueId = await makeLeague(db, { competitionId, ownerId: 'a', mode: 'EASY' })

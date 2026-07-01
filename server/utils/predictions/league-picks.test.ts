@@ -71,8 +71,12 @@ describe('upsertLeaguePrediction', () => {
     const m = await openMatch()
     await upsertLeaguePrediction(db, { leagueId, userId: 'u1', matchId: m, home: 2, away: 1, wager: 3 }, NOW)
     await upsertLeaguePrediction(db, { leagueId, userId: 'u1', matchId: m, home: 3, away: 0 }, NOW)
-    const [o] = await getLeagueOverrides(db, leagueId, 'u1')
-    expect(o).toMatchObject({ homeGoals: 3, awayGoals: 0, wager: 3 })
+    let [o] = await getLeagueOverrides(db, leagueId, 'u1')
+    expect(o).toMatchObject({ homeGoals: 3, awayGoals: 0, wager: 3, isOutcomeOnly: false })
+    // Supplying isOutcomeOnly on a conflict updates just that field.
+    await upsertLeaguePrediction(db, { leagueId, userId: 'u1', matchId: m, home: 3, away: 0, isOutcomeOnly: true }, NOW)
+    ;[o] = await getLeagueOverrides(db, leagueId, 'u1')
+    expect(o).toMatchObject({ wager: 3, isOutcomeOnly: true })
   })
 
   it('rejects a non-member', async () => {
@@ -215,6 +219,8 @@ describe('setLeagueJoker', () => {
     const finalRound = (await findRoundId(db, competitionId, 'FINAL', null)) as string
     const finalM = await makeMatch(db, { competitionId, roundId: finalRound, stage: 'FINAL', kickoffTime: FUTURE })
     await expect(setLeagueJoker(db, { leagueId, userId: 'u1', matchId: finalM, isJoker: true }, NOW)).rejects.toBeInstanceOf(ValidationError)
+    const tbd = await makeMatch(db, { competitionId, roundId, kickoffTime: FUTURE, homeTeamCode: null })
+    await expect(setLeagueJoker(db, { leagueId, userId: 'u1', matchId: tbd, isJoker: true }, NOW)).rejects.toBeInstanceOf(ValidationError)
     const open = await openMatch()
     await expect(setLeagueJoker(db, { leagueId, userId: 'outsider', matchId: open, isJoker: true }, NOW)).rejects.toBeInstanceOf(ForbiddenError)
     await expect(setLeagueJoker(db, { leagueId, userId: 'u1', matchId: open, isJoker: true }, NOW)).rejects.toBeInstanceOf(NotFoundError)
