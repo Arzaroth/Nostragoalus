@@ -39,8 +39,12 @@ run = "pnpm e2e:smtp"
 
 [tasks.e2e-up]
 description = "Bring up the isolated, disposable e2e stack (own DB/maildev/keycloak on shifted ports; never touches the dev DB)."
+# Project name is per-worktree (${PWD##*/} = the worktree dir) so two worktrees
+# don't share one ng-e2e stack: sharing it let a stale sibling container get
+# reused with the wrong bind-mount, serving the other branch's source. The ports
+# are still shared, so only one e2e stack runs per host at a time.
 # Name the services so the prod `app` (host :3000) isn't started alongside.
-run = "docker compose -p ng-e2e -f compose.yaml -f compose.dev.yaml -f compose.e2e.yaml --profile dev --profile e2e up -d --build db maildev keycloak app-dev"
+run = 'docker compose -p "ng-e2e-${PWD##*/}" -f compose.yaml -f compose.dev.yaml -f compose.e2e.yaml --profile dev --profile e2e up -d --build db maildev keycloak app-dev'
 
 [tasks.e2e]
 description = "Browser e2e (Playwright): predict/finalize/leaderboard + mail + SSO against the isolated e2e stack (own empty DB). See tests/e2e/README.md."
@@ -49,7 +53,7 @@ run = "pnpm e2e"
 
 [tasks.e2e-down]
 description = "Tear down the isolated e2e stack and drop its DB volume."
-run = "docker compose -p ng-e2e -f compose.yaml -f compose.dev.yaml -f compose.e2e.yaml --profile dev --profile e2e down -v"
+run = 'docker compose -p "ng-e2e-${PWD##*/}" -f compose.yaml -f compose.dev.yaml -f compose.e2e.yaml --profile dev --profile e2e down -v'
 
 
 [tasks.seed-demo]

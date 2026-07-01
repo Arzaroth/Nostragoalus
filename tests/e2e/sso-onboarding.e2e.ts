@@ -96,11 +96,13 @@ test('SCIM provisions a user and active:false deprovisions (ban, data kept)', as
   const { scimToken, baseUrl } = (await tokenRes.json()) as { scimToken: string; baseUrl: string }
   expect(scimToken.length).toBeGreaterThan(10)
 
-  const scim = await request.newContext({ baseURL: baseUrl, extraHTTPHeaders: { authorization: `Bearer ${scimToken}` } })
+  const scim = await request.newContext({ extraHTTPHeaders: { authorization: `Bearer ${scimToken}` } })
+  // Full URL (baseUrl already ends in /api/auth/scim/v2): a leading-slash path
+  // against a baseURL resolves from the origin and would drop the base path.
   // SCIM requires application/scim+json; pass the body as a string so Playwright
   // doesn't override the content-type with application/json.
   const scimReq = (method: 'post' | 'patch', path: string, body: unknown) =>
-    scim.fetch(path, { method, headers: { 'content-type': 'application/scim+json' }, data: JSON.stringify(body) })
+    scim.fetch(`${baseUrl}${path}`, { method, headers: { 'content-type': 'application/scim+json' }, data: JSON.stringify(body) })
 
   const create = await scimReq('post', '/Users', {
     schemas: ['urn:ietf:params:scim:schemas:core:2.0:User'],
