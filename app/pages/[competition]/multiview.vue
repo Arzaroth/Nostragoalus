@@ -6,25 +6,19 @@ import {
   parseMultiviewQuery,
   buildMultiviewQuery,
   visibleCells,
+  resolveFocus,
   addCell,
   replaceCell,
   removeCell,
   type MultiviewLayout,
   type MultiviewState,
 } from '../../utils/multiview'
-import type { MatchListItem } from '../../composables/useMatches'
 
 const { t } = useI18n()
 useHead({ title: t('multiview.title') })
 
 const route = useRoute()
 const router = useRouter()
-const { data: allMatches } = useMatches()
-const matchById = computed(() => {
-  const map = new Map<string, MatchListItem>()
-  for (const m of allMatches.value ?? []) map.set(m.id, m)
-  return map
-})
 
 // The URL query is the single source of truth: state is derived from it, and every
 // change is written back with router.replace (no history spam), so a view is
@@ -32,14 +26,7 @@ const matchById = computed(() => {
 const state = computed<MultiviewState>(() => parseMultiviewQuery(route.query))
 const layout = computed(() => state.value.layout)
 const cells = computed(() => visibleCells(state.value.cells, state.value.layout))
-// One entry per rendered grid slot (filled or empty), resolved against the match
-// list so the cell can show teams/score without another fetch.
-const slots = computed(() =>
-  Array.from({ length: capacityOf(state.value.layout) }, (_, index) => {
-    const id = cells.value[index]
-    return { index, id, match: id ? matchById.value.get(id) : undefined }
-  }),
-)
+const focus = computed(() => resolveFocus(state.value.cells, state.value.layout, state.value.focus))
 
 function update(next: Partial<MultiviewState>) {
   const q = { ...route.query }
@@ -50,6 +37,9 @@ function update(next: Partial<MultiviewState>) {
 }
 function setLayout(l: MultiviewLayout) {
   update({ layout: l })
+}
+function setFocus(id: string) {
+  update({ focus: id })
 }
 
 // picker: null index = append a cell, a number = replace that cell in place.
@@ -100,49 +90,15 @@ function onRemove(i: number) {
       </div>
     </div>
 
-    <div
-      class="grid gap-2 md:gap-3"
-      :style="{
-        gridTemplateColumns: `repeat(${gridDims(layout).cols}, minmax(0, 1fr))`,
-        gridTemplateRows: `repeat(${gridDims(layout).rows}, minmax(0, 1fr))`,
-        minHeight: 'calc(100dvh - var(--ng-header-h) - 9rem)',
-      }"
-    >
-      <template v-for="slot in slots" :key="slot.index">
-        <MultiviewSlotEmpty v-if="!slot.id" @add="openAdd" />
-        <div
-          v-else
-          class="relative flex flex-col rounded-xl border overflow-hidden"
-          style="border-color: var(--p-content-border-color); background: var(--p-content-background)"
-        >
-          <div class="flex items-center justify-between gap-2 px-2 py-1.5 border-b" style="border-color: var(--p-content-border-color)">
-            <span class="flex items-center gap-1.5 min-w-0 text-sm font-medium">
-              <template v-if="slot.match">
-                <img v-if="flagUrl(slot.match.homeTeamCode)" :src="flagUrl(slot.match.homeTeamCode) || ''" class="w-4 h-4 rounded object-cover shrink-0" alt="" >
-                <span class="truncate">{{ slot.match.homeTeam }}</span>
-                <span class="opacity-50 shrink-0">-</span>
-                <span class="truncate">{{ slot.match.awayTeam }}</span>
-                <img v-if="flagUrl(slot.match.awayTeamCode)" :src="flagUrl(slot.match.awayTeamCode) || ''" class="w-4 h-4 rounded object-cover shrink-0" alt="" >
-              </template>
-              <span v-else class="truncate opacity-60">{{ t('matches.noResults') }}</span>
-            </span>
-            <span class="flex items-center gap-1 shrink-0">
-              <button type="button" class="p-1 rounded hover:bg-black/5 dark:hover:bg-white/10" :aria-label="t('multiview.changeMatch')" v-tooltip.bottom="t('multiview.changeMatch')" @click="openReplace(slot.index)">
-                <i class="pi pi-sync text-xs" />
-              </button>
-              <button type="button" class="p-1 rounded hover:bg-black/5 dark:hover:bg-white/10" :aria-label="t('multiview.remove')" v-tooltip.bottom="t('multiview.remove')" @click="onRemove(slot.index)">
-                <i class="pi pi-times text-xs" />
-              </button>
-            </span>
-          </div>
-          <div class="flex-1 flex items-center justify-center p-4">
-            <span v-if="slot.match" class="tabular-nums text-3xl font-bold">
-              {{ slot.match.fullTimeHome ?? '-' }} <span class="opacity-40">–</span> {{ slot.match.fullTimeAway ?? '-' }}
-            </span>
-          </div>
-        </div>
-      </template>
-    </div>
+    <MultiviewGrid
+      :cells="cells"
+      :layout="layout"
+      :focused-id="focus"
+      @add="openAdd"
+      @replace="openReplace"
+      @remove="onRemove"
+      @focus="setFocus"
+    />
 
     <MultiviewPickerDialog v-model:visible="pickerOpen" :disabled-ids="cells" @select="onSelect" />
   </div>
