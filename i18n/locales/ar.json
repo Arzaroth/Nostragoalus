@@ -288,8 +288,23 @@
     "active": "نشط",
     "idle": "غائب"
   },
+  "multiview": {
+    "title": "عرض متعدد",
+    "subtitle": "شاهد عدة مباريات في وقت واحد",
+    "addMatch": "إضافة مباراة",
+    "changeMatch": "تغيير المباراة",
+    "remove": "إزالة",
+    "layoutAria": "التبديل إلى تخطيط {layout}",
+    "view": {
+      "tile": "بطاقة",
+      "stream": "بث"
+    },
+    "streamUnavailable": "لا يوجد بث لهذه المباراة",
+    "streamCapReached": "{count} بث في كل مرة"
+  },
   "nav": {
     "matches": "المباريات",
+    "multiview": "عرض متعدد",
     "bracket": "الجدول",
     "map": "الخريطة",
     "ranking": "التصنيف",
