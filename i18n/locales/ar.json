@@ -294,6 +294,7 @@
     "addMatch": "إضافة مباراة",
     "changeMatch": "تغيير المباراة",
     "remove": "إزالة",
+    "filterAll": "الكل",
     "layoutAria": "التبديل إلى تخطيط {layout}",
     "view": {
       "tile": "بطاقة",

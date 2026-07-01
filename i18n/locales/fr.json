@@ -179,6 +179,7 @@
     "addMatch": "Ajouter un match",
     "changeMatch": "Changer de match",
     "remove": "Retirer",
+    "filterAll": "Tous",
     "layoutAria": "Passer à la disposition {layout}",
     "view": {
       "tile": "Vignette",

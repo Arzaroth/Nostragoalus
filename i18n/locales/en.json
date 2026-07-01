@@ -183,6 +183,7 @@
     "addMatch": "Add match",
     "changeMatch": "Change match",
     "remove": "Remove",
+    "filterAll": "All",
     "layoutAria": "Switch to {layout} layout",
     "view": {
       "tile": "Tile",
