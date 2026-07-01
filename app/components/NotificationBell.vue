@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { chatMentionPath, type NotificationDTO } from '#shared/types/notifications'
+import { cabinetPath, chatMentionPath, type NotificationDTO } from '#shared/types/notifications'
 
 const { t, locale } = useI18n()
 const router = useRouter()
@@ -25,6 +25,8 @@ const ICONS: Record<NotificationDTO['type'], string> = {
   MATCH_RESULT: 'pi pi-flag',
   CHAMPION_RESULT: 'pi pi-crown',
   BEST_SCORER_RESULT: 'pi pi-star',
+  TROPHY_AWARDED: 'pi pi-trophy',
+  ACHIEVEMENT_UNLOCKED: 'pi pi-verified',
   CHAT_MENTION: 'pi pi-at',
 }
 
@@ -61,6 +63,17 @@ function itemText(n: NotificationDTO): string {
         competition: d.competitionName,
         points: d.points,
       })
+    case 'TROPHY_AWARDED': {
+      const trophy =
+        d.trophyType === 'TEAM_SPECIALIST'
+          ? d.teamName
+            ? t('achievements.trophy.TEAM_SPECIALIST.name', { team: d.teamName })
+            : t('achievements.trophy.TEAM_SPECIALIST_GENERIC.name')
+          : t(`achievements.trophy.${d.trophyType}.name`)
+      return t('notifications.item.trophyAwarded', { trophy, competition: d.competitionName })
+    }
+    case 'ACHIEVEMENT_UNLOCKED':
+      return t('notifications.item.achievementUnlocked', { achievement: t(`achievements.badge.${d.key}.name`) })
     case 'CHAT_MENTION':
       return d.matchId
         ? t('notifications.item.mentionMatch', { name: d.senderName, home: d.homeTeam ?? '', away: d.awayTeam ?? '' })
@@ -82,6 +95,9 @@ function linkFor(n: NotificationDTO): string {
     case 'CHAMPION_RESULT':
     case 'BEST_SCORER_RESULT':
       return `/${d.competitionSlug}/leaderboard`
+    case 'TROPHY_AWARDED':
+    case 'ACHIEVEMENT_UNLOCKED':
+      return cabinetPath(d)
     case 'CHAT_MENTION':
       return chatMentionPath(d)
   }

@@ -1,3 +1,5 @@
+import type { AchievementTier, CompetitionAwardType } from './achievements'
+
 // In-app notification center. The `type` column on user_notification mirrors
 // `data.type` (the service derives it on insert, so they can't drift); the typed
 // `data` bag drives rendering and deep-linking with no per-type columns.
@@ -9,6 +11,8 @@ export type NotificationType =
   | 'MATCH_RESULT'
   | 'CHAMPION_RESULT'
   | 'BEST_SCORER_RESULT'
+  | 'TROPHY_AWARDED'
+  | 'ACHIEVEMENT_UNLOCKED'
   | 'CHAT_MENTION'
 
 export type NotificationData =
@@ -49,6 +53,28 @@ export type NotificationData =
       points: number
       won: boolean
     }
+  // A competition-end trophy landed on your cabinet. teamName is set only for the
+  // team-specialist trophy (it names the team); userId is the recipient, for the
+  // deep link to their own cabinet.
+  | {
+      type: 'TROPHY_AWARDED'
+      competitionSlug: string
+      competitionName: string
+      userId: string
+      trophyType: CompetitionAwardType
+      teamName: string | null
+    }
+  // A milestone badge unlocked. competitionSlug/Name are null for a global
+  // (competition-spanning) badge like the secret unlock; tier is null for a
+  // single-shot badge.
+  | {
+      type: 'ACHIEVEMENT_UNLOCKED'
+      competitionSlug: string | null
+      competitionName: string | null
+      userId: string
+      key: string
+      tier: AchievementTier | null
+    }
   // Someone @-mentioned the recipient in league chat. Carries room context only
   // (sender name + which room): the message itself is E2EE, so no preview. matchId
   // null = the league-global room; home/away name the match thread otherwise.
@@ -76,6 +102,13 @@ export function chatMentionPath(d: {
   const base = d.matchId ? `/${d.competitionSlug}/matches/${d.matchId}` : `/${d.competitionSlug}`
   const room = d.matchId ?? 'global'
   return `${base}?ngLeague=${encodeURIComponent(d.leagueId)}&chat=${encodeURIComponent(room)}`
+}
+
+// Deep link for a trophy/achievement notification: the recipient's own cabinet,
+// on their profile under the competition. A global badge (no competition) links
+// home. Shared so the server push builder and the client bell agree.
+export function cabinetPath(d: { competitionSlug: string | null; userId: string }): string {
+  return d.competitionSlug ? `/${d.competitionSlug}/users/${d.userId}` : '/'
 }
 
 // The shape the API and the WS `notification:new` push both carry; the client

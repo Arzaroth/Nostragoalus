@@ -8,6 +8,7 @@ import { syncMatchDetails } from '../../utils/sync/details'
 import { awardBestScorerBonuses } from '../../utils/bestscorer/service'
 import { awardCompetitionTrophies } from '../../utils/awards/service'
 import { evaluateAchievements } from '../../utils/achievements/service'
+import { notifyAchievementUnlocked, notifyTrophyAwarded } from '../../utils/notifications/events'
 import { getScoringConfigFor } from '../../utils/scoring/store'
 import { updateLeagueRankSnapshots, updateRankSnapshots } from '../../utils/leaderboard/snapshots'
 import { publishMatchUpdates } from '../../utils/live/hub'
@@ -40,8 +41,9 @@ export default defineTask({
       try {
         // After the best-scorer bonus so the OVERALL trophy reflects the final
         // leaderboard (which folds in that bonus). Self-gated on a decided final
-        // and idempotent. Notifications for new trophies are wired separately.
-        await awardCompetitionTrophies(db, competition.id)
+        // and idempotent; only newly-awarded trophies notify.
+        const newTrophies = await awardCompetitionTrophies(db, competition.id)
+        await notifyTrophyAwarded(db, competition.id, newTrophies)
       } catch {
         // never fail the task over trophies
       }
@@ -60,9 +62,12 @@ export default defineTask({
       }
       try {
         // Milestone badges only move when scoring does. Runs after the trophy
-        // award so treble/podium see this tick's trophies. Idempotent; new
-        // unlocks are notified separately.
-        if (result.scored > 0) await evaluateAchievements(db, competition.id)
+        // award so treble/podium see this tick's trophies. Idempotent; only
+        // newly-earned (or graded-up) badges notify.
+        if (result.scored > 0) {
+          const newBadges = await evaluateAchievements(db, competition.id)
+          await notifyAchievementUnlocked(db, newBadges)
+        }
       } catch {
         // never fail the task over achievements
       }

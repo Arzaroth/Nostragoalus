@@ -1,4 +1,58 @@
 {
+  "achievements": {
+    "cabinetTitle": "Trophy cabinet",
+    "fridgeTitle": "My fridge",
+    "trophiesHeading": "Trophies",
+    "badgesHeading": "Achievements",
+    "empty": "No trophies or achievements yet.",
+    "fridgeEmpty": "Nothing on the fridge yet.",
+    "fridgeEmptyOwn": "Pin your proudest trophies and badges here.",
+    "locked": "Locked",
+    "lockedHint": "Keep playing to unlock this one.",
+    "viewCabinet": "View trophy cabinet",
+    "editFridge": "Arrange fridge",
+    "doneEditing": "Done",
+    "pin": "Pin to fridge",
+    "unpin": "Take off the fridge",
+    "fridgeFull": "Your fridge is full ({max} slots).",
+    "saved": "Fridge saved.",
+    "earnedOn": "Earned {date}",
+    "tier": {
+      "BRONZE": "Bronze",
+      "SILVER": "Silver",
+      "GOLD": "Gold"
+    },
+    "trophy": {
+      "OVERALL": { "name": "Grand Champion", "desc": "Finished top of the overall leaderboard." },
+      "GROUP_PHASE": { "name": "Group Stage Guru", "desc": "Best predictor of the group stage." },
+      "KNOCKOUT_PHASE": { "name": "Bracket Master", "desc": "Best predictor of the knockout rounds." },
+      "MADAME_IRMA": { "name": "Madame Irma", "desc": "Called the most exact scorelines of anyone." },
+      "TEAM_SPECIALIST": { "name": "{team} Specialist", "desc": "Best predictor of {team}'s matches." },
+      "TEAM_SPECIALIST_GENERIC": { "name": "Team Specialist", "desc": "Best predictor of the featured team's matches." }
+    },
+    "badge": {
+      "first-blood": { "name": "First Blood", "desc": "Nailed your first exact scoreline." },
+      "sharpshooter": { "name": "Sharpshooter", "desc": "Call exact scorelines - the more the better." },
+      "prophet": { "name": "Prophet", "desc": "Rack up predictions." },
+      "century": { "name": "Centurion", "desc": "Bank prediction points by the hundred." },
+      "perfect-round": { "name": "Flawless", "desc": "Got every match in a round exactly right." },
+      "hot-streak": { "name": "Hot Streak", "desc": "String together exact scorelines." },
+      "on-fire": { "name": "On Fire", "desc": "Score in match after match." },
+      "contrarian": { "name": "Against the Grain", "desc": "Beat the crowd for a rarity bonus." },
+      "lone-wolf": { "name": "Lone Wolf", "desc": "The only soul to nail a scoreline." },
+      "joker-hero": { "name": "Joker's Wild", "desc": "Land your joker on an exact scoreline." },
+      "early-bird": { "name": "Early Bird", "desc": "Get your predictions in well ahead of kickoff." },
+      "night-owl": { "name": "Night Owl", "desc": "Predict in the dead of night." },
+      "deadline-dancer": { "name": "Deadline Dancer", "desc": "Predict in the last five minutes before kickoff." },
+      "completionist": { "name": "Completionist", "desc": "Predicted every match of the tournament." },
+      "champion-oracle": { "name": "Kingmaker", "desc": "Your champion pick lifted the trophy." },
+      "golden-touch": { "name": "Golden Touch", "desc": "Your Golden Boot pick finished top scorer." },
+      "underdog-whisperer": { "name": "Underdog Whisperer", "desc": "Your long-shot champion pick came good." },
+      "treble": { "name": "Treble", "desc": "Held three trophies in one tournament." },
+      "podium": { "name": "On the Podium", "desc": "Finished in the overall top three." },
+      "the-magic-word": { "name": "The Magic Word", "desc": "You said the magic word. A little colour never hurt anyone." }
+    }
+  },
   "verify": {
     "title": "Verify scores",
     "sub": "Proof that predictions are not edited after kickoff.",
@@ -1205,7 +1259,9 @@
       "bestScorerWon": "Your Golden Boot pick {player} finished top scorer! +{points} pts",
       "bestScorerLost": "Your Golden Boot pick {player} didn't finish top scorer.",
       "mention": "{name} mentioned you in {league}.",
-      "mentionMatch": "{name} mentioned you in {home} v {away}."
+      "mentionMatch": "{name} mentioned you in {home} v {away}.",
+      "trophyAwarded": "You won the {trophy} trophy in {competition}!",
+      "achievementUnlocked": "Achievement unlocked: {achievement}."
     }
   },
   "push": {
@@ -1218,6 +1274,8 @@
     "matchResultMiss": { "title": "Your result", "body": "{home} {hs}-{as} {away} - no points this time" },
     "champion": { "title": "Champion!", "body": "Your champion {team} won - +{points} pts" },
     "bestScorer": { "title": "Golden Boot!", "body": "Your pick {player} finished top scorer - +{points} pts" },
+    "trophy": { "title": "Trophy won!", "body": "You won the {trophy} trophy in {competition}" },
+    "achievement": { "title": "Achievement unlocked!", "body": "You earned {achievement}" },
     "leagueJoin": { "title": "New league member", "body": "{name} joined {league}" },
     "leagueRoleOwner": { "title": "League update", "body": "You're now the owner of {league}" },
     "leagueRolePromoted": { "title": "League update", "body": "You're now a moderator of {league}" },

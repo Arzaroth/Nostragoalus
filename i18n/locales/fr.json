@@ -1,4 +1,54 @@
 {
+  "achievements": {
+    "cabinetTitle": "Vitrine à trophées",
+    "fridgeTitle": "Mon frigo",
+    "trophiesHeading": "Trophées",
+    "badgesHeading": "Succès",
+    "empty": "Aucun trophée ni succès pour l'instant.",
+    "fridgeEmpty": "Rien sur le frigo pour l'instant.",
+    "fridgeEmptyOwn": "Épinglez ici vos plus beaux trophées et succès.",
+    "locked": "Verrouillé",
+    "lockedHint": "Continuez à jouer pour débloquer celui-ci.",
+    "viewCabinet": "Voir la vitrine à trophées",
+    "editFridge": "Organiser le frigo",
+    "doneEditing": "Terminé",
+    "pin": "Épingler au frigo",
+    "unpin": "Retirer du frigo",
+    "fridgeFull": "Votre frigo est plein ({max} emplacements).",
+    "saved": "Frigo enregistré.",
+    "earnedOn": "Obtenu le {date}",
+    "tier": { "BRONZE": "Bronze", "SILVER": "Argent", "GOLD": "Or" },
+    "trophy": {
+      "OVERALL": { "name": "Grand champion", "desc": "Terminé en tête du classement général." },
+      "GROUP_PHASE": { "name": "Gourou de la phase de groupes", "desc": "Meilleur pronostiqueur de la phase de groupes." },
+      "KNOCKOUT_PHASE": { "name": "Maître du tableau final", "desc": "Meilleur pronostiqueur des phases à élimination directe." },
+      "MADAME_IRMA": { "name": "Madame Irma", "desc": "A prédit le plus de scores exacts de tous." },
+      "TEAM_SPECIALIST": { "name": "Spécialiste {team}", "desc": "Meilleur pronostiqueur des matchs de {team}." },
+      "TEAM_SPECIALIST_GENERIC": { "name": "Spécialiste d'équipe", "desc": "Meilleur pronostiqueur des matchs de l'équipe vedette." }
+    },
+    "badge": {
+      "first-blood": { "name": "Premier sang", "desc": "Vous avez trouvé votre premier score exact." },
+      "sharpshooter": { "name": "Tireur d'élite", "desc": "Trouvez des scores exacts - plus il y en a, mieux c'est." },
+      "prophet": { "name": "Prophète", "desc": "Accumulez les pronostics." },
+      "century": { "name": "Centurion", "desc": "Engrangez des points de pronostic par centaines." },
+      "perfect-round": { "name": "Sans faute", "desc": "Tous les matchs d'un tour trouvés au score exact." },
+      "hot-streak": { "name": "Série chaude", "desc": "Enchaînez les scores exacts." },
+      "on-fire": { "name": "En feu", "desc": "Marquez des points match après match." },
+      "contrarian": { "name": "À contre-courant", "desc": "Déjouez la foule pour décrocher un bonus de rareté." },
+      "lone-wolf": { "name": "Loup solitaire", "desc": "Le seul à avoir trouvé un score exact." },
+      "joker-hero": { "name": "Joker gagnant", "desc": "Placez votre joker sur un score exact." },
+      "early-bird": { "name": "Lève-tôt", "desc": "Enregistrez vos pronostics bien avant le coup d'envoi." },
+      "night-owl": { "name": "Noctambule", "desc": "Pronostiquez en pleine nuit." },
+      "deadline-dancer": { "name": "Sur le fil", "desc": "Pronostiquez dans les cinq dernières minutes avant le coup d'envoi." },
+      "completionist": { "name": "Complétiste", "desc": "Tous les matchs du tournoi pronostiqués." },
+      "champion-oracle": { "name": "Faiseur de rois", "desc": "Votre pronostic champion a soulevé le trophée." },
+      "golden-touch": { "name": "Touche d'or", "desc": "Votre pari Soulier d'or a fini meilleur buteur." },
+      "underdog-whisperer": { "name": "L'ami des outsiders", "desc": "Votre pronostic champion très improbable a fini par payer." },
+      "treble": { "name": "Triplé", "desc": "Détenu trois trophées dans un même tournoi." },
+      "podium": { "name": "Sur le podium", "desc": "Terminé dans le top 3 général." },
+      "the-magic-word": { "name": "Le mot magique", "desc": "Vous avez dit le mot magique. Un peu de couleur n'a jamais fait de mal." }
+    }
+  },
   "verify": {
     "title": "Vérifier les scores",
     "sub": "La preuve que les pronostics ne sont pas modifiés après le coup d'envoi.",
@@ -1205,7 +1255,9 @@
       "bestScorerWon": "Votre pari Soulier d'or {player} a fini meilleur buteur ! +{points} pts",
       "bestScorerLost": "Votre pari Soulier d'or {player} n'a pas fini meilleur buteur.",
       "mention": "{name} vous a mentionné dans {league}.",
-      "mentionMatch": "{name} vous a mentionné dans {home} v {away}."
+      "mentionMatch": "{name} vous a mentionné dans {home} v {away}.",
+      "trophyAwarded": "Vous avez remporté le trophée {trophy} dans {competition} !",
+      "achievementUnlocked": "Succès débloqué : {achievement}."
     }
   },
   "push": {
@@ -1218,6 +1270,8 @@
     "matchResultMiss": { "title": "Votre résultat", "body": "{home} {hs}-{as} {away} - aucun point cette fois" },
     "champion": { "title": "Champion !", "body": "Votre champion {team} a gagné - +{points} pts" },
     "bestScorer": { "title": "Soulier d'or !", "body": "Votre pari {player} a fini meilleur buteur - +{points} pts" },
+    "trophy": { "title": "Trophée remporté !", "body": "Vous avez remporté le trophée {trophy} dans {competition}" },
+    "achievement": { "title": "Succès débloqué !", "body": "Vous avez obtenu {achievement}" },
     "leagueJoin": { "title": "Nouveau membre", "body": "{name} a rejoint {league}" },
     "leagueRoleOwner": { "title": "Mise à jour de ligue", "body": "Vous êtes désormais propriétaire de {league}" },
     "leagueRolePromoted": { "title": "Mise à jour de ligue", "body": "Vous êtes désormais modérateur de {league}" },

@@ -18,6 +18,9 @@ import { fetchAvatarDataUrl, isUnusableAvatarUrl, storeAvatarFromDataUrl } from 
 import { useStorageDriver } from '../server/utils/storage'
 import { autoJoinSsoLeagues } from '../server/utils/leagues/auto-join'
 import { publishMemberNameChanged } from '../server/utils/live/league-chat'
+import { grantAchievement } from '../server/utils/achievements/service'
+import { PONY_ACHIEVEMENT_KEY } from '../server/utils/achievements/catalog'
+import { notifyAchievementUnlocked } from '../server/utils/notifications/events'
 import { symmetricDecrypt } from 'better-auth/crypto'
 import { isSkinId } from '../app/utils/skins'
 import { sendMail } from './mail'
@@ -179,6 +182,22 @@ export function buildAuthOptions(database: AuthDb) {
           after: async (user: Record<string, unknown>) => {
             if (typeof user?.id === 'string' && typeof user?.name === 'string') {
               void publishMemberNameChanged(db, user.id, user.name).catch(() => {})
+            }
+            // The konami skin unlock persists as skinsUnlocked:true. Grant the
+            // secret badge exactly once (grantAchievement is idempotent) and
+            // notify only on the first grant. Fires on every user update, but the
+            // grant no-ops once held.
+            if (typeof user?.id === 'string' && user?.skinsUnlocked === true) {
+              const uid = user.id
+              void grantAchievement(db, { userId: uid, competitionId: null, key: PONY_ACHIEVEMENT_KEY, tier: 'GOLD' })
+                .then((granted) =>
+                  granted
+                    ? notifyAchievementUnlocked(db, [
+                        { userId: uid, competitionId: null, key: PONY_ACHIEVEMENT_KEY, tier: 'GOLD' },
+                      ])
+                    : undefined,
+                )
+                .catch(() => {})
             }
           },
         },

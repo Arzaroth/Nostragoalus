@@ -59,6 +59,8 @@ const TYPE_CATEGORY: Record<NotificationType, PushCategory> = {
   MATCH_RESULT: 'matchResults',
   CHAMPION_RESULT: 'tournament',
   BEST_SCORER_RESULT: 'tournament',
+  TROPHY_AWARDED: 'tournament',
+  ACHIEVEMENT_UNLOCKED: 'tournament',
   LEAGUE_JOIN: 'league',
   LEAGUE_ROLE: 'league',
   LEAGUE_REMOVED: 'league',
