@@ -23,9 +23,11 @@ const selections = useLeagueSelections()
 const onLeaguePages = computed(() => route.path === '/leagues' || route.path.startsWith('/leagues/'))
 const leagueId = computed<string | null>(() => (onLeaguePages.value ? null : selectedLeagueId.value))
 
-// A match detail route unlocks the Global/Match scope toggle.
+// The focused multiview cell wins; otherwise a match detail route unlocks the
+// Global/Match scope toggle. Either way there's a single match thread in view.
+const mvFocus = useMultiviewFocus()
 const matchId = computed<string | null>(() =>
-  String(route.name) === 'competition-matches-id' ? (route.params.id as string) : null,
+  mvFocus.focusedMatchId.value ?? (String(route.name) === 'competition-matches-id' ? (route.params.id as string) : null),
 )
 
 const enabled = ref(false)
@@ -38,6 +40,12 @@ const scope = ref<'global' | 'match'>('global')
 // Off a match page there is no match room: pin scope to global and hide the toggle.
 watch(matchId, (m) => {
   if (!m) scope.value = 'global'
+})
+// A multiview cell gaining focus re-targets the dock at that match's thread
+// (silently: it does not pop the dock open - only an explicit inbox/deep-link
+// click does that).
+watch(mvFocus.focusedMatchId, (id) => {
+  if (id) scope.value = 'match'
 })
 const scopedMatchId = computed<string | null>(() => (scope.value === 'match' ? matchId.value : null))
 
@@ -150,6 +158,12 @@ async function openRoom(r: ChatUnreadRoomDTO) {
   selections.value = withLeagueSelection(selections.value, r.competitionSlug, r.leagueId)
   const sameComp = r.competitionSlug === slug.value
   if (r.matchId) {
+    // If that match is a cell in the current multiview, focus it in place instead
+    // of leaving the grid for the detail page.
+    if (sameComp && mvFocus.tryFocus(r.matchId)) {
+      scope.value = 'match'
+      return
+    }
     if (!sameComp || r.matchId !== matchId.value) await navigateTo(`/${r.competitionSlug}/matches/${r.matchId}`)
     scope.value = 'match'
   } else {

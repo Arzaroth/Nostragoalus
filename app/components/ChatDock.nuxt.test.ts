@@ -21,6 +21,23 @@ vi.mock('../composables/useSelectedLeague', () => ({
 }))
 mockNuxtImport('useRoute', () => () => route.value as never)
 
+// The multiview focus channel: drives the dock's match thread off the route.
+const focusedMatchId = ref<string | null>(null)
+const presentCells = ref<string[]>([])
+mockNuxtImport('useMultiviewFocus', () => () => ({
+  focusedMatchId,
+  presentCells,
+  setFocus: (v: string | null) => (focusedMatchId.value = v),
+  setPresent: (v: string[]) => (presentCells.value = v),
+  tryFocus: (id: string) => {
+    if (presentCells.value.includes(id)) {
+      focusedMatchId.value = id
+      return true
+    }
+    return false
+  },
+}))
+
 const ChatPanelStub = {
   name: 'ChatPanel',
   props: ['leagueId', 'matchId', 'flat'],
@@ -45,6 +62,8 @@ beforeEach(() => {
   selectedLeagueId.value = 'L1'
   leagueSelections.value = {}
   route.value = { name: 'competition-home', path: '/world-cup-2026', params: {}, query: {} }
+  focusedMatchId.value = null
+  presentCells.value = []
 })
 afterEach(() => {
   for (const w of mounted) w.unmount()
@@ -78,5 +97,12 @@ describe('ChatDock', () => {
     const match = await mount(true)
     expect(match.text()).toContain('This match')
     expect(match.text()).toContain('League')
+  })
+
+  it('follows a focused multiview cell even off a match route', async () => {
+    // Home route (no match in the URL), but a multiview cell is focused.
+    focusedMatchId.value = 'M2'
+    const w = await mount(true)
+    expect(w.text()).toContain('This match')
   })
 })

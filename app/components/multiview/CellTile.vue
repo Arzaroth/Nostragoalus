@@ -47,8 +47,18 @@ const clock = computed(() => {
       </span>
     </div>
 
+    <!-- Viewer presence, timeline and reactions ride sockets/heavy fetches, so
+         they exist only for the focused cell. -->
+    <div v-if="focused" class="flex justify-center pb-1">
+      <MultiviewCellViewers :match-id="matchId" />
+    </div>
+
     <div v-if="focused && hasStarted" class="flex-1 min-h-0 overflow-hidden border-t mt-1 pt-1" style="border-color: var(--p-content-border-color)">
       <MatchPlayByPlay :events="(events as PlayByPlayEvent[]) ?? []" :home-code="match?.homeTeamCode" :away-code="match?.awayTeamCode" compact />
+    </div>
+
+    <div v-if="focused && hasStarted" class="shrink-0 border-t mt-1 pt-1" style="border-color: var(--p-content-border-color)">
+      <ReactionBar :match-id="matchId" />
     </div>
   </div>
 </template>
