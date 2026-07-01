@@ -23,3 +23,50 @@ export type FridgeItemType = (typeof FRIDGE_ITEM_TYPES)[number]
 
 // How many items a user may pin to their fridge showcase, per competition.
 export const FRIDGE_SLOT_COUNT = 6
+
+// === Cabinet / fridge read DTOs (server -> client) ===
+
+export interface TrophyDto {
+  type: CompetitionAwardType
+  value: number
+  teamCode: string | null
+  awardedAt: string
+}
+
+export interface AchievementTierThresholdDto {
+  tier: AchievementTier
+  threshold: number
+}
+
+export interface AchievementDto {
+  key: string
+  category: string
+  scope: AchievementScope
+  hidden: boolean
+  tiers: AchievementTierThresholdDto[]
+  // null = not yet earned (a locked slot in the cabinet).
+  earned: { tier: AchievementTier | null; progress: number; unlockedAt: string } | null
+}
+
+export type AchievementScope = 'COMPETITION' | 'GLOBAL'
+
+export interface FridgePinDto {
+  slot: number
+  itemType: FridgeItemType
+  itemKey: string
+}
+
+export interface CabinetDto {
+  userId: string
+  displayName: string
+  isOwner: boolean
+  trophies: TrophyDto[]
+  achievements: AchievementDto[]
+  fridge: FridgePinDto[]
+}
+
+// A single item the client asks to pin (order in the array = slot order).
+export interface FridgePinInput {
+  itemType: FridgeItemType
+  itemKey: string
+}

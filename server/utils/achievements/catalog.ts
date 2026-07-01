@@ -1,4 +1,4 @@
-import type { AchievementTier } from '#shared/types/achievements'
+import type { AchievementScope, AchievementTier } from '#shared/types/achievements'
 
 // The achievement catalog lives in code (not the DB): the badges a user can earn,
 // their grading thresholds, and how they present. user_achievement rows only
@@ -14,9 +14,8 @@ export type AchievementCategory =
   | 'TROPHY_META'
   | 'SECRET'
 
-// COMPETITION badges are earned per competition; GLOBAL ones span all of them
-// (their user_achievement row has a null competitionId).
-export type AchievementScope = 'COMPETITION' | 'GLOBAL'
+// AchievementScope (COMPETITION vs GLOBAL) is defined in #shared and re-exported
+// above so this module stays the one place the catalog is described.
 
 // The per-user metrics a batch evaluation derives from the settled prediction
 // state. Every stat-driven achievement grades one of these.
