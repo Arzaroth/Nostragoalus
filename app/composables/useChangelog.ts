@@ -2,6 +2,7 @@ import enRaw from '../../CHANGELOG.md?raw'
 import frRaw from '../../i18n/changelogs/fr.md?raw'
 import thRaw from '../../i18n/changelogs/th.md?raw'
 import tlhRaw from '../../i18n/changelogs/tlh.md?raw'
+import arRaw from '../../i18n/changelogs/ar.md?raw'
 import { parseChangelog, latestVersion, isUnseen, selectLocaleChangelog, type ChangelogVersion } from '~/utils/changelog'
 
 // The changelog is a build-time constant, so parse each locale once at module
@@ -14,6 +15,7 @@ const localized: Record<string, ChangelogVersion[]> = {
   fr: parseChangelog(frRaw),
   th: parseChangelog(thRaw),
   tlh: parseChangelog(tlhRaw),
+  ar: parseChangelog(arRaw),
 }
 const latest = latestVersion(enVersions)
 

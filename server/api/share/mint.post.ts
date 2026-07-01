@@ -54,7 +54,7 @@ defineRouteMeta({
             properties: {
               matchId: { type: 'string', format: 'uuid' },
               mode: { type: 'string', enum: ['sealed', 'reveal', 'result'] },
-              locale: { type: 'string', enum: ['en', 'fr', 'th', 'tlh'] },
+              locale: { type: 'string', enum: ['en', 'fr', 'th', 'tlh', 'ar'] },
             },
           },
         },
