@@ -439,7 +439,7 @@ effort buckets; order within a bucket is not priority.
     `mise run changelog promote` fans the `[Unreleased]` move across all four and
     `mise run changelog check` enforces structural parity in the gate. Roadmap-item
     localization (below) is still open, so this parent item stays open.
-- [ ] **RTL support + Arabic locale** (IN_PROGRESS, worktree-rtl-arabic): add
+- [x] **RTL support + Arabic locale** (shipped in 2.7.0): add
       Arabic (`ar`) as the fifth locale and the first right-to-left language,
       proving the app's layout is direction-agnostic. Decisions (locked):
   - **Why Arabic**: widest RTL reach and a real WC-2026 fit (Morocco, Tunisia,
