@@ -7,11 +7,19 @@ const bodySchema = z
   .object({
     title: z.string().trim().min(3).max(120).optional(),
     description: z.string().trim().max(2000).nullable().optional(),
-    status: z.enum(['PLANNED', 'IN_PROGRESS', 'SHIPPED']).optional(),
+    // SUGGESTED lets an admin demote back to (or promote from) the community
+    // column; moderationStatus REJECTED hides a spam suggestion, APPROVED restores it.
+    status: z.enum(['PLANNED', 'IN_PROGRESS', 'SHIPPED', 'SUGGESTED']).optional(),
     position: z.number().int().min(0).optional(),
+    moderationStatus: z.enum(['PENDING', 'APPROVED', 'REJECTED']).optional(),
   })
   .refine(
-    (b) => b.title !== undefined || b.description !== undefined || b.status !== undefined || b.position !== undefined,
+    (b) =>
+      b.title !== undefined ||
+      b.description !== undefined ||
+      b.status !== undefined ||
+      b.position !== undefined ||
+      b.moderationStatus !== undefined,
     { message: 'nothing to update' },
   )
 
@@ -35,8 +43,9 @@ defineRouteMeta({
             "properties": {
               "title": { "type": "string", "description": "3-120 chars." },
               "description": { "type": "string", "nullable": true },
-              "status": { "type": "string", "enum": ["PLANNED", "IN_PROGRESS", "SHIPPED"] },
-              "position": { "type": "integer", "minimum": 0 }
+              "status": { "type": "string", "enum": ["PLANNED", "IN_PROGRESS", "SHIPPED", "SUGGESTED"] },
+              "position": { "type": "integer", "minimum": 0 },
+              "moderationStatus": { "type": "string", "enum": ["PENDING", "APPROVED", "REJECTED"] }
             }
           }
         }
