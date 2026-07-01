@@ -47,4 +47,4 @@ top assists. Built to grow into team-level boards (best attack/defense) later.
 - `app/pages/[competition]/matches/index.vue` (the `viewMode` toggle + Stats block)
 - `app/composables/useScorers.ts`, `app/components/PlayerRankingTable.vue`
 - `server/api/competitions/scorers.get.ts`, `server/utils/stats/scorers.ts`
-- i18n: `matches.viewStats`, `stats.*` in `i18n/locales/{en,fr,th,tlh}.json`
+- i18n: `matches.viewStats`, `stats.*` in `i18n/locales/{en,fr,th,tlh,ar}.json`

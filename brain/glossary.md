@@ -87,5 +87,7 @@ the code. Alphabetical.
   images. See [architecture/storage.md](architecture/storage.md).
 - **Skin** - a cosmetic theme orthogonal to light/dark; the unlockable ones are
   the MLP easter egg. See [features/easter-eggs.md](features/easter-eggs.md).
-- **tlh** - the Klingon locale code; one of the four required locales and itself
+- **tlh** - the Klingon locale code; one of the five required locales and itself
   an easter egg.
+- **ar** - the Arabic locale code; the first right-to-left locale. See
+  [architecture/rtl.md](architecture/rtl.md).

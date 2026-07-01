@@ -73,14 +73,14 @@ not deep `../../../../shared/*`, or the SSR/rollup build fails on link errors.
 | OG/share images + PWA service worker | [rendering.md](rendering.md) |
 | External data: FIFA match data, odds, FIFA ranking | [providers.md](providers.md) |
 | Test gate, coverage, pglite, factories | [testing.md](testing.md) |
-| i18n, four locales | [i18n.md](i18n.md) |
+| i18n, five locales | [i18n.md](i18n.md) |
 
 ## Hard rules that shape the code
 
 (Full list in the repo's `CLAUDE.md`; the architecturally load-bearing ones:)
 
 - async/await + try/catch, never `.then/.catch`.
-- Every user-facing string is i18n'd in all four locales.
+- Every user-facing string is i18n'd in all five locales.
 - A finished feature branch goes through feature-treatment (rebase -> parallel
   review -> fix -> gate -> merge -> release -> remove worktree).
 - The merge gate: `pnpm typecheck`, `pnpm test:coverage`, `pnpm test:components`,

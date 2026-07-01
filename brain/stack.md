@@ -24,7 +24,7 @@ Sources of truth: `package.json`, `pnpm-workspace.yaml`, `nuxt.config.ts`,
 - **@tanstack/vue-query** 5.101.0 - the client data layer (see
   [architecture/client.md](architecture/client.md)). App-level `staleTime: 60_000`,
   `refetchOnWindowFocus: false`.
-- **@nuxtjs/i18n** 10.4.0 - four locales `en / fr / th / tlh` (see
+- **@nuxtjs/i18n** 10.4.0 - five locales `en / fr / th / tlh / ar` (see
   [architecture/i18n.md](architecture/i18n.md)).
 - **@vite-pwa/nuxt** - service worker via `injectManifest` (custom SW). See
   [features/pwa.md](features/pwa.md) and [features/web-push.md](features/web-push.md).

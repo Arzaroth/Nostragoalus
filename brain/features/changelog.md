@@ -18,12 +18,12 @@ and sanitized with DOMPurify on the about page.
 The changelog renders in the active locale. Translations are parallel
 Keep-a-Changelog files, `i18n/changelogs/{fr,th,tlh}.md`, mirroring
 `CHANGELOG.md` bullet-for-bullet (identical version headers and dates;
-translated section titles and bullets). `useChangelog` imports all four with
+translated section titles and bullets). `useChangelog` imports all five with
 `?raw`, parses each, and `selectLocaleChangelog` overlays the active locale onto
 the English list per version - falling back to the English entry for any version
 a locale has not translated, so a card never goes blank. English stays canonical
 for the version list, ordering, and the unseen comparison (all locale-independent
-since headers match). The all-four-locales rule and the
+since headers match). The all-five-locales rule and the
 `mise run changelog check` parity guard are covered in
 [../architecture/i18n.md](../architecture/i18n.md).
 

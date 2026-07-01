@@ -59,7 +59,7 @@ documented approximation (see [../../TODO.md](../../TODO.md)).
   (`app/pages/[competition]/matches/[id].vue`), under "your pick", owner-only.
   While live it is provisional and refetches on the page's live score signal
   (`scoreTotal`), resolving to the full-time line at the whistle. Copy in
-  `pastPick.*` across all four locales.
+  `pastPick.*` across all five locales.
 
 ## Phase / future
 

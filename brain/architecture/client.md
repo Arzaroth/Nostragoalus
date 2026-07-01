@@ -8,7 +8,7 @@ composables + the query cache.
 
 - **Modules:** `@vueuse/nuxt`, `@primevue/nuxt-module`, `@unocss/nuxt`,
   `@nuxtjs/i18n`, `@vite-pwa/nuxt`.
-- **i18n:** four locales `en / fr / th / tlh`, auto-detect via the `ng_locale`
+- **i18n:** five locales `en / fr / th / tlh / ar`, auto-detect via the `ng_locale`
   cookie. See [i18n.md](i18n.md).
 - **PWA:** `registerType: 'prompt'` (user controls SW activation so assets never
   swap mid-prediction), `periodicSyncForUpdates: 3600`, precache globs exclude
@@ -82,7 +82,7 @@ Rough groups:
 ## Conventions and footguns
 
 - **Tooltips:** informational hints use the PrimeVue `v-tooltip` directive
-  (i18n'd in all four locales), never native `title=`. The only `title=`
+  (i18n'd in all five locales), never native `title=`. The only `title=`
   exception is revealing text cut off by `truncate`.
 - **Never wrap a `.client.vue` component in `<ClientOnly>`.** It is already
   client-only by filename; doubling up makes the `#fallback` stick in the

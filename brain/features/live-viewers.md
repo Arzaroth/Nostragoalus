@@ -8,7 +8,7 @@ hub](../architecture/realtime.md). Back to the catalog: [index.md](index.md).
 
 Under the scoreline, only while the match is in play (`LIVE`/`PAUSED`) and the
 count is above zero: a pulsing dot and "N watching now" (pluralized,
-[all four locales](../architecture/i18n.md)). Rendered by
+[all five locales](../architecture/i18n.md)). Rendered by
 `app/components/MatchViewers.vue` (presentational - the page owns the
 live/count gate).
 

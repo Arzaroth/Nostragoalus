@@ -50,4 +50,4 @@ See [decisions.md](../decisions.md).
 ## i18n
 
 `matches.outstanding.{label,jump}` (label is pluralized) and
-`predictions.outlandish.{title,body,confirm}` in all four locales.
+`predictions.outlandish.{title,body,confirm}` in all five locales.

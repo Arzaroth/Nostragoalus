@@ -45,7 +45,7 @@ bumps the badge, and refetches on reconnect. See
 - `NotificationBell.vue` renders the popover and deep-links per type.
 
 Emit helpers live in `server/utils/notifications/events.ts` (unit-tested
-directly). Strings are i18n'd in all four locales.
+directly). Strings are i18n'd in all five locales.
 
 ## Triggers
 
