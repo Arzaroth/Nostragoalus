@@ -3,6 +3,7 @@ import en from '../../../i18n/locales/en.json'
 import fr from '../../../i18n/locales/fr.json'
 import th from '../../../i18n/locales/th.json'
 import tlh from '../../../i18n/locales/tlh.json'
+import ar from '../../../i18n/locales/ar.json'
 
 // The push body is user-facing, so it follows the four-locale rule. The bell's
 // client-side itemText can't run server-side, so push has its own terse `push.*`
@@ -26,6 +27,7 @@ const MESSAGES: Record<string, PushMessages> = {
   fr: (fr as { push: PushMessages }).push,
   th: (th as { push: PushMessages }).push,
   tlh: (tlh as { push: PushMessages }).push,
+  ar: (ar as { push: PushMessages }).push,
 }
 
 function messagesFor(locale: string | null | undefined): PushMessages {

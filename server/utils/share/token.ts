@@ -9,7 +9,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
 export const SHARE_MODES = ['result', 'sealed', 'reveal'] as const
 export type ShareMode = (typeof SHARE_MODES)[number]
 
-export const SHARE_LOCALES = ['en', 'fr', 'th', 'tlh'] as const
+export const SHARE_LOCALES = ['en', 'fr', 'th', 'tlh', 'ar'] as const
 export type ShareLocale = (typeof SHARE_LOCALES)[number]
 
 export interface ShareTokenPayload {

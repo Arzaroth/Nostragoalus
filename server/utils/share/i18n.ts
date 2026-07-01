@@ -3,6 +3,7 @@ import en from '../../../i18n/locales/en.json'
 import fr from '../../../i18n/locales/fr.json'
 import th from '../../../i18n/locales/th.json'
 import tlh from '../../../i18n/locales/tlh.json'
+import ar from '../../../i18n/locales/ar.json'
 
 // Server-side translation for the share card, which is rendered by a crawler-
 // facing route with no Vue/i18n context. Reads the SAME locale JSON the app
@@ -13,6 +14,7 @@ const DICTS: Record<ShareLocale, Dict> = {
   fr: fr as Dict,
   th: th as Dict,
   tlh: tlh as Dict,
+  ar: ar as Dict,
 }
 
 function lookup(dict: Dict, key: string): string | undefined {

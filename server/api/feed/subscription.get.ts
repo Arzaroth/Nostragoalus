@@ -28,7 +28,7 @@ defineRouteMeta({
     summary: 'My calendar feed URL',
     description:
       "Mints the signed subscription URL (https + webcal) for the authenticated user's iCalendar feed of fixtures and pick deadlines. Deterministic per user + locale.",
-    parameters: [{ name: 'locale', in: 'query', required: false, schema: { type: 'string', enum: ['en', 'fr', 'th', 'tlh'] } }],
+    parameters: [{ name: 'locale', in: 'query', required: false, schema: { type: 'string', enum: ['en', 'fr', 'th', 'tlh', 'ar'] } }],
     responses: {
       '200': { description: 'The https and webcal subscription URLs.' },
       '401': { description: 'Not signed in.' },
