@@ -365,6 +365,13 @@
       "when": 1783014894858,
       "tag": "0051_tiresome_wrecker",
       "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1783022104399,
+      "tag": "0052_legal_nehzno",
+      "breakpoints": true
     }
   ]
 }

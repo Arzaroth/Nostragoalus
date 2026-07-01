@@ -848,9 +848,28 @@ export const leaderboardRank = pgTable(
   (t) => [primaryKey({ columns: [t.competitionId, t.userId] })],
 )
 
-export const roadmapStatusEnum = pgEnum('roadmap_status', ['PLANNED', 'IN_PROGRESS', 'SHIPPED'])
+// SUGGESTED is the community bucket (user-submitted, not yet triaged onto the
+// roadmap proper); admins promote it to PLANNED/IN_PROGRESS/SHIPPED.
+export const roadmapStatusEnum = pgEnum('roadmap_status', [
+  'PLANNED',
+  'IN_PROGRESS',
+  'SHIPPED',
+  'SUGGESTED',
+])
 
-// Admin-curated public roadmap entries (the /roadmap page).
+// Spam gate for user submissions. Admin-authored items default APPROVED;
+// user suggestions land APPROVED too (public-immediately) and admins flip to
+// REJECTED to hide. PENDING exists so the model can tighten to approve-first
+// later without another migration.
+export const roadmapModerationEnum = pgEnum('roadmap_moderation', [
+  'PENDING',
+  'APPROVED',
+  'REJECTED',
+])
+
+// Admin-curated public roadmap entries plus user-submitted suggestions (the
+// /roadmap page). One table, two views: SUGGESTED = community feed, the rest =
+// the roadmap proper. authorId is null for admin/system-authored items.
 export const roadmapItem = pgTable(
   'roadmap_item',
   {
@@ -860,13 +879,39 @@ export const roadmapItem = pgTable(
     status: roadmapStatusEnum('status').notNull().default('PLANNED'),
     // Manual ordering within a status column; lower comes first.
     position: integer('position').notNull().default(0),
+    authorId: text('author_id').references(() => user.id, { onDelete: 'set null' }),
+    moderationStatus: roadmapModerationEnum('moderation_status').notNull().default('APPROVED'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true })
       .notNull()
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
-  (t) => [index('roadmap_item_status_position_idx').on(t.status, t.position)],
+  (t) => [
+    index('roadmap_item_status_position_idx').on(t.status, t.position),
+    index('roadmap_item_author_idx').on(t.authorId),
+  ],
+)
+
+// One upvote per user per roadmap item; toggle to remove. Vote counts are
+// derived (count(*) grouped by item), never denormalized onto roadmap_item.
+export const roadmapVote = pgTable(
+  'roadmap_vote',
+  {
+    id: pk(),
+    roadmapItemId: text('roadmap_item_id')
+      .notNull()
+      .references(() => roadmapItem.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('roadmap_vote_item_user_uq').on(t.roadmapItemId, t.userId),
+    index('roadmap_vote_item_idx').on(t.roadmapItemId),
+    index('roadmap_vote_user_idx').on(t.userId),
+  ],
 )
 
 // Generic runtime key-value settings (admin-toggled flags that must change
