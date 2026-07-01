@@ -22,6 +22,13 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 - [ ] **Human review of the machine-translated Arabic**: `i18n/locales/ar.json`
       and `i18n/changelogs/ar.md` are a machine-translation full pass (MSA). A
       native reviewer should polish tone/terminology before it's treated as final.
+- [ ] **ar.md is not in the changelog gate**: `mise-tasks/changelog` `LOCALES` is
+      `['fr','th','tlh']`, so `check` never validates `i18n/changelogs/ar.md` and
+      `promote` never moves its `[Unreleased]` into a dated section on release. The
+      2.8.0 pass fixed ar.md's drift by hand (added the missing `[2.7.0]` section),
+      but it will drift again every release. Add `ar` to `LOCALES` once ar.md is
+      backfilled to mirror every historical version's fingerprint (blocked on the
+      machine-translation review above), or it will fail the gate for prior tags.
 
 ## Cross-league chat inbox (deferred from the feature-treatment review)
 
