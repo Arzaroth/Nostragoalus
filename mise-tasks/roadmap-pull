@@ -1,0 +1,53 @@
+#!/usr/bin/env -S node
+//MISE description="List community roadmap suggestions with their upvote counts"
+//USAGE flag "-a --all" help="Include hidden (rejected) suggestions"
+//USAGE flag "-n --limit <limit>" help="Max rows (default 50)"
+
+// The "pull" side of Roadmap v2: surface user-submitted suggestions (the
+// SUGGESTED column) ranked by demand so an admin can triage them onto the
+// roadmap. Talks to the dockerized Postgres via `docker compose exec db psql`
+// (same as roadmap-add / db-backup), so it needs no node_modules and works on a
+// prod host with only the built app. Values are passed as psql variables and
+// interpolated with :'var' (psql quotes/escapes them); execFileSync runs without
+// a shell, so there's no shell quoting either. The one bare interpolation (:lim)
+// is a JS-validated integer, never user text.
+import { execFileSync } from 'node:child_process'
+
+const includeHidden = (process.env.usage_all || '') === 'true'
+const limit = Number.parseInt(process.env.usage_limit || '50', 10)
+if (!Number.isInteger(limit) || limit < 1 || limit > 1000) {
+  console.error('usage: mise run roadmap-pull [--all] [--limit N] - limit must be 1-1000')
+  process.exit(1)
+}
+
+// Vote tally is derived (grouped count), author resolved to a friendly label.
+// The moderation filter is a psql-quoted string compare so no boolean is
+// concatenated into SQL. "user" is quoted (reserved word).
+const sql = `SELECT COALESCE(v.votes, 0) AS votes,
+       ri.moderation_status AS status,
+       ri.created_at::date AS since,
+       COALESCE(NULLIF(u.name, ''), u.email, '(deleted)') AS author,
+       ri.title
+FROM roadmap_item ri
+LEFT JOIN (
+  SELECT roadmap_item_id, COUNT(*) AS votes FROM roadmap_vote GROUP BY roadmap_item_id
+) v ON v.roadmap_item_id = ri.id
+LEFT JOIN "user" u ON u.id = ri.author_id
+WHERE ri.status = 'SUGGESTED'
+  AND (:'hidden' = 'true' OR ri.moderation_status <> 'REJECTED')
+ORDER BY votes DESC, ri.created_at ASC
+LIMIT :lim;`
+
+const out = execFileSync(
+  'docker',
+  [
+    'compose', 'exec', '-T', 'db',
+    'psql', '-U', 'nostragoalus', '-d', 'nostragoalus',
+    '-P', 'pager=off',
+    '-v', 'ON_ERROR_STOP=1',
+    '-v', `hidden=${includeHidden}`,
+    '-v', `lim=${limit}`,
+  ],
+  { input: sql, encoding: 'utf8' },
+)
+process.stdout.write(out)
