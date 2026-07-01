@@ -59,6 +59,13 @@ function onSelect(id: string) {
 function onRemove(i: number) {
   update({ cells: removeCell(state.value.cells, i) })
 }
+
+// Per-cell Tile|Stream choice is ephemeral UI state (not in the URL), keyed by
+// match id so it survives layout changes.
+const viewModes = reactive<Record<string, 'tile' | 'stream'>>({})
+function setViewMode(id: string, mode: 'tile' | 'stream') {
+  viewModes[id] = mode
+}
 </script>
 
 <template>
@@ -94,10 +101,12 @@ function onRemove(i: number) {
       :cells="cells"
       :layout="layout"
       :focused-id="focus"
+      :view-modes="viewModes"
       @add="openAdd"
       @replace="openReplace"
       @remove="onRemove"
       @focus="setFocus"
+      @update:view-mode="setViewMode"
     />
 
     <MultiviewPickerDialog v-model:visible="pickerOpen" :disabled-ids="cells" @select="onSelect" />

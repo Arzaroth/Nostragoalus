@@ -1,10 +1,17 @@
 <script setup lang="ts">
 import { useQueryClient } from '@tanstack/vue-query'
-import { capacityOf, gridDims, type MultiviewLayout } from '../../utils/multiview'
+import { capacityOf, gridDims, canEnableStream, type MultiviewLayout } from '../../utils/multiview'
 import type { MatchListItem } from '../../composables/useMatches'
 
-const props = defineProps<{ cells: string[]; layout: MultiviewLayout; focusedId: string | null }>()
-const emit = defineEmits<{ add: []; replace: [number]; remove: [number]; focus: [string] }>()
+const props = withDefaults(
+  defineProps<{ cells: string[]; layout: MultiviewLayout; focusedId: string | null; viewModes?: Record<string, 'tile' | 'stream'> }>(),
+  { viewModes: () => ({}) },
+)
+const emit = defineEmits<{ add: []; replace: [number]; remove: [number]; focus: [string]; 'update:viewMode': [string, 'tile' | 'stream'] }>()
+
+// Cells currently in stream mode, and whether another cell may switch to stream
+// under the concurrent-stream cap.
+const streamIds = computed(() => props.cells.filter((id) => props.viewModes[id] === 'stream'))
 
 const qc = useQueryClient()
 const { data: allMatches } = useMatches()
@@ -48,9 +55,12 @@ const slots = computed(() =>
         :match-id="slot.id"
         :match="slot.match"
         :focused="slot.id === focusedId"
+        :view-mode="viewModes[slot.id] ?? 'tile'"
+        :stream-allowed="canEnableStream(streamIds, slot.id)"
         @change="emit('replace', slot.index)"
         @remove="emit('remove', slot.index)"
         @focus="emit('focus', slot.id)"
+        @update:view-mode="(m) => emit('update:viewMode', slot.id!, m)"
       />
     </template>
   </div>
