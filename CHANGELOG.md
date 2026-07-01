@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+- **A brand-new install works before any fixtures are imported**: a freshly migrated database now gets a default scoring configuration on startup, so the champion and best-scorer pickers (and match finalisation) work straight away instead of erroring with "no active scoring config" until the first fixtures import created one.
+
 ## [2.8.0] - 2026-07-02
 
 ### Added
@@ -13,7 +16,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ### Fixed
 - **Chat no longer marks unread as read before you can read it**: opening or switching into a league whose messages this device can't decrypt yet (you haven't entered your recovery key, or the key hasn't reached you) no longer clears its unread badge. It stays unread and clears only once the messages actually become readable.
-- **A brand-new install works before any fixtures are imported**: a freshly migrated database now gets a default scoring configuration on startup, so the champion and best-scorer pickers (and match finalisation) work straight away instead of erroring with "no active scoring config" until the first fixtures import created one.
 
 ## [2.7.0] - 2026-07-01
 

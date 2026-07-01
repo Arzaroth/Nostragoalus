@@ -5,6 +5,9 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Corrigé
+- **Une installation toute neuve fonctionne avant tout import de matchs** : une base de données fraîchement migrée reçoit désormais une configuration de score par défaut au démarrage, si bien que les sélecteurs de champion et de meilleur buteur (et la finalisation des matchs) fonctionnent immédiatement, au lieu d'échouer avec « aucune configuration de score active » jusqu'à ce que le premier import de matchs en crée une.
+
 ## [2.8.0] - 2026-07-02
 
 ### Ajouté
@@ -13,7 +16,6 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ### Corrigé
 - **Le chat ne marque plus comme lu ce que vous ne pouvez pas encore lire** : ouvrir une ligue ou y basculer alors que cet appareil ne peut pas encore déchiffrer ses messages (vous n'avez pas saisi votre code de récupération, ou la clé ne vous est pas parvenue) n'efface plus son badge de non-lus. Elle reste non lue et ne s'efface qu'une fois les messages réellement lisibles.
-- **Une installation toute neuve fonctionne avant tout import de matchs** : une base de données fraîchement migrée reçoit désormais une configuration de score par défaut au démarrage, si bien que les sélecteurs de champion et de meilleur buteur (et la finalisation des matchs) fonctionnent immédiatement, au lieu d'échouer avec « aucune configuration de score active » jusqu'à ce que le premier import de matchs en crée une.
 
 ## [2.7.0] - 2026-07-01
 

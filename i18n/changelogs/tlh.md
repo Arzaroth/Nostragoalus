@@ -5,6 +5,9 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### tI'pu'
+- **may'mey chelpa' vumlaH chu' chenmoH**: DaH taghDI' De'wI' chu' choqmeH chut motlh Suq, vaj charghwI' vongwI' wIvwI'mey (may' rInmoH je) SIbI' vum; may'mey chelmeH wa'DIch chut chenpa' "choqmeH chut vumtaH tu'lu'be'" ghItlhbe'.
+
 ## [2.8.0] - 2026-07-02
 
 ### chelpu'
@@ -13,7 +16,6 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ### tI'pu'
 - **laDlaHpa' ghom, laDpu' 'oSbe'**: QIn ngaQHa'moHlaHbe'bogh ghom (ngaQHa'moHwI' chovnatlh chelbe'lu', qoj SaHbe') poSlu'chugh qoj 'elchugh, laDbe' Sup teqbe'. laDbe' ratlh; QIn laDlaHDI' neH teqlu'.
-- **may'mey chelpa' vumlaH chu' chenmoH**: DaH taghDI' De'wI' chu' choqmeH chut motlh Suq, vaj charghwI' vongwI' wIvwI'mey (may' rInmoH je) SIbI' vum; may'mey chelmeH wa'DIch chut chenpa' "choqmeH chut vumtaH tu'lu'be'" ghItlhbe'.
 
 ## [2.7.0] - 2026-07-01
 
