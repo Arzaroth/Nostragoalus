@@ -206,7 +206,7 @@ async function openRoom(r: ChatUnreadRoomDTO) {
           </button>
           <div
             v-if="leaguesOpen"
-            class="absolute left-0 top-7 z-10 w-56 rounded-lg border shadow-lg py-1 text-sm"
+            class="absolute start-0 top-7 z-10 w-56 rounded-lg border shadow-lg py-1 text-sm"
             style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
           >
             <p class="px-3 py-1 text-xs font-semibold uppercase tracking-wider" style="color: var(--p-text-muted-color)">{{ t('chat.league.title') }}</p>
@@ -214,7 +214,7 @@ async function openRoom(r: ChatUnreadRoomDTO) {
               v-for="l in myLeagues ?? []"
               :key="l.id"
               type="button"
-              class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:opacity-100 opacity-90"
+              class="w-full flex items-center gap-2 px-3 py-1.5 text-start hover:opacity-100 opacity-90"
               :class="{ 'font-bold': l.id === selectedLeagueId }"
               @click="switchLeague(l.id)"
             >
