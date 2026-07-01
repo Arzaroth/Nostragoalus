@@ -85,6 +85,7 @@ onMounted(() => {
     </div>
     <PredictionList v-if="upcoming.length" :predictions="upcoming" />
     <div v-if="!data.predictions.length" class="opacity-60">{{ t('predictions.none') }}</div>
+    <TrophyCabinet v-if="!global" :user-id="data.user.id" />
   </div>
   <!-- Unknown user or a private profile the viewer doesn't share a league with. -->
   <div v-else-if="error" class="opacity-60">{{ t('err.notFound') }}</div>
