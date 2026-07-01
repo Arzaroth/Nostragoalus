@@ -815,7 +815,7 @@ watch(
           </button>
           <div
             v-if="menuOpen"
-            class="absolute right-0 top-7 z-30 w-56 rounded-lg border shadow-lg py-1 text-sm"
+            class="absolute end-0 top-7 z-30 w-56 rounded-lg border shadow-lg py-1 text-sm"
             style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
           >
             <button type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-start opacity-90 hover:opacity-100" @click="showVerify = !showVerify; menuOpen = false">
@@ -876,7 +876,7 @@ watch(
         <div v-if="searchOpen" class="flex flex-col gap-1 mb-2">
           <div class="flex items-center gap-2">
             <span class="relative flex-1">
-              <i class="pi pi-search absolute left-2 top-1/2 -translate-y-1/2 text-xs" style="color: var(--p-text-muted-color)" />
+              <i class="pi pi-search absolute start-2 top-1/2 -translate-y-1/2 text-xs" style="color: var(--p-text-muted-color)" />
               <InputText ref="searchEl" v-model="searchQuery" :placeholder="t('chat.search.placeholder')" class="w-full !ps-7" size="small" />
             </span>
             <small v-if="searchQuery.trim()" class="tabular-nums whitespace-nowrap" style="color: var(--p-text-muted-color)">{{ displayMessages.length === 1 ? t('chat.search.one') : t('chat.search.results', { n: displayMessages.length }) }}</small>
@@ -947,7 +947,7 @@ watch(
                   <button type="button" v-tooltip.bottom="t('chat.react.add')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.react.add')" @click="pickerFor = pickerFor === m.id ? null : m.id"><i class="pi pi-face-smile text-xs" /></button>
                   <div
                     v-if="pickerFor === m.id"
-                    class="absolute top-6 right-0 z-20 flex items-center gap-1 p-1 rounded-full border shadow-lg"
+                    class="absolute top-6 end-0 z-20 flex items-center gap-1 p-1 rounded-full border shadow-lg"
                     style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
                   >
                     <button
@@ -1155,7 +1155,7 @@ watch(
             <!-- @mention autocomplete, anchored above the composer. -->
             <div
               v-if="mentionQuery !== null && mentionCandidates.length"
-              class="absolute bottom-full left-0 mb-2 z-30 w-64 max-w-full rounded-lg border shadow-lg py-1 overflow-hidden"
+              class="absolute bottom-full start-0 mb-2 z-30 w-64 max-w-full rounded-lg border shadow-lg py-1 overflow-hidden"
               style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
             >
               <button
@@ -1175,7 +1175,7 @@ watch(
             <Button type="button" icon="pi pi-image" severity="secondary" text :disabled="sending || pending.length >= MAX_IMAGES" :aria-label="t('chat.image.attach')" @click="fileInput?.click()" />
             <div class="relative">
               <Button type="button" data-emoji-toggle icon="pi pi-face-smile" severity="secondary" text :aria-label="t('chat.emoji.button')" @click="emojiOpen = !emojiOpen" />
-              <div v-if="emojiOpen" class="absolute bottom-full left-0 mb-2 z-30">
+              <div v-if="emojiOpen" class="absolute bottom-full start-0 mb-2 z-30">
                 <EmojiPicker @select="insertEmoji" @close="emojiOpen = false" />
               </div>
             </div>
