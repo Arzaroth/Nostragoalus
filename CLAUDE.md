@@ -18,6 +18,11 @@
   steps separately. The 98% gate covers `server/utils`, `shared`, `app/utils`
   (not `server/api` routes or pages) - that's why logic lives in services: keep
   routes/pages thin enough to not need direct coverage.
+- Every user-facing feature ships with an end-to-end test alongside its unit +
+  component tests: a Playwright spec in `tests/e2e/*.e2e.ts` covering the feature's
+  main path through the real UI, green via `mise run e2e` (the isolated, disposable
+  stack - its own DB, never the dev DB). E2E is separate from the coverage gate and
+  the SSR build; feature-treatment does not pass without the feature's e2e spec.
 - A finished feature branch goes through feature-treatment (rebase -> max-effort
   parallel review -> fix -> gate -> merge -> release -> remove the worktree).
   Nothing merges without that adversarial review and a green gate.
@@ -50,7 +55,12 @@
   migrations) + `tests/factories.ts`; components as `*.nuxt.test.ts` with
   `mountSuspended`. Unmount what you mount and clear the query cache between
   tests - leaked observers and the 60s staleTime have both caused
-  order-dependent flakes.
+  order-dependent flakes. E2E: Playwright specs in `tests/e2e/*.e2e.ts` drive the
+  real app over the isolated stack (`mise run e2e`; seed via
+  `tests/e2e/helpers/db.ts`, sign in via `helpers/auth.ts`), not part of the
+  coverage gate. An SSR-rendered control can be clicked before hydration wires its
+  handler, so gate the first interaction on interactivity (retry with Playwright
+  `expect(...).toPass()`), not just visibility.
 - Local stack: `mise run dev` (HMR) / `mise run preview` (prod-target build,
   what you use to demo a branch). Worktree previews need `.env` copied from
   the main checkout or auth 500s on the default secret.
