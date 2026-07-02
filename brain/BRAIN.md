@@ -58,7 +58,7 @@ use the indexes.
 | [stats.md](features/stats.md) | Player rankings tab: top scorers + top assists. |
 | [leagues.md](features/leagues.md) | Competition-scoped groups, roles, visibility, SSO auto-join. |
 | [sso-provisioning.md](features/sso-provisioning.md) | SSO onboarding lifecycle, connection test, OIDC test-sign-in claim preview, DNS domain verify + bypass, SCIM provisioning. |
-| [crowd-bot.md](features/crowd-bot.md) | The consensus "ghost" participant (MODE/MEAN). |
+| [crowd-bot.md](features/crowd-bot.md) | The "ghost" bot personas: consensus 🤖, evil twin 😈, equalizer ⚖️. |
 | [odds.md](features/odds.md) | 1X2 decimal odds (Sofascore + BetExplorer). |
 | [reactions.md](features/reactions.md) | Match + chat emoji reactions. |
 | [live-viewers.md](features/live-viewers.md) | Real-time "N watching now" per-match viewer count. |
@@ -87,7 +87,7 @@ use the indexes.
 | What error maps to which HTTP status? | [architecture/server.md](architecture/server.md) |
 | How is a prediction scored? When does it lock? | [features/predictions-and-scoring.md](features/predictions-and-scoring.md) |
 | How does "an earlier pick of yours would have scored" work? | [features/past-pick-counterfactual.md](features/past-pick-counterfactual.md) |
-| How does the crowd/bot get its scoreline? | [features/crowd-bot.md](features/crowd-bot.md) |
+| How do the bots (consensus/evil-twin/equalizer) get their scoreline? | [features/crowd-bot.md](features/crowd-bot.md) |
 | Why did my new column not appear in dev? | [architecture/database.md](architecture/database.md) |
 | How do I add a user-facing string? | [architecture/i18n.md](architecture/i18n.md) |
 | How does live update reach the client? | [architecture/realtime.md](architecture/realtime.md) |
