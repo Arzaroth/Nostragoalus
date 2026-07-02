@@ -66,3 +66,35 @@ test('suggest -> under review -> upvote -> admin approve clears the flag', async
   await expect(page.getByText(title)).toBeVisible()
   await expect(page.getByText('Under review')).toHaveCount(0)
 })
+
+test('the public roadmap is a kanban board and status moves land in the right column', async ({ page }) => {
+  // Seed a planned item through the admin API, then move it with the reorder
+  // endpoint (the kanban drag's backend) and confirm the public board reflects it.
+  const admin = await request.newContext({ baseURL: APP })
+  const signin = await admin.post('/api/auth/sign-in/email', {
+    headers: { Origin: APP },
+    data: { email: ADMIN.email, password: ADMIN.password },
+  })
+  expect(signin.ok()).toBeTruthy()
+  const title = `E2E board item ${Date.now().toString(36)}`
+  const created = (await (await admin.post('/api/admin/roadmap', { data: { title, status: 'PLANNED' } })).json()) as {
+    item: { id: string }
+  }
+  const id = created.item.id
+
+  await page.goto('/roadmap')
+  await page.waitForLoadState('networkidle')
+  // The four board columns render, and the item sits in Planned.
+  await expect(page.locator('[data-status="SUGGESTED"]')).toBeVisible()
+  await expect(page.locator('[data-status="SHIPPED"]')).toBeVisible()
+  await expect(page.locator('[data-status="PLANNED"]')).toContainText(title)
+
+  const put = await admin.put('/api/admin/roadmap/reorder', { data: { status: 'IN_PROGRESS', ids: [id] } })
+  expect(put.ok()).toBeTruthy()
+  await admin.dispose()
+
+  await page.reload()
+  await page.waitForLoadState('networkidle')
+  await expect(page.locator('[data-status="IN_PROGRESS"]')).toContainText(title)
+  await expect(page.locator('[data-status="PLANNED"]')).not.toContainText(title)
+})

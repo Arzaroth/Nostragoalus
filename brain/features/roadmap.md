@@ -9,8 +9,12 @@ user suggestions share one table (`roadmap_item`) and render as two views.
 - A `roadmap_item` row has a `status` (`roadmap_status` enum): `PLANNED`,
   `IN_PROGRESS`, `SHIPPED` are the roadmap proper; `SUGGESTED` is the community
   bucket (user-submitted, not yet triaged onto the roadmap).
-- `position` is per-status manual ordering (each column restarts at 0); the
-  admin up/down reorder swaps neighbours atomically.
+- `position` is per-status ordering (each column restarts at 0). The admin board
+  sets it by drag-drop: `reorderColumn(status, ids)` rewrites the whole target
+  column's order (and each card's status, for one dragged in from another column)
+  in a single transaction via `PUT /api/admin/roadmap/reorder`. The older
+  neighbour-swap `reorderRoadmapItem` / `POST .../:id/move` is kept as an API but
+  the UI no longer uses it.
 - `authorId` is the submitter (null for admin/system-authored items).
 - `moderationStatus` (`roadmap_moderation` enum), the hybrid-moderation state:
   `PENDING` (a fresh user suggestion - public and upvotable but "under review",
@@ -23,18 +27,25 @@ user suggestions share one table (`roadmap_item`) and render as two views.
 
 ## Two views, one table
 
-- **Public roadmap** (`/roadmap`, `app/pages/roadmap.vue`): the three roadmap
-  status sections plus a "Community suggestions" section ranked by vote count.
-  `GET /api/roadmap` returns every non-`REJECTED` item with its `voteCount`, a
-  per-viewer `viewerHasVoted`, and `underReview` (true while `PENDING`); the page
-  shows an "under review" tag on those. Every item carries an upvote control.
-- **Admin triage** (`AdminRoadmapSection.vue` in `/admin`): `GET /api/admin/roadmap`
-  (`includeHidden`) returns everything including hidden items, with author and
-  vote counts, on its own `['admin-roadmap']` query key. Admins reorder, edit,
-  approve a pending suggestion, set status (promoting a suggestion onto the
-  roadmap auto-approves it, un-hiding even a previously-rejected one, since a
-  promoted item that stayed `REJECTED` would sit on the roadmap yet vanish from
-  the public list), hide/restore (`moderationStatus`), and delete.
+Both views render the same four-column kanban board, ordered as a pipeline
+(`ROADMAP_COLUMNS` in `useRoadmap.ts`): Suggested -> Planned -> In progress ->
+Shipped. It scrolls horizontally on narrow screens.
+
+- **Public board** (`/roadmap`, `app/pages/roadmap.vue`): read-only. The
+  community (`SUGGESTED`) column is ranked by vote count and carries the suggest
+  form; the rest keep admin position order. `GET /api/roadmap` returns every
+  non-`REJECTED` item with its `voteCount`, a per-viewer `viewerHasVoted`, and
+  `underReview` (true while `PENDING`); pending cards show an "under review" tag.
+  Every card carries an upvote control.
+- **Admin board** (`AdminRoadmapSection.vue` in `/admin`): `GET /api/admin/roadmap`
+  (`includeHidden`) feeds it hidden items, author and vote counts on its own
+  `['admin-roadmap']` query key. Native HTML5 drag moves a card between columns
+  (status change; promoting a card onto the roadmap auto-approves it, un-hiding
+  even a previously-rejected one, since a promoted item that stayed `REJECTED`
+  would sit on the roadmap yet vanish from the public list) or reorders it within
+  one, persisted via the reorder endpoint with an optimistic cache patch. Cards
+  also carry edit, approve/hide/restore (`moderationStatus`), delete, and a
+  keyboard-accessible status Select (the drag path's a11y fallback).
 
 ## Public write actions
 
@@ -63,7 +74,7 @@ user suggestions share one table (`roadmap_item`) and render as two views.
 
 Roadmap item title/description are raw DB strings, English-only (the page chrome
 is i18n'd across the five locales, the body is not). Localizing DB content is a
-separate ROADMAP backlog item; a kanban drag-drop admin UX is another.
+separate ROADMAP backlog item.
 
 ## Sources
 

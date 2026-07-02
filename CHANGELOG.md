@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Changed
+- **Roadmap is now a board**: the roadmap reads as side-by-side columns - community suggestions, planned, in progress and shipped - instead of a stacked list, so you can take in the whole pipeline at a glance (swipe sideways on a narrow screen).
+
 ## [2.12.0] - 2026-07-02
 
 ### Added

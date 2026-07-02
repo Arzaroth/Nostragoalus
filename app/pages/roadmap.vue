@@ -63,6 +63,7 @@ useHead({ title: t('roadmap.title') })
       <section
         v-for="col in ROADMAP_COLUMNS"
         :key="col.status"
+        :data-status="col.status"
         class="ng-card shrink-0 w-72 md:w-auto md:flex-1 rounded-2xl border overflow-hidden self-stretch"
         style="background: var(--p-content-background)"
       >
