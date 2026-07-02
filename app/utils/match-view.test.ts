@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildTimeline, h2hSummaryOf, minuteVal, HALFTIME_VAL, ET_HALFTIME_VAL, pbpIcon, isGoalKind, pbpTextSpec, pbpFlagCode } from './match-view'
+import { buildTimeline, h2hSummaryOf, minuteVal, HALFTIME_VAL, ET_HALFTIME_VAL, liveClockSpec, isGoalKind, pbpTextSpec, pbpFlagCode } from './match-view'
 import { EXTRA_TIME_BREAK_MINUTE } from '#shared/types/match'
 
 describe('minuteVal', () => {
@@ -133,12 +133,15 @@ describe('match-view branch fill', () => {
   })
 })
 
-describe('pbpIcon', () => {
-  it('maps known kinds to an emoji and unknown kinds to empty', () => {
-    expect(pbpIcon('goal')).toBe('⚽')
-    expect(pbpIcon('var')).toBe('📺')
-    expect(pbpIcon('foul')).toBe('') // no whistle emoji - view draws the icon
-    expect(pbpIcon('nonsense')).toBe('')
+describe('liveClockSpec', () => {
+  it('shows half-time when paused or on a half-time break', () => {
+    expect(liveClockSpec('PAUSED', { minute: "47'" })).toEqual({ key: 'match.halfTime' })
+    expect(liveClockSpec('LIVE', { halfTime: true, minute: "45'" })).toEqual({ key: 'match.halfTime' })
+  })
+  it('shows the running minute, falling back to a bare LIVE when absent', () => {
+    expect(liveClockSpec('LIVE', { minute: "47'" })).toEqual({ text: "47'" })
+    expect(liveClockSpec('LIVE', { minute: '' })).toEqual({ key: 'match.live' })
+    expect(liveClockSpec('LIVE', null)).toEqual({ key: 'match.live' })
   })
 })
 

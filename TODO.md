@@ -1746,6 +1746,15 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
 - [ ] Test debt: no `*.nuxt.test.ts` for `MultiviewSlotEmpty`, `CellStream`,
       `CellViewers`, or the page shell itself (URL round-trip is covered at the
       util level in `multiview.test.ts`; the page wiring is not).
+- [ ] Live-feed rows keyed by array index: `PlayByPlay.vue` timeline rows and
+      `CellTile.vue` goal chips use `:key="i"`. Content is fully derived from the
+      item so it stays correct, but a late-arriving/reordered event makes Vue patch
+      rows in place rather than move them (brief mis-attached goal emphasis). Key by
+      a stable event identity (kind+minute+side+player) if it ever matters visually.
+- [ ] `minuteLabel` (the FIFA half-time/extra-time break-minute rule) is still
+      duplicated between `PlayByPlay.vue` and the match detail page. `liveClockSpec`
+      was pulled into `match-view.ts` during the treatment; give `minuteLabel` the
+      same spec treatment so the break-minute rule has one home.
 
 ## Achievements / trophy cabinet (deferred from the feature pass)
 

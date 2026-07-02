@@ -5,6 +5,9 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Ajouté
+- **Multi-vue** : suivez plusieurs matchs à la fois dans une grille configurable (1, 2x1, 2x2 ou 3x3). Chaque cellule affiche une tuile en direct - score, horloge, buteurs et fil du match - ou bascule vers le flux vidéo du match lorsqu'il y en a un. Les matchs et la disposition que vous choisissez vivent dans l'URL, donc une multi-vue est partageable et survit à un rechargement. La fenêtre de chat suit la cellule que vous mettez au premier plan, et cliquer sur un match dans la boîte de réception du chat saute vers sa cellule au lieu de quitter la grille.
+
 ## [2.10.0] - 2026-07-02
 
 ### Ajouté

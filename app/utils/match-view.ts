@@ -153,11 +153,20 @@ const PERIOD_KEYS: Record<string, string> = {
   'full-time': 'fullTime',
 }
 
-export function pbpIcon(kind: string): string {
-  return TIMELINE_ICONS[kind] ?? ''
-}
 export function isGoalKind(kind: string): boolean {
   return GOAL_KINDS.has(kind)
+}
+
+// The live-clock rule shared by the match page and the multiview tile: half-time,
+// the provider's running minute (e.g. "47'"), or a bare LIVE when the minute isn't
+// exposed. Returns an i18n key or a literal minute so each caller resolves via its
+// own `t`. Callers decide when a match is live enough to show it.
+export function liveClockSpec(
+  status: string,
+  detail: { halfTime?: boolean | null; minute?: string | null } | null | undefined,
+): { key: string } | { text: string } {
+  if (status === 'PAUSED' || detail?.halfTime) return { key: 'match.halfTime' }
+  return detail?.minute ? { text: detail.minute } : { key: 'match.live' }
 }
 
 export interface PbpEventInput {

@@ -48,7 +48,7 @@ const slots = computed(() =>
       minHeight: 'calc(100dvh - var(--ng-header-h) - 9rem)',
     }"
   >
-    <template v-for="slot in slots" :key="slot.index">
+    <template v-for="slot in slots" :key="slot.id ?? 'empty-' + slot.index">
       <MultiviewSlotEmpty v-if="!slot.id" @add="emit('add')" />
       <MultiviewCell
         v-else

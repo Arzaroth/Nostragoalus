@@ -75,9 +75,13 @@ watch([cells, focus], () => {
   mvFocus.setPresent(cells.value)
   mvFocus.setFocus(focus.value)
 }, { immediate: true })
+// An inbox click on a gridded match writes focus to the URL (the source of truth),
+// so the grid highlight and the dock thread move together instead of desyncing.
+mvFocus.onFocusRequest((id) => setFocus(id))
 onBeforeUnmount(() => {
   mvFocus.setPresent([])
   mvFocus.setFocus(null)
+  mvFocus.onFocusRequest(null)
 })
 </script>
 

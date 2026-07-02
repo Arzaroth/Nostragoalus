@@ -7,10 +7,18 @@ import { isCellPresent } from '../utils/multiview'
 // in the layout and the page mounts/unmounts independently.
 export function useMultiviewFocus() {
   const app = useNuxtApp() as {
-    _ngMultiviewFocus?: { focusedMatchId: Ref<string | null>; presentCells: Ref<string[]> }
+    _ngMultiviewFocus?: {
+      focusedMatchId: Ref<string | null>
+      presentCells: Ref<string[]>
+      requestHandler: Ref<((id: string) => void) | null>
+    }
   }
-  app._ngMultiviewFocus ??= { focusedMatchId: ref<string | null>(null), presentCells: ref<string[]>([]) }
-  const { focusedMatchId, presentCells } = app._ngMultiviewFocus
+  app._ngMultiviewFocus ??= {
+    focusedMatchId: ref<string | null>(null),
+    presentCells: ref<string[]>([]),
+    requestHandler: ref<((id: string) => void) | null>(null),
+  }
+  const { focusedMatchId, presentCells, requestHandler } = app._ngMultiviewFocus
 
   function setFocus(id: string | null): void {
     focusedMatchId.value = id
@@ -18,14 +26,23 @@ export function useMultiviewFocus() {
   function setPresent(ids: string[]): void {
     presentCells.value = ids
   }
+  // The multiview page registers how a focus request reaches the URL (its single
+  // source of truth); clears it on unmount. Without a handler tryFocus still
+  // updates the published focus so a dock-only consumer keeps working.
+  function onFocusRequest(handler: ((id: string) => void) | null): void {
+    requestHandler.value = handler
+  }
   // Focus a match iff it is currently a grid cell; returns whether it took, so the
   // caller can fall back to navigation when the grid is absent or lacks the match.
+  // Routes through the page handler so the URL (and thus the grid highlight) moves,
+  // not just the dock's thread.
   function tryFocus(id: string): boolean {
     if (isCellPresent(presentCells.value, id)) {
       focusedMatchId.value = id
+      requestHandler.value?.(id)
       return true
     }
     return false
   }
-  return { focusedMatchId, presentCells, setFocus, setPresent, tryFocus }
+  return { focusedMatchId, presentCells, setFocus, setPresent, onFocusRequest, tryFocus }
 }
