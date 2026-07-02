@@ -49,6 +49,7 @@ interface PickRow {
 
 function toPickDto(r: PickRow): WrappedPickDto {
   const crowdRaw = r.crowdShare == null ? null : Number(r.crowdShare)
+  // Only scored rows are featured on slides, so totalPoints is set.
   return {
     matchId: r.matchId,
     homeTeam: r.homeTeam,
@@ -62,7 +63,7 @@ function toPickDto(r: PickRow): WrappedPickDto {
     actualHome: r.actualHome,
     actualAway: r.actualAway,
     tier: r.tier,
-    totalPoints: r.totalPoints ?? 0,
+    totalPoints: r.totalPoints!,
     bonusPoints: r.bonusPoints ?? 0,
     isJoker: r.isJoker,
     crowdSharePct: crowdRaw != null && Number.isFinite(crowdRaw) ? Math.round(crowdRaw * 100) : null,
@@ -72,10 +73,11 @@ function toPickDto(r: PickRow): WrappedPickDto {
 // Highest points first; ties go to the earlier kickoff, then matchId, so the
 // featured pick is stable across calls.
 function byPointsThenKickoff(a: PickRow, b: PickRow): number {
+  // Callers only sort scored rows, so totalPoints is set.
   return (
-    (b.totalPoints ?? 0) - (a.totalPoints ?? 0) ||
+    b.totalPoints! - a.totalPoints! ||
     a.kickoffTime.getTime() - b.kickoffTime.getTime() ||
-    (a.matchId < b.matchId ? -1 : a.matchId > b.matchId ? 1 : 0)
+    a.matchId.localeCompare(b.matchId)
   )
 }
 
@@ -194,7 +196,8 @@ export async function getWrapped(
     .select({ n: sql<number>`count(*)::int` })
     .from(match)
     .where(and(eq(match.competitionId, opts.competitionId), eq(match.scoringState, 'SCORED')))
-  const scoredMatches = scoredMatchesRow?.n ?? 0
+  // A count(*) select always returns one row.
+  const scoredMatches = scoredMatchesRow!.n
 
   // Final standings: rank against the visible board population, self always
   // included; a hidden/private user occupies no public position (mirrors
@@ -204,11 +207,13 @@ export async function getWrapped(
     limit: 100_000,
     alwaysIncludeUserId: opts.userId,
   })
-  const boardRow = board.find((r) => r.userId === opts.userId)
+  // alwaysIncludeUserId guarantees the caller's row is on the board.
+  const boardRow = board.find((r) => r.userId === opts.userId)!
   const isExcluded = profile.hidden || profile.priv
-  const rank = isExcluded ? null : (boardRow?.rank ?? null)
+  const rank = isExcluded ? null : boardRow.rank
   const players = board.length - (isExcluded ? 1 : 0)
-  const topPercent = rank !== null && players > 0 ? Math.max(1, Math.ceil((rank / players) * 100)) : null
+  // A non-null rank implies the caller counts toward players, so players >= 1.
+  const topPercent = rank !== null ? Math.max(1, Math.ceil((rank / players) * 100)) : null
 
   // Field exact-share for the matches this user missed: how gettable was it.
   const missedIds = new Set(scored.filter((r) => r.tier === 'MISS').map((r) => r.matchId))
@@ -224,17 +229,17 @@ export async function getWrapped(
       .innerJoin(match, and(eq(match.id, prediction.matchId), eq(match.competitionId, opts.competitionId)))
       .where(isNotNull(prediction.totalPoints))
       .groupBy(prediction.matchId)
-    const shareByMatch = new Map(
-      fieldRows.map((r) => [r.matchId, r.total > 0 ? Math.round((r.exact / r.total) * 100) : 0]),
-    )
+    // A grouped row always has total >= 1, and the user's own scored MISS is
+    // part of the field, so the map lookup can't miss.
+    const shareByMatch = new Map(fieldRows.map((r) => [r.matchId, Math.round((r.exact / r.total) * 100)]))
     const misses = scored
       .filter((r) => r.tier === 'MISS')
-      .map((r) => ({ row: r, fieldExactPct: shareByMatch.get(r.matchId) ?? 0 }))
+      .map((r) => ({ row: r, fieldExactPct: shareByMatch.get(r.matchId)! }))
       .sort(
         (a, b) =>
           b.fieldExactPct - a.fieldExactPct ||
           a.row.kickoffTime.getTime() - b.row.kickoffTime.getTime() ||
-          (a.row.matchId < b.row.matchId ? -1 : 1),
+          a.row.matchId.localeCompare(b.row.matchId),
       )
     if (misses.length > 0 && misses[0].fieldExactPct > 0) {
       biggestMiss = { ...toPickDto(misses[0].row), fieldExactPct: misses[0].fieldExactPct }
@@ -250,7 +255,7 @@ export async function getWrapped(
     (a, b) =>
       (b.bonusPoints ?? 0) - (a.bonusPoints ?? 0) ||
       a.kickoffTime.getTime() - b.kickoffTime.getTime() ||
-      (a.matchId < b.matchId ? -1 : 1),
+      a.matchId.localeCompare(b.matchId),
   )[0]
 
   const bestPick = [...scored].sort(byPointsThenKickoff)[0]
@@ -345,7 +350,9 @@ export async function getWrapped(
     journeyRows.map((r) => ({
       userId: r.userId,
       sortOrder: r.sortOrder,
-      points: r.points ?? 0,
+      // isNotNull(totalPoints) makes points non-null; tier can still be null on
+      // a legacy/partial rescore row - fold it into MISS.
+      points: r.points!,
       tier: (r.tier as string) ?? 'MISS',
     })),
     rounds,
@@ -358,10 +365,10 @@ export async function getWrapped(
     displayName: profile.name,
     image: profile.image,
     totals: {
-      totalPoints: boardRow?.totalPoints ?? 0,
-      predictionPoints: boardRow?.predictionPoints ?? 0,
-      championPoints: boardRow?.championPoints ?? 0,
-      bestScorerPoints: boardRow?.bestScorerPoints ?? 0,
+      totalPoints: boardRow.totalPoints,
+      predictionPoints: boardRow.predictionPoints,
+      championPoints: boardRow.championPoints,
+      bestScorerPoints: boardRow.bestScorerPoints,
       rank,
       players,
       topPercent,
@@ -373,7 +380,8 @@ export async function getWrapped(
       miss: tierCount('MISS'),
       predictions: pickRows.length,
       scoredMatches,
-      completionPct: scoredMatches > 0 ? Math.round((scored.length / scoredMatches) * 100) : 0,
+      // The decided-final gate guarantees at least one scored match.
+      completionPct: Math.round((scored.length / scoredMatches) * 100),
     },
     streaks: {
       exactStreak: achievementStats?.exactStreak ?? 0,
@@ -384,11 +392,11 @@ export async function getWrapped(
     biggestMiss,
     jokers: {
       played: jokerRows.length,
-      points: jokerScored.reduce((s, r) => s + (r.totalPoints ?? 0), 0),
+      points: jokerScored.reduce((s, r) => s + r.totalPoints!, 0),
       best: bestJoker ? toPickDto(bestJoker) : null,
     },
     crowd: {
-      bonusPoints: crowdRows.reduce((s, r) => s + (r.bonusPoints ?? 0), 0),
+      bonusPoints: crowdRows.reduce((s, r) => s + r.bonusPoints!, 0),
       biggestBonus: biggestBonus ? toPickDto(biggestBonus) : null,
       loneWolf: achievementStats?.loneWolf ?? 0,
     },
@@ -401,9 +409,9 @@ export async function getWrapped(
         : null,
     },
     chat: {
-      messages: msgRow?.n ?? 0,
+      messages: msgRow!.n,
       reactionsGiven: givenRows.reduce((s, r) => s + r.n, 0),
-      reactionsReceived: receivedRow?.n ?? 0,
+      reactionsReceived: receivedRow!.n,
       topEmoji: (givenRows[0]?.emoji as ReactionEmoji | undefined) ?? null,
     },
     haul: {
