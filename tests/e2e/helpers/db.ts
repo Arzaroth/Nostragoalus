@@ -74,6 +74,28 @@ export async function seedCompetitionWithMatch(): Promise<SeededFixture> {
   return { competitionId: rows[0].competition_id, matchId: rows[0].match_id, slug: E2E_SLUG, home, away }
 }
 
+// Seed a crowd of synthetic users each predicting the match, so the bots have a
+// consensus to derive from (MODE needs >= 5 distinct predictors). Emails share
+// the `bot-crowd-` prefix that cleanup() sweeps. Predictions are inserted
+// unlocked/unscored - finalize (or the future kickoff) settles them.
+export async function seedCrowdPredictions(matchId: string, picks: [number, number][]): Promise<void> {
+  const { rows } = await db().query<{ round_id: string }>(`select round_id from match where id = $1`, [matchId])
+  const roundId = rows[0].round_id
+  for (let i = 0; i < picks.length; i += 1) {
+    const id = `bot-crowd-${i}`
+    await db().query(
+      `insert into "user" (id, name, email, email_verified, updated_at)
+       values ($1, $2, $3, true, now()) on conflict (id) do nothing`,
+      [id, `Crowd ${i}`, `${id}@e2e.local`],
+    )
+    await db().query(
+      `insert into prediction (id, user_id, match_id, round_id, home_goals, away_goals, updated_at)
+       values (gen_random_uuid(), $1, $2, $3, $4, $5, now())`,
+      [id, matchId, roundId, picks[i][0], picks[i][1]],
+    )
+  }
+}
+
 // The (single) prediction stored for a match, for asserting the pick saved.
 export async function getMatchPrediction(matchId: string): Promise<{ home: number; away: number } | null> {
   const { rows } = await db().query<{ home_goals: number; away_goals: number }>(
@@ -150,6 +172,9 @@ export async function cleanup(): Promise<void> {
   await db().query(`delete from round where competition_id in (select id from competition where slug = $1)`, [E2E_SLUG])
   // competition_award / user_achievement / showcase_pin all cascade off this delete.
   await db().query(`delete from competition where slug = $1`, [E2E_SLUG])
+  // Synthetic crowd users seeded for the bot spec (their predictions are gone
+  // with the match above, so the FK is clear).
+  await db().query(`delete from "user" where email like 'bot-crowd-%@e2e.local'`)
 }
 
 // The signed-up user's id, so award/achievement/showcase rows can be seeded for
