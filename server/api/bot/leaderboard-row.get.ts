@@ -1,5 +1,5 @@
 import { db } from '../../../db'
-import { BOT_USER_ID, type ConsensusMethod } from '../../../shared/types/bot'
+import { botPersonaParam, botUserId, parseBotPersona, type ConsensusMethod } from '../../../shared/types/bot'
 import { getBotOverviewCached } from '../../utils/bot/service'
 import { getCompetitionById, resolveCompetition } from '../../utils/competitions/store'
 import { isAdmin, requireUser } from '../../utils/auth-guards'
@@ -8,6 +8,7 @@ import { toHttpError } from '../../utils/http'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
+  const persona = parseBotPersona(query.persona)
   const method: ConsensusMethod = query.method === 'mean' ? 'MEAN' : 'MODE'
 
   // Same league guard as /api/leaderboard: members, public leagues, or admins.
@@ -28,15 +29,15 @@ export default defineEventHandler(async (event) => {
   } else {
     competition = await resolveCompetition(db, (query.competition as string) || null)
   }
-  if (!competition) return { competition: null, row: null, method, modeAvailable: false }
+  if (!competition) return { competition: null, row: null, persona: botPersonaParam(persona), method, modeAvailable: false }
 
-  const overview = await getBotOverviewCached(db, competition.id, { method, leagueId: league?.id, includePrivate })
+  const overview = await getBotOverviewCached(db, competition.id, { persona, method, leagueId: league?.id, includePrivate })
   // Shown as soon as the bot has a rank (anyone has predicted), even at 0 pts
   // pre-scoring, so the toggle always reveals it.
   const row = overview.summary.rank !== null
     ? {
         rank: overview.summary.rank,
-        userId: BOT_USER_ID,
+        userId: botUserId(persona),
         totalPoints: overview.summary.totalPoints,
         predictionPoints: overview.summary.predictionPoints,
         championPoints: overview.summary.championPoints,
@@ -55,6 +56,7 @@ export default defineEventHandler(async (event) => {
   return {
     competition: { id: competition.id, slug: competition.slug, name: competition.name },
     row,
+    persona: botPersonaParam(persona),
     method: overview.method,
     modeAvailable: overview.modeAvailable,
   }
@@ -65,8 +67,8 @@ defineRouteMeta({
     "tags": [
       "Bot"
     ],
-    "summary": "Consensus bot ranking row",
-    "description": "Where a bot averaging everyone's predictions would rank. Display-only: real ranks are untouched.",
+    "summary": "Bot ranking row",
+    "description": "Where a bot persona would rank against the real board. Display-only: real ranks are untouched.",
     "parameters": [
       {
         "in": "query",
@@ -75,6 +77,16 @@ defineRouteMeta({
         "description": "Competition slug (e.g. 'world-cup-2026'). Defaults to the current tournament.",
         "schema": {
           "type": "string"
+        }
+      },
+      {
+        "in": "query",
+        "name": "persona",
+        "required": false,
+        "description": "Which bot: 'consensus' (default), 'evil-twin' or 'equalizer'.",
+        "schema": {
+          "type": "string",
+          "enum": ["consensus", "evil-twin", "equalizer"]
         }
       },
       {

@@ -1,5 +1,5 @@
 import { db } from '../../../db'
-import { BOT_USER_ID, type ConsensusMethod } from '../../../shared/types/bot'
+import { botPersonaParam, botUserId, parseBotPersona, type ConsensusMethod } from '../../../shared/types/bot'
 import { getBotOverviewCached } from '../../utils/bot/service'
 import { getCompetitionById, resolveCompetition } from '../../utils/competitions/store'
 import { isAdmin, requireUser } from '../../utils/auth-guards'
@@ -8,6 +8,7 @@ import { toHttpError } from '../../utils/http'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
+  const persona = parseBotPersona(query.persona)
   const method: ConsensusMethod = query.method === 'mean' ? 'MEAN' : 'MODE'
   // Admins also see the consensus for matches that haven't kicked off yet;
   // everyone else gets the same kickoff privacy rule as user predictions.
@@ -34,6 +35,7 @@ export default defineEventHandler(async (event) => {
   if (!competition) throw createError({ statusCode: 404, statusMessage: 'competition not found' })
 
   const overview = await getBotOverviewCached(db, competition.id, {
+    persona,
     method,
     leagueId: league?.id,
     includeUpcoming: admin,
@@ -41,7 +43,8 @@ export default defineEventHandler(async (event) => {
   })
 
   return {
-    bot: { id: BOT_USER_ID },
+    bot: { id: botUserId(persona) },
+    persona: botPersonaParam(persona),
     competition: { id: competition.id, slug: competition.slug, name: competition.name },
     league: league ? { id: league.id, name: league.name } : null,
     champion: overview.champion,
@@ -59,8 +62,8 @@ defineRouteMeta({
     "tags": [
       "Bot"
     ],
-    "summary": "Consensus bot picks",
-    "description": "Per-match consensus of everyone's predictions with the points the bot would have scored. Upcoming matches are admin-only.",
+    "summary": "Bot picks",
+    "description": "Per-match picks of a bot persona with the points it would have scored. Personas: consensus (the crowd's pick), evil-twin (that pick inverted), equalizer (always a draw). Upcoming matches are admin-only.",
     "parameters": [
       {
         "in": "query",
@@ -69,6 +72,16 @@ defineRouteMeta({
         "description": "Competition slug (e.g. 'world-cup-2026'). Defaults to the current tournament.",
         "schema": {
           "type": "string"
+        }
+      },
+      {
+        "in": "query",
+        "name": "persona",
+        "required": false,
+        "description": "Which bot: 'consensus' (default), 'evil-twin' or 'equalizer'.",
+        "schema": {
+          "type": "string",
+          "enum": ["consensus", "evil-twin", "equalizer"]
         }
       },
       {
