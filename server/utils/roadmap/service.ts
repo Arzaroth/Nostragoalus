@@ -116,8 +116,9 @@ export async function createRoadmapItem(db: AppDatabase, input: RoadmapItemInput
 }
 
 // A community suggestion: authored by a signed-in user, lands in the SUGGESTED
-// column, publicly visible immediately (moderationStatus APPROVED). Admins hide
-// spam after the fact by flipping moderationStatus to REJECTED.
+// column. Hybrid moderation: it is publicly visible and upvotable immediately
+// but PENDING ("under review") until an admin blesses it to APPROVED. Admins
+// hide spam by flipping to REJECTED (which drops it from the public view).
 export async function createSuggestion(db: AppDatabase, input: SuggestionInput) {
   const title = input.title.trim()
   if (title.length < SUGGESTION_TITLE_MIN) throw new ValidationError('title is too short')
@@ -128,7 +129,7 @@ export async function createSuggestion(db: AppDatabase, input: SuggestionInput) 
       title,
       description: input.description?.trim() || null,
       status: 'SUGGESTED',
-      moderationStatus: 'APPROVED',
+      moderationStatus: 'PENDING',
       authorId: input.authorId,
       position: await nextPosition(db, 'SUGGESTED'),
     })
@@ -190,10 +191,19 @@ export async function updateRoadmapItem(db: AppDatabase, id: string, patch: Road
     if (patch.status !== undefined) {
       set.status = patch.status
       // Moving to a different column: append at its end so positions stay unique
-      // per status (unless the caller pinned an explicit position). Promoting a
-      // suggestion (SUGGESTED -> PLANNED/...) rides this same path.
+      // per status (unless the caller pinned an explicit position).
       if (patch.status !== current.status && patch.position === undefined) {
         set.position = await nextPosition(tx, patch.status)
+      }
+      // Promoting a pending suggestion onto the roadmap proper blesses it:
+      // promotion implies approval, so it stops showing as "under review"
+      // (unless the caller set moderationStatus explicitly in the same patch).
+      if (
+        patch.status !== 'SUGGESTED' &&
+        current.moderationStatus === 'PENDING' &&
+        patch.moderationStatus === undefined
+      ) {
+        set.moderationStatus = 'APPROVED'
       }
     }
     const [row] = await tx.update(roadmapItem).set(set).where(eq(roadmapItem.id, id)).returning()

@@ -810,7 +810,8 @@
       "actionFailed": "That action failed - try again.",
       "userSuggestion": "User suggestion",
       "hide": "Hide",
-      "restore": "Restore"
+      "restore": "Restore",
+      "approve": "Approve"
     },
     "sso": {
       "title": "Single Sign-On",
@@ -1069,6 +1070,7 @@
     "empty": "Nothing here yet - watch this space.",
     "error": "Couldn't load the roadmap right now.",
     "suggested": "Community suggestions",
+    "underReview": "Under review",
     "upvote": "Upvote",
     "upvoteRemove": "Remove upvote",
     "signInToVote": "Sign in to vote",

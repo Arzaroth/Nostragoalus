@@ -16,6 +16,9 @@ export default defineEventHandler(async (event) => {
       position: i.position,
       voteCount: i.voteCount,
       viewerHasVoted: i.viewerHasVoted,
+      // Hybrid moderation: a still-pending suggestion is public but flagged
+      // "under review". Expose only the boolean, not the raw moderation state.
+      underReview: i.moderationStatus === 'PENDING',
       updatedAt: i.updatedAt,
     })),
   }
@@ -25,7 +28,7 @@ defineRouteMeta({
   openAPI: {
     "tags": ["Roadmap"],
     "summary": "List roadmap items",
-    "description": "Public roadmap: planned, in-progress and shipped features plus community suggestions, each with its upvote count. Hidden (rejected) items are omitted.",
+    "description": "Public roadmap: planned, in-progress and shipped features plus community suggestions, each with its upvote count. Pending suggestions are shown flagged underReview; hidden (rejected) items are omitted.",
     "responses": {
       "200": {
         "description": "All visible roadmap items ordered by status then position.",
@@ -46,6 +49,7 @@ defineRouteMeta({
                       "position": { "type": "integer" },
                       "voteCount": { "type": "integer" },
                       "viewerHasVoted": { "type": "boolean" },
+                      "underReview": { "type": "boolean" },
                       "updatedAt": { "type": "string", "format": "date-time" }
                     }
                   }

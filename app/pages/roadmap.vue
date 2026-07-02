@@ -145,7 +145,12 @@ useHead({ title: t('roadmap.title') })
           style="border-color: var(--p-content-border-color)"
         >
           <div class="flex-1 min-w-0">
-            <div class="font-medium">{{ item.title }}</div>
+            <div class="font-medium flex items-center gap-2">
+              <span>{{ item.title }}</span>
+              <Tag v-if="item.underReview" severity="warn" rounded class="shrink-0">
+                <i class="pi pi-hourglass text-xs me-1" />{{ t('roadmap.underReview') }}
+              </Tag>
+            </div>
             <p v-if="item.description" class="text-xs mt-1 whitespace-pre-line" style="color: var(--p-text-muted-color)">
               {{ item.description }}
             </p>

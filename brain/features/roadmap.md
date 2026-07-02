@@ -12,9 +12,11 @@ user suggestions share one table (`roadmap_item`) and render as two views.
 - `position` is per-status manual ordering (each column restarts at 0); the
   admin up/down reorder swaps neighbours atomically.
 - `authorId` is the submitter (null for admin/system-authored items).
-- `moderationStatus` (`roadmap_moderation` enum): `APPROVED` (default, visible),
-  `REJECTED` (hidden from the public), `PENDING` (unused today - it exists so the
-  model can tighten to approve-before-public later without a migration).
+- `moderationStatus` (`roadmap_moderation` enum), the hybrid-moderation state:
+  `PENDING` (a fresh user suggestion - public and upvotable but "under review",
+  not yet official), `APPROVED` (blessed by an admin; admin-authored items
+  default here), `REJECTED` (hidden from the public). Only `REJECTED` is dropped
+  from the public view; `PENDING` shows flagged.
 - A `roadmap_vote` row is one upvote keyed unique on `(roadmapItemId, userId)`;
   toggling removes it. Vote counts are always derived (`count(*)` grouped), never
   denormalized onto `roadmap_item`.
@@ -23,21 +25,23 @@ user suggestions share one table (`roadmap_item`) and render as two views.
 
 - **Public roadmap** (`/roadmap`, `app/pages/roadmap.vue`): the three roadmap
   status sections plus a "Community suggestions" section ranked by vote count.
-  `GET /api/roadmap` returns every non-`REJECTED` item with its `voteCount` and,
-  for a signed-in viewer, `viewerHasVoted`. Every item carries an upvote control.
+  `GET /api/roadmap` returns every non-`REJECTED` item with its `voteCount`, a
+  per-viewer `viewerHasVoted`, and `underReview` (true while `PENDING`); the page
+  shows an "under review" tag on those. Every item carries an upvote control.
 - **Admin triage** (`AdminRoadmapSection.vue` in `/admin`): `GET /api/admin/roadmap`
   (`includeHidden`) returns everything including hidden items, with author and
   vote counts, on its own `['admin-roadmap']` query key. Admins reorder, edit,
-  set status (promote a `SUGGESTED` item onto the roadmap), hide/restore
-  (`moderationStatus`), and delete.
+  approve a pending suggestion, set status (promoting a `SUGGESTED` item onto the
+  roadmap auto-approves it), hide/restore (`moderationStatus`), and delete.
 
 ## Public write actions
 
 - **Suggest**: `POST /api/roadmap/suggestions` (`createSuggestion`) - signed-in
-  users only. Lands in `SUGGESTED` + `APPROVED` (public-immediately: the only
-  spam gate is auth plus a per-user rate limit, see
-  [../architecture/server.md](../architecture/server.md) `createRateLimiter`).
-  Admins hide spam after the fact.
+  users only. Lands in `SUGGESTED` + `PENDING` (hybrid: publicly visible and
+  upvotable at once but "under review" until an admin approves it). Spam gate is
+  auth plus a per-user rate limit (see
+  [../architecture/server.md](../architecture/server.md) `createRateLimiter`);
+  admins hide spam to `REJECTED` after the fact.
 - **Vote**: `POST /api/roadmap/:id/vote` (`toggleVote`) - toggles the caller's
   upvote and returns `{ voted, voteCount }`. Rejected/missing items refuse the
   vote. Same one-per-user toggle shape as [reactions](reactions.md). The client

@@ -11,6 +11,8 @@ export interface RoadmapItem {
   position: number
   voteCount: number
   viewerHasVoted: boolean
+  // Hybrid moderation: a public but not-yet-blessed suggestion (PENDING).
+  underReview: boolean
   updatedAt: string
 }
 
