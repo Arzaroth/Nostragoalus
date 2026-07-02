@@ -201,6 +201,7 @@ function saveEdit() {
         <div
           v-for="col in ROADMAP_COLUMNS"
           :key="col.status"
+          :data-status="col.status"
           class="ng-col shrink-0 w-64 self-stretch rounded-xl border flex flex-col"
           :class="dragOverCol === col.status ? 'ng-col-over' : ''"
           style="border-color: var(--p-content-border-color)"

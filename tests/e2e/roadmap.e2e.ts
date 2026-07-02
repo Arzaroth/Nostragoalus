@@ -1,5 +1,5 @@
 import { test, expect, request } from '@playwright/test'
-import { ADMIN, freshUser, signUp, typeInto } from './helpers/auth'
+import { ADMIN, dismissOnboarding, freshUser, signIn, signUp, typeInto } from './helpers/auth'
 import { closeDb } from './helpers/db'
 
 // Roadmap v2 main path through the real UI: a signed-in user posts a suggestion
@@ -100,4 +100,37 @@ test('the public roadmap is a kanban board and status moves land in the right co
   await page.waitForLoadState('networkidle')
   await expect(page.locator('[data-status="IN_PROGRESS"]')).toContainText(title)
   await expect(page.locator('[data-status="PLANNED"]')).not.toContainText(title)
+})
+
+test('an admin drags a card between columns on the board', async ({ page }) => {
+  // Seed a planned item, then drag it to In progress through the real admin UI.
+  const admin = await request.newContext({ baseURL: APP })
+  await admin.post('/api/auth/sign-in/email', {
+    headers: { Origin: APP },
+    data: { email: ADMIN.email, password: ADMIN.password },
+  })
+  const title = `E2E drag ${Date.now().toString(36)}`
+  await admin.post('/api/admin/roadmap', { data: { title, status: 'PLANNED' } })
+  await admin.dispose()
+
+  await signIn(page, ADMIN)
+  await dismissOnboarding(page)
+  await page.goto('/admin?section=roadmap')
+  await page.waitForLoadState('networkidle')
+
+  const card = page.locator('[data-status="PLANNED"] .ng-drag', { hasText: title })
+  await expect(card).toBeVisible()
+  const target = page.locator('[data-status="IN_PROGRESS"]')
+
+  // Native HTML5 drag-drop; retry until hydration has wired the handlers and the
+  // card actually lands in the target column.
+  await expect(async () => {
+    await card.dragTo(target)
+    await expect(page.locator('[data-status="IN_PROGRESS"] .ng-drag', { hasText: title })).toBeVisible({
+      timeout: 3000,
+    })
+  }).toPass({ timeout: 20_000 })
+
+  // And it's gone from the source column.
+  await expect(page.locator('[data-status="PLANNED"] .ng-drag', { hasText: title })).toHaveCount(0)
 })
