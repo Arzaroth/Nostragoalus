@@ -12,9 +12,11 @@ user suggestions share one table (`roadmap_item`) and render as two views.
 - `position` is per-status ordering (each column restarts at 0). The admin board
   sets it by drag-drop: `reorderColumn(status, ids)` rewrites the whole target
   column's order (and each card's status, for one dragged in from another column)
-  in a single transaction via `PUT /api/admin/roadmap/reorder`. The older
-  neighbour-swap `reorderRoadmapItem` / `POST .../:id/move` is kept as an API but
-  the UI no longer uses it.
+  in a single transaction via `PUT /api/admin/roadmap/reorder`. It shares the
+  `blessedModerationOnPromote` rule with `updateRoadmapItem`, so dragging a card
+  onto the roadmap auto-approves it exactly like the status Select does. (The
+  older neighbour-swap `reorderRoadmapItem` / `POST .../:id/move` was removed once
+  the drag replaced it.)
 - `authorId` is the submitter (null for admin/system-authored items).
 - `moderationStatus` (`roadmap_moderation` enum), the hybrid-moderation state:
   `PENDING` (a fresh user suggestion - public and upvotable but "under review",
