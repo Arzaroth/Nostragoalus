@@ -10,6 +10,7 @@ import {
   createSuggestion,
   deleteRoadmapItem,
   listRoadmapItems,
+  reorderColumn,
   reorderRoadmapItem,
   toggleVote,
   updateRoadmapItem,
@@ -255,6 +256,44 @@ describe('roadmap service', () => {
     // An explicit moderationStatus on a promote is honored over the auto-bless.
     const kept = await updateRoadmapItem(d, s.id, { status: 'PLANNED', moderationStatus: 'PENDING' })
     expect(kept.moderationStatus).toBe('PENDING')
+    await c.close()
+  })
+
+  it('reorderColumn sets an explicit order within a column', async () => {
+    const { db: d, client: c } = await createTestDb()
+    const a = await createRoadmapItem(d, { title: 'a' })
+    const b = await createRoadmapItem(d, { title: 'b' })
+    const cc = await createRoadmapItem(d, { title: 'c' })
+    await reorderColumn(d, 'PLANNED', [cc.id, a.id, b.id])
+    const planned = (await listRoadmapItems(d)).filter((i) => i.status === 'PLANNED')
+    expect(planned.map((i) => i.title)).toEqual(['c', 'a', 'b'])
+    expect(planned.map((i) => i.position)).toEqual([0, 1, 2])
+    await c.close()
+  })
+
+  it('reorderColumn moves cards across columns and auto-approves a dragged-in suggestion', async () => {
+    const { db: d, client: c } = await createTestDb()
+    const u = await makeUser(d, 'u1')
+    const suggestion = await createSuggestion(d, { authorId: u, title: 'dragged idea' }) // SUGGESTED, PENDING
+    const planned = await createRoadmapItem(d, { title: 'existing' }) // PLANNED, APPROVED
+    // Drag the suggestion into IN_PROGRESS above the existing item.
+    await reorderColumn(d, 'IN_PROGRESS', [suggestion.id, planned.id])
+    const inProgress = (await listRoadmapItems(d, { includeHidden: true })).filter((i) => i.status === 'IN_PROGRESS')
+    expect(inProgress.map((i) => i.title)).toEqual(['dragged idea', 'existing'])
+    // Promotion off SUGGESTED blesses the pending suggestion.
+    expect(inProgress.find((i) => i.id === suggestion.id)!.moderationStatus).toBe('APPROVED')
+    await c.close()
+  })
+
+  it('reorderColumn into SUGGESTED leaves moderation untouched and skips unknown ids', async () => {
+    const { db: d, client: c } = await createTestDb()
+    const u = await makeUser(d, 'u1')
+    const s = await createSuggestion(d, { authorId: u, title: 'still pending' }) // SUGGESTED, PENDING
+    await reorderColumn(d, 'SUGGESTED', ['ghost-id', s.id])
+    const [row] = (await listRoadmapItems(d, { includeHidden: true })).filter((i) => i.id === s.id)
+    expect(row.status).toBe('SUGGESTED')
+    expect(row.position).toBe(1) // placed at its array index; the unknown id was skipped
+    expect(row.moderationStatus).toBe('PENDING') // no auto-approve when staying in SUGGESTED
     await c.close()
   })
 })

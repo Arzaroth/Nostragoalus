@@ -241,6 +241,32 @@ export async function reorderRoadmapItem(db: AppDatabase, id: string, direction:
   })
 }
 
+// Persist an explicit ordering for a whole status column (the kanban drag-drop):
+// every id in `ids` is placed in `status` at its array index. A card dragged in
+// from another column has its status rewritten here, and a pending suggestion
+// dragged onto the roadmap proper is auto-approved (the same "promotion blesses
+// it" rule as updateRoadmapItem). Unknown ids are skipped. The source column an
+// item left keeps its positions (gaps are fine - listing orders by position).
+export async function reorderColumn(db: AppDatabase, status: RoadmapStatus, ids: string[]): Promise<void> {
+  await db.transaction(async (tx) => {
+    for (let i = 0; i < ids.length; i++) {
+      const set: { status: RoadmapStatus; position: number; moderationStatus?: RoadmapModeration } = {
+        status,
+        position: i,
+      }
+      if (status !== 'SUGGESTED') {
+        const [cur] = await tx
+          .select({ moderationStatus: roadmapItem.moderationStatus })
+          .from(roadmapItem)
+          .where(eq(roadmapItem.id, ids[i]))
+          .limit(1)
+        if (cur?.moderationStatus === 'PENDING') set.moderationStatus = 'APPROVED'
+      }
+      await tx.update(roadmapItem).set(set).where(eq(roadmapItem.id, ids[i]))
+    }
+  })
+}
+
 export async function deleteRoadmapItem(db: AppDatabase, id: string) {
   const [row] = await db.delete(roadmapItem).where(eq(roadmapItem.id, id)).returning({ id: roadmapItem.id })
   if (!row) throw new NotFoundError('roadmap item not found')
