@@ -1006,9 +1006,13 @@ landed alongside it (verified by running the stack):
       `getDomainVerificationInstructions` and `verifyDomainDns` - a
       `domainTxtRecord(providerId, domain, token)` helper keeps the mint and verify
       sides byte-compatible with the plugin's identifier format.
-- [ ] Pre-existing (surfaced by the i18n sweep, not this feature): `chat.dock.undock`
-      / `chat.dock.redock` exist in en/th/tlh but are missing from `fr.json`, so
-      French users see the raw keys on the chat dock control.
+- [x] i18n parity: 2.9.0 shipped with the ~31 new `admin.sso.*` onboarding keys
+      missing from `ar.json` (the review only checked en/fr/th/tlh - `ar` was added
+      in 2.7.0 after this branch forked) and the pre-existing `chat.dock.undock`/
+      `redock` missing from `fr.json`. Both filled in a 2.9.1 patch; a full
+      en-vs-{fr,th,tlh,ar} flatten sweep is now clean.
+- [ ] The 31 Arabic `admin.sso.*` strings added in 2.9.1 are machine-translated -
+      have a human review them (same caveat as the rest of the RTL/Arabic locale).
 
 ### Deferred from the feature-treatment review
 

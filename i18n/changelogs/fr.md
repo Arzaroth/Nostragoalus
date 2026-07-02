@@ -5,6 +5,9 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Corrigé
+- **Lacunes de traduction en arabe et en français comblées** : la console d'administration SSO est désormais entièrement traduite en arabe (certaines chaînes s'affichaient auparavant sous forme de clés brutes dans les panneaux d'onboarding et SCIM), et le contrôle d'ancrage/détachement de la fenêtre de chat a maintenant ses libellés en français.
+
 ## [2.9.0] - 2026-07-02
 
 ### Ajouté
