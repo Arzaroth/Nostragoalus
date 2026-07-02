@@ -446,6 +446,16 @@ effort buckets; order within a bucket is not priority.
       suggestions feed the roadmap, roadmap items get user upvotes. One
       schema, two views. CLI pull command for suggestions. Spam guard: auth
       required + rate limit.
+  - IN_PROGRESS (2026-07-02) on worktree-roadmap-v2.
+  - Moderation = hybrid (decided 2026-07-02): a suggestion is public and
+    upvotable the instant it's posted but shows as "under review" until an admin
+    blesses it; only approved suggestions look official and can be promoted onto
+    the roadmap. Auth + a per-user rate limit are the spam guard; admins hide
+    spam (REJECTED, dropped from the public view). One `roadmap_item` table -
+    `SUGGESTED` status is the community column, `moderationStatus`
+    PENDING/APPROVED/REJECTED tracks the review state; a `roadmap_vote` join is
+    one upvote per user (toggle). `mise run roadmap-pull` triages by votes.
+  - Kanban board + localized roadmap content stay as their own items below.
 - [ ] **Roadmap as kanban board**: render the /roadmap page as columns per
       status (planned / in progress / shipped) instead of stacked sections;
       admins drag cards between columns and reorder within one (replaces the

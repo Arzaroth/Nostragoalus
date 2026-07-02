@@ -481,12 +481,33 @@ landed alongside it (verified by running the stack):
       in `TextEncoder`/`TextDecoder` (service.ts x2, migrate.ts, attachments.ts).
       Moving the conversion inside those two helpers (string in/out) collapses it.
 
+## Roadmap v2 - suggestions & upvotes (deferred from the feature pass)
+
+Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
+"under review" until an admin blesses them). Known tradeoffs:
+
+- [ ] Upvote is invalidate-and-refetch, not optimistic: a vote tap waits a round
+      trip before the count moves. Fine at current scale; make it optimistic
+      (setQueryData patch + rollback) if it feels laggy.
+- [ ] The suggestion rate limiter is the in-process sliding window
+      (`createRateLimiter`), so it's per-instance - a multi-instance deploy would
+      not share the budget. Move to a DB/Redis-backed limiter if we ever run more
+      than one app instance.
+- [ ] Promoting a PENDING suggestion onto the roadmap auto-approves it (promotion
+      implies blessing). Split the two actions if admins ever want to
+      promote-but-keep-under-review.
+- [ ] Suggestion author is shown only in the admin triage view, never publicly.
+      Decide whether a public "suggested by" byline is wanted.
+- [ ] Roadmap item title/description are still English-only DB strings; localizing
+      them is its own ROADMAP.md item, and the kanban drag-drop UX is another.
+
 ## Roadmap / home CTA / PWA (deferred from the feature passes)
 
-- [ ] Roadmap admin reorder is two sequential PUTs from the client (swap with
+- [x] Roadmap admin reorder is two sequential PUTs from the client (swap with
       the neighbor); one failing leaves duplicate positions. A server-side
       swap/reorder endpoint fixes it and is a prerequisite for the kanban
-      drag-and-drop (ROADMAP.md).
+      drag-and-drop (ROADMAP.md). Resolved: `POST /api/admin/roadmap/:id/move`
+      (`reorderRoadmapItem`) does the neighbor swap atomically in one request.
 - [ ] Roadmap item content is single-language while the chrome around it is
       i18n'd in four locales; decide whether that's accepted (EN-only roadmap)
       or items grow per-locale fields.
