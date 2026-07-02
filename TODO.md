@@ -509,6 +509,14 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
       creates in the same column can land on the same position value. Display stays
       deterministic (list + reorder both tiebreak on `createdAt`), so this is cosmetic
       today; make it atomic (or add the unique constraint) if positions must be dense.
+- [ ] **Stale API schema**: the already-sampled `GET /api/roadmap` block in
+      `server/utils/docs/response-schemas.json` still shows the pre-v2 shape - the
+      response now carries `voteCount`, `viewerHasVoted`, `underReview` per item and
+      the community suggestions. Regen was deferred (the sampler needs a running stack
+      on the canonical seed, and reseeding the shared dev DB would disrupt live dev +
+      the league-modes worktree). Re-run `node scripts/gen-api-schemas.mjs` against a
+      freshly-seeded stack on the next controlled regen and keep the `/api/roadmap`
+      block (`git checkout -p` the rest if unrelated endpoints drift).
 
 ## Roadmap / home CTA / PWA (deferred from the feature passes)
 
