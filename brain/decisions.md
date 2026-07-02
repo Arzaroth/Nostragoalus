@@ -193,3 +193,9 @@ feature/architecture doc that implements it.
 - **Cabinet + fridge are per-competition**, matching every other page's
   `/[competition]/` scope; global badges like the secret unlock still surface in
   each competition's cabinet. See [features/achievements.md](features/achievements.md).
+- **An achievement tier only ever climbs.** Batch evaluation grades a badge up when
+  the metric crosses a higher threshold, but a rescore that drops the metric refreshes
+  the stored progress without demoting the tier - a badge, once earned, is a
+  high-water mark. Streaks are made deterministic by tiebreaking equal kickoffs on
+  match id, and night-owl reads the UTC hour explicitly, so both are stable regardless
+  of DB row order or server timezone.
