@@ -2,7 +2,7 @@ import { db } from '../../../db'
 import { botPersonaParam, botUserId, parseBotPersona, type ConsensusMethod } from '../../../shared/types/bot'
 import { getBotOverviewCached } from '../../utils/bot/service'
 import { getCompetitionById, resolveCompetition } from '../../utils/competitions/store'
-import { isAdmin, requireUser } from '../../utils/auth-guards'
+import { getSessionUser, isAdmin, requireUser } from '../../utils/auth-guards'
 import { resolveLeagueView, type LeagueRow } from '../../utils/leagues/service'
 import { toHttpError } from '../../utils/http'
 
@@ -10,6 +10,8 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const persona = parseBotPersona(query.persona)
   const method: ConsensusMethod = query.method === 'mean' ? 'MEAN' : 'MODE'
+  // The evil twin ranks the signed-in viewer's own picks swapped; no viewer, no row.
+  const viewer = persona === 'EVIL_TWIN' ? await getSessionUser(event) : null
 
   // Same league guard as /api/leaderboard: members, public leagues, or admins.
   let league: LeagueRow | null = null
@@ -31,7 +33,7 @@ export default defineEventHandler(async (event) => {
   }
   if (!competition) return { competition: null, row: null, persona: botPersonaParam(persona), method, modeAvailable: false }
 
-  const overview = await getBotOverviewCached(db, competition.id, { persona, method, leagueId: league?.id, includePrivate })
+  const overview = await getBotOverviewCached(db, competition.id, { persona, method, userId: viewer?.id, leagueId: league?.id, includePrivate })
   // Shown as soon as the bot has a rank (anyone has predicted), even at 0 pts
   // pre-scoring, so the toggle always reveals it.
   const row = overview.summary.rank !== null
@@ -83,7 +85,7 @@ defineRouteMeta({
         "in": "query",
         "name": "persona",
         "required": false,
-        "description": "Which bot: 'consensus' (default), 'evil-twin' or 'equalizer'.",
+        "description": "Which bot: 'consensus' (default, the crowd), 'evil-twin' (your own picks swapped; needs sign-in) or 'equalizer' (always a draw).",
         "schema": {
           "type": "string",
           "enum": ["consensus", "evil-twin", "equalizer"]

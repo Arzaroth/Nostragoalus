@@ -573,49 +573,65 @@ describe('getBotOverviewCached', () => {
   })
 })
 
-describe('getBotOverview - EVIL_TWIN', () => {
-  it('inverts the consensus, ids itself distinctly, and backs the least-picked champion', async () => {
+describe('getBotOverview - EVIL_TWIN (per user)', () => {
+  it('swaps only the viewer own picks, keeps their champion, ids itself distinctly', async () => {
     const { db, client, competitionId, groupRound } = await setup()
-    const u = await makeUsers(db, 6)
-    // Consensus is 2-1; the evil twin flips it to 1-2 - which is the result -> EXACT.
+    const u = await makeUsers(db, 5)
+    const me = u[0]
+    // The match finishes 1-2. I (u0) picked 2-1 (wrong); my twin swaps to 1-2 = EXACT.
+    // The rest of the crowd is irrelevant to my twin.
     const m = await makeMatch(db, { competitionId, roundId: groupRound, kickoffTime: PAST, status: 'FINISHED', fullTimeHome: 1, fullTimeAway: 2 })
-    await predictAll(db, u, m, groupRound, [[2, 1], [2, 1], [2, 1], [2, 1], [1, 2], [0, 0]])
-    // BRA is the crowd favourite; ARG the rarest pick -> the evil twin backs ARG.
-    for (const [i, code] of (['BRA', 'BRA', 'BRA', 'BRA', 'ARG', 'FRA'] as const).entries()) {
-      await db.insert(championPick).values({ userId: u[i], competitionId, teamCode: code, teamName: code })
-    }
+    await predictAll(db, u, m, groupRound, [[2, 1], [3, 3], [3, 3], [3, 3], [3, 3]])
+    // My champion pick, which the twin keeps unchanged.
+    await db.insert(championPick).values({ userId: me, competitionId, teamCode: 'BRA', teamName: 'Brazil' })
     await finalizeMatches(db, NOW)
 
-    const overview = await getBotOverview(db, competitionId, { persona: 'EVIL_TWIN' }, NOW)
+    const overview = await getBotOverview(db, competitionId, { persona: 'EVIL_TWIN', userId: me }, NOW)
     expect(overview.persona).toBe('EVIL_TWIN')
-    const [row] = overview.rows
-    expect(row).toMatchObject({
+    // Only my pick drives it: population is just me.
+    expect(overview.population).toBe(1)
+    expect(overview.rows).toHaveLength(1)
+    expect(overview.rows[0]).toMatchObject({
       userId: botUserId('EVIL_TWIN'),
+      matchId: m,
       homeGoals: 1,
       awayGoals: 2,
       baseTier: 'EXACT',
-      consensusMethod: 'MODE',
-      consensusCount: 1,
-      consensusTotal: 6,
+      // No crowd context, so no "picked by" badge.
+      consensusCount: 0,
+      consensusTotal: 0,
     })
-    // Least-picked: ARG and FRA both have 1, alpha order picks ARG.
-    expect(overview.champion?.teamCode).toBe('ARG')
+    // The twin keeps my own champion (not the crowd's, not the rarest).
+    expect(overview.champion?.teamCode).toBe('BRA')
     await client.close()
   })
 
-  it('plays its joker where fewest of the crowd jokered', async () => {
+  it('mirrors the player own joker onto the swapped pick', async () => {
     const { db, client, competitionId } = await setup()
     const r16 = (await findRoundId(db, competitionId, 'R16', null)) as string
-    const u = await makeUsers(db, 5)
-    const many = await makeMatch(db, { competitionId, roundId: r16, stage: 'R16', kickoffTime: new Date('2026-06-10T16:00:00Z') })
-    const few = await makeMatch(db, { competitionId, roundId: r16, stage: 'R16', kickoffTime: PAST })
-    // One joker per user per round: u0-u2 joker `many`, u3 jokers `few`.
-    await predictAll(db, u, many, r16, [[1, 0, true], [1, 0, true], [1, 0, true], [2, 0], [0, 0]])
-    await predictAll(db, u, few, r16, [[0, 0], [0, 0], [0, 0], [1, 1, true], [2, 1]])
+    const me = await makeUser(db, 'me', 'me')
+    const jokered = await makeMatch(db, { competitionId, roundId: r16, stage: 'R16', kickoffTime: new Date('2026-06-10T16:00:00Z') })
+    const plain = await makeMatch(db, { competitionId, roundId: r16, stage: 'R16', kickoffTime: PAST })
+    await makePrediction(db, { userId: me, matchId: jokered, roundId: r16, home: 2, away: 0, isJoker: true })
+    await makePrediction(db, { userId: me, matchId: plain, roundId: r16, home: 1, away: 0 })
+
+    const overview = await getBotOverview(db, competitionId, { persona: 'EVIL_TWIN', userId: me }, NOW)
+    // The twin doubles the same match I did, and swaps every scoreline.
+    expect(overview.rows.find((r) => r.matchId === jokered)).toMatchObject({ isJoker: true, homeGoals: 0, awayGoals: 2 })
+    expect(overview.rows.find((r) => r.matchId === plain)).toMatchObject({ isJoker: false, homeGoals: 0, awayGoals: 1 })
+    await client.close()
+  })
+
+  it('is empty without a viewer (no userId, no crowd fallback)', async () => {
+    const { db, client, competitionId, groupRound } = await setup()
+    const u = await makeUsers(db, 6)
+    const m = await makeMatch(db, { competitionId, roundId: groupRound, kickoffTime: PAST, status: 'FINISHED', fullTimeHome: 1, fullTimeAway: 0 })
+    await predictAll(db, u, m, groupRound, [[2, 1], [2, 1], [2, 1], [0, 0], [1, 1], [3, 0]])
+    await finalizeMatches(db, NOW)
 
     const overview = await getBotOverview(db, competitionId, { persona: 'EVIL_TWIN' }, NOW)
-    expect(overview.rows.find((r) => r.matchId === few)?.isJoker).toBe(true)
-    expect(overview.rows.find((r) => r.matchId === many)?.isJoker).toBe(false)
+    expect(overview).toMatchObject({ population: 0, rows: [], champion: null })
+    expect(overview.summary.rank).toBeNull()
     await client.close()
   })
 })
@@ -676,13 +692,16 @@ describe('getBotOverview - EQUALIZER', () => {
 })
 
 describe('getBotChampion - personas', () => {
-  it('EVIL_TWIN backs the least-picked team, ties alphabetical', async () => {
+  it('scoped to a userId, returns that player own pick (the evil twin keeps it)', async () => {
     const { db, client, competitionId } = await setup()
     const u = await makeUsers(db, 4)
+    // The crowd favours BRA, but my own pick is FRA - the twin keeps mine.
     for (const [i, code] of (['BRA', 'BRA', 'BRA', 'FRA'] as const).entries()) {
       await db.insert(championPick).values({ userId: u[i], competitionId, teamCode: code, teamName: code })
     }
-    expect((await getBotChampion(db, competitionId, { persona: 'EVIL_TWIN' }))?.teamCode).toBe('FRA')
+    expect((await getBotChampion(db, competitionId, { userId: u[3] }))?.teamCode).toBe('FRA')
+    // Without the scope, it is the crowd's most-picked.
+    expect((await getBotChampion(db, competitionId))?.teamCode).toBe('BRA')
     await client.close()
   })
 

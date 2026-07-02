@@ -42,9 +42,9 @@ describe('bot personas', () => {
     expect(parseBotPersona(['evil-twin'])).toBe('CONSENSUS')
   })
 
-  it('only the equalizer ignores the consensus method', () => {
+  it('only the consensus bot has a MODE/MEAN choice', () => {
     expect(personaUsesMethod('consensus')).toBe(true)
-    expect(personaUsesMethod('evil-twin')).toBe(true)
+    expect(personaUsesMethod('evil-twin')).toBe(false)
     expect(personaUsesMethod('equalizer')).toBe(false)
   })
 

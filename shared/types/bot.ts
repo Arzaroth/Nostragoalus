@@ -4,10 +4,11 @@ export const BOT_USER_ID = '__bot__'
 
 export type ConsensusMethod = 'MODE' | 'MEAN'
 
-// The synthetic bots. Each is a picking strategy scored by the real engine;
-// none is stored - all are computed on the fly from the crowd's own picks.
+// The synthetic bots, each a picking strategy scored by the real engine; none
+// is stored - all are computed on the fly.
 //  - CONSENSUS: the crowd's own MODE/MEAN scoreline.
-//  - EVIL_TWIN: the consensus flipped (favoured winner reversed, margin kept).
+//  - EVIL_TWIN: per-user - the signed-in player's own picks with every score
+//    swapped (a draw is its own twin). Keeps their jokers and champion.
 //  - EQUALIZER: always a draw ("the equalizer" = the goal that levels a game).
 export type BotPersona = 'CONSENSUS' | 'EVIL_TWIN' | 'EQUALIZER'
 
@@ -58,11 +59,11 @@ export function botPersonaParam(persona: BotPersona): BotPersonaParam {
 // The equalizer always calls a draw; 1-1 is the modal drawn scoreline.
 export const DRAW_SCORELINE = { home: 1, away: 1 } as const
 
-// The consensus method (MODE/MEAN) shapes the consensus and evil-twin picks
-// (evil twin inverts the consensus); the equalizer ignores it, so its method
-// toggle is hidden. Takes the wire param, which is what the UI carries.
+// Only the consensus bot has a MODE/MEAN choice; the evil twin swaps your own
+// literal picks and the equalizer always draws, so neither shows the toggle.
+// Takes the wire param, which is what the UI carries.
 export function personaUsesMethod(persona: BotPersonaParam): boolean {
-  return persona !== 'equalizer'
+  return persona === 'consensus'
 }
 
 // Display metadata for each bot, shared by the leaderboard rows and the bot
