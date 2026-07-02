@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.10.0] - 2026-07-02
+
 ### chelpu'
 - **Dojmey pa' 'ej "jablu'bogh Doch"**: DaH Hoch qo'qammey profile-Daq Dojmey pa' ghaj. Qup ghob Dojmey chavlu' - Hoch QaQ, ghom QaQ, may' QaQ, mI' teH law' ("Madame Irma"), qoj ghob potlh chov QaQ - 'ej pa'Daq chel, badges je (mI' teH wa'DIch, tuj rap, ghom jey, latlh je, baS Doq/baS chIS/SuD). "jablu'bogh Doch"-Daq nIvbogh yISam, 'ej DaHjaj wa' DaSuqDI' yISov.
 

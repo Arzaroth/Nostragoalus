@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.10.0] - 2026-07-02
+
 ### Added
 - **Trophy cabinet and "my fridge"**: every player now has a trophy cabinet on their profile. Win a competition-end trophy - best overall, best in the group stage, best in the knockouts, the most exact scores ("Madame Irma"), or best predictor of the featured team - and it lands there, alongside achievement badges you unlock as you play (first exact score, hot streaks, beating the crowd, and more, in bronze/silver/gold). Pin your proudest few to your "fridge" to show them off, and get a notification the moment you earn one.
 
