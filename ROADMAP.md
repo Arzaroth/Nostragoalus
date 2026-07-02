@@ -88,12 +88,12 @@ effort buckets; order within a bucket is not priority.
       Crowd Bot, scored by the real engine (whatever the tier table pays a draw
       is what it earns - no separate premise to verify). No champion pick; jokers
       the most-drawish knockout match by crowd margin.
-- [ ] **Evil twin** (IN_PROGRESS, worktree-bot-personas): built as a bot persona,
-      NOT the original per-user swapped-picks view. Decision: it inverts the
-      **crowd consensus** scoreline (winner flipped, margin kept) as a single
-      ghost - the consensus bot's mischievous mirror - so a draw stays a draw
-      (self-twin) with no special case. Backs the least-picked champion, jokers
-      where fewest of the crowd did.
+- [ ] **Evil twin** (IN_PROGRESS, worktree-bot-personas): per-user, as originally
+      designed - your OWN picks with every scoreline swapped (winner flipped,
+      margin kept; a draw is its own twin), scored and ranked as a ghost. Keeps
+      your jokers and champion. Personal (only you see your twin, when signed in).
+      Implemented by scoping the bot overview to a single userId. An
+      anti-consensus crowd ghost was tried first and rejected.
 - [ ] **Outstanding-picks nudge + outlandish-pick guard** (IN_PROGRESS,
       worktree-pick-guard): the fixtures stats strip shows "N matches need a pick
       before the next lockout" with a jump-to-first-unpicked; and ScoreInput asks
@@ -137,8 +137,8 @@ effort buckets; order within a bucket is not priority.
 
 ## Features
 
-- [ ] **Achievements: trophy cabinet + "my fridge"** (IN_PROGRESS,
-      worktree-achievements): per-competition trophies derived at finalize into
+- [x] **Achievements: trophy cabinet + "my fridge"** (shipped in 2.10.0):
+      per-competition trophies derived at finalize into
       `competition_award` - best overall (the leaderboard winner), best in the
       group phase, best in the knockouts, most exact scores ("Madame Irma"), and
       best predictor of a configurable featured team (`competition.featuredTeamCode`,
@@ -188,7 +188,7 @@ effort buckets; order within a bucket is not priority.
       scoped key can POST/DELETE links. A forced raw (non-whitelist) embed runs in
       a strict sandbox (no same-origin). Still deferred: the separate curation bot
       that fills links via the API (see TODO.md).
-- [ ] **Multi-view** (IN_PROGRESS, worktree-multiview): a configurable grid
+- [x] **Multi-view** (shipped in 2.11.0): a configurable grid
       (1/2x1/2x2/3x3) to watch several matches at once. Decisions: each cell is a
       live tile (score/clock, goal-scorer chips, play-by-play) with a per-cell
       Tile|Stream toggle that reuses the curated `match_media` embed when a match
@@ -458,7 +458,7 @@ effort buckets; order within a bucket is not priority.
     no original). The half-points already prices the late-info edge, same as a
     switcher, so locking out non-pickers entirely was needlessly punitive.
     Pickers show in the window regardless of an existing pick ("Pick for half").
-- [ ] **Roadmap v2 - user suggestions + upvotes** (MVP page is in "Up next"):
+- [x] **Roadmap v2 - user suggestions + upvotes** (shipped in 2.12.0):
       suggestions feed the roadmap, roadmap items get user upvotes. One
       schema, two views. CLI pull command for suggestions. Spam guard: auth
       required + rate limit.
@@ -472,7 +472,7 @@ effort buckets; order within a bucket is not priority.
     PENDING/APPROVED/REJECTED tracks the review state; a `roadmap_vote` join is
     one upvote per user (toggle). `mise run roadmap-pull` triages by votes.
   - Kanban board + localized roadmap content stay as their own items below.
-- [ ] **Roadmap as kanban board**: render the /roadmap page as columns per
+- [x] **Roadmap as kanban board** (shipped in 2.13.0): render the /roadmap page as columns per
       status (planned / in progress / shipped) instead of stacked sections;
       admins drag cards between columns and reorder within one (replaces the
       up/down buttons). Public view read-only.
