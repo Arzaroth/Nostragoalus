@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+- **Arabic and French interface gaps filled in**: the SSO admin console is now fully translated into Arabic (it previously showed some raw text keys in the onboarding and SCIM panels), and the chat window's dock/undock control now has French labels.
+
 ## [2.9.0] - 2026-07-02
 
 ### Added
