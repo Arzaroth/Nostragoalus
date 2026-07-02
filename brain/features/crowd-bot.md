@@ -1,9 +1,10 @@
 # Prediction bots (personas)
 
-Synthetic "ghost" participants that play a strategy over the whole crowd's
-picks. They appear on the leaderboard and a per-bot predictions page so users
-can see, and beat, the wisdom (or the mischief) of the crowd. Three personas
-ship today; all are computed on the fly, none is stored.
+Synthetic "ghost" participants that play a strategy scored by the real engine.
+They appear on the leaderboard and a per-bot predictions page so users can see,
+and beat, them. Three personas ship today; all are computed on the fly, none is
+stored. Two are crowd-derived (`CONSENSUS`, `EQUALIZER`); one is **per-user**
+(`EVIL_TWIN`).
 
 ## Personas
 
@@ -13,13 +14,20 @@ Each persona is a picking strategy scored by the real engine. See
 | Persona | icon | Per-match pick | Joker (per KO round) | Champion |
 | --- | --- | --- | --- | --- |
 | `CONSENSUS` | 🤖 | the crowd's MODE/MEAN scoreline | where **most** of the crowd jokered | most-picked team |
-| `EVIL_TWIN` | 😈 | the consensus **inverted** (home/away swapped: winner flipped, margin kept; a draw stays a draw) | where **fewest** of the crowd jokered | **least**-picked team |
+| `EVIL_TWIN` | 😈 | **per-user**: the signed-in player's own picks with each score **swapped** (winner flipped, margin kept; a draw is its own twin) | the same match the **player** jokered | the **player's own** champion (kept, not inverted) |
 | `EQUALIZER` | ⚖️ | always a **1-1 draw** (`DRAW_SCORELINE`), ignoring the crowd scoreline and the MODE gate | the **most drawish** match (smallest crowd margin) | none (a draw-caller has no champion) |
 
-`consensusCount/Total` on each row is re-derived as how many of the crowd
-landed on exactly the persona's pick, so the "picked by X/Y" badge is truthful
-even for the contrarian bots. The evil twin and equalizer report `MODE`-style
-so the badge always shows that count rather than "mean of N".
+The evil twin is computed by scoping `getBotOverview` to a single `userId` (the
+signed-in viewer): `scoped` is just that player's own predictions, so
+`botPick` inverts each of their picks, the joker logic finds only their jokered
+match as a candidate, and `getBotChampion` returns their own pick. Without a
+viewer it returns empty - it never falls back to inverting the whole crowd.
+
+`consensusCount/Total` on a row is re-derived as how many of the crowd landed on
+exactly the persona's pick (the "picked by X/Y" badge). The consensus reports
+its method (MODE/MEAN), the equalizer reports `MODE`-style so the badge shows
+that draw count; the per-user evil twin has no crowd context, so its counts are
+0 and the badge is hidden.
 
 ## Identity
 
@@ -31,9 +39,9 @@ The wire/deep-link param is lowercase-hyphenated (`consensus`, `evil-twin`,
 
 ## Consensus methods
 
-Two methods, switchable in the UI, shaping the `CONSENSUS` and `EVIL_TWIN`
-picks (the equalizer ignores them, so its method toggle is hidden -
-`personaUsesMethod`):
+Two methods, switchable in the UI, shaping the `CONSENSUS` pick only (the evil
+twin swaps your literal picks and the equalizer always draws, so neither shows
+the method toggle - `personaUsesMethod`):
 
 - **MODE** - the most-picked scoreline. The default.
 - **MEAN** - the rounded average of all predicted scores.
@@ -58,8 +66,10 @@ Scored by the real engine, so each row is directly comparable to human players:
   would-be rank (`insertGhostRows`). On an exact points tie, real users win;
   the bot sorts below them.
 - The leaderboard offers one toggle per persona; the ghost hides in the global
-  view (jokers, finals and champion picks are competition-scoped). Each row
-  deep-links to `/{competition}/bot?persona=...`.
+  view (jokers, finals and champion picks are competition-scoped). The evil-twin
+  toggle only appears to a signed-in viewer (it swaps their own picks). Each row
+  deep-links to `/{competition}/bot?persona=...`; the evil twin's row reads
+  "Your Evil Twin".
 - Users see picks only for matches that have kicked off. Admins also see
   upcoming ones (server-enforced, so the pre-kickoff crowd is not leaked).
 

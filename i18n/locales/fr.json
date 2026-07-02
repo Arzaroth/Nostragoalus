@@ -593,12 +593,12 @@
     "meanOf": "moyenne de {total}",
     "persona": {
       "consensus": "Bot consensus",
-      "evilTwin": "Jumeau maléfique",
+      "evilTwin": "Votre jumeau maléfique",
       "equalizer": "L'Égaliseur"
     },
     "blurb": {
       "consensus": "Joue le score le plus choisi par les joueurs - ou la moyenne. N'affecte le classement de personne.",
-      "evilTwin": "Inverse le prono de la foule : il mise sur le résultat opposé à chaque match. N'affecte le classement de personne.",
+      "evilTwin": "Vos propres pronos avec chaque score inversé - voyez ce qu'aurait donné parier contre vous-même. Un nul est son propre jumeau. N'affecte le classement de personne.",
       "equalizer": "Pronostique un match nul à chaque rencontre. N'affecte le classement de personne."
     }
   },
