@@ -96,6 +96,23 @@ export async function seedCrowdPredictions(matchId: string, picks: [number, numb
   }
 }
 
+// Seed one prediction for a specific (already-existing) user - e.g. the
+// signed-up viewer whose evil twin swaps their own pick.
+export async function seedUserPrediction(
+  userId: string,
+  matchId: string,
+  home: number,
+  away: number,
+  isJoker = false,
+): Promise<void> {
+  const { rows } = await db().query<{ round_id: string }>(`select round_id from match where id = $1`, [matchId])
+  await db().query(
+    `insert into prediction (id, user_id, match_id, round_id, home_goals, away_goals, is_joker, updated_at)
+     values (gen_random_uuid(), $1, $2, $3, $4, $5, $6, now())`,
+    [userId, matchId, rows[0].round_id, home, away, isJoker],
+  )
+}
+
 // The (single) prediction stored for a match, for asserting the pick saved.
 export async function getMatchPrediction(matchId: string): Promise<{ home: number; away: number } | null> {
   const { rows } = await db().query<{ home_goals: number; away_goals: number }>(

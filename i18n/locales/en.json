@@ -597,12 +597,12 @@
     "meanOf": "averaged over {total}",
     "persona": {
       "consensus": "Crowd Bot",
-      "evilTwin": "Evil Twin",
+      "evilTwin": "Your Evil Twin",
       "equalizer": "The Equalizer"
     },
     "blurb": {
       "consensus": "Plays the most common score picked by all players - or the average. It doesn't affect anyone's rank.",
-      "evilTwin": "Flips the crowd's pick on its head: it backs the opposite result every match. It doesn't affect anyone's rank.",
+      "evilTwin": "Your own picks with every score flipped - see how betting against yourself would have gone. A draw is its own twin. It doesn't affect anyone's rank.",
       "equalizer": "Calls a draw in every single match. It doesn't affect anyone's rank."
     }
   },

@@ -593,12 +593,12 @@
     "meanOf": "{total} vo' motlh",
     "persona": {
       "consensus": "ghom qoq",
-      "evilTwin": "veqlargh qoq",
+      "evilTwin": "veqlargh qoqlIj",
       "equalizer": "rap qoq"
     },
     "blurb": {
       "consensus": "QujwI' law' wIv motlh noH qoq - pagh botlh. patlh choHbe'.",
-      "evilTwin": "may' Hoch DoH noH wIv qoq. patlh choHbe'.",
+      "evilTwin": "noHlIj Hoch DoH wIv qoq. rap: rap. patlh choHbe'.",
       "equalizer": "may' Hoch rap noH wIv qoq. patlh choHbe'."
     }
   },

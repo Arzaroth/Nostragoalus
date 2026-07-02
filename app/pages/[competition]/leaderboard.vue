@@ -55,7 +55,11 @@ const scopeOptions = computed(() => [
 // only - but have no global identity (joker rounds, finals and champion picks
 // are competition-scoped), so they disappear in the global view. Each persona
 // is an independent, toggleable ghost row.
-const botPersonas = BOT_PERSONA_PARAMS
+// The evil twin swaps your OWN picks, so it only offers itself to a signed-in
+// viewer; the crowd bots are for everyone.
+const botPersonas = computed(() =>
+  meId.value ? BOT_PERSONA_PARAMS : BOT_PERSONA_PARAMS.filter((p) => p !== 'evil-twin'),
+)
 const enabledPersonas = useBotPersonas()
 const botMethod = useBotMethod()
 function togglePersona(persona: BotPersonaParam, on: boolean) {
@@ -64,7 +68,7 @@ function togglePersona(persona: BotPersonaParam, on: boolean) {
     : enabledPersonas.value.filter((p) => p !== persona)
 }
 const consensusOn = computed(() => !isGlobal.value && enabledPersonas.value.includes('consensus'))
-const evilOn = computed(() => !isGlobal.value && enabledPersonas.value.includes('evil-twin'))
+const evilOn = computed(() => !isGlobal.value && !!meId.value && enabledPersonas.value.includes('evil-twin'))
 const equalizerOn = computed(() => !isGlobal.value && enabledPersonas.value.includes('equalizer'))
 const { data: consensusBot } = useBotRow('consensus', consensusOn, botMethod, scopedLeagueId)
 const { data: evilBot } = useBotRow('evil-twin', evilOn, botMethod, scopedLeagueId)

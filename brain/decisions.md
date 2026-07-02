@@ -56,12 +56,15 @@ feature/architecture doc that implements it.
   the single consensus bot instead of forking it:** the ghost model (derive,
   score, insert at rank) already fit; the personas differ only in the picking
   function, joker rule and champion rule.
-- **Evil twin = anti-consensus, equalizer = always-draw.** Of the many readings
-  of the names, these keep each bot a pure function of the crowd with no new
-  inputs: the evil twin inverts the consensus scoreline (winner flipped, margin
-  kept), and "the equalizer" is the football term for the tying goal, so it calls
-  a draw every match. The equalizer therefore has no champion and ignores the
-  MODE population gate.
+- **Evil twin = per-user, equalizer = always-draw.** The evil twin is each
+  player's OWN picks with every scoreline swapped (a draw is its own twin),
+  scored and ranked as a ghost - "betting against yourself". An anti-consensus
+  crowd ghost was built first and rejected: the twin must be personal. It reuses
+  the crowd-bot machinery by scoping `getBotOverview` to a single `userId`
+  (population 1, so no MODE/MEAN, keeping the player's jokers and champion), and
+  returns empty with no signed-in viewer rather than inverting the crowd. "The
+  equalizer" is the football term for the tying goal, so it calls a draw every
+  match - no champion, ignores the MODE gate.
 - **Each persona is its own ghost id and toggle.** Distinct `botUserId(persona)`
   values let all three coexist as independent leaderboard rows (real users still
   win exact ties); consensus keeps `'__bot__'` for backward-compatible links. See

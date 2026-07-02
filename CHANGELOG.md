@@ -6,7 +6,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 ## [Unreleased]
 
 ### Added
-- **Two new bots to chase**: alongside the Crowd Bot, the leaderboard now has an **Evil Twin** that bets against the crowd (it flips the popular pick and backs the opposite result every match) and an **Equalizer** that calls a draw in every single game. Toggle any of the three on or off independently - each shows up as its own ghost row at the rank it would have earned, and its own page lets you see every pick it made. Like the Crowd Bot, they never affect anyone's real standing.
+- **Two new bots to chase**: alongside the Crowd Bot, the leaderboard now has **Your Evil Twin** - your own picks with every score flipped, so you can see how betting against yourself would have gone (a draw is its own twin) - and an **Equalizer** that calls a draw in every single game. Toggle any of them on or off independently - each shows up as its own ghost row at the rank it would have earned, and its own page lists every pick it made. Your Evil Twin is personal (only you see it, when signed in); the others are for everyone. Like the Crowd Bot, none of them affect anyone's real standing.
 
 ## [2.15.0] - 2026-07-04
 
