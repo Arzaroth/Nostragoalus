@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [2.10.0] - 2026-07-02
+
 ### Ajouté
 - **Vitrine à trophées et « mon frigo »** : chaque joueur dispose désormais d'une vitrine à trophées sur son profil. Remportez un trophée de fin de compétition - meilleur au classement général, meilleur de la phase de groupes, meilleur des phases finales, le plus de scores exacts (« Madame Irma »), ou meilleur pronostiqueur de l'équipe à la une - et il y apparaît, aux côtés des badges de réussite débloqués en jouant (premier score exact, séries en cours, battre la foule, et bien d'autres, en bronze/argent/or). Épinglez vos préférés sur votre « frigo » pour les exhiber, et recevez une notification dès que vous en gagnez un.
 
