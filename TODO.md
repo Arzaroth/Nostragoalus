@@ -1779,3 +1779,8 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
       `users/[id]/predictions.get.ts`. Pull it into a shared
       `requireViewableProfile(event, id)` (alongside `getSessionUser`/`isAdmin`) so
       the two - and the next user-scoped GET - can't drift on a security guard.
+- [ ] **Sample the cabinet response schema**: `GET /api/users/{id}/cabinet` is wired
+      into `scripts/gen-api-schemas.mjs` TARGETS but not yet in the sampled
+      `response-schemas.json` - the regen was deferred to avoid drifting the ~20 other
+      endpoint examples against the shared (non-canonical-seed) dev DB. Pick it up on
+      the next controlled regen against a freshly-seeded stack.

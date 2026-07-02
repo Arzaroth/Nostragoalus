@@ -82,6 +82,7 @@ const TARGETS = {
   '/api/sso/check': '/api/sso/check?email=player%40example.com',
   '/api/predictions/crowd': `/api/predictions/crowd?competition=${liveComp}`,
   '/api/users/{id}/predictions': `/api/users/${userId}/predictions?competition=${liveComp}`,
+  '/api/users/{id}/cabinet': `/api/users/${userId}/cabinet?competition=${liveComp}`,
   '/api/commitments': '/api/commitments?limit=5',
   '/api/commitments/head': '/api/commitments/head',
 }
