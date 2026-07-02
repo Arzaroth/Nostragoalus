@@ -1449,6 +1449,19 @@
     "haulBadges": "{n} badges debloques",
     "summaryTitle": "C'etait votre tournoi",
     "summaryRank": "Rang final",
-    "summaryHaul": "Trophees et badges"
+    "summaryHaul": "Trophees et badges",
+      "shareDownload": "Telecharger ma carte",
+      "shareCopy": "Copier le lien de l'image",
+      "shareCopied": "Lien copie !",
+      "shareError": "Echec du partage. Reessayez.",
+      "card": {
+        "title": "Retro du tournoi",
+        "pts": "points",
+        "rank": "sur {players}",
+        "exact": "scores exacts",
+        "haul": "trophees et badges",
+        "top": "Top {pct}% des joueurs",
+        "tagline": "Pronostique. Marque. Frime."
+      }
   }
 }

@@ -1453,6 +1453,19 @@
     "haulBadges": "{n} badges unlocked",
     "summaryTitle": "That was your tournament",
     "summaryRank": "Final rank",
-    "summaryHaul": "Trophies & badges"
+    "summaryHaul": "Trophies & badges",
+      "shareDownload": "Download my card",
+      "shareCopy": "Copy image link",
+      "shareCopied": "Link copied!",
+      "shareError": "Sharing failed. Try again.",
+      "card": {
+        "title": "Tournament Wrapped",
+        "pts": "points",
+        "rank": "of {players}",
+        "exact": "exact scores",
+        "haul": "trophies & badges",
+        "top": "Top {pct}% of all players",
+        "tagline": "Predict. Score. Brag."
+      }
   }
 }

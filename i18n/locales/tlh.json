@@ -1449,6 +1449,19 @@
     "haulBadges": "{n} Deghmey poSmoHlu'",
     "summaryTitle": "may'lIj 'oHta'",
     "summaryRank": "patlh Qav",
-    "summaryHaul": "quH Degh je"
+    "summaryHaul": "quH Degh je",
+      "shareDownload": "navwIj yIjon",
+      "shareCopy": "mIllogh DevwI' yIvel",
+      "shareCopied": "velta'!",
+      "shareError": "maghbe'. yInIDqa'.",
+      "card": {
+        "title": "may' qonwI'",
+        "pts": "DoS",
+        "rank": "/ {players}",
+        "exact": "DoS pup",
+        "haul": "quH Degh je",
+        "top": "Hoch chuq {pct}%",
+        "tagline": "yI'aq. yIQap. yImIy."
+      }
   }
 }
