@@ -75,6 +75,7 @@ use the indexes.
 | [achievements.md](features/achievements.md) | Competition-end trophies + milestone badges, the trophy cabinet and "my showcase". |
 | [rewards.md](features/rewards.md) | Per-league prizes for the trophy criteria: owner config + live winner standings. |
 | [roadmap.md](features/roadmap.md) | Public roadmap + community suggestions and upvotes, admin triage. |
+| [wrapped.md](features/wrapped.md) | Tournament Wrapped: post-final recap deck + shareable summary card. |
 | [easter-eggs.md](features/easter-eggs.md) | MLP skins, pony reactions, the Klingon locale. |
 
 ## Find by question

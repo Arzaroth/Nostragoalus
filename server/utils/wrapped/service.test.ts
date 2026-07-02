@@ -235,6 +235,81 @@ describe('getWrapped', () => {
     expect(res.biggestMiss).toBeNull()
   })
 
+  it('breaks ties deterministically and ignores odds bonuses', async () => {
+    const c = await seedCompetition(db)
+    const g1 = await roundId(c, 'GROUP', 1)
+    const g2 = await roundId(c, 'GROUP', 2)
+    const g3 = await roundId(c, 'GROUP', 3)
+    const r32 = await roundId(c, 'R32')
+    const alice = await makeUser(db, 'alice')
+    const bob = await makeUser(db, 'bob')
+    const carol = await makeUser(db, 'carol')
+
+    const t0 = new Date('2026-06-10T12:00:00Z')
+    const t1 = new Date('2026-06-12T12:00:00Z')
+    const t2 = new Date('2026-06-14T12:00:00Z')
+    const t3 = new Date('2026-06-28T12:00:00Z')
+
+    // MD1: alice absent; bob and carol both MISS (level on the whole ladder).
+    const mBob = await scoredMatch(c, g1, 'GROUP', t0)
+    await pred({ userId: bob, matchId: mBob, roundId: g1, tier: 'MISS', points: 0 })
+    await pred({ userId: carol, matchId: mBob, roundId: g1, tier: 'MISS', points: 0 })
+
+    // MD2: two equal EXACTs at the same kickoff, both with an equal crowd bonus.
+    const mA = await scoredMatch(c, g2, 'GROUP', t1)
+    const mB = await scoredMatch(c, g2, 'GROUP', t1)
+    await pred({ userId: alice, matchId: mA, roundId: g2, tier: 'EXACT', points: 4, bonus: 2, isJoker: true })
+    await pred({ userId: alice, matchId: mB, roundId: g2, tier: 'EXACT', points: 4, bonus: 2 })
+
+    // MD3: a second joker on equal points (later kickoff) with an ODDS bonus,
+    // plus a scored row with a null tier and null bonus.
+    const mC = await scoredMatch(c, g3, 'GROUP', t2)
+    await pred({ userId: alice, matchId: mC, roundId: g3, tier: 'EXACT', points: 4, bonus: 5, bonusSource: 'ODDS', isJoker: true })
+    const mNull = await scoredMatch(c, g3, 'GROUP', t2)
+    const nullPredId = await pred({ userId: alice, matchId: mNull, roundId: g3, tier: 'DIFF', points: 1 })
+    await db.update(prediction).set({ baseTier: null, bonusPoints: null }).where(eq(prediction.id, nullPredId))
+
+    // R32: two same-kickoff misses that the field (bob) nailed equally.
+    const mD = await scoredMatch(c, r32, 'R32', t3)
+    const mE = await scoredMatch(c, r32, 'R32', t3)
+    await pred({ userId: alice, matchId: mD, roundId: r32, tier: 'MISS', points: 0 })
+    await pred({ userId: alice, matchId: mE, roundId: r32, tier: 'MISS', points: 0 })
+    await pred({ userId: bob, matchId: mD, roundId: r32, tier: 'EXACT', points: 3 })
+    await pred({ userId: bob, matchId: mE, roundId: r32, tier: 'EXACT', points: 3 })
+
+    await decideFinal(c)
+    const res = (await getWrapped(db, { competitionId: c, userId: alice })) as WrappedDto
+
+    // Equal points + equal kickoff resolve on matchId; equal points across
+    // kickoffs resolve to the earlier one.
+    const firstAB = [mA, mB].sort()[0]
+    expect(res.bestPick!.matchId).toBe(firstAB)
+    expect(res.jokers.best!.matchId).toBe(mA)
+    expect(res.jokers.played).toBe(2)
+
+    // The ODDS bonus is excluded from the crowd slide entirely.
+    expect(res.crowd.bonusPoints).toBe(4)
+    expect(res.crowd.biggestBonus!.matchId).toBe(firstAB)
+    expect(res.crowd.biggestBonus!.bonusPoints).toBe(2)
+
+    // Both misses were equally gettable: the earliest matchId wins.
+    expect(res.biggestMiss!.matchId).toBe([mD, mE].sort()[0])
+    expect(res.biggestMiss!.fieldExactPct).toBe(50)
+
+    // Alice has no MD1 pick, so her journey starts at MD2 (3 rounds, not 4).
+    expect(res.journey).toHaveLength(3)
+    expect(res.journey[0]!.players).toBe(3)
+    expect(res.journey[0]!.rank).toBe(1)
+
+    // A featured pick scored before bonuses existed (null bonusPoints) reads 0.
+    const bobRes = (await getWrapped(db, { competitionId: c, userId: bob })) as WrappedDto
+    expect(bobRes.bestPick!.totalPoints).toBe(3)
+    const bobBestId = bobRes.bestPick!.matchId
+    await db.update(prediction).set({ bonusPoints: null }).where(eq(prediction.matchId, bobBestId))
+    const bobAgain = (await getWrapped(db, { competitionId: c, userId: bob })) as WrappedDto
+    expect(bobAgain.bestPick!.bonusPoints).toBe(0)
+  })
+
   it('hides rank and shrinks the population for a hidden user, keeping their points', async () => {
     const c = await seedCompetition(db)
     const g1 = await roundId(c, 'GROUP', 1)
