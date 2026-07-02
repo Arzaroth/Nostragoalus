@@ -5,7 +5,7 @@ export function useMatchMedia(id: Ref<string>) {
   return useQuery({
     queryKey: ['match-media', id],
     queryFn: ({ signal }) =>
-      $fetch<{ media: MatchMediaItem[] }>(`/api/matches/${id.value}/media`, { signal }).then((r) => r.media),
+      $fetch<{ media: MatchMediaItem[] }>(`/api/matches/${encodeURIComponent(id.value)}/media`, { signal }).then((r) => r.media),
   })
 }
 

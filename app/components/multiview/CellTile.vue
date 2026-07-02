@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { matchHasStarted, matchIsInPlay, type MatchStatus } from '#shared/types/match'
+import { liveClockSpec } from '../../utils/match-view'
 import type { MatchListItem } from '../../composables/useMatches'
 import type { PlayByPlayEvent } from '../match/PlayByPlay.vue'
 
@@ -22,10 +23,9 @@ const homeScore = computed(() => props.match?.fullTimeHome ?? null)
 const awayScore = computed(() => props.match?.fullTimeAway ?? null)
 const goals = computed<any[]>(() => (detail.value as any)?.goals ?? [])
 const clock = computed(() => {
-  const d = detail.value as any
   if (!isLive.value) return null
-  if (status.value === 'PAUSED' || d?.halfTime) return t('match.halfTime')
-  return d?.minute || t('match.live')
+  const s = liveClockSpec(status.value, detail.value as { halfTime?: boolean | null; minute?: string | null } | null)
+  return 'text' in s ? s.text : t(s.key)
 })
 </script>
 

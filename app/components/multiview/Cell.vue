@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { visibleMediaForStatus, type MatchMediaItem } from '#shared/match-media'
+import { MAX_STREAM_CELLS } from '../../utils/multiview'
 import type { MatchStatus } from '#shared/types/match'
 import type { MatchListItem } from '../../composables/useMatches'
 
@@ -34,7 +35,7 @@ watch(hasStream, (has) => {
   if (!has && props.viewMode === 'stream') emit('update:viewMode', 'tile')
 })
 
-const streamTooltip = computed(() => (!hasStream.value ? t('multiview.streamUnavailable') : !props.streamAllowed ? t('multiview.streamCapReached', { count: 1 }) : t('multiview.view.stream')))
+const streamTooltip = computed(() => (!hasStream.value ? t('multiview.streamUnavailable') : !props.streamAllowed ? t('multiview.streamCapReached', { count: MAX_STREAM_CELLS }) : t('multiview.view.stream')))
 </script>
 
 <template>

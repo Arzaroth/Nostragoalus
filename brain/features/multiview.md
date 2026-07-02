@@ -50,11 +50,13 @@ survives a reload.
   the tile if its embed disappears.
 - **Chat follows focus, not the route.** `useMultiviewFocus` is an app-level
   singleton (same one-slot pattern as `useChatDockOpen`) holding
-  `focusedMatchId` + `presentCells`. The page publishes them (and clears on
-  unmount); the single [`ChatDock`](chat.md) derives its match thread from
-  `focusedMatchId` (falling back to the route), and an inbox/deep-link click on a
-  match that is a grid cell calls `tryFocus` to focus it in place instead of
-  navigating to the detail page. See [decisions.md](../decisions.md).
+  `focusedMatchId` + `presentCells` + a page-registered focus-request handler. The
+  page publishes the focus/cells (and clears them on unmount); the single
+  [`ChatDock`](chat.md) derives its match thread from `focusedMatchId` (falling back
+  to the route). An inbox/deep-link click on a match that is a grid cell calls
+  `tryFocus`, which routes through the page handler to write `focus` to the URL (the
+  single source of truth), so the grid highlight and the dock thread move together
+  instead of the dock drifting from the grid. See [decisions.md](../decisions.md).
 
 ## Why not per-cell chat
 
@@ -66,9 +68,10 @@ threads. Instead there is one dock that follows the focused cell. See
 
 ## Reused, not reinvented
 
-- `app/components/match/PlayByPlay.vue` (`MatchPlayByPlay`) + the pure PBP mapping
-  in `app/utils/match-view.ts` (`pbpTextSpec`/`pbpIcon`/`isGoalKind`/`pbpFlagCode`),
-  both extracted from the match detail page and shared with the tile.
+- `app/components/match/PlayByPlay.vue` (`MatchPlayByPlay`) + the pure match-view
+  helpers in `app/utils/match-view.ts` (`pbpTextSpec`/`isGoalKind`/`pbpFlagCode`,
+  and the shared `liveClockSpec` live-clock rule), both extracted from the match
+  detail page and shared with the tile.
 - `useLiveMatches`, `useMatchMedia` + `MatchMediaEmbed`, `ReactionBar`,
   `MatchViewers`, the fixture list query `useMatches`.
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { buildTimeline, h2hSummaryOf } from '../../../utils/match-view'
+import { buildTimeline, h2hSummaryOf, liveClockSpec } from '../../../utils/match-view'
 import { visibleMediaForStatus, type MatchMediaKind } from '#shared/match-media'
 import { EXTRA_TIME_BREAK_MINUTE, matchHasStarted, matchIsInPlay } from '#shared/types/match'
 const { t, locale } = useI18n()
@@ -214,9 +214,10 @@ watch(scoreTotal, (now) => {
 })
 // Live clock under the score: half-time, the provider's running minute (e.g.
 // "47'"), or a bare LIVE when the minute isn't exposed.
-const liveClock = computed(() =>
-  status.value === 'PAUSED' || detail.value?.halfTime ? t('match.halfTime') : detail.value?.minute || t('match.live'),
-)
+const liveClock = computed(() => {
+  const s = liveClockSpec(status.value, detail.value)
+  return 'text' in s ? s.text : t(s.key)
+})
 // Possession bar: FIFA's BallPossession is null mid-match, but the live IFES
 // stats carry it - fall back to those so the bar shows during the game too.
 const possession = computed(() => {
