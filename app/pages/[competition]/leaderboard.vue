@@ -38,6 +38,10 @@ watch(boardError, (err) => {
 const { session } = useAuth()
 const meId = computed(() => session.value?.data?.user?.id)
 
+// The wrapped banner only shows once the final is decided (ready: true).
+const { data: wrappedData } = useWrapped(() => !!meId.value)
+const wrappedReady = computed(() => wrappedData.value?.ready === true)
+
 // Short fixed label for the league scope: the pill already names the league,
 // and the full name overflowed the header next to the bot controls.
 const scopeOptions = computed(() => [
@@ -119,6 +123,21 @@ const hasLive = computed(() => displayRows.value.some((r) => r.livePoints))
         <SelectButton v-model="scope" :options="scopeOptions" option-label="label" option-value="value" :allow-empty="false" size="small" />
       </div>
     </div>
+    <!-- Post-final: the recap banner invites everyone into their Wrapped. -->
+    <NuxtLink
+      v-if="wrappedReady"
+      :to="`/${slug}/wrapped`"
+      class="flex items-center gap-3 rounded-xl p-4 mb-5 text-white no-underline"
+      style="background: linear-gradient(120deg, #4338ca, #7c3aed)"
+      data-test="wrapped-banner"
+    >
+      <span class="text-3xl">🎉</span>
+      <span class="flex-1">
+        <span class="block font-bold">{{ t('wrapped.bannerTitle') }}</span>
+        <span class="block text-sm opacity-90">{{ t('wrapped.bannerBody') }}</span>
+      </span>
+      <i class="pi pi-arrow-right rtl:rotate-180" />
+    </NuxtLink>
     <div v-if="isLoading" class="opacity-60">{{ t('common.loading') }}</div>
     <div v-else-if="!displayRows.length" class="opacity-60">{{ t('leaderboard.empty') }}</div>
 
