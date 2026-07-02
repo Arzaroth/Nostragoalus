@@ -252,9 +252,22 @@ effort buckets; order within a bucket is not priority.
     existing preferences pattern), VAPID keys via runtimeConfig (new env), a
     service-worker `push`/`notificationclick` handler, and a server `web-push`
     send that prunes dead subscriptions (404/410). Ship before any native wrapper.
-- [ ] **Tournament Wrapped**: end-of-competition personal recap - best/worst
-      pick, joker efficiency, percentile, biggest rarity bonus - with a
-      shareable image card. Pure read-side work.
+- [ ] **Tournament Wrapped** (IN_PROGRESS, worktree-wrapped): end-of-competition
+      personal recap - best/worst pick, joker efficiency, percentile, biggest
+      rarity bonus - with a shareable image card. Pure read-side work.
+      Decisions (locked 2026-07-02):
+  - **Format: story slides** - Spotify-style full-screen tap/swipe sequence
+    (~8-10 stat slides) ending on a summary card; not a static page.
+  - **Unlock: post-final only** - available once the competition is finalized
+    (all trophies awarded, data frozen). No mid-tournament "so far" variant.
+  - **Rank journey: replay reconstruction** - rank-over-time computed
+    retroactively by replaying scored predictions in kickoff order (no new
+    snapshot table; heavy query but cacheable since post-final data is frozen).
+  - **Chat stats: counts only** - messages sent, reactions given/received,
+    top reaction; derived from row counts, never touches E2EE content.
+  - Aggregation builds on `computeAchievementStats` + per-prediction points
+    rows; share card reuses the satori/resvg stack (as planned in
+    brain/features/share-images.md).
 - [ ] **What-if stats**: "joker on match X = +14 pts", "following the crowd
       would have scored N vs your M" (reuses consensus-bot data).
 - [ ] **Past-pick counterfactual** (IN_PROGRESS, worktree-past-pick): on a match
