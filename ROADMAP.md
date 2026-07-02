@@ -647,6 +647,7 @@ effort buckets; order within a bucket is not priority.
       `active:false` maps to a ban (block sign-in + revoke sessions, data kept).
       Ships with the lifecycle (draft/enabled/disabled), connection test, OIDC
       test-sign-in claim preview, and DNS-TXT domain verification with admin bypass.
+      Shipped 2.9.0.
 
 ## Dropped / rethink
 
