@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.12.0] - 2026-07-02
+
 ### Added
 - **Suggest and upvote roadmap features**: the roadmap page now has a community suggestions section - signed in, propose a feature in a few words and it appears right away, marked "under review" until we pick it up, for everyone to upvote. You can upvote any roadmap item too, and suggestions are ranked by votes so the most-wanted ideas rise to the top.
 

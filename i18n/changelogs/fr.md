@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [2.12.0] - 2026-07-02
+
 ### Ajouté
 - **Proposer et voter pour des fonctionnalités de la feuille de route** : la page feuille de route dispose désormais d'une section suggestions communautaires - connecté, proposez une fonctionnalité en quelques mots et elle apparaît aussitôt, marquée « en cours d'examen » jusqu'à ce que nous la retenions, pour que chacun puisse voter. Vous pouvez aussi voter pour n'importe quel élément de la feuille de route, et les suggestions sont classées par votes afin que les idées les plus demandées remontent en tête.
 
