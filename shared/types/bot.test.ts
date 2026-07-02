@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   BOT_PERSONAS,
+  BOT_PERSONA_PARAMS,
   BOT_USER_ID,
   DRAW_SCORELINE,
   botPersonaParam,
@@ -26,6 +27,10 @@ describe('bot personas', () => {
     }
     expect(botPersonaParam('EVIL_TWIN')).toBe('evil-twin')
     expect(botPersonaParam('EQUALIZER')).toBe('equalizer')
+  })
+
+  it('wire-param list lines up with the persona list', () => {
+    expect(BOT_PERSONA_PARAMS).toEqual(BOT_PERSONAS.map(botPersonaParam))
   })
 
   it('falls back to CONSENSUS for unknown, empty or non-string values', () => {

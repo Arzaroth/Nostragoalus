@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/vue-query'
 import type { Serialized } from '#shared/types/serialized'
+import type { BotPersonaParam } from '#shared/types/bot'
 import type { BotChampion, BotMatchRow, BotSummary } from '../../server/utils/bot/service'
 
 // Lowercase on the wire; the server echoes the effective method back after
@@ -24,12 +25,14 @@ export interface BotLeaderboardRow {
 
 export interface BotRowPayload {
   row: BotLeaderboardRow | null
+  persona: BotPersonaParam
   method: 'MODE' | 'MEAN'
   modeAvailable: boolean
 }
 
 export interface BotPredictionsPayload {
   bot: { id: string }
+  persona: BotPersonaParam
   competition: { id: string; slug: string; name: string }
   league: { id: string; name: string } | null
   champion: BotChampion | null
@@ -42,36 +45,58 @@ export interface BotPredictionsPayload {
 }
 
 // Shared between the leaderboard toggle and the bot page so switching the
-// consensus method in one place carries over to the other.
+// consensus method in one place carries over to the other. Only CONSENSUS and
+// EVIL_TWIN read it; the equalizer ignores the method entirely.
 export function useBotMethod() {
   return useState<BotMethodParam>('bot-method', () => 'mode')
 }
 
-// A league id scopes the consensus to that league's members; the server
-// derives the competition from the league, so only one of the two is sent.
-function botQuery(slug: Ref<string | null>, method: Ref<BotMethodParam>, league: Ref<string | null>) {
-  return league.value
-    ? { league: league.value, method: method.value }
-    : { competition: slug.value ?? undefined, method: method.value }
+// Which persona ghosts are toggled on in the leaderboard (independent rows).
+export function useBotPersonas() {
+  return useState<BotPersonaParam[]>('bot-personas', () => [])
 }
 
-export function useBotRow(enabled: Ref<boolean>, method: Ref<BotMethodParam>, leagueId?: Ref<string | null>) {
+// A league id scopes the consensus to that league's members; the server
+// derives the competition from the league, so only one of the two is sent.
+function botQuery(
+  slug: Ref<string | null>,
+  persona: BotPersonaParam,
+  method: Ref<BotMethodParam>,
+  league: Ref<string | null>,
+) {
+  const scope = league.value ? { league: league.value } : { competition: slug.value ?? undefined }
+  return { ...scope, persona, method: method.value }
+}
+
+export function useBotRow(
+  persona: BotPersonaParam,
+  enabled: Ref<boolean>,
+  method: Ref<BotMethodParam>,
+  leagueId?: Ref<string | null>,
+) {
   const slug = useSelectedCompetition()
   const league = leagueId ?? ref(null)
   return useQuery({
-    queryKey: ['bot-row', slug, method, league],
+    queryKey: ['bot-row', persona, slug, method, league],
     enabled,
     queryFn: ({ signal }) =>
-      $fetch<BotRowPayload>('/api/bot/leaderboard-row', { query: botQuery(slug, method, league), signal }),
+      $fetch<BotRowPayload>('/api/bot/leaderboard-row', { query: botQuery(slug, persona, method, league), signal }),
   })
 }
 
-export function useBotPredictions(method: Ref<BotMethodParam>, leagueId?: Ref<string | null>) {
+export function useBotPredictions(
+  persona: Ref<BotPersonaParam>,
+  method: Ref<BotMethodParam>,
+  leagueId?: Ref<string | null>,
+) {
   const slug = useSelectedCompetition()
   const league = leagueId ?? ref(null)
   return useQuery({
-    queryKey: ['bot-predictions', slug, method, league],
+    queryKey: ['bot-predictions', persona, slug, method, league],
     queryFn: ({ signal }) =>
-      $fetch<BotPredictionsPayload>('/api/bot/predictions', { query: botQuery(slug, method, league), signal }),
+      $fetch<BotPredictionsPayload>('/api/bot/predictions', {
+        query: botQuery(slug, persona.value, method, league),
+        signal,
+      }),
   })
 }

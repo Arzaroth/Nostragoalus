@@ -29,6 +29,8 @@ export function botUserId(persona: BotPersona): string {
 // Lowercase, hyphenated persona on the wire (query string / deep link).
 export type BotPersonaParam = 'consensus' | 'evil-twin' | 'equalizer'
 
+export const BOT_PERSONA_PARAMS: readonly BotPersonaParam[] = ['consensus', 'evil-twin', 'equalizer']
+
 const PARAM_TO_PERSONA: Record<BotPersonaParam, BotPersona> = {
   consensus: 'CONSENSUS',
   'evil-twin': 'EVIL_TWIN',
