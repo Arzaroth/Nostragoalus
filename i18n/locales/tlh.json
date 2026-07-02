@@ -806,7 +806,8 @@
       "actionFailed": "Qagh - yInID.",
       "userSuggestion": "lo'wI' qeS",
       "hide": "yISo'",
-      "restore": "yIchegh"
+      "restore": "yIchegh",
+      "approve": "yIchaw'"
     },
     "sso": {
       "title": "SSO",
@@ -1065,6 +1066,7 @@
     "empty": "pagh naDev tu'lu'.",
     "error": "DaH He vI'ang laHbe'.",
     "suggested": "ghom qeSmey",
+    "underReview": "nuDlu'taH",
     "upvote": "yIwuq",
     "upvoteRemove": "wuq yIteq",
     "signInToVote": "wuqmeH yI'el",

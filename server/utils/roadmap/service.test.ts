@@ -145,12 +145,12 @@ describe('roadmap service', () => {
     await expect(reorderRoadmapItem(db, 'nope', 'up')).rejects.toThrow(NotFoundError)
   })
 
-  it('creates a suggestion: SUGGESTED, APPROVED, authored, trimmed, appended', async () => {
+  it('creates a suggestion: SUGGESTED, PENDING (under review), authored, trimmed, appended', async () => {
     const { db: d, client: c } = await createTestDb()
     const u = await makeUser(d, 'u1')
     const s = await createSuggestion(d, { authorId: u, title: '  Dark mode  ', description: '  please  ' })
     expect(s.status).toBe('SUGGESTED')
-    expect(s.moderationStatus).toBe('APPROVED')
+    expect(s.moderationStatus).toBe('PENDING')
     expect(s.authorId).toBe(u)
     expect(s.title).toBe('Dark mode')
     expect(s.description).toBe('please')
@@ -222,15 +222,35 @@ describe('roadmap service', () => {
     await c.close()
   })
 
-  it('promotes a suggestion onto the roadmap and can set moderation state', async () => {
+  it('promotes a pending suggestion onto the roadmap, auto-approving it', async () => {
     const { db: d, client: c } = await createTestDb()
     const u = await makeUser(d, 'u1')
     const s = await createSuggestion(d, { authorId: u, title: 'Great idea' })
+    expect(s.moderationStatus).toBe('PENDING')
     const promoted = await updateRoadmapItem(d, s.id, { status: 'PLANNED' })
     expect(promoted.status).toBe('PLANNED')
     expect(promoted.position).toBe(0) // appended into the empty PLANNED column
+    // Promotion blesses a pending suggestion.
+    expect(promoted.moderationStatus).toBe('APPROVED')
     const hidden = await updateRoadmapItem(d, s.id, { moderationStatus: 'REJECTED' })
     expect(hidden.moderationStatus).toBe('REJECTED')
+    await c.close()
+  })
+
+  it('keeps a pending suggestion public (under review) and upvotable', async () => {
+    const { db: d, client: c } = await createTestDb()
+    const author = await makeUser(d, 'u1')
+    const voter = await makeUser(d, 'u2')
+    const s = await createSuggestion(d, { authorId: author, title: 'Please add this' })
+    // Public list shows it despite PENDING (only REJECTED is hidden).
+    const seen = (await listRoadmapItems(d)).find((i) => i.id === s.id)!
+    expect(seen).toBeDefined()
+    expect(seen.moderationStatus).toBe('PENDING')
+    // And it can be upvoted while under review.
+    expect(await toggleVote(d, { itemId: s.id, userId: voter })).toEqual({ voted: true, voteCount: 1 })
+    // An explicit moderationStatus on a promote is honored over the auto-bless.
+    const kept = await updateRoadmapItem(d, s.id, { status: 'PLANNED', moderationStatus: 'PENDING' })
+    expect(kept.moderationStatus).toBe('PENDING')
     await c.close()
   })
 })

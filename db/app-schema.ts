@@ -857,10 +857,10 @@ export const roadmapStatusEnum = pgEnum('roadmap_status', [
   'SUGGESTED',
 ])
 
-// Spam gate for user submissions. Admin-authored items default APPROVED;
-// user suggestions land APPROVED too (public-immediately) and admins flip to
-// REJECTED to hide. PENDING exists so the model can tighten to approve-first
-// later without another migration.
+// Review state for a suggestion (hybrid moderation). Admin-authored items
+// default APPROVED. User suggestions land PENDING ("under review"): publicly
+// visible and upvotable at once, but not official until an admin blesses them
+// to APPROVED. REJECTED hides spam from the public view.
 export const roadmapModerationEnum = pgEnum('roadmap_moderation', [
   'PENDING',
   'APPROVED',

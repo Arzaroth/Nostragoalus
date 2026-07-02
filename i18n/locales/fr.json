@@ -806,7 +806,8 @@
       "actionFailed": "L'action a échoué - réessaie.",
       "userSuggestion": "Suggestion d'utilisateur",
       "hide": "Masquer",
-      "restore": "Restaurer"
+      "restore": "Restaurer",
+      "approve": "Approuver"
     },
     "sso": {
       "title": "Authentification unique (SSO)",
@@ -1065,6 +1066,7 @@
     "empty": "Rien ici pour l'instant.",
     "error": "Impossible de charger la feuille de route pour le moment.",
     "suggested": "Suggestions de la communauté",
+    "underReview": "En cours d'examen",
     "upvote": "Voter",
     "upvoteRemove": "Retirer le vote",
     "signInToVote": "Connecte-toi pour voter",

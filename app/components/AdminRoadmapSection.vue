@@ -201,6 +201,16 @@ function saveEdit() {
             @update:model-value="(v: RoadmapStatus) => setStatus(item, v)"
           />
           <Button
+            v-if="item.moderationStatus === 'PENDING'"
+            icon="pi pi-check"
+            severity="success"
+            text
+            rounded
+            size="small"
+            :aria-label="t('admin.roadmap.approve')"
+            @click="setModeration(item, 'APPROVED')"
+          />
+          <Button
             v-if="item.moderationStatus === 'REJECTED'"
             icon="pi pi-eye"
             severity="secondary"

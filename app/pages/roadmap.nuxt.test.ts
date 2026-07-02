@@ -41,8 +41,8 @@ async function roadmapMod() {
   return (await import('../composables/useRoadmap')) as any
 }
 
-const IN_PROGRESS = { id: 'a', title: 'Live scores', description: null, status: 'IN_PROGRESS', position: 0, voteCount: 3, viewerHasVoted: false, updatedAt: '' }
-const SUGGESTION = { id: 's', title: 'Dark mode', description: 'please', status: 'SUGGESTED', position: 0, voteCount: 7, viewerHasVoted: true, updatedAt: '' }
+const IN_PROGRESS = { id: 'a', title: 'Live scores', description: null, status: 'IN_PROGRESS', position: 0, voteCount: 3, viewerHasVoted: false, underReview: false, updatedAt: '' }
+const SUGGESTION = { id: 's', title: 'Dark mode', description: 'please', status: 'SUGGESTED', position: 0, voteCount: 7, viewerHasVoted: true, underReview: true, updatedAt: '' }
 
 beforeEach(async () => {
   ;(await authMod()).__signed.value = true
@@ -70,6 +70,8 @@ describe('roadmap page', () => {
     expect(wrapper.text()).toContain('Live scores')
     expect(wrapper.text()).toContain('Community suggestions')
     expect(wrapper.text()).toContain('Dark mode')
+    // The pending suggestion is flagged under review.
+    expect(wrapper.text()).toContain('Under review')
     // One vote button per item.
     expect(wrapper.findAll('button.ng-vote')).toHaveLength(2)
     // The suggestion the viewer voted for is marked pressed.
