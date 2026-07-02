@@ -1810,3 +1810,23 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
       `response-schemas.json` - the regen was deferred to avoid drifting the ~20 other
       endpoint examples against the shared (non-canonical-seed) dev DB. Pick it up on
       the next controlled regen against a freshly-seeded stack.
+
+## Tournament Wrapped (deferred from the feature pass)
+
+- [ ] No server-side cache on `getWrapped`: every hit replays the rank journey
+      and runs `computeAchievementStats` over the whole competition. Post-final
+      the data is frozen, so a per-(user, competition) cache (nitro storage or
+      an LRU with a day TTL, invalidated on rescore) is safe and worth it before
+      a big-population final.
+- [ ] The wrapped share flow returns the raw PNG URL only - no `/s/`-style
+      landing page with OG unfurl tags like the prediction card has. Add a
+      wrapped share landing (or fold into `/s/`) for real link unfurls.
+- [ ] The rank journey uses prediction points only; the champion/best-scorer
+      bonuses land at finalize with no timeline, so the last journey point can
+      disagree with the final rank shown on the totals slide. Documented
+      approximation - revisit if users notice.
+- [ ] Deck polish: no auto-advance timer (manual taps only), no per-slide
+      count-up/confetti animations, and the RTL (ar) layout of the deck has not
+      been verified in a real browser.
+- [ ] Wrapped "not ready" teaser could show a countdown to the final instead of
+      static copy.
