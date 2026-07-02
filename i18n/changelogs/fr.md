@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [2.13.0] - 2026-07-02
+
 ### Modifié
 - **La feuille de route est désormais un tableau** : la feuille de route se lit en colonnes côte à côte - suggestions de la communauté, planifié, en cours et livré - au lieu d'une liste empilée, pour saisir tout le pipeline d'un coup d'œil (balayez latéralement sur écran étroit).
 
