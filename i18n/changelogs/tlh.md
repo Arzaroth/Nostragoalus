@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.11.0] - 2026-07-02
+
 ### chelpu'
 - **qaS law' leghlu'**: rap wa' poH law' qaS legh, choHlaHbogh HatlhDaq (1, 2x1, 2x2, qoj 3x3). Hoch HatlhHom yIn HaSta cha' - mI', tlhoy'wI', maghwI'pu' je qaS ta' - qoj qaS video HIjmeH chID. HatlhHommey 'ej HatlhmeH DaWIvbogh URL-Daq tu'lu', vaj latlhpu' vI'IpmeH 'ej qaSDI' vay' choHqa'be'. QIn Qorwagh yISambogh HatlhHom tlha', 'ej QIn ngaSwI'Daq qaS DaqIpDI' HatlhHomDaq jaH, Hatlh mejbe'.
 
