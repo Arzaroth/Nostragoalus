@@ -811,7 +811,8 @@
       "userSuggestion": "User suggestion",
       "hide": "Hide",
       "restore": "Restore",
-      "approve": "Approve"
+      "approve": "Approve",
+      "boardHint": "Drag cards between columns to change status, or reorder within a column."
     },
     "sso": {
       "title": "Single Sign-On",
