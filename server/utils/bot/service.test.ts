@@ -8,8 +8,8 @@ import { DEFAULT_RULES } from '../scoring/config'
 import { finalizeMatches } from '../sync/finalize'
 import { championPick, match, prediction, scoringConfig, user } from '../../../db/schema'
 import { insertOddsSnapshots } from '../odds/store'
-import { BOT_USER_ID } from '../../../shared/types/bot'
-import { MIN_CONSENSUS_USERS, clearBotCache, computeConsensus, getBotChampion, getBotOverview, getBotOverviewCached } from './service'
+import { BOT_USER_ID, botUserId } from '../../../shared/types/bot'
+import { MIN_CONSENSUS_USERS, botPick, clearBotCache, computeConsensus, getBotChampion, getBotOverview, getBotOverviewCached } from './service'
 
 const NOW = new Date('2026-06-15T12:00:00Z')
 const PAST = new Date('2026-06-11T16:00:00Z')
@@ -64,6 +64,44 @@ describe('computeConsensus - MEAN', () => {
 
   it('returns null for no rows', () => {
     expect(computeConsensus([], 'MEAN')).toBeNull()
+  })
+})
+
+describe('botPick - personas', () => {
+  it('CONSENSUS returns the crowd mode pick unchanged', () => {
+    expect(botPick(scores([2, 1], [2, 1], [2, 1], [1, 0], [0, 0]), 'CONSENSUS', 'MODE')).toMatchObject({
+      home: 2,
+      away: 1,
+      count: 3,
+      total: 5,
+    })
+  })
+
+  it('EVIL_TWIN inverts the consensus and recounts the crowd matchers', () => {
+    // mode 2-1 -> inverted 1-2; exactly one crowd row actually picked 1-2.
+    expect(botPick(scores([2, 1], [2, 1], [2, 1], [1, 2], [0, 0]), 'EVIL_TWIN', 'MODE')).toMatchObject({
+      home: 1,
+      away: 2,
+      count: 1,
+      total: 5,
+    })
+  })
+
+  it('EVIL_TWIN leaves a drawn consensus drawn', () => {
+    expect(botPick(scores([1, 1], [1, 1], [1, 1], [2, 2], [0, 0]), 'EVIL_TWIN', 'MODE')).toMatchObject({ home: 1, away: 1 })
+  })
+
+  it('EVIL_TWIN inherits the MODE population gate', () => {
+    expect(botPick(scores([2, 1], [2, 1]), 'EVIL_TWIN', 'MODE')).toBeNull()
+  })
+
+  it('EQUALIZER always calls a 1-1 draw regardless of the crowd or method', () => {
+    expect(botPick(scores([3, 0], [3, 0]), 'EQUALIZER', 'MODE')).toMatchObject({ home: 1, away: 1, count: 0, total: 2 })
+    expect(botPick(scores([1, 1], [2, 0]), 'EQUALIZER', 'MEAN')).toMatchObject({ home: 1, away: 1, count: 1, total: 2 })
+  })
+
+  it('returns null with no rows for every persona', () => {
+    for (const p of ['CONSENSUS', 'EVIL_TWIN', 'EQUALIZER'] as const) expect(botPick([], p, 'MODE')).toBeNull()
   })
 })
 
@@ -531,6 +569,130 @@ describe('getBotOverviewCached', () => {
     const overview = await getBotOverview(db, competitionId, {}, NOW)
     expect(overview.population).toBe(0)
     expect(overview.summary.rank).toBeNull()
+    await client.close()
+  })
+})
+
+describe('getBotOverview - EVIL_TWIN', () => {
+  it('inverts the consensus, ids itself distinctly, and backs the least-picked champion', async () => {
+    const { db, client, competitionId, groupRound } = await setup()
+    const u = await makeUsers(db, 6)
+    // Consensus is 2-1; the evil twin flips it to 1-2 - which is the result -> EXACT.
+    const m = await makeMatch(db, { competitionId, roundId: groupRound, kickoffTime: PAST, status: 'FINISHED', fullTimeHome: 1, fullTimeAway: 2 })
+    await predictAll(db, u, m, groupRound, [[2, 1], [2, 1], [2, 1], [2, 1], [1, 2], [0, 0]])
+    // BRA is the crowd favourite; ARG the rarest pick -> the evil twin backs ARG.
+    for (const [i, code] of (['BRA', 'BRA', 'BRA', 'BRA', 'ARG', 'FRA'] as const).entries()) {
+      await db.insert(championPick).values({ userId: u[i], competitionId, teamCode: code, teamName: code })
+    }
+    await finalizeMatches(db, NOW)
+
+    const overview = await getBotOverview(db, competitionId, { persona: 'EVIL_TWIN' }, NOW)
+    expect(overview.persona).toBe('EVIL_TWIN')
+    const [row] = overview.rows
+    expect(row).toMatchObject({
+      userId: botUserId('EVIL_TWIN'),
+      homeGoals: 1,
+      awayGoals: 2,
+      baseTier: 'EXACT',
+      consensusMethod: 'MODE',
+      consensusCount: 1,
+      consensusTotal: 6,
+    })
+    // Least-picked: ARG and FRA both have 1, alpha order picks ARG.
+    expect(overview.champion?.teamCode).toBe('ARG')
+    await client.close()
+  })
+
+  it('plays its joker where fewest of the crowd jokered', async () => {
+    const { db, client, competitionId } = await setup()
+    const r16 = (await findRoundId(db, competitionId, 'R16', null)) as string
+    const u = await makeUsers(db, 5)
+    const many = await makeMatch(db, { competitionId, roundId: r16, stage: 'R16', kickoffTime: new Date('2026-06-10T16:00:00Z') })
+    const few = await makeMatch(db, { competitionId, roundId: r16, stage: 'R16', kickoffTime: PAST })
+    // One joker per user per round: u0-u2 joker `many`, u3 jokers `few`.
+    await predictAll(db, u, many, r16, [[1, 0, true], [1, 0, true], [1, 0, true], [2, 0], [0, 0]])
+    await predictAll(db, u, few, r16, [[0, 0], [0, 0], [0, 0], [1, 1, true], [2, 1]])
+
+    const overview = await getBotOverview(db, competitionId, { persona: 'EVIL_TWIN' }, NOW)
+    expect(overview.rows.find((r) => r.matchId === few)?.isJoker).toBe(true)
+    expect(overview.rows.find((r) => r.matchId === many)?.isJoker).toBe(false)
+    await client.close()
+  })
+})
+
+describe('getBotOverview - EQUALIZER', () => {
+  it('always draws 1-1, names no champion, and ids itself distinctly', async () => {
+    const { db, client, competitionId, groupRound } = await setup()
+    const u = await makeUsers(db, 6)
+    // Actual is a 1-1 draw, so the equalizer's standing call is EXACT.
+    const m = await makeMatch(db, { competitionId, roundId: groupRound, kickoffTime: PAST, status: 'FINISHED', fullTimeHome: 1, fullTimeAway: 1 })
+    await predictAll(db, u, m, groupRound, [[2, 1], [2, 1], [1, 1], [0, 0], [3, 2], [2, 0]])
+    for (const id of u) await db.insert(championPick).values({ userId: id, competitionId, teamCode: 'BRA', teamName: 'BRA' })
+    await finalizeMatches(db, NOW)
+
+    const overview = await getBotOverview(db, competitionId, { persona: 'EQUALIZER' }, NOW)
+    expect(overview.persona).toBe('EQUALIZER')
+    const [row] = overview.rows
+    expect(row).toMatchObject({
+      userId: botUserId('EQUALIZER'),
+      homeGoals: 1,
+      awayGoals: 1,
+      baseTier: 'EXACT',
+      consensusMethod: 'MODE',
+      consensusCount: 1,
+      consensusTotal: 6,
+    })
+    expect(overview.champion).toBeNull()
+    expect(overview.summary.championPoints).toBe(0)
+    await client.close()
+  })
+
+  it('ignores the MODE threshold and calls even a thin match a draw', async () => {
+    const { db, client, competitionId, groupRound } = await setup()
+    const u = await makeUsers(db, 2)
+    const thin = await makeMatch(db, { competitionId, roundId: groupRound, kickoffTime: PAST })
+    await predictAll(db, u, thin, groupRound, [[3, 0], [2, 0]])
+
+    const overview = await getBotOverview(db, competitionId, { persona: 'EQUALIZER', method: 'MODE' }, NOW)
+    expect(overview.rows.map((r) => r.matchId)).toEqual([thin])
+    expect(overview.rows[0]).toMatchObject({ homeGoals: 1, awayGoals: 1, consensusCount: 0 })
+    await client.close()
+  })
+
+  it('jokers the most drawish knockout match by the crowd margin', async () => {
+    const { db, client, competitionId } = await setup()
+    const r16 = (await findRoundId(db, competitionId, 'R16', null)) as string
+    const u = await makeUsers(db, 5)
+    const lopsided = await makeMatch(db, { competitionId, roundId: r16, stage: 'R16', kickoffTime: new Date('2026-06-10T16:00:00Z') })
+    const tight = await makeMatch(db, { competitionId, roundId: r16, stage: 'R16', kickoffTime: PAST })
+    await predictAll(db, u, lopsided, r16, [[3, 0], [3, 0], [3, 0], [3, 0], [3, 0]])
+    await predictAll(db, u, tight, r16, [[1, 1], [1, 1], [2, 1], [1, 1], [1, 1]])
+
+    const overview = await getBotOverview(db, competitionId, { persona: 'EQUALIZER' }, NOW)
+    expect(overview.rows.find((r) => r.matchId === tight)?.isJoker).toBe(true)
+    expect(overview.rows.find((r) => r.matchId === lopsided)?.isJoker).toBe(false)
+    await client.close()
+  })
+})
+
+describe('getBotChampion - personas', () => {
+  it('EVIL_TWIN backs the least-picked team, ties alphabetical', async () => {
+    const { db, client, competitionId } = await setup()
+    const u = await makeUsers(db, 4)
+    for (const [i, code] of (['BRA', 'BRA', 'BRA', 'FRA'] as const).entries()) {
+      await db.insert(championPick).values({ userId: u[i], competitionId, teamCode: code, teamName: code })
+    }
+    expect((await getBotChampion(db, competitionId, { persona: 'EVIL_TWIN' }))?.teamCode).toBe('FRA')
+    await client.close()
+  })
+
+  it('EQUALIZER names no champion even with picks on the board', async () => {
+    const { db, client, competitionId } = await setup()
+    const u = await makeUsers(db, 2)
+    for (const [i, code] of (['BRA', 'FRA'] as const).entries()) {
+      await db.insert(championPick).values({ userId: u[i], competitionId, teamCode: code, teamName: code })
+    }
+    expect(await getBotChampion(db, competitionId, { persona: 'EQUALIZER' })).toBeNull()
     await client.close()
   })
 })
