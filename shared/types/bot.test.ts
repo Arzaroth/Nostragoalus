@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   BOT_PERSONAS,
+  BOT_PERSONA_META,
   BOT_PERSONA_PARAMS,
   BOT_USER_ID,
   DRAW_SCORELINE,
@@ -42,12 +43,21 @@ describe('bot personas', () => {
   })
 
   it('only the equalizer ignores the consensus method', () => {
-    expect(personaUsesMethod('CONSENSUS')).toBe(true)
-    expect(personaUsesMethod('EVIL_TWIN')).toBe(true)
-    expect(personaUsesMethod('EQUALIZER')).toBe(false)
+    expect(personaUsesMethod('consensus')).toBe(true)
+    expect(personaUsesMethod('evil-twin')).toBe(true)
+    expect(personaUsesMethod('equalizer')).toBe(false)
   })
 
   it('the equalizer draw is 1-1', () => {
     expect(DRAW_SCORELINE).toEqual({ home: 1, away: 1 })
+  })
+
+  it('has display metadata for every persona', () => {
+    expect(Object.keys(BOT_PERSONA_META)).toEqual([...BOT_PERSONA_PARAMS])
+    for (const p of BOT_PERSONA_PARAMS) {
+      expect(BOT_PERSONA_META[p].icon).toBeTruthy()
+      expect(BOT_PERSONA_META[p].nameKey).toMatch(/^bot\.persona\./)
+      expect(BOT_PERSONA_META[p].blurbKey).toMatch(/^bot\.blurb\./)
+    }
   })
 })

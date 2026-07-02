@@ -58,8 +58,23 @@ export function botPersonaParam(persona: BotPersona): BotPersonaParam {
 // The equalizer always calls a draw; 1-1 is the modal drawn scoreline.
 export const DRAW_SCORELINE = { home: 1, away: 1 } as const
 
-// The consensus method (MODE/MEAN) shapes the CONSENSUS and EVIL_TWIN picks
-// (evil twin inverts the consensus); the equalizer ignores it.
-export function personaUsesMethod(persona: BotPersona): boolean {
-  return persona !== 'EQUALIZER'
+// The consensus method (MODE/MEAN) shapes the consensus and evil-twin picks
+// (evil twin inverts the consensus); the equalizer ignores it, so its method
+// toggle is hidden. Takes the wire param, which is what the UI carries.
+export function personaUsesMethod(persona: BotPersonaParam): boolean {
+  return persona !== 'equalizer'
+}
+
+// Display metadata for each bot, shared by the leaderboard rows and the bot
+// page. The i18n keys resolve in all five locales.
+export interface BotPersonaMeta {
+  icon: string
+  nameKey: string
+  blurbKey: string
+}
+
+export const BOT_PERSONA_META: Record<BotPersonaParam, BotPersonaMeta> = {
+  consensus: { icon: '🤖', nameKey: 'bot.persona.consensus', blurbKey: 'bot.blurb.consensus' },
+  'evil-twin': { icon: '😈', nameKey: 'bot.persona.evilTwin', blurbKey: 'bot.blurb.evilTwin' },
+  equalizer: { icon: '⚖️', nameKey: 'bot.persona.equalizer', blurbKey: 'bot.blurb.equalizer' },
 }

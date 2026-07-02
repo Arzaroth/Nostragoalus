@@ -583,17 +583,24 @@
     "hiddenTip": "patlhvo' chamwI'pu' So'pu' loHwI'. ghomDaq ratlh 'ej ghom 'ev QInmey lor; patlhDaq cha'lu'be' neH."
   },
   "bot": {
-    "name": "ghom qoq",
-    "show": "qoq",
     "virtual": "QujwI' qoq",
-    "note": "QujwI' law' wIv motlh noH qoq - pagh botlh. patlh choHbe'.",
     "pickedBy": "{count}/{total} wIv",
-    "adminUpcoming": "loHwI' legh: may' taghbe'pu'bogh je 'ang - may' taghpu'bogh neH legh QujwI'pu'.",
-    "empty": "wej noH ghom - noHDI' QujwI'pu' 'ang.",
+    "adminUpcoming": "loHwI' legh: may' taghbe'pu'bogh noH je 'ang - may' taghpu'bogh neH legh QujwI'pu'.",
+    "empty": "wej noH - noHDI' QujwI'pu' 'ang.",
     "methodMode": "wIv motlh",
     "methodMean": "botlh",
     "modeDisabled": "noH puS - wIv motlh Qagh, vaj botlh 'ang.",
-    "meanOf": "{total} vo' motlh"
+    "meanOf": "{total} vo' motlh",
+    "persona": {
+      "consensus": "ghom qoq",
+      "evilTwin": "veqlargh qoq",
+      "equalizer": "rap qoq"
+    },
+    "blurb": {
+      "consensus": "QujwI' law' wIv motlh noH qoq - pagh botlh. patlh choHbe'.",
+      "evilTwin": "may' Hoch DoH noH wIv qoq. patlh choHbe'.",
+      "equalizer": "may' Hoch rap noH wIv qoq. patlh choHbe'."
+    }
   },
   "match": {
     "standings": "patmey",
