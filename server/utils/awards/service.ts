@@ -64,7 +64,8 @@ async function rankableForMatches(
 
 // A competition's trophies are only decided once its final is played out. Mirrors
 // the champion/best-scorer gate (a decided FINAL with a HOME/AWAY winner).
-async function hasDecidedFinal(db: AppDatabase, competitionId: string): Promise<boolean> {
+// Exported: Tournament Wrapped unlocks on the same gate.
+export async function hasDecidedFinal(db: AppDatabase, competitionId: string): Promise<boolean> {
   const rows = await db
     .select({ id: match.id })
     .from(match)
