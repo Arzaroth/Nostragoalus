@@ -44,7 +44,6 @@ export interface RoadmapItemView {
   moderationStatus: RoadmapModeration
   voteCount: number
   viewerHasVoted: boolean
-  createdAt: Date
   updatedAt: Date
 }
 
@@ -138,9 +137,10 @@ export async function createSuggestion(db: AppDatabase, input: SuggestionInput) 
 }
 
 // Toggle the caller's upvote on an item and return the fresh tally. Rejected
-// (hidden) items can't be voted on. The (itemId, userId) unique index makes the
-// insert path safe under a double-tap race; we check-then-write inside a
-// transaction so voted/voteCount stay consistent.
+// (hidden) items can't be voted on. We check-then-write inside a transaction so
+// voted/voteCount stay consistent, and the insert is onConflictDoNothing against
+// the (itemId, userId) unique index so a concurrent double-tap resolves to a
+// single vote instead of a unique-violation 500.
 export async function toggleVote(
   db: AppDatabase,
   input: { itemId: string; userId: string },
@@ -164,7 +164,7 @@ export async function toggleVote(
       await tx.delete(roadmapVote).where(eq(roadmapVote.id, existing.id))
       voted = false
     } else {
-      await tx.insert(roadmapVote).values({ roadmapItemId: input.itemId, userId: input.userId })
+      await tx.insert(roadmapVote).values({ roadmapItemId: input.itemId, userId: input.userId }).onConflictDoNothing()
       voted = true
     }
 
@@ -195,12 +195,14 @@ export async function updateRoadmapItem(db: AppDatabase, id: string, patch: Road
       if (patch.status !== current.status && patch.position === undefined) {
         set.position = await nextPosition(tx, patch.status)
       }
-      // Promoting a pending suggestion onto the roadmap proper blesses it:
-      // promotion implies approval, so it stops showing as "under review"
-      // (unless the caller set moderationStatus explicitly in the same patch).
+      // Promoting a suggestion onto the roadmap proper blesses it: promotion
+      // implies approval, so a still-pending OR previously-rejected item stops
+      // being hidden (unless the caller set moderationStatus explicitly). Without
+      // covering REJECTED, promoting a rejected suggestion would land it on the
+      // roadmap yet keep it filtered out of the public list.
       if (
         patch.status !== 'SUGGESTED' &&
-        current.moderationStatus === 'PENDING' &&
+        current.moderationStatus !== 'APPROVED' &&
         patch.moderationStatus === undefined
       ) {
         set.moderationStatus = 'APPROVED'
@@ -225,7 +227,12 @@ export async function reorderRoadmapItem(db: AppDatabase, id: string, direction:
           direction === 'up' ? lt(roadmapItem.position, item.position) : gt(roadmapItem.position, item.position),
         ),
       )
-      .orderBy(direction === 'up' ? desc(roadmapItem.position) : asc(roadmapItem.position))
+      .orderBy(
+        direction === 'up' ? desc(roadmapItem.position) : asc(roadmapItem.position),
+        // Stable tiebreak so a neighbour is picked deterministically when two rows
+        // in a column happen to share a position.
+        direction === 'up' ? desc(roadmapItem.createdAt) : asc(roadmapItem.createdAt),
+      )
       .limit(1)
     if (!neighbor) return item // already at the edge - no-op
     await tx.update(roadmapItem).set({ position: neighbor.position }).where(eq(roadmapItem.id, item.id))

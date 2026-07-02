@@ -5,6 +5,9 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### chelpu'
+- **qaStaHvIS mIw'a' tlhob 'ej woH**: DaH roadmap HaSta ghom qngup pa' tu'lu' - DaghItlhpu'chugh, puS mu'mey qaStaHvIS mIw'a' yIchup 'ej SibI' 'anglu', "luland'lu'taH" per, wIwIvpa'; Hoch woHlaH. roadmap Doch nughlaH je DawoHlaH, 'ej woH mI' tlha' qaStaHvIS mIw'a' lan, vaj potlh qngup nIvbogh joq.
+
 ## [2.11.0] - 2026-07-02
 
 ### chelpu'

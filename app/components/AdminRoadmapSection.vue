@@ -38,7 +38,7 @@ const statusOptions = computed(() => [
   { label: t('roadmap.suggested'), value: 'SUGGESTED' },
 ])
 // Admin-authored items go on the roadmap proper, never into the community bucket.
-const createStatusOptions = computed(() => statusOptions.value.slice(0, 3))
+const createStatusOptions = computed(() => statusOptions.value.filter((o) => o.value !== 'SUGGESTED'))
 const grouped = computed(() => groupByStatus(items.value))
 
 // Create form

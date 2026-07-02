@@ -31,8 +31,10 @@ user suggestions share one table (`roadmap_item`) and render as two views.
 - **Admin triage** (`AdminRoadmapSection.vue` in `/admin`): `GET /api/admin/roadmap`
   (`includeHidden`) returns everything including hidden items, with author and
   vote counts, on its own `['admin-roadmap']` query key. Admins reorder, edit,
-  approve a pending suggestion, set status (promoting a `SUGGESTED` item onto the
-  roadmap auto-approves it), hide/restore (`moderationStatus`), and delete.
+  approve a pending suggestion, set status (promoting a suggestion onto the
+  roadmap auto-approves it, un-hiding even a previously-rejected one, since a
+  promoted item that stayed `REJECTED` would sit on the roadmap yet vanish from
+  the public list), hide/restore (`moderationStatus`), and delete.
 
 ## Public write actions
 
