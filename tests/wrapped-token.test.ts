@@ -32,6 +32,11 @@ describe('wrapped share token', () => {
     expect(verifyWrappedToken(SECRET, `${badLocale}.${signWrappedBody(SECRET, badLocale)}`)).toBeNull()
     const notJson = Buffer.from('nope').toString('base64url')
     expect(verifyWrappedToken(SECRET, `${notJson}.${signWrappedBody(SECRET, notJson)}`)).toBeNull()
+    // Valid JSON that is not an object at all.
+    for (const raw of ['123', 'null', '"str"']) {
+      const body = Buffer.from(raw).toString('base64url')
+      expect(verifyWrappedToken(SECRET, `${body}.${signWrappedBody(SECRET, body)}`)).toBeNull()
+    }
   })
 
   it('is domain-separated from the prediction share token', () => {

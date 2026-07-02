@@ -226,3 +226,46 @@ export async function seedScoredPrediction(
     [userId, matchId, home, away, points, tier],
   )
 }
+
+// A decided FINAL (FINISHED with a HOME winner, scored) - the gate that unlocks
+// Tournament Wrapped and the competition trophies.
+export async function seedDecidedFinal(competitionId: string): Promise<void> {
+  await db().query(
+    `
+    with r as (
+      insert into round (id, competition_id, kind, stage, matchday, label, sort_order)
+      values (gen_random_uuid(), $1, 'KNOCKOUT', 'FINAL', null, 'Final', 99)
+      returning id, competition_id
+    )
+    insert into match (id, competition_id, provider_match_id, round_id, stage,
+                       home_team, away_team, home_team_code, away_team_code, kickoff_time,
+                       status, full_time_home, full_time_away, winner, scoring_state, details_fetched_at)
+    select gen_random_uuid(), r.competition_id, 'e2e-final', r.id, 'FINAL',
+           'Finalist A', 'Finalist B', 'FNA', 'FNB', now() - interval '3 hours',
+           'FINISHED', 1, 0, 'HOME', 'SCORED', now()
+    from r
+    `,
+    [competitionId],
+  )
+}
+
+// A settled, scored prediction for a user on a match: flips the match to a
+// finished 1-0 (scored) and stores an EXACT pick worth the given points, so the
+// wrapped recap has real data without running finalize.
+export async function seedScoredPrediction(userId: string, matchId: string, points = 3): Promise<void> {
+  await db().query(
+    `update match
+     set status = 'FINISHED', full_time_home = 1, full_time_away = 0, winner = 'HOME',
+         kickoff_time = now() - interval '4 hours', scoring_state = 'SCORED', details_fetched_at = now()
+     where id = $1`,
+    [matchId],
+  )
+  await db().query(
+    `insert into prediction (id, user_id, match_id, round_id, home_goals, away_goals,
+                             locked_at, base_points, base_tier, bonus_points, total_points, scored_at)
+     select gen_random_uuid(), $2, m.id, m.round_id, 1, 0,
+            m.kickoff_time, $3, 'EXACT', 0, $3, now()
+     from match m where m.id = $1`,
+    [matchId, userId, points],
+  )
+}

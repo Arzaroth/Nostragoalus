@@ -228,3 +228,19 @@ feature/architecture doc that implements it.
   private profiles seen by a non-member, keep their standings slot but come back
   nameless (the UI shows a neutral placeholder) rather than leaking a name the board
   itself conceals. See [features/rewards.md](features/rewards.md).
+
+## Tournament Wrapped
+
+- **Tournament Wrapped is post-final only, and read-side only.** The recap uses
+  the same gate as trophies (`hasDecidedFinal`): before that the numbers move and
+  the haul is incomplete. No new tables - every slide derives from persisted
+  per-prediction points, the achievements aggregator (so recap and badges cannot
+  disagree), award/badge rows and chat row counts. The rank journey is REPLAYED
+  from scored predictions per round (prediction points only) rather than
+  snapshotted: there was no history table, and post-final the replay is frozen and
+  cacheable. Chat stats stay counts-only because message bodies are E2EE; the
+  server only ever sees row counts and plaintext reaction glyphs.
+- **The wrapped share card gets its own HMAC token family** (user + competition,
+  domain string `nostragoalus/wrapped-card/v1`), not an extension of the
+  prediction token payload - two token families that can never be swapped are
+  simpler to reason about than one payload with two shapes.
