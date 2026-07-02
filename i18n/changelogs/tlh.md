@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.9.1] - 2026-07-02
+
 ### tI'pu'
 - **Arab, vIraS mu'mey chellu'**: DaH Arab Hol SSO che'wI' pa' mughlu' naQ (nItlhpa' De' Sar HaSta rur), 'ej QIn Qorwagh lupHa'/lup SeH per vIraS tu'lu'.
 
