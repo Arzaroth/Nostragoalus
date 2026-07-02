@@ -47,6 +47,26 @@ feature/architecture doc that implements it.
   miscalibrates; a fixed ceiling stays predictable and identical for every
   fixture. It's a confirm, not a block. See [features/pick-guard.md](features/pick-guard.md).
 
+## Bots (personas)
+
+- **Bots are strategies over the crowd, not stored accounts.** All three
+  personas are computed on the fly from everyone else's real picks and scored by
+  the same engine, so there is no bot table, no cron and no schema migration -
+  adding a persona is a branch in `botPick`, not a new entity. **Why generalize
+  the single consensus bot instead of forking it:** the ghost model (derive,
+  score, insert at rank) already fit; the personas differ only in the picking
+  function, joker rule and champion rule.
+- **Evil twin = anti-consensus, equalizer = always-draw.** Of the many readings
+  of the names, these keep each bot a pure function of the crowd with no new
+  inputs: the evil twin inverts the consensus scoreline (winner flipped, margin
+  kept), and "the equalizer" is the football term for the tying goal, so it calls
+  a draw every match. The equalizer therefore has no champion and ignores the
+  MODE population gate.
+- **Each persona is its own ghost id and toggle.** Distinct `botUserId(persona)`
+  values let all three coexist as independent leaderboard rows (real users still
+  win exact ties); consensus keeps `'__bot__'` for backward-compatible links. See
+  [features/crowd-bot.md](features/crowd-bot.md).
+
 ## External data
 
 - **Sofascore is the primary odds provider** (user's explicit choice over The Odds

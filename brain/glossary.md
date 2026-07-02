@@ -36,8 +36,10 @@ the code. Alphabetical.
   [features/champion-pick.md](features/champion-pick.md).
 - **Best scorer / Golden Boot pick** - a guess of the top scorer; pays a bonus
   resolved from goal events. See [features/best-scorer.md](features/best-scorer.md).
-- **Crowd / bot** - a synthetic participant (`__bot__`) that predicts the
-  consensus of all real users (MODE or MEAN). Display-only ghost row. See
+- **Bot / persona** - a synthetic, display-only ghost participant that plays a
+  strategy over all real users' picks. Three personas: **consensus** (the crowd's
+  MODE/MEAN pick), **evil twin** (that pick inverted), **equalizer** (always a
+  draw). Each is an on-the-fly `botUserId(persona)` row. See
   [features/crowd-bot.md](features/crowd-bot.md).
 - **League** - a competition-scoped group of players that filters the views
   (leaderboard, chat). Predictions stay global/user-scoped. See
