@@ -83,14 +83,17 @@ effort buckets; order within a bucket is not priority.
       of their pick history. The separator only shows for admins (the only viewers
       who receive not-yet-kicked-off picks); for everyone else the anchor sits after
       the last played match. Mirrors the fixtures page's jump-to-next.
-- [ ] **"The Equalizer" bot mode**: always picks 1-1 (modal draw score) to
-      leverage the draws-score-something floor. Verify the "draw pick always
-      >= 2 pts" premise against the tier table first; if outcome-miss = 0 the
-      bot is terrible, which is also funny - ship either way.
-- [ ] **Evil twin**: derived view, zero schema - your twin picked the swapped
-      score of every prediction; see how it fared. Draws are self-twins by
-      design; one-line tooltip ("even your evil twin agrees") instead of a
-      rules paragraph. Exact draw handling still TBD (swap vs crowd-derived).
+- [ ] **"The Equalizer" bot mode** (IN_PROGRESS, worktree-bot-personas): always
+      picks 1-1 (modal draw score). Built as a third bot persona alongside the
+      Crowd Bot, scored by the real engine (whatever the tier table pays a draw
+      is what it earns - no separate premise to verify). No champion pick; jokers
+      the most-drawish knockout match by crowd margin.
+- [ ] **Evil twin** (IN_PROGRESS, worktree-bot-personas): built as a bot persona,
+      NOT the original per-user swapped-picks view. Decision: it inverts the
+      **crowd consensus** scoreline (winner flipped, margin kept) as a single
+      ghost - the consensus bot's mischievous mirror - so a draw stays a draw
+      (self-twin) with no special case. Backs the least-picked champion, jokers
+      where fewest of the crowd did.
 - [ ] **Outstanding-picks nudge + outlandish-pick guard** (IN_PROGRESS,
       worktree-pick-guard): the fixtures stats strip shows "N matches need a pick
       before the next lockout" with a jump-to-first-unpicked; and ScoreInput asks
