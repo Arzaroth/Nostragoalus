@@ -94,8 +94,7 @@ effort buckets; order within a bucket is not priority.
       your jokers and champion. Personal (only you see your twin, when signed in).
       Implemented by scoping the bot overview to a single userId. An
       anti-consensus crowd ghost was tried first and rejected.
-- [ ] **Outstanding-picks nudge + outlandish-pick guard** (IN_PROGRESS,
-      worktree-pick-guard): the fixtures stats strip shows "N matches need a pick
+- [x] **Outstanding-picks nudge + outlandish-pick guard** (shipped in 2.5.0): the fixtures stats strip shows "N matches need a pick
       before the next lockout" with a jump-to-first-unpicked; and ScoreInput asks
       for confirmation before saving an implausible scoreline. Outlandish
       threshold (locked): a flat absolute cap (`home > 7 || away > 7 ||
@@ -103,14 +102,14 @@ effort buckets; order within a bucket is not priority.
       so a standard-deviation rule miscalibrates. Confirm, not block. The count is
       derived client-side from the loaded matches + the user's picks; logic lives
       in tested `app/utils` helpers (the page stays outside the coverage gate).
-- [ ] **Odds movement** (IN_PROGRESS, worktree-odds-movement): surface the
+- [x] **Odds movement** (shipped in 2.5.0): surface the
       opening-vs-current line drift already stored in `oddsSnapshot.initial*`
       (only the current 1X2 is shown today) - a per-outcome shortened/drifted/flat
       marker plus a tap-to-expand opening-prices + per-bookmaker panel. Decimal
       display only. The bookmaker breakdown is plumbed end-to-end but dormant in
       prod (Sofascore is one aggregated feed, `bookmakers` is null); it lights up
       when a multi-book provider populates the column.
-- [ ] **Live viewer count** (IN_PROGRESS, worktree-live-viewers): "N watching
+- [x] **Live viewer count** (shipped in 2.5.0): "N watching
       now" on a live match page. A new per-match viewer room in the in-process WS
       hub, fed by a dedicated `viewing` frame (not the score-`subscribe` frame, so
       browsing the fixtures list does not inflate the count) and a `viewers:update`
@@ -273,7 +272,7 @@ effort buckets; order within a bucket is not priority.
     brain/features/share-images.md).
 - [ ] **What-if stats**: "joker on match X = +14 pts", "following the crowd
       would have scored N vs your M" (reuses consensus-bot data).
-- [ ] **Past-pick counterfactual** (IN_PROGRESS, worktree-past-pick): on a match
+- [x] **Past-pick counterfactual** (shipped in 2.5.0): on a match
       you predicted, surface (owner-only) when a score you picked earlier and then
       swapped off would have out-scored the one you kept - live and provisional
       while it plays, settled at full-time, with a cheeky line for a winning 0-0
@@ -462,7 +461,7 @@ effort buckets; order within a bucket is not priority.
       suggestions feed the roadmap, roadmap items get user upvotes. One
       schema, two views. CLI pull command for suggestions. Spam guard: auth
       required + rate limit.
-  - IN_PROGRESS (2026-07-02) on worktree-roadmap-v2.
+  - Shipped in 2.12.0.
   - Moderation = hybrid (decided 2026-07-02): a suggestion is public and
     upvotable the instant it's posted but shows as "under review" until an admin
     blesses it; only approved suggestions look official and can be promoted onto
@@ -640,7 +639,7 @@ effort buckets; order within a bucket is not priority.
   - Electron / Neutralino / Electrobun ruled out (size / ecosystem /
     maturity).
 - [ ] **Tamper-evident / E2EE scores**:
-  - Phase 1 **commit-reveal** (IN_PROGRESS, worktree-tamper-evidence). Locked
+  - Phase 1 **commit-reveal** (shipped in 1.33.0). Locked
     design: an append-only `prediction_commitment` ledger, hash-chained like a
     blockchain (no PoW/consensus) - each entry's hash folds in the prior head,
     so a retro-edit forces rewriting every later entry. Anchor is **in-DB only**
