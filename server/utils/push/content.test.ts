@@ -122,6 +122,23 @@ describe('notificationPushContent', () => {
     ).toBe('/')
   })
 
+  it('falls back to the raw type/key when a trophy or badge name is missing', () => {
+    // Unknown badge key: no localized name, so the key itself is shown.
+    expect(
+      notificationPushContent(
+        { type: 'ACHIEVEMENT_UNLOCKED', competitionSlug: 'wc', competitionName: 'WC', userId: 'u1', key: 'no-such-badge', tier: 'BRONZE' },
+        'en',
+      ).body,
+    ).toContain('no-such-badge')
+    // Unknown trophy type falls back to the raw type; an unknown locale falls back to English.
+    expect(
+      notificationPushContent(
+        { type: 'TROPHY_AWARDED', competitionSlug: 'wc', competitionName: 'WC', userId: 'u1', trophyType: 'MYSTERY' as never, teamName: null },
+        'xx',
+      ).body,
+    ).toContain('MYSTERY')
+  })
+
   it('falls back to English for an unknown or null locale', () => {
     expect(notificationPushContent(reminder, 'xx').body).toBe(notificationPushContent(reminder, 'en').body)
     expect(notificationPushContent(reminder, null).body).toBe(notificationPushContent(reminder, 'en').body)

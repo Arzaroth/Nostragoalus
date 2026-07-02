@@ -45,10 +45,14 @@ golden-touch, underdog-whisperer) and trophy-meta (treble, podium).
 tick (after the trophy award, so treble/podium see this tick's trophies). It derives
 every user's metrics once (`computeAchievementStats`: exact/points/streaks/perfect
 rounds/lone-wolf/oracle/underdog/completion/podium/trophy counts) then upserts. It is
-idempotent and returns the badges newly earned or graded up, for notification.
+idempotent and returns the badges newly earned or graded up, for notification. A tier
+is a high-water mark: a rescore that lowers a metric refreshes stored progress but
+never demotes the badge.
 
 Behavioural timings read `prediction.createdAt` (first save) vs `match.kickoffTime`;
-streaks and perfect rounds are folded in JS from the scored rows in kickoff order.
+night-owl counts the small hours by the UTC hour explicitly (not the DB session zone).
+Streaks and perfect rounds are folded in JS from the scored rows in kickoff order, with
+equal kickoffs tiebroken by match id so simultaneous fixtures give a stable streak.
 
 ### The secret badge
 

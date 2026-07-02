@@ -1774,3 +1774,8 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
 - [ ] **No global cross-competition cabinet**: the cabinet/fridge are
       per-competition. A profile-level "all competitions" showcase could come later
       (global badges already span competitions).
+- [ ] **Extract the private-profile view guard**: the 404-not-403 + `canViewProfile`
+      gate is copy-pasted between `users/[id]/cabinet.get.ts` and
+      `users/[id]/predictions.get.ts`. Pull it into a shared
+      `requireViewableProfile(event, id)` (alongside `getSessionUser`/`isAdmin`) so
+      the two - and the next user-scoped GET - can't drift on a security guard.

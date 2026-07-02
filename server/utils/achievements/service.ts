@@ -36,8 +36,11 @@ const ZERO_STATS: UserAchievementStats = {
 
 // Longest run of consecutive EXACT / non-MISS predictions, over the user's scored
 // picks in kickoff order.
-function streaks(rows: { tier: string; kickoff: Date }[]): { exactStreak: number; scoringStreak: number } {
-  const ordered = [...rows].sort((a, b) => a.kickoff.getTime() - b.kickoff.getTime())
+function streaks(rows: { tier: string; kickoff: Date; matchId: string }[]): { exactStreak: number; scoringStreak: number } {
+  // Tiebreak equal kickoffs by matchId so simultaneous fixtures give a stable streak.
+  const ordered = [...rows].sort(
+    (a, b) => a.kickoff.getTime() - b.kickoff.getTime() || (a.matchId < b.matchId ? -1 : a.matchId > b.matchId ? 1 : 0),
+  )
   let exact = 0
   let scoring = 0
   let bestExact = 0
@@ -90,7 +93,10 @@ export async function computeAchievementStats(
         sql<number>`count(*) filter (where ${prediction.createdAt} <= ${match.kickoffTime} - interval '24 hours')`.mapWith(
           Number,
         ),
-      nightOwl: sql<number>`count(*) filter (where extract(hour from ${prediction.createdAt}) < 4)`.mapWith(Number),
+      nightOwl:
+        sql<number>`count(*) filter (where extract(hour from ${prediction.createdAt} at time zone 'UTC') < 4)`.mapWith(
+          Number,
+        ),
       deadlineDancer:
         sql<number>`count(*) filter (where ${prediction.createdAt} >= ${match.kickoffTime} - interval '5 minutes')`.mapWith(
           Number,
@@ -103,6 +109,7 @@ export async function computeAchievementStats(
   const scoredRows = await db
     .select({
       userId: prediction.userId,
+      matchId: prediction.matchId,
       roundId: prediction.roundId,
       tier: prediction.baseTier,
       kickoff: match.kickoffTime,
@@ -110,6 +117,7 @@ export async function computeAchievementStats(
     .from(prediction)
     .innerJoin(match, inComp)
     .where(isNotNull(prediction.baseTier))
+    .orderBy(match.kickoffTime, prediction.matchId)
 
   const roundTotals = await db
     .select({ roundId: match.roundId, n: sql<number>`count(*)`.mapWith(Number) })
@@ -148,10 +156,10 @@ export async function computeAchievementStats(
   const podiumUsers = new Set(board.filter((r) => r.rank <= 3 && r.totalPoints > 0).map((r) => r.userId))
 
   // Fold the per-user, per-row work in JS.
-  const scoredByUser = new Map<string, { roundId: string; tier: string; kickoff: Date }[]>()
+  const scoredByUser = new Map<string, { roundId: string; tier: string; kickoff: Date; matchId: string }[]>()
   for (const r of scoredRows) {
     const arr = scoredByUser.get(r.userId) ?? []
-    arr.push({ roundId: r.roundId, tier: r.tier as string, kickoff: r.kickoff as Date })
+    arr.push({ roundId: r.roundId, tier: r.tier as string, kickoff: r.kickoff as Date, matchId: r.matchId })
     scoredByUser.set(r.userId, arr)
   }
   const loneByUser = new Map<string, number>()
@@ -231,8 +239,10 @@ export async function evaluateAchievements(db: AppDatabase, competitionId: strin
       } else if (tierRank(tier) > tierRank(ex.tier)) {
         await db.update(userAchievement).set({ tier, progress: value }).where(eq(userAchievement.id, ex.id))
         newly.push({ userId, competitionId, key: def.key, tier })
-      } else if (ex.progress !== value || ex.tier !== tier) {
-        await db.update(userAchievement).set({ tier, progress: value }).where(eq(userAchievement.id, ex.id))
+      } else if (ex.progress !== value) {
+        // Tier is a high-water mark: a rescore that lowers the metric refreshes
+        // progress but never demotes the badge (grading up is handled above).
+        await db.update(userAchievement).set({ progress: value }).where(eq(userAchievement.id, ex.id))
       }
     }
   }
