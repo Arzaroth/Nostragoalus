@@ -267,7 +267,10 @@ describe('getWrapped', () => {
     await pred({ userId: alice, matchId: mC, roundId: g3, tier: 'EXACT', points: 4, bonus: 5, bonusSource: 'ODDS', isJoker: true })
     const mNull = await scoredMatch(c, g3, 'GROUP', t2)
     const nullPredId = await pred({ userId: alice, matchId: mNull, roundId: g3, tier: 'DIFF', points: 1 })
-    await db.update(prediction).set({ baseTier: null, bonusPoints: null }).where(eq(prediction.id, nullPredId))
+    // Null tier + a CROWD source with null bonus: legacy/partial-rescore shape.
+    await db.update(prediction).set({ baseTier: null, bonusPoints: null, bonusSource: 'CROWD' }).where(eq(prediction.id, nullPredId))
+    // carol's lone OUTCOME keeps the outcome arm of the journey ladder alive.
+    await pred({ userId: carol, matchId: mNull, roundId: g3, tier: 'OUTCOME', points: 1 })
 
     // R32: two same-kickoff misses that the field (bob) nailed equally.
     const mD = await scoredMatch(c, r32, 'R32', t3)

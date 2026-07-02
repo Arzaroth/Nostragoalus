@@ -5,6 +5,11 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### chelpu'
+- **Tournament Wrapped**: Qor'a' Sovlu'DI', may' Segh Dun ghaj recap poSmoH - HaSta naQ tlhetlh Dalgh: point naQ, tlheD patlh je top vatlhvI', mI' lugh HuD, wIvbogh QaQ, lujpu'bogh wIv, joker laH, patlh SaltaH, ghom qImHa'bogh wIv, champion je Golden Boot noH, league-chat vum, je pop qan. summary card rInmoH - laDlaH ghap HaSta rur boSlaH, 'ej leaderboard-Daq banner pa' lengmoH.
+### tI'pu'
+- **"DaH bejlu'" tab law' HadHa' chID**: qatlh rap tab law'Daq poSmoHDI', wa' bejwI' rur chID, tab-vaD wa'be'. cha' nuv pIm (ghap cha' meb) cha' rur chIDtaH.
+
 ## [2.14.0] - 2026-07-04
 
 ### chelpu'
