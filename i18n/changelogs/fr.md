@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [2.9.0] - 2026-07-02
+
 ### Ajouté
 - **Onboarding SSO guidé** : enregistrer un fournisseur d'identité passe désormais par les étapes brouillon -> test -> vérification -> activation au lieu d'être mis en ligne dès l'enregistrement. Vous pouvez lancer un test de connexion automatisé (découverte OIDC/JWKS, certificat et accessibilité des points de terminaison SAML), effectuer une véritable « connexion de test » OIDC qui prévisualise les revendications exactes renvoyées par l'IdP mappées sur nos champs, et vérifier la propriété du domaine e-mail via un enregistrement DNS TXT - ou la contourner en tant qu'administrateur. Les fournisseurs peuvent être activés, temporairement désactivés ou conservés en brouillon ; désactiver bloque les nouvelles connexions mais laisse fonctionner les sessions existantes.
 - **Provisionnement SCIM** : les fournisseurs d'identité peuvent créer, mettre à jour et désactiver des utilisateurs automatiquement via SCIM 2.0. Générez un jeton par fournisseur depuis la console d'administration (affiché une seule fois) ; désactiver un utilisateur depuis l'IdP bloque sa connexion et met fin à ses sessions tout en conservant intacts ses ligues, ses pronostics et son historique, et le réactiver restaure l'accès.
