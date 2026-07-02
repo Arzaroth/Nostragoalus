@@ -87,6 +87,11 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   browse. Recognised hosts (YouTube, Twitch, Dailymotion, Vimeo) play inline in a sandboxed embed;
   admins can paste a provider's embed code and force-embed other hosts with per-link sandbox/allow
   controls, anything else opens in a new tab
+- **Multi-view**: watch several matches at once in a configurable grid (1, 2x1, 2x2 or 3x3). Each
+  cell is a live tile (score, clock, goal scorers and play-by-play) or switches to the match's video
+  stream when one is available. The matches and layout live in the URL, so a multi-view is shareable
+  and survives a reload; the chat dock follows whichever cell you focus, and clicking a match in the
+  chat inbox jumps to its cell instead of leaving the grid
 - **Match reactions**: from kickoff on, react with an emoji (🔥 ⚽ 😮 🤣 😢 😡) - counts climb live
   for everyone watching, with your league's tally beside the global one when a league is selected;
   one reaction each, tap to change or clear
