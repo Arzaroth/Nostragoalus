@@ -56,7 +56,7 @@ const ITEMS = [
   { status: 'IN_PROGRESS', title: 'Multi-view', description: 'Watch several matches at once in a grid you arrange (one, two or up to nine at a time). Each panel shows the live score, clock, goalscorers and play-by-play, or switches to the video stream when one is available. Your line-up and layout live in the link, so you can share or reopen the exact set-up, and the chat follows whichever match you focus.' },
   { status: 'IN_PROGRESS', title: 'Trophy cabinet & achievements', description: 'Every player gets a trophy cabinet: competition-end trophies for the best overall predictor, the best in the group stage and the knockouts, the most exact scores, and the best predictor of the featured team - plus achievement badges you unlock as you play, in bronze, silver and gold. Pin your favourites to your "fridge" to show them off.' },
   { status: 'IN_PROGRESS', title: 'Suggest & upvote roadmap features', description: 'Suggest a feature in a few words and it appears on the roadmap right away for everyone to upvote - marked "under review" until we pick it up. You can upvote any roadmap item too, and the community suggestions are ranked by votes so the most-wanted ideas rise to the top.' },
-  { status: 'PLANNED', title: 'Tournament Wrapped', description: 'An end-of-competition recap - best and worst pick, joker efficiency, your percentile - with a shareable card.' },
+  { status: 'IN_PROGRESS', title: 'Tournament Wrapped', description: 'An end-of-competition recap - best and worst pick, joker efficiency, your percentile - with a shareable card.' },
   { status: 'PLANNED', title: 'Personal & what-if stats', description: 'See where a joker would have helped, how you compare to the crowd, and your prediction biases.' },
 ]
 
