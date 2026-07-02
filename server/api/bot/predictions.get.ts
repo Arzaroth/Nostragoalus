@@ -2,7 +2,7 @@ import { db } from '../../../db'
 import { botPersonaParam, botUserId, parseBotPersona, type ConsensusMethod } from '../../../shared/types/bot'
 import { getBotOverviewCached } from '../../utils/bot/service'
 import { getCompetitionById, resolveCompetition } from '../../utils/competitions/store'
-import { isAdmin, requireUser } from '../../utils/auth-guards'
+import { getSessionUser, isAdmin, requireUser } from '../../utils/auth-guards'
 import { resolveLeagueView, type LeagueRow } from '../../utils/leagues/service'
 import { toHttpError } from '../../utils/http'
 
@@ -13,6 +13,9 @@ export default defineEventHandler(async (event) => {
   // Admins also see the consensus for matches that haven't kicked off yet;
   // everyone else gets the same kickoff privacy rule as user predictions.
   const admin = await isAdmin(event)
+  // The evil twin is the signed-in viewer's own picks swapped; without a viewer
+  // it has nothing to derive from and returns empty.
+  const viewer = persona === 'EVIL_TWIN' ? await getSessionUser(event) : null
 
   // Same league guard as /api/leaderboard: members, public leagues, or admins.
   let league: LeagueRow | null = null
@@ -37,6 +40,7 @@ export default defineEventHandler(async (event) => {
   const overview = await getBotOverviewCached(db, competition.id, {
     persona,
     method,
+    userId: viewer?.id,
     leagueId: league?.id,
     includeUpcoming: admin,
     includePrivate,
@@ -78,7 +82,7 @@ defineRouteMeta({
         "in": "query",
         "name": "persona",
         "required": false,
-        "description": "Which bot: 'consensus' (default), 'evil-twin' or 'equalizer'.",
+        "description": "Which bot: 'consensus' (default, the crowd), 'evil-twin' (your own picks swapped; needs sign-in) or 'equalizer' (always a draw).",
         "schema": {
           "type": "string",
           "enum": ["consensus", "evil-twin", "equalizer"]

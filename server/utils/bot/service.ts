@@ -49,13 +49,13 @@ export function computeConsensus(rows: { home: number; away: number }[], method:
   return { home: best.home, away: best.away, count: best.count, total: rows.length }
 }
 
-// The per-match scoreline each persona plays, with `count` re-derived as the
-// number of scoped predictions that landed on exactly that scoreline (so the
-// "picked by X/Y" badge is truthful for the contrarian bots too):
+// The per-match scoreline a persona plays over the scoped rows, with `count`
+// re-derived as how many scoped predictions landed on exactly that scoreline:
 //  - CONSENSUS: the crowd's own MODE/MEAN pick.
-//  - EVIL_TWIN: that pick inverted (home/away swapped) - the favoured winner is
-//    reversed while the margin is kept; a drawn consensus stays drawn.
-//  - EQUALIZER: always a draw, ignoring the crowd's scoreline entirely.
+//  - EVIL_TWIN: that pick inverted (home/away swapped) - the winner reversed,
+//    the margin kept, a draw its own twin. Scoped to one player (their own
+//    predictions), this is simply each of their picks swapped.
+//  - EQUALIZER: always a draw, ignoring the scoreline entirely.
 // EQUALIZER needs only that someone predicted the match; the others inherit
 // computeConsensus's null gate (MODE below the threshold omits the match).
 export function botPick(
@@ -145,6 +145,10 @@ export interface BotScopeOptions {
   // Which bot to compute; defaults to the original consensus ghost.
   persona?: BotPersona
   method?: ConsensusMethod
+  // The EVIL_TWIN is per-user: scoped to this single player's own picks (each
+  // scoreline swapped), keeping their jokers and champion. Required for that
+  // persona; ignored by the crowd-derived CONSENSUS/EQUALIZER.
+  userId?: string
   // League hook: scope consensus, joker, champion and rank to the members.
   // The bonus histogram intentionally stays competition-wide - real points
   // were awarded against the full locked crowd.
@@ -155,13 +159,14 @@ export interface BotScopeOptions {
   includePrivate?: boolean
 }
 
-// The bot's champion pick follows its persona: CONSENSUS backs the team most
-// users picked, EVIL_TWIN the least-picked one, and EQUALIZER names no champion
-// (a draw-caller has no single winner to crown).
+// The bot's champion pick: the most-picked team across the scope. EQUALIZER
+// names no champion (a draw-caller has no winner to crown). With `userId` the
+// scope is a single player - their own champion pick - which the per-user EVIL
+// TWIN keeps unchanged (it only swaps scorelines).
 export async function getBotChampion(
   db: AppDatabase,
   competitionId: string,
-  opts: { leagueId?: string; persona?: BotPersona } = {},
+  opts: { leagueId?: string; userId?: string; persona?: BotPersona } = {},
 ): Promise<BotChampion | null> {
   const persona = opts.persona ?? 'CONSENSUS'
   if (persona === 'EQUALIZER') return null
@@ -179,7 +184,10 @@ export async function getBotChampion(
       and(eq(leagueMember.userId, championPick.userId), eq(leagueMember.leagueId, opts.leagueId)),
     )
   }
-  const picks = (await query.where(eq(championPick.competitionId, competitionId))).filter(
+  const scope = opts.userId
+    ? and(eq(championPick.competitionId, competitionId), eq(championPick.userId, opts.userId))
+    : eq(championPick.competitionId, competitionId)
+  const picks = (await query.where(scope)).filter(
     (p): p is { teamCode: string; teamName: string; potentialPoints: number } => p.teamCode !== null,
   )
 
@@ -194,11 +202,7 @@ export async function getBotChampion(
     }
   }
   if (counts.size === 0) return null
-  const best = [...counts.values()].sort((a, b) =>
-    persona === 'EVIL_TWIN'
-      ? a.count - b.count || a.teamCode.localeCompare(b.teamCode)
-      : b.count - a.count || a.teamCode.localeCompare(b.teamCode),
-  )[0]
+  const best = [...counts.values()].sort((a, b) => b.count - a.count || a.teamCode.localeCompare(b.teamCode))[0]
 
   // The bot's virtual pick pays what most of its crowd locked in for that team
   // (picks made at different times can carry different snapshots; ties go low).
@@ -223,12 +227,29 @@ export async function getBotChampion(
   }
 }
 
+const EMPTY_SUMMARY: BotSummary = {
+  rank: null,
+  totalPoints: 0,
+  predictionPoints: 0,
+  championPoints: 0,
+  exactCount: 0,
+  outcomeCount: 0,
+  gdCount: 0,
+}
+
 export async function getBotOverview(
   db: AppDatabase,
   competitionId: string,
   opts: BotScopeOptions = {},
   now: Date = new Date(),
 ): Promise<BotOverview> {
+  const persona = opts.persona ?? 'CONSENSUS'
+  // The evil twin is per-user; with no viewer it has nothing to swap, and must
+  // not silently fall back to inverting the whole crowd.
+  if (persona === 'EVIL_TWIN' && !opts.userId) {
+    return { persona, method: 'MEAN', modeAvailable: false, population: 0, rows: [], champion: null, summary: EMPTY_SUMMARY, hasScores: false }
+  }
+
   const matches = await db
     .select({
       id: match.id,
@@ -277,9 +298,12 @@ export async function getBotOverview(
         ).map((r) => r.userId),
       )
     : null
-  const scoped = members ? allPredictions.filter((p) => members.has(p.userId)) : allPredictions
+  // The evil twin derives from one player's own picks; league scope (if any)
+  // still applies to the ranking board, not to whose picks the twin swaps.
+  const scoped = allPredictions.filter(
+    (p) => (!members || members.has(p.userId)) && (!opts.userId || p.userId === opts.userId),
+  )
 
-  const persona = opts.persona ?? 'CONSENSUS'
   const population = new Set(scoped.map((p) => p.userId)).size
   const modeAvailable = population >= MIN_CONSENSUS_USERS
   const requested = opts.method ?? 'MODE'
@@ -300,9 +324,10 @@ export async function getBotOverview(
   }
 
   // The bot plays one joker per multi-match knockout round; the persona decides
-  // which match. CONSENSUS doubles where most of the crowd jokered, EVIL_TWIN
-  // where fewest did, EQUALIZER on the most drawish match (smallest crowd
-  // margin). A lower key sorts first; ties break by earliest kickoff then id.
+  // which match. CONSENSUS doubles where most of the crowd jokered; EVIL_TWIN,
+  // scoped to one player, has only that player's jokered match as a candidate,
+  // so it mirrors their joker; EQUALIZER takes the most drawish match (smallest
+  // crowd margin). A lower key sorts first; ties break by earliest kickoff then id.
   const jokerMatches = new Set<string>()
   const byRound = new Map<string, { matchId: string; kickoffTime: Date; key: number }[]>()
   for (const m of matches) {
@@ -393,16 +418,17 @@ export async function getBotOverview(
       penaltiesAway: m.penaltiesAway,
       roundLabel: m.roundLabel,
       roundSort: m.roundSort,
-      consensusCount: pick.count,
-      consensusTotal: pick.total,
-      // Display-only: the badge reads this to choose "mean of N" vs "picked by
-      // X/Y". The contrarian personas commit to one concrete scoreline, so they
-      // report MODE-style to show how many of the crowd matched their pick.
+      // The per-user evil twin has no crowd context, so it shows no "picked by"
+      // badge (total 0 hides it); the crowd personas keep it. The equalizer
+      // reports MODE-style so the badge shows how many of the crowd matched its
+      // draw call rather than "mean of N".
+      consensusCount: persona === 'EVIL_TWIN' ? 0 : pick.count,
+      consensusTotal: persona === 'EVIL_TWIN' ? 0 : pick.total,
       consensusMethod: persona === 'CONSENSUS' ? method : 'MODE',
     })
   }
 
-  const champion = await getBotChampion(db, competitionId, { leagueId: opts.leagueId, persona })
+  const champion = await getBotChampion(db, competitionId, { leagueId: opts.leagueId, userId: opts.userId, persona })
 
   const scoredRows = rows.filter((r) => r.totalPoints !== null)
   const predictionPoints = scoredRows.reduce((sum, r) => sum + r.totalPoints!, 0)
@@ -459,6 +485,7 @@ export async function getBotOverviewCached(
   const key = [
     competitionId,
     opts.persona ?? 'CONSENSUS',
+    opts.userId ?? '',
     opts.leagueId ?? '',
     opts.method ?? '',
     opts.includeUpcoming ? 1 : 0,
