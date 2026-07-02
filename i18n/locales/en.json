@@ -587,17 +587,24 @@
     "hiddenTip": "Members an admin has hidden from the rankings. They're still in the league and their picks still count in the crowd totals; they just don't appear on the board."
   },
   "bot": {
-    "name": "Crowd Bot",
-    "show": "Bot",
     "virtual": "virtual player",
-    "note": "Predicts the most common score picked by all players - or the average. It doesn't affect anyone's rank.",
     "pickedBy": "picked by {count}/{total}",
-    "adminUpcoming": "Admin view: consensus for upcoming matches is included - players only see kicked-off matches.",
-    "empty": "No consensus yet - it appears once players start predicting.",
+    "adminUpcoming": "Admin view: upcoming-match picks are included - players only see kicked-off matches.",
+    "empty": "No picks yet - they appear once players start predicting.",
     "methodMode": "Most picked",
     "methodMean": "Average",
     "modeDisabled": "Too few predictions - the most-picked score would be biased, so the average is shown.",
-    "meanOf": "averaged over {total}"
+    "meanOf": "averaged over {total}",
+    "persona": {
+      "consensus": "Crowd Bot",
+      "evilTwin": "Evil Twin",
+      "equalizer": "The Equalizer"
+    },
+    "blurb": {
+      "consensus": "Plays the most common score picked by all players - or the average. It doesn't affect anyone's rank.",
+      "evilTwin": "Flips the crowd's pick on its head: it backs the opposite result every match. It doesn't affect anyone's rank.",
+      "equalizer": "Calls a draw in every single match. It doesn't affect anyone's rank."
+    }
   },
   "match": {
     "standings": "Standings",

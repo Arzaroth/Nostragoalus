@@ -583,17 +583,24 @@
     "hiddenTip": "Des membres qu'un admin a masqués du classement. Ils restent dans la ligue et leurs pronos comptent toujours dans les totaux du groupe ; ils n'apparaissent simplement pas au classement."
   },
   "bot": {
-    "name": "Bot consensus",
-    "show": "Bot",
     "virtual": "joueur virtuel",
-    "note": "Pronostique le score le plus choisi par les joueurs - ou la moyenne. N'affecte le classement de personne.",
     "pickedBy": "choisi par {count}/{total}",
-    "adminUpcoming": "Vue admin : le consensus des matchs à venir est inclus - les joueurs ne voient que les matchs commencés.",
-    "empty": "Pas encore de consensus - il apparaît dès que les joueurs pronostiquent.",
+    "adminUpcoming": "Vue admin : les pronos des matchs à venir sont inclus - les joueurs ne voient que les matchs commencés.",
+    "empty": "Pas encore de pronos - ils apparaissent dès que les joueurs pronostiquent.",
     "methodMode": "Plus choisi",
     "methodMean": "Moyenne",
     "modeDisabled": "Trop peu de pronos - le score le plus choisi serait biaisé, la moyenne est affichée.",
-    "meanOf": "moyenne de {total}"
+    "meanOf": "moyenne de {total}",
+    "persona": {
+      "consensus": "Bot consensus",
+      "evilTwin": "Jumeau maléfique",
+      "equalizer": "L'Égaliseur"
+    },
+    "blurb": {
+      "consensus": "Joue le score le plus choisi par les joueurs - ou la moyenne. N'affecte le classement de personne.",
+      "evilTwin": "Inverse le prono de la foule : il mise sur le résultat opposé à chaque match. N'affecte le classement de personne.",
+      "equalizer": "Pronostique un match nul à chaque rencontre. N'affecte le classement de personne."
+    }
   },
   "match": {
     "standings": "Groupe",

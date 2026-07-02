@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useQueryClient } from '@tanstack/vue-query'
+import { BOT_PERSONA_META, BOT_PERSONA_PARAMS, personaUsesMethod, type BotPersonaParam } from '#shared/types/bot'
 const { t } = useI18n()
 useHead({ title: t('leaderboard.title') })
 const slug = useSelectedCompetition()
@@ -50,39 +51,68 @@ const scopeOptions = computed(() => [
   { label: t('leaderboard.global'), value: 'global' as const },
 ])
 
-// The bot follows the board's scope - competition-wide or league members
-// only - but has no global identity (joker rounds, finals and champion picks
-// are competition-scoped), so the toggle disappears in the global view.
-const showBot = ref(false)
+// The ghosts follow the board's scope - competition-wide or league members
+// only - but have no global identity (joker rounds, finals and champion picks
+// are competition-scoped), so they disappear in the global view. Each persona
+// is an independent, toggleable ghost row.
+const botPersonas = BOT_PERSONA_PARAMS
+const enabledPersonas = useBotPersonas()
 const botMethod = useBotMethod()
-const botEnabled = computed(() => showBot.value && !isGlobal.value)
-const { data: bot } = useBotRow(botEnabled, botMethod, scopedLeagueId)
-// Both methods always selectable; below the population threshold only MEAN is
-// meaningful, so the toggle is hidden then (no greyed-out disabled option).
+function togglePersona(persona: BotPersonaParam, on: boolean) {
+  enabledPersonas.value = on
+    ? [...enabledPersonas.value.filter((p) => p !== persona), persona]
+    : enabledPersonas.value.filter((p) => p !== persona)
+}
+const consensusOn = computed(() => !isGlobal.value && enabledPersonas.value.includes('consensus'))
+const evilOn = computed(() => !isGlobal.value && enabledPersonas.value.includes('evil-twin'))
+const equalizerOn = computed(() => !isGlobal.value && enabledPersonas.value.includes('equalizer'))
+const { data: consensusBot } = useBotRow('consensus', consensusOn, botMethod, scopedLeagueId)
+const { data: evilBot } = useBotRow('evil-twin', evilOn, botMethod, scopedLeagueId)
+const { data: equalizerBot } = useBotRow('equalizer', equalizerOn, botMethod, scopedLeagueId)
+
 const methodOptions = computed(() => [
   { label: t('bot.methodMode'), value: 'mode' },
   { label: t('bot.methodMean'), value: 'mean' },
 ])
+// The method only shapes the consensus-derived ghosts (consensus, evil twin);
+// below the population threshold only MEAN is meaningful, so the toggle hides.
+const methodInUse = computed(() => !isGlobal.value && enabledPersonas.value.some(personaUsesMethod))
+const modeAvailable = computed(() => consensusBot.value?.modeAvailable ?? evilBot.value?.modeAvailable ?? false)
 // The server enforces the population gate; mirror it in the control.
 watchEffect(() => {
-  if (bot.value && !bot.value.modeAvailable && botMethod.value === 'mode') botMethod.value = 'mean'
+  if (methodInUse.value && !modeAvailable.value && botMethod.value === 'mode') botMethod.value = 'mean'
 })
 
-type DisplayRow = LeaderboardRow & { movement?: number | null; isBot?: boolean }
+type DisplayRow = LeaderboardRow & {
+  movement?: number | null
+  isBot?: boolean
+  persona?: BotPersonaParam
+  icon?: string
+}
+const ghostRows = computed<DisplayRow[]>(() => {
+  const sources = [
+    { persona: 'consensus' as const, on: consensusOn.value, payload: consensusBot.value },
+    { persona: 'evil-twin' as const, on: evilOn.value, payload: evilBot.value },
+    { persona: 'equalizer' as const, on: equalizerOn.value, payload: equalizerBot.value },
+  ]
+  return sources
+    .filter((s) => s.on && s.payload?.row && s.payload.row.rank !== null)
+    .map((s) => ({
+      ...s.payload!.row!,
+      rank: s.payload!.row!.rank as number,
+      persona: s.persona,
+      icon: BOT_PERSONA_META[s.persona].icon,
+      displayName: t(BOT_PERSONA_META[s.persona].nameKey),
+      image: null,
+      livePoints: 0,
+      movement: null,
+      isBot: true,
+      showcase: [],
+    }))
+})
 const displayRows = computed<DisplayRow[]>(() => {
   const base: DisplayRow[] = rows.value ?? []
-  const row = bot.value?.row
-  if (!botEnabled.value || !row || row.rank === null) return base
-  return insertGhostRow(base, {
-    ...row,
-    rank: row.rank,
-    displayName: t('bot.name'),
-    image: null,
-    livePoints: 0,
-    movement: null,
-    isBot: true,
-    showcase: [],
-  })
+  return ghostRows.value.length ? insertGhostRows(base, ghostRows.value) : base
 })
 
 function medal(rank: number) {
@@ -111,10 +141,19 @@ const hasLive = computed(() => displayRows.value.some((r) => r.livePoints))
       </div>
       <div class="flex items-center gap-2 flex-wrap">
         <template v-if="!isGlobal">
-          <ToggleButton v-model="showBot" :on-label="t('bot.show')" :off-label="t('bot.show')" on-icon="pi pi-eye" off-icon="pi pi-eye-slash" size="small" />
-          <SelectButton v-if="showBot && bot?.modeAvailable" v-model="botMethod" :options="methodOptions" option-label="label" option-value="value" :allow-empty="false" size="small" />
+          <ToggleButton
+            v-for="p in botPersonas"
+            :key="p"
+            v-tooltip.top="t(BOT_PERSONA_META[p].blurbKey)"
+            :model-value="enabledPersonas.includes(p)"
+            :on-label="`${BOT_PERSONA_META[p].icon} ${t(BOT_PERSONA_META[p].nameKey)}`"
+            :off-label="`${BOT_PERSONA_META[p].icon} ${t(BOT_PERSONA_META[p].nameKey)}`"
+            size="small"
+            @update:model-value="(on: boolean) => togglePersona(p, on)"
+          />
+          <SelectButton v-if="methodInUse && modeAvailable" v-model="botMethod" :options="methodOptions" option-label="label" option-value="value" :allow-empty="false" size="small" />
           <i
-            v-if="showBot && bot && !bot.modeAvailable"
+            v-if="methodInUse && !modeAvailable"
             v-tooltip.top="t('bot.modeDisabled')"
             class="pi pi-info-circle cursor-help"
             style="color: var(--p-text-muted-color)"
@@ -145,7 +184,7 @@ const hasLive = computed(() => displayRows.value.some((r) => r.livePoints))
       <NuxtLink
         v-for="r in displayRows"
         :key="r.userId"
-        :to="r.isBot ? `/${slug}/bot${scopedLeagueId ? `?league=${scopedLeagueId}` : ''}` : `/${slug}/users/${r.userId}${isGlobal ? '?global=1' : ''}`"
+        :to="r.isBot ? `/${slug}/bot?persona=${r.persona}${scopedLeagueId ? `&league=${scopedLeagueId}` : ''}` : `/${slug}/users/${r.userId}${isGlobal ? '?global=1' : ''}`"
         class="ng-card flex items-center gap-3 rounded-xl border px-4 py-3"
         :style="`background: var(--p-content-background); border-style: ${r.isBot ? 'dashed' : 'solid'}; opacity: ${r.isBot ? '0.85' : '1'}; border-color: ${r.userId === meId ? 'var(--p-primary-color)' : 'var(--p-content-border-color)'}; border-width: ${r.userId === meId ? '2px' : '1px'}`"
       >
@@ -158,7 +197,7 @@ const hasLive = computed(() => displayRows.value.some((r) => r.livePoints))
             {{ r.movement > 0 ? '▲' : '▼' }}{{ Math.abs(r.movement) }}
           </div>
         </div>
-        <span v-if="r.isBot" class="shrink-0 text-2xl leading-none w-8 h-8 inline-flex items-center justify-center">🤖</span>
+        <span v-if="r.isBot" class="shrink-0 text-2xl leading-none w-8 h-8 inline-flex items-center justify-center">{{ r.icon }}</span>
         <UserAvatar v-else :image="r.image" :user-id="r.userId" />
         <div class="flex-1 min-w-0">
           <div class="font-semibold truncate flex items-center gap-2.5">

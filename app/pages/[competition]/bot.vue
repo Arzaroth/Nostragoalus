@@ -1,19 +1,31 @@
 <script setup lang="ts">
+import { BOT_PERSONA_META, BOT_PERSONA_PARAMS, botPersonaParam, parseBotPersona, personaUsesMethod, type BotPersonaParam } from '#shared/types/bot'
 const { t } = useI18n()
 const route = useRoute()
+const router = useRouter()
 const slug = useSelectedCompetition()
 const botMethod = useBotMethod()
 // Carried over from a league-scoped leaderboard: same consensus lens here.
 const leagueId = computed(() => (route.query.league ? String(route.query.league) : null))
-const { data, isLoading } = useBotPredictions(botMethod, leagueId)
+// Persona from the URL, deep-linked from a leaderboard ghost row; default consensus.
+const persona = computed<BotPersonaParam>(() => botPersonaParam(parseBotPersona(route.query.persona)))
+function selectPersona(p: BotPersonaParam) {
+  router.replace({ query: { ...route.query, persona: p } })
+}
+const meta = computed(() => BOT_PERSONA_META[persona.value])
+const { data, isLoading } = useBotPredictions(persona, botMethod, leagueId)
 
+const personaOptions = computed(() =>
+  BOT_PERSONA_PARAMS.map((p) => ({ value: p, label: `${BOT_PERSONA_META[p].icon} ${t(BOT_PERSONA_META[p].nameKey)}` })),
+)
 const methodOptions = computed(() => [
   { label: t('bot.methodMode'), value: 'mode' },
   { label: t('bot.methodMean'), value: 'mean' },
 ])
-// The server enforces the population gate; mirror it in the control.
+// The equalizer ignores the method; the others fall back to MEAN below the gate.
+const usesMethod = computed(() => personaUsesMethod(persona.value))
 watchEffect(() => {
-  if (data.value && !data.value.modeAvailable && botMethod.value === 'mode') botMethod.value = 'mean'
+  if (usesMethod.value && data.value && !data.value.modeAvailable && botMethod.value === 'mode') botMethod.value = 'mean'
 })
 
 // Admin view includes not-yet-kicked-off consensus; split it off behind the
@@ -32,8 +44,8 @@ const upcoming = computed(() => (data.value?.predictions ?? []).filter((p) => ne
     <div v-else-if="data">
       <div class="flex items-center justify-between gap-3 flex-wrap mt-3 mb-1">
         <div class="flex items-center gap-3 min-w-0">
-          <span class="text-4xl leading-none shrink-0">🤖</span>
-          <h1 class="text-2xl font-bold truncate">{{ t('bot.name') }}</h1>
+          <span class="text-4xl leading-none shrink-0">{{ meta.icon }}</span>
+          <h1 class="text-2xl font-bold truncate">{{ t(meta.nameKey) }}</h1>
           <span class="text-xs font-normal px-1.5 py-0.5 rounded-full shrink-0" style="color: var(--p-text-muted-color); background: var(--p-content-border-color)">{{ t('bot.virtual') }}</span>
           <span
             v-if="data.champion?.teamCode && flagUrl(data.champion.teamCode)"
@@ -47,11 +59,14 @@ const upcoming = computed(() => (data.value?.predictions ?? []).filter((p) => ne
           <CompetitionPill />
           <span v-if="data.league" class="text-xs font-semibold px-2 py-1 rounded-full truncate min-w-0 max-w-[45vw] sm:max-w-none" style="color: var(--p-primary-color); background: var(--p-highlight-background, var(--p-content-border-color))">{{ data.league.name }}</span>
         </div>
-        <SelectButton v-if="data.modeAvailable" v-model="botMethod" :options="methodOptions" option-label="label" option-value="value" :allow-empty="false" size="small" />
+        <div class="flex items-center gap-2 flex-wrap">
+          <SelectButton :model-value="persona" :options="personaOptions" option-label="label" option-value="value" :allow-empty="false" size="small" @update:model-value="selectPersona" />
+          <SelectButton v-if="usesMethod && data.modeAvailable" v-model="botMethod" :options="methodOptions" option-label="label" option-value="value" :allow-empty="false" size="small" />
+        </div>
       </div>
       <p class="text-sm mb-2" style="color: var(--p-text-muted-color)">
-        {{ t('bot.note') }}
-        <span v-if="!data.modeAvailable" v-tooltip.top="t('bot.modeDisabled')" class="cursor-help"><i class="pi pi-info-circle" /></span>
+        {{ t(meta.blurbKey) }}
+        <span v-if="usesMethod && !data.modeAvailable" v-tooltip.top="t('bot.modeDisabled')" class="cursor-help"><i class="pi pi-info-circle" /></span>
       </p>
       <div class="flex items-center gap-2 flex-wrap text-sm mb-3" style="color: var(--p-text-muted-color)">
         <span v-if="data.summary.rank" class="font-semibold" style="color: var(--p-text-color)">#{{ data.summary.rank }}</span>
