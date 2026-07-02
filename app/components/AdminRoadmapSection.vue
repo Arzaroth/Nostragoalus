@@ -84,7 +84,8 @@ const setModeration = (item: AdminRoadmapItem, moderationStatus: RoadmapModerati
 
 // Kanban drag: persist the whole target column's order in one request. The
 // cache is patched optimistically so the card lands where it was dropped without
-// waiting for the refetch; onError resyncs from the server.
+// waiting for the refetch; onError resyncs from the server (discarding the
+// optimistic patch) so a failed reorder can't leave a stale order on screen.
 const reorderMutation = useMutation({
   mutationFn: (input: { status: RoadmapStatus; ids: string[] }) =>
     $fetch<unknown>('/api/admin/roadmap/reorder', { method: 'PUT', body: input }),
@@ -92,7 +93,10 @@ const reorderMutation = useMutation({
     actionErr.value = ''
     invalidate()
   },
-  onError: onActionError,
+  onError: (e: unknown) => {
+    onActionError(e)
+    invalidate()
+  },
 })
 
 const dragId = ref<string | null>(null)
@@ -113,17 +117,23 @@ function onDragEnd() {
 function applyLocal(status: RoadmapStatus, ids: string[]) {
   const pos = new Map(ids.map((id, i) => [id, i]))
   queryClient.setQueryData<AdminRoadmapItem[]>(['admin-roadmap'], (old) =>
-    old?.map((it) =>
-      pos.has(it.id)
-        ? {
-            ...it,
-            status,
-            position: pos.get(it.id)!,
-            moderationStatus:
-              status !== 'SUGGESTED' && it.moderationStatus === 'PENDING' ? 'APPROVED' : it.moderationStatus,
-          }
-        : it,
-    ),
+    old
+      ?.map((it) =>
+        pos.has(it.id)
+          ? {
+              ...it,
+              status,
+              position: pos.get(it.id)!,
+              // Same promotion rule as the server (blessedModerationOnPromote):
+              // a card dragged onto the roadmap proper un-hides even a rejected one.
+              moderationStatus:
+                status !== 'SUGGESTED' && it.moderationStatus !== 'APPROVED' ? 'APPROVED' : it.moderationStatus,
+            }
+          : it,
+      )
+      // groupByStatus buckets in array order and does not sort by position, so the
+      // card only visibly moves if the array itself reflects the new order.
+      .sort((x, y) => x.position - y.position),
   )
 }
 

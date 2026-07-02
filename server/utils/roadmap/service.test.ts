@@ -11,7 +11,6 @@ import {
   deleteRoadmapItem,
   listRoadmapItems,
   reorderColumn,
-  reorderRoadmapItem,
   toggleVote,
   updateRoadmapItem,
 } from './service'
@@ -119,31 +118,6 @@ describe('roadmap service', () => {
     const same = await updateRoadmapItem(d, planned.id, { status: 'SHIPPED' })
     expect(same.position).toBe(5)
     await c.close()
-  })
-
-  it('reorders within a status column atomically, no-ops at the edge', async () => {
-    const { db: d, client: c } = await createTestDb()
-    const a = await createRoadmapItem(d, { title: 'a' })
-    await createRoadmapItem(d, { title: 'b' })
-    await createRoadmapItem(d, { title: 'c' })
-    const titles = async () => (await listRoadmapItems(d)).map((i) => i.title)
-
-    const b = (await listRoadmapItems(d))[1]
-    const movedB = await reorderRoadmapItem(d, b.id, 'up')
-    expect(movedB.position).toBe(0)
-    expect(await titles()).toEqual(['b', 'a', 'c'])
-
-    await reorderRoadmapItem(d, a.id, 'down') // a is now at index 1
-    expect(await titles()).toEqual(['b', 'c', 'a'])
-
-    const noop = await reorderRoadmapItem(d, b.id, 'up') // already top
-    expect(noop.position).toBe(0)
-    expect(await titles()).toEqual(['b', 'c', 'a'])
-    await c.close()
-  })
-
-  it('reorder throws NotFoundError for a missing item', async () => {
-    await expect(reorderRoadmapItem(db, 'nope', 'up')).rejects.toThrow(NotFoundError)
   })
 
   it('creates a suggestion: SUGGESTED, PENDING (under review), authored, trimmed, appended', async () => {
@@ -282,6 +256,31 @@ describe('roadmap service', () => {
     expect(inProgress.map((i) => i.title)).toEqual(['dragged idea', 'existing'])
     // Promotion off SUGGESTED blesses the pending suggestion.
     expect(inProgress.find((i) => i.id === suggestion.id)!.moderationStatus).toBe('APPROVED')
+    await c.close()
+  })
+
+  it('reorderColumn un-hides a REJECTED suggestion dragged onto the roadmap', async () => {
+    const { db: d, client: c } = await createTestDb()
+    const u = await makeUser(d, 'u1')
+    const s = await createSuggestion(d, { authorId: u, title: 'was rejected' })
+    await updateRoadmapItem(d, s.id, { moderationStatus: 'REJECTED' })
+    // Dragging it into a roadmap column must approve it (matching the status-Select
+    // path), else it would sit on the roadmap yet stay hidden from the public list.
+    await reorderColumn(d, 'PLANNED', [s.id])
+    const [row] = (await listRoadmapItems(d, { includeHidden: true })).filter((i) => i.id === s.id)
+    expect(row.status).toBe('PLANNED')
+    expect(row.moderationStatus).toBe('APPROVED')
+    await c.close()
+  })
+
+  it('reorderColumn skips an unknown id dragged into a roadmap column', async () => {
+    const { db: d, client: c } = await createTestDb()
+    const planned = await createRoadmapItem(d, { title: 'real' })
+    // The ghost id matches no row (cur is undefined), so the promotion check no-ops
+    // and only the real card is placed.
+    await reorderColumn(d, 'PLANNED', ['ghost-id', planned.id])
+    const [row] = (await listRoadmapItems(d)).filter((i) => i.id === planned.id)
+    expect(row.position).toBe(1)
     await c.close()
   })
 

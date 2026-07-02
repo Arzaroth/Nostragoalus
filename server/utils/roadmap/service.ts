@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, gt, lt, max, ne } from 'drizzle-orm'
+import { and, asc, count, eq, max, ne } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { roadmapItem, roadmapModerationEnum, roadmapStatusEnum, roadmapVote } from '../../../db/schema'
 import { NotFoundError, ValidationError } from '../errors'
@@ -176,6 +176,18 @@ export async function toggleVote(
   })
 }
 
+// Promotion blesses a suggestion: moving it onto the roadmap proper (any non-
+// SUGGESTED status) approves a still-PENDING or previously-REJECTED item, so it
+// stops being hidden from the public list. Returns 'APPROVED' to set, or undefined
+// to leave moderation unchanged. Shared by updateRoadmapItem (the status Select)
+// and reorderColumn (the drag), so the two promotion paths never diverge.
+export function blessedModerationOnPromote(
+  targetStatus: RoadmapStatus,
+  current: RoadmapModeration,
+): RoadmapModeration | undefined {
+  return targetStatus !== 'SUGGESTED' && current !== 'APPROVED' ? 'APPROVED' : undefined
+}
+
 export async function updateRoadmapItem(db: AppDatabase, id: string, patch: RoadmapItemPatch) {
   if (patch.title !== undefined && !patch.title.trim()) throw new ValidationError('title cannot be empty')
   return db.transaction(async (tx) => {
@@ -195,17 +207,12 @@ export async function updateRoadmapItem(db: AppDatabase, id: string, patch: Road
       if (patch.status !== current.status && patch.position === undefined) {
         set.position = await nextPosition(tx, patch.status)
       }
-      // Promoting a suggestion onto the roadmap proper blesses it: promotion
-      // implies approval, so a still-pending OR previously-rejected item stops
-      // being hidden (unless the caller set moderationStatus explicitly). Without
-      // covering REJECTED, promoting a rejected suggestion would land it on the
-      // roadmap yet keep it filtered out of the public list.
-      if (
-        patch.status !== 'SUGGESTED' &&
-        current.moderationStatus !== 'APPROVED' &&
-        patch.moderationStatus === undefined
-      ) {
-        set.moderationStatus = 'APPROVED'
+      // Promoting a suggestion onto the roadmap proper blesses it (see
+      // blessedModerationOnPromote); an explicit moderationStatus in the same
+      // patch wins over the auto-bless.
+      if (patch.moderationStatus === undefined) {
+        const blessed = blessedModerationOnPromote(patch.status, current.moderationStatus)
+        if (blessed) set.moderationStatus = blessed
       }
     }
     const [row] = await tx.update(roadmapItem).set(set).where(eq(roadmapItem.id, id)).returning()
@@ -213,40 +220,13 @@ export async function updateRoadmapItem(db: AppDatabase, id: string, patch: Road
   })
 }
 
-// Swap an item with its adjacent neighbor in the same status column, atomically.
-export async function reorderRoadmapItem(db: AppDatabase, id: string, direction: 'up' | 'down') {
-  return db.transaction(async (tx) => {
-    const [item] = await tx.select().from(roadmapItem).where(eq(roadmapItem.id, id)).limit(1)
-    if (!item) throw new NotFoundError('roadmap item not found')
-    const [neighbor] = await tx
-      .select()
-      .from(roadmapItem)
-      .where(
-        and(
-          eq(roadmapItem.status, item.status),
-          direction === 'up' ? lt(roadmapItem.position, item.position) : gt(roadmapItem.position, item.position),
-        ),
-      )
-      .orderBy(
-        direction === 'up' ? desc(roadmapItem.position) : asc(roadmapItem.position),
-        // Stable tiebreak so a neighbour is picked deterministically when two rows
-        // in a column happen to share a position.
-        direction === 'up' ? desc(roadmapItem.createdAt) : asc(roadmapItem.createdAt),
-      )
-      .limit(1)
-    if (!neighbor) return item // already at the edge - no-op
-    await tx.update(roadmapItem).set({ position: neighbor.position }).where(eq(roadmapItem.id, item.id))
-    await tx.update(roadmapItem).set({ position: item.position }).where(eq(roadmapItem.id, neighbor.id))
-    return { ...item, position: neighbor.position }
-  })
-}
-
 // Persist an explicit ordering for a whole status column (the kanban drag-drop):
 // every id in `ids` is placed in `status` at its array index. A card dragged in
-// from another column has its status rewritten here, and a pending suggestion
-// dragged onto the roadmap proper is auto-approved (the same "promotion blesses
-// it" rule as updateRoadmapItem). Unknown ids are skipped. The source column an
-// item left keeps its positions (gaps are fine - listing orders by position).
+// from another column has its status rewritten here, and a suggestion dragged onto
+// the roadmap proper is auto-approved via the shared blessedModerationOnPromote
+// rule (so the drag path matches the status-Select path exactly). Unknown ids are
+// skipped. The source column an item left keeps its positions (gaps are fine -
+// listing orders by position).
 export async function reorderColumn(db: AppDatabase, status: RoadmapStatus, ids: string[]): Promise<void> {
   await db.transaction(async (tx) => {
     for (let i = 0; i < ids.length; i++) {
@@ -260,7 +240,8 @@ export async function reorderColumn(db: AppDatabase, status: RoadmapStatus, ids:
           .from(roadmapItem)
           .where(eq(roadmapItem.id, ids[i]))
           .limit(1)
-        if (cur?.moderationStatus === 'PENDING') set.moderationStatus = 'APPROVED'
+        const blessed = cur ? blessedModerationOnPromote(status, cur.moderationStatus) : undefined
+        if (blessed) set.moderationStatus = blessed
       }
       await tx.update(roadmapItem).set(set).where(eq(roadmapItem.id, ids[i]))
     }

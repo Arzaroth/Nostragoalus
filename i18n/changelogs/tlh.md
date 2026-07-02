@@ -5,6 +5,9 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### choHpu'
+- **DaH tetlh 'oH He nav'e'**: He nav 'och tetlhmey rur - ghom qnup, nab, ruch, rInpu' je - qter nIteb rurbe', vaj Hoch tetlh boch Damuvlaw' (HutlhwI' HaSta yIghelmoH).
+
 ## [2.12.0] - 2026-07-02
 
 ### chelpu'

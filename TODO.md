@@ -499,7 +499,17 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
 - [ ] Suggestion author is shown only in the admin triage view, never publicly.
       Decide whether a public "suggested by" byline is wanted.
 - [ ] Roadmap item title/description are still English-only DB strings; localizing
-      them is its own ROADMAP.md item, and the kanban drag-drop UX is another.
+      them is its own ROADMAP.md item.
+- [ ] Both boards (`roadmap.vue`, `AdminRoadmapSection.vue`) open-code the same
+      column chrome (`v-for col in ROADMAP_COLUMNS` -> section + Tag/icon/label +
+      count). Only the column DATA is shared; extract a `RoadmapColumn` shell (header
+      slot + card slot) so the chrome lives once. The card bodies legitimately differ
+      (public upvote vs admin edit controls) so a shared card is optional.
+- [ ] `AdminRoadmapSection.statusOptions` re-lists the four statuses + label keys
+      that `ROADMAP_COLUMNS` already carries; derive it (`.map(c => ({label: t(c.key),
+      value: c.status}))`, filtering SUGGESTED) instead of a parallel literal. Same for
+      the `z.enum([...])` status list duplicated across `reorder.put.ts` and
+      `[id]/index.put.ts` - hoist one shared const.
 - [ ] The upvote button is copy-pasted between the roadmap-sections loop and the
       suggestions loop in `roadmap.vue` (plus the read-only tally in
       `AdminRoadmapSection.vue`). Extract a `RoadmapVoteButton` so the aria/disabled/
@@ -523,8 +533,11 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
 - [x] Roadmap admin reorder is two sequential PUTs from the client (swap with
       the neighbor); one failing leaves duplicate positions. A server-side
       swap/reorder endpoint fixes it and is a prerequisite for the kanban
-      drag-and-drop (ROADMAP.md). Resolved: `POST /api/admin/roadmap/:id/move`
-      (`reorderRoadmapItem`) does the neighbor swap atomically in one request.
+      drag-and-drop (ROADMAP.md). Resolved then superseded: the neighbour-swap
+      `POST /api/admin/roadmap/:id/move` (`reorderRoadmapItem`) shipped in v2, then
+      the kanban drag replaced it with `PUT /api/admin/roadmap/reorder`
+      (`reorderColumn`, a dense 0..n column rewrite); the old move endpoint +
+      `reorderRoadmapItem` were removed as dead in the kanban treatment.
 - [ ] Roadmap item content is single-language while the chrome around it is
       i18n'd in four locales; decide whether that's accepted (EN-only roadmap)
       or items grow per-locale fields.
