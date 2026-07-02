@@ -500,6 +500,15 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
       Decide whether a public "suggested by" byline is wanted.
 - [ ] Roadmap item title/description are still English-only DB strings; localizing
       them is its own ROADMAP.md item, and the kanban drag-drop UX is another.
+- [ ] The upvote button is copy-pasted between the roadmap-sections loop and the
+      suggestions loop in `roadmap.vue` (plus the read-only tally in
+      `AdminRoadmapSection.vue`). Extract a `RoadmapVoteButton` so the aria/disabled/
+      click wiring has one home and can't drift across the three renders.
+- [ ] `nextPosition` reads `max(position)` then inserts `max+1` outside a
+      transaction with no unique `(status, position)` constraint, so two concurrent
+      creates in the same column can land on the same position value. Display stays
+      deterministic (list + reorder both tiebreak on `createdAt`), so this is cosmetic
+      today; make it atomic (or add the unique constraint) if positions must be dense.
 
 ## Roadmap / home CTA / PWA (deferred from the feature passes)
 

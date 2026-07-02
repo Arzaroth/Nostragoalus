@@ -234,6 +234,10 @@ describe('roadmap service', () => {
     expect(promoted.moderationStatus).toBe('APPROVED')
     const hidden = await updateRoadmapItem(d, s.id, { moderationStatus: 'REJECTED' })
     expect(hidden.moderationStatus).toBe('REJECTED')
+    // Re-promoting a rejected suggestion un-hides it: promotion implies approval,
+    // else it would sit on the roadmap yet stay filtered out of the public list.
+    const rescued = await updateRoadmapItem(d, s.id, { status: 'IN_PROGRESS' })
+    expect(rescued.moderationStatus).toBe('APPROVED')
     await c.close()
   })
 
