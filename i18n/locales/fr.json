@@ -807,7 +807,8 @@
       "userSuggestion": "Suggestion d'utilisateur",
       "hide": "Masquer",
       "restore": "Restaurer",
-      "approve": "Approuver"
+      "approve": "Approuver",
+      "boardHint": "Glisse les cartes entre les colonnes pour changer de statut, ou réordonne dans une colonne."
     },
     "sso": {
       "title": "Authentification unique (SSO)",
