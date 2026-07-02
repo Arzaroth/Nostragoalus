@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { freshUser, signUp } from './helpers/auth'
+import { dismissOnboarding, freshUser, signUp } from './helpers/auth'
 import {
   cleanup,
   closeDb,
@@ -29,7 +29,11 @@ test('the trophy cabinet shows earned items and the owner can pin one to the fri
   await seedTrophy(fixture.competitionId, userId, 'OVERALL', 42)
   await seedAchievement(userId, fixture.competitionId, 'first-blood', 'BRONZE')
 
-  await page.goto(`/${fixture.slug}/users/${userId}`)
+  // The dev server compiles this route on first hit; that cold compile can abort
+  // the very first navigation (ERR_ABORTED). Retry until it serves.
+  await expect(async () => {
+    await page.goto(`/${fixture.slug}/users/${userId}`)
+  }).toPass({ timeout: 30_000 })
 
   // The cabinet renders the trophy and the earned badge.
   await expect(page.getByText('Grand Champion')).toBeVisible()
@@ -37,6 +41,12 @@ test('the trophy cabinet shows earned items and the owner can pin one to the fri
 
   // Owner sees the empty-fridge prompt and, once hydrated, the arrange control.
   await expect(page.getByText('Pin your proudest trophies and badges here.')).toBeVisible()
+
+  // A fresh account's one-time league onboarding modal can float in over the
+  // page (no close button / no Escape) and intercept clicks; the sign-up dismiss
+  // can race a straight-after navigation, so clear it here before interacting.
+  await dismissOnboarding(page)
+
   const arrange = page.getByRole('button', { name: 'Arrange fridge' })
   await expect(arrange).toBeVisible()
   await arrange.click()
