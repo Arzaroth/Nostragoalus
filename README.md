@@ -153,7 +153,7 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   leaderboards immediately
 - Admin **API clients**: mint scoped, optionally expiring machine keys for integrations (shown once,
   stored hashed), list and revoke them; also mintable headlessly with `mise run create-api-key`
-- Public **roadmap** page (planned / in progress / shipped), admin-curated with reordering, plus **community suggestions**: signed-in players propose a feature (public right away, "under review" until an admin blesses it) and upvote any item, with suggestions ranked by demand; `mise run roadmap-add` / `roadmap-seed` / `roadmap-pull` (triage) CLIs
+- Public **roadmap board** (side-by-side columns: community suggestions / planned / in progress / shipped), admins triage by drag-drop, plus **community suggestions**: signed-in players propose a feature (public right away, "under review" until an admin blesses it) and upvote any item, with suggestions ranked by demand; `mise run roadmap-add` / `roadmap-seed` / `roadmap-pull` (triage) CLIs
 - A **what's new** badge: a dot on your account menu when the changelog has versions
   you have not seen, with those entries highlighted on the About page (remembered per
   account, across devices) and the release notes rendered in your selected language
