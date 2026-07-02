@@ -28,7 +28,7 @@ test('suggest -> under review -> upvote -> admin approve clears the flag', async
   await page.getByRole('button', { name: 'Suggest', exact: true }).click()
 
   // The suggestion appears, flagged "under review".
-  const row = page.locator('div.flex.items-start', { hasText: title })
+  const row = page.locator('.ng-roadmap-card', { hasText: title })
   await expect(row).toBeVisible()
   await expect(row.getByText('Under review')).toBeVisible()
 
@@ -63,8 +63,11 @@ test('suggest -> under review -> upvote -> admin approve clears the flag', async
   // SUGGESTED item in the isolated DB, so the flag is gone entirely).
   await page.reload()
   await page.waitForLoadState('networkidle')
-  await expect(page.getByText(title)).toBeVisible()
-  await expect(page.getByText('Under review')).toHaveCount(0)
+  const card = page.locator('.ng-roadmap-card', { hasText: title })
+  await expect(card).toBeVisible()
+  // This suggestion is no longer flagged (scoped to its own card so other
+  // pending suggestions in the DB don't matter).
+  await expect(card.getByText('Under review')).toHaveCount(0)
 })
 
 test('the public roadmap is a kanban board and status moves land in the right column', async ({ page }) => {
