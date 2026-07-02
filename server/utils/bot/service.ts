@@ -10,7 +10,7 @@ import { getLeaderboard } from '../leaderboard/service'
 import { closingOddsForOutcome } from '../odds/store'
 import { outcomeOf } from '../scoring/tiers'
 
-import { BOT_USER_ID, type ConsensusMethod } from '../../../shared/types/bot'
+import { DRAW_SCORELINE, botUserId, type BotPersona, type ConsensusMethod } from '../../../shared/types/bot'
 
 // Below this many distinct predictors, the most-common scoreline is noise, not
 // consensus - the MODE method falls back to MEAN (mirrors crowdMinDenominator).
@@ -47,6 +47,35 @@ export function computeConsensus(rows: { home: number; away: number }[], method:
     (a, b) => b.count - a.count || a.home + a.away - (b.home + b.away) || b.home - a.home,
   )[0]
   return { home: best.home, away: best.away, count: best.count, total: rows.length }
+}
+
+// The per-match scoreline each persona plays, with `count` re-derived as the
+// number of scoped predictions that landed on exactly that scoreline (so the
+// "picked by X/Y" badge is truthful for the contrarian bots too):
+//  - CONSENSUS: the crowd's own MODE/MEAN pick.
+//  - EVIL_TWIN: that pick inverted (home/away swapped) - the favoured winner is
+//    reversed while the margin is kept; a drawn consensus stays drawn.
+//  - EQUALIZER: always a draw, ignoring the crowd's scoreline entirely.
+// EQUALIZER needs only that someone predicted the match; the others inherit
+// computeConsensus's null gate (MODE below the threshold omits the match).
+export function botPick(
+  rows: { home: number; away: number }[],
+  persona: BotPersona,
+  method: ConsensusMethod,
+): Consensus | null {
+  if (rows.length === 0) return null
+
+  if (persona === 'EQUALIZER') {
+    const { home, away } = DRAW_SCORELINE
+    return { home, away, count: rows.filter((r) => r.home === home && r.away === away).length, total: rows.length }
+  }
+
+  const consensus = computeConsensus(rows, method)
+  if (!consensus || persona === 'CONSENSUS') return consensus
+
+  const home = consensus.away
+  const away = consensus.home
+  return { home, away, count: rows.filter((r) => r.home === home && r.away === away).length, total: rows.length }
 }
 
 export interface BotMatchRow {
@@ -100,6 +129,7 @@ export interface BotSummary {
 }
 
 export interface BotOverview {
+  persona: BotPersona
   method: ConsensusMethod
   modeAvailable: boolean
   population: number
@@ -112,6 +142,8 @@ export interface BotOverview {
 }
 
 export interface BotScopeOptions {
+  // Which bot to compute; defaults to the original consensus ghost.
+  persona?: BotPersona
   method?: ConsensusMethod
   // League hook: scope consensus, joker, champion and rank to the members.
   // The bonus histogram intentionally stays competition-wide - real points
@@ -123,12 +155,16 @@ export interface BotScopeOptions {
   includePrivate?: boolean
 }
 
-// The bot's champion pick is the team most users picked.
+// The bot's champion pick follows its persona: CONSENSUS backs the team most
+// users picked, EVIL_TWIN the least-picked one, and EQUALIZER names no champion
+// (a draw-caller has no single winner to crown).
 export async function getBotChampion(
   db: AppDatabase,
   competitionId: string,
-  opts: { leagueId?: string } = {},
+  opts: { leagueId?: string; persona?: BotPersona } = {},
 ): Promise<BotChampion | null> {
+  const persona = opts.persona ?? 'CONSENSUS'
+  if (persona === 'EQUALIZER') return null
   let query = db
     .select({
       teamCode: championPick.teamCode,
@@ -158,8 +194,10 @@ export async function getBotChampion(
     }
   }
   if (counts.size === 0) return null
-  const best = [...counts.values()].sort(
-    (a, b) => b.count - a.count || a.teamCode.localeCompare(b.teamCode),
+  const best = [...counts.values()].sort((a, b) =>
+    persona === 'EVIL_TWIN'
+      ? a.count - b.count || a.teamCode.localeCompare(b.teamCode)
+      : b.count - a.count || a.teamCode.localeCompare(b.teamCode),
   )[0]
 
   // The bot's virtual pick pays what most of its crowd locked in for that team
@@ -241,6 +279,7 @@ export async function getBotOverview(
     : null
   const scoped = members ? allPredictions.filter((p) => members.has(p.userId)) : allPredictions
 
+  const persona = opts.persona ?? 'CONSENSUS'
   const population = new Set(scoped.map((p) => p.userId)).size
   const modeAvailable = population >= MIN_CONSENSUS_USERS
   const requested = opts.method ?? 'MODE'
@@ -260,21 +299,33 @@ export async function getBotOverview(
     else lockedByMatch.set(p.matchId, [p])
   }
 
-  // The bot plays its joker where most of the scoped crowd played theirs.
+  // The bot plays one joker per multi-match knockout round; the persona decides
+  // which match. CONSENSUS doubles where most of the crowd jokered, EVIL_TWIN
+  // where fewest did, EQUALIZER on the most drawish match (smallest crowd
+  // margin). A lower key sorts first; ties break by earliest kickoff then id.
   const jokerMatches = new Set<string>()
-  const byRound = new Map<string, { matchId: string; kickoffTime: Date; count: number }[]>()
+  const byRound = new Map<string, { matchId: string; kickoffTime: Date; key: number }[]>()
   for (const m of matches) {
     if (m.roundKind !== 'KNOCKOUT' || isSingleMatchStage(m.stage)) continue
-    const count = (scopedByMatch.get(m.id) ?? []).filter((p) => p.isJoker).length
-    if (count === 0) continue
+    const jokerRows = scopedByMatch.get(m.id) ?? []
+    let key: number | null
+    if (persona === 'EQUALIZER') {
+      const c = computeConsensus(jokerRows, 'MEAN')
+      key = c ? Math.abs(c.home - c.away) : null
+    } else {
+      const jokers = jokerRows.filter((p) => p.isJoker).length
+      key = jokers === 0 ? null : persona === 'EVIL_TWIN' ? jokers : -jokers
+    }
+    if (key === null) continue
     const list = byRound.get(m.roundId)
-    if (list) list.push({ matchId: m.id, kickoffTime: m.kickoffTime, count })
-    else byRound.set(m.roundId, [{ matchId: m.id, kickoffTime: m.kickoffTime, count }])
+    const entry = { matchId: m.id, kickoffTime: m.kickoffTime, key }
+    if (list) list.push(entry)
+    else byRound.set(m.roundId, [entry])
   }
   for (const candidates of byRound.values()) {
     candidates.sort(
       (a, b) =>
-        b.count - a.count ||
+        a.key - b.key ||
         a.kickoffTime.getTime() - b.kickoffTime.getTime() ||
         a.matchId.localeCompare(b.matchId),
     )
@@ -286,8 +337,8 @@ export async function getBotOverview(
   const rows: BotMatchRow[] = []
   for (const m of matches) {
     if (!opts.includeUpcoming && m.kickoffTime > now) continue
-    const consensus = computeConsensus(scopedByMatch.get(m.id) ?? [], method)
-    if (!consensus) continue
+    const pick = botPick(scopedByMatch.get(m.id) ?? [], persona, method)
+    if (!pick) continue
 
     const isJoker = jokerMatches.has(m.id)
     const scored = m.scoringState === 'SCORED' && m.fullTimeHome !== null && m.fullTimeAway !== null
@@ -311,17 +362,17 @@ export async function getBotOverview(
             })),
             forceJoker: countsDouble(m.stage),
           },
-          { id: m.id, home: consensus.home, away: consensus.away, isJoker },
+          { id: m.id, home: pick.home, away: pick.away, isJoker },
         )
       : null
 
     rows.push({
       id: `bot-${m.id}`,
-      userId: BOT_USER_ID,
+      userId: botUserId(persona),
       matchId: m.id,
       roundId: m.roundId,
-      homeGoals: consensus.home,
-      awayGoals: consensus.away,
+      homeGoals: pick.home,
+      awayGoals: pick.away,
       isJoker,
       baseTier: score?.baseTier ?? null,
       totalPoints: score?.totalPoints ?? null,
@@ -342,13 +393,16 @@ export async function getBotOverview(
       penaltiesAway: m.penaltiesAway,
       roundLabel: m.roundLabel,
       roundSort: m.roundSort,
-      consensusCount: consensus.count,
-      consensusTotal: consensus.total,
-      consensusMethod: method,
+      consensusCount: pick.count,
+      consensusTotal: pick.total,
+      // Display-only: the badge reads this to choose "mean of N" vs "picked by
+      // X/Y". The contrarian personas commit to one concrete scoreline, so they
+      // report MODE-style to show how many of the crowd matched their pick.
+      consensusMethod: persona === 'CONSENSUS' ? method : 'MODE',
     })
   }
 
-  const champion = await getBotChampion(db, competitionId, { leagueId: opts.leagueId })
+  const champion = await getBotChampion(db, competitionId, { leagueId: opts.leagueId, persona })
 
   const scoredRows = rows.filter((r) => r.totalPoints !== null)
   const predictionPoints = scoredRows.reduce((sum, r) => sum + r.totalPoints!, 0)
@@ -378,6 +432,7 @@ export async function getBotOverview(
   }
 
   return {
+    persona,
     method,
     modeAvailable,
     population,
@@ -403,6 +458,7 @@ export async function getBotOverviewCached(
 ): Promise<BotOverview> {
   const key = [
     competitionId,
+    opts.persona ?? 'CONSENSUS',
     opts.leagueId ?? '',
     opts.method ?? '',
     opts.includeUpcoming ? 1 : 0,
