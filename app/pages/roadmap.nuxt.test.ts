@@ -81,7 +81,9 @@ describe('roadmap page', () => {
 
   it('toggles an upvote when signed in', async () => {
     const wrapper = await mount()
-    await wrapper.findAll('button.ng-vote')[0].trigger('click')
+    // Vote on the In-progress card specifically (column order is board-defined).
+    const card = wrapper.findAll('.ng-roadmap-card').find((c) => c.text().includes('Live scores'))!
+    await card.find('button.ng-vote').trigger('click')
     const m = await roadmapMod()
     expect(m.__voteMutate).toHaveBeenCalledWith('a')
   })

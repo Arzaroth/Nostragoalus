@@ -30,6 +30,16 @@ export interface AdminRoadmapItem {
   updatedAt: string
 }
 
+// The kanban board columns, left to right as a pipeline: community ideas ->
+// planned -> being built -> shipped. Shared by the public board and the admin
+// board so both render the same columns in the same order.
+export const ROADMAP_COLUMNS: Array<{ status: RoadmapStatus; key: string; icon: string; severity: string }> = [
+  { status: 'SUGGESTED', key: 'roadmap.suggested', icon: 'pi pi-lightbulb', severity: 'contrast' },
+  { status: 'PLANNED', key: 'roadmap.planned', icon: 'pi pi-clock', severity: 'secondary' },
+  { status: 'IN_PROGRESS', key: 'roadmap.inProgress', icon: 'pi pi-spinner', severity: 'info' },
+  { status: 'SHIPPED', key: 'roadmap.shipped', icon: 'pi pi-check-circle', severity: 'success' },
+]
+
 // Bucket items into their status columns (shared by the public page and the
 // admin editor so the grouping logic lives in one place). Generic so the admin
 // item shape (with moderation/author fields) buckets the same way.
