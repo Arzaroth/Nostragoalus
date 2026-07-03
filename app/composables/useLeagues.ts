@@ -9,6 +9,10 @@ export interface League {
   visibility: LeagueVisibility
   role: LeagueRole
   memberCount: number
+  // Present on the my-leagues list; omitted by create/join responses (the list
+  // refetches right after either). Used to hide chat-less leagues from the
+  // in-chat league switcher.
+  chatEnabled?: boolean
   competition: { id: string; slug: string; name: string }
   joinCode?: string
 }

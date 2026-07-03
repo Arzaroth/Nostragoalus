@@ -143,6 +143,9 @@ const roomsOpen = ref(false)
 // top). Lists this competition's leagues; picking one repoints the ng-league
 // cookie for the current competition, which re-resolves the dock's room live.
 const leaguesOpen = ref(false)
+// Only leagues with chat on are worth switching to from the chat dock; a
+// chat-less league would just land on a disabled panel.
+const chatLeagues = computed(() => (myLeagues.value ?? []).filter((l) => l.chatEnabled))
 function switchLeague(id: string): void {
   leaguesOpen.value = false
   selectedLeagueId.value = id
@@ -213,17 +216,18 @@ async function openRoom(r: ChatUnreadRoomDTO) {
         :class="undocked ? 'cursor-move select-none' : ''"
         style="border-color: var(--p-content-border-color); background: var(--p-content-background)"
       >
-        <!-- League switcher: change league without scrolling up to the pill. Shows
-             the current league name so a switch (incl. from the inbox) is visible. -->
-        <div class="relative">
+        <!-- League switcher: just the league glyph + a chevron (no name - it would
+             crowd the scope toggle and action icons in the narrow dock). The
+             tooltip names the current league; the dropdown lists full names. -->
+        <div class="relative shrink-0">
           <button
             type="button"
-            class="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold max-w-[9rem] hover:bg-black/5 dark:hover:bg-white/10"
+            class="inline-flex items-center gap-1 rounded-lg px-2 py-1 hover:bg-black/5 dark:hover:bg-white/10"
             :aria-label="t('chat.league.switch')"
+            v-tooltip.bottom="selectedLeague?.name ?? t('chat.dock.title')"
             @click="leaguesOpen = !leaguesOpen"
           >
             <i class="pi pi-users text-xs" style="color: var(--p-primary-color)" />
-            <span class="truncate">{{ selectedLeague?.name ?? t('chat.dock.title') }}</span>
             <i class="pi pi-chevron-down text-[10px] opacity-60" />
           </button>
           <div
@@ -233,7 +237,7 @@ async function openRoom(r: ChatUnreadRoomDTO) {
           >
             <p class="px-3 py-1 text-xs font-semibold uppercase tracking-wider" style="color: var(--p-text-muted-color)">{{ t('chat.league.title') }}</p>
             <button
-              v-for="l in myLeagues ?? []"
+              v-for="l in chatLeagues"
               :key="l.id"
               type="button"
               class="w-full flex items-center gap-2 px-3 py-1.5 text-start hover:opacity-100 opacity-90"
@@ -247,7 +251,7 @@ async function openRoom(r: ChatUnreadRoomDTO) {
             </button>
           </div>
         </div>
-        <div v-if="matchId" class="flex items-center rounded-lg overflow-hidden text-xs" style="border: 1px solid var(--p-content-border-color)">
+        <div v-if="matchId" class="flex items-center shrink-0 rounded-lg overflow-hidden text-xs" style="border: 1px solid var(--p-content-border-color)">
           <button
             type="button"
             class="relative px-2.5 py-1 font-semibold"
