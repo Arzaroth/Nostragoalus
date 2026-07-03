@@ -193,3 +193,36 @@ export async function getShowcasePins(
   )
   return rows.map((r) => ({ achievementKey: r.achievement_key }))
 }
+
+// A private league owned by the given user (cascades off the e2e competition on
+// cleanup), for the rewards flow.
+export async function seedLeague(competitionId: string, ownerId: string): Promise<string> {
+  const { rows } = await db().query<{ id: string }>(
+    `with l as (
+       insert into league (id, competition_id, name, visibility, join_code, created_by)
+       values (gen_random_uuid(), $1, 'E2E League', 'PRIVATE', 'E2E' || substr(md5(random()::text), 1, 8), $2)
+       returning id
+     )
+     insert into league_member (league_id, user_id, role) select id, $2, 'OWNER' from l
+     returning league_id as id`,
+    [competitionId, ownerId],
+  )
+  return rows[0].id
+}
+
+// A scored prediction for a user on a match, so they lead the leaderboard.
+export async function seedScoredPrediction(
+  userId: string,
+  matchId: string,
+  home: number,
+  away: number,
+  points: number,
+  tier: string,
+): Promise<void> {
+  await db().query(
+    `insert into prediction
+       (id, user_id, match_id, round_id, home_goals, away_goals, locked_at, base_tier, total_points, base_points, scored_at, scored_at_version)
+     select gen_random_uuid(), $1, m.id, m.round_id, $3, $4, now(), $6, $5, $5, now(), 1 from match m where m.id = $2`,
+    [userId, matchId, home, away, points, tier],
+  )
+}
