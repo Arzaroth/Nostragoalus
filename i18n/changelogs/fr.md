@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [2.14.0] - 2026-07-04
+
 ### Ajouté
 - **Prix de ligue** : un propriétaire ou modérateur de ligue peut désormais attribuer un vrai prix (un intitulé, une photo facultative, une note et un lien) à chacun des cinq lauréats - meilleur au général, meilleur en phase de groupes, meilleur en phase à élimination directe, plus de scores exacts, et meilleur pronostiqueur de l'équipe mise en avant. Chaque membre voit les prix sur la page de la ligue avec qui mène actuellement chacun (cela se met à jour au fil des matchs et se fige à la fin), et votre propre vitrine affiche les prix que vous détenez actuellement dans vos ligues.
 - **Mettez vos succès en vitrine dans les classements** : choisissez jusqu'à trois de vos succès et ils apparaissent désormais sous forme de petits badges à côté de votre nom dans les classements.
