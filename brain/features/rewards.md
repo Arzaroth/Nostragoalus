@@ -13,7 +13,10 @@ across the whole competition.
   `competition_award_type`, `label`, `imageKey?`, `note?`, `link?`), unique per
   (league, type). Migration 0054.
 - Owner/moderator only: `PUT /api/leagues/[id]/rewards` (authorized by
-  `resolveLeagueManage`). A blank label clears that criterion's prize.
+  `resolveLeagueManage`). A blank label clears that criterion's prize. `link` is
+  validated to `http(s)` only (it renders as an anchor href to every member, so a
+  `javascript:` URL would be stored XSS); `type` is the shared
+  `COMPETITION_AWARD_TYPES` enum.
 - The image is uploaded as a `data:` URL; the route resolves it to a storage key
   via `storeRewardFromDataUrl` (content-addressed `reward/<sha>.<ext>`, mirrors the
   avatar path) and serves it at `/api/media/reward/[key]`. The service takes a
@@ -30,7 +33,11 @@ each prize; it settles when the competition ends. No finalize hook, no award tab
   meta-pick bonuses), the phase / Madame-IRMA / team-specialist criteria via
   `rankableForMatches` narrowed with `inArray(prediction.userId, memberIds)`.
 - `getRewardStandings(db, leagueId, viewerId)` returns all five: each configured
-  prize (or null) + the current league leader(s) (ties share) + `youHold`.
+  prize (or null) + the current league leader(s) (ties share) + `youHold`. A
+  leader's name follows the same visibility rule as the league board
+  ([leagues.md](leagues.md)): admin-hidden members and (to non-members) private
+  profiles keep their slot but surface with an empty `displayName`, which the UI
+  renders as a neutral "hidden player" placeholder.
 - `getMyRewards(db, userId)` walks the user's leagues and returns the prizes they
   currently hold, for the cabinet strip.
 

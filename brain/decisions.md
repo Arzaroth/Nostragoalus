@@ -221,3 +221,10 @@ feature/architecture doc that implements it.
 - **Reward images reuse the avatar storage seam** (content-addressed
   `reward/<sha>.<ext>`, served at `/api/media/reward/[key]`); the route resolves the
   uploaded data URL to a key so the reward service stays storage-free and testable.
+- **A prize leader's name is masked to the viewer's leaderboard entitlement.** The
+  prize `link` renders as an anchor href, so it is validated to `http(s)` only (a
+  `javascript:` URL would be stored XSS against every member). Likewise the current
+  leader's `displayName` respects board visibility: admin-hidden members, and
+  private profiles seen by a non-member, keep their standings slot but come back
+  nameless (the UI shows a neutral placeholder) rather than leaking a name the board
+  itself conceals. See [features/rewards.md](features/rewards.md).

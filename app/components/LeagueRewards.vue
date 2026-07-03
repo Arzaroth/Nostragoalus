@@ -15,6 +15,13 @@ function criterionName(type: CompetitionAwardType, teamCode: string | null): str
   return t(`achievements.trophy.${type}.name`)
 }
 
+// A leader the viewer isn't allowed to see (private profile / admin-hidden) comes
+// back with an empty name; show a neutral placeholder rather than a blank.
+function leaderNames(winners: { displayName: string }[]): string {
+  const shown = winners.map((w) => w.displayName).filter((n) => n !== '')
+  return shown.length > 0 ? shown.join(', ') : t('reward.hiddenLeader')
+}
+
 // The prizes actually configured (members see these); the owner edits all five.
 const configured = computed(() => (standings.data.value ?? []).filter((s) => s.reward))
 
@@ -96,7 +103,7 @@ async function submit() {
           <div class="font-semibold leading-tight">{{ s.reward!.label }}</div>
           <div class="text-xs mt-0.5" style="color: var(--p-text-muted-color)">
             <template v-if="s.winners.length > 0">
-              {{ t('reward.currentLeader') }}: {{ s.winners.map((w) => w.displayName).join(', ') }}
+              {{ t('reward.currentLeader') }}: {{ leaderNames(s.winners) }}
               <span v-if="s.youHold" class="font-semibold" style="color: var(--p-primary-color)"> - {{ t('reward.you') }}</span>
             </template>
             <template v-else>{{ t('reward.noLeader') }}</template>

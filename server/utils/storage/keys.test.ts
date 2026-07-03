@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { assertSafeKey, avatarKey, chatImageKey, contentTypeFromKey } from './keys'
+import { assertSafeKey, avatarKey, chatImageKey, contentTypeFromKey, rewardKey } from './keys'
 import { StorageError } from '../errors'
 
 describe('assertSafeKey', () => {
@@ -35,6 +35,15 @@ describe('avatarKey', () => {
   })
   it('rejects an unsupported content type', () => {
     expect(() => avatarKey(new Uint8Array([1]), 'image/tiff')).toThrow(StorageError)
+  })
+})
+
+describe('rewardKey', () => {
+  it('content-addresses by sha256 + extension under reward/', () => {
+    expect(rewardKey(new Uint8Array([1, 2, 3]), 'image/webp')).toMatch(/^reward\/[0-9a-f]{64}\.webp$/)
+  })
+  it('rejects an unsupported content type', () => {
+    expect(() => rewardKey(new Uint8Array([1]), 'image/tiff')).toThrow(StorageError)
   })
 })
 

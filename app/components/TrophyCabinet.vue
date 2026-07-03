@@ -125,8 +125,8 @@ async function save() {
         </h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div
-            v-for="(r, i) in myRewards.data.value"
-            :key="i"
+            v-for="r in myRewards.data.value"
+            :key="`${r.leagueId}:${r.reward.type}`"
             class="rounded-lg border p-2 flex items-center gap-2"
             style="border-color: var(--p-primary-color)"
           >
