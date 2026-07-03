@@ -91,7 +91,7 @@ describe('notificationPushContent', () => {
     )
     expect(overall.body).toContain('Grand Champion')
     expect(overall.body).toContain('World Cup')
-    expect(overall).toMatchObject({ url: '/wc/users/u1', tag: 'trophy:wc:OVERALL' })
+    expect(overall).toMatchObject({ url: '/wc/users/u1#cabinet', tag: 'trophy:wc:OVERALL' })
 
     // Team specialist interpolates the team; a null team uses the generic name.
     const spec = notificationPushContent(
@@ -111,15 +111,16 @@ describe('notificationPushContent', () => {
       'en',
     )
     expect(badge.body).toContain('First Blood')
-    expect(badge).toMatchObject({ url: '/wc/users/u1', tag: 'achv:first-blood' })
+    expect(badge).toMatchObject({ url: '/wc/users/u1#cabinet', tag: 'achv:first-blood' })
 
-    // A global badge (no competition) links home.
+    // A global badge (no competition) still lands on the owner's cabinet, under
+    // the primary competition (which shows global items too), not the home page.
     expect(
       notificationPushContent(
         { type: 'ACHIEVEMENT_UNLOCKED', competitionSlug: null, competitionName: null, userId: 'u1', key: 'the-magic-word', tier: 'GOLD' },
         'en',
       ).url,
-    ).toBe('/')
+    ).toBe('/world-cup-2026/users/u1#cabinet')
   })
 
   it('falls back to the raw type/key when a trophy or badge name is missing', () => {

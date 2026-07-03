@@ -110,7 +110,7 @@ async function save() {
 </script>
 
 <template>
-  <section class="mt-6">
+  <section id="cabinet" class="mt-6" style="scroll-margin-top: calc(var(--ng-header-h, 4rem) + 1rem)">
     <h2 class="text-lg font-bold mb-3">{{ t('achievements.cabinetTitle') }}</h2>
 
     <p v-if="isLoading" class="text-sm" style="color: var(--p-text-muted-color)">{{ t('common.loading') }}</p>
