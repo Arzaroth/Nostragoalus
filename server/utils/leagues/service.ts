@@ -38,6 +38,7 @@ export interface LeagueSummary {
   visibility: LeagueVisibility
   role: LeagueRole
   memberCount: number
+  chatEnabled: boolean
   competition: { id: string; slug: string; name: string }
   joinCode?: string
 }
@@ -189,6 +190,7 @@ export async function listUserLeagues(db: AppDatabase, userId: string, competiti
       joinCode: league.joinCode,
       role: leagueMember.role,
       memberCount,
+      chatEnabled: league.chatEnabled,
       competitionId: competition.id,
       competitionSlug: competition.slug,
       competitionName: competition.name,
@@ -208,6 +210,7 @@ export async function listUserLeagues(db: AppDatabase, userId: string, competiti
     visibility: r.visibility as LeagueVisibility,
     role: r.role as LeagueRole,
     memberCount: Number(r.memberCount),
+    chatEnabled: r.chatEnabled,
     competition: { id: r.competitionId, slug: r.competitionSlug, name: r.competitionName },
     ...(canSeeJoinCode(r.role as LeagueRole) ? { joinCode: r.joinCode } : {}),
   }))
