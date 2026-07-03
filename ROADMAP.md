@@ -88,12 +88,15 @@ effort buckets; order within a bucket is not priority.
       Crowd Bot, scored by the real engine (whatever the tier table pays a draw
       is what it earns - no separate premise to verify). No champion pick; jokers
       the most-drawish knockout match by crowd margin.
-- [ ] **Evil twin** (IN_PROGRESS, worktree-bot-personas): per-user, as originally
-      designed - your OWN picks with every scoreline swapped (winner flipped,
-      margin kept; a draw is its own twin), scored and ranked as a ghost. Keeps
-      your jokers and champion. Personal (only you see your twin, when signed in).
-      Implemented by scoping the bot overview to a single userId. An
-      anti-consensus crowd ghost was tried first and rejected.
+- [ ] **Evil twin** (IN_PROGRESS, worktree-bot-personas): per-user - a player's
+      OWN picks with every scoreline swapped (winner flipped, margin kept; a draw
+      is its own twin), scored and ranked. Keeps their jokers and champion.
+      Surfaced as a toggle on the player PROFILE page (any player's twin, gated by
+      the same visibility as their picks), not the leaderboard - which keeps the
+      board uncluttered. Implemented by scoping the bot overview to one userId. An
+      anti-consensus crowd ghost, and a leaderboard-only "your twin", were both
+      tried and rejected. Leaderboard crowd bots (consensus, equalizer) collapsed
+      into one "Bots" popover.
 - [x] **Outstanding-picks nudge + outlandish-pick guard** (shipped in 2.5.0): the fixtures stats strip shows "N matches need a pick
       before the next lockout" with a jump-to-first-unpicked; and ScoreInput asks
       for confirmation before saving an implausible scoreline. Outlandish
