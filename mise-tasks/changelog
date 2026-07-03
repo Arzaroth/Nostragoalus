@@ -25,7 +25,7 @@ const date = process.env.usage_date
 // files mirror it bullet-for-bullet so the about page can render the changelog
 // in the active locale. See app/composables/useChangelog.ts.
 const CANONICAL = 'CHANGELOG.md'
-const LOCALES = ['i18n/changelogs/fr.md', 'i18n/changelogs/th.md', 'i18n/changelogs/tlh.md']
+const LOCALES = ['i18n/changelogs/fr.md', 'i18n/changelogs/th.md', 'i18n/changelogs/tlh.md', 'i18n/changelogs/ar.md']
 
 const pendingOf = (text) => (text.match(/## \[Unreleased\]\n([\s\S]*?)(?=\n## \[)/)?.[1] ?? '').trim()
 

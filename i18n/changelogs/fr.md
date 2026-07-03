@@ -5,6 +5,13 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Corrigé
+- **Le multi-vue ne force plus de barre de défilement** : la grille des matchs réserve désormais la place du pied de page, si bien que la page remplit exactement la fenêtre au lieu de repousser le pied de page juste hors de l'écran.
+- **Le fil du multi-vue reste dans sa tuile** : le fil de chaque cellule défile désormais à l'intérieur de la tuile au lieu d'étirer la cellule et toute la page, et il s'affiche dans chaque tuile démarrée, pas seulement celle sélectionnée.
+- **Les notifications de succès et de trophées ouvrent votre vitrine** : cliquer sur une notification de succès débloqué ou de trophée vous amène désormais à votre vitrine à trophées, même pour les badges hors compétition, au lieu de vous déposer sur la page d'accueil.
+- **Sélecteur de ligue du chat** : le sélecteur de ligue du volet ne liste plus les ligues sans chat, et n'affiche que l'icône de ligue pour que son libellé n'encombre pas le bouton match/ligue dans le volet étroit (les noms complets restent dans le menu déroulant). Activer le chat d'une ligue la fait désormais apparaître dans le sélecteur sans recharger la page.
+- **Fraîcheur de la feuille de route** : revenir à la feuille de route (tableau public ou éditeur admin) la recharge désormais, si bien qu'une suggestion ajoutée ailleurs apparaît sans rafraîchissement manuel.
+
 ## [2.13.0] - 2026-07-02
 
 ### Modifié
