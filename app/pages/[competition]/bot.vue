@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BOT_PERSONA_META, BOT_PERSONA_PARAMS, botPersonaParam, parseBotPersona, personaUsesMethod, type BotPersonaParam } from '#shared/types/bot'
+import { BOT_PERSONA_META, LEADERBOARD_BOT_PARAMS, botPersonaParam, parseBotPersona, personaUsesMethod, type BotPersonaParam } from '#shared/types/bot'
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
@@ -15,8 +15,9 @@ function selectPersona(p: BotPersonaParam) {
 const meta = computed(() => BOT_PERSONA_META[persona.value])
 const { data, isLoading } = useBotPredictions(persona, botMethod, leagueId)
 
+// Only the crowd bots have a shared page; the evil twin lives on profiles.
 const personaOptions = computed(() =>
-  BOT_PERSONA_PARAMS.map((p) => ({ value: p, label: `${BOT_PERSONA_META[p].icon} ${t(BOT_PERSONA_META[p].nameKey)}` })),
+  LEADERBOARD_BOT_PARAMS.map((p) => ({ value: p, label: `${BOT_PERSONA_META[p].icon} ${t(BOT_PERSONA_META[p].nameKey)}` })),
 )
 const methodOptions = computed(() => [
   { label: t('bot.methodMode'), value: 'mode' },

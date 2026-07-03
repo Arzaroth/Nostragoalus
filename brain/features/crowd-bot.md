@@ -62,14 +62,17 @@ Scored by the real engine, so each row is directly comparable to human players:
 
 ## Display rules
 
-- Each enabled persona is an independent, display-only ghost row at its
-  would-be rank (`insertGhostRows`). On an exact points tie, real users win;
-  the bot sorts below them.
-- The leaderboard offers one toggle per persona; the ghost hides in the global
-  view (jokers, finals and champion picks are competition-scoped). The evil-twin
-  toggle only appears to a signed-in viewer (it swaps their own picks). Each row
-  deep-links to `/{competition}/bot?persona=...`; the evil twin's row reads
-  "Your Evil Twin".
+- **Leaderboard = crowd bots only** (`LEADERBOARD_BOT_PARAMS`: consensus,
+  equalizer). A single "Bots" popover (checkboxes + the consensus MODE/MEAN
+  choice) enables them; each enabled one is a display-only ghost row at its
+  would-be rank (`insertGhostRows`, real users win exact ties). The ghosts hide
+  in the global view (jokers, finals and champion picks are competition-scoped)
+  and deep-link to `/{competition}/bot?persona=...`.
+- **Evil twin = profile pages.** A player's `/{competition}/users/{id}` page has
+  an "Evil Twin" toggle that swaps that player's own picks and shows how they'd
+  have scored + a would-be rank. It reuses `/api/bot/predictions?persona=evil-twin&user={id}`,
+  guarded by the same profile visibility (`canViewProfile`) as their picks, and
+  is competition-scope only (no global identity). Not on the leaderboard.
 - Users see picks only for matches that have kicked off. Admins also see
   upcoming ones (server-enforced, so the pre-kickoff crowd is not leaked).
 
@@ -89,10 +92,13 @@ score-input crowd line, not the bots' own consensus.
   `DRAW_SCORELINE`, `BOT_PERSONA_META`, `personaUsesMethod`)
 - `server/utils/bot/service.ts` (`botPick`, `computeConsensus`, `getBotOverview`,
   `getBotChampion`, TTL cache keyed by persona)
-- `server/api/bot/predictions.get.ts`, `server/api/bot/leaderboard-row.get.ts`
-  (both take a `persona` query param)
-- `app/composables/useBot.ts` (`useBotPersonas`, `useBotRow`, `useBotPredictions`)
+- `server/api/bot/predictions.get.ts` (`persona`, plus `user` for the profile
+  evil twin), `server/api/bot/leaderboard-row.get.ts`
+- `app/composables/useBot.ts` (`useBotPersonas`, `useBotRow`, `useBotPredictions`,
+  `useUserEvilTwin`)
 - `app/utils/bot-row.ts` (`insertGhostRow`, `insertGhostRows`)
-- `app/pages/[competition]/leaderboard.vue`, `app/pages/[competition]/bot.vue`
+- `app/pages/[competition]/leaderboard.vue` (Bots popover),
+  `app/pages/[competition]/bot.vue`,
+  `app/pages/[competition]/users/[id].vue` (Evil Twin toggle)
 - Live crowd totals: `server/utils/predictions/service.ts`
   (`getCrowdTotals`, `publishCrowdUpdate`), `app/composables/useCrowdTotals.ts`

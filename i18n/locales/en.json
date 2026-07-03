@@ -595,6 +595,10 @@
     "methodMean": "Average",
     "modeDisabled": "Too few predictions - the most-picked score would be biased, so the average is shown.",
     "meanOf": "averaged over {total}",
+    "showBots": "Bots",
+    "evilTwin": "Evil Twin",
+    "evilTwinNote": "Their picks with every score flipped; a draw is its own twin.",
+    "twinWouldRank": "would rank #{rank}",
     "persona": {
       "consensus": "Crowd Bot",
       "evilTwin": "Your Evil Twin",

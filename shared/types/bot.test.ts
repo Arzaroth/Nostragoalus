@@ -5,6 +5,7 @@ import {
   BOT_PERSONA_PARAMS,
   BOT_USER_ID,
   DRAW_SCORELINE,
+  LEADERBOARD_BOT_PARAMS,
   botPersonaParam,
   botUserId,
   parseBotPersona,
@@ -14,6 +15,11 @@ import {
 describe('bot personas', () => {
   it('lists the three personas', () => {
     expect(BOT_PERSONAS).toEqual(['CONSENSUS', 'EVIL_TWIN', 'EQUALIZER'])
+  })
+
+  it('the leaderboard shows only the crowd bots (evil twin lives on profiles)', () => {
+    expect(LEADERBOARD_BOT_PARAMS).toEqual(['consensus', 'equalizer'])
+    expect(LEADERBOARD_BOT_PARAMS).not.toContain('evil-twin')
   })
 
   it('gives each persona a distinct ghost id, consensus keeping the legacy id', () => {

@@ -591,6 +591,10 @@
     "methodMean": "Moyenne",
     "modeDisabled": "Trop peu de pronos - le score le plus choisi serait biaisé, la moyenne est affichée.",
     "meanOf": "moyenne de {total}",
+    "showBots": "Bots",
+    "evilTwin": "Jumeau maléfique",
+    "evilTwinNote": "Ses pronos avec chaque score inversé ; un nul est son propre jumeau.",
+    "twinWouldRank": "serait #{rank}",
     "persona": {
       "consensus": "Bot consensus",
       "evilTwin": "Votre jumeau maléfique",

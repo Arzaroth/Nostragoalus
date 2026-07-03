@@ -46,6 +46,15 @@ onMounted(() => {
   if (route.hash || !kickedOff.value.length) return
   void nextTick(() => nowAnchor.value?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
 })
+
+// This player's evil twin: their own picks with every score swapped. No global
+// identity (jokers/champion are per-competition), so it's competition-scope only.
+const userId = computed(() => String(route.params.id))
+const twinOn = ref(false)
+const twinCompetition = computed(() => (global.value ? null : (slug.value ?? null)))
+const twinEnabled = computed(() => twinOn.value && !global.value)
+const { data: twin } = useUserEvilTwin(userId, twinCompetition, twinEnabled)
+const showTwin = computed(() => twinEnabled.value && !!twin.value)
 </script>
 
 <template>
@@ -69,23 +78,50 @@ onMounted(() => {
         </span>
         <CompetitionPill v-if="!global" />
       </div>
-      <SelectButton v-model="global" :options="scopeOptions" option-label="label" option-value="value" :allow-empty="false" size="small" />
-    </div>
-    <p class="text-sm mb-5" style="color: var(--p-text-muted-color)">{{ t('predictions.publicNote') }}</p>
-    <PredictionList :predictions="kickedOff" />
-    <!-- The "now" boundary: played picks above, still-upcoming (admin-only) below.
-         Also the scroll anchor centered on load. Invisible when there's nothing
-         upcoming to introduce. -->
-    <div ref="nowAnchor" style="scroll-margin-top: calc(var(--ng-header-h, 4rem) + 1rem)">
-      <div v-if="upcoming.length" class="flex items-center gap-3 my-4 text-xs font-semibold" style="color: var(--p-text-muted-color)">
-        <span class="flex-1 border-t" style="border-color: var(--p-content-border-color)" />
-        <span class="inline-flex items-center gap-1.5"><i class="pi pi-eye-slash" />{{ t('predictions.adminUpcomingDivider') }}</span>
-        <span class="flex-1 border-t" style="border-color: var(--p-content-border-color)" />
+      <div class="flex items-center gap-2 flex-wrap">
+        <ToggleButton
+          v-if="!global"
+          v-model="twinOn"
+          :on-label="`😈 ${t('bot.evilTwin')}`"
+          :off-label="`😈 ${t('bot.evilTwin')}`"
+          size="small"
+          v-tooltip.top="t('bot.evilTwinNote')"
+        />
+        <SelectButton v-model="global" :options="scopeOptions" option-label="label" option-value="value" :allow-empty="false" size="small" />
       </div>
     </div>
-    <PredictionList v-if="upcoming.length" :predictions="upcoming" />
-    <div v-if="!data.predictions.length" class="opacity-60">{{ t('predictions.none') }}</div>
-    <TrophyCabinet v-if="!global" :user-id="data.user.id" />
+
+    <template v-if="showTwin && twin">
+      <p class="text-sm mb-1 flex items-center gap-2 flex-wrap" style="color: var(--p-text-muted-color)">
+        <span>😈 {{ t('bot.evilTwinNote') }}</span>
+      </p>
+      <div class="flex items-center gap-2 flex-wrap text-sm mb-4" style="color: var(--p-text-muted-color)">
+        <span v-if="twin.summary.rank" class="font-semibold" style="color: var(--p-text-color)">{{ t('bot.twinWouldRank', { rank: twin.summary.rank }) }}</span>
+        <span class="font-semibold" style="color: var(--p-text-color)">{{ twin.summary.totalPoints }} {{ t('leaderboard.pts') }}</span>
+        <span>· {{ twin.summary.exactCount }} {{ t('leaderboard.exact') }}</span>
+        <span>· {{ twin.summary.outcomeCount }} {{ t('leaderboard.correct') }}</span>
+      </div>
+      <PredictionList :predictions="twin.predictions" />
+      <div v-if="!twin.predictions.length" class="opacity-60">{{ t('bot.empty') }}</div>
+    </template>
+
+    <template v-else>
+      <p class="text-sm mb-5" style="color: var(--p-text-muted-color)">{{ t('predictions.publicNote') }}</p>
+      <PredictionList :predictions="kickedOff" />
+      <!-- The "now" boundary: played picks above, still-upcoming (admin-only) below.
+           Also the scroll anchor centered on load. Invisible when there's nothing
+           upcoming to introduce. -->
+      <div ref="nowAnchor" style="scroll-margin-top: calc(var(--ng-header-h, 4rem) + 1rem)">
+        <div v-if="upcoming.length" class="flex items-center gap-3 my-4 text-xs font-semibold" style="color: var(--p-text-muted-color)">
+          <span class="flex-1 border-t" style="border-color: var(--p-content-border-color)" />
+          <span class="inline-flex items-center gap-1.5"><i class="pi pi-eye-slash" />{{ t('predictions.adminUpcomingDivider') }}</span>
+          <span class="flex-1 border-t" style="border-color: var(--p-content-border-color)" />
+        </div>
+      </div>
+      <PredictionList v-if="upcoming.length" :predictions="upcoming" />
+      <div v-if="!data.predictions.length" class="opacity-60">{{ t('predictions.none') }}</div>
+      <TrophyCabinet v-if="!global" :user-id="data.user.id" />
+    </template>
   </div>
   <!-- Unknown user or a private profile the viewer doesn't share a league with. -->
   <div v-else-if="error" class="opacity-60">{{ t('err.notFound') }}</div>
