@@ -996,6 +996,18 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
       SSO admin section nearly doubled and is still inline in
       `app/pages/admin/index.vue` with `$fetch`. Extracting would thin the page and
       let a `*.nuxt.test.ts` cover the badges / enable-gating / claim preview.
+- [ ] Collapse the test-signin dry-run onto a single redirect URI. Today an admin
+      must register TWO callbacks at the IdP: the live login one
+      (`/api/auth/sso/callback/{providerId}`, owned by the better-auth SSO plugin)
+      and our separate dry-run one (`/api/sso/test-callback`, `test-signin.ts`).
+      WorkOS/Amazon-style test buttons reuse the ONE live callback and disambiguate
+      the test via `state` - the second URI is pure onboarding friction and trips
+      admins ("Redirect URI Error" until they add it). We split it because we can't
+      branch inside the plugin's callback to skip `provisionUser`. Fix: intercept
+      the test `state` in `server/api/auth/[...all].ts` (or a route middleware)
+      before it reaches the plugin and short-circuit to the claim-capture path, so
+      admins register a single redirect URI. Alt: drop the dry-run and do a real
+      sign-in as the test.
 - [x] SCIM provisioning is covered two ways: `tests/scim-provisioning.test.ts`
       (pglite, production auth options) drives mint -> provision -> `active:false`
       ban (data kept) -> reactivate, and `tests/e2e/sso-onboarding.e2e.ts` does the
