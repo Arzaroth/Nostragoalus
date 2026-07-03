@@ -79,4 +79,45 @@ describe('match viewer rooms', () => {
     expect(viewerCount('ghost')).toBe(0)
     expect(viewersOf('ghost')).toEqual([])
   })
+
+  it('de-dupes a user across tabs: two sockets of one user count once', () => {
+    const tab1 = {}
+    const tab2 = {}
+    setViewing(tab1, ['m1'], 'user-a')
+    setViewing(tab2, ['m1'], 'user-a')
+    // Both sockets are in the room (each needs the fan-out)...
+    expect(viewersOf('m1')).toEqual([tab1, tab2])
+    // ...but they are one viewer.
+    expect(viewerCount('m1')).toBe(1)
+  })
+
+  it('counts distinct users independently', () => {
+    setViewing({}, ['m1'], 'user-a')
+    setViewing({}, ['m1'], 'user-b')
+    expect(viewerCount('m1')).toBe(2)
+  })
+
+  it('closing one of a user\'s tabs keeps the count while another remains', () => {
+    const tab1 = {}
+    const tab2 = {}
+    setViewing(tab1, ['m1'], 'user-a')
+    setViewing(tab2, ['m1'], 'user-a')
+    expect(viewerCount('m1')).toBe(1)
+    removeViewer(tab1)
+    expect(viewerCount('m1')).toBe(1)
+    removeViewer(tab2)
+    expect(viewerCount('m1')).toBe(0)
+  })
+
+  it('guests are keyed by socket: two guest tabs count as two', () => {
+    setViewing({}, ['m1'], null)
+    setViewing({}, ['m1'])
+    expect(viewerCount('m1')).toBe(2)
+  })
+
+  it('a guest and a logged-in user on the same match count as two', () => {
+    setViewing({}, ['m1'], null)
+    setViewing({}, ['m1'], 'user-a')
+    expect(viewerCount('m1')).toBe(2)
+  })
 })

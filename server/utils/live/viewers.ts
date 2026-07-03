@@ -2,8 +2,10 @@
 // it is viewing (a `viewing` frame, distinct from the score `subscribe` the
 // fixtures list also sends, which would otherwise count every list browser into
 // every match). This module is the pure, in-process bookkeeping: which sockets
-// are in which room, kept correct across join, leave and disconnect, de-duped by
-// socket. The hub fans the resulting counts out; this file never sends.
+// are in which room, kept correct across join, leave and disconnect. Room
+// membership is per-socket (the hub fans a count out to every socket), but the
+// count itself de-dupes by viewer: one user with N tabs on a match counts once.
+// The hub fans the resulting counts out; this file never sends.
 //
 // In-process only: the count is per-instance and would undercount across a
 // multi-node deploy (see brain/features/live-viewers.md). Matches the hub model.
@@ -17,6 +19,11 @@ const rooms = new Map<string, Set<ViewerToken>>()
 // socket -> the matches it is currently counted in, so a fresh report can be
 // diffed against the previous one without scanning every room.
 const viewing = new Map<ViewerToken, Set<string>>()
+// socket -> the identity the count de-dupes on: the logged-in user id, or the
+// socket itself for a guest (so two guest tabs still count as two). Kept in
+// lockstep with `viewing` - set on first report, dropped when the socket clears
+// or disconnects.
+const viewerIdentity = new Map<ViewerToken, unknown>()
 
 function leaveRoom(matchId: string, token: ViewerToken): void {
   // Invariant: a matchId in a socket's `viewing` set always has that socket in
@@ -34,7 +41,9 @@ function leaveRoom(matchId: string, token: ViewerToken): void {
 // Returns the matchIds whose viewer count changed, so the caller broadcasts a
 // fresh count for only those. Re-reporting the same set is a no-op (the
 // per-socket de-dupe: one socket counts once however many times it reports).
-export function setViewing(token: ViewerToken, matchIds: Iterable<string>): string[] {
+// `viewerId` is the logged-in user id (null/undefined for a guest); the count
+// de-dupes on it so a user's other tabs don't inflate it.
+export function setViewing(token: ViewerToken, matchIds: Iterable<string>, viewerId?: string | null): string[] {
   const next = new Set(matchIds)
   const prev = viewing.get(token) ?? new Set<string>()
   const changed: string[] = []
@@ -53,8 +62,13 @@ export function setViewing(token: ViewerToken, matchIds: Iterable<string>): stri
     leaveRoom(id, token)
     changed.push(id)
   }
-  if (next.size) viewing.set(token, next)
-  else viewing.delete(token)
+  if (next.size) {
+    viewing.set(token, next)
+    viewerIdentity.set(token, viewerId ?? token)
+  } else {
+    viewing.delete(token)
+    viewerIdentity.delete(token)
+  }
   return changed
 }
 
@@ -67,11 +81,18 @@ export function removeViewer(token: ViewerToken): string[] {
   const changed = [...prev]
   for (const id of prev) leaveRoom(id, token)
   viewing.delete(token)
+  viewerIdentity.delete(token)
   return changed
 }
 
+// Distinct viewers in a room: sockets sharing a viewer identity (a logged-in
+// user's multiple tabs) count once; guests, keyed by their own socket, each count.
 export function viewerCount(matchId: string): number {
-  return rooms.get(matchId)?.size ?? 0
+  const room = rooms.get(matchId)
+  if (!room) return 0
+  const identities = new Set<unknown>()
+  for (const token of room) identities.add(viewerIdentity.get(token) ?? token)
+  return identities.size
 }
 
 // The sockets currently viewing a match, for the hub's fan-out. A snapshot array
@@ -85,4 +106,5 @@ export function viewersOf(matchId: string): ViewerToken[] {
 export function __resetViewers(): void {
   rooms.clear()
   viewing.clear()
+  viewerIdentity.clear()
 }
