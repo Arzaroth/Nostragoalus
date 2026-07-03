@@ -40,7 +40,7 @@ const streamTooltip = computed(() => (!hasStream.value ? t('multiview.streamUnav
 
 <template>
   <div
-    class="relative flex flex-col rounded-xl border overflow-hidden cursor-pointer transition"
+    class="relative flex flex-col min-h-0 min-w-0 rounded-xl border overflow-hidden cursor-pointer transition"
     :style="`border-color: ${focused ? 'var(--p-primary-color)' : 'var(--p-content-border-color)'}; background: var(--p-content-background); ${focused ? 'box-shadow: 0 0 0 1px var(--p-primary-color)' : ''}`"
     @click="$emit('focus')"
   >

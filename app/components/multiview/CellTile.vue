@@ -12,12 +12,10 @@ const status = computed<string>(() => props.match?.status ?? 'SCHEDULED')
 const hasStarted = computed(() => matchHasStarted(status.value as MatchStatus))
 const isLive = computed(() => matchIsInPlay(status.value as MatchStatus))
 
-// live-detail only once a match is under way; timeline only for the focused cell.
+// live-detail and play-by-play both load once a match is under way, in every cell
+// (not just the focused one) so each grid tile shows its own live timeline.
 const { data: detail } = useMatchLiveDetail(idRef, hasStarted)
-const { data: events } = useMatchTimeline(
-  idRef,
-  computed(() => !!props.focused && hasStarted.value),
-)
+const { data: events } = useMatchTimeline(idRef, hasStarted)
 
 const homeScore = computed(() => props.match?.fullTimeHome ?? null)
 const awayScore = computed(() => props.match?.fullTimeAway ?? null)
@@ -47,13 +45,13 @@ const clock = computed(() => {
       </span>
     </div>
 
-    <!-- Viewer presence, timeline and reactions ride sockets/heavy fetches, so
-         they exist only for the focused cell. -->
+    <!-- Viewer presence and reactions ride presence sockets, so they stay on the
+         focused cell only; the play-by-play below shows in every cell. -->
     <div v-if="focused" class="flex justify-center pb-1">
       <MultiviewCellViewers :match-id="matchId" />
     </div>
 
-    <div v-if="focused && hasStarted" class="flex-1 min-h-0 overflow-hidden border-t mt-1 pt-1" style="border-color: var(--p-content-border-color)">
+    <div v-if="hasStarted" class="flex-1 min-h-0 overflow-hidden border-t mt-1 pt-1" style="border-color: var(--p-content-border-color)">
       <MatchPlayByPlay :events="(events as PlayByPlayEvent[]) ?? []" :home-code="match?.homeTeamCode" :away-code="match?.awayTeamCode" compact />
     </div>
 

@@ -45,7 +45,13 @@ const slots = computed(() =>
     :style="{
       gridTemplateColumns: `repeat(${gridDims(layout).cols}, minmax(0, 1fr))`,
       gridTemplateRows: `repeat(${gridDims(layout).rows}, minmax(0, 1fr))`,
-      minHeight: 'calc(100dvh - var(--ng-header-h) - 9rem)',
+      // A definite height (not min-height) so each cell's row is bounded: a cell's
+      // play-by-play then scrolls inside it (max-h-full) instead of growing the
+      // cell and pushing the page into a scrollbar. The header/footer vars carry
+      // fallbacks (their natural sizes) so the calc stays VALID before the
+      // ResizeObservers set them: an unset var with no fallback voids the whole
+      // calc, collapsing height to auto and unbounding the grid.
+      height: 'calc(100dvh - var(--ng-header-h, 4rem) - var(--ng-footer-h, 2.25rem) - 9rem)',
     }"
   >
     <template v-for="slot in slots" :key="slot.id ?? 'empty-' + slot.index">
