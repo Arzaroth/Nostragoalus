@@ -11,11 +11,11 @@ hub](../architecture/realtime.md), the [chat dock](chat.md) and the curated
 `/[competition]/multiview` (a top-level section tab, `nav.multiview`). A layout
 picker (1 / 2x1 / 2x2 / 3x3) and a grid of cells. An empty cell is an "Add match"
 placeholder that opens a searchable, status-filterable fixture picker; a filled
-cell shows a **live tile** (score, live clock, goal-scorer chips) and, when the
-match has curated video, a **Tile|Stream toggle** to swap the cell to the embed.
-Click a cell to **focus** it: the focused cell also shows the play-by-play, the
-"N watching now" count and the reaction bar, and the [chat dock](chat.md)
-re-targets to that match's thread.
+cell shows a **live tile** (score, live clock, goal-scorer chips, and the
+play-by-play once the match is under way) and, when the match has curated video,
+a **Tile|Stream toggle** to swap the cell to the embed. Click a cell to **focus**
+it: the focused cell adds the "N watching now" count and the reaction bar, and the
+[chat dock](chat.md) re-targets to that match's thread.
 
 The chosen matches, layout and focus live in the URL
 (`?cells=<id,id,...>&layout=2x2&focus=<id>`), so a multi-view is shareable and
@@ -35,14 +35,21 @@ survives a reload.
   [`useLiveMatches`](../architecture/realtime.md) once for the cell matches, so
   scores/clock ride a single `/_ws` subscription and patch the `['matches', slug]`
   cache the tiles read. On `scores:changed` it invalidates the per-cell
-  `useMatchLiveDetail` and the focused `useMatchTimeline` queries (vue-query, no
-  sockets of their own, deduped by match id).
-- **Focused-cell only.** The play-by-play (heavy), `useMatchPresence` (opens a
-  socket and sends the `viewing` ping) and `useMatchReactions` (socket) are
-  mounted only for the focused cell (`MultiviewCellTile` gates them; presence is
-  wrapped in `MultiviewCellViewers` so its socket exists only while mounted). This
-  keeps a 4-cell grid at one scores socket + at most one reactions + one presence,
-  instead of a per-cell blow-up.
+  `useMatchLiveDetail` and `useMatchTimeline` queries (vue-query, no sockets of
+  their own, deduped by match id).
+- **Per-cell vs focused-cell.** The play-by-play (`useMatchTimeline`) and live
+  detail are fetched for every started cell, so each tile shows its own timeline -
+  they are plain vue-query fetches, cheap enough to run per cell. Only the
+  socket-backed pieces stay focused-cell only: `useMatchPresence` (opens a socket
+  and sends the `viewing` ping, wrapped in `MultiviewCellViewers` so its socket
+  exists only while mounted) and `useMatchReactions` (socket). This keeps a 4-cell
+  grid at one scores socket + at most one reactions + one presence, instead of a
+  per-cell socket blow-up.
+- **Cells are bounded to the grid.** `MultiviewGrid` sets a definite `height`
+  (`calc(100dvh - var(--ng-header-h,4rem) - var(--ng-footer-h,2.25rem) - 9rem)`, the
+  var fallbacks keep the calc valid before the header/footer `ResizeObserver`s set
+  them) and each cell carries `min-h-0`, so a cell's play-by-play scrolls inside it
+  (`max-h-full`) instead of stretching the cell and pushing the page.
 - **Streams.** `MultiviewCellStream` reuses `MatchMediaEmbed` with the first
   embeddable item from `visibleMediaForStatus(useMatchMedia(id), status)`. The
   Stream toggle is disabled when a match has no embeddable media or when the

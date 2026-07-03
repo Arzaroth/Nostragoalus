@@ -73,10 +73,13 @@ known residual is the DNS-rebind TOCTOU window (documented in TODO).
 
 The floating, collapsible `ChatDock` (Global / Match scope) coexists with the
 inline `ChatPanel` on the league page. Its header carries a league switcher
-(change league without the competition pill) that names the current league, so a
-switch - including opening a foreign-league inbox room - is visible; each league
-in the switcher list shows a dot when it has any unread chat, whether in its
-global room or a match thread (`useChatActivity.hasUnreadInLeague`). Presence
+(change league without the competition pill), shown as just the league glyph plus
+a chevron (the name would crowd the scope toggle in the narrow dock; it rides a
+tooltip, and the dropdown lists full names). The dropdown lists only the user's
+leagues that have chat **enabled** (`chatEnabled` on the my-leagues DTO), and each
+shows a dot when it has any unread chat, whether in its global room or a match
+thread (`useChatActivity.hasUnreadInLeague`). Enabling/disabling a league's chat
+invalidates the my-leagues query so the switcher updates without a reload. Presence
 dots and client-side search are built in. Live events on the WebSocket: `chat:new`, `chat:moderation`,
 `chat:roster` (display-name changes), and `chat:state-changed` (chat on/off and
 key rotation). See [../architecture/realtime.md](../architecture/realtime.md).

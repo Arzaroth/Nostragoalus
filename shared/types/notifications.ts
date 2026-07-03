@@ -105,14 +105,13 @@ export function chatMentionPath(d: {
   return `${base}?ngLeague=${encodeURIComponent(d.leagueId)}&chat=${encodeURIComponent(room)}`
 }
 
-// Deep link for a trophy/achievement notification: the recipient's own cabinet,
-// on their profile under the competition. A global badge (no competition) links
-// home. Shared so the server push builder and the client bell agree.
-// A user's trophy cabinet lives on their competition-scoped profile, below their
-// picks. Global achievements/trophies carry no competitionSlug, but the cabinet
-// shows global items under any competition, so fall back to the primary one
-// rather than dumping the click on the home page. The #cabinet hash scrolls past
-// the picks straight to the achievements.
+// Deep link for a trophy/achievement notification: the recipient's own trophy
+// cabinet, which lives on their competition-scoped profile below their picks.
+// Global achievements/trophies carry no competitionSlug, but the cabinet shows
+// global items under any competition, so fall back to the primary one rather
+// than dumping the click on the home page. The #cabinet hash scrolls past the
+// picks straight to the achievements. Shared so the server push builder and the
+// client bell agree.
 export function cabinetPath(d: { competitionSlug: string | null; userId: string }): string {
   return `/${d.competitionSlug ?? DEFAULT_COMPETITION}/users/${d.userId}#cabinet`
 }
