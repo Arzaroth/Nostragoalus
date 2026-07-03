@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [2.13.1] - 2026-07-04
+
 ### Corrigé
 - **Le multi-vue ne force plus de barre de défilement** : la grille des matchs réserve désormais la place du pied de page, si bien que la page remplit exactement la fenêtre au lieu de repousser le pied de page juste hors de l'écran.
 - **Le fil du multi-vue reste dans sa tuile** : le fil de chaque cellule défile désormais à l'intérieur de la tuile au lieu d'étirer la cellule et toute la page, et il s'affiche dans chaque tuile démarrée, pas seulement celle sélectionnée.

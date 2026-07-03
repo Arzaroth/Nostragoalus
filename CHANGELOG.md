@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.13.1] - 2026-07-04
+
 ### Fixed
 - **Multi-view no longer forces a scrollbar**: the match grid now reserves room for the footer, so the page fills the viewport exactly instead of pushing the footer just off-screen.
 - **Multi-view play-by-play stays inside its tile**: each cell's play-by-play now scrolls within the tile instead of stretching the cell and the whole page, and it shows in every started tile, not just the focused one.
