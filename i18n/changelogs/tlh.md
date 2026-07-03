@@ -5,6 +5,13 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### tI'pu'
+- **multi-view scrollbar ghojmoHbe'law'**: DaH qIp HaSta 'ay' footer Daq polHa'; vaj HaSta naQ buy'moH nav, footer teqHa'.
+- **multi-view qun tetlh tuqoDDaq ratlh**: DaH Hoch cell qun tetlh cell qoDDaq vIHtaH, cell nav je tetChoHbe'; 'ej Hoch cell taghpu'Daq 'anglu', wIvbogh cell neH Hutlhbe'.
+- **Qapla' pop ghItlhmey DaH trophy Daq poSmoH**: Qapla' pop ghItlh vIqIpDI', trophy vISaHmeH jImej, competition Hutlhbogh badge je; nav tut vIjaHbe'.
+- **QIn league wIvwI'**: DaH league wIvwI' chat Hutlhbogh league 'anglu'Ha'; league Doch tut neH 'anglu' vaj per tut match/league qaQwI' machHa'moHbe' (menu ghoDaq pong naQ ratlh). league chat vIchu'DI' nav choHqa'Ha' 'ej wIvwI'Daq 'ang.
+- **roadmap chu'qu'**: roadmap (public board pagh admin editor) vIcheghqa'DI' DaH latlh tlhamqa'; vaj latlh Daq qngup chelpu' 'anglu', nav choHqa'Ha'.
+
 ## [2.13.0] - 2026-07-02
 
 ### choHpu'

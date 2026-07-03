@@ -22,13 +22,13 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 - [ ] **Human review of the machine-translated Arabic**: `i18n/locales/ar.json`
       and `i18n/changelogs/ar.md` are a machine-translation full pass (MSA). A
       native reviewer should polish tone/terminology before it's treated as final.
-- [ ] **ar.md is not in the changelog gate**: `mise-tasks/changelog` `LOCALES` is
-      `['fr','th','tlh']`, so `check` never validates `i18n/changelogs/ar.md` and
-      `promote` never moves its `[Unreleased]` into a dated section on release. The
-      2.8.0 pass fixed ar.md's drift by hand (added the missing `[2.7.0]` section),
-      but it will drift again every release. Add `ar` to `LOCALES` once ar.md is
-      backfilled to mirror every historical version's fingerprint (blocked on the
-      machine-translation review above), or it will fail the gate for prior tags.
+- [x] **ar.md is now in the changelog gate**: backfilled `[2.8.1]`..`[2.13.0]` in
+      Arabic (promoted the piled `[Unreleased]` content into dated sections and
+      translated the missing `[2.9.0]`/`[2.9.1]`), so ar.md mirrors CHANGELOG.md
+      fingerprint for all 119 versions, then added `ar` to `mise-tasks/changelog`
+      `LOCALES`. `check` now validates it and `promote` moves its `[Unreleased]` on
+      release, so it can't drift again. The fresh Arabic (2.9.0/2.9.1 + the 2.13.1
+      batch) is machine-authored - folds into the human-review item above.
 
 ## Cross-league chat inbox (deferred from the feature-treatment review)
 
