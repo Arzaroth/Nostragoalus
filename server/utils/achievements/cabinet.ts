@@ -1,17 +1,17 @@
 import { and, eq, isNull, or } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
-import { competitionAward, fridgePin, user, userAchievement } from '../../../db/schema'
+import { competitionAward, showcasePin, user, userAchievement } from '../../../db/schema'
 import {
   type CabinetDto,
   COMPETITION_AWARD_TYPES,
-  type FridgePinDto,
-  type FridgePinInput,
-  FRIDGE_SLOT_COUNT,
+  SHOWCASE_SLOT_COUNT,
+  type ShowcasePinDto,
+  type ShowcasePinInput,
 } from '#shared/types/achievements'
 import { NotFoundError, ValidationError } from '../errors'
 import { ALL_ACHIEVEMENTS } from './catalog'
 
-// The trophies + achievements + fridge for one user in one competition. Global
+// The trophies + achievements + showcase for one user in one competition. Global
 // (competition-spanning) badges are folded in. Hidden badges only ever surface
 // once earned - a locked secret is never revealed, so the surprise survives.
 export async function getCabinet(
@@ -50,10 +50,10 @@ export async function getCabinet(
 
   const pins = await db
     .select()
-    .from(fridgePin)
-    .where(and(eq(fridgePin.userId, opts.userId), eq(fridgePin.competitionId, opts.competitionId)))
-    .orderBy(fridgePin.slot)
-  const fridge: FridgePinDto[] = pins.map((p) => ({ slot: p.slot, itemType: p.itemType, itemKey: p.itemKey }))
+    .from(showcasePin)
+    .where(and(eq(showcasePin.userId, opts.userId), eq(showcasePin.competitionId, opts.competitionId)))
+    .orderBy(showcasePin.slot)
+  const showcase: ShowcasePinDto[] = pins.map((p) => ({ slot: p.slot, achievementKey: p.achievementKey }))
 
   return {
     userId: opts.userId,
@@ -61,35 +61,29 @@ export async function getCabinet(
     isOwner: opts.viewerId === opts.userId,
     trophies,
     achievements,
-    fridge,
+    showcase,
   }
 }
 
-// Replace a user's fridge for a competition with the given ordered items. Every
-// item must be one the user has actually earned (no pinning aspirational
-// trophies), capped at FRIDGE_SLOT_COUNT, no duplicates. Array order = slot order.
-export async function setFridge(
+// Replace a user's showcase for a competition with the given ordered achievements.
+// Every one must be an achievement the user has actually earned (no pinning
+// aspirational badges), capped at SHOWCASE_SLOT_COUNT, no duplicates. Array order
+// = slot order.
+export async function setShowcase(
   db: AppDatabase,
-  opts: { competitionId: string; userId: string; items: FridgePinInput[] },
-): Promise<FridgePinDto[]> {
+  opts: { competitionId: string; userId: string; items: ShowcasePinInput[] },
+): Promise<ShowcasePinDto[]> {
   const { items } = opts
-  if (items.length > FRIDGE_SLOT_COUNT) throw new ValidationError(`a fridge holds at most ${FRIDGE_SLOT_COUNT} items`)
+  if (items.length > SHOWCASE_SLOT_COUNT) {
+    throw new ValidationError(`a showcase holds at most ${SHOWCASE_SLOT_COUNT} achievements`)
+  }
 
   const seen = new Set<string>()
   for (const it of items) {
-    const k = `${it.itemType}:${it.itemKey}`
-    if (seen.has(k)) throw new ValidationError('duplicate fridge item')
-    seen.add(k)
+    if (seen.has(it.achievementKey)) throw new ValidationError('duplicate showcase achievement')
+    seen.add(it.achievementKey)
   }
 
-  const ownedTrophies = new Set(
-    (
-      await db
-        .select({ type: competitionAward.type })
-        .from(competitionAward)
-        .where(and(eq(competitionAward.competitionId, opts.competitionId), eq(competitionAward.userId, opts.userId)))
-    ).map((r) => r.type as string),
-  )
   const ownedAchievements = new Set(
     (
       await db
@@ -104,30 +98,30 @@ export async function setFridge(
     ).map((r) => r.key),
   )
   for (const it of items) {
-    const owned = it.itemType === 'TROPHY' ? ownedTrophies.has(it.itemKey) : ownedAchievements.has(it.itemKey)
-    if (!owned) throw new ValidationError(`cannot pin an unearned item: ${it.itemType} ${it.itemKey}`)
+    if (!ownedAchievements.has(it.achievementKey)) {
+      throw new ValidationError(`cannot pin an unearned achievement: ${it.achievementKey}`)
+    }
   }
 
   return db.transaction(async (tx) => {
     await tx
-      .delete(fridgePin)
-      .where(and(eq(fridgePin.userId, opts.userId), eq(fridgePin.competitionId, opts.competitionId)))
+      .delete(showcasePin)
+      .where(and(eq(showcasePin.userId, opts.userId), eq(showcasePin.competitionId, opts.competitionId)))
     if (items.length > 0) {
-      await tx.insert(fridgePin).values(
+      await tx.insert(showcasePin).values(
         items.map((it, i) => ({
           userId: opts.userId,
           competitionId: opts.competitionId,
-          itemType: it.itemType,
-          itemKey: it.itemKey,
+          achievementKey: it.achievementKey,
           slot: i,
         })),
       )
     }
     const pins = await tx
       .select()
-      .from(fridgePin)
-      .where(and(eq(fridgePin.userId, opts.userId), eq(fridgePin.competitionId, opts.competitionId)))
-      .orderBy(fridgePin.slot)
-    return pins.map((p) => ({ slot: p.slot, itemType: p.itemType, itemKey: p.itemKey }))
+      .from(showcasePin)
+      .where(and(eq(showcasePin.userId, opts.userId), eq(showcasePin.competitionId, opts.competitionId)))
+      .orderBy(showcasePin.slot)
+    return pins.map((p) => ({ slot: p.slot, achievementKey: p.achievementKey }))
   })
 }

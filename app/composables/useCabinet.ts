@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/vue-query'
 import type { CabinetDto } from '#shared/types/achievements'
 
-// A player's trophy cabinet (trophies + achievements + fridge) for the selected
+// A player's trophy cabinet (trophies + achievements + showcase) for the selected
 // competition. Lazy-enabled like useScorers/useStandings so it only fetches when
 // its section is shown. Keyed by user + competition so switching either refetches.
 export function useCabinet(

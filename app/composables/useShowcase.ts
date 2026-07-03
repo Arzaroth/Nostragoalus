@@ -1,15 +1,15 @@
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
-import type { FridgePinDto, FridgePinInput } from '#shared/types/achievements'
+import type { ShowcasePinDto, ShowcasePinInput } from '#shared/types/achievements'
 
-// Save the current user's fridge (the pinned showcase) for the selected
+// Save the current user's showcase (the pinned achievements) for the selected
 // competition. Replaces it wholesale; invalidates every cabinet view so the
 // owner's and any spectators' showcases refresh.
-export function useFridge() {
+export function useShowcase() {
   const slug = useSelectedCompetition()
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (items: FridgePinInput[]) =>
-      $fetch<{ ok: boolean; fridge: FridgePinDto[] }>('/api/fridge', {
+    mutationFn: (items: ShowcasePinInput[]) =>
+      $fetch<{ ok: boolean; showcase: ShowcasePinDto[] }>('/api/showcase', {
         method: 'PUT',
         body: { competition: slug.value, items },
       }),

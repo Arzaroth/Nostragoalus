@@ -32,7 +32,7 @@ defineRouteMeta({
     tags: ['Achievements'],
     summary: 'A player trophy cabinet',
     description:
-      "A player's trophies, achievements and pinned fridge for a competition. Global (cross-competition) badges are folded in. Hidden badges appear only once earned.",
+      "A player's trophies, achievements and pinned showcase for a competition. Global (cross-competition) badges are folded in. Hidden badges appear only once earned.",
     parameters: [
       { in: 'path', name: 'id', required: true, description: 'User id.', schema: { type: 'string' } },
       {
@@ -44,7 +44,7 @@ defineRouteMeta({
       },
     ],
     responses: {
-      '200': { description: 'The cabinet (trophies, achievements, fridge).' },
+      '200': { description: 'The cabinet (trophies, achievements, showcase).' },
       '404': { description: 'Unknown user/competition, or a private profile the caller cannot see.' },
     },
   },

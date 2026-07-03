@@ -200,7 +200,7 @@ feature/architecture doc that implements it.
   multi-team and multi-locale, so `competition.featuredTeamCode` (default `FRA`)
   drives one team-specialist trophy that names its team, instead of hard-coding
   France or minting a trophy per participating team.
-- **Cabinet + fridge are per-competition**, matching every other page's
+- **Cabinet + showcase are per-competition**, matching every other page's
   `/[competition]/` scope; global badges like the secret unlock still surface in
   each competition's cabinet. See [features/achievements.md](features/achievements.md).
 - **An achievement tier only ever climbs.** Batch evaluation grades a badge up when

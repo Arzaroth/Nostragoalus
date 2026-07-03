@@ -1,21 +1,21 @@
 {
   "achievements": {
     "cabinetTitle": "Trophy cabinet",
-    "fridgeTitle": "My fridge",
+    "showcaseTitle": "My showcase",
     "trophiesHeading": "Trophies",
     "badgesHeading": "Achievements",
     "empty": "No trophies or achievements yet.",
-    "fridgeEmpty": "Nothing on the fridge yet.",
-    "fridgeEmptyOwn": "Pin your proudest trophies and badges here.",
+    "showcaseEmpty": "Nothing on show yet.",
+    "showcaseEmptyOwn": "Show off up to 3 of your achievements here.",
     "locked": "Locked",
     "lockedHint": "Keep playing to unlock this one.",
     "viewCabinet": "View trophy cabinet",
-    "editFridge": "Arrange fridge",
+    "editShowcase": "Edit showcase",
     "doneEditing": "Done",
-    "pin": "Pin to fridge",
-    "unpin": "Take off the fridge",
-    "fridgeFull": "Your fridge is full ({max} slots).",
-    "saved": "Fridge saved.",
+    "pin": "Add to showcase",
+    "unpin": "Remove from showcase",
+    "showcaseFull": "Your showcase is full ({max} slots).",
+    "saved": "Showcase saved.",
     "earnedOn": "Earned {date}",
     "tier": {
       "BRONZE": "Bronze",
@@ -50,7 +50,8 @@
       "underdog-whisperer": { "name": "Underdog Whisperer", "desc": "Your long-shot champion pick came good." },
       "treble": { "name": "Treble", "desc": "Held three trophies in one tournament." },
       "podium": { "name": "On the Podium", "desc": "Finished in the overall top three." },
-      "the-magic-word": { "name": "The Magic Word", "desc": "You said the magic word. A little colour never hurt anyone." }
+      "the-magic-word": { "name": "The Magic Word", "desc": "You said the magic word. A little colour never hurt anyone." },
+      "the-collector": { "name": "The Collector", "desc": "Gotta catch 'em all. Every last one." }
     }
   },
   "verify": {

@@ -6,6 +6,7 @@ import { getLeaderboard } from '../leaderboard/service'
 import {
   ACHIEVEMENTS,
   type AchievementMetric,
+  COLLECTOR_ACHIEVEMENT_KEY,
   tierForValue,
   type UserAchievementStats,
 } from './catalog'
@@ -228,11 +229,15 @@ export async function evaluateAchievements(db: AppDatabase, competitionId: strin
 
   const newly: UnlockedAchievement[] = []
   for (const [userId, s] of stats) {
+    let heldCount = 0
     for (const def of ACHIEVEMENTS) {
       const value = s[def.metric as AchievementMetric]
       const tier = tierForValue(def.tiers, value)
-      if (!tier) continue
       const ex = exByKey.get(`${userId}:${def.key}`)
+      // Held once earned (tier is a high-water mark, so a rescore-down never
+      // loses it). Counts toward the "all badges" secret below.
+      if (ex || tier) heldCount += 1
+      if (!tier) continue
       if (!ex) {
         await db.insert(userAchievement).values({ userId, competitionId, key: def.key, tier, progress: value })
         newly.push({ userId, competitionId, key: def.key, tier })
@@ -244,6 +249,17 @@ export async function evaluateAchievements(db: AppDatabase, competitionId: strin
         // progress but never demotes the badge (grading up is handled above).
         await db.update(userAchievement).set({ progress: value }).where(eq(userAchievement.id, ex.id))
       }
+    }
+    // The hidden "collector" secret: earned every non-secret badge. Granted
+    // globally (competitionId null), once, idempotently.
+    if (heldCount === ACHIEVEMENTS.length) {
+      const granted = await grantAchievement(db, {
+        userId,
+        competitionId: null,
+        key: COLLECTOR_ACHIEVEMENT_KEY,
+        tier: 'GOLD',
+      })
+      if (granted) newly.push({ userId, competitionId: null, key: COLLECTOR_ACHIEVEMENT_KEY, tier: 'GOLD' })
     }
   }
   return newly

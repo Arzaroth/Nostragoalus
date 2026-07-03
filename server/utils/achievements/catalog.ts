@@ -103,8 +103,19 @@ export const PONY_ACHIEVEMENT: AchievementDef = {
   hidden: true,
 }
 
+// Secret, evaluated (not event-granted): unlocks once every non-hidden badge
+// above is earned. Hidden + cryptic so it isn't dangled as a to-do list.
+export const COLLECTOR_ACHIEVEMENT_KEY = 'the-collector'
+export const COLLECTOR_ACHIEVEMENT: AchievementDef = {
+  key: COLLECTOR_ACHIEVEMENT_KEY,
+  category: 'SECRET',
+  scope: 'GLOBAL',
+  tiers: [{ tier: 'GOLD', threshold: 1 }],
+  hidden: true,
+}
+
 // The full catalog for display (cabinet + i18n), batch-evaluated ones plus secrets.
-export const ALL_ACHIEVEMENTS: AchievementDef[] = [...ACHIEVEMENTS, PONY_ACHIEVEMENT]
+export const ALL_ACHIEVEMENTS: AchievementDef[] = [...ACHIEVEMENTS, PONY_ACHIEVEMENT, COLLECTOR_ACHIEVEMENT]
 
 // The highest tier whose threshold the value meets, or null if none. Thresholds
 // are ascending, so the last satisfied one wins.

@@ -18,13 +18,10 @@ export type CompetitionAwardType = (typeof COMPETITION_AWARD_TYPES)[number]
 export const ACHIEVEMENT_TIERS = ['BRONZE', 'SILVER', 'GOLD'] as const
 export type AchievementTier = (typeof ACHIEVEMENT_TIERS)[number]
 
-export const FRIDGE_ITEM_TYPES = ['TROPHY', 'ACHIEVEMENT'] as const
-export type FridgeItemType = (typeof FRIDGE_ITEM_TYPES)[number]
+// How many achievements a user may pin to their showcase, per competition.
+export const SHOWCASE_SLOT_COUNT = 3
 
-// How many items a user may pin to their fridge showcase, per competition.
-export const FRIDGE_SLOT_COUNT = 6
-
-// === Cabinet / fridge read DTOs (server -> client) ===
+// === Cabinet / showcase read DTOs (server -> client) ===
 
 export interface TrophyDto {
   type: CompetitionAwardType
@@ -50,10 +47,18 @@ export interface AchievementDto {
 
 export type AchievementScope = 'COMPETITION' | 'GLOBAL'
 
-export interface FridgePinDto {
+// One showcased achievement as it rides a leaderboard row (icon + tint next to the
+// name). category drives the icon, tier the colour. Resolved server-side so the
+// client needs no catalog.
+export interface ShowcaseIconDto {
+  key: string
+  category: string
+  tier: AchievementTier | null
+}
+
+export interface ShowcasePinDto {
   slot: number
-  itemType: FridgeItemType
-  itemKey: string
+  achievementKey: string
 }
 
 export interface CabinetDto {
@@ -62,11 +67,10 @@ export interface CabinetDto {
   isOwner: boolean
   trophies: TrophyDto[]
   achievements: AchievementDto[]
-  fridge: FridgePinDto[]
+  showcase: ShowcasePinDto[]
 }
 
-// A single item the client asks to pin (order in the array = slot order).
-export interface FridgePinInput {
-  itemType: FridgeItemType
-  itemKey: string
+// A single achievement the client asks to pin (order in the array = slot order).
+export interface ShowcasePinInput {
+  achievementKey: string
 }
