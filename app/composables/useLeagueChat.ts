@@ -566,11 +566,15 @@ export function useLeagueChat(
     }
     await $fetch(`/api/leagues/${lid()}/chat/enable`, { method: 'POST', body: { wraps } })
     await load()
+    // The my-leagues list carries chatEnabled, which gates the chat dock's league
+    // switcher; refresh it so the league appears there without a page reload.
+    void queryClient.invalidateQueries({ queryKey: ['leagues'] })
   }
 
   async function disableChat(): Promise<void> {
     await $fetch(`/api/leagues/${lid()}/chat/disable`, { method: 'POST' })
     await load()
+    void queryClient.invalidateQueries({ queryKey: ['leagues'] })
   }
 
   // Rotate the league group key (OWNER/MODERATOR): a fresh key sealed to the
