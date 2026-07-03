@@ -21,6 +21,13 @@ router.afterEach(() => {
   })
 })
 
+// Expose the footer's (wrap-variable) height as a CSS var so a viewport-filling
+// page (multiview) can reserve it and stop its grid above the footer.
+const footerEl = ref<HTMLElement | null>(null)
+useResizeObserver(footerEl, ([entry]) => {
+  document.documentElement.style.setProperty('--ng-footer-h', `${entry.target.clientHeight}px`)
+})
+
 const lang = computed({
   get: () => locale.value,
   set: (v: string) => {
@@ -31,6 +38,7 @@ const lang = computed({
 
 <template>
   <footer
+    ref="footerEl"
     class="border-t text-xs"
     style="border-color: var(--p-content-border-color); color: var(--p-text-muted-color); background: var(--p-content-background)"
   >

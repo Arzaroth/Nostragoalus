@@ -21,12 +21,18 @@ describe('MultiviewCellTile', () => {
     expect(text).toContain('Kylian Mbappé')
   })
 
-  it('renders the play-by-play only when focused', async () => {
+  it('renders the play-by-play in every started cell, focused or not', async () => {
     const unfocused = await mountSuspended(MultiviewCellTile, { props: { matchId: 'm1', match: liveMatch, focused: false } })
-    expect(unfocused.findComponent({ name: 'MatchPlayByPlay' }).exists()).toBe(false)
+    expect(unfocused.findComponent({ name: 'MatchPlayByPlay' }).exists()).toBe(true)
+    expect(unfocused.text()).toContain('scores')
 
     const focused = await mountSuspended(MultiviewCellTile, { props: { matchId: 'm1', match: liveMatch, focused: true } })
     expect(focused.findComponent({ name: 'MatchPlayByPlay' }).exists()).toBe(true)
-    expect(focused.text()).toContain('scores')
+  })
+
+  it('hides the play-by-play until the match has started', async () => {
+    const scheduled = { ...liveMatch, status: 'SCHEDULED' }
+    const c = await mountSuspended(MultiviewCellTile, { props: { matchId: 'm1', match: scheduled, focused: true } })
+    expect(c.findComponent({ name: 'MatchPlayByPlay' }).exists()).toBe(false)
   })
 })
