@@ -75,8 +75,8 @@ const { data: equalizerBot } = useBotRow('equalizer', equalizerOn, botMethod, sc
 const activeBotCount = computed(() => [consensusOn.value, evilOn.value, equalizerOn.value].filter(Boolean).length)
 
 const methodOptions = computed(() => [
-  { label: t('bot.methodMode'), value: 'mode' },
-  { label: t('bot.methodMean'), value: 'mean' },
+  { label: t('bot.methodMode'), value: 'mode' as const },
+  { label: t('bot.methodMean'), value: 'mean' as const },
 ])
 // Only the crowd bot (consensus) has a MODE/MEAN choice; below the population
 // threshold only MEAN is meaningful, so the choice hides and the server forces
@@ -168,8 +168,17 @@ const hasLive = computed(() => displayRows.value.some((r) => r.livePoints))
                 <i class="pi" :class="consensusOn ? 'pi-check-square' : 'pi-stop'" :style="consensusOn ? 'color: var(--p-primary-color)' : 'opacity:0.4'" />
                 <span class="flex-1">🤖 {{ t('bot.persona.consensus') }}</span>
               </button>
-              <div v-if="consensusOn" class="px-3 pb-2">
-                <SelectButton v-if="modeAvailable" v-model="botMethod" :options="methodOptions" option-label="label" option-value="value" :allow-empty="false" size="small" class="w-full ng-bot-method" />
+              <div v-if="consensusOn" class="px-3 pt-2 pb-2">
+                <div v-if="modeAvailable" class="flex rounded-md overflow-hidden border" style="border-color: var(--p-content-border-color)">
+                  <button
+                    v-for="o in methodOptions"
+                    :key="o.value"
+                    type="button"
+                    class="flex-1 py-1 text-xs font-medium transition"
+                    :style="botMethod === o.value ? 'background: var(--p-primary-color); color: #fff' : 'color: var(--p-text-muted-color)'"
+                    @click="botMethod = o.value"
+                  >{{ o.label }}</button>
+                </div>
                 <span v-else class="text-xs" style="color: var(--p-text-muted-color)">{{ t('bot.modeDisabled') }}</span>
               </div>
               <button v-if="meId" type="button" class="px-3 py-2 text-sm text-start flex items-center gap-2 transition hover:bg-black/5 dark:hover:bg-white/10" @click="togglePersona('evil-twin', !evilOn)">
