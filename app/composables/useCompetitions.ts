@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/vue-query'
+import { DEFAULT_COMPETITION } from '#shared/competition'
 
 export interface Competition {
   id: string
@@ -6,7 +7,7 @@ export interface Competition {
   name: string
 }
 
-export const DEFAULT_COMPETITION = 'world-cup-2026'
+export { DEFAULT_COMPETITION }
 
 // The active competition is the `[competition]` path segment. On un-prefixed
 // pages (account/admin/login) it falls back to the last-viewed one (cookie).
