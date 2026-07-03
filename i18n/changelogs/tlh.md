@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.14.0] - 2026-07-04
+
 ### chelpu'
 - **may' huch pop**: DaH may' pIn'a' ghap SeHwI' vagh Qapchugh (per, mIllogh DIchDaq, QIn, ghItlh je) huch pop cherlaH - Hoch Dun, ghom tlheD Dun, HeghwI' tlheD Dun, mI' lugh law' law', je may' Segh wIvbogh nughDaq pojwI' Dun. Hoch may' Sepwl' huch pop legh may' HaStaDaq, DaH Dev 'Iv je legh (may' rInpu'DI' choH, rInDI' taghqa'be'); 'ej DaghajmoHbogh huch pop 'angbogh cabinet Daghaj.
 - **mISmoHwI' HaStaDaq may' Segh Da'ang**: wej may' Segh wIvlaH, DaH pong retlhDaq per mach rur 'anglu'.

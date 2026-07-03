@@ -5,6 +5,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+- **"Watching now" no longer counts your extra tabs**: opening the same match in several tabs counts you as one viewer, not one per tab. Two different people (or two guests) still count as two.
+
+## [2.14.0] - 2026-07-04
+
 ### Added
 - **League prizes**: a league owner or moderator can now set a real-world prize (a label, an optional photo, a note and a link) for each of the five winners - best overall, best in the group stage, best in the knockouts, most exact scores, and best predictor of the featured team. Every member sees the prizes on the league page with who is currently leading each one (it updates as matches are played and settles at the end), and your own cabinet shows the prizes you currently hold across your leagues.
 - **Showcase your achievements in the rankings**: pick up to three of your achievements and they now appear as little badges next to your name on the leaderboards.
