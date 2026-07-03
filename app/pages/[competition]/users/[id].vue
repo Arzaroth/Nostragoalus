@@ -50,7 +50,8 @@ onMounted(() => {
 // This player's evil twin: their own picks with every score swapped. No global
 // identity (jokers/champion are per-competition), so it's competition-scope only.
 const userId = computed(() => String(route.params.id))
-const twinOn = ref(false)
+// ?twin=1 (e.g. from the leaderboard's own-twin ghost) opens straight into it.
+const twinOn = ref(route.query.twin === '1')
 const twinCompetition = computed(() => (global.value ? null : (slug.value ?? null)))
 const twinEnabled = computed(() => twinOn.value && !global.value)
 const { data: twin } = useUserEvilTwin(userId, twinCompetition, twinEnabled)
@@ -100,6 +101,11 @@ const showTwin = computed(() => twinEnabled.value && !!twin.value)
         <span class="font-semibold" style="color: var(--p-text-color)">{{ twin.summary.totalPoints }} {{ t('leaderboard.pts') }}</span>
         <span>· {{ twin.summary.exactCount }} {{ t('leaderboard.exact') }}</span>
         <span>· {{ twin.summary.outcomeCount }} {{ t('leaderboard.correct') }}</span>
+        <span
+          v-if="twin.subject"
+          class="ms-1 px-2 py-0.5 rounded-full font-medium"
+          style="color: var(--p-primary-color); background: var(--p-highlight-background, var(--p-content-border-color))"
+        >{{ t('bot.twinVs', { name: data.user.name, rank: twin.subject.rank, points: twin.subject.totalPoints }) }}</span>
       </div>
       <PredictionList :predictions="twin.predictions" />
       <div v-if="!twin.predictions.length" class="opacity-60">{{ t('bot.empty') }}</div>

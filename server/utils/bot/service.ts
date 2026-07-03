@@ -128,6 +128,15 @@ export interface BotSummary {
   gdCount: number
 }
 
+// The real player the evil twin belongs to, from the same board it's ranked
+// against, so a profile can show "twin would rank #8 vs your #4".
+export interface BotSubject {
+  rank: number
+  totalPoints: number
+  exactCount: number
+  outcomeCount: number
+}
+
 export interface BotOverview {
   persona: BotPersona
   method: ConsensusMethod
@@ -136,6 +145,9 @@ export interface BotOverview {
   rows: BotMatchRow[]
   champion: BotChampion | null
   summary: BotSummary
+  // The scoped player's own real standing (only when userId is set - the evil
+  // twin), for comparison. Null if they're off the board (e.g. private).
+  subject: BotSubject | null
   // False until at least one consensus row has been scored - the ghost row
   // only exists once the bot has actual points to show.
   hasScores: boolean
@@ -247,7 +259,7 @@ export async function getBotOverview(
   // The evil twin is per-user; with no viewer it has nothing to swap, and must
   // not silently fall back to inverting the whole crowd.
   if (persona === 'EVIL_TWIN' && !opts.userId) {
-    return { persona, method: 'MEAN', modeAvailable: false, population: 0, rows: [], champion: null, summary: EMPTY_SUMMARY, hasScores: false }
+    return { persona, method: 'MEAN', modeAvailable: false, population: 0, rows: [], champion: null, summary: EMPTY_SUMMARY, subject: null, hasScores: false }
   }
 
   const matches = await db
@@ -443,6 +455,7 @@ export async function getBotOverview(
   // scored (it sits last on a 0-point board) - so the ghost row is visible the
   // moment the toggle is on, not only once it has points.
   let rank: number | null = null
+  let subject: BotSubject | null = null
   if (population > 0) {
     const board = await getLeaderboard(db, { competitionId, leagueId: opts.leagueId, includePrivate: opts.includePrivate, limit: 10000 })
     // Display-only ladder (the 4 numeric levels); real users win exact ties.
@@ -455,6 +468,10 @@ export async function getBotOverview(
             r.outcomeCount - outcomeCount ||
             r.gdCount - gdCount) >= 0,
       ).length
+    // For the evil twin, the scoped player's own row on that same board, so a
+    // profile can put the twin's would-be rank next to the player's real one.
+    const s = opts.userId ? board.find((r) => r.userId === opts.userId) : undefined
+    if (s) subject = { rank: s.rank, totalPoints: s.totalPoints, exactCount: s.exactCount, outcomeCount: s.outcomeCount }
   }
 
   return {
@@ -465,6 +482,7 @@ export async function getBotOverview(
     rows,
     champion,
     summary: { rank, totalPoints, predictionPoints, championPoints, exactCount, outcomeCount, gdCount },
+    subject,
     hasScores,
   }
 }

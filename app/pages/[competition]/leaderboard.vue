@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useQueryClient } from '@tanstack/vue-query'
-import { BOT_PERSONA_META, LEADERBOARD_BOT_PARAMS, type BotPersonaParam } from '#shared/types/bot'
+import { BOT_PERSONA_META, type BotPersonaParam } from '#shared/types/bot'
 const { t } = useI18n()
 useHead({ title: t('leaderboard.title') })
 const slug = useSelectedCompetition()
@@ -51,12 +51,12 @@ const scopeOptions = computed(() => [
   { label: t('leaderboard.global'), value: 'global' as const },
 ])
 
-// Crowd-derived ghosts (consensus, equalizer): display-only rows at their
-// would-be rank, enabled from one "Bots" popover. They follow the board scope
-// but have no global identity (jokers/finals/champion are per-competition), so
-// they hide in the global view. The evil twin is per-user and lives on profile
-// pages, not here.
-const botPersonas = LEADERBOARD_BOT_PARAMS
+// Display-only ghost rows at their would-be rank, enabled from one "Bots"
+// popover. They follow the board scope but have no global identity
+// (jokers/finals/champion are per-competition), so they hide in the global view.
+// The crowd bots (consensus, equalizer) are for everyone; the evil twin here is
+// your OWN picks swapped, so it needs a signed-in viewer and links to your
+// profile - the fuller per-player twin lives there.
 const enabledPersonas = useBotPersonas()
 const botMethod = useBotMethod()
 const botMenu = ref()
@@ -66,11 +66,13 @@ function togglePersona(persona: BotPersonaParam, on: boolean) {
     : enabledPersonas.value.filter((p) => p !== persona)
 }
 const consensusOn = computed(() => !isGlobal.value && enabledPersonas.value.includes('consensus'))
+const evilOn = computed(() => !isGlobal.value && !!meId.value && enabledPersonas.value.includes('evil-twin'))
 const equalizerOn = computed(() => !isGlobal.value && enabledPersonas.value.includes('equalizer'))
 const { data: consensusBot } = useBotRow('consensus', consensusOn, botMethod, scopedLeagueId)
+const { data: evilBot } = useBotRow('evil-twin', evilOn, botMethod, scopedLeagueId)
 const { data: equalizerBot } = useBotRow('equalizer', equalizerOn, botMethod, scopedLeagueId)
-// Count of enabled crowd bots, for the trigger's badge.
-const activeBotCount = computed(() => [consensusOn.value, equalizerOn.value].filter(Boolean).length)
+// Count of enabled bots, for the trigger's badge.
+const activeBotCount = computed(() => [consensusOn.value, evilOn.value, equalizerOn.value].filter(Boolean).length)
 
 const methodOptions = computed(() => [
   { label: t('bot.methodMode'), value: 'mode' },
@@ -93,6 +95,7 @@ type DisplayRow = LeaderboardRow & {
 const ghostRows = computed<DisplayRow[]>(() => {
   const sources = [
     { persona: 'consensus' as const, on: consensusOn.value, payload: consensusBot.value },
+    { persona: 'evil-twin' as const, on: evilOn.value, payload: evilBot.value },
     { persona: 'equalizer' as const, on: equalizerOn.value, payload: equalizerBot.value },
   ]
   return sources
@@ -117,6 +120,14 @@ const displayRows = computed<DisplayRow[]>(() => {
 
 function medal(rank: number) {
   return rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null
+}
+
+// A ghost row links to its bot page; the evil-twin ghost is your own, so it goes
+// to your profile with the twin already open (its fuller home).
+function rowLink(r: DisplayRow) {
+  if (!r.isBot) return `/${slug.value}/users/${r.userId}${isGlobal.value ? '?global=1' : ''}`
+  if (r.persona === 'evil-twin') return `/${slug.value}/users/${meId.value}?twin=1`
+  return `/${slug.value}/bot?persona=${r.persona}${scopedLeagueId.value ? `&league=${scopedLeagueId.value}` : ''}`
 }
 
 // Any provisional points = at least one match is live and counting.
@@ -152,15 +163,19 @@ const hasLive = computed(() => displayRows.value.some((r) => r.livePoints))
             <i class="pi pi-chevron-down text-xs opacity-60" />
           </button>
           <Popover ref="botMenu">
-            <div class="flex flex-col w-56 -m-1 py-1">
+            <div class="flex flex-col w-64 -m-1 py-1">
               <button type="button" class="px-3 py-2 text-sm text-start flex items-center gap-2 transition hover:bg-black/5 dark:hover:bg-white/10" @click="togglePersona('consensus', !consensusOn)">
                 <i class="pi" :class="consensusOn ? 'pi-check-square' : 'pi-stop'" :style="consensusOn ? 'color: var(--p-primary-color)' : 'opacity:0.4'" />
                 <span class="flex-1">🤖 {{ t('bot.persona.consensus') }}</span>
               </button>
-              <div v-if="consensusOn" class="px-3 pb-2 ps-9">
-                <SelectButton v-if="modeAvailable" v-model="botMethod" :options="methodOptions" option-label="label" option-value="value" :allow-empty="false" size="small" />
+              <div v-if="consensusOn" class="px-3 pb-2">
+                <SelectButton v-if="modeAvailable" v-model="botMethod" :options="methodOptions" option-label="label" option-value="value" :allow-empty="false" size="small" class="w-full ng-bot-method" />
                 <span v-else class="text-xs" style="color: var(--p-text-muted-color)">{{ t('bot.modeDisabled') }}</span>
               </div>
+              <button v-if="meId" type="button" class="px-3 py-2 text-sm text-start flex items-center gap-2 transition hover:bg-black/5 dark:hover:bg-white/10" @click="togglePersona('evil-twin', !evilOn)">
+                <i class="pi" :class="evilOn ? 'pi-check-square' : 'pi-stop'" :style="evilOn ? 'color: var(--p-primary-color)' : 'opacity:0.4'" />
+                <span class="flex-1">😈 {{ t('bot.persona.evilTwin') }}</span>
+              </button>
               <button type="button" class="px-3 py-2 text-sm text-start flex items-center gap-2 transition hover:bg-black/5 dark:hover:bg-white/10" @click="togglePersona('equalizer', !equalizerOn)">
                 <i class="pi" :class="equalizerOn ? 'pi-check-square' : 'pi-stop'" :style="equalizerOn ? 'color: var(--p-primary-color)' : 'opacity:0.4'" />
                 <span class="flex-1">⚖️ {{ t('bot.persona.equalizer') }}</span>
@@ -193,7 +208,7 @@ const hasLive = computed(() => displayRows.value.some((r) => r.livePoints))
       <NuxtLink
         v-for="r in displayRows"
         :key="r.userId"
-        :to="r.isBot ? `/${slug}/bot?persona=${r.persona}${scopedLeagueId ? `&league=${scopedLeagueId}` : ''}` : `/${slug}/users/${r.userId}${isGlobal ? '?global=1' : ''}`"
+        :to="rowLink(r)"
         class="ng-card flex items-center gap-3 rounded-xl border px-4 py-3"
         :style="`background: var(--p-content-background); border-style: ${r.isBot ? 'dashed' : 'solid'}; opacity: ${r.isBot ? '0.85' : '1'}; border-color: ${r.userId === meId ? 'var(--p-primary-color)' : 'var(--p-content-border-color)'}; border-width: ${r.userId === meId ? '2px' : '1px'}`"
       >

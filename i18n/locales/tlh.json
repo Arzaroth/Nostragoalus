@@ -595,6 +595,7 @@
     "evilTwin": "veqlargh qoq",
     "evilTwinNote": "noHDaj Hoch DoH wIv. rap: rap.",
     "twinWouldRank": "patlh #{rank}",
+    "twinVs": "{name}: patlh #{rank} · {points} pts",
     "persona": {
       "consensus": "ghom qoq",
       "evilTwin": "veqlargh qoqlIj",
