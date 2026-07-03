@@ -4,7 +4,7 @@ import { createTestDb, type TestDb } from '../../../tests/db'
 import { findRoundId } from '../sync/rounds'
 import { addLeagueMember, makeLeague, makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
 import { compareLeaderboardRows, countLeagueMembersHiddenFromBoard, getLeaderboard } from './service'
-import { bestScorerPick, championPick, prediction, user } from '../../../db/schema'
+import { bestScorerPick, championPick, prediction, showcasePin, user, userAchievement } from '../../../db/schema'
 
 describe('compareLeaderboardRows', () => {
   const base = { totalPoints: 0, exactCount: 0, outcomeCount: 0, gdCount: 0, userId: 'a' }
@@ -286,6 +286,26 @@ describe('countLeagueMembersHiddenFromBoard', () => {
     expect(await countLeagueMembersHiddenFromBoard(db, { leagueId, includePrivate: false })).toBe(2)
     // The viewer themselves never counts, even when hidden.
     expect(await countLeagueMembersHiddenFromBoard(db, { leagueId, includePrivate: true, viewerId: hidden })).toBe(0)
+    await client.close()
+  })
+})
+
+describe('getLeaderboard showcase', () => {
+  it('carries each row a user pinned achievements (icon-ready key/category/tier)', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const roundId = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: new Date('2026-06-11T16:00:00Z'), status: 'FINISHED', fullTimeHome: 1, fullTimeAway: 0 })
+    const alice = await makeUser(db, 'alice', 'Alice')
+    const p = await makePrediction(db, { userId: alice, matchId: m, roundId, home: 1, away: 0, lockedAt: new Date() })
+    await score(db, p, 3, 'EXACT')
+    await db.insert(userAchievement).values({ userId: alice, competitionId, key: 'sharpshooter', tier: 'SILVER', progress: 5 })
+    await db.insert(showcasePin).values({ userId: alice, competitionId, achievementKey: 'sharpshooter', slot: 0 })
+
+    const board = await getLeaderboard(db, { competitionId })
+    expect(board.find((r) => r.userId === alice)?.showcase).toEqual([{ key: 'sharpshooter', category: 'MILESTONE', tier: 'SILVER' }])
+    // The global (competition-null) board never carries a showcase.
+    expect((await getLeaderboard(db, { competitionId: null }))[0]?.showcase).toEqual([])
     await client.close()
   })
 })
