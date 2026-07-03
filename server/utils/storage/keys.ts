@@ -50,6 +50,17 @@ export function avatarKey(bytes: Uint8Array, contentType: string): string {
   return key
 }
 
+// Reward images are content-addressed like avatars: the key is the sha256 of the
+// bytes, so an unchanged image dedups to one object and its URL is immutable.
+export function rewardKey(bytes: Uint8Array, contentType: string): string {
+  const ext = EXT_BY_MIME[contentType]
+  if (!ext) throw new StorageError(`unsupported reward content type: ${contentType}`)
+  const hash = createHash('sha256').update(bytes).digest('hex')
+  const key = `reward/${hash}.${ext}`
+  assertSafeKey(key)
+  return key
+}
+
 // Best-effort content type from a key's extension, for backends that don't store it.
 export function contentTypeFromKey(key: string): string {
   const dot = key.lastIndexOf('.')

@@ -711,6 +711,36 @@ export const league = pgTable(
   (t) => [uniqueIndex('league_join_code_uq').on(t.joinCode), index('league_competition_idx').on(t.competitionId)],
 )
 
+// A league owner/moderator's configured prize for a competition-end award
+// category. The league's winner of that criterion (best among the members) earns
+// it. imageKey points at a stored reward image (fs/s3), served at
+// /api/media/reward/<key>; note/link are free-form (how/where to claim). Winners
+// themselves are derived at read time from the leaderboard, not stored here.
+export const leagueReward = pgTable(
+  'league_reward',
+  {
+    id: pk(),
+    leagueId: text('league_id')
+      .notNull()
+      .references(() => league.id, { onDelete: 'cascade' }),
+    type: competitionAwardTypeEnum('type').notNull(),
+    label: text('label').notNull(),
+    imageKey: text('image_key'),
+    note: text('note'),
+    link: text('link'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [uniqueIndex('league_reward_league_type_uq').on(t.leagueId, t.type)],
+)
+
+export const leagueRewardRelations = relations(leagueReward, ({ one }) => ({
+  league: one(league, { fields: [leagueReward.leagueId], references: [league.id] }),
+}))
+
 // Row exists = member. No status column: leave-memory lives in leagueOptOut so
 // every membership join stays filter-free.
 export const leagueMember = pgTable(

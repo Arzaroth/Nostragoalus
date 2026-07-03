@@ -37,12 +37,14 @@ function topTiedByLadder(rows: RankableRow[]): RankableRow[] {
 }
 
 // Per-user rankable aggregates over the competition's predictions, optionally
-// narrowed to a subset of matches (a phase, or a team's fixtures). Only scored
-// predictions count; a user with no scored pick in the subset is absent.
+// narrowed to a subset of matches (a phase, or a team's fixtures) and to a subset
+// of users (a league's members). Only scored predictions count; a user with no
+// scored pick in the subset is absent.
 async function rankableForMatches(
   db: AppDatabase,
   competitionId: string,
   matchFilter?: SQL,
+  userIds?: string[],
 ): Promise<RankableRow[]> {
   return db
     .select({
@@ -56,7 +58,7 @@ async function rankableForMatches(
     })
     .from(prediction)
     .innerJoin(match, and(eq(match.id, prediction.matchId), eq(match.competitionId, competitionId), matchFilter))
-    .where(isNotNull(prediction.totalPoints))
+    .where(and(isNotNull(prediction.totalPoints), userIds ? inArray(prediction.userId, userIds) : undefined))
     .groupBy(prediction.userId)
 }
 
@@ -91,26 +93,37 @@ function pushPointsWinners(
   for (const r of winners) out.push({ type, userId: r.userId, value: r.totalPoints, teamCode })
 }
 
-// Compute the trophy holders for a finished competition. Empty until the final
-// is decided (and empty again if it somehow un-decides), which drives the reset.
-async function computeTrophies(db: AppDatabase, competitionId: string): Promise<TrophyAward[]> {
-  if (!(await hasDecidedFinal(db, competitionId))) return []
-
+// The five-criteria winners from the CURRENT settled state, optionally scoped to a
+// league (OVERALL via the league board, the rest via its members). No final gate:
+// shared by the (final-gated, global) trophy award and the (live, provisional)
+// league rewards, so a league sees "who is currently winning each prize".
+export async function computeCriteriaWinners(
+  db: AppDatabase,
+  competitionId: string,
+  opts: { leagueId?: string; memberIds?: string[] } = {},
+): Promise<TrophyAward[]> {
   const out: TrophyAward[] = []
+  const ids = opts.memberIds
 
-  // OVERALL = the leaderboard winner, so it folds in the champion + best-scorer
-  // bonuses exactly as the standings do. Ranked on scored totals (no live delta).
-  const board = await getLeaderboard(db, { competitionId, includeHidden: true, includePrivate: true, limit: 100_000 })
+  // OVERALL = the leaderboard winner (folds in champion + best-scorer bonuses).
+  // Scoped to the league's member subset when a leagueId is given.
+  const board = await getLeaderboard(db, {
+    competitionId,
+    leagueId: opts.leagueId,
+    includeHidden: true,
+    includePrivate: true,
+    limit: 100_000,
+  })
   const overall = board.filter((r) => r.rank === 1 && r.totalPoints > 0)
   for (const r of overall) out.push({ type: 'OVERALL', userId: r.userId, value: r.totalPoints, teamCode: null })
 
   // Phase trophies are pure prediction points within the phase (no meta bonus,
   // which isn't phase-attributable). GROUP = the group stage, KNOCKOUT = the rest.
-  pushPointsWinners(out, 'GROUP_PHASE', await rankableForMatches(db, competitionId, eq(match.stage, 'GROUP')))
-  pushPointsWinners(out, 'KNOCKOUT_PHASE', await rankableForMatches(db, competitionId, ne(match.stage, 'GROUP')))
+  pushPointsWinners(out, 'GROUP_PHASE', await rankableForMatches(db, competitionId, eq(match.stage, 'GROUP'), ids))
+  pushPointsWinners(out, 'KNOCKOUT_PHASE', await rankableForMatches(db, competitionId, ne(match.stage, 'GROUP'), ids))
 
   // Madame IRMA = the most EXACT scorelines across the whole competition.
-  const whole = await rankableForMatches(db, competitionId)
+  const whole = await rankableForMatches(db, competitionId, undefined, ids)
   const maxExact = Math.max(0, ...whole.map((r) => r.exactCount))
   if (maxExact > 0) {
     for (const r of whole.filter((r) => r.exactCount === maxExact)) {
@@ -130,11 +143,19 @@ async function computeTrophies(db: AppDatabase, competitionId: string): Promise<
       db,
       competitionId,
       or(eq(match.homeTeamCode, comp.code), eq(match.awayTeamCode, comp.code)),
+      ids,
     )
     pushPointsWinners(out, 'TEAM_SPECIALIST', rows, comp.code)
   }
 
   return out
+}
+
+// Global trophy holders for a finished competition. Empty until the final is
+// decided (and empty again if it somehow un-decides), which drives the reset.
+async function computeTrophies(db: AppDatabase, competitionId: string): Promise<TrophyAward[]> {
+  if (!(await hasDecidedFinal(db, competitionId))) return []
+  return computeCriteriaWinners(db, competitionId)
 }
 
 // Idempotent: reconcile competition_award to the freshly computed set. Stale
