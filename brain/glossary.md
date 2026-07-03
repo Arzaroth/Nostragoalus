@@ -25,8 +25,8 @@ the code. Alphabetical.
   catalog, graded bronze/silver/gold (`user_achievement`).
 - **Trophy cabinet** - a user's full gallery of trophies + achievements on their
   profile (earned lit, locked greyed).
-- **Fridge** - the curated subset of the cabinet a user pins to show off, per
-  competition (max 6 slots). The "kid's-drawings-on-the-fridge" showcase.
+- **Showcase** - the curated set of earned achievements a user pins to show off,
+  per competition (max 3 slots, achievements only - trophies are not pinnable).
 - **Madame Irma** - the trophy for the most exact scorelines (a fortune-teller
   pun; from the source contest's "most exact scores" prize).
 - **Featured team** - `competition.featuredTeamCode`, the team the

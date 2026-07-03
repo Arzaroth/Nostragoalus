@@ -13,6 +13,7 @@ import {
 import type { BaseTier } from '../scoring/tiers'
 import { createTestDb } from '../../../tests/db'
 import { makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
+import { ACHIEVEMENTS, COLLECTOR_ACHIEVEMENT_KEY } from './catalog'
 import { computeAchievementStats, evaluateAchievements, grantAchievement } from './service'
 
 let db: AppDatabase
@@ -281,5 +282,53 @@ describe('grantAchievement', () => {
     const alice = await makeUser(db, 'alice')
     expect(await grantAchievement(db, { userId: alice, competitionId: c, key: 'x' })).toBe(true)
     expect(await grantAchievement(db, { userId: alice, competitionId: c, key: 'x' })).toBe(false)
+  })
+})
+
+describe('the-collector secret', () => {
+  const collectorRows = () =>
+    db.select().from(userAchievement).where(eq(userAchievement.key, COLLECTOR_ACHIEVEMENT_KEY))
+
+  it('grants once every non-secret badge is held, and is idempotent', async () => {
+    const c = await seedCompetition(db)
+    const g1 = await roundId(c, 'GROUP', 1)
+    const alice = await makeUser(db, 'alice')
+    // A prediction so alice is in the stats map.
+    const m = await scoredMatch(c, g1, 'GROUP', new Date('2026-06-11T12:00:00Z'))
+    await pred({ userId: alice, matchId: m, roundId: g1, tier: 'EXACT', points: 3 })
+    // Pre-hold every non-secret badge.
+    await db
+      .insert(userAchievement)
+      .values(ACHIEVEMENTS.map((d) => ({ userId: alice, competitionId: c, key: d.key, tier: 'BRONZE' as const, progress: 1 })))
+
+    const newly = await evaluateAchievements(db, c)
+    expect(newly.some((u) => u.key === COLLECTOR_ACHIEVEMENT_KEY && u.competitionId === null)).toBe(true)
+    const rows = await collectorRows()
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({ competitionId: null, tier: 'GOLD' })
+
+    const again = await evaluateAchievements(db, c)
+    expect(again.some((u) => u.key === COLLECTOR_ACHIEVEMENT_KEY)).toBe(false)
+    expect(await collectorRows()).toHaveLength(1)
+  })
+
+  it('withholds the collector while any badge is missing', async () => {
+    const c = await seedCompetition(db)
+    const g1 = await roundId(c, 'GROUP', 1)
+    const alice = await makeUser(db, 'alice')
+    const m = await scoredMatch(c, g1, 'GROUP', new Date('2026-06-11T12:00:00Z'))
+    await pred({ userId: alice, matchId: m, roundId: g1, tier: 'EXACT', points: 3 })
+    // Hold all but 'prophet' (needs 10 predictions - unreachable with one pick).
+    await db.insert(userAchievement).values(
+      ACHIEVEMENTS.filter((d) => d.key !== 'prophet').map((d) => ({
+        userId: alice,
+        competitionId: c,
+        key: d.key,
+        tier: 'BRONZE' as const,
+        progress: 1,
+      })),
+    )
+    await evaluateAchievements(db, c)
+    expect(await collectorRows()).toHaveLength(0)
   })
 })

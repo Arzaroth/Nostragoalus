@@ -574,8 +574,8 @@ export const goalEventRelations = relations(goalEvent, ({ one }) => ({
 // Two artifact kinds. TROPHIES are the rare, competition-end awards derived at
 // finalize from the leaderboard / prediction aggregates (competitionAward);
 // ACHIEVEMENTS are the milestone badges earned during play from a code-defined
-// catalog (userAchievement). The FRIDGE is a user's curated public showcase of
-// pinned items (fridgePin). See brain/features/achievements.md.
+// catalog (userAchievement). The SHOWCASE is a user's curated public display of
+// pinned achievements (showcasePin). See brain/features/achievements.md.
 
 // The five v1 trophy categories (see server/utils/awards). Ties share a trophy:
 // one row per (competition, user, type), so several users can hold the same type.
@@ -644,14 +644,12 @@ export const userAchievement = pgTable(
   ],
 )
 
-export const fridgeItemTypeEnum = pgEnum('fridge_item_type', ['TROPHY', 'ACHIEVEMENT'])
-
-// A user's curated "fridge": the ordered subset of their trophies/achievements
-// they choose to display, per competition (slot 0..N). itemKey is the trophy type
-// (competitionAwardType) or the achievement key. Both a per-slot and a per-item
-// unique index stop double-pinning and slot collisions.
-export const fridgePin = pgTable(
-  'fridge_pin',
+// A user's curated "showcase": the ordered subset of their earned achievements
+// they choose to display, per competition (slot 0..N). achievementKey is the
+// achievement key. Both a per-slot and a per-achievement unique index stop
+// double-pinning and slot collisions.
+export const showcasePin = pgTable(
+  'showcase_pin',
   {
     id: pk(),
     userId: text('user_id')
@@ -660,14 +658,13 @@ export const fridgePin = pgTable(
     competitionId: text('competition_id')
       .notNull()
       .references(() => competition.id, { onDelete: 'cascade' }),
-    itemType: fridgeItemTypeEnum('item_type').notNull(),
-    itemKey: text('item_key').notNull(),
+    achievementKey: text('achievement_key').notNull(),
     slot: integer('slot').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    uniqueIndex('fridge_pin_user_comp_slot_uq').on(t.userId, t.competitionId, t.slot),
-    uniqueIndex('fridge_pin_user_comp_item_uq').on(t.userId, t.competitionId, t.itemType, t.itemKey),
+    uniqueIndex('showcase_pin_user_comp_slot_uq').on(t.userId, t.competitionId, t.slot),
+    uniqueIndex('showcase_pin_user_comp_ach_uq').on(t.userId, t.competitionId, t.achievementKey),
   ],
 )
 
@@ -681,9 +678,9 @@ export const userAchievementRelations = relations(userAchievement, ({ one }) => 
   competition: one(competition, { fields: [userAchievement.competitionId], references: [competition.id] }),
 }))
 
-export const fridgePinRelations = relations(fridgePin, ({ one }) => ({
-  user: one(user, { fields: [fridgePin.userId], references: [user.id] }),
-  competition: one(competition, { fields: [fridgePin.competitionId], references: [competition.id] }),
+export const showcasePinRelations = relations(showcasePin, ({ one }) => ({
+  user: one(user, { fields: [showcasePin.userId], references: [user.id] }),
+  competition: one(competition, { fields: [showcasePin.competitionId], references: [competition.id] }),
 }))
 
 export const leagueRoleEnum = pgEnum('league_role', ['OWNER', 'MODERATOR', 'MEMBER'])

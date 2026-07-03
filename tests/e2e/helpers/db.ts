@@ -148,12 +148,12 @@ export async function cleanup(): Promise<void> {
   )
   await db().query(`delete from match where competition_id in (select id from competition where slug = $1)`, [E2E_SLUG])
   await db().query(`delete from round where competition_id in (select id from competition where slug = $1)`, [E2E_SLUG])
-  // competition_award / user_achievement / fridge_pin all cascade off this delete.
+  // competition_award / user_achievement / showcase_pin all cascade off this delete.
   await db().query(`delete from competition where slug = $1`, [E2E_SLUG])
 }
 
-// The signed-up user's id, so award/achievement/fridge rows can be seeded for them
-// (signUp/freshUser don't expose the created id).
+// The signed-up user's id, so award/achievement/showcase rows can be seeded for
+// them (signUp/freshUser don't expose the created id).
 export async function getUserIdByEmail(email: string): Promise<string> {
   const { rows } = await db().query<{ id: string }>(`select id from "user" where email = $1 limit 1`, [email])
   return rows[0].id
@@ -182,14 +182,14 @@ export async function seedAchievement(
   )
 }
 
-// The user's saved fridge pins (ordered), to assert the arrange-and-save flow.
-export async function getFridgePins(
+// The user's saved showcase pins (ordered), to assert the arrange-and-save flow.
+export async function getShowcasePins(
   userId: string,
   competitionId: string,
-): Promise<{ itemType: string; itemKey: string }[]> {
-  const { rows } = await db().query<{ item_type: string; item_key: string }>(
-    `select item_type, item_key from fridge_pin where user_id = $1 and competition_id = $2 order by slot`,
+): Promise<{ achievementKey: string }[]> {
+  const { rows } = await db().query<{ achievement_key: string }>(
+    `select achievement_key from showcase_pin where user_id = $1 and competition_id = $2 order by slot`,
     [userId, competitionId],
   )
-  return rows.map((r) => ({ itemType: r.item_type, itemKey: r.item_key }))
+  return rows.map((r) => ({ achievementKey: r.achievement_key }))
 }

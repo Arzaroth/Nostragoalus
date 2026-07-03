@@ -28,7 +28,7 @@ const CABINET: CabinetDto = {
       earned: null,
     },
   ],
-  fridge: [{ slot: 0, itemType: 'TROPHY', itemKey: 'OVERALL' }],
+  showcase: [{ slot: 0, achievementKey: 'first-blood' }],
 }
 
 let wrapper: Awaited<ReturnType<typeof mountSuspended>> | null = null
@@ -64,17 +64,17 @@ describe('TrophyCabinet', () => {
     expect(wrapper.text()).toContain('First Blood')
     // Locked badges are rendered greyed.
     expect(wrapper.html()).toContain('opacity-40')
-    // The owner gets the fridge-arrange control.
-    expect(wrapper.text()).toContain('Arrange fridge')
+    // The owner gets the showcase-edit control.
+    expect(wrapper.text()).toContain('Edit showcase')
   })
 
-  it('enters fridge edit mode on the owner control', async () => {
+  it('enters showcase edit mode on the owner control', async () => {
     await clearCache()
     wrapper = await mountSuspended(TrophyCabinet, { props: { userId: 'u1' } })
     await vi.waitFor(() => expect(wrapper!.text()).toContain('Grand Champion'))
     const arrange = wrapper!
       .findAll('button')
-      .find((b: { text: () => string; trigger: (e: string) => Promise<void> }) => b.text().includes('Arrange fridge'))
+      .find((b: { text: () => string; trigger: (e: string) => Promise<void> }) => b.text().includes('Edit showcase'))
     await arrange!.trigger('click')
     expect(wrapper.text()).toContain('Done')
   })

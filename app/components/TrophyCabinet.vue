@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import type { AchievementDto, CompetitionAwardType, FridgePinInput, TrophyDto } from '#shared/types/achievements'
-import { FRIDGE_SLOT_COUNT } from '#shared/types/achievements'
+import type { AchievementDto, CompetitionAwardType, ShowcasePinInput, TrophyDto } from '#shared/types/achievements'
+import { SHOWCASE_SLOT_COUNT } from '#shared/types/achievements'
 
 const props = defineProps<{ userId: string }>()
 const { t } = useI18n()
 
 const { data: cabinet, isLoading } = useCabinet(() => props.userId)
-const fridge = useFridge()
+const showcase = useShowcase()
 
 const TROPHY_ICON: Record<CompetitionAwardType, string> = {
   OVERALL: 'pi pi-trophy',
@@ -79,32 +79,32 @@ const badges = computed(() =>
 )
 const isOwner = computed(() => cabinet.value?.isOwner ?? false)
 
-// Everything the owner may pin: earned trophies + earned badges.
-const pinnable = computed(() => [...trophies.value, ...badges.value.filter((b) => !b.locked)])
-const byKey = computed(() => new Map(pinnable.value.map((d) => [`${d.itemType}:${d.itemKey}`, d])))
-const fridgeItems = computed(() =>
-  (cabinet.value?.fridge ?? [])
-    .map((f) => byKey.value.get(`${f.itemType}:${f.itemKey}`))
+// The showcase holds earned achievements only; a Display's itemKey is the key.
+const pinnable = computed(() => badges.value.filter((b) => !b.locked))
+const byKey = computed(() => new Map(pinnable.value.map((d) => [d.itemKey, d])))
+const showcaseItems = computed(() =>
+  (cabinet.value?.showcase ?? [])
+    .map((s) => byKey.value.get(s.achievementKey))
     .filter((d): d is Display => !!d),
 )
 
 const editing = ref(false)
-const selected = ref<FridgePinInput[]>([])
-const slotsFull = computed(() => selected.value.length >= FRIDGE_SLOT_COUNT)
+const selected = ref<ShowcasePinInput[]>([])
+const slotsFull = computed(() => selected.value.length >= SHOWCASE_SLOT_COUNT)
 function isPinned(d: Display) {
-  return selected.value.some((s) => s.itemType === d.itemType && s.itemKey === d.itemKey)
+  return selected.value.some((s) => s.achievementKey === d.itemKey)
 }
 function togglePin(d: Display) {
-  const i = selected.value.findIndex((s) => s.itemType === d.itemType && s.itemKey === d.itemKey)
+  const i = selected.value.findIndex((s) => s.achievementKey === d.itemKey)
   if (i >= 0) selected.value.splice(i, 1)
-  else if (!slotsFull.value) selected.value.push({ itemType: d.itemType, itemKey: d.itemKey })
+  else if (!slotsFull.value) selected.value.push({ achievementKey: d.itemKey })
 }
 function startEdit() {
-  selected.value = (cabinet.value?.fridge ?? []).map((f) => ({ itemType: f.itemType, itemKey: f.itemKey }))
+  selected.value = (cabinet.value?.showcase ?? []).map((s) => ({ achievementKey: s.achievementKey }))
   editing.value = true
 }
 async function save() {
-  await fridge.mutateAsync(selected.value)
+  await showcase.mutateAsync(selected.value)
   editing.value = false
 }
 </script>
@@ -116,21 +116,21 @@ async function save() {
     <p v-if="isLoading" class="text-sm" style="color: var(--p-text-muted-color)">{{ t('common.loading') }}</p>
 
     <template v-else-if="cabinet">
-      <!-- My fridge: the curated showcase -->
+      <!-- My showcase: the curated set of pinned achievements -->
       <div class="mb-5">
         <div class="flex items-center justify-between mb-2">
           <h3 class="text-sm font-semibold uppercase tracking-wide" style="color: var(--p-text-muted-color)">
-            {{ t('achievements.fridgeTitle') }}
+            {{ t('achievements.showcaseTitle') }}
           </h3>
           <div v-if="isOwner" class="flex items-center gap-2">
             <span v-if="editing" class="text-xs" style="color: var(--p-text-muted-color)">
-              {{ selected.length }}/{{ FRIDGE_SLOT_COUNT }}
+              {{ selected.length }}/{{ SHOWCASE_SLOT_COUNT }}
             </span>
             <Button
               v-if="!editing"
               size="small"
               severity="secondary"
-              :label="t('achievements.editFridge')"
+              :label="t('achievements.editShowcase')"
               icon="pi pi-pencil"
               @click="startEdit"
             />
@@ -139,17 +139,17 @@ async function save() {
               size="small"
               :label="t('achievements.doneEditing')"
               icon="pi pi-check"
-              :loading="fridge.isPending.value"
+              :loading="showcase.isPending.value"
               @click="save"
             />
           </div>
         </div>
 
-        <!-- Edit mode: pick from everything earned -->
+        <!-- Edit mode: pick from every earned achievement -->
         <div v-if="editing" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
           <CabinetTile
             v-for="d in pinnable"
-            :key="`${d.itemType}:${d.itemKey}`"
+            :key="d.itemKey"
             v-bind="d"
             editable
             :pinned="isPinned(d)"
@@ -162,11 +162,11 @@ async function save() {
         </div>
 
         <!-- Read mode: the pinned showcase -->
-        <div v-else-if="fridgeItems.length > 0" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          <CabinetTile v-for="d in fridgeItems" :key="`${d.itemType}:${d.itemKey}`" v-bind="d" />
+        <div v-else-if="showcaseItems.length > 0" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <CabinetTile v-for="d in showcaseItems" :key="d.itemKey" v-bind="d" />
         </div>
         <p v-else class="text-sm" style="color: var(--p-text-muted-color)">
-          {{ isOwner ? t('achievements.fridgeEmptyOwn') : t('achievements.fridgeEmpty') }}
+          {{ isOwner ? t('achievements.showcaseEmptyOwn') : t('achievements.showcaseEmpty') }}
         </p>
       </div>
 

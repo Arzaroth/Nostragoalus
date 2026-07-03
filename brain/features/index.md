@@ -28,7 +28,7 @@ early on). Back to the root map: [../BRAIN.md](../BRAIN.md).
 | [PWA](pwa.md) | Installable app + install/download/reload UX | v2.1.0 | `PwaBanner.vue`, `pwa-status.client.ts` |
 | [Image storage](image-storage.md) | Pluggable fs/s3 backend; avatars + chat blobs out of Postgres | v2.0.0 | `server/utils/storage/*`, `media:migrate-blobs` |
 | [Changelog](changelog.md) | In-app release history (`/about`) + "What's new" badge, rendered in the active locale | core | `CHANGELOG.md`, `i18n/changelogs/*`, `useChangelog.ts` |
-| [Achievements](achievements.md) | Trophy cabinet + "my fridge": 5 competition-end trophies, ~20 milestone badges, curated per-competition showcase | Unreleased | `competition_award`, `user_achievement`, `fridge_pin`; `server/utils/{awards,achievements}/*` |
+| [Achievements](achievements.md) | Trophy cabinet + "my showcase": 5 competition-end trophies, ~20 milestone badges, curated per-competition achievements showcase | Unreleased | `competition_award`, `user_achievement`, `showcase_pin`; `server/utils/{awards,achievements}/*` |
 | [Roadmap](roadmap.md) | Public `/roadmap` (planned/in-progress/shipped) + community suggestions users submit and upvote; admin triage | unreleased | `roadmap_item`, `roadmap_vote`; `server/utils/roadmap/*`, `useRoadmap.ts`, `roadmap.vue` |
 | [Easter eggs](easter-eggs.md) | Konami "My Little Prono" skins, pony reactions, Klingon locale | hidden | `app/utils/skins.ts`, `public/skins/*`, `ng-skin` cookie |
 

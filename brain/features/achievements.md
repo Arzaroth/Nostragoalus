@@ -1,4 +1,4 @@
-# Achievements, trophy cabinet and "my fridge"
+# Achievements, trophy cabinet and "my showcase"
 
 Two kinds of recognition hang off the [core loop](predictions-and-scoring.md):
 
@@ -8,8 +8,9 @@ Two kinds of recognition hang off the [core loop](predictions-and-scoring.md):
   catalog, graded bronze/silver/gold.
 
 Each user has a **trophy cabinet** (everything they can earn, lit or locked) and a
-**fridge** - the curated subset they pin to show off, per competition. Both live on
-the profile page `/[competition]/users/[id]`.
+**showcase** - a curated set of up to three earned achievements they pin to show
+off, per competition. Trophies still render in the cabinet but are not pinnable.
+Both live on the profile page `/[competition]/users/[id]`.
 
 ## The five trophies
 
@@ -62,16 +63,17 @@ is not batch-evaluated: it is granted from the better-auth user-update hook
 `grantAchievement` (idempotent, notifies once). Kept out of the public docs like the
 rest of the [easter eggs](easter-eggs.md); the copy is deliberately cryptic.
 
-## Cabinet and fridge
+## Cabinet and showcase
 
 - Read: `GET /api/users/[id]/cabinet?competition=` -> `getCabinet`
   (`server/utils/achievements/cabinet.ts`) returns a `CabinetDto` (trophies,
-  achievements with earned/locked status, fridge, isOwner). It mirrors the profile
+  achievements with earned/locked status, showcase, isOwner). It mirrors the profile
   privacy gate (private profiles 404 unless owner/admin/league mate). A hidden badge
   surfaces only once earned, so a locked secret is never revealed.
-- Write: `PUT /api/fridge` -> `setFridge` replaces the owner's fridge with an ordered
-  set of pins (max `FRIDGE_SLOT_COUNT` = 6, no duplicates, only earned items).
-- Client: `useCabinet` / `useFridge` composables, `TrophyCabinet.vue` +
+- Write: `PUT /api/showcase` -> `setShowcase` replaces the owner's showcase with an
+  ordered set of pins (max `SHOWCASE_SLOT_COUNT` = 3, no duplicates, achievements
+  only, each one earned). Trophies cannot be pinned.
+- Client: `useCabinet` / `useShowcase` composables, `TrophyCabinet.vue` +
   `CabinetTile.vue`, embedded on the profile page (competition scope only).
 
 ## Notifications
@@ -84,11 +86,11 @@ own cabinet (`cabinetPath`).
 
 ## Sources
 
-- `db/app-schema.ts` (`competition_award`, `user_achievement`, `fridge_pin`,
+- `db/app-schema.ts` (`competition_award`, `user_achievement`, `showcase_pin`,
   `competition.featuredTeamCode`)
 - `server/utils/awards/service.ts`, `server/utils/achievements/{catalog,service,cabinet}.ts`
 - `server/tasks/matches/finalize.ts` (the award + evaluate + notify hook)
-- `server/api/users/[id]/cabinet.get.ts`, `server/api/fridge/index.put.ts`
-- `app/composables/use{Cabinet,Fridge}.ts`, `app/components/{TrophyCabinet,CabinetTile}.vue`
+- `server/api/users/[id]/cabinet.get.ts`, `server/api/showcase/index.put.ts`
+- `app/composables/use{Cabinet,Showcase}.ts`, `app/components/{TrophyCabinet,CabinetTile}.vue`
 - `shared/types/achievements.ts`, i18n `achievements.*` in all five locales
 - Notifications: `shared/types/notifications.ts`, `server/utils/notifications/events.ts`

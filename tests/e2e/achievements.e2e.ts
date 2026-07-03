@@ -3,7 +3,7 @@ import { dismissOnboarding, freshUser, signUp } from './helpers/auth'
 import {
   cleanup,
   closeDb,
-  getFridgePins,
+  getShowcasePins,
   getUserIdByEmail,
   seedAchievement,
   seedCompetitionWithMatch,
@@ -20,7 +20,7 @@ test.afterAll(async () => {
   await closeDb()
 })
 
-test('the trophy cabinet shows earned items and the owner can pin one to the fridge', async ({ page }) => {
+test('the trophy cabinet shows earned items and the owner can pin one to the showcase', async ({ page }) => {
   const user = freshUser()
   await signUp(page, user)
   const userId = await getUserIdByEmail(user.email)
@@ -39,24 +39,24 @@ test('the trophy cabinet shows earned items and the owner can pin one to the fri
   await expect(page.getByText('Grand Champion')).toBeVisible()
   await expect(page.getByText('First Blood')).toBeVisible()
 
-  // Owner sees the empty-fridge prompt and, once hydrated, the arrange control.
-  await expect(page.getByText('Pin your proudest trophies and badges here.')).toBeVisible()
+  // Owner sees the empty-showcase prompt and, once hydrated, the edit control.
+  await expect(page.getByText('Show off up to 3 of your achievements here.')).toBeVisible()
 
   // A fresh account's one-time league onboarding modal can float in over the
   // page (no close button / no Escape) and intercept clicks; the sign-up dismiss
   // can race a straight-after navigation, so clear it here before interacting.
   await dismissOnboarding(page)
 
-  const arrange = page.getByRole('button', { name: 'Arrange fridge' })
+  const arrange = page.getByRole('button', { name: 'Edit showcase' })
   await expect(arrange).toBeVisible()
   await arrange.click()
 
-  // Pin the first earned item and save.
-  const pin = page.getByRole('button', { name: 'Pin to fridge' }).first()
+  // Pin the first earned achievement and save.
+  const pin = page.getByRole('button', { name: 'Add to showcase' }).first()
   await expect(pin).toBeVisible()
   await pin.click()
   await page.getByRole('button', { name: 'Done' }).click()
 
-  // The pin persisted to the fridge.
-  await expect.poll(() => getFridgePins(userId, fixture.competitionId), { timeout: 8_000 }).toHaveLength(1)
+  // The pin persisted to the showcase.
+  await expect.poll(() => getShowcasePins(userId, fixture.competitionId), { timeout: 8_000 }).toHaveLength(1)
 })
