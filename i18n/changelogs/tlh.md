@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.13.1] - 2026-07-04
+
 ### tI'pu'
 - **multi-view scrollbar ghojmoHbe'law'**: DaH qIp HaSta 'ay' footer Daq polHa'; vaj HaSta naQ buy'moH nav, footer teqHa'.
 - **multi-view qun tetlh tuqoDDaq ratlh**: DaH Hoch cell qun tetlh cell qoDDaq vIHtaH, cell nav je tetChoHbe'; 'ej Hoch cell taghpu'Daq 'anglu', wIvbogh cell neH Hutlhbe'.
