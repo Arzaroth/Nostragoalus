@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/vue-query'
 import type { Serialized } from '#shared/types/serialized'
 import type { BotPersonaParam } from '#shared/types/bot'
-import type { BotChampion, BotMatchRow, BotSummary } from '../../server/utils/bot/service'
+import type { BotChampion, BotMatchRow, BotSubject, BotSummary } from '../../server/utils/bot/service'
 
 // Lowercase on the wire; the server echoes the effective method back after
 // the population gate (a 'mode' request can come back as MEAN).
@@ -37,6 +37,7 @@ export interface BotPredictionsPayload {
   league: { id: string; name: string } | null
   champion: BotChampion | null
   summary: BotSummary
+  subject: BotSubject | null
   admin: boolean
   method: 'MODE' | 'MEAN'
   modeAvailable: boolean

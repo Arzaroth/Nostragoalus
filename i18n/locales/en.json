@@ -599,6 +599,7 @@
     "evilTwin": "Evil Twin",
     "evilTwinNote": "Their picks with every score flipped; a draw is its own twin.",
     "twinWouldRank": "would rank #{rank}",
+    "twinVs": "vs {name}: #{rank} · {points} pts",
     "persona": {
       "consensus": "Crowd Bot",
       "evilTwin": "Your Evil Twin",

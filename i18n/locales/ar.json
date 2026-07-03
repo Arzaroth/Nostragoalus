@@ -722,6 +722,7 @@
     "evilTwin": "التوأم الشرير",
     "evilTwinNote": "توقّعاته مع عكس كل نتيجة؛ التعادل توأم نفسه.",
     "twinWouldRank": "سيحتل المركز #{rank}",
+    "twinVs": "مقابل {name}: #{rank} · {points} نقطة",
     "persona": {
       "consensus": "روبوت الجمهور",
       "evilTwin": "توأمك الشرير",

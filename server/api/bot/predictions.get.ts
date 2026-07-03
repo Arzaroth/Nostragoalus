@@ -68,6 +68,7 @@ export default defineEventHandler(async (event) => {
     league: league ? { id: league.id, name: league.name } : null,
     champion: overview.champion,
     summary: overview.summary,
+    subject: overview.subject,
     admin,
     method: overview.method,
     modeAvailable: overview.modeAvailable,

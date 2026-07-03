@@ -595,6 +595,7 @@
     "evilTwin": "ฝาแฝดปีศาจ",
     "evilTwinNote": "คำทายของเขาที่สลับสกอร์ทุกแมตช์ ผลเสมอคือฝาแฝดของตัวเอง",
     "twinWouldRank": "จะอยู่อันดับ #{rank}",
+    "twinVs": "เทียบกับ {name}: อันดับ #{rank} · {points} แต้ม",
     "persona": {
       "consensus": "บอทมหาชน",
       "evilTwin": "ฝาแฝดปีศาจของคุณ",

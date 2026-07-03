@@ -595,6 +595,7 @@
     "evilTwin": "Jumeau maléfique",
     "evilTwinNote": "Ses pronos avec chaque score inversé ; un nul est son propre jumeau.",
     "twinWouldRank": "serait #{rank}",
+    "twinVs": "contre {name} : #{rank} · {points} pts",
     "persona": {
       "consensus": "Bot consensus",
       "evilTwin": "Votre jumeau maléfique",

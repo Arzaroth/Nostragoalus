@@ -603,6 +603,10 @@ describe('getBotOverview - EVIL_TWIN (per user)', () => {
     })
     // The twin keeps my own champion (not the crowd's, not the rarest).
     expect(overview.champion?.teamCode).toBe('BRA')
+    // The subject row is my own real standing, for a profile to compare against:
+    // I picked 2-1 and missed, so 0 points, while my twin's swap nailed it.
+    expect(overview.subject).toMatchObject({ totalPoints: 0 })
+    expect(overview.summary.totalPoints).toBeGreaterThan(0)
     await client.close()
   })
 
