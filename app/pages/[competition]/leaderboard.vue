@@ -78,12 +78,20 @@ const methodOptions = computed(() => [
   { label: t('bot.methodMode'), value: 'mode' as const },
   { label: t('bot.methodMean'), value: 'mean' as const },
 ])
+function setMethod(value: 'mode' | 'mean') {
+  botMethod.value = value
+}
 // Only the crowd bot (consensus) has a MODE/MEAN choice; below the population
 // threshold only MEAN is meaningful, so the choice hides and the server forces
-// MEAN. Mirror that in the control.
-const modeAvailable = computed(() => consensusBot.value?.modeAvailable ?? false)
+// MEAN. Default to available while the row loads so switching method (which
+// refetches) doesn't blink the control away.
+const modeAvailable = computed(() => consensusBot.value?.modeAvailable ?? true)
+// Only force MEAN once we actually know the mode is unavailable (data loaded) -
+// gating on the loaded row keeps a method switch from resetting itself mid-fetch.
 watchEffect(() => {
-  if (consensusOn.value && !modeAvailable.value && botMethod.value === 'mode') botMethod.value = 'mean'
+  if (consensusOn.value && consensusBot.value && !consensusBot.value.modeAvailable && botMethod.value === 'mode') {
+    botMethod.value = 'mean'
+  }
 })
 
 type DisplayRow = LeaderboardRow & {
@@ -171,12 +179,18 @@ const hasLive = computed(() => displayRows.value.some((r) => r.livePoints))
               <div v-if="consensusOn" class="px-3 pt-2 pb-2">
                 <div v-if="modeAvailable" class="flex rounded-md overflow-hidden border" style="border-color: var(--p-content-border-color)">
                   <button
-                    v-for="o in methodOptions"
+                    v-for="(o, i) in methodOptions"
                     :key="o.value"
                     type="button"
                     class="flex-1 py-1 text-xs font-medium transition"
-                    :style="botMethod === o.value ? 'background: var(--p-primary-color); color: #fff' : 'color: var(--p-text-muted-color)'"
-                    @click="botMethod = o.value"
+                    :class="{ 'border-s': i > 0 }"
+                    :style="[
+                      { textAlign: 'center', borderColor: 'var(--p-content-border-color)' },
+                      botMethod === o.value
+                        ? { background: 'var(--p-primary-color)', color: '#fff' }
+                        : { color: 'var(--p-text-muted-color)' },
+                    ]"
+                    @click.stop="setMethod(o.value)"
                   >{{ o.label }}</button>
                 </div>
                 <span v-else class="text-xs" style="color: var(--p-text-muted-color)">{{ t('bot.modeDisabled') }}</span>
