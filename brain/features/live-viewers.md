@@ -17,9 +17,10 @@ live/count gate).
 - **Counting** lives in `server/utils/live/viewers.ts` - a pure, in-process
   module (under the [98% gate](../architecture/testing.md)): `Map<matchId,
   Set<socket>>` rooms plus a reverse `Map<socket, Set<matchId>>` so a fresh
-  report diffs against the previous one. `setViewing` / `removeViewer` return the
-  matchIds whose count changed; `viewerCount` / `viewersOf` read it. It never
-  sends - the hub does.
+  report diffs against the previous one, and a `Map<socket, identity>` recording
+  the viewer identity each socket de-dupes on. `setViewing` / `removeViewer`
+  return the matchIds whose count changed; `viewerCount` / `viewersOf` read it.
+  It never sends - the hub does.
 - **A dedicated `viewing` frame, not `subscribe`.** A socket on the detail page
   sends `{ type: 'viewing', matchId }` (`app/composables/useMatchPresence.ts`).
   This is deliberately separate from the `subscribe` score frame that
@@ -27,10 +28,13 @@ live/count gate).
   visible match for score patches, so counting `subscribe` would make every list
   browser a "viewer" of every match. Only the detail page sends `viewing`, so the
   count means "people actually on this match".
-- **De-dupe by socket.** One socket counts once however many times it reports
-  (re-sends on reconnect are no-ops). Distinct tabs count separately - this is
-  socket-level, unlike the user-level ref-counting in
-  [presence](../architecture/realtime.md).
+- **De-dupe by viewer.** Room membership is per-socket (each socket needs the
+  fan-out), but the *count* de-dupes on viewer identity: `setViewing` is passed
+  the socket's `userId`, so a logged-in user's multiple tabs on one match count
+  once (like the user-level ref-counting in
+  [presence](../architecture/realtime.md)). Guests have no `userId`, so they fall
+  back to their socket and each guest tab counts separately. Re-sends on reconnect
+  are still no-ops.
 - **Fan-out.** `server/utils/live/hub.ts` `syncMatchViewers` (on a `viewing`
   frame) and `dropMatchViewer` (on disconnect) push `{ type: 'viewers:update',
   matchId, count }` to everyone in that match's room. On disconnect the socket

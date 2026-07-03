@@ -55,10 +55,11 @@ function broadcastViewerCounts(changedMatchIds: readonly string[]): void {
 }
 
 // A socket reported the match it is viewing (the detail page's `viewing` frame).
-// Counts it into that match's room (de-duped by socket) and pushes the new
-// "N watching now" to that room. An empty list clears its membership.
+// Counts it into that match's room (de-duped by user, so a user's other tabs
+// don't inflate it) and pushes the new "N watching now" to that room. An empty
+// list clears its membership.
 export function syncMatchViewers(sub: LiveSubscriber, matchIds: Iterable<string>): void {
-  broadcastViewerCounts(setViewing(sub, matchIds))
+  broadcastViewerCounts(setViewing(sub, matchIds, sub.userId))
 }
 
 // A socket disconnected: drop it from every viewer room and tell the others.
