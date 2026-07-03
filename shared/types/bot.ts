@@ -32,6 +32,10 @@ export type BotPersonaParam = 'consensus' | 'evil-twin' | 'equalizer'
 
 export const BOT_PERSONA_PARAMS: readonly BotPersonaParam[] = ['consensus', 'evil-twin', 'equalizer']
 
+// The crowd-derived bots shown as leaderboard ghosts and on the /bot page. The
+// evil twin is per-user and lives on profile pages, not here.
+export const LEADERBOARD_BOT_PARAMS: readonly BotPersonaParam[] = ['consensus', 'equalizer']
+
 const PARAM_TO_PERSONA: Record<BotPersonaParam, BotPersona> = {
   consensus: 'CONSENSUS',
   'evil-twin': 'EVIL_TWIN',

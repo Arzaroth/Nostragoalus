@@ -65,10 +65,15 @@ feature/architecture doc that implements it.
   returns empty with no signed-in viewer rather than inverting the crowd. "The
   equalizer" is the football term for the tying goal, so it calls a draw every
   match - no champion, ignores the MODE gate.
-- **Each persona is its own ghost id and toggle.** Distinct `botUserId(persona)`
-  values let all three coexist as independent leaderboard rows (real users still
-  win exact ties); consensus keeps `'__bot__'` for backward-compatible links. See
-  [features/crowd-bot.md](features/crowd-bot.md).
+- **Each persona is its own ghost id.** Distinct `botUserId(persona)` values let
+  the crowd bots coexist as independent leaderboard rows (real users still win
+  exact ties); consensus keeps `'__bot__'` for backward-compatible links.
+- **Crowd bots on the leaderboard, the evil twin on profiles.** The per-user evil
+  twin belongs to a player, so it lives on their profile page (an "Evil Twin"
+  toggle that swaps their picks, guarded by the same profile visibility), not as
+  a leaderboard toggle - that also decluttered the header. The two crowd bots
+  (consensus, equalizer) collapsed from a row of toggles into a single "Bots"
+  popover (`LEADERBOARD_BOT_PARAMS`). See [features/crowd-bot.md](features/crowd-bot.md).
 
 ## External data
 

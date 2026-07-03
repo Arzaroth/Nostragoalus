@@ -591,6 +591,10 @@
     "methodMean": "botlh",
     "modeDisabled": "noH puS - wIv motlh Qagh, vaj botlh 'ang.",
     "meanOf": "{total} vo' motlh",
+    "showBots": "qoqmey",
+    "evilTwin": "veqlargh qoq",
+    "evilTwinNote": "noHDaj Hoch DoH wIv. rap: rap.",
+    "twinWouldRank": "patlh #{rank}",
     "persona": {
       "consensus": "ghom qoq",
       "evilTwin": "veqlargh qoqlIj",

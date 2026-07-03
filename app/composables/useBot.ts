@@ -100,3 +100,18 @@ export function useBotPredictions(
       }),
   })
 }
+
+// A specific player's evil twin (their own picks swapped) for their profile
+// page. `competition` is a slug, or 'global' - the twin has no global identity,
+// so the caller only enables it in a single-competition view.
+export function useUserEvilTwin(userId: Ref<string>, competition: Ref<string | null>, enabled: Ref<boolean>) {
+  return useQuery({
+    queryKey: ['evil-twin', userId, competition],
+    enabled,
+    queryFn: ({ signal }) =>
+      $fetch<BotPredictionsPayload>('/api/bot/predictions', {
+        query: { persona: 'evil-twin', user: userId.value, competition: competition.value ?? undefined },
+        signal,
+      }),
+  })
+}

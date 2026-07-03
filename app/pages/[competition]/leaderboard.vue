@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useQueryClient } from '@tanstack/vue-query'
-import { BOT_PERSONA_META, BOT_PERSONA_PARAMS, personaUsesMethod, type BotPersonaParam } from '#shared/types/bot'
+import { BOT_PERSONA_META, LEADERBOARD_BOT_PARAMS, type BotPersonaParam } from '#shared/types/bot'
 const { t } = useI18n()
 useHead({ title: t('leaderboard.title') })
 const slug = useSelectedCompetition()
@@ -51,40 +51,37 @@ const scopeOptions = computed(() => [
   { label: t('leaderboard.global'), value: 'global' as const },
 ])
 
-// The ghosts follow the board's scope - competition-wide or league members
-// only - but have no global identity (joker rounds, finals and champion picks
-// are competition-scoped), so they disappear in the global view. Each persona
-// is an independent, toggleable ghost row.
-// The evil twin swaps your OWN picks, so it only offers itself to a signed-in
-// viewer; the crowd bots are for everyone.
-const botPersonas = computed(() =>
-  meId.value ? BOT_PERSONA_PARAMS : BOT_PERSONA_PARAMS.filter((p) => p !== 'evil-twin'),
-)
+// Crowd-derived ghosts (consensus, equalizer): display-only rows at their
+// would-be rank, enabled from one "Bots" popover. They follow the board scope
+// but have no global identity (jokers/finals/champion are per-competition), so
+// they hide in the global view. The evil twin is per-user and lives on profile
+// pages, not here.
+const botPersonas = LEADERBOARD_BOT_PARAMS
 const enabledPersonas = useBotPersonas()
 const botMethod = useBotMethod()
+const botMenu = ref()
 function togglePersona(persona: BotPersonaParam, on: boolean) {
   enabledPersonas.value = on
     ? [...enabledPersonas.value.filter((p) => p !== persona), persona]
     : enabledPersonas.value.filter((p) => p !== persona)
 }
 const consensusOn = computed(() => !isGlobal.value && enabledPersonas.value.includes('consensus'))
-const evilOn = computed(() => !isGlobal.value && !!meId.value && enabledPersonas.value.includes('evil-twin'))
 const equalizerOn = computed(() => !isGlobal.value && enabledPersonas.value.includes('equalizer'))
 const { data: consensusBot } = useBotRow('consensus', consensusOn, botMethod, scopedLeagueId)
-const { data: evilBot } = useBotRow('evil-twin', evilOn, botMethod, scopedLeagueId)
 const { data: equalizerBot } = useBotRow('equalizer', equalizerOn, botMethod, scopedLeagueId)
+// Count of enabled crowd bots, for the trigger's badge.
+const activeBotCount = computed(() => [consensusOn.value, equalizerOn.value].filter(Boolean).length)
 
 const methodOptions = computed(() => [
   { label: t('bot.methodMode'), value: 'mode' },
   { label: t('bot.methodMean'), value: 'mean' },
 ])
-// The method only shapes the consensus-derived ghosts (consensus, evil twin);
-// below the population threshold only MEAN is meaningful, so the toggle hides.
-const methodInUse = computed(() => !isGlobal.value && enabledPersonas.value.some(personaUsesMethod))
-const modeAvailable = computed(() => consensusBot.value?.modeAvailable ?? evilBot.value?.modeAvailable ?? false)
-// The server enforces the population gate; mirror it in the control.
+// Only the crowd bot (consensus) has a MODE/MEAN choice; below the population
+// threshold only MEAN is meaningful, so the choice hides and the server forces
+// MEAN. Mirror that in the control.
+const modeAvailable = computed(() => consensusBot.value?.modeAvailable ?? false)
 watchEffect(() => {
-  if (methodInUse.value && !modeAvailable.value && botMethod.value === 'mode') botMethod.value = 'mean'
+  if (consensusOn.value && !modeAvailable.value && botMethod.value === 'mode') botMethod.value = 'mean'
 })
 
 type DisplayRow = LeaderboardRow & {
@@ -96,7 +93,6 @@ type DisplayRow = LeaderboardRow & {
 const ghostRows = computed<DisplayRow[]>(() => {
   const sources = [
     { persona: 'consensus' as const, on: consensusOn.value, payload: consensusBot.value },
-    { persona: 'evil-twin' as const, on: evilOn.value, payload: evilBot.value },
     { persona: 'equalizer' as const, on: equalizerOn.value, payload: equalizerBot.value },
   ]
   return sources
@@ -145,23 +141,32 @@ const hasLive = computed(() => displayRows.value.some((r) => r.livePoints))
       </div>
       <div class="flex items-center gap-2 flex-wrap">
         <template v-if="!isGlobal">
-          <ToggleButton
-            v-for="p in botPersonas"
-            :key="p"
-            v-tooltip.top="t(BOT_PERSONA_META[p].blurbKey)"
-            :model-value="enabledPersonas.includes(p)"
-            :on-label="`${BOT_PERSONA_META[p].icon} ${t(BOT_PERSONA_META[p].nameKey)}`"
-            :off-label="`${BOT_PERSONA_META[p].icon} ${t(BOT_PERSONA_META[p].nameKey)}`"
-            size="small"
-            @update:model-value="(on: boolean) => togglePersona(p, on)"
-          />
-          <SelectButton v-if="methodInUse && modeAvailable" v-model="botMethod" :options="methodOptions" option-label="label" option-value="value" :allow-empty="false" size="small" />
-          <i
-            v-if="methodInUse && !modeAvailable"
-            v-tooltip.top="t('bot.modeDisabled')"
-            class="pi pi-info-circle cursor-help"
-            style="color: var(--p-text-muted-color)"
-          />
+          <button
+            type="button"
+            class="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition hover:bg-black/5 dark:hover:bg-white/10"
+            :style="`border-color: var(--p-content-border-color); background: var(--p-content-background); color: ${activeBotCount ? 'var(--p-primary-color)' : 'var(--p-text-color)'}`"
+            @click="(e) => botMenu.toggle(e)"
+          >
+            <span>🤖</span>{{ t('bot.showBots') }}
+            <span v-if="activeBotCount" class="text-[10px] font-bold px-1.5 rounded-full" style="color: #fff; background: var(--p-primary-color)">{{ activeBotCount }}</span>
+            <i class="pi pi-chevron-down text-xs opacity-60" />
+          </button>
+          <Popover ref="botMenu">
+            <div class="flex flex-col w-56 -m-1 py-1">
+              <button type="button" class="px-3 py-2 text-sm text-start flex items-center gap-2 transition hover:bg-black/5 dark:hover:bg-white/10" @click="togglePersona('consensus', !consensusOn)">
+                <i class="pi" :class="consensusOn ? 'pi-check-square' : 'pi-stop'" :style="consensusOn ? 'color: var(--p-primary-color)' : 'opacity:0.4'" />
+                <span class="flex-1">🤖 {{ t('bot.persona.consensus') }}</span>
+              </button>
+              <div v-if="consensusOn" class="px-3 pb-2 ps-9">
+                <SelectButton v-if="modeAvailable" v-model="botMethod" :options="methodOptions" option-label="label" option-value="value" :allow-empty="false" size="small" />
+                <span v-else class="text-xs" style="color: var(--p-text-muted-color)">{{ t('bot.modeDisabled') }}</span>
+              </div>
+              <button type="button" class="px-3 py-2 text-sm text-start flex items-center gap-2 transition hover:bg-black/5 dark:hover:bg-white/10" @click="togglePersona('equalizer', !equalizerOn)">
+                <i class="pi" :class="equalizerOn ? 'pi-check-square' : 'pi-stop'" :style="equalizerOn ? 'color: var(--p-primary-color)' : 'opacity:0.4'" />
+                <span class="flex-1">⚖️ {{ t('bot.persona.equalizer') }}</span>
+              </button>
+            </div>
+          </Popover>
         </template>
         <SelectButton v-model="scope" :options="scopeOptions" option-label="label" option-value="value" :allow-empty="false" size="small" />
       </div>

@@ -1,9 +1,11 @@
+import { eq } from 'drizzle-orm'
 import { db } from '../../../db'
+import { user } from '../../../db/schema'
 import { botPersonaParam, botUserId, parseBotPersona, type ConsensusMethod } from '../../../shared/types/bot'
 import { getBotOverviewCached } from '../../utils/bot/service'
 import { getCompetitionById, resolveCompetition } from '../../utils/competitions/store'
 import { getSessionUser, isAdmin, requireUser } from '../../utils/auth-guards'
-import { resolveLeagueView, type LeagueRow } from '../../utils/leagues/service'
+import { canViewProfile, resolveLeagueView, type LeagueRow } from '../../utils/leagues/service'
 import { toHttpError } from '../../utils/http'
 
 export default defineEventHandler(async (event) => {
@@ -13,9 +15,22 @@ export default defineEventHandler(async (event) => {
   // Admins also see the consensus for matches that haven't kicked off yet;
   // everyone else gets the same kickoff privacy rule as user predictions.
   const admin = await isAdmin(event)
-  // The evil twin is the signed-in viewer's own picks swapped; without a viewer
-  // it has nothing to derive from and returns empty.
+  // The evil twin is one player's picks swapped: the ?user target on a profile
+  // page, else the signed-in viewer's own. Without any target it returns empty.
   const viewer = persona === 'EVIL_TWIN' ? await getSessionUser(event) : null
+  let twinUserId = viewer?.id
+  if (persona === 'EVIL_TWIN' && query.user) {
+    const wanted = String(query.user)
+    // Same private-profile guard as /api/users/[id]/predictions: a private
+    // player's twin is visible only to league mates, admins, or themselves.
+    const [target] = await db.select({ profilePrivate: user.profilePrivate }).from(user).where(eq(user.id, wanted)).limit(1)
+    if (!target) throw createError({ statusCode: 404, statusMessage: 'user not found' })
+    if (target.profilePrivate) {
+      const allowed = viewer && (await canViewProfile(db, { viewerId: viewer.id, targetUserId: wanted, isAdmin: admin }))
+      if (!allowed) throw createError({ statusCode: 404, statusMessage: 'user not found' })
+    }
+    twinUserId = wanted
+  }
 
   // Same league guard as /api/leaderboard: members, public leagues, or admins.
   let league: LeagueRow | null = null
@@ -40,7 +55,7 @@ export default defineEventHandler(async (event) => {
   const overview = await getBotOverviewCached(db, competition.id, {
     persona,
     method,
-    userId: viewer?.id,
+    userId: twinUserId,
     leagueId: league?.id,
     includeUpcoming: admin,
     includePrivate,
@@ -82,10 +97,19 @@ defineRouteMeta({
         "in": "query",
         "name": "persona",
         "required": false,
-        "description": "Which bot: 'consensus' (default, the crowd), 'evil-twin' (your own picks swapped; needs sign-in) or 'equalizer' (always a draw).",
+        "description": "Which bot: 'consensus' (default, the crowd), 'evil-twin' (a player's picks swapped) or 'equalizer' (always a draw).",
         "schema": {
           "type": "string",
           "enum": ["consensus", "evil-twin", "equalizer"]
+        }
+      },
+      {
+        "in": "query",
+        "name": "user",
+        "required": false,
+        "description": "For 'evil-twin': the player whose picks to swap (a profile view). Defaults to the signed-in viewer. Private profiles follow the usual visibility rules.",
+        "schema": {
+          "type": "string"
         }
       },
       {
