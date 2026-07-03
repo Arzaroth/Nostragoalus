@@ -44,8 +44,8 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   competition-end trophies (best overall, best of the group stage, best of the knockouts, most exact
   scorelines, and best predictor of a featured team, ties shared) alongside a catalog of achievement
   badges earned as you play (first exact score, hot streaks, beating the crowd and more, graded
-  bronze/silver/gold) - and a **fridge** to pin your proudest few and show them off; a new trophy or
-  badge alerts you over the bell and web push
+  bronze/silver/gold) - and a **showcase** of up to three you pin beside your name in the rankings;
+  a new trophy or badge alerts you over the bell and web push
 - **Private leagues**: spin up a league for friends, family or the office with per-league rankings
   and crowd totals; invite by join code or a shareable **invite link** (optional expiry and a cap on
   uses); private-profile members stay hidden from the board. A kicked-off match's view gains a

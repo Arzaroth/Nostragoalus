@@ -586,15 +586,17 @@ effort buckets; order within a bucket is not priority.
     UEFA normalizers to a shared `MatchLineups` type), a thin
     `GET /api/matches/[id]/lineups` over a service, a `useMatchLineups`
     vue-query composable, and a `MatchLineups.vue` section on the match page.
-- [ ] **League rewards + "My fridge"**: league owner attaches real-world
+- [x] **League rewards + showcase**: league owner/moderator attaches real-world
       stakes to the season ("most exact scores -> bottle of Saint-Emilion").
-  - Criteria from a **curated, auto-computed list only** (league winner,
-    most exact scores, best matchday, most jokers converted, ...); reward is
-    free text. No custom criteria - everything resolves from data.
-  - Awarded automatically at competition end; the app tracks honor, humans
-    hand over the bottle (no in-app transactions, it's a social contract).
-  - **"My fridge"** page: every reward you've won across leagues, because
-    arguably you're winning wine bottles.
+  - Criteria from a **curated, auto-computed list only** (best overall, best in
+    the group stage, best in the knockouts, most exact scores, best predictor of
+    the featured team); reward is a label + optional photo + note + link. No
+    custom criteria - everything resolves from data.
+  - Live leader per criterion, settled at competition end; the app tracks honor,
+    humans hand over the bottle (no in-app transactions, it's a social contract).
+  - The cabinet's **"prizes you hold"** strip shows every reward you currently
+    lead across your leagues. (The curated pins became the **showcase**: up to
+    three achievements shown beside your name in the rankings.)
 - [ ] **Prune inactive users** (admin):
   - Users with predictions are load-bearing (historical rankings, crowd
     totals, rarity): **anonymize, never delete** - keep picks/points under

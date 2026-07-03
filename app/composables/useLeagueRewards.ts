@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import type { LeagueRewardInput, RewardStandingDto } from '#shared/types/rewards'
+import type { LeagueRewardDto, LeagueRewardInput, RewardStandingDto } from '#shared/types/rewards'
 
 // A league's prize standings (each criterion's prize + current leader + youHold),
 // plus the owner/moderator config mutation.
@@ -15,7 +15,7 @@ export function useLeagueRewards(leagueId: MaybeRefOrGetter<string>, enabled: Ma
 
   const save = useMutation({
     mutationFn: (items: LeagueRewardInput[]) =>
-      $fetch<{ ok: boolean }>(`/api/leagues/${id.value}/rewards`, { method: 'PUT', body: { items } }),
+      $fetch<{ ok: boolean; rewards: LeagueRewardDto[] }>(`/api/leagues/${id.value}/rewards`, { method: 'PUT', body: { items } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leagueRewards'] })
       queryClient.invalidateQueries({ queryKey: ['myRewards'] })

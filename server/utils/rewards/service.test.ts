@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { AppDatabase } from '../../../db/types'
-import { leagueReward, match, prediction, round } from '../../../db/schema'
+import { leagueMember, leagueReward, match, prediction, round, user } from '../../../db/schema'
 import type { BaseTier } from '../scoring/tiers'
 import { createTestDb } from '../../../tests/db'
 import { addLeagueMember, makeLeague, makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
@@ -100,11 +100,37 @@ describe('getRewardStandings', () => {
     const competitionId = await seedCompetition(db)
     const owner = await makeUser(db, 'owner')
     const leagueId = await makeLeague(db, { competitionId, ownerId: owner })
-    // Remove the owner membership to make it memberless.
+    // makeLeague adds the owner as a member; drop it so the league is truly
+    // memberless and the no-members short-circuit (winners = []) is exercised.
+    await db.delete(leagueMember).where(eq(leagueMember.leagueId, leagueId))
     const standings = await getRewardStandings(db, leagueId, null)
-    // Owner is a member (makeLeague adds them), so winners may exist; assert shape.
     expect(standings).toHaveLength(5)
+    expect(standings.every((s) => s.winners.length === 0)).toBe(true)
     expect(standings.every((s) => s.youHold === false)).toBe(true) // viewer null
+  })
+
+  it('hides a private leader from a non-member and admin-hidden from everyone', async () => {
+    const { leagueId, alice, bob } = await scenario() // alice leads OVERALL among members
+    const outsider = await makeUser(db, 'outsider')
+
+    // A fellow member still sees the private leader's name.
+    await db.update(user).set({ profilePrivate: true }).where(eq(user.id, alice))
+    const forMember = await getRewardStandings(db, leagueId, bob)
+    expect(forMember.find((s) => s.type === 'OVERALL')?.winners[0]?.displayName).not.toBe('')
+
+    // A non-member (public-league browse) gets the leader masked, not the name.
+    const forOutsider = await getRewardStandings(db, leagueId, outsider)
+    const overall = forOutsider.find((s) => s.type === 'OVERALL')
+    expect(overall?.winners.length).toBe(1) // the leader still occupies the slot
+    expect(overall?.winners[0]?.displayName).toBe('')
+
+    // Admin-hidden is concealed even from a fellow member.
+    await db.update(user).set({ profilePrivate: false, hiddenFromLeaderboard: true }).where(eq(user.id, alice))
+    const bobView = await getRewardStandings(db, leagueId, bob)
+    expect(bobView.find((s) => s.type === 'OVERALL')?.winners[0]?.displayName).toBe('')
+    // The leader sees their own name regardless.
+    const selfView = await getRewardStandings(db, leagueId, alice)
+    expect(selfView.find((s) => s.type === 'OVERALL')?.winners[0]?.displayName).not.toBe('')
   })
 
   it('throws for an unknown league', async () => {

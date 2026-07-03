@@ -77,12 +77,23 @@ export async function getRewardStandings(
   const winners = memberIds.length > 0 ? await computeCriteriaWinners(db, lg.competitionId, { leagueId, memberIds }) : []
   const rewards = new Map((await listLeagueRewards(db, leagueId)).map((r) => [r.type, r]))
 
+  // A leader's name is only revealed to viewers the leaderboard would show it to:
+  // admin-hidden members stay hidden from everyone but themselves, and private
+  // profiles stay hidden from non-members. Concealed leaders keep their slot (so
+  // the criterion still reads as "led") but surface with an empty displayName.
+  const viewerIsMember = viewerId !== null && memberIds.includes(viewerId)
   const winnerIds = [...new Set(winners.map((w) => w.userId))]
-  const names = new Map(
+  const visible = new Map(
     winnerIds.length > 0
-      ? (await db.select({ id: user.id, name: user.name }).from(user).where(inArray(user.id, winnerIds))).map(
-          (u) => [u.id, u.name] as const,
-        )
+      ? (
+          await db
+            .select({ id: user.id, name: user.name, hidden: user.hiddenFromLeaderboard, isPrivate: user.profilePrivate })
+            .from(user)
+            .where(inArray(user.id, winnerIds))
+        ).map((u) => {
+          const shown = u.id === viewerId || (!u.hidden && (!u.isPrivate || viewerIsMember))
+          return [u.id, shown ? u.name : ''] as const
+        })
       : [],
   )
 
@@ -91,7 +102,7 @@ export async function getRewardStandings(
     return {
       type,
       reward: rewards.get(type) ?? null,
-      winners: typeWinners.map((w) => ({ userId: w.userId, displayName: names.get(w.userId) ?? '' })),
+      winners: typeWinners.map((w) => ({ userId: w.userId, displayName: visible.get(w.userId) ?? '' })),
       value: typeWinners[0]?.value ?? 0,
       teamCode: typeWinners[0]?.teamCode ?? null,
       youHold: viewerId !== null && typeWinners.some((w) => w.userId === viewerId),

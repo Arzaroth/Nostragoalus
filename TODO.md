@@ -1835,6 +1835,10 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
       `response-schemas.json` - the regen was deferred to avoid drifting the ~20 other
       endpoint examples against the shared (non-canonical-seed) dev DB. Pick it up on
       the next controlled regen against a freshly-seeded stack.
+- [ ] **Re-sample the leaderboard response schema**: `GET /api/leaderboard` (already
+      in TARGETS + `response-schemas.json`) gained a `showcase: ShowcaseIconDto[]`
+      field per row from the rewards/showcase feature, so its sampled example is now
+      stale. Regen against a freshly-seeded stack in the same pass as the cabinet one.
 
 ## Tournament Wrapped (deferred from the feature pass)
 
@@ -1855,3 +1859,33 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
       been verified in a real browser.
 - [ ] Wrapped "not ready" teaser could show a countdown to the final instead of
       static copy.
+
+## League rewards + showcase (deferred from the feature pass)
+
+- [ ] `getMyRewards` / `getRewardStandings` N+1: the cabinet strip recomputes
+      each league's full criteria winners once per membership, and every criteria
+      pass runs a full `getLeaderboard` (limit 100_000) plus per-phase/per-team
+      aggregates. A viewer in many leagues fans out O(leagues) of the heaviest
+      query on one `/api/me/rewards` hit. Replace with a scoped "does the viewer
+      lead any criterion" query, or cache per (league, competition) invalidated
+      on rescore.
+- [ ] `GET /api/media/reward/[key]` is public + `cache-control: immutable`, so a
+      private league's prize photo is served to anonymous callers and shared
+      caches (the key is an unguessable sha256, so no enumeration). Consider
+      gating it behind `requireUser` with `private` caching like the avatar
+      endpoint if private-league prize images should stay members-only.
+- [ ] Served media has no `X-Content-Type-Options: nosniff` and reward/avatar
+      uploads are not magic-byte validated (content-type is trusted from the
+      data: URL prefix, allowlisted to raster types). Defense-in-depth: add
+      nosniff on the media endpoints and a signature check in the shared image
+      helper.
+- [ ] Storage duplication: `storeRewardFromDataUrl` ~ `storeAvatarFromDataUrl`,
+      `rewardKey` ~ `avatarKey`, and `media/reward/[key]` ~ `media/avatar/[key]`
+      (same KEY_RE, cache/etag headers). Extract a shared
+      `storeImageFromDataUrl(driver, {keyFn, allow, maxBytes})`, a
+      `contentAddressedKey(prefix, bytes, ct)`, and a media-serving helper so a
+      third media kind doesn't clone a third copy.
+- [ ] Migration `0053_tidy_snowbird` drops `fridge_pin` with `CASCADE` and no
+      data migration into `showcase_pin`; existing pins are lost on deploy.
+      Accepted for the rename (re-pinning is trivial and showcase is
+      achievements-only), noted for prod awareness.

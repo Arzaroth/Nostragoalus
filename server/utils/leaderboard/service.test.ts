@@ -308,4 +308,35 @@ describe('getLeaderboard showcase', () => {
     expect((await getLeaderboard(db, { competitionId: null }))[0]?.showcase).toEqual([])
     await client.close()
   })
+
+  it('returns up to three pins in slot order and skips a retired-key pin', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const roundId = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: new Date('2026-06-11T16:00:00Z'), status: 'FINISHED', fullTimeHome: 1, fullTimeAway: 0 })
+    const alice = await makeUser(db, 'alice', 'Alice')
+    const p = await makePrediction(db, { userId: alice, matchId: m, roundId, home: 1, away: 0, lockedAt: new Date() })
+    await score(db, p, 3, 'EXACT')
+    await db.insert(userAchievement).values([
+      { userId: alice, competitionId, key: 'sharpshooter', tier: 'SILVER', progress: 5 },
+      { userId: alice, competitionId, key: 'hot-streak', tier: 'GOLD', progress: 8 },
+      { userId: alice, competitionId, key: 'contrarian', tier: 'BRONZE', progress: 5 },
+    ])
+    // Inserted out of slot order; the board must return them slot-ascending.
+    await db.insert(showcasePin).values([
+      { userId: alice, competitionId, achievementKey: 'hot-streak', slot: 2 },
+      { userId: alice, competitionId, achievementKey: 'sharpshooter', slot: 0 },
+      { userId: alice, competitionId, achievementKey: 'contrarian', slot: 1 },
+      // A pin whose achievement no longer exists in the catalog: skipped, not rendered.
+      { userId: alice, competitionId, achievementKey: '__retired__', slot: 3 },
+    ])
+
+    const board = await getLeaderboard(db, { competitionId })
+    expect(board.find((r) => r.userId === alice)?.showcase).toEqual([
+      { key: 'sharpshooter', category: 'MILESTONE', tier: 'SILVER' },
+      { key: 'contrarian', category: 'CROWD', tier: 'BRONZE' },
+      { key: 'hot-streak', category: 'STREAK', tier: 'GOLD' },
+    ])
+    await client.close()
+  })
 })

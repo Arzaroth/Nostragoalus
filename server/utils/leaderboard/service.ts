@@ -212,8 +212,12 @@ export async function getLeaderboard(
       .where(eq(showcasePin.competitionId, opts.competitionId))
       .orderBy(showcasePin.slot)
     for (const p of pins) {
+      // Skip a pin whose achievement was retired from the catalog since it was
+      // set - its icon category can't be resolved, so it can't be rendered.
+      const category = CATEGORY_BY_KEY.get(p.key)
+      if (!category) continue
       const arr = showcaseByUser.get(p.userId) ?? []
-      arr.push({ key: p.key, category: CATEGORY_BY_KEY.get(p.key) ?? 'MILESTONE', tier: p.tier })
+      arr.push({ key: p.key, category, tier: p.tier })
       showcaseByUser.set(p.userId, arr)
     }
   }
