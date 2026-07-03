@@ -13,6 +13,10 @@ const meId = computed(() => session.value?.data?.user?.id)
 
 const confirmLeave = ref(false)
 const isMember = computed(() => !!detail.data.value?.league.role)
+const canManage = computed(() => {
+  const role = detail.data.value?.league.role
+  return role === 'OWNER' || role === 'MODERATOR'
+})
 
 function medal(rank: number) {
   return rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null
@@ -71,9 +75,10 @@ function medal(rank: number) {
           </div>
           <UserAvatar :image="r.image" :user-id="r.userId" />
           <div class="flex-1 min-w-0">
-            <div class="font-semibold truncate">
-              {{ r.displayName }}
-              <span v-if="r.userId === meId" class="text-xs font-normal ms-1" style="color: var(--p-primary-color)">{{ t('leaderboard.you') }}</span>
+            <div class="font-semibold truncate flex items-center gap-2">
+              <span class="truncate">{{ r.displayName }}</span>
+              <ShowcaseIcons :items="r.showcase" />
+              <span v-if="r.userId === meId" class="text-xs font-normal" style="color: var(--p-primary-color)">{{ t('leaderboard.you') }}</span>
             </div>
             <div class="text-xs" style="color: var(--p-text-muted-color)">
               {{ r.exactCount }} {{ t('leaderboard.exact') }} · {{ r.outcomeCount }} {{ t('leaderboard.correct') }}<template v-if="r.championPoints"> · 👑 +{{ r.championPoints }}</template>
@@ -95,6 +100,8 @@ function medal(rank: number) {
           <i class="pi pi-info-circle" style="font-size: 0.7rem; opacity: 0.6" />
         </div>
       </div>
+
+      <LeagueRewards v-if="leagueId" :league-id="leagueId" :can-manage="canManage" />
 
       <ChatPanel v-if="isMember && leagueId" :league-id="leagueId" class="mt-6" />
 

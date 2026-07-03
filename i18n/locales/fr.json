@@ -46,8 +46,26 @@
       "underdog-whisperer": { "name": "L'ami des outsiders", "desc": "Votre pronostic champion très improbable a fini par payer." },
       "treble": { "name": "Triplé", "desc": "Détenu trois trophées dans un même tournoi." },
       "podium": { "name": "Sur le podium", "desc": "Terminé dans le top 3 général." },
-      "the-magic-word": { "name": "Le mot magique", "desc": "Vous avez dit le mot magique. Un peu de couleur n'a jamais fait de mal." }
+      "the-magic-word": { "name": "Le mot magique", "desc": "Vous avez dit le mot magique. Un peu de couleur n'a jamais fait de mal." },
+      "the-collector": { "name": "Le Collectionneur", "desc": "Il faut tous les attraper. Jusqu'au dernier." }
     }
+  },
+  "reward": {
+    "title": "Récompenses",
+    "edit": "Modifier les récompenses",
+    "save": "Enregistrer les récompenses",
+    "held": "Récompenses que vous détenez",
+    "none": "Aucune récompense définie pour cette ligue pour l'instant.",
+    "noneOwner": "Aucune récompense pour l'instant - définissez-en une pour chaque gagnant.",
+    "currentLeader": "En tête actuellement",
+    "noLeader": "Pas encore de leader",
+    "you": "c'est vous !",
+    "details": "Détails",
+    "label": "Récompense (ex. un magnum de rosé)",
+    "note": "Note (facultatif)",
+    "link": "Lien (facultatif)",
+    "image": "Ajouter une image",
+    "clearImage": "Retirer"
   },
   "verify": {
     "title": "Vérifier les scores",
@@ -199,6 +217,7 @@
     "signIn": "Connexion",
     "signOut": "Déconnexion",
     "leagues": "Ligues",
+    "myAchievements": "Mes succès",
     "whatsNew": "Quoi de neuf",
     "whatsNewUnread": "Du nouveau depuis votre dernière visite"
   },

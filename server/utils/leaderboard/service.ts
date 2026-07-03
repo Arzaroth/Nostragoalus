@@ -1,6 +1,21 @@
-import { and, eq, isNotNull, ne, or, sql } from 'drizzle-orm'
+import { and, eq, isNotNull, isNull, ne, or, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
-import { bestScorerPick, championPick, leagueMember, match, prediction, user } from '../../../db/schema'
+import {
+  bestScorerPick,
+  championPick,
+  leagueMember,
+  match,
+  prediction,
+  showcasePin,
+  user,
+  userAchievement,
+} from '../../../db/schema'
+import type { ShowcaseIconDto } from '#shared/types/achievements'
+import { ALL_ACHIEVEMENTS } from '../achievements/catalog'
+
+// Showcased achievements store only the key; the icon needs the category. Resolve
+// it once from the code catalog so the board never round-trips per row.
+const CATEGORY_BY_KEY = new Map(ALL_ACHIEVEMENTS.map((a) => [a.key, a.category]))
 
 export interface LeaderboardRow {
   rank: number
@@ -19,6 +34,8 @@ export interface LeaderboardRow {
   exactCount: number
   outcomeCount: number
   gdCount: number
+  // Up to three achievements the user pinned to their showcase (icon + tint).
+  showcase: ShowcaseIconDto[]
 }
 
 // Prediction aggregates are scoped to the competition via the match join.
@@ -176,6 +193,31 @@ export async function getLeaderboard(
     !!opts.competitionId,
   )
 
+  // Up to three showcased achievements per user, icon-ready {key, category, tier}.
+  // Competition/league scope only (showcase_pin.competitionId is notNull); the
+  // tier join tolerates a global badge (null competitionId) sharing the key.
+  const showcaseByUser = new Map<string, ShowcaseIconDto[]>()
+  if (opts.competitionId) {
+    const pins = await db
+      .select({ userId: showcasePin.userId, key: showcasePin.achievementKey, tier: userAchievement.tier })
+      .from(showcasePin)
+      .leftJoin(
+        userAchievement,
+        and(
+          eq(userAchievement.userId, showcasePin.userId),
+          eq(userAchievement.key, showcasePin.achievementKey),
+          or(eq(userAchievement.competitionId, opts.competitionId), isNull(userAchievement.competitionId)),
+        ),
+      )
+      .where(eq(showcasePin.competitionId, opts.competitionId))
+      .orderBy(showcasePin.slot)
+    for (const p of pins) {
+      const arr = showcaseByUser.get(p.userId) ?? []
+      arr.push({ key: p.key, category: CATEGORY_BY_KEY.get(p.key) ?? 'MILESTONE', tier: p.tier })
+      showcaseByUser.set(p.userId, arr)
+    }
+  }
+
   // Bonus points are merged in JS (a SQL join would fan out the per-prediction
   // rows). totalPoints / exactCount / ... are the SCORED (confirmed) figures the
   // UI shows; livePoints is the provisional delta from in-progress matches shown
@@ -195,6 +237,7 @@ export async function getLeaderboard(
       bestScorerPoints,
       bestScorerName: bestScorerBonus.name.get(r.userId) ?? null,
       bestScorerCode: bestScorerBonus.code.get(r.userId) ?? null,
+      showcase: showcaseByUser.get(r.userId) ?? [],
       livePoints,
       totalPoints, // scored only - the live delta is added for ranking, not display
       rankTotal: totalPoints + livePoints,
@@ -245,5 +288,6 @@ export async function getLeaderboard(
     exactCount: r.exactCount,
     outcomeCount: r.outcomeCount,
     gdCount: r.gdCount,
+    showcase: r.showcase,
   }))
 }

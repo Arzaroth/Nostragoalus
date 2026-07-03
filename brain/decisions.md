@@ -209,3 +209,15 @@ feature/architecture doc that implements it.
   high-water mark. Streaks are made deterministic by tiebreaking equal kickoffs on
   match id, and night-owl reads the UTC hour explicitly, so both are stable regardless
   of DB row order or server timezone.
+
+## League rewards
+
+- **Prizes are per-league, and their winners are derived live at read time, not
+  stored.** The contest is a league's own (best among its members, not the global
+  trophy). `computeCriteriaWinners` is the global trophy computation parameterized
+  by `{ leagueId, memberIds }`; `getRewardStandings` runs it on demand, so a league
+  sees who is currently leading each prize and it settles at competition end - no
+  finalize hook, no league-award table. See [features/rewards.md](features/rewards.md).
+- **Reward images reuse the avatar storage seam** (content-addressed
+  `reward/<sha>.<ext>`, served at `/api/media/reward/[key]`); the route resolves the
+  uploaded data URL to a key so the reward service stays storage-free and testable.

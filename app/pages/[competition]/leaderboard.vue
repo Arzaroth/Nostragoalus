@@ -77,6 +77,7 @@ const displayRows = computed<DisplayRow[]>(() => {
     livePoints: 0,
     movement: null,
     isBot: true,
+    showcase: [],
   })
 })
 
@@ -152,6 +153,7 @@ const hasLive = computed(() => displayRows.value.some((r) => r.livePoints))
               <img :src="flagUrl(r.bestScorerCode) || ''" class="w-4 h-4 rounded object-cover" alt="" >
               <span class="absolute -top-2 -left-1.5 text-[10px]" style="transform: rotate(-12deg)"><GoldenBoot /></span>
             </span>
+            <ShowcaseIcons :items="r.showcase" />
             <span v-if="r.userId === meId" class="text-xs font-normal" style="color: var(--p-primary-color)">{{ t('leaderboard.you') }}</span>
           </div>
           <div class="text-xs" style="color: var(--p-text-muted-color)">
