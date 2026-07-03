@@ -5,6 +5,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+- **Multi-view no longer forces a scrollbar**: the match grid now reserves room for the footer, so the page fills the viewport exactly instead of pushing the footer just off-screen.
+- **Multi-view play-by-play stays inside its tile**: each cell's play-by-play now scrolls within the tile instead of stretching the cell and the whole page, and it shows in every started tile, not just the focused one.
+- **Achievement and trophy notifications open your cabinet**: clicking an unlocked-achievement or trophy notification now jumps to your trophy cabinet, even for competition-agnostic badges, instead of dropping you on the home page.
+- **Chat league switcher**: the dock's league switcher no longer lists leagues without chat, and shows just the league icon so its label can't crowd the match/league toggle in the narrow dock (full names stay in the dropdown). Enabling chat on a league now makes it appear in the switcher without a page reload.
+- **Roadmap freshness**: returning to the roadmap (public board or admin editor) now refetches, so a suggestion added elsewhere shows up without a manual refresh.
+
 ## [2.13.0] - 2026-07-02
 
 ### Changed
