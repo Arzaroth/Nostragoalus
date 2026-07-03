@@ -28,15 +28,14 @@ test.afterAll(async () => {
   await closeDb()
 })
 
-// The feature's main path through the real UI: toggle the two new bots onto the
-// leaderboard, and confirm the equalizer's draw and - the key per-user bit - that
-// Your Evil Twin swaps the signed-in player's OWN pick.
-test('bot personas: your evil twin swaps your pick; the equalizer draws', async ({ page }) => {
+// The feature's main path through the real UI: enable the crowd bots from the
+// leaderboard "Bots" popover, then flip a player's profile to their Evil Twin and
+// confirm it swaps that player's own pick.
+test('bot personas: Bots popover ghosts + profile evil twin swaps a pick', async ({ page }) => {
   const user = freshUser()
   await signUp(page, user)
 
-  // Seed MY own pick (2-0) as the signed-in viewer, then finish the match 0-2:
-  // my evil twin's swap (0-2) is exactly the result, so it out-scores me.
+  // Seed MY own pick (2-0), then finish the match 0-2 and finalize.
   const userId = await getUserIdByEmail(user.email)
   await seedUserPrediction(userId, fixture.matchId, 2, 0)
   await finishMatch(fixture.matchId, 0, 2)
@@ -51,36 +50,28 @@ test('bot personas: your evil twin swaps your pick; the equalizer draws', async 
   expect(finalize.ok(), 'finalize run-task').toBeTruthy()
   await adminApi.dispose()
 
+  // Leaderboard: open the Bots popover (retry - an SSR trigger can be clicked
+  // before hydration) and enable both crowd bots.
   await page.goto(`/${fixture.slug}/leaderboard`)
-
-  // Turn each new bot ghost on. An SSR toggle can be clicked before hydration
-  // wires it, so retry - but only click while the row is still absent, so a
-  // late-appearing row is never toggled back off.
-  for (const name of ['Evil Twin', 'The Equalizer']) {
-    const btn = page.getByRole('button', { name: new RegExp(name) })
-    const row = page.locator('a.ng-card', { hasText: name })
-    await expect(async () => {
-      if (!(await row.isVisible())) await btn.click()
-      await expect(row).toBeVisible({ timeout: 2_000 })
-    }).toPass({ timeout: 20_000 })
-  }
-
-  // My evil twin swapped my 2-0 into 0-2 - the actual result - so it scored.
-  const twinRow = page.locator('a.ng-card', { hasText: 'Evil Twin' })
-  const twinPoints = await twinRow.locator('span.text-xl.font-bold.tabular-nums').first().innerText()
-  expect(Number(twinPoints), 'evil twin scored the swap').toBeGreaterThan(0)
-
-  // Open the Equalizer from its ghost row: it drew (1-1).
-  await page.locator('a.ng-card', { hasText: 'The Equalizer' }).click()
-  await expect(page).toHaveURL(/persona=equalizer/)
-  await expect(page.getByRole('heading', { name: 'The Equalizer' })).toBeVisible({ timeout: 10_000 })
-  await expect(page.locator('.tabular-nums.text-lg').first()).toHaveText(/1\s*[–-]\s*1/)
-
-  // Switch to Your Evil Twin: it shows MY 2-0 pick swapped to 0-2.
+  const botsBtn = page.getByRole('button', { name: /Bots/ }).first()
   await expect(async () => {
-    await page.getByRole('button', { name: /Evil Twin/ }).click()
-    await expect(page).toHaveURL(/persona=evil-twin/, { timeout: 2_000 })
-  }).toPass({ timeout: 15_000 })
-  await expect(page.getByRole('heading', { name: 'Your Evil Twin' })).toBeVisible({ timeout: 10_000 })
+    await botsBtn.click()
+    await expect(page.getByRole('button', { name: /Crowd Bot/ })).toBeVisible({ timeout: 1_500 })
+  }).toPass({ timeout: 20_000 })
+  await page.getByRole('button', { name: /Crowd Bot/ }).click()
+  await page.getByRole('button', { name: /The Equalizer/ }).click()
+  await page.keyboard.press('Escape')
+  await expect(page.locator('a.ng-card', { hasText: 'Crowd Bot' })).toBeVisible({ timeout: 10_000 })
+  await expect(page.locator('a.ng-card', { hasText: 'The Equalizer' })).toBeVisible({ timeout: 10_000 })
+
+  // Profile: my picks show my 2-0; the Evil Twin toggle swaps it to 0-2.
+  await page.goto(`/${fixture.slug}/users/${userId}`)
+  await expect(page.locator('.tabular-nums.text-lg').first()).toHaveText(/2\s*[–-]\s*0/, { timeout: 10_000 })
+  const twinBtn = page.getByRole('button', { name: /Evil Twin/ })
+  await expect(async () => {
+    // Only click while the twin summary is absent, so a late render is not toggled back off.
+    if (!(await page.getByText(/would rank/i).isVisible().catch(() => false))) await twinBtn.click()
+    await expect(page.getByText(/would rank/i)).toBeVisible({ timeout: 2_000 })
+  }).toPass({ timeout: 20_000 })
   await expect(page.locator('.tabular-nums.text-lg').first()).toHaveText(/0\s*[–-]\s*2/)
 })
