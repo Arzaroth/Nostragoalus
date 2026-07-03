@@ -54,6 +54,23 @@
       "the-collector": { "name": "The Collector", "desc": "Gotta catch 'em all. Every last one." }
     }
   },
+  "reward": {
+    "title": "Prizes",
+    "edit": "Edit prizes",
+    "save": "Save prizes",
+    "held": "Prizes you hold",
+    "none": "No prizes set for this league yet.",
+    "noneOwner": "No prizes yet - set one for each winner.",
+    "currentLeader": "Currently leading",
+    "noLeader": "No leader yet",
+    "you": "that's you!",
+    "details": "Details",
+    "label": "Prize (e.g. a magnum of rosé)",
+    "note": "Note (optional)",
+    "link": "Link (optional)",
+    "image": "Add image",
+    "clearImage": "Remove"
+  },
   "verify": {
     "title": "Verify scores",
     "sub": "Proof that predictions are not edited after kickoff.",
@@ -204,6 +221,7 @@
     "signIn": "Sign in",
     "signOut": "Sign out",
     "leagues": "Leagues",
+    "myAchievements": "My achievements",
     "whatsNew": "What's new",
     "whatsNewUnread": "New since your last visit"
   },

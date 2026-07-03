@@ -189,6 +189,9 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateNavFades))
                   <NuxtLink to="/leagues" class="px-3 py-2 text-sm flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/10" @click="userMenu.hide()">
                     <i class="pi pi-users" />{{ t('leagues.title') }}
                   </NuxtLink>
+                  <NuxtLink v-if="slug" :to="`/${slug}/users/${session.data.user.id}`" class="px-3 py-2 text-sm flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/10" @click="userMenu.hide()">
+                    <i class="pi pi-trophy" />{{ t('nav.myAchievements') }}
+                  </NuxtLink>
                   <NuxtLink to="/preferences" class="px-3 py-2 text-sm flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/10" @click="userMenu.hide()">
                     <i class="pi pi-sliders-h" />{{ t('prefs.title') }}
                   </NuxtLink>

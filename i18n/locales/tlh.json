@@ -46,8 +46,26 @@
       "underdog-whisperer": { "name": "Do'Ha' wInwI'", "desc": "puj wInwI'lI' Qap." },
       "treble": { "name": "wej Qapla'", "desc": "wej Qapla' Daghaj." },
       "podium": { "name": "patlh wej", "desc": "Hoch wej nIvDaq SoH." },
-      "the-magic-word": { "name": "rItlh mu'", "desc": "mu' So' Dajatlh. rItlh mach QIHbe'." }
+      "the-magic-word": { "name": "rItlh mu'", "desc": "mu' So' Dajatlh. rItlh mach QIHbe'." },
+      "the-collector": { "name": "boSwI'", "desc": "Hoch yIboS. wa' yIlonQo'." }
     }
+  },
+  "reward": {
+    "title": "pop",
+    "edit": "pop yIchoH",
+    "save": "pop yIpol",
+    "held": "pop Daghajbogh",
+    "none": "boqvamvaD pop tu'lu'be'.",
+    "noneOwner": "pop tu'lu'be' - Hoch QapwI'vaD wa' yIchel.",
+    "currentLeader": "DaH Dev",
+    "noLeader": "DevwI' tu'lu'be'",
+    "you": "SoH 'oH!",
+    "details": "De'",
+    "label": "pop (ghItlh: HIq'a' wa')",
+    "note": "QIn (raDbe'lu')",
+    "link": "rar (raDbe'lu')",
+    "image": "mIllogh chel",
+    "clearImage": "teq"
   },
   "verify": {
     "title": "Qun tob",
@@ -199,6 +217,7 @@
     "signIn": "yI'el",
     "signOut": "yImej",
     "leagues": "boqmey",
+    "myAchievements": "ta'mey wIj",
     "whatsNew": "chu'bogh",
     "whatsNewUnread": "choH chu'"
   },

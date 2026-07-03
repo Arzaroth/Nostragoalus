@@ -78,6 +78,8 @@ const badges = computed(() =>
     .sort((a, b) => Number(a.locked) - Number(b.locked)),
 )
 const isOwner = computed(() => cabinet.value?.isOwner ?? false)
+// Prizes the viewer currently holds across their leagues (own cabinet only).
+const myRewards = useMyRewards(isOwner)
 
 // The showcase holds earned achievements only; a Display's itemKey is the key.
 const pinnable = computed(() => badges.value.filter((b) => !b.locked))
@@ -116,6 +118,28 @@ async function save() {
     <p v-if="isLoading" class="text-sm" style="color: var(--p-text-muted-color)">{{ t('common.loading') }}</p>
 
     <template v-else-if="cabinet">
+      <!-- Prizes you currently hold across your leagues -->
+      <div v-if="isOwner && (myRewards.data.value?.length ?? 0) > 0" class="mb-5">
+        <h3 class="text-sm font-semibold uppercase tracking-wide mb-2" style="color: var(--p-text-muted-color)">
+          {{ t('reward.held') }}
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div
+            v-for="(r, i) in myRewards.data.value"
+            :key="i"
+            class="rounded-lg border p-2 flex items-center gap-2"
+            style="border-color: var(--p-primary-color)"
+          >
+            <img v-if="r.reward.imageUrl" :src="r.reward.imageUrl" class="w-10 h-10 rounded object-cover shrink-0" alt="" >
+            <i v-else class="pi pi-gift text-xl shrink-0" style="color: var(--p-primary-color)" />
+            <div class="min-w-0">
+              <div class="text-sm font-semibold truncate">{{ r.reward.label }}</div>
+              <div class="text-xs truncate" style="color: var(--p-text-muted-color)">{{ r.leagueName }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- My showcase: the curated set of pinned achievements -->
       <div class="mb-5">
         <div class="flex items-center justify-between mb-2">
