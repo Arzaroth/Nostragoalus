@@ -16,6 +16,9 @@ const { data: items, isPending } = useQuery({
   queryKey: ['admin-roadmap'],
   enabled,
   queryFn: ({ signal }) => $fetch<{ items: AdminRoadmapItem[] }>('/api/admin/roadmap', { signal }).then((r) => r.items),
+  // Suggestions arrive from the public page (a different query key), so reopening
+  // the admin editor always refetches instead of serving the 60s-stale cache.
+  refetchOnMount: 'always',
 })
 // A moderation/status change shifts what the public page shows, so refresh both.
 const invalidate = () => {

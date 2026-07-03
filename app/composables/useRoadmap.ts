@@ -55,6 +55,10 @@ export function useRoadmap() {
   return useQuery({
     queryKey: ['roadmap'],
     queryFn: ({ signal }) => $fetch<{ items: RoadmapItem[] }>('/api/roadmap', { signal }).then((r) => r.items),
+    // The list changes from other users (new suggestions, votes) and admin moves,
+    // so returning to the page always refetches rather than serving the 60s-stale
+    // cache - otherwise a suggestion added elsewhere is invisible until reload.
+    refetchOnMount: 'always',
   })
 }
 
