@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [2.16.1] - 2026-07-04
+
 ### Corrigé
 - **La saisie semi-automatique des mentions partout** : la liste de suggestions de membres apparaît désormais aussi dans les réponses en fil et lors de la modification d'un message, pas seulement dans le champ principal.
 - **Les mentions s'affichent avec le nom dans les aperçus de réponse** : une mention dans un message cité ou auquel on répond affiche maintenant le nom de la personne (par exemple @Sam) au lieu d'un identifiant brut, dans la bannière « en réponse à », l'aperçu du message parent cité et la file de signalements.
