@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.18.1] - 2026-07-05
+
 ### Fixed
 - **Wooden Spoon only counts if you actually played**: the "finished dead last" badge now goes to the last-placed player who predicted at least half the tournament, so someone who gave up after a game or two is treated as a quitter rather than the loser - and no longer steals the badge from the genuine last-placer.
 
