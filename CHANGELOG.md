@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.16.1] - 2026-07-04
+
 ### Fixed
 - **@mention autocomplete everywhere you type**: the member suggestion popup now also appears in thread replies and when editing a message, not just the main composer.
 - **Mentions read as names in reply previews**: a mention inside a replied-to or quoted message now shows the person's name (for example @Sam) instead of a raw id, in the "replying to" banner, the quoted-parent preview and the moderation reports queue.

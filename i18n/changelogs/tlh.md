@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.16.1] - 2026-07-04
+
 ### tI'pu'
 - **Hoch ghItlhmeH mention qawHaq**: DaH thread jang je QIn choHDI' je member qawHaq 'anglu', ghItlh Dev neH ghobe'.
 - **jang HaSta mentionvaD pong per, ID ghobe'**: jangbogh ghap boSbogh QInDaq mention DaH pong pong 'anglu' (mup @Sam), ID Doq ghobe' - "jang" banner, boSbogh QIn, je Sup tlhegh.
