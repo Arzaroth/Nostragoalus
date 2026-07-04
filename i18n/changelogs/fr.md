@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [2.16.3] - 2026-07-05
+
 ### Corrigé
 - **L'onglet Joueurs d'un match affiche tous les buteurs de ses deux équipes** : les listes de buteurs et de passeurs par équipe étaient tirées du classement général des 20 meilleurs de la compétition, si bien qu'une équipe sans buteur dans ce top 20 semblait n'avoir rien marqué, et les buteurs moins prolifiques d'une grande équipe étaient écartés. L'onglet répertorie désormais chaque but et chaque passe décisive inscrits par ses deux équipes.
 
