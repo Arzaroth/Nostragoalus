@@ -80,7 +80,7 @@ Version bump policy: **minor** for a user-facing feature, **patch** for fix-only
 **major** only when a release breaks the deploy/run contract (new required
 service/env var, destructive migration, auth/DB swap) or shifts the product
 identity. The owner runs the actual prod deploy and roadmap update; the release
-task only writes the tag and pushes. Current version: **2.1.0**.
+task only writes the tag and pushes. Current version: **2.16.2**.
 
 The full pre-release docs sweep (README, CHANGELOG, API response schemas,
 about-page tech stack) is encoded in the `release` skill.
@@ -99,6 +99,9 @@ about-page tech stack) is encoded in the `release` skill.
 - `mise run create-api-key` - mint a scoped API key. See [auth.md](architecture/auth.md).
 - `mise run roadmap-seed` / `roadmap-add` - seed/add public roadmap items
   (idempotent). Seed new features as IN_PROGRESS here when starting them.
+- `mise run roadmap-pull` - list community-suggested roadmap items ranked by
+  upvotes (triage the SUGGESTED column onto the roadmap; `--all` includes
+  rejected).
 - `media:migrate-blobs` (admin Background-tasks page) - move image blobs out of
   Postgres. See [features/image-storage.md](features/image-storage.md).
 
@@ -121,7 +124,7 @@ about-page tech stack) is encoded in the `release` skill.
 ## Planning docs (kept current as work happens)
 
 - `CHANGELOG.md` - Keep a Changelog; `[Unreleased]` stays populated as you work.
-  Translated mirrors live in `i18n/changelogs/{fr,th,tlh}.md` - a new entry goes
+  Translated mirrors live in `i18n/changelogs/{fr,th,tlh,ar}.md` - a new entry goes
   in all of them (the changelog check enforces it).
 - `ROADMAP.md` - feature backlog + design decisions (decisions not written down
   are lost). Tick items when they ship with the release version.

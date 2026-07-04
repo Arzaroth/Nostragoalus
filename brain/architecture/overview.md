@@ -5,7 +5,7 @@ keep the test gate green. Read this first, then jump to the specific layer file.
 
 ## What it is
 
-A football score-prediction game (branded **Nostragoalus**, repo dir `mpp`).
+A football score-prediction game (branded **Nostragoalus**, repo dir `nostragoalus`).
 Friends predict match scores, earn points by closeness, ranked **per
 competition**. Multi-competition by design (add a `competition` row, no rebuild);
 first competition is the FIFA World Cup 2026. See

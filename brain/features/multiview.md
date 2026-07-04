@@ -35,8 +35,8 @@ survives a reload.
   [`useLiveMatches`](../architecture/realtime.md) once for the cell matches, so
   scores/clock ride a single `/_ws` subscription and patch the `['matches', slug]`
   cache the tiles read. On `scores:changed` it invalidates the per-cell
-  `useMatchLiveDetail` and `useMatchTimeline` queries (vue-query, no sockets of
-  their own, deduped by match id).
+  `useMatchLiveDetail` queries and the focused cell's `useMatchTimeline`
+  (vue-query, no sockets of their own, deduped by match id).
 - **Per-cell vs focused-cell.** The play-by-play (`useMatchTimeline`) and live
   detail are fetched for every started cell, so each tile shows its own timeline -
   they are plain vue-query fetches, cheap enough to run per cell. Only the

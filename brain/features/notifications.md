@@ -17,10 +17,11 @@ One table, `user_notification`:
   `createNotification` does `onConflictDoNothing` on `(userId, dedupeKey)` when
   the key is not null.
 
-The eight `notification_type` values:
+The ten `notification_type` values:
 
 `LEAGUE_JOIN`, `LEAGUE_ROLE`, `LEAGUE_REMOVED`, `PICK_REMINDER`, `MATCH_RESULT`,
-`CHAMPION_RESULT`, `BEST_SCORER_RESULT`, `CHAT_MENTION`.
+`CHAMPION_RESULT`, `BEST_SCORER_RESULT`, `TROPHY_AWARDED`,
+`ACHIEVEMENT_UNLOCKED`, `CHAT_MENTION`.
 
 (The transient push-only `MATCH_LIVE` and `GOAL` kinds are NOT in this enum or
 the bell - see [web push](web-push.md).)
@@ -61,6 +62,14 @@ directly). Strings are i18n'd in all five locales.
 - `CHAMPION_RESULT` / `BEST_SCORER_RESULT` - to winners at finalize, deduped per
   competition. See [champion pick](champion-pick.md) and [best
   scorer](best-scorer.md).
+- `TROPHY_AWARDED` / `ACHIEVEMENT_UNLOCKED` - competition-end trophies and
+  milestone badges, emitted from the finalize scoring transaction (a badge like
+  the secret unlock can also fire outside finalize). Both deep-link to the
+  recipient's own trophy cabinet (`#cabinet` on their competition profile, via
+  `cabinetPath`), so clicking opens the cabinet. Dedupe
+  `trophy:{competitionId}:{type}` and
+  `achievement:{competitionId|global}:{key}:{tier}`. See
+  [achievements](achievements.md).
 - League activity - `LEAGUE_JOIN` (to owner + mods), `LEAGUE_ROLE`
   (promote/transfer, to the member), `LEAGUE_REMOVED` (kick, to the member). See
   [leagues](leagues.md).
@@ -78,6 +87,7 @@ caps each user to the newest 200.
 ## Sources
 
 - `db/app-schema.ts` (`user_notification`, `notification_type`)
+- `shared/types/notifications.ts` (`NotificationType` / `NotificationData`, `cabinetPath`)
 - `server/utils/notifications/service.ts`, `events.ts`, `reminders.ts`
 - `server/utils/live/hub.ts` (`publishUserNotification`)
 - `server/api/notifications/*`, `app/components/NotificationBell.vue`,

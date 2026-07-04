@@ -10,7 +10,9 @@ reaction set is reused for chat message reactions.
 - The public palette is six reactions: `FIRE`, `GOAL`, `WOW`, `LAUGH`, `SAD`,
   `ANGRY`, rendered as the emoji set (fire, ball, wow, laugh, sad, angry).
 - Rendered by `ReactionBar.vue` via the `ReactionGlyph` component.
-- Live updates flow through `publishLeagueReactionUpdate` on the hub (see
+- A write (`/api/reactions` PUT) publishes the global bar total
+  (`publishReactionUpdate`) and per-league totals (`publishLeagueReactionUpdates`);
+  the hub fans them out to subscribers (see
   [../architecture/realtime.md](../architecture/realtime.md)).
 
 ## Reused by chat
@@ -21,8 +23,9 @@ content is end-to-end encrypted), modelled the same way as match reactions.
 
 ## Secret cosmetic tie-in
 
-When a [My Little Prono skin](easter-eggs.md) is active, `ReactionBar` swaps the
-six emoji for the mane-six pony heads, using a fixed mapping independent of which
+When a [My Little Prono skin](easter-eggs.md) is active, `ReactionGlyph` (which
+the match `ReactionBar` and chat reactions both render through) swaps the six
+emoji for the mane-six pony heads, using a fixed mapping independent of which
 skin is selected:
 
 | Reaction | Pony |
@@ -43,4 +46,6 @@ documented palette is the emoji set; the pony heads are an easter egg (see
 - `db/app-schema.ts` (`match_reaction`, `reaction_emoji` enum)
 - `shared/reactions.ts`
 - `app/components/ReactionBar.vue`, `app/components/ReactionGlyph.vue`
-- `server/utils/live/hub.ts` (`publishLeagueReactionUpdate`)
+- `server/api/reactions/index.put.ts` (write, then publish)
+- `server/utils/live/hub.ts` (`publishReactionUpdate`, `publishLeagueReactionUpdate`),
+  `server/utils/live/league-reactions.ts` (`publishLeagueReactionUpdates`)

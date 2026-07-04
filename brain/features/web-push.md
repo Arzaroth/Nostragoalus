@@ -16,8 +16,8 @@ Seven nullable `push*` boolean columns live on the better-auth `user` table
 | Pick reminders | reminders | on |
 | Match kickoff (`MATCH_LIVE`) | kickoff | on |
 | Live goals (`GOAL`) | goals | on |
-| Match results | results | on |
-| Tournament (champion / best scorer) | tournament | on |
+| Match results | matchResults | on |
+| Tournament (champion / best scorer / trophies / achievements) | tournament | on |
 | League activity | league | off |
 | Chat mentions (`CHAT_MENTION`) | mentions | on |
 

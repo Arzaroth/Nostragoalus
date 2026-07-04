@@ -6,7 +6,7 @@ are unofficial or undocumented endpoints), so the quirks below are load-bearing.
 
 ## Match data: FIFA (default, keyless)
 
-`api.fifa.com/v3` is the default provider. It needs no key.
+`api.fifa.com/api/v3` is the default provider. It needs no key.
 
 - **Season resolution:** via `/seasons`, resolved by hint or date and cached on
   the `competition` row.
@@ -50,9 +50,12 @@ and [../features/best-scorer.md](../features/best-scorer.md).
   `/unique-tournament/{id}/season/{sid}/events/{next|last}/{page}` then
   `/event/{eid}/odds/1/all` (marketId 1 = Full time, 1/X/2). Display is decimal
   only.
-- **BetExplorer** (plain server-rendered HTML) is the backup provider, used for
-  bookmaker averages. Median/consensus does not apply to the single Sofascore
-  feed.
+- **BetExplorer** is a selectable provider (the admin odds switch) but has no
+  server-side fetcher: it ships its 1X2 client-side only, with no plain-HTTP odds
+  endpoint, so the poll skips any competition set to it (`fetchesOdds: false`). A
+  snapshot's `bookmakers` field holds per-book prices when a provider supplies
+  them; Sofascore always leaves it null, so median/consensus over the single feed
+  does not apply.
 
 See [../features/odds.md](../features/odds.md).
 
@@ -87,6 +90,6 @@ provider.
 ## Sources
 
 - `server/utils/providers/**` (FIFA, football-data adapters, `cycle-tls.ts`)
-- `server/utils/odds/providers/{sofascore,betexplorer}.ts`
+- `server/utils/odds/providers/sofascore.ts`, `server/utils/odds/{sync,provider-config}.ts` (odds provider registry)
 - `server/utils/champion/ranking.ts`
 - `server/tasks/**` (`matches:finalize`, `fixtures:refresh`, `scores:poll`, `odds:*`)

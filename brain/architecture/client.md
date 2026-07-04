@@ -39,9 +39,8 @@ The active competition is a **URL path prefix**. See
   session" (redirect) from a failed `getSession()` request (a transport `error`:
   leave the session alone), so a flaky mobile connection cannot eject a signed-in
   user mid-session. Also `app/middleware/competition.global.ts` (validate/redirect
-  the `[competition]`
-  `app/middleware/competition.global.ts` (validate/redirect the `[competition]`
-  slug).
+  the `[competition]` slug, plus legacy-redirect un-prefixed pages like `/matches`
+  to the path-prefixed form).
 
 ## Composables (the data layer)
 
@@ -79,7 +78,7 @@ Rough groups:
 - `app/plugins/**`: `vue-query.ts` (universal), `theme.client.ts`,
   `preferences.client.ts`, `skin.client.ts`, `primevue-services.ts`,
   `pwa-status.client.ts`, `update-check.client.ts`, `tamper-watch.client.ts`,
-  `render-time.server.ts`.
+  `chat-deeplink.client.ts`, `render-time.server.ts`.
 - `app/layouts/`: `default.vue` (header + nav, presence broadcast, competition
   pill, admin badge) and `auth.vue` (no nav).
 

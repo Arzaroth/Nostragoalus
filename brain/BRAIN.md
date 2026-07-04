@@ -4,9 +4,9 @@ The map of the codebase, written so a developer or AI can understand the app
 **without reading the source**. Start here, follow the links, stop when you have
 the answer. Every leaf doc cites the real source files if you need to go deeper.
 
-> Product: **Nostragoalus** (repo dir `mpp`) - a football score-prediction game.
+> Product: **Nostragoalus** (repo dir `nostragoalus`) - a football score-prediction game.
 > Friends predict match scores, earn points by closeness, ranked per competition.
-> Stack snapshot in [stack.md](stack.md); current version is **2.1.0**.
+> Stack snapshot in [stack.md](stack.md); current version is **2.16.2**.
 
 ## How to use this
 

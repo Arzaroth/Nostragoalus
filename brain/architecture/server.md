@@ -9,7 +9,7 @@ typed domain errors. Read [overview.md](overview.md) first for the layering rule
 server/
   api/                      Nitro file-based routes -> server/api/<path>/<name>.<method>.ts
     admin/                  admin-only endpoints (leagues, users, sso, api-keys,
-                            settings, scoring, matches/media, roadmap, cron, run-task)
+                            settings, scoring, matches, odds, roadmap, cron, run-task)
     auth/[...all].ts        better-auth catch-all (auto-wired)
     matches/                match detail: live-detail, timeline, insights, ...
     predictions/            index.put (save), joker.put, crowd.get
@@ -18,8 +18,8 @@ server/
     notifications/          index.get, read.post, delete.post
     push/                   subscribe.post, unsubscribe.post
     champion/, best-scorer/, share/, commitments/, sso/ ...
-  routes/                   non-/api routes: _ws.ts (WebSocket), og/share/[token].get.ts,
-                            verify/ (public ledger page data)
+  routes/                   non-/api routes: _ws.ts (WebSocket), og/{share,wrapped}/[token].get.ts,
+                            docs/ (OpenAPI JSON + Scalar UI)
   middleware/               passkey-guard.ts, skin.ts (run on every request)
   plugins/                  migrate.ts, warm-settings.ts (run at startup)
   tasks/                    Nitro file-based scheduled tasks (media/migrate-blobs.ts, ...)
@@ -74,6 +74,7 @@ Services throw; routes never build status codes by hand. `toHttpError`
 | `LockedError` | 409 | match already kicked off (prediction past lock) |
 | `JokerQuotaError` | 409 | the round's single ×2 joker is already used |
 | `ConflictError` | 409 | generic conflict |
+| `SsoNotReadyError` | 409 | SSO provider not ready to enable (config incomplete/unverified) |
 | `StorageError` | 500 | blob backend failure (message is generic, never leaks the path) |
 
 A unique-violation from Postgres is also mapped to 409 (covers PK races).
@@ -137,16 +138,16 @@ admin Background-tasks page via `server/api/admin/run-task.post.ts`).
 |---|---|---|
 | `scores:poll` | every 2 min (live-gated) | poll live scores, publish changes, fire live push |
 | `fixtures:refresh` | hourly | refresh fixtures from the provider |
-| `predictions:sync` / `matches:finalize` | every 5 min | derive goal events + possession |
+| `matches:finalize` | every 5 min | lock predictions at kickoff, score finished matches |
 | `odds:refresh` | every 30 min (fire-and-forget) | refresh odds snapshots |
-| `notifications:send-reminders` | every 15 min | PICK_REMINDER scheduling |
+| `notifications:pick-reminders` | every 15 min | PICK_REMINDER scheduling |
 | `users:prune-unverified` | daily | drop never-verified signups |
 | `notifications:prune` | daily | retention (read >7d, cap 200) |
-| `predictions:finalize` | manual | idempotent scoring of a finished match |
+| `fixtures:import` / `*:backfill` | manual | one-shot fixture import and odds/rank/badge backfills |
 | `media:migrate-blobs` | manual | move image blobs Postgres -> storage |
 
-Exact cron strings and the full list are in the registry. Finalize is the
-heart of scoring: see [../features/predictions-and-scoring.md](../features/predictions-and-scoring.md).
+Exact cron strings and the full list are in the registry. `matches:finalize` is
+the heart of scoring: see [../features/predictions-and-scoring.md](../features/predictions-and-scoring.md).
 
 ## Sources
 

@@ -34,9 +34,9 @@ phase-attributable); OVERALL uses the full leaderboard so it matches the standin
 
 ## The achievement catalog
 
-Code, not data: `server/utils/achievements/catalog.ts` lists ~20 batch-evaluated
-badges (plus one secret) with their category, scope, grading thresholds and whether
-they are hidden. `user_achievement` only records what a user unlocked. Categories:
+Code, not data: `server/utils/achievements/catalog.ts` lists 19 batch-evaluated
+badges (plus two secret badges) with their category, scope, grading thresholds and
+whether they are hidden. `user_achievement` only records what a user unlocked. Categories:
 milestone (first-blood, sharpshooter, prophet, century, perfect-round), streak
 (hot-streak, on-fire), crowd (contrarian, lone-wolf), joker (joker-hero), behavioural
 (early-bird, night-owl, deadline-dancer, completionist), oracle (champion-oracle,
@@ -63,13 +63,18 @@ night-owl counts the small hours by the UTC hour explicitly (not the DB session 
 Streaks and perfect rounds are folded in JS from the scored rows in kickoff order, with
 equal kickoffs tiebroken by match id so simultaneous fixtures give a stable streak.
 
-### The secret badge
+### The secret badges
 
 `the-magic-word` is hidden and GLOBAL (spans competitions, null `competitionId`). It
 is not batch-evaluated: it is granted from the better-auth user-update hook
 (`lib/auth.ts`) when the konami skin unlock persists (`skinsUnlocked`), via
-`grantAchievement` (idempotent, notifies once). Kept out of the public docs like the
-rest of the [easter eggs](easter-eggs.md); the copy is deliberately cryptic.
+`grantAchievement` (idempotent, notifies once).
+
+`the-collector` is also hidden and GLOBAL, but evaluated rather than event-granted:
+`evaluateAchievements` grants it (idempotent) once a user holds every one of the 19
+non-secret badges (`heldCount === ACHIEVEMENTS.length`). Both are kept out of the
+public docs like the rest of the [easter eggs](easter-eggs.md); the copy is
+deliberately cryptic so the unlock is not dangled as a to-do list.
 
 ## Cabinet and showcase
 
@@ -98,7 +103,7 @@ own cabinet (`cabinetPath`).
   `competition.featuredTeamCode`)
 - `server/utils/awards/service.ts`, `server/utils/achievements/{catalog,service,cabinet,backfill}.ts`
 - `server/tasks/matches/finalize.ts` (the award + evaluate + notify hook),
-  `server/tasks/achievements/backfill.ts` (manual historical backfill, in `tasks/registry.ts`)
+  `server/tasks/achievements/backfill.ts` (manual historical backfill, listed in `server/utils/tasks/registry.ts`)
 - `server/api/users/[id]/cabinet.get.ts`, `server/api/showcase/index.put.ts`
 - `app/composables/use{Cabinet,Showcase}.ts`, `app/components/{TrophyCabinet,CabinetTile}.vue`
 - `shared/types/achievements.ts`, i18n `achievements.*` in all five locales

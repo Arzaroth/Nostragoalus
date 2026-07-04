@@ -42,9 +42,12 @@ the public changelog/roadmap/about.
 
 ## Pony match reactions
 
-When a skin is active, `ReactionBar.vue` swaps the six [match reaction](reactions.md)
-emoji for the mane-six heads (the same `public/skins/<id>.png` assets), with a
-fixed mapping independent of the selected skin: FIRE -> rainbow, GOAL -> applejack,
+When a skin is active, `ReactionGlyph.vue` (the shared per-face component behind
+the match `ReactionBar` and chat message reactions) renders the mane-six heads
+instead of the six [match reaction](reactions.md) emoji (the same
+`public/skins/<id>.png` assets); `MatchReactionsLine.vue`, the compact match-list
+line, carries its own copy of the swap. The mapping is fixed, independent of the
+selected skin: FIRE -> rainbow, GOAL -> applejack,
 WOW -> twilight, LAUGH -> pinkie, SAD -> fluttershy, ANGRY -> rarity. The swap is
 display-only; the stored reaction enum key is unchanged. The public palette
 (fire, goal, wow, laugh, sad, angry glyphs) is what end users normally see.
@@ -60,4 +63,5 @@ strings are kept terse and in-character. It is a real locale file
 
 - `app/utils/skins.ts`, `app/composables/useSkin.ts`, `useKonamiUnlock.ts`
 - `server/middleware/skin.ts`, `lib/auth.ts` (skin additionalFields + update hook)
-- `app/components/ReactionBar.vue`, `public/skins/*`, `i18n/locales/tlh.json`
+- `app/components/ReactionGlyph.vue`, `app/components/MatchReactionsLine.vue`,
+  `public/skins/*`, `i18n/locales/tlh.json`

@@ -54,7 +54,9 @@ Reuses the satori + resvg stack ([share-images.md](share-images.md),
 - `server/utils/share/wrapped-token.ts`: a second stateless HMAC token family
   (user + competition + locale), domain-separated from the prediction token so
   the two can never be swapped.
-- `POST /api/share/wrapped-mint` (auth, 404 until the final is scored) ->
+- `POST /api/share/wrapped-mint` (auth, 404 until the final is decided via the
+  looser `hasDecidedFinal`; the `[token]` PNG route re-runs `getWrapped` and
+  serves the not-ready fallback until the final is `SCORED`) ->
   `GET /og/wrapped/[token]` public PNG (pure template in
   `server/utils/share/wrapped-template.ts`; binary route outside the coverage
   gate, cached 1 day - post-final data is frozen). Both OG routes load their

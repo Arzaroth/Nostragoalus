@@ -9,21 +9,26 @@ off this.
 
 A prediction is a row in the `prediction` table: `userId`, `matchId`, `roundId`,
 `homeGoals` and `awayGoals` (0-99), and `isJoker`. Saving goes through
-`PUT /api/predictions` -> `upsertPrediction(db, ...)`, which runs in a
-transaction and does several things at once:
+`PUT /api/predictions` -> `upsertPrediction(db, ...)`. The service runs one
+transaction that:
 
 - Upserts the prediction (create or overwrite while the match is open).
-- Publishes a crowd update so live subscribers see the consensus move
-  (see [crowd-bot.md](crowd-bot.md) and [../architecture/realtime.md](../architecture/realtime.md)).
 - Clears any outstanding pick reminder for that match
   (see [notifications.md](notifications.md)).
 - Appends to the tamper-evidence ledger when the score actually changed
   (see [tamper-evidence.md](tamper-evidence.md)).
 
+After the save the handler publishes a crowd update so live subscribers see the
+consensus move: the global total, plus a fire-and-forget per-league fan-out
+(see [crowd-bot.md](crowd-bot.md), [leagues.md](leagues.md) and
+[../architecture/realtime.md](../architecture/realtime.md)).
+
 Predictions lock at kickoff. The server enforces the lock (a write after kickoff
-throws `LockedError` -> 409); `lockedAt` records when. The `joker` toggle is a
-separate endpoint and is constrained to one ×2 joker per round
-(`JokerQuotaError` -> 409 when the quota is spent).
+throws `LockedError` -> 409); `lockedAt` records when. The joker toggle is a
+separate endpoint, constrained to one ×2 joker per round by a partial unique
+index. Turning a joker on moves it off the round's current joker match; that move
+is rejected with `LockedError` (409) only when the previous joker match has
+already kicked off.
 
 ## The scoring engine
 
@@ -48,29 +53,45 @@ Scoring is MPP-style and lives in `server/utils/scoring/`
 
 ### Versioned config
 
-Scoring parameters live in the `scoring_config` table, versioned by `version`
-(primary key). The tier tables are jsonb: `baseTiers`, `crowdTiers`,
-`oddsTiers`, `championTiers`, plus `crowdMatchBasis`, `crowdMinDenominator`,
-`oddsAppliesTo`. Admins edit config from the admin Scoring section; existing
-awarded points are not retroactively rewritten by a config change.
+Scoring parameters live in the `scoring_config` table, versioned by a unique
+`version` (the `id` is the primary key). Base points are plain integer columns
+(`ptsExact`/`ptsDiff`/`ptsOutcome`/`ptsMiss`, defaulting to 3/2/1/0); the rarity
+and long-pick tier tables are jsonb (`crowdTiers`, `crowdOutcomeTiers`,
+`oddsTiers`, `championTiers`), alongside `crowdMatchBasis`, `crowdMinDenominator`
+and `oddsAppliesTo`. A row with a null `competitionId` is the default; a row
+scoped to a competition id overrides it for that competition, and `isActive`
+selects the live row per scope. Admins edit config from the admin Scoring
+section; existing awarded points are not retroactively rewritten by a config
+change.
 
 ## Finalizing
 
-Finalize is idempotent and "derive, don't mutate": it recomputes from the stored
-match result rather than mutating prediction rows in place, so it can run again
-safely.
+Finalize is idempotent: it recomputes each finished match's points from the
+stored full-time result, keyed on `resultHash` + config `version`, so a re-run
+with unchanged inputs is a no-op and a rescore after a correction lands the same
+numbers.
 
-- `predictions:finalize` is a manual task (cron `null`, triggered from the admin
-  Background-tasks page or by the scoring flow). It scores on the 90' full-time
-  result, writes `match_score_event` (idempotency anchor with a
-  `match_scoring_state` of `PENDING`/`SCORED`/`VOID`/`STALE`), and awards the
-  champion and best-scorer bonuses in the same transaction.
-- It emits `MATCH_RESULT` notifications (and push) to users who predicted the
-  match, plus `CHAMPION_RESULT` / `BEST_SCORER_RESULT` to the winners.
-- `matches:finalize` (separate, scheduled) pulls per-match detail into
-  `goal_event` rows and `match.possession*`. The stored `goal_event` rows are
-  what champion/best-scorer awards are derived from, so finalize never makes a
-  provider HTTP call.
+A single scheduled task, `matches:finalize` (cron `*/5 * * * *`), runs the whole
+tick. `finalizeMatches(db)` wraps lock/unlock, scoring, champion awards and voids
+in one transaction; the task then syncs per-match detail and awards the
+best-scorer bonus.
+
+- `finalizeMatches` locks due predictions (stamps `lockedAt`), unlocks any that
+  slipped back to the future, then scores every `FINISHED` match on its 90'
+  full-time result via `scoreMatchRow`. A scored match sets `match.scoringState`
+  to `SCORED` (the state enum is `PENDING`/`SCORED`/`VOID`/`STALE`, and lives on
+  the `match` row), stamps `resultHash`/`scoredAtVersion`, and appends an append-
+  only `match_score_event` observation row. Cancelled or long-postponed matches
+  are `VOID`ed and their points cleared.
+- The champion bonus is awarded in the same transaction (it reads only the
+  final's settled winner). The best-scorer bonus is not: it depends on
+  `goal_event`, which the detail sync (`syncMatchDetails`) populates after the
+  transaction, so the task awards it once the goal rows are fresh. Champion picks
+  score off the stored winner and best-scorer picks off the stored `goal_event`
+  rows, not a fresh provider call inside scoring.
+- Finalizing emits `MATCH_RESULT` notifications (and push) to users who predicted
+  the match, plus `CHAMPION_RESULT` / `BEST_SCORER_RESULT` to the winners; the
+  live pushes fire only after the transaction commits.
 
 ## Related
 
@@ -82,7 +103,8 @@ safely.
 
 - `server/api/predictions/index.put.ts`, `server/api/predictions/joker.put.ts`
 - `server/utils/predictions/service.ts` (`upsertPrediction`)
-- `server/utils/scoring/engine.ts`, `bonus.ts`, `config.ts`
+- `server/utils/scoring/engine.ts`, `bonus.ts`, `tiers.ts`, `config.ts`, `store.ts`
+- `server/utils/sync/finalize.ts` (`finalizeMatches`, `scoreMatchRow`)
 - `shared/types/scoring.ts`
 - `db/app-schema.ts` (`prediction`, `match_score_event`, `scoring_config`, `goal_event`)
-- `server/tasks/**` finalize tasks (registered via `server/utils/tasks/registry.ts`)
+- `server/tasks/matches/finalize.ts` (the `matches:finalize` task, registered via `server/utils/tasks/registry.ts`)

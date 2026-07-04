@@ -154,4 +154,5 @@ the pony-head glyph swap from the match reaction stack.
   `shared/reactions.ts`
 - `app/utils/chat-content.ts`, `app/components/Chat*.vue`,
   `app/composables/useLeagueChat.ts`, `useChatActivity.ts`, `useChatDockOpen.ts`,
+  `useChatImage.ts` (5MB cap, webp compression, GIF passthrough),
   `app/plugins/chat-deeplink.client.ts`

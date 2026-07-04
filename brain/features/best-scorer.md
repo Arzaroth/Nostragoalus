@@ -7,7 +7,7 @@ player wins the Golden Boot (most goals).
 ## Mechanics
 
 - The pick is a row in `best_scorer_pick` (`userId`, `competitionId`, `playerId`,
-  `playerName`, `awardedPoints`). Added in migration 0016.
+  `playerName`, `awardedPoints`). Added in migration 0018.
 - The UI is a two-step squad selection: pick a team, then pick a player from that
   team's squad. Squads come from the existing `/api/teams/[code]` endpoint (FIFA
   `getTeamTournament`).
@@ -41,7 +41,7 @@ notification to the winners.
 - `app/composables/useBestScorer.ts`, `server/api/best-scorer/index.put.ts`
 - `server/utils/bestscorer/service.ts`
 - `app/utils/format.ts` (`playerPhotoUrl`)
-- `drizzle/0016_*.sql`
+- `drizzle/0018_best_scorer.sql`
 - Shares its picker showcase, query/mutation plumbing, leaderboard bonus merge
   and result notification with the [champion pick](champion-pick.md):
   `app/components/MetaPickShowcase.vue`, `app/composables/useMetaPick.ts`,

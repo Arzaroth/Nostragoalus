@@ -23,7 +23,8 @@ Two implementations, mirroring the providers/odds factory pattern:
 - `drivers/s3.ts` - `aws4fetch` SigV4, path-style addressing, with an
   injectable `fetchImpl` for tests. Keys pass `assertSafeKey` as a backstop.
 
-`factory.ts` picks the driver; `service.ts` derives keys and wraps put/get.
+`factory.ts` picks the driver; `keys.ts` derives the object keys (and holds
+`assertSafeKey`); `service.ts` wraps put/get.
 `index.ts` holds the `useRuntimeConfig` glue (`useStorageDriver()` /
 `resolveStorage(driver?)`) and is excluded from coverage like the providers
 index. Services that may touch images take an optional `driver?` resolved lazily
@@ -69,7 +70,8 @@ Environment, read in `nuxt.config.ts` runtimeConfig:
 
 ## Migration and backup
 
-- `media:migrate-blobs` (a manual Nitro task, `server/utils/storage/migrate.ts`)
+- `media:migrate-blobs` (a manual Nitro task, `server/tasks/media/migrate-blobs.ts`,
+  wrapping the `migrateBlobsToStorage` logic in `server/utils/storage/migrate.ts`)
   copies legacy in-DB blobs into the store. It is idempotent and resumable (the
   remaining-in-DB predicate is its own work queue) and is run from the admin
   Background-tasks page until the counts reach zero, BEFORE the release that
@@ -81,8 +83,9 @@ Environment, read in `nuxt.config.ts` runtimeConfig:
 
 ## Sources
 
-- `server/utils/storage/{driver,factory,service,index,migrate}.ts`
+- `server/utils/storage/{driver,factory,service,index,keys,migrate}.ts`
 - `server/utils/storage/drivers/{fs,s3}.ts`
+- `server/tasks/media/migrate-blobs.ts` (the Nitro task wrapper)
 - `server/utils/auth/avatar.ts`, `server/api/media/avatar/[...key].get.ts`
 - `db/app-schema.ts` (`chat_attachment`), `tests/storage.ts`
 - `compose.yaml` (rustfs, rustfs-init, mc), `mise-tasks/db-backup`

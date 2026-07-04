@@ -35,9 +35,12 @@ The `league_visibility` enum has two values:
 - `PRIVATE` - 404s to outsiders, so the id's existence is never leaked. Joining
   needs the join code.
 
-Join codes are 4 - 16 characters, case/dash/space-insensitive, unique
-(collision-retried), and the join-code endpoint is rate-limited by an in-process
-sliding window (`server/utils/rate-limit.ts`).
+Generated join codes are a fixed 8 characters drawn from a 30-letter
+ambiguity-free alphabet (`JOIN_CODE_ALPHABET`, no I/L/O/U/0/1 so a code reads
+aloud and types cleanly), unique (collision-retried). The join endpoint
+normalizes submitted codes case/dash/space-insensitively and accepts 4 - 16
+characters of raw input (`z.string().trim().min(4).max(16)`); it is rate-limited
+by an in-process sliding window (`server/utils/rate-limit.ts`).
 
 ## Access guards
 
@@ -88,7 +91,7 @@ Each league hosts an end-to-end-encrypted chat. The league row carries
 
 - `db/app-schema.ts` (`league`, `league_member`, `league_opt_out`,
   `league_invite`, `league_leaderboard_rank`, `league_visibility`/`league_role` enums)
-- `server/utils/leagues/service.ts`
+- `server/utils/leagues/service.ts`, `server/utils/leagues/code.ts` (join-code alphabet/normalize)
 - `server/api/leagues/**` (`join.post.ts`, `leave.post.ts`, `[id]/**`)
 - `app/utils/league-cookie.ts`, `app/composables/useLeagues.ts` (`useLeagueSelections`)
 - `server/utils/rate-limit.ts`

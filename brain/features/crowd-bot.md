@@ -81,7 +81,8 @@ Scored by the real engine, so each row is directly comparable to human players:
 `getCrowdTotals(db, ..., leagueId?)` sums predictions per match and returns
 `{matchId: {home, away, count}}`. With a `leagueId` it sums only that league's
 members, but this is display-only: the scoring crowd bonus is always global (see
-[leagues.md](leagues.md)). `upsertPrediction` triggers `publishCrowdUpdate` so
+[leagues.md](leagues.md)). Writing a prediction (`/api/predictions` PUT) calls
+`publishCrowdUpdate` (and `publishLeagueCrowdUpdates`) after the upsert, so
 the totals move live for subscribers (see
 [../architecture/realtime.md](../architecture/realtime.md)). This powers the
 score-input crowd line, not the bots' own consensus.
@@ -101,4 +102,6 @@ score-input crowd line, not the bots' own consensus.
   `app/pages/[competition]/bot.vue`,
   `app/pages/[competition]/users/[id].vue` (Evil Twin toggle)
 - Live crowd totals: `server/utils/predictions/service.ts`
-  (`getCrowdTotals`, `publishCrowdUpdate`), `app/composables/useCrowdTotals.ts`
+  (`getCrowdTotals`, `getMatchCrowdTotal`), `server/api/predictions/index.put.ts`
+  (`publishCrowdUpdate`/`publishLeagueCrowdUpdates` on write; the publishers live
+  in `server/utils/live/hub.ts`), `app/composables/useCrowdTotals.ts`

@@ -15,8 +15,8 @@ model, passkeys/2FA/API keys, and the runtime SSO subsystem.
 
 ## Plugins enabled
 
-`sso`, `scim`, `passkey`, `apiKey`, plus better-auth's built-in `twoFactor` and
-`admin`.
+`sso`, `scim`, `passkey`, `apiKey`, plus better-auth's built-in `twoFactor`,
+`admin`, and `haveIBeenPwned` (rejects breached passwords via Have I Been Pwned).
 
 ## Session guards
 
@@ -182,4 +182,4 @@ for SSO league auto-join.
 - `server/utils/sso/{service,config,test-signin}.ts`, `server/api/admin/sso/**`
 - `server/api/sso/{check,test-callback}.get.ts`
 - See [../features/sso-provisioning.md](../features/sso-provisioning.md)
-- `db/auth-schema.ts` (`user`, `session`, `account`, `ssoProvider`, `apikey`)
+- `db/auth-schema.ts` (`user`, `session`, `account`, `ssoProvider`, `scimProvider`, `apikey`)

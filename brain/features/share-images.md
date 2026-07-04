@@ -17,9 +17,15 @@ feature wiring.
 
 ## Card model + states
 
-The card has three states - prediction, live, and result - built from the match
-plus the user's pick. The model lives in `shared/share-card.ts`; the pure element
-template and the render live in `server/utils/share/` (under the 98% gate).
+The card has four states - `sealed`, `reveal`, `live`, and `result` - derived
+from match timing plus scoring (not taken verbatim from the token): pre-kickoff
+it is `sealed` unless the owner minted a `reveal`, flips to `live` once kickoff
+passes, then `result` when the match is finished and scored. The state machine
+and card model live in `server/utils/share/card.ts`; the pure element template
+(`template.ts`) and the satori/resvg render (`render.ts`) sit alongside, under the
+98% gate. The shared pure helpers (round label, tier palette, score format, flag
+URL) live in `shared/share-card.ts`, used by both this server template and the
+client `ShareCardView.vue` so the two renderers can't drift.
 
 Team identity on the card is rendered as CODE pills (for example ENG, SEN), not
 FIFA-CDN flag images, to avoid a render-time network dependency and failure mode.

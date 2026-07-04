@@ -74,8 +74,9 @@ rule in `app/assets/css/main.css` flips them under RTL:
 
 The satori share card stays **LTR** (a score graphic - home left, away right, a
 universal convention). Arabic **glyphs** still render: the card's font fallback
-(`server/routes/og/share/[token].get.ts`, `SCRIPT_FAMILY`) already fetches Noto
-Sans Arabic on demand for Arabic text. Bundling `NotoSansArabic-*.woff` alongside
+(`server/utils/share/og-assets.ts`, `SCRIPT_FAMILY` maps `ar` to `Noto Sans
+Arabic`) already fetches Noto Sans Arabic on demand for Arabic text. Bundling
+`NotoSansArabic-*.woff` alongside
 the Thai fonts (for offline reliability, like Thai) is a deferred nicety (see
 [TODO.md](../../TODO.md)).
 

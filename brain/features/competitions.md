@@ -12,8 +12,9 @@ Each `competition` row carries:
 
 - `slug` - the URL segment (for example `world-cup-2026`).
 - `name` - the display name.
-- `provider` + `externalIds` - which match-data provider to use and the ids that
-  resolve fixtures, bracket and stats (see [../architecture/providers.md](../architecture/providers.md)).
+- `provider` + `externalCompetitionId`/`externalSeasonId` - which match-data
+  provider to use and the ids that resolve fixtures, bracket and stats
+  (see [../architecture/providers.md](../architecture/providers.md)).
 - `seasonHint` - helps the provider resolve the right season.
 - `isActive` - whether it shows in the switcher.
 
@@ -26,8 +27,8 @@ either a `GROUP_MATCHDAY` or a `KNOCKOUT` stage (`GROUP`, `R32`, `R16`, `QF`,
 The active competition is a path prefix, not a stored selection:
 
 - Competition-scoped pages live under `app/pages/[competition]/`:
-  `matches` (list + detail), `bracket`, `map`, `leaderboard`, `predictions`,
-  `teams/[code]`, `users/[id]`.
+  `matches` (list + detail), `bracket`, `map`, `leaderboard`, `bot`,
+  `multiview`, `wrapped`, `teams/[code]`, `users/[id]`.
 - Global pages stay un-prefixed: `/`, `/login`, `/signup`, `/account`,
   `/preferences`, `/admin`, `/about`, `/roadmap`, `/leagues`.
 
