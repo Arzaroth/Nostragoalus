@@ -57,6 +57,42 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       LeaguePill gets that for free). Extract a shared popover-shell (or reuse
       `<Popover>`) so the three stop drifting and gain click-outside dismissal.
 
+## Direct messages (deferred from the feature pass)
+
+DMs reuse `chat_message` (scoped by `dm_thread_id`), so the whole message stack is
+structurally available, but v1 only wired **text + edit + read-state + live +
+notifications**. Deferred:
+
+- [ ] **DM-scoped message features not wired**: reactions, attachments/images,
+      link previews, threads and @mentions all FK `chat_message.id` and so apply to
+      a DM row at the schema level, but the DM composer/render path
+      (`useDms.ts` / `DmDock.vue`) and `postDmMessage` don't wire any of them.
+      Reach parity with league chat where it makes sense for a 1:1 room (mentions
+      and threads are arguably league-only), reusing the existing chat
+      components/services rather than re-implementing.
+- [ ] **No message deletion / moderation UI for DMs**: `chat_message` carries the
+      moderation columns and `chat_message_report` FKs it, but a DM has no report/
+      remove/delete surface (a 1:1 room has no moderator; a self-delete/hard-delete
+      is the missing piece). Decide the model for a two-person room (mutual delete,
+      self-delete tombstone) and wire it.
+- [ ] **No typing indicator**: league chat has `chat:typing`; DMs have no
+      equivalent live frame. Add a `dm:typing` frame (user-pinned, like
+      `dm:new`) if wanted.
+- [ ] **No block / mute**: there is a `dmDiscoverable` opt-out from cold-contact
+      discovery, but no way to block or mute an existing correspondent (a co-member
+      can always open a thread). Add a per-user block list that hides/refuses DMs.
+- [ ] **Separate dock vs a ChatDock tab**: DMs ship as a standalone global
+      `DmDock` because `ChatDock` is league-gated (see
+      [ROADMAP.md](ROADMAP.md) / brain decisions). If ChatDock is made able to host
+      a global scope, fold DMs in as a tab so there is one messaging surface, not
+      two floating docks.
+- [ ] **Inbox unread is an N+1 per-thread query**: `listThreads`
+      (`server/utils/dm/service.ts`) computes each thread's unread count with a
+      per-thread query rather than one grouped query over
+      `chat_message`/`dm_thread_read`. Fine at friends-scale; collapse to a single
+      grouped query (count messages newer than the caller's read marker, per
+      thread) if a user accumulates many threads.
+
 ## Past-pick counterfactual (deferred from the feature pass)
 
 - [ ] **Extract a shared `buildMatchScoreInput` / score-the-locked-field helper**
