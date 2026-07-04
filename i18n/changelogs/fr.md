@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [2.15.0] - 2026-07-04
+
 ### Ajouté
 - **Tournament Wrapped** : une fois la finale jouée, votre rétrospective personnelle du tournoi se débloque - une histoire en plein écran que vous faites défiler d'une touche : points totaux, classement final et top pour cent, détail des scores exacts, votre meilleur pronostic, celui qui vous a échappé, efficacité des jokers, votre remontée au classement, pronostics à contre-courant, verdicts du champion et du Soulier d'or, activité du chat de ligue et votre palmarès. Elle se termine sur une carte récapitulative que vous pouvez télécharger ou partager en image, et une bannière sur le classement vous y emmène.
 
