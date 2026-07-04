@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+- **A match's Players tab shows every scorer of its two teams**: the per-team scorer and assister lists were drawn from the tournament-wide top-20 leaderboard, so a team with no top-20 scorer looked like it had scored nothing, and a big team's lower-tally scorers were dropped. The tab now lists every goal and assist its two teams recorded.
+
 ## [2.16.2] - 2026-07-04
 
 ### Fixed

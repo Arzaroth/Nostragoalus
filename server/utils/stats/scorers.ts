@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import type { PlayerRankings, TopScorer } from '../../../shared/types/match'
-import { goalEvent } from '../../../db/schema'
+import { goalEvent, match } from '../../../db/schema'
 
 // Every player with a goal or assist in the competition (own goals excluded from
 // the scorer's tally; the assist credits the assisting player, who is on the
@@ -55,6 +55,21 @@ export function rankPlayers(players: TopScorer[], limit = 20): PlayerRankings {
   }
 }
 
+// Both Stats boards scoped to a set of team codes, unsliced. The competition
+// boards are a global top-N leaderboard; a single match's Players tab needs every
+// contributor of its two teams, not just the ones ranking in the tournament-wide
+// top-N (else a team with only low-tally scorers looks like it scored nothing).
+export async function getTeamsPlayerRankings(
+  db: AppDatabase,
+  competitionId: string,
+  teamCodes: (string | null)[],
+): Promise<PlayerRankings> {
+  const codes = new Set(teamCodes.filter((c): c is string => !!c))
+  if (codes.size === 0) return { scorers: [], assists: [] }
+  const players = (await aggregatePlayers(db, competitionId)).filter((p) => p.teamCode && codes.has(p.teamCode))
+  return rankPlayers(players, Number.POSITIVE_INFINITY)
+}
+
 // Goal-ranked players from stored goal events (assist tie-break). Includes pure
 // assisters so per-team callers see a team's full contribution.
 export async function getCompetitionTopScorers(
@@ -72,6 +87,20 @@ export async function getCompetitionPlayerRankings(
   limit = 20,
 ): Promise<PlayerRankings> {
   return rankPlayers(await aggregatePlayers(db, competitionId), limit)
+}
+
+// The two Stats boards for a single fixture's Players tab: every contributor of
+// the match's home and away teams (goals + assists), unsliced. Empty rankings if
+// the match is unknown.
+export async function getMatchPlayerRankings(db: AppDatabase, matchId: string): Promise<PlayerRankings> {
+  const rows = await db
+    .select({ competitionId: match.competitionId, homeTeamCode: match.homeTeamCode, awayTeamCode: match.awayTeamCode })
+    .from(match)
+    .where(eq(match.id, matchId))
+    .limit(1)
+  const m = rows[0]
+  if (!m) return { scorers: [], assists: [] }
+  return getTeamsPlayerRankings(db, m.competitionId, [m.homeTeamCode, m.awayTeamCode])
 }
 
 export async function getMatchGoals(db: AppDatabase, matchId: string) {
