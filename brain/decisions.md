@@ -170,6 +170,35 @@ feature/architecture doc that implements it.
   scores ride one `useLiveMatches` subscription for the whole grid. See
   [features/multiview.md](features/multiview.md).
 
+## Direct messages
+
+- **DMs reuse the chat crypto and generalize `chat_message`, not a parallel
+  `dm_*` message stack.** A DM is a `chat_message` row scoped to a `dm_thread`
+  (nullable `league_id`, new `dm_thread_id`, a `num_nonnulls(...) = 1` CHECK)
+  instead of a league room, so reactions, attachments, reports, replies and edits
+  - all FK `chat_message.id` - work on a DM for free. The thread key is the
+  `league_chat_key` model narrowed to two members: a per-thread group key sealed
+  to each participant's `chat_identity` pubkey, one row per `(thread, user,
+  epoch)`, so the server stays ciphertext-only and history survives a rotation via
+  the epoch->key map. Cloning the whole encrypted-message + attachment + moderation
+  stack for one-to-one would have doubled the surface with no new behaviour. See
+  [features/dms.md](features/dms.md).
+- **Reach is co-members always + globally opt-in discovery.** You can always DM
+  someone you share a [league](features/leagues.md) with; anyone else must have
+  `dmDiscoverable = true` (default on, per-user opt-out) to be found by name. This
+  keeps the default friction-free (people already in your leagues) while giving a
+  private opt-out from cold-contact, and a discoverable stranger still needs a
+  `chat_identity` to be listed (no pubkey, no sealable thread key). See
+  [features/dms.md](features/dms.md).
+- **A separate global `DmDock`, not a tab in the league [ChatDock](features/chat.md).**
+  The intent was a ChatDock tab, but ChatDock is league-gated (competition pages
+  with a chat-enabled league selected) while DMs are global and must work on every
+  page. DMs ship as their own dock mounted in the default layout; live delivery is
+  user-pinned (`publishDmMessage`/`publishDmEdit` fan out to the two participants'
+  sockets by `userId`, no subscribe frame), like the notification push. A future
+  consolidation of the two docks is left open (TODO). See
+  [features/dms.md](features/dms.md).
+
 ## Operations
 
 - **Shared dev pgdata + a timestamp-ordering migrator** means a stale branch's

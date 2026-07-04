@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- **Direct messages**: send private, one-to-one messages to another player from a new messages dock in the corner of every page. Like league chat, they are end-to-end encrypted - only you and the person you are writing to can read them, never the server. You can message anyone you share a league with, plus anyone who has chosen to be discoverable (a setting you can turn off for yourself). You get a bell notification and a push (if you have push on) when a message arrives, and can edit a message you have sent.
+
 ## [2.20.0] - 2026-07-05
 
 ### Added
