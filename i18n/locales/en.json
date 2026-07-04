@@ -152,6 +152,24 @@
       "rolled-back": "Entries are missing since your last visit"
     }
   },
+  "dm": {
+    "title": "Messages",
+    "open": "Open direct messages",
+    "close": "Close",
+    "new": "New message",
+    "back": "Back",
+    "empty": "No conversations yet.",
+    "needsRestore": "Restore your chat key on this device to read your messages.",
+    "searchPlaceholder": "Search by name",
+    "searchHint": "Search for someone to message.",
+    "coMember": "League",
+    "placeholder": "Message",
+    "editPlaceholder": "Edit message",
+    "edit": "Edit",
+    "edited": "edited",
+    "cancel": "Cancel",
+    "undecryptable": "Can't decrypt this message"
+  },
   "chat": {
     "roomTitle": "League chat",
     "threadTitle": "Match chat",

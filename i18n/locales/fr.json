@@ -148,6 +148,24 @@
       "rolled-back": "Des entrées manquent depuis votre dernière visite"
     }
   },
+  "dm": {
+    "title": "Messages",
+    "open": "Ouvrir les messages privés",
+    "close": "Fermer",
+    "new": "Nouveau message",
+    "back": "Retour",
+    "empty": "Aucune conversation pour l'instant.",
+    "needsRestore": "Restaurez votre clé de chat sur cet appareil pour lire vos messages.",
+    "searchPlaceholder": "Rechercher par nom",
+    "searchHint": "Cherchez quelqu'un à qui écrire.",
+    "coMember": "Ligue",
+    "placeholder": "Message",
+    "editPlaceholder": "Modifier le message",
+    "edit": "Modifier",
+    "edited": "modifié",
+    "cancel": "Annuler",
+    "undecryptable": "Impossible de déchiffrer ce message"
+  },
   "chat": {
     "roomTitle": "Chat de la ligue",
     "threadTitle": "Chat du match",
