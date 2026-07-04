@@ -42,6 +42,20 @@ effort buckets; order within a bucket is not priority.
       leaderboard visibility rules (admin-hidden dropped except self, private
       profiles for members/admins only); non-predictors shown as a muted count.
       Refreshed off the existing live-score watch + 45s poll, no new socket.
+- [ ] **League modes** (IN_PROGRESS, worktree-league-modes): per-league scoring
+      modes, frozen once the competition kicks off. Easy - call the winner or a
+      draw, scored by odds (longshots pay more). Hard - predict scores and stake a
+      confidence budget per round (correct pays your stake, exact doubles it).
+      Hardcore - last player standing; a wrong call costs a life (owner sets how
+      many), survivors co-win. Decisions: picks stay (user, match)-centric - modes
+      are a read-time scoring lens over the base pick; a moded league can hold
+      per-league override picks (`league_prediction`, effective = override ?? base,
+      follow-main vs customize) so a player can play one league safe and another
+      for the upset, with per-card completeness nudges. Boards fit the mode (points
+      - carrying the configured bonus + champion/best-scorer + live - or a survival
+      list). Overrides get a separate tamper-evident commitment chain. Admins have
+      full capability (create/swap any time). Built on 2.6.0, gate green; deferred:
+      same-mode override scoring, the public verify-page UI for the league chain.
 - [x] **Changelog since-last-seen** (shipped in 1.25.0): store last-seen version
       per user, a badge dot on the account menu, and highlighted delta sections
       on the About page. The marker rides a better-auth additionalField
