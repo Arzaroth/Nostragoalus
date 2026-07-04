@@ -245,6 +245,10 @@ describe('final-standing gate, opener and bad badges', () => {
     const g1 = await roundId(c, 'GROUP', 1)
     const alice = await makeUser(db, 'alice')
     const bob = await makeUser(db, 'bob')
+    // A user who never predicts in this competition. getLeaderboard scans the whole
+    // user table, so ghost sits at 0 points on the bottom rank; wooden-spoon must
+    // key off the worst PARTICIPANT (bob), never this non-participant.
+    const ghost = await makeUser(db, 'ghost')
     const m = await scoredMatch(c, g1, 'GROUP', new Date('2026-06-11T12:00:00Z'))
     await pred({ userId: alice, matchId: m, roundId: g1, tier: 'EXACT', points: 3 })
     await pred({ userId: bob, matchId: m, roundId: g1, tier: 'OUTCOME', points: 1 })
@@ -255,12 +259,26 @@ describe('final-standing gate, opener and bad badges', () => {
     expect(a).toMatchObject({ completed: 0, podium: 0, woodenSpoon: 0 })
     expect((await stats(c, bob)).woodenSpoon).toBe(0)
 
-    // Decide the final: now they settle.
+    // Decide the final: now they settle. bob (dead-last participant) earns the
+    // spoon; ghost (no predictions) is not a participant and never does.
     await decidedFinal(c, g1)
     a = await stats(c, alice)
     expect(a.completed).toBe(0) // did not predict the final -> not complete
     expect(a.podium).toBe(1)
     expect((await stats(c, bob)).woodenSpoon).toBe(1)
+    expect((await computeAchievementStats(db, c)).get(ghost)?.woodenSpoon ?? 0).toBe(0)
+  })
+
+  it('never awards wooden-spoon in a single-participant competition', async () => {
+    const c = await seedCompetition(db)
+    const g1 = await roundId(c, 'GROUP', 1)
+    const solo = await makeUser(db, 'solo')
+    await makeUser(db, 'onlooker') // exists in the user table but never predicts
+    const m = await scoredMatch(c, g1, 'GROUP', new Date('2026-06-11T12:00:00Z'))
+    await pred({ userId: solo, matchId: m, roundId: g1, tier: 'MISS', points: 0 })
+    await decidedFinal(c, g1)
+    // One real participant -> no contest -> no spoon, even dead last with zero points.
+    expect((await stats(c, solo)).woodenSpoon).toBe(0)
   })
 
   it('credits opening-act only for an EXACT on the tournament opener', async () => {

@@ -9,6 +9,7 @@ import {
   type AchievementMetric,
   COLLECTABLE_ACHIEVEMENTS,
   COLLECTOR_ACHIEVEMENT_KEY,
+  isCollectable,
   tierForValue,
   type UserAchievementStats,
 } from './catalog'
@@ -183,11 +184,17 @@ export async function computeAchievementStats(
 
   const board = await getLeaderboard(db, { competitionId, includeHidden: true, includePrivate: true, limit: 100_000 })
   const podiumUsers = new Set(board.filter((r) => r.rank <= 3 && r.totalPoints > 0).map((r) => r.userId))
-  // Dead last: everyone tied on the worst rank, but only a real contest (>1 ranked
-  // player). Gated on tournamentDone below so it settles once, at the end.
-  const lastRank = board.length > 0 ? Math.max(...board.map((r) => r.rank)) : 0
+  // Dead last: the worst rank AMONG ACTUAL PARTICIPANTS. getLeaderboard scans the
+  // whole user table, so every non-participant sits at 0 points on the bottom rank -
+  // taking the global max rank would make "last" mean "one of the untold many who
+  // never played". Restrict to users who made a prediction in this competition
+  // (the `agg` set), and require more than one of them for a real contest. Gated on
+  // tournamentDone below so it settles once, at the end.
+  const participantIds = new Set(agg.map((r) => r.userId))
+  const participantRanks = board.filter((r) => participantIds.has(r.userId))
+  const lastRank = participantRanks.reduce((m, r) => Math.max(m, r.rank), 0)
   const woodenSpoonUsers = new Set(
-    board.length > 1 ? board.filter((r) => r.rank === lastRank).map((r) => r.userId) : [],
+    participantRanks.length > 1 ? participantRanks.filter((r) => r.rank === lastRank).map((r) => r.userId) : [],
   )
 
   // Fold the per-user, per-row work in JS.
@@ -276,7 +283,7 @@ export async function evaluateAchievements(db: AppDatabase, competitionId: strin
       const ex = exByKey.get(`${userId}:${def.key}`)
       // Held once earned (tier is a high-water mark, so a rescore-down never
       // loses it). Only collectable (non-SHAME) badges count toward the secret.
-      if ((ex || tier) && def.category !== 'SHAME') heldCount += 1
+      if ((ex || tier) && isCollectable(def)) heldCount += 1
       if (!tier) continue
       if (!ex) {
         await db.insert(userAchievement).values({ userId, competitionId, key: def.key, tier, progress: value })

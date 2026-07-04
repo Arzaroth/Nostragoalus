@@ -96,8 +96,8 @@ is not batch-evaluated: it is granted from the better-auth user-update hook
 `evaluateAchievements` grants it (idempotent) once a user holds every *collectable*
 badge (`heldCount === COLLECTABLE_ACHIEVEMENTS.length` - the 20 non-secret,
 non-SHAME badges). The two SHAME badges are deliberately excluded (`isCollectable`):
-several are mutually exclusive with the good badges, so counting them would make the
-collector unwinnable in one competition. Both secrets are kept out of the public docs
+they conflict with the good badges (in a real-sized field, dead last is nowhere near
+top-3), so counting them would make the collector unwinnable in one competition. Both secrets are kept out of the public docs
 like the rest of the [easter eggs](easter-eggs.md); the copy is deliberately cryptic
 so the unlock is not dangled as a to-do list.
 
