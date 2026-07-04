@@ -34,21 +34,43 @@ phase-attributable); OVERALL uses the full leaderboard so it matches the standin
 
 ## The achievement catalog
 
-Code, not data: `server/utils/achievements/catalog.ts` lists 19 batch-evaluated
+Code, not data: `server/utils/achievements/catalog.ts` lists 22 batch-evaluated
 badges (plus two secret badges) with their category, scope, grading thresholds and
 whether they are hidden. `user_achievement` only records what a user unlocked. Categories:
-milestone (first-blood, sharpshooter, prophet, century, perfect-round), streak
-(hot-streak, on-fire), crowd (contrarian, lone-wolf), joker (joker-hero), behavioural
-(early-bird, night-owl, deadline-dancer, completionist), oracle (champion-oracle,
-golden-touch, underdog-whisperer) and trophy-meta (treble, podium).
+milestone (first-blood, opening-act, sharpshooter, prophet, century, perfect-round),
+streak (hot-streak, on-fire), crowd (contrarian, lone-wolf), joker (joker-hero),
+behavioural (early-bird, night-owl, deadline-dancer, completionist), oracle
+(champion-oracle, golden-touch, underdog-whisperer), trophy-meta (treble, podium) and
+shame (cold-streak, wooden-spoon - the "bad" badges).
 
 `evaluateAchievements` (`server/utils/achievements/service.ts`) runs each finalize
 tick (after the trophy award, so treble/podium see this tick's trophies). It derives
 every user's metrics once (`computeAchievementStats`: exact/points/streaks/perfect
-rounds/lone-wolf/oracle/underdog/completion/podium/trophy counts) then upserts. It is
-idempotent and returns the badges newly earned or graded up, for notification. A tier
-is a high-water mark: a rescore that lowers a metric refreshes stored progress but
-never demotes the badge.
+rounds/opener/lone-wolf/oracle/underdog/completion/podium/wooden-spoon/trophy counts)
+then upserts. It is idempotent and returns the badges newly earned or graded up, for
+notification. A tier is a high-water mark: a rescore that lowers a metric refreshes
+stored progress but never demotes the badge.
+
+**The final-standing gate.** completionist, podium and wooden-spoon settle only once
+the tournament is over - gated on `hasDecidedFinal` (`server/utils/awards/service.ts`),
+the same decided-FINAL check the trophies use. Without it, completionist fired
+mid-tournament off "every match scored so far" (not every match), and last-place would
+flip every finalize tick. **opening-act** grades the EXACT on the earliest-kickoff
+scored match (the tournament opener); it is single-GOLD (high rarity). **underdog** is
+a winning champion pick ranked outside the FIFA top 15 (rank >= 16, or unranked) - a
+reachable long shot, not the old effectively-impossible rank 41+.
+
+**SHAME badges** (`cold-streak` = five MISS in a row, `wooden-spoon` = finished dead
+last) are earned by doing badly. They are excluded from the-collector (`isCollectable`
+/ `COLLECTABLE_ACHIEVEMENTS` in `catalog.ts`): several are mutually exclusive with the
+"good" badges (you cannot finish both top-3 and last), so requiring them would make the
+collector unwinnable in one competition.
+
+**Criteria tooltips.** Every badge and trophy carries an `achievements.*.criteria`
+i18n string stating the concrete unlock condition (thresholds included for graded
+badges). `CabinetTile.vue` shows it in a stylized `v-tooltip` on every tile - locked
+tiles prefix it with the `locked` label ("how to earn this"), earned tiles read as
+"what you did". This replaced the old generic "keep playing" locked-only hint.
 
 Because it only runs on a finalize tick that newly scores a match (`result.scored > 0`),
 a competition whose matches are already scored when the feature deploys - or one that
@@ -71,10 +93,13 @@ is not batch-evaluated: it is granted from the better-auth user-update hook
 `grantAchievement` (idempotent, notifies once).
 
 `the-collector` is also hidden and GLOBAL, but evaluated rather than event-granted:
-`evaluateAchievements` grants it (idempotent) once a user holds every one of the 19
-non-secret badges (`heldCount === ACHIEVEMENTS.length`). Both are kept out of the
-public docs like the rest of the [easter eggs](easter-eggs.md); the copy is
-deliberately cryptic so the unlock is not dangled as a to-do list.
+`evaluateAchievements` grants it (idempotent) once a user holds every *collectable*
+badge (`heldCount === COLLECTABLE_ACHIEVEMENTS.length` - the 20 non-secret,
+non-SHAME badges). The two SHAME badges are deliberately excluded (`isCollectable`):
+several are mutually exclusive with the good badges, so counting them would make the
+collector unwinnable in one competition. Both secrets are kept out of the public docs
+like the rest of the [easter eggs](easter-eggs.md); the copy is deliberately cryptic
+so the unlock is not dangled as a to-do list.
 
 ## Cabinet and showcase
 

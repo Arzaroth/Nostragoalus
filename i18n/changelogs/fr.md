@@ -5,6 +5,16 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Ajouté
+- **Deux nouveaux succès** : **Lever de rideau** - trouvez le score exact du tout premier match du tournoi (un badge rare, de rang or) - et, pour la postérité, deux badges « ratés » pince-sans-rire : **Glacial** (cinq erreurs d'affilée) et **Lanterne rouge** (finir bon dernier). Les badges « ratés » ne comptent jamais pour le secret caché du « collectionneur ».
+- **Des critères clairs sur chaque badge et trophée** : survoler une tuile de la vitrine à trophées montre désormais exactement comment l'obtenir - seuils compris - qu'elle soit verrouillée ou déjà à vous, en remplacement du vague « continuez à jouer » d'avant.
+
+### Modifié
+- **L'ami des outsiders est enfin atteignable** : il se débloque quand votre pronostic champion, classé hors du top 15 FIFA (ou non classé), finit par l'emporter - au lieu de l'ancien seuil rang 41+ que presque aucune équipe réelle ne pouvait atteindre.
+
+### Corrigé
+- **Le Complétiste attend le coup de sifflet final** : le badge « tous les matchs pronostiqués » ne se débloque plus qu'une fois le tournoi réellement terminé, et non en cours de route quand vous aviez seulement suivi tous les matchs joués jusque-là. Le badge du top trois « Sur le podium » et la nouvelle Lanterne rouge se règlent de la même façon, à la fin.
+
 ## [2.17.0] - 2026-07-05
 
 ### Ajouté
