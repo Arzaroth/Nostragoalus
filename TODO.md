@@ -1982,3 +1982,17 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
       data migration into `showcase_pin`; existing pins are lost on deploy.
       Accepted for the rename (re-pinning is trivial and showcase is
       achievements-only), noted for prod awareness.
+
+### Deferred from the feature-treatment review (prize rankings + featured team)
+
+- [ ] The prize-ranking e2e (`rewards.e2e.ts`) covers only the LeagueRewards
+      card open path. The two other new entry points have no e2e: the
+      TrophyCabinet "your prizes" tile opening the same `RewardRankingDialog`,
+      and the admin Competitions section saving a featured team (then the
+      TEAM_SPECIALIST prize flipping from disabled to enabled). Both are unit-
+      tested; add e2e when the prize surface next gets touched.
+- [ ] The `getMyRewards` fan-out (the N+1 item above) got heavier: it now
+      returns every configured prize (held + chased), so it walks all five
+      criteria for every membership, not just the held ones. The scoped
+      "does the viewer lead / where does the viewer stand" rewrite matters more
+      now.
