@@ -745,6 +745,29 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
       leaderboard.vue and bot.vue.
 - [ ] MEAN rounding uses Math.round (half-up bias on x.5 averages); consider
       banker's rounding or documenting the bias.
+- [ ] Bot personas are hand-enumerated across ~9 parallel structures in
+      `shared/types/bot.ts` (two unions, `BOT_PERSONAS`, `PERSONA_USER_IDS`,
+      `BOT_PERSONA_PARAMS`, `LEADERBOARD_BOT_PARAMS`, `PARAM_TO_PERSONA`,
+      `PERSONA_TO_PARAM`, `BOT_PERSONA_META`, `personaUsesMethod`) plus two OpenAPI
+      enums in the route files. Collapse into one `Record<BotPersona, {param,
+      userId, icon, nameKey, blurbKey, usesMethod, onLeaderboard}>` so a 4th
+      persona is one row, not nine edits (a missed map yields a silent `undefined`
+      ghost id/param).
+- [ ] `leaderboard.vue`'s "Bots" popover hardcodes each persona's emoji
+      (🤖/😈/⚖️) and `t('bot.persona.*')` even though `BOT_PERSONA_META` (used for
+      the ghost rows in the same file) is the single icon/name source; likewise
+      the profile twin hardcodes 😈. Drive them off META so an icon change can't
+      diverge. Same file re-lists the persona set ~5x (the three `*On` computeds,
+      `activeBotCount`, the `sources` array, the popover buttons) - a
+      `requiresViewer`-carrying persona table would drive them.
+- [ ] `LEADERBOARD_BOT_PARAMS` (['consensus','equalizer']) is misnamed: it drives
+      the `/bot` PAGE switcher, not the leaderboard (which shows all three
+      personas incl. the evil twin). Rename to `BOT_PAGE_PARAMS` and fix the
+      comment.
+- [ ] `insertGhostRows` renders rank-tied ghosts in reverse of the declared
+      persona order (equalizer above consensus on a tie). Deterministic and
+      test-asserted, but the visual order inverts the popover order; fold by
+      source order if it ever matters.
 
 ## Best scorer (deferred from the merge review)
 
