@@ -66,7 +66,14 @@
     "note": "Note (facultatif)",
     "link": "Lien (facultatif)",
     "image": "Ajouter une image",
-    "clearImage": "Retirer"
+    "clearImage": "Retirer",
+    "myPrizes": "Vos récompenses",
+    "holding": "En tête",
+    "chasing": "À la poursuite",
+    "teamSpecialistDisabled": "Choisissez une équipe à l'honneur dans l'admin pour activer cette récompense.",
+    "noRanking": "Pas encore de classement - personne n'a marqué pour cette récompense.",
+    "metricPoints": "pts",
+    "metricExact": "exacts"
   },
   "verify": {
     "title": "Vérifier les scores",
@@ -767,6 +774,18 @@
     "deleteMailSent": "Mail de confirmation envoyé - le compte sera supprimé en ouvrant le lien."
   },
   "admin": {
+    "competitions": {
+      "title": "Compétitions",
+      "hint": "Réglages par compétition, comme l'équipe à l'honneur du Spécialiste d'équipe.",
+      "intro": "Choisissez l'équipe suivie par la récompense Spécialiste d'équipe. Tant qu'aucune n'est définie, cette récompense est désactivée pour toutes les ligues de la compétition.",
+      "none": "Aucune compétition pour l'instant.",
+      "colCompetition": "Compétition",
+      "colFeaturedTeam": "Équipe à l'honneur",
+      "noFeaturedTeam": "Aucune (récompense désactivée)",
+      "noTeams": "Aucune équipe pour l'instant - chargez d'abord le calendrier.",
+      "save": "Enregistrer",
+      "saveFailed": "Impossible d'enregistrer l'équipe à l'honneur."
+    },
     "odds": {
       "title": "Fournisseur de cotes",
       "hint": "Choisissez quel fournisseur cote les matchs de chaque compétition.",

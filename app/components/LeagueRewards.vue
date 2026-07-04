@@ -5,15 +5,7 @@ import type { LeagueRewardInput } from '#shared/types/rewards'
 const props = defineProps<{ leagueId: string; canManage: boolean }>()
 const { t } = useI18n()
 const { standings, save } = useLeagueRewards(() => props.leagueId)
-
-function criterionName(type: CompetitionAwardType, teamCode: string | null): string {
-  if (type === 'TEAM_SPECIALIST') {
-    return teamCode
-      ? t('achievements.trophy.TEAM_SPECIALIST.name', { team: teamCode })
-      : t('achievements.trophy.TEAM_SPECIALIST_GENERIC.name')
-  }
-  return t(`achievements.trophy.${type}.name`)
-}
+const criterionName = useCriterionName()
 
 // A leader the viewer isn't allowed to see (private profile / admin-hidden) comes
 // back with an empty name; show a neutral placeholder rather than a blank.
@@ -25,12 +17,26 @@ function leaderNames(winners: { displayName: string }[]): string {
 // The prizes actually configured (members see these); the owner edits all five.
 const configured = computed(() => (standings.data.value ?? []).filter((s) => s.reward))
 
+// Open a criterion's live ranking. Disabled criteria (TEAM_SPECIALIST with no
+// featured team) have no ranking to show.
+const rankingType = ref<CompetitionAwardType | null>(null)
+const rankingTeamCode = ref<string | null>(null)
+const rankingOpen = ref(false)
+function openRanking(s: { type: CompetitionAwardType; teamCode: string | null; disabled: boolean }) {
+  if (s.disabled) return
+  rankingType.value = s.type
+  rankingTeamCode.value = s.teamCode
+  rankingOpen.value = true
+}
+
 interface FormRow {
   type: CompetitionAwardType
   label: string
   note: string
   link: string
   currentUrl: string | null
+  teamCode: string | null
+  disabled: boolean
   dataUrl?: string
   cleared?: boolean
 }
@@ -38,10 +44,18 @@ const editing = ref(false)
 const form = ref<FormRow[]>([])
 
 function openEdit() {
-  const byType = new Map((standings.data.value ?? []).map((s) => [s.type, s.reward]))
+  const byType = new Map((standings.data.value ?? []).map((s) => [s.type, s]))
   form.value = COMPETITION_AWARD_TYPES.map((type) => {
-    const r = byType.get(type)
-    return { type, label: r?.label ?? '', note: r?.note ?? '', link: r?.link ?? '', currentUrl: r?.imageUrl ?? null }
+    const s = byType.get(type)
+    return {
+      type,
+      label: s?.reward?.label ?? '',
+      note: s?.reward?.note ?? '',
+      link: s?.reward?.link ?? '',
+      currentUrl: s?.reward?.imageUrl ?? null,
+      teamCode: s?.teamCode ?? null,
+      disabled: s?.disabled ?? false,
+    }
   })
   editing.value = true
 }
@@ -93,32 +107,44 @@ async function submit() {
       <div
         v-for="s in configured"
         :key="s.type"
-        class="rounded-lg border p-3 flex gap-3"
+        class="rounded-lg border p-3 flex gap-3 text-left"
+        :class="s.disabled ? 'opacity-60' : 'cursor-pointer hover:brightness-95'"
         :style="`border-color: ${s.youHold ? 'var(--p-primary-color)' : 'var(--p-content-border-color)'}`"
+        :role="s.disabled ? undefined : 'button'"
+        :tabindex="s.disabled ? undefined : 0"
+        @click="openRanking(s)"
+        @keydown.enter="openRanking(s)"
       >
         <img v-if="s.reward!.imageUrl" :src="s.reward!.imageUrl" class="w-14 h-14 rounded object-cover shrink-0" alt="" >
         <i v-else class="pi pi-gift text-2xl shrink-0" style="color: var(--p-primary-color)" />
         <div class="min-w-0">
-          <div class="text-xs uppercase tracking-wide" style="color: var(--p-text-muted-color)">{{ criterionName(s.type, s.teamCode) }}</div>
+          <div class="text-xs uppercase tracking-wide flex items-center gap-1" style="color: var(--p-text-muted-color)">
+            {{ criterionName(s.type, s.teamCode) }}
+            <i v-if="!s.disabled" class="pi pi-chart-bar text-[0.65rem]" />
+          </div>
           <div class="font-semibold leading-tight">{{ s.reward!.label }}</div>
           <div class="text-xs mt-0.5" style="color: var(--p-text-muted-color)">
-            <template v-if="s.winners.length > 0">
+            <template v-if="s.disabled">{{ t('reward.teamSpecialistDisabled') }}</template>
+            <template v-else-if="s.winners.length > 0">
               {{ t('reward.currentLeader') }}: {{ leaderNames(s.winners) }}
               <span v-if="s.youHold" class="font-semibold" style="color: var(--p-primary-color)"> - {{ t('reward.you') }}</span>
             </template>
             <template v-else>{{ t('reward.noLeader') }}</template>
           </div>
-          <a v-if="s.reward!.link" :href="s.reward!.link" target="_blank" rel="noopener" class="text-xs hover:underline" style="color: var(--p-primary-color)">{{ t('reward.details') }}</a>
+          <a v-if="s.reward!.link" :href="s.reward!.link" target="_blank" rel="noopener" class="text-xs hover:underline" style="color: var(--p-primary-color)" @click.stop>{{ t('reward.details') }}</a>
           <div v-if="s.reward!.note" class="text-xs mt-0.5" style="color: var(--p-text-muted-color)">{{ s.reward!.note }}</div>
         </div>
       </div>
     </div>
 
+    <RewardRankingDialog v-model:visible="rankingOpen" :league-id="leagueId" :type="rankingType" :team-code="rankingTeamCode" />
+
     <Dialog v-model:visible="editing" modal :header="t('reward.title')" class="w-[95vw] max-w-2xl">
       <div class="flex flex-col gap-4">
-        <div v-for="row in form" :key="row.type" class="border-b pb-3 last:border-b-0" style="border-color: var(--p-content-border-color)">
-          <div class="text-sm font-semibold mb-1">{{ criterionName(row.type, null) }}</div>
-          <div class="flex gap-3">
+        <div v-for="row in form" :key="row.type" class="border-b pb-3 last:border-b-0" :class="row.disabled ? 'opacity-60' : ''" style="border-color: var(--p-content-border-color)">
+          <div class="text-sm font-semibold mb-1">{{ criterionName(row.type, row.teamCode) }}</div>
+          <p v-if="row.disabled" class="text-xs" style="color: var(--p-text-muted-color)">{{ t('reward.teamSpecialistDisabled') }}</p>
+          <div v-else class="flex gap-3">
             <div class="shrink-0">
               <img v-if="previewFor(row)" :src="previewFor(row)!" class="w-16 h-16 rounded object-cover" alt="" >
               <div v-else class="w-16 h-16 rounded flex items-center justify-center" style="background: var(--p-content-border-color)"><i class="pi pi-image" /></div>
