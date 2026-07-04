@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.18.0] - 2026-07-05
+
 ### Added
 - **Two new achievements**: **Opening Act** - call the exact scoreline of the tournament's very first match (a rare, gold-tier badge) - and, for the record books, a pair of tongue-in-cheek "bad" badges: **Ice Cold** (five misses in a row) and **Wooden Spoon** (finish dead last). The bad badges never count toward the hidden "collector" secret.
 - **Clear criteria on every badge and trophy**: hovering any tile in the trophy cabinet now shows exactly how it is earned - thresholds and all - whether it is locked or already yours, replacing the old vague "keep playing" hint.
