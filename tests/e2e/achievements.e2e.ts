@@ -25,9 +25,12 @@ test('the trophy cabinet shows earned items and the owner can pin one to the sho
   await signUp(page, user)
   const userId = await getUserIdByEmail(user.email)
 
-  // One trophy (overall winner) + one badge for the signed-in user.
+  // One trophy (overall winner) + a few badges for the signed-in user, including a
+  // gold opening-act and a SHAME "bad" badge, to prove the new catalog surfaces.
   await seedTrophy(fixture.competitionId, userId, 'OVERALL', 42)
   await seedAchievement(userId, fixture.competitionId, 'first-blood', 'BRONZE')
+  await seedAchievement(userId, fixture.competitionId, 'opening-act', 'GOLD')
+  await seedAchievement(userId, fixture.competitionId, 'wooden-spoon', 'BRONZE')
 
   // The dev server compiles this route on first hit; that cold compile can abort
   // the very first navigation (ERR_ABORTED). Retry until it serves.
@@ -35,9 +38,19 @@ test('the trophy cabinet shows earned items and the owner can pin one to the sho
     await page.goto(`/${fixture.slug}/users/${userId}`)
   }).toPass({ timeout: 30_000 })
 
-  // The cabinet renders the trophy and the earned badge.
+  // The cabinet renders the trophy and the earned badges (new catalog included).
   await expect(page.getByText('Grand Champion')).toBeVisible()
   await expect(page.getByText('First Blood')).toBeVisible()
+  await expect(page.getByText('Opening Act')).toBeVisible()
+  await expect(page.getByText('Wooden Spoon')).toBeVisible()
+
+  // Every tile carries its unlock criteria for a stylized tooltip (rendered as the
+  // PrimeVue directive's aria data on the tile). Hover the opener badge and assert
+  // the criteria copy shows.
+  await page.getByText('Opening Act').hover()
+  await expect(
+    page.getByText("Call the exact scoreline of the tournament's opening match."),
+  ).toBeVisible()
 
   // Owner sees the empty-showcase prompt and, once hydrated, the edit control.
   await expect(page.getByText('Show off up to 3 of your achievements here.')).toBeVisible()
