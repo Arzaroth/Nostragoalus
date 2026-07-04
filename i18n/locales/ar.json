@@ -1586,6 +1586,7 @@
       "championLost": "لم يفز اختيارك للبطل {team} بـ{competition}.",
       "bestScorerWon": "أنهى اختيارك للحذاء الذهبي {player} كأفضل هدّاف! +{points} نقطة",
       "bestScorerLost": "لم يُنهِ اختيارك للحذاء الذهبي {player} كأفضل هدّاف.",
+      "dm": "أرسل إليك {name} رسالة.",
       "mention": "أشار إليك {name} في {league}.",
       "mentionMatch": "أشار إليك {name} في {home} ضد {away}.",
       "trophyAwarded": "فزت بكأس {trophy} في {competition}!",
@@ -1593,6 +1594,10 @@
     }
   },
   "push": {
+    "dm": {
+      "title": "رسالة جديدة",
+      "body": "{name} أرسل إليك رسالة"
+    },
     "mention": {
       "title": "إشارة جديدة",
       "body": "{name} أشار إليك في {league}"

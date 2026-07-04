@@ -1387,6 +1387,7 @@
       "championLost": "Qapbe' wInwI'lI' {team}.",
       "bestScorerWon": "Qappu' DujwI'lI' {player}! +{points}",
       "bestScorerLost": "Qapbe' DujwI'lI' {player}.",
+      "dm": "SoHvaD QIn ngeH {name}.",
       "mention": "{league}Daq {name} pong.",
       "mentionMatch": "{home}-{away}Daq {name} pong.",
       "trophyAwarded": "{competition}Daq {trophy} Qapla' DaSuq!",
@@ -1394,6 +1395,7 @@
     }
   },
   "push": {
+    "dm": { "title": "QIn chu'", "body": "SoHvaD QIn ngeH {name}" },
     "mention": { "title": "ponglu'", "body": "{league}Daq {name} pong" },
     "mentionMatch": { "title": "ponglu'", "body": "{home}-{away}Daq {name} pong" },
     "reminder": { "title": "yIqIp 'e' yIlIj 'e' yImev", "body": "tugh {home} {away}" },

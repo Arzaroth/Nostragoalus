@@ -4,6 +4,7 @@ import { match } from '../../../db/schema'
 import type { NotificationDTO } from '../../../shared/types/notifications'
 import type { ReactionTotals } from '../../../shared/reactions'
 import type { ChatAttachmentDTO, ChatMessageDTO } from '../../../shared/types/chat'
+import type { DmMessageDTO } from '../../../shared/types/dm'
 import { removeViewer, setViewing, viewerCount, viewersOf } from './viewers'
 
 export interface LiveSubscriber {
@@ -296,6 +297,25 @@ export function publishChatEdit(
   attachments: ChatAttachmentDTO[],
 ): number {
   return deliverToMembers(memberIds, { type: 'chat:edit', leagueId, messageId, ciphertext, editedAt, attachments })
+}
+
+// A new direct message: deliver the ciphertext to just the two participants'
+// connected sockets (the sender's other tabs included, so every device stays in
+// sync). Same members-only privacy gate as league chat, scoped to the pair.
+export function publishDmMessage(participantIds: readonly string[], message: DmMessageDTO): number {
+  return deliverToMembers(participantIds, { type: 'dm:new', threadId: message.threadId, message })
+}
+
+// A DM message was edited by its author: push the new ciphertext + edit time to
+// the two participants so they re-decrypt it in place. Content stays opaque.
+export function publishDmEdit(
+  participantIds: readonly string[],
+  threadId: string,
+  messageId: string,
+  ciphertext: string,
+  editedAt: string,
+): number {
+  return deliverToMembers(participantIds, { type: 'dm:edit', threadId, messageId, ciphertext, editedAt })
 }
 
 // A member changed their display name: tell every connected member of the leagues

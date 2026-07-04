@@ -48,6 +48,7 @@ async function getUserPushPrefs(db: AppDatabase, userId: string): Promise<UserPu
       pushTournament: user.pushTournament,
       pushLeague: user.pushLeague,
       pushMentions: user.pushMentions,
+      pushDm: user.pushDm,
     })
     .from(user)
     .where(eq(user.id, userId))

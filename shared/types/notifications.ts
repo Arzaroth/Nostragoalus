@@ -15,6 +15,7 @@ export type NotificationType =
   | 'TROPHY_AWARDED'
   | 'ACHIEVEMENT_UNLOCKED'
   | 'CHAT_MENTION'
+  | 'DM_MESSAGE'
 
 export type NotificationData =
   | { type: 'LEAGUE_JOIN'; leagueId: string; leagueName: string; joinerName: string }
@@ -87,6 +88,14 @@ export type NotificationData =
       matchId: string | null
       homeTeam: string | null
       awayTeam: string | null
+      senderId: string
+      senderName: string
+    }
+  // Someone sent the recipient a direct message. Carries the thread + sender name
+  // only; the message body is E2EE, so there is no preview.
+  | {
+      type: 'DM_MESSAGE'
+      threadId: string
       senderId: string
       senderName: string
     }
