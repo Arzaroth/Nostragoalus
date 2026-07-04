@@ -88,6 +88,16 @@ the code. Alphabetical.
   -> fix -> gate -> merge -> release -> remove worktree.
 - **Epoch (chat)** - the key-version counter on E2E chat; rotating the league key
   bumps the epoch. See [features/chat.md](features/chat.md).
+- **DM thread** - a one-to-one direct-message conversation (`dm_thread`), stored
+  as a canonical ordered participant pair (`userAId < userBId`, unique). Messages
+  are `chat_message` rows scoped by `dm_thread_id` instead of a league, reusing the
+  chat crypto + reaction/attachment/reply stack. See
+  [features/dms.md](features/dms.md).
+- **Thread key epoch** - the key-version counter on a DM thread (`dm_thread.keyEpoch`);
+  the per-thread symmetric key is sealed to each participant per epoch
+  (`dm_thread_key`), so rotating it bumps the epoch and clients keep an epoch->key
+  map to read old history. The [chat](features/chat.md) league-key epoch for a
+  two-member room. See [features/dms.md](features/dms.md).
 - **Room key** - a chat room's id for unread tracking: the `matchId` of a match
   thread, or the `__global__` sentinel for the league room (`roomKeyFor`). The
   cross-league inbox keys unread per `leagueId::roomKey`. See

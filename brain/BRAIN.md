@@ -67,6 +67,7 @@ use the indexes.
 | [notifications.md](features/notifications.md) | In-app notification center (the bell). |
 | [web-push.md](features/web-push.md) | VAPID push, per-category toggles, live goal/kickoff. |
 | [chat.md](features/chat.md) | E2E-encrypted league chat (threads, mentions, moderation, images). |
+| [dms.md](features/dms.md) | E2E-encrypted one-to-one direct messages, global dock. |
 | [tamper-evidence.md](features/tamper-evidence.md) | Commit-reveal hash-chain ledger + `/verify`. |
 | [past-pick-counterfactual.md](features/past-pick-counterfactual.md) | Owner-only "an earlier pick of yours would have scored", live + full-time. |
 | [share-images.md](features/share-images.md) | Prediction share cards. |
