@@ -33,27 +33,69 @@ each prize; it settles when the competition ends. No finalize hook, no award tab
   meta-pick bonuses), the phase / Madame-IRMA / team-specialist criteria via
   `rankableForMatches` narrowed with `inArray(prediction.userId, memberIds)`.
 - `getRewardStandings(db, leagueId, viewerId)` returns all five: each configured
-  prize (or null) + the current league leader(s) (ties share) + `youHold`. A
-  leader's name follows the same visibility rule as the league board
+  prize (or null) + the current league leader(s) (ties share) + `youHold` +
+  `disabled`. A leader's name follows the same visibility rule as the league board
   ([leagues.md](leagues.md)): admin-hidden members and (to non-members) private
   profiles keep their slot but surface with an empty `displayName`, which the UI
-  renders as a neutral "hidden player" placeholder.
-- `getMyRewards(db, userId)` walks the user's leagues and returns the prizes they
-  currently hold, for the cabinet strip.
+  renders as a neutral "hidden player" placeholder. `teamCode`/`disabled` for
+  TEAM_SPECIALIST come from the competition's `featuredTeamCode` (see below), not
+  the winner row, so the criterion reads as disabled before anyone scores.
+- `getMyRewards(db, userId)` walks the user's leagues and returns every configured
+  prize with `youHold`, for the cabinet strip: the ones the user leads (lit) and
+  the ones they chase (tentative, greyed). Held prizes sort first.
+
+## Per-criterion ranking (the full standings behind a prize)
+
+The winners functions collapse each criterion to its rank-1 rows; the ranking
+functions expose the whole ladder so a member can click a prize and see where they
+stand.
+
+- `rankCriteria(db, competitionId, type, { leagueId, memberIds, teamCode })`
+  (`awards/service.ts`) returns the full ordered `{ userId, value, rank }[]` for one
+  criterion. Its rank-1 rows are exactly `computeCriteriaWinners`' winners for that
+  type (shared `criteriaMatchFilter` for the phases; OVERALL via `getLeaderboard`;
+  MADAME_IRMA ranked on EXACT count; TEAM_SPECIALIST scoped to the featured team,
+  empty without one). 1224 ranking; zero-value rows are dropped.
+- `getRewardRanking(db, leagueId, type, viewerId)` (`rewards/service.ts`) wraps it
+  for a league: the reward, the metric (`points`/`exact`), and the ranked rows with
+  the same name/avatar visibility rules as the standings (extracted into
+  `resolveVisibleNames`), each flagged `isViewer`. Served at
+  `GET /api/leagues/[id]/rewards/[type]/ranking`.
+
+## Team Specialist featured team (admin)
+
+TEAM_SPECIALIST tracks the competition's `featuredTeamCode` (`competition` table).
+It has no default, so the prize is **disabled** until an admin sets one.
+
+- Admin **Competitions** section (`AdminCompetitionsSection.vue`, first tab, above
+  Leagues) lists each competition with a team picker sourced from its fixtures.
+- `listCompetitionsForAdmin` + `setCompetitionFeaturedTeam` (`competitions/admin.ts`,
+  the latter rejecting a code not in the competition's teams) behind
+  `GET`/`PUT /api/admin/competitions`; the store setter is
+  `setFeaturedTeamCode` (`competitions/store.ts`).
 
 ## Client
 
-- `useLeagueRewards` (standings + owner config mutation), `useMyRewards`.
+- `useLeagueRewards` (standings + owner config mutation), `useMyRewards`,
+  `useRewardRanking` (a criterion's ranking, fetched when the dialog opens),
+  `useCriterionName` (shared criterion label incl. the featured-team name).
 - `LeagueRewards.vue` on the league page: the prizes grid (current leader, yours
-  highlighted) + an owner "Edit prizes" dialog. A "prizes you hold" strip shows on
-  the [cabinet](achievements.md).
+  highlighted; TEAM_SPECIALIST greyed when disabled) + an owner "Edit prizes"
+  dialog. Clicking a prize opens `RewardRankingDialog.vue` (shared with the
+  cabinet). A "your prizes" strip (held + chased) shows on the
+  [cabinet](achievements.md), each tile opening the same dialog.
 
 ## Sources
 
-- `db/app-schema.ts` (`league_reward`), `shared/types/rewards.ts`
+- `db/app-schema.ts` (`league_reward`, `competition.featuredTeamCode`),
+  `shared/types/rewards.ts`, `shared/types/admin-competitions.ts`
 - `server/utils/rewards/{service,image}.ts`, `server/utils/awards/service.ts`
-  (`computeCriteriaWinners`)
-- `server/api/leagues/[id]/rewards.{get,put}.ts`, `server/api/me/rewards.get.ts`,
-  `server/api/media/reward/[key].get.ts`
-- `app/composables/use{LeagueRewards,MyRewards}.ts`, `app/components/LeagueRewards.vue`
-- i18n `reward.*` in all five locales
+  (`computeCriteriaWinners`, `rankCriteria`, `criteriaMatchFilter`),
+  `server/utils/competitions/{store,admin}.ts`
+- `server/api/leagues/[id]/rewards.{get,put}.ts`,
+  `server/api/leagues/[id]/rewards/[type]/ranking.get.ts`,
+  `server/api/me/rewards.get.ts`, `server/api/media/reward/[key].get.ts`,
+  `server/api/admin/competitions/index.{get,put}.ts`
+- `app/composables/use{LeagueRewards,MyRewards,RewardRanking,CriterionName}.ts`,
+  `app/components/{LeagueRewards,RewardRankingDialog,TrophyCabinet,AdminCompetitionsSection}.vue`
+- i18n `reward.*` and `admin.competitions.*` in all five locales
