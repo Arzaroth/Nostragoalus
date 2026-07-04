@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.16.0] - 2026-07-04
+
 ### Added
 - **The Equalizer bot**: a new bot that calls a draw in every single match. Enable it (and the Crowd Bot) from a single "Bots" button on the leaderboard - each shows up as a ghost row at the rank it would have earned, with its own page listing every pick. It never affects anyone's real standing.
 - **Evil Twin on player profiles**: every player's profile has an "Evil Twin" toggle - their own picks with every score flipped (a draw is its own twin) - so you can see how betting against them would have gone, and where that twin would rank. Follows the same visibility as their picks.

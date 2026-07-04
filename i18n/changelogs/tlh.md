@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.16.0] - 2026-07-04
+
 ### chelpu'
 - **Equalizer bot**: bot chu', Hoch qIp rap 'oH wIv. leaderboard "Bots" button wa' vItlhutlhDI' chu'lu' (Crowd Bot je) - Hoch patlh Suqpu'bogh lurDech rur 'anglu', 'ej Hoch wIv per page ghaj. not ghaH patlh lurDech ruch.
 - **Evil Twin player profile-Daq**: Hoch player profile "Evil Twin" toggle ghaj - wIv ghajbogh, Hoch mI' choHlu' (rap 'oH twin 'oH je) - matlhHa'ghach DaqaSmoHchugh nuq qaS legh, 'ej nuqDaq patlh twin. wIv rur chut tlha'.
