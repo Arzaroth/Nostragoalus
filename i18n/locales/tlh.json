@@ -49,8 +49,8 @@
       "opening-act": { "name": "poSmoHwI'", "desc": "may' wa'DIch DaqIppu'.", "criteria": "may' wa'DIch mI' pup DaqIp." },
       "cold-streak": { "name": "bIr", "desc": "vagh Qaghmey. bIqIp'a'?", "criteria": "vagh DaqIp 'ach Qap Hoch. bIqIp'a'?" },
       "wooden-spoon": { "name": "'utlh Qav", "desc": "may' rInDI' Qav SoH.", "criteria": "may' rInDI' Qav Dabej." },
-      "the-magic-word": { "name": "rItlh mu'", "desc": "mu' So' Dajatlh. rItlh mach QIHbe'." },
-      "the-collector": { "name": "boSwI'", "desc": "Hoch yIboS. wa' yIlonQo'." }
+      "the-magic-word": { "name": "rItlh mu'", "desc": "mu' So' Dajatlh. rItlh mach QIHbe'.", "criteria": "lojmIt neH poSbe' 'op mu'." },
+      "the-collector": { "name": "boSwI'", "desc": "Hoch yIboS. wa' yIlonQo'.", "criteria": "Hoch 'utlh lo'laH DaghajnIS." }
     }
   },
   "reward": {

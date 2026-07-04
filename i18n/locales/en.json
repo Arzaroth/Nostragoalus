@@ -53,8 +53,8 @@
       "opening-act": { "name": "Opening Act", "desc": "Nailed the very first match of the whole tournament.", "criteria": "Call the exact scoreline of the tournament's opening match." },
       "cold-streak": { "name": "Ice Cold", "desc": "Five misses in a row. Are you even trying?", "criteria": "Miss five predictions in a row." },
       "wooden-spoon": { "name": "Wooden Spoon", "desc": "Propped up the entire table.", "criteria": "Finish dead last on the leaderboard once the tournament ends." },
-      "the-magic-word": { "name": "The Magic Word", "desc": "You said the magic word. A little colour never hurt anyone." },
-      "the-collector": { "name": "The Collector", "desc": "Gotta catch 'em all. Every last one." }
+      "the-magic-word": { "name": "The Magic Word", "desc": "You said the magic word. A little colour never hurt anyone.", "criteria": "Some words unlock more than doors." },
+      "the-collector": { "name": "The Collector", "desc": "Gotta catch 'em all. Every last one.", "criteria": "Hold every badge worth holding." }
     }
   },
   "reward": {

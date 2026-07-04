@@ -49,8 +49,8 @@
       "opening-act": { "name": "Lever de rideau", "desc": "Le tout premier match du tournoi, trouvé pile.", "criteria": "Trouvez le score exact du match d'ouverture du tournoi." },
       "cold-streak": { "name": "Glacial", "desc": "Cinq ratés d'affilée. Tu essaies vraiment ?", "criteria": "Ratez cinq pronostics d'affilée." },
       "wooden-spoon": { "name": "Lanterne rouge", "desc": "Bon dernier de tout le classement.", "criteria": "Terminez bon dernier du classement à la fin du tournoi." },
-      "the-magic-word": { "name": "Le mot magique", "desc": "Vous avez dit le mot magique. Un peu de couleur n'a jamais fait de mal." },
-      "the-collector": { "name": "Le Collectionneur", "desc": "Il faut tous les attraper. Jusqu'au dernier." }
+      "the-magic-word": { "name": "Le mot magique", "desc": "Vous avez dit le mot magique. Un peu de couleur n'a jamais fait de mal.", "criteria": "Certains mots ouvrent plus que des portes." },
+      "the-collector": { "name": "Le Collectionneur", "desc": "Il faut tous les attraper. Jusqu'au dernier.", "criteria": "Détenez tous les badges qui comptent." }
     }
   },
   "reward": {

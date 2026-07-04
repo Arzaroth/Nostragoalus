@@ -104,8 +104,8 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { key: 'wooden-spoon', category: 'SHAME', scope: 'COMPETITION', metric: 'woodenSpoon', tiers: single(1) },
 ]
 
-// The badges the-collector requires. SHAME badges are opt-out: several are mutually
-// exclusive with the "good" ones (you cannot finish both top-3 and dead last), so
+// The badges the-collector requires. SHAME badges are opt-out: they conflict with
+// the "good" ones (in any real-sized field, dead last is nowhere near top-3), so
 // requiring them would make the collector unwinnable in a single competition.
 export const isCollectable = (def: AchievementDef): boolean => def.category !== 'SHAME'
 export const COLLECTABLE_ACHIEVEMENTS: AchievementDef[] = ACHIEVEMENTS.filter(isCollectable)
