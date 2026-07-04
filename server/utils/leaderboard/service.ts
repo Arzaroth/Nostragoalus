@@ -64,6 +64,23 @@ export function compareLeaderboardRows(a: RankableRow, b: RankableRow): number {
   )
 }
 
+// Standard competition ("1224") ranking over rows already sorted by the ladder:
+// equal-key rows share a rank, the next distinct key skips ahead. Takes the
+// per-row tie key in sorted order and returns the rank for each position.
+export function denseRanks(sortedKeys: string[]): number[] {
+  const out: number[] = []
+  let rank = 0
+  let prev: string | null = null
+  sortedKeys.forEach((key, i) => {
+    if (key !== prev) {
+      rank = i + 1
+      prev = key
+    }
+    out.push(rank)
+  })
+  return out
+}
+
 // How many league members the board leaves out for visibility reasons (mirrors
 // getLeaderboard's WHERE): admin-hidden always, private profiles when the
 // viewer isn't entitled to see them. The viewer themselves is never counted
@@ -264,15 +281,9 @@ export async function getLeaderboard(
 
   // Standard competition ranking ("1224"): equal-on-the-ladder rows share a rank,
   // the next distinct row skips ahead. Computed over the full board before paging.
-  let rank = 0
-  let prevKey: string | null = null
+  const ranks = denseRanks(merged.map((r) => `${r.rankTotal}|${r.rankExact}|${r.rankOutcome}|${r.rankGd}`))
   merged.forEach((r, i) => {
-    const key = `${r.rankTotal}|${r.rankExact}|${r.rankOutcome}|${r.rankGd}`
-    if (key !== prevKey) {
-      rank = i + 1
-      prevKey = key
-    }
-    r.rank = rank
+    r.rank = ranks[i]
   })
 
   return merged.slice(offset, offset + limit).map((r) => ({

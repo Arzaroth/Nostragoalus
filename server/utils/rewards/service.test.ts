@@ -159,6 +159,16 @@ describe('getMyRewards', () => {
     expect(bobs[0]).toMatchObject({ type: 'OVERALL', youHold: false })
   })
 
+  it('omits a disabled TEAM_SPECIALIST prize (no featured team) from the cabinet', async () => {
+    const { leagueId, alice } = await scenario() // no featuredTeamCode
+    await setLeagueRewards(db, leagueId, [
+      { type: 'OVERALL', label: 'Magnum' },
+      { type: 'TEAM_SPECIALIST', label: 'Boot' },
+    ])
+    const mine = await getMyRewards(db, alice)
+    expect(mine.map((r) => r.type)).toEqual(['OVERALL'])
+  })
+
   it('sorts prizes the user holds ahead of ones they are chasing', async () => {
     const { leagueId, alice } = await scenario()
     // Alice holds OVERALL but not the group phase (Alice+Bob tie is broken by the

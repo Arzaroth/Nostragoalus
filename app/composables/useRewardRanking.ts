@@ -14,6 +14,9 @@ export function useRewardRanking(
   return useQuery({
     queryKey: ['rewardRanking', id, criterion],
     enabled: computed(() => toValue(enabled) && !!id.value && !!criterion.value),
+    // Standings are live: refetch each time the dialog reopens rather than serving
+    // the app's 60s-stale cache (overrides the app-level staleTime).
+    staleTime: 0,
     queryFn: ({ signal }) =>
       $fetch<RewardRankingDto>(`/api/leagues/${id.value}/rewards/${criterion.value}/ranking`, { signal }),
   })

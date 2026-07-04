@@ -274,3 +274,15 @@ feature/architecture doc that implements it.
   domain string `nostragoalus/wrapped-card/v1`), not an extension of the
   prediction token payload - two token families that can never be swapped are
   simpler to reason about than one payload with two shapes.
+- **Prize rankings reuse the winners computation instead of a parallel path.**
+  `rankCriteria` shares `criteriaMatchFilter` (and OVERALL's `getLeaderboard`) with
+  `computeCriteriaWinners`, so a criterion's rank-1 rows are provably the same set
+  the standings report as leaders; the ranking just stops discarding the tail. One
+  source of truth avoids a "the dialog disagrees with the card" class of bug. See
+  [rewards.md](features/rewards.md).
+- **Team Specialist is disabled, not hidden, until an admin sets a featured team.**
+  `competition.featuredTeamCode` has no default (a sensible host default would be
+  wrong for a neutral competition), so rather than silently never awarding the
+  prize, the criterion surfaces `disabled` everywhere (greyed card, blocked owner
+  config, absent from the cabinet) and an admin Competitions panel makes the
+  requirement explicit. See [rewards.md](features/rewards.md).

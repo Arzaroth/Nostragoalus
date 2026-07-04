@@ -244,6 +244,29 @@ describe('rankCriteria', () => {
     ]) // Carol has no EXACT, so she is absent
   })
 
+  it('orders an EXACT tie by the points ladder while sharing the rank', async () => {
+    const competitionId = await seedCompetition(db)
+    const groupRound = await roundId(competitionId, 'GROUP', 1)
+    const kickoff = new Date('2026-06-11T18:00:00Z')
+    const x = await makeUser(db, 'x')
+    const y = await makeUser(db, 'y')
+    const m1 = await makeMatch(db, { competitionId, roundId: groupRound, stage: 'GROUP', status: 'FINISHED', fullTimeHome: 1, fullTimeAway: 0, winner: 'HOME', kickoffTime: kickoff })
+    const m2 = await makeMatch(db, { competitionId, roundId: groupRound, stage: 'GROUP', status: 'FINISHED', fullTimeHome: 2, fullTimeAway: 0, winner: 'HOME', kickoffTime: kickoff })
+    const p = async (u: string, mm: string, total: number, tier: BaseTier) =>
+      score(await makePrediction(db, { userId: u, matchId: mm, roundId: groupRound, home: 0, away: 0, lockedAt: kickoff }), total, tier)
+    // Both have one EXACT (tie on the metric); X adds a DIFF so the ladder
+    // tiebreak inside compareByExact orders X ahead, but they share rank 1.
+    await p(x, m1, 3, 'EXACT')
+    await p(x, m2, 2, 'DIFF')
+    await p(y, m1, 3, 'EXACT')
+    await p(y, m2, 0, 'MISS')
+
+    const rows = await rankCriteria(db, competitionId, 'MADAME_IRMA')
+    expect(rows.map((r) => r.userId)).toEqual([x, y])
+    expect(rows.every((r) => r.rank === 1)).toBe(true)
+    expect(rows.every((r) => r.value === 1)).toBe(true)
+  })
+
   it('scopes TEAM_SPECIALIST to the featured team fixtures', async () => {
     const { competitionId, alice } = await scenario('FRA')
     const rows = await rankCriteria(db, competitionId, 'TEAM_SPECIALIST', { teamCode: 'FRA' })

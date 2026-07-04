@@ -1,7 +1,7 @@
 import { and, eq, inArray, isNotNull, ne, or, type SQL, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { competition, competitionAward, match, prediction } from '../../../db/schema'
-import { compareLeaderboardRows, getLeaderboard, type RankableRow } from '../leaderboard/service'
+import { compareLeaderboardRows, denseRanks, getLeaderboard, type RankableRow } from '../leaderboard/service'
 import type { CompetitionAwardType } from '#shared/types/achievements'
 
 // The competition-end trophies (the "prizes" of the contest). Each is derived at
@@ -237,19 +237,12 @@ export async function rankCriteria(
   const byExact = type === 'MADAME_IRMA'
   const sorted = [...rows].sort(byExact ? compareByExact : compareLeaderboardRows)
 
-  const out: RankedCriteriaRow[] = []
-  let rank = 0
-  let prevKey: string | null = null
-  sorted.forEach((r, i) => {
-    // Ties share a rank on the ranking metric: EXACT count for MADAME_IRMA, the
-    // full points ladder otherwise (so the rank-1 set matches the winners).
-    const key = byExact ? `${r.exactCount}` : `${r.totalPoints}|${r.exactCount}|${r.outcomeCount}|${r.gdCount}`
-    if (key !== prevKey) {
-      rank = i + 1
-      prevKey = key
-    }
-    out.push({ userId: r.userId, value: byExact ? r.exactCount : r.totalPoints, rank })
-  })
+  // Ties share a rank on the ranking metric: EXACT count for MADAME_IRMA, the full
+  // points ladder otherwise (so the rank-1 set matches the winners).
+  const ranks = denseRanks(
+    sorted.map((r) => (byExact ? `${r.exactCount}` : `${r.totalPoints}|${r.exactCount}|${r.outcomeCount}|${r.gdCount}`)),
+  )
+  const out = sorted.map((r, i) => ({ userId: r.userId, value: byExact ? r.exactCount : r.totalPoints, rank: ranks[i] }))
   // Zeros sort last, so dropping them leaves the positive rows' ranks intact.
   return out.filter((r) => r.value > 0)
 }
