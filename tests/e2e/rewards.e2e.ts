@@ -48,4 +48,14 @@ test('a league owner configures a prize and sees they are currently leading it',
   // The prize shows on the league page, with the current leader being you.
   await expect(page.getByText('Un magnum de rosé')).toBeVisible()
   await expect(page.getByText("that's you!")).toBeVisible()
+
+  // Clicking the prize opens its live ranking, where you sit on top with points.
+  // The card is SSR-rendered; retry until hydration wires the click handler.
+  await expect(async () => {
+    await page.getByText('Un magnum de rosé').click()
+    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 2_000 })
+  }).toPass({ timeout: 15_000 })
+  const dialog = page.getByRole('dialog')
+  await expect(dialog.getByText('3 pts')).toBeVisible()
+  await expect(dialog.getByText("that's you!")).toBeVisible()
 })
