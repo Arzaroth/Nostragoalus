@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+- **Backfill achievement badges earned before the feature shipped**: a new admin Background-tasks job grants every milestone badge players already earned in past or finished competitions. Milestone badges otherwise only unlock on a match that newly scores, so historical results - and any competition already over - never received them.
+
 ## [2.16.1] - 2026-07-04
 
 ### Fixed

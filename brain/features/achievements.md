@@ -50,6 +50,14 @@ idempotent and returns the badges newly earned or graded up, for notification. A
 is a high-water mark: a rescore that lowers a metric refreshes stored progress but
 never demotes the badge.
 
+Because it only runs on a finalize tick that newly scores a match (`result.scored > 0`),
+a competition whose matches are already scored when the feature deploys - or one that
+has finished and will never finalize again - never gets its historical badges. The
+manual `achievements:backfill` task (`server/tasks/achievements/backfill.ts` ->
+`backfillAchievements`, admin Background-tasks page) runs the same idempotent evaluation
+across every competition to grant them, silently (no unlock notifications, so a deploy
+doesn't blast users with a backlog).
+
 Behavioural timings read `prediction.createdAt` (first save) vs `match.kickoffTime`;
 night-owl counts the small hours by the UTC hour explicitly (not the DB session zone).
 Streaks and perfect rounds are folded in JS from the scored rows in kickoff order, with
@@ -88,8 +96,9 @@ own cabinet (`cabinetPath`).
 
 - `db/app-schema.ts` (`competition_award`, `user_achievement`, `showcase_pin`,
   `competition.featuredTeamCode`)
-- `server/utils/awards/service.ts`, `server/utils/achievements/{catalog,service,cabinet}.ts`
-- `server/tasks/matches/finalize.ts` (the award + evaluate + notify hook)
+- `server/utils/awards/service.ts`, `server/utils/achievements/{catalog,service,cabinet,backfill}.ts`
+- `server/tasks/matches/finalize.ts` (the award + evaluate + notify hook),
+  `server/tasks/achievements/backfill.ts` (manual historical backfill, in `tasks/registry.ts`)
 - `server/api/users/[id]/cabinet.get.ts`, `server/api/showcase/index.put.ts`
 - `app/composables/use{Cabinet,Showcase}.ts`, `app/components/{TrophyCabinet,CabinetTile}.vue`
 - `shared/types/achievements.ts`, i18n `achievements.*` in all five locales

@@ -1142,7 +1142,8 @@
       "notifsPrune": "Notification cleanup",
       "oddsBackfill": "Odds backfill (historical)",
       "fixturesImport": "Import fixtures",
-      "championBackfillRanks": "Backfill champion ranks"
+      "championBackfillRanks": "Backfill champion ranks",
+      "achievementsBackfill": "Backfill achievement badges"
     },
     "status": { "ok": "Last run succeeded", "failed": "Last run failed", "never": "Never run" },
     "tip": { "never": "Has not run yet" },

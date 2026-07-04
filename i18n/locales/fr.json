@@ -1138,7 +1138,8 @@
       "notifsPrune": "Nettoyage des notifications",
       "oddsBackfill": "Récupération des cotes (historique)",
       "fixturesImport": "Importer les matchs",
-      "championBackfillRanks": "Compléter les rangs des champions"
+      "championBackfillRanks": "Compléter les rangs des champions",
+      "achievementsBackfill": "Compléter les badges de succès"
     },
     "status": { "ok": "Dernière exécution réussie", "failed": "Dernière exécution échouée", "never": "Jamais exécutée" },
     "tip": { "never": "Pas encore exécutée" },

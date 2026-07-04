@@ -5,6 +5,9 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Corrigé
+- **Attribuer les badges de succès gagnés avant l'arrivée de la fonctionnalité** : un nouveau job de la page Tâches en arrière-plan (admin) attribue tous les badges d'étape que les joueurs avaient déjà gagnés dans les compétitions passées ou terminées. Ces badges ne se débloquaient sinon qu'au moment où un match était nouvellement noté, si bien que les résultats historiques - et toute compétition déjà terminée - ne les recevaient jamais.
+
 ## [2.16.1] - 2026-07-04
 
 ### Corrigé

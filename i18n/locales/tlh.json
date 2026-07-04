@@ -1138,7 +1138,8 @@
       "notifsPrune": "QInmey Say'moH",
       "oddsBackfill": "Suvluq tIq Suq",
       "fixturesImport": "may'mey tIlIH",
-      "championBackfillRanks": "charghwI' patlh tI'"
+      "championBackfillRanks": "charghwI' patlh tI'",
+      "achievementsBackfill": "may' Segh Huch tI'"
     },
     "status": { "ok": "Qapchu' Qu' ramey", "failed": "luj Qu' ramey", "never": "qaSpu'be'" },
     "tip": { "never": "qaSpu'be'" },

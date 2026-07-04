@@ -1324,7 +1324,8 @@
       "notifsPrune": "تنظيف الإشعارات",
       "oddsBackfill": "تعبئة الاحتمالات (التاريخية)",
       "fixturesImport": "استيراد المباريات",
-      "championBackfillRanks": "تعبئة تصنيفات البطل"
+      "championBackfillRanks": "تعبئة تصنيفات البطل",
+      "achievementsBackfill": "تعبئة شارات الإنجازات"
     },
     "status": {
       "ok": "نجح آخر تشغيل",
