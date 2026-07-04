@@ -83,7 +83,7 @@ this doc is the feature-level map.
   domain-verified / SCIM badges per provider, a Manage panel with the lifecycle
   buttons, test-connection results, the test-sign-in popup + claim preview, the
   domain TXT card (+ bypass), and the reveal-once SCIM token card. i18n keys under
-  `admin.sso.*` in all four locales.
+  `admin.sso.*` in all five locales.
 
 ## Related
 

@@ -7,7 +7,7 @@ size depends on how unlikely the pick was.
 ## Mechanics
 
 - The pick is a row in `champion_pick` (`userId`, `competitionId`, `teamCode`,
-  `teamName`, `awardedPoints`).
+  `teamName`, `fifaRank`, `awardedPoints`).
 - Points use **FIFA-rank tier buckets**, not a flat bonus. Default tiers
   (`DEFAULT_CHAMPION_TIERS`, stored in `scoring_config.champion_tiers` jsonb):
 
@@ -18,8 +18,11 @@ size depends on how unlikely the pick was.
   | 21 - 40 | 25 |
   | 41+ | 40 |
 
-  A team with an unknown rank falls back to the flat `championBonus`. Picking a
-  lower-ranked team is a bigger gamble and pays more.
+  A team whose rank is unknown because it is not in the FIFA table gets the
+  catch-all top tier (the biggest long-shot payout), not the flat bonus. The
+  flat `championBonus` is the fallback only when the FIFA ranking fetch itself
+  fails and no ranks are available at all. Picking a lower-ranked team is a
+  bigger gamble and pays more.
 - **The rank and payout are snapshotted on the pick at pick time and never
   recomputed.** If the team's FIFA rank changes later, the locked-in payout does
   not move. The FIFA ranking source and its quirks are documented in
@@ -49,8 +52,10 @@ winner is known, and a `CHAMPION_RESULT` notification goes to the winners.
 
 - `db/app-schema.ts` (`champion_pick`, `scoring_config.champion_tiers`)
 - `app/composables/useChampion.ts`, `server/api/champion/index.put.ts`
-- `server/utils/champion/ranking.ts` (`championPointsForRank`, `getFifaRanks`)
-- `server/utils/scoring/config.ts` (`DEFAULT_CHAMPION_TIERS`, `getChampionLockTime`)
+- `server/utils/champion/ranking.ts` (`getFifaRanks`) and
+  `server/utils/champion/service.ts` (`getChampionLockTime`, `repickChampion`,
+  `awardChampionBonuses`)
+- `server/utils/scoring/config.ts` (`DEFAULT_CHAMPION_TIERS`, `championPointsForRank`)
 - Shares its picker showcase, query/mutation plumbing, leaderboard bonus merge
   and result notification with the [best-scorer pick](best-scorer.md):
   `app/components/MetaPickShowcase.vue`, `app/composables/useMetaPick.ts`,

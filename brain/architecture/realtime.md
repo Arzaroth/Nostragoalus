@@ -92,6 +92,7 @@ everyone else. Both paths converge on the same vue-query cache keys (see
 ## Sources
 
 - `server/routes/_ws.ts`
-- `server/utils/live/hub.ts`, `server/utils/live/presence.ts`, `server/utils/live/viewers.ts`
+- `server/utils/live/hub.ts` (subscriber registry, presence map, every `publish*` helper), `server/utils/live/viewers.ts`
+- `server/utils/live/league-chat.ts` (`publishMemberNameChanged`), `server/utils/live/league-reactions.ts` (`publishLeagueReactionUpdates`), `server/utils/live/league-crowd.ts`
 - `app/composables/useReconnectingSocket.ts`, `app/utils/heartbeat.ts`, `app/composables/usePresence.ts`, `app/composables/useMatchPresence.ts`
 - `app/components/UserAvatar.vue` (presence dot), `app/components/MatchViewers.vue` ("N watching now")

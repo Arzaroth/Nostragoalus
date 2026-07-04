@@ -16,7 +16,7 @@ and sanitized with DOMPurify on the about page.
 ## Translated by active locale
 
 The changelog renders in the active locale. Translations are parallel
-Keep-a-Changelog files, `i18n/changelogs/{fr,th,tlh}.md`, mirroring
+Keep-a-Changelog files, `i18n/changelogs/{fr,th,tlh,ar}.md`, mirroring
 `CHANGELOG.md` bullet-for-bullet (identical version headers and dates;
 translated section titles and bullets). `useChangelog` imports all five with
 `?raw`, parses each, and `selectLocaleChangelog` overlays the active locale onto
@@ -40,7 +40,7 @@ marker and nothing to badge.
 
 ## Sources
 
-- `CHANGELOG.md`, `i18n/changelogs/{fr,th,tlh}.md`
+- `CHANGELOG.md`, `i18n/changelogs/{fr,th,tlh,ar}.md`
 - `app/composables/useChangelog.ts`, `app/utils/changelog.ts`
 - `app/pages/about.vue` (`#changelog`), `app/layouts/default.vue` (badge + menu)
 - `mise-tasks/changelog` (`read` / `promote` / `check`), `mise-tasks/release`

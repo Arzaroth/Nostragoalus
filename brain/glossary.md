@@ -15,7 +15,8 @@ the code. Alphabetical.
   round (`round_kind` = GROUP_MATCHDAY | KNOCKOUT).
 - **Stage** - GROUP, R32, R16, QF, SF, THIRD_PLACE, FINAL.
 - **Match** - one fixture; has a `match_status` lifecycle
-  (SCHEDULED -> LIVE -> FINISHED, plus POSTPONED/CANCELLED/SUSPENDED/AWARDED).
+  (SCHEDULED -> LIVE/PAUSED -> FINISHED, plus
+  POSTPONED/CANCELLED/SUSPENDED/AWARDED/INTERRUPTED).
 - **Prediction** - a user's home/away score guess for a match, locked at kickoff.
 - **Joker** - a single ×2 multiplier a user spends on one prediction per round.
 - **Trophy** - a rare, competition-end award (OVERALL, GROUP_PHASE,
@@ -52,6 +53,10 @@ the code. Alphabetical.
   [features/predictions-and-scoring.md](features/predictions-and-scoring.md).
 - **Scoring tiers** - EXACT (3) / DIFF (2) / OUTCOME (1) / MISS (0) base points,
   plus crowd-rarity and optional odds bonuses.
+- **Tournament Wrapped** - the post-final recap deck (a user's tournament as a
+  slide show) plus a shareable summary card. Gated on a SCORED final, read-side
+  only, every slide derived from persisted data. See
+  [features/wrapped.md](features/wrapped.md).
 
 ## Tamper-evidence
 

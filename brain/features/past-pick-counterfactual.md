@@ -63,7 +63,8 @@ documented approximation (see [../../TODO.md](../../TODO.md)).
 
 ## Phase / future
 
-Phase 1 = full-time result AND the live tease, both shipped together. The plan
+Phase 1 = full-time result AND the live tease, both shipped together in v2.5.0.
+The plan
 is to fold this into one "counterfactuals" surface with the future "evil twin"
 and "what-if stats" items - tracked in [../../TODO.md](../../TODO.md).
 

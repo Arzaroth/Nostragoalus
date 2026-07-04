@@ -27,8 +27,8 @@ exists for a future multi-book provider; the display surfaces it when populated.
 
 ## Storage and refresh
 
-- `odds_snapshot` rows store a snapshot per match: `provider`, `eventRef`, the
-  current `OddsTriple` (`oddsHome`/`oddsDraw`/`oddsAway`), the opening prices
+- `odds_snapshot` rows store a snapshot per match: `provider`, `providerEventRef`,
+  the current `OddsTriple` (`oddsHome`/`oddsDraw`/`oddsAway`), the opening prices
   (`initialHome`/`initialDraw`/`initialAway`, null when the provider exposes no
   open), a `bookmakers` jsonb (`StoredBookmakerOdds[]`, null for aggregating
   feeds like Sofascore), and a `kind` of `POLL` (live polling) or `BACKFILL`
@@ -74,6 +74,7 @@ JA3 fingerprint gets past the Cloudflare-class WAF. See
 - `server/utils/odds/store.ts` (`latestOddsByMatch`, `MatchOddsView`), `sync.ts`, `provider-config.ts`, `matcher.ts`
 - `server/utils/matches/service.ts` (attaches `match.odds`)
 - `app/utils/odds-movement.ts`, `app/composables/useMatchOdds.ts`, `app/components/MatchOdds.vue`
-- `shared/types/odds.ts` (`OddsTriple`, `StoredBookmakerOdds`)
-- `db/app-schema.ts` (`odds_snapshot`, `odds_kind` enum)
+- `shared/types/odds.ts` (`OddsTriple`, `StoredBookmakerOdds`, `OddsSnapshotKind`)
+- `db/app-schema.ts` (`odds_snapshot`; `kind` is an inline `POLL`/`BACKFILL` text
+  column typed `OddsSnapshotKind`, not a separate pg enum)
 - `server/utils/providers/cycle-tls.ts`
