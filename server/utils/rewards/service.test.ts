@@ -1,11 +1,11 @@
 import { eq } from 'drizzle-orm'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { AppDatabase } from '../../../db/types'
-import { leagueMember, leagueReward, match, prediction, round, user } from '../../../db/schema'
+import { competition, leagueMember, leagueReward, match, prediction, round, user } from '../../../db/schema'
 import type { BaseTier } from '../scoring/tiers'
 import { createTestDb } from '../../../tests/db'
 import { addLeagueMember, makeLeague, makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
-import { getMyRewards, getRewardStandings, listLeagueRewards, setLeagueRewards } from './service'
+import { getMyRewards, getRewardRanking, getRewardStandings, listLeagueRewards, setLeagueRewards } from './service'
 
 let db: AppDatabase
 
@@ -139,15 +139,137 @@ describe('getRewardStandings', () => {
 })
 
 describe('getMyRewards', () => {
-  it('lists the prizes the user currently holds across their leagues', async () => {
+  it('lists held (youHold) and chased (tentative) prizes, held first', async () => {
     const { leagueId, alice, bob } = await scenario()
     await setLeagueRewards(db, leagueId, [{ type: 'OVERALL', label: 'Un magnum', imageKey: 'reward/z.webp' }])
 
+    // Alice leads OVERALL, so she holds the one configured prize.
     const mine = await getMyRewards(db, alice)
     expect(mine).toHaveLength(1)
-    expect(mine[0]).toMatchObject({ leagueId, reward: { type: 'OVERALL', label: 'Un magnum', imageUrl: '/api/media/reward/z.webp' } })
+    expect(mine[0]).toMatchObject({
+      leagueId,
+      type: 'OVERALL',
+      youHold: true,
+      reward: { type: 'OVERALL', label: 'Un magnum', imageUrl: '/api/media/reward/z.webp' },
+    })
 
-    // Bob holds no prize.
-    expect(await getMyRewards(db, bob)).toHaveLength(0)
+    // Bob is a member chasing the same prize: it shows tentative (youHold false).
+    const bobs = await getMyRewards(db, bob)
+    expect(bobs).toHaveLength(1)
+    expect(bobs[0]).toMatchObject({ type: 'OVERALL', youHold: false })
+  })
+
+  it('sorts prizes the user holds ahead of ones they are chasing', async () => {
+    const { leagueId, alice } = await scenario()
+    // Alice holds OVERALL but not the group phase (Alice+Bob tie is broken by the
+    // ladder toward Alice on OVERALL only); configure both so she has one of each.
+    await setLeagueRewards(db, leagueId, [
+      { type: 'OVERALL', label: 'Magnum' },
+      { type: 'KNOCKOUT_PHASE', label: 'Trophy' },
+    ])
+    const mine = await getMyRewards(db, alice)
+    expect(mine).toHaveLength(2)
+    // Held (OVERALL) sorts before the chased knockout prize (nobody scored a KO).
+    expect(mine[0].youHold).toBe(true)
+    expect(mine[1].youHold).toBe(false)
+  })
+})
+
+// A team-specialist scenario: FRA is the featured team and the single scored
+// match involves FRA, so Alice leads the team subset.
+async function teamScenario() {
+  const competitionId = await seedCompetition(db)
+  await db.update(competition).set({ featuredTeamCode: 'FRA' }).where(eq(competition.id, competitionId))
+  const g1 = await groupRound(competitionId)
+  // Distinct ids so a test may build a plain scenario() alongside this one.
+  const alice = await makeUser(db, 'talice')
+  const bob = await makeUser(db, 'tbob')
+  const leagueId = await makeLeague(db, { competitionId, ownerId: alice })
+  await addLeagueMember(db, leagueId, bob, 'MEMBER')
+  const m = await makeMatch(db, {
+    competitionId,
+    roundId: g1,
+    stage: 'GROUP',
+    status: 'FINISHED',
+    homeTeamCode: 'FRA',
+    fullTimeHome: 1,
+    fullTimeAway: 0,
+    winner: 'HOME',
+    kickoffTime: new Date('2026-06-11T12:00:00Z'),
+  })
+  await scoredPred(alice, m, g1, 'EXACT', 3)
+  await scoredPred(bob, m, g1, 'DIFF', 2)
+  return { competitionId, leagueId, alice, bob }
+}
+
+describe('getRewardStandings team-specialist gating', () => {
+  it('disables TEAM_SPECIALIST with no featured team, enables it with one', async () => {
+    const plain = await scenario()
+    const off = (await getRewardStandings(db, plain.leagueId, plain.alice)).find((s) => s.type === 'TEAM_SPECIALIST')!
+    expect(off.disabled).toBe(true)
+    expect(off.teamCode).toBeNull()
+
+    const team = await teamScenario()
+    const on = (await getRewardStandings(db, team.leagueId, team.alice)).find((s) => s.type === 'TEAM_SPECIALIST')!
+    expect(on.disabled).toBe(false)
+    expect(on.teamCode).toBe('FRA')
+    expect(on.youHold).toBe(true) // Alice leads the FRA subset
+  })
+})
+
+describe('getRewardRanking', () => {
+  it('ranks a criterion among members and flags the viewer', async () => {
+    const { leagueId, alice, bob } = await scenario()
+    await setLeagueRewards(db, leagueId, [{ type: 'OVERALL', label: 'Magnum' }])
+
+    const ranking = await getRewardRanking(db, leagueId, 'OVERALL', bob)
+    expect(ranking.metric).toBe('points')
+    expect(ranking.reward?.label).toBe('Magnum')
+    expect(ranking.rows.map((r) => [r.displayName, r.value, r.rank, r.isViewer])).toEqual([
+      ['alice', 3, 1, false],
+      ['bob', 2, 2, true],
+    ])
+  })
+
+  it('reads MADAME_IRMA on the EXACT metric', async () => {
+    const { leagueId, alice } = await scenario()
+    const ranking = await getRewardRanking(db, leagueId, 'MADAME_IRMA', alice)
+    expect(ranking.metric).toBe('exact')
+    // Alice has the only EXACT; Bob (DIFF) drops out of the exact ranking.
+    expect(ranking.rows).toHaveLength(1)
+    expect(ranking.rows[0]).toMatchObject({ userId: alice, value: 1, rank: 1 })
+  })
+
+  it('returns an empty TEAM_SPECIALIST ranking when no featured team is set', async () => {
+    const { leagueId, alice } = await scenario()
+    const ranking = await getRewardRanking(db, leagueId, 'TEAM_SPECIALIST', alice)
+    expect(ranking.teamCode).toBeNull()
+    expect(ranking.rows).toEqual([])
+  })
+
+  it('names the TEAM_SPECIALIST ranking by the featured team', async () => {
+    const { leagueId, alice } = await teamScenario()
+    const ranking = await getRewardRanking(db, leagueId, 'TEAM_SPECIALIST', alice)
+    expect(ranking.teamCode).toBe('FRA')
+    expect(ranking.rows[0]).toMatchObject({ userId: alice, rank: 1 })
+  })
+
+  it('blanks a concealed member row for a non-member viewer', async () => {
+    const { leagueId, alice } = await scenario()
+    const outsider = await makeUser(db, 'outsider')
+    await db.update(user).set({ profilePrivate: true }).where(eq(user.id, alice))
+    const ranking = await getRewardRanking(db, leagueId, 'OVERALL', outsider)
+    const aliceRow = ranking.rows.find((r) => r.userId === alice)!
+    expect(aliceRow.displayName).toBe('')
+    expect(aliceRow.image).toBeNull()
+  })
+
+  it('is empty for a memberless league and throws for an unknown one', async () => {
+    const competitionId = await seedCompetition(db)
+    const owner = await makeUser(db, 'owner')
+    const leagueId = await makeLeague(db, { competitionId, ownerId: owner })
+    await db.delete(leagueMember).where(eq(leagueMember.leagueId, leagueId))
+    expect((await getRewardRanking(db, leagueId, 'OVERALL', null)).rows).toEqual([])
+    await expect(getRewardRanking(db, 'nope', 'OVERALL', null)).rejects.toThrow()
   })
 })

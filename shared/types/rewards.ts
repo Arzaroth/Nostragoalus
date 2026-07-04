@@ -33,13 +33,47 @@ export interface RewardStandingDto {
   winners: { userId: string; displayName: string }[]
   value: number
   teamCode: string | null
+  // TEAM_SPECIALIST is disabled until an admin configures the competition's
+  // featured team: no prize can be earned and the criterion reads as inactive.
+  disabled: boolean
   youHold: boolean
 }
 
-// A reward the viewer currently holds in one of their leagues, for the cabinet
-// "prizes you hold" strip (aggregated across leagues).
+// A configured prize in one of the viewer's leagues, for the cabinet strip
+// (aggregated across leagues). youHold distinguishes prizes the viewer currently
+// leads (lit) from ones they are chasing (tentative, greyed). type/teamCode link
+// the tile to that criterion's ranking.
 export interface MyRewardDto {
   leagueId: string
   leagueName: string
   reward: LeagueRewardDto
+  type: CompetitionAwardType
+  teamCode: string | null
+  youHold: boolean
+}
+
+// How a criterion's ranking value reads: prediction points for most, EXACT-count
+// for Madame IRMA.
+export type RewardMetric = 'points' | 'exact'
+
+// One member's row in a criterion's live ranking (the prize leaderboard opened
+// from a prize card). displayName is '' when the viewer isn't entitled to see it.
+export interface RewardRankingRow {
+  rank: number
+  userId: string
+  displayName: string
+  image: string | null
+  value: number
+  isViewer: boolean
+}
+
+// A criterion's full live ranking among a league's members, for the prize-ranking
+// dialog. reward is the configured prize (or null), teamCode names the featured
+// team for TEAM_SPECIALIST.
+export interface RewardRankingDto {
+  type: CompetitionAwardType
+  teamCode: string | null
+  reward: LeagueRewardDto | null
+  metric: RewardMetric
+  rows: RewardRankingRow[]
 }

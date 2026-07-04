@@ -5,7 +5,7 @@ import { competition, competitionAward, prediction, round } from '../../../db/sc
 import type { BaseTier } from '../scoring/tiers'
 import { createTestDb } from '../../../tests/db'
 import { makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
-import { awardCompetitionTrophies } from './service'
+import { awardCompetitionTrophies, criteriaMatchFilter, rankCriteria } from './service'
 
 let db: AppDatabase
 
@@ -199,5 +199,60 @@ describe('awardCompetitionTrophies', () => {
 
     await awardCompetitionTrophies(db, competitionId)
     expect(await awards(competitionId)).toHaveLength(0)
+  })
+})
+
+describe('criteriaMatchFilter', () => {
+  it('scopes only the phase criteria; whole-competition ones have no filter', () => {
+    expect(criteriaMatchFilter('GROUP_PHASE')).toBeDefined()
+    expect(criteriaMatchFilter('KNOCKOUT_PHASE')).toBeDefined()
+    expect(criteriaMatchFilter('OVERALL')).toBeUndefined()
+    expect(criteriaMatchFilter('MADAME_IRMA')).toBeUndefined()
+    expect(criteriaMatchFilter('TEAM_SPECIALIST')).toBeUndefined()
+  })
+})
+
+describe('rankCriteria', () => {
+  // scenario('FRA'): Alice 8 overall, Bob 5, Carol 3; group is an Alice/Bob tie on
+  // 5; knockout Alice 3 / Carol 2; IRMA Alice 2 exact / Bob 1; FRA subset Alice 6.
+  it('ranks OVERALL from the leaderboard, dropping zero-point players', async () => {
+    const { competitionId, alice, bob } = await scenario('FRA')
+    const rows = await rankCriteria(db, competitionId, 'OVERALL')
+    expect(rows.map((r) => [r.userId, r.value, r.rank])).toEqual([
+      [alice, 8, 1],
+      [bob, 5, 2],
+      expect.arrayContaining([3, 3]), // carol third on 3
+    ])
+  })
+
+  it('shares rank 1 on a tie and skips ahead (1224) for the group phase', async () => {
+    const { competitionId, alice, bob } = await scenario('FRA')
+    const rows = await rankCriteria(db, competitionId, 'GROUP_PHASE')
+    const top = rows.filter((r) => r.rank === 1)
+    expect(top.map((r) => r.userId).sort()).toEqual([alice, bob].sort())
+    expect(top.every((r) => r.value === 5)).toBe(true)
+    // Carol is next, skipped to rank 3.
+    expect(rows.find((r) => r.rank === 3)?.value).toBe(1)
+  })
+
+  it('ranks MADAME_IRMA by EXACT count, not points', async () => {
+    const { competitionId, alice, bob } = await scenario('FRA')
+    const rows = await rankCriteria(db, competitionId, 'MADAME_IRMA')
+    expect(rows.map((r) => [r.userId, r.value, r.rank])).toEqual([
+      [alice, 2, 1],
+      [bob, 1, 2],
+    ]) // Carol has no EXACT, so she is absent
+  })
+
+  it('scopes TEAM_SPECIALIST to the featured team fixtures', async () => {
+    const { competitionId, alice } = await scenario('FRA')
+    const rows = await rankCriteria(db, competitionId, 'TEAM_SPECIALIST', { teamCode: 'FRA' })
+    expect(rows[0]).toMatchObject({ userId: alice, value: 6, rank: 1 })
+    expect(rows).toHaveLength(3) // Alice 6, Carol 3, Bob 2 all scored in FRA games
+  })
+
+  it('returns no TEAM_SPECIALIST ranking without a featured team', async () => {
+    const { competitionId } = await scenario('FRA')
+    expect(await rankCriteria(db, competitionId, 'TEAM_SPECIALIST', {})).toEqual([])
   })
 })

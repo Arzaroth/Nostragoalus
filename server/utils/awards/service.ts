@@ -36,6 +36,20 @@ function topTiedByLadder(rows: RankableRow[]): RankableRow[] {
   return rows.filter((r) => sameLadder(r, best))
 }
 
+// The match subset each criterion scores over. GROUP = the group stage, KNOCKOUT
+// = everything after it. OVERALL/MADAME_IRMA span the whole competition (no filter)
+// and TEAM_SPECIALIST is team-scoped by the caller (it needs the team code).
+export function criteriaMatchFilter(type: CompetitionAwardType): SQL | undefined {
+  switch (type) {
+    case 'GROUP_PHASE':
+      return eq(match.stage, 'GROUP')
+    case 'KNOCKOUT_PHASE':
+      return ne(match.stage, 'GROUP')
+    default:
+      return undefined
+  }
+}
+
 // Per-user rankable aggregates over the competition's predictions, optionally
 // narrowed to a subset of matches (a phase, or a team's fixtures) and to a subset
 // of users (a league's members). Only scored predictions count; a user with no
@@ -143,8 +157,8 @@ export async function computeCriteriaWinners(
 
   // Phase trophies are pure prediction points within the phase (no meta bonus,
   // which isn't phase-attributable). GROUP = the group stage, KNOCKOUT = the rest.
-  pushPointsWinners(out, 'GROUP_PHASE', await rankableForMatches(db, competitionId, eq(match.stage, 'GROUP'), ids))
-  pushPointsWinners(out, 'KNOCKOUT_PHASE', await rankableForMatches(db, competitionId, ne(match.stage, 'GROUP'), ids))
+  pushPointsWinners(out, 'GROUP_PHASE', await rankableForMatches(db, competitionId, criteriaMatchFilter('GROUP_PHASE'), ids))
+  pushPointsWinners(out, 'KNOCKOUT_PHASE', await rankableForMatches(db, competitionId, criteriaMatchFilter('KNOCKOUT_PHASE'), ids))
 
   // Madame IRMA = the most EXACT scorelines across the whole competition.
   const whole = await rankableForMatches(db, competitionId, undefined, ids)
@@ -173,6 +187,71 @@ export async function computeCriteriaWinners(
   }
 
   return out
+}
+
+// One member's place in a criterion's live ranking. value is points for most
+// criteria, EXACT-count for MADAME_IRMA. Ties share a rank ("1224").
+export interface RankedCriteriaRow {
+  userId: string
+  value: number
+  rank: number
+}
+
+// Madame IRMA ranks on EXACT count first (its winning metric), then falls back to
+// the normal ladder so equal-exact rows still order deterministically.
+function compareByExact(a: RankableRow, b: RankableRow): number {
+  return b.exactCount - a.exactCount || compareLeaderboardRows(a, b)
+}
+
+// The full live ranking of one criterion among a league's members (or the whole
+// competition when no memberIds). Its rank-1 rows are exactly computeCriteriaWinners'
+// winners for that type; this exposes the tail so a member can see where they stand.
+// Only rows that actually scored in the criterion (value > 0) are returned.
+export async function rankCriteria(
+  db: AppDatabase,
+  competitionId: string,
+  type: CompetitionAwardType,
+  opts: { leagueId?: string; memberIds?: string[]; teamCode?: string | null } = {},
+): Promise<RankedCriteriaRow[]> {
+  // OVERALL folds in the champion + best-scorer bonuses, so it must come from the
+  // leaderboard (which already ranks provisionally), not raw prediction points.
+  if (type === 'OVERALL') {
+    const board = await getLeaderboard(db, {
+      competitionId,
+      leagueId: opts.leagueId,
+      includeHidden: true,
+      includePrivate: true,
+      limit: 100_000,
+    })
+    return board.filter((r) => r.totalPoints > 0).map((r) => ({ userId: r.userId, value: r.totalPoints, rank: r.rank }))
+  }
+
+  // TEAM_SPECIALIST has no ranking until a featured team is configured.
+  if (type === 'TEAM_SPECIALIST' && !opts.teamCode) return []
+  const filter =
+    type === 'TEAM_SPECIALIST'
+      ? or(eq(match.homeTeamCode, opts.teamCode!), eq(match.awayTeamCode, opts.teamCode!))
+      : criteriaMatchFilter(type)
+
+  const rows = await rankableForMatches(db, competitionId, filter, opts.memberIds)
+  const byExact = type === 'MADAME_IRMA'
+  const sorted = [...rows].sort(byExact ? compareByExact : compareLeaderboardRows)
+
+  const out: RankedCriteriaRow[] = []
+  let rank = 0
+  let prevKey: string | null = null
+  sorted.forEach((r, i) => {
+    // Ties share a rank on the ranking metric: EXACT count for MADAME_IRMA, the
+    // full points ladder otherwise (so the rank-1 set matches the winners).
+    const key = byExact ? `${r.exactCount}` : `${r.totalPoints}|${r.exactCount}|${r.outcomeCount}|${r.gdCount}`
+    if (key !== prevKey) {
+      rank = i + 1
+      prevKey = key
+    }
+    out.push({ userId: r.userId, value: byExact ? r.exactCount : r.totalPoints, rank })
+  })
+  // Zeros sort last, so dropping them leaves the positive rows' ranks intact.
+  return out.filter((r) => r.value > 0)
 }
 
 // Global trophy holders for a finished competition. Empty until the final is
