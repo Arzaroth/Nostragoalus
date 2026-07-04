@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { cabinetPath, chatMentionPath, type NotificationDTO } from '#shared/types/notifications'
+import { dmPath } from '#shared/types/dm'
 
 const { t, locale } = useI18n()
 const router = useRouter()
@@ -28,6 +29,7 @@ const ICONS: Record<NotificationDTO['type'], string> = {
   TROPHY_AWARDED: 'pi pi-trophy',
   ACHIEVEMENT_UNLOCKED: 'pi pi-verified',
   CHAT_MENTION: 'pi pi-at',
+  DM_MESSAGE: 'pi pi-envelope',
 }
 
 function itemText(n: NotificationDTO): string {
@@ -78,6 +80,8 @@ function itemText(n: NotificationDTO): string {
       return d.matchId
         ? t('notifications.item.mentionMatch', { name: d.senderName, home: d.homeTeam ?? '', away: d.awayTeam ?? '' })
         : t('notifications.item.mention', { name: d.senderName, league: d.leagueName })
+    case 'DM_MESSAGE':
+      return t('notifications.item.dm', { name: d.senderName })
   }
 }
 
@@ -100,6 +104,8 @@ function linkFor(n: NotificationDTO): string {
       return cabinetPath(d)
     case 'CHAT_MENTION':
       return chatMentionPath(d)
+    case 'DM_MESSAGE':
+      return dmPath(d.threadId)
   }
 }
 

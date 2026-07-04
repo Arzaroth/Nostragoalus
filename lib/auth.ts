@@ -149,6 +149,10 @@ export function buildAuthOptions(database: AuthDb) {
         pushLeague: { type: 'boolean' as const, required: false },
         // @mentioned in a league chat (any league/match). Default-on (prefs.ts).
         pushMentions: { type: 'boolean' as const, required: false },
+        // A new direct message landed. Directed by name, so default-on (prefs.ts).
+        pushDm: { type: 'boolean' as const, required: false },
+        // Opt-out of the global DM recipient search (co-members can always DM you).
+        dmDiscoverable: { type: 'boolean' as const, required: false },
         // Newest changelog version the user has viewed (settable: the client
         // stamps it on first load and when the changelog is opened).
         lastSeenChangelogVersion: { type: 'string' as const, required: false },

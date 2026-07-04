@@ -1391,6 +1391,7 @@
       "championLost": "Your champion pick {team} didn't win the {competition}.",
       "bestScorerWon": "Your Golden Boot pick {player} finished top scorer! +{points} pts",
       "bestScorerLost": "Your Golden Boot pick {player} didn't finish top scorer.",
+      "dm": "{name} sent you a message.",
       "mention": "{name} mentioned you in {league}.",
       "mentionMatch": "{name} mentioned you in {home} v {away}.",
       "trophyAwarded": "You won the {trophy} trophy in {competition}!",
@@ -1398,6 +1399,7 @@
     }
   },
   "push": {
+    "dm": { "title": "New message", "body": "{name} sent you a message" },
     "mention": { "title": "New mention", "body": "{name} mentioned you in {league}" },
     "mentionMatch": { "title": "New mention", "body": "{name} mentioned you in {home} v {away}" },
     "reminder": { "title": "Don't forget to predict", "body": "{home} v {away} kicks off soon" },

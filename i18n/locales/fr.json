@@ -1387,6 +1387,7 @@
       "championLost": "Votre pronostic champion {team} n'a pas gagné {competition}.",
       "bestScorerWon": "Votre pari Soulier d'or {player} a fini meilleur buteur ! +{points} pts",
       "bestScorerLost": "Votre pari Soulier d'or {player} n'a pas fini meilleur buteur.",
+      "dm": "{name} vous a envoyé un message.",
       "mention": "{name} vous a mentionné dans {league}.",
       "mentionMatch": "{name} vous a mentionné dans {home} v {away}.",
       "trophyAwarded": "Vous avez remporté le trophée {trophy} dans {competition} !",
@@ -1394,6 +1395,7 @@
     }
   },
   "push": {
+    "dm": { "title": "Nouveau message", "body": "{name} vous a envoyé un message" },
     "mention": { "title": "Nouvelle mention", "body": "{name} vous a mentionné dans {league}" },
     "mentionMatch": { "title": "Nouvelle mention", "body": "{name} vous a mentionné dans {home} v {away}" },
     "reminder": { "title": "N'oubliez pas de pronostiquer", "body": "{home} v {away} commence bientôt" },

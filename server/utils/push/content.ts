@@ -1,4 +1,5 @@
 import { cabinetPath, chatMentionPath, type NotificationData } from '../../../shared/types/notifications'
+import { dmPath } from '../../../shared/types/dm'
 import type { CompetitionAwardType } from '../../../shared/types/achievements'
 import en from '../../../i18n/locales/en.json'
 import fr from '../../../i18n/locales/fr.json'
@@ -178,6 +179,14 @@ export function notificationPushContent(data: NotificationData, locale: string |
           : render(m.mention, { name: data.senderName, league: data.leagueName })),
         url: chatMentionPath(data),
         tag: `mention:${data.leagueId}:${data.matchId ?? 'global'}`,
+      }
+    case 'DM_MESSAGE':
+      // Sender name only, never message text (DMs are E2EE). The tag collapses a
+      // burst of messages in the same thread into one notification.
+      return {
+        ...render(m.dm, { name: data.senderName }),
+        url: dmPath(data.threadId),
+        tag: `dm:${data.threadId}`,
       }
   }
 }
