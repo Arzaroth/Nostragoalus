@@ -3,9 +3,11 @@ import type { AppDatabase } from '../../../db/types'
 import { bestScorerPick, championPick, competitionAward, match, prediction, userAchievement } from '../../../db/schema'
 import type { AchievementTier } from '#shared/types/achievements'
 import { getLeaderboard } from '../leaderboard/service'
+import { hasDecidedFinal } from '../awards/service'
 import {
   ACHIEVEMENTS,
   type AchievementMetric,
+  COLLECTABLE_ACHIEVEMENTS,
   COLLECTOR_ACHIEVEMENT_KEY,
   tierForValue,
   type UserAchievementStats,
@@ -25,7 +27,9 @@ const ZERO_STATS: UserAchievementStats = {
   deadlineDancer: 0,
   exactStreak: 0,
   scoringStreak: 0,
+  missStreak: 0,
   perfectRounds: 0,
+  openingAct: 0,
   completed: 0,
   championOracle: 0,
   goldenTouch: 0,
@@ -33,26 +37,33 @@ const ZERO_STATS: UserAchievementStats = {
   loneWolf: 0,
   trophies: 0,
   podium: 0,
+  woodenSpoon: 0,
 }
 
-// Longest run of consecutive EXACT / non-MISS predictions, over the user's scored
-// picks in kickoff order.
-function streaks(rows: { tier: string; kickoff: Date; matchId: string }[]): { exactStreak: number; scoringStreak: number } {
+// Longest run of consecutive EXACT / non-MISS / MISS predictions, over the user's
+// scored picks in kickoff order. The MISS run backs the "bad" cold-streak badge.
+function streaks(
+  rows: { tier: string; kickoff: Date; matchId: string }[],
+): { exactStreak: number; scoringStreak: number; missStreak: number } {
   // Tiebreak equal kickoffs by matchId so simultaneous fixtures give a stable streak.
   const ordered = [...rows].sort(
     (a, b) => a.kickoff.getTime() - b.kickoff.getTime() || (a.matchId < b.matchId ? -1 : a.matchId > b.matchId ? 1 : 0),
   )
   let exact = 0
   let scoring = 0
+  let miss = 0
   let bestExact = 0
   let bestScoring = 0
+  let bestMiss = 0
   for (const r of ordered) {
     exact = r.tier === 'EXACT' ? exact + 1 : 0
     scoring = r.tier === 'MISS' ? 0 : scoring + 1
+    miss = r.tier === 'MISS' ? miss + 1 : 0
     bestExact = Math.max(bestExact, exact)
     bestScoring = Math.max(bestScoring, scoring)
+    bestMiss = Math.max(bestMiss, miss)
   }
-  return { exactStreak: bestExact, scoringStreak: bestScoring }
+  return { exactStreak: bestExact, scoringStreak: bestScoring, missStreak: bestMiss }
 }
 
 // Rounds where the user got every scored match in the round EXACT and left none
@@ -79,6 +90,23 @@ export async function computeAchievementStats(
   competitionId: string,
 ): Promise<Map<string, UserAchievementStats>> {
   const inComp = and(eq(match.id, prediction.matchId), eq(match.competitionId, competitionId))
+
+  // Final-standing badges (completionist, podium, wooden-spoon) only settle once the
+  // tournament is actually over - the same decided-FINAL gate the trophies use.
+  // Without this, "predicted every match" fires mid-tournament off the matches
+  // scored so far, and "finished last" would flip every finalize tick.
+  const tournamentDone = await hasDecidedFinal(db, competitionId)
+
+  // The tournament opener: the earliest-kickoff match that has been scored. Calling
+  // it EXACT earns opening-act (min match id breaks a same-kickoff tie, matching the
+  // streak ordering).
+  const [opener] = await db
+    .select({ id: match.id })
+    .from(match)
+    .where(and(eq(match.competitionId, competitionId), eq(match.scoringState, 'SCORED')))
+    .orderBy(match.kickoffTime, match.id)
+    .limit(1)
+  const openerId = opener?.id ?? null
 
   const agg = await db
     .select({
@@ -155,6 +183,12 @@ export async function computeAchievementStats(
 
   const board = await getLeaderboard(db, { competitionId, includeHidden: true, includePrivate: true, limit: 100_000 })
   const podiumUsers = new Set(board.filter((r) => r.rank <= 3 && r.totalPoints > 0).map((r) => r.userId))
+  // Dead last: everyone tied on the worst rank, but only a real contest (>1 ranked
+  // player). Gated on tournamentDone below so it settles once, at the end.
+  const lastRank = board.length > 0 ? Math.max(...board.map((r) => r.rank)) : 0
+  const woodenSpoonUsers = new Set(
+    board.length > 1 ? board.filter((r) => r.rank === lastRank).map((r) => r.userId) : [],
+  )
 
   // Fold the per-user, per-row work in JS.
   const scoredByUser = new Map<string, { roundId: string; tier: string; kickoff: Date; matchId: string }[]>()
@@ -182,7 +216,7 @@ export async function computeAchievementStats(
   for (const userId of ids) {
     const a = aggByUser.get(userId)
     const scored = scoredByUser.get(userId) ?? []
-    const { exactStreak, scoringStreak } = streaks(scored)
+    const { exactStreak, scoringStreak, missStreak } = streaks(scored)
     const isChampion = championByUser.has(userId)
     const rank = championByUser.get(userId) ?? null
     out.set(userId, {
@@ -197,16 +231,22 @@ export async function computeAchievementStats(
       deadlineDancer: a?.deadlineDancer ?? 0,
       exactStreak,
       scoringStreak,
+      missStreak,
       perfectRounds: perfectRounds(scored, roundScored),
-      completed: totalScored > 0 && scored.length === totalScored ? 1 : 0,
+      openingAct: openerId && scored.some((r) => r.matchId === openerId && r.tier === 'EXACT') ? 1 : 0,
+      // Predicted every match, but only credited once the tournament is over.
+      completed: tournamentDone && totalScored > 0 && scored.length === totalScored ? 1 : 0,
       championOracle: isChampion ? 1 : 0,
       goldenTouch: bestSet.has(userId) ? 1 : 0,
-      // Underdog = a winning champion pick that was a long shot (rank 41+, or an
-      // unranked team that fell back to the flat bonus).
-      underdog: isChampion && (rank === null || rank >= 41) ? 1 : 0,
+      // Underdog = a winning champion pick outside the FIFA top 15 (or an unranked
+      // team that fell back to the flat bonus). A reachable long shot, not rank 41+.
+      underdog: isChampion && (rank === null || rank >= 16) ? 1 : 0,
       loneWolf: loneByUser.get(userId) ?? 0,
       trophies: trophyByUser.get(userId) ?? 0,
-      podium: podiumUsers.has(userId) ? 1 : 0,
+      podium: tournamentDone && podiumUsers.has(userId) ? 1 : 0,
+      // Dead last, once the tournament is over. Only for players who actually
+      // predicted (a?.predictions), never someone who merely holds a champion pick.
+      woodenSpoon: tournamentDone && (a?.predictions ?? 0) > 0 && woodenSpoonUsers.has(userId) ? 1 : 0,
     })
   }
   return out
@@ -235,8 +275,8 @@ export async function evaluateAchievements(db: AppDatabase, competitionId: strin
       const tier = tierForValue(def.tiers, value)
       const ex = exByKey.get(`${userId}:${def.key}`)
       // Held once earned (tier is a high-water mark, so a rescore-down never
-      // loses it). Counts toward the "all badges" secret below.
-      if (ex || tier) heldCount += 1
+      // loses it). Only collectable (non-SHAME) badges count toward the secret.
+      if ((ex || tier) && def.category !== 'SHAME') heldCount += 1
       if (!tier) continue
       if (!ex) {
         await db.insert(userAchievement).values({ userId, competitionId, key: def.key, tier, progress: value })
@@ -252,7 +292,7 @@ export async function evaluateAchievements(db: AppDatabase, competitionId: strin
     }
     // The hidden "collector" secret: earned every non-secret badge. Granted
     // globally (competitionId null), once, idempotently.
-    if (heldCount === ACHIEVEMENTS.length) {
+    if (heldCount === COLLECTABLE_ACHIEVEMENTS.length) {
       const granted = await grantAchievement(db, {
         userId,
         competitionId: null,

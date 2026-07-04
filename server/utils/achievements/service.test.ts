@@ -44,6 +44,13 @@ async function scoredMatch(competitionId: string, rid: string, stage: string, ki
   return id
 }
 
+// A decided, scored final: the gate for the final-standing badges (completionist,
+// podium, wooden-spoon). Kicks off after every group match so it never displaces
+// the opener.
+async function decidedFinal(competitionId: string, rid: string): Promise<string> {
+  return scoredMatch(competitionId, rid, 'FINAL', new Date('2026-07-19T18:00:00Z'))
+}
+
 interface PredOpts {
   userId: string
   matchId: string
@@ -132,10 +139,13 @@ describe('computeAchievementStats', () => {
     const m1 = await scoredMatch(c, g1, 'GROUP', new Date('2026-06-11T12:00:00Z'))
     const m2 = await scoredMatch(c, g1, 'GROUP', new Date('2026-06-11T15:00:00Z'))
     const m3 = await scoredMatch(c, g2, 'GROUP', new Date('2026-06-12T12:00:00Z'))
+    // The tournament is over: completion only settles once the final is decided.
+    const fin = await decidedFinal(c, g2)
     // Alice: both G1 matches EXACT (perfect round) + predicts every scored match.
     await pred({ userId: alice, matchId: m1, roundId: g1, tier: 'EXACT', points: 3 })
     await pred({ userId: alice, matchId: m2, roundId: g1, tier: 'EXACT', points: 3 })
     await pred({ userId: alice, matchId: m3, roundId: g2, tier: 'DIFF', points: 2 })
+    await pred({ userId: alice, matchId: fin, roundId: g2, tier: 'OUTCOME', points: 1 })
     // Bob: only one of the two G1 matches, so no perfect round and not complete.
     await pred({ userId: bob, matchId: m1, roundId: g1, tier: 'EXACT', points: 3 })
 
@@ -214,6 +224,8 @@ describe('computeAchievementStats', () => {
       const m = await scoredMatch(c, g1, 'GROUP', new Date(`2026-06-1${i}T12:00:00Z`))
       await pred({ userId: users[i], matchId: m, roundId: g1, tier: 'EXACT', points: points[i] })
     }
+    // Podium (and wooden-spoon) only settle once the tournament is over.
+    await decidedFinal(c, g1)
     await db.insert(competitionAward).values([
       { competitionId: c, userId: 'u1', type: 'OVERALL', value: 10 },
       { competitionId: c, userId: 'u1', type: 'GROUP_PHASE', value: 10 },
@@ -224,6 +236,73 @@ describe('computeAchievementStats', () => {
     expect(all.get('u1')).toMatchObject({ trophies: 3, podium: 1 })
     expect(all.get('u3')?.podium).toBe(1)
     expect(all.get('u4')?.podium).toBe(0)
+  })
+})
+
+describe('final-standing gate, opener and bad badges', () => {
+  it('withholds completion, podium and wooden-spoon until the final is decided', async () => {
+    const c = await seedCompetition(db)
+    const g1 = await roundId(c, 'GROUP', 1)
+    const alice = await makeUser(db, 'alice')
+    const bob = await makeUser(db, 'bob')
+    const m = await scoredMatch(c, g1, 'GROUP', new Date('2026-06-11T12:00:00Z'))
+    await pred({ userId: alice, matchId: m, roundId: g1, tier: 'EXACT', points: 3 })
+    await pred({ userId: bob, matchId: m, roundId: g1, tier: 'OUTCOME', points: 1 })
+
+    // No decided final yet: alice has predicted every scored match and tops the
+    // board, bob is last - but none of the final-standing badges may fire.
+    let a = await stats(c, alice)
+    expect(a).toMatchObject({ completed: 0, podium: 0, woodenSpoon: 0 })
+    expect((await stats(c, bob)).woodenSpoon).toBe(0)
+
+    // Decide the final: now they settle.
+    await decidedFinal(c, g1)
+    a = await stats(c, alice)
+    expect(a.completed).toBe(0) // did not predict the final -> not complete
+    expect(a.podium).toBe(1)
+    expect((await stats(c, bob)).woodenSpoon).toBe(1)
+  })
+
+  it('credits opening-act only for an EXACT on the tournament opener', async () => {
+    const c = await seedCompetition(db)
+    const g1 = await roundId(c, 'GROUP', 1)
+    const alice = await makeUser(db, 'alice')
+    const bob = await makeUser(db, 'bob')
+    const opener = await scoredMatch(c, g1, 'GROUP', new Date('2026-06-11T12:00:00Z'))
+    const later = await scoredMatch(c, g1, 'GROUP', new Date('2026-06-12T12:00:00Z'))
+    // Alice nails the opener; bob only nails a later match.
+    await pred({ userId: alice, matchId: opener, roundId: g1, tier: 'EXACT', points: 3 })
+    await pred({ userId: bob, matchId: opener, roundId: g1, tier: 'DIFF', points: 2 })
+    await pred({ userId: bob, matchId: later, roundId: g1, tier: 'EXACT', points: 3 })
+
+    expect((await stats(c, alice)).openingAct).toBe(1)
+    expect((await stats(c, bob)).openingAct).toBe(0)
+  })
+
+  it('measures the longest MISS streak for the cold-streak badge', async () => {
+    const c = await seedCompetition(db)
+    const g1 = await roundId(c, 'GROUP', 1)
+    const alice = await makeUser(db, 'alice')
+    // MISS, MISS, EXACT, MISS, MISS, MISS -> longest miss streak 3.
+    const seq: BaseTier[] = ['MISS', 'MISS', 'EXACT', 'MISS', 'MISS', 'MISS']
+    for (let i = 0; i < seq.length; i++) {
+      const m = await scoredMatch(c, g1, 'GROUP', new Date(`2026-06-1${i}T12:00:00Z`))
+      await pred({ userId: alice, matchId: m, roundId: g1, tier: seq[i], points: seq[i] === 'MISS' ? 0 : 3 })
+    }
+    expect((await stats(c, alice)).missStreak).toBe(3)
+  })
+
+  it('draws the underdog line at FIFA rank 16, not 41', async () => {
+    const c = await seedCompetition(db)
+    const inside = await makeUser(db, 'inside')
+    const edge = await makeUser(db, 'edge')
+    await db.insert(championPick).values([
+      { userId: inside, competitionId: c, teamName: 'I', teamCode: 'I', fifaRank: 15, potentialPoints: 12, awardedPoints: 12 },
+      { userId: edge, competitionId: c, teamName: 'E', teamCode: 'E', fifaRank: 16, potentialPoints: 20, awardedPoints: 20 },
+    ])
+    const all = await computeAchievementStats(db, c)
+    expect(all.get(inside)?.underdog).toBe(0)
+    expect(all.get(edge)?.underdog).toBe(1)
   })
 })
 
