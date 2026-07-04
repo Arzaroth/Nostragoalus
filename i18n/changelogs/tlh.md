@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.17.0] - 2026-07-05
+
 ### chelpu'
 - **Hoch pop patlh yISo'Ha'**: ghom pop yI'uy, criterion patlh yaS DaleghmeH - naQ, ghom, ram, Madame Irma, ghom pin je - Hoch member Daq cha'; qId qaSDI'. pop DatlhutlhboghmeH (Doq) je pop Daghajbogh cha' patlh cabinet, 'ej Hoch rap patlh poSmoH.
 - **ghom pin, admin-vo' wIv**: admin-Daq qIptaHghach Sech chu', qIptaHghach Hoch ghom pin wIv, TEAM_SPECIALIST pop tlhutlhbogh. wIvbe'lu'chugh, pop lujang.
