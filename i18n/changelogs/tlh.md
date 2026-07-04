@@ -5,6 +5,9 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### tI'pu'
+- **'utlh Qav DaqIppu' 'e' poQ**: DaH may' Qav wInwI', bID may' DaqIppu' 'e' poQ, 'utlh Qav Suq. wa' cha' may' tlhab 'e' mevpu'wI' mevwI' 'oH, lujwI' ghobe' - 'ej may' Qav wInwI' Hutlh 'utlh voqHa'.
+
 ## [2.18.0] - 2026-07-05
 
 ### chelpu'

@@ -281,6 +281,36 @@ describe('final-standing gate, opener and bad badges', () => {
     expect((await stats(c, solo)).woodenSpoon).toBe(0)
   })
 
+  it('excludes early quitters from wooden-spoon, and still awards the genuine last player', async () => {
+    const c = await seedCompetition(db)
+    const g1 = await roundId(c, 'GROUP', 1)
+    const winner = await makeUser(db, 'winner')
+    const mid = await makeUser(db, 'mid')
+    const last = await makeUser(db, 'last')
+    const quitter = await makeUser(db, 'quitter')
+    // Four scored matches total (3 group + the final): half = 2, so a player needs
+    // >= 2 predictions to be eligible.
+    const m1 = await scoredMatch(c, g1, 'GROUP', new Date('2026-06-11T12:00:00Z'))
+    const m2 = await scoredMatch(c, g1, 'GROUP', new Date('2026-06-12T12:00:00Z'))
+    const m3 = await scoredMatch(c, g1, 'GROUP', new Date('2026-06-13T12:00:00Z'))
+    const fin = await decidedFinal(c, g1)
+    const all = [m1, m2, m3, fin]
+    // winner + mid + last each predict all four; last scores the fewest of them
+    // (one point, still strictly above the quitter's zero).
+    for (const id of all) await pred({ userId: winner, matchId: id, roundId: g1, tier: 'EXACT', points: 3 })
+    for (const id of all) await pred({ userId: mid, matchId: id, roundId: g1, tier: 'DIFF', points: 2 })
+    await pred({ userId: last, matchId: m1, roundId: g1, tier: 'OUTCOME', points: 1 })
+    for (const id of [m2, m3, fin]) await pred({ userId: last, matchId: id, roundId: g1, tier: 'MISS', points: 0 })
+    // quitter bailed: a single prediction (< 2), scoring nothing -> globally dead last
+    // by points, but ineligible, and must not void last's spoon.
+    await pred({ userId: quitter, matchId: m1, roundId: g1, tier: 'MISS', points: 0 })
+
+    const s = await computeAchievementStats(db, c)
+    expect(s.get(last)?.woodenSpoon).toBe(1)
+    expect(s.get(quitter)?.woodenSpoon ?? 0).toBe(0)
+    expect(s.get(winner)?.woodenSpoon).toBe(0)
+  })
+
   it('credits opening-act only for an EXACT on the tournament opener', async () => {
     const c = await seedCompetition(db)
     const g1 = await roundId(c, 'GROUP', 1)

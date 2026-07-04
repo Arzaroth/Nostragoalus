@@ -60,6 +60,15 @@ scored match (the tournament opener); it is single-GOLD (high rarity). **underdo
 a winning champion pick ranked outside the FIFA top 15 (rank >= 16, or unranked) - a
 reachable long shot, not the old effectively-impossible rank 41+.
 
+**wooden-spoon** ("dead last") judges only players who saw the tournament through:
+you must have predicted at least `WOODEN_SPOON_MIN_SHARE` (half) of its matches to be
+eligible, and the worst rank is taken among those eligible players (not all
+participants), so an early quitter ranked below the genuine last-placer is neither
+awarded the spoon nor able to void it. It also needs more than one eligible player
+(a real contest). Because getLeaderboard scans the whole `user` table, this
+participant-scoping is what keeps "last" from meaning "one of the untold many who never
+played".
+
 **SHAME badges** (`cold-streak` = five MISS in a row, `wooden-spoon` = finished dead
 last) are earned by doing badly. They are excluded from the-collector (`isCollectable`
 / `COLLECTABLE_ACHIEVEMENTS` in `catalog.ts`): several are mutually exclusive with the
