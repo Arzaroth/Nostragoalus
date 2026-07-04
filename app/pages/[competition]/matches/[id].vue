@@ -45,8 +45,11 @@ const { data, refresh: refreshMatch } = await useFetch<{
 const { data: insights, status: insightsStatus, clear: clearInsights, refresh: refreshInsights } = await useFetch<any>(`/api/matches/${id.value}/insights`, { lazy: true })
 
 const selectedSlug = useSelectedCompetition()
-const { data: scorersData, status: scorersStatus, clear: clearScorers } = await useFetch<{ scorers: any[]; assists: any[] }>('/api/competitions/scorers', {
-  query: computed(() => (selectedSlug.value ? { competition: selectedSlug.value } : {})),
+// Match-scoped: every contributor of this fixture's two teams, unsliced. The
+// competition board is a tournament-wide top-N leaderboard - filtering that to a
+// team hid any team without a top-N scorer (and dropped a big team's lower-tally
+// scorers), so a team that had scored looked empty. See getMatchPlayerRankings.
+const { data: scorersData, status: scorersStatus, clear: clearScorers } = await useFetch<{ scorers: any[]; assists: any[] }>(`/api/matches/${id.value}/scorers`, {
   lazy: true,
 })
 // The endpoint splits players into a goals board and an assists board; a pure

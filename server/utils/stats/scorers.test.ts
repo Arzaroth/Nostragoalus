@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { createTestDb } from '../../../tests/db'
 import { seedCompetition, makeMatch } from '../../../tests/factories'
 import { findRoundId } from '../sync/rounds'
-import { getCompetitionPlayerRankings, getCompetitionTopScorers, rankPlayers } from './scorers'
+import { getCompetitionPlayerRankings, getCompetitionTopScorers, getMatchPlayerRankings, getTeamsPlayerRankings, rankPlayers } from './scorers'
 import { goalEvent } from '../../../db/schema'
 import type { AppDatabase } from '../../../db/types'
 import type { TopScorer } from '../../../shared/types/match'
@@ -100,6 +100,59 @@ describe('rankPlayers', () => {
   it('treats null assists as zero and drops them from the assist board', () => {
     const { assists } = rankPlayers([player({ playerName: 'Goal Only', goals: 2, assists: null })])
     expect(assists).toEqual([])
+  })
+})
+
+describe('getTeamsPlayerRankings', () => {
+  it('returns every contributor of the given teams, unsliced, and excludes others', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const md1 = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+    const mid = await makeMatch(db, { competitionId, roundId: md1, kickoffTime: new Date('2026-06-11T16:00:00Z') })
+
+    // FRA has a superstar and a fringe 1-goal scorer; PAR has one scorer + one
+    // pure assister; BRA is a third team that must not leak into the result.
+    await addGoal(db, competitionId, mid, { playerId: 'f1', playerName: 'Mbappe', teamCode: 'FRA' })
+    await addGoal(db, competitionId, mid, { playerId: 'f1', playerName: 'Mbappe', teamCode: 'FRA' })
+    await addGoal(db, competitionId, mid, { playerId: 'f2', playerName: 'Barcola', teamCode: 'FRA' })
+    await addGoal(db, competitionId, mid, { playerId: 'p1', playerName: 'Almiron', teamCode: 'PAR', assistPlayerId: 'p2', assistPlayerName: 'Sanabria' })
+    await addGoal(db, competitionId, mid, { playerId: 'b1', playerName: 'Neymar', teamCode: 'BRA' })
+
+    const { scorers, assists } = await getTeamsPlayerRankings(db, competitionId, ['FRA', 'PAR'])
+    expect(scorers.map((s) => s.playerName)).toEqual(['Mbappe', 'Almiron', 'Barcola'])
+    expect(scorers.some((s) => s.teamCode === 'BRA')).toBe(false)
+    expect(assists.map((s) => s.playerName)).toEqual(['Sanabria'])
+    await client.close()
+  })
+
+  it('returns empty boards when no team code is given', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    expect(await getTeamsPlayerRankings(db, competitionId, [null])).toEqual({ scorers: [], assists: [] })
+    await client.close()
+  })
+})
+
+describe('getMatchPlayerRankings', () => {
+  it('scopes the boards to the match home and away team codes', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const md1 = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+    const mid = await makeMatch(db, { competitionId, roundId: md1, homeTeamCode: 'PAR', awayTeamCode: 'FRA', kickoffTime: new Date('2026-06-11T16:00:00Z') })
+    const other = await makeMatch(db, { competitionId, roundId: md1, homeTeamCode: 'BRA', awayTeamCode: 'ARG', kickoffTime: new Date('2026-06-12T16:00:00Z') })
+
+    await addGoal(db, competitionId, mid, { playerId: 'p1', playerName: 'Almiron', teamCode: 'PAR' })
+    await addGoal(db, competitionId, other, { playerId: 'b1', playerName: 'Neymar', teamCode: 'BRA' })
+
+    const { scorers } = await getMatchPlayerRankings(db, mid)
+    expect(scorers.map((s) => s.playerName)).toEqual(['Almiron'])
+    await client.close()
+  })
+
+  it('returns empty boards for an unknown match', async () => {
+    const { db, client } = await createTestDb()
+    expect(await getMatchPlayerRankings(db, 'nope')).toEqual({ scorers: [], assists: [] })
+    await client.close()
   })
 })
 

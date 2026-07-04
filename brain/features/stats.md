@@ -25,6 +25,14 @@ top assists. Built to grow into team-level boards (best attack/defense) later.
   goal-ranked list (own goals excluded, pure assisters kept) for per-team
   callers. See [best-scorer.md](best-scorer.md) and
   [../architecture/providers.md](../architecture/providers.md).
+- A single match's "Players" tab (`app/pages/[competition]/matches/[id].vue`) is
+  a different, fixture-scoped board: it lists every scorer and assister of the
+  two teams playing, **unsliced**. It has its own endpoint
+  (`/api/matches/[id]/scorers` -> `getMatchPlayerRankings` ->
+  `getTeamsPlayerRankings`, both in `server/utils/stats/scorers.ts`) rather than
+  the competition top-20 board - filtering the tournament-wide top-N to one team
+  hid teams whose scorers ranked outside it. Local `goal_event` only (no FIFA
+  path), so it is as complete as the stored goal events for finished matches.
 
 ## Client
 
@@ -47,4 +55,5 @@ top assists. Built to grow into team-level boards (best attack/defense) later.
 - `app/pages/[competition]/matches/index.vue` (the `viewMode` toggle + Stats block)
 - `app/composables/useScorers.ts`, `app/components/PlayerRankingTable.vue`
 - `server/api/competitions/scorers.get.ts`, `server/utils/stats/scorers.ts`
+- `server/api/matches/[id]/scorers.get.ts` (the fixture-scoped Players tab board)
 - i18n: `matches.viewStats`, `stats.*` in `i18n/locales/{en,fr,th,tlh,ar}.json`
