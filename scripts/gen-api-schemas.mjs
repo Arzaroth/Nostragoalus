@@ -69,6 +69,7 @@ const TARGETS = {
   '/api/matches/{id}': `/api/matches/${matchId}`,
   '/api/matches/{id}/insights': `/api/matches/${matchId}/insights`,
   '/api/matches/{id}/live-detail': `/api/matches/${matchId}/live-detail`,
+  '/api/matches/{id}/scorers': `/api/matches/${matchId}/scorers`,
   '/api/leaderboard': `/api/leaderboard?competition=${comp}`,
   '/api/competitions/scorers': `/api/competitions/scorers?competition=${comp}`,
   '/api/competitions/teams': `/api/competitions/teams?competition=${comp}`,

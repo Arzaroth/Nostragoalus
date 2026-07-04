@@ -1299,6 +1299,65 @@
       }
     }
   },
+  "/api/matches/{id}/scorers": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "scorers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "playerName": {
+                "type": "string"
+              },
+              "teamName": {
+                "type": "string"
+              },
+              "teamCode": {
+                "type": "string"
+              },
+              "goals": {
+                "type": "integer"
+              },
+              "assists": {
+                "type": "integer"
+              },
+              "penalties": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          }
+        },
+        "assists": {
+          "type": "array",
+          "items": {}
+        }
+      }
+    },
+    "example": {
+      "scorers": [
+        {
+          "playerName": "Enner VALENCIA",
+          "teamName": "Ecuador",
+          "teamCode": "ECU",
+          "goals": 3,
+          "assists": 0,
+          "penalties": null
+        },
+        {
+          "playerName": "MOHAMMED MUNTARI",
+          "teamName": "Qatar",
+          "teamCode": "QAT",
+          "goals": 1,
+          "assists": 0,
+          "penalties": null
+        }
+      ],
+      "assists": []
+    }
+  },
   "/api/leaderboard": {
     "schema": {
       "type": "object",
