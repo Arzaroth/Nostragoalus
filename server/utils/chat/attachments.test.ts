@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { createTestDb } from '../../../tests/db'
 import { addLeagueMember, makeLeague, makeUser, seedCompetition } from '../../../tests/factories'
 import { memoryStorage } from '../../../tests/storage'
-import { chatAttachment, chatMessage, league } from '../../../db/schema'
+import { chatAttachment, chatMessage, dmThread, league } from '../../../db/schema'
 import { eq } from 'drizzle-orm'
 import { enableLeagueChat, postMessage } from './service'
 import { getAttachmentCiphertext, getMessageAttachments, listRoomMedia } from './attachments'
@@ -115,6 +115,17 @@ describe('chat attachments', () => {
       postMessage(db, { leagueId, userId: owner, ciphertext: 'cap', epoch: 1, images: [{ ciphertext: huge, byteSize: 1 }] }),
     ).rejects.toThrow()
     expect((await db.select().from(league).where(eq(league.id, leagueId))).length).toBe(1)
+    await client.close()
+  })
+
+  it('404s a direct-message attachment: a DM image is not reachable through a league route', async () => {
+    const { db, client, owner, member, storage } = await setup()
+    // A DM thread + a DM chat_message (leagueId null) with an attachment.
+    const [lo, hi] = owner < member ? [owner, member] : [member, owner]
+    const t = await db.insert(dmThread).values({ userAId: lo, userBId: hi }).returning({ id: dmThread.id })
+    const dmMsg = await db.insert(chatMessage).values({ dmThreadId: t[0].id, userId: owner, epoch: 1, ciphertext: 'secret' }).returning({ id: chatMessage.id })
+    await db.insert(chatAttachment).values({ messageId: dmMsg[0].id, idx: 0, epoch: 1, ciphertext: 'IMG', byteSize: 3 })
+    await expect(getAttachmentCiphertext(db, dmMsg[0].id, 0, owner, storage)).rejects.toBeInstanceOf(NotFoundError)
     await client.close()
   })
 

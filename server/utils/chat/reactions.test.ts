@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { createTestDb } from '../../../tests/db'
 import { addLeagueMember, makeLeague, makeUser, seedCompetition } from '../../../tests/factories'
-import { chatMessage } from '../../../db/schema'
+import { chatMessage, dmThread } from '../../../db/schema'
 import { setChatReaction, getReactionTotals, getMyReactions, getMessageReactionTotals } from './reactions'
 import { emptyReactionTotals } from '../../../shared/reactions'
 import { ForbiddenError, NotFoundError, ValidationError } from '../errors'
@@ -60,6 +60,16 @@ describe('setChatReaction', () => {
     const otherLeague = await makeLeague(db, { competitionId, ownerId: other })
     const otherMessage = await addMessage(db, otherLeague, other)
     await expect(setChatReaction(db, { leagueId, messageId: otherMessage, userId: other, emoji: 'FIRE' })).rejects.toBeInstanceOf(NotFoundError)
+    await client.close()
+  })
+
+  it('404s a direct-message row: a DM message is not reachable through a league route', async () => {
+    const { db, client, leagueId, owner, member } = await setup()
+    // A DM thread + a chat_message scoped to it (leagueId null).
+    const [lo, hi] = owner < member ? [owner, member] : [member, owner]
+    const t = await db.insert(dmThread).values({ userAId: lo, userBId: hi }).returning({ id: dmThread.id })
+    const dmMsg = await db.insert(chatMessage).values({ dmThreadId: t[0].id, userId: owner, epoch: 1, ciphertext: 'secret' }).returning({ id: chatMessage.id })
+    await expect(setChatReaction(db, { leagueId, messageId: dmMsg[0].id, userId: owner, emoji: 'FIRE' })).rejects.toBeInstanceOf(NotFoundError)
     await client.close()
   })
 

@@ -148,6 +148,24 @@
       "rolled-back": "Such tlha' Qun chenbe'"
     }
   },
+  "dm": {
+    "title": "QInmey",
+    "open": "QInmey poSmoH",
+    "close": "SoQmoH",
+    "new": "QIn chu'",
+    "back": "chegh",
+    "empty": "QIn tu'be'lu'.",
+    "needsRestore": "QInmey DalaDmeH De'wI'vamDaq ngaSwI' yIchoH.",
+    "searchPlaceholder": "pong yISam",
+    "searchHint": "Qummeh vay' yISam.",
+    "coMember": "ghom",
+    "placeholder": "QIn",
+    "editPlaceholder": "QIn yIchoH",
+    "edit": "choH",
+    "edited": "choHlu'",
+    "cancel": "qIl",
+    "undecryptable": "QIn poSmoHlaHbe'."
+  },
   "chat": {
     "roomTitle": "ghom ja'chuq",
     "threadTitle": "qugh ja'chuq",
