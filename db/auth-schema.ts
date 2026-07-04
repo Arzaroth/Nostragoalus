@@ -33,6 +33,11 @@ export const user = pgTable("user", {
   pushTournament: boolean("push_tournament"),
   pushLeague: boolean("push_league"),
   pushMentions: boolean("push_mentions"),
+  pushDm: boolean("push_dm"),
+  // Direct-message discoverability. co-members can always DM you (you already
+  // share a league); this only governs the opt-in global name search. false =
+  // hidden from that search entirely (co-members unaffected).
+  dmDiscoverable: boolean("dm_discoverable").default(true).notNull(),
   // Newest CHANGELOG version the user has viewed (null = not yet baselined).
   // The client stamps it to the latest released version on first load and
   // re-stamps when the changelog is opened; the delta drives the "what's new"

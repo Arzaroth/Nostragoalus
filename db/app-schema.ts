@@ -993,6 +993,7 @@ export const notificationTypeEnum = pgEnum('notification_type', [
   'TROPHY_AWARDED',
   'ACHIEVEMENT_UNLOCKED',
   'CHAT_MENTION',
+  'DM_MESSAGE',
 ])
 
 // Per-user in-app notifications (the header bell). `type` mirrors `data.type`;
@@ -1105,18 +1106,21 @@ export const leagueChatKey = pgTable(
 // everyone, the row kept so replies don't dangle).
 export const chatModerationStateEnum = pgEnum('chat_moderation_state', ['VISIBLE', 'PENDING', 'REMOVED'])
 
-// An encrypted chat message. matchId null = the league-global room; set = a
-// per-match thread. The server keeps the sender id, timestamp and the key epoch
-// (metadata it needs to order and route) but only ciphertext for the content
-// (secretbox under the group key, packed nonce+ct).
+// An encrypted chat message. Scope is exactly one of two kinds (CHECK below):
+// a league room - leagueId set, matchId null = league-global, set = a per-match
+// thread - OR a direct-message thread - dmThreadId set, leagueId/matchId null.
+// The server keeps the sender id, timestamp and the key epoch (metadata it needs
+// to order and route) but only ciphertext for the content (secretbox under the
+// room's group key - the league key or the DM thread key - packed nonce+ct).
 export const chatMessage = pgTable(
   'chat_message',
   {
     id: pk(),
-    leagueId: text('league_id')
-      .notNull()
-      .references(() => league.id, { onDelete: 'cascade' }),
+    leagueId: text('league_id').references(() => league.id, { onDelete: 'cascade' }),
     matchId: text('match_id').references(() => match.id, { onDelete: 'cascade' }),
+    // Set for a direct-message thread; mutually exclusive with leagueId. Same
+    // reactions/attachments/reports/reply machinery (all FK chat_message.id).
+    dmThreadId: text('dm_thread_id').references((): AnyPgColumn => dmThread.id, { onDelete: 'cascade' }),
     userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
     // The message this one quotes (same room). Set null if the parent is hard
     // deleted, so a quote survives as a plain message rather than dangling. A
@@ -1139,6 +1143,8 @@ export const chatMessage = pgTable(
     index('chat_message_room_idx').on(t.leagueId, t.matchId, t.createdAt),
     index('chat_message_league_idx').on(t.leagueId, t.createdAt),
     index('chat_message_thread_idx').on(t.threadId, t.createdAt),
+    index('chat_message_dm_idx').on(t.dmThreadId, t.createdAt),
+    check('chat_message_scope_xor', sql`num_nonnulls(${t.leagueId}, ${t.dmThreadId}) = 1`),
   ],
 )
 
@@ -1244,4 +1250,92 @@ export const chatRoomRead = pgTable(
   },
   (t) => [primaryKey({ columns: [t.userId, t.leagueId, t.roomKey] })],
 )
+
+// === Direct messages (end-to-end encrypted, same crypto as league chat) ===
+// A DM thread is a two-party encrypted "room". Its messages are chat_message
+// rows with dmThreadId set (leagueId null), so they reuse the whole chat message
+// stack: reactions, attachments, reports, replies, edits. The two participants
+// are stored as an ordered pair (userAId < userBId, enforced below) so the pair
+// is canonical - one thread per unordered {a, b}, no self-DM.
+export const dmThread = pgTable(
+  'dm_thread',
+  {
+    id: pk(),
+    userAId: text('user_a_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    userBId: text('user_b_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    // Bumped when the thread key is rotated (e.g. a participant re-keys); 1 on
+    // creation. Mirrors league.chatKeyEpoch - messages carry the epoch they were
+    // sealed under so history stays readable across rotations.
+    keyEpoch: integer('key_epoch').notNull().default(1),
+    // Newest message time, for ordering the inbox without scanning chat_message.
+    lastMessageAt: timestamp('last_message_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('dm_thread_pair_uq').on(t.userAId, t.userBId),
+    index('dm_thread_user_a_idx').on(t.userAId, t.lastMessageAt),
+    index('dm_thread_user_b_idx').on(t.userBId, t.lastMessageAt),
+    check('dm_thread_order', sql`${t.userAId} < ${t.userBId}`),
+  ],
+)
+
+// The per-thread symmetric key, sealed to one participant's public key (sealed
+// box), one row per (thread, participant, epoch) - the leagueChatKey model for a
+// two-member room. Each participant unwraps their copy with their chat_identity
+// private key to read/write the thread.
+export const dmThreadKey = pgTable(
+  'dm_thread_key',
+  {
+    id: pk(),
+    threadId: text('thread_id')
+      .notNull()
+      .references(() => dmThread.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    epoch: integer('epoch').notNull(),
+    wrappedKey: text('wrapped_key').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('dm_thread_key_member_epoch_uq').on(t.threadId, t.userId, t.epoch),
+    index('dm_thread_key_thread_epoch_idx').on(t.threadId, t.epoch),
+  ],
+)
+
+// Per-user, per-thread "last read" marker driving the DM inbox unread counts.
+// A thread's unread = messages newer than lastReadAt (floored at thread creation
+// when no row exists). Mirrors chatRoomRead; no per-message read receipt.
+export const dmThreadRead = pgTable(
+  'dm_thread_read',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    threadId: text('thread_id')
+      .notNull()
+      .references(() => dmThread.id, { onDelete: 'cascade' }),
+    lastReadAt: timestamp('last_read_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.threadId] })],
+)
+
+export const dmThreadRelations = relations(dmThread, ({ one, many }) => ({
+  userA: one(user, { fields: [dmThread.userAId], references: [user.id], relationName: 'dmThreadUserA' }),
+  userB: one(user, { fields: [dmThread.userBId], references: [user.id], relationName: 'dmThreadUserB' }),
+  keys: many(dmThreadKey),
+}))
+
+export const dmThreadKeyRelations = relations(dmThreadKey, ({ one }) => ({
+  thread: one(dmThread, { fields: [dmThreadKey.threadId], references: [dmThread.id] }),
+  user: one(user, { fields: [dmThreadKey.userId], references: [user.id] }),
+}))
 
