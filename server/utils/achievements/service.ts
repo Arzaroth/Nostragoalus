@@ -197,8 +197,14 @@ export async function computeAchievementStats(
   // so a quitter ranked below the genuine last-placer doesn't steal - and void - the
   // badge). Require more than one qualifier for a real contest. Gated on tournamentDone
   // below so it settles once, at the end.
+  // Count each user's SCORED predictions, not every prediction they entered, so the
+  // eligibility numerator and the totalScored denominator both range over matches that
+  // actually counted - consistent even if some matches never scored (voided/abandoned)
+  // by the time the final is decided.
+  const scoredCount = new Map<string, number>()
+  for (const r of scoredRows) scoredCount.set(r.userId, (scoredCount.get(r.userId) ?? 0) + 1)
   const minPredictions = totalScored * WOODEN_SPOON_MIN_SHARE
-  const qualified = new Set(agg.filter((r) => r.predictions >= minPredictions).map((r) => r.userId))
+  const qualified = new Set([...scoredCount].filter(([, n]) => n >= minPredictions).map(([id]) => id))
   const qualifiedRanks = board.filter((r) => qualified.has(r.userId))
   const lastRank = qualifiedRanks.reduce((m, r) => Math.max(m, r.rank), 0)
   const woodenSpoonUsers = new Set(
