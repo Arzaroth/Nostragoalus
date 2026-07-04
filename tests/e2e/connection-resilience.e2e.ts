@@ -20,16 +20,39 @@ test('a failed getSession does not eject a signed-in user to /login', async ({ p
   await page.goto('/account')
   await expect(page).toHaveURL(/\/account$/)
 
-  // Simulate the roaming failure: the session probe the guard runs on every
-  // navigation fails at the network layer (aborted, not a 401).
-  await page.route('**/api/auth/get-session**', (route) => route.abort())
+  // Open the user menu (the avatar lives in <ClientOnly>, so its visibility also
+  // proves the app has hydrated - the next link click is a real client-side
+  // navigation, not a full document load). Open it BEFORE aborting get-session,
+  // so the session-gated menu is still mounted.
+  const avatar = page.locator('header button:has(img[src*="/brand/avatar"])')
+  await expect(avatar).toBeVisible()
+  const prefLink = page.locator('a[href="/preferences"]')
+  await expect(async () => {
+    await avatar.click()
+    await expect(prefLink).toBeVisible({ timeout: 1_000 })
+  }).toPass({ timeout: 10_000 })
 
-  // Navigate to another protected route. The old guard read the resulting null
-  // `data` as logged-out and redirected; the fixed guard sees the transport
-  // error and leaves the session alone.
-  await page.goto('/preferences')
+  // Simulate the roaming failure: the session probe the guard runs on every
+  // client-side navigation fails (a 5xx/gateway hiccup on spotty mobile data,
+  // not a 401), which better-auth surfaces as a transport `error` with a null
+  // `data`. The guard runs only on the client (it server-bails), so this MUST be
+  // an in-app SPA navigation - a page.goto would render server-side and never
+  // hit the intercepted route, passing vacuously.
+  let probed = false
+  await page.route('**/api/auth/get-session**', (route) => {
+    probed = true
+    return route.fulfill({ status: 500, contentType: 'application/json', body: '{}' })
+  })
+
+  // Follow the Preferences link (a NuxtLink = SPA nav). The old guard read the
+  // resulting null `data` as logged-out and redirected; the fixed guard sees the
+  // transport error and leaves the session alone.
+  await prefLink.click()
   await expect(page).toHaveURL(/\/preferences$/)
   expect(new URL(page.url()).pathname).not.toBe('/login')
+  // Prove the client guard actually ran its session probe (otherwise the "stayed
+  // on /preferences" assertion would be meaningless).
+  expect(probed).toBe(true)
 
   // With connectivity restored, navigation still works normally.
   await page.unroute('**/api/auth/get-session**')

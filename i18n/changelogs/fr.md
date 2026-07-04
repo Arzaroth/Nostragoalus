@@ -5,6 +5,12 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Corrigé
+- **La saisie semi-automatique des mentions partout** : la liste de suggestions de membres apparaît désormais aussi dans les réponses en fil et lors de la modification d'un message, pas seulement dans le champ principal.
+- **Les mentions s'affichent avec le nom dans les aperçus de réponse** : une mention dans un message cité ou auquel on répond affiche maintenant le nom de la personne (par exemple @Sam) au lieu d'un identifiant brut, dans la bannière « en réponse à », l'aperçu du message parent cité et la file de signalements.
+- **Restez connecté sur une connexion instable** : une requête perdue en itinérance ou sur des données mobiles capricieuses ne vous renvoie plus vers l'écran de connexion tant que votre session est valide.
+- **Les mises à jour en direct se rétablissent sur mobile** : l'application détecte désormais quand un réseau mobile a silencieusement coupé la connexion en direct (fréquent en 4G/5G lors du changement de cellule) et se reconnecte d'elle-même, pour que scores, chat et notifications continuent d'arriver sans rechargement manuel.
+
 ## [2.16.0] - 2026-07-04
 
 ### Ajouté

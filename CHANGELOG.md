@@ -8,6 +8,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 ### Fixed
 - **@mention autocomplete everywhere you type**: the member suggestion popup now also appears in thread replies and when editing a message, not just the main composer.
 - **Mentions read as names in reply previews**: a mention inside a replied-to or quoted message now shows the person's name (for example @Sam) instead of a raw id, in the "replying to" banner, the quoted-parent preview and the moderation reports queue.
+- **Stay signed in on a flaky connection**: a dropped request while roaming or on spotty mobile data no longer bounces you to the login screen when your session is still valid.
+- **Live updates recover on mobile**: the app now detects when a phone network has silently killed the live connection (common on 4G/5G when switching cells) and reconnects on its own, so scores, chat and notifications keep flowing without a manual reload.
 
 ## [2.16.0] - 2026-07-04
 
@@ -22,8 +24,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ### Fixed
 - **"Watching now" no longer counts your extra tabs**: opening the same match in several tabs counts you as one viewer, not one per tab. Two different people (or two guests) still count as two.
-- **Stay signed in on a flaky connection**: a dropped request while roaming or on spotty mobile data no longer bounces you to the login screen when your session is still valid.
-- **Live updates recover on mobile**: the app now detects when a phone network has silently killed the live connection (common on 4G/5G when switching cells) and reconnects on its own, so scores, chat and notifications keep flowing without a manual reload.
 
 ## [2.14.0] - 2026-07-04
 
