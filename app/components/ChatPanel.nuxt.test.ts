@@ -105,6 +105,16 @@ async function mount() {
   return wrapper
 }
 
+// Set a textarea's value with the caret at the end (jsdom does not move it on
+// assignment) so the @mention detector reads the trailing @partial run.
+async function typeWithCaret(field: { element: Element; trigger: (e: string) => Promise<void> }, value: string) {
+  const el = field.element as HTMLTextAreaElement
+  el.value = value
+  el.selectionStart = value.length
+  el.selectionEnd = value.length
+  await field.trigger('input')
+}
+
 describe('ChatPanel', () => {
   it('offers enable to admins when chat is off', async () => {
     const s = await chatState()
@@ -300,6 +310,67 @@ describe('ChatPanel', () => {
     // Delete calls moderate(remove).
     await wrapper.get('button[aria-label="Delete"]').trigger('click')
     expect(s.moderate).toHaveBeenCalledWith('x', 'remove')
+  })
+
+  it('decodes a mention id to a name in a quoted parent preview', async () => {
+    const s = await chatState()
+    s.enabled.value = true
+    s.ready.value = true
+    // A reply whose parent @-mentions someone: the quote preview shows @Sam, not
+    // the raw @<other> id token.
+    s.messages.value = [
+      msg({ id: 'p', userId: 'me', text: 'hey @<other>' }),
+      msg({ id: 'c', userId: 'other', parentId: 'p', text: 'answer', createdAt: '2026-06-10T10:01:00.000Z' }),
+    ]
+    const wrapper = await mount()
+    await vi.waitFor(() => expect(wrapper.text()).toContain('answer'))
+    expect(wrapper.text()).toContain('hey @Sam')
+    expect(wrapper.text()).not.toContain('@<other>')
+  })
+
+  it('decodes a mention id to a name in the reply banner', async () => {
+    const s = await chatState()
+    s.enabled.value = true
+    s.ready.value = true
+    s.messages.value = [msg({ id: 'p', userId: 'other', text: 'hey @<other>' })]
+    const wrapper = await mount()
+    await vi.waitFor(() => expect(wrapper.text()).toContain('hey @Sam'))
+    await wrapper.findAll('button[aria-label="Reply"]')[0].trigger('click')
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Replying to'))
+    expect(wrapper.text()).not.toContain('@<other>')
+  })
+
+  it('autocompletes an @mention in the thread reply composer', async () => {
+    const s = await chatState()
+    s.enabled.value = true
+    s.ready.value = true
+    s.messages.value = [msg({ id: 'p', userId: 'other', text: 'orig', threadCount: 0 })]
+    s.threadParentId.value = 'p'
+    const wrapper = await mount()
+    await vi.waitFor(() => expect(wrapper.find('[data-thread="p"] textarea').exists()).toBe(true))
+    await typeWithCaret(wrapper.find('[data-thread="p"] textarea'), '@Sa')
+    const pick = wrapper.findAll('[data-thread="p"] form button').find((b) => b.text() === 'Sam')
+    expect(pick).toBeTruthy()
+    await wrapper.find('[data-thread="p"] textarea').trigger('keydown', { key: 'Enter' })
+    await wrapper.find('[data-thread="p"] form').trigger('submit')
+    expect(s.send).toHaveBeenCalledWith('@<other> ', { threadId: 'p', mentions: ['other'] })
+  })
+
+  it('autocompletes an @mention while editing a message', async () => {
+    const s = await chatState()
+    s.enabled.value = true
+    s.ready.value = true
+    s.messages.value = [msg({ id: 'x', userId: 'me', text: 'mine' })]
+    const wrapper = await mount()
+    await vi.waitFor(() => expect(wrapper.text()).toContain('mine'))
+    await wrapper.get('button[aria-label="Edit"]').trigger('click')
+    await typeWithCaret(wrapper.find('[data-mid="x"] textarea'), '@Sa')
+    const pick = wrapper.findAll('[data-mid="x"] button').find((b) => b.text() === 'Sam')
+    expect(pick).toBeTruthy()
+    await wrapper.find('[data-mid="x"] textarea').trigger('keydown', { key: 'Enter' })
+    const save = wrapper.findAll('button').find((b) => b.text() === 'Save')!
+    await save.trigger('click')
+    expect(s.editMessage).toHaveBeenCalledWith('x', '@<other> ', { addImages: [], removeIdxs: [] })
   })
 
   it('tombstones a removed message and hides its content', async () => {

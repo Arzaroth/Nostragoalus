@@ -40,7 +40,12 @@ and routes by message id and metadata, never by reading content.
   check the sidecar), and the recipient's own `pushMentions` toggle is the
   backstop there (see TODO). The push/bell deep-links cross-league via
   `chatMentionPath` (`?ngLeague=&chat=`), interpreted by the `chat-deeplink`
-  client plugin.
+  client plugin. A shared `ChatMentionMenu.vue` autocomplete popup (member
+  suggestions on an `@partial` run) is wired into all three text fields - main
+  composer, thread reply and inline edit - via a `mentionTarget`-keyed field map
+  in `ChatPanel.vue`. Reply/quote previews (the "replying to" banner, the
+  quoted-parent line, the reports queue) run the raw text through
+  `decodeMentions` so a quoted `@<id>` reads as the current `@Name`, not the id.
 - Reactions reuse the [match reaction set](reactions.md) (plaintext emoji, so the
   server sees the emoji but not the message).
 - A hand-rolled emoji picker inserts raw unicode at the caret.
