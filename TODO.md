@@ -1859,6 +1859,35 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
       been verified in a real browser.
 - [ ] Wrapped "not ready" teaser could show a countdown to the final instead of
       static copy.
+- [ ] Share-token + OG-asset dedup: `wrapped-token.ts` copies the whole HMAC /
+      base64url / `timingSafeEqual` verify plumbing from `share/token.ts` (only the
+      domain string + payload shape are legitimately its own). Extract a shared
+      `signToken(domain, payload)` / `verifyToken(domain, validator, token)` so a
+      hardening fix to one path can't miss the other. (The font/mark + fallback
+      loaders were already de-duplicated into `server/utils/share/og-assets.ts`.)
+- [ ] `getWrapped` re-derives data it already has: it re-queries `championPick` /
+      `bestScorerPick` for the meta card even though the reused `getLeaderboard`
+      `boardRow` already carries champion/best-scorer code+name+points (the totals
+      card reads them off `boardRow`), and it re-implements the me/stats
+      board-position rule (`alwaysIncludeUserId` + self-exclusion) and the
+      leaderboard's 1224 rank-assignment + tier-bucket rules inside `replayJourney`.
+      Read the meta off `boardRow`, and extract `getMyBoardPosition` + the shared
+      rank/tier helpers, so the recap can't silently drift from the board.
+- [ ] The leaderboard page fetches the full `getWrapped` DTO just to decide whether
+      to show the "your recap is ready" banner (`useWrapped` -> whole recap). Post-final
+      that runs the heavy aggregation for every signed-in visitor of the busiest page.
+      Add a cheap readiness check (`hasScoredFinal`-backed boolean endpoint) for the
+      banner.
+- [ ] `WrappedDeck.vue` stat-card markup is hand-repeated 8x across the tiers and
+      summary slides, and `wrapped-template.ts` re-declares the `el()`/`img()` VNode
+      helpers already in `share/template.ts`. DRY the stat card (v-for or a
+      `WrappedStat`) and export the vnode helpers from a shared module.
+- [ ] `topPercent` shows "Top 100%" for the last-place finisher and a solo (rank 1
+      of 1) player. Suppress or reword it for `rank === players` / `players === 1`.
+- [ ] Wrapped chat stats count reactions on moderator-REMOVED messages (the message
+      count already filters `moderationState = 'REMOVED'`, the reactions-given /
+      -received queries do not). Decide whether removed-message reactions should
+      count, and align the filters either way.
 
 ## League rewards + showcase (deferred from the feature pass)
 

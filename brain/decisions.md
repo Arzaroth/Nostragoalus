@@ -231,9 +231,11 @@ feature/architecture doc that implements it.
 
 ## Tournament Wrapped
 
-- **Tournament Wrapped is post-final only, and read-side only.** The recap uses
-  the same gate as trophies (`hasDecidedFinal`): before that the numbers move and
-  the haul is incomplete. No new tables - every slide derives from persisted
+- **Tournament Wrapped is post-final only, and read-side only.** The recap gates
+  on `hasScoredFinal` (a FINAL whose `scoringState` is `SCORED`), stricter than the
+  trophy gate `hasDecidedFinal` (winner set): before finalize scores the final the
+  numbers move, bonuses are zero and the haul is incomplete, so gating on the
+  winner alone would show a "frozen" but wrong recap in the sync -> finalize window. No new tables - every slide derives from persisted
   per-prediction points, the achievements aggregator (so recap and badges cannot
   disagree), award/badge rows and chat row counts. The rank journey is REPLAYED
   from scored predictions per round (prediction points only) rather than

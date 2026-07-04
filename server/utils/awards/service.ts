@@ -64,7 +64,6 @@ async function rankableForMatches(
 
 // A competition's trophies are only decided once its final is played out. Mirrors
 // the champion/best-scorer gate (a decided FINAL with a HOME/AWAY winner).
-// Exported: Tournament Wrapped unlocks on the same gate.
 export async function hasDecidedFinal(db: AppDatabase, competitionId: string): Promise<boolean> {
   const rows = await db
     .select({ id: match.id })
@@ -75,6 +74,30 @@ export async function hasDecidedFinal(db: AppDatabase, competitionId: string): P
         eq(match.stage, 'FINAL'),
         eq(match.status, 'FINISHED'),
         inArray(match.winner, ['HOME', 'AWAY']),
+      ),
+    )
+    .limit(1)
+  return rows.length > 0
+}
+
+// Tournament Wrapped needs a stricter gate than hasDecidedFinal: the final must
+// also be SCORED, i.e. finalize has run. The winner is written by match sync,
+// but the final round's prediction scoring, the champion/best-scorer bonuses and
+// the trophy rows only land when finalize marks the final scoringState='SCORED'
+// (in that same transaction). Gating on the winner alone would unlock the recap
+// in the sync -> finalize window with unscored predictions, zeroed meta bonuses
+// and an empty trophy haul, while presenting itself as the definitive recap.
+export async function hasScoredFinal(db: AppDatabase, competitionId: string): Promise<boolean> {
+  const rows = await db
+    .select({ id: match.id })
+    .from(match)
+    .where(
+      and(
+        eq(match.competitionId, competitionId),
+        eq(match.stage, 'FINAL'),
+        eq(match.status, 'FINISHED'),
+        inArray(match.winner, ['HOME', 'AWAY']),
+        eq(match.scoringState, 'SCORED'),
       ),
     )
     .limit(1)
