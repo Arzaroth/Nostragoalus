@@ -636,6 +636,11 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
       `scripts/gen-api-schemas.mjs` TARGETS). Deferred with the other endpoints
       pending a controlled regen (sampling rewrites the whole file and pulls live
       drift); the route already carries its inline `defineRouteMeta` OpenAPI.
+- [ ] `/api/users/{id}/cabinet` is in `gen-api-schemas.mjs` TARGETS and is now
+      seed-reachable (a regen produces a valid block), but it is still absent from
+      `response-schemas.json`. Add it on the next controlled regen run against a
+      freshly-seeded DB (the match-scorers regen only kept its own block to avoid
+      committing the stale dev DB's commitments/timestamp drift).
 
 ## Email verification (deferred from the feature-treatment review)
 
