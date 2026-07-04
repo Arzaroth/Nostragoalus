@@ -35,6 +35,10 @@ export const TASKS: TaskDef[] = [
   // One-shot champion FIFA-rank backfill, manual only. Awaited (one fetch + a
   // batch update) so the run returns its summary to the admin result dialog.
   { name: 'champion:backfill-ranks', cron: null, fireAndForget: false },
+  // One-shot milestone-badge backfill, manual only. Grants badges earned before
+  // the feature shipped (finalize only evaluates on a newly-scoring tick).
+  // Awaited so the per-competition grant counts reach the admin result dialog.
+  { name: 'achievements:backfill', cron: null, fireAndForget: false },
   // One-shot image-blob migration (DB -> storage backend), manual only.
   // Fire-and-forget: a large media set can run past a proxy timeout; the result
   // counts land in the task_run record. Run until both counts are 0.

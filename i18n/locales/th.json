@@ -1138,7 +1138,8 @@
       "notifsPrune": "ล้างการแจ้งเตือน",
       "oddsBackfill": "ดึงราคาย้อนหลัง",
       "fixturesImport": "นำเข้าตารางแข่ง",
-      "championBackfillRanks": "เติมอันดับแชมเปียน"
+      "championBackfillRanks": "เติมอันดับแชมเปียน",
+      "achievementsBackfill": "เติมตราความสำเร็จ"
     },
     "status": { "ok": "การรันล่าสุดสำเร็จ", "failed": "การรันล่าสุดล้มเหลว", "never": "ยังไม่เคยรัน" },
     "tip": { "never": "ยังไม่เคยรัน" },

@@ -5,6 +5,9 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### tI'pu'
+- **may' Segh Huch qan tI'**: Background tasks page (admin) Qu' chu' - Hoch may' Segh Huch potlh QujwI'pu' Suqpu'bogh qaSpu'bogh ghap rInpu'bogh tay'ghom nob. rutlh may' chu' chovlu'DI' neH poSmoH Huch, vaj qan Dochmey - rInpu'bogh tay'ghom je - Suqbe'.
+
 ## [2.16.1] - 2026-07-04
 
 ### tI'pu'
