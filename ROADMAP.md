@@ -444,6 +444,31 @@ effort buckets; order within a bucket is not priority.
         header-bell `CHAT_MENTION`: the mentioned ids ride as a plaintext sidecar
         (validated against real members, sender dropped), and the alert carries
         room context only, never the E2EE message text.
+- [ ] **Direct messages (1:1 E2EE)** (IN_PROGRESS, worktree-dms): private
+      one-to-one messages between two users, end-to-end encrypted like league
+      chat. Decisions (locked):
+      - **Reuse the chat crypto + generalize `chat_message`**, not a parallel
+        `dm_*` message stack: `league_id` goes nullable, a `dm_thread_id` column +
+        a `num_nonnulls(league_id, dm_thread_id) = 1` CHECK scope each message to
+        one league room OR one DM thread, so reactions/attachments/reports/replies/
+        edits (all FK `chat_message.id`) work on a DM for free.
+      - **Thread key = the `league_chat_key` model for two members**: `dm_thread`
+        is a canonical ordered pair (`userAId < userBId`, unique, no self-DM) with
+        a `keyEpoch`; the per-thread symmetric key is sealed to each participant's
+        `chat_identity` pubkey, one `dm_thread_key` row per (thread, user, epoch),
+        so the server stays ciphertext-only and history survives rotation.
+      - **Reach = co-members always + globally opt-in discovery**: message anyone
+        you share a league with; anyone else must set `dmDiscoverable` (default on,
+        per-user opt-out) to be found by name.
+      - **Separate global `DmDock`, not a ChatDock tab**: ChatDock is league-gated
+        (competition pages + a chat-enabled league) but DMs are global, so the dock
+        mounts in the default layout on every page. Live delivery is user-pinned
+        (`publishDmMessage`/`publishDmEdit` to the two participants' sockets, no
+        subscribe frame); a `DM_MESSAGE` bell + push (default-on `dm` category)
+        deep-links `/?dm=<threadId>`. v1 ships text + edit + read-state + live +
+        notifications; reactions/attachments/threads/mentions on DMs and a
+        dock-consolidation are deferred (TODO.md). Consolidating the two docks is
+        left open.
 - [ ] **Hall of shame (per pick, not per player)**: "shame of the round" -
       one per matchday so nobody is dogpiled tournament-wide. Shameable =
       wrong outcome (a miss) AND max total goal error (|dHome| + |dAway|);
