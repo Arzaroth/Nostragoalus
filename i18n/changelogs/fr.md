@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [2.16.0] - 2026-07-04
+
 ### Ajouté
 - **Le bot Égaliseur** : un nouveau bot qui pronostique un match nul à chaque rencontre. Activez-le (ainsi que le Crowd Bot) depuis un seul bouton « Bots » sur le classement - chacun apparaît comme une ligne fantôme au rang qu'il aurait obtenu, avec sa propre page listant chaque pronostic. Il n'affecte jamais le classement réel de qui que ce soit.
 - **Jumeau maléfique sur les profils des joueurs** : le profil de chaque joueur a un bouton « Jumeau maléfique » - ses propres pronostics avec chaque score inversé (un match nul est son propre jumeau) - pour voir ce qu'aurait donné un pari contre lui, et à quel rang ce jumeau se classerait. Suit la même visibilité que ses pronostics.
