@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.15.0] - 2026-07-04
+
 ### Added
 - **Tournament Wrapped**: once the final is decided, your personal tournament recap unlocks - a full-screen story you tap through: total points, final rank and top percent, exact-score breakdown, your best call, the one that got away, joker efficiency, your climb through the standings, crowd-defying picks, champion and Golden Boot verdicts, league-chat activity and your trophy haul. It ends on a summary card you can download or share as an image, and a banner on the leaderboard takes you there.
 
