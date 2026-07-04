@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.17.0] - 2026-07-05
+
 ### Added
 - **See the full ranking behind every prize**: click any league prize to open its live standings for that criterion - overall, group phase, knockout, Madame Irma or the Team Specialist - showing where every member sits, settling when the competition ends. Your trophy cabinet now also lists the prizes you are chasing (greyed) next to the ones you hold, and each opens the same ranking.
 - **Team Specialist featured team, set from admin**: a new Competitions section in the admin panel picks, per competition, the team the Team Specialist prize follows. Until one is chosen, that prize shows as disabled instead of silently never being awarded.
