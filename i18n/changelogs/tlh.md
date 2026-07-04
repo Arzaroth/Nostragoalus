@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.18.0] - 2026-07-05
+
 ### chelpu'
 - **cha' Qapla' chu'**: **poSmoHwI'** - may' wa'DIch mI' pup DaqIp ('utlh Doq QaghHa') - 'ej qonwI'vaD, cha' Qagh 'utlhmey tlhaQ: **bIr** (vagh Qaghmey rIntaH) 'ej **'utlh Qav** (may' rInDI' Qav). Qagh 'utlhmey pagh boqHa' pegh «boqwI'» So'.
 - **Hoch 'utlh 'ej mIn Doq motlh QaS**: DaH cha'DIch 'utlh chevmey pat 'e' cha' Qamvis - Hoch vI' je - vaj Sung ghap SoHvaD, «yImev» Qatlh So' motlh chIl.
