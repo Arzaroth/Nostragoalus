@@ -5,6 +5,9 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Corrigé
+- **La Lanterne rouge ne compte que si vous avez vraiment joué** : le badge « bon dernier » revient désormais au dernier joueur ayant pronostiqué au moins la moitié du tournoi, si bien que celui qui a abandonné après un ou deux matchs est considéré comme un déserteur plutôt que comme le perdant - et ne vole plus le badge au véritable dernier.
+
 ## [2.18.0] - 2026-07-05
 
 ### Ajouté

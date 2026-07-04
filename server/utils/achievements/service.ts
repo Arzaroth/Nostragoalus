@@ -14,6 +14,11 @@ import {
   type UserAchievementStats,
 } from './catalog'
 
+// Wooden Spoon only judges players who saw the tournament through: you must have
+// predicted at least this share of its matches to be eligible for "dead last".
+// Someone who gave up after a game or two is a quitter, not the loser of the contest.
+const WOODEN_SPOON_MIN_SHARE = 0.5
+
 const TIER_RANK: Record<AchievementTier, number> = { BRONZE: 1, SILVER: 2, GOLD: 3 }
 const tierRank = (t: AchievementTier | null): number => (t ? TIER_RANK[t] : 0)
 
@@ -184,17 +189,20 @@ export async function computeAchievementStats(
 
   const board = await getLeaderboard(db, { competitionId, includeHidden: true, includePrivate: true, limit: 100_000 })
   const podiumUsers = new Set(board.filter((r) => r.rank <= 3 && r.totalPoints > 0).map((r) => r.userId))
-  // Dead last: the worst rank AMONG ACTUAL PARTICIPANTS. getLeaderboard scans the
-  // whole user table, so every non-participant sits at 0 points on the bottom rank -
-  // taking the global max rank would make "last" mean "one of the untold many who
-  // never played". Restrict to users who made a prediction in this competition
-  // (the `agg` set), and require more than one of them for a real contest. Gated on
-  // tournamentDone below so it settles once, at the end.
-  const participantIds = new Set(agg.map((r) => r.userId))
-  const participantRanks = board.filter((r) => participantIds.has(r.userId))
-  const lastRank = participantRanks.reduce((m, r) => Math.max(m, r.rank), 0)
+  // Dead last: the worst rank AMONG PLAYERS WHO ACTUALLY PLAYED. getLeaderboard scans
+  // the whole user table, so every non-participant sits at 0 points on the bottom rank;
+  // and someone who bailed after a game or two is a quitter, not the wooden-spoon loser.
+  // So qualify on "predicted at least WOODEN_SPOON_MIN_SHARE of the tournament", then
+  // take the worst rank among the qualified (computed over them, not all participants,
+  // so a quitter ranked below the genuine last-placer doesn't steal - and void - the
+  // badge). Require more than one qualifier for a real contest. Gated on tournamentDone
+  // below so it settles once, at the end.
+  const minPredictions = totalScored * WOODEN_SPOON_MIN_SHARE
+  const qualified = new Set(agg.filter((r) => r.predictions >= minPredictions).map((r) => r.userId))
+  const qualifiedRanks = board.filter((r) => qualified.has(r.userId))
+  const lastRank = qualifiedRanks.reduce((m, r) => Math.max(m, r.rank), 0)
   const woodenSpoonUsers = new Set(
-    participantRanks.length > 1 ? participantRanks.filter((r) => r.rank === lastRank).map((r) => r.userId) : [],
+    qualifiedRanks.length > 1 ? qualifiedRanks.filter((r) => r.rank === lastRank).map((r) => r.userId) : [],
   )
 
   // Fold the per-user, per-row work in JS.
@@ -253,7 +261,8 @@ export async function computeAchievementStats(
       podium: tournamentDone && podiumUsers.has(userId) ? 1 : 0,
       // Dead last, once the tournament is over. Only for players who actually
       // predicted (a?.predictions), never someone who merely holds a champion pick.
-      woodenSpoon: tournamentDone && (a?.predictions ?? 0) > 0 && woodenSpoonUsers.has(userId) ? 1 : 0,
+      // Eligibility (played enough) is already baked into woodenSpoonUsers.
+      woodenSpoon: tournamentDone && woodenSpoonUsers.has(userId) ? 1 : 0,
     })
   }
   return out
