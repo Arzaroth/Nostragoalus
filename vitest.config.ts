@@ -23,6 +23,7 @@ export default defineConfig(async () => ({
         '**/types/**',
         'server/utils/providers/index.ts',
         'server/utils/storage/index.ts', // useRuntimeConfig glue - the logic is in factory/service/drivers
+        'server/utils/share/og-assets.ts', // storage reads + Google Fonts fetch glue - exercised via the OG routes, not unit tests
         'server/utils/http.ts',
         'app/utils/image.ts', // canvas/Image DOM glue - no headless canvas to exercise it
       ],

@@ -255,7 +255,11 @@ const topEmojiGlyph = computed(() =>
             <div class="rounded-xl bg-white/15 p-3"><div class="text-2xl font-black">{{ wrapped.tiers.exact }}</div><div class="text-xs opacity-80">{{ t('wrapped.tiersExact') }}</div></div>
             <div class="rounded-xl bg-white/15 p-3"><div class="text-2xl font-black">{{ wrapped.haul.trophies.length + wrapped.haul.badges.length }}</div><div class="text-xs opacity-80">{{ t('wrapped.summaryHaul') }}</div></div>
           </div>
-          <slot name="summary-actions" />
+          <!-- Lift the share CTAs above the full-height prev/next tap zones (z-5),
+               or a tap on Download/Copy just advances the deck instead. -->
+          <div class="relative z-10 flex flex-col items-center gap-3 w-full">
+            <slot name="summary-actions" />
+          </div>
         </template>
       </div>
     </Transition>

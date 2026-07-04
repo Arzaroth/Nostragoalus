@@ -114,6 +114,28 @@ describe('getWrapped', () => {
     expect(res).toEqual({ ready: false, competitionName: 'Teaser Cup' })
   })
 
+  it('stays a teaser when the final is decided but not yet scored', async () => {
+    const c = await seedCompetition(db, { name: 'Window Cup' })
+    await makeUser(db, 'alice')
+    const fr = await roundId(c, 'FINAL')
+    // Final whistle blown (winner set by sync) but finalize has not scored it
+    // yet: the recap must not unlock with zeroed bonuses and an empty haul.
+    await makeMatch(db, {
+      competitionId: c,
+      roundId: fr,
+      stage: 'FINAL' as never,
+      status: 'FINISHED',
+      fullTimeHome: 1,
+      fullTimeAway: 0,
+      winner: 'HOME',
+      kickoffTime: new Date('2026-07-19T18:00:00Z'),
+      homeTeam: 'Home',
+      awayTeam: 'Away',
+    })
+    const res = await getWrapped(db, { competitionId: c, userId: 'alice' })
+    expect(res).toEqual({ ready: false, competitionName: 'Window Cup' })
+  })
+
   it('builds the full recap for a scored competition', async () => {
     const c = await seedCompetition(db, { name: 'Recap Cup' })
     const g1 = await roundId(c, 'GROUP', 1)

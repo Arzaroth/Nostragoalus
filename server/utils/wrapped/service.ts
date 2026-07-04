@@ -23,7 +23,7 @@ import type {
   WrappedResponse,
 } from '#shared/types/wrapped'
 import { NotFoundError } from '../errors'
-import { hasDecidedFinal } from '../awards/service'
+import { hasScoredFinal } from '../awards/service'
 import { computeAchievementStats } from '../achievements/service'
 import { compareLeaderboardRows, getLeaderboard } from '../leaderboard/service'
 
@@ -151,7 +151,7 @@ export async function getWrapped(
     .limit(1)
   if (!comp) throw new NotFoundError('competition not found')
 
-  if (!(await hasDecidedFinal(db, opts.competitionId))) {
+  if (!(await hasScoredFinal(db, opts.competitionId))) {
     return { ready: false, competitionName: comp.name }
   }
 
@@ -380,7 +380,8 @@ export async function getWrapped(
       miss: tierCount('MISS'),
       predictions: pickRows.length,
       scoredMatches,
-      // The decided-final gate guarantees at least one scored match.
+      // The scored-final gate (hasScoredFinal) guarantees the final is SCORED,
+      // so scoredMatches >= 1 and this division is never 0/0.
       completionPct: Math.round((scored.length / scoredMatches) * 100),
     },
     streaks: {

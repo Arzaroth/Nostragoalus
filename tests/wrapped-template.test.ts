@@ -37,6 +37,14 @@ function textOf(data: WrappedCardData): string {
   return out.join(' | ')
 }
 
+function hasImg(node: VNode | string | number | null | undefined | false, src: string): boolean {
+  if (node == null || node === false || typeof node === 'string' || typeof node === 'number') return false
+  if (node.type === 'img' && (node.props as { src?: string }).src === src) return true
+  const children = node.props.children
+  if (Array.isArray(children)) return children.some((c) => hasImg(c, src))
+  return hasImg(children, src)
+}
+
 describe('buildWrappedCardElement', () => {
   it('renders name, competition, points, rank, exacts, haul and the top percent', () => {
     const text = textOf(card())
@@ -64,5 +72,11 @@ describe('buildWrappedCardElement', () => {
   it('localizes the card copy', () => {
     const text = textOf(card({ locale: 'fr' }))
     expect(text).toContain('Retro du tournoi')
+  })
+
+  it('embeds the brand mark image when a mark data URI is supplied', () => {
+    const mark = 'data:image/svg+xml;base64,PHN2Zz48L3N2Zz4='
+    const el = buildWrappedCardElement(card(), { host: 'goal.example.com', markDataUri: mark }, shareTranslator('en'))
+    expect(hasImg(el, mark)).toBe(true)
   })
 })

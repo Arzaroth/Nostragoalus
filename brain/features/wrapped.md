@@ -2,9 +2,13 @@
 
 A Spotify-Wrapped-style personal recap of the tournament: a full-screen story
 deck of 8-12 slides plus a shareable summary card. Strictly post-final: it
-unlocks on the same gate as trophies (`hasDecidedFinal` - a FINISHED FINAL with
-a HOME/AWAY winner), because only then are the numbers frozen and the haul
-complete.
+unlocks on `hasScoredFinal` - a FINISHED FINAL with a HOME/AWAY winner whose
+`scoringState` is `SCORED`. That is stricter than the trophy gate
+(`hasDecidedFinal`): the winner is set by match sync, but the final-round
+scoring, the champion/best-scorer bonuses and the trophy rows only land when
+finalize marks the final `SCORED` (same transaction). Gating on the winner alone
+would unlock a "frozen" recap in the sync -> finalize window with unscored
+predictions, zeroed bonuses and an empty haul.
 
 ## Server
 
@@ -50,10 +54,13 @@ Reuses the satori + resvg stack ([share-images.md](share-images.md),
 - `server/utils/share/wrapped-token.ts`: a second stateless HMAC token family
   (user + competition + locale), domain-separated from the prediction token so
   the two can never be swapped.
-- `POST /api/share/wrapped-mint` (auth, 404 until the final is decided) ->
+- `POST /api/share/wrapped-mint` (auth, 404 until the final is scored) ->
   `GET /og/wrapped/[token]` public PNG (pure template in
   `server/utils/share/wrapped-template.ts`; binary route outside the coverage
-  gate, cached 1 day - post-final data is frozen).
+  gate, cached 1 day - post-final data is frozen). Both OG routes load their
+  bundled fonts/mark and the non-Latin fallback font via the shared
+  `server/utils/share/og-assets.ts` (so a CJK/Arabic display name renders on the
+  card instead of tofu).
 - Summary slide offers download + copy-image-link.
 
 ## Tests
