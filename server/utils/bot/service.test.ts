@@ -558,9 +558,10 @@ describe('getBotOverviewCached', () => {
     const fresh = await getBotOverviewCached(db, competitionId, {})
     expect(fresh.rows[0].consensusTotal).toBe(first.rows[0].consensusTotal + 1)
 
-    // Cover the cache-key flag branches (admin upcoming + includePrivate).
-    const keyed = await getBotOverviewCached(db, competitionId, { includeUpcoming: true, includePrivate: true })
-    expect(keyed.summary.rank).not.toBeNull()
+    // Cover the cache-key branches: persona + userId (value arms) alongside the
+    // admin-upcoming + includePrivate flags.
+    const keyed = await getBotOverviewCached(db, competitionId, { persona: 'EQUALIZER', userId: u[0], includeUpcoming: true, includePrivate: true })
+    expect(keyed.persona).toBe('EQUALIZER')
     await client.close()
   })
 
@@ -691,6 +692,22 @@ describe('getBotOverview - EQUALIZER', () => {
     const overview = await getBotOverview(db, competitionId, { persona: 'EQUALIZER' }, NOW)
     expect(overview.rows.find((r) => r.matchId === tight)?.isJoker).toBe(true)
     expect(overview.rows.find((r) => r.matchId === lopsided)?.isJoker).toBe(false)
+    await client.close()
+  })
+
+  it('skips a prediction-less knockout match as a joker candidate', async () => {
+    const { db, client, competitionId } = await setup()
+    const r16 = (await findRoundId(db, competitionId, 'R16', null)) as string
+    const u = await makeUsers(db, 5)
+    const played = await makeMatch(db, { competitionId, roundId: r16, stage: 'R16', kickoffTime: PAST })
+    const empty = await makeMatch(db, { competitionId, roundId: r16, stage: 'R16', kickoffTime: new Date('2026-06-10T16:00:00Z') })
+    await predictAll(db, u, played, r16, [[1, 1], [1, 1], [2, 1], [1, 1], [1, 1]])
+    // `empty` has no predictions: the equalizer's joker-key consensus is null, so
+    // it is skipped (the `: null` arm) and the played match takes the joker.
+
+    const overview = await getBotOverview(db, competitionId, { persona: 'EQUALIZER' }, NOW)
+    expect(overview.rows.find((r) => r.matchId === empty)).toBeUndefined()
+    expect(overview.rows.find((r) => r.matchId === played)?.isJoker).toBe(true)
     await client.close()
   })
 })

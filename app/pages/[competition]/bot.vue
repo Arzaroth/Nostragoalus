@@ -8,7 +8,13 @@ const botMethod = useBotMethod()
 // Carried over from a league-scoped leaderboard: same consensus lens here.
 const leagueId = computed(() => (route.query.league ? String(route.query.league) : null))
 // Persona from the URL, deep-linked from a leaderboard ghost row; default consensus.
-const persona = computed<BotPersonaParam>(() => botPersonaParam(parseBotPersona(route.query.persona)))
+// The /bot page hosts the crowd bots only (its switcher is LEADERBOARD_BOT_PARAMS);
+// the evil twin lives on profile pages, so a stale ?persona=evil-twin deep link
+// falls back to the crowd bot rather than rendering the twin off-profile.
+const persona = computed<BotPersonaParam>(() => {
+  const p = botPersonaParam(parseBotPersona(route.query.persona))
+  return LEADERBOARD_BOT_PARAMS.includes(p) ? p : 'consensus'
+})
 function selectPersona(p: BotPersonaParam) {
   router.replace({ query: { ...route.query, persona: p } })
 }

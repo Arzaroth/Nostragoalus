@@ -589,7 +589,6 @@
   "bot": {
     "virtual": "virtual player",
     "pickedBy": "picked by {count}/{total}",
-    "adminUpcoming": "Admin view: upcoming-match picks are included - players only see kicked-off matches.",
     "empty": "No picks yet - they appear once players start predicting.",
     "methodMode": "Most picked",
     "methodMean": "Average",
