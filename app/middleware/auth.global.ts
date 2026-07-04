@@ -12,6 +12,13 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // it to signed-out friends).
   if (to.path.startsWith('/s/')) return
 
-  const { data } = await authClient.getSession()
+  // getSession() returns { data, error } and does NOT throw on a failed request.
+  // On mobile/roaming 4G the fetch can fail (packet loss, CGNAT drop, tower
+  // handoff) with a still-valid cookie. Treating that null `data` as logged-out
+  // bounced the user to /login mid-session; only redirect on a real "no
+  // session" (data null, no transport error). A genuinely expired cookie is
+  // caught by the actual API call the page makes.
+  const { data, error } = await authClient.getSession()
+  if (error) return
   if (!data) return navigateTo('/login')
 })

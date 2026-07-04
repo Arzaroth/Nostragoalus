@@ -35,7 +35,11 @@ The active competition is a **URL path prefix**. See
 - Un-prefixed global pages - `/`, login, signup, 2FA, verify-email, account,
   preferences, about, license, roadmap, leagues (discover + join), error pages.
 - Global middleware: `app/middleware/auth.global.ts` (redirect to /login unless
-  the route is in `PUBLIC_ROUTES` or a session exists) and
+  the route is in `PUBLIC_ROUTES` or a session exists). It distinguishes "no
+  session" (redirect) from a failed `getSession()` request (a transport `error`:
+  leave the session alone), so a flaky mobile connection cannot eject a signed-in
+  user mid-session. Also `app/middleware/competition.global.ts` (validate/redirect
+  the `[competition]`
   `app/middleware/competition.global.ts` (validate/redirect the `[competition]`
   slug).
 
