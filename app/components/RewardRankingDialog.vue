@@ -45,7 +45,8 @@ function nameOf(displayName: string): string {
         :style="r.isViewer ? 'background: var(--p-highlight-background)' : ''"
       >
         <span class="w-6 text-right text-sm font-semibold tabular-nums shrink-0" style="color: var(--p-text-muted-color)">{{ r.rank }}</span>
-        <UserAvatar :image="r.image" :user-id="r.userId" />
+        <!-- Concealed members (blank name) get no presence dot: userId drives it. -->
+        <UserAvatar :image="r.image" :user-id="r.displayName === '' ? null : r.userId" />
         <span class="flex-1 min-w-0 truncate text-sm" :class="r.displayName === '' ? 'italic' : ''">
           {{ nameOf(r.displayName) }}
           <span v-if="r.isViewer" class="font-semibold" style="color: var(--p-primary-color)"> - {{ t('reward.you') }}</span>

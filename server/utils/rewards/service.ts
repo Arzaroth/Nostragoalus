@@ -144,7 +144,9 @@ export async function getMyRewards(db: AppDatabase, userId: string): Promise<MyR
   for (const m of memberships) {
     const standings = await getRewardStandings(db, m.leagueId, userId)
     for (const s of standings) {
-      if (s.reward) {
+      // A disabled criterion (TEAM_SPECIALIST with no featured team) can't be
+      // earned yet, so it never shows in the cabinet - held or chased.
+      if (s.reward && !s.disabled) {
         out.push({
           leagueId: m.leagueId,
           leagueName: m.leagueName,
@@ -168,7 +170,12 @@ export async function getRewardRanking(
   type: CompetitionAwardType,
   viewerId: string | null,
 ): Promise<RewardRankingDto> {
-  const [lg] = await db.select({ competitionId: league.competitionId }).from(league).where(eq(league.id, leagueId)).limit(1)
+  const [lg] = await db
+    .select({ competitionId: league.competitionId, featuredTeamCode: competition.featuredTeamCode })
+    .from(league)
+    .innerJoin(competition, eq(competition.id, league.competitionId))
+    .where(eq(league.id, leagueId))
+    .limit(1)
   if (!lg) throw new NotFoundError('league not found')
 
   const memberIds = (
@@ -176,12 +183,7 @@ export async function getRewardRanking(
   ).map((m) => m.userId)
 
   // The featured team names the TEAM_SPECIALIST ranking even before anyone scores.
-  const teamCode =
-    type === 'TEAM_SPECIALIST'
-      ? (
-          await db.select({ code: competition.featuredTeamCode }).from(competition).where(eq(competition.id, lg.competitionId)).limit(1)
-        )[0]?.code ?? null
-      : null
+  const teamCode = type === 'TEAM_SPECIALIST' ? lg.featuredTeamCode : null
 
   const ranked = memberIds.length > 0 ? await rankCriteria(db, lg.competitionId, type, { leagueId, memberIds, teamCode }) : []
 

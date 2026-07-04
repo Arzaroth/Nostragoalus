@@ -5,6 +5,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Ajouté
+- **Voir le classement complet derrière chaque récompense** : cliquez sur une récompense de ligue pour ouvrir son classement en direct pour ce critère - général, phase de groupes, phase à élimination, Madame Irma ou le Spécialiste d'équipe - qui montre où se situe chaque membre et se fige à la fin de la compétition. Votre vitrine à trophées liste aussi les récompenses que vous visez (grisées) à côté de celles que vous détenez, chacune ouvrant le même classement.
+- **Équipe à l'honneur du Spécialiste d'équipe, réglée depuis l'admin** : une nouvelle section Compétitions du panneau d'administration choisit, par compétition, l'équipe suivie par la récompense Spécialiste d'équipe. Tant qu'aucune n'est choisie, cette récompense est désactivée au lieu de n'être jamais attribuée en silence.
+
 ## [2.16.3] - 2026-07-05
 
 ### Corrigé
