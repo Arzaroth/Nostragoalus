@@ -11,7 +11,8 @@ import { getMembership } from '../leagues/service'
 
 async function messageLeague(db: AppDatabase, messageId: string): Promise<string> {
   const rows = await db.select({ leagueId: chatMessage.leagueId }).from(chatMessage).where(eq(chatMessage.id, messageId)).limit(1)
-  if (!rows[0]) throw new NotFoundError('message not found')
+  // A null leagueId is a direct-message row - not reachable through a league route.
+  if (!rows[0] || rows[0].leagueId === null) throw new NotFoundError('message not found')
   return rows[0].leagueId
 }
 

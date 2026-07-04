@@ -54,7 +54,8 @@ export async function getAttachmentCiphertext(
     .innerJoin(chatMessage, eq(chatMessage.id, chatAttachment.messageId))
     .where(and(eq(chatAttachment.messageId, messageId), eq(chatAttachment.idx, idx)))
     .limit(1)
-  if (!rows[0]) throw new NotFoundError('attachment not found')
+  // A null leagueId is a direct-message attachment - not reachable through a league route.
+  if (!rows[0] || rows[0].leagueId === null) throw new NotFoundError('attachment not found')
   const membership = await getMembership(db, rows[0].leagueId, userId)
   if (!membership) throw new ForbiddenError('not a league member')
   const isAdmin = membership.role === 'OWNER' || membership.role === 'MODERATOR'
