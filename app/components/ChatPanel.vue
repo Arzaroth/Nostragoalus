@@ -194,11 +194,17 @@ function startReply(m: DecryptedMessage) {
 function parentOf(m: DecryptedMessage): DecryptedMessage | undefined {
   return m.parentId ? messages.value.find((x) => x.id === m.parentId) : undefined
 }
+// A one-line plaintext preview of a message (reply banner, quoted parent, reports
+// queue): decode `@<id>` mentions to `@Name` so a quoted mention reads as the name,
+// not the raw id. Null text is an undecryptable message.
+function previewText(text: string | null): string {
+  return text === null ? t('chat.cantDecrypt') : decodeMentions(text, names.value, t('chat.unknownUser'))
+}
 // Quote text for a parent: a removed parent reads "message removed", not the
 // generic can't-decrypt placeholder.
 function quoteText(p: DecryptedMessage): string {
   if (p.moderation === 'REMOVED') return t('chat.moderation.removed')
-  return p.text ?? t('chat.cantDecrypt')
+  return previewText(p.text)
 }
 
 // Threads (a separate relation from quotes): thread replies live in a message's
@@ -369,6 +375,17 @@ function composerTextarea(): HTMLTextAreaElement | null {
   const el = composer.value?.$el as HTMLElement | undefined
   return (el?.tagName === 'TEXTAREA' ? el : el?.querySelector?.('textarea')) as HTMLTextAreaElement | null
 }
+// The thread and edit fields live inside the message v-for, so their template refs
+// would be arrays - reach them through the DOM by the open thread/edit id instead,
+// the same way startEdit/openThreadFor already focus them.
+function threadTextarea(): HTMLTextAreaElement | null {
+  const id = threadParentId.value
+  return id ? (listEl.value?.querySelector(`[data-thread="${id}"] textarea`) as HTMLTextAreaElement | null) : null
+}
+function editTextarea(): HTMLTextAreaElement | null {
+  const id = editingId.value
+  return id ? (listEl.value?.querySelector(`[data-mid="${id}"] textarea`) as HTMLTextAreaElement | null) : null
+}
 
 // The autoResize textareas grow to fit, then cap at ~3 lines. We only switch on
 // the scrollbar once the content actually exceeds that cap: leaving overflow:auto
@@ -403,8 +420,23 @@ function insertEmoji(emoji: string) {
 }
 
 // @mention autocomplete: when the caret sits in an `@partial` run, offer matching
-// league members; picking inserts a stable `@<id>` token that renders as their
-// current name. Arrow/Enter/Tab/Escape drive it from the composer keydown.
+// league members; picking inserts the display name (encodeMentions maps it back to
+// a stable `@<id>` token at send time). The same popup serves the main composer, a
+// thread reply and an inline edit - `mentionTarget` tracks which field is active so
+// only that field shows the dropdown and receives the insertion. Arrow/Enter/Tab/
+// Escape drive it from that field's keydown.
+type MentionTarget = 'composer' | 'thread' | 'edit'
+interface MentionField {
+  get(): string
+  set(v: string): void
+  ta(): HTMLTextAreaElement | null
+}
+const mentionFields: Record<MentionTarget, MentionField> = {
+  composer: { get: () => draft.value, set: (v) => { draft.value = v }, ta: composerTextarea },
+  thread: { get: () => threadDraft.value, set: (v) => { threadDraft.value = v }, ta: threadTextarea },
+  edit: { get: () => editDraft.value, set: (v) => { editDraft.value = v }, ta: editTextarea },
+}
+const mentionTarget = ref<MentionTarget>('composer')
 const mentionQuery = ref<string | null>(null)
 const mentionStart = ref(0)
 const mentionIndex = ref(0)
@@ -413,14 +445,17 @@ const mentionCandidates = computed(() => {
   const q = mentionQuery.value.toLowerCase()
   return (detail.data.value?.members ?? []).filter((m) => m.name.toLowerCase().includes(q)).slice(0, 6)
 })
-function detectMention() {
-  const ta = composerTextarea()
+function detectMention(target: MentionTarget) {
+  mentionTarget.value = target
+  const f = mentionFields[target]
+  const ta = f.ta()
   if (!ta) {
     mentionQuery.value = null
     return
   }
-  const caret = ta.selectionStart ?? draft.value.length
-  const m = draft.value.slice(0, caret).match(/(?:^|\s)@([^\s@]*)$/)
+  const text = f.get()
+  const caret = ta.selectionStart ?? text.length
+  const m = text.slice(0, caret).match(/(?:^|\s)@([^\s@]*)$/)
   if (m) {
     mentionQuery.value = m[1]!
     mentionStart.value = caret - m[1]!.length - 1
@@ -430,14 +465,16 @@ function detectMention() {
   }
 }
 function applyMention(member: { userId: string; name: string }) {
-  const ta = composerTextarea()
-  const caret = ta?.selectionStart ?? draft.value.length
-  const before = draft.value.slice(0, mentionStart.value)
-  const after = draft.value.slice(caret)
-  // Insert the display name so the composer reads naturally; encodeMentions maps
-  // it back to a stable @<id> token at send time.
+  const f = mentionFields[mentionTarget.value]
+  const ta = f.ta()
+  const text = f.get()
+  const caret = ta?.selectionStart ?? text.length
+  const before = text.slice(0, mentionStart.value)
+  const after = text.slice(caret)
+  // Insert the display name so the field reads naturally; encodeMentions maps it
+  // back to a stable @<id> token at send time.
   const token = `@${member.name} `
-  draft.value = before + token + after
+  f.set(before + token + after)
   mentionQuery.value = null
   nextTick(() => {
     ta?.focus()
@@ -445,41 +482,75 @@ function applyMention(member: { userId: string; name: string }) {
     ta?.setSelectionRange(pos, pos)
   })
 }
+// Drive the open dropdown from a field's keydown. Returns true when it consumed the
+// key, so the field's own Enter/arrow handling is skipped.
+function mentionNavKey(e: KeyboardEvent): boolean {
+  const list = mentionCandidates.value
+  if (mentionQuery.value === null || !list.length) return false
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    mentionIndex.value = (mentionIndex.value + 1) % list.length
+    return true
+  }
+  if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    mentionIndex.value = (mentionIndex.value - 1 + list.length) % list.length
+    return true
+  }
+  if (e.key === 'Enter' || e.key === 'Tab') {
+    e.preventDefault()
+    applyMention(list[mentionIndex.value]!)
+    return true
+  }
+  if (e.key === 'Escape') {
+    e.preventDefault()
+    mentionQuery.value = null
+    return true
+  }
+  return false
+}
 function onComposerInput() {
   chat.sendTyping()
-  detectMention()
+  detectMention('composer')
   composerScrolls.value = capScroll(composerTextarea())
 }
 function onComposerKey(e: KeyboardEvent) {
-  const list = mentionCandidates.value
-  if (mentionQuery.value !== null && list.length) {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      mentionIndex.value = (mentionIndex.value + 1) % list.length
-      return
-    }
-    if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      mentionIndex.value = (mentionIndex.value - 1 + list.length) % list.length
-      return
-    }
-    if (e.key === 'Enter' || e.key === 'Tab') {
-      e.preventDefault()
-      applyMention(list[mentionIndex.value]!)
-      return
-    }
-    if (e.key === 'Escape') {
-      e.preventDefault()
-      mentionQuery.value = null
-      return
-    }
-  }
+  if (mentionNavKey(e)) return
   if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
     e.preventDefault()
     void submit()
     return
   }
   if (e.key === 'ArrowUp') onComposerUp(e)
+}
+function onThreadInput(e: Event) {
+  detectMention('thread')
+  threadScrolls.value = capScroll(e.target as HTMLTextAreaElement)
+}
+function onThreadKey(e: KeyboardEvent) {
+  if (mentionNavKey(e)) return
+  if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    e.preventDefault()
+    void submitThreadReply()
+  }
+}
+function onEditInput(e: Event) {
+  detectMention('edit')
+  editScrolls.value = capScroll(e.target as HTMLTextAreaElement)
+}
+function onEditKey(e: KeyboardEvent) {
+  if (mentionNavKey(e)) return
+  if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    e.preventDefault()
+    void saveEdit()
+    return
+  }
+  if (e.key === 'Escape') {
+    cancelEdit()
+    return
+  }
+  if (e.key === 'ArrowUp') onEditUp(e)
+  else if (e.key === 'ArrowDown') onEditDown(e)
 }
 
 // Images are buffered before send: each is compressed locally and previewed in a
@@ -1016,8 +1087,15 @@ watch(
             </button>
             <span v-if="!contentVisible(m)" class="italic" :class="m.userId === meId ? 'self-end' : 'self-start'" style="color: var(--p-text-muted-color)">{{ m.moderation === 'REMOVED' ? t('chat.moderation.removed') : t('chat.moderation.pendingHidden') }}</span>
             <!-- Inline edit of your own message: text plus image add/remove. -->
-            <div v-else-if="editingId === m.id" class="flex flex-col gap-1">
-              <Textarea v-model="editDraft" rows="1" autoResize class="w-full" :style="{ maxHeight: '7.5rem', overflowY: editScrolls ? 'auto' : 'hidden' }" @input="(e) => (editScrolls = capScroll(e.target as HTMLTextAreaElement))" @keydown.enter.exact.prevent="saveEdit" @keydown.esc="cancelEdit" @keydown.up="onEditUp" @keydown.down="onEditDown" />
+            <div v-else-if="editingId === m.id" class="relative flex flex-col gap-1">
+              <ChatMentionMenu
+                v-if="mentionTarget === 'edit' && mentionQuery !== null && mentionCandidates.length"
+                :candidates="mentionCandidates"
+                :active-index="mentionIndex"
+                @select="applyMention"
+                @hover="(i) => (mentionIndex = i)"
+              />
+              <Textarea v-model="editDraft" rows="1" autoResize class="w-full" :style="{ maxHeight: '7.5rem', overflowY: editScrolls ? 'auto' : 'hidden' }" @input="onEditInput" @keydown="onEditKey" />
               <div v-if="editExisting.length || editAdd.length" class="flex flex-wrap gap-1.5">
                 <!-- Existing images: tap the x to mark for removal (re-tap to keep). -->
                 <div v-for="e in editExisting" :key="`ex-${e.idx}`" class="relative">
@@ -1126,8 +1204,15 @@ watch(
                   <ChatImage v-if="r.attachments.length" :class="r.userId === meId ? 'self-end' : 'self-start'" :message-id="r.id" :attachments="r.attachments" :load="chat.loadAttachment" @open="(idx) => openMessageImages(r, idx)" />
                 </template>
               </div>
-              <form class="flex items-end gap-2" @submit.prevent="submitThreadReply">
-                <Textarea v-model="threadDraft" :placeholder="t('chat.thread.placeholder')" rows="1" autoResize class="flex-1" :style="{ maxHeight: '7.5rem', overflowY: threadScrolls ? 'auto' : 'hidden' }" @input="(e) => (threadScrolls = capScroll(e.target as HTMLTextAreaElement))" @keydown.enter.exact.prevent="submitThreadReply" />
+              <form class="relative flex items-end gap-2" @submit.prevent="submitThreadReply">
+                <ChatMentionMenu
+                  v-if="mentionTarget === 'thread' && mentionQuery !== null && mentionCandidates.length"
+                  :candidates="mentionCandidates"
+                  :active-index="mentionIndex"
+                  @select="applyMention"
+                  @hover="(i) => (mentionIndex = i)"
+                />
+                <Textarea v-model="threadDraft" :placeholder="t('chat.thread.placeholder')" rows="1" autoResize class="flex-1" :style="{ maxHeight: '7.5rem', overflowY: threadScrolls ? 'auto' : 'hidden' }" @input="onThreadInput" @keydown="onThreadKey" />
                 <Button type="submit" icon="pi pi-send" :loading="sending" :disabled="!threadDraft.trim() || threadOverLimit" :aria-label="t('chat.send')" />
               </form>
             </div>
@@ -1153,7 +1238,7 @@ watch(
             style="border-color: var(--p-primary-color); background: color-mix(in srgb, var(--p-text-color) 5%, transparent)"
           >
             <span class="opacity-70">{{ t('chat.reply.replyingTo', { name: nameFor(replyTo.userId) }) }}</span>
-            <span class="truncate flex-1" style="color: var(--p-text-muted-color)">{{ replyTo.text ?? t('chat.cantDecrypt') }}</span>
+            <span class="truncate flex-1" style="color: var(--p-text-muted-color)">{{ previewText(replyTo.text) }}</span>
             <button type="button" class="opacity-70 hover:opacity-100" :aria-label="t('chat.reply.cancel')" @click="replyTo = null"><i class="pi pi-times text-xs" /></button>
           </div>
           <small v-if="typingText" class="italic h-4" style="color: var(--p-text-muted-color)">{{ typingText }}</small>
@@ -1177,24 +1262,13 @@ watch(
           <input ref="editFileInput" type="file" :accept="acceptImages" multiple class="hidden" @change="onEditFilePicked">
           <form class="relative flex items-end gap-2" @submit.prevent="submit">
             <!-- @mention autocomplete, anchored above the composer. -->
-            <div
-              v-if="mentionQuery !== null && mentionCandidates.length"
-              class="absolute bottom-full start-0 mb-2 z-30 w-64 max-w-full rounded-lg border shadow-lg py-1 overflow-hidden"
-              style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
-            >
-              <button
-                v-for="(c, i) in mentionCandidates"
-                :key="c.userId"
-                type="button"
-                class="w-full flex items-center gap-2 px-3 py-1.5 text-start"
-                :style="i === mentionIndex ? 'background: color-mix(in srgb, var(--p-primary-color) 14%, transparent)' : ''"
-                @mousedown.prevent="applyMention(c)"
-                @mouseenter="mentionIndex = i"
-              >
-                <UserAvatar :image="c.image" :user-id="c.userId" class="!w-5 !h-5 shrink-0 text-[0.5rem]" />
-                <span class="truncate text-sm">{{ c.name }}</span>
-              </button>
-            </div>
+            <ChatMentionMenu
+              v-if="mentionTarget === 'composer' && mentionQuery !== null && mentionCandidates.length"
+              :candidates="mentionCandidates"
+              :active-index="mentionIndex"
+              @select="applyMention"
+              @hover="(i) => (mentionIndex = i)"
+            />
             <input ref="fileInput" type="file" :accept="acceptImages" multiple class="hidden" @change="onFilePicked">
             <Button type="button" icon="pi pi-image" severity="secondary" text :disabled="sending || pending.length >= MAX_IMAGES" :aria-label="t('chat.image.attach')" @click="fileInput?.click()" />
             <div class="relative">
@@ -1280,7 +1354,7 @@ watch(
             <span class="text-[10px] px-1.5 py-0.5 rounded-full" style="border: 1px solid var(--ng-danger); color: var(--ng-danger)">{{ t('chat.moderation.reportCount', { n: r.reports }) }}</span>
             <span v-if="r.moderation === 'PENDING'" class="text-[10px] uppercase tracking-wider" style="color: var(--ng-danger)">{{ t('chat.moderation.pendingTag') }}</span>
           </div>
-          <span class="break-words">{{ r.text ?? t('chat.cantDecrypt') }}</span>
+          <span class="break-words">{{ previewText(r.text) }}</span>
           <div class="flex items-center gap-3">
             <button type="button" class="text-xs underline" style="color: var(--p-primary-color)" @click="resolveReport(r.id, 'restore')">{{ t('chat.moderation.ignore') }}</button>
             <button type="button" class="text-xs underline" style="color: var(--ng-danger)" @click="resolveReport(r.id, 'remove')">{{ t('chat.moderation.confirm') }}</button>
