@@ -37,12 +37,13 @@ describe('createHeartbeat', () => {
     expect(ping).toHaveBeenCalledTimes(1)
   })
 
-  it('arms only one watchdog at a time so an unanswered ping is not extended', () => {
+  it('declaring the socket dead cancels the interval so it never pings again', () => {
     const { ping, onDead, hb } = setup()
     hb.start()
     vi.advanceTimersByTime(1000) // ping #1, watchdog armed (fires at +500)
-    vi.advanceTimersByTime(1000) // interval fires again mid-timeout: must NOT re-ping or re-arm
-    // The original watchdog (armed at t=1000) has already fired at t=1500.
+    // At t=1500 the watchdog fires: onDead runs and stop() clears the interval,
+    // so the next scheduled tick at t=2000 never happens.
+    vi.advanceTimersByTime(1000)
     expect(onDead).toHaveBeenCalledTimes(1)
     expect(ping).toHaveBeenCalledTimes(1)
   })

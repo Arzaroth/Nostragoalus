@@ -5,6 +5,12 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### tI'pu'
+- **Hoch ghItlhmeH mention qawHaq**: DaH thread jang je QIn choHDI' je member qawHaq 'anglu', ghItlh Dev neH ghobe'.
+- **jang HaSta mentionvaD pong per, ID ghobe'**: jangbogh ghap boSbogh QInDaq mention DaH pong pong 'anglu' (mup @Sam), ID Doq ghobe' - "jang" banner, boSbogh QIn, je Sup tlhegh.
+- **DunmoHHa' rar SoHtaH**: roaming ghap mobile Hong QInDaq lujpu'bogh tlhob qaSDI', session lulaHtaHvIS login HaSta vIchDaq qaSbe'.
+- **mobile-Daq DaH update chektaH**: DaH app-e' Sovbej mobile network DaH rar HoHpu' (4G/5G cell choHDI' qaS) 'ej ngugh rar chu', vaj mI', chat, je ghum qaStaH manual reload ghobe'.
+
 ## [2.16.0] - 2026-07-04
 
 ### chelpu'
