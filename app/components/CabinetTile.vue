@@ -1,8 +1,9 @@
 <script setup lang="ts">
-withDefaults(
+const props = withDefaults(
   defineProps<{
     name: string
     desc: string
+    criteria?: string
     icon: string
     tint?: string
     tier?: string | null
@@ -13,6 +14,7 @@ withDefaults(
     pinDisabled?: boolean
   }>(),
   {
+    criteria: '',
     tint: 'var(--p-primary-color)',
     tier: null,
     locked: false,
@@ -24,12 +26,21 @@ withDefaults(
 )
 const emit = defineEmits<{ toggle: [] }>()
 const { t } = useI18n()
+
+// The tooltip always states the concrete unlock criteria. Locked tiles prefix it
+// with the "Locked" label so it reads as "how to earn this"; earned tiles read as
+// "what you did". Falls back to the old generic hint if no criteria was supplied.
+const tip = computed(() => {
+  if (!props.criteria) return props.locked ? t('achievements.lockedHint') : ''
+  return props.locked ? `${t('achievements.locked')} - ${props.criteria}` : props.criteria
+})
 </script>
 
 <template>
   <div
+    v-tooltip.top="tip"
     class="relative rounded-lg border p-3 flex flex-col items-center text-center gap-0.5 transition"
-    :class="locked ? 'opacity-40' : ''"
+    :class="[locked ? 'opacity-40' : '', tip ? 'cursor-help' : '']"
     style="border-color: var(--p-content-border-color)"
   >
     <span
@@ -42,11 +53,7 @@ const { t } = useI18n()
     <i v-else :class="locked ? 'pi pi-lock' : icon" class="text-2xl" :style="locked ? '' : `color:${tint}`" />
 
     <span class="text-sm font-semibold leading-tight mt-1">{{ name }}</span>
-    <span
-      v-tooltip.top="locked ? t('achievements.lockedHint') : ''"
-      class="text-xs leading-snug"
-      style="color: var(--p-text-muted-color)"
-    >{{ desc }}</span>
+    <span class="text-xs leading-snug" style="color: var(--p-text-muted-color)">{{ desc }}</span>
 
     <button
       v-if="editable"

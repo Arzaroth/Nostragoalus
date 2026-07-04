@@ -23,6 +23,7 @@ const CATEGORY_ICON: Record<string, string> = {
   ORACLE: 'pi pi-eye',
   STREAK: 'pi pi-forward',
   TROPHY_META: 'pi pi-trophy',
+  SHAME: 'pi pi-thumbs-down',
   SECRET: 'pi pi-sparkles',
 }
 const TIER_TINT: Record<string, string> = { BRONZE: '#cd7f32', SILVER: '#9ca3af', GOLD: '#eab308' }
@@ -33,6 +34,7 @@ interface Display {
   itemKey: string
   name: string
   desc: string
+  criteria: string
   icon: string
   tint: string
   tier: string | null
@@ -48,6 +50,7 @@ function trophyDisplay(tr: TrophyDto): Display {
     itemKey: tr.type,
     name: t(`achievements.trophy.${nameKey}.name`, { team: tr.teamCode ?? '' }),
     desc: t(`achievements.trophy.${nameKey}.desc`, { team: tr.teamCode ?? '' }),
+    criteria: t(`achievements.trophy.${nameKey}.criteria`, { team: tr.teamCode ?? '' }),
     icon: TROPHY_ICON[tr.type],
     tint: TROPHY_TINT,
     tier: null,
@@ -63,6 +66,7 @@ function badgeDisplay(a: AchievementDto): Display {
     itemKey: a.key,
     name: t(`achievements.badge.${a.key}.name`),
     desc: t(`achievements.badge.${a.key}.desc`),
+    criteria: t(`achievements.badge.${a.key}.criteria`),
     icon: CATEGORY_ICON[a.category] ?? 'pi pi-verified',
     tint: tier ? TIER_TINT[tier] : 'var(--p-primary-color)',
     tier: tier ? t(`achievements.tier.${tier}`) : null,
