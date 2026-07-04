@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.16.3] - 2026-07-05
+
 ### tI'pu'
 - **may' QujwI' tetlh: cha' ghommey naghwI'pu' Hoch 'ang**: wa'DIch, tayghom naQ chergh 20 nIvbogh neH lo'lu', vaj ghom naghwI' Hutlhbogh 20 nIvbogh naghqa'be'law', 'ej ghom tInmey naghwI' puSqu'bogh chIlqa'. DaH tetlh cha' ghommey naghmey assistmey je Hoch 'ang.
 
