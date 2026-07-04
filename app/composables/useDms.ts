@@ -27,7 +27,6 @@ export interface DecodedDm {
 const threadKeys = new Map<string, Map<number, Uint8Array>>()
 const threadOther = new Map<string, DmThreadDetailDTO['other']>()
 const messages = reactive(new Map<string, DecodedDm[]>())
-let socketStarted = false
 
 export function useDms() {
   const queryClient = useQueryClient()
@@ -103,7 +102,6 @@ export function useDms() {
     const decoded = await Promise.all(res.messages.map((m) => decrypt(threadId, m)))
     // The API returns newest-first; the UI reads top-down oldest-first.
     messages.set(threadId, decoded.reverse())
-    startSocket()
   }
 
   function threadMessages(threadId: string): DecodedDm[] {
@@ -198,39 +196,36 @@ export function useDms() {
     list.push(msg)
   }
 
-  // A single live socket for DMs. The server delivers dm:new / dm:edit to this
-  // user's sockets directly (identity pinned at connect), so there is nothing to
-  // subscribe to; we just react. Started lazily the first time a thread loads.
-  function startSocket(): void {
-    if (socketStarted || !import.meta.client) return
-    socketStarted = true
-    useReconnectingSocket({
-      onMessage: async (data) => {
-        const msg = data as { type?: string; threadId?: string; message?: DmMessageDTO; messageId?: string; ciphertext?: string; editedAt?: string }
-        if (msg.type === 'dm:new' && msg.threadId && msg.message) {
-          if (threadKeys.has(msg.threadId)) appendDecoded(msg.threadId, await decrypt(msg.threadId, msg.message))
-          queryClient.invalidateQueries({ queryKey: ['dm', 'threads'] })
-          return
-        }
-        if (msg.type === 'dm:edit' && msg.threadId && msg.messageId && msg.ciphertext) {
-          const list = messages.get(msg.threadId)
-          const idx = list?.findIndex((m) => m.id === msg.messageId) ?? -1
-          if (list && idx >= 0) {
-            const key = threadKeys.get(msg.threadId)?.get(list[idx].epoch)
-            let text = list[idx].text
-            if (key) {
-              try {
-                text = await decryptMessage(msg.ciphertext, key)
-              } catch {
-                /* keep prior text */
-              }
+  // A single live socket for DMs, opened during setup so its onMounted connect
+  // actually fires (useReconnectingSocket binds lifecycle hooks). The server
+  // delivers dm:new / dm:edit to this user's sockets directly (identity pinned at
+  // connect), so there is nothing to subscribe to; we just react.
+  useReconnectingSocket({
+    onMessage: async (data) => {
+      const msg = data as { type?: string; threadId?: string; message?: DmMessageDTO; messageId?: string; ciphertext?: string; editedAt?: string }
+      if (msg.type === 'dm:new' && msg.threadId && msg.message) {
+        if (threadKeys.has(msg.threadId)) appendDecoded(msg.threadId, await decrypt(msg.threadId, msg.message))
+        queryClient.invalidateQueries({ queryKey: ['dm', 'threads'] })
+        return
+      }
+      if (msg.type === 'dm:edit' && msg.threadId && msg.messageId && msg.ciphertext) {
+        const list = messages.get(msg.threadId)
+        const idx = list?.findIndex((m) => m.id === msg.messageId) ?? -1
+        if (list && idx >= 0) {
+          const key = threadKeys.get(msg.threadId)?.get(list[idx].epoch)
+          let text = list[idx].text
+          if (key) {
+            try {
+              text = await decryptMessage(msg.ciphertext, key)
+            } catch {
+              /* keep prior text */
             }
-            list[idx] = { ...list[idx], text, editedAt: msg.editedAt ?? list[idx].editedAt }
           }
+          list[idx] = { ...list[idx], text, editedAt: msg.editedAt ?? list[idx].editedAt }
         }
-      },
-    })
-  }
+      }
+    },
+  })
 
   return {
     threads,

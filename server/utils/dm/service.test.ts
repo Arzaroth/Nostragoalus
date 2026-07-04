@@ -184,6 +184,7 @@ describe('listThreads', () => {
     const me = await mkUser(db, 'aaa')
     const x = await mkUser(db, 'xxx')
     const y = await mkUser(db, 'yyy')
+    await db.update(user).set({ image: 'https://img/y.png' }).where(eq(user.id, y))
     const t1 = await openThread(db, me, x)
     const t2 = await openThread(db, me, y)
     // t2 is more recently active, so it sorts first.
@@ -192,6 +193,7 @@ describe('listThreads', () => {
     const inbox = await listThreads(db, me)
     expect(inbox.map((r) => r.threadId)).toEqual([t2, t1])
     expect(inbox[0].other.id).toBe(y)
+    expect(inbox[0].other.image).toBe('https://img/y.png')
     expect(inbox[0].myWrappedKey).toBe('wk-aaa')
     expect(inbox[0].lastMessageAt).toBeInstanceOf(Date)
     await client.close()
