@@ -66,7 +66,14 @@
     "note": "QIn (raDbe'lu')",
     "link": "rar (raDbe'lu')",
     "image": "mIllogh chel",
-    "clearImage": "teq"
+    "clearImage": "teq",
+    "myPrizes": "pop lIj",
+    "holding": "Daghaj",
+    "chasing": "Datlhutlh",
+    "teamSpecialistDisabled": "pop chu'meH admin-Daq ghom pin yIwIv.",
+    "noRanking": "patlh tu'lu'be' - Qapbogh tu'lu'be'.",
+    "metricPoints": "wanI'",
+    "metricExact": "motlh"
   },
   "verify": {
     "title": "Qun tob",
@@ -767,6 +774,18 @@
     "deleteMailSent": "'olmeH QIn ngeHlu'ta' - leQ DapoSmoHDI' raQwI' Qaw'lu'."
   },
   "admin": {
+    "competitions": {
+      "title": "qIptaHghachmey",
+      "hint": "qIptaHghach Sech, ghom pin je.",
+      "intro": "ghom pin yIwIv, pop DatlhutlhmeH. pin wIvbe'lu'chugh, qIptaHghach Hoch boq pop lujang.",
+      "none": "qIptaHghach tu'lu'be'.",
+      "colCompetition": "qIptaHghach",
+      "colFeaturedTeam": "ghom pin",
+      "noFeaturedTeam": "pagh (pop lujang)",
+      "noTeams": "ghom tu'lu'be' - wanI' yISaH.",
+      "save": "yIpol",
+      "saveFailed": "ghom pin pollaHbe'."
+    },
     "odds": {
       "title": "qI' tlhe'wI'",
       "hint": "yIwIv: nuq tlhe'wI' qel Hoch qaj qI'.",

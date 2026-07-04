@@ -70,7 +70,14 @@
     "note": "Note (optional)",
     "link": "Link (optional)",
     "image": "Add image",
-    "clearImage": "Remove"
+    "clearImage": "Remove",
+    "myPrizes": "Your prizes",
+    "holding": "Holding",
+    "chasing": "Chasing",
+    "teamSpecialistDisabled": "Set a featured team in admin to enable this prize.",
+    "noRanking": "No ranking yet - nobody has scored in this prize.",
+    "metricPoints": "pts",
+    "metricExact": "exact"
   },
   "verify": {
     "title": "Verify scores",
@@ -771,6 +778,18 @@
     "deleteMailSent": "Confirmation mail sent - the account will be deleted when you open the link."
   },
   "admin": {
+    "competitions": {
+      "title": "Competitions",
+      "hint": "Per-competition settings, like the Team Specialist featured team.",
+      "intro": "Pick the team the Team Specialist prize tracks. Until one is set, that prize is disabled for every league in the competition.",
+      "none": "No competitions yet.",
+      "colCompetition": "Competition",
+      "colFeaturedTeam": "Featured team",
+      "noFeaturedTeam": "None (prize disabled)",
+      "noTeams": "No teams yet - load the fixtures first.",
+      "save": "Save",
+      "saveFailed": "Could not save the featured team."
+    },
     "odds": {
       "title": "Odds provider",
       "hint": "Pick which provider prices each competition's matches.",

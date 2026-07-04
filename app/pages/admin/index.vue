@@ -434,6 +434,7 @@ const navItems = [
   { key: 'signup', icon: 'pi pi-user-plus', label: 'admin.signup.title', hint: 'admin.signup.hint' },
   { key: 'sso', icon: 'pi pi-shield', label: 'admin.sso.title', hint: 'admin.sso.hint' },
   { key: 'users', icon: 'pi pi-users', label: 'admin.users.title', hint: 'admin.users.hint' },
+  { key: 'competitions', icon: 'pi pi-flag', label: 'admin.competitions.title', hint: 'admin.competitions.hint' },
   { key: 'leagues', icon: 'pi pi-trophy', label: 'admin.leagues.title', hint: 'admin.leagues.hint' },
   { key: 'roadmap', icon: 'pi pi-map', label: 'admin.roadmap.title', hint: 'admin.roadmap.hint' },
   { key: 'cron', icon: 'pi pi-clock', label: 'cron.title', hint: 'cron.hint' },
@@ -783,6 +784,9 @@ const counts = computed<Record<string, { total: number; loading: boolean }>>(() 
           </div>
           <Menu ref="rowMenu" :model="rowMenuItems" popup />
         </section>
+
+        <!-- Competitions: featured team for the Team Specialist prize -->
+        <AdminCompetitionsSection v-show="active === 'competitions'" :is-admin="isAdmin" />
 
         <!-- Leagues -->
         <AdminLeaguesSection v-show="active === 'leagues'" :is-admin="isAdmin" />

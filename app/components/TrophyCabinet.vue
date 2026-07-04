@@ -78,8 +78,21 @@ const badges = computed(() =>
     .sort((a, b) => Number(a.locked) - Number(b.locked)),
 )
 const isOwner = computed(() => cabinet.value?.isOwner ?? false)
-// Prizes the viewer currently holds across their leagues (own cabinet only).
+// Prizes across the viewer's leagues (own cabinet only): held (lit) + chased
+// (tentative, greyed). Each opens that criterion's live ranking.
 const myRewards = useMyRewards(isOwner)
+const criterionName = useCriterionName()
+
+const rankingLeagueId = ref<string | null>(null)
+const rankingType = ref<CompetitionAwardType | null>(null)
+const rankingTeamCode = ref<string | null>(null)
+const rankingOpen = ref(false)
+function openReward(r: { leagueId: string; type: CompetitionAwardType; teamCode: string | null }) {
+  rankingLeagueId.value = r.leagueId
+  rankingType.value = r.type
+  rankingTeamCode.value = r.teamCode
+  rankingOpen.value = true
+}
 
 // The showcase holds earned achievements only; a Display's itemKey is the key.
 const pinnable = computed(() => badges.value.filter((b) => !b.locked))
@@ -118,27 +131,38 @@ async function save() {
     <p v-if="isLoading" class="text-sm" style="color: var(--p-text-muted-color)">{{ t('common.loading') }}</p>
 
     <template v-else-if="cabinet">
-      <!-- Prizes you currently hold across your leagues -->
+      <!-- Prizes across your leagues: held (lit) and chased (tentative, greyed) -->
       <div v-if="isOwner && (myRewards.data.value?.length ?? 0) > 0" class="mb-5">
         <h3 class="text-sm font-semibold uppercase tracking-wide mb-2" style="color: var(--p-text-muted-color)">
-          {{ t('reward.held') }}
+          {{ t('reward.myPrizes') }}
         </h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <div
+          <button
             v-for="r in myRewards.data.value"
-            :key="`${r.leagueId}:${r.reward.type}`"
-            class="rounded-lg border p-2 flex items-center gap-2"
-            style="border-color: var(--p-primary-color)"
+            :key="`${r.leagueId}:${r.type}`"
+            type="button"
+            class="rounded-lg border p-2 flex items-center gap-2 text-left cursor-pointer hover:brightness-95"
+            :class="r.youHold ? '' : 'opacity-60'"
+            :style="`border-color: ${r.youHold ? 'var(--p-primary-color)' : 'var(--p-content-border-color)'}`"
+            @click="openReward(r)"
           >
             <img v-if="r.reward.imageUrl" :src="r.reward.imageUrl" class="w-10 h-10 rounded object-cover shrink-0" alt="" >
             <i v-else class="pi pi-gift text-xl shrink-0" style="color: var(--p-primary-color)" />
-            <div class="min-w-0">
+            <div class="min-w-0 flex-1">
               <div class="text-sm font-semibold truncate">{{ r.reward.label }}</div>
-              <div class="text-xs truncate" style="color: var(--p-text-muted-color)">{{ r.leagueName }}</div>
+              <div class="text-xs truncate" style="color: var(--p-text-muted-color)">
+                {{ r.leagueName }} - {{ criterionName(r.type, r.teamCode) }}
+              </div>
             </div>
-          </div>
+            <span
+              class="text-[0.6rem] uppercase tracking-wide font-semibold shrink-0"
+              :style="`color: ${r.youHold ? 'var(--p-primary-color)' : 'var(--p-text-muted-color)'}`"
+            >{{ r.youHold ? t('reward.holding') : t('reward.chasing') }}</span>
+          </button>
         </div>
       </div>
+
+      <RewardRankingDialog v-model:visible="rankingOpen" :league-id="rankingLeagueId" :type="rankingType" :team-code="rankingTeamCode" />
 
       <!-- My showcase: the curated set of pinned achievements -->
       <div class="mb-5">
