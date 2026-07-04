@@ -6,7 +6,7 @@ import {
   getUserIdByEmail,
   seedCompetitionWithMatch,
   seedDecidedFinal,
-  seedScoredPrediction,
+  seedFinishedExactPrediction,
   seedTrophy,
   type SeededFixture,
 } from './helpers/db'
@@ -27,7 +27,7 @@ test('the wrapped deck unlocks post-final and steps through to the shareable sum
 
   // A scored EXACT pick + a trophy give the recap real numbers; the decided
   // final opens the gate.
-  await seedScoredPrediction(userId, fixture.matchId, 3)
+  await seedFinishedExactPrediction(userId, fixture.matchId, 3)
   await seedTrophy(fixture.competitionId, userId, 'OVERALL', 3)
   await seedDecidedFinal(fixture.competitionId)
 

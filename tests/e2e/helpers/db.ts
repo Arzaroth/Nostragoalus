@@ -294,7 +294,7 @@ export async function seedDecidedFinal(competitionId: string): Promise<void> {
 // A settled, scored prediction for a user on a match: flips the match to a
 // finished 1-0 (scored) and stores an EXACT pick worth the given points, so the
 // wrapped recap has real data without running finalize.
-export async function seedScoredPrediction(userId: string, matchId: string, points = 3): Promise<void> {
+export async function seedFinishedExactPrediction(userId: string, matchId: string, points = 3): Promise<void> {
   await db().query(
     `update match
      set status = 'FINISHED', full_time_home = 1, full_time_away = 0, winner = 'HOME',
