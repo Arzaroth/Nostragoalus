@@ -56,7 +56,11 @@ export default defineWebSocketHandler({
     if (!subscriber) return
     try {
       const data = JSON.parse(message.text())
-      if (data?.type === 'subscribe' && Array.isArray(data.matchIds)) {
+      if (data?.type === 'ping') {
+        // Client keepalive/half-open detector (see app/utils/heartbeat.ts).
+        // Answer immediately; no auth or state needed.
+        peer.send(JSON.stringify({ type: 'pong' }))
+      } else if (data?.type === 'subscribe' && Array.isArray(data.matchIds)) {
         subscriber.matchIds = new Set(data.matchIds.map(String))
         // Converge this client immediately: a transition it missed while
         // disconnected (e.g. full-time) would otherwise stick until reload.

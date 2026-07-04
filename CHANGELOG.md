@@ -22,6 +22,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ### Fixed
 - **"Watching now" no longer counts your extra tabs**: opening the same match in several tabs counts you as one viewer, not one per tab. Two different people (or two guests) still count as two.
+- **Stay signed in on a flaky connection**: a dropped request while roaming or on spotty mobile data no longer bounces you to the login screen when your session is still valid.
+- **Live updates recover on mobile**: the app now detects when a phone network has silently killed the live connection (common on 4G/5G when switching cells) and reconnects on its own, so scores, chat and notifications keep flowing without a manual reload.
 
 ## [2.14.0] - 2026-07-04
 

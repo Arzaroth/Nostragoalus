@@ -43,6 +43,9 @@ fire-and-forget after a successful mutation or during a scheduled task.
   `viewers:update` (server -> a match's viewer room: the new "N watching now"
   count). Per-match presence, distinct from the global `presence:*` and from the
   `subscribe` score frame - see [../features/live-viewers.md](../features/live-viewers.md).
+- `ping` (client -> server keepalive) and `pong` (server -> client answer). App-level
+  heartbeat, distinct from the `presence:ping` idle report - it detects a silently
+  half-open socket (see the heartbeat note under `useReconnectingSocket`).
 - crowd totals update and live score/match updates. Three views patch
   `match:update` frames: the match detail (`useLiveMatch`), the fixtures list
   (`useLiveMatches`, into the `['matches', slug]` cache) and the knockout bracket
@@ -60,6 +63,15 @@ The single managed connection. Exponential backoff 1s -> 30s (capped),
 force-reconnect on `visibilitychange` (tab refocus) and the `online` event. Its
 `onOpen` fires on connect AND on every reconnect, which is the hook to
 re-subscribe and refetch so the cache heals after a drop.
+
+**Heartbeat / half-open detection** (`app/utils/heartbeat.ts`): a `visibilitychange`
+/ `online` reconnect only fires when the OS reports the flap. On mobile/CGNAT a
+carrier silently drops an idle NAT mapping - the socket stops delivering but never
+fires `onclose`, so nothing retriggers and live data freezes until a manual reload.
+The heartbeat pings every 25s (under a typical carrier idle timeout, which also
+keeps the mapping warm) and if the `pong` does not arrive within 10s it declares the
+socket dead and force-reconnects. `createHeartbeat` is a pure timer controller
+(unit-tested); the composable wires `ping`/`onPong`/`onDead` to the socket.
 
 ### `usePresence`
 
@@ -81,5 +93,5 @@ everyone else. Both paths converge on the same vue-query cache keys (see
 
 - `server/routes/_ws.ts`
 - `server/utils/live/hub.ts`, `server/utils/live/presence.ts`, `server/utils/live/viewers.ts`
-- `app/composables/useReconnectingSocket.ts`, `app/composables/usePresence.ts`, `app/composables/useMatchPresence.ts`
+- `app/composables/useReconnectingSocket.ts`, `app/utils/heartbeat.ts`, `app/composables/usePresence.ts`, `app/composables/useMatchPresence.ts`
 - `app/components/UserAvatar.vue` (presence dot), `app/components/MatchViewers.vue` ("N watching now")
