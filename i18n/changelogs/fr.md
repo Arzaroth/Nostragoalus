@@ -5,6 +5,19 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Ajouté
+- **Composez votre liste de prix** : les propriétaires et modérateurs de ligue peuvent désormais attacher un prix à l'un des onze critères (les cinq d'origine plus Cuillère de bois, Sage de la finale, Oracle des poules, Oracle des phases finales, Fine gâchette et Gourou des écarts) et ajouter ou retirer des prix librement, un par critère. Chaque prix affiche toujours son leader en direct et son classement complet.
+- **Une description pour chaque ligue** : les propriétaires et modérateurs peuvent rédiger un texte « À propos de cette ligue » - présentation, règles, ce que vous voulez - en Markdown, avec titres, listes, liens et images téléversées. Tous ceux qui voient la ligue le voient.
+
+### Modifié
+- **L'équipe du Spécialiste d'équipe se choisit désormais par ligue** : au lieu d'une seule équipe choisie à l'échelle du site dans l'admin, chaque propriétaire ou modérateur de ligue choisit l'équipe que suit son prix Spécialiste d'équipe, là où il définit le prix. Tant qu'aucune n'est choisie, ce prix s'affiche comme désactivé.
+
+### Supprimé
+- **Section Compétitions de l'admin** : le sélecteur d'équipe à l'honneur par compétition a disparu, remplacé par le réglage par ligue ci-dessus. Le trophée global Spécialiste d'équipe dans la vitrine n'est plus attribué (ceux déjà gagnés restent affichés).
+
+### Notes de mise à jour
+- L'équipe à l'honneur est passée de la compétition à chaque ligue ; les ligues qui avaient un prix Spécialiste d'équipe doivent faire choisir à nouveau leur équipe par un propriétaire ou modérateur pour le réactiver.
+
 ## [2.18.2] - 2026-07-05
 
 ### Corrigé

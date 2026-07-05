@@ -11,6 +11,10 @@ import { LEAGUE_REWARD_CRITERIA, type LeagueRewardCriterion, type RewardMetric, 
 // aggregates the trophies use (rankableForMatches), plus OVERALL off the league
 // leaderboard (which folds in the champion/best-scorer bonuses). Winners are
 // derived live among the league's members; nothing is stored.
+//
+// One ranking function `rankRows` is the single source of truth for how a criterion
+// orders its members: the standings winners are its rank-1 rows and the ranking
+// dialog is its whole ladder, so the card and the dialog can never disagree.
 
 export interface RewardWinner {
   type: LeagueRewardCriterion
@@ -44,39 +48,59 @@ function metricValue(r: RankableRow, metric: RewardMetric): number {
   }
 }
 
-// Two rows are level on the full points -> exact -> outcome -> goal-diff ladder.
-function sameLadder(a: RankableRow, b: RankableRow): boolean {
-  return (
-    a.totalPoints === b.totalPoints &&
-    a.exactCount === b.exactCount &&
-    a.outcomeCount === b.outcomeCount &&
-    a.gdCount === b.gdCount
+// One criterion's full dense (1224) ranking over an already-fetched member subset.
+// Points criteria rank on the full points -> exact -> outcome -> goal-diff ladder;
+// count criteria rank on their metric (ties fall back to the ladder). WOODEN_SPOON
+// inverts (lowest first) and keeps zeros - a zero is a real last place among members
+// who predicted. Every other criterion drops zero-value rows (they did not score in
+// it). rankRows is pure so the batch standings path and the single-criterion ranking
+// path share it without sharing a query.
+function rankRows(type: LeagueRewardCriterion, rows: RankableRow[]): RankedRewardRow[] {
+  if (rows.length === 0) return []
+  if (type === 'WOODEN_SPOON') {
+    const sorted = [...rows].sort((a, b) => a.totalPoints - b.totalPoints || compareLeaderboardRows(a, b))
+    const ranks = denseRanks(sorted.map((r) => `${r.totalPoints}`))
+    return sorted.map((r, i) => ({ userId: r.userId, value: r.totalPoints, rank: ranks[i] }))
+  }
+  const metric = rewardMetricFor(type)
+  const byLadder = metric === 'points'
+  const sorted = [...rows].sort(byLadder ? compareLeaderboardRows : (a, b) => metricValue(b, metric) - metricValue(a, metric) || compareLeaderboardRows(a, b))
+  const ranks = denseRanks(
+    sorted.map((r) => (byLadder ? `${r.totalPoints}|${r.exactCount}|${r.outcomeCount}|${r.gdCount}` : `${metricValue(r, metric)}`)),
   )
+  const out = sorted.map((r, i) => ({ userId: r.userId, value: byLadder ? r.totalPoints : metricValue(r, metric), rank: ranks[i] }))
+  return out.filter((r) => r.value > 0)
 }
 
-// The winner(s) of a rankable criterion (everything but OVERALL). Points criteria
-// take the top-tied ladder rows (a positive score required). Count criteria take
-// the rows at the max value. WOODEN_SPOON inverts: the lowest score(s). And
-// TEAM_SPECIALIST is multi-winner: every predictor with an exact on the featured
-// team holds it, valued by their exact count.
-function winnersFromRankable(type: LeagueRewardCriterion, rows: RankableRow[]): Array<{ userId: string; value: number }> {
-  if (rows.length === 0) return []
-  const metric = rewardMetricFor(type)
-  if (type === 'WOODEN_SPOON') {
-    const min = Math.min(...rows.map((r) => r.totalPoints))
-    return rows.filter((r) => r.totalPoints === min).map((r) => ({ userId: r.userId, value: r.totalPoints }))
+// The winner(s) of a ranked criterion: its rank-1 rows. TEAM_SPECIALIST is the
+// exception - every predictor with an exact on the featured team holds it (valued by
+// their own count), so the whole ranking is holders, not just the top tie.
+function holdersOf(type: LeagueRewardCriterion, ranked: RankedRewardRow[]): RankedRewardRow[] {
+  return type === 'TEAM_SPECIALIST' ? ranked : ranked.filter((r) => r.rank === 1)
+}
+
+function teamFilter(teamCode: string): SQL {
+  return or(eq(match.homeTeamCode, teamCode), eq(match.awayTeamCode, teamCode))!
+}
+
+// The match subset a single criterion scores over. GROUP = the group stage, KNOCKOUT
+// = the rest, FINAL = the final only, TEAM = the league's featured-team fixtures.
+// undefined = the whole competition.
+function criterionFilter(type: LeagueRewardCriterion, teamCode: string | null): SQL | undefined {
+  switch (type) {
+    case 'GROUP_PHASE':
+    case 'GROUP_ORACLE':
+      return eq(match.stage, 'GROUP')
+    case 'KNOCKOUT_PHASE':
+    case 'KNOCKOUT_ORACLE':
+      return ne(match.stage, 'GROUP')
+    case 'FINALIST':
+      return eq(match.stage, 'FINAL')
+    case 'TEAM_SPECIALIST':
+      return teamCode ? teamFilter(teamCode) : undefined
+    default:
+      return undefined
   }
-  if (type === 'TEAM_SPECIALIST') {
-    return rows.filter((r) => r.exactCount > 0).map((r) => ({ userId: r.userId, value: r.exactCount }))
-  }
-  if (metric === 'points') {
-    const best = [...rows].sort(compareLeaderboardRows)[0]
-    if (best.totalPoints <= 0) return []
-    return rows.filter((r) => sameLadder(r, best)).map((r) => ({ userId: r.userId, value: r.totalPoints }))
-  }
-  const max = Math.max(0, ...rows.map((r) => metricValue(r, metric)))
-  if (max <= 0) return []
-  return rows.filter((r) => metricValue(r, metric) === max).map((r) => ({ userId: r.userId, value: max }))
 }
 
 // The per-user aggregates a whole standings pass needs, grouped by their distinct
@@ -96,30 +120,6 @@ async function rankableSubsets(
     opts.featuredTeamCode ? rankableForMatches(db, competitionId, teamFilter(opts.featuredTeamCode), ids) : Promise.resolve([]),
   ])
   return { whole, group, knockout, final, team }
-}
-
-function teamFilter(teamCode: string): SQL {
-  return or(eq(match.homeTeamCode, teamCode), eq(match.awayTeamCode, teamCode))!
-}
-
-// The match subset a single criterion scores over, for the on-demand ranking. GROUP
-// = the group stage, KNOCKOUT = the rest, FINAL = the final only, TEAM = the league's
-// featured-team fixtures. undefined = the whole competition.
-function criterionFilter(type: LeagueRewardCriterion, teamCode: string | null): SQL | undefined {
-  switch (type) {
-    case 'GROUP_PHASE':
-    case 'GROUP_ORACLE':
-      return eq(match.stage, 'GROUP')
-    case 'KNOCKOUT_PHASE':
-    case 'KNOCKOUT_ORACLE':
-      return ne(match.stage, 'GROUP')
-    case 'FINALIST':
-      return eq(match.stage, 'FINAL')
-    case 'TEAM_SPECIALIST':
-      return teamCode ? teamFilter(teamCode) : undefined
-    default:
-      return undefined
-  }
 }
 
 function subsetFor(
@@ -143,8 +143,9 @@ function subsetFor(
 }
 
 // Every criterion's current league winner(s), live/provisional (settles at
-// competition end). OVERALL comes off the league leaderboard; the rest off the
-// rankable subsets. TEAM_SPECIALIST is omitted without a featured team.
+// competition end). OVERALL comes off the league leaderboard; the rest are the rank-1
+// rows of each criterion's ranking (TEAM_SPECIALIST: every exact holder). Omitted
+// without a featured team.
 export async function computeLeagueRewardWinners(
   db: AppDatabase,
   competitionId: string,
@@ -167,17 +168,17 @@ export async function computeLeagueRewardWinners(
   for (const type of LEAGUE_REWARD_CRITERIA) {
     if (type === 'OVERALL') continue
     if (type === 'TEAM_SPECIALIST' && !opts.featuredTeamCode) continue
-    for (const w of winnersFromRankable(type, subsetFor(type, subsets))) {
-      out.push({ type, userId: w.userId, value: w.value })
+    for (const h of holdersOf(type, rankRows(type, subsetFor(type, subsets)))) {
+      out.push({ type, userId: h.userId, value: h.value })
     }
   }
   return out
 }
 
-// One criterion's full live ranking among a league's members. The rank-1 rows are
-// the current leaders (WOODEN_SPOON inverts: rank 1 is the lowest score). Only rows
-// that scored in the criterion (value > 0) are returned, except WOODEN_SPOON where a
-// zero is a legitimate last place among members who did predict.
+// One criterion's full live ranking among a league's members. The rank-1 rows are the
+// current leaders (WOODEN_SPOON inverts: rank 1 is the lowest score). Shares rankRows
+// with the winners computation, so a member's card position and the ranking dialog
+// always agree.
 export async function rankLeagueCriterion(
   db: AppDatabase,
   competitionId: string,
@@ -197,21 +198,5 @@ export async function rankLeagueCriterion(
 
   if (type === 'TEAM_SPECIALIST' && !opts.featuredTeamCode) return []
   const rows = await rankableForMatches(db, competitionId, criterionFilter(type, opts.featuredTeamCode), opts.memberIds)
-
-  if (type === 'WOODEN_SPOON') {
-    // Ascending: the fewest points ranks first. Ties (same points) share a rank; a
-    // zero stays in (it is a real last place among members who predicted).
-    const sorted = [...rows].sort((a, b) => a.totalPoints - b.totalPoints || compareLeaderboardRows(a, b))
-    const ranks = denseRanks(sorted.map((r) => `${r.totalPoints}`))
-    return sorted.map((r, i) => ({ userId: r.userId, value: r.totalPoints, rank: ranks[i] }))
-  }
-
-  const metric = rewardMetricFor(type)
-  const byLadder = metric === 'points'
-  const sorted = [...rows].sort(byLadder ? compareLeaderboardRows : (a, b) => metricValue(b, metric) - metricValue(a, metric) || compareLeaderboardRows(a, b))
-  const ranks = denseRanks(
-    sorted.map((r) => (byLadder ? `${r.totalPoints}|${r.exactCount}|${r.outcomeCount}|${r.gdCount}` : `${metricValue(r, metric)}`)),
-  )
-  const out = sorted.map((r, i) => ({ userId: r.userId, value: byLadder ? r.totalPoints : metricValue(r, metric), rank: ranks[i] }))
-  return out.filter((r) => r.value > 0)
+  return rankRows(type, rows)
 }

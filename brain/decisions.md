@@ -272,9 +272,12 @@ feature/architecture doc that implements it.
   `isomorphic-dompurify` (`app/utils/markdown.ts`) with a narrow tag allow-list and
   forced link/image hardening - both already dependencies (the about page uses the same
   pair). Sanitizing on render, not on write, means the boundary is the one place the
-  HTML is produced; storing raw HTML would trust the author. Description images reuse the
-  reward image store rather than inlining data URLs (which would blow the length cap).
-  See [features/leagues.md](features/leagues.md).
+  HTML is produced; storing raw HTML would trust the author. `isomorphic-dompurify` is a
+  process-wide singleton shared with the about page, so `renderMarkdown` scopes its
+  link/image-hardening hook to each call (add before the synchronous sanitize, remove in
+  a `finally`) rather than registering it globally, so it can't leak onto other callers.
+  Description images reuse the reward image store rather than inlining data URLs (which
+  would blow the length cap). See [features/leagues.md](features/leagues.md).
 
 ## Tournament Wrapped
 

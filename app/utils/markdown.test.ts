@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import DOMPurify from 'isomorphic-dompurify'
 import { renderMarkdown } from './markdown'
 
 describe('renderMarkdown', () => {
@@ -40,5 +41,14 @@ describe('renderMarkdown', () => {
     expect(html).toContain('src="/api/media/reward/x.webp"')
     expect(html).toContain('referrerpolicy="no-referrer"')
     expect(html).toContain('loading="lazy"')
+  })
+
+  it('does not leak its hardening hook onto other DOMPurify callers', () => {
+    // renderMarkdown registers a global afterSanitizeAttributes hook; it must remove
+    // it so a bare sanitize (e.g. the about page) is not silently rewritten.
+    renderMarkdown('[x](https://example.com)')
+    const plain = DOMPurify.sanitize('<a href="https://example.com">x</a>')
+    expect(plain).toContain('href="https://example.com"')
+    expect(plain).not.toContain('target=')
   })
 })
