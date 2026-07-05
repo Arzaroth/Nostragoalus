@@ -190,13 +190,22 @@ feature/architecture doc that implements it.
   private opt-out from cold-contact, and a discoverable stranger still needs a
   `chat_identity` to be listed (no pubkey, no sealable thread key). See
   [features/dms.md](features/dms.md).
-- **A separate global `DmDock`, not a tab in the league [ChatDock](features/chat.md).**
-  The intent was a ChatDock tab, but ChatDock is league-gated (competition pages
-  with a chat-enabled league selected) while DMs are global and must work on every
-  page. DMs ship as their own dock mounted in the default layout; live delivery is
-  user-pinned (`publishDmMessage`/`publishDmEdit` fan out to the two participants'
-  sockets by `userId`, no subscribe frame), like the notification push. A future
-  consolidation of the two docks is left open (TODO). See
+- **One messaging surface: DMs are a Direct mode inside [ChatDock](features/chat.md),
+  reusing `ChatPanel` - not a separate dock.** This reverses the earlier
+  "separate global `DmDock`" call. That split existed only because ChatDock was
+  league-gated; ChatDock is now `v-if="signedIn"` and carries a League | Direct
+  toggle (off a league it forces Direct and hides the toggle), so one dock covers
+  both and DMs still work on every page. The old `DmDock.vue`/`useDms.ts` were
+  deleted. **Why consolidate:** one surface for the user, and real code reuse - an
+  open DM is rendered by the same `ChatPanel` as league chat (`useDmRoom` is a
+  drop-in for `useLeagueChat`), which is what buys DMs full chat parity
+  (reactions/reply/threads/edit/images/media/link-previews) for free instead of a
+  lean text-only cut. A scope-agnostic authorizer (`server/utils/chat/access.ts`,
+  league-member-or-DM-participant) lets the shared message/reaction/attachment/edit
+  routes serve both. The 1:1-meaningless chrome (enable/rotate/moderation/reports/
+  verify/@mentions) is hidden in DM mode. Live delivery is still user-pinned
+  (`publishDmMessage`/`publishDmEdit` fan out to the two participants' sockets by
+  `userId`, no subscribe frame), like the notification push. See
   [features/dms.md](features/dms.md).
 
 ## Operations

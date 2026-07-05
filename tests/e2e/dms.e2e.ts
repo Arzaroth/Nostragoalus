@@ -29,9 +29,9 @@ test.beforeAll(async () => {
     B_EMAIL,
   ])
   // A valid-length chat public key: 32 random bytes in url-safe, no-padding base64
-  // (the exact variant app/utils/e2ee.ts encodes/decodes public keys with, so the
-  // client can seal the thread key to it). dm_discoverable defaults true, so B is
-  // searchable by name.
+  // (the exact variant app/utils/e2ee.ts encodes/decodes public keys with - its
+  // libsodium from_base64 needs URLSAFE_NO_PADDING - so the client can seal the
+  // thread key to it). dm_discoverable defaults true, so B is searchable by name.
   await db().query(`insert into chat_identity (user_id, public_key) values ($1, $2)`, [
     bId,
     randomBytes(32).toString('base64url'),
@@ -47,16 +47,25 @@ test.afterAll(async () => {
   pool = null
 })
 
-test('a signed-in user opens the DM dock, finds someone, and sends them a message', async ({ page }) => {
+test('a signed-in user opens the messaging dock in Direct mode, finds someone, and sends them a message', async ({
+  page,
+}) => {
   const userA = freshUser()
   await signUp(page, userA)
 
-  // The dock lives in the default layout; an SSR-rendered bubble can be clicked
-  // before hydration wires @click, so retry opening until the panel shows.
-  const openBubble = page.getByRole('button', { name: 'Open direct messages' })
+  // The messaging dock (league chat + DMs, one surface) lives in the default
+  // layout; its bubble is bottom-RIGHT. An SSR-rendered bubble can be clicked
+  // before hydration wires @click, so retry opening until the Direct-mode inbox
+  // (its "New message" pencil) shows. A brand-new account has no league selected,
+  // so the dock opens straight into Direct mode - the League|Direct toggle only
+  // appears once a league is in reach; if one is, flip to Direct via its
+  // send/paper-plane button.
+  const openBubble = page.getByRole('button', { name: 'Open league chat' })
   const pencil = page.getByRole('button', { name: 'New message' })
   await expect(async () => {
     await openBubble.click({ timeout: 2_000 })
+    const directToggle = page.getByRole('button', { name: 'Messages', exact: true })
+    if (await directToggle.isVisible().catch(() => false)) await directToggle.click()
     await expect(pencil).toBeVisible({ timeout: 2_000 })
   }).toPass({ timeout: 30_000 })
 
@@ -70,8 +79,10 @@ test('a signed-in user opens the DM dock, finds someone, and sends them a messag
   await expect(result).toBeVisible({ timeout: 15_000 })
   await result.click()
 
-  // Picking opens (auto-enrolls A's identity, creates the thread) the conversation.
-  const composer = page.getByPlaceholder('Message')
+  // Picking auto-enrolls A's identity, creates the thread, and opens it in a
+  // ChatPanel driven in DM mode (full chat parity), whose composer is the shared
+  // chat composer.
+  const composer = page.getByPlaceholder('Write a message')
   await expect(composer).toBeVisible({ timeout: 15_000 })
   const body = `hello ${tag}`
   await typeInto(composer, body)
