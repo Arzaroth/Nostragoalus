@@ -59,8 +59,19 @@ export function useNotifications() {
       if (msg?.type !== 'notification:new' || !msg.notification) return
       const incoming = msg.notification
       patchFeed((feed) => {
-        if (feed.notifications.some((n) => n.id === incoming.id)) return feed
-        return { notifications: [incoming, ...feed.notifications], unreadCount: feed.unreadCount + 1 }
+        const idx = feed.notifications.findIndex((n) => n.id === incoming.id)
+        if (idx === -1) {
+          return { notifications: [incoming, ...feed.notifications], unreadCount: feed.unreadCount + 1 }
+        }
+        // Same id already present: a grouping row (e.g. a DM thread) resurfaced with
+        // fresh data. Move it to the top and re-count it as unread if it had been read.
+        const prev = feed.notifications[idx]!
+        const rest = feed.notifications.filter((_, i) => i !== idx)
+        const wasRead = prev.read
+        return {
+          notifications: [incoming, ...rest],
+          unreadCount: feed.unreadCount + (wasRead && !incoming.read ? 1 : 0),
+        }
       })
     },
   })
@@ -93,11 +104,28 @@ export function useNotifications() {
     onSettled: settle,
   })
 
+  // Dismiss several rows at once - the DM bell entry collapses a set of thread rows
+  // into one item, so dismissing it removes them all in a single request.
+  const dismissMany = useMutation({
+    mutationFn: (ids: string[]) =>
+      $fetch<{ deleted: number }>('/api/notifications/delete', { method: 'POST', body: { ids } }),
+    onMutate: (ids: string[]) =>
+      patchFeed((feed) => {
+        const set = new Set(ids)
+        const unreadRemoved = feed.notifications.filter((n) => set.has(n.id) && !n.read).length
+        return {
+          notifications: feed.notifications.filter((n) => !set.has(n.id)),
+          unreadCount: Math.max(0, feed.unreadCount - unreadRemoved),
+        }
+      }),
+    onSettled: settle,
+  })
+
   const deleteAll = useMutation({
     mutationFn: () => $fetch<{ deleted: number }>('/api/notifications/delete', { method: 'POST', body: { all: true } }),
     onMutate: () => patchFeed(() => ({ notifications: [], unreadCount: 0 })),
     onSettled: settle,
   })
 
-  return { notifications, unreadCount, isLoading: query.isLoading, markRead, markAllRead, dismiss, deleteAll }
+  return { notifications, unreadCount, isLoading: query.isLoading, markRead, markAllRead, dismiss, dismissMany, deleteAll }
 }

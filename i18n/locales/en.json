@@ -1459,6 +1459,7 @@
       "bestScorerWon": "Your Golden Boot pick {player} finished top scorer! +{points} pts",
       "bestScorerLost": "Your Golden Boot pick {player} didn't finish top scorer.",
       "dm": "{name} sent you a message.",
+      "dmGroup": "{count} people sent you messages.",
       "mention": "{name} mentioned you in {league}.",
       "mentionMatch": "{name} mentioned you in {home} v {away}.",
       "trophyAwarded": "You won the {trophy} trophy in {competition}!",
