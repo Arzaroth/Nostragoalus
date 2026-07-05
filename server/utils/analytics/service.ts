@@ -1,0 +1,284 @@
+import { and, asc, eq, isNotNull } from 'drizzle-orm'
+import type { AppDatabase } from '../../../db/types'
+import { competition as competitionTable, match, prediction, round } from '../../../db/schema'
+import { NotFoundError } from '../errors'
+import { outcomeOf, type Outcome } from '../scoring/tiers'
+import type {
+  AnalyticsResponse,
+  PickHighlight,
+  RoundAccuracy,
+  TeamBias,
+  TierCounts,
+} from '#shared/types/analytics'
+
+// One scored pick joined to its match result and round, the raw material the
+// pure aggregation below turns into the bias report.
+export interface AnalyticsPickRow {
+  homeGoals: number
+  awayGoals: number
+  baseTier: 'EXACT' | 'DIFF' | 'OUTCOME' | 'MISS' | null
+  totalPoints: number
+  isJoker: boolean
+  actualHome: number
+  actualAway: number
+  homeTeam: string
+  awayTeam: string
+  homeCode: string | null
+  awayCode: string | null
+  roundLabel: string
+  roundOrder: number
+}
+
+const MIN_TEAM_SAMPLE = 2
+const TOP_TEAMS = 3
+// Highest-value tier first, for the best-call tie-break.
+const TIER_RANK: Record<'EXACT' | 'DIFF' | 'OUTCOME' | 'MISS', number> = {
+  EXACT: 3,
+  DIFF: 2,
+  OUTCOME: 1,
+  MISS: 0,
+}
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100
+}
+
+// A legacy scored row can carry a null tier; the leaderboard treats that as a
+// miss, so mirror that here.
+function tierOf(row: AnalyticsPickRow): keyof TierCounts {
+  switch (row.baseTier) {
+    case 'EXACT':
+      return 'exact'
+    case 'DIFF':
+      return 'diff'
+    case 'OUTCOME':
+      return 'outcome'
+    default:
+      return 'miss'
+  }
+}
+
+function highlight(row: AnalyticsPickRow): PickHighlight {
+  return {
+    home: row.homeTeam,
+    away: row.awayTeam,
+    homeCode: row.homeCode,
+    awayCode: row.awayCode,
+    predicted: `${row.homeGoals}-${row.awayGoals}`,
+    actual: `${row.actualHome}-${row.actualAway}`,
+    points: row.totalPoints,
+    tier: tierOf(row),
+    isJoker: row.isJoker,
+  }
+}
+
+interface TeamAcc {
+  code: string | null
+  name: string
+  sample: number
+  predictedWins: number
+  actualWins: number
+}
+
+function toBias(acc: TeamAcc): TeamBias {
+  const predictedWinRate = acc.predictedWins / acc.sample
+  const actualWinRate = acc.actualWins / acc.sample
+  return {
+    code: acc.code,
+    name: acc.name,
+    sample: acc.sample,
+    predictedWinRate: round2(predictedWinRate),
+    actualWinRate: round2(actualWinRate),
+    delta: round2(predictedWinRate - actualWinRate),
+  }
+}
+
+// Pure aggregation over the user's scored picks - the whole report is derived
+// here so it can be unit-tested without a database.
+export function computeAnalytics(competitionName: string, rows: AnalyticsPickRow[]): AnalyticsResponse {
+  const empty: AnalyticsResponse = {
+    competitionName,
+    hasData: false,
+    totalPicks: 0,
+    totalPoints: 0,
+    avgPoints: 0,
+    tiers: { exact: 0, diff: 0, outcome: 0, miss: 0 },
+    accuracy: 0,
+    exactRate: 0,
+    goals: { predictedAvg: 0, actualAvg: 0, lean: 0 },
+    outcomeLean: {
+      predicted: { home: 0, draw: 0, away: 0 },
+      actual: { home: 0, draw: 0, away: 0 },
+      homeBiasPct: 0,
+      drawGapPct: 0,
+    },
+    teams: { overrated: [], underrated: [] },
+    overTime: [],
+    bestCall: null,
+    worstMiss: null,
+  }
+  if (rows.length === 0) return empty
+
+  const tiers: TierCounts = { exact: 0, diff: 0, outcome: 0, miss: 0 }
+  const predicted = { home: 0, draw: 0, away: 0 }
+  const actual = { home: 0, draw: 0, away: 0 }
+  const teams = new Map<string, TeamAcc>()
+  const roundMap = new Map<number, RoundAccuracy>()
+  let totalPoints = 0
+  let predictedGoals = 0
+  let actualGoals = 0
+
+  const bumpTeam = (code: string | null, name: string, predictedWin: boolean, actualWin: boolean) => {
+    const key = code ?? name
+    const acc = teams.get(key) ?? { code, name, sample: 0, predictedWins: 0, actualWins: 0 }
+    acc.sample += 1
+    if (predictedWin) acc.predictedWins += 1
+    if (actualWin) acc.actualWins += 1
+    teams.set(key, acc)
+  }
+
+  for (const row of rows) {
+    const tier = tierOf(row)
+    tiers[tier] += 1
+    totalPoints += row.totalPoints
+    predictedGoals += row.homeGoals + row.awayGoals
+    actualGoals += row.actualHome + row.actualAway
+
+    const predOutcome = outcomeOf({ home: row.homeGoals, away: row.awayGoals })
+    const actOutcome = outcomeOf({ home: row.actualHome, away: row.actualAway })
+    predicted[predOutcome.toLowerCase() as Lowercase<Outcome>] += 1
+    actual[actOutcome.toLowerCase() as Lowercase<Outcome>] += 1
+
+    bumpTeam(row.homeCode, row.homeTeam, predOutcome === 'HOME', actOutcome === 'HOME')
+    bumpTeam(row.awayCode, row.awayTeam, predOutcome === 'AWAY', actOutcome === 'AWAY')
+
+    const bucket = roundMap.get(row.roundOrder) ?? {
+      label: row.roundLabel,
+      order: row.roundOrder,
+      picks: 0,
+      accuracy: 0,
+      points: 0,
+    }
+    bucket.picks += 1
+    bucket.points += row.totalPoints
+    if (tier !== 'miss') bucket.accuracy += 1
+    roundMap.set(row.roundOrder, bucket)
+  }
+
+  const totalPicks = rows.length
+  const correct = tiers.exact + tiers.diff + tiers.outcome
+  const pct = (n: number) => (n / totalPicks) * 100
+
+  const biases = [...teams.values()].filter((t) => t.sample >= MIN_TEAM_SAMPLE).map(toBias)
+  // Most over-rated first (largest positive delta); ties broken by the larger
+  // sample so a well-evidenced bias outranks a marginal one.
+  const byDelta = (a: TeamBias, b: TeamBias) => b.delta - a.delta || b.sample - a.sample
+  const overrated = [...biases].sort(byDelta).filter((t) => t.delta > 0).slice(0, TOP_TEAMS)
+  const underrated = [...biases].sort((a, b) => byDelta(b, a)).filter((t) => t.delta < 0).slice(0, TOP_TEAMS)
+
+  const overTime = [...roundMap.values()]
+    .sort((a, b) => a.order - b.order)
+    .map((r) => ({ ...r, accuracy: round2(r.accuracy / r.picks) }))
+
+  const bestCall = rows.reduce((best, row) =>
+    row.totalPoints > best.totalPoints ||
+    (row.totalPoints === best.totalPoints && TIER_RANK[row.baseTier ?? 'MISS'] > TIER_RANK[best.baseTier ?? 'MISS'])
+      ? row
+      : best,
+  )
+  const misses = rows.filter((r) => tierOf(r) === 'miss')
+  const goalError = (r: AnalyticsPickRow) =>
+    Math.abs(r.homeGoals - r.actualHome) + Math.abs(r.awayGoals - r.actualAway)
+  const worstMiss = misses.length
+    ? misses.reduce((worst, row) =>
+        goalError(row) > goalError(worst) || (goalError(row) === goalError(worst) && row.isJoker && !worst.isJoker)
+          ? row
+          : worst,
+      )
+    : null
+
+  return {
+    competitionName,
+    hasData: true,
+    totalPicks,
+    totalPoints,
+    avgPoints: round2(totalPoints / totalPicks),
+    tiers,
+    accuracy: round2(correct / totalPicks),
+    exactRate: round2(tiers.exact / totalPicks),
+    goals: {
+      predictedAvg: round2(predictedGoals / totalPicks),
+      actualAvg: round2(actualGoals / totalPicks),
+      lean: round2((predictedGoals - actualGoals) / totalPicks),
+    },
+    outcomeLean: {
+      predicted,
+      actual,
+      homeBiasPct: round2(pct(predicted.home) - pct(actual.home)),
+      drawGapPct: round2(pct(predicted.draw) - pct(actual.draw)),
+    },
+    teams: { overrated, underrated },
+    overTime,
+    bestCall: highlight(bestCall),
+    worstMiss: worstMiss ? highlight(worstMiss) : null,
+  }
+}
+
+export async function getAnalytics(
+  db: AppDatabase,
+  opts: { competitionId: string; userId: string },
+): Promise<AnalyticsResponse> {
+  const [comp] = await db
+    .select({ name: competitionTable.name })
+    .from(competitionTable)
+    .where(eq(competitionTable.id, opts.competitionId))
+    .limit(1)
+  if (!comp) throw new NotFoundError('competition not found')
+
+  const rows = await db
+    .select({
+      homeGoals: prediction.homeGoals,
+      awayGoals: prediction.awayGoals,
+      baseTier: prediction.baseTier,
+      totalPoints: prediction.totalPoints,
+      isJoker: prediction.isJoker,
+      actualHome: match.fullTimeHome,
+      actualAway: match.fullTimeAway,
+      homeTeam: match.homeTeam,
+      awayTeam: match.awayTeam,
+      homeCode: match.homeTeamCode,
+      awayCode: match.awayTeamCode,
+      roundLabel: round.label,
+      roundOrder: round.sortOrder,
+    })
+    .from(prediction)
+    .innerJoin(match, eq(match.id, prediction.matchId))
+    .innerJoin(round, eq(round.id, prediction.roundId))
+    .where(
+      and(
+        eq(prediction.userId, opts.userId),
+        eq(match.competitionId, opts.competitionId),
+        isNotNull(prediction.totalPoints),
+        isNotNull(match.fullTimeHome),
+        isNotNull(match.fullTimeAway),
+      ),
+    )
+    .orderBy(asc(match.kickoffTime))
+
+  const clean: AnalyticsPickRow[] = rows.map((r) => ({
+    homeGoals: r.homeGoals,
+    awayGoals: r.awayGoals,
+    baseTier: r.baseTier,
+    totalPoints: r.totalPoints ?? 0,
+    isJoker: r.isJoker,
+    actualHome: r.actualHome as number,
+    actualAway: r.actualAway as number,
+    homeTeam: r.homeTeam,
+    awayTeam: r.awayTeam,
+    homeCode: r.homeCode,
+    awayCode: r.awayCode,
+    roundLabel: r.roundLabel,
+    roundOrder: r.roundOrder,
+  }))
+  return computeAnalytics(comp.name, clean)
+}
