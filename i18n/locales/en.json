@@ -27,8 +27,8 @@
       "GROUP_PHASE": { "name": "Group Stage Guru", "desc": "Best predictor of the group stage.", "criteria": "Score the most prediction points across the group stage." },
       "KNOCKOUT_PHASE": { "name": "Bracket Master", "desc": "Best predictor of the knockout rounds.", "criteria": "Score the most prediction points across the knockout rounds." },
       "MADAME_IRMA": { "name": "Madame Irma", "desc": "Called the most exact scorelines of anyone.", "criteria": "End with more exact scorelines than any other player." },
-      "TEAM_SPECIALIST": { "name": "{team} Specialist", "desc": "Best predictor of {team}'s matches.", "criteria": "Be the best predictor of {team}'s matches." },
-      "TEAM_SPECIALIST_GENERIC": { "name": "Team Specialist", "desc": "Best predictor of the featured team's matches.", "criteria": "Be the best predictor of the featured team's matches." }
+      "TEAM_SPECIALIST": { "name": "{team} Specialist", "desc": "Called exact scorelines on {team}'s matches.", "criteria": "Call an exact scoreline on any of {team}'s matches - every exact is a win." },
+      "TEAM_SPECIALIST_GENERIC": { "name": "Team Specialist", "desc": "Called exact scorelines on the featured team's matches.", "criteria": "Call an exact scoreline on the featured team's matches - every exact is a win." }
     },
     "badge": {
       "first-blood": { "name": "First Blood", "desc": "Nailed your first exact scoreline.", "criteria": "Call a single exact scoreline." },
@@ -65,6 +65,7 @@
     "none": "No prizes set for this league yet.",
     "noneOwner": "No prizes yet - set one for each winner.",
     "currentLeader": "Currently leading",
+    "leaderPlusOthers": "{name} +{count} others",
     "noLeader": "No leader yet",
     "hiddenLeader": "A hidden player",
     "you": "that's you!",

@@ -23,8 +23,8 @@
       "GROUP_PHASE": { "name": "ghom may' pIn", "desc": "ghom may' qIpwI' pov.", "criteria": "ghom Daq yay law'." },
       "KNOCKOUT_PHASE": { "name": "Qaw' may' pIn", "desc": "Qaw' may' qIpwI' pov.", "criteria": "HeH Daq yay law'." },
       "MADAME_IRMA": { "name": "joH irma", "desc": "mI' pup law'qu' DaqIp.", "criteria": "mI' pup law' law', Hoch puS." },
-      "TEAM_SPECIALIST": { "name": "{team} po'wI'", "desc": "{team} may' qIpwI' pov.", "criteria": "{team} may' pov DawInpu'." },
-      "TEAM_SPECIALIST_GENERIC": { "name": "ghom po'wI'", "desc": "ghom may' qIpwI' pov.", "criteria": "quv ghom may' pov DawInpu'." }
+      "TEAM_SPECIALIST": { "name": "{team} po'wI'", "desc": "{team} may'mey mI' pup DaqIppu'.", "criteria": "{team} may' mI' pup DaqIp - Hoch mI' pup Qapla'." },
+      "TEAM_SPECIALIST_GENERIC": { "name": "ghom po'wI'", "desc": "quv ghom may'mey mI' pup DaqIppu'.", "criteria": "quv ghom may' mI' pup DaqIp - Hoch mI' pup Qapla'." }
     },
     "badge": {
       "first-blood": { "name": "'Iw wa'DIch", "desc": "wa'DIch mI' pup DaqIp.", "criteria": "wa' mI' pup DaqIp." },
@@ -61,6 +61,7 @@
     "none": "boqvamvaD pop tu'lu'be'.",
     "noneOwner": "pop tu'lu'be' - Hoch QapwI'vaD wa' yIchel.",
     "currentLeader": "DaH Dev",
+    "leaderPlusOthers": "{name} +{count} latlh",
     "noLeader": "DevwI' tu'lu'be'",
     "hiddenLeader": "So'wI' ghot",
     "you": "SoH 'oH!",

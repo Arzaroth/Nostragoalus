@@ -53,7 +53,8 @@ export interface MyRewardDto {
 }
 
 // How a criterion's ranking value reads: prediction points for most, EXACT-count
-// for Madame IRMA.
+// for Madame IRMA and Team Specialist (the latter counts exacts on the featured
+// team, i.e. rewards won).
 export type RewardMetric = 'points' | 'exact'
 
 // One member's row in a criterion's live ranking (the prize leaderboard opened

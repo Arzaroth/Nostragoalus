@@ -11,7 +11,8 @@ export interface TrophyAward {
   type: CompetitionAwardType
   userId: string
   // The winning metric shown on the trophy: points for OVERALL/phase trophies,
-  // EXACT count for MADAME_IRMA. teamCode is set only for TEAM_SPECIALIST.
+  // EXACT count for MADAME_IRMA and TEAM_SPECIALIST (the latter = exacts on the
+  // featured team, i.e. rewards won). teamCode is set only for TEAM_SPECIALIST.
   value: number
   teamCode: string | null
 }
@@ -183,7 +184,12 @@ export async function computeCriteriaWinners(
       or(eq(match.homeTeamCode, comp.code), eq(match.awayTeamCode, comp.code)),
       ids,
     )
-    pushPointsWinners(out, 'TEAM_SPECIALIST', rows, comp.code)
+    // Team Specialist is not "best predictor": every EXACT scoreline on the featured
+    // team's matches is a win, so every predictor with at least one holds it, valued
+    // by their exact count (how many times they won it).
+    for (const r of rows) {
+      if (r.exactCount > 0) out.push({ type: 'TEAM_SPECIALIST', userId: r.userId, value: r.exactCount, teamCode: comp.code })
+    }
   }
 
   return out
@@ -234,7 +240,9 @@ export async function rankCriteria(
       : criteriaMatchFilter(type)
 
   const rows = await rankableForMatches(db, competitionId, filter, opts.memberIds)
-  const byExact = type === 'MADAME_IRMA'
+  // MADAME_IRMA and TEAM_SPECIALIST rank on EXACT count (their winning metric); the
+  // rest use the points ladder. For TEAM_SPECIALIST the count is "rewards won".
+  const byExact = type === 'MADAME_IRMA' || type === 'TEAM_SPECIALIST'
   const sorted = [...rows].sort(byExact ? compareByExact : compareLeaderboardRows)
 
   // Ties share a rank on the ranking metric: EXACT count for MADAME_IRMA, the full

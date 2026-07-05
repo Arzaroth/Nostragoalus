@@ -129,8 +129,11 @@ describe('awardCompetitionTrophies', () => {
     expect(byType('OVERALL')).toEqual([expect.objectContaining({ userId: alice, value: 8 })])
     expect(byType('KNOCKOUT_PHASE')).toEqual([expect.objectContaining({ userId: alice, value: 3 })])
     expect(byType('MADAME_IRMA')).toEqual([expect.objectContaining({ userId: alice, value: 2 })])
+    // Team Specialist = one win per exact on FRA's matches (g1 + the final). Only
+    // Alice called any (both EXACT), so she holds it with value 2 (rewards won);
+    // Bob/Carol scored on FRA games but never exact, so they do not hold it.
     expect(byType('TEAM_SPECIALIST')).toEqual([
-      expect.objectContaining({ userId: alice, value: 6, teamCode: 'FRA' }),
+      expect.objectContaining({ userId: alice, value: 2, teamCode: 'FRA' }),
     ])
     // Group phase is a tie: Alice and Bob both on 5.
     const group = byType('GROUP_PHASE')
@@ -267,11 +270,67 @@ describe('rankCriteria', () => {
     expect(rows.every((r) => r.value === 1)).toBe(true)
   })
 
-  it('scopes TEAM_SPECIALIST to the featured team fixtures', async () => {
+  it('ranks TEAM_SPECIALIST by exact count on the featured team, dropping non-exact scorers', async () => {
     const { competitionId, alice } = await scenario('FRA')
     const rows = await rankCriteria(db, competitionId, 'TEAM_SPECIALIST', { teamCode: 'FRA' })
-    expect(rows[0]).toMatchObject({ userId: alice, value: 6, rank: 1 })
-    expect(rows).toHaveLength(3) // Alice 6, Carol 3, Bob 2 all scored in FRA games
+    // Only Alice called exact scorelines on FRA's games (2). Bob/Carol scored on FRA
+    // matches but never exact, so they have no reward and drop out (value 0).
+    expect(rows).toEqual([{ userId: alice, value: 2, rank: 1 }])
+  })
+
+  it('ranks multiple TEAM_SPECIALIST winners by their exact count, ties sharing a rank', async () => {
+    const competitionId = await seedCompetition(db)
+    await db.update(competition).set({ featuredTeamCode: 'FRA' }).where(eq(competition.id, competitionId))
+    const g = await roundId(competitionId, 'GROUP', 1)
+    const [ann, ben, cid, dan] = await Promise.all([
+      makeUser(db, 'ann'),
+      makeUser(db, 'ben'),
+      makeUser(db, 'cid'),
+      makeUser(db, 'dan'),
+    ])
+    // Three FRA fixtures + one non-FRA match that must never count.
+    const fra = []
+    for (let i = 0; i < 3; i++) {
+      fra.push(
+        await makeMatch(db, {
+          competitionId,
+          roundId: g,
+          stage: 'GROUP',
+          status: 'FINISHED',
+          homeTeamCode: 'FRA',
+          fullTimeHome: 1,
+          fullTimeAway: 0,
+          winner: 'HOME',
+          kickoffTime: new Date('2026-06-11T18:00:00Z'),
+        }),
+      )
+    }
+    const other = await makeMatch(db, {
+      competitionId,
+      roundId: g,
+      stage: 'GROUP',
+      status: 'FINISHED',
+      fullTimeHome: 0,
+      fullTimeAway: 0,
+      winner: 'DRAW',
+      kickoffTime: new Date('2026-06-11T18:00:00Z'),
+    })
+    const p = async (userId: string, matchId: string, tier: BaseTier) =>
+      score(await makePrediction(db, { userId, matchId, roundId: g, home: 0, away: 0 }), tier === 'EXACT' ? 3 : 0, tier)
+    // ann: 3 exacts on FRA. ben + cid: 1 exact each (tie). dan: an exact only on the
+    // non-FRA match, so no reward.
+    for (const m of fra) await p(ann, m, 'EXACT')
+    await p(ben, fra[0], 'EXACT')
+    await p(cid, fra[1], 'EXACT')
+    await p(dan, other, 'EXACT')
+
+    const rows = await rankCriteria(db, competitionId, 'TEAM_SPECIALIST', { teamCode: 'FRA' })
+    expect(rows).toEqual([
+      { userId: ann, value: 3, rank: 1 },
+      expect.objectContaining({ value: 1, rank: 2 }),
+      expect.objectContaining({ value: 1, rank: 2 }),
+    ])
+    expect(rows.map((r) => r.userId).sort()).toEqual([ann, ben, cid].sort()) // dan dropped
   })
 
   it('returns no TEAM_SPECIALIST ranking without a featured team', async () => {

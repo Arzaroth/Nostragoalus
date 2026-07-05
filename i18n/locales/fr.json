@@ -23,8 +23,8 @@
       "GROUP_PHASE": { "name": "Gourou de la phase de groupes", "desc": "Meilleur pronostiqueur de la phase de groupes.", "criteria": "Marquez le plus de points sur la phase de groupes." },
       "KNOCKOUT_PHASE": { "name": "Maître du tableau final", "desc": "Meilleur pronostiqueur des phases à élimination directe.", "criteria": "Marquez le plus de points sur les phases à élimination directe." },
       "MADAME_IRMA": { "name": "Madame Irma", "desc": "A prédit le plus de scores exacts de tous.", "criteria": "Terminez avec plus de scores exacts que quiconque." },
-      "TEAM_SPECIALIST": { "name": "Spécialiste {team}", "desc": "Meilleur pronostiqueur des matchs de {team}.", "criteria": "Soyez le meilleur pronostiqueur des matchs de {team}." },
-      "TEAM_SPECIALIST_GENERIC": { "name": "Spécialiste d'équipe", "desc": "Meilleur pronostiqueur des matchs de l'équipe vedette.", "criteria": "Soyez le meilleur pronostiqueur des matchs de l'équipe à l'honneur." }
+      "TEAM_SPECIALIST": { "name": "Spécialiste {team}", "desc": "Scores exacts trouvés sur les matchs de {team}.", "criteria": "Trouvez un score exact sur un match de {team} - chaque score exact est une victoire." },
+      "TEAM_SPECIALIST_GENERIC": { "name": "Spécialiste d'équipe", "desc": "Scores exacts trouvés sur les matchs de l'équipe à l'honneur.", "criteria": "Trouvez un score exact sur un match de l'équipe à l'honneur - chaque score exact est une victoire." }
     },
     "badge": {
       "first-blood": { "name": "Premier sang", "desc": "Vous avez trouvé votre premier score exact.", "criteria": "Trouvez un seul score exact." },
@@ -61,6 +61,7 @@
     "none": "Aucune récompense définie pour cette ligue pour l'instant.",
     "noneOwner": "Aucune récompense pour l'instant - définissez-en une pour chaque gagnant.",
     "currentLeader": "En tête actuellement",
+    "leaderPlusOthers": "{name} +{count} autres",
     "noLeader": "Pas encore de leader",
     "hiddenLeader": "Un joueur masqué",
     "you": "c'est vous !",
