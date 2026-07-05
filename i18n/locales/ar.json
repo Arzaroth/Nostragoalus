@@ -9,6 +9,7 @@
     "showcaseEmptyOwn": "اعرض ما يصل إلى 3 من إنجازاتك هنا.",
     "locked": "مقفل",
     "lockedHint": "واصل اللعب لفتح هذا.",
+    "progress": "التقدم: {current} من {target}",
     "viewCabinet": "عرض خزانة الكؤوس",
     "editShowcase": "تعديل الواجهة",
     "doneEditing": "تم",

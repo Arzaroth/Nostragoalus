@@ -1,9 +1,9 @@
 import { and, eq } from 'drizzle-orm'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { AppDatabase } from '../../../db/types'
-import { competitionAward, showcasePin, userAchievement } from '../../../db/schema'
+import { competitionAward, match, prediction, round, showcasePin, userAchievement } from '../../../db/schema'
 import { createTestDb } from '../../../tests/db'
-import { makeUser, seedCompetition } from '../../../tests/factories'
+import { makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
 import { NotFoundError, ValidationError } from '../errors'
 import { PONY_ACHIEVEMENT_KEY } from './catalog'
 import { getCabinet, setShowcase } from './cabinet'
@@ -41,8 +41,36 @@ describe('getCabinet', () => {
     // Earned hidden badge shows; a locked ordinary badge shows with earned=null.
     expect(ach.get(PONY_ACHIEVEMENT_KEY)?.earned?.tier).toBe('GOLD')
     expect(ach.get('sharpshooter')?.earned).toBeNull()
+    // Live metric value rides every metric badge (0 with no scored picks); the
+    // event-granted secret has no metric, so current is null.
+    expect(ach.get('sharpshooter')?.current).toBe(0)
+    expect(ach.get(PONY_ACHIEVEMENT_KEY)?.current).toBeNull()
 
     expect(cab.showcase).toEqual([{ slot: 0, achievementKey: 'first-blood' }])
+  })
+
+  it('surfaces the live metric value so locked badges show progress', async () => {
+    const c = await seedCompetition(db)
+    const alice = await makeUser(db, 'alice')
+    const [g1] = await db.select().from(round).where(eq(round.competitionId, c)).limit(1)
+    const m = await makeMatch(db, {
+      competitionId: c,
+      roundId: g1.id,
+      status: 'FINISHED',
+      fullTimeHome: 1,
+      fullTimeAway: 0,
+      winner: 'HOME',
+      kickoffTime: new Date('2026-06-15T12:00:00Z'),
+    })
+    await db.update(match).set({ scoringState: 'SCORED' }).where(eq(match.id, m))
+    const pid = await makePrediction(db, { userId: alice, matchId: m, roundId: g1.id, home: 1, away: 0 })
+    await db.update(prediction).set({ baseTier: 'EXACT', totalPoints: 3, basePoints: 3 }).where(eq(prediction.id, pid))
+
+    const cab = await getCabinet(db, { competitionId: c, userId: alice, viewerId: alice })
+    const sharpshooter = cab.achievements.find((a) => a.key === 'sharpshooter')
+    // 1 exact, still locked (bronze at 5): the client draws a 1/5 bar toward bronze.
+    expect(sharpshooter?.earned).toBeNull()
+    expect(sharpshooter?.current).toBe(1)
   })
 
   it('hides an unearned secret badge and flags non-owners', async () => {

@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+
+- Trophy-cabinet progress bars: every badge you have not yet maxed out now shows how close you are to its next tier - "3 / 5" toward the next rung, drawn on locked badges too, so you can see what you are chasing instead of only what you already hold.
+
 ## [2.25.1] - 2026-07-05
 
 ### Changed
