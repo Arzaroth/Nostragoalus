@@ -52,6 +52,50 @@ vi.mock('../composables/useLeagueChat', async () => {
   }
   return { useLeagueChat: () => state, __state: state }
 })
+// The DM engine exposes the SAME surface as useLeagueChat; ChatPanel picks it when
+// dmThreadId is set. A DM is always on (enabled), has no admin and inert league-only
+// ops, so the panel hides the admin/moderation/enable/verify/mention UI in this mode.
+vi.mock('../composables/useDmRoom', async () => {
+  const { ref, computed } = await import('vue')
+  const state = {
+    enabled: ref(true),
+    isAdmin: computed(() => false),
+    ready: ref(false),
+    awaitingKey: ref(false),
+    loading: ref(false),
+    sending: ref(false),
+    readMarker: ref<string | null>(null),
+    messages: ref<Array<Record<string, unknown>>>([]),
+    memberKeys: ref<Array<{ userId: string; publicKey: string; name: string; image: string | null }>>([]),
+    muted: ref<string[]>([]),
+    identityStatus: ref('ready'),
+    hasMore: ref(false),
+    loadingOlder: ref(false),
+    typingUserIds: ref<string[]>([]),
+    threadParentId: ref<string | null>(null),
+    threadMessages: ref<Array<Record<string, unknown>>>([]),
+    threadLoading: ref(false),
+    openThread: vi.fn(),
+    closeThread: vi.fn(),
+    send: vi.fn(),
+    toggleMute: vi.fn(),
+    enableChat: vi.fn(),
+    disableChat: vi.fn(),
+    rotateKey: vi.fn(),
+    requestRekey: vi.fn(),
+    load: vi.fn(),
+    loadOlder: vi.fn(),
+    react: vi.fn(),
+    sendTyping: vi.fn(),
+    roomMedia: vi.fn(async () => []),
+    loadAttachment: vi.fn(),
+    editMessage: vi.fn(),
+    report: vi.fn(),
+    moderate: vi.fn(),
+    fetchReports: vi.fn(async () => []),
+  }
+  return { useDmRoom: () => state, __dm: state }
+})
 vi.mock('../composables/useChatIdentity', async () => {
   const { ref } = await import('vue')
   const { generateIdentity } = await import('../utils/e2ee')
@@ -72,6 +116,10 @@ async function chatState() {
   return ((await import('../composables/useLeagueChat')) as any).__state
 }
 
+async function dmState() {
+  return ((await import('../composables/useDmRoom')) as any).__dm
+}
+
 let mounted: Array<{ unmount: () => void }> = []
 beforeEach(async () => {
   const s = await chatState()
@@ -89,6 +137,23 @@ beforeEach(async () => {
   s.threadLoading.value = false
   s.openThread.mockReset()
   s.closeThread.mockReset()
+  const d = await dmState()
+  d.enabled.value = true
+  d.ready.value = false
+  d.awaitingKey.value = false
+  d.readMarker.value = null
+  d.messages.value = []
+  d.memberKeys.value = []
+  d.muted.value = []
+  d.identityStatus.value = 'ready'
+  d.threadParentId.value = null
+  d.threadMessages.value = []
+  d.threadLoading.value = false
+  d.openThread.mockReset()
+  d.closeThread.mockReset()
+  d.send.mockReset()
+  d.react.mockReset()
+  d.editMessage.mockReset()
 })
 afterEach(() => {
   for (const w of mounted) w.unmount()
@@ -113,6 +178,12 @@ async function typeWithCaret(field: { element: Element; trigger: (e: string) => 
   el.selectionStart = value.length
   el.selectionEnd = value.length
   await field.trigger('input')
+}
+
+async function dmMount() {
+  const wrapper = await mountSuspended(ChatPanel, { props: { dmThreadId: 'T1' } })
+  mounted.push(wrapper)
+  return wrapper
 }
 
 describe('ChatPanel', () => {
@@ -450,5 +521,83 @@ describe('ChatPanel', () => {
     await vi.waitFor(() => expect(document.body.textContent).toMatch(/\d{5} \d{5} \d{5} \d{5} \d{5} \d{5}/))
     expect(document.body.textContent).toContain('Your safety number')
     expect(document.body.textContent).toContain('Sam') // the peer's name
+  })
+})
+
+describe('ChatPanel DM mode', () => {
+  async function readyDm() {
+    const me = await generateIdentity()
+    const other = await generateIdentity()
+    const d = await dmState()
+    d.ready.value = true
+    // Real (base64) keys so the always-running key-verification composable can
+    // fingerprint the two-person roster, even though its UI is hidden in a DM.
+    d.memberKeys.value = [
+      { userId: 'me', publicKey: me.publicKey, name: 'Me', image: null },
+      { userId: 'other', publicKey: other.publicKey, name: 'Sam', image: null },
+    ]
+    return d
+  }
+
+  it('renders the message stack (names, reactions) from the DM roster, not league detail', async () => {
+    const d = await readyDm()
+    d.messages.value = [msg({ id: 'a', userId: 'other', text: 'hey there', reactions: { ...emptyReactionTotals(), FIRE: 1 }, myReaction: 'FIRE' })]
+    const wrapper = await dmMount()
+    await vi.waitFor(() => expect(wrapper.text()).toContain('hey there'))
+    // Name resolves from memberKeys (no league-detail query in a DM).
+    expect(wrapper.text()).toContain('Sam')
+    // Reaction pill is present and toggles.
+    const pill = wrapper.find('button[aria-pressed="true"]')
+    expect(pill.exists()).toBe(true)
+    await pill.trigger('click')
+    expect(d.react).toHaveBeenCalledWith('a', 'FIRE')
+  })
+
+  it('keeps reply, react, media and own-message edit available', async () => {
+    const d = await readyDm()
+    d.messages.value = [msg({ id: 'x', userId: 'me', text: 'mine' })]
+    const wrapper = await dmMount()
+    await vi.waitFor(() => expect(wrapper.text()).toContain('mine'))
+    expect(wrapper.find('button[aria-label="Reply"]').exists()).toBe(true)
+    expect(wrapper.find('button[aria-label="Add reaction"]').exists()).toBe(true)
+    expect(wrapper.find('button[aria-label="Media"]').exists()).toBe(true)
+    // The author can still edit their own DM message.
+    await wrapper.get('button[aria-label="Edit"]').trigger('click')
+    await wrapper.find('textarea').setValue('mine v2')
+    const save = wrapper.findAll('button').find((b) => b.text() === 'Save')!
+    await save.trigger('click')
+    expect(d.editMessage).toHaveBeenCalledWith('x', 'mine v2', { addImages: [], removeIdxs: [] })
+  })
+
+  it('hides the moderation and enable UI in a DM', async () => {
+    const d = await readyDm()
+    d.messages.value = [
+      msg({ id: 'a', userId: 'other', text: 'from sam' }),
+      msg({ id: 'b', userId: 'me', text: 'from me' }),
+    ]
+    const wrapper = await dmMount()
+    await vi.waitFor(() => expect(wrapper.text()).toContain('from sam'))
+    // No report on a peer message, no delete on the caller's own, no enable notice.
+    expect(wrapper.find('button[aria-label="Report"]').exists()).toBe(false)
+    expect(wrapper.find('button[aria-label="Delete"]').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('Enable chat')
+    expect(wrapper.text()).not.toContain('Chat is off')
+  })
+
+  it('hides the admin (verify/rotate) menu items in a DM', async () => {
+    await readyDm()
+    const wrapper = await dmMount()
+    await wrapper.get('button[aria-label="More options"]').trigger('click')
+    expect(wrapper.text()).not.toContain('Verify keys')
+    expect(wrapper.text()).not.toContain('Rotate key')
+  })
+
+  it('offers no @mention autocomplete in a DM', async () => {
+    await readyDm()
+    const wrapper = await dmMount()
+    await wrapper.find('textarea').setValue('hi @S')
+    await wrapper.vm.$nextTick()
+    // The mention popup (unique .w-64 container) never renders in DM mode.
+    expect(wrapper.find('.w-64').exists()).toBe(false)
   })
 })

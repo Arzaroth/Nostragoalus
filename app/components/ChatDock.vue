@@ -11,6 +11,7 @@ import { useDraggable, useStorage } from '@vueuse/core'
 import { GLOBAL_ROOM, roomKeyOf, useChatActivity } from '~/composables/useChatActivity'
 import { withLeagueSelection } from '~/utils/league-cookie'
 import type { ChatUnreadRoomDTO } from '#shared/types/chat'
+import type { DmRecipientDTO } from '#shared/types/dm'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -174,26 +175,125 @@ async function openRoom(r: ChatUnreadRoomDTO) {
     scope.value = 'global'
   }
 }
+
+// --- Direct messages (the dock's second mode) ---
+// DMs are global (not league scoped), so this mode is available to any signed-in
+// user, even on a page with no league selected. The conversation list + recipient
+// search live here; an open thread reuses ChatPanel in DM mode (full chat parity).
+const { session } = useAuth()
+const signedIn = computed(() => !!session.value?.data?.user)
+const dm = useDmInbox()
+// League mode needs a resolved league; without one, only Direct is available.
+const mode = ref<'league' | 'direct'>('league')
+watch(
+  leagueId,
+  (l) => {
+    if (!l) mode.value = 'direct'
+  },
+  { immediate: true },
+)
+const dmView = ref<'inbox' | 'thread' | 'new'>('inbox')
+const dmThreadId = ref<string | null>(null)
+const dmSearch = ref('')
+const dmResults = ref<DmRecipientDTO[]>([])
+let dmSearchTimer: ReturnType<typeof setTimeout> | undefined
+
+const dmThread = computed(() => (dm.threads.data.value ?? []).find((t) => t.threadId === dmThreadId.value) ?? null)
+
+async function openDock() {
+  collapsed.value = false
+  if (mode.value === 'direct') await dm.ensureIdentity()
+}
+function switchMode(m: 'league' | 'direct') {
+  mode.value = m
+  if (m === 'direct') {
+    void dm.ensureIdentity()
+    if (dmView.value === 'thread' && !dmThreadId.value) dmView.value = 'inbox'
+  }
+}
+
+async function openDmThread(threadId: string) {
+  dmThreadId.value = threadId
+  dmView.value = 'thread'
+  dm.markRead.mutate(threadId)
+}
+function dmBackToInbox() {
+  dmView.value = 'inbox'
+  dmThreadId.value = null
+}
+function openDmNew() {
+  dmView.value = 'new'
+  dmSearch.value = ''
+  dmResults.value = []
+  void dm.searchRecipients('').then((r) => (dmResults.value = r))
+}
+watch(dmSearch, (q) => {
+  clearTimeout(dmSearchTimer)
+  dmSearchTimer = setTimeout(async () => {
+    dmResults.value = await dm.searchRecipients(q.trim())
+  }, 250)
+})
+async function pickDmRecipient(r: DmRecipientDTO) {
+  const threadId = await dm.startThread.mutateAsync(r.userId)
+  await openDmThread(threadId)
+}
+function dmInitial(name: string): string {
+  return (name.trim()[0] ?? '?').toUpperCase()
+}
+
+// A DM deep link (bell/push): /?dm=<threadId> opens the dock straight to Direct
+// mode on that conversation. (route is already declared above.)
+onMounted(() => {
+  const wanted = route.query.dm
+  if (typeof wanted === 'string' && wanted && signedIn.value) {
+    collapsed.value = false
+    switchMode('direct')
+    void openDmThread(wanted)
+  }
+})
+
+// A "Message" button elsewhere (a profile page) asks the dock to open a DM with a
+// user: switch to Direct, start/open the thread, uncollapse.
+const dmOpen = useDmOpen()
+watch(
+  dmOpen.requestOpen,
+  async () => {
+    const userId = dmOpen.take()
+    if (!userId || !signedIn.value) return
+    collapsed.value = false
+    switchMode('direct')
+    try {
+      const threadId = await dm.startThread.mutateAsync(userId)
+      await openDmThread(threadId)
+    } catch {
+      // recipient has no chat identity yet, or a transient failure; stay on the inbox
+    }
+  },
+  { immediate: true },
+)
+
+// The bubble badge sums league activity and DM unread so one number covers both.
+const bubbleTotal = computed(() => activity.total.value + dm.totalUnread.value)
 </script>
 
 <template>
-  <div v-if="leagueId" class="fixed bottom-4 right-4 z-40 flex flex-col items-end" style="max-width: 92vw">
-    <!-- Collapsed: a chat bubble (only once chat is on), badged with unread. -->
+  <div v-if="signedIn" class="fixed bottom-4 right-4 z-40 flex flex-col items-end" style="max-width: 92vw">
+    <!-- Collapsed: the messaging bubble (league chat + DMs), badged with unread. -->
     <button
-      v-show="enabled && collapsed"
+      v-show="collapsed"
       type="button"
       data-tour="chat"
       class="relative rounded-full w-14 h-14 shadow-lg flex items-center justify-center transition-transform hover:scale-105"
       style="background: var(--p-primary-color); color: var(--p-primary-contrast-color)"
       :aria-label="t('chat.dock.open')"
-      @click="collapsed = false"
+      @click="openDock"
     >
       <i class="pi pi-comments text-xl" />
       <span
-        v-if="activity.total.value"
+        v-if="bubbleTotal"
         class="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full text-xs font-bold flex items-center justify-center tabular-nums"
         style="background: var(--ng-danger); color: #fff"
-      >{{ activity.total.value > 99 ? '99+' : activity.total.value }}</span>
+      >{{ bubbleTotal > 99 ? '99+' : bubbleTotal }}</span>
       <!-- Unread @mentions get their own badge (distinct colour), still counted in
            the global total above. -->
       <span
@@ -204,9 +304,9 @@ async function openRoom(r: ChatUnreadRoomDTO) {
       >@</span>
     </button>
 
-    <!-- The window. Kept mounted while collapsed/off (v-show) to hold the socket. -->
+    <!-- The window. Kept mounted while collapsed (v-show) to hold the socket. -->
     <div
-      v-show="enabled && !collapsed"
+      v-show="!collapsed"
       ref="dockEl"
       class="ng-card rounded-2xl border shadow-2xl flex flex-col overflow-hidden"
       :style="panelStyle"
@@ -217,10 +317,32 @@ async function openRoom(r: ChatUnreadRoomDTO) {
         :class="undocked ? 'cursor-move select-none' : ''"
         style="border-color: var(--p-content-border-color); background: var(--p-content-background)"
       >
+        <!-- Mode toggle: league chat vs direct messages. Only shown when a league
+             chat is in reach; off a league, only Direct is available. -->
+        <div v-if="leagueId" class="flex items-center shrink-0 rounded-lg overflow-hidden text-xs" style="border: 1px solid var(--p-content-border-color)">
+          <button
+            type="button"
+            class="px-2 py-1 font-semibold"
+            :style="mode === 'league' ? 'background: var(--p-primary-color); color: var(--p-primary-contrast-color)' : 'color: var(--p-text-muted-color)'"
+            :aria-label="t('chat.dock.title')"
+            @click="switchMode('league')"
+          ><i class="pi pi-users text-xs" /></button>
+          <button
+            type="button"
+            class="relative px-2 py-1 font-semibold"
+            :style="mode === 'direct' ? 'background: var(--p-primary-color); color: var(--p-primary-contrast-color)' : 'color: var(--p-text-muted-color)'"
+            :aria-label="t('dm.title')"
+            @click="switchMode('direct')"
+          >
+            <i class="pi pi-send text-xs" />
+            <span v-if="dm.totalUnread.value" class="absolute top-0 right-0 w-2 h-2 rounded-full" style="background: var(--ng-danger)" />
+          </button>
+        </div>
+
         <!-- League switcher: just the league glyph + a chevron (no name - it would
              crowd the scope toggle and action icons in the narrow dock). The
              tooltip names the current league; the dropdown lists full names. -->
-        <div class="relative shrink-0">
+        <div v-if="mode === 'league'" class="relative shrink-0">
           <button
             type="button"
             class="inline-flex items-center gap-1 rounded-lg px-2 py-1 hover:bg-black/5 dark:hover:bg-white/10"
@@ -252,7 +374,7 @@ async function openRoom(r: ChatUnreadRoomDTO) {
             </button>
           </div>
         </div>
-        <div v-if="matchId" class="flex items-center shrink-0 rounded-lg overflow-hidden text-xs" style="border: 1px solid var(--p-content-border-color)">
+        <div v-if="mode === 'league' && matchId" class="flex items-center shrink-0 rounded-lg overflow-hidden text-xs" style="border: 1px solid var(--p-content-border-color)">
           <button
             type="button"
             class="relative px-2.5 py-1 font-semibold"
@@ -273,8 +395,20 @@ async function openRoom(r: ChatUnreadRoomDTO) {
           </button>
         </div>
 
+        <!-- Direct-mode header: title + back/new. -->
+        <template v-if="mode === 'direct'">
+          <button v-if="dmView !== 'inbox'" type="button" class="opacity-70 hover:opacity-100 shrink-0" :aria-label="t('dm.back')" @click="dmBackToInbox">
+            <i class="pi pi-arrow-left" />
+          </button>
+          <span class="font-semibold truncate">{{ dmView === 'thread' ? (dmThread?.other.name ?? '') : dmView === 'new' ? t('dm.new') : t('dm.title') }}</span>
+          <button v-if="dmView === 'inbox'" type="button" class="ms-auto opacity-70 hover:opacity-100 shrink-0" :aria-label="t('dm.new')" @click="openDmNew">
+            <i class="pi pi-pencil" />
+          </button>
+          <span v-else class="ms-auto" />
+        </template>
+
         <!-- Rooms with activity: jump to whichever room has unread. -->
-        <div class="relative ms-auto">
+        <div v-if="mode === 'league'" class="relative ms-auto">
           <button
             type="button"
             class="relative opacity-70 hover:opacity-100"
@@ -337,8 +471,60 @@ async function openRoom(r: ChatUnreadRoomDTO) {
         </button>
       </div>
 
-      <div class="p-3">
-        <ChatPanel :league-id="leagueId" :match-id="scopedMatchId" :match-label="scopedMatchId ? matchLabel(scopedMatchId) : ''" flat :tall="expanded" :active="enabled && !collapsed" @update:enabled="enabled = $event" @update:readable="panelReadable = $event" />
+      <!-- League chat: kept mounted (v-show) so its socket + enabled state survive a
+           mode switch; only rendered once a league is resolved. -->
+      <div v-if="leagueId" v-show="mode === 'league'" class="p-3">
+        <ChatPanel :league-id="leagueId" :match-id="scopedMatchId" :match-label="scopedMatchId ? matchLabel(scopedMatchId) : ''" flat :tall="expanded" :active="mode === 'league' && enabled && !collapsed" @update:enabled="enabled = $event" @update:readable="panelReadable = $event" />
+      </div>
+
+      <!-- Direct messages: the inbox, a recipient search, or an open thread that
+           reuses ChatPanel in DM mode (full chat parity). -->
+      <div v-if="mode === 'direct'" class="flex flex-col" :style="`height: ${expanded ? '34rem' : '28rem'}`">
+        <div v-if="dm.identityStatus.value === 'needs-restore'" class="p-4 text-sm" style="color: var(--p-text-muted-color)">{{ t('dm.needsRestore') }}</div>
+        <ChatPanel
+          v-else-if="dmView === 'thread' && dmThreadId"
+          :key="dmThreadId"
+          :dm-thread-id="dmThreadId ?? undefined"
+          flat
+          :tall="expanded"
+          :active="!collapsed"
+          class="p-3 flex-1 min-h-0"
+        />
+        <div v-else-if="dmView === 'new'" class="flex-1 flex flex-col min-h-0">
+          <div class="p-3 shrink-0">
+            <input v-model="dmSearch" type="text" class="w-full rounded-lg border px-3 py-2 text-sm" style="background: var(--p-content-background); border-color: var(--p-content-border-color)" :placeholder="t('dm.searchPlaceholder')" >
+          </div>
+          <div class="flex-1 overflow-y-auto">
+            <p v-if="!dmResults.length" class="px-3 py-2 text-sm" style="color: var(--p-text-muted-color)">{{ t('dm.searchHint') }}</p>
+            <button
+              v-for="r in dmResults"
+              :key="r.userId"
+              type="button"
+              class="w-full flex items-center gap-3 px-3 py-2 text-start hover:bg-black/5 dark:hover:bg-white/10"
+              @click="pickDmRecipient(r)"
+            >
+              <img v-if="r.image" :src="r.image" class="w-8 h-8 rounded-full object-cover shrink-0" alt="" >
+              <span v-else class="w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-sm font-bold" style="background: var(--p-primary-color); color: var(--p-primary-contrast-color)">{{ dmInitial(r.name) }}</span>
+              <span class="flex-1 truncate">{{ r.name }}</span>
+              <span v-if="r.shared" class="text-xs px-1.5 py-0.5 rounded" style="background: var(--p-primary-color); color: var(--p-primary-contrast-color)">{{ t('dm.coMember') }}</span>
+            </button>
+          </div>
+        </div>
+        <div v-else class="flex-1 overflow-y-auto">
+          <p v-if="!(dm.threads.data.value ?? []).length" class="p-4 text-sm" style="color: var(--p-text-muted-color)">{{ t('dm.empty') }}</p>
+          <button
+            v-for="th in dm.threads.data.value ?? []"
+            :key="th.threadId"
+            type="button"
+            class="w-full flex items-center gap-3 px-3 py-2.5 text-start hover:bg-black/5 dark:hover:bg-white/10"
+            @click="openDmThread(th.threadId)"
+          >
+            <img v-if="th.other.image" :src="th.other.image" class="w-9 h-9 rounded-full object-cover shrink-0" alt="" >
+            <span v-else class="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-sm font-bold" style="background: var(--p-primary-color); color: var(--p-primary-contrast-color)">{{ dmInitial(th.other.name) }}</span>
+            <span class="flex-1 min-w-0 truncate font-medium">{{ th.other.name }}</span>
+            <span v-if="th.unread" class="min-w-5 h-5 px-1 shrink-0 rounded-full text-xs font-bold flex items-center justify-center tabular-nums" style="background: var(--ng-danger); color: #fff">{{ th.unread > 99 ? '99+' : th.unread }}</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>

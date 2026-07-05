@@ -150,6 +150,7 @@
   },
   "dm": {
     "title": "Messages",
+    "message": "Message",
     "open": "Ouvrir les messages privés",
     "close": "Fermer",
     "new": "Nouveau message",

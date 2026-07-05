@@ -21,6 +21,13 @@ const { data, error } = await useFetch<{
   query: computed(() => ({ competition: global.value ? 'global' : (slug.value ?? undefined) })),
 })
 
+// Start a direct message with this user: hand the id to the dock (which opens the
+// Direct tab and starts the thread). Signed-in viewers only, and not on your own
+// profile.
+const { session } = useAuth()
+const dmOpen = useDmOpen()
+const canMessage = computed(() => !!session.value?.data?.user && session.value.data.user.id !== data.value?.user.id)
+
 // Split picks at "now": played (kicked-off) above, any still-upcoming below.
 // Only admins ever receive upcoming rows (picks stay private until kickoff), so
 // the split is admin-only: everyone else gets every returned pick as played,
@@ -80,6 +87,7 @@ const showTwin = computed(() => twinEnabled.value && !!twin.value)
         <CompetitionPill v-if="!global" />
       </div>
       <div class="flex items-center gap-2 flex-wrap">
+        <Button v-if="canMessage" size="small" outlined icon="pi pi-send" :label="t('dm.message')" @click="dmOpen.requestDm(data.user.id)" />
         <ToggleButton
           v-if="!global"
           v-model="twinOn"
@@ -89,6 +97,18 @@ const showTwin = computed(() => twinEnabled.value && !!twin.value)
           v-tooltip.top="t('bot.evilTwinNote')"
         />
         <SelectButton v-model="global" :options="scopeOptions" option-label="label" option-value="value" :allow-empty="false" size="small" />
+      </div>
+    </div>
+    <p class="text-sm mb-5" style="color: var(--p-text-muted-color)">{{ t('predictions.publicNote') }}</p>
+    <PredictionList :predictions="kickedOff" />
+    <!-- The "now" boundary: played picks above, still-upcoming (admin-only) below.
+         Also the scroll anchor centered on load. Invisible when there's nothing
+         upcoming to introduce. -->
+    <div ref="nowAnchor" style="scroll-margin-top: calc(var(--ng-header-h, 4rem) + 1rem)">
+      <div v-if="upcoming.length" class="flex items-center gap-3 my-4 text-xs font-semibold" style="color: var(--p-text-muted-color)">
+        <span class="flex-1 border-t" style="border-color: var(--p-content-border-color)" />
+        <span class="inline-flex items-center gap-1.5"><i class="pi pi-eye-slash" />{{ t('predictions.adminUpcomingDivider') }}</span>
+        <span class="flex-1 border-t" style="border-color: var(--p-content-border-color)" />
       </div>
     </div>
 

@@ -18,7 +18,9 @@ import {
   requireParticipant,
   searchRecipients,
 } from './service'
-import { getAttachmentCiphertext, getMessageAttachments } from '../chat/attachments'
+import { getAttachmentCiphertext, getMessageAttachments, listRoomMedia } from '../chat/attachments'
+import { getMessageReactionTotals, setChatReaction } from '../chat/reactions'
+import { emptyReactionTotals } from '../../../shared/reactions'
 import { memoryStorage } from '../../../tests/storage'
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors'
 
@@ -462,6 +464,37 @@ describe('editDmMessage', () => {
     await expect(
       editDmMessage(db, { threadId, messageId: m.id, userId: me, ciphertext: 'x', addImages: [{ ciphertext: 'x'.repeat(9_000_001), byteSize: 1 }] }),
     ).rejects.toBeInstanceOf(ValidationError)
+    await client.close()
+  })
+})
+
+// The DM message gallery and reactions run through the shared chat utilities in
+// their DM scope - exercise those DM branches here (parity with league chat).
+describe('DM media and reactions (shared chat utils, DM scope)', () => {
+  it('lists a thread images newest-first for a participant and 404s a non-participant', async () => {
+    const { db, client } = await createTestDb()
+    const me = await mkUser(db, 'aaa')
+    const other = await mkUser(db, 'bbb')
+    const stranger = await mkUser(db, 'zzz')
+    const threadId = await openThread(db, me, other)
+    const storage = memoryStorage()
+    const m = await postDmMessage(db, { threadId, userId: me, ciphertext: 'pic', epoch: 1, images: [{ ciphertext: 'A', byteSize: 1 }] }, storage)
+    const media = await listRoomMedia(db, { threadId, userId: me })
+    expect(media).toEqual([{ messageId: m.id, idx: 0, epoch: 1, createdAt: m.createdAt }])
+    await expect(listRoomMedia(db, { threadId, userId: stranger })).rejects.toBeInstanceOf(NotFoundError)
+    await client.close()
+  })
+
+  it('reacts on a DM message and totals it, with an empty fallback for an un-reacted message', async () => {
+    const { db, client } = await createTestDb()
+    const me = await mkUser(db, 'aaa')
+    const other = await mkUser(db, 'bbb')
+    const threadId = await openThread(db, me, other)
+    const m = await postDmMessage(db, { threadId, userId: me, ciphertext: 'hi', epoch: 1 })
+    expect(await getMessageReactionTotals(db, m.id)).toEqual(emptyReactionTotals())
+    const ctx = await setChatReaction(db, { messageId: m.id, userId: other, emoji: 'FIRE' })
+    expect(ctx.kind).toBe('dm')
+    expect((await getMessageReactionTotals(db, m.id)).FIRE).toBe(1)
     await client.close()
   })
 })

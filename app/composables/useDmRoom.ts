@@ -22,6 +22,7 @@ export function useDmRoom(threadId: MaybeRefOrGetter<string>) {
   const { session } = useAuth()
   const myId = computed(() => session.value?.data?.user?.id ?? null)
   const myName = computed(() => session.value?.data?.user?.name ?? '')
+  const myImage = computed(() => session.value?.data?.user?.image ?? null)
 
   // A DM thread is always "on"; ready waits on holding the current key.
   const enabled = ref(true)
@@ -29,7 +30,9 @@ export function useDmRoom(threadId: MaybeRefOrGetter<string>) {
   const role = ref<'MEMBER'>('MEMBER')
   const keys = ref<Map<number, Uint8Array>>(new Map())
   const messages = ref<DecryptedMessage[]>([])
-  const memberKeys = ref<{ userId: string; publicKey: string; name: string }[]>([])
+  // Same roster shape as league chat, plus the avatar the DM view renders from
+  // (there is no league-detail query to draw member images from in a DM).
+  const memberKeys = ref<{ userId: string; publicKey: string; name: string; image: string | null }[]>([])
   const loading = ref(false)
   const sending = ref(false)
   const readMarker = ref<string | null>(null)
@@ -115,8 +118,8 @@ export function useDmRoom(threadId: MaybeRefOrGetter<string>) {
       }
       keys.value = map
       memberKeys.value = [
-        { userId: myId.value ?? '', publicKey: identity.value.publicKey, name: myName.value },
-        { userId: thread.other.userId, publicKey: thread.other.publicKey, name: thread.other.name },
+        { userId: myId.value ?? '', publicKey: identity.value.publicKey, name: myName.value, image: myImage.value },
+        { userId: thread.other.userId, publicKey: thread.other.publicKey, name: thread.other.name, image: thread.other.image },
       ]
       await loadMessages({ resetMarker: !bg })
     } finally {
