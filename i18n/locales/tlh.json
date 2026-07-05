@@ -1565,6 +1565,32 @@
       "rarity": "QuQ rapvam wIvpu' {pct}% neH",
       "tagline": "QuQmey yIwuq. juplI' yIqul."
     },
+    "shareProfile": "nuv De' yIvel",
+    "shareAnalytics": "mIw De' yIvel",
+    "profileCard": {
+      "title": "nuv",
+      "pts": "pup",
+      "rank": "{players} vo'",
+      "exact": "chID",
+      "haul": "may'",
+      "tagline": "QuQmey yIwuq. juplI' yIqul."
+    },
+    "analyticsCard": {
+      "title": "mIw",
+      "accuracy": "lugh",
+      "exact": "chID",
+      "goals": "QuQ Duv",
+      "home": "juH Duv",
+      "tagline": "QuQmey yIwuq. juplI' yIqul."
+    },
+    "profileLanding": {
+      "title": "Nostragoalus {name}",
+      "subtitle": "Nostragoalus: QuQmey yIwuq, QuQmey yISuq, juplI' yIqul."
+    },
+    "analyticsLanding": {
+      "title": "{name} wIvmey Duv",
+      "subtitle": "Nostragoalus: QuQmey yIwuq, QuQmey yISuq, juplI' yIqul."
+    },
     "landing": {
       "resultTitle": "{score} wuq {name}",
       "liveTitle": "{score} wuq {name}",

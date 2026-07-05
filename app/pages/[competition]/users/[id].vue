@@ -1,7 +1,8 @@
 <script setup lang="ts">
 const route = useRoute()
 const router = useRouter()
-const { t } = useI18n()
+const { t, locale } = useI18n()
+const toast = useToast()
 const slug = useSelectedCompetition()
 const global = computed({
   get: () => route.query.global === '1',
@@ -31,6 +32,27 @@ const dmOpen = useDmOpen()
 const canMessage = computed(
   () => !!session.value?.data?.user && session.value.data.user.id !== data.value?.user.id && !!data.value?.user.canMessage,
 )
+
+// Your own profile: mint a signed share card and copy its public link. The token
+// names only you, and the /p/ landing renders without a login, so it unfurls when
+// sent to friends. Competition-scoped (the card brags about one tournament).
+const isSelf = computed(() => !!session.value?.data?.user && session.value.data.user.id === data.value?.user.id)
+const sharing = ref(false)
+async function shareProfile() {
+  sharing.value = true
+  try {
+    const res = await $fetch<{ url: string }>('/api/share/profile-mint', {
+      method: 'POST',
+      body: { competition: slug.value ?? undefined, locale: locale.value },
+    })
+    if (typeof navigator !== 'undefined' && navigator.clipboard) await navigator.clipboard.writeText(res.url)
+    toast.add({ severity: 'success', summary: t('share.copied'), life: 2500 })
+  } catch {
+    toast.add({ severity: 'error', summary: t('share.failed'), life: 2500 })
+  } finally {
+    sharing.value = false
+  }
+}
 
 // Split picks at "now": played (kicked-off) above, any still-upcoming below.
 // Only admins ever receive upcoming rows (picks stay private until kickoff), so
@@ -114,6 +136,16 @@ watch(
       </div>
       <div class="flex items-center gap-2 flex-wrap">
         <Button v-if="canMessage" size="small" outlined icon="pi pi-send" :label="t('dm.message')" @click="dmOpen.requestDm(data.user.id)" />
+        <Button
+          v-if="isSelf && !global"
+          size="small"
+          outlined
+          icon="pi pi-share-alt"
+          :label="t('share.shareProfile')"
+          :loading="sharing"
+          data-test="share-profile"
+          @click="shareProfile"
+        />
         <ToggleButton
           v-if="!global"
           v-model="twinOn"
