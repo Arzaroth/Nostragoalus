@@ -1,18 +1,20 @@
-import { and, eq, inArray, isNotNull, ne, or, type SQL, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNotNull, ne, type SQL, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
-import { competition, competitionAward, match, prediction } from '../../../db/schema'
-import { compareLeaderboardRows, denseRanks, getLeaderboard, type RankableRow } from '../leaderboard/service'
+import { competitionAward, match, prediction } from '../../../db/schema'
+import { compareLeaderboardRows, getLeaderboard, type RankableRow } from '../leaderboard/service'
 import type { CompetitionAwardType } from '#shared/types/achievements'
 
 // The competition-end trophies (the "prizes" of the contest). Each is derived at
 // finalize from the settled prediction/leaderboard state, so recomputing is safe
 // and idempotent. Ties share a trophy: several users can hold the same type.
+// The featured-team TEAM_SPECIALIST trophy is no longer minted (the featured team
+// moved to a per-league prize); the union keeps the value for historical rows.
 export interface TrophyAward {
   type: CompetitionAwardType
   userId: string
   // The winning metric shown on the trophy: points for OVERALL/phase trophies,
-  // EXACT count for MADAME_IRMA and TEAM_SPECIALIST (the latter = exacts on the
-  // featured team, i.e. rewards won). teamCode is set only for TEAM_SPECIALIST.
+  // EXACT count for MADAME_IRMA. teamCode is unused by current trophies (kept for
+  // the historical TEAM_SPECIALIST rows).
   value: number
   teamCode: string | null
 }
@@ -54,8 +56,10 @@ export function criteriaMatchFilter(type: CompetitionAwardType): SQL | undefined
 // Per-user rankable aggregates over the competition's predictions, optionally
 // narrowed to a subset of matches (a phase, or a team's fixtures) and to a subset
 // of users (a league's members). Only scored predictions count; a user with no
-// scored pick in the subset is absent.
-async function rankableForMatches(
+// scored pick in the subset is absent. Exported for the league-reward criteria
+// engine (server/utils/rewards/criteria.ts), which ranks the same aggregates over
+// a wider set of metric x filter combinations.
+export async function rankableForMatches(
   db: AppDatabase,
   competitionId: string,
   matchFilter?: SQL,
@@ -132,23 +136,17 @@ function pushPointsWinners(
   for (const r of winners) out.push({ type, userId: r.userId, value: r.totalPoints, teamCode })
 }
 
-// The five-criteria winners from the CURRENT settled state, optionally scoped to a
-// league (OVERALL via the league board, the rest via its members). No final gate:
-// shared by the (final-gated, global) trophy award and the (live, provisional)
-// league rewards, so a league sees "who is currently winning each prize".
-export async function computeCriteriaWinners(
-  db: AppDatabase,
-  competitionId: string,
-  opts: { leagueId?: string; memberIds?: string[] } = {},
-): Promise<TrophyAward[]> {
+// The global competition-end trophy winners from the CURRENT settled state (no
+// league scope). The featured-team TEAM_SPECIALIST trophy is no longer minted (the
+// featured team is now a per-league prize; see server/utils/rewards/criteria.ts).
+// No final gate here: computeTrophies applies it. League prize winners are computed
+// separately by the reward criteria engine, over a wider criteria set.
+export async function computeCriteriaWinners(db: AppDatabase, competitionId: string): Promise<TrophyAward[]> {
   const out: TrophyAward[] = []
-  const ids = opts.memberIds
 
   // OVERALL = the leaderboard winner (folds in champion + best-scorer bonuses).
-  // Scoped to the league's member subset when a leagueId is given.
   const board = await getLeaderboard(db, {
     competitionId,
-    leagueId: opts.leagueId,
     includeHidden: true,
     includePrivate: true,
     limit: 100_000,
@@ -158,11 +156,11 @@ export async function computeCriteriaWinners(
 
   // Phase trophies are pure prediction points within the phase (no meta bonus,
   // which isn't phase-attributable). GROUP = the group stage, KNOCKOUT = the rest.
-  pushPointsWinners(out, 'GROUP_PHASE', await rankableForMatches(db, competitionId, criteriaMatchFilter('GROUP_PHASE'), ids))
-  pushPointsWinners(out, 'KNOCKOUT_PHASE', await rankableForMatches(db, competitionId, criteriaMatchFilter('KNOCKOUT_PHASE'), ids))
+  pushPointsWinners(out, 'GROUP_PHASE', await rankableForMatches(db, competitionId, criteriaMatchFilter('GROUP_PHASE')))
+  pushPointsWinners(out, 'KNOCKOUT_PHASE', await rankableForMatches(db, competitionId, criteriaMatchFilter('KNOCKOUT_PHASE')))
 
   // Madame IRMA = the most EXACT scorelines across the whole competition.
-  const whole = await rankableForMatches(db, competitionId, undefined, ids)
+  const whole = await rankableForMatches(db, competitionId)
   const maxExact = Math.max(0, ...whole.map((r) => r.exactCount))
   if (maxExact > 0) {
     for (const r of whole.filter((r) => r.exactCount === maxExact)) {
@@ -170,89 +168,7 @@ export async function computeCriteriaWinners(
     }
   }
 
-  // Team specialist = best predictor of the competition's featured team, when one
-  // is configured (default the host). Names the team on the trophy.
-  const [comp] = await db
-    .select({ code: competition.featuredTeamCode })
-    .from(competition)
-    .where(eq(competition.id, competitionId))
-    .limit(1)
-  if (comp?.code) {
-    const rows = await rankableForMatches(
-      db,
-      competitionId,
-      or(eq(match.homeTeamCode, comp.code), eq(match.awayTeamCode, comp.code)),
-      ids,
-    )
-    // Team Specialist is not "best predictor": every EXACT scoreline on the featured
-    // team's matches is a win, so every predictor with at least one holds it, valued
-    // by their exact count (how many times they won it).
-    for (const r of rows) {
-      if (r.exactCount > 0) out.push({ type: 'TEAM_SPECIALIST', userId: r.userId, value: r.exactCount, teamCode: comp.code })
-    }
-  }
-
   return out
-}
-
-// One member's place in a criterion's live ranking. value is points for most
-// criteria, EXACT-count for MADAME_IRMA. Ties share a rank ("1224").
-export interface RankedCriteriaRow {
-  userId: string
-  value: number
-  rank: number
-}
-
-// Madame IRMA ranks on EXACT count first (its winning metric), then falls back to
-// the normal ladder so equal-exact rows still order deterministically.
-function compareByExact(a: RankableRow, b: RankableRow): number {
-  return b.exactCount - a.exactCount || compareLeaderboardRows(a, b)
-}
-
-// The full live ranking of one criterion among a league's members (or the whole
-// competition when no memberIds). Its rank-1 rows are exactly computeCriteriaWinners'
-// winners for that type; this exposes the tail so a member can see where they stand.
-// Only rows that actually scored in the criterion (value > 0) are returned.
-export async function rankCriteria(
-  db: AppDatabase,
-  competitionId: string,
-  type: CompetitionAwardType,
-  opts: { leagueId?: string; memberIds?: string[]; teamCode?: string | null } = {},
-): Promise<RankedCriteriaRow[]> {
-  // OVERALL folds in the champion + best-scorer bonuses, so it must come from the
-  // leaderboard (which already ranks provisionally), not raw prediction points.
-  if (type === 'OVERALL') {
-    const board = await getLeaderboard(db, {
-      competitionId,
-      leagueId: opts.leagueId,
-      includeHidden: true,
-      includePrivate: true,
-      limit: 100_000,
-    })
-    return board.filter((r) => r.totalPoints > 0).map((r) => ({ userId: r.userId, value: r.totalPoints, rank: r.rank }))
-  }
-
-  // TEAM_SPECIALIST has no ranking until a featured team is configured.
-  if (type === 'TEAM_SPECIALIST' && !opts.teamCode) return []
-  const filter =
-    type === 'TEAM_SPECIALIST'
-      ? or(eq(match.homeTeamCode, opts.teamCode!), eq(match.awayTeamCode, opts.teamCode!))
-      : criteriaMatchFilter(type)
-
-  const rows = await rankableForMatches(db, competitionId, filter, opts.memberIds)
-  // MADAME_IRMA and TEAM_SPECIALIST rank on EXACT count (their winning metric); the
-  // rest use the points ladder. For TEAM_SPECIALIST the count is "rewards won".
-  const byExact = type === 'MADAME_IRMA' || type === 'TEAM_SPECIALIST'
-  const sorted = [...rows].sort(byExact ? compareByExact : compareLeaderboardRows)
-
-  // Ties share a rank on the ranking metric: EXACT count for MADAME_IRMA, the full
-  // points ladder otherwise (so the rank-1 set matches the winners).
-  const ranks = denseRanks(
-    sorted.map((r) => (byExact ? `${r.exactCount}` : `${r.totalPoints}|${r.exactCount}|${r.outcomeCount}|${r.gdCount}`)),
-  )
-  const out = sorted.map((r, i) => ({ userId: r.userId, value: byExact ? r.exactCount : r.totalPoints, rank: ranks[i] }))
-  // Zeros sort last, so dropping them leaves the positive rows' ranks intact.
-  return out.filter((r) => r.value > 0)
 }
 
 // Global trophy holders for a finished competition. Empty until the final is

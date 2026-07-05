@@ -77,6 +77,26 @@ Two distinct hiding mechanisms:
   self/admins/league-mates via `canViewProfile` (404, no existence leak).
 - `hiddenFromLeaderboard` is admin-only moderation that hides a user everywhere.
 
+## Description
+
+An owner/moderator can write an "About this league" blurb (`league.description`, a
+nullable markdown source) shown to everyone who can see the league. It is set through
+the shared `PUT /api/leagues/[id]` league-update route (`setLeagueDescription`; a blank
+string clears it) and rendered on the client by `renderMarkdown` (`app/utils/markdown.ts`):
+`marked` -> `isomorphic-dompurify` with a narrow allow-list (headings, emphasis, lists,
+links, images, code), forced `target`/`rel` on links and `no-referrer` on images.
+Sanitization is the security boundary - the source is untrusted author input shown to
+every member, so a `<script>` or `javascript:` URL is stripped. Images upload via
+`POST /api/leagues/[id]/description-image` (owner/moderator; reuses the reward image
+store) and embed as markdown. Component: `LeagueDescription.vue`.
+
+## Featured team + prizes
+
+`league.featuredTeamCode` (nullable) is the team a league's Team Specialist **prize**
+tracks, set by an owner/moderator in the prize editor (`setLeagueFeaturedTeam`, which
+rejects a code not in the competition's teams). The prizes themselves live in
+[rewards.md](rewards.md).
+
 ## Chat
 
 Each league hosts an end-to-end-encrypted chat. The league row carries
@@ -89,9 +109,13 @@ Each league hosts an end-to-end-encrypted chat. The league row carries
 
 ## Sources
 
-- `db/app-schema.ts` (`league`, `league_member`, `league_opt_out`,
-  `league_invite`, `league_leaderboard_rank`, `league_visibility`/`league_role` enums)
-- `server/utils/leagues/service.ts`, `server/utils/leagues/code.ts` (join-code alphabet/normalize)
-- `server/api/leagues/**` (`join.post.ts`, `leave.post.ts`, `[id]/**`)
-- `app/utils/league-cookie.ts`, `app/composables/useLeagues.ts` (`useLeagueSelections`)
+- `db/app-schema.ts` (`league` incl. `description` + `featured_team_code`,
+  `league_member`, `league_opt_out`, `league_invite`, `league_leaderboard_rank`,
+  `league_visibility`/`league_role` enums)
+- `server/utils/leagues/service.ts` (`setLeagueDescription`, `setLeagueFeaturedTeam`),
+  `server/utils/leagues/code.ts` (join-code alphabet/normalize)
+- `server/api/leagues/**` (`join.post.ts`, `leave.post.ts`, `[id]/index.put.ts`,
+  `[id]/description-image.post.ts`, `[id]/**`)
+- `app/utils/{league-cookie,markdown}.ts`, `app/composables/useLeagues.ts` (`useLeagueSelections`),
+  `app/components/LeagueDescription.vue`
 - `server/utils/rate-limit.ts`

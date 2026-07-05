@@ -1,12 +1,11 @@
 import { useQuery } from '@tanstack/vue-query'
-import type { CompetitionAwardType } from '#shared/types/achievements'
-import type { RewardRankingDto } from '#shared/types/rewards'
+import type { LeagueRewardCriterion, RewardRankingDto } from '#shared/types/rewards'
 
 // One criterion's live ranking within a league, fetched on demand when the prize
 // ranking dialog opens (enabled gate). Keyed per league + criterion.
 export function useRewardRanking(
   leagueId: MaybeRefOrGetter<string | null>,
-  type: MaybeRefOrGetter<CompetitionAwardType | null>,
+  type: MaybeRefOrGetter<LeagueRewardCriterion | null>,
   enabled: MaybeRefOrGetter<boolean> = true,
 ) {
   const id = computed(() => toValue(leagueId))

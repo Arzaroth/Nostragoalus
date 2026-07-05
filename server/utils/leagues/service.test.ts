@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { and, eq } from 'drizzle-orm'
 import { createTestDb, type TestDb } from '../../../tests/db'
-import { addLeagueMember, makeCompetition, makeLeague, makeUser } from '../../../tests/factories'
-import { league, leagueMember, leagueOptOut, ssoProvider, ssoProviderLeague, user } from '../../../db/schema'
+import { addLeagueMember, makeCompetition, makeLeague, makeMatch, makeUser, seedCompetition } from '../../../tests/factories'
+import { league, leagueMember, leagueOptOut, round, ssoProvider, ssoProviderLeague, user } from '../../../db/schema'
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors'
 import {
   adminAddMember,
@@ -35,6 +35,8 @@ import {
   removeMembership,
   renameLeague,
   setAdminMemberRole,
+  setLeagueDescription,
+  setLeagueFeaturedTeam,
   setLeagueVisibility,
   setMemberRole,
   transferOwnership,
@@ -722,5 +724,54 @@ describe('user deletion cascade', () => {
     expect((await getLeague(db, id))?.createdBy).toBeNull()
     // Ownerless league survives; remaining members keep it alive.
     expect((await listLeagueMembers(db, id)).map((m) => m.userId)).toEqual(['bob'])
+  })
+})
+
+describe('setLeagueDescription', () => {
+  it('sets, clears on blank/null, and 404s an unknown league', async () => {
+    await makeUser(db, 'owner')
+    const id = await makeLeague(db, { competitionId, ownerId: 'owner' })
+
+    await setLeagueDescription(db, id, '# Rules\nBe nice.')
+    expect((await getLeague(db, id))?.description).toBe('# Rules\nBe nice.')
+
+    // A whitespace-only blurb clears it rather than storing empty markdown.
+    await setLeagueDescription(db, id, '   ')
+    expect((await getLeague(db, id))?.description).toBeNull()
+
+    await setLeagueDescription(db, id, 'back again')
+    await setLeagueDescription(db, id, null)
+    expect((await getLeague(db, id))?.description).toBeNull()
+
+    await expect(setLeagueDescription(db, 'nope', 'x')).rejects.toBeInstanceOf(NotFoundError)
+  })
+})
+
+describe('setLeagueFeaturedTeam', () => {
+  it('sets a competition team, clears with null, rejects an unknown team and league', async () => {
+    const comp = await seedCompetition(db)
+    const rounds = await db.select().from(round).where(eq(round.competitionId, comp))
+    const groupRound = rounds.find((r) => r.stage === 'GROUP' && r.matchday === 1)!.id
+    await makeMatch(db, {
+      competitionId: comp,
+      roundId: groupRound,
+      stage: 'GROUP',
+      status: 'FINISHED',
+      homeTeamCode: 'FRA',
+      kickoffTime: new Date('2026-06-11T12:00:00Z'),
+    })
+    await makeUser(db, 'owner')
+    const id = await makeLeague(db, { competitionId: comp, ownerId: 'owner' })
+
+    await setLeagueFeaturedTeam(db, id, 'FRA')
+    expect((await getLeague(db, id))?.featuredTeamCode).toBe('FRA')
+
+    await setLeagueFeaturedTeam(db, id, null)
+    expect((await getLeague(db, id))?.featuredTeamCode).toBeNull()
+
+    // A code that is not one of the competition's teams is rejected so the prize
+    // can always resolve.
+    await expect(setLeagueFeaturedTeam(db, id, 'XXX')).rejects.toBeInstanceOf(ValidationError)
+    await expect(setLeagueFeaturedTeam(db, 'nope', 'FRA')).rejects.toBeInstanceOf(NotFoundError)
   })
 })

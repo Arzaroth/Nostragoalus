@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { AchievementDto, CompetitionAwardType, ShowcasePinInput, TrophyDto } from '#shared/types/achievements'
 import { SHOWCASE_SLOT_COUNT } from '#shared/types/achievements'
+import type { LeagueRewardCriterion } from '#shared/types/rewards'
 
 const props = defineProps<{ userId: string }>()
 const { t } = useI18n()
@@ -88,10 +89,10 @@ const myRewards = useMyRewards(isOwner)
 const criterionName = useCriterionName()
 
 const rankingLeagueId = ref<string | null>(null)
-const rankingType = ref<CompetitionAwardType | null>(null)
+const rankingType = ref<LeagueRewardCriterion | null>(null)
 const rankingTeamCode = ref<string | null>(null)
 const rankingOpen = ref(false)
-function openReward(r: { leagueId: string; type: CompetitionAwardType; teamCode: string | null }) {
+function openReward(r: { leagueId: string; type: LeagueRewardCriterion; teamCode: string | null }) {
   rankingLeagueId.value = r.leagueId
   rankingType.value = r.type
   rankingTeamCode.value = r.teamCode

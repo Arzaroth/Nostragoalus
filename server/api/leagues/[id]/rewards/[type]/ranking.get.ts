@@ -4,19 +4,19 @@ import { resolveLeagueView } from '../../../../../utils/leagues/service'
 import { getRewardRanking } from '../../../../../utils/rewards/service'
 import { toHttpError } from '../../../../../utils/http'
 import { ValidationError } from '../../../../../utils/errors'
-import { COMPETITION_AWARD_TYPES } from '#shared/types/achievements'
+import { LEAGUE_REWARD_CRITERIA, type LeagueRewardCriterion } from '#shared/types/rewards'
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
   const id = getRouterParam(event, 'id')!
   const type = getRouterParam(event, 'type')!
   try {
-    if (!(COMPETITION_AWARD_TYPES as readonly string[]).includes(type)) {
+    if (!(LEAGUE_REWARD_CRITERIA as readonly string[]).includes(type)) {
       throw new ValidationError('unknown reward criterion')
     }
     // Same visibility as the league detail and its reward standings.
     await resolveLeagueView(db, id, user.id, { resolveAdmin: () => isAdmin(event) })
-    return await getRewardRanking(db, id, type as (typeof COMPETITION_AWARD_TYPES)[number], user.id)
+    return await getRewardRanking(db, id, type as LeagueRewardCriterion, user.id)
   } catch (error) {
     throw toHttpError(error)
   }

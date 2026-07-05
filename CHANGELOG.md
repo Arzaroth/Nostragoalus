@@ -5,6 +5,19 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+- **Build your own prize list**: league owners and moderators can now attach a prize to any of eleven criteria (the original five plus Wooden Spoon, Final Sage, Group Oracle, Knockout Oracle, Sharpshooter and Goal-Difference Guru) and add or remove prizes freely, one per criterion. Each prize still shows its live leader and full ranking.
+- **A description for every league**: owners and moderators can write an "About this league" blurb - intro, rules, whatever - in Markdown, with headings, lists, links and uploaded images. Everyone who can see the league sees it.
+
+### Changed
+- **The Team Specialist team is now set per league**: instead of one team chosen site-wide in admin, each league owner or moderator picks the team their Team Specialist prize follows, right where they set the prize. Until they pick one, that prize shows as disabled.
+
+### Removed
+- **Admin Competitions section**: the per-competition featured-team picker is gone, replaced by the per-league setting above. The global Team Specialist trophy in the cabinet is no longer awarded (any already earned stay on show).
+
+### Upgrade notes
+- The featured team moved from the competition to each league, so leagues that had a Team Specialist prize need an owner or moderator to pick their team again to re-enable it.
+
 ## [2.18.2] - 2026-07-05
 
 ### Fixed

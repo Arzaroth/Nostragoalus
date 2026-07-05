@@ -101,7 +101,19 @@ function medal(rank: number) {
         </div>
       </div>
 
-      <LeagueRewards v-if="leagueId" :league-id="leagueId" :can-manage="canManage" />
+      <LeagueDescription
+        v-if="leagueId"
+        :league-id="leagueId"
+        :description="detail.data.value.league.description"
+        :can-manage="canManage"
+      />
+
+      <LeagueRewards
+        v-if="leagueId"
+        :league-id="leagueId"
+        :can-manage="canManage"
+        :competition-slug="detail.data.value.league.competition?.slug"
+      />
 
       <ChatPanel v-if="isMember && leagueId" :league-id="leagueId" class="mt-6" />
 

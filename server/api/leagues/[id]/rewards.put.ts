@@ -5,7 +5,7 @@ import { resolveLeagueManage } from '../../../utils/leagues/service'
 import { listLeagueRewards, type LeagueRewardWrite, setLeagueRewards } from '../../../utils/rewards/service'
 import { storeRewardFromDataUrl } from '../../../utils/rewards/image'
 import { useStorageDriver } from '../../../utils/storage'
-import { COMPETITION_AWARD_TYPES } from '#shared/types/achievements'
+import { LEAGUE_REWARD_CRITERIA } from '#shared/types/rewards'
 
 // The prize link is rendered as an anchor href to every member, so only http(s)
 // is allowed - a javascript:/data: URL would be a stored XSS against viewers.
@@ -19,7 +19,7 @@ function isHttpUrl(s: string): boolean {
 }
 
 const itemSchema = z.object({
-  type: z.enum(COMPETITION_AWARD_TYPES),
+  type: z.enum(LEAGUE_REWARD_CRITERIA),
   label: z.string().max(120),
   // A data: URL uploads a new image, null clears it, absent keeps the current one.
   imageDataUrl: z.string().max(1_400_000).nullish(),
@@ -27,7 +27,15 @@ const itemSchema = z.object({
   link: z.string().max(500).refine(isHttpUrl, 'link must be an http(s) URL').nullish(),
 })
 
-const bodySchema = z.object({ items: z.array(itemSchema).max(5) })
+// At most one prize per criterion (the DB unique index enforces it too, but a
+// duplicate in one submit would silently upsert twice). Replace-set semantics: the
+// form sends the full desired list each save; a blank label deletes that prize.
+const bodySchema = z.object({
+  items: z
+    .array(itemSchema)
+    .max(LEAGUE_REWARD_CRITERIA.length)
+    .refine((items) => new Set(items.map((i) => i.type)).size === items.length, 'each criterion may appear at most once'),
+})
 
 export default defineValidatedHandler({ body: bodySchema }, async ({ event, body, user }) => {
   const id = getRouterParam(event, 'id')!
@@ -53,7 +61,7 @@ defineRouteMeta({
     tags: ['Leagues'],
     summary: 'Configure league prizes',
     description:
-      "Owner/moderator only. Set the prize (label + optional image + note + link) for each criterion; a blank label removes it. Send imageDataUrl as a data: URL to upload, null to clear, omit to keep.",
+      "Owner/moderator only. Replace-set: send the full desired list of prizes (label + optional image + note + link), one per criterion; a blank label removes that prize. Send imageDataUrl as a data: URL to upload, null to clear, omit to keep.",
     requestBody: {
       required: true,
       content: {
@@ -63,11 +71,11 @@ defineRouteMeta({
             properties: {
               items: {
                 type: 'array',
-                maxItems: 5,
+                maxItems: LEAGUE_REWARD_CRITERIA.length,
                 items: {
                   type: 'object',
                   properties: {
-                    type: { type: 'string', enum: ['OVERALL', 'GROUP_PHASE', 'KNOCKOUT_PHASE', 'MADAME_IRMA', 'TEAM_SPECIALIST'] },
+                    type: { type: 'string', enum: [...LEAGUE_REWARD_CRITERIA] },
                     label: { type: 'string' },
                     imageDataUrl: { type: 'string', nullable: true },
                     note: { type: 'string', nullable: true },

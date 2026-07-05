@@ -71,12 +71,6 @@ export async function setExternalSeasonId(db: AppDatabase, id: string, externalS
   await db.update(competition).set({ externalSeasonId }).where(eq(competition.id, id))
 }
 
-// The team the competition's TEAM_SPECIALIST prize tracks. null disables that
-// criterion (no featured team, no prize). Admin-only via the competitions panel.
-export async function setFeaturedTeamCode(db: AppDatabase, id: string, featuredTeamCode: string | null): Promise<void> {
-  await db.update(competition).set({ featuredTeamCode }).where(eq(competition.id, id))
-}
-
 // Resolve a competition by slug, or fall back to the first active one (for the
 // default view when no competition is specified).
 export async function resolveCompetition(db: AppDatabase, slug?: string | null) {

@@ -9,6 +9,9 @@ export interface League {
   visibility: LeagueVisibility
   role: LeagueRole
   memberCount: number
+  // The owner/moderator-authored markdown blurb. Present on the league detail
+  // response (null when unset); omitted by the list responses.
+  description?: string | null
   // Present on the my-leagues list; omitted by create/join responses (the list
   // refetches right after either). Used to hide chat-less leagues from the
   // in-chat league switcher.
@@ -106,12 +109,27 @@ export function useLeagueActions() {
   })
 
   const update = useMutation({
-    mutationFn: (input: { leagueId: string; name?: string; visibility?: LeagueVisibility }) =>
+    mutationFn: (input: {
+      leagueId: string
+      name?: string
+      visibility?: LeagueVisibility
+      description?: string | null
+      featuredTeamCode?: string | null
+    }) =>
       $fetch<{ ok: boolean }>(`/api/leagues/${input.leagueId}`, {
         method: 'PUT',
-        body: { name: input.name, visibility: input.visibility },
+        body: {
+          name: input.name,
+          visibility: input.visibility,
+          description: input.description,
+          featuredTeamCode: input.featuredTeamCode,
+        },
       }),
-    onSuccess: () => invalidate(false),
+    onSuccess: () => {
+      invalidate(false)
+      // The featured team drives the TEAM_SPECIALIST prize standings.
+      queryClient.invalidateQueries({ queryKey: ['leagueRewards'] })
+    },
   })
 
   const regenerateCode = useMutation({

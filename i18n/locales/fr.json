@@ -74,10 +74,45 @@
     "myPrizes": "Vos récompenses",
     "holding": "En tête",
     "chasing": "À la poursuite",
-    "teamSpecialistDisabled": "Choisissez une équipe à l'honneur dans l'admin pour activer cette récompense.",
+    "teamSpecialistDisabled": "Choisissez une équipe à l'honneur pour activer cette récompense.",
+    "teamSpecialistPickTeam": "Choisissez l'équipe suivie par cette récompense.",
+    "featuredTeam": "Équipe à l'honneur",
+    "noFeaturedTeam": "Aucune équipe à l'honneur",
+    "addPrize": "Ajouter une récompense",
+    "pickCriterion": "Choisissez un critère…",
+    "removePrize": "Retirer",
+    "editEmpty": "Aucune récompense - ajoutez-en une ci-dessous.",
     "noRanking": "Pas encore de classement - personne n'a marqué pour cette récompense.",
     "metricPoints": "pts",
-    "metricExact": "exacts"
+    "metricExact": "exacts",
+    "metricOutcome": "corrects",
+    "metricGoalDiff": "DB",
+    "criterion": {
+      "OVERALL": { "name": "Vainqueur général", "desc": "En tête du classement de la ligue." },
+      "WOODEN_SPOON": { "name": "Cuillère de bois", "desc": "Le moins de points de la ligue." },
+      "GROUP_PHASE": { "name": "Gourou des poules", "desc": "Le plus de points sur la phase de poules." },
+      "KNOCKOUT_PHASE": { "name": "Maître du tableau", "desc": "Le plus de points sur les phases finales." },
+      "FINALIST": { "name": "Sage de la finale", "desc": "Le plus de points sur la finale." },
+      "MADAME_IRMA": { "name": "Madame Irma", "desc": "Le plus de scores exacts de tous." },
+      "GROUP_ORACLE": { "name": "Oracle des poules", "desc": "Le plus de scores exacts en phase de poules." },
+      "KNOCKOUT_ORACLE": { "name": "Oracle des phases finales", "desc": "Le plus de scores exacts en phases finales." },
+      "SHARPSHOOTER": { "name": "Fine gâchette", "desc": "Le plus de résultats corrects (V/N/D)." },
+      "GOAL_DIFF_GURU": { "name": "Gourou des écarts", "desc": "Le plus d'écarts de buts corrects." },
+      "TEAM_SPECIALIST": { "name": "Spécialiste {team}", "desc": "Le plus de scores exacts sur les matchs de {team}." },
+      "TEAM_SPECIALIST_GENERIC": { "name": "Spécialiste d'équipe", "desc": "Le plus de scores exacts sur les matchs de l'équipe à l'honneur." }
+    }
+  },
+  "leagueDesc": {
+    "title": "À propos de cette ligue",
+    "edit": "Modifier",
+    "add": "Ajouter une description",
+    "empty": "Pas encore de description.",
+    "hint": "Markdown pris en charge : titres, gras, listes, liens, images.",
+    "placeholder": "Présentez votre ligue, ses règles, ses récompenses…",
+    "preview": "Aperçu",
+    "addImage": "Ajouter une image",
+    "uploading": "Envoi…",
+    "uploadFailed": "Échec de l'envoi de l'image."
   },
   "verify": {
     "title": "Vérifier les scores",
@@ -778,18 +813,6 @@
     "deleteMailSent": "Mail de confirmation envoyé - le compte sera supprimé en ouvrant le lien."
   },
   "admin": {
-    "competitions": {
-      "title": "Compétitions",
-      "hint": "Réglages par compétition, comme l'équipe à l'honneur du Spécialiste d'équipe.",
-      "intro": "Choisissez l'équipe suivie par la récompense Spécialiste d'équipe. Tant qu'aucune n'est définie, cette récompense est désactivée pour toutes les ligues de la compétition.",
-      "none": "Aucune compétition pour l'instant.",
-      "colCompetition": "Compétition",
-      "colFeaturedTeam": "Équipe à l'honneur",
-      "noFeaturedTeam": "Aucune (récompense désactivée)",
-      "noTeams": "Aucune équipe pour l'instant - chargez d'abord le calendrier.",
-      "save": "Enregistrer",
-      "saveFailed": "Impossible d'enregistrer l'équipe à l'honneur."
-    },
     "odds": {
       "title": "Fournisseur de cotes",
       "hint": "Choisissez quel fournisseur cote les matchs de chaque compétition.",

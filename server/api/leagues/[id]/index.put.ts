@@ -1,14 +1,25 @@
 import { z } from 'zod'
 import { db } from '../../../../db'
 import { defineValidatedHandler } from '../../../utils/validated-handler'
-import { renameLeague, resolveLeagueManage, setLeagueVisibility } from '../../../utils/leagues/service'
+import {
+  renameLeague,
+  resolveLeagueManage,
+  setLeagueDescription,
+  setLeagueFeaturedTeam,
+  setLeagueVisibility,
+} from '../../../utils/leagues/service'
 
 const bodySchema = z
   .object({
     name: z.string().trim().min(3).max(50).optional(),
     visibility: z.enum(['PRIVATE', 'PUBLIC']).optional(),
+    // Markdown source for the league blurb; null (or blank) clears it.
+    description: z.string().max(10_000).nullable().optional(),
+    // FIFA tricode of the league's TEAM_SPECIALIST team; null clears it. The
+    // service rejects a code not in the competition (422).
+    featuredTeamCode: z.string().max(8).nullable().optional(),
   })
-  .refine((b) => b.name !== undefined || b.visibility !== undefined, { message: 'nothing to update' })
+  .refine((b) => Object.values(b).some((v) => v !== undefined), { message: 'nothing to update' })
 
 export default defineValidatedHandler({ body: bodySchema }, async ({ event, body, user }) => {
   const id = getRouterParam(event, 'id')!
@@ -21,14 +32,20 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ event, body
     if (membership?.role !== 'OWNER') throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
     await setLeagueVisibility(db, id, body.visibility)
   }
+  if (body.description !== undefined) {
+    await setLeagueDescription(db, id, body.description)
+  }
+  if (body.featuredTeamCode !== undefined) {
+    await setLeagueFeaturedTeam(db, id, body.featuredTeamCode)
+  }
   return { ok: true }
 })
 
 defineRouteMeta({
   openAPI: {
     "tags": ["Leagues"],
-    "summary": "Rename a league or change its visibility",
-    "description": "Name: owner or moderator. Visibility: owner only.",
+    "summary": "Update a league (name, visibility, description, featured team)",
+    "description": "Name/description/featured team: owner or moderator. Visibility: owner only.",
     "requestBody": {
       "required": true,
       "content": {
@@ -37,7 +54,9 @@ defineRouteMeta({
             "type": "object",
             "properties": {
               "name": { "type": "string", "description": "3-50 chars." },
-              "visibility": { "type": "string", "enum": ["PRIVATE", "PUBLIC"] }
+              "visibility": { "type": "string", "enum": ["PRIVATE", "PUBLIC"] },
+              "description": { "type": "string", "nullable": true, "description": "Markdown blurb; null or blank clears it." },
+              "featuredTeamCode": { "type": "string", "nullable": true, "description": "FIFA tricode for the Team Specialist prize; null clears it." }
             }
           }
         }
@@ -48,7 +67,7 @@ defineRouteMeta({
       "401": { "description": "Not signed in." },
       "403": { "description": "Insufficient league role." },
       "404": { "description": "Unknown league." },
-      "422": { "description": "Invalid or empty body." }
+      "422": { "description": "Invalid body, or a featured team not in the competition." }
     }
   },
 })

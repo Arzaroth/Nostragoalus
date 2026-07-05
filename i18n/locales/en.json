@@ -78,10 +78,45 @@
     "myPrizes": "Your prizes",
     "holding": "Holding",
     "chasing": "Chasing",
-    "teamSpecialistDisabled": "Set a featured team in admin to enable this prize.",
+    "teamSpecialistDisabled": "Pick a featured team to enable this prize.",
+    "teamSpecialistPickTeam": "Pick the team this prize tracks.",
+    "featuredTeam": "Featured team",
+    "noFeaturedTeam": "No featured team",
+    "addPrize": "Add prize",
+    "pickCriterion": "Pick a criterion…",
+    "removePrize": "Remove",
+    "editEmpty": "No prizes yet - add one below.",
     "noRanking": "No ranking yet - nobody has scored in this prize.",
     "metricPoints": "pts",
-    "metricExact": "exact"
+    "metricExact": "exact",
+    "metricOutcome": "correct",
+    "metricGoalDiff": "GD",
+    "criterion": {
+      "OVERALL": { "name": "Overall Winner", "desc": "Tops the league leaderboard." },
+      "WOODEN_SPOON": { "name": "Wooden Spoon", "desc": "Fewest points in the league." },
+      "GROUP_PHASE": { "name": "Group Stage Guru", "desc": "Most points across the group stage." },
+      "KNOCKOUT_PHASE": { "name": "Bracket Master", "desc": "Most points across the knockout rounds." },
+      "FINALIST": { "name": "Final Sage", "desc": "Most points on the final." },
+      "MADAME_IRMA": { "name": "Madame Irma", "desc": "Most exact scorelines of anyone." },
+      "GROUP_ORACLE": { "name": "Group Oracle", "desc": "Most exact scorelines in the group stage." },
+      "KNOCKOUT_ORACLE": { "name": "Knockout Oracle", "desc": "Most exact scorelines in the knockout rounds." },
+      "SHARPSHOOTER": { "name": "Sharpshooter", "desc": "Most correct results (win/draw/loss)." },
+      "GOAL_DIFF_GURU": { "name": "Goal-Difference Guru", "desc": "Most correct goal differences." },
+      "TEAM_SPECIALIST": { "name": "{team} Specialist", "desc": "Most exact scorelines on {team}'s matches." },
+      "TEAM_SPECIALIST_GENERIC": { "name": "Team Specialist", "desc": "Most exact scorelines on the featured team's matches." }
+    }
+  },
+  "leagueDesc": {
+    "title": "About this league",
+    "edit": "Edit",
+    "add": "Add a description",
+    "empty": "No description yet.",
+    "hint": "Markdown supported: headings, bold, lists, links, images.",
+    "placeholder": "Introduce your league, its rules, prizes…",
+    "preview": "Preview",
+    "addImage": "Add image",
+    "uploading": "Uploading…",
+    "uploadFailed": "Image upload failed."
   },
   "verify": {
     "title": "Verify scores",
@@ -782,18 +817,6 @@
     "deleteMailSent": "Confirmation mail sent - the account will be deleted when you open the link."
   },
   "admin": {
-    "competitions": {
-      "title": "Competitions",
-      "hint": "Per-competition settings, like the Team Specialist featured team.",
-      "intro": "Pick the team the Team Specialist prize tracks. Until one is set, that prize is disabled for every league in the competition.",
-      "none": "No competitions yet.",
-      "colCompetition": "Competition",
-      "colFeaturedTeam": "Featured team",
-      "noFeaturedTeam": "None (prize disabled)",
-      "noTeams": "No teams yet - load the fixtures first.",
-      "save": "Save",
-      "saveFailed": "Could not save the featured team."
-    },
     "odds": {
       "title": "Odds provider",
       "hint": "Pick which provider prices each competition's matches.",
