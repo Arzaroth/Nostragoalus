@@ -6,6 +6,14 @@
   `package.json`.
 - DB schema changes go through `db/app-schema.ts` + `pnpm db:generate` - never
   hand-write migration SQL into `drizzle/`.
+- Worktree creation/management goes through the `wt` command (worktrunk) only -
+  `wt switch --create <branch>` to make one, `wt list`, `wt remove` - never raw
+  `git worktree`. On create, the `[post-start]` hook in `.config/wt.toml` runs
+  `wt step copy-ignored --require-include`, copying the gitignored files listed
+  in `.worktreeinclude` (`.env`, `node_modules/`, `.pnpm-store/`, build caches)
+  from the main checkout so the new worktree boots warm - no cold reinstall, no
+  auth 500 on the default secret. Add a pattern to `.worktreeinclude` when a new
+  gitignored artifact is worth copying; both files are committed.
 - Every user-facing string gets i18n keys in **all five locales**
   (`i18n/locales/{en,fr,th,tlh,ar}.json`) - tlh is Klingon, keep it terse and
   in-character.
