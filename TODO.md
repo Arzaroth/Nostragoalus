@@ -307,15 +307,12 @@ one messaging dock. Still open:
 
 ## Live hardening (deferred from the feature-treatment review)
 
-- [ ] **Chat mutations still leak league existence**: the `resolveLeagueManage`
-      existence-leak fix (404 for both missing and outsider, never a 403 that
-      confirms a private league is real) was applied to the league-management
-      endpoints but NOT to the parallel chat mutations
+- [x] **Chat mutations still leak league existence**: fixed. The chat mutations
       (`server/utils/chat/service.ts` postMessage / enableLeagueChat /
-      disableLeagueChat / rotateLeagueChatKey / addWrappedKeys), which still do
-      the split `NotFoundError` then `ForbiddenError`. Low risk (league.id is a
-      random UUID, so blind enumeration is infeasible), but migrate them to the
-      same combined-404 shape for consistency.
+      disableLeagueChat / rotateLeagueChatKey / addWrappedKeys) and the
+      members-only `listMessages` read now fetch membership up front and 404 a
+      non-member (existence hidden, matching `resolveLeagueManage`); the
+      member-facing 403s (insufficient role, chat-not-enabled) are unchanged.
 - [ ] **Goal pushes skip SUSPENDED/INTERRUPTED**: `push/live.ts` keeps its own
       narrow `LIVE_STATUSES = {LIVE, PAUSED}` and was not folded into the shared
       `matchIsInPlay` taxonomy, so a goal observed only while a match reads
@@ -340,13 +337,13 @@ one messaging dock. Still open:
 
 ## Calendar feed (deferred from the feature-treatment review)
 
-- [ ] `server/utils/feed/token.ts` is a near-verbatim clone of
-      `server/utils/share/token.ts` (b64url, sign-body/sign-token, the
-      `MAX_TOKEN_LENGTH = 512` cap and the whole timing-safe verify path); only
-      the domain string and payload shape differ, and feed already imports
-      `SHARE_LOCALES` from share. Extract one shared signed-token codec so a
-      future hardening of the verify path can't land on one keyless public route
-      and miss the other.
+- [x] `server/utils/feed/token.ts` was a near-verbatim clone of
+      `server/utils/share/token.ts`. Done: `createSignedTokenCodec(domainTag,
+      isValid)` (`server/utils/signed-token/codec.ts`) holds b64url +
+      domain-separated HMAC + 512-cap + timing-safe verify; share and feed keep
+      their public API as thin re-exports and only pin their own domain tag +
+      payload validator, so a future hardening of the verify path lands on both
+      keyless public routes at once.
 - [ ] `FeedMatch.kickoffTime` is typed `Date | string` but every caller passes a
       Date (drizzle `timestamp` mode). A timezone-naive string would be parsed as
       local time by `new Date()` and shift the emitted UTC instant. Narrow to
@@ -371,13 +368,13 @@ one messaging dock. Still open:
 
 ## Group tiebreakers + elimination (deferred from the feature-treatment review)
 
-- [ ] The group-standings row select (`group, homeTeam, awayTeam, *Code, status,
-      fullTime*` WHERE `stage='GROUP'`) is now hand-written in THREE places:
-      `standings.get.ts`, `bracket.get.ts:groupStandingsFor`, and the insights
-      service. Extend the existing deferred `selectGroupStandingsRows` extraction
-      to cover `bracket.get.ts` too. `eliminated.get.ts` selects a different shape
-      (adds `stage`+`winner`, drops names, no `stage` filter) and intentionally
-      does not share it.
+- [x] The group-standings row select (`group, homeTeam, awayTeam, *Code, status,
+      fullTime*` WHERE `stage='GROUP'`) was hand-written in THREE places. Done:
+      all of `standings.get.ts`, `bracket.get.ts:groupStandingsFor` and the
+      match-insights service now go through `selectGroupStandingsRows` (given an
+      optional `group` filter to scope a single group's table). `eliminated.get.ts`
+      selects a different shape (adds `stage`+`winner`, drops names, no `stage`
+      filter) and intentionally does not share it.
 - [x] The classic `['points', 'gd', 'gf']` criteria triple is repeated ~5x
       (tiebreakers.ts default + WC2026 best-third, standings.ts `DEFAULT_CRITERIA`,
       projection.ts `rankThirds` fallback). Done: one exported `CLASSIC` const in
@@ -560,10 +557,11 @@ landed alongside it (verified by running the stack):
       fs driver (type is derived from the key on read) but load-bearing for s3, and
       `fsDriver.exists` swallows a path-escape `StorageError` into `false` unlike
       get/put/delete. Document the contentType contract and make `exists` consistent.
-- [ ] **De-duplicate the chat-image encode/decode**: `putChatImage` takes a
-      `Uint8Array` and `getChatImage` returns one, so all four call sites wrap them
-      in `TextEncoder`/`TextDecoder` (service.ts x2, migrate.ts, attachments.ts).
-      Moving the conversion inside those two helpers (string in/out) collapses it.
+- [x] **De-duplicate the chat-image encode/decode**: done. `putChatImage` takes
+      and `getChatImage` returns the ciphertext string; the text<->bytes
+      conversion moved inside the two helpers, dropping the `TextEncoder`/
+      `TextDecoder` wrappers at all four call sites (service.ts x2, migrate.ts,
+      attachments.ts).
 
 ## Roadmap v2 - suggestions & upvotes (deferred from the feature pass)
 
@@ -750,10 +748,16 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
       are verbatim copies of the global ones (snapshots.ts) - parameterize by
       table/scope. Same for the per-league fetch pipeline in useCrowdTotals
       (clone of the global block) and adminCreateLeague vs createLeague.
-- [ ] Extract one resolveLeagueView(event, leagueId) guard helper - the
+- [x] Extract one resolveLeagueView(event, leagueId) guard helper - the
       getLeague/membership/admin/canView/competition-slug block is copy-pasted
       across leaderboard, crowd and league-detail routes (already drifted: the
       mutation routes 403 where the GETs 404, leaking league existence).
+      Resolved: `resolveLeagueView` + `resolveLeagueManage`
+      (`server/utils/leagues/service.ts`) now back the leaderboard/crowd/
+      reactions/league-detail/standings/invite/rewards routes, and the drift is
+      closed (manage 404s a non-member like a read). The parallel chat mutations
+      were the last split-guard holdout - now aligned (see the chat existence-leak
+      item under Live hardening).
 - [ ] Adopt defineValidatedHandler on the remaining hand-rolled league mutation
       routes - create/join/rename/transfer are converted; `[id]/index.delete`,
       `[id]/join`, `[id]/leave`, `[id]/members/[userId].delete` and
