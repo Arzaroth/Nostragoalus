@@ -9,6 +9,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 - Trophy-cabinet progress bars: every badge you have not yet maxed out now shows how close you are to its next tier - "3 / 5" toward the next rung, drawn on locked badges too, so you can see what you are chasing instead of only what you already hold.
 - Shareable profile card: a Share button on your own profile mints a link to a rich card of your standing (rank, points, exact scores, trophy and badge haul) that opens without a login, so it unfurls with a preview when you send it to friends. Works mid-tournament, not just at the end.
+- Shareable personal analytics: a Share button on your analytics page mints the same kind of link to a card of your prediction bias (accuracy, exact rate, goal lean, home-team bias), viewable without a login.
 
 ## [2.25.1] - 2026-07-05
 

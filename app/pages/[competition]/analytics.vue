@@ -1,9 +1,31 @@
 <script setup lang="ts">
-const { t } = useI18n()
+const { t, locale } = useI18n()
+const toast = useToast()
+const slug = useSelectedCompetition()
 useHead({ title: t('analytics.title') })
 const { session } = useAuth()
 const signedIn = computed(() => !!session.value?.data?.user?.id)
 const { data, isLoading, error } = useAnalytics(signedIn)
+
+// Mint a signed link to your own analytics card and copy it. The token names
+// only you and the /a/ landing renders without a login, so it unfurls when sent
+// to friends. Only offered once there is a report to share.
+const sharing = ref(false)
+async function shareAnalytics() {
+  sharing.value = true
+  try {
+    const res = await $fetch<{ url: string }>('/api/share/analytics-mint', {
+      method: 'POST',
+      body: { competition: slug.value ?? undefined, locale: locale.value },
+    })
+    if (typeof navigator !== 'undefined' && navigator.clipboard) await navigator.clipboard.writeText(res.url)
+    toast.add({ severity: 'success', summary: t('share.copied'), life: 2500 })
+  } catch {
+    toast.add({ severity: 'error', summary: t('share.failed'), life: 2500 })
+  } finally {
+    sharing.value = false
+  }
+}
 </script>
 
 <template>
@@ -16,6 +38,17 @@ const { data, isLoading, error } = useAnalytics(signedIn)
         style="color: var(--p-text-muted-color)"
       />
       <CompetitionPill />
+      <Button
+        v-if="signedIn && data?.hasData"
+        class="ms-auto"
+        size="small"
+        outlined
+        icon="pi pi-share-alt"
+        :label="t('share.shareAnalytics')"
+        :loading="sharing"
+        data-test="share-analytics"
+        @click="shareAnalytics"
+      />
     </div>
 
     <div v-if="!signedIn" class="opacity-60">{{ t('analytics.signInHint') }}</div>
