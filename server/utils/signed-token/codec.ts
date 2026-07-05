@@ -31,8 +31,15 @@ export function createSignedTokenCodec<P>(
 ): SignedTokenCodec<P> {
   const key = (secret: string): Buffer => createHmac('sha256', secret).update(domainTag).digest()
   const b64url = (buf: Buffer): string => buf.toString('base64url')
-  const signBody = (secret: string, body: string): string =>
-    b64url(createHmac('sha256', key(secret)).update(body).digest())
+  const signBody = (secret: string, body: string): string => {
+    // An empty secret is the runtimeConfig default: HMAC('') is a publicly
+    // computable constant, so every token becomes forgeable. Fail closed at the
+    // token layer - minting refuses outright; verification (below) refuses to
+    // validate. The boot guard (server/plugins/assert-secret.ts) is the primary
+    // defense; this makes a misconfiguration unforgeable rather than silent.
+    if (!secret) throw new Error('signed-token: refusing to sign with an empty secret')
+    return b64url(createHmac('sha256', key(secret)).update(body).digest())
+  }
 
   return {
     signBody,
@@ -41,6 +48,10 @@ export function createSignedTokenCodec<P>(
       return `${body}.${signBody(secret, body)}`
     },
     verify(secret, token) {
+      // Never validate under an empty secret (see signBody): a forged token
+      // would otherwise pass. verify must not throw on attacker input, so return
+      // null rather than reusing signBody's throw.
+      if (!secret) return null
       if (!token || token.length > MAX_TOKEN_LENGTH) return null
       const dot = token.indexOf('.')
       if (dot <= 0) return null

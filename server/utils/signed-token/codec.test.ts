@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { createHmac } from 'node:crypto'
 import { createSignedTokenCodec } from './codec'
 
 interface P {
@@ -56,5 +57,22 @@ describe('createSignedTokenCodec', () => {
   it('rejects non-JSON body', () => {
     const body = Buffer.from('not json{').toString('base64url')
     expect(codec.verify(SECRET, `${body}.${codec.signBody(SECRET, body)}`)).toBeNull()
+  })
+
+  it('refuses to sign with an empty secret', () => {
+    expect(() => codec.sign('', { x: 'hello', v: 1 })).toThrow()
+    expect(() => codec.signBody('', 'body')).toThrow()
+  })
+
+  it('never validates a token under an empty secret', () => {
+    // A token minted with a real secret must not verify when the secret is empty,
+    // and a token an attacker forges against HMAC('') must be rejected too.
+    const real = codec.sign(SECRET, { x: 'hello', v: 1 })
+    expect(codec.verify('', real)).toBeNull()
+    const body = Buffer.from(JSON.stringify({ x: 'hello', v: 1 })).toString('base64url')
+    const forgedMac = createHmac('sha256', createHmac('sha256', '').update('nostragoalus/test/v1').digest())
+      .update(body)
+      .digest('base64url')
+    expect(codec.verify('', `${body}.${forgedMac}`)).toBeNull()
   })
 })
