@@ -17,7 +17,9 @@ const g = computed(() => props.totals[props.matchId])
 const l = computed(() => props.leagueTotals?.[props.matchId])
 
 function fmt(v: CrowdTotal | undefined) {
-  if (!v) return '–'
+  // count <= 0 is the server's anonymity-floor sentinel (a live push below the
+  // minimum): render it as no-data, not a real "0-0" consensus.
+  if (!v || v.count <= 0) return '–'
   return `${v.home}–${v.away}${props.count ? ` (${v.count})` : ''}`
 }
 </script>
