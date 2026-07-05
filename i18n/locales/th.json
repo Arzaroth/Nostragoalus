@@ -9,6 +9,7 @@
     "showcaseEmptyOwn": "อวดความสำเร็จของคุณได้สูงสุด 3 รายการที่นี่",
     "locked": "ล็อกอยู่",
     "lockedHint": "เล่นต่อไปเพื่อปลดล็อกอันนี้",
+    "progress": "ความคืบหน้า: {current} จาก {target}",
     "viewCabinet": "ดูตู้โชว์ถ้วยรางวัล",
     "editShowcase": "แก้ไขตู้โชว์",
     "doneEditing": "เสร็จ",

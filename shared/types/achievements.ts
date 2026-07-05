@@ -43,6 +43,9 @@ export interface AchievementDto {
   tiers: AchievementTierThresholdDto[]
   // null = not yet earned (a locked slot in the cabinet).
   earned: { tier: AchievementTier | null; progress: number; unlockedAt: string } | null
+  // The user's live metric value, so the cabinet can draw a progress bar toward the
+  // next tier - on locked badges too. null for event-granted secrets (no metric).
+  current: number | null
 }
 
 export type AchievementScope = 'COMPETITION' | 'GLOBAL'

@@ -10,6 +10,7 @@ import {
 } from '#shared/types/achievements'
 import { NotFoundError, ValidationError } from '../errors'
 import { ALL_ACHIEVEMENTS } from './catalog'
+import { computeAchievementStats } from './service'
 
 // The trophies + achievements + showcase for one user in one competition. Global
 // (competition-spanning) badges are folded in. Hidden badges only ever surface
@@ -41,11 +42,18 @@ export async function getCabinet(
     )
   const earnedByKey = new Map(earnedRows.map((r) => [r.key, r]))
 
+  // Live metric values so a locked badge can still show "3 / 5 to the next tier".
+  // Derived, not persisted (evaluateAchievements only stores progress once a tier is
+  // reached), so this recompute is the read side of the same source of truth.
+  const stats = await computeAchievementStats(db, opts.competitionId)
+  const userStats = stats.get(opts.userId)
+
   const achievements = ALL_ACHIEVEMENTS.flatMap((def) => {
     const e = earnedByKey.get(def.key)
     const earned = e ? { tier: e.tier, progress: e.progress, unlockedAt: e.unlockedAt.toISOString() } : null
     if (def.hidden && !earned) return []
-    return [{ key: def.key, category: def.category, scope: def.scope, hidden: !!def.hidden, tiers: def.tiers, earned }]
+    const current = def.metric ? (userStats?.[def.metric] ?? 0) : null
+    return [{ key: def.key, category: def.category, scope: def.scope, hidden: !!def.hidden, tiers: def.tiers, earned, current }]
   })
 
   const pins = await db

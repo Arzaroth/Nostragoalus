@@ -9,6 +9,7 @@ const props = withDefaults(
     tier?: string | null
     locked?: boolean
     flag?: string | null
+    progress?: { current: number; target: number } | null
     editable?: boolean
     pinned?: boolean
     pinDisabled?: boolean
@@ -19,6 +20,7 @@ const props = withDefaults(
     tier: null,
     locked: false,
     flag: null,
+    progress: null,
     editable: false,
     pinned: false,
     pinDisabled: false,
@@ -34,6 +36,10 @@ const tip = computed(() => {
   if (!props.criteria) return props.locked ? t('achievements.lockedHint') : ''
   return props.locked ? `${t('achievements.locked')} - ${props.criteria}` : props.criteria
 })
+
+const progressPct = computed(() =>
+  props.progress ? Math.min(100, Math.round((props.progress.current / props.progress.target) * 100)) : 0,
+)
 </script>
 
 <template>
@@ -54,6 +60,19 @@ const tip = computed(() => {
 
     <span class="text-sm font-semibold leading-tight mt-1">{{ name }}</span>
     <span class="text-xs leading-snug" style="color: var(--p-text-muted-color)">{{ desc }}</span>
+
+    <div
+      v-if="progress"
+      class="mt-1.5 w-full flex flex-col items-center gap-0.5"
+      :aria-label="t('achievements.progress', { current: progress.current, target: progress.target })"
+    >
+      <div class="h-1.5 w-full rounded-full overflow-hidden" style="background: var(--p-content-border-color)">
+        <div class="h-full rounded-full transition-all" :style="`width:${progressPct}%;background:${tint}`" />
+      </div>
+      <span class="text-[10px] tabular-nums" style="color: var(--p-text-muted-color)">
+        {{ progress.current }} / {{ progress.target }}
+      </span>
+    </div>
 
     <button
       v-if="editable"

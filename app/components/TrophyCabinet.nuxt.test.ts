@@ -18,6 +18,7 @@ const CABINET: CabinetDto = {
       hidden: false,
       tiers: [{ tier: 'BRONZE', threshold: 1 }],
       earned: { tier: 'BRONZE', progress: 1, unlockedAt: '2026-06-12T00:00:00.000Z' },
+      current: 1,
     },
     {
       key: 'sharpshooter',
@@ -26,6 +27,7 @@ const CABINET: CabinetDto = {
       hidden: false,
       tiers: [{ tier: 'BRONZE', threshold: 5 }],
       earned: null,
+      current: 2,
     },
   ],
   showcase: [{ slot: 0, achievementKey: 'first-blood' }],
@@ -64,6 +66,8 @@ describe('TrophyCabinet', () => {
     expect(wrapper.text()).toContain('First Blood')
     // Locked badges are rendered greyed.
     expect(wrapper.html()).toContain('opacity-40')
+    // A locked badge with partial progress draws its "current / target" bar.
+    expect(wrapper.text()).toContain('2 / 5')
     // The owner gets the showcase-edit control.
     expect(wrapper.text()).toContain('Edit showcase')
   })

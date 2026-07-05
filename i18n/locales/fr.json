@@ -9,6 +9,7 @@
     "showcaseEmptyOwn": "Mettez en avant jusqu'à 3 de vos succès ici.",
     "locked": "Verrouillé",
     "lockedHint": "Continuez à jouer pour débloquer celui-ci.",
+    "progress": "Progression : {current} sur {target}",
     "viewCabinet": "Voir la vitrine à trophées",
     "editShowcase": "Modifier la vitrine",
     "doneEditing": "Terminé",

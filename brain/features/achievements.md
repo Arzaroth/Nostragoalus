@@ -121,6 +121,12 @@ so the unlock is not dangled as a to-do list.
   achievements with earned/locked status, showcase, isOwner). It mirrors the profile
   privacy gate (private profiles 404 unless owner/admin/league mate). A hidden badge
   surfaces only once earned, so a locked secret is never revealed.
+- Each metric badge in the DTO also carries a live `current` value (the read side of
+  `computeAchievementStats`, recomputed on cabinet read - not persisted, since
+  `evaluateAchievements` only stores `progress` once a tier is reached). It powers the
+  `CabinetTile` progress bar toward the next tier, drawn on locked badges too. Hidden
+  badges are dropped before the DTO, so their `current` never leaks; event-granted
+  secrets have no metric, so `current` is null.
 - Write: `PUT /api/showcase` -> `setShowcase` replaces the owner's showcase with an
   ordered set of pins (max `SHOWCASE_SLOT_COUNT` = 3, no duplicates, achievements
   only, each one earned). Trophies cannot be pinned.

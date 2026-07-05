@@ -41,6 +41,16 @@ interface Display {
   tier: string | null
   locked: boolean
   flag: string | null
+  progress: { current: number; target: number } | null
+}
+
+// Progress toward the next unmet tier. null once the top tier is reached (a full
+// badge needs no bar) or for badges with no metric (trophies, event secrets).
+function badgeProgress(a: AchievementDto): { current: number; target: number } | null {
+  if (a.current == null) return null
+  const next = a.tiers.find((t) => a.current! < t.threshold)
+  if (!next) return null
+  return { current: a.current, target: next.threshold }
 }
 
 function trophyDisplay(tr: TrophyDto): Display {
@@ -57,6 +67,7 @@ function trophyDisplay(tr: TrophyDto): Display {
     tier: null,
     locked: false,
     flag: isTeam ? flagUrl(tr.teamCode) : null,
+    progress: null,
   }
 }
 
@@ -73,6 +84,7 @@ function badgeDisplay(a: AchievementDto): Display {
     tier: tier ? t(`achievements.tier.${tier}`) : null,
     locked: !a.earned,
     flag: null,
+    progress: badgeProgress(a),
   }
 }
 

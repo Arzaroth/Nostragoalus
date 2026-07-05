@@ -9,6 +9,7 @@
     "showcaseEmptyOwn": "Show off up to 3 of your achievements here.",
     "locked": "Locked",
     "lockedHint": "Keep playing to unlock this one.",
+    "progress": "Progress: {current} of {target}",
     "viewCabinet": "View trophy cabinet",
     "editShowcase": "Edit showcase",
     "doneEditing": "Done",
