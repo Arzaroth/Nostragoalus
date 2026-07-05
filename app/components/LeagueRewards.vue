@@ -11,11 +11,17 @@ const criterionName = useCriterionName()
 // plus a "+N others" tail when several hold it - Team Specialist can have many.
 // A holder the viewer isn't allowed to see (private / admin-hidden) comes back with
 // an empty name; show a neutral placeholder rather than a blank.
-function holderLine(winners: { displayName: string }[]): string {
+function holderLine(winners: { displayName: string }[], collapse: boolean): string {
   if (winners.length === 0) return ''
-  const first = winners[0].displayName || t('reward.hiddenLeader')
+  const shown = winners.map((w) => w.displayName).filter((n) => n !== '')
+  // Team Specialist can have many holders, so lead with the top (first visible)
+  // holder + a "+N others" tail. The other criteria have at most a small tie-shared
+  // set, so list every visible name (more informative). Placeholder only when every
+  // holder is hidden.
+  if (!collapse) return shown.length > 0 ? shown.join(', ') : t('reward.hiddenLeader')
+  const lead = shown[0] ?? t('reward.hiddenLeader')
   const others = winners.length - 1
-  return others > 0 ? t('reward.leaderPlusOthers', { name: first, count: others }) : first
+  return others > 0 ? t('reward.leaderPlusOthers', { name: lead, count: others }) : lead
 }
 
 // The prizes actually configured (members see these); the owner edits all five.
@@ -130,7 +136,7 @@ async function submit() {
           <div class="text-xs mt-0.5" style="color: var(--p-text-muted-color)">
             <template v-if="s.disabled">{{ t('reward.teamSpecialistDisabled') }}</template>
             <template v-else-if="s.winners.length > 0">
-              {{ t('reward.currentLeader') }}: {{ holderLine(s.winners) }}
+              {{ t('reward.currentLeader') }}: {{ holderLine(s.winners, s.type === 'TEAM_SPECIALIST') }}
               <span v-if="s.youHold" class="font-semibold" style="color: var(--p-primary-color)"> - {{ t('reward.you') }}</span>
             </template>
             <template v-else>{{ t('reward.noLeader') }}</template>
