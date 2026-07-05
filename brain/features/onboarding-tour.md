@@ -59,9 +59,11 @@ Same one-time-flag pattern as the league prompt (see [leagues.md](leagues.md)):
   the service.
 - Writer `dismissOnboardingTour`
   ([`server/utils/onboarding/service.ts`](../../server/utils/onboarding/service.ts)),
-  idempotent via an `is null` guard, behind the thin route
+  behind the thin route
   [`server/api/me/onboarding-tour.post.ts`](../../server/api/me/onboarding-tour.post.ts).
-  Both exits (finish, skip) stamp it.
+  Both exits (finish, skip) stamp it. It delegates to the shared
+  `stampUserFlagOnce` ([`server/utils/user-flags/service.ts`](../../server/utils/user-flags/service.ts)),
+  idempotent via an `is null` guard, shared with the leagues one-time prompt.
 - **Auto-start** fires once per session as the in-session hand-off from the
   league prompt: the tour flag is unset AND `markLeaguePromptResolved()` (a module
   signal on `useOnboardingTour`) has fired this session. The league dialog calls
