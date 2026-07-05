@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.20.0] - 2026-07-05
+
 ### chelpu'
 - **chu'wI'pu'vaD lI'wI' leng**: HaSta wewHa'moHbogh leng, wa'logh wa' Doch 'angbogh - qIptaHghach choH, meq qav, charghwI' QIn'a' je yIwIv, patlh toS, ram QInmey Hev, ghomlIj yaj je. account chu'vaD wa'DIch taghqa' ("ghom yImuvmeH" tlhob tlhomDaq), account tetlhvo' latlh poHmey chISqa'laH.
 
