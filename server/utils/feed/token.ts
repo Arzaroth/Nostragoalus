@@ -20,7 +20,10 @@ export interface FeedTokenPayload {
   l: FeedLocale
   // the user's feed-token version at mint time; the .ics route rejects the token
   // when it no longer matches user.feedTokenVersion, giving per-user revocation.
-  fv: number
+  // Optional for back-compat: tokens minted before feed-token versioning carry no
+  // `fv`; the .ics route treats an absent `fv` as version 0 (the default), so
+  // already-subscribed calendar links keep working until the user regenerates.
+  fv?: number
   // payload version, so the format can evolve without honouring stale tokens
   v: 1
 }
@@ -32,9 +35,7 @@ function isValidPayload(value: unknown): value is FeedTokenPayload {
     p.v === 1 &&
     typeof p.u === 'string' &&
     p.u.length > 0 &&
-    typeof p.fv === 'number' &&
-    Number.isInteger(p.fv) &&
-    p.fv >= 0 &&
+    (p.fv === undefined || (typeof p.fv === 'number' && Number.isInteger(p.fv) && p.fv >= 0)) &&
     typeof p.l === 'string' &&
     (FEED_LOCALES as readonly string[]).includes(p.l)
   )

@@ -5,10 +5,14 @@ import { account, twoFactor, user } from '../../../db/schema'
 import { requireUser } from '../../utils/auth-guards'
 import { consumeTotpCode } from '../../utils/auth/totp-consume'
 import { issueReauth } from '../../utils/auth/reauth'
+import { assertSameOrigin } from '../../utils/csrf'
 
 // Sudo mode: confirm the password (and a TOTP code when 2FA is on) and issue a
 // short-lived re-auth cookie required by sensitive actions (passkey registration).
 export default defineEventHandler(async (event) => {
+  // Same-origin CSRF guard for this cookie-session mutation (it sets the sudo
+  // cookie), matching the guard defineValidatedHandler applies elsewhere.
+  assertSameOrigin(event)
   const sessionUser = await requireUser(event)
   const body = await readBody(event).catch(() => ({}))
 

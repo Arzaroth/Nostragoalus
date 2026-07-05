@@ -4,9 +4,13 @@ import { db } from '../../../db'
 import { twoFactor } from '../../../db/schema'
 import { requireUser } from '../../utils/auth-guards'
 import { consumeTotpCode } from '../../utils/auth/totp-consume'
+import { assertSameOrigin } from '../../utils/csrf'
 
 // Confirms the caller's current TOTP code (used as a guard before disabling 2FA).
 export default defineEventHandler(async (event) => {
+  // Same-origin CSRF guard for this cookie-session mutation, matching the guard
+  // defineValidatedHandler applies to every other mutating route.
+  assertSameOrigin(event)
   const user = await requireUser(event)
   const body = await readBody(event).catch(() => ({}))
   const code = String(body?.code ?? '')
