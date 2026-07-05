@@ -57,7 +57,7 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ body, user,
   // Fire-and-forget fan-out + notify so a delivery hiccup can't fail the post. The
   // conversation threadId is the frame's routing key; the message carries the rest.
   void Promise.resolve(publishDmMessage([user.id, row.otherId], threadId, message))
-  void notifyDm(db, { threadId, messageId: row.id, senderId: user.id, recipientId: row.otherId }).catch(() => {})
+  void notifyDm(db, { threadId, senderId: user.id, recipientId: row.otherId }).catch(() => {})
   return { message }
 })
 

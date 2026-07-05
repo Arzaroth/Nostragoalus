@@ -51,6 +51,31 @@ describe('createNotification', () => {
     await client.close()
   })
 
+  it('refresh: a dedupeKey collision resurfaces the row (unread + new data) instead of a no-op', async () => {
+    const { db, client, userId } = await setup()
+    const key = 'dm-thread:t1'
+    const first = await createNotification(db, {
+      userId,
+      data: { type: 'DM_MESSAGE', threadId: 't1', senderId: 's1', senderName: 'Alice' },
+      dedupeKey: key,
+      refresh: true,
+    })
+    await markRead(db, userId, [first!.id])
+    const again = await createNotification(db, {
+      userId,
+      data: { type: 'DM_MESSAGE', threadId: 't1', senderId: 's1', senderName: 'Alice (2)' },
+      dedupeKey: key,
+      refresh: true,
+    })
+    expect(again).not.toBeNull()
+    expect(again?.id).toBe(first?.id)
+    expect(again?.read).toBe(false)
+    expect((again?.data as { senderName: string }).senderName).toBe('Alice (2)')
+    const list = await listNotifications(db, userId)
+    expect(list).toHaveLength(1)
+    await client.close()
+  })
+
   it('allows multiple rows when no dedupeKey is given', async () => {
     const { db, client, userId } = await setup()
     await createNotification(db, { userId, data: leagueJoin() })

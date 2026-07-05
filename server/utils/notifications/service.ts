@@ -41,24 +41,34 @@ function toDTO(row: NotificationRow): NotificationDTO {
 // insert is a no-op and returns null (nothing new, nothing to push). Pass
 // `collector` when creating inside a transaction: the push is deferred into it
 // instead of fired now, so it only reaches sockets if the caller commits.
+//
+// `refresh` flips a dedupeKey collision from no-op to resurface: the existing row
+// is bumped to now (newest-first) with the new data and marked unread again, so a
+// grouping key (e.g. one row per DM thread) collapses a burst of events into a
+// single, freshly-unread bell entry instead of one row per event.
 export async function createNotification(
   db: AppDatabase,
-  input: { userId: string; data: NotificationData; dedupeKey?: string },
+  input: { userId: string; data: NotificationData; dedupeKey?: string; refresh?: boolean },
   collector?: PendingNotification[],
 ): Promise<NotificationDTO | null> {
-  const inserted = await db
-    .insert(userNotification)
-    .values({
-      userId: input.userId,
-      type: input.data.type,
-      data: input.data,
-      dedupeKey: input.dedupeKey ?? null,
-    })
-    .onConflictDoNothing({
-      target: [userNotification.userId, userNotification.dedupeKey],
-      where: sql`${userNotification.dedupeKey} is not null`,
-    })
-    .returning()
+  const base = db.insert(userNotification).values({
+    userId: input.userId,
+    type: input.data.type,
+    data: input.data,
+    dedupeKey: input.dedupeKey ?? null,
+  })
+  const q =
+    input.refresh && input.dedupeKey
+      ? base.onConflictDoUpdate({
+          target: [userNotification.userId, userNotification.dedupeKey],
+          targetWhere: sql`${userNotification.dedupeKey} is not null`,
+          set: { data: input.data, readAt: null, createdAt: new Date() },
+        })
+      : base.onConflictDoNothing({
+          target: [userNotification.userId, userNotification.dedupeKey],
+          where: sql`${userNotification.dedupeKey} is not null`,
+        })
+  const inserted = await q.returning()
   const row = inserted[0] as NotificationRow | undefined
   if (!row) return null
   const dto = toDTO(row)
