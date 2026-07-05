@@ -4,7 +4,57 @@ import { dmPath } from '#shared/types/dm'
 
 const { t, locale } = useI18n()
 const router = useRouter()
-const { notifications, unreadCount, isLoading, markRead, markAllRead, dismiss, deleteAll } = useNotifications()
+const { notifications, unreadCount, isLoading, markRead, markAllRead, dismiss, dismissMany, deleteAll } =
+  useNotifications()
+const dmDock = useDmDockOpen()
+
+// The bell collapses all DM rows (already one per thread server-side) into one
+// entry, so a busy inbox is a single line. `single` renders a plain notification;
+// `dmGroup` renders that collapsed entry and, on click, opens the one thread it
+// covers or the DM inbox when it spans several.
+type DmData = Extract<NotificationDTO['data'], { type: 'DM_MESSAGE' }>
+type DisplayItem =
+  | { kind: 'single'; n: NotificationDTO }
+  | {
+      kind: 'dmGroup'
+      ids: string[]
+      threads: string[]
+      senderName: string
+      unread: boolean
+      createdAt: string
+    }
+
+const displayItems = computed<DisplayItem[]>(() => {
+  const list = notifications.value
+  const dms = list.filter((n) => n.data.type === 'DM_MESSAGE')
+  // 0 or 1 DM row: no collapsing needed - a lone DM renders as a normal entry.
+  if (dms.length <= 1) return list.map((n) => ({ kind: 'single', n }) as DisplayItem)
+  const threads = [...new Set(dms.map((n) => (n.data as DmData).threadId))]
+  const newest = dms[0]! // list is newest-first, so the first DM is the freshest
+  const group: DisplayItem = {
+    kind: 'dmGroup',
+    ids: dms.map((n) => n.id),
+    threads,
+    senderName: (newest.data as DmData).senderName,
+    unread: dms.some((n) => !n.read),
+    createdAt: newest.createdAt,
+  }
+  // Rebuild the list in place, dropping the group in at the newest DM's slot so the
+  // overall newest-first order is kept.
+  const items: DisplayItem[] = []
+  let placed = false
+  for (const n of list) {
+    if (n.data.type === 'DM_MESSAGE') {
+      if (!placed) {
+        items.push(group)
+        placed = true
+      }
+      continue
+    }
+    items.push({ kind: 'single', n })
+  }
+  return items
+})
 
 const panel = ref()
 const { onShow, onHide } = useHideOnScroll(panel)
@@ -120,10 +170,35 @@ function timeAgo(iso: string): string {
   return rtf.format(-Math.round(hr / 24), 'day')
 }
 
+// Open a DM in place via the dock store rather than router.push(dmPath): the dock
+// is already mounted, so navigating to /?dm=... would only change the query and
+// leave the user on the current page without opening the thread.
+function openDm(threadId: string | null) {
+  if (threadId) dmDock.requestThread(threadId)
+  else dmDock.requestInbox()
+}
+
 async function onItem(n: NotificationDTO) {
   if (!n.read) markRead.mutate([n.id])
   panel.value?.hide?.()
+  if (n.data.type === 'DM_MESSAGE') {
+    openDm(n.data.threadId)
+    return
+  }
   await router.push(linkFor(n))
+}
+
+function dmGroupText(g: Extract<DisplayItem, { kind: 'dmGroup' }>): string {
+  return g.threads.length === 1
+    ? t('notifications.item.dm', { name: g.senderName })
+    : t('notifications.item.dmGroup', { count: g.threads.length })
+}
+
+function onDmGroup(g: Extract<DisplayItem, { kind: 'dmGroup' }>) {
+  markRead.mutate(g.ids)
+  panel.value?.hide?.()
+  // One conversation -> open it; several -> the inbox so the user picks.
+  openDm(g.threads.length === 1 ? g.threads[0]! : null)
 }
 </script>
 
@@ -175,33 +250,62 @@ async function onItem(n: NotificationDTO) {
           >
             {{ t('notifications.empty') }}
           </div>
-          <div
-            v-for="n in notifications"
-            :key="n.id"
-            class="relative flex items-stretch border-b last:border-b-0 hover:bg-black/5 dark:hover:bg-white/10 transition"
-            style="border-color: var(--p-content-border-color)"
-            :style="n.read ? '' : 'background: color-mix(in srgb, var(--p-primary-color) 7%, transparent)'"
-          >
-            <button
-              type="button"
-              class="flex-1 min-w-0 text-start px-3 py-2.5 pe-8 flex items-start gap-2.5"
-              @click="onItem(n)"
+          <template v-for="item in displayItems">
+            <div
+              v-if="item.kind === 'dmGroup'"
+              :key="'dm-group'"
+              class="relative flex items-stretch border-b last:border-b-0 hover:bg-black/5 dark:hover:bg-white/10 transition"
+              style="border-color: var(--p-content-border-color)"
+              :style="item.unread ? 'background: color-mix(in srgb, var(--p-primary-color) 7%, transparent)' : ''"
             >
-              <i :class="ICONS[n.type]" class="mt-0.5" :style="n.read ? '' : 'color: var(--p-primary-color)'" />
-              <span class="min-w-0 flex-1">
-                <span class="block text-sm leading-snug">{{ itemText(n) }}</span>
-                <span class="block text-xs mt-0.5" style="color: var(--p-text-muted-color)">{{ timeAgo(n.createdAt) }}</span>
-              </span>
-            </button>
-            <button
-              type="button"
-              class="absolute top-1.5 end-1.5 w-6 h-6 flex items-center justify-center rounded-full opacity-60 hover:opacity-100 hover:bg-black/10 dark:hover:bg-white/15 transition"
-              :aria-label="t('notifications.dismiss')"
-              @click="dismiss.mutate(n.id)"
+              <button
+                type="button"
+                class="flex-1 min-w-0 text-start px-3 py-2.5 pe-8 flex items-start gap-2.5"
+                @click="onDmGroup(item)"
+              >
+                <i class="pi pi-envelope mt-0.5" :style="item.unread ? 'color: var(--p-primary-color)' : ''" />
+                <span class="min-w-0 flex-1">
+                  <span class="block text-sm leading-snug">{{ dmGroupText(item) }}</span>
+                  <span class="block text-xs mt-0.5" style="color: var(--p-text-muted-color)">{{ timeAgo(item.createdAt) }}</span>
+                </span>
+              </button>
+              <button
+                type="button"
+                class="absolute top-1.5 end-1.5 w-6 h-6 flex items-center justify-center rounded-full opacity-60 hover:opacity-100 hover:bg-black/10 dark:hover:bg-white/15 transition"
+                :aria-label="t('notifications.dismiss')"
+                @click="dismissMany.mutate(item.ids)"
+              >
+                <i class="pi pi-times text-xs" />
+              </button>
+            </div>
+            <div
+              v-else
+              :key="item.n.id"
+              class="relative flex items-stretch border-b last:border-b-0 hover:bg-black/5 dark:hover:bg-white/10 transition"
+              style="border-color: var(--p-content-border-color)"
+              :style="item.n.read ? '' : 'background: color-mix(in srgb, var(--p-primary-color) 7%, transparent)'"
             >
-              <i class="pi pi-times text-xs" />
-            </button>
-          </div>
+              <button
+                type="button"
+                class="flex-1 min-w-0 text-start px-3 py-2.5 pe-8 flex items-start gap-2.5"
+                @click="onItem(item.n)"
+              >
+                <i :class="ICONS[item.n.type]" class="mt-0.5" :style="item.n.read ? '' : 'color: var(--p-primary-color)'" />
+                <span class="min-w-0 flex-1">
+                  <span class="block text-sm leading-snug">{{ itemText(item.n) }}</span>
+                  <span class="block text-xs mt-0.5" style="color: var(--p-text-muted-color)">{{ timeAgo(item.n.createdAt) }}</span>
+                </span>
+              </button>
+              <button
+                type="button"
+                class="absolute top-1.5 end-1.5 w-6 h-6 flex items-center justify-center rounded-full opacity-60 hover:opacity-100 hover:bg-black/10 dark:hover:bg-white/15 transition"
+                :aria-label="t('notifications.dismiss')"
+                @click="dismiss.mutate(item.n.id)"
+              >
+                <i class="pi pi-times text-xs" />
+              </button>
+            </div>
+          </template>
         </div>
       </div>
     </Popover>

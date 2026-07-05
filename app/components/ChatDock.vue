@@ -242,15 +242,33 @@ function dmInitial(name: string): string {
   return (name.trim()[0] ?? '?').toUpperCase()
 }
 
-// A DM deep link (bell/push): /?dm=<threadId> opens the dock straight to Direct
-// mode on that conversation. (route is already declared above.)
-onMounted(() => {
-  const wanted = route.query.dm
-  if (typeof wanted === 'string' && wanted && signedIn.value) {
-    collapsed.value = false
-    switchMode('direct')
-    void openDmThread(wanted)
-  }
+// A DM deep link (push, or a fresh load): /?dm=<threadId> opens the dock straight
+// to Direct mode on that conversation. A watch (not onMounted) so a push click
+// while the app is already open - which only changes the query, not the route -
+// still opens the thread. (route is already declared above.)
+watch(
+  () => route.query.dm,
+  (wanted) => {
+    if (typeof wanted === 'string' && wanted && signedIn.value) {
+      collapsed.value = false
+      switchMode('direct')
+      void openDmThread(wanted)
+    }
+  },
+  { immediate: true },
+)
+
+// The DM bell entry (in-app) asks the dock to open Direct mode in place: a
+// specific thread, or the inbox when a grouped notification spans several. No
+// navigation, so it opens even though the dock is already mounted.
+const dmDock = useDmDockOpen()
+watch(dmDock.requestOpen, () => {
+  const want = dmDock.take()
+  if (!want || !signedIn.value) return
+  collapsed.value = false
+  switchMode('direct')
+  if (want.threadId) void openDmThread(want.threadId)
+  else dmBackToInbox()
 })
 
 // A "Message" button elsewhere (a profile page) asks the dock to open a DM with a

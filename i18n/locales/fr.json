@@ -1455,6 +1455,7 @@
       "bestScorerWon": "Votre pari Soulier d'or {player} a fini meilleur buteur ! +{points} pts",
       "bestScorerLost": "Votre pari Soulier d'or {player} n'a pas fini meilleur buteur.",
       "dm": "{name} vous a envoyé un message.",
+      "dmGroup": "{count} personnes vous ont envoyé des messages.",
       "mention": "{name} vous a mentionné dans {league}.",
       "mentionMatch": "{name} vous a mentionné dans {home} v {away}.",
       "trophyAwarded": "Vous avez remporté le trophée {trophy} dans {competition} !",

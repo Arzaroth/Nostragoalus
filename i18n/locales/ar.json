@@ -1654,6 +1654,7 @@
       "bestScorerWon": "أنهى اختيارك للحذاء الذهبي {player} كأفضل هدّاف! +{points} نقطة",
       "bestScorerLost": "لم يُنهِ اختيارك للحذاء الذهبي {player} كأفضل هدّاف.",
       "dm": "أرسل إليك {name} رسالة.",
+      "dmGroup": "أرسل إليك {count} أشخاص رسائل.",
       "mention": "أشار إليك {name} في {league}.",
       "mentionMatch": "أشار إليك {name} في {home} ضد {away}.",
       "trophyAwarded": "فزت بكأس {trophy} في {competition}!",

@@ -111,6 +111,35 @@ describe('useNotifications', () => {
     expect(api.unreadCount.value).toBe(2)
   })
 
+  it('resurfaces a same-id frame: moves it to the top and re-counts it unread if it was read', async () => {
+    feed = {
+      notifications: [
+        { ...n1, id: 'g1', read: true },
+        { ...n1, id: 'other', read: false },
+      ],
+      unreadCount: 1,
+    }
+    const { api } = await setup()
+    await vi.waitFor(() => expect(api.notifications.value).toHaveLength(2))
+    const socket = await socketOpts()
+    // Same id as the read row, arriving fresh (unread) - a grouped thread bumped.
+    socket.onMessage({ type: 'notification:new', notification: { ...n1, id: 'g1', read: false, createdAt: '2026-06-16T00:00:00.000Z' } })
+    await vi.waitFor(() => {
+      expect(api.notifications.value[0]?.id).toBe('g1')
+      expect(api.unreadCount.value).toBe(2)
+    })
+    expect(api.notifications.value).toHaveLength(2)
+  })
+
+  it('dismissMany posts all the ids at once', async () => {
+    const { api } = await setup()
+    await api.dismissMany.mutateAsync(['a', 'b', 'c'])
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/notifications/delete',
+      expect.objectContaining({ method: 'POST', body: { ids: ['a', 'b', 'c'] } }),
+    )
+  })
+
   it('markRead posts the ids', async () => {
     const { api } = await setup()
     await vi.waitFor(() => expect(api.notifications.value).toHaveLength(1))

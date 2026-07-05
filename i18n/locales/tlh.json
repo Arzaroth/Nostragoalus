@@ -1455,6 +1455,7 @@
       "bestScorerWon": "Qappu' DujwI'lI' {player}! +{points}",
       "bestScorerLost": "Qapbe' DujwI'lI' {player}.",
       "dm": "SoHvaD QIn ngeH {name}.",
+      "dmGroup": "SoHvaD QInmey ngeH {count} nuv.",
       "mention": "{league}Daq {name} pong.",
       "mentionMatch": "{home}-{away}Daq {name} pong.",
       "trophyAwarded": "{competition}Daq {trophy} Qapla' DaSuq!",

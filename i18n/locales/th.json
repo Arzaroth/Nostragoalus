@@ -1455,6 +1455,7 @@
       "bestScorerWon": "{player} ที่คุณเลือกเป็นดาวซัลโวสูงสุด! +{points} แต้ม",
       "bestScorerLost": "{player} ที่คุณเลือกไม่ได้เป็นดาวซัลโวสูงสุด",
       "dm": "{name} ส่งข้อความถึงคุณ",
+      "dmGroup": "มี {count} คนส่งข้อความถึงคุณ",
       "mention": "{name} กล่าวถึงคุณใน {league}",
       "mentionMatch": "{name} กล่าวถึงคุณใน {home} v {away}",
       "trophyAwarded": "คุณคว้าถ้วย {trophy} ใน {competition}!",
