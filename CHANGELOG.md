@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.19.0] - 2026-07-05
+
 ### Added
 - **Build your own prize list**: league owners and moderators can now attach a prize to any of eleven criteria (the original five plus Wooden Spoon, Final Sage, Group Oracle, Knockout Oracle, Sharpshooter and Goal-Difference Guru) and add or remove prizes freely, one per criterion. Each prize still shows its live leader and full ranking.
 - **A description for every league**: owners and moderators can write an "About this league" blurb - intro, rules, whatever - in Markdown, with headings, lists, links and uploaded images. Everyone who can see the league sees it.
