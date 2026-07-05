@@ -159,6 +159,11 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   tiebreakers (head-to-head first for WC2026 / Euro2024, goal difference first for WC2022)
 - **Player stats** tab on the matches view, beside Fixtures and Standings: side-by-side top
   scorers and top assists for the competition, with team flags
+- **Personal analytics**: a per-competition bias report on your own picks - how they landed
+  (exact / goal-difference / outcome / miss), whether you over- or under-predict goals, your
+  home-win and draw lean, the teams you over- and under-rate, accuracy round by round, and your
+  best call and biggest miss. Reachable from the nav once signed in and, unlike Tournament Wrapped,
+  it works mid-tournament
 - Auth: identifier-first login with **SSO domain capture** - runtime-configurable OIDC / SAML /
   Google providers (several domains each, display names, envelope-encrypted secrets, in-place
   editing, SP metadata for IdP setup; an internal or private-network IdP needs its origin in
