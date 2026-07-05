@@ -45,6 +45,8 @@ describe('getCabinet', () => {
     // event-granted secret has no metric, so current is null.
     expect(ach.get('sharpshooter')?.current).toBe(0)
     expect(ach.get(PONY_ACHIEVEMENT_KEY)?.current).toBeNull()
+    // SHAME badges carry no progress bar (no chasing a cold streak).
+    expect(ach.get('cold-streak')?.current).toBeNull()
 
     expect(cab.showcase).toEqual([{ slot: 0, achievementKey: 'first-blood' }])
   })

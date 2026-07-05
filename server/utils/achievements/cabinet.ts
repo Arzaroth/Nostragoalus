@@ -52,7 +52,9 @@ export async function getCabinet(
     const e = earnedByKey.get(def.key)
     const earned = e ? { tier: e.tier, progress: e.progress, unlockedAt: e.unlockedAt.toISOString() } : null
     if (def.hidden && !earned) return []
-    const current = def.metric ? (userStats?.[def.metric] ?? 0) : null
+    // No progress bar on SHAME badges: you don't "chase" a bad badge, and a bar
+    // would telegraph its threshold (how close you are to a cold streak).
+    const current = def.metric && def.category !== 'SHAME' ? (userStats?.[def.metric] ?? 0) : null
     return [{ key: def.key, category: def.category, scope: def.scope, hidden: !!def.hidden, tiers: def.tiers, earned, current }]
   })
 

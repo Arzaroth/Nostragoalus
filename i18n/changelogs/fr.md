@@ -5,6 +5,12 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Ajouté
+
+- Barres de progression de la vitrine des trophées : chaque badge que vous n'avez pas encore porté au maximum indique désormais votre distance jusqu'au palier suivant - « 3 / 5 » vers l'échelon suivant, affiché aussi sur les badges verrouillés, pour voir ce que vous visez et pas seulement ce que vous détenez déjà.
+- Carte de profil partageable : un bouton Partager sur votre propre profil génère un lien vers une carte détaillée de votre classement (rang, points, scores exacts, butin de trophées et de badges) qui s'ouvre sans connexion, avec un aperçu quand vous l'envoyez à des amis. Fonctionne en cours de tournoi, pas seulement à la fin.
+- Analyses personnelles partageables : un bouton Partager sur votre page d'analyses génère le même type de lien vers une carte de vos biais de pronostic (précision, taux d'exacts, biais de buts, biais domicile), consultable sans connexion.
+
 ## [2.25.1] - 2026-07-05
 
 ### Modifié

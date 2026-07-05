@@ -43,6 +43,11 @@ describe('user-competition card token', () => {
     expect(codec.verify(SECRET, forge(JSON.stringify({ v: 1, u: 'u', c: 'c', l: 'xx' })))).toBeNull()
     expect(codec.verify(SECRET, forge(JSON.stringify({ v: 2, u: 'u', c: 'c', l: 'en' })))).toBeNull()
     expect(codec.verify(SECRET, forge(JSON.stringify({ v: 1, u: 'u', c: 'c', l: 'en', x: 'soon' })))).toBeNull()
+    // Non-string subject/competition/locale, and a finite-typed but non-finite x.
+    expect(codec.verify(SECRET, forge(JSON.stringify({ v: 1, u: 123, c: 'c', l: 'en' })))).toBeNull()
+    expect(codec.verify(SECRET, forge(JSON.stringify({ v: 1, u: 'u', c: 456, l: 'en' })))).toBeNull()
+    expect(codec.verify(SECRET, forge(JSON.stringify({ v: 1, u: 'u', c: 'c', l: 5 })))).toBeNull()
+    expect(codec.verify(SECRET, forge('{"v":1,"u":"u","c":"c","l":"en","x":null}'))).toBeNull()
     expect(codec.verify(SECRET, forge('nope'))).toBeNull()
     for (const raw of ['123', 'null', '"str"']) expect(codec.verify(SECRET, forge(raw))).toBeNull()
   })

@@ -37,7 +37,9 @@ export async function getProfileCard(
     limit: 100_000,
     alwaysIncludeUserId: opts.userId,
   })
-  const row = board.find((r) => r.userId === opts.userId)
+  // alwaysIncludeUserId forces this user onto the board, and an unknown user
+  // already threw above, so the row is guaranteed present.
+  const row = board.find((r) => r.userId === opts.userId)!
 
   const [{ n: trophies }] = await db
     .select({ n: sql<number>`count(*)`.mapWith(Number) })
@@ -56,10 +58,10 @@ export async function getProfileCard(
   return {
     displayName: profile.name,
     competitionName: competition.name,
-    rank: row?.rank ?? null,
+    rank: row.rank,
     players: board.length,
-    totalPoints: row?.totalPoints ?? 0,
-    exact: row?.exactCount ?? 0,
+    totalPoints: row.totalPoints,
+    exact: row.exactCount,
     trophies,
     badges,
   }

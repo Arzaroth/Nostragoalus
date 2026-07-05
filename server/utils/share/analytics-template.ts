@@ -31,10 +31,12 @@ function stat(big: string, label: string): VNode {
 }
 
 // A signed number reads as a lean/bias ("+0.4", "-12"); a plain magnitude would
-// hide the direction the whole card is about.
+// hide the direction the whole card is about. A value that rounds to zero
+// collapses to unsigned "0" - never a stray "-0"/"-0.0".
 function signed(n: number, digits = 0): string {
-  const v = n.toFixed(digits)
-  return n > 0 ? `+${v}` : v
+  const r = Number(n.toFixed(digits))
+  const v = (r === 0 ? 0 : r).toFixed(digits)
+  return r > 0 ? `+${v}` : v
 }
 
 export interface AnalyticsCardContext {
