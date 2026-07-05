@@ -15,13 +15,16 @@ One table, `user_notification`:
 - `dedupeKey` - nullable, with a per-user partial unique index. Scheduled and
   finalize triggers pass a stable key so re-runs stay idempotent;
   `createNotification` does `onConflictDoNothing` on `(userId, dedupeKey)` when
-  the key is not null.
+  the key is not null. Passing `refresh: true` flips the collision from no-op to
+  resurface (`onConflictDoUpdate`): the existing row is bumped to now and marked
+  unread with the new data, so a grouping key collapses a burst into one
+  freshly-unread entry (used by `DM_MESSAGE`, one row per thread).
 
-The ten `notification_type` values:
+The eleven `notification_type` values:
 
 `LEAGUE_JOIN`, `LEAGUE_ROLE`, `LEAGUE_REMOVED`, `PICK_REMINDER`, `MATCH_RESULT`,
 `CHAMPION_RESULT`, `BEST_SCORER_RESULT`, `TROPHY_AWARDED`,
-`ACHIEVEMENT_UNLOCKED`, `CHAT_MENTION`.
+`ACHIEVEMENT_UNLOCKED`, `CHAT_MENTION`, `DM_MESSAGE`.
 
 (The transient push-only `MATCH_LIVE` and `GOAL` kinds are NOT in this enum or
 the bell - see [web push](web-push.md).)
@@ -78,6 +81,15 @@ directly). Strings are i18n'd in all five locales.
   carries room context only (sender name + league/match), never message text (the
   chat is E2EE). Dedupe `mention:{messageId}:{userId}`. Marking the room read
   clears these rows (see chat's cross-league inbox).
+- `DM_MESSAGE` - a new [direct message](dms.md), fired from the DM post path
+  (`notifyDm`). Data carries thread + sender name only (E2EE, no preview). Dedupe
+  is per-thread `dm-thread:{threadId}` with `refresh: true`, so a whole
+  conversation is one bell row that resurfaces unread on each message, never one
+  row per message. The bell then collapses *all* `DM_MESSAGE` rows into a single
+  grouped entry; clicking it opens the one thread it covers, or the DM inbox when
+  it spans several - via the `useDmDockOpen` store (opens the already-mounted dock
+  in place), not a route, so it never lands on the home page. Web push still deep-
+  links via `dmPath` (`/?dm=<threadId>`) for a fresh app open.
 
 ## Retention
 

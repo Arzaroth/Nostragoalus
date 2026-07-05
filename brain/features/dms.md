@@ -108,6 +108,14 @@ body) and deep-links via `dmPath` (`/?dm=<threadId>`). The `dm` push category
 column; `content.ts` renders the copy and tags it `dm:<threadId>` so repeat DMs
 from the same thread collapse.
 
+The bell entry groups too, at two levels: the notification row is keyed per thread
+(`dedupeKey: dm-thread:{threadId}`, `refresh: true`) so a conversation is one
+resurfacing row rather than one row per message, and the bell then collapses *all*
+`DM_MESSAGE` rows into a single grouped entry. Clicking it opens the one thread it
+covers, or the DM inbox when it spans several, through the `useDmDockOpen` store -
+opening the already-mounted dock in place (no route change, so it never lands on
+the home page).
+
 ## The UI: Direct mode inside ChatDock
 
 There is no standalone DM dock. `app/components/DmDock.vue` and
@@ -128,8 +136,11 @@ There is no standalone DM dock. `app/components/DmDock.vue` and
   open, an empty query returns co-members), and an **open thread** rendered by
   `<ChatPanel :dm-thread-id="...">` (full chat parity). Picking a recipient calls
   `startThread` then opens the thread.
-- **Deep link.** `/?dm=<threadId>` (from a bell/push) opens the dock straight into
-  Direct mode on that conversation (`onMounted` reads `route.query.dm`).
+- **Deep link.** `/?dm=<threadId>` (from web push, or a fresh load) opens the dock
+  straight into Direct mode on that conversation - a `watch` on `route.query.dm`
+  (not `onMounted`), so a push click while the app is already open still opens it.
+  The in-app bell click instead uses the `useDmDockOpen` store (a thread id, or the
+  inbox) so it opens without a navigation.
 
 Three composables back it:
 
@@ -145,7 +156,10 @@ Three composables back it:
   creation and opens the DM socket, patching the inbox on `dm:new`/`dm:edit`.
 - **`app/composables/useDmOpen.ts`** - a one-slot app-level signal so a "Message"
   button elsewhere (e.g. a user profile page) asks the dock to switch to Direct
-  and open/start a thread with a given user.
+  and open/start a thread with a given **user**.
+- **`app/composables/useDmDockOpen.ts`** - the sibling signal for the bell click:
+  open the dock on an existing **thread** id (or the inbox when null), without a
+  navigation.
 
 ## Sources
 
