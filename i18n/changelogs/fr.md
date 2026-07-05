@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [2.21.1] - 2026-07-05
+
 ### Corrigé
 - **Les images de description de ligue s'envoient de façon fiable** : les images ajoutées à la description d'une ligue sont désormais réduites dans votre navigateur avant l'envoi, pour que les photos volumineuses n'échouent plus à l'ajout.
 

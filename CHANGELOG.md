@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.21.1] - 2026-07-05
+
 ### Fixed
 - **League description images upload reliably**: images added to a league's description are now shrunk in your browser before upload, so large photos no longer fail to attach.
 
