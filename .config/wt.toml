@@ -1,0 +1,12 @@
+# worktrunk (wt) project config - committed & shared.
+# All worktree creation/management goes through `wt` (see CLAUDE.md).
+#
+# On worktree create, copy gitignored files listed in .worktreeinclude from the
+# main checkout so a new worktree boots warm: node_modules + pnpm store (no cold
+# reinstall), the .env secrets (auth 500s on the default secret otherwise), and
+# build caches. copy-on-write (reflink) makes big dirs near-free.
+#
+# --require-include: copy nothing unless .worktreeinclude selects it (only the
+# listed patterns, never every gitignored file).
+[post-start]
+copy-ignored = "wt step copy-ignored --require-include"

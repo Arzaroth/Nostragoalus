@@ -1,0 +1,18 @@
+# Gitignored files `wt step copy-ignored` copies into a new worktree.
+# gitignore-style patterns; a file copies only if it is BOTH gitignored AND
+# matched here. Tracked files (e.g. .env.e2e) are never touched.
+
+# Secrets - auth 500s on the default secret without the real .env
+.env
+.env.*
+
+# Dependencies - skip the cold reinstall
+node_modules/
+.pnpm-store/
+
+# Build / dev caches - reflink-cheap warm start
+.nuxt/
+.output/
+.nitro/
+.cache/
+.data/
