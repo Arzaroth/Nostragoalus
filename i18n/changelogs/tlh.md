@@ -5,6 +5,12 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### chelpu'
+
+- may' De'wI' Duv 'echletmey: patlh veb bISum'a' cha'lu' Hoch may'vaD not naQ; "3 / 5" patlh vebvaD, ngaQ may'mey je. DanID DaleghlaH, ghaj neH ghobe'.
+- nuv De' HevlaH tetlh: nuv De'lIj vel 'e' ra' SeH; patlh, pup, chID pup, may' cha'. lojmIt poSbe'chugh lISlu', juppu'vaD ngeHDI' 'ang. QujtaHvIS lISlu', rInDI' neH ghobe'.
+- mIw De' HevlaH tetlh: mIw De'lIj vel 'e' ra' SeH; rap tetlh, wIvmey Duv 'ang (lugh, chID pup, QuQ Duv, juH Duv). lojmIt poSbe'chugh lISlu'.
+
 ## [2.25.1] - 2026-07-05
 
 ### choHpu'

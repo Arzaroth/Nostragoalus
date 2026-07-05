@@ -126,7 +126,8 @@ so the unlock is not dangled as a to-do list.
   `evaluateAchievements` only stores `progress` once a tier is reached). It powers the
   `CabinetTile` progress bar toward the next tier, drawn on locked badges too. Hidden
   badges are dropped before the DTO, so their `current` never leaks; event-granted
-  secrets have no metric, so `current` is null.
+  secrets have no metric, so `current` is null. SHAME badges also get `current: null`
+  (you don't chase a cold streak, and a bar would telegraph its threshold).
 - Write: `PUT /api/showcase` -> `setShowcase` replaces the owner's showcase with an
   ordered set of pins (max `SHOWCASE_SLOT_COUNT` = 3, no duplicates, achievements
   only, each one earned). Trophies cannot be pinned.

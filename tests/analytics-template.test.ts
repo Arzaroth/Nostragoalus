@@ -62,6 +62,14 @@ describe('buildAnalyticsCardElement', () => {
     expect(text).not.toContain('+0.0')
   })
 
+  it('collapses a value that rounds to zero to an unsigned zero (no -0)', () => {
+    // -0.04 rounds to 0.0 at one decimal; -0.3 rounds to 0 at zero decimals.
+    const text = textOf(card({ goalLean: -0.04, homeBiasPct: -0.3 }))
+    expect(text).toContain('0.0')
+    expect(text).not.toContain('-0.0')
+    expect(text).not.toContain('-0%')
+  })
+
   it('localizes the card copy', () => {
     expect(textOf(card({ locale: 'fr' }))).toContain('Stats')
   })
