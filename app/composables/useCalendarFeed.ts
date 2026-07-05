@@ -35,6 +35,24 @@ export function useCalendarFeed() {
     }
   }
 
+  // Revoke every previously-issued feed URL and mint a fresh one. Use if the link
+  // leaked (calendar apps log/sync/share these URLs).
+  async function regenerate() {
+    if (busy.value) return
+    busy.value = true
+    try {
+      data.value = await $fetch<FeedSubscription>('/api/feed/regenerate', {
+        method: 'POST',
+        query: { locale: locale.value },
+      })
+      toast.add({ severity: 'success', summary: t('feed.regenerated'), life: 3000 })
+    } catch {
+      toast.add({ severity: 'error', summary: t('feed.failed'), life: 3000 })
+    } finally {
+      busy.value = false
+    }
+  }
+
   // The token is locale-specific (its event text is rendered in that language);
   // switching language while the link is revealed re-mints it so the shown/copied
   // URL matches the current locale instead of keeping the stale one.
@@ -45,5 +63,5 @@ export function useCalendarFeed() {
     }
   })
 
-  return { data, busy, load, copy }
+  return { data, busy, load, copy, regenerate }
 }

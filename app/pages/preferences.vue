@@ -104,7 +104,7 @@ function onMasterPush(v: boolean) {
   void (v ? pushSubscribe() : pushUnsubscribe())
 }
 
-const { data: feedData, busy: feedBusy, load: feedLoad, copy: feedCopy } = useCalendarFeed()
+const { data: feedData, busy: feedBusy, load: feedLoad, copy: feedCopy, regenerate: feedRegenerate } = useCalendarFeed()
 
 const themeOptions = computed(() => [
   { label: t('prefs.light'), value: 'light', icon: 'pi pi-sun' },
@@ -296,8 +296,18 @@ const skinModel = computed({
                 <a :href="feedData.webcalUrl" class="contents">
                   <Button :label="t('feed.add')" icon="pi pi-calendar-plus" size="small" severity="secondary" outlined />
                 </a>
+                <Button
+                  :label="t('feed.regenerate')"
+                  :loading="feedBusy"
+                  icon="pi pi-refresh"
+                  size="small"
+                  severity="danger"
+                  outlined
+                  @click="feedRegenerate()"
+                />
               </div>
               <p class="text-xs" style="color: var(--p-text-muted-color)">{{ t('feed.instructions') }}</p>
+              <p class="text-xs" style="color: var(--p-text-muted-color)">{{ t('feed.revokeHint') }}</p>
             </template>
             <template #fallback>
               <p class="text-sm" style="color: var(--p-text-muted-color)">{{ t('feed.hint') }}</p>
