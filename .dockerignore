@@ -21,6 +21,11 @@
 # Committed migrations: the prod stage copies these from the build stage.
 !drizzle
 
+# The `postbuild` script (package.json) runs this after `nuxt build` to
+# fingerprint the client bundle. Its only non-node import is lib/integrity
+# (whitelisted above), so the single file is enough.
+!mise-tasks/build-integrity
+
 # Dependency manifests (pnpm fetch/install) + store/registry config.
 !package.json
 !pnpm-lock.yaml
