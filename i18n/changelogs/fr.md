@@ -5,6 +5,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Corrigé
+- **Jumeau maléfique** : consulter le Jumeau maléfique d'un joueur n'affiche plus une seconde fois sa propre liste de pronostics sous le tableau du jumeau.
+- **Armoire à trophées** : l'entrée de menu « Mes accomplissements » et les notifications d'accomplissement défilent désormais directement jusqu'à votre armoire à trophées.
+
 ## [2.22.0] - 2026-07-05
 
 ### Ajouté

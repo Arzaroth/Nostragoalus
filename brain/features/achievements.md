@@ -133,7 +133,11 @@ New winners/unlocks fire `TROPHY_AWARDED` / `ACHIEVEMENT_UNLOCKED`
 (see [notifications](notifications.md) and [web-push](web-push.md), `tournament`
 push category). The bell resolves the trophy/badge NAME via the `achievements.*`
 i18n keys; push reads the same locale JSON server-side. Deep link = the recipient's
-own cabinet (`cabinetPath`).
+own cabinet (`cabinetPath`). The cabinet `<section>` anchors at `#cabinet`; the
+"My achievements" account-menu entry and the notification deep link both target it,
+and the profile page smooth-scrolls to it when it arrives with that hash (the
+router's own hash scroll fires before the section mounts and ignores its
+`scroll-margin-top`, so a `watch` re-runs `scrollIntoView` once the section exists).
 
 ## Sources
 
