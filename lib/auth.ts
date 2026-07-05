@@ -114,7 +114,18 @@ export function buildAuthOptions(database: AuthDb) {
               throw new APIError('BAD_REQUEST', { message: 'The last admin account cannot be deleted.' })
             }
           }
-          const viaMailedLink = request?.url?.includes('/delete-user/callback') ?? false
+          // Trust the mailed-link path only from the request PATHNAME - never a
+          // substring of the whole URL, or an attacker appends
+          // `?x=/delete-user/callback` to a session-authenticated delete and the
+          // marker match skips the TOTP gate entirely. Reaching this route means
+          // better-auth already validated the mailed deletion token. Any parse
+          // failure or missing URL falls through to requiring the code.
+          let viaMailedLink = false
+          try {
+            viaMailedLink = request ? new URL(request.url).pathname.endsWith('/delete-user/callback') : false
+          } catch {
+            viaMailedLink = false
+          }
           if (!viaMailedLink && (u as { twoFactorEnabled?: boolean | null }).twoFactorEnabled) {
             const code = request?.headers.get('x-totp-code') ?? ''
             const rows = await database.select().from(schema.twoFactor).where(eq(schema.twoFactor.userId, u.id)).limit(1)
