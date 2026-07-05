@@ -54,6 +54,16 @@ const profilePrivate = computed({
     persistFlash()
   },
 })
+// DM discoverability defaults on (column default true), so treat only an explicit
+// false as off. Turning it off keeps you reachable by league mates but hides you
+// from the "start a DM" search for everyone else.
+const dmDiscoverable = computed({
+  get: () => (session.value?.data?.user as any)?.dmDiscoverable !== false,
+  set: async (v: boolean) => {
+    await (updateUser as (f: Record<string, unknown>) => Promise<unknown>)({ dmDiscoverable: v })
+    persistFlash()
+  },
+})
 function persistFlash() {
   saved.value = true
   clearTimeout(savedTimer)
@@ -79,6 +89,7 @@ const pushCategories = [
   { key: 'pushTournament', label: 'prefs.push.tournament', def: true },
   { key: 'pushLeague', label: 'prefs.push.league', def: false },
   { key: 'pushMentions', label: 'prefs.push.mentions', def: true },
+  { key: 'pushDm', label: 'prefs.push.dm', def: true },
 ] as const
 
 function pushGet(cat: { key: string; def: boolean }): boolean {
@@ -183,6 +194,13 @@ const skinModel = computed({
             <label for="profile-private" class="flex flex-col cursor-pointer">
               <span class="text-sm font-medium">{{ t('prefs.privateProfile') }}</span>
               <span class="text-xs" style="color: var(--p-text-muted-color)">{{ t('prefs.privateProfileHint') }}</span>
+            </label>
+          </div>
+          <div class="flex items-start gap-3">
+            <ToggleSwitch v-model="dmDiscoverable" input-id="dm-discoverable" class="shrink-0 mt-0.5" />
+            <label for="dm-discoverable" class="flex flex-col cursor-pointer">
+              <span class="text-sm font-medium">{{ t('prefs.dmDiscoverable') }}</span>
+              <span class="text-xs" style="color: var(--p-text-muted-color)">{{ t('prefs.dmDiscoverableHint') }}</span>
             </label>
           </div>
         </div>

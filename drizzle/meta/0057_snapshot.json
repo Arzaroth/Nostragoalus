@@ -1,5 +1,5 @@
 {
-  "id": "02426d97-0356-4d1a-bac8-135653688848",
+  "id": "f3b12706-7684-415a-8782-7fabcd611235",
   "prevId": "ac2f82c2-b994-49c8-b4ea-d279352ce00c",
   "version": "7",
   "dialect": "postgresql",
@@ -2551,7 +2551,7 @@
       "checkConstraints": {
         "dm_thread_order": {
           "name": "dm_thread_order",
-          "value": "\"dm_thread\".\"user_a_id\" < \"dm_thread\".\"user_b_id\""
+          "value": "\"dm_thread\".\"user_a_id\" COLLATE \"C\" < \"dm_thread\".\"user_b_id\" COLLATE \"C\""
         }
       },
       "isRLSEnabled": false

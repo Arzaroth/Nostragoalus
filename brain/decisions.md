@@ -183,13 +183,16 @@ feature/architecture doc that implements it.
   the epoch->key map. Cloning the whole encrypted-message + attachment + moderation
   stack for one-to-one would have doubled the surface with no new behaviour. See
   [features/dms.md](features/dms.md).
-- **Reach is co-members always + globally opt-in discovery.** You can always DM
-  someone you share a [league](features/leagues.md) with; anyone else must have
-  `dmDiscoverable = true` (default on, per-user opt-out) to be found by name. This
-  keeps the default friction-free (people already in your leagues) while giving a
-  private opt-out from cold-contact, and a discoverable stranger still needs a
-  `chat_identity` to be listed (no pubkey, no sealable thread key). See
-  [features/dms.md](features/dms.md).
+- **Reach is co-members always + globally opt-in discovery, enforced at contact
+  not just in search.** You can always DM someone you share a
+  [league](features/leagues.md) with; anyone else must have `dmDiscoverable = true`
+  (default on, per-user opt-out) to be reachable. This same `canDm` predicate gates
+  the recipient search **and** `createThread`, the identity/pubkey lookup and the
+  profile "Message" flag - so opting out actually blocks cold-contact from a
+  stranger who knows your id, rather than only hiding you from name search (an
+  earlier version enforced it in search alone, which the DM review closed). A
+  discoverable stranger still needs a `chat_identity` to be listed (no pubkey, no
+  sealable thread key). See [features/dms.md](features/dms.md).
 - **One messaging surface: DMs are a Direct mode inside [ChatDock](features/chat.md),
   reusing `ChatPanel` - not a separate dock.** This reverses the earlier
   "separate global `DmDock`" call. That split existed only because ChatDock was

@@ -6,7 +6,7 @@ CREATE TABLE "dm_thread" (
 	"key_epoch" integer DEFAULT 1 NOT NULL,
 	"last_message_at" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "dm_thread_order" CHECK ("dm_thread"."user_a_id" < "dm_thread"."user_b_id")
+	CONSTRAINT "dm_thread_order" CHECK ("dm_thread"."user_a_id" COLLATE "C" < "dm_thread"."user_b_id" COLLATE "C")
 );
 --> statement-breakpoint
 CREATE TABLE "dm_thread_key" (

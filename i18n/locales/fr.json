@@ -337,6 +337,8 @@
     "crowdHint": "Sous chaque prono, le score cumulé de tous les joueurs (1-1 + 2-1 + 4-0 donne 7-2).",
     "privateProfile": "Profil privé",
     "privateProfileHint": "Sortez des classements généraux et par compétition. Seuls les membres de vos ligues (et les admins) voient votre profil ; vos classements de ligue vous incluent toujours. Vos pronos restent dans les totaux anonymes de la foule.",
+    "dmDiscoverable": "Trouvable pour les messages",
+    "dmDiscoverableHint": "Permettez aux joueurs avec qui vous ne partagez pas de ligue de vous trouver par nom pour démarrer un message direct. Vos coéquipiers de ligue peuvent toujours vous écrire. Désactivez pour ne plus apparaître dans cette recherche.",
     "push": {
       "title": "Notifications push",
       "hint": "Recevez des alertes sur cet appareil, même quand l'app est fermée.",
@@ -350,7 +352,8 @@
       "matchResults": "Résultats des matchs",
       "tournament": "Résultats du tournoi",
       "league": "Activité des ligues",
-      "mentions": "Mentions dans le chat"
+      "mentions": "Mentions dans le chat",
+      "dm": "Messages directs"
     },
     "odds": "Afficher les cotes",
     "oddsHint": "Cotes décimales 1X2 sous chaque match : 1 = victoire domicile, X = nul, 2 = victoire extérieur. Plus le nombre est bas, plus c'est probable. Figées au coup d'envoi."

@@ -9,6 +9,7 @@ import {
   type LiveSubscriber,
 } from './hub'
 import { findRoundId } from '../sync/rounds'
+import { emptyReactionTotals } from '../../../shared/reactions'
 import { makeMatch, seedCompetition } from '../../../tests/factories'
 
 describe('live hub', () => {
@@ -226,8 +227,10 @@ it('publishDmMessage delivers to the two participants only', async () => {
   const outsider = { matchIds: new Set<string>(), userId: 'o', send: vi.fn() }
   for (const s of [a, b, outsider]) addLiveSubscriber(s)
   try {
-    const message = { id: 'm1', threadId: 't1', parentId: null, userId: 'a', epoch: 1, ciphertext: 'CT', createdAt: '2026-06-10T10:00:00.000Z', editedAt: null, moderation: 'VISIBLE' as const }
-    const delivered = publishDmMessage(['a', 'b'], message)
+    // The message is the full ChatMessageDTO; its threadId is the reply-root (null
+    // for a top-level message), while the frame's threadId is the conversation id.
+    const message = { id: 'm1', leagueId: '', matchId: null, parentId: null, threadId: null, userId: 'a', epoch: 1, ciphertext: 'CT', createdAt: '2026-06-10T10:00:00.000Z', editedAt: null, attachments: [], moderation: 'VISIBLE' as const, reported: false, reactions: emptyReactionTotals(), myReaction: null, threadCount: 0 }
+    const delivered = publishDmMessage(['a', 'b'], 't1', message)
     expect(delivered).toBe(2)
     expect(a.send).toHaveBeenCalledWith({ type: 'dm:new', threadId: 't1', message })
     expect(b.send).toHaveBeenCalledWith({ type: 'dm:new', threadId: 't1', message })

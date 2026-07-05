@@ -11,8 +11,10 @@ gained a League | Direct mode toggle, and an open DM conversation is rendered by
 the **same `ChatPanel`** that renders league chat. So a DM has full chat parity -
 reactions, reply, threads, edit, images, the media gallery and link previews - not
 a lean text-only cut. The only league-specific chrome a DM drops is what has no
-meaning in a 1:1: enable/disable, key rotation, roster/verify, moderation, reports
-and @mentions (no moderator, no roster to mention).
+meaning in a 1:1: enable/disable, group-key rotation, moderation, reports and
+@mentions (no moderator, no roster to mention). **Safety-number verification and
+identity-recovery setup DO stay** - they concern the shared E2EE identity, not the
+room, so the DM overflow menu keeps them; only the league/admin items are hidden.
 
 ## Encryption model
 
@@ -24,8 +26,11 @@ keypair every chatting user already has.
 - `dm_thread` - one row per unordered participant pair, stored as an **ordered**
   pair `(userAId < userBId)` with a `dm_thread_order` CHECK and a
   `dm_thread_pair_uq` unique index, so there is exactly one thread per `{a, b}`
-  and no self-DM. Carries `keyEpoch` (rotation counter) and `lastMessageAt` (so
-  the inbox orders without scanning messages).
+  and no self-DM. The CHECK compares `COLLATE "C"` (byte order) so it agrees with
+  `orderPair`'s JavaScript `a < b` regardless of the database's locale collation -
+  otherwise a JS-ordered insert could fail the CHECK for some mixed-case id pairs.
+  `keyEpoch` is reserved for a future re-key (always 1 today - a DM has no rotation
+  path) and `lastMessageAt` orders the inbox without scanning messages.
 - `dm_thread_key` - the per-thread symmetric key sealed (libsodium sealed box) to
   one participant's public key, one row per `(thread, user, epoch)` - the
   [`league_chat_key`](chat.md) model narrowed to a two-member room. Each
@@ -64,8 +69,17 @@ excluded:
   with a non-empty search term (`shared: false`).
 
 So you can always reach people you already share a league with, and opt in (or
-out) of being found by anyone else. A stranger with no `chat_identity` is not
-listed - there would be no pubkey to seal the thread key to.
+out) of being found by anyone else (the `dmDiscoverable` toggle lives in
+preferences, next to the private-profile switch). A stranger with no
+`chat_identity` is not listed - there would be no pubkey to seal the thread key to.
+
+The same reachability is **enforced at the point of contact**, not just in search:
+`canDm(caller, target)` (`server/utils/dm/service.ts`) is true when they share a
+league or the target is discoverable, and it gates `createThread`, the
+`GET /api/dm/identity` pubkey lookup (404, not 403, so a bare id never confirms an
+account exists) and the profile page's `canMessage` flag. So a user you cannot
+find also cannot be cold-messaged by someone who just knows their id; an already
+open thread always reopens regardless (the gate is for first contact only).
 
 ## Live delivery
 
@@ -73,10 +87,15 @@ DM frames are delivered over the same in-process WebSocket [hub](../architecture
 but **without a subscribe frame**: `publishDmMessage` / `publishDmEdit`
 (`server/utils/live/hub.ts`) fan out to the two participants by their pinned
 socket `userId` (`deliverToMembers`), the same user-pinned delivery the
-[notification](notifications.md) push uses. Frame types are `dm:new` (carrying the
-`DmMessageDTO`) and `dm:edit` (thread id, message id, new ciphertext, editedAt).
-No per-thread room registry exists - a DM reaches exactly the sender and the
-recipient wherever they are connected.
+[notification](notifications.md) push uses. Frame types are `dm:new` and
+`dm:edit`. `dm:new` carries the **full `ChatMessageDTO`** (identical to the POST
+response) under a frame-level `threadId` that is the conversation id: the frame
+`threadId` routes the message to the right open thread, while the message's own
+`threadId` stays the reply-root (null at top level) so the recipient decrypts it
+exactly like a loaded row, attachments and all. `dm:edit` carries the thread id,
+message id, new ciphertext, editedAt and attachment set. No per-thread room
+registry exists - a DM reaches exactly the sender and the recipient wherever they
+are connected.
 
 ## Notifications + push
 
@@ -136,7 +155,7 @@ Three composables back it:
 - `lib/auth.ts` (`pushDm`, `dmDiscoverable` user additionalFields)
 - `server/utils/dm/service.ts` (`createThread`, `listThreads`, `getThreadDetail`,
   `postDmMessage`, `editDmMessage`, `listDmMessages`, `markThreadRead`,
-  `searchRecipients`), `server/utils/dm/notify.ts` (`notifyDm`)
+  `searchRecipients`, `canDm`), `server/utils/dm/notify.ts` (`notifyDm`)
 - `server/utils/chat/access.ts` - the scope-agnostic authorizer: a caller may act
   on a `chat_message` if they are a member of its league room **or** a participant
   of its DM thread, so the shared message/reaction/attachment/edit routes serve
@@ -147,6 +166,8 @@ Three composables back it:
   carries image add/remove, matching the league-chat routes.
 - `server/utils/live/hub.ts` (`publishDmMessage`, `publishDmEdit`),
   `server/utils/push/{prefs,content}.ts` (`dm` category)
-- `shared/types/dm.ts` (`DmMessageDTO`, `DmThreadDetailDTO`, `DmRecipientDTO`,
-  `dmPath`), `app/composables/{useDmRoom,useDmInbox,useDmOpen}.ts`,
-  `app/components/{ChatDock,ChatPanel}.vue`, `app/utils/e2ee.ts`
+- `shared/types/dm.ts` (`DmThreadDetailDTO`, `DmThreadSummaryDTO`,
+  `DmRecipientDTO`, `dmPath` - the live frame reuses `ChatMessageDTO`, no separate
+  DM message shape), `app/composables/{useDmRoom,useDmInbox,useDmOpen}.ts`,
+  `app/components/{ChatDock,ChatPanel}.vue`, `app/pages/preferences.vue`
+  (`dmDiscoverable`, `pushDm` toggles), `app/utils/e2ee.ts`

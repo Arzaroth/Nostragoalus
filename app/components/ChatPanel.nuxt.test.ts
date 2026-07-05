@@ -584,13 +584,15 @@ describe('ChatPanel DM mode', () => {
     expect(wrapper.text()).not.toContain('Chat is off')
   })
 
-  it('hides the overflow menu entirely in a DM (no verify/rotate/recovery items)', async () => {
+  it('offers key verification but no league/admin items in a DM overflow menu', async () => {
     await readyDm()
     const wrapper = await dmMount()
-    // The overflow menu holds only league/admin/verify actions, so with nothing to
-    // manage (no muted user) the whole button is absent in a DM.
-    expect(wrapper.find('button[aria-label="More options"]').exists()).toBe(false)
-    expect(wrapper.text()).not.toContain('Verify keys')
+    // Key verification and identity recovery apply to a DM (same E2EE identity), so
+    // the overflow menu is present; the league-only rotate/moderation items are not.
+    const menu = wrapper.find('button[aria-label="More options"]')
+    expect(menu.exists()).toBe(true)
+    await menu.trigger('click')
+    expect(wrapper.text()).toContain('Verify keys')
     expect(wrapper.text()).not.toContain('Rotate key')
   })
 

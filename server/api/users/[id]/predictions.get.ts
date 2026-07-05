@@ -5,10 +5,12 @@ import { getUserPublicPredictions } from '../../../utils/predictions/service'
 import { resolveCompetition } from '../../../utils/competitions/store'
 import { getSessionUser, isAdmin } from '../../../utils/auth-guards'
 import { canViewProfile } from '../../../utils/leagues/service'
+import { canDm } from '../../../utils/dm/service'
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id') as string
   const admin = await isAdmin(event)
+  const viewer = await getSessionUser(event)
   const rows = await db
     .select({ name: user.name, image: user.image, profilePrivate: user.profilePrivate })
     .from(user)
@@ -19,7 +21,6 @@ export default defineEventHandler(async (event) => {
   // Private profiles 404 (not 403) for everyone but league mates, admins and
   // the user themself, so probing an id never confirms the account exists.
   if (rows[0].profilePrivate) {
-    const viewer = await getSessionUser(event)
     const allowed = viewer && (await canViewProfile(db, { viewerId: viewer.id, targetUserId: id, isAdmin: admin }))
     if (!allowed) throw createError({ statusCode: 404, statusMessage: 'user not found' })
   }
@@ -49,12 +50,15 @@ export default defineEventHandler(async (event) => {
   const bestScorer = bestScorerRows[0] ?? null
 
   // A user can only be DMed once they have set up chat (a chat_identity holds their
-  // public key; DMs are sealed to it). Surfaced so the profile hides "Message" for
-  // someone who cannot receive one (a bot, or anyone who never opened chat).
+  // public key; DMs are sealed to it) AND the viewer is allowed to reach them (a
+  // shared league or the target opted into discovery). Surfaced so the profile only
+  // shows "Message" when clicking it will actually open a thread - matching the
+  // server-side canDm gate on identity.get and createThread.
   const identityRows = await db.select({ userId: chatIdentity.userId }).from(chatIdentity).where(eq(chatIdentity.userId, id)).limit(1)
+  const canMessage = identityRows.length > 0 && !!viewer && (await canDm(db, viewer.id, id))
 
   return {
-    user: { id, name: rows[0].name, image: rows[0].image, canMessage: identityRows.length > 0 },
+    user: { id, name: rows[0].name, image: rows[0].image, canMessage },
     champion,
     bestScorer,
     champions: global ? championRows : undefined,

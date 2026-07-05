@@ -4,7 +4,6 @@ import { match } from '../../../db/schema'
 import type { NotificationDTO } from '../../../shared/types/notifications'
 import type { ReactionTotals } from '../../../shared/reactions'
 import type { ChatAttachmentDTO, ChatMessageDTO } from '../../../shared/types/chat'
-import type { DmMessageDTO } from '../../../shared/types/dm'
 import { removeViewer, setViewing, viewerCount, viewersOf } from './viewers'
 
 export interface LiveSubscriber {
@@ -301,9 +300,12 @@ export function publishChatEdit(
 
 // A new direct message: deliver the ciphertext to just the two participants'
 // connected sockets (the sender's other tabs included, so every device stays in
-// sync). Same members-only privacy gate as league chat, scoped to the pair.
-export function publishDmMessage(participantIds: readonly string[], message: DmMessageDTO): number {
-  return deliverToMembers(participantIds, { type: 'dm:new', threadId: message.threadId, message })
+// sync). Same members-only privacy gate as league chat, scoped to the pair. The
+// frame-level threadId is the CONVERSATION id (the client routes on it); the
+// message is the full ChatMessageDTO, so its own threadId stays the reply-root
+// (null for a top-level message) and its attachments ride along for live render.
+export function publishDmMessage(participantIds: readonly string[], threadId: string, message: ChatMessageDTO): number {
+  return deliverToMembers(participantIds, { type: 'dm:new', threadId, message })
 }
 
 // A DM message was edited by its author: push the new ciphertext + edit time + the
