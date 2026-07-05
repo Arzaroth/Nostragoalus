@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "nuxt dev",
     "build": "nuxt build",
+    "postbuild": "node mise-tasks/build-integrity",
     "typecheck": "nuxt typecheck",
     "preview": "nuxt preview",
     "start": "node .output/server/index.mjs",

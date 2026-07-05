@@ -18,6 +18,7 @@ Back to the root map: [../BRAIN.md](../BRAIN.md).
 | [testing.md](testing.md) | The merge gate, coverage rules, pglite test DB, factories, Playwright e2e | vitest, coverage, 98%, pglite, factories, nuxt.test, e2e, playwright |
 | [i18n.md](i18n.md) | The five locales and the all-locales rule | i18n, locales, en fr th tlh ar, Klingon |
 | [rtl.md](rtl.md) | Right-to-left mechanics: html dir, logical CSS, mirrored bracket, icon flip | rtl, right-to-left, Arabic, ar, dir, logical properties, mirror |
+| [build-integrity.md](build-integrity.md) | Client-JS bundle fingerprint on /about: detect a silent swap of the E2EE crypto code | integrity, digest, SHA-256, build-integrity.json, SRI, reproducible, e2ee |
 
 ## How to use this folder
 
