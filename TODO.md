@@ -2193,3 +2193,20 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
       `markLeaguePromptResolved()` signal (the server flag only reaches the
       session on a refetch). If the league prompt ever moves off the same client,
       the tour would fall back to the session flag / a reload.
+
+## Security-hardening + E2EE tiers (sec/hardening-e2ee)
+
+Shipped on the branch, gate-green (typecheck / 98% coverage / components / build).
+Not yet done, for feature-treatment:
+
+- [ ] E2E specs for the user-facing pieces (feed "Regenerate link" revocation, the
+      chat key-transparency "not in log" / tamper warning in the verify dialog, the
+      crowd-total anonymity floor). None run yet (`mise run e2e`).
+- [ ] Live-browser verification of the verify dialog KT badges and the feed
+      regenerate flow (drive headless Chrome on the preview build).
+- [ ] H2 (unfurl DNS-rebind SSRF) intentionally NOT fixed - needs an egress network
+      policy / IP-pinning fetcher; deferred by request.
+- [ ] Full script-src CSP still deferred (inline theme script + Nuxt hydration
+      payload need nonces/hashing + browser tuning); only frame-ancestors ships now.
+- [ ] KT has no external witness (in-app anchor only, by decision) - a from-genesis
+      rewrite is caught only by a client that pinned an earlier head.
