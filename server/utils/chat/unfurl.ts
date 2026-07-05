@@ -1,6 +1,7 @@
 import { promises as dns } from 'node:dns'
 import { isIP } from 'node:net'
 import { CHROME_JA3, CHROME_UA, cycleGet, cycleHeader } from '../providers/cycle-tls'
+import { createTtlCache } from '../cache/ttl-cache'
 import type { LinkPreviewDTO } from '#shared/types/chat'
 
 // Server-side link unfurl for chat previews. The chat is end-to-end encrypted, so
@@ -32,7 +33,13 @@ const CACHE_MAX = 500
 const MAX_BYTES = 512 * 1024
 const MAX_REDIRECTS = 3
 
-const cache = new Map<string, { at: number; value: LinkPreviewDTO }>()
+// A real result lives an hour; a miss (nothing useful, a transient block or
+// timeout) expires quickly so a flaky fetch heals on the next view. Bounded so a
+// firehose of distinct URLs can't grow it without limit.
+const cache = createTtlCache<string, LinkPreviewDTO>({
+  ttlMs: (v) => (isEmptyPreview(v) ? MISS_TTL : CACHE_TTL),
+  maxSize: CACHE_MAX,
+})
 
 // Exposed for tests: drop the in-memory cache between cases.
 export function __clearUnfurlCache(): void {
@@ -214,7 +221,7 @@ function isEmptyPreview(v: LinkPreviewDTO): boolean {
 
 export async function unfurlLink(rawUrl: string): Promise<LinkPreviewDTO> {
   const hit = cache.get(rawUrl)
-  if (hit && Date.now() - hit.at < (isEmptyPreview(hit.value) ? MISS_TTL : CACHE_TTL)) return hit.value
+  if (hit) return hit
   let value = EMPTY(rawUrl)
   try {
     const fetched = await safeFetchHtml(rawUrl)
@@ -223,9 +230,6 @@ export async function unfurlLink(rawUrl: string): Promise<LinkPreviewDTO> {
     // blocked host, timeout, malformed URL or network error - serve an empty
     // preview (the client just hides it) and cache the miss.
   }
-  // Bound the cache: drop the oldest entry (insertion order) once full. size>=MAX
-  // guarantees a first key, so the non-null assertion is safe.
-  if (cache.size >= CACHE_MAX) cache.delete(cache.keys().next().value!)
-  cache.set(rawUrl, { at: Date.now(), value })
+  cache.set(rawUrl, value)
   return value
 }

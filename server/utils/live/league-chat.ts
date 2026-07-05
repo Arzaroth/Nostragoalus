@@ -14,6 +14,7 @@ import {
   publishLeagueChatMessage,
 } from './hub'
 import type { ChatModerationState } from '../../../shared/types/chat'
+import { createTtlCache } from '../cache/ttl-cache'
 
 // A new chat message: push the ciphertext to that league's connected members
 // only (the room is members-only, like league crowd/reaction pushes). `mentions`
@@ -84,8 +85,7 @@ export async function publishModeration(
 // the league member set - which only changes on join/leave - is cached briefly to
 // keep the hot path off the database. The cache is keyed by league and expires
 // quickly so a new member starts receiving typing hints within seconds.
-const TYPING_MEMBERS_TTL_MS = 10_000
-const typingMembersCache = new Map<string, { ids: string[]; at: number }>()
+const typingMembersCache = createTtlCache<string, string[]>({ ttlMs: 10_000 })
 
 // A member is typing: broadcast it to the room's other connected members. Returns
 // false (no fan-out) when the typer is not actually a league member, so a stranger
@@ -95,13 +95,10 @@ export async function publishTyping(
   db: AppDatabase,
   opts: { leagueId: string; matchId: string | null; userId: string; nowMs: number },
 ): Promise<boolean> {
-  const cached = typingMembersCache.get(opts.leagueId)
-  let ids: string[]
-  if (cached && opts.nowMs - cached.at < TYPING_MEMBERS_TTL_MS) {
-    ids = cached.ids
-  } else {
+  let ids = typingMembersCache.get(opts.leagueId, opts.nowMs)
+  if (!ids) {
     ids = await getLeagueMemberIds(db, opts.leagueId)
-    typingMembersCache.set(opts.leagueId, { ids, at: opts.nowMs })
+    typingMembersCache.set(opts.leagueId, ids, opts.nowMs)
   }
   if (!ids.includes(opts.userId)) return false
   const recipients = ids.filter((id) => id !== opts.userId)

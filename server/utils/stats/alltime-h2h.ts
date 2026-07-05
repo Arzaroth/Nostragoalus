@@ -5,6 +5,8 @@
 // so historic friendlies (e.g. Norway-France 2010, 2014) were silently missing.
 // Team-based, so it works before kickoff too.
 
+import { createTtlCache } from '../cache/ttl-cache'
+
 export interface AllTimeMeeting {
   date: string
   competition: string
@@ -96,14 +98,11 @@ const ID_SOURCES = [
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-interface Cache<T> {
-  at: number
-  value: T
-}
-
-let idMapCache: Cache<Map<string, string>> | null = null
-const h2hCache = new Map<string, Cache<AllTimeH2H | null>>()
-const calendarCache = new Map<string, Cache<DataCentreRow[]>>()
+// A single team-id map (harvested once per day), plus per-key TTL caches for
+// the two archive reads. The id map stays a bare slot (one value, not keyed).
+let idMapCache: { at: number; value: Map<string, string> } | null = null
+const h2hCache = createTtlCache<string, AllTimeH2H | null>({ ttlMs: DAY_MS })
+const calendarCache = createTtlCache<string, DataCentreRow[]>({ ttlMs: DAY_MS })
 
 export function resetAllTimeH2hCaches() {
   idMapCache = null
@@ -112,8 +111,8 @@ export function resetAllTimeH2hCaches() {
 }
 
 async function teamCalendar(teamId: string, fetchImpl: typeof fetch, now: number): Promise<DataCentreRow[]> {
-  const cached = calendarCache.get(teamId)
-  if (cached && now - cached.at < DAY_MS) return cached.value
+  const cached = calendarCache.get(teamId, now)
+  if (cached) return cached
   // The archive caps a response at 1000 rows, newest first; that drops only the
   // pre-1920s tail for the few nations with >1000 caps - irrelevant to h2h.
   const data = await getJson<DataCentreRow[]>(
@@ -121,7 +120,7 @@ async function teamCalendar(teamId: string, fetchImpl: typeof fetch, now: number
     fetchImpl,
   )
   const rows = Array.isArray(data) ? data : []
-  calendarCache.set(teamId, { at: now, value: rows })
+  calendarCache.set(teamId, rows, now)
   return rows
 }
 
@@ -209,8 +208,8 @@ export async function getAllTimeHeadToHead(
   before = '9999',
 ): Promise<AllTimeH2H | null> {
   const key = [codeA, codeB, before].join('|')
-  const cached = h2hCache.get(key)
-  if (cached && now - cached.at < DAY_MS) return cached.value
+  // A cached null (no meetings found) is a real hit, distinct from a miss.
+  if (h2hCache.has(key, now)) return h2hCache.get(key, now) ?? null
 
   let result: AllTimeH2H | null = null
   try {
@@ -255,6 +254,6 @@ export async function getAllTimeHeadToHead(
   } catch {
     result = null
   }
-  h2hCache.set(key, { at: now, value: result })
+  h2hCache.set(key, result, now)
   return result
 }

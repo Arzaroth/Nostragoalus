@@ -9,6 +9,7 @@ import { getScoringConfigFor } from '../scoring/store'
 import { getLeaderboard } from '../leaderboard/service'
 import { closingOddsForOutcome } from '../odds/store'
 import { outcomeOf } from '../scoring/tiers'
+import { createTtlCache } from '../cache/ttl-cache'
 
 import { DRAW_SCORELINE, botUserId, type BotPersona, type ConsensusMethod } from '../../../shared/types/bot'
 
@@ -492,8 +493,7 @@ export async function getBotOverview(
 // its result is identical for everyone sharing (competition, league, method,
 // visibility). A short in-process TTL collapses the per-request cost during a
 // busy leaderboard view; the bot is display-only so brief staleness is fine.
-const BOT_CACHE_TTL_MS = 30_000
-const botCache = new Map<string, { at: number; value: BotOverview }>()
+const botCache = createTtlCache<string, BotOverview>({ ttlMs: 30_000 })
 
 export async function getBotOverviewCached(
   db: AppDatabase,
@@ -509,11 +509,10 @@ export async function getBotOverviewCached(
     opts.includeUpcoming ? 1 : 0,
     opts.includePrivate ? 1 : 0,
   ].join('|')
-  const now = Date.now()
   const hit = botCache.get(key)
-  if (hit && now - hit.at < BOT_CACHE_TTL_MS) return hit.value
+  if (hit) return hit
   const value = await getBotOverview(db, competitionId, opts)
-  botCache.set(key, { at: now, value })
+  botCache.set(key, value)
   return value
 }
 
