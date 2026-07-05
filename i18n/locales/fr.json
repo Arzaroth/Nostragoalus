@@ -1157,7 +1157,12 @@
     "dataText": "Les données des matchs proviennent de points d'accès FIFA et UEFA publiquement accessibles (non officiels, lecture seule, poliment limités en débit). Tuiles de carte par les contributeurs OpenStreetMap. Ce projet n'est ni affilié ni approuvé par la FIFA ou l'UEFA.",
     "changelogTitle": "Journal des modifications",
     "sourceCta": "Lire le code source",
-    "newBadge": "Nouveau"
+    "newBadge": "Nouveau",
+    "integrityTitle": "Intégrité du code client",
+    "integrityText": "Le chat et les messages privés sont chiffrés de bout en bout dans votre navigateur : leur sécurité repose donc sur le JavaScript que ce site vous livre. L'empreinte ci-dessous est le SHA-256 du bundle de code client qui vous a réellement été servi. Comparez-la à la valeur publiée pour cette version : si une build remplace le code de chiffrement, les empreintes cessent de correspondre. Un serveur peut toujours livrer du code altéré au tout premier chargement - cela rend une divergence ultérieure détectable, pas impossible.",
+    "integrityVersionLabel": "Version de build",
+    "integrityDigestLabel": "Empreinte du bundle ({algo}, {count} fragments)",
+    "integrityUnavailable": "Aucune empreinte d'intégrité n'est disponible pour cette build."
   },
   "roadmap": {
     "title": "Feuille de route",

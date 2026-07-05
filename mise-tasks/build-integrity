@@ -1,0 +1,61 @@
+#!/usr/bin/env -S node
+//MISE description="Fingerprint the built client JS bundle for /about + independent publishing"
+
+// Runs after `nuxt build` (wired as the package.json `postbuild` script, and
+// runnable by hand: `mise run build-integrity`). It walks the content-hashed
+// client chunks nitro emits under .output/public/_nuxt/*.js, SHA-256s each, and
+// folds them into one deterministic bundle digest (see lib/integrity/digest.mjs).
+// The digest is written to .output/public/build-integrity.json so it is served
+// at /build-integrity.json and shown on the /about page.
+//
+// What this buys: an operator can publish the digest of an honest, reproducible
+// build; a later silent swap of the delivered crypto code changes the served
+// digest, so a divergence is DETECTABLE by anyone comparing the two. It does NOT
+// prevent a compelled operator from shipping malicious JS (and faking this same
+// endpoint) on first load - see the "Client-code integrity" note in TODO.md.
+//
+// Builtins + the pure helper only, so it runs on a prod host with just the built
+// app (same constraint as the other mise tasks).
+import { readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { join } from 'node:path'
+import { sha256Hex, bundleDigest, formatDigest } from '../lib/integrity/digest.mjs'
+
+const CLIENT_DIR = '.output/public/_nuxt'
+const OUT = '.output/public/build-integrity.json'
+
+if (!existsSync(CLIENT_DIR)) {
+  // No client build on disk (wrong preset, or run before `nuxt build`). Warn but
+  // don't fail the build - the digest is a hardening extra, not a build gate.
+  console.warn(`build-integrity: ${CLIENT_DIR} not found - skipping (run \`pnpm build\` first).`)
+  process.exit(0)
+}
+
+const pkg = JSON.parse(readFileSync('package.json', 'utf8'))
+
+const entries = readdirSync(CLIENT_DIR)
+  .filter((name) => name.endsWith('.js'))
+  .map((name) => ({ name, sha256: sha256Hex(readFileSync(join(CLIENT_DIR, name))) }))
+
+if (entries.length === 0) {
+  console.warn(`build-integrity: no .js chunks under ${CLIENT_DIR} - skipping.`)
+  process.exit(0)
+}
+
+const digest = bundleDigest(entries)
+
+// Only `digest`, `version` and `algorithm` are the reproducible comparison
+// values; `generatedAt`/`chunkCount` are informational metadata.
+const payload = {
+  version: pkg.version,
+  algorithm: 'sha256',
+  digest,
+  chunkCount: entries.length,
+  generatedAt: new Date().toISOString(),
+}
+
+writeFileSync(OUT, `${JSON.stringify(payload, null, 2)}\n`)
+
+console.log(`build-integrity: v${pkg.version}, ${entries.length} client chunks`)
+console.log(`  digest: ${digest}`)
+console.log(`  grouped: ${formatDigest(digest)}`)
+console.log(`  written: ${OUT} (served at /build-integrity.json)`)

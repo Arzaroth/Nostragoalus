@@ -1157,7 +1157,12 @@
     "dataText": "may' De' FIFA UEFA je naw'Daq vo' (official pagh, laD neH). qo' mIllogh OpenStreetMap vo'. FIFA UEFA joq projectvam luvoqbe'.",
     "changelogTitle": "choH tetlh",
     "sourceCta": "ngoq mung yIlaD",
-    "newBadge": "chu'"
+    "newBadge": "chu'",
+    "integrityTitle": "ngoq 'ol",
+    "integrityText": "HablI'lIjDaq E2EE ja'chuq Qan. mI'vam 'oH ngoq nempuq SHA-256'e'. Qorwaghvam mI' cha'lu'bogh yItlhej. rap'be'chugh, choHlu' ngoq. wa'DIch neH Qan - ghIq choH tu'lu'.",
+    "integrityVersionLabel": "ngoq mI'",
+    "integrityDigestLabel": "ngoq nempuq ({algo}, {count} 'ay')",
+    "integrityUnavailable": "ngoqvam nempuq tu'be'lu'."
   },
   "roadmap": {
     "title": "He nab",

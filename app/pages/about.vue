@@ -6,6 +6,26 @@ import { isUnseen } from '~/utils/changelog'
 const { t } = useI18n()
 useHead({ title: t('about.title') })
 const { isDark } = useTheme()
+const config = useRuntimeConfig()
+
+// Client-code integrity fingerprint. The digest of the served client JS bundle
+// is written to /build-integrity.json at build time (mise-tasks/build-integrity);
+// showing it here lets a user compare it against the digest an honest,
+// reproducible build publishes. Fetched client-side and tolerant of absence (a
+// dev server has no built bundle), so it never blocks the page.
+interface BuildIntegrity {
+  version: string
+  algorithm: string
+  digest: string
+  chunkCount: number
+  generatedAt: string
+}
+const { data: integrity } = useFetch<BuildIntegrity | null>('/build-integrity.json', {
+  server: false,
+  // A missing file (dev, or a build without the post-step) is expected, not an error.
+  default: () => null,
+})
+const groupedDigest = computed(() => (integrity.value?.digest.match(/.{1,8}/g) ?? []).join(' '))
 
 // Parsed changelog + "since last seen" marker. Snapshot what the user had seen
 // BEFORE this visit marks everything read, so the newer entries stay
@@ -128,6 +148,23 @@ const renderInline = (md: string): string =>
       <h2 class="font-semibold text-lg flex items-center gap-2"><i class="pi pi-sparkles" style="color: var(--p-primary-color)" /> {{ t('about.aiTitle') }}</h2>
       <p class="text-sm mt-2" style="color: var(--p-text-muted-color)">{{ t('about.aiText') }}</p>
       <a href="https://git.arzaroth.com/Arzaroth/Nostragoalus" target="_blank" rel="noopener" class="inline-flex items-center gap-2 mt-3 text-sm hover:underline" style="color: var(--p-primary-color)"><i class="pi pi-code" /> {{ t('about.sourceCta') }}</a>
+    </section>
+
+    <!-- Client-code integrity -->
+    <section class="ng-card rounded-2xl border p-6" style="background: var(--p-content-background)">
+      <h2 class="font-semibold text-lg flex items-center gap-2"><i class="pi pi-shield" style="color: var(--p-primary-color)" /> {{ t('about.integrityTitle') }}</h2>
+      <p class="text-sm mt-2" style="color: var(--p-text-muted-color)">{{ t('about.integrityText') }}</p>
+      <dl v-if="integrity" class="mt-4 flex flex-col gap-2 text-sm">
+        <div class="flex items-baseline gap-2">
+          <dt class="text-xs uppercase tracking-wider font-semibold shrink-0" style="color: var(--p-text-muted-color)">{{ t('about.integrityVersionLabel') }}</dt>
+          <dd class="font-mono">{{ integrity.version }}</dd>
+        </div>
+        <div class="flex flex-col gap-1">
+          <dt class="text-xs uppercase tracking-wider font-semibold" style="color: var(--p-text-muted-color)">{{ t('about.integrityDigestLabel', { algo: integrity.algorithm, count: integrity.chunkCount }) }}</dt>
+          <dd class="font-mono text-xs break-all select-all p-2 rounded border" style="border-color: var(--p-content-border-color)">{{ groupedDigest }}</dd>
+        </div>
+      </dl>
+      <p v-else class="text-sm mt-4 italic" style="color: var(--p-text-muted-color)">{{ t('about.integrityUnavailable') }}</p>
     </section>
 
     <!-- Tech stack -->

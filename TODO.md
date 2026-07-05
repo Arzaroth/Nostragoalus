@@ -555,6 +555,41 @@ landed alongside it (verified by running the stack):
       Keycloak/Authentik) - would also cover account linking and the
       password nuke in a real browser flow.
 
+## Client-code integrity (build-integrity fingerprint)
+
+Shipped: `mise-tasks/build-integrity` (wired as the `postbuild` npm script)
+SHA-256s every content-hashed client chunk under `.output/public/_nuxt/*.js`,
+folds them into one deterministic bundle digest (`lib/integrity/digest.mjs`),
+and writes `.output/public/build-integrity.json` (served at
+`/build-integrity.json`). The About page shows the version + grouped digest.
+
+- What it **does** guarantee: the digest is deterministic and reproducible from
+  identical source + toolchain (Vite chunk names are content-addressed). An
+  operator can publish the digest of an honest build; if a later build silently
+  swaps the E2EE crypto code, the served digest diverges and the difference is
+  **detectable** by anyone comparing the served value (or a self-computed hash of
+  the downloaded chunks) against the independently published one.
+- What it does **NOT** guarantee: it does not prevent a compelled/malicious
+  operator from shipping altered JS. This is server-delivered code - the same
+  server that ships bad JS can serve a matching (faked) `/build-integrity.json`,
+  and nothing stops a hostile bundle on the very first load. The honest claim is
+  detectability of a *divergence from a published reproducible build*, not
+  prevention. Real assurance requires a third party (or the user) to reproduce
+  the build and/or hash the delivered chunks out-of-band.
+- [ ] Publish the per-release digest somewhere the operator does not control
+      unilaterally (git tag / release notes / a mirror) so the comparison value
+      has independent provenance. Today it is only surfaced in-app.
+- [ ] Reproducible-build doc: pin the exact toolchain (node, pnpm, lockfile) so a
+      third party can regenerate the identical digest and confirm it.
+- [ ] Real Subresource Integrity (`integrity=` on the app's own chunks) is **not**
+      cleanly feasible here and was deliberately skipped: Nuxt/Vite inject
+      code-split chunks via dynamic `import()` and `<link rel="modulepreload">`
+      that carry no `integrity` attribute, and dynamic-import integrity (import-map
+      integrity) is not broadly supported. A hand-rolled SRI over Nuxt's dynamic
+      graph would break on every rebuild; the published-hash approach above is the
+      pragmatic substitute. Same reasoning as the deferred script-src CSP
+      (see `nuxt.config.ts` routeRules note).
+
 ## Ops
 
 - [x] Nightly backup cron on the host (pre-1.0 checklist):
