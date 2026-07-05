@@ -786,6 +786,7 @@ describe('league modes', () => {
     expect(normalizeLives('EASY', null)).toBeNull()
     expect(() => normalizeLives('HARDCORE', null)).toThrow(ValidationError)
     expect(() => normalizeLives('HARDCORE', 0)).toThrow(ValidationError)
+    expect(() => normalizeLives('HARDCORE', 100)).toThrow(ValidationError)
     expect(() => normalizeLives('HARDCORE', 1.5)).toThrow(ValidationError)
   })
 

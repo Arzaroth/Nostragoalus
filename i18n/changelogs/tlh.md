@@ -5,6 +5,9 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### chelpu'
+- **ghom mIw**: DaH wej mIw chu'vo' wa' lo'laHbogh ghom chenmoHlaH (qu'meH taghDI', mIw ngaQ). **QatlhHa'** - Qapwl' ghap rontlhutlh neH per, chetvl'mo' ta' - jIyDaj Doy' law' DIl. **Qatlh** - meqmey per 'ej Hoch tlhIngan wanl'vaD voqmeH Huch Sum; lugh chetvl' DIl SoHvaD, 'ej lugh San chetvl' cha'logh DIl. **ram Qatlh** - Qan'eghbogh loD'a' Qav, muj chetvl'mo' yIn natlh (chovnatlh wIvbogh pIn), 'ej yInlIj natlhDI' teqlu'; Qan'eghbogh chaH Qapqa' tay'. Hoch ghom mIwDaj cha' 'ej tlhaptlhutlh raS (naghmey raS, ghap ram Qatlhvaddel Qan'eghbogh tetlh).
+
 ## [2.21.1] - 2026-07-05
 
 ### tI'pu'

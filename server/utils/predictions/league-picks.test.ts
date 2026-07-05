@@ -11,7 +11,7 @@ import {
   seedCompetition,
 } from '../../../tests/factories'
 import { findRoundId } from '../sync/rounds'
-import { leagueMember, leaguePrediction } from '../../../db/schema'
+import { leagueMember, leaguePrediction, leaguePredictionCommitment } from '../../../db/schema'
 import { ForbiddenError, LockedError, NotFoundError, ValidationError } from '../errors'
 import {
   getLeagueCompleteness,
@@ -120,6 +120,13 @@ describe('upsertLeaguePrediction', () => {
     await expect(
       upsertLeaguePrediction(db, { leagueId, userId: 'u1', matchId: a, home: 1, away: 0, wager: -1 }, NOW),
     ).rejects.toBeInstanceOf(ValidationError)
+    // A fractional or out-of-range stake is rejected the same way.
+    await expect(
+      upsertLeaguePrediction(db, { leagueId, userId: 'u1', matchId: a, home: 1, away: 0, wager: 1.5 }, NOW),
+    ).rejects.toBeInstanceOf(ValidationError)
+    await expect(
+      upsertLeaguePrediction(db, { leagueId, userId: 'u1', matchId: a, home: 1, away: 0, wager: 1000 }, NOW),
+    ).rejects.toBeInstanceOf(ValidationError)
     // Two matches in the round -> budget 6. Stake 5 then 5 overflows.
     await upsertLeaguePrediction(db, { leagueId, userId: 'u1', matchId: a, home: 1, away: 0, wager: 5 }, NOW)
     await expect(
@@ -224,6 +231,28 @@ describe('setLeagueJoker', () => {
     const open = await openMatch()
     await expect(setLeagueJoker(db, { leagueId, userId: 'outsider', matchId: open, isJoker: true }, NOW)).rejects.toBeInstanceOf(ForbiddenError)
     await expect(setLeagueJoker(db, { leagueId, userId: 'u1', matchId: open, isJoker: true }, NOW)).rejects.toBeInstanceOf(NotFoundError)
+  })
+
+  it('rejects a NORMAL league (overrides only exist in moded leagues)', async () => {
+    const normal = await makeLeague(db, { competitionId, ownerId: 'u1', mode: 'NORMAL' })
+    const m = await openMatch()
+    await makePrediction(db, { userId: 'u1', matchId: m, roundId, home: 1, away: 0 })
+    await expect(setLeagueJoker(db, { leagueId: normal, userId: 'u1', matchId: m, isJoker: true }, NOW)).rejects.toBeInstanceOf(
+      ValidationError,
+    )
+  })
+
+  it('records a league commitment for the override it seeds from the base pick', async () => {
+    const leagueId = await makeLeague(db, { competitionId, ownerId: 'u1', mode: 'EASY' })
+    const a = await openMatch()
+    const b = await openMatch()
+    await makePrediction(db, { userId: 'u1', matchId: a, roundId, home: 1, away: 0 })
+    await makePrediction(db, { userId: 'u1', matchId: b, roundId, home: 2, away: 1 })
+
+    await setLeagueJoker(db, { leagueId, userId: 'u1', matchId: a, isJoker: true }, NOW)
+    const rows = await db.select().from(leaguePredictionCommitment).where(eq(leaguePredictionCommitment.matchId, a))
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({ leagueId, homeGoals: 1, awayGoals: 0 })
   })
 })
 

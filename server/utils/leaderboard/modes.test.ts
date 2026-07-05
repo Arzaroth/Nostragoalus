@@ -12,8 +12,8 @@ import {
 } from '../../../tests/factories'
 import { findRoundId } from '../sync/rounds'
 import { ensureDefaultScoringConfig } from '../scoring/store'
-import { bestScorerPick, championPick, user } from '../../../db/schema'
-import { eq } from 'drizzle-orm'
+import { bestScorerPick, championPick, scoringConfig, user } from '../../../db/schema'
+import { and, eq, isNull } from 'drizzle-orm'
 import { getLeagueModeBoard, type ModePointsRow, type SurvivalRow } from './modes'
 
 let db: TestDb
@@ -93,6 +93,22 @@ describe('getLeagueModeBoard - EASY', () => {
 
     const board = await getLeagueModeBoard(db, { leagueId, mode: 'EASY', competitionId })
     expect(rowsOf(board).a).toMatchObject({ points: 1 })
+  })
+
+  it('scores under an ODDS bonus source (odds resolved per outcome)', async () => {
+    // Flip the default config from CROWD to ODDS so the odds-bonus branch runs.
+    await db
+      .update(scoringConfig)
+      .set({ bonusSource: 'ODDS' })
+      .where(and(eq(scoringConfig.isActive, true), isNull(scoringConfig.competitionId)))
+    await makeUser(db, 'a')
+    const leagueId = await makeLeague(db, { competitionId, ownerId: 'a', mode: 'EASY' })
+    const m = await scoredMatch(2, 1) // HOME wins
+    await makePrediction(db, { userId: 'a', matchId: m, roundId, home: 1, away: 0 }) // HOME, correct
+
+    const board = await getLeagueModeBoard(db, { leagueId, mode: 'EASY', competitionId })
+    // No odds snapshot seeded -> bonus falls back to the base correct point.
+    expect(rowsOf(board).a).toMatchObject({ rank: 1, points: 1, outcomeCount: 1 })
   })
 })
 

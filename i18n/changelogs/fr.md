@@ -5,6 +5,9 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Ajouté
+- **Modes de ligue** : une ligue peut désormais être créée dans l'un des trois nouveaux modes (son mode est verrouillé dès le coup d'envoi de la compétition). **Facile** - désignez seulement le vainqueur ou le nul, et marquez selon les cotes, les outsiders rapportant davantage. **Difficile** - pronostiquez les scores et misez un budget de confiance sur chaque journée ; un pronostic juste rapporte votre mise et le score exact rapporte le double. **Extrême** - le dernier joueur en lice, où un mauvais pronostic coûte une vie (le propriétaire choisit combien) et où l'épuisement de vos vies vous élimine, les survivants gagnant ensemble. Chaque ligue affiche son mode et un classement adapté (un tableau de points, ou une liste de survie pour l'extrême).
+
 ## [2.21.1] - 2026-07-05
 
 ### Corrigé
