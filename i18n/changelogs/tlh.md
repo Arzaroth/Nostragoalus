@@ -5,6 +5,15 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### choHpu'
+
+- ghom "wIvmey Damev" qeSHommey "N may' wIvnISlu'" HaSta qellu'be' DaH. patlh 'ej may' 'echletmey ghom maq neH, HaSta jatlhlaHbe'bogh Doch poQDI' - ghom motlh chevmey lugh, ghom Qatlh lIw. wIv Hutlh wa'logh neH HaSta cha'lu', vaj ghom law' DalojDI' qeSHommey laDlaH.
+
+### tI'pu'
+
+- nughmey HaSta (je consensus-wI' HaSta, Wrapped HaSta) vo' Sep DachoHDI', Sep chu'vaD HaSta rap DataHtaH DaH, may'mey HaStavaD DalItlhbe'.
+- chevwI' qan Hutlh tlhopal may' lujwI'pu' chImmoH chevwI' DaH - Euro rur, France Netherlands je tlhopal may' lujpu'DI' chImmoHlu'be'pu'.
+
 ## [2.25.0] - 2026-07-05
 
 ### chelpu'

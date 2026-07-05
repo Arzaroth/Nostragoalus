@@ -210,12 +210,9 @@ const issuesByMatch = computed(() => {
   }
   return map
 })
+// issuesByMatch drops NEEDS_PICK, so a chip is only ever a score or a stake gap.
 function reasonLabel(reason: string): string {
-  return reason === 'NEEDS_EXACT'
-    ? t('leagues.reasonScore')
-    : reason === 'NEEDS_STAKE'
-      ? t('leagues.reasonStake')
-      : t('leagues.reasonPick')
+  return reason === 'NEEDS_STAKE' ? t('leagues.reasonStake') : t('leagues.reasonScore')
 }
 
 // Rounds whose one joker already sits on a locked (started/finished) match: it

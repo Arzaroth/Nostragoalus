@@ -1410,7 +1410,6 @@
     "nudgeTitle": "ทายให้ครบ",
     "nudgeNeedsExact": "{n} ยังไม่มีสกอร์",
     "nudgeNeedsStake": "{n} ยังไม่วางเดิมพัน",
-    "reasonPick": "ยังไม่ทาย",
     "reasonScore": "ยังไม่มีสกอร์",
     "reasonStake": "ยังไม่วางเดิมพัน"
   },

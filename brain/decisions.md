@@ -229,6 +229,12 @@ feature/architecture doc that implements it.
   outcome. The nudge surfaces the mode-specific gap (a real score, a stake); a
   plain missing pick is left to the base outstanding-picks banner so the
   per-league nudges don't repeat it once per league (`features/league-modes.md`).
+- **Map elimination is format-aware for the third-place game.** `computeEliminatedTeams`
+  skips a semi-final loser only when the competition's format plays a third-place
+  match (that match then eliminates its own loser); a format without one, like the
+  Euro, greys the semi-final losers at the semi-final. The flag is `thirdPlace` on
+  the per-competition `Tiebreakers` struct (`server/utils/stats/tiebreakers.ts`),
+  defaulting true so an unknown format never falsely greys a still-alive team.
 - **Mode frozen at kickoff.** No moded create or swap once any match has started,
   so the rules can't shift mid-tournament (`assertCompetitionNotRunning`).
 - **HARD round budget is serialized per member+round.** The stake write reads the
