@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from 'node:crypto'
+import { createSignedTokenCodec } from '../signed-token/codec'
 import { SHARE_LOCALES, type ShareLocale } from '../share/token'
 
 // A calendar-feed token is a stateless, signed capability naming the user whose
@@ -22,27 +22,6 @@ export interface FeedTokenPayload {
   v: 1
 }
 
-// Domain-separate the signing key from the raw auth secret so a feed token HMAC
-// can never collide with anything else signed under the same secret.
-function feedKey(secret: string): Buffer {
-  return createHmac('sha256', secret).update('nostragoalus/ical-feed/v1').digest()
-}
-
-function b64url(buf: Buffer): string {
-  return buf.toString('base64url')
-}
-
-// Exported so tests can forge an authentically-MACed token over a deliberately
-// malformed body (to exercise the shape + JSON guards in verify).
-export function signFeedBody(secret: string, body: string): string {
-  return b64url(createHmac('sha256', feedKey(secret)).update(body).digest())
-}
-
-export function signFeedToken(secret: string, payload: FeedTokenPayload): string {
-  const body = b64url(Buffer.from(JSON.stringify(payload)))
-  return `${body}.${signFeedBody(secret, body)}`
-}
-
 function isValidPayload(value: unknown): value is FeedTokenPayload {
   if (typeof value !== 'object' || value === null) return false
   const p = value as Record<string, unknown>
@@ -55,26 +34,13 @@ function isValidPayload(value: unknown): value is FeedTokenPayload {
   )
 }
 
-// Returns the payload only when the signature matches AND the shape is valid;
-// any tampering, truncation, or unknown field shape yields null (-> 404 at the
-// route). Never throws on attacker-controlled input. Cap the length so an
-// anonymous caller can't force an unbounded HMAC on this keyless public route.
-const MAX_TOKEN_LENGTH = 512
+// The signing/verify path (b64url, domain-separated HMAC, timing-safe compare,
+// 512-char cap -> null on any tampering) lives in the shared codec; this module
+// only pins the domain tag and the payload shape.
+const codec = createSignedTokenCodec<FeedTokenPayload>('nostragoalus/ical-feed/v1', isValidPayload)
 
-export function verifyFeedToken(secret: string, token: string | undefined): FeedTokenPayload | null {
-  if (!token || token.length > MAX_TOKEN_LENGTH) return null
-  const dot = token.indexOf('.')
-  if (dot <= 0) return null
-  const body = token.slice(0, dot)
-  const provided = token.slice(dot + 1)
-  const expected = signFeedBody(secret, body)
-  const a = Buffer.from(provided)
-  const b = Buffer.from(expected)
-  if (a.length !== b.length || !timingSafeEqual(a, b)) return null
-  try {
-    const parsed: unknown = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'))
-    return isValidPayload(parsed) ? parsed : null
-  } catch {
-    return null
-  }
-}
+// Exposed so tests can forge an authentically-MACed token over a deliberately
+// malformed body (to exercise the shape + JSON guards in verify).
+export const signFeedBody = codec.signBody
+export const signFeedToken = codec.sign
+export const verifyFeedToken = codec.verify
