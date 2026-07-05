@@ -48,7 +48,8 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   competition-end trophies (best overall, best of the group stage, best of the knockouts, most exact
   scorelines, ties shared) alongside a catalog of achievement
   badges earned as you play (first exact score, hot streaks, beating the crowd and more, graded
-  bronze/silver/gold) - and a **showcase** of up to three you pin beside your name in the rankings;
+  bronze/silver/gold, with a progress bar on every unfinished badge showing how close you are to its
+  next tier) - and a **showcase** of up to three you pin beside your name in the rankings;
   a new trophy or badge alerts you over the bell and web push
 - **Private leagues**: spin up a league for friends, family or the office with per-league rankings
   and crowd totals; invite by join code or a shareable **invite link** (optional expiry and a cap on
@@ -164,6 +165,9 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   home-win and draw lean, the teams you over- and under-rate, accuracy round by round, and your
   best call and biggest miss. Reachable from the nav once signed in and, unlike Tournament Wrapped,
   it works mid-tournament
+- **Shareable cards**: a Share button on your own profile or analytics page mints a signed link to a
+  server-rendered card (your standing, or your prediction bias) that opens without a login and unfurls
+  with a preview when you send it to friends
 - Auth: identifier-first login with **SSO domain capture** - runtime-configurable OIDC / SAML /
   Google providers (several domains each, display names, envelope-encrypted secrets, in-place
   editing, SP metadata for IdP setup; an internal or private-network IdP needs its origin in
