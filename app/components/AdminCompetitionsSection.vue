@@ -52,9 +52,9 @@ const saveMutation = useMutation({
       <div v-else-if="!data || !data.competitions.length" class="text-sm" style="color: var(--p-text-muted-color)">{{ t('admin.competitions.none') }}</div>
       <table v-else class="w-full text-sm">
         <thead>
-          <tr style="color: var(--p-text-muted-color)" class="text-start">
-            <th class="py-1">{{ t('admin.competitions.colCompetition') }}</th>
-            <th>{{ t('admin.competitions.colFeaturedTeam') }}</th>
+          <tr style="color: var(--p-text-muted-color)">
+            <th class="py-1 pe-3 text-start font-medium">{{ t('admin.competitions.colCompetition') }}</th>
+            <th class="pe-3 text-start font-medium">{{ t('admin.competitions.colFeaturedTeam') }}</th>
             <th />
           </tr>
         </thead>
