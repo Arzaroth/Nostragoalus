@@ -25,7 +25,7 @@ import type {
 import { NotFoundError } from '../errors'
 import { hasScoredFinal } from '../awards/service'
 import { computeAchievementStats } from '../achievements/service'
-import { compareLeaderboardRows, getLeaderboard } from '../leaderboard/service'
+import { compareLeaderboardRows, denseRanks, getLeaderboard } from '../leaderboard/service'
 
 interface PickRow {
   matchId: string
@@ -115,18 +115,10 @@ function replayJourney(
     if (!cumulative.has(userId)) continue
     const board = [...cumulative.entries()].map(([id, agg]) => ({ userId: id, ...agg }))
     board.sort(compareLeaderboardRows)
-    // Standard competition ranking: ladder-level rows share a rank.
-    let rank = 0
-    let prev: string | null = null
-    let userRank = 0
-    board.forEach((r, i) => {
-      const key = `${r.totalPoints}|${r.exactCount}|${r.outcomeCount}|${r.gdCount}`
-      if (key !== prev) {
-        rank = i + 1
-        prev = key
-      }
-      if (r.userId === userId) userRank = rank
-    })
+    // Standard competition ranking ("1224"): ladder-level rows share a rank.
+    const ranks = denseRanks(board.map((r) => `${r.totalPoints}|${r.exactCount}|${r.outcomeCount}|${r.gdCount}`))
+    const userIdx = board.findIndex((r) => r.userId === userId)
+    const userRank = userIdx >= 0 ? ranks[userIdx] : 0
     journey.push({
       roundLabel: rnd.label,
       sortOrder: rnd.sortOrder,

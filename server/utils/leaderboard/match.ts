@@ -7,7 +7,7 @@ import { getScoringConfigFor } from '../scoring/store'
 import type { ScoringRules } from '../scoring/config'
 import { scorePredictions } from '../scoring/engine'
 import { outcomeOf, type BaseTier } from '../scoring/tiers'
-import { compareLeaderboardRows } from './service'
+import { compareLeaderboardRows, denseRanks } from './service'
 
 export interface MatchStandingRow {
   rank: number
@@ -166,16 +166,10 @@ export async function getMatchLeagueStandings(
   )
 
   // Standard competition ranking ("1224"): ties share a rank, the next distinct
-  // row skips ahead.
-  let rank = 0
-  let prevKey: string | null = null
+  // row skips ahead. Same dense-skip helper the main leaderboard uses.
+  const ranks = denseRanks(scored.map((r) => `${r.points}|${r.exact}|${r.outcome}|${r.gd}`))
   scored.forEach((r, i) => {
-    const key = `${r.points}|${r.exact}|${r.outcome}|${r.gd}`
-    if (key !== prevKey) {
-      rank = i + 1
-      prevKey = key
-    }
-    r.rank = rank
+    r.rank = ranks[i]
   })
 
   return {
