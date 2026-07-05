@@ -151,6 +151,7 @@
   "dm": {
     "title": "Messages",
     "message": "Message",
+    "cantMessage": "Cet utilisateur n'a pas activé la messagerie.",
     "open": "Ouvrir les messages privés",
     "close": "Fermer",
     "new": "Nouveau message",

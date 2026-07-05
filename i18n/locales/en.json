@@ -155,6 +155,7 @@
   "dm": {
     "title": "Messages",
     "message": "Message",
+    "cantMessage": "This user hasn't set up messaging.",
     "open": "Open direct messages",
     "close": "Close",
     "new": "New message",
