@@ -103,19 +103,6 @@ const showTwin = computed(() => twinEnabled.value && !!twin.value)
         <SelectButton v-model="global" :options="scopeOptions" option-label="label" option-value="value" :allow-empty="false" size="small" />
       </div>
     </div>
-    <p class="text-sm mb-5" style="color: var(--p-text-muted-color)">{{ t('predictions.publicNote') }}</p>
-    <PredictionList :predictions="kickedOff" />
-    <!-- The "now" boundary: played picks above, still-upcoming (admin-only) below.
-         Also the scroll anchor centered on load. Invisible when there's nothing
-         upcoming to introduce. -->
-    <div ref="nowAnchor" style="scroll-margin-top: calc(var(--ng-header-h, 4rem) + 1rem)">
-      <div v-if="upcoming.length" class="flex items-center gap-3 my-4 text-xs font-semibold" style="color: var(--p-text-muted-color)">
-        <span class="flex-1 border-t" style="border-color: var(--p-content-border-color)" />
-        <span class="inline-flex items-center gap-1.5"><i class="pi pi-eye-slash" />{{ t('predictions.adminUpcomingDivider') }}</span>
-        <span class="flex-1 border-t" style="border-color: var(--p-content-border-color)" />
-      </div>
-    </div>
-
     <template v-if="showTwin && twin">
       <p class="text-sm mb-1 flex items-center gap-2 flex-wrap" style="color: var(--p-text-muted-color)">
         <span>😈 {{ t('bot.evilTwinNote') }}</span>
