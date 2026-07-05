@@ -12,6 +12,11 @@
 
 export type Criterion = 'points' | 'gd' | 'gf' | 'wins' | 'h2h-points' | 'h2h-gd' | 'h2h-gf'
 
+// The classic FIFA ladder: overall points, then goal difference, then goals for.
+// The default within-group / best-third order when nothing more specific applies.
+// Shared (never mutated) so the ~5 sites that fall back to it can't drift.
+export const CLASSIC: Criterion[] = ['points', 'gd', 'gf']
+
 export interface Tiebreakers {
   // Within-group ranking (head-to-head criteria operate on the matches between the
   // tied teams only). Always starts with 'points'.
@@ -29,13 +34,13 @@ const GD_FIRST: Criterion[] = ['points', 'gd', 'gf', 'h2h-points', 'h2h-gd', 'h2
 
 const WORLD_CUP_2026: Tiebreakers = {
   withinGroup: H2H_FIRST,
-  bestThird: ['points', 'gd', 'gf'],
+  bestThird: CLASSIC,
   advancePerGroup: 2,
   bestThirds: 8,
 }
 const EURO_2024: Tiebreakers = {
   withinGroup: H2H_FIRST,
-  bestThird: ['points', 'gd', 'gf', 'wins'],
+  bestThird: [...CLASSIC, 'wins'],
   advancePerGroup: 2,
   bestThirds: 4,
 }
@@ -48,8 +53,8 @@ const WORLD_CUP_2022: Tiebreakers = {
 
 // Unknown competitions fall back to the classic FIFA order (GD first), top two up.
 const DEFAULT_TIEBREAKERS: Tiebreakers = {
-  withinGroup: ['points', 'gd', 'gf'],
-  bestThird: ['points', 'gd', 'gf'],
+  withinGroup: CLASSIC,
+  bestThird: CLASSIC,
   advancePerGroup: 2,
   bestThirds: 0,
 }
