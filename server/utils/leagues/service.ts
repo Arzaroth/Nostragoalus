@@ -16,6 +16,7 @@ import { listCompetitionTeams } from '../champion/service'
 import { notifyLeagueJoin, notifyLeagueRemoved, notifyLeagueRole } from '../notifications/events'
 import { generateJoinCode, normalizeJoinCode, type JoinCodeGenerator } from './code'
 import { canKick, canManageLeague, canSeeJoinCode, type LeagueRole } from './permissions'
+import { stampUserFlagOnce } from '../user-flags/service'
 
 export type LeagueVisibility = 'PRIVATE' | 'PUBLIC'
 
@@ -56,10 +57,7 @@ function isUniqueViolation(error: unknown): boolean {
 }
 
 async function stampPromptDismissed(db: AppDatabase, userId: string): Promise<void> {
-  await db
-    .update(user)
-    .set({ leaguePromptDismissedAt: new Date() })
-    .where(and(eq(user.id, userId), sql`${user.leaguePromptDismissedAt} is null`))
+  await stampUserFlagOnce(db, userId, 'leaguePromptDismissedAt')
 }
 
 export async function getLeague(db: AppDatabase, id: string): Promise<LeagueRow | null> {
