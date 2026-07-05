@@ -302,7 +302,7 @@ export async function postDmMessage(
   if (images.length > 0) {
     const store = resolveStorage(driver)
     for (let idx = 0; idx < images.length; idx += 1) {
-      const storageKey = await putChatImage(store, messageId, idx, new TextEncoder().encode(images[idx].ciphertext))
+      const storageKey = await putChatImage(store, messageId, idx, images[idx].ciphertext)
       attachmentRows.push({ messageId, idx, epoch: opts.epoch, storageKey, ciphertext: null, byteSize: images[idx].byteSize })
     }
   }
@@ -377,7 +377,7 @@ export async function editDmMessage(
     const store = resolveStorage(driver)
     for (const img of addImages) {
       const idx = nextIdx++
-      const storageKey = await putChatImage(store, opts.messageId, idx, new TextEncoder().encode(img.ciphertext))
+      const storageKey = await putChatImage(store, opts.messageId, idx, img.ciphertext)
       added.push({ idx, epoch: t.keyEpoch, storageKey, byteSize: img.byteSize })
     }
   }
