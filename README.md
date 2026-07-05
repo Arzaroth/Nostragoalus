@@ -88,8 +88,11 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   inside the chat window, pick up where you left off at a "new messages" line drawn at your last-read
   point, undock the window
   into a draggable panel, and mute or report others. A **Verify keys** panel shows
-  per-member safety numbers to compare out-of-band (first-seen pinning, change warning), an admin can
-  **rotate the key** to revoke a removed member, and members can flag a message - enough reports
+  per-member safety numbers to compare out-of-band (first-seen pinning, change warning) and cross-checks
+  each member's key against a public, tamper-evident **key-transparency log**, so a server that
+  substitutes a member's key is caught; removing a member automatically marks the chat to **re-key**
+  (forward secrecy - an admin's client rotates the group key so the ex-member can't read later messages),
+  and members can flag a message - enough reports
   auto-hide it pending an owner/moderator's call (moderation acts on message ids and report counts,
   never on the unreadable content)
 - **Direct messages (end-to-end encrypted)**: private one-to-one conversations from a messages dock in
@@ -133,7 +136,8 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   app (Google Calendar, Apple Calendar, Outlook, Thunderbird) - a personal signed link (https +
   webcal) revealed in Preferences that stays up to date on its own, with a reminder three hours
   before each match you haven't predicted; it carries fixtures and results but never your predicted
-  score, so it's safe to hand to a calendar service
+  score, so it's safe to hand to a calendar service. If a link leaks, **regenerate** it in Preferences
+  to instantly revoke every previously shared URL and issue a fresh one
 - **Shareable prediction cards**: turn any pick into a social image (server-rendered OG card via
   satori + resvg, localized) with a link that unfurls in chats - result, sealed teaser, or an
   owner-only score reveal; signed stateless tokens keep the field's picks hidden until kickoff
@@ -167,6 +171,9 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   unconfirmed accounts); **2FA** (TOTP, email codes, single-use backup codes, trusted devices);
   **passkeys** (sudo-gated registration). SSO-managed accounts hand credential management to the IdP
   (an SSO sign-in removes any local password; admins are exempt as break-glass access)
+- **Client-code integrity**: the About page publishes the SHA-256 of the client JavaScript bundle the
+  server actually delivered, so a divergence from the digest published for a release makes a silent swap
+  of the end-to-end-encryption code detectable
 - Admin user management (roles, bans, leaderboard visibility, 2FA removal, SSO unlink); with SMTP
   configured, account deletion is confirmed through a mailed link
 - Admin **Background tasks** page: schedule, next/last run, run count and last result for every
