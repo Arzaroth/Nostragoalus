@@ -4,8 +4,15 @@ One-to-one, end-to-end encrypted private messages between two users, global (not
 league-scoped). Built on the [chat](chat.md) crypto and the same `chat_message`
 row: the server stores ciphertext + sealed keys only, never plaintext. A DM is a
 chat message scoped to a two-person thread instead of a league room, so it
-inherits the reply/reaction/attachment/report machinery for free (only text +
-edit are wired in v1 - see [TODO](../../TODO.md)).
+inherits the reply/reaction/attachment/report machinery for free.
+
+DMs and league chat share **one messaging surface**: the [ChatDock](chat.md)
+gained a League | Direct mode toggle, and an open DM conversation is rendered by
+the **same `ChatPanel`** that renders league chat. So a DM has full chat parity -
+reactions, reply, threads, edit, images, the media gallery and link previews - not
+a lean text-only cut. The only league-specific chrome a DM drops is what has no
+meaning in a 1:1: enable/disable, key rotation, roster/verify, moderation, reports
+and @mentions (no moderator, no roster to mention).
 
 ## Encryption model
 
@@ -82,25 +89,44 @@ body) and deep-links via `dmPath` (`/?dm=<threadId>`). The `dm` push category
 column; `content.ts` renders the copy and tags it `dm:<threadId>` so repeat DMs
 from the same thread collapse.
 
-## The DmDock UI
+## The UI: Direct mode inside ChatDock
 
-`app/components/DmDock.vue` is a global, floating bottom-left dock, mounted once in
-`app/layouts/default.vue` (so it is present on every page, unlike the
-league-gated [ChatDock](chat.md)). It has three views: an inbox
-(`listThreads` summaries with unread counts), an open thread (decrypted messages +
-composer + edit), and a new-recipient search. `app/composables/useDms.ts` drives
-it: it reuses `app/utils/e2ee.ts` to seal a fresh key to both pubkeys on thread
-creation, unwrap the per-epoch keys, and encrypt/decrypt messages client-side;
-it opens the DM socket and patches the inbox on `dm:new`/`dm:edit`. A DM
-notification deep-links to `/?dm=<threadId>`, which opens the dock on that thread.
+There is no standalone DM dock. `app/components/DmDock.vue` and
+`app/composables/useDms.ts` were **deleted**; DMs live inside
+`app/components/ChatDock.vue`, the single bottom-right messaging bubble.
 
-## Why a separate dock
+- **Availability.** The dock is now `v-if="signedIn"`, not league-gated - any
+  signed-in user gets it, even on a page with no league selected. The bubble's
+  aria-label is still `chat.dock.open` ("Open league chat"); its unread badge sums
+  league activity **and** DM unread (`bubbleTotal`).
+- **Mode toggle.** The header carries a two-button League | Direct toggle (a
+  `pi-users` glyph and a `pi-send` paper-plane), shown only when a league chat is
+  in reach. Off a league (`leagueId` null) the dock forces `mode = 'direct'` and
+  hides the toggle, so DMs work where league chat cannot.
+- **Direct mode views.** Three inner views (`dmView`): an **inbox** (thread list
+  with unread counts and the other participant's name/avatar), a **new-message**
+  view opened by the header pencil (a recipient search - suggestions shown on
+  open, an empty query returns co-members), and an **open thread** rendered by
+  `<ChatPanel :dm-thread-id="...">` (full chat parity). Picking a recipient calls
+  `startThread` then opens the thread.
+- **Deep link.** `/?dm=<threadId>` (from a bell/push) opens the dock straight into
+  Direct mode on that conversation (`onMounted` reads `route.query.dm`).
 
-The design intent was a tab inside the existing [ChatDock](chat.md), but ChatDock
-is league-gated (it only shows on `/[competition]/` pages with a chat-enabled
-league selected), while DMs are global and must work everywhere. So DMs ship as a
-separate global `DmDock`. Consolidating the two docks is a possible future step -
-see [decisions.md](../decisions.md) and [TODO](../../TODO.md).
+Three composables back it:
+
+- **`app/composables/useDmRoom.ts`** - the per-thread engine, a drop-in for
+  `useLeagueChat`'s interface (same surface: `messages`, `send`, `react`,
+  `editMessage`, reply/thread, images...), pointed at `/api/dm/${threadId}/*` and
+  unwrapping the per-thread key instead of a league group key. This is what lets
+  the shared `ChatPanel` drive a DM unchanged; league-only ops
+  (enable/disable/rotate/rekey/roster/moderation/typing) are inert.
+- **`app/composables/useDmInbox.ts`** - the list side: the threads query,
+  `ensureIdentity`, `searchRecipients`, `startThread`, `markRead`, `totalUnread`.
+  It reuses `app/utils/e2ee.ts` to seal a fresh key to both pubkeys on thread
+  creation and opens the DM socket, patching the inbox on `dm:new`/`dm:edit`.
+- **`app/composables/useDmOpen.ts`** - a one-slot app-level signal so a "Message"
+  button elsewhere (e.g. a user profile page) asks the dock to switch to Direct
+  and open/start a thread with a given user.
 
 ## Sources
 
@@ -111,9 +137,16 @@ see [decisions.md](../decisions.md) and [TODO](../../TODO.md).
 - `server/utils/dm/service.ts` (`createThread`, `listThreads`, `getThreadDetail`,
   `postDmMessage`, `editDmMessage`, `listDmMessages`, `markThreadRead`,
   `searchRecipients`), `server/utils/dm/notify.ts` (`notifyDm`)
-- `server/api/dm/**` (`threads`, `[threadId]/{index,messages,edit,read}`,
-  `identity`, `recipients`)
+- `server/utils/chat/access.ts` - the scope-agnostic authorizer: a caller may act
+  on a `chat_message` if they are a member of its league room **or** a participant
+  of its DM thread, so the shared message/reaction/attachment/edit routes serve
+  both scopes.
+- `server/api/dm/**` (`threads`, `[threadId]/{index,messages,edit,read,react}`,
+  `[threadId]/attachments/[messageId]`, `[threadId]/media`, `identity`,
+  `recipients`) - `messages.get` returns enriched `ChatMessageDTO`s, `edit.post`
+  carries image add/remove, matching the league-chat routes.
 - `server/utils/live/hub.ts` (`publishDmMessage`, `publishDmEdit`),
   `server/utils/push/{prefs,content}.ts` (`dm` category)
-- `shared/types/dm.ts` (`DmMessageDTO`, `dmPath`), `app/composables/useDms.ts`,
-  `app/components/DmDock.vue`, `app/utils/e2ee.ts`
+- `shared/types/dm.ts` (`DmMessageDTO`, `DmThreadDetailDTO`, `DmRecipientDTO`,
+  `dmPath`), `app/composables/{useDmRoom,useDmInbox,useDmOpen}.ts`,
+  `app/components/{ChatDock,ChatPanel}.vue`, `app/utils/e2ee.ts`
