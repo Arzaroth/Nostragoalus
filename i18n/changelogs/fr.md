@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [2.26.0] - 2026-07-05
+
 ### Ajouté
 
 - Barres de progression de la vitrine des trophées : chaque badge que vous n'avez pas encore porté au maximum indique désormais votre distance jusqu'au palier suivant - « 3 / 5 » vers l'échelon suivant, affiché aussi sur les badges verrouillés, pour voir ce que vous visez et pas seulement ce que vous détenez déjà.
