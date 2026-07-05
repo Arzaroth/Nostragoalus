@@ -1565,6 +1565,32 @@
       "rarity": "Seulement {pct}% des joueurs ont trouvé ce score",
       "tagline": "Pronostiquez les scores. Soyez plus visionnaire que vos amis."
     },
+    "shareProfile": "Partager le profil",
+    "shareAnalytics": "Partager les stats",
+    "profileCard": {
+      "title": "Profil",
+      "pts": "points",
+      "rank": "sur {players}",
+      "exact": "exacts",
+      "haul": "butin",
+      "tagline": "Pronostiquez les scores. Soyez plus visionnaire que vos amis."
+    },
+    "analyticsCard": {
+      "title": "Stats",
+      "accuracy": "précision",
+      "exact": "taux d'exacts",
+      "goals": "biais de buts",
+      "home": "biais domicile",
+      "tagline": "Pronostiquez les scores. Soyez plus visionnaire que vos amis."
+    },
+    "profileLanding": {
+      "title": "{name} sur Nostragoalus",
+      "subtitle": "Nostragoalus est un jeu de pronostics football : pronostiquez les scores, gagnez des points, soyez plus visionnaire que vos amis."
+    },
+    "analyticsLanding": {
+      "title": "Les biais de {name}",
+      "subtitle": "Nostragoalus est un jeu de pronostics football : pronostiquez les scores, gagnez des points, soyez plus visionnaire que vos amis."
+    },
     "landing": {
       "resultTitle": "{name} a pronostiqué {score}",
       "liveTitle": "{name} a pronostiqué {score}",

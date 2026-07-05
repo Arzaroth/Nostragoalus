@@ -1565,6 +1565,32 @@
       "rarity": "มีผู้เล่นเพียง {pct}% ที่ทายสกอร์นี้ถูก",
       "tagline": "ทายสกอร์ ทำนายให้แม่นกว่าเพื่อน"
     },
+    "shareProfile": "แชร์โปรไฟล์",
+    "shareAnalytics": "แชร์สถิติ",
+    "profileCard": {
+      "title": "โปรไฟล์",
+      "pts": "คะแนน",
+      "rank": "จาก {players}",
+      "exact": "แม่นยำ",
+      "haul": "ของรางวัล",
+      "tagline": "ทายสกอร์ ทำนายให้แม่นกว่าเพื่อน"
+    },
+    "analyticsCard": {
+      "title": "สถิติ",
+      "accuracy": "ความแม่นยำ",
+      "exact": "อัตราแม่นยำ",
+      "goals": "แนวโน้มประตู",
+      "home": "เอนเจ้าบ้าน",
+      "tagline": "ทายสกอร์ ทำนายให้แม่นกว่าเพื่อน"
+    },
+    "profileLanding": {
+      "title": "{name} บน Nostragoalus",
+      "subtitle": "Nostragoalus คือเกมทายผลฟุตบอล ทายสกอร์ สะสมแต้ม และทำนายให้แม่นกว่าเพื่อน"
+    },
+    "analyticsLanding": {
+      "title": "แนวโน้มการทายของ {name}",
+      "subtitle": "Nostragoalus คือเกมทายผลฟุตบอล ทายสกอร์ สะสมแต้ม และทำนายให้แม่นกว่าเพื่อน"
+    },
     "landing": {
       "resultTitle": "{name} ทายไว้ {score}",
       "liveTitle": "{name} ทายไว้ {score}",

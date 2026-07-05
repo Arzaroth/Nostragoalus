@@ -1812,6 +1812,32 @@
       "rarity": "{pct}% فقط من اللاعبين توقّعوا هذه النتيجة",
       "tagline": "توقّع النتائج. تفوّق على أصدقائك بالتوقّع."
     },
+    "shareProfile": "مشاركة الملف",
+    "shareAnalytics": "مشاركة التحليلات",
+    "profileCard": {
+      "title": "الملف",
+      "pts": "نقاط",
+      "rank": "من {players}",
+      "exact": "مضبوط",
+      "haul": "الغنيمة",
+      "tagline": "توقّع النتائج. تفوّق على أصدقائك بالتوقّع."
+    },
+    "analyticsCard": {
+      "title": "التحليلات",
+      "accuracy": "الدقة",
+      "exact": "نسبة المضبوط",
+      "goals": "ميل الأهداف",
+      "home": "ميل المضيف",
+      "tagline": "توقّع النتائج. تفوّق على أصدقائك بالتوقّع."
+    },
+    "profileLanding": {
+      "title": "{name} على Nostragoalus",
+      "subtitle": "Nostragoalus لعبة توقّعات كرة قدم: توقّع النتائج، واجمع النقاط، وتفوّق على أصدقائك بالتوقّع."
+    },
+    "analyticsLanding": {
+      "title": "ميول توقعات {name}",
+      "subtitle": "Nostragoalus لعبة توقّعات كرة قدم: توقّع النتائج، واجمع النقاط، وتفوّق على أصدقائك بالتوقّع."
+    },
     "landing": {
       "resultTitle": "{name} توقّع {score}",
       "liveTitle": "{name} توقّع {score}",

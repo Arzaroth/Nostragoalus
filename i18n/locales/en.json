@@ -1569,6 +1569,32 @@
       "rarity": "Only {pct}% of players called this scoreline",
       "tagline": "Predict the scores. Out-foresee your friends."
     },
+    "shareProfile": "Share profile",
+    "shareAnalytics": "Share analytics",
+    "profileCard": {
+      "title": "Profile",
+      "pts": "points",
+      "rank": "of {players}",
+      "exact": "exact",
+      "haul": "haul",
+      "tagline": "Predict the scores. Out-foresee your friends."
+    },
+    "analyticsCard": {
+      "title": "Analytics",
+      "accuracy": "accuracy",
+      "exact": "exact rate",
+      "goals": "goal lean",
+      "home": "home bias",
+      "tagline": "Predict the scores. Out-foresee your friends."
+    },
+    "profileLanding": {
+      "title": "{name} on Nostragoalus",
+      "subtitle": "Nostragoalus is a football prediction game: call the scores, earn points, out-foresee your friends."
+    },
+    "analyticsLanding": {
+      "title": "{name}'s prediction bias",
+      "subtitle": "Nostragoalus is a football prediction game: call the scores, earn points, out-foresee your friends."
+    },
     "landing": {
       "resultTitle": "{name} called {score}",
       "liveTitle": "{name} called {score}",
