@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+- **Evil Twin**: viewing a player's Evil Twin no longer renders their own picks list a second time below the twin's board.
+- **Trophy cabinet**: the "My achievements" menu entry and achievement notifications now scroll straight to your Trophy cabinet.
+
 ## [2.22.0] - 2026-07-05
 
 ### Added

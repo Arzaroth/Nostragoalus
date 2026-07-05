@@ -5,6 +5,10 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### tI'pu'
+- **qab chab**: qab chab DaleghDI', chab pagh choH'be' - naDev nIvbogh chab tetlh cha'logh 'oH.
+- **mIptajmey nagh'a'**: "reHwI' mIptajmey" DaHjaj 'ej mIptaj QIn, DaH mIptajmey nagh'a'Daq bIt.
+
 ## [2.22.0] - 2026-07-05
 
 ### chelpu'
