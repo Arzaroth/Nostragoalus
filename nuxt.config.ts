@@ -53,6 +53,23 @@ export default defineNuxtConfig({
 
   // Scheduled tasks + scoring fold into the admin page's rail; keep the old paths working.
   routeRules: {
+    // Security response headers on every route (Nitro/Nuxt sets none by default).
+    // nosniff also covers the user-uploaded media routes (avatar/reward), whose
+    // content-type is attacker-derived. frame-ancestors + X-Frame-Options block
+    // clickjacking of this session-cookie app. HSTS is ignored over plain http so
+    // it's safe to send unconditionally. A full script-src/style-src CSP is
+    // deliberately deferred (see TODO.md): the inline theme-bootstrap script and
+    // Nuxt's inlined hydration payload need per-inline hashing/nonces and real
+    // browser tuning, and a broken CSP is worse than none.
+    '/**': {
+      headers: {
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+        'Referrer-Policy': 'strict-origin-when-cross-origin',
+        'Strict-Transport-Security': 'max-age=63072000; includeSubDomains',
+        'Content-Security-Policy': "frame-ancestors 'none'",
+      },
+    },
     '/admin/cron': { redirect: '/admin?section=cron' },
     '/admin/scoring': { redirect: '/admin?section=scoring' },
     // Public, unauthenticated landing widget: cache the two aggregate counts so a
