@@ -9,8 +9,11 @@
 //
 // Talks to the dockerized Postgres via `docker compose exec db psql` (same as
 // db-backup), so it needs no node_modules - works on a prod host with only the
-// built app deployed.
-import { execSync } from 'node:child_process'
+// built app deployed. The whole item set is passed as ONE json psql variable and
+// expanded server-side with jsonb_to_recordset, so no value is ever concatenated
+// into SQL (no hand-rolled quote escaper), and execFileSync runs without a shell
+// (no shell quoting either) - matching roadmap-add / create-admin.
+import { execFileSync } from 'node:child_process'
 
 const force = process.env.usage_force === 'true'
 const reset = process.env.usage_reset === 'true'
@@ -65,28 +68,34 @@ const ITEMS = [
   { status: 'PLANNED', title: 'Personal & what-if stats', description: 'See where a joker would have helped, how you compare to the crowd, and your prediction biases.' },
 ]
 
-const q = (s) => (s === null ? 'NULL' : `'${String(s).replace(/'/g, "''")}'`)
+// Stamp a per-status display position (order within a status), then hand the whole
+// set to psql as a single json string. jsonb_to_recordset expands it into rows.
 const next = {}
-const values = ITEMS.map((it) => {
-  const pos = next[it.status] ?? 0
-  next[it.status] = pos + 1
-  return `(gen_random_uuid()::text, ${q(it.title)}, ${q(it.description)}, ${q(it.status)}::roadmap_status, ${pos})`
-}).join(',\n  ')
+const items = ITEMS.map((it) => {
+  const position = next[it.status] ?? 0
+  next[it.status] = position + 1
+  return { title: it.title, description: it.description, status: it.status, position }
+})
 
-// The WHERE on the SELECT (from a VALUES list) makes it a no-op when the table
-// already has items, unless --force/--reset drops the guard. --reset first
-// wipes the table so the seed becomes the whole roadmap again (clean state).
+// The WHERE guard makes it a no-op when the table already has items, unless
+// --force/--reset drops it. --reset first wipes the table so the seed becomes the
+// whole roadmap again (clean state). Only static SQL structure is built here; every
+// value rides in the :'items' json variable (psql quotes/escapes it).
 const guard = force || reset ? '' : '\nWHERE (SELECT count(*) FROM roadmap_item) = 0'
 const wipe = reset ? 'DELETE FROM roadmap_item;\n' : ''
 const sql = `${wipe}INSERT INTO roadmap_item (id, title, description, status, position)
-SELECT * FROM (VALUES
-  ${values}
-) AS v(id, title, description, status, position)${guard};`
+SELECT gen_random_uuid()::text, x.title, x.description, x.status::roadmap_status, x.position
+FROM jsonb_to_recordset(:'items'::jsonb) AS x(title text, description text, status text, position int)${guard};`
 
-const out = execSync('docker compose exec -T db psql -U nostragoalus -d nostragoalus -v ON_ERROR_STOP=1', {
-  input: sql,
-  encoding: 'utf8',
-  shell: '/bin/sh',
-})
+const out = execFileSync(
+  'docker',
+  [
+    'compose', 'exec', '-T', 'db',
+    'psql', '-U', 'nostragoalus', '-d', 'nostragoalus',
+    '-v', 'ON_ERROR_STOP=1',
+    '-v', `items=${JSON.stringify(items)}`,
+  ],
+  { input: sql, encoding: 'utf8' },
+)
 const inserted = Number(/INSERT \d+ (\d+)/.exec(out)?.[1] ?? 0)
 console.log(inserted > 0 ? `seeded ${inserted} roadmap item(s)` : 'roadmap already has items - skipped (pass --reset to wipe and reseed, or --force to append)')
