@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [2.18.2] - 2026-07-05
+
 ### Corrigé
 - **Le Spécialiste d'équipe récompense chaque score exact, pas seulement le « meilleur »** : le prix Spécialiste d'équipe (et son trophée) revient désormais à toute personne qui trouve un score exact sur un match de l'équipe à l'honneur - chaque score exact est une victoire, il y a donc plusieurs gagnants, et cliquer sur le prix affiche le nombre de scores exacts (récompenses gagnées) de chaque joueur plutôt qu'un classement aux points.
 - **Le menu déroulant d'équipe à l'honneur (admin) s'aligne avec son en-tête** : le sélecteur « Équipe à l'honneur » de la section Compétitions n'est plus décalé par rapport à son titre.

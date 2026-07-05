@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.18.2] - 2026-07-05
+
 ### Fixed
 - **Team Specialist rewards every exact scoreline, not just the "best"**: the Team Specialist prize (and its trophy) now goes to everyone who calls an exact scoreline on the featured team's matches - every exact is a win, so there are many winners, and clicking the prize shows each player's count of exact scorelines (rewards won) rather than a single points ranking.
 - **Admin featured-team dropdown lines up with its column header**: the "Featured team" picker in the admin Competitions section is no longer offset from its heading.
