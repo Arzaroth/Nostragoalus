@@ -414,6 +414,20 @@
       "when": 1783236472153,
       "tag": "0058_optimal_infant_terrible",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1783234995541,
+      "tag": "0059_closed_arachne",
+      "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1783235624740,
+      "tag": "0060_bored_starbolt",
+      "breakpoints": true
     }
   ]
 }
