@@ -60,11 +60,14 @@ each prize; it settles when the competition ends. No finalize hook, no award tab
   rest come off `rankableForMatches` (exported from `awards/service.ts`) narrowed with
   `inArray(prediction.userId, memberIds)`. It runs one query per distinct match subset
   (whole / group / knockout / final / team), not one per criterion.
-- `winnersFromRankable` collapses each criterion to its rank-1 (tie-shared) winners:
-  the top-ladder rows for points criteria, the max-value rows for count criteria, the
-  **lowest** for WOODEN_SPOON. TEAM_SPECIALIST is the exception - **every** predictor
-  with an exact on the featured team holds it (valued by their exact count), so it has
-  many winners and a person "wins it" once per exact.
+- A single pure `rankRows(type, rows)` is the source of truth for how a criterion
+  orders its members (dense 1224 ranking; points criteria on the full ladder, count
+  criteria on their metric, WOODEN_SPOON ascending keeping zeros, everything else
+  dropping zero-value rows). The winners are its **rank-1** rows - `holdersOf` returns
+  `ranked.filter(rank === 1)` - so the standings card and the ranking dialog share one
+  function and can never disagree. TEAM_SPECIALIST is the exception `holdersOf` encodes:
+  **every** predictor with an exact on the featured team holds it (valued by their exact
+  count), so the whole ranking is holders, not just the top tie.
 - `getRewardStandings(db, leagueId, viewerId)` (`rewards/service.ts`) returns all
   eleven: each configured prize (or null) + the current holders (sorted by value desc;
   ties share) + `metric` + `youHold` + `disabled`. The card shows the top holder plus a

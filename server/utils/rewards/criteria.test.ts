@@ -151,4 +151,57 @@ describe('rankLeagueCriterion', () => {
     const rows = await rankLeagueCriterion(db, competitionId, 'TEAM_SPECIALIST', opts('FRA'))
     expect(rows).toEqual([expect.objectContaining({ userId: alice, value: 2, rank: 1 })])
   })
+
+  it('ranks the phase criteria on phase points (group tie, knockout drops the non-scorer)', async () => {
+    const { competitionId, alice, bob, carol, opts } = await scenario()
+    const group = await rankLeagueCriterion(db, competitionId, 'GROUP_PHASE', opts())
+    expect(group.filter((r) => r.rank === 1).map((r) => r.userId).sort()).toEqual([alice, bob].sort())
+    expect(group.find((r) => r.userId === carol)).toMatchObject({ value: 1, rank: 3 })
+    // Only the final is a knockout match here: alice 3, carol 2, bob missed (dropped).
+    const ko = await rankLeagueCriterion(db, competitionId, 'KNOCKOUT_PHASE', opts())
+    expect(ko.map((r) => [r.userId, r.value, r.rank])).toEqual([
+      [alice, 3, 1],
+      [carol, 2, 2],
+    ])
+    expect(ko.some((r) => r.userId === bob)).toBe(false)
+  })
+
+  it('shares a WOODEN_SPOON rank on a points tie, and is empty for a subset nobody scored', async () => {
+    const competitionId = await seedCompetition(db)
+    const gr = await roundId(competitionId, 'GROUP', 1)
+    const x = await makeUser(db, 'wx')
+    const y = await makeUser(db, 'wy')
+    const z = await makeUser(db, 'wz')
+    const leagueId = await makeLeague(db, { competitionId, ownerId: x })
+    await addLeagueMember(db, leagueId, y, 'MEMBER')
+    await addLeagueMember(db, leagueId, z, 'MEMBER')
+    const m = await makeMatch(db, { competitionId, roundId: gr, stage: 'GROUP', status: 'FINISHED', fullTimeHome: 1, fullTimeAway: 0, winner: 'HOME', kickoffTime: new Date('2026-06-11T12:00:00Z') })
+    await scored(x, m, gr, 'EXACT', 3)
+    await scored(y, m, gr, 'OUTCOME', 1)
+    await scored(z, m, gr, 'OUTCOME', 1)
+    const opts = { leagueId, memberIds: [x, y, z], featuredTeamCode: null }
+
+    const spoon = await rankLeagueCriterion(db, competitionId, 'WOODEN_SPOON', opts)
+    // y and z tie on the lowest (1) at rank 1 (the ascending points tiebreak fires); x is last.
+    expect(spoon.filter((r) => r.rank === 1).map((r) => r.userId).sort()).toEqual([y, z].sort())
+    expect(spoon.find((r) => r.userId === x)).toMatchObject({ value: 3, rank: 3 })
+    // No final match exists, so the FINALIST subset has zero rows.
+    expect(await rankLeagueCriterion(db, competitionId, 'FINALIST', opts)).toEqual([])
+  })
+
+  it('mints no positive winner when nobody scored, but keeps the wooden spoon', async () => {
+    const competitionId = await seedCompetition(db)
+    const gr = await roundId(competitionId, 'GROUP', 1)
+    const a = await makeUser(db, 'za')
+    const leagueId = await makeLeague(db, { competitionId, ownerId: a })
+    const m = await makeMatch(db, { competitionId, roundId: gr, stage: 'GROUP', status: 'FINISHED', fullTimeHome: 1, fullTimeAway: 0, winner: 'HOME', kickoffTime: new Date('2026-06-11T12:00:00Z') })
+    await scored(a, m, gr, 'MISS', 0) // scored, but zero points
+    const opts = { leagueId, memberIds: [a], featuredTeamCode: null }
+
+    // OVERALL (rank 1 but 0 points) and every positive-metric criterion drop out;
+    // only WOODEN_SPOON keeps the zero as a real last place.
+    const winners = await computeLeagueRewardWinners(db, competitionId, opts)
+    expect(winners.map((w) => w.type)).toEqual(['WOODEN_SPOON'])
+    expect(winners[0]).toMatchObject({ type: 'WOODEN_SPOON', userId: a, value: 0 })
+  })
 })
