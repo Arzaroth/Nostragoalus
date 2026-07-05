@@ -42,12 +42,10 @@ export function markLeaguePromptResolved(): void {
 
 interface TourUser {
   onboardingTourDismissedAt?: string | Date | null
-  leaguePromptDismissedAt?: string | Date | null
 }
 
 export function useOnboardingTour() {
   const { session } = useAuth()
-  const mine = useMyLeagues()
   const slug = useSelectedCompetition()
 
   const tourUser = computed(() => session.value?.data?.user as TourUser | undefined)
@@ -57,28 +55,26 @@ export function useOnboardingTour() {
     return !!u && (u.onboardingTourDismissedAt === null || u.onboardingTourDismissedAt === undefined)
   })
 
-  // Don't fight the league prompt: only auto-start once that one-time modal is
-  // settled (dismissed, or the user already has a league).
-  const leaguePromptSettled = computed(() => {
-    if (leaguePromptResolvedSignal.value) return true
-    const u = tourUser.value
-    if (!u) return false
-    if (u.leaguePromptDismissedAt !== null && u.leaguePromptDismissedAt !== undefined) return true
-    return mine.isSuccess.value && (mine.data.value?.length ?? 0) > 0
-  })
-
+  // Auto-start ONLY as the in-session hand-off from the league prompt. The prompt
+  // (LeagueOnboardingDialog) fires markLeaguePromptResolved when a user settles it,
+  // and only a brand-new user (no memberships, flag unset) ever sees it. Gating on
+  // that fresh signal - not on the durable "prompt dismissed / already has a league"
+  // state - is what keeps the tour from auto-starting (and force-navigating to
+  // /matches) for the entire existing user base, whose onboardingTourDismissedAt is
+  // null after this additive migration. A brand-new user auto-joined into a league
+  // (so the prompt never shows) can still launch it from the account menu.
   const canAutoStart = computed(
-    () => !resolved.value && !active.value && flagUnset.value && mine.isSuccess.value && leaguePromptSettled.value,
+    () => !resolved.value && !active.value && flagUnset.value && leaguePromptResolvedSignal.value,
   )
 
   async function start() {
     resolved.value = true
     stepIndex.value = 0
-    active.value = true
-    // Run against the matches page - that is where the pick/champion/pill
-    // targets live. A no-op if we are already there.
+    // Run against the matches page - that is where the pick/champion/pill targets
+    // live. Navigate first, then activate, so the first locate() runs on that page.
     const target = `/${slug.value}/matches`
     if (useRoute().path !== target) await navigateTo(target)
+    active.value = true
   }
 
   function next() {
