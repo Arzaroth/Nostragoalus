@@ -3,6 +3,27 @@
 Deferred work, queued behind feature development.
 Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
+## Onboarding tour (deferred from the feature-treatment review)
+
+- [ ] **A third copy of the one-time dismiss-flag pattern**: `dismissOnboardingTour`
+      (`server/utils/onboarding/service.ts`) + `/api/me/onboarding-tour.post.ts` are a
+      near-verbatim clone of `stampPromptDismissed` + `/api/me/league-prompt.post.ts`
+      (and the `*DismissedAt` column mirrors the league one). A shared
+      `stampUserFlagOnce(db, userId, column)` helper (or a generic `/api/me/dismiss-flag`
+      route) would collapse both, and any future one-time prompt.
+- [ ] **Auto-tour skips a new user auto-joined into a league**: auto-start now gates on
+      the in-session `markLeaguePromptResolved` hand-off (so it never fires for the
+      existing user base). A brand-new user who is SSO-auto-joined into a league never
+      sees the league prompt, so the tour does not auto-start for them - they must launch
+      it from the account menu. Acceptable, but a durable "brand-new account" signal
+      (e.g. `user.createdAt` recency) could re-enable auto-start for that segment.
+- [ ] **Tour view logic is thinly tested**: `OnboardingTour.nuxt.test.ts` mocks the whole
+      composable, so the geometry (`locate`/`measure`/`positionCard`, the rAF self-skip on
+      an absent target) and `useOnboardingTour` itself (canAutoStart gating, persist
+      error-swallow, next()->finish() on last step) have no unit assertion - only the
+      single e2e happy path. `data-tour` anchors are string-coupled (a removed anchor
+      self-skips silently); an e2e assertion per step would catch a broken anchor.
+
 ## League prizes rework (deferred from the feature pass)
 
 - [ ] **`getMyRewards` fans out per league**: it calls `getRewardStandings` for
