@@ -590,6 +590,48 @@ and writes `.output/public/build-integrity.json` (served at
       pragmatic substitute. Same reasoning as the deferred script-src CSP
       (see `nuxt.config.ts` routeRules note).
 
+## Security hardening + E2EE (deferred from feature-treatment review)
+
+The max-effort review of `sec/hardening-e2ee` fixed the confirmed correctness
+and integrity issues inline (empty-KT-log false tamper alarm, legacy-feed-token
+back-compat, atomic chat-identity+KT append, CSRF guard on the `confirm-*`
+routes). These are the real-but-out-of-scope items it surfaced:
+
+- [ ] Throttle/lock out TOTP verification on `server/api/me/confirm-totp.post.ts`
+      and `confirm-credentials.post.ts`. `consumeTotpCode` returns false without
+      consuming on a wrong code, so an attacker holding a stolen session + the
+      password can brute-force the ~10^6 code space (a fresh ~3-step window every
+      30s) to obtain the `ng_reauth` sudo cookie. Other sensitive routes already
+      return 429 (leagues/join, invite accept, chat/unfurl); reuse that limiter.
+- [ ] Enforce the "TOTP required to disable 2FA" control server-side. Today
+      `app/composables/useTwoFactor.ts` gates the disable on `/api/me/confirm-totp`
+      client-side only; better-auth's `twoFactor.disable` validates just the
+      password, so an attacker with session + password can call it directly and
+      skip the code. Needs a server-side hook on the disable itself (the
+      client check is currently security theater and burns the user's live code).
+- [ ] Consolidate the three-way TOTP decrypt-and-consume block (twoFactor row
+      lookup -> resolve `BETTER_AUTH_SECRET` -> `symmetricDecrypt` ->
+      `consumeTotpCode`) shared by `confirm-totp`, `confirm-credentials` and
+      `lib/auth.ts` beforeDelete into one `consumeUserTotp(db, userId, code)`
+      helper next to `server/utils/auth/totp-consume.ts`. Centralizes the
+      secret-resolution (the empty-key handling differs between sites today).
+- [ ] Fold the three hash-chain implementations into one. `shared/key-transparency.ts`
+      `verifyKtChain` + `appendKeyBinding` duplicate the walk/append already in
+      `shared/commitment.ts` (`verifyLedger`/`verifyLeagueLedger` and the
+      `appendPredictionCommitment` head-lock append). A generic `walkChain` +
+      head-lock-append helper would absorb all three; only the per-link hash
+      field-list and the opened-commitment check differ. Real but non-trivial
+      (predates this branch); do all three at once.
+- [ ] Lift the share/wrapped-token expiry policy (`x: payload.x ?? now+TTL` on
+      sign, `x < now -> null` on verify) into an opt-in
+      `createExpiringTokenCodec(codec, ttlSeconds)` wrapper so `share/token.ts`
+      and `share/wrapped-token.ts` stop repeating it (the base codec stays
+      expiry-agnostic for feed tokens).
+- [ ] Add `/api/keys/head` and `/api/keys/log` to the `TARGETS` map in
+      `scripts/gen-api-schemas.mjs` so their public response shapes get sampled
+      structured schemas (regen was done for the shapes that moved; these two
+      public GETs only carry the inline OpenAPI prose today).
+
 ## Ops
 
 - [x] Nightly backup cron on the host (pre-1.0 checklist):
