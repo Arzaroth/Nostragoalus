@@ -109,6 +109,9 @@ export interface ChatStatus {
   myWrappedKeys: EpochKey[]
   missingKeys: MemberKey[]
   memberKeys: MemberKey[]
+  // A member was removed since the last rotation; a keyholder client should
+  // rotate the group key to give the remaining members forward secrecy.
+  rekeyPending: boolean
 }
 
 // Chat status for a league member: whether chat is on, the current key epoch, the
@@ -125,7 +128,15 @@ export async function getChatStatus(db: AppDatabase, leagueId: string, userId: s
     lg.chatEnabled ? getMembersMissingKey(db, leagueId, epoch) : Promise.resolve<MemberKey[]>([]),
     getMemberPublicKeys(db, leagueId),
   ])
-  return { enabled: lg.chatEnabled, epoch, role: membership.role, myWrappedKeys, missingKeys, memberKeys }
+  return {
+    enabled: lg.chatEnabled,
+    epoch,
+    role: membership.role,
+    myWrappedKeys,
+    missingKeys,
+    memberKeys,
+    rekeyPending: lg.chatEnabled && lg.chatRekeyPendingAt != null,
+  }
 }
 
 // --- enable / disable ---
@@ -241,7 +252,7 @@ export async function rotateLeagueChatKey(
   }
 
   await db.transaction(async (tx) => {
-    await tx.update(league).set({ chatKeyEpoch: epoch }).where(eq(league.id, opts.leagueId))
+    await tx.update(league).set({ chatKeyEpoch: epoch, chatRekeyPendingAt: null }).where(eq(league.id, opts.leagueId))
     if (opts.wraps.length > 0) {
       await tx
         .insert(leagueChatKey)
