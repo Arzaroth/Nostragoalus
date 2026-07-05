@@ -11,7 +11,7 @@ import type { PgDatabase, PgQueryResultHKT } from 'drizzle-orm/pg-core'
 import { db } from '../db'
 import * as schema from '../db/schema'
 import { withEncryptedSSO } from '../server/utils/crypto/encrypted-adapter'
-import { verifyTotpCode } from '../server/utils/auth/totp'
+import { consumeTotpCode } from '../server/utils/auth/totp-consume'
 import { isSsoManaged } from '../server/utils/auth/sso-managed'
 import { emailVerificationRequiredSync, loadEmailVerificationFlag } from '../server/utils/auth/email-verification'
 import { fetchAvatarDataUrl, isUnusableAvatarUrl, storeAvatarFromDataUrl } from '../server/utils/auth/avatar'
@@ -132,7 +132,7 @@ export function buildAuthOptions(database: AuthDb) {
             const key = process.env.BETTER_AUTH_SECRET ?? process.env.NUXT_BETTER_AUTH_SECRET
             if (!key) throw new APIError('INTERNAL_SERVER_ERROR', { message: 'Auth secret is not configured.' })
             const secret = rows[0] ? await symmetricDecrypt({ key, data: rows[0].secret }) : ''
-            if (!rows[0] || !verifyTotpCode(secret, code, Date.now(), 1, 'raw')) {
+            if (!rows[0] || !(await consumeTotpCode(db, u.id, secret, code))) {
               throw new APIError('BAD_REQUEST', { message: 'A valid two-factor code is required to delete this account.' })
             }
           }

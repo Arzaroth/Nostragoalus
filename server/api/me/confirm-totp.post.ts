@@ -3,7 +3,7 @@ import { symmetricDecrypt } from 'better-auth/crypto'
 import { db } from '../../../db'
 import { twoFactor } from '../../../db/schema'
 import { requireUser } from '../../utils/auth-guards'
-import { verifyTotpCode } from '../../utils/auth/totp'
+import { consumeTotpCode } from '../../utils/auth/totp-consume'
 
 // Confirms the caller's current TOTP code (used as a guard before disabling 2FA).
 export default defineEventHandler(async (event) => {
@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
 
   const key = process.env.BETTER_AUTH_SECRET ?? process.env.NUXT_BETTER_AUTH_SECRET ?? ''
   const secret = await symmetricDecrypt({ key, data: rows[0].secret })
-  return { valid: verifyTotpCode(secret, code, Date.now(), 1, 'raw') }
+  return { valid: await consumeTotpCode(db, user.id, secret, code) }
 })
 
 defineRouteMeta({

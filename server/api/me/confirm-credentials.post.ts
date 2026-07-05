@@ -3,7 +3,7 @@ import { symmetricDecrypt, verifyPassword } from 'better-auth/crypto'
 import { db } from '../../../db'
 import { account, twoFactor, user } from '../../../db/schema'
 import { requireUser } from '../../utils/auth-guards'
-import { verifyTotpCode } from '../../utils/auth/totp'
+import { consumeTotpCode } from '../../utils/auth/totp-consume'
 import { issueReauth } from '../../utils/auth/reauth'
 
 // Sudo mode: confirm the password (and a TOTP code when 2FA is on) and issue a
@@ -27,7 +27,7 @@ export default defineEventHandler(async (event) => {
     const rows = await db.select().from(twoFactor).where(eq(twoFactor.userId, sessionUser.id)).limit(1)
     const key = process.env.BETTER_AUTH_SECRET ?? process.env.NUXT_BETTER_AUTH_SECRET ?? ''
     const secret = rows[0] ? await symmetricDecrypt({ key, data: rows[0].secret }) : ''
-    if (!rows[0] || !verifyTotpCode(secret, String(body?.code ?? ''), Date.now(), 1, 'raw')) {
+    if (!rows[0] || !(await consumeTotpCode(db, sessionUser.id, secret, String(body?.code ?? '')))) {
       return { valid: false }
     }
   }
