@@ -119,22 +119,46 @@ one messaging dock. Still open:
       remove/delete surface (a 1:1 room has no moderator; a self-delete/hard-delete
       is the missing piece). Decide the model for a two-person room (mutual delete,
       self-delete tombstone) and wire it.
-- [ ] **Live image messages need a refetch**: the `dm:new` live frame carries the
-      lighter `DmMessageDTO` (no attachments), so a recipient sees an incoming
-      image message's text live but fetches the image on the next load. Carry the
-      full `ChatMessageDTO` on the frame (like league `chat:new`) to close this.
+- [x] **Live image messages need a refetch** (done, DM feature-treatment): the
+      `dm:new` live frame now carries the full `ChatMessageDTO` (like league
+      `chat:new`) with a separate conversation `threadId` at the frame level, so an
+      incoming image message renders live, attachments and all. `DmMessageDTO` was
+      dropped. (This also fixed a correctness bug where the frame's message-level
+      `threadId` was the conversation id, misrouting every live top-level DM as a
+      thread reply so it never appended.)
 - [ ] **No typing indicator**: league chat has `chat:typing`; DMs have no
       equivalent live frame. Add a `dm:typing` frame (user-pinned, like
       `dm:new`) if wanted.
 - [ ] **No block / mute**: there is a `dmDiscoverable` opt-out from cold-contact
-      discovery, but no way to block or mute an existing correspondent (a co-member
-      can always open a thread). Add a per-user block list that hides/refuses DMs.
-- [ ] **Inbox unread is an N+1 per-thread query**: `listThreads`
-      (`server/utils/dm/service.ts`) computes each thread's unread count with a
-      per-thread query rather than one grouped query over
-      `chat_message`/`dm_thread_read`. Fine at friends-scale; collapse to a single
-      grouped query (count messages newer than the caller's read marker, per
-      thread) if a user accumulates many threads.
+      discovery (now enforced at contact via `canDm`, not just in search), but no
+      way to block or mute an existing correspondent (a co-member can always open a
+      thread). Add a per-user block list that hides/refuses DMs.
+- [ ] **Inbox unread is an N+1 per-thread query, and `listThreads` is unbounded**:
+      `listThreads` (`server/utils/dm/service.ts`) computes each thread's unread
+      count with a per-thread query rather than one grouped query over
+      `chat_message`/`dm_thread_read`, and returns every thread with no LIMIT/keyset
+      paging. Fine at friends-scale; collapse to a single grouped unread query and
+      add paging if a user accumulates many threads.
+- [ ] **Open-thread markRead races the read marker**: `ChatDock` fires
+      `markRead` on opening a thread while `useDmRoom.load` GETs the server-computed
+      `readMarker`; if the write lands first, the "new messages" divider is
+      suppressed. Compute the divider from a marker snapshot taken before markRead,
+      or have the GET return the pre-open marker.
+- [ ] **No DM re-key path**: `dm_thread.keyEpoch` is always 1 - `rotateKey`/
+      `requestRekey` are inert in `useDmRoom` and nothing inserts a new-epoch
+      `dm_thread_key`. Fine today (there is no identity-rotation feature; losing an
+      identity without a recovery code locks you out of all chat, same as league
+      chat). If per-thread rotation or identity rotation is ever added, implement
+      re-wrapping the thread key to the new epoch/pubkey.
+- [ ] **`useDmRoom` largely re-implements `useLeagueChat`, and the attachment
+      write-ordering is copy-pasted**: `useDmRoom` mirrors `useLeagueChat`'s
+      decrypt/load/send/react/edit/thread engine differing mainly in the API base
+      path, and `postDmMessage`/`editDmMessage` repeat `chat/service.ts`'s
+      "write each image to storage before the tx, never reuse a removed idx"
+      block (the read side was already extracted to `chat/attachments.ts`). Extract
+      a shared `useChatRoom({ basePath })` factory and a `writeMessageImages`/
+      `applyImageEdit` helper, and share the `MAX_CIPHERTEXT`/`MAX_ATTACHMENT`/
+      `MAX_IMAGES` caps, so a fix lands once for both surfaces.
 
 ## Past-pick counterfactual (deferred from the feature pass)
 
