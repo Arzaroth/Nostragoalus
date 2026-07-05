@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.24.0] - 2026-07-05
+
 ### Changed
 
 - The per-league leaderboard now shows the same rich rows as the competition board: rank movement arrows, the champion crown, the best-scorer boot and live provisional points, instead of a plainer standings list.
