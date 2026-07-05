@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import { match } from '../../../db/schema'
 import type { AppDatabase } from '../../../db/types'
-import type { Criterion } from './tiebreakers'
+import { CLASSIC, type Criterion } from './tiebreakers'
 
 export interface StandingsInputMatch {
   homeTeam: string
@@ -25,8 +25,6 @@ export interface StandingRow {
   gd: number
   points: number
 }
-
-const DEFAULT_CRITERIA: Criterion[] = ['points', 'gd', 'gf']
 
 function matchCounts(m: StandingsInputMatch, includeLive: boolean): boolean {
   if (m.fullTimeHome == null || m.fullTimeAway == null) return false
@@ -203,7 +201,7 @@ export function computeGroupStandings(matches: StandingsInputMatch[], opts: Stan
 
   for (const row of table.values()) row.gd = row.gf - row.ga
 
-  return rankTied([...table.values()], matches, !!opts.includeLive, opts.tiebreakers ?? DEFAULT_CRITERIA)
+  return rankTied([...table.values()], matches, !!opts.includeLive, opts.tiebreakers ?? CLASSIC)
 }
 
 export interface GroupStandings {

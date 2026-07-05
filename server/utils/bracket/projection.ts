@@ -1,5 +1,5 @@
 import { compareByCriteria, type GroupStandings, type StandingRow } from '../stats/standings'
-import type { Criterion } from '../stats/tiebreakers'
+import { CLASSIC, type Criterion } from '../stats/tiebreakers'
 import type { NormalizedBracket } from '../../../shared/types/match'
 
 // Predictive bracket: resolve a knockout slot's placeholder (e.g. "1A", "Winner
@@ -99,7 +99,7 @@ function rankThirds(input: ProjectInput): { code: string; name: string; group: s
     const row = gs.rows[2]
     if (row?.code) thirds.push({ ...row, group: gs.group })
   }
-  const cmp = compareByCriteria(input.bestThird ?? ['points', 'gd', 'gf'])
+  const cmp = compareByCriteria(input.bestThird ?? CLASSIC)
   thirds.sort((a, b) => cmp(a, b) || a.group.localeCompare(b.group))
   return thirds.map((t) => ({ code: t.code!, name: t.name, group: t.group }))
 }
