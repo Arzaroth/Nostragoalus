@@ -35,7 +35,7 @@ export async function migrateBlobsToStorage(
       .limit(batchSize)
     if (rows.length === 0) break
     for (const r of rows) {
-      const storageKey = await putChatImage(driver, r.messageId, r.idx, new TextEncoder().encode(r.ciphertext!))
+      const storageKey = await putChatImage(driver, r.messageId, r.idx, r.ciphertext!)
       await db
         .update(chatAttachment)
         .set({ storageKey, ciphertext: null })
