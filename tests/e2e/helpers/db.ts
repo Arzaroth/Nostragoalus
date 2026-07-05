@@ -150,6 +150,42 @@ export async function finishMatch(matchId: string, home: number, away: number): 
   )
 }
 
+// Flip the seeded match to a finished, fully-scored result (past kickoff), so the
+// league mode boards - which read only matches whose scoring_state is SCORED -
+// pick it up. Unlike finishMatch this stamps scoring_state directly instead of
+// leaning on a finalize run.
+export async function scoreMatch(matchId: string, home: number, away: number): Promise<void> {
+  const winner = home > away ? 'HOME' : home < away ? 'AWAY' : 'DRAW'
+  await db().query(
+    `update match
+     set status = 'FINISHED', full_time_home = $2, full_time_away = $3, winner = $4,
+         scoring_state = 'SCORED', kickoff_time = now() - interval '3 hours', details_fetched_at = now()
+     where id = $1`,
+    [matchId, home, away, winner],
+  )
+}
+
+// A HARD/EASY/HARDCORE league (default HARD) owned by the user, for the mode
+// board flow. Cascades off the e2e competition on cleanup.
+export async function seedLeagueMode(
+  competitionId: string,
+  ownerId: string,
+  mode = 'HARD',
+  lives: number | null = null,
+): Promise<string> {
+  const { rows } = await db().query<{ id: string }>(
+    `with l as (
+       insert into league (id, competition_id, name, visibility, mode, lives, join_code, created_by)
+       values (gen_random_uuid(), $1, 'E2E Mode League', 'PRIVATE', $3, $4, 'E2E' || substr(md5(random()::text), 1, 8), $2)
+       returning id
+     )
+     insert into league_member (league_id, user_id, role) select id, $2, 'OWNER' from l
+     returning league_id as id`,
+    [competitionId, ownerId, mode, lives],
+  )
+  return rows[0].id
+}
+
 // Mark a user's email verified, so they can sign in regardless of the instance's
 // email-verification setting (used to make the admin account usable in setup).
 export async function markUserVerified(email: string): Promise<void> {

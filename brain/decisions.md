@@ -229,6 +229,19 @@ feature/architecture doc that implements it.
   outcome. The nudge surfaces where a pick is done and where it is not.
 - **Mode frozen at kickoff.** No moded create or swap once any match has started,
   so the rules can't shift mid-tournament (`assertCompetitionNotRunning`).
+- **HARD round budget is serialized per member+round.** The stake write reads the
+  round's other stakes then checks the budget; two concurrent saves on different
+  matches of the same round would each read the other as 0 and both commit,
+  overshooting the fixed budget. A transaction-level `pg_advisory_xact_lock` keyed
+  on the member+round (base picks and each league override chain get their own
+  bucket) makes the read-then-write atomic (`lockWagerBudget`,
+  `server/utils/predictions/service.ts`).
+- **Every override write is tamper-evident, including joker-seeded ones.**
+  `setLeagueJoker` seeds an override copied from the base pick when the league
+  still mirrors it; that seeded scoreline appends to the league chain like a
+  written override, so the ledger never misses an override. A per-league joker is
+  override-only, so it is rejected on a NORMAL league (same guard as
+  `upsertLeaguePrediction`).
 
 ## Operations
 
