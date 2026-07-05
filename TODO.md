@@ -3,6 +3,28 @@
 Deferred work, queued behind feature development.
 Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
+## League prizes rework (deferred from the feature pass)
+
+- [ ] **`getMyRewards` fans out per league**: it calls `getRewardStandings` for
+      every league the user is in, and each now runs ~5 rankable-subset queries +
+      a leaderboard. Fine for a handful of leagues; if a power user joins many, the
+      cabinet strip does O(leagues x subsets) queries. Consider a batched compute
+      or caching the per-league winner set. See `server/utils/rewards/{service,criteria}.ts`.
+- [ ] **Featured-team not backfilled by the migration**: migration 0055 drops
+      `competition.featuredTeamCode` without copying it into each league's new
+      `featuredTeamCode`, so leagues that had a Team Specialist prize come back
+      disabled until an owner re-picks (called out in the CHANGELOG upgrade notes).
+      A one-off data backfill (per league, from its competition's old value) would
+      have preserved them, but the hard rule forbids hand-editing drizzle SQL.
+- [ ] **Description images have no GC**: `description-image` uploads reuse the
+      content-addressed reward store; an image dropped from the markdown is never
+      deleted (same orphan-object gap as chat/reward images - see the Image storage
+      section). Also no per-league quota on uploads.
+- [ ] **Reward standings `metric` unused on the card**: `RewardStandingDto` now
+      carries `metric`, but `LeagueRewards.vue` only shows the leader name, not the
+      value+unit. Could surface "12 exact" / "8 pts" on the card, not just in the
+      ranking dialog.
+
 ## RTL / Arabic (deferred from the feature pass)
 
 - [ ] **Bundle Noto Sans Arabic for share cards**: Arabic glyphs on the satori

@@ -173,7 +173,9 @@ effort buckets; order within a bucket is not priority.
       `competition_award` - best overall (the leaderboard winner), best in the
       group phase, best in the knockouts, most exact scores ("Madame Irma"), and
       best predictor of a configurable featured team (`competition.featuredTeamCode`,
-      default France). Plus ~20 milestone badges (bronze/silver/gold) from a code
+      default France; **the global featured-team trophy was later retired** when the
+      featured team moved to a per-league prize - see the League rewards enhancement).
+      Plus ~20 milestone badges (bronze/silver/gold) from a code
       catalog in `user_achievement`, evaluated each finalize tick. A trophy cabinet
       (earned + locked) and a curated "fridge" (max 6 pins) on the profile, with
       TROPHY_AWARDED / ACHIEVEMENT_UNLOCKED notifications. Decisions: catalog in
@@ -651,6 +653,13 @@ effort buckets; order within a bucket is not priority.
   - The cabinet's **"prizes you hold"** strip shows every reward you currently
     lead across your leagues. (The curated pins became the **showcase**: up to
     three achievements shown beside your name in the rankings.)
+  - **Enhancement (in progress, feat/league-prizes)**: the criteria list grew to
+    11 (added Wooden Spoon, Finalist, Group/Knockout Oracle, Sharpshooter,
+    Goal-Difference Guru) and owners now **add/delete** prizes freely, one per
+    criterion. The **Team Specialist featured team moved from admin (per
+    competition) to each league** (picked in the prize editor), so the global
+    Team Specialist trophy is retired. Leagues also gained a Markdown **"About
+    this league" description** (headings, lists, links, uploaded images).
 - [ ] **Prune inactive users** (admin):
   - Users with predictions are load-bearing (historical rankings, crowd
     totals, rarity): **anonymize, never delete** - keep picks/points under
