@@ -22,23 +22,34 @@ export async function appendKeyBinding(
   publicKey: string,
   now: Date = new Date(),
 ): Promise<void> {
-  await db.transaction(async (tx) => {
-    const [head] = await tx.select().from(keyTransparencyHead).where(eq(keyTransparencyHead.id, HEAD_ID)).for('update')
-    const prevHash = head?.headHash ?? KT_GENESIS
-    const seq = head ? head.seq + 1 : 0
-    // Fold the exact ISO string the log will later serve, so the client recomputes
-    // the same hash (JS Date is ms precision; the timestamptz round-trips it).
-    const entryHash = await computeKtEntryHash({ seq, prevHash, userId, publicKey, createdAt: now.toISOString() })
-    await tx.insert(keyTransparencyEntry).values({ seq, userId, publicKey, prevHash, entryHash, createdAt: now })
-    if (head) {
-      await tx
-        .update(keyTransparencyHead)
-        .set({ seq, headHash: entryHash, updatedAt: now })
-        .where(eq(keyTransparencyHead.id, HEAD_ID))
-    } else {
-      await tx.insert(keyTransparencyHead).values({ id: HEAD_ID, seq, headHash: entryHash, updatedAt: now })
-    }
-  })
+  await db.transaction((tx) => appendKeyBindingTx(tx, userId, publicKey, now))
+}
+
+// The append body without its own transaction, so a caller that must bind the KT
+// entry atomically to some other write (e.g. the chat-identity insert) can run both
+// inside one transaction - then a lost genesis race or transient failure rolls the
+// whole thing back rather than orphaning an identity that has no log entry.
+export async function appendKeyBindingTx(
+  tx: AppDatabase,
+  userId: string,
+  publicKey: string,
+  now: Date = new Date(),
+): Promise<void> {
+  const [head] = await tx.select().from(keyTransparencyHead).where(eq(keyTransparencyHead.id, HEAD_ID)).for('update')
+  const prevHash = head?.headHash ?? KT_GENESIS
+  const seq = head ? head.seq + 1 : 0
+  // Fold the exact ISO string the log will later serve, so the client recomputes
+  // the same hash (JS Date is ms precision; the timestamptz round-trips it).
+  const entryHash = await computeKtEntryHash({ seq, prevHash, userId, publicKey, createdAt: now.toISOString() })
+  await tx.insert(keyTransparencyEntry).values({ seq, userId, publicKey, prevHash, entryHash, createdAt: now })
+  if (head) {
+    await tx
+      .update(keyTransparencyHead)
+      .set({ seq, headHash: entryHash, updatedAt: now })
+      .where(eq(keyTransparencyHead.id, HEAD_ID))
+  } else {
+    await tx.insert(keyTransparencyHead).values({ id: HEAD_ID, seq, headHash: entryHash, updatedAt: now })
+  }
 }
 
 export async function getKtHead(db: AppDatabase): Promise<KtHead> {

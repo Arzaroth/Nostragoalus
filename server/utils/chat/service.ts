@@ -4,7 +4,7 @@ import type { AppDatabase } from '../../../db/types'
 import { chatAttachment, chatIdentity, chatMessage, league, leagueChatKey, leagueMember, match, user } from '../../../db/schema'
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors'
 import { getLeague, getMembership } from '../leagues/service'
-import { appendKeyBinding } from '../key-transparency/service'
+import { appendKeyBindingTx } from '../key-transparency/service'
 import { keysetBefore } from '../keyset'
 import type { StorageDriver } from '../storage/driver'
 import { deleteChatImage, putChatImage, resolveStorage } from '../storage'
@@ -55,18 +55,23 @@ export async function registerChatIdentity(
   publicKey: string,
 ): Promise<{ publicKey: string; created: boolean }> {
   if (!publicKey) throw new ValidationError('public key required')
-  const existing = await getChatIdentity(db, userId)
-  if (existing) return { publicKey: existing.publicKey, created: false }
-  const inserted = await db
-    .insert(chatIdentity)
-    .values({ userId, publicKey })
-    .onConflictDoNothing()
-    .returning({ userId: chatIdentity.userId })
-  // Record the new binding in the key-transparency log so a substituted key is
-  // detectable. Only the insert that actually landed appends - a concurrent
-  // enrolment that lost the conflict does not double-log.
-  if (inserted.length > 0) await appendKeyBinding(db, userId, publicKey)
-  return { publicKey, created: inserted.length > 0 }
+  // Insert the identity and log its key in ONE transaction: the KT guarantee is that
+  // every published key is in the transparency log, so a failure to append (a lost
+  // genesis race, a transient error) must roll the identity insert back too - never
+  // leave an identity that has no log entry (clients read that as a substituted key).
+  return await db.transaction(async (tx) => {
+    const existing = await getChatIdentity(tx, userId)
+    if (existing) return { publicKey: existing.publicKey, created: false }
+    const inserted = await tx
+      .insert(chatIdentity)
+      .values({ userId, publicKey })
+      .onConflictDoNothing()
+      .returning({ userId: chatIdentity.userId })
+    // Only the insert that actually landed appends - a concurrent enrolment that
+    // lost the conflict does not double-log.
+    if (inserted.length > 0) await appendKeyBindingTx(tx, userId, publicKey)
+    return { publicKey, created: inserted.length > 0 }
+  })
 }
 
 // Store (or replace) the recovery-code escrow of the caller's private key.

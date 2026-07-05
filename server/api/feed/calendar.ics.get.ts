@@ -20,7 +20,10 @@ export default defineEventHandler(async (event) => {
   // link carries a stale version and is rejected (same 404 as an unknown token,
   // so a revoked URL never confirms the user exists).
   const [owner] = await db.select({ fv: userTable.feedTokenVersion }).from(userTable).where(eq(userTable.id, payload.u))
-  if (!owner || owner.fv !== payload.fv) throw createError({ statusCode: 404, statusMessage: 'feed not found' })
+  // Absent `fv` (a token minted before feed-token versioning) counts as version 0,
+  // the user's default, so pre-existing calendar subscriptions keep working until a
+  // regenerate bumps the version and orphans them.
+  if (!owner || owner.fv !== (payload.fv ?? 0)) throw createError({ statusCode: 404, statusMessage: 'feed not found' })
 
   const now = new Date()
   const matches = await getFeedMatches(db, payload.u, now)

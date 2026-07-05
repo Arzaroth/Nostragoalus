@@ -49,7 +49,11 @@ export function useKeyTransparency() {
       entries.value = snap.entries
       chainOk.value = snap.chainOk
       const pin = pinnedHead.value
-      if (pin && (snap.entries.length < pin.size || snap.entries[pin.size - 1]?.entryHash !== pin.hash)) {
+      // A size-0 pin anchors nothing (the log was empty when we pinned): entries can
+      // only grow from empty, so it can never be violated - and `entries[pin.size - 1]`
+      // would index -1 and false-positive. A genuine rewind from N>0 back to a shorter
+      // log is still caught by the length check.
+      if (pin && pin.size > 0 && (snap.entries.length < pin.size || snap.entries[pin.size - 1]?.entryHash !== pin.hash)) {
         // The log shrank, or the entry we pinned changed: an append-only violation.
         headTampered.value = true
       } else if (snap.chainOk) {

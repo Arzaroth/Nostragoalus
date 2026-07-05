@@ -62,7 +62,6 @@ describe('feed token', () => {
       { u: '', l: 'en', fv: 0, v: 1 }, // empty user
       { u: 1, l: 'en', fv: 0, v: 1 }, // non-string user
       { l: 'en', fv: 0, v: 1 }, // missing user
-      { u: 'user-1', l: 'en', v: 1 }, // missing fv
       { u: 'user-1', l: 'en', fv: -1, v: 1 }, // negative fv
       { u: 'user-1', l: 'en', fv: 1.5, v: 1 }, // non-integer fv
     ]
@@ -71,6 +70,16 @@ describe('feed token', () => {
       const token = `${body}.${signFeedBody(SECRET, body)}`
       expect(verifyFeedToken(SECRET, token)).toBeNull()
     }
+  })
+
+  it('accepts a legacy token minted before feed-token versioning (no fv)', () => {
+    // Back-compat: tokens already subscribed in users' calendars carry {u,l,v:1}
+    // with no fv. They must still verify; the .ics route treats absent fv as v0.
+    const body = b64url(JSON.stringify({ u: 'user-1', l: 'en', v: 1 }))
+    const token = `${body}.${signFeedBody(SECRET, body)}`
+    const payload = verifyFeedToken(SECRET, token)
+    expect(payload).toEqual({ u: 'user-1', l: 'en', v: 1 })
+    expect(payload?.fv).toBeUndefined()
   })
 
   it('a token minted at one version does not validate at another (revocation)', () => {
