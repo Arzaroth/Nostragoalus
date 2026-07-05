@@ -14,5 +14,8 @@ CREATE TABLE "key_transparency_head" (
 	"updated_at" timestamp with time zone NOT NULL
 );
 --> statement-breakpoint
+ALTER TABLE "two_factor" ADD COLUMN "last_totp_step" integer;--> statement-breakpoint
+ALTER TABLE "user" ADD COLUMN "feed_token_version" integer DEFAULT 0 NOT NULL;--> statement-breakpoint
+ALTER TABLE "league" ADD COLUMN "chat_rekey_pending_at" timestamp with time zone;--> statement-breakpoint
 CREATE UNIQUE INDEX "key_transparency_entry_hash_uq" ON "key_transparency_entry" USING btree ("entry_hash");--> statement-breakpoint
 CREATE INDEX "key_transparency_entry_user_idx" ON "key_transparency_entry" USING btree ("user_id");

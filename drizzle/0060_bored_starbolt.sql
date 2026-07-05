@@ -1,1 +1,0 @@
-ALTER TABLE "league" ADD COLUMN "chat_rekey_pending_at" timestamp with time zone;
