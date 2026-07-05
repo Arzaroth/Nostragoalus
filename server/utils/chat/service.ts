@@ -172,8 +172,11 @@ export async function enableLeagueChat(
     .from(league)
     .where(eq(league.id, opts.leagueId))
     .limit(1)
-  if (rows.length === 0) throw new NotFoundError('league not found')
-  assertLeagueAdmin(await getMembership(db, opts.leagueId, opts.actorId))
+  // Hide existence like resolveLeagueManage: a non-member (or a missing league)
+  // gets a 404, never a 403 that would confirm a private league is real.
+  const membership = await getMembership(db, opts.leagueId, opts.actorId)
+  if (rows.length === 0 || !membership) throw new NotFoundError('league not found')
+  assertLeagueAdmin(membership)
   if (rows[0].enabled) throw new ConflictError('chat already enabled')
   const firstEnable = rows[0].epoch === 0
   const epoch = firstEnable ? rows[0].epoch + 1 : rows[0].epoch
@@ -206,8 +209,9 @@ export async function disableLeagueChat(
   opts: { leagueId: string; actorId: string },
 ): Promise<void> {
   const rows = await db.select({ id: league.id }).from(league).where(eq(league.id, opts.leagueId)).limit(1)
-  if (rows.length === 0) throw new NotFoundError('league not found')
-  assertLeagueAdmin(await getMembership(db, opts.leagueId, opts.actorId))
+  const membership = await getMembership(db, opts.leagueId, opts.actorId)
+  if (rows.length === 0 || !membership) throw new NotFoundError('league not found')
+  assertLeagueAdmin(membership)
   await db.update(league).set({ chatEnabled: false }).where(eq(league.id, opts.leagueId))
 }
 
@@ -225,8 +229,9 @@ export async function rotateLeagueChatKey(
     .from(league)
     .where(eq(league.id, opts.leagueId))
     .limit(1)
-  if (rows.length === 0) throw new NotFoundError('league not found')
-  assertLeagueAdmin(await getMembership(db, opts.leagueId, opts.actorId))
+  const membership = await getMembership(db, opts.leagueId, opts.actorId)
+  if (rows.length === 0 || !membership) throw new NotFoundError('league not found')
+  assertLeagueAdmin(membership)
   if (!rows[0].enabled) throw new ForbiddenError('chat is not enabled for this league')
   const epoch = rows[0].epoch + 1
 
@@ -308,9 +313,8 @@ export async function addWrappedKeys(
     .from(league)
     .where(eq(league.id, opts.leagueId))
     .limit(1)
-  if (rows.length === 0) throw new NotFoundError('league not found')
   const membership = await getMembership(db, opts.leagueId, opts.actorId)
-  if (!membership) throw new ForbiddenError('not a league member')
+  if (rows.length === 0 || !membership) throw new NotFoundError('league not found')
   if (opts.epoch !== rows[0].epoch) throw new ConflictError('stale key epoch')
   if (opts.wraps.length === 0) return { added: 0 }
   const members = await leagueMemberIds(db, opts.leagueId)
@@ -390,9 +394,8 @@ export async function postMessage(
     .from(league)
     .where(eq(league.id, opts.leagueId))
     .limit(1)
-  if (rows.length === 0) throw new NotFoundError('league not found')
   const membership = await getMembership(db, opts.leagueId, opts.userId)
-  if (!membership) throw new ForbiddenError('not a league member')
+  if (rows.length === 0 || !membership) throw new NotFoundError('league not found')
   if (!rows[0].enabled) throw new ForbiddenError('chat is not enabled for this league')
   if (opts.epoch !== rows[0].epoch) throw new ConflictError('stale key epoch')
   if (opts.matchId) {
@@ -595,8 +598,10 @@ export async function listMessages(
     thread?: string | null
   },
 ): Promise<ChatMessageRow[]> {
+  // Members-only read: a non-member gets a 404 (hide existence), matching
+  // resolveLeagueView and the chat mutations rather than a 403.
   const membership = await getMembership(db, opts.leagueId, opts.userId)
-  if (!membership) throw new ForbiddenError('not a league member')
+  if (!membership) throw new NotFoundError('league not found')
   const limit = Math.min(Math.max(opts.limit ?? DEFAULT_PAGE, 1), MAX_PAGE)
   const room = opts.matchId ? eq(chatMessage.matchId, opts.matchId) : isNull(chatMessage.matchId)
   // Thread mode: this root's replies, oldest-first. Room mode: everything that is
