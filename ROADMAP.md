@@ -12,6 +12,21 @@ effort buckets; order within a bucket is not priority.
 
 ## Quick wins
 
+- [ ] **Guided onboarding tour** (built, awaiting release): a one-time
+      spotlight walk-through for new players. A full-screen overlay dims the
+      page and cuts a hole around one target at a time, stepping through the
+      core actions: switch tournaments (the competition pill), predict a score,
+      the champion + best-scorer picks, the rankings, the notification bell and
+      league chat. Design (from the 2026-06-29 next-features batch, deferred as
+      #6): a real focus/greyout tour, not just empty-state copy. Decisions:
+      runs against the matches page (where the pick anchors live); targeted
+      steps self-skip when their element is absent or hidden (chat launcher for
+      a user with no league); one-time per-user flag
+      (`onboardingTourDismissedAt`, same shape as the league prompt), stamped on
+      finish or skip; auto-starts once the league-onboarding prompt is settled
+      so the two overlays never collide; replayable anytime from the account
+      menu. Steps hook elements via a new `data-tour` attribute. Klingon +
+      Arabic copy is best-effort, wants a native pass.
 - [x] **Player stats tab** (shipped in 2.2.0): a "Stats" tab in the matches view,
       beside Fixtures and Standings, with top scorers and top assists side by side
       for the competition. Reuses the existing `/api/competitions/scorers`

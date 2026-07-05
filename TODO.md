@@ -1996,3 +1996,21 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
       criteria for every membership, not just the held ones. The scoped
       "does the viewer lead / where does the viewer stand" rewrite matters more
       now.
+
+## Onboarding tour (deferred from the feature pass)
+
+- [ ] Klingon (`tlh`) and Arabic (`ar`) step copy in `i18n/locales/*` is best-
+      effort machine/hand translation; wants a native-speaker pass (same caveat
+      as the rest of those locales).
+- [ ] The tour only spotlights surfaces reachable from the matches page plus the
+      always-on header (notifications). No cross-route steps (leagues page,
+      bracket, map, wrapped) - a step navigating between routes mid-tour was left
+      out to keep the geometry/scroll tracking simple. Revisit if the tour should
+      cover more of the app.
+- [ ] `data-tour="predict"` lands on every match card (it is on the v-for'd card
+      div); the tour just targets the first via `querySelector`. Harmless, but if
+      a step ever needs a *specific* match, add a dedicated single anchor.
+- [ ] Auto-start hands off from the league prompt via an in-memory
+      `markLeaguePromptResolved()` signal (the server flag only reaches the
+      session on a refetch). If the league prompt ever moves off the same client,
+      the tour would fall back to the session flag / a reload.
