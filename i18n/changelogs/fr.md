@@ -5,6 +5,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Corrigé
+
+- **Messages directs** : une conversation active n'inonde plus la cloche de notifications d'une entrée par message - toutes les notifications de messages directs sont désormais regroupées en une seule entrée. Un clic ouvre la conversation lorsqu'il n'y en a qu'une, ou la boîte de réception des messages lorsque plusieurs personnes ont écrit, au lieu de vous renvoyer à la page d'accueil.
+
 ## [2.23.0] - 2026-07-05
 
 ### Ajouté
