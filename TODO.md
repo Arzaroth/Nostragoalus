@@ -5,12 +5,11 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
 ## Onboarding tour (deferred from the feature-treatment review)
 
-- [ ] **A third copy of the one-time dismiss-flag pattern**: `dismissOnboardingTour`
-      (`server/utils/onboarding/service.ts`) + `/api/me/onboarding-tour.post.ts` are a
-      near-verbatim clone of `stampPromptDismissed` + `/api/me/league-prompt.post.ts`
-      (and the `*DismissedAt` column mirrors the league one). A shared
-      `stampUserFlagOnce(db, userId, column)` helper (or a generic `/api/me/dismiss-flag`
-      route) would collapse both, and any future one-time prompt.
+- [x] **A third copy of the one-time dismiss-flag pattern**: resolved.
+      `stampUserFlagOnce(db, userId, flag)` (`server/utils/user-flags/service.ts`,
+      keyed by a `UserOnceFlag` union) now holds the idempotent `is null`-guarded
+      stamp; `dismissOnboardingTour` and the leagues `stampPromptDismissed` are thin
+      wrappers over it, so a future one-time prompt reuses the helper.
 - [ ] **Auto-tour skips a new user auto-joined into a league**: auto-start now gates on
       the in-session `markLeaguePromptResolved` hand-off (so it never fires for the
       existing user base). A brand-new user who is SSO-auto-joined into a league never
@@ -297,11 +296,14 @@ one messaging dock. Still open:
       shared `useLiveMatchSubscription(liveIds, { onUpdate, onScoresChanged })`
       so a protocol change lands in one place. Folds into the broader
       "unify the WS consumers onto one shared socket" item under Notifications.
-- [ ] **Extract a shared `ttlCache<T>` helper**: `server/utils/bracket/cache.ts`
-      is the ~7th hand-rolled `Map<string, { at, value }>` + TTL (see
-      `bot/service.ts`, `chat/unfurl.ts`, `stats/alltime-h2h.ts`,
-      `live/league-chat.ts`, `auth/email-verification.ts`). A single
-      `ttlCache` with get/set/invalidate/evict would replace all of them.
+- [x] **Extract a shared `ttlCache<T>` helper**: done.
+      `createTtlCache` (`server/utils/cache/ttl-cache.ts`, get/has/set/invalidate/
+      clear, injectable per-call clock, number-or-function TTL, optional maxSize)
+      replaced the hand-rolled `Map<string, { at, value }>` + TTL in
+      `bracket/cache.ts`, `bot/service.ts`, `chat/unfurl.ts`,
+      `stats/alltime-h2h.ts` (h2h + calendar) and `live/league-chat.ts`. Left
+      bespoke: `auth/email-verification.ts` (single value + fire-and-forget
+      stale-refresh side effect) and the h2h id-map (single value).
 
 ## Live hardening (deferred from the feature-treatment review)
 
@@ -376,9 +378,11 @@ one messaging dock. Still open:
       to cover `bracket.get.ts` too. `eliminated.get.ts` selects a different shape
       (adds `stage`+`winner`, drops names, no `stage` filter) and intentionally
       does not share it.
-- [ ] The classic `['points', 'gd', 'gf']` criteria triple is repeated ~5x
+- [x] The classic `['points', 'gd', 'gf']` criteria triple is repeated ~5x
       (tiebreakers.ts default + WC2026 best-third, standings.ts `DEFAULT_CRITERIA`,
-      projection.ts `rankThirds` fallback). Extract one exported `CLASSIC` const.
+      projection.ts `rankThirds` fallback). Done: one exported `CLASSIC` const in
+      `stats/tiebreakers.ts` (Euro's best-third is now `[...CLASSIC, 'wins']`);
+      `standings.ts` `DEFAULT_CRITERIA` removed in favour of it.
 - [ ] `GET /api/competitions/eliminated` (and `/standings`) are not in the sampled
       API response schemas (`response-schemas.json`); add on the next controlled
       regen (the inline `defineRouteMeta` OpenAPI already ships).
@@ -794,10 +798,12 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
       viewer-on-top `or`. Two sources of truth for "who is a visible member": share
       one helper so a visibility-rule change can't drift the per-match board from
       the league page.
-- [ ] The "1224" rank-assignment loop in match.ts is a third copy of the inline
+- [x] The "1224" rank-assignment loop in match.ts is a third copy of the inline
       block in `getLeaderboard` (leaderboard/service.ts); `compareLeaderboardRows`
-      was extracted but this dense-skip step wasn't. Extract `assignRanks(rows)` so
-      a tie-handling change lands once.
+      was extracted but this dense-skip step wasn't. Done: `getLeaderboard` already
+      used the exported `denseRanks` helper; `match.ts` and a 4th copy in
+      `wrapped/service.ts` now route through it too, so a tie-handling change lands
+      once.
 - [ ] The league-standings route adds another copy of the getLeague + membership +
       admin guard - folds into the existing `resolveLeagueView(event, leagueId)`
       helper item under the Leagues section.
