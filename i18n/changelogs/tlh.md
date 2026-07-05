@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.19.0] - 2026-07-05
+
 ### chelpu'
 - **pop tetlh Data'**: ghom pin, ghom SeH je pop chup wa'maH wa' chov (vagh tlha' + 'un naQ, QujHom po'wI', ghom qellI', may' qellI', baHwI', naDev pIn) - pop chel, pop teq je, wa' chov wa' pop. pop Hoch Dev nID cha' patlh naQ je.
 - **Hoch ghom De'**: ghom pin, ghom SeH je "ghom De'" ghItlh - QIj, chut, vay' je - Markdown lo', nab, tetlh, rar, nagh beQ je. ghom leghbogh Hoch legh.

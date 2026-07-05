@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [2.19.0] - 2026-07-05
+
 ### Ajouté
 - **Composez votre liste de prix** : les propriétaires et modérateurs de ligue peuvent désormais attacher un prix à l'un des onze critères (les cinq d'origine plus Cuillère de bois, Sage de la finale, Oracle des poules, Oracle des phases finales, Fine gâchette et Gourou des écarts) et ajouter ou retirer des prix librement, un par critère. Chaque prix affiche toujours son leader en direct et son classement complet.
 - **Une description pour chaque ligue** : les propriétaires et modérateurs peuvent rédiger un texte « À propos de cette ligue » - présentation, règles, ce que vous voulez - en Markdown, avec titres, listes, liens et images téléversées. Tous ceux qui voient la ligue le voient.
