@@ -315,8 +315,10 @@ effort buckets; order within a bucket is not priority.
       crowd-rarity denominator like the bot; scored against the field as it locked,
       a documented approximation). Future: fold together with Evil twin + What-if
       into one "counterfactuals" surface.
-- [ ] **Personal analytics page**: bias detector - avg goals predicted vs
-      real, favorite-team optimism, accuracy by group/team/round.
+- [x] **Personal analytics page** (feature-complete on `feat/personal-analytics`,
+      awaiting feature-treatment): bias detector - tier mix, goals predicted vs
+      real, home/draw lean, over/under-rated teams, accuracy by round, best call +
+      biggest miss. Not final-gated, so it works mid-tournament.
 - [x] **Prediction share cards** (shipped 1.32.0): the
       lightweight, mid-tournament sibling of Tournament Wrapped (which is the
       end-of-competition card). A shareable image for a single pick, generated
