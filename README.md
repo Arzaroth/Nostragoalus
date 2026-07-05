@@ -22,6 +22,10 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
 
 ## Features
 
+- **Guided onboarding tour**: a one-time spotlight walk-through greets a brand-new account (right
+  after the "join a league" prompt), dimming the page and highlighting one thing at a time - switching
+  tournaments, predicting a score, picking the champion and top scorer, the rankings, live
+  notifications and league chat. Replayable anytime from the account menu
 - Score predictions with closeness-tiered points, a rarity bonus, and one ×2 **joker** per round;
   Enter/space hops between score inputs so a whole matchday can be typed without the mouse, a banner
   counts how many matches still need a pick before the next lockout (with a jump to the soonest), and
