@@ -5,6 +5,11 @@ import type { LeaderboardRow as ServerLeaderboardRow } from '../../server/utils/
 // canonical server interface (championCode/championPoints included).
 export type LeaderboardRow = ServerLeaderboardRow & { movement?: number | null }
 
+// A row as the boards render it: a real player row, or a display-only bot ghost
+// carrying an icon. Shared by LeaderboardRowCard and the leaderboard page so the
+// card's prop type and the page's row list can't drift.
+export type LeaderboardDisplayRow = LeaderboardRow & { isBot?: boolean; icon?: string }
+
 interface LeaderboardResponse {
   rows: LeaderboardRow[]
   // League scope only: members left off the board for visibility reasons

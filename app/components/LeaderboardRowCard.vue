@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { LeaderboardRow } from '../composables/useLeaderboard'
+import type { LeaderboardDisplayRow } from '../composables/useLeaderboard'
 
 // One leaderboard row, shared by the competition board and the per-league board
 // so they never drift. Everything is driven off the row data: the crown, boot,
@@ -7,9 +7,8 @@ import type { LeaderboardRow } from '../composables/useLeaderboard'
 // the bot decoration (dashed border, icon, "virtual" tag) only when isBot is set
 // - a plain league row leaves them all inert. The link target differs per board
 // (bots, global flag), so the parent computes it and passes `to`.
-type DisplayRow = LeaderboardRow & { isBot?: boolean; icon?: string }
 const props = defineProps<{
-  row: DisplayRow
+  row: LeaderboardDisplayRow
   to: string
   meId?: string
 }>()

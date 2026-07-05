@@ -5,6 +5,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Modifié
+
+- Le classement par ligue affiche désormais les mêmes lignes détaillées que le classement de la compétition : flèches de mouvement de rang, couronne du champion, soulier d'or et points provisoires en direct, au lieu d'une liste plus sobre.
+
 ## [2.23.1] - 2026-07-05
 
 ### Corrigé
