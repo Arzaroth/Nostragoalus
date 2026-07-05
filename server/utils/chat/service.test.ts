@@ -103,10 +103,10 @@ describe('enableLeagueChat', () => {
     await client.close()
   })
 
-  it('forbids a non-member and a plain member', async () => {
+  it('hides existence from a non-member, forbids a plain member', async () => {
     const { db, client, leagueId } = await setup()
     const stranger = await makeUser(db, 'stranger')
-    await expect(enableWith(db, leagueId, stranger, [])).rejects.toBeInstanceOf(ForbiddenError)
+    await expect(enableWith(db, leagueId, stranger, [])).rejects.toBeInstanceOf(NotFoundError)
     const member = await makeUser(db, 'member')
     await addLeagueMember(db, leagueId, member)
     await expect(enableWith(db, leagueId, member, [])).rejects.toBeInstanceOf(ForbiddenError)
@@ -298,12 +298,13 @@ describe('key distribution', () => {
     await client.close()
   })
 
-  it('addWrappedKeys: NotFound, Forbidden, stale epoch, empty, non-member, idempotent', async () => {
+  it('addWrappedKeys: NotFound (unknown league + non-member), stale epoch, empty, idempotent', async () => {
     const { db, client, owner, leagueId } = await setup()
     await expect(addWrappedKeys(db, { leagueId: 'nope', actorId: owner, epoch: 1, wraps: wrapsFor([owner]) })).rejects.toBeInstanceOf(NotFoundError)
     await enableWith(db, leagueId, owner, [owner])
     const stranger = await makeUser(db, 'stranger')
-    await expect(addWrappedKeys(db, { leagueId, actorId: stranger, epoch: 1, wraps: wrapsFor([owner]) })).rejects.toBeInstanceOf(ForbiddenError)
+    // A non-member gets a 404 (hide existence), not a 403.
+    await expect(addWrappedKeys(db, { leagueId, actorId: stranger, epoch: 1, wraps: wrapsFor([owner]) })).rejects.toBeInstanceOf(NotFoundError)
     await expect(addWrappedKeys(db, { leagueId, actorId: owner, epoch: 2, wraps: wrapsFor([owner]) })).rejects.toBeInstanceOf(ConflictError)
     expect(await addWrappedKeys(db, { leagueId, actorId: owner, epoch: 1, wraps: [] })).toEqual({ added: 0 })
     await expect(addWrappedKeys(db, { leagueId, actorId: owner, epoch: 1, wraps: wrapsFor([stranger]) })).rejects.toBeInstanceOf(ValidationError)
@@ -333,10 +334,11 @@ describe('postMessage', () => {
     await client.close()
   })
 
-  it('forbids non-members and posting while disabled', async () => {
+  it('hides existence from non-members and forbids posting while disabled', async () => {
     const { db, client, owner, leagueId } = await setup()
     const stranger = await makeUser(db, 'stranger')
-    await expect(postMessage(db, { leagueId, userId: stranger, ciphertext: 'c', epoch: 0 })).rejects.toBeInstanceOf(ForbiddenError)
+    // Non-member gets a 404 (hide existence), not a 403.
+    await expect(postMessage(db, { leagueId, userId: stranger, ciphertext: 'c', epoch: 0 })).rejects.toBeInstanceOf(NotFoundError)
     // Member, but chat not enabled yet.
     await expect(postMessage(db, { leagueId, userId: owner, ciphertext: 'c', epoch: 0 })).rejects.toBeInstanceOf(ForbiddenError)
     await client.close()
@@ -547,10 +549,10 @@ describe('editMessage', () => {
 })
 
 describe('listMessages', () => {
-  it('forbids non-members', async () => {
+  it('hides existence from non-members', async () => {
     const { db, client, leagueId } = await setup()
     const stranger = await makeUser(db, 'stranger')
-    await expect(listMessages(db, { leagueId, userId: stranger })).rejects.toBeInstanceOf(ForbiddenError)
+    await expect(listMessages(db, { leagueId, userId: stranger })).rejects.toBeInstanceOf(NotFoundError)
     await client.close()
   })
 
