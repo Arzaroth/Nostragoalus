@@ -257,11 +257,43 @@ describe('getRewardRanking', () => {
     expect(ranking.rows).toEqual([])
   })
 
-  it('names the TEAM_SPECIALIST ranking by the featured team', async () => {
+  it('names the TEAM_SPECIALIST ranking by the featured team and reads on the EXACT metric', async () => {
     const { leagueId, alice } = await teamScenario()
     const ranking = await getRewardRanking(db, leagueId, 'TEAM_SPECIALIST', alice)
     expect(ranking.teamCode).toBe('FRA')
-    expect(ranking.rows[0]).toMatchObject({ userId: alice, rank: 1 })
+    expect(ranking.metric).toBe('exact')
+    // Only Alice called an exact on FRA (Bob's DIFF drops out); value = her exact count.
+    expect(ranking.rows).toEqual([expect.objectContaining({ userId: alice, value: 1, rank: 1 })])
+  })
+
+  it('holds TEAM_SPECIALIST for every member with an exact, ranked and sorted by count', async () => {
+    const competitionId = await seedCompetition(db)
+    await db.update(competition).set({ featuredTeamCode: 'FRA' }).where(eq(competition.id, competitionId))
+    const g1 = await groupRound(competitionId)
+    const alice = await makeUser(db, 'ta')
+    const bob = await makeUser(db, 'tb')
+    const leagueId = await makeLeague(db, { competitionId, ownerId: alice })
+    await addLeagueMember(db, leagueId, bob, 'MEMBER')
+    const fra1 = await makeMatch(db, { competitionId, roundId: g1, stage: 'GROUP', status: 'FINISHED', homeTeamCode: 'FRA', fullTimeHome: 1, fullTimeAway: 0, winner: 'HOME', kickoffTime: new Date('2026-06-11T12:00:00Z') })
+    const fra2 = await makeMatch(db, { competitionId, roundId: g1, stage: 'GROUP', status: 'FINISHED', homeTeamCode: 'FRA', fullTimeHome: 2, fullTimeAway: 0, winner: 'HOME', kickoffTime: new Date('2026-06-12T12:00:00Z') })
+    // Alice: 2 exacts on FRA. Bob: 1 exact. Both hold the prize.
+    await scoredPred(alice, fra1, g1, 'EXACT', 3)
+    await scoredPred(alice, fra2, g1, 'EXACT', 3)
+    await scoredPred(bob, fra1, g1, 'EXACT', 3)
+    await scoredPred(bob, fra2, g1, 'DIFF', 2)
+
+    const ts = (await getRewardStandings(db, leagueId, bob)).find((s) => s.type === 'TEAM_SPECIALIST')!
+    expect(ts.disabled).toBe(false)
+    expect(ts.youHold).toBe(true) // Bob holds it too, not just the top holder
+    expect(ts.value).toBe(2) // the top holder's exact count
+    // Winners sorted by count desc, so the card shows Alice first then "+N others".
+    expect(ts.winners.map((w) => w.displayName)).toEqual(['ta', 'tb'])
+
+    const ranking = await getRewardRanking(db, leagueId, 'TEAM_SPECIALIST', bob)
+    expect(ranking.rows.map((r) => [r.displayName, r.value, r.rank])).toEqual([
+      ['ta', 2, 1],
+      ['tb', 1, 2],
+    ])
   })
 
   it('blanks a concealed member row for a non-member viewer', async () => {

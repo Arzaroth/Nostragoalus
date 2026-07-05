@@ -113,7 +113,9 @@ export async function getRewardStandings(
   const visible = await resolveVisibleNames(db, winners.map((w) => w.userId), viewerId, viewerIsMember)
 
   return COMPETITION_AWARD_TYPES.map((type) => {
-    const typeWinners = winners.filter((w) => w.type === type)
+    // Sort by value desc so winners[0] is the top holder (most exacts for
+    // TEAM_SPECIALIST); the card shows that holder plus "+N others".
+    const typeWinners = winners.filter((w) => w.type === type).sort((a, b) => b.value - a.value)
     // TEAM_SPECIALIST names its team from the competition's featured team, not the
     // winner row: null means no featured team is configured, which disables the
     // criterion (no prize can be earned until an admin picks one).
@@ -195,7 +197,7 @@ export async function getRewardRanking(
     type,
     teamCode,
     reward,
-    metric: type === 'MADAME_IRMA' ? 'exact' : 'points',
+    metric: type === 'MADAME_IRMA' || type === 'TEAM_SPECIALIST' ? 'exact' : 'points',
     rows: ranked.map((r) => {
       const v = visible.get(r.userId)
       return {
