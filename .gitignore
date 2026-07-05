@@ -54,3 +54,6 @@ backups/
 
 # pnpm content-addressable store (created by store-dir in repo)
 .pnpm-store
+
+# Local code-review artifacts (feature-treatment / review sessions)
+reviews/
