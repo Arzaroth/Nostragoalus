@@ -2,8 +2,9 @@ import { tiebreakersForCompetition } from './tiebreakers'
 
 // Teams that are out of the tournament beyond any doubt, for greying them on the
 // world map. Three certain signals, never a "probably out" guess:
-//   1. lost a finished knockout match (a semi-final loser is spared - they still
-//      play the third-place game),
+//   1. lost a finished knockout match (a semi-final loser is spared only when the
+//      format has a third-place game still to play them; the Euro has none, so its
+//      semi-final losers are out here),
 //   2. once the group stage is over and the knockout slots carry real codes, a
 //      group team absent from the knockout (covers a third that missed the cut),
 //   3. mid-group: a team that cannot reach a qualifying-eligible group rank in ANY
@@ -32,9 +33,12 @@ export function computeEliminatedTeams(matches: ElimMatch[], competitionSlug: st
   const tb = tiebreakersForCompetition(competitionSlug)
   const eliminated = new Set<string>()
 
-  // 1. Knockout losers (skip semi-finals: their losers go to the third-place game).
+  // 1. Knockout losers. A semi-final loser is spared only when this format plays a
+  // third-place game (that match eliminates its loser below); formats without one
+  // (the Euro) eliminate the semi-final loser here.
   for (const m of matches) {
-    if (m.stage === 'GROUP' || m.stage === 'SF') continue
+    if (m.stage === 'GROUP') continue
+    if (m.stage === 'SF' && tb.thirdPlace) continue
     if (!isFinished(m.status)) continue
     if (m.winner !== 'HOME' && m.winner !== 'AWAY') continue
     const loser = m.winner === 'HOME' ? m.awayTeamCode : m.homeTeamCode

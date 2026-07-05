@@ -19,6 +19,13 @@ describe('computeEliminatedTeams - knockout', () => {
     expect(out.has('ESP')).toBe(false) // SF loser -> third-place game
   })
 
+  it('eliminates a semi-final loser in a format with no third-place game (Euro 2024)', () => {
+    const out = set([ko('QF', 'FRA', 'BRA', 'HOME'), ko('SF', 'ESP', 'FRA', 'HOME'), ko('SF', 'ENG', 'NED', 'HOME')], 'euro-2024')
+    expect(out.has('FRA')).toBe(true) // SF loser, no third-place game to save them
+    expect(out.has('NED')).toBe(true) // the other SF loser
+    expect(out.has('ESP')).toBe(false) // SF winner, still in
+  })
+
   it('eliminates the third-place and final losers', () => {
     const out = set([ko('THIRD_PLACE', 'NED', 'POR', 'HOME'), ko('FINAL', 'ARG', 'FRA', 'AWAY')], 'world-cup-2026')
     expect(out.has('POR')).toBe(true)
