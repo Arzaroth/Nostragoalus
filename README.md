@@ -61,6 +61,13 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   picks, and more), adding or removing prizes freely with a live leader and full ranking per prize; prizes
   you lead across your leagues show in your cabinet. Each league also gets a Markdown **"About this league"**
   page for rules, links and images
+- **League modes**: create a league in one of three modes (locked once the competition kicks off).
+  **Easy** scores just the winner or a draw, paying by the odds so longshots pay more; **Hard** adds a
+  per-round confidence budget you stake across matches, where a correct call pays your stake and the exact
+  score pays double; **Hardcore** is last-player-standing, a wrong call costs a life (the owner sets how
+  many) and running out eliminates you, survivors winning together. Each league shows its mode and a fitting
+  board - a points table, or a survival list for hardcore - and you can keep per-league override picks that
+  diverge from your main ones
 - **League chat (end-to-end encrypted)**: a private chat per league - a general room plus a
   per-match thread - in a collapsible window that follows you across the competition, turned on by a
   league owner or moderator (off by default, behind a trade-offs warning). Messages, replies and images
