@@ -407,6 +407,13 @@
       "when": 1783228498395,
       "tag": "0057_regular_chronomancer",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1783236472153,
+      "tag": "0058_optimal_infant_terrible",
+      "breakpoints": true
     }
   ]
 }
