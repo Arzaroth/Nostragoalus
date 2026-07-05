@@ -179,24 +179,29 @@ function roundUsed(roundId: string): number {
   return used
 }
 
-// The completeness nudge: leagues with picks still missing or needing more.
+// The completeness nudge: leagues with a mode-specific gap (a real score for
+// NORMAL, a stake for HARD). A plain missing pick (NEEDS_PICK) is deliberately
+// left out - the base "N match needs a pick" banner already covers it, and for
+// all-normal leagues that made this panel a redundant per-league repeat of the
+// banner that did not scale past a few leagues.
 const completenessQ = useLeagueCompleteness(slug)
 const incompleteLeagues = computed(() =>
-  (completenessQ.data.value ?? []).filter((c) => c.summary.incomplete + c.summary.missing > 0),
+  (completenessQ.data.value ?? []).filter((c) => c.summary.incomplete > 0),
 )
-function nudgeText(c: { summary: { missing: number; needsExact: number; needsStake: number } }): string {
+function nudgeText(c: { summary: { needsExact: number; needsStake: number } }): string {
   const parts: string[] = []
-  if (c.summary.missing) parts.push(t('leagues.nudgeMissing', { n: c.summary.missing }))
   if (c.summary.needsExact) parts.push(t('leagues.nudgeNeedsExact', { n: c.summary.needsExact }))
   if (c.summary.needsStake) parts.push(t('leagues.nudgeNeedsStake', { n: c.summary.needsStake }))
   return parts.join(' · ')
 }
 // Per-match completeness chips: which of the user's leagues still need this
-// match's pick fixed (a missing pick, a real score, or a stake).
+// match's pick fixed. Only mode-specific gaps (a real score, a stake) - a plain
+// missing pick is the base banner's job, not a per-league chip.
 const issuesByMatch = computed(() => {
   const map = new Map<string, { name: string; reason: string }[]>()
   for (const c of completenessQ.data.value ?? []) {
     for (const iss of c.issues) {
+      if (iss.reason === 'NEEDS_PICK') continue
       const entry = { name: c.name, reason: iss.reason }
       const list = map.get(iss.matchId)
       if (list) list.push(entry)

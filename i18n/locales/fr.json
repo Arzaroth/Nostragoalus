@@ -1408,7 +1408,6 @@
     "followMain": "Suivre mes pronostics principaux",
     "customize": "Personnaliser pour cette ligue",
     "nudgeTitle": "Complétez vos pronostics",
-    "nudgeMissing": "{n} manquant(s)",
     "nudgeNeedsExact": "{n} sans score",
     "nudgeNeedsStake": "{n} sans mise",
     "reasonPick": "à pronostiquer",

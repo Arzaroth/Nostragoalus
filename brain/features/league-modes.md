@@ -119,7 +119,13 @@ follow-main vs customize (`setPicksSynced`), and in custom mode score/stake/joke
 saves target the league override (`setLeagueJoker` places the joker per league
 per round). A completeness nudge banner lists leagues whose picks still need a
 score or stake, and per-card chips flag, per match, which leagues still need that
-match fixed (`getLeagueCompleteness` returns per-league `issues`). Composables: `useLeaguePicks.ts` (`useLeagueOverrides`,
+match fixed (`getLeagueCompleteness` returns per-league `issues`). Both surfaces
+deliberately drop the `NEEDS_PICK` (`summary.missing`) reason: a plain missing
+pick is already covered once by the base "N match needs a pick" outstanding-picks
+banner (`pick-guard.md`), so per-league surfaces only show the mode-specific gap
+(`NEEDS_EXACT` / `NEEDS_STAKE`) and stay readable across many leagues. The server
+still computes and returns `missing`; the filtering is client-side in
+`[competition]/matches/index.vue` (`incompleteLeagues`, `issuesByMatch`). Composables: `useLeaguePicks.ts` (`useLeagueOverrides`,
 `useLeagueCompleteness`, `useLeaguePickMutations`). Endpoints: `PUT
 /api/leagues/[id]/predictions/[matchId]`, `POST /api/leagues/[id]/picks-sync`,
 `GET /api/leagues/[id]/overrides`, `GET /api/leagues/completeness`.
