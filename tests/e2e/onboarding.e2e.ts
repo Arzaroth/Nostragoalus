@@ -18,7 +18,12 @@ test.afterAll(async () => {
 })
 
 test('the onboarding tour auto-starts, walks the steps, and stays dismissed', async ({ page }) => {
-  await signUp(page, freshUser())
+  // Leave the league prompt pending: the tour auto-starts off the in-session
+  // signal fired when the prompt is dismissed, and that signal lives only in the
+  // current page-load. Dismissing it during signUp (on a page we then navigate
+  // away from) would stamp the durable flag and the signal would be lost across
+  // the goto below, so the prompt must be dismissed on the matches page itself.
+  await signUp(page, freshUser(), { dismissPrompt: false })
 
   // Signup leaves the app mid-redirect; an immediate goto can be aborted by that
   // in-flight navigation, so retry on abort (same shape as pickers.e2e).
@@ -32,8 +37,8 @@ test('the onboarding tour auto-starts, walks the steps, and stays dismissed', as
   }
   await page.waitForLoadState('networkidle')
 
-  // Dismissing the fresh account's league prompt settles it and refreshes the
-  // session, which is exactly what lets the tour auto-start in this session.
+  // Dismiss the still-pending league prompt on THIS page-load: that fires the
+  // in-session signal the tour's auto-start gate waits on.
   await dismissOnboarding(page)
 
   // Auto-start: the welcome step (centered, no target) appears without any

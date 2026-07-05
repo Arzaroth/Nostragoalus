@@ -25,7 +25,12 @@ export async function typeInto(field: Locator, value: string): Promise<void> {
 // dev stack has require_email_verification on, so sign-up returns no session
 // until the address is confirmed). The verify link auto-signs-in, so the user is
 // logged in afterwards. Name is the only non-email/password input on the form.
-export async function signUp(page: Page, user: Credentials): Promise<void> {
+// dismissPrompt defaults on: most specs just want the click-blocking league
+// modal gone. Pass false to leave the one-time prompt pending, so a later page
+// can dismiss it itself - the onboarding tour only auto-starts in the same
+// page-load that the prompt is resolved (an in-session signal, not a durable
+// flag), so a spec asserting auto-start must dismiss on the page under test.
+export async function signUp(page: Page, user: Credentials, opts: { dismissPrompt?: boolean } = {}): Promise<void> {
   await page.goto('/signup')
   await page.waitForLoadState('networkidle')
   await typeInto(page.locator('input:not([type="email"]):not([type="password"])').first(), user.name ?? user.email)
@@ -58,7 +63,7 @@ export async function signUp(page: Page, user: Credentials): Promise<void> {
     await page.waitForURL((url) => !url.pathname.startsWith('/verify-email'), { timeout: 8_000 }).catch(() => {})
     if (new URL(page.url()).pathname.startsWith('/verify-email')) await page.goto('/')
   }
-  await dismissOnboarding(page)
+  if (opts.dismissPrompt !== false) await dismissOnboarding(page)
 }
 
 // A fresh account gets a one-time league onboarding prompt: a modal with no close
