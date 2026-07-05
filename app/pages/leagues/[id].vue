@@ -25,10 +25,6 @@ const canManage = computed(() => {
   const role = detail.data.value?.league.role
   return role === 'OWNER' || role === 'MODERATOR'
 })
-
-function medal(rank: number) {
-  return rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null
-}
 </script>
 
 <template>
@@ -83,33 +79,13 @@ function medal(rank: number) {
       <div v-if="rows.isLoading.value" class="opacity-60">{{ t('common.loading') }}</div>
       <div v-else-if="!rows.data.value?.length" class="opacity-60">{{ t('leaderboard.empty') }}</div>
       <div v-else class="flex flex-col gap-2">
-        <NuxtLink
+        <LeaderboardRowCard
           v-for="r in rows.data.value"
           :key="r.userId"
+          :row="r"
           :to="`/${detail.data.value.league.competition?.slug}/users/${r.userId}`"
-          class="ng-card flex items-center gap-3 rounded-xl border px-4 py-3"
-          :style="`background: var(--p-content-background); border-color: ${r.userId === meId ? 'var(--p-primary-color)' : 'var(--p-content-border-color)'}; border-width: ${r.userId === meId ? '2px' : '1px'}`"
-        >
-          <div class="w-8 text-center shrink-0 font-bold tabular-nums text-lg">
-            <span v-if="medal(r.rank)">{{ medal(r.rank) }}</span>
-            <span v-else style="color: var(--p-text-muted-color)">{{ r.rank }}</span>
-          </div>
-          <UserAvatar :image="r.image" :user-id="r.userId" />
-          <div class="flex-1 min-w-0">
-            <div class="font-semibold truncate flex items-center gap-2">
-              <span class="truncate">{{ r.displayName }}</span>
-              <ShowcaseIcons :items="r.showcase" />
-              <span v-if="r.userId === meId" class="text-xs font-normal" style="color: var(--p-primary-color)">{{ t('leaderboard.you') }}</span>
-            </div>
-            <div class="text-xs" style="color: var(--p-text-muted-color)">
-              {{ r.exactCount }} {{ t('leaderboard.exact') }} · {{ r.outcomeCount }} {{ t('leaderboard.correct') }}<template v-if="r.championPoints"> · 👑 +{{ r.championPoints }}</template>
-            </div>
-          </div>
-          <div class="text-end shrink-0">
-            <span class="text-xl font-bold tabular-nums">{{ r.totalPoints }}</span>
-            <span class="text-xs ms-1" style="color: var(--p-text-muted-color)">{{ t('leaderboard.pts') }}</span>
-          </div>
-        </NuxtLink>
+          :me-id="meId"
+        />
         <div
           v-if="hiddenCount.data.value"
           v-tooltip.top="{ value: t('leaderboard.hiddenTip'), pt: { text: 'text-xs max-w-64' } }"
