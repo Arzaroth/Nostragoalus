@@ -4,6 +4,7 @@ import type { AppDatabase } from '../../../db/types'
 import { chatAttachment, chatIdentity, chatMessage, league, leagueChatKey, leagueMember, match, user } from '../../../db/schema'
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors'
 import { getLeague, getMembership } from '../leagues/service'
+import { appendKeyBinding } from '../key-transparency/service'
 import { keysetBefore } from '../keyset'
 import type { StorageDriver } from '../storage/driver'
 import { deleteChatImage, putChatImage, resolveStorage } from '../storage'
@@ -56,8 +57,16 @@ export async function registerChatIdentity(
   if (!publicKey) throw new ValidationError('public key required')
   const existing = await getChatIdentity(db, userId)
   if (existing) return { publicKey: existing.publicKey, created: false }
-  await db.insert(chatIdentity).values({ userId, publicKey }).onConflictDoNothing()
-  return { publicKey, created: true }
+  const inserted = await db
+    .insert(chatIdentity)
+    .values({ userId, publicKey })
+    .onConflictDoNothing()
+    .returning({ userId: chatIdentity.userId })
+  // Record the new binding in the key-transparency log so a substituted key is
+  // detectable. Only the insert that actually landed appends - a concurrent
+  // enrolment that lost the conflict does not double-log.
+  if (inserted.length > 0) await appendKeyBinding(db, userId, publicKey)
+  return { publicKey, created: inserted.length > 0 }
 }
 
 // Store (or replace) the recovery-code escrow of the caller's private key.

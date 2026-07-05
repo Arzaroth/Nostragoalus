@@ -4,6 +4,13 @@ End-to-end encrypted league chat. The server stores ciphertext only, so almost
 every feature is implemented client-side after decryption. The server moderates
 and routes by message id and metadata, never by reading content.
 
+The E2EE guarantee holds against a **passive** server (data at rest is
+unreadable); an actively malicious server could substitute keys or ship altered
+client code. Those are made *detectable* (key transparency, safety numbers, build
+integrity) but not fully prevented - see
+[../architecture/e2ee-trust-model.md](../architecture/e2ee-trust-model.md) for the
+exact boundary and the hardening layers.
+
 ## Encryption model
 
 - `chat_identity` - one row per user holding their public key.

@@ -115,7 +115,7 @@ const { identity, hasRecovery, setupRecovery, restore } = useChatIdentity()
 // Key verification: per-member safety numbers + trust-on-first-use pinning, so a
 // substituted public key is caught.
 const verify = useChatKeyVerification(memberKeys, computed(() => identity.value?.publicKey ?? null))
-const { entries: keyEntries, myFingerprint, changedCount } = verify
+const { entries: keyEntries, myFingerprint, changedCount, logTampered } = verify
 const showVerify = ref(false)
 const showMuted = ref(false)
 // Show peers only; the caller's own number is shown once as "your safety number".
@@ -1336,6 +1336,9 @@ watch(
     <Dialog v-model:visible="showVerify" modal :header="t('chat.verify.title')" :style="{ width: '30rem', maxWidth: '92vw' }">
       <div class="flex flex-col gap-2 text-sm">
         <p style="color: var(--p-text-muted-color)">{{ t('chat.verify.intro') }}</p>
+        <p v-if="logTampered" class="text-xs font-semibold p-2 rounded" style="color: var(--ng-danger); border: 1px solid var(--ng-danger)">
+          <i class="pi pi-exclamation-triangle" /> {{ t('chat.verify.logTampered') }}
+        </p>
         <div class="flex flex-col gap-0.5">
           <span class="text-xs font-semibold">{{ t('chat.verify.your') }}</span>
           <code class="font-mono text-xs break-all">{{ myFingerprint }}</code>
@@ -1346,6 +1349,7 @@ watch(
             <span class="font-semibold">{{ nameFor(e.userId) }}</span>
             <span v-if="e.changed" class="text-[10px] px-1.5 py-0.5 rounded-full" style="border: 1px solid var(--ng-danger); color: var(--ng-danger)">{{ t('chat.verify.changed') }}</span>
             <span v-else-if="e.verified" class="text-[10px] px-1.5 py-0.5 rounded-full" style="background: var(--ng-star-soft); color: var(--ng-star)">{{ t('chat.verify.verified') }}</span>
+            <span v-if="e.transparency === 'mismatch'" v-tooltip.top="t('chat.verify.notInLogHint')" class="text-[10px] px-1.5 py-0.5 rounded-full" style="border: 1px solid var(--ng-danger); color: var(--ng-danger)">{{ t('chat.verify.notInLog') }}</span>
           </div>
           <code class="font-mono text-xs break-all" :style="e.changed ? 'color: var(--ng-danger)' : ''">{{ e.fingerprint }}</code>
           <div class="flex items-center gap-3">

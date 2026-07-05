@@ -543,6 +543,35 @@ export const commitmentChainHead = pgTable('commitment_chain_head', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
 })
 
+// Append-only key-transparency log: one hash-chained entry per chat public key, so
+// a client can detect a server that substitutes a member's key to MITM E2EE chat.
+// Same chain construction as prediction_commitment (see shared/key-transparency.ts).
+// Public: the whole log is served unauthenticated as a transparency anchor.
+export const keyTransparencyEntry = pgTable(
+  'key_transparency_entry',
+  {
+    seq: integer('seq').primaryKey(),
+    userId: text('user_id').notNull(),
+    publicKey: text('public_key').notNull(),
+    prevHash: text('prev_hash').notNull(),
+    entryHash: text('entry_hash').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    uniqueIndex('key_transparency_entry_hash_uq').on(t.entryHash),
+    index('key_transparency_entry_user_idx').on(t.userId),
+  ],
+)
+
+// Singleton head of the KT chain (id always 'singleton'), locked FOR UPDATE while
+// appending so concurrent enrolments serialize and the chain can never fork.
+export const keyTransparencyHead = pgTable('key_transparency_head', {
+  id: text('id').primaryKey(),
+  seq: integer('seq').notNull(),
+  headHash: text('head_hash').notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
+})
+
 export const userProfileRelations = relations(userProfile, ({ one }) => ({
   user: one(user, { fields: [userProfile.userId], references: [user.id] }),
 }))

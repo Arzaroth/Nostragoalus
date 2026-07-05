@@ -19,6 +19,7 @@ Back to the root map: [../BRAIN.md](../BRAIN.md).
 | [i18n.md](i18n.md) | The five locales and the all-locales rule | i18n, locales, en fr th tlh ar, Klingon |
 | [rtl.md](rtl.md) | Right-to-left mechanics: html dir, logical CSS, mirrored bracket, icon flip | rtl, right-to-left, Arabic, ar, dir, logical properties, mirror |
 | [build-integrity.md](build-integrity.md) | Client-JS bundle fingerprint on /about: detect a silent swap of the E2EE crypto code | integrity, digest, SHA-256, build-integrity.json, SRI, reproducible, e2ee |
+| [e2ee-trust-model.md](e2ee-trust-model.md) | What E2EE chat/DM protects against (passive vs active server); key transparency, rekey-on-removal, integrity | e2ee, key transparency, KT, TOFU, safety number, passive, forward secrecy, rekey |
 
 ## How to use this folder
 

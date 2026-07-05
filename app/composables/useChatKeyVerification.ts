@@ -1,6 +1,7 @@
 import { useStorage } from '@vueuse/core'
 import { fingerprint } from '~/utils/e2ee'
 import { chatKeyPins } from '~/composables/useChatKeyPins'
+import { useKeyTransparency, type KtCheck } from '~/composables/useKeyTransparency'
 
 export interface KeyEntry {
   userId: string
@@ -8,6 +9,8 @@ export interface KeyEntry {
   fingerprint: string
   verified: boolean
   changed: boolean
+  // How this member's served key compares to the public key-transparency log.
+  transparency: KtCheck
 }
 
 // Chat-key trust on this device. Pins each member's public key on first sight
@@ -20,6 +23,7 @@ export function useChatKeyVerification(
   myPublicKey: MaybeRefOrGetter<string | null>,
 ) {
   const pins = chatKeyPins()
+  const kt = useKeyTransparency()
   const verified = useStorage<Record<string, string>>('ng-chat-keyverified', {})
   const entries = ref<KeyEntry[]>([])
   const myFingerprint = ref('')
@@ -30,6 +34,7 @@ export function useChatKeyVerification(
 
   async function recompute(): Promise<void> {
     const mine = ++runSeq
+    await kt.ensure()
     const list: KeyEntry[] = []
     const nextPins = { ...pins.value }
     for (const m of toValue(members)) {
@@ -42,6 +47,7 @@ export function useChatKeyVerification(
         fingerprint: await fingerprint(m.publicKey),
         verified: verified.value[m.userId] === m.publicKey,
         changed,
+        transparency: kt.check(m.userId, m.publicKey),
       })
     }
     const me = toValue(myPublicKey)
@@ -72,11 +78,26 @@ export function useChatKeyVerification(
 
   const changedCount = computed(() => entries.value.filter((e) => e.changed).length)
   const unverifiedCount = computed(() => entries.value.filter((e) => !e.verified).length)
+  // A member whose served key isn't the one in the public transparency log: the
+  // strongest substitution signal (stronger than a TOFU "changed" flag, which the
+  // user may just not have seen before).
+  const transparencyMismatchCount = computed(() => entries.value.filter((e) => e.transparency === 'mismatch').length)
+  // The log itself failed to recompute, or was rewritten below our pinned head.
+  const logTampered = computed(() => kt.chainOk.value === false || kt.headTampered.value)
 
   watch([() => toValue(members), () => toValue(myPublicKey)], () => void recompute(), {
     immediate: true,
     deep: true,
   })
 
-  return { entries, myFingerprint, changedCount, unverifiedCount, markVerified, acknowledgeChange }
+  return {
+    entries,
+    myFingerprint,
+    changedCount,
+    unverifiedCount,
+    transparencyMismatchCount,
+    logTampered,
+    markVerified,
+    acknowledgeChange,
+  }
 }
