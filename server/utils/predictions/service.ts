@@ -323,6 +323,18 @@ export async function setJoker(db: AppDatabase, input: SetJokerInput, now: Date 
   await db.update(prediction).set({ isJoker: input.isJoker }).where(eq(prediction.id, preds[0].id))
 }
 
+// Anonymity floor for crowd aggregates. Below this many predictions the summed
+// scoreline (especially with ?league= on a tiny league) reveals a specific
+// member's still-unlocked pick, so the aggregate is reported as empty until
+// enough predictions blur any single one. Crowd totals are an opt-in, live
+// "wisdom of the crowd" display shown while predicting, so this hides the
+// deanonymizing tail without disabling the pre-kickoff feature itself.
+export const MIN_CROWD_COUNT = 3
+
+const EMPTY_CROWD = { home: 0, away: 0, count: 0 }
+const withCrowdFloor = <T extends { count: number }>(total: T): T | typeof EMPTY_CROWD =>
+  total.count >= MIN_CROWD_COUNT ? total : EMPTY_CROWD
+
 // Combined totals of one match's predictions (for live pushes after a save).
 export async function getMatchCrowdTotal(db: AppDatabase, matchId: string, opts?: { leagueId?: string }) {
   let query = db
@@ -340,7 +352,7 @@ export async function getMatchCrowdTotal(db: AppDatabase, matchId: string, opts?
     )
   }
   const rows = await query.where(eq(prediction.matchId, matchId))
-  return rows[0] ?? { home: 0, away: 0, count: 0 }
+  return withCrowdFloor(rows[0] ?? EMPTY_CROWD)
 }
 
 // Combined totals of everyone's predictions per match (1-1 + 2-1 + 4-0 = 7-2).
@@ -363,7 +375,13 @@ export async function getCrowdTotals(db: AppDatabase, competitionId: string, opt
     )
   }
   const rows = await query.where(eq(match.competitionId, competitionId)).groupBy(prediction.matchId)
-  return Object.fromEntries(rows.map((r) => [r.matchId, { home: r.home, away: r.away, count: r.count }]))
+  // Omit matches under the anonymity floor entirely; the client renders a missing
+  // matchId as "no crowd data" (CrowdLine.fmt), so a tiny-N pick never surfaces.
+  return Object.fromEntries(
+    rows
+      .filter((r) => r.count >= MIN_CROWD_COUNT)
+      .map((r) => [r.matchId, { home: r.home, away: r.away, count: r.count }]),
+  )
 }
 
 async function assertLeagueMembership(db: AppDatabase, leagueId: string, userId: string): Promise<void> {

@@ -224,34 +224,54 @@ describe('getCrowdTotals', () => {
     const u1 = await makeUser(db, 'u1', 'U1')
     const u2 = await makeUser(db, 'u2', 'U2')
     const u3 = await makeUser(db, 'u3', 'U3')
+    const u4 = await makeUser(db, 'u4', 'U4') // predicts but never joins the league
     await makePrediction(db, { userId: u1, matchId: m, roundId, home: 1, away: 1 })
     await makePrediction(db, { userId: u2, matchId: m, roundId, home: 2, away: 1 })
     await makePrediction(db, { userId: u3, matchId: m, roundId, home: 4, away: 0 })
+    await makePrediction(db, { userId: u4, matchId: m, roundId, home: 9, away: 9 })
     const leagueId = await makeLeague(db, { competitionId, ownerId: u1 })
     await addLeagueMember(db, leagueId, u2)
+    await addLeagueMember(db, leagueId, u3)
     const emptyLeague = await makeLeague(db, { competitionId })
 
-    const totals = await getCrowdTotals(db, competitionId, { leagueId })
-    expect(totals[m]).toEqual({ home: 3, away: 2, count: 2 })
+    // League excludes the non-member u4: 1-1 + 2-1 + 4-0 = 7-2 over 3 members.
+    expect((await getCrowdTotals(db, competitionId, { leagueId }))[m]).toEqual({ home: 7, away: 2, count: 3 })
+    // Global includes u4.
+    expect((await getCrowdTotals(db, competitionId))[m]).toEqual({ home: 16, away: 11, count: 4 })
     expect(await getCrowdTotals(db, competitionId, { leagueId: emptyLeague })).toEqual({})
-    // A member with no prediction contributes nothing.
-    const u4 = await makeUser(db, 'u4', 'U4')
-    await addLeagueMember(db, leagueId, u4)
-    expect((await getCrowdTotals(db, competitionId, { leagueId }))[m]).toEqual({ home: 3, away: 2, count: 2 })
+    await client.close()
+  })
+
+  it('omits matches below the anonymity floor and reveals them once reached', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const roundId = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: new Date('2026-06-15T16:00:00Z') })
+    const roster = ['a1', 'a2', 'a3']
+    for (let i = 0; i < 2; i++) {
+      await makePrediction(db, { userId: await makeUser(db, roster[i], roster[i]), matchId: m, roundId, home: 1, away: 0 })
+    }
+    // Two predictions: a summed 2-0 would pin a specific member's pick -> hidden.
+    expect((await getCrowdTotals(db, competitionId))[m]).toBeUndefined()
+    await makePrediction(db, { userId: await makeUser(db, roster[2], roster[2]), matchId: m, roundId, home: 1, away: 0 })
+    expect((await getCrowdTotals(db, competitionId))[m]).toEqual({ home: 3, away: 0, count: 3 })
     await client.close()
   })
 })
 
 describe('getMatchCrowdTotal', () => {
-  it('sums one match and returns zeros when nobody predicted', async () => {
+  it('sums one match, but reports empty below the anonymity floor', async () => {
     const { db, client } = await createTestDb()
     const competitionId = await seedCompetition(db)
     const roundId = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
     const m = await makeMatch(db, { competitionId, roundId, kickoffTime: new Date('2026-06-15T16:00:00Z') })
     expect(await getMatchCrowdTotal(db, m)).toEqual({ home: 0, away: 0, count: 0 })
-    const u = await makeUser(db, 'cx', 'CX')
-    await makePrediction(db, { userId: u, matchId: m, roundId, home: 3, away: 2 })
-    expect(await getMatchCrowdTotal(db, m)).toEqual({ home: 3, away: 2, count: 1 })
+    await makePrediction(db, { userId: await makeUser(db, 'cx', 'CX'), matchId: m, roundId, home: 3, away: 2 })
+    await makePrediction(db, { userId: await makeUser(db, 'cy', 'CY'), matchId: m, roundId, home: 1, away: 0 })
+    // One or two predictions: floored to empty so a live push can't out a picker.
+    expect(await getMatchCrowdTotal(db, m)).toEqual({ home: 0, away: 0, count: 0 })
+    await makePrediction(db, { userId: await makeUser(db, 'cz', 'CZ'), matchId: m, roundId, home: 0, away: 1 })
+    expect(await getMatchCrowdTotal(db, m)).toEqual({ home: 4, away: 3, count: 3 })
     await client.close()
   })
 })
