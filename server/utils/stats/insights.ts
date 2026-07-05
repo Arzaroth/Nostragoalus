@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, gt, lt, ne, or } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { competition as competitionTable, match } from '../../../db/schema'
-import { computeGroupStandings, type StandingRow } from './standings'
+import { computeGroupStandings, selectGroupStandingsRows, type StandingRow } from './standings'
 import { getMatchGoals } from './scorers'
 
 export interface FormResult {
@@ -131,10 +131,7 @@ export async function getMatchInsights(db: AppDatabase, matchId: string, now: Da
 
   let standings: StandingRow[] | null = null
   if (m.stage === 'GROUP' && m.groupName) {
-    const groupMatches = await db
-      .select()
-      .from(match)
-      .where(and(eq(match.competitionId, m.competitionId), eq(match.groupName, m.groupName)))
+    const groupMatches = await selectGroupStandingsRows(db, m.competitionId, m.groupName)
     // Match view: fold in-progress matches into the table so it tracks live.
     standings = computeGroupStandings(groupMatches, { includeLive: true })
   }

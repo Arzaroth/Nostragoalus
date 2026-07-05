@@ -231,9 +231,15 @@ export function computeAllGroupStandings(
 export type GroupStandingsRow = StandingsInputMatch & { group: string | null }
 
 // The exact projection feeding computeAllGroupStandings for a competition's group
-// stage. Single source so the fixtures-page table, the bracket projection and any
-// other group-standings consumer can't drift on columns or filter.
-export async function selectGroupStandingsRows(db: AppDatabase, competitionId: string): Promise<GroupStandingsRow[]> {
+// stage. Single source so the fixtures-page table, the bracket projection, the
+// per-match insights table and any other group-standings consumer can't drift on
+// columns or filter. Pass `group` to scope to one group (a match-insights table);
+// omit it for the whole group stage (a fixtures-page / projection table).
+export async function selectGroupStandingsRows(
+  db: AppDatabase,
+  competitionId: string,
+  group?: string,
+): Promise<GroupStandingsRow[]> {
   return db
     .select({
       group: match.groupName,
@@ -246,5 +252,11 @@ export async function selectGroupStandingsRows(db: AppDatabase, competitionId: s
       fullTimeAway: match.fullTimeAway,
     })
     .from(match)
-    .where(and(eq(match.competitionId, competitionId), eq(match.stage, 'GROUP')))
+    .where(
+      and(
+        eq(match.competitionId, competitionId),
+        eq(match.stage, 'GROUP'),
+        ...(group ? [eq(match.groupName, group)] : []),
+      ),
+    )
 }
