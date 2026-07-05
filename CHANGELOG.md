@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.22.0] - 2026-07-05
+
 ### Added
 - **League modes**: a league can now be created in one of three new modes (its mode is locked once the competition kicks off). **Easy** - call just the winner or a draw, and score by the odds, with longshots paying more. **Hard** - predict scores and stake a confidence budget across each round; a correct call pays your stake and the exact score pays double. **Hardcore** - last player standing, where a wrong call costs a life (the owner picks how many) and running out eliminates you, with survivors winning together. Each league shows its mode and a board that fits it (a points table, or a survival list for hardcore).
 
