@@ -14,9 +14,11 @@ function targetPath(s: string) {
   // A player exists across competitions - keep their page (and the team page).
   if (section === 'users' && parts[3]) return `/${s}/users/${parts[3]}`
   if (section === 'teams' && parts[3]) return `/${s}/teams/${parts[3]}`
-  if (['bracket', 'map', 'leaderboard', 'matches', 'multiview'].includes(section)) return `/${s}/${section}`
-  // a single match (matches/:id) has no equivalent elsewhere - fall back to the list
-  return `/${s}/matches`
+  // A single match (matches/:id) has no equivalent elsewhere - fall back to the list.
+  if (section === 'matches' && parts[3]) return `/${s}/matches`
+  // Every top-level section (matches, analytics, bracket, map, bot, wrapped, ...)
+  // exists per competition - keep the kind of page you're on.
+  return `/${s}/${section}`
 }
 function switchTo(s: string) {
   menu.value?.hide?.()
