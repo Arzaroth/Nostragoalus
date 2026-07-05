@@ -23,6 +23,9 @@ const isFirst = computed(() => stepIndex.value === 0)
 const isLast = computed(() => stepIndex.value === steps.length - 1)
 
 let retry = 0
+// The id of a pending self-skip retry frame, so unmount can cancel it (a step
+// whose target never appears is mid-retry when the overlay tears down).
+let rafId = 0
 
 // Resolve the current step's target: find it, scroll it into view, cache its
 // rect. A step with no target is a centered card. A step whose target never
@@ -41,11 +44,12 @@ function locate() {
   // Treat absent or zero-size (v-show hidden, e.g. the chat launcher for a user
   // whose chat is off) as not-there: retry briefly, then skip the step.
   if (!el || !r || (r.width === 0 && r.height === 0)) {
-    if (retry++ < 24) requestAnimationFrame(locate)
+    if (retry++ < 24) rafId = requestAnimationFrame(locate)
     else next()
     return
   }
   retry = 0
+  rafId = 0
   const off = r.top < 0 || r.bottom > window.innerHeight
   if (off) el.scrollIntoView({ block: 'center', behavior: 'smooth' })
   measure()
@@ -134,6 +138,9 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', onResize)
   window.removeEventListener('scroll', onResize, true)
   window.removeEventListener('keydown', onKey)
+  // Cancel any pending self-skip frame so it can't run against a torn-down
+  // component and mutate the shared tour state after unmount.
+  if (rafId) cancelAnimationFrame(rafId)
 })
 </script>
 

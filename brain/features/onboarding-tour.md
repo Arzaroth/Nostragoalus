@@ -62,15 +62,19 @@ Same one-time-flag pattern as the league prompt (see [leagues.md](leagues.md)):
   idempotent via an `is null` guard, behind the thin route
   [`server/api/me/onboarding-tour.post.ts`](../../server/api/me/onboarding-tour.post.ts).
   Both exits (finish, skip) stamp it.
-- **Auto-start** fires once per session when: the tour flag is unset, the
-  leagues query has resolved, and the league prompt is settled (its flag set,
-  the user already has a league, or - within the same session - the league
-  dialog signalled it was just dismissed). Gating on the league prompt keeps two
-  overlays from fighting - the tour waits until the "join a league" modal is
-  done. The league dialog's server flag only reaches the session on a refetch,
-  so it also calls `markLeaguePromptResolved()` (a module signal on
-  `useOnboardingTour`) on any exit, which flips the tour's gate immediately and
-  fires the auto-start watcher in the same session.
+- **Auto-start** fires once per session as the in-session hand-off from the
+  league prompt: the tour flag is unset AND `markLeaguePromptResolved()` (a module
+  signal on `useOnboardingTour`) has fired this session. The league dialog calls
+  that signal on any exit (dismiss or join), and only a brand-new user (no
+  memberships, flag unset) ever sees that dialog - so gating on the fresh signal
+  both keeps the two overlays from fighting (the tour waits for the "join a league"
+  modal) and, crucially, stops the tour auto-starting for the **entire existing
+  user base**: the additive migration leaves everyone's `onboardingTourDismissedAt`
+  null, so gating on the durable "flag set / already has a league" state (an earlier
+  design) would have popped the spotlight - and force-navigated to `/matches` - for
+  every established user. The trade-off: a brand-new user auto-joined into a league
+  (the prompt never shows) does not get the auto-tour and launches it from the menu
+  instead.
 - **Manual replay**: a "Take the tour" item in the account menu
   ([`default.vue`](../../app/layouts/default.vue)) calls `start()`, which ignores
   the flag - always available.
