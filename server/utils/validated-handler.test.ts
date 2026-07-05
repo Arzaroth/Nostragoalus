@@ -24,6 +24,7 @@ beforeEach(() => {
   vi.stubGlobal('createError', (e: { statusCode: number; statusMessage: string; data?: unknown }) =>
     Object.assign(new Error(e.statusMessage), e),
   )
+  vi.stubGlobal('getRequestHost', () => 'app.host')
 })
 afterEach(() => vi.unstubAllGlobals())
 
@@ -128,5 +129,33 @@ describe('defineValidatedHandler', () => {
     const defineValidatedHandler = await load()
     const handler = defineValidatedHandler({}, async ({ body }) => ({ body: body ?? null }))
     expect(await callWith(handler, { ignored: true })).toEqual({ body: null })
+  })
+
+  it('rejects a cross-origin cookie-session mutation before touching the session', async () => {
+    requireUser.mockResolvedValue(ADMIN)
+    const defineValidatedHandler = await load()
+    const handler = defineValidatedHandler({}, async () => ({ ok: true }))
+    const event = { method: 'POST', headers: new Headers({ origin: 'https://evil.example' }) }
+    await expect(handler(event)).rejects.toMatchObject({ statusCode: 403 })
+    expect(requireUser).not.toHaveBeenCalled()
+  })
+
+  it('allows a same-origin mutation (matching Origin host)', async () => {
+    requireUser.mockResolvedValue(ADMIN)
+    const defineValidatedHandler = await load()
+    const handler = defineValidatedHandler({}, async ({ user }) => ({ by: user.id }))
+    const event = { method: 'POST', headers: new Headers({ origin: 'https://app.host' }) }
+    expect(await handler(event)).toEqual({ by: 'u1' })
+    expect(requireUser).toHaveBeenCalledOnce()
+  })
+
+  it('skips the origin check for api-key callers', async () => {
+    requireApiKey.mockResolvedValue({ id: 'k1', email: 'k@b.c', role: 'user' })
+    const defineValidatedHandler = await load()
+    const handler = defineValidatedHandler({ apiKey: { media: ['write'] } }, async ({ user }) => ({ by: user.id }))
+    // Cross-origin header present, but an api-key request is not cookie-borne.
+    const event = { method: 'POST', headers: new Headers({ 'x-api-key': 'k', origin: 'https://evil.example' }) }
+    bodyByEvent.set(event, undefined)
+    expect(await handler(event)).toEqual({ by: 'k1' })
   })
 })

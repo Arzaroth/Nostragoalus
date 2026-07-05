@@ -12,8 +12,10 @@ function forge(value: unknown): string {
 }
 
 describe('share token', () => {
-  it('round-trips a signed payload', () => {
-    expect(verifyShareToken(SECRET, signShareToken(SECRET, payload))).toEqual(payload)
+  it('round-trips a signed payload (an expiry is stamped on)', () => {
+    const out = verifyShareToken(SECRET, signShareToken(SECRET, payload))
+    expect(out).toMatchObject(payload)
+    expect(typeof out?.x).toBe('number')
   })
 
   it('rejects a tampered body (MAC mismatch)', () => {

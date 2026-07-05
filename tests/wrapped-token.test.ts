@@ -7,7 +7,7 @@ const SECRET = 'test-secret'
 describe('wrapped share token', () => {
   it('round-trips a valid payload', () => {
     const token = signWrappedToken(SECRET, { u: 'user-1', c: 'comp-1', l: 'fr', v: 1 })
-    expect(verifyWrappedToken(SECRET, token)).toEqual({ u: 'user-1', c: 'comp-1', l: 'fr', v: 1 })
+    expect(verifyWrappedToken(SECRET, token)).toMatchObject({ u: 'user-1', c: 'comp-1', l: 'fr', v: 1 })
   })
 
   it('rejects tampering, truncation and wrong secrets', () => {
