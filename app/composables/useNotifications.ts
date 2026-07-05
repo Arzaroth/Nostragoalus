@@ -90,23 +90,10 @@ export function useNotifications() {
     onSettled: settle,
   })
 
+  // Dismiss one or more rows in a single request. Takes an id array so the DM bell
+  // entry - which collapses a set of thread rows into one item - can drop them all
+  // at once; a plain row just passes a single-element array.
   const dismiss = useMutation({
-    mutationFn: (id: string) =>
-      $fetch<{ deleted: number }>('/api/notifications/delete', { method: 'POST', body: { ids: [id] } }),
-    onMutate: (id: string) =>
-      patchFeed((feed) => {
-        const target = feed.notifications.find((n) => n.id === id)
-        return {
-          notifications: feed.notifications.filter((n) => n.id !== id),
-          unreadCount: target && !target.read ? Math.max(0, feed.unreadCount - 1) : feed.unreadCount,
-        }
-      }),
-    onSettled: settle,
-  })
-
-  // Dismiss several rows at once - the DM bell entry collapses a set of thread rows
-  // into one item, so dismissing it removes them all in a single request.
-  const dismissMany = useMutation({
     mutationFn: (ids: string[]) =>
       $fetch<{ deleted: number }>('/api/notifications/delete', { method: 'POST', body: { ids } }),
     onMutate: (ids: string[]) =>
@@ -127,5 +114,5 @@ export function useNotifications() {
     onSettled: settle,
   })
 
-  return { notifications, unreadCount, isLoading: query.isLoading, markRead, markAllRead, dismiss, dismissMany, deleteAll }
+  return { notifications, unreadCount, isLoading: query.isLoading, markRead, markAllRead, dismiss, deleteAll }
 }

@@ -131,15 +131,6 @@ describe('useNotifications', () => {
     expect(api.notifications.value).toHaveLength(2)
   })
 
-  it('dismissMany posts all the ids at once', async () => {
-    const { api } = await setup()
-    await api.dismissMany.mutateAsync(['a', 'b', 'c'])
-    expect(fetchMock).toHaveBeenCalledWith(
-      '/api/notifications/delete',
-      expect.objectContaining({ method: 'POST', body: { ids: ['a', 'b', 'c'] } }),
-    )
-  })
-
   it('markRead posts the ids', async () => {
     const { api } = await setup()
     await vi.waitFor(() => expect(api.notifications.value).toHaveLength(1))
@@ -159,12 +150,17 @@ describe('useNotifications', () => {
     )
   })
 
-  it('dismiss deletes the id', async () => {
+  it('dismiss deletes one or several ids in a single request', async () => {
     const { api } = await setup()
-    await api.dismiss.mutateAsync('n1')
+    await api.dismiss.mutateAsync(['n1'])
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/notifications/delete',
       expect.objectContaining({ method: 'POST', body: { ids: ['n1'] } }),
+    )
+    await api.dismiss.mutateAsync(['a', 'b', 'c'])
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/notifications/delete',
+      expect.objectContaining({ method: 'POST', body: { ids: ['a', 'b', 'c'] } }),
     )
   })
 
