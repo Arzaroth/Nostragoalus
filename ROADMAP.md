@@ -477,15 +477,19 @@ effort buckets; order within a bucket is not priority.
       - **Reach = co-members always + globally opt-in discovery**: message anyone
         you share a league with; anyone else must set `dmDiscoverable` (default on,
         per-user opt-out) to be found by name.
-      - **Separate global `DmDock`, not a ChatDock tab**: ChatDock is league-gated
-        (competition pages + a chat-enabled league) but DMs are global, so the dock
-        mounts in the default layout on every page. Live delivery is user-pinned
-        (`publishDmMessage`/`publishDmEdit` to the two participants' sockets, no
-        subscribe frame); a `DM_MESSAGE` bell + push (default-on `dm` category)
-        deep-links `/?dm=<threadId>`. v1 ships text + edit + read-state + live +
-        notifications; reactions/attachments/threads/mentions on DMs and a
-        dock-consolidation are deferred (TODO.md). Consolidating the two docks is
-        left open.
+      - **One messaging surface**: DMs live inside the existing chat dock, which
+        gained a Chat | Direct toggle and is now shown to any signed-in user (not
+        league-gated). An open DM reuses the same `ChatPanel` as league chat, so
+        DMs have full parity: reactions, reply, threads, edit, images + media
+        gallery, link previews. A `dmThreadId` prop switches ChatPanel to the
+        `useDmRoom` engine (a drop-in for `useLeagueChat`); league-only chrome
+        (enable/rotate/moderation/reports/verify/mentions) is hidden in DM mode.
+        Moderation + mentions are intentionally omitted (no moderator or roster in
+        a 1:1). Live delivery is user-pinned (`publishDmMessage`/`publishDmEdit`/
+        `publishDmReaction` to the two participants' sockets, no subscribe frame);
+        a `DM_MESSAGE` bell + push (default-on `dm` category) deep-links
+        `/?dm=<threadId>`. A "Message" button on a profile opens a DM. The
+        scope-agnostic authorizer is `server/utils/chat/access.ts`.
 - [ ] **Hall of shame (per pick, not per player)**: "shame of the round" -
       one per matchday so nobody is dogpiled tournament-wide. Shameable =
       wrong outcome (a miss) AND max total goal error (|dHome| + |dAway|);
