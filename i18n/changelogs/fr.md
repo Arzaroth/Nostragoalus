@@ -21,6 +21,20 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 ### Corrigé
 - **Les images de description de ligue s'envoient de façon fiable** : les images ajoutées à la description d'une ligue sont désormais réduites dans votre navigateur avant l'envoi, pour que les photos volumineuses n'échouent plus à l'ajout.
 
+- Régénérez le lien de votre flux de calendrier : un bouton dans les Préférences révoque toutes les URL d'abonnement partagées auparavant et en émet une nouvelle, au cas où un lien aurait fuité.
+- Transparence des clés pour le chat : la fenêtre de vérification signale un membre dont la clé de chiffrement ne correspond pas au journal public et infalsifiable des clés, détectant une clé substituée.
+
+### Modifié
+
+- Les liens de carte de pronostic et de récap partagés expirent désormais après 180 jours au lieu d'être permanents.
+
+### Sécurité
+
+- Le chat renouvelle automatiquement ses clés quand un membre quitte une ligue, afin que son ancienne clé ne puisse plus déchiffrer les messages envoyés ensuite.
+- Les totaux de pronostics de la foule sont masqués pour un match n'ayant qu'un ou deux pronostics, afin qu'une petite ligue ne révèle pas le pronostic non verrouillé d'un individu.
+- Les codes à deux facteurs sont désormais à usage unique et ne peuvent pas être rejoués pendant leur fenêtre de validité.
+- Renforcement de la vérification à deux facteurs pour la suppression de compte, de la gestion des requêtes multi-origines et des en-têtes de réponse ; l'application refuse de démarrer avec un secret manquant ou faible.
+
 ## [2.21.0] - 2026-07-05
 
 ### Ajouté
