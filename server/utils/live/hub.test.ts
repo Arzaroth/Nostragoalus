@@ -219,6 +219,57 @@ it('publishChatTyping pushes a typing hint to the named recipients only', async 
   }
 })
 
+it('publishDmMessage delivers to the two participants only', async () => {
+  const { addLiveSubscriber, removeLiveSubscriber, publishDmMessage } = await import('./hub')
+  const a = { matchIds: new Set<string>(), userId: 'a', send: vi.fn() }
+  const b = { matchIds: new Set<string>(), userId: 'b', send: vi.fn() }
+  const outsider = { matchIds: new Set<string>(), userId: 'o', send: vi.fn() }
+  for (const s of [a, b, outsider]) addLiveSubscriber(s)
+  try {
+    const message = { id: 'm1', threadId: 't1', parentId: null, userId: 'a', epoch: 1, ciphertext: 'CT', createdAt: '2026-06-10T10:00:00.000Z', editedAt: null, moderation: 'VISIBLE' as const }
+    const delivered = publishDmMessage(['a', 'b'], message)
+    expect(delivered).toBe(2)
+    expect(a.send).toHaveBeenCalledWith({ type: 'dm:new', threadId: 't1', message })
+    expect(b.send).toHaveBeenCalledWith({ type: 'dm:new', threadId: 't1', message })
+    expect(outsider.send).not.toHaveBeenCalled()
+  } finally {
+    for (const s of [a, b, outsider]) removeLiveSubscriber(s)
+  }
+})
+
+it('publishDmEdit pushes the new ciphertext + attachments to the two participants only', async () => {
+  const { addLiveSubscriber, removeLiveSubscriber, publishDmEdit } = await import('./hub')
+  const a = { matchIds: new Set<string>(), userId: 'a', send: vi.fn() }
+  const outsider = { matchIds: new Set<string>(), userId: 'o', send: vi.fn() }
+  for (const s of [a, outsider]) addLiveSubscriber(s)
+  try {
+    const attachments = [{ idx: 0, epoch: 1 }]
+    const delivered = publishDmEdit(['a', 'b'], 't1', 'm1', 'CT', '2026-06-10T10:00:00.000Z', attachments)
+    expect(delivered).toBe(1)
+    expect(a.send).toHaveBeenCalledWith({ type: 'dm:edit', threadId: 't1', messageId: 'm1', ciphertext: 'CT', editedAt: '2026-06-10T10:00:00.000Z', attachments })
+    expect(outsider.send).not.toHaveBeenCalled()
+  } finally {
+    for (const s of [a, outsider]) removeLiveSubscriber(s)
+  }
+})
+
+it('publishDmReaction pushes the new totals to the two participants only', async () => {
+  const { addLiveSubscriber, removeLiveSubscriber, publishDmReaction } = await import('./hub')
+  const { emptyReactionTotals } = await import('../../../shared/reactions')
+  const a = { matchIds: new Set<string>(), userId: 'a', send: vi.fn() }
+  const outsider = { matchIds: new Set<string>(), userId: 'o', send: vi.fn() }
+  for (const s of [a, outsider]) addLiveSubscriber(s)
+  try {
+    const totals = emptyReactionTotals()
+    const delivered = publishDmReaction(['a', 'b'], 't1', 'm1', totals)
+    expect(delivered).toBe(1)
+    expect(a.send).toHaveBeenCalledWith({ type: 'dm:reaction', threadId: 't1', messageId: 'm1', totals })
+    expect(outsider.send).not.toHaveBeenCalled()
+  } finally {
+    for (const s of [a, outsider]) removeLiveSubscriber(s)
+  }
+})
+
 describe('per-match viewer counts', () => {
   it('pushes the live count to everyone in the match room as viewers join and leave', async () => {
     const { syncMatchViewers, dropMatchViewer } = await import('./hub')

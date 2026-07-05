@@ -1,9 +1,14 @@
 import { randomUUID } from 'node:crypto'
 import { and, asc, count, desc, eq, ilike, inArray, isNull, ne, or, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
-import { chatIdentity, chatMessage, dmThread, dmThreadKey, dmThreadRead, leagueMember, user } from '../../../db/schema'
+import { chatAttachment, chatIdentity, chatMessage, dmThread, dmThreadKey, dmThreadRead, leagueMember, user } from '../../../db/schema'
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors'
 import { keysetBefore } from '../keyset'
+import type { StorageDriver } from '../storage/driver'
+import { deleteChatImage, putChatImage, resolveStorage } from '../storage'
+import { chatImageKey } from '../storage/keys'
+import type { AttachmentInput } from '../chat/service'
+import type { ChatAttachmentDTO } from '../../../shared/types/chat'
 
 // Direct messages are end-to-end encrypted with the same crypto as league chat
 // (app/utils/e2ee.ts): a DM thread has a symmetric key sealed to each of the two
@@ -12,6 +17,10 @@ import { keysetBefore } from '../keyset'
 // set, so it reuses that table's reactions/attachments/reports/reply machinery.
 
 const MAX_CIPHERTEXT = 16_384
+// Encrypted image blob cap (base64) and per-message image count - the same caps
+// as league chat (see chat/service.ts), since a DM message shares that table.
+const MAX_ATTACHMENT = 9_000_000
+const MAX_IMAGES = 6
 const DEFAULT_PAGE = 50
 const MAX_PAGE = 100
 const MAX_SEARCH = 20
@@ -255,10 +264,24 @@ const messageColumns = {
 // route can push it live and notify.
 export async function postDmMessage(
   db: AppDatabase,
-  opts: { threadId: string; userId: string; ciphertext: string; epoch: number; parentId?: string | null; threadRootId?: string | null },
-): Promise<DmMessageRow & { otherId: string }> {
+  opts: {
+    threadId: string
+    userId: string
+    ciphertext: string
+    epoch: number
+    parentId?: string | null
+    threadRootId?: string | null
+    images?: AttachmentInput[] | null
+  },
+  driver?: StorageDriver,
+): Promise<DmMessageRow & { otherId: string; attachments: ChatAttachmentDTO[] }> {
   if (!opts.ciphertext) throw new ValidationError('empty message')
   if (opts.ciphertext.length > MAX_CIPHERTEXT) throw new ValidationError('message too large')
+  const images = opts.images ?? []
+  if (images.length > MAX_IMAGES) throw new ValidationError('too many images')
+  for (const img of images) {
+    if (img.ciphertext.length > MAX_ATTACHMENT) throw new ValidationError('image too large')
+  }
   const t = await requireParticipant(db, opts.threadId, opts.userId)
   if (opts.epoch !== t.keyEpoch) throw new ConflictError('stale key epoch')
   for (const targetId of [opts.parentId, opts.threadRootId]) {
@@ -270,7 +293,19 @@ export async function postDmMessage(
       .limit(1)
     if (!p[0] || p[0].dmThreadId !== opts.threadId) throw new ValidationError('reply target is not in this conversation')
   }
+  // Pre-generate the id so each image's ciphertext lands in the storage backend
+  // BEFORE the row insert (storage I/O must not run inside the db transaction), the
+  // same ordering league chat uses - a reader never finds a row pointing at a
+  // missing object. Keys are chat/{messageId}/{idx}; the bytes are opaque base64.
   const messageId = randomUUID()
+  const attachmentRows: { messageId: string; idx: number; epoch: number; storageKey: string; ciphertext: null; byteSize: number }[] = []
+  if (images.length > 0) {
+    const store = resolveStorage(driver)
+    for (let idx = 0; idx < images.length; idx += 1) {
+      const storageKey = await putChatImage(store, messageId, idx, new TextEncoder().encode(images[idx].ciphertext))
+      attachmentRows.push({ messageId, idx, epoch: opts.epoch, storageKey, ciphertext: null, byteSize: images[idx].byteSize })
+    }
+  }
   const row = await db.transaction(async (tx) => {
     const inserted = await tx
       .insert(chatMessage)
@@ -284,20 +319,32 @@ export async function postDmMessage(
         ciphertext: opts.ciphertext,
       })
       .returning(messageColumns)
+    if (attachmentRows.length > 0) {
+      await tx.insert(chatAttachment).values(attachmentRows)
+    }
     await tx.update(dmThread).set({ lastMessageAt: inserted[0].createdAt }).where(eq(dmThread.id, opts.threadId))
     return inserted[0]
   })
-  return { ...row, otherId: t.otherId }
+  const attachments: ChatAttachmentDTO[] = images.map((_, idx) => ({ idx, epoch: opts.epoch }))
+  return { ...row, otherId: t.otherId, attachments }
 }
 
 // The author replaces their own DM message text (re-encrypted client-side, sealed
-// under the current epoch). Author only, visible messages only. Stamps editedAt.
+// under the current epoch), may drop some of its images (removeIdxs) and/or append
+// new ones (addImages). Author only, visible messages only. Stamps editedAt and
+// returns the resulting attachment set (idx order). Mirrors chat editMessage.
 export async function editDmMessage(
   db: AppDatabase,
-  opts: { threadId: string; messageId: string; userId: string; ciphertext: string },
-): Promise<{ editedAt: Date }> {
+  opts: { threadId: string; messageId: string; userId: string; ciphertext: string; addImages?: AttachmentInput[]; removeIdxs?: number[] },
+  driver?: StorageDriver,
+): Promise<{ editedAt: Date; attachments: ChatAttachmentDTO[] }> {
   if (!opts.ciphertext) throw new ValidationError('empty message')
   if (opts.ciphertext.length > MAX_CIPHERTEXT) throw new ValidationError('message too large')
+  const addImages = opts.addImages ?? []
+  for (const img of addImages) {
+    if (img.ciphertext.length > MAX_ATTACHMENT) throw new ValidationError('image too large')
+  }
+  const removeIdxs = new Set(opts.removeIdxs ?? [])
   const t = await requireParticipant(db, opts.threadId, opts.userId)
   const rows = await db
     .select({ dmThreadId: chatMessage.dmThreadId, userId: chatMessage.userId, state: chatMessage.moderationState })
@@ -308,8 +355,61 @@ export async function editDmMessage(
   if (rows[0].userId !== opts.userId) throw new ForbiddenError('only the author can edit this message')
   if (rows[0].state !== 'VISIBLE') throw new ValidationError('this message cannot be edited')
   const editedAt = new Date()
-  await db.update(chatMessage).set({ ciphertext: opts.ciphertext, epoch: t.keyEpoch, editedAt }).where(eq(chatMessage.id, opts.messageId))
-  return { editedAt }
+
+  // Read the current attachments outside the tx so new images can be written to the
+  // storage backend before the row insert (storage I/O must not run inside a db
+  // transaction). editDmMessage is author-only, so a concurrent change is
+  // pathological; the (messageId, idx) PK still guards an idx collision.
+  const existing = await db
+    .select({ idx: chatAttachment.idx, epoch: chatAttachment.epoch })
+    .from(chatAttachment)
+    .where(eq(chatAttachment.messageId, opts.messageId))
+    .orderBy(asc(chatAttachment.idx))
+  const survivors = existing.filter((a) => !removeIdxs.has(a.idx))
+  if (survivors.length + addImages.length > MAX_IMAGES) throw new ValidationError('too many images')
+
+  // New images append after the highest idx that ever existed (not just survivors)
+  // so a removed idx is never reused - the post-tx cleanup deletes the removed
+  // idxs' objects, which would wipe a new image written to that key.
+  let nextIdx = existing.reduce((max, a) => Math.max(max, a.idx), -1) + 1
+  const added: { idx: number; epoch: number; storageKey: string; byteSize: number }[] = []
+  if (addImages.length > 0) {
+    const store = resolveStorage(driver)
+    for (const img of addImages) {
+      const idx = nextIdx++
+      const storageKey = await putChatImage(store, opts.messageId, idx, new TextEncoder().encode(img.ciphertext))
+      added.push({ idx, epoch: t.keyEpoch, storageKey, byteSize: img.byteSize })
+    }
+  }
+
+  const attachments = await db.transaction(async (tx) => {
+    // The new text is sealed under the current thread key, so move the stored epoch
+    // to match. Kept images stay at their own epoch (the client decrypts each one).
+    await tx.update(chatMessage).set({ ciphertext: opts.ciphertext, epoch: t.keyEpoch, editedAt }).where(eq(chatMessage.id, opts.messageId))
+    if (removeIdxs.size > 0) {
+      await tx
+        .delete(chatAttachment)
+        .where(and(eq(chatAttachment.messageId, opts.messageId), inArray(chatAttachment.idx, [...removeIdxs])))
+    }
+    if (added.length > 0) {
+      await tx.insert(chatAttachment).values(
+        added.map((a) => ({ messageId: opts.messageId, idx: a.idx, epoch: a.epoch, storageKey: a.storageKey, ciphertext: null, byteSize: a.byteSize })),
+      )
+    }
+    return [
+      ...survivors.map((s) => ({ idx: s.idx, epoch: s.epoch })),
+      ...added.map((a) => ({ idx: a.idx, epoch: a.epoch })),
+    ].sort((a, b) => a.idx - b.idx)
+  })
+
+  // The removed images' objects are now unreferenced - drop them best-effort.
+  if (removeIdxs.size > 0) {
+    const store = resolveStorage(driver)
+    for (const idx of removeIdxs) {
+      await deleteChatImage(store, chatImageKey(opts.messageId, idx)).catch(() => {})
+    }
+  }
+  return { editedAt, attachments }
 }
 
 // A page of ciphertext for one thread, newest first; `before`/`beforeId` page back
@@ -341,6 +441,17 @@ export async function markThreadRead(db: AppDatabase, threadId: string, userId: 
     .insert(dmThreadRead)
     .values({ userId, threadId, lastReadAt: now })
     .onConflictDoUpdate({ target: [dmThreadRead.userId, dmThreadRead.threadId], set: { lastReadAt: now } })
+}
+
+// The caller's last-read time for a thread (ISO on the wire), or null if they have
+// never opened it - drives the "new messages" divider on the first message page.
+export async function getDmReadMarker(db: AppDatabase, threadId: string, userId: string): Promise<Date | null> {
+  const rows = await db
+    .select({ lastReadAt: dmThreadRead.lastReadAt })
+    .from(dmThreadRead)
+    .where(and(eq(dmThreadRead.userId, userId), eq(dmThreadRead.threadId, threadId)))
+    .limit(1)
+  return rows[0]?.lastReadAt ?? null
 }
 
 export interface RecipientSuggestion {
