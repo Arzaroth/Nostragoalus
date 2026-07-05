@@ -5,6 +5,15 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Modifié
+
+- Les rappels « Terminez vos pronostics » par ligue ne répètent plus la bannière « N match à pronostiquer ». Le panneau et les pastilles par match ne signalent désormais une ligue que lorsqu'elle demande quelque chose que la bannière ne dit pas - un score exact pour une ligue normale, ou une mise pour une ligue difficile. Un pronostic manquant n'apparaît qu'une fois, dans la bannière, pour que les rappels restent lisibles quand vous êtes dans de nombreuses ligues.
+
+### Corrigé
+
+- Changer de compétition depuis la page d'analyses personnelles (ainsi que les pages du bot de consensus et du Wrapped) vous garde désormais sur cette même page pour la nouvelle compétition, au lieu de vous renvoyer vers ses matchs.
+- La carte grise désormais les perdants d'une demi-finale dans un tournoi sans match pour la troisième place, comme l'Euro, où la France et les Pays-Bas restaient non grisés après avoir perdu leurs demi-finales.
+
 ## [2.25.0] - 2026-07-05
 
 ### Ajouté

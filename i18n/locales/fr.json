@@ -1410,7 +1410,6 @@
     "nudgeTitle": "Complétez vos pronostics",
     "nudgeNeedsExact": "{n} sans score",
     "nudgeNeedsStake": "{n} sans mise",
-    "reasonPick": "à pronostiquer",
     "reasonScore": "sans score",
     "reasonStake": "sans mise"
   },
