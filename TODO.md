@@ -3,6 +3,20 @@
 Deferred work, queued behind feature development.
 Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
+## League board parity (deferred from the feature-treatment review)
+
+- [ ] **Richer parity e2e**: `tests/e2e/league-board-parity.e2e.ts` only asserts the
+      me-highlight border (the one field the old degraded league board already had).
+      Seed a champion pick + `league_leaderboard_rank` snapshots so the spec asserts
+      the crown / movement arrow actually render on the league board, proving the
+      parity the feature is named after (the component test covers the rendering; the
+      e2e does not).
+- [ ] **Dedup the medal + movement-arrow markup**: `medal()` and the `▲/▼`
+      movement block now live in `LeaderboardRowCard.vue` AND both moded boards
+      (`LeagueSurvivalBoard.vue`, `LeagueModePointsBoard.vue`) - triplicated because
+      the moded row shapes differ. Factor a small shared sub-primitive so a visual
+      change (color, threshold, glyph) is made once.
+
 ## Onboarding tour (deferred from the feature-treatment review)
 
 - [x] **A third copy of the one-time dismiss-flag pattern**: resolved.
