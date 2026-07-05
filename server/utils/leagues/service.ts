@@ -38,6 +38,7 @@ export interface LeagueRow {
   chatEnabledAt: Date | null
   chatEnabledBy: string | null
   chatKeyEpoch: number
+  chatRekeyPendingAt: Date | null
 }
 
 export interface LeagueSummary {
