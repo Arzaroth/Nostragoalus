@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.26.0] - 2026-07-05
+
 ### chelpu'
 
 - may' De'wI' Duv 'echletmey: patlh veb bISum'a' cha'lu' Hoch may'vaD not naQ; "3 / 5" patlh vebvaD, ngaQ may'mey je. DanID DaleghlaH, ghaj neH ghobe'.
