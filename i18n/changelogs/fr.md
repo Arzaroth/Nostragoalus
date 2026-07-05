@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [2.25.1] - 2026-07-05
+
 ### Modifié
 
 - Les rappels « Terminez vos pronostics » par ligue ne répètent plus la bannière « N match à pronostiquer ». Le panneau et les pastilles par match ne signalent désormais une ligue que lorsqu'elle demande quelque chose que la bannière ne dit pas - un score exact pour une ligue normale, ou une mise pour une ligue difficile. Un pronostic manquant n'apparaît qu'une fois, dans la bannière, pour que les rappels restent lisibles quand vous êtes dans de nombreuses ligues.

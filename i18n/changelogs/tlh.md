@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.25.1] - 2026-07-05
+
 ### choHpu'
 
 - ghom "wIvmey Damev" qeSHommey "N may' wIvnISlu'" HaSta qellu'be' DaH. patlh 'ej may' 'echletmey ghom maq neH, HaSta jatlhlaHbe'bogh Doch poQDI' - ghom motlh chevmey lugh, ghom Qatlh lIw. wIv Hutlh wa'logh neH HaSta cha'lu', vaj ghom law' DalojDI' qeSHommey laDlaH.
