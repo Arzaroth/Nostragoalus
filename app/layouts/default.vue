@@ -81,6 +81,8 @@ const navLinks = computed(() => {
     { to: `/${c}/bracket`, key: 'nav.bracket', icon: 'pi pi-sitemap' },
     { to: `/${c}/map`, key: 'nav.map', icon: 'pi pi-map' },
     { to: `/${c}/leaderboard`, key: 'nav.ranking', icon: 'pi pi-trophy' },
+    // Personal analytics only make sense for a signed-in player.
+    ...(session.value?.data?.user?.id ? [{ to: `/${c}/analytics`, key: 'nav.analytics', icon: 'pi pi-chart-bar' }] : []),
     ...(isAdmin.value ? [{ to: '/admin', key: 'nav.admin', icon: 'pi pi-cog' }] : []),
   ]
 })

@@ -12,6 +12,7 @@ early on). Back to the root map: [../BRAIN.md](../BRAIN.md).
 | [Champion pick](champion-pick.md) | Per-competition winner pick, FIFA-rank tier points snapshotted at pick time | core | `champion_pick`; `server/utils/champion/*` |
 | [Best scorer](best-scorer.md) | Golden Boot pick from team squads, goal-event-derived award | core | `best_scorer_pick`; `server/utils/bestscorer/*` |
 | [Stats](stats.md) | Player rankings tab in the matches view: top scorers + top assists, side by side | 2.2.0 | `useScorers.ts`, `PlayerRankingTable.vue`, `competitions/scorers.get.ts` |
+| [Personal analytics](analytics.md) | Per-competition bias report on your own picks: tier mix, goals lean, home/draw lean, over/under-rated teams, accuracy by round, best call + biggest miss; works mid-tournament | unreleased | `server/utils/analytics/service.ts`, `me/analytics.get.ts`, `AnalyticsReport.vue`, `useAnalytics.ts` |
 | [Leagues](leagues.md) | Competition-scoped player groups, roles, public/private, SSO auto-join | core | `league`, `league_member`, `league_opt_out`, `league_leaderboard_rank` |
 | [Onboarding tour](onboarding-tour.md) | One-time spotlight walk-through of the core actions for new players; replayable from the account menu | unreleased | `onboardingTourDismissedAt`; `OnboardingTour.vue`, `useOnboardingTour.ts`, `server/utils/onboarding/*` |
 | [Bot personas](crowd-bot.md) | Synthetic ghost bots: consensus, evil twin, equalizer | core | `botUserId`; `server/utils/bot/service.ts`, `server/api/bot/*` |

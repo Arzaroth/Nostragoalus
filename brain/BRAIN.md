@@ -56,6 +56,7 @@ use the indexes.
 | [champion-pick.md](features/champion-pick.md) | Per-competition winner pick, FIFA-rank tier payouts. |
 | [best-scorer.md](features/best-scorer.md) | Golden Boot pick, goal-event-derived award. |
 | [stats.md](features/stats.md) | Player rankings tab: top scorers + top assists. |
+| [analytics.md](features/analytics.md) | Personal analytics: per-competition bias report on your own picks (mid-tournament). |
 | [leagues.md](features/leagues.md) | Competition-scoped groups, roles, visibility, SSO auto-join. |
 | [onboarding-tour.md](features/onboarding-tour.md) | One-time spotlight walk-through of the core actions for new players; replayable from the account menu. |
 | [sso-provisioning.md](features/sso-provisioning.md) | SSO onboarding lifecycle, connection test, OIDC test-sign-in claim preview, DNS domain verify + bypass, SCIM provisioning. |
