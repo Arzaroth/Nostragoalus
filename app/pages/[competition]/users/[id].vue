@@ -67,6 +67,28 @@ const twinCompetition = computed(() => (global.value ? null : (slug.value ?? nul
 const twinEnabled = computed(() => twinOn.value && !global.value)
 const { data: twin } = useUserEvilTwin(userId, twinCompetition, twinEnabled)
 const showTwin = computed(() => twinEnabled.value && !!twin.value)
+
+// The "my achievements" menu item and an ACHIEVEMENT_UNLOCKED notification both
+// deep-link to #cabinet. That section only exists once the profile data resolves
+// and the page mounts - after the router's own hash scroll has already fired -
+// and that scroll ignores the section's scroll-margin-top anyway. Re-run
+// scrollIntoView (which honors it) whenever those inputs change, until the
+// target exists, mirroring the fixtures page. The onMounted above already
+// early-returns when a hash is present, so the two never fight over the scroll.
+const pageMounted = useMounted()
+let scrolledHash = ''
+watch(
+  [() => !!data.value, pageMounted, () => route.hash],
+  async () => {
+    if (route.hash !== '#cabinet' || route.hash === scrolledHash || !pageMounted.value || !data.value) return
+    await nextTick()
+    const el = document.getElementById('cabinet')
+    if (!el) return
+    scrolledHash = route.hash
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  },
+  { immediate: true, flush: 'post' },
+)
 </script>
 
 <template>
