@@ -154,6 +154,7 @@
   },
   "dm": {
     "title": "Messages",
+    "message": "Message",
     "open": "Open direct messages",
     "close": "Close",
     "new": "New message",

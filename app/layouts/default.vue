@@ -256,7 +256,6 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateNavFades))
     <SiteFooter />
     <Toast />
     <ChatDock />
-    <DmDock />
   </div>
 </template>
 

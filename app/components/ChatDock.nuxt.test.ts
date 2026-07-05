@@ -21,6 +21,26 @@ vi.mock('../composables/useSelectedLeague', () => ({
 }))
 mockNuxtImport('useRoute', () => () => route.value as never)
 
+// The dock now hosts DMs too (available to any signed-in user); stub the auth +
+// DM-inbox surface so the league-mode wiring under test renders.
+vi.mock('../composables/useAuth', () => ({
+  useAuth: () => ({ session: ref({ data: { user: { id: 'me', name: 'Me', image: null } } }) }),
+}))
+vi.mock('../composables/useDmInbox', () => ({
+  useDmInbox: () => ({
+    threads: { data: ref([]) },
+    totalUnread: ref(0),
+    identityStatus: ref('ready'),
+    ensureIdentity: async () => {},
+    searchRecipients: async () => [],
+    startThread: { mutateAsync: async () => 'T1' },
+    markRead: { mutate: () => {} },
+  }),
+}))
+vi.mock('../composables/useDmOpen', () => ({
+  useDmOpen: () => ({ pending: ref(null), requestOpen: ref(0), requestDm: () => {}, take: () => null }),
+}))
+
 // The multiview focus channel: drives the dock's match thread off the route.
 const focusedMatchId = ref<string | null>(null)
 const presentCells = ref<string[]>([])
@@ -77,16 +97,18 @@ describe('ChatDock', () => {
     expect(w.find('.chat-panel-stub').exists()).toBe(false)
   })
 
-  it('keeps the panel mounted but hides the bubble while chat is off', async () => {
+  it('keeps the league panel mounted even while league chat is off', async () => {
     const w = await mount(false)
     // Mounted (so its socket can catch a live enable) but hidden via v-show.
     expect(w.find('.chat-panel-stub').exists()).toBe(true)
-    expect(bubble(w).attributes('style')).toContain('display: none')
   })
 
-  it('shows the bubble once chat is enabled', async () => {
-    const w = await mount(true)
-    expect(bubble(w).attributes('style') ?? '').not.toContain('display: none')
+  it('shows the messaging bubble for any signed-in user (DMs are always available)', async () => {
+    // Even with league chat off, the bubble is shown - it also opens DMs.
+    const off = await mount(false)
+    expect(bubble(off).attributes('style') ?? '').not.toContain('display: none')
+    const on = await mount(true)
+    expect(bubble(on).attributes('style') ?? '').not.toContain('display: none')
   })
 
   it('shows the Global/Match scope toggle only on a match route', async () => {

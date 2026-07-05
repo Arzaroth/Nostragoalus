@@ -4,17 +4,21 @@ import { REACTION_EMOJIS, type ReactionEmoji } from '#shared/reactions'
 import { MAX_MESSAGE_TEXT_LENGTH } from '#shared/types/chat'
 import { decodeMentions, encodeMentions, extractMentions } from '~/utils/chat-content'
 import { ACCEPTED_IMAGE_TYPES, compressToWebp, imageMimeForBytes } from '~/composables/useChatImage'
+import { DEFAULT_COMPETITION } from '#shared/competition'
 import type { DecryptedMessage, PendingImage } from '~/composables/useLeagueChat'
-// End-to-end encrypted league chat. The league-global room (matchId null) or a
-// per-match thread. All crypto is client-side; the server only relays ciphertext.
-// `flat` drops the outer card chrome so the panel can sit inside the chat dock,
-// which supplies its own window frame. `tall` grows the message list (the dock's
-// expanded mode). `active` is false while the dock is collapsed - the list is
-// hidden then, so we re-scroll to the bottom when it becomes visible again.
+// End-to-end encrypted chat. Drives either a league room (the league-global room
+// with matchId null, or a per-match thread) or, when `dmThreadId` is set, a single
+// two-person DM thread as just another room. All crypto is client-side; the server
+// only relays ciphertext. `flat` drops the outer card chrome so the panel can sit
+// inside the chat dock, which supplies its own window frame. `tall` grows the
+// message list (the dock's expanded mode). `active` is false while the dock is
+// collapsed - the list is hidden then, so we re-scroll to the bottom when it
+// becomes visible again.
 const props = withDefaults(
-  defineProps<{ leagueId: string; matchId?: string | null; matchLabel?: string; flat?: boolean; tall?: boolean; active?: boolean }>(),
+  defineProps<{ leagueId?: string; matchId?: string | null; matchLabel?: string; flat?: boolean; tall?: boolean; active?: boolean; dmThreadId?: string }>(),
   { matchId: null, matchLabel: '', flat: false, tall: false, active: true },
 )
+const isDm = computed(() => !!props.dmThreadId)
 
 // Up to this many images on one message (mirrors the server cap).
 const MAX_IMAGES = 6
@@ -25,9 +29,12 @@ const meId = computed(() => session.value?.data?.user?.id ?? null)
 const slug = useSelectedCompetition()
 
 // A chat author's profile page (same destination as a leaderboard row), or null
-// when there is no competition context (the global dock with nothing selected).
+// when there is no competition context (the global dock with nothing selected). A
+// DM has no competition of its own, so fall back to the default one - the profile
+// page is the same person wherever it opens, and a dead link would be worse.
 function profileLink(uid: string | null): string | null {
-  return uid && slug.value ? `/${slug.value}/users/${uid}` : null
+  const s = slug.value ?? (isDm.value ? DEFAULT_COMPETITION : null)
+  return uid && s ? `/${s}/users/${uid}` : null
 }
 
 function fmtTime(iso: string): string {
@@ -39,10 +46,12 @@ function fmtFull(iso: string): string {
   return new Date(iso).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
 }
 
-const chat = useLeagueChat(
-  () => props.leagueId,
-  () => props.matchId ?? null,
-)
+// One mode for the panel's life: the dock keys/remounts this component on a mode
+// switch, so this conditional call at setup is safe. Both composables expose the
+// same surface, so the rest of the panel is mode-agnostic.
+const chat = props.dmThreadId
+  ? useDmRoom(() => props.dmThreadId!)
+  : useLeagueChat(() => props.leagueId!, () => props.matchId ?? null)
 const { enabled, isAdmin, ready, awaitingKey, loading, sending, readMarker, hasMore, loadingOlder, typingUserIds, messages, memberKeys, muted, identityStatus } = chat
 
 // Let a host (the floating dock) follow the live on/off state so it can show or
@@ -113,8 +122,10 @@ const showMuted = ref(false)
 const peerEntries = computed(() => keyEntries.value.filter((e) => e.userId !== meId.value))
 
 // Member names for display (the messages carry only user ids). Reuses the shared
-// league-detail query so we don't re-fetch the roster the page already cached.
-const detail = useLeagueDetail(computed<string | null>(() => props.leagueId))
+// league-detail query so we don't re-fetch the roster the page already cached. In
+// DM mode there is no league detail (query inert); names+avatars come solely from
+// the two-person roster on memberKeys.
+const detail = useLeagueDetail(computed<string | null>(() => (isDm.value ? null : props.leagueId ?? null)))
 const names = computed<Record<string, string>>(() => {
   const map: Record<string, string> = {}
   // Roster first, then chat members - so a participant hidden from the public
@@ -130,12 +141,19 @@ function nameFor(uid: string | null): string {
 const avatars = computed<Record<string, string | null>>(() => {
   const map: Record<string, string | null> = {}
   for (const m of detail.data.value?.members ?? []) map[m.userId] = m.image
+  // DM roster carries avatars on memberKeys (no league detail to draw from).
+  for (const m of memberKeys.value) {
+    const img = (m as { image?: string | null }).image
+    if (img != null) map[m.userId] = img
+  }
   return map
 })
 function avatarFor(uid: string | null): string | null {
   return uid ? avatars.value[uid] ?? null : null
 }
-const leagueName = computed(() => detail.data.value?.league?.name ?? '')
+// The other DM participant, for the lightbox title (a DM has no league name).
+const otherName = computed(() => memberKeys.value.find((m) => m.userId !== meId.value)?.name ?? '')
+const leagueName = computed(() => (isDm.value ? otherName.value : detail.data.value?.league?.name ?? ''))
 
 // Copy a message's text to the clipboard (the text component only, not images).
 function copyText(m: DecryptedMessage) {
@@ -883,7 +901,7 @@ watch(
       <i class="pi pi-lock" style="color: var(--p-primary-color)" />
       <span class="font-semibold">{{ props.matchId ? t('chat.threadTitle') : t('chat.roomTitle') }}</span>
       <span v-tooltip.top="t('chat.e2eeHint')" class="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-full" style="background: var(--ng-star-soft); color: var(--ng-star)">{{ t('chat.e2ee') }}</span>
-      <span v-if="changedCount > 0" v-tooltip.top="t('chat.verify.changedWarn')" class="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-full inline-flex items-center gap-1" style="border: 1px solid var(--ng-danger); color: var(--ng-danger)"><i class="pi pi-exclamation-triangle text-[10px]" />{{ t('chat.verify.changed') }}</span>
+      <span v-if="!isDm && changedCount > 0" v-tooltip.top="t('chat.verify.changedWarn')" class="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-full inline-flex items-center gap-1" style="border: 1px solid var(--ng-danger); color: var(--ng-danger)"><i class="pi pi-exclamation-triangle text-[10px]" />{{ t('chat.verify.changed') }}</span>
       <div v-if="ready" class="ms-auto flex items-center gap-3">
         <button type="button" v-tooltip.top="t('chat.search.button')" class="opacity-70 hover:opacity-100 inline-flex items-center" :class="searchOpen ? 'opacity-100' : ''" :style="searchOpen ? 'color: var(--p-primary-color)' : ''" :aria-label="t('chat.search.button')" @click="toggleSearch">
           <i class="pi pi-search" />
@@ -896,19 +914,19 @@ watch(
         <div class="relative">
           <button type="button" class="relative opacity-70 hover:opacity-100 inline-flex items-center" :aria-label="t('chat.menu.button')" @click="menuOpen = !menuOpen">
             <i class="pi pi-ellipsis-h" />
-            <span v-if="changedCount > 0" class="absolute -top-1 -right-1 w-2 h-2 rounded-full" style="background: var(--ng-danger)" />
+            <span v-if="!isDm && changedCount > 0" class="absolute -top-1 -right-1 w-2 h-2 rounded-full" style="background: var(--ng-danger)" />
           </button>
           <div
             v-if="menuOpen"
             class="absolute end-0 top-7 z-30 w-56 rounded-lg border shadow-lg py-1 text-sm"
             style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
           >
-            <button type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-start opacity-90 hover:opacity-100" @click="showVerify = !showVerify; menuOpen = false">
+            <button v-if="!isDm" type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-start opacity-90 hover:opacity-100" @click="showVerify = !showVerify; menuOpen = false">
               <i class="pi pi-shield text-xs" style="color: var(--p-primary-color)" />
               <span class="flex-1">{{ t('chat.verify.show') }}</span>
               <span v-if="changedCount > 0" class="text-xs font-bold" style="color: var(--ng-danger)">{{ changedCount }}</span>
             </button>
-            <button v-if="!hasRecovery" type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-start opacity-90 hover:opacity-100" :disabled="recoveryBusy" @click="menuOpen = false; openRecoverySetup()">
+            <button v-if="!isDm && !hasRecovery" type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-start opacity-90 hover:opacity-100" :disabled="recoveryBusy" @click="menuOpen = false; openRecoverySetup()">
               <i class="pi pi-key text-xs" style="color: var(--p-primary-color)" />
               <span class="flex-1">{{ t('chat.setupRecovery') }}</span>
             </button>
@@ -1032,7 +1050,7 @@ watch(
               </span>
               <span v-tooltip.top="fmtFull(m.createdAt)" class="text-[10px]" style="color: var(--p-text-muted-color)">{{ fmtTime(m.createdAt) }}</span>
               <span v-if="m.editedAt" v-tooltip.bottom="t('chat.edit.at', { time: fmtTime(m.editedAt) })" class="text-[10px] italic" style="color: var(--p-text-muted-color)">{{ t('chat.edit.edited') }}</span>
-              <span v-if="m.moderation === 'PENDING'" class="text-[10px] uppercase tracking-wider font-semibold px-1 rounded" style="border: 1px solid var(--ng-danger); color: var(--ng-danger)">{{ t('chat.moderation.pendingTag') }}</span>
+              <span v-if="!isDm && m.moderation === 'PENDING'" class="text-[10px] uppercase tracking-wider font-semibold px-1 rounded" style="border: 1px solid var(--ng-danger); color: var(--ng-danger)">{{ t('chat.moderation.pendingTag') }}</span>
               <!-- Per-message actions, icon-only, revealed on hover. -->
               <span v-if="m.moderation !== 'REMOVED'" class="ms-auto flex items-center gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                 <button type="button" v-tooltip.bottom="t('chat.reply.button')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.reply.button')" @click="startReply(m)"><i class="pi pi-reply text-xs" /></button>
@@ -1060,7 +1078,7 @@ watch(
                 <button v-if="m.userId === meId && m.moderation === 'VISIBLE'" type="button" v-tooltip.bottom="t('chat.edit.button')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.edit.button')" @click="startEdit(m)"><i class="pi pi-pencil text-xs" /></button>
                 <button v-if="m.userId && m.userId !== meId" type="button" v-tooltip.bottom="t('chat.mute')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.mute')" @click="chat.toggleMute(m.userId)"><i class="pi pi-volume-off text-xs" /></button>
                 <button
-                  v-if="m.userId && m.userId !== meId"
+                  v-if="!isDm && m.userId && m.userId !== meId"
                   type="button"
                   v-tooltip.bottom="m.reported ? t('chat.moderation.unreport') : t('chat.moderation.report')"
                   class="opacity-60 hover:opacity-100"
@@ -1068,8 +1086,8 @@ watch(
                   :style="m.reported ? 'color: var(--ng-danger)' : ''"
                   @click="chat.report(m.id)"
                 ><i :class="m.reported ? 'pi pi-flag-fill' : 'pi pi-flag'" class="text-xs" /></button>
-                <button v-if="isAdmin || m.userId === meId" type="button" v-tooltip.bottom="m.userId === meId ? t('chat.delete') : t('chat.moderation.remove')" class="opacity-60 hover:opacity-100" :aria-label="m.userId === meId ? t('chat.delete') : t('chat.moderation.remove')" style="color: var(--ng-danger)" @click="chat.moderate(m.id, 'remove')"><i class="pi pi-trash text-xs" /></button>
-                <button v-if="isAdmin && m.moderation === 'PENDING'" type="button" v-tooltip.bottom="t('chat.moderation.restore')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.moderation.restore')" style="color: var(--p-primary-color)" @click="chat.moderate(m.id, 'restore')"><i class="pi pi-undo text-xs" /></button>
+                <button v-if="!isDm && (isAdmin || m.userId === meId)" type="button" v-tooltip.bottom="m.userId === meId ? t('chat.delete') : t('chat.moderation.remove')" class="opacity-60 hover:opacity-100" :aria-label="m.userId === meId ? t('chat.delete') : t('chat.moderation.remove')" style="color: var(--ng-danger)" @click="chat.moderate(m.id, 'remove')"><i class="pi pi-trash text-xs" /></button>
+                <button v-if="!isDm && isAdmin && m.moderation === 'PENDING'" type="button" v-tooltip.bottom="t('chat.moderation.restore')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.moderation.restore')" style="color: var(--p-primary-color)" @click="chat.moderate(m.id, 'restore')"><i class="pi pi-undo text-xs" /></button>
               </span>
             </div>
             <!-- Quoted parent (a reply stays in the main list): click to jump to it. -->
@@ -1193,8 +1211,8 @@ watch(
                   <span v-tooltip.top="fmtFull(r.createdAt)" class="text-[10px]" style="color: var(--p-text-muted-color)">{{ fmtTime(r.createdAt) }}</span>
                   <span v-if="r.editedAt" class="text-[10px] italic" style="color: var(--p-text-muted-color)">{{ t('chat.edit.edited') }}</span>
                   <span class="ms-auto flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button v-if="contentVisible(r) && r.userId && r.userId !== meId" type="button" v-tooltip.bottom="r.reported ? t('chat.moderation.unreport') : t('chat.moderation.report')" class="opacity-60 hover:opacity-100" :aria-label="r.reported ? t('chat.moderation.unreport') : t('chat.moderation.report')" :style="r.reported ? 'color: var(--ng-danger)' : ''" @click="chat.report(r.id)"><i :class="r.reported ? 'pi pi-flag-fill' : 'pi pi-flag'" class="text-[10px]" /></button>
-                    <button v-if="isAdmin || r.userId === meId" type="button" v-tooltip.bottom="r.userId === meId ? t('chat.delete') : t('chat.moderation.remove')" class="opacity-60 hover:opacity-100" :aria-label="r.userId === meId ? t('chat.delete') : t('chat.moderation.remove')" style="color: var(--ng-danger)" @click="chat.moderate(r.id, 'remove')"><i class="pi pi-trash text-[10px]" /></button>
+                    <button v-if="!isDm && contentVisible(r) && r.userId && r.userId !== meId" type="button" v-tooltip.bottom="r.reported ? t('chat.moderation.unreport') : t('chat.moderation.report')" class="opacity-60 hover:opacity-100" :aria-label="r.reported ? t('chat.moderation.unreport') : t('chat.moderation.report')" :style="r.reported ? 'color: var(--ng-danger)' : ''" @click="chat.report(r.id)"><i :class="r.reported ? 'pi pi-flag-fill' : 'pi pi-flag'" class="text-[10px]" /></button>
+                    <button v-if="!isDm && (isAdmin || r.userId === meId)" type="button" v-tooltip.bottom="r.userId === meId ? t('chat.delete') : t('chat.moderation.remove')" class="opacity-60 hover:opacity-100" :aria-label="r.userId === meId ? t('chat.delete') : t('chat.moderation.remove')" style="color: var(--ng-danger)" @click="chat.moderate(r.id, 'remove')"><i class="pi pi-trash text-[10px]" /></button>
                   </span>
                 </div>
                 <span v-if="!contentVisible(r)" class="italic text-xs" style="color: var(--p-text-muted-color)">{{ r.moderation === 'REMOVED' ? t('chat.moderation.removed') : t('chat.moderation.pendingHidden') }}</span>
@@ -1263,7 +1281,7 @@ watch(
           <form class="relative flex items-end gap-2" @submit.prevent="submit">
             <!-- @mention autocomplete, anchored above the composer. -->
             <ChatMentionMenu
-              v-if="mentionTarget === 'composer' && mentionQuery !== null && mentionCandidates.length"
+              v-if="!isDm && mentionTarget === 'composer' && mentionQuery !== null && mentionCandidates.length"
               :candidates="mentionCandidates"
               :active-index="mentionIndex"
               @select="applyMention"
@@ -1293,6 +1311,9 @@ watch(
       </template>
     </template>
 
+    <!-- League-only dialogs (enable/verify/rotate/reports/recovery): a DM is always
+         on, has no admin and no per-message moderation, so none of these apply. -->
+    <template v-if="!isDm">
     <!-- Legal-cover warning before enabling. -->
     <Dialog v-model:visible="showWarning" modal :header="t('chat.warning.title')" :style="{ width: '32rem', maxWidth: '92vw' }">
       <div class="flex flex-col gap-3 text-sm">
@@ -1377,6 +1398,7 @@ watch(
         <Button :label="t('chat.recovery.saved')" @click="showRecovery = false" />
       </template>
     </Dialog>
+    </template>
 
     <!-- Shared image viewer: cycles a message's images, or the room media gallery. -->
     <ChatLightbox
