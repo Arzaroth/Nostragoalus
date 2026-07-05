@@ -110,9 +110,9 @@ function toggleUndock() {
 const panelStyle = computed(() => {
   const base = `max-width: 94vw; background: var(--p-content-background); border-color: var(--p-content-border-color)`
   if (undocked.value) {
-    return `${dragStyle.value}; position: fixed; z-index: 50; width: ${expanded.value ? '40rem' : '22rem'}; height: 32rem; resize: both; overflow: hidden; ${base}`
+    return `${dragStyle.value}; position: fixed; z-index: 50; width: ${expanded.value ? '40rem' : '24rem'}; height: 32rem; resize: both; overflow: hidden; ${base}`
   }
-  return `width: ${expanded.value ? 'min(48rem, 94vw)' : '22rem'}; ${base}`
+  return `width: ${expanded.value ? 'min(48rem, 94vw)' : '24rem'}; ${base}`
 })
 
 // "Share a pick to chat" asks the dock to open the global room; the panel there

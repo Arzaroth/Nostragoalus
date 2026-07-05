@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm'
 import { db } from '../../../../db'
-import { bestScorerPick, championPick, user } from '../../../../db/schema'
+import { bestScorerPick, championPick, chatIdentity, user } from '../../../../db/schema'
 import { getUserPublicPredictions } from '../../../utils/predictions/service'
 import { resolveCompetition } from '../../../utils/competitions/store'
 import { getSessionUser, isAdmin } from '../../../utils/auth-guards'
@@ -48,8 +48,13 @@ export default defineEventHandler(async (event) => {
     : []
   const bestScorer = bestScorerRows[0] ?? null
 
+  // A user can only be DMed once they have set up chat (a chat_identity holds their
+  // public key; DMs are sealed to it). Surfaced so the profile hides "Message" for
+  // someone who cannot receive one (a bot, or anyone who never opened chat).
+  const identityRows = await db.select({ userId: chatIdentity.userId }).from(chatIdentity).where(eq(chatIdentity.userId, id)).limit(1)
+
   return {
-    user: { id, name: rows[0].name, image: rows[0].image },
+    user: { id, name: rows[0].name, image: rows[0].image, canMessage: identityRows.length > 0 },
     champion,
     bestScorer,
     champions: global ? championRows : undefined,
