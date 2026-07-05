@@ -7,11 +7,15 @@ const { t } = useI18n()
 const { standings, save } = useLeagueRewards(() => props.leagueId)
 const criterionName = useCriterionName()
 
-// A leader the viewer isn't allowed to see (private profile / admin-hidden) comes
-// back with an empty name; show a neutral placeholder rather than a blank.
-function leaderNames(winners: { displayName: string }[]): string {
-  const shown = winners.map((w) => w.displayName).filter((n) => n !== '')
-  return shown.length > 0 ? shown.join(', ') : t('reward.hiddenLeader')
+// The holder line: the top holder (winners are sorted by value desc server-side)
+// plus a "+N others" tail when several hold it - Team Specialist can have many.
+// A holder the viewer isn't allowed to see (private / admin-hidden) comes back with
+// an empty name; show a neutral placeholder rather than a blank.
+function holderLine(winners: { displayName: string }[]): string {
+  if (winners.length === 0) return ''
+  const first = winners[0].displayName || t('reward.hiddenLeader')
+  const others = winners.length - 1
+  return others > 0 ? t('reward.leaderPlusOthers', { name: first, count: others }) : first
 }
 
 // The prizes actually configured (members see these); the owner edits all five.
@@ -126,7 +130,7 @@ async function submit() {
           <div class="text-xs mt-0.5" style="color: var(--p-text-muted-color)">
             <template v-if="s.disabled">{{ t('reward.teamSpecialistDisabled') }}</template>
             <template v-else-if="s.winners.length > 0">
-              {{ t('reward.currentLeader') }}: {{ leaderNames(s.winners) }}
+              {{ t('reward.currentLeader') }}: {{ holderLine(s.winners) }}
               <span v-if="s.youHold" class="font-semibold" style="color: var(--p-primary-color)"> - {{ t('reward.you') }}</span>
             </template>
             <template v-else>{{ t('reward.noLeader') }}</template>
