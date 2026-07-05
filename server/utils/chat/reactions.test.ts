@@ -50,32 +50,32 @@ describe('setChatReaction', () => {
     await client.close()
   })
 
-  it('forbids non-members and 404s an unknown or cross-league message', async () => {
-    const { db, client, leagueId, messageId, competitionId } = await setup()
+  it('forbids non-members and 404s an unknown message', async () => {
+    const { db, client, messageId } = await setup()
     const stranger = await makeUser(db, 'stranger')
-    await expect(setChatReaction(db, { leagueId, messageId, userId: stranger, emoji: 'FIRE' })).rejects.toBeInstanceOf(ForbiddenError)
-    await expect(setChatReaction(db, { leagueId, messageId: '00000000-0000-0000-0000-000000000000', userId: stranger, emoji: 'FIRE' })).rejects.toBeInstanceOf(NotFoundError)
-    // A message that belongs to a different league than the route's id.
-    const other = await makeUser(db, 'other')
-    const otherLeague = await makeLeague(db, { competitionId, ownerId: other })
-    const otherMessage = await addMessage(db, otherLeague, other)
-    await expect(setChatReaction(db, { leagueId, messageId: otherMessage, userId: other, emoji: 'FIRE' })).rejects.toBeInstanceOf(NotFoundError)
+    await expect(setChatReaction(db, { messageId, userId: stranger, emoji: 'FIRE' })).rejects.toBeInstanceOf(ForbiddenError)
+    await expect(setChatReaction(db, { messageId: '00000000-0000-0000-0000-000000000000', userId: stranger, emoji: 'FIRE' })).rejects.toBeInstanceOf(NotFoundError)
     await client.close()
   })
 
-  it('404s a direct-message row: a DM message is not reachable through a league route', async () => {
-    const { db, client, leagueId, owner, member } = await setup()
+  it('authorizes a DM participant and 404s a non-participant on a DM message', async () => {
+    const { db, client, owner, member } = await setup()
     // A DM thread + a chat_message scoped to it (leagueId null).
     const [lo, hi] = owner < member ? [owner, member] : [member, owner]
     const t = await db.insert(dmThread).values({ userAId: lo, userBId: hi }).returning({ id: dmThread.id })
     const dmMsg = await db.insert(chatMessage).values({ dmThreadId: t[0].id, userId: owner, epoch: 1, ciphertext: 'secret' }).returning({ id: chatMessage.id })
-    await expect(setChatReaction(db, { leagueId, messageId: dmMsg[0].id, userId: owner, emoji: 'FIRE' })).rejects.toBeInstanceOf(NotFoundError)
+    // A participant reacts; the returned context is the DM scope.
+    const ctx = await setChatReaction(db, { messageId: dmMsg[0].id, userId: owner, emoji: 'FIRE' })
+    expect(ctx.kind).toBe('dm')
+    // A non-participant cannot even see the message.
+    const stranger = await makeUser(db, 'stranger2')
+    await expect(setChatReaction(db, { messageId: dmMsg[0].id, userId: stranger, emoji: 'FIRE' })).rejects.toBeInstanceOf(NotFoundError)
     await client.close()
   })
 
   it('rejects an unknown emoji', async () => {
-    const { db, client, leagueId, messageId, member } = await setup()
-    await expect(setChatReaction(db, { leagueId, messageId, userId: member, emoji: 'NOPE' as never })).rejects.toBeInstanceOf(ValidationError)
+    const { db, client, messageId, member } = await setup()
+    await expect(setChatReaction(db, { messageId, userId: member, emoji: 'NOPE' as never })).rejects.toBeInstanceOf(ValidationError)
     await client.close()
   })
 

@@ -118,14 +118,17 @@ describe('chat attachments', () => {
     await client.close()
   })
 
-  it('404s a direct-message attachment: a DM image is not reachable through a league route', async () => {
+  it('serves a DM attachment to a participant and 404s a non-participant', async () => {
     const { db, client, owner, member, storage } = await setup()
     // A DM thread + a DM chat_message (leagueId null) with an attachment.
     const [lo, hi] = owner < member ? [owner, member] : [member, owner]
     const t = await db.insert(dmThread).values({ userAId: lo, userBId: hi }).returning({ id: dmThread.id })
     const dmMsg = await db.insert(chatMessage).values({ dmThreadId: t[0].id, userId: owner, epoch: 1, ciphertext: 'secret' }).returning({ id: chatMessage.id })
     await db.insert(chatAttachment).values({ messageId: dmMsg[0].id, idx: 0, epoch: 1, ciphertext: 'IMG', byteSize: 3 })
-    await expect(getAttachmentCiphertext(db, dmMsg[0].id, 0, owner, storage)).rejects.toBeInstanceOf(NotFoundError)
+    // A participant gets the ciphertext; a non-participant cannot see the message.
+    expect(await getAttachmentCiphertext(db, dmMsg[0].id, 0, member, storage)).toEqual({ ciphertext: 'IMG', epoch: 1 })
+    const stranger = await makeUser(db, 'stranger-dm')
+    await expect(getAttachmentCiphertext(db, dmMsg[0].id, 0, stranger, storage)).rejects.toBeInstanceOf(NotFoundError)
     await client.close()
   })
 

@@ -1,38 +1,28 @@
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
-import { chatMessage, chatMessageReaction } from '../../../db/schema'
+import { chatMessageReaction } from '../../../db/schema'
 import { REACTION_EMOJIS, emptyReactionTotals, type ReactionEmoji, type ReactionTotals } from '../../../shared/reactions'
-import { ForbiddenError, NotFoundError, ValidationError } from '../errors'
-import { getMembership } from '../leagues/service'
+import { ValidationError } from '../errors'
+import { authorizeMessageActor, type MessageContext } from './access'
 
 // Emoji reactions on chat messages mirror match reactions: one per member per
 // message, changeable, toggled off by passing null. Only the glyph is stored -
 // never anything about the encrypted message it sits on.
 
-async function messageLeague(db: AppDatabase, messageId: string): Promise<string> {
-  const rows = await db.select({ leagueId: chatMessage.leagueId }).from(chatMessage).where(eq(chatMessage.id, messageId)).limit(1)
-  // A null leagueId is a direct-message row - not reachable through a league route.
-  if (!rows[0] || rows[0].leagueId === null) throw new NotFoundError('message not found')
-  return rows[0].leagueId
-}
-
-// Set (or clear, when emoji is null) the caller's reaction on a message. Returns
-// the message's league so the route can fan the new totals out to its members.
-// Members only; the message must belong to the given league.
+// Set (or clear, when emoji is null) the caller's reaction on a message, in either
+// scope. Authorizes the actor (league member or DM participant) and returns the
+// message's context so the route can fan the new totals out to the right audience.
 export async function setChatReaction(
   db: AppDatabase,
-  opts: { leagueId: string; messageId: string; userId: string; emoji: ReactionEmoji | null },
-): Promise<{ leagueId: string }> {
+  opts: { messageId: string; userId: string; emoji: ReactionEmoji | null },
+): Promise<MessageContext> {
   if (opts.emoji !== null && !REACTION_EMOJIS.includes(opts.emoji)) throw new ValidationError('unknown reaction')
-  const leagueId = await messageLeague(db, opts.messageId)
-  if (leagueId !== opts.leagueId) throw new NotFoundError('message not found')
-  const membership = await getMembership(db, leagueId, opts.userId)
-  if (!membership) throw new ForbiddenError('not a league member')
+  const ctx = await authorizeMessageActor(db, opts.messageId, opts.userId)
   if (opts.emoji === null) {
     await db
       .delete(chatMessageReaction)
       .where(and(eq(chatMessageReaction.messageId, opts.messageId), eq(chatMessageReaction.userId, opts.userId)))
-    return { leagueId }
+    return ctx
   }
   await db
     .insert(chatMessageReaction)
@@ -41,7 +31,7 @@ export async function setChatReaction(
       target: [chatMessageReaction.userId, chatMessageReaction.messageId],
       set: { emoji: opts.emoji, updatedAt: new Date() },
     })
-  return { leagueId }
+  return ctx
 }
 
 // Per-emoji totals for a single message (zeros included), for a live push.
