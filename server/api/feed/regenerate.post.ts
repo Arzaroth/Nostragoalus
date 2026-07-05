@@ -1,27 +1,30 @@
 import { getRequestURL } from 'h3'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { db } from '../../../db'
 import { user as userTable } from '../../../db/schema'
-import { requireUser } from '../../utils/auth-guards'
 import { FEED_LOCALES, type FeedLocale, signFeedToken } from '../../utils/feed/token'
+import { defineValidatedHandler } from '../../utils/validated-handler'
 
-// Returns the caller's own calendar-feed subscription URLs. The token is
-// deterministic (same user + locale -> same token), so this is idempotent and the
-// URL is stable for a calendar client to keep polling. Locale defaults to English;
-// the client passes its active locale so the feed's event text matches the UI.
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
+// Revoke every previously-issued calendar-feed URL for the caller by bumping their
+// feed-token version, then mint a fresh subscription URL. Use when a feed link
+// leaked (calendar URLs get logged/synced/shared). No body; session + same-origin
+// gated by defineValidatedHandler.
+export default defineValidatedHandler({}, async ({ user, event }) => {
   const q = getQuery(event)
   const locale = (
     typeof q.locale === 'string' && (FEED_LOCALES as readonly string[]).includes(q.locale) ? q.locale : 'en'
   ) as FeedLocale
 
+  const [row] = await db
+    .update(userTable)
+    .set({ feedTokenVersion: sql`${userTable.feedTokenVersion} + 1` })
+    .where(eq(userTable.id, user.id))
+    .returning({ fv: userTable.feedTokenVersion })
+
   const secret = useRuntimeConfig(event).betterAuthSecret
-  const [row] = await db.select({ fv: userTable.feedTokenVersion }).from(userTable).where(eq(userTable.id, user.id))
   const token = signFeedToken(secret, { u: user.id, l: locale, fv: row?.fv ?? 0, v: 1 })
   const origin = getRequestURL(event).origin
   const url = `${origin}/api/feed/calendar.ics?token=${token}`
-  // webcal:// makes desktop/mobile calendar apps offer a one-tap subscribe.
   const webcalUrl = url.replace(/^https?:/, 'webcal:')
   return { url, webcalUrl }
 })
@@ -29,12 +32,12 @@ export default defineEventHandler(async (event) => {
 defineRouteMeta({
   openAPI: {
     tags: ['Feed'],
-    summary: 'My calendar feed URL',
+    summary: 'Regenerate my calendar feed link',
     description:
-      "Mints the signed subscription URL (https + webcal) for the authenticated user's iCalendar feed of fixtures and pick deadlines. Deterministic per user + locale.",
+      "Bumps the caller's feed-token version, revoking every previously-issued calendar URL, and returns a fresh subscription URL (https + webcal). Use if a feed link leaked.",
     parameters: [{ name: 'locale', in: 'query', required: false, schema: { type: 'string', enum: ['en', 'fr', 'th', 'tlh', 'ar'] } }],
     responses: {
-      '200': { description: 'The https and webcal subscription URLs.' },
+      '200': { description: 'The new https and webcal subscription URLs.' },
       '401': { description: 'Not signed in.' },
     },
   },

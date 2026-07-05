@@ -18,6 +18,9 @@ export interface FeedTokenPayload {
   u: string
   // locale for the event text
   l: FeedLocale
+  // the user's feed-token version at mint time; the .ics route rejects the token
+  // when it no longer matches user.feedTokenVersion, giving per-user revocation.
+  fv: number
   // payload version, so the format can evolve without honouring stale tokens
   v: 1
 }
@@ -29,6 +32,9 @@ function isValidPayload(value: unknown): value is FeedTokenPayload {
     p.v === 1 &&
     typeof p.u === 'string' &&
     p.u.length > 0 &&
+    typeof p.fv === 'number' &&
+    Number.isInteger(p.fv) &&
+    p.fv >= 0 &&
     typeof p.l === 'string' &&
     (FEED_LOCALES as readonly string[]).includes(p.l)
   )

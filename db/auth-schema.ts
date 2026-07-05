@@ -53,6 +53,12 @@ export const user = pgTable("user", {
   // skipped. Written only by the onboarding service, read-only client-side.
   onboardingTourDismissedAt: timestamp("onboarding_tour_dismissed_at"),
   twoFactorEnabled: boolean("two_factor_enabled").default(false),
+  // Baked into the (otherwise permanent, revocation-less) calendar-feed token so
+  // the feed can be revoked without rotating the whole app secret: the .ics route
+  // rejects a token whose version != this, and regenerating the feed link bumps
+  // it, killing every previously-issued URL. Written only by the feed regenerate
+  // route, read-only client-side.
+  feedTokenVersion: integer("feed_token_version").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()

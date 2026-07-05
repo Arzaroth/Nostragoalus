@@ -1,5 +1,7 @@
 import { getRequestURL } from 'h3'
+import { eq } from 'drizzle-orm'
 import { db } from '../../../db'
+import { user as userTable } from '../../../db/schema'
 import { buildFeedCalendar } from '../../utils/feed/ical'
 import { getFeedMatches } from '../../utils/feed/service'
 import { verifyFeedToken } from '../../utils/feed/token'
@@ -13,6 +15,12 @@ export default defineEventHandler(async (event) => {
   const secret = useRuntimeConfig(event).betterAuthSecret
   const payload = verifyFeedToken(secret, typeof token === 'string' ? token : undefined)
   if (!payload) throw createError({ statusCode: 404, statusMessage: 'feed not found' })
+
+  // Per-user revocation: a token minted before the user regenerated their feed
+  // link carries a stale version and is rejected (same 404 as an unknown token,
+  // so a revoked URL never confirms the user exists).
+  const [owner] = await db.select({ fv: userTable.feedTokenVersion }).from(userTable).where(eq(userTable.id, payload.u))
+  if (!owner || owner.fv !== payload.fv) throw createError({ statusCode: 404, statusMessage: 'feed not found' })
 
   const now = new Date()
   const matches = await getFeedMatches(db, payload.u, now)

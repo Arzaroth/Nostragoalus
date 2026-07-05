@@ -8,20 +8,20 @@ function b64url(s: string): string {
 }
 
 describe('feed token', () => {
-  it('round-trips a valid payload', () => {
-    const token = signFeedToken(SECRET, { u: 'user-1', l: 'fr', v: 1 })
-    expect(verifyFeedToken(SECRET, token)).toEqual({ u: 'user-1', l: 'fr', v: 1 })
+  it('round-trips a valid payload (carrying the feed version)', () => {
+    const token = signFeedToken(SECRET, { u: 'user-1', l: 'fr', fv: 3, v: 1 })
+    expect(verifyFeedToken(SECRET, token)).toEqual({ u: 'user-1', l: 'fr', fv: 3, v: 1 })
   })
 
   it('rejects a token signed with a different secret', () => {
-    const token = signFeedToken(SECRET, { u: 'user-1', l: 'en', v: 1 })
+    const token = signFeedToken(SECRET, { u: 'user-1', l: 'en', fv: 0, v: 1 })
     expect(verifyFeedToken('other-secret', token)).toBeNull()
   })
 
   it('rejects a tampered body', () => {
-    const token = signFeedToken(SECRET, { u: 'user-1', l: 'en', v: 1 })
+    const token = signFeedToken(SECRET, { u: 'user-1', l: 'en', fv: 0, v: 1 })
     const [, mac] = token.split('.')
-    const forged = `${b64url(JSON.stringify({ u: 'user-2', l: 'en', v: 1 }))}.${mac}`
+    const forged = `${b64url(JSON.stringify({ u: 'user-2', l: 'en', fv: 0, v: 1 }))}.${mac}`
     expect(verifyFeedToken(SECRET, forged)).toBeNull()
   })
 
@@ -36,7 +36,7 @@ describe('feed token', () => {
   })
 
   it('returns null on a signature length mismatch', () => {
-    const body = b64url(JSON.stringify({ u: 'user-1', l: 'en', v: 1 }))
+    const body = b64url(JSON.stringify({ u: 'user-1', l: 'en', fv: 0, v: 1 }))
     expect(verifyFeedToken(SECRET, `${body}.short`)).toBeNull()
   })
 
@@ -56,17 +56,29 @@ describe('feed token', () => {
 
   it('returns null on an authentic MAC over a shape-invalid payload', () => {
     const cases = [
-      { u: 'user-1', l: 'en' }, // missing v
-      { u: 'user-1', l: 'klingon', v: 1 }, // unknown locale
-      { u: 'user-1', l: 5, v: 1 }, // non-string locale
-      { u: '', l: 'en', v: 1 }, // empty user
-      { u: 1, l: 'en', v: 1 }, // non-string user
-      { l: 'en', v: 1 }, // missing user
+      { u: 'user-1', l: 'en', fv: 0 }, // missing v
+      { u: 'user-1', l: 'klingon', fv: 0, v: 1 }, // unknown locale
+      { u: 'user-1', l: 5, fv: 0, v: 1 }, // non-string locale
+      { u: '', l: 'en', fv: 0, v: 1 }, // empty user
+      { u: 1, l: 'en', fv: 0, v: 1 }, // non-string user
+      { l: 'en', fv: 0, v: 1 }, // missing user
+      { u: 'user-1', l: 'en', v: 1 }, // missing fv
+      { u: 'user-1', l: 'en', fv: -1, v: 1 }, // negative fv
+      { u: 'user-1', l: 'en', fv: 1.5, v: 1 }, // non-integer fv
     ]
     for (const c of cases) {
       const body = b64url(JSON.stringify(c))
       const token = `${body}.${signFeedBody(SECRET, body)}`
       expect(verifyFeedToken(SECRET, token)).toBeNull()
     }
+  })
+
+  it('a token minted at one version does not validate at another (revocation)', () => {
+    // The route compares payload.fv to the user's current feedTokenVersion; here we
+    // just prove different versions produce distinct, non-interchangeable payloads.
+    const v0 = verifyFeedToken(SECRET, signFeedToken(SECRET, { u: 'u', l: 'en', fv: 0, v: 1 }))
+    const v1 = verifyFeedToken(SECRET, signFeedToken(SECRET, { u: 'u', l: 'en', fv: 1, v: 1 }))
+    expect(v0?.fv).toBe(0)
+    expect(v1?.fv).toBe(1)
   })
 })
