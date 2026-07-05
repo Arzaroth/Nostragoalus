@@ -36,10 +36,13 @@ test('a league owner configures a prize and sees they are currently leading it',
   }).toPass({ timeout: 30_000 })
   await dismissOnboarding(page)
 
-  // Configure the OVERALL prize (the first row in the edit dialog).
+  // Add an OVERALL prize: the edit dialog starts empty, so pick the criterion from
+  // the dropdown, add it, then fill the prize label.
   const edit = page.getByRole('button', { name: 'Edit prizes' })
   await expect(edit).toBeVisible()
   await edit.click()
+  await page.locator('select').selectOption({ label: 'Overall Winner' })
+  await page.getByRole('button', { name: 'Add prize' }).click()
   const label = page.locator('.p-inputtext').first()
   await label.click()
   await label.pressSequentially('Un magnum de rosé', { delay: 5 })
@@ -58,4 +61,29 @@ test('a league owner configures a prize and sees they are currently leading it',
   const dialog = page.getByRole('dialog')
   await expect(dialog.getByText('3 pts')).toBeVisible()
   await expect(dialog.getByText("that's you!")).toBeVisible()
+  await page.keyboard.press('Escape')
+})
+
+test('a league owner writes a markdown description that renders for viewers', async ({ page }) => {
+  const user = freshUser()
+  await signUp(page, user)
+  const userId = await getUserIdByEmail(user.email)
+  const leagueId = await seedLeague(fixture.competitionId, userId)
+
+  await expect(async () => {
+    await page.goto(`/leagues/${leagueId}`)
+  }).toPass({ timeout: 30_000 })
+  await dismissOnboarding(page)
+
+  const addDesc = page.getByRole('button', { name: 'Add a description' })
+  await expect(addDesc).toBeVisible()
+  await addDesc.click()
+  const editor = page.getByRole('textbox', { name: 'About this league' })
+  await editor.fill('## House rules\n\nBe **nice** to each other.')
+  // The dialog footer Save (common.save), not the prizes "Save prizes".
+  await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click()
+
+  // The rendered markdown shows on the league page (sanitized, as real elements).
+  await expect(page.getByRole('heading', { name: 'House rules' })).toBeVisible()
+  await expect(page.getByText('nice', { exact: false })).toBeVisible()
 })

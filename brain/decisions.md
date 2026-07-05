@@ -242,10 +242,19 @@ feature/architecture doc that implements it.
 
 - **Prizes are per-league, and their winners are derived live at read time, not
   stored.** The contest is a league's own (best among its members, not the global
-  trophy). `computeCriteriaWinners` is the global trophy computation parameterized
-  by `{ leagueId, memberIds }`; `getRewardStandings` runs it on demand, so a league
-  sees who is currently leading each prize and it settles at competition end - no
-  finalize hook, no league-award table. See [features/rewards.md](features/rewards.md).
+  trophy). A dedicated league engine `computeLeagueRewardWinners`
+  (`server/utils/rewards/criteria.ts`) runs on demand from `getRewardStandings`, so a
+  league sees who is currently leading each prize and it settles at competition end -
+  no finalize hook, no league-award table. See [features/rewards.md](features/rewards.md).
+- **League prizes get their own criteria enum, decoupled from the global trophies.**
+  Owners wanted more than the five trophy categories, so `league_reward.type` moved to
+  a wider `league_reward_criterion` enum (eleven criteria: the original five plus
+  Wooden Spoon, Finalist, Group/Knockout Oracle, Sharpshooter, Goal-Difference Guru).
+  Each is a `(metric x match-filter x direction)` over the same `rankableForMatches`
+  aggregates. Keeping this separate from `competition_award_type` means the global
+  trophy set (and the achievements/wrapped/cabinet that read it) is untouched, and the
+  blast radius of a new prize criterion is one enum + one spec table. `rankableForMatches`
+  is exported from `awards/service.ts` for the engine to reuse.
 - **Reward images reuse the avatar storage seam** (content-addressed
   `reward/<sha>.<ext>`, served at `/api/media/reward/[key]`); the route resolves the
   uploaded data URL to a key so the reward service stays storage-free and testable.
@@ -256,6 +265,16 @@ feature/architecture doc that implements it.
   private profiles seen by a non-member, keep their standings slot but come back
   nameless (the UI shows a neutral placeholder) rather than leaking a name the board
   itself conceals. See [features/rewards.md](features/rewards.md).
+
+- **The league description is Markdown, sanitized on render, not stored as HTML.**
+  The blurb is untrusted author input shown to every member, so it is kept as Markdown
+  source (`league.description`) and rendered client-side through `marked` ->
+  `isomorphic-dompurify` (`app/utils/markdown.ts`) with a narrow tag allow-list and
+  forced link/image hardening - both already dependencies (the about page uses the same
+  pair). Sanitizing on render, not on write, means the boundary is the one place the
+  HTML is produced; storing raw HTML would trust the author. Description images reuse the
+  reward image store rather than inlining data URLs (which would blow the length cap).
+  See [features/leagues.md](features/leagues.md).
 
 ## Tournament Wrapped
 
@@ -275,14 +294,23 @@ feature/architecture doc that implements it.
   prediction token payload - two token families that can never be swapped are
   simpler to reason about than one payload with two shapes.
 - **Prize rankings reuse the winners computation instead of a parallel path.**
-  `rankCriteria` shares `criteriaMatchFilter` (and OVERALL's `getLeaderboard`) with
-  `computeCriteriaWinners`, so a criterion's rank-1 rows are provably the same set
-  the standings report as leaders; the ranking just stops discarding the tail. One
-  source of truth avoids a "the dialog disagrees with the card" class of bug. See
-  [rewards.md](features/rewards.md).
-- **Team Specialist is disabled, not hidden, until an admin sets a featured team.**
-  `competition.featuredTeamCode` has no default (a sensible host default would be
-  wrong for a neutral competition), so rather than silently never awarding the
-  prize, the criterion surfaces `disabled` everywhere (greyed card, blocked owner
-  config, absent from the cabinet) and an admin Competitions panel makes the
-  requirement explicit. See [rewards.md](features/rewards.md).
+  `rankLeagueCriterion` and `computeLeagueRewardWinners` share the same per-criterion
+  spec (metric, subset, direction) in `criteria.ts`, so a criterion's rank-1 rows are
+  the same set the standings report as leaders; the ranking just stops discarding the
+  tail. One source of truth avoids a "the dialog disagrees with the card" class of bug.
+  See [rewards.md](features/rewards.md).
+- **The featured team moved from the competition (admin) to the league (owner).** It
+  used to be one `competition.featuredTeamCode` set in an admin Competitions panel,
+  shared by every league in the competition. Owners wanted their own team, so it is now
+  `league.featuredTeamCode`, picked in the prize editor alongside the Team Specialist
+  prize. Consequences: the admin Competitions section and its routes were removed, and
+  the **global** Team Specialist trophy is no longer minted (no competition-wide team to
+  compute it from) - historical `competition_award` rows still render, but
+  `computeCriteriaWinners` stops emitting new ones. The value stays in
+  `competition_award_type` for those historical rows. A migration cannot backfill the
+  team (leagues span teams), so leagues re-pick. See [rewards.md](features/rewards.md).
+- **Team Specialist is disabled, not hidden, until the league picks a featured team.**
+  `league.featuredTeamCode` has no default (a sensible host default would be wrong for a
+  neutral competition), so rather than silently never awarding the prize, the criterion
+  surfaces `disabled` everywhere (greyed card, absent from the cabinet) until an
+  owner/moderator picks the team in the prize editor. See [rewards.md](features/rewards.md).

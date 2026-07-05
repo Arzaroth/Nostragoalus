@@ -74,10 +74,45 @@
     "myPrizes": "pop lIj",
     "holding": "Daghaj",
     "chasing": "Datlhutlh",
-    "teamSpecialistDisabled": "pop chu'meH admin-Daq ghom pin yIwIv.",
+    "teamSpecialistDisabled": "pop chu'meH ghom pin yIwIv.",
+    "teamSpecialistPickTeam": "pop tlhutlhbogh ghom yIwIv.",
+    "featuredTeam": "ghom pin",
+    "noFeaturedTeam": "ghom pin pagh",
+    "addPrize": "pop chel",
+    "pickCriterion": "chov yIwIv…",
+    "removePrize": "teq",
+    "editEmpty": "pop tu'lu'be' - bIngDaq yIchel.",
     "noRanking": "patlh tu'lu'be' - Qapbogh tu'lu'be'.",
     "metricPoints": "wanI'",
-    "metricExact": "motlh"
+    "metricExact": "motlh",
+    "metricOutcome": "lugh",
+    "metricGoalDiff": "GD",
+    "criterion": {
+      "OVERALL": { "name": "Hoch charghwI'", "desc": "patlh nIt Dev." },
+      "WOODEN_SPOON": { "name": "'un naQ", "desc": "wanI' puS law' Hoch puS puS." },
+      "GROUP_PHASE": { "name": "ghom mIw po'wI'", "desc": "ghom mIwDaq wanI' law' Hoch." },
+      "KNOCKOUT_PHASE": { "name": "may' pIn", "desc": "may' mIwDaq wanI' law' Hoch." },
+      "FINALIST": { "name": "QujHom po'wI'", "desc": "QujHomDaq wanI' law' Hoch." },
+      "MADAME_IRMA": { "name": "IrMa qellI'", "desc": "motlh law' Hoch." },
+      "GROUP_ORACLE": { "name": "ghom qellI'", "desc": "ghom mIwDaq motlh law' Hoch." },
+      "KNOCKOUT_ORACLE": { "name": "may' qellI'", "desc": "may' mIwDaq motlh law' Hoch." },
+      "SHARPSHOOTER": { "name": "baHwI'", "desc": "Qapla' lugh law' Hoch (Qap/rap/lup)." },
+      "GOAL_DIFF_GURU": { "name": "naDev pIn", "desc": "naDev lugh law' Hoch." },
+      "TEAM_SPECIALIST": { "name": "{team} po'wI'", "desc": "{team} may'meyDaq motlh law' Hoch." },
+      "TEAM_SPECIALIST_GENERIC": { "name": "ghom po'wI'", "desc": "ghom pin may'meyDaq motlh law' Hoch." }
+    }
+  },
+  "leagueDesc": {
+    "title": "ghom De'",
+    "edit": "yIchoH",
+    "add": "De' chel",
+    "empty": "De' tu'lu'be'.",
+    "hint": "Markdown lo'laH: nab, ram, tetlh, rar, nagh beQ.",
+    "placeholder": "ghomlIj, chutmey, popmey yIQIj…",
+    "preview": "cha'",
+    "addImage": "nagh beQ chel",
+    "uploading": "ngeHtaH…",
+    "uploadFailed": "nagh beQ ngeHlaHbe'."
   },
   "verify": {
     "title": "Qun tob",
@@ -778,18 +813,6 @@
     "deleteMailSent": "'olmeH QIn ngeHlu'ta' - leQ DapoSmoHDI' raQwI' Qaw'lu'."
   },
   "admin": {
-    "competitions": {
-      "title": "qIptaHghachmey",
-      "hint": "qIptaHghach Sech, ghom pin je.",
-      "intro": "ghom pin yIwIv, pop DatlhutlhmeH. pin wIvbe'lu'chugh, qIptaHghach Hoch boq pop lujang.",
-      "none": "qIptaHghach tu'lu'be'.",
-      "colCompetition": "qIptaHghach",
-      "colFeaturedTeam": "ghom pin",
-      "noFeaturedTeam": "pagh (pop lujang)",
-      "noTeams": "ghom tu'lu'be' - wanI' yISaH.",
-      "save": "yIpol",
-      "saveFailed": "ghom pin pollaHbe'."
-    },
     "odds": {
       "title": "qI' tlhe'wI'",
       "hint": "yIwIv: nuq tlhe'wI' qel Hoch qaj qI'.",

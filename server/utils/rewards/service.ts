@@ -1,16 +1,21 @@
 import { and, eq, inArray } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
-import { competition, league, leagueMember, leagueReward, user } from '../../../db/schema'
-import { COMPETITION_AWARD_TYPES, type CompetitionAwardType } from '#shared/types/achievements'
+import { league, leagueMember, leagueReward, user } from '../../../db/schema'
+import {
+  isTeamScopedCriterion,
+  LEAGUE_REWARD_CRITERIA,
+  type LeagueRewardCriterion,
+  rewardMetricFor,
+} from '#shared/types/rewards'
 import type { LeagueRewardDto, MyRewardDto, RewardRankingDto, RewardStandingDto } from '#shared/types/rewards'
 import { NotFoundError } from '../errors'
-import { computeCriteriaWinners, rankCriteria } from '../awards/service'
+import { computeLeagueRewardWinners, rankLeagueCriterion } from './criteria'
 
 // A route resolves the uploaded image to a storage key before calling the
 // service, so the service stays storage-free (and unit-testable). imageKey:
 // a key sets/replaces the image, null clears it, undefined keeps the current one.
 export interface LeagueRewardWrite {
-  type: CompetitionAwardType
+  type: LeagueRewardCriterion
   label: string
   imageKey?: string | null
   note?: string | null
@@ -85,18 +90,17 @@ async function resolveVisibleNames(
   )
 }
 
-// The five criteria for a league: each configured prize + who currently leads it
+// Every criterion for a league: each configured prize + who currently leads it
 // among the members (live/provisional, settles at competition end) + whether the
-// viewer holds it. Winners tie-share.
+// viewer holds it. Winners tie-share; TEAM_SPECIALIST is multi-holder.
 export async function getRewardStandings(
   db: AppDatabase,
   leagueId: string,
   viewerId: string | null,
 ): Promise<RewardStandingDto[]> {
   const [lg] = await db
-    .select({ competitionId: league.competitionId, featuredTeamCode: competition.featuredTeamCode })
+    .select({ competitionId: league.competitionId, featuredTeamCode: league.featuredTeamCode })
     .from(league)
-    .innerJoin(competition, eq(competition.id, league.competitionId))
     .where(eq(league.id, leagueId))
     .limit(1)
   if (!lg) throw new NotFoundError('league not found')
@@ -104,7 +108,10 @@ export async function getRewardStandings(
   const memberIds = (
     await db.select({ userId: leagueMember.userId }).from(leagueMember).where(eq(leagueMember.leagueId, leagueId))
   ).map((m) => m.userId)
-  const winners = memberIds.length > 0 ? await computeCriteriaWinners(db, lg.competitionId, { leagueId, memberIds }) : []
+  const winners =
+    memberIds.length > 0
+      ? await computeLeagueRewardWinners(db, lg.competitionId, { leagueId, memberIds, featuredTeamCode: lg.featuredTeamCode })
+      : []
   const rewards = new Map((await listLeagueRewards(db, leagueId)).map((r) => [r.type, r]))
 
   // Concealed leaders keep their slot (so the criterion still reads as "led") but
@@ -112,19 +119,20 @@ export async function getRewardStandings(
   const viewerIsMember = viewerId !== null && memberIds.includes(viewerId)
   const visible = await resolveVisibleNames(db, winners.map((w) => w.userId), viewerId, viewerIsMember)
 
-  return COMPETITION_AWARD_TYPES.map((type) => {
+  return LEAGUE_REWARD_CRITERIA.map((type) => {
     // Sort by value desc so winners[0] is the top holder (most exacts for
-    // TEAM_SPECIALIST); the card shows that holder plus "+N others".
+    // TEAM_SPECIALIST); the card shows that holder plus "+N others". WOODEN_SPOON
+    // has a single lowest-value holder set, so the order does not matter there.
     const typeWinners = winners.filter((w) => w.type === type).sort((a, b) => b.value - a.value)
-    // TEAM_SPECIALIST names its team from the competition's featured team, not the
-    // winner row: null means no featured team is configured, which disables the
-    // criterion (no prize can be earned until an admin picks one).
-    const teamCode = type === 'TEAM_SPECIALIST' ? lg.featuredTeamCode : null
+    // TEAM_SPECIALIST names the league's featured team: null disables the criterion
+    // until an owner/moderator picks one.
+    const teamCode = isTeamScopedCriterion(type) ? lg.featuredTeamCode : null
     return {
       type,
       reward: rewards.get(type) ?? null,
       winners: typeWinners.map((w) => ({ userId: w.userId, displayName: visible.get(w.userId)?.displayName ?? '' })),
       value: typeWinners[0]?.value ?? 0,
+      metric: rewardMetricFor(type),
       teamCode,
       disabled: type === 'TEAM_SPECIALIST' && !lg.featuredTeamCode,
       youHold: viewerId !== null && typeWinners.some((w) => w.userId === viewerId),
@@ -169,13 +177,12 @@ export async function getMyRewards(db: AppDatabase, userId: string): Promise<MyR
 export async function getRewardRanking(
   db: AppDatabase,
   leagueId: string,
-  type: CompetitionAwardType,
+  type: LeagueRewardCriterion,
   viewerId: string | null,
 ): Promise<RewardRankingDto> {
   const [lg] = await db
-    .select({ competitionId: league.competitionId, featuredTeamCode: competition.featuredTeamCode })
+    .select({ competitionId: league.competitionId, featuredTeamCode: league.featuredTeamCode })
     .from(league)
-    .innerJoin(competition, eq(competition.id, league.competitionId))
     .where(eq(league.id, leagueId))
     .limit(1)
   if (!lg) throw new NotFoundError('league not found')
@@ -185,9 +192,12 @@ export async function getRewardRanking(
   ).map((m) => m.userId)
 
   // The featured team names the TEAM_SPECIALIST ranking even before anyone scores.
-  const teamCode = type === 'TEAM_SPECIALIST' ? lg.featuredTeamCode : null
+  const teamCode = isTeamScopedCriterion(type) ? lg.featuredTeamCode : null
 
-  const ranked = memberIds.length > 0 ? await rankCriteria(db, lg.competitionId, type, { leagueId, memberIds, teamCode }) : []
+  const ranked =
+    memberIds.length > 0
+      ? await rankLeagueCriterion(db, lg.competitionId, type, { leagueId, memberIds, featuredTeamCode: lg.featuredTeamCode })
+      : []
 
   const viewerIsMember = viewerId !== null && memberIds.includes(viewerId)
   const visible = await resolveVisibleNames(db, ranked.map((r) => r.userId), viewerId, viewerIsMember)
@@ -197,7 +207,7 @@ export async function getRewardRanking(
     type,
     teamCode,
     reward,
-    metric: type === 'MADAME_IRMA' || type === 'TEAM_SPECIALIST' ? 'exact' : 'points',
+    metric: rewardMetricFor(type),
     rows: ranked.map((r) => {
       const v = visible.get(r.userId)
       return {

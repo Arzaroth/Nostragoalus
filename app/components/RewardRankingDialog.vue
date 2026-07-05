@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { CompetitionAwardType } from '#shared/types/achievements'
+import type { LeagueRewardCriterion, RewardMetric } from '#shared/types/rewards'
 
-const props = defineProps<{ leagueId: string | null; type: CompetitionAwardType | null; teamCode?: string | null }>()
+const props = defineProps<{ leagueId: string | null; type: LeagueRewardCriterion | null; teamCode?: string | null }>()
 const visible = defineModel<boolean>('visible', { required: true })
 const { t } = useI18n()
 const criterionName = useCriterionName()
@@ -16,7 +16,15 @@ const heading = computed(() =>
   props.type ? criterionName(props.type, props.teamCode ?? ranking.data.value?.teamCode ?? null) : '',
 )
 const rows = computed(() => ranking.data.value?.rows ?? [])
-const metric = computed(() => ranking.data.value?.metric ?? 'points')
+const metric = computed<RewardMetric>(() => ranking.data.value?.metric ?? 'points')
+
+// The unit shown after each member's value, per the criterion's ranking metric.
+const METRIC_LABEL: Record<RewardMetric, string> = {
+  points: 'reward.metricPoints',
+  exact: 'reward.metricExact',
+  outcome: 'reward.metricOutcome',
+  goaldiff: 'reward.metricGoalDiff',
+}
 
 // A concealed member (private/hidden) comes back with a blank name.
 function nameOf(displayName: string): string {
@@ -53,7 +61,7 @@ function nameOf(displayName: string): string {
         </span>
         <span class="text-sm font-semibold tabular-nums shrink-0">
           {{ r.value }}
-          <span class="text-xs font-normal" style="color: var(--p-text-muted-color)">{{ metric === 'exact' ? t('reward.metricExact') : t('reward.metricPoints') }}</span>
+          <span class="text-xs font-normal" style="color: var(--p-text-muted-color)">{{ t(METRIC_LABEL[metric]) }}</span>
         </span>
       </li>
     </ol>

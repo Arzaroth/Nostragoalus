@@ -1,38 +1,28 @@
 <script setup lang="ts">
-import { COMPETITION_AWARD_TYPES, type CompetitionAwardType } from '#shared/types/achievements'
-import type { LeagueRewardInput } from '#shared/types/rewards'
+import { LEAGUE_REWARD_CRITERIA, type LeagueRewardCriterion, type LeagueRewardInput } from '#shared/types/rewards'
 
-const props = defineProps<{ leagueId: string; canManage: boolean }>()
+const props = defineProps<{ leagueId: string; canManage: boolean; competitionSlug?: string | null }>()
 const { t } = useI18n()
 const { standings, save } = useLeagueRewards(() => props.leagueId)
+const { update } = useLeagueActions()
 const criterionName = useCriterionName()
 
-// The holder line: the top holder (winners are sorted by value desc server-side)
-// plus a "+N others" tail when several hold it - Team Specialist can have many.
-// A holder the viewer isn't allowed to see (private / admin-hidden) comes back with
-// an empty name; show a neutral placeholder rather than a blank.
-function holderLine(winners: { displayName: string }[], collapse: boolean): string {
-  if (winners.length === 0) return ''
+// A leader the viewer isn't allowed to see (private profile / admin-hidden) comes
+// back with an empty name; show a neutral placeholder rather than a blank.
+function leaderNames(winners: { displayName: string }[]): string {
   const shown = winners.map((w) => w.displayName).filter((n) => n !== '')
-  // Team Specialist can have many holders, so lead with the top (first visible)
-  // holder + a "+N others" tail. The other criteria have at most a small tie-shared
-  // set, so list every visible name (more informative). Placeholder only when every
-  // holder is hidden.
-  if (!collapse) return shown.length > 0 ? shown.join(', ') : t('reward.hiddenLeader')
-  const lead = shown[0] ?? t('reward.hiddenLeader')
-  const others = winners.length - 1
-  return others > 0 ? t('reward.leaderPlusOthers', { name: lead, count: others }) : lead
+  return shown.length > 0 ? shown.join(', ') : t('reward.hiddenLeader')
 }
 
-// The prizes actually configured (members see these); the owner edits all five.
+// The prizes actually configured (members see these), in criterion order.
 const configured = computed(() => (standings.data.value ?? []).filter((s) => s.reward))
 
 // Open a criterion's live ranking. Disabled criteria (TEAM_SPECIALIST with no
 // featured team) have no ranking to show.
-const rankingType = ref<CompetitionAwardType | null>(null)
+const rankingType = ref<LeagueRewardCriterion | null>(null)
 const rankingTeamCode = ref<string | null>(null)
 const rankingOpen = ref(false)
-function openRanking(s: { type: CompetitionAwardType; teamCode: string | null; disabled: boolean }) {
+function openRanking(s: { type: LeagueRewardCriterion; teamCode: string | null; disabled: boolean }) {
   if (s.disabled) return
   rankingType.value = s.type
   rankingTeamCode.value = s.teamCode
@@ -40,34 +30,58 @@ function openRanking(s: { type: CompetitionAwardType; teamCode: string | null; d
 }
 
 interface FormRow {
-  type: CompetitionAwardType
+  type: LeagueRewardCriterion
   label: string
   note: string
   link: string
   currentUrl: string | null
-  teamCode: string | null
-  disabled: boolean
   dataUrl?: string
   cleared?: boolean
 }
 const editing = ref(false)
 const form = ref<FormRow[]>([])
+// The league's TEAM_SPECIALIST team, edited alongside its prize.
+const featuredTeam = ref<string | null>(null)
+const addType = ref<LeagueRewardCriterion | ''>('')
+
+// The competition's teams for the TEAM_SPECIALIST picker, loaded once on first edit.
+const teams = ref<{ code: string; name: string }[]>([])
+const teamsLoaded = ref(false)
+async function ensureTeams() {
+  if (teamsLoaded.value || !props.competitionSlug) return
+  const r = await $fetch<{ teams: { code: string; name: string }[] }>('/api/competitions/teams', {
+    query: { competition: props.competitionSlug },
+  })
+  teams.value = r.teams
+  teamsLoaded.value = true
+}
+
+function currentFeaturedTeam(): string | null {
+  return (standings.data.value ?? []).find((s) => s.type === 'TEAM_SPECIALIST')?.teamCode ?? null
+}
 
 function openEdit() {
   const byType = new Map((standings.data.value ?? []).map((s) => [s.type, s]))
-  form.value = COMPETITION_AWARD_TYPES.map((type) => {
-    const s = byType.get(type)
-    return {
-      type,
-      label: s?.reward?.label ?? '',
-      note: s?.reward?.note ?? '',
-      link: s?.reward?.link ?? '',
-      currentUrl: s?.reward?.imageUrl ?? null,
-      teamCode: s?.teamCode ?? null,
-      disabled: s?.disabled ?? false,
-    }
+  form.value = LEAGUE_REWARD_CRITERIA.filter((type) => byType.get(type)?.reward).map((type) => {
+    const s = byType.get(type)!
+    return { type, label: s.reward!.label, note: s.reward!.note ?? '', link: s.reward!.link ?? '', currentUrl: s.reward!.imageUrl ?? null }
   })
+  featuredTeam.value = currentFeaturedTeam()
+  addType.value = ''
   editing.value = true
+  ensureTeams()
+}
+
+const usedTypes = computed(() => new Set(form.value.map((r) => r.type)))
+const available = computed(() => LEAGUE_REWARD_CRITERIA.filter((type) => !usedTypes.value.has(type)))
+
+function addPrize() {
+  if (!addType.value) return
+  form.value.push({ type: addType.value, label: '', note: '', link: '', currentUrl: null })
+  addType.value = ''
+}
+function removePrize(index: number) {
+  form.value.splice(index, 1)
 }
 
 function onFile(row: FormRow, e: Event) {
@@ -89,15 +103,27 @@ function previewFor(row: FormRow): string | null {
   return row.dataUrl ?? (row.cleared ? null : row.currentUrl)
 }
 
+const saving = computed(() => save.isPending.value || update.isPending.value)
+
 async function submit() {
-  const items: LeagueRewardInput[] = form.value.map((r) => ({
-    type: r.type,
-    label: r.label,
-    imageDataUrl: r.dataUrl ?? (r.cleared ? null : undefined),
-    note: r.note.trim() || null,
-    link: r.link.trim() || null,
-  }))
+  // Replace-set: every criterion is either present (its label) or blank (deleted).
+  // A blank label clears the prize server-side, so removed rows are deletions.
+  const rowByType = new Map(form.value.map((r) => [r.type, r]))
+  const items: LeagueRewardInput[] = LEAGUE_REWARD_CRITERIA.map((type) => {
+    const r = rowByType.get(type)
+    if (!r) return { type, label: '', imageDataUrl: null }
+    return {
+      type,
+      label: r.label,
+      imageDataUrl: r.dataUrl ?? (r.cleared ? null : undefined),
+      note: r.note.trim() || null,
+      link: r.link.trim() || null,
+    }
+  })
   await save.mutateAsync(items)
+  if ((featuredTeam.value ?? null) !== currentFeaturedTeam()) {
+    await update.mutateAsync({ leagueId: props.leagueId, featuredTeamCode: featuredTeam.value ?? null })
+  }
   editing.value = false
 }
 </script>
@@ -136,7 +162,7 @@ async function submit() {
           <div class="text-xs mt-0.5" style="color: var(--p-text-muted-color)">
             <template v-if="s.disabled">{{ t('reward.teamSpecialistDisabled') }}</template>
             <template v-else-if="s.winners.length > 0">
-              {{ t('reward.currentLeader') }}: {{ holderLine(s.winners, s.type === 'TEAM_SPECIALIST') }}
+              {{ t('reward.currentLeader') }}: {{ leaderNames(s.winners) }}
               <span v-if="s.youHold" class="font-semibold" style="color: var(--p-primary-color)"> - {{ t('reward.you') }}</span>
             </template>
             <template v-else>{{ t('reward.noLeader') }}</template>
@@ -151,10 +177,15 @@ async function submit() {
 
     <Dialog v-model:visible="editing" modal :header="t('reward.title')" class="w-[95vw] max-w-2xl">
       <div class="flex flex-col gap-4">
-        <div v-for="row in form" :key="row.type" class="border-b pb-3 last:border-b-0" :class="row.disabled ? 'opacity-60' : ''" style="border-color: var(--p-content-border-color)">
-          <div class="text-sm font-semibold mb-1">{{ criterionName(row.type, row.teamCode) }}</div>
-          <p v-if="row.disabled" class="text-xs" style="color: var(--p-text-muted-color)">{{ t('reward.teamSpecialistDisabled') }}</p>
-          <div v-else class="flex gap-3">
+        <p v-if="form.length === 0" class="text-sm" style="color: var(--p-text-muted-color)">{{ t('reward.editEmpty') }}</p>
+        <div v-for="(row, i) in form" :key="row.type" class="border-b pb-3 last:border-b-0" style="border-color: var(--p-content-border-color)">
+          <div class="flex items-center justify-between mb-1">
+            <div class="text-sm font-semibold">{{ criterionName(row.type, featuredTeam) }}</div>
+            <button type="button" class="text-xs hover:underline" style="color: var(--ng-danger)" @click="removePrize(i)">
+              {{ t('reward.removePrize') }}
+            </button>
+          </div>
+          <div class="flex gap-3">
             <div class="shrink-0">
               <img v-if="previewFor(row)" :src="previewFor(row)!" class="w-16 h-16 rounded object-cover" alt="" >
               <div v-else class="w-16 h-16 rounded flex items-center justify-center" style="background: var(--p-content-border-color)"><i class="pi pi-image" /></div>
@@ -168,15 +199,44 @@ async function submit() {
             </div>
             <div class="flex-1 flex flex-col gap-2">
               <InputText v-model="row.label" :placeholder="t('reward.label')" size="small" />
+              <!-- The Team Specialist prize also needs a featured team to be earnable. -->
+              <select
+                v-if="row.type === 'TEAM_SPECIALIST'"
+                v-model="featuredTeam"
+                :aria-label="t('reward.featuredTeam')"
+                class="rounded-lg border px-2 py-1.5 text-sm disabled:opacity-50"
+                :disabled="teams.length === 0"
+                style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
+              >
+                <option :value="null">{{ t('reward.noFeaturedTeam') }}</option>
+                <option v-for="team in teams" :key="team.code" :value="team.code">{{ team.name }} ({{ team.code }})</option>
+              </select>
+              <p v-if="row.type === 'TEAM_SPECIALIST' && !featuredTeam" class="text-xs" style="color: var(--p-text-muted-color)">
+                {{ t('reward.teamSpecialistPickTeam') }}
+              </p>
               <InputText v-model="row.note" :placeholder="t('reward.note')" size="small" />
               <InputText v-model="row.link" :placeholder="t('reward.link')" size="small" />
             </div>
           </div>
         </div>
+
+        <div class="flex items-center gap-2">
+          <select
+            v-model="addType"
+            :aria-label="t('reward.addPrize')"
+            :disabled="available.length === 0"
+            class="flex-1 rounded-lg border px-2 py-1.5 text-sm disabled:opacity-50"
+            style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
+          >
+            <option value="">{{ t('reward.pickCriterion') }}</option>
+            <option v-for="type in available" :key="type" :value="type">{{ criterionName(type, featuredTeam) }}</option>
+          </select>
+          <Button size="small" icon="pi pi-plus" :label="t('reward.addPrize')" :disabled="!addType" @click="addPrize" />
+        </div>
       </div>
       <template #footer>
         <Button severity="secondary" :label="t('common.cancel')" @click="editing = false" />
-        <Button :label="t('reward.save')" icon="pi pi-check" :loading="save.isPending.value" @click="submit" />
+        <Button :label="t('reward.save')" icon="pi pi-check" :loading="saving" @click="submit" />
       </template>
     </Dialog>
   </section>

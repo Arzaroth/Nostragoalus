@@ -30,8 +30,10 @@ the code. Alphabetical.
   per competition (max 3 slots, achievements only - trophies are not pinnable).
 - **Madame Irma** - the trophy for the most exact scorelines (a fortune-teller
   pun; from the source contest's "most exact scores" prize).
-- **Featured team** - `competition.featuredTeamCode`, the team the
-  TEAM_SPECIALIST trophy tracks (default France for the World Cup).
+- **Featured team** - `league.featuredTeamCode`, the team a league's TEAM_SPECIALIST
+  prize tracks, picked by an owner/moderator (no default; the prize is disabled until
+  one is set). Was once a per-competition admin setting driving a global trophy; that
+  global Team Specialist trophy is no longer minted. See [features/rewards.md](features/rewards.md).
 - **Champion pick** - a per-competition guess of the tournament winner; pays a
   FIFA-rank-tiered bonus snapshotted at pick time. See
   [features/champion-pick.md](features/champion-pick.md).

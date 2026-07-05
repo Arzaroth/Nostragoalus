@@ -1,15 +1,15 @@
-import type { CompetitionAwardType } from '#shared/types/achievements'
+import type { LeagueRewardCriterion } from '#shared/types/rewards'
 
-// The display name of an award criterion. TEAM_SPECIALIST names its featured team
-// when one is set, else falls back to the generic label.
+// The display name of a league prize criterion. TEAM_SPECIALIST names its featured
+// team when one is set, else falls back to the generic label.
 export function useCriterionName() {
   const { t } = useI18n()
-  return (type: CompetitionAwardType, teamCode: string | null): string => {
+  return (type: LeagueRewardCriterion, teamCode: string | null): string => {
     if (type === 'TEAM_SPECIALIST') {
       return teamCode
-        ? t('achievements.trophy.TEAM_SPECIALIST.name', { team: teamCode })
-        : t('achievements.trophy.TEAM_SPECIALIST_GENERIC.name')
+        ? t('reward.criterion.TEAM_SPECIALIST.name', { team: teamCode })
+        : t('reward.criterion.TEAM_SPECIALIST_GENERIC.name')
     }
-    return t(`achievements.trophy.${type}.name`)
+    return t(`reward.criterion.${type}.name`)
   }
 }

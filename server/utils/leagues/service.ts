@@ -12,6 +12,7 @@ import {
   user,
 } from '../../../db/schema'
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors'
+import { listCompetitionTeams } from '../champion/service'
 import { notifyLeagueJoin, notifyLeagueRemoved, notifyLeagueRole } from '../notifications/events'
 import { generateJoinCode, normalizeJoinCode, type JoinCodeGenerator } from './code'
 import { canKick, canManageLeague, canSeeJoinCode, type LeagueRole } from './permissions'
@@ -24,6 +25,8 @@ export interface LeagueRow {
   name: string
   visibility: LeagueVisibility
   joinCode: string
+  description: string | null
+  featuredTeamCode: string | null
   createdBy: string | null
   createdAt: Date
   chatEnabled: boolean
@@ -445,6 +448,27 @@ export async function renameLeague(db: AppDatabase, leagueId: string, name: stri
 export async function setLeagueVisibility(db: AppDatabase, leagueId: string, visibility: LeagueVisibility): Promise<void> {
   const rows = await db.update(league).set({ visibility }).where(eq(league.id, leagueId)).returning({ id: league.id })
   if (!rows[0]) throw new NotFoundError('league not found')
+}
+
+// The owner/moderator-authored league blurb (markdown source). A blank string
+// clears it. The route authorizes; the render side sanitizes.
+export async function setLeagueDescription(db: AppDatabase, leagueId: string, description: string | null): Promise<void> {
+  const value = description && description.trim() !== '' ? description : null
+  const rows = await db.update(league).set({ description: value }).where(eq(league.id, leagueId)).returning({ id: league.id })
+  if (!rows[0]) throw new NotFoundError('league not found')
+}
+
+// Set (or clear, with null) the team the league's TEAM_SPECIALIST prize tracks.
+// Rejects a code that isn't one of the competition's teams so the prize always
+// resolves. The route authorizes (owner/moderator).
+export async function setLeagueFeaturedTeam(db: AppDatabase, leagueId: string, code: string | null): Promise<void> {
+  const lg = await getLeague(db, leagueId)
+  if (!lg) throw new NotFoundError('league not found')
+  if (code !== null) {
+    const teams = await listCompetitionTeams(db, lg.competitionId)
+    if (!teams.some((t) => t.code === code)) throw new ValidationError('team not in competition')
+  }
+  await db.update(league).set({ featuredTeamCode: code }).where(eq(league.id, leagueId))
 }
 
 export async function deleteLeague(db: AppDatabase, leagueId: string): Promise<void> {

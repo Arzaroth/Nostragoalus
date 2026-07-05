@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { AppDatabase } from '../../../db/types'
-import { competition, leagueMember, leagueReward, match, prediction, round, user } from '../../../db/schema'
+import { league, leagueMember, leagueReward, match, prediction, round, user } from '../../../db/schema'
 import type { BaseTier } from '../scoring/tiers'
 import { createTestDb } from '../../../tests/db'
 import { addLeagueMember, makeLeague, makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
@@ -82,7 +82,7 @@ describe('getRewardStandings', () => {
     await setLeagueRewards(db, leagueId, [{ type: 'OVERALL', label: 'Un magnum' }])
 
     const forAlice = await getRewardStandings(db, leagueId, alice)
-    expect(forAlice).toHaveLength(5)
+    expect(forAlice).toHaveLength(11)
     const overall = forAlice.find((s) => s.type === 'OVERALL')!
     expect(overall.reward?.label).toBe('Un magnum')
     expect(overall.winners.map((w) => w.userId)).toEqual([alice])
@@ -104,7 +104,7 @@ describe('getRewardStandings', () => {
     // memberless and the no-members short-circuit (winners = []) is exercised.
     await db.delete(leagueMember).where(eq(leagueMember.leagueId, leagueId))
     const standings = await getRewardStandings(db, leagueId, null)
-    expect(standings).toHaveLength(5)
+    expect(standings).toHaveLength(11)
     expect(standings.every((s) => s.winners.length === 0)).toBe(true)
     expect(standings.every((s) => s.youHold === false)).toBe(true) // viewer null
   })
@@ -189,12 +189,13 @@ describe('getMyRewards', () => {
 // match involves FRA, so Alice leads the team subset.
 async function teamScenario() {
   const competitionId = await seedCompetition(db)
-  await db.update(competition).set({ featuredTeamCode: 'FRA' }).where(eq(competition.id, competitionId))
   const g1 = await groupRound(competitionId)
   // Distinct ids so a test may build a plain scenario() alongside this one.
   const alice = await makeUser(db, 'talice')
   const bob = await makeUser(db, 'tbob')
   const leagueId = await makeLeague(db, { competitionId, ownerId: alice })
+  // The featured team is now per-league (drives the TEAM_SPECIALIST prize).
+  await db.update(league).set({ featuredTeamCode: 'FRA' }).where(eq(league.id, leagueId))
   await addLeagueMember(db, leagueId, bob, 'MEMBER')
   const m = await makeMatch(db, {
     competitionId,
@@ -268,11 +269,11 @@ describe('getRewardRanking', () => {
 
   it('holds TEAM_SPECIALIST for every member with an exact, ranked and sorted by count', async () => {
     const competitionId = await seedCompetition(db)
-    await db.update(competition).set({ featuredTeamCode: 'FRA' }).where(eq(competition.id, competitionId))
     const g1 = await groupRound(competitionId)
     const alice = await makeUser(db, 'ta')
     const bob = await makeUser(db, 'tb')
     const leagueId = await makeLeague(db, { competitionId, ownerId: alice })
+    await db.update(league).set({ featuredTeamCode: 'FRA' }).where(eq(league.id, leagueId))
     await addLeagueMember(db, leagueId, bob, 'MEMBER')
     const fra1 = await makeMatch(db, { competitionId, roundId: g1, stage: 'GROUP', status: 'FINISHED', homeTeamCode: 'FRA', fullTimeHome: 1, fullTimeAway: 0, winner: 'HOME', kickoffTime: new Date('2026-06-11T12:00:00Z') })
     const fra2 = await makeMatch(db, { competitionId, roundId: g1, stage: 'GROUP', status: 'FINISHED', homeTeamCode: 'FRA', fullTimeHome: 2, fullTimeAway: 0, winner: 'HOME', kickoffTime: new Date('2026-06-12T12:00:00Z') })

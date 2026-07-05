@@ -119,9 +119,6 @@ export const competition = pgTable(
     seasonHint: text('season_hint'),
     oddsProvider: text('odds_provider'),
     oddsProviderRef: text('odds_provider_ref'),
-    // Team the per-competition "specialist" trophy tracks (best predictor of this
-    // team's matches). Null = no featured-team trophy for this competition.
-    featuredTeamCode: text('featured_team_code'),
     isActive: boolean('is_active').notNull().default(true),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -577,14 +574,17 @@ export const goalEventRelations = relations(goalEvent, ({ one }) => ({
 // catalog (userAchievement). The SHOWCASE is a user's curated public display of
 // pinned achievements (showcasePin). See brain/features/achievements.md.
 
-// The five v1 trophy categories (see server/utils/awards). Ties share a trophy:
-// one row per (competition, user, type), so several users can hold the same type.
+// The global competition-end trophy categories (see server/utils/awards). Ties
+// share a trophy: one row per (competition, user, type), so several users can hold
+// the same type. TEAM_SPECIALIST is a LEGACY value: as of the per-league prize
+// rework the featured team moved to the league, so no new global TEAM_SPECIALIST
+// trophies are minted, but the value stays so historical award rows still render.
 export const competitionAwardTypeEnum = pgEnum('competition_award_type', [
   'OVERALL', // best total predictor = the leaderboard winner
   'GROUP_PHASE', // best predictor summed over GROUP matches only
   'KNOCKOUT_PHASE', // best predictor summed over knockout matches only
   'MADAME_IRMA', // most EXACT scorelines across the competition
-  'TEAM_SPECIALIST', // best predictor of the competition's featuredTeam matches
+  'TEAM_SPECIALIST', // LEGACY: historical featured-team trophies only (see above)
 ])
 
 export const competitionAward = pgTable(
@@ -687,6 +687,27 @@ export const leagueRoleEnum = pgEnum('league_role', ['OWNER', 'MODERATOR', 'MEMB
 
 export const leagueVisibilityEnum = pgEnum('league_visibility', ['PRIVATE', 'PUBLIC'])
 
+// The criteria a league owner/moderator can attach a prize to. A superset of the
+// global trophy set: it keeps the original five (so existing prizes stay valid)
+// and adds phase/metric-scoped variants plus the inverse WOODEN_SPOON. Each maps
+// to a metric x match-filter x direction spec in server/utils/rewards/criteria.ts.
+// Unlike competitionAwardTypeEnum these never mint a global trophy; they are
+// league-scoped, live-derived prizes only. TEAM_SPECIALIST here tracks the
+// LEAGUE's featured team (league.featuredTeamCode), not a competition-wide one.
+export const leagueRewardCriterionEnum = pgEnum('league_reward_criterion', [
+  'OVERALL', // best total predictor = the league leaderboard winner
+  'WOODEN_SPOON', // fewest points among members who scored (last place)
+  'GROUP_PHASE', // most points over GROUP matches
+  'KNOCKOUT_PHASE', // most points over knockout matches
+  'FINALIST', // most points on the FINAL match
+  'MADAME_IRMA', // most EXACT scorelines across the competition
+  'GROUP_ORACLE', // most EXACT scorelines in the group stage
+  'KNOCKOUT_ORACLE', // most EXACT scorelines in the knockout stage
+  'SHARPSHOOTER', // most correct outcomes (win/draw/loss) across the competition
+  'GOAL_DIFF_GURU', // most correct goal-difference calls across the competition
+  'TEAM_SPECIALIST', // most EXACT scorelines on the league's featured team (multi-winner)
+])
+
 export const league = pgTable(
   'league',
   {
@@ -697,6 +718,12 @@ export const league = pgTable(
     name: text('name').notNull(),
     visibility: leagueVisibilityEnum('visibility').notNull().default('PRIVATE'),
     joinCode: text('join_code').notNull(),
+    // Owner/moderator-authored league blurb (intro, rules, ...). Markdown source;
+    // rendered client-side through marked + isomorphic-dompurify. Null = none.
+    description: text('description'),
+    // The team the league's TEAM_SPECIALIST prize tracks (FIFA tricode). Null =
+    // that prize is disabled until an owner/moderator picks a team.
+    featuredTeamCode: text('featured_team_code'),
     createdBy: text('created_by').references(() => user.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     // End-to-end encrypted chat (off by default; only OWNER/MODERATOR enables,
@@ -711,9 +738,10 @@ export const league = pgTable(
   (t) => [uniqueIndex('league_join_code_uq').on(t.joinCode), index('league_competition_idx').on(t.competitionId)],
 )
 
-// A league owner/moderator's configured prize for a competition-end award
-// category. The league's winner of that criterion (best among the members) earns
-// it. imageKey points at a stored reward image (fs/s3), served at
+// A league owner/moderator's configured prize for one reward criterion. The
+// league's winner of that criterion (derived among the members) earns it. Owners
+// add/delete prizes freely; the unique index below stops a criterion being used
+// twice. imageKey points at a stored reward image (fs/s3), served at
 // /api/media/reward/<key>; note/link are free-form (how/where to claim). Winners
 // themselves are derived at read time from the leaderboard, not stored here.
 export const leagueReward = pgTable(
@@ -723,7 +751,7 @@ export const leagueReward = pgTable(
     leagueId: text('league_id')
       .notNull()
       .references(() => league.id, { onDelete: 'cascade' }),
-    type: competitionAwardTypeEnum('type').notNull(),
+    type: leagueRewardCriterionEnum('type').notNull(),
     label: text('label').notNull(),
     imageKey: text('image_key'),
     note: text('note'),
