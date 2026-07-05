@@ -81,6 +81,11 @@ export const twoFactor = pgTable("two_factor", {
   secret: text("secret").notNull(),
   backupCodes: text("backup_codes").notNull(),
   verified: boolean("verified").default(false),
+  // Highest TOTP step (floor(unixSeconds/30)) already accepted for this user, to
+  // block replay of a captured code inside its +/-1 validity window. A code is
+  // consumed only when its step is strictly greater than this (server/utils/auth/
+  // totp-consume.ts). Null = none accepted yet. Not a better-auth field; ours.
+  lastTotpStep: integer("last_totp_step"),
   userId: text("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
