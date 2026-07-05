@@ -15,7 +15,12 @@ const bodySchema = z.object({
 // totals to the league's connected members. Members only; the emoji is plaintext.
 export default defineValidatedHandler({ body: bodySchema }, async ({ body, user, event }) => {
   const leagueId = getRouterParam(event, 'id') as string
-  await setChatReaction(db, { leagueId, messageId: body.messageId, userId: user.id, emoji: body.emoji })
+  const ctx = await setChatReaction(db, { messageId: body.messageId, userId: user.id, emoji: body.emoji })
+  // This league route only acts on messages in this league (a DM or another
+  // league's message goes through its own route).
+  if (ctx.kind !== 'league' || ctx.leagueId !== leagueId) {
+    throw createError({ statusCode: 404, statusMessage: 'message not found' })
+  }
   void publishChatReaction(db, leagueId, body.messageId).catch(() => {})
   return { ok: true }
 })

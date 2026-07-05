@@ -3,6 +3,8 @@ import type { AppDatabase } from '../../../db/types'
 import { chatAttachment, chatMessage } from '../../../db/schema'
 import { ForbiddenError, NotFoundError } from '../errors'
 import { getMembership } from '../leagues/service'
+import { requireParticipant } from '../dm/service'
+import { authorizeMessageActor } from './access'
 import type { ChatAttachmentDTO } from '../../../shared/types/chat'
 import type { StorageDriver } from '../storage/driver'
 import { getChatImage, resolveStorage } from '../storage'
@@ -42,9 +44,11 @@ export async function getAttachmentCiphertext(
   userId: string,
   driver?: StorageDriver,
 ): Promise<{ ciphertext: string; epoch: number }> {
+  // Authorize the actor on the message (league member or DM participant), then
+  // load the image row. A non-participant/non-member throws before any bytes.
+  const ctx = await authorizeMessageActor(db, messageId, userId)
   const rows = await db
     .select({
-      leagueId: chatMessage.leagueId,
       ciphertext: chatAttachment.ciphertext,
       storageKey: chatAttachment.storageKey,
       epoch: chatAttachment.epoch,
@@ -54,13 +58,14 @@ export async function getAttachmentCiphertext(
     .innerJoin(chatMessage, eq(chatMessage.id, chatAttachment.messageId))
     .where(and(eq(chatAttachment.messageId, messageId), eq(chatAttachment.idx, idx)))
     .limit(1)
-  // A null leagueId is a direct-message attachment - not reachable through a league route.
-  if (!rows[0] || rows[0].leagueId === null) throw new NotFoundError('attachment not found')
-  const membership = await getMembership(db, rows[0].leagueId, userId)
-  if (!membership) throw new ForbiddenError('not a league member')
-  const isAdmin = membership.role === 'OWNER' || membership.role === 'MODERATOR'
-  if (rows[0].moderation === 'REMOVED' || (rows[0].moderation === 'PENDING' && !isAdmin)) {
-    throw new NotFoundError('attachment not found')
+  if (!rows[0]) throw new NotFoundError('attachment not found')
+  // Moderation hides an image the same way messages.get strips it, but only in a
+  // league (a DM has no moderation - see chat/access).
+  if (ctx.kind === 'league') {
+    const isAdmin = ctx.role === 'OWNER' || ctx.role === 'MODERATOR'
+    if (rows[0].moderation === 'REMOVED' || (rows[0].moderation === 'PENDING' && !isAdmin)) {
+      throw new NotFoundError('attachment not found')
+    }
   }
   // Legacy rows keep the ciphertext in the column; migrated rows hold a storage key
   // (the CHECK guarantees exactly one). The returned wire shape is identical either way.
@@ -75,21 +80,31 @@ export interface RoomMediaItem {
   createdAt: Date
 }
 
-// Every image in one room (league-global when matchId is null, else a match
-// thread), newest message first then idx, for the media gallery. Members only;
-// images on hidden messages are excluded the same way the listing/fetch hide them
-// (removed from everyone, pending from non-moderators).
+// Every image in one room, newest message first then idx, for the media gallery.
+// A room is a league room (league-global when matchId is null, else a match thread)
+// or a DM thread. League members / DM participants only; league images on hidden
+// messages are excluded the same way the listing/fetch hide them (a DM has no
+// moderation).
 export async function listRoomMedia(
   db: AppDatabase,
-  opts: { leagueId: string; matchId?: string | null; userId: string },
+  opts: ({ leagueId: string; matchId?: string | null } | { threadId: string }) & { userId: string },
 ): Promise<RoomMediaItem[]> {
-  const membership = await getMembership(db, opts.leagueId, opts.userId)
-  if (!membership) throw new ForbiddenError('not a league member')
-  const isAdmin = membership.role === 'OWNER' || membership.role === 'MODERATOR'
-  const room = opts.matchId ? eq(chatMessage.matchId, opts.matchId) : isNull(chatMessage.matchId)
-  const visible = isAdmin
-    ? inArray(chatMessage.moderationState, ['VISIBLE', 'PENDING'])
-    : eq(chatMessage.moderationState, 'VISIBLE')
+  let scope
+  let visible
+  if ('threadId' in opts) {
+    await requireParticipant(db, opts.threadId, opts.userId)
+    scope = eq(chatMessage.dmThreadId, opts.threadId)
+    visible = eq(chatMessage.moderationState, 'VISIBLE')
+  } else {
+    const membership = await getMembership(db, opts.leagueId, opts.userId)
+    if (!membership) throw new ForbiddenError('not a league member')
+    const isAdmin = membership.role === 'OWNER' || membership.role === 'MODERATOR'
+    const room = opts.matchId ? eq(chatMessage.matchId, opts.matchId) : isNull(chatMessage.matchId)
+    scope = and(eq(chatMessage.leagueId, opts.leagueId), room)
+    visible = isAdmin
+      ? inArray(chatMessage.moderationState, ['VISIBLE', 'PENDING'])
+      : eq(chatMessage.moderationState, 'VISIBLE')
+  }
   const rows = await db
     .select({
       messageId: chatAttachment.messageId,
@@ -99,7 +114,7 @@ export async function listRoomMedia(
     })
     .from(chatAttachment)
     .innerJoin(chatMessage, eq(chatMessage.id, chatAttachment.messageId))
-    .where(and(eq(chatMessage.leagueId, opts.leagueId), room, visible))
+    .where(and(scope, visible))
     .orderBy(desc(chatMessage.createdAt), desc(chatMessage.id), asc(chatAttachment.idx))
   return rows.map((r) => ({ messageId: r.messageId, idx: r.idx, epoch: r.epoch, createdAt: r.createdAt }))
 }
