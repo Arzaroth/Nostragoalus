@@ -17,16 +17,18 @@ function avatarUrl(key: string): string {
   return `/api/media/${key}`
 }
 
-export async function putChatImage(driver: StorageDriver, messageId: string, idx: number, bytes: Uint8Array): Promise<string> {
+// The chat "image" is the message's armored ciphertext string; storage holds
+// bytes, so the text<->bytes conversion lives here rather than at every caller.
+export async function putChatImage(driver: StorageDriver, messageId: string, idx: number, ciphertext: string): Promise<string> {
   const key = chatImageKey(messageId, idx)
-  await driver.put(key, bytes, 'application/octet-stream')
+  await driver.put(key, new TextEncoder().encode(ciphertext), 'application/octet-stream')
   return key
 }
 
-export async function getChatImage(driver: StorageDriver, key: string): Promise<Uint8Array> {
+export async function getChatImage(driver: StorageDriver, key: string): Promise<string> {
   const obj = await driver.get(key)
   if (!obj) throw new StorageError(`chat image missing in storage: ${key}`)
-  return obj.bytes
+  return new TextDecoder().decode(obj.bytes)
 }
 
 export async function deleteChatImage(driver: StorageDriver, key: string): Promise<void> {

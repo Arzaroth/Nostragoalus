@@ -23,23 +23,23 @@ function fakeDriver(): StorageDriver & { store: Map<string, StorageObject> } {
 }
 
 describe('chat image storage', () => {
-  it('put returns the derived key and stores the bytes', async () => {
+  it('put returns the derived key and stores the ciphertext bytes', async () => {
     const d = fakeDriver()
-    const key = await putChatImage(d, 'm1', 0, new Uint8Array([1, 2]))
+    const key = await putChatImage(d, 'm1', 0, 'CIPHER')
     expect(key).toBe('chat/m1/0')
-    expect(d.store.get('chat/m1/0')?.bytes).toEqual(new Uint8Array([1, 2]))
+    expect(d.store.get('chat/m1/0')?.bytes).toEqual(new TextEncoder().encode('CIPHER'))
   })
-  it('get returns the bytes', async () => {
+  it('get round-trips the ciphertext string', async () => {
     const d = fakeDriver()
-    await putChatImage(d, 'm1', 1, new Uint8Array([5]))
-    expect(await getChatImage(d, 'chat/m1/1')).toEqual(new Uint8Array([5]))
+    await putChatImage(d, 'm1', 1, 'HELLO')
+    expect(await getChatImage(d, 'chat/m1/1')).toBe('HELLO')
   })
   it('get throws when the object is missing', async () => {
     await expect(getChatImage(fakeDriver(), 'chat/none/0')).rejects.toBeInstanceOf(StorageError)
   })
   it('delete removes it', async () => {
     const d = fakeDriver()
-    await putChatImage(d, 'm1', 0, new Uint8Array([1]))
+    await putChatImage(d, 'm1', 0, 'X')
     await deleteChatImage(d, 'chat/m1/0')
     expect(d.store.has('chat/m1/0')).toBe(false)
   })

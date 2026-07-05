@@ -63,7 +63,7 @@ export async function getAttachmentCiphertext(
   }
   // Legacy rows keep the ciphertext in the column; migrated rows hold a storage key
   // (the CHECK guarantees exactly one). The returned wire shape is identical either way.
-  const ciphertext = rows[0].ciphertext ?? new TextDecoder().decode(await getChatImage(resolveStorage(driver), rows[0].storageKey!))
+  const ciphertext = rows[0].ciphertext ?? (await getChatImage(resolveStorage(driver), rows[0].storageKey!))
   return { ciphertext, epoch: rows[0].epoch }
 }
 
