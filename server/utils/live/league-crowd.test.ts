@@ -17,10 +17,16 @@ describe('publishLeagueCrowdUpdates', () => {
     const m = await makeMatch(db, { competitionId, roundId, kickoffTime: new Date('2026-06-15T16:00:00Z') })
     const alice = await makeUser(db, 'alice')
     const bob = await makeUser(db, 'bob')
+    const dave = await makeUser(db, 'dave')
     await makeUser(db, 'carol')
     const leagueId = await makeLeague(db, { competitionId, ownerId: alice })
     await addLeagueMember(db, leagueId, bob)
+    await addLeagueMember(db, leagueId, dave)
+    // Three member predictions clear the anonymity floor (MIN_CROWD_COUNT); carol
+    // predicts too but isn't a member, so the league totals exclude her.
     await makePrediction(db, { userId: alice, matchId: m, roundId, home: 2, away: 1 })
+    await makePrediction(db, { userId: bob, matchId: m, roundId, home: 1, away: 0 })
+    await makePrediction(db, { userId: dave, matchId: m, roundId, home: 0, away: 1 })
     await makePrediction(db, { userId: 'carol', matchId: m, roundId, home: 4, away: 0 })
 
     const aliceSub = sub(alice)
@@ -36,7 +42,7 @@ describe('publishLeagueCrowdUpdates', () => {
         leagueId,
         matchId: m,
         // Carol's prediction is outside the league: totals cover members only.
-        totals: { home: 2, away: 1, count: 1 },
+        totals: { home: 3, away: 2, count: 3 },
       }
       expect(aliceSub.send).toHaveBeenCalledWith(expected)
       expect(bobSub.send).toHaveBeenCalledWith(expected)

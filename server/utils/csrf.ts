@@ -38,10 +38,14 @@ export function isCrossOriginMutation(input: {
 }
 
 export function assertSameOrigin(event: H3Event): void {
+  const method = event.method ?? ''
+  // A non-mutating method can't be CSRF-relevant; skip before touching the host so
+  // there's nothing to compute (and nothing to throw) on an odd/partial event.
+  if (!MUTATING_METHODS.has(method.toUpperCase())) return
   const rejected = isCrossOriginMutation({
-    method: event.method,
-    origin: event.headers.get('origin'),
-    referer: event.headers.get('referer'),
+    method,
+    origin: event.headers?.get?.('origin'),
+    referer: event.headers?.get?.('referer'),
     // Trust the proxy's forwarded host: the app runs behind a reverse proxy.
     host: getRequestHost(event, { xForwardedHost: true }),
   })
