@@ -13,6 +13,7 @@ early on). Back to the root map: [../BRAIN.md](../BRAIN.md).
 | [Best scorer](best-scorer.md) | Golden Boot pick from team squads, goal-event-derived award | core | `best_scorer_pick`; `server/utils/bestscorer/*` |
 | [Stats](stats.md) | Player rankings tab in the matches view: top scorers + top assists, side by side | 2.2.0 | `useScorers.ts`, `PlayerRankingTable.vue`, `competitions/scorers.get.ts` |
 | [Leagues](leagues.md) | Competition-scoped player groups, roles, public/private, SSO auto-join | core | `league`, `league_member`, `league_opt_out`, `league_leaderboard_rank` |
+| [Onboarding tour](onboarding-tour.md) | One-time spotlight walk-through of the core actions for new players; replayable from the account menu | unreleased | `onboardingTourDismissedAt`; `OnboardingTour.vue`, `useOnboardingTour.ts`, `server/utils/onboarding/*` |
 | [Bot personas](crowd-bot.md) | Synthetic ghost bots: consensus, evil twin, equalizer | core | `botUserId`; `server/utils/bot/service.ts`, `server/api/bot/*` |
 | [Odds](odds.md) | Decimal 1X2 bookmaker odds (Sofascore primary, BetExplorer backup) | core | `odds_snapshot`; `server/utils/odds/*` |
 | [Reactions](reactions.md) | Six-emoji match reactions, reused by chat | core | `match_reaction`; `ReactionBar.vue` |

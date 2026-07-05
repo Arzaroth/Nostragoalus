@@ -1354,6 +1354,24 @@
     "browseLeagues": "Browse leagues",
     "joinFailed": "Couldn't join the league. The link may have just expired."
   },
+  "onboarding": {
+    "title": "Welcome tour",
+    "takeTour": "Take the tour",
+    "skip": "Skip tour",
+    "back": "Back",
+    "next": "Next",
+    "done": "Got it",
+    "steps": {
+      "welcome": { "title": "Welcome to Nostragoalus!", "body": "A quick tour of how to play: predict match scores, climb the rankings, and beat your friends. Ready?" },
+      "competition": { "title": "Pick your tournament", "body": "Switch between tournaments here. Your picks and rankings are kept per tournament." },
+      "predict": { "title": "Predict the scores", "body": "This is the game: open a match and enter the score you think it will end. Closer guesses score more points." },
+      "champion": { "title": "Bonus picks", "body": "Call the overall champion and the top scorer for extra points. Lock them in before kickoff." },
+      "leaderboard": { "title": "Climb the rankings", "body": "See where you stand against everyone - and against your leagues." },
+      "notifications": { "title": "Stay in the loop", "body": "Goals, kickoffs and results land here in real time. Never miss a match." },
+      "chat": { "title": "Talk some trash", "body": "Chat with your league mates right here while the matches play out." },
+      "done": { "title": "You're all set!", "body": "Make your first prediction and let the games begin. You can replay this tour anytime from your account menu." }
+    }
+  },
   "notifications": {
     "title": "Notifications",
     "ariaLabel": "Notifications",

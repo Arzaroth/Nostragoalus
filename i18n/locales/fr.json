@@ -1350,6 +1350,24 @@
     "browseLeagues": "Parcourir les ligues",
     "joinFailed": "Impossible de rejoindre la ligue. Le lien vient peut-être d'expirer."
   },
+  "onboarding": {
+    "title": "Visite guidée",
+    "takeTour": "Faire la visite",
+    "skip": "Passer",
+    "back": "Retour",
+    "next": "Suivant",
+    "done": "C'est parti",
+    "steps": {
+      "welcome": { "title": "Bienvenue sur Nostragoalus !", "body": "Un petit tour pour apprendre à jouer : pronostiquez les scores, grimpez au classement et battez vos amis. Prêt ?" },
+      "competition": { "title": "Choisissez votre tournoi", "body": "Changez de tournoi ici. Vos pronostics et classements sont propres à chaque tournoi." },
+      "predict": { "title": "Pronostiquez les scores", "body": "Le cœur du jeu : ouvrez un match et entrez le score que vous imaginez. Plus c'est proche, plus vous marquez." },
+      "champion": { "title": "Pronostics bonus", "body": "Désignez le champion et le meilleur buteur pour des points en plus. À valider avant le coup d'envoi." },
+      "leaderboard": { "title": "Grimpez au classement", "body": "Voyez où vous vous situez face à tous - et face à vos ligues." },
+      "notifications": { "title": "Restez informé", "body": "Buts, coups d'envoi et résultats arrivent ici en temps réel. Ne manquez aucun match." },
+      "chat": { "title": "Chambrez vos amis", "body": "Discutez avec votre ligue ici même pendant les matchs." },
+      "done": { "title": "Tout est prêt !", "body": "Faites votre premier pronostic et que les jeux commencent. Vous pouvez relancer la visite depuis le menu de votre compte." }
+    }
+  },
   "notifications": {
     "title": "Notifications",
     "ariaLabel": "Notifications",

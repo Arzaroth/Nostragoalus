@@ -44,6 +44,9 @@ export const user = pgTable("user", {
   // Null = the one-time "join a league" prompt has never been dismissed.
   // Written only by the league service (dismiss/join/create), read-only client-side.
   leaguePromptDismissedAt: timestamp("league_prompt_dismissed_at"),
+  // Null = the one-time spotlight onboarding tour has never been finished or
+  // skipped. Written only by the onboarding service, read-only client-side.
+  onboardingTourDismissedAt: timestamp("onboarding_tour_dismissed_at"),
   twoFactorEnabled: boolean("two_factor_enabled").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")

@@ -158,6 +158,9 @@ export function buildAuthOptions(database: AuthDb) {
         // input: false - the onboarding dialog reads it from the session; only
         // the league service writes it (dismiss, or first join/create).
         leaguePromptDismissedAt: { type: 'date' as const, required: false, input: false },
+        // input: false - the tour overlay reads it from the session; only the
+        // onboarding service writes it (on finish or skip).
+        onboardingTourDismissedAt: { type: 'date' as const, required: false, input: false },
       },
     },
     // Constrain the cosmetic skin to the known set on write. The read side

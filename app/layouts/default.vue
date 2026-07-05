@@ -87,6 +87,12 @@ const navLinks = computed(() => {
 
 const userMenu = ref()
 const { onShow: onUserMenuShow, onHide: onUserMenuHide } = useHideOnScroll(userMenu)
+
+const { start: startTour } = useOnboardingTour()
+async function onTakeTour() {
+  userMenu.value?.hide?.()
+  await startTour()
+}
 async function onSignOut() {
   userMenu.value?.hide?.()
   await signOut()
@@ -154,6 +160,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateNavFades))
             class="px-2.5 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition hover:bg-black/5 dark:hover:bg-white/10 whitespace-nowrap"
             active-class="!text-[var(--p-primary-color)] bg-black/5 dark:bg-white/10"
             :title="t(l.key)"
+            :data-tour="l.key === 'nav.ranking' ? 'leaderboard' : undefined"
           >
             <i :class="l.icon" /><span class="hidden lg:inline">{{ t(l.key) }}</span>
           </NuxtLink>
@@ -195,6 +202,9 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateNavFades))
                   <NuxtLink to="/preferences" class="px-3 py-2 text-sm flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/10" @click="userMenu.hide()">
                     <i class="pi pi-sliders-h" />{{ t('prefs.title') }}
                   </NuxtLink>
+                  <button type="button" class="px-3 py-2 text-sm text-start flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/10" @click="onTakeTour">
+                    <i class="pi pi-compass" />{{ t('onboarding.takeTour') }}
+                  </button>
                   <NuxtLink to="/about#changelog" class="px-3 py-2 text-sm flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/10" @click="userMenu.hide()">
                     <i class="pi pi-megaphone" /><span class="flex-1">{{ t('nav.whatsNew') }}</span>
                     <span v-if="hasUnseenChangelog" class="w-2 h-2 rounded-full shrink-0" style="background: var(--p-primary-color)" aria-hidden="true" />
@@ -209,6 +219,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateNavFades))
               <Button :label="t('nav.signIn')" size="small" />
             </NuxtLink>
             <LeagueOnboardingDialog v-if="session && session.data" />
+            <OnboardingTour v-if="session && session.data" />
           </ClientOnly>
         </div>
       </div>

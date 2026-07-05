@@ -424,7 +424,7 @@ watch(searchOpen, () => nextTick(updateListHeight))
       </div>
       <Button size="small" :label="t('matches.outstanding.jump')" icon="pi pi-arrow-down" severity="primary" text @click="jumpToFirstUnpicked" />
     </div>
-    <div ref="picksEl" class="grid md:grid-cols-2 gap-4 mb-6">
+    <div ref="picksEl" data-tour="champion" class="grid md:grid-cols-2 gap-4 mb-6">
       <ChampionPick />
       <BestScorerPick />
     </div>
@@ -547,6 +547,7 @@ watch(searchOpen, () => nextTick(updateListHeight))
             v-for="m in g.items"
             :id="`match-${m.id}`"
             :key="m.id"
+            data-tour="predict"
             class="ng-card rounded-2xl border p-4 flex flex-col gap-3 cursor-pointer"
             style="background: var(--p-content-background); border-color: var(--p-content-border-color); scroll-margin-top: calc(var(--ng-header-h, 64px) + 16px)"
             @click="openMatch($event, m.id)"
