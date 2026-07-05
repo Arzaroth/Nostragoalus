@@ -784,6 +784,12 @@ export const league = pgTable(
     chatEnabledAt: timestamp('chat_enabled_at', { withTimezone: true }),
     chatEnabledBy: text('chat_enabled_by').references(() => user.id, { onDelete: 'set null' }),
     chatKeyEpoch: integer('chat_key_epoch').notNull().default(0),
+    // Set when a member is removed while chat is on. The server can't re-key
+    // (E2EE - only a keyholder's client can seal a fresh group key), so it marks a
+    // rotation owed; the next OWNER/MODERATOR client rotates and clears this.
+    // Forward secrecy against a later ciphertext leak - live reads are already
+    // blocked by the membership gate. Null = no rotation owed.
+    chatRekeyPendingAt: timestamp('chat_rekey_pending_at', { withTimezone: true }),
   },
   (t) => [uniqueIndex('league_join_code_uq').on(t.joinCode), index('league_competition_idx').on(t.competitionId)],
 )

@@ -4,6 +4,7 @@ import type { AppDatabase } from '../../../db/types'
 import {
   competition,
   league,
+  leagueChatKey,
   leagueLeaderboardRank,
   leagueMember,
   leagueOptOut,
@@ -418,6 +419,17 @@ export async function removeMembership(db: AppDatabase, leagueId: string, userId
     await tx
       .delete(leagueLeaderboardRank)
       .where(and(eq(leagueLeaderboardRank.leagueId, leagueId), eq(leagueLeaderboardRank.userId, userId)))
+
+    // Chat forward secrecy: drop the leaver's sealed group keys and, if chat is
+    // on, mark a rotation owed so a keyholder's client re-keys (the server can't -
+    // it never holds the group key). Their retained key can't read new messages
+    // anyway (the membership gate blocks the fetch); this bounds a later
+    // ciphertext-leak to messages sent before the next rotation.
+    await tx.delete(leagueChatKey).where(and(eq(leagueChatKey.leagueId, leagueId), eq(leagueChatKey.userId, userId)))
+    const [lg] = await tx.select({ chatEnabled: league.chatEnabled }).from(league).where(eq(league.id, leagueId))
+    if (lg?.chatEnabled) {
+      await tx.update(league).set({ chatRekeyPendingAt: new Date() }).where(eq(league.id, leagueId))
+    }
   })
 }
 

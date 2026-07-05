@@ -4,7 +4,8 @@ import { createTestDb } from '../../../tests/db'
 import { findRoundId } from '../sync/rounds'
 import { addLeagueMember, makeLeague, makeMatch, makeUser, seedCompetition } from '../../../tests/factories'
 import { memoryStorage } from '../../../tests/storage'
-import { chatIdentity, chatMessage, league } from '../../../db/schema'
+import { chatIdentity, chatMessage, league, leagueChatKey } from '../../../db/schema'
+import { removeMembership } from '../leagues/service'
 import {
   addWrappedKeys,
   disableLeagueChat,
@@ -680,6 +681,43 @@ describe('requestChatRekey', () => {
     await enableWith(db, leagueId, owner, [owner]) // seals the key to the owner only, epoch 1
     expect(await requestChatRekey(db, leagueId, owner)).toEqual({ requested: false, epoch: 1 }) // owner holds it
     expect(await requestChatRekey(db, leagueId, newbie)).toEqual({ requested: true, epoch: 1 }) // newbie has none
+    await client.close()
+  })
+})
+
+describe('chat re-key on member removal (Tier 1 forward secrecy)', () => {
+  it('marks a rotation pending and drops the leaver key; a rotation clears it', async () => {
+    const { db, client, owner, leagueId } = await setup()
+    const m1 = await makeUser(db, 'm1')
+    await addLeagueMember(db, leagueId, m1)
+    await addIdentity(db, owner)
+    await addIdentity(db, m1)
+    await enableWith(db, leagueId, owner, [owner, m1])
+
+    expect((await getChatStatus(db, leagueId, owner)).rekeyPending).toBe(false)
+
+    await removeMembership(db, leagueId, m1)
+
+    // The leaver's sealed group key is gone, and a rotation is owed.
+    const leftKeys = await db
+      .select()
+      .from(leagueChatKey)
+      .where(and(eq(leagueChatKey.leagueId, leagueId), eq(leagueChatKey.userId, m1)))
+    expect(leftKeys).toHaveLength(0)
+    expect((await getChatStatus(db, leagueId, owner)).rekeyPending).toBe(true)
+
+    // A keyholder rotation clears the pending flag.
+    await rotateLeagueChatKey(db, { leagueId, actorId: owner, wraps: wrapsFor([owner]) })
+    expect((await getChatStatus(db, leagueId, owner)).rekeyPending).toBe(false)
+    await client.close()
+  })
+
+  it('does not mark a rotation when chat is off', async () => {
+    const { db, client, owner, leagueId } = await setup()
+    const m1 = await makeUser(db, 'm1')
+    await addLeagueMember(db, leagueId, m1)
+    await removeMembership(db, leagueId, m1)
+    expect((await getChatStatus(db, leagueId, owner)).rekeyPending).toBe(false)
     await client.close()
   })
 })

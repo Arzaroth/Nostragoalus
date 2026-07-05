@@ -53,6 +53,7 @@ interface ChatStatus {
   myWrappedKeys: { epoch: number; wrappedKey: string }[]
   missingKeys: { userId: string; publicKey: string; name: string }[]
   memberKeys: { userId: string; publicKey: string; name: string }[]
+  rekeyPending: boolean
 }
 
 // One chat room: the league-global room (matchId null) or a per-match thread.
@@ -302,6 +303,10 @@ export function useLeagueChat(
       await loadMessages({ resetMarker: !bg })
       // Still keyless after loading: nudge connected keyholders to seal it for us.
       if (!currentKey.value) void requestRekey()
+      // A member was removed since the last rotation: a keyholder re-keys so the
+      // leaver's retained group key stops decrypting future messages (forward
+      // secrecy). Only an admin can rotate; best-effort, one at a time.
+      if (status.rekeyPending && isAdmin.value && currentKey.value) void maybeAutoRotate()
     } finally {
       if (!bg) loading.value = false
     }
@@ -591,6 +596,22 @@ export function useLeagueChat(
     )
     await $fetch(`/api/leagues/${lid()}/chat/rotate`, { method: 'POST', body: { wraps } })
     await load()
+  }
+
+  // Auto-rotate once when the server reports a rotation is owed (a member was
+  // removed). Guarded so overlapping loads / multiple admins don't stack
+  // rotations; on failure a keyholder retries on the next load.
+  let autoRotating = false
+  async function maybeAutoRotate(): Promise<void> {
+    if (autoRotating) return
+    autoRotating = true
+    try {
+      await rotateKey()
+    } catch {
+      // transient: retried on the next load / by another keyholder
+    } finally {
+      autoRotating = false
+    }
   }
 
   // Transient "who is typing" presence for the current room. Each ping refreshes
