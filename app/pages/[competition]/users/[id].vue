@@ -12,7 +12,7 @@ const scopeOptions = computed(() => [
   { label: t('leaderboard.global'), value: true },
 ])
 const { data, error } = await useFetch<{
-  user: { id: string; name: string; image: string | null }
+  user: { id: string; name: string; image: string | null; canMessage: boolean }
   champion: { teamCode: string | null; teamName: string; awardedPoints: number } | null
   bestScorer: { teamCode: string | null; teamName: string; playerName: string; awardedPoints: number } | null
   predictions: (MyPrediction & { competitionSlug?: string })[]
@@ -26,7 +26,11 @@ const { data, error } = await useFetch<{
 // profile.
 const { session } = useAuth()
 const dmOpen = useDmOpen()
-const canMessage = computed(() => !!session.value?.data?.user && session.value.data.user.id !== data.value?.user.id)
+// Only when signed in, not your own profile, and the target has set up chat (else
+// they cannot receive an E2E-encrypted DM).
+const canMessage = computed(
+  () => !!session.value?.data?.user && session.value.data.user.id !== data.value?.user.id && !!data.value?.user.canMessage,
+)
 
 // Split picks at "now": played (kicked-off) above, any still-upcoming below.
 // Only admins ever receive upcoming rows (picks stay private until kickoff), so
