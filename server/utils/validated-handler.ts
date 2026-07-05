@@ -1,6 +1,7 @@
 import type { H3Event } from 'h3'
 import type { z, ZodType } from 'zod'
 import { requireAdmin, requireApiKey, requireUser } from './auth-guards'
+import { assertSameOrigin } from './csrf'
 import { toHttpError } from './http'
 
 interface HandlerCtx<B> {
@@ -35,6 +36,9 @@ export function defineValidatedHandler<S extends ZodType>(
       if (!options.apiKey) throw createError({ statusCode: 401, statusMessage: 'API key not accepted on this route' })
       user = await requireApiKey(apiKeyHeader, options.apiKey, !!options.admin)
     } else {
+      // Cookie-session auth is the CSRF-exposed path; reject a cross-origin
+      // mutation before touching the session. API-key callers (above) skip this.
+      assertSameOrigin(event)
       user = options.admin ? await requireAdmin(event) : await requireUser(event)
     }
 
