@@ -5,6 +5,23 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+
+- Client-code integrity fingerprint on the About page: the SHA-256 of the client JavaScript bundle actually served to your browser, so you can compare it against the digest published for a release and detect a silent swap of the end-to-end-encryption code.
+- Regenerate your calendar-feed link: a button in Preferences revokes every previously shared subscription URL and issues a fresh one, in case a link leaked.
+- Key transparency for chat: the verify dialog now flags a member whose encryption key does not match the public, tamper-evident key log, catching a substituted key.
+
+### Changed
+
+- Shared prediction and recap card links now expire after 180 days instead of lasting forever.
+
+### Security
+
+- Chat automatically re-keys when a member leaves a league, so their old key can no longer unlock messages sent afterwards.
+- Crowd-prediction totals are hidden for a match with only one or two picks, so a small league cannot reveal an individual's not-yet-locked prediction.
+- Two-factor codes are now single-use and cannot be replayed within their validity window.
+- Hardened account deletion's two-factor check, cross-origin request handling and response headers, and the app now refuses to start with a missing or weak secret.
+
 ## [2.22.1] - 2026-07-05
 
 ### Fixed
