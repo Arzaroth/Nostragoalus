@@ -6,6 +6,7 @@ import { chatIdentity, chatMessage, dmThread, dmThreadKey, dmThreadRead, user } 
 import {
   createThread,
   editDmMessage,
+  getDmReadMarker,
   getPublicIdentity,
   getThreadDetail,
   getThreadForPair,
@@ -17,6 +18,8 @@ import {
   requireParticipant,
   searchRecipients,
 } from './service'
+import { getAttachmentCiphertext, getMessageAttachments } from '../chat/attachments'
+import { memoryStorage } from '../../../tests/storage'
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors'
 
 type Db = Awaited<ReturnType<typeof createTestDb>>['db']
@@ -317,6 +320,41 @@ describe('postDmMessage', () => {
     await client.close()
   })
 
+  it('stores images to the backend before the row and returns their descriptors', async () => {
+    const { db, client } = await createTestDb()
+    const me = await mkUser(db, 'aaa')
+    const other = await mkUser(db, 'bbb')
+    const threadId = await openThread(db, me, other)
+    const storage = memoryStorage()
+    const msg = await postDmMessage(
+      db,
+      { threadId, userId: me, ciphertext: 'hi', epoch: 1, images: [{ ciphertext: 'A', byteSize: 1 }, { ciphertext: 'B', byteSize: 2 }] },
+      storage,
+    )
+    expect(msg.attachments).toEqual([{ idx: 0, epoch: 1 }, { idx: 1, epoch: 1 }])
+    // Descriptors surface through the shared chat listing, and the bytes round-trip.
+    const byMessage = await getMessageAttachments(db, [msg.id])
+    expect(byMessage.get(msg.id)).toEqual([{ idx: 0, epoch: 1 }, { idx: 1, epoch: 1 }])
+    expect((await getAttachmentCiphertext(db, msg.id, 0, other, storage)).ciphertext).toBe('A')
+    expect(storage.store.has(`chat/${msg.id}/1`)).toBe(true)
+    await client.close()
+  })
+
+  it('rejects too many images or an oversized image', async () => {
+    const { db, client } = await createTestDb()
+    const me = await mkUser(db, 'aaa')
+    const other = await mkUser(db, 'bbb')
+    const threadId = await openThread(db, me, other)
+    const storage = memoryStorage()
+    await expect(
+      postDmMessage(db, { threadId, userId: me, ciphertext: 'hi', epoch: 1, images: Array.from({ length: 7 }, () => ({ ciphertext: 'x', byteSize: 1 })) }, storage),
+    ).rejects.toBeInstanceOf(ValidationError)
+    await expect(
+      postDmMessage(db, { threadId, userId: me, ciphertext: 'hi', epoch: 1, images: [{ ciphertext: 'x'.repeat(9_000_001), byteSize: 1 }] }, storage),
+    ).rejects.toBeInstanceOf(ValidationError)
+    await client.close()
+  })
+
   it('accepts an in-thread quote and thread root, and rejects cross-thread targets', async () => {
     const { db, client } = await createTestDb()
     const me = await mkUser(db, 'aaa')
@@ -381,6 +419,64 @@ describe('editDmMessage', () => {
     const inT2 = await postDmMessage(db, { threadId: t2, userId: me, ciphertext: 'o', epoch: 1 })
     await expect(editDmMessage(db, { threadId: t1, messageId: inT2.id, userId: me, ciphertext: 'x' })).rejects.toBeInstanceOf(NotFoundError)
     await expect(editDmMessage(db, { threadId: t1, messageId: '00000000-0000-0000-0000-000000000000', userId: me, ciphertext: 'x' })).rejects.toBeInstanceOf(NotFoundError)
+    await client.close()
+  })
+
+  it('drops and appends images on edit, keeping idx stable and the cap enforced', async () => {
+    const { db, client } = await createTestDb()
+    const me = await mkUser(db, 'aaa')
+    const other = await mkUser(db, 'bbb')
+    const threadId = await openThread(db, me, other)
+    const storage = memoryStorage()
+    const m = await postDmMessage(
+      db,
+      { threadId, userId: me, ciphertext: 'orig', epoch: 1, images: [{ ciphertext: 'A', byteSize: 1 }, { ciphertext: 'B', byteSize: 1 }, { ciphertext: 'C', byteSize: 1 }] },
+      storage,
+    )
+    // Drop idx 1, append a new image: survivors keep their idx, the new one appends
+    // after the highest idx that ever existed (3), never reusing the removed 1.
+    const res = await editDmMessage(
+      db,
+      { threadId, messageId: m.id, userId: me, ciphertext: 'edited', removeIdxs: [1], addImages: [{ ciphertext: 'D', byteSize: 1 }] },
+      storage,
+    )
+    expect(res.attachments).toEqual([{ idx: 0, epoch: 1 }, { idx: 2, epoch: 1 }, { idx: 3, epoch: 1 }])
+    expect((await getAttachmentCiphertext(db, m.id, 0, other, storage)).ciphertext).toBe('A')
+    await expect(getAttachmentCiphertext(db, m.id, 1, other, storage)).rejects.toBeInstanceOf(NotFoundError)
+    expect((await getAttachmentCiphertext(db, m.id, 3, other, storage)).ciphertext).toBe('D')
+    // The dropped image's object is gone from storage too (not just the row).
+    expect(storage.store.has(`chat/${m.id}/1`)).toBe(false)
+    // Adding past the six-image cap is rejected.
+    await expect(
+      editDmMessage(db, { threadId, messageId: m.id, userId: me, ciphertext: 'edited', addImages: Array.from({ length: 4 }, () => ({ ciphertext: 'n', byteSize: 1 })) }, storage),
+    ).rejects.toBeInstanceOf(ValidationError)
+    await client.close()
+  })
+
+  it('rejects an oversized appended image on edit', async () => {
+    const { db, client } = await createTestDb()
+    const me = await mkUser(db, 'aaa')
+    const other = await mkUser(db, 'bbb')
+    const threadId = await openThread(db, me, other)
+    const m = await postDmMessage(db, { threadId, userId: me, ciphertext: 'orig', epoch: 1 })
+    await expect(
+      editDmMessage(db, { threadId, messageId: m.id, userId: me, ciphertext: 'x', addImages: [{ ciphertext: 'x'.repeat(9_000_001), byteSize: 1 }] }),
+    ).rejects.toBeInstanceOf(ValidationError)
+    await client.close()
+  })
+})
+
+describe('getDmReadMarker', () => {
+  it('returns the caller marker after a read and null before one, participant-scoped', async () => {
+    const { db, client } = await createTestDb()
+    const me = await mkUser(db, 'aaa')
+    const other = await mkUser(db, 'bbb')
+    const threadId = await openThread(db, me, other)
+    expect(await getDmReadMarker(db, threadId, me)).toBeNull()
+    await markThreadRead(db, threadId, me)
+    expect(await getDmReadMarker(db, threadId, me)).toBeInstanceOf(Date)
+    // The other participant has their own (still absent) marker.
+    expect(await getDmReadMarker(db, threadId, other)).toBeNull()
     await client.close()
   })
 })

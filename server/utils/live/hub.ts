@@ -306,7 +306,8 @@ export function publishDmMessage(participantIds: readonly string[], message: DmM
   return deliverToMembers(participantIds, { type: 'dm:new', threadId: message.threadId, message })
 }
 
-// A DM message was edited by its author: push the new ciphertext + edit time to
+// A DM message was edited by its author: push the new ciphertext + edit time + the
+// resulting attachment set (descriptors only - the bytes are fetched on demand) to
 // the two participants so they re-decrypt it in place. Content stays opaque.
 export function publishDmEdit(
   participantIds: readonly string[],
@@ -314,8 +315,21 @@ export function publishDmEdit(
   messageId: string,
   ciphertext: string,
   editedAt: string,
+  attachments: ChatAttachmentDTO[],
 ): number {
-  return deliverToMembers(participantIds, { type: 'dm:edit', threadId, messageId, ciphertext, editedAt })
+  return deliverToMembers(participantIds, { type: 'dm:edit', threadId, messageId, ciphertext, editedAt, attachments })
+}
+
+// A DM message's reaction counts changed: push the new per-emoji totals to the two
+// participants (the emoji counts are plaintext; the message content stays opaque).
+// Mirrors publishChatReactionUpdate, scoped to the DM pair.
+export function publishDmReaction(
+  participantIds: readonly string[],
+  threadId: string,
+  messageId: string,
+  totals: ReactionTotals,
+): number {
+  return deliverToMembers(participantIds, { type: 'dm:reaction', threadId, messageId, totals })
 }
 
 // A member changed their display name: tell every connected member of the leagues

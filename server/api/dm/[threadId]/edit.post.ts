@@ -7,24 +7,39 @@ import { defineValidatedHandler } from '../../../utils/validated-handler'
 const bodySchema = z.object({
   messageId: z.string().uuid(),
   ciphertext: z.string().min(1).max(16_384),
+  // Images to append (sealed under the current epoch) and idxs of images to drop.
+  addImages: z
+    .array(z.object({ ciphertext: z.string().min(1).max(9_000_000), byteSize: z.number().int().positive() }))
+    .max(6)
+    .optional(),
+  removeIdxs: z.array(z.number().int().nonnegative()).optional(),
 })
 
-// The author replaces their own DM message text (re-encrypted client-side) and the
-// edit is pushed live to both participants. Author only, visible messages only.
+// The author edits their own DM message: store the re-encrypted text, drop/append
+// images, stamp the edit time, and push the new ciphertext + attachment set live to
+// both participants. Author only, visible messages only.
 export default defineValidatedHandler({ body: bodySchema }, async ({ body, user, event }) => {
   const threadId = getRouterParam(event, 'threadId') as string
-  const { editedAt } = await editDmMessage(db, { threadId, messageId: body.messageId, userId: user.id, ciphertext: body.ciphertext })
+  const { editedAt, attachments } = await editDmMessage(db, {
+    threadId,
+    messageId: body.messageId,
+    userId: user.id,
+    ciphertext: body.ciphertext,
+    addImages: body.addImages,
+    removeIdxs: body.removeIdxs,
+  })
+  const iso = editedAt.toISOString()
   const t = await requireParticipant(db, threadId, user.id)
-  void Promise.resolve(publishDmEdit([user.id, t.otherId], threadId, body.messageId, body.ciphertext, editedAt.toISOString()))
-  return { editedAt: editedAt.toISOString() }
+  void Promise.resolve(publishDmEdit([user.id, t.otherId], threadId, body.messageId, body.ciphertext, iso, attachments))
+  return { editedAt: iso, attachments }
 })
 
 defineRouteMeta({
   openAPI: {
     tags: ['DM'],
     summary: 'Edit a direct message',
-    description: 'Author only. Replaces the ciphertext and pushes the edit live to both participants.',
+    description: 'Author only. Replaces the ciphertext, drops/appends images, and pushes the edit + attachment set live to both participants.',
     parameters: [{ in: 'path', name: 'threadId', required: true, schema: { type: 'string' } }],
-    responses: { '200': { description: '{ editedAt }.' }, '403': { description: 'Not the author.' }, '404': { description: 'Not found.' } },
+    responses: { '200': { description: '{ editedAt, attachments: ChatAttachmentDTO[] }.' }, '403': { description: 'Not the author.' }, '404': { description: 'Not found.' } },
   },
 })
