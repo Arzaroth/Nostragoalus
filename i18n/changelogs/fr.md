@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [2.20.0] - 2026-07-05
+
 ### Ajouté
 - **Visite guidée pour les nouveaux joueurs** : une visite en surbrillance qui assombrit la page et met en avant une chose à la fois - changer de tournoi, pronostiquer un score, choisir le champion et le meilleur buteur, grimper au classement, recevoir les notifications en direct et discuter avec votre ligue. Elle se lance d'elle-même une fois pour un tout nouveau compte (juste après l'invitation à « rejoindre une ligue ») et peut être rejouée à tout moment depuis le menu du compte.
 

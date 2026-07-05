@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.20.0] - 2026-07-05
+
 ### Added
 - **Guided onboarding tour for new players**: a spotlight walk-through that dims the page and highlights one thing at a time - switch tournaments, predict a score, pick the champion and top scorer, climb the rankings, catch live notifications, and chat with your league. It starts itself once for a brand-new account (right after the "join a league" prompt) and can be replayed anytime from the account menu.
 
