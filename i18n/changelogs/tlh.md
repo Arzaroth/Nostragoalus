@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.25.0] - 2026-07-05
+
 ### chelpu'
 
 - nughmey HaSta: Sep tIq wIvmeylIj chovnatlh - wIvmey Do' (rurqu' / chevmey / Qapla' / Qagh), naQmey law' pagh puS DaHech'a', juH 'ej rap DaparHa'bogh, ghom Damaqbogh 'ej Damaq puSbogh, chevmey lugh, wIv pov 'ej Qagh tIn. bIter'eghDI' De'wI'vo' Sammeh; Wrapped rurbe' - qaStaHvIS lo'laH.
