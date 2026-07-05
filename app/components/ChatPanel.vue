@@ -910,8 +910,9 @@ watch(
           <i class="pi pi-images" />
         </button>
         <!-- Overflow menu: verify, key backup and admin actions, tucked away so
-             they are deliberate and don't crowd the composer. -->
-        <div class="relative">
+             they are deliberate and don't crowd the composer. In a DM none of those
+             apply, so it only appears when there is a muted user to manage. -->
+        <div v-if="!isDm || muted.length" class="relative">
           <button type="button" class="relative opacity-70 hover:opacity-100 inline-flex items-center" :aria-label="t('chat.menu.button')" @click="menuOpen = !menuOpen">
             <i class="pi pi-ellipsis-h" />
             <span v-if="!isDm && changedCount > 0" class="absolute -top-1 -right-1 w-2 h-2 rounded-full" style="background: var(--ng-danger)" />

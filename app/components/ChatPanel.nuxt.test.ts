@@ -584,10 +584,12 @@ describe('ChatPanel DM mode', () => {
     expect(wrapper.text()).not.toContain('Chat is off')
   })
 
-  it('hides the admin (verify/rotate) menu items in a DM', async () => {
+  it('hides the overflow menu entirely in a DM (no verify/rotate/recovery items)', async () => {
     await readyDm()
     const wrapper = await dmMount()
-    await wrapper.get('button[aria-label="More options"]').trigger('click')
+    // The overflow menu holds only league/admin/verify actions, so with nothing to
+    // manage (no muted user) the whole button is absent in a DM.
+    expect(wrapper.find('button[aria-label="More options"]').exists()).toBe(false)
     expect(wrapper.text()).not.toContain('Verify keys')
     expect(wrapper.text()).not.toContain('Rotate key')
   })
