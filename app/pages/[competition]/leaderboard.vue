@@ -126,10 +126,6 @@ const displayRows = computed<DisplayRow[]>(() => {
   return ghostRows.value.length ? insertGhostRows(base, ghostRows.value) : base
 })
 
-function medal(rank: number) {
-  return rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null
-}
-
 // A ghost row links to its bot page; the evil-twin ghost is your own, so it goes
 // to your profile with the twin already open (its fuller home).
 function rowLink(r: DisplayRow) {
@@ -228,52 +224,13 @@ const hasLive = computed(() => displayRows.value.some((r) => r.livePoints))
     <div v-else-if="!displayRows.length" class="opacity-60">{{ t('leaderboard.empty') }}</div>
 
     <div v-else class="flex flex-col gap-2">
-      <NuxtLink
+      <LeaderboardRowCard
         v-for="r in displayRows"
         :key="r.userId"
+        :row="r"
         :to="rowLink(r)"
-        class="ng-card flex items-center gap-3 rounded-xl border px-4 py-3"
-        :style="`background: var(--p-content-background); border-style: ${r.isBot ? 'dashed' : 'solid'}; opacity: ${r.isBot ? '0.85' : '1'}; border-color: ${r.userId === meId ? 'var(--p-primary-color)' : 'var(--p-content-border-color)'}; border-width: ${r.userId === meId ? '2px' : '1px'}`"
-      >
-        <div class="w-8 text-center shrink-0">
-          <div class="font-bold tabular-nums text-lg leading-tight">
-            <span v-if="medal(r.rank)">{{ medal(r.rank) }}</span>
-            <span v-else style="color: var(--p-text-muted-color)">{{ r.rank }}</span>
-          </div>
-          <div v-if="r.movement" class="text-[10px] font-bold leading-none" :style="`color: ${r.movement > 0 ? 'var(--ng-success)' : 'var(--ng-danger)'}`">
-            {{ r.movement > 0 ? '▲' : '▼' }}{{ Math.abs(r.movement) }}
-          </div>
-        </div>
-        <span v-if="r.isBot" class="shrink-0 text-2xl leading-none w-8 h-8 inline-flex items-center justify-center">{{ r.icon }}</span>
-        <UserAvatar v-else :image="r.image" :user-id="r.userId" />
-        <div class="flex-1 min-w-0">
-          <div class="font-semibold truncate flex items-center gap-2.5">
-            <span class="truncate">{{ r.displayName }}</span>
-            <span v-if="r.isBot" class="text-xs font-normal px-1.5 py-0.5 rounded-full" style="color: var(--p-text-muted-color); background: var(--p-content-border-color)">{{ t('bot.virtual') }}</span>
-            <span v-if="r.championCode && flagUrl(r.championCode)" v-tooltip.top="`${t('champion.tag')}: ${r.championName ?? r.championCode}`" class="relative shrink-0 inline-flex">
-              <img :src="flagUrl(r.championCode) || ''" class="w-4 h-4 rounded object-cover" alt="" >
-              <span class="absolute -top-2 -left-1.5 text-[10px]" style="transform: rotate(-25deg)">👑</span>
-            </span>
-            <span v-if="r.bestScorerCode && flagUrl(r.bestScorerCode)" v-tooltip.top="`${t('bestScorer.tag')}: ${r.bestScorerName ? formatPlayerName(r.bestScorerName) : r.bestScorerCode}`" class="relative shrink-0 inline-flex">
-              <img :src="flagUrl(r.bestScorerCode) || ''" class="w-4 h-4 rounded object-cover" alt="" >
-              <span class="absolute -top-2 -left-1.5 text-[10px]" style="transform: rotate(-12deg)"><GoldenBoot /></span>
-            </span>
-            <ShowcaseIcons :items="r.showcase" />
-            <span v-if="r.userId === meId" class="text-xs font-normal" style="color: var(--p-primary-color)">{{ t('leaderboard.you') }}</span>
-          </div>
-          <div class="text-xs" style="color: var(--p-text-muted-color)">
-            {{ r.exactCount }} {{ t('leaderboard.exact') }} · {{ r.outcomeCount }} {{ t('leaderboard.correct') }}<template v-if="r.championPoints"> · 👑 +{{ r.championPoints }}</template><template v-if="r.bestScorerPoints"> · <GoldenBoot /> +{{ r.bestScorerPoints }}</template>
-          </div>
-        </div>
-        <div class="text-end shrink-0">
-          <div>
-            <span class="text-xl font-bold tabular-nums">{{ r.totalPoints }}</span>
-            <span class="text-xs ms-1" style="color: var(--p-text-muted-color)">{{ t('leaderboard.pts') }}</span>
-          </div>
-          <div v-if="r.livePoints" v-tooltip.left="t('leaderboard.livePointsHint')" class="text-[10px] font-bold leading-none tabular-nums" style="color: var(--ng-danger)">+{{ r.livePoints }} {{ t('leaderboard.live') }}</div>
-        </div>
-        <i class="pi pi-angle-right text-xs shrink-0" style="color: var(--p-text-muted-color)" />
-      </NuxtLink>
+        :me-id="meId"
+      />
       <div
         v-if="hiddenCount"
         v-tooltip.top="{ value: t('leaderboard.hiddenTip'), pt: { text: 'text-xs max-w-64' } }"

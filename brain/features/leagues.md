@@ -76,6 +76,14 @@ by the finalize task. Private profiles are included only when the viewer is a
 member or admin (`includePrivate` option); an outsider viewing a public league
 gets null ranks for hidden players so their board does not leak private rank.
 
+Both the NORMAL league board (`app/pages/leagues/[id].vue`) and the competition
+board (`app/pages/[competition]/leaderboard.vue`) render each row through the
+shared `app/components/LeaderboardRowCard.vue`, so they stay in lockstep: rank
+movement, the champion crown, the best-scorer boot and live provisional points
+all render off the row data, and the bot ghost decoration renders only when the
+parent marks a row `isBot`. Moded leagues keep their own boards
+(`LeagueSurvivalBoard`/`LeagueModePointsBoard`).
+
 Two distinct hiding mechanisms:
 
 - `user.profile_private` is a user-settable opt-out of ranking. It removes the
