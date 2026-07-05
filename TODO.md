@@ -17,6 +17,17 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       the moded row shapes differ. Factor a small shared sub-primitive so a visual
       change (color, threshold, glyph) is made once.
 
+## Personal analytics (deferred from the feature-treatment review)
+
+- [ ] **Share the pick-row join with Wrapped**: `getAnalytics` (`server/utils/analytics/service.ts`)
+      and `getWrapped` (`server/utils/wrapped/service.ts`) run a near-identical
+      prediction ⋈ match ⋈ round join projecting the same columns
+      (homeTeamCode/fullTimeHome/baseTier/round.sortOrder). A shared select builder
+      would stop them drifting when the projection changes.
+- [ ] **`exactRate` has no in-app consumer**: it's on the analytics DTO and tested,
+      but no UI reads it. Either surface it (e.g. next to accuracy) or drop it if the
+      public API surface does not need it.
+
 ## Onboarding tour (deferred from the feature-treatment review)
 
 - [x] **A third copy of the one-time dismiss-flag pattern**: resolved.
