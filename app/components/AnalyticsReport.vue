@@ -15,7 +15,7 @@ const tierSegments = computed(() => {
     { key: 'exact', n: exact, color: 'var(--ng-success)' },
     { key: 'diff', n: diff, color: '#3b82f6' },
     { key: 'outcome', n: outcome, color: '#a855f7' },
-    { key: 'miss', n: miss, color: 'var(--p-content-border-color)' },
+    { key: 'miss', n: miss, color: 'var(--p-text-muted-color)' },
   ].map((s) => ({ ...s, width: (s.n / total) * 100 }))
 })
 
@@ -133,12 +133,20 @@ function biasWidth(t: TeamBias) {
     <section class="grid sm:grid-cols-2 gap-4">
       <div v-if="data.bestCall" class="ng-card rounded-xl border px-4 py-3" style="background: var(--p-content-background); border-color: var(--p-content-border-color)">
         <div class="text-xs uppercase tracking-wide mb-1" style="color: var(--ng-success)">{{ t('analytics.bestCall') }}</div>
-        <div class="font-semibold">{{ data.bestCall.home }} {{ data.bestCall.actual }} {{ data.bestCall.away }}</div>
+        <div class="font-semibold flex items-center gap-1.5">
+          <img v-if="flagUrl(data.bestCall.homeCode)" :src="flagUrl(data.bestCall.homeCode) || ''" class="w-4 h-4 rounded object-cover shrink-0" alt="" >
+          <span>{{ data.bestCall.home }} {{ data.bestCall.actual }} {{ data.bestCall.away }}</span>
+          <img v-if="flagUrl(data.bestCall.awayCode)" :src="flagUrl(data.bestCall.awayCode) || ''" class="w-4 h-4 rounded object-cover shrink-0" alt="" >
+        </div>
         <div class="text-xs" style="color: var(--p-text-muted-color)">{{ t('analytics.youPicked', { score: data.bestCall.predicted }) }} · +{{ data.bestCall.points }} {{ t('leaderboard.pts') }}</div>
       </div>
       <div v-if="data.worstMiss" class="ng-card rounded-xl border px-4 py-3" style="background: var(--p-content-background); border-color: var(--p-content-border-color)">
         <div class="text-xs uppercase tracking-wide mb-1" style="color: var(--ng-danger)">{{ t('analytics.worstMiss') }}</div>
-        <div class="font-semibold">{{ data.worstMiss.home }} {{ data.worstMiss.actual }} {{ data.worstMiss.away }}</div>
+        <div class="font-semibold flex items-center gap-1.5">
+          <img v-if="flagUrl(data.worstMiss.homeCode)" :src="flagUrl(data.worstMiss.homeCode) || ''" class="w-4 h-4 rounded object-cover shrink-0" alt="" >
+          <span>{{ data.worstMiss.home }} {{ data.worstMiss.actual }} {{ data.worstMiss.away }}</span>
+          <img v-if="flagUrl(data.worstMiss.awayCode)" :src="flagUrl(data.worstMiss.awayCode) || ''" class="w-4 h-4 rounded object-cover shrink-0" alt="" >
+        </div>
         <div class="text-xs" style="color: var(--p-text-muted-color)">{{ t('analytics.youPicked', { score: data.worstMiss.predicted }) }}</div>
       </div>
     </section>

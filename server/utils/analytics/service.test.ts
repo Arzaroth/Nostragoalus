@@ -126,6 +126,76 @@ describe('computeAnalytics', () => {
     expect(r.worstMiss).toBeNull()
     expect(r.bestCall).not.toBeNull()
   })
+
+  it('keys a team by name when its country code is missing', () => {
+    const r = computeAnalytics('C', [
+      row({ homeTeam: 'Wanderers', homeCode: null, awayTeam: 'Rovers', awayCode: null, homeGoals: 2, awayGoals: 0, actualHome: 0, actualAway: 1 }),
+      row({ homeTeam: 'Wanderers', homeCode: null, awayTeam: 'Rovers', awayCode: null, homeGoals: 1, awayGoals: 0, actualHome: 0, actualAway: 2 }),
+    ])
+    expect(r.teams.overrated[0]).toMatchObject({ code: null, name: 'Wanderers', sample: 2 })
+    expect(r.teams.underrated[0]).toMatchObject({ code: null, name: 'Rovers' })
+  })
+
+  it('takes the miss with the strictly-largest goal error', () => {
+    const r = computeAnalytics('C', [
+      row({ baseTier: 'MISS', homeGoals: 0, awayGoals: 0, actualHome: 1, actualAway: 0, homeTeam: 'Small' }),
+      row({ baseTier: 'MISS', homeGoals: 0, awayGoals: 0, actualHome: 5, actualAway: 0, homeTeam: 'Big' }),
+    ])
+    expect(r.worstMiss?.home).toBe('Big')
+  })
+
+  it('keeps the first joker miss when two joker misses tie on goal error', () => {
+    const r = computeAnalytics('C', [
+      row({ baseTier: 'MISS', isJoker: true, homeGoals: 0, awayGoals: 0, actualHome: 2, actualAway: 0, homeTeam: 'First' }),
+      row({ baseTier: 'MISS', isJoker: true, homeGoals: 0, awayGoals: 0, actualHome: 2, actualAway: 0, homeTeam: 'Second' }),
+    ])
+    expect(r.worstMiss?.home).toBe('First')
+  })
+
+  it('breaks an over-rated delta tie toward the larger sample', () => {
+    const overrate = (home: string, away: string) =>
+      row({ homeTeam: home, homeCode: home, awayTeam: away, awayCode: away, homeGoals: 2, awayGoals: 0, actualHome: 0, actualAway: 1 })
+    const r = computeAnalytics('C', [
+      overrate('X', 'A'),
+      overrate('X', 'B'),
+      overrate('X', 'C'),
+      overrate('Y', 'D'),
+      overrate('Y', 'E'),
+    ])
+    // X and Y both predicted-to-win-lost every time (delta +1); X has the larger
+    // sample so it leads. A-E appear once each, below MIN_TEAM_SAMPLE.
+    expect(r.teams.overrated.map((t) => t.code)).toEqual(['X', 'Y'])
+  })
+
+  it('breaks an under-rated delta tie toward the larger sample', () => {
+    // Predict the home team to win (so the away team is tipped to lose), but the
+    // away team actually wins - the away team is the under-rated one.
+    const underrate = (home: string, away: string) =>
+      row({ homeTeam: home, homeCode: home, awayTeam: away, awayCode: away, homeGoals: 2, awayGoals: 0, actualHome: 0, actualAway: 3 })
+    const r = computeAnalytics('C', [
+      underrate('H1', 'P'),
+      underrate('H2', 'P'),
+      underrate('H3', 'P'),
+      underrate('H4', 'Q'),
+      underrate('H5', 'Q'),
+    ])
+    // P and Q were always predicted to lose but always won (delta -1); P has the
+    // larger sample so it leads the under-rated list.
+    expect(r.teams.underrated.map((t) => t.code)).toEqual(['P', 'Q'])
+  })
+
+  it('coalesces a null tier to MISS on both sides of the best-call tie-break', () => {
+    const nullBest = computeAnalytics('C', [
+      row({ baseTier: null, totalPoints: 5, homeTeam: 'Keep' }),
+      row({ baseTier: 'MISS', totalPoints: 5, homeTeam: 'Other' }),
+    ])
+    expect(nullBest.bestCall?.home).toBe('Keep')
+    const nullRow = computeAnalytics('C', [
+      row({ baseTier: 'MISS', totalPoints: 5, homeTeam: 'Keep' }),
+      row({ baseTier: null, totalPoints: 5, homeTeam: 'Other' }),
+    ])
+    expect(nullRow.bestCall?.home).toBe('Keep')
+  })
 })
 
 describe('getAnalytics', () => {

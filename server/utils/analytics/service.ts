@@ -170,11 +170,12 @@ export function computeAnalytics(competitionName: string, rows: AnalyticsPickRow
   const pct = (n: number) => (n / totalPicks) * 100
 
   const biases = [...teams.values()].filter((t) => t.sample >= MIN_TEAM_SAMPLE).map(toBias)
-  // Most over-rated first (largest positive delta); ties broken by the larger
-  // sample so a well-evidenced bias outranks a marginal one.
-  const byDelta = (a: TeamBias, b: TeamBias) => b.delta - a.delta || b.sample - a.sample
-  const overrated = [...biases].sort(byDelta).filter((t) => t.delta > 0).slice(0, TOP_TEAMS)
-  const underrated = [...biases].sort((a, b) => byDelta(b, a)).filter((t) => t.delta < 0).slice(0, TOP_TEAMS)
+  // Ties on both lists break to the larger sample, so a well-evidenced bias
+  // outranks a marginal one. Over-rated leads with the largest positive delta,
+  // under-rated with the most-negative - only the delta ordering flips.
+  const bySample = (a: TeamBias, b: TeamBias) => b.sample - a.sample
+  const overrated = [...biases].sort((a, b) => b.delta - a.delta || bySample(a, b)).filter((t) => t.delta > 0).slice(0, TOP_TEAMS)
+  const underrated = [...biases].sort((a, b) => a.delta - b.delta || bySample(a, b)).filter((t) => t.delta < 0).slice(0, TOP_TEAMS)
 
   const overTime = [...roundMap.values()]
     .sort((a, b) => a.order - b.order)
@@ -269,7 +270,8 @@ export async function getAnalytics(
     homeGoals: r.homeGoals,
     awayGoals: r.awayGoals,
     baseTier: r.baseTier,
-    totalPoints: r.totalPoints ?? 0,
+    // isNotNull-filtered in the query, so never actually null here.
+    totalPoints: r.totalPoints as number,
     isJoker: r.isJoker,
     actualHome: r.actualHome as number,
     actualAway: r.actualAway as number,
