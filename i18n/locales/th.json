@@ -1408,7 +1408,6 @@
     "followMain": "ใช้คำทายหลักของฉัน",
     "customize": "ปรับเฉพาะลีกนี้",
     "nudgeTitle": "ทายให้ครบ",
-    "nudgeMissing": "ขาด {n}",
     "nudgeNeedsExact": "{n} ยังไม่มีสกอร์",
     "nudgeNeedsStake": "{n} ยังไม่วางเดิมพัน",
     "reasonPick": "ยังไม่ทาย",

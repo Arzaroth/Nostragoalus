@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Changed
+
+- The per-league "finish your picks" nudges no longer repeat the "N match needs a pick" banner. The panel and the per-match chips now only flag a league when it needs something the banner cannot say - a real score for a normal league, or a stake for a hard league. A plain missing pick shows once, in the banner, so the nudges stay readable when you belong to many leagues.
+
 ## [2.25.0] - 2026-07-05
 
 ### Added

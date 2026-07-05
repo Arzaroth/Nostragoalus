@@ -226,7 +226,9 @@ feature/architecture doc that implements it.
   same-mode divergence is deferred (`TODO.md`).
 - **Strict completeness.** An outcome-only pick is INCOMPLETE for a NORMAL league
   (you said "home", not a scoreline), HARD needs a stake, easy/hardcore accept any
-  outcome. The nudge surfaces where a pick is done and where it is not.
+  outcome. The nudge surfaces the mode-specific gap (a real score, a stake); a
+  plain missing pick is left to the base outstanding-picks banner so the
+  per-league nudges don't repeat it once per league (`features/league-modes.md`).
 - **Mode frozen at kickoff.** No moded create or swap once any match has started,
   so the rules can't shift mid-tournament (`assertCompetitionNotRunning`).
 - **HARD round budget is serialized per member+round.** The stake write reads the

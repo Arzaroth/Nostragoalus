@@ -1412,7 +1412,6 @@
     "followMain": "Follow my main picks",
     "customize": "Customize for this league",
     "nudgeTitle": "Finish your picks",
-    "nudgeMissing": "{n} missing",
     "nudgeNeedsExact": "{n} need a score",
     "nudgeNeedsStake": "{n} need a stake",
     "reasonPick": "needs a pick",
