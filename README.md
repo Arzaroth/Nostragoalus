@@ -40,9 +40,9 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
 - **Champion pick** bonus, locked at the first kickoff and shown beside every name on the rankings
 - Per-competition **and global** rankings with movement arrows; browse other players' (locked)
   predictions; admins can hide any account from the rankings (hidden players still count in crowd totals)
-- **Trophy cabinet & achievements**: every profile carries a per-competition **trophy cabinet** - five
+- **Trophy cabinet & achievements**: every profile carries a per-competition **trophy cabinet** - four
   competition-end trophies (best overall, best of the group stage, best of the knockouts, most exact
-  scorelines, and best predictor of a featured team, ties shared) alongside a catalog of achievement
+  scorelines, ties shared) alongside a catalog of achievement
   badges earned as you play (first exact score, hot streaks, beating the crowd and more, graded
   bronze/silver/gold) - and a **showcase** of up to three you pin beside your name in the rankings;
   a new trophy or badge alerts you over the bell and web push
@@ -51,6 +51,12 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   uses); private-profile members stay hidden from the board. A kicked-off match's view gains a
   **Ranking tab** by the points each pick earns on that match (live then final): everyone who
   predicted by default, or just your league's members when a league is selected
+- **League prizes & description**: a league owner or moderator can put real-world stakes on the season -
+  attach a prize (label, photo, note, link) to any of eleven criteria (best overall, wooden spoon, group
+  and knockout specialists, sharpshooter, goal-difference guru, a **Team Specialist** for a team the league
+  picks, and more), adding or removing prizes freely with a live leader and full ranking per prize; prizes
+  you lead across your leagues show in your cabinet. Each league also gets a Markdown **"About this league"**
+  page for rules, links and images
 - **League chat (end-to-end encrypted)**: a private chat per league - a general room plus a
   per-match thread - in a collapsible window that follows you across the competition, turned on by a
   league owner or moderator (off by default, behind a trade-offs warning). Messages, replies and images
