@@ -85,6 +85,13 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   **rotate the key** to revoke a removed member, and members can flag a message - enough reports
   auto-hide it pending an owner/moderator's call (moderation acts on message ids and report counts,
   never on the unreadable content)
+- **Direct messages (end-to-end encrypted)**: private one-to-one conversations from a messages dock in
+  the corner of every page, available to any signed-in user (no league required). They reuse the league
+  chat's crypto and the same message surface, so a DM has full parity - reactions, reply, threads, edit,
+  images, media gallery and link previews - with only you and the recipient able to read them, never the
+  server. Reach anyone you share a league with, plus anyone who has left DM discovery on (a per-user
+  opt-out in preferences); safety-number verification and identity recovery carry over from chat. A new
+  message pings the header bell and web push (its own toggle), and deep-links straight to the thread
 - **Online presence**: a live dot on every avatar shows whether someone is active (green), online but
   idle (amber) or offline, over the same WebSocket
 - Live scores over WebSocket with a pixel-art **goal celebration**; match view with possession,
