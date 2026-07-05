@@ -28,6 +28,9 @@ const visible = computed(
 // Any exit path dismisses server-side: the prompt is one-time by design.
 async function dismiss() {
   dismissedLocally.value = true
+  // Tell the onboarding tour the prompt is settled so it can auto-start now,
+  // rather than only after the session flag propagates on a reload.
+  markLeaguePromptResolved()
   try {
     await $fetch('/api/me/league-prompt', { method: 'POST' })
   } catch {
@@ -41,6 +44,7 @@ async function submit() {
   try {
     await join.mutateAsync({ code: code.value })
     dismissedLocally.value = true
+    markLeaguePromptResolved()
   } catch (e: any) {
     error.value = e?.statusCode === 409 ? t('leagues.alreadyMember') : t('leagues.joinInvalid')
   }

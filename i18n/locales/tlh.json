@@ -1350,6 +1350,24 @@
     "browseLeagues": "ghommey yIbej",
     "joinFailed": "ghom DamuvlaHbe'. DaH natlhpu' rIy 'e' DuH."
   },
+  "onboarding": {
+    "title": "ghojmoH leng",
+    "takeTour": "yIleng",
+    "skip": "yISup",
+    "back": "yIchegh",
+    "next": "veb",
+    "done": "Qapla'",
+    "steps": {
+      "welcome": { "title": "nuqneH!", "body": "Nostragoalus Dalo'meH leng nI'Ha'. patlh yIQaw', patlh yISal, jup yIjey. bIghuH'a'?" },
+      "competition": { "title": "may' yIwIv", "body": "naDev may' DaChoH. Hoch may'Daq patlh Qaw'wI' je pim." },
+      "predict": { "title": "patlh yIQaw'", "body": "lojmIt Qujvam: may' yIpoSmoH, patlh DaQubbogh yIghItlh. Sum Qaw'wI' 'e' DaSuqchugh, law' yay DaSuq." },
+      "champion": { "title": "boq Qaw'wI'", "body": "charghwI' 'ej ghob pov yIwIv, yay latlh DaSuqmeH. taghDI' may' yIrItlhHa'." },
+      "leaderboard": { "title": "patlh yISal", "body": "Hoch 'ej ghomlIj DaqIpbogh yIlegh, nuqDaq SoH." },
+      "notifications": { "title": "De' yISov", "body": "may', taghlu', 'ej Do' - naDev tugh chegh. may' yIlIjHa'." },
+      "chat": { "title": "ghom yIja'", "body": "may' qaStaHvIS, naDev ghomlIj yIja'." },
+      "done": { "title": "Qapla'!", "body": "wa'DIch patlh yIQaw', Qujmey yItagh. reH account teywI'Daq leng DaqaSmoHqa' laH." }
+    }
+  },
   "notifications": {
     "title": "QInmey",
     "ariaLabel": "QInmey",

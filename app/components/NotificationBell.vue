@@ -125,6 +125,7 @@ async function onItem(n: NotificationDTO) {
   <ClientOnly>
     <button
       type="button"
+      data-tour="notifications"
       class="relative rounded-full shrink-0 w-9 h-9 flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition"
       :aria-label="t('notifications.ariaLabel')"
       @click="toggle"

@@ -28,6 +28,7 @@ function switchTo(s: string) {
 <template>
   <button
     type="button"
+    data-tour="competition"
     class="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold transition hover:bg-black/5 dark:hover:bg-white/10"
     style="border-color: var(--p-content-border-color); background: var(--p-content-background)"
     @click="(e) => menu.toggle(e)"

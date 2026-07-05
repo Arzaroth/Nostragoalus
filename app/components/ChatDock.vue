@@ -182,6 +182,7 @@ async function openRoom(r: ChatUnreadRoomDTO) {
     <button
       v-show="enabled && collapsed"
       type="button"
+      data-tour="chat"
       class="relative rounded-full w-14 h-14 shadow-lg flex items-center justify-center transition-transform hover:scale-105"
       style="background: var(--p-primary-color); color: var(--p-primary-contrast-color)"
       :aria-label="t('chat.dock.open')"

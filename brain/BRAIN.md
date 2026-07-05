@@ -57,6 +57,7 @@ use the indexes.
 | [best-scorer.md](features/best-scorer.md) | Golden Boot pick, goal-event-derived award. |
 | [stats.md](features/stats.md) | Player rankings tab: top scorers + top assists. |
 | [leagues.md](features/leagues.md) | Competition-scoped groups, roles, visibility, SSO auto-join. |
+| [onboarding-tour.md](features/onboarding-tour.md) | One-time spotlight walk-through of the core actions for new players; replayable from the account menu. |
 | [sso-provisioning.md](features/sso-provisioning.md) | SSO onboarding lifecycle, connection test, OIDC test-sign-in claim preview, DNS domain verify + bypass, SCIM provisioning. |
 | [crowd-bot.md](features/crowd-bot.md) | The "ghost" bot personas: consensus 🤖, evil twin 😈, equalizer ⚖️. |
 | [odds.md](features/odds.md) | 1X2 decimal odds (Sofascore + BetExplorer). |
@@ -97,6 +98,7 @@ use the indexes.
 | How does an admin onboard an SSO provider (test/verify) or use SCIM? | [features/sso-provisioning.md](features/sso-provisioning.md) |
 | How do I cut a release? What bumps major? | [operations.md](operations.md) |
 | Why Sofascore / FIFA ranking and not odds? | [decisions.md](decisions.md) |
+| How does a brand-new player learn the app (the spotlight tour)? | [features/onboarding-tour.md](features/onboarding-tour.md) |
 | What's the konami easter egg? | [features/easter-eggs.md](features/easter-eggs.md) |
 
 ## Maintaining the brain
