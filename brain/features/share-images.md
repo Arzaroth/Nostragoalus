@@ -35,12 +35,42 @@ FIFA-CDN flag images, to avoid a render-time network dependency and failure mode
 The result state is cached around 1 day (immutable once final); live and
 pre-kickoff states use a short cache (around 120s) since they change.
 
-The same satori + resvg stack is intended to serve Tournament Wrapped and sibling
-share cards.
+## Sibling cards (wrapped, profile, analytics)
+
+The same satori + resvg stack serves three user-scoped cards. They all name a
+`{user, competition, locale}` and differ only in their domain-separation tag, so
+they share one token codec, `createUserCompetitionCardCodec(domainTag)`
+(`server/utils/share/card-token.ts`); `wrapped-token.ts`, `profile-token.ts` and
+`analytics-token.ts` are thin wrappers over it. A token minted for one family
+never validates as another.
+
+- **Wrapped** (`/og/wrapped/[token]`, minted by `wrapped-mint.post.ts`): the
+  post-final recap card; 404s until the final is decided. Image-only, minted from
+  the wrapped page.
+- **Profile** (`/og/profile/[token]`, `profile-mint.post.ts`,
+  `profile-card.ts` + `profile-template.ts`): rank, points, exacts and the
+  trophy/badge haul. Works mid-tournament (no gate). Landing page `/p/[token]`.
+- **Analytics** (`/og/analytics/[token]`, `analytics-mint.post.ts`,
+  `analytics-card.ts` + `analytics-template.ts`): the bias-detector headline
+  numbers (accuracy, exact rate, goal lean, home bias), reusing the
+  userId-parameterized `getAnalytics`. 404s until the user has a scored pick
+  (`hasData`). Landing page `/a/[token]`.
+
+Each mint is owner-only (the token names only the caller), so a card is reachable
+only by the link its owner chooses to share - no public handle, nothing crawlable
+by default. The `/p/` and `/a/` landings are in the auth-middleware public
+allowlist (like `/s/`) so a signed-out friend can open them; each resolves the
+origin once at setup and sets `og:image` to the PNG so the link unfurls. Both use
+a short (~5min) cache since the standing/report shifts as matches score. The
+per-card JSON summaries (`/api/share/profile/[token]`, `/api/share/analytics/
+[token]`) feed the landing headings + SEO meta.
 
 ## Sources
 
 - `server/utils/share/{token,card,template,render}.ts`,
   `server/routes/og/share/[token].get.ts`
 - `shared/share-card.ts`, `server/api/share/mint.post.ts`
+- Sibling cards: `server/utils/share/{card-token,profile-token,profile-card,profile-template,analytics-token,analytics-card,analytics-template}.ts`,
+  `server/routes/og/{profile,analytics}/[token].get.ts`, `server/api/share/{profile-mint,analytics-mint}.post.ts`,
+  `app/pages/{p,a}/[token].vue`
 - Rendering details: [../architecture/rendering.md](../architecture/rendering.md)
