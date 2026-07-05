@@ -25,12 +25,16 @@ a decided FINAL (same trigger as the [champion](champion-pick.md) /
 | `GROUP_PHASE` | best predictor over `stage='GROUP'` matches | prediction points in phase |
 | `KNOCKOUT_PHASE` | best predictor over the knockout stages | prediction points in phase |
 | `MADAME_IRMA` | most EXACT scorelines of anyone | EXACT count |
-| `TEAM_SPECIALIST` | best predictor of the competition's featured team | points on that team's matches |
+| `TEAM_SPECIALIST` | everyone who called an EXACT scoreline on the featured team (many winners) | exact scorelines on that team's matches (rewards won) |
 
 The featured team is `competition.featuredTeamCode` (nullable; default `FRA` for the
-World Cup, from the original ID Capture x AXEO contest's "best France predictor"
-prize). Phase trophies use pure prediction points (no meta-pick bonus, which is not
+World Cup, from the original ID Capture x AXEO contest's featured-team prize). Phase
+trophies use pure prediction points (no meta-pick bonus, which is not
 phase-attributable); OVERALL uses the full leaderboard so it matches the standings.
+TEAM_SPECIALIST is the odd one out: it is not "best predictor" but "every EXACT
+scoreline on the featured team's matches is a win", so every predictor with at least
+one holds it, valued by their exact count (rewards won) - hence many winners, and its
+ranking (and the league prize's) reads on the exact-count metric, not points.
 
 ## The achievement catalog
 
