@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.23.1] - 2026-07-05
+
 ### tI'pu'
 
 - **QIn nIH**: ja'chuqmeH QInmey law'chugh, notification 'och buy'be'qa' - DaH QIn nIH notification Hoch muvchuqmoHlu' wa'. wa' ja'chuq neHchughDaq, ja'chuq poSmoH; law' nuv ja'chugh, QIn nIH pa' poSmoH; juH HaStabe' vangqa'be'.

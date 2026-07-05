@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.23.1] - 2026-07-05
+
 ### Fixed
 - **Direct messages**: a busy conversation no longer floods the notification bell with one entry per message - all direct-message notifications now collapse into a single grouped entry. Clicking it opens the conversation when there is only one, or the messages inbox when several people have written, instead of dropping you on the home page.
 
