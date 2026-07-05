@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.25.0] - 2026-07-05
+
 ### Added
 
 - Personal analytics page: a per-competition bias report on your own predictions - how your picks landed (exact / goal-difference / outcome / miss), whether you over- or under-predict goals, your home-win and draw lean, the teams you over- and under-rate, your accuracy round by round, and your best call and biggest miss. Reachable from the nav once signed in, and unlike Tournament Wrapped it works mid-tournament.
