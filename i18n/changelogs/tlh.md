@@ -5,6 +5,23 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### chelpu'
+
+- About HaStaHDaq ngoq 'ol nempuq: HablI'lIjvaD lengbogh JavaScript ngoq SHA-256. chu'qa'ghach nempuq cha'lu'bogh yItlhej 'ej E2EE ngoq choHlu'chugh tamqu'bogh yItu'.
+- DIvI' jajmey ghItlh chu' yIchenmoH: SImmeH Daq boQ'e' lo'lu'DI', ghItlhmey qan Hoch teqlu' 'ej ghItlh chu' noblu'. ghItlh pegh lujchugh lo'.
+- ja'chuqmeH ngoq teyHom: nughpu' ngoq tey pegh Qapbe'chugh, lu'olwI' 'angnIS. ngoq choHlu'law' tu'lu'.
+
+### choHpu'
+
+- loQ ghItlhmey (nab, chovnatlh) 180 jaj ret Hegh, reH taHbe'.
+
+### Hung
+
+- ghom mej wa'chugh, ja'chuq ngoqmey chu'choHlu'; vaj ngoq qan lo'laHbe' QIn chu'.
+- wa' cha' chovnatlh neH ghajbogh may' totals So'lu', vaj ghom mach individual chovnatlh So'be'lu' 'angbe'.
+- cha' Segh De' wa'logh neH lo'laH; poH lo'laHDI' qaSqa'be'.
+- lojmoH cha' Segh tobmeH, mung law' tob, 'ej response headers tI'lu'; pegh mIS ghajchugh ghItlh, taghbe' app.
+
 ## [2.22.1] - 2026-07-05
 
 ### tI'pu'
@@ -20,20 +37,6 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ### tI'pu'
 - **Sep QIj mIllogh lupoQlu' 'e' Qapchu'**: DaH Sep QIj chellu'bogh mIllogh, lupoQ 'e' DaH lISlu' 'ej tInpu'chugh mIllogh Qapbe' ghobe'.
-
-- DIvI' jajmey ghItlh chu' yIchenmoH: SImmeH Daq boQ'e' lo'lu'DI', ghItlhmey qan Hoch teqlu' 'ej ghItlh chu' noblu'. ghItlh pegh lujchugh lo'.
-- ja'chuqmeH ngoq teyHom: nughpu' ngoq tey pegh Qapbe'chugh, lu'olwI' 'angnIS. ngoq choHlu'law' tu'lu'.
-
-### choHpu'
-
-- loQ ghItlhmey (nab, chovnatlh) 180 jaj ret Hegh, reH taHbe'.
-
-### Hung
-
-- ghom mej wa'chugh, ja'chuq ngoqmey chu'choHlu'; vaj ngoq qan lo'laHbe' QIn chu'.
-- wa' cha' chovnatlh neH ghajbogh may' totals So'lu', vaj ghom mach individual chovnatlh So'be'lu' 'angbe'.
-- cha' Segh De' wa'logh neH lo'laH; poH lo'laHDI' qaSqa'be'.
-- lojmoH cha' Segh tobmeH, mung law' tob, 'ej response headers tI'lu'; pegh mIS ghajchugh ghItlh, taghbe' app.
 
 ## [2.21.0] - 2026-07-05
 
