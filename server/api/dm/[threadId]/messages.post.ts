@@ -5,7 +5,6 @@ import { notifyDm } from '../../../utils/dm/notify'
 import { publishDmMessage } from '../../../utils/live/hub'
 import { defineValidatedHandler } from '../../../utils/validated-handler'
 import { emptyReactionTotals } from '../../../../shared/reactions'
-import type { DmMessageDTO } from '../../../../shared/types/dm'
 import type { ChatMessageDTO } from '../../../../shared/types/chat'
 
 const bodySchema = z.object({
@@ -34,8 +33,9 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ body, user,
     threadRootId: body.threadId ?? null,
     images: body.images ?? null,
   })
-  // The HTTP response is the full ChatMessageDTO shape (parity with league chat);
-  // the live dm:new frame carries the lighter DmMessageDTO the client expects.
+  // The HTTP response and the live dm:new frame are the SAME ChatMessageDTO (parity
+  // with league chat), so the recipient decrypts it exactly like a loaded row - its
+  // threadId is the reply-root (null at top level) and attachments render live.
   const message: ChatMessageDTO = {
     id: row.id,
     leagueId: '',
@@ -54,19 +54,9 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ body, user,
     myReaction: null,
     threadCount: 0,
   }
-  const live: DmMessageDTO = {
-    id: row.id,
-    threadId,
-    parentId: row.parentId,
-    userId: row.userId,
-    epoch: row.epoch,
-    ciphertext: row.ciphertext,
-    createdAt: row.createdAt.toISOString(),
-    editedAt: null,
-    moderation: 'VISIBLE',
-  }
-  // Fire-and-forget fan-out + notify so a delivery hiccup can't fail the post.
-  void Promise.resolve(publishDmMessage([user.id, row.otherId], live))
+  // Fire-and-forget fan-out + notify so a delivery hiccup can't fail the post. The
+  // conversation threadId is the frame's routing key; the message carries the rest.
+  void Promise.resolve(publishDmMessage([user.id, row.otherId], threadId, message))
   void notifyDm(db, { threadId, messageId: row.id, senderId: user.id, recipientId: row.otherId }).catch(() => {})
   return { message }
 })

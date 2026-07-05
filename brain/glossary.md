@@ -95,9 +95,10 @@ the code. Alphabetical.
   [features/dms.md](features/dms.md).
 - **Thread key epoch** - the key-version counter on a DM thread (`dm_thread.keyEpoch`);
   the per-thread symmetric key is sealed to each participant per epoch
-  (`dm_thread_key`), so rotating it bumps the epoch and clients keep an epoch->key
-  map to read old history. The [chat](features/chat.md) league-key epoch for a
-  two-member room. See [features/dms.md](features/dms.md).
+  (`dm_thread_key`), and clients keep an epoch->key map so history would survive a
+  rotation. Reserved for the future: a DM has no re-key path today, so the epoch is
+  always 1 (unlike the [chat](features/chat.md) league-key epoch, which an admin can
+  rotate). See [features/dms.md](features/dms.md).
 - **Room key** - a chat room's id for unread tracking: the `matchId` of a match
   thread, or the `__global__` sentinel for the league room (`roomKeyFor`). The
   cross-league inbox keys unread per `leagueId::roomKey`. See

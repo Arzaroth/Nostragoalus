@@ -1267,9 +1267,10 @@ export const dmThread = pgTable(
     userBId: text('user_b_id')
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
-    // Bumped when the thread key is rotated (e.g. a participant re-keys); 1 on
-    // creation. Mirrors league.chatKeyEpoch - messages carry the epoch they were
-    // sealed under so history stays readable across rotations.
+    // The key epoch messages are sealed under; 1 on creation and never advanced
+    // today (a DM has no re-key path - the reserved column lets one be added later
+    // without a schema change). Messages still carry their epoch so history would
+    // stay readable if rotation is ever introduced.
     keyEpoch: integer('key_epoch').notNull().default(1),
     // Newest message time, for ordering the inbox without scanning chat_message.
     lastMessageAt: timestamp('last_message_at', { withTimezone: true }),
@@ -1279,7 +1280,11 @@ export const dmThread = pgTable(
     uniqueIndex('dm_thread_pair_uq').on(t.userAId, t.userBId),
     index('dm_thread_user_a_idx').on(t.userAId, t.lastMessageAt),
     index('dm_thread_user_b_idx').on(t.userBId, t.lastMessageAt),
-    check('dm_thread_order', sql`${t.userAId} < ${t.userBId}`),
+    // Byte-order (COLLATE "C") so the DB's ordering matches JavaScript's `a < b` in
+    // orderPair(): user ids are mixed-case ASCII, and under a locale collation the
+    // two would disagree for some pairs, making the JS-ordered insert fail this
+    // CHECK and lock that pair out of ever opening a thread.
+    check('dm_thread_order', sql`${t.userAId} COLLATE "C" < ${t.userBId} COLLATE "C"`),
   ],
 )
 

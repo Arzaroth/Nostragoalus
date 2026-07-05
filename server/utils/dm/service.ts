@@ -86,6 +86,31 @@ export async function getPublicIdentity(db: AppDatabase, userId: string): Promis
   return rows[0] ?? null
 }
 
+// Whether `caller` is allowed to cold-open a DM with `target`: they share at least
+// one league (co-members are always reachable) or the target has DM discovery on.
+// This is the same reachability the two searchRecipients pools express, enforced at
+// the point of contact so a user you cannot find - opted out of discovery and with
+// no shared league - also cannot be messaged by someone who just knows their id.
+export async function canDm(db: AppDatabase, callerId: string, targetId: string): Promise<boolean> {
+  if (callerId === targetId) return false
+  const shared = await db
+    .select({ leagueId: leagueMember.leagueId })
+    .from(leagueMember)
+    .where(
+      and(
+        eq(leagueMember.userId, targetId),
+        inArray(
+          leagueMember.leagueId,
+          db.select({ leagueId: leagueMember.leagueId }).from(leagueMember).where(eq(leagueMember.userId, callerId)),
+        ),
+      ),
+    )
+    .limit(1)
+  if (shared.length > 0) return true
+  const rows = await db.select({ discoverable: user.dmDiscoverable }).from(user).where(eq(user.id, targetId)).limit(1)
+  return rows[0]?.discoverable === true
+}
+
 export interface DmWrappedKeyInput {
   userId: string
   wrappedKey: string
@@ -106,8 +131,11 @@ export async function createThread(
   if (!recipient) throw new ValidationError('this user has not set up chat yet')
   const existing = await getThreadForPair(db, opts.userId, opts.recipientId)
   if (existing) {
+    // An established conversation always reopens, even if the other party has
+    // since turned off discovery - the reachability gate is only for cold contact.
     return { threadId: existing.id, epoch: existing.keyEpoch, created: false, otherId: opts.recipientId }
   }
+  if (!(await canDm(db, opts.userId, opts.recipientId))) throw new ForbiddenError('you cannot message this user')
   const participants = new Set([opts.userId, opts.recipientId])
   if (opts.wraps.length !== 2 || !opts.wraps.every((w) => participants.has(w.userId))) {
     throw new ValidationError('a wrapped key is required for each participant')
@@ -155,7 +183,10 @@ export async function listThreads(db: AppDatabase, userId: string): Promise<DmTh
     })
     .from(dmThread)
     .where(or(eq(dmThread.userAId, userId), eq(dmThread.userBId, userId)))
-    .orderBy(desc(dmThread.lastMessageAt), desc(dmThread.createdAt))
+    // Sort by last activity, falling back to creation for a thread with no messages
+    // yet - a bare `desc(lastMessageAt)` is NULLS FIRST in Postgres, which would
+    // float an empty thread above conversations with real recent activity.
+    .orderBy(sql`coalesce(${dmThread.lastMessageAt}, ${dmThread.createdAt}) desc`)
   if (threads.length === 0) return []
   const ids = threads.map((t) => t.id)
   const otherIds = threads.map((t) => t.otherId)
@@ -489,6 +520,9 @@ export async function searchRecipients(db: AppDatabase, viewerId: string, query:
         .from(user)
         .innerJoin(chatIdentity, eq(chatIdentity.userId, user.id))
         .where(and(inArray(user.id, [...sharedSet]), nameMatch))
+        // Deterministic pick when more than MAX_SEARCH match, so the cap keeps a
+        // stable, alphabetical subset instead of an arbitrary run-to-run one.
+        .orderBy(asc(user.name), asc(user.id))
         .limit(MAX_SEARCH)
     : []
   // Globally discoverable strangers only make sense with a search term.
@@ -498,6 +532,7 @@ export async function searchRecipients(db: AppDatabase, viewerId: string, query:
         .from(user)
         .innerJoin(chatIdentity, eq(chatIdentity.userId, user.id))
         .where(and(eq(user.dmDiscoverable, true), ne(user.id, viewerId), ilike(user.name, `%${term}%`)))
+        .orderBy(asc(user.name), asc(user.id))
         .limit(MAX_SEARCH)
     : []
   const out: RecipientSuggestion[] = coMembers.map((r) => ({ ...r, shared: true }))

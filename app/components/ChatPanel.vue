@@ -901,7 +901,7 @@ watch(
       <i class="pi pi-lock" style="color: var(--p-primary-color)" />
       <span class="font-semibold truncate">{{ isDm ? otherName : props.matchId ? t('chat.threadTitle') : t('chat.roomTitle') }}</span>
       <span v-tooltip.top="t('chat.e2eeHint')" class="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-full" style="background: var(--ng-star-soft); color: var(--ng-star)">{{ t('chat.e2ee') }}</span>
-      <span v-if="!isDm && changedCount > 0" v-tooltip.top="t('chat.verify.changedWarn')" class="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-full inline-flex items-center gap-1" style="border: 1px solid var(--ng-danger); color: var(--ng-danger)"><i class="pi pi-exclamation-triangle text-[10px]" />{{ t('chat.verify.changed') }}</span>
+      <span v-if="changedCount > 0" v-tooltip.top="t('chat.verify.changedWarn')" class="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-full inline-flex items-center gap-1" style="border: 1px solid var(--ng-danger); color: var(--ng-danger)"><i class="pi pi-exclamation-triangle text-[10px]" />{{ t('chat.verify.changed') }}</span>
       <div v-if="ready" class="ms-auto flex items-center gap-3">
         <button type="button" v-tooltip.top="t('chat.search.button')" class="opacity-70 hover:opacity-100 inline-flex items-center" :class="searchOpen ? 'opacity-100' : ''" :style="searchOpen ? 'color: var(--p-primary-color)' : ''" :aria-label="t('chat.search.button')" @click="toggleSearch">
           <i class="pi pi-search" />
@@ -909,25 +909,27 @@ watch(
         <button type="button" v-tooltip.top="t('chat.media.button')" class="opacity-70 hover:opacity-100 inline-flex items-center" :aria-label="t('chat.media.button')" :disabled="mediaLoading" @click="openMedia">
           <i class="pi pi-images" />
         </button>
-        <!-- Overflow menu: verify, key backup and admin actions, tucked away so
-             they are deliberate and don't crowd the composer. In a DM none of those
-             apply, so it only appears when there is a muted user to manage. -->
-        <div v-if="!isDm || muted.length" class="relative">
+        <!-- Overflow menu: verify safety numbers, key backup and admin actions,
+             tucked away so they are deliberate and don't crowd the composer. Key
+             verification and identity recovery apply to a DM too (same E2EE
+             identity), so the menu shows there; the admin/moderation items stay
+             league-only. -->
+        <div class="relative">
           <button type="button" class="relative opacity-70 hover:opacity-100 inline-flex items-center" :aria-label="t('chat.menu.button')" @click="menuOpen = !menuOpen">
             <i class="pi pi-ellipsis-h" />
-            <span v-if="!isDm && changedCount > 0" class="absolute -top-1 -right-1 w-2 h-2 rounded-full" style="background: var(--ng-danger)" />
+            <span v-if="changedCount > 0" class="absolute -top-1 -right-1 w-2 h-2 rounded-full" style="background: var(--ng-danger)" />
           </button>
           <div
             v-if="menuOpen"
             class="absolute end-0 top-7 z-30 w-56 rounded-lg border shadow-lg py-1 text-sm"
             style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
           >
-            <button v-if="!isDm" type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-start opacity-90 hover:opacity-100" @click="showVerify = !showVerify; menuOpen = false">
+            <button type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-start opacity-90 hover:opacity-100" @click="showVerify = !showVerify; menuOpen = false">
               <i class="pi pi-shield text-xs" style="color: var(--p-primary-color)" />
               <span class="flex-1">{{ t('chat.verify.show') }}</span>
               <span v-if="changedCount > 0" class="text-xs font-bold" style="color: var(--ng-danger)">{{ changedCount }}</span>
             </button>
-            <button v-if="!isDm && !hasRecovery" type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-start opacity-90 hover:opacity-100" :disabled="recoveryBusy" @click="menuOpen = false; openRecoverySetup()">
+            <button v-if="!hasRecovery" type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-start opacity-90 hover:opacity-100" :disabled="recoveryBusy" @click="menuOpen = false; openRecoverySetup()">
               <i class="pi pi-key text-xs" style="color: var(--p-primary-color)" />
               <span class="flex-1">{{ t('chat.setupRecovery') }}</span>
             </button>
@@ -1312,11 +1314,12 @@ watch(
       </template>
     </template>
 
-    <!-- League-only dialogs (enable/verify/rotate/reports/recovery): a DM is always
-         on, has no admin and no per-message moderation, so none of these apply. -->
-    <template v-if="!isDm">
+    <!-- Safety-number verification and identity recovery apply to a DM too (the same
+         E2EE identity), so they render unconditionally. The enable/rotate/reports
+         dialogs are league-only - a DM is always on, has no admin and no per-message
+         moderation - so each carries its own v-if="!isDm". -->
     <!-- Legal-cover warning before enabling. -->
-    <Dialog v-model:visible="showWarning" modal :header="t('chat.warning.title')" :style="{ width: '32rem', maxWidth: '92vw' }">
+    <Dialog v-if="!isDm" v-model:visible="showWarning" modal :header="t('chat.warning.title')" :style="{ width: '32rem', maxWidth: '92vw' }">
       <div class="flex flex-col gap-3 text-sm">
         <p>{{ t('chat.warning.body1') }}</p>
         <p>{{ t('chat.warning.body2') }}</p>
@@ -1357,7 +1360,7 @@ watch(
     </Dialog>
 
     <!-- Rotate-key confirm (admins). -->
-    <Dialog v-model:visible="showRotate" modal :header="t('chat.rotate.title')" :style="{ width: '30rem', maxWidth: '92vw' }">
+    <Dialog v-if="!isDm" v-model:visible="showRotate" modal :header="t('chat.rotate.title')" :style="{ width: '30rem', maxWidth: '92vw' }">
       <p class="text-sm">{{ t('chat.rotate.body') }}</p>
       <template #footer>
         <Button :label="t('chat.rotate.cancel')" severity="secondary" text @click="showRotate = false" />
@@ -1366,7 +1369,7 @@ watch(
     </Dialog>
 
     <!-- Reports queue (owner/moderator): read each, then keep or remove. -->
-    <Dialog v-model:visible="showReports" modal :header="t('chat.moderation.queueTitle')" :style="{ width: '34rem', maxWidth: '92vw' }">
+    <Dialog v-if="!isDm" v-model:visible="showReports" modal :header="t('chat.moderation.queueTitle')" :style="{ width: '34rem', maxWidth: '92vw' }">
       <div v-if="reportsLoading" class="text-sm" style="color: var(--p-text-muted-color)">{{ t('chat.loading') }}</div>
       <p v-else-if="!reports.length" class="text-sm py-4 text-center" style="color: var(--p-text-muted-color)">{{ t('chat.moderation.empty') }}</p>
       <div v-else class="flex flex-col gap-3">
@@ -1399,7 +1402,6 @@ watch(
         <Button :label="t('chat.recovery.saved')" @click="showRecovery = false" />
       </template>
     </Dialog>
-    </template>
 
     <!-- Shared image viewer: cycles a message's images, or the room media gallery. -->
     <ChatLightbox

@@ -4,6 +4,7 @@ import { createTestDb } from '../../../tests/db'
 import { addLeagueMember, makeLeague, makeUser, seedCompetition } from '../../../tests/factories'
 import { chatIdentity, chatMessage, dmThread, dmThreadKey, dmThreadRead, user } from '../../../db/schema'
 import {
+  canDm,
   createThread,
   editDmMessage,
   getDmReadMarker,
@@ -139,6 +140,28 @@ describe('createThread', () => {
     await client.close()
   })
 
+  it('rejects a cold-contact recipient who is neither a co-member nor discoverable', async () => {
+    const { db, client } = await createTestDb()
+    const a = await mkUser(db, 'aaa')
+    const hidden = await mkUser(db, 'bbb')
+    await db.update(user).set({ dmDiscoverable: false }).where(eq(user.id, hidden))
+    await expect(createThread(db, { userId: a, recipientId: hidden, wraps: wrapsFor([a, hidden]) })).rejects.toBeInstanceOf(ForbiddenError)
+    await client.close()
+  })
+
+  it('lets you open a thread with a co-member even when they are not discoverable', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const a = await mkUser(db, 'aaa')
+    const mate = await mkUser(db, 'bbb')
+    await db.update(user).set({ dmDiscoverable: false }).where(eq(user.id, mate))
+    const leagueId = await makeLeague(db, { competitionId, ownerId: a })
+    await addLeagueMember(db, leagueId, mate)
+    const r = await createThread(db, { userId: a, recipientId: mate, wraps: wrapsFor([a, mate]) })
+    expect(r.created).toBe(true)
+    await client.close()
+  })
+
   it('rejects the wrong number of wraps or a wrap for a non-participant', async () => {
     const { db, client } = await createTestDb()
     const a = await mkUser(db, 'aaa')
@@ -172,6 +195,38 @@ describe('createThread', () => {
     await expect(
       createThread(db, { userId: 'ghost', recipientId: b, wraps: [{ userId: 'ghost', wrappedKey: 'x' }, { userId: b, wrappedKey: 'y' }] }),
     ).rejects.toBeInstanceOf(ConflictError)
+    await client.close()
+  })
+})
+
+describe('canDm', () => {
+  it('is false for yourself', async () => {
+    const { db, client } = await createTestDb()
+    const a = await mkUser(db, 'aaa')
+    expect(await canDm(db, a, a)).toBe(false)
+    await client.close()
+  })
+
+  it('is true for a co-member even if the target opted out of discovery', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const a = await mkUser(db, 'aaa')
+    const mate = await mkUser(db, 'bbb')
+    await db.update(user).set({ dmDiscoverable: false }).where(eq(user.id, mate))
+    const leagueId = await makeLeague(db, { competitionId, ownerId: a })
+    await addLeagueMember(db, leagueId, mate)
+    expect(await canDm(db, a, mate)).toBe(true)
+    await client.close()
+  })
+
+  it('is true for a discoverable stranger and false for a hidden one you share no league with', async () => {
+    const { db, client } = await createTestDb()
+    const a = await mkUser(db, 'aaa')
+    const disco = await mkUser(db, 'bbb') // discoverable by default
+    const hidden = await mkUser(db, 'ccc')
+    await db.update(user).set({ dmDiscoverable: false }).where(eq(user.id, hidden))
+    expect(await canDm(db, a, disco)).toBe(true)
+    expect(await canDm(db, a, hidden)).toBe(false)
     await client.close()
   })
 })

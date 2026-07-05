@@ -1,5 +1,3 @@
-import type { ChatModerationState } from './chat'
-
 // Direct messages: a two-party end-to-end-encrypted conversation. The server only
 // ever holds ciphertext and sealed keys, exactly like league chat; these are the
 // wire shapes the DM API and the WS `dm:*` pushes carry. A DM message is stored as
@@ -20,21 +18,6 @@ export interface DmParticipantDTO {
   name: string
   image: string | null
   publicKey: string
-}
-
-// Wire shape for one encrypted DM message. Mirrors ChatMessageDTO but thread-scoped
-// (no league/match). ciphertext is opaque to the server. parentId quotes another
-// message in the same thread. createdAt/editedAt are ISO strings.
-export interface DmMessageDTO {
-  id: string
-  threadId: string
-  parentId: string | null
-  userId: string | null
-  epoch: number
-  ciphertext: string
-  createdAt: string
-  editedAt: string | null
-  moderation: ChatModerationState
 }
 
 // One conversation in the DM inbox: the other participant, newest-activity time,

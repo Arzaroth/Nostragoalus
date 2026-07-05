@@ -337,6 +337,8 @@
     "crowdHint": "Hoch wIv bIngDaq, Hoch QujwI'pu' mI' boqlu'pu'.",
     "privateProfile": "De' pegh",
     "privateProfileHint": "patlh nIvvo' yImej. boqlIj boqwI'pu' (loHwI'pu' je) neH De'lIj lulegh; boq patlhDaq SoHtaH. ghom mImeyDaq QInmeylIj ratlh.",
+    "dmDiscoverable": "QIn ngeHmeH tu'lu'laH",
+    "dmDiscoverableHint": "boqlIj boqbe'wI'pu' ponglIj lo'taHvIS SoH tu'laH, QIn nIH taghmeH. reH SoHvaD QIn ngeHlaH boqwI'pu'. nejmeH pa'vo' So'meH, vam yIchu'Ha'.",
     "push": {
       "title": "QInmey ngeH",
       "hint": "lo'laHtaHvIS De'wI'vam QInmey yISuq, SoQpu'DI' app je.",
@@ -350,7 +352,8 @@
       "matchResults": "ngugh Damiltlhtaghach",
       "tournament": "lompuq Damiltlhtaghach",
       "league": "ghom vum",
-      "mentions": "QIn pong"
+      "mentions": "QIn pong",
+      "dm": "QIn nIH"
     },
     "odds": "SuD mI'mey cha'",
     "oddsHint": "1X2 mI': 1 = juH Qap, X = rap, 2 = nIteb Qap. mI' machHa' law', DuH law'. may' taghDI' qon."
