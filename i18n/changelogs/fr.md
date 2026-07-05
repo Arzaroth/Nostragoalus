@@ -5,6 +5,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Ajouté
+
+- Page d'analyses : un bilan par compétition de vos propres pronostics - comment vos choix sont tombés (score exact / écart / résultat / raté), si vous surestimez ou sous-estimez les buts, votre penchant pour les victoires à domicile et les nuls, les équipes que vous surestimez et sous-estimez, votre précision tour par tour, votre meilleur prono et votre plus gros raté. Accessible depuis le menu une fois connecté, et contrairement au Wrapped, disponible en cours de tournoi.
+
 ## [2.24.0] - 2026-07-05
 
 ### Modifié
