@@ -5,6 +5,10 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### tI'pu'
+- **ghom pIn'a' pop nob Hoch mI' pup, «pov» neH ghobe'**: DaH ghom pIn'a' pop (trophy je) quv ghom may'mey mI' pup DaqIppu'bogh Hoch ghaH Suq - Hoch mI' pup Qapla', vaj Qapla'wI' law', 'ej pop DaqI'DI' Hoch wInwI' mI' pup mI' cha' (pop Suqta'), yay mI' ghobe'.
+- **ghom quv wIvmeH De'wI' patlh (pIn) nav nach rap QaS**: «quv ghom» wIvwI', qoj Sech Daq, DaH nach lughbe' ghobe'.
+
 ## [2.18.1] - 2026-07-05
 
 ### tI'pu'

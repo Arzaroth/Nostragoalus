@@ -4,8 +4,9 @@ Real-world prizes a league attaches to the five competition-end
 [trophy criteria](achievements.md). The contest is per-league (the original
 "notre ligue privée" model): a league owner/moderator configures a prize for each
 criterion, and the league's winner of that criterion (best **among the members**)
-earns it. Distinct from the global [trophies](achievements.md), which are the best
-across the whole competition.
+earns it - except Team Specialist, where every member who calls an exact scoreline on
+the featured team wins (many holders). Distinct from the global
+[trophies](achievements.md), which are computed across the whole competition.
 
 ## Config
 
@@ -32,9 +33,15 @@ each prize; it settles when the competition ends. No finalize hook, no award tab
   `{ leagueId, memberIds }`: OVERALL via `getLeaderboard(leagueId)` (folds in the
   meta-pick bonuses), the phase / Madame-IRMA / team-specialist criteria via
   `rankableForMatches` narrowed with `inArray(prediction.userId, memberIds)`.
+- `computeCriteriaWinners` collapses each criterion to its rank-1 (tie-shared)
+  winners - except TEAM_SPECIALIST, which returns **every** predictor with an exact on
+  the featured team (each valued by their exact count), so it has many winners and a
+  person "wins it" once per exact.
 - `getRewardStandings(db, leagueId, viewerId)` returns all five: each configured
-  prize (or null) + the current league leader(s) (ties share) + `youHold` +
-  `disabled`. A leader's name follows the same visibility rule as the league board
+  prize (or null) + the current holders (sorted by value desc; ties share) + `youHold`
+  + `disabled`. The prize card shows the top holder plus a "+N others" tail
+  (`reward.leaderPlusOthers`), which is what makes many-winner TEAM_SPECIALIST read
+  cleanly. A holder's name follows the same visibility rule as the league board
   ([leagues.md](leagues.md)): admin-hidden members and (to non-members) private
   profiles keep their slot but surface with an empty `displayName`, which the UI
   renders as a neutral "hidden player" placeholder. `teamCode`/`disabled` for
@@ -46,16 +53,19 @@ each prize; it settles when the competition ends. No finalize hook, no award tab
 
 ## Per-criterion ranking (the full standings behind a prize)
 
-The winners functions collapse each criterion to its rank-1 rows; the ranking
-functions expose the whole ladder so a member can click a prize and see where they
-stand.
+The winners functions collapse most criteria to their rank-1 rows (TEAM_SPECIALIST
+excepted - all its non-zero rows win); the ranking functions expose the whole ladder
+so a member can click a prize and see where they stand.
 
 - `rankCriteria(db, competitionId, type, { leagueId, memberIds, teamCode })`
   (`awards/service.ts`) returns the full ordered `{ userId, value, rank }[]` for one
-  criterion. Its rank-1 rows are exactly `computeCriteriaWinners`' winners for that
-  type (shared `criteriaMatchFilter` for the phases; OVERALL via `getLeaderboard`;
-  MADAME_IRMA ranked on EXACT count; TEAM_SPECIALIST scoped to the featured team,
-  empty without one). 1224 ranking; zero-value rows are dropped.
+  criterion (shared `criteriaMatchFilter` for the phases; OVERALL via `getLeaderboard`;
+  MADAME_IRMA and TEAM_SPECIALIST ranked on EXACT count; TEAM_SPECIALIST scoped to the
+  featured team, empty without one). 1224 ranking; zero-value rows are dropped.
+  For the points/exact-ladder criteria the rank-1 rows are exactly
+  `computeCriteriaWinners`' winners; TEAM_SPECIALIST is the exception - **every**
+  non-zero row is a winner (every exact on the featured team is a reward), so the whole
+  ranking is holders, valued by their exact count.
 - `getRewardRanking(db, leagueId, type, viewerId)` (`rewards/service.ts`) wraps it
   for a league: the reward, the metric (`points`/`exact`), and the ranked rows with
   the same name/avatar visibility rules as the standings (extracted into
