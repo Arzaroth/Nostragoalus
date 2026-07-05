@@ -23,6 +23,43 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       single e2e happy path. `data-tour` anchors are string-coupled (a removed anchor
       self-skips silently); an e2e assertion per step would catch a broken anchor.
 
+## League modes (deferred from the feature pass + treatment review)
+
+- [ ] **NORMAL-league per-league overrides**: a NORMAL league always mirrors the
+      base pick. Its score carries the global crowd-rarity bonus + champion /
+      best-scorer / live that a per-league re-score can't reproduce, so same-mode
+      divergence is out until the mode board can fold those in
+      (`upsertLeaguePrediction` / `setLeagueJoker` reject NORMAL). Decide whether a
+      NORMAL override should re-score locally or stay disabled.
+- [ ] **Provisional live HARDCORE elimination**: survival is computed off SCORED
+      matches only; an in-play match that will burn a member's last life doesn't
+      show them as eliminated until it settles. A provisional-live pass (like the
+      points board's live column) would surface it sooner.
+- [ ] **Public `/verify` UI for the league override chain**: the separate
+      `league_prediction_commitment` chain + `verifyLeagueChainServer` self-audit
+      exist, but the public verify page has no tab for it (only the base chain).
+      Add the league-chain view when the per-league verify UX is designed.
+- [ ] **Dedup the base vs league commitment chain**: `appendLeaguePredictionCommitment`
+      / `getLeagueChainHead` / `getLeagueCommitmentChain` / `verifyLeagueChainServer`
+      (`server/utils/commitment/service.ts`) and `verifyLeagueLedger` /
+      `computeLeagueCommitment` (`shared/commitment.ts`) are near-verbatim clones of
+      the base-chain functions. The separate physical chain is justified, but the
+      transaction/lock/paging/verify plumbing could collapse to one implementation
+      taking a chain descriptor (`{ headId, table, compute, extraCols }`) so a fix to
+      the lock/nextSeq/paging invariants can't drift between the two copies.
+- [ ] **Extract a shared `LeaderboardRow` component**: `LeagueModePointsBoard.vue`,
+      `LeagueSurvivalBoard.vue`, and the inline NORMAL board in
+      `app/pages/leagues/[id].vue` repeat the same row-card (me-highlight border,
+      rank + medal + movement, avatar, name + `you` tag, metric) and each defines its
+      own `medal()`. One parameterized row would keep the three boards visually in
+      step.
+- [ ] **Client mode taxonomy duplicates the server predicate**: `matches/index.vue`
+      re-derives "which modes are outcome-only / use a stake" inline, and
+      `MatchPickControls.vue quick()` hardcodes the canonical W/D/L scorelines that
+      `server/utils/leagues/modes.ts` centralizes (`isOutcomeMode`/`usesWager`/
+      `CANONICAL_SCORELINE`). A shared client-visible taxonomy would keep them in sync
+      if a mode is added or reclassified.
+
 ## League prizes rework (deferred from the feature pass)
 
 - [ ] **`getMyRewards` fans out per league**: it calls `getRewardStandings` for
