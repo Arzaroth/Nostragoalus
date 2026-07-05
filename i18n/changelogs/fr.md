@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [2.21.0] - 2026-07-05
+
 ### Ajouté
 - **Messages directs** : envoyez des messages privés, en tête-à-tête, à un autre joueur depuis un nouveau dock de messagerie dans le coin de chaque page. Comme le chat de ligue, ils sont chiffrés de bout en bout - vous seul et votre interlocuteur pouvez les lire, jamais le serveur. Vous pouvez écrire à toute personne avec qui vous partagez une ligue, ainsi qu'à quiconque a choisi d'être trouvable (un réglage que vous pouvez désactiver pour vous-même). Vous recevez une notification dans la cloche et une notification push (si elle est activée) à l'arrivée d'un message, et vous pouvez modifier un message que vous avez envoyé.
 

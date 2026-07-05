@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.21.0] - 2026-07-05
+
 ### chelpu'
 - **QIn nIH**: latlh baHwI'vaD wa' vaghDIch QIn nIH ngeH, Hoch HaStaHom QoymeH QIn Daq chu'vo'. ghom ja'chuq rur, HochHom So'lu' - SoH je QIn Hevwl' neH laDlaH, lujqa'Ha' loD'a'. ghomlIj tlhejbogh vay' DangeHlaH, ghap tu'lu'meH wIvbogh vay' je (yaH DaChoHlaH). QIn paw, gho' QoymeH je push (chu'lu'chugh) Hev, QIn ngeHta'bogh DaghItlhqa'laH.
 
