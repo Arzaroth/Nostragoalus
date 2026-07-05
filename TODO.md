@@ -502,16 +502,15 @@ delete-account mail flows and an SSO/OIDC flow against a dockerized Keycloak. It
 runs green 4/4 from an empty DB (`mise run e2e`) after the runnability fixes that
 landed alongside it (verified by running the stack):
 
-- [ ] **`onboarding.e2e.ts` "the onboarding tour auto-starts" is red on `master`**:
-      the welcome step never appears after signup -> dismiss league prompt -> land
-      on `/matches` (the other 27 specs pass). Confirmed pre-existing on a clean
-      master worktree, not a regression - it went unnoticed because the full
-      worktree e2e run was blocked by the docker-project-name dot bug (fixed on
-      `feat/league-board-parity`). Either the in-session auto-start gate (tightened
-      in the 2.20.0 review to stop firing for all existing users) now fails to fire
-      for a genuinely new account in this flow (a real onboarding-retention bug), or
-      the test's session-refresh assumption is stale. Diagnose the `canAutoStart`
-      signal against `dismissOnboarding`'s session refresh.
+- [x] **`onboarding.e2e.ts` "the onboarding tour auto-starts" was red on `master`**
+      (fixed on `fix/onboarding-autostart`): it was a test bug, not an app bug. The
+      tour auto-starts off an in-session signal fired only when the league prompt is
+      dismissed in the current page-load; the spec let `signUp` dismiss the prompt on
+      one page, then navigated to `/matches` (wiping the module-level signal) and
+      expected the tour there. Fixed by leaving the prompt pending through `signUp`
+      (`dismissPrompt: false`) and dismissing it on the matches page itself. The
+      2.20.0 auto-start gating was correct and is unchanged. (Surfaced once the
+      docker-project-name dot fix let the full suite run from a worktree.)
 - [x] **Default `scoring_config` for the isolated e2e DB**: a fresh, migrated DB
       has no `scoring_config` row (only `fixtures:import`/`refresh` seed one), so
       every scoring-dependent route (the champion/best-scorer pickers,
