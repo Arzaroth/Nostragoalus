@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.23.0] - 2026-07-05
+
 ### Added
 
 - Client-code integrity fingerprint on the About page: the SHA-256 of the client JavaScript bundle actually served to your browser, so you can compare it against the digest published for a release and detect a silent swap of the end-to-end-encryption code.

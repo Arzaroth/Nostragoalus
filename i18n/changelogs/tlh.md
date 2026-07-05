@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.23.0] - 2026-07-05
+
 ### chelpu'
 
 - About HaStaHDaq ngoq 'ol nempuq: HablI'lIjvaD lengbogh JavaScript ngoq SHA-256. chu'qa'ghach nempuq cha'lu'bogh yItlhej 'ej E2EE ngoq choHlu'chugh tamqu'bogh yItu'.

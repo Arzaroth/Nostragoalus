@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [2.23.0] - 2026-07-05
+
 ### Ajouté
 
 - Empreinte d'intégrité du code client sur la page À propos : le SHA-256 du bundle JavaScript réellement servi à votre navigateur, à comparer avec l'empreinte publiée pour une version afin de détecter un remplacement silencieux du code de chiffrement de bout en bout.
