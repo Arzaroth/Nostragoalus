@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { downscaleToWebpDataUrl } from '../utils/image'
+
 const props = defineProps<{ leagueId: string; description: string | null | undefined; canManage: boolean }>()
 const { t } = useI18n()
 const { update } = useLeagueActions()
@@ -24,12 +26,9 @@ async function onImage(e: Event) {
   uploadError.value = ''
   uploading.value = true
   try {
-    const dataUrl = await new Promise<string>((resolve, reject) => {
-      const fr = new FileReader()
-      fr.onload = () => resolve(fr.result as string)
-      fr.onerror = () => reject(new Error('read failed'))
-      fr.readAsDataURL(file)
-    })
+    // Downscale + re-encode client-side; the raw file (multi-MB) blows past the
+    // server's 512KB reward-store cap and 422s.
+    const dataUrl = await downscaleToWebpDataUrl(file)
     const { url } = await $fetch<{ url: string }>(`/api/leagues/${props.leagueId}/description-image`, {
       method: 'POST',
       body: { imageDataUrl: dataUrl },

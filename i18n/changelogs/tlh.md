@@ -5,6 +5,9 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### tI'pu'
+- **Sep QIj mIllogh lupoQlu' 'e' Qapchu'**: DaH Sep QIj chellu'bogh mIllogh, lupoQ 'e' DaH lISlu' 'ej tInpu'chugh mIllogh Qapbe' ghobe'.
+
 ## [2.21.0] - 2026-07-05
 
 ### chelpu'
