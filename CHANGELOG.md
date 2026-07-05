@@ -9,6 +9,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 - The per-league "finish your picks" nudges no longer repeat the "N match needs a pick" banner. The panel and the per-match chips now only flag a league when it needs something the banner cannot say - a real score for a normal league, or a stake for a hard league. A plain missing pick shows once, in the banner, so the nudges stay readable when you belong to many leagues.
 
+### Fixed
+
+- Switching competition from the personal analytics page (and the consensus-bot and Wrapped pages) now keeps you on that same page for the new competition, instead of dropping you on its fixtures view.
+- The map now greys out the losers of a semi-final in a tournament with no third-place play-off, such as the Euro, where France and the Netherlands were left un-greyed after losing their semi-finals.
+
 ## [2.25.0] - 2026-07-05
 
 ### Added
