@@ -390,3 +390,11 @@ feature/architecture doc that implements it.
   neutral competition), so rather than silently never awarding the prize, the criterion
   surfaces `disabled` everywhere (greyed card, absent from the cabinet) until an
   owner/moderator picks the team in the prize editor. See [rewards.md](features/rewards.md).
+- **Key transparency is anchored in-app only (no external witness).** The
+  `(userId -> publicKey)` log (`shared/key-transparency.ts`) is append-only and
+  publicly served, so a returning client that pinned an earlier head detects a
+  rewritten log. We deliberately did NOT add an external transparency witness
+  (git-mirror/CT-style service): it's a deploy dependency the self-hosted operator
+  must run, and the app can't force it. The accepted limit: a brand-new visitor with
+  no pin cannot catch a from-genesis rewrite. See
+  [architecture/e2ee-trust-model.md](architecture/e2ee-trust-model.md).
