@@ -94,12 +94,9 @@ watchEffect(() => {
   }
 })
 
-type DisplayRow = LeaderboardRow & {
-  movement?: number | null
-  isBot?: boolean
-  persona?: BotPersonaParam
-  icon?: string
-}
+// The board's own rows plus display-only bot ghosts; persona drives the ghost's
+// link target. The bot decoration (isBot/icon) lives on the shared row type.
+type DisplayRow = LeaderboardDisplayRow & { persona?: BotPersonaParam }
 const ghostRows = computed<DisplayRow[]>(() => {
   const sources = [
     { persona: 'consensus' as const, on: consensusOn.value, payload: consensusBot.value },

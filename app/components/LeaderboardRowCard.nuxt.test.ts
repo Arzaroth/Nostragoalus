@@ -52,9 +52,19 @@ describe('LeaderboardRowCard', () => {
     expect(w.text()).not.toContain('▼')
   })
 
-  it('shows a medal for the top three instead of a bare rank', async () => {
-    const w = await mount(row({ rank: 1 }))
-    expect(w.text()).toContain('🥇')
+  it.each([
+    [1, '🥇'],
+    [2, '🥈'],
+    [3, '🥉'],
+  ])('shows the medal for rank %i instead of a bare number', async (rank, medal) => {
+    const w = await mount(row({ rank }))
+    expect(w.text()).toContain(medal)
+  })
+
+  it('appends champion and best-scorer points to the meta line', async () => {
+    const w = await mount(row({ championPoints: 10, bestScorerPoints: 5 }))
+    expect(w.text()).toContain('👑 +10')
+    expect(w.text()).toContain('+5')
   })
 
   it('renders an up arrow with the gained places when movement is positive', async () => {

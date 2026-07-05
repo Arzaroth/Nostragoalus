@@ -5,6 +5,10 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### choHpu'
+
+- DaH ghom patlh tetlh rurmoH Sep patlh tetlh: patlh vIH vetlh, may' qan mIv, waqHom qan, 'ej DaH 'Iy loQ - tetlh nap nIHbe'.
+
 ## [2.23.1] - 2026-07-05
 
 ### tI'pu'
