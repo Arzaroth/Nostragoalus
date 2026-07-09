@@ -37,7 +37,13 @@ keypair every chatting user already has.
   participant unwraps their `wrappedKey` with their `chat_identity` private key to
   read/write. On thread creation the caller seals the fresh group key to **both**
   pubkeys (`createThread` takes both wrapped copies), so the recipient can decrypt
-  the moment they open it.
+  the moment they open it. If a participant later [resets their chat
+  identity](chat.md#identity-recovery), their sealed copy is purged and
+  `getThreadDetail` flags `otherMissingCurrentKey`; the other party's client
+  re-seals the **same** key at the current epoch to the new pubkey (`addDmWrappedKey`,
+  `POST /api/dm/[id]/keys`) - gated on trusting that key, so an unacknowledged swap
+  is never handed the key. This is a re-seal, not an epoch bump: the DM still has no
+  rotation path.
 - `dm_thread_read` - the per-user last-read marker, mirroring `chat_room_read`.
 
 Clients hold an epoch->key map (`getThreadDetail` returns **all** epochs), so old

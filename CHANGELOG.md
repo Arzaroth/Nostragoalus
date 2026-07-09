@@ -5,6 +5,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+
+- Regenerate your chat recovery code: from a device where chat still works, mint a fresh code from the chat menu's danger zone. The old code stops working the moment you do.
+- Reset your chat identity: lost both your device's chat key and your recovery code? Start fresh with a brand-new key from the "Lost your recovery code?" prompt. Your direct messages and current league chats come back once each person you talk with re-verifies your new safety number; older league history that had already been re-keyed stays lost.
+
 ## [2.28.0] - 2026-07-10
 
 ### Added
@@ -26,7 +31,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 - Flawless no longer unlocks from a half-played round. A knockout round has only its first match scored while the rest are still to come, and calling that one exactly used to count as a perfect round; Flawless (and Set and Forget) now wait until every match of the round has been played.
 - Badges that reflect a final standing - a perfect round, finishing the whole tournament, a podium or last-place finish - now clear themselves if that standing is undone (say a tournament is reset), instead of lingering on your cabinet forever. Streak, tally and "you called it" badges still keep your best.
 - The Ice Cold badge now shows its thumbs-down icon in the rankings, matching the trophy cabinet, instead of a stray check mark.
-
 ## [2.27.0] - 2026-07-09
 
 ### Added

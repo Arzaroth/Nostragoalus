@@ -5,6 +5,11 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### chelpu'
+
+- QIn chu'wI' De' chu' yImoj: De' vum jIH De'wI'Daq, QInmey menu ghurmoHwI' Daqvo' De' chu' yIchenmoH. DaH chu'wI' De' qan lujqa'be'.
+- SoQ qablIj yIchu'moH: De'wI' ngaQHa'moHwI' 'ej chu'wI' De' Data'be''a'? "chu'wI' De' Data'be''a'?" mI'Daq ngaQHa'moHwI' chu' yIlo' 'ej yItagh chu'. QIn pegh Sep QInmey je chu' luchegh, ghot Hoch mI'lIj chu' lunubqa'DI'; ngaQHa'moHwI' choHpu'bogh Sep qan lujqa'be'.
+
 ## [2.28.0] - 2026-07-10
 
 ### chelpu'
@@ -26,7 +31,6 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 - ghItlhHa' ghItlh: DawI' pItlhbe'bogh may'mey vagh poH Daq lujatlhbe'chugh, ghItlhHa' poSbe'. may' Qav'e' Dawuqbogh neH lugh Dawuqchugh, wa' may' naQ rurbe'; DaH ghItlhHa' (choH pagh je) may' naQ poH pItlhpu'DI' neH lo'laH.
 - patlh Qav Delbogh may'mey - may' naQ lugh, ghom naQ Dawuq, patlh wej pagh patlh Qav - DaH patlh Do'Ha'chugh 'e' lIjnISDI' (may' choHqa'lu'DI' rur), HaSta DaqDaq ratlhbe' 'ach chIlqa'. tlhegh may'mey, mI' may'mey, "lugh Dawuq" may'mey je DaH ghaj potlh polqa'.
 - may' bIrqu' DaH patlh DaqDaq nItlh bIng 'ang, may' HaSta rur, chov motlh rurbe'.
-
 ## [2.27.0] - 2026-07-09
 
 ### chelpu'

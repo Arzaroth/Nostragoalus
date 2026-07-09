@@ -26,6 +26,31 @@ exact boundary and the hardening layers.
   message; the 5MB original is compressed to webp before encryption (GIFs pass
   through to preserve animation).
 
+## Identity & recovery
+
+The keypair is generated on the device and only its public key is uploaded
+(`useChatIdentity.ts`, `registerChatIdentity` - insert-once, never overwritten). The
+private key lives in IndexedDB. Three recovery paths, all in the chat overflow menu's
+**danger zone** (or the restore prompt), each behind a confirm:
+
+- **Set up / regenerate a recovery code** - `setupRecovery` wraps the private key under
+  `Argon2id(code)` and escrows the ciphertext blob (`chat_identity.recovery_wrapped_key`,
+  `PUT /api/chat/recovery`). The code is generated (never user-chosen), shown once.
+  Regenerate is the same call from a ready device: it *replaces* the blob, so the old
+  code stops working. Needs the key on this device.
+- **Restore** - on a new device, `restore(code)` unwraps the escrow back into IndexedDB.
+- **Reset** (`resetChatIdentity`, `POST /api/chat/identity/reset`) - the hard recovery
+  when both the device key and the code are lost. Mints a fresh keypair, overwrites the
+  public key, **appends the new binding to the [KT log](../architecture/e2ee-trust-model.md)**
+  (a legitimate rotation - latest binding wins), drops the escrow, and purges every
+  `league_chat_key` + `dm_thread_key` sealed to the old key - all in one transaction.
+  The user then reads as "missing" the current key everywhere, so a keyholder re-seals
+  the current league epoch (`reconcileKeys`, unchanged) and the DM peer re-seals the
+  thread key (`addDmWrappedKey`) - each **only after acknowledging** the changed safety
+  number (`isKeyTrusted` gate). History under a rotated-out league epoch stays lost;
+  DMs (single epoch) and the current league epoch come back. Offered on a ready device
+  (a deliberate re-key) and from the restore prompt (the locked-out escape hatch).
+
 ## Messaging features
 
 - Length limit 2000 (`MAX_MESSAGE_TEXT_LENGTH`), with a 16KB ciphertext server
