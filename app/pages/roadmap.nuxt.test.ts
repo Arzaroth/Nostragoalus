@@ -81,11 +81,21 @@ describe('roadmap page', () => {
 
   it('toggles an upvote when signed in', async () => {
     const wrapper = await mount()
-    // Vote on the In-progress card specifically (column order is board-defined).
-    const card = wrapper.findAll('.ng-roadmap-card').find((c) => c.text().includes('Live scores'))!
+    // Vote on the open suggestion card (column order is board-defined).
+    const card = wrapper.findAll('.ng-roadmap-card').find((c) => c.text().includes('Dark mode'))!
     await card.find('button.ng-vote').trigger('click')
     const m = await roadmapMod()
-    expect(m.__voteMutate).toHaveBeenCalledWith('a')
+    expect(m.__voteMutate).toHaveBeenCalledWith('s')
+  })
+
+  it('disables voting on an in-progress item and does not fire the mutation', async () => {
+    const wrapper = await mount()
+    const card = wrapper.findAll('.ng-roadmap-card').find((c) => c.text().includes('Live scores'))!
+    const button = card.find('button.ng-vote')
+    expect(button.attributes('disabled')).toBeDefined()
+    await button.trigger('click')
+    const m = await roadmapMod()
+    expect(m.__voteMutate).not.toHaveBeenCalled()
   })
 
   it('submits a suggestion through the form', async () => {

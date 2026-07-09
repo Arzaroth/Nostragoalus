@@ -18,9 +18,21 @@ function columnItems(status: RoadmapStatus): RoadmapItem[] {
   return list
 }
 
+// Voting closes once an idea is being built or done: upvotes there don't inform
+// what to build next. Mirrors the server guard in toggleVote.
+function votingClosed(status: RoadmapStatus): boolean {
+  return status === 'IN_PROGRESS' || status === 'SHIPPED'
+}
+
 function onVote(item: RoadmapItem) {
-  if (!signedIn.value || vote.isPending.value) return
+  if (!signedIn.value || vote.isPending.value || votingClosed(item.status)) return
   vote.mutate(item.id)
+}
+
+function voteTooltip(item: RoadmapItem): string {
+  if (votingClosed(item.status)) return t('roadmap.votingClosed')
+  if (!signedIn.value) return t('roadmap.signInToVote')
+  return t(item.viewerHasVoted ? 'roadmap.upvoteRemove' : 'roadmap.upvote')
 }
 
 const suggestTitle = ref('')
@@ -123,13 +135,13 @@ useHead({ title: t('roadmap.title') })
             </p>
           </div>
           <button
-            v-tooltip.top="signedIn ? t(item.viewerHasVoted ? 'roadmap.upvoteRemove' : 'roadmap.upvote') : t('roadmap.signInToVote')"
+            v-tooltip.top="voteTooltip(item)"
             type="button"
             class="ng-vote shrink-0 flex flex-col items-center justify-center rounded-lg border px-2.5 py-1 leading-none transition-colors"
             :class="item.viewerHasVoted ? 'ng-vote-active' : ''"
             :aria-pressed="item.viewerHasVoted"
             :aria-label="t('roadmap.votes', { n: item.voteCount })"
-            :disabled="vote.isPending.value"
+            :disabled="vote.isPending.value || votingClosed(item.status)"
             @click="onVote(item)"
           >
             <i class="pi pi-caret-up text-xs" />

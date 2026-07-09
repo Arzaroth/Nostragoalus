@@ -1224,6 +1224,7 @@
     "upvote": "Upvote",
     "upvoteRemove": "Remove upvote",
     "signInToVote": "Sign in to vote",
+    "votingClosed": "Voting is closed once this is in progress or shipped",
     "votes": "{n} votes",
     "suggest": {
       "titleLabel": "Your idea in a few words",

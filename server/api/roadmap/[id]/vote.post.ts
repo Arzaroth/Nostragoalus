@@ -31,7 +31,8 @@ defineRouteMeta({
         }
       },
       "401": { "description": "Not signed in." },
-      "404": { "description": "Unknown or hidden item." }
+      "404": { "description": "Unknown or hidden item." },
+      "409": { "description": "Voting is closed: the item is in progress or shipped." }
     }
   },
 })

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { createTestDb } from '../../../tests/db'
 import { makeUser } from '../../../tests/factories'
-import { NotFoundError, ValidationError } from '../errors'
+import { ConflictError, NotFoundError, ValidationError } from '../errors'
 import {
   ROADMAP_STATUSES,
   SUGGESTION_TITLE_MAX,
@@ -230,6 +230,19 @@ describe('roadmap service', () => {
     // An explicit moderationStatus on a promote is honored over the auto-bless.
     const kept = await updateRoadmapItem(d, s.id, { status: 'PLANNED', moderationStatus: 'PENDING' })
     expect(kept.moderationStatus).toBe('PENDING')
+    await c.close()
+  })
+
+  it('closes voting once an item is in progress or shipped', async () => {
+    const { db: d, client: c } = await createTestDb()
+    const voter = await makeUser(d, 'u1')
+    const building = await createRoadmapItem(d, { title: 'building', status: 'IN_PROGRESS' })
+    const done = await createRoadmapItem(d, { title: 'done', status: 'SHIPPED' })
+    const planned = await createRoadmapItem(d, { title: 'planned', status: 'PLANNED' })
+    await expect(toggleVote(d, { itemId: building.id, userId: voter })).rejects.toThrow(ConflictError)
+    await expect(toggleVote(d, { itemId: done.id, userId: voter })).rejects.toThrow(ConflictError)
+    // Still-open statuses (PLANNED, SUGGESTED) remain votable.
+    expect(await toggleVote(d, { itemId: planned.id, userId: voter })).toEqual({ voted: true, voteCount: 1 })
     await c.close()
   })
 

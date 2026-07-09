@@ -1220,6 +1220,7 @@
     "upvote": "Voter",
     "upvoteRemove": "Retirer le vote",
     "signInToVote": "Connecte-toi pour voter",
+    "votingClosed": "Les votes sont clos dès qu'une idée est en cours ou livrée",
     "votes": "{n} votes",
     "suggest": {
       "titleLabel": "Ton idée en quelques mots",
