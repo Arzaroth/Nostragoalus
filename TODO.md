@@ -2159,6 +2159,22 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
       field per row from the rewards/showcase feature, so its sampled example is now
       stale. Regen against a freshly-seeded stack in the same pass as the cabinet one.
 
+### Deferred from the feature-treatment review (pick-time badges + cabinet anchor, 2.27.0)
+
+- [ ] **`perfectRounds` and `untouchedRound` share an unfactored "fully-predicted
+      multi-match round" notion**: both (in `server/utils/achievements/service.ts`)
+      group scored rows by round, `continue` on `isSingleMatchStage`, and gate on the
+      round being fully predicted (`scored === roundScored` / `ids.length === total`),
+      differing only in the per-round predicate (all EXACT vs all untouched). A shared
+      `fullyPredictedRounds(rows, roundScored)` helper returning the qualifying roundIds,
+      with each caller layering its extra check, removes the duplicated grouping so the
+      completeness rule can't drift between Flawless and Set-and-Forget.
+- [ ] **`evaluatePickTimeAchievements` re-aggregates the user's whole pick history on
+      every first save**: the three pick-time counts join over all of that user's
+      matches per save (O(all-picks)). Only the just-saved match can newly qualify, so a
+      `WHERE` narrowing to `input.matchId` would make it O(1). Correct and idempotent as
+      is (finalize stays the backfill); revisit only if save latency ever matters.
+
 ## Tournament Wrapped (deferred from the feature pass)
 
 - [ ] No server-side cache on `getWrapped`: every hit replays the rank journey
