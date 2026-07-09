@@ -4,7 +4,7 @@ import { createTestDb } from '../../../tests/db'
 import { findRoundId } from '../sync/rounds'
 import { addLeagueMember, makeLeague, makeMatch, makeUser, seedCompetition } from '../../../tests/factories'
 import { memoryStorage } from '../../../tests/storage'
-import { chatIdentity, chatMessage, league, leagueChatKey } from '../../../db/schema'
+import { chatIdentity, chatMessage, keyTransparencyEntry, league, leagueChatKey } from '../../../db/schema'
 import { removeMembership } from '../leagues/service'
 import {
   addWrappedKeys,
@@ -24,6 +24,7 @@ import {
   postMessage,
   registerChatIdentity,
   requestChatRekey,
+  resetChatIdentity,
   rotateLeagueChatKey,
   setRecoveryBlob,
 } from './service'
@@ -82,6 +83,32 @@ describe('chat identity', () => {
     const { db, client } = await setup()
     const stranger = await makeUser(db, 'stranger')
     expect(await getRecoveryBlob(db, stranger)).toBeNull()
+    await client.close()
+  })
+
+  it('resets the identity: new key, dropped escrow, purged league keys, KT re-append', async () => {
+    const { db, client, owner, leagueId } = await setup()
+    await expect(resetChatIdentity(db, owner, '')).rejects.toBeInstanceOf(ValidationError)
+    await expect(resetChatIdentity(db, owner, 'newpk')).rejects.toBeInstanceOf(NotFoundError) // no identity yet
+    await registerChatIdentity(db, owner, 'pkA')
+    await setRecoveryBlob(db, owner, 'blob')
+    await enableWith(db, leagueId, owner, [owner])
+    expect(await getMyWrappedKey(db, leagueId, owner, 1)).toBe('wk-owner')
+
+    await resetChatIdentity(db, owner, 'pkNEW')
+    const id = await getChatIdentity(db, owner)
+    expect(id?.publicKey).toBe('pkNEW')
+    expect(id?.recoveryWrappedKey).toBeNull()
+    // The league key sealed to the old identity is purged, so the user reads as
+    // "missing" the current epoch and a keyholder re-seals to the new key.
+    expect(await getMyWrappedKey(db, leagueId, owner, 1)).toBeNull()
+    expect((await getMembersMissingKey(db, leagueId, 1)).map((m) => m.userId)).toContain(owner)
+    // The new key is appended to the transparency log (a legitimate rotation).
+    const entries = await db
+      .select({ publicKey: keyTransparencyEntry.publicKey })
+      .from(keyTransparencyEntry)
+      .where(eq(keyTransparencyEntry.userId, owner))
+    expect(entries.map((e) => e.publicKey)).toEqual(['pkA', 'pkNEW'])
     await client.close()
   })
 

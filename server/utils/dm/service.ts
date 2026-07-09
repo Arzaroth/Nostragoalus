@@ -247,6 +247,10 @@ export interface DmThreadDetail {
   epoch: number
   other: PublicIdentity
   myWrappedKeys: DmEpochKey[]
+  // The other participant has no sealed key at the current epoch - typically because
+  // they reset their identity, so their old sealed copy was purged. If I hold the key,
+  // my client re-seals it to their (new) public key via addDmWrappedKey.
+  otherMissingCurrentKey: boolean
 }
 
 // Full detail for one thread the caller is in: the other participant's public
@@ -256,12 +260,39 @@ export async function getThreadDetail(db: AppDatabase, threadId: string, userId:
   const t = await requireParticipant(db, threadId, userId)
   const other = await getPublicIdentity(db, t.otherId)
   if (!other) throw new NotFoundError('conversation not found')
-  const keys = await db
-    .select({ epoch: dmThreadKey.epoch, wrappedKey: dmThreadKey.wrappedKey })
-    .from(dmThreadKey)
-    .where(and(eq(dmThreadKey.threadId, threadId), eq(dmThreadKey.userId, userId)))
-    .orderBy(asc(dmThreadKey.epoch))
-  return { threadId, epoch: t.keyEpoch, other, myWrappedKeys: keys }
+  const [keys, otherCurrent] = await Promise.all([
+    db
+      .select({ epoch: dmThreadKey.epoch, wrappedKey: dmThreadKey.wrappedKey })
+      .from(dmThreadKey)
+      .where(and(eq(dmThreadKey.threadId, threadId), eq(dmThreadKey.userId, userId)))
+      .orderBy(asc(dmThreadKey.epoch)),
+    db
+      .select({ id: dmThreadKey.id })
+      .from(dmThreadKey)
+      .where(and(eq(dmThreadKey.threadId, threadId), eq(dmThreadKey.userId, t.otherId), eq(dmThreadKey.epoch, t.keyEpoch)))
+      .limit(1),
+  ])
+  return { threadId, epoch: t.keyEpoch, other, myWrappedKeys: keys, otherMissingCurrentKey: otherCurrent.length === 0 }
+}
+
+// Seal the current thread key to the OTHER participant at the current epoch. Used when
+// that participant reset their identity and lost their sealed copy: the remaining
+// keyholder (the caller) re-seals the same key to their new public key, so the thread's
+// history and forward messages come back for them. Participant-only; the target must be
+// the other party and the epoch current. Idempotent - a concurrent re-seal is a no-op.
+export async function addDmWrappedKey(
+  db: AppDatabase,
+  opts: { threadId: string; actorId: string; targetUserId: string; epoch: number; wrappedKey: string },
+): Promise<{ added: number }> {
+  const t = await requireParticipant(db, opts.threadId, opts.actorId)
+  if (opts.targetUserId !== t.otherId) throw new ValidationError('can only seal the key to the other participant')
+  if (opts.epoch !== t.keyEpoch) throw new ConflictError('stale key epoch')
+  const res = await db
+    .insert(dmThreadKey)
+    .values({ threadId: opts.threadId, userId: opts.targetUserId, epoch: opts.epoch, wrappedKey: opts.wrappedKey })
+    .onConflictDoNothing()
+    .returning({ id: dmThreadKey.id })
+  return { added: res.length }
 }
 
 export interface DmMessageRow {

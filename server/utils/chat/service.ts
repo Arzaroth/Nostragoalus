@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { and, asc, count, desc, eq, inArray, isNull, lt, not } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
-import { chatAttachment, chatIdentity, chatMessage, league, leagueChatKey, leagueMember, match, user } from '../../../db/schema'
+import { chatAttachment, chatIdentity, chatMessage, dmThreadKey, league, leagueChatKey, leagueMember, match, user } from '../../../db/schema'
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors'
 import { getLeague, getMembership } from '../leagues/service'
 import { appendKeyBindingTx } from '../key-transparency/service'
@@ -89,6 +89,34 @@ export async function setRecoveryBlob(db: AppDatabase, userId: string, blob: str
 export async function getRecoveryBlob(db: AppDatabase, userId: string): Promise<string | null> {
   const id = await getChatIdentity(db, userId)
   return id?.recoveryWrappedKey ?? null
+}
+
+// Replace the caller's identity keypair with a new one - the hard recovery for a
+// user who lost BOTH their device key and their recovery code. Unlike the insert-once
+// registerChatIdentity, this overwrites the public key: the new key is appended to the
+// transparency log as a fresh binding (a legitimate rotation, latest-binding-wins - so
+// the log reads `ok`, but co-members' pinned safety numbers change and they must
+// re-verify before their clients re-seal). The old recovery escrow is dropped (it
+// wrapped the OLD private key), and every league/DM key sealed to the old key is
+// deleted so the caller shows as "missing" everywhere and a keyholder/peer re-seals to
+// the new key. History under a rotated-out league epoch stays lost; the current league
+// epoch and DMs (single epoch) come back once co-members/peers acknowledge and re-seal.
+export async function resetChatIdentity(db: AppDatabase, userId: string, publicKey: string): Promise<void> {
+  if (!publicKey) throw new ValidationError('public key required')
+  await db.transaction(async (tx) => {
+    const res = await tx
+      .update(chatIdentity)
+      .set({ publicKey, recoveryWrappedKey: null })
+      .where(eq(chatIdentity.userId, userId))
+      .returning({ userId: chatIdentity.userId })
+    if (res.length === 0) throw new NotFoundError('chat identity not found')
+    // Bind the new key in the same transaction as the identity write and the stale-key
+    // purge, so a failed append rolls the whole reset back rather than leaving a key
+    // with no log entry (which every client would read as a substituted key).
+    await appendKeyBindingTx(tx, userId, publicKey)
+    await tx.delete(leagueChatKey).where(eq(leagueChatKey.userId, userId))
+    await tx.delete(dmThreadKey).where(eq(dmThreadKey.userId, userId))
+  })
 }
 
 export interface MemberKey {
