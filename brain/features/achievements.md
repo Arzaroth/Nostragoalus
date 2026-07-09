@@ -61,7 +61,13 @@ every user's metrics once (`computeAchievementStats`: exact/points/streaks/perfe
 rounds/opener/lone-wolf/oracle/underdog/completion/podium/wooden-spoon/trophy counts)
 then upserts. It is idempotent and returns the badges newly earned or graded up, for
 notification. A tier is a high-water mark: a rescore that lowers a metric refreshes
-stored progress but never demotes the badge.
+stored progress but never demotes the badge - so streaks and tallies survive a
+transient rescore dip. The exception is `revocable` badges (`perfect-round`,
+`completionist`, `podium`, `wooden-spoon` in `catalog.ts`): these reflect a
+current-state truth, not a lifetime peak, so when their metric no longer meets any
+tier the row is deleted (`applyAchievementTier`) and the badge self-heals away - a
+mis-grant, or an undone state like a rewound tournament whose final is no longer
+decided. Revocation is silent (no notification).
 
 **The final-standing gate.** completionist, podium and wooden-spoon settle only once
 the tournament is over - gated on `hasDecidedFinal` (`server/utils/awards/service.ts`),
@@ -79,9 +85,13 @@ most EXACT calls landed on any one team (counted for both the home and away side
 each exact pick; single-tier at 3). **Flawless (`perfect-round`)** excludes the final
 and third-place (`isSingleMatchStage`): those are one-match rounds where a "perfect
 round" is just a single exact (already grand-finale's job), so Flawless means a clean
-sweep of a real multi-match round. **set-and-forget** rewards predicting every scored
-match of a multi-match round and never editing one - "never edited" = the pick has a
-single `prediction_commitment` ledger entry (the chain appends only on a real change).
+sweep of a real multi-match round. Both Flawless and set-and-forget only count a
+**complete** round - every one of its matches scored (`completeRounds`: `roundScored`
+=== the round's total match count). Without this a knockout round with just its first
+match scored would read as perfect off that one exact, before the rest are played.
+**set-and-forget** rewards predicting every match of such a complete multi-match round
+and never editing one - "never edited" = the pick has a single `prediction_commitment`
+ledger entry (the chain appends only on a real change).
 
 **wooden-spoon** ("dead last") judges only players who saw the tournament through:
 you must have predicted at least `WOODEN_SPOON_MIN_SHARE` (half) of its matches to be

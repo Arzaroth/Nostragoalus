@@ -278,6 +278,43 @@ describe('computeAchievementStats', () => {
     expect((await stats(c, alice)).perfectRounds).toBe(0)
   })
 
+  it('does not credit Flawless for an incomplete round with only some matches scored', async () => {
+    const c = await seedCompetition(db)
+    const qf = await roundId(c, 'QF')
+    const alice = await makeUser(db, 'alice')
+    // One QF match played and called EXACT; the round's other three are still scheduled.
+    const played = await scoredMatch(c, qf, 'QF', new Date('2026-07-10T18:00:00Z'))
+    for (let i = 0; i < 3; i++) {
+      await makeMatch(db, { competitionId: c, roundId: qf, stage: 'QF', kickoffTime: new Date('2026-07-11T18:00:00Z') })
+    }
+    await pred({ userId: alice, matchId: played, roundId: qf, tier: 'EXACT', points: 5 })
+    // The round is not complete, so a lone exact must not read as a perfect round.
+    expect((await stats(c, alice)).perfectRounds).toBe(0)
+
+    // Score the rest and call them all EXACT: now the whole round is complete and perfect.
+    const rest = await db.select().from(match).where(eq(match.roundId, qf))
+    for (const m of rest) {
+      await db
+        .update(match)
+        .set({ scoringState: 'SCORED', status: 'FINISHED', winner: 'HOME', fullTimeHome: 1, fullTimeAway: 0 })
+        .where(eq(match.id, m.id))
+      if (m.id !== played) await pred({ userId: alice, matchId: m.id, roundId: qf, tier: 'EXACT', points: 5 })
+    }
+    expect((await stats(c, alice)).perfectRounds).toBe(1)
+  })
+
+  it('does not credit set-and-forget for an incomplete round', async () => {
+    const c = await seedCompetition(db)
+    const qf = await roundId(c, 'QF')
+    const alice = await makeUser(db, 'alice')
+    // One match scored and left untouched, but a second match of the round is unplayed.
+    const played = await scoredMatch(c, qf, 'QF', new Date('2026-07-10T18:00:00Z'))
+    await makeMatch(db, { competitionId: c, roundId: qf, stage: 'QF', kickoffTime: new Date('2026-07-11T18:00:00Z') })
+    const p = await pred({ userId: alice, matchId: played, roundId: qf, tier: 'DIFF', points: 1 })
+    await commit(p, alice, played, 1)
+    expect((await stats(c, alice)).setAndForget).toBe(0)
+  })
+
   it('credits lone-wolf only for the sole EXACT on a match', async () => {
     const c = await seedCompetition(db)
     const g1 = await roundId(c, 'GROUP', 1)
@@ -493,6 +530,45 @@ describe('evaluateAchievements', () => {
     const newly = await evaluateAchievements(db, c)
     expect(newly.some((u) => u.key === 'first-blood' && u.tier === 'BRONZE')).toBe(true)
   })
+
+  it('revokes a revocable badge when its state is undone, keeping a high-water one', async () => {
+    const c = await seedCompetition(db)
+    const g1 = await roundId(c, 'GROUP', 1)
+    const alice = await makeUser(db, 'alice')
+    // A complete, all-EXACT round earns Flawless (revocable) and feeds sharpshooter (high-water).
+    for (let i = 0; i < 5; i++) {
+      const m = await scoredMatch(c, g1, 'GROUP', new Date(2026, 5, 11, 12, i))
+      await pred({ userId: alice, matchId: m, roundId: g1, tier: 'EXACT', points: 3 })
+    }
+    await evaluateAchievements(db, c)
+    expect(await db.select().from(userAchievement).where(eq(userAchievement.key, 'perfect-round'))).toHaveLength(1)
+    expect((await db.select().from(userAchievement).where(eq(userAchievement.key, 'sharpshooter')))[0]?.tier).toBe('BRONZE')
+
+    // Rewind: an unplayed match appears in the round, so it is no longer complete.
+    await makeMatch(db, { competitionId: c, roundId: g1, stage: 'GROUP', kickoffTime: new Date('2026-06-12T12:00:00Z') })
+    await evaluateAchievements(db, c)
+    // Flawless self-heals away; sharpshooter (5 exacts, unchanged) stays.
+    expect(await db.select().from(userAchievement).where(eq(userAchievement.key, 'perfect-round'))).toHaveLength(0)
+    expect((await db.select().from(userAchievement).where(eq(userAchievement.key, 'sharpshooter')))[0]?.tier).toBe('BRONZE')
+  })
+
+  it('revokes completionist when a rewound tournament un-decides the final', async () => {
+    const c = await seedCompetition(db)
+    const g1 = await roundId(c, 'GROUP', 1)
+    const fin = await roundId(c, 'FINAL')
+    const alice = await makeUser(db, 'alice')
+    const m = await scoredMatch(c, g1, 'GROUP', new Date('2026-06-11T12:00:00Z'))
+    const finalMatch = await decidedFinal(c, fin)
+    await pred({ userId: alice, matchId: m, roundId: g1, tier: 'EXACT', points: 3 })
+    await pred({ userId: alice, matchId: finalMatch, roundId: fin, tier: 'EXACT', points: 6 })
+    await evaluateAchievements(db, c)
+    expect(await db.select().from(userAchievement).where(eq(userAchievement.key, 'completionist'))).toHaveLength(1)
+
+    // The final reverts to scheduled/pending: hasDecidedFinal flips false again.
+    await db.update(match).set({ status: 'SCHEDULED', winner: null, scoringState: 'PENDING' }).where(eq(match.id, finalMatch))
+    await evaluateAchievements(db, c)
+    expect(await db.select().from(userAchievement).where(eq(userAchievement.key, 'completionist'))).toHaveLength(0)
+  })
 })
 
 describe('evaluatePickTimeAchievements', () => {
@@ -583,11 +659,17 @@ describe('the-collector secret', () => {
   it('grants once every non-secret badge is held, and is idempotent', async () => {
     const c = await seedCompetition(db)
     const g1 = await roundId(c, 'GROUP', 1)
+    const fin = await roundId(c, 'FINAL')
     const alice = await makeUser(db, 'alice')
-    // A prediction so alice is in the stats map.
+    // Genuinely satisfy the revocable badges (they no longer count on a bare row):
+    // a complete all-EXACT round (perfect-round), a decided final so the tournament is
+    // over, and every scored match predicted (completionist), leaving alice top of the
+    // one-player board (podium).
     const m = await scoredMatch(c, g1, 'GROUP', new Date('2026-06-11T12:00:00Z'))
     await pred({ userId: alice, matchId: m, roundId: g1, tier: 'EXACT', points: 3 })
-    // Pre-hold every non-secret badge.
+    const finalMatch = await decidedFinal(c, fin)
+    await pred({ userId: alice, matchId: finalMatch, roundId: fin, tier: 'EXACT', points: 6 })
+    // Pre-hold every remaining non-secret badge.
     await db
       .insert(userAchievement)
       .values(ACHIEVEMENTS.map((d) => ({ userId: alice, competitionId: c, key: d.key, tier: 'BRONZE' as const, progress: 1 })))
