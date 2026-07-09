@@ -69,16 +69,7 @@ const upcoming = computed(() =>
   data.value?.adminView ? (data.value.predictions ?? []).filter((p) => new Date(p.kickoffTime).getTime() > now) : [],
 )
 
-// A profile fills with played rows as the tournament runs, so the top is rarely
-// the useful spot. On load, center the "now" boundary so the latest action is in
-// view, mirroring the fixtures page's jump-to-next. Skipped when nothing has
-// kicked off yet (nothing to scroll past) or when the URL already targets an
-// anchor. onMounted is client-only, so this never runs during SSR.
 const nowAnchor = ref<HTMLElement | null>(null)
-onMounted(() => {
-  if (route.hash || !kickedOff.value.length) return
-  void nextTick(() => nowAnchor.value?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
-})
 
 // This player's evil twin: their own picks with every score swapped. No global
 // identity (jokers/champion are per-competition), so it's competition-scope only.
@@ -90,24 +81,36 @@ const twinEnabled = computed(() => twinOn.value && !global.value)
 const { data: twin } = useUserEvilTwin(userId, twinCompetition, twinEnabled)
 const showTwin = computed(() => twinEnabled.value && !!twin.value)
 
-// The "my achievements" menu item and an ACHIEVEMENT_UNLOCKED notification both
-// deep-link to #cabinet. That section only exists once the profile data resolves
-// and the page mounts - after the router's own hash scroll has already fired -
-// and that scroll ignores the section's scroll-margin-top anyway. Re-run
-// scrollIntoView (which honors it) whenever those inputs change, until the
-// target exists, mirroring the fixtures page. The onMounted above already
-// early-returns when a hash is present, so the two never fight over the scroll.
+// One scroll decision, once, after the page mounts and profile data resolves -
+// the target sections only exist then. Two landings compete: a #cabinet deep-link
+// (the "my achievements" menu item and an ACHIEVEMENT_UNLOCKED notification) and
+// the default jump-to-now. The anchor wins; otherwise center the "now" boundary
+// so the latest action is in view (skipped when nothing has kicked off yet).
+//
+// A single latch means the two never fight, and we read window.location.hash
+// (not the reactive route.hash) because after SSR the router reconciles the hash a
+// tick late - which is exactly what let the jump-to-now fire before the anchor and
+// preempt it. window.location.hash is authoritative the instant we run (client,
+// flush:post). route.hash stays in the deps so a same-route hash-only nav retriggers.
 const pageMounted = useMounted()
-let scrolledHash = ''
+let scrolled = false
 watch(
   [() => !!data.value, pageMounted, () => route.hash],
   async () => {
-    if (route.hash !== '#cabinet' || route.hash === scrolledHash || !pageMounted.value || !data.value) return
+    if (scrolled || !pageMounted.value || !data.value) return
     await nextTick()
-    const el = document.getElementById('cabinet')
-    if (!el) return
-    scrolledHash = route.hash
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    const hash = typeof window !== 'undefined' ? window.location.hash : route.hash
+    if (hash === '#cabinet') {
+      const el = document.getElementById('cabinet')
+      if (!el) return
+      scrolled = true
+      // Router's own hash scroll fired before this section existed and ignores its
+      // scroll-margin-top; scrollIntoView honors it.
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    } else if (!hash && kickedOff.value.length) {
+      scrolled = true
+      nowAnchor.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
   },
   { immediate: true, flush: 'post' },
 )
