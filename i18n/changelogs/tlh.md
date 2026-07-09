@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.27.0] - 2026-07-09
+
 ### chelpu'
 
 - may' Segh chu' vagh: may' Qav (tera' may' Qav lugh Dawuq - 'Iw wa'DIch rur), pagh pagh (0-0 lugh Dawuq), maQmey law' (vagh maQ latlh je ghajbogh may' lugh Dawuq), jagh (rap Segh may'mey lugh wejlogh Dawuq), choH pagh (ghom naQ Dawuq 'ej not DachoH).
