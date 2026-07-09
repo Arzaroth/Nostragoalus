@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.27.1] - 2026-07-10
+
 ### tI'pu'
 
 - ghItlhHa' ghItlh: DawI' pItlhbe'bogh may'mey vagh poH Daq lujatlhbe'chugh, ghItlhHa' poSbe'. may' Qav'e' Dawuqbogh neH lugh Dawuqchugh, wa' may' naQ rurbe'; DaH ghItlhHa' (choH pagh je) may' naQ poH pItlhpu'DI' neH lo'laH.

@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.27.1] - 2026-07-10
+
 ### Fixed
 
 - Flawless no longer unlocks from a half-played round. A knockout round has only its first match scored while the rest are still to come, and calling that one exactly used to count as a perfect round; Flawless (and Set and Forget) now wait until every match of the round has been played.
