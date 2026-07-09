@@ -1,7 +1,7 @@
 import { and, asc, count, eq, max, ne } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { roadmapItem, roadmapModerationEnum, roadmapStatusEnum, roadmapVote } from '../../../db/schema'
-import { NotFoundError, ValidationError } from '../errors'
+import { ConflictError, NotFoundError, ValidationError } from '../errors'
 
 export type RoadmapStatus = (typeof roadmapStatusEnum.enumValues)[number]
 export type RoadmapModeration = (typeof roadmapModerationEnum.enumValues)[number]
@@ -147,11 +147,20 @@ export async function toggleVote(
 ): Promise<{ voted: boolean; voteCount: number }> {
   return db.transaction(async (tx) => {
     const [item] = await tx
-      .select({ id: roadmapItem.id, moderationStatus: roadmapItem.moderationStatus })
+      .select({
+        id: roadmapItem.id,
+        status: roadmapItem.status,
+        moderationStatus: roadmapItem.moderationStatus,
+      })
       .from(roadmapItem)
       .where(eq(roadmapItem.id, input.itemId))
       .limit(1)
     if (!item || item.moderationStatus === 'REJECTED') throw new NotFoundError('roadmap item not found')
+    // Voting is a signal for what to build next, so it closes once an idea is
+    // being built (IN_PROGRESS) or done (SHIPPED) - upvotes there are noise.
+    if (item.status === 'IN_PROGRESS' || item.status === 'SHIPPED') {
+      throw new ConflictError('voting is closed for this item')
+    }
 
     const [existing] = await tx
       .select({ id: roadmapVote.id })

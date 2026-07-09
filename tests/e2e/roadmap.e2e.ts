@@ -100,6 +100,10 @@ test('the public roadmap is a kanban board and status moves land in the right co
   await page.waitForLoadState('networkidle')
   await expect(page.locator('[data-status="IN_PROGRESS"]')).toContainText(title)
   await expect(page.locator('[data-status="PLANNED"]')).not.toContainText(title)
+
+  // Voting closes once an item is in progress: its upvote button is disabled.
+  const inProgressCard = page.locator('[data-status="IN_PROGRESS"] .ng-roadmap-card', { hasText: title })
+  await expect(inProgressCard.locator('button.ng-vote')).toBeDisabled()
 })
 
 test('an admin drags a card between columns on the board', async ({ page }) => {
