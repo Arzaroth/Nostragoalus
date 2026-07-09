@@ -5,6 +5,12 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Corrigé
+
+- Sans faute ne se débloque plus sur une journée à moitié jouée. Dans un tour à élimination directe, seul le premier match est terminé alors que les autres restent à venir, et le pronostiquer au score exact suffisait à valider un tour parfait ; Sans faute (et Réglé d'avance) attendent désormais que tous les matchs du tour aient été joués.
+- Les badges qui reflètent un classement final - un tour parfait, terminer tout le tournoi, une place sur le podium ou à la dernière place - se retirent désormais tout seuls si ce classement est annulé (par exemple après la réinitialisation d'un tournoi), au lieu de rester coincés à jamais dans votre vitrine. Les badges de série, de cumul et « bien vu » conservent votre record.
+- Le badge Glacial affiche désormais son pouce vers le bas dans le classement, comme sur la vitrine des trophées, au lieu d'une coche générique.
+
 ## [2.27.0] - 2026-07-09
 
 ### Ajouté

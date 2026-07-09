@@ -277,28 +277,26 @@ export async function computeAchievementStats(
     .where(isNotNull(prediction.baseTier))
     .orderBy(match.kickoffTime, prediction.matchId)
 
+  // Per round: how many matches it has, and how many are scored. One grouped scan
+  // yields both the scored counts (Flawless / Set-and-Forget need every scored match
+  // of a round predicted) and which rounds are "complete" - every match scored.
+  // Completeness is the guard that keeps a partially-played round from counting off
+  // its early matches alone: mid-tournament a knockout round has one match scored and
+  // the rest still scheduled, and a lone exact there must not read as a perfect round.
+  // (A match that never scores - voided - keeps its round from ever completing;
+  // acceptable for these rare high-bar badges.)
   const roundTotals = await db
-    .select({ roundId: match.roundId, n: sql<number>`count(*)`.mapWith(Number) })
-    .from(match)
-    .where(and(eq(match.competitionId, competitionId), eq(match.scoringState, 'SCORED')))
-    .groupBy(match.roundId)
-  const roundScored = new Map(roundTotals.map((r) => [r.roundId, r.n]))
-  const totalScored = roundTotals.reduce((s, r) => s + r.n, 0)
-
-  // A round is "complete" once every one of its matches has been scored. This is the
-  // guard that keeps a partially-played round from counting toward Flawless or
-  // Set-and-Forget off its early matches alone: mid-tournament a knockout round has
-  // one match scored and the rest still scheduled, and a lone exact there must not
-  // read as a perfect round. (A match that never scores - voided - keeps its round
-  // from ever qualifying; acceptable for these rare high-bar badges.)
-  const roundMatchCounts = await db
-    .select({ roundId: match.roundId, n: sql<number>`count(*)`.mapWith(Number) })
+    .select({
+      roundId: match.roundId,
+      total: sql<number>`count(*)`.mapWith(Number),
+      scored: sql<number>`count(*) filter (where ${match.scoringState} = 'SCORED')`.mapWith(Number),
+    })
     .from(match)
     .where(eq(match.competitionId, competitionId))
     .groupBy(match.roundId)
-  const completeRounds = new Set(
-    roundMatchCounts.filter((r) => (roundScored.get(r.roundId) ?? 0) === r.n).map((r) => r.roundId),
-  )
+  const roundScored = new Map(roundTotals.filter((r) => r.scored > 0).map((r) => [r.roundId, r.scored]))
+  const totalScored = roundTotals.reduce((s, r) => s + r.scored, 0)
+  const completeRounds = new Set(roundTotals.filter((r) => r.scored === r.total).map((r) => r.roundId))
 
   // How many commitment-ledger entries each prediction in this competition has: one
   // entry = never edited (backs set-and-forget). The ledger appends only on a real
@@ -570,6 +568,16 @@ export async function evaluateAchievements(db: AppDatabase, competitionId: strin
       })
       if (granted) newly.push({ userId, competitionId: null, key: COLLECTOR_ACHIEVEMENT_KEY, tier: 'GOLD' })
     }
+  }
+
+  // Users who dropped out of the stats entirely - e.g. a reset wiped every prediction
+  // they had - are never visited by the loop above, so `applyAchievementTier` never
+  // gets the chance to revoke their now-baseless rows. Clear their revocable badges
+  // here (their metrics are all zero now); non-revocable badges stay, high-water.
+  const revocableKeys = new Set(ACHIEVEMENTS.filter((d) => d.revocable).map((d) => d.key))
+  for (const row of existing) {
+    if (stats.has(row.userId) || !revocableKeys.has(row.key)) continue
+    await db.delete(userAchievement).where(eq(userAchievement.id, row.id))
   }
   return newly
 }

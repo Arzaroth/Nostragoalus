@@ -569,6 +569,21 @@ describe('evaluateAchievements', () => {
     await evaluateAchievements(db, c)
     expect(await db.select().from(userAchievement).where(eq(userAchievement.key, 'completionist'))).toHaveLength(0)
   })
+
+  it('revokes a revocable badge for a user who dropped out of the stats entirely', async () => {
+    const c = await seedCompetition(db)
+    const alice = await makeUser(db, 'alice')
+    // Alice has no predictions or picks left in this comp (a reset wiped them), so she
+    // is absent from the stats map - but two stale competition badges survive from before.
+    await db.insert(userAchievement).values([
+      { userId: alice, competitionId: c, key: 'completionist', tier: 'BRONZE' as const, progress: 1 },
+      { userId: alice, competitionId: c, key: 'sharpshooter', tier: 'BRONZE' as const, progress: 5 },
+    ])
+    await evaluateAchievements(db, c)
+    const keys = (await db.select().from(userAchievement).where(eq(userAchievement.userId, alice))).map((r) => r.key)
+    expect(keys).not.toContain('completionist') // revocable -> swept even though alice has no stats
+    expect(keys).toContain('sharpshooter') // high-water tally -> kept
+  })
 })
 
 describe('evaluatePickTimeAchievements', () => {
