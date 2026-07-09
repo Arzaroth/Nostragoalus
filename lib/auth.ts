@@ -36,6 +36,20 @@ export function buildAuthOptions(database: AuthDb) {
         schema,
       }),
     ),
+    // Sessions live long and slide forward on use. The default 7-day expiry made
+    // this a weekly-check tournament app log people out during quiet stretches
+    // between matchdays, and the short lifetime showed up worst on iOS installed
+    // PWAs (a home-screen web app WebKit is quick to evict): a short-lived cookie
+    // there gets dropped when the app is backgrounded/reaped, so the user "gets
+    // logged out for no reason". A long expiresIn makes better-auth mint a
+    // long-lived persistent Set-Cookie (Max-Age = expiresIn) that survives that,
+    // and updateAge refreshes it on each active day so it never lapses in use.
+    // Users who want to end a session early get the connected-devices controls on
+    // /account; admin ban/SCIM deprovision still revoke immediately.
+    session: {
+      expiresIn: 60 * 60 * 24 * 90, // 90 days
+      updateAge: 60 * 60 * 24, // slide the expiry forward at most once a day
+    },
     emailAndPassword: {
       enabled: true,
       // Admin-toggled at runtime (no redeploy). better-auth reads this getter

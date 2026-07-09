@@ -35,6 +35,24 @@ Most routes do not call these directly: they go through `defineValidatedHandler`
 which wires the right guard from its `admin` / `apiKey` options. See
 [server.md](server.md).
 
+## Session lifetime
+
+- `buildAuthOptions` sets `session.expiresIn` to **90 days** with
+  `session.updateAge` of **1 day** (sliding): an active session refreshes its
+  expiry at most once a day, so a regularly-used session effectively never
+  lapses, and an idle one survives 90 days.
+- The long `expiresIn` is deliberate. better-auth mints the session cookie with
+  `Max-Age = expiresIn`, so a long expiry makes it a long-lived **persistent**
+  cookie. That was the fix for "logged out for no reason" reports, worst on iOS
+  **installed PWAs** (a home-screen web app WebKit evicts aggressively): a
+  short-lived cookie there is dropped when the app is backgrounded/reaped. It is
+  NOT client-side - the client is already hardened (`app/middleware/auth.global.ts`
+  bails on a transient session-fetch error instead of redirecting to `/login`,
+  and `refetchOnWindowFocus` is off).
+- Users end sessions early from the connected-devices controls in `/account`
+  (see [../features/connected-devices.md](../features/connected-devices.md));
+  admin ban / SCIM `active:false` revoke immediately.
+
 ## Admin model
 
 - Admins are seeded from the `NUXT_ADMIN_EMAILS` env var (comma-separated). An
