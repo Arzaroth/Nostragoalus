@@ -5,6 +5,21 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Ajouté
+
+- Cinq nouveaux badges. Grande finale (pronostiquer la finale du tournoi au score exact - le pendant de Premier sang). Match nul vierge (annoncer un 0-0 pile). Festival de buts (deviner exactement un match d'au moins cinq buts). Bête noire (réussir le score exact des matchs d'une même équipe trois fois). Réglé d'avance (pronostiquer toute une journée sans jamais modifier un pronostic).
+- Les badges de série (Série chaude, En feu) affichent désormais votre série en cours à côté de votre record, tant que le badge continue de grimper, pour voir la série sur laquelle vous êtes en ce moment et pas seulement votre record.
+
+### Modifié
+
+- « Lever de rideau » s'appelle désormais « Premier sang » (réussir le match d'ouverture du tournoi), et l'ancien « Premier sang » (votre premier score exact d'une compétition) devient « La chasse est ouverte ». Chaque badge garde sa propre icône.
+- Sans faute (une journée parfaite) ne compte plus la finale ni le match pour la troisième place : ce sont des journées à un seul match, déjà récompensées par leur propre badge, donc Sans faute désigne désormais un sans-faute sur une vraie journée à plusieurs matchs.
+
+### Corrigé
+
+- Les badges de rythme de pronostic (Lève-tôt, Noctambule, Sur le fil) se débloquent désormais dès que vous enregistrez le pronostic concerné, au lieu d'attendre que le match suivant soit noté - pronostiquer dans les cinq dernières minutes avant le coup d'envoi accorde Sur le fil immédiatement.
+- « Mes trophées » dans le menu défile de nouveau directement vers votre vitrine, au lieu que le défilement du profil vers le dernier match ne vole le focus d'abord.
+
 ## [2.26.0] - 2026-07-05
 
 ### Ajouté

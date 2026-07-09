@@ -38,7 +38,7 @@ cabinet. It lives on as a per-league prize criterion - see
 
 ## The achievement catalog
 
-Code, not data: `server/utils/achievements/catalog.ts` lists 22 batch-evaluated
+Code, not data: `server/utils/achievements/catalog.ts` lists 27 batch-evaluated
 badges (plus two secret badges) with their category, scope, grading thresholds and
 whether they are hidden. `user_achievement` only records what a user unlocked. Categories:
 milestone (first-blood, opening-act, grand-finale, bore-draw, goal-rush, nemesis,
@@ -160,7 +160,8 @@ so the unlock is not dangled as a to-do list.
   (you don't chase a cold streak, and a bar would telegraph its threshold).
 - Streak badges (hot-streak, on-fire) also carry `currentStreak`: the ongoing run
   right now, shown next to the best (which rides `current`). It is null on non-streak
-  badges and once the badge is maxed (top tier reached - nothing left to chase). The
+  badges, once the badge is maxed (top tier reached - nothing left to chase), and when
+  the current run is 0 (a just-broken streak is nothing to show). The
   cur* runs come from `computeAchievementStats` (the trailing counters of `streaks()`).
 - The DTO also carries the per-key `icon` override (or null to fall back to the
   category icon), resolved from `catalog.ts` so `TrophyCabinet.vue` need not know keys.

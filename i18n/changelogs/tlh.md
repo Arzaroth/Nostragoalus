@@ -5,6 +5,21 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### chelpu'
+
+- may' Segh chu' vagh: may' Qav (tera' may' Qav lugh Dawuq - 'Iw wa'DIch rur), pagh pagh (0-0 lugh Dawuq), maQmey law' (vagh maQ latlh je ghajbogh may' lugh Dawuq), jagh (rap Segh may'mey lugh wejlogh Dawuq), choH pagh (ghom naQ Dawuq 'ej not DachoH).
+- may' tlheghmey (qul tlhegh, meQtaH) DaH tlhegh DataHtaHbogh 'ang, patlh toy'taHvIS, tlhegh DataHbogh DaH Daleghmeh, ghaj neH ghobe'.
+
+### choHpu'
+
+- may' «may' poS» pong «'Iw wa'DIch» DaH (may' poS lugh Dawuq), «'Iw wa'DIch» qan (wa'DIch chevmey lugh) pong «wamtaH» DaH. may' Hoch HaSta Sub ghaj.
+- pupqu' (ghom pup) DaH may' Qav tlhopal may' je HISlaHbe': wa' may' ghommey bIH, Sub ngaqbogh ghaj, vaj pupqu' 'oH DaH ghom law'-may' naQ pup.
+
+### tI'pu'
+
+- may' poH tlheghmey (po bo'Degh, ram bo'Degh, poH vuS SuvwI') DaH wuq DaghItlhtaHvIS poSmoHlu', may' veb pat loSbe' - poH Qav cha'maH vagh tup Hutlh Dawuqchugh, poH vuS SuvwI' DaH Danob.
+- qeSHom «may'wIj» DaH may' De'wI' Duv Duv, HaSta Duv nIvbogh vangbe'.
+
 ## [2.26.0] - 2026-07-05
 
 ### chelpu'
