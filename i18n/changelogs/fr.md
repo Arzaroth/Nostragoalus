@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [2.27.1] - 2026-07-10
+
 ### Corrigé
 
 - Sans faute ne se débloque plus sur une journée à moitié jouée. Dans un tour à élimination directe, seul le premier match est terminé alors que les autres restent à venir, et le pronostiquer au score exact suffisait à valider un tour parfait ; Sans faute (et Réglé d'avance) attendent désormais que tous les matchs du tour aient été joués.
