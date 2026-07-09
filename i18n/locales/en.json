@@ -252,6 +252,16 @@
       "confirm": "Regenerate",
       "cancel": "Cancel"
     },
+    "reset": {
+      "button": "Reset chat identity",
+      "link": "Lost your recovery code? Start fresh.",
+      "title": "Reset your chat identity?",
+      "body1": "Only use this if you have lost your recovery code and can't restore on this device. It creates a brand-new chat key here.",
+      "body2": "Your direct messages and current league chats come back once each person you talk with re-verifies your new key, in person or over a channel you trust. Older league history that had already been re-keyed stays lost for good.",
+      "body3": "Everyone sees your safety number change and must re-verify you. This can't be undone.",
+      "confirm": "Reset my identity",
+      "cancel": "Cancel"
+    },
     "verify": {
       "show": "Verify keys",
       "intro": "Compare these numbers with each member in person or over a channel you trust. If a member's number does not match, their key may have been tampered with.",

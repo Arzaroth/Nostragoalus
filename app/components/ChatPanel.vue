@@ -110,7 +110,7 @@ async function resolveReport(id: string, action: 'remove' | 'restore') {
   await chat.moderate(id, action)
   reports.value = reports.value.filter((r) => r.id !== id)
 }
-const { identity, hasRecovery, setupRecovery, restore } = useChatIdentity()
+const { identity, hasRecovery, setupRecovery, restore, resetIdentity } = useChatIdentity()
 
 // Key verification: per-member safety numbers + trust-on-first-use pinning, so a
 // substituted public key is caught.
@@ -729,6 +729,22 @@ async function confirmRegenerate() {
   await openRecoverySetup()
 }
 
+// Reset the identity: the hard recovery when the recovery code is lost too. Destructive
+// (drops the old escrow, re-keys, everyone must re-verify), so it sits behind a confirm
+// that spells out the consequences. On success reload the room so the new key takes.
+const showResetConfirm = ref(false)
+const resetting = ref(false)
+async function confirmReset() {
+  resetting.value = true
+  try {
+    await resetIdentity()
+    showResetConfirm.value = false
+    await chat.load()
+  } finally {
+    resetting.value = false
+  }
+}
+
 // Restore on a new device.
 const restoreCode = ref('')
 const restoreError = ref(false)
@@ -946,12 +962,18 @@ watch(
               <i class="pi pi-volume-off text-xs" />
               <span class="flex-1">{{ t('chat.muted.show', { n: muted.length }) }}</span>
             </button>
-            <!-- Danger zone: identity-level recovery actions. Not admin-gated (a DM
-                 shares this same E2EE identity); destructive, so each confirms. -->
-            <template v-if="hasRecovery && identityStatus === 'ready'">
+            <!-- Danger zone: identity-level recovery actions on a ready device. Not
+                 admin-gated (a DM shares this same E2EE identity); destructive, so each
+                 confirms. Regenerate needs a saved code to replace; reset re-keys the
+                 whole identity. A device with neither key nor code is in needs-restore
+                 instead (the menu is hidden there) and resets from the restore block. -->
+            <template v-if="identityStatus === 'ready'">
               <div class="my-1 border-t" style="border-color: var(--p-content-border-color)" />
-              <button type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-start opacity-90 hover:opacity-100" style="color: var(--ng-danger)" :disabled="recoveryBusy" @click="menuOpen = false; showRegenConfirm = true">
+              <button v-if="hasRecovery" type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-start opacity-90 hover:opacity-100" style="color: var(--ng-danger)" :disabled="recoveryBusy" @click="menuOpen = false; showRegenConfirm = true">
                 <i class="pi pi-refresh text-xs" /><span class="flex-1">{{ t('chat.regenerate.button') }}</span>
+              </button>
+              <button type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-start opacity-90 hover:opacity-100" style="color: var(--ng-danger)" @click="menuOpen = false; showResetConfirm = true">
+                <i class="pi pi-user-edit text-xs" /><span class="flex-1">{{ t('chat.reset.button') }}</span>
               </button>
             </template>
             <template v-if="isAdmin">
@@ -977,6 +999,7 @@ watch(
       <InputText v-model="restoreCode" :placeholder="t('chat.restore.placeholder')" />
       <small v-if="restoreError" style="color: var(--ng-danger)">{{ t('chat.restore.error') }}</small>
       <Button :label="t('chat.restore.button')" :loading="restoring" size="small" @click="doRestore" />
+      <button type="button" class="text-xs underline self-start" style="color: var(--ng-danger)" @click="showResetConfirm = true">{{ t('chat.reset.link') }}</button>
     </div>
 
     <!-- Disabled. -->
@@ -1421,6 +1444,20 @@ watch(
       <template #footer>
         <Button :label="t('chat.regenerate.cancel')" severity="secondary" text @click="showRegenConfirm = false" />
         <Button :label="t('chat.regenerate.confirm')" :loading="recoveryBusy" @click="confirmRegenerate" />
+      </template>
+    </Dialog>
+
+    <!-- Reset-identity confirm: a hard recovery. Spells out the consequences in full
+         because it drops the old escrow, re-keys, and makes everyone re-verify. -->
+    <Dialog v-model:visible="showResetConfirm" modal :header="t('chat.reset.title')" :style="{ width: '32rem', maxWidth: '92vw' }">
+      <div class="flex flex-col gap-3 text-sm">
+        <p>{{ t('chat.reset.body1') }}</p>
+        <p>{{ t('chat.reset.body2') }}</p>
+        <p style="color: var(--ng-danger)">{{ t('chat.reset.body3') }}</p>
+      </div>
+      <template #footer>
+        <Button :label="t('chat.reset.cancel')" severity="secondary" text @click="showResetConfirm = false" />
+        <Button :label="t('chat.reset.confirm')" severity="danger" :loading="resetting" @click="confirmReset" />
       </template>
     </Dialog>
 
