@@ -64,12 +64,13 @@ export async function getCabinet(
     // would telegraph its threshold (how close you are to a cold streak).
     const current = def.metric && def.category !== 'SHAME' ? (userStats?.[def.metric] ?? 0) : null
     // Show the ongoing streak only on a still-climbing streak badge: hide it once the
-    // top tier is reached (nothing left to chase) and never on SHAME badges.
+    // top tier is reached (nothing left to chase) and never on SHAME badges. A run of
+    // 0 (a just-broken streak) is nothing to show, so it hides too.
     const curField = def.metric ? STREAK_CUR[def.metric] : undefined
     const topThreshold = def.tiers[def.tiers.length - 1]?.threshold ?? Infinity
     const maxed = (current ?? 0) >= topThreshold
-    const currentStreak =
-      curField && def.category !== 'SHAME' && !maxed ? (userStats?.[curField] ?? 0) : null
+    const cur = curField && def.category !== 'SHAME' && !maxed ? (userStats?.[curField] ?? 0) : 0
+    const currentStreak = cur > 0 ? cur : null
     return [
       {
         key: def.key,
