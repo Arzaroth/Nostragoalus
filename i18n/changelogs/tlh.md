@@ -5,6 +5,12 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### tI'pu'
+
+- ghItlhHa' ghItlh: DawI' pItlhbe'bogh may'mey vagh poH Daq lujatlhbe'chugh, ghItlhHa' poSbe'. may' Qav'e' Dawuqbogh neH lugh Dawuqchugh, wa' may' naQ rurbe'; DaH ghItlhHa' (choH pagh je) may' naQ poH pItlhpu'DI' neH lo'laH.
+- patlh Qav Delbogh may'mey - may' naQ lugh, ghom naQ Dawuq, patlh wej pagh patlh Qav - DaH patlh Do'Ha'chugh 'e' lIjnISDI' (may' choHqa'lu'DI' rur), HaSta DaqDaq ratlhbe' 'ach chIlqa'. tlhegh may'mey, mI' may'mey, "lugh Dawuq" may'mey je DaH ghaj potlh polqa'.
+- may' bIrqu' DaH patlh DaqDaq nItlh bIng 'ang, may' HaSta rur, chov motlh rurbe'.
+
 ## [2.27.0] - 2026-07-09
 
 ### chelpu'

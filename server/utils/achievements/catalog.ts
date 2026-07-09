@@ -72,10 +72,12 @@ export interface AchievementDef {
   // Hidden until earned: other users never see it locked, and the owner sees only
   // a cryptic teaser. Used for the secret badges.
   hidden?: boolean
-  // Revocable: the badge reflects a current-state truth (a final standing, a
-  // complete-round perfection), not a lifetime peak. When its metric stops meeting
-  // any tier the row is deleted, so a mis-grant or an undone state (a rewound
-  // tournament) self-heals. Off by default: streaks and cumulative counts are
+  // Revocable: the badge reflects a standing that is only true while a gate holds - a
+  // final standing (completionist/podium/wooden-spoon, gated on a decided final) or a
+  // complete-round perfection (perfect-round) - not a lifetime peak. When its metric
+  // stops meeting any tier the row is deleted, so a mis-grant or an undone state (a
+  // rewound tournament) self-heals. Off by default: streaks, cumulative counts and
+  // one-off "you called it right" feats (grand-finale, champion-oracle, ...) are
   // high-water and must survive a transient rescore dip. See applyAchievementTier.
   revocable?: boolean
 }
@@ -113,6 +115,9 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { key: 'night-owl', category: 'BEHAVIORAL', scope: 'COMPETITION', metric: 'nightOwl', tiers: single(1) },
   { key: 'deadline-dancer', category: 'BEHAVIORAL', scope: 'COMPETITION', metric: 'deadlineDancer', tiers: single(1) },
   { key: 'completionist', category: 'BEHAVIORAL', scope: 'COMPETITION', metric: 'completed', tiers: single(1), revocable: true },
+  // Not revocable: these are "you called it right" feats, the champion-pick analog of
+  // grand-finale (which also hinges on a decided final and stays high-water). A rewind
+  // that un-decides the champion leaves them, exactly as it leaves grand-finale.
   { key: 'champion-oracle', category: 'ORACLE', scope: 'COMPETITION', metric: 'championOracle', tiers: single(1) },
   { key: 'golden-touch', category: 'ORACLE', scope: 'COMPETITION', metric: 'goldenTouch', tiers: single(1) },
   { key: 'underdog-whisperer', category: 'ORACLE', scope: 'COMPETITION', metric: 'underdog', tiers: single(1) },

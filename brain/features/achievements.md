@@ -62,12 +62,18 @@ rounds/opener/lone-wolf/oracle/underdog/completion/podium/wooden-spoon/trophy co
 then upserts. It is idempotent and returns the badges newly earned or graded up, for
 notification. A tier is a high-water mark: a rescore that lowers a metric refreshes
 stored progress but never demotes the badge - so streaks and tallies survive a
-transient rescore dip. The exception is `revocable` badges (`perfect-round`,
-`completionist`, `podium`, `wooden-spoon` in `catalog.ts`): these reflect a
-current-state truth, not a lifetime peak, so when their metric no longer meets any
-tier the row is deleted (`applyAchievementTier`) and the badge self-heals away - a
-mis-grant, or an undone state like a rewound tournament whose final is no longer
-decided. Revocation is silent (no notification).
+transient rescore dip. The exception is `revocable` badges (in `catalog.ts`:
+`perfect-round`, and the final-standing `completionist`/`podium`/`wooden-spoon` gated
+on a decided final): these reflect a standing that is only true while its gate holds,
+not a lifetime peak, so when their metric no longer meets any tier the row is deleted
+(`applyAchievementTier`) and the badge self-heals away - a mis-grant, or an undone
+state like a rewound tournament whose final is no longer decided. "You called it"
+feats stay high-water even though they hinge on a decided result: `grand-finale` and
+`champion-oracle`/`underdog-whisperer`/`golden-touch` are kept, not revoked, exactly
+as one earned-then-corrected exact call is. Revocation is silent (no notification).
+`evaluateAchievements` also sweeps revocable rows for users who have dropped out of
+the stats map entirely (a reset that wiped all their predictions), which the per-user
+loop would otherwise never revisit.
 
 **The final-standing gate.** completionist, podium and wooden-spoon settle only once
 the tournament is over - gated on `hasDecidedFinal` (`server/utils/awards/service.ts`),
