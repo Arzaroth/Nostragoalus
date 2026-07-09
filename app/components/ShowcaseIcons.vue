@@ -3,18 +3,6 @@ import type { ShowcaseIconDto } from '#shared/types/achievements'
 
 defineProps<{ items: ShowcaseIconDto[] }>()
 const { t } = useI18n()
-
-const CATEGORY_ICON: Record<string, string> = {
-  MILESTONE: 'pi pi-bolt',
-  BEHAVIORAL: 'pi pi-clock',
-  CROWD: 'pi pi-users',
-  JOKER: 'pi pi-star',
-  ORACLE: 'pi pi-eye',
-  STREAK: 'pi pi-forward',
-  TROPHY_META: 'pi pi-trophy',
-  SECRET: 'pi pi-sparkles',
-}
-const TIER_TINT: Record<string, string> = { BRONZE: '#cd7f32', SILVER: '#9ca3af', GOLD: '#eab308' }
 </script>
 
 <template>
@@ -23,9 +11,9 @@ const TIER_TINT: Record<string, string> = { BRONZE: '#cd7f32', SILVER: '#9ca3af'
       v-for="it in items"
       :key="it.key"
       v-tooltip.top="t(`achievements.badge.${it.key}.name`)"
-      :class="CATEGORY_ICON[it.category] ?? 'pi pi-verified'"
+      :class="ACHIEVEMENT_CATEGORY_ICON[it.category] ?? FALLBACK_ACHIEVEMENT_ICON"
       class="text-xs"
-      :style="`color:${it.tier ? TIER_TINT[it.tier] : 'var(--p-primary-color)'}`"
+      :style="`color:${it.tier ? ACHIEVEMENT_TIER_TINT[it.tier] : 'var(--p-primary-color)'}`"
     />
   </span>
 </template>

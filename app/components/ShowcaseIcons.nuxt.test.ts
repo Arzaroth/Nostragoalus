@@ -23,4 +23,12 @@ describe('ShowcaseIcons', () => {
     wrapper = await mountSuspended(ShowcaseIcons, { props: { items: [] } })
     expect(wrapper.findAll('i')).toHaveLength(0)
   })
+
+  it('renders the SHAME thumbs-down icon, matching the cabinet (not the generic fallback)', async () => {
+    const items: ShowcaseIconDto[] = [{ key: 'cold-streak', category: 'SHAME', tier: 'BRONZE' }]
+    wrapper = await mountSuspended(ShowcaseIcons, { props: { items } })
+    const icon = wrapper.find('i')
+    expect(icon.classes()).toContain('pi-thumbs-down')
+    expect(icon.classes()).not.toContain('pi-verified')
+  })
 })
