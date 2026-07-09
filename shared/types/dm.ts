@@ -38,6 +38,9 @@ export interface DmThreadDetailDTO {
   epoch: number
   other: DmParticipantDTO
   myWrappedKeys: DmEpochKeyDTO[]
+  // The other participant lacks a sealed key at the current epoch (they reset their
+  // identity): a keyholder client re-seals the thread key to their new public key.
+  otherMissingCurrentKey: boolean
 }
 
 // A candidate to start a DM with. `shared` marks a league co-member (always

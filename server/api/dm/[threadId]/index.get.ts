@@ -16,6 +16,7 @@ export default defineEventHandler(async (event) => {
       epoch: detail.epoch,
       other: { userId: detail.other.userId, name: detail.other.name, image: detail.other.image, publicKey: detail.other.publicKey },
       myWrappedKeys: detail.myWrappedKeys,
+      otherMissingCurrentKey: detail.otherMissingCurrentKey,
     }
     return { thread: dto }
   } catch (err) {

@@ -4,6 +4,7 @@ import { createTestDb } from '../../../tests/db'
 import { addLeagueMember, makeLeague, makeUser, seedCompetition } from '../../../tests/factories'
 import { chatIdentity, chatMessage, dmThread, dmThreadKey, dmThreadRead, user } from '../../../db/schema'
 import {
+  addDmWrappedKey,
   canDm,
   createThread,
   editDmMessage,
@@ -19,6 +20,7 @@ import {
   requireParticipant,
   searchRecipients,
 } from './service'
+import { resetChatIdentity } from '../chat/service'
 import { getAttachmentCiphertext, getMessageAttachments, listRoomMedia } from '../chat/attachments'
 import { getMessageReactionTotals, setChatReaction } from '../chat/reactions'
 import { emptyReactionTotals } from '../../../shared/reactions'
@@ -318,6 +320,17 @@ describe('getThreadDetail', () => {
       { epoch: 1, wrappedKey: 'wk-aaa' },
       { epoch: 2, wrappedKey: 'wk2-aaa' },
     ])
+    // The other party has no key at the current epoch (2) - only I advanced.
+    expect(detail.otherMissingCurrentKey).toBe(true)
+    await client.close()
+  })
+
+  it('reports otherMissingCurrentKey false when the other party holds the current key', async () => {
+    const { db, client } = await createTestDb()
+    const me = await mkUser(db, 'aaa')
+    const other = await mkUser(db, 'bbb')
+    const threadId = await openThread(db, me, other)
+    expect((await getThreadDetail(db, threadId, me)).otherMissingCurrentKey).toBe(false)
     await client.close()
   })
 
@@ -338,6 +351,56 @@ describe('getThreadDetail', () => {
     const threadId = await openThread(db, me, other)
     await db.delete(chatIdentity).where(eq(chatIdentity.userId, other))
     await expect(getThreadDetail(db, threadId, me)).rejects.toBeInstanceOf(NotFoundError)
+    await client.close()
+  })
+})
+
+describe('addDmWrappedKey', () => {
+  it('re-seals the current key to the other party and is idempotent', async () => {
+    const { db, client } = await createTestDb()
+    const me = await mkUser(db, 'aaa')
+    const other = await mkUser(db, 'bbb')
+    const threadId = await openThread(db, me, other)
+    // The other party lost their sealed key (as a reset would do).
+    await db.delete(dmThreadKey).where(and(eq(dmThreadKey.threadId, threadId), eq(dmThreadKey.userId, other)))
+    expect((await getThreadDetail(db, threadId, me)).otherMissingCurrentKey).toBe(true)
+
+    const first = await addDmWrappedKey(db, { threadId, actorId: me, targetUserId: other, epoch: 1, wrappedKey: 'reWK' })
+    expect(first.added).toBe(1)
+    expect((await getThreadDetail(db, threadId, me)).otherMissingCurrentKey).toBe(false)
+    expect((await getThreadDetail(db, threadId, other)).myWrappedKeys).toEqual([{ epoch: 1, wrappedKey: 'reWK' }])
+    // A concurrent re-seal is a no-op.
+    const again = await addDmWrappedKey(db, { threadId, actorId: me, targetUserId: other, epoch: 1, wrappedKey: 'other' })
+    expect(again.added).toBe(0)
+    await client.close()
+  })
+
+  it('rejects a non-participant, self-target, wrong target and stale epoch', async () => {
+    const { db, client } = await createTestDb()
+    const me = await mkUser(db, 'aaa')
+    const other = await mkUser(db, 'bbb')
+    const stranger = await mkUser(db, 'zzz')
+    const threadId = await openThread(db, me, other)
+    await expect(addDmWrappedKey(db, { threadId, actorId: stranger, targetUserId: other, epoch: 1, wrappedKey: 'x' })).rejects.toBeInstanceOf(NotFoundError)
+    await expect(addDmWrappedKey(db, { threadId, actorId: me, targetUserId: me, epoch: 1, wrappedKey: 'x' })).rejects.toBeInstanceOf(ValidationError)
+    await expect(addDmWrappedKey(db, { threadId, actorId: me, targetUserId: stranger, epoch: 1, wrappedKey: 'x' })).rejects.toBeInstanceOf(ValidationError)
+    await expect(addDmWrappedKey(db, { threadId, actorId: me, targetUserId: other, epoch: 2, wrappedKey: 'x' })).rejects.toBeInstanceOf(ConflictError)
+    await client.close()
+  })
+
+  it('a peer identity reset purges its thread key; the keyholder re-seals to the new key', async () => {
+    const { db, client } = await createTestDb()
+    const me = await mkUser(db, 'aaa')
+    const other = await mkUser(db, 'bbb')
+    const threadId = await openThread(db, me, other)
+    // The other party resets: their sealed thread key is purged and their pubkey changes.
+    await resetChatIdentity(db, other, 'pk-bbb-NEW')
+    const detail = await getThreadDetail(db, threadId, me)
+    expect(detail.otherMissingCurrentKey).toBe(true)
+    expect(detail.other.publicKey).toBe('pk-bbb-NEW')
+    // The keyholder re-seals the same key to the new pubkey; the peer regains the thread.
+    await addDmWrappedKey(db, { threadId, actorId: me, targetUserId: other, epoch: 1, wrappedKey: 'reWK-new' })
+    expect((await getThreadDetail(db, threadId, other)).myWrappedKeys).toEqual([{ epoch: 1, wrappedKey: 'reWK-new' }])
     await client.close()
   })
 })
