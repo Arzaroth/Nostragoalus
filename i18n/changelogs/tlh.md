@@ -5,6 +5,18 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### chelpu'
+
+- rarlu'bogh janmey: DaH lojmItlIj HaSta janmey Hoch 'ang, account-lIj 'elpu'bogh (jan Segh, IP, Qu' Qav poH). wa' jan yImej, pagh «latlh janmey Hoch yImej» yIlo'. lat janDaq pagh chIlpu'bogh janDaq bIleghpu'chugh, QaQ.
+
+### choHpu'
+
+- DaH may' roadmap wuqmey SoQlu'DI' Qu' taHtaHvIS pagh rInDI': chay' chenmoHnIS 'oS wuqmey, vaj Qu' taghlu'DI' mevmoH. Qu' pIchlu'bogh je ghom qeqbogh wuqmey poSqa'taH.
+
+### tI'pu'
+
+- DaH sessions nI'qu' 'ej lo'lu'taHvIS taHmoHlu', «meqHa' mejmoHlu'» tI'. iPhone-Daq juH HaSta (PWA) chuqlu'DI' potlh law': session nI'be'bogh teqlu'laH app SoQlu'DI' 'ej Hurgh.
+
 ## [2.27.1] - 2026-07-10
 
 ### tI'pu'

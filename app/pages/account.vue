@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { resizeToDataUrl } from '../utils/image'
+import { deviceLabel, parseUserAgent } from '../utils/user-agent'
 
 const { t, locale } = useI18n()
 const { session, changeEmail, changePassword, updateUser, deleteUser, signOut } = useAuth()
@@ -76,6 +77,22 @@ async function revokeTrust() {
   await $fetch<{ trusted: boolean }>('/api/me/revoke-trust', { method: 'POST' })
   await refreshTrust()
 }
+
+// --- Connected devices (active login sessions) ---
+const { sessions: activeSessions, revoke: revokeDevice, revokeOthers } = useSessions()
+// better-auth's useSession data carries the current session alongside the user.
+const currentSessionToken = computed(() => (session.value?.data as { session?: { token?: string } } | undefined)?.session?.token)
+// Current device first, then most-recently-active.
+const deviceRows = computed(() => {
+  const rows = [...(activeSessions.data.value ?? [])]
+  return rows.sort((a, b) => {
+    const aCurrent = a.token === currentSessionToken.value
+    const bCurrent = b.token === currentSessionToken.value
+    if (aCurrent !== bCurrent) return aCurrent ? -1 : 1
+    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+  })
+})
+const otherDeviceCount = computed(() => deviceRows.value.filter((s) => s.token !== currentSessionToken.value).length)
 
 
 const email = ref('')
@@ -405,6 +422,61 @@ async function confirmDelete() {
               <InputOtp v-model="pkCode" :length="6" integer-only />
             </div>
             <Button :label="t('passkeys.add')" icon="pi pi-plus" :loading="pkBusy" :disabled="!pkPassword || (tfaEnabled && String(pkCode).length < 6)" @click="addPasskey" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="ng-card rounded-2xl border" style="background: var(--p-content-background)">
+      <div class="grid md:grid-cols-3 gap-6 p-6">
+        <div>
+          <h2 class="font-semibold">{{ t('sessions.title') }}</h2>
+          <p class="text-sm mt-1" style="color: var(--p-text-muted-color)">{{ t('sessions.hint') }}</p>
+        </div>
+        <div class="md:col-span-2 flex flex-col gap-3">
+          <Message v-if="activeSessions.isError.value" severity="error" size="small">{{ t('sessions.loadFailed') }}</Message>
+          <div v-if="activeSessions.isPending.value" class="text-sm" style="color: var(--p-text-muted-color)">{{ t('common.loading') }}</div>
+          <div v-else class="flex flex-col rounded-xl border divide-y" style="border-color: var(--p-content-border-color)">
+            <div
+              v-for="s in deviceRows"
+              :key="s.token"
+              class="ng-session-row flex items-center gap-3 px-4 py-2.5 text-sm"
+              style="border-color: var(--p-content-border-color)"
+            >
+              <i :class="parseUserAgent(s.userAgent).icon" style="color: var(--p-primary-color)" />
+              <div class="flex-1 min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="font-medium truncate">{{ deviceLabel(s.userAgent, t('sessions.unknownDevice')) }}</span>
+                  <Tag v-if="s.token === currentSessionToken" severity="success" rounded>{{ t('sessions.current') }}</Tag>
+                </div>
+                <div class="text-xs mt-0.5" style="color: var(--p-text-muted-color)">
+                  <span v-if="s.ipAddress">{{ s.ipAddress }} · </span>{{ t('sessions.lastActive', { when: new Date(s.updatedAt).toLocaleString(locale) }) }}
+                </div>
+              </div>
+              <Button
+                v-if="s.token !== currentSessionToken"
+                icon="pi pi-sign-out"
+                size="small"
+                severity="danger"
+                text
+                rounded
+                :loading="revokeDevice.isPending.value"
+                :aria-label="t('sessions.revoke')"
+                @click="revokeDevice.mutate(s.token)"
+              />
+            </div>
+          </div>
+          <div>
+            <Button
+              :label="t('sessions.revokeOthers')"
+              icon="pi pi-sign-out"
+              size="small"
+              severity="danger"
+              outlined
+              :disabled="otherDeviceCount === 0"
+              :loading="revokeOthers.isPending.value"
+              @click="revokeOthers.mutate()"
+            />
           </div>
         </div>
       </div>

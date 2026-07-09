@@ -5,6 +5,18 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Ajouté
+
+- Appareils connectés : ta page de compte liste désormais chaque appareil connecté à ton compte (type d'appareil, adresse IP et dernière activité), avec un bouton pour déconnecter un appareil précis et un bouton « déconnecter tous les autres appareils ». Pratique si tu t'es connecté sur un téléphone partagé ou perdu.
+
+### Modifié
+
+- Les votes sur la roadmap se ferment désormais dès qu'une idée est en cours ou livrée : les votes servent à décider quoi construire ensuite, ils s'arrêtent donc une fois la construction commencée. Les idées planifiées et suggérées par la communauté restent ouvertes aux votes comme avant.
+
+### Corrigé
+
+- Les sessions durent désormais bien plus longtemps et se prolongent au fil de ton utilisation, corrigeant les « déconnexions sans raison » - surtout visible quand l'app est installée sur l'écran d'accueil (PWA) d'un iPhone, où une connexion de courte durée pouvait être perdue lorsque l'app était fermée en arrière-plan.
+
 ## [2.27.1] - 2026-07-10
 
 ### Corrigé

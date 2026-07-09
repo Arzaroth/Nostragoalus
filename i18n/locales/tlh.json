@@ -1189,6 +1189,16 @@
     "failed": "jan ngoq 'el Qagh.",
     "gateFailed": "pegh mu' pagh ngoq qarbe'."
   },
+  "sessions": {
+    "title": "rarlu'bogh janmey",
+    "hint": "DaH 'elpu'bogh janmey. DaSovbe'bogh jan yImej.",
+    "current": "janvam",
+    "unknownDevice": "jan Sovbe'lu'",
+    "lastActive": "Qu' Qav: {when}",
+    "revoke": "janvam yImej",
+    "revokeOthers": "latlh janmey Hoch yImej",
+    "loadFailed": "janlIj laDlaHbe'."
+  },
   "about": {
     "title": "De'",
     "intro": "Nostragoalus: QI'D noH Quj poSmoHlu'pu'bogh. mI'mey yInoH, QuQmey yISuq, juppu'lI' tIjey.",

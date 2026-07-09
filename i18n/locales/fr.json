@@ -1189,6 +1189,16 @@
     "failed": "Échec de la connexion par clé d'accès.",
     "gateFailed": "Mot de passe ou code incorrect."
   },
+  "sessions": {
+    "title": "Appareils connectés",
+    "hint": "Les appareils actuellement connectés à ton compte. Déconnecte ceux que tu ne reconnais pas.",
+    "current": "Cet appareil",
+    "unknownDevice": "Appareil inconnu",
+    "lastActive": "Dernière activité {when}",
+    "revoke": "Déconnecter cet appareil",
+    "revokeOthers": "Déconnecter tous les autres appareils",
+    "loadFailed": "Impossible de charger tes appareils."
+  },
   "about": {
     "title": "À propos",
     "intro": "Nostragoalus est un jeu de pronostics football open source : pronostiquez les scores, marquez des points selon votre précision et devancez vos amis.",
