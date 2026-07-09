@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.27.0] - 2026-07-09
+
 ### Added
 
 - Five new badges. Grand Finale (call the tournament's final exactly - the bookend to First Blood). Bore Draw (call a 0-0 on the nose). Goal Rush (nail a match of five or more goals exactly). Nemesis (call the same team's matches exactly three times). Set and Forget (predict a whole round and never edit a pick).

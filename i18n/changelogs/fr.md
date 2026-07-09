@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [2.27.0] - 2026-07-09
+
 ### Ajouté
 
 - Cinq nouveaux badges. Grande finale (pronostiquer la finale du tournoi au score exact - le pendant de Premier sang). Match nul vierge (annoncer un 0-0 pile). Festival de buts (deviner exactement un match d'au moins cinq buts). Bête noire (réussir le score exact des matchs d'une même équipe trois fois). Réglé d'avance (pronostiquer toute une journée sans jamais modifier un pronostic).
