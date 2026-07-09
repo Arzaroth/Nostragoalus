@@ -49,6 +49,16 @@ export function buildAuthOptions(database: AuthDb) {
     session: {
       expiresIn: 60 * 60 * 24 * 90, // 90 days
       updateAge: 60 * 60 * 24, // slide the expiry forward at most once a day
+      // Disable better-auth's session-freshness gate. It is keyed on the session's
+      // createdAt (which updateAge never moves), and it guards exactly two
+      // endpoints: /list-sessions and /unlink-account. With the long expiry above,
+      // a returning user's session is almost always >24h old, so the default
+      // freshAge (1 day) would make the connected-devices list 403 for precisely
+      // the users it is meant to serve. This app does not use better-auth's
+      // /unlink-account (SSO unlink is a separate admin route), so 0 only un-gates
+      // the device list. Genuinely sensitive actions have their own re-auth
+      // (password/TOTP/mailed-link on delete, the ng_reauth cookie on passkeys).
+      freshAge: 0,
     },
     emailAndPassword: {
       enabled: true,

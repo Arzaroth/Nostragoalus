@@ -1197,7 +1197,8 @@
     "lastActive": "Dernière activité {when}",
     "revoke": "Déconnecter cet appareil",
     "revokeOthers": "Déconnecter tous les autres appareils",
-    "loadFailed": "Impossible de charger tes appareils."
+    "loadFailed": "Impossible de charger tes appareils.",
+    "revokeFailed": "Impossible de déconnecter cet appareil. Réessaie."
   },
   "about": {
     "title": "À propos",

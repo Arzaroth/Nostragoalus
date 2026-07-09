@@ -1197,7 +1197,8 @@
     "lastActive": "Qu' Qav: {when}",
     "revoke": "janvam yImej",
     "revokeOthers": "latlh janmey Hoch yImej",
-    "loadFailed": "janlIj laDlaHbe'."
+    "loadFailed": "janlIj laDlaHbe'.",
+    "revokeFailed": "janvam mejmoHlaHbe'. yInID."
   },
   "about": {
     "title": "De'",

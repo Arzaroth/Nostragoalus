@@ -13,6 +13,13 @@ don't recognise. It doubles as the diagnostic surface for spurious-logout report
     `ipAddress?`, `userAgent?`, `createdAt`, `updatedAt`, `expiresAt`).
   - `revoke-session` (body `{ token }`) -> drop one session.
   - `revoke-other-sessions` -> drop every session except the current one.
+- **`freshAge: 0` is required** (`lib/auth.ts` session block). better-auth's
+  `/list-sessions` is guarded by a session-freshness middleware keyed on the
+  session's `createdAt` (which the sliding `updateAge` never moves). With the
+  default 1-day `freshAge`, the list would 403 (`SESSION_NOT_FRESH`) for any
+  session older than a day - i.e. exactly the returning users the 90-day expiry
+  serves. `freshAge: 0` disables that gate; it also covers `/unlink-account`,
+  which this app does not use (SSO unlink is a separate admin route).
 - `app/composables/useSessions.ts` wraps those client methods in vue-query: a
   `['sessions']` query plus `revoke` / `revokeOthers` mutations that invalidate it.
   better-auth calls resolve to `{ data, error }`; the composable rethrows `error`

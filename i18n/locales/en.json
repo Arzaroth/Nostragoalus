@@ -1201,7 +1201,8 @@
     "lastActive": "Last active {when}",
     "revoke": "Sign out this device",
     "revokeOthers": "Sign out all other devices",
-    "loadFailed": "Could not load your devices."
+    "loadFailed": "Could not load your devices.",
+    "revokeFailed": "Could not sign out that device. Try again."
   },
   "about": {
     "title": "About",

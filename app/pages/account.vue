@@ -435,6 +435,7 @@ async function confirmDelete() {
         </div>
         <div class="md:col-span-2 flex flex-col gap-3">
           <Message v-if="activeSessions.isError.value" severity="error" size="small">{{ t('sessions.loadFailed') }}</Message>
+          <Message v-if="revokeDevice.isError.value || revokeOthers.isError.value" severity="error" size="small">{{ t('sessions.revokeFailed') }}</Message>
           <div v-if="activeSessions.isPending.value" class="text-sm" style="color: var(--p-text-muted-color)">{{ t('common.loading') }}</div>
           <div v-else class="flex flex-col rounded-xl border divide-y" style="border-color: var(--p-content-border-color)">
             <div
@@ -454,7 +455,7 @@ async function confirmDelete() {
                 </div>
               </div>
               <Button
-                v-if="s.token !== currentSessionToken"
+                v-if="currentSessionToken && s.token !== currentSessionToken"
                 icon="pi pi-sign-out"
                 size="small"
                 severity="danger"
@@ -473,7 +474,7 @@ async function confirmDelete() {
               size="small"
               severity="danger"
               outlined
-              :disabled="otherDeviceCount === 0"
+              :disabled="!currentSessionToken || otherDeviceCount === 0"
               :loading="revokeOthers.isPending.value"
               @click="revokeOthers.mutate()"
             />
