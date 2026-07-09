@@ -5,7 +5,9 @@ import {
   encryptBytes,
   encryptMessage,
   openGroupKey,
+  sealGroupKey,
 } from '~/utils/e2ee'
+import { chatKeyPins, isKeyTrusted } from '~/composables/useChatKeyPins'
 import { emptyReactionTotals, type ReactionEmoji, type ReactionTotals } from '#shared/reactions'
 import type { ChatAttachmentDTO, ChatMediaItemDTO, ChatMessageDTO, ChatModerationState } from '#shared/types/chat'
 import type { DmThreadDetailDTO } from '#shared/types/dm'
@@ -55,6 +57,31 @@ export function useDmRoom(threadId: MaybeRefOrGetter<string>) {
 
   function tid(): string {
     return toValue(threadId)
+  }
+
+  // The other participant, and whether they lack a sealed key at the current epoch
+  // (typically because they reset their identity). If I am the keyholder I re-seal the
+  // thread key to their new public key - see reconcilePeerKey.
+  const pins = chatKeyPins()
+  const otherId = ref<string | null>(null)
+  const otherPublicKey = ref<string | null>(null)
+  const otherMissingKey = ref(false)
+
+  // Re-seal the current thread key to the other participant after they reset their
+  // identity (their old sealed copy was purged, so the thread went dark for them). Only
+  // if I hold the key AND I trust their key - unseen (TOFU) or acknowledged in the
+  // verify panel - so an unacknowledged key swap is never handed the thread key. Idle
+  // unless they are actually missing it; re-runs when a pin changes (an acknowledge).
+  async function reconcilePeerKey(): Promise<void> {
+    const ck = currentKey.value
+    if (!ck || !otherMissingKey.value || !otherId.value || !otherPublicKey.value) return
+    if (!isKeyTrusted(pins.value, otherId.value, otherPublicKey.value)) return
+    const wrappedKey = await sealGroupKey(ck, otherPublicKey.value)
+    await $fetch(`/api/dm/${tid()}/keys`, {
+      method: 'POST',
+      body: { targetUserId: otherId.value, epoch: epoch.value, wrappedKey },
+    }).catch(() => {})
+    otherMissingKey.value = false
   }
 
   async function decryptRow(r: ChatMessageDTO): Promise<DecryptedMessage> {
@@ -121,7 +148,12 @@ export function useDmRoom(threadId: MaybeRefOrGetter<string>) {
         { userId: myId.value ?? '', publicKey: identity.value.publicKey, name: myName.value, image: myImage.value },
         { userId: thread.other.userId, publicKey: thread.other.publicKey, name: thread.other.name, image: thread.other.image },
       ]
+      otherId.value = thread.other.userId
+      otherPublicKey.value = thread.other.publicKey
+      otherMissingKey.value = thread.otherMissingCurrentKey
       await loadMessages({ resetMarker: !bg })
+      // If the other party reset and I hold the key, re-seal it to their new pubkey.
+      await reconcilePeerKey()
     } finally {
       if (!bg) loading.value = false
     }
@@ -371,6 +403,10 @@ export function useDmRoom(threadId: MaybeRefOrGetter<string>) {
     },
     { immediate: true },
   )
+
+  // Acknowledging the peer's changed key (in the verify panel) updates the shared pin
+  // store; that is our cue to re-seal the thread key to their new identity.
+  watch(pins, () => void reconcilePeerKey(), { deep: true })
 
   const visibleThread = computed(() =>
     threadMessages.value.filter((m) => !m.userId || !muted.value.includes(m.userId)),
