@@ -95,6 +95,23 @@ export function useChatIdentity() {
     return code
   }
 
+  // Hard recovery from a device that has no usable key AND no recovery code: mint a
+  // fresh keypair and replace the server identity, becoming ready here. Server-side the
+  // old escrow and every key sealed to the old identity are dropped, so a keyholder/peer
+  // re-seals the current keys to this new identity once they acknowledge the changed
+  // safety number. History under a rotated-out league epoch stays lost. Needs an
+  // existing server identity to reset (there is nothing to reset otherwise).
+  async function resetIdentity(): Promise<void> {
+    const uid = userId.value
+    if (!uid) throw new Error('signed out')
+    const id = await generateIdentity()
+    await $fetch('/api/chat/identity/reset', { method: 'POST', body: { publicKey: id.publicKey } })
+    await idbSet(`id-${uid}`, id)
+    identity.value = id
+    status.value = 'ready'
+    hasRecovery.value = false
+  }
+
   // Restore the private key on this device from a recovery code. Throws if the
   // code is wrong or no escrow exists.
   async function restore(code: string): Promise<void> {
@@ -110,5 +127,5 @@ export function useChatIdentity() {
     status.value = 'ready'
   }
 
-  return { status, identity, hasRecovery, ensure, setupRecovery, restore }
+  return { status, identity, hasRecovery, ensure, setupRecovery, restore, resetIdentity }
 }

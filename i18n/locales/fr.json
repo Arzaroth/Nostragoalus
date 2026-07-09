@@ -248,6 +248,16 @@
       "confirm": "Régénérer",
       "cancel": "Annuler"
     },
+    "reset": {
+      "button": "Réinitialiser l'identité de chat",
+      "link": "Code de récupération perdu ? Repartir de zéro.",
+      "title": "Réinitialiser votre identité de chat ?",
+      "body1": "À utiliser uniquement si vous avez perdu votre code de récupération et ne pouvez pas restaurer sur cet appareil. Une toute nouvelle clé de chat est créée ici.",
+      "body2": "Vos messages privés et les chats de ligue actuels reviennent une fois que chaque personne à qui vous parlez re-vérifie votre nouvelle clé, en personne ou via un canal de confiance. L'ancien historique de ligue déjà renouvelé est perdu définitivement.",
+      "body3": "Tout le monde voit votre numéro de sécurité changer et doit vous re-vérifier. Cette action est irréversible.",
+      "confirm": "Réinitialiser mon identité",
+      "cancel": "Annuler"
+    },
     "verify": {
       "show": "Vérifier les clés",
       "intro": "Comparez ces numéros avec chaque membre en personne ou via un canal de confiance. Si le numéro d'un membre ne correspond pas, sa clé a peut-être été falsifiée.",

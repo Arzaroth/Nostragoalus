@@ -248,6 +248,16 @@
       "confirm": "yImoj",
       "cancel": "qIl"
     },
+    "reset": {
+      "button": "SoQ qablIj yIchu'moH",
+      "link": "chu'wI' De' Data'be''a'? yItagh chu'.",
+      "title": "SoQ qablIj Dachu'moHnIS'a'?",
+      "body1": "chu'wI' De' Data'be'chugh 'ej De' Dachu'laHbe'chugh neH yIlo'. naDev ngaQHa'moHwI' chu' chenlu'.",
+      "body2": "QIn pegh Sep QInmey je chu' luchegh, ghot Hoch ngaQHa'moHwI' chu'lIj lunubqa'DI'. ngaQHa'moHwI' choHpu'bogh Sep qan lujlaHbe'.",
+      "body3": "mI'lIj choH legh Hoch; qanubqa'nIS. DaqIlHa'laHbe'.",
+      "confirm": "qablIj yIchu'moH",
+      "cancel": "qIl"
+    },
     "verify": {
       "show": "ngaQHa'moHwI' yInub",
       "intro": "Hoch ghot mI' yIqel. rapbe'chugh, ngaQHa'moHwI' choHlu'pu'.",

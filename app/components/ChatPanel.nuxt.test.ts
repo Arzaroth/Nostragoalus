@@ -99,7 +99,7 @@ vi.mock('../composables/useDmRoom', async () => {
 vi.mock('../composables/useChatIdentity', async () => {
   const { ref } = await import('vue')
   const { generateIdentity } = await import('../utils/e2ee')
-  const s = { identity: ref(await generateIdentity()), hasRecovery: ref(true), setupRecovery: vi.fn(), restore: vi.fn() }
+  const s = { identity: ref(await generateIdentity()), hasRecovery: ref(true), setupRecovery: vi.fn(), restore: vi.fn(), resetIdentity: vi.fn() }
   return { useChatIdentity: () => s, __id: s }
 })
 vi.mock('../composables/useLeagues', async () => {
@@ -501,6 +501,34 @@ describe('ChatPanel', () => {
     expect(confirm).toBeTruthy()
     confirm.dispatchEvent(new Event('click', { bubbles: true }))
     await vi.waitFor(() => expect(id.setupRecovery).toHaveBeenCalled())
+  })
+
+  it('resets the identity from the restore prompt, behind a consequences confirm', async () => {
+    const s = await chatState()
+    s.identityStatus.value = 'needs-restore'
+    const id = ((await import('../composables/useChatIdentity')) as any).__id
+    id.resetIdentity.mockClear()
+    const wrapper = await mount()
+    // The restore block (shown when the device lacks the key) offers the escape hatch.
+    const link = wrapper.findAll('button').find((b) => b.text().includes('Start fresh'))!
+    expect(link).toBeTruthy()
+    await link.trigger('click')
+    await vi.waitFor(() => expect(document.body.textContent).toContain('must re-verify you'))
+    expect(id.resetIdentity).not.toHaveBeenCalled()
+    const confirm = [...document.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Reset my identity')!
+    expect(confirm).toBeTruthy()
+    confirm.dispatchEvent(new Event('click', { bubbles: true }))
+    await vi.waitFor(() => expect(id.resetIdentity).toHaveBeenCalled())
+  })
+
+  it('offers a reset in the danger zone of a ready device', async () => {
+    const s = await chatState()
+    s.enabled.value = true
+    s.ready.value = true
+    const wrapper = await mount()
+    await wrapper.get('button[aria-label="More options"]').trigger('click')
+    const item = wrapper.findAll('button').find((b) => b.text().includes('Reset chat identity'))
+    expect(item).toBeTruthy()
   })
 
   it('lists muted members and offers an unmute', async () => {
