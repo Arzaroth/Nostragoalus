@@ -1193,6 +1193,16 @@
     "failed": "Passkey sign-in failed.",
     "gateFailed": "Wrong password or code."
   },
+  "sessions": {
+    "title": "Connected devices",
+    "hint": "Devices currently signed in to your account. Sign out any you don't recognise.",
+    "current": "This device",
+    "unknownDevice": "Unknown device",
+    "lastActive": "Last active {when}",
+    "revoke": "Sign out this device",
+    "revokeOthers": "Sign out all other devices",
+    "loadFailed": "Could not load your devices."
+  },
   "about": {
     "title": "About",
     "intro": "Nostragoalus is an open-source football prediction game: call the scores, earn points for how close you get, and out-foresee your friends.",

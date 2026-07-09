@@ -59,6 +59,7 @@ use the indexes.
 | [analytics.md](features/analytics.md) | Personal analytics: per-competition bias report on your own picks (mid-tournament). |
 | [leagues.md](features/leagues.md) | Competition-scoped groups, roles, visibility, SSO auto-join. |
 | [onboarding-tour.md](features/onboarding-tour.md) | One-time spotlight walk-through of the core actions for new players; replayable from the account menu. |
+| [connected-devices.md](features/connected-devices.md) | Account page lists active login sessions (device/IP/last-active) with per-device and bulk sign-out. |
 | [sso-provisioning.md](features/sso-provisioning.md) | SSO onboarding lifecycle, connection test, OIDC test-sign-in claim preview, DNS domain verify + bypass, SCIM provisioning. |
 | [league-modes.md](features/league-modes.md) | Per-league scoring modes (easy/hard/hardcore) + base pick / override. |
 | [crowd-bot.md](features/crowd-bot.md) | The "ghost" bot personas: consensus 🤖, evil twin 😈, equalizer ⚖️. |

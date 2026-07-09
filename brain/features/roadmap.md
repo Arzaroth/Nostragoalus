@@ -26,6 +26,10 @@ user suggestions share one table (`roadmap_item`) and render as two views.
 - A `roadmap_vote` row is one upvote keyed unique on `(roadmapItemId, userId)`;
   toggling removes it. Vote counts are always derived (`count(*)` grouped), never
   denormalized onto `roadmap_item`.
+- Voting closes once an item's `status` is `IN_PROGRESS` or `SHIPPED` (upvotes are
+  a build-next signal, so they stop mattering there). `toggleVote` throws
+  `ConflictError` (409) for those, and the board disables the upvote button with a
+  "voting closed" tooltip. Still-open `PLANNED`/`SUGGESTED` items stay votable.
 
 ## Two views, one table
 

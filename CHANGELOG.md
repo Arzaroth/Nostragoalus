@@ -5,6 +5,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+
+- Connected devices: your account page now lists every device signed in to your account (device type, IP and when it was last active), with a button to sign out any single device and a "sign out all other devices" button. Handy if you sign in on a shared or lost phone.
+
+### Changed
+
+- Voting on the roadmap now closes once an idea is in progress or shipped: upvotes are a signal for what to build next, so they stop once building has started. Planned and community-suggested ideas stay open to votes as before.
+
+### Fixed
+
+- Sessions now last far longer and refresh as you use the app, fixing "logged out for no reason" - most noticeable when the app is installed to your home screen (PWA) on iPhone, where a short-lived login could be dropped when the app was closed in the background.
+
 ## [2.27.1] - 2026-07-10
 
 ### Fixed
