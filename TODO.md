@@ -3,6 +3,20 @@
 Deferred work, queued behind feature development.
 Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
+## Chat identity recovery / reset
+
+- [ ] **No live nudge when a DM peer re-seals after a reset**: after a user resets
+      their chat identity, each DM peer re-seals the thread key to the new key on
+      their next thread open or socket reconnect (`useDmRoom.reconcilePeerKey`). The
+      reset user then only regains that thread on their OWN next load - there is no
+      `dm:keys-added`-style live push telling them a fresh key landed (league chat has
+      `chat:keys-added`). Add a DM push so a reset user's threads light up as peers
+      re-seal, instead of after a manual reopen.
+- [ ] **Reset from a ready device has no "why"**: the danger-zone reset is offered on
+      a ready device as a deliberate identity re-key, but nothing explains when you
+      would want it (a suspected key/code leak). Add a hint, or hide it behind an
+      "advanced" reveal, so it is not mistaken for the regenerate-code flow.
+
 ## League board parity (deferred from the feature-treatment review)
 
 - [ ] **Richer parity e2e**: `tests/e2e/league-board-parity.e2e.ts` only asserts the
