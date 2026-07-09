@@ -42,8 +42,11 @@ though key-substitution and code-swaps are made detectable.*
   `server/utils/key-transparency/service.ts`, `/api/keys/{head,log}`,
   `app/composables/useKeyTransparency.ts`. An append-only, hash-chained log of every
   `(userId -> publicKey)` binding, appended when a chat identity is first created
-  (serialized by a FOR UPDATE head lock, same construction as the commitment
-  ledger). The whole log is public. A client recomputes the chain, pins the head
+  **or reset** (a legitimate key rotation - the log keeps every binding and clients
+  take the latest for a user via `loggedKeyFor`, so a reset reads `ok`, not a
+  `mismatch`; but every co-member's pinned safety number changes, so they re-verify
+  before their client re-seals to the new key). Serialized by a FOR UPDATE head lock,
+  same construction as the commitment ledger. The whole log is public. A client recomputes the chain, pins the head
   locally, and cross-checks each served member key against the log: a `mismatch`
   (served key not the logged one) or a `logTampered` (chain fails / rewritten below
   the pinned head) surfaces in the verify dialog (`ChatPanel.vue`). **Limit

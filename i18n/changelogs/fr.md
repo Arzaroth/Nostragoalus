@@ -5,6 +5,11 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Ajouté
+
+- Régénérer votre code de récupération de chat : depuis un appareil où le chat fonctionne encore, créez un nouveau code depuis la zone sensible du menu de chat. L'ancien code cesse de fonctionner à l'instant même.
+- Réinitialiser votre identité de chat : vous avez perdu à la fois la clé de chat de votre appareil et votre code de récupération ? Repartez de zéro avec une clé toute neuve depuis l'invite « Code de récupération perdu ? ». Vos messages privés et vos chats de ligue actuels reviennent une fois que chaque personne à qui vous parlez re-vérifie votre nouveau numéro de sécurité ; l'ancien historique de ligue déjà renouvelé reste perdu.
+
 ## [2.28.0] - 2026-07-10
 
 ### Ajouté
@@ -26,7 +31,6 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 - Sans faute ne se débloque plus sur une journée à moitié jouée. Dans un tour à élimination directe, seul le premier match est terminé alors que les autres restent à venir, et le pronostiquer au score exact suffisait à valider un tour parfait ; Sans faute (et Réglé d'avance) attendent désormais que tous les matchs du tour aient été joués.
 - Les badges qui reflètent un classement final - un tour parfait, terminer tout le tournoi, une place sur le podium ou à la dernière place - se retirent désormais tout seuls si ce classement est annulé (par exemple après la réinitialisation d'un tournoi), au lieu de rester coincés à jamais dans votre vitrine. Les badges de série, de cumul et « bien vu » conservent votre record.
 - Le badge Glacial affiche désormais son pouce vers le bas dans le classement, comme sur la vitrine des trophées, au lieu d'une coche générique.
-
 ## [2.27.0] - 2026-07-09
 
 ### Ajouté
