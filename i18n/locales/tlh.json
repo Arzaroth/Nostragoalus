@@ -240,6 +240,14 @@
       "confirm": "ngaQHa'moHwI' chu' yIchu'",
       "cancel": "qIl"
     },
+    "regenerate": {
+      "button": "chu'wI' De' chu' yImoj",
+      "title": "chu'wI' De' chu' DamojnIS'a'?",
+      "body1": "chu'wI' De' chu' chenlu'; wa'logh 'anglu'. qan yIlon.",
+      "body2": "DaH chu'wI' De'lIj qan lujlaHbe'.",
+      "confirm": "yImoj",
+      "cancel": "qIl"
+    },
     "verify": {
       "show": "ngaQHa'moHwI' yInub",
       "intro": "Hoch ghot mI' yIqel. rapbe'chugh, ngaQHa'moHwI' choHlu'pu'.",

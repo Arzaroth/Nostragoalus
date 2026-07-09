@@ -244,6 +244,14 @@
       "confirm": "Rotate key",
       "cancel": "Cancel"
     },
+    "regenerate": {
+      "button": "Regenerate recovery code",
+      "title": "Regenerate your recovery code?",
+      "body1": "This makes a new recovery code and shows it once. Save it in place of the old one.",
+      "body2": "Your current recovery code stops working the moment you do this.",
+      "confirm": "Regenerate",
+      "cancel": "Cancel"
+    },
     "verify": {
       "show": "Verify keys",
       "intro": "Compare these numbers with each member in person or over a channel you trust. If a member's number does not match, their key may have been tampered with.",
