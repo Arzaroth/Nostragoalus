@@ -5,6 +5,21 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+
+- Five new badges. Grand Finale (call the tournament's final exactly - the bookend to First Blood). Bore Draw (call a 0-0 on the nose). Goal Rush (nail a match of five or more goals exactly). Nemesis (call the same team's matches exactly three times). Set and Forget (predict a whole round and never edit a pick).
+- Streak badges (Hot Streak, On Fire) now show your current ongoing run next to your best while the badge is still climbing, so you can see the streak you are on right now, not only your record.
+
+### Changed
+
+- "Opening Act" is now called "First Blood" (nailing the tournament's opening match), and the old "First Blood" (your first exact scoreline of a competition) is now "The Hunt Is On". Both badges keep their own icon.
+- Flawless (a perfect round) no longer counts the final or third-place play-off: those are one-match rounds, and calling them is already its own badge, so Flawless now means a clean sweep of a real multi-match round.
+
+### Fixed
+
+- The pick-timing badges (Early Bird, Night Owl, Deadline Dancer) now unlock the moment you save the qualifying pick, instead of only after the next match is scored - so predicting in the last five minutes before kickoff grants Deadline Dancer right away.
+- "My achievements" in the menu now scrolls straight to your trophy cabinet again, instead of the profile's jump-to-latest-match scroll stealing focus first.
+
 ## [2.26.0] - 2026-07-05
 
 ### Added

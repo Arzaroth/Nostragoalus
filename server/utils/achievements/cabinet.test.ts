@@ -75,6 +75,39 @@ describe('getCabinet', () => {
     expect(sharpshooter?.current).toBe(1)
   })
 
+  it('exposes the icon override and the ongoing streak on a climbing streak badge', async () => {
+    const c = await seedCompetition(db)
+    const alice = await makeUser(db, 'alice')
+    const [g1] = await db.select().from(round).where(eq(round.competitionId, c)).limit(1)
+    const mk = async (i: number) => {
+      const m = await makeMatch(db, {
+        competitionId: c,
+        roundId: g1.id,
+        status: 'FINISHED',
+        fullTimeHome: 1,
+        fullTimeAway: 0,
+        winner: 'HOME',
+        kickoffTime: new Date(Date.UTC(2026, 5, 15, 12 + i)),
+      })
+      await db.update(match).set({ scoringState: 'SCORED' }).where(eq(match.id, m))
+      const pid = await makePrediction(db, { userId: alice, matchId: m, roundId: g1.id, home: 1, away: 0 })
+      await db.update(prediction).set({ baseTier: 'EXACT', totalPoints: 3, basePoints: 3 }).where(eq(prediction.id, pid))
+    }
+    await mk(0)
+    await mk(1)
+
+    const cab = await getCabinet(db, { competitionId: c, userId: alice, viewerId: alice })
+    const ach = new Map(cab.achievements.map((a) => [a.key, a]))
+    // hot-streak (bronze at 3): the best run rides `current`, the ongoing run `currentStreak`.
+    expect(ach.get('hot-streak')?.current).toBe(2)
+    expect(ach.get('hot-streak')?.currentStreak).toBe(2)
+    // A non-streak badge never carries an ongoing streak.
+    expect(ach.get('sharpshooter')?.currentStreak).toBeNull()
+    // The per-key icon override rides the DTO; a badge without one stays null.
+    expect(ach.get('grand-finale')?.icon).toBe('pi pi-crown')
+    expect(ach.get('sharpshooter')?.icon).toBeNull()
+  })
+
   it('hides an unearned secret badge and flags non-owners', async () => {
     const c = await seedCompetition(db)
     const bob = await makeUser(db, 'bob')

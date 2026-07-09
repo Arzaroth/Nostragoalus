@@ -34,6 +34,11 @@ export const ACHIEVEMENT_METRICS = [
   'missStreak', // longest run of consecutive MISS predictions (a "bad" badge)
   'perfectRounds', // rounds where every scored pick was EXACT (and none missing)
   'openingAct', // 1 = called the very first match of the tournament EXACT
+  'finalExact', // 1 = called the tournament's FINAL match EXACT
+  'boreDraw', // 1 = called a 0-0 EXACT
+  'goalRush', // 1 = called a match with 5+ total goals EXACT
+  'bogeyTeam', // most EXACT calls on any one team's matches (home or away)
+  'setAndForget', // 1 = predicted a whole multi-match round and never edited one of them
   'completed', // 1 = tournament over AND predicted every match of it
   'championOracle', // 1 = champion pick paid out
   'goldenTouch', // 1 = best-scorer (Golden Boot) pick paid out
@@ -61,6 +66,9 @@ export interface AchievementDef {
   metric?: AchievementMetric
   // Ascending thresholds. A single-shot badge has one BRONZE entry.
   tiers: AchievementTierThreshold[]
+  // Per-key icon override (primeicons class). Absent = the category icon. Lets two
+  // badges of the same category read differently (e.g. the opener vs the final).
+  icon?: string
   // Hidden until earned: other users never see it locked, and the owner sees only
   // a cryptic teaser. Used for the secret badges.
   hidden?: boolean
@@ -77,9 +85,15 @@ const graded = (b: number, s: number, g: number): AchievementTierThreshold[] => 
 
 // The batch-evaluated catalog (everything except event-granted secrets).
 export const ACHIEVEMENTS: AchievementDef[] = [
-  { key: 'first-blood', category: 'MILESTONE', scope: 'COMPETITION', metric: 'exact', tiers: single(1) },
+  { key: 'first-blood', category: 'MILESTONE', scope: 'COMPETITION', metric: 'exact', tiers: single(1), icon: 'pi pi-compass' },
   // Called the tournament's very first match EXACT. Rare and unrepeatable, so gold.
-  { key: 'opening-act', category: 'MILESTONE', scope: 'COMPETITION', metric: 'openingAct', tiers: singleGold(1) },
+  { key: 'opening-act', category: 'MILESTONE', scope: 'COMPETITION', metric: 'openingAct', tiers: singleGold(1), icon: 'pi pi-flag' },
+  // The bookend to opening-act: called the tournament's FINAL match EXACT.
+  { key: 'grand-finale', category: 'MILESTONE', scope: 'COMPETITION', metric: 'finalExact', tiers: singleGold(1), icon: 'pi pi-crown' },
+  { key: 'bore-draw', category: 'MILESTONE', scope: 'COMPETITION', metric: 'boreDraw', tiers: single(1), icon: 'pi pi-moon' },
+  { key: 'goal-rush', category: 'MILESTONE', scope: 'COMPETITION', metric: 'goalRush', tiers: single(1), icon: 'pi pi-star-fill' },
+  { key: 'nemesis', category: 'MILESTONE', scope: 'COMPETITION', metric: 'bogeyTeam', tiers: single(3), icon: 'pi pi-replay' },
+  { key: 'set-and-forget', category: 'BEHAVIORAL', scope: 'COMPETITION', metric: 'setAndForget', tiers: single(1), icon: 'pi pi-lock' },
   { key: 'sharpshooter', category: 'MILESTONE', scope: 'COMPETITION', metric: 'exact', tiers: graded(5, 15, 30) },
   { key: 'prophet', category: 'MILESTONE', scope: 'COMPETITION', metric: 'predictions', tiers: graded(10, 50, 100) },
   { key: 'century', category: 'MILESTONE', scope: 'COMPETITION', metric: 'points', tiers: graded(100, 250, 500) },

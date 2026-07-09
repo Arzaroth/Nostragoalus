@@ -39,6 +39,9 @@ export interface AchievementDto {
   key: string
   category: string
   scope: AchievementScope
+  // Per-key icon override (primeicons class), or null to fall back to the category
+  // icon. Lets same-category badges read differently (e.g. the opener vs the final).
+  icon: string | null
   hidden: boolean
   tiers: AchievementTierThresholdDto[]
   // null = not yet earned (a locked slot in the cabinet).
@@ -46,6 +49,9 @@ export interface AchievementDto {
   // The user's live metric value, so the cabinet can draw a progress bar toward the
   // next tier - on locked badges too. null for event-granted secrets (no metric).
   current: number | null
+  // For streak badges only: the current ongoing run, shown next to the best (which
+  // is `current`). null when not a streak badge or the badge is already maxed out.
+  currentStreak: number | null
 }
 
 export type AchievementScope = 'COMPETITION' | 'GLOBAL'

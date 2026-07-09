@@ -48,6 +48,14 @@ export async function getCabinet(
   const stats = await computeAchievementStats(db, opts.competitionId)
   const userStats = stats.get(opts.userId)
 
+  // Streak badges also surface the CURRENT ongoing run beside the best (`current`),
+  // while the badge is still climbing. Maps the badge metric to the matching cur* stat.
+  const STREAK_CUR: Partial<Record<string, 'curExactStreak' | 'curScoringStreak' | 'curMissStreak'>> = {
+    exactStreak: 'curExactStreak',
+    scoringStreak: 'curScoringStreak',
+    missStreak: 'curMissStreak',
+  }
+
   const achievements = ALL_ACHIEVEMENTS.flatMap((def) => {
     const e = earnedByKey.get(def.key)
     const earned = e ? { tier: e.tier, progress: e.progress, unlockedAt: e.unlockedAt.toISOString() } : null
@@ -55,7 +63,26 @@ export async function getCabinet(
     // No progress bar on SHAME badges: you don't "chase" a bad badge, and a bar
     // would telegraph its threshold (how close you are to a cold streak).
     const current = def.metric && def.category !== 'SHAME' ? (userStats?.[def.metric] ?? 0) : null
-    return [{ key: def.key, category: def.category, scope: def.scope, hidden: !!def.hidden, tiers: def.tiers, earned, current }]
+    // Show the ongoing streak only on a still-climbing streak badge: hide it once the
+    // top tier is reached (nothing left to chase) and never on SHAME badges.
+    const curField = def.metric ? STREAK_CUR[def.metric] : undefined
+    const topThreshold = def.tiers[def.tiers.length - 1]?.threshold ?? Infinity
+    const maxed = (current ?? 0) >= topThreshold
+    const currentStreak =
+      curField && def.category !== 'SHAME' && !maxed ? (userStats?.[curField] ?? 0) : null
+    return [
+      {
+        key: def.key,
+        category: def.category,
+        scope: def.scope,
+        icon: def.icon ?? null,
+        hidden: !!def.hidden,
+        tiers: def.tiers,
+        earned,
+        current,
+        currentStreak,
+      },
+    ]
   })
 
   const pins = await db

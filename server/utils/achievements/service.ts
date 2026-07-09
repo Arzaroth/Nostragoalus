@@ -1,11 +1,21 @@
-import { and, eq, gt, isNotNull, isNull, sql } from 'drizzle-orm'
+import { and, eq, gt, inArray, isNotNull, isNull, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
-import { bestScorerPick, championPick, competitionAward, match, prediction, userAchievement } from '../../../db/schema'
+import {
+  bestScorerPick,
+  championPick,
+  competitionAward,
+  match,
+  prediction,
+  predictionCommitment,
+  userAchievement,
+} from '../../../db/schema'
+import { isSingleMatchStage } from '../../../shared/types/match'
 import type { AchievementTier } from '#shared/types/achievements'
 import { getLeaderboard } from '../leaderboard/service'
 import { hasDecidedFinal } from '../awards/service'
 import {
   ACHIEVEMENTS,
+  type AchievementDef,
   type AchievementMetric,
   COLLECTABLE_ACHIEVEMENTS,
   COLLECTOR_ACHIEVEMENT_KEY,
@@ -13,6 +23,29 @@ import {
   tierForValue,
   type UserAchievementStats,
 } from './catalog'
+
+// Pick-time windows, shared by the batch aggregate and the save-time grant so the
+// two never drift. sql.raw only ever interpolates these numeric constants (never
+// user input), so there is no injection surface.
+const EARLY_BIRD_HOURS = 24
+const DEADLINE_MINUTES = 5
+const NIGHT_OWL_UTC_HOUR = 4
+const earlyBirdCount = () =>
+  sql<number>`count(*) filter (where ${prediction.createdAt} <= ${match.kickoffTime} - ${sql.raw(`interval '${EARLY_BIRD_HOURS} hours'`)})`.mapWith(
+    Number,
+  )
+const nightOwlCount = () =>
+  sql<number>`count(*) filter (where extract(hour from ${prediction.createdAt} at time zone 'UTC') < ${NIGHT_OWL_UTC_HOUR})`.mapWith(
+    Number,
+  )
+const deadlineDancerCount = () =>
+  sql<number>`count(*) filter (where ${prediction.createdAt} >= ${match.kickoffTime} - ${sql.raw(`interval '${DEADLINE_MINUTES} minutes'`)})`.mapWith(
+    Number,
+  )
+
+// The behavioral badges earned by the ACT of saving a pick (not by any match
+// result): grant them at save time, not just at finalize. Their keys and metrics.
+const PICK_TIME_BADGES = ['early-bird', 'night-owl', 'deadline-dancer'] as const
 
 // Wooden Spoon only judges players who saw the tournament through: you must have
 // predicted at least this share of its matches to be eligible for "dead last".
@@ -22,7 +55,16 @@ const WOODEN_SPOON_MIN_SHARE = 0.5
 const TIER_RANK: Record<AchievementTier, number> = { BRONZE: 1, SILVER: 2, GOLD: 3 }
 const tierRank = (t: AchievementTier | null): number => (t ? TIER_RANK[t] : 0)
 
-const ZERO_STATS: UserAchievementStats = {
+// The stats map value: every badge metric, plus the current (ongoing) streak
+// values the cabinet renders next to the best. The cur* fields are display-only
+// (no badge grades on them), so they live here rather than in the metric union.
+export interface AchievementStats extends UserAchievementStats {
+  curExactStreak: number
+  curScoringStreak: number
+  curMissStreak: number
+}
+
+const ZERO_STATS: AchievementStats = {
   predictions: 0,
   exact: 0,
   points: 0,
@@ -36,6 +78,11 @@ const ZERO_STATS: UserAchievementStats = {
   missStreak: 0,
   perfectRounds: 0,
   openingAct: 0,
+  finalExact: 0,
+  boreDraw: 0,
+  goalRush: 0,
+  bogeyTeam: 0,
+  setAndForget: 0,
   completed: 0,
   championOracle: 0,
   goldenTouch: 0,
@@ -44,13 +91,25 @@ const ZERO_STATS: UserAchievementStats = {
   trophies: 0,
   podium: 0,
   woodenSpoon: 0,
+  curExactStreak: 0,
+  curScoringStreak: 0,
+  curMissStreak: 0,
 }
 
 // Longest run of consecutive EXACT / non-MISS / MISS predictions, over the user's
 // scored picks in kickoff order. The MISS run backs the "bad" cold-streak badge.
-function streaks(
-  rows: { tier: string; kickoff: Date; matchId: string }[],
-): { exactStreak: number; scoringStreak: number; missStreak: number } {
+// Also returns the CURRENT (trailing) run of each - the ongoing streak the player
+// is on right now - which the cabinet shows alongside the best while a streak badge
+// is still climbing.
+export interface StreakResult {
+  exactStreak: number
+  scoringStreak: number
+  missStreak: number
+  curExactStreak: number
+  curScoringStreak: number
+  curMissStreak: number
+}
+function streaks(rows: { tier: string; kickoff: Date; matchId: string }[]): StreakResult {
   // Tiebreak equal kickoffs by matchId so simultaneous fixtures give a stable streak.
   const ordered = [...rows].sort(
     (a, b) => a.kickoff.getTime() - b.kickoff.getTime() || (a.matchId < b.matchId ? -1 : a.matchId > b.matchId ? 1 : 0),
@@ -69,24 +128,73 @@ function streaks(
     bestScoring = Math.max(bestScoring, scoring)
     bestMiss = Math.max(bestMiss, miss)
   }
-  return { exactStreak: bestExact, scoringStreak: bestScoring, missStreak: bestMiss }
+  // The loop's trailing counters ARE the current ongoing runs.
+  return {
+    exactStreak: bestExact,
+    scoringStreak: bestScoring,
+    missStreak: bestMiss,
+    curExactStreak: exact,
+    curScoringStreak: scoring,
+    curMissStreak: miss,
+  }
 }
 
 // Rounds where the user got every scored match in the round EXACT and left none
-// of that round's scored matches unpredicted.
-function perfectRounds(rows: { roundId: string; tier: string }[], roundScored: Map<string, number>): number {
-  const byRound = new Map<string, { scored: number; exact: number }>()
+// of that round's scored matches unpredicted. The final and third-place are
+// one-match rounds - a "perfect round" there is just a single exact (grand-finale
+// already rewards the final), so they are excluded from Flawless.
+function perfectRounds(rows: { roundId: string; tier: string; stage: string }[], roundScored: Map<string, number>): number {
+  const byRound = new Map<string, { scored: number; exact: number; stage: string }>()
   for (const r of rows) {
-    const agg = byRound.get(r.roundId) ?? { scored: 0, exact: 0 }
+    const agg = byRound.get(r.roundId) ?? { scored: 0, exact: 0, stage: r.stage }
     agg.scored += 1
     if (r.tier === 'EXACT') agg.exact += 1
     byRound.set(r.roundId, agg)
   }
   let count = 0
   for (const [roundId, agg] of byRound) {
+    if (isSingleMatchStage(agg.stage)) continue
     if (agg.scored > 0 && agg.scored === agg.exact && agg.scored === (roundScored.get(roundId) ?? 0)) count += 1
   }
   return count
+}
+
+// Set and Forget: predicted every scored match of a multi-match round and never
+// edited any of those picks (each has a single commitment-ledger entry). Discipline,
+// not accuracy. Single-match rounds are excluded (one untouched pick is no feat).
+function untouchedRound(
+  rows: { roundId: string; stage: string; predictionId: string }[],
+  roundScored: Map<string, number>,
+  untouched: Set<string>,
+): number {
+  const byRound = new Map<string, { ids: string[]; stage: string }>()
+  for (const r of rows) {
+    const g = byRound.get(r.roundId) ?? { ids: [], stage: r.stage }
+    g.ids.push(r.predictionId)
+    byRound.set(r.roundId, g)
+  }
+  for (const [roundId, g] of byRound) {
+    if (isSingleMatchStage(g.stage)) continue
+    const total = roundScored.get(roundId) ?? 0
+    if (total > 0 && g.ids.length === total && g.ids.every((id) => untouched.has(id))) return 1
+  }
+  return 0
+}
+
+// Nemesis: the most EXACT calls landed on any single team's matches (a team is
+// counted for both the home and away sides of each exact pick).
+function bogeyTeam(rows: { tier: string; homeTeamCode: string | null; awayTeamCode: string | null }[]): number {
+  const byTeam = new Map<string, number>()
+  for (const r of rows) {
+    if (r.tier !== 'EXACT') continue
+    for (const code of [r.homeTeamCode, r.awayTeamCode]) {
+      if (!code) continue
+      byTeam.set(code, (byTeam.get(code) ?? 0) + 1)
+    }
+  }
+  let max = 0
+  for (const n of byTeam.values()) max = Math.max(max, n)
+  return max
 }
 
 // Derive every user's achievement metrics for a competition from the settled
@@ -94,7 +202,7 @@ function perfectRounds(rows: { roundId: string; tier: string }[], roundScored: M
 export async function computeAchievementStats(
   db: AppDatabase,
   competitionId: string,
-): Promise<Map<string, UserAchievementStats>> {
+): Promise<Map<string, AchievementStats>> {
   const inComp = and(eq(match.id, prediction.matchId), eq(match.competitionId, competitionId))
 
   // Final-standing badges (completionist, podium, wooden-spoon) only settle once the
@@ -124,16 +232,17 @@ export async function computeAchievementStats(
       jokerExact: sql<number>`count(*) filter (where ${prediction.isJoker} and ${prediction.baseTier} = 'EXACT')`.mapWith(
         Number,
       ),
-      earlyBird:
-        sql<number>`count(*) filter (where ${prediction.createdAt} <= ${match.kickoffTime} - interval '24 hours')`.mapWith(
+      earlyBird: earlyBirdCount(),
+      nightOwl: nightOwlCount(),
+      deadlineDancer: deadlineDancerCount(),
+      finalExact:
+        sql<number>`count(*) filter (where ${prediction.baseTier} = 'EXACT' and ${match.stage} = 'FINAL')`.mapWith(Number),
+      boreDraw:
+        sql<number>`count(*) filter (where ${prediction.baseTier} = 'EXACT' and ${prediction.homeGoals} = 0 and ${prediction.awayGoals} = 0)`.mapWith(
           Number,
         ),
-      nightOwl:
-        sql<number>`count(*) filter (where extract(hour from ${prediction.createdAt} at time zone 'UTC') < 4)`.mapWith(
-          Number,
-        ),
-      deadlineDancer:
-        sql<number>`count(*) filter (where ${prediction.createdAt} >= ${match.kickoffTime} - interval '5 minutes')`.mapWith(
+      goalRush:
+        sql<number>`count(*) filter (where ${prediction.baseTier} = 'EXACT' and ${prediction.homeGoals} + ${prediction.awayGoals} >= 5)`.mapWith(
           Number,
         ),
     })
@@ -143,11 +252,15 @@ export async function computeAchievementStats(
 
   const scoredRows = await db
     .select({
+      predictionId: prediction.id,
       userId: prediction.userId,
       matchId: prediction.matchId,
       roundId: prediction.roundId,
       tier: prediction.baseTier,
       kickoff: match.kickoffTime,
+      stage: match.stage,
+      homeTeamCode: match.homeTeamCode,
+      awayTeamCode: match.awayTeamCode,
     })
     .from(prediction)
     .innerJoin(match, inComp)
@@ -161,6 +274,17 @@ export async function computeAchievementStats(
     .groupBy(match.roundId)
   const roundScored = new Map(roundTotals.map((r) => [r.roundId, r.n]))
   const totalScored = roundTotals.reduce((s, r) => s + r.n, 0)
+
+  // How many commitment-ledger entries each prediction in this competition has: one
+  // entry = never edited (backs set-and-forget). The ledger appends only on a real
+  // pick change, so a single entry means the pick was placed once and left alone.
+  const commitCounts = await db
+    .select({ predictionId: predictionCommitment.predictionId, n: sql<number>`count(*)`.mapWith(Number) })
+    .from(predictionCommitment)
+    .innerJoin(prediction, eq(prediction.id, predictionCommitment.predictionId))
+    .innerJoin(match, inComp)
+    .groupBy(predictionCommitment.predictionId)
+  const untouched = new Set(commitCounts.filter((c) => c.n === 1).map((c) => c.predictionId))
 
   // Matches with a single EXACT prediction: that lone user gets loneWolf credit.
   const lone = await db
@@ -212,10 +336,29 @@ export async function computeAchievementStats(
   )
 
   // Fold the per-user, per-row work in JS.
-  const scoredByUser = new Map<string, { roundId: string; tier: string; kickoff: Date; matchId: string }[]>()
+  type ScoredRow = {
+    predictionId: string
+    roundId: string
+    tier: string
+    kickoff: Date
+    matchId: string
+    stage: string
+    homeTeamCode: string | null
+    awayTeamCode: string | null
+  }
+  const scoredByUser = new Map<string, ScoredRow[]>()
   for (const r of scoredRows) {
     const arr = scoredByUser.get(r.userId) ?? []
-    arr.push({ roundId: r.roundId, tier: r.tier as string, kickoff: r.kickoff as Date, matchId: r.matchId })
+    arr.push({
+      predictionId: r.predictionId,
+      roundId: r.roundId,
+      tier: r.tier as string,
+      kickoff: r.kickoff as Date,
+      matchId: r.matchId,
+      stage: r.stage as string,
+      homeTeamCode: r.homeTeamCode,
+      awayTeamCode: r.awayTeamCode,
+    })
     scoredByUser.set(r.userId, arr)
   }
   const loneByUser = new Map<string, number>()
@@ -233,11 +376,11 @@ export async function computeAchievementStats(
   const championByUser = new Map(champs.map((r) => [r.userId, r.rank]))
   const bestSet = new Set(bests.map((r) => r.userId))
 
-  const out = new Map<string, UserAchievementStats>()
+  const out = new Map<string, AchievementStats>()
   for (const userId of ids) {
     const a = aggByUser.get(userId)
     const scored = scoredByUser.get(userId) ?? []
-    const { exactStreak, scoringStreak, missStreak } = streaks(scored)
+    const { exactStreak, scoringStreak, missStreak, curExactStreak, curScoringStreak, curMissStreak } = streaks(scored)
     const isChampion = championByUser.has(userId)
     const rank = championByUser.get(userId) ?? null
     out.set(userId, {
@@ -250,9 +393,17 @@ export async function computeAchievementStats(
       earlyBird: a?.earlyBird ?? 0,
       nightOwl: a?.nightOwl ?? 0,
       deadlineDancer: a?.deadlineDancer ?? 0,
+      finalExact: a?.finalExact ?? 0,
+      boreDraw: a?.boreDraw ?? 0,
+      goalRush: a?.goalRush ?? 0,
+      bogeyTeam: bogeyTeam(scored),
+      setAndForget: untouchedRound(scored, roundScored, untouched),
       exactStreak,
       scoringStreak,
       missStreak,
+      curExactStreak,
+      curScoringStreak,
+      curMissStreak,
       perfectRounds: perfectRounds(scored, roundScored),
       openingAct: openerId && scored.some((r) => r.matchId === openerId && r.tier === 'EXACT') ? 1 : 0,
       // Predicted every match, but only credited once the tournament is over.
@@ -281,6 +432,76 @@ export interface UnlockedAchievement {
   tier: AchievementTier
 }
 
+// Grade one def for one user against the current metric value and upsert the row,
+// pushing to `newly` when the badge is first earned or graded up. Idempotent: an
+// unchanged value is a no-op, a lower value only refreshes progress (tier is a
+// high-water mark). Shared by the finalize batch and the save-time pick-time grant.
+type UserAchievementRow = typeof userAchievement.$inferSelect
+async function applyAchievementTier(
+  db: AppDatabase,
+  ex: UserAchievementRow | undefined,
+  userId: string,
+  competitionId: string,
+  def: AchievementDef,
+  value: number,
+  newly: UnlockedAchievement[],
+): Promise<void> {
+  const tier = tierForValue(def.tiers, value)
+  if (!tier) return
+  if (!ex) {
+    await db.insert(userAchievement).values({ userId, competitionId, key: def.key, tier, progress: value })
+    newly.push({ userId, competitionId, key: def.key, tier })
+  } else if (tierRank(tier) > tierRank(ex.tier)) {
+    await db.update(userAchievement).set({ tier, progress: value }).where(eq(userAchievement.id, ex.id))
+    newly.push({ userId, competitionId, key: def.key, tier })
+  } else if (ex.progress !== value) {
+    // Tier is a high-water mark: a rescore that lowers the metric refreshes
+    // progress but never demotes the badge (grading up is handled above).
+    await db.update(userAchievement).set({ progress: value }).where(eq(userAchievement.id, ex.id))
+  }
+}
+
+// Grant the pick-time behavioral badges (early-bird / night-owl / deadline-dancer)
+// the instant a pick is saved, instead of waiting for the next scored finalize
+// tick. These badges are earned by the act of predicting (createdAt vs kickoff),
+// so they are known at save time - the finalize batch stays as the backfill.
+// Idempotent and notify-safe: a badge already held is never re-granted.
+export async function evaluatePickTimeAchievements(
+  db: AppDatabase,
+  competitionId: string,
+  userId: string,
+): Promise<UnlockedAchievement[]> {
+  const [counts] = await db
+    .select({
+      'early-bird': earlyBirdCount(),
+      'night-owl': nightOwlCount(),
+      'deadline-dancer': deadlineDancerCount(),
+    })
+    .from(prediction)
+    .innerJoin(match, and(eq(match.id, prediction.matchId), eq(match.competitionId, competitionId)))
+    .where(eq(prediction.userId, userId))
+
+  const existing = await db
+    .select()
+    .from(userAchievement)
+    .where(
+      and(
+        eq(userAchievement.userId, userId),
+        eq(userAchievement.competitionId, competitionId),
+        inArray(userAchievement.key, [...PICK_TIME_BADGES]),
+      ),
+    )
+  const exByKey = new Map(existing.map((e) => [e.key, e]))
+
+  const newly: UnlockedAchievement[] = []
+  for (const key of PICK_TIME_BADGES) {
+    const def = ACHIEVEMENTS.find((d) => d.key === key)
+    if (!def) continue
+    await applyAchievementTier(db, exByKey.get(key), userId, competitionId, def, counts?.[key] ?? 0, newly)
+  }
+  return newly
+}
+
 // Idempotent: evaluate every batch achievement for a competition and upsert the
 // user_achievement rows. Returns the badges newly earned (or graded up) this run,
 // so the caller can notify. Safe on every finalize tick.
@@ -294,23 +515,11 @@ export async function evaluateAchievements(db: AppDatabase, competitionId: strin
     let heldCount = 0
     for (const def of ACHIEVEMENTS) {
       const value = s[def.metric as AchievementMetric]
-      const tier = tierForValue(def.tiers, value)
       const ex = exByKey.get(`${userId}:${def.key}`)
       // Held once earned (tier is a high-water mark, so a rescore-down never
       // loses it). Only collectable (non-SHAME) badges count toward the secret.
-      if ((ex || tier) && isCollectable(def)) heldCount += 1
-      if (!tier) continue
-      if (!ex) {
-        await db.insert(userAchievement).values({ userId, competitionId, key: def.key, tier, progress: value })
-        newly.push({ userId, competitionId, key: def.key, tier })
-      } else if (tierRank(tier) > tierRank(ex.tier)) {
-        await db.update(userAchievement).set({ tier, progress: value }).where(eq(userAchievement.id, ex.id))
-        newly.push({ userId, competitionId, key: def.key, tier })
-      } else if (ex.progress !== value) {
-        // Tier is a high-water mark: a rescore that lowers the metric refreshes
-        // progress but never demotes the badge (grading up is handled above).
-        await db.update(userAchievement).set({ progress: value }).where(eq(userAchievement.id, ex.id))
-      }
+      if ((ex || tierForValue(def.tiers, value)) && isCollectable(def)) heldCount += 1
+      await applyAchievementTier(db, ex, userId, competitionId, def, value, newly)
     }
     // The hidden "collector" secret: earned every non-secret badge. Granted
     // globally (competitionId null), once, idempotently.

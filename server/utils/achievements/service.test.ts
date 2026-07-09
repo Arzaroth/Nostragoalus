@@ -7,6 +7,7 @@ import {
   competitionAward,
   match,
   prediction,
+  predictionCommitment,
   round,
   userAchievement,
 } from '../../../db/schema'
@@ -14,7 +15,7 @@ import type { BaseTier } from '../scoring/tiers'
 import { createTestDb } from '../../../tests/db'
 import { makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
 import { ACHIEVEMENTS, COLLECTOR_ACHIEVEMENT_KEY } from './catalog'
-import { computeAchievementStats, evaluateAchievements, grantAchievement } from './service'
+import { computeAchievementStats, evaluateAchievements, evaluatePickTimeAchievements, grantAchievement } from './service'
 
 let db: AppDatabase
 
@@ -60,14 +61,16 @@ interface PredOpts {
   bonus?: number
   isJoker?: boolean
   createdAt?: Date
+  home?: number
+  away?: number
 }
 async function pred(o: PredOpts): Promise<string> {
   const id = await makePrediction(db, {
     userId: o.userId,
     matchId: o.matchId,
     roundId: o.roundId,
-    home: 0,
-    away: 0,
+    home: o.home ?? 0,
+    away: o.away ?? 0,
     isJoker: o.isJoker ?? false,
   })
   await db
@@ -82,6 +85,29 @@ async function pred(o: PredOpts): Promise<string> {
     })
     .where(eq(prediction.id, id))
   return id
+}
+
+// Append n commitment-ledger entries for a prediction (n>1 = it was edited). The
+// achievement code only counts rows, so the hash fields just need to be unique.
+let commitSeq = 1
+async function commit(predictionId: string, userId: string, matchId: string, n = 1): Promise<void> {
+  for (let i = 0; i < n; i++) {
+    const seq = commitSeq++
+    await db.insert(predictionCommitment).values({
+      seq,
+      predictionId,
+      userId,
+      subject: 'subj',
+      matchId,
+      homeGoals: 0,
+      awayGoals: 0,
+      salt: `salt-${seq}`,
+      commitment: `commit-${seq}`,
+      prevHash: `prev-${seq}`,
+      entryHash: `entry-${seq}`,
+      createdAt: new Date(),
+    })
+  }
 }
 
 const stats = async (competitionId: string, userId: string) =>
@@ -112,6 +138,81 @@ describe('computeAchievementStats', () => {
       nightOwl: 1,
       deadlineDancer: 1,
     })
+  })
+
+  it('counts the scoreline, final, and repeat-team metrics', async () => {
+    const c = await seedCompetition(db)
+    const g1 = await roundId(c, 'GROUP', 1)
+    const fin = await roundId(c, 'FINAL')
+    const alice = await makeUser(db, 'alice')
+    const kickoff = new Date('2026-06-15T12:00:00Z')
+    const draw = await scoredMatch(c, g1, 'GROUP', kickoff)
+    const rush = await scoredMatch(c, g1, 'GROUP', kickoff)
+    const finalMatch = await scoredMatch(c, fin, 'FINAL', new Date('2026-07-19T18:00:00Z'))
+    // A goalless draw called exact (bore-draw), a 3-2 thriller (goal-rush), the final
+    // (grand-finale). All three matches share the default teams, so bogeyTeam = 3.
+    await pred({ userId: alice, matchId: draw, roundId: g1, tier: 'EXACT', points: 3, home: 0, away: 0 })
+    await pred({ userId: alice, matchId: rush, roundId: g1, tier: 'EXACT', points: 3, home: 3, away: 2 })
+    await pred({ userId: alice, matchId: finalMatch, roundId: fin, tier: 'EXACT', points: 6, home: 1, away: 0 })
+
+    expect(await stats(c, alice)).toMatchObject({ boreDraw: 1, goalRush: 1, finalExact: 1, bogeyTeam: 3 })
+  })
+
+  it('reports the current ongoing streak alongside the best', async () => {
+    const c = await seedCompetition(db)
+    const g1 = await roundId(c, 'GROUP', 1)
+    const alice = await makeUser(db, 'alice')
+    const t0 = new Date('2026-06-15T12:00:00Z')
+    const mk = async (i: number, tier: BaseTier) => {
+      const m = await scoredMatch(c, g1, 'GROUP', new Date(t0.getTime() + i * 3_600_000))
+      await pred({ userId: alice, matchId: m, roundId: g1, tier, points: tier === 'EXACT' ? 3 : 0 })
+    }
+    // EXACT, EXACT, MISS, EXACT in kickoff order: best exact run 2, ongoing run 1.
+    await mk(0, 'EXACT')
+    await mk(1, 'EXACT')
+    await mk(2, 'MISS')
+    await mk(3, 'EXACT')
+    expect(await stats(c, alice)).toMatchObject({
+      exactStreak: 2,
+      curExactStreak: 1,
+      scoringStreak: 2,
+      curScoringStreak: 1,
+    })
+  })
+
+  it('excludes the final and third-place rounds from Flawless', async () => {
+    const c = await seedCompetition(db)
+    const g1 = await roundId(c, 'GROUP', 1)
+    const fin = await roundId(c, 'FINAL')
+    const alice = await makeUser(db, 'alice')
+    // A perfect GROUP round counts; the final called exact does NOT add a Flawless.
+    const gm = await scoredMatch(c, g1, 'GROUP', new Date('2026-06-15T12:00:00Z'))
+    await pred({ userId: alice, matchId: gm, roundId: g1, tier: 'EXACT', points: 3 })
+    const fm = await scoredMatch(c, fin, 'FINAL', new Date('2026-07-19T18:00:00Z'))
+    await pred({ userId: alice, matchId: fm, roundId: fin, tier: 'EXACT', points: 6 })
+    expect((await stats(c, alice)).perfectRounds).toBe(1)
+  })
+
+  it('awards set-and-forget for an untouched full round, not an edited one', async () => {
+    const c = await seedCompetition(db)
+    const g1 = await roundId(c, 'GROUP', 1)
+    const alice = await makeUser(db, 'alice')
+    const bob = await makeUser(db, 'bob')
+    const kickoff = new Date('2026-06-15T12:00:00Z')
+    const m1 = await scoredMatch(c, g1, 'GROUP', kickoff)
+    const m2 = await scoredMatch(c, g1, 'GROUP', kickoff)
+    // Alice predicted both matches of the round, each committed once (never edited).
+    const a1 = await pred({ userId: alice, matchId: m1, roundId: g1, tier: 'DIFF', points: 1 })
+    const a2 = await pred({ userId: alice, matchId: m2, roundId: g1, tier: 'DIFF', points: 1 })
+    await commit(a1, alice, m1, 1)
+    await commit(a2, alice, m2, 1)
+    // Bob predicted both too, but edited one of them (two commitments).
+    const b1 = await pred({ userId: bob, matchId: m1, roundId: g1, tier: 'DIFF', points: 1 })
+    const b2 = await pred({ userId: bob, matchId: m2, roundId: g1, tier: 'DIFF', points: 1 })
+    await commit(b1, bob, m1, 1)
+    await commit(b2, bob, m2, 2)
+    expect((await stats(c, alice)).setAndForget).toBe(1)
+    expect((await stats(c, bob)).setAndForget).toBe(0)
   })
 
   it('measures the longest EXACT and non-MISS streaks in kickoff order', async () => {
@@ -391,6 +492,69 @@ describe('evaluateAchievements', () => {
     await db.insert(userAchievement).values({ userId: alice, competitionId: c, key: 'first-blood', tier: null, progress: 0 })
     const newly = await evaluateAchievements(db, c)
     expect(newly.some((u) => u.key === 'first-blood' && u.tier === 'BRONZE')).toBe(true)
+  })
+})
+
+describe('evaluatePickTimeAchievements', () => {
+  it('grants the pick-time behavioral badges at save time, idempotently', async () => {
+    const c = await seedCompetition(db)
+    const g1 = await roundId(c, 'GROUP', 1)
+    const alice = await makeUser(db, 'alice')
+    const kickoff = new Date('2026-06-15T12:00:00Z')
+    const a = await scoredMatch(c, g1, 'GROUP', kickoff)
+    const b = await scoredMatch(c, g1, 'GROUP', kickoff)
+    const cc = await scoredMatch(c, g1, 'GROUP', kickoff)
+    await pred({ userId: alice, matchId: a, roundId: g1, createdAt: new Date('2026-06-12T12:00:00Z') }) // early bird
+    await pred({ userId: alice, matchId: b, roundId: g1, createdAt: new Date('2026-06-15T02:30:00Z') }) // night owl
+    await pred({ userId: alice, matchId: cc, roundId: g1, createdAt: new Date('2026-06-15T11:58:00Z') }) // deadline dancer
+
+    const newly = await evaluatePickTimeAchievements(db, c, alice)
+    expect(newly.map((u) => u.key).sort()).toEqual(['deadline-dancer', 'early-bird', 'night-owl'])
+    const rows = await db.select().from(userAchievement).where(eq(userAchievement.userId, alice))
+    expect(rows.map((r) => r.key).sort()).toEqual(['deadline-dancer', 'early-bird', 'night-owl'])
+    expect(rows.every((r) => r.competitionId === c)).toBe(true)
+    // Idempotent: a second pass grants nothing.
+    expect(await evaluatePickTimeAchievements(db, c, alice)).toHaveLength(0)
+  })
+
+  it('grants nothing when no pick falls in a window', async () => {
+    const c = await seedCompetition(db)
+    const g1 = await roundId(c, 'GROUP', 1)
+    const alice = await makeUser(db, 'alice')
+    const kickoff = new Date('2026-06-15T12:00:00Z')
+    const m = await scoredMatch(c, g1, 'GROUP', kickoff)
+    // Saved 6h before kickoff, midday UTC: no early-bird, night-owl, or deadline.
+    await pred({ userId: alice, matchId: m, roundId: g1, createdAt: new Date('2026-06-15T06:00:00Z') })
+    expect(await evaluatePickTimeAchievements(db, c, alice)).toHaveLength(0)
+    expect(await db.select().from(userAchievement).where(eq(userAchievement.userId, alice))).toHaveLength(0)
+  })
+
+  it('grades early-bird up and refreshes progress as more early picks land', async () => {
+    const c = await seedCompetition(db)
+    const g1 = await roundId(c, 'GROUP', 1)
+    const alice = await makeUser(db, 'alice')
+    const early = new Date('2026-06-12T12:00:00Z')
+    const kickoff = new Date('2026-06-15T12:00:00Z')
+    const addEarly = async (n: number) => {
+      for (let i = 0; i < n; i++) {
+        const m = await scoredMatch(c, g1, 'GROUP', kickoff)
+        await pred({ userId: alice, matchId: m, roundId: g1, createdAt: early })
+      }
+    }
+    await addEarly(1)
+    expect((await evaluatePickTimeAchievements(db, c, alice)).some((u) => u.key === 'early-bird' && u.tier === 'BRONZE')).toBe(
+      true,
+    )
+    // 5 total early picks: still BRONZE, but progress refreshes (no new unlock).
+    await addEarly(4)
+    expect(await evaluatePickTimeAchievements(db, c, alice)).toHaveLength(0)
+    const eb = (await db.select().from(userAchievement).where(eq(userAchievement.key, 'early-bird')))[0]
+    expect(eb).toMatchObject({ tier: 'BRONZE', progress: 5 })
+    // 10 total: grades up to SILVER.
+    await addEarly(5)
+    expect((await evaluatePickTimeAchievements(db, c, alice)).some((u) => u.key === 'early-bird' && u.tier === 'SILVER')).toBe(
+      true,
+    )
   })
 })
 

@@ -13,6 +13,8 @@ import {
 import { isSingleMatchStage } from '../../../shared/types/match'
 import { ForbiddenError, LockedError, NotFoundError, ValidationError } from '../errors'
 import { deletePickReminder } from '../notifications/reminders'
+import { notifyAchievementUnlocked } from '../notifications/events'
+import { evaluatePickTimeAchievements } from '../achievements/service'
 import { appendLeaguePredictionCommitment, appendPredictionCommitment } from '../commitment/service'
 import { hardRoundBudget, type LeagueMode } from '../leagues/modes'
 import { pickCompleteness, summarizeCompleteness, type CompletenessSummary, type IncompleteReason } from '../leagues/completeness'
@@ -105,7 +107,8 @@ export async function upsertPrediction(
 
   // One transaction: the pick and its tamper-evidence commitment land or roll
   // back together, so the ledger can never disagree with the stored prediction.
-  return db.transaction(async (tx) => {
+  let wasNew = false
+  const predictionId = await db.transaction(async (tx) => {
     const [existing] = await tx
       .select({ homeGoals: prediction.homeGoals, awayGoals: prediction.awayGoals })
       .from(prediction)
@@ -156,6 +159,10 @@ export async function upsertPrediction(
       })
       .returning({ id: prediction.id })
 
+    // A brand-new pick stamps createdAt=now; an edit keeps the original. The
+    // pick-time badges grade off createdAt, so only a first save can newly earn one.
+    wasNew = !existing
+
     // Append a commitment only when the pick actually changed - autosave re-fires
     // the same score, and that should not grow the ledger.
     if (!existing || existing.homeGoals !== input.home || existing.awayGoals !== input.away) {
@@ -170,6 +177,19 @@ export async function upsertPrediction(
     await deletePickReminder(tx, input.userId, input.matchId)
     return row.id
   })
+
+  // Instant pick-time badges (early-bird / night-owl / deadline-dancer): grant now
+  // rather than waiting for the next scored finalize tick. Only a first save can
+  // qualify (createdAt is immutable), and a badge never fails the save.
+  if (wasNew) {
+    try {
+      const unlocked = await evaluatePickTimeAchievements(db, matchRow.competitionId, input.userId)
+      await notifyAchievementUnlocked(db, unlocked)
+    } catch {
+      // never fail the pick over an achievement side effect
+    }
+  }
+  return predictionId
 }
 
 // Prediction joined with enough match/round context to render a readable list.
