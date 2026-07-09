@@ -72,6 +72,12 @@ export interface AchievementDef {
   // Hidden until earned: other users never see it locked, and the owner sees only
   // a cryptic teaser. Used for the secret badges.
   hidden?: boolean
+  // Revocable: the badge reflects a current-state truth (a final standing, a
+  // complete-round perfection), not a lifetime peak. When its metric stops meeting
+  // any tier the row is deleted, so a mis-grant or an undone state (a rewound
+  // tournament) self-heals. Off by default: streaks and cumulative counts are
+  // high-water and must survive a transient rescore dip. See applyAchievementTier.
+  revocable?: boolean
 }
 
 const single = (threshold = 1): AchievementTierThreshold[] => [{ tier: 'BRONZE', threshold }]
@@ -97,7 +103,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { key: 'sharpshooter', category: 'MILESTONE', scope: 'COMPETITION', metric: 'exact', tiers: graded(5, 15, 30) },
   { key: 'prophet', category: 'MILESTONE', scope: 'COMPETITION', metric: 'predictions', tiers: graded(10, 50, 100) },
   { key: 'century', category: 'MILESTONE', scope: 'COMPETITION', metric: 'points', tiers: graded(100, 250, 500) },
-  { key: 'perfect-round', category: 'MILESTONE', scope: 'COMPETITION', metric: 'perfectRounds', tiers: single(1) },
+  { key: 'perfect-round', category: 'MILESTONE', scope: 'COMPETITION', metric: 'perfectRounds', tiers: single(1), revocable: true },
   { key: 'hot-streak', category: 'STREAK', scope: 'COMPETITION', metric: 'exactStreak', tiers: graded(3, 5, 8) },
   { key: 'on-fire', category: 'STREAK', scope: 'COMPETITION', metric: 'scoringStreak', tiers: graded(5, 10, 15) },
   { key: 'contrarian', category: 'CROWD', scope: 'COMPETITION', metric: 'crowdHits', tiers: graded(5, 15, 30) },
@@ -106,16 +112,16 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { key: 'early-bird', category: 'BEHAVIORAL', scope: 'COMPETITION', metric: 'earlyBird', tiers: graded(1, 10, 25) },
   { key: 'night-owl', category: 'BEHAVIORAL', scope: 'COMPETITION', metric: 'nightOwl', tiers: single(1) },
   { key: 'deadline-dancer', category: 'BEHAVIORAL', scope: 'COMPETITION', metric: 'deadlineDancer', tiers: single(1) },
-  { key: 'completionist', category: 'BEHAVIORAL', scope: 'COMPETITION', metric: 'completed', tiers: single(1) },
+  { key: 'completionist', category: 'BEHAVIORAL', scope: 'COMPETITION', metric: 'completed', tiers: single(1), revocable: true },
   { key: 'champion-oracle', category: 'ORACLE', scope: 'COMPETITION', metric: 'championOracle', tiers: single(1) },
   { key: 'golden-touch', category: 'ORACLE', scope: 'COMPETITION', metric: 'goldenTouch', tiers: single(1) },
   { key: 'underdog-whisperer', category: 'ORACLE', scope: 'COMPETITION', metric: 'underdog', tiers: single(1) },
   { key: 'treble', category: 'TROPHY_META', scope: 'COMPETITION', metric: 'trophies', tiers: single(3) },
-  { key: 'podium', category: 'TROPHY_META', scope: 'COMPETITION', metric: 'podium', tiers: single(1) },
+  { key: 'podium', category: 'TROPHY_META', scope: 'COMPETITION', metric: 'podium', tiers: single(1), revocable: true },
   // "Bad" badges (SHAME): earned by doing poorly. Excluded from the-collector so
   // the completionist secret never demands you tank a tournament (see isCollectable).
   { key: 'cold-streak', category: 'SHAME', scope: 'COMPETITION', metric: 'missStreak', tiers: single(5) },
-  { key: 'wooden-spoon', category: 'SHAME', scope: 'COMPETITION', metric: 'woodenSpoon', tiers: single(1) },
+  { key: 'wooden-spoon', category: 'SHAME', scope: 'COMPETITION', metric: 'woodenSpoon', tiers: single(1), revocable: true },
 ]
 
 // The badges the-collector requires. SHAME badges are opt-out: they conflict with

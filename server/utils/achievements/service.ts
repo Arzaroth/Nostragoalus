@@ -139,11 +139,17 @@ function streaks(rows: { tier: string; kickoff: Date; matchId: string }[]): Stre
   }
 }
 
-// Rounds where the user got every scored match in the round EXACT and left none
-// of that round's scored matches unpredicted. The final and third-place are
-// one-match rounds - a "perfect round" there is just a single exact (grand-finale
-// already rewards the final), so they are excluded from Flawless.
-function perfectRounds(rows: { roundId: string; tier: string; stage: string }[], roundScored: Map<string, number>): number {
+// Rounds where the user called every match in the round EXACT. Only fully-scored
+// (complete) rounds count: mid-tournament a round has just its early matches
+// scored, and one exact of those would falsely read as "perfect" before the rest
+// are even played (see completeRounds in computeAchievementStats). The final and
+// third-place are one-match rounds - a "perfect round" there is just a single
+// exact (grand-finale already rewards the final), so they are excluded from Flawless.
+function perfectRounds(
+  rows: { roundId: string; tier: string; stage: string }[],
+  roundScored: Map<string, number>,
+  completeRounds: Set<string>,
+): number {
   const byRound = new Map<string, { scored: number; exact: number; stage: string }>()
   for (const r of rows) {
     const agg = byRound.get(r.roundId) ?? { scored: 0, exact: 0, stage: r.stage }
@@ -154,17 +160,20 @@ function perfectRounds(rows: { roundId: string; tier: string; stage: string }[],
   let count = 0
   for (const [roundId, agg] of byRound) {
     if (isSingleMatchStage(agg.stage)) continue
+    if (!completeRounds.has(roundId)) continue
     if (agg.scored > 0 && agg.scored === agg.exact && agg.scored === (roundScored.get(roundId) ?? 0)) count += 1
   }
   return count
 }
 
-// Set and Forget: predicted every scored match of a multi-match round and never
+// Set and Forget: predicted every match of a complete multi-match round and never
 // edited any of those picks (each has a single commitment-ledger entry). Discipline,
-// not accuracy. Single-match rounds are excluded (one untouched pick is no feat).
+// not accuracy. Only complete rounds count (same partial-round guard as Flawless);
+// single-match rounds are excluded (one untouched pick is no feat).
 function untouchedRound(
   rows: { roundId: string; stage: string; predictionId: string }[],
   roundScored: Map<string, number>,
+  completeRounds: Set<string>,
   untouched: Set<string>,
 ): number {
   const byRound = new Map<string, { ids: string[]; stage: string }>()
@@ -175,6 +184,7 @@ function untouchedRound(
   }
   for (const [roundId, g] of byRound) {
     if (isSingleMatchStage(g.stage)) continue
+    if (!completeRounds.has(roundId)) continue
     const total = roundScored.get(roundId) ?? 0
     if (total > 0 && g.ids.length === total && g.ids.every((id) => untouched.has(id))) return 1
   }
@@ -274,6 +284,21 @@ export async function computeAchievementStats(
     .groupBy(match.roundId)
   const roundScored = new Map(roundTotals.map((r) => [r.roundId, r.n]))
   const totalScored = roundTotals.reduce((s, r) => s + r.n, 0)
+
+  // A round is "complete" once every one of its matches has been scored. This is the
+  // guard that keeps a partially-played round from counting toward Flawless or
+  // Set-and-Forget off its early matches alone: mid-tournament a knockout round has
+  // one match scored and the rest still scheduled, and a lone exact there must not
+  // read as a perfect round. (A match that never scores - voided - keeps its round
+  // from ever qualifying; acceptable for these rare high-bar badges.)
+  const roundMatchCounts = await db
+    .select({ roundId: match.roundId, n: sql<number>`count(*)`.mapWith(Number) })
+    .from(match)
+    .where(eq(match.competitionId, competitionId))
+    .groupBy(match.roundId)
+  const completeRounds = new Set(
+    roundMatchCounts.filter((r) => (roundScored.get(r.roundId) ?? 0) === r.n).map((r) => r.roundId),
+  )
 
   // How many commitment-ledger entries each prediction in this competition has: one
   // entry = never edited (backs set-and-forget). The ledger appends only on a real
@@ -397,14 +422,14 @@ export async function computeAchievementStats(
       boreDraw: a?.boreDraw ?? 0,
       goalRush: a?.goalRush ?? 0,
       bogeyTeam: bogeyTeam(scored),
-      setAndForget: untouchedRound(scored, roundScored, untouched),
+      setAndForget: untouchedRound(scored, roundScored, completeRounds, untouched),
       exactStreak,
       scoringStreak,
       missStreak,
       curExactStreak,
       curScoringStreak,
       curMissStreak,
-      perfectRounds: perfectRounds(scored, roundScored),
+      perfectRounds: perfectRounds(scored, roundScored, completeRounds),
       openingAct: openerId && scored.some((r) => r.matchId === openerId && r.tier === 'EXACT') ? 1 : 0,
       // Predicted every match, but only credited once the tournament is over.
       completed: tournamentDone && totalScored > 0 && scored.length === totalScored ? 1 : 0,
@@ -447,7 +472,17 @@ async function applyAchievementTier(
   newly: UnlockedAchievement[],
 ): Promise<void> {
   const tier = tierForValue(def.tiers, value)
-  if (!tier) return
+  if (!tier) {
+    // Below every threshold. Normally nothing to do (an unearned badge has no row).
+    // But a `revocable` badge reflects a current-state truth, not a lifetime peak: if
+    // it no longer holds - mis-granted by a bug, or the state that earned it was undone
+    // (a tournament rewound so its final is no longer decided) - the stale row is
+    // deleted, so it self-heals on the next tick. Non-revocable badges (streaks,
+    // cumulative counts) stay put, shielded from transient rescore dips. Losing a badge
+    // is silent - no notification.
+    if (def.revocable && ex) await db.delete(userAchievement).where(eq(userAchievement.id, ex.id))
+    return
+  }
   if (!ex) {
     await db.insert(userAchievement).values({ userId, competitionId, key: def.key, tier, progress: value })
     newly.push({ userId, competitionId, key: def.key, tier })
@@ -516,9 +551,12 @@ export async function evaluateAchievements(db: AppDatabase, competitionId: strin
     for (const def of ACHIEVEMENTS) {
       const value = s[def.metric as AchievementMetric]
       const ex = exByKey.get(`${userId}:${def.key}`)
-      // Held once earned (tier is a high-water mark, so a rescore-down never
-      // loses it). Only collectable (non-SHAME) badges count toward the secret.
-      if ((ex || tierForValue(def.tiers, value)) && isCollectable(def)) heldCount += 1
+      // Held if it currently qualifies, or a prior row survives this run. A tier is a
+      // high-water mark so a non-revocable badge stays held on a rescore-down; a
+      // revocable one whose metric no longer meets any tier is about to be deleted, so
+      // its stale row does not count. Only collectable (non-SHAME) badges feed the secret.
+      const held = tierForValue(def.tiers, value) || (ex && !def.revocable)
+      if (held && isCollectable(def)) heldCount += 1
       await applyAchievementTier(db, ex, userId, competitionId, def, value, newly)
     }
     // The hidden "collector" secret: earned every non-secret badge. Granted
