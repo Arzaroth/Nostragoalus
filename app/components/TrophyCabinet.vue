@@ -16,18 +16,6 @@ const TROPHY_ICON: Record<CompetitionAwardType, string> = {
   MADAME_IRMA: 'pi pi-eye',
   TEAM_SPECIALIST: 'pi pi-flag',
 }
-const CATEGORY_ICON: Record<string, string> = {
-  MILESTONE: 'pi pi-bolt',
-  BEHAVIORAL: 'pi pi-clock',
-  CROWD: 'pi pi-users',
-  JOKER: 'pi pi-star',
-  ORACLE: 'pi pi-eye',
-  STREAK: 'pi pi-forward',
-  TROPHY_META: 'pi pi-trophy',
-  SHAME: 'pi pi-thumbs-down',
-  SECRET: 'pi pi-sparkles',
-}
-const TIER_TINT: Record<string, string> = { BRONZE: '#cd7f32', SILVER: '#9ca3af', GOLD: '#eab308' }
 const TROPHY_TINT = '#eab308'
 
 interface Display {
@@ -82,8 +70,8 @@ function badgeDisplay(a: AchievementDto): Display {
     name: t(`achievements.badge.${a.key}.name`),
     desc: t(`achievements.badge.${a.key}.desc`),
     criteria: t(`achievements.badge.${a.key}.criteria`),
-    icon: a.icon ?? CATEGORY_ICON[a.category] ?? 'pi pi-verified',
-    tint: tier ? TIER_TINT[tier] : 'var(--p-primary-color)',
+    icon: a.icon ?? ACHIEVEMENT_CATEGORY_ICON[a.category] ?? FALLBACK_ACHIEVEMENT_ICON,
+    tint: tier ? ACHIEVEMENT_TIER_TINT[tier] : 'var(--p-primary-color)',
     tier: tier ? t(`achievements.tier.${tier}`) : null,
     locked: !a.earned,
     flag: null,
