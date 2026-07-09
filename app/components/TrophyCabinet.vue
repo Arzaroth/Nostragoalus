@@ -42,6 +42,8 @@ interface Display {
   locked: boolean
   flag: string | null
   progress: { current: number; target: number } | null
+  // Current ongoing streak, for streak badges still climbing (null otherwise).
+  currentStreak: number | null
 }
 
 // Progress toward the next unmet tier. null once the top tier is reached (a full
@@ -68,6 +70,7 @@ function trophyDisplay(tr: TrophyDto): Display {
     locked: false,
     flag: isTeam ? flagUrl(tr.teamCode) : null,
     progress: null,
+    currentStreak: null,
   }
 }
 
@@ -79,12 +82,13 @@ function badgeDisplay(a: AchievementDto): Display {
     name: t(`achievements.badge.${a.key}.name`),
     desc: t(`achievements.badge.${a.key}.desc`),
     criteria: t(`achievements.badge.${a.key}.criteria`),
-    icon: CATEGORY_ICON[a.category] ?? 'pi pi-verified',
+    icon: a.icon ?? CATEGORY_ICON[a.category] ?? 'pi pi-verified',
     tint: tier ? TIER_TINT[tier] : 'var(--p-primary-color)',
     tier: tier ? t(`achievements.tier.${tier}`) : null,
     locked: !a.earned,
     flag: null,
     progress: badgeProgress(a),
+    currentStreak: a.currentStreak,
   }
 }
 

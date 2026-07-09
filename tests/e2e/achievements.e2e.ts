@@ -25,11 +25,14 @@ test('the trophy cabinet shows earned items and the owner can pin one to the sho
   await signUp(page, user)
   const userId = await getUserIdByEmail(user.email)
 
-  // One trophy (overall winner) + a few badges for the signed-in user, including a
-  // gold opening-act and a SHAME "bad" badge, to prove the new catalog surfaces.
+  // One trophy (overall winner) + a few badges for the signed-in user: the renamed
+  // opener (key opening-act, shown "First Blood"), the renamed first-exact (key
+  // first-blood, shown "The Hunt Is On"), a new milestone (grand-finale) and a SHAME
+  // "bad" badge, to prove the catalog - renames and new badges included - surfaces.
   await seedTrophy(fixture.competitionId, userId, 'OVERALL', 42)
   await seedAchievement(userId, fixture.competitionId, 'first-blood', 'BRONZE')
   await seedAchievement(userId, fixture.competitionId, 'opening-act', 'GOLD')
+  await seedAchievement(userId, fixture.competitionId, 'grand-finale', 'GOLD')
   await seedAchievement(userId, fixture.competitionId, 'wooden-spoon', 'BRONZE')
 
   // The dev server compiles this route on first hit; that cold compile can abort
@@ -38,16 +41,17 @@ test('the trophy cabinet shows earned items and the owner can pin one to the sho
     await page.goto(`/${fixture.slug}/users/${userId}`)
   }).toPass({ timeout: 30_000 })
 
-  // The cabinet renders the trophy and the earned badges (new catalog included).
+  // The cabinet renders the trophy and the earned badges (renames + new catalog).
   await expect(page.getByText('Grand Champion')).toBeVisible()
-  await expect(page.getByText('First Blood')).toBeVisible()
-  await expect(page.getByText('Opening Act')).toBeVisible()
+  await expect(page.getByText('The Hunt Is On')).toBeVisible() // key: first-blood
+  await expect(page.getByText('First Blood', { exact: true })).toBeVisible() // key: opening-act
+  await expect(page.getByText('Grand Finale')).toBeVisible()
   await expect(page.getByText('Wooden Spoon')).toBeVisible()
 
   // Every tile carries its unlock criteria for a stylized tooltip (rendered as the
   // PrimeVue directive's aria data on the tile). Hover the opener badge and assert
   // the criteria copy shows.
-  await page.getByText('Opening Act').hover()
+  await page.getByText('First Blood', { exact: true }).hover()
   await expect(
     page.getByText("Call the exact scoreline of the tournament's opening match."),
   ).toBeVisible()

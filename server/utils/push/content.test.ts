@@ -110,7 +110,7 @@ describe('notificationPushContent', () => {
       { type: 'ACHIEVEMENT_UNLOCKED', competitionSlug: 'wc', competitionName: 'World Cup', userId: 'u1', key: 'first-blood', tier: 'BRONZE' },
       'en',
     )
-    expect(badge.body).toContain('First Blood')
+    expect(badge.body).toContain('The Hunt Is On') // key first-blood, renamed
     expect(badge).toMatchObject({ url: '/wc/users/u1#cabinet', tag: 'achv:first-blood' })
 
     // A global badge (no competition) still lands on the owner's cabinet, under

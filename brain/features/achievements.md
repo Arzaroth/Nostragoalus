@@ -41,11 +41,19 @@ cabinet. It lives on as a per-league prize criterion - see
 Code, not data: `server/utils/achievements/catalog.ts` lists 22 batch-evaluated
 badges (plus two secret badges) with their category, scope, grading thresholds and
 whether they are hidden. `user_achievement` only records what a user unlocked. Categories:
-milestone (first-blood, opening-act, sharpshooter, prophet, century, perfect-round),
-streak (hot-streak, on-fire), crowd (contrarian, lone-wolf), joker (joker-hero),
-behavioural (early-bird, night-owl, deadline-dancer, completionist), oracle
-(champion-oracle, golden-touch, underdog-whisperer), trophy-meta (treble, podium) and
-shame (cold-streak, wooden-spoon - the "bad" badges).
+milestone (first-blood, opening-act, grand-finale, bore-draw, goal-rush, nemesis,
+sharpshooter, prophet, century, perfect-round), streak (hot-streak, on-fire), crowd
+(contrarian, lone-wolf), joker (joker-hero), behavioural (early-bird, night-owl,
+deadline-dancer, set-and-forget, completionist), oracle (champion-oracle,
+golden-touch, underdog-whisperer), trophy-meta (treble, podium) and shame
+(cold-streak, wooden-spoon - the "bad" badges).
+
+Two milestone KEYS carry a display name that reads counter to the key (the key never
+changes, the i18n name did): `opening-act` shows as **"First Blood"** (nailing the
+tournament's opening match) and `first-blood` shows as **"The Hunt Is On"** (your
+first exact of a competition). `grand-finale` is the bookend to `opening-act` - the
+FINAL match called EXACT. Some same-category badges set a per-key `icon` override in
+`catalog.ts` (e.g. opener flag vs final crown) so they don't all share the category icon.
 
 `evaluateAchievements` (`server/utils/achievements/service.ts`) runs each finalize
 tick (after the trophy award, so treble/podium see this tick's trophies). It derives
@@ -62,7 +70,18 @@ mid-tournament off "every match scored so far" (not every match), and last-place
 flip every finalize tick. **opening-act** grades the EXACT on the earliest-kickoff
 scored match (the tournament opener); it is single-GOLD (high rarity). **underdog** is
 a winning champion pick ranked outside the FIFA top 15 (rank >= 16, or unranked) - a
-reachable long shot, not the old effectively-impossible rank 41+.
+reachable long shot, not the old effectively-impossible rank 41+. **grand-finale** is
+the counterpart to opening-act: the EXACT on a `stage = 'FINAL'` match (also single-GOLD).
+
+**Scoreline-flavour badges** grade off the settled prediction alone: **bore-draw** is
+an EXACT 0-0, **goal-rush** an EXACT on a match of 5+ total goals, and **nemesis** the
+most EXACT calls landed on any one team (counted for both the home and away side of
+each exact pick; single-tier at 3). **Flawless (`perfect-round`)** excludes the final
+and third-place (`isSingleMatchStage`): those are one-match rounds where a "perfect
+round" is just a single exact (already grand-finale's job), so Flawless means a clean
+sweep of a real multi-match round. **set-and-forget** rewards predicting every scored
+match of a multi-match round and never editing one - "never edited" = the pick has a
+single `prediction_commitment` ledger entry (the chain appends only on a real change).
 
 **wooden-spoon** ("dead last") judges only players who saw the tournament through:
 you must have predicted at least `WOODEN_SPOON_MIN_SHARE` (half) of its matches to be
@@ -98,6 +117,17 @@ night-owl counts the small hours by the UTC hour explicitly (not the DB session 
 Streaks and perfect rounds are folded in JS from the scored rows in kickoff order, with
 equal kickoffs tiebroken by match id so simultaneous fixtures give a stable streak.
 
+**Pick-time badges grant at save, not just at finalize.** early-bird, night-owl and
+deadline-dancer are earned by the ACT of saving a pick (createdAt vs kickoff), fully
+known before any match is scored - so waiting for a scored finalize tick meant a
+deadline pick showed locked until its match finished (the cabinet only marks a badge
+earned when a persisted row exists). `upsertPrediction` (`server/utils/predictions/service.ts`)
+now calls `evaluatePickTimeAchievements` after a first save (never on an edit -
+createdAt is immutable), which recounts just those three metrics for that user and
+grants/notifies immediately. The finalize batch stays as the backfill; grants are
+idempotent so it never re-notifies. The shared grant/upgrade step is
+`applyAchievementTier`.
+
 ### The secret badges
 
 `the-magic-word` is hidden and GLOBAL (spans competitions, null `competitionId`). It
@@ -128,6 +158,12 @@ so the unlock is not dangled as a to-do list.
   badges are dropped before the DTO, so their `current` never leaks; event-granted
   secrets have no metric, so `current` is null. SHAME badges also get `current: null`
   (you don't chase a cold streak, and a bar would telegraph its threshold).
+- Streak badges (hot-streak, on-fire) also carry `currentStreak`: the ongoing run
+  right now, shown next to the best (which rides `current`). It is null on non-streak
+  badges and once the badge is maxed (top tier reached - nothing left to chase). The
+  cur* runs come from `computeAchievementStats` (the trailing counters of `streaks()`).
+- The DTO also carries the per-key `icon` override (or null to fall back to the
+  category icon), resolved from `catalog.ts` so `TrophyCabinet.vue` need not know keys.
 - Write: `PUT /api/showcase` -> `setShowcase` replaces the owner's showcase with an
   ordered set of pins (max `SHOWCASE_SLOT_COUNT` = 3, no duplicates, achievements
   only, each one earned). Trophies cannot be pinned.

@@ -4,7 +4,7 @@ import { createTestDb } from '../../../tests/db'
 import { findRoundId } from '../sync/rounds'
 import { addLeagueMember, makeLeague, makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
 import { getCrowdTotals, getMatchCrowdTotal, getMyPredictions, getMyStats, getUserPublicPredictions, setJoker, upsertPrediction } from './service'
-import { prediction } from '../../../db/schema'
+import { prediction, userAchievement } from '../../../db/schema'
 import { LockedError, NotFoundError, ValidationError } from '../errors'
 
 const NOW = new Date('2026-06-10T00:00:00Z')
@@ -57,6 +57,21 @@ describe('upsertPrediction', () => {
     expect(id1).toBe(id2)
     const [p] = await db.select().from(prediction).where(eq(prediction.id, id1))
     expect(p).toMatchObject({ homeGoals: 2, awayGoals: 2 })
+    await client.close()
+  })
+
+  it('grants a pick-time badge on a first save, not on a later edit', async () => {
+    const { db, client, competitionId, roundId, userId } = await setup()
+    // Kicks off in the fixed past relative to the wall clock, so the fresh
+    // createdAt lands in the deadline-dancer window (createdAt >= kickoff - 5m).
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: FUTURE })
+    await upsertPrediction(db, { userId, matchId: m, home: 1, away: 0 }, NOW)
+    const afterInsert = await db.select().from(userAchievement).where(eq(userAchievement.userId, userId))
+    expect(afterInsert.some((r) => r.key === 'deadline-dancer')).toBe(true)
+    // An edit is not a new pick (createdAt is immutable): no additional grant.
+    await upsertPrediction(db, { userId, matchId: m, home: 2, away: 1 }, NOW)
+    const afterEdit = await db.select().from(userAchievement).where(eq(userAchievement.userId, userId))
+    expect(afterEdit).toHaveLength(afterInsert.length)
     await client.close()
   })
 })

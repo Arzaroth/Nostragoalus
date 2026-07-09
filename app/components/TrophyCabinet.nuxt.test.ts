@@ -15,19 +15,23 @@ const CABINET: CabinetDto = {
       key: 'first-blood',
       category: 'MILESTONE',
       scope: 'COMPETITION',
+      icon: null,
       hidden: false,
       tiers: [{ tier: 'BRONZE', threshold: 1 }],
       earned: { tier: 'BRONZE', progress: 1, unlockedAt: '2026-06-12T00:00:00.000Z' },
       current: 1,
+      currentStreak: null,
     },
     {
       key: 'sharpshooter',
       category: 'MILESTONE',
       scope: 'COMPETITION',
+      icon: null,
       hidden: false,
       tiers: [{ tier: 'BRONZE', threshold: 5 }],
       earned: null,
       current: 2,
+      currentStreak: null,
     },
   ],
   showcase: [{ slot: 0, achievementKey: 'first-blood' }],
@@ -63,7 +67,7 @@ describe('TrophyCabinet', () => {
     await clearCache()
     wrapper = await mountSuspended(TrophyCabinet, { props: { userId: 'u1' } })
     await vi.waitFor(() => expect(wrapper!.text()).toContain('Grand Champion'))
-    expect(wrapper.text()).toContain('First Blood')
+    expect(wrapper.text()).toContain('The Hunt Is On') // key first-blood, renamed
     // Locked badges are rendered greyed.
     expect(wrapper.html()).toContain('opacity-40')
     // A locked badge with partial progress draws its "current / target" bar.

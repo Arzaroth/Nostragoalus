@@ -10,6 +10,8 @@ const props = withDefaults(
     locked?: boolean
     flag?: string | null
     progress?: { current: number; target: number } | null
+    // Current ongoing streak, shown beside the best on streak badges (null = hide).
+    currentStreak?: number | null
     editable?: boolean
     pinned?: boolean
     pinDisabled?: boolean
@@ -21,6 +23,7 @@ const props = withDefaults(
     locked: false,
     flag: null,
     progress: null,
+    currentStreak: null,
     editable: false,
     pinned: false,
     pinDisabled: false,
@@ -70,7 +73,10 @@ const progressPct = computed(() =>
         <div class="h-full rounded-full transition-all" :style="`width:${progressPct}%;background:${tint}`" />
       </div>
       <span class="text-[10px] tabular-nums" style="color: var(--p-text-muted-color)">
-        {{ progress.current }} / {{ progress.target }}
+        {{ currentStreak != null ? t('achievements.bestStreak', { n: progress.current }) : `${progress.current} / ${progress.target}` }}
+      </span>
+      <span v-if="currentStreak != null" class="text-[10px] tabular-nums font-semibold" :style="`color:${tint}`">
+        {{ t('achievements.currentStreak', { n: currentStreak }) }}
       </span>
     </div>
 
