@@ -720,6 +720,15 @@ async function copyRecovery() {
   if (recoveryCode.value) await navigator.clipboard?.writeText(recoveryCode.value).catch(() => {})
 }
 
+// Regenerate a recovery code from a device that already holds the key: re-wrap the
+// same private key under a fresh code (replacing the escrow blob), which
+// invalidates the old code. Behind a confirm because that invalidation is silent.
+const showRegenConfirm = ref(false)
+async function confirmRegenerate() {
+  showRegenConfirm.value = false
+  await openRecoverySetup()
+}
+
 // Restore on a new device.
 const restoreCode = ref('')
 const restoreError = ref(false)
@@ -937,6 +946,14 @@ watch(
               <i class="pi pi-volume-off text-xs" />
               <span class="flex-1">{{ t('chat.muted.show', { n: muted.length }) }}</span>
             </button>
+            <!-- Danger zone: identity-level recovery actions. Not admin-gated (a DM
+                 shares this same E2EE identity); destructive, so each confirms. -->
+            <template v-if="hasRecovery && identityStatus === 'ready'">
+              <div class="my-1 border-t" style="border-color: var(--p-content-border-color)" />
+              <button type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-start opacity-90 hover:opacity-100" style="color: var(--ng-danger)" :disabled="recoveryBusy" @click="menuOpen = false; showRegenConfirm = true">
+                <i class="pi pi-refresh text-xs" /><span class="flex-1">{{ t('chat.regenerate.button') }}</span>
+              </button>
+            </template>
             <template v-if="isAdmin">
               <div class="my-1 border-t" style="border-color: var(--p-content-border-color)" />
               <button type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-start opacity-90 hover:opacity-100" @click="menuOpen = false; openReports()">
@@ -1392,6 +1409,18 @@ watch(
       </div>
       <template #footer>
         <Button :label="t('chat.moderation.done')" severity="secondary" text @click="showReports = false" />
+      </template>
+    </Dialog>
+
+    <!-- Regenerate-recovery-code confirm: replacing the escrow invalidates the old code. -->
+    <Dialog v-model:visible="showRegenConfirm" modal :header="t('chat.regenerate.title')" :style="{ width: '30rem', maxWidth: '92vw' }">
+      <div class="flex flex-col gap-3 text-sm">
+        <p>{{ t('chat.regenerate.body1') }}</p>
+        <p style="color: var(--ng-danger)">{{ t('chat.regenerate.body2') }}</p>
+      </div>
+      <template #footer>
+        <Button :label="t('chat.regenerate.cancel')" severity="secondary" text @click="showRegenConfirm = false" />
+        <Button :label="t('chat.regenerate.confirm')" :loading="recoveryBusy" @click="confirmRegenerate" />
       </template>
     </Dialog>
 

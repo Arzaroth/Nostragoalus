@@ -482,6 +482,27 @@ describe('ChatPanel', () => {
     expect(wrapper.text()).toContain('Rotate key')
   })
 
+  it('regenerates the recovery code from the danger zone, behind a confirm', async () => {
+    const s = await chatState()
+    s.enabled.value = true
+    s.ready.value = true
+    const id = ((await import('../composables/useChatIdentity')) as any).__id
+    id.setupRecovery.mockClear()
+    const wrapper = await mount()
+    await wrapper.get('button[aria-label="More options"]').trigger('click')
+    const item = wrapper.findAll('button').find((b) => b.text().includes('Regenerate recovery code'))!
+    expect(item).toBeTruthy()
+    await item.trigger('click')
+    // The confirm (a teleported Dialog) spells out that the old code is
+    // invalidated - and does NOT act until the user confirms.
+    await vi.waitFor(() => expect(document.body.textContent).toContain('Your current recovery code stops working'))
+    expect(id.setupRecovery).not.toHaveBeenCalled()
+    const confirm = [...document.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Regenerate')!
+    expect(confirm).toBeTruthy()
+    confirm.dispatchEvent(new Event('click', { bubbles: true }))
+    await vi.waitFor(() => expect(id.setupRecovery).toHaveBeenCalled())
+  })
+
   it('lists muted members and offers an unmute', async () => {
     const s = await chatState()
     s.enabled.value = true

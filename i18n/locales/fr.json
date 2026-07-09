@@ -240,6 +240,14 @@
       "confirm": "Renouveler la clé",
       "cancel": "Annuler"
     },
+    "regenerate": {
+      "button": "Régénérer le code de récupération",
+      "title": "Régénérer votre code de récupération ?",
+      "body1": "Un nouveau code de récupération est créé et affiché une seule fois. Conservez-le à la place de l'ancien.",
+      "body2": "Votre code de récupération actuel cesse de fonctionner dès cet instant.",
+      "confirm": "Régénérer",
+      "cancel": "Annuler"
+    },
     "verify": {
       "show": "Vérifier les clés",
       "intro": "Comparez ces numéros avec chaque membre en personne ou via un canal de confiance. Si le numéro d'un membre ne correspond pas, sa clé a peut-être été falsifiée.",
