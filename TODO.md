@@ -587,6 +587,12 @@ landed alongside it (verified by running the stack):
       catastrophic wipe), but importing the helpers outside Playwright would
       seed/delete `e2e-cup` in the dev DB. Make the helpers refuse to run without
       an explicit e2e target.
+- [ ] **`rewards.e2e.ts` "markdown description renders for viewers" is flaky/red**:
+      the spec clicks the SSR-rendered "Add a description" button without the
+      `expect(...).toPass()` interactivity gate the other specs use, so it fails
+      `toBeVisible()`/click before hydration wires the handler (seen red on the
+      2.28.0 e2e run; unrelated to that release). Wrap the first interaction in a
+      `toPass()` retry like `roadmap.e2e.ts`/`sessions.e2e.ts` do.
 - [ ] Identifier-first login: password reveal for local accounts, SSO
       redirect for captured domains, `/login?password=1` escape hatch.
 - [ ] Signup domain-capture warning (continue anyway / use SSO).
