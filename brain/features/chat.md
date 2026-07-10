@@ -26,7 +26,7 @@ exact boundary and the hardening layers.
   message; the 5MB original is compressed to webp before encryption (GIFs pass
   through to preserve animation).
 
-## Identity & recovery
+## Identity and recovery
 
 The keypair is generated on the device and only its public key is uploaded
 (`useChatIdentity.ts`, `registerChatIdentity` - insert-once, never overwritten). The

@@ -406,3 +406,13 @@ feature/architecture doc that implements it.
   must run, and the app can't force it. The accepted limit: a brand-new visitor with
   no pin cannot catch a from-genesis rewrite. See
   [architecture/e2ee-trust-model.md](architecture/e2ee-trust-model.md).
+- **Identity reset re-grants existing keys (keep history), it does not force
+  forward-only.** A hard reset (lost device key + recovery code) mints a new keypair;
+  co-members and DM peers then re-seal the **existing** league/DM keys to the new
+  pubkey rather than rotating to a fresh key. So the reset user regains their DMs and
+  the current league epoch (only rotated-out older league epochs stay lost). Chosen
+  over strict forward-only because a per-member forward-only reset would need a
+  league-wide rotation (can't scope one member's reset to a new epoch without
+  re-keying everyone) and would throw away recoverable history for no confidentiality
+  gain - the changed key is already gated behind the safety-number acknowledge, which
+  is the real protection. See [features/chat.md](features/chat.md#identity-and-recovery).
