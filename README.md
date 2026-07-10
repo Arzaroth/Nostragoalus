@@ -74,7 +74,8 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   league owner or moderator (off by default, behind a trade-offs warning). Messages, replies and images
   are encrypted on members' devices with a libsodium group key, so the server only ever stores
   ciphertext and cannot read it; keys enroll silently on first use, with a one-time recovery code to
-  restore history on another device. React with emoji, reply with a quoted preview, or open a message's
+  restore history on another device (regenerate the code anytime, or reset to a fresh identity if you
+  lose both the device key and the code). React with emoji, reply with a quoted preview, or open a message's
   **thread** for a focused side-conversation kept out of the main room. **@mention** league members with
   autocomplete (rename-proof, links to their profile, with a distinct unread badge on the dock, plus a
   cross-league header-bell and web-push alert wherever it lands), drop in
