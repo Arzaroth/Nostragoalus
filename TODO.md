@@ -16,6 +16,12 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
       a ready device as a deliberate identity re-key, but nothing explains when you
       would want it (a suspected key/code leak). Add a hint, or hide it behind an
       "advanced" reveal, so it is not mistaken for the regenerate-code flow.
+- [ ] **No throttle on `POST /api/chat/identity/reset`**: each reset takes the global
+      `FOR UPDATE` lock on the singleton key-transparency head and appends a permanent
+      KT row. A scripted loop contends with every user's enrolment app-wide and grows
+      the append-only log unbounded (griefing, not a confidentiality break). The
+      insert-once `registerChatIdentity` has the same lock but can't be spammed; reset
+      can. Add a per-user rate limit (same gap the enrolment path has - solve together).
 
 ## League board parity (deferred from the feature-treatment review)
 
