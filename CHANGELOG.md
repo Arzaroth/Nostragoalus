@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.28.0] - 2026-07-10
+
 ### Added
 
 - Connected devices: your account page now lists every device signed in to your account (device type, IP and when it was last active), with a button to sign out any single device and a "sign out all other devices" button. Handy if you sign in on a shared or lost phone.

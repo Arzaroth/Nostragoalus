@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [2.28.0] - 2026-07-10
+
 ### Ajouté
 
 - Appareils connectés : ta page de compte liste désormais chaque appareil connecté à ton compte (type d'appareil, adresse IP et dernière activité), avec un bouton pour déconnecter un appareil précis et un bouton « déconnecter tous les autres appareils ». Pratique si tu t'es connecté sur un téléphone partagé ou perdu.
