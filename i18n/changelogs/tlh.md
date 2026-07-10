@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.28.0] - 2026-07-10
+
 ### chelpu'
 
 - rarlu'bogh janmey: DaH lojmItlIj HaSta janmey Hoch 'ang, account-lIj 'elpu'bogh (jan Segh, IP, Qu' Qav poH). wa' jan yImej, pagh «latlh janmey Hoch yImej» yIlo'. lat janDaq pagh chIlpu'bogh janDaq bIleghpu'chugh, QaQ.
