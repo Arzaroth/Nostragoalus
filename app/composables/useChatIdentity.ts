@@ -105,8 +105,14 @@ export function useChatIdentity() {
     const uid = userId.value
     if (!uid) throw new Error('signed out')
     const id = await generateIdentity()
-    await $fetch('/api/chat/identity/reset', { method: 'POST', body: { publicKey: id.publicKey } })
+    // Persist the new key locally BEFORE the server call. If the reset landed but the
+    // local write were then lost (crash, storage eviction), the server would hold a
+    // public key whose private key is gone and the old escrow is already dropped -
+    // unrecoverable. Writing first means a mid-flight failure lands in needs-restore
+    // with the old escrow still intact (the server still has the old key), which the
+    // user can recover from with their old code.
     await idbSet(`id-${uid}`, id)
+    await $fetch('/api/chat/identity/reset', { method: 'POST', body: { publicKey: id.publicKey } })
     identity.value = id
     status.value = 'ready'
     hasRecovery.value = false

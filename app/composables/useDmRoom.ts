@@ -77,11 +77,18 @@ export function useDmRoom(threadId: MaybeRefOrGetter<string>) {
     if (!ck || !otherMissingKey.value || !otherId.value || !otherPublicKey.value) return
     if (!isKeyTrusted(pins.value, otherId.value, otherPublicKey.value)) return
     const wrappedKey = await sealGroupKey(ck, otherPublicKey.value)
-    await $fetch(`/api/dm/${tid()}/keys`, {
-      method: 'POST',
-      body: { targetUserId: otherId.value, epoch: epoch.value, wrappedKey },
-    }).catch(() => {})
-    otherMissingKey.value = false
+    try {
+      await $fetch(`/api/dm/${tid()}/keys`, {
+        method: 'POST',
+        body: { targetUserId: otherId.value, epoch: epoch.value, wrappedKey },
+      })
+      otherMissingKey.value = false
+    } catch {
+      // Re-seal failed (network, or a stale-epoch 409 from a concurrent change):
+      // leave otherMissingKey true so a later load/reconnect retries. Clearing it
+      // here would record a failed re-seal as done and leave the peer keyless until
+      // a full reload.
+    }
   }
 
   async function decryptRow(r: ChatMessageDTO): Promise<DecryptedMessage> {
@@ -406,7 +413,10 @@ export function useDmRoom(threadId: MaybeRefOrGetter<string>) {
 
   // Acknowledging the peer's changed key (in the verify panel) updates the shared pin
   // store; that is our cue to re-seal the thread key to their new identity.
-  watch(pins, () => void reconcilePeerKey(), { deep: true })
+  // Shallow watch: the pin store is always replaced wholesale on an acknowledge
+  // (never mutated in place), so a shallow watch fires on every change and avoids a
+  // deep diff on every app-wide pin write.
+  watch(pins, () => void reconcilePeerKey())
 
   const visibleThread = computed(() =>
     threadMessages.value.filter((m) => !m.userId || !muted.value.includes(m.userId)),

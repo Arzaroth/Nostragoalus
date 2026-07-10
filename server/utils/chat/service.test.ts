@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { and, eq } from 'drizzle-orm'
+import { and, asc, eq } from 'drizzle-orm'
 import { createTestDb } from '../../../tests/db'
 import { findRoundId } from '../sync/rounds'
 import { addLeagueMember, makeLeague, makeMatch, makeUser, seedCompetition } from '../../../tests/factories'
@@ -108,6 +108,7 @@ describe('chat identity', () => {
       .select({ publicKey: keyTransparencyEntry.publicKey })
       .from(keyTransparencyEntry)
       .where(eq(keyTransparencyEntry.userId, owner))
+      .orderBy(asc(keyTransparencyEntry.seq))
     expect(entries.map((e) => e.publicKey)).toEqual(['pkA', 'pkNEW'])
     await client.close()
   })
