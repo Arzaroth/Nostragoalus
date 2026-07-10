@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.29.0] - 2026-07-10
+
 ### chelpu'
 
 - QIn chu'wI' De' chu' yImoj: De' vum jIH De'wI'Daq, QInmey menu ghurmoHwI' Daqvo' De' chu' yIchenmoH. DaH chu'wI' De' qan lujqa'be'.

@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.29.0] - 2026-07-10
+
 ### Added
 
 - Regenerate your chat recovery code: from a device where chat still works, mint a fresh code from the chat menu's danger zone. The old code stops working the moment you do.

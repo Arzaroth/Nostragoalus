@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [2.29.0] - 2026-07-10
+
 ### Ajouté
 
 - Régénérer votre code de récupération de chat : depuis un appareil où le chat fonctionne encore, créez un nouveau code depuis la zone sensible du menu de chat. L'ancien code cesse de fonctionner à l'instant même.
