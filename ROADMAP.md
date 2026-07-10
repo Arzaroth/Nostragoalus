@@ -540,6 +540,16 @@ effort buckets; order within a bucket is not priority.
       status (planned / in progress / shipped) instead of stacked sections;
       admins drag cards between columns and reorder within one (replaces the
       up/down buttons). Public view read-only.
+  - Voting closes once an item is IN_PROGRESS or SHIPPED (shipped in 2.28.0):
+    upvotes are a build-next signal, so they stop mattering once building starts.
+    Server throws 409; the board disables the upvote button. From a roadmap
+    community suggestion.
+- [x] **Connected devices + longer sessions** (shipped in 2.28.0): the account page
+      lists every active login session (device type, IP, last active) with per-device
+      and "sign out all other devices" controls (from a roadmap suggestion). Paired
+      with a session-lifetime fix (90-day sliding sessions + `freshAge: 0`) that stops
+      spurious logouts, worst on iOS installed PWAs where a short-lived cookie is
+      dropped when the home-screen app is backgrounded.
 - [ ] **Localized roadmap + changelog**: the whole app chrome is i18n'd in four
       locales but the roadmap items (DB content) and the About-page changelog are
       English-only (the chrome around them is translated, the body is not).
