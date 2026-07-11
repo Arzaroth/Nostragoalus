@@ -677,10 +677,10 @@ describe('the-collector secret', () => {
     const fin = await roundId(c, 'FINAL')
     const alice = await makeUser(db, 'alice')
     // Genuinely satisfy the revocable badges (they no longer count on a bare row):
-    // a complete all-EXACT round (perfect-round), a decided final so the tournament is
-    // over, and every scored match predicted (completionist), leaving alice top of the
-    // one-player board (podium).
-    const m = await scoredMatch(c, g1, 'GROUP', new Date('2026-06-11T12:00:00Z'))
+    // a complete all-EXACT round (perfect-round), a complete named group fully called
+    // (group-guru), a decided final so the tournament is over, and every scored match
+    // predicted (completionist), leaving alice top of the one-player board (podium).
+    const m = await scoredTeam(c, g1, { group: 'A', home: 'HOM', away: 'AWY', kickoff: new Date('2026-06-11T12:00:00Z') })
     await pred({ userId: alice, matchId: m, roundId: g1, tier: 'EXACT', points: 3 })
     const finalMatch = await decidedFinal(c, fin)
     await pred({ userId: alice, matchId: finalMatch, roundId: fin, tier: 'EXACT', points: 6 })
@@ -718,5 +718,137 @@ describe('the-collector secret', () => {
     )
     await evaluateAchievements(db, c)
     expect(await collectorRows()).toHaveLength(0)
+  })
+})
+
+// A scored match with explicit team codes / stage / group / winner - the fixtures the
+// team-, champion- and group-scoped badges read. kickoff is spread so streaks/opener
+// ordering stays stable and the final always kicks off last.
+async function scoredTeam(
+  competitionId: string,
+  rid: string,
+  o: { stage?: string; group?: string | null; home: string; away: string; winner?: 'HOME' | 'AWAY'; kickoff: Date },
+): Promise<string> {
+  const id = await makeMatch(db, {
+    competitionId,
+    roundId: rid,
+    stage: (o.stage ?? 'GROUP') as never,
+    groupName: o.group ?? null,
+    homeTeamCode: o.home,
+    awayTeamCode: o.away,
+    status: 'FINISHED',
+    fullTimeHome: o.winner === 'AWAY' ? 0 : 1,
+    fullTimeAway: o.winner === 'AWAY' ? 1 : 0,
+    winner: o.winner ?? 'HOME',
+    kickoffTime: o.kickoff,
+  })
+  await db.update(match).set({ scoringState: 'SCORED' }).where(eq(match.id, id))
+  return id
+}
+
+describe('Form Reader (teamsRead)', () => {
+  it('counts teams with 5+ correct-outcome (non-MISS) calls, ignoring MISS', async () => {
+    const c = await seedCompetition(db)
+    const g1 = await roundId(c, 'GROUP', 1)
+    const alice = await makeUser(db, 'alice')
+    let k = 0
+    const nextKick = () => new Date(2026, 5, 11, 12, k++)
+    // BRA: 5 non-MISS -> counts. ARG: 4 non-MISS + 1 MISS -> does not.
+    for (let i = 0; i < 5; i++) {
+      const m = await scoredTeam(c, g1, { home: 'BRA', away: `X${i}`, kickoff: nextKick() })
+      await pred({ userId: alice, matchId: m, roundId: g1, tier: i === 0 ? 'EXACT' : 'OUTCOME' })
+    }
+    for (let i = 0; i < 5; i++) {
+      const m = await scoredTeam(c, g1, { home: 'ARG', away: `Y${i}`, kickoff: nextKick() })
+      await pred({ userId: alice, matchId: m, roundId: g1, tier: i === 4 ? 'MISS' : 'DIFF' })
+    }
+    expect((await stats(c, alice)).teamsRead).toBe(1)
+  })
+
+  it('grades 3/5/7 teams', async () => {
+    const c = await seedCompetition(db)
+    const g1 = await roundId(c, 'GROUP', 1)
+    const alice = await makeUser(db, 'alice')
+    let k = 0
+    for (let t = 0; t < 3; t++) {
+      for (let i = 0; i < 5; i++) {
+        const m = await scoredTeam(c, g1, { home: `T${t}`, away: `Z${t}${i}`, kickoff: new Date(2026, 5, 11, 12, k++) })
+        await pred({ userId: alice, matchId: m, roundId: g1, tier: 'OUTCOME' })
+      }
+    }
+    expect((await stats(c, alice)).teamsRead).toBe(3)
+    const def = ACHIEVEMENTS.find((d) => d.key === 'form-reader')!
+    expect(def.tiers.map((t) => t.threshold)).toEqual([3, 5, 7])
+  })
+})
+
+describe("Champion's Path (championPath)", () => {
+  async function withChampion(): Promise<{ c: string; alice: string; braMatches: string[] }> {
+    const c = await seedCompetition(db)
+    const g1 = await roundId(c, 'GROUP', 1)
+    const finalR = await roundId(c, 'FINAL')
+    const alice = await makeUser(db, 'alice')
+    // BRA plays two group games then wins the final -> BRA is champion.
+    const m1 = await scoredTeam(c, g1, { home: 'BRA', away: 'SRB', kickoff: new Date('2026-06-11T12:00:00Z') })
+    const m2 = await scoredTeam(c, g1, { home: 'CMR', away: 'BRA', kickoff: new Date('2026-06-15T12:00:00Z') })
+    const mf = await scoredTeam(c, finalR, { stage: 'FINAL', home: 'BRA', away: 'ARG', winner: 'HOME', kickoff: new Date('2026-07-19T18:00:00Z') })
+    return { c, alice, braMatches: [m1, m2, mf] }
+  }
+
+  it('grants when every champion match outcome is called', async () => {
+    const { c, alice, braMatches } = await withChampion()
+    const g1 = await roundId(c, 'GROUP', 1)
+    const finalR = await roundId(c, 'FINAL')
+    await pred({ userId: alice, matchId: braMatches[0], roundId: g1, tier: 'OUTCOME' })
+    await pred({ userId: alice, matchId: braMatches[1], roundId: g1, tier: 'DIFF' })
+    await pred({ userId: alice, matchId: braMatches[2], roundId: finalR, tier: 'EXACT' })
+    expect((await stats(c, alice)).championPath).toBe(1)
+  })
+
+  it('withholds when a champion match is MISSed or unpredicted', async () => {
+    const { c, alice, braMatches } = await withChampion()
+    const g1 = await roundId(c, 'GROUP', 1)
+    const finalR = await roundId(c, 'FINAL')
+    await pred({ userId: alice, matchId: braMatches[0], roundId: g1, tier: 'MISS' })
+    await pred({ userId: alice, matchId: braMatches[2], roundId: finalR, tier: 'EXACT' })
+    // braMatches[1] left unpredicted entirely.
+    expect((await stats(c, alice)).championPath).toBe(0)
+  })
+})
+
+describe('Group Guru (groupPerfect)', () => {
+  it('grants for a complete group fully called, revocable in the catalog', async () => {
+    const c = await seedCompetition(db)
+    const g1 = await roundId(c, 'GROUP', 1)
+    const alice = await makeUser(db, 'alice')
+    const ms: string[] = []
+    for (let i = 0; i < 3; i++) {
+      ms.push(await scoredTeam(c, g1, { group: 'A', home: `A${i}`, away: `B${i}`, kickoff: new Date(2026, 5, 11, 12, i) }))
+    }
+    for (const m of ms) await pred({ userId: alice, matchId: m, roundId: g1, tier: 'OUTCOME' })
+    expect((await stats(c, alice)).groupPerfect).toBe(1)
+    expect(ACHIEVEMENTS.find((d) => d.key === 'group-guru')!.revocable).toBe(true)
+  })
+
+  it('withholds while the group is incomplete or a match is MISSed', async () => {
+    const c = await seedCompetition(db)
+    const g1 = await roundId(c, 'GROUP', 1)
+    const alice = await makeUser(db, 'alice')
+    const m1 = await scoredTeam(c, g1, { group: 'A', home: 'A0', away: 'B0', kickoff: new Date(2026, 5, 11, 12, 0) })
+    const m2 = await scoredTeam(c, g1, { group: 'A', home: 'A1', away: 'B1', kickoff: new Date(2026, 5, 11, 12, 1) })
+    // A third group-A match stays PENDING -> group incomplete.
+    const m3 = await makeMatch(db, {
+      competitionId: c,
+      roundId: g1,
+      stage: 'GROUP',
+      groupName: 'A',
+      homeTeamCode: 'A2',
+      awayTeamCode: 'B2',
+      kickoffTime: new Date(2026, 5, 11, 12, 2),
+    })
+    await pred({ userId: alice, matchId: m1, roundId: g1, tier: 'OUTCOME' })
+    await pred({ userId: alice, matchId: m2, roundId: g1, tier: 'OUTCOME' })
+    await pred({ userId: alice, matchId: m3, roundId: g1, tier: 'OUTCOME' })
+    expect((await stats(c, alice)).groupPerfect).toBe(0)
   })
 })

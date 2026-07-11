@@ -1,4 +1,4 @@
-import { and, eq, gt, inArray, isNotNull, isNull, sql } from 'drizzle-orm'
+import { and, eq, gt, inArray, isNotNull, isNull, or, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import {
   bestScorerPick,
@@ -91,6 +91,9 @@ const ZERO_STATS: AchievementStats = {
   trophies: 0,
   podium: 0,
   woodenSpoon: 0,
+  teamsRead: 0,
+  championPath: 0,
+  groupPerfect: 0,
   curExactStreak: 0,
   curScoringStreak: 0,
   curMissStreak: 0,
@@ -207,6 +210,43 @@ function bogeyTeam(rows: { tier: string; homeTeamCode: string | null; awayTeamCo
   return max
 }
 
+// Form Reader: how many distinct teams the user called the OUTCOME of (non-MISS:
+// EXACT, DIFF or OUTCOME) at least OUTCOMES_PER_TEAM times, counting a team for both
+// the home and away side of each of its matches (mirrors nemesis). Grades 3/5/7 teams.
+const OUTCOMES_PER_TEAM = 5
+function teamsRead(rows: { tier: string; homeTeamCode: string | null; awayTeamCode: string | null }[]): number {
+  const byTeam = new Map<string, number>()
+  for (const r of rows) {
+    if (r.tier === 'MISS') continue
+    for (const code of [r.homeTeamCode, r.awayTeamCode]) {
+      if (!code) continue
+      byTeam.set(code, (byTeam.get(code) ?? 0) + 1)
+    }
+  }
+  let n = 0
+  for (const c of byTeam.values()) if (c >= OUTCOMES_PER_TEAM) n += 1
+  return n
+}
+
+// Group Guru: 1 if the user called the OUTCOME (non-MISS) of every match in at least
+// one COMPLETE group. completeGroups maps a fully-scored group's name to its match
+// count; the user qualifies when their non-MISS group picks cover all of them (a
+// missing pick or a MISS drops the count below the total). Incomplete groups are
+// excluded so a group with games still to play can't read as perfect off its early
+// results (the group analog of the perfect-round completeRounds guard).
+function groupPerfect(
+  rows: { stage: string; groupName: string | null; tier: string }[],
+  completeGroups: Map<string, number>,
+): number {
+  const byGroup = new Map<string, number>()
+  for (const r of rows) {
+    if (r.stage !== 'GROUP' || !r.groupName || r.tier === 'MISS') continue
+    byGroup.set(r.groupName, (byGroup.get(r.groupName) ?? 0) + 1)
+  }
+  for (const [g, total] of completeGroups) if ((byGroup.get(g) ?? 0) === total) return 1
+  return 0
+}
+
 // Derive every user's achievement metrics for a competition from the settled
 // prediction/leaderboard/pick state. Pure read; the evaluation writes.
 export async function computeAchievementStats(
@@ -269,6 +309,7 @@ export async function computeAchievementStats(
       tier: prediction.baseTier,
       kickoff: match.kickoffTime,
       stage: match.stage,
+      groupName: match.groupName,
       homeTeamCode: match.homeTeamCode,
       awayTeamCode: match.awayTeamCode,
     })
@@ -297,6 +338,48 @@ export async function computeAchievementStats(
   const roundScored = new Map(roundTotals.filter((r) => r.scored > 0).map((r) => [r.roundId, r.scored]))
   const totalScored = roundTotals.reduce((s, r) => s + r.scored, 0)
   const completeRounds = new Set(roundTotals.filter((r) => r.scored === r.total).map((r) => r.roundId))
+
+  // Complete groups (Group Guru): a named group whose every match is scored, and how
+  // many matches it holds. Only complete groups can be "perfect" - see groupPerfect.
+  const groupTotals = await db
+    .select({
+      groupName: match.groupName,
+      total: sql<number>`count(*)`.mapWith(Number),
+      scored: sql<number>`count(*) filter (where ${match.scoringState} = 'SCORED')`.mapWith(Number),
+    })
+    .from(match)
+    .where(and(eq(match.competitionId, competitionId), eq(match.stage, 'GROUP'), isNotNull(match.groupName)))
+    .groupBy(match.groupName)
+  const completeGroups = new Map(
+    groupTotals.filter((r) => r.groupName && r.total > 0 && r.scored === r.total).map((r) => [r.groupName as string, r.total]),
+  )
+
+  // The tournament champion (Champion's Path): the winner of the decided, scored final.
+  // Its whole set of scored matches is the denominator - a user earns the badge by
+  // calling the outcome (non-MISS) of every one of them. Empty until the final decides.
+  const [finalMatch] = tournamentDone
+    ? await db
+        .select({ winner: match.winner, home: match.homeTeamCode, away: match.awayTeamCode })
+        .from(match)
+        .where(and(eq(match.competitionId, competitionId), eq(match.stage, 'FINAL'), inArray(match.winner, ['HOME', 'AWAY'])))
+        .limit(1)
+    : []
+  const championCode = finalMatch ? (finalMatch.winner === 'HOME' ? finalMatch.home : finalMatch.away) : null
+  const championMatchIds = new Set<string>()
+  if (championCode) {
+    const champMatches = await db
+      .select({ id: match.id })
+      .from(match)
+      .where(
+        and(
+          eq(match.competitionId, competitionId),
+          eq(match.scoringState, 'SCORED'),
+          or(eq(match.homeTeamCode, championCode), eq(match.awayTeamCode, championCode)),
+        ),
+      )
+    for (const m of champMatches) championMatchIds.add(m.id)
+  }
+  const championMatchCount = championMatchIds.size
 
   // How many commitment-ledger entries each prediction in this competition has: one
   // entry = never edited (backs set-and-forget). The ledger appends only on a real
@@ -366,6 +449,7 @@ export async function computeAchievementStats(
     kickoff: Date
     matchId: string
     stage: string
+    groupName: string | null
     homeTeamCode: string | null
     awayTeamCode: string | null
   }
@@ -379,6 +463,7 @@ export async function computeAchievementStats(
       kickoff: r.kickoff as Date,
       matchId: r.matchId,
       stage: r.stage as string,
+      groupName: r.groupName,
       homeTeamCode: r.homeTeamCode,
       awayTeamCode: r.awayTeamCode,
     })
@@ -443,6 +528,15 @@ export async function computeAchievementStats(
       // predicted (a?.predictions), never someone who merely holds a champion pick.
       // Eligibility (played enough) is already baked into woodenSpoonUsers.
       woodenSpoon: tournamentDone && woodenSpoonUsers.has(userId) ? 1 : 0,
+      teamsRead: teamsRead(scored),
+      // Called every champion match's outcome: every scored champion match is covered
+      // by a non-MISS pick from this user. Empty champion set (no decided final) = 0.
+      championPath:
+        championMatchCount > 0 &&
+        scored.filter((r) => championMatchIds.has(r.matchId) && r.tier !== 'MISS').length === championMatchCount
+          ? 1
+          : 0,
+      groupPerfect: groupPerfect(scored, completeGroups),
     })
   }
   return out
