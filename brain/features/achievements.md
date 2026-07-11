@@ -63,8 +63,9 @@ then upserts. It is idempotent and returns the badges newly earned or graded up,
 notification. A tier is a high-water mark: a rescore that lowers a metric refreshes
 stored progress but never demotes the badge - so streaks and tallies survive a
 transient rescore dip. The exception is `revocable` badges (in `catalog.ts`:
-`perfect-round`, and the final-standing `completionist`/`podium`/`wooden-spoon` gated
-and `group-guru`, on a decided final): these reflect a standing that is only true while its gate holds,
+`perfect-round` and `group-guru`, whose complete-round / complete-group sweep a
+rescore can break, and the final-standing `completionist`/`podium`/`wooden-spoon`
+gated on a decided final): these reflect a standing that is only true while its gate holds,
 not a lifetime peak, so when their metric no longer meets any tier the row is deleted
 (`applyAchievementTier`) and the badge self-heals away - a mis-grant, or an undone
 state like a rewound tournament whose final is no longer decided. "You called it"
