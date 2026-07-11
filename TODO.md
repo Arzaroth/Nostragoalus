@@ -47,24 +47,27 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 - [ ] **`exactRate` has no in-app consumer**: it's on the analytics DTO and tested,
       but no UI reads it. Either surface it (e.g. next to accuracy) or drop it if the
       public API surface does not need it.
-- [ ] **Fergie time drops any match that went to extra time**: reconcile compares the
-      goal_event tally against `fullTimeHome/Away`, which stores the REGULATION score
-      only (`server/utils/sync/upsert-matches.ts`), while goal_event carries ET goals
-      too. So a knockout tie with a genuine 90'+ stoppage swing that then goes to ET
-      fails reconcile (tally > regulation score) and contributes zero Fergie time. It
-      is safe-fail (never a wrong number, just a conservative miss). To recover it,
-      reconcile against the regulation-time score and scope the `+` stoppage detection
-      to `<= 90'` (an ET stoppage minute like `105'+2'` also contains `+`).
-- [ ] **Divergent added-time minute check**: Fergie uses an ad-hoc
-      `minute?.includes('+')` (`server/utils/analytics/service.ts`), while
-      `server/utils/stats/insights.ts` already has the canonical `minuteValue()`
-      parser (base*100+stoppage). Factor a shared `isAddedTime(minute)` predicate so
-      the two never drift, and fold the `<= 90'` regulation scope above into it.
-- [ ] **`fergieSwing()` duplicates `highlight()`**: both builders emit the same
-      home/away/homeCode/awayCode/predicted/actual/isJoker shape with the same inline
-      `${home}-${away}` formatting, differing only in the trailing points+tier vs
-      preStoppage+swing fields. A shared `basePickShape(row)` spread into each removes
-      the duplicated field list and score-string literal.
+- [ ] **Fergie time drops any match that went to extra time**: `computeFergie`
+      reconciles the goal_event tally against `fullTimeHome/Away`, which stores the
+      REGULATION score only (`server/utils/sync/upsert-matches.ts`), while goal_event
+      carries ET goals too. So a knockout tie with a genuine 90'+ stoppage swing that
+      then goes to ET fails reconcile (tally > regulation score) and contributes zero
+      Fergie time. Safe-fail (never a wrong number, just a conservative miss). To
+      recover it, replay against the regulation line: stop the running score at the
+      end of 90' (+stoppage) and reconcile there, and keep `isAddedTime` scoped to
+      base >= 90 (already done - it currently also admits ET stoppage like `105'+2'`,
+      harmless only because those matches drop on reconcile today).
+- [ ] **Fergie time anchors on the current scoring config, not the scored version**:
+      `loadFergieTime` re-derives points with `getScoringConfigFor` (current active
+      version) while `prediction.totalPoints` was persisted at `scoredAtVersion`. If an
+      admin edits the scoring override, or a late ODDS BACKFILL snapshot lands, between
+      a match being scored and the next finalize tick rescoring it, the Fergie net is
+      computed against different rules than the leaderboard shows. Transient
+      (self-heals on the next finalize tick); low priority.
+
+Resolved by the Fergie time v2 rework: the ad-hoc `minute?.includes('+')` now reuses
+the canonical `minuteValue()` parser, and `fergieSwing()` was removed (the metric is
+per-match `FergieMatch`, not a `highlight()`-shaped swing).
 
 ## Onboarding tour (deferred from the feature-treatment review)
 
