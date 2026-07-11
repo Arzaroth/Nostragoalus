@@ -153,6 +153,8 @@ function avatarFor(uid: string | null): string | null {
 }
 // The other DM participant, for the lightbox title (a DM has no league name).
 const otherName = computed(() => memberKeys.value.find((m) => m.userId !== meId.value)?.name ?? '')
+// The DM peer's id, for placing a voice call to them.
+const otherId = computed(() => memberKeys.value.find((m) => m.userId !== meId.value)?.userId ?? null)
 const leagueName = computed(() => (isDm.value ? otherName.value : detail.data.value?.league?.name ?? ''))
 
 // Copy a message's text to the clipboard (the text component only, not images).
@@ -928,6 +930,7 @@ watch(
       <span v-tooltip.top="t('chat.e2eeHint')" class="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-full" style="background: var(--ng-star-soft); color: var(--ng-star)">{{ t('chat.e2ee') }}</span>
       <span v-if="changedCount > 0" v-tooltip.top="t('chat.verify.changedWarn')" class="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-full inline-flex items-center gap-1" style="border: 1px solid var(--ng-danger); color: var(--ng-danger)"><i class="pi pi-exclamation-triangle text-[10px]" />{{ t('chat.verify.changed') }}</span>
       <div v-if="ready" class="ms-auto flex items-center gap-3">
+        <VoiceCallButton :is-dm="isDm" :thread-id="props.dmThreadId" :callee-id="otherId" :league-id="props.leagueId" :match-id="props.matchId ?? null" />
         <button type="button" v-tooltip.top="t('chat.search.button')" class="opacity-70 hover:opacity-100 inline-flex items-center" :class="searchOpen ? 'opacity-100' : ''" :style="searchOpen ? 'color: var(--p-primary-color)' : ''" :aria-label="t('chat.search.button')" @click="toggleSearch">
           <i class="pi pi-search" />
         </button>

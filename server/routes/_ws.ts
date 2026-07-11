@@ -38,7 +38,7 @@ async function handleVoiceFrame(sub: LiveSubscriber, data: Record<string, unknow
       break
     }
     case 'voice:leave':
-      handleVoiceLeave(sub)
+      await handleVoiceLeave(db, sub)
       break
     case 'voice:signal': {
       const to = asStr(data.to)
@@ -152,8 +152,9 @@ export default defineWebSocketHandler({
       subscriber.closed = true
       if (subscriber.userId) presenceDisconnect(subscriber.userId)
       // Leave any voice call before dropping the subscriber, so the decremented
-      // roster reaches the remaining participants (they tear down this peer).
-      handleVoiceLeave(subscriber)
+      // roster reaches the remaining participants (they tear down this peer). The
+      // close hook is sync, so this is fire-and-forget.
+      void handleVoiceLeave(db, subscriber)
       removeLiveSubscriber(subscriber)
       // Drop it from its viewer room after leaving the subscriber set, so the
       // decremented "N watching now" reaches the remaining viewers, not itself.

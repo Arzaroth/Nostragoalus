@@ -388,7 +388,8 @@
       "tournament": "lompuq Damiltlhtaghach",
       "league": "ghom vum",
       "mentions": "QIn pong",
-      "dm": "QIn nIH"
+      "dm": "QIn nIH",
+      "calls": "rI'mey"
     },
     "odds": "SuD mI'mey cha'",
     "oddsHint": "1X2 mI': 1 = juH Qap, X = rap, 2 = nIteb Qap. mI' machHa' law', DuH law'. may' taghDI' qon."
@@ -1551,6 +1552,8 @@
       "bestScorerWon": "Qappu' DujwI'lI' {player}! +{points}",
       "bestScorerLost": "Qapbe' DujwI'lI' {player}.",
       "dm": "SoHvaD QIn ngeH {name}.",
+      "voiceMissed": "rI' luj: {name}.",
+      "voiceMissedLeague": "rI' luj: {name} ({league}).",
       "dmGroup": "SoHvaD QInmey ngeH {count} nuv.",
       "mention": "{league}Daq {name} pong.",
       "mentionMatch": "{home}-{away}Daq {name} pong.",
@@ -1558,8 +1561,28 @@
       "achievementUnlocked": "ta' poSlu': {achievement}."
     }
   },
+  "voice": {
+    "call": "rI'",
+    "joinVoice": "wab yItlhej",
+    "ringing": "rItaH…",
+    "connecting": "rartaH…",
+    "inVoice": "wabDaq {n}",
+    "incoming": "rI' chu'",
+    "callingYou": "SoHvaD rI' {name}",
+    "accept": "yIlaj",
+    "decline": "yIlajQo'",
+    "mute": "yItammoH",
+    "unmute": "yIQoymoH",
+    "hangup": "yImev",
+    "invite": "yIrI'",
+    "inviteTitle": "wabvaD yIrI'",
+    "inviteNone": "naDev Hoch.",
+    "invited": "{name} rI'lu'",
+    "error": { "micDenied": "QoymeH jan poQlu'." }
+  },
   "push": {
     "dm": { "title": "QIn chu'", "body": "SoHvaD QIn ngeH {name}" },
+    "voiceMissed": { "title": "rI' luj", "body": "SoHvaD rI' {name}" },
     "mention": { "title": "ponglu'", "body": "{league}Daq {name} pong" },
     "mentionMatch": { "title": "ponglu'", "body": "{home}-{away}Daq {name} pong" },
     "reminder": { "title": "yIqIp 'e' yIlIj 'e' yImev", "body": "tugh {home} {away}" },

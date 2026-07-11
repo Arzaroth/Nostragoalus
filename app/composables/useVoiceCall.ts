@@ -26,6 +26,9 @@ const roster = ref<string[]>([])
 const remoteStreams = ref<Record<string, MediaStream>>({})
 const incoming = ref<IncomingRing | null>(null)
 const muted = ref(false)
+// Live "N in voice" counts per league room key, for the badge shown to members who
+// are not in the call. Fed by voice:presence broadcasts.
+const roomPresence = ref<Record<string, number>>({})
 // An i18n key for a surfaced error (mic denied, connect failed), else null.
 const errorKey = ref<string | null>(null)
 
@@ -199,6 +202,16 @@ function start(): void {
           // Another tab of ours took the call over; drop this tab's silently.
           cleanup()
           break
+        case 'voice:presence': {
+          // A league room's live count for the "N in voice" badge.
+          const key = String(data.roomKey)
+          const count = Number(data.count) || 0
+          const next = { ...roomPresence.value }
+          if (count > 0) next[key] = count
+          else delete next[key]
+          roomPresence.value = next
+          break
+        }
       }
     }
 
@@ -301,6 +314,10 @@ export function useVoiceCall() {
     muted: readonly(muted),
     errorKey: readonly(errorKey),
     inCall,
+    // Live "N in voice" count for a league room key (0 if none / unknown).
+    voiceCountFor: (roomKey: string) => roomPresence.value[roomKey] ?? 0,
+    // Whether this tab is currently in the call for the given scope.
+    isInScope: (scope: VoiceScope) => activeScope.value != null && voiceRoomKey(activeScope.value) === voiceRoomKey(scope),
     // Actions (no-ops until the client singleton has started).
     startDmCall: (threadId: string, calleeId: string) => impl?.startDmCall(threadId, calleeId),
     joinLeagueVoice: (leagueId: string, matchId: string | null) => impl?.joinLeagueVoice(leagueId, matchId),

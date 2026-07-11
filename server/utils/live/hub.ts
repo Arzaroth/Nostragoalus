@@ -409,6 +409,12 @@ export function publishVoiceToUser(userId: string, payload: unknown): number {
   return deliverToMembers([userId], payload)
 }
 
+// A league voice room's participant count to every connected league member (the
+// members-only gate, like chat), so non-participants see the "N in voice" badge.
+export function publishVoicePresence(memberIds: readonly string[], payload: unknown): number {
+  return deliverToMembers(memberIds, payload)
+}
+
 // Push the current state of the given matches to every subscriber watching them.
 export async function publishMatchUpdates(db: AppDatabase, matchIds: string[]): Promise<number> {
   if (matchIds.length === 0 || subscribers.size === 0) return 0

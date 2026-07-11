@@ -1,11 +1,21 @@
 import type { AppDatabase } from '../../../db/types'
 import type { LiveSubscriber } from './hub'
-import { publishVoiceRoster, publishVoiceToUser, sendVoiceToToken } from './hub'
-import { isInRoom, joinRoom, leaveRoom, roomOf, tokenInRoom } from './voice-rooms'
+import { publishVoicePresence, publishVoiceRoster, publishVoiceToUser, sendVoiceToToken } from './hub'
+import { isInRoom, joinRoom, leaveRoom, roomOf, rosterOf, tokenInRoom } from './voice-rooms'
 import { recordMissedCall, resolveVoiceScope } from '../voice/service'
+import { getLeagueMemberIds } from '../chat/service'
 import { displayName } from '../notifications/events'
 import type { VoiceScope, VoiceSignalKind } from '../../../shared/types/voice'
 import { parseVoiceRoomKey } from '../../../shared/types/voice'
+
+// Broadcast a league room's live participant count to every league member, so the
+// "N in voice" badge shows even to non-participants. DM rooms need no badge, so
+// this is a no-op for them.
+async function broadcastLeaguePresence(db: AppDatabase, roomKey: string, scope: VoiceScope): Promise<void> {
+  if (scope.kind !== 'league') return
+  const members = await getLeagueMemberIds(db, scope.leagueId)
+  publishVoicePresence(members, { type: 'voice:presence', roomKey, scope, count: rosterOf(roomKey).length })
+}
 
 // The WS-frame orchestration for voice: authorize (reusing chat/DM rules), mutate
 // the in-process rooms and fan the right frames out. `_ws.ts` calls these; the
@@ -21,15 +31,19 @@ export async function handleVoiceJoin(db: AppDatabase, sub: LiveSubscriber, scop
   const { evicted } = joinRoom(sub, resolved.roomKey, sub.userId)
   if (evicted) sendVoiceToToken(evicted, { type: 'voice:evicted', scope, from: sub.userId })
   publishVoiceRoster(resolved.roomKey, scope)
+  await broadcastLeaguePresence(db, resolved.roomKey, scope)
 }
 
-// Leave whatever call this socket is in (an explicit leave or a disconnect) and
-// push the updated roster to the remainers. No-op if the socket is in no call.
-export function handleVoiceLeave(sub: LiveSubscriber): void {
+// Leave whatever call this socket is in (an explicit leave or a disconnect): push
+// the reduced roster to the remainers and update the league "N in voice" badge.
+// No-op if the socket is in no call.
+export async function handleVoiceLeave(db: AppDatabase, sub: LiveSubscriber): Promise<void> {
   const left = leaveRoom(sub)
   if (!left) return
   const scope = parseVoiceRoomKey(left.roomKey)
-  if (scope) publishVoiceRoster(left.roomKey, scope)
+  if (!scope) return
+  publishVoiceRoster(left.roomKey, scope)
+  await broadcastLeaguePresence(db, left.roomKey, scope)
 }
 
 // Relay one SDP/ICE payload to another participant. Authorized purely by live
