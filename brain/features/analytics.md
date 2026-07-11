@@ -42,15 +42,18 @@ works **mid-tournament**: it reads whatever scored picks exist so far.
   (`computeFergie`), because it needs the whole field to re-run the rarity bonus,
   and passed into `computeAnalytics`. `getAnalytics` loads, only for the picked
   matches that have an added-time [`goal_event`](../../db/app-schema.ts): the goal
-  timeline, and the whole **locked** field per match (the exact set finalize
-  scored, so `scorePredictions` reproduces the real total at any hypothetical
-  scoreline). A goal is added-time when its free-text `minute` carries a `+` (e.g.
-  `"90'+3'"`); `minute` also drives the chronological sort (`"90'+5'"` -> 90.05).
-  `computeFergie` replays each match from 0-0, and **only trusts a match whose
-  replayed goals reconcile with the full-time score** (a gap in the feed
-  contributes nothing). `forceJoker` mirrors `countsDouble(stage)` so knockout
-  doubling matches reality; ODDS configs resolve each hypothetical outcome's
-  closing odds, CROWD (the default) needs none.
+  timeline (ordered by id for a stable sequence), and the whole **locked** field
+  per match (the exact set finalize scored, so `scorePredictions` reproduces the
+  real total at any hypothetical scoreline). `parseMinute` reads the free-text
+  `minute` (`"90'+5'"` -> base 90 / added 5): a goal is Fergie added-time when it
+  carries a `+` **and** its base minute is 90 or later (second-half stoppage on;
+  a first-half `"45'+2'"` does not count), and the base+added drives the
+  chronological sort. `computeFergie` replays each match from 0-0 and returns
+  nothing for a match it cannot trust - **any unparseable/absent minute** (order
+  unknown) or a goal set that **does not reconcile with the full-time score** - so
+  a gap in the feed never invents a swing. `forceJoker` mirrors
+  `countsDouble(stage)`; ODDS configs resolve each hypothetical outcome's closing
+  odds, CROWD (the default) needs none.
 - Route `server/api/me/analytics.get.ts` - a thin `me`-scoped GET mirroring
   `me/wrapped.get.ts` (auth via `requireUser`, `resolveCompetition`, `toHttpError`),
   but with **no final gate**: `{ hasData: false }` until the user has a scored pick.
