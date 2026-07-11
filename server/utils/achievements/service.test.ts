@@ -758,6 +758,22 @@ describe('Form Reader (teamsRead)', () => {
       const m = await scoredTeam(c, g1, { home: 'BRA', away: `X${i}`, kickoff: nextKick() })
       await pred({ userId: alice, matchId: m, roundId: g1, tier: i === 0 ? 'EXACT' : 'OUTCOME' })
     }
+    // A BRA fixture whose opponent code is null (a still-TBD side): the null code is
+    // skipped, BRA still tallies. Exercises the null-code guard.
+    const nullSide = await makeMatch(db, {
+      competitionId: c,
+      roundId: g1,
+      stage: 'GROUP',
+      homeTeamCode: 'BRA',
+      awayTeamCode: null,
+      status: 'FINISHED',
+      fullTimeHome: 1,
+      fullTimeAway: 0,
+      winner: 'HOME',
+      kickoffTime: nextKick(),
+    })
+    await db.update(match).set({ scoringState: 'SCORED' }).where(eq(match.id, nullSide))
+    await pred({ userId: alice, matchId: nullSide, roundId: g1, tier: 'OUTCOME' })
     for (let i = 0; i < 5; i++) {
       const m = await scoredTeam(c, g1, { home: 'ARG', away: `Y${i}`, kickoff: nextKick() })
       await pred({ userId: alice, matchId: m, roundId: g1, tier: i === 4 ? 'MISS' : 'DIFF' })
@@ -814,6 +830,19 @@ describe("Champion's Path (championPath)", () => {
     // braMatches[1] left unpredicted entirely.
     expect((await stats(c, alice)).championPath).toBe(0)
   })
+
+  it('resolves the champion from the away side of the final', async () => {
+    const c = await seedCompetition(db)
+    const g1 = await roundId(c, 'GROUP', 1)
+    const finalR = await roundId(c, 'FINAL')
+    const alice = await makeUser(db, 'alice')
+    // ARG plays a group game then wins the final from the away side -> ARG is champion.
+    const grp = await scoredTeam(c, g1, { home: 'NGA', away: 'ARG', kickoff: new Date('2026-06-12T12:00:00Z') })
+    const fin = await scoredTeam(c, finalR, { stage: 'FINAL', home: 'FRA', away: 'ARG', winner: 'AWAY', kickoff: new Date('2026-07-19T18:00:00Z') })
+    await pred({ userId: alice, matchId: grp, roundId: g1, tier: 'OUTCOME' })
+    await pred({ userId: alice, matchId: fin, roundId: finalR, tier: 'OUTCOME' })
+    expect((await stats(c, alice)).championPath).toBe(1)
+  })
 })
 
 describe('Group Guru (groupPerfect)', () => {
@@ -830,25 +859,30 @@ describe('Group Guru (groupPerfect)', () => {
     expect(ACHIEVEMENTS.find((d) => d.key === 'group-guru')!.revocable).toBe(true)
   })
 
-  it('withholds while the group is incomplete or a match is MISSed', async () => {
+  it('withholds when a complete group is not fully called, unpredicted, or still incomplete', async () => {
     const c = await seedCompetition(db)
     const g1 = await roundId(c, 'GROUP', 1)
     const alice = await makeUser(db, 'alice')
-    const m1 = await scoredTeam(c, g1, { group: 'A', home: 'A0', away: 'B0', kickoff: new Date(2026, 5, 11, 12, 0) })
-    const m2 = await scoredTeam(c, g1, { group: 'A', home: 'A1', away: 'B1', kickoff: new Date(2026, 5, 11, 12, 1) })
-    // A third group-A match stays PENDING -> group incomplete.
-    const m3 = await makeMatch(db, {
+    // Group A: complete (2 scored) but alice MISSes one -> covered < total.
+    const a0 = await scoredTeam(c, g1, { group: 'A', home: 'A0', away: 'B0', kickoff: new Date(2026, 5, 11, 12, 0) })
+    const a1 = await scoredTeam(c, g1, { group: 'A', home: 'A1', away: 'B1', kickoff: new Date(2026, 5, 11, 12, 1) })
+    await pred({ userId: alice, matchId: a0, roundId: g1, tier: 'OUTCOME' })
+    await pred({ userId: alice, matchId: a1, roundId: g1, tier: 'MISS' })
+    // Group B: complete (1 scored) but alice never predicts it -> no coverage entry.
+    await scoredTeam(c, g1, { group: 'B', home: 'C0', away: 'D0', kickoff: new Date(2026, 5, 11, 12, 2) })
+    // Group C: one match still PENDING -> the group is incomplete and excluded.
+    const c0 = await scoredTeam(c, g1, { group: 'C', home: 'E0', away: 'F0', kickoff: new Date(2026, 5, 11, 12, 3) })
+    const c1 = await makeMatch(db, {
       competitionId: c,
       roundId: g1,
       stage: 'GROUP',
-      groupName: 'A',
-      homeTeamCode: 'A2',
-      awayTeamCode: 'B2',
-      kickoffTime: new Date(2026, 5, 11, 12, 2),
+      groupName: 'C',
+      homeTeamCode: 'E1',
+      awayTeamCode: 'F1',
+      kickoffTime: new Date(2026, 5, 11, 12, 4),
     })
-    await pred({ userId: alice, matchId: m1, roundId: g1, tier: 'OUTCOME' })
-    await pred({ userId: alice, matchId: m2, roundId: g1, tier: 'OUTCOME' })
-    await pred({ userId: alice, matchId: m3, roundId: g1, tier: 'OUTCOME' })
+    await pred({ userId: alice, matchId: c0, roundId: g1, tier: 'OUTCOME' })
+    await pred({ userId: alice, matchId: c1, roundId: g1, tier: 'OUTCOME' })
     expect((await stats(c, alice)).groupPerfect).toBe(0)
   })
 })

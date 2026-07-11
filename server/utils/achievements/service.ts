@@ -350,8 +350,10 @@ export async function computeAchievementStats(
     .from(match)
     .where(and(eq(match.competitionId, competitionId), eq(match.stage, 'GROUP'), isNotNull(match.groupName)))
     .groupBy(match.groupName)
+  // groupTotals only holds named GROUP rows (isNotNull filter), each with >=1 match,
+  // so a group is complete exactly when every one of its matches is scored.
   const completeGroups = new Map(
-    groupTotals.filter((r) => r.groupName && r.total > 0 && r.scored === r.total).map((r) => [r.groupName as string, r.total]),
+    groupTotals.filter((r) => r.scored === r.total).map((r) => [r.groupName as string, r.total]),
   )
 
   // The tournament champion (Champion's Path): the winner of the decided, scored final.
