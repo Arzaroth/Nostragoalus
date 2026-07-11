@@ -82,6 +82,15 @@ describe('computeHeadToHead', () => {
     expect(r.divergences.some((m) => m.matchId === 'd0')).toBe(false)
   })
 
+  it('breaks an equal points-gap divergence tie by matchId for a stable order', () => {
+    const r = computeHeadToHead('C', A, B, [
+      hrow({ matchId: 'zeta', aHome: 2, aAway: 0, bHome: 0, bAway: 1, aPoints: 3, bPoints: 0 }),
+      hrow({ matchId: 'alpha', aHome: 2, aAway: 0, bHome: 0, bAway: 1, aPoints: 3, bPoints: 0 }),
+    ])
+    // Same gap of 3, so matchId decides: 'alpha' before 'zeta'.
+    expect(r.divergences.map((m) => m.matchId)).toEqual(['alpha', 'zeta'])
+  })
+
   it('accumulates the lead round by round in sort order', () => {
     const r = computeHeadToHead('C', A, B, [
       hrow({ roundLabel: 'Group 1', roundOrder: 1, aPoints: 3, bPoints: 1 }),
@@ -151,17 +160,33 @@ describe('getHeadToHead', () => {
     expect(r.b.name).toBe('bob')
   })
 
-  it('404s when either profile is private and the viewer cannot see it', async () => {
+  it('404s a private player B, but an admin sees the real comparison through it', async () => {
     const c = await seedCompetition(db)
     const alice = await makeUser(db, 'alice')
     const bob = await makeUser(db, 'bob')
+    const g1 = await groupRound(c, 1)
+    const m = await makeMatch(db, { competitionId: c, roundId: g1, kickoffTime: new Date('2026-06-01T12:00:00Z'), fullTimeHome: 2, fullTimeAway: 0, winner: 'HOME', scoringState: 'SCORED' })
+    await scoredPick(alice, m, g1, 2, 0, 3)
+    await scoredPick(bob, m, g1, 0, 1, 0)
     await db.update(user).set({ profilePrivate: true }).where(eq(user.id, bob))
     // A stranger (no shared league) cannot view Bob, so the comparison 404s.
     await expect(
       getHeadToHead(db, { competitionId: c, aId: alice, bId: bob, viewerId: alice, isAdmin: false }),
     ).rejects.toThrow('user not found')
-    // An admin sees through it.
+    // An admin sees through it AND gets the real shared comparison.
     const r = await getHeadToHead(db, { competitionId: c, aId: alice, bId: bob, viewerId: alice, isAdmin: true })
-    expect(r.hasData).toBe(false)
+    expect(r.hasData).toBe(true)
+    expect(r.shared).toBe(1)
+    expect(r.aPoints).toBe(3)
+  })
+
+  it('404s a private player A (first-position privacy denial)', async () => {
+    const c = await seedCompetition(db)
+    const alice = await makeUser(db, 'alice')
+    const bob = await makeUser(db, 'bob')
+    await db.update(user).set({ profilePrivate: true }).where(eq(user.id, alice))
+    await expect(
+      getHeadToHead(db, { competitionId: c, aId: alice, bId: bob, viewerId: bob, isAdmin: false }),
+    ).rejects.toThrow('user not found')
   })
 })

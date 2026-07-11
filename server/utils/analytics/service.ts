@@ -406,7 +406,10 @@ export async function getAnalytics(
         isNotNull(match.fullTimeAway),
       ),
     )
-    .orderBy(asc(match.kickoffTime))
+    // match.id is a stable tiebreaker so simultaneous kickoffs (group finales
+    // play at the same time) order deterministically - computeStreak reads this
+    // sequence, so without it the current/best run could flip between requests.
+    .orderBy(asc(match.kickoffTime), asc(match.id))
 
   // No scored picks means an empty report, so skip the extra reads entirely.
   if (rows.length === 0) return computeAnalytics(comp.name, [])

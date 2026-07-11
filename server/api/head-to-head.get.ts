@@ -2,6 +2,7 @@ import { db } from '../../db'
 import { getHeadToHead } from '../utils/analytics/h2h'
 import { resolveCompetition } from '../utils/competitions/store'
 import { getSessionUser, isAdmin } from '../utils/auth-guards'
+import { toHttpError } from '../utils/http'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
@@ -22,13 +23,20 @@ export default defineEventHandler(async (event) => {
   const competition = await resolveCompetition(db, (query.competition as string) || null)
   if (!competition) throw createError({ statusCode: 404, statusMessage: 'competition not found' })
 
-  return getHeadToHead(db, {
-    competitionId: competition.id,
-    aId,
-    bId,
-    viewerId: viewer?.id ?? null,
-    isAdmin: admin,
-  })
+  try {
+    // NotFoundError (unknown or unviewable-private player) maps to 404 here, the
+    // same status a genuinely missing user gets, so a private account is never
+    // distinguishable from a non-existent one.
+    return await getHeadToHead(db, {
+      competitionId: competition.id,
+      aId,
+      bId,
+      viewerId: viewer?.id ?? null,
+      isAdmin: admin,
+    })
+  } catch (error) {
+    throw toHttpError(error)
+  }
 })
 
 defineRouteMeta({

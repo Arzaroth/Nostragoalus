@@ -26,20 +26,15 @@ const goalsVerdict = computed(() => {
   if (l <= -0.5) return t('analytics.goalsUnder')
   return t('analytics.goalsBalanced')
 })
-// Accuracy sparkline geometry. One series (per-round accuracy, 0..1), plotted in
-// a stretched viewBox so it fills the width; the line keeps a crisp 2px via
-// non-scaling-stroke, and full-height hit rects carry the per-round tooltips.
-const SPARK_W = 300
-const SPARK_H = 100
+// Accuracy sparkline: one series (per-round accuracy, 0..1) over the shared
+// sparkline geometry, drawn as a filled line with per-round hover bands.
 const spark = computed(() => {
-  const pts = props.data.overTime
-  const n = pts.length
-  const xAt = (i: number) => (n <= 1 ? 0 : (i / (n - 1)) * SPARK_W)
-  const coords = pts.map((r, i) => ({ x: xAt(i), y: SPARK_H - r.accuracy * SPARK_H, r }))
-  const line = coords.map((c) => `${c.x},${c.y}`).join(' ')
-  const area = `M0,${SPARK_H} ${coords.map((c) => `L${c.x},${c.y}`).join(' ')} L${SPARK_W},${SPARK_H} Z`
-  const band = SPARK_W / n
-  return { coords, line, area, band }
+  const bands = sparkBands(props.data.overTime)
+  return {
+    bands,
+    line: sparkLine(bands, (r) => r.accuracy, 1),
+    area: sparkArea(bands, (r) => r.accuracy, 1),
+  }
 })
 
 function biasWidth(t: TeamBias) {
@@ -162,7 +157,7 @@ const netColor = (n: number) =>
         </defs>
         <path :d="spark.area" fill="url(#ng-spark-fill)" />
         <polyline :points="spark.line" fill="none" stroke="var(--p-primary-color)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round" />
-        <rect v-for="(c, i) in spark.coords" :key="c.r.order" v-tooltip.top="`${c.r.label}: ${pct(c.r.accuracy)}% · ${c.r.points} ${t('leaderboard.pts')}`" :x="Math.max(0, c.x - spark.band / 2)" y="0" :width="spark.band" :height="100" fill="transparent" :data-round="i" />
+        <rect v-for="(c, i) in spark.bands" :key="c.item.order" v-tooltip.top="`${c.item.label}: ${pct(c.item.accuracy)}% · ${c.item.points} ${t('leaderboard.pts')}`" :x="Math.max(0, c.x - c.band / 2)" y="0" :width="c.band" :height="100" fill="transparent" :data-round="i" />
       </svg>
       <div class="text-xs mt-1" style="color: var(--p-text-muted-color)">{{ t('analytics.overTimeHint') }}</div>
     </section>
