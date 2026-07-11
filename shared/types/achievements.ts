@@ -15,7 +15,9 @@ export const COMPETITION_AWARD_TYPES = [
 
 export type CompetitionAwardType = (typeof COMPETITION_AWARD_TYPES)[number]
 
-export const ACHIEVEMENT_TIERS = ['BRONZE', 'SILVER', 'GOLD'] as const
+// DIAMOND sits above GOLD - a rare fourth tier for an elite exact-score feat
+// (currently only Champion's Path's all-exact grade). Keep it last (ascending).
+export const ACHIEVEMENT_TIERS = ['BRONZE', 'SILVER', 'GOLD', 'DIAMOND'] as const
 export type AchievementTier = (typeof ACHIEVEMENT_TIERS)[number]
 
 // How many achievements a user may pin to their showcase, per competition.
@@ -35,6 +37,16 @@ export interface AchievementTierThresholdDto {
   threshold: number
 }
 
+// How rare a badge is: the share of this competition's participants (players with
+// at least one prediction) holding it at a given tier or higher. One entry per
+// catalog tier, ascending, so `pct` is non-increasing. Empty when the competition
+// has no participants yet.
+export interface AchievementRarityDto {
+  tier: AchievementTier
+  // 0..100, one decimal.
+  pct: number
+}
+
 export interface AchievementDto {
   key: string
   category: string
@@ -52,6 +64,9 @@ export interface AchievementDto {
   // For streak badges only: the current ongoing run, shown next to the best (which
   // is `current`). null when not a streak badge or the badge is already maxed out.
   currentStreak: number | null
+  // Per-tier holder share among competition participants (ascending by tier). Empty
+  // when there are no participants to measure against.
+  rarity: AchievementRarityDto[]
 }
 
 export type AchievementScope = 'COMPETITION' | 'GLOBAL'

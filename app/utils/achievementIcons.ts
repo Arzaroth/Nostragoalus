@@ -18,6 +18,8 @@ export const ACHIEVEMENT_TIER_TINT: Record<string, string> = {
   BRONZE: '#cd7f32',
   SILVER: '#9ca3af',
   GOLD: '#eab308',
+  // A bright cyan-white, clearly above gold on the shelf.
+  DIAMOND: '#22d3ee',
 }
 
 // Fallback when a category has no mapped icon (defensive; every live category is mapped).

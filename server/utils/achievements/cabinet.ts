@@ -1,13 +1,17 @@
-import { and, eq, isNull, or } from 'drizzle-orm'
+import { and, count, eq, isNull, or } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { competitionAward, showcasePin, user, userAchievement } from '../../../db/schema'
 import {
+  ACHIEVEMENT_TIERS,
+  type AchievementRarityDto,
+  type AchievementTier,
   type CabinetDto,
   COMPETITION_AWARD_TYPES,
   SHOWCASE_SLOT_COUNT,
   type ShowcasePinDto,
   type ShowcasePinInput,
 } from '#shared/types/achievements'
+import type { AchievementDef } from './catalog'
 import { NotFoundError, ValidationError } from '../errors'
 import { ALL_ACHIEVEMENTS } from './catalog'
 import { computeAchievementStats } from './service'
@@ -48,6 +52,32 @@ export async function getCabinet(
   const stats = await computeAchievementStats(db, opts.competitionId)
   const userStats = stats.get(opts.userId)
 
+  // Rarity: how many of the competition's participants (stats has one entry per
+  // player with a prediction) hold each badge, per tier. One competition-wide
+  // grouped scan, merged onto every badge below.
+  const participants = stats.size
+  const holderRows = await db
+    .select({ key: userAchievement.key, tier: userAchievement.tier, n: count() })
+    .from(userAchievement)
+    .where(or(eq(userAchievement.competitionId, opts.competitionId), isNull(userAchievement.competitionId)))
+    .groupBy(userAchievement.key, userAchievement.tier)
+  const holdersByKey = new Map<string, { tier: AchievementTier | null; n: number }[]>()
+  for (const r of holderRows) {
+    const list = holdersByKey.get(r.key) ?? []
+    list.push({ tier: r.tier, n: Number(r.n) })
+    holdersByKey.set(r.key, list)
+  }
+  // A null tier (legacy single-shot rows) counts as the lowest band.
+  const rankOf = (t: AchievementTier | null): number => (t ? ACHIEVEMENT_TIERS.indexOf(t) + 1 : 1)
+  const rarityFor = (def: AchievementDef): AchievementRarityDto[] => {
+    if (participants === 0) return []
+    const rows = holdersByKey.get(def.key) ?? []
+    return def.tiers.map((t) => {
+      const holders = rows.reduce((s, r) => (rankOf(r.tier) >= rankOf(t.tier) ? s + r.n : s), 0)
+      return { tier: t.tier, pct: Math.round((holders / participants) * 1000) / 10 }
+    })
+  }
+
   // Streak badges also surface the CURRENT ongoing run beside the best (`current`),
   // while the badge is still climbing. Maps the badge metric to the matching cur* stat.
   const STREAK_CUR: Partial<Record<string, 'curExactStreak' | 'curScoringStreak' | 'curMissStreak'>> = {
@@ -82,6 +112,7 @@ export async function getCabinet(
         earned,
         current,
         currentStreak,
+        rarity: rarityFor(def),
       },
     ]
   })

@@ -32,6 +32,8 @@ interface Display {
   progress: { current: number; target: number } | null
   // Current ongoing streak, for streak badges still climbing (null otherwise).
   currentStreak: number | null
+  // Pre-formatted rarity line, or null (trophies, or no participants to measure).
+  rarity: string | null
 }
 
 // Progress toward the next unmet tier. null once the top tier is reached (a full
@@ -59,7 +61,17 @@ function trophyDisplay(tr: TrophyDto): Display {
     flag: isTeam ? flagUrl(tr.teamCode) : null,
     progress: null,
     currentStreak: null,
+    rarity: null,
   }
+}
+
+// Rarity to surface: the tier you hold, or (locked) how many hold it at all - the
+// lowest tier's share. Hidden when there's nothing to measure (no participants).
+function badgeRarity(a: AchievementDto): string | null {
+  const tier = a.earned?.tier ?? null
+  const entry = tier ? a.rarity.find((r) => r.tier === tier) : a.rarity[0]
+  if (!entry) return null
+  return entry.pct === 0 ? t('achievements.rarityNone') : t('achievements.rarity', { pct: entry.pct })
 }
 
 function badgeDisplay(a: AchievementDto): Display {
@@ -77,6 +89,7 @@ function badgeDisplay(a: AchievementDto): Display {
     flag: null,
     progress: badgeProgress(a),
     currentStreak: a.currentStreak,
+    rarity: badgeRarity(a),
   }
 }
 

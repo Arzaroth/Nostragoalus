@@ -87,11 +87,13 @@ const showTwin = computed(() => twinEnabled.value && !!twin.value)
 // the default jump-to-now. The anchor wins; otherwise center the "now" boundary
 // so the latest action is in view (skipped when nothing has kicked off yet).
 //
-// A single latch means the two never fight, and we read window.location.hash
-// (not the reactive route.hash) because after SSR the router reconciles the hash a
-// tick late - which is exactly what let the jump-to-now fire before the anchor and
-// preempt it. window.location.hash is authoritative the instant we run (client,
-// flush:post). route.hash stays in the deps so a same-route hash-only nav retriggers.
+// A single latch means the two never fight. The intended anchor is read from
+// route.hash FIRST, then window.location.hash: on an in-app nav (the "my
+// achievements" menu item) route.hash is set at once while the URL/hash reconciles
+// a tick late, and mid-hydration it is the reverse - window.location.hash leads.
+// Trusting route.hash-then-URL covers both orderings, so neither lets the default
+// jump-to-now fire on a stale-empty hash and steal the one-shot before the anchor.
+// route.hash also stays in the deps so a same-route hash-only nav retriggers.
 const pageMounted = useMounted()
 let scrolled = false
 watch(
@@ -99,7 +101,7 @@ watch(
   async () => {
     if (scrolled || !pageMounted.value || !data.value) return
     await nextTick()
-    const hash = typeof window !== 'undefined' ? window.location.hash : route.hash
+    const hash = route.hash || (typeof window !== 'undefined' ? window.location.hash : '')
     if (hash === '#cabinet') {
       const el = document.getElementById('cabinet')
       if (!el) return

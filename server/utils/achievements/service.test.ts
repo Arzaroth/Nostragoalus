@@ -552,6 +552,29 @@ describe('evaluateAchievements', () => {
     expect((await db.select().from(userAchievement).where(eq(userAchievement.key, 'sharpshooter')))[0]?.tier).toBe('BRONZE')
   })
 
+  it('demotes a tiered revocable badge when a rescore drops its band', async () => {
+    const c = await seedCompetition(db)
+    const g1 = await roundId(c, 'GROUP', 1)
+    const alice = await makeUser(db, 'alice')
+    // Two complete groups fully called -> group-guru at SILVER (2).
+    const groups: Record<string, string[]> = { A: [], B: [] }
+    for (const grp of ['A', 'B']) {
+      for (let i = 0; i < 2; i++) {
+        const m = await scoredTeam(c, g1, { group: grp, home: `${grp}${i}`, away: `X${grp}${i}`, kickoff: new Date(2026, 5, 11, 12, grp.charCodeAt(0) + i) })
+        groups[grp].push(m)
+        await pred({ userId: alice, matchId: m, roundId: g1, tier: 'OUTCOME' })
+      }
+    }
+    await evaluateAchievements(db, c)
+    expect((await db.select().from(userAchievement).where(eq(userAchievement.key, 'group-guru')))[0]?.tier).toBe('SILVER')
+
+    // An unplayed match joins group B -> B is no longer complete, so only A counts.
+    await makeMatch(db, { competitionId: c, roundId: g1, stage: 'GROUP', groupName: 'B', kickoffTime: new Date('2026-06-13T12:00:00Z') })
+    await evaluateAchievements(db, c)
+    // Revocable: the tier demotes to BRONZE rather than staying at its high-water SILVER.
+    expect((await db.select().from(userAchievement).where(eq(userAchievement.key, 'group-guru')))[0]?.tier).toBe('BRONZE')
+  })
+
   it('revokes completionist when a rewound tournament un-decides the final', async () => {
     const c = await seedCompetition(db)
     const g1 = await roundId(c, 'GROUP', 1)
@@ -821,6 +844,21 @@ describe("Champion's Path (championPath)", () => {
     expect((await stats(c, alice)).championPath).toBe(1)
   })
 
+  it('reaches the diamond grade when every champion match is called EXACT', async () => {
+    const { c, alice, braMatches } = await withChampion()
+    const g1 = await roundId(c, 'GROUP', 1)
+    const finalR = await roundId(c, 'FINAL')
+    await pred({ userId: alice, matchId: braMatches[0], roundId: g1, tier: 'EXACT' })
+    await pred({ userId: alice, matchId: braMatches[1], roundId: g1, tier: 'EXACT' })
+    await pred({ userId: alice, matchId: braMatches[2], roundId: finalR, tier: 'EXACT' })
+    expect((await stats(c, alice)).championPath).toBe(2)
+    // The catalog maps 1 -> GOLD, 2 -> DIAMOND.
+    expect(ACHIEVEMENTS.find((d) => d.key === 'champions-path')!.tiers).toEqual([
+      { tier: 'GOLD', threshold: 1 },
+      { tier: 'DIAMOND', threshold: 2 },
+    ])
+  })
+
   it('withholds when a champion match is MISSed or unpredicted', async () => {
     const { c, alice, braMatches } = await withChampion()
     const g1 = await roundId(c, 'GROUP', 1)
@@ -885,6 +923,29 @@ describe('Group Guru (groupPerfect)', () => {
     for (const m of ms) await pred({ userId: alice, matchId: m, roundId: g1, tier: 'OUTCOME' })
     expect((await stats(c, alice)).groupPerfect).toBe(1)
     expect(ACHIEVEMENTS.find((d) => d.key === 'group-guru')!.revocable).toBe(true)
+    // Now graded by number of perfect groups.
+    expect(ACHIEVEMENTS.find((d) => d.key === 'group-guru')!.tiers).toEqual([
+      { tier: 'BRONZE', threshold: 1 },
+      { tier: 'SILVER', threshold: 2 },
+      { tier: 'GOLD', threshold: 3 },
+    ])
+  })
+
+  it('counts each complete group the user fully called', async () => {
+    const c = await seedCompetition(db)
+    const g1 = await roundId(c, 'GROUP', 1)
+    const alice = await makeUser(db, 'alice')
+    // Groups A and B fully called (2 matches each); group C fully called too but
+    // alice MISSes one of its matches, so only A and B count.
+    for (const grp of ['A', 'B', 'C']) {
+      const ms: string[] = []
+      for (let i = 0; i < 2; i++) {
+        ms.push(await scoredTeam(c, g1, { group: grp, home: `${grp}${i}`, away: `X${grp}${i}`, kickoff: new Date(2026, 5, 11, 12, grp.charCodeAt(0) + i) }))
+      }
+      await pred({ userId: alice, matchId: ms[0], roundId: g1, tier: 'OUTCOME' })
+      await pred({ userId: alice, matchId: ms[1], roundId: g1, tier: grp === 'C' ? 'MISS' : 'OUTCOME' })
+    }
+    expect((await stats(c, alice)).groupPerfect).toBe(2)
   })
 
   it('withholds when a complete group is not fully called, unpredicted, or still incomplete', async () => {

@@ -48,8 +48,8 @@ export const ACHIEVEMENT_METRICS = [
   'podium', // 1 = tournament over AND finished top 3 overall
   'woodenSpoon', // 1 = tournament over AND finished dead last (a "bad" badge)
   'teamsRead', // teams with >=5 correct-outcome (non-MISS) calls on their matches, this tournament
-  'championPath', // 1 = called the outcome of EVERY match the tournament champion played
-  'groupPerfect', // 1 = called the outcome of every match in one complete group
+  'championPath', // champion's whole run: 1 = every match's outcome called, 2 = every one EXACT
+  'groupPerfect', // number of complete groups whose every match outcome the user called
 ] as const
 
 export type AchievementMetric = (typeof ACHIEVEMENT_METRICS)[number]
@@ -93,6 +93,12 @@ const graded = (b: number, s: number, g: number): AchievementTierThreshold[] => 
   { tier: 'SILVER', threshold: s },
   { tier: 'GOLD', threshold: g },
 ]
+// Two elite rungs: a hard feat at gold and a near-impossible exact grade above it.
+// The metric returns 1 for the gold band, 2 for the diamond band.
+const goldDiamond = (): AchievementTierThreshold[] => [
+  { tier: 'GOLD', threshold: 1 },
+  { tier: 'DIAMOND', threshold: 2 },
+]
 
 // The batch-evaluated catalog (everything except event-granted secrets).
 export const ACHIEVEMENTS: AchievementDef[] = [
@@ -103,7 +109,9 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { key: 'grand-finale', category: 'MILESTONE', scope: 'COMPETITION', metric: 'finalExact', tiers: singleGold(1), icon: 'pi pi-crown' },
   { key: 'bore-draw', category: 'MILESTONE', scope: 'COMPETITION', metric: 'boreDraw', tiers: single(1), icon: 'pi pi-moon' },
   { key: 'goal-rush', category: 'MILESTONE', scope: 'COMPETITION', metric: 'goalRush', tiers: single(1), icon: 'pi pi-star-fill' },
-  { key: 'nemesis', category: 'MILESTONE', scope: 'COMPETITION', metric: 'bogeyTeam', tiers: single(3), icon: 'pi pi-replay' },
+  // "Open Book" (key kept as `nemesis` to preserve already-granted rows): a team
+  // whose exact scores you keep nailing - you read them like an open book.
+  { key: 'nemesis', category: 'MILESTONE', scope: 'COMPETITION', metric: 'bogeyTeam', tiers: single(3), icon: 'pi pi-book' },
   { key: 'set-and-forget', category: 'BEHAVIORAL', scope: 'COMPETITION', metric: 'setAndForget', tiers: single(1), icon: 'pi pi-lock' },
   { key: 'sharpshooter', category: 'MILESTONE', scope: 'COMPETITION', metric: 'exact', tiers: graded(5, 15, 30) },
   { key: 'prophet', category: 'MILESTONE', scope: 'COMPETITION', metric: 'predictions', tiers: graded(10, 50, 100) },
@@ -129,12 +137,13 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   // needs five games to give five outcomes, so this leans on deep-run sides - gold
   // (seven such teams) is a brutal read of the bracket.
   { key: 'form-reader', category: 'MILESTONE', scope: 'COMPETITION', metric: 'teamsRead', tiers: graded(3, 5, 7), icon: 'pi pi-users' },
-  // Called the outcome of every match the eventual champion played, start to lift.
-  // Hinges on a decided final like grand-finale, so it stays high-water (non-revocable).
-  { key: 'champions-path', category: 'ORACLE', scope: 'COMPETITION', metric: 'championPath', tiers: singleGold(1), icon: 'pi pi-sitemap' },
-  // Called every outcome in one full group. Complete-group perfection, the group
-  // analog of perfect-round, so revocable: a rescore that breaks it self-heals.
-  { key: 'group-guru', category: 'MILESTONE', scope: 'COMPETITION', metric: 'groupPerfect', tiers: single(1), icon: 'pi pi-th-large', revocable: true },
+  // Called the eventual champion's whole run, start to lift: every match's outcome
+  // (gold), or every one EXACT (diamond, near-impossible). Hinges on a decided final
+  // like grand-finale, so it stays high-water (non-revocable).
+  { key: 'champions-path', category: 'ORACLE', scope: 'COMPETITION', metric: 'championPath', tiers: goldDiamond(), icon: 'pi pi-sitemap' },
+  // Called every outcome in one / two / three full groups. Complete-group perfection,
+  // the group analog of perfect-round, so revocable: a rescore that breaks it self-heals.
+  { key: 'group-guru', category: 'MILESTONE', scope: 'COMPETITION', metric: 'groupPerfect', tiers: graded(1, 2, 3), icon: 'pi pi-th-large', revocable: true },
   { key: 'treble', category: 'TROPHY_META', scope: 'COMPETITION', metric: 'trophies', tiers: single(3) },
   { key: 'podium', category: 'TROPHY_META', scope: 'COMPETITION', metric: 'podium', tiers: single(1), revocable: true },
   // "Bad" badges (SHAME): earned by doing poorly. Excluded from the-collector so

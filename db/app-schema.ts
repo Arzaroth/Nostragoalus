@@ -680,7 +680,7 @@ export const competitionAward = pgTable(
 
 // Optional graded tier for tiered achievements (Sharpshooter, Prophet, ...).
 // Single-shot badges leave it null.
-export const achievementTierEnum = pgEnum('achievement_tier', ['BRONZE', 'SILVER', 'GOLD'])
+export const achievementTierEnum = pgEnum('achievement_tier', ['BRONZE', 'SILVER', 'GOLD', 'DIAMOND'])
 
 // One row per (user, competition, key) once the badge is first earned. The
 // catalog itself lives in code (server/utils/achievements/catalog.ts), not here.

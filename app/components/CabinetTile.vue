@@ -8,6 +8,8 @@ const props = withDefaults(
     tint?: string
     tier?: string | null
     locked?: boolean
+    // Pre-formatted rarity line (e.g. "Held by 4%"), or null to hide.
+    rarity?: string | null
     flag?: string | null
     progress?: { current: number; target: number } | null
     // Current ongoing streak, shown beside the best on streak badges (null = hide).
@@ -21,6 +23,7 @@ const props = withDefaults(
     tint: 'var(--p-primary-color)',
     tier: null,
     locked: false,
+    rarity: null,
     flag: null,
     progress: null,
     currentStreak: null,
@@ -63,6 +66,7 @@ const progressPct = computed(() =>
 
     <span class="text-sm font-semibold leading-tight mt-1">{{ name }}</span>
     <span class="text-xs leading-snug" style="color: var(--p-text-muted-color)">{{ desc }}</span>
+    <span v-if="rarity" class="text-[10px] tabular-nums" style="color: var(--p-text-muted-color)" data-test="badge-rarity">{{ rarity }}</span>
 
     <div
       v-if="progress"

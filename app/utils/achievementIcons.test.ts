@@ -11,7 +11,7 @@ describe('achievementIcons', () => {
   })
 
   it('maps each tier to a tint and exposes a generic fallback', () => {
-    expect(Object.keys(ACHIEVEMENT_TIER_TINT)).toEqual(['BRONZE', 'SILVER', 'GOLD'])
+    expect(Object.keys(ACHIEVEMENT_TIER_TINT)).toEqual(['BRONZE', 'SILVER', 'GOLD', 'DIAMOND'])
     expect(FALLBACK_ACHIEVEMENT_ICON).toBe('pi pi-verified')
   })
 })

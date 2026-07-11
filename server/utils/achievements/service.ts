@@ -52,7 +52,7 @@ const PICK_TIME_BADGES = ['early-bird', 'night-owl', 'deadline-dancer'] as const
 // Someone who gave up after a game or two is a quitter, not the loser of the contest.
 const WOODEN_SPOON_MIN_SHARE = 0.5
 
-const TIER_RANK: Record<AchievementTier, number> = { BRONZE: 1, SILVER: 2, GOLD: 3 }
+const TIER_RANK: Record<AchievementTier, number> = { BRONZE: 1, SILVER: 2, GOLD: 3, DIAMOND: 4 }
 const tierRank = (t: AchievementTier | null): number => (t ? TIER_RANK[t] : 0)
 
 // The stats map value: every badge metric, plus the current (ongoing) streak
@@ -243,8 +243,26 @@ function groupPerfect(
     if (r.stage !== 'GROUP' || !r.groupName || r.tier === 'MISS') continue
     byGroup.set(r.groupName, (byGroup.get(r.groupName) ?? 0) + 1)
   }
-  for (const [g, total] of completeGroups) if ((byGroup.get(g) ?? 0) === total) return 1
-  return 0
+  // Count how many complete groups the user called in full - the graded tiers
+  // reward reading two or three whole groups, not just one.
+  let count = 0
+  for (const [g, total] of completeGroups) if ((byGroup.get(g) ?? 0) === total) count += 1
+  return count
+}
+
+// The champion's whole run: 1 (Gold) = every one of the champion's scored matches
+// is covered by a non-MISS pick; 2 (Diamond) = every one is EXACT. Any missing
+// pick, any MISS, or no champion set at all = 0.
+function championPath(
+  rows: { matchId: string; tier: string }[],
+  championMatchIds: Set<string>,
+  championMatchCount: number,
+): number {
+  if (championMatchCount === 0) return 0
+  const champ = rows.filter((r) => championMatchIds.has(r.matchId))
+  const nonMiss = champ.filter((r) => r.tier !== 'MISS').length
+  if (nonMiss !== championMatchCount) return 0
+  return champ.filter((r) => r.tier === 'EXACT').length === championMatchCount ? 2 : 1
 }
 
 // Derive every user's achievement metrics for a competition from the settled
@@ -544,13 +562,10 @@ export async function computeAchievementStats(
       // Eligibility (played enough) is already baked into woodenSpoonUsers.
       woodenSpoon: tournamentDone && woodenSpoonUsers.has(userId) ? 1 : 0,
       teamsRead: teamsRead(scored),
-      // Called every champion match's outcome: every scored champion match is covered
-      // by a non-MISS pick from this user. Empty champion set (no decided final) = 0.
-      championPath:
-        championMatchCount > 0 &&
-        scored.filter((r) => championMatchIds.has(r.matchId) && r.tier !== 'MISS').length === championMatchCount
-          ? 1
-          : 0,
+      // Called the whole champion's run: 1 = every scored champion match covered by a
+      // non-MISS pick (Gold), 2 = every one called EXACT (Diamond). 0 if any is missing,
+      // a MISS, or there's no decided final yet.
+      championPath: championPath(scored, championMatchIds, championMatchCount),
       groupPerfect: groupPerfect(scored, completeGroups),
     })
   }
@@ -596,8 +611,13 @@ async function applyAchievementTier(
   } else if (tierRank(tier) > tierRank(ex.tier)) {
     await db.update(userAchievement).set({ tier, progress: value }).where(eq(userAchievement.id, ex.id))
     newly.push({ userId, competitionId, key: def.key, tier })
+  } else if (def.revocable && tierRank(tier) < tierRank(ex.tier)) {
+    // A revocable badge tracks a current-state truth (like the full revoke above),
+    // so a rescore that drops the metric to a lower band demotes the tier too -
+    // silently, no re-notification. Non-revocable badges keep their high-water tier.
+    await db.update(userAchievement).set({ tier, progress: value }).where(eq(userAchievement.id, ex.id))
   } else if (ex.progress !== value) {
-    // Tier is a high-water mark: a rescore that lowers the metric refreshes
+    // Otherwise tier is a high-water mark: a rescore that lowers the metric refreshes
     // progress but never demotes the badge (grading up is handled above).
     await db.update(userAchievement).set({ progress: value }).where(eq(userAchievement.id, ex.id))
   }

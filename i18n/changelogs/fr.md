@@ -5,6 +5,20 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Ajouté
+
+- Rareté dans la vitrine à trophées : chaque badge affiche désormais la part des joueurs de la compétition qui le possèdent, par palier - de quoi voir à quel point votre collection est rare.
+
+### Modifié
+
+- Le Gourou de groupe est désormais gradué : trouve le résultat de tous les matchs d'un, deux ou trois groupes complets pour le bronze, l'argent, l'or.
+- La route du champion a maintenant deux paliers : or pour avoir trouvé le résultat de chaque match du champion, et un nouveau palier Diamant (au-dessus de l'or) pour avoir trouvé le score exact de chacun.
+- Le badge « Bête noire » est renommé « Livre ouvert » - une équipe dont vous devinez les scores exacts sans cesse.
+
+### Corrigé
+
+- Ouvrir la vitrine à trophées depuis le menu Succès défile désormais bien jusqu'à elle, au lieu d'être détourné par le défilement « jusqu'à maintenant » de votre profil.
+
 ## [2.32.1] - 2026-07-11
 
 ### Modifié
