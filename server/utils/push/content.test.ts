@@ -84,6 +84,71 @@ describe('notificationPushContent', () => {
     expect(blank.url).toBe('/wc/matches/m9?ngLeague=l1&chat=m9')
   })
 
+  it('builds missed-call copy + deep link for DM and league scopes', () => {
+    const dm = notificationPushContent(
+      {
+        type: 'VOICE_MISSED',
+        callerId: 'u1',
+        callerName: 'Alice',
+        threadId: 't7',
+        leagueId: null,
+        leagueName: null,
+        competitionSlug: null,
+        matchId: null,
+      },
+      'en',
+    )
+    expect(dm.body).toContain('Alice')
+    expect(dm).toMatchObject({ url: '/?dm=t7', tag: 'call:dm:t7' })
+
+    const leagueMatch = notificationPushContent(
+      {
+        type: 'VOICE_MISSED',
+        callerId: 'u1',
+        callerName: 'Bob',
+        threadId: null,
+        leagueId: 'l1',
+        leagueName: 'Friends',
+        competitionSlug: 'wc',
+        matchId: 'm9',
+      },
+      'en',
+    )
+    expect(leagueMatch).toMatchObject({ url: '/wc/matches/m9?ngLeague=l1&chat=m9', tag: 'call:league:l1:m9' })
+
+    const leagueGlobal = notificationPushContent(
+      {
+        type: 'VOICE_MISSED',
+        callerId: 'u1',
+        callerName: 'Bob',
+        threadId: null,
+        leagueId: 'l1',
+        leagueName: 'Friends',
+        competitionSlug: 'wc',
+        matchId: null,
+      },
+      'en',
+    )
+    expect(leagueGlobal.tag).toBe('call:league:l1:global')
+
+    // Defensive: a league-scoped miss with the slug/league unresolved still renders
+    // (the `?? default` fallbacks), never throwing on a null.
+    const bare = notificationPushContent(
+      {
+        type: 'VOICE_MISSED',
+        callerId: 'u1',
+        callerName: 'Bob',
+        threadId: null,
+        leagueId: null,
+        leagueName: null,
+        competitionSlug: null,
+        matchId: null,
+      },
+      'en',
+    )
+    expect(bare.body).toContain('Bob')
+  })
+
   it('renders trophy and achievement pushes with the cabinet deep link', () => {
     const overall = notificationPushContent(
       { type: 'TROPHY_AWARDED', competitionSlug: 'wc', competitionName: 'World Cup', userId: 'u1', trophyType: 'OVERALL', teamName: null },
