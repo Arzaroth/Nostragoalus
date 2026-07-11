@@ -463,6 +463,22 @@ effort buckets; order within a bucket is not priority.
         header-bell `CHAT_MENTION`: the mentioned ids ride as a plaintext sidecar
         (validated against real members, sender dropped), and the alert carries
         room context only, never the E2EE message text.
+- [ ] **Voice chat** (IN_PROGRESS, worktree feat/voice-chat): audio calls in the
+      chat surface - 1:1 from a DM, and small group rooms in a league (optionally
+      match-scoped, "watch together"). Decisions (locked):
+      - **Peer-to-peer WebRTC mesh, not an SFU**, so media stays DTLS-SRTP
+        end-to-end encrypted (the server never sees audio). Scales to a handful;
+        a large-room SFU is out of scope.
+      - **Signaling on the existing WS hub** (new `voice:*` frames), authorized by
+        reusing the DM-participant / league-member checks. One socket endpoint per
+        user per room (a second tab takes the call over).
+      - **DM**: live ring + a missed-call notification (bell + push, new "Calls"
+        category). **League**: an always-on "N in voice" badge + explicit invite,
+        no whole-league blast. Rooms are ephemeral.
+      - **TURN via self-hosted coturn** (opt-in `voice` compose profile, ephemeral
+        credentials); STUN-only without it. Audio only for v1.
+      - Deferred: signing the SDP fingerprint (server-MITM), ICE-restart on a socket
+        flap, a large-room SFU, multi-node signaling, video - see TODO.md.
 - [ ] **Direct messages (1:1 E2EE)** (IN_PROGRESS, worktree-dms): private
       one-to-one messages between two users, end-to-end encrypted like league
       chat. Decisions (locked):

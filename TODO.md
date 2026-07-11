@@ -3,6 +3,26 @@
 Deferred work, queued behind feature development.
 Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
+## Voice chat (deferred from the feature pass)
+
+- **Sign the SDP / DTLS fingerprint** to close a server-side active MITM. The server
+  relays SDP unsigned, so a compromised server could swap the DTLS fingerprint and
+  intercept a call (passive listening is already blocked by SRTP). Fix: sign the
+  fingerprint with the chat identity - needs an Ed25519 signing key alongside the
+  X25519 box key. Same tiered approach as the E2EE hardening.
+- **ICE-restart on a socket flap** so a brief WS drop doesn't kill an in-progress
+  call. Today a flap can strand the peer connections; v1 relies on redial.
+- **A large-room SFU.** The mesh is `N*(N-1)/2` connections; beyond ~5-6 a league
+  room needs a selective forwarding unit (which would trade away media E2EE).
+- **Multi-node signaling.** Voice rooms are in-process, so calls don't span a
+  multi-node deploy - the same limit as the rest of the WS hub.
+- **"N in voice" snapshot on chat open.** The badge is live from the next join/leave;
+  a client that loads mid-call won't show it until the roster next changes.
+- **Live speaking indicators** (per-participant audio levels) in the in-call bar.
+- **A full call log + a "Call ended, 4:12" system line.** Only missed calls are
+  persisted today; ongoing/ended calls are purely in-process.
+- **Video / screen share.** v1 is audio only.
+
 ## Chat identity recovery / reset
 
 - [ ] **No live nudge when a DM peer re-seals after a reset**: after a user resets
