@@ -16,7 +16,36 @@ export function voiceRoomKey(scope: VoiceScope): string {
   return scope.matchId ? `league:${scope.leagueId}:match:${scope.matchId}` : `league:${scope.leagueId}`
 }
 
+// The inverse of voiceRoomKey, for the fan-out paths that only carry a room key
+// (a leave / disconnect) and need to name the scope in the frame. Returns null for
+// a malformed key.
+export function parseVoiceRoomKey(roomKey: string): VoiceScope | null {
+  const parts = roomKey.split(':')
+  if (parts[0] === 'dm' && parts.length === 2) return { kind: 'dm', threadId: parts[1] }
+  if (parts[0] === 'league' && parts.length === 2) return { kind: 'league', leagueId: parts[1], matchId: null }
+  if (parts[0] === 'league' && parts.length === 4 && parts[2] === 'match') {
+    return { kind: 'league', leagueId: parts[1], matchId: parts[3] }
+  }
+  return null
+}
+
 export type VoiceSignalKind = 'offer' | 'answer' | 'ice'
+
+// Validate an untrusted scope from a client frame into a VoiceScope, or null. Ids
+// are short uuids; an over-long or wrong-shaped value is rejected so a hostile
+// frame cannot mint a giant room key or a malformed scope.
+export function parseVoiceScope(raw: unknown): VoiceScope | null {
+  if (typeof raw !== 'object' || raw === null) return null
+  const s = raw as Record<string, unknown>
+  const ok = (v: unknown): v is string => typeof v === 'string' && v.length > 0 && v.length <= 64
+  if (s.kind === 'dm') return ok(s.threadId) ? { kind: 'dm', threadId: s.threadId } : null
+  if (s.kind === 'league') {
+    if (!ok(s.leagueId)) return null
+    const matchId = s.matchId == null ? null : ok(s.matchId) ? s.matchId : undefined
+    return matchId === undefined ? null : { kind: 'league', leagueId: s.leagueId, matchId }
+  }
+  return null
+}
 
 // A parsed scope's role for the client (a DM call rings one peer; a league call is
 // a join-any-time mesh room).
@@ -74,13 +103,15 @@ export type VoiceInboundFrame =
 
 // === Server -> client frames (outbound) ===
 
-// The full roster of a room after a join/leave - the mesh membership the client
-// reconciles its peer connections against.
+// The full roster of a room after a join/leave - the mesh membership (user ids)
+// the client reconciles its peer connections against. Display names are resolved
+// client-side from data it already holds (league roster / DM peer), so the server
+// keeps this to ids and stays out of the name-resolution business here.
 export interface VoiceRosterFrame {
   type: 'voice:roster'
   roomKey: string
   scope: VoiceScope
-  roster: VoiceParticipant[]
+  roster: string[]
 }
 // An incoming ring for the recipient.
 export interface VoiceRingFrame {
@@ -102,11 +133,6 @@ export interface VoiceControlFrame {
   type: 'voice:declined' | 'voice:cancelled' | 'voice:evicted' | 'voice:unavailable'
   scope: VoiceScope
   from: string
-}
-
-export interface VoiceParticipant {
-  userId: string
-  name: string
 }
 
 // What the ICE-servers endpoint returns: STUN always, TURN when coturn is

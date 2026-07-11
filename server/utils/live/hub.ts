@@ -5,6 +5,8 @@ import type { NotificationDTO } from '../../../shared/types/notifications'
 import type { ReactionTotals } from '../../../shared/reactions'
 import type { ChatAttachmentDTO, ChatMessageDTO } from '../../../shared/types/chat'
 import { removeViewer, setViewing, viewerCount, viewersOf } from './viewers'
+import { rosterOf, tokensInRoom, type VoiceToken } from './voice-rooms'
+import type { VoiceScope } from '../../../shared/types/voice'
 
 export interface LiveSubscriber {
   matchIds: Set<string>
@@ -371,6 +373,40 @@ export function publishUserNotification(userId: string, notification: Notificati
     }
   }
   return delivered
+}
+
+// --- voice calls ---
+// Signaling fan-out for WebRTC voice. The media is peer-to-peer (DTLS-SRTP); the
+// hub only relays call control + the SDP/ICE the browsers swap to connect. Room
+// membership lives in ./voice-rooms; these are the send primitives. A roster or
+// signal targets the ONE socket a user is in the call on (voice-rooms tracks it),
+// so the user's other tabs are never dragged into the call; ring/control frames go
+// to every socket of a user (any tab can answer / dismiss).
+
+function guardedSend(token: VoiceToken, payload: unknown): void {
+  try {
+    ;(token as LiveSubscriber).send(payload)
+  } catch {
+    // socket closing; skip
+  }
+}
+
+// Push a room's current roster (user ids) to every participating socket.
+export function publishVoiceRoster(roomKey: string, scope: VoiceScope): void {
+  const payload = { type: 'voice:roster', roomKey, scope, roster: rosterOf(roomKey) }
+  for (const token of tokensInRoom(roomKey)) guardedSend(token, payload)
+}
+
+// Relay one SDP/ICE payload (or an eviction) to a single participant's socket.
+export function sendVoiceToToken(token: VoiceToken, payload: unknown): void {
+  guardedSend(token, payload)
+}
+
+// A ring or terminal control frame to a user's every open socket, so any of their
+// tabs can pick it up (or dismiss the ring). Returns how many sockets got it - 0
+// means the user is offline, which the caller treats as a missed call.
+export function publishVoiceToUser(userId: string, payload: unknown): number {
+  return deliverToMembers([userId], payload)
 }
 
 // Push the current state of the given matches to every subscriber watching them.
