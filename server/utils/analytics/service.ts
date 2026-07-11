@@ -249,10 +249,14 @@ async function loadFergieTime(
   const { rules } = await getScoringConfigFor(db, competitionId)
   const matchIds = userRows.map((r) => r.matchId)
 
+  // Ordered by id so a match's goals arrive in a stable sequence: the replay
+  // re-sorts by parsed minute, but same-minute goals keep this deterministic
+  // order across requests rather than whatever the planner returns.
   const goalRows = await db
     .select({ matchId: goalEvent.matchId, side: goalEvent.side, minute: goalEvent.minute })
     .from(goalEvent)
     .where(inArray(goalEvent.matchId, matchIds))
+    .orderBy(asc(goalEvent.id))
 
   const goalsByMatch = new Map<string, FergieGoal[]>()
   const hasAdded = new Set<string>()
@@ -294,26 +298,30 @@ async function loadFergieTime(
   // resolve all three per match up front. CROWD (the default) needs none.
   const oddsByMatch = new Map<string, Partial<Record<Outcome, number | null>>>()
   if (rules.bonusSource === 'ODDS') {
-    for (const r of fergieRows) {
-      const entry: Partial<Record<Outcome, number | null>> = {}
-      for (const o of ['HOME', 'DRAW', 'AWAY'] as Outcome[]) {
-        entry[o] = await closingOddsForOutcome(db, r.matchId, r.kickoffTime, o)
-      }
-      oddsByMatch.set(r.matchId, entry)
-    }
+    const outcomes: Outcome[] = ['HOME', 'DRAW', 'AWAY']
+    await Promise.all(
+      fergieRows.map(async (r) => {
+        const resolved = await Promise.all(outcomes.map((o) => closingOddsForOutcome(db, r.matchId, r.kickoffTime, o)))
+        oddsByMatch.set(r.matchId, Object.fromEntries(outcomes.map((o, i) => [o, resolved[i]])))
+      }),
+    )
   }
 
+  // .get(matchId) is a guaranteed hit here: fergieRows are the user's own locked
+  // picks (so the field query returns their row) that hasAdded pulled straight
+  // from goalsByMatch.
   const inputs: FergieMatchInput[] = fergieRows.map((r) => ({
     home: r.homeTeam,
     away: r.awayTeam,
     homeCode: r.homeCode,
     awayCode: r.awayCode,
     predId: r.predId,
+    pred: { home: r.predHome, away: r.predAway },
     isJoker: r.isJoker,
     actual: { home: r.actualHome, away: r.actualAway },
     forceJoker: countsDouble(r.stage),
-    field: fieldByMatch.get(r.matchId) ?? [],
-    goals: goalsByMatch.get(r.matchId) ?? [],
+    field: fieldByMatch.get(r.matchId)!,
+    goals: goalsByMatch.get(r.matchId)!,
     oddsForOutcome: (o: Outcome) => oddsByMatch.get(r.matchId)?.[o] ?? null,
   }))
 
@@ -324,6 +332,8 @@ async function loadFergieTime(
 interface FergiePickRow {
   matchId: string
   predId: string
+  predHome: number
+  predAway: number
   isJoker: boolean
   actualHome: number
   actualAway: number
@@ -403,6 +413,8 @@ export async function getAnalytics(
   const fergieRows: FergiePickRow[] = rows.map((r) => ({
     matchId: r.matchId,
     predId: r.predId,
+    predHome: r.homeGoals,
+    predAway: r.awayGoals,
     isJoker: r.isJoker,
     actualHome: r.actualHome as number,
     actualAway: r.actualAway as number,

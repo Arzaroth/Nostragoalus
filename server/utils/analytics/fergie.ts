@@ -20,6 +20,9 @@ export interface FergieMatchInput {
   // The user's own prediction id - it sits inside `field`, and its scored total
   // at the actual scoreline equals the stored prediction.totalPoints.
   predId: string
+  // The user's pick, for the breakdown label (predId points at the same row in
+  // `field`, but carrying it avoids a lookup and a can't-happen fallback).
+  pred: Scoreline
   isJoker: boolean
   actual: Scoreline
   // Knockout stages force the joker multiplier on everyone (finalize's
@@ -44,17 +47,30 @@ export function emptyFergie(): FergieTime {
   }
 }
 
-function isAddedTime(minute: string | null): boolean {
-  return !!minute && minute.includes('+')
+// Parse a free-text upstream minute: "66'" -> {base:66, added:0}, "90'+5'" ->
+// {base:90, added:5, hasAdded:true}, "45'+2'" -> {base:45, added:2, hasAdded}.
+// Null/unparseable -> null. The `\D*` sits INSIDE the optional group so it can't
+// swallow the "+" before the group tries to match it.
+export function parseMinute(minute: string | null | undefined): { base: number; added: number; hasAdded: boolean } | null {
+  const m = minute?.match(/^(\d+)(?:\D*\+\D*(\d+))?/)
+  if (!m) return null
+  return { base: Number(m[1]), added: m[2] ? Number(m[2]) : 0, hasAdded: m[2] != null }
 }
 
-// A sortable clock position: "90'+5'" -> 90.05, "66'" -> 66, so added-time goals
-// order after their regulation minute and first-half stoppage before the second
-// half. Unparseable/absent minutes sort last, keeping them out of the sequence.
-function minuteOrder(minute: string | null): number {
-  const m = minute?.match(/(\d+)\D*(?:\+\D*(\d+))?/)
-  if (!m) return Number.POSITIVE_INFINITY
-  return Number(m[1]) + (m[2] ? Number(m[2]) / 100 : 0)
+// A sortable clock position: "90'+5'" -> 90.05, "66'" -> 66, so an added-time
+// goal orders after its regulation minute. Unparseable/absent minutes sort last.
+export function minuteOrder(minute: string | null): number {
+  const p = parseMinute(minute)
+  return p ? p.base + p.added / 100 : Number.POSITIVE_INFINITY
+}
+
+// "Fergie time" is end-of-half stoppage from the second half on: an added-time
+// goal (minute carries a "+") whose base minute is 90' or later (90'+, 105'+,
+// 120'+). A first-half "45'+2'" is stoppage too, but its marginal value against a
+// mid-match scoreline is not what the metric is about, so it does not count.
+export function isAddedTime(minute: string | null): boolean {
+  const p = parseMinute(minute)
+  return !!p && p.hasAdded && p.base >= 90
 }
 
 function realPoints(m: FergieMatchInput, rules: ScoringRules, at: Scoreline): number {
@@ -69,11 +85,16 @@ function realPoints(m: FergieMatchInput, rules: ScoringRules, at: Scoreline): nu
 }
 
 // Replay one match goal by goal, banking each added-time goal's real-points
-// delta. Returns null when the goal feed does not reconcile with the full-time
-// score (so an incomplete timeline never invents a swing) or when no added-time
-// goal fell.
+// delta. Returns null when the timeline cannot be trusted - a goal with an
+// unparseable/absent minute (so the order is unknown), or a set of goals that
+// does not reconcile with the full-time score - or when no added-time goal fell.
+// Bailing out here means an incomplete feed never invents a swing.
 function replayMatch(m: FergieMatchInput, rules: ScoringRules): FergieMatch | null {
-  const sorted = [...m.goals].sort((a, b) => minuteOrder(a.minute) - minuteOrder(b.minute))
+  const ordered = m.goals.map((g) => ({ g, order: minuteOrder(g.minute) }))
+  // One unorderable minute makes every added-time delta suspect (a real early
+  // goal could be applied after a late one), even if the final still reconciles.
+  if (ordered.some((o) => !Number.isFinite(o.order))) return null
+  const sorted = ordered.sort((a, b) => a.order - b.order).map((o) => o.g)
   let home = 0
   let away = 0
   let gained = 0
@@ -96,18 +117,13 @@ function replayMatch(m: FergieMatchInput, rules: ScoringRules): FergieMatch | nu
     away: m.away,
     homeCode: m.homeCode,
     awayCode: m.awayCode,
-    predicted: predictedLabel(m),
+    predicted: `${m.pred.home}-${m.pred.away}`,
     actual: `${m.actual.home}-${m.actual.away}`,
     gained,
     lost,
     net: gained - lost,
     isJoker: m.isJoker,
   }
-}
-
-function predictedLabel(m: FergieMatchInput): string {
-  const own = m.field.find((p) => p.id === m.predId)
-  return own ? `${own.home}-${own.away}` : '?-?'
 }
 
 export function computeFergie(matches: FergieMatchInput[], rules: ScoringRules): FergieTime {

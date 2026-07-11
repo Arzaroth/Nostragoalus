@@ -55,7 +55,8 @@ export interface PickHighlight {
 // match is replayed goal by goal in chronological order, and every added-time
 // goal's own points delta is banked - so a match that gained then lost (e.g. a
 // score you nailed in stoppage time, then a later stoppage goal broke it) shows
-// on both sides while its net telescopes to the full-time-minus-baseline swing.
+// on both sides. `net` is the sum of those per-goal deltas; when the added-time
+// goals are the match's last goals it equals full-time minus the pre-added line.
 export interface FergieMatch {
   home: string
   away: string
