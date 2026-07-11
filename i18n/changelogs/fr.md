@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [2.30.0] - 2026-07-11
+
 ### Ajouté
 
 - Le temps additionnel dans vos analyses personnelles : une nouvelle carte montrant combien de points les buts du temps additionnel vous ont rapportés ou coûtés, par rapport au score à la fin du temps réglementaire. Elle réévalue chaque prono face au score d'avant le temps additionnel et met en avant votre plus beau cadeau tardif et votre pire coup du sort.

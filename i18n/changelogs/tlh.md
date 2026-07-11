@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.30.0] - 2026-07-11
+
 ### chelpu'
 
 - nughI' De'wI'Daq poH chel: 'ay' chu' 'oH. poH chel maw'mey Say' DaSuqpu' pagh Danatlhpu' 'e' cha', qaStaHvIS Qav poH mI'. wIvmey Hoch qelqa', poH chel pagh mI' qelDI'; nob tIn 'ej 'oy' tIn Da'anglaw'.
