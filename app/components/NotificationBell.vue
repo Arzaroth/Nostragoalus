@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { cabinetPath, chatMentionPath, type NotificationDTO } from '#shared/types/notifications'
+import { DEFAULT_COMPETITION } from '#shared/competition'
 import { dmPath } from '#shared/types/dm'
 
 const { t, locale } = useI18n()
@@ -90,6 +91,7 @@ const ICONS: Record<NotificationDTO['type'], string> = {
   ACHIEVEMENT_UNLOCKED: 'pi pi-verified',
   CHAT_MENTION: 'pi pi-at',
   DM_MESSAGE: 'pi pi-envelope',
+  VOICE_MISSED: 'pi pi-phone',
 }
 
 function itemText(n: NotificationDTO): string {
@@ -142,6 +144,10 @@ function itemText(n: NotificationDTO): string {
         : t('notifications.item.mention', { name: d.senderName, league: d.leagueName })
     case 'DM_MESSAGE':
       return t('notifications.item.dm', { name: d.senderName })
+    case 'VOICE_MISSED':
+      return d.leagueId
+        ? t('notifications.item.voiceMissedLeague', { name: d.callerName, league: d.leagueName ?? '' })
+        : t('notifications.item.voiceMissed', { name: d.callerName })
   }
 }
 
@@ -166,6 +172,14 @@ function linkFor(n: NotificationDTO): string {
       return chatMentionPath(d)
     case 'DM_MESSAGE':
       return dmPath(d.threadId)
+    case 'VOICE_MISSED':
+      return d.threadId
+        ? dmPath(d.threadId)
+        : chatMentionPath({
+            competitionSlug: d.competitionSlug ?? DEFAULT_COMPETITION,
+            leagueId: d.leagueId ?? '',
+            matchId: d.matchId,
+          })
   }
 }
 

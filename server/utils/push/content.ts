@@ -1,4 +1,5 @@
 import { cabinetPath, chatMentionPath, type NotificationData } from '../../../shared/types/notifications'
+import { DEFAULT_COMPETITION } from '../../../shared/competition'
 import { dmPath } from '../../../shared/types/dm'
 import type { CompetitionAwardType } from '../../../shared/types/achievements'
 import en from '../../../i18n/locales/en.json'
@@ -187,6 +188,23 @@ export function notificationPushContent(data: NotificationData, locale: string |
         ...render(m.dm, { name: data.senderName }),
         url: dmPath(data.threadId),
         tag: `dm:${data.threadId}`,
+      }
+    case 'VOICE_MISSED':
+      // Caller + room context only, never any media. A DM-scoped miss deep-links
+      // to the thread; a league-scoped miss to that room. The tag collapses
+      // repeated missed rings from the same caller/room into one notification.
+      return {
+        ...render(m.voiceMissed, { name: data.callerName }),
+        url: data.threadId
+          ? dmPath(data.threadId)
+          : chatMentionPath({
+              competitionSlug: data.competitionSlug ?? DEFAULT_COMPETITION,
+              leagueId: data.leagueId ?? '',
+              matchId: data.matchId,
+            }),
+        tag: data.threadId
+          ? `call:dm:${data.threadId}`
+          : `call:league:${data.leagueId}:${data.matchId ?? 'global'}`,
       }
   }
 }

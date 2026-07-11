@@ -12,8 +12,9 @@ export type PushCategory =
   | 'league'
   | 'mentions'
   | 'dm'
+  | 'calls'
 
-export const PUSH_CATEGORIES: PushCategory[] = ['reminders', 'kickoff', 'goals', 'matchResults', 'tournament', 'league', 'mentions', 'dm']
+export const PUSH_CATEGORIES: PushCategory[] = ['reminders', 'kickoff', 'goals', 'matchResults', 'tournament', 'league', 'mentions', 'dm', 'calls']
 
 // Default-on for the time-sensitive and result categories; league social is
 // off by default (low urgency). Mentions are directed at the recipient by name,
@@ -27,6 +28,7 @@ export const PUSH_DEFAULTS: Record<PushCategory, boolean> = {
   league: false,
   mentions: true,
   dm: true,
+  calls: true,
 }
 
 // The user column backing each category (the better-auth additionalFields).
@@ -39,6 +41,7 @@ export const PUSH_COLUMN: Record<PushCategory, keyof PushPrefs> = {
   league: 'pushLeague',
   mentions: 'pushMentions',
   dm: 'pushDm',
+  calls: 'pushCalls',
 }
 
 export interface PushPrefs {
@@ -50,6 +53,7 @@ export interface PushPrefs {
   pushLeague: boolean | null
   pushMentions: boolean | null
   pushDm: boolean | null
+  pushCalls: boolean | null
 }
 
 export function isPushEnabled(prefs: PushPrefs | null | undefined, category: PushCategory): boolean {
@@ -70,6 +74,7 @@ const TYPE_CATEGORY: Record<NotificationType, PushCategory> = {
   LEAGUE_REMOVED: 'league',
   CHAT_MENTION: 'mentions',
   DM_MESSAGE: 'dm',
+  VOICE_MISSED: 'calls',
 }
 
 export function categoryForType(type: NotificationType): PushCategory {

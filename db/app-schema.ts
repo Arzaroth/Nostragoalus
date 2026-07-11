@@ -1132,6 +1132,7 @@ export const notificationTypeEnum = pgEnum('notification_type', [
   'ACHIEVEMENT_UNLOCKED',
   'CHAT_MENTION',
   'DM_MESSAGE',
+  'VOICE_MISSED',
 ])
 
 // Per-user in-app notifications (the header bell). `type` mirrors `data.type`;
@@ -1480,5 +1481,46 @@ export const dmThreadRelations = relations(dmThread, ({ one, many }) => ({
 export const dmThreadKeyRelations = relations(dmThreadKey, ({ one }) => ({
   thread: one(dmThread, { fields: [dmThreadKey.threadId], references: [dmThread.id] }),
   user: one(user, { fields: [dmThreadKey.userId], references: [user.id] }),
+}))
+
+// === Voice calls ===
+// A light, ephemeral call log. The live call (roster, WebRTC signaling) lives in
+// the in-process hub (server/utils/live/voice-rooms) and never touches this table;
+// this only records a call happened, for the missed-call notification and a "call
+// ended" system line. Media is peer-to-peer DTLS-SRTP - the server never sees it.
+// ONGOING while at least one peer is connected, ENDED when the last leaves, MISSED
+// when a DM ring / league invite was never answered.
+export const voiceCallStatusEnum = pgEnum('voice_call_status', ['ONGOING', 'ENDED', 'MISSED'])
+
+export const voiceCall = pgTable(
+  'voice_call',
+  {
+    id: pk(),
+    // Scope mirrors chat_message: exactly one of a league room (matchId optional =
+    // a per-match voice room) or a DM thread. Enforced by the CHECK below.
+    leagueId: text('league_id').references(() => league.id, { onDelete: 'cascade' }),
+    matchId: text('match_id').references(() => match.id, { onDelete: 'cascade' }),
+    dmThreadId: text('dm_thread_id').references(() => dmThread.id, { onDelete: 'cascade' }),
+    // Who started the call (offerer / room opener). Kept for the log even if the
+    // account is later deleted.
+    initiatorId: text('initiator_id').references(() => user.id, { onDelete: 'set null' }),
+    status: voiceCallStatusEnum('status').notNull().default('ONGOING'),
+    // The user ids that joined at least once - a light historical record, not the
+    // live roster (the hub owns liveness). Appended as peers join.
+    participantIds: jsonb('participant_ids').$type<string[]>().notNull().default([]),
+    startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+    endedAt: timestamp('ended_at', { withTimezone: true }),
+  },
+  (t) => [
+    index('voice_call_league_match_idx').on(t.leagueId, t.matchId, t.startedAt.desc()),
+    index('voice_call_dm_idx').on(t.dmThreadId, t.startedAt.desc()),
+    check('voice_call_scope_xor', sql`num_nonnulls(${t.leagueId}, ${t.dmThreadId}) = 1`),
+  ],
+)
+
+export const voiceCallRelations = relations(voiceCall, ({ one }) => ({
+  league: one(league, { fields: [voiceCall.leagueId], references: [league.id] }),
+  thread: one(dmThread, { fields: [voiceCall.dmThreadId], references: [dmThread.id] }),
+  initiator: one(user, { fields: [voiceCall.initiatorId], references: [user.id] }),
 }))
 

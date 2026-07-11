@@ -16,6 +16,7 @@ export type NotificationType =
   | 'ACHIEVEMENT_UNLOCKED'
   | 'CHAT_MENTION'
   | 'DM_MESSAGE'
+  | 'VOICE_MISSED'
 
 export type NotificationData =
   | { type: 'LEAGUE_JOIN'; leagueId: string; leagueName: string; joinerName: string }
@@ -98,6 +99,20 @@ export type NotificationData =
       threadId: string
       senderId: string
       senderName: string
+    }
+  // A voice call the recipient did not answer (offline, or ring timed out). Scope
+  // is exactly one of the two, mirroring a chat message: a DM thread (threadId set)
+  // or a league room (leagueId set, matchId optional for a match thread). Carries
+  // caller + room context only - a call has no content to preview.
+  | {
+      type: 'VOICE_MISSED'
+      callerId: string
+      callerName: string
+      threadId: string | null
+      leagueId: string | null
+      leagueName: string | null
+      competitionSlug: string | null
+      matchId: string | null
     }
 
 // Deep link for a chat-mention notification (push URL + bell click). Selects the
