@@ -113,6 +113,15 @@ export interface VoiceRosterFrame {
   scope: VoiceScope
   roster: string[]
 }
+// A league voice room's participant count, broadcast to every league member (not
+// just participants) so the chat can show an always-on "N in voice" badge and an
+// invite affordance. count 0 = the room emptied (clear the badge).
+export interface VoicePresenceFrame {
+  type: 'voice:presence'
+  roomKey: string
+  scope: VoiceScope
+  count: number
+}
 // An incoming ring for the recipient.
 export interface VoiceRingFrame {
   type: 'voice:ring'

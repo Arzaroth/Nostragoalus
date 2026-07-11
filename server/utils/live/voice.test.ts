@@ -55,7 +55,7 @@ async function leagueFixture() {
   const leagueId = await makeLeague(db, { competitionId, ownerId: 'owner', name: 'Reds' })
   await addLeagueMember(db, leagueId, 'member')
   await db.update(league).set({ chatEnabled: true }).where(eq(league.id, leagueId))
-  return { db, leagueId, scope: { kind: 'league' as const, leagueId, matchId: null } }
+  return { db, leagueId, roomKey: `league:${leagueId}`, scope: { kind: 'league' as const, leagueId, matchId: null } }
 }
 
 describe('voice signaling glue', () => {
@@ -114,13 +114,26 @@ describe('voice signaling glue', () => {
     await handleVoiceJoin(db, a, scope)
     await handleVoiceJoin(db, b, scope)
     a.send.mockClear()
-    handleVoiceLeave(b)
+    await handleVoiceLeave(db, b)
     expect(framesOfType(a, 'voice:roster').at(-1)?.roster).toEqual(['alice'])
   })
 
-  it('leaving when in no room is a no-op', () => {
+  it('leaving when in no room is a no-op', async () => {
+    const { db } = await dmFixture()
     const a = connect('alice')
-    expect(() => handleVoiceLeave(a)).not.toThrow()
+    await expect(handleVoiceLeave(db, a)).resolves.toBeUndefined()
+  })
+
+  it('broadcasts the "N in voice" count to all league members on join and leave', async () => {
+    const { db, roomKey, scope } = await leagueFixture()
+    const owner = connect('owner')
+    const member = connect('member') // not joining - just a league member watching the badge
+    await handleVoiceJoin(db, owner, scope)
+    // The non-participant member is told the room now has 1.
+    expect(framesOfType(member, 'voice:presence').at(-1)).toMatchObject({ roomKey, count: 1 })
+    await handleVoiceLeave(db, owner)
+    // Emptied room broadcasts 0 so the badge clears.
+    expect(framesOfType(member, 'voice:presence').at(-1)).toMatchObject({ roomKey, count: 0 })
   })
 
   it('invite rings an online member and records no missed call', async () => {

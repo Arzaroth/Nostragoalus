@@ -388,7 +388,8 @@
       "tournament": "Résultats du tournoi",
       "league": "Activité des ligues",
       "mentions": "Mentions dans le chat",
-      "dm": "Messages directs"
+      "dm": "Messages directs",
+      "calls": "Appels"
     },
     "odds": "Afficher les cotes",
     "oddsHint": "Cotes décimales 1X2 sous chaque match : 1 = victoire domicile, X = nul, 2 = victoire extérieur. Plus le nombre est bas, plus c'est probable. Figées au coup d'envoi."
@@ -1551,6 +1552,8 @@
       "bestScorerWon": "Votre pari Soulier d'or {player} a fini meilleur buteur ! +{points} pts",
       "bestScorerLost": "Votre pari Soulier d'or {player} n'a pas fini meilleur buteur.",
       "dm": "{name} vous a envoyé un message.",
+      "voiceMissed": "Appel manqué de {name}.",
+      "voiceMissedLeague": "Appel manqué de {name} dans {league}.",
       "dmGroup": "{count} personnes vous ont envoyé des messages.",
       "mention": "{name} vous a mentionné dans {league}.",
       "mentionMatch": "{name} vous a mentionné dans {home} v {away}.",
@@ -1558,8 +1561,28 @@
       "achievementUnlocked": "Succès débloqué : {achievement}."
     }
   },
+  "voice": {
+    "call": "Appeler",
+    "joinVoice": "Rejoindre l'audio",
+    "ringing": "Sonnerie…",
+    "connecting": "Connexion…",
+    "inVoice": "{n} en audio",
+    "incoming": "Appel entrant",
+    "callingYou": "{name} vous appelle",
+    "accept": "Accepter",
+    "decline": "Refuser",
+    "mute": "Couper le micro",
+    "unmute": "Activer le micro",
+    "hangup": "Raccrocher",
+    "invite": "Inviter à l'appel",
+    "inviteTitle": "Inviter à l'audio",
+    "inviteNone": "Tout le monde est déjà là.",
+    "invited": "{name} invité",
+    "error": { "micDenied": "L'accès au micro est nécessaire pour appeler." }
+  },
   "push": {
     "dm": { "title": "Nouveau message", "body": "{name} vous a envoyé un message" },
+    "voiceMissed": { "title": "Appel manqué", "body": "{name} a essayé de vous appeler" },
     "mention": { "title": "Nouvelle mention", "body": "{name} vous a mentionné dans {league}" },
     "mentionMatch": { "title": "Nouvelle mention", "body": "{name} vous a mentionné dans {home} v {away}" },
     "reminder": { "title": "N'oubliez pas de pronostiquer", "body": "{home} v {away} commence bientôt" },

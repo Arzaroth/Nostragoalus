@@ -393,7 +393,8 @@
       "tournament": "Tournament results",
       "league": "League activity",
       "mentions": "Chat mentions",
-      "dm": "Direct messages"
+      "dm": "Direct messages",
+      "calls": "Calls"
     },
     "odds": "Show bookmaker odds",
     "oddsHint": "Decimal 1X2 odds under each match: 1 = home win, X = draw, 2 = away win. Lower number = more likely. Snapshotted at kickoff."
@@ -1557,14 +1558,36 @@
       "bestScorerLost": "Your Golden Boot pick {player} didn't finish top scorer.",
       "dm": "{name} sent you a message.",
       "dmGroup": "{count} people sent you messages.",
+      "voiceMissed": "Missed call from {name}.",
+      "voiceMissedLeague": "Missed call from {name} in {league}.",
       "mention": "{name} mentioned you in {league}.",
       "mentionMatch": "{name} mentioned you in {home} v {away}.",
       "trophyAwarded": "You won the {trophy} trophy in {competition}!",
       "achievementUnlocked": "Achievement unlocked: {achievement}."
     }
   },
+  "voice": {
+    "call": "Call",
+    "joinVoice": "Join voice",
+    "ringing": "Ringing…",
+    "connecting": "Connecting…",
+    "inVoice": "{n} in voice",
+    "incoming": "Incoming call",
+    "callingYou": "{name} is calling you",
+    "accept": "Accept",
+    "decline": "Decline",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "hangup": "Hang up",
+    "invite": "Invite to call",
+    "inviteTitle": "Invite to voice",
+    "inviteNone": "Everyone's already here.",
+    "invited": "Invited {name}",
+    "error": { "micDenied": "Microphone access is needed for a call." }
+  },
   "push": {
     "dm": { "title": "New message", "body": "{name} sent you a message" },
+    "voiceMissed": { "title": "Missed call", "body": "{name} tried to call you" },
     "mention": { "title": "New mention", "body": "{name} mentioned you in {league}" },
     "mentionMatch": { "title": "New mention", "body": "{name} mentioned you in {home} v {away}" },
     "reminder": { "title": "Don't forget to predict", "body": "{home} v {away} kicks off soon" },

@@ -388,7 +388,8 @@
       "tournament": "ผลรายการแข่งขัน",
       "league": "กิจกรรมในลีก",
       "mentions": "การกล่าวถึงในแชต",
-      "dm": "ข้อความส่วนตัว"
+      "dm": "ข้อความส่วนตัว",
+      "calls": "สายโทร"
     },
     "odds": "แสดงราคาต่อรอง",
     "oddsHint": "ราคาต่อรองทศนิยม 1X2 ใต้แต่ละแมตช์: 1 = เจ้าบ้านชนะ, X = เสมอ, 2 = ทีมเยือนชนะ ตัวเลขยิ่งต่ำยิ่งมีโอกาส บันทึกตอนเริ่มแข่ง"
@@ -1551,6 +1552,8 @@
       "bestScorerWon": "{player} ที่คุณเลือกเป็นดาวซัลโวสูงสุด! +{points} แต้ม",
       "bestScorerLost": "{player} ที่คุณเลือกไม่ได้เป็นดาวซัลโวสูงสุด",
       "dm": "{name} ส่งข้อความถึงคุณ",
+      "voiceMissed": "สายที่ไม่ได้รับจาก {name}",
+      "voiceMissedLeague": "สายที่ไม่ได้รับจาก {name} ใน {league}",
       "dmGroup": "มี {count} คนส่งข้อความถึงคุณ",
       "mention": "{name} กล่าวถึงคุณใน {league}",
       "mentionMatch": "{name} กล่าวถึงคุณใน {home} v {away}",
@@ -1558,8 +1561,28 @@
       "achievementUnlocked": "ปลดล็อกความสำเร็จ: {achievement}"
     }
   },
+  "voice": {
+    "call": "โทร",
+    "joinVoice": "เข้าร่วมเสียง",
+    "ringing": "กำลังเรียก…",
+    "connecting": "กำลังเชื่อมต่อ…",
+    "inVoice": "{n} คนในสาย",
+    "incoming": "สายเรียกเข้า",
+    "callingYou": "{name} กำลังโทรหาคุณ",
+    "accept": "รับสาย",
+    "decline": "ปฏิเสธ",
+    "mute": "ปิดไมค์",
+    "unmute": "เปิดไมค์",
+    "hangup": "วางสาย",
+    "invite": "เชิญเข้าร่วมสาย",
+    "inviteTitle": "เชิญเข้าร่วมเสียง",
+    "inviteNone": "ทุกคนอยู่ครบแล้ว",
+    "invited": "เชิญ {name} แล้ว",
+    "error": { "micDenied": "ต้องอนุญาตใช้ไมโครโฟนเพื่อโทร" }
+  },
   "push": {
     "dm": { "title": "ข้อความใหม่", "body": "{name} ส่งข้อความถึงคุณ" },
+    "voiceMissed": { "title": "สายที่ไม่ได้รับ", "body": "{name} พยายามโทรหาคุณ" },
     "mention": { "title": "การกล่าวถึงใหม่", "body": "{name} กล่าวถึงคุณใน {league}" },
     "mentionMatch": { "title": "การกล่าวถึงใหม่", "body": "{name} กล่าวถึงคุณใน {home} v {away}" },
     "reminder": { "title": "อย่าลืมทายผล", "body": "{home} v {away} กำลังจะเริ่ม" },
