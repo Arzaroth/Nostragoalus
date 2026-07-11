@@ -47,6 +47,9 @@ export const ACHIEVEMENT_METRICS = [
   'trophies', // competition-end trophies held
   'podium', // 1 = tournament over AND finished top 3 overall
   'woodenSpoon', // 1 = tournament over AND finished dead last (a "bad" badge)
+  'teamsRead', // teams with >=5 correct-outcome (non-MISS) calls on their matches, this tournament
+  'championPath', // 1 = called the outcome of EVERY match the tournament champion played
+  'groupPerfect', // 1 = called the outcome of every match in one complete group
 ] as const
 
 export type AchievementMetric = (typeof ACHIEVEMENT_METRICS)[number]
@@ -121,6 +124,17 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { key: 'champion-oracle', category: 'ORACLE', scope: 'COMPETITION', metric: 'championOracle', tiers: single(1) },
   { key: 'golden-touch', category: 'ORACLE', scope: 'COMPETITION', metric: 'goldenTouch', tiers: single(1) },
   { key: 'underdog-whisperer', category: 'ORACLE', scope: 'COMPETITION', metric: 'underdog', tiers: single(1) },
+  // Read a whole team's tournament: five correct outcomes (non-MISS) on one team's
+  // matches, for three / five / seven distinct teams in a single tournament. A team
+  // needs five games to give five outcomes, so this leans on deep-run sides - gold
+  // (seven such teams) is a brutal read of the bracket.
+  { key: 'form-reader', category: 'MILESTONE', scope: 'COMPETITION', metric: 'teamsRead', tiers: graded(3, 5, 7), icon: 'pi pi-users' },
+  // Called the outcome of every match the eventual champion played, start to lift.
+  // Hinges on a decided final like grand-finale, so it stays high-water (non-revocable).
+  { key: 'champions-path', category: 'ORACLE', scope: 'COMPETITION', metric: 'championPath', tiers: singleGold(1), icon: 'pi pi-sitemap' },
+  // Called every outcome in one full group. Complete-group perfection, the group
+  // analog of perfect-round, so revocable: a rescore that breaks it self-heals.
+  { key: 'group-guru', category: 'MILESTONE', scope: 'COMPETITION', metric: 'groupPerfect', tiers: single(1), icon: 'pi pi-th-large', revocable: true },
   { key: 'treble', category: 'TROPHY_META', scope: 'COMPETITION', metric: 'trophies', tiers: single(3) },
   { key: 'podium', category: 'TROPHY_META', scope: 'COMPETITION', metric: 'podium', tiers: single(1), revocable: true },
   // "Bad" badges (SHAME): earned by doing poorly. Excluded from the-collector so
