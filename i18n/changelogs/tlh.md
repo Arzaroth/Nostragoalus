@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.34.0] - 2026-07-12
+
 ### chelpu'
 
 - nab: nab. latlh ghItlhwI' nablIj vs nablIj yIvu'. ghItlhwI' De'vo', vu' yISuq: qup Suq lujeS 'Iv nIH, Qap-lujQaD-rap De'lIj, mI' Qav je rap rap, poH: nIH choH, chev tIn law' je.
