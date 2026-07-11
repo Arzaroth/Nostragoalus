@@ -114,7 +114,9 @@ export function computeHeadToHead(
 
   const divergences = matches
     .filter((m) => m.diverged)
-    .sort((x, y) => Math.abs(y.aPoints - y.bPoints) - Math.abs(x.aPoints - x.bPoints))
+    // matchId breaks a points-gap tie so which six survive the slice is stable
+    // across DB row order.
+    .sort((x, y) => Math.abs(y.aPoints - y.bPoints) - Math.abs(x.aPoints - x.bPoints) || x.matchId.localeCompare(y.matchId))
     .slice(0, MAX_DIVERGENCES)
 
   return {
@@ -136,7 +138,7 @@ export function computeHeadToHead(
 
 async function loadPlayer(db: AppDatabase, id: string): Promise<H2HPlayer | null> {
   const rows = await db
-    .select({ id: user.id, name: user.name, image: user.image, profilePrivate: user.profilePrivate })
+    .select({ id: user.id, name: user.name, image: user.image })
     .from(user)
     .where(eq(user.id, id))
     .limit(1)

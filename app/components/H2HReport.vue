@@ -15,19 +15,16 @@ const leader = computed(() => {
   return aPoints > bPoints ? 'a' : aPoints < bPoints ? 'b' : 'tie'
 })
 
-const CHART_W = 300
-const CHART_H = 100
+// Two cumulative-points series (A and B) over the shared sparkline geometry,
+// both scaled to the same max so the lead reads on one axis.
 const chart = computed(() => {
   const pts = props.data.overTime
-  const n = pts.length
+  const bands = sparkBands(pts)
   const maxY = Math.max(1, ...pts.map((r) => Math.max(r.aPoints, r.bPoints)))
-  const xAt = (i: number) => (n <= 1 ? 0 : (i / (n - 1)) * CHART_W)
-  const yAt = (v: number) => CHART_H - (v / maxY) * CHART_H
-  const lineFor = (key: 'aPoints' | 'bPoints') => pts.map((r, i) => `${xAt(i)},${yAt(r[key])}`).join(' ')
   return {
-    a: lineFor('aPoints'),
-    b: lineFor('bPoints'),
-    bands: pts.map((r, i) => ({ r, x: xAt(i), band: CHART_W / n })),
+    a: sparkLine(bands, (r) => r.aPoints, maxY),
+    b: sparkLine(bands, (r) => r.bPoints, maxY),
+    bands,
   }
 })
 </script>
@@ -73,7 +70,7 @@ const chart = computed(() => {
       <svg :viewBox="`0 0 ${300} ${100}`" preserveAspectRatio="none" class="w-full h-28 overflow-visible" role="img" :aria-label="t('h2h.leadTitle')">
         <polyline :points="chart.a" fill="none" :stroke="A_COLOR" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round" />
         <polyline :points="chart.b" fill="none" :stroke="B_COLOR" stroke-width="2" stroke-dasharray="4 3" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round" />
-        <rect v-for="(c, i) in chart.bands" :key="c.r.order" v-tooltip.top="`${c.r.label}: ${data.a.name} ${c.r.aPoints} · ${data.b.name} ${c.r.bPoints}`" :x="Math.max(0, c.x - c.band / 2)" y="0" :width="c.band" :height="100" fill="transparent" :data-round="i" />
+        <rect v-for="(c, i) in chart.bands" :key="c.item.order" v-tooltip.top="`${c.item.label}: ${data.a.name} ${c.item.aPoints} · ${data.b.name} ${c.item.bPoints}`" :x="Math.max(0, c.x - c.band / 2)" y="0" :width="c.band" :height="100" fill="transparent" :data-round="i" />
       </svg>
     </section>
 
