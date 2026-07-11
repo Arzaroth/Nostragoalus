@@ -57,6 +57,7 @@ use the indexes.
 | [best-scorer.md](features/best-scorer.md) | Golden Boot pick, goal-event-derived award. |
 | [stats.md](features/stats.md) | Player rankings tab: top scorers + top assists. |
 | [analytics.md](features/analytics.md) | Personal analytics: per-competition bias report on your own picks (mid-tournament). |
+| [head-to-head.md](features/head-to-head.md) | Head-to-head: compare two players over their shared scored picks. |
 | [leagues.md](features/leagues.md) | Competition-scoped groups, roles, visibility, SSO auto-join. |
 | [onboarding-tour.md](features/onboarding-tour.md) | One-time spotlight walk-through of the core actions for new players; replayable from the account menu. |
 | [connected-devices.md](features/connected-devices.md) | Account page lists active login sessions (device/IP/last-active) with per-device and bulk sign-out. |

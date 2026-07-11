@@ -16,8 +16,11 @@ works **mid-tournament**: it reads whatever scored picks exist so far.
   for a home-win bias and draw-blindness (predicting far fewer draws than happen).
 - **Team bias**: the teams the user most over-rates (predicted to win more than
   they did) and under-rates, gated to a minimum sample so a one-off doesn't rank.
-- **Accuracy by round**: a bar per round (taller = more points, brighter = more
-  accurate), in round sort order.
+- **Streak**: the run of consecutive correct picks (at least a right outcome) that
+  is still live at the most recent scored pick, plus the longest run anywhere in
+  the tournament. Hidden until a run of at least one exists.
+- **Accuracy by round**: an SVG sparkline of the correct-pick rate round by round,
+  in round sort order, with a per-round hover band (accuracy and points).
 - **Best call / biggest miss**: the top-scoring pick (tie broken toward the higher
   tier) and the miss with the largest goal error (tie broken toward a joker).
 - **Fergie time**: how the user's **real points** (base + crowd/odds rarity bonus,
@@ -38,6 +41,9 @@ works **mid-tournament**: it reads whatever scored picks exist so far.
   `computeAnalytics(competitionName, rows)`. All aggregation lives in that pure
   function, so the whole report is unit-tested without a database. Outcome
   derivation reuses `outcomeOf` from [`server/utils/scoring/tiers.ts`](../../server/utils/scoring/tiers.ts).
+  The streak is derived from the same rows, which the query orders by
+  `(kickoffTime, match.id)` so the trailing run is deterministic even when
+  group-finale matches kick off at the same time.
 - Fergie time is priced separately in [`analytics/fergie.ts`](../../server/utils/analytics/fergie.ts)
   (`computeFergie`), because it needs the whole field to re-run the rarity bonus,
   and passed into `computeAnalytics`. `getAnalytics` loads, only for the picked
@@ -64,12 +70,18 @@ works **mid-tournament**: it reads whatever scored picks exist so far.
 - DTO in [`#shared/types/analytics`](../../shared/types/analytics.ts).
 - Client: `app/composables/useAnalytics.ts` (vue-query, key `['analytics', slug]`)
   -> `app/pages/[competition]/analytics.vue` (signed-in gate + empty state) ->
-  presentational `app/components/AnalyticsReport.vue` (prop `data`, pure render,
-  CSS-width bars in the spirit of `ReactionBar.vue`).
+  presentational `app/components/AnalyticsReport.vue` (prop `data`, pure render).
+  The accuracy sparkline is drawn with the shared
+  [`app/utils/sparkline.ts`](../../app/utils/sparkline.ts) geometry helpers
+  (`sparkBands`/`sparkLine`/`sparkArea`), also used by the
+  [head-to-head](head-to-head.md) lead chart.
 - Nav: a signed-in-only "Analytics" link in `app/layouts/default.vue`'s `navLinks`.
 
 ## Notes
 
 - Not league-scoped: it reports the user's base picks across the competition.
 - i18n lives under the `analytics.*` namespace (plus `nav.analytics`) in all five
-  locales; the Fergie time card adds `analytics.fergie*` keys there.
+  locales; the Fergie time card adds `analytics.fergie*` keys and the streak adds
+  `analytics.streak*` there.
+- Related but distinct: [head-to-head](head-to-head.md) compares two players'
+  picks, where analytics reports on one.
