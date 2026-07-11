@@ -50,9 +50,13 @@ export interface PickHighlight {
   isJoker: boolean
 }
 
-// One match where a stoppage-time (added-time) goal changed the user's base
-// points, versus the score frozen at the end of regulation open play.
-export interface FergieSwing {
+// One picked match that had at least one added-time goal, and how the user's
+// real points (base + rarity bonus, joker included) moved on those goals. The
+// match is replayed goal by goal in chronological order, and every added-time
+// goal's own points delta is banked - so a match that gained then lost (e.g. a
+// score you nailed in stoppage time, then a later stoppage goal broke it) shows
+// on both sides while its net telescopes to the full-time-minus-baseline swing.
+export interface FergieMatch {
   home: string
   away: string
   homeCode: string | null
@@ -60,29 +64,36 @@ export interface FergieSwing {
   predicted: string
   // Full-time score, added time included.
   actual: string
-  // Score with every added-time goal stripped out.
-  preStoppage: string
-  // Base-points delta (full-time minus pre-stoppage): positive = added time
-  // paid the user, negative = it cost them.
-  swing: number
+  // Real points the added-time goals in this match won the user (sum of the
+  // positive per-goal deltas) ...
+  gained: number
+  // ... and cost (sum of the negative deltas, as a positive number).
+  lost: number
+  // gained - lost.
+  net: number
   isJoker: boolean
 }
 
-// "Fergie time": how the user's base points moved on goals scored in added
-// time, aggregated over the matches where such a goal actually fell. Only
-// matches whose recorded goals reconcile with the full-time score count, so a
-// gap in the goal feed never invents a swing.
+// "Fergie time": how the user's real points (base + crowd/odds rarity bonus,
+// joker applied) moved on goals scored in added time, aggregated over the
+// matches where such a goal fell. Each match is replayed chronologically and
+// every added-time goal is priced with the full scoring engine against the
+// whole field. Only matches whose recorded goals reconcile with the full-time
+// score count, so a gap in the goal feed never invents a swing.
 export interface FergieTime {
   // Picked matches that had at least one added-time goal (reconciled).
   matches: number
   // Total added-time goals across those matches.
   goals: number
-  // pointsWon - pointsLost: net base points added time was worth to the user.
+  // pointsWon - pointsLost: net real points added time was worth to the user.
   netPoints: number
   pointsWon: number
   pointsLost: number
-  biggestGain: FergieSwing | null
-  biggestLoss: FergieSwing | null
+  biggestGain: FergieMatch | null
+  biggestLoss: FergieMatch | null
+  // Every match with added-time point movement (gained or lost non-zero),
+  // most-impactful first, for the per-match breakdown.
+  breakdown: FergieMatch[]
 }
 
 export interface AnalyticsResponse {

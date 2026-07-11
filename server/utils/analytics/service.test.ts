@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { eq } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
-import { match, prediction, round } from '../../../db/schema'
+import { match, prediction, round, scoringConfig } from '../../../db/schema'
 import { createTestDb } from '../../../tests/db'
 import { makeGoalEvent, makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
 import { ensureDefaultScoringConfig } from '../scoring/store'
@@ -22,8 +22,6 @@ function row(o: Partial<AnalyticsPickRow> = {}): AnalyticsPickRow {
     awayCode: 'AWY',
     roundLabel: 'Group 1',
     roundOrder: 1,
-    stoppageHome: 0,
-    stoppageAway: 0,
     ...o,
   }
 }
@@ -200,97 +198,20 @@ describe('computeAnalytics', () => {
     expect(nullRow.bestCall?.home).toBe('Keep')
   })
 
-  describe('fergie time', () => {
-    it('is empty when no pick had an added-time goal', () => {
-      const r = computeAnalytics('C', [row(), row({ homeGoals: 2, awayGoals: 2 })])
-      expect(r.fergieTime).toEqual({
-        matches: 0,
-        goals: 0,
-        netPoints: 0,
-        pointsWon: 0,
-        pointsLost: 0,
-        biggestGain: null,
-        biggestLoss: null,
-      })
-    })
-
-    it('banks base points won when a stoppage goal rescues the pick', () => {
-      // Picked 2-1 (home win). Finished 2-1 with a 90'+3' home goal, so pre-
-      // stoppage it was 1-1 (a draw = MISS). Full time is EXACT: swing +3.
-      const r = computeAnalytics('C', [
-        row({ homeGoals: 2, awayGoals: 1, actualHome: 2, actualAway: 1, stoppageHome: 1, stoppageAway: 0 }),
-      ])
-      expect(r.fergieTime.matches).toBe(1)
-      expect(r.fergieTime.goals).toBe(1)
-      expect(r.fergieTime.pointsWon).toBe(3)
-      expect(r.fergieTime.pointsLost).toBe(0)
-      expect(r.fergieTime.netPoints).toBe(3)
-      expect(r.fergieTime.biggestGain).toMatchObject({ actual: '2-1', preStoppage: '1-1', swing: 3 })
-      expect(r.fergieTime.biggestLoss).toBeNull()
-    })
-
-    it('banks base points lost when a stoppage goal breaks the pick', () => {
-      // Picked 1-1 (draw). Pre-stoppage it was 1-1 (EXACT = 3). A 90'+2' away
-      // goal made it 1-2, an away win = MISS: swing -3.
-      const r = computeAnalytics('C', [
-        row({ homeGoals: 1, awayGoals: 1, actualHome: 1, actualAway: 2, stoppageHome: 0, stoppageAway: 1 }),
-      ])
-      expect(r.fergieTime.pointsWon).toBe(0)
-      expect(r.fergieTime.pointsLost).toBe(3)
-      expect(r.fergieTime.netPoints).toBe(-3)
-      expect(r.fergieTime.biggestLoss).toMatchObject({ actual: '1-2', preStoppage: '1-1', swing: -3 })
-      expect(r.fergieTime.biggestGain).toBeNull()
-    })
-
-    it('counts a stoppage goal that leaves the tier unchanged but scores no swing', () => {
-      // Picked 0-0, finished 2-0 with one 90'+1' home goal: MISS before (0-0 vs
-      // 1-0) and MISS after. The goal is counted, the swing is zero.
-      const r = computeAnalytics('C', [
-        row({ homeGoals: 0, awayGoals: 0, actualHome: 2, actualAway: 0, stoppageHome: 1, stoppageAway: 0 }),
-      ])
-      expect(r.fergieTime.matches).toBe(1)
-      expect(r.fergieTime.goals).toBe(1)
-      expect(r.fergieTime.netPoints).toBe(0)
-      expect(r.fergieTime.biggestGain).toBeNull()
-      expect(r.fergieTime.biggestLoss).toBeNull()
-    })
-
-    it('nets wins against losses and keeps the largest of each as the highlights', () => {
-      const r = computeAnalytics('C', [
-        row({ homeGoals: 2, awayGoals: 1, actualHome: 2, actualAway: 1, stoppageHome: 1, homeTeam: 'Win' }),
-        row({ homeGoals: 1, awayGoals: 1, actualHome: 1, actualAway: 2, stoppageAway: 1, homeTeam: 'Lose' }),
-      ])
-      expect(r.fergieTime.matches).toBe(2)
-      expect(r.fergieTime.netPoints).toBe(0)
-      expect(r.fergieTime.biggestGain?.home).toBe('Win')
-      expect(r.fergieTime.biggestLoss?.home).toBe('Lose')
-    })
-
-    it('keeps the largest of several gains and losses as the highlights', () => {
-      const r = computeAnalytics('C', [
-        row({ homeGoals: 0, awayGoals: 3, actualHome: 1, actualAway: 2, stoppageAway: 1, homeTeam: 'GainSmall' }), // +1
-        row({ homeGoals: 2, awayGoals: 1, actualHome: 2, actualAway: 1, stoppageHome: 1, homeTeam: 'GainBig' }), // +3
-        row({ homeGoals: 0, awayGoals: 3, actualHome: 1, actualAway: 2, stoppageAway: 1, homeTeam: 'GainSmall2' }), // +1, no upgrade
-        row({ homeGoals: 0, awayGoals: 3, actualHome: 2, actualAway: 2, stoppageHome: 1, homeTeam: 'LossSmall' }), // -1
-        row({ homeGoals: 1, awayGoals: 1, actualHome: 1, actualAway: 2, stoppageAway: 1, homeTeam: 'LossBig' }), // -3
-        row({ homeGoals: 0, awayGoals: 3, actualHome: 2, actualAway: 2, stoppageHome: 1, homeTeam: 'LossSmall2' }), // -1, no upgrade
-      ])
-      expect(r.fergieTime.matches).toBe(6)
-      expect(r.fergieTime.pointsWon).toBe(5)
-      expect(r.fergieTime.pointsLost).toBe(5)
-      expect(r.fergieTime.netPoints).toBe(0)
-      expect(r.fergieTime.biggestGain?.home).toBe('GainBig')
-      expect(r.fergieTime.biggestLoss?.home).toBe('LossBig')
-    })
-
-    it('scales the swing to a custom base-points config', () => {
-      const r = computeAnalytics(
-        'C',
-        [row({ homeGoals: 2, awayGoals: 1, actualHome: 2, actualAway: 1, stoppageHome: 1 })],
-        { exact: 10, diff: 5, outcome: 2, miss: 0 },
-      )
-      expect(r.fergieTime.netPoints).toBe(10)
-    })
+  it('carries a precomputed fergie summary through unchanged', () => {
+    const fergie = {
+      matches: 1,
+      goals: 1,
+      netPoints: 3,
+      pointsWon: 3,
+      pointsLost: 0,
+      biggestGain: null,
+      biggestLoss: null,
+      breakdown: [],
+    }
+    expect(computeAnalytics('C', [row()], fergie).fergieTime).toBe(fergie)
+    // Also on the empty path.
+    expect(computeAnalytics('C', [], fergie).fergieTime).toBe(fergie)
   })
 })
 
@@ -355,7 +276,7 @@ describe('getAnalytics', () => {
     expect(r.bestCall).toMatchObject({ predicted: '2-0', actual: '2-0' })
   })
 
-  it('credits fergie time when reconciled goals include an added-time strike', async () => {
+  it('prices fergie time from the real replayed score of a reconciled match', async () => {
     const c = await seedCompetition(db)
     const u = await makeUser(db, 'alice')
     const g1 = await groupRound(c, 1)
@@ -368,41 +289,104 @@ describe('getAnalytics', () => {
       winner: 'HOME',
       scoringState: 'SCORED',
     })
-    const pid = await makePrediction(db, { userId: u, matchId: m, roundId: g1, home: 2, away: 1 })
-    await db.update(prediction).set({ baseTier: 'EXACT', totalPoints: 3, scoredAt: new Date() }).where(eq(prediction.id, pid))
+    // Locked, so the pick joins the field the fergie replay re-scores against.
+    const pid = await makePrediction(db, { userId: u, matchId: m, roundId: g1, home: 2, away: 1, lockedAt: new Date() })
+    await db.update(prediction).set({ baseTier: 'EXACT', totalPoints: 3, basePoints: 3, scoredAt: new Date() }).where(eq(prediction.id, pid))
     await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'HOME', minute: "30'" })
     await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'AWAY', minute: "60'" })
     await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'HOME', minute: "90'+3'" })
 
     const r = await getAnalytics(db, { competitionId: c, userId: u })
-    // Pre-stoppage 1-1 (a draw) missed the 2-1 pick; the winner made it EXACT.
-    expect(r.fergieTime).toMatchObject({ matches: 1, goals: 1, pointsWon: 3, netPoints: 3 })
-    expect(r.fergieTime.biggestGain).toMatchObject({ actual: '2-1', preStoppage: '1-1', swing: 3 })
+    // Before the 90'+3' winner it was 1-1 (a draw = 0 for the 2-1 pick); after it
+    // was 2-1 (exact = 3). Real-points swing +3.
+    expect(r.fergieTime).toMatchObject({ matches: 1, goals: 1, pointsWon: 3, pointsLost: 0, netPoints: 3 })
+    expect(r.fergieTime.biggestGain).toMatchObject({ actual: '2-1', predicted: '2-1', gained: 3, net: 3 })
+    expect(r.fergieTime.breakdown).toHaveLength(1)
   })
 
-  it('credits an away stoppage-time goal against a home-leaning pick', async () => {
+  it('shows a match that was nailed in added time then lost to a later added-time goal', async () => {
     const c = await seedCompetition(db)
     const u = await makeUser(db, 'alice')
     const g1 = await groupRound(c, 1)
+    // 2-0 at 90', then 90'+5' (away) makes it 2-1 - the user's exact 2-1 - then
+    // 90'+6' (home) makes it 3-1. Gained the exact, then lost it.
     const m = await makeMatch(db, {
       competitionId: c,
       roundId: g1,
       kickoffTime: new Date('2026-06-01T12:00:00Z'),
-      fullTimeHome: 1,
-      fullTimeAway: 2,
-      winner: 'AWAY',
+      fullTimeHome: 3,
+      fullTimeAway: 1,
+      winner: 'HOME',
       scoringState: 'SCORED',
     })
-    const pid = await makePrediction(db, { userId: u, matchId: m, roundId: g1, home: 1, away: 2 })
-    await db.update(prediction).set({ baseTier: 'EXACT', totalPoints: 3, scoredAt: new Date() }).where(eq(prediction.id, pid))
-    await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'HOME', minute: "20'" })
-    await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'AWAY', minute: "55'" })
-    await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'AWAY', minute: "90'+4'" })
+    const pid = await makePrediction(db, { userId: u, matchId: m, roundId: g1, home: 2, away: 1, lockedAt: new Date() })
+    await db.update(prediction).set({ baseTier: 'OUTCOME', totalPoints: 1, basePoints: 1, scoredAt: new Date() }).where(eq(prediction.id, pid))
+    await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'HOME', minute: "60'" })
+    await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'HOME', minute: "82'" })
+    await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'AWAY', minute: "90'+5'" })
+    await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'HOME', minute: "90'+6'" })
 
     const r = await getAnalytics(db, { competitionId: c, userId: u })
-    // Pre-stoppage 1-1 (a draw) missed the 1-2 pick; the late away goal made it EXACT.
-    expect(r.fergieTime).toMatchObject({ matches: 1, goals: 1, netPoints: 3 })
-    expect(r.fergieTime.biggestGain).toMatchObject({ actual: '1-2', preStoppage: '1-1', swing: 3 })
+    // +2 (outcome->exact on the 2-1) then -2 (exact->outcome on the 3-1); net 0
+    // but both sides visible, and the match still shows in the breakdown.
+    expect(r.fergieTime).toMatchObject({ matches: 1, goals: 2, pointsWon: 2, pointsLost: 2, netPoints: 0 })
+    expect(r.fergieTime.breakdown).toHaveLength(1)
+    expect(r.fergieTime.breakdown[0]).toMatchObject({ gained: 2, lost: 2, net: 0 })
+  })
+
+  it('doubles a joker pick swing on the knockout stages that force the multiplier', async () => {
+    const c = await seedCompetition(db)
+    const u = await makeUser(db, 'alice')
+    // FINAL forces the joker multiplier on everyone (countsDouble).
+    const [finalRound] = await db
+      .insert(round)
+      .values({ competitionId: c, kind: 'KNOCKOUT', stage: 'FINAL', label: 'Final', sortOrder: 99 })
+      .returning({ id: round.id })
+    const m = await makeMatch(db, {
+      competitionId: c,
+      roundId: finalRound.id,
+      stage: 'FINAL',
+      kickoffTime: new Date('2026-07-01T12:00:00Z'),
+      fullTimeHome: 2,
+      fullTimeAway: 1,
+      winner: 'HOME',
+      scoringState: 'SCORED',
+    })
+    const pid = await makePrediction(db, { userId: u, matchId: m, roundId: finalRound.id, home: 2, away: 1, lockedAt: new Date() })
+    await db.update(prediction).set({ baseTier: 'EXACT', totalPoints: 6, basePoints: 3, scoredAt: new Date() }).where(eq(prediction.id, pid))
+    await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'HOME', minute: "30'" })
+    await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'AWAY', minute: "60'" })
+    await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'HOME', minute: "90'+3'" })
+
+    const r = await getAnalytics(db, { competitionId: c, userId: u })
+    // Base swing +3, doubled by the forced final joker -> +6.
+    expect(r.fergieTime).toMatchObject({ matches: 1, netPoints: 6 })
+  })
+
+  it('prices fergie time under an ODDS scoring config (resolving closing odds per outcome)', async () => {
+    const c = await seedCompetition(db)
+    const u = await makeUser(db, 'alice')
+    const g1 = await groupRound(c, 1)
+    // Flip the active config to ODDS: exercises the per-outcome odds resolution.
+    // No odds snapshots exist, so the odds bonus is 0 and the swing is base only.
+    await db.update(scoringConfig).set({ bonusSource: 'ODDS' }).where(eq(scoringConfig.isActive, true))
+    const m = await makeMatch(db, {
+      competitionId: c,
+      roundId: g1,
+      kickoffTime: new Date('2026-06-01T12:00:00Z'),
+      fullTimeHome: 2,
+      fullTimeAway: 1,
+      winner: 'HOME',
+      scoringState: 'SCORED',
+    })
+    const pid = await makePrediction(db, { userId: u, matchId: m, roundId: g1, home: 2, away: 1, lockedAt: new Date() })
+    await db.update(prediction).set({ baseTier: 'EXACT', totalPoints: 3, basePoints: 3, scoredAt: new Date() }).where(eq(prediction.id, pid))
+    await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'HOME', minute: "30'" })
+    await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'AWAY', minute: "60'" })
+    await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'HOME', minute: "90'+3'" })
+
+    const r = await getAnalytics(db, { competitionId: c, userId: u })
+    expect(r.fergieTime).toMatchObject({ matches: 1, netPoints: 3 })
   })
 
   it('ignores added-time goals when the goal feed disagrees with the final score', async () => {
@@ -418,10 +402,9 @@ describe('getAnalytics', () => {
       winner: 'HOME',
       scoringState: 'SCORED',
     })
-    const pid = await makePrediction(db, { userId: u, matchId: m, roundId: g1, home: 2, away: 1 })
-    await db.update(prediction).set({ baseTier: 'EXACT', totalPoints: 3, scoredAt: new Date() }).where(eq(prediction.id, pid))
-    // Only two recorded goals for a 2-1 result, one with an unknown minute:
-    // cannot trust the timeline, so no swing.
+    const pid = await makePrediction(db, { userId: u, matchId: m, roundId: g1, home: 2, away: 1, lockedAt: new Date() })
+    await db.update(prediction).set({ baseTier: 'EXACT', totalPoints: 3, basePoints: 3, scoredAt: new Date() }).where(eq(prediction.id, pid))
+    // Only two recorded goals for a 2-1 result: cannot trust the timeline.
     await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'HOME', minute: "90'+3'" })
     await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'AWAY', minute: null })
 

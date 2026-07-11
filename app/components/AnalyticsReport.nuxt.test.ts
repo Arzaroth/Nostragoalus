@@ -31,12 +31,16 @@ const DATA: AnalyticsResponse = {
   worstMiss: { home: 'Spain', away: 'Italy', homeCode: 'ESP', awayCode: 'ITA', predicted: '0-0', actual: '3-3', points: 0, tier: 'miss', isJoker: false },
   fergieTime: {
     matches: 2,
-    goals: 2,
+    goals: 3,
     netPoints: 1,
     pointsWon: 3,
     pointsLost: 2,
-    biggestGain: { home: 'France', away: 'Brazil', homeCode: 'FRA', awayCode: 'BRA', predicted: '2-1', actual: '2-1', preStoppage: '1-1', swing: 3, isJoker: false },
-    biggestLoss: { home: 'Spain', away: 'Italy', homeCode: 'ESP', awayCode: 'ITA', predicted: '1-1', actual: '1-2', preStoppage: '1-1', swing: -2, isJoker: false },
+    biggestGain: { home: 'France', away: 'Brazil', homeCode: 'FRA', awayCode: 'BRA', predicted: '2-1', actual: '2-1', gained: 3, lost: 0, net: 3, isJoker: false },
+    biggestLoss: { home: 'Spain', away: 'Italy', homeCode: 'ESP', awayCode: 'ITA', predicted: '1-1', actual: '1-2', gained: 0, lost: 2, net: -2, isJoker: false },
+    breakdown: [
+      { home: 'France', away: 'Brazil', homeCode: 'FRA', awayCode: 'BRA', predicted: '2-1', actual: '2-1', gained: 3, lost: 0, net: 3, isJoker: false },
+      { home: 'Spain', away: 'Italy', homeCode: 'ESP', awayCode: 'ITA', predicted: '1-1', actual: '1-2', gained: 0, lost: 2, net: -2, isJoker: false },
+    ],
   },
 }
 
@@ -104,17 +108,26 @@ describe('AnalyticsReport', () => {
     expect(w.text()).not.toContain('Biggest miss')
   })
 
-  it('shows the fergie-time card with the signed net swing', async () => {
+  it('shows the fergie-time card with the signed net and the won/lost split', async () => {
     const w = await mount()
     expect(w.text()).toContain('Fergie time')
     expect(w.find('[data-test="fergie-net"]').text()).toBe('+1')
-    expect(w.text()).toContain('Biggest gift')
-    expect(w.text()).toContain('Cruellest twist')
+    expect(w.text()).toContain('+3 won')
+    expect(w.text()).toContain('-2 lost')
+  })
+
+  it('lists every match with added-time point movement in the breakdown', async () => {
+    const w = await mount()
+    const items = w.find('[data-test="fergie-breakdown"]').findAll('li')
+    expect(items).toHaveLength(2)
+    expect(items[0].text()).toContain('France')
+    expect(items[0].text()).toContain('(+3)')
+    expect(items[1].text()).toContain('(-2)')
   })
 
   it('hides the fergie-time card when no pick had an added-time goal', async () => {
     const w = await mount({
-      fergieTime: { matches: 0, goals: 0, netPoints: 0, pointsWon: 0, pointsLost: 0, biggestGain: null, biggestLoss: null },
+      fergieTime: { matches: 0, goals: 0, netPoints: 0, pointsWon: 0, pointsLost: 0, biggestGain: null, biggestLoss: null, breakdown: [] },
     })
     expect(w.find('[data-test="fergie-time"]').exists()).toBe(false)
   })

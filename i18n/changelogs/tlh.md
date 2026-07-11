@@ -5,6 +5,10 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### choHlu'pu'
+
+- DaH poH chel ghantoH lI'qu' juvlaw' - ghantoH nobqu' joker je naQ, ghantoH bIH neH ghobe' - 'ej maw' vItlhutlh may' Hoch vItlhutlhqa'. poH chelDaq mI' DawIvpu', 'ach maw' tlha' DanatlhchoH: nob 'ej natlh cha'. tlhoy' De' Suq / natlh 'ang, 'ej may' Hoch mI' vImuvpu' poH chelDaq lISta'bogh cha'.
+
 ## [2.31.0] - 2026-07-11
 
 ### chelpu'

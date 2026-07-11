@@ -703,11 +703,10 @@
     "worstMiss": "Biggest miss",
     "youPicked": "You picked {score}",
     "fergieTitle": "Fergie time",
-    "fergieHint": "Base points added-time goals won or cost you, versus the score at the end of regulation.",
-    "fergieSummary": "{goals} added-time goals across {matches} matches · +{won} won, -{lost} lost.",
-    "fergieGain": "Biggest gift",
-    "fergieLoss": "Cruellest twist",
-    "fergiePre": "Was {score} before added time"
+    "fergieHint": "Points added-time goals won or cost you, replayed goal by goal with the rarity bonus. One stoppage can gift and rob you in the same match.",
+    "fergieSummary": "{goals} added-time goals across {matches} matches",
+    "fergieWon": "won",
+    "fergieLost": "lost"
   },
   "leaderboard": {
     "title": "Ranking",

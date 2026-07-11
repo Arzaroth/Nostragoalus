@@ -5,6 +5,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Modifié
+
+- Le temps additionnel mesure désormais vos vrais points - bonus de rareté et joker compris, pas seulement les points de base - et rejoue chaque match but par but : un score décroché dans le temps additionnel puis reperdu sur un but plus tardif affiche à la fois le gain et la perte. La carte détaille maintenant la répartition gagnés / perdus derrière le net et liste chaque match dont les points ont bougé dans le temps additionnel.
+
 ## [2.31.0] - 2026-07-11
 
 ### Ajouté
