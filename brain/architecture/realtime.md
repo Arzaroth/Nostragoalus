@@ -54,14 +54,16 @@ fire-and-forget after a successful mutation or during a scheduled task.
   (freshest) and refetches `['bracket']` on `scores:changed` for advancement and
   live group-qualifier projections; a knockout match finishing busts that cache
   from `scores:poll` so the next slot fills without waiting out the TTL.
-- The match detail header shows a score reconciled from two clocks: the WS
-  `match:update` value (the football-data `scores:poll`, ~2 min) and the goal
-  count off the FIFA detail/insights feed (~45 s, VAR-aware). A plain max of the
-  two can never drop when VAR disallows a goal (the stale-high WS side pins it),
-  so `app/utils/live-score.ts` arbitrates by recency instead: whichever source
-  moved since the last tick wins, both-moved ties go to the faster feed, and an
-  unready feed is held so a fetch gap can't flicker the score to 0. Wired in
-  `app/pages/[competition]/matches/[id].vue` (`syncLiveScore` / `homeScore`).
+- The match detail header must agree with the goal event list beneath it. Both
+  come from FIFA feeds on different clocks: the goal count off the detail/insights
+  feed (~45 s, VAR-aware, the same source the list renders) and the WS
+  `match:update` value patched from the football-data `scores:poll` (~2 min). A
+  plain max of the two can never drop when VAR disallows a goal (the stale-high WS
+  side pins it), and recency arbitration can't tell a stale WS poll from a fresh
+  goal - so `app/utils/live-score.ts` (`liveHeaderScore`) makes the fresher goal
+  feed authoritative once it has landed, falling back to the WS/stored score only
+  before it arrives. A struck-off goal then drops from the header and the list in
+  lockstep. Wired in `app/pages/[competition]/matches/[id].vue` (`homeScore`).
 
 ## Client side
 
