@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { buildTimeline, h2hSummaryOf, liveClockSpec } from '../../../utils/match-view'
-import { seedLiveScore, reconcileLiveScore, type LiveScoreState, type LiveScoreSources } from '../../../utils/live-score'
+import { liveHeaderScore } from '../../../utils/live-score'
 import { visibleMediaForStatus, type MatchMediaKind } from '#shared/match-media'
 import { EXTRA_TIME_BREAK_MINUTE, matchHasStarted, matchIsInPlay } from '#shared/types/match'
 const { t, locale } = useI18n()
@@ -179,45 +179,25 @@ const isLive = computed(() => matchIsInPlay(status.value))
 const goals = computed<any[]>(() => (detail.value?.goals ?? insights.value?.goals ?? []) as any[])
 const homeGoalEvents = computed(() => goals.value.filter((g: any) => g.side === 'HOME'))
 const awayGoalEvents = computed(() => goals.value.filter((g: any) => g.side === 'AWAY'))
-// While live, the header score patches over WS from the football-data poll (~2 min)
-// while the goal event list comes from the FIFA detail feed (~45 s). A plain max of
-// the two never drops when VAR disallows a goal - the stale-high WS side pins it.
-// Reconcile by recency instead (see utils/live-score): the source that moved since
-// the last tick wins, so a disallow on the fast feed drops the header even while the
-// WS score is still high. Closure state mirrors the lastScoreTotal pattern below;
-// the watch keeps it fed. The stored result stays authoritative once finished.
+// While live, the header must match the goal event list beneath it. The list comes
+// from the FIFA detail feed (~45 s); the WS/stored score trails it via the
+// football-data poll (~2 min). Lead with the feed count once it has landed (see
+// utils/live-score) so a VAR disallow drops the header and the list together, and a
+// stale WS poll can't re-raise a struck-off goal. The stored result stays
+// authoritative once the match is finished.
 const feedReady = computed(() => detail.value != null || insights.value != null)
-const homeLive = ref<LiveScoreState | null>(null)
-const awayLive = ref<LiveScoreState | null>(null)
-function syncLiveScore() {
-  if (!isLive.value) {
-    homeLive.value = null
-    awayLive.value = null
-    return
-  }
-  const ready = feedReady.value
-  const hs: LiveScoreSources = { ws: live.value?.fullTimeHome ?? m.value?.fullTimeHome ?? null, feed: homeGoalEvents.value.length, feedReady: ready }
-  const as: LiveScoreSources = { ws: live.value?.fullTimeAway ?? m.value?.fullTimeAway ?? null, feed: awayGoalEvents.value.length, feedReady: ready }
-  homeLive.value = homeLive.value ? reconcileLiveScore(homeLive.value, hs) : seedLiveScore(hs)
-  awayLive.value = awayLive.value ? reconcileLiveScore(awayLive.value, as) : seedLiveScore(as)
-}
-watch(
-  [isLive, () => live.value?.fullTimeHome, () => live.value?.fullTimeAway, () => homeGoalEvents.value.length, () => awayGoalEvents.value.length, feedReady],
-  syncLiveScore,
-  { immediate: true },
-)
 const homeScore = computed(() => {
   const stored = live.value?.fullTimeHome ?? m.value?.fullTimeHome ?? null
-  return isLive.value ? (homeLive.value?.value ?? stored) : stored
+  return isLive.value ? liveHeaderScore(homeGoalEvents.value.length, stored, feedReady.value) : stored
 })
 const awayScore = computed(() => {
   const stored = live.value?.fullTimeAway ?? m.value?.fullTimeAway ?? null
-  return isLive.value ? (awayLive.value?.value ?? stored) : stored
+  return isLive.value ? liveHeaderScore(awayGoalEvents.value.length, stored, feedReady.value) : stored
 })
-// Celebrate off the score the header actually shows (recency-reconciled, above)
-// so the pixel goal fires the moment the scoreline moves, not a WS poll later - and
-// a VAR disallow that drops the score never fires it. The first non-null reading
-// just seeds the baseline, so opening a match already in play doesn't set it off.
+// Celebrate off the score the header actually shows (feed-led, above) so the pixel
+// goal fires as the scoreline moves - and a VAR disallow that drops the score never
+// fires it. The first non-null reading just seeds the baseline, so opening a match
+// already in play doesn't set it off.
 const scoreTotal = computed(() => (homeScore.value == null || awayScore.value == null ? null : homeScore.value + awayScore.value))
 let lastScoreTotal: number | null = null
 watch(scoreTotal, (now) => {

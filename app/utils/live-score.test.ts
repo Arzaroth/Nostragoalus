@@ -1,59 +1,29 @@
 import { describe, it, expect } from 'vitest'
-import { seedLiveScore, reconcileLiveScore, type LiveScoreState } from './live-score'
+import { liveHeaderScore } from './live-score'
 
-describe('seedLiveScore', () => {
-  it('takes the higher of ws and feed so a match already in play does not under-report', () => {
-    expect(seedLiveScore({ ws: 2, feed: 1, feedReady: true })).toEqual({ value: 2, ws: 2, feed: 1 })
-    expect(seedLiveScore({ ws: 1, feed: 2, feedReady: true })).toEqual({ value: 2, ws: 1, feed: 2 })
+describe('liveHeaderScore', () => {
+  it('uses the goal feed count once the feed has landed', () => {
+    expect(liveHeaderScore(2, 2, true)).toBe(2)
+    // A 0-0 with the feed present reads 0, not the fallback.
+    expect(liveHeaderScore(0, 0, true)).toBe(0)
   })
 
-  it('treats a null ws as zero', () => {
-    expect(seedLiveScore({ ws: null, feed: 1, feedReady: true })).toEqual({ value: 1, ws: 0, feed: 1 })
+  it('drops with the feed when VAR disallows a goal, ignoring a stale-high ws score', () => {
+    // The feed has corrected to 1; the WS/football-data score still trails at 2.
+    expect(liveHeaderScore(1, 2, true)).toBe(1)
   })
 
-  it('ignores the feed until it is ready', () => {
-    expect(seedLiveScore({ ws: 1, feed: 3, feedReady: false })).toEqual({ value: 1, ws: 1, feed: 0 })
-  })
-})
-
-describe('reconcileLiveScore', () => {
-  const seed: LiveScoreState = { value: 2, ws: 2, feed: 2 }
-
-  it('drops the score when VAR removes a goal from the feed while ws is still stale-high', () => {
-    // The disallow lands on the 45 s feed first; ws is unchanged at 2.
-    const after = reconcileLiveScore(seed, { ws: 2, feed: 1, feedReady: true })
-    expect(after.value).toBe(1)
-    // ws poll later catches up to 1 - no change, stays 1.
-    expect(reconcileLiveScore(after, { ws: 1, feed: 1, feedReady: true }).value).toBe(1)
+  it('leads a fresh goal the WS score has not caught yet', () => {
+    expect(liveHeaderScore(2, 1, true)).toBe(2)
   })
 
-  it('leads a fresh goal on the feed before the ws poll catches up', () => {
-    const state: LiveScoreState = { value: 1, ws: 1, feed: 1 }
-    expect(reconcileLiveScore(state, { ws: 1, feed: 2, feedReady: true }).value).toBe(2)
+  it('falls back to the WS/stored score before the feed is ready', () => {
+    expect(liveHeaderScore(0, 2, false)).toBe(2)
+    // A not-yet-fetched feed reads 0, but feedReady=false means it is ignored.
+    expect(liveHeaderScore(0, 0, false)).toBe(0)
   })
 
-  it('leads a fresh goal on ws when the feed has not parsed the scorer yet', () => {
-    const state: LiveScoreState = { value: 1, ws: 1, feed: 1 }
-    expect(reconcileLiveScore(state, { ws: 2, feed: 1, feedReady: true }).value).toBe(2)
-  })
-
-  it('prefers the faster feed when both move in the same tick', () => {
-    const state: LiveScoreState = { value: 1, ws: 1, feed: 1 }
-    // ws jumps to 3 (a stale double-poll) while the feed says 2 - trust the feed.
-    expect(reconcileLiveScore(state, { ws: 3, feed: 2, feedReady: true }).value).toBe(2)
-  })
-
-  it('holds steady when neither source changed', () => {
-    expect(reconcileLiveScore(seed, { ws: 2, feed: 2, feedReady: true })).toEqual(seed)
-  })
-
-  it('holds a null ws at its last reading', () => {
-    const state: LiveScoreState = { value: 2, ws: 2, feed: 2 }
-    expect(reconcileLiveScore(state, { ws: null, feed: 2, feedReady: true })).toEqual(state)
-  })
-
-  it('ignores a transient unready feed so a fetch gap cannot flicker the score to zero', () => {
-    const state: LiveScoreState = { value: 2, ws: 2, feed: 2 }
-    expect(reconcileLiveScore(state, { ws: 2, feed: 0, feedReady: false })).toEqual(state)
+  it('falls back to 0 when the feed is unready and there is no WS score yet', () => {
+    expect(liveHeaderScore(0, null, false)).toBe(0)
   })
 })

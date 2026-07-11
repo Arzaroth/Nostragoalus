@@ -416,3 +416,17 @@ feature/architecture doc that implements it.
   re-keying everyone) and would throw away recoverable history for no confidentiality
   gain - the changed key is already gated behind the safety-number acknowledge, which
   is the real protection. See [features/chat.md](features/chat.md#identity-and-recovery).
+- **The live match header score is the FIFA goal-feed count, not the WS scoreboard,
+  once the feed has landed.** The header sits above the goal event list and must
+  agree with it; the list is rendered from the detail/insights goal feed (~45 s). The
+  WS/football-data score (~2 min) trails it. We first tried `Math.max(ws, feedCount)`
+  (never drops on a VAR disallow - the stale-high WS pins it) then recency arbitration
+  (a stale WS poll delivering the pre-disallow value is indistinguishable from a fresh
+  goal, so it re-raises the struck-off score all the same). Neither can hold "the
+  header matches the list" because they let a lagging scoreboard number win. The feed
+  is strictly fresher and is the list's own source, so `liveHeaderScore`
+  (`app/utils/live-score.ts`) makes it authoritative when ready, WS/stored only as the
+  pre-feed fallback. Accepted tradeoff: if the feed genuinely omits a goal the
+  scoreboard counts, the header under-reports - but it then still matches the list
+  beneath it, which is the property users actually notice. See
+  [architecture/realtime.md](architecture/realtime.md).
