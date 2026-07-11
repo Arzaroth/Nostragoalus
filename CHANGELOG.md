@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Changed
+
+- Fergie time now measures your real points - the rarity bonus and joker included, not just base points - and replays each match goal by goal, so a score you nailed in stoppage time and then lost to a later goal shows both the gain and the loss. The card now spells out the won / lost split behind the net and lists every match whose points moved in added time.
+
 ## [2.31.0] - 2026-07-11
 
 ### Added

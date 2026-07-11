@@ -63,4 +63,7 @@ test('the analytics page reports fergie time won on a stoppage-time winner', asy
   const fergie = page.locator('[data-test=fergie-time]')
   await expect(fergie).toBeVisible({ timeout: 10_000 })
   await expect(fergie.locator('[data-test=fergie-net]')).toHaveText('+3')
+  // The won/lost split and the per-match breakdown, not just the net.
+  await expect(fergie.getByText('+3 won')).toBeVisible()
+  await expect(fergie.locator('[data-test=fergie-breakdown] li')).toHaveCount(1)
 })

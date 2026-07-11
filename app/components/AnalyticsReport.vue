@@ -35,9 +35,8 @@ function biasWidth(t: TeamBias) {
 const fergie = computed(() => props.data.fergieTime)
 // Signed point label, e.g. "+3" / "-2" / "0".
 const signedPts = (n: number) => `${n > 0 ? '+' : ''}${n}`
-const fergieColor = computed(() =>
-  fergie.value.netPoints > 0 ? 'var(--ng-success)' : fergie.value.netPoints < 0 ? 'var(--ng-danger)' : 'var(--p-text-muted-color)',
-)
+const netColor = (n: number) =>
+  n > 0 ? 'var(--ng-success)' : n < 0 ? 'var(--ng-danger)' : 'var(--p-text-muted-color)'
 </script>
 
 <template>
@@ -163,32 +162,31 @@ const fergieColor = computed(() =>
       <h2 class="font-semibold mb-1">{{ t('analytics.fergieTitle') }}</h2>
       <p class="text-sm" style="color: var(--p-text-muted-color)">{{ t('analytics.fergieHint') }}</p>
       <div class="flex items-baseline gap-2 mt-2">
-        <span class="text-3xl font-bold tabular-nums" :style="`color: ${fergieColor}`" data-test="fergie-net">{{ signedPts(fergie.netPoints) }}</span>
+        <span class="text-3xl font-bold tabular-nums" :style="`color: ${netColor(fergie.netPoints)}`" data-test="fergie-net">{{ signedPts(fergie.netPoints) }}</span>
         <span class="text-sm" style="color: var(--p-text-muted-color)">{{ t('leaderboard.pts') }}</span>
       </div>
-      <p class="text-xs mt-1" style="color: var(--p-text-muted-color)">
-        {{ t('analytics.fergieSummary', { goals: fergie.goals, matches: fergie.matches, won: fergie.pointsWon, lost: fergie.pointsLost }) }}
-      </p>
-      <div class="grid sm:grid-cols-2 gap-3 mt-3">
-        <div v-if="fergie.biggestGain" class="text-sm">
-          <div class="text-xs uppercase tracking-wide mb-0.5" style="color: var(--ng-success)">{{ t('analytics.fergieGain') }}</div>
-          <div class="flex items-center gap-1.5 font-medium">
-            <img v-if="flagUrl(fergie.biggestGain.homeCode)" :src="flagUrl(fergie.biggestGain.homeCode) || ''" class="w-4 h-4 rounded object-cover shrink-0" alt="" >
-            <span>{{ fergie.biggestGain.home }} {{ fergie.biggestGain.actual }} {{ fergie.biggestGain.away }}</span>
-            <img v-if="flagUrl(fergie.biggestGain.awayCode)" :src="flagUrl(fergie.biggestGain.awayCode) || ''" class="w-4 h-4 rounded object-cover shrink-0" alt="" >
-          </div>
-          <div class="text-xs" style="color: var(--p-text-muted-color)">{{ t('analytics.fergiePre', { score: fergie.biggestGain.preStoppage }) }} · {{ signedPts(fergie.biggestGain.swing) }} {{ t('leaderboard.pts') }}</div>
-        </div>
-        <div v-if="fergie.biggestLoss" class="text-sm">
-          <div class="text-xs uppercase tracking-wide mb-0.5" style="color: var(--ng-danger)">{{ t('analytics.fergieLoss') }}</div>
-          <div class="flex items-center gap-1.5 font-medium">
-            <img v-if="flagUrl(fergie.biggestLoss.homeCode)" :src="flagUrl(fergie.biggestLoss.homeCode) || ''" class="w-4 h-4 rounded object-cover shrink-0" alt="" >
-            <span>{{ fergie.biggestLoss.home }} {{ fergie.biggestLoss.actual }} {{ fergie.biggestLoss.away }}</span>
-            <img v-if="flagUrl(fergie.biggestLoss.awayCode)" :src="flagUrl(fergie.biggestLoss.awayCode) || ''" class="w-4 h-4 rounded object-cover shrink-0" alt="" >
-          </div>
-          <div class="text-xs" style="color: var(--p-text-muted-color)">{{ t('analytics.fergiePre', { score: fergie.biggestLoss.preStoppage }) }} · {{ signedPts(fergie.biggestLoss.swing) }} {{ t('leaderboard.pts') }}</div>
-        </div>
+      <!-- The net is the split of won vs lost - spell it out so the two figures,
+           not the example matches, read as what makes the headline. -->
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm">
+        <span class="tabular-nums" style="color: var(--ng-success)">+{{ fergie.pointsWon }} {{ t('analytics.fergieWon') }}</span>
+        <span class="tabular-nums" style="color: var(--ng-danger)">-{{ fergie.pointsLost }} {{ t('analytics.fergieLost') }}</span>
+        <span class="text-xs" style="color: var(--p-text-muted-color)">{{ t('analytics.fergieSummary', { goals: fergie.goals, matches: fergie.matches }) }}</span>
       </div>
+      <!-- Per-match breakdown: every match whose points moved in added time. A
+           match can show both a gain and a loss (a score nailed then broken). -->
+      <ul v-if="fergie.breakdown.length" class="flex flex-col gap-1.5 mt-3" data-test="fergie-breakdown">
+        <li v-for="(row, i) in fergie.breakdown" :key="i" class="flex items-center gap-2 text-sm">
+          <img v-if="flagUrl(row.homeCode)" :src="flagUrl(row.homeCode) || ''" class="w-4 h-4 rounded object-cover shrink-0" alt="" >
+          <span class="truncate">{{ row.home }} {{ row.actual }} {{ row.away }}</span>
+          <img v-if="flagUrl(row.awayCode)" :src="flagUrl(row.awayCode) || ''" class="w-4 h-4 rounded object-cover shrink-0" alt="" >
+          <span class="text-xs shrink-0" style="color: var(--p-text-muted-color)">{{ t('analytics.youPicked', { score: row.predicted }) }}</span>
+          <span class="ms-auto flex items-center gap-1.5 tabular-nums text-xs shrink-0">
+            <span v-if="row.gained" style="color: var(--ng-success)">+{{ row.gained }}</span>
+            <span v-if="row.lost" style="color: var(--ng-danger)">-{{ row.lost }}</span>
+            <span class="font-semibold" :style="`color: ${netColor(row.net)}`">({{ signedPts(row.net) }})</span>
+          </span>
+        </li>
+      </ul>
     </section>
   </div>
 </template>

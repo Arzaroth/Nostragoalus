@@ -699,11 +699,10 @@
     "worstMiss": "Plus gros raté",
     "youPicked": "Vous aviez mis {score}",
     "fergieTitle": "Temps additionnel",
-    "fergieHint": "Points de base que le temps additionnel vous a rapportés ou coûtés, par rapport au score à la fin du temps réglementaire.",
-    "fergieSummary": "{goals} buts dans le temps additionnel sur {matches} matchs · +{won} gagnés, -{lost} perdus.",
-    "fergieGain": "Plus beau cadeau",
-    "fergieLoss": "Pire coup du sort",
-    "fergiePre": "C'était {score} avant le temps additionnel"
+    "fergieHint": "Points que le temps additionnel vous a rapportés ou coûtés, rejoués but par but avec le bonus de rareté. Un même arrêt de jeu peut vous offrir puis vous reprendre des points.",
+    "fergieSummary": "{goals} buts dans le temps additionnel sur {matches} matchs",
+    "fergieWon": "gagnés",
+    "fergieLost": "perdus"
   },
   "leaderboard": {
     "title": "Classement",

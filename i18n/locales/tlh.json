@@ -699,11 +699,10 @@
     "worstMiss": "Qagh tIn",
     "youPicked": "{score} DawIv",
     "fergieTitle": "poH chel",
-    "fergieHint": "poH chel maw'mey: Say' DaSuqpu' pagh Danatlhpu', qaStaHvIS Qav poH mI'.",
-    "fergieSummary": "{goals} maw' poH chel, {matches} may' · +{won} Suq, -{lost} natlh.",
-    "fergieGain": "nob tIn",
-    "fergieLoss": "'oy' tIn",
-    "fergiePre": "poH chel pagh: {score}"
+    "fergieHint": "poH chel maw'mey Say' DaSuqpu' pagh Danatlhpu'. maw' tetlh vItlhutlh, ghantoH nobqu'. wa' may' rInDI', maw' wa' nob 'ej natlh.",
+    "fergieSummary": "{goals} maw' poH chel, {matches} may'",
+    "fergieWon": "Suq",
+    "fergieLost": "natlh"
   },
   "leaderboard": {
     "title": "patlh",
