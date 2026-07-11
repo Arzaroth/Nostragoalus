@@ -694,7 +694,13 @@
     "overTimeHint": "สูง = คะแนนมาก, สว่าง = แม่นยำ",
     "bestCall": "ทายดีที่สุด",
     "worstMiss": "พลาดมากสุด",
-    "youPicked": "คุณทาย {score}"
+    "youPicked": "คุณทาย {score}",
+    "fergieTitle": "ช่วงทดเวลา",
+    "fergieHint": "คะแนนพื้นฐานที่ประตูช่วงทดเวลาทำให้คุณได้หรือเสีย เทียบกับสกอร์เมื่อจบเวลาปกติ",
+    "fergieSummary": "{goals} ประตูช่วงทดเวลาจาก {matches} นัด · +{won} ได้, -{lost} เสีย",
+    "fergieGain": "ของขวัญชิ้นใหญ่สุด",
+    "fergieLoss": "พลิกผันโหดสุด",
+    "fergiePre": "ก่อนทดเวลาเป็น {score}"
   },
   "leaderboard": {
     "title": "อันดับ",

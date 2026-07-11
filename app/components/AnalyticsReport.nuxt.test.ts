@@ -29,6 +29,15 @@ const DATA: AnalyticsResponse = {
   ],
   bestCall: { home: 'France', away: 'Brazil', homeCode: 'FRA', awayCode: 'BRA', predicted: '2-0', actual: '2-0', points: 8, tier: 'exact', isJoker: true },
   worstMiss: { home: 'Spain', away: 'Italy', homeCode: 'ESP', awayCode: 'ITA', predicted: '0-0', actual: '3-3', points: 0, tier: 'miss', isJoker: false },
+  fergieTime: {
+    matches: 2,
+    goals: 2,
+    netPoints: 1,
+    pointsWon: 3,
+    pointsLost: 2,
+    biggestGain: { home: 'France', away: 'Brazil', homeCode: 'FRA', awayCode: 'BRA', predicted: '2-1', actual: '2-1', preStoppage: '1-1', swing: 3, isJoker: false },
+    biggestLoss: { home: 'Spain', away: 'Italy', homeCode: 'ESP', awayCode: 'ITA', predicted: '1-1', actual: '1-2', preStoppage: '1-1', swing: -2, isJoker: false },
+  },
 }
 
 let wrapper: Awaited<ReturnType<typeof mountSuspended>> | null = null
@@ -93,5 +102,20 @@ describe('AnalyticsReport', () => {
   it('omits the biggest-miss card when there is none', async () => {
     const w = await mount({ worstMiss: null })
     expect(w.text()).not.toContain('Biggest miss')
+  })
+
+  it('shows the fergie-time card with the signed net swing', async () => {
+    const w = await mount()
+    expect(w.text()).toContain('Fergie time')
+    expect(w.find('[data-test="fergie-net"]').text()).toBe('+1')
+    expect(w.text()).toContain('Biggest gift')
+    expect(w.text()).toContain('Cruellest twist')
+  })
+
+  it('hides the fergie-time card when no pick had an added-time goal', async () => {
+    const w = await mount({
+      fergieTime: { matches: 0, goals: 0, netPoints: 0, pointsWon: 0, pointsLost: 0, biggestGain: null, biggestLoss: null },
+    })
+    expect(w.find('[data-test="fergie-time"]').exists()).toBe(false)
   })
 })

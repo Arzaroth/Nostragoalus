@@ -694,7 +694,13 @@
     "overTimeHint": "Plus haut = plus de points ; plus vif = plus précis.",
     "bestCall": "Meilleur prono",
     "worstMiss": "Plus gros raté",
-    "youPicked": "Vous aviez mis {score}"
+    "youPicked": "Vous aviez mis {score}",
+    "fergieTitle": "Temps additionnel",
+    "fergieHint": "Points de base que le temps additionnel vous a rapportés ou coûtés, par rapport au score à la fin du temps réglementaire.",
+    "fergieSummary": "{goals} buts dans le temps additionnel sur {matches} matchs · +{won} gagnés, -{lost} perdus.",
+    "fergieGain": "Plus beau cadeau",
+    "fergieLoss": "Pire coup du sort",
+    "fergiePre": "C'était {score} avant le temps additionnel"
   },
   "leaderboard": {
     "title": "Classement",

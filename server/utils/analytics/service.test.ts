@@ -3,7 +3,8 @@ import { eq } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { match, prediction, round } from '../../../db/schema'
 import { createTestDb } from '../../../tests/db'
-import { makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
+import { makeGoalEvent, makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
+import { ensureDefaultScoringConfig } from '../scoring/store'
 import { computeAnalytics, getAnalytics, type AnalyticsPickRow } from './service'
 
 function row(o: Partial<AnalyticsPickRow> = {}): AnalyticsPickRow {
@@ -21,6 +22,8 @@ function row(o: Partial<AnalyticsPickRow> = {}): AnalyticsPickRow {
     awayCode: 'AWY',
     roundLabel: 'Group 1',
     roundOrder: 1,
+    stoppageHome: 0,
+    stoppageAway: 0,
     ...o,
   }
 }
@@ -196,6 +199,99 @@ describe('computeAnalytics', () => {
     ])
     expect(nullRow.bestCall?.home).toBe('Keep')
   })
+
+  describe('fergie time', () => {
+    it('is empty when no pick had an added-time goal', () => {
+      const r = computeAnalytics('C', [row(), row({ homeGoals: 2, awayGoals: 2 })])
+      expect(r.fergieTime).toEqual({
+        matches: 0,
+        goals: 0,
+        netPoints: 0,
+        pointsWon: 0,
+        pointsLost: 0,
+        biggestGain: null,
+        biggestLoss: null,
+      })
+    })
+
+    it('banks base points won when a stoppage goal rescues the pick', () => {
+      // Picked 2-1 (home win). Finished 2-1 with a 90'+3' home goal, so pre-
+      // stoppage it was 1-1 (a draw = MISS). Full time is EXACT: swing +3.
+      const r = computeAnalytics('C', [
+        row({ homeGoals: 2, awayGoals: 1, actualHome: 2, actualAway: 1, stoppageHome: 1, stoppageAway: 0 }),
+      ])
+      expect(r.fergieTime.matches).toBe(1)
+      expect(r.fergieTime.goals).toBe(1)
+      expect(r.fergieTime.pointsWon).toBe(3)
+      expect(r.fergieTime.pointsLost).toBe(0)
+      expect(r.fergieTime.netPoints).toBe(3)
+      expect(r.fergieTime.biggestGain).toMatchObject({ actual: '2-1', preStoppage: '1-1', swing: 3 })
+      expect(r.fergieTime.biggestLoss).toBeNull()
+    })
+
+    it('banks base points lost when a stoppage goal breaks the pick', () => {
+      // Picked 1-1 (draw). Pre-stoppage it was 1-1 (EXACT = 3). A 90'+2' away
+      // goal made it 1-2, an away win = MISS: swing -3.
+      const r = computeAnalytics('C', [
+        row({ homeGoals: 1, awayGoals: 1, actualHome: 1, actualAway: 2, stoppageHome: 0, stoppageAway: 1 }),
+      ])
+      expect(r.fergieTime.pointsWon).toBe(0)
+      expect(r.fergieTime.pointsLost).toBe(3)
+      expect(r.fergieTime.netPoints).toBe(-3)
+      expect(r.fergieTime.biggestLoss).toMatchObject({ actual: '1-2', preStoppage: '1-1', swing: -3 })
+      expect(r.fergieTime.biggestGain).toBeNull()
+    })
+
+    it('counts a stoppage goal that leaves the tier unchanged but scores no swing', () => {
+      // Picked 0-0, finished 2-0 with one 90'+1' home goal: MISS before (0-0 vs
+      // 1-0) and MISS after. The goal is counted, the swing is zero.
+      const r = computeAnalytics('C', [
+        row({ homeGoals: 0, awayGoals: 0, actualHome: 2, actualAway: 0, stoppageHome: 1, stoppageAway: 0 }),
+      ])
+      expect(r.fergieTime.matches).toBe(1)
+      expect(r.fergieTime.goals).toBe(1)
+      expect(r.fergieTime.netPoints).toBe(0)
+      expect(r.fergieTime.biggestGain).toBeNull()
+      expect(r.fergieTime.biggestLoss).toBeNull()
+    })
+
+    it('nets wins against losses and keeps the largest of each as the highlights', () => {
+      const r = computeAnalytics('C', [
+        row({ homeGoals: 2, awayGoals: 1, actualHome: 2, actualAway: 1, stoppageHome: 1, homeTeam: 'Win' }),
+        row({ homeGoals: 1, awayGoals: 1, actualHome: 1, actualAway: 2, stoppageAway: 1, homeTeam: 'Lose' }),
+      ])
+      expect(r.fergieTime.matches).toBe(2)
+      expect(r.fergieTime.netPoints).toBe(0)
+      expect(r.fergieTime.biggestGain?.home).toBe('Win')
+      expect(r.fergieTime.biggestLoss?.home).toBe('Lose')
+    })
+
+    it('keeps the largest of several gains and losses as the highlights', () => {
+      const r = computeAnalytics('C', [
+        row({ homeGoals: 0, awayGoals: 3, actualHome: 1, actualAway: 2, stoppageAway: 1, homeTeam: 'GainSmall' }), // +1
+        row({ homeGoals: 2, awayGoals: 1, actualHome: 2, actualAway: 1, stoppageHome: 1, homeTeam: 'GainBig' }), // +3
+        row({ homeGoals: 0, awayGoals: 3, actualHome: 1, actualAway: 2, stoppageAway: 1, homeTeam: 'GainSmall2' }), // +1, no upgrade
+        row({ homeGoals: 0, awayGoals: 3, actualHome: 2, actualAway: 2, stoppageHome: 1, homeTeam: 'LossSmall' }), // -1
+        row({ homeGoals: 1, awayGoals: 1, actualHome: 1, actualAway: 2, stoppageAway: 1, homeTeam: 'LossBig' }), // -3
+        row({ homeGoals: 0, awayGoals: 3, actualHome: 2, actualAway: 2, stoppageHome: 1, homeTeam: 'LossSmall2' }), // -1, no upgrade
+      ])
+      expect(r.fergieTime.matches).toBe(6)
+      expect(r.fergieTime.pointsWon).toBe(5)
+      expect(r.fergieTime.pointsLost).toBe(5)
+      expect(r.fergieTime.netPoints).toBe(0)
+      expect(r.fergieTime.biggestGain?.home).toBe('GainBig')
+      expect(r.fergieTime.biggestLoss?.home).toBe('LossBig')
+    })
+
+    it('scales the swing to a custom base-points config', () => {
+      const r = computeAnalytics(
+        'C',
+        [row({ homeGoals: 2, awayGoals: 1, actualHome: 2, actualAway: 1, stoppageHome: 1 })],
+        { exact: 10, diff: 5, outcome: 2, miss: 0 },
+      )
+      expect(r.fergieTime.netPoints).toBe(10)
+    })
+  })
 })
 
 describe('getAnalytics', () => {
@@ -203,6 +299,7 @@ describe('getAnalytics', () => {
 
   beforeEach(async () => {
     db = (await createTestDb()).db as unknown as AppDatabase
+    await ensureDefaultScoringConfig(db)
   })
 
   async function groupRound(competitionId: string, matchday: number): Promise<string> {
@@ -256,5 +353,80 @@ describe('getAnalytics', () => {
     expect(r.tiers.exact).toBe(1)
     expect(r.totalPoints).toBe(8)
     expect(r.bestCall).toMatchObject({ predicted: '2-0', actual: '2-0' })
+  })
+
+  it('credits fergie time when reconciled goals include an added-time strike', async () => {
+    const c = await seedCompetition(db)
+    const u = await makeUser(db, 'alice')
+    const g1 = await groupRound(c, 1)
+    const m = await makeMatch(db, {
+      competitionId: c,
+      roundId: g1,
+      kickoffTime: new Date('2026-06-01T12:00:00Z'),
+      fullTimeHome: 2,
+      fullTimeAway: 1,
+      winner: 'HOME',
+      scoringState: 'SCORED',
+    })
+    const pid = await makePrediction(db, { userId: u, matchId: m, roundId: g1, home: 2, away: 1 })
+    await db.update(prediction).set({ baseTier: 'EXACT', totalPoints: 3, scoredAt: new Date() }).where(eq(prediction.id, pid))
+    await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'HOME', minute: "30'" })
+    await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'AWAY', minute: "60'" })
+    await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'HOME', minute: "90'+3'" })
+
+    const r = await getAnalytics(db, { competitionId: c, userId: u })
+    // Pre-stoppage 1-1 (a draw) missed the 2-1 pick; the winner made it EXACT.
+    expect(r.fergieTime).toMatchObject({ matches: 1, goals: 1, pointsWon: 3, netPoints: 3 })
+    expect(r.fergieTime.biggestGain).toMatchObject({ actual: '2-1', preStoppage: '1-1', swing: 3 })
+  })
+
+  it('credits an away stoppage-time goal against a home-leaning pick', async () => {
+    const c = await seedCompetition(db)
+    const u = await makeUser(db, 'alice')
+    const g1 = await groupRound(c, 1)
+    const m = await makeMatch(db, {
+      competitionId: c,
+      roundId: g1,
+      kickoffTime: new Date('2026-06-01T12:00:00Z'),
+      fullTimeHome: 1,
+      fullTimeAway: 2,
+      winner: 'AWAY',
+      scoringState: 'SCORED',
+    })
+    const pid = await makePrediction(db, { userId: u, matchId: m, roundId: g1, home: 1, away: 2 })
+    await db.update(prediction).set({ baseTier: 'EXACT', totalPoints: 3, scoredAt: new Date() }).where(eq(prediction.id, pid))
+    await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'HOME', minute: "20'" })
+    await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'AWAY', minute: "55'" })
+    await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'AWAY', minute: "90'+4'" })
+
+    const r = await getAnalytics(db, { competitionId: c, userId: u })
+    // Pre-stoppage 1-1 (a draw) missed the 1-2 pick; the late away goal made it EXACT.
+    expect(r.fergieTime).toMatchObject({ matches: 1, goals: 1, netPoints: 3 })
+    expect(r.fergieTime.biggestGain).toMatchObject({ actual: '1-2', preStoppage: '1-1', swing: 3 })
+  })
+
+  it('ignores added-time goals when the goal feed disagrees with the final score', async () => {
+    const c = await seedCompetition(db)
+    const u = await makeUser(db, 'alice')
+    const g1 = await groupRound(c, 1)
+    const m = await makeMatch(db, {
+      competitionId: c,
+      roundId: g1,
+      kickoffTime: new Date('2026-06-01T12:00:00Z'),
+      fullTimeHome: 2,
+      fullTimeAway: 1,
+      winner: 'HOME',
+      scoringState: 'SCORED',
+    })
+    const pid = await makePrediction(db, { userId: u, matchId: m, roundId: g1, home: 2, away: 1 })
+    await db.update(prediction).set({ baseTier: 'EXACT', totalPoints: 3, scoredAt: new Date() }).where(eq(prediction.id, pid))
+    // Only two recorded goals for a 2-1 result, one with an unknown minute:
+    // cannot trust the timeline, so no swing.
+    await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'HOME', minute: "90'+3'" })
+    await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'AWAY', minute: null })
+
+    const r = await getAnalytics(db, { competitionId: c, userId: u })
+    expect(r.fergieTime.matches).toBe(0)
+    expect(r.fergieTime.netPoints).toBe(0)
   })
 })

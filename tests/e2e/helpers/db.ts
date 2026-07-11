@@ -305,6 +305,45 @@ export async function seedScoredPrediction(
   )
 }
 
+// A finished 2-1 home win whose winning goal fell in added time (90'+3'), with
+// the signed-in user holding the exact 2-1 pick. Pre-stoppage the score was 1-1
+// (a draw), so the pick's 3 points are entirely Fergie time. The three goal
+// events reconcile with the 2-1 full-time score, so the analytics loader trusts
+// the timeline. Lives in the fixture competition's group round; cascades on
+// cleanup with the match.
+export async function seedFergieScenario(userId: string, competitionId: string): Promise<void> {
+  const { rows } = await db().query<{ match_id: string; round_id: string }>(
+    `with r as (
+       select id from round where competition_id = $1 and stage = 'GROUP' order by sort_order limit 1
+     )
+     insert into match (id, competition_id, provider_match_id, round_id, stage, group_name,
+                        home_team, away_team, home_team_code, away_team_code, kickoff_time,
+                        status, full_time_home, full_time_away, winner, scoring_state, details_fetched_at)
+     select gen_random_uuid(), $1, 'e2e-fergie', r.id, 'GROUP', 'A',
+            'Fergie Home', 'Fergie Away', 'FGH', 'FGA', now() - interval '3 hours',
+            'FINISHED', 2, 1, 'HOME', 'SCORED', now()
+     from r
+     returning id as match_id, round_id`,
+    [competitionId],
+  )
+  const matchId = rows[0].match_id
+  const roundId = rows[0].round_id
+  await db().query(
+    `insert into prediction (id, user_id, match_id, round_id, home_goals, away_goals,
+                             locked_at, base_points, base_tier, bonus_points, total_points, scored_at)
+     values (gen_random_uuid(), $1, $2, $3, 2, 1, now(), 3, 'EXACT', 0, 3, now())`,
+    [userId, matchId, roundId],
+  )
+  const goals: [string, string][] = [['HOME', "30'"], ['AWAY', "60'"], ['HOME', "90'+3'"]]
+  for (const [side, minute] of goals) {
+    await db().query(
+      `insert into goal_event (id, match_id, competition_id, side, team_name, player_name, minute, own_goal)
+       values (gen_random_uuid(), $1, $2, $3, 'Team', 'Scorer', $4, false)`,
+      [matchId, competitionId, side, minute],
+    )
+  }
+}
+
 // A decided FINAL (FINISHED with a HOME winner, scored) - the gate that unlocks
 // Tournament Wrapped and the competition trophies.
 export async function seedDecidedFinal(competitionId: string): Promise<void> {

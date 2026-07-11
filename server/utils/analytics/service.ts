@@ -1,10 +1,13 @@
 import { and, asc, eq, isNotNull } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
-import { competition as competitionTable, match, prediction, round } from '../../../db/schema'
+import { competition as competitionTable, goalEvent, match, prediction, round } from '../../../db/schema'
 import { NotFoundError } from '../errors'
-import { outcomeOf, type Outcome } from '../scoring/tiers'
+import { basePointsFor, classifyTier, DEFAULT_BASE_POINTS, outcomeOf, type BasePoints, type Outcome } from '../scoring/tiers'
+import { getScoringConfigFor } from '../scoring/store'
 import type {
   AnalyticsResponse,
+  FergieSwing,
+  FergieTime,
   PickHighlight,
   RoundAccuracy,
   TeamBias,
@@ -27,6 +30,10 @@ export interface AnalyticsPickRow {
   awayCode: string | null
   roundLabel: string
   roundOrder: number
+  // Added-time goals scored for each side in this match, counted only when the
+  // match's recorded goals reconcile with its full-time score (0 otherwise).
+  stoppageHome: number
+  stoppageAway: number
 }
 
 const MIN_TEAM_SAMPLE = 2
@@ -72,6 +79,20 @@ function highlight(row: AnalyticsPickRow): PickHighlight {
   }
 }
 
+function fergieSwing(row: AnalyticsPickRow, preHome: number, preAway: number, swing: number): FergieSwing {
+  return {
+    home: row.homeTeam,
+    away: row.awayTeam,
+    homeCode: row.homeCode,
+    awayCode: row.awayCode,
+    predicted: `${row.homeGoals}-${row.awayGoals}`,
+    actual: `${row.actualHome}-${row.actualAway}`,
+    preStoppage: `${preHome}-${preAway}`,
+    swing,
+    isJoker: row.isJoker,
+  }
+}
+
 interface TeamAcc {
   code: string | null
   name: string
@@ -95,7 +116,20 @@ function toBias(acc: TeamAcc): TeamBias {
 
 // Pure aggregation over the user's scored picks - the whole report is derived
 // here so it can be unit-tested without a database.
-export function computeAnalytics(competitionName: string, rows: AnalyticsPickRow[]): AnalyticsResponse {
+export function computeAnalytics(
+  competitionName: string,
+  rows: AnalyticsPickRow[],
+  base: BasePoints = DEFAULT_BASE_POINTS,
+): AnalyticsResponse {
+  const emptyFergie: FergieTime = {
+    matches: 0,
+    goals: 0,
+    netPoints: 0,
+    pointsWon: 0,
+    pointsLost: 0,
+    biggestGain: null,
+    biggestLoss: null,
+  }
   const empty: AnalyticsResponse = {
     competitionName,
     hasData: false,
@@ -116,6 +150,7 @@ export function computeAnalytics(competitionName: string, rows: AnalyticsPickRow
     overTime: [],
     bestCall: null,
     worstMiss: null,
+    fergieTime: emptyFergie,
   }
   if (rows.length === 0) return empty
 
@@ -198,6 +233,35 @@ export function computeAnalytics(competitionName: string, rows: AnalyticsPickRow
       )
     : null
 
+  // Fergie time: re-score each pick against the pre-stoppage line (added-time
+  // goals removed) and bank the base-points swing. Only rows the loader marked
+  // as reconciled carry non-zero stoppage counts, so no invented drama.
+  const fergie: FergieTime = { ...emptyFergie, biggestGain: null, biggestLoss: null }
+  for (const row of rows) {
+    const stoppage = row.stoppageHome + row.stoppageAway
+    if (stoppage === 0) continue
+    const preHome = Math.max(0, row.actualHome - row.stoppageHome)
+    const preAway = Math.max(0, row.actualAway - row.stoppageAway)
+    const pred = { home: row.homeGoals, away: row.awayGoals }
+    const actualPoints = basePointsFor(classifyTier(pred, { home: row.actualHome, away: row.actualAway }), base)
+    const prePoints = basePointsFor(classifyTier(pred, { home: preHome, away: preAway }), base)
+    const swing = actualPoints - prePoints
+    fergie.matches += 1
+    fergie.goals += stoppage
+    if (swing > 0) {
+      fergie.pointsWon += swing
+      if (!fergie.biggestGain || swing > fergie.biggestGain.swing) {
+        fergie.biggestGain = fergieSwing(row, preHome, preAway, swing)
+      }
+    } else if (swing < 0) {
+      fergie.pointsLost += -swing
+      if (!fergie.biggestLoss || swing < fergie.biggestLoss.swing) {
+        fergie.biggestLoss = fergieSwing(row, preHome, preAway, swing)
+      }
+    }
+  }
+  fergie.netPoints = fergie.pointsWon - fergie.pointsLost
+
   return {
     competitionName,
     hasData: true,
@@ -222,6 +286,7 @@ export function computeAnalytics(competitionName: string, rows: AnalyticsPickRow
     overTime,
     bestCall: highlight(bestCall),
     worstMiss: worstMiss ? highlight(worstMiss) : null,
+    fergieTime: fergie,
   }
 }
 
@@ -238,6 +303,7 @@ export async function getAnalytics(
 
   const rows = await db
     .select({
+      matchId: prediction.matchId,
       homeGoals: prediction.homeGoals,
       awayGoals: prediction.awayGoals,
       baseTier: prediction.baseTier,
@@ -266,21 +332,63 @@ export async function getAnalytics(
     )
     .orderBy(asc(match.kickoffTime))
 
-  const clean: AnalyticsPickRow[] = rows.map((r) => ({
-    homeGoals: r.homeGoals,
-    awayGoals: r.awayGoals,
-    baseTier: r.baseTier,
-    // isNotNull-filtered in the query, so never actually null here.
-    totalPoints: r.totalPoints as number,
-    isJoker: r.isJoker,
-    actualHome: r.actualHome as number,
-    actualAway: r.actualAway as number,
-    homeTeam: r.homeTeam,
-    awayTeam: r.awayTeam,
-    homeCode: r.homeCode,
-    awayCode: r.awayCode,
-    roundLabel: r.roundLabel,
-    roundOrder: r.roundOrder,
-  }))
-  return computeAnalytics(comp.name, clean)
+  // No scored picks means an empty report, independent of goals or point scale,
+  // so skip the extra reads entirely.
+  if (rows.length === 0) return computeAnalytics(comp.name, [])
+
+  // Per-match goal tallies from the detail feed: total per side (to reconcile
+  // against the full-time score) and how many of those fell in added time. A
+  // minute like "45'+2'" or "90'+3'" carries a "+"; open-play minutes do not.
+  const goals = await db
+    .select({ matchId: goalEvent.matchId, side: goalEvent.side, minute: goalEvent.minute })
+    .from(goalEvent)
+    .where(eq(goalEvent.competitionId, opts.competitionId))
+
+  const tally = new Map<string, { home: number; away: number; stopHome: number; stopAway: number }>()
+  for (const g of goals) {
+    const acc = tally.get(g.matchId) ?? { home: 0, away: 0, stopHome: 0, stopAway: 0 }
+    const stoppage = g.minute?.includes('+') ?? false
+    if (g.side === 'HOME') {
+      acc.home += 1
+      if (stoppage) acc.stopHome += 1
+    } else {
+      acc.away += 1
+      if (stoppage) acc.stopAway += 1
+    }
+    tally.set(g.matchId, acc)
+  }
+
+  const stoppageFor = (matchId: string, actualHome: number, actualAway: number) => {
+    const t = tally.get(matchId)
+    // No recorded goals, or a feed that disagrees with the final score, means we
+    // cannot trust which goals were late - so this match contributes no swing.
+    if (!t || t.home !== actualHome || t.away !== actualAway) return { home: 0, away: 0 }
+    return { home: t.stopHome, away: t.stopAway }
+  }
+
+  const clean: AnalyticsPickRow[] = rows.map((r) => {
+    const actualHome = r.actualHome as number
+    const actualAway = r.actualAway as number
+    const stoppage = stoppageFor(r.matchId, actualHome, actualAway)
+    return {
+      homeGoals: r.homeGoals,
+      awayGoals: r.awayGoals,
+      baseTier: r.baseTier,
+      // isNotNull-filtered in the query, so never actually null here.
+      totalPoints: r.totalPoints as number,
+      isJoker: r.isJoker,
+      actualHome,
+      actualAway,
+      homeTeam: r.homeTeam,
+      awayTeam: r.awayTeam,
+      homeCode: r.homeCode,
+      awayCode: r.awayCode,
+      roundLabel: r.roundLabel,
+      roundOrder: r.roundOrder,
+      stoppageHome: stoppage.home,
+      stoppageAway: stoppage.away,
+    }
+  })
+  const { rules } = await getScoringConfigFor(db, opts.competitionId)
+  return computeAnalytics(comp.name, clean, rules.base)
 }
