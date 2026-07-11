@@ -5,6 +5,14 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Ajouté
+
+- Face à face : comparez vos pronostics à ceux d'un autre joueur. Depuis le profil d'un joueur, cliquez sur Comparer pour voir qui mène sur les matchs que vous avez tous deux vus notés, votre bilan victoires-défaites-nuls, la fréquence de vos accords sur le score et le résultat, l'avance qui bascule au fil des tours, et les matchs où vous avez le plus divergé.
+
+### Modifié
+
+- Les statistiques personnelles tracent désormais votre précision tour par tour sous forme de sparkline, et ajoutent une carte de série indiquant votre série de bons pronostics en cours et votre meilleure du tournoi.
+
 ## [2.33.1] - 2026-07-12
 
 ### Corrigé

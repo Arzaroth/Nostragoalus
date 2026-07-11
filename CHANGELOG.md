@@ -5,6 +5,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+
+- Head-to-head: compare your picks against another player. From any player's profile hit Compare to see who is ahead over the matches you have both had scored, your win-loss-tie record, how often you agreed on the score and the outcome, the lead swinging round by round, and the calls where you diverged most.
+
+### Changed
+
+- Personal analytics now draws your accuracy round by round as a sparkline, and adds a streak card showing your current run of correct picks and your best of the tournament.
+
 ## [2.33.1] - 2026-07-12
 
 ### Fixed
