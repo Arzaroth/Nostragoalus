@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.32.1] - 2026-07-11
+
 ### Changed
 
 - Fergie time no longer counts a knockout added-time goal that settles a draw (a late winner or a golden goal). In a bracket a draw at 90' goes to extra time rather than standing, so that goal did not really win or lose you the tie. A stoppage goal struck from a decisive score still counts, including a late equalizer that takes a lead away.
