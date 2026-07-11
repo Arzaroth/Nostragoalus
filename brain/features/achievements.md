@@ -215,6 +215,8 @@ map `computeAchievementStats` already returns, one entry per player with a predi
 `rarity[]` is cumulative and ascending: each tier's `pct` is the share of participants
 holding the badge at that tier **or higher**. The tile shows the rarity of the tier you
 hold, or (locked) the lowest tier's share; `pct === 0` renders as "no one has this yet".
+GLOBAL badges (held app-wide, so a per-competition denominator is meaningless) and SHAME
+badges (no chasing a punishment) carry no rarity - `rarityFor` returns `[]` for both.
 
 ## Notifications
 

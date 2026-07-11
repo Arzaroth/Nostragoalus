@@ -2,7 +2,6 @@ import { and, count, eq, isNull, or } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { competitionAward, showcasePin, user, userAchievement } from '../../../db/schema'
 import {
-  ACHIEVEMENT_TIERS,
   type AchievementRarityDto,
   type AchievementTier,
   type CabinetDto,
@@ -14,7 +13,7 @@ import {
 import type { AchievementDef } from './catalog'
 import { NotFoundError, ValidationError } from '../errors'
 import { ALL_ACHIEVEMENTS } from './catalog'
-import { computeAchievementStats } from './service'
+import { computeAchievementStats, TIER_RANK } from './service'
 
 // The trophies + achievements + showcase for one user in one competition. Global
 // (competition-spanning) badges are folded in. Hidden badges only ever surface
@@ -68,9 +67,13 @@ export async function getCabinet(
     holdersByKey.set(r.key, list)
   }
   // A null tier (legacy single-shot rows) counts as the lowest band.
-  const rankOf = (t: AchievementTier | null): number => (t ? ACHIEVEMENT_TIERS.indexOf(t) + 1 : 1)
+  const rankOf = (t: AchievementTier | null): number => (t ? TIER_RANK[t] : 1)
   const rarityFor = (def: AchievementDef): AchievementRarityDto[] => {
-    if (participants === 0) return []
+    // GLOBAL badges are held app-wide, not per competition, so a competition
+    // participant denominator is meaningless (holders could exceed 100%). SHAME
+    // badges get no rarity for the same reason they get no progress bar - you
+    // don't chase a punishment. Otherwise need at least one participant to divide by.
+    if (participants === 0 || def.scope === 'GLOBAL' || def.category === 'SHAME') return []
     const rows = holdersByKey.get(def.key) ?? []
     return def.tiers.map((t) => {
       const holders = rows.reduce((s, r) => (rankOf(r.tier) >= rankOf(t.tier) ? s + r.n : s), 0)
