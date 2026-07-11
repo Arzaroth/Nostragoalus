@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.33.0] - 2026-07-12
+
 ### chelpu'
 
 - 'och pa'Daq DojmoH: DaH Hoch Dab 'ang mI', chaq lo'laHghach patlh, vaj Do'Ha'ghach Da'anglaH.

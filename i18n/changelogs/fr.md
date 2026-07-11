@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [2.33.0] - 2026-07-12
+
 ### Ajouté
 
 - Rareté dans la vitrine à trophées : chaque badge affiche désormais la part des joueurs de la compétition qui le possèdent, par palier - de quoi voir à quel point votre collection est rare.

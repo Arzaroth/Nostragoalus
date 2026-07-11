@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.33.0] - 2026-07-12
+
 ### Added
 
 - Trophy cabinet rarity: each badge now shows the share of the competition's players who hold it, per tier - so you can see how rare your haul really is.
