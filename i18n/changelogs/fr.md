@@ -5,6 +5,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Corrigé
+
+- L'en-tête d'un match en direct ne reste plus bloqué sur un score après qu'un but a été refusé par la VAR. Le score suit désormais la source la plus récemment mise à jour : un but annulé disparaît aussitôt de l'en-tête au lieu de s'y attarder un tour ou deux alors que la liste des buteurs en dessous montre déjà le but disparu.
+
 ## [2.33.0] - 2026-07-12
 
 ### Ajouté
