@@ -182,6 +182,13 @@ export default defineNuxtConfig({
     // contact the push service can reach. Push is disabled when these are unset.
     vapidPrivateKey: '',
     vapidSubject: '',
+    // Voice-chat TURN relay (self-hosted coturn, use-auth-secret mode). The
+    // secret mints ephemeral per-call credentials server-side and never reaches
+    // the browser; host is the coturn hostname; realm is its configured realm.
+    // All unset = STUN-only (calls behind symmetric NAT will fail).
+    turnSecret: '',
+    turnHost: '',
+    turnRealm: '',
     // Image storage backend. driver 'fs' (default) writes under storageFsRoot;
     // driver 's3' talks to any S3-compatible endpoint (the deploy runs rustfs).
     storageDriver: 'fs',
