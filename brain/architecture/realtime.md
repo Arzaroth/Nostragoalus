@@ -54,6 +54,14 @@ fire-and-forget after a successful mutation or during a scheduled task.
   (freshest) and refetches `['bracket']` on `scores:changed` for advancement and
   live group-qualifier projections; a knockout match finishing busts that cache
   from `scores:poll` so the next slot fills without waiting out the TTL.
+- The match detail header shows a score reconciled from two clocks: the WS
+  `match:update` value (the football-data `scores:poll`, ~2 min) and the goal
+  count off the FIFA detail/insights feed (~45 s, VAR-aware). A plain max of the
+  two can never drop when VAR disallows a goal (the stale-high WS side pins it),
+  so `app/utils/live-score.ts` arbitrates by recency instead: whichever source
+  moved since the last tick wins, both-moved ties go to the faster feed, and an
+  unready feed is held so a fetch gap can't flicker the score to 0. Wired in
+  `app/pages/[competition]/matches/[id].vue` (`syncLiveScore` / `homeScore`).
 
 ## Client side
 

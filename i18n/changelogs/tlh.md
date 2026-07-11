@@ -5,6 +5,10 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### tI'pu'
+
+- VAR maw' Qotlh 'e' tlhoS, match tlhup nav bo'Dagh maw' mI' taHbe'chugh. DaH De' chu' law' tlha' mI'; maw' Qotlhlu'bogh nom nge'lu', reH taHbe'.
+
 ## [2.33.0] - 2026-07-12
 
 ### chelpu'
