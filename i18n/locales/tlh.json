@@ -670,6 +670,22 @@
     "pickLateConfirm": "DaH qIchwI' nIvlI' yIwIv'a', QuQ bID? poH vuS pIq DawIv, vaj not QuQ naQ Suqlu'.",
     "repickedNote": "choHlu' (QuQ bID). wa'DIch: {player}."
   },
+  "h2h": {
+    "title": "nab: nab",
+    "subtitle": "cha' ghItlhwI' vu': qup Suq lujeS.",
+    "compare": "vu'",
+    "vs": "vs",
+    "shared": "nab rap",
+    "record": "may' De'",
+    "recordHint": "may' De': Qap-lujQaD-rap, qup nab rap.",
+    "sameScore": "mI' rap",
+    "sameOutcome": "Qav rap",
+    "leadTitle": "poH: nIH",
+    "divergeTitle": "chev tIn law'",
+    "pickHint": "ghItlhwI' De' poSmoH, vu' yISuq.",
+    "empty": "qup rap Suq law' Suqbe'.",
+    "loadError": "vu' laDlaHbe'."
+  },
   "analytics": {
     "title": "nughmey",
     "subtitle": "wIvmeylIj DuvmeH: bIlughpu''a', bIQaghpu''a'?",
