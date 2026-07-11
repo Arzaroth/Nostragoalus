@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.34.0] - 2026-07-12
+
 ### Added
 
 - Head-to-head: compare your picks against another player. From any player's profile hit Compare to see who is ahead over the matches you have both had scored, your win-loss-tie record, how often you agreed on the score and the outcome, the lead swinging round by round, and the calls where you diverged most.
