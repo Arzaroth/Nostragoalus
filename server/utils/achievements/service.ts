@@ -358,12 +358,25 @@ export async function computeAchievementStats(
 
   // The tournament champion (Champion's Path): the winner of the decided, scored final.
   // Its whole set of scored matches is the denominator - a user earns the badge by
-  // calling the outcome (non-MISS) of every one of them. Empty until the final decides.
+  // calling the outcome (non-MISS) of every one of them. The final itself must be
+  // SCORED, not merely FINISHED-with-winner: the denominator below filters on
+  // scoringState='SCORED', so resolving the champion in the sync -> finalize window
+  // (winner written, final not yet scored - tournamentDone is already true there) would
+  // drop the final from the denominator and grant the badge without the final being
+  // called. Requiring the final scored keeps it in the set. Empty until then.
   const [finalMatch] = tournamentDone
     ? await db
         .select({ winner: match.winner, home: match.homeTeamCode, away: match.awayTeamCode })
         .from(match)
-        .where(and(eq(match.competitionId, competitionId), eq(match.stage, 'FINAL'), inArray(match.winner, ['HOME', 'AWAY'])))
+        .where(
+          and(
+            eq(match.competitionId, competitionId),
+            eq(match.stage, 'FINAL'),
+            eq(match.scoringState, 'SCORED'),
+            inArray(match.winner, ['HOME', 'AWAY']),
+          ),
+        )
+        .orderBy(match.id)
         .limit(1)
     : []
   const championCode = finalMatch ? (finalMatch.winner === 'HOME' ? finalMatch.home : finalMatch.away) : null

@@ -843,6 +843,34 @@ describe("Champion's Path (championPath)", () => {
     await pred({ userId: alice, matchId: fin, roundId: finalR, tier: 'OUTCOME' })
     expect((await stats(c, alice)).championPath).toBe(1)
   })
+
+  it('withholds in the decided-but-unscored final window (final not yet SCORED)', async () => {
+    const c = await seedCompetition(db)
+    const g1 = await roundId(c, 'GROUP', 1)
+    const finalR = await roundId(c, 'FINAL')
+    const alice = await makeUser(db, 'alice')
+    // BRA wins its group game (scored, called) and the final is FINISHED with a HOME
+    // winner but NOT yet SCORED - the sync -> finalize window. hasDecidedFinal is true,
+    // yet the champion must resolve only from a SCORED final, so the still-unscored
+    // final is excluded and the badge is withheld (it would otherwise grant off the
+    // group game alone, without the final ever being called).
+    const grp = await scoredTeam(c, g1, { home: 'BRA', away: 'SRB', kickoff: new Date('2026-06-11T12:00:00Z') })
+    const fin = await makeMatch(db, {
+      competitionId: c,
+      roundId: finalR,
+      stage: 'FINAL',
+      homeTeamCode: 'BRA',
+      awayTeamCode: 'ARG',
+      status: 'FINISHED',
+      fullTimeHome: 1,
+      fullTimeAway: 0,
+      winner: 'HOME',
+      kickoffTime: new Date('2026-07-19T18:00:00Z'),
+    })
+    await pred({ userId: alice, matchId: grp, roundId: g1, tier: 'OUTCOME' })
+    await pred({ userId: alice, matchId: fin, roundId: finalR, tier: 'OUTCOME' })
+    expect((await stats(c, alice)).championPath).toBe(0)
+  })
 })
 
 describe('Group Guru (groupPerfect)', () => {
