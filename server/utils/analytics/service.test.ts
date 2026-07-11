@@ -347,20 +347,53 @@ describe('getAnalytics', () => {
       roundId: finalRound.id,
       stage: 'FINAL',
       kickoffTime: new Date('2026-07-01T12:00:00Z'),
+      fullTimeHome: 3,
+      fullTimeAway: 1,
+      winner: 'HOME',
+      scoringState: 'SCORED',
+    })
+    const pid = await makePrediction(db, { userId: u, matchId: m, roundId: finalRound.id, home: 3, away: 1, lockedAt: new Date() })
+    await db.update(prediction).set({ baseTier: 'EXACT', totalPoints: 6, basePoints: 3, scoredAt: new Date() }).where(eq(prediction.id, pid))
+    // 2-1 (a decisive lead, not a draw) before the 90'+3' winner, so it counts.
+    await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'HOME', minute: "30'" })
+    await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'AWAY', minute: "55'" })
+    await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'HOME', minute: "70'" })
+    await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'HOME', minute: "90'+3'" })
+
+    const r = await getAnalytics(db, { competitionId: c, userId: u })
+    // Base swing 2-1 (outcome=1) -> 3-1 (exact=3) = +2, doubled by the forced
+    // final joker -> +4.
+    expect(r.fergieTime).toMatchObject({ matches: 1, netPoints: 4 })
+  })
+
+  it('does not credit a bracket added-time goal that broke a draw', async () => {
+    const c = await seedCompetition(db)
+    const u = await makeUser(db, 'alice')
+    const [ko] = await db
+      .insert(round)
+      .values({ competitionId: c, kind: 'KNOCKOUT', stage: 'R16', label: 'Round of 16', sortOrder: 90 })
+      .returning({ id: round.id })
+    const m = await makeMatch(db, {
+      competitionId: c,
+      roundId: ko.id,
+      stage: 'R16',
+      kickoffTime: new Date('2026-07-01T12:00:00Z'),
       fullTimeHome: 2,
       fullTimeAway: 1,
       winner: 'HOME',
       scoringState: 'SCORED',
     })
-    const pid = await makePrediction(db, { userId: u, matchId: m, roundId: finalRound.id, home: 2, away: 1, lockedAt: new Date() })
-    await db.update(prediction).set({ baseTier: 'EXACT', totalPoints: 6, basePoints: 3, scoredAt: new Date() }).where(eq(prediction.id, pid))
+    const pid = await makePrediction(db, { userId: u, matchId: m, roundId: ko.id, home: 2, away: 1, lockedAt: new Date() })
+    await db.update(prediction).set({ baseTier: 'EXACT', totalPoints: 3, basePoints: 3, scoredAt: new Date() }).where(eq(prediction.id, pid))
+    // 1-1 before the 90'+3' winner: the draw would have gone to extra time, so no
+    // Fergie credit despite the exact 2-1.
     await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'HOME', minute: "30'" })
     await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'AWAY', minute: "60'" })
     await makeGoalEvent(db, { matchId: m, competitionId: c, side: 'HOME', minute: "90'+3'" })
 
     const r = await getAnalytics(db, { competitionId: c, userId: u })
-    // Base swing +3, doubled by the forced final joker -> +6.
-    expect(r.fergieTime).toMatchObject({ matches: 1, netPoints: 6 })
+    expect(r.fergieTime).toMatchObject({ matches: 1, goals: 1, netPoints: 0 })
+    expect(r.fergieTime.breakdown).toHaveLength(0)
   })
 
   it('prices fergie time under an ODDS scoring config (resolving closing odds per outcome)', async () => {
