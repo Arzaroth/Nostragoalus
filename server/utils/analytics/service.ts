@@ -1,7 +1,7 @@
 import { and, asc, eq, inArray, isNotNull } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { competition as competitionTable, goalEvent, match, prediction, round } from '../../../db/schema'
-import { countsDouble } from '../../../shared/types/match'
+import { countsDouble, isKnockout } from '../../../shared/types/match'
 import { NotFoundError } from '../errors'
 import { outcomeOf, type Outcome } from '../scoring/tiers'
 import { getScoringConfigFor } from '../scoring/store'
@@ -320,6 +320,7 @@ async function loadFergieTime(
     isJoker: r.isJoker,
     actual: { home: r.actualHome, away: r.actualAway },
     forceJoker: countsDouble(r.stage),
+    isKnockout: isKnockout(r.stage),
     field: fieldByMatch.get(r.matchId)!,
     goals: goalsByMatch.get(r.matchId)!,
     oddsForOutcome: (o: Outcome) => oddsByMatch.get(r.matchId)?.[o] ?? null,

@@ -25,6 +25,7 @@ function match(over: Partial<FergieMatchInput>): FergieMatchInput {
     isJoker: false,
     actual: { home: 2, away: 1 },
     forceJoker: false,
+    isKnockout: false,
     field,
     goals: [],
     ...over,
@@ -201,6 +202,47 @@ describe('computeFergie', () => {
       RULES,
     )
     expect(r.matches).toBe(0)
+  })
+
+  it('does not credit a bracket added-time goal struck from a draw', () => {
+    // Knockout 1-1 at 90', then a 90'+3' home winner. The draw would have gone to
+    // extra time, so the winner grants no Fergie points despite nailing the 2-1.
+    const r = computeFergie(
+      [
+        match({
+          isKnockout: true,
+          actual: { home: 2, away: 1 },
+          field: [me(2, 1)],
+          goals: [
+            { side: 'HOME', minute: "30'" },
+            { side: 'AWAY', minute: "60'" },
+            { side: 'HOME', minute: "90'+3'" },
+          ],
+        }),
+      ],
+      RULES,
+    )
+    expect(r).toMatchObject({ matches: 1, goals: 1, pointsWon: 0, pointsLost: 0, netPoints: 0 })
+    expect(r.breakdown).toHaveLength(0)
+  })
+
+  it('still counts a bracket added-time goal struck from a decisive lead', () => {
+    // Knockout 1-0 at 90', then a 90'+2' equalizer. The lead was a real would-be
+    // result, so losing the exact 1-0 to the equalizer counts (even though the
+    // 1-1 itself then goes to extra time).
+    const r = computeFergie(
+      [
+        match({
+          isKnockout: true,
+          actual: { home: 1, away: 1 },
+          field: [me(1, 0)],
+          goals: [{ side: 'HOME', minute: "30'" }, { side: 'AWAY', minute: "90'+2'" }],
+        }),
+      ],
+      RULES,
+    )
+    expect(r).toMatchObject({ matches: 1, goals: 1, pointsLost: 3, netPoints: -3 })
+    expect(r.breakdown[0]).toMatchObject({ net: -3 })
   })
 
   it('skips a reconciled match with no added-time goal', () => {

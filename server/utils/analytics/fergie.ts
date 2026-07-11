@@ -33,6 +33,9 @@ export interface FergieMatchInput {
   // Knockout stages force the joker multiplier on everyone (finalize's
   // countsDouble(stage)); mirror it so the replayed points match reality.
   forceJoker: boolean
+  // A bracket match: a draw at 90' goes to extra time rather than standing, so an
+  // added-time goal struck from a drawn scoreline is discounted below.
+  isKnockout: boolean
   field: PredictionInput[]
   goals: FergieGoal[]
   // Closing odds of a given outcome, needed only when the config scores on ODDS.
@@ -94,7 +97,14 @@ function replayMatch(m: FergieMatchInput, rules: ScoringRules): FergieMatch | nu
     else away += 1
     if (!isAddedTime(g.minute)) continue
     added += 1
-    const delta = realPoints(m, rules, { home, away }) - realPoints(m, rules, before)
+    const after: Scoreline = { home, away }
+    // In a bracket a draw at 90' goes to extra time rather than standing, so a
+    // score that is a draw JUST BEFORE an added-time goal is not a would-be
+    // result: a goal that resolves it neither grants nor costs Fergie points. A
+    // goal struck from a decisive score still counts - even an equalizer (1-0 ->
+    // 1-1), since that pre-goal lead was a real result the goal took away.
+    if (m.isKnockout && outcomeOf(before) === 'DRAW') continue
+    const delta = realPoints(m, rules, after) - realPoints(m, rules, before)
     if (delta > 0) gained += delta
     else if (delta < 0) lost += -delta
   }

@@ -53,7 +53,11 @@ works **mid-tournament**: it reads whatever scored picks exist so far.
   unknown) or a goal set that **does not reconcile with the full-time score** - so
   a gap in the feed never invents a swing. `forceJoker` mirrors
   `countsDouble(stage)`; ODDS configs resolve each hypothetical outcome's closing
-  odds, CROWD (the default) needs none.
+  odds, CROWD (the default) needs none. In a **knockout** (`isKnockout(stage)`) an
+  added-time goal struck from a **drawn** scoreline banks nothing: a draw at 90'
+  goes to extra time rather than standing, so that pre-goal draw is not a would-be
+  result. A goal from a decisive score still counts, including an equalizer
+  (1-0 -> 1-1) that takes a real lead away.
 - Route `server/api/me/analytics.get.ts` - a thin `me`-scoped GET mirroring
   `me/wrapped.get.ts` (auth via `requireUser`, `resolveCompetition`, `toHttpError`),
   but with **no final gate**: `{ hasData: false }` until the user has a scored pick.
