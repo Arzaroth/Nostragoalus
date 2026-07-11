@@ -236,7 +236,7 @@ export function computeAnalytics(
   // Fergie time: re-score each pick against the pre-stoppage line (added-time
   // goals removed) and bank the base-points swing. Only rows the loader marked
   // as reconciled carry non-zero stoppage counts, so no invented drama.
-  const fergie: FergieTime = { ...emptyFergie, biggestGain: null, biggestLoss: null }
+  const fergie: FergieTime = { ...emptyFergie }
   for (const row of rows) {
     const stoppage = row.stoppageHome + row.stoppageAway
     if (stoppage === 0) continue
