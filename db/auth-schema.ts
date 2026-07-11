@@ -34,6 +34,7 @@ export const user = pgTable("user", {
   pushLeague: boolean("push_league"),
   pushMentions: boolean("push_mentions"),
   pushDm: boolean("push_dm"),
+  pushCalls: boolean("push_calls"),
   // Direct-message discoverability. co-members can always DM you (you already
   // share a league); this only governs the opt-in global name search. false =
   // hidden from that search entirely (co-members unaffected).

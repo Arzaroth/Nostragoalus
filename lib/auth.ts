@@ -186,6 +186,8 @@ export function buildAuthOptions(database: AuthDb) {
         pushMentions: { type: 'boolean' as const, required: false },
         // A new direct message landed. Directed by name, so default-on (prefs.ts).
         pushDm: { type: 'boolean' as const, required: false },
+        // A missed voice call (DM ring / league invite). Time-sensitive, default-on.
+        pushCalls: { type: 'boolean' as const, required: false },
         // Opt-out of the global DM recipient search (co-members can always DM you).
         dmDiscoverable: { type: 'boolean' as const, required: false },
         // Newest changelog version the user has viewed (settable: the client
