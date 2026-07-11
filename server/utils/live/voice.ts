@@ -40,8 +40,8 @@ export async function handleVoiceJoin(db: AppDatabase, sub: LiveSubscriber, scop
 export async function handleVoiceLeave(db: AppDatabase, sub: LiveSubscriber): Promise<void> {
   const left = leaveRoom(sub)
   if (!left) return
-  const scope = parseVoiceRoomKey(left.roomKey)
-  if (!scope) return
+  // The room key was built from a validated scope on join, so it always parses.
+  const scope = parseVoiceRoomKey(left.roomKey)!
   publishVoiceRoster(left.roomKey, scope)
   await broadcastLeaguePresence(db, left.roomKey, scope)
 }

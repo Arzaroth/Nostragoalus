@@ -195,6 +195,14 @@ describe('voice signaling glue', () => {
     expect(rows[0].status).toBe('MISSED')
   })
 
+  it('cancel to a target outside the scope records nothing', async () => {
+    const { db, scope } = await dmFixture()
+    const a = connect('alice')
+    await handleVoiceCancel(db, a, scope, 'stranger')
+    const rows = await db.select().from(voiceCall)
+    expect(rows).toHaveLength(0)
+  })
+
   it('cancel does nothing once the callee has joined', async () => {
     const { db, scope } = await dmFixture()
     const a = connect('alice')

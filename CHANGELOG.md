@@ -5,6 +5,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+
+- Voice chat. Call someone one-to-one from a direct message, or start a group voice room in a league chat (optionally tied to a match, to watch a game together). A live "N in voice" badge shows a league call is happening, and you can invite specific members into it. Incoming calls ring you anywhere in the app; a missed call lands in your notifications (and as a push, under the new **Calls** category). Audio is peer-to-peer and end-to-end encrypted - it never passes through the server.
+
+### Operator notes
+
+- Reliable calls behind strict NATs need a TURN relay: a self-hosted **coturn** service, shipped behind the opt-in `voice` compose profile (`docker compose --profile voice up`), configured via `NUXT_TURN_SECRET` / `NUXT_TURN_HOST` / `NUXT_TURN_REALM` (see `.env.example`). Without it the app runs STUN-only and some calls will fail to connect.
+
 ## [2.34.0] - 2026-07-12
 
 ### Added

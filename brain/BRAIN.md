@@ -39,6 +39,7 @@ use the indexes.
 | [database.md](architecture/database.md) | Schema groups, enums, migrations, the shared-dev-DB caveat, test DB. |
 | [auth.md](architecture/auth.md) | better-auth, SSO (encrypted), passkeys, 2FA, API keys, admin model. |
 | [realtime.md](architecture/realtime.md) | WebSocket hub, live event types, presence, reconnecting client. |
+| [webrtc.md](architecture/webrtc.md) | Peer-to-peer voice: mesh, STUN/TURN, self-hosted coturn, ephemeral creds. |
 | [storage.md](architecture/storage.md) | Pluggable fs/s3 blob storage, avatars, chat ciphertext, migration. |
 | [rendering.md](architecture/rendering.md) | satori/resvg share images + PWA service worker, the SSR footguns. |
 | [providers.md](architecture/providers.md) | FIFA match data, Sofascore odds, FIFA ranking, the cycletls engine. |
@@ -72,6 +73,7 @@ use the indexes.
 | [web-push.md](features/web-push.md) | VAPID push, per-category toggles, live goal/kickoff. |
 | [chat.md](features/chat.md) | E2E-encrypted league chat (threads, mentions, moderation, images). |
 | [dms.md](features/dms.md) | E2E-encrypted one-to-one direct messages, global dock. |
+| [voice-chat.md](features/voice-chat.md) | Peer-to-peer WebRTC audio calls: 1:1 DM + small league (match-scoped) rooms; mesh, coturn. |
 | [tamper-evidence.md](features/tamper-evidence.md) | Commit-reveal hash-chain ledger + `/verify`. |
 | [past-pick-counterfactual.md](features/past-pick-counterfactual.md) | Owner-only "an earlier pick of yours would have scored", live + full-time. |
 | [share-images.md](features/share-images.md) | Prediction share cards. |

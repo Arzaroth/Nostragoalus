@@ -12,6 +12,7 @@ Back to the root map: [../BRAIN.md](../BRAIN.md).
 | [database.md](database.md) | Drizzle schema, every table + enum, relations, migrations, connection | drizzle, migration, pglite, enum, app-schema, db:generate |
 | [auth.md](auth.md) | better-auth, SSO (encrypted), passkeys, 2FA, API keys, admin model | better-auth, sso, KEK, passkey, reauth, requireUser, admin emails |
 | [realtime.md](realtime.md) | Nitro WebSocket, the live hub, presence, live event types | _ws, hub, publishUserNotification, presence, useReconnectingSocket |
+| [webrtc.md](webrtc.md) | Peer-to-peer voice: mesh topology, WS signaling, STUN/TURN, self-hosted coturn, ephemeral creds | webrtc, coturn, turn, stun, ice, srtp, mesh, RTCPeerConnection, ice-servers |
 | [storage.md](storage.md) | Pluggable image storage (fs/s3), avatars, chat blobs, migration | StorageDriver, rustfs, aws4fetch, avatar, migrate-blobs |
 | [rendering.md](rendering.md) | Server-rendered OG/share images (satori+resvg) and the PWA service worker | satori, resvg, og, woff, injectManifest, service-worker |
 | [providers.md](providers.md) | External data: FIFA match data, odds, FIFA ranking, the cycletls engine | FIFA, sofascore, betexplorer, cycletls, JA3, ranking |

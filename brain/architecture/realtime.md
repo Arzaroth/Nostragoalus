@@ -46,6 +46,13 @@ fire-and-forget after a successful mutation or during a scheduled task.
 - `ping` (client -> server keepalive) and `pong` (server -> client answer). App-level
   heartbeat, distinct from the `presence:ping` idle report - it detects a silently
   half-open socket (see the heartbeat note under `useReconnectingSocket`).
+- `voice:*` - WebRTC call signaling relayed for [voice chat](../features/voice-chat.md):
+  `voice:join`/`voice:leave`, `voice:signal` (SDP/ICE relayed between two members of
+  a room), `voice:invite`/`voice:ring`/`voice:decline`/`voice:cancel`,
+  `voice:roster` (a room's participants) and `voice:presence` (a league room's count
+  to all members, for the "N in voice" badge). The media itself is peer-to-peer, not
+  on this socket - see [webrtc.md](webrtc.md). Handled by `server/utils/live/voice.ts`
+  + `voice-rooms.ts`, dispatched in `_ws.ts`.
 - crowd totals update and live score/match updates. Three views patch
   `match:update` frames: the match detail (`useLiveMatch`), the fixtures list
   (`useLiveMatches`, into the `['matches', slug]` cache) and the knockout bracket
