@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [2.32.1] - 2026-07-11
+
 ### choHlu'pu'
 
 - QIntagh may'mey rInmoHmeH poH chel maw' - maw' Qav pagh maw' SuD - poH chel juvpu'be'chugh. QIntagh may'Daq, cha'maH javDIch tupDaq rojHom 'oH 'ej poH chel latlh 'oH, vaj may' Daghajbe' Daghajbe'. maw' Duj HoS 'ang vItlhutlh reH juvlu', 'ej maw' rojHom chenmoHwI' Duj DuHIvbogh je.

@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [2.32.1] - 2026-07-11
+
 ### Modifié
 
 - Le temps additionnel ne compte plus un but inscrit dans un match à élimination directe qui tranche un match nul (un but vainqueur tardif ou un but en or). En phase finale, un nul à la 90e envoie le match en prolongation au lieu d'être définitif : ce but ne vous a donc pas vraiment fait gagner ni perdre la confrontation. Un but marqué depuis un score décisif compte toujours, y compris une égalisation tardive qui vous prive d'une avance.
