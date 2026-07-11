@@ -63,6 +63,44 @@ services:
     environment:
       MC_HOST_ng: http://${NUXT_STORAGE_S3_ACCESS_KEY_ID:-rustfsadmin}:${NUXT_STORAGE_S3_SECRET_ACCESS_KEY:-rustfsadmin}@rustfs:9000
 
+  # TURN relay for voice chat (self-hosted coturn), behind the `voice` profile so
+  # the base stack is unchanged for deploys that don't want calls:
+  #   docker compose --profile voice up
+  # The app is STUN-only (and calls behind symmetric NAT fail) until this runs and
+  # NUXT_TURN_SECRET / NUXT_TURN_HOST are set. use-auth-secret mode: the app mints
+  # ephemeral credentials from the shared secret, so coturn stores no accounts.
+  # Prod notes: set NUXT_TURN_EXTERNAL_IP to the host's public IP, open the ports
+  # below (3478 + the relay range) in the firewall, and mount a cert for turns:.
+  coturn:
+    image: coturn/coturn:4.6.2-alpine
+    profiles: ['voice']
+    restart: unless-stopped
+    # Host networking lets coturn hand out real relay addresses without NAT
+    # rewriting; drop it and publish the ports explicitly only if host mode is
+    # unavailable (then NUXT_TURN_EXTERNAL_IP is required).
+    network_mode: host
+    command:
+      - -n
+      - --use-auth-secret
+      # Required: set NUXT_TURN_SECRET in .env before starting the voice profile.
+      # It must match the app's NUXT_TURN_SECRET (an empty value makes TURN unusable).
+      - --static-auth-secret=${NUXT_TURN_SECRET:-}
+      - --realm=${NUXT_TURN_REALM:-nostragoalus}
+      - --listening-port=3478
+      - --tls-listening-port=5349
+      - --min-port=49160
+      - --max-port=49200
+      - --fingerprint
+      - --no-cli
+      - --no-multicast-peers
+      # Uncomment for TLS (turns:) once a cert is mounted into the container:
+      # - --cert=/etc/coturn/tls/fullchain.pem
+      # - --pkey=/etc/coturn/tls/privkey.pem
+      # Uncomment when NOT using host networking (bridge mode needs the public IP):
+      # - --external-ip=${NUXT_TURN_EXTERNAL_IP}
+    # volumes:
+    #   - /etc/letsencrypt/live/turn.example.com:/etc/coturn/tls:ro
+
   app:
     build:
       context: .
