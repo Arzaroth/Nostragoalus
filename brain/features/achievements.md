@@ -42,11 +42,11 @@ Code, not data: `server/utils/achievements/catalog.ts` lists 27 batch-evaluated
 badges (plus two secret badges) with their category, scope, grading thresholds and
 whether they are hidden. `user_achievement` only records what a user unlocked. Categories:
 milestone (first-blood, opening-act, grand-finale, bore-draw, goal-rush, nemesis,
-sharpshooter, prophet, century, perfect-round), streak (hot-streak, on-fire), crowd
-(contrarian, lone-wolf), joker (joker-hero), behavioural (early-bird, night-owl,
-deadline-dancer, set-and-forget, completionist), oracle (champion-oracle,
-golden-touch, underdog-whisperer), trophy-meta (treble, podium) and shame
-(cold-streak, wooden-spoon - the "bad" badges).
+sharpshooter, prophet, century, perfect-round, form-reader, group-guru), streak
+(hot-streak, on-fire), crowd (contrarian, lone-wolf), joker (joker-hero), behavioural
+(early-bird, night-owl, deadline-dancer, set-and-forget, completionist), oracle
+(champion-oracle, golden-touch, underdog-whisperer, champions-path), trophy-meta
+(treble, podium) and shame (cold-streak, wooden-spoon - the "bad" badges).
 
 Two milestone KEYS carry a display name that reads counter to the key (the key never
 changes, the i18n name did): `opening-act` shows as **"First Blood"** (nailing the
@@ -64,7 +64,7 @@ notification. A tier is a high-water mark: a rescore that lowers a metric refres
 stored progress but never demotes the badge - so streaks and tallies survive a
 transient rescore dip. The exception is `revocable` badges (in `catalog.ts`:
 `perfect-round`, and the final-standing `completionist`/`podium`/`wooden-spoon` gated
-on a decided final): these reflect a standing that is only true while its gate holds,
+and `group-guru`, on a decided final): these reflect a standing that is only true while its gate holds,
 not a lifetime peak, so when their metric no longer meets any tier the row is deleted
 (`applyAchievementTier`) and the badge self-heals away - a mis-grant, or an undone
 state like a rewound tournament whose final is no longer decided. "You called it"
@@ -98,6 +98,21 @@ match scored would read as perfect off that one exact, before the rest are playe
 **set-and-forget** rewards predicting every match of such a complete multi-match round
 and never editing one - "never edited" = the pick has a single `prediction_commitment`
 ledger entry (the chain appends only on a real change).
+
+**Correct-outcome badges** grade off calling the RESULT, not the exact scoreline -
+`baseTier` in `{EXACT, DIFF, OUTCOME}` (i.e. non-MISS). **Form Reader (`form-reader`)**
+counts distinct teams the user called the outcome of at least `OUTCOMES_PER_TEAM` (5)
+times, a team counted for both the home and away side of each of its matches (same
+tally shape as nemesis); graded at 3/5/7 teams. Since a team needs five games to give
+five outcomes it leans on deep-run sides, so gold is a brutal read of the bracket.
+**Champion's Path (`champions-path`)** grants when the user called the outcome of
+**every** scored match the tournament champion played - the champion is the winner of
+the decided, scored `stage='FINAL'` match, its whole scored-match set the denominator;
+single-GOLD, high-water like the other "you called it" feats (a missing pick or one
+MISS drops it). **Group Guru (`group-guru`)** grants for calling every outcome in one
+**complete** group (`match.group_name`, every match scored - the group analog of
+Flawless's `completeRounds` guard); revocable, since a rescore that breaks the sweep
+should self-heal.
 
 **wooden-spoon** ("dead last") judges only players who saw the tournament through:
 you must have predicted at least `WOODEN_SPOON_MIN_SHARE` (half) of its matches to be
