@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+
+- Fergie time in your personal analytics: a new card showing how many points added-time goals won or cost you, versus the score at the end of regulation. It re-scores each pick against the pre-stoppage line and highlights your biggest late gift and cruellest late twist.
+
 ## [2.29.0] - 2026-07-10
 
 ### Added

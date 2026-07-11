@@ -821,7 +821,13 @@
     "overTimeHint": "الأعلى = نقاط أكثر، الأوضح = أدق.",
     "bestCall": "أفضل توقع",
     "worstMiss": "أكبر خطأ",
-    "youPicked": "توقّعت {score}"
+    "youPicked": "توقّعت {score}",
+    "fergieTitle": "الوقت بدل الضائع",
+    "fergieHint": "النقاط الأساسية التي كسبتها أو خسرتها بسبب أهداف الوقت بدل الضائع، مقارنة بالنتيجة عند نهاية الوقت الأصلي.",
+    "fergieSummary": "{goals} أهداف في الوقت بدل الضائع عبر {matches} مباريات · +{won} مكسب، -{lost} خسارة.",
+    "fergieGain": "أكبر هدية",
+    "fergieLoss": "أقسى انقلاب",
+    "fergiePre": "كانت {score} قبل الوقت بدل الضائع"
   },
   "leaderboard": {
     "title": "الترتيب",

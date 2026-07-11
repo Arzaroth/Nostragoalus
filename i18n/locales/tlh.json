@@ -694,7 +694,13 @@
     "overTimeHint": "jen: 'Iy law'. wov: lugh law'.",
     "bestCall": "wIv pov",
     "worstMiss": "Qagh tIn",
-    "youPicked": "{score} DawIv"
+    "youPicked": "{score} DawIv",
+    "fergieTitle": "poH chel",
+    "fergieHint": "poH chel maw'mey: Say' DaSuqpu' pagh Danatlhpu', qaStaHvIS Qav poH mI'.",
+    "fergieSummary": "{goals} maw' poH chel, {matches} may' · +{won} Suq, -{lost} natlh.",
+    "fergieGain": "nob tIn",
+    "fergieLoss": "'oy' tIn",
+    "fergiePre": "poH chel pagh: {score}"
   },
   "leaderboard": {
     "title": "patlh",

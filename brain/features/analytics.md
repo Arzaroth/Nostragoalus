@@ -20,6 +20,12 @@ works **mid-tournament**: it reads whatever scored picks exist so far.
   accurate), in round sort order.
 - **Best call / biggest miss**: the top-scoring pick (tie broken toward the higher
   tier) and the miss with the largest goal error (tie broken toward a joker).
+- **Fergie time**: how the user's base points moved on added-time goals. Each pick
+  is re-scored against its **pre-stoppage** line (every added-time goal stripped
+  out), and the base-points delta (full-time minus pre-stoppage) is banked as a
+  swing - positive when a late goal paid off the pick, negative when it broke it.
+  The card shows the net swing, matches/goals involved, and the biggest single
+  gain and loss. Only shown when at least one picked match had an added-time goal.
 
 ## How it works
 
@@ -29,6 +35,14 @@ works **mid-tournament**: it reads whatever scored picks exist so far.
   `computeAnalytics(competitionName, rows)`. All aggregation lives in that pure
   function, so the whole report is unit-tested without a database. Outcome
   derivation reuses `outcomeOf` from [`server/utils/scoring/tiers.ts`](../../server/utils/scoring/tiers.ts).
+- Fergie time reads [`goal_event`](../../db/app-schema.ts) rows for the
+  competition: a goal is added-time when its free-text `minute` carries a `+`
+  (e.g. `"90'+3'"`). Per match the loader sums goals per side and **only trusts a
+  match whose side-sums reconcile with the full-time score** - a gap in the goal
+  feed contributes no swing. The pre-stoppage line is `full-time minus per-side
+  added-time counts`, re-classified with `classifyTier` and priced with
+  `basePointsFor` against the competition's base points
+  (`getScoringConfigFor`), so a custom scoring config scales the swing.
 - Route `server/api/me/analytics.get.ts` - a thin `me`-scoped GET mirroring
   `me/wrapped.get.ts` (auth via `requireUser`, `resolveCompetition`, `toHttpError`),
   but with **no final gate**: `{ hasData: false }` until the user has a scored pick.
@@ -42,5 +56,5 @@ works **mid-tournament**: it reads whatever scored picks exist so far.
 ## Notes
 
 - Not league-scoped: it reports the user's base picks across the competition.
-- No new i18n beyond the `analytics.*` namespace and `nav.analytics` in all five
-  locales.
+- i18n lives under the `analytics.*` namespace (plus `nav.analytics`) in all five
+  locales; the Fergie time card adds `analytics.fergie*` keys there.

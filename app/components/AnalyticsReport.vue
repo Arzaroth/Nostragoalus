@@ -31,6 +31,13 @@ const maxRoundPoints = computed(() => Math.max(1, ...props.data.overTime.map((r)
 function biasWidth(t: TeamBias) {
   return Math.min(100, Math.abs(t.delta) * 100)
 }
+
+const fergie = computed(() => props.data.fergieTime)
+// Signed point label, e.g. "+3" / "-2" / "0".
+const signedPts = (n: number) => `${n > 0 ? '+' : ''}${n}`
+const fergieColor = computed(() =>
+  fergie.value.netPoints > 0 ? 'var(--ng-success)' : fergie.value.netPoints < 0 ? 'var(--ng-danger)' : 'var(--p-text-muted-color)',
+)
 </script>
 
 <template>
@@ -148,6 +155,39 @@ function biasWidth(t: TeamBias) {
           <img v-if="flagUrl(data.worstMiss.awayCode)" :src="flagUrl(data.worstMiss.awayCode) || ''" class="w-4 h-4 rounded object-cover shrink-0" alt="" >
         </div>
         <div class="text-xs" style="color: var(--p-text-muted-color)">{{ t('analytics.youPicked', { score: data.worstMiss.predicted }) }}</div>
+      </div>
+    </section>
+
+    <!-- Fergie time -->
+    <section v-if="fergie.matches" class="ng-card rounded-xl border px-4 py-3" data-test="fergie-time" style="background: var(--p-content-background); border-color: var(--p-content-border-color)">
+      <h2 class="font-semibold mb-1">{{ t('analytics.fergieTitle') }}</h2>
+      <p class="text-sm" style="color: var(--p-text-muted-color)">{{ t('analytics.fergieHint') }}</p>
+      <div class="flex items-baseline gap-2 mt-2">
+        <span class="text-3xl font-bold tabular-nums" :style="`color: ${fergieColor}`" data-test="fergie-net">{{ signedPts(fergie.netPoints) }}</span>
+        <span class="text-sm" style="color: var(--p-text-muted-color)">{{ t('leaderboard.pts') }}</span>
+      </div>
+      <p class="text-xs mt-1" style="color: var(--p-text-muted-color)">
+        {{ t('analytics.fergieSummary', { goals: fergie.goals, matches: fergie.matches, won: fergie.pointsWon, lost: fergie.pointsLost }) }}
+      </p>
+      <div class="grid sm:grid-cols-2 gap-3 mt-3">
+        <div v-if="fergie.biggestGain" class="text-sm">
+          <div class="text-xs uppercase tracking-wide mb-0.5" style="color: var(--ng-success)">{{ t('analytics.fergieGain') }}</div>
+          <div class="flex items-center gap-1.5 font-medium">
+            <img v-if="flagUrl(fergie.biggestGain.homeCode)" :src="flagUrl(fergie.biggestGain.homeCode) || ''" class="w-4 h-4 rounded object-cover shrink-0" alt="" >
+            <span>{{ fergie.biggestGain.home }} {{ fergie.biggestGain.actual }} {{ fergie.biggestGain.away }}</span>
+            <img v-if="flagUrl(fergie.biggestGain.awayCode)" :src="flagUrl(fergie.biggestGain.awayCode) || ''" class="w-4 h-4 rounded object-cover shrink-0" alt="" >
+          </div>
+          <div class="text-xs" style="color: var(--p-text-muted-color)">{{ t('analytics.fergiePre', { score: fergie.biggestGain.preStoppage }) }} · {{ signedPts(fergie.biggestGain.swing) }} {{ t('leaderboard.pts') }}</div>
+        </div>
+        <div v-if="fergie.biggestLoss" class="text-sm">
+          <div class="text-xs uppercase tracking-wide mb-0.5" style="color: var(--ng-danger)">{{ t('analytics.fergieLoss') }}</div>
+          <div class="flex items-center gap-1.5 font-medium">
+            <img v-if="flagUrl(fergie.biggestLoss.homeCode)" :src="flagUrl(fergie.biggestLoss.homeCode) || ''" class="w-4 h-4 rounded object-cover shrink-0" alt="" >
+            <span>{{ fergie.biggestLoss.home }} {{ fergie.biggestLoss.actual }} {{ fergie.biggestLoss.away }}</span>
+            <img v-if="flagUrl(fergie.biggestLoss.awayCode)" :src="flagUrl(fergie.biggestLoss.awayCode) || ''" class="w-4 h-4 rounded object-cover shrink-0" alt="" >
+          </div>
+          <div class="text-xs" style="color: var(--p-text-muted-color)">{{ t('analytics.fergiePre', { score: fergie.biggestLoss.preStoppage }) }} · {{ signedPts(fergie.biggestLoss.swing) }} {{ t('leaderboard.pts') }}</div>
+        </div>
       </div>
     </section>
   </div>

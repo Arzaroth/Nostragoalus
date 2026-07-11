@@ -5,6 +5,8 @@ import {
   closeDb,
   getUserIdByEmail,
   seedCompetitionWithMatch,
+  seedDefaultScoringConfig,
+  seedFergieScenario,
   seedFinishedExactPrediction,
   type SeededFixture,
 } from './helpers/db'
@@ -12,6 +14,9 @@ import {
 let fixture: SeededFixture
 test.beforeAll(async () => {
   fixture = await seedCompetitionWithMatch()
+  // The analytics report reads the competition's base points to weigh Fergie
+  // time; the isolated stack has no seeded config until we add one.
+  await seedDefaultScoringConfig()
 })
 test.afterAll(async () => {
   await cleanup()
@@ -39,4 +44,23 @@ test('the analytics page shows a bias report once a pick is scored', async ({ pa
   await expect(report).toBeVisible({ timeout: 10_000 })
   // An exact 2-1 call lands in the tier mix and as the best call.
   await expect(page.getByText('Best call')).toBeVisible()
+})
+
+// Fergie time re-scores each pick against the pre-stoppage line: a stoppage-time
+// winner that turned a draw into an exact call should surface as points won.
+test('the analytics page reports fergie time won on a stoppage-time winner', async ({ page }) => {
+  const user = freshUser()
+  await signUp(page, user)
+  const userId = await getUserIdByEmail(user.email)
+
+  await seedFergieScenario(userId, fixture.competitionId)
+
+  await expect(async () => {
+    await page.goto(`/${fixture.slug}/analytics`)
+  }).toPass({ timeout: 30_000 })
+  await dismissOnboarding(page)
+
+  const fergie = page.locator('[data-test=fergie-time]')
+  await expect(fergie).toBeVisible({ timeout: 10_000 })
+  await expect(fergie.locator('[data-test=fergie-net]')).toHaveText('+3')
 })

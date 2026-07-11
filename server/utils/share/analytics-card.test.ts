@@ -5,12 +5,14 @@ import { match, prediction, round } from '../../../db/schema'
 import { createTestDb } from '../../../tests/db'
 import { makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
 import { NotFoundError } from '../errors'
+import { ensureDefaultScoringConfig } from '../scoring/store'
 import { getAnalyticsCard } from './analytics-card'
 
 let db: AppDatabase
 
 beforeEach(async () => {
   db = (await createTestDb()).db as unknown as AppDatabase
+  await ensureDefaultScoringConfig(db)
 })
 
 describe('getAnalyticsCard', () => {

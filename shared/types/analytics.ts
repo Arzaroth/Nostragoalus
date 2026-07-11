@@ -50,6 +50,41 @@ export interface PickHighlight {
   isJoker: boolean
 }
 
+// One match where a stoppage-time (added-time) goal changed the user's base
+// points, versus the score frozen at the end of regulation open play.
+export interface FergieSwing {
+  home: string
+  away: string
+  homeCode: string | null
+  awayCode: string | null
+  predicted: string
+  // Full-time score, added time included.
+  actual: string
+  // Score with every added-time goal stripped out.
+  preStoppage: string
+  // Base-points delta (full-time minus pre-stoppage): positive = added time
+  // paid the user, negative = it cost them.
+  swing: number
+  isJoker: boolean
+}
+
+// "Fergie time": how the user's base points moved on goals scored in added
+// time, aggregated over the matches where such a goal actually fell. Only
+// matches whose recorded goals reconcile with the full-time score count, so a
+// gap in the goal feed never invents a swing.
+export interface FergieTime {
+  // Picked matches that had at least one added-time goal (reconciled).
+  matches: number
+  // Total added-time goals across those matches.
+  goals: number
+  // pointsWon - pointsLost: net base points added time was worth to the user.
+  netPoints: number
+  pointsWon: number
+  pointsLost: number
+  biggestGain: FergieSwing | null
+  biggestLoss: FergieSwing | null
+}
+
 export interface AnalyticsResponse {
   competitionName: string
   // False when the user has no scored picks yet: the page shows an empty state.
@@ -83,4 +118,5 @@ export interface AnalyticsResponse {
   overTime: RoundAccuracy[]
   bestCall: PickHighlight | null
   worstMiss: PickHighlight | null
+  fergieTime: FergieTime
 }

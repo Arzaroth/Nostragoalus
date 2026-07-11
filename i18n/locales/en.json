@@ -698,7 +698,13 @@
     "overTimeHint": "Taller = more points; brighter = more accurate.",
     "bestCall": "Best call",
     "worstMiss": "Biggest miss",
-    "youPicked": "You picked {score}"
+    "youPicked": "You picked {score}",
+    "fergieTitle": "Fergie time",
+    "fergieHint": "Base points added-time goals won or cost you, versus the score at the end of regulation.",
+    "fergieSummary": "{goals} added-time goals across {matches} matches · +{won} won, -{lost} lost.",
+    "fergieGain": "Biggest gift",
+    "fergieLoss": "Cruellest twist",
+    "fergiePre": "Was {score} before added time"
   },
   "leaderboard": {
     "title": "Ranking",

@@ -1,6 +1,7 @@
 import type { AppDatabase } from '../db/types'
 import {
   competition,
+  goalEvent,
   league,
   leagueMember,
   leaguePrediction,
@@ -102,6 +103,29 @@ export async function makeMatch(db: AppDatabase, opts: MatchOptions): Promise<st
     })
     .returning({ id: match.id })
   return row.id
+}
+
+export interface GoalEventOptions {
+  matchId: string
+  competitionId: string
+  side: 'HOME' | 'AWAY'
+  // "45'+2'" / "90'+3'" for added time; "12'" for open play.
+  minute?: string | null
+  ownGoal?: boolean
+  teamName?: string
+  playerName?: string
+}
+
+export async function makeGoalEvent(db: AppDatabase, opts: GoalEventOptions): Promise<void> {
+  await db.insert(goalEvent).values({
+    matchId: opts.matchId,
+    competitionId: opts.competitionId,
+    side: opts.side,
+    teamName: opts.teamName ?? (opts.side === 'HOME' ? 'Home' : 'Away'),
+    playerName: opts.playerName ?? 'Scorer',
+    minute: opts.minute ?? null,
+    ownGoal: opts.ownGoal ?? false,
+  })
 }
 
 export interface LeagueOptions {
