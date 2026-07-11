@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_RULES, type ScoringRules } from '../scoring/config'
 import type { PredictionInput } from '../scoring/engine'
-import { computeFergie, isAddedTime, minuteOrder, parseMinute, type FergieGoal, type FergieMatchInput } from './fergie'
+import { computeFergie, isAddedTime, type FergieGoal, type FergieMatchInput } from './fergie'
 
 // The user is 'me'; everyone else fills the field so the crowd bonus can fire.
 function me(home: number, away: number, isJoker = false): PredictionInput {
@@ -33,29 +33,36 @@ function match(over: Partial<FergieMatchInput>): FergieMatchInput {
 
 const RULES: ScoringRules = DEFAULT_RULES
 
-describe('minute parsing', () => {
-  it('parses regulation, second-half stoppage and first-half stoppage', () => {
-    expect(parseMinute("66'")).toEqual({ base: 66, added: 0, hasAdded: false })
-    expect(parseMinute("90'+3'")).toEqual({ base: 90, added: 3, hasAdded: true })
-    expect(parseMinute("45'+2'")).toEqual({ base: 45, added: 2, hasAdded: true })
-    expect(parseMinute("105'+1'")).toEqual({ base: 105, added: 1, hasAdded: true })
-    expect(parseMinute(null)).toBeNull()
-    expect(parseMinute("'")).toBeNull()
-  })
-
-  it('orders added time after its base minute so later stoppage sorts last', () => {
-    expect(minuteOrder("90'+9'")).toBeGreaterThan(minuteOrder("90'+2'"))
-    expect(minuteOrder("90'+2'")).toBeGreaterThan(minuteOrder("90'"))
-    expect(minuteOrder("45'+2'")).toBeLessThan(minuteOrder("46'"))
-    expect(minuteOrder(null)).toBe(Number.POSITIVE_INFINITY)
-  })
-
+describe('isAddedTime', () => {
   it('treats only 90-plus stoppage as Fergie added time, not first-half stoppage', () => {
     expect(isAddedTime("90'+3'")).toBe(true)
     expect(isAddedTime("120'+2'")).toBe(true)
     expect(isAddedTime("45'+2'")).toBe(false)
     expect(isAddedTime("92'")).toBe(false)
     expect(isAddedTime(null)).toBe(false)
+  })
+
+  it('orders two same-base stoppage goals by their added minute in the replay', () => {
+    // 90'+2' away (2-1) then 90'+9' home (3-1): with correct ordering the pick
+    // 2-1 hits its exact on the +2 (gain) then loses it on the +9 (loss). A
+    // parser that ignored the added part would order them arbitrarily.
+    const r = computeFergie(
+      [
+        match({
+          actual: { home: 3, away: 1 },
+          field: [me(2, 1)],
+          goals: [
+            { side: 'HOME', minute: "40'" },
+            { side: 'HOME', minute: "80'" },
+            { side: 'HOME', minute: "90'+9'" },
+            { side: 'AWAY', minute: "90'+2'" },
+          ],
+        }),
+      ],
+      RULES,
+    )
+    // +2 first: 2-0 -> 2-1 nails the exact (gain); +9: 2-1 -> 3-1 breaks it (loss).
+    expect(r.breakdown[0]).toMatchObject({ gained: 2, lost: 2, net: 0 })
   })
 })
 
