@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [2.31.0] - 2026-07-11
+
 ### Ajouté
 
 - Trois nouveaux succès, à débloquer au sein d'un même tournoi : **Lecteur de forme** (trouvez le résultat des matchs d'une équipe cinq fois, pour trois, cinq ou sept équipes différentes), **La route du champion** (trouvez le résultat de tous les matchs du futur champion) et **Gourou de groupe** (trouvez tous les résultats d'un même groupe). Le « résultat » désigne l'issue (victoire, nul ou défaite), pas le score exact.

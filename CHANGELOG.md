@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.31.0] - 2026-07-11
+
 ### Added
 
 - Three new achievements, all earned within a single tournament: **Form Reader** (call the outcome of one team's matches five times, for three, five or seven different teams), **Champion's Path** (call the outcome of every match the eventual champion plays) and **Group Guru** (call every outcome in one full group). "Outcome" means the right result (win, draw or loss), not the exact scoreline.
