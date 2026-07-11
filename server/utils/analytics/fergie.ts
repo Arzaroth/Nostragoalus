@@ -1,7 +1,12 @@
 import { scorePredictions, type PredictionInput } from '../scoring/engine'
 import { outcomeOf, type Outcome, type Scoreline } from '../scoring/tiers'
+import { minuteValue } from '../stats/insights'
 import type { ScoringRules } from '../scoring/config'
 import type { FergieMatch, FergieTime } from '#shared/types/analytics'
+
+// minuteValue's sentinel for a null/unparseable minute; a real clock never
+// reaches it (max ~130'), so >= this means the timeline order is unknown.
+const UNKNOWN_MINUTE = 1e9
 
 export interface FergieGoal {
   side: 'HOME' | 'AWAY'
@@ -47,30 +52,13 @@ export function emptyFergie(): FergieTime {
   }
 }
 
-// Parse a free-text upstream minute: "66'" -> {base:66, added:0}, "90'+5'" ->
-// {base:90, added:5, hasAdded:true}, "45'+2'" -> {base:45, added:2, hasAdded}.
-// Null/unparseable -> null. The `\D*` sits INSIDE the optional group so it can't
-// swallow the "+" before the group tries to match it.
-export function parseMinute(minute: string | null | undefined): { base: number; added: number; hasAdded: boolean } | null {
-  const m = minute?.match(/^(\d+)(?:\D*\+\D*(\d+))?/)
-  if (!m) return null
-  return { base: Number(m[1]), added: m[2] ? Number(m[2]) : 0, hasAdded: m[2] != null }
-}
-
-// A sortable clock position: "90'+5'" -> 90.05, "66'" -> 66, so an added-time
-// goal orders after its regulation minute. Unparseable/absent minutes sort last.
-export function minuteOrder(minute: string | null): number {
-  const p = parseMinute(minute)
-  return p ? p.base + p.added / 100 : Number.POSITIVE_INFINITY
-}
-
 // "Fergie time" is end-of-half stoppage from the second half on: an added-time
 // goal (minute carries a "+") whose base minute is 90' or later (90'+, 105'+,
 // 120'+). A first-half "45'+2'" is stoppage too, but its marginal value against a
 // mid-match scoreline is not what the metric is about, so it does not count.
+// minuteValue encodes base*100 + stoppage, so its hundreds are the base minute.
 export function isAddedTime(minute: string | null): boolean {
-  const p = parseMinute(minute)
-  return !!p && p.hasAdded && p.base >= 90
+  return !!minute && minute.includes('+') && Math.floor(minuteValue(minute) / 100) >= 90
 }
 
 function realPoints(m: FergieMatchInput, rules: ScoringRules, at: Scoreline): number {
@@ -90,10 +78,10 @@ function realPoints(m: FergieMatchInput, rules: ScoringRules, at: Scoreline): nu
 // does not reconcile with the full-time score - or when no added-time goal fell.
 // Bailing out here means an incomplete feed never invents a swing.
 function replayMatch(m: FergieMatchInput, rules: ScoringRules): FergieMatch | null {
-  const ordered = m.goals.map((g) => ({ g, order: minuteOrder(g.minute) }))
+  const ordered = m.goals.map((g) => ({ g, order: minuteValue(g.minute) }))
   // One unorderable minute makes every added-time delta suspect (a real early
   // goal could be applied after a late one), even if the final still reconciles.
-  if (ordered.some((o) => !Number.isFinite(o.order))) return null
+  if (ordered.some((o) => o.order >= UNKNOWN_MINUTE)) return null
   const sorted = ordered.sort((a, b) => a.order - b.order).map((o) => o.g)
   let home = 0
   let away = 0
