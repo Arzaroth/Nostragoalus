@@ -172,7 +172,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateNavFades))
           <ClientOnly>
             <template v-if="session && session.data">
               <NotificationBell />
-              <button type="button" class="relative rounded-full shrink-0" :aria-label="hasUnseenChangelog ? t('nav.whatsNewUnread') : t('account.title')" @click="(e) => userMenu.toggle(e)">
+              <button type="button" data-test="user-menu" class="relative rounded-full shrink-0" :aria-label="hasUnseenChangelog ? t('nav.whatsNewUnread') : t('account.title')" @click="(e) => userMenu.toggle(e)">
                 <Avatar
                   :image="session.data.user.image || '/brand/avatar.svg'"
                   shape="circle"

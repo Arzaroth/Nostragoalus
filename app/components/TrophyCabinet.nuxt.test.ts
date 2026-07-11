@@ -21,6 +21,7 @@ const CABINET: CabinetDto = {
       earned: { tier: 'BRONZE', progress: 1, unlockedAt: '2026-06-12T00:00:00.000Z' },
       current: 1,
       currentStreak: null,
+      rarity: [{ tier: 'BRONZE', pct: 40 }],
     },
     {
       key: 'sharpshooter',
@@ -32,6 +33,7 @@ const CABINET: CabinetDto = {
       earned: null,
       current: 2,
       currentStreak: null,
+      rarity: [{ tier: 'BRONZE', pct: 0 }],
     },
   ],
   showcase: [{ slot: 0, achievementKey: 'first-blood' }],
@@ -74,6 +76,9 @@ describe('TrophyCabinet', () => {
     expect(wrapper.text()).toContain('2 / 5')
     // The owner gets the showcase-edit control.
     expect(wrapper.text()).toContain('Edit showcase')
+    // Rarity: the earned badge shows its held-by %, the unheld one reads "no one yet".
+    expect(wrapper.text()).toContain('Held by 40%')
+    expect(wrapper.text()).toContain('No one has this yet')
   })
 
   it('enters showcase edit mode on the owner control', async () => {

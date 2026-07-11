@@ -5,6 +5,20 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### chelpu'
+
+- 'och pa'Daq DojmoH: DaH Hoch Dab 'ang mI', chaq lo'laHghach patlh, vaj Do'Ha'ghach Da'anglaH.
+
+### choHlu'pu'
+
+- ghom pIn'a' patlh ghaj: wa', cha', wej ghom naQ may' Hoch mI' Del - baS Doq, baS chIS, baS SuD.
+- charghwI' He cha' patlh ghaj: baS SuD - charghwI' may' Hoch mI' Del; nagh 'IH chu' (baS SuD nIvDaq) - Hoch may' mI' pup Del.
+- "jagh" Dab pong choHlu' "paq poS" - wa' ghom mI' pup reH DaqIpbogh.
+
+### DImanpu'
+
+- Dojmey teywI' menuvo' 'och pa' poSlu'DI', DaH lugh 'och pa' ghoSchoH, profileDaj "DaH" ghoSchoHwI' qanchugh.
+
 ## [2.32.1] - 2026-07-11
 
 ### choHlu'pu'

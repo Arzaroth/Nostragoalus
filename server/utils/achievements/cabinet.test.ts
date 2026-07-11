@@ -75,6 +75,36 @@ describe('getCabinet', () => {
     expect(sharpshooter?.current).toBe(1)
   })
 
+  it('reports per-tier rarity as the share of participants holding each badge', async () => {
+    const c = await seedCompetition(db)
+    const alice = await makeUser(db, 'alice')
+    const bob = await makeUser(db, 'bob')
+    const [g1] = await db.select().from(round).where(eq(round.competitionId, c)).limit(1)
+    const m = await makeMatch(db, {
+      competitionId: c,
+      roundId: g1.id,
+      status: 'FINISHED',
+      fullTimeHome: 1,
+      fullTimeAway: 0,
+      winner: 'HOME',
+      kickoffTime: new Date('2026-06-15T12:00:00Z'),
+    })
+    await db.update(match).set({ scoringState: 'SCORED' }).where(eq(match.id, m))
+    // Both alice and bob are participants (a prediction each) - the denominator is 2.
+    const pa = await makePrediction(db, { userId: alice, matchId: m, roundId: g1.id, home: 1, away: 0 })
+    await db.update(prediction).set({ baseTier: 'EXACT', totalPoints: 3, basePoints: 3 }).where(eq(prediction.id, pa))
+    const pb = await makePrediction(db, { userId: bob, matchId: m, roundId: g1.id, home: 2, away: 2 })
+    await db.update(prediction).set({ baseTier: 'MISS', totalPoints: 0, basePoints: 0 }).where(eq(prediction.id, pb))
+    // Only alice holds first-blood.
+    await db.insert(userAchievement).values({ userId: alice, competitionId: c, key: 'first-blood', tier: 'BRONZE', progress: 1 })
+
+    const cab = await getCabinet(db, { competitionId: c, userId: alice, viewerId: alice })
+    const firstBlood = cab.achievements.find((a) => a.key === 'first-blood')
+    expect(firstBlood?.rarity).toEqual([{ tier: 'BRONZE', pct: 50 }]) // 1 of 2 participants
+    const sharpshooter = cab.achievements.find((a) => a.key === 'sharpshooter')
+    expect(sharpshooter?.rarity[0]?.pct).toBe(0) // nobody holds it
+  })
+
   it('exposes the icon override and the ongoing streak on a climbing streak badge', async () => {
     const c = await seedCompetition(db)
     const alice = await makeUser(db, 'alice')

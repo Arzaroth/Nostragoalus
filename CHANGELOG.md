@@ -5,6 +5,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+
+- Trophy cabinet rarity: each badge now shows the share of the competition's players who hold it, per tier - so you can see how rare your haul really is.
+
+### Changed
+
+- Group Guru is now tiered: call every match's outcome in one, two, or three full groups for bronze, silver, gold.
+- Champion's Path now has two tiers: gold for calling the champion's every match outcome, and a new Diamond tier (above gold) for calling every one exact.
+- The "Nemesis" badge is renamed "Open Book" - a team whose exact scores you keep nailing.
+
+### Fixed
+
+- Opening the trophy cabinet from the Achievements menu now scrolls to it reliably, instead of being hijacked by your profile's jump-to-now scroll.
+
 ## [2.32.1] - 2026-07-11
 
 ### Changed

@@ -5,7 +5,8 @@ Two kinds of recognition hang off the [core loop](predictions-and-scoring.md):
 - **Trophies** - rare, competition-end awards (the "prizes" of the contest),
   derived at finalize from the settled leaderboard/prediction state.
 - **Achievements** - milestone badges earned during play, from a code-defined
-  catalog, graded bronze/silver/gold.
+  catalog, graded bronze/silver/gold - plus a rare fourth **diamond** tier above
+  gold (currently only Champion's Path's all-exact grade).
 
 Each user has a **trophy cabinet** (everything they can earn, lit or locked) and a
 **showcase** - a curated set of up to three earned achievements they pin to show
@@ -89,7 +90,8 @@ the counterpart to opening-act: the EXACT on a `stage = 'FINAL'` match (also sin
 **Scoreline-flavour badges** grade off the settled prediction alone: **bore-draw** is
 an EXACT 0-0, **goal-rush** an EXACT on a match of 5+ total goals, and **nemesis** the
 most EXACT calls landed on any one team (counted for both the home and away side of
-each exact pick; single-tier at 3). **Flawless (`perfect-round`)** excludes the final
+each exact pick; single-tier at 3). nemesis is the internal catalog key; it displays
+as **"Open Book"** (the key is kept so already-granted rows survive). **Flawless (`perfect-round`)** excludes the final
 and third-place (`isSingleMatchStage`): those are one-match rounds where a "perfect
 round" is just a single exact (already grand-finale's job), so Flawless means a clean
 sweep of a real multi-match round. Both Flawless and set-and-forget only count a
@@ -106,14 +108,17 @@ counts distinct teams the user called the outcome of at least `OUTCOMES_PER_TEAM
 times, a team counted for both the home and away side of each of its matches (same
 tally shape as nemesis); graded at 3/5/7 teams. Since a team needs five games to give
 five outcomes it leans on deep-run sides, so gold is a brutal read of the bracket.
-**Champion's Path (`champions-path`)** grants when the user called the outcome of
-**every** scored match the tournament champion played - the champion is the winner of
-the decided, scored `stage='FINAL'` match, its whole scored-match set the denominator;
-single-GOLD, high-water like the other "you called it" feats (a missing pick or one
-MISS drops it). **Group Guru (`group-guru`)** grants for calling every outcome in one
-**complete** group (`match.group_name`, every match scored - the group analog of
-Flawless's `completeRounds` guard); revocable, since a rescore that breaks the sweep
-should self-heal.
+**Champion's Path (`champions-path`)** grades on the champion's whole run - the champion
+is the winner of the decided, scored `stage='FINAL'` match, its whole scored-match set
+the denominator. The `championPath` metric is 1 (**gold**) when every one of those
+matches is covered by a non-MISS pick, 2 (**diamond**) when every one is EXACT; a
+missing pick or one MISS drops it to 0. High-water like the other "you called it" feats
+(non-revocable). **Group Guru (`group-guru`)** is tiered by the **number** of complete
+groups (`match.group_name`, every match scored - the group analog of Flawless's
+`completeRounds` guard) whose every outcome the user called: `groupPerfect` returns that
+count, graded 1/2/3 for bronze/silver/gold. Revocable, so a rescore that breaks a sweep
+self-heals - and because it is now both tiered and revocable, `applyAchievementTier`
+**demotes** the tier (not just deletes at zero) when the count drops a band.
 
 **wooden-spoon** ("dead last") judges only players who saw the tournament through:
 you must have predicted at least `WOODEN_SPOON_MIN_SHARE` (half) of its matches to be
@@ -203,6 +208,14 @@ so the unlock is not dangled as a to-do list.
 - Client: `useCabinet` / `useShowcase` composables, `TrophyCabinet.vue` +
   `CabinetTile.vue`, embedded on the profile page (competition scope only).
 
+**Rarity.** `getCabinet` also attaches a per-tier `rarity` to every `AchievementDto`:
+one competition-wide grouped scan of `user_achievement` (`GROUP BY key, tier`) gives
+holder counts, divided by the participant denominator (`stats.size` - the participant
+map `computeAchievementStats` already returns, one entry per player with a prediction).
+`rarity[]` is cumulative and ascending: each tier's `pct` is the share of participants
+holding the badge at that tier **or higher**. The tile shows the rarity of the tier you
+hold, or (locked) the lowest tier's share; `pct === 0` renders as "no one has this yet".
+
 ## Notifications
 
 New winners/unlocks fire `TROPHY_AWARDED` / `ACHIEVEMENT_UNLOCKED`
@@ -214,6 +227,12 @@ own cabinet (`cabinetPath`). The cabinet `<section>` anchors at `#cabinet`; the
 and the profile page smooth-scrolls to it when it arrives with that hash (the
 router's own hash scroll fires before the section mounts and ignores its
 `scroll-margin-top`, so a `watch` re-runs `scrollIntoView` once the section exists).
+That page also auto-scrolls to the "now" boundary (end of the played picks) when it
+loads with no hash; a single latch arbitrates so the two never both fire. The intended
+hash is read as `route.hash || window.location.hash`: on an in-app nav `route.hash`
+leads (the URL reconciles a tick late), mid-hydration the URL leads - trusting both
+orderings stops the jump-to-now branch from claiming the one-shot on a stale-empty hash
+before the `#cabinet` anchor resolves.
 
 ## Sources
 

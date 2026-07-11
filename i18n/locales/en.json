@@ -20,10 +20,13 @@
     "showcaseFull": "Your showcase is full ({max} slots).",
     "saved": "Showcase saved.",
     "earnedOn": "Earned {date}",
+    "rarity": "Held by {pct}%",
+    "rarityNone": "No one has this yet",
     "tier": {
       "BRONZE": "Bronze",
       "SILVER": "Silver",
-      "GOLD": "Gold"
+      "GOLD": "Gold",
+      "DIAMOND": "Diamond"
     },
     "trophy": {
       "OVERALL": { "name": "Grand Champion", "desc": "Finished top of the overall leaderboard.", "criteria": "Top the overall leaderboard when the tournament ends." },
@@ -53,14 +56,14 @@
       "underdog-whisperer": { "name": "Underdog Whisperer", "desc": "Your long-shot champion pick came good.", "criteria": "Win with a champion pick ranked outside the FIFA top 15 (or unranked)." },
       "treble": { "name": "Treble", "desc": "Held three trophies in one tournament.", "criteria": "Hold three competition-end trophies at the same time." },
       "form-reader": { "name": "Form Reader", "desc": "You read whole teams' tournaments, game after game.", "criteria": "Call the outcome of one team's matches 5 times, for 3 teams (bronze), 5 (silver), 7 (gold)." },
-      "champions-path": { "name": "Champion's Path", "desc": "You called the winners' entire run to the trophy.", "criteria": "Call the outcome of every match the tournament's champion plays." },
-      "group-guru": { "name": "Group Guru", "desc": "Read a whole group, top to bottom.", "criteria": "Call the outcome of every match in a single group." },
+      "champions-path": { "name": "Champion's Path", "desc": "You called the winners' entire run to the trophy.", "criteria": "Call the champion's whole run: every match's outcome for gold, every one exact for diamond." },
+      "group-guru": { "name": "Group Guru", "desc": "Read whole groups, top to bottom.", "criteria": "Call every match's outcome in a full group: 1 for bronze, 2 silver, 3 gold." },
       "podium": { "name": "On the Podium", "desc": "Finished in the overall top three.", "criteria": "Finish in the overall top three once the tournament ends." },
       "opening-act": { "name": "First Blood", "desc": "Nailed the very first match of the whole tournament.", "criteria": "Call the exact scoreline of the tournament's opening match." },
       "grand-finale": { "name": "Grand Finale", "desc": "Nailed the tournament's final match.", "criteria": "Call the exact scoreline of the tournament's final." },
       "bore-draw": { "name": "Bore Draw", "desc": "Called a goalless draw on the nose.", "criteria": "Call an exact 0-0." },
       "goal-rush": { "name": "Goal Rush", "desc": "Nailed a goal fest exactly.", "criteria": "Call the exact score of a match with five or more goals." },
-      "nemesis": { "name": "Nemesis", "desc": "One team you just can't stop reading.", "criteria": "Call exact scorelines on the same team's matches three times." },
+      "nemesis": { "name": "Open Book", "desc": "One team you read like an open book.", "criteria": "Call exact scorelines on the same team's matches three times." },
       "set-and-forget": { "name": "Set and Forget", "desc": "Called a whole round without a single edit.", "criteria": "Predict every match of a round and never change a pick." },
       "cold-streak": { "name": "Ice Cold", "desc": "Five misses in a row. Are you even trying?", "criteria": "Miss five predictions in a row." },
       "wooden-spoon": { "name": "Wooden Spoon", "desc": "Propped up the entire table.", "criteria": "Finish dead last on the leaderboard once the tournament ends." },
