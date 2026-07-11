@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { rosterDelta, shouldOffer } from './voice'
+import { isCallEstablished, rosterDelta, shouldOffer } from './voice'
 
 describe('shouldOffer', () => {
   it('the smaller id offers, the larger waits', () => {
@@ -8,6 +8,17 @@ describe('shouldOffer', () => {
   })
   it('exactly one side of a pair offers', () => {
     expect(shouldOffer('a', 'b')).not.toBe(shouldOffer('b', 'a'))
+  })
+})
+
+describe('isCallEstablished', () => {
+  it('a DM is established only once both parties are present', () => {
+    expect(isCallEstablished('dm', 1)).toBe(false)
+    expect(isCallEstablished('dm', 2)).toBe(true)
+  })
+  it('a league room is established the moment the local member joins', () => {
+    expect(isCallEstablished('league', 0)).toBe(false)
+    expect(isCallEstablished('league', 1)).toBe(true)
   })
 })
 

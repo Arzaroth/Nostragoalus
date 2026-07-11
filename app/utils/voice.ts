@@ -10,6 +10,15 @@ export function shouldOffer(selfId: string, peerId: string): boolean {
   return selfId < peerId
 }
 
+// Whether a freshly-received roster means the local call is now established, so the
+// UI can leave its pre-connected state (outgoing / connecting). A DM ring is only
+// "in call" once both parties are present (roster >= 2); a league room is a
+// join-any-time space, so the local member is in the call the moment their own join
+// rosters back (>= 1), even before anyone else arrives.
+export function isCallEstablished(scopeKind: 'dm' | 'league', rosterLen: number): boolean {
+  return scopeKind === 'dm' ? rosterLen >= 2 : rosterLen >= 1
+}
+
 export interface RosterDelta {
   // Peers to open a connection to (in the new roster, not before, never self).
   added: string[]

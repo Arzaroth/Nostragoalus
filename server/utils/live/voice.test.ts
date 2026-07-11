@@ -195,6 +195,18 @@ describe('voice signaling glue', () => {
     expect(rows[0].status).toBe('MISSED')
   })
 
+  it('an offline callee is recorded once across the invite + cancel that follows', async () => {
+    const { db, threadId, scope } = await dmFixture()
+    const a = connect('alice') // 'bob' has no socket - offline for the whole ring
+    // The DM ring: invite (undeliverable -> logs the miss), then the caller's
+    // timeout cancels. Cancel must not log a second row for the same miss.
+    await handleVoiceInvite(db, a, scope, ['bob'])
+    await handleVoiceCancel(db, a, scope, 'bob')
+    const rows = await db.select().from(voiceCall).where(eq(voiceCall.dmThreadId, threadId))
+    expect(rows).toHaveLength(1)
+    expect(rows[0].status).toBe('MISSED')
+  })
+
   it('cancel to a target outside the scope records nothing', async () => {
     const { db, scope } = await dmFixture()
     const a = connect('alice')

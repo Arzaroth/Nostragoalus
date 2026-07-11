@@ -170,7 +170,11 @@ function start(): void {
           if (activeScope.value && data.roomKey === voiceRoomKey(activeScope.value)) {
             roster.value = (data.roster as string[]) ?? []
             reconcile(roster.value)
-            if ((state.value === 'outgoing' || state.value === 'connecting') && roster.value.length >= 2) {
+            if (
+              activeScope.value &&
+              (state.value === 'outgoing' || state.value === 'connecting') &&
+              isCallEstablished(activeScope.value.kind, roster.value.length)
+            ) {
               state.value = 'in-call'
             }
           }
