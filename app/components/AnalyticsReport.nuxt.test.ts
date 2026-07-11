@@ -27,6 +27,7 @@ const DATA: AnalyticsResponse = {
     { label: 'Group 1', order: 1, picks: 3, accuracy: 0.67, points: 9 },
     { label: 'Group 2', order: 2, picks: 3, accuracy: 0.33, points: 4 },
   ],
+  streak: { current: 2, best: 4 },
   bestCall: { home: 'France', away: 'Brazil', homeCode: 'FRA', awayCode: 'BRA', predicted: '2-0', actual: '2-0', points: 8, tier: 'exact', isJoker: true },
   worstMiss: { home: 'Spain', away: 'Italy', homeCode: 'ESP', awayCode: 'ITA', predicted: '0-0', actual: '3-3', points: 0, tier: 'miss', isJoker: false },
   fergieTime: {
@@ -88,11 +89,28 @@ describe('AnalyticsReport', () => {
     expect(w.find('img[src*="BRA"]').exists()).toBe(true)
   })
 
-  it('renders one bar per round in the accuracy timeline', async () => {
+  it('renders the accuracy sparkline with one hover band per round', async () => {
     const w = await mount()
     expect(w.text()).toContain('Accuracy by round')
-    // Two rounds -> two flex cells in the timeline row.
-    expect(w.findAll('.h-24 > div')).toHaveLength(2)
+    expect(w.find('svg polyline').exists()).toBe(true)
+    // One transparent hit rect per round carries the tooltip.
+    expect(w.findAll('svg rect')).toHaveLength(2)
+  })
+
+  it('hides the sparkline until there is more than one round', async () => {
+    const w = await mount({ overTime: [{ label: 'Group 1', order: 1, picks: 3, accuracy: 0.67, points: 9 }] })
+    expect(w.find('svg polyline').exists()).toBe(false)
+  })
+
+  it('shows the current streak and best run when a run exists', async () => {
+    const w = await mount()
+    expect(w.text()).toContain('current streak')
+    expect(w.text()).toContain('Best run: 4')
+  })
+
+  it('hides the streak card when the best run is zero', async () => {
+    const w = await mount({ streak: { current: 0, best: 0 } })
+    expect(w.text()).not.toContain('current streak')
   })
 
   it('shows the best call and biggest miss', async () => {

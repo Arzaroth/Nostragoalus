@@ -13,6 +13,7 @@ import type {
   FergieTime,
   PickHighlight,
   RoundAccuracy,
+  StreakSummary,
   TeamBias,
   TierCounts,
 } from '#shared/types/analytics'
@@ -62,6 +63,20 @@ function tierOf(row: AnalyticsPickRow): keyof TierCounts {
     default:
       return 'miss'
   }
+}
+
+// Consecutive correct picks (at least a right outcome). `rows` arrive in
+// chronological order, so the trailing run is the streak still live now and the
+// longest run seen is the tournament best.
+function computeStreak(rows: AnalyticsPickRow[]): StreakSummary {
+  let current = 0
+  let best = 0
+  for (const row of rows) {
+    if (tierOf(row) === 'miss') current = 0
+    else current += 1
+    if (current > best) best = current
+  }
+  return { current, best }
 }
 
 function highlight(row: AnalyticsPickRow): PickHighlight {
@@ -125,6 +140,7 @@ export function computeAnalytics(
     },
     teams: { overrated: [], underrated: [] },
     overTime: [],
+    streak: { current: 0, best: 0 },
     bestCall: null,
     worstMiss: null,
     fergieTime,
@@ -232,6 +248,7 @@ export function computeAnalytics(
     },
     teams: { overrated, underrated },
     overTime,
+    streak: computeStreak(rows),
     bestCall: highlight(bestCall),
     worstMiss: worstMiss ? highlight(worstMiss) : null,
     fergieTime,

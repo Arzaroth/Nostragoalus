@@ -102,6 +102,33 @@ describe('computeAnalytics', () => {
     expect(r.overTime[1]).toMatchObject({ picks: 1, accuracy: 0, points: 0 })
   })
 
+  it('reports a zero streak for no picks', () => {
+    expect(computeAnalytics('C', []).streak).toEqual({ current: 0, best: 0 })
+  })
+
+  it('tracks the current run and the tournament best over chronological picks', () => {
+    // W W L W W W L (chronological): best run is the middle 3, current is 0.
+    const r = computeAnalytics('C', [
+      row({ baseTier: 'EXACT' }),
+      row({ baseTier: 'DIFF' }),
+      row({ baseTier: 'MISS' }),
+      row({ baseTier: 'OUTCOME' }),
+      row({ baseTier: 'EXACT' }),
+      row({ baseTier: 'DIFF' }),
+      row({ baseTier: 'MISS' }),
+    ])
+    expect(r.streak).toEqual({ current: 0, best: 3 })
+  })
+
+  it('keeps a live current streak when the latest picks are correct', () => {
+    const r = computeAnalytics('C', [
+      row({ baseTier: 'MISS' }),
+      row({ baseTier: 'EXACT' }),
+      row({ baseTier: 'OUTCOME' }),
+    ])
+    expect(r.streak).toEqual({ current: 2, best: 2 })
+  })
+
   it('picks the best call by points then tier, and the biggest miss by goal error', () => {
     const r = computeAnalytics('C', [
       row({ baseTier: 'OUTCOME', totalPoints: 3, homeGoals: 1, awayGoals: 0, actualHome: 3, actualAway: 0 }),

@@ -38,6 +38,15 @@ export interface RoundAccuracy {
   points: number
 }
 
+// Runs of consecutive correct picks (at least a right outcome), measured over
+// the user's scored picks in chronological order. `current` is the run still
+// live at the most recent scored pick (0 if that pick missed); `best` is the
+// longest run anywhere in the tournament.
+export interface StreakSummary {
+  current: number
+  best: number
+}
+
 export interface PickHighlight {
   home: string
   away: string
@@ -128,6 +137,7 @@ export interface AnalyticsResponse {
     underrated: TeamBias[]
   }
   overTime: RoundAccuracy[]
+  streak: StreakSummary
   bestCall: PickHighlight | null
   worstMiss: PickHighlight | null
   fergieTime: FergieTime

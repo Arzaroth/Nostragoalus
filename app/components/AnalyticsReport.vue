@@ -26,7 +26,21 @@ const goalsVerdict = computed(() => {
   if (l <= -0.5) return t('analytics.goalsUnder')
   return t('analytics.goalsBalanced')
 })
-const maxRoundPoints = computed(() => Math.max(1, ...props.data.overTime.map((r) => r.points)))
+// Accuracy sparkline geometry. One series (per-round accuracy, 0..1), plotted in
+// a stretched viewBox so it fills the width; the line keeps a crisp 2px via
+// non-scaling-stroke, and full-height hit rects carry the per-round tooltips.
+const SPARK_W = 300
+const SPARK_H = 100
+const spark = computed(() => {
+  const pts = props.data.overTime
+  const n = pts.length
+  const xAt = (i: number) => (n <= 1 ? 0 : (i / (n - 1)) * SPARK_W)
+  const coords = pts.map((r, i) => ({ x: xAt(i), y: SPARK_H - r.accuracy * SPARK_H, r }))
+  const line = coords.map((c) => `${c.x},${c.y}`).join(' ')
+  const area = `M0,${SPARK_H} ${coords.map((c) => `L${c.x},${c.y}`).join(' ')} L${SPARK_W},${SPARK_H} Z`
+  const band = SPARK_W / n
+  return { coords, line, area, band }
+})
 
 function biasWidth(t: TeamBias) {
   return Math.min(100, Math.abs(t.delta) * 100)
@@ -53,6 +67,18 @@ const netColor = (n: number) =>
         <div class="text-xs" style="color: var(--p-text-muted-color)">{{ s.label }}</div>
       </div>
     </div>
+
+    <!-- Streak -->
+    <section v-if="data.streak.best > 0" class="ng-card rounded-xl border px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-1" style="background: var(--p-content-background); border-color: var(--p-content-border-color)">
+      <div class="flex items-baseline gap-2">
+        <span class="text-2xl" :class="data.streak.current > 0 ? '' : 'grayscale opacity-50'">🔥</span>
+        <span class="text-2xl font-bold tabular-nums">{{ data.streak.current }}</span>
+        <span class="text-sm" style="color: var(--p-text-muted-color)">{{ t('analytics.streakCurrent') }}</span>
+      </div>
+      <div class="text-sm" style="color: var(--p-text-muted-color)">
+        {{ t('analytics.streakBest', { n: data.streak.best }) }}
+      </div>
+    </section>
 
     <!-- Tier breakdown -->
     <section>
@@ -127,11 +153,17 @@ const netColor = (n: number) =>
     <!-- Accuracy over time -->
     <section v-if="data.overTime.length > 1">
       <h2 class="font-semibold mb-2">{{ t('analytics.overTimeTitle') }}</h2>
-      <div class="flex items-end gap-1 h-24">
-        <div v-for="r in data.overTime" :key="r.order" v-tooltip.top="`${r.label}: ${pct(r.accuracy)}% · ${r.points} ${t('leaderboard.pts')}`" class="flex-1 flex flex-col items-center justify-end h-full">
-          <div class="w-full rounded-t" :style="`height: ${(r.points / maxRoundPoints) * 100}%; min-height: 2px; background: var(--p-primary-color); opacity: ${0.4 + r.accuracy * 0.6}`" />
-        </div>
-      </div>
+      <svg :viewBox="`0 0 ${300} ${100}`" preserveAspectRatio="none" class="w-full h-24 overflow-visible" role="img" :aria-label="t('analytics.overTimeTitle')">
+        <defs>
+          <linearGradient id="ng-spark-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="var(--p-primary-color)" stop-opacity="0.35" />
+            <stop offset="1" stop-color="var(--p-primary-color)" stop-opacity="0" />
+          </linearGradient>
+        </defs>
+        <path :d="spark.area" fill="url(#ng-spark-fill)" />
+        <polyline :points="spark.line" fill="none" stroke="var(--p-primary-color)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round" />
+        <rect v-for="(c, i) in spark.coords" :key="c.r.order" v-tooltip.top="`${c.r.label}: ${pct(c.r.accuracy)}% · ${c.r.points} ${t('leaderboard.pts')}`" :x="Math.max(0, c.x - spark.band / 2)" y="0" :width="spark.band" :height="100" fill="transparent" :data-round="i" />
+      </svg>
       <div class="text-xs mt-1" style="color: var(--p-text-muted-color)">{{ t('analytics.overTimeHint') }}</div>
     </section>
 
