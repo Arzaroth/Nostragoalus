@@ -37,6 +37,9 @@ const canMessage = computed(
 // names only you, and the /p/ landing renders without a login, so it unfurls when
 // sent to friends. Competition-scoped (the card brags about one tournament).
 const isSelf = computed(() => !!session.value?.data?.user && session.value.data.user.id === data.value?.user.id)
+// Compare this player against yourself, competition-scoped (jokers/champion are
+// per-competition, so the head-to-head only makes sense within one tournament).
+const canCompare = computed(() => !!session.value?.data?.user && !isSelf.value && !global.value && !!data.value)
 const sharing = ref(false)
 async function shareProfile() {
   sharing.value = true
@@ -141,6 +144,9 @@ watch(
       </div>
       <div class="flex items-center gap-2 flex-wrap">
         <Button v-if="canMessage" size="small" outlined icon="pi pi-send" :label="t('dm.message')" @click="dmOpen.requestDm(data.user.id)" />
+        <NuxtLink v-if="canCompare" :to="`/${slug}/compare?a=me&b=${data.user.id}`">
+          <Button size="small" outlined icon="pi pi-arrows-h" :label="t('h2h.compare')" data-test="compare-link" />
+        </NuxtLink>
         <Button
           v-if="isSelf && !global"
           size="small"

@@ -675,6 +675,22 @@
     "pickLateConfirm": "Set this as your Golden Boot pick now, for half the points? You're picking after the deadline, so it can never be worth full points.",
     "repickedNote": "Changed (half points). Originally: {player}."
   },
+  "h2h": {
+    "title": "Head to head",
+    "subtitle": "Two players compared over the matches you both have scored.",
+    "compare": "Compare",
+    "vs": "vs",
+    "shared": "shared picks",
+    "record": "match record",
+    "recordHint": "Match record is wins-losses-ties by points on each shared match.",
+    "sameScore": "same score",
+    "sameOutcome": "same outcome",
+    "leadTitle": "Lead over time",
+    "divergeTitle": "Biggest divergences",
+    "pickHint": "Open a player's profile and hit Compare to face them off against you.",
+    "empty": "No matches you have both had scored yet.",
+    "loadError": "Could not load the comparison."
+  },
   "analytics": {
     "title": "Analytics",
     "subtitle": "How your predictions lean, measured against what actually happened.",

@@ -670,6 +670,22 @@
     "pickLateConfirm": "Définir ce meilleur buteur maintenant, pour la moitié des points ? Vous choisissez après la date limite, donc il ne pourra jamais valoir les points pleins.",
     "repickedNote": "Modifié (moitié des points). À l'origine : {player}."
   },
+  "h2h": {
+    "title": "Face à face",
+    "subtitle": "Deux joueurs comparés sur les matchs que vous avez tous deux vus notés.",
+    "compare": "Comparer",
+    "vs": "contre",
+    "shared": "pronostics communs",
+    "record": "bilan des matchs",
+    "recordHint": "Le bilan est victoires-défaites-nuls aux points sur chaque match commun.",
+    "sameScore": "même score",
+    "sameOutcome": "même résultat",
+    "leadTitle": "Avance au fil du temps",
+    "divergeTitle": "Plus grands écarts",
+    "pickHint": "Ouvrez le profil d'un joueur et cliquez sur Comparer pour l'affronter.",
+    "empty": "Aucun match encore noté pour vous deux.",
+    "loadError": "Impossible de charger la comparaison."
+  },
   "analytics": {
     "title": "Analyses",
     "subtitle": "Les tendances de vos pronostics, comparées à la réalité.",
