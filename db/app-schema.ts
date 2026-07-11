@@ -1505,8 +1505,9 @@ export const voiceCall = pgTable(
     // account is later deleted.
     initiatorId: text('initiator_id').references(() => user.id, { onDelete: 'set null' }),
     status: voiceCallStatusEnum('status').notNull().default('ONGOING'),
-    // The user ids that joined at least once - a light historical record, not the
-    // live roster (the hub owns liveness). Appended as peers join.
+    // A light historical record of who took part, not the live roster (the hub
+    // owns liveness). Today only missed calls are persisted, carrying the caller;
+    // a full join-by-join lifecycle (ONGOING/ENDED) is reserved for call history.
     participantIds: jsonb('participant_ids').$type<string[]>().notNull().default([]),
     startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
     endedAt: timestamp('ended_at', { withTimezone: true }),

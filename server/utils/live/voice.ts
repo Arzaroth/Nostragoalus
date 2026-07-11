@@ -99,9 +99,9 @@ export async function handleVoiceDecline(
 }
 
 // The caller cancels an outgoing ring before it is answered (hung up, or the ring
-// timed out). If the callee never joined the room it is a missed call for them
-// (bell + push) and their ring is dismissed. Authorized like an invite so the
-// missed-call path cannot be abused.
+// timed out). The callee's ring is dismissed; if they were online and never joined
+// it is logged as a missed call for them (bell + push). Authorized like an invite
+// so the missed-call path cannot be abused.
 export async function handleVoiceCancel(
   db: AppDatabase,
   sub: LiveSubscriber,
@@ -112,6 +112,10 @@ export async function handleVoiceCancel(
   const resolved = await resolveVoiceScope(db, sub.userId, scope)
   if (!resolved.audience.includes(to)) return
   if (isInRoom(resolved.roomKey, to)) return
-  await recordMissedCall(db, { meta: resolved.meta, callerId: sub.userId, targetId: to })
-  publishVoiceToUser(to, { type: 'voice:cancelled', scope, from: sub.userId })
+  // Dismiss the ring on the callee's devices. Record the miss only when a socket
+  // of theirs actually got the ring (online, then unanswered): an offline callee
+  // received no ring, and `handleVoiceInvite` already logged that miss when the
+  // invite failed to deliver - recording again here would double the history row.
+  const delivered = publishVoiceToUser(to, { type: 'voice:cancelled', scope, from: sub.userId })
+  if (delivered > 0) await recordMissedCall(db, { meta: resolved.meta, callerId: sub.userId, targetId: to })
 }
