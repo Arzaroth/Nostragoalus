@@ -5,6 +5,10 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### chelpu'
+
+- wej Qapla' chu', wa' lup'a'Daq DaSuqlaH: **Sub laDwI'** (wa' Sub may' mI' vagh DaDel; wej, vagh, Soch Sub), **charghwI' He** (charghwI' may' Hoch mI' DaDel), **ghom pIn'a'** (wa' ghom may' Hoch mI' DaDel). mI' pup 'oHbe'; Qap, rar, lujchoH je 'oH.
+
 ## [2.30.0] - 2026-07-11
 
 ### chelpu'
