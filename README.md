@@ -163,8 +163,9 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   scorers and top assists for the competition, with team flags
 - **Personal analytics**: a per-competition bias report on your own picks - how they landed
   (exact / goal-difference / outcome / miss), whether you over- or under-predict goals, your
-  home-win and draw lean, the teams you over- and under-rate, accuracy round by round, and your
-  best call and biggest miss. Reachable from the nav once signed in and, unlike Tournament Wrapped,
+  home-win and draw lean, the teams you over- and under-rate, accuracy round by round, your
+  best call and biggest miss, and how many points added-time goals won or cost you (Fergie time).
+  Reachable from the nav once signed in and, unlike Tournament Wrapped,
   it works mid-tournament
 - **Shareable cards**: a Share button on your own profile or analytics page mints a signed link to a
   server-rendered card (your standing, or your prediction bias) that opens without a login and unfurls
