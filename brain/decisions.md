@@ -430,3 +430,26 @@ feature/architecture doc that implements it.
   scoreboard counts, the header under-reports - but it then still matches the list
   beneath it, which is the property users actually notice. See
   [architecture/realtime.md](architecture/realtime.md).
+
+## Voice chat
+
+- **Mesh, not an SFU.** Voice is a full peer-to-peer mesh so the media stays
+  DTLS-SRTP end-to-end encrypted - the same privacy stance as the E2EE chat. An SFU
+  would terminate the streams server-side and break that. The cost is scaling:
+  `N*(N-1)/2` connections, fine for a DM and small league rooms, poor beyond ~5-6. A
+  large-room SFU is deferred (TODO). See [architecture/webrtc.md](architecture/webrtc.md).
+- **Signaling on the existing WS hub, not a new service.** The one in-process hub
+  already carries authenticated, per-user frames, so voice signaling slots in as new
+  frame types - no second socket, no external signaling server. It inherits the same
+  single-instance limit (rooms are per-node).
+- **coturn behind an opt-in compose profile.** TURN is required for reliable calls
+  behind symmetric NAT, but the app boots and runs STUN-only without it, so coturn
+  sits behind the `voice` profile rather than the base stack. Ephemeral
+  HMAC credentials (use-auth-secret) keep the shared secret server-side.
+- **A missed call is the only thing persisted.** The live call is entirely
+  in-process; `voice_call` records just a MISSED row (for the notification + future
+  history). Full call logging / a "call ended, 4:12" line is deferred.
+- **Known gap - SDP MITM.** The server relays SDP, so a malicious server could swap a
+  DTLS fingerprint and actively MITM a call (passive listening is already blocked by
+  SRTP). Closing it needs the fingerprint signed with an identity key - deferred
+  (TODO), the same tiered approach as the E2EE hardening above.

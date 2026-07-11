@@ -28,6 +28,7 @@ early on). Back to the root map: [../BRAIN.md](../BRAIN.md).
 | [Web push](web-push.md) | VAPID web push with per-category toggles, goal/kickoff triggers | core | `push_subscription`, `push*` user cols; `server/utils/push/*` |
 | [Chat](chat.md) | E2E-encrypted league chat: threads, mentions, reactions, images, moderation | 1.36.0, 1.42.0 | `chat_message`, `chat_attachment`, `chat_identity`, `league_chat_key`, `chat_message_report` |
 | [DMs](dms.md) | E2E-encrypted one-to-one direct messages, reusing chat crypto + `chat_message`, in a global dock | Unreleased | `dm_thread`, `dm_thread_key`, `dm_thread_read`, `chat_message.dm_thread_id`; `server/utils/dm/*`, `DmDock.vue` |
+| [Voice chat](voice-chat.md) | Peer-to-peer WebRTC audio: 1:1 DM calls + small league (match-scoped) rooms; mesh, DTLS-SRTP E2EE, self-hosted coturn | Unreleased | `voice_call`; `server/utils/voice/*`, `server/utils/live/voice*.ts`, `useVoiceCall.ts`, `shared/types/voice.ts`, coturn |
 | [Tamper-evidence](tamper-evidence.md) | Commit-reveal hash-chain ledger of score picks, public `/verify` | v1.33.0 | `prediction_commitment`, `commitment_chain_head`; `shared/commitment.ts` |
 | [Past-pick counterfactual](past-pick-counterfactual.md) | Owner-only "an earlier pick of yours would have scored", live + full-time, off the ledger | 2.5.0 | `prediction_commitment`; `server/utils/past-pick/*`, `PastPickHint.vue` |
 | [Share images](share-images.md) | Server-rendered OG/share cards (satori + resvg), signed tokens | core | `server/utils/share/*`, `routes/og/share/[token].get.ts` |

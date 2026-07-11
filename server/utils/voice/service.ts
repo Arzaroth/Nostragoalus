@@ -53,8 +53,9 @@ export async function resolveVoiceScope(db: AppDatabase, userId: string, scope: 
     .innerJoin(competition, eq(competition.id, league.competitionId))
     .where(eq(league.id, scope.leagueId))
     .limit(1)
-  const lg = rows[0]
-  if (!lg) throw new NotFoundError('league not found')
+  // The membership check above already proved the league (and, via its FK, the
+  // competition) exists, so the innerJoin returns a row.
+  const lg = rows[0]!
   // Voice piggybacks on the chat toggle: no chat, no calls.
   if (!lg.chatEnabled) throw new ForbiddenError('voice is not enabled for this league')
   if (scope.matchId) {

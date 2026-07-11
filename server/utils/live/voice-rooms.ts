@@ -25,8 +25,10 @@ const rooms = new Map<string, Map<string, VoiceToken>>()
 const membership = new Map<VoiceToken, { roomKey: string; userId: string }>()
 
 function removeFromRoom(roomKey: string, userId: string): void {
-  const userMap = rooms.get(roomKey)
-  if (!userMap) return
+  // Invariant: every caller passes a roomKey that currently has a userMap - a
+  // membership entry always implies its room exists (the two maps are mutated
+  // together) - so the map is present here.
+  const userMap = rooms.get(roomKey)!
   userMap.delete(userId)
   // Drop empty rooms so an ended call frees its slot (ephemeral lifecycle).
   if (userMap.size === 0) rooms.delete(roomKey)
@@ -80,16 +82,14 @@ export interface VoiceLeaveResult {
 }
 
 // Remove a socket from its room. Returns what it left (for the hub's fan-out) or
-// null if it was in no room. Guards against an already-evicted token deleting the
-// new tab's entry: it only clears the map slot it still owns.
+// null if it was in no room. A token that still has a membership entry is by
+// definition that user's current endpoint (eviction and room-moves delete the old
+// token's membership), so it is safe to clear the slot unconditionally.
 export function leaveRoom(token: VoiceToken): VoiceLeaveResult | null {
   const m = membership.get(token)
   membership.delete(token)
   if (!m) return null
-  const userMap = rooms.get(m.roomKey)
-  // Only remove the user if THIS token is still their current endpoint - an
-  // evicted token leaving later must not drop the tab that took over.
-  if (userMap?.get(m.userId) === token) removeFromRoom(m.roomKey, m.userId)
+  removeFromRoom(m.roomKey, m.userId)
   return { roomKey: m.roomKey, userId: m.userId, roster: [...(rooms.get(m.roomKey)?.keys() ?? [])] }
 }
 

@@ -87,6 +87,19 @@ the code. Alphabetical.
 
 ## Technical
 
+- **WebRTC** - the browser peer-to-peer real-time media stack behind
+  [voice chat](features/voice-chat.md). Carries the audio directly between
+  participants; the server only relays signaling.
+- **Mesh** - a call topology where every pair of participants holds its own peer
+  connection (vs an **SFU**, a media server that receives and re-forwards streams).
+  The app meshes so media stays end-to-end encrypted.
+- **DTLS-SRTP** - the encryption WebRTC media uses; makes a peer-to-peer call E2EE
+  by construction (the server, and any TURN relay, never see plaintext audio).
+- **Signaling** - the out-of-band exchange (SDP offers/answers + ICE candidates)
+  two browsers need to set up a peer connection. Relayed over the WS hub.
+- **STUN / TURN** - NAT-traversal helpers. STUN discovers a peer's public address;
+  TURN relays the (still-encrypted) media when a direct path is impossible (symmetric
+  NAT). TURN is the self-hosted **coturn** service. See [architecture/webrtc.md](architecture/webrtc.md).
 - **Service** - a function in `server/utils/<feature>/service.ts` taking
   `AppDatabase` first and throwing domain errors. The covered logic surface.
 - **AppDatabase** - the Drizzle `PgDatabase` type every service accepts
