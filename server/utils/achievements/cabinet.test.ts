@@ -105,6 +105,61 @@ describe('getCabinet', () => {
     expect(sharpshooter?.rarity[0]?.pct).toBe(0) // nobody holds it
   })
 
+  it('computes cumulative per-tier rarity (holders at that tier or higher)', async () => {
+    const c = await seedCompetition(db)
+    const [g1] = await db.select().from(round).where(eq(round.competitionId, c)).limit(1)
+    const m = await makeMatch(db, {
+      competitionId: c,
+      roundId: g1.id,
+      status: 'FINISHED',
+      fullTimeHome: 1,
+      fullTimeAway: 0,
+      winner: 'HOME',
+      kickoffTime: new Date('2026-06-15T12:00:00Z'),
+    })
+    await db.update(match).set({ scoringState: 'SCORED' }).where(eq(match.id, m))
+    // Four participants (one prediction each) - the denominator.
+    const users: string[] = []
+    for (const name of ['a', 'b', 'cc', 'd']) {
+      const u = await makeUser(db, name)
+      users.push(u)
+      await makePrediction(db, { userId: u, matchId: m, roundId: g1.id, home: 1, away: 0 })
+    }
+    // group-guru held at gold / silver / bronze / null (a legacy no-tier row).
+    await db.insert(userAchievement).values([
+      { userId: users[0], competitionId: c, key: 'group-guru', tier: 'GOLD', progress: 3 },
+      { userId: users[1], competitionId: c, key: 'group-guru', tier: 'SILVER', progress: 2 },
+      { userId: users[2], competitionId: c, key: 'group-guru', tier: 'BRONZE', progress: 1 },
+      { userId: users[3], competitionId: c, key: 'group-guru', tier: null, progress: 1 },
+    ])
+
+    const cab = await getCabinet(db, { competitionId: c, userId: users[0], viewerId: users[0] })
+    const gg = cab.achievements.find((a) => a.key === 'group-guru')
+    // >= bronze: all 4 (null counts as lowest); >= silver: gold+silver = 2; >= gold: 1.
+    expect(gg?.rarity).toEqual([
+      { tier: 'BRONZE', pct: 100 },
+      { tier: 'SILVER', pct: 50 },
+      { tier: 'GOLD', pct: 25 },
+    ])
+  })
+
+  it('omits rarity for GLOBAL and SHAME badges', async () => {
+    const c = await seedCompetition(db)
+    const alice = await makeUser(db, 'alice')
+    const [g1] = await db.select().from(round).where(eq(round.competitionId, c)).limit(1)
+    const m = await makeMatch(db, { competitionId: c, roundId: g1.id, kickoffTime: new Date('2026-06-15T12:00:00Z') })
+    await makePrediction(db, { userId: alice, matchId: m, roundId: g1.id, home: 1, away: 0 })
+    await db.insert(userAchievement).values([
+      // GLOBAL badge: competitionId null, held app-wide - no per-competition rarity.
+      { userId: alice, competitionId: null, key: 'the-collector', tier: 'GOLD', progress: 1 },
+      { userId: alice, competitionId: c, key: 'wooden-spoon', tier: 'BRONZE', progress: 1 },
+    ])
+
+    const cab = await getCabinet(db, { competitionId: c, userId: alice, viewerId: alice })
+    expect(cab.achievements.find((a) => a.key === 'the-collector')?.rarity).toEqual([])
+    expect(cab.achievements.find((a) => a.key === 'wooden-spoon')?.rarity).toEqual([])
+  })
+
   it('exposes the icon override and the ongoing streak on a climbing streak badge', async () => {
     const c = await seedCompetition(db)
     const alice = await makeUser(db, 'alice')

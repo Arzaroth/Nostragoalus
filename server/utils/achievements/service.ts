@@ -52,7 +52,7 @@ const PICK_TIME_BADGES = ['early-bird', 'night-owl', 'deadline-dancer'] as const
 // Someone who gave up after a game or two is a quitter, not the loser of the contest.
 const WOODEN_SPOON_MIN_SHARE = 0.5
 
-const TIER_RANK: Record<AchievementTier, number> = { BRONZE: 1, SILVER: 2, GOLD: 3, DIAMOND: 4 }
+export const TIER_RANK: Record<AchievementTier, number> = { BRONZE: 1, SILVER: 2, GOLD: 3, DIAMOND: 4 }
 const tierRank = (t: AchievementTier | null): number => (t ? TIER_RANK[t] : 0)
 
 // The stats map value: every badge metric, plus the current (ongoing) streak
