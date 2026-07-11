@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [2.33.1] - 2026-07-12
+
 ### Fixed
 
 - A live match header no longer stays stuck on a score after VAR disallows a goal. The header now tracks the same live goal feed as the scorer list beneath it, so a struck-off goal drops from both at once instead of lingering on the header for a poll or two.
