@@ -1,0 +1,39 @@
+# Web app (Nuxt) tasks. These run in this package's dir (config_root =
+# apps/web-nuxt) no matter where mise is invoked from, so `mise run check` works
+# from the repo root or from here. Repo-level orchestration (the docker compose
+# stacks) lives in the root .mise.toml instead.
+
+[tasks.test]
+description = "Run the test suite with the coverage gate"
+dir = "{{ config_root }}"
+run = "pnpm test:coverage"
+
+[tasks.components]
+description = "Nuxt-runtime component/composable tests"
+dir = "{{ config_root }}"
+run = "pnpm test:components"
+
+[tasks.check]
+description = "Full gate: types + tests with the coverage threshold + prod build"
+dir = "{{ config_root }}"
+run = ["pnpm typecheck", "pnpm test:coverage", "pnpm test:components", "pnpm build"]
+
+[tasks.build-integrity]
+description = "Fingerprint the built client bundle (also runs automatically as postbuild)"
+dir = "{{ config_root }}"
+run = "node scripts/build-integrity"
+
+[tasks.e2e-smtp]
+description = "E2E: email-OTP flow through the running stack + maildev"
+dir = "{{ config_root }}"
+run = "pnpm e2e:smtp"
+
+[tasks.seed-demo]
+description = "Fill the DB with demo players/predictions, then re-score (needs the stack up)"
+dir = "{{ config_root }}"
+run = "node scripts/seed-demo.mjs"
+
+[tasks.shots]
+description = "Retake the landing showcase screenshots with headless Firefox (stack + seed first)"
+dir = "{{ config_root }}"
+run = "node scripts/showcase-shots.mjs"

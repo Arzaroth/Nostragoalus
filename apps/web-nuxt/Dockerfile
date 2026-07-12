@@ -26,21 +26,21 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 FROM install AS dev
 ENV NODE_ENV=development
 EXPOSE 3000
-CMD ["pnpm", "dev", "--host"]
+CMD ["pnpm", "-C", "apps/web-nuxt", "dev", "--host"]
 
 # Build the production output.
 FROM install AS build
 ENV NODE_ENV=production
-RUN pnpm build
+RUN pnpm -C apps/web-nuxt build
 
 # Minimal production runtime: only the Nitro output + committed migrations.
 FROM base AS prod
 ENV NODE_ENV=production
-COPY --from=build /app/.output ./.output
+COPY --from=build /app/apps/web-nuxt/.output ./.output
 # Nitro traces cycletls' JS but not its spawned Go helper binary; add the linux
 # builds (x64 + arm64) so the uTLS engine starts whichever arch this runs on.
-COPY --from=build /app/node_modules/cycletls/dist/index /app/node_modules/cycletls/dist/index-arm64 ./.output/server/node_modules/cycletls/dist/
-COPY --from=build /app/drizzle ./drizzle
+COPY --from=build /app/apps/web-nuxt/node_modules/cycletls/dist/index /app/apps/web-nuxt/node_modules/cycletls/dist/index-arm64 ./.output/server/node_modules/cycletls/dist/
+COPY --from=build /app/apps/web-nuxt/drizzle ./drizzle
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD wget -q --spider http://127.0.0.1:3000/ || exit 1
