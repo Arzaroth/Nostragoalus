@@ -29,7 +29,7 @@ function stubGlobals() {
     lastMeta = m?.openAPI
   })
   // Call-time helpers a route body may reference; harmless no-ops during import.
-  for (const name of ['readBody', 'getQuery', 'getRouterParam', 'getHeader', 'createError', 'sendRedirect', 'setResponseStatus', 'getRequestHost']) {
+  for (const name of ['readBody', 'getQuery', 'getRouterParam', 'getHeader', 'createError', 'sendRedirect', 'setResponseStatus', 'getRequestHost', 'getRequestURL']) {
     vi.stubGlobal(name, () => undefined)
   }
   vi.stubGlobal('useRuntimeConfig', () => ({}))
@@ -68,7 +68,7 @@ interface Spec {
 }
 
 let spec: Spec
-const report = { converted: 0, unconverted: 0, failed: [] as string[] }
+const report = { converted: 0, unconverted: [] as string[], failed: [] as string[] }
 
 beforeAll(async () => {
   stubGlobals()
@@ -85,7 +85,7 @@ beforeAll(async () => {
     }
     const contract = mod.default?.__contract
     if (!contract?.response) {
-      report.unconverted++
+      report.unconverted.push(relative(apiDir, abs))
       continue
     }
     const { path, method } = filePathToRoute(relative(apiDir, abs))
@@ -105,7 +105,11 @@ describe('openapi spec emitter', () => {
     // runtime-only imports); that is fine. A CONVERTED route must import clean.
     expect(report.converted).toBeGreaterThanOrEqual(2)
     // eslint-disable-next-line no-console
-    console.log(`[contract] converted=${report.converted} unconverted=${report.unconverted} import-failed=${report.failed.length}`)
+    console.log(`[contract] converted=${report.converted} unconverted=${report.unconverted.length} import-failed=${report.failed.length}`)
+    // eslint-disable-next-line no-console
+    if (report.unconverted.length) console.log(`[contract] unconverted:\n  ${report.unconverted.join('\n  ')}`)
+    // eslint-disable-next-line no-console
+    if (report.failed.length) console.log(`[contract] import-failed:\n  ${report.failed.join('\n  ')}`)
   })
 
   it('emits an operation for each converted route', () => {

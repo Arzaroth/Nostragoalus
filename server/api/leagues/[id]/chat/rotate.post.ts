@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { db } from '../../../../../db'
 import { rotateLeagueChatKey } from '../../../../utils/chat/service'
 import { publishStateChanged } from '../../../../utils/live/league-chat'
+import { epochResultSchema } from '../../../../schemas/league-chat'
 import { defineValidatedHandler } from '../../../../utils/validated-handler'
 
 const bodySchema = z.object({
@@ -12,7 +13,7 @@ const bodySchema = z.object({
 // Rotate the league group key (OWNER/MODERATOR). Bumps the epoch and stores a new
 // sealed group key for the current members; old ciphertext stays readable at the
 // old epoch, removed members are left without the new key.
-export default defineValidatedHandler({ body: bodySchema }, async ({ body, user, event }) => {
+export default defineValidatedHandler({ body: bodySchema, response: epochResultSchema }, async ({ body, user, event }) => {
   const leagueId = getRouterParam(event, 'id') as string
   const res = await rotateLeagueChatKey(db, { leagueId, actorId: user.id, wraps: body.wraps })
   void publishStateChanged(db, leagueId).catch(() => {})

@@ -5,7 +5,9 @@ import { isSmtpConfigured, setEmailVerificationRequired } from '../../../utils/a
 
 const bodySchema = z.object({ enabled: z.boolean() })
 
-export default defineValidatedHandler({ admin: true, body: bodySchema }, async ({ body }) => {
+const responseSchema = z.object({ emailVerificationRequired: z.boolean() })
+
+export default defineValidatedHandler({ admin: true, body: bodySchema, response: responseSchema }, async ({ body }) => {
   // Enabling without a mail transport would lock every new sign-up out (the
   // verification mail can never be sent), so refuse it.
   if (body.enabled && !isSmtpConfigured()) {

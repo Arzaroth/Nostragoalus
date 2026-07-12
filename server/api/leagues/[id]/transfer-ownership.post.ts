@@ -5,11 +5,13 @@ import { resolveLeagueManage, transferOwnership } from '../../../utils/leagues/s
 
 const bodySchema = z.object({ userId: z.string().min(1) })
 
-export default defineValidatedHandler({ body: bodySchema }, async ({ event, body, user }) => {
+const responseSchema = z.object({ ok: z.literal(true) })
+
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ event, body, user }) => {
   const id = getRouterParam(event, 'id')!
   await resolveLeagueManage(db, id, user.id, { requiredRole: 'OWNER' })
   await transferOwnership(db, { leagueId: id, fromUserId: user.id, toUserId: body.userId })
-  return { ok: true }
+  return { ok: true as const }
 })
 
 defineRouteMeta({

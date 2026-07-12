@@ -1,5 +1,7 @@
 import { z } from 'zod'
 import { db } from '../../../db'
+import { competitionRefSchema } from '../../schemas/competition'
+import { leagueModeSchema, leagueVisibilitySchema } from '../../schemas/league-list'
 import { defineValidatedHandler } from '../../utils/validated-handler'
 import { getCompetitionBySlug } from '../../utils/competitions/store'
 import { createLeague } from '../../utils/leagues/service'
@@ -13,7 +15,24 @@ const bodySchema = z.object({
   lives: z.number().int().min(1).max(99).optional(),
 })
 
-export default defineValidatedHandler({ body: bodySchema }, async ({ body, user }) => {
+// The freshly created league. picksSynced/role/memberCount are constant for a
+// new owner-only league, so they are pinned as literals.
+const responseSchema = z.object({
+  league: z.object({
+    id: z.string(),
+    name: z.string(),
+    visibility: leagueVisibilitySchema,
+    mode: leagueModeSchema,
+    lives: z.number().nullable(),
+    picksSynced: z.literal(true),
+    joinCode: z.string(),
+    role: z.literal('OWNER'),
+    memberCount: z.literal(1),
+    competition: competitionRefSchema,
+  }),
+})
+
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ body, user }) => {
   const competition = await getCompetitionBySlug(db, body.competition)
   if (!competition) throw createError({ statusCode: 404, statusMessage: 'Unknown competition' })
   const league = await createLeague(db, {
@@ -31,10 +50,10 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ body, user 
       visibility: league.visibility,
       mode: league.mode,
       lives: league.lives,
-      picksSynced: true,
+      picksSynced: true as const,
       joinCode: league.joinCode,
-      role: 'OWNER',
-      memberCount: 1,
+      role: 'OWNER' as const,
+      memberCount: 1 as const,
       competition: { id: competition.id, slug: competition.slug, name: competition.name },
     },
   }

@@ -1,17 +1,22 @@
+import { z } from 'zod'
 import { db } from '../../../../db'
-import { requireUser } from '../../../utils/auth-guards'
-import { toHttpError } from '../../../utils/http'
+import { defineValidatedHandler } from '../../../utils/validated-handler'
 import { joinPublicLeague } from '../../../utils/leagues/service'
+import { leagueRoleSchema, leagueVisibilitySchema } from '../../../schemas/league'
 
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
+const responseSchema = z.object({
+  league: z.object({
+    id: z.string(),
+    name: z.string(),
+    visibility: leagueVisibilitySchema,
+    role: leagueRoleSchema,
+  }),
+})
+
+export default defineValidatedHandler({ response: responseSchema }, async ({ event, user }) => {
   const id = getRouterParam(event, 'id')!
-  try {
-    const { league, role } = await joinPublicLeague(db, { userId: user.id, leagueId: id })
-    return { league: { id: league.id, name: league.name, visibility: league.visibility, role } }
-  } catch (error) {
-    throw toHttpError(error)
-  }
+  const { league, role } = await joinPublicLeague(db, { userId: user.id, leagueId: id })
+  return { league: { id: league.id, name: league.name, visibility: league.visibility, role } }
 })
 
 defineRouteMeta({

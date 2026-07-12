@@ -1,17 +1,12 @@
 import { db } from '../../../../../db'
-import { requireAdmin } from '../../../../utils/auth-guards'
-import { toHttpError } from '../../../../utils/http'
 import { deleteLeague } from '../../../../utils/leagues/service'
+import { defineValidatedHandler } from '../../../../utils/validated-handler'
+import { okSchema } from '../../../../schemas/chat'
 
-export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
+export default defineValidatedHandler({ admin: true, response: okSchema }, async ({ event }) => {
   const id = getRouterParam(event, 'id')!
-  try {
-    await deleteLeague(db, id)
-    return { ok: true }
-  } catch (error) {
-    throw toHttpError(error)
-  }
+  await deleteLeague(db, id)
+  return { ok: true as const }
 })
 
 defineRouteMeta({

@@ -1,10 +1,14 @@
+import { z } from 'zod'
 import { db } from '../../../../../db'
-import { defineValidatedHandler } from '../../../../utils/validated-handler'
+import { defineReadHandler } from '../../../../utils/read-handler'
 import { getDomainVerificationInstructions } from '../../../../utils/sso/service'
+
+// Mirrors DomainVerificationInstructions (server/utils/sso/service.ts).
+const responseSchema = z.object({ host: z.string(), value: z.string(), verified: z.boolean() })
 
 // Returns the DNS-TXT record to publish on the first configured domain (minting a
 // 7-day token if needed) plus whether the domain is already verified.
-export default defineValidatedHandler({ admin: true }, async ({ event }) => {
+export default defineReadHandler({ response: responseSchema, auth: 'admin' }, async ({ event }) => {
   const providerId = getRouterParam(event, 'providerId')!
   return await getDomainVerificationInstructions(db, providerId)
 })

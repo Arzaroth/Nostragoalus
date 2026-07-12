@@ -1,25 +1,39 @@
+import { z } from 'zod'
 import { db } from '../../../../../../db'
-import { isAdmin, requireUser } from '../../../../../utils/auth-guards'
+import { isAdmin } from '../../../../../utils/auth-guards'
 import { resolveLeagueView } from '../../../../../utils/leagues/service'
 import { getRewardRanking } from '../../../../../utils/rewards/service'
-import { toHttpError } from '../../../../../utils/http'
 import { ValidationError } from '../../../../../utils/errors'
+import { defineReadHandler } from '../../../../../utils/read-handler'
+import { leagueRewardDtoSchema, rewardCriterionSchema, rewardMetricSchema } from '../../../../../schemas/league'
 import { LEAGUE_REWARD_CRITERIA, type LeagueRewardCriterion } from '#shared/types/rewards'
 
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
+const responseSchema = z.object({
+  type: rewardCriterionSchema,
+  teamCode: z.string().nullable(),
+  reward: leagueRewardDtoSchema.nullable(),
+  metric: rewardMetricSchema,
+  rows: z.array(
+    z.object({
+      rank: z.number(),
+      userId: z.string(),
+      displayName: z.string(),
+      image: z.string().nullable(),
+      value: z.number(),
+      isViewer: z.boolean(),
+    }),
+  ),
+})
+
+export default defineReadHandler({ response: responseSchema, auth: 'user' }, async ({ event, user }) => {
   const id = getRouterParam(event, 'id')!
   const type = getRouterParam(event, 'type')!
-  try {
-    if (!(LEAGUE_REWARD_CRITERIA as readonly string[]).includes(type)) {
-      throw new ValidationError('unknown reward criterion')
-    }
-    // Same visibility as the league detail and its reward standings.
-    await resolveLeagueView(db, id, user.id, { resolveAdmin: () => isAdmin(event) })
-    return await getRewardRanking(db, id, type as LeagueRewardCriterion, user.id)
-  } catch (error) {
-    throw toHttpError(error)
+  if (!(LEAGUE_REWARD_CRITERIA as readonly string[]).includes(type)) {
+    throw new ValidationError('unknown reward criterion')
   }
+  // Same visibility as the league detail and its reward standings.
+  await resolveLeagueView(db, id, user.id, { resolveAdmin: () => isAdmin(event) })
+  return await getRewardRanking(db, id, type as LeagueRewardCriterion, user.id)
 })
 
 defineRouteMeta({

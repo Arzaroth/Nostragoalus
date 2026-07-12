@@ -1,9 +1,11 @@
+import { z } from 'zod'
 import { db } from '../../../../db'
-import { requireAdmin } from '../../../utils/auth-guards'
 import { pruneEmptyLeagues } from '../../../utils/leagues/service'
+import { defineValidatedHandler } from '../../../utils/validated-handler'
 
-export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
+const responseSchema = z.object({ pruned: z.number() })
+
+export default defineValidatedHandler({ admin: true, response: responseSchema }, async () => {
   return { pruned: await pruneEmptyLeagues(db) }
 })
 

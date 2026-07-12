@@ -5,7 +5,9 @@ import { revokeApiKey } from '../../../utils/api-keys/service'
 
 const bodySchema = z.object({ id: z.string().min(1) })
 
-export default defineValidatedHandler({ admin: true, body: bodySchema }, async ({ body }) => {
+const responseSchema = z.object({ revoked: z.boolean() })
+
+export default defineValidatedHandler({ admin: true, body: bodySchema, response: responseSchema }, async ({ body }) => {
   return { revoked: await revokeApiKey(db, body.id) }
 })
 

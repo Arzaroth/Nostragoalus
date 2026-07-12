@@ -1,8 +1,10 @@
-import { requireAdmin } from '../../utils/auth-guards'
+import { z } from 'zod'
+import { defineValidatedHandler } from '../../utils/validated-handler'
 import { findTask } from '../../utils/tasks/registry'
 
-export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
+const responseSchema = z.object({ task: z.string(), result: z.unknown() })
+
+export default defineValidatedHandler({ admin: true, response: responseSchema }, async ({ event }) => {
   const body = await readBody(event)
   const task = findTask(String(body?.name))
   if (!task) throw createError({ statusCode: 400, statusMessage: 'unknown task' })

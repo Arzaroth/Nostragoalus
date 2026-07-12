@@ -3,8 +3,9 @@ import { defineValidatedHandler } from '../../../utils/validated-handler'
 import { getCompetitionBySlug } from '../../../utils/competitions/store'
 import { setCompetitionOddsProvider, setOddsProviderSchema } from '../../../utils/odds/provider-config'
 import { NotFoundError } from '../../../utils/errors'
+import { competitionOddsRowSchema } from '../../../schemas/admin-misc'
 
-export default defineValidatedHandler({ admin: true, body: setOddsProviderSchema }, async ({ body }) => {
+export default defineValidatedHandler({ admin: true, body: setOddsProviderSchema, response: competitionOddsRowSchema }, async ({ body }) => {
   const competition = await getCompetitionBySlug(db, body.competition)
   if (!competition) throw new NotFoundError('competition not found')
   return setCompetitionOddsProvider(db, competition.id, body.provider, body.providerRef)

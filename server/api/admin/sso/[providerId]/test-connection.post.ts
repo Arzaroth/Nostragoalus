@@ -1,10 +1,19 @@
+import { z } from 'zod'
 import { db } from '../../../../../db'
 import { defineValidatedHandler } from '../../../../utils/validated-handler'
 import { testConnection } from '../../../../utils/sso/service'
 
+// Mirrors SsoConnectionTestResult (#shared/types/sso).
+const responseSchema = z.object({
+  ok: z.boolean(),
+  checkedAt: z.string(),
+  kind: z.enum(['oidc', 'saml']),
+  checks: z.array(z.object({ name: z.string(), ok: z.boolean(), detail: z.string().optional() })),
+})
+
 // Runs the automated pre-flight checks (OIDC discovery/JWKS, SAML cert/entry
 // point) and persists the outcome. A passing result is the gate to enable.
-export default defineValidatedHandler({ admin: true }, async ({ event }) => {
+export default defineValidatedHandler({ admin: true, response: responseSchema }, async ({ event }) => {
   const providerId = getRouterParam(event, 'providerId')!
   return await testConnection(db, providerId)
 })

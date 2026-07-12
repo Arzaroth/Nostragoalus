@@ -1,11 +1,25 @@
+import { z } from 'zod'
 import { db } from '../../../../../db'
-import { defineValidatedHandler } from '../../../../utils/validated-handler'
+import { defineReadHandler } from '../../../../utils/read-handler'
 import { getTestSignInResult } from '../../../../utils/sso/test-signin'
+
+const querySchema = z.object({ testId: z.string().optional() })
+
+// Mirrors CapturedClaims (server/utils/sso/test-signin.ts).
+const capturedClaimsSchema = z.object({
+  rawClaims: z.record(z.string(), z.unknown()),
+  mapped: z.object({
+    email: z.string().nullable(),
+    name: z.string().nullable(),
+    image: z.string().nullable(),
+  }),
+})
+const responseSchema = z.object({ result: capturedClaimsSchema.nullable() })
 
 // Admin-gated read of a finished test sign-in's captured claims (keyed by the
 // testId nonce). Returns { result: null } until the popup has reported back.
-export default defineValidatedHandler({ admin: true }, async ({ event }) => {
-  const testId = String(getQuery(event).testId ?? '')
+export default defineReadHandler({ response: responseSchema, auth: 'admin', query: querySchema }, async ({ query }) => {
+  const testId = query.testId ?? ''
   return { result: testId ? await getTestSignInResult(db, testId) : null }
 })
 

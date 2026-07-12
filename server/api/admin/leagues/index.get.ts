@@ -1,11 +1,27 @@
+import { z } from 'zod'
 import { db } from '../../../../db'
-import { requireAdmin } from '../../../utils/auth-guards'
 import { getCompetitionBySlug } from '../../../utils/competitions/store'
 import { listLeaguesAdmin } from '../../../utils/leagues/service'
+import { defineReadHandler } from '../../../utils/read-handler'
+import { adminCompetitionRefSchema } from '../../../schemas/admin-league'
 
-export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
-  const slug = (getQuery(event).competition as string) || null
+const querySchema = z.object({ competition: z.string().optional() })
+
+const adminLeagueRowSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  visibility: z.string(),
+  joinCode: z.string(),
+  memberCount: z.number(),
+  competition: adminCompetitionRefSchema,
+  owner: z.object({ userId: z.string(), name: z.string() }).nullable(),
+  autoJoinProviderIds: z.array(z.string()),
+  createdAt: z.date(),
+})
+const responseSchema = z.object({ leagues: z.array(adminLeagueRowSchema) })
+
+export default defineReadHandler({ response: responseSchema, auth: 'admin', query: querySchema }, async ({ query }) => {
+  const slug = query.competition || null
   let competitionId: string | undefined
   if (slug) {
     const competition = await getCompetitionBySlug(db, slug)

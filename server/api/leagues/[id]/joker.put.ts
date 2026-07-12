@@ -5,12 +5,14 @@ import { setLeagueJoker } from '../../../utils/predictions/service'
 
 const bodySchema = z.object({ matchId: z.string().uuid(), isJoker: z.boolean() })
 
+const responseSchema = z.object({ ok: z.literal(true) })
+
 // Place/clear the joker on a per-league override (custom moded leagues). Creates
 // an override from the base pick if needed; one joker per (league, round).
-export default defineValidatedHandler({ body: bodySchema }, async ({ event, body, user }) => {
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ event, body, user }) => {
   const leagueId = getRouterParam(event, 'id')!
   await setLeagueJoker(db, { leagueId, userId: user.id, matchId: body.matchId, isJoker: body.isJoker })
-  return { ok: true }
+  return { ok: true as const }
 })
 
 defineRouteMeta({

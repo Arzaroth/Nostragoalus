@@ -1,20 +1,30 @@
+import { z } from 'zod'
 import { db } from '../../../../db'
-import { isAdmin, requireUser } from '../../../utils/auth-guards'
+import { isAdmin } from '../../../utils/auth-guards'
 import { resolveLeagueView } from '../../../utils/leagues/service'
 import { getRewardStandings } from '../../../utils/rewards/service'
-import { toHttpError } from '../../../utils/http'
+import { defineReadHandler } from '../../../utils/read-handler'
+import { leagueRewardDtoSchema, rewardCriterionSchema, rewardMetricSchema } from '../../../schemas/league'
 
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
+const rewardStandingSchema = z.object({
+  type: rewardCriterionSchema,
+  reward: leagueRewardDtoSchema.nullable(),
+  winners: z.array(z.object({ userId: z.string(), displayName: z.string() })),
+  value: z.number(),
+  metric: rewardMetricSchema,
+  teamCode: z.string().nullable(),
+  disabled: z.boolean(),
+  youHold: z.boolean(),
+})
+
+const responseSchema = z.array(rewardStandingSchema)
+
+export default defineReadHandler({ response: responseSchema, auth: 'user' }, async ({ event, user }) => {
   const id = getRouterParam(event, 'id')!
-  try {
-    // Same visibility as the league detail: members always, public leagues for
-    // anyone signed in, admins for moderation.
-    await resolveLeagueView(db, id, user.id, { resolveAdmin: () => isAdmin(event) })
-    return await getRewardStandings(db, id, user.id)
-  } catch (error) {
-    throw toHttpError(error)
-  }
+  // Same visibility as the league detail: members always, public leagues for
+  // anyone signed in, admins for moderation.
+  await resolveLeagueView(db, id, user.id, { resolveAdmin: () => isAdmin(event) })
+  return await getRewardStandings(db, id, user.id)
 })
 
 defineRouteMeta({

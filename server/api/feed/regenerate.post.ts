@@ -1,4 +1,3 @@
-import { getRequestURL } from 'h3'
 import { eq, sql } from 'drizzle-orm'
 import { db } from '../../../db'
 import { user as userTable } from '../../../db/schema'

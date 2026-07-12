@@ -1,13 +1,52 @@
+import { z } from 'zod'
 import { db } from '../../../../db'
-import { isAdmin, requireUser } from '../../../utils/auth-guards'
+import { isAdmin } from '../../../utils/auth-guards'
 import { canViewLeague, getLeague, getMembership } from '../../../utils/leagues/service'
 import { getLeagueModeBoard } from '../../../utils/leaderboard/modes'
 import { getLeagueRankSnapshots, rankMovement } from '../../../utils/leaderboard/snapshots'
+import { defineReadHandler } from '../../../utils/read-handler'
+import { leagueModeSchema } from '../../../schemas/league'
+
+// Rows carry the base board fields plus the route-computed movement arrow. The
+// two shapes (points vs survival) are validated as a union so a wrong-mode row
+// can never leak.
+const pointsRowSchema = z.object({
+  rank: z.number(),
+  userId: z.string(),
+  displayName: z.string(),
+  image: z.string().nullable(),
+  points: z.number(),
+  livePoints: z.number(),
+  exactCount: z.number(),
+  outcomeCount: z.number(),
+  movement: z.number().nullable(),
+})
+const survivalRowSchema = z.object({
+  rank: z.number(),
+  userId: z.string(),
+  displayName: z.string(),
+  image: z.string().nullable(),
+  alive: z.boolean(),
+  livesLeft: z.number(),
+  survived: z.number(),
+  eliminatedRoundLabel: z.string().nullable(),
+  movement: z.number().nullable(),
+})
+
+const responseSchema = z.object({
+  board: z.object({
+    kind: z.enum(['points', 'survival']),
+    mode: leagueModeSchema,
+    live: z.boolean(),
+    rows: z.array(z.union([pointsRowSchema, survivalRowSchema])),
+  }),
+  mode: leagueModeSchema,
+  lives: z.number().nullable(),
+})
 
 // Read-time board for a moded league (easy/hard points, or hardcore survival).
 // NORMAL leagues use the standard leaderboard endpoint instead.
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
+export default defineReadHandler({ response: responseSchema, auth: 'user' }, async ({ event, user }) => {
   const id = getRouterParam(event, 'id')!
   const league = await getLeague(db, id)
   if (!league) throw createError({ statusCode: 404, statusMessage: 'League not found' })

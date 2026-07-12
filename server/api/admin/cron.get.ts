@@ -1,10 +1,27 @@
+import { z } from 'zod'
 import { db } from '../../../db'
 import { taskRun } from '../../../db/schema'
-import { requireAdmin } from '../../utils/auth-guards'
+import { defineReadHandler } from '../../utils/read-handler'
 import { buildCronTaskRows } from '../../utils/tasks/cron-status'
 
-export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
+// Mirrors CronTaskRow (server/utils/tasks/cron-status.ts): one registry task
+// joined with its persisted run history (timestamps already ISO strings).
+const cronTaskRowSchema = z.object({
+  name: z.string(),
+  schedule: z.string().nullable(),
+  nextRunAt: z.string().nullable(),
+  previousRunAt: z.string().nullable(),
+  lastRunAt: z.string().nullable(),
+  lastFailureAt: z.string().nullable(),
+  lastDurationMs: z.number().nullable(),
+  executions: z.number(),
+  lastResult: z.string().nullable(),
+  lastError: z.string().nullable(),
+  status: z.enum(['ok', 'failed', 'never']),
+})
+const responseSchema = z.object({ tasks: z.array(cronTaskRowSchema) })
+
+export default defineReadHandler({ response: responseSchema, auth: 'admin' }, async () => {
   const runs = await db.select().from(taskRun)
   return { tasks: buildCronTaskRows(runs, new Date()) }
 })

@@ -10,7 +10,9 @@ import { useStorageDriver } from '../../../utils/storage'
 // moderator only, so a non-manager can't fill storage.
 const bodySchema = z.object({ imageDataUrl: z.string().max(1_400_000) })
 
-export default defineValidatedHandler({ body: bodySchema }, async ({ event, body, user }) => {
+const responseSchema = z.object({ url: z.string() })
+
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ event, body, user }) => {
   const id = getRouterParam(event, 'id')!
   await resolveLeagueManage(db, id, user.id)
   const key = await storeRewardFromDataUrl(useStorageDriver(), body.imageDataUrl)

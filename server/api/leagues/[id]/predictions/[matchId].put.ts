@@ -10,10 +10,12 @@ const bodySchema = z.object({
   wager: z.number().int().min(0).max(999).nullable().optional(),
 })
 
+const responseSchema = z.object({ id: z.string() })
+
 // Save a per-league override pick (moded leagues only). Switches the membership
 // off sync. Service rejects non-members (403), NORMAL leagues (400), locked or
 // TBD matches, and over-budget stakes.
-export default defineValidatedHandler({ body: bodySchema }, async ({ event, body, user }) => {
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ event, body, user }) => {
   const leagueId = getRouterParam(event, 'id')!
   const matchId = getRouterParam(event, 'matchId')!
   const id = await upsertLeaguePrediction(db, {

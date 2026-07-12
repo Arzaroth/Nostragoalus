@@ -3,6 +3,7 @@ import { db } from '../../../../../db'
 import { defineValidatedHandler } from '../../../../utils/validated-handler'
 import { resolveLeagueManage } from '../../../../utils/leagues/service'
 import { createInvite, inviteStatus, listInvites } from '../../../../utils/leagues/invites'
+import { inviteViewSchema } from '../../../../schemas/league'
 
 const bodySchema = z.object({
   // Hours keeps the API timezone-free; null/omitted = never expires. Capped at
@@ -11,10 +12,12 @@ const bodySchema = z.object({
   maxUses: z.number().int().min(1).max(1000).nullish(),
 })
 
+const responseSchema = z.object({ invite: inviteViewSchema })
+
 // A runaway mint loop is pointless rows; cap actives per league.
 const MAX_ACTIVE_INVITES = 20
 
-export default defineValidatedHandler({ body: bodySchema }, async ({ event, body, user }) => {
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ event, body, user }) => {
   const id = getRouterParam(event, 'id')!
   await resolveLeagueManage(db, id, user.id)
   if ((await listInvites(db, id)).length >= MAX_ACTIVE_INVITES) {

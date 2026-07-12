@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { db } from '../../../../../db'
 import { setChatReaction } from '../../../../utils/chat/reactions'
 import { publishChatReaction } from '../../../../utils/live/league-chat'
+import { okSchema } from '../../../../schemas/chat'
 import { defineValidatedHandler } from '../../../../utils/validated-handler'
 import { REACTION_EMOJIS } from '../../../../../shared/reactions'
 
@@ -13,7 +14,7 @@ const bodySchema = z.object({
 
 // Set or clear the caller's emoji reaction on a message, then push the fresh
 // totals to the league's connected members. Members only; the emoji is plaintext.
-export default defineValidatedHandler({ body: bodySchema }, async ({ body, user, event }) => {
+export default defineValidatedHandler({ body: bodySchema, response: okSchema }, async ({ body, user, event }) => {
   const leagueId = getRouterParam(event, 'id') as string
   const ctx = await setChatReaction(db, { messageId: body.messageId, userId: user.id, emoji: body.emoji })
   // This league route only acts on messages in this league (a DM or another
@@ -22,7 +23,7 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ body, user,
     throw createError({ statusCode: 404, statusMessage: 'message not found' })
   }
   void publishChatReaction(db, leagueId, body.messageId).catch(() => {})
-  return { ok: true }
+  return { ok: true as const }
 })
 
 defineRouteMeta({

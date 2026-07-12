@@ -2,16 +2,17 @@ import { z } from 'zod'
 import { db } from '../../../../../db'
 import { defineValidatedHandler } from '../../../../utils/validated-handler'
 import { adminAddMember } from '../../../../utils/leagues/service'
+import { okSchema } from '../../../../schemas/chat'
 
 const bodySchema = z.object({
   userId: z.string().min(1),
   role: z.enum(['OWNER', 'MODERATOR', 'MEMBER']).optional(),
 })
 
-export default defineValidatedHandler({ admin: true, body: bodySchema }, async ({ event, body }) => {
+export default defineValidatedHandler({ admin: true, body: bodySchema, response: okSchema }, async ({ event, body }) => {
   const id = getRouterParam(event, 'id')!
   await adminAddMember(db, { leagueId: id, userId: body.userId, role: body.role })
-  return { ok: true }
+  return { ok: true as const }
 })
 
 defineRouteMeta({

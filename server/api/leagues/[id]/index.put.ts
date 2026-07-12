@@ -24,7 +24,9 @@ const bodySchema = z
   })
   .refine((b) => Object.values(b).some((v) => v !== undefined), { message: 'nothing to update' })
 
-export default defineValidatedHandler({ body: bodySchema }, async ({ event, body, user }) => {
+const responseSchema = z.object({ ok: z.literal(true) })
+
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ event, body, user }) => {
   const id = getRouterParam(event, 'id')!
   const { membership } = await resolveLeagueManage(db, id, user.id)
   if (body.name !== undefined) {
@@ -47,7 +49,7 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ event, body
     if (membership?.role !== 'OWNER') throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
     await setLeagueMode(db, id, body.mode, body.lives)
   }
-  return { ok: true }
+  return { ok: true as const }
 })
 
 defineRouteMeta({

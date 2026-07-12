@@ -1,12 +1,14 @@
+import { z } from 'zod'
 import { db } from '../../../../../db'
-import { requireAdmin } from '../../../../utils/auth-guards'
+import { defineValidatedHandler } from '../../../../utils/validated-handler'
 import { removeTwoFactor } from '../../../../utils/admin/twofactor'
 
-export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
+const responseSchema = z.object({ ok: z.literal(true) })
+
+export default defineValidatedHandler({ admin: true, response: responseSchema }, async ({ event }) => {
   const id = getRouterParam(event, 'id') as string
   await removeTwoFactor(db, id)
-  return { ok: true }
+  return { ok: true as const }
 })
 
 defineRouteMeta({

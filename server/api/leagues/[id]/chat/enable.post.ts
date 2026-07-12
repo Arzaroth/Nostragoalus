@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { db } from '../../../../../db'
 import { enableLeagueChat } from '../../../../utils/chat/service'
 import { publishStateChanged } from '../../../../utils/live/league-chat'
+import { epochResultSchema } from '../../../../schemas/league-chat'
 import { defineValidatedHandler } from '../../../../utils/validated-handler'
 
 const bodySchema = z.object({
@@ -11,7 +12,7 @@ const bodySchema = z.object({
 
 // Enable chat (OWNER/MODERATOR). The client confirmed the legal warning, generated
 // the group key, and supplies the per-member wraps; the server only persists them.
-export default defineValidatedHandler({ body: bodySchema }, async ({ body, user, event }) => {
+export default defineValidatedHandler({ body: bodySchema, response: epochResultSchema }, async ({ body, user, event }) => {
   const leagueId = getRouterParam(event, 'id') as string
   const res = await enableLeagueChat(db, { leagueId, actorId: user.id, wraps: body.wraps })
   void publishStateChanged(db, leagueId).catch(() => {})

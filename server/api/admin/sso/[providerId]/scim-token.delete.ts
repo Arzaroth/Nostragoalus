@@ -3,13 +3,14 @@ import { db } from '../../../../../db'
 import { scimProvider } from '../../../../../db/schema'
 import { defineValidatedHandler } from '../../../../utils/validated-handler'
 import { scimProviderId } from '../../../../utils/sso/service'
+import { okSchema } from '../../../../schemas/admin-sso'
 
 // Revokes SCIM provisioning for a provider by dropping its connection row: the
 // IdP's stored bearer no longer resolves, so provisioning calls 401.
-export default defineValidatedHandler({ admin: true }, async ({ event }) => {
+export default defineValidatedHandler({ admin: true, response: okSchema }, async ({ event }) => {
   const providerId = getRouterParam(event, 'providerId')!
   await db.delete(scimProvider).where(eq(scimProvider.providerId, scimProviderId(providerId)))
-  return { ok: true }
+  return { ok: true as const }
 })
 
 defineRouteMeta({

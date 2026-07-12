@@ -1,11 +1,18 @@
+import { z } from 'zod'
 import { db } from '../../../db'
-import { requireUser } from '../../utils/auth-guards'
+import { competitionRefSchema } from '../../schemas/competition'
 import { resolveCompetition } from '../../utils/competitions/store'
 import { listPublicLeagues } from '../../utils/leagues/service'
+import { defineReadHandler } from '../../utils/read-handler'
 
-export default defineEventHandler(async (event) => {
-  await requireUser(event)
-  const competition = await resolveCompetition(db, (getQuery(event).competition as string) || null)
+const querySchema = z.object({ competition: z.string().optional() })
+const responseSchema = z.object({
+  competition: competitionRefSchema.nullable(),
+  leagues: z.array(z.object({ id: z.string(), name: z.string(), memberCount: z.number() })),
+})
+
+export default defineReadHandler({ response: responseSchema, auth: 'user', query: querySchema }, async ({ query }) => {
+  const competition = await resolveCompetition(db, query.competition || null)
   if (!competition) return { competition: null, leagues: [] }
   return {
     competition: { id: competition.id, slug: competition.slug, name: competition.name },

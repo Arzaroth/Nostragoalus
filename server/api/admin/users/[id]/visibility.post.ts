@@ -1,18 +1,20 @@
 import { eq } from 'drizzle-orm'
+import { z } from 'zod'
 import { db } from '../../../../../db'
 import { user } from '../../../../../db/schema'
-import { requireAdmin } from '../../../../utils/auth-guards'
+import { defineValidatedHandler } from '../../../../utils/validated-handler'
+
+const responseSchema = z.object({ ok: z.literal(true), hidden: z.boolean() })
 
 // hiddenFromLeaderboard is deliberately NOT a better-auth additionalField, so
 // users cannot flip it on themselves through updateUser - only this admin route.
-export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
+export default defineValidatedHandler({ admin: true, response: responseSchema }, async ({ event }) => {
   const id = getRouterParam(event, 'id') as string
   const body = await readBody(event)
   const hidden = body?.hidden === true
   const updated = await db.update(user).set({ hiddenFromLeaderboard: hidden }).where(eq(user.id, id)).returning({ id: user.id })
   if (!updated[0]) throw createError({ statusCode: 404, statusMessage: 'Unknown user' })
-  return { ok: true, hidden }
+  return { ok: true as const, hidden }
 })
 
 defineRouteMeta({

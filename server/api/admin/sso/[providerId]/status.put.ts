@@ -4,13 +4,14 @@ import { defineValidatedHandler } from '../../../../utils/validated-handler'
 import { setProviderStatus } from '../../../../utils/sso/service'
 
 const bodySchema = z.object({ status: z.enum(['draft', 'enabled', 'disabled']) })
+const responseSchema = z.object({ ok: z.literal(true), status: z.enum(['draft', 'enabled', 'disabled']) })
 
 // Move a provider through its lifecycle. Enabling is gated in the service: it
 // needs a passing connection test and a verified (or bypassed) domain, else 409.
-export default defineValidatedHandler({ admin: true, body: bodySchema }, async ({ event, body }) => {
+export default defineValidatedHandler({ admin: true, body: bodySchema, response: responseSchema }, async ({ event, body }) => {
   const providerId = getRouterParam(event, 'providerId')!
   await setProviderStatus(db, providerId, body.status)
-  return { ok: true, status: body.status }
+  return { ok: true as const, status: body.status }
 })
 
 defineRouteMeta({

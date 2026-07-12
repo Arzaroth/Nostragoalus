@@ -1,11 +1,12 @@
 import { db } from '../../../../../db'
 import { defineValidatedHandler } from '../../../../utils/validated-handler'
 import { deleteRoadmapItem } from '../../../../utils/roadmap/service'
+import { okSchema } from '../../../../schemas/chat'
 
-export default defineValidatedHandler({ admin: true }, async ({ event }) => {
+export default defineValidatedHandler({ admin: true, response: okSchema }, async ({ event }) => {
   const id = getRouterParam(event, 'id')!
   await deleteRoadmapItem(db, id)
-  return { ok: true }
+  return { ok: true as const }
 })
 
 defineRouteMeta({

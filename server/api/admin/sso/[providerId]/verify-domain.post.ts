@@ -1,10 +1,19 @@
+import { z } from 'zod'
 import { db } from '../../../../../db'
 import { defineValidatedHandler } from '../../../../utils/validated-handler'
 import { verifyDomainDns } from '../../../../utils/sso/service'
 
+// Mirrors DomainVerificationCheck (server/utils/sso/service.ts).
+const responseSchema = z.object({
+  ok: z.boolean(),
+  host: z.string(),
+  expected: z.string(),
+  found: z.array(z.string()),
+})
+
 // Resolves the DNS-TXT record and, on a match, marks the domain verified. Returns
 // the expected/found records either way so the UI can show what's still missing.
-export default defineValidatedHandler({ admin: true }, async ({ event }) => {
+export default defineValidatedHandler({ admin: true, response: responseSchema }, async ({ event }) => {
   const providerId = getRouterParam(event, 'providerId')!
   return await verifyDomainDns(db, providerId)
 })
