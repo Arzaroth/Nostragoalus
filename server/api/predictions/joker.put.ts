@@ -3,14 +3,16 @@ import { db } from '../../../db'
 import { setJoker } from '../../utils/predictions/service'
 import { defineValidatedHandler } from '../../utils/validated-handler'
 
-const bodySchema = z.object({
+export const bodySchema = z.object({
   matchId: z.string().uuid(),
   isJoker: z.boolean(),
 })
 
-export default defineValidatedHandler({ body: bodySchema }, async ({ body, user }) => {
+export const responseSchema = z.object({ ok: z.literal(true) })
+
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ body, user }) => {
   await setJoker(db, { userId: user.id, matchId: body.matchId, isJoker: body.isJoker })
-  return { ok: true }
+  return { ok: true as const }
 })
 
 defineRouteMeta({

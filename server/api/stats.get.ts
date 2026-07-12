@@ -1,7 +1,14 @@
+import { z } from 'zod'
 import { db } from '../../db'
+import { defineReadHandler } from '../utils/read-handler'
 import { getPlatformStats } from '../utils/stats/platform'
 
-export default defineEventHandler(async () => {
+export const responseSchema = z.object({
+  players: z.number().int().nonnegative(),
+  predictions: z.number().int().nonnegative(),
+})
+
+export default defineReadHandler({ response: responseSchema }, async () => {
   return await getPlatformStats(db)
 })
 

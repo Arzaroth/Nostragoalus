@@ -17,6 +17,11 @@ interface Options<S extends ZodType> {
   // (e.g. { media: ['write'] }); for admin routes the key's owner must be an
   // admin too. Routes without this option are session-only and reject keys.
   apiKey?: Record<string, string[]>
+  // The response contract. When set, the handler's return is parsed through it
+  // before it leaves the server, so a shape that drifts from the published
+  // OpenAPI/Dart contract is a loud 500 here, not a silent client break. Same
+  // schema the spec emitter reads (server/utils/openapi/contract.ts).
+  response?: ZodType
 }
 
 // One wrapper for mutating routes: enforce auth (user or admin), parse+validate
@@ -56,10 +61,27 @@ export function defineValidatedHandler<S extends ZodType>(
       body = parsed.data
     }
 
+    let result: unknown
     try {
-      return await handler({ event, body: body as never, user })
+      result = await handler({ event, body: body as never, user })
     } catch (error) {
       throw toHttpError(error)
     }
+    return options.response ? parseResponse(options.response, result) : result
   })
+}
+
+// A handler return that fails its own response contract is a server bug, not a
+// client one: surface it as a 500 with the offending paths (never a malformed
+// 200 the client has to guess at).
+export function parseResponse<R>(schema: ZodType, result: unknown): R {
+  const parsed = schema.safeParse(result)
+  if (!parsed.success) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Response contract violation',
+      data: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
+    })
+  }
+  return parsed.data as R
 }

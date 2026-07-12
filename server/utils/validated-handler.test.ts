@@ -158,4 +158,24 @@ describe('defineValidatedHandler', () => {
     bodyByEvent.set(event, undefined)
     expect(await handler(event)).toEqual({ by: 'k1' })
   })
+
+  it('parses the handler return through the response contract', async () => {
+    requireUser.mockResolvedValue(ADMIN)
+    const defineValidatedHandler = await load()
+    const response = z.object({ ok: z.literal(true) })
+    // Handler leaks an extra field; the contract strips it on the way out.
+    const handler = defineValidatedHandler({ response }, async () => ({ ok: true, secret: 42 }))
+    expect(await callWith(handler, undefined)).toEqual({ ok: true })
+  })
+
+  it('500s when the handler return breaks the response contract', async () => {
+    requireUser.mockResolvedValue(ADMIN)
+    const defineValidatedHandler = await load()
+    const response = z.object({ ok: z.literal(true) })
+    const handler = defineValidatedHandler({ response }, async () => ({ ok: false }) as never)
+    await expect(callWith(handler, undefined)).rejects.toMatchObject({
+      statusCode: 500,
+      statusMessage: 'Response contract violation',
+    })
+  })
 })
