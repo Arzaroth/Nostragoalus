@@ -95,9 +95,23 @@ test('a DM voice call: caller rings, callee answers, both land in the call', asy
   await expect(pageA.getByRole('button', { name: 'Hang up' })).toBeVisible({ timeout: 15_000 })
   await expect(pageB.getByRole('button', { name: 'Hang up' })).toBeVisible({ timeout: 15_000 })
 
-  // A hangs up; the bar clears.
+  // The in-call bar names the other participant (names ride the roster frames -
+  // B has no chat open, so this can only come from the voice roster).
+  await expect(pageB.getByText(userA.name)).toBeVisible({ timeout: 15_000 })
+
+  // The audio settings dialog opens with the device pickers and noise toggle.
+  await pageB.getByRole('button', { name: 'Audio settings' }).click()
+  await expect(pageB.getByText('Noise suppression')).toBeVisible({ timeout: 10_000 })
+  await pageB.keyboard.press('Escape')
+  await expect(pageB.getByText('Noise suppression')).toBeHidden({ timeout: 10_000 })
+
+  // A hangs up; BOTH bars clear - one side leaving ends the DM call for the other.
   await pageA.getByRole('button', { name: 'Hang up' }).click()
   await expect(pageA.getByRole('button', { name: 'Hang up' })).toBeHidden({ timeout: 15_000 })
+  await expect(pageB.getByRole('button', { name: 'Hang up' })).toBeHidden({ timeout: 15_000 })
+
+  // The ended call leaves a system line in A's open thread.
+  await expect(pageA.getByText(`Call by ${userA.name}`)).toBeVisible({ timeout: 15_000 })
 
   await ctxA.close()
   await ctxB.close()

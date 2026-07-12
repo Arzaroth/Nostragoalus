@@ -5,8 +5,16 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
-### tI'pu'
+### chel
 
+- wab rI': DaH rI' tlhejbogh nuvpu' 'ang rI' tlhegh; jatlhbogh nuv pong wov, 'ej QoymeH janlIj 'aqroS 'aghmeH wej tlheghmey. league «wab yItlhej» QIn naDev nuvpu' pong 'ang je.
+- wab rI': wab SeH Daq - QoymeH jan wab jan je wIv (qawlu'), chuS polHa' chu'. wab qEQ qeq je reH chu'lu' DaH.
+- wab rI': bItamtaHvIS bIjatlhchugh «bItam - Qoylu'be'!» QIn cha'lu'.
+- QIn: rI' qun tlheghmey - «rI' tagh / rIn (poH) / jangbe'lu'» DM league pa' je QIn tlhegh luDab, SIbI'.
+
+### lughmoH
+
+- wab rI': DM rI' Damevchugh DaH latlhvaD je rIn - qaSpa': «rI'taH» ghaHtaH, tlhaq qettaH, tam leQ jangbe', web QIn chu'qa'pa'.
 - nab vs nab: DaH mI' chev pat «chev tIn law'» tetlh; wanI' pIm neH 'angta'bogh Qagh tI'lu'. Qapbogh rap lulegh cha' QujwI' 'ach mI' pup joker je Suqta' wa' (24 mI' vs wa' mI') — chev tInqu' 'oH, So'ta' tetlh. DaH 'anglu'.
 - nab vs nab: DaH profile navDaq chegh QujwI' pongmey Deghmey je.
 

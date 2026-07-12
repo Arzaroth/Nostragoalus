@@ -18081,6 +18081,85 @@
         }
       }
     },
+    "/api/voice/calls": {
+      "get": {
+        "tags": [
+          "Voice"
+        ],
+        "summary": "Call log for a chat scope",
+        "description": "Recent voice calls (ongoing, ended, missed) of a DM thread or league/match room, oldest first, for the chat call lines. Caller must be a thread participant / league member.",
+        "responses": {
+          "200": {
+            "description": "{ calls: [...] }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "calls": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "ONGOING",
+                              "ENDED",
+                              "MISSED"
+                            ]
+                          },
+                          "initiatorId": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "initiatorName": {
+                            "type": "string"
+                          },
+                          "participantCount": {
+                            "type": "number"
+                          },
+                          "startedAt": {
+                            "type": "string"
+                          },
+                          "endedAt": {
+                            "nullable": true,
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "status",
+                          "initiatorId",
+                          "initiatorName",
+                          "participantCount",
+                          "startedAt",
+                          "endedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "calls"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Neither scope given."
+          },
+          "404": {
+            "description": "Not a participant / member."
+          }
+        }
+      }
+    },
     "/api/voice/ice-servers": {
       "get": {
         "tags": [

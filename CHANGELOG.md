@@ -5,8 +5,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+
+- Voice calls: the in-call bar now shows who is in the call, with the speaker's name lighting up while they talk, plus a live 3-bar meter for your own microphone. The league "join voice" tooltip also names who is already in.
+- Voice calls: an audio settings dialog in the call bar to pick your microphone and speaker (remembered across calls) and toggle noise suppression. Echo cancellation and auto gain are now always on.
+- Voice calls: talking while muted pops a gentle "You're muted" reminder.
+- Chat: call history lines in the conversation - "call started / ended (with duration) / missed" appear in the timeline for both DMs and league rooms, live as they happen.
+
 ### Fixed
 
+- Voice calls: hanging up a DM call now ends it for the other side too - previously they were left stuck "in call" with a running timer and an unresponsive mute button until a reload.
 - Head-to-head: the "Biggest divergences" list now ranks your shared picks by their points gap, instead of only showing matches where you predicted different results. A match where you both called the same winner but one of you landed the exact score with a joker (a 24-point pick against a 1-point one) is exactly the kind of swing the list was hiding.
 - Head-to-head: the two players' names and avatars now link back to their profile pages.
 
