@@ -220,6 +220,14 @@ function start(): void {
             state.value = 'idle'
           }
           break
+        case 'voice:ended':
+          // The other DM party left; the server already removed us from the room,
+          // so no voice:leave is needed. Scope-checked so a stale frame from a
+          // just-ended call cannot kill a new one.
+          if (activeScope.value && voiceRoomKey(data.scope as VoiceScope) === voiceRoomKey(activeScope.value)) {
+            cleanup()
+          }
+          break
         case 'voice:evicted':
           // Another tab of ours took the call over; drop this tab's silently. The
           // server already removed this token, so no voice:leave is needed.
