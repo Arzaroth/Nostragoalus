@@ -189,6 +189,10 @@ export default defineNuxtConfig({
     turnSecret: '',
     turnHost: '',
     turnRealm: '',
+    // TURN listening ports the browser dials (configurable to avoid a clash with
+    // another service on the host, e.g. a netbird relay on 3478). Default IANA.
+    turnPort: '3478',
+    turnTlsPort: '5349',
     // Image storage backend. driver 'fs' (default) writes under storageFsRoot;
     // driver 's3' talks to any S3-compatible endpoint (the deploy runs rustfs).
     storageDriver: 'fs',

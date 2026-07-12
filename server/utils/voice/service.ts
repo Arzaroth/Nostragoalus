@@ -135,6 +135,11 @@ export interface TurnConfig {
   secret: string
   host: string
   realm: string
+  // The ports the browser dials coturn on. Configurable so a deploy can move them
+  // off ports already taken on the host (e.g. a netbird relay owns 3478). Default
+  // to the IANA STUN/TURN ports.
+  port: number
+  tlsPort: number
 }
 
 // A coturn ephemeral credential (the TURN REST `use-auth-secret` scheme): the
@@ -166,11 +171,13 @@ export function buildIceServers(
 ): IceServersResponse {
   const iceServers: IceServer[] = [{ urls: 'stun:stun.l.google.com:19302' }]
   if (turn?.secret && turn.host) {
+    const port = turn.port || 3478
+    const tlsPort = turn.tlsPort || 5349
     const { username, credential } = turnCredential(turn.secret, userId, ttlSeconds, nowMs)
     iceServers.push(
-      { urls: `turn:${turn.host}:3478?transport=udp`, username, credential },
-      { urls: `turn:${turn.host}:3478?transport=tcp`, username, credential },
-      { urls: `turns:${turn.host}:5349?transport=tcp`, username, credential },
+      { urls: `turn:${turn.host}:${port}?transport=udp`, username, credential },
+      { urls: `turn:${turn.host}:${port}?transport=tcp`, username, credential },
+      { urls: `turns:${turn.host}:${tlsPort}?transport=tcp`, username, credential },
     )
   }
   return { iceServers, ttl: ttlSeconds }

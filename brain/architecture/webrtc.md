@@ -50,10 +50,13 @@ never reaches the browser.
 
 Runtime config (`NUXT_TURN_SECRET` / `NUXT_TURN_HOST` / `NUXT_TURN_REALM`, plus
 `NUXT_TURN_EXTERNAL_IP` = the host's public IP whenever coturn sits behind NAT, so
-it advertises a reachable relay address). Prod firewall: forward **3478 (udp+tcp)**
-and the **relay range 49160-49200/udp** to the host (and 5349/tcp if you mount a
-TLS cert for `turns:`). The coturn command applies `--external-ip` only when the
-env var is set (a shell wrapper in `compose.yaml`). The relay is opaque to the
+it advertises a reachable relay address). Prod firewall: forward the TURN
+port **(default 3478, udp+tcp)** and the **relay range (default 49160-49200/udp)**
+to the host (and the TLS port for `turns:`). All four ports are env-configurable
+(`NUXT_TURN_PORT` / `NUXT_TURN_TLS_PORT` / `NUXT_TURN_MIN_PORT` / `NUXT_TURN_MAX_PORT`,
+read by both the app's ICE urls and coturn) so a deploy can dodge a clash - e.g. a
+netbird relay that already owns 3478 and 49152-65535. The coturn command applies
+`--external-ip` only when the env var is set (a shell wrapper in `compose.yaml`). The relay is opaque to the
 media - it forwards SRTP packets it cannot decrypt, so E2EE holds even through TURN.
 
 ## Known gap

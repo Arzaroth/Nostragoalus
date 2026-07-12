@@ -8,7 +8,17 @@ import { buildIceServers } from '../../utils/voice/service'
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
   const cfg = useRuntimeConfig()
-  return buildIceServers({ secret: cfg.turnSecret, host: cfg.turnHost, realm: cfg.turnRealm }, user.id, Date.now())
+  return buildIceServers(
+    {
+      secret: cfg.turnSecret,
+      host: cfg.turnHost,
+      realm: cfg.turnRealm,
+      port: Number(cfg.turnPort) || 3478,
+      tlsPort: Number(cfg.turnTlsPort) || 5349,
+    },
+    user.id,
+    Date.now(),
+  )
 })
 
 defineRouteMeta({
