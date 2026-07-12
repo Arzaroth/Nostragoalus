@@ -112,8 +112,11 @@ export function computeHeadToHead(
       return { label: r.label, order: r.order, aPoints: aRun, bPoints: bRun }
     })
 
+  // Ranked by points gap, not by predicted outcome: two picks on the same
+  // winner can still be dozens of points apart (exact score + rarity + joker),
+  // and those are the swings that decided the head-to-head.
   const divergences = matches
-    .filter((m) => m.diverged)
+    .filter((m) => m.aPoints !== m.bPoints)
     // matchId breaks a points-gap tie so which six survive the slice is stable
     // across DB row order.
     .sort((x, y) => Math.abs(y.aPoints - y.bPoints) - Math.abs(x.aPoints - x.bPoints) || x.matchId.localeCompare(y.matchId))
