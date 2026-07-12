@@ -123,6 +123,13 @@ test('DM notifications collapse into one bell entry that opens the dock instead 
   await page.reload()
   await page.waitForLoadState('networkidle')
   await dismissOnboarding(page)
+  // If the prompt re-showed (slow dismissal write), its hand-off auto-starts the
+  // welcome tour, which force-navigates to /matches; the no-navigation assertion
+  // below needs the bell flow to start from the home page.
+  if (new URL(page.url()).pathname !== '/') {
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+  }
 
   // Open the bell (retry through hydration) and assert the two threads collapsed to
   // a single grouped line rather than two separate rows.

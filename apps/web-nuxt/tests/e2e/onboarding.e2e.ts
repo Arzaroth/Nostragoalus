@@ -38,8 +38,9 @@ test('the onboarding tour auto-starts, walks the steps, and stays dismissed', as
   await page.waitForLoadState('networkidle')
 
   // Dismiss the still-pending league prompt on THIS page-load: that fires the
-  // in-session signal the tour's auto-start gate waits on.
-  await dismissOnboarding(page)
+  // in-session signal the tour's auto-start gate waits on. skipTour: false -
+  // the auto-started tour is exactly what this spec asserts.
+  await dismissOnboarding(page, { skipTour: false })
 
   // Auto-start: the welcome step (centered, no target) appears without any
   // further action.
