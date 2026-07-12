@@ -1579,6 +1579,8 @@
     "output": "Haut-parleur",
     "noiseSuppression": "Réduction de bruit",
     "deviceDefault": "Par défaut du système",
+    "reconnecting": "Reconnexion…",
+    "quality": {"fair": "Connexion instable", "poor": "Mauvaise connexion"},
     "log": {"missed": "Appel manqué de {name}", "ongoing": "{name} a démarré un appel", "ended": "Appel de {name} · {duration}"},
     "hangup": "Raccrocher",
     "invite": "Inviter à l'appel",

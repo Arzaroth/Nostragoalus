@@ -7,7 +7,7 @@ const { t } = useI18n()
 const toast = useToast()
 const {
   state, activeScope, roster, rosterNames, remoteStreams, incoming, muted, errorKey,
-  localLevel, speakingPeers, mutedTalkingAt,
+  localLevel, speakingPeers, mutedTalkingAt, connectionQuality, reconnecting,
   inputDevices, outputDevices, inputDeviceId, outputDeviceId, noiseSuppression, canPickOutput,
   accept, decline, hangup, invite, toggleMute,
   refreshDevices, setInputDevice, setOutputDevice, setNoiseSuppression,
@@ -53,11 +53,7 @@ watch(
   },
 )
 onBeforeUnmount(() => clearInterval(timer))
-const clock = computed(() => {
-  const m = Math.floor(elapsed.value / 60)
-  const s = elapsed.value % 60
-  return `${m}:${String(s).padStart(2, '0')}`
-})
+const clock = computed(() => formatCallDuration(elapsed.value))
 
 // A denied mic (or other error) surfaces as a toast, once per error.
 watch(
@@ -165,7 +161,10 @@ function ring(userId: string): void {
         <span class="relative inline-flex rounded-full h-2.5 w-2.5" style="background: var(--p-primary-color)" />
       </span>
       <span class="flex flex-col min-w-0">
-        <span class="text-sm font-medium tabular-nums">{{ statusLabel }}</span>
+        <span class="text-sm font-medium tabular-nums">
+          {{ statusLabel }}
+          <span v-if="reconnecting" class="text-xs font-semibold" style="color: var(--ng-danger)">{{ t('voice.reconnecting') }}</span>
+        </span>
         <span v-if="others.length" class="text-xs truncate max-w-[14rem]">
           <template v-for="(o, i) in others" :key="o">
             <span
@@ -176,6 +175,16 @@ function ring(userId: string): void {
           </template>
         </span>
       </span>
+
+      <!-- Link quality warning; hidden while the connection is fine. -->
+      <i
+        v-if="state === 'in-call' && !reconnecting && connectionQuality && connectionQuality !== 'good'"
+        v-tooltip.top="t(`voice.quality.${connectionQuality}`)"
+        class="pi pi-wifi text-sm"
+        :style="connectionQuality === 'poor' ? 'color: var(--ng-danger)' : 'color: var(--ng-star)'"
+        :aria-label="t(`voice.quality.${connectionQuality}`)"
+        role="img"
+      />
 
       <!-- Own mic meter; hollow while muted. -->
       <span v-if="state === 'in-call'" class="flex items-end gap-0.5 h-3.5" aria-hidden="true">

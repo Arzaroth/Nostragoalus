@@ -1584,6 +1584,8 @@
     "output": "Speaker",
     "noiseSuppression": "Noise suppression",
     "deviceDefault": "System default",
+    "reconnecting": "Reconnecting…",
+    "quality": {"fair": "Connection unstable", "poor": "Poor connection"},
     "log": {"missed": "Missed call from {name}", "ongoing": "{name} started a call", "ended": "Call by {name} · {duration}"},
     "hangup": "Hang up",
     "invite": "Invite to call",

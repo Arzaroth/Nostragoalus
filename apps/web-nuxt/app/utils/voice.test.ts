@@ -5,10 +5,14 @@ import {
   VOICE_SPEAKING_THRESHOLD,
   buildAudioConstraints,
   createMutedTalkingTracker,
+  extractQualityInputs,
+  formatCallDuration,
   isCallEstablished,
   levelFromSamples,
+  qualityOf,
   rosterDelta,
   shouldOffer,
+  worstQuality,
 } from './voice'
 
 describe('shouldOffer', () => {
@@ -124,5 +128,60 @@ describe('buildAudioConstraints', () => {
   })
   it('pins a chosen device with exact', () => {
     expect(buildAudioConstraints('mic1', true).deviceId).toEqual({ exact: 'mic1' })
+  })
+})
+
+describe('connection quality', () => {
+  it('extracts rtt + loss from remote-inbound and jitter from inbound audio stats', () => {
+    const inputs = extractQualityInputs([
+      { type: 'remote-inbound-rtp', kind: 'audio', roundTripTime: 0.2, fractionLost: 0.01 },
+      { type: 'inbound-rtp', kind: 'audio', jitter: 0.015 },
+      { type: 'remote-inbound-rtp', kind: 'video', roundTripTime: 9 },
+      { type: 'candidate-pair', currentRoundTripTime: 9 },
+    ])
+    expect(inputs).toEqual({ rttMs: 200, lossFraction: 0.01, jitterMs: 15 })
+  })
+
+  it('returns nulls when the stats carry no audio reports', () => {
+    expect(extractQualityInputs([{ type: 'transport' }])).toEqual({ rttMs: null, lossFraction: null, jitterMs: null })
+  })
+
+  it('grades good, fair and poor by loss, rtt and jitter thresholds', () => {
+    expect(qualityOf({ rttMs: 100, lossFraction: 0.01, jitterMs: 10 })).toBe('good')
+    expect(qualityOf({ rttMs: 300, lossFraction: 0, jitterMs: 0 })).toBe('fair')
+    expect(qualityOf({ rttMs: 0, lossFraction: 0.05, jitterMs: 0 })).toBe('fair')
+    expect(qualityOf({ rttMs: 0, lossFraction: 0, jitterMs: 60 })).toBe('fair')
+    expect(qualityOf({ rttMs: 600, lossFraction: 0, jitterMs: 0 })).toBe('poor')
+    expect(qualityOf({ rttMs: 0, lossFraction: 0.1, jitterMs: 0 })).toBe('poor')
+    expect(qualityOf({ rttMs: 0, lossFraction: 0, jitterMs: 150 })).toBe('poor')
+  })
+
+  it('treats missing signals as fine (a fresh link is not flagged)', () => {
+    expect(qualityOf({ rttMs: null, lossFraction: null, jitterMs: null })).toBe('good')
+  })
+
+  it('worstQuality: worst link wins, null with no links', () => {
+    expect(worstQuality([])).toBeNull()
+    expect(worstQuality(['good', 'good'])).toBe('good')
+    expect(worstQuality(['good', 'fair'])).toBe('fair')
+    expect(worstQuality(['fair', 'poor', 'good'])).toBe('poor')
+  })
+})
+
+describe('formatCallDuration', () => {
+  it('m:ss under an hour', () => {
+    expect(formatCallDuration(0)).toBe('0:00')
+    expect(formatCallDuration(59)).toBe('0:59')
+    expect(formatCallDuration(65)).toBe('1:05')
+    expect(formatCallDuration(3599)).toBe('59:59')
+  })
+  it('h:mm:ss from an hour up', () => {
+    expect(formatCallDuration(3600)).toBe('1:00:00')
+    expect(formatCallDuration(4059)).toBe('1:07:39')
+    expect(formatCallDuration(7325)).toBe('2:02:05')
+  })
+  it('clamps negatives and floors fractions', () => {
+    expect(formatCallDuration(-5)).toBe('0:00')
+    expect(formatCallDuration(61.9)).toBe('1:01')
   })
 })

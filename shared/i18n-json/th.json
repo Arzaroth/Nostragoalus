@@ -1579,6 +1579,8 @@
     "output": "ลำโพง",
     "noiseSuppression": "ตัดเสียงรบกวน",
     "deviceDefault": "ค่าเริ่มต้นของระบบ",
+    "reconnecting": "กำลังเชื่อมต่อใหม่…",
+    "quality": {"fair": "การเชื่อมต่อไม่เสถียร", "poor": "การเชื่อมต่อแย่"},
     "log": {"missed": "สายที่ไม่ได้รับจาก {name}", "ongoing": "{name} เริ่มการโทร", "ended": "การโทรของ {name} · {duration}"},
     "hangup": "วางสาย",
     "invite": "เชิญเข้าร่วมสาย",
