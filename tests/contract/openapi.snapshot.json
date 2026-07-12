@@ -5,6 +5,374 @@
     "version": "1.0"
   },
   "paths": {
+    "/api/predictions/crowd": {
+      "get": {
+        "tags": [
+          "Predictions"
+        ],
+        "summary": "Crowd totals",
+        "description": "The combined total of every player's prediction per match (1-1 + 2-1 + 4-0 shows as 7-2), with the number of predictions. Shown under prediction inputs when the account preference is enabled. With ?league=, totals cover only that league's members (display only - the scoring crowd bonus is always computed from everyone).",
+        "responses": {
+          "200": {
+            "description": "Map of matchId to {home, away, count}.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "totals": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                          "home": {
+                            "type": "number"
+                          },
+                          "away": {
+                            "type": "number"
+                          },
+                          "count": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "home",
+                          "away",
+                          "count"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "league": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "totals"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "League belongs to another competition than the one requested."
+          },
+          "401": {
+            "description": "Not signed in."
+          },
+          "404": {
+            "description": "Unknown league, or private league the caller is not in."
+          }
+        }
+      }
+    },
+    "/api/predictions": {
+      "get": {
+        "tags": [
+          "Predictions"
+        ],
+        "summary": "My predictions",
+        "description": "All of the signed-in user's predictions for a competition, with per-match points once scored.",
+        "responses": {
+          "200": {
+            "description": "Prediction list.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "predictions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "userId": {
+                            "type": "string"
+                          },
+                          "matchId": {
+                            "type": "string"
+                          },
+                          "roundId": {
+                            "type": "string"
+                          },
+                          "homeGoals": {
+                            "type": "integer",
+                            "minimum": -2147483648,
+                            "maximum": 2147483647
+                          },
+                          "awayGoals": {
+                            "type": "integer",
+                            "minimum": -2147483648,
+                            "maximum": 2147483647
+                          },
+                          "isOutcomeOnly": {
+                            "type": "boolean"
+                          },
+                          "wager": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": -2147483648,
+                            "maximum": 2147483647
+                          },
+                          "isJoker": {
+                            "type": "boolean"
+                          },
+                          "baseTier": {
+                            "nullable": true,
+                            "type": "string",
+                            "enum": [
+                              "EXACT",
+                              "DIFF",
+                              "OUTCOME",
+                              "MISS"
+                            ]
+                          },
+                          "totalPoints": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": -2147483648,
+                            "maximum": 2147483647
+                          },
+                          "basePoints": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": -2147483648,
+                            "maximum": 2147483647
+                          },
+                          "bonusPoints": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": -2147483648,
+                            "maximum": 2147483647
+                          },
+                          "crowdShare": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "jokerMultiplierApplied": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "homeTeam": {
+                            "type": "string"
+                          },
+                          "awayTeam": {
+                            "type": "string"
+                          },
+                          "homeTeamCode": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "awayTeamCode": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "kickoffTime": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "SCHEDULED",
+                              "LIVE",
+                              "PAUSED",
+                              "FINISHED",
+                              "POSTPONED",
+                              "CANCELLED",
+                              "SUSPENDED",
+                              "AWARDED",
+                              "INTERRUPTED"
+                            ]
+                          },
+                          "stage": {
+                            "type": "string",
+                            "enum": [
+                              "GROUP",
+                              "R32",
+                              "R16",
+                              "QF",
+                              "SF",
+                              "THIRD_PLACE",
+                              "FINAL"
+                            ]
+                          },
+                          "fullTimeHome": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": -2147483648,
+                            "maximum": 2147483647
+                          },
+                          "fullTimeAway": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": -2147483648,
+                            "maximum": 2147483647
+                          },
+                          "penaltiesHome": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": -2147483648,
+                            "maximum": 2147483647
+                          },
+                          "penaltiesAway": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": -2147483648,
+                            "maximum": 2147483647
+                          },
+                          "roundLabel": {
+                            "type": "string"
+                          },
+                          "roundSort": {
+                            "type": "integer",
+                            "minimum": -2147483648,
+                            "maximum": 2147483647
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "userId",
+                          "matchId",
+                          "roundId",
+                          "homeGoals",
+                          "awayGoals",
+                          "isOutcomeOnly",
+                          "wager",
+                          "isJoker",
+                          "baseTier",
+                          "totalPoints",
+                          "basePoints",
+                          "bonusPoints",
+                          "crowdShare",
+                          "jokerMultiplierApplied",
+                          "homeTeam",
+                          "awayTeam",
+                          "homeTeamCode",
+                          "awayTeamCode",
+                          "kickoffTime",
+                          "status",
+                          "stage",
+                          "fullTimeHome",
+                          "fullTimeAway",
+                          "penaltiesHome",
+                          "penaltiesAway",
+                          "roundLabel",
+                          "roundSort"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "predictions"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in."
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Predictions"
+        ],
+        "summary": "Save a prediction",
+        "description": "Create or update the score prediction for one match. Rejected once the match has kicked off (server-side lock) or while the teams are unconfirmed.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "matchId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "home": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 99
+                  },
+                  "away": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 99
+                  },
+                  "isOutcomeOnly": {
+                    "type": "boolean"
+                  },
+                  "wager": {
+                    "nullable": true,
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 999
+                  }
+                },
+                "required": [
+                  "matchId",
+                  "home",
+                  "away"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The stored prediction id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in."
+          },
+          "409": {
+            "description": "Match already kicked off."
+          },
+          "422": {
+            "description": "Invalid body, invalid scores, or unconfirmed teams."
+          }
+        }
+      }
+    },
     "/api/predictions/joker": {
       "put": {
         "tags": [

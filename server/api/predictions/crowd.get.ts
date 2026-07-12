@@ -1,29 +1,28 @@
+import { z } from 'zod'
 import { db } from '../../../db'
+import { crowdTotalSchema } from '../../schemas/prediction'
+import { isAdmin } from '../../utils/auth-guards'
 import { getCompetitionById, resolveCompetition } from '../../utils/competitions/store'
-import { getCrowdTotals } from '../../utils/predictions/service'
-import { isAdmin, requireUser } from '../../utils/auth-guards'
 import { resolveLeagueView } from '../../utils/leagues/service'
-import { toHttpError } from '../../utils/http'
+import { getCrowdTotals } from '../../utils/predictions/service'
+import { defineReadHandler } from '../../utils/read-handler'
 
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
-  const query = getQuery(event)
+const querySchema = z.object({ competition: z.string().optional(), league: z.string().optional() })
+const responseSchema = z.object({
+  totals: z.record(z.string(), crowdTotalSchema),
+  league: z.object({ id: z.string(), name: z.string() }).optional(),
+})
 
+export default defineReadHandler({ response: responseSchema, auth: 'user', query: querySchema }, async ({ event, user, query }) => {
   // League crowd is display-only; the scoring bonus always uses everyone.
   if (query.league) {
     // Members/admins only: the live crowd consensus is a members feature (the
     // WS league channel is members-only too), and folding private-profile
     // members into a small public league's totals would deanonymize them.
-    let resolved
-    try {
-      resolved = await resolveLeagueView(db, String(query.league), user.id, {
-        membersOnly: true,
-        resolveAdmin: () => isAdmin(event),
-      })
-    } catch (error) {
-      throw toHttpError(error)
-    }
-    const { league } = resolved
+    const { league } = await resolveLeagueView(db, query.league, user.id, {
+      membersOnly: true,
+      resolveAdmin: () => isAdmin(event),
+    })
     const competition = await getCompetitionById(db, league.competitionId)
     if (query.competition && competition && query.competition !== competition.slug) {
       throw createError({ statusCode: 400, statusMessage: 'League belongs to another competition' })
@@ -34,7 +33,7 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  const competition = await resolveCompetition(db, (query.competition as string) || null)
+  const competition = await resolveCompetition(db, query.competition || null)
   if (!competition) return { totals: {} }
   return { totals: await getCrowdTotals(db, competition.id) }
 })
