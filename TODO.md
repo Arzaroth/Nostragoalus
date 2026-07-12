@@ -25,8 +25,10 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
   intercept a call (passive listening is already blocked by SRTP). Fix: sign the
   fingerprint with the chat identity - needs an Ed25519 signing key alongside the
   X25519 box key. Same tiered approach as the E2EE hardening.
-- **ICE-restart on a socket flap** so a brief WS drop doesn't kill an in-progress
-  call. Today a flap can strand the peer connections; v1 relies on redial.
+- [x] **ICE-restart on a socket flap** - shipped with the voice-improvements
+  batch: `failed` (or 3s-sustained `disconnected`) peer links auto-restart ICE
+  (offerer-side `iceRestart: true`, 3-attempt cap), plus a connection-quality
+  indicator + "Reconnecting…" state in the call bar.
 - **A large-room SFU.** The mesh is `N*(N-1)/2` connections; beyond ~5-6 a league
   room needs a selective forwarding unit (which would trade away media E2EE).
 - **Multi-node signaling.** Voice rooms are in-process, so calls don't span a
