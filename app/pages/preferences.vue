@@ -90,6 +90,7 @@ const pushCategories = [
   { key: 'pushLeague', label: 'prefs.push.league', def: false },
   { key: 'pushMentions', label: 'prefs.push.mentions', def: true },
   { key: 'pushDm', label: 'prefs.push.dm', def: true },
+  { key: 'pushCalls', label: 'prefs.push.calls', def: true },
 ] as const
 
 function pushGet(cat: { key: string; def: boolean }): boolean {

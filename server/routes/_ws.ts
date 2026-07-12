@@ -43,7 +43,12 @@ async function handleVoiceFrame(sub: LiveSubscriber, data: Record<string, unknow
     case 'voice:signal': {
       const to = asStr(data.to)
       const kind = data.kind as VoiceSignalKind
-      if (to && (kind === 'offer' || kind === 'answer' || kind === 'ice')) handleVoiceSignal(sub, to, kind, data.payload)
+      // Cap the relayed SDP/ICE size so an authorized peer can't amplify a huge
+      // payload at a co-participant (a real SDP is a few KB; ICE candidates tiny).
+      const withinSize = JSON.stringify(data.payload ?? null).length <= 16_384
+      if (to && withinSize && (kind === 'offer' || kind === 'answer' || kind === 'ice')) {
+        handleVoiceSignal(sub, to, kind, data.payload)
+      }
       break
     }
     case 'voice:invite': {

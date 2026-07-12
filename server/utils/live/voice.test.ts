@@ -107,6 +107,22 @@ describe('voice signaling glue', () => {
     expect(framesOfType(a1, 'voice:evicted')).toHaveLength(1)
   })
 
+  it('a takeover tells the other participants to reset their peer to the rejoiner', async () => {
+    const { db, scope } = await leagueFixture()
+    const owner1 = connect('owner')
+    const member = connect('member')
+    await handleVoiceJoin(db, owner1, scope)
+    await handleVoiceJoin(db, member, scope)
+    member.send.mockClear()
+    // Owner rejoins from a second tab.
+    const owner2 = connect('owner')
+    await handleVoiceJoin(db, owner2, scope)
+    // The other member is told to reset their connection to owner; the rejoining
+    // tab itself is not.
+    expect(framesOfType(member, 'voice:peer-reset').at(-1)).toMatchObject({ userId: 'owner' })
+    expect(framesOfType(owner2, 'voice:peer-reset')).toHaveLength(0)
+  })
+
   it('leave pushes the reduced roster to the remaining members', async () => {
     const { db, scope } = await dmFixture()
     const a = connect('alice')

@@ -65,8 +65,13 @@ function start(): void {
       onMessage: (data) => handleFrame(data as Record<string, unknown>),
       onOpen: () => {
         // After a reconnect, re-announce our presence in the call so the server
-        // re-seats this socket as our endpoint and re-rosters the room.
-        if (activeScope.value && (state.value === 'in-call' || state.value === 'connecting')) {
+        // re-seats this socket as our endpoint and re-rosters the room. Includes
+        // 'outgoing': a DM caller mid-ring has already joined the room, so a flap
+        // would otherwise drop their seat and the answered call would never connect.
+        if (
+          activeScope.value &&
+          (state.value === 'in-call' || state.value === 'connecting' || state.value === 'outgoing')
+        ) {
           socket.send({ type: 'voice:join', scope: activeScope.value })
         }
       },
@@ -111,10 +116,16 @@ function start(): void {
     }
 
     async function offerTo(peerId: string): Promise<void> {
-      const pc = ensurePeer(peerId)
-      const offer = await pc.createOffer()
-      await pc.setLocalDescription(offer)
-      socket.send({ type: 'voice:signal', to: peerId, kind: 'offer', payload: pc.localDescription })
+      try {
+        const pc = ensurePeer(peerId)
+        const offer = await pc.createOffer()
+        await pc.setLocalDescription(offer)
+        socket.send({ type: 'voice:signal', to: peerId, kind: 'offer', payload: pc.localDescription })
+      } catch {
+        // A failed offer (e.g. the peer left mid-negotiation) is contained here
+        // rather than surfacing as an unhandled rejection; the peer heals on the
+        // next roster/reset or is dropped by its connection-state watcher.
+      }
     }
 
     function dropPeer(peerId: string): void {
@@ -148,19 +159,21 @@ function start(): void {
 
     async function handleSignal(from: string, kind: VoiceSignalKind, payload: unknown): Promise<void> {
       const pc = ensurePeer(from)
-      if (kind === 'offer') {
-        await pc.setRemoteDescription(payload as RTCSessionDescriptionInit)
-        const answer = await pc.createAnswer()
-        await pc.setLocalDescription(answer)
-        socket.send({ type: 'voice:signal', to: from, kind: 'answer', payload: pc.localDescription })
-      } else if (kind === 'answer') {
-        await pc.setRemoteDescription(payload as RTCSessionDescriptionInit)
-      } else {
-        try {
+      try {
+        if (kind === 'offer') {
+          await pc.setRemoteDescription(payload as RTCSessionDescriptionInit)
+          const answer = await pc.createAnswer()
+          await pc.setLocalDescription(answer)
+          socket.send({ type: 'voice:signal', to: from, kind: 'answer', payload: pc.localDescription })
+        } else if (kind === 'answer') {
+          await pc.setRemoteDescription(payload as RTCSessionDescriptionInit)
+        } else {
           await pc.addIceCandidate(payload as RTCIceCandidateInit)
-        } catch {
-          // a candidate that arrives before the remote description is safely dropped
         }
+      } catch {
+        // A malformed or out-of-order SDP/ICE frame (glare, a candidate before the
+        // remote description) is contained rather than surfacing as an unhandled
+        // rejection; the connection heals on renegotiation or is dropped on failure.
       }
     }
 
@@ -194,7 +207,12 @@ function start(): void {
           void handleSignal(String(data.from), data.kind as VoiceSignalKind, data.payload)
           break
         case 'voice:declined':
-          if (state.value === 'outgoing') cleanup()
+          // The callee declined. Leave the room we joined when we started ringing,
+          // then drop locally - otherwise the server keeps us as a phantom member.
+          if (state.value === 'outgoing') {
+            socket.send({ type: 'voice:leave' })
+            cleanup()
+          }
           break
         case 'voice:cancelled':
           if (state.value === 'incoming') {
@@ -203,9 +221,23 @@ function start(): void {
           }
           break
         case 'voice:evicted':
-          // Another tab of ours took the call over; drop this tab's silently.
+          // Another tab of ours took the call over; drop this tab's silently. The
+          // server already removed this token, so no voice:leave is needed.
           cleanup()
           break
+        case 'voice:peer-reset': {
+          // A peer re-joined from a new tab (a takeover). Our connection to them is
+          // now dead; drop it and re-establish, letting the deterministic offerer
+          // rule pick which side sends the fresh offer (the other side waits).
+          const uid = String(data.userId)
+          const self = myId()
+          if (self && uid !== self) {
+            dropPeer(uid)
+            ensurePeer(uid)
+            if (shouldOffer(self, uid)) void offerTo(uid)
+          }
+          break
+        }
         case 'voice:presence': {
           // A league room's live count for the "N in voice" badge.
           const key = String(data.roomKey)

@@ -47,12 +47,6 @@ export function parseVoiceScope(raw: unknown): VoiceScope | null {
   return null
 }
 
-// A parsed scope's role for the client (a DM call rings one peer; a league call is
-// a join-any-time mesh room).
-export function isDmScope(scope: VoiceScope): scope is { kind: 'dm'; threadId: string } {
-  return scope.kind === 'dm'
-}
-
 // === Client -> server frames (inbound on /_ws) ===
 
 // Join (or open) the call for a scope. The caller of a DM, a DM callee accepting,
@@ -142,6 +136,13 @@ export interface VoiceControlFrame {
   type: 'voice:declined' | 'voice:cancelled' | 'voice:evicted'
   scope: VoiceScope
   from: string
+}
+// A participant re-joined from a new tab (a takeover): the roster userIds are
+// unchanged, so the other members are told to drop and re-establish their peer
+// connection to that user - otherwise they keep a dead link to the old tab.
+export interface VoicePeerResetFrame {
+  type: 'voice:peer-reset'
+  userId: string
 }
 
 // What the ICE-servers endpoint returns: STUN always, TURN when coturn is

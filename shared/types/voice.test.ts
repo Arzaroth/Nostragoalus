@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isDmScope, parseVoiceRoomKey, parseVoiceScope, voiceRoomKey, type VoiceScope } from './voice'
+import { parseVoiceRoomKey, parseVoiceScope, voiceRoomKey, type VoiceScope } from './voice'
 
 describe('voiceRoomKey', () => {
   it('keys a DM by thread', () => {
@@ -24,13 +24,6 @@ describe('parseVoiceRoomKey', () => {
     expect(parseVoiceRoomKey('nonsense')).toBeNull()
     expect(parseVoiceRoomKey('league:l1:notmatch:m9')).toBeNull()
     expect(parseVoiceRoomKey('dm:a:b')).toBeNull()
-  })
-})
-
-describe('isDmScope', () => {
-  it('narrows a DM scope', () => {
-    expect(isDmScope({ kind: 'dm', threadId: 't' })).toBe(true)
-    expect(isDmScope({ kind: 'league', leagueId: 'l', matchId: null })).toBe(false)
   })
 })
 

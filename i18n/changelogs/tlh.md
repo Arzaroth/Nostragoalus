@@ -5,6 +5,14 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### chelta'
+
+- wab ja'chuqtaHghach. DIvI' QIn'e' latlh yISum wa' vaghDIch, pagh ghom wab pa' yIchenmoH DIvI' QInDaq (SuvwI' rar'eghlaHchugh, DaH tlhej boS). "N wabDaq" 'oS 'ang - DIvI' rI' qaStaH, 'ej vay' yIrI'laH. rI' chu' Hoch DaqDaq Suqlu'; rI' luj QInmeyDaq (**rI'mey** Segh chu' push je) tu'lu'. wab peer-to-peer 'ej encrypted - server rInbe'.
+
+### che'wI' QInmey
+
+- NAT Doqbe'chugh, rI' pop TURN relay poQlu': **coturn** self-hosted, `voice` Compose profile chu'laHbogh (`docker compose --profile voice up`), `NUXT_TURN_SECRET` / `NUXT_TURN_HOST` / `NUXT_TURN_REALM` lo' (`.env.example` yIlegh). pagh, STUN neH lo' 'ej rI' latlh luj.
+
 ## [2.34.0] - 2026-07-12
 
 ### chelpu'
