@@ -108,6 +108,10 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   or start a group voice room in a league chat - optionally tied to a match, to watch together. A live
   "N in voice" badge shows a league call is on, and you can invite chosen members; incoming calls ring
   you anywhere in the app, and a missed call lands in your notifications (its own **Calls** push toggle).
+  The call bar shows who is in the call (the speaker's name lights up as they talk), with a mic level
+  meter, a muted-talking reminder, audio device settings (mic/speaker pick + noise suppression), and a
+  connection-quality indicator; dropped links self-heal with an ICE restart, and call history lines
+  ("call started / ended / missed") appear in the chat timeline.
   The audio is direct browser-to-browser (WebRTC, DTLS-SRTP), so it never passes through the server;
   reliable connections behind strict NATs use a self-hosted **coturn** TURN relay (the `voice` compose
   profile)
