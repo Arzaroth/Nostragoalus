@@ -1,21 +1,17 @@
 import { z } from 'zod'
 import { db } from '../../../../db'
+import { okSchema } from '../../../schemas/chat'
 import { resetChatIdentity } from '../../../utils/chat/service'
 import { defineValidatedHandler } from '../../../utils/validated-handler'
-import { toHttpError } from '../../../utils/http'
 
 const bodySchema = z.object({ publicKey: z.string().min(1).max(256) })
 
 // Replace the caller's chat identity keypair (hard recovery when both the device key
 // and the recovery code are lost). Overwrites the public key, drops the old escrow,
 // and purges every group/thread key sealed to the old key so keyholders/peers re-seal.
-export default defineValidatedHandler({ body: bodySchema }, async ({ body, user }) => {
-  try {
-    await resetChatIdentity(db, user.id, body.publicKey)
-    return { ok: true }
-  } catch (err) {
-    throw toHttpError(err)
-  }
+export default defineValidatedHandler({ body: bodySchema, response: okSchema }, async ({ body, user }) => {
+  await resetChatIdentity(db, user.id, body.publicKey)
+  return { ok: true as const }
 })
 
 defineRouteMeta({

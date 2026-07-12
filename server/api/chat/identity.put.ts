@@ -5,9 +5,11 @@ import { defineValidatedHandler } from '../../utils/validated-handler'
 
 const bodySchema = z.object({ publicKey: z.string().min(1).max(256) })
 
+const responseSchema = z.object({ publicKey: z.string(), created: z.boolean() })
+
 // Publish the caller's chat public key once (silent enrollment). An existing key
 // is never overwritten; the response says whether this call created it.
-export default defineValidatedHandler({ body: bodySchema }, async ({ body, user }) => {
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ body, user }) => {
   return registerChatIdentity(db, user.id, body.publicKey)
 })
 

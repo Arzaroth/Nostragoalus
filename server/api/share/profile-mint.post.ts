@@ -2,6 +2,7 @@ import { getRequestURL } from 'h3'
 import { z } from 'zod'
 import { db } from '../../../db'
 import { NotFoundError } from '../../utils/errors'
+import { shareLinksSchema } from '../../schemas/roadmap'
 import { resolveCompetition } from '../../utils/competitions/store'
 import { SHARE_LOCALES } from '../../utils/share/token'
 import { signProfileToken } from '../../utils/share/profile-token'
@@ -16,7 +17,7 @@ const bodySchema = z.object({
 // ever names the caller, so a third party can't render someone else's card, and
 // the card is reachable only by the link the owner chooses to share. Works
 // mid-tournament (no final gate) - it is a snapshot of the current standing.
-export default defineValidatedHandler({ body: bodySchema }, async ({ body, user, event }) => {
+export default defineValidatedHandler({ body: bodySchema, response: shareLinksSchema }, async ({ body, user, event }) => {
   const competition = await resolveCompetition(db, body.competition ?? null)
   if (!competition) throw new NotFoundError('competition not found')
 

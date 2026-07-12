@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { db } from '../../../db'
+import { okSchema } from '../../schemas/chat'
 import { setRecoveryBlob } from '../../utils/chat/service'
 import { defineValidatedHandler } from '../../utils/validated-handler'
 
@@ -7,9 +8,9 @@ const bodySchema = z.object({ blob: z.string().min(1).max(4096) })
 
 // Save (or replace) the recovery escrow of the caller's private key. The blob is
 // opaque ciphertext the server cannot open.
-export default defineValidatedHandler({ body: bodySchema }, async ({ body, user }) => {
+export default defineValidatedHandler({ body: bodySchema, response: okSchema }, async ({ body, user }) => {
   await setRecoveryBlob(db, user.id, body.blob)
-  return { ok: true }
+  return { ok: true as const }
 })
 
 defineRouteMeta({

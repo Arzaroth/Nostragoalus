@@ -1,12 +1,22 @@
+import { z } from 'zod'
 import { db } from '../../../db'
-import { requireUser } from '../../utils/auth-guards'
 import { listThreads } from '../../utils/dm/service'
+import { defineReadHandler } from '../../utils/read-handler'
 import type { DmThreadSummaryDTO } from '../../../shared/types/dm'
+
+const responseSchema = z.object({
+  threads: z.array(z.object({
+    threadId: z.string(),
+    other: z.object({ id: z.string(), name: z.string(), image: z.string().nullable() }),
+    lastMessageAt: z.string().nullable(),
+    unread: z.number(),
+    myWrappedKey: z.string().nullable(),
+  })),
+})
 
 // The signed-in user's DM inbox: every conversation, newest activity first, with
 // the other participant, the unread count and the caller's sealed current key.
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
+export default defineReadHandler({ response: responseSchema, auth: 'user' }, async ({ user }) => {
   const rows = await listThreads(db, user.id)
   const threads: DmThreadSummaryDTO[] = rows.map((t) => ({
     threadId: t.threadId,

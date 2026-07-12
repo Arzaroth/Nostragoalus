@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { db } from '../../../../db'
+import { chatMessageSchema } from '../../../schemas/dm'
 import { postDmMessage } from '../../../utils/dm/service'
 import { notifyDm } from '../../../utils/dm/notify'
 import { publishDmMessage } from '../../../utils/live/hub'
@@ -20,9 +21,11 @@ const bodySchema = z.object({
     .optional(),
 })
 
+const responseSchema = z.object({ message: chatMessageSchema })
+
 // Post one encrypted DM (server stores ciphertext only), push it live to both
 // participants and notify the recipient (bell + push).
-export default defineValidatedHandler({ body: bodySchema }, async ({ body, user, event }) => {
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ body, user, event }) => {
   const threadId = getRouterParam(event, 'threadId') as string
   const row = await postDmMessage(db, {
     threadId,

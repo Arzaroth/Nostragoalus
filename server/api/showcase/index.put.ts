@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { db } from '../../../db'
+import { showcasePinSchema } from '../../schemas/me'
 import { setShowcase } from '../../utils/achievements/cabinet'
 import { resolveCompetition } from '../../utils/competitions/store'
 import { defineValidatedHandler } from '../../utils/validated-handler'
@@ -18,12 +19,14 @@ const bodySchema = z.object({
     .max(SHOWCASE_SLOT_COUNT),
 })
 
-export default defineValidatedHandler({ body: bodySchema }, async ({ body, user }) => {
+const responseSchema = z.object({ ok: z.literal(true), showcase: z.array(showcasePinSchema) })
+
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ body, user }) => {
   const competition = await resolveCompetition(db, body.competition || null)
   if (!competition) throw createError({ statusCode: 404, statusMessage: 'competition not found' })
 
   const showcase = await setShowcase(db, { competitionId: competition.id, userId: user.id, items: body.items })
-  return { ok: true, showcase }
+  return { ok: true as const, showcase }
 })
 
 defineRouteMeta({

@@ -1,9 +1,23 @@
+import { z } from 'zod'
 import { db } from '../../../db'
-import { requireUser } from '../../utils/auth-guards'
 import { getUnreadRooms } from '../../utils/chat/unread'
+import { defineReadHandler } from '../../utils/read-handler'
 
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
+const chatUnreadRoomSchema = z.object({
+  leagueId: z.string(),
+  leagueName: z.string(),
+  competitionSlug: z.string(),
+  roomKey: z.string(),
+  matchId: z.string().nullable(),
+  homeTeam: z.string().nullable(),
+  awayTeam: z.string().nullable(),
+  unread: z.number(),
+  mentions: z.number(),
+  lastAt: z.string().nullable(),
+})
+const responseSchema = z.object({ rooms: z.array(chatUnreadRoomSchema) })
+
+export default defineReadHandler({ response: responseSchema, auth: 'user' }, async ({ user }) => {
   const rooms = await getUnreadRooms(db, user.id)
   return { rooms }
 })

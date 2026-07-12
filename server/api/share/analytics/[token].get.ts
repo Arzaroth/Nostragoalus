@@ -1,11 +1,25 @@
+import { z } from 'zod'
 import { db } from '../../../../db'
+import { defineReadHandler } from '../../../utils/read-handler'
 import { getAnalyticsCard } from '../../../utils/share/analytics-card'
 import { verifyAnalyticsToken } from '../../../utils/share/analytics-token'
+
+const responseSchema = z.object({
+  card: z.object({
+    displayName: z.string(),
+    competitionName: z.string(),
+    hasData: z.boolean(),
+    accuracyPct: z.number(),
+    exactPct: z.number(),
+    goalLean: z.number(),
+    homeBiasPct: z.number(),
+  }),
+})
 
 // Public summary for the analytics share landing page (/a/[token]): the headline
 // bias numbers it needs for its heading + SEO meta. The image is the OG PNG at
 // /og/analytics/[token].
-export default defineEventHandler(async (event) => {
+export default defineReadHandler({ response: responseSchema }, async ({ event }) => {
   const token = getRouterParam(event, 'token')
   const secret = useRuntimeConfig(event).betterAuthSecret
   const payload = verifyAnalyticsToken(secret, token)

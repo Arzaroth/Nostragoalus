@@ -1,18 +1,31 @@
+import { z } from 'zod'
 import { db } from '../../../db'
+import { matchOddsViewSchema, matchRowSchema } from '../../schemas/match'
 import { listMatches } from '../../utils/matches/service'
 import { resolveCompetition } from '../../utils/competitions/store'
+import { defineReadHandler } from '../../utils/read-handler'
 import type { AppStage, MatchStatus } from '../../../shared/types/match'
 
-export default defineEventHandler(async (event) => {
-  const query = getQuery(event)
-  const competition = await resolveCompetition(db, (query.competition as string) || null)
+const querySchema = z.object({
+  competition: z.string().optional(),
+  stage: z.string().optional(),
+  status: z.string().optional(),
+  matchday: z.coerce.number().optional(),
+})
+const responseSchema = z.object({
+  competition: z.object({ id: z.string(), slug: z.string(), name: z.string() }).nullable(),
+  matches: z.array(matchRowSchema.extend({ odds: matchOddsViewSchema.nullable(), isLocked: z.boolean() })),
+})
+
+export default defineReadHandler({ response: responseSchema, query: querySchema }, async ({ query }) => {
+  const competition = await resolveCompetition(db, query.competition || null)
   if (!competition) return { competition: null, matches: [] }
 
   const matches = await listMatches(db, {
     competitionId: competition.id,
     stage: (query.stage as AppStage) || undefined,
     status: (query.status as MatchStatus) || undefined,
-    matchday: query.matchday ? Number(query.matchday) : undefined,
+    matchday: query.matchday,
   })
 
   const now = Date.now()

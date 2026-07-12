@@ -1,24 +1,32 @@
+import { z } from 'zod'
 import { db } from '../../../db'
-import { isAdmin, requireUser } from '../../utils/auth-guards'
+import { isAdmin } from '../../utils/auth-guards'
 import { getCompetitionById, resolveCompetition } from '../../utils/competitions/store'
 import { getLeaderboard } from '../../utils/leaderboard/service'
 import { resolveLeagueView } from '../../utils/leagues/service'
 import { getMyStats } from '../../utils/predictions/service'
-import { toHttpError } from '../../utils/http'
+import { defineReadHandler } from '../../utils/read-handler'
 
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
-  const query = getQuery(event)
+const querySchema = z.object({ competition: z.string().optional(), league: z.string().optional() })
+const responseSchema = z.object({
+  stats: z
+    .object({
+      rank: z.number().nullable(),
+      players: z.number(),
+      totalPoints: z.number(),
+      exact: z.number(),
+      outcome: z.number(),
+      predictions: z.number(),
+      jokers: z.number(),
+    })
+    .nullable(),
+})
 
+export default defineReadHandler({ response: responseSchema, auth: 'user', query: querySchema }, async ({ event, user, query }) => {
   // League scope: rank/players are within that league (members see private
   // mates); the caller's own counters stay competition-wide.
   if (query.league) {
-    let resolved
-    try {
-      resolved = await resolveLeagueView(db, String(query.league), user.id, { resolveAdmin: () => isAdmin(event) })
-    } catch (error) {
-      throw toHttpError(error)
-    }
+    const resolved = await resolveLeagueView(db, query.league, user.id, { resolveAdmin: () => isAdmin(event) })
     const { league, membership } = resolved
     const admin = membership ? false : await isAdmin(event)
     const competition = await getCompetitionById(db, league.competitionId)
@@ -41,7 +49,7 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  const competition = await resolveCompetition(db, (query.competition as string) || null)
+  const competition = await resolveCompetition(db, query.competition || null)
   if (!competition) return { stats: null }
 
   const [board, counters] = await Promise.all([

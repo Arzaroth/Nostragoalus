@@ -1,9 +1,16 @@
 import { eq } from 'drizzle-orm'
+import { z } from 'zod'
 import { db } from '../../../../db'
 import { match } from '../../../../db/schema'
 import { providerForCompetition } from '../../../utils/providers'
 import { getCompetitionById } from '../../../utils/competitions/store'
 import { resolveCompetitionSeason } from '../../../utils/sync/competition'
+import { defineReadHandler } from '../../../utils/read-handler'
+
+// The upstream match detail is a provider-shaped payload the route passes through
+// verbatim (typed `unknown` here and in the cache), so the contract is the
+// envelope, not the provider's internal shape.
+const responseSchema = z.object({ detail: z.unknown() })
 
 // Full-time details never change again - cache them for the process lifetime.
 // Live matches refresh every minute so the clock and stats stay current.
@@ -11,7 +18,7 @@ import { resolveCompetitionSeason } from '../../../utils/sync/competition'
 const cache = new Map<string, { at: number; final: boolean; detail: unknown }>()
 const TTL_MS = 60 * 1000
 
-export default defineEventHandler(async (event) => {
+export default defineReadHandler({ response: responseSchema }, async ({ event }) => {
   const id = getRouterParam(event, 'id') as string
   const cached = cache.get(id)
   if (cached && (cached.final || Date.now() - cached.at < TTL_MS)) return { detail: cached.detail }

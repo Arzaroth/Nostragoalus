@@ -1,7 +1,16 @@
-import { requireUser } from '../../utils/auth-guards'
+import { z } from 'zod'
 import { unfurlLink } from '../../utils/chat/unfurl'
+import { defineReadHandler } from '../../utils/read-handler'
 import { createRateLimiter } from '../../utils/rate-limit'
 import type { LinkPreviewDTO } from '#shared/types/chat'
+
+const responseSchema = z.object({
+  url: z.string(),
+  title: z.string().nullable(),
+  description: z.string().nullable(),
+  image: z.string().nullable(),
+  siteName: z.string().nullable(),
+})
 
 // This route fetches an attacker-influenced URL server-side (an SSRF-adjacent
 // sink), so cap how fast it can be driven. A per-user bucket stops a single
@@ -17,8 +26,7 @@ const globalLimiter = createRateLimiter({ limit: 120, windowMs: 60_000 })
 // decrypted) chat message, so it can show a collapsible link preview. Auth-gated
 // to keep this from being an open SSRF/fetch proxy; the heavy lifting and the
 // host guard live in the unfurl util.
-export default defineEventHandler(async (event): Promise<LinkPreviewDTO> => {
-  const user = await requireUser(event)
+export default defineReadHandler({ response: responseSchema, auth: 'user' }, async ({ event, user }): Promise<LinkPreviewDTO> => {
   const url = getQuery(event).url
   const empty: LinkPreviewDTO = { url: typeof url === 'string' ? url : '', title: null, description: null, image: null, siteName: null }
   if (typeof url !== 'string' || url.length > 2048 || !/^https?:\/\//i.test(url)) return empty

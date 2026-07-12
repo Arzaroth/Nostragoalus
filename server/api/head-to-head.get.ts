@@ -1,11 +1,48 @@
+import { z } from 'zod'
 import { db } from '../../db'
 import { getHeadToHead } from '../utils/analytics/h2h'
 import { resolveCompetition } from '../utils/competitions/store'
 import { getSessionUser, isAdmin } from '../utils/auth-guards'
-import { toHttpError } from '../utils/http'
+import { defineReadHandler } from '../utils/read-handler'
 
-export default defineEventHandler(async (event) => {
-  const query = getQuery(event)
+const playerSchema = z.object({ id: z.string(), name: z.string(), image: z.string().nullable() })
+const matchSchema = z.object({
+  matchId: z.string(),
+  home: z.string(),
+  away: z.string(),
+  homeCode: z.string().nullable(),
+  awayCode: z.string().nullable(),
+  actual: z.string(),
+  aPredicted: z.string(),
+  bPredicted: z.string(),
+  aPoints: z.number(),
+  bPoints: z.number(),
+  winner: z.enum(['a', 'b', 'tie']),
+  diverged: z.boolean(),
+})
+const responseSchema = z.object({
+  competitionName: z.string(),
+  a: playerSchema,
+  b: playerSchema,
+  shared: z.number(),
+  hasData: z.boolean(),
+  aPoints: z.number(),
+  bPoints: z.number(),
+  aWins: z.number(),
+  bWins: z.number(),
+  ties: z.number(),
+  agreement: z.object({ sameScore: z.number(), sameOutcome: z.number() }),
+  overTime: z.array(z.object({ label: z.string(), order: z.number(), aPoints: z.number(), bPoints: z.number() })),
+  divergences: z.array(matchSchema),
+})
+
+const querySchema = z.object({
+  a: z.string().optional(),
+  b: z.string().optional(),
+  competition: z.string().optional(),
+})
+
+export default defineReadHandler({ response: responseSchema, query: querySchema }, async ({ event, query }) => {
   const viewer = await getSessionUser(event)
   const admin = await isAdmin(event)
 
@@ -20,23 +57,19 @@ export default defineEventHandler(async (event) => {
   if (!aId || !bId) throw createError({ statusCode: 400, statusMessage: 'two players required' })
   if (aId === bId) throw createError({ statusCode: 400, statusMessage: 'players must differ' })
 
-  const competition = await resolveCompetition(db, (query.competition as string) || null)
+  const competition = await resolveCompetition(db, query.competition || null)
   if (!competition) throw createError({ statusCode: 404, statusMessage: 'competition not found' })
 
-  try {
-    // NotFoundError (unknown or unviewable-private player) maps to 404 here, the
-    // same status a genuinely missing user gets, so a private account is never
-    // distinguishable from a non-existent one.
-    return await getHeadToHead(db, {
-      competitionId: competition.id,
-      aId,
-      bId,
-      viewerId: viewer?.id ?? null,
-      isAdmin: admin,
-    })
-  } catch (error) {
-    throw toHttpError(error)
-  }
+  // NotFoundError (unknown or unviewable-private player) maps to 404 by the read
+  // handler, the same status a genuinely missing user gets, so a private account
+  // is never distinguishable from a non-existent one.
+  return await getHeadToHead(db, {
+    competitionId: competition.id,
+    aId,
+    bId,
+    viewerId: viewer?.id ?? null,
+    isAdmin: admin,
+  })
 })
 
 defineRouteMeta({

@@ -1,12 +1,14 @@
-import { requireUser } from '../../utils/auth-guards'
+import { z } from 'zod'
+import { defineValidatedHandler } from '../../utils/validated-handler'
+
+const responseSchema = z.object({ ok: z.literal(true) })
 
 // Forget the "trust this device" cookie for THIS browser, so the next sign-in
 // asks for the second factor again. (Trust is cookie-based, per device.)
-export default defineEventHandler(async (event) => {
-  await requireUser(event)
+export default defineValidatedHandler({ response: responseSchema }, async ({ event }) => {
   deleteCookie(event, 'better-auth.trust_device')
   deleteCookie(event, '__Secure-better-auth.trust_device')
-  return { ok: true }
+  return { ok: true as const }
 })
 
 defineRouteMeta({

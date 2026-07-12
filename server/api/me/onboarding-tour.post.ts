@@ -1,11 +1,13 @@
+import { z } from 'zod'
 import { db } from '../../../db'
-import { requireUser } from '../../utils/auth-guards'
 import { dismissOnboardingTour } from '../../utils/onboarding/service'
+import { defineValidatedHandler } from '../../utils/validated-handler'
 
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
+const responseSchema = z.object({ ok: z.literal(true) })
+
+export default defineValidatedHandler({ response: responseSchema }, async ({ user }) => {
   await dismissOnboardingTour(db, user.id)
-  return { ok: true }
+  return { ok: true as const }
 })
 
 defineRouteMeta({

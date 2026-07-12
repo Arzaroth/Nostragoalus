@@ -1,14 +1,62 @@
+import { z } from 'zod'
 import { db } from '../../../db'
+import { competitionRefSchema } from '../../schemas/competition'
 import { countLeagueMembersHiddenFromBoard, getLeaderboard } from '../../utils/leaderboard/service'
 import { getLiveProvisionalPoints } from '../../utils/leaderboard/live'
 import { getLeagueRankSnapshots, getRankSnapshots, rankMovement, type RankSnapshot } from '../../utils/leaderboard/snapshots'
 import { getCompetitionById, resolveCompetition } from '../../utils/competitions/store'
 import { isAdmin, requireUser, requireUserOrApiKey } from '../../utils/auth-guards'
 import { resolveLeagueView } from '../../utils/leagues/service'
-import { toHttpError } from '../../utils/http'
+import { defineReadHandler } from '../../utils/read-handler'
 
-export default defineEventHandler(async (event) => {
-  const query = getQuery(event)
+const querySchema = z.object({
+  competition: z.string().optional(),
+  global: z.string().optional(),
+  league: z.string().optional(),
+  limit: z.string().optional(),
+  offset: z.string().optional(),
+})
+
+// One ranked player (LeaderboardRow in server/utils/leaderboard/service.ts),
+// optionally carrying the within-view movement delta the route appends. Movement
+// is absent on the global board (no snapshots), so it stays optional.
+const showcaseIconSchema = z.object({
+  key: z.string(),
+  category: z.string(),
+  tier: z.enum(['BRONZE', 'SILVER', 'GOLD', 'DIAMOND']).nullable(),
+})
+const leaderboardRowSchema = z.object({
+  rank: z.number(),
+  userId: z.string(),
+  displayName: z.string(),
+  image: z.string().nullable(),
+  totalPoints: z.number(),
+  predictionPoints: z.number(),
+  championPoints: z.number(),
+  championCode: z.string().nullable(),
+  championName: z.string().nullable(),
+  bestScorerPoints: z.number(),
+  bestScorerName: z.string().nullable(),
+  bestScorerCode: z.string().nullable(),
+  livePoints: z.number(),
+  exactCount: z.number(),
+  outcomeCount: z.number(),
+  gdCount: z.number(),
+  showcase: z.array(showcaseIconSchema),
+  movement: z.number().nullable().optional(),
+})
+// One object across every branch (per-competition, global, league, empty): the
+// league-only fields (league, hiddenCount) and the snapshot-derived `live` stay
+// optional, competition is nullable, rows always present.
+const responseSchema = z.object({
+  competition: competitionRefSchema.nullable(),
+  league: z.object({ id: z.string(), name: z.string() }).optional(),
+  live: z.boolean().optional(),
+  hiddenCount: z.number().optional(),
+  rows: z.array(leaderboardRowSchema),
+})
+
+export default defineReadHandler({ response: responseSchema, query: querySchema }, async ({ event, query }) => {
   const limit = query.limit ? Math.min(Number(query.limit), 200) : 100
   const offset = query.offset ? Math.max(Number(query.offset), 0) : 0
   // League-scoped ranking. The league fixes the competition; movement arrows
@@ -16,13 +64,7 @@ export default defineEventHandler(async (event) => {
   // and admins only - the outsider board has no snapshot to compare against).
   if (query.league) {
     const user = await requireUser(event)
-    let resolved
-    try {
-      resolved = await resolveLeagueView(db, String(query.league), user.id, { resolveAdmin: () => isAdmin(event) })
-    } catch (error) {
-      throw toHttpError(error)
-    }
-    const { league, membership } = resolved
+    const { league, membership } = await resolveLeagueView(db, query.league, user.id, { resolveAdmin: () => isAdmin(event) })
     const admin = membership ? false : await isAdmin(event)
     const competition = await getCompetitionById(db, league.competitionId)
     if (query.competition && competition && query.competition !== competition.slug) {
@@ -71,7 +113,7 @@ export default defineEventHandler(async (event) => {
     return { competition: null, rows: await getLeaderboard(db, { competitionId: null, limit, offset, alwaysIncludeUserId: principal.id }) }
   }
 
-  const competition = await resolveCompetition(db, (query.competition as string) || null)
+  const competition = await resolveCompetition(db, query.competition || null)
   if (!competition) return { competition: null, rows: [] }
   const [liveProvisional, snapshots] = await Promise.all([
     getLiveProvisionalPoints(db, competition.id),

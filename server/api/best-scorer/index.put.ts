@@ -14,7 +14,9 @@ const bodySchema = z.object({
   repick: z.boolean().optional(),
 })
 
-export default defineValidatedHandler({ body: bodySchema }, async ({ body, user }) => {
+const responseSchema = z.object({ ok: z.literal(true) })
+
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ body, user }) => {
   const competition = await resolveCompetition(db, body.competition || null)
   if (!competition) throw createError({ statusCode: 404, statusMessage: 'competition not found' })
 
@@ -27,7 +29,7 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ body, user 
     teamName: body.teamName,
   }
   await (body.repick ? repickBestScorer(db, input) : setBestScorerPick(db, input))
-  return { ok: true }
+  return { ok: true as const }
 })
 
 defineRouteMeta({

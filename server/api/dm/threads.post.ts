@@ -12,10 +12,12 @@ const bodySchema = z.object({
     .length(2),
 })
 
+const responseSchema = z.object({ threadId: z.string(), epoch: z.number(), created: z.boolean() })
+
 // Open (or reopen) a DM thread with a recipient. Idempotent: an existing thread is
 // returned untouched. On first creation the caller's client supplies the thread
 // key sealed to both participants; the server persists them at epoch 1.
-export default defineValidatedHandler({ body: bodySchema }, async ({ body, user }) => {
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ body, user }) => {
   const result = await createThread(db, { userId: user.id, recipientId: body.recipientId, wraps: body.wraps })
   return { threadId: result.threadId, epoch: result.epoch, created: result.created }
 })

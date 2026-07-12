@@ -5,7 +5,9 @@ import { defineValidatedHandler } from '../../utils/validated-handler'
 
 const bodySchema = z.object({ endpoint: z.string().min(1) })
 
-export default defineValidatedHandler({ body: bodySchema }, async ({ body, user }) => {
+const responseSchema = z.object({ removed: z.number() })
+
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ body, user }) => {
   const removed = await deleteSubscription(db, user.id, body.endpoint)
   return { removed }
 })

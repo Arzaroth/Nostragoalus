@@ -1,12 +1,47 @@
 import { eq } from 'drizzle-orm'
+import { z } from 'zod'
 import { db } from '../../../../db'
 import { user } from '../../../../db/schema'
+import { showcasePinSchema } from '../../../schemas/me'
 import { getCabinet } from '../../../utils/achievements/cabinet'
 import { resolveCompetition } from '../../../utils/competitions/store'
 import { getSessionUser, isAdmin } from '../../../utils/auth-guards'
 import { canViewProfile } from '../../../utils/leagues/service'
+import { defineReadHandler } from '../../../utils/read-handler'
 
-export default defineEventHandler(async (event) => {
+const querySchema = z.object({ competition: z.string().optional() })
+
+const trophySchema = z.object({
+  type: z.string(),
+  value: z.number(),
+  teamCode: z.string().nullable(),
+  awardedAt: z.string(),
+})
+const raritySchema = z.object({ tier: z.string(), pct: z.number() })
+const achievementSchema = z.object({
+  key: z.string(),
+  category: z.string(),
+  scope: z.string(),
+  icon: z.string().nullable(),
+  hidden: z.boolean(),
+  tiers: z.array(z.object({ tier: z.string(), threshold: z.number() })),
+  earned: z
+    .object({ tier: z.string().nullable(), progress: z.number(), unlockedAt: z.string() })
+    .nullable(),
+  current: z.number().nullable(),
+  currentStreak: z.number().nullable(),
+  rarity: z.array(raritySchema),
+})
+const responseSchema = z.object({
+  userId: z.string(),
+  displayName: z.string(),
+  isOwner: z.boolean(),
+  trophies: z.array(trophySchema),
+  achievements: z.array(achievementSchema),
+  showcase: z.array(showcasePinSchema),
+})
+
+export default defineReadHandler({ response: responseSchema, query: querySchema }, async ({ event, query }) => {
   const id = getRouterParam(event, 'id') as string
   const admin = await isAdmin(event)
   const viewer = await getSessionUser(event)
@@ -21,7 +56,7 @@ export default defineEventHandler(async (event) => {
     if (!allowed) throw createError({ statusCode: 404, statusMessage: 'user not found' })
   }
 
-  const competition = await resolveCompetition(db, (getQuery(event).competition as string) || null)
+  const competition = await resolveCompetition(db, query.competition || null)
   if (!competition) throw createError({ statusCode: 404, statusMessage: 'competition not found' })
 
   return getCabinet(db, { competitionId: competition.id, userId: id, viewerId: viewer?.id ?? null })

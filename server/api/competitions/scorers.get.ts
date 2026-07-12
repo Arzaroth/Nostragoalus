@@ -1,8 +1,10 @@
 import { eq } from 'drizzle-orm'
+import { z } from 'zod'
 import { db } from '../../../db'
 import type { PlayerRankings } from '../../../shared/types/match'
 import { providerForCompetition } from '../../utils/providers'
 import { resolveCompetition } from '../../utils/competitions/store'
+import { defineReadHandler } from '../../utils/read-handler'
 import { resolveCompetitionSeason } from '../../utils/sync/competition'
 import { getCompetitionPlayerRankings, rankPlayers } from '../../utils/stats/scorers'
 import { goalEvent } from '../../../db/schema'
@@ -11,9 +13,23 @@ const EMPTY: PlayerRankings = { scorers: [], assists: [] }
 const cache = new Map<string, { at: number; rankings: PlayerRankings }>()
 const TTL_MS = 10 * 60 * 1000
 
-export default defineEventHandler(async (event): Promise<PlayerRankings> => {
-  const query = getQuery(event)
-  const competition = await resolveCompetition(db, (query.competition as string) || null)
+const querySchema = z.object({ competition: z.string().optional() })
+// One ranked player (TopScorer in shared/types/match.ts); the two boards share it.
+const topScorerSchema = z.object({
+  playerName: z.string(),
+  teamName: z.string(),
+  teamCode: z.string().nullable(),
+  goals: z.number(),
+  assists: z.number().nullable(),
+  penalties: z.number().nullable(),
+})
+const responseSchema = z.object({
+  scorers: z.array(topScorerSchema),
+  assists: z.array(topScorerSchema),
+})
+
+export default defineReadHandler({ response: responseSchema, query: querySchema }, async ({ query }) => {
+  const competition = await resolveCompetition(db, query.competition || null)
   if (!competition) return EMPTY
 
   const cached = cache.get(competition.id)

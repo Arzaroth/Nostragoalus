@@ -1,13 +1,67 @@
 import { and, desc, eq, or } from 'drizzle-orm'
+import { createSelectSchema } from 'drizzle-zod'
+import { z } from 'zod'
 import { db } from '../../../db'
 import { competition as competitionTable, goalEvent, match } from '../../../db/schema'
 import type { SquadPlayer, TeamSeasonStats, TopScorer } from '../../../shared/types/match'
+import { matchRowSchema, standingRowSchema } from '../../schemas/match'
 import { resolveCompetition } from '../../utils/competitions/store'
 import { getTeamMatches } from '../../utils/matches/service'
 import { computeGroupStandings } from '../../utils/stats/standings'
 import { getCompetitionTopScorers } from '../../utils/stats/scorers'
 import { providerForCompetition } from '../../utils/providers'
+import { defineReadHandler } from '../../utils/read-handler'
 import { resolveCompetitionSeason } from '../../utils/sync/competition'
+
+const competitionCols = createSelectSchema(competitionTable)
+// The narrow scorer projection the route surfaces (extra provider fields like
+// teamName/penalties are stripped by the response parse).
+const teamScorerSchema = z.object({
+  playerName: z.string(),
+  teamCode: z.string().nullable(),
+  goals: z.number(),
+  assists: z.number().nullable(),
+})
+const teamSeasonStatsSchema = z.object({
+  goals: z.number().nullable(),
+  conceded: z.number().nullable(),
+  assists: z.number().nullable(),
+  possession: z.number().nullable(),
+  attempts: z.number().nullable(),
+  onTarget: z.number().nullable(),
+  passes: z.number().nullable(),
+  passAccuracy: z.number().nullable(),
+  crosses: z.number().nullable(),
+  corners: z.number().nullable(),
+  offsides: z.number().nullable(),
+  yellowCards: z.number().nullable(),
+  redCards: z.number().nullable(),
+})
+const squadPlayerSchema = z.object({
+  playerId: z.string(),
+  name: z.string(),
+  shirtNumber: z.number().nullable(),
+  position: z.enum(['GK', 'DF', 'MF', 'FW']).nullable(),
+  captain: z.boolean(),
+  pictureUrl: z.string().nullable(),
+  x: z.number().nullable().optional(),
+  y: z.number().nullable().optional(),
+  goals: z.number(),
+  assists: z.number(),
+})
+const querySchema = z.object({ competition: z.string().optional(), lite: z.string().optional() })
+const responseSchema = z.object({
+  team: z.object({ code: z.string(), name: z.string(), competition: z.string() }).nullable(),
+  matches: z.array(matchRowSchema),
+  group: z.string().nullable(),
+  standings: z.array(standingRowSchema).nullable(),
+  topScorer: teamScorerSchema.nullable(),
+  topAssister: teamScorerSchema.nullable(),
+  teamStats: teamSeasonStatsSchema.nullable(),
+  squad: z.array(squadPlayerSchema),
+  coach: z.string().nullable(),
+  competitions: z.array(z.object({ slug: competitionCols.shape.slug, name: competitionCols.shape.name, seasonHint: competitionCols.shape.seasonHint })),
+})
 
 // The FIFA statistics document is season-wide (same for every team) and heavy -
 // cache it per competition. The tournament sweep (squad/coach/stats) is many
@@ -17,11 +71,10 @@ const PLAYERS_TTL_MS = 10 * 60 * 1000
 const tournamentCache = new Map<string, { at: number; data: { squad: SquadPlayer[]; coach: string | null; stats: TeamSeasonStats | null } }>()
 const TOURNAMENT_TTL_MS = 6 * 60 * 60 * 1000
 
-export default defineEventHandler(async (event) => {
+export default defineReadHandler({ response: responseSchema, query: querySchema }, async ({ event, query }) => {
   const code = getRouterParam(event, 'code') as string
-  const query = getQuery(event)
   const lite = query.lite === '1' // map panel: skip the expensive tournament sweep
-  const competition = await resolveCompetition(db, (query.competition as string) || null)
+  const competition = await resolveCompetition(db, query.competition || null)
   if (!competition) {
     return { team: null, matches: [], group: null, standings: null, topScorer: null, topAssister: null, teamStats: null, squad: [], coach: null, competitions: [] }
   }

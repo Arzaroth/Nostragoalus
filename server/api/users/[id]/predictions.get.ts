@@ -1,13 +1,49 @@
 import { and, eq } from 'drizzle-orm'
+import { createSelectSchema } from 'drizzle-zod'
+import { z } from 'zod'
 import { db } from '../../../../db'
 import { bestScorerPick, championPick, chatIdentity, user } from '../../../../db/schema'
+import { predictionViewSchema } from '../../../schemas/prediction'
 import { getUserPublicPredictions } from '../../../utils/predictions/service'
 import { resolveCompetition } from '../../../utils/competitions/store'
 import { getSessionUser, isAdmin } from '../../../utils/auth-guards'
 import { canViewProfile } from '../../../utils/leagues/service'
 import { canDm } from '../../../utils/dm/service'
+import { defineReadHandler } from '../../../utils/read-handler'
 
-export default defineEventHandler(async (event) => {
+const querySchema = z.object({ competition: z.string().optional() })
+
+const championSchema = createSelectSchema(championPick).pick({
+  teamCode: true,
+  teamName: true,
+  competitionId: true,
+  awardedPoints: true,
+})
+const bestScorerSchema = createSelectSchema(bestScorerPick).pick({
+  teamCode: true,
+  teamName: true,
+  playerName: true,
+  awardedPoints: true,
+})
+const userCols = createSelectSchema(user)
+const responseSchema = z.object({
+  user: z.object({
+    id: z.string(),
+    name: userCols.shape.name,
+    image: userCols.shape.image,
+    canMessage: z.boolean(),
+  }),
+  champion: championSchema.nullable(),
+  bestScorer: bestScorerSchema.nullable(),
+  champions: z.array(championSchema).optional(),
+  global: z.boolean(),
+  adminView: z.boolean(),
+  predictions: z.array(
+    predictionViewSchema.extend({ competitionSlug: z.string(), competitionName: z.string() }),
+  ),
+})
+
+export default defineReadHandler({ response: responseSchema, query: querySchema }, async ({ event, query }) => {
   const id = getRouterParam(event, 'id') as string
   const admin = await isAdmin(event)
   const viewer = await getSessionUser(event)
@@ -26,7 +62,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // 'global' shows the player across every competition
-  const requested = (getQuery(event).competition as string) || null
+  const requested = query.competition || null
   const global = requested === 'global'
   const competition = global ? null : await resolveCompetition(db, requested)
 

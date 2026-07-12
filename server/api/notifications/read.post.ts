@@ -1,9 +1,12 @@
+import { z } from 'zod'
 import { db } from '../../../db'
 import { markAllRead, markRead } from '../../utils/notifications/service'
 import { defineValidatedHandler } from '../../utils/validated-handler'
 import { idsOrAllSchema } from './_schema'
 
-export default defineValidatedHandler({ body: idsOrAllSchema }, async ({ body, user }) => {
+const responseSchema = z.object({ marked: z.number() })
+
+export default defineValidatedHandler({ body: idsOrAllSchema, response: responseSchema }, async ({ body, user }) => {
   const marked = body.all ? await markAllRead(db, user.id) : await markRead(db, user.id, body.ids ?? [])
   return { marked }
 })

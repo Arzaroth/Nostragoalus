@@ -1,26 +1,23 @@
 import { eq } from 'drizzle-orm'
 import { symmetricDecrypt } from 'better-auth/crypto'
+import { z } from 'zod'
 import { db } from '../../../db'
 import { twoFactor } from '../../../db/schema'
-import { requireUser } from '../../utils/auth-guards'
 import { consumeTotpCode } from '../../utils/auth/totp-consume'
-import { assertSameOrigin } from '../../utils/csrf'
+import { defineValidatedHandler } from '../../utils/validated-handler'
+
+const bodySchema = z.object({ code: z.string() })
+const responseSchema = z.object({ valid: z.boolean() })
 
 // Confirms the caller's current TOTP code (used as a guard before disabling 2FA).
-export default defineEventHandler(async (event) => {
-  // Same-origin CSRF guard for this cookie-session mutation, matching the guard
-  // defineValidatedHandler applies to every other mutating route.
-  assertSameOrigin(event)
-  const user = await requireUser(event)
-  const body = await readBody(event).catch(() => ({}))
-  const code = String(body?.code ?? '')
-
+// defineValidatedHandler applies the same-origin CSRF guard and user-session auth.
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ body, user }) => {
   const rows = await db.select().from(twoFactor).where(eq(twoFactor.userId, user.id)).limit(1)
   if (rows.length === 0) throw createError({ statusCode: 400, statusMessage: 'two-factor is not enabled' })
 
   const key = process.env.BETTER_AUTH_SECRET ?? process.env.NUXT_BETTER_AUTH_SECRET ?? ''
   const secret = await symmetricDecrypt({ key, data: rows[0].secret })
-  return { valid: await consumeTotpCode(db, user.id, secret, code) }
+  return { valid: await consumeTotpCode(db, user.id, secret, body.code) }
 })
 
 defineRouteMeta({

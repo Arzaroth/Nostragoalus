@@ -1,9 +1,17 @@
+import { z } from 'zod'
 import { db } from '../../../db'
 import { getChainHead } from '../../utils/commitment/service'
+import { defineReadHandler } from '../../utils/read-handler'
+
+const responseSchema = z.object({
+  seq: z.number(),
+  headHash: z.string(),
+  updatedAt: z.date().nullable(),
+})
 
 // Public: the current head of the prediction commitment chain. Anyone can snapshot
 // this and later detect a retro-edit (the recomputed head would no longer match).
-export default defineEventHandler(async () => {
+export default defineReadHandler({ response: responseSchema }, async () => {
   const head = await getChainHead(db)
   return { seq: head.seq, headHash: head.headHash, updatedAt: head.updatedAt }
 })

@@ -1,21 +1,20 @@
 import { and, eq } from 'drizzle-orm'
 import { symmetricDecrypt, verifyPassword } from 'better-auth/crypto'
+import { z } from 'zod'
 import { db } from '../../../db'
 import { account, twoFactor, user } from '../../../db/schema'
-import { requireUser } from '../../utils/auth-guards'
 import { consumeTotpCode } from '../../utils/auth/totp-consume'
 import { issueReauth } from '../../utils/auth/reauth'
-import { assertSameOrigin } from '../../utils/csrf'
+import { defineValidatedHandler } from '../../utils/validated-handler'
+
+const bodySchema = z.object({ password: z.string(), code: z.string().optional() })
+const responseSchema = z.object({ valid: z.boolean() })
 
 // Sudo mode: confirm the password (and a TOTP code when 2FA is on) and issue a
 // short-lived re-auth cookie required by sensitive actions (passkey registration).
-export default defineEventHandler(async (event) => {
-  // Same-origin CSRF guard for this cookie-session mutation (it sets the sudo
-  // cookie), matching the guard defineValidatedHandler applies elsewhere.
-  assertSameOrigin(event)
-  const sessionUser = await requireUser(event)
-  const body = await readBody(event).catch(() => ({}))
-
+// defineValidatedHandler applies the same-origin CSRF guard (this sets the sudo
+// cookie) and the user-session auth.
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ event, body, user: sessionUser }) => {
   const accounts = await db
     .select({ password: account.password })
     .from(account)
@@ -23,7 +22,7 @@ export default defineEventHandler(async (event) => {
     .limit(1)
   if (!accounts[0]?.password) throw createError({ statusCode: 400, statusMessage: 'no password account' })
 
-  const passwordOk = await verifyPassword({ hash: accounts[0].password, password: String(body?.password ?? '') })
+  const passwordOk = await verifyPassword({ hash: accounts[0].password, password: body.password })
   if (!passwordOk) return { valid: false }
 
   const [u] = await db.select({ twoFactorEnabled: user.twoFactorEnabled }).from(user).where(eq(user.id, sessionUser.id))
@@ -31,7 +30,7 @@ export default defineEventHandler(async (event) => {
     const rows = await db.select().from(twoFactor).where(eq(twoFactor.userId, sessionUser.id)).limit(1)
     const key = process.env.BETTER_AUTH_SECRET ?? process.env.NUXT_BETTER_AUTH_SECRET ?? ''
     const secret = rows[0] ? await symmetricDecrypt({ key, data: rows[0].secret }) : ''
-    if (!rows[0] || !(await consumeTotpCode(db, sessionUser.id, secret, String(body?.code ?? '')))) {
+    if (!rows[0] || !(await consumeTotpCode(db, sessionUser.id, secret, body.code ?? ''))) {
       return { valid: false }
     }
   }

@@ -11,9 +11,11 @@ const bodySchema = z.object({
   emoji: z.enum(REACTION_EMOJIS).nullable(),
 })
 
+const responseSchema = z.object({ ok: z.literal(true) })
+
 // Set or clear the caller's emoji reaction on a DM message, then push the fresh
 // totals to the two participants. Participant only; the emoji is plaintext.
-export default defineValidatedHandler({ body: bodySchema }, async ({ body, user, event }) => {
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ body, user, event }) => {
   const threadId = getRouterParam(event, 'threadId') as string
   const ctx = await setChatReaction(db, { messageId: body.messageId, userId: user.id, emoji: body.emoji })
   // This DM route only acts on messages in this thread (a league or another
@@ -23,7 +25,7 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ body, user,
   }
   const totals = await getMessageReactionTotals(db, body.messageId)
   void Promise.resolve(publishDmReaction([ctx.userAId, ctx.userBId], threadId, body.messageId, totals))
-  return { ok: true }
+  return { ok: true as const }
 })
 
 defineRouteMeta({

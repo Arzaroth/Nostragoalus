@@ -8,7 +8,9 @@ const bodySchema = z.object({
   keys: z.object({ p256dh: z.string().min(1), auth: z.string().min(1) }),
 })
 
-export default defineValidatedHandler({ body: bodySchema }, async ({ body, user, event }) => {
+const responseSchema = z.object({ ok: z.boolean() })
+
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ body, user, event }) => {
   await saveSubscription(db, user.id, body, getRequestHeader(event, 'user-agent') ?? null)
   return { ok: true }
 })

@@ -1,29 +1,27 @@
+import { z } from 'zod'
 import { db } from '../../../db'
+import { reactionEmojiSchema, reactionTotalsSchema } from '../../schemas/dm'
 import { getSessionUser, isAdmin } from '../../utils/auth-guards'
 import { resolveLeagueView } from '../../utils/leagues/service'
 import { getMatchReactionTotals, getMyReaction } from '../../utils/reactions/service'
-import { toHttpError } from '../../utils/http'
+import { defineReadHandler } from '../../utils/read-handler'
+
+const querySchema = z.object({ league: z.string().optional() })
+const responseSchema = z.object({ totals: reactionTotalsSchema, mine: reactionEmojiSchema.nullable() })
 
 // Global reaction counts are public (read-only aggregates, no PII): the bar
 // renders for guests too, just without a highlighted "mine". League-scoped
 // counts stay members-only, like crowd totals.
-export default defineEventHandler(async (event) => {
+export default defineReadHandler({ response: responseSchema, query: querySchema }, async ({ event, query }) => {
   const matchId = getRouterParam(event, 'matchId') as string
-  const query = getQuery(event)
   const user = await getSessionUser(event)
 
   if (query.league) {
     if (!user) throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
-    let resolved
-    try {
-      resolved = await resolveLeagueView(db, String(query.league), user.id, {
-        membersOnly: true,
-        resolveAdmin: () => isAdmin(event),
-      })
-    } catch (error) {
-      throw toHttpError(error)
-    }
-    const { league } = resolved
+    const { league } = await resolveLeagueView(db, query.league, user.id, {
+      membersOnly: true,
+      resolveAdmin: () => isAdmin(event),
+    })
     return {
       totals: await getMatchReactionTotals(db, matchId, { leagueId: league.id }),
       mine: await getMyReaction(db, user.id, matchId),
