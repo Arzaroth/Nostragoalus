@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-07-12
+
 ### chelta'
 
 - wab ja'chuqtaHghach. DIvI' QIn'e' latlh yISum wa' vaghDIch, pagh ghom wab pa' yIchenmoH DIvI' QInDaq (SuvwI' rar'eghlaHchugh, DaH tlhej boS). "N wabDaq" 'oS 'ang - DIvI' rI' qaStaH, 'ej vay' yIrI'laH. rI' chu' Hoch DaqDaq Suqlu'; rI' luj QInmeyDaq (**rI'mey** Segh chu' push je) tu'lu'. wab peer-to-peer 'ej encrypted - server rInbe'.

@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-07-12
+
 ### Ajouté
 
 - Chat vocal. Appelez quelqu'un en tête-à-tête depuis une conversation privée, ou lancez un salon vocal de groupe dans le chat d'une ligue (éventuellement lié à un match, pour regarder ensemble). Un badge « N en vocal » indique qu'un appel de ligue est en cours, et vous pouvez y inviter des membres précis. Les appels entrants vous sonnent partout dans l'application ; un appel manqué arrive dans vos notifications (et en push, dans la nouvelle catégorie **Appels**). L'audio est pair-à-pair et chiffré de bout en bout - il ne passe jamais par le serveur.
