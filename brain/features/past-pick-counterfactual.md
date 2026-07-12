@@ -23,7 +23,7 @@ the whole thing on kickoff so nothing leaks early.
 ## How it scores
 
 `getPastPickCounterfactual(db, { matchId, userId, rules? })` in
-[`apps/web-nuxt/server/utils/past-pick/service.ts`](../../server/utils/past-pick/service.ts):
+[`apps/web-nuxt/server/utils/past-pick/service.ts`](../../apps/web-nuxt/server/utils/past-pick/service.ts):
 
 1. Load the match. Pre-kickoff (`!matchHasStarted`) or no scoreline yet -> `none`.
 2. Load the kept pick (the user's current `prediction` row). None -> `none`.
@@ -50,10 +50,10 @@ documented approximation (see [../../TODO.md](../../TODO.md)).
 ## Surface
 
 - Endpoint:
-  [`apps/web-nuxt/server/api/matches/[id]/my-past-picks.get.ts`](../../server/api/matches/[id]/my-past-picks.get.ts)
+  [`apps/web-nuxt/server/api/matches/[id]/my-past-picks.get.ts`](../../apps/web-nuxt/server/api/matches/[id]/my-past-picks.get.ts)
   - owner-gated (`requireUser`), returns the counterfactual for the session user
   only. **Copy-protection**: never another user's picks.
-- Composable: [`apps/web-nuxt/app/composables/useMyPastPicks.ts`](../../app/composables/useMyPastPicks.ts)
+- Composable: [`apps/web-nuxt/app/composables/useMyPastPicks.ts`](../../apps/web-nuxt/app/composables/useMyPastPicks.ts)
   - client-only, enabled once the match has started.
 - Component: `PastPickHint.vue` on the match page
   (`apps/web-nuxt/app/pages/[competition]/matches/[id].vue`), under "your pick", owner-only.

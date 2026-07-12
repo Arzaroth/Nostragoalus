@@ -40,7 +40,7 @@ relaying a candidate is authorized by live room membership alone. See
 
 ### coturn (self-hosted relay)
 
-A `coturn` container behind the `voice` [compose](operations.md) profile
+A `coturn` container behind the `voice` [compose](../operations.md) profile
 (`mise run up` includes it; `docker compose --profile voice up` starts it alone). Runs in `use-auth-secret` mode: the app mints an ephemeral,
 time-limited credential per request (`turnCredential` in
 `apps/web-nuxt/server/utils/voice/service.ts` - `username = <expiry>:<userId>`,

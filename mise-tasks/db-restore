@@ -19,7 +19,7 @@ import { createInterface } from 'node:readline/promises'
 function s3Bucket() {
   if (process.env.NUXT_STORAGE_S3_BUCKET) return process.env.NUXT_STORAGE_S3_BUCKET
   try {
-    const m = readFileSync('.env', 'utf8').match(/^\s*NUXT_STORAGE_S3_BUCKET\s*=\s*(.+?)\s*$/m)
+    const m = readFileSync('apps/web-nuxt/.env', 'utf8').match(/^\s*NUXT_STORAGE_S3_BUCKET\s*=\s*(.+?)\s*$/m)
     if (m) return m[1].replace(/^["']|["']$/g, '')
   } catch {
     // no .env (or unreadable) - fall through to the default
