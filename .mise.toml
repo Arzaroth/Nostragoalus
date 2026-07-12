@@ -2,8 +2,8 @@
 # app (prod build) and app-dev (HMR) share port 3000 - each task stops the other first.
 
 [tasks.up]
-description = "Prod-like stack: built app + db (no mail catcher)"
-run = "docker compose -f compose.yaml -f compose.dev.yaml --profile dev stop app-dev 2>/dev/null; docker compose up -d --build --wait"
+description = "Prod-like stack: built app + db + coturn (no mail catcher)"
+run = "docker compose -f compose.yaml -f compose.dev.yaml --profile dev stop app-dev 2>/dev/null; docker compose --profile voice up -d --build --wait"
 
 [tasks.dev]
 description = "HMR dev server + db + maildev (source bind-mounted, hot reload)"

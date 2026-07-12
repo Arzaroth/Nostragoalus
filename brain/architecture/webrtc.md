@@ -41,8 +41,7 @@ relaying a candidate is authorized by live room membership alone. See
 ### coturn (self-hosted relay)
 
 A `coturn` container behind the `voice` [compose](operations.md) profile
-(`docker compose --profile voice up`) - the base stack is unchanged for deploys
-that do not want calls. Runs in `use-auth-secret` mode: the app mints an ephemeral,
+(`mise run up` includes it; `docker compose --profile voice up` starts it alone). Runs in `use-auth-secret` mode: the app mints an ephemeral,
 time-limited credential per request (`turnCredential` in
 `server/utils/voice/service.ts` - `username = <expiry>:<userId>`,
 `credential = base64(HMAC-SHA1(secret, username))`), which coturn recomputes and
@@ -50,10 +49,12 @@ accepts until expiry, so no per-user accounts are stored and the shared secret
 never reaches the browser.
 
 Runtime config (`NUXT_TURN_SECRET` / `NUXT_TURN_HOST` / `NUXT_TURN_REALM`, plus
-`NUXT_TURN_EXTERNAL_IP` when not on host networking). Prod: open the coturn ports
-(3478 + the relay range) in the firewall and mount a TLS cert for `turns:`. The
-relay is opaque to the media - it forwards SRTP packets it cannot decrypt, so
-E2EE holds even through TURN.
+`NUXT_TURN_EXTERNAL_IP` = the host's public IP whenever coturn sits behind NAT, so
+it advertises a reachable relay address). Prod firewall: forward **3478 (udp+tcp)**
+and the **relay range 49160-49200/udp** to the host (and 5349/tcp if you mount a
+TLS cert for `turns:`). The coturn command applies `--external-ip` only when the
+env var is set (a shell wrapper in `compose.yaml`). The relay is opaque to the
+media - it forwards SRTP packets it cannot decrypt, so E2EE holds even through TURN.
 
 ## Known gap
 
