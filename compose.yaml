@@ -65,39 +65,41 @@ services:
 
   # TURN relay for voice chat (self-hosted coturn), behind the `voice` profile so
   # the base stack is unchanged for deploys that don't want calls:
-  #   docker compose --profile voice up
+  #   docker compose --profile voice up   (mise run up includes it)
   # The app is STUN-only (and calls behind symmetric NAT fail) until this runs and
   # NUXT_TURN_SECRET / NUXT_TURN_HOST are set. use-auth-secret mode: the app mints
   # ephemeral credentials from the shared secret, so coturn stores no accounts.
-  # Prod notes: set NUXT_TURN_EXTERNAL_IP to the host's public IP, open the ports
-  # below (3478 + the relay range) in the firewall, and mount a cert for turns:.
+  #
+  # Firewall: forward 3478 (udp+tcp) AND the relay range 49160-49200/udp to this
+  # host (5349/tcp too if you enable TLS). If this host is behind NAT (reached via a
+  # port-forward), set NUXT_TURN_EXTERNAL_IP to its PUBLIC IP - coturn otherwise
+  # advertises the private LAN address as the relay and external browsers can't
+  # reach it. This is independent of host vs bridge networking.
   coturn:
     image: coturn/coturn:4.6.2-alpine
     profiles: ['voice']
     restart: unless-stopped
-    # Host networking lets coturn hand out real relay addresses without NAT
-    # rewriting; drop it and publish the ports explicitly only if host mode is
-    # unavailable (then NUXT_TURN_EXTERNAL_IP is required).
+    # Host networking so coturn sees the real interfaces and the whole relay port
+    # range without per-port publishing (it does NOT by itself fix a NAT'd host -
+    # that is what NUXT_TURN_EXTERNAL_IP is for).
     network_mode: host
+    environment:
+      NUXT_TURN_SECRET: ${NUXT_TURN_SECRET:-}
+      NUXT_TURN_REALM: ${NUXT_TURN_REALM:-nostragoalus}
+      NUXT_TURN_EXTERNAL_IP: ${NUXT_TURN_EXTERNAL_IP:-}
+    # A shell wrapper so `--external-ip` is added ONLY when NUXT_TURN_EXTERNAL_IP is
+    # set (`$$` defers the expansion to the container shell, not compose). For TLS
+    # (turns:), append `--cert=... --pkey=...` here and mount the cert (volume below).
+    entrypoint: ['/bin/sh', '-c']
     command:
-      - -n
-      - --use-auth-secret
-      # Required: set NUXT_TURN_SECRET in .env before starting the voice profile.
-      # It must match the app's NUXT_TURN_SECRET (an empty value makes TURN unusable).
-      - --static-auth-secret=${NUXT_TURN_SECRET:-}
-      - --realm=${NUXT_TURN_REALM:-nostragoalus}
-      - --listening-port=3478
-      - --tls-listening-port=5349
-      - --min-port=49160
-      - --max-port=49200
-      - --fingerprint
-      - --no-cli
-      - --no-multicast-peers
-      # Uncomment for TLS (turns:) once a cert is mounted into the container:
-      # - --cert=/etc/coturn/tls/fullchain.pem
-      # - --pkey=/etc/coturn/tls/privkey.pem
-      # Uncomment when NOT using host networking (bridge mode needs the public IP):
-      # - --external-ip=${NUXT_TURN_EXTERNAL_IP}
+      - >
+        exec turnserver -n --use-auth-secret
+        --static-auth-secret="$$NUXT_TURN_SECRET"
+        --realm="$$NUXT_TURN_REALM"
+        --listening-port=3478 --tls-listening-port=5349
+        --min-port=49160 --max-port=49200
+        --fingerprint --no-cli --no-multicast-peers
+        $${NUXT_TURN_EXTERNAL_IP:+--external-ip=$$NUXT_TURN_EXTERNAL_IP}
     # volumes:
     #   - /etc/letsencrypt/live/turn.example.com:/etc/coturn/tls:ro
 
