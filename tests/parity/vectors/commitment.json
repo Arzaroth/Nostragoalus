@@ -1,0 +1,476 @@
+{
+  "module": "commitment",
+  "cases": [
+    {
+      "fn": "sha256Hex",
+      "args": [
+        ""
+      ],
+      "expected": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "fn": "sha256Hex",
+      "args": [
+        "abc"
+      ],
+      "expected": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+    },
+    {
+      "fn": "sha256Hex",
+      "args": [
+        "ngc-parity-éà🌐"
+      ],
+      "expected": "b4f9b6a6b34477a61c7a37ac6b410d5d273f66bb168a54f74e28394f94453cd8"
+    },
+    {
+      "fn": "computeSubject",
+      "args": [
+        "user-1"
+      ],
+      "expected": "58f62a871ab02f0b6e3cf347fa1cef904ac0cd620a019c7d9d0241260b55bf13"
+    },
+    {
+      "fn": "computeSubject",
+      "args": [
+        "user-2"
+      ],
+      "expected": "815222d02850ba86a0c646afbb416677330ec07b0b33990229464479d452b52b"
+    },
+    {
+      "fn": "computeCommitment",
+      "args": [
+        {
+          "subject": "s",
+          "matchId": "m",
+          "homeGoals": 2,
+          "awayGoals": 1,
+          "salt": "pepper"
+        }
+      ],
+      "expected": "1f07bc4a4b4e8f4eb537e673d0c09f56b3d38f446acab76ed6b8b8613c5d76ff"
+    },
+    {
+      "fn": "computeEntryHash",
+      "args": [
+        {
+          "seq": 1,
+          "prevHash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "commitment": "c",
+          "subject": "s",
+          "matchId": "m",
+          "createdAt": "2026-06-19T10:00:00.000Z"
+        }
+      ],
+      "expected": "34a205ec9c9c77d4a4faa80ed54a818acace9cd8d6e82227a8015df5d5e8be38"
+    },
+    {
+      "fn": "computeLeagueCommitment",
+      "args": [
+        {
+          "subject": "s",
+          "leagueId": "L1",
+          "matchId": "m",
+          "homeGoals": 2,
+          "awayGoals": 1,
+          "salt": "pepper"
+        }
+      ],
+      "expected": "de2de6d1cfbd4849d88088a81385b3ca1a5893215fa095d888b0582ea3f2ef9e"
+    },
+    {
+      "fn": "computeLeagueEntryHash",
+      "args": [
+        {
+          "seq": 1,
+          "prevHash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "commitment": "c",
+          "subject": "s",
+          "leagueId": "L1",
+          "matchId": "m",
+          "createdAt": "2026-06-19T10:00:00.000Z"
+        }
+      ],
+      "expected": "9d947843476fe842d2ee83212c7aacd3cda64200007a2d30e3dc0367a760f563"
+    },
+    {
+      "fn": "verifyLedger",
+      "args": [
+        []
+      ],
+      "expected": {
+        "ok": true,
+        "count": 0,
+        "head": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    },
+    {
+      "fn": "verifyLedger",
+      "args": [
+        [
+          {
+            "seq": 1,
+            "prevHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "commitment": "b60c7c9decc4815071ac624a99140e8df5c71ad446b9c329a573a428a872795e",
+            "subject": "aa49caead6ed22b7d2675d8ecd89f0fe1999df842af45d89a25522adaf694f3c",
+            "matchId": "m1",
+            "createdAt": "2026-06-19T10:00:00.000Z",
+            "entryHash": "a2edaa793c90e14557dd1f633203fe3a49095b271544f7ae2545d35eaf9cbd5d",
+            "opened": true,
+            "homeGoals": 2,
+            "awayGoals": 1,
+            "salt": "a"
+          },
+          {
+            "seq": 2,
+            "prevHash": "a2edaa793c90e14557dd1f633203fe3a49095b271544f7ae2545d35eaf9cbd5d",
+            "commitment": "3eb2cb686bbf6d007d32704df8b8da5f03b614da149d555c5d6eb6b3814701cd",
+            "subject": "783fed4fcce6f15c96f2b264da5fb761d50c8d37d42bcfe34cf9f083db4bef8c",
+            "matchId": "m2",
+            "createdAt": "2026-06-19T11:00:00.000Z",
+            "entryHash": "52d9866e6660b73e62b5dbb964ebc68986979c9b3f3d3c06c0e8df3de2614fde",
+            "opened": false,
+            "homeGoals": 0,
+            "awayGoals": 0,
+            "salt": "b"
+          }
+        ]
+      ],
+      "expected": {
+        "ok": true,
+        "count": 2,
+        "head": "52d9866e6660b73e62b5dbb964ebc68986979c9b3f3d3c06c0e8df3de2614fde"
+      }
+    },
+    {
+      "fn": "verifyLedger",
+      "args": [
+        [
+          {
+            "seq": 1,
+            "prevHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "commitment": "b60c7c9decc4815071ac624a99140e8df5c71ad446b9c329a573a428a872795e",
+            "subject": "aa49caead6ed22b7d2675d8ecd89f0fe1999df842af45d89a25522adaf694f3c",
+            "matchId": "m1",
+            "createdAt": "2026-06-19T10:00:00.000Z",
+            "entryHash": "a2edaa793c90e14557dd1f633203fe3a49095b271544f7ae2545d35eaf9cbd5d",
+            "opened": true,
+            "homeGoals": 5,
+            "awayGoals": 1,
+            "salt": "a"
+          }
+        ]
+      ],
+      "expected": {
+        "ok": false,
+        "count": 1,
+        "head": "0000000000000000000000000000000000000000000000000000000000000000",
+        "failedSeq": 1,
+        "reason": "commitment"
+      }
+    },
+    {
+      "fn": "verifyLedger",
+      "args": [
+        [
+          {
+            "seq": 2,
+            "prevHash": "a2edaa793c90e14557dd1f633203fe3a49095b271544f7ae2545d35eaf9cbd5d",
+            "commitment": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+            "subject": "783fed4fcce6f15c96f2b264da5fb761d50c8d37d42bcfe34cf9f083db4bef8c",
+            "matchId": "m2",
+            "createdAt": "2026-06-19T11:00:00.000Z",
+            "entryHash": "52d9866e6660b73e62b5dbb964ebc68986979c9b3f3d3c06c0e8df3de2614fde",
+            "opened": false,
+            "homeGoals": 0,
+            "awayGoals": 0,
+            "salt": "b"
+          }
+        ]
+      ],
+      "expected": {
+        "ok": false,
+        "count": 1,
+        "head": "0000000000000000000000000000000000000000000000000000000000000000",
+        "failedSeq": 2,
+        "reason": "link"
+      }
+    },
+    {
+      "fn": "verifyLedger",
+      "args": [
+        [
+          {
+            "seq": 1,
+            "prevHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "commitment": "b60c7c9decc4815071ac624a99140e8df5c71ad446b9c329a573a428a872795e",
+            "subject": "aa49caead6ed22b7d2675d8ecd89f0fe1999df842af45d89a25522adaf694f3c",
+            "matchId": "m1",
+            "createdAt": "2026-06-19T10:00:00.000Z",
+            "entryHash": "a2edaa793c90e14557dd1f633203fe3a49095b271544f7ae2545d35eaf9cbd5d",
+            "opened": true,
+            "homeGoals": 2,
+            "awayGoals": 1,
+            "salt": "a"
+          },
+          {
+            "seq": 3,
+            "prevHash": "a2edaa793c90e14557dd1f633203fe3a49095b271544f7ae2545d35eaf9cbd5d",
+            "commitment": "a14d0925c84f5f714856a3cccbc24ce1c4a74d4f00547fd7a9985dddb776b46a",
+            "subject": "aa49caead6ed22b7d2675d8ecd89f0fe1999df842af45d89a25522adaf694f3c",
+            "matchId": "m3",
+            "createdAt": "2026-06-19T11:00:00.000Z",
+            "entryHash": "ba8c4c27ef058f1b854adca494d8eac38f0c24003c3b5b96c0191659fe951e0e",
+            "opened": true,
+            "homeGoals": 1,
+            "awayGoals": 0,
+            "salt": "c"
+          }
+        ]
+      ],
+      "expected": {
+        "ok": false,
+        "count": 2,
+        "head": "a2edaa793c90e14557dd1f633203fe3a49095b271544f7ae2545d35eaf9cbd5d",
+        "failedSeq": 3,
+        "reason": "sequence"
+      }
+    },
+    {
+      "fn": "verifyLedger",
+      "args": [
+        [
+          {
+            "seq": 1,
+            "prevHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "commitment": "b60c7c9decc4815071ac624a99140e8df5c71ad446b9c329a573a428a872795e",
+            "subject": "aa49caead6ed22b7d2675d8ecd89f0fe1999df842af45d89a25522adaf694f3c",
+            "matchId": "m1",
+            "createdAt": "2026-06-19T10:00:00.000Z",
+            "entryHash": "a2edaa793c90e14557dd1f633203fe3a49095b271544f7ae2545d35eaf9cbd5d",
+            "opened": true,
+            "homeGoals": 2,
+            "awayGoals": 1,
+            "salt": "a"
+          },
+          {
+            "seq": 2,
+            "prevHash": "wrong-prev",
+            "commitment": "a1432c5bb3f2304c84f91c0a325aa424d67289cbdea82477d5a70307e92067e9",
+            "subject": "aa49caead6ed22b7d2675d8ecd89f0fe1999df842af45d89a25522adaf694f3c",
+            "matchId": "m2",
+            "createdAt": "2026-06-19T11:00:00.000Z",
+            "entryHash": "3d24520368cadc83af76feb0828a1fb18e1d50b667940373404d639847563c5c",
+            "opened": true,
+            "homeGoals": 1,
+            "awayGoals": 0,
+            "salt": "b"
+          }
+        ]
+      ],
+      "expected": {
+        "ok": false,
+        "count": 2,
+        "head": "a2edaa793c90e14557dd1f633203fe3a49095b271544f7ae2545d35eaf9cbd5d",
+        "failedSeq": 2,
+        "reason": "link"
+      }
+    },
+    {
+      "fn": "witnessExtension",
+      "args": [
+        null,
+        [],
+        {
+          "seq": 4,
+          "headHash": "h"
+        }
+      ],
+      "expected": {
+        "status": "first-seen",
+        "head": {
+          "seq": 4,
+          "headHash": "h"
+        }
+      }
+    },
+    {
+      "fn": "witnessExtension",
+      "args": [
+        {
+          "seq": 2,
+          "headHash": "e5c69ec3aa66c15f8caccbe1c63bd348a055772fce5042abe17d3217f3d9f981"
+        },
+        [],
+        {
+          "seq": 2,
+          "headHash": "e5c69ec3aa66c15f8caccbe1c63bd348a055772fce5042abe17d3217f3d9f981"
+        }
+      ],
+      "expected": {
+        "status": "consistent",
+        "head": {
+          "seq": 2,
+          "headHash": "e5c69ec3aa66c15f8caccbe1c63bd348a055772fce5042abe17d3217f3d9f981"
+        }
+      }
+    },
+    {
+      "fn": "witnessExtension",
+      "args": [
+        {
+          "seq": 2,
+          "headHash": "e5c69ec3aa66c15f8caccbe1c63bd348a055772fce5042abe17d3217f3d9f981"
+        },
+        [],
+        {
+          "seq": 2,
+          "headHash": "evil"
+        }
+      ],
+      "expected": {
+        "status": "tampered",
+        "head": {
+          "seq": 2,
+          "headHash": "e5c69ec3aa66c15f8caccbe1c63bd348a055772fce5042abe17d3217f3d9f981"
+        }
+      }
+    },
+    {
+      "fn": "witnessExtension",
+      "args": [
+        {
+          "seq": 5,
+          "headHash": "h5"
+        },
+        [],
+        {
+          "seq": 3,
+          "headHash": "h3"
+        }
+      ],
+      "expected": {
+        "status": "rolled-back",
+        "head": {
+          "seq": 5,
+          "headHash": "h5"
+        }
+      }
+    },
+    {
+      "fn": "witnessExtension",
+      "args": [
+        {
+          "seq": 2,
+          "headHash": "e5c69ec3aa66c15f8caccbe1c63bd348a055772fce5042abe17d3217f3d9f981"
+        },
+        [
+          {
+            "seq": 3,
+            "prevHash": "e5c69ec3aa66c15f8caccbe1c63bd348a055772fce5042abe17d3217f3d9f981",
+            "commitment": "ffe3b07a8a6836671f1e5fafa75f867d3f9139d63f6c3a14d6d02452ef9a2c33",
+            "subject": "aa49caead6ed22b7d2675d8ecd89f0fe1999df842af45d89a25522adaf694f3c",
+            "matchId": "m3",
+            "createdAt": "2026-06-19T10:00:00.000Z",
+            "entryHash": "7774762262604cf54ef8ef58b44ba41858e1752deb1699ffa79397310805a46b",
+            "opened": true,
+            "homeGoals": 0,
+            "awayGoals": 0,
+            "salt": "c"
+          },
+          {
+            "seq": 4,
+            "prevHash": "7774762262604cf54ef8ef58b44ba41858e1752deb1699ffa79397310805a46b",
+            "commitment": "a280aca3336ac177da8633fd42fe2379b0569f6cf01fdffaf700175b468a667e",
+            "subject": "aa49caead6ed22b7d2675d8ecd89f0fe1999df842af45d89a25522adaf694f3c",
+            "matchId": "m4",
+            "createdAt": "2026-06-19T11:00:00.000Z",
+            "entryHash": "3126c809a93cf3be92b3f8fdeed326a7af4dc3a9eda773a529b08f98ce696478",
+            "opened": true,
+            "homeGoals": 1,
+            "awayGoals": 1,
+            "salt": "d"
+          }
+        ],
+        {
+          "seq": 4,
+          "headHash": "3126c809a93cf3be92b3f8fdeed326a7af4dc3a9eda773a529b08f98ce696478"
+        }
+      ],
+      "expected": {
+        "status": "consistent",
+        "head": {
+          "seq": 4,
+          "headHash": "3126c809a93cf3be92b3f8fdeed326a7af4dc3a9eda773a529b08f98ce696478"
+        }
+      }
+    },
+    {
+      "fn": "verifyLeagueLedger",
+      "args": [
+        [
+          {
+            "seq": 1,
+            "prevHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "commitment": "0df14644ef8b9fdd979894f637c523dacf268fc7f4e010ec113e8248a18858ac",
+            "subject": "aa49caead6ed22b7d2675d8ecd89f0fe1999df842af45d89a25522adaf694f3c",
+            "leagueId": "L1",
+            "matchId": "m1",
+            "createdAt": "2026-06-19T10:00:00.000Z",
+            "entryHash": "bde7409bbdb8165c2d0cadcf2074fb327bff32ad050c65b9015d208f62838479",
+            "opened": true,
+            "homeGoals": 2,
+            "awayGoals": 1,
+            "salt": "a"
+          },
+          {
+            "seq": 2,
+            "prevHash": "bde7409bbdb8165c2d0cadcf2074fb327bff32ad050c65b9015d208f62838479",
+            "commitment": "822f539eb789c7fc957bb5564b6e118cb45424a2422e1a66b4bcd2393183fae6",
+            "subject": "783fed4fcce6f15c96f2b264da5fb761d50c8d37d42bcfe34cf9f083db4bef8c",
+            "leagueId": "L1",
+            "matchId": "m2",
+            "createdAt": "2026-06-19T11:00:00.000Z",
+            "entryHash": "11334f690838661ef9c33dba3fdf03591d8765ef85979041f8e3160dbd494d5b",
+            "opened": false,
+            "homeGoals": 0,
+            "awayGoals": 0,
+            "salt": "b"
+          }
+        ]
+      ],
+      "expected": {
+        "ok": true,
+        "count": 2,
+        "head": "11334f690838661ef9c33dba3fdf03591d8765ef85979041f8e3160dbd494d5b"
+      }
+    },
+    {
+      "fn": "verifyLeagueLedger",
+      "args": [
+        [
+          {
+            "seq": 1,
+            "prevHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "commitment": "0df14644ef8b9fdd979894f637c523dacf268fc7f4e010ec113e8248a18858ac",
+            "subject": "aa49caead6ed22b7d2675d8ecd89f0fe1999df842af45d89a25522adaf694f3c",
+            "leagueId": "L1",
+            "matchId": "m1",
+            "createdAt": "2026-06-19T10:00:00.000Z",
+            "entryHash": "bde7409bbdb8165c2d0cadcf2074fb327bff32ad050c65b9015d208f62838479",
+            "opened": true,
+            "homeGoals": 9,
+            "awayGoals": 1,
+            "salt": "a"
+          }
+        ]
+      ],
+      "expected": {
+        "ok": false,
+        "count": 1,
+        "head": "0000000000000000000000000000000000000000000000000000000000000000",
+        "failedSeq": 1,
+        "reason": "commitment"
+      }
+    }
+  ]
+}
