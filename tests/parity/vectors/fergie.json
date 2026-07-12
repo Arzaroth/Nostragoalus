@@ -1,0 +1,642 @@
+{
+  "module": "fergie",
+  "cases": [
+    {
+      "fn": "isAddedTime",
+      "args": [
+        "90'+5'"
+      ],
+      "expected": true
+    },
+    {
+      "fn": "isAddedTime",
+      "args": [
+        "66'"
+      ],
+      "expected": false
+    },
+    {
+      "fn": "isAddedTime",
+      "args": [
+        "45'+2'"
+      ],
+      "expected": false
+    },
+    {
+      "fn": "isAddedTime",
+      "args": [
+        null
+      ],
+      "expected": false
+    },
+    {
+      "fn": "computeFergie",
+      "args": [
+        [
+          {
+            "home": "France",
+            "away": "Brazil",
+            "homeCode": "FRA",
+            "awayCode": "BRA",
+            "predId": "me",
+            "pred": {
+              "home": 2,
+              "away": 1
+            },
+            "isJoker": false,
+            "actual": {
+              "home": 3,
+              "away": 2
+            },
+            "forceJoker": false,
+            "isKnockout": false,
+            "field": [
+              {
+                "id": "me",
+                "home": 2,
+                "away": 1,
+                "isJoker": false
+              },
+              {
+                "id": "o1",
+                "home": 1,
+                "away": 0,
+                "isJoker": false
+              },
+              {
+                "id": "o2",
+                "home": 3,
+                "away": 2,
+                "isJoker": false
+              }
+            ],
+            "goals": [
+              {
+                "side": "HOME",
+                "minute": "40'"
+              },
+              {
+                "side": "HOME",
+                "minute": "80'"
+              },
+              {
+                "side": "AWAY",
+                "minute": "88'"
+              },
+              {
+                "side": "HOME",
+                "minute": "90'+9'"
+              },
+              {
+                "side": "AWAY",
+                "minute": "90'+2'"
+              }
+            ]
+          }
+        ],
+        {
+          "base": {
+            "exact": 3,
+            "diff": 2,
+            "outcome": 1,
+            "miss": 0
+          },
+          "jokerMultiplier": 2,
+          "jokerAppliesToBonus": true,
+          "championBonus": 10,
+          "championTiers": [
+            {
+              "maxRank": 8,
+              "points": 10
+            },
+            {
+              "maxRank": 20,
+              "points": 15
+            },
+            {
+              "maxRank": 40,
+              "points": 25
+            },
+            {
+              "maxRank": null,
+              "points": 40
+            }
+          ],
+          "bestScorerBonus": 10,
+          "bonusSource": "NONE",
+          "crowdTiers": [
+            {
+              "maxShareExclusive": 0.01,
+              "bonus": 5
+            },
+            {
+              "maxShareExclusive": 0.05,
+              "bonus": 4
+            },
+            {
+              "maxShareExclusive": 0.12,
+              "bonus": 3
+            },
+            {
+              "maxShareExclusive": 0.22,
+              "bonus": 2
+            },
+            {
+              "maxShareExclusive": 0.35,
+              "bonus": 1
+            }
+          ],
+          "crowdOutcomeTiers": [
+            {
+              "maxShareExclusive": 0.1,
+              "bonus": 2
+            },
+            {
+              "maxShareExclusive": 0.25,
+              "bonus": 1
+            }
+          ],
+          "crowdMatchBasis": "EXACT",
+          "crowdMinDenominator": 5,
+          "oddsTiers": [
+            {
+              "minDecimalOdds": 6,
+              "bonus": 5
+            },
+            {
+              "minDecimalOdds": 3.5,
+              "bonus": 3
+            },
+            {
+              "minDecimalOdds": 2.2,
+              "bonus": 2
+            }
+          ],
+          "oddsAppliesTo": "OUTCOME"
+        }
+      ],
+      "expected": {
+        "matches": 1,
+        "goals": 2,
+        "netPoints": -1,
+        "pointsWon": 2,
+        "pointsLost": 3,
+        "biggestGain": {
+          "home": "France",
+          "away": "Brazil",
+          "homeCode": "FRA",
+          "awayCode": "BRA",
+          "predicted": "2-1",
+          "actual": "3-2",
+          "gained": 2,
+          "lost": 3,
+          "net": -1,
+          "isJoker": false
+        },
+        "biggestLoss": {
+          "home": "France",
+          "away": "Brazil",
+          "homeCode": "FRA",
+          "awayCode": "BRA",
+          "predicted": "2-1",
+          "actual": "3-2",
+          "gained": 2,
+          "lost": 3,
+          "net": -1,
+          "isJoker": false
+        },
+        "breakdown": [
+          {
+            "home": "France",
+            "away": "Brazil",
+            "homeCode": "FRA",
+            "awayCode": "BRA",
+            "predicted": "2-1",
+            "actual": "3-2",
+            "gained": 2,
+            "lost": 3,
+            "net": -1,
+            "isJoker": false
+          }
+        ]
+      }
+    },
+    {
+      "fn": "computeFergie",
+      "args": [
+        [
+          {
+            "home": "France",
+            "away": "Brazil",
+            "homeCode": "FRA",
+            "awayCode": "BRA",
+            "predId": "me",
+            "pred": {
+              "home": 2,
+              "away": 1
+            },
+            "isJoker": false,
+            "actual": {
+              "home": 3,
+              "away": 2
+            },
+            "forceJoker": false,
+            "isKnockout": false,
+            "field": [
+              {
+                "id": "me",
+                "home": 2,
+                "away": 1,
+                "isJoker": false
+              },
+              {
+                "id": "o1",
+                "home": 1,
+                "away": 0,
+                "isJoker": false
+              },
+              {
+                "id": "o2",
+                "home": 3,
+                "away": 2,
+                "isJoker": false
+              }
+            ],
+            "goals": [
+              {
+                "side": "HOME",
+                "minute": "40'"
+              },
+              {
+                "side": "HOME",
+                "minute": "80'"
+              },
+              {
+                "side": "AWAY",
+                "minute": "88'"
+              },
+              {
+                "side": "HOME",
+                "minute": "90'+9'"
+              },
+              {
+                "side": "AWAY",
+                "minute": "90'+2'"
+              }
+            ]
+          }
+        ],
+        {
+          "base": {
+            "exact": 3,
+            "diff": 2,
+            "outcome": 1,
+            "miss": 0
+          },
+          "jokerMultiplier": 2,
+          "jokerAppliesToBonus": true,
+          "championBonus": 10,
+          "championTiers": [
+            {
+              "maxRank": 8,
+              "points": 10
+            },
+            {
+              "maxRank": 20,
+              "points": 15
+            },
+            {
+              "maxRank": 40,
+              "points": 25
+            },
+            {
+              "maxRank": null,
+              "points": 40
+            }
+          ],
+          "bestScorerBonus": 10,
+          "bonusSource": "CROWD",
+          "crowdTiers": [
+            {
+              "maxShareExclusive": 0.01,
+              "bonus": 5
+            },
+            {
+              "maxShareExclusive": 0.05,
+              "bonus": 4
+            },
+            {
+              "maxShareExclusive": 0.12,
+              "bonus": 3
+            },
+            {
+              "maxShareExclusive": 0.22,
+              "bonus": 2
+            },
+            {
+              "maxShareExclusive": 0.35,
+              "bonus": 1
+            }
+          ],
+          "crowdOutcomeTiers": [
+            {
+              "maxShareExclusive": 0.1,
+              "bonus": 2
+            },
+            {
+              "maxShareExclusive": 0.25,
+              "bonus": 1
+            }
+          ],
+          "crowdMatchBasis": "EXACT",
+          "crowdMinDenominator": 1,
+          "oddsTiers": [
+            {
+              "minDecimalOdds": 6,
+              "bonus": 5
+            },
+            {
+              "minDecimalOdds": 3.5,
+              "bonus": 3
+            },
+            {
+              "minDecimalOdds": 2.2,
+              "bonus": 2
+            }
+          ],
+          "oddsAppliesTo": "OUTCOME"
+        }
+      ],
+      "expected": {
+        "matches": 1,
+        "goals": 2,
+        "netPoints": -2,
+        "pointsWon": 2,
+        "pointsLost": 4,
+        "biggestGain": {
+          "home": "France",
+          "away": "Brazil",
+          "homeCode": "FRA",
+          "awayCode": "BRA",
+          "predicted": "2-1",
+          "actual": "3-2",
+          "gained": 2,
+          "lost": 4,
+          "net": -2,
+          "isJoker": false
+        },
+        "biggestLoss": {
+          "home": "France",
+          "away": "Brazil",
+          "homeCode": "FRA",
+          "awayCode": "BRA",
+          "predicted": "2-1",
+          "actual": "3-2",
+          "gained": 2,
+          "lost": 4,
+          "net": -2,
+          "isJoker": false
+        },
+        "breakdown": [
+          {
+            "home": "France",
+            "away": "Brazil",
+            "homeCode": "FRA",
+            "awayCode": "BRA",
+            "predicted": "2-1",
+            "actual": "3-2",
+            "gained": 2,
+            "lost": 4,
+            "net": -2,
+            "isJoker": false
+          }
+        ]
+      }
+    },
+    {
+      "fn": "computeFergie",
+      "args": [
+        [
+          {
+            "home": "France",
+            "away": "Brazil",
+            "homeCode": "FRA",
+            "awayCode": "BRA",
+            "predId": "me",
+            "pred": {
+              "home": 1,
+              "away": 0
+            },
+            "isJoker": false,
+            "actual": {
+              "home": 1,
+              "away": 0
+            },
+            "forceJoker": false,
+            "isKnockout": true,
+            "field": [
+              {
+                "id": "me",
+                "home": 1,
+                "away": 0,
+                "isJoker": false
+              }
+            ],
+            "goals": [
+              {
+                "side": "HOME",
+                "minute": "90'+3'"
+              }
+            ]
+          }
+        ],
+        {
+          "base": {
+            "exact": 3,
+            "diff": 2,
+            "outcome": 1,
+            "miss": 0
+          },
+          "jokerMultiplier": 2,
+          "jokerAppliesToBonus": true,
+          "championBonus": 10,
+          "championTiers": [
+            {
+              "maxRank": 8,
+              "points": 10
+            },
+            {
+              "maxRank": 20,
+              "points": 15
+            },
+            {
+              "maxRank": 40,
+              "points": 25
+            },
+            {
+              "maxRank": null,
+              "points": 40
+            }
+          ],
+          "bestScorerBonus": 10,
+          "bonusSource": "NONE",
+          "crowdTiers": [
+            {
+              "maxShareExclusive": 0.01,
+              "bonus": 5
+            },
+            {
+              "maxShareExclusive": 0.05,
+              "bonus": 4
+            },
+            {
+              "maxShareExclusive": 0.12,
+              "bonus": 3
+            },
+            {
+              "maxShareExclusive": 0.22,
+              "bonus": 2
+            },
+            {
+              "maxShareExclusive": 0.35,
+              "bonus": 1
+            }
+          ],
+          "crowdOutcomeTiers": [
+            {
+              "maxShareExclusive": 0.1,
+              "bonus": 2
+            },
+            {
+              "maxShareExclusive": 0.25,
+              "bonus": 1
+            }
+          ],
+          "crowdMatchBasis": "EXACT",
+          "crowdMinDenominator": 5,
+          "oddsTiers": [
+            {
+              "minDecimalOdds": 6,
+              "bonus": 5
+            },
+            {
+              "minDecimalOdds": 3.5,
+              "bonus": 3
+            },
+            {
+              "minDecimalOdds": 2.2,
+              "bonus": 2
+            }
+          ],
+          "oddsAppliesTo": "OUTCOME"
+        }
+      ],
+      "expected": {
+        "matches": 1,
+        "goals": 1,
+        "netPoints": 0,
+        "pointsWon": 0,
+        "pointsLost": 0,
+        "biggestGain": null,
+        "biggestLoss": null,
+        "breakdown": []
+      }
+    },
+    {
+      "fn": "computeFergie",
+      "args": [
+        [],
+        {
+          "base": {
+            "exact": 3,
+            "diff": 2,
+            "outcome": 1,
+            "miss": 0
+          },
+          "jokerMultiplier": 2,
+          "jokerAppliesToBonus": true,
+          "championBonus": 10,
+          "championTiers": [
+            {
+              "maxRank": 8,
+              "points": 10
+            },
+            {
+              "maxRank": 20,
+              "points": 15
+            },
+            {
+              "maxRank": 40,
+              "points": 25
+            },
+            {
+              "maxRank": null,
+              "points": 40
+            }
+          ],
+          "bestScorerBonus": 10,
+          "bonusSource": "NONE",
+          "crowdTiers": [
+            {
+              "maxShareExclusive": 0.01,
+              "bonus": 5
+            },
+            {
+              "maxShareExclusive": 0.05,
+              "bonus": 4
+            },
+            {
+              "maxShareExclusive": 0.12,
+              "bonus": 3
+            },
+            {
+              "maxShareExclusive": 0.22,
+              "bonus": 2
+            },
+            {
+              "maxShareExclusive": 0.35,
+              "bonus": 1
+            }
+          ],
+          "crowdOutcomeTiers": [
+            {
+              "maxShareExclusive": 0.1,
+              "bonus": 2
+            },
+            {
+              "maxShareExclusive": 0.25,
+              "bonus": 1
+            }
+          ],
+          "crowdMatchBasis": "EXACT",
+          "crowdMinDenominator": 5,
+          "oddsTiers": [
+            {
+              "minDecimalOdds": 6,
+              "bonus": 5
+            },
+            {
+              "minDecimalOdds": 3.5,
+              "bonus": 3
+            },
+            {
+              "minDecimalOdds": 2.2,
+              "bonus": 2
+            }
+          ],
+          "oddsAppliesTo": "OUTCOME"
+        }
+      ],
+      "expected": {
+        "matches": 0,
+        "goals": 0,
+        "netPoints": 0,
+        "pointsWon": 0,
+        "pointsLost": 0,
+        "biggestGain": null,
+        "biggestLoss": null,
+        "breakdown": []
+      }
+    }
+  ]
+}

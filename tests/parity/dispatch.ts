@@ -4,6 +4,10 @@
 // Dart reimplementation (a mobile client) - the frozen `expected` is the target
 // both stacks must hit, and the TS replay here is the drift alarm on this side.
 import * as e2ee from '../../app/utils/e2ee'
+import * as fergie from '../../server/utils/analytics/fergie'
+import * as consensus from '../../server/utils/bot/service'
+import * as scoring from '../../server/utils/scoring/engine'
+import * as standings from '../../server/utils/stats/standings'
 import * as commitment from '#shared/commitment'
 import * as kt from '#shared/key-transparency'
 
@@ -34,6 +38,22 @@ const registry: Record<string, Record<string, (...args: never[]) => unknown>> = 
     decryptMessage: e2ee.decryptMessage,
     decryptBytes: e2ee.decryptBytes,
     unwrapPrivateKeyWithRecovery: e2ee.unwrapPrivateKeyWithRecovery,
+  },
+  scoring: {
+    scorePredictions: scoring.scorePredictions,
+    computeBonus: scoring.computeBonus,
+    buildHistogram: scoring.buildHistogram,
+    scoreSyntheticPrediction: scoring.scoreSyntheticPrediction,
+  },
+  fergie: {
+    computeFergie: fergie.computeFergie,
+    isAddedTime: fergie.isAddedTime,
+  },
+  standings: {
+    computeGroupStandings: standings.computeGroupStandings,
+  },
+  consensus: {
+    computeConsensus: consensus.computeConsensus,
   },
 }
 
