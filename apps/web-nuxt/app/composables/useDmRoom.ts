@@ -11,6 +11,7 @@ import { chatKeyPins, isKeyTrusted } from '~/composables/useChatKeyPins'
 import { emptyReactionTotals, type ReactionEmoji, type ReactionTotals } from '#shared/reactions'
 import type { ChatAttachmentDTO, ChatMediaItemDTO, ChatMessageDTO, ChatModerationState } from '#shared/types/chat'
 import type { DmThreadDetailDTO } from '#shared/types/dm'
+import type { CallLogEntry } from '#shared/types/voice'
 import type { DecryptedMessage, PendingImage, ReportedMessage } from '~/composables/useLeagueChat'
 
 // A single DM thread as a chat "room", exposing the SAME surface as useLeagueChat
@@ -343,9 +344,22 @@ export function useDmRoom(threadId: MaybeRefOrGetter<string>) {
   const typingUserIds = ref<string[]>([])
   function sendTyping(): void {}
 
+  // Call lines for the thread (started / ended / missed), interleaved into the
+  // timeline by ChatPanel. Refetched on each voice:log push for this thread.
+  const callLog = ref<CallLogEntry[]>([])
+  async function loadCallLog(): Promise<void> {
+    try {
+      const res = await $fetch<{ calls: CallLogEntry[] }>('/api/voice/calls', { query: { dmThreadId: tid() } })
+      callLog.value = res.calls
+    } catch {
+      // The call-line strip is optional decoration; the chat works without it.
+    }
+  }
+
   useReconnectingSocket({
     onOpen: () => {
       void load({ background: true })
+      void loadCallLog()
     },
     onMessage: (data) => {
       const msg = data as {
@@ -359,6 +373,10 @@ export function useDmRoom(threadId: MaybeRefOrGetter<string>) {
         totals?: ReactionTotals
       }
       if (!msg.type || msg.threadId !== tid()) return
+      if (msg.type === 'voice:log') {
+        void loadCallLog()
+        return
+      }
       if (msg.type === 'dm:reaction') {
         if (msg.messageId && msg.totals) patchMessage(msg.messageId, { reactions: msg.totals })
         return
@@ -438,6 +456,7 @@ export function useDmRoom(threadId: MaybeRefOrGetter<string>) {
     typingUserIds,
     sendTyping,
     messages: visibleMessages,
+    callLog,
     memberKeys,
     muted,
     toggleMute,

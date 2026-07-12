@@ -12,6 +12,7 @@ import { useQueryClient } from '@tanstack/vue-query'
 import { chatKeyPins, isKeyTrusted } from '~/composables/useChatKeyPins'
 import { emptyReactionTotals, type ReactionEmoji, type ReactionTotals } from '#shared/reactions'
 import type { ChatAttachmentDTO, ChatMediaItemDTO, ChatMessageDTO, ChatModerationState } from '#shared/types/chat'
+import type { CallLogEntry } from '#shared/types/voice'
 
 // A pre-compressed image waiting to be sent (the composer buffers these before the
 // user hits send, and edits append them); bytes are the webp the composable seals.
@@ -642,11 +643,26 @@ export function useLeagueChat(
     typingTimers.clear()
   })
 
+  // Call lines for this room (started / ended / missed), interleaved into the
+  // timeline by ChatPanel. Refetched on each voice:log push for this room.
+  const callLog = ref<CallLogEntry[]>([])
+  async function loadCallLog(): Promise<void> {
+    try {
+      const res = await $fetch<{ calls: CallLogEntry[] }>('/api/voice/calls', {
+        query: { leagueId: lid(), matchId: mid() ?? undefined },
+      })
+      callLog.value = res.calls
+    } catch {
+      // The call-line strip is optional decoration; the chat works without it.
+    }
+  }
+
   const socket = useReconnectingSocket({
     onOpen: () => {
       // A reconnect / tab refocus: refresh in the background so the open message
       // list and the reader's scroll position are not thrown away.
       void load({ background: true })
+      void loadCallLog()
     },
     onMessage: (data) => {
       const msg = data as { type?: string; leagueId?: string; message?: ChatMessageDTO }
@@ -666,6 +682,13 @@ export function useLeagueChat(
         return
       }
       if (msg.leagueId !== lid()) return
+      // The room's call log changed (call opened / ended / missed): refetch the
+      // call lines. Room-scoped: the frame's matchId must match this room's.
+      if (msg.type === 'voice:log') {
+        const vm = data as { matchId?: string | null }
+        if ((vm.matchId ?? null) === mid()) void loadCallLog()
+        return
+      }
       // A member is missing the current key (league-scoped, not per-room): if we
       // hold it, seal it for whoever still needs it. Non-keyholders no-op.
       if (msg.type === 'chat:rekey-request') {
@@ -794,6 +817,7 @@ export function useLeagueChat(
     typingUserIds,
     sendTyping,
     messages: visibleMessages,
+    callLog,
     memberKeys,
     muted,
     toggleMute,
