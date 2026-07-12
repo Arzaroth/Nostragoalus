@@ -4,7 +4,17 @@ import { createTestDb } from '../../../tests/db'
 import { addLeagueMember, makeLeague, makeMatch, makeUser, seedCompetition } from '../../../tests/factories'
 import { dmThread, league, round, userNotification, voiceCall } from '../../../db/schema'
 import { orderPair } from '../dm/service'
-import { buildIceServers, recordMissedCall, resolveVoiceScope, turnCredential } from './service'
+import {
+  addCallParticipant,
+  buildIceServers,
+  closeCallLog,
+  listCallLog,
+  openCallLog,
+  recordMissedCall,
+  resolveVoiceScope,
+  scopeAudience,
+  turnCredential,
+} from './service'
 
 async function makeThread(db: Awaited<ReturnType<typeof createTestDb>>['db'], a: string, b: string): Promise<string> {
   const [lo, hi] = orderPair(a, b)
@@ -207,5 +217,52 @@ describe('recordMissedCall', () => {
     expect(notifs[0].data).toMatchObject({ type: 'VOICE_MISSED', leagueId, leagueName: 'Reds', competitionSlug: 'wc', threadId: null })
     const calls = await db.select().from(voiceCall).where(eq(voiceCall.leagueId, leagueId))
     expect(calls[0].status).toBe('MISSED')
+  })
+})
+
+describe('call log service', () => {
+  it('scopeAudience: the DM pair, [] for a vanished thread, league members', async () => {
+    const { db } = await createTestDb()
+    await makeUser(db, 'alice')
+    await makeUser(db, 'bob')
+    const threadId = await makeThread(db, 'alice', 'bob')
+    expect((await scopeAudience(db, { kind: 'dm', threadId })).sort()).toEqual(['alice', 'bob'])
+    expect(await scopeAudience(db, { kind: 'dm', threadId: 'nope' })).toEqual([])
+
+    const competitionId = await seedCompetition(db)
+    await makeUser(db, 'owner')
+    const leagueId = await makeLeague(db, { competitionId, ownerId: 'owner', name: 'Reds' })
+    expect(await scopeAudience(db, { kind: 'league', leagueId, matchId: null })).toContain('owner')
+  })
+
+  it('addCallParticipant appends once and ignores duplicates', async () => {
+    const { db } = await createTestDb()
+    await makeUser(db, 'alice')
+    await makeUser(db, 'bob')
+    const threadId = await makeThread(db, 'alice', 'bob')
+    const callId = await openCallLog(db, { kind: 'dm', threadId }, 'alice', ['alice'])
+    await addCallParticipant(db, callId, 'bob')
+    await addCallParticipant(db, callId, 'bob')
+    const [row] = await db.select().from(voiceCall).where(eq(voiceCall.id, callId))
+    expect(row.participantIds).toEqual(['alice', 'bob'])
+  })
+
+  it('listCallLog scopes a match room apart from the league-global room', async () => {
+    const { db } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    await makeUser(db, 'owner')
+    const leagueId = await makeLeague(db, { competitionId, ownerId: 'owner', name: 'Reds' })
+    const roundId = await firstRound(db, competitionId)
+    const matchId = await makeMatch(db, { competitionId, roundId, kickoffTime: new Date() })
+    const globalId = await openCallLog(db, { kind: 'league', leagueId, leagueName: 'Reds', competitionSlug: 'wc', matchId: null }, 'owner', ['owner'])
+    const matchCallId = await openCallLog(db, { kind: 'league', leagueId, leagueName: 'Reds', competitionSlug: 'wc', matchId }, 'owner', ['owner'])
+    await closeCallLog(db, matchCallId)
+
+    const globalCalls = await listCallLog(db, { kind: 'league', leagueId, matchId: null })
+    expect(globalCalls.map((c) => c.id)).toEqual([globalId])
+    const matchCalls = await listCallLog(db, { kind: 'league', leagueId, matchId })
+    expect(matchCalls.map((c) => c.id)).toEqual([matchCallId])
+    expect(matchCalls[0]!.status).toBe('ENDED')
+    expect(matchCalls[0]!.endedAt).not.toBeNull()
   })
 })

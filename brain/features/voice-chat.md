@@ -12,12 +12,22 @@ Back to the catalog: [index.md](index.md). The transport it rides:
 - **DM:** a Call button in the DM chat header. Pressing it rings the other person;
   they get an app-wide incoming-call dialog (Accept / Decline). Unanswered or
   offline -> a missed-call notification (bell + web push, the new "Calls"
-  category). While connected, an in-call bar (mute, hang-up, a timer) floats above
-  the chat dock.
+  category). While connected, an in-call bar (mute, audio settings, hang-up, a
+  timer) floats above the chat dock. Either side hanging up ends the call for
+  both.
 - **League:** a Join-voice button in the league chat header, carrying a live
-  "N in voice" badge so members see a call is happening without being in it.
-  Inside the call, an Invite control rings chosen members. The room is ephemeral -
-  it exists while at least one person is in it.
+  "N in voice" badge (its tooltip names who is in) so members see a call is
+  happening without being in it. Inside the call, an Invite control rings chosen
+  members. The room is ephemeral - it exists while at least one person is in it.
+- The in-call bar lists the other participants (names ride the roster frames),
+  lights a speaker's name while they talk, and shows a 3-bar meter for the local
+  mic. Talking while muted pops a throttled "you're muted" toast.
+- An audio-settings dialog picks the input/output device (persisted in
+  localStorage, output only where `setSinkId` exists) and toggles noise
+  suppression; echo cancellation + auto gain are always requested.
+- Chat timelines (DM + league) interleave **call lines** - started / ended (with
+  duration) / missed - from the `voice_call` log, refreshed live by a `voice:log`
+  push.
 - Audio only (no video/screen share in v1).
 
 ## How it works
@@ -46,8 +56,13 @@ coverage gate), with the send primitives in `apps/web-nuxt/server/utils/live/hub
 - `voice:invite` - rings members; an offline target is recorded as a missed call
   immediately. `voice:decline` / `voice:cancel` - clear the other side's UI;
   cancel of an unanswered ring records the miss.
-- `voice:roster` (participants) and `voice:presence` (a league room's count to
-  every league member, for the badge) go back out.
+- `voice:roster` (participant ids + display names) and `voice:presence` (a league
+  room's count + names to every league member, for the badge) go back out.
+- **DM teardown:** a DM is a two-party call, so one side leaving force-drops the
+  remainer and sends them `voice:ended` - no zombie "in-call" state. League rooms
+  just shrink.
+- `voice:log` - fanned to the scope's audience whenever the call log changes
+  (opened / ended / missed) so open chats refetch their call lines.
 
 **One endpoint per user per room:** `voice-rooms.ts` keeps a single socket per user
 in a room, so a second tab joining takes the call over (the old tab is evicted) -
@@ -64,9 +79,17 @@ and unit-tested in `apps/web-nuxt/app/utils/voice.ts`:
   peer, the lexicographically smaller id offers (`shouldOffer`) while the other
   waits - so exactly one side of each pair offers, and late joiners connect the
   same way (no glare, no full perfect-negotiation needed for audio-only).
-- Mic via `getUserMedia` (a denial surfaces an error toast); remote streams are
-  keyed by peer for the hidden `<audio>` elements (`VoiceAudio.vue`). Mute toggles
-  the local track. On a socket reconnect it re-joins so the room heals.
+- Mic via `getUserMedia` with `buildAudioConstraints` (echo cancellation + auto
+  gain always, noise suppression toggleable, chosen device pinned `exact` with a
+  fallback to default if it vanished); a denial surfaces an error toast. Remote
+  streams are keyed by peer for the hidden `<audio>` elements (`VoiceAudio.vue`,
+  which also applies the chosen `sinkId`). Mute toggles the local track. A device
+  switch re-acquires and `replaceTrack`s into every peer's sender (no
+  renegotiation). On a socket reconnect it re-joins so the room heals.
+- Level metering: one `AudioContext`, an `AnalyserNode` per stream. The local
+  analyser taps a CLONE of the mic track kept enabled while muted - that is what
+  detects talking-while-muted (`createMutedTalkingTracker`, pure + tested in
+  `apps/web-nuxt/app/utils/voice.ts` with `levelFromSamples`).
 
 ### ICE / TURN
 
@@ -75,12 +98,17 @@ The browser fetches `GET /api/voice/ice-servers` for STUN (always) plus TURN whe
 per-request credential. Without TURN the app is STUN-only and a call behind
 symmetric NAT will fail (the UI surfaces the failure).
 
-### Persistence
+### Persistence (the call log)
 
-Deliberately thin. `voice_call` records only a **missed** call (for the
-notification + future call history); the live call's roster and signaling are
-purely in-process. The `VOICE_MISSED` notification carries caller + room context
-(no media), deep-linking to the DM thread or league room.
+`voice_call` now records full lifecycles, not just misses: a league room opens an
+ONGOING row on first join, a DM once both parties connect (an unanswered ring
+stays the missed-call path); participants accumulate in `participantIds` and the
+row closes ENDED (with `endedAt`) when the room empties. The roomKey->row map is
+in-process (`callLogByRoom` in `live/voice.ts`), same lifetime as the rooms.
+`GET /api/voice/calls` serves a scope's recent rows (authz = `resolveVoiceScope`);
+the chat composables fetch it and `ChatPanel.vue` interleaves the lines into the
+timeline by `startedAt`. The `VOICE_MISSED` notification carries caller + room
+context (no media), deep-linking to the DM thread or league room.
 
 ## Scope / limits
 
@@ -90,14 +118,16 @@ purely in-process. The `VOICE_MISSED` notification carries caller + room context
   (deferred, TODO).
 - Deferred to TODO: signing the SDP fingerprint to close a server-side SDP MITM
   (passive listening is already blocked by SRTP), ICE-restart to survive a socket
-  flap mid-call, live speaking indicators, a presence snapshot on chat open (the
-  badge is live from the next join/leave), video.
+  flap mid-call, a presence snapshot on chat open (the badge is live from the
+  next join/leave), video. A server restart mid-call orphans the ONGOING call-log
+  row (accepted: same in-process lifetime as the rooms).
 
 ## Sources
 
 - Server: `apps/web-nuxt/server/utils/voice/service.ts`, `apps/web-nuxt/server/utils/live/voice.ts`,
   `apps/web-nuxt/server/utils/live/voice-rooms.ts`, `apps/web-nuxt/server/utils/live/hub.ts` (voice
-  primitives), `apps/web-nuxt/server/routes/_ws.ts`, `apps/web-nuxt/server/api/voice/ice-servers.get.ts`
+  primitives), `apps/web-nuxt/server/routes/_ws.ts`, `apps/web-nuxt/server/api/voice/ice-servers.get.ts`,
+  `apps/web-nuxt/server/api/voice/calls.get.ts`
 - Client: `apps/web-nuxt/app/composables/useVoiceCall.ts`, `apps/web-nuxt/app/utils/voice.ts`,
   `apps/web-nuxt/app/components/VoiceCallButton.vue`, `VoiceCallOverlay.client.vue`,
   `VoiceAudio.vue`
