@@ -463,7 +463,7 @@ effort buckets; order within a bucket is not priority.
         header-bell `CHAT_MENTION`: the mentioned ids ride as a plaintext sidecar
         (validated against real members, sender dropped), and the alert carries
         room context only, never the E2EE message text.
-- [ ] **Voice chat** (IN_PROGRESS, worktree feat/voice-chat): audio calls in the
+- [x] **Voice chat** (shipped in 3.0.0): audio calls in the
       chat surface - 1:1 from a DM, and small group rooms in a league (optionally
       match-scoped, "watch together"). Decisions (locked):
       - **Peer-to-peer WebRTC mesh, not an SFU**, so media stays DTLS-SRTP
