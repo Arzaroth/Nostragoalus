@@ -64,7 +64,8 @@ mockNuxtImport('useVoiceCall', () => () => ({
   toggleMute,
 }))
 mockNuxtImport('useLeagueDetail', () => () => ({ data: ref({ members: [] }) }))
-mockNuxtImport('useToast', () => () => ({ add: vi.fn() }))
+const toastAdd = vi.fn()
+mockNuxtImport('useToast', () => () => ({ add: toastAdd }))
 mockNuxtImport('useAuth', () => () => ({ session: ref({ data: { user: { id: 'me' } } }) }))
 
 beforeEach(() => {
@@ -176,5 +177,34 @@ describe('VoiceCallOverlay', () => {
     const w = await mountSuspended(VoiceCallOverlay)
     const labels = w.findAll('button').map((b) => b.attributes('aria-label'))
     expect(labels).toContain('Invite to call')
+  })
+
+  it('nudges when talking while muted, but not on mount', async () => {
+    state.value = 'in-call'
+    activeScope.value = { kind: 'dm', threadId: 't1' }
+    mutedTalkingAt.value = 0
+    const w = await mountSuspended(VoiceCallOverlay)
+    expect(toastAdd).not.toHaveBeenCalled()
+
+    mutedTalkingAt.value = Date.now()
+    await nextTick()
+    expect(toastAdd).toHaveBeenCalledWith(expect.objectContaining({ summary: "You're muted" }))
+    w.unmount()
+  })
+
+  it('starts the clock immediately when mounted mid-call', async () => {
+    vi.useFakeTimers()
+    try {
+      state.value = 'in-call'
+      activeScope.value = { kind: 'dm', threadId: 't1' }
+      const w = await mountSuspended(VoiceCallOverlay)
+      await vi.advanceTimersByTimeAsync(1000)
+      await nextTick()
+      expect(w.text()).toContain('0:01')
+      expect(w.text()).not.toContain('0:00')
+      w.unmount()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

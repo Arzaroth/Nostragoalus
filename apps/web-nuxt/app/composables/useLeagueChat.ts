@@ -12,7 +12,6 @@ import { useQueryClient } from '@tanstack/vue-query'
 import { chatKeyPins, isKeyTrusted } from '~/composables/useChatKeyPins'
 import { emptyReactionTotals, type ReactionEmoji, type ReactionTotals } from '#shared/reactions'
 import type { ChatAttachmentDTO, ChatMediaItemDTO, ChatMessageDTO, ChatModerationState } from '#shared/types/chat'
-import type { CallLogEntry } from '#shared/types/voice'
 
 // A pre-compressed image waiting to be sent (the composer buffers these before the
 // user hits send, and edits append them); bytes are the webp the composable seals.
@@ -643,19 +642,11 @@ export function useLeagueChat(
     typingTimers.clear()
   })
 
-  // Call lines for this room (started / ended / missed), interleaved into the
-  // timeline by ChatPanel. Refetched on each voice:log push for this room.
-  const callLog = ref<CallLogEntry[]>([])
-  async function loadCallLog(): Promise<void> {
-    try {
-      const res = await $fetch<{ calls: CallLogEntry[] }>('/api/voice/calls', {
-        query: { leagueId: lid(), matchId: mid() ?? undefined },
-      })
-      callLog.value = res.calls
-    } catch {
-      // The call-line strip is optional decoration; the chat works without it.
-    }
-  }
+  // Call lines for this room, refetched on each voice:log push for this room.
+  const { callLog, loadCallLog, resetCallLog } = createCallLog(() => ({
+    leagueId: lid(),
+    matchId: mid() ?? undefined,
+  }))
 
   const socket = useReconnectingSocket({
     onOpen: () => {
@@ -791,7 +782,10 @@ export function useLeagueChat(
     () => [toValue(leagueId), toValue(matchId)],
     () => {
       closeThread()
+      // The call lines belong to the room we're leaving: clear + refetch.
+      resetCallLog()
       void load()
+      void loadCallLog()
     },
     { immediate: true },
   )

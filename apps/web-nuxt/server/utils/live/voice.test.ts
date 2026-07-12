@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { and, eq } from 'drizzle-orm'
 import { createTestDb } from '../../../tests/db'
-import { addLeagueMember, makeLeague, makeUser, seedCompetition } from '../../../tests/factories'
-import { dmThread, league, userNotification, voiceCall } from '../../../db/schema'
+import { addLeagueMember, makeLeague, makeMatch, makeUser, seedCompetition } from '../../../tests/factories'
+import { dmThread, league, round, userNotification, voiceCall } from '../../../db/schema'
 import { orderPair } from '../dm/service'
 import { addLiveSubscriber, removeLiveSubscriber, type LiveSubscriber } from './hub'
 import { __resetVoiceRooms } from './voice-rooms'
-import { listCallLog } from '../voice/service'
+import { listCallLog, openCallLog } from '../voice/service'
 import {
   __resetVoiceCallLog,
   handleVoiceCancel,
@@ -17,12 +17,20 @@ import {
   handleVoiceSignal,
 } from './voice'
 
+// Passthrough mock: the call-log race tests stretch or fail a single open to pin
+// the interleaving deterministically; everything else hits the real service.
+vi.mock('../voice/service', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../voice/service')>()
+  return { ...actual, openCallLog: vi.fn(actual.openCallLog) }
+})
+
 const live: LiveSubscriber[] = []
 afterEach(() => {
   for (const s of live) removeLiveSubscriber(s)
   live.length = 0
   __resetVoiceRooms()
   __resetVoiceCallLog()
+  vi.mocked(openCallLog).mockClear()
 })
 
 function connect(userId: string): LiveSubscriber & { send: ReturnType<typeof vi.fn> } {
@@ -58,7 +66,7 @@ async function leagueFixture() {
   const leagueId = await makeLeague(db, { competitionId, ownerId: 'owner', name: 'Reds' })
   await addLeagueMember(db, leagueId, 'member')
   await db.update(league).set({ chatEnabled: true }).where(eq(league.id, leagueId))
-  return { db, leagueId, roomKey: `league:${leagueId}`, scope: { kind: 'league' as const, leagueId, matchId: null } }
+  return { db, competitionId, leagueId, roomKey: `league:${leagueId}`, scope: { kind: 'league' as const, leagueId, matchId: null } }
 }
 
 describe('voice signaling glue', () => {
@@ -353,5 +361,74 @@ describe('call log lifecycle', () => {
     const calls = await listCallLog(db, scope)
     expect(calls.at(-1)).toMatchObject({ status: 'MISSED', initiatorId: 'alice' })
     expect(framesOfType(a, 'voice:log').at(-1)).toMatchObject({ threadId })
+  })
+
+  it('two concurrent joins open exactly one ONGOING row', async () => {
+    const { db, leagueId, scope } = await leagueFixture()
+    const actual = await vi.importActual<typeof import('../voice/service')>('../voice/service')
+    // Hold the first open mid-insert so the second join arrives while it is pending.
+    vi.mocked(openCallLog).mockImplementationOnce(async (...args) => {
+      await new Promise((r) => setTimeout(r, 25))
+      return actual.openCallLog(...args)
+    })
+    const owner = connect('owner')
+    const member = connect('member')
+    await Promise.all([handleVoiceJoin(db, owner, scope), handleVoiceJoin(db, member, scope)])
+    const rows = await db.select().from(voiceCall).where(eq(voiceCall.leagueId, leagueId))
+    expect(rows).toHaveLength(1)
+    expect(rows[0]!.status).toBe('ONGOING')
+    expect([...rows[0]!.participantIds].sort()).toEqual(['member', 'owner'])
+  })
+
+  it('a failed open logs nothing (even for a concurrent second join) and a later join retries', async () => {
+    const { db, leagueId, scope } = await leagueFixture()
+    vi.mocked(openCallLog).mockImplementationOnce(async () => {
+      await new Promise((r) => setTimeout(r, 20))
+      throw new Error('db down')
+    })
+    const owner = connect('owner')
+    const member = connect('member')
+    // The second join awaits the first's (failing) open instead of opening its own.
+    await Promise.all([handleVoiceJoin(db, owner, scope), handleVoiceJoin(db, member, scope)])
+    expect(await db.select().from(voiceCall).where(eq(voiceCall.leagueId, leagueId))).toHaveLength(0)
+    // The failure freed the slot: emptying the room then rejoining opens cleanly.
+    await handleVoiceLeave(db, owner)
+    await handleVoiceLeave(db, member)
+    const owner2 = connect('owner')
+    await handleVoiceJoin(db, owner2, scope)
+    const rows = await db.select().from(voiceCall).where(eq(voiceCall.leagueId, leagueId))
+    expect(rows).toHaveLength(1)
+    expect(rows[0]!.status).toBe('ONGOING')
+  })
+
+  it('a leave racing a failed open closes nothing and leaves no row', async () => {
+    const { db, leagueId, scope } = await leagueFixture()
+    vi.mocked(openCallLog).mockImplementationOnce(async () => {
+      await new Promise((r) => setTimeout(r, 30))
+      throw new Error('db down')
+    })
+    const owner = connect('owner')
+    const joining = handleVoiceJoin(db, owner, scope)
+    await vi.waitFor(() => expect(openCallLog).toHaveBeenCalled())
+    // The room empties while the open is still pending: the close path awaits the
+    // pending open, sees it never wrote a row, and closes nothing.
+    await handleVoiceLeave(db, owner)
+    await joining
+    expect(await db.select().from(voiceCall).where(eq(voiceCall.leagueId, leagueId))).toHaveLength(0)
+  })
+
+  it('hopping rooms closes the prior room log once it empties; a same-room rejoin does not', async () => {
+    const { db, competitionId, leagueId, scope } = await leagueFixture()
+    const roundId = (await db.select({ id: round.id }).from(round).where(eq(round.competitionId, competitionId)).limit(1))[0]!.id
+    const matchId = await makeMatch(db, { competitionId, roundId, kickoffTime: new Date() })
+    const matchScope = { kind: 'league' as const, leagueId, matchId }
+    const owner = connect('owner')
+    await handleVoiceJoin(db, owner, scope)
+    await handleVoiceJoin(db, owner, matchScope)
+    expect((await listCallLog(db, scope))[0]).toMatchObject({ status: 'ENDED' })
+    expect((await listCallLog(db, matchScope))[0]).toMatchObject({ status: 'ONGOING' })
+    // Rejoining the room the socket is already in is not a hop: its log stays open.
+    await handleVoiceJoin(db, owner, matchScope)
+    expect((await listCallLog(db, matchScope))[0]).toMatchObject({ status: 'ONGOING' })
   })
 })

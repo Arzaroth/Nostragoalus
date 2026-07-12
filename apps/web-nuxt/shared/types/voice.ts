@@ -155,7 +155,9 @@ export interface CallLogEntry {
   id: string
   status: 'ONGOING' | 'ENDED' | 'MISSED'
   initiatorId: string | null
-  initiatorName: string
+  // Null when the initiator's account was deleted; the client renders a localized
+  // fallback name.
+  initiatorName: string | null
   participantCount: number
   startedAt: string
   endedAt: string | null

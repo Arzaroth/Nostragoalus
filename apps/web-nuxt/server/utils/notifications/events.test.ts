@@ -16,6 +16,8 @@ import {
 } from '../../../db/schema'
 import type { NotificationData } from '#shared/types/notifications'
 import {
+  displayName,
+  displayNames,
   notifyAchievementUnlocked,
   notifyBestScorerResult,
   notifyChampionResult,
@@ -48,6 +50,23 @@ async function setup() {
 function notifsFor(db: AppDatabase, userId: string) {
   return db.select().from(userNotification).where(eq(userNotification.userId, userId))
 }
+
+describe('displayName / displayNames', () => {
+  it('prefers the profile display name and falls back to the account name', async () => {
+    const { db, owner, member } = await setup()
+    await db.insert(userProfile).values({ userId: owner, displayName: 'Boss' })
+    expect(await displayName(db, owner)).toBe('Boss')
+    expect(await displayName(db, member)).toBe('member')
+    expect(await displayNames(db, [owner, member])).toEqual({ owner: 'Boss', member: 'member' })
+  })
+
+  it('falls back to Someone for an unknown user; the bulk map just omits it', async () => {
+    const { db } = await setup()
+    expect(await displayName(db, 'ghost')).toBe('Someone')
+    expect(await displayNames(db, ['ghost'])).toEqual({})
+    expect(await displayNames(db, [])).toEqual({})
+  })
+})
 
 describe('notifyLeagueJoin', () => {
   it('notifies owner and moderators, not plain members or the joiner', async () => {

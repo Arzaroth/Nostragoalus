@@ -36,21 +36,26 @@ const METER_BARS = [
 const remoteEntries = computed(() => Object.entries(remoteStreams.value))
 const isLeague = computed(() => activeScope.value?.kind === 'league')
 
-// Call timer: start counting when the call connects.
+// Call timer: derived from a wall-clock start (a per-tick counter drifts far
+// behind real time under background-tab interval throttling). Immediate so a
+// remount mid-call starts the clock instead of freezing at 0:00.
 const elapsed = ref(0)
 let timer: ReturnType<typeof setInterval> | undefined
+let startedAt = 0
 watch(
   () => state.value,
   (s) => {
     if (s === 'in-call' && !timer) {
+      startedAt = Date.now()
       elapsed.value = 0
-      timer = setInterval(() => (elapsed.value += 1), 1000)
+      timer = setInterval(() => (elapsed.value = Math.round((Date.now() - startedAt) / 1000)), 1000)
     } else if (s === 'idle') {
       clearInterval(timer)
       timer = undefined
       elapsed.value = 0
     }
   },
+  { immediate: true },
 )
 onBeforeUnmount(() => clearInterval(timer))
 const clock = computed(() => formatCallDuration(elapsed.value))

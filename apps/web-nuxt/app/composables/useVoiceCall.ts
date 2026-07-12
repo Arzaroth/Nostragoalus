@@ -108,19 +108,34 @@ function start(): void {
     // "you're muted" nudge.
     let audioCtx: AudioContext | null = null
     let monitorTrack: MediaStreamTrack | null = null
-    const analysers = new Map<string, AnalyserNode>()
+    const analysers = new Map<string, { analyser: AnalyserNode; source: MediaStreamAudioSourceNode }>()
     let meterTimer: ReturnType<typeof setInterval> | undefined
     const mutedTracker = createMutedTalkingTracker()
     const METER_INTERVAL_MS = 150
 
+    // Disconnect the entry's source node too - replacing an entry without it
+    // accumulates orphaned nodes on the shared AudioContext.
+    function detachAnalyser(key: string): void {
+      const entry = analysers.get(key)
+      if (!entry) return
+      try {
+        entry.source.disconnect()
+      } catch {
+        // The context may already be closed; nothing left to release.
+      }
+      analysers.delete(key)
+    }
+
     function attachAnalyser(key: string, stream: MediaStream): void {
       try {
+        detachAnalyser(key)
         audioCtx ??= new AudioContext()
-        void audioCtx.resume()
+        void audioCtx.resume().catch(() => {})
         const analyser = audioCtx.createAnalyser()
         analyser.fftSize = 256
-        audioCtx.createMediaStreamSource(stream).connect(analyser)
-        analysers.set(key, analyser)
+        const source = audioCtx.createMediaStreamSource(stream)
+        source.connect(analyser)
+        analysers.set(key, { analyser, source })
         meterTimer ??= setInterval(meterTick, METER_INTERVAL_MS)
       } catch {
         // Metering is best-effort cosmetics; a failed AudioContext never blocks the call.
@@ -128,9 +143,12 @@ function start(): void {
     }
 
     function meterTick(): void {
+      // Autoplay policy can leave the context suspended after a gestureless
+      // rejoin; keep nudging it or every meter reads 0 forever.
+      if (audioCtx && audioCtx.state === 'suspended') void audioCtx.resume().catch(() => {})
       const buf = new Uint8Array(256)
       const nextSpeaking: Record<string, boolean> = {}
-      for (const [key, analyser] of analysers) {
+      for (const [key, { analyser }] of analysers) {
         analyser.getByteTimeDomainData(buf)
         const level = levelFromSamples(buf)
         if (key === 'local') {
@@ -195,9 +213,13 @@ function start(): void {
         })
       } catch (err) {
         // A remembered device may be unplugged; fall back to the default once.
+        // Only forget the saved preference when the device itself is gone - a
+        // permission or busy-hardware error should not erase the user's choice.
         if (!inputDeviceId.value) throw err
-        inputDeviceId.value = null
-        localStorage.removeItem(PREF_INPUT)
+        if (isDeviceGoneError((err as DOMException | null)?.name)) {
+          inputDeviceId.value = null
+          localStorage.removeItem(PREF_INPUT)
+        }
         return await navigator.mediaDevices.getUserMedia({
           audio: buildAudioConstraints(null, noiseSuppression.value),
           video: false,
@@ -256,21 +278,25 @@ function start(): void {
         return
       }
       const newTrack = next.getAudioTracks()[0] ?? null
-      if (newTrack) {
-        for (const pc of peers.values()) {
-          const sender = pc.getSenders().find((s) => s.track?.kind === 'audio')
-          if (sender) {
-            try {
-              await sender.replaceTrack(newTrack)
-            } catch {
-              // A failed swap on one peer heals on the next reset; keep going.
-            }
+      if (!newTrack) {
+        // A trackless stream would swap us one-way silent; keep the current mic.
+        for (const track of next.getTracks()) track.stop()
+        errorKey.value = 'voice.error.micDenied'
+        return
+      }
+      for (const pc of peers.values()) {
+        const sender = pc.getSenders().find((s) => s.track?.kind === 'audio')
+        if (sender) {
+          try {
+            await sender.replaceTrack(newTrack)
+          } catch {
+            // A failed swap on one peer heals on the next reset; keep going.
           }
         }
       }
       for (const track of localStream.getTracks()) track.stop()
       monitorTrack?.stop()
-      analysers.delete('local')
+      detachAnalyser('local')
       localStream = next
       for (const track of localStream.getAudioTracks()) track.enabled = !muted.value
       attachLocalMonitor()
@@ -283,6 +309,12 @@ function start(): void {
     // so a truly dead link eventually drops.
     const RESTART_MAX_ATTEMPTS = 3
     const DISCONNECT_GRACE_MS = 3_000
+    // How long the non-offerer waits between failed-link observations before
+    // re-checking (and eventually giving up) - the offerer may have given up
+    // or left, and connectionState fires no further events while 'failed'.
+    const RESTART_WAIT_MS = 5_000
+    // Per-peer count of restart attempts (offerer) or failed-link observations
+    // (non-offerer); either role drops the peer past RESTART_MAX_ATTEMPTS.
     const restartAttempts = new Map<string, number>()
     const disconnectTimers = new Map<string, ReturnType<typeof setTimeout>>()
     // Peers that reached 'connected' at least once - only their downtime counts
@@ -299,9 +331,30 @@ function start(): void {
       }
       restartAttempts.set(peerId, attempt)
       const self = myId()
-      if (!self || !shouldOffer(self, peerId)) return
+      if (!self) return
+      if (!shouldOffer(self, peerId)) {
+        // The offerer owns the ICE restart; this side waits for the fresh offer,
+        // but not forever - re-observe on a timer so it too hits the cap.
+        clearTimeout(disconnectTimers.get(peerId))
+        disconnectTimers.set(
+          peerId,
+          setTimeout(() => {
+            const st = peers.get(peerId)?.connectionState
+            if (st === 'failed' || st === 'disconnected') void restartPeer(peerId)
+          }, RESTART_WAIT_MS),
+        )
+        return
+      }
       try {
-        await ensureIce()
+        const cfg = await ensureIce()
+        try {
+          // The restart must gather on the CURRENT TURN credential; the pc was
+          // built with the construction-time one, which may have expired.
+          pc.setConfiguration(cfg)
+        } catch {
+          // Older browsers can refuse setConfiguration; restart on the old
+          // servers anyway rather than not at all.
+        }
         const offer = await pc.createOffer({ iceRestart: true })
         await pc.setLocalDescription(offer)
         socket.send({ type: 'voice:signal', to: peerId, kind: 'offer', payload: pc.localDescription })
@@ -391,6 +444,22 @@ function start(): void {
       }
     }
 
+    // Tear down and rebuild the link to a peer that re-seated (tab takeover).
+    // Refresh ICE first so the new pc is not built on an expired cached TURN
+    // credential (ensureIce no-ops while the credential is still fresh).
+    async function resetPeer(peerId: string): Promise<void> {
+      const self = myId()
+      if (!self || peerId === self) return
+      dropPeer(peerId)
+      try {
+        await ensureIce()
+      } catch {
+        // A stale cached credential still beats not reconnecting at all.
+      }
+      ensurePeer(peerId)
+      if (shouldOffer(self, peerId)) void offerTo(peerId)
+    }
+
     function dropPeer(peerId: string): void {
       const pc = peers.get(peerId)
       if (pc) {
@@ -400,7 +469,7 @@ function start(): void {
         pc.close()
         peers.delete(peerId)
       }
-      analysers.delete(peerId)
+      detachAnalyser(peerId)
       restartAttempts.delete(peerId)
       clearTimeout(disconnectTimers.get(peerId))
       disconnectTimers.delete(peerId)
@@ -502,19 +571,12 @@ function start(): void {
           // server already removed this token, so no voice:leave is needed.
           cleanup()
           break
-        case 'voice:peer-reset': {
+        case 'voice:peer-reset':
           // A peer re-joined from a new tab (a takeover). Our connection to them is
           // now dead; drop it and re-establish, letting the deterministic offerer
           // rule pick which side sends the fresh offer (the other side waits).
-          const uid = String(data.userId)
-          const self = myId()
-          if (self && uid !== self) {
-            dropPeer(uid)
-            ensurePeer(uid)
-            if (shouldOffer(self, uid)) void offerTo(uid)
-          }
+          void resetPeer(String(data.userId))
           break
-        }
         case 'voice:presence': {
           // A league room's live count for the "N in voice" badge.
           const key = String(data.roomKey)

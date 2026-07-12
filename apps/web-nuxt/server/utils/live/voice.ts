@@ -36,8 +36,10 @@ async function broadcastLeaguePresence(
 
 // roomKey -> the ONGOING voice_call row backing the live room, for the chat call
 // log. In-process like the rooms themselves; a restart mid-call orphans the row
-// exactly as it drops the room (accepted, same as the rest of the hub).
-const callLogByRoom = new Map<string, string>()
+// exactly as it drops the room (accepted, same as the rest of the hub). The value
+// is the open's promise (null = the open failed), stored before it settles so two
+// concurrent joins share one row instead of each inserting their own.
+const callLogByRoom = new Map<string, Promise<string | null>>()
 
 // Exposed for tests.
 export function __resetVoiceCallLog(): void {
@@ -63,24 +65,38 @@ async function trackJoinInCallLog(db: AppDatabase, roomKey: string, scope: Voice
   const roster = rosterOf(roomKey)
   const existing = callLogByRoom.get(roomKey)
   if (existing) {
-    await addCallParticipant(db, existing, userId)
+    const callId = await existing
+    if (callId) await addCallParticipant(db, callId, userId)
     return
   }
-  if (scope.kind === 'league') {
-    callLogByRoom.set(roomKey, await openCallLog(db, meta, userId, roster))
-    await publishCallLogChanged(db, scope)
-  } else if (roster.length >= 2) {
-    // Map insertion order: the first roster entry is the caller.
-    callLogByRoom.set(roomKey, await openCallLog(db, meta, roster[0]!, roster))
-    await publishCallLogChanged(db, scope)
-  }
+  if (scope.kind !== 'league' && roster.length < 2) return
+  // Map insertion order: the first roster entry is the caller.
+  const initiatorId = scope.kind === 'league' ? userId : roster[0]!
+  const opening = (async () => {
+    try {
+      return await openCallLog(db, meta, initiatorId, roster)
+    } catch {
+      // A failed open frees the slot so a later join can retry - unless the slot
+      // was already recycled (the room emptied) while this insert was pending.
+      if (callLogByRoom.get(roomKey) === opening) callLogByRoom.delete(roomKey)
+      return null
+    }
+  })()
+  // Set BEFORE the first await settles: a concurrent second join must find the
+  // pending open and append to it, not insert a duplicate ONGOING row.
+  callLogByRoom.set(roomKey, opening)
+  if ((await opening) === null) return
+  await publishCallLogChanged(db, scope)
 }
 
 async function closeCallLogIfEmpty(db: AppDatabase, roomKey: string, scope: VoiceScope): Promise<void> {
   if (rosterOf(roomKey).length > 0) return
-  const callId = callLogByRoom.get(roomKey)
-  if (!callId) return
+  const pending = callLogByRoom.get(roomKey)
+  if (!pending) return
   callLogByRoom.delete(roomKey)
+  const callId = await pending
+  // A null settled open never wrote a row, so there is nothing to close.
+  if (!callId) return
   await closeCallLog(db, callId)
   await publishCallLogChanged(db, scope)
 }

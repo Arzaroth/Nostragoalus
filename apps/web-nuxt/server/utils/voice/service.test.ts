@@ -247,6 +247,31 @@ describe('call log service', () => {
     expect(row.participantIds).toEqual(['alice', 'bob'])
   })
 
+  it('addCallParticipant keeps both of two concurrent appends (atomic update, no lost write)', async () => {
+    const { db } = await createTestDb()
+    await makeUser(db, 'alice')
+    await makeUser(db, 'bob')
+    await makeUser(db, 'carol')
+    const threadId = await makeThread(db, 'alice', 'bob')
+    const callId = await openCallLog(db, { kind: 'dm', threadId }, 'alice', ['alice'])
+    await Promise.all([addCallParticipant(db, callId, 'bob'), addCallParticipant(db, callId, 'carol')])
+    const [row] = await db.select().from(voiceCall).where(eq(voiceCall.id, callId))
+    expect([...row.participantIds].sort()).toEqual(['alice', 'bob', 'carol'])
+  })
+
+  it('listCallLog reports a null initiator (deleted account) with a null name', async () => {
+    const { db } = await createTestDb()
+    await makeUser(db, 'alice')
+    await makeUser(db, 'bob')
+    const threadId = await makeThread(db, 'alice', 'bob')
+    // What the FK's on-delete-set-null leaves behind when the caller's account goes.
+    await db.insert(voiceCall).values({ dmThreadId: threadId, participantIds: ['alice', 'bob'] })
+    const calls = await listCallLog(db, { kind: 'dm', threadId })
+    expect(calls).toHaveLength(1)
+    expect(calls[0]!.initiatorId).toBeNull()
+    expect(calls[0]!.initiatorName).toBeNull()
+  })
+
   it('listCallLog scopes a match room apart from the league-global room', async () => {
     const { db } = await createTestDb()
     const competitionId = await seedCompetition(db)
