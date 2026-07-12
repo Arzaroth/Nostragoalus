@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [4.0.1] - 2026-07-12
+
 ### Operator notes
 
 - The `app` service now disables core dumps (`ulimits: core: 0`). A hard Node crash previously dumped a multi-gigabyte core file into the container's writable layer, which could fill the Docker data disk - once taking the database down when `/var` filled up. A crash now just restarts instead of leaving a huge core behind.
