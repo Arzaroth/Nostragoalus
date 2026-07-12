@@ -5,6 +5,21 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
 ## Voice chat (deferred from the feature pass)
 
+- **Ring rate-limiting + invite-only-while-in-a-call.** A league member can send
+  `voice:invite` for chosen members without being in a call; today the only guards
+  are co-membership + a 50-id cap per frame, so a member could spam ring modals.
+  (Push spam is already blocked - a repeated missed ring collapses onto the bell
+  entry without re-pushing.) Add a per-caller ring rate limit, and gate invite on
+  the caller actually being in the room (needs the client to send the invite only
+  after the join is acknowledged, to avoid a join/invite frame race).
+- **Resurface a genuinely later missed call without re-pushing.** The missed-call
+  notification is deduped without `refresh` so rapid re-dials can't spam pushes; the
+  cost is that a real later missed call from the same caller won't resurface on the
+  bell. Decoupling bell-resurface from web-push needs `createNotification` support.
+- **Mid-call authorization revocation.** Scope authz is checked at join; a member
+  removed from the league (or chat disabled) mid-call is not evicted from the voice
+  room, so they keep relaying/receiving ICE candidates until they leave/disconnect.
+  Evict on the membership/chat-state change.
 - **Sign the SDP / DTLS fingerprint** to close a server-side active MITM. The server
   relays SDP unsigned, so a compromised server could swap the DTLS fingerprint and
   intercept a call (passive listening is already blocked by SRTP). Fix: sign the
