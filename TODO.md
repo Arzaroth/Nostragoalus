@@ -2400,20 +2400,24 @@ Shipped (vertical slices proving each mechanism):
 - [x] Two routes converted (PUT predictions/joker, GET stats).
 - [x] Golden-vector parity harness (`tests/parity/`) + `commitment` module
       vectors; `pnpm parity:bless` re-freezes.
+- [x] Spec emitter: stubbed-import walker (`tests/contract/openapi.test.ts`)
+      over all routes -> committed `openapi.snapshot.json`, regen-clean gate
+      like `db:generate`. Wrappers attach an inert `__contract`;
+      `route-path.ts` maps Nitro filenames to `{ path, method }`.
+- [x] Date wire-shape policy (b): response schemas use `z.date()` (validates the
+      Date, cheap, every env); `toOpenApiSchema` maps it to a date-time string
+      for the wire/Dart contract.
+- [x] Parity vectors for `key-transparency` + `e2ee` (libsodium interop KATs -
+      decrypt/unseal/derive direction); suite factored into `harness.ts`, bytes
+      marshalled as `{ $b64 }`.
 
 Open:
-- [ ] Spec emitter: stubbed-import walker over all routes (stub the h3/wrapper
-      globals, import each route, capture its zod schemas) -> committed
-      `openapi.json`. Contract test fails on staleness or a missing response
-      schema (regen-clean, like `db:generate`). Retire the hand-written
-      `requestBody`/`responses` literals in `defineRouteMeta`.
-- [ ] Date wire-shape policy: a handler returns `Date` before h3 serializes it,
-      but the wire/Dart contract wants an ISO string. Decide once (wire-shape
-      schema + validate post-serialize, or `z.date()` + mapper) before fanning
-      out to date-returning routes. Slice 1 was kept Date-free on purpose.
-- [ ] Fan out response schemas to the remaining ~188 routes, by feature area.
-- [ ] Parity vectors for the rest of the security/scoring core:
-      `key-transparency`, `e2ee` (libsodium KATs), `scoring`, `criteria`,
-      `fergie`, `achievements`, `match`/`stage`.
-- [ ] Dart codegen from `openapi.json` + a Dart parity-vector runner - only when
-      the mobile app actually starts.
+- [ ] Fan out response schemas to the remaining ~180 routes, by feature area.
+      8 routes currently fail to import under the bare unit env (aliases /
+      runtime-only imports) - make them import-clean as they're converted.
+- [ ] Retire the now-redundant hand-written `requestBody`/`responses` literals
+      in `defineRouteMeta` on converted routes (emitter is authoritative).
+- [ ] Parity vectors for the scoring core: `scoring`, `criteria`, `fergie`,
+      `achievements`, `match`/`stage`.
+- [ ] Dart codegen from the emitted spec + a Dart parity-vector runner - only
+      when the mobile app actually starts.
