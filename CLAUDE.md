@@ -15,7 +15,7 @@
   auth 500 on the default secret. Add a pattern to `.worktreeinclude` when a new
   gitignored artifact is worth copying; both files are committed.
 - Every user-facing string gets i18n keys in **all five locales**
-  (`i18n/locales/{en,fr,th,tlh,ar}.json`) - tlh is Klingon, keep it terse and
+  (`shared/i18n-json/{en,fr,th,tlh,ar}.json`) - tlh is Klingon, keep it terse and
   in-character.
 - The gate before any merge: `pnpm typecheck`, `pnpm test:coverage` (98%
   thresholds, enforced), `pnpm test:components`, `pnpm build`. The SSR/rollup

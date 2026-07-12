@@ -56,7 +56,7 @@ display-only; the stored reaction enum key is unchanged. The public palette
 
 The fourth locale, `tlh` (Klingon), is itself an in-character easter egg. The
 strings are kept terse and in-character. It is a real locale file
-(`i18n/locales/tlh.json`) so it is required code, unlike the skins. See
+(`shared/i18n-json/tlh.json`) so it is required code, unlike the skins. See
 [../architecture/i18n.md](../architecture/i18n.md).
 
 ## Sources
@@ -64,4 +64,4 @@ strings are kept terse and in-character. It is a real locale file
 - `app/utils/skins.ts`, `app/composables/useSkin.ts`, `useKonamiUnlock.ts`
 - `server/middleware/skin.ts`, `lib/auth.ts` (skin additionalFields + update hook)
 - `app/components/ReactionGlyph.vue`, `app/components/MatchReactionsLine.vue`,
-  `public/skins/*`, `i18n/locales/tlh.json`
+  `public/skins/*`, `shared/i18n-json/tlh.json`
