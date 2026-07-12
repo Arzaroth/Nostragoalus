@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 import VoiceCallOverlay from './VoiceCallOverlay.client.vue'
 import type { CallState, IncomingRing } from '../composables/useVoiceCall'
@@ -15,6 +15,8 @@ const errorKey = ref<string | null>(null)
 const localLevel = ref(0)
 const speakingPeers = ref<Record<string, boolean>>({})
 const mutedTalkingAt = ref(0)
+const connectionQuality = ref<'good' | 'fair' | 'poor' | null>(null)
+const reconnecting = ref(false)
 const inputDevices = ref<{ deviceId: string; label: string }[]>([])
 const outputDevices = ref<{ deviceId: string; label: string }[]>([])
 const inputDeviceId = ref<string | null>(null)
@@ -43,6 +45,8 @@ mockNuxtImport('useVoiceCall', () => () => ({
   localLevel,
   speakingPeers,
   mutedTalkingAt,
+  connectionQuality,
+  reconnecting,
   inputDevices,
   outputDevices,
   inputDeviceId,
@@ -73,6 +77,8 @@ beforeEach(() => {
   localLevel.value = 0
   speakingPeers.value = {}
   mutedTalkingAt.value = 0
+  connectionQuality.value = null
+  reconnecting.value = false
   inputDevices.value = []
   outputDevices.value = []
   inputDeviceId.value = null
@@ -148,6 +154,20 @@ describe('VoiceCallOverlay', () => {
     // The settings dialog is teleported to <body>.
     expect(document.body.textContent).toContain('Microphone')
     expect(document.body.textContent).toContain('Noise suppression')
+  })
+
+  it('flags a degraded link and a reconnect in the in-call bar', async () => {
+    state.value = 'in-call'
+    activeScope.value = { kind: 'dm', threadId: 't1' }
+    connectionQuality.value = 'poor'
+    const w = await mountSuspended(VoiceCallOverlay)
+    expect(w.find('[aria-label="Poor connection"]').exists()).toBe(true)
+
+    reconnecting.value = true
+    await nextTick()
+    expect(w.text()).toContain('Reconnecting')
+    // The reconnect chip replaces the quality icon (one signal at a time).
+    expect(w.find('[aria-label="Poor connection"]').exists()).toBe(false)
   })
 
   it('exposes an invite control only for a league call', async () => {

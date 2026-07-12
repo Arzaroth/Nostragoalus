@@ -11,10 +11,13 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 - Appels vocaux : une boîte de réglages audio dans la barre d'appel pour choisir son micro et son haut-parleur (mémorisés d'un appel à l'autre) et activer la réduction de bruit. L'annulation d'écho et le gain automatique sont désormais toujours actifs.
 - Appels vocaux : parler en étant en sourdine affiche un rappel « Votre micro est coupé ».
 - Chat : des lignes d'historique d'appel dans la conversation - « appel démarré / terminé (avec durée) / manqué » apparaissent dans le fil pour les MP et les salons de ligue, en direct.
+- Appels vocaux : un indicateur de qualité de connexion dans la barre d'appel - une icône ambre/rouge quand la liaison se dégrade, et un avis « Reconnexion… » pendant qu'une liaison coupée se rétablit.
 
 ### Corrigé
 
 - Appels vocaux : raccrocher un appel en MP y met désormais fin aussi pour l'autre personne - elle restait auparavant bloquée « en appel » avec un minuteur qui tournait et un bouton sourdine inopérant jusqu'à un rechargement.
+- Appels vocaux : une connexion pair-à-pair coupée (changement d'onglet ou de réseau, liaison instable) se rétablit désormais automatiquement via un redémarrage ICE au lieu de rester muette jusqu'à un rappel.
+- Appels vocaux : le minuteur d'appel (et les durées des lignes d'appel du chat) passe désormais en heures - « 1:07:39 » au lieu de « 67:39 ».
 - Face à face : la liste « Plus grands écarts » classe désormais vos pronostics communs par écart de points, au lieu de ne montrer que les matchs où vous aviez prédit des résultats différents. Un match où vous aviez tous deux vu le même vainqueur mais où l'un a décroché le score exact avec un joker (un pronostic à 24 points contre un à 1 point) est exactement le genre d'écart que la liste cachait.
 - Face à face : les noms et avatars des deux joueurs renvoient désormais vers leur page de profil.
 

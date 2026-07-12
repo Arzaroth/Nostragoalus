@@ -1,6 +1,7 @@
 import { effectScope } from 'vue'
 import type { IceServersResponse, VoiceScope, VoiceSignalKind } from '#shared/types/voice'
 import { voiceRoomKey } from '#shared/types/voice'
+import type { ConnectionQuality } from '~/utils/voice'
 
 // App-wide voice-call singleton (one per tab), modeled on usePresence: one detached
 // scope owns a dedicated WS socket for signaling and the RTCPeerConnection mesh, so
@@ -41,6 +42,12 @@ const speakingPeers = ref<Record<string, boolean>>({})
 // Bumped (timestamp) when sustained speech is detected while muted - the UI
 // toasts a "you're muted" nudge on each bump.
 const mutedTalkingAt = ref(0)
+
+// Worst per-peer link quality (from getStats), null until measured. Drives the
+// call bar's quality indicator.
+const connectionQuality = ref<ConnectionQuality | null>(null)
+// True while a previously-connected peer link is down and being re-established.
+const reconnecting = ref(false)
 
 // Audio device selection (persisted): null = system default. Output selection
 // only works where HTMLMediaElement.setSinkId exists (canPickOutput).
@@ -167,10 +174,16 @@ function start(): void {
       },
     })
 
+    let iceFetchedAt = 0
+    let iceTtlMs = 0
     async function ensureIce(): Promise<RTCConfiguration> {
-      if (iceConfig) return iceConfig
+      // The TURN credential is time-limited: refetch once 90% of its ttl has
+      // passed so a later call (or an ICE restart) never starts on a dead cred.
+      if (iceConfig && Date.now() - iceFetchedAt < iceTtlMs * 0.9) return iceConfig
       const res = await $fetch<IceServersResponse>('/api/voice/ice-servers')
       iceConfig = { iceServers: res.iceServers }
+      iceFetchedAt = Date.now()
+      iceTtlMs = res.ttl * 1000
       return iceConfig
     }
 
@@ -263,6 +276,40 @@ function start(): void {
       attachLocalMonitor()
     }
 
+    // Self-healing: a peer link that drops (tab throttling, a network change, a
+    // flaky hop) is re-established with an ICE restart instead of being dropped
+    // for good. Only the deterministic offerer restarts (no glare); the other
+    // side sees the same failure and waits for the fresh offer. Bounded attempts
+    // so a truly dead link eventually drops.
+    const RESTART_MAX_ATTEMPTS = 3
+    const DISCONNECT_GRACE_MS = 3_000
+    const restartAttempts = new Map<string, number>()
+    const disconnectTimers = new Map<string, ReturnType<typeof setTimeout>>()
+    // Peers that reached 'connected' at least once - only their downtime counts
+    // as "reconnecting" (initial setup is 'connecting', not an outage).
+    const everConnected = new Set<string>()
+
+    async function restartPeer(peerId: string): Promise<void> {
+      const pc = peers.get(peerId)
+      if (!pc) return
+      const attempt = (restartAttempts.get(peerId) ?? 0) + 1
+      if (attempt > RESTART_MAX_ATTEMPTS) {
+        dropPeer(peerId)
+        return
+      }
+      restartAttempts.set(peerId, attempt)
+      const self = myId()
+      if (!self || !shouldOffer(self, peerId)) return
+      try {
+        await ensureIce()
+        const offer = await pc.createOffer({ iceRestart: true })
+        await pc.setLocalDescription(offer)
+        socket.send({ type: 'voice:signal', to: peerId, kind: 'offer', payload: pc.localDescription })
+      } catch {
+        dropPeer(peerId)
+      }
+    }
+
     function ensurePeer(peerId: string): RTCPeerConnection {
       const existing = peers.get(peerId)
       if (existing) return existing
@@ -276,10 +323,59 @@ function start(): void {
         attachAnalyser(peerId, e.streams[0])
       }
       pc.onconnectionstatechange = () => {
-        if (pc.connectionState === 'failed' || pc.connectionState === 'closed') dropPeer(peerId)
+        const st = pc.connectionState
+        if (st === 'connected') {
+          everConnected.add(peerId)
+          restartAttempts.delete(peerId)
+          clearTimeout(disconnectTimers.get(peerId))
+          disconnectTimers.delete(peerId)
+        } else if (st === 'disconnected') {
+          // Often self-heals; give it a grace window before forcing a restart.
+          clearTimeout(disconnectTimers.get(peerId))
+          disconnectTimers.set(
+            peerId,
+            setTimeout(() => {
+              if (peers.get(peerId)?.connectionState === 'disconnected') void restartPeer(peerId)
+            }, DISCONNECT_GRACE_MS),
+          )
+        } else if (st === 'failed') {
+          void restartPeer(peerId)
+        } else if (st === 'closed') {
+          dropPeer(peerId)
+        }
       }
       peers.set(peerId, pc)
+      ensureStatsLoop()
       return pc
+    }
+
+    // Poll each link's stats for the quality indicator: worst link wins, and a
+    // previously-connected peer being down flags "reconnecting".
+    let statsTimer: ReturnType<typeof setInterval> | undefined
+    const STATS_INTERVAL_MS = 2_000
+    function ensureStatsLoop(): void {
+      statsTimer ??= setInterval(() => void statsTick(), STATS_INTERVAL_MS)
+    }
+    async function statsTick(): Promise<void> {
+      const qualities: ConnectionQuality[] = []
+      let anyDown = false
+      for (const [peerId, pc] of peers) {
+        const st = pc.connectionState
+        if (st === 'connected') {
+          try {
+            const stats = await pc.getStats()
+            const reports: Array<Record<string, unknown>> = []
+            stats.forEach((r) => reports.push(r as unknown as Record<string, unknown>))
+            qualities.push(qualityOf(extractQualityInputs(reports)))
+          } catch {
+            // A closing connection mid-poll; skip this tick.
+          }
+        } else if (everConnected.has(peerId)) {
+          anyDown = true
+        }
+      }
+      reconnecting.value = anyDown
+      connectionQuality.value = anyDown ? 'poor' : worstQuality(qualities)
     }
 
     async function offerTo(peerId: string): Promise<void> {
@@ -305,6 +401,10 @@ function start(): void {
         peers.delete(peerId)
       }
       analysers.delete(peerId)
+      restartAttempts.delete(peerId)
+      clearTimeout(disconnectTimers.get(peerId))
+      disconnectTimers.delete(peerId)
+      everConnected.delete(peerId)
       if (remoteStreams.value[peerId]) {
         const next = { ...remoteStreams.value }
         delete next[peerId]
@@ -431,6 +531,10 @@ function start(): void {
     function cleanup(): void {
       clearTimeout(ringTimer)
       teardownMetering()
+      clearInterval(statsTimer)
+      statsTimer = undefined
+      connectionQuality.value = null
+      reconnecting.value = false
       for (const peerId of [...peers.keys()]) dropPeer(peerId)
       if (localStream) {
         for (const track of localStream.getTracks()) track.stop()
@@ -552,6 +656,8 @@ export function useVoiceCall() {
     localLevel: readonly(localLevel),
     speakingPeers: readonly(speakingPeers),
     mutedTalkingAt: readonly(mutedTalkingAt),
+    connectionQuality: readonly(connectionQuality),
+    reconnecting: readonly(reconnecting),
     inputDevices: readonly(inputDevices),
     outputDevices: readonly(outputDevices),
     inputDeviceId: readonly(inputDeviceId),

@@ -1778,6 +1778,8 @@
     "output": "مكبر الصوت",
     "noiseSuppression": "عزل الضوضاء",
     "deviceDefault": "الافتراضي للنظام",
+    "reconnecting": "جارٍ إعادة الاتصال…",
+    "quality": {"fair": "الاتصال غير مستقر", "poor": "الاتصال ضعيف"},
     "log": {"missed": "مكالمة فائتة من {name}", "ongoing": "بدأ {name} مكالمة", "ended": "مكالمة من {name} · {duration}"},
     "hangup": "إنهاء",
     "invite": "دعوة إلى المكالمة",

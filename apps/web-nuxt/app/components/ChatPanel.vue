@@ -827,10 +827,7 @@ const callLinesByAnchor = computed(() => {
 
 function callDuration(c: CallLogEntry): string {
   if (!c.endedAt) return ''
-  const secs = Math.max(0, Math.round((new Date(c.endedAt).getTime() - new Date(c.startedAt).getTime()) / 1000))
-  const m = Math.floor(secs / 60)
-  const s = secs % 60
-  return `${m}:${String(s).padStart(2, '0')}`
+  return formatCallDuration((new Date(c.endedAt).getTime() - new Date(c.startedAt).getTime()) / 1000)
 }
 
 function callLineText(c: CallLogEntry): string {

@@ -12,9 +12,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 - Voice calls: talking while muted pops a gentle "You're muted" reminder.
 - Chat: call history lines in the conversation - "call started / ended (with duration) / missed" appear in the timeline for both DMs and league rooms, live as they happen.
 
+- Voice calls: a connection-quality indicator in the call bar - an amber/red icon when the link degrades, and a "Reconnecting…" notice while a dropped link is being re-established.
+
 ### Fixed
 
 - Voice calls: hanging up a DM call now ends it for the other side too - previously they were left stuck "in call" with a running timer and an unresponsive mute button until a reload.
+- Voice calls: a dropped peer connection (switching tabs or networks, a flaky hop) now automatically re-establishes with an ICE restart instead of going silent until redial.
+- Voice calls: the call timer (and chat call-line durations) now roll into hours - "1:07:39" instead of "67:39".
 - Head-to-head: the "Biggest divergences" list now ranks your shared picks by their points gap, instead of only showing matches where you predicted different results. A match where you both called the same winner but one of you landed the exact score with a joker (a 24-point pick against a 1-point one) is exactly the kind of swing the list was hiding.
 - Head-to-head: the two players' names and avatars now link back to their profile pages.
 

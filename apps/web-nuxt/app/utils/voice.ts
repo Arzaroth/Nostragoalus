@@ -36,6 +36,65 @@ export function rosterDelta(previous: Iterable<string>, roster: readonly string[
   return { added, removed }
 }
 
+// Call-duration display: m:ss under an hour, h:mm:ss from there ("67:39" reads
+// as minutes, "1:07:39" doesn't). Used by the in-call timer and the chat call
+// lines.
+export function formatCallDuration(totalSeconds: number): string {
+  const secs = Math.max(0, Math.floor(totalSeconds))
+  const h = Math.floor(secs / 3600)
+  const m = Math.floor((secs % 3600) / 60)
+  const s = secs % 60
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  return `${m}:${String(s).padStart(2, '0')}`
+}
+
+// === Connection quality (fed by RTCPeerConnection.getStats) ===
+
+export type ConnectionQuality = 'good' | 'fair' | 'poor'
+
+export interface RtcQualityInputs {
+  rttMs: number | null
+  lossFraction: number | null
+  jitterMs: number | null
+}
+
+// Pull the three signals that matter for perceived audio quality out of a raw
+// stats dump: round-trip time + loss as the REMOTE saw our audio
+// (remote-inbound-rtp), jitter as we receive theirs (inbound-rtp).
+export function extractQualityInputs(reports: Array<Record<string, unknown>>): RtcQualityInputs {
+  let rttMs: number | null = null
+  let lossFraction: number | null = null
+  let jitterMs: number | null = null
+  for (const r of reports) {
+    if (r.type === 'remote-inbound-rtp' && r.kind === 'audio') {
+      if (typeof r.roundTripTime === 'number') rttMs = r.roundTripTime * 1000
+      if (typeof r.fractionLost === 'number') lossFraction = r.fractionLost
+    } else if (r.type === 'inbound-rtp' && r.kind === 'audio' && typeof r.jitter === 'number') {
+      jitterMs = r.jitter * 1000
+    }
+  }
+  return { rttMs, lossFraction, jitterMs }
+}
+
+// Thresholds tuned for conversational audio: past ~250ms RTT talk-over starts,
+// past ~2% loss artifacts become audible, past ~8% speech breaks up.
+export function qualityOf(i: RtcQualityInputs): ConnectionQuality {
+  const rtt = i.rttMs ?? 0
+  const loss = i.lossFraction ?? 0
+  const jitter = i.jitterMs ?? 0
+  if (loss > 0.08 || rtt > 500 || jitter > 100) return 'poor'
+  if (loss > 0.02 || rtt > 250 || jitter > 40) return 'fair'
+  return 'good'
+}
+
+// A call is as good as its worst link (null = nothing to measure yet).
+export function worstQuality(qs: readonly ConnectionQuality[]): ConnectionQuality | null {
+  if (qs.length === 0) return null
+  if (qs.includes('poor')) return 'poor'
+  if (qs.includes('fair')) return 'fair'
+  return 'good'
+}
+
 // getUserMedia audio constraints for a call. Echo cancellation and auto gain are
 // always on (a speakerphone call without them howls); noise suppression is the
 // user's toggle. A chosen device is `exact` so a switch never silently falls back.

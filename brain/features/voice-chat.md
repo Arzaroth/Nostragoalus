@@ -90,6 +90,18 @@ and unit-tested in `apps/web-nuxt/app/utils/voice.ts`:
   analyser taps a CLONE of the mic track kept enabled while muted - that is what
   detects talking-while-muted (`createMutedTalkingTracker`, pure + tested in
   `apps/web-nuxt/app/utils/voice.ts` with `levelFromSamples`).
+- Self-healing links: a peer connection that goes `failed` (or stays
+  `disconnected` past a 3s grace) gets an **ICE restart** - the deterministic
+  offerer re-offers with `iceRestart: true` (no glare; the other side waits),
+  capped at 3 attempts before the peer is dropped. The cached ICE config expires
+  at 90% of the TURN credential ttl so a restart never rides a dead credential.
+- Quality indicator: a 2s `getStats()` poll per link -> `extractQualityInputs`
+  (RTT + fractionLost from remote-inbound-rtp, jitter from inbound-rtp) ->
+  `qualityOf`/`worstQuality` (pure, tested). The call bar shows an amber/red
+  wifi icon on fair/poor and a "Reconnecting…" chip while a previously-connected
+  peer is down. There is no long "buffered replay" - the browser's jitter buffer
+  (NetEq) already does short-gap buffering with accelerated catch-up; anything
+  longer would put a live conversation seconds behind.
 
 ### ICE / TURN
 
