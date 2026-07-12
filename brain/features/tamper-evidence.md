@@ -32,9 +32,9 @@ Privacy is built in:
 
 ## Code + public surface
 
-- `shared/commitment.ts` - isomorphic Web-Crypto helpers (sha256, `verifyLedger`,
+- `apps/web-nuxt/shared/commitment.ts` - isomorphic Web-Crypto helpers (sha256, `verifyLedger`,
   `witnessExtension`), used identically on server and client.
-- `server/utils/commitment/service.ts` - append / get-head / get-chain / verify,
+- `apps/web-nuxt/server/utils/commitment/service.ts` - append / get-head / get-chain / verify,
   wired into `upsertPrediction` (which now runs in a transaction).
 - `GET /api/commitments` and `GET /api/commitments/head` - public,
   unauthenticated.
@@ -62,7 +62,7 @@ the live prediction row).
 
 ## Sources
 
-- `db/app-schema.ts` (`prediction_commitment`, `commitment_chain_head`)
-- `shared/commitment.ts`, `server/utils/commitment/service.ts`
-- `server/api/commitments/*`, `server/routes/verify/*`,
-  `app/plugins/tamper-watch.client.ts`, `app/composables/useTamperWatch.ts`
+- `apps/web-nuxt/db/app-schema.ts` (`prediction_commitment`, `commitment_chain_head`)
+- `apps/web-nuxt/shared/commitment.ts`, `apps/web-nuxt/server/utils/commitment/service.ts`
+- `apps/web-nuxt/server/api/commitments/*`, `apps/web-nuxt/server/routes/verify/*`,
+  `apps/web-nuxt/app/plugins/tamper-watch.client.ts`, `apps/web-nuxt/app/composables/useTamperWatch.ts`

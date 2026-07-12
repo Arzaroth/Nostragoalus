@@ -34,7 +34,7 @@ exists for a future multi-book provider; the display surfaces it when populated.
   feeds like Sofascore), and a `kind` of `POLL` (live polling) or `BACKFILL`
   (historical import).
 - The `odds:refresh` task runs every 30 minutes, fire-and-forget.
-- `latestOddsByMatch` (`server/utils/odds/store.ts`) reads the newest snapshot
+- `latestOddsByMatch` (`apps/web-nuxt/server/utils/odds/store.ts`) reads the newest snapshot
   per match and surfaces current + opening + bookmakers as `MatchOddsView`; the
   match list/detail services attach it as `match.odds`.
 
@@ -43,7 +43,7 @@ exists for a future multi-book provider; the display surfaces it when populated.
 The compact `MatchOdds.vue` renders the current 1X2 plus a movement marker per
 outcome:
 
-- `oddsMovement(initial, current)` (`app/utils/odds-movement.ts`) is a pure
+- `oddsMovement(initial, current)` (`apps/web-nuxt/app/utils/odds-movement.ts`) is a pure
   helper returning per-outcome `{ direction, delta }` where direction is `in`
   (shortened: current < opening), `out` (drifted: current > opening) or `flat`.
   The drift is rounded to the two decimals shown, so the marker never
@@ -70,11 +70,11 @@ JA3 fingerprint gets past the Cloudflare-class WAF. See
 
 ## Sources
 
-- `server/utils/odds/providers/sofascore.ts` (the only plain-HTTP fetcher today)
-- `server/utils/odds/store.ts` (`latestOddsByMatch`, `MatchOddsView`), `sync.ts`, `provider-config.ts`, `matcher.ts`
-- `server/utils/matches/service.ts` (attaches `match.odds`)
-- `app/utils/odds-movement.ts`, `app/composables/useMatchOdds.ts`, `app/components/MatchOdds.vue`
-- `shared/types/odds.ts` (`OddsTriple`, `StoredBookmakerOdds`, `OddsSnapshotKind`)
-- `db/app-schema.ts` (`odds_snapshot`; `kind` is an inline `POLL`/`BACKFILL` text
+- `apps/web-nuxt/server/utils/odds/providers/sofascore.ts` (the only plain-HTTP fetcher today)
+- `apps/web-nuxt/server/utils/odds/store.ts` (`latestOddsByMatch`, `MatchOddsView`), `sync.ts`, `provider-config.ts`, `matcher.ts`
+- `apps/web-nuxt/server/utils/matches/service.ts` (attaches `match.odds`)
+- `apps/web-nuxt/app/utils/odds-movement.ts`, `apps/web-nuxt/app/composables/useMatchOdds.ts`, `apps/web-nuxt/app/components/MatchOdds.vue`
+- `apps/web-nuxt/shared/types/odds.ts` (`OddsTriple`, `StoredBookmakerOdds`, `OddsSnapshotKind`)
+- `apps/web-nuxt/db/app-schema.ts` (`odds_snapshot`; `kind` is an inline `POLL`/`BACKFILL` text
   column typed `OddsSnapshotKind`, not a separate pg enum)
-- `server/utils/providers/cycle-tls.ts`
+- `apps/web-nuxt/server/utils/providers/cycle-tls.ts`

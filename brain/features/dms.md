@@ -19,7 +19,7 @@ room, so the DM overflow menu keeps them; only the league/admin items are hidden
 ## Encryption model
 
 Same group-key primitives as league chat, reused verbatim from
-`app/utils/e2ee.ts` (`generateGroupKey`, `sealGroupKey`, `openGroupKey`,
+`apps/web-nuxt/app/utils/e2ee.ts` (`generateGroupKey`, `sealGroupKey`, `openGroupKey`,
 `encryptMessage`, `decryptMessage`) via the [`chat_identity`](chat.md) X25519
 keypair every chatting user already has.
 
@@ -63,7 +63,7 @@ shared, only the scope column differs.
 
 ## Recipient discovery + privacy
 
-`searchRecipients` (`server/utils/dm/service.ts`) returns two sets, self always
+`searchRecipients` (`apps/web-nuxt/server/utils/dm/service.ts`) returns two sets, self always
 excluded:
 
 - **Co-members** - anyone sharing at least one [league](leagues.md) with the
@@ -80,7 +80,7 @@ preferences, next to the private-profile switch). A stranger with no
 `chat_identity` is not listed - there would be no pubkey to seal the thread key to.
 
 The same reachability is **enforced at the point of contact**, not just in search:
-`canDm(caller, target)` (`server/utils/dm/service.ts`) is true when they share a
+`canDm(caller, target)` (`apps/web-nuxt/server/utils/dm/service.ts`) is true when they share a
 league or the target is discoverable, and it gates `createThread`, the
 `GET /api/dm/identity` pubkey lookup (404, not 403, so a bare id never confirms an
 account exists) and the profile page's `canMessage` flag. So a user you cannot
@@ -91,7 +91,7 @@ open thread always reopens regardless (the gate is for first contact only).
 
 DM frames are delivered over the same in-process WebSocket [hub](../architecture/realtime.md)
 but **without a subscribe frame**: `publishDmMessage` / `publishDmEdit`
-(`server/utils/live/hub.ts`) fan out to the two participants by their pinned
+(`apps/web-nuxt/server/utils/live/hub.ts`) fan out to the two participants by their pinned
 socket `userId` (`deliverToMembers`), the same user-pinned delivery the
 [notification](notifications.md) push uses. Frame types are `dm:new` and
 `dm:edit`. `dm:new` carries the **full `ChatMessageDTO`** (identical to the POST
@@ -105,12 +105,12 @@ are connected.
 
 ## Notifications + push
 
-`notifyDm` (`server/utils/dm/notify.ts`) fires a `DM_MESSAGE`
+`notifyDm` (`apps/web-nuxt/server/utils/dm/notify.ts`) fires a `DM_MESSAGE`
 [notification](notifications.md) (header bell) and, on top of it, a
 [web push](web-push.md) - `createNotification` does both, gated on the recipient's
 `dm` push category. The push copy carries the sender name only (never the E2EE
 body) and deep-links via `dmPath` (`/?dm=<threadId>`). The `dm` push category
-(`server/utils/push/prefs.ts`) is **default-on** and backed by the `pushDm` user
+(`apps/web-nuxt/server/utils/push/prefs.ts`) is **default-on** and backed by the `pushDm` user
 column; `content.ts` renders the copy and tags it `dm:<threadId>` so repeat DMs
 from the same thread collapse.
 
@@ -124,9 +124,9 @@ the home page).
 
 ## The UI: Direct mode inside ChatDock
 
-There is no standalone DM dock. `app/components/DmDock.vue` and
-`app/composables/useDms.ts` were **deleted**; DMs live inside
-`app/components/ChatDock.vue`, the single bottom-right messaging bubble.
+There is no standalone DM dock. `apps/web-nuxt/app/components/DmDock.vue` and
+`apps/web-nuxt/app/composables/useDms.ts` were **deleted**; DMs live inside
+`apps/web-nuxt/app/components/ChatDock.vue`, the single bottom-right messaging bubble.
 
 - **Availability.** The dock is now `v-if="signedIn"`, not league-gated - any
   signed-in user gets it, even on a page with no league selected. The bubble's
@@ -150,44 +150,44 @@ There is no standalone DM dock. `app/components/DmDock.vue` and
 
 Three composables back it:
 
-- **`app/composables/useDmRoom.ts`** - the per-thread engine, a drop-in for
+- **`apps/web-nuxt/app/composables/useDmRoom.ts`** - the per-thread engine, a drop-in for
   `useLeagueChat`'s interface (same surface: `messages`, `send`, `react`,
   `editMessage`, reply/thread, images...), pointed at `/api/dm/${threadId}/*` and
   unwrapping the per-thread key instead of a league group key. This is what lets
   the shared `ChatPanel` drive a DM unchanged; league-only ops
   (enable/disable/rotate/rekey/roster/moderation/typing) are inert.
-- **`app/composables/useDmInbox.ts`** - the list side: the threads query,
+- **`apps/web-nuxt/app/composables/useDmInbox.ts`** - the list side: the threads query,
   `ensureIdentity`, `searchRecipients`, `startThread`, `markRead`, `totalUnread`.
-  It reuses `app/utils/e2ee.ts` to seal a fresh key to both pubkeys on thread
+  It reuses `apps/web-nuxt/app/utils/e2ee.ts` to seal a fresh key to both pubkeys on thread
   creation and opens the DM socket, patching the inbox on `dm:new`/`dm:edit`.
-- **`app/composables/useDmOpen.ts`** - a one-slot app-level signal so a "Message"
+- **`apps/web-nuxt/app/composables/useDmOpen.ts`** - a one-slot app-level signal so a "Message"
   button elsewhere (e.g. a user profile page) asks the dock to switch to Direct
   and open/start a thread with a given **user**.
-- **`app/composables/useDmDockOpen.ts`** - the sibling signal for the bell click:
+- **`apps/web-nuxt/app/composables/useDmDockOpen.ts`** - the sibling signal for the bell click:
   open the dock on an existing **thread** id (or the inbox when null), without a
   navigation.
 
 ## Sources
 
-- `db/app-schema.ts` (`dm_thread`, `dm_thread_key`, `dm_thread_read`,
+- `apps/web-nuxt/db/app-schema.ts` (`dm_thread`, `dm_thread_key`, `dm_thread_read`,
   `chat_message` generalization + `chat_message_scope_xor`, `DM_MESSAGE`
   notification type)
-- `lib/auth.ts` (`pushDm`, `dmDiscoverable` user additionalFields)
-- `server/utils/dm/service.ts` (`createThread`, `listThreads`, `getThreadDetail`,
+- `apps/web-nuxt/lib/auth.ts` (`pushDm`, `dmDiscoverable` user additionalFields)
+- `apps/web-nuxt/server/utils/dm/service.ts` (`createThread`, `listThreads`, `getThreadDetail`,
   `postDmMessage`, `editDmMessage`, `listDmMessages`, `markThreadRead`,
-  `searchRecipients`, `canDm`), `server/utils/dm/notify.ts` (`notifyDm`)
-- `server/utils/chat/access.ts` - the scope-agnostic authorizer: a caller may act
+  `searchRecipients`, `canDm`), `apps/web-nuxt/server/utils/dm/notify.ts` (`notifyDm`)
+- `apps/web-nuxt/server/utils/chat/access.ts` - the scope-agnostic authorizer: a caller may act
   on a `chat_message` if they are a member of its league room **or** a participant
   of its DM thread, so the shared message/reaction/attachment/edit routes serve
   both scopes.
-- `server/api/dm/**` (`threads`, `[threadId]/{index,messages,edit,read,react}`,
+- `apps/web-nuxt/server/api/dm/**` (`threads`, `[threadId]/{index,messages,edit,read,react}`,
   `[threadId]/attachments/[messageId]`, `[threadId]/media`, `identity`,
   `recipients`) - `messages.get` returns enriched `ChatMessageDTO`s, `edit.post`
   carries image add/remove, matching the league-chat routes.
-- `server/utils/live/hub.ts` (`publishDmMessage`, `publishDmEdit`),
-  `server/utils/push/{prefs,content}.ts` (`dm` category)
-- `shared/types/dm.ts` (`DmThreadDetailDTO`, `DmThreadSummaryDTO`,
+- `apps/web-nuxt/server/utils/live/hub.ts` (`publishDmMessage`, `publishDmEdit`),
+  `apps/web-nuxt/server/utils/push/{prefs,content}.ts` (`dm` category)
+- `apps/web-nuxt/shared/types/dm.ts` (`DmThreadDetailDTO`, `DmThreadSummaryDTO`,
   `DmRecipientDTO`, `dmPath` - the live frame reuses `ChatMessageDTO`, no separate
-  DM message shape), `app/composables/{useDmRoom,useDmInbox,useDmOpen}.ts`,
-  `app/components/{ChatDock,ChatPanel}.vue`, `app/pages/preferences.vue`
-  (`dmDiscoverable`, `pushDm` toggles), `app/utils/e2ee.ts`
+  DM message shape), `apps/web-nuxt/app/composables/{useDmRoom,useDmInbox,useDmOpen}.ts`,
+  `apps/web-nuxt/app/components/{ChatDock,ChatPanel}.vue`, `apps/web-nuxt/app/pages/preferences.vue`
+  (`dmDiscoverable`, `pushDm` toggles), `apps/web-nuxt/app/utils/e2ee.ts`

@@ -63,7 +63,7 @@ private key lives in IndexedDB. Three recovery paths, all in the chat overflow m
   `@<id>` token, and the mentioned ids ride as a plaintext `mentions[]` sidecar
   (the body stays E2EE, so the ids are never decrypted server-side and are not
   stored on the message). They drive the live unread-mention badge (the `chat:new`
-  frame) and, via `server/utils/chat/mentions.ts` `notifyMentions` at post time, a
+  frame) and, via `apps/web-nuxt/server/utils/chat/mentions.ts` `notifyMentions` at post time, a
   durable `CHAT_MENTION` [notification](notifications.md) (header bell) plus a
   [web push](web-push.md) - regardless of which league or match. The ids are
   intersected with the league's real members and the sender is dropped, which
@@ -81,13 +81,13 @@ private key lives in IndexedDB. Three recovery paths, all in the chat overflow m
 - Reactions reuse the [match reaction set](reactions.md) (plaintext emoji, so the
   server sees the emoji but not the message).
 - A hand-rolled emoji picker inserts raw unicode at the caret.
-- Rich rendering: `app/utils/chat-content.ts` tokenizes the decrypted text and
+- Rich rendering: `apps/web-nuxt/app/utils/chat-content.ts` tokenizes the decrypted text and
   `ChatMessageContent.vue` renders `@mentions`, inline image/gif URLs, and the
   first link as a collapsible `ChatLinkPreview`.
 
 ## Link previews (unfurl)
 
-`GET /api/chat/unfurl` + `server/utils/chat/unfurl.ts` fetch and parse OpenGraph
+`GET /api/chat/unfurl` + `apps/web-nuxt/server/utils/chat/unfurl.ts` fetch and parse OpenGraph
 metadata. It is auth-gated and SSRF-guarded: per-hop DNS resolution with
 private / loopback / link-local blocking, manual redirect handling, a byte cap,
 html-only, and an in-memory cache. It fetches through the shared cycletls
@@ -129,8 +129,8 @@ leagues, not just the selected one, and it survives a reload.
 
 - Read state is a per-room marker, `chat_room_read (userId, leagueId, roomKey)`
   with `lastReadAt` - deliberately NOT a per-message "seen by" receipt. `roomKey`
-  is the matchId, or the `__global__` sentinel (`shared/types/chat.ts` `roomKeyFor`).
-- `GET /api/chat/unread` (`server/utils/chat/unread.ts` `getUnreadRooms`) counts,
+  is the matchId, or the `__global__` sentinel (`apps/web-nuxt/shared/types/chat.ts` `roomKeyFor`).
+- `GET /api/chat/unread` (`apps/web-nuxt/server/utils/chat/unread.ts` `getUnreadRooms`) counts,
   per room across the user's leagues, messages newer than the marker - floored at
   `league_member.joinedAt` when there is no marker, so pre-join history never
   shows - excluding own, thread-reply and non-visible messages. Unread-mention
@@ -178,13 +178,13 @@ the pony-head glyph swap from the match reaction stack.
 
 ## Sources
 
-- `db/app-schema.ts` (`chat_message`, `chat_attachment`, `chat_identity`,
+- `apps/web-nuxt/db/app-schema.ts` (`chat_message`, `chat_attachment`, `chat_identity`,
   `league_chat_key`, `chat_message_report`, `chat_moderation_state`,
   `chat_room_read`)
-- `server/utils/chat/*` (service, unfurl, `mentions`, `unread`),
-  `server/api/chat/{unread.get,read.post}.ts`, `shared/types/chat.ts`,
-  `shared/reactions.ts`
-- `app/utils/chat-content.ts`, `app/components/Chat*.vue`,
-  `app/composables/useLeagueChat.ts`, `useChatActivity.ts`, `useChatDockOpen.ts`,
+- `apps/web-nuxt/server/utils/chat/*` (service, unfurl, `mentions`, `unread`),
+  `apps/web-nuxt/server/api/chat/{unread.get,read.post}.ts`, `apps/web-nuxt/shared/types/chat.ts`,
+  `apps/web-nuxt/shared/reactions.ts`
+- `apps/web-nuxt/app/utils/chat-content.ts`, `apps/web-nuxt/app/components/Chat*.vue`,
+  `apps/web-nuxt/app/composables/useLeagueChat.ts`, `useChatActivity.ts`, `useChatDockOpen.ts`,
   `useChatImage.ts` (5MB cap, webp compression, GIF passthrough),
-  `app/plugins/chat-deeplink.client.ts`
+  `apps/web-nuxt/app/plugins/chat-deeplink.client.ts`

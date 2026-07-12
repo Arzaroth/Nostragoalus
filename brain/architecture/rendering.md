@@ -11,20 +11,20 @@ The app does NOT use the nuxt-og-image module: the route logic and deps are kept
 explicit. Product details in
 [../features/share-images.md](../features/share-images.md).
 
-Pipeline lives in `server/utils/share/*`:
+Pipeline lives in `apps/web-nuxt/server/utils/share/*`:
 
 - `token.ts` - stateless HMAC tokens, domain-separated from the auth secret.
   Minting (`/api/share/mint`) checks ownership; the public render trusts the
   signed token.
 - the card model + the pure element template + `render.ts` (satori + resvg).
-- the binary route `server/routes/og/share/[token].get.ts` is outside the
-  coverage gate; the pure logic under `server/utils/share/**` is inside it.
+- the binary route `apps/web-nuxt/server/routes/og/share/[token].get.ts` is outside the
+  coverage gate; the pure logic under `apps/web-nuxt/server/utils/share/**` is inside it.
 - Cache: finished-result cards cache ~1 day, live / pre-kickoff cards ~120s.
 
 ### Two footguns (do not relearn these)
 
 1. **satori needs `ttf` / `otf` / `woff`, NOT `woff2`, and does not fetch remote
-   images.** Vendored woff fonts live in `server/assets/fonts/` (Inter Latin plus
+   images.** Vendored woff fonts live in `apps/web-nuxt/server/assets/fonts/` (Inter Latin plus
    Noto Sans Thai for locale glyph coverage via satori's per-glyph fallback).
    Additional script subsets (ja/ko/zh/ar/he/hi, etc.) are fetched from Google
    Fonts on demand through satori's `loadAdditionalAsset` and cached, degrading
@@ -43,7 +43,7 @@ Pipeline lives in `server/utils/share/*`:
 ## PWA service worker
 
 - `@vite-pwa/nuxt` in `injectManifest` mode (switched from `generateSW`), with a
-  custom worker at `app/service-worker/sw.ts` (Workbox `precacheAndRoute` +
+  custom worker at `apps/web-nuxt/app/service-worker/sw.ts` (Workbox `precacheAndRoute` +
   `cleanupOutdatedCaches`, plus the `push` and `notificationclick` handlers for
   web push).
 - `registerType: 'prompt'` - the user controls activation via the in-app banner,
@@ -59,7 +59,7 @@ The install / download / reload UX that sits on top of this worker is
 
 ## Sources
 
-- `server/utils/share/{token,render,template}.ts`, `shared/share-card.ts`
-- `server/routes/og/share/[token].get.ts`, `server/api/share/mint.post.ts`
-- `server/assets/fonts/*`
-- `app/service-worker/sw.ts`, `nuxt.config.ts` (pwa block)
+- `apps/web-nuxt/server/utils/share/{token,render,template}.ts`, `apps/web-nuxt/shared/share-card.ts`
+- `apps/web-nuxt/server/routes/og/share/[token].get.ts`, `apps/web-nuxt/server/api/share/mint.post.ts`
+- `apps/web-nuxt/server/assets/fonts/*`
+- `apps/web-nuxt/app/service-worker/sw.ts`, `apps/web-nuxt/nuxt.config.ts` (pwa block)

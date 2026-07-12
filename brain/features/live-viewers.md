@@ -9,12 +9,12 @@ hub](../architecture/realtime.md). Back to the catalog: [index.md](index.md).
 Under the scoreline, only while the match is in play (`LIVE`/`PAUSED`) and the
 count is above zero: a pulsing dot and "N watching now" (pluralized,
 [all five locales](../architecture/i18n.md)). Rendered by
-`app/components/MatchViewers.vue` (presentational - the page owns the
+`apps/web-nuxt/app/components/MatchViewers.vue` (presentational - the page owns the
 live/count gate).
 
 ## How it works
 
-- **Counting** lives in `server/utils/live/viewers.ts` - a pure, in-process
+- **Counting** lives in `apps/web-nuxt/server/utils/live/viewers.ts` - a pure, in-process
   module (under the [98% gate](../architecture/testing.md)): `Map<matchId,
   Set<socket>>` rooms plus a reverse `Map<socket, Set<matchId>>` so a fresh
   report diffs against the previous one, and a `Map<socket, identity>` recording
@@ -22,7 +22,7 @@ live/count gate).
   return the matchIds whose count changed; `viewerCount` / `viewersOf` read it.
   It never sends - the hub does.
 - **A dedicated `viewing` frame, not `subscribe`.** A socket on the detail page
-  sends `{ type: 'viewing', matchId }` (`app/composables/useMatchPresence.ts`).
+  sends `{ type: 'viewing', matchId }` (`apps/web-nuxt/app/composables/useMatchPresence.ts`).
   This is deliberately separate from the `subscribe` score frame that
   `useLiveMatch` / `useLiveMatches` send: the fixtures list subscribes to *every*
   visible match for score patches, so counting `subscribe` would make every list
@@ -35,7 +35,7 @@ live/count gate).
   [presence](../architecture/realtime.md)). Guests have no `userId`, so they fall
   back to their socket and each guest tab counts separately. Re-sends on reconnect
   are still no-ops.
-- **Fan-out.** `server/utils/live/hub.ts` `syncMatchViewers` (on a `viewing`
+- **Fan-out.** `apps/web-nuxt/server/utils/live/hub.ts` `syncMatchViewers` (on a `viewing`
   frame) and `dropMatchViewer` (on disconnect) push `{ type: 'viewers:update',
   matchId, count }` to everyone in that match's room. On disconnect the socket
   leaves the subscriber set *before* the drop, so the decremented count reaches
@@ -52,7 +52,7 @@ pub/sub for the rooms - tracked in [../../TODO.md](../../TODO.md). Not solved no
 
 ## Sources
 
-- `server/utils/live/viewers.ts` (+ `viewers.test.ts`), `server/utils/live/hub.ts`
-- `server/routes/_ws.ts` (the `viewing` frame + disconnect drop)
-- `app/composables/useMatchPresence.ts`, `app/components/MatchViewers.vue`
-- `app/pages/[competition]/matches/[id].vue` (the gated display)
+- `apps/web-nuxt/server/utils/live/viewers.ts` (+ `viewers.test.ts`), `apps/web-nuxt/server/utils/live/hub.ts`
+- `apps/web-nuxt/server/routes/_ws.ts` (the `viewing` frame + disconnect drop)
+- `apps/web-nuxt/app/composables/useMatchPresence.ts`, `apps/web-nuxt/app/components/MatchViewers.vue`
+- `apps/web-nuxt/app/pages/[competition]/matches/[id].vue` (the gated display)

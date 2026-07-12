@@ -32,13 +32,13 @@ See [../decisions.md](../decisions.md).
 
 Rides the one in-process [WebSocket hub](../architecture/realtime.md) - no new
 transport. The frames (`voice:*`) are validated and dispatched in
-`server/routes/_ws.ts`; the logic lives in `server/utils/live/voice.ts` (under the
-coverage gate), with the send primitives in `server/utils/live/hub.ts`:
+`apps/web-nuxt/server/routes/_ws.ts`; the logic lives in `apps/web-nuxt/server/utils/live/voice.ts` (under the
+coverage gate), with the send primitives in `apps/web-nuxt/server/utils/live/hub.ts`:
 
 - `voice:join` / `voice:leave` - enter/leave the call for a scope. The server
-  authorizes the scope (`server/utils/voice/service.ts` `resolveVoiceScope`,
+  authorizes the scope (`apps/web-nuxt/server/utils/voice/service.ts` `resolveVoiceScope`,
   reusing DM-participant + league-member checks), seats the socket in the room
-  (`server/utils/live/voice-rooms.ts`) and fans the roster to the room.
+  (`apps/web-nuxt/server/utils/live/voice-rooms.ts`) and fans the roster to the room.
 - `voice:signal` - relays one SDP offer/answer or ICE candidate to another
   participant. Authorized purely by live room membership (both peers must be in the
   same room), so there is no per-signal DB hit and no way to push signaling at a
@@ -55,10 +55,10 @@ one mic per person, and signaling targets the one participating tab.
 
 ### The mesh (client)
 
-`app/composables/useVoiceCall.ts` is an app-wide singleton (one per tab, like
+`apps/web-nuxt/app/composables/useVoiceCall.ts` is an app-wide singleton (one per tab, like
 [`usePresence`](../architecture/realtime.md)) owning a dedicated signaling socket
 and the peer-connection map. The glare-free offerer rule and roster diff are pure
-and unit-tested in `app/utils/voice.ts`:
+and unit-tested in `apps/web-nuxt/app/utils/voice.ts`:
 
 - On a `voice:roster` frame it diffs the peer set (`rosterDelta`) and, for each new
   peer, the lexicographically smaller id offers (`shouldOffer`) while the other
@@ -95,14 +95,14 @@ purely in-process. The `VOICE_MISSED` notification carries caller + room context
 
 ## Sources
 
-- Server: `server/utils/voice/service.ts`, `server/utils/live/voice.ts`,
-  `server/utils/live/voice-rooms.ts`, `server/utils/live/hub.ts` (voice
-  primitives), `server/routes/_ws.ts`, `server/api/voice/ice-servers.get.ts`
-- Client: `app/composables/useVoiceCall.ts`, `app/utils/voice.ts`,
-  `app/components/VoiceCallButton.vue`, `VoiceCallOverlay.client.vue`,
+- Server: `apps/web-nuxt/server/utils/voice/service.ts`, `apps/web-nuxt/server/utils/live/voice.ts`,
+  `apps/web-nuxt/server/utils/live/voice-rooms.ts`, `apps/web-nuxt/server/utils/live/hub.ts` (voice
+  primitives), `apps/web-nuxt/server/routes/_ws.ts`, `apps/web-nuxt/server/api/voice/ice-servers.get.ts`
+- Client: `apps/web-nuxt/app/composables/useVoiceCall.ts`, `apps/web-nuxt/app/utils/voice.ts`,
+  `apps/web-nuxt/app/components/VoiceCallButton.vue`, `VoiceCallOverlay.client.vue`,
   `VoiceAudio.vue`
-- Shared: `shared/types/voice.ts` (scope, room key, frames, ICE response)
+- Shared: `apps/web-nuxt/shared/types/voice.ts` (scope, room key, frames, ICE response)
 - Schema: `voice_call` + `voice_call_status` enum; `VOICE_MISSED` notification;
-  `pushCalls` category (`db/app-schema.ts`, `db/auth-schema.ts`)
-- Infra: `coturn` service in `compose.yaml` (the `voice` profile)
-- E2E: `tests/e2e/voice-chat.e2e.ts`
+  `pushCalls` category (`apps/web-nuxt/db/app-schema.ts`, `apps/web-nuxt/db/auth-schema.ts`)
+- Infra: `coturn` service in `apps/web-nuxt/compose.yaml` (the `voice` profile)
+- E2E: `apps/web-nuxt/tests/e2e/voice-chat.e2e.ts`

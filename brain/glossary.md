@@ -100,10 +100,10 @@ the code. Alphabetical.
 - **STUN / TURN** - NAT-traversal helpers. STUN discovers a peer's public address;
   TURN relays the (still-encrypted) media when a direct path is impossible (symmetric
   NAT). TURN is the self-hosted **coturn** service. See [architecture/webrtc.md](architecture/webrtc.md).
-- **Service** - a function in `server/utils/<feature>/service.ts` taking
+- **Service** - a function in `apps/web-nuxt/server/utils/<feature>/service.ts` taking
   `AppDatabase` first and throwing domain errors. The covered logic surface.
 - **AppDatabase** - the Drizzle `PgDatabase` type every service accepts
-  (`db/types.ts`).
+  (`apps/web-nuxt/db/types.ts`).
 - **`defineValidatedHandler`** - the route wrapper that does auth + zod body
   validation. See [architecture/server.md](architecture/server.md).
 - **The gate** - typecheck + 98% coverage tests + component tests + build, run

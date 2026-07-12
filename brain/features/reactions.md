@@ -43,9 +43,9 @@ documented palette is the emoji set; the pony heads are an easter egg (see
 
 ## Sources
 
-- `db/app-schema.ts` (`match_reaction`, `reaction_emoji` enum)
-- `shared/reactions.ts`
-- `app/components/ReactionBar.vue`, `app/components/ReactionGlyph.vue`
-- `server/api/reactions/index.put.ts` (write, then publish)
-- `server/utils/live/hub.ts` (`publishReactionUpdate`, `publishLeagueReactionUpdate`),
-  `server/utils/live/league-reactions.ts` (`publishLeagueReactionUpdates`)
+- `apps/web-nuxt/db/app-schema.ts` (`match_reaction`, `reaction_emoji` enum)
+- `apps/web-nuxt/shared/reactions.ts`
+- `apps/web-nuxt/app/components/ReactionBar.vue`, `apps/web-nuxt/app/components/ReactionGlyph.vue`
+- `apps/web-nuxt/server/api/reactions/index.put.ts` (write, then publish)
+- `apps/web-nuxt/server/utils/live/hub.ts` (`publishReactionUpdate`, `publishLeagueReactionUpdate`),
+  `apps/web-nuxt/server/utils/live/league-reactions.ts` (`publishLeagueReactionUpdates`)

@@ -18,15 +18,15 @@ How the app is built, run locally, tested, released, and deployed. Task runner i
 | `mise run seed-demo` | Fill the DB with demo players/predictions, then re-score |
 | `mise run shots` | Retake landing screenshots (headless Firefox) |
 | `mise run e2e-smtp` | Email-OTP flow end-to-end through the stack + maildev |
-| `mise run e2e` | Browser e2e (Playwright): predict/finalize/leaderboard + mail + SSO against the isolated `ng-e2e` stack (`e2e-up` / `e2e-down` manage its own DB/maildev/keycloak); see `tests/e2e/README.md` |
+| `mise run e2e` | Browser e2e (Playwright): predict/finalize/leaderboard + mail + SSO against the isolated `ng-e2e` stack (`e2e-up` / `e2e-down` manage its own DB/maildev/keycloak); see `apps/web-nuxt/tests/e2e/README.md` |
 
-Worktree previews need `.env` copied from the main checkout, or auth 500s on the
+Worktree previews need `apps/web-nuxt/.env` copied from the main checkout, or auth 500s on the
 default secret.
 
 ## Docker
 
-Compose project `nostragoalus`: base `compose.yaml` + dev overlay
-`compose.dev.yaml`. `Dockerfile` stages: `base` -> `deps` (pnpm fetch, cached) ->
+Compose project `nostragoalus`: base `apps/web-nuxt/compose.yaml` + dev overlay
+`apps/web-nuxt/compose.dev.yaml`. `apps/web-nuxt/Dockerfile` stages: `base` -> `deps` (pnpm fetch, cached) ->
 `install` -> `dev` | `build` | `prod`. The cycletls glibc shim (`gcompat`,
 `libstdc++`) is installed in the **base** stage so it is inherited by dev, build,
 and prod (a provider HTTP engine fails on Alpine/musl without it). See
@@ -140,5 +140,5 @@ Never assume the deployed/prod version or state: check
 ## Sources
 
 - `.mise.toml`, `mise-tasks/*`
-- `compose.yaml`, `compose.dev.yaml`, `Dockerfile`
+- `apps/web-nuxt/compose.yaml`, `apps/web-nuxt/compose.dev.yaml`, `apps/web-nuxt/Dockerfile`
 - `CHANGELOG.md`, `ROADMAP.md`, `TODO.md`, `package.json`

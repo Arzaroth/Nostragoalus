@@ -10,7 +10,7 @@ Back to the [feature index](index.md).
 
 ## Shape
 
-- **Overlay**: [`app/components/OnboardingTour.vue`](../../app/components/OnboardingTour.vue).
+- **Overlay**: [`apps/web-nuxt/app/components/OnboardingTour.vue`](../../app/components/OnboardingTour.vue).
   Client-only (reads `window` / `getBoundingClientRect`), teleports to `body`,
   sits at `z-[1000]` - above the sticky header (`z-50`) and chat/banner
   (`z-40`), below the `z-[2000]` lightboxes. The dim + spotlight is one trick: a
@@ -21,7 +21,7 @@ Back to the [feature index](index.md).
   is no room, and clamps to the viewport; it re-measures on scroll and resize so
   the spotlight tracks through smooth-scroll and layout shifts.
 - **State + gating**:
-  [`app/composables/useOnboardingTour.ts`](../../app/composables/useOnboardingTour.ts).
+  [`apps/web-nuxt/app/composables/useOnboardingTour.ts`](../../app/composables/useOnboardingTour.ts).
   Module-level singleton refs (`active`, `stepIndex`) so the overlay and the
   "Take the tour" menu launcher drive one instance. `TOUR_STEPS` is the ordered
   step list; each step has an i18n `key` and an optional `target` CSS selector.
@@ -53,16 +53,16 @@ convention before - added with this feature):
 Same one-time-flag pattern as the league prompt (see [leagues.md](leagues.md)):
 
 - Column `onboardingTourDismissedAt` on the `user` table
-  ([`db/auth-schema.ts`](../../db/auth-schema.ts)), exposed on the session as a
+  ([`apps/web-nuxt/db/auth-schema.ts`](../../db/auth-schema.ts)), exposed on the session as a
   better-auth `additionalField` with `input: false`
-  ([`lib/auth.ts`](../../lib/auth.ts)) - readable client-side, writable only by
+  ([`apps/web-nuxt/lib/auth.ts`](../../lib/auth.ts)) - readable client-side, writable only by
   the service.
 - Writer `dismissOnboardingTour`
-  ([`server/utils/onboarding/service.ts`](../../server/utils/onboarding/service.ts)),
+  ([`apps/web-nuxt/server/utils/onboarding/service.ts`](../../server/utils/onboarding/service.ts)),
   behind the thin route
-  [`server/api/me/onboarding-tour.post.ts`](../../server/api/me/onboarding-tour.post.ts).
+  [`apps/web-nuxt/server/api/me/onboarding-tour.post.ts`](../../server/api/me/onboarding-tour.post.ts).
   Both exits (finish, skip) stamp it. It delegates to the shared
-  `stampUserFlagOnce` ([`server/utils/user-flags/service.ts`](../../server/utils/user-flags/service.ts)),
+  `stampUserFlagOnce` ([`apps/web-nuxt/server/utils/user-flags/service.ts`](../../server/utils/user-flags/service.ts)),
   idempotent via an `is null` guard, shared with the leagues one-time prompt.
 - **Auto-start** fires once per session as the in-session hand-off from the
   league prompt: the tour flag is unset AND `markLeaguePromptResolved()` (a module
@@ -83,9 +83,9 @@ Same one-time-flag pattern as the league prompt (see [leagues.md](leagues.md)):
 
 ## Tests
 
-- Service: [`server/utils/onboarding/service.test.ts`](../../server/utils/onboarding/service.test.ts) (pglite; stamp, idempotent, scoped).
-- Component: [`app/components/OnboardingTour.nuxt.test.ts`](../../app/components/OnboardingTour.nuxt.test.ts) (render, step bookends, skip, auto-start).
-- E2E: [`tests/e2e/onboarding.e2e.ts`](../../tests/e2e/onboarding.e2e.ts) drives the launcher through every step and asserts it stays dismissed on reload.
+- Service: [`apps/web-nuxt/server/utils/onboarding/service.test.ts`](../../server/utils/onboarding/service.test.ts) (pglite; stamp, idempotent, scoped).
+- Component: [`apps/web-nuxt/app/components/OnboardingTour.nuxt.test.ts`](../../app/components/OnboardingTour.nuxt.test.ts) (render, step bookends, skip, auto-start).
+- E2E: [`apps/web-nuxt/tests/e2e/onboarding.e2e.ts`](../../tests/e2e/onboarding.e2e.ts) drives the launcher through every step and asserts it stays dismissed on reload.
 
 ## Notes
 

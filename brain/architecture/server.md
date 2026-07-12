@@ -6,8 +6,8 @@ typed domain errors. Read [overview.md](overview.md) first for the layering rule
 ## Directory layout
 
 ```
-server/
-  api/                      Nitro file-based routes -> server/api/<path>/<name>.<method>.ts
+apps/web-nuxt/server/
+  api/                      Nitro file-based routes -> apps/web-nuxt/server/api/<path>/<name>.<method>.ts
     admin/                  admin-only endpoints (leagues, users, sso, api-keys,
                             settings, scoring, matches, odds, roadmap, cron, run-task)
     auth/[...all].ts        better-auth catch-all (auto-wired)
@@ -38,12 +38,12 @@ server/
 ## The service pattern
 
 Every service function takes `AppDatabase` (alias of Drizzle's
-`PgDatabase<...>`, defined in `db/types.ts`) as its first parameter and throws
+`PgDatabase<...>`, defined in `apps/web-nuxt/db/types.ts`) as its first parameter and throws
 the error classes from `errors.ts`. Routes import the singleton `db` from
-`db/index.ts` and call services.
+`apps/web-nuxt/db/index.ts` and call services.
 
 ```ts
-// server/utils/<feature>/service.ts
+// apps/web-nuxt/server/utils/<feature>/service.ts
 import type { AppDatabase } from '../../../db/types'
 import { ValidationError, NotFoundError } from '../errors'
 
@@ -64,7 +64,7 @@ logic lives here and routes stay thin. See [testing.md](testing.md).
 ## Errors -> HTTP
 
 Services throw; routes never build status codes by hand. `toHttpError`
-(`server/utils/http.ts`) maps each class:
+(`apps/web-nuxt/server/utils/http.ts`) maps each class:
 
 | Error class | Status | Meaning |
 |---|---|---|
@@ -86,7 +86,7 @@ The standard wrapper for mutations: it enforces auth, zod-validates the body, an
 exposes the validated body + session user to the handler.
 
 ```ts
-// server/api/predictions/index.put.ts
+// apps/web-nuxt/server/api/predictions/index.put.ts
 const bodySchema = z.object({
   matchId: z.string().uuid(),
   home: z.number().int().min(0).max(99),
@@ -112,10 +112,10 @@ request body, responses). This drives the generated docs at
 
 ## Startup plugins
 
-- `server/plugins/migrate.ts` - when `RUN_MIGRATIONS=true`, runs the Drizzle
+- `apps/web-nuxt/server/plugins/migrate.ts` - when `RUN_MIGRATIONS=true`, runs the Drizzle
   node-postgres migrator against `./drizzle` on boot. See
   [database.md](database.md) for the shared-dev-DB migrator caveat.
-- `server/plugins/warm-settings.ts` - pre-loads the email-verification flag from
+- `apps/web-nuxt/server/plugins/warm-settings.ts` - pre-loads the email-verification flag from
   the DB so sign-in/sign-up see the correct state immediately, and seeds a default
   `scoring_config` (idempotent `ensureDefaultScoringConfig`) so a freshly migrated
   DB is usable before any `fixtures:import` (the scoring-dependent routes would
@@ -123,16 +123,16 @@ request body, responses). This drives the generated docs at
 
 ## Request middleware
 
-- `server/middleware/passkey-guard.ts` - guards passkey-registration endpoints
+- `apps/web-nuxt/server/middleware/passkey-guard.ts` - guards passkey-registration endpoints
   behind a fresh reauth (`ng_reauth` cookie). See [auth.md](auth.md).
-- `server/middleware/skin.ts` - seeds the cosmetic skin for SSR. See
+- `apps/web-nuxt/server/middleware/skin.ts` - seeds the cosmetic skin for SSR. See
   [../features/easter-eggs.md](../features/easter-eggs.md).
 
 ## Scheduled tasks
 
-The cron schedule lives in `server/utils/tasks/registry.ts` as a `TASKS` array of
+The cron schedule lives in `apps/web-nuxt/server/utils/tasks/registry.ts` as a `TASKS` array of
 `{ name, cron, fireAndForget }`. `null` cron = manual-only (triggered from the
-admin Background-tasks page via `server/api/admin/run-task.post.ts`).
+admin Background-tasks page via `apps/web-nuxt/server/api/admin/run-task.post.ts`).
 
 | Task | Cron | Purpose |
 |---|---|---|
@@ -151,7 +151,7 @@ the heart of scoring: see [../features/predictions-and-scoring.md](../features/p
 
 ## Sources
 
-- `server/api/**`, `server/routes/**`, `server/middleware/**`, `server/plugins/**`
-- `server/utils/errors.ts`, `server/utils/http.ts`, `server/utils/validated-handler.ts`, `server/utils/auth-guards.ts`
-- `server/utils/tasks/registry.ts`
-- `db/types.ts`, `db/index.ts`
+- `apps/web-nuxt/server/api/**`, `apps/web-nuxt/server/routes/**`, `apps/web-nuxt/server/middleware/**`, `apps/web-nuxt/server/plugins/**`
+- `apps/web-nuxt/server/utils/errors.ts`, `apps/web-nuxt/server/utils/http.ts`, `apps/web-nuxt/server/utils/validated-handler.ts`, `apps/web-nuxt/server/utils/auth-guards.ts`
+- `apps/web-nuxt/server/utils/tasks/registry.ts`
+- `apps/web-nuxt/db/types.ts`, `apps/web-nuxt/db/index.ts`

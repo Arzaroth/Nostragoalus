@@ -10,7 +10,7 @@ feature wiring.
 
 1. `POST /api/share/mint` checks ownership of the prediction and returns a
    stateless HMAC token. The signing secret is domain-separated from the auth
-   secret (`server/utils/share/token.ts`).
+   secret (`apps/web-nuxt/server/utils/share/token.ts`).
 2. `GET /og/share/[token]` is public: it verifies the signed token and renders
    the card. The mint step is the authorization boundary; the render trusts the
    token. This route is outside the coverage gate (it returns a binary).
@@ -21,10 +21,10 @@ The card has four states - `sealed`, `reveal`, `live`, and `result` - derived
 from match timing plus scoring (not taken verbatim from the token): pre-kickoff
 it is `sealed` unless the owner minted a `reveal`, flips to `live` once kickoff
 passes, then `result` when the match is finished and scored. The state machine
-and card model live in `server/utils/share/card.ts`; the pure element template
+and card model live in `apps/web-nuxt/server/utils/share/card.ts`; the pure element template
 (`template.ts`) and the satori/resvg render (`render.ts`) sit alongside, under the
 98% gate. The shared pure helpers (round label, tier palette, score format, flag
-URL) live in `shared/share-card.ts`, used by both this server template and the
+URL) live in `apps/web-nuxt/shared/share-card.ts`, used by both this server template and the
 client `ShareCardView.vue` so the two renderers can't drift.
 
 Team identity on the card is rendered as CODE pills (for example ENG, SEN), not
@@ -40,7 +40,7 @@ pre-kickoff states use a short cache (around 120s) since they change.
 The same satori + resvg stack serves three user-scoped cards. They all name a
 `{user, competition, locale}` and differ only in their domain-separation tag, so
 they share one token codec, `createUserCompetitionCardCodec(domainTag)`
-(`server/utils/share/card-token.ts`); `wrapped-token.ts`, `profile-token.ts` and
+(`apps/web-nuxt/server/utils/share/card-token.ts`); `wrapped-token.ts`, `profile-token.ts` and
 `analytics-token.ts` are thin wrappers over it. A token minted for one family
 never validates as another.
 
@@ -67,10 +67,10 @@ per-card JSON summaries (`/api/share/profile/[token]`, `/api/share/analytics/
 
 ## Sources
 
-- `server/utils/share/{token,card,template,render}.ts`,
-  `server/routes/og/share/[token].get.ts`
-- `shared/share-card.ts`, `server/api/share/mint.post.ts`
-- Sibling cards: `server/utils/share/{card-token,profile-token,profile-card,profile-template,analytics-token,analytics-card,analytics-template}.ts`,
-  `server/routes/og/{profile,analytics}/[token].get.ts`, `server/api/share/{profile-mint,analytics-mint}.post.ts`,
-  `app/pages/{p,a}/[token].vue`
+- `apps/web-nuxt/server/utils/share/{token,card,template,render}.ts`,
+  `apps/web-nuxt/server/routes/og/share/[token].get.ts`
+- `apps/web-nuxt/shared/share-card.ts`, `apps/web-nuxt/server/api/share/mint.post.ts`
+- Sibling cards: `apps/web-nuxt/server/utils/share/{card-token,profile-token,profile-card,profile-template,analytics-token,analytics-card,analytics-template}.ts`,
+  `apps/web-nuxt/server/routes/og/{profile,analytics}/[token].get.ts`, `apps/web-nuxt/server/api/share/{profile-mint,analytics-mint}.post.ts`,
+  `apps/web-nuxt/app/pages/{p,a}/[token].vue`
 - Rendering details: [../architecture/rendering.md](../architecture/rendering.md)

@@ -9,7 +9,7 @@ stored. Two are crowd-derived (`CONSENSUS`, `EQUALIZER`); one is **per-user**
 ## Personas
 
 Each persona is a picking strategy scored by the real engine. See
-`server/utils/bot/service.ts` (`botPick`, `getBotOverview`, `getBotChampion`).
+`apps/web-nuxt/server/utils/bot/service.ts` (`botPick`, `getBotOverview`, `getBotChampion`).
 
 | Persona | icon | Per-match pick | Joker (per KO round) | Champion |
 | --- | --- | --- | --- | --- |
@@ -89,19 +89,19 @@ score-input crowd line, not the bots' own consensus.
 
 ## Sources
 
-- `shared/types/bot.ts` (`BotPersona`, `botUserId`, `parseBotPersona`,
+- `apps/web-nuxt/shared/types/bot.ts` (`BotPersona`, `botUserId`, `parseBotPersona`,
   `DRAW_SCORELINE`, `BOT_PERSONA_META`, `personaUsesMethod`)
-- `server/utils/bot/service.ts` (`botPick`, `computeConsensus`, `getBotOverview`,
+- `apps/web-nuxt/server/utils/bot/service.ts` (`botPick`, `computeConsensus`, `getBotOverview`,
   `getBotChampion`, TTL cache keyed by persona)
-- `server/api/bot/predictions.get.ts` (`persona`, plus `user` for the profile
-  evil twin), `server/api/bot/leaderboard-row.get.ts`
-- `app/composables/useBot.ts` (`useBotPersonas`, `useBotRow`, `useBotPredictions`,
+- `apps/web-nuxt/server/api/bot/predictions.get.ts` (`persona`, plus `user` for the profile
+  evil twin), `apps/web-nuxt/server/api/bot/leaderboard-row.get.ts`
+- `apps/web-nuxt/app/composables/useBot.ts` (`useBotPersonas`, `useBotRow`, `useBotPredictions`,
   `useUserEvilTwin`)
-- `app/utils/bot-row.ts` (`insertGhostRow`, `insertGhostRows`)
-- `app/pages/[competition]/leaderboard.vue` (Bots popover),
-  `app/pages/[competition]/bot.vue`,
-  `app/pages/[competition]/users/[id].vue` (Evil Twin toggle)
-- Live crowd totals: `server/utils/predictions/service.ts`
-  (`getCrowdTotals`, `getMatchCrowdTotal`), `server/api/predictions/index.put.ts`
+- `apps/web-nuxt/app/utils/bot-row.ts` (`insertGhostRow`, `insertGhostRows`)
+- `apps/web-nuxt/app/pages/[competition]/leaderboard.vue` (Bots popover),
+  `apps/web-nuxt/app/pages/[competition]/bot.vue`,
+  `apps/web-nuxt/app/pages/[competition]/users/[id].vue` (Evil Twin toggle)
+- Live crowd totals: `apps/web-nuxt/server/utils/predictions/service.ts`
+  (`getCrowdTotals`, `getMatchCrowdTotal`), `apps/web-nuxt/server/api/predictions/index.put.ts`
   (`publishCrowdUpdate`/`publishLeagueCrowdUpdates` on write; the publishers live
-  in `server/utils/live/hub.ts`), `app/composables/useCrowdTotals.ts`
+  in `apps/web-nuxt/server/utils/live/hub.ts`), `apps/web-nuxt/app/composables/useCrowdTotals.ts`

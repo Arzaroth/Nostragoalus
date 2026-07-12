@@ -77,7 +77,7 @@ Used to snapshot a picked team's tier (see
 
 Cloudflare-class WAFs (Sofascore, and many link-unfurl targets like 9gag) block
 Node's default TLS by JA3 fingerprint. The shared engine
-`server/utils/providers/cycle-tls.ts` uses **cycletls** (uTLS) with a Chrome JA3
+`apps/web-nuxt/server/utils/providers/cycle-tls.ts` uses **cycletls** (uTLS) with a Chrome JA3
 to pass, exposing `cycleGet` / `withOk` / `cycleHeader`. It is used by both the
 odds client and the chat link unfurl (see [../features/chat.md](../features/chat.md)).
 
@@ -89,7 +89,7 @@ provider.
 
 ## Sources
 
-- `server/utils/providers/**` (FIFA, football-data adapters, `cycle-tls.ts`)
-- `server/utils/odds/providers/sofascore.ts`, `server/utils/odds/{sync,provider-config}.ts` (odds provider registry)
-- `server/utils/champion/ranking.ts`
-- `server/tasks/**` (`matches:finalize`, `fixtures:refresh`, `scores:poll`, `odds:*`)
+- `apps/web-nuxt/server/utils/providers/**` (FIFA, football-data adapters, `cycle-tls.ts`)
+- `apps/web-nuxt/server/utils/odds/providers/sofascore.ts`, `apps/web-nuxt/server/utils/odds/{sync,provider-config}.ts` (odds provider registry)
+- `apps/web-nuxt/server/utils/champion/ranking.ts`
+- `apps/web-nuxt/server/tasks/**` (`matches:finalize`, `fixtures:refresh`, `scores:poll`, `odds:*`)

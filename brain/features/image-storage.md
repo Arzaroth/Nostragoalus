@@ -32,7 +32,7 @@ counts reach 0. Run it to zero BEFORE the release that drops the legacy
 ciphertext column and makes `storage_key` NOT NULL.
 
 Note: a Nitro file-based task registers by its path, so the file must be named
-`server/tasks/media/migrate-blobs.ts` to be callable as `media:migrate-blobs`
+`apps/web-nuxt/server/tasks/media/migrate-blobs.ts` to be callable as `media:migrate-blobs`
 (an earlier `migrate.ts` registered as `media:migrate` and silently no-op'd).
 
 ## Backup
@@ -51,7 +51,7 @@ tracked in TODO.
 
 ## Sources
 
-- `server/utils/storage/*` (driver, drivers/fs, drivers/s3, factory, service)
-- `server/tasks/media/migrate-blobs.ts`, `server/utils/storage/migrate.ts`
-- `mise-tasks/db-backup`, `mise-tasks/db-restore`, `compose.yaml`
+- `apps/web-nuxt/server/utils/storage/*` (driver, drivers/fs, drivers/s3, factory, service)
+- `apps/web-nuxt/server/tasks/media/migrate-blobs.ts`, `apps/web-nuxt/server/utils/storage/migrate.ts`
+- `mise-tasks/db-backup`, `mise-tasks/db-restore`, `apps/web-nuxt/compose.yaml`
 - Driver internals: [../architecture/storage.md](../architecture/storage.md)

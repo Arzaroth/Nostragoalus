@@ -203,7 +203,7 @@ feature/architecture doc that implements it.
   open DM is rendered by the same `ChatPanel` as league chat (`useDmRoom` is a
   drop-in for `useLeagueChat`), which is what buys DMs full chat parity
   (reactions/reply/threads/edit/images/media/link-previews) for free instead of a
-  lean text-only cut. A scope-agnostic authorizer (`server/utils/chat/access.ts`,
+  lean text-only cut. A scope-agnostic authorizer (`apps/web-nuxt/server/utils/chat/access.ts`,
   league-member-or-DM-participant) lets the shared message/reaction/attachment/edit
   routes serve both. The 1:1-meaningless chrome (enable/rotate/moderation/reports/
   verify/@mentions) is hidden in DM mode. Live delivery is still user-pinned
@@ -215,7 +215,7 @@ feature/architecture doc that implements it.
 
 - **Modes are a read-time scoring lens, not a new prediction model.** Picks stay
   (user, match)-centric; an easy/hard/hardcore league re-scores the same effective
-  picks at read time (`server/utils/leaderboard/modes.ts`), so tamper-evidence,
+  picks at read time (`apps/web-nuxt/server/utils/leaderboard/modes.ts`), so tamper-evidence,
   the global crowd histogram and the bot keep one canonical pick per user. See
   [features/league-modes.md](features/league-modes.md).
 - **Base pick + per-league override, synced by default.** To let a player diverge
@@ -233,7 +233,7 @@ feature/architecture doc that implements it.
   skips a semi-final loser only when the competition's format plays a third-place
   match (that match then eliminates its own loser); a format without one, like the
   Euro, greys the semi-final losers at the semi-final. The flag is `thirdPlace` on
-  the per-competition `Tiebreakers` struct (`server/utils/stats/tiebreakers.ts`),
+  the per-competition `Tiebreakers` struct (`apps/web-nuxt/server/utils/stats/tiebreakers.ts`),
   defaulting true so an unknown format never falsely greys a still-alive team.
 - **Mode frozen at kickoff.** No moded create or swap once any match has started,
   so the rules can't shift mid-tournament (`assertCompetitionNotRunning`).
@@ -243,7 +243,7 @@ feature/architecture doc that implements it.
   overshooting the fixed budget. A transaction-level `pg_advisory_xact_lock` keyed
   on the member+round (base picks and each league override chain get their own
   bucket) makes the read-then-write atomic (`lockWagerBudget`,
-  `server/utils/predictions/service.ts`).
+  `apps/web-nuxt/server/utils/predictions/service.ts`).
 - **Every override write is tamper-evident, including joker-seeded ones.**
   `setLeagueJoker` seeds an override copied from the base pick when the league
   still mirrors it; that seeded scoreline appends to the league chain like a
@@ -296,7 +296,7 @@ feature/architecture doc that implements it.
 
 - **The achievement catalog lives in code, not the DB.** `user_achievement` only
   records what was unlocked; the badge list, thresholds and presentation are a
-  code catalog (`server/utils/achievements/catalog.ts`). Badges are behaviour, not
+  code catalog (`apps/web-nuxt/server/utils/achievements/catalog.ts`). Badges are behaviour, not
   content: they track the scoring logic, want type-safety + review, and never need
   runtime editing - a data table would only add migration ceremony.
 - **Trophies are derived, never stored as truth.** `awardCompetitionTrophies`
@@ -324,7 +324,7 @@ feature/architecture doc that implements it.
 - **Prizes are per-league, and their winners are derived live at read time, not
   stored.** The contest is a league's own (best among its members, not the global
   trophy). A dedicated league engine `computeLeagueRewardWinners`
-  (`server/utils/rewards/criteria.ts`) runs on demand from `getRewardStandings`, so a
+  (`apps/web-nuxt/server/utils/rewards/criteria.ts`) runs on demand from `getRewardStandings`, so a
   league sees who is currently leading each prize and it settles at competition end -
   no finalize hook, no league-award table. See [features/rewards.md](features/rewards.md).
 - **League prizes get their own criteria enum, decoupled from the global trophies.**
@@ -335,7 +335,7 @@ feature/architecture doc that implements it.
   aggregates. Keeping this separate from `competition_award_type` means the global
   trophy set (and the achievements/wrapped/cabinet that read it) is untouched, and the
   blast radius of a new prize criterion is one enum + one spec table. `rankableForMatches`
-  is exported from `awards/service.ts` for the engine to reuse.
+  is exported from `apps/web-nuxt/server/utils/awards/service.ts` for the engine to reuse.
 - **Reward images reuse the avatar storage seam** (content-addressed
   `reward/<sha>.<ext>`, served at `/api/media/reward/[key]`); the route resolves the
   uploaded data URL to a key so the reward service stays storage-free and testable.
@@ -350,7 +350,7 @@ feature/architecture doc that implements it.
 - **The league description is Markdown, sanitized on render, not stored as HTML.**
   The blurb is untrusted author input shown to every member, so it is kept as Markdown
   source (`league.description`) and rendered client-side through `marked` ->
-  `isomorphic-dompurify` (`app/utils/markdown.ts`) with a narrow tag allow-list and
+  `isomorphic-dompurify` (`apps/web-nuxt/app/utils/markdown.ts`) with a narrow tag allow-list and
   forced link/image hardening - both already dependencies (the about page uses the same
   pair). Sanitizing on render, not on write, means the boundary is the one place the
   HTML is produced; storing raw HTML would trust the author. `isomorphic-dompurify` is a
@@ -399,7 +399,7 @@ feature/architecture doc that implements it.
   surfaces `disabled` everywhere (greyed card, absent from the cabinet) until an
   owner/moderator picks the team in the prize editor. See [rewards.md](features/rewards.md).
 - **Key transparency is anchored in-app only (no external witness).** The
-  `(userId -> publicKey)` log (`shared/key-transparency.ts`) is append-only and
+  `(userId -> publicKey)` log (`apps/web-nuxt/shared/key-transparency.ts`) is append-only and
   publicly served, so a returning client that pinned an earlier head detects a
   rewritten log. We deliberately did NOT add an external transparency witness
   (git-mirror/CT-style service): it's a deploy dependency the self-hosted operator
@@ -425,7 +425,7 @@ feature/architecture doc that implements it.
   goal, so it re-raises the struck-off score all the same). Neither can hold "the
   header matches the list" because they let a lagging scoreboard number win. The feed
   is strictly fresher and is the list's own source, so `liveHeaderScore`
-  (`app/utils/live-score.ts`) makes it authoritative when ready, WS/stored only as the
+  (`apps/web-nuxt/app/utils/live-score.ts`) makes it authoritative when ready, WS/stored only as the
   pre-feed fallback. Accepted tradeoff: if the feed genuinely omits a goal the
   scoreboard counts, the header under-reports - but it then still matches the list
   beneath it, which is the property users actually notice. See

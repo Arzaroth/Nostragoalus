@@ -23,7 +23,7 @@ the whole thing on kickoff so nothing leaks early.
 ## How it scores
 
 `getPastPickCounterfactual(db, { matchId, userId, rules? })` in
-[`server/utils/past-pick/service.ts`](../../server/utils/past-pick/service.ts):
+[`apps/web-nuxt/server/utils/past-pick/service.ts`](../../server/utils/past-pick/service.ts):
 
 1. Load the match. Pre-kickoff (`!matchHasStarted`) or no scoreline yet -> `none`.
 2. Load the kept pick (the user's current `prediction` row). None -> `none`.
@@ -50,13 +50,13 @@ documented approximation (see [../../TODO.md](../../TODO.md)).
 ## Surface
 
 - Endpoint:
-  [`server/api/matches/[id]/my-past-picks.get.ts`](../../server/api/matches/[id]/my-past-picks.get.ts)
+  [`apps/web-nuxt/server/api/matches/[id]/my-past-picks.get.ts`](../../server/api/matches/[id]/my-past-picks.get.ts)
   - owner-gated (`requireUser`), returns the counterfactual for the session user
   only. **Copy-protection**: never another user's picks.
-- Composable: [`app/composables/useMyPastPicks.ts`](../../app/composables/useMyPastPicks.ts)
+- Composable: [`apps/web-nuxt/app/composables/useMyPastPicks.ts`](../../app/composables/useMyPastPicks.ts)
   - client-only, enabled once the match has started.
 - Component: `PastPickHint.vue` on the match page
-  (`app/pages/[competition]/matches/[id].vue`), under "your pick", owner-only.
+  (`apps/web-nuxt/app/pages/[competition]/matches/[id].vue`), under "your pick", owner-only.
   While live it is provisional and refetches on the page's live score signal
   (`scoreTotal`), resolving to the full-time line at the whistle. Copy in
   `pastPick.*` across all five locales.
@@ -70,8 +70,8 @@ and "what-if stats" items - tracked in [../../TODO.md](../../TODO.md).
 
 ## Sources
 
-- `server/utils/past-pick/service.ts` (+ `service.test.ts`)
-- `server/api/matches/[id]/my-past-picks.get.ts`
-- `app/composables/useMyPastPicks.ts`, `app/components/PastPickHint.vue` (+ `.nuxt.test.ts`)
-- `shared/types/past-pick.ts`
-- Reused: `server/utils/scoring/engine.ts`, `server/utils/scoring/store.ts`, `server/utils/commitment/service.ts`, `shared/types/match.ts`
+- `apps/web-nuxt/server/utils/past-pick/service.ts` (+ `service.test.ts`)
+- `apps/web-nuxt/server/api/matches/[id]/my-past-picks.get.ts`
+- `apps/web-nuxt/app/composables/useMyPastPicks.ts`, `apps/web-nuxt/app/components/PastPickHint.vue` (+ `.nuxt.test.ts`)
+- `apps/web-nuxt/shared/types/past-pick.ts`
+- Reused: `apps/web-nuxt/server/utils/scoring/engine.ts`, `apps/web-nuxt/server/utils/scoring/store.ts`, `apps/web-nuxt/server/utils/commitment/service.ts`, `apps/web-nuxt/shared/types/match.ts`

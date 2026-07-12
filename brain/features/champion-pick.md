@@ -50,14 +50,14 @@ winner is known, and a `CHAMPION_RESULT` notification goes to the winners.
 
 ## Sources
 
-- `db/app-schema.ts` (`champion_pick`, `scoring_config.champion_tiers`)
-- `app/composables/useChampion.ts`, `server/api/champion/index.put.ts`
-- `server/utils/champion/ranking.ts` (`getFifaRanks`) and
-  `server/utils/champion/service.ts` (`getChampionLockTime`, `repickChampion`,
+- `apps/web-nuxt/db/app-schema.ts` (`champion_pick`, `scoring_config.champion_tiers`)
+- `apps/web-nuxt/app/composables/useChampion.ts`, `apps/web-nuxt/server/api/champion/index.put.ts`
+- `apps/web-nuxt/server/utils/champion/ranking.ts` (`getFifaRanks`) and
+  `apps/web-nuxt/server/utils/champion/service.ts` (`getChampionLockTime`, `repickChampion`,
   `awardChampionBonuses`)
-- `server/utils/scoring/config.ts` (`DEFAULT_CHAMPION_TIERS`, `championPointsForRank`)
+- `apps/web-nuxt/server/utils/scoring/config.ts` (`DEFAULT_CHAMPION_TIERS`, `championPointsForRank`)
 - Shares its picker showcase, query/mutation plumbing, leaderboard bonus merge
   and result notification with the [best-scorer pick](best-scorer.md):
-  `app/components/MetaPickShowcase.vue`, `app/composables/useMetaPick.ts`,
-  `collectMetaBonus` (`server/utils/leaderboard/service.ts`) and `notifyMetaResult`
-  (`server/utils/notifications/events.ts`).
+  `apps/web-nuxt/app/components/MetaPickShowcase.vue`, `apps/web-nuxt/app/composables/useMetaPick.ts`,
+  `collectMetaBonus` (`apps/web-nuxt/server/utils/leaderboard/service.ts`) and `notifyMetaResult`
+  (`apps/web-nuxt/server/utils/notifications/events.ts`).

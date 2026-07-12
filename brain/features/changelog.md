@@ -8,7 +8,7 @@ new" item that badges with a dot when there is an unseen release.
 
 `CHANGELOG.md` (repo root, Keep a Changelog) is the canonical English source and
 the release tooling's input. It is imported with Vite `?raw` and parsed at
-module load by `parseChangelog` (`app/utils/changelog.ts`) into
+module load by `parseChangelog` (`apps/web-nuxt/app/utils/changelog.ts`) into
 `{ version, date, sections[{ title, items[] }] }`; the `[Unreleased]` block is
 dropped. Inline bullet markdown (bold, `code`, links) is rendered with `marked`
 and sanitized with DOMPurify on the about page.
@@ -41,6 +41,6 @@ marker and nothing to badge.
 ## Sources
 
 - `CHANGELOG.md`, `i18n/changelogs/{fr,th,tlh,ar}.md`
-- `app/composables/useChangelog.ts`, `app/utils/changelog.ts`
-- `app/pages/about.vue` (`#changelog`), `app/layouts/default.vue` (badge + menu)
+- `apps/web-nuxt/app/composables/useChangelog.ts`, `apps/web-nuxt/app/utils/changelog.ts`
+- `apps/web-nuxt/app/pages/about.vue` (`#changelog`), `apps/web-nuxt/app/layouts/default.vue` (badge + menu)
 - `mise-tasks/changelog` (`read` / `promote` / `check`), `mise-tasks/release`

@@ -1,11 +1,34 @@
 # Nostragoalus - project instructions
 
+## Repo layout (monorepo)
+
+pnpm workspace. The paths below are relative to the repo root unless noted.
+
+- `apps/web-nuxt/` - the Nuxt app AND its whole server stack, self-contained:
+  `app/` `server/` `db/` `shared/` (the isomorphic TS behind the `#shared` alias)
+  `tests/` `lib/` `scripts/` `drizzle/` `public/` `i18n/` + every config
+  (`nuxt.config.ts`, `vitest.config.ts`, ...) + `package.json` + the deploy stack
+  (`Dockerfile`, `Dockerfile.dockerignore`, `compose*.yaml`, `.env*`). Run the
+  gate and dev scripts here: `pnpm -C apps/web-nuxt <script>` from the root, or
+  `cd apps/web-nuxt` first.
+- `apps/mobile-flutter/` - the Dart cross-stack parity runner (and a future
+  Flutter client).
+- `shared/` - cross-app, language-neutral DATA only (consumed by both apps):
+  `shared/contracts-openapi/` (the emitted OpenAPI snapshot), `shared/parity-json/`
+  (golden vectors), `shared/i18n-json/` (locale JSON; the app reads it via the
+  `apps/web-nuxt/i18n/locales` symlink). Do NOT confuse this with the TS
+  `apps/web-nuxt/shared/`.
+- Root: `brain/`, `mise-tasks/` (release/changelog/roadmap), `.mise.toml` (stack
+  orchestration), `pnpm-workspace.yaml`, `CHANGELOG.md`, `README.md`, `ROADMAP.md`,
+  `TODO.md`, `LICENSE*`, `.config/wt.toml`, `.worktreeinclude`.
+
 ## Hard rules
 
-- Dependencies change through `pnpm add/remove/update` only - never hand-edit
-  `package.json`.
-- DB schema changes go through `db/app-schema.ts` + `pnpm db:generate` - never
-  hand-write migration SQL into `drizzle/`.
+- Dependencies change through `pnpm add/remove/update` only (in `apps/web-nuxt`,
+  the workspace member) - never hand-edit `package.json`.
+- DB schema changes go through `apps/web-nuxt/db/app-schema.ts` +
+  `pnpm -C apps/web-nuxt db:generate` - never hand-write migration SQL into
+  `apps/web-nuxt/drizzle/`.
 - Worktree creation/management goes through the `wt` command (worktrunk) only -
   `wt switch --create <branch>` to make one, `wt list`, `wt remove` - never raw
   `git worktree`. On create, the `[post-start]` hook in `.config/wt.toml` runs
@@ -17,17 +40,18 @@
 - Every user-facing string gets i18n keys in **all five locales**
   (`shared/i18n-json/{en,fr,th,tlh,ar}.json`) - tlh is Klingon, keep it terse and
   in-character.
-- The gate before any merge: `pnpm typecheck`, `pnpm test:coverage` (98%
-  thresholds, enforced), `pnpm test:components`, `pnpm build`. The SSR/rollup
-  build catches unresolved-import link errors the others miss (import shared via
-  the `#shared` alias, not deep `../../../../shared/*`, from nested route pages).
+- The gate before any merge (run in `apps/web-nuxt`, e.g. `pnpm -C apps/web-nuxt
+  typecheck`): `pnpm typecheck`, `pnpm test:coverage` (98% thresholds, enforced),
+  `pnpm test:components`, `pnpm build`. The SSR/rollup build catches
+  unresolved-import link errors the others miss (import shared via the `#shared`
+  alias, not deep `../../../../shared/*`, from nested route pages).
   Beware zsh pipelines masking
   exit codes (`typecheck | tail` reports success) - `set -o pipefail` or check
-  steps separately. The 98% gate covers `server/utils`, `shared`, `app/utils`
-  (not `server/api` routes or pages) - that's why logic lives in services: keep
+  steps separately. The 98% gate covers `apps/web-nuxt/{server/utils,shared,app/utils}`
+  (not `apps/web-nuxt/server/api` routes or pages) - that's why logic lives in services: keep
   routes/pages thin enough to not need direct coverage.
 - Every user-facing feature ships with an end-to-end test alongside its unit +
-  component tests: a Playwright spec in `tests/e2e/*.e2e.ts` covering the feature's
+  component tests: a Playwright spec in `apps/web-nuxt/tests/e2e/*.e2e.ts` covering the feature's
   main path through the real UI, green via `mise run e2e` (the isolated, disposable
   stack - its own DB, never the dev DB). E2E is separate from the coverage gate and
   the SSR build; feature-treatment does not pass without the feature's e2e spec.
@@ -51,21 +75,22 @@
 
 ## Conventions (match the existing shape)
 
-- Server: routes are thin, logic lives in `server/utils/<feature>/service.ts`
+- Server: routes are thin, logic lives in `apps/web-nuxt/server/utils/<feature>/service.ts`
   taking `AppDatabase` as first param and throwing the error classes from
-  `server/utils/errors.ts`. Mutations use `defineValidatedHandler` (zod body,
-  `admin: true` for admin routes, `toHttpError` mapping). Every route carries
+  `apps/web-nuxt/server/utils/errors.ts`. Mutations use `defineValidatedHandler`
+  (zod body, optional zod `response`, `admin: true` for admin routes,
+  `toHttpError` mapping); reads use `defineReadHandler`. Every route carries
   `defineRouteMeta` OpenAPI docs.
-- Client: TanStack vue-query composables (`app/composables/use<Feature>.ts`),
+- Client: TanStack vue-query composables (`apps/web-nuxt/app/composables/use<Feature>.ts`),
   hierarchical query keys, invalidate on mutation success. Note the app-level
   `staleTime: 60_000`.
-- Tests: services against pglite (`tests/db.ts` `createTestDb` runs the real
-  migrations) + `tests/factories.ts`; components as `*.nuxt.test.ts` with
+- Tests: services against pglite (`apps/web-nuxt/tests/db.ts` `createTestDb` runs the real
+  migrations) + `apps/web-nuxt/tests/factories.ts`; components as `*.nuxt.test.ts` with
   `mountSuspended`. Unmount what you mount and clear the query cache between
   tests - leaked observers and the 60s staleTime have both caused
-  order-dependent flakes. E2E: Playwright specs in `tests/e2e/*.e2e.ts` drive the
+  order-dependent flakes. E2E: Playwright specs in `apps/web-nuxt/tests/e2e/*.e2e.ts` drive the
   real app over the isolated stack (`mise run e2e`; seed via
-  `tests/e2e/helpers/db.ts`, sign in via `helpers/auth.ts`), not part of the
+  `apps/web-nuxt/tests/e2e/helpers/db.ts`, sign in via `helpers/auth.ts`), not part of the
   coverage gate. An SSR-rendered control can be clicked before hydration wires its
   handler, so gate the first interaction on interactivity (retry with Playwright
   `expect(...).toPass()`), not just visibility.
@@ -88,8 +113,9 @@
 ## Releases
 
 - Cut releases with `mise run release <x.y.z>`: it moves CHANGELOG `[Unreleased]`
-  into a dated section, bumps `package.json`, runs the full gate, tags, and
-  pushes.
+  into a dated section, bumps `apps/web-nuxt/package.json` (the versioned app;
+  the root `package.json` is just the workspace shell), runs the full gate, tags,
+  and pushes.
 - Keep `CHANGELOG.md` `[Unreleased]` populated as you work (Keep a Changelog:
   Added / Changed / Fixed, user-facing wording). The release fails on an empty
   one.
