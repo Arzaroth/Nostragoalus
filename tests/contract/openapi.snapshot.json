@@ -1,0 +1,113 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Nostragoalus API",
+    "version": "1.0"
+  },
+  "paths": {
+    "/api/predictions/joker": {
+      "put": {
+        "tags": [
+          "Predictions"
+        ],
+        "summary": "Move the joker",
+        "description": "Set or clear the x2 joker on a match. One per round; movable while neither match has kicked off. Rejected on single-match rounds (final, third place) and unconfirmed-team fixtures.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "matchId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "isJoker": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "matchId",
+                  "isJoker"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated joker placement.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in."
+          },
+          "409": {
+            "description": "A concerned match already started."
+          },
+          "422": {
+            "description": "Invalid body, single-match round, or unconfirmed teams."
+          }
+        }
+      }
+    },
+    "/api/stats": {
+      "get": {
+        "tags": [
+          "Stats"
+        ],
+        "summary": "Platform totals",
+        "description": "Aggregate, name-free counts (registered players, predictions made) for the public landing page. No personal data.",
+        "responses": {
+          "200": {
+            "description": "Platform totals.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "players": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "predictions": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "players",
+                    "predictions"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
