@@ -33,9 +33,16 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
   multi-node deploy - the same limit as the rest of the WS hub.
 - **"N in voice" snapshot on chat open.** The badge is live from the next join/leave;
   a client that loads mid-call won't show it until the roster next changes.
-- **Live speaking indicators** (per-participant audio levels) in the in-call bar.
-- **A full call log + a "Call ended, 4:12" system line.** Only missed calls are
-  persisted today; ongoing/ended calls are purely in-process.
+- [x] **Live speaking indicators** - shipped with the voice-improvements batch
+  (per-stream AnalyserNode; speaker's name lights in the in-call bar).
+- [x] **A full call log + a "Call ended, 4:12" system line** - shipped with the
+  voice-improvements batch (ONGOING/ENDED voice_call lifecycle + chat call lines).
+- **Orphaned ONGOING call-log rows after a server restart.** The roomKey->row map
+  is in-process; a restart mid-call leaves the row ONGOING forever. Sweep stale
+  ONGOING rows on boot (or age them out) so old chats don't show a phantom
+  "ongoing" line.
+- **Call log pagination.** The chat fetches the latest 50 call rows per scope;
+  older call lines silently drop off (messages paginate, call lines don't).
 - **Video / screen share.** v1 is audio only.
 
 ## Chat identity recovery / reset
