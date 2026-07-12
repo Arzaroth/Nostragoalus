@@ -51,10 +51,18 @@ Date the handler returns, cheaply, in every env; `toOpenApiSchema` maps
 `z.date()` to a date-time string for the wire/Dart contract, so the runtime
 check and the published contract agree with no serialize dance.
 
-### Open slices (see TODO.md "Cross-stack contract & parity")
-- Fan-out: response schema on the remaining routes, by feature area. ~180
-  unconverted; 8 currently fail to import under the bare unit env (aliases /
-  runtime-only imports) and must be made import-clean as they are converted.
+The handler-return typecheck makes the fan-out safe: `defineValidatedHandler` /
+`defineReadHandler` type the handler's return as `z.input<R>` of its response
+schema (see [validated-handler.ts](../../server/utils/validated-handler.ts)
+`ResponseReturn`), so a schema that does not match what the route returns is a
+compile error, not a runtime 500. Shared DB-projection shapes are derived from
+the drizzle tables with `drizzle-zod` in [server/schemas/](../../server/schemas)
+(out of the coverage gate; route files stay thin).
+
+Fan-out is COMPLETE: 183 routes carry a compile-verified response schema. The 7
+routes without one are excluded by design - binary (media, share OG images),
+XML (SAML SP metadata), HTML (SSO test-callback), the `.ics` calendar feed, the
+better-auth `[...all]` catch-all, and the `_schema` helper (not a route).
 
 ## Logic parity: frozen golden vectors
 
@@ -74,10 +82,25 @@ can.
 Suite factored into
 [tests/parity/harness.ts](../../tests/parity/harness.ts) (`parityVectors`);
 `dispatch.ts` marshals `Uint8Array` args/results as `{ $b64 }` so crypto vectors
-cross the JSON boundary. Modules done: `commitment` (commit-reveal ledger),
+cross the JSON boundary. Eight modules: `commitment` (commit-reveal ledger),
 `key-transparency` (chat-key hash chain), `e2ee` (libsodium interop KATs -
-decrypt/unseal/derive direction, since encrypt/seal is random). Queued:
-`scoring`, `criteria`, `fergie`, `achievements`, `match`/`stage`.
+decrypt/unseal/derive direction, since encrypt/seal is random), `scoring` (the
+points engine), `fergie` (added-time replay), `standings` (group table),
+`consensus` (bot scoreline), `match` (stage/status predicates). Only db-bound
+logic (criteria, achievements) is out of scope for pure vectors.
+
+## Dart consumer side
+
+[mobile/parity/](../../mobile/parity) is the Flutter-side counterpart, fed by
+both artifacts above:
+- `test/parity_test.dart` replays the frozen vectors (read in place from
+  `tests/parity/vectors`, single source) against Dart ports. `commitment`,
+  `key-transparency`, `match` are ported + pass; the rest are skipped-loudly with
+  a porting recipe in `dispatch.dart` (`e2ee` needs a libsodium binding +
+  `$b64` marshalling).
+- `tool/gen_models.sh` generates Dart request/response classes from
+  `openapi.snapshot.json` (openapi-generator), single-sourcing the wire contract
+  from the server's zod.
 
 Related: [e2ee-trust-model.md](e2ee-trust-model.md),
 [build-integrity.md](build-integrity.md), [testing.md](testing.md).
