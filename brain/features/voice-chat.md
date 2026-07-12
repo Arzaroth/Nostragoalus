@@ -92,9 +92,12 @@ and unit-tested in `apps/web-nuxt/app/utils/voice.ts`:
   `apps/web-nuxt/app/utils/voice.ts` with `levelFromSamples`).
 - Self-healing links: a peer connection that goes `failed` (or stays
   `disconnected` past a 3s grace) gets an **ICE restart** - the deterministic
-  offerer re-offers with `iceRestart: true` (no glare; the other side waits),
-  capped at 3 attempts before the peer is dropped. The cached ICE config expires
-  at 90% of the TURN credential ttl so a restart never rides a dead credential.
+  offerer re-offers with `iceRestart: true` (no glare; the other side waits on a
+  5s re-check loop), both sides capped at 3 attempts before the peer is dropped
+  so neither hangs in "Reconnecting" forever. The cached ICE config expires at
+  90% of the TURN credential ttl and a restart applies the refreshed config to
+  the live connection (`pc.setConfiguration`), so it never rides a dead
+  credential.
 - Quality indicator: a 2s `getStats()` poll per link -> `extractQualityInputs`
   (RTT + fractionLost from remote-inbound-rtp, jitter from inbound-rtp) ->
   `qualityOf`/`worstQuality` (pure, tested). The call bar shows an amber/red
