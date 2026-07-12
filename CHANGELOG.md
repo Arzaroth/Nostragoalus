@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Operator notes
+
+- Voice-chat coturn: the relay now advertises the host's public IP when `NUXT_TURN_EXTERNAL_IP` is set (needed when the box is behind NAT, so external browsers get a reachable relay address), and its ports are configurable (`NUXT_TURN_PORT` / `NUXT_TURN_TLS_PORT` / `NUXT_TURN_MIN_PORT` / `NUXT_TURN_MAX_PORT`) so it can coexist with another service already using 3478 or the default relay range. `mise run up` now brings coturn up with the stack.
+
 ## [3.0.0] - 2026-07-12
 
 ### Added

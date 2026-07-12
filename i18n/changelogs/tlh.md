@@ -5,6 +5,10 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### che'wI' QInmey
+
+- wab ja'chuqtaHghach coturn: `NUXT_TURN_EXTERNAL_IP` lu'lu'chugh, DaH relay-vaD host public IP 'anglu' (NAT tlheghDaq juH machine, vaj Hopbogh browser-mey relay Sum Suqlu'), 'ej port-mey choHlaHlu' (`NUXT_TURN_PORT` / `NUXT_TURN_TLS_PORT` / `NUXT_TURN_MIN_PORT` / `NUXT_TURN_MAX_PORT`), vaj 3478 pagh relay range lo'bogh latlh service tlhej ratlhlaH. `mise run up` DaH coturn stack tlhej taghmoH.
+
 ## [3.0.0] - 2026-07-12
 
 ### chelta'
