@@ -124,6 +124,12 @@ services:
       target: prod
     image: nostragoalus-app:local
     restart: unless-stopped
+    # A hard Node crash dumps a multi-GB core into the container's writable layer
+    # (cwd /app), which silently fills the docker data disk and took the DB down
+    # once (postgres PANIC on a full /var). Disable core dumps - a crash just
+    # restarts (restart: unless-stopped) instead of leaving a 5 GB core behind.
+    ulimits:
+      core: 0
     env_file:
       - path: .env
         required: false

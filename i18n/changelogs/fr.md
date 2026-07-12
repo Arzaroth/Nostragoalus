@@ -5,6 +5,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Notes d'exploitation
+
+- Le service `app` désactive désormais les vidages mémoire (`ulimits: core: 0`). Un plantage brutal de Node écrivait auparavant un fichier core de plusieurs gigaoctets dans la couche inscriptible du conteneur, ce qui pouvait remplir le disque de données Docker - allant jusqu'à mettre la base de données hors service lorsque `/var` était saturé. Un plantage se contente maintenant de redémarrer au lieu de laisser un énorme core derrière lui.
+
 ## [4.0.0] - 2026-07-12
 
 ### Notes d'exploitation

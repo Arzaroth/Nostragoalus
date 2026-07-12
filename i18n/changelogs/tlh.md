@@ -5,6 +5,10 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### che'wI' QInmey
+
+- DaH core dump chotlhHa' `app` lo'wI' (`ulimits: core: 0`). nom Qaw'lu'pu'DI' Node, wa'DIch container porgh writable-layerDaq core teywI' tIn (gigabyte law') qonlu', vaj Docker De' disk buy'moHlaH - `/var` buy'DI' Database HoHpu'. DaH Qaw'lu'chugh, tagh'egh neH; core teywI' tIn lIjbe'.
+
 ## [4.0.0] - 2026-07-12
 
 ### che'wI' QInmey
