@@ -1,12 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { createTestDb } from '../../../tests/db'
 import { addLeagueMember, makeLeague, makeUser, seedCompetition } from '../../../tests/factories'
 import { dmThread, league, userNotification, voiceCall } from '../../../db/schema'
 import { orderPair } from '../dm/service'
 import { addLiveSubscriber, removeLiveSubscriber, type LiveSubscriber } from './hub'
 import { __resetVoiceRooms } from './voice-rooms'
+import { listCallLog } from '../voice/service'
 import {
+  __resetVoiceCallLog,
   handleVoiceCancel,
   handleVoiceDecline,
   handleVoiceInvite,
@@ -20,6 +22,7 @@ afterEach(() => {
   for (const s of live) removeLiveSubscriber(s)
   live.length = 0
   __resetVoiceRooms()
+  __resetVoiceCallLog()
 })
 
 function connect(userId: string): LiveSubscriber & { send: ReturnType<typeof vi.fn> } {
@@ -180,7 +183,11 @@ describe('voice signaling glue', () => {
     await handleVoiceJoin(db, owner, scope)
     await handleVoiceInvite(db, owner, scope, ['member'])
     expect(framesOfType(member, 'voice:ring').at(-1)).toMatchObject({ from: 'owner', fromName: 'Owner' })
-    const misses = await db.select().from(voiceCall).where(eq(voiceCall.leagueId, leagueId))
+    // The join opened an ONGOING log row; the point here is no MISSED row.
+    const misses = await db
+      .select()
+      .from(voiceCall)
+      .where(and(eq(voiceCall.leagueId, leagueId), eq(voiceCall.status, 'MISSED')))
     expect(misses).toHaveLength(0)
   })
 
@@ -261,7 +268,8 @@ describe('voice signaling glue', () => {
     b.send.mockClear()
     await handleVoiceCancel(db, a, scope, 'bob')
     expect(framesOfType(b, 'voice:cancelled')).toHaveLength(0)
-    const rows = await db.select().from(voiceCall)
+    // Both joined, so an ONGOING log row exists; the point here is no MISSED row.
+    const rows = await db.select().from(voiceCall).where(eq(voiceCall.status, 'MISSED'))
     expect(rows).toHaveLength(0)
   })
 
@@ -274,5 +282,76 @@ describe('voice signaling glue', () => {
     await expect(handleVoiceInvite(db, anon, scope, ['bob'])).resolves.toBeUndefined()
     await expect(handleVoiceDecline(db, anon, scope, 'bob')).resolves.toBeUndefined()
     await expect(handleVoiceCancel(db, anon, scope, 'bob')).resolves.toBeUndefined()
+  })
+})
+
+describe('call log lifecycle', () => {
+  it('league: opens ONGOING on first join, accumulates participants, closes ENDED when the room empties', async () => {
+    const { db, leagueId, scope } = await leagueFixture()
+    const owner = connect('owner')
+    const member = connect('member')
+    await handleVoiceJoin(db, owner, scope)
+
+    let calls = await listCallLog(db, scope)
+    expect(calls).toHaveLength(1)
+    expect(calls[0]).toMatchObject({ status: 'ONGOING', initiatorId: 'owner', initiatorName: 'Owner', participantCount: 1 })
+
+    await handleVoiceJoin(db, member, scope)
+    calls = await listCallLog(db, scope)
+    expect(calls[0]!.participantCount).toBe(2)
+
+    await handleVoiceLeave(db, owner)
+    calls = await listCallLog(db, scope)
+    expect(calls[0]!.status).toBe('ONGOING')
+
+    await handleVoiceLeave(db, member)
+    calls = await listCallLog(db, scope)
+    expect(calls[0]!.status).toBe('ENDED')
+    expect(calls[0]!.endedAt).not.toBeNull()
+
+    // One row total for the league (the lifecycle reused it end to end).
+    const rows = await db.select().from(voiceCall).where(eq(voiceCall.leagueId, leagueId))
+    expect(rows).toHaveLength(1)
+  })
+
+  it('DM: logs nothing until both parties join, then ENDED on hangup', async () => {
+    const { db, scope } = await dmFixture()
+    const a = connect('alice')
+    const b = connect('bob')
+    await handleVoiceJoin(db, a, scope)
+    expect(await listCallLog(db, scope)).toHaveLength(0)
+
+    await handleVoiceJoin(db, b, scope)
+    let calls = await listCallLog(db, scope)
+    expect(calls).toHaveLength(1)
+    // The first joiner (the caller) is the initiator.
+    expect(calls[0]).toMatchObject({ status: 'ONGOING', initiatorId: 'alice', participantCount: 2 })
+
+    // One side hanging up empties the DM room (the other is force-dropped).
+    await handleVoiceLeave(db, a)
+    calls = await listCallLog(db, scope)
+    expect(calls[0]!.status).toBe('ENDED')
+  })
+
+  it('fans a voice:log frame to the audience on open and close', async () => {
+    const { db, scope } = await leagueFixture()
+    const owner = connect('owner')
+    const member = connect('member') // not in the call, but a league member
+    await handleVoiceJoin(db, owner, scope)
+    expect(framesOfType(member, 'voice:log').at(-1)).toMatchObject({ leagueId: scope.leagueId, matchId: null })
+    member.send.mockClear()
+    await handleVoiceLeave(db, owner)
+    expect(framesOfType(member, 'voice:log')).toHaveLength(1)
+  })
+
+  it('a missed DM ring appears in the call log and pushes voice:log to the pair', async () => {
+    const { db, threadId, scope } = await dmFixture()
+    const a = connect('alice')
+    await handleVoiceJoin(db, a, scope)
+    // 'bob' is offline: the invite records a miss immediately.
+    await handleVoiceInvite(db, a, scope, ['bob'])
+    const calls = await listCallLog(db, scope)
+    expect(calls.at(-1)).toMatchObject({ status: 'MISSED', initiatorId: 'alice' })
+    expect(framesOfType(a, 'voice:log').at(-1)).toMatchObject({ threadId })
   })
 })

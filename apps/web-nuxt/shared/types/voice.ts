@@ -139,6 +139,28 @@ export interface VoiceControlFrame {
   scope: VoiceScope
   from: string
 }
+// The call log of a scope changed (call opened / ended / missed): open chats
+// refetch their call lines. The scope rides flattened so the chat composables'
+// per-room frame gating applies unchanged.
+export interface VoiceLogFrame {
+  type: 'voice:log'
+  threadId?: string
+  leagueId?: string
+  matchId?: string | null
+}
+
+// One call-log row as the API serves it (GET /api/voice/calls), interleaved into
+// the chat timeline as a system line.
+export interface CallLogEntry {
+  id: string
+  status: 'ONGOING' | 'ENDED' | 'MISSED'
+  initiatorId: string | null
+  initiatorName: string
+  participantCount: number
+  startedAt: string
+  endedAt: string | null
+}
+
 // A participant re-joined from a new tab (a takeover): the roster userIds are
 // unchanged, so the other members are told to drop and re-establish their peer
 // connection to that user - otherwise they keep a dead link to the old tab.

@@ -416,6 +416,12 @@ export function publishVoicePresence(memberIds: readonly string[], payload: unkn
   return deliverToMembers(memberIds, payload)
 }
 
+// A call-log change (call opened / ended / missed) to a scope's audience, so open
+// chats refetch their call lines.
+export function publishVoiceLog(memberIds: readonly string[], payload: unknown): number {
+  return deliverToMembers(memberIds, payload)
+}
+
 // Push the current state of the given matches to every subscriber watching them.
 export async function publishMatchUpdates(db: AppDatabase, matchIds: string[]): Promise<number> {
   if (matchIds.length === 0 || subscribers.size === 0) return 0

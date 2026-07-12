@@ -5,6 +5,7 @@ import { MAX_MESSAGE_TEXT_LENGTH } from '#shared/types/chat'
 import { decodeMentions, encodeMentions, extractMentions } from '~/utils/chat-content'
 import { ACCEPTED_IMAGE_TYPES, compressToWebp, imageMimeForBytes } from '~/composables/useChatImage'
 import { DEFAULT_COMPETITION } from '#shared/competition'
+import type { CallLogEntry } from '#shared/types/voice'
 import type { DecryptedMessage, PendingImage } from '~/composables/useLeagueChat'
 // End-to-end encrypted chat. Drives either a league room (the league-global room
 // with matchId null, or a per-match thread) or, when `dmThreadId` is set, a single
@@ -52,7 +53,7 @@ function fmtFull(iso: string): string {
 const chat = props.dmThreadId
   ? useDmRoom(() => props.dmThreadId!)
   : useLeagueChat(() => props.leagueId!, () => props.matchId ?? null)
-const { enabled, isAdmin, ready, awaitingKey, loading, sending, readMarker, hasMore, loadingOlder, typingUserIds, messages, memberKeys, muted, identityStatus } = chat
+const { enabled, isAdmin, ready, awaitingKey, loading, sending, readMarker, hasMore, loadingOlder, typingUserIds, messages, callLog, memberKeys, muted, identityStatus } = chat
 
 // Let a host (the floating dock) follow the live on/off state so it can show or
 // hide itself the moment an admin toggles chat, without its own status fetch.
@@ -802,6 +803,42 @@ const displayMessages = computed(() => {
   if (!searchOpen.value || !q) return messages.value
   return messages.value.filter((m) => m.text && decodeMentions(m.text, names.value, t('chat.unknownUser')).toLowerCase().includes(q))
 })
+// Interleave the room's call lines (started / ended / missed) into the message
+// timeline without touching the message rows: each call is grouped before the
+// first message newer than it; calls newer than every message trail the list.
+// Hidden while searching (they are not messages).
+const callLinesByAnchor = computed(() => {
+  const before = new Map<string, CallLogEntry[]>()
+  const tail: CallLogEntry[] = []
+  if (searchOpen.value || !callLog.value.length) return { before, tail }
+  const msgs = messages.value
+  for (const c of callLog.value) {
+    const anchor = msgs.find((m) => m.createdAt > c.startedAt)
+    if (anchor) {
+      const list = before.get(anchor.id) ?? []
+      list.push(c)
+      before.set(anchor.id, list)
+    } else {
+      tail.push(c)
+    }
+  }
+  return { before, tail }
+})
+
+function callDuration(c: CallLogEntry): string {
+  if (!c.endedAt) return ''
+  const secs = Math.max(0, Math.round((new Date(c.endedAt).getTime() - new Date(c.startedAt).getTime()) / 1000))
+  const m = Math.floor(secs / 60)
+  const s = secs % 60
+  return `${m}:${String(s).padStart(2, '0')}`
+}
+
+function callLineText(c: CallLogEntry): string {
+  if (c.status === 'MISSED') return t('voice.log.missed', { name: c.initiatorName })
+  if (c.status === 'ONGOING') return t('voice.log.ongoing', { name: c.initiatorName })
+  return t('voice.log.ended', { name: c.initiatorName, duration: callDuration(c) })
+}
+
 function toggleSearch() {
   searchOpen.value = !searchOpen.value
   if (searchOpen.value) {
@@ -1054,6 +1091,17 @@ watch(
             v-for="m in displayMessages"
             :key="m.id"
           >
+          <!-- Call lines older than this message. -->
+          <div
+            v-for="c in callLinesByAnchor.before.get(m.id) ?? []"
+            :key="c.id"
+            class="flex items-center justify-center gap-1.5 py-0.5 text-xs select-none"
+            style="color: var(--p-text-muted-color)"
+          >
+            <i class="pi pi-phone text-[10px]" :style="c.status === 'MISSED' ? 'color: var(--ng-danger)' : ''" />
+            <span>{{ callLineText(c) }}</span>
+            <span v-tooltip.top="fmtFull(c.startedAt)" class="opacity-70">{{ fmtTime(c.startedAt) }}</span>
+          </div>
           <!-- Last-read boundary: everything below arrived since you last read. -->
           <div v-if="!searchOpen && m.id === firstUnreadId" class="flex items-center gap-2 py-0.5 select-none">
             <span class="flex-1 h-px" style="background: color-mix(in srgb, var(--p-primary-color) 45%, transparent)" />
@@ -1282,6 +1330,17 @@ watch(
             </div>
           </div>
           </template>
+          <!-- Call lines newer than every loaded message. -->
+          <div
+            v-for="c in callLinesByAnchor.tail"
+            :key="c.id"
+            class="flex items-center justify-center gap-1.5 py-0.5 text-xs select-none"
+            style="color: var(--p-text-muted-color)"
+          >
+            <i class="pi pi-phone text-[10px]" :style="c.status === 'MISSED' ? 'color: var(--ng-danger)' : ''" />
+            <span>{{ callLineText(c) }}</span>
+            <span v-tooltip.top="fmtFull(c.startedAt)" class="opacity-70">{{ fmtTime(c.startedAt) }}</span>
+          </div>
         </div>
           <button
             v-if="hasNew"

@@ -1579,6 +1579,7 @@
     "output": "wab jan",
     "noiseSuppression": "chuS polHa'",
     "deviceDefault": "motlh",
+    "log": {"missed": "rI' {name} 'ach jangbe'lu'", "ongoing": "rI'taH {name}", "ended": "rI' rIn · {duration}"},
     "hangup": "yImev",
     "invite": "yIrI'",
     "inviteTitle": "wabvaD yIrI'",

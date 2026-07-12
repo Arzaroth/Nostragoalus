@@ -1,14 +1,14 @@
 import { createHmac } from 'node:crypto'
-import { eq } from 'drizzle-orm'
+import { and, desc, eq, isNull } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
-import { competition, league, match, voiceCall } from '../../../db/schema'
+import { competition, dmThread, league, match, voiceCall } from '../../../db/schema'
 import type { IceServer, IceServersResponse, VoiceScope } from '../../../shared/types/voice'
 import { voiceRoomKey } from '../../../shared/types/voice'
 import { ForbiddenError, NotFoundError, ValidationError } from '../errors'
 import { getLeagueMemberIds } from '../chat/service'
 import { getMembership } from '../leagues/service'
 import { requireParticipant } from '../dm/service'
-import { displayName } from '../notifications/events'
+import { displayName, displayNames } from '../notifications/events'
 import { createNotification } from '../notifications/service'
 
 // The context a resolved scope carries for the missed-call notification. Exactly
@@ -129,6 +129,95 @@ export async function recordMissedCall(
     // the callee with pushes. (Resurfacing a genuinely later miss without re-pushing
     // would need createNotification support - deferred, see TODO.)
   })
+}
+
+// Everyone a scope's call events concern: the DM pair, or the league's members.
+// Used to fan the voice:log refresh frame out to open chats.
+export async function scopeAudience(db: AppDatabase, scope: VoiceScope): Promise<string[]> {
+  if (scope.kind === 'dm') {
+    const rows = await db
+      .select({ a: dmThread.userAId, b: dmThread.userBId })
+      .from(dmThread)
+      .where(eq(dmThread.id, scope.threadId))
+      .limit(1)
+    return rows[0] ? [rows[0].a, rows[0].b] : []
+  }
+  return getLeagueMemberIds(db, scope.leagueId)
+}
+
+// === Call log lifecycle (the ONGOING/ENDED rows behind the chat call lines) ===
+// The hub opens a row when a call becomes real (league room opens / DM connects),
+// accumulates participants, and closes it when the room empties. MISSED rows come
+// from recordMissedCall.
+
+export async function openCallLog(
+  db: AppDatabase,
+  meta: VoiceScopeMeta,
+  initiatorId: string,
+  participantIds: string[],
+): Promise<string> {
+  const rows = await db
+    .insert(voiceCall)
+    .values(
+      meta.kind === 'dm'
+        ? { dmThreadId: meta.threadId, initiatorId, participantIds }
+        : { leagueId: meta.leagueId, matchId: meta.matchId, initiatorId, participantIds },
+    )
+    .returning({ id: voiceCall.id })
+  return rows[0]!.id
+}
+
+export async function addCallParticipant(db: AppDatabase, callId: string, userId: string): Promise<void> {
+  const rows = await db
+    .select({ participantIds: voiceCall.participantIds })
+    .from(voiceCall)
+    .where(eq(voiceCall.id, callId))
+    .limit(1)
+  const current = rows[0]?.participantIds ?? []
+  if (current.includes(userId)) return
+  await db.update(voiceCall).set({ participantIds: [...current, userId] }).where(eq(voiceCall.id, callId))
+}
+
+export async function closeCallLog(db: AppDatabase, callId: string): Promise<void> {
+  await db.update(voiceCall).set({ status: 'ENDED', endedAt: new Date() }).where(eq(voiceCall.id, callId))
+}
+
+export interface CallLogRow {
+  id: string
+  status: 'ONGOING' | 'ENDED' | 'MISSED'
+  initiatorId: string | null
+  initiatorName: string
+  participantCount: number
+  startedAt: Date
+  endedAt: Date | null
+}
+
+// The most recent calls of a scope, oldest first (ready to interleave with the
+// chat timeline). The caller is authorized separately (resolveVoiceScope).
+export async function listCallLog(db: AppDatabase, scope: VoiceScope, limit = 50): Promise<CallLogRow[]> {
+  const where =
+    scope.kind === 'dm'
+      ? eq(voiceCall.dmThreadId, scope.threadId)
+      : and(
+          eq(voiceCall.leagueId, scope.leagueId),
+          scope.matchId ? eq(voiceCall.matchId, scope.matchId) : isNull(voiceCall.matchId),
+        )
+  const rows = await db
+    .select()
+    .from(voiceCall)
+    .where(where)
+    .orderBy(desc(voiceCall.startedAt), desc(voiceCall.id))
+    .limit(limit)
+  const names = await displayNames(db, [...new Set(rows.map((r) => r.initiatorId).filter((v): v is string => v != null))])
+  return rows.reverse().map((r) => ({
+    id: r.id,
+    status: r.status,
+    initiatorId: r.initiatorId,
+    initiatorName: (r.initiatorId ? names[r.initiatorId] : null) ?? 'Someone',
+    participantCount: r.participantIds.length,
+    startedAt: r.startedAt,
+    endedAt: r.endedAt,
+  }))
 }
 
 export interface TurnConfig {

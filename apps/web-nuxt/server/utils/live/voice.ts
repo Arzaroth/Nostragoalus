@@ -1,8 +1,16 @@
 import type { AppDatabase } from '../../../db/types'
 import type { LiveSubscriber } from './hub'
-import { publishVoicePresence, publishVoiceRoster, publishVoiceToUser, sendVoiceToToken } from './hub'
+import { publishVoiceLog, publishVoicePresence, publishVoiceRoster, publishVoiceToUser, sendVoiceToToken } from './hub'
 import { isInRoom, joinRoom, leaveRoom, roomOf, rosterOf, tokenInRoom, tokensInRoom } from './voice-rooms'
-import { recordMissedCall, resolveVoiceScope } from '../voice/service'
+import {
+  addCallParticipant,
+  closeCallLog,
+  openCallLog,
+  recordMissedCall,
+  resolveVoiceScope,
+  scopeAudience,
+} from '../voice/service'
+import type { VoiceScopeMeta } from '../voice/service'
 import { getLeagueMemberIds } from '../chat/service'
 import { displayName, displayNames } from '../notifications/events'
 import type { VoiceScope, VoiceSignalKind } from '../../../shared/types/voice'
@@ -26,6 +34,57 @@ async function broadcastLeaguePresence(
   publishVoicePresence(recipients, { type: 'voice:presence', roomKey, scope, count: roster.length, names: rosterNames })
 }
 
+// roomKey -> the ONGOING voice_call row backing the live room, for the chat call
+// log. In-process like the rooms themselves; a restart mid-call orphans the row
+// exactly as it drops the room (accepted, same as the rest of the hub).
+const callLogByRoom = new Map<string, string>()
+
+// Exposed for tests.
+export function __resetVoiceCallLog(): void {
+  callLogByRoom.clear()
+}
+
+// Tell a scope's audience the call log changed, so open chats refetch their call
+// lines. The frame carries the scope flattened, matching the chat composables'
+// per-room frame gating.
+async function publishCallLogChanged(db: AppDatabase, scope: VoiceScope, audience?: readonly string[]): Promise<void> {
+  const recipients = audience ?? (await scopeAudience(db, scope))
+  const frame =
+    scope.kind === 'dm'
+      ? { type: 'voice:log', threadId: scope.threadId }
+      : { type: 'voice:log', leagueId: scope.leagueId, matchId: scope.matchId }
+  publishVoiceLog(recipients, frame)
+}
+
+// Open/append/close the persistent call-log row as the live room changes. A
+// league room logs from its first join; a DM only once both parties connected
+// (an unanswered ring is the missed-call path, not a call).
+async function trackJoinInCallLog(db: AppDatabase, roomKey: string, scope: VoiceScope, meta: VoiceScopeMeta, userId: string): Promise<void> {
+  const roster = rosterOf(roomKey)
+  const existing = callLogByRoom.get(roomKey)
+  if (existing) {
+    await addCallParticipant(db, existing, userId)
+    return
+  }
+  if (scope.kind === 'league') {
+    callLogByRoom.set(roomKey, await openCallLog(db, meta, userId, roster))
+    await publishCallLogChanged(db, scope)
+  } else if (roster.length >= 2) {
+    // Map insertion order: the first roster entry is the caller.
+    callLogByRoom.set(roomKey, await openCallLog(db, meta, roster[0]!, roster))
+    await publishCallLogChanged(db, scope)
+  }
+}
+
+async function closeCallLogIfEmpty(db: AppDatabase, roomKey: string, scope: VoiceScope): Promise<void> {
+  if (rosterOf(roomKey).length > 0) return
+  const callId = callLogByRoom.get(roomKey)
+  if (!callId) return
+  callLogByRoom.delete(roomKey)
+  await closeCallLog(db, callId)
+  await publishCallLogChanged(db, scope)
+}
+
 // The WS-frame orchestration for voice: authorize (reusing chat/DM rules), mutate
 // the in-process rooms and fan the right frames out. `_ws.ts` calls these; the
 // low-level sends live in hub.ts and the room bookkeeping in voice-rooms.ts. A
@@ -37,6 +96,9 @@ async function broadcastLeaguePresence(
 export async function handleVoiceJoin(db: AppDatabase, sub: LiveSubscriber, scope: VoiceScope): Promise<void> {
   if (!sub.userId) return
   const resolved = await resolveVoiceScope(db, sub.userId, scope)
+  // A socket hopping rooms leaves its old room inside joinRoom, bypassing
+  // handleVoiceLeave - note the old room so its log can still be closed.
+  const prior = roomOf(sub)
   const { evicted } = joinRoom(sub, resolved.roomKey, sub.userId)
   if (evicted) {
     // A second tab took the call over. Tell the displaced tab to drop, and tell
@@ -51,6 +113,11 @@ export async function handleVoiceJoin(db: AppDatabase, sub: LiveSubscriber, scop
   const names = await displayNames(db, rosterOf(resolved.roomKey))
   publishVoiceRoster(resolved.roomKey, scope, names)
   await broadcastLeaguePresence(db, resolved.roomKey, scope, resolved.audience, names)
+  await trackJoinInCallLog(db, resolved.roomKey, scope, resolved.meta, sub.userId)
+  if (prior && prior.roomKey !== resolved.roomKey) {
+    const priorScope = parseVoiceRoomKey(prior.roomKey)
+    if (priorScope) await closeCallLogIfEmpty(db, prior.roomKey, priorScope)
+  }
 }
 
 // Leave whatever call this socket is in (an explicit leave or a disconnect): push
@@ -73,6 +140,7 @@ export async function handleVoiceLeave(db: AppDatabase, sub: LiveSubscriber): Pr
   const names = await displayNames(db, rosterOf(left.roomKey))
   publishVoiceRoster(left.roomKey, scope, names)
   await broadcastLeaguePresence(db, left.roomKey, scope, undefined, names)
+  await closeCallLogIfEmpty(db, left.roomKey, scope)
 }
 
 // Relay one SDP/ICE payload to another participant. Authorized purely by live
@@ -107,6 +175,7 @@ export async function handleVoiceInvite(
     const delivered = publishVoiceToUser(target, { type: 'voice:ring', scope, from: sub.userId, fromName })
     if (delivered === 0) {
       await recordMissedCall(db, { meta: resolved.meta, callerId: sub.userId, targetId: target })
+      await publishCallLogChanged(db, scope, resolved.audience)
     }
   }
 }
@@ -146,5 +215,8 @@ export async function handleVoiceCancel(
   // received no ring, and `handleVoiceInvite` already logged that miss when the
   // invite failed to deliver - recording again here would double the history row.
   const delivered = publishVoiceToUser(to, { type: 'voice:cancelled', scope, from: sub.userId })
-  if (delivered > 0) await recordMissedCall(db, { meta: resolved.meta, callerId: sub.userId, targetId: to })
+  if (delivered > 0) {
+    await recordMissedCall(db, { meta: resolved.meta, callerId: sub.userId, targetId: to })
+    await publishCallLogChanged(db, scope, resolved.audience)
+  }
 }

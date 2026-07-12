@@ -1778,6 +1778,7 @@
     "output": "مكبر الصوت",
     "noiseSuppression": "عزل الضوضاء",
     "deviceDefault": "الافتراضي للنظام",
+    "log": {"missed": "مكالمة فائتة من {name}", "ongoing": "بدأ {name} مكالمة", "ended": "مكالمة من {name} · {duration}"},
     "hangup": "إنهاء",
     "invite": "دعوة إلى المكالمة",
     "inviteTitle": "دعوة إلى المكالمة الصوتية",

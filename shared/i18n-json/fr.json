@@ -1579,6 +1579,7 @@
     "output": "Haut-parleur",
     "noiseSuppression": "Réduction de bruit",
     "deviceDefault": "Par défaut du système",
+    "log": {"missed": "Appel manqué de {name}", "ongoing": "{name} a démarré un appel", "ended": "Appel de {name} · {duration}"},
     "hangup": "Raccrocher",
     "invite": "Inviter à l'appel",
     "inviteTitle": "Inviter à l'audio",
