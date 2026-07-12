@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [4.1.0] - 2026-07-13
+
 ### Ajouté
 
 - Appels vocaux : la barre d'appel affiche désormais qui est dans l'appel, le nom de la personne qui parle s'illumine, et un vumètre à 3 barres montre votre propre micro. L'infobulle « Rejoindre l'audio » d'une ligue nomme aussi qui est déjà en ligne.

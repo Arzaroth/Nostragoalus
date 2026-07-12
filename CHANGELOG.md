@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [4.1.0] - 2026-07-13
+
 ### Added
 
 - Voice calls: the in-call bar now shows who is in the call, with the speaker's name lighting up while they talk, plus a live 3-bar meter for your own microphone. The league "join voice" tooltip also names who is already in.
