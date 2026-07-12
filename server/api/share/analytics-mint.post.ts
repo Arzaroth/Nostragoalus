@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { db } from '../../../db'
 import { NotFoundError } from '../../utils/errors'
 import { resolveCompetition } from '../../utils/competitions/store'
+import { shareLinksSchema } from '../../schemas/roadmap'
 import { getAnalyticsCard } from '../../utils/share/analytics-card'
 import { SHARE_LOCALES } from '../../utils/share/token'
 import { signAnalyticsToken } from '../../utils/share/analytics-token'
@@ -17,7 +18,7 @@ const bodySchema = z.object({
 // token only ever names the caller. With no scored pick yet there is nothing to
 // report, so minting 404s until the report has data (mirrors wrapped's pre-final
 // gate). Works mid-tournament otherwise - the analytics page is not final-gated.
-export default defineValidatedHandler({ body: bodySchema }, async ({ body, user, event }) => {
+export default defineValidatedHandler({ body: bodySchema, response: shareLinksSchema }, async ({ body, user, event }) => {
   const competition = await resolveCompetition(db, body.competition ?? null)
   if (!competition) throw new NotFoundError('competition not found')
   const card = await getAnalyticsCard(db, { competitionId: competition.id, userId: user.id })

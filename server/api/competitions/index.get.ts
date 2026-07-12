@@ -1,7 +1,12 @@
+import { z } from 'zod'
 import { db } from '../../../db'
+import { competitionRefSchema } from '../../schemas/competition'
 import { listActiveCompetitions } from '../../utils/competitions/store'
+import { defineReadHandler } from '../../utils/read-handler'
 
-export default defineEventHandler(async () => {
+const responseSchema = z.object({ competitions: z.array(competitionRefSchema) })
+
+export default defineReadHandler({ response: responseSchema }, async () => {
   const competitions = await listActiveCompetitions(db)
   return { competitions: competitions.map((c) => ({ id: c.id, slug: c.slug, name: c.name })) }
 })

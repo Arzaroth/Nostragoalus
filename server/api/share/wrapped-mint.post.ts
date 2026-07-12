@@ -13,10 +13,12 @@ const bodySchema = z.object({
   locale: z.enum(SHARE_LOCALES).optional(),
 })
 
+const responseSchema = z.object({ token: z.string(), imageUrl: z.string() })
+
 // Mints a signed wrapped-card token for the caller's OWN recap. The token only
 // ever names the caller, so a third party can't render someone else's card.
 // Pre-final there is no recap to share, so minting 404s until the gate opens.
-export default defineValidatedHandler({ body: bodySchema }, async ({ body, user, event }) => {
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ body, user, event }) => {
   const competition = await resolveCompetition(db, body.competition ?? null)
   if (!competition) throw new NotFoundError('competition not found')
   if (!(await hasDecidedFinal(db, competition.id))) throw new NotFoundError('wrapped not ready')

@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { db } from '../../../../db'
+import { chatAttachmentSchema } from '../../../schemas/dm'
 import { editDmMessage, requireParticipant } from '../../../utils/dm/service'
 import { publishDmEdit } from '../../../utils/live/hub'
 import { defineValidatedHandler } from '../../../utils/validated-handler'
@@ -15,10 +16,12 @@ const bodySchema = z.object({
   removeIdxs: z.array(z.number().int().nonnegative()).optional(),
 })
 
+const responseSchema = z.object({ editedAt: z.string(), attachments: z.array(chatAttachmentSchema) })
+
 // The author edits their own DM message: store the re-encrypted text, drop/append
 // images, stamp the edit time, and push the new ciphertext + attachment set live to
 // both participants. Author only, visible messages only.
-export default defineValidatedHandler({ body: bodySchema }, async ({ body, user, event }) => {
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ body, user, event }) => {
   const threadId = getRouterParam(event, 'threadId') as string
   const { editedAt, attachments } = await editDmMessage(db, {
     threadId,

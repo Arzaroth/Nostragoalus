@@ -1,8 +1,10 @@
-import { requireUser } from '../../utils/auth-guards'
+import { z } from 'zod'
+import { defineReadHandler } from '../../utils/read-handler'
+
+const responseSchema = z.object({ trusted: z.boolean() })
 
 // The trust cookie is HttpOnly; report its presence so the UI can reflect it.
-export default defineEventHandler(async (event) => {
-  await requireUser(event)
+export default defineReadHandler({ response: responseSchema, auth: 'user' }, async ({ event }) => {
   const trusted = !!(getCookie(event, 'better-auth.trust_device') || getCookie(event, '__Secure-better-auth.trust_device'))
   return { trusted }
 })

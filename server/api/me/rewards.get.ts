@@ -1,9 +1,28 @@
+import { z } from 'zod'
 import { db } from '../../../db'
-import { requireUser } from '../../utils/auth-guards'
 import { getMyRewards } from '../../utils/rewards/service'
+import { defineReadHandler } from '../../utils/read-handler'
 
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
+const rewardSchema = z.object({
+  type: z.string(),
+  label: z.string(),
+  imageUrl: z.string().nullable(),
+  note: z.string().nullable(),
+  link: z.string().nullable(),
+})
+
+const responseSchema = z.array(
+  z.object({
+    leagueId: z.string(),
+    leagueName: z.string(),
+    reward: rewardSchema,
+    type: z.string(),
+    teamCode: z.string().nullable(),
+    youHold: z.boolean(),
+  }),
+)
+
+export default defineReadHandler({ response: responseSchema, auth: 'user' }, async ({ user }) => {
   return getMyRewards(db, user.id)
 })
 

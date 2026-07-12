@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm'
+import { z } from 'zod'
 import { db } from '../../../db'
 import { user } from '../../../db/schema'
 import { botPersonaParam, botUserId, parseBotPersona, type ConsensusMethod } from '../../../shared/types/bot'
@@ -6,9 +7,83 @@ import { getBotOverviewCached } from '../../utils/bot/service'
 import { getCompetitionById, resolveCompetition } from '../../utils/competitions/store'
 import { getSessionUser, isAdmin, requireUser } from '../../utils/auth-guards'
 import { canViewProfile, resolveLeagueView, type LeagueRow } from '../../utils/leagues/service'
-import { toHttpError } from '../../utils/http'
+import { defineReadHandler } from '../../utils/read-handler'
 
-export default defineEventHandler(async (event) => {
+const championSchema = z.object({
+  teamCode: z.string(),
+  teamName: z.string(),
+  count: z.number(),
+  total: z.number(),
+  awardedPoints: z.number(),
+})
+const summarySchema = z.object({
+  rank: z.number().nullable(),
+  totalPoints: z.number(),
+  predictionPoints: z.number(),
+  championPoints: z.number(),
+  exactCount: z.number(),
+  outcomeCount: z.number(),
+  gdCount: z.number(),
+})
+const subjectSchema = z.object({
+  rank: z.number(),
+  totalPoints: z.number(),
+  exactCount: z.number(),
+  outcomeCount: z.number(),
+})
+const consensusMethodSchema = z.enum(['MODE', 'MEAN'])
+// One bot pick joined to its match + round (BotMatchRow). String-enum columns
+// (baseTier, status, stage) are kept as z.string() - the union type is assignable
+// and the enum values live on the shared match/scoring types.
+const botMatchRowSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  matchId: z.string(),
+  roundId: z.string(),
+  homeGoals: z.number(),
+  awayGoals: z.number(),
+  isOutcomeOnly: z.boolean(),
+  wager: z.number().nullable(),
+  isJoker: z.boolean(),
+  baseTier: z.string().nullable(),
+  totalPoints: z.number().nullable(),
+  basePoints: z.number().nullable(),
+  bonusPoints: z.number().nullable(),
+  crowdShare: z.string().nullable(),
+  jokerMultiplierApplied: z.string().nullable(),
+  homeTeam: z.string(),
+  awayTeam: z.string(),
+  homeTeamCode: z.string().nullable(),
+  awayTeamCode: z.string().nullable(),
+  kickoffTime: z.date(),
+  status: z.string(),
+  stage: z.string(),
+  fullTimeHome: z.number().nullable(),
+  fullTimeAway: z.number().nullable(),
+  penaltiesHome: z.number().nullable(),
+  penaltiesAway: z.number().nullable(),
+  roundLabel: z.string(),
+  roundSort: z.number(),
+  consensusCount: z.number(),
+  consensusTotal: z.number(),
+  consensusMethod: consensusMethodSchema,
+})
+const responseSchema = z.object({
+  bot: z.object({ id: z.string() }),
+  persona: z.enum(['consensus', 'evil-twin', 'equalizer']),
+  competition: z.object({ id: z.string(), slug: z.string(), name: z.string() }),
+  league: z.object({ id: z.string(), name: z.string() }).nullable(),
+  champion: championSchema.nullable(),
+  summary: summarySchema,
+  subject: subjectSchema.nullable(),
+  admin: z.boolean(),
+  method: consensusMethodSchema,
+  modeAvailable: z.boolean(),
+  population: z.number(),
+  predictions: z.array(botMatchRowSchema),
+})
+
+export default defineReadHandler({ response: responseSchema }, async ({ event }) => {
   const query = getQuery(event)
   const persona = parseBotPersona(query.persona)
   const method: ConsensusMethod = query.method === 'mean' ? 'MEAN' : 'MODE'
@@ -38,12 +113,7 @@ export default defineEventHandler(async (event) => {
   let includePrivate = false
   if (query.league) {
     const user = await requireUser(event)
-    let resolved
-    try {
-      resolved = await resolveLeagueView(db, String(query.league), user.id, { resolveAdmin: () => admin })
-    } catch (error) {
-      throw toHttpError(error)
-    }
+    const resolved = await resolveLeagueView(db, String(query.league), user.id, { resolveAdmin: () => admin })
     league = resolved.league
     includePrivate = !!resolved.membership || admin
     competition = await getCompetitionById(db, league.competitionId)

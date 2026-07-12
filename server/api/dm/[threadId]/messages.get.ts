@@ -1,26 +1,36 @@
+import { z } from 'zod'
 import { db } from '../../../../db'
-import { requireUser } from '../../../utils/auth-guards'
+import { chatMessageSchema } from '../../../schemas/dm'
 import { getDmReadMarker, listDmMessages } from '../../../utils/dm/service'
 import { getThreadCounts } from '../../../utils/chat/service'
 import { getMyReactions, getReactionTotals } from '../../../utils/chat/reactions'
 import { getMessageAttachments } from '../../../utils/chat/attachments'
-import { toHttpError } from '../../../utils/http'
+import { defineReadHandler } from '../../../utils/read-handler'
 import { emptyReactionTotals } from '../../../../shared/reactions'
 import type { ChatMessageDTO } from '../../../../shared/types/chat'
+
+const querySchema = z.object({
+  before: z.string().optional(),
+  beforeId: z.string().optional(),
+  limit: z.string().optional(),
+  thread: z.string().optional(),
+})
+const responseSchema = z.object({
+  messages: z.array(chatMessageSchema),
+  readMarker: z.string().nullable(),
+})
 
 // A page of ciphertext for one thread, newest first. `before`/`beforeId` page back
 // through history; `thread` lists a root message's replies (oldest-first). Each
 // message carries full league-chat parity (attachments, reactions, thread count);
 // DM has no league/match (leagueId '', matchId null) and no moderation (VISIBLE).
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
+export default defineReadHandler({ response: responseSchema, auth: 'user', query: querySchema }, async ({ event, user, query }) => {
   const threadId = getRouterParam(event, 'threadId') as string
-  const q = getQuery(event)
-  const before = typeof q.before === 'string' ? new Date(q.before) : undefined
-  const beforeId = typeof q.beforeId === 'string' ? q.beforeId : undefined
-  const limit = typeof q.limit === 'string' ? Number(q.limit) : undefined
-  const thread = typeof q.thread === 'string' ? q.thread : undefined
-  try {
+  const before = typeof query.before === 'string' ? new Date(query.before) : undefined
+  const beforeId = typeof query.beforeId === 'string' ? query.beforeId : undefined
+  const limit = typeof query.limit === 'string' ? Number(query.limit) : undefined
+  const thread = typeof query.thread === 'string' ? query.thread : undefined
+  {
     const rows = await listDmMessages(db, {
       threadId,
       userId: user.id,
@@ -59,8 +69,6 @@ export default defineEventHandler(async (event) => {
     // messages" divider); thread views and backward paging never draw it.
     const readMarker = thread || before ? null : (await getDmReadMarker(db, threadId, user.id))?.toISOString() ?? null
     return { messages, readMarker }
-  } catch (err) {
-    throw toHttpError(err)
   }
 })
 

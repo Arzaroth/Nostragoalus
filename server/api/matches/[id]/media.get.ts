@@ -1,7 +1,20 @@
+import { z } from 'zod'
 import { db } from '../../../../db'
 import { listMatchMedia } from '../../../utils/match-media/service'
+import { defineReadHandler } from '../../../utils/read-handler'
 
-export default defineEventHandler(async (event) => {
+const matchMediaItemSchema = z.object({
+  id: z.string(),
+  kind: z.enum(['LIVE', 'REPLAY', 'HIGHLIGHTS']),
+  url: z.string(),
+  label: z.string().nullable(),
+  embeddable: z.boolean(),
+  sandbox: z.boolean().nullable(),
+  allow: z.string().nullable(),
+})
+const responseSchema = z.object({ media: z.array(matchMediaItemSchema) })
+
+export default defineReadHandler({ response: responseSchema }, async ({ event }) => {
   const id = getRouterParam(event, 'id') as string
   return { media: await listMatchMedia(db, id) }
 })

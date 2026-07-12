@@ -1,19 +1,89 @@
+import { z } from 'zod'
 import { db } from '../../../db'
-import { requireUser } from '../../utils/auth-guards'
 import { resolveCompetition } from '../../utils/competitions/store'
 import { getAnalytics } from '../../utils/analytics/service'
-import { toHttpError } from '../../utils/http'
+import { defineReadHandler } from '../../utils/read-handler'
 
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
-  const competition = await resolveCompetition(db, (getQuery(event).competition as string) || null)
+const querySchema = z.object({ competition: z.string().optional() })
+
+const outcomeCountsSchema = z.object({ home: z.number(), draw: z.number(), away: z.number() })
+const tierCountsSchema = z.object({ exact: z.number(), diff: z.number(), outcome: z.number(), miss: z.number() })
+const teamBiasSchema = z.object({
+  code: z.string().nullable(),
+  name: z.string(),
+  sample: z.number(),
+  predictedWinRate: z.number(),
+  actualWinRate: z.number(),
+  delta: z.number(),
+})
+const roundAccuracySchema = z.object({
+  label: z.string(),
+  order: z.number(),
+  picks: z.number(),
+  accuracy: z.number(),
+  points: z.number(),
+})
+const pickHighlightSchema = z.object({
+  home: z.string(),
+  away: z.string(),
+  homeCode: z.string().nullable(),
+  awayCode: z.string().nullable(),
+  predicted: z.string(),
+  actual: z.string(),
+  points: z.number(),
+  tier: z.string(),
+  isJoker: z.boolean(),
+})
+const fergieMatchSchema = z.object({
+  home: z.string(),
+  away: z.string(),
+  homeCode: z.string().nullable(),
+  awayCode: z.string().nullable(),
+  predicted: z.string(),
+  actual: z.string(),
+  gained: z.number(),
+  lost: z.number(),
+  net: z.number(),
+  isJoker: z.boolean(),
+})
+const responseSchema = z.object({
+  competitionName: z.string(),
+  hasData: z.boolean(),
+  totalPicks: z.number(),
+  totalPoints: z.number(),
+  avgPoints: z.number(),
+  tiers: tierCountsSchema,
+  accuracy: z.number(),
+  exactRate: z.number(),
+  goals: z.object({ predictedAvg: z.number(), actualAvg: z.number(), lean: z.number() }),
+  outcomeLean: z.object({
+    predicted: outcomeCountsSchema,
+    actual: outcomeCountsSchema,
+    homeBiasPct: z.number(),
+    drawGapPct: z.number(),
+  }),
+  teams: z.object({ overrated: z.array(teamBiasSchema), underrated: z.array(teamBiasSchema) }),
+  overTime: z.array(roundAccuracySchema),
+  streak: z.object({ current: z.number(), best: z.number() }),
+  bestCall: pickHighlightSchema.nullable(),
+  worstMiss: pickHighlightSchema.nullable(),
+  fergieTime: z.object({
+    matches: z.number(),
+    goals: z.number(),
+    netPoints: z.number(),
+    pointsWon: z.number(),
+    pointsLost: z.number(),
+    biggestGain: fergieMatchSchema.nullable(),
+    biggestLoss: fergieMatchSchema.nullable(),
+    breakdown: z.array(fergieMatchSchema),
+  }),
+})
+
+export default defineReadHandler({ response: responseSchema, auth: 'user', query: querySchema }, async ({ user, query }) => {
+  const competition = await resolveCompetition(db, query.competition || null)
   if (!competition) throw createError({ statusCode: 404, statusMessage: 'competition not found' })
 
-  try {
-    return await getAnalytics(db, { competitionId: competition.id, userId: user.id })
-  } catch (error) {
-    throw toHttpError(error)
-  }
+  return getAnalytics(db, { competitionId: competition.id, userId: user.id })
 })
 
 defineRouteMeta({

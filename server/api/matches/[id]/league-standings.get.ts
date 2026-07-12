@@ -1,15 +1,33 @@
 import { eq } from 'drizzle-orm'
+import { z } from 'zod'
 import { db } from '../../../../db'
 import { match } from '../../../../db/schema'
 import { getMatchLeagueStandings } from '../../../utils/leaderboard/match'
-import { isAdmin, requireUser } from '../../../utils/auth-guards'
+import { isAdmin } from '../../../utils/auth-guards'
 import { resolveLeagueView } from '../../../utils/leagues/service'
-import { toHttpError } from '../../../utils/http'
+import { defineReadHandler } from '../../../utils/read-handler'
 
-export default defineEventHandler(async (event) => {
+const querySchema = z.object({ league: z.string().optional() })
+const rowSchema = z.object({
+  rank: z.number(),
+  userId: z.string(),
+  displayName: z.string(),
+  image: z.string().nullable(),
+  homeGoals: z.number(),
+  awayGoals: z.number(),
+  isJoker: z.boolean(),
+  points: z.number(),
+  baseTier: z.enum(['EXACT', 'DIFF', 'OUTCOME', 'MISS']).nullable(),
+})
+const responseSchema = z.object({
+  scope: z.enum(['upcoming', 'live', 'final']),
+  rows: z.array(rowSchema),
+  notPredicted: z.number(),
+  league: z.object({ id: z.string(), name: z.string() }).optional(),
+})
+
+export default defineReadHandler({ response: responseSchema, auth: 'user', query: querySchema }, async ({ event, user, query }) => {
   const matchId = getRouterParam(event, 'id') as string
-  const query = getQuery(event)
-  const user = await requireUser(event)
 
   // No league: the public per-match ranking - every visible user who picked
   // (private/hidden excluded, picks still hidden until kickoff). Any signed-in
@@ -17,23 +35,18 @@ export default defineEventHandler(async (event) => {
   // default visibility filter (includePrivate omitted).
   if (!query.league) {
     const [m] = await db.select({ competitionId: match.competitionId }).from(match).where(eq(match.id, matchId)).limit(1)
-    if (!m) return { scope: 'upcoming', rows: [], notPredicted: 0 }
+    if (!m) return { scope: 'upcoming' as const, rows: [], notPredicted: 0 }
     return getMatchLeagueStandings(db, { matchId, competitionId: m.competitionId, viewerId: user.id })
   }
 
   // Members/admins only: this exposes each member's per-match pick, the same
   // sensitivity the crowd endpoint and the WS league channel restrict. A public
-  // league's board would otherwise leak individual picks to any outsider.
-  let resolved
-  try {
-    resolved = await resolveLeagueView(db, String(query.league), user.id, {
-      membersOnly: true,
-      resolveAdmin: () => isAdmin(event),
-    })
-  } catch (error) {
-    throw toHttpError(error)
-  }
-  const { league } = resolved
+  // league's board would otherwise leak individual picks to any outsider. The
+  // wrapper maps a resolveLeagueView throw to its HTTP status.
+  const { league } = await resolveLeagueView(db, String(query.league), user.id, {
+    membersOnly: true,
+    resolveAdmin: () => isAdmin(event),
+  })
 
   // League mates see each other's picks (post-kickoff) even with private profiles.
   const standings = await getMatchLeagueStandings(db, {

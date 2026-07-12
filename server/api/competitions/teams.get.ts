@@ -1,10 +1,16 @@
+import { z } from 'zod'
 import { db } from '../../../db'
 import { resolveCompetition } from '../../utils/competitions/store'
 import { listCompetitionTeams } from '../../utils/champion/service'
+import { defineReadHandler } from '../../utils/read-handler'
 
-export default defineEventHandler(async (event) => {
-  const query = getQuery(event)
-  const competition = await resolveCompetition(db, (query.competition as string) || null)
+const querySchema = z.object({ competition: z.string().optional() })
+const responseSchema = z.object({
+  teams: z.array(z.object({ code: z.string(), name: z.string() })),
+})
+
+export default defineReadHandler({ response: responseSchema, query: querySchema }, async ({ query }) => {
+  const competition = await resolveCompetition(db, query.competition || null)
   if (!competition) return { teams: [] }
   return { teams: await listCompetitionTeams(db, competition.id) }
 })

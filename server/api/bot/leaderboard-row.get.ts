@@ -1,12 +1,36 @@
+import { z } from 'zod'
 import { db } from '../../../db'
 import { botPersonaParam, botUserId, parseBotPersona, type ConsensusMethod } from '../../../shared/types/bot'
 import { getBotOverviewCached } from '../../utils/bot/service'
 import { getCompetitionById, resolveCompetition } from '../../utils/competitions/store'
 import { getSessionUser, isAdmin, requireUser } from '../../utils/auth-guards'
 import { resolveLeagueView, type LeagueRow } from '../../utils/leagues/service'
-import { toHttpError } from '../../utils/http'
+import { defineReadHandler } from '../../utils/read-handler'
 
-export default defineEventHandler(async (event) => {
+const rowSchema = z.object({
+  rank: z.number(),
+  userId: z.string(),
+  totalPoints: z.number(),
+  predictionPoints: z.number(),
+  championPoints: z.number(),
+  championCode: z.string().nullable(),
+  championName: z.string().nullable(),
+  bestScorerPoints: z.number(),
+  bestScorerName: z.string().nullable(),
+  bestScorerCode: z.string().nullable(),
+  exactCount: z.number(),
+  outcomeCount: z.number(),
+  gdCount: z.number(),
+})
+const responseSchema = z.object({
+  competition: z.object({ id: z.string(), slug: z.string(), name: z.string() }).nullable(),
+  row: rowSchema.nullable(),
+  persona: z.enum(['consensus', 'evil-twin', 'equalizer']),
+  method: z.enum(['MODE', 'MEAN']),
+  modeAvailable: z.boolean(),
+})
+
+export default defineReadHandler({ response: responseSchema }, async ({ event }) => {
   const query = getQuery(event)
   const persona = parseBotPersona(query.persona)
   const method: ConsensusMethod = query.method === 'mean' ? 'MEAN' : 'MODE'
@@ -19,12 +43,7 @@ export default defineEventHandler(async (event) => {
   let includePrivate = false
   if (query.league) {
     const user = await requireUser(event)
-    let resolved
-    try {
-      resolved = await resolveLeagueView(db, String(query.league), user.id, { resolveAdmin: () => isAdmin(event) })
-    } catch (error) {
-      throw toHttpError(error)
-    }
+    const resolved = await resolveLeagueView(db, String(query.league), user.id, { resolveAdmin: () => isAdmin(event) })
     league = resolved.league
     includePrivate = !!resolved.membership || (await isAdmin(event))
     competition = await getCompetitionById(db, league.competitionId)

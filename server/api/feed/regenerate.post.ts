@@ -2,6 +2,7 @@ import { getRequestURL } from 'h3'
 import { eq, sql } from 'drizzle-orm'
 import { db } from '../../../db'
 import { user as userTable } from '../../../db/schema'
+import { feedUrlsSchema } from '../../schemas/roadmap'
 import { FEED_LOCALES, type FeedLocale, signFeedToken } from '../../utils/feed/token'
 import { defineValidatedHandler } from '../../utils/validated-handler'
 
@@ -9,7 +10,7 @@ import { defineValidatedHandler } from '../../utils/validated-handler'
 // feed-token version, then mint a fresh subscription URL. Use when a feed link
 // leaked (calendar URLs get logged/synced/shared). No body; session + same-origin
 // gated by defineValidatedHandler.
-export default defineValidatedHandler({}, async ({ user, event }) => {
+export default defineValidatedHandler({ response: feedUrlsSchema }, async ({ user, event }) => {
   const q = getQuery(event)
   const locale = (
     typeof q.locale === 'string' && (FEED_LOCALES as readonly string[]).includes(q.locale) ? q.locale : 'en'

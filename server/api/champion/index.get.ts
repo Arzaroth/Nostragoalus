@@ -1,16 +1,26 @@
+import { createSelectSchema } from 'drizzle-zod'
+import { z } from 'zod'
 import { db } from '../../../db'
-import { requireUser } from '../../utils/auth-guards'
+import { championPick } from '../../../db/schema'
 import { resolveCompetition } from '../../utils/competitions/store'
 import { getChampionLockTime, getMyChampionPick, listCompetitionTeams } from '../../utils/champion/service'
 import { getSecondChanceWindow, isSecondChanceOpen } from '../../utils/picks/window'
 import { getFifaRanks } from '../../utils/champion/ranking'
+import { defineReadHandler } from '../../utils/read-handler'
 import { championPointsForRank } from '../../utils/scoring/config'
 import { getScoringConfigFor } from '../../utils/scoring/store'
 
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
-  const query = getQuery(event)
-  const competition = await resolveCompetition(db, (query.competition as string) || null)
+const querySchema = z.object({ competition: z.string().optional() })
+const responseSchema = z.object({
+  competition: z.object({ id: z.string(), slug: z.string(), name: z.string() }).nullable(),
+  teams: z.array(z.object({ code: z.string(), name: z.string(), fifaRank: z.number().nullable(), potentialPoints: z.number() })),
+  myPick: createSelectSchema(championPick).nullable(),
+  locked: z.boolean(),
+  secondChance: z.object({ open: z.boolean(), closesAt: z.string().nullable() }),
+})
+
+export default defineReadHandler({ response: responseSchema, auth: 'user', query: querySchema }, async ({ user, query }) => {
+  const competition = await resolveCompetition(db, query.competition || null)
   if (!competition) return { competition: null, teams: [], myPick: null, locked: true, secondChance: { open: false, closesAt: null } }
 
   const [teams, myPick, lock, window, ranks, config] = await Promise.all([

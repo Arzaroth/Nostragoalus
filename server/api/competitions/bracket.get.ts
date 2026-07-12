@@ -1,14 +1,47 @@
 import { eq } from 'drizzle-orm'
+import { z } from 'zod'
 import { db } from '../../../db'
 import { match } from '../../../db/schema'
 import { providerForCompetition } from '../../utils/providers'
 import { orderBracketFeeders } from '../../utils/providers/bracket-order'
 import { resolveCompetition } from '../../utils/competitions/store'
+import { defineReadHandler } from '../../utils/read-handler'
 import { resolveCompetitionSeason } from '../../utils/sync/competition'
 import { computeAllGroupStandings, selectGroupStandingsRows } from '../../utils/stats/standings'
 import { tiebreakersForCompetition, type Criterion } from '../../utils/stats/tiebreakers'
 import { projectBracket } from '../../utils/bracket/projection'
 import { getCachedBracket, setCachedBracket } from '../../utils/bracket/cache'
+
+const querySchema = z.object({ competition: z.string().optional() })
+
+// The projected knockout tree (NormalizedBracket in shared/types/match.ts).
+// MatchStatus is left as a string here - the union of provider statuses widens
+// to string and the value is display-only.
+const bracketMatchSchema = z.object({
+  id: z.string().nullable().optional(),
+  providerMatchId: z.string(),
+  matchNumber: z.number().nullable().optional(),
+  homeTeam: z.string(),
+  homeCode: z.string().nullable(),
+  awayTeam: z.string(),
+  awayCode: z.string().nullable(),
+  homeProjectedCode: z.string().nullable().optional(),
+  homeProjectedTeam: z.string().nullable().optional(),
+  awayProjectedCode: z.string().nullable().optional(),
+  awayProjectedTeam: z.string().nullable().optional(),
+  homeScore: z.number().nullable(),
+  awayScore: z.number().nullable(),
+  homePens: z.number().nullable(),
+  awayPens: z.number().nullable(),
+  winner: z.enum(['HOME', 'AWAY']).nullable(),
+  status: z.string(),
+  kickoffTime: z.string(),
+})
+const bracketSchema = z.object({
+  winner: z.object({ name: z.string(), code: z.string().nullable() }).nullable(),
+  rounds: z.array(z.object({ name: z.string(), sequence: z.number(), matches: z.array(bracketMatchSchema) })),
+})
+const responseSchema = z.object({ bracket: bracketSchema.nullable() })
 
 async function buildBaseBracket(competitionId: string, provider: ReturnType<typeof providerForCompetition>) {
   let bracket = await provider.getBracket!()
@@ -28,9 +61,8 @@ async function groupStandingsFor(competitionId: string, tiebreakers: Criterion[]
   return computeAllGroupStandings(rows, { includeLive: true, tiebreakers })
 }
 
-export default defineEventHandler(async (event) => {
-  const query = getQuery(event)
-  const competition = await resolveCompetition(db, (query.competition as string) || null)
+export default defineReadHandler({ response: responseSchema, query: querySchema }, async ({ query }) => {
+  const competition = await resolveCompetition(db, query.competition || null)
   if (!competition) return { bracket: null }
 
   try {

@@ -1,12 +1,23 @@
-import { requireUser } from '../../utils/auth-guards'
+import { z } from 'zod'
+import { defineReadHandler } from '../../utils/read-handler'
 import { buildIceServers } from '../../utils/voice/service'
+
+const responseSchema = z.object({
+  iceServers: z.array(
+    z.object({
+      urls: z.union([z.string(), z.array(z.string())]),
+      username: z.string().optional(),
+      credential: z.string().optional(),
+    }),
+  ),
+  ttl: z.number(),
+})
 
 // The ICE servers a voice call uses to connect: a public STUN server always, plus
 // self-hosted TURN when coturn is configured (with a fresh, time-limited credential
 // minted per request from the shared secret - the secret itself never leaves the
 // server). The client refetches before the credential's ttl lapses.
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
+export default defineReadHandler({ response: responseSchema, auth: 'user' }, async ({ user }) => {
   const cfg = useRuntimeConfig()
   return buildIceServers(
     {

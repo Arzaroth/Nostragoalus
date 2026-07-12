@@ -1,27 +1,33 @@
+import { z } from 'zod'
 import { db } from '../../../../db'
-import { requireUser } from '../../../utils/auth-guards'
+import { dmParticipantSchema } from '../../../schemas/dm'
 import { getThreadDetail } from '../../../utils/dm/service'
-import { toHttpError } from '../../../utils/http'
+import { defineReadHandler } from '../../../utils/read-handler'
 import type { DmThreadDetailDTO } from '../../../../shared/types/dm'
+
+const responseSchema = z.object({
+  thread: z.object({
+    threadId: z.string(),
+    epoch: z.number(),
+    other: dmParticipantSchema,
+    myWrappedKeys: z.array(z.object({ epoch: z.number(), wrappedKey: z.string() })),
+    otherMissingCurrentKey: z.boolean(),
+  }),
+})
 
 // Detail for one thread the caller is in: the other participant public identity
 // and the caller sealed key for every epoch. 404s for a non-participant.
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
+export default defineReadHandler({ response: responseSchema, auth: 'user' }, async ({ event, user }) => {
   const threadId = getRouterParam(event, 'threadId') as string
-  try {
-    const detail = await getThreadDetail(db, threadId, user.id)
-    const dto: DmThreadDetailDTO = {
-      threadId: detail.threadId,
-      epoch: detail.epoch,
-      other: { userId: detail.other.userId, name: detail.other.name, image: detail.other.image, publicKey: detail.other.publicKey },
-      myWrappedKeys: detail.myWrappedKeys,
-      otherMissingCurrentKey: detail.otherMissingCurrentKey,
-    }
-    return { thread: dto }
-  } catch (err) {
-    throw toHttpError(err)
+  const detail = await getThreadDetail(db, threadId, user.id)
+  const dto: DmThreadDetailDTO = {
+    threadId: detail.threadId,
+    epoch: detail.epoch,
+    other: { userId: detail.other.userId, name: detail.other.name, image: detail.other.image, publicKey: detail.other.publicKey },
+    myWrappedKeys: detail.myWrappedKeys,
+    otherMissingCurrentKey: detail.otherMissingCurrentKey,
   }
+  return { thread: dto }
 })
 
 defineRouteMeta({

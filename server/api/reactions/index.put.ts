@@ -12,14 +12,16 @@ const bodySchema = z.object({
   emoji: z.enum(REACTION_EMOJIS).nullable(),
 })
 
-export default defineValidatedHandler({ body: bodySchema }, async ({ body, user }) => {
+const responseSchema = z.object({ ok: z.literal(true) })
+
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ body, user }) => {
   await setReaction(db, { userId: user.id, matchId: body.matchId, emoji: body.emoji })
   // Live counts for everyone viewing the match.
   publishReactionUpdate(body.matchId, await getMatchReactionTotals(db, body.matchId))
   // League-scoped counts to the reactor's league mates - fire and forget so a
   // per-league fan-out can't add latency to (or fail) the reaction itself.
   void publishLeagueReactionUpdates(db, { userId: user.id, matchId: body.matchId }).catch(() => {})
-  return { ok: true }
+  return { ok: true as const }
 })
 
 defineRouteMeta({

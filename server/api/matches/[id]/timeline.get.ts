@@ -1,9 +1,16 @@
 import { eq } from 'drizzle-orm'
+import { z } from 'zod'
 import { db } from '../../../../db'
 import { match } from '../../../../db/schema'
 import { providerForCompetition } from '../../../utils/providers'
 import { getCompetitionById } from '../../../utils/competitions/store'
 import { resolveCompetitionSeason } from '../../../utils/sync/competition'
+import { defineReadHandler } from '../../../utils/read-handler'
+
+// The curated play-by-play is a provider-shaped list the route passes through
+// verbatim (typed `unknown` in the cache), so the contract is the envelope, not
+// each event's internal shape.
+const responseSchema = z.object({ events: z.unknown() })
 
 // Finished timelines never change again - cache for the process lifetime. Live
 // matches refresh every minute so new events show up. (Single instance: an
@@ -16,7 +23,7 @@ const TTL_MS = 60 * 1000
 // language so one locale's text isn't served to another.
 const FIFA_PBP_LANGS = new Set(['en', 'fr'])
 
-export default defineEventHandler(async (event) => {
+export default defineReadHandler({ response: responseSchema }, async ({ event }) => {
   const id = getRouterParam(event, 'id') as string
   const locale = getCookie(event, 'ng_locale') || 'en'
   const lang = FIFA_PBP_LANGS.has(locale) ? locale : null

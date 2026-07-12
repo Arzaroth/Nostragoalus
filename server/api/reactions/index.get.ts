@@ -1,38 +1,39 @@
+import { z } from 'zod'
 import { db } from '../../../db'
+import { reactionEmojiSchema, reactionTotalsSchema } from '../../schemas/dm'
 import { resolveCompetition } from '../../utils/competitions/store'
 import { getCompetitionReactionTotals, getMyCompetitionReactions } from '../../utils/reactions/service'
 import { getSessionUser, isAdmin } from '../../utils/auth-guards'
 import { resolveLeagueView } from '../../utils/leagues/service'
-import { toHttpError } from '../../utils/http'
+import { defineReadHandler } from '../../utils/read-handler'
+
+const querySchema = z.object({ competition: z.string().optional(), league: z.string().optional() })
+const responseSchema = z.object({
+  totals: z.record(z.string(), reactionTotalsSchema),
+  mine: z.record(z.string(), reactionEmojiSchema),
+})
 
 // Bulk reaction counts for a whole competition's matches, keyed by match id: the
 // fixtures list fetches once instead of one request per card. Global counts are
 // public (read-only aggregates, no PII), like the per-match route; ?league=
 // counts stay members-only, like crowd totals. `mine` maps the caller's own
 // reaction per match (empty for guests).
-export default defineEventHandler(async (event) => {
-  const query = getQuery(event)
+export default defineReadHandler({ response: responseSchema, query: querySchema }, async ({ event, query }) => {
   const user = await getSessionUser(event)
 
   if (query.league) {
     if (!user) throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
-    let resolved
-    try {
-      resolved = await resolveLeagueView(db, String(query.league), user.id, {
-        membersOnly: true,
-        resolveAdmin: () => isAdmin(event),
-      })
-    } catch (error) {
-      throw toHttpError(error)
-    }
-    const { league } = resolved
+    const { league } = await resolveLeagueView(db, query.league, user.id, {
+      membersOnly: true,
+      resolveAdmin: () => isAdmin(event),
+    })
     return {
       totals: await getCompetitionReactionTotals(db, league.competitionId, { leagueId: league.id }),
       mine: await getMyCompetitionReactions(db, user.id, league.competitionId),
     }
   }
 
-  const competition = await resolveCompetition(db, (query.competition as string) || null)
+  const competition = await resolveCompetition(db, query.competition || null)
   if (!competition) return { totals: {}, mine: {} }
   return {
     totals: await getCompetitionReactionTotals(db, competition.id),

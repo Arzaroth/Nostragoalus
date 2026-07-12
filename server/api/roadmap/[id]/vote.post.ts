@@ -1,10 +1,13 @@
+import { z } from 'zod'
 import { db } from '../../../../db'
 import { defineValidatedHandler } from '../../../utils/validated-handler'
 import { toggleVote } from '../../../utils/roadmap/service'
 
+const responseSchema = z.object({ voted: z.boolean(), voteCount: z.number() })
+
 // No body: the target is the route id and the action is a toggle. The non-admin
 // handler still requires a signed-in user, whose id owns the vote.
-export default defineValidatedHandler({}, async ({ event, user }) => {
+export default defineValidatedHandler({ response: responseSchema }, async ({ event, user }) => {
   const id = getRouterParam(event, 'id')!
   const result = await toggleVote(db, { itemId: id, userId: user.id })
   return result

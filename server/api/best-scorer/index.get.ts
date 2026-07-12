@@ -1,15 +1,30 @@
+import { createSelectSchema } from 'drizzle-zod'
+import { z } from 'zod'
 import { db } from '../../../db'
-import { requireUser } from '../../utils/auth-guards'
+import { bestScorerPick, competition as competitionTable } from '../../../db/schema'
 import { resolveCompetition } from '../../utils/competitions/store'
 import { getChampionLockTime, listCompetitionTeams } from '../../utils/champion/service'
 import { getMyBestScorerPick } from '../../utils/bestscorer/service'
 import { getSecondChanceWindow, isSecondChanceOpen } from '../../utils/picks/window'
+import { defineReadHandler } from '../../utils/read-handler'
 import { getScoringConfigFor } from '../../utils/scoring/store'
 
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
-  const query = getQuery(event)
-  const competition = await resolveCompetition(db, (query.competition as string) || null)
+const competitionCols = createSelectSchema(competitionTable)
+const querySchema = z.object({ competition: z.string().optional() })
+const responseSchema = z.object({
+  competition: z.object({ id: z.string(), slug: z.string(), name: z.string() }).nullable(),
+  // Absent on the no-competition early return, present otherwise.
+  provider: competitionCols.shape.provider.optional(),
+  season: competitionCols.shape.seasonHint.optional(),
+  bonus: z.number(),
+  teams: z.array(z.object({ code: z.string(), name: z.string() })),
+  myPick: createSelectSchema(bestScorerPick).nullable(),
+  locked: z.boolean(),
+  secondChance: z.object({ open: z.boolean(), closesAt: z.string().nullable() }),
+})
+
+export default defineReadHandler({ response: responseSchema, auth: 'user', query: querySchema }, async ({ user, query }) => {
+  const competition = await resolveCompetition(db, query.competition || null)
   if (!competition) return { competition: null, teams: [], myPick: null, locked: true, bonus: 0, secondChance: { open: false, closesAt: null } }
 
   const [teams, myPick, lock, window, config] = await Promise.all([

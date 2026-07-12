@@ -1,9 +1,12 @@
+import { z } from 'zod'
 import { db } from '../../../db'
 import { deleteAllNotifications, deleteNotifications } from '../../utils/notifications/service'
 import { defineValidatedHandler } from '../../utils/validated-handler'
 import { idsOrAllSchema } from './_schema'
 
-export default defineValidatedHandler({ body: idsOrAllSchema }, async ({ body, user }) => {
+const responseSchema = z.object({ deleted: z.number() })
+
+export default defineValidatedHandler({ body: idsOrAllSchema, response: responseSchema }, async ({ body, user }) => {
   const deleted = body.all ? await deleteAllNotifications(db, user.id) : await deleteNotifications(db, user.id, body.ids ?? [])
   return { deleted }
 })

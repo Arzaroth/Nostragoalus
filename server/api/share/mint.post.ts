@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { db } from '../../../db'
 import { NotFoundError } from '../../utils/errors'
 import { getOwnPredictionRef } from '../../utils/predictions/service'
-import { SHARE_LOCALES, signShareToken, type ShareMode } from '../../utils/share/token'
+import { SHARE_LOCALES, SHARE_MODES, signShareToken, type ShareMode } from '../../utils/share/token'
 import { defineValidatedHandler } from '../../utils/validated-handler'
 
 const bodySchema = z.object({
@@ -13,10 +13,17 @@ const bodySchema = z.object({
   locale: z.enum(SHARE_LOCALES).optional(),
 })
 
+const responseSchema = z.object({
+  token: z.string(),
+  mode: z.enum(SHARE_MODES),
+  url: z.string(),
+  imageUrl: z.string(),
+})
+
 // Mints a signed share token for the caller's OWN pick on a match. Looking the
 // pick up by userId makes ownership intrinsic: a third party can't get a token
 // (let alone a reveal) for someone else's pick.
-export default defineValidatedHandler({ body: bodySchema }, async ({ body, user, event }) => {
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ body, user, event }) => {
   const row = await getOwnPredictionRef(db, user.id, body.matchId)
   if (!row) throw new NotFoundError('no prediction to share')
 

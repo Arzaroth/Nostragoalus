@@ -1,5 +1,7 @@
+import { createSelectSchema } from 'drizzle-zod'
 import { z } from 'zod'
 import { db } from '../../../db'
+import { roadmapItem } from '../../../db/schema'
 import { defineValidatedHandler } from '../../utils/validated-handler'
 import { createRateLimiter } from '../../utils/rate-limit'
 import {
@@ -14,12 +16,16 @@ const bodySchema = z.object({
   description: z.string().trim().max(SUGGESTION_DESCRIPTION_MAX).optional(),
 })
 
+// createSuggestion returns the freshly inserted row (`.returning()` with no
+// projection), so the response mirrors the whole roadmap_item table.
+const responseSchema = z.object({ item: createSelectSchema(roadmapItem) })
+
 // Suggestions are public-immediately, so the only spam gate is auth (enforced by
 // the non-admin handler) plus this per-user cap: a handful per hour is plenty for
 // a genuine feature wishlist and pointless for a flooder.
 const limiter = createRateLimiter({ limit: 5, windowMs: 60 * 60 * 1000 })
 
-export default defineValidatedHandler({ body: bodySchema }, async ({ body, user }) => {
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ body, user }) => {
   if (!limiter.allow(user.id)) {
     throw createError({ statusCode: 429, statusMessage: 'Too many suggestions, try again later' })
   }

@@ -1,8 +1,29 @@
+import { createSelectSchema } from 'drizzle-zod'
+import { z } from 'zod'
 import { db } from '../../../db'
+import { roadmapItem } from '../../../db/schema'
 import { getSessionUser } from '../../utils/auth-guards'
+import { defineReadHandler } from '../../utils/read-handler'
 import { listRoadmapItems } from '../../utils/roadmap/service'
 
-export default defineEventHandler(async (event) => {
+const cols = createSelectSchema(roadmapItem)
+const responseSchema = z.object({
+  items: z.array(
+    z.object({
+      id: cols.shape.id,
+      title: cols.shape.title,
+      description: cols.shape.description,
+      status: cols.shape.status,
+      position: cols.shape.position,
+      voteCount: z.number(),
+      viewerHasVoted: z.boolean(),
+      underReview: z.boolean(),
+      updatedAt: cols.shape.updatedAt,
+    }),
+  ),
+})
+
+export default defineReadHandler({ response: responseSchema }, async ({ event }) => {
   // Public endpoint, but a signed-in viewer gets viewerHasVoted per item so the
   // upvote buttons render in the right state without a second round trip.
   const viewer = await getSessionUser(event)

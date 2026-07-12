@@ -1,12 +1,36 @@
+import { z } from 'zod'
 import { db } from '../../../db'
 import { getCommitmentChain } from '../../utils/commitment/service'
+import { defineReadHandler } from '../../utils/read-handler'
+
+const querySchema = z.object({ afterSeq: z.string().optional(), limit: z.string().optional() })
+
+// One ledger entry (LedgerEntry in shared/commitment.ts). The opening (homeGoals,
+// awayGoals, salt) is present only once `opened` is true.
+const ledgerEntrySchema = z.object({
+  seq: z.number(),
+  prevHash: z.string(),
+  commitment: z.string(),
+  subject: z.string(),
+  matchId: z.string(),
+  createdAt: z.string(),
+  entryHash: z.string(),
+  opened: z.boolean(),
+  homeGoals: z.number().optional(),
+  awayGoals: z.number().optional(),
+  salt: z.string().optional(),
+})
+const responseSchema = z.object({
+  entries: z.array(ledgerEntrySchema),
+  head: z.object({ seq: z.number(), headHash: z.string() }),
+  nextSeq: z.number().nullable(),
+})
 
 // Public: a page of the prediction commitment ledger. Each entry always carries
 // its commitment + chain links; the opening (score + salt) appears only once the
 // entry's match has kicked off, so picks stay hidden until lock while integrity
 // stays verifiable throughout. Page forward with ?afterSeq=<nextSeq>.
-export default defineEventHandler(async (event) => {
-  const q = getQuery(event)
+export default defineReadHandler({ response: responseSchema, query: querySchema }, async ({ query: q }) => {
   const opts: { afterSeq?: number; limit?: number } = {}
   const afterSeq = Number(q.afterSeq)
   const limit = Number(q.limit)

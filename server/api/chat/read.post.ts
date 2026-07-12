@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { db } from '../../../db'
 import { GLOBAL_ROOM } from '../../../shared/types/chat'
+import { okSchema } from '../../schemas/chat'
 import { markRoomRead } from '../../utils/chat/unread'
 import { defineValidatedHandler } from '../../utils/validated-handler'
 
@@ -11,9 +12,9 @@ const bodySchema = z.object({
   roomKey: z.union([z.literal(GLOBAL_ROOM), z.string().uuid()]),
 })
 
-export default defineValidatedHandler({ body: bodySchema }, async ({ body, user }) => {
+export default defineValidatedHandler({ body: bodySchema, response: okSchema }, async ({ body, user }) => {
   await markRoomRead(db, user.id, { leagueId: body.leagueId, roomKey: body.roomKey })
-  return { ok: true }
+  return { ok: true as const }
 })
 
 defineRouteMeta({
