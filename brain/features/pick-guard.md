@@ -1,8 +1,8 @@
 # Pick guard
 
 Two small safeguards around making a score prediction, both on the fixtures page
-([apps/web-nuxt/app/pages/[competition]/matches/index.vue](../../app/pages/%5Bcompetition%5D/matches/index.vue))
-and its score field ([apps/web-nuxt/app/components/ScoreInput.vue](../../app/components/ScoreInput.vue)).
+([apps/web-nuxt/app/pages/[competition]/matches/index.vue](../../apps/web-nuxt/app/pages/%5Bcompetition%5D/matches/index.vue))
+and its score field ([apps/web-nuxt/app/components/ScoreInput.vue](../../apps/web-nuxt/app/components/ScoreInput.vue)).
 Part of the core predict loop: see [predictions-and-scoring.md](predictions-and-scoring.md).
 
 ## Outstanding-picks nudge
@@ -13,7 +13,7 @@ are still **pickable** (kickoff ahead so not locked, both teams known) and that
 the user has not predicted yet. The logic is a pure helper so it lands under the
 98% coverage gate (the page itself is not covered):
 
-- [apps/web-nuxt/app/utils/outstanding-picks.ts](../../app/utils/outstanding-picks.ts):
+- [apps/web-nuxt/app/utils/outstanding-picks.ts](../../apps/web-nuxt/app/utils/outstanding-picks.ts):
   `isMatchPickable` mirrors ScoreInput's own disabled rule
   (`!isLocked && homeTeamCode && awayTeamCode`), so the count never disagrees
   with the rows the user can actually fill in. `countOutstandingPicks` and
@@ -33,13 +33,13 @@ jump for the scroll position.
 
 The score field auto-saves on debounce / blur / Enter with no Save button. When
 the entered scoreline is implausible, it holds a confirm dialog
-([AppConfirmDialog.vue](../../app/components/AppConfirmDialog.vue)) before
+([AppConfirmDialog.vue](../../apps/web-nuxt/app/components/AppConfirmDialog.vue)) before
 committing instead of saving silently. It is a confirm, not a block: accept saves
 the value, cancel (or Esc / mask) restores the last saved value. Plausible scores
 still auto-save untouched, and the keyboard-advance UX is preserved - focus does
 not hop to the next match while the confirm is up.
 
-- Predicate: [apps/web-nuxt/app/utils/prediction-sanity.ts](../../app/utils/prediction-sanity.ts)
+- Predicate: [apps/web-nuxt/app/utils/prediction-sanity.ts](../../apps/web-nuxt/app/utils/prediction-sanity.ts)
   `isOutlandishScore(home, away)` - an absolute cap: `home > 7 || away > 7 ||
   home + away > 11`.
 

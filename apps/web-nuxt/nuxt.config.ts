@@ -121,7 +121,8 @@ export default defineNuxtConfig({
   i18n: {
     strategy: 'no_prefix',
     defaultLocale: 'en',
-    // locale subdir within it.
+    // Locales come from apps/web-nuxt/i18n/locales, a symlink to the top-level
+    // shared/i18n-json (langDir/restructureDir stay default).
     locales: [
       { code: 'en', name: 'English', file: 'en.json', language: 'en' },
       { code: 'fr', name: 'Français', file: 'fr.json', language: 'fr' },
