@@ -16,7 +16,9 @@ const bodySchema = z.object({
   wager: z.number().int().min(0).max(999).nullable().optional(),
 })
 
-export default defineValidatedHandler({ body: bodySchema }, async ({ body, user }) => {
+const responseSchema = z.object({ id: z.string() })
+
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ body, user }) => {
   const id = await upsertPrediction(db, {
     userId: user.id,
     matchId: body.matchId,

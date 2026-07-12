@@ -4,33 +4,37 @@ import { requireAdmin, requireUser } from './auth-guards'
 import { toHttpError } from './http'
 import { type HandlerContract, parseResponse, type ResponseReturn } from './validated-handler'
 
-interface ReadCtx<Q> {
+type ReadUser = { id: string; email: string; role?: string | null }
+type Auth = 'user' | 'admin'
+
+interface ReadCtx<Q, A extends Auth | undefined> {
   event: H3Event
   query: Q
-  // null on a public read; the authenticated user on an auth'd one.
-  user: { id: string; email: string; role?: string | null } | null
+  // Non-null when the route opts into auth; null on a public read. The auth
+  // literal narrows it so an auth'd handler needs no null check.
+  user: A extends Auth ? ReadUser : ReadUser | null
 }
 
-interface ReadOptions<R extends ZodType, Q extends ZodType> {
+interface ReadOptions<R extends ZodType, Q extends ZodType, A extends Auth | undefined> {
   // The response contract - always required, so every read has a machine-
   // readable, runtime-checked shape for the OpenAPI/Dart client to bind to.
   response: R
   // Reads are public by default (a GET carries no CSRF risk); opt into auth.
-  auth?: 'user' | 'admin'
+  auth?: A
   // Optional query-string contract, validated the same way a body is.
   query?: Q
 }
 
 // The read counterpart to defineValidatedHandler: enforce optional auth, parse
 // the query string against a zod schema, map domain errors to HTTP, and validate
-// the response against its contract on the way out. Keeps the 107 read routes as
-// thin and as contract-bound as the mutations.
-export function defineReadHandler<R extends ZodType, Q extends ZodType = ZodType>(
-  options: ReadOptions<R, Q>,
-  handler: (ctx: ReadCtx<Q extends ZodType ? z.infer<Q> : undefined>) => ResponseReturn<R>,
+// the response against its contract on the way out. Keeps the read routes as thin
+// and as contract-bound as the mutations.
+export function defineReadHandler<R extends ZodType, Q extends ZodType = ZodType, A extends Auth | undefined = undefined>(
+  options: ReadOptions<R, Q, A>,
+  handler: (ctx: ReadCtx<Q extends ZodType ? z.infer<Q> : undefined, A>) => ResponseReturn<R>,
 ) {
   const handle = defineEventHandler(async (event) => {
-    let user: ReadCtx<unknown>['user'] = null
+    let user: ReadUser | null = null
     if (options.auth === 'admin') user = await requireAdmin(event)
     else if (options.auth === 'user') user = await requireUser(event)
 
@@ -49,7 +53,7 @@ export function defineReadHandler<R extends ZodType, Q extends ZodType = ZodType
 
     let result: unknown
     try {
-      result = await handler({ event, query: query as never, user })
+      result = await handler({ event, query: query as never, user } as Parameters<typeof handler>[0])
     } catch (error) {
       throw toHttpError(error)
     }

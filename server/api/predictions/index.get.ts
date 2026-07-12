@@ -1,11 +1,15 @@
+import { z } from 'zod'
 import { db } from '../../../db'
-import { getMyPredictions } from '../../utils/predictions/service'
-import { requireUser } from '../../utils/auth-guards'
+import { predictionViewSchema } from '../../schemas/prediction'
 import { resolveCompetition } from '../../utils/competitions/store'
+import { getMyPredictions } from '../../utils/predictions/service'
+import { defineReadHandler } from '../../utils/read-handler'
 
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
-  const competition = await resolveCompetition(db, (getQuery(event).competition as string) || null)
+const querySchema = z.object({ competition: z.string().optional() })
+const responseSchema = z.object({ predictions: z.array(predictionViewSchema) })
+
+export default defineReadHandler({ response: responseSchema, auth: 'user', query: querySchema }, async ({ user, query }) => {
+  const competition = await resolveCompetition(db, query.competition || null)
   return { predictions: await getMyPredictions(db, user.id, competition?.id) }
 })
 
