@@ -104,6 +104,13 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   server. Reach anyone you share a league with, plus anyone who has left DM discovery on (a per-user
   opt-out in preferences); safety-number verification and identity recovery carry over from chat. A new
   message pings the header bell and web push (its own toggle), and deep-links straight to the thread
+- **Voice chat (peer-to-peer, end-to-end encrypted)**: call someone one-to-one from a direct message,
+  or start a group voice room in a league chat - optionally tied to a match, to watch together. A live
+  "N in voice" badge shows a league call is on, and you can invite chosen members; incoming calls ring
+  you anywhere in the app, and a missed call lands in your notifications (its own **Calls** push toggle).
+  The audio is direct browser-to-browser (WebRTC, DTLS-SRTP), so it never passes through the server;
+  reliable connections behind strict NATs use a self-hosted **coturn** TURN relay (the `voice` compose
+  profile)
 - **Online presence**: a live dot on every avatar shows whether someone is active (green), online but
   idle (amber) or offline, over the same WebSocket
 - Live scores over WebSocket with a pixel-art **goal celebration**; match view with possession,
