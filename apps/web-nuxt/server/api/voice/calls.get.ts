@@ -57,9 +57,9 @@ defineRouteMeta({
     description:
       'Recent voice calls (ongoing, ended, missed) of a DM thread or league/match room, oldest first, for the chat call lines. Caller must be a thread participant / league member.',
     parameters: [
-      { in: 'query', name: 'dmThreadId', required: false, schema: { type: 'string', maxLength: 64 } },
-      { in: 'query', name: 'leagueId', required: false, schema: { type: 'string', maxLength: 64 } },
-      { in: 'query', name: 'matchId', required: false, schema: { type: 'string', maxLength: 64 } },
+      { in: 'query', name: 'dmThreadId', required: false, schema: { type: 'string' } },
+      { in: 'query', name: 'leagueId', required: false, schema: { type: 'string' } },
+      { in: 'query', name: 'matchId', required: false, schema: { type: 'string' } },
     ],
     responses: {
       '200': { description: '{ calls: [...] }.' },
