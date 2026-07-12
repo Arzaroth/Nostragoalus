@@ -5,6 +5,10 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### che'wI' QInmey
+
+- wab ja'chuqtaHghach coturn: `NUXT_TURN_EXTERNAL_IP` chImchugh, container taghDI' `NUXT_TURN_HOST` vo' IP ngu'lu' 'e' patlh - vaj dyndns pong relay public IP mung nItebHa'. `NUXT_TURN_HOST` ghaH pong browser ngu'laHbogh njub, CDN (Cloudflare TURN/UDP qengbe') qengbe'bogh pong.
+
 ## [3.0.1] - 2026-07-12
 
 ### che'wI' QInmey

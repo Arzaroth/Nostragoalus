@@ -50,7 +50,11 @@ never reaches the browser.
 
 Runtime config (`NUXT_TURN_SECRET` / `NUXT_TURN_HOST` / `NUXT_TURN_REALM`, plus
 `NUXT_TURN_EXTERNAL_IP` = the host's public IP whenever coturn sits behind NAT, so
-it advertises a reachable relay address). Prod firewall: forward the TURN
+it advertises a reachable relay address). `NUXT_TURN_HOST` must be a name the
+browser resolves directly - not a CDN-proxied one (Cloudflare can't carry TURN/UDP).
+`NUXT_TURN_EXTERNAL_IP` left blank auto-resolves from `NUXT_TURN_HOST` at coturn
+start (the compose wrapper runs `getent ahostsv4`), so a dyndns host stays the
+single source of truth. Prod firewall: forward the TURN
 port **(default 3478, udp+tcp)** and the **relay range (default 49160-49200/udp)**
 to the host (and the TLS port for `turns:`). All four ports are env-configurable
 (`NUXT_TURN_PORT` / `NUXT_TURN_TLS_PORT` / `NUXT_TURN_MIN_PORT` / `NUXT_TURN_MAX_PORT`,

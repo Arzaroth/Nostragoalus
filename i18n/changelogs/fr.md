@@ -5,6 +5,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Notes d'exploitation
+
+- coturn du chat vocal : `NUXT_TURN_EXTERNAL_IP` peut rester vide pour être résolu automatiquement depuis `NUXT_TURN_HOST` au démarrage du conteneur, afin qu'un nom dyndns reste la source unique de l'IP publique du relais. `NUXT_TURN_HOST` doit être un nom que le navigateur résout directement, pas un nom passé par un CDN (Cloudflare ne peut pas transporter le TURN/UDP).
+
 ## [3.0.1] - 2026-07-12
 
 ### Notes d'exploitation

@@ -94,19 +94,26 @@ services:
       NUXT_TURN_TLS_PORT: ${NUXT_TURN_TLS_PORT:-5349}
       NUXT_TURN_MIN_PORT: ${NUXT_TURN_MIN_PORT:-49160}
       NUXT_TURN_MAX_PORT: ${NUXT_TURN_MAX_PORT:-49200}
-    # A shell wrapper so `--external-ip` is added ONLY when NUXT_TURN_EXTERNAL_IP is
-    # set (`$$` defers the expansion to the container shell, not compose). For TLS
-    # (turns:), append `--cert=... --pkey=...` here and mount the cert (volume below).
+    # A shell wrapper (`$$` defers expansion to the container shell, not compose):
+    # coturn's --external-ip needs a literal IP, but the deploy may only know a
+    # (dyndns) hostname, so if NUXT_TURN_EXTERNAL_IP is unset we resolve
+    # NUXT_TURN_HOST to its IPv4 at start - the dyndns name stays the single source
+    # of truth (re-resolved on each container start). --external-ip is omitted only
+    # when neither yields an address. For TLS (turns:), append `--cert=... --pkey=...`
+    # here and mount the cert (volume below).
     entrypoint: ['/bin/sh', '-c']
     command:
       - >
+        EXT="$$NUXT_TURN_EXTERNAL_IP";
+        if [ -z "$$EXT" ] && [ -n "$$NUXT_TURN_HOST" ]; then
+        EXT=$$(getent ahostsv4 "$$NUXT_TURN_HOST" | awk '{print $$1; exit}'); fi;
         exec turnserver -n --use-auth-secret
         --static-auth-secret="$$NUXT_TURN_SECRET"
         --realm="$$NUXT_TURN_REALM"
         --listening-port="$$NUXT_TURN_PORT" --tls-listening-port="$$NUXT_TURN_TLS_PORT"
         --min-port="$$NUXT_TURN_MIN_PORT" --max-port="$$NUXT_TURN_MAX_PORT"
         --fingerprint --no-cli --no-multicast-peers
-        $${NUXT_TURN_EXTERNAL_IP:+--external-ip=$$NUXT_TURN_EXTERNAL_IP}
+        $${EXT:+--external-ip=$$EXT}
     # volumes:
     #   - /etc/letsencrypt/live/turn.example.com:/etc/coturn/tls:ro
 
