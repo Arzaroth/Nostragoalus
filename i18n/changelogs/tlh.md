@@ -5,6 +5,10 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### che'wI' QInmey
+
+- DaH pnpm monorepo 'oH qawHaq'e'. `apps/web-nuxt/` bIngDaq vIH web ghun je compose stack naQ (`Dockerfile`, `compose*.yaml`, `.env*`); qawHaq porgh 'oH Docker build context'e'. `mise run up`/`dev`/`preview` je `mise run release`: DaH He chu' lupoQ. docker toy'bogh deploy: `apps/web-nuxt/compose.yaml` lupoQ (pagh `-f apps/web-nuxt/Dockerfile`, context `.`). ghun DatabaSe je choHbe' - rap chenmoHlu'bogh ghun.
+
 ## [3.0.3] - 2026-07-12
 
 ### choHpu'

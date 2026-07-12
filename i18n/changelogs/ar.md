@@ -5,6 +5,10 @@
 
 ## [Unreleased]
 
+### ملاحظات للمشغّل
+
+- أصبح المستودع الآن أحادي المستودع (monorepo) بنظام pnpm. نُقل تطبيق الويب وكامل حزمة compose الخاصة به (`Dockerfile` و`compose*.yaml` و`.env*`) إلى `apps/web-nuxt/`، مع بقاء سياق بناء Docker في جذر المستودع. تشير `mise run up`/`dev`/`preview` و`mise run release` بالفعل إلى المسارات الجديدة؛ وأي نشر يستدعي docker مباشرةً يجب أن يستهدف `apps/web-nuxt/compose.yaml` (أو `-f apps/web-nuxt/Dockerfile` مع السياق `.`). لا تغيير في التطبيق أو قاعدة البيانات - التطبيق المبني مطابق تمامًا.
+
 ## [3.0.3] - 2026-07-12
 
 ### تعديلات
