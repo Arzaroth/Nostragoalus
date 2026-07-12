@@ -57,6 +57,15 @@ export async function handleVoiceLeave(db: AppDatabase, sub: LiveSubscriber): Pr
   if (!left) return
   // The room key was built from a validated scope on join, so it always parses.
   const scope = parseVoiceRoomKey(left.roomKey)!
+  // A DM is a two-party call: one side leaving ends it for the other too. Drop the
+  // remainer from the room and tell them, instead of stranding them in a zombie
+  // "in-call" state with no peer.
+  if (scope.kind === 'dm') {
+    for (const token of tokensInRoom(left.roomKey)) {
+      leaveRoom(token)
+      sendVoiceToToken(token, { type: 'voice:ended', scope, from: left.userId })
+    }
+  }
   publishVoiceRoster(left.roomKey, scope)
   await broadcastLeaguePresence(db, left.roomKey, scope)
 }

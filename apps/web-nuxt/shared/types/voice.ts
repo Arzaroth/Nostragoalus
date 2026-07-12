@@ -131,9 +131,10 @@ export interface VoiceSignalInbound {
   payload: unknown
 }
 // The other party declined / the caller cancelled / you were displaced by another
-// tab - a terminal control frame the client acts on (dismiss ring, drop call).
+// tab / the call ended (the other DM party left) - a terminal control frame the
+// client acts on (dismiss ring, drop call).
 export interface VoiceControlFrame {
-  type: 'voice:declined' | 'voice:cancelled' | 'voice:evicted'
+  type: 'voice:declined' | 'voice:cancelled' | 'voice:evicted' | 'voice:ended'
   scope: VoiceScope
   from: string
 }

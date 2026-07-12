@@ -123,15 +123,31 @@ describe('voice signaling glue', () => {
     expect(framesOfType(owner2, 'voice:peer-reset')).toHaveLength(0)
   })
 
-  it('leave pushes the reduced roster to the remaining members', async () => {
-    const { db, scope } = await dmFixture()
+  it('leave pushes the reduced roster to the remaining league members', async () => {
+    const { db, scope } = await leagueFixture()
+    const owner = connect('owner')
+    const member = connect('member')
+    await handleVoiceJoin(db, owner, scope)
+    await handleVoiceJoin(db, member, scope)
+    owner.send.mockClear()
+    await handleVoiceLeave(db, member)
+    expect(framesOfType(owner, 'voice:roster').at(-1)?.roster).toEqual(['owner'])
+  })
+
+  it('DM: one side leaving ends the call for the other', async () => {
+    const { db, threadId, scope } = await dmFixture()
     const a = connect('alice')
     const b = connect('bob')
     await handleVoiceJoin(db, a, scope)
     await handleVoiceJoin(db, b, scope)
     a.send.mockClear()
     await handleVoiceLeave(db, b)
-    expect(framesOfType(a, 'voice:roster').at(-1)?.roster).toEqual(['alice'])
+    // The remainer is told the call ended (not left alone in a zombie room).
+    expect(framesOfType(a, 'voice:ended').at(-1)).toMatchObject({ from: 'bob', scope })
+    // The room is empty: a fresh join opens a new 1-member room.
+    const a2 = connect('alice')
+    await handleVoiceJoin(db, a2, scope)
+    expect(framesOfType(a2, 'voice:roster').at(-1)).toMatchObject({ roomKey: `dm:${threadId}`, roster: ['alice'] })
   })
 
   it('leaving when in no room is a no-op', async () => {
