@@ -5,6 +5,10 @@
 
 ## [Unreleased]
 
+### หมายเหตุสำหรับผู้ดูแล
+
+- ที่เก็บโค้ดเป็น pnpm monorepo แล้ว แอปเว็บและสแต็ก compose ทั้งหมด (`Dockerfile`, `compose*.yaml`, `.env*`) ย้ายไปอยู่ใต้ `apps/web-nuxt/` โดยบริบทการ build ของ Docker ยังคงเป็นรากของที่เก็บโค้ด `mise run up`/`dev`/`preview` และ `mise run release` ชี้ไปยังเส้นทางใหม่แล้ว การดีพลอยที่เรียก docker โดยตรงต้องชี้ไปที่ `apps/web-nuxt/compose.yaml` (หรือ `-f apps/web-nuxt/Dockerfile` ด้วยบริบท `.`) ไม่มีการเปลี่ยนแปลงแอปพลิเคชันหรือฐานข้อมูล - แอปที่ build ได้เหมือนเดิมทุกประการ
+
 ## [3.0.3] - 2026-07-12
 
 ### เปลี่ยนแปลง
