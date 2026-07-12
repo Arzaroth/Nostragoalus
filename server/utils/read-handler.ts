@@ -2,7 +2,7 @@ import type { H3Event } from 'h3'
 import type { z, ZodType } from 'zod'
 import { requireAdmin, requireUser } from './auth-guards'
 import { toHttpError } from './http'
-import { type HandlerContract, parseResponse } from './validated-handler'
+import { type HandlerContract, parseResponse, type ResponseReturn } from './validated-handler'
 
 interface ReadCtx<Q> {
   event: H3Event
@@ -27,7 +27,7 @@ interface ReadOptions<R extends ZodType, Q extends ZodType> {
 // thin and as contract-bound as the mutations.
 export function defineReadHandler<R extends ZodType, Q extends ZodType = ZodType>(
   options: ReadOptions<R, Q>,
-  handler: (ctx: ReadCtx<Q extends ZodType ? z.infer<Q> : undefined>) => unknown | Promise<unknown>,
+  handler: (ctx: ReadCtx<Q extends ZodType ? z.infer<Q> : undefined>) => ResponseReturn<R>,
 ) {
   const handle = defineEventHandler(async (event) => {
     let user: ReadCtx<unknown>['user'] = null

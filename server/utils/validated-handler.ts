@@ -10,7 +10,13 @@ interface HandlerCtx<B> {
   user: { id: string; email: string; role?: string | null }
 }
 
-interface Options<S extends ZodType> {
+type MaybePromise<T> = T | Promise<T>
+// The value a handler must return: `z.input<R>` of its response schema (what the
+// route produces, before parse). With no response schema R is the base ZodType
+// and `z.input` widens to unknown, so the return is unconstrained.
+export type ResponseReturn<R extends ZodType> = MaybePromise<z.input<R>>
+
+interface Options<S extends ZodType, R extends ZodType> {
   body?: S
   admin?: boolean
   // When set, the route ALSO accepts an x-api-key carrying these permissions
@@ -20,17 +26,19 @@ interface Options<S extends ZodType> {
   // The response contract. When set, the handler's return is parsed through it
   // before it leaves the server, so a shape that drifts from the published
   // OpenAPI/Dart contract is a loud 500 here, not a silent client break. Same
-  // schema the spec emitter reads (server/utils/openapi/contract.ts).
-  response?: ZodType
+  // schema the spec emitter reads (server/utils/openapi/contract.ts). The
+  // handler's return type is checked against `z.input<R>` at compile time, so a
+  // schema that does not match what the route returns fails typecheck.
+  response?: R
 }
 
 // One wrapper for mutating routes: enforce auth (user or admin), parse+validate
 // the body against a Zod schema (so the OpenAPI constraints are load-bearing),
 // and map domain errors to HTTP. Replaces the String()/Number() coercion that
 // let NaN/"undefined" flow into services.
-export function defineValidatedHandler<S extends ZodType>(
-  options: Options<S>,
-  handler: (ctx: HandlerCtx<S extends ZodType ? z.infer<S> : undefined>) => unknown | Promise<unknown>,
+export function defineValidatedHandler<S extends ZodType, R extends ZodType = ZodType>(
+  options: Options<S, R>,
+  handler: (ctx: HandlerCtx<S extends ZodType ? z.infer<S> : undefined>) => ResponseReturn<R>,
 ) {
   const handle = defineEventHandler(async (event) => {
     const apiKeyHeader = event.headers?.get?.('x-api-key')
