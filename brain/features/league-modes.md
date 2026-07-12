@@ -4,7 +4,7 @@ A league's **mode** decides how it scores. The default `NORMAL` is the classic
 exact-score game ([predictions & scoring](predictions-and-scoring.md)); three
 new modes change the rules per league. Set at creation, a mode is **frozen once
 the competition has kicked off** so the game cannot shift under players
-mid-tournament. Source of truth: `server/utils/leagues/modes.ts`.
+mid-tournament. Source of truth: `apps/web-nuxt/server/utils/leagues/modes.ts`.
 
 This makes a league more than the member-filter lens of plain [leagues](leagues.md):
 a moded league is re-scored from picks at read time and can hold its own picks.
@@ -21,16 +21,16 @@ a moded league is re-scored from picks at read time and can hold its own picks.
 Mode predicates (`isOutcomeMode`, `usesWager`, `usesLives`, `isEliminationMode`),
 the per-mode pure scorers (`easyPoints`, `hardPoints`, `normalPoints`,
 `modePoints`, `hardcoreSurvives`), the canonical W/D/L scoreline map, and the
-fixed `hardRoundBudget` all live in `server/utils/leagues/modes.ts`.
+fixed `hardRoundBudget` all live in `apps/web-nuxt/server/utils/leagues/modes.ts`.
 
 - **EASY** reads only the outcome of a pick, so an exact 2-1 and a W/D/L "home"
   score it identically. Points use the competition's configured `oddsTiers`
-  (`server/utils/scoring/bonus.ts:oddsBonus`) on top of `EASY_CORRECT_BASE`.
+  (`apps/web-nuxt/server/utils/scoring/bonus.ts:oddsBonus`) on top of `EASY_CORRECT_BASE`.
 - **HARD** layers a per-round confidence budget (`hardRoundBudget` = matches in
   round x `HARD_BUDGET_PER_MATCH`). The stake rides the base pick (shared across
   a member's HARD leagues), enforced in `upsertPrediction`.
 - **HARDCORE** carries no points. The board walks scored matches in kickoff order
-  (`server/utils/leaderboard/modes.ts:buildSurvivalBoard`), burning a life per
+  (`apps/web-nuxt/server/utils/leaderboard/modes.ts:buildSurvivalBoard`), burning a life per
   wrong/missing outcome; `league.lives` (owner-set, 1-99) is the buffer.
 
 ## Base pick + per-league override
@@ -55,7 +55,7 @@ league can hold an **override**:
 ## Completeness (the nudge)
 
 Because picks can diverge and modes want different things, completeness is
-per-(user, match, league): `server/utils/leagues/completeness.ts` +
+per-(user, match, league): `apps/web-nuxt/server/utils/leagues/completeness.ts` +
 `getLeagueCompleteness`. Strict rules:
 
 - `MISSING` - no effective pick.
@@ -68,7 +68,7 @@ W/D/L quick-pick stores a canonical scoreline).
 
 ## Boards
 
-`server/utils/leaderboard/modes.ts:getLeagueModeBoard` serves moded boards,
+`apps/web-nuxt/server/utils/leaderboard/modes.ts:getLeagueModeBoard` serves moded boards,
 re-scoring effective picks for the visible members (same visibility rules as the
 normal board). EASY/HARD points boards mirror the normal board's richness: the
 per-pick scoring adds the competition's configured bonus (crowd rarity or odds,
@@ -99,20 +99,20 @@ NORMAL leagues keep the standard `getLeaderboard` path.
 
 - Schema: `league.mode`, `league.lives`, `league_member.picks_synced`,
   `prediction.is_outcome_only`, `prediction.wager`, `league_prediction`,
-  `league_prediction_commitment` (`db/app-schema.ts`).
-- Server: `server/utils/leagues/modes.ts`, `completeness.ts`,
-  `server/utils/leaderboard/modes.ts`, override functions in
-  `server/utils/predictions/service.ts`.
+  `league_prediction_commitment` (`apps/web-nuxt/db/app-schema.ts`).
+- Server: `apps/web-nuxt/server/utils/leagues/modes.ts`, `completeness.ts`,
+  `apps/web-nuxt/server/utils/leaderboard/modes.ts`, override functions in
+  `apps/web-nuxt/server/utils/predictions/service.ts`.
 - Tamper-evidence: override score changes append to a **separate** hash chain
   (`league_prediction_commitment`, head id `league`), domain-separated from the
   base chain and binding the leagueId - `appendLeaguePredictionCommitment` +
-  `verifyLeagueChainServer` (`server/utils/commitment/service.ts`),
-  `computeLeagueCommitment`/`verifyLeagueLedger` (`shared/commitment.ts`). See
+  `verifyLeagueChainServer` (`apps/web-nuxt/server/utils/commitment/service.ts`),
+  `computeLeagueCommitment`/`verifyLeagueLedger` (`apps/web-nuxt/shared/commitment.ts`). See
   [tamper-evidence](tamper-evidence.md).
 
 ## Client surfaces
 
-The matches page (`app/pages/[competition]/matches/index.vue`) adapts to the
+The matches page (`apps/web-nuxt/app/pages/[competition]/matches/index.vue`) adapts to the
 pilled league: `MatchPickControls.vue` adds a W/D/L quick-pick (easy/hardcore)
 and a HARD stake stepper bounded by the per-round budget, a banner toggles
 follow-main vs customize (`setPicksSynced`), and in custom mode score/stake/joker

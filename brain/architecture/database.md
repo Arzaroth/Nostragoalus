@@ -5,22 +5,22 @@ source of truth; migrations are generated, never hand-written.
 
 ## Files and connection
 
-- `db/index.ts` - one `pg.Pool` + `drizzle(pool, { schema })`. Connection from
+- `apps/web-nuxt/db/index.ts` - one `pg.Pool` + `drizzle(pool, { schema })`. Connection from
   `DATABASE_URL ?? NUXT_DATABASE_URL`. Exports the singleton `db`.
-- `db/schema.ts` - re-exports `auth-schema.ts` + `app-schema.ts`.
-- `db/auth-schema.ts` - better-auth tables (`user`, `session`, `account`,
+- `apps/web-nuxt/db/schema.ts` - re-exports `auth-schema.ts` + `app-schema.ts`.
+- `apps/web-nuxt/db/auth-schema.ts` - better-auth tables (`user`, `session`, `account`,
   `verification`, `passkey`, `two_factor`, `sso_provider`, `scim_provider`,
   `apikey`). See [auth.md](auth.md).
-- `db/app-schema.ts` - all product tables, enums, and Drizzle relations.
-- `db/types.ts` - `AppDatabase = PgDatabase<...>`, the type every service takes.
-- `drizzle.config.ts` - dialect postgresql, schema `./db/schema.ts`, out
+- `apps/web-nuxt/db/app-schema.ts` - all product tables, enums, and Drizzle relations.
+- `apps/web-nuxt/db/types.ts` - `AppDatabase = PgDatabase<...>`, the type every service takes.
+- `apps/web-nuxt/drizzle.config.ts` - dialect postgresql, schema `./db/schema.ts`, out
   `./drizzle`.
 
 ## Migrations
 
-- Generate with `pnpm db:generate` (drizzle-kit) into `drizzle/NNNN_name.sql`
+- Generate with `pnpm db:generate` (drizzle-kit) into `apps/web-nuxt/drizzle/NNNN_name.sql`
   plus the journal/snapshot. Currently ~55 migrations (0000 through 0054).
-- Applied on boot by `server/plugins/migrate.ts` when `RUN_MIGRATIONS=true`.
+- Applied on boot by `apps/web-nuxt/server/plugins/migrate.ts` when `RUN_MIGRATIONS=true`.
 - **Shared-dev-DB caveat:** the local `nostragoalus_pgdata` volume is shared
   across all worktrees/branches, and the node-postgres migrator applies journal
   entries by `when` timestamp, not by hash. If a parallel branch applied a
@@ -33,7 +33,7 @@ source of truth; migrations are generated, never hand-written.
 ## Table groups
 
 Logical names are the Drizzle TS exports; the SQL tables are snake_case
-(`chatMessage` -> `chat_message`). Full column lists live in `db/app-schema.ts`.
+(`chatMessage` -> `chat_message`). Full column lists live in `apps/web-nuxt/db/app-schema.ts`.
 
 - **Auth:** `user`, `session`, `account`, `verification`, `passkey`, `two_factor`,
   `sso_provider` (lifecycle `status` + `last_tested_at`/`last_test_result` +
@@ -101,16 +101,16 @@ deliberately has none (it must outlive deleted rows).
 
 ## Test database
 
-- `tests/db.ts` `createTestDb()` spins up `@electric-sql/pglite` (in-memory
+- `apps/web-nuxt/tests/db.ts` `createTestDb()` spins up `@electric-sql/pglite` (in-memory
   Postgres) and runs the REAL `./drizzle` migrations, so service tests exercise
   production schema. See [testing.md](testing.md).
-- `tests/factories.ts` - `makeUser`, `makeCompetition`, `seedCompetition`,
+- `apps/web-nuxt/tests/factories.ts` - `makeUser`, `makeCompetition`, `seedCompetition`,
   `makeMatch`, `makeLeague`, `addLeagueMember`, `makePrediction`, `makeReaction`.
-- `tests/storage.ts` - `memoryStorage()` injected where a service needs a blob
+- `apps/web-nuxt/tests/storage.ts` - `memoryStorage()` injected where a service needs a blob
   driver.
 
 ## Sources
 
-- `db/index.ts`, `db/schema.ts`, `db/auth-schema.ts`, `db/app-schema.ts`, `db/types.ts`
-- `drizzle.config.ts`, `drizzle/`, `server/plugins/migrate.ts`
-- `tests/db.ts`, `tests/factories.ts`, `tests/storage.ts`
+- `apps/web-nuxt/db/index.ts`, `apps/web-nuxt/db/schema.ts`, `apps/web-nuxt/db/auth-schema.ts`, `apps/web-nuxt/db/app-schema.ts`, `apps/web-nuxt/db/types.ts`
+- `apps/web-nuxt/drizzle.config.ts`, `apps/web-nuxt/drizzle/`, `apps/web-nuxt/server/plugins/migrate.ts`
+- `apps/web-nuxt/tests/db.ts`, `apps/web-nuxt/tests/factories.ts`, `apps/web-nuxt/tests/storage.ts`

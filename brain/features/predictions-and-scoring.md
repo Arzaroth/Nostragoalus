@@ -32,7 +32,7 @@ already kicked off.
 
 ## The scoring engine
 
-Scoring is MPP-style and lives in `server/utils/scoring/`
+Scoring is MPP-style and lives in `apps/web-nuxt/server/utils/scoring/`
 (`engine.ts` + `bonus.ts` + `config.ts`). A prediction's points are:
 
 1. **Base tier** - graded against the final result:
@@ -101,10 +101,10 @@ best-scorer bonus.
 
 ## Sources
 
-- `server/api/predictions/index.put.ts`, `server/api/predictions/joker.put.ts`
-- `server/utils/predictions/service.ts` (`upsertPrediction`)
-- `server/utils/scoring/engine.ts`, `bonus.ts`, `tiers.ts`, `config.ts`, `store.ts`
-- `server/utils/sync/finalize.ts` (`finalizeMatches`, `scoreMatchRow`)
-- `shared/types/scoring.ts`
-- `db/app-schema.ts` (`prediction`, `match_score_event`, `scoring_config`, `goal_event`)
-- `server/tasks/matches/finalize.ts` (the `matches:finalize` task, registered via `server/utils/tasks/registry.ts`)
+- `apps/web-nuxt/server/api/predictions/index.put.ts`, `apps/web-nuxt/server/api/predictions/joker.put.ts`
+- `apps/web-nuxt/server/utils/predictions/service.ts` (`upsertPrediction`)
+- `apps/web-nuxt/server/utils/scoring/engine.ts`, `bonus.ts`, `tiers.ts`, `config.ts`, `store.ts`
+- `apps/web-nuxt/server/utils/sync/finalize.ts` (`finalizeMatches`, `scoreMatchRow`)
+- `apps/web-nuxt/shared/types/scoring.ts`
+- `apps/web-nuxt/db/app-schema.ts` (`prediction`, `match_score_event`, `scoring_config`, `goal_event`)
+- `apps/web-nuxt/server/tasks/matches/finalize.ts` (the `matches:finalize` task, registered via `apps/web-nuxt/server/utils/tasks/registry.ts`)

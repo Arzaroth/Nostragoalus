@@ -10,7 +10,7 @@ whole competition over a fixed five and settled at finalize.
 
 ## The criteria
 
-`LEAGUE_REWARD_CRITERIA` (`shared/types/rewards.ts`, mirrored by the
+`LEAGUE_REWARD_CRITERIA` (`apps/web-nuxt/shared/types/rewards.ts`, mirrored by the
 `league_reward_criterion` pg enum) is a superset of the global trophy set - eleven
 criteria, each a `(metric x match-filter x direction)` over the same per-user
 aggregates the trophies use:
@@ -55,7 +55,7 @@ aggregates the trophies use:
 Winners are computed at **read time**, so a league sees who is *currently* leading
 each prize; it settles when the competition ends. No finalize hook, no award table.
 
-- `computeLeagueRewardWinners` (`server/utils/rewards/criteria.ts`) is the engine.
+- `computeLeagueRewardWinners` (`apps/web-nuxt/server/utils/rewards/criteria.ts`) is the engine.
   OVERALL comes off `getLeaderboard(leagueId)` (folds in the meta-pick bonuses); the
   rest come off `rankableForMatches` (exported from `awards/service.ts`) narrowed with
   `inArray(prediction.userId, memberIds)`. It runs one query per distinct match subset
@@ -124,14 +124,14 @@ team. (This replaced the old admin-global, per-competition featured team; see
 
 ## Sources
 
-- `db/app-schema.ts` (`league_reward`, `league.featuredTeamCode`,
-  `league_reward_criterion` enum), `shared/types/rewards.ts`
-- `server/utils/rewards/{service,criteria,image}.ts`, `server/utils/awards/service.ts`
+- `apps/web-nuxt/db/app-schema.ts` (`league_reward`, `league.featuredTeamCode`,
+  `league_reward_criterion` enum), `apps/web-nuxt/shared/types/rewards.ts`
+- `apps/web-nuxt/server/utils/rewards/{service,criteria,image}.ts`, `apps/web-nuxt/server/utils/awards/service.ts`
   (`rankableForMatches`, `computeCriteriaWinners`, `criteriaMatchFilter`)
-- `server/api/leagues/[id]/rewards.{get,put}.ts`,
-  `server/api/leagues/[id]/rewards/[type]/ranking.get.ts`,
-  `server/api/leagues/[id]/index.put.ts` (featured team),
-  `server/api/me/rewards.get.ts`, `server/api/media/reward/[key].get.ts`
-- `app/composables/use{LeagueRewards,MyRewards,RewardRanking,CriterionName}.ts`,
-  `app/components/{LeagueRewards,RewardRankingDialog,TrophyCabinet}.vue`
+- `apps/web-nuxt/server/api/leagues/[id]/rewards.{get,put}.ts`,
+  `apps/web-nuxt/server/api/leagues/[id]/rewards/[type]/ranking.get.ts`,
+  `apps/web-nuxt/server/api/leagues/[id]/index.put.ts` (featured team),
+  `apps/web-nuxt/server/api/me/rewards.get.ts`, `apps/web-nuxt/server/api/media/reward/[key].get.ts`
+- `apps/web-nuxt/app/composables/use{LeagueRewards,MyRewards,RewardRanking,CriterionName}.ts`,
+  `apps/web-nuxt/app/components/{LeagueRewards,RewardRankingDialog,TrophyCabinet}.vue`
 - i18n `reward.*` (incl. `reward.criterion.*`) in all five locales

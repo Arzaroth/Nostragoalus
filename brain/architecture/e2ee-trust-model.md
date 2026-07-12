@@ -7,7 +7,7 @@ one, and the wording matters.
 
 ## The crypto (recap)
 
-Each user's browser generates a libsodium keypair (`app/utils/e2ee.ts`
+Each user's browser generates a libsodium keypair (`apps/web-nuxt/app/utils/e2ee.ts`
 `generateIdentity`) and uploads only the public key (`registerChatIdentity`). A
 random per-league group key is sealed to each member's public key (anonymous
 sealed box); messages are `crypto_secretbox` (XSalsa20-Poly1305) under the group
@@ -38,9 +38,9 @@ though key-substitution and code-swaps are made detectable.*
 
 ## Hardening layers
 
-- **Key transparency (KT)** - `shared/key-transparency.ts`,
-  `server/utils/key-transparency/service.ts`, `/api/keys/{head,log}`,
-  `app/composables/useKeyTransparency.ts`. An append-only, hash-chained log of every
+- **Key transparency (KT)** - `apps/web-nuxt/shared/key-transparency.ts`,
+  `apps/web-nuxt/server/utils/key-transparency/service.ts`, `/api/keys/{head,log}`,
+  `apps/web-nuxt/app/composables/useKeyTransparency.ts`. An append-only, hash-chained log of every
   `(userId -> publicKey)` binding, appended when a chat identity is first created
   **or reset** (a legitimate key rotation - the log keeps every binding and clients
   take the latest for a user via `loggedKeyFor`, so a reset reads `ok`, not a
@@ -58,7 +58,7 @@ though key-substitution and code-swaps are made detectable.*
   `getChatStatus` returns `rekeyPending` and the next OWNER/MODERATOR client
   auto-invokes `rotateKey` (fresh group key sealed to the remaining members, epoch
   bumped). Live reads were already blocked by the membership gate; this bounds a
-  later ciphertext leak. `server/utils/leagues/service.ts` `removeMembership`.
+  later ciphertext leak. `apps/web-nuxt/server/utils/leagues/service.ts` `removeMembership`.
 - **Build integrity** - see [build-integrity.md](build-integrity.md): a published
   SHA-256 of the client bundle so a later crypto-code swap is detectable.
 

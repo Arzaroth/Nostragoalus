@@ -37,7 +37,7 @@ Both views render the same four-column kanban board, ordered as a pipeline
 (`ROADMAP_COLUMNS` in `useRoadmap.ts`): Suggested -> Planned -> In progress ->
 Shipped. It scrolls horizontally on narrow screens.
 
-- **Public board** (`/roadmap`, `app/pages/roadmap.vue`): read-only. The
+- **Public board** (`/roadmap`, `apps/web-nuxt/app/pages/roadmap.vue`): read-only. The
   community (`SUGGESTED`) column is ranked by vote count and carries the suggest
   form; the rest keep admin position order. `GET /api/roadmap` returns every
   non-`REJECTED` item with its `voteCount`, a per-viewer `viewerHasVoted`, and
@@ -84,10 +84,10 @@ separate ROADMAP backlog item.
 
 ## Sources
 
-- `db/app-schema.ts` (`roadmap_item`, `roadmap_vote`, `roadmap_status`,
+- `apps/web-nuxt/db/app-schema.ts` (`roadmap_item`, `roadmap_vote`, `roadmap_status`,
   `roadmap_moderation`)
-- `server/utils/roadmap/service.ts`
-- `server/api/roadmap/*` (public), `server/api/admin/roadmap/*` (admin)
-- `app/composables/useRoadmap.ts`, `app/pages/roadmap.vue`,
-  `app/components/AdminRoadmapSection.vue`
+- `apps/web-nuxt/server/utils/roadmap/service.ts`
+- `apps/web-nuxt/server/api/roadmap/*` (public), `apps/web-nuxt/server/api/admin/roadmap/*` (admin)
+- `apps/web-nuxt/app/composables/useRoadmap.ts`, `apps/web-nuxt/app/pages/roadmap.vue`,
+  `apps/web-nuxt/app/components/AdminRoadmapSection.vue`
 - `mise-tasks/roadmap-seed`, `roadmap-add`, `roadmap-pull`

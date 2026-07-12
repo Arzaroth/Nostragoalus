@@ -9,7 +9,7 @@ toggle.
 
 Seven nullable `push*` boolean columns live on the better-auth `user` table
 (additionalFields). Null means "use the category default", resolved in
-`server/utils/push/prefs.ts`. Catalogue and defaults:
+`apps/web-nuxt/server/utils/push/prefs.ts`. Catalogue and defaults:
 
 | Category | Push key | Default |
 |---|---|---|
@@ -39,23 +39,23 @@ own keys: `NUXT_PUBLIC_VAPID_PUBLIC_KEY`, `NUXT_VAPID_PRIVATE_KEY`,
 ## Service worker
 
 The app uses `@vite-pwa/nuxt` in `injectManifest` mode with a custom worker at
-`app/service-worker/sw.ts` (Workbox precache plus `push` and `notificationclick`
+`apps/web-nuxt/app/service-worker/sw.ts` (Workbox precache plus `push` and `notificationclick`
 handlers). See [../architecture/rendering.md](../architecture/rendering.md) and
 [pwa.md](pwa.md).
 
 ## Send path
 
-`server/utils/push/send.ts` (`pushNotification` / `pushToUser`) gates on the
+`apps/web-nuxt/server/utils/push/send.ts` (`pushNotification` / `pushToUser`) gates on the
 config plus the category toggle, delivers to all of a user's subscriptions, and
 prunes dead ones (404 / 410). Push copy is rendered server-side in
-`server/utils/push/content.ts` with `push.*` i18n keys in all five locales (the
+`apps/web-nuxt/server/utils/push/content.ts` with `push.*` i18n keys in all five locales (the
 bell's client-side item text cannot run server-side). The send is hooked
 fire-and-forget into `createNotification` and the finalize post-commit flush.
 
 ## Live triggers
 
 `upsertMatches` now returns `transitions`; the `scores:poll` task feeds them to
-`server/utils/push/live.ts` `notifyLiveMatchEvents`, which fires kickoff on a
+`apps/web-nuxt/server/utils/push/live.ts` `notifyLiveMatchEvents`, which fires kickoff on a
 `SCHEDULED -> LIVE` transition and a goal on a live score increase, predictor-
 scoped, once per transition.
 
@@ -68,7 +68,7 @@ installed PWA (iOS >= 16.4).
 
 ## Sources
 
-- `db/app-schema.ts` (`push_subscription`), better-auth `user` push fields
-- `server/utils/push/{prefs,send,content,live}.ts`
-- `app/service-worker/sw.ts`, `app/composables/usePushNotifications.ts`,
-  `app/pages/preferences.vue`
+- `apps/web-nuxt/db/app-schema.ts` (`push_subscription`), better-auth `user` push fields
+- `apps/web-nuxt/server/utils/push/{prefs,send,content,live}.ts`
+- `apps/web-nuxt/app/service-worker/sw.ts`, `apps/web-nuxt/app/composables/usePushNotifications.ts`,
+  `apps/web-nuxt/app/pages/preferences.vue`

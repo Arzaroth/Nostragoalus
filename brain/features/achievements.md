@@ -15,7 +15,7 @@ Both live on the profile page `/[competition]/users/[id]`.
 
 ## The five trophies
 
-Computed by `awardCompetitionTrophies` (`server/utils/awards/service.ts`), gated on
+Computed by `awardCompetitionTrophies` (`apps/web-nuxt/server/utils/awards/service.ts`), gated on
 a decided FINAL (same trigger as the [champion](champion-pick.md) /
 [best-scorer](best-scorer.md) bonuses) and reconciled idempotently into
 `competition_award`. Ties share a trophy (one row per (competition, user, type)).
@@ -39,7 +39,7 @@ cabinet. It lives on as a per-league prize criterion - see
 
 ## The achievement catalog
 
-Code, not data: `server/utils/achievements/catalog.ts` lists 27 batch-evaluated
+Code, not data: `apps/web-nuxt/server/utils/achievements/catalog.ts` lists 27 batch-evaluated
 badges (plus two secret badges) with their category, scope, grading thresholds and
 whether they are hidden. `user_achievement` only records what a user unlocked. Categories:
 milestone (first-blood, opening-act, grand-finale, bore-draw, goal-rush, nemesis,
@@ -56,7 +56,7 @@ first exact of a competition). `grand-finale` is the bookend to `opening-act` - 
 FINAL match called EXACT. Some same-category badges set a per-key `icon` override in
 `catalog.ts` (e.g. opener flag vs final crown) so they don't all share the category icon.
 
-`evaluateAchievements` (`server/utils/achievements/service.ts`) runs each finalize
+`evaluateAchievements` (`apps/web-nuxt/server/utils/achievements/service.ts`) runs each finalize
 tick (after the trophy award, so treble/podium see this tick's trophies). It derives
 every user's metrics once (`computeAchievementStats`: exact/points/streaks/perfect
 rounds/opener/lone-wolf/oracle/underdog/completion/podium/wooden-spoon/trophy counts)
@@ -78,7 +78,7 @@ the stats map entirely (a reset that wiped all their predictions), which the per
 loop would otherwise never revisit.
 
 **The final-standing gate.** completionist, podium and wooden-spoon settle only once
-the tournament is over - gated on `hasDecidedFinal` (`server/utils/awards/service.ts`),
+the tournament is over - gated on `hasDecidedFinal` (`apps/web-nuxt/server/utils/awards/service.ts`),
 the same decided-FINAL check the trophies use. Without it, completionist fired
 mid-tournament off "every match scored so far" (not every match), and last-place would
 flip every finalize tick. **opening-act** grades the EXACT on the earliest-kickoff
@@ -144,7 +144,7 @@ tiles prefix it with the `locked` label ("how to earn this"), earned tiles read 
 Because it only runs on a finalize tick that newly scores a match (`result.scored > 0`),
 a competition whose matches are already scored when the feature deploys - or one that
 has finished and will never finalize again - never gets its historical badges. The
-manual `achievements:backfill` task (`server/tasks/achievements/backfill.ts` ->
+manual `achievements:backfill` task (`apps/web-nuxt/server/tasks/achievements/backfill.ts` ->
 `backfillAchievements`, admin Background-tasks page) runs the same idempotent evaluation
 across every competition to grant them, silently (no unlock notifications, so a deploy
 doesn't blast users with a backlog).
@@ -158,7 +158,7 @@ equal kickoffs tiebroken by match id so simultaneous fixtures give a stable stre
 deadline-dancer are earned by the ACT of saving a pick (createdAt vs kickoff), fully
 known before any match is scored - so waiting for a scored finalize tick meant a
 deadline pick showed locked until its match finished (the cabinet only marks a badge
-earned when a persisted row exists). `upsertPrediction` (`server/utils/predictions/service.ts`)
+earned when a persisted row exists). `upsertPrediction` (`apps/web-nuxt/server/utils/predictions/service.ts`)
 now calls `evaluatePickTimeAchievements` after a first save (never on an edit -
 createdAt is immutable), which recounts just those three metrics for that user and
 grants/notifies immediately. The finalize batch stays as the backfill; grants are
@@ -169,7 +169,7 @@ idempotent so it never re-notifies. The shared grant/upgrade step is
 
 `the-magic-word` is hidden and GLOBAL (spans competitions, null `competitionId`). It
 is not batch-evaluated: it is granted from the better-auth user-update hook
-(`lib/auth.ts`) when the konami skin unlock persists (`skinsUnlocked`), via
+(`apps/web-nuxt/lib/auth.ts`) when the konami skin unlock persists (`skinsUnlocked`), via
 `grantAchievement` (idempotent, notifies once).
 
 `the-collector` is also hidden and GLOBAL, but evaluated rather than event-granted:
@@ -184,7 +184,7 @@ so the unlock is not dangled as a to-do list.
 ## Cabinet and showcase
 
 - Read: `GET /api/users/[id]/cabinet?competition=` -> `getCabinet`
-  (`server/utils/achievements/cabinet.ts`) returns a `CabinetDto` (trophies,
+  (`apps/web-nuxt/server/utils/achievements/cabinet.ts`) returns a `CabinetDto` (trophies,
   achievements with earned/locked status, showcase, isOwner). It mirrors the profile
   privacy gate (private profiles 404 unless owner/admin/league mate). A hidden badge
   surfaces only once earned, so a locked secret is never revealed.
@@ -238,11 +238,11 @@ before the `#cabinet` anchor resolves.
 
 ## Sources
 
-- `db/app-schema.ts` (`competition_award`, `user_achievement`, `showcase_pin`)
-- `server/utils/awards/service.ts`, `server/utils/achievements/{catalog,service,cabinet,backfill}.ts`
-- `server/tasks/matches/finalize.ts` (the award + evaluate + notify hook),
-  `server/tasks/achievements/backfill.ts` (manual historical backfill, listed in `server/utils/tasks/registry.ts`)
-- `server/api/users/[id]/cabinet.get.ts`, `server/api/showcase/index.put.ts`
-- `app/composables/use{Cabinet,Showcase}.ts`, `app/components/{TrophyCabinet,CabinetTile}.vue`
-- `shared/types/achievements.ts`, i18n `achievements.*` in all five locales
-- Notifications: `shared/types/notifications.ts`, `server/utils/notifications/events.ts`
+- `apps/web-nuxt/db/app-schema.ts` (`competition_award`, `user_achievement`, `showcase_pin`)
+- `apps/web-nuxt/server/utils/awards/service.ts`, `apps/web-nuxt/server/utils/achievements/{catalog,service,cabinet,backfill}.ts`
+- `apps/web-nuxt/server/tasks/matches/finalize.ts` (the award + evaluate + notify hook),
+  `apps/web-nuxt/server/tasks/achievements/backfill.ts` (manual historical backfill, listed in `apps/web-nuxt/server/utils/tasks/registry.ts`)
+- `apps/web-nuxt/server/api/users/[id]/cabinet.get.ts`, `apps/web-nuxt/server/api/showcase/index.put.ts`
+- `apps/web-nuxt/app/composables/use{Cabinet,Showcase}.ts`, `apps/web-nuxt/app/components/{TrophyCabinet,CabinetTile}.vue`
+- `apps/web-nuxt/shared/types/achievements.ts`, i18n `achievements.*` in all five locales
+- Notifications: `apps/web-nuxt/shared/types/notifications.ts`, `apps/web-nuxt/server/utils/notifications/events.ts`

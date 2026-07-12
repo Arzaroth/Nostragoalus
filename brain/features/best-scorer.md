@@ -27,7 +27,7 @@ player wins the Golden Boot (most goals).
 ## Presentation
 
 Player headshots come from the FIFA picture API `players-sq-3/{playerId}`
-(`playerPhotoUrl` in `app/utils/format.ts`), falling back to the team flag if the
+(`playerPhotoUrl` in `apps/web-nuxt/app/utils/format.ts`), falling back to the team flag if the
 image fails to load.
 
 ## Scoring
@@ -37,13 +37,13 @@ notification to the winners.
 
 ## Sources
 
-- `db/app-schema.ts` (`best_scorer_pick`, `goal_event`)
-- `app/composables/useBestScorer.ts`, `server/api/best-scorer/index.put.ts`
-- `server/utils/bestscorer/service.ts`
-- `app/utils/format.ts` (`playerPhotoUrl`)
-- `drizzle/0018_best_scorer.sql`
+- `apps/web-nuxt/db/app-schema.ts` (`best_scorer_pick`, `goal_event`)
+- `apps/web-nuxt/app/composables/useBestScorer.ts`, `apps/web-nuxt/server/api/best-scorer/index.put.ts`
+- `apps/web-nuxt/server/utils/bestscorer/service.ts`
+- `apps/web-nuxt/app/utils/format.ts` (`playerPhotoUrl`)
+- `apps/web-nuxt/drizzle/0018_best_scorer.sql`
 - Shares its picker showcase, query/mutation plumbing, leaderboard bonus merge
   and result notification with the [champion pick](champion-pick.md):
-  `app/components/MetaPickShowcase.vue`, `app/composables/useMetaPick.ts`,
-  `collectMetaBonus` (`server/utils/leaderboard/service.ts`) and `notifyMetaResult`
-  (`server/utils/notifications/events.ts`).
+  `apps/web-nuxt/app/components/MetaPickShowcase.vue`, `apps/web-nuxt/app/composables/useMetaPick.ts`,
+  `collectMetaBonus` (`apps/web-nuxt/server/utils/leaderboard/service.ts`) and `notifyMetaResult`
+  (`apps/web-nuxt/server/utils/notifications/events.ts`).

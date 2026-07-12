@@ -31,7 +31,7 @@ the bell - see [web push](web-push.md).)
 
 ## Live delivery
 
-`publishUserNotification(userId, dto)` in `server/utils/live/hub.ts` sends the WS
+`publishUserNotification(userId, dto)` in `apps/web-nuxt/server/utils/live/hub.ts` sends the WS
 event `notification:new` to that user's own sockets only (the same per-user gate
 the league hub uses). The client `useNotifications` composable prepends the item,
 bumps the badge, and refetches on reconnect. See
@@ -42,13 +42,13 @@ bumps the badge, and refetches on reconnect. See
 - `GET /api/notifications` - the feed plus `unreadCount`, paged with a compound
   `(before, beforeId)` keyset cursor (the `id` tiebreaks rows that share a
   `createdAt`, since a whole finalize tick is minted at the transaction-start
-  time - see `keysetBefore` in `server/utils/keyset.ts`, shared with chat).
+  time - see `keysetBefore` in `apps/web-nuxt/server/utils/keyset.ts`, shared with chat).
 - `POST /api/notifications/read` - `{ids}` or `{all}`.
 - `POST /api/notifications/delete` - per-item dismiss `{ids}` (and a server-only
   `{all}` clear).
 - `NotificationBell.vue` renders the popover and deep-links per type.
 
-Emit helpers live in `server/utils/notifications/events.ts` (unit-tested
+Emit helpers live in `apps/web-nuxt/server/utils/notifications/events.ts` (unit-tested
 directly). Strings are i18n'd in all five locales.
 
 ## Triggers
@@ -77,7 +77,7 @@ directly). Strings are i18n'd in all five locales.
   (promote/transfer, to the member), `LEAGUE_REMOVED` (kick, to the member). See
   [leagues](leagues.md).
 - `CHAT_MENTION` - someone @mentioned the recipient in league [chat](chat.md),
-  fired from the post path (`server/utils/chat/mentions.ts`), cross-league. Data
+  fired from the post path (`apps/web-nuxt/server/utils/chat/mentions.ts`), cross-league. Data
   carries room context only (sender name + league/match), never message text (the
   chat is E2EE). Dedupe `mention:{messageId}:{userId}`. Marking the room read
   clears these rows (see chat's cross-league inbox).
@@ -98,9 +98,9 @@ caps each user to the newest 200.
 
 ## Sources
 
-- `db/app-schema.ts` (`user_notification`, `notification_type`)
-- `shared/types/notifications.ts` (`NotificationType` / `NotificationData`, `cabinetPath`)
-- `server/utils/notifications/service.ts`, `events.ts`, `reminders.ts`
-- `server/utils/live/hub.ts` (`publishUserNotification`)
-- `server/api/notifications/*`, `app/components/NotificationBell.vue`,
-  `app/composables/useNotifications.ts`
+- `apps/web-nuxt/db/app-schema.ts` (`user_notification`, `notification_type`)
+- `apps/web-nuxt/shared/types/notifications.ts` (`NotificationType` / `NotificationData`, `cabinetPath`)
+- `apps/web-nuxt/server/utils/notifications/service.ts`, `events.ts`, `reminders.ts`
+- `apps/web-nuxt/server/utils/live/hub.ts` (`publishUserNotification`)
+- `apps/web-nuxt/server/api/notifications/*`, `apps/web-nuxt/app/components/NotificationBell.vue`,
+  `apps/web-nuxt/app/composables/useNotifications.ts`

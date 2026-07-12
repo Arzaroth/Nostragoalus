@@ -16,16 +16,16 @@ glossary in [../glossary.md](../glossary.md).
 
 ```
 HTTP route (thin)  ->  service (all logic)  ->  Drizzle / AppDatabase  ->  Postgres
-   server/api/**       server/utils/<feat>/service.ts
+   apps/web-nuxt/server/api/**       apps/web-nuxt/server/utils/<feat>/service.ts
 ```
 
 - **Routes are thin.** They validate input, call one or more service functions,
   and map thrown domain errors to HTTP. No business logic in a route.
-- **Logic lives in services** under `server/utils/<feature>/service.ts`, each
+- **Logic lives in services** under `apps/web-nuxt/server/utils/<feature>/service.ts`, each
   function taking `AppDatabase` as its first parameter and throwing the error
-  classes from `server/utils/errors.ts`.
-- **Why:** the coverage gate (98%) is enforced only on `server/utils/**`,
-  `shared/**`, `app/utils/**` - NOT on `server/api` routes or `app/pages`. Keeping
+  classes from `apps/web-nuxt/server/utils/errors.ts`.
+- **Why:** the coverage gate (98%) is enforced only on `apps/web-nuxt/server/utils/**`,
+  `apps/web-nuxt/shared/**`, `apps/web-nuxt/app/utils/**` - NOT on `apps/web-nuxt/server/api` routes or `apps/web-nuxt/app/pages`. Keeping
   routes/pages thin enough to not need direct coverage is how the gate stays
   achievable. See [testing.md](testing.md).
 
@@ -33,29 +33,29 @@ HTTP route (thin)  ->  service (all logic)  ->  Drizzle / AppDatabase  ->  Postg
 
 | Surface | Path | Covered by gate? | What's here |
 |---|---|---|---|
-| Server logic | `server/utils/**` | yes (98%) | services, scoring, providers, auth glue, tasks |
-| Shared isomorphic | `shared/**` | yes (98%) | types, commitment crypto, pure helpers used both sides |
-| Client logic | `app/utils/**` | yes (98%) | formatters, pure UI helpers |
-| Thin edges | `server/api/**`, `server/tasks/**`, `app/pages/**`, `*.vue` | no | routes, Nitro tasks, pages, components |
+| Server logic | `apps/web-nuxt/server/utils/**` | yes (98%) | services, scoring, providers, auth glue, tasks |
+| Shared isomorphic | `apps/web-nuxt/shared/**` | yes (98%) | types, commitment crypto, pure helpers used both sides |
+| Client logic | `apps/web-nuxt/app/utils/**` | yes (98%) | formatters, pure UI helpers |
+| Thin edges | `apps/web-nuxt/server/api/**`, `apps/web-nuxt/server/tasks/**`, `apps/web-nuxt/app/pages/**`, `*.vue` | no | routes, Nitro tasks, pages, components |
 
-`#shared` is the import alias for `shared/**` - use it from nested route pages,
+`#shared` is the import alias for `apps/web-nuxt/shared/**` - use it from nested route pages,
 not deep `../../../../shared/*`, or the SSR/rollup build fails on link errors.
 
 ## Request lifecycle (server)
 
-1. Nitro file-based route in `server/api/**` matches (e.g.
+1. Nitro file-based route in `apps/web-nuxt/server/api/**` matches (e.g.
    `predictions/index.put.ts`).
 2. `defineValidatedHandler` enforces auth (session user / admin / API key) and
    zod-validates the body. See [server.md](server.md).
 3. The handler calls a service function with the singleton `db`.
 4. The service does the work, throwing typed errors on failure.
-5. `toHttpError` (`server/utils/http.ts`) maps a thrown domain error to the right
+5. `toHttpError` (`apps/web-nuxt/server/utils/http.ts`) maps a thrown domain error to the right
    status code; `defineRouteMeta` documents the route for OpenAPI.
 
 ## Client lifecycle
 
 - SSR renders the page; **TanStack vue-query** composables
-  (`app/composables/use<Feature>.ts`) own client data with hierarchical query
+  (`apps/web-nuxt/app/composables/use<Feature>.ts`) own client data with hierarchical query
   keys and invalidate-on-mutation. See [client.md](client.md).
 - A reconnecting WebSocket (`/_ws`) feeds live updates (scores, chat, presence,
   notifications) into the cache. See [realtime.md](realtime.md).
@@ -83,5 +83,6 @@ not deep `../../../../shared/*`, or the SSR/rollup build fails on link errors.
 - Every user-facing string is i18n'd in all five locales.
 - A finished feature branch goes through feature-treatment (rebase -> parallel
   review -> fix -> gate -> merge -> release -> remove worktree).
-- The merge gate: `pnpm typecheck`, `pnpm test:coverage`, `pnpm test:components`,
-  `pnpm build` (the build catches SSR/rollup link errors the others miss).
+- The merge gate (run from `apps/web-nuxt`): `pnpm typecheck`, `pnpm test:coverage`,
+  `pnpm test:components`, `pnpm build` (the build catches SSR/rollup link errors the
+  others miss).

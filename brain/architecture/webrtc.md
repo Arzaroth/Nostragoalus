@@ -43,7 +43,7 @@ relaying a candidate is authorized by live room membership alone. See
 A `coturn` container behind the `voice` [compose](operations.md) profile
 (`mise run up` includes it; `docker compose --profile voice up` starts it alone). Runs in `use-auth-secret` mode: the app mints an ephemeral,
 time-limited credential per request (`turnCredential` in
-`server/utils/voice/service.ts` - `username = <expiry>:<userId>`,
+`apps/web-nuxt/server/utils/voice/service.ts` - `username = <expiry>:<userId>`,
 `credential = base64(HMAC-SHA1(secret, username))`), which coturn recomputes and
 accepts until expiry, so no per-user accounts are stored and the shared secret
 never reaches the browser.
@@ -60,7 +60,7 @@ to the host (and the TLS port for `turns:`). All four ports are env-configurable
 (`NUXT_TURN_PORT` / `NUXT_TURN_TLS_PORT` / `NUXT_TURN_MIN_PORT` / `NUXT_TURN_MAX_PORT`,
 read by both the app's ICE urls and coturn) so a deploy can dodge a clash - e.g. a
 netbird relay that already owns 3478 and 49152-65535. The coturn command applies
-`--external-ip` only when the env var is set (a shell wrapper in `compose.yaml`). The relay is opaque to the
+`--external-ip` only when the env var is set (a shell wrapper in `apps/web-nuxt/compose.yaml`). The relay is opaque to the
 media - it forwards SRTP packets it cannot decrypt, so E2EE holds even through TURN.
 
 ## Known gap
@@ -73,7 +73,7 @@ the same tiered approach as the E2EE hardening in [../decisions.md](../decisions
 
 ## Sources
 
-- `server/api/voice/ice-servers.get.ts`, `server/utils/voice/service.ts`
+- `apps/web-nuxt/server/api/voice/ice-servers.get.ts`, `apps/web-nuxt/server/utils/voice/service.ts`
   (`buildIceServers`, `turnCredential`)
-- `compose.yaml` (`coturn`, the `voice` profile), `.env.example` (`NUXT_TURN_*`)
-- `app/composables/useVoiceCall.ts` (the peer-connection mesh)
+- `apps/web-nuxt/compose.yaml` (`coturn`, the `voice` profile), `apps/web-nuxt/.env.example` (`NUXT_TURN_*`)
+- `apps/web-nuxt/app/composables/useVoiceCall.ts` (the peer-connection mesh)

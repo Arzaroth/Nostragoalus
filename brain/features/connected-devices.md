@@ -1,6 +1,6 @@
 # Connected devices
 
-A "Connected devices" section on `/account` (`app/pages/account.vue`) lets a user
+A "Connected devices" section on `/account` (`apps/web-nuxt/app/pages/account.vue`) lets a user
 see every session currently signed in to their account and sign out the ones they
 don't recognise. It doubles as the diagnostic surface for spurious-logout reports
 (see the session-lifetime note in [../architecture/auth.md](../architecture/auth.md)).
@@ -8,19 +8,19 @@ don't recognise. It doubles as the diagnostic surface for spurious-logout report
 ## How it works
 
 - Backed by better-auth's built-in session endpoints (no plugin needed), reachable
-  through the auth catch-all `server/api/auth/[...all].ts`:
+  through the auth catch-all `apps/web-nuxt/server/api/auth/[...all].ts`:
   - `list-sessions` -> the caller's own active sessions (`id`, `token`,
     `ipAddress?`, `userAgent?`, `createdAt`, `updatedAt`, `expiresAt`).
   - `revoke-session` (body `{ token }`) -> drop one session.
   - `revoke-other-sessions` -> drop every session except the current one.
-- **`freshAge: 0` is required** (`lib/auth.ts` session block). better-auth's
+- **`freshAge: 0` is required** (`apps/web-nuxt/lib/auth.ts` session block). better-auth's
   `/list-sessions` is guarded by a session-freshness middleware keyed on the
   session's `createdAt` (which the sliding `updateAge` never moves). With the
   default 1-day `freshAge`, the list would 403 (`SESSION_NOT_FRESH`) for any
   session older than a day - i.e. exactly the returning users the 90-day expiry
   serves. `freshAge: 0` disables that gate; it also covers `/unlink-account`,
   which this app does not use (SSO unlink is a separate admin route).
-- `app/composables/useSessions.ts` wraps those client methods in vue-query: a
+- `apps/web-nuxt/app/composables/useSessions.ts` wraps those client methods in vue-query: a
   `['sessions']` query plus `revoke` / `revokeOthers` mutations that invalidate it.
   better-auth calls resolve to `{ data, error }`; the composable rethrows `error`
   so vue-query drives `isPending`/`isError`.
@@ -29,10 +29,10 @@ don't recognise. It doubles as the diagnostic surface for spurious-logout report
   "This device", sorted first, and shows **no** revoke button - so a user can never
   sign themselves out from this list. "Sign out all other devices" is disabled when
   no other device exists.
-- `app/utils/user-agent.ts` (`parseUserAgent` / `deviceLabel`) turns the stored
+- `apps/web-nuxt/app/utils/user-agent.ts` (`parseUserAgent` / `deviceLabel`) turns the stored
   User-Agent into a friendly label ("iPhone - Safari") and a device-kind icon. It
   is a deliberately small OS/browser bucketer, not a full UA database, and is unit
-  tested (it lives in the coverage-gated `app/utils`).
+  tested (it lives in the coverage-gated `apps/web-nuxt/app/utils`).
 
 ## Notes
 
@@ -45,6 +45,6 @@ don't recognise. It doubles as the diagnostic surface for spurious-logout report
 
 ## Sources
 
-- `app/pages/account.vue`, `app/composables/useSessions.ts`, `app/utils/user-agent.ts`
-- `tests/e2e/sessions.e2e.ts`, `app/utils/user-agent.test.ts`
-- `db/auth-schema.ts` (`session.ipAddress`, `session.userAgent`)
+- `apps/web-nuxt/app/pages/account.vue`, `apps/web-nuxt/app/composables/useSessions.ts`, `apps/web-nuxt/app/utils/user-agent.ts`
+- `apps/web-nuxt/tests/e2e/sessions.e2e.ts`, `apps/web-nuxt/app/utils/user-agent.test.ts`
+- `apps/web-nuxt/db/auth-schema.ts` (`session.ipAddress`, `session.userAgent`)

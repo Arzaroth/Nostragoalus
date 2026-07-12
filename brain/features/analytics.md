@@ -35,19 +35,19 @@ works **mid-tournament**: it reads whatever scored picks exist so far.
 
 ## How it works
 
-- `server/utils/analytics/service.ts` - `getAnalytics(db, { competitionId, userId })`
+- `apps/web-nuxt/server/utils/analytics/service.ts` - `getAnalytics(db, { competitionId, userId })`
   fetches the user's scored picks (`prediction.totalPoints IS NOT NULL`, joined to
   a `match` with a final score and its `round`) and hands the raw rows to the pure
   `computeAnalytics(competitionName, rows)`. All aggregation lives in that pure
   function, so the whole report is unit-tested without a database. Outcome
-  derivation reuses `outcomeOf` from [`server/utils/scoring/tiers.ts`](../../server/utils/scoring/tiers.ts).
+  derivation reuses `outcomeOf` from [`apps/web-nuxt/server/utils/scoring/tiers.ts`](../../apps/web-nuxt/server/utils/scoring/tiers.ts).
   The streak is derived from the same rows, which the query orders by
   `(kickoffTime, match.id)` so the trailing run is deterministic even when
   group-finale matches kick off at the same time.
-- Fergie time is priced separately in [`analytics/fergie.ts`](../../server/utils/analytics/fergie.ts)
+- Fergie time is priced separately in [`analytics/fergie.ts`](../../apps/web-nuxt/server/utils/analytics/fergie.ts)
   (`computeFergie`), because it needs the whole field to re-run the rarity bonus,
   and passed into `computeAnalytics`. `getAnalytics` loads, only for the picked
-  matches that have an added-time [`goal_event`](../../db/app-schema.ts): the goal
+  matches that have an added-time [`goal_event`](../../apps/web-nuxt/db/app-schema.ts): the goal
   timeline (ordered by id for a stable sequence), and the whole **locked** field
   per match (the exact set finalize scored, so `scorePredictions` reproduces the
   real total at any hypothetical scoreline). `parseMinute` reads the free-text
@@ -64,18 +64,18 @@ works **mid-tournament**: it reads whatever scored picks exist so far.
   goes to extra time rather than standing, so that pre-goal draw is not a would-be
   result. A goal from a decisive score still counts, including an equalizer
   (1-0 -> 1-1) that takes a real lead away.
-- Route `server/api/me/analytics.get.ts` - a thin `me`-scoped GET mirroring
+- Route `apps/web-nuxt/server/api/me/analytics.get.ts` - a thin `me`-scoped GET mirroring
   `me/wrapped.get.ts` (auth via `requireUser`, `resolveCompetition`, `toHttpError`),
   but with **no final gate**: `{ hasData: false }` until the user has a scored pick.
-- DTO in [`#shared/types/analytics`](../../shared/types/analytics.ts).
-- Client: `app/composables/useAnalytics.ts` (vue-query, key `['analytics', slug]`)
-  -> `app/pages/[competition]/analytics.vue` (signed-in gate + empty state) ->
-  presentational `app/components/AnalyticsReport.vue` (prop `data`, pure render).
+- DTO in [`#shared/types/analytics`](../../apps/web-nuxt/shared/types/analytics.ts).
+- Client: `apps/web-nuxt/app/composables/useAnalytics.ts` (vue-query, key `['analytics', slug]`)
+  -> `apps/web-nuxt/app/pages/[competition]/analytics.vue` (signed-in gate + empty state) ->
+  presentational `apps/web-nuxt/app/components/AnalyticsReport.vue` (prop `data`, pure render).
   The accuracy sparkline is drawn with the shared
-  [`app/utils/sparkline.ts`](../../app/utils/sparkline.ts) geometry helpers
+  [`apps/web-nuxt/app/utils/sparkline.ts`](../../apps/web-nuxt/app/utils/sparkline.ts) geometry helpers
   (`sparkBands`/`sparkLine`/`sparkArea`), also used by the
   [head-to-head](head-to-head.md) lead chart.
-- Nav: a signed-in-only "Analytics" link in `app/layouts/default.vue`'s `navLinks`.
+- Nav: a signed-in-only "Analytics" link in `apps/web-nuxt/app/layouts/default.vue`'s `navLinks`.
 
 ## Notes
 

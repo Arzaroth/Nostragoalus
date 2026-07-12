@@ -16,7 +16,7 @@ this doc is the feature-level map.
   callback guard. Register lands new providers as `draft`; the column default is
   `enabled` purely so the migration grandfathers existing rows.
 - **Disabling is non-disruptive**: the gate sits on the sign-in callback paths
-  (`server/utils/auth/sso-guard-paths.ts` `ssoCallbackProviderId`), so new
+  (`apps/web-nuxt/server/utils/auth/sso-guard-paths.ts` `ssoCallbackProviderId`), so new
   sign-ins are rejected (redirect to `/login?error=provider_disabled`) but
   existing sessions are never touched.
 - `setProviderStatus` enforces the enable gate: a passing connection test
@@ -25,14 +25,14 @@ this doc is the feature-level map.
 
 ## Connection test
 
-- `testConnection` (`server/utils/sso/service.ts`) runs automated checks and
+- `testConnection` (`apps/web-nuxt/server/utils/sso/service.ts`) runs automated checks and
   persists `last_tested_at` + `last_test_result`. OIDC: discovery endpoints
   present + a reachable JWKS that publishes keys. SAML: a parseable X.509 cert + a
   reachable entry point. Pure-ish (network mocked in tests).
 
 ## Test sign-in (live claim preview, OIDC)
 
-- `server/utils/sso/test-signin.ts`: a real OIDC PKCE round-trip that captures the
+- `apps/web-nuxt/server/utils/sso/test-signin.ts`: a real OIDC PKCE round-trip that captures the
   IdP's id_token + userinfo claims, maps them to `{email, name, image}`, and
   stores the result - **without ever creating a user/session or running
   `provisionUser`** (a unit test asserts zero new `user`/`session` rows).
@@ -57,7 +57,7 @@ this doc is the feature-level map.
   registering admin), but it matches the plugin's `_better-auth-token-{providerId}`
   identifier and `identifier=value` TXT format, so the plugin's own endpoint stays
   compatible.
-- Editing a provider's domain (`server/api/admin/sso/[providerId].put.ts`) resets
+- Editing a provider's domain (`apps/web-nuxt/server/api/admin/sso/[providerId].put.ts`) resets
   `domainVerified=false`, mirroring the plugin's blocked `update-provider`: a newly
   added domain must be re-verified (or re-bypassed) before it's trusted for login,
   so the DNS proof can't be inherited by a domain that was never checked.
@@ -79,7 +79,7 @@ this doc is the feature-level map.
 
 ## Admin UI
 
-- All in the `/admin` SSO section (`app/pages/admin/index.vue`): status /
+- All in the `/admin` SSO section (`apps/web-nuxt/app/pages/admin/index.vue`): status /
   domain-verified / SCIM badges per provider, a Manage panel with the lifecycle
   buttons, test-connection results, the test-sign-in popup + claim preview, the
   domain TXT card (+ bypass), and the reveal-once SCIM token card. i18n keys under
@@ -92,10 +92,10 @@ this doc is the feature-level map.
 
 ## Sources
 
-- `db/auth-schema.ts` (`sso_provider` status/last_test_*, `scim_provider`),
-  `shared/types/sso.ts`
-- `server/utils/sso/{service,config,test-signin}.ts`
-- `server/utils/auth/{sso-domains,sso-guard-paths}.ts`,
-  `server/api/auth/[...all].ts`
-- `server/api/admin/sso/**`, `server/api/sso/test-callback.get.ts`
-- `lib/auth.ts` (the `sso` + `scim` plugin config), `app/pages/admin/index.vue`
+- `apps/web-nuxt/db/auth-schema.ts` (`sso_provider` status/last_test_*, `scim_provider`),
+  `apps/web-nuxt/shared/types/sso.ts`
+- `apps/web-nuxt/server/utils/sso/{service,config,test-signin}.ts`
+- `apps/web-nuxt/server/utils/auth/{sso-domains,sso-guard-paths}.ts`,
+  `apps/web-nuxt/server/api/auth/[...all].ts`
+- `apps/web-nuxt/server/api/admin/sso/**`, `apps/web-nuxt/server/api/sso/test-callback.get.ts`
+- `apps/web-nuxt/lib/auth.ts` (the `sso` + `scim` plugin config), `apps/web-nuxt/app/pages/admin/index.vue`

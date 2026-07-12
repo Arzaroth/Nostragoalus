@@ -23,12 +23,12 @@ survives a reload.
 
 ## How it works
 
-- **State is the URL.** `app/utils/multiview.ts` is the pure, [98%-gated](../architecture/testing.md)
+- **State is the URL.** `apps/web-nuxt/app/utils/multiview.ts` is the pure, [98%-gated](../architecture/testing.md)
   model: layout capacity/dimension math (`capacityOf`, `gridDims`), query
   encode/decode (`parseMultiviewQuery`/`buildMultiviewQuery`, `decodeCells`),
   `visibleCells`/`resolveFocus`, cell `add`/`replace`/`remove`, and the
   stream-cap check `canEnableStream`. The page
-  (`app/pages/[competition]/multiview.vue`) derives state from `route.query` and
+  (`apps/web-nuxt/app/pages/[competition]/multiview.vue`) derives state from `route.query` and
   writes every change back with `router.replace`. Cells beyond the layout's
   capacity stay in the URL (shrinking then re-growing the layout re-reveals them).
 - **One socket for the whole grid.** `MultiviewGrid.vue` calls
@@ -75,8 +75,8 @@ threads. Instead there is one dock that follows the focused cell. See
 
 ## Reused, not reinvented
 
-- `app/components/match/PlayByPlay.vue` (`MatchPlayByPlay`) + the pure match-view
-  helpers in `app/utils/match-view.ts` (`pbpTextSpec`/`isGoalKind`/`pbpFlagCode`,
+- `apps/web-nuxt/app/components/match/PlayByPlay.vue` (`MatchPlayByPlay`) + the pure match-view
+  helpers in `apps/web-nuxt/app/utils/match-view.ts` (`pbpTextSpec`/`isGoalKind`/`pbpFlagCode`,
   and the shared `liveClockSpec` live-clock rule), both extracted from the match
   detail page and shared with the tile.
 - `useLiveMatches`, `useMatchMedia` + `MatchMediaEmbed`, `ReactionBar`,
@@ -84,13 +84,13 @@ threads. Instead there is one dock that follows the focused cell. See
 
 ## Sources
 
-- `app/utils/multiview.ts` (+ `multiview.test.ts`)
-- `app/pages/[competition]/multiview.vue`
-- `app/components/multiview/*` (`Grid`, `Cell`, `CellTile`, `CellStream`,
+- `apps/web-nuxt/app/utils/multiview.ts` (+ `multiview.test.ts`)
+- `apps/web-nuxt/app/pages/[competition]/multiview.vue`
+- `apps/web-nuxt/app/components/multiview/*` (`Grid`, `Cell`, `CellTile`, `CellStream`,
   `CellViewers`, `SlotEmpty`, `PickerDialog`)
-- `app/composables/useMultiviewFocus.ts`, `useMatchLiveDetail.ts`,
+- `apps/web-nuxt/app/composables/useMultiviewFocus.ts`, `useMatchLiveDetail.ts`,
   `useMatchTimeline.ts`
-- `app/components/ChatDock.vue` (focus-driven match thread + inbox `tryFocus`)
-- `app/components/match/PlayByPlay.vue`, `app/utils/match-view.ts`
-- `app/layouts/default.vue` (nav entry, full-width branch), `CompetitionPill.vue`
+- `apps/web-nuxt/app/components/ChatDock.vue` (focus-driven match thread + inbox `tryFocus`)
+- `apps/web-nuxt/app/components/match/PlayByPlay.vue`, `apps/web-nuxt/app/utils/match-view.ts`
+- `apps/web-nuxt/app/layouts/default.vue` (nav entry, full-width branch), `CompetitionPill.vue`
   (section allow-list)

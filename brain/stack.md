@@ -3,8 +3,8 @@
 The exact technologies and versions Nostragoalus runs on. Bump these when
 `package.json` / Docker images change (the maintenance rule covers it).
 
-Sources of truth: `package.json`, `pnpm-workspace.yaml`, `nuxt.config.ts`,
-`Dockerfile`, `compose.yaml`.
+Sources of truth: `package.json`, `pnpm-workspace.yaml`, `apps/web-nuxt/nuxt.config.ts`,
+`apps/web-nuxt/Dockerfile`, `apps/web-nuxt/compose.yaml`.
 
 ## Runtime / language
 
@@ -46,7 +46,7 @@ Sources of truth: `package.json`, `pnpm-workspace.yaml`, `nuxt.config.ts`,
 - **Postgres 17** (Docker `postgres:17.10-alpine`).
 - **Drizzle ORM** 0.45.2 (`drizzle-orm/node-postgres`), **drizzle-kit** 0.31.10.
 - **pg** 8.21.0 (single `pg.Pool`).
-- Schema changes go through `db/app-schema.ts` + `pnpm db:generate` - never
+- Schema changes go through `apps/web-nuxt/db/app-schema.ts` + `pnpm db:generate` - never
   hand-write migration SQL. See [architecture/database.md](architecture/database.md).
 
 ## Object storage (images)
@@ -75,8 +75,8 @@ Sources of truth: `package.json`, `pnpm-workspace.yaml`, `nuxt.config.ts`,
 
 ## Ops
 
-- **Docker Compose** project `nostragoalus`: base `compose.yaml` + dev overlay
-  `compose.dev.yaml`. Services: `db`, `rustfs` (+`rustfs-init`, `mc`), `app`,
+- **Docker Compose** project `nostragoalus`: base `apps/web-nuxt/compose.yaml` + dev overlay
+  `apps/web-nuxt/compose.dev.yaml`. Services: `db`, `rustfs` (+`rustfs-init`, `mc`), `app`,
   `app-dev`, `maildev`. Volumes `nostragoalus_pgdata`, `nostragoalus_media`.
 - **mise** task runner (`.mise.toml` + `mise-tasks/`). See
   [operations.md](operations.md).

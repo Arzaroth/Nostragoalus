@@ -6,8 +6,8 @@ document direction flips. This doc is the how.
 
 ## Document direction
 
-`nuxt.config.ts` gives each locale a `language` (BCP47) and gives `ar`
-`dir: 'rtl'`. `app/app.vue` binds `<html lang>` and `<html dir>` off the **active
+`apps/web-nuxt/nuxt.config.ts` gives each locale a `language` (BCP47) and gives `ar`
+`dir: 'rtl'`. `apps/web-nuxt/app/app.vue` binds `<html lang>` and `<html dir>` off the **active
 locale object** (from `useI18n().locales`), because both fields ride the SSR
 payload, so server and client agree and RTL is correct on the first paint:
 
@@ -63,7 +63,7 @@ side). Identical under LTR. Matches FIFA's own Arabic bracket.
 ## Icons
 
 Directional glyphs (back/forward arrows, chevrons) are font glyphs, so a global
-rule in `app/assets/css/main.css` flips them under RTL:
+rule in `apps/web-nuxt/app/assets/css/main.css` flips them under RTL:
 
 ```css
 [dir='rtl'] .pi-arrow-left, [dir='rtl'] .pi-arrow-right,
@@ -74,7 +74,7 @@ rule in `app/assets/css/main.css` flips them under RTL:
 
 The satori share card stays **LTR** (a score graphic - home left, away right, a
 universal convention). Arabic **glyphs** still render: the card's font fallback
-(`server/utils/share/og-assets.ts`, `SCRIPT_FAMILY` maps `ar` to `Noto Sans
+(`apps/web-nuxt/server/utils/share/og-assets.ts`, `SCRIPT_FAMILY` maps `ar` to `Noto Sans
 Arabic`) already fetches Noto Sans Arabic on demand for Arabic text. Bundling
 `NotoSansArabic-*.woff` alongside
 the Thai fonts (for offline reliability, like Thai) is a deferred nicety (see
@@ -82,7 +82,7 @@ the Thai fonts (for offline reliability, like Thai) is a deferred nicety (see
 
 ## Tests
 
-`tests/e2e/rtl.e2e.ts` (Playwright) asserts: default renders `dir=ltr`, the
+`apps/web-nuxt/tests/e2e/rtl.e2e.ts` (Playwright) asserts: default renders `dir=ltr`, the
 `ng_locale=ar` cookie renders `dir=rtl` in the SSR markup, and the footer
 switcher flips the live document to `rtl`.
 
@@ -92,8 +92,8 @@ after locale-churn/edits (dir/cookie detection goes stale); a container
 
 ## Sources
 
-- `nuxt.config.ts` (per-locale `dir`/`language`), `app/app.vue` (`<html>` binding)
-- `app/assets/css/main.css` (icon-flip rule)
-- `app/pages/[competition]/bracket.vue`, `app/components/BracketMatchCard.vue`
-- `tests/e2e/rtl.e2e.ts`
+- `apps/web-nuxt/nuxt.config.ts` (per-locale `dir`/`language`), `apps/web-nuxt/app/app.vue` (`<html>` binding)
+- `apps/web-nuxt/app/assets/css/main.css` (icon-flip rule)
+- `apps/web-nuxt/app/pages/[competition]/bracket.vue`, `apps/web-nuxt/app/components/BracketMatchCard.vue`
+- `apps/web-nuxt/tests/e2e/rtl.e2e.ts`
 - [i18n.md](i18n.md)

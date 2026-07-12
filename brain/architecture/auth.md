@@ -1,7 +1,7 @@
 # Auth
 
 Authentication and authorization run on **better-auth** 1.6.23, configured in
-`lib/auth.ts` (`buildAuthOptions`). The Nitro catch-all `server/api/auth/[...all].ts`
+`apps/web-nuxt/lib/auth.ts` (`buildAuthOptions`). The Nitro catch-all `apps/web-nuxt/server/api/auth/[...all].ts`
 mounts all better-auth routes. This file covers the local auth surface, the admin
 model, passkeys/2FA/API keys, and the runtime SSO subsystem.
 
@@ -10,7 +10,7 @@ model, passkeys/2FA/API keys, and the runtime SSO subsystem.
 - Email + password enabled. Local accounts are intentionally **never
   email-verified**, which matters for SSO account linking (below).
 - Email verification can be required or not; the flag lives in `app_setting` and
-  is warmed into memory at boot by `server/plugins/warm-settings.ts` so sign-in
+  is warmed into memory at boot by `apps/web-nuxt/server/plugins/warm-settings.ts` so sign-in
   and sign-up immediately see the correct state without a per-request DB hit.
 
 ## Plugins enabled
@@ -20,7 +20,7 @@ model, passkeys/2FA/API keys, and the runtime SSO subsystem.
 
 ## Session guards
 
-All guards live in `server/utils/auth-guards.ts` and are the canonical way a
+All guards live in `apps/web-nuxt/server/utils/auth-guards.ts` and are the canonical way a
 route learns who is calling:
 
 | Guard | Behaviour |
@@ -46,7 +46,7 @@ which wires the right guard from its `admin` / `apiKey` options. See
   cookie. That was the fix for "logged out for no reason" reports, worst on iOS
   **installed PWAs** (a home-screen web app WebKit evicts aggressively): a
   short-lived cookie there is dropped when the app is backgrounded/reaped. It is
-  NOT client-side - the client is already hardened (`app/middleware/auth.global.ts`
+  NOT client-side - the client is already hardened (`apps/web-nuxt/app/middleware/auth.global.ts`
   bails on a transient session-fetch error instead of redirecting to `/login`,
   and `refetchOnWindowFocus` is off).
 - Users end sessions early from the connected-devices controls in `/account`
@@ -59,12 +59,12 @@ which wires the right guard from its `admin` / `apiKey` options. See
   env admin is promoted to `role: 'admin'` on first admin check, so the
   better-auth `admin` plugin and `requireAdmin` agree.
 - `mise run create-admin` provisions one from the CLI.
-- Admin endpoints live under `server/api/admin/**` and always require admin.
+- Admin endpoints live under `apps/web-nuxt/server/api/admin/**` and always require admin.
 
 ## Passkeys (WebAuthn)
 
 - Registering a NEW passkey is sensitive, so it is gated by a reauth step:
-  `server/middleware/passkey-guard.ts` requires a fresh `ng_reauth` cookie
+  `apps/web-nuxt/server/middleware/passkey-guard.ts` requires a fresh `ng_reauth` cookie
   (password, and 2FA if enabled, recently confirmed) before the registration
   endpoints respond. Without it the route 403s.
 
@@ -90,7 +90,7 @@ for SSO league auto-join.
 
 ### Secrets are envelope-encrypted at rest
 
-- `server/utils/crypto/envelope.ts` implements KEK -> DEK -> AES-256-GCM;
+- `apps/web-nuxt/server/utils/crypto/envelope.ts` implements KEK -> DEK -> AES-256-GCM;
   `encrypted-adapter.ts` wraps the better-auth Drizzle adapter so
   `ssoProvider.oidcConfig` / `samlConfig` are sealed on write and opened on read.
 - Requires `NUXT_SSO_KEK` (32-byte base64). Without it, provider registration
@@ -100,7 +100,7 @@ for SSO league auto-join.
 ### OIDC discovery trust workaround
 
 - The plugin rejects discovery URLs not in `trustedOrigins`. The admin endpoint
-  (`server/api/admin/sso/index.post.ts`) instead fetches the IdP discovery doc
+  (`apps/web-nuxt/server/api/admin/sso/index.post.ts`) instead fetches the IdP discovery doc
   server-side (admin-trusted), then registers with explicit
   `authorizationEndpoint` / `tokenEndpoint` / `jwksEndpoint` plus
   `oidcConfig.skipDiscovery: true` (note: `skipDiscovery` lives inside
@@ -108,7 +108,7 @@ for SSO league auto-join.
   `https://accounts.google.com`.
 - A self-hosted or internal SSO IdP whose token endpoint resolves to a private
   address is refused by the plugin's SSRF guard unless its origin is trusted.
-  `buildAuthOptions` (`lib/auth.ts`) reads `NUXT_SSO_TRUSTED_ORIGINS`
+  `buildAuthOptions` (`apps/web-nuxt/lib/auth.ts`) reads `NUXT_SSO_TRUSTED_ORIGINS`
   (comma-separated, trimmed) into better-auth's `trustedOrigins` for exactly that;
   public IdPs need nothing. The SSO e2e uses it to trust its dockerized Keycloak
   (`http://keycloak:8080`).
@@ -116,7 +116,7 @@ for SSO league auto-join.
 ### Identifier-first login
 
 - Login is identifier-first: the user enters an email, `GET /api/sso/check`
-  resolves the domain via `server/utils/auth/sso-domains.ts`, then either
+  resolves the domain via `apps/web-nuxt/server/utils/auth/sso-domains.ts`, then either
   redirects through `signIn.sso({ providerId })` or reveals the password field.
 - `/login?password=1` is the escape hatch for an IdP outage.
 - Multi-domain is a CSV in `sso_provider.domain` (native plugin support, matches
@@ -153,13 +153,13 @@ for SSO league auto-join.
   callback gate). Disabling is non-disruptive: existing sessions keep working
   because the catch-all gate sits only on the sign-in callback paths, never on
   session validation.
-- Logic lives in the covered `server/utils/sso/service.ts`; the admin routes
-  (`server/api/admin/sso/[providerId]/{status,test-connection,verify-domain,
+- Logic lives in the covered `apps/web-nuxt/server/utils/sso/service.ts`; the admin routes
+  (`apps/web-nuxt/server/api/admin/sso/[providerId]/{status,test-connection,verify-domain,
   bypass-domain,scim-token}`) stay thin.
 - **Connection test** (`testConnection`): automated checks - OIDC fetches the
   discovery endpoints + a JWKS with keys; SAML parses the X.509 cert and reaches
   the entry point. The result (`last_test_result.ok`) is the gate to enable.
-- **Test sign-in** (`server/utils/sso/test-signin.ts`, OIDC only): a real PKCE
+- **Test sign-in** (`apps/web-nuxt/server/utils/sso/test-signin.ts`, OIDC only): a real PKCE
   round-trip that captures the IdP's claims and maps them to our fields WITHOUT
   creating a user/session (it never runs `provisionUser`). A single-use 256-bit
   nonce ticket lives in the `verification` table (5-min TTL); the public callback
@@ -192,12 +192,12 @@ for SSO league auto-join.
 
 ## Sources
 
-- `lib/auth.ts`, `server/api/auth/[...all].ts`
-- `server/utils/auth-guards.ts`, `server/utils/validated-handler.ts`
-- `server/plugins/warm-settings.ts`, `server/middleware/passkey-guard.ts`
-- `server/utils/crypto/envelope.ts`, `server/utils/crypto/encrypted-adapter.ts`
-- `server/utils/auth/sso-domains.ts`, `server/utils/auth/sso-guard-paths.ts`
-- `server/utils/sso/{service,config,test-signin}.ts`, `server/api/admin/sso/**`
-- `server/api/sso/{check,test-callback}.get.ts`
+- `apps/web-nuxt/lib/auth.ts`, `apps/web-nuxt/server/api/auth/[...all].ts`
+- `apps/web-nuxt/server/utils/auth-guards.ts`, `apps/web-nuxt/server/utils/validated-handler.ts`
+- `apps/web-nuxt/server/plugins/warm-settings.ts`, `apps/web-nuxt/server/middleware/passkey-guard.ts`
+- `apps/web-nuxt/server/utils/crypto/envelope.ts`, `apps/web-nuxt/server/utils/crypto/encrypted-adapter.ts`
+- `apps/web-nuxt/server/utils/auth/sso-domains.ts`, `apps/web-nuxt/server/utils/auth/sso-guard-paths.ts`
+- `apps/web-nuxt/server/utils/sso/{service,config,test-signin}.ts`, `apps/web-nuxt/server/api/admin/sso/**`
+- `apps/web-nuxt/server/api/sso/{check,test-callback}.get.ts`
 - See [../features/sso-provisioning.md](../features/sso-provisioning.md)
-- `db/auth-schema.ts` (`user`, `session`, `account`, `ssoProvider`, `scimProvider`, `apikey`)
+- `apps/web-nuxt/db/auth-schema.ts` (`user`, `session`, `account`, `ssoProvider`, `scimProvider`, `apikey`)

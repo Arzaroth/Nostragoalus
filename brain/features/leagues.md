@@ -47,11 +47,11 @@ ambiguity-free alphabet (`JOIN_CODE_ALPHABET`, no I/L/O/U/0/1 so a code reads
 aloud and types cleanly), unique (collision-retried). The join endpoint
 normalizes submitted codes case/dash/space-insensitively and accepts 4 - 16
 characters of raw input (`z.string().trim().min(4).max(16)`); it is rate-limited
-by an in-process sliding window (`server/utils/rate-limit.ts`).
+by an in-process sliding window (`apps/web-nuxt/server/utils/rate-limit.ts`).
 
 ## Access guards
 
-Two shared helpers in `server/utils/leagues/service.ts` enforce access uniformly
+Two shared helpers in `apps/web-nuxt/server/utils/leagues/service.ts` enforce access uniformly
 so no endpoint hand-rolls the membership/role lookup: `resolveLeagueView` for
 scoped reads (the PUBLIC view path, or members-only when `membersOnly`, with a
 site-admin override) and `resolveLeagueManage` for mutations (role-gated). Both
@@ -76,9 +76,9 @@ by the finalize task. Private profiles are included only when the viewer is a
 member or admin (`includePrivate` option); an outsider viewing a public league
 gets null ranks for hidden players so their board does not leak private rank.
 
-Both the NORMAL league board (`app/pages/leagues/[id].vue`) and the competition
-board (`app/pages/[competition]/leaderboard.vue`) render each row through the
-shared `app/components/LeaderboardRowCard.vue`, so they stay in lockstep: rank
+Both the NORMAL league board (`apps/web-nuxt/app/pages/leagues/[id].vue`) and the competition
+board (`apps/web-nuxt/app/pages/[competition]/leaderboard.vue`) render each row through the
+shared `apps/web-nuxt/app/components/LeaderboardRowCard.vue`, so they stay in lockstep: rank
 movement, the champion crown, the best-scorer boot and live provisional points
 all render off the row data, and the bot ghost decoration renders only when the
 parent marks a row `isBot`. Moded leagues keep their own boards
@@ -97,7 +97,7 @@ Two distinct hiding mechanisms:
 An owner/moderator can write an "About this league" blurb (`league.description`, a
 nullable markdown source) shown to everyone who can see the league. It is set through
 the shared `PUT /api/leagues/[id]` league-update route (`setLeagueDescription`; a blank
-string clears it) and rendered on the client by `renderMarkdown` (`app/utils/markdown.ts`):
+string clears it) and rendered on the client by `renderMarkdown` (`apps/web-nuxt/app/utils/markdown.ts`):
 `marked` -> `isomorphic-dompurify` with a narrow allow-list (headings, emphasis, lists,
 links, images, code), forced `target`/`rel` on links and `no-referrer` on images.
 Sanitization is the security boundary - the source is untrusted author input shown to
@@ -124,13 +124,13 @@ Each league hosts an end-to-end-encrypted chat. The league row carries
 
 ## Sources
 
-- `db/app-schema.ts` (`league` incl. `description` + `featured_team_code`,
+- `apps/web-nuxt/db/app-schema.ts` (`league` incl. `description` + `featured_team_code`,
   `league_member`, `league_opt_out`, `league_invite`, `league_leaderboard_rank`,
   `league_visibility`/`league_role` enums)
-- `server/utils/leagues/service.ts` (`setLeagueDescription`, `setLeagueFeaturedTeam`),
-  `server/utils/leagues/code.ts` (join-code alphabet/normalize)
-- `server/api/leagues/**` (`join.post.ts`, `leave.post.ts`, `[id]/index.put.ts`,
+- `apps/web-nuxt/server/utils/leagues/service.ts` (`setLeagueDescription`, `setLeagueFeaturedTeam`),
+  `apps/web-nuxt/server/utils/leagues/code.ts` (join-code alphabet/normalize)
+- `apps/web-nuxt/server/api/leagues/**` (`join.post.ts`, `leave.post.ts`, `[id]/index.put.ts`,
   `[id]/description-image.post.ts`, `[id]/**`)
-- `app/utils/{league-cookie,markdown}.ts`, `app/composables/useLeagues.ts` (`useLeagueSelections`),
-  `app/components/LeagueDescription.vue`
-- `server/utils/rate-limit.ts`
+- `apps/web-nuxt/app/utils/{league-cookie,markdown}.ts`, `apps/web-nuxt/app/composables/useLeagues.ts` (`useLeagueSelections`),
+  `apps/web-nuxt/app/components/LeagueDescription.vue`
+- `apps/web-nuxt/server/utils/rate-limit.ts`

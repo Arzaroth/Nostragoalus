@@ -26,18 +26,18 @@ either a `GROUP_MATCHDAY` or a `KNOCKOUT` stage (`GROUP`, `R32`, `R16`, `QF`,
 
 The active competition is a path prefix, not a stored selection:
 
-- Competition-scoped pages live under `app/pages/[competition]/`:
+- Competition-scoped pages live under `apps/web-nuxt/app/pages/[competition]/`:
   `matches` (list + detail), `bracket`, `map`, `leaderboard`, `bot`,
   `multiview`, `wrapped`, `teams/[code]`, `users/[id]`.
 - Global pages stay un-prefixed: `/`, `/login`, `/signup`, `/account`,
   `/preferences`, `/admin`, `/about`, `/roadmap`, `/leagues`.
 
-`useSelectedCompetition()` (in `app/composables/useCompetitions.ts`) reads
+`useSelectedCompetition()` (in `apps/web-nuxt/app/composables/useCompetitions.ts`) reads
 `route.params.competition`. Because the slug is in the URL, every link is
 shareable and never shows another competition's data by accident.
 
 The `ng-competition` cookie is a fallback only: it seeds the redirect from `/`
-and from legacy un-prefixed paths. `app/middleware/competition.global.ts`
+and from legacy un-prefixed paths. `apps/web-nuxt/app/middleware/competition.global.ts`
 redirects a legacy path like `/matches` to `/<last>/matches`, and
 `[competition]/index.vue` redirects to that competition's matches.
 
@@ -61,9 +61,9 @@ competition id in the service layer.
 
 ## Sources
 
-- `db/app-schema.ts` (`competition`, `round`, `match` tables and enums)
-- `app/composables/useCompetitions.ts`
-- `app/pages/[competition]/**`
-- `app/middleware/competition.global.ts`
-- `app/components/CompetitionPill.vue`
-- `server/api/competitions/index.get.ts`
+- `apps/web-nuxt/db/app-schema.ts` (`competition`, `round`, `match` tables and enums)
+- `apps/web-nuxt/app/composables/useCompetitions.ts`
+- `apps/web-nuxt/app/pages/[competition]/**`
+- `apps/web-nuxt/app/middleware/competition.global.ts`
+- `apps/web-nuxt/app/components/CompetitionPill.vue`
+- `apps/web-nuxt/server/api/competitions/index.get.ts`

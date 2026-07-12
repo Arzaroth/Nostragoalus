@@ -7,7 +7,7 @@ which is why the app is single-instance today (see
 
 ## The socket
 
-- Endpoint `/_ws`, handled by `server/routes/_ws.ts`.
+- Endpoint `/_ws`, handled by `apps/web-nuxt/server/routes/_ws.ts`.
 - The user's session is resolved once, at socket open, and pinned to that
   connection. All later authorization (which league rooms a socket may receive)
   is gated against that resolved identity, so a client cannot subscribe itself
@@ -15,7 +15,7 @@ which is why the app is single-instance today (see
 
 ## The live hub
 
-`server/utils/live/hub.ts` is the in-process fan-out. It tracks connected sockets
+`apps/web-nuxt/server/utils/live/hub.ts` is the in-process fan-out. It tracks connected sockets
 and exposes typed publish helpers that the rest of the server calls
 fire-and-forget after a successful mutation or during a scheduled task.
 
@@ -53,13 +53,13 @@ fire-and-forget after a successful mutation or during a scheduled task.
   all members, for the "N in voice" badge) and `voice:peer-reset` (a takeover: the
   other members re-establish their peer connection to the user who re-joined from a
   new tab). The media itself is peer-to-peer, not
-  on this socket - see [webrtc.md](webrtc.md). Handled by `server/utils/live/voice.ts`
+  on this socket - see [webrtc.md](webrtc.md). Handled by `apps/web-nuxt/server/utils/live/voice.ts`
   + `voice-rooms.ts`, dispatched in `_ws.ts`.
 - crowd totals update and live score/match updates. Three views patch
   `match:update` frames: the match detail (`useLiveMatch`), the fixtures list
   (`useLiveMatches`, into the `['matches', slug]` cache) and the knockout bracket
   (`useLiveBracket`). The bracket's scores live in a cached provider base (10-min
-  TTL, `server/utils/bracket/cache.ts`), so it overlays the WS frame on top
+  TTL, `apps/web-nuxt/server/utils/bracket/cache.ts`), so it overlays the WS frame on top
   (freshest) and refetches `['bracket']` on `scores:changed` for advancement and
   live group-qualifier projections; a knockout match finishing busts that cache
   from `scores:poll` so the next slot fills without waiting out the TTL.
@@ -69,10 +69,10 @@ fire-and-forget after a successful mutation or during a scheduled task.
   `match:update` value patched from the football-data `scores:poll` (~2 min). A
   plain max of the two can never drop when VAR disallows a goal (the stale-high WS
   side pins it), and recency arbitration can't tell a stale WS poll from a fresh
-  goal - so `app/utils/live-score.ts` (`liveHeaderScore`) makes the fresher goal
+  goal - so `apps/web-nuxt/app/utils/live-score.ts` (`liveHeaderScore`) makes the fresher goal
   feed authoritative once it has landed, falling back to the WS/stored score only
   before it arrives. A struck-off goal then drops from the header and the list in
-  lockstep. Wired in `app/pages/[competition]/matches/[id].vue` (`homeScore`).
+  lockstep. Wired in `apps/web-nuxt/app/pages/[competition]/matches/[id].vue` (`homeScore`).
 
 ## Client side
 
@@ -83,7 +83,7 @@ force-reconnect on `visibilitychange` (tab refocus) and the `online` event. Its
 `onOpen` fires on connect AND on every reconnect, which is the hook to
 re-subscribe and refetch so the cache heals after a drop.
 
-**Heartbeat / half-open detection** (`app/utils/heartbeat.ts`): a `visibilitychange`
+**Heartbeat / half-open detection** (`apps/web-nuxt/app/utils/heartbeat.ts`): a `visibilitychange`
 / `online` reconnect only fires when the OS reports the flap. On mobile/CGNAT a
 carrier silently drops an idle NAT mapping - the socket stops delivering but never
 fires `onclose`, so nothing retriggers and live data freezes until a manual reload.
@@ -110,8 +110,8 @@ everyone else. Both paths converge on the same vue-query cache keys (see
 
 ## Sources
 
-- `server/routes/_ws.ts`
-- `server/utils/live/hub.ts` (subscriber registry, presence map, every `publish*` helper), `server/utils/live/viewers.ts`
-- `server/utils/live/league-chat.ts` (`publishMemberNameChanged`), `server/utils/live/league-reactions.ts` (`publishLeagueReactionUpdates`), `server/utils/live/league-crowd.ts`
-- `app/composables/useReconnectingSocket.ts`, `app/utils/heartbeat.ts`, `app/composables/usePresence.ts`, `app/composables/useMatchPresence.ts`
-- `app/components/UserAvatar.vue` (presence dot), `app/components/MatchViewers.vue` ("N watching now")
+- `apps/web-nuxt/server/routes/_ws.ts`
+- `apps/web-nuxt/server/utils/live/hub.ts` (subscriber registry, presence map, every `publish*` helper), `apps/web-nuxt/server/utils/live/viewers.ts`
+- `apps/web-nuxt/server/utils/live/league-chat.ts` (`publishMemberNameChanged`), `apps/web-nuxt/server/utils/live/league-reactions.ts` (`publishLeagueReactionUpdates`), `apps/web-nuxt/server/utils/live/league-crowd.ts`
+- `apps/web-nuxt/app/composables/useReconnectingSocket.ts`, `apps/web-nuxt/app/utils/heartbeat.ts`, `apps/web-nuxt/app/composables/usePresence.ts`, `apps/web-nuxt/app/composables/useMatchPresence.ts`
+- `apps/web-nuxt/app/components/UserAvatar.vue` (presence dot), `apps/web-nuxt/app/components/MatchViewers.vue` ("N watching now")

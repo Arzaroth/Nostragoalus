@@ -20,7 +20,7 @@ A single component `PwaBanner.vue` renders one of three priority-ordered phases:
 
 ## Download tracking
 
-`app/plugins/pwa-status.client.ts` hooks the vite-pwa `service-worker:registered`
+`apps/web-nuxt/app/plugins/pwa-status.client.ts` hooks the vite-pwa `service-worker:registered`
 event and tracks the incoming worker through `updatefound` + `statechange`,
 writing a `sw-downloading` `useState`. It guards with
 `if (!navigator.serviceWorker.controller) return` so a first-visit precache is
@@ -32,7 +32,7 @@ keeps it decoupled and testable without a real service worker.
 `registerType: 'prompt'` means the user controls activation, which avoids an
 asset swap mid-prediction. `periodicSyncForUpdates: 3600` makes long-lived
 tabs / installed instances notice deploys hourly, and
-`app/plugins/update-check.client.ts` polls the build manifest as a backstop.
+`apps/web-nuxt/app/plugins/update-check.client.ts` polls the build manifest as a backstop.
 
 ## Layout
 
@@ -45,6 +45,6 @@ are flagged for a real-browser verify pass.
 
 ## Sources
 
-- `app/components/PwaBanner.vue`, `app/plugins/pwa-status.client.ts`,
-  `app/plugins/update-check.client.ts`
-- PWA config in `nuxt.config.ts`; service worker in `app/service-worker/sw.ts`
+- `apps/web-nuxt/app/components/PwaBanner.vue`, `apps/web-nuxt/app/plugins/pwa-status.client.ts`,
+  `apps/web-nuxt/app/plugins/update-check.client.ts`
+- PWA config in `apps/web-nuxt/nuxt.config.ts`; service worker in `apps/web-nuxt/app/service-worker/sw.ts`

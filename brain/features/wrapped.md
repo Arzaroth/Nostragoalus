@@ -12,8 +12,8 @@ predictions, zeroed bonuses and an empty haul.
 
 ## Server
 
-- `server/utils/wrapped/service.ts` `getWrapped(db, { competitionId, userId })`
-  builds the whole `WrappedDto` (`shared/types/wrapped.ts`). Pre-final it
+- `apps/web-nuxt/server/utils/wrapped/service.ts` `getWrapped(db, { competitionId, userId })`
+  builds the whole `WrappedDto` (`apps/web-nuxt/shared/types/wrapped.ts`). Pre-final it
   returns `{ ready: false }` - a state, not an error, so the page can tease.
 - Sources, all read-side (no new tables):
   - totals/rank/percentile from `getLeaderboard` (same visible-or-self
@@ -24,7 +24,7 @@ predictions, zeroed bonuses and an empty haul.
   - biggest miss = the user's MISS on the match with the highest field
     exact-share (skipped when nobody nailed it).
   - streaks / perfect rounds / lone-wolf reuse `computeAchievementStats`
-    (`server/utils/achievements/service.ts`) so recap and badges cannot
+    (`apps/web-nuxt/server/utils/achievements/service.ts`) so recap and badges cannot
     disagree.
   - rank journey is REPLAYED per round from scored predictions (cumulative
     ladder, `compareLeaderboardRows`), prediction points only - there is no
@@ -42,7 +42,7 @@ predictions, zeroed bonuses and an empty haul.
 - `/[competition]/wrapped` page: teaser pre-final, else `WrappedDeck.vue` - a
   fixed-overlay story deck (tap zones, swipe, arrow keys, progress segments,
   per-slide gradients). Slide list + journey chart geometry are pure functions
-  in `app/utils/wrapped-slides.ts` (empty slides skipped, under the 98% gate).
+  in `apps/web-nuxt/app/utils/wrapped-slides.ts` (empty slides skipped, under the 98% gate).
 - Entry: a banner on the leaderboard page once `useWrapped` reports
   `ready: true` (5 min staleTime - the recap is frozen).
 
@@ -51,22 +51,22 @@ predictions, zeroed bonuses and an empty haul.
 Reuses the satori + resvg stack ([share-images.md](share-images.md),
 [../architecture/rendering.md](../architecture/rendering.md)):
 
-- `server/utils/share/wrapped-token.ts`: a second stateless HMAC token family
+- `apps/web-nuxt/server/utils/share/wrapped-token.ts`: a second stateless HMAC token family
   (user + competition + locale), domain-separated from the prediction token so
   the two can never be swapped.
 - `POST /api/share/wrapped-mint` (auth, 404 until the final is decided via the
   looser `hasDecidedFinal`; the `[token]` PNG route re-runs `getWrapped` and
   serves the not-ready fallback until the final is `SCORED`) ->
   `GET /og/wrapped/[token]` public PNG (pure template in
-  `server/utils/share/wrapped-template.ts`; binary route outside the coverage
+  `apps/web-nuxt/server/utils/share/wrapped-template.ts`; binary route outside the coverage
   gate, cached 1 day - post-final data is frozen). Both OG routes load their
   bundled fonts/mark and the non-Latin fallback font via the shared
-  `server/utils/share/og-assets.ts` (so a CJK/Arabic display name renders on the
+  `apps/web-nuxt/server/utils/share/og-assets.ts` (so a CJK/Arabic display name renders on the
   card instead of tofu).
 - Summary slide offers download + copy-image-link.
 
 ## Tests
 
 Service + template + token under the coverage gate; `WrappedDeck` component
-test; `tests/e2e/wrapped.e2e.ts` drives seed -> deck -> summary -> mint -> PNG
+test; `apps/web-nuxt/tests/e2e/wrapped.e2e.ts` drives seed -> deck -> summary -> mint -> PNG
 and the leaderboard banner.

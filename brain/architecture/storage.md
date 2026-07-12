@@ -9,7 +9,7 @@ mechanism.
 
 ## The driver interface
 
-`server/utils/storage/driver.ts` defines `StorageDriver`:
+`apps/web-nuxt/server/utils/storage/driver.ts` defines `StorageDriver`:
 
 ```
 put(key, bytes, contentType)   get(key)   delete(key)   exists(key)
@@ -29,11 +29,11 @@ Two implementations, mirroring the providers/odds factory pattern:
 `resolveStorage(driver?)`) and is excluded from coverage like the providers
 index. Services that may touch images take an optional `driver?` resolved lazily
 only when an image is actually involved, so unit tests inject `memoryStorage()`
-from `tests/storage.ts`.
+from `apps/web-nuxt/tests/storage.ts`.
 
 ## Config
 
-Environment, read in `nuxt.config.ts` runtimeConfig:
+Environment, read in `apps/web-nuxt/nuxt.config.ts` runtimeConfig:
 
 - `NUXT_STORAGE_DRIVER` = `fs` | `s3` (the Docker deploy defaults to `s3`).
 - `NUXT_STORAGE_FS_ROOT` for the fs driver.
@@ -48,10 +48,10 @@ Environment, read in `nuxt.config.ts` runtimeConfig:
 
 - Content-addressed: `avatar/{sha256}.{ext}` (immutable, cache-friendly, no
   userId in the key).
-- Stored by intercepting two existing paths in `lib/auth.ts`: the
+- Stored by intercepting two existing paths in `apps/web-nuxt/lib/auth.ts`: the
   `update.before` hook (client uploads a data URL) and `provisionUser` (IdP
   photos on SSO login), both via `storeAvatarFromDataUrl` in
-  `server/utils/auth/avatar.ts`.
+  `apps/web-nuxt/server/utils/auth/avatar.ts`.
 - `user.image` holds a serving URL `/api/media/avatar/{key}`; the GET route
   requires a user and serves the bytes with an immutable cache header. There is
   no new upload route: avatars reuse the proven updateUser path.
@@ -70,8 +70,8 @@ Environment, read in `nuxt.config.ts` runtimeConfig:
 
 ## Migration and backup
 
-- `media:migrate-blobs` (a manual Nitro task, `server/tasks/media/migrate-blobs.ts`,
-  wrapping the `migrateBlobsToStorage` logic in `server/utils/storage/migrate.ts`)
+- `media:migrate-blobs` (a manual Nitro task, `apps/web-nuxt/server/tasks/media/migrate-blobs.ts`,
+  wrapping the `migrateBlobsToStorage` logic in `apps/web-nuxt/server/utils/storage/migrate.ts`)
   copies legacy in-DB blobs into the store. It is idempotent and resumable (the
   remaining-in-DB predicate is its own work queue) and is run from the admin
   Background-tasks page until the counts reach zero, BEFORE the release that
@@ -83,9 +83,9 @@ Environment, read in `nuxt.config.ts` runtimeConfig:
 
 ## Sources
 
-- `server/utils/storage/{driver,factory,service,index,keys,migrate}.ts`
-- `server/utils/storage/drivers/{fs,s3}.ts`
-- `server/tasks/media/migrate-blobs.ts` (the Nitro task wrapper)
-- `server/utils/auth/avatar.ts`, `server/api/media/avatar/[...key].get.ts`
-- `db/app-schema.ts` (`chat_attachment`), `tests/storage.ts`
-- `compose.yaml` (rustfs, rustfs-init, mc), `mise-tasks/db-backup`
+- `apps/web-nuxt/server/utils/storage/{driver,factory,service,index,keys,migrate}.ts`
+- `apps/web-nuxt/server/utils/storage/drivers/{fs,s3}.ts`
+- `apps/web-nuxt/server/tasks/media/migrate-blobs.ts` (the Nitro task wrapper)
+- `apps/web-nuxt/server/utils/auth/avatar.ts`, `apps/web-nuxt/server/api/media/avatar/[...key].get.ts`
+- `apps/web-nuxt/db/app-schema.ts` (`chat_attachment`), `apps/web-nuxt/tests/storage.ts`
+- `apps/web-nuxt/compose.yaml` (rustfs, rustfs-init, mc), `mise-tasks/db-backup`

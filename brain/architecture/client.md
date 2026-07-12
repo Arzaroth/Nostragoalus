@@ -4,7 +4,7 @@ Nuxt 4 + Vue 3 SSR app. Data flows through TanStack vue-query composables; live
 updates arrive over one reconnecting WebSocket. No Pinia/Vuex - state is
 composables + the query cache.
 
-## nuxt.config.ts (key settings)
+## apps/web-nuxt/nuxt.config.ts (key settings)
 
 - **Modules:** `@vueuse/nuxt`, `@primevue/nuxt-module`, `@unocss/nuxt`,
   `@nuxtjs/i18n`, `@vite-pwa/nuxt`.
@@ -26,7 +26,7 @@ composables + the query cache.
 The active competition is a **URL path prefix**. See
 [../features/competitions.md](../features/competitions.md) for the full model.
 
-- `app/pages/[competition]/` - matches (list + detail), bracket, map (Leaflet),
+- `apps/web-nuxt/app/pages/[competition]/` - matches (list + detail), bracket, map (Leaflet),
   leaderboard, predictions/bot, teams/[code], users/[id]. The fixtures list
   auto-scrolls on load to the live (else next upcoming) match; the `users/[id]`
   profile splits picks at "now" (played above, admin-only upcoming below) and
@@ -34,17 +34,17 @@ The active competition is a **URL path prefix**. See
   than the top of a long history.
 - Un-prefixed global pages - `/`, login, signup, 2FA, verify-email, account,
   preferences, about, license, roadmap, leagues (discover + join), error pages.
-- Global middleware: `app/middleware/auth.global.ts` (redirect to /login unless
+- Global middleware: `apps/web-nuxt/app/middleware/auth.global.ts` (redirect to /login unless
   the route is in `PUBLIC_ROUTES` or a session exists). It distinguishes "no
   session" (redirect) from a failed `getSession()` request (a transport `error`:
   leave the session alone), so a flaky mobile connection cannot eject a signed-in
-  user mid-session. Also `app/middleware/competition.global.ts` (validate/redirect
+  user mid-session. Also `apps/web-nuxt/app/middleware/competition.global.ts` (validate/redirect
   the `[competition]` slug, plus legacy-redirect un-prefixed pages like `/matches`
   to the path-prefixed form).
 
 ## Composables (the data layer)
 
-`app/composables/use<Feature>.ts`. The query client (`app/plugins/vue-query.ts`)
+`apps/web-nuxt/app/composables/use<Feature>.ts`. The query client (`apps/web-nuxt/app/plugins/vue-query.ts`)
 sets app-level `staleTime: 60_000` and `refetchOnWindowFocus: false`.
 
 Pattern: hierarchical query keys, an abort `signal`, a `select()` projection so
@@ -70,16 +70,16 @@ Rough groups:
 
 ## Components, plugins, layouts
 
-- `app/components/**` (flat, plus `logos/`): match (lineups, odds, bracket card,
+- `apps/web-nuxt/app/components/**` (flat, plus `logos/`): match (lineups, odds, bracket card,
   goal animation), league (cards + dialogs + members), chat (ChatDock, ChatPanel,
   ChatMessageContent, ChatImage, ChatLightbox, EmojiPicker), admin sections,
   layout chrome (AppFooter, CompetitionPill, LeaguePill, PwaBanner,
   NotificationBell).
-- `app/plugins/**`: `vue-query.ts` (universal), `theme.client.ts`,
+- `apps/web-nuxt/app/plugins/**`: `vue-query.ts` (universal), `theme.client.ts`,
   `preferences.client.ts`, `skin.client.ts`, `primevue-services.ts`,
   `pwa-status.client.ts`, `update-check.client.ts`, `tamper-watch.client.ts`,
   `chat-deeplink.client.ts`, `render-time.server.ts`.
-- `app/layouts/`: `default.vue` (header + nav, presence broadcast, competition
+- `apps/web-nuxt/app/layouts/`: `default.vue` (header + nav, presence broadcast, competition
   pill, admin badge) and `auth.vue` (no nav).
 
 ## Conventions and footguns
@@ -98,7 +98,7 @@ Rough groups:
 
 ## Sources
 
-- `nuxt.config.ts`, `app/app.vue`, `app/plugins/vue-query.ts`
-- `app/pages/**`, `app/composables/**`, `app/components/**`
-- `app/middleware/auth.global.ts`, `app/middleware/competition.global.ts`
-- `app/layouts/default.vue`
+- `apps/web-nuxt/nuxt.config.ts`, `apps/web-nuxt/app/app.vue`, `apps/web-nuxt/app/plugins/vue-query.ts`
+- `apps/web-nuxt/app/pages/**`, `apps/web-nuxt/app/composables/**`, `apps/web-nuxt/app/components/**`
+- `apps/web-nuxt/app/middleware/auth.global.ts`, `apps/web-nuxt/app/middleware/competition.global.ts`
+- `apps/web-nuxt/app/layouts/default.vue`
