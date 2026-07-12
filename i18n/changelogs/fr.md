@@ -5,6 +5,11 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Corrigé
+
+- Face à face : la liste « Plus grands écarts » classe désormais vos pronostics communs par écart de points, au lieu de ne montrer que les matchs où vous aviez prédit des résultats différents. Un match où vous aviez tous deux vu le même vainqueur mais où l'un a décroché le score exact avec un joker (un pronostic à 24 points contre un à 1 point) est exactement le genre d'écart que la liste cachait.
+- Face à face : les noms et avatars des deux joueurs renvoient désormais vers leur page de profil.
+
 ## [4.0.1] - 2026-07-12
 
 ### Notes d'exploitation

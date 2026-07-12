@@ -5,6 +5,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+
+- Head-to-head: the "Biggest divergences" list now ranks your shared picks by their points gap, instead of only showing matches where you predicted different results. A match where you both called the same winner but one of you landed the exact score with a joker (a 24-point pick against a 1-point one) is exactly the kind of swing the list was hiding.
+- Head-to-head: the two players' names and avatars now link back to their profile pages.
+
 ## [4.0.1] - 2026-07-12
 
 ### Operator notes
