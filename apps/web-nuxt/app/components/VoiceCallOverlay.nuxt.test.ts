@@ -12,6 +12,9 @@ const remoteStreams = ref<Record<string, MediaStream>>({})
 const incoming = ref<IncomingRing | null>(null)
 const muted = ref(false)
 const errorKey = ref<string | null>(null)
+const localLevel = ref(0)
+const speakingPeers = ref<Record<string, boolean>>({})
+const mutedTalkingAt = ref(0)
 const accept = vi.fn()
 const decline = vi.fn()
 const hangup = vi.fn()
@@ -27,6 +30,9 @@ mockNuxtImport('useVoiceCall', () => () => ({
   incoming,
   muted,
   errorKey,
+  localLevel,
+  speakingPeers,
+  mutedTalkingAt,
   accept,
   decline,
   hangup,
@@ -44,6 +50,9 @@ beforeEach(() => {
   rosterNames.value = {}
   incoming.value = null
   muted.value = false
+  localLevel.value = 0
+  speakingPeers.value = {}
+  mutedTalkingAt.value = 0
 })
 afterEach(() => vi.clearAllMocks())
 
@@ -88,6 +97,18 @@ describe('VoiceCallOverlay', () => {
     // Self is not listed; the peer is, from the server-shipped roster names.
     expect(w.text()).toContain('Bob')
     expect(w.text()).not.toContain('Me,')
+  })
+
+  it('highlights a speaking participant', async () => {
+    state.value = 'in-call'
+    activeScope.value = { kind: 'dm', threadId: 't1' }
+    roster.value = ['me', 'bob']
+    rosterNames.value = { me: 'Me', bob: 'Bob' }
+    speakingPeers.value = { bob: true }
+    const w = await mountSuspended(VoiceCallOverlay)
+    // The innermost span is the name itself (its wrapper also texts as 'Bob').
+    const bob = w.findAll('span').filter((s) => s.text() === 'Bob').at(-1)
+    expect(bob!.attributes('style')).toContain('font-weight')
   })
 
   it('exposes an invite control only for a league call', async () => {

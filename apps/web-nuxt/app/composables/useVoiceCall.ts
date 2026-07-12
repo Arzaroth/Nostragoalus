@@ -34,6 +34,13 @@ const muted = ref(false)
 const roomPresence = ref<Record<string, { count: number; names: Record<string, string> }>>({})
 // An i18n key for a surfaced error (mic denied, connect failed), else null.
 const errorKey = ref<string | null>(null)
+// Own mic level (0..1 RMS, 0 while muted) for the in-call meter.
+const localLevel = ref(0)
+// peerId -> currently speaking, for the participant list.
+const speakingPeers = ref<Record<string, boolean>>({})
+// Bumped (timestamp) when sustained speech is detected while muted - the UI
+// toasts a "you're muted" nudge on each bump.
+const mutedTalkingAt = ref(0)
 
 let started = false
 let impl: VoiceImpl | null = null
@@ -63,6 +70,63 @@ function start(): void {
     let ringTimer: ReturnType<typeof setTimeout> | undefined
     // The callee we rang for an outgoing DM call, so a hang-up/timeout can cancel it.
     let outgoingCallee: string | null = null
+
+    // Level metering: one AudioContext, an AnalyserNode per stream ('local' + each
+    // peer), sampled on a timer. The local analyser taps a CLONE of the mic track
+    // kept always-enabled, so speech is still measurable while muted (the mute
+    // toggle disables only the track the peers receive) - that is what powers the
+    // "you're muted" nudge.
+    let audioCtx: AudioContext | null = null
+    let monitorTrack: MediaStreamTrack | null = null
+    const analysers = new Map<string, AnalyserNode>()
+    let meterTimer: ReturnType<typeof setInterval> | undefined
+    const mutedTracker = createMutedTalkingTracker()
+    const METER_INTERVAL_MS = 150
+
+    function attachAnalyser(key: string, stream: MediaStream): void {
+      try {
+        audioCtx ??= new AudioContext()
+        void audioCtx.resume()
+        const analyser = audioCtx.createAnalyser()
+        analyser.fftSize = 256
+        audioCtx.createMediaStreamSource(stream).connect(analyser)
+        analysers.set(key, analyser)
+        meterTimer ??= setInterval(meterTick, METER_INTERVAL_MS)
+      } catch {
+        // Metering is best-effort cosmetics; a failed AudioContext never blocks the call.
+      }
+    }
+
+    function meterTick(): void {
+      const buf = new Uint8Array(256)
+      const nextSpeaking: Record<string, boolean> = {}
+      for (const [key, analyser] of analysers) {
+        analyser.getByteTimeDomainData(buf)
+        const level = levelFromSamples(buf)
+        if (key === 'local') {
+          localLevel.value = muted.value ? 0 : level
+          if (mutedTracker.feed(muted.value, level, Date.now())) mutedTalkingAt.value = Date.now()
+        } else {
+          nextSpeaking[key] = level >= VOICE_SPEAKING_THRESHOLD
+        }
+      }
+      speakingPeers.value = nextSpeaking
+    }
+
+    function teardownMetering(): void {
+      clearInterval(meterTimer)
+      meterTimer = undefined
+      analysers.clear()
+      monitorTrack?.stop()
+      monitorTrack = null
+      if (audioCtx) {
+        void audioCtx.close().catch(() => {})
+        audioCtx = null
+      }
+      mutedTracker.reset()
+      localLevel.value = 0
+      speakingPeers.value = {}
+    }
 
     const socket = useReconnectingSocket({
       onMessage: (data) => handleFrame(data as Record<string, unknown>),
@@ -97,6 +161,12 @@ function start(): void {
       }
       // Honor a mute set before the mic was acquired.
       for (const track of localStream.getAudioTracks()) track.enabled = !muted.value
+      const track = localStream.getAudioTracks()[0]
+      if (track) {
+        monitorTrack = track.clone()
+        monitorTrack.enabled = true
+        attachAnalyser('local', new MediaStream([monitorTrack]))
+      }
       return localStream
     }
 
@@ -110,6 +180,7 @@ function start(): void {
       }
       pc.ontrack = (e) => {
         remoteStreams.value = { ...remoteStreams.value, [peerId]: e.streams[0] }
+        attachAnalyser(peerId, e.streams[0])
       }
       pc.onconnectionstatechange = () => {
         if (pc.connectionState === 'failed' || pc.connectionState === 'closed') dropPeer(peerId)
@@ -140,6 +211,7 @@ function start(): void {
         pc.close()
         peers.delete(peerId)
       }
+      analysers.delete(peerId)
       if (remoteStreams.value[peerId]) {
         const next = { ...remoteStreams.value }
         delete next[peerId]
@@ -265,6 +337,7 @@ function start(): void {
 
     function cleanup(): void {
       clearTimeout(ringTimer)
+      teardownMetering()
       for (const peerId of [...peers.keys()]) dropPeer(peerId)
       if (localStream) {
         for (const track of localStream.getTracks()) track.stop()
@@ -363,6 +436,9 @@ export function useVoiceCall() {
     incoming: readonly(incoming),
     muted: readonly(muted),
     errorKey: readonly(errorKey),
+    localLevel: readonly(localLevel),
+    speakingPeers: readonly(speakingPeers),
+    mutedTalkingAt: readonly(mutedTalkingAt),
     inCall,
     // Live "N in voice" count for a league room key (0 if none / unknown).
     voiceCountFor: (roomKey: string) => roomPresence.value[roomKey]?.count ?? 0,

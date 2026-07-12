@@ -35,3 +35,54 @@ export function rosterDelta(previous: Iterable<string>, roster: readonly string[
   const removed = [...prev].filter((id) => !next.has(id))
   return { added, removed }
 }
+
+// RMS level above which a stream counts as someone speaking. Time-domain RMS of
+// normal speech sits well above this; keyboard/breath noise stays below.
+export const VOICE_SPEAKING_THRESHOLD = 0.04
+// Speech must hold this long while muted before the "you're muted" nudge fires,
+// so a cough or a chair squeak does not toast.
+export const MUTED_TALKING_SUSTAIN_MS = 600
+// Minimum gap between two nudges - the user heard it, no need to nag every tick.
+export const MUTED_TALKING_THROTTLE_MS = 15_000
+
+// RMS of one AnalyserNode time-domain snapshot (bytes centered on 128) -> 0..1.
+export function levelFromSamples(samples: Uint8Array): number {
+  if (samples.length === 0) return 0
+  let sum = 0
+  for (const s of samples) {
+    const d = (s - 128) / 128
+    sum += d * d
+  }
+  return Math.sqrt(sum / samples.length)
+}
+
+export interface MutedTalkingTracker {
+  // Feed one meter tick; returns true when the "you're muted" nudge should fire.
+  feed: (muted: boolean, level: number, now: number) => boolean
+  reset: () => void
+}
+
+// Stateful detector for talking while muted: sustained speech-level input while
+// muted fires once, then throttles.
+export function createMutedTalkingTracker(): MutedTalkingTracker {
+  let speechStart: number | null = null
+  let lastFired = Number.NEGATIVE_INFINITY
+  return {
+    feed(muted, level, now) {
+      if (!muted || level < VOICE_SPEAKING_THRESHOLD) {
+        speechStart = null
+        return false
+      }
+      speechStart ??= now
+      if (now - speechStart >= MUTED_TALKING_SUSTAIN_MS && now - lastFired >= MUTED_TALKING_THROTTLE_MS) {
+        lastFired = now
+        return true
+      }
+      return false
+    },
+    reset() {
+      speechStart = null
+      lastFired = Number.NEGATIVE_INFINITY
+    },
+  }
+}
