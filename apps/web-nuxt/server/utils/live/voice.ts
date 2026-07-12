@@ -72,7 +72,8 @@ async function trackJoinInCallLog(db: AppDatabase, roomKey: string, scope: Voice
   if (scope.kind !== 'league' && roster.length < 2) return
   // Map insertion order: the first roster entry is the caller.
   const initiatorId = scope.kind === 'league' ? userId : roster[0]!
-  const opening = (async () => {
+  let opening!: Promise<string | null>
+  opening = (async () => {
     try {
       return await openCallLog(db, meta, initiatorId, roster)
     } catch {
