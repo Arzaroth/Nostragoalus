@@ -55,6 +55,20 @@ describe('buildIceServers', () => {
       expect(s.credential).toBe(cred.credential)
     }
     expect(res.ttl).toBe(600)
+    // Default IANA ports when none are configured.
+    expect((turn[0].urls as string)).toContain(':3478')
+    expect((turn[2].urls as string)).toContain(':5349')
+  })
+
+  it('uses the configured TURN ports in the urls', () => {
+    const res = buildIceServers(
+      { secret: 'shh', host: 'turn.example.com', realm: 'r', port: 3479, tlsPort: 5350 },
+      'user-a',
+      1_700_000_000_000,
+    )
+    const urls = res.iceServers.map((s) => s.urls as string)
+    expect(urls).toContain('turn:turn.example.com:3479?transport=udp')
+    expect(urls).toContain('turns:turn.example.com:5350?transport=tcp')
   })
 
   it('stays STUN-only when the secret is set but the host is missing', () => {
