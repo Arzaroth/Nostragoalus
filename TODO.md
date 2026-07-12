@@ -2411,13 +2411,25 @@ Shipped (vertical slices proving each mechanism):
       decrypt/unseal/derive direction); suite factored into `harness.ts`, bytes
       marshalled as `{ $b64 }`.
 
+- [x] Response-schema fan-out COMPLETE: 183 routes carry a compile-verified
+      response schema (handler return typed as `z.input<R>`, drizzle-zod for DB
+      projections). The 7 without one are excluded by design (binary/XML/HTML/
+      ICS/auth-catch-all/_schema helper). Emitter reports unconverted +
+      import-failed names.
+- [x] Parity vectors for the scoring core: `scoring`, `fergie`, `standings`,
+      `consensus`, `match` (8 modules total with crypto). `criteria` +
+      `achievements` are db-bound, out of scope for pure vectors.
+- [x] Dart consumer side: `mobile/parity/` vector runner (commitment/kt/match
+      ported + passing, rest stubbed with recipes) + `tool/gen_models.sh`
+      (OpenAPI -> Dart models). Authored but not executed (no Dart SDK here).
+
 Open:
-- [ ] Fan out response schemas to the remaining ~180 routes, by feature area.
-      8 routes currently fail to import under the bare unit env (aliases /
-      runtime-only imports) - make them import-clean as they're converted.
 - [ ] Retire the now-redundant hand-written `requestBody`/`responses` literals
-      in `defineRouteMeta` on converted routes (emitter is authoritative).
-- [ ] Parity vectors for the scoring core: `scoring`, `criteria`, `fergie`,
-      `achievements`, `match`/`stage`.
-- [ ] Dart codegen from the emitted spec + a Dart parity-vector runner - only
-      when the mobile app actually starts.
+      in `defineRouteMeta` on converted routes (emitter is authoritative). Prose
+      (tags/summary/description) still comes from defineRouteMeta.
+- [ ] Port the remaining Dart parity modules (e2ee + scoring/fergie/standings/
+      consensus) and run `dart test` - only when the mobile app actually starts.
+- [ ] Some response schemas use deliberate looseness (`z.unknown()` for provider
+      passthrough in matches live-detail/timeline + admin run-task; `z.custom`
+      for the notification-data union; `z.string()` for a few enums). Tighten if
+      the Dart models need them structured.
