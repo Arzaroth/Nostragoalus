@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [3.0.1] - 2026-07-12
+
 ### Notes d'exploitation
 
 - coturn du chat vocal : le relais annonce désormais l'IP publique de l'hôte quand `NUXT_TURN_EXTERNAL_IP` est défini (nécessaire si la machine est derrière un NAT, pour que les navigateurs externes obtiennent une adresse de relais joignable), et ses ports sont configurables (`NUXT_TURN_PORT` / `NUXT_TURN_TLS_PORT` / `NUXT_TURN_MIN_PORT` / `NUXT_TURN_MAX_PORT`) pour coexister avec un autre service utilisant déjà 3478 ou la plage de relais par défaut. `mise run up` démarre désormais coturn avec la stack.
