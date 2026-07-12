@@ -16,7 +16,7 @@ import type { HandlerContract } from '../../server/utils/validated-handler'
 //                 re-blessed, exactly like `db:generate`.
 //   CONTRACT_BLESS: rewrite the snapshot.  CONTRACT_BLESS=1 pnpm test:run tests/contract
 const apiDir = fileURLToPath(new URL('../../server/api', import.meta.url))
-const snapshotPath = fileURLToPath(new URL('./openapi.snapshot.json', import.meta.url))
+const snapshotPath = fileURLToPath(new URL('../../shared/contracts-openapi/openapi.snapshot.json', import.meta.url))
 const bless = !!process.env.CONTRACT_BLESS
 
 // defineRouteMeta runs at import time; capture the prose it carries per route.

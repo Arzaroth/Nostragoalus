@@ -4,4 +4,4 @@ import { parityVectors } from './harness'
 
 // Frozen cross-stack vectors for the scoring logic. Re-freeze after a deliberate
 // change:  pnpm parity:bless
-parityVectors('scoring', buildCases, fileURLToPath(new URL('./vectors/scoring.json', import.meta.url)))
+parityVectors('scoring', buildCases, fileURLToPath(new URL('../../shared/parity-json/scoring.json', import.meta.url)))

@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 // Loads a frozen vector file (the SAME JSON the TS side writes under
-// tests/parity/vectors) and compares Dart results to the frozen `expected`.
+// shared/parity-json) and compares Dart results to the frozen `expected`.
 // Structural deep-equality on decoded JSON, so map key order is irrelevant and
 // an int that reads back as a double still matches.
 

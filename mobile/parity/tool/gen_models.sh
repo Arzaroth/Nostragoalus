@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 # Generate Dart API model classes from the zod-derived OpenAPI snapshot.
 #
-# The snapshot (tests/contract/openapi.snapshot.json) is emitted from the routes'
+# The snapshot (shared/contracts-openapi/openapi.snapshot.json) is emitted from the routes'
 # zod schemas by the TS spec emitter, so the generated Dart models track exactly
 # what the server accepts and returns - regenerate it (CONTRACT_BLESS=1 pnpm
 # test:run tests/contract) whenever a schema changes, then re-run this.
@@ -11,7 +11,7 @@
 # response-schema fan-out completes (admin/ and leagues/ still pending).
 set -eu
 
-SPEC="../../tests/contract/openapi.snapshot.json"
+SPEC="../../shared/contracts-openapi/openapi.snapshot.json"
 OUT="lib/api"
 
 command -v openapi-generator-cli >/dev/null 2>&1 || {

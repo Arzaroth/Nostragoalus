@@ -40,7 +40,7 @@ the h3/Nitro globals, imports every `server/api` route, reads that `__contract`,
 and builds one operation per route via `buildOperation` +
 [route-path.ts](../../server/utils/openapi/route-path.ts) (Nitro filename ->
 `{ path, method }`). Normal run asserts the rebuilt spec equals the committed
-`openapi.snapshot.json` (drift gate, like `db:generate`); `CONTRACT_BLESS=1`
+`shared/contracts-openapi/openapi.snapshot.json` (drift gate, like `db:generate`); `CONTRACT_BLESS=1`
 re-freezes. The gate **ratchets**: every route not contract-bound (no response
 schema, or fails to import) must appear in the test's `NO_CONTRACT` exempt list,
 so a new raw-handler route - or a converted route that starts failing to
@@ -97,12 +97,12 @@ logic (criteria, achievements) is out of scope for pure vectors.
 [mobile/parity/](../../mobile/parity) is the Flutter-side counterpart, fed by
 both artifacts above:
 - `test/parity_test.dart` replays the frozen vectors (read in place from
-  `tests/parity/vectors`, single source) against Dart ports. `commitment`,
+  `shared/parity-json`, single source) against Dart ports. `commitment`,
   `key-transparency`, `match` are ported + pass; the rest are skipped-loudly with
   a porting recipe in `dispatch.dart` (`e2ee` needs a libsodium binding +
   `$b64` marshalling).
 - `tool/gen_models.sh` generates Dart request/response classes from
-  `openapi.snapshot.json` (openapi-generator), single-sourcing the wire contract
+  `shared/contracts-openapi/openapi.snapshot.json` (openapi-generator), single-sourcing the wire contract
   from the server's zod.
 
 Related: [e2ee-trust-model.md](e2ee-trust-model.md),
