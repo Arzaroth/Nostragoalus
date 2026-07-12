@@ -5,8 +5,10 @@
 // wrap it in <ClientOnly>. All call state comes from the useVoiceCall singleton.
 const { t } = useI18n()
 const toast = useToast()
-const { state, activeScope, roster, rosterNames, remoteStreams, incoming, muted, errorKey, accept, decline, hangup, invite, toggleMute } =
-  useVoiceCall()
+const {
+  state, activeScope, roster, rosterNames, remoteStreams, incoming, muted, errorKey,
+  localLevel, speakingPeers, mutedTalkingAt, accept, decline, hangup, invite, toggleMute,
+} = useVoiceCall()
 
 // Names come from the league roster when available (fresher on a rename), else
 // from the names the server ships with each voice:roster push (covers DMs).
@@ -15,13 +17,18 @@ const detail = useLeagueDetail(leagueId)
 const nameOf = (userId: string): string =>
   detail.data.value?.members?.find((m) => m.userId === userId)?.name ?? rosterNames.value[userId] ?? userId
 
-// Who else is on the call, for the "with X, Y" line under the status.
+// Who else is on the call, for the "with X, Y" line under the status. A speaking
+// participant's name lights up (fed by the per-peer level meters).
 const { session } = useAuth()
 const myId = computed(() => session.value?.data?.user?.id ?? null)
-const others = computed(() => roster.value.filter((id) => id !== myId.value))
-const participantsLabel = computed(() =>
-  state.value === 'in-call' && others.value.length ? others.value.map(nameOf).join(', ') : '',
-)
+const others = computed(() => (state.value === 'in-call' ? roster.value.filter((id) => id !== myId.value) : []))
+
+// Own mic meter: three bars lit by rising RMS thresholds.
+const METER_BARS = [
+  { threshold: 0.02, height: '6px' },
+  { threshold: 0.08, height: '10px' },
+  { threshold: 0.18, height: '14px' },
+]
 
 const remoteEntries = computed(() => Object.entries(remoteStreams.value))
 const isLeague = computed(() => activeScope.value?.kind === 'league')
@@ -54,6 +61,14 @@ watch(
   () => errorKey.value,
   (key) => {
     if (key) toast.add({ severity: 'error', summary: t(key), life: 4000 })
+  },
+)
+
+// Talking while muted: nudge, throttled composable-side.
+watch(
+  () => mutedTalkingAt.value,
+  (at) => {
+    if (at) toast.add({ severity: 'warn', summary: t('voice.mutedTalking'), life: 3000 })
   },
 )
 
@@ -120,11 +135,28 @@ function ring(userId: string): void {
       </span>
       <span class="flex flex-col min-w-0">
         <span class="text-sm font-medium tabular-nums">{{ statusLabel }}</span>
+        <span v-if="others.length" class="text-xs truncate max-w-[14rem]">
+          <template v-for="(o, i) in others" :key="o">
+            <span
+              :style="speakingPeers[o]
+                ? 'color: var(--p-primary-color); font-weight: 600'
+                : 'color: var(--p-text-muted-color)'"
+            >{{ nameOf(o) }}</span><span v-if="i < others.length - 1" style="color: var(--p-text-muted-color)">, </span>
+          </template>
+        </span>
+      </span>
+
+      <!-- Own mic meter; hollow while muted. -->
+      <span v-if="state === 'in-call'" class="flex items-end gap-0.5 h-3.5" aria-hidden="true">
         <span
-          v-if="participantsLabel"
-          class="text-xs truncate max-w-[14rem]"
-          style="color: var(--p-text-muted-color)"
-        >{{ participantsLabel }}</span>
+          v-for="bar in METER_BARS"
+          :key="bar.threshold"
+          class="w-1 rounded-sm"
+          :style="{
+            height: bar.height,
+            background: !muted && localLevel >= bar.threshold ? 'var(--p-primary-color)' : 'var(--p-content-border-color)',
+          }"
+        />
       </span>
 
       <button
