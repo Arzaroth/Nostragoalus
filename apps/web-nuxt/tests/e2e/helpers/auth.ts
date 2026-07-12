@@ -69,10 +69,19 @@ export async function signUp(page: Page, user: Credentials, opts: { dismissPromp
 // A fresh account gets a one-time league onboarding prompt: a modal with no close
 // button and no Escape, so it intercepts clicks on every page until dismissed.
 // "Maybe later" stamps the server-side dismissal, so this only needs doing once.
-export async function dismissOnboarding(page: Page): Promise<void> {
-  await page
+// Resolving the prompt is also the in-session hand-off that auto-starts the
+// welcome tour; when that race lands, the tour dialog overlays every page, so
+// skip it here too. A spec asserting the auto-start passes skipTour: false.
+export async function dismissOnboarding(page: Page, opts: { skipTour?: boolean } = {}): Promise<void> {
+  const dismissed = await page
     .getByRole('button', { name: 'Maybe later', exact: true })
     .click({ timeout: 8_000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!dismissed || opts.skipTour === false) return
+  await page
+    .getByRole('button', { name: 'Skip tour', exact: true })
+    .click({ timeout: 5_000 })
     .catch(() => {})
 }
 
