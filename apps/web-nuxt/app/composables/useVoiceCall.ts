@@ -22,13 +22,16 @@ const state = ref<CallState>('idle')
 const activeScope = ref<VoiceScope | null>(null)
 // User ids in the current room, including self (the mesh roster).
 const roster = ref<string[]>([])
+// Display names for the roster ids, sent by the server with each roster push (a
+// DM has no client-side member list to resolve names from).
+const rosterNames = ref<Record<string, string>>({})
 // Remote audio, keyed by peer user id - the UI binds each to a hidden <audio>.
 const remoteStreams = ref<Record<string, MediaStream>>({})
 const incoming = ref<IncomingRing | null>(null)
 const muted = ref(false)
-// Live "N in voice" counts per league room key, for the badge shown to members who
-// are not in the call. Fed by voice:presence broadcasts.
-const roomPresence = ref<Record<string, number>>({})
+// Live "N in voice" state per league room key (count + who), for the badge shown
+// to members who are not in the call. Fed by voice:presence broadcasts.
+const roomPresence = ref<Record<string, { count: number; names: Record<string, string> }>>({})
 // An i18n key for a surfaced error (mic denied, connect failed), else null.
 const errorKey = ref<string | null>(null)
 
@@ -182,6 +185,7 @@ function start(): void {
         case 'voice:roster': {
           if (activeScope.value && data.roomKey === voiceRoomKey(activeScope.value)) {
             roster.value = (data.roster as string[]) ?? []
+            rosterNames.value = (data.names as Record<string, string>) ?? {}
             reconcile(roster.value)
             if (
               activeScope.value &&
@@ -251,7 +255,7 @@ function start(): void {
           const key = String(data.roomKey)
           const count = Number(data.count) || 0
           const next = { ...roomPresence.value }
-          if (count > 0) next[key] = count
+          if (count > 0) next[key] = { count, names: (data.names as Record<string, string>) ?? {} }
           else delete next[key]
           roomPresence.value = next
           break
@@ -268,6 +272,7 @@ function start(): void {
       }
       remoteStreams.value = {}
       roster.value = []
+      rosterNames.value = {}
       activeScope.value = null
       incoming.value = null
       outgoingCallee = null
@@ -353,13 +358,16 @@ export function useVoiceCall() {
     state: readonly(state),
     activeScope: readonly(activeScope),
     roster: readonly(roster),
+    rosterNames: readonly(rosterNames),
     remoteStreams: readonly(remoteStreams),
     incoming: readonly(incoming),
     muted: readonly(muted),
     errorKey: readonly(errorKey),
     inCall,
     // Live "N in voice" count for a league room key (0 if none / unknown).
-    voiceCountFor: (roomKey: string) => roomPresence.value[roomKey] ?? 0,
+    voiceCountFor: (roomKey: string) => roomPresence.value[roomKey]?.count ?? 0,
+    // Who is in a league room's call right now (display names, [] if none).
+    voiceNamesFor: (roomKey: string) => Object.values(roomPresence.value[roomKey]?.names ?? {}),
     // Whether this tab is currently in the call for the given scope.
     isInScope: (scope: VoiceScope) => activeScope.value != null && voiceRoomKey(activeScope.value) === voiceRoomKey(scope),
     // Actions (no-ops until the client singleton has started).

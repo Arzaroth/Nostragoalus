@@ -6,6 +6,7 @@ import VoiceCallButton from './VoiceCallButton.vue'
 const inCall = ref(false)
 const here = ref(false)
 const counts = ref<Record<string, number>>({})
+const names = ref<Record<string, string[]>>({})
 const startDmCall = vi.fn()
 const joinLeagueVoice = vi.fn()
 
@@ -13,6 +14,7 @@ mockNuxtImport('useVoiceCall', () => () => ({
   inCall,
   isInScope: () => here.value,
   voiceCountFor: (key: string) => counts.value[key] ?? 0,
+  voiceNamesFor: (key: string) => names.value[key] ?? [],
   startDmCall,
   joinLeagueVoice,
 }))
@@ -21,6 +23,7 @@ beforeEach(() => {
   inCall.value = false
   here.value = false
   counts.value = {}
+  names.value = {}
   startDmCall.mockClear()
   joinLeagueVoice.mockClear()
 })
