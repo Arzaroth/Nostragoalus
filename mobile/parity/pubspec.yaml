@@ -1,0 +1,21 @@
+name: nostragoalus_parity
+description: >-
+  Cross-stack parity runner. Replays the golden vectors frozen by the TS side
+  (tests/parity/vectors/*.json) against Dart reimplementations of the pure,
+  security-critical logic, so a Flutter client cannot silently diverge from the
+  web app. See README.md.
+publish_to: none
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  # SHA-256 for the commit-reveal ledger and the key-transparency log.
+  crypto: ^3.0.0
+
+dev_dependencies:
+  test: ^1.25.0
+  # NOTE: the e2ee module needs libsodium's exact primitives (secretbox,
+  # sealed box, Argon2id, blake2b). In the real app that is `sodium_libs`
+  # (Flutter) / `sodium` (ffi to the system libsodium). It is intentionally
+  # NOT wired here so this package stays pure-Dart runnable; e2ee vectors are
+  # skipped until a libsodium binding is added. See dispatch.dart.
