@@ -1,0 +1,59 @@
+{
+  "module": "e2ee",
+  "cases": [
+    {
+      "fn": "fingerprint",
+      "args": [
+        "QmAspqgfkjNUQakh6viHLsWfmuTE9t_kOtzsKw3JnHg"
+      ],
+      "expected": "57815 99084 97953 45472 30710 62937"
+    },
+    {
+      "fn": "openGroupKey",
+      "args": [
+        "OtmDoPBjImUqKUHJdENDqriks2E7LjXfqvzcb_pBWxabhmagt2pjBYcc-37UrWwzZe9xSeNDYKLLOS9_vYyPFLdFtuFdxm_DbeBLmdZoy7Y",
+        {
+          "publicKey": "QmAspqgfkjNUQakh6viHLsWfmuTE9t_kOtzsKw3JnHg",
+          "privateKey": {
+            "$b64": "oIjvTUNfMoTncfMjrqAVED/O95SNGKzu8cYsbfGbqSI="
+          }
+        }
+      ],
+      "expected": {
+        "$b64": "E9FQtbqyOl7fFA2RbSY0FCeuCEGBELXqgU1Mx3kluCE="
+      }
+    },
+    {
+      "fn": "decryptMessage",
+      "args": [
+        "yGoEC24oeT0AYO6r7d6i240HvUOo1A3ZNzmAp1pMHV4xx2Gi050svcOFJ0kR4n74yrvM8E2r0tbgcLEpNz-q",
+        {
+          "$b64": "E9FQtbqyOl7fFA2RbSY0FCeuCEGBELXqgU1Mx3kluCE="
+        }
+      ],
+      "expected": "hello 🌍 e2ee - café"
+    },
+    {
+      "fn": "decryptBytes",
+      "args": [
+        "n1ReCjZwp7gj5_pRA7rfSBKDMP-j3fWOGBJ-LeyeNJCpC1A3yVtPetgSyiaCMUY",
+        {
+          "$b64": "E9FQtbqyOl7fFA2RbSY0FCeuCEGBELXqgU1Mx3kluCE="
+        }
+      ],
+      "expected": {
+        "$b64": "AAEC+oD/Bw=="
+      }
+    },
+    {
+      "fn": "unwrapPrivateKeyWithRecovery",
+      "args": [
+        "wAPhgXdhR1K8lP28lh-yPOKW5VYHrqKmoswjPptTaZwwPqvoPLb9AMu29sMqOAnjMJ4R8DPK1yUINbmeh1vYvzrWA_WSq58YsErIrA2DvO1G1_jLORJhWQ",
+        "ABCD-EFGH-IJKL-MNOP"
+      ],
+      "expected": {
+        "$b64": "oIjvTUNfMoTncfMjrqAVED/O95SNGKzu8cYsbfGbqSI="
+      }
+    }
+  ]
+}
