@@ -121,6 +121,11 @@ export default defineNuxtConfig({
   i18n: {
     strategy: 'no_prefix',
     defaultLocale: 'en',
+    // Locales live in the top-level shared/ domain (consumed cross-stack), not
+    // under the app. restructureDir points nuxt-i18n's base there; langDir is the
+    // locale subdir within it.
+    restructureDir: 'shared',
+    langDir: 'i18n-json',
     locales: [
       { code: 'en', name: 'English', file: 'en.json', language: 'en' },
       { code: 'fr', name: 'Français', file: 'fr.json', language: 'fr' },

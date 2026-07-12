@@ -56,4 +56,4 @@ top assists. Built to grow into team-level boards (best attack/defense) later.
 - `app/composables/useScorers.ts`, `app/components/PlayerRankingTable.vue`
 - `server/api/competitions/scorers.get.ts`, `server/utils/stats/scorers.ts`
 - `server/api/matches/[id]/scorers.get.ts` (the fixture-scoped Players tab board)
-- i18n: `matches.viewStats`, `stats.*` in `i18n/locales/{en,fr,th,tlh,ar}.json`
+- i18n: `matches.viewStats`, `stats.*` in `shared/i18n-json/{en,fr,th,tlh,ar}.json`

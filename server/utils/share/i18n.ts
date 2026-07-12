@@ -1,9 +1,9 @@
 import type { ShareLocale } from './token'
-import en from '../../../i18n/locales/en.json'
-import fr from '../../../i18n/locales/fr.json'
-import th from '../../../i18n/locales/th.json'
-import tlh from '../../../i18n/locales/tlh.json'
-import ar from '../../../i18n/locales/ar.json'
+import en from '../../../shared/i18n-json/en.json'
+import fr from '../../../shared/i18n-json/fr.json'
+import th from '../../../shared/i18n-json/th.json'
+import tlh from '../../../shared/i18n-json/tlh.json'
+import ar from '../../../shared/i18n-json/ar.json'
 
 // Server-side translation for the share card, which is rendered by a crawler-
 // facing route with no Vue/i18n context. Reads the SAME locale JSON the app

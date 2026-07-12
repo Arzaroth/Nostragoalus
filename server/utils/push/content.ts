@@ -2,11 +2,11 @@ import { cabinetPath, chatMentionPath, type NotificationData } from '../../../sh
 import { DEFAULT_COMPETITION } from '../../../shared/competition'
 import { dmPath } from '../../../shared/types/dm'
 import type { CompetitionAwardType } from '../../../shared/types/achievements'
-import en from '../../../i18n/locales/en.json'
-import fr from '../../../i18n/locales/fr.json'
-import th from '../../../i18n/locales/th.json'
-import tlh from '../../../i18n/locales/tlh.json'
-import ar from '../../../i18n/locales/ar.json'
+import en from '../../../shared/i18n-json/en.json'
+import fr from '../../../shared/i18n-json/fr.json'
+import th from '../../../shared/i18n-json/th.json'
+import tlh from '../../../shared/i18n-json/tlh.json'
+import ar from '../../../shared/i18n-json/ar.json'
 
 // The push body is user-facing, so it follows the four-locale rule. The bell's
 // client-side itemText can't run server-side, so push has its own terse `push.*`
