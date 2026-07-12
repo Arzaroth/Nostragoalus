@@ -32,7 +32,7 @@ export function defineValidatedHandler<S extends ZodType>(
   options: Options<S>,
   handler: (ctx: HandlerCtx<S extends ZodType ? z.infer<S> : undefined>) => unknown | Promise<unknown>,
 ) {
-  return defineEventHandler(async (event) => {
+  const handle = defineEventHandler(async (event) => {
     const apiKeyHeader = event.headers?.get?.('x-api-key')
     let user: HandlerCtx<unknown>['user']
     if (apiKeyHeader) {
@@ -69,6 +69,19 @@ export function defineValidatedHandler<S extends ZodType>(
     }
     return options.response ? parseResponse(options.response, result) : result
   })
+  // The spec emitter reads this off the default export (under a stubbed import)
+  // to build the route's OpenAPI operation from the SAME zod schemas the handler
+  // validates with. Inert at runtime.
+  ;(handle as HandlerContract).__contract = { kind: 'mutation', body: options.body, response: options.response }
+  return handle
+}
+
+export interface HandlerContract {
+  __contract?: {
+    kind: 'mutation' | 'read'
+    body?: ZodType
+    response?: ZodType
+  }
 }
 
 // A handler return that fails its own response contract is a server bug, not a

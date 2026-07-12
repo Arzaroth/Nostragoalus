@@ -6,8 +6,24 @@ import { z } from 'zod'
 // client) is built from, so the published contract can never drift from what the
 // server actually accepts and returns. `openapi-3.0` is Nitro's dialect: it
 // emits `nullable: true` and drops the `$schema` key, so no post-processing.
+//
+// Date policy: a response schema uses `z.date()` for a timestamp - it validates
+// the Date object the handler returns, cheaply, in every env (no double
+// serialize). h3 then serializes it to an ISO string, so the WIRE shape is a
+// date-time string; this maps `z.date()` to exactly that for the published
+// contract, keeping the runtime check and the client contract in agreement.
 export function toOpenApiSchema(schema: ZodType, io: 'input' | 'output' = 'output'): Record<string, unknown> {
-  return z.toJSONSchema(schema, { target: 'openapi-3.0', io }) as Record<string, unknown>
+  return z.toJSONSchema(schema, {
+    target: 'openapi-3.0',
+    io,
+    unrepresentable: 'any',
+    override: (ctx) => {
+      if ((ctx.zodSchema as { _zod: { def: { type: string } } })._zod.def.type === 'date') {
+        ctx.jsonSchema.type = 'string'
+        ctx.jsonSchema.format = 'date-time'
+      }
+    },
+  }) as Record<string, unknown>
 }
 
 export interface ContractMeta {

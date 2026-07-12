@@ -14,6 +14,11 @@ describe('toOpenApiSchema', () => {
     expect((out.properties as Record<string, unknown>).a).toMatchObject({ nullable: true, type: 'string' })
   })
 
+  it('maps z.date() to a date-time string (the wire shape)', () => {
+    const out = toOpenApiSchema(z.object({ createdAt: z.date() }))
+    expect((out.properties as Record<string, unknown>).createdAt).toEqual({ type: 'string', format: 'date-time' })
+  })
+
   it('honours the input vs output projection', () => {
     // A default is optional on the way in, always present on the way out.
     const schema = z.object({ n: z.number().default(1) })

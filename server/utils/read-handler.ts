@@ -2,7 +2,7 @@ import type { H3Event } from 'h3'
 import type { z, ZodType } from 'zod'
 import { requireAdmin, requireUser } from './auth-guards'
 import { toHttpError } from './http'
-import { parseResponse } from './validated-handler'
+import { type HandlerContract, parseResponse } from './validated-handler'
 
 interface ReadCtx<Q> {
   event: H3Event
@@ -29,7 +29,7 @@ export function defineReadHandler<R extends ZodType, Q extends ZodType = ZodType
   options: ReadOptions<R, Q>,
   handler: (ctx: ReadCtx<Q extends ZodType ? z.infer<Q> : undefined>) => unknown | Promise<unknown>,
 ) {
-  return defineEventHandler(async (event) => {
+  const handle = defineEventHandler(async (event) => {
     let user: ReadCtx<unknown>['user'] = null
     if (options.auth === 'admin') user = await requireAdmin(event)
     else if (options.auth === 'user') user = await requireUser(event)
@@ -55,4 +55,8 @@ export function defineReadHandler<R extends ZodType, Q extends ZodType = ZodType
     }
     return parseResponse(options.response, result)
   })
+  // See defineValidatedHandler: the spec emitter reads this to build the read's
+  // OpenAPI operation from its zod contract.
+  ;(handle as HandlerContract).__contract = { kind: 'read', response: options.response }
+  return handle
 }
