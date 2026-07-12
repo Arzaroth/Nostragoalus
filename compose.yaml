@@ -120,6 +120,7 @@ services:
   app:
     build:
       context: .
+      dockerfile: apps/web-nuxt/Dockerfile
       target: prod
     image: nostragoalus-app:local
     restart: unless-stopped

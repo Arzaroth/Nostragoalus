@@ -5,39 +5,33 @@
 # re-included below is invisible to the build (and to the dev/install layers).
 *
 
-# Source + framework config that `pnpm build` (nuxt) needs.
-!app
-!server
-!shared
-!lib
-!db
-!i18n
-!public
-!nuxt.config.ts
-!tsconfig.json
-!uno.config.ts
-!.nuxtrc
+# The web app package: source, framework config, drizzle migrations, the
+# postbuild fingerprint script + its lib/integrity dep, and the app package.json.
+!apps/web-nuxt
+# ...but not its heavy build/dep artifacts (re-excluded so they never bloat the
+# context or bust the COPY layer).
+apps/web-nuxt/node_modules
+apps/web-nuxt/.nuxt
+apps/web-nuxt/.output
+apps/web-nuxt/.data
 
-# Committed migrations: the prod stage copies these from the build stage.
-!drizzle
+# Cross-app shared DATA: locale JSON is read at build via the app's
+# i18n/locales symlink into here; keep it in context so the symlink resolves.
+!shared/i18n-json
 
-# The `postbuild` script (package.json) runs this after `nuxt build` to
-# fingerprint the client bundle. Its only non-node import is lib/integrity
-# (whitelisted above), so the single file is enough.
-!mise-tasks/build-integrity
-
-# Dependency manifests (pnpm fetch/install) + store/registry config.
+# Root workspace manifests + npm/registry config.
 !package.json
 !pnpm-lock.yaml
 !pnpm-workspace.yaml
 !.npmrc
 
-# Imported at build time via ?raw by license.vue / about.vue - keep these.
+# Imported at build time via ?raw (license.vue / about.vue / useChangelog).
 !LICENSE
 !LICENSE-MIT
 !LICENSE-WTFPL
 !CHANGELOG.md
+!i18n/changelogs
 
 # Colocated component tests (*.nuxt.test.ts) are not build inputs - re-exclude
-# them after pulling in app/server so they don't bust the COPY layer.
+# them after pulling in the app so they don't bust the COPY layer.
 **/*.test.ts

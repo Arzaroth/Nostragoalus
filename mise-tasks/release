@@ -46,21 +46,23 @@ mise run changelog check
 # Move [Unreleased] -> dated section (changelog task) and bump the version (jq).
 mise run changelog promote "$version" "$date"
 tmp="$(mktemp)"
-jq --indent 2 --arg v "$version" '.version = $v' package.json > "$tmp"
-mv "$tmp" package.json
+# The versioned package is the web app (shown on /about); the root package.json
+# is just the workspace shell.
+jq --indent 2 --arg v "$version" '.version = $v' apps/web-nuxt/package.json > "$tmp"
+mv "$tmp" apps/web-nuxt/package.json
 
 echo "running the gate (typecheck + coverage + component tests + prod build)..."
 export CI=true
-pnpm typecheck
+pnpm -C apps/web-nuxt typecheck
 # Translated changelogs must mirror CHANGELOG.md, including the block just promoted.
 mise run changelog check
-pnpm test:coverage
-pnpm test:components
+pnpm -C apps/web-nuxt test:coverage
+pnpm -C apps/web-nuxt test:components
 # Build last: catches SSR/rollup link errors (e.g. unresolved imports) that
 # typecheck and the unit/component suites miss, so a release tag always builds.
-pnpm build
+pnpm -C apps/web-nuxt build
 
-git add CHANGELOG.md i18n/changelogs/*.md package.json
+git add CHANGELOG.md i18n/changelogs/*.md apps/web-nuxt/package.json
 git commit -m "chore(release): ${version}"
 git tag -a "v${version}" -m "Nostragoalus ${version}"
 git push origin master --follow-tags

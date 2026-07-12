@@ -64,6 +64,7 @@ services:
     profiles: ['dev']
     build:
       context: .
+      dockerfile: apps/web-nuxt/Dockerfile
       target: dev
     image: nostragoalus-app:dev
     env_file:
@@ -90,12 +91,14 @@ services:
       - '127.0.0.1:3000:3000'
     volumes:
       - .:/app
-      # Container-private dirs: node_modules from the image, and build output
-      # (.nuxt/.output) kept OFF the bind mount - the container runs as root,
-      # and root-owned artifacts on the host break host-side pnpm/nuxt runs.
+      # Container-private dirs: node_modules (workspace root + the app package)
+      # from the image, and the app's build output (.nuxt/.output) kept OFF the
+      # bind mount - the container runs as root, and root-owned artifacts on the
+      # host break host-side pnpm/nuxt runs.
       - /app/node_modules
-      - /app/.nuxt
-      - /app/.output
+      - /app/apps/web-nuxt/node_modules
+      - /app/apps/web-nuxt/.nuxt
+      - /app/apps/web-nuxt/.output
     depends_on:
       db:
         condition: service_healthy
