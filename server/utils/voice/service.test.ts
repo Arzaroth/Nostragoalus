@@ -61,6 +61,11 @@ describe('buildIceServers', () => {
     const res = buildIceServers({ secret: 'shh' }, 'user-a', 1_700_000_000_000)
     expect(res.iceServers).toHaveLength(1)
   })
+
+  it('stays STUN-only when the host is set but the secret is missing', () => {
+    const res = buildIceServers({ host: 'turn.example.com' }, 'user-a', 1_700_000_000_000)
+    expect(res.iceServers).toHaveLength(1)
+  })
 })
 
 describe('resolveVoiceScope - DM', () => {
@@ -132,6 +137,13 @@ describe('resolveVoiceScope - league', () => {
     const roundId = await firstRound(db, otherComp)
     const foreign = await makeMatch(db, { competitionId: otherComp, roundId, kickoffTime: new Date() })
     await expect(resolveVoiceScope(db, 'member', { kind: 'league', leagueId, matchId: foreign })).rejects.toThrow()
+  })
+
+  it('rejects a matchId that does not resolve to any match', async () => {
+    const { db, leagueId } = await setup()
+    await expect(
+      resolveVoiceScope(db, 'member', { kind: 'league', leagueId, matchId: 'no-such-match' }),
+    ).rejects.toThrow()
   })
 })
 

@@ -5,6 +5,14 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Ajouté
+
+- Chat vocal. Appelez quelqu'un en tête-à-tête depuis une conversation privée, ou lancez un salon vocal de groupe dans le chat d'une ligue (éventuellement lié à un match, pour regarder ensemble). Un badge « N en vocal » indique qu'un appel de ligue est en cours, et vous pouvez y inviter des membres précis. Les appels entrants vous sonnent partout dans l'application ; un appel manqué arrive dans vos notifications (et en push, dans la nouvelle catégorie **Appels**). L'audio est pair-à-pair et chiffré de bout en bout - il ne passe jamais par le serveur.
+
+### Notes d'exploitation
+
+- Des appels fiables derrière un NAT strict nécessitent un relais TURN : un service **coturn** auto-hébergé, fourni derrière le profil Compose optionnel `voice` (`docker compose --profile voice up`), configuré via `NUXT_TURN_SECRET` / `NUXT_TURN_HOST` / `NUXT_TURN_REALM` (voir `.env.example`). Sans lui, l'application fonctionne en STUN seul et certains appels échoueront.
+
 ## [2.34.0] - 2026-07-12
 
 ### Ajouté

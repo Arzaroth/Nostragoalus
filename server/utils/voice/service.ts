@@ -124,7 +124,10 @@ export async function recordMissedCall(
       meta.kind === 'dm'
         ? `call:${meta.threadId}:${callerId}`
         : `call:${meta.leagueId}:${meta.matchId ?? 'global'}:${callerId}`,
-    refresh: true,
+    // Not `refresh`: a repeated missed ring from the same caller collapses onto the
+    // existing bell entry WITHOUT re-firing a web push, so rapid re-dials cannot spam
+    // the callee with pushes. (Resurfacing a genuinely later miss without re-pushing
+    // would need createNotification support - deferred, see TODO.)
   })
 }
 

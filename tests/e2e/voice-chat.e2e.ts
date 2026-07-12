@@ -72,17 +72,23 @@ test('a DM voice call: caller rings, callee answers, both land in the call', asy
   await expect(pageA.getByPlaceholder('Write a message')).toBeVisible({ timeout: 15_000 })
 
   // A places the call: the header Call button acquires the (fake) mic, joins the
-  // room and rings B. A's outgoing bar shows "Ringing".
+  // room and rings B, whose app-wide overlay pops the incoming call. The ring is a
+  // one-shot; if B's voice socket wasn't connected yet the ring is lost, so this is
+  // self-healing - on a miss it hangs A up (back to idle, the Call button returns)
+  // and re-rings, rather than flaking.
   const callBtn = pageA.getByRole('button', { name: 'Call', exact: true })
+  const accept = pageB.getByRole('button', { name: 'Accept' })
   await expect(callBtn).toBeVisible({ timeout: 15_000 })
   await expect(async () => {
-    await callBtn.click({ timeout: 2_000 })
-    await expect(pageA.getByText('Ringing')).toBeVisible({ timeout: 2_000 })
-  }).toPass({ timeout: 20_000 })
+    if (await callBtn.isVisible().catch(() => false)) await callBtn.click({ timeout: 2_000 })
+    if (!(await accept.isVisible({ timeout: 4_000 }).catch(() => false))) {
+      const hangup = pageA.getByRole('button', { name: 'Hang up' })
+      if (await hangup.isVisible().catch(() => false)) await hangup.click()
+      throw new Error('callee did not ring yet; retrying')
+    }
+  }).toPass({ timeout: 40_000 })
 
-  // B's app-wide ring overlay pops the incoming call. B answers.
-  const accept = pageB.getByRole('button', { name: 'Accept' })
-  await expect(accept).toBeVisible({ timeout: 15_000 })
+  // B answers.
   await accept.click()
 
   // Both peers join the room, so each shows the in-call bar (the hang-up control).

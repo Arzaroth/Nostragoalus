@@ -1,7 +1,7 @@
 import type { AppDatabase } from '../../../db/types'
 import type { LiveSubscriber } from './hub'
 import { publishVoicePresence, publishVoiceRoster, publishVoiceToUser, sendVoiceToToken } from './hub'
-import { isInRoom, joinRoom, leaveRoom, roomOf, rosterOf, tokenInRoom } from './voice-rooms'
+import { isInRoom, joinRoom, leaveRoom, roomOf, rosterOf, tokenInRoom, tokensInRoom } from './voice-rooms'
 import { recordMissedCall, resolveVoiceScope } from '../voice/service'
 import { getLeagueMemberIds } from '../chat/service'
 import { displayName } from '../notifications/events'
@@ -10,11 +10,17 @@ import { parseVoiceRoomKey } from '../../../shared/types/voice'
 
 // Broadcast a league room's live participant count to every league member, so the
 // "N in voice" badge shows even to non-participants. DM rooms need no badge, so
-// this is a no-op for them.
-async function broadcastLeaguePresence(db: AppDatabase, roomKey: string, scope: VoiceScope): Promise<void> {
+// this is a no-op for them. `members` lets the join path pass the member list it
+// already fetched (resolveVoiceScope), avoiding a second identical query.
+async function broadcastLeaguePresence(
+  db: AppDatabase,
+  roomKey: string,
+  scope: VoiceScope,
+  members?: readonly string[],
+): Promise<void> {
   if (scope.kind !== 'league') return
-  const members = await getLeagueMemberIds(db, scope.leagueId)
-  publishVoicePresence(members, { type: 'voice:presence', roomKey, scope, count: rosterOf(roomKey).length })
+  const recipients = members ?? (await getLeagueMemberIds(db, scope.leagueId))
+  publishVoicePresence(recipients, { type: 'voice:presence', roomKey, scope, count: rosterOf(roomKey).length })
 }
 
 // The WS-frame orchestration for voice: authorize (reusing chat/DM rules), mutate
@@ -29,9 +35,18 @@ export async function handleVoiceJoin(db: AppDatabase, sub: LiveSubscriber, scop
   if (!sub.userId) return
   const resolved = await resolveVoiceScope(db, sub.userId, scope)
   const { evicted } = joinRoom(sub, resolved.roomKey, sub.userId)
-  if (evicted) sendVoiceToToken(evicted, { type: 'voice:evicted', scope, from: sub.userId })
+  if (evicted) {
+    // A second tab took the call over. Tell the displaced tab to drop, and tell
+    // the OTHER participants to reset their peer connection to this user - the
+    // roster userIds did not change on a takeover, so without this they would keep
+    // a dead link to the old tab and never reconnect to the new one.
+    sendVoiceToToken(evicted, { type: 'voice:evicted', scope, from: sub.userId })
+    for (const token of tokensInRoom(resolved.roomKey)) {
+      if (token !== sub) sendVoiceToToken(token, { type: 'voice:peer-reset', userId: sub.userId })
+    }
+  }
   publishVoiceRoster(resolved.roomKey, scope)
-  await broadcastLeaguePresence(db, resolved.roomKey, scope)
+  await broadcastLeaguePresence(db, resolved.roomKey, scope, resolved.audience)
 }
 
 // Leave whatever call this socket is in (an explicit leave or a disconnect): push
