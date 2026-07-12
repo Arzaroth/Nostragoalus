@@ -1,0 +1,1277 @@
+{
+  "module": "scoring",
+  "cases": [
+    {
+      "fn": "scorePredictions",
+      "args": [
+        {
+          "actual": {
+            "home": 2,
+            "away": 1
+          },
+          "rules": {
+            "base": {
+              "exact": 3,
+              "diff": 2,
+              "outcome": 1,
+              "miss": 0
+            },
+            "jokerMultiplier": 2,
+            "jokerAppliesToBonus": true,
+            "championBonus": 10,
+            "championTiers": [
+              {
+                "maxRank": 8,
+                "points": 10
+              },
+              {
+                "maxRank": 20,
+                "points": 15
+              },
+              {
+                "maxRank": 40,
+                "points": 25
+              },
+              {
+                "maxRank": null,
+                "points": 40
+              }
+            ],
+            "bestScorerBonus": 10,
+            "bonusSource": "NONE",
+            "crowdTiers": [
+              {
+                "maxShareExclusive": 0.01,
+                "bonus": 5
+              },
+              {
+                "maxShareExclusive": 0.05,
+                "bonus": 4
+              },
+              {
+                "maxShareExclusive": 0.12,
+                "bonus": 3
+              },
+              {
+                "maxShareExclusive": 0.22,
+                "bonus": 2
+              },
+              {
+                "maxShareExclusive": 0.35,
+                "bonus": 1
+              }
+            ],
+            "crowdOutcomeTiers": [
+              {
+                "maxShareExclusive": 0.1,
+                "bonus": 2
+              },
+              {
+                "maxShareExclusive": 0.25,
+                "bonus": 1
+              }
+            ],
+            "crowdMatchBasis": "EXACT",
+            "crowdMinDenominator": 5,
+            "oddsTiers": [
+              {
+                "minDecimalOdds": 6,
+                "bonus": 5
+              },
+              {
+                "minDecimalOdds": 3.5,
+                "bonus": 3
+              },
+              {
+                "minDecimalOdds": 2.2,
+                "bonus": 2
+              }
+            ],
+            "oddsAppliesTo": "OUTCOME"
+          },
+          "predictions": [
+            {
+              "id": "exact",
+              "home": 2,
+              "away": 1,
+              "isJoker": false
+            },
+            {
+              "id": "diff",
+              "home": 3,
+              "away": 2,
+              "isJoker": false
+            },
+            {
+              "id": "outcome",
+              "home": 4,
+              "away": 1,
+              "isJoker": false
+            },
+            {
+              "id": "miss",
+              "home": 0,
+              "away": 0,
+              "isJoker": false
+            }
+          ]
+        }
+      ],
+      "expected": [
+        {
+          "id": "exact",
+          "baseTier": "EXACT",
+          "basePoints": 3,
+          "bonusPoints": 0,
+          "bonusSource": "NONE",
+          "crowdShare": null,
+          "jokerMultiplier": 1,
+          "totalPoints": 3
+        },
+        {
+          "id": "diff",
+          "baseTier": "DIFF",
+          "basePoints": 2,
+          "bonusPoints": 0,
+          "bonusSource": "NONE",
+          "crowdShare": null,
+          "jokerMultiplier": 1,
+          "totalPoints": 2
+        },
+        {
+          "id": "outcome",
+          "baseTier": "OUTCOME",
+          "basePoints": 1,
+          "bonusPoints": 0,
+          "bonusSource": "NONE",
+          "crowdShare": null,
+          "jokerMultiplier": 1,
+          "totalPoints": 1
+        },
+        {
+          "id": "miss",
+          "baseTier": "MISS",
+          "basePoints": 0,
+          "bonusPoints": 0,
+          "bonusSource": "NONE",
+          "crowdShare": null,
+          "jokerMultiplier": 1,
+          "totalPoints": 0
+        }
+      ]
+    },
+    {
+      "fn": "scorePredictions",
+      "args": [
+        {
+          "actual": {
+            "home": 0,
+            "away": 0
+          },
+          "rules": {
+            "base": {
+              "exact": 3,
+              "diff": 2,
+              "outcome": 1,
+              "miss": 0
+            },
+            "jokerMultiplier": 2,
+            "jokerAppliesToBonus": true,
+            "championBonus": 10,
+            "championTiers": [
+              {
+                "maxRank": 8,
+                "points": 10
+              },
+              {
+                "maxRank": 20,
+                "points": 15
+              },
+              {
+                "maxRank": 40,
+                "points": 25
+              },
+              {
+                "maxRank": null,
+                "points": 40
+              }
+            ],
+            "bestScorerBonus": 10,
+            "bonusSource": "NONE",
+            "crowdTiers": [
+              {
+                "maxShareExclusive": 0.01,
+                "bonus": 5
+              },
+              {
+                "maxShareExclusive": 0.05,
+                "bonus": 4
+              },
+              {
+                "maxShareExclusive": 0.12,
+                "bonus": 3
+              },
+              {
+                "maxShareExclusive": 0.22,
+                "bonus": 2
+              },
+              {
+                "maxShareExclusive": 0.35,
+                "bonus": 1
+              }
+            ],
+            "crowdOutcomeTiers": [
+              {
+                "maxShareExclusive": 0.1,
+                "bonus": 2
+              },
+              {
+                "maxShareExclusive": 0.25,
+                "bonus": 1
+              }
+            ],
+            "crowdMatchBasis": "EXACT",
+            "crowdMinDenominator": 5,
+            "oddsTiers": [
+              {
+                "minDecimalOdds": 6,
+                "bonus": 5
+              },
+              {
+                "minDecimalOdds": 3.5,
+                "bonus": 3
+              },
+              {
+                "minDecimalOdds": 2.2,
+                "bonus": 2
+              }
+            ],
+            "oddsAppliesTo": "OUTCOME"
+          },
+          "predictions": []
+        }
+      ],
+      "expected": []
+    },
+    {
+      "fn": "scorePredictions",
+      "args": [
+        {
+          "actual": {
+            "home": 2,
+            "away": 1
+          },
+          "rules": {
+            "base": {
+              "exact": 3,
+              "diff": 2,
+              "outcome": 1,
+              "miss": 0
+            },
+            "jokerMultiplier": 2,
+            "jokerAppliesToBonus": true,
+            "championBonus": 10,
+            "championTiers": [
+              {
+                "maxRank": 8,
+                "points": 10
+              },
+              {
+                "maxRank": 20,
+                "points": 15
+              },
+              {
+                "maxRank": 40,
+                "points": 25
+              },
+              {
+                "maxRank": null,
+                "points": 40
+              }
+            ],
+            "bestScorerBonus": 10,
+            "bonusSource": "CROWD",
+            "crowdTiers": [
+              {
+                "maxShareExclusive": 0.01,
+                "bonus": 5
+              },
+              {
+                "maxShareExclusive": 0.05,
+                "bonus": 4
+              },
+              {
+                "maxShareExclusive": 0.12,
+                "bonus": 3
+              },
+              {
+                "maxShareExclusive": 0.22,
+                "bonus": 2
+              },
+              {
+                "maxShareExclusive": 0.35,
+                "bonus": 1
+              }
+            ],
+            "crowdOutcomeTiers": [
+              {
+                "maxShareExclusive": 0.1,
+                "bonus": 2
+              },
+              {
+                "maxShareExclusive": 0.25,
+                "bonus": 1
+              }
+            ],
+            "crowdMatchBasis": "EXACT",
+            "crowdMinDenominator": 1,
+            "oddsTiers": [
+              {
+                "minDecimalOdds": 6,
+                "bonus": 5
+              },
+              {
+                "minDecimalOdds": 3.5,
+                "bonus": 3
+              },
+              {
+                "minDecimalOdds": 2.2,
+                "bonus": 2
+              }
+            ],
+            "oddsAppliesTo": "OUTCOME"
+          },
+          "predictions": [
+            {
+              "id": "p1",
+              "home": 2,
+              "away": 1,
+              "isJoker": false
+            },
+            {
+              "id": "p2",
+              "home": 1,
+              "away": 0,
+              "isJoker": false
+            },
+            {
+              "id": "p3",
+              "home": 3,
+              "away": 1,
+              "isJoker": false
+            },
+            {
+              "id": "p4",
+              "home": 4,
+              "away": 2,
+              "isJoker": false
+            },
+            {
+              "id": "p5",
+              "home": 3,
+              "away": 0,
+              "isJoker": false
+            },
+            {
+              "id": "miss",
+              "home": 0,
+              "away": 0,
+              "isJoker": false
+            }
+          ]
+        }
+      ],
+      "expected": [
+        {
+          "id": "p1",
+          "baseTier": "EXACT",
+          "basePoints": 3,
+          "bonusPoints": 2,
+          "bonusSource": "CROWD",
+          "crowdShare": 0.2,
+          "jokerMultiplier": 1,
+          "totalPoints": 5
+        },
+        {
+          "id": "p2",
+          "baseTier": "DIFF",
+          "basePoints": 2,
+          "bonusPoints": 0,
+          "bonusSource": "CROWD",
+          "crowdShare": null,
+          "jokerMultiplier": 1,
+          "totalPoints": 2
+        },
+        {
+          "id": "p3",
+          "baseTier": "OUTCOME",
+          "basePoints": 1,
+          "bonusPoints": 0,
+          "bonusSource": "CROWD",
+          "crowdShare": null,
+          "jokerMultiplier": 1,
+          "totalPoints": 1
+        },
+        {
+          "id": "p4",
+          "baseTier": "OUTCOME",
+          "basePoints": 1,
+          "bonusPoints": 0,
+          "bonusSource": "CROWD",
+          "crowdShare": null,
+          "jokerMultiplier": 1,
+          "totalPoints": 1
+        },
+        {
+          "id": "p5",
+          "baseTier": "OUTCOME",
+          "basePoints": 1,
+          "bonusPoints": 0,
+          "bonusSource": "CROWD",
+          "crowdShare": null,
+          "jokerMultiplier": 1,
+          "totalPoints": 1
+        },
+        {
+          "id": "miss",
+          "baseTier": "MISS",
+          "basePoints": 0,
+          "bonusPoints": 0,
+          "bonusSource": "CROWD",
+          "crowdShare": null,
+          "jokerMultiplier": 1,
+          "totalPoints": 0
+        }
+      ]
+    },
+    {
+      "fn": "scorePredictions",
+      "args": [
+        {
+          "actual": {
+            "home": 1,
+            "away": 0
+          },
+          "rules": {
+            "base": {
+              "exact": 3,
+              "diff": 2,
+              "outcome": 1,
+              "miss": 0
+            },
+            "jokerMultiplier": 2,
+            "jokerAppliesToBonus": true,
+            "championBonus": 10,
+            "championTiers": [
+              {
+                "maxRank": 8,
+                "points": 10
+              },
+              {
+                "maxRank": 20,
+                "points": 15
+              },
+              {
+                "maxRank": 40,
+                "points": 25
+              },
+              {
+                "maxRank": null,
+                "points": 40
+              }
+            ],
+            "bestScorerBonus": 10,
+            "bonusSource": "CROWD",
+            "crowdTiers": [
+              {
+                "maxShareExclusive": 0.01,
+                "bonus": 5
+              },
+              {
+                "maxShareExclusive": 0.05,
+                "bonus": 4
+              },
+              {
+                "maxShareExclusive": 0.12,
+                "bonus": 3
+              },
+              {
+                "maxShareExclusive": 0.22,
+                "bonus": 2
+              },
+              {
+                "maxShareExclusive": 0.35,
+                "bonus": 1
+              }
+            ],
+            "crowdOutcomeTiers": [
+              {
+                "maxShareExclusive": 0.1,
+                "bonus": 2
+              },
+              {
+                "maxShareExclusive": 0.25,
+                "bonus": 1
+              }
+            ],
+            "crowdMatchBasis": "OUTCOME",
+            "crowdMinDenominator": 1,
+            "oddsTiers": [
+              {
+                "minDecimalOdds": 6,
+                "bonus": 5
+              },
+              {
+                "minDecimalOdds": 3.5,
+                "bonus": 3
+              },
+              {
+                "minDecimalOdds": 2.2,
+                "bonus": 2
+              }
+            ],
+            "oddsAppliesTo": "OUTCOME"
+          },
+          "predictions": [
+            {
+              "id": "win",
+              "home": 1,
+              "away": 0,
+              "isJoker": false
+            },
+            {
+              "id": "l1",
+              "home": 0,
+              "away": 1,
+              "isJoker": false
+            },
+            {
+              "id": "l2",
+              "home": 0,
+              "away": 1,
+              "isJoker": false
+            },
+            {
+              "id": "l3",
+              "home": 0,
+              "away": 2,
+              "isJoker": false
+            },
+            {
+              "id": "l4",
+              "home": 0,
+              "away": 1,
+              "isJoker": false
+            }
+          ]
+        }
+      ],
+      "expected": [
+        {
+          "id": "win",
+          "baseTier": "EXACT",
+          "basePoints": 3,
+          "bonusPoints": 2,
+          "bonusSource": "CROWD",
+          "crowdShare": 0.2,
+          "jokerMultiplier": 1,
+          "totalPoints": 5
+        },
+        {
+          "id": "l1",
+          "baseTier": "MISS",
+          "basePoints": 0,
+          "bonusPoints": 0,
+          "bonusSource": "CROWD",
+          "crowdShare": null,
+          "jokerMultiplier": 1,
+          "totalPoints": 0
+        },
+        {
+          "id": "l2",
+          "baseTier": "MISS",
+          "basePoints": 0,
+          "bonusPoints": 0,
+          "bonusSource": "CROWD",
+          "crowdShare": null,
+          "jokerMultiplier": 1,
+          "totalPoints": 0
+        },
+        {
+          "id": "l3",
+          "baseTier": "MISS",
+          "basePoints": 0,
+          "bonusPoints": 0,
+          "bonusSource": "CROWD",
+          "crowdShare": null,
+          "jokerMultiplier": 1,
+          "totalPoints": 0
+        },
+        {
+          "id": "l4",
+          "baseTier": "MISS",
+          "basePoints": 0,
+          "bonusPoints": 0,
+          "bonusSource": "CROWD",
+          "crowdShare": null,
+          "jokerMultiplier": 1,
+          "totalPoints": 0
+        }
+      ]
+    },
+    {
+      "fn": "scorePredictions",
+      "args": [
+        {
+          "actual": {
+            "home": 2,
+            "away": 1
+          },
+          "rules": {
+            "base": {
+              "exact": 3,
+              "diff": 2,
+              "outcome": 1,
+              "miss": 0
+            },
+            "jokerMultiplier": 2,
+            "jokerAppliesToBonus": true,
+            "championBonus": 10,
+            "championTiers": [
+              {
+                "maxRank": 8,
+                "points": 10
+              },
+              {
+                "maxRank": 20,
+                "points": 15
+              },
+              {
+                "maxRank": 40,
+                "points": 25
+              },
+              {
+                "maxRank": null,
+                "points": 40
+              }
+            ],
+            "bestScorerBonus": 10,
+            "bonusSource": "ODDS",
+            "crowdTiers": [
+              {
+                "maxShareExclusive": 0.01,
+                "bonus": 5
+              },
+              {
+                "maxShareExclusive": 0.05,
+                "bonus": 4
+              },
+              {
+                "maxShareExclusive": 0.12,
+                "bonus": 3
+              },
+              {
+                "maxShareExclusive": 0.22,
+                "bonus": 2
+              },
+              {
+                "maxShareExclusive": 0.35,
+                "bonus": 1
+              }
+            ],
+            "crowdOutcomeTiers": [
+              {
+                "maxShareExclusive": 0.1,
+                "bonus": 2
+              },
+              {
+                "maxShareExclusive": 0.25,
+                "bonus": 1
+              }
+            ],
+            "crowdMatchBasis": "EXACT",
+            "crowdMinDenominator": 5,
+            "oddsTiers": [
+              {
+                "minDecimalOdds": 6,
+                "bonus": 5
+              },
+              {
+                "minDecimalOdds": 3.5,
+                "bonus": 3
+              },
+              {
+                "minDecimalOdds": 2.2,
+                "bonus": 2
+              }
+            ],
+            "oddsAppliesTo": "OUTCOME"
+          },
+          "predictions": [
+            {
+              "id": "a",
+              "home": 2,
+              "away": 1,
+              "isJoker": false
+            },
+            {
+              "id": "b",
+              "home": 1,
+              "away": 0,
+              "isJoker": false
+            }
+          ],
+          "actualOutcomeOdds": 3.5
+        }
+      ],
+      "expected": [
+        {
+          "id": "a",
+          "baseTier": "EXACT",
+          "basePoints": 3,
+          "bonusPoints": 3,
+          "bonusSource": "ODDS",
+          "crowdShare": null,
+          "jokerMultiplier": 1,
+          "totalPoints": 6
+        },
+        {
+          "id": "b",
+          "baseTier": "DIFF",
+          "basePoints": 2,
+          "bonusPoints": 3,
+          "bonusSource": "ODDS",
+          "crowdShare": null,
+          "jokerMultiplier": 1,
+          "totalPoints": 5
+        }
+      ]
+    },
+    {
+      "fn": "scorePredictions",
+      "args": [
+        {
+          "actual": {
+            "home": 2,
+            "away": 1
+          },
+          "rules": {
+            "base": {
+              "exact": 3,
+              "diff": 2,
+              "outcome": 1,
+              "miss": 0
+            },
+            "jokerMultiplier": 2,
+            "jokerAppliesToBonus": true,
+            "championBonus": 10,
+            "championTiers": [
+              {
+                "maxRank": 8,
+                "points": 10
+              },
+              {
+                "maxRank": 20,
+                "points": 15
+              },
+              {
+                "maxRank": 40,
+                "points": 25
+              },
+              {
+                "maxRank": null,
+                "points": 40
+              }
+            ],
+            "bestScorerBonus": 10,
+            "bonusSource": "NONE",
+            "crowdTiers": [
+              {
+                "maxShareExclusive": 0.01,
+                "bonus": 5
+              },
+              {
+                "maxShareExclusive": 0.05,
+                "bonus": 4
+              },
+              {
+                "maxShareExclusive": 0.12,
+                "bonus": 3
+              },
+              {
+                "maxShareExclusive": 0.22,
+                "bonus": 2
+              },
+              {
+                "maxShareExclusive": 0.35,
+                "bonus": 1
+              }
+            ],
+            "crowdOutcomeTiers": [
+              {
+                "maxShareExclusive": 0.1,
+                "bonus": 2
+              },
+              {
+                "maxShareExclusive": 0.25,
+                "bonus": 1
+              }
+            ],
+            "crowdMatchBasis": "EXACT",
+            "crowdMinDenominator": 5,
+            "oddsTiers": [
+              {
+                "minDecimalOdds": 6,
+                "bonus": 5
+              },
+              {
+                "minDecimalOdds": 3.5,
+                "bonus": 3
+              },
+              {
+                "minDecimalOdds": 2.2,
+                "bonus": 2
+              }
+            ],
+            "oddsAppliesTo": "OUTCOME"
+          },
+          "predictions": [
+            {
+              "id": "j",
+              "home": 2,
+              "away": 1,
+              "isJoker": true
+            }
+          ]
+        }
+      ],
+      "expected": [
+        {
+          "id": "j",
+          "baseTier": "EXACT",
+          "basePoints": 3,
+          "bonusPoints": 0,
+          "bonusSource": "NONE",
+          "crowdShare": null,
+          "jokerMultiplier": 2,
+          "totalPoints": 6
+        }
+      ]
+    },
+    {
+      "fn": "scorePredictions",
+      "args": [
+        {
+          "actual": {
+            "home": 0,
+            "away": 0
+          },
+          "rules": {
+            "base": {
+              "exact": 3,
+              "diff": 2,
+              "outcome": 1,
+              "miss": 0
+            },
+            "jokerMultiplier": 2,
+            "jokerAppliesToBonus": true,
+            "championBonus": 10,
+            "championTiers": [
+              {
+                "maxRank": 8,
+                "points": 10
+              },
+              {
+                "maxRank": 20,
+                "points": 15
+              },
+              {
+                "maxRank": 40,
+                "points": 25
+              },
+              {
+                "maxRank": null,
+                "points": 40
+              }
+            ],
+            "bestScorerBonus": 10,
+            "bonusSource": "NONE",
+            "crowdTiers": [
+              {
+                "maxShareExclusive": 0.01,
+                "bonus": 5
+              },
+              {
+                "maxShareExclusive": 0.05,
+                "bonus": 4
+              },
+              {
+                "maxShareExclusive": 0.12,
+                "bonus": 3
+              },
+              {
+                "maxShareExclusive": 0.22,
+                "bonus": 2
+              },
+              {
+                "maxShareExclusive": 0.35,
+                "bonus": 1
+              }
+            ],
+            "crowdOutcomeTiers": [
+              {
+                "maxShareExclusive": 0.1,
+                "bonus": 2
+              },
+              {
+                "maxShareExclusive": 0.25,
+                "bonus": 1
+              }
+            ],
+            "crowdMatchBasis": "EXACT",
+            "crowdMinDenominator": 5,
+            "oddsTiers": [
+              {
+                "minDecimalOdds": 6,
+                "bonus": 5
+              },
+              {
+                "minDecimalOdds": 3.5,
+                "bonus": 3
+              },
+              {
+                "minDecimalOdds": 2.2,
+                "bonus": 2
+              }
+            ],
+            "oddsAppliesTo": "OUTCOME"
+          },
+          "predictions": [
+            {
+              "id": "x",
+              "home": 0,
+              "away": 0,
+              "isJoker": false
+            }
+          ],
+          "forceJoker": true
+        }
+      ],
+      "expected": [
+        {
+          "id": "x",
+          "baseTier": "EXACT",
+          "basePoints": 3,
+          "bonusPoints": 0,
+          "bonusSource": "NONE",
+          "crowdShare": null,
+          "jokerMultiplier": 2,
+          "totalPoints": 6
+        }
+      ]
+    },
+    {
+      "fn": "buildHistogram",
+      "args": [
+        {
+          "home": 2,
+          "away": 1
+        },
+        [
+          {
+            "id": "p1",
+            "home": 2,
+            "away": 1,
+            "isJoker": false
+          },
+          {
+            "id": "p2",
+            "home": 1,
+            "away": 0,
+            "isJoker": false
+          },
+          {
+            "id": "p3",
+            "home": 3,
+            "away": 1,
+            "isJoker": false
+          },
+          {
+            "id": "p4",
+            "home": 4,
+            "away": 2,
+            "isJoker": false
+          },
+          {
+            "id": "p5",
+            "home": 3,
+            "away": 0,
+            "isJoker": false
+          },
+          {
+            "id": "miss",
+            "home": 0,
+            "away": 0,
+            "isJoker": false
+          }
+        ]
+      ],
+      "expected": {
+        "exactCount": 1,
+        "outcomeCount": 5,
+        "total": 6,
+        "actualOutcome": "HOME"
+      }
+    },
+    {
+      "fn": "computeBonus",
+      "args": [
+        {
+          "home": 2,
+          "away": 1
+        },
+        {
+          "home": 2,
+          "away": 1
+        },
+        {
+          "base": {
+            "exact": 3,
+            "diff": 2,
+            "outcome": 1,
+            "miss": 0
+          },
+          "jokerMultiplier": 2,
+          "jokerAppliesToBonus": true,
+          "championBonus": 10,
+          "championTiers": [
+            {
+              "maxRank": 8,
+              "points": 10
+            },
+            {
+              "maxRank": 20,
+              "points": 15
+            },
+            {
+              "maxRank": 40,
+              "points": 25
+            },
+            {
+              "maxRank": null,
+              "points": 40
+            }
+          ],
+          "bestScorerBonus": 10,
+          "bonusSource": "CROWD",
+          "crowdTiers": [
+            {
+              "maxShareExclusive": 0.01,
+              "bonus": 5
+            },
+            {
+              "maxShareExclusive": 0.05,
+              "bonus": 4
+            },
+            {
+              "maxShareExclusive": 0.12,
+              "bonus": 3
+            },
+            {
+              "maxShareExclusive": 0.22,
+              "bonus": 2
+            },
+            {
+              "maxShareExclusive": 0.35,
+              "bonus": 1
+            }
+          ],
+          "crowdOutcomeTiers": [
+            {
+              "maxShareExclusive": 0.1,
+              "bonus": 2
+            },
+            {
+              "maxShareExclusive": 0.25,
+              "bonus": 1
+            }
+          ],
+          "crowdMatchBasis": "EXACT",
+          "crowdMinDenominator": 1,
+          "oddsTiers": [
+            {
+              "minDecimalOdds": 6,
+              "bonus": 5
+            },
+            {
+              "minDecimalOdds": 3.5,
+              "bonus": 3
+            },
+            {
+              "minDecimalOdds": 2.2,
+              "bonus": 2
+            }
+          ],
+          "oddsAppliesTo": "OUTCOME"
+        },
+        {
+          "exactCount": 1,
+          "outcomeCount": 5,
+          "total": 6,
+          "actualOutcome": "HOME"
+        },
+        null
+      ],
+      "expected": {
+        "bonus": 2,
+        "source": "CROWD",
+        "share": 0.2
+      }
+    },
+    {
+      "fn": "scoreSyntheticPrediction",
+      "args": [
+        {
+          "actual": {
+            "home": 2,
+            "away": 1
+          },
+          "rules": {
+            "base": {
+              "exact": 3,
+              "diff": 2,
+              "outcome": 1,
+              "miss": 0
+            },
+            "jokerMultiplier": 2,
+            "jokerAppliesToBonus": true,
+            "championBonus": 10,
+            "championTiers": [
+              {
+                "maxRank": 8,
+                "points": 10
+              },
+              {
+                "maxRank": 20,
+                "points": 15
+              },
+              {
+                "maxRank": 40,
+                "points": 25
+              },
+              {
+                "maxRank": null,
+                "points": 40
+              }
+            ],
+            "bestScorerBonus": 10,
+            "bonusSource": "CROWD",
+            "crowdTiers": [
+              {
+                "maxShareExclusive": 0.01,
+                "bonus": 5
+              },
+              {
+                "maxShareExclusive": 0.05,
+                "bonus": 4
+              },
+              {
+                "maxShareExclusive": 0.12,
+                "bonus": 3
+              },
+              {
+                "maxShareExclusive": 0.22,
+                "bonus": 2
+              },
+              {
+                "maxShareExclusive": 0.35,
+                "bonus": 1
+              }
+            ],
+            "crowdOutcomeTiers": [
+              {
+                "maxShareExclusive": 0.1,
+                "bonus": 2
+              },
+              {
+                "maxShareExclusive": 0.25,
+                "bonus": 1
+              }
+            ],
+            "crowdMatchBasis": "EXACT",
+            "crowdMinDenominator": 1,
+            "oddsTiers": [
+              {
+                "minDecimalOdds": 6,
+                "bonus": 5
+              },
+              {
+                "minDecimalOdds": 3.5,
+                "bonus": 3
+              },
+              {
+                "minDecimalOdds": 2.2,
+                "bonus": 2
+              }
+            ],
+            "oddsAppliesTo": "OUTCOME"
+          },
+          "predictions": [
+            {
+              "id": "p1",
+              "home": 2,
+              "away": 1,
+              "isJoker": false
+            },
+            {
+              "id": "p2",
+              "home": 1,
+              "away": 0,
+              "isJoker": false
+            },
+            {
+              "id": "p3",
+              "home": 3,
+              "away": 1,
+              "isJoker": false
+            },
+            {
+              "id": "p4",
+              "home": 4,
+              "away": 2,
+              "isJoker": false
+            },
+            {
+              "id": "p5",
+              "home": 3,
+              "away": 0,
+              "isJoker": false
+            },
+            {
+              "id": "miss",
+              "home": 0,
+              "away": 0,
+              "isJoker": false
+            }
+          ]
+        },
+        {
+          "id": "bot",
+          "home": 2,
+          "away": 1,
+          "isJoker": false
+        }
+      ],
+      "expected": {
+        "id": "bot",
+        "baseTier": "EXACT",
+        "basePoints": 3,
+        "bonusPoints": 2,
+        "bonusSource": "CROWD",
+        "crowdShare": 0.2,
+        "jokerMultiplier": 1,
+        "totalPoints": 5
+      }
+    }
+  ]
+}

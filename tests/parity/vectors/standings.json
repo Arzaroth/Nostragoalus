@@ -1,0 +1,210 @@
+{
+  "module": "standings",
+  "cases": [
+    {
+      "fn": "computeGroupStandings",
+      "args": [
+        [
+          {
+            "homeTeam": "A",
+            "awayTeam": "B",
+            "homeTeamCode": null,
+            "awayTeamCode": null,
+            "status": "FINISHED",
+            "fullTimeHome": 2,
+            "fullTimeAway": 0
+          },
+          {
+            "homeTeam": "A",
+            "awayTeam": "C",
+            "homeTeamCode": null,
+            "awayTeamCode": null,
+            "status": "FINISHED",
+            "fullTimeHome": 1,
+            "fullTimeAway": 1
+          },
+          {
+            "homeTeam": "A",
+            "awayTeam": "D",
+            "homeTeamCode": null,
+            "awayTeamCode": null,
+            "status": "FINISHED",
+            "fullTimeHome": 3,
+            "fullTimeAway": 1
+          },
+          {
+            "homeTeam": "C",
+            "awayTeam": "D",
+            "homeTeamCode": null,
+            "awayTeamCode": null,
+            "status": "FINISHED",
+            "fullTimeHome": 2,
+            "fullTimeAway": 0
+          },
+          {
+            "homeTeam": "B",
+            "awayTeam": "D",
+            "homeTeamCode": null,
+            "awayTeamCode": null,
+            "status": "FINISHED",
+            "fullTimeHome": 1,
+            "fullTimeAway": 0
+          },
+          {
+            "homeTeam": "B",
+            "awayTeam": "C",
+            "homeTeamCode": null,
+            "awayTeamCode": null,
+            "status": "FINISHED",
+            "fullTimeHome": 0,
+            "fullTimeAway": 0
+          }
+        ]
+      ],
+      "expected": [
+        {
+          "code": null,
+          "name": "A",
+          "played": 3,
+          "won": 2,
+          "drawn": 1,
+          "lost": 0,
+          "gf": 6,
+          "ga": 2,
+          "gd": 4,
+          "points": 7
+        },
+        {
+          "code": null,
+          "name": "C",
+          "played": 3,
+          "won": 1,
+          "drawn": 2,
+          "lost": 0,
+          "gf": 3,
+          "ga": 1,
+          "gd": 2,
+          "points": 5
+        },
+        {
+          "code": null,
+          "name": "B",
+          "played": 3,
+          "won": 1,
+          "drawn": 1,
+          "lost": 1,
+          "gf": 1,
+          "ga": 2,
+          "gd": -1,
+          "points": 4
+        },
+        {
+          "code": null,
+          "name": "D",
+          "played": 3,
+          "won": 0,
+          "drawn": 0,
+          "lost": 3,
+          "gf": 1,
+          "ga": 6,
+          "gd": -5,
+          "points": 0
+        }
+      ]
+    },
+    {
+      "fn": "computeGroupStandings",
+      "args": [
+        [
+          {
+            "homeTeam": "X",
+            "awayTeam": "Y",
+            "homeTeamCode": null,
+            "awayTeamCode": null,
+            "status": "SCHEDULED",
+            "fullTimeHome": null,
+            "fullTimeAway": null
+          }
+        ]
+      ],
+      "expected": [
+        {
+          "code": null,
+          "name": "X",
+          "played": 0,
+          "won": 0,
+          "drawn": 0,
+          "lost": 0,
+          "gf": 0,
+          "ga": 0,
+          "gd": 0,
+          "points": 0
+        },
+        {
+          "code": null,
+          "name": "Y",
+          "played": 0,
+          "won": 0,
+          "drawn": 0,
+          "lost": 0,
+          "gf": 0,
+          "ga": 0,
+          "gd": 0,
+          "points": 0
+        }
+      ]
+    },
+    {
+      "fn": "computeGroupStandings",
+      "args": [
+        [
+          {
+            "homeTeam": "A",
+            "awayTeam": "B",
+            "homeTeamCode": null,
+            "awayTeamCode": null,
+            "status": "LIVE",
+            "fullTimeHome": 1,
+            "fullTimeAway": 0
+          }
+        ],
+        {
+          "includeLive": true
+        }
+      ],
+      "expected": [
+        {
+          "code": null,
+          "name": "A",
+          "played": 1,
+          "won": 1,
+          "drawn": 0,
+          "lost": 0,
+          "gf": 1,
+          "ga": 0,
+          "gd": 1,
+          "points": 3
+        },
+        {
+          "code": null,
+          "name": "B",
+          "played": 1,
+          "won": 0,
+          "drawn": 0,
+          "lost": 1,
+          "gf": 0,
+          "ga": 1,
+          "gd": -1,
+          "points": 0
+        }
+      ]
+    },
+    {
+      "fn": "computeGroupStandings",
+      "args": [
+        []
+      ],
+      "expected": []
+    }
+  ]
+}
