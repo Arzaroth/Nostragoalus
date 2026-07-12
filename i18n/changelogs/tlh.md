@@ -5,6 +5,11 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### tI'pu'
+
+- nab vs nab: DaH mI' chev pat «chev tIn law'» tetlh; wanI' pIm neH 'angta'bogh Qagh tI'lu'. Qapbogh rap lulegh cha' QujwI' 'ach mI' pup joker je Suqta' wa' (24 mI' vs wa' mI') — chev tInqu' 'oH, So'ta' tetlh. DaH 'anglu'.
+- nab vs nab: DaH profile navDaq chegh QujwI' pongmey Deghmey je.
+
 ## [4.0.1] - 2026-07-12
 
 ### che'wI' QInmey
