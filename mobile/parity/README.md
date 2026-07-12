@@ -5,11 +5,11 @@ diverge from the web app. Two independent pieces, both fed by artifacts the TS
 side already produces and commits:
 
 1. **Vector runner** - replays the golden vectors frozen under
-   `tests/parity/vectors/*.json` against Dart reimplementations of the pure,
+   `shared/parity-json/*.json` against Dart reimplementations of the pure,
    security-critical logic. The frozen `expected` is the contract both stacks
    must hit; a mismatch is a real divergence.
 2. **Model codegen** - generates Dart request/response classes from the
-   zod-derived OpenAPI snapshot (`tests/contract/openapi.snapshot.json`), so the
+   zod-derived OpenAPI snapshot (`shared/contracts-openapi/openapi.snapshot.json`), so the
    wire contract is single-sourced from the server's zod schemas.
 
 See `../../brain/architecture/cross-stack-contract.md` for the whole design.

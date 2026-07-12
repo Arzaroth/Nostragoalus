@@ -1,7 +1,7 @@
 name: nostragoalus_parity
 description: >-
   Cross-stack parity runner. Replays the golden vectors frozen by the TS side
-  (tests/parity/vectors/*.json) against Dart reimplementations of the pure,
+  (shared/parity-json/*.json) against Dart reimplementations of the pure,
   security-critical logic, so a Flutter client cannot silently diverge from the
   web app. See README.md.
 publish_to: none
