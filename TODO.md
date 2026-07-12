@@ -2384,3 +2384,36 @@ Not yet done, for feature-treatment:
       payload need nonces/hashing + browser tuning); only frame-ancestors ships now.
 - [ ] KT has no external witness (in-app anchor only, by decision) - a from-genesis
       rewrite is caught only by a client that pinned an earlier head.
+
+## Cross-stack contract & parity (foundations for a mobile client)
+
+Groundwork so a future non-TS client (Flutter/Dart) stays consistent with the
+server. Both tracks are pure hardening wins on their own. Foundations shipped on
+`feat/contract-parity-foundations`; see
+`brain/architecture/cross-stack-contract.md`.
+
+Shipped (vertical slices proving each mechanism):
+- [x] zod -> OpenAPI 3.0 helper (`server/utils/openapi/contract.ts`:
+      `toOpenApiSchema` + `buildOperation`).
+- [x] Runtime response validation: `response` schema on `defineValidatedHandler`
+      + new `defineReadHandler` (auth + query + response) for reads.
+- [x] Two routes converted (PUT predictions/joker, GET stats).
+- [x] Golden-vector parity harness (`tests/parity/`) + `commitment` module
+      vectors; `pnpm parity:bless` re-freezes.
+
+Open:
+- [ ] Spec emitter: stubbed-import walker over all routes (stub the h3/wrapper
+      globals, import each route, capture its zod schemas) -> committed
+      `openapi.json`. Contract test fails on staleness or a missing response
+      schema (regen-clean, like `db:generate`). Retire the hand-written
+      `requestBody`/`responses` literals in `defineRouteMeta`.
+- [ ] Date wire-shape policy: a handler returns `Date` before h3 serializes it,
+      but the wire/Dart contract wants an ISO string. Decide once (wire-shape
+      schema + validate post-serialize, or `z.date()` + mapper) before fanning
+      out to date-returning routes. Slice 1 was kept Date-free on purpose.
+- [ ] Fan out response schemas to the remaining ~188 routes, by feature area.
+- [ ] Parity vectors for the rest of the security/scoring core:
+      `key-transparency`, `e2ee` (libsodium KATs), `scoring`, `criteria`,
+      `fergie`, `achievements`, `match`/`stage`.
+- [ ] Dart codegen from `openapi.json` + a Dart parity-vector runner - only when
+      the mobile app actually starts.
