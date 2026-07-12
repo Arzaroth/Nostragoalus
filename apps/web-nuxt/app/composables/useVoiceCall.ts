@@ -42,6 +42,19 @@ const speakingPeers = ref<Record<string, boolean>>({})
 // toasts a "you're muted" nudge on each bump.
 const mutedTalkingAt = ref(0)
 
+// Audio device selection (persisted): null = system default. Output selection
+// only works where HTMLMediaElement.setSinkId exists (canPickOutput).
+const inputDevices = ref<{ deviceId: string; label: string }[]>([])
+const outputDevices = ref<{ deviceId: string; label: string }[]>([])
+const inputDeviceId = ref<string | null>(null)
+const outputDeviceId = ref<string | null>(null)
+const noiseSuppression = ref(true)
+const canPickOutput = ref(false)
+
+const PREF_INPUT = 'ng-voice-input'
+const PREF_OUTPUT = 'ng-voice-output'
+const PREF_NOISE = 'ng-voice-noise-suppression'
+
 let started = false
 let impl: VoiceImpl | null = null
 
@@ -55,6 +68,10 @@ interface VoiceImpl {
   hangup: () => void
   invite: (userIds: string[]) => void
   toggleMute: () => void
+  refreshDevices: () => Promise<void>
+  setInputDevice: (deviceId: string | null) => Promise<void>
+  setOutputDevice: (deviceId: string | null) => void
+  setNoiseSuppression: (on: boolean) => Promise<void>
 }
 
 function start(): void {
@@ -63,6 +80,12 @@ function start(): void {
   effectScope(true).run(() => {
     const { session } = useAuth()
     const myId = () => session.value?.data?.user?.id ?? null
+
+    // Restore the persisted device/processing preferences.
+    canPickOutput.value = 'setSinkId' in HTMLMediaElement.prototype
+    inputDeviceId.value = localStorage.getItem(PREF_INPUT)
+    outputDeviceId.value = canPickOutput.value ? localStorage.getItem(PREF_OUTPUT) : null
+    noiseSuppression.value = localStorage.getItem(PREF_NOISE) !== 'off'
 
     const peers = new Map<string, RTCPeerConnection>()
     let localStream: MediaStream | null = null
@@ -151,23 +174,93 @@ function start(): void {
       return iceConfig
     }
 
+    async function acquireMic(): Promise<MediaStream> {
+      try {
+        return await navigator.mediaDevices.getUserMedia({
+          audio: buildAudioConstraints(inputDeviceId.value, noiseSuppression.value),
+          video: false,
+        })
+      } catch (err) {
+        // A remembered device may be unplugged; fall back to the default once.
+        if (!inputDeviceId.value) throw err
+        inputDeviceId.value = null
+        localStorage.removeItem(PREF_INPUT)
+        return await navigator.mediaDevices.getUserMedia({
+          audio: buildAudioConstraints(null, noiseSuppression.value),
+          video: false,
+        })
+      }
+    }
+
+    // Tap a clone of the mic track (kept enabled) for the local level meter.
+    function attachLocalMonitor(): void {
+      const track = localStream?.getAudioTracks()[0]
+      if (!track) return
+      monitorTrack = track.clone()
+      monitorTrack.enabled = true
+      attachAnalyser('local', new MediaStream([monitorTrack]))
+    }
+
+    async function refreshDevices(): Promise<void> {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices()
+        inputDevices.value = devices
+          .filter((d) => d.kind === 'audioinput')
+          .map((d) => ({ deviceId: d.deviceId, label: d.label }))
+        outputDevices.value = devices
+          .filter((d) => d.kind === 'audiooutput')
+          .map((d) => ({ deviceId: d.deviceId, label: d.label }))
+      } catch {
+        // Device listing is optional UI sugar; the call works without it.
+      }
+    }
+
     async function ensureMic(): Promise<MediaStream> {
       if (localStream) return localStream
       try {
-        localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+        localStream = await acquireMic()
       } catch {
         errorKey.value = 'voice.error.micDenied'
         throw new Error('mic denied')
       }
       // Honor a mute set before the mic was acquired.
       for (const track of localStream.getAudioTracks()) track.enabled = !muted.value
-      const track = localStream.getAudioTracks()[0]
-      if (track) {
-        monitorTrack = track.clone()
-        monitorTrack.enabled = true
-        attachAnalyser('local', new MediaStream([monitorTrack]))
-      }
+      attachLocalMonitor()
+      // Labels only populate once the permission is granted, so (re)list now.
+      void refreshDevices()
       return localStream
+    }
+
+    // Swap the mic (device or processing change) without renegotiating: acquire a
+    // fresh track and replaceTrack it into every peer's audio sender.
+    async function reacquireMic(): Promise<void> {
+      if (!localStream) return
+      let next: MediaStream
+      try {
+        next = await acquireMic()
+      } catch {
+        errorKey.value = 'voice.error.micDenied'
+        return
+      }
+      const newTrack = next.getAudioTracks()[0] ?? null
+      if (newTrack) {
+        for (const pc of peers.values()) {
+          const sender = pc.getSenders().find((s) => s.track?.kind === 'audio')
+          if (sender) {
+            try {
+              await sender.replaceTrack(newTrack)
+            } catch {
+              // A failed swap on one peer heals on the next reset; keep going.
+            }
+          }
+        }
+      }
+      for (const track of localStream.getTracks()) track.stop()
+      monitorTrack?.stop()
+      analysers.delete('local')
+      localStream = next
+      for (const track of localStream.getAudioTracks()) track.enabled = !muted.value
+      attachLocalMonitor()
     }
 
     function ensurePeer(peerId: string): RTCPeerConnection {
@@ -420,7 +513,27 @@ function start(): void {
         muted.value = !muted.value
         if (localStream) for (const track of localStream.getAudioTracks()) track.enabled = !muted.value
       },
+      refreshDevices,
+      async setInputDevice(deviceId) {
+        inputDeviceId.value = deviceId
+        if (deviceId) localStorage.setItem(PREF_INPUT, deviceId)
+        else localStorage.removeItem(PREF_INPUT)
+        await reacquireMic()
+      },
+      setOutputDevice(deviceId) {
+        // Applied by the <VoiceAudio> elements watching outputDeviceId.
+        outputDeviceId.value = deviceId
+        if (deviceId) localStorage.setItem(PREF_OUTPUT, deviceId)
+        else localStorage.removeItem(PREF_OUTPUT)
+      },
+      async setNoiseSuppression(on) {
+        noiseSuppression.value = on
+        localStorage.setItem(PREF_NOISE, on ? 'on' : 'off')
+        await reacquireMic()
+      },
     }
+
+    navigator.mediaDevices?.addEventListener?.('devicechange', () => void refreshDevices())
   })
 }
 
@@ -439,6 +552,12 @@ export function useVoiceCall() {
     localLevel: readonly(localLevel),
     speakingPeers: readonly(speakingPeers),
     mutedTalkingAt: readonly(mutedTalkingAt),
+    inputDevices: readonly(inputDevices),
+    outputDevices: readonly(outputDevices),
+    inputDeviceId: readonly(inputDeviceId),
+    outputDeviceId: readonly(outputDeviceId),
+    noiseSuppression: readonly(noiseSuppression),
+    canPickOutput: readonly(canPickOutput),
     inCall,
     // Live "N in voice" count for a league room key (0 if none / unknown).
     voiceCountFor: (roomKey: string) => roomPresence.value[roomKey]?.count ?? 0,
@@ -454,5 +573,9 @@ export function useVoiceCall() {
     hangup: () => impl?.hangup(),
     invite: (userIds: string[]) => impl?.invite(userIds),
     toggleMute: () => impl?.toggleMute(),
+    refreshDevices: () => impl?.refreshDevices(),
+    setInputDevice: (deviceId: string | null) => impl?.setInputDevice(deviceId),
+    setOutputDevice: (deviceId: string | null) => impl?.setOutputDevice(deviceId),
+    setNoiseSuppression: (on: boolean) => impl?.setNoiseSuppression(on),
   }
 }

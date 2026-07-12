@@ -3,6 +3,7 @@ import {
   MUTED_TALKING_SUSTAIN_MS,
   MUTED_TALKING_THROTTLE_MS,
   VOICE_SPEAKING_THRESHOLD,
+  buildAudioConstraints,
   createMutedTalkingTracker,
   isCallEstablished,
   levelFromSamples,
@@ -107,5 +108,21 @@ describe('createMutedTalkingTracker', () => {
     tr.reset()
     expect(tr.feed(true, loud, MUTED_TALKING_SUSTAIN_MS + 1)).toBe(false)
     expect(tr.feed(true, loud, MUTED_TALKING_SUSTAIN_MS * 2 + 1)).toBe(true)
+  })
+})
+
+describe('buildAudioConstraints', () => {
+  it('always requests echo cancellation and auto gain', () => {
+    expect(buildAudioConstraints(null, true)).toEqual({
+      echoCancellation: true,
+      autoGainControl: true,
+      noiseSuppression: true,
+    })
+  })
+  it('passes the noise-suppression toggle through', () => {
+    expect(buildAudioConstraints(null, false).noiseSuppression).toBe(false)
+  })
+  it('pins a chosen device with exact', () => {
+    expect(buildAudioConstraints('mic1', true).deviceId).toEqual({ exact: 'mic1' })
   })
 })

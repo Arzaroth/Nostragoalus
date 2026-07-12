@@ -15,6 +15,16 @@ const errorKey = ref<string | null>(null)
 const localLevel = ref(0)
 const speakingPeers = ref<Record<string, boolean>>({})
 const mutedTalkingAt = ref(0)
+const inputDevices = ref<{ deviceId: string; label: string }[]>([])
+const outputDevices = ref<{ deviceId: string; label: string }[]>([])
+const inputDeviceId = ref<string | null>(null)
+const outputDeviceId = ref<string | null>(null)
+const noiseSuppression = ref(true)
+const canPickOutput = ref(true)
+const refreshDevices = vi.fn()
+const setInputDevice = vi.fn()
+const setOutputDevice = vi.fn()
+const setNoiseSuppression = vi.fn()
 const accept = vi.fn()
 const decline = vi.fn()
 const hangup = vi.fn()
@@ -33,6 +43,16 @@ mockNuxtImport('useVoiceCall', () => () => ({
   localLevel,
   speakingPeers,
   mutedTalkingAt,
+  inputDevices,
+  outputDevices,
+  inputDeviceId,
+  outputDeviceId,
+  noiseSuppression,
+  canPickOutput,
+  refreshDevices,
+  setInputDevice,
+  setOutputDevice,
+  setNoiseSuppression,
   accept,
   decline,
   hangup,
@@ -53,6 +73,11 @@ beforeEach(() => {
   localLevel.value = 0
   speakingPeers.value = {}
   mutedTalkingAt.value = 0
+  inputDevices.value = []
+  outputDevices.value = []
+  inputDeviceId.value = null
+  outputDeviceId.value = null
+  noiseSuppression.value = true
 })
 afterEach(() => vi.clearAllMocks())
 
@@ -109,6 +134,20 @@ describe('VoiceCallOverlay', () => {
     // The innermost span is the name itself (its wrapper also texts as 'Bob').
     const bob = w.findAll('span').filter((s) => s.text() === 'Bob').at(-1)
     expect(bob!.attributes('style')).toContain('font-weight')
+  })
+
+  it('opens the audio settings with device pickers and the noise toggle', async () => {
+    state.value = 'in-call'
+    activeScope.value = { kind: 'dm', threadId: 't1' }
+    inputDevices.value = [{ deviceId: 'mic1', label: 'USB Mic' }]
+    outputDevices.value = [{ deviceId: 'spk1', label: 'Headphones' }]
+    const w = await mountSuspended(VoiceCallOverlay)
+    const gear = w.findAll('button').find((b) => b.attributes('aria-label') === 'Audio settings')
+    await gear!.trigger('click')
+    expect(refreshDevices).toHaveBeenCalled()
+    // The settings dialog is teleported to <body>.
+    expect(document.body.textContent).toContain('Microphone')
+    expect(document.body.textContent).toContain('Noise suppression')
   })
 
   it('exposes an invite control only for a league call', async () => {
