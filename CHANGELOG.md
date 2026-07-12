@@ -11,7 +11,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 - Voice calls: an audio settings dialog in the call bar to pick your microphone and speaker (remembered across calls) and toggle noise suppression. Echo cancellation and auto gain are now always on.
 - Voice calls: talking while muted pops a gentle "You're muted" reminder.
 - Chat: call history lines in the conversation - "call started / ended (with duration) / missed" appear in the timeline for both DMs and league rooms, live as they happen.
-
 - Voice calls: a connection-quality indicator in the call bar - an amber/red icon when the link degrades, and a "Reconnecting…" notice while a dropped link is being re-established.
 
 ### Fixed
