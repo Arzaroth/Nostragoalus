@@ -5,6 +5,10 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### choHpu'
+
+- API ghItlh (OpenAPI, `/_docs`): DaH Hoch Sotlh Qu' De' je jang De' nISwI'vo' chenmoHlu'; vaj ghItlh ngoDmey rap.
+
 ## [3.0.2] - 2026-07-12
 
 ### che'wI' QInmey

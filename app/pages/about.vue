@@ -93,6 +93,7 @@ const stack: { group: string; items: StackItem[] }[] = [
     items: [
       { name: 'Nitro / h3', logo: 'https://nitro.build/icon.svg', desc: 'The next-generation server toolkit', url: 'https://nitro.build', license: 'MIT', licenseUrl: 'https://github.com/nitrojs/nitro/blob/main/LICENSE' },
       { name: 'Drizzle ORM', logo: 'drizzle', desc: 'A TypeScript ORM that feels like SQL', url: 'https://orm.drizzle.team', license: 'Apache-2.0', licenseUrl: 'https://github.com/drizzle-team/drizzle-orm/blob/main/LICENSE' },
+      { name: 'drizzle-zod', logo: 'drizzle', desc: 'Generate Zod schemas from Drizzle tables', url: 'https://orm.drizzle.team/docs/zod', license: 'Apache-2.0', licenseUrl: 'https://github.com/drizzle-team/drizzle-orm/blob/main/LICENSE' },
       { name: 'PostgreSQL', logo: 'postgresql', desc: "The world's most advanced open-source relational database", url: 'https://www.postgresql.org', license: 'PostgreSQL', licenseUrl: 'https://www.postgresql.org/about/licence/' },
       { name: 'node-postgres', logo: 'https://node-postgres.com/favicon.ico', desc: 'PostgreSQL client for Node.js', url: 'https://node-postgres.com', license: 'MIT', licenseUrl: 'https://github.com/brianc/node-postgres/blob/master/LICENSE' },
       { name: 'better-auth', logo: 'betterauth', logoColor: '8b8b8b', desc: 'Comprehensive authentication framework for TypeScript', url: 'https://better-auth.com', license: 'MIT', licenseUrl: 'https://github.com/better-auth/better-auth/blob/main/LICENSE.md' },

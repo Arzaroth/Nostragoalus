@@ -10,7 +10,9 @@ const querySchema = z.object({
   competition: z.string().optional(),
   stage: z.string().optional(),
   status: z.string().optional(),
-  matchday: z.coerce.number().optional(),
+  // Treat an empty `?matchday=` as absent (no filter), matching the old
+  // truthy-check behaviour; `z.coerce` alone would turn '' into 0.
+  matchday: z.preprocess((v) => (v === '' ? undefined : v), z.coerce.number().int().optional()),
 })
 const responseSchema = z.object({
   competition: z.object({ id: z.string(), slug: z.string(), name: z.string() }).nullable(),

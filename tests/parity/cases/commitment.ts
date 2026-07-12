@@ -101,6 +101,11 @@ export async function buildCases(): Promise<RawCase[]> {
   cases.push({ fn: 'witnessExtension', args: [{ seq: 2, headHash: w2.entryHash }, [], { seq: 2, headHash: 'evil' }] }) // tampered
   cases.push({ fn: 'witnessExtension', args: [{ seq: 5, headHash: 'h5' }, [], { seq: 3, headHash: 'h3' }] }) // rolled-back
   cases.push({ fn: 'witnessExtension', args: [{ seq: 2, headHash: w2.entryHash }, [w3, w4], { seq: 4, headHash: w4.entryHash }] }) // valid extension
+  // The three ways an extension is rejected (each OR-clause of the tampered
+  // branch), so a Dart port can't pass by only proving the happy path:
+  cases.push({ fn: 'witnessExtension', args: [{ seq: 2, headHash: w2.entryHash }, [w4], { seq: 4, headHash: w4.entryHash }] }) // non-contiguous (skips seq 3)
+  cases.push({ fn: 'witnessExtension', args: [{ seq: 2, headHash: w2.entryHash }, [{ ...w3, prevHash: 'wrong-prev' }, w4], { seq: 4, headHash: w4.entryHash }] }) // broken link inside extension (verifyLedger fails)
+  cases.push({ fn: 'witnessExtension', args: [{ seq: 2, headHash: w2.entryHash }, [w3, w4], { seq: 4, headHash: 'not-the-walked-head' }] }) // walks fine but does not reach the served head
 
   // --- league ledger: domain-separated twin ---
   const l1 = await makeLeagueEntry(1, COMMITMENT_GENESIS, 'u1', 'L1', 'm1', ISO1, { homeGoals: 2, awayGoals: 1, salt: 'a' })
