@@ -119,7 +119,7 @@ services:
 
   app:
     build:
-      context: .
+      context: ../..
       dockerfile: apps/web-nuxt/Dockerfile
       target: prod
     image: nostragoalus-app:local

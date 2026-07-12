@@ -1,25 +1,30 @@
 # Repo-level orchestration: the docker compose stacks (mise run <task>).
-# App (Nuxt) tasks - test / check / build-integrity / seed / shots - live in
-# apps/web-nuxt/.mise.toml and are pulled in via task_config.includes below, so
-# `mise run check` works from the repo root or from inside the app.
+# App (Nuxt) build/test tasks live in apps/web-nuxt/.mise.toml (run from the
+# app dir). Repo-release tasks (release/changelog/roadmap) stay in mise-tasks/.
 # app (prod build) and app-dev (HMR) share port 3000 - each task stops the other first.
+
+[env]
+# The web app owns the stack; its compose files live in apps/web-nuxt. This
+# lets a bare `docker compose` (this file + the mise-tasks/ ops scripts) find
+# them from the repo root without -f.
+COMPOSE_FILE = "apps/web-nuxt/compose.yaml"
 
 
 [tasks.up]
 description = "Prod-like stack: built app + db + coturn (no mail catcher)"
-run = "docker compose -f compose.yaml -f compose.dev.yaml --profile dev stop app-dev 2>/dev/null; docker compose --profile voice up -d --build --wait"
+run = "docker compose -f apps/web-nuxt/compose.yaml -f apps/web-nuxt/compose.dev.yaml --profile dev stop app-dev 2>/dev/null; docker compose --profile voice up -d --build --wait"
 
 [tasks.dev]
 description = "HMR dev server + db + maildev (source bind-mounted, hot reload)"
-run = "docker compose stop app 2>/dev/null; docker compose -f compose.yaml -f compose.dev.yaml --profile dev up -d --build --renew-anon-volumes --wait db maildev app-dev"
+run = "docker compose stop app 2>/dev/null; docker compose -f apps/web-nuxt/compose.yaml -f apps/web-nuxt/compose.dev.yaml --profile dev up -d --build --renew-anon-volumes --wait db maildev app-dev"
 
 [tasks.preview]
 description = "Built (prod-target) app + db + maildev (dev env, no HMR)"
-run = "docker compose -f compose.yaml -f compose.dev.yaml --profile dev stop app-dev 2>/dev/null; docker compose -f compose.yaml -f compose.dev.yaml up -d --build --wait"
+run = "docker compose -f apps/web-nuxt/compose.yaml -f apps/web-nuxt/compose.dev.yaml --profile dev stop app-dev 2>/dev/null; docker compose -f apps/web-nuxt/compose.yaml -f apps/web-nuxt/compose.dev.yaml up -d --build --wait"
 
 [tasks.down]
 description = "Stop everything (incl. dev overlay services)"
-run = "docker compose -f compose.yaml -f compose.dev.yaml --profile dev down"
+run = "docker compose -f apps/web-nuxt/compose.yaml -f apps/web-nuxt/compose.dev.yaml --profile dev down"
 
 [tasks.logs]
 description = "Follow app logs (built app)"
@@ -27,7 +32,7 @@ run = "docker compose logs -f app"
 
 [tasks.logs-dev]
 description = "Follow HMR dev server logs"
-run = "docker compose -f compose.yaml -f compose.dev.yaml --profile dev logs -f app-dev"
+run = "docker compose -f apps/web-nuxt/compose.yaml -f apps/web-nuxt/compose.dev.yaml --profile dev logs -f app-dev"
 
 [tasks.psql]
 description = "psql into the database"
@@ -42,7 +47,7 @@ description = "Bring up the isolated, disposable e2e stack (own DB/maildev/keycl
 # to dashes - a wt worktree dir like `repo.fix-x` is otherwise an invalid docker
 # project name.
 # Name the services so the prod `app` (host :3000) isn't started alongside.
-run = 'docker compose -p "ng-e2e-$(basename "$PWD" | tr . -)" -f compose.yaml -f compose.dev.yaml -f compose.e2e.yaml --profile dev --profile e2e up -d --build db maildev keycloak app-dev'
+run = 'docker compose -p "ng-e2e-$(basename "$PWD" | tr . -)" -f apps/web-nuxt/compose.yaml -f apps/web-nuxt/compose.dev.yaml -f apps/web-nuxt/compose.e2e.yaml --profile dev --profile e2e up -d --build db maildev keycloak app-dev'
 
 [tasks.e2e]
 description = "Browser e2e (Playwright): predict/finalize/leaderboard + mail + SSO against the isolated e2e stack (own empty DB). See tests/e2e/README.md."
@@ -51,4 +56,4 @@ run = "pnpm -C apps/web-nuxt e2e"
 
 [tasks.e2e-down]
 description = "Tear down the isolated e2e stack and drop its DB volume."
-run = 'docker compose -p "ng-e2e-$(basename "$PWD" | tr . -)" -f compose.yaml -f compose.dev.yaml -f compose.e2e.yaml --profile dev --profile e2e down -v'
+run = 'docker compose -p "ng-e2e-$(basename "$PWD" | tr . -)" -f apps/web-nuxt/compose.yaml -f apps/web-nuxt/compose.dev.yaml -f apps/web-nuxt/compose.e2e.yaml --profile dev --profile e2e down -v'
