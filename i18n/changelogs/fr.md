@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [4.0.0] - 2026-07-12
+
 ### Notes d'exploitation
 
 - Le dépôt est désormais un monorepo pnpm. L'application web et toute sa stack compose (`Dockerfile`, `compose*.yaml`, `.env*`) ont été déplacées sous `apps/web-nuxt/`, le contexte de build Docker restant la racine du dépôt. `mise run up`/`dev`/`preview` et `mise run release` pointent déjà vers les nouveaux chemins ; un déploiement qui invoque docker directement doit cibler `apps/web-nuxt/compose.yaml` (ou `-f apps/web-nuxt/Dockerfile` avec le contexte `.`). Aucun changement applicatif ni de base de données - l'application construite est identique.
