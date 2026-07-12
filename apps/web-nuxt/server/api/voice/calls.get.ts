@@ -6,9 +6,9 @@ import { ValidationError } from '../../utils/errors'
 import type { VoiceScope } from '../../../shared/types/voice'
 
 const querySchema = z.object({
-  dmThreadId: z.string().optional(),
-  leagueId: z.string().optional(),
-  matchId: z.string().optional(),
+  dmThreadId: z.string().max(64).optional(),
+  leagueId: z.string().max(64).optional(),
+  matchId: z.string().max(64).optional(),
 })
 
 const responseSchema = z.object({
@@ -17,7 +17,7 @@ const responseSchema = z.object({
       id: z.string(),
       status: z.enum(['ONGOING', 'ENDED', 'MISSED']),
       initiatorId: z.string().nullable(),
-      initiatorName: z.string(),
+      initiatorName: z.string().nullable(),
       participantCount: z.number(),
       startedAt: z.string(),
       endedAt: z.string().nullable(),
@@ -57,9 +57,9 @@ defineRouteMeta({
     description:
       'Recent voice calls (ongoing, ended, missed) of a DM thread or league/match room, oldest first, for the chat call lines. Caller must be a thread participant / league member.',
     parameters: [
-      { in: 'query', name: 'dmThreadId', required: false, schema: { type: 'string' } },
-      { in: 'query', name: 'leagueId', required: false, schema: { type: 'string' } },
-      { in: 'query', name: 'matchId', required: false, schema: { type: 'string' } },
+      { in: 'query', name: 'dmThreadId', required: false, schema: { type: 'string', maxLength: 64 } },
+      { in: 'query', name: 'leagueId', required: false, schema: { type: 'string', maxLength: 64 } },
+      { in: 'query', name: 'matchId', required: false, schema: { type: 'string', maxLength: 64 } },
     ],
     responses: {
       '200': { description: '{ calls: [...] }.' },

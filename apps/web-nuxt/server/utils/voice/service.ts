@@ -1,5 +1,5 @@
 import { createHmac } from 'node:crypto'
-import { and, desc, eq, isNull } from 'drizzle-orm'
+import { and, desc, eq, isNull, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { competition, dmThread, league, match, voiceCall } from '../../../db/schema'
 import type { IceServer, IceServersResponse, VoiceScope } from '../../../shared/types/voice'
@@ -168,14 +168,13 @@ export async function openCallLog(
 }
 
 export async function addCallParticipant(db: AppDatabase, callId: string, userId: string): Promise<void> {
-  const rows = await db
-    .select({ participantIds: voiceCall.participantIds })
-    .from(voiceCall)
-    .where(eq(voiceCall.id, callId))
-    .limit(1)
-  const current = rows[0]?.participantIds ?? []
-  if (current.includes(userId)) return
-  await db.update(voiceCall).set({ participantIds: [...current, userId] }).where(eq(voiceCall.id, callId))
+  // A single guarded UPDATE: a JS read-modify-write loses one of two concurrent
+  // joins (both read the same array, the second write clobbers the first).
+  const one = JSON.stringify([userId])
+  await db
+    .update(voiceCall)
+    .set({ participantIds: sql`${voiceCall.participantIds} || ${one}::jsonb` })
+    .where(and(eq(voiceCall.id, callId), sql`not (${voiceCall.participantIds} @> ${one}::jsonb)`))
 }
 
 export async function closeCallLog(db: AppDatabase, callId: string): Promise<void> {
@@ -186,7 +185,9 @@ export interface CallLogRow {
   id: string
   status: 'ONGOING' | 'ENDED' | 'MISSED'
   initiatorId: string | null
-  initiatorName: string
+  // Null when the initiator's account was deleted (the FK sets initiatorId null);
+  // the client renders its own localized fallback.
+  initiatorName: string | null
   participantCount: number
   startedAt: Date
   endedAt: Date | null
@@ -213,7 +214,9 @@ export async function listCallLog(db: AppDatabase, scope: VoiceScope, limit = 50
     id: r.id,
     status: r.status,
     initiatorId: r.initiatorId,
-    initiatorName: (r.initiatorId ? names[r.initiatorId] : null) ?? 'Someone',
+    // The FK (on delete set null) guarantees a non-null initiatorId still has its
+    // user row, so the names lookup always hits.
+    initiatorName: r.initiatorId ? names[r.initiatorId]! : null,
     participantCount: r.participantIds.length,
     startedAt: r.startedAt,
     endedAt: r.endedAt,

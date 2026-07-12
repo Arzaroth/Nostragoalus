@@ -11,7 +11,6 @@ import { chatKeyPins, isKeyTrusted } from '~/composables/useChatKeyPins'
 import { emptyReactionTotals, type ReactionEmoji, type ReactionTotals } from '#shared/reactions'
 import type { ChatAttachmentDTO, ChatMediaItemDTO, ChatMessageDTO, ChatModerationState } from '#shared/types/chat'
 import type { DmThreadDetailDTO } from '#shared/types/dm'
-import type { CallLogEntry } from '#shared/types/voice'
 import type { DecryptedMessage, PendingImage, ReportedMessage } from '~/composables/useLeagueChat'
 
 // A single DM thread as a chat "room", exposing the SAME surface as useLeagueChat
@@ -344,17 +343,8 @@ export function useDmRoom(threadId: MaybeRefOrGetter<string>) {
   const typingUserIds = ref<string[]>([])
   function sendTyping(): void {}
 
-  // Call lines for the thread (started / ended / missed), interleaved into the
-  // timeline by ChatPanel. Refetched on each voice:log push for this thread.
-  const callLog = ref<CallLogEntry[]>([])
-  async function loadCallLog(): Promise<void> {
-    try {
-      const res = await $fetch<{ calls: CallLogEntry[] }>('/api/voice/calls', { query: { dmThreadId: tid() } })
-      callLog.value = res.calls
-    } catch {
-      // The call-line strip is optional decoration; the chat works without it.
-    }
-  }
+  // Call lines for the thread, refetched on each voice:log push for this thread.
+  const { callLog, loadCallLog, resetCallLog } = createCallLog(() => ({ dmThreadId: tid() }))
 
   useReconnectingSocket({
     onOpen: () => {
@@ -424,7 +414,10 @@ export function useDmRoom(threadId: MaybeRefOrGetter<string>) {
     () => toValue(threadId),
     () => {
       closeThread()
+      // The call lines belong to the thread we're leaving: clear + refetch.
+      resetCallLog()
       void load()
+      void loadCallLog()
     },
     { immediate: true },
   )

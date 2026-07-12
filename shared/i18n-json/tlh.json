@@ -1581,7 +1581,7 @@
     "deviceDefault": "motlh",
     "reconnecting": "rarqa'taH…",
     "quality": {"fair": "rar taQ", "poor": "rar qab"},
-    "log": {"missed": "rI' {name} 'ach jangbe'lu'", "ongoing": "rI'taH {name}", "ended": "rI' rIn · {duration}"},
+    "log": {"missed": "rI' {name} 'ach jangbe'lu'", "ongoing": "rI'taH {name}", "ended": "rI' {name} rIn · {duration}"},
     "hangup": "yImev",
     "invite": "yIrI'",
     "inviteTitle": "wabvaD yIrI'",

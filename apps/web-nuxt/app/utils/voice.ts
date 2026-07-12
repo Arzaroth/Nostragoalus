@@ -107,6 +107,14 @@ export function buildAudioConstraints(deviceId: string | null, noiseSuppression:
   }
 }
 
+// getUserMedia failures that mean the SAVED input device is the problem (gone,
+// or its exact-deviceId constraint unsatisfiable) - only these should clear the
+// persisted preference. A permission or busy-hardware error is not the device's
+// fault; forgetting the choice over one would lose it on any transient failure.
+export function isDeviceGoneError(name: unknown): boolean {
+  return name === 'OverconstrainedError' || name === 'NotFoundError'
+}
+
 // RMS level above which a stream counts as someone speaking. Time-domain RMS of
 // normal speech sits well above this; keyboard/breath noise stays below.
 export const VOICE_SPEAKING_THRESHOLD = 0.04

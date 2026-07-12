@@ -812,8 +812,13 @@ const callLinesByAnchor = computed(() => {
   const tail: CallLogEntry[] = []
   if (searchOpen.value || !callLog.value.length) return { before, tail }
   const msgs = messages.value
+  // Both lists are chronological: one merge pass, comparing epoch millis (raw
+  // ISO-string compares silently mis-anchor if a serialization shape differs).
+  let i = 0
   for (const c of callLog.value) {
-    const anchor = msgs.find((m) => m.createdAt > c.startedAt)
+    const started = Date.parse(c.startedAt)
+    while (i < msgs.length && Date.parse(msgs[i]!.createdAt) <= started) i += 1
+    const anchor = msgs[i]
     if (anchor) {
       const list = before.get(anchor.id) ?? []
       list.push(c)
@@ -831,9 +836,10 @@ function callDuration(c: CallLogEntry): string {
 }
 
 function callLineText(c: CallLogEntry): string {
-  if (c.status === 'MISSED') return t('voice.log.missed', { name: c.initiatorName })
-  if (c.status === 'ONGOING') return t('voice.log.ongoing', { name: c.initiatorName })
-  return t('voice.log.ended', { name: c.initiatorName, duration: callDuration(c) })
+  const name = c.initiatorName ?? t('chat.unknownUser')
+  if (c.status === 'MISSED') return t('voice.log.missed', { name })
+  if (c.status === 'ONGOING') return t('voice.log.ongoing', { name })
+  return t('voice.log.ended', { name, duration: callDuration(c) })
 }
 
 function toggleSearch() {

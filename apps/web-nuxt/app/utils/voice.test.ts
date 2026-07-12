@@ -8,6 +8,7 @@ import {
   extractQualityInputs,
   formatCallDuration,
   isCallEstablished,
+  isDeviceGoneError,
   levelFromSamples,
   qualityOf,
   rosterDelta,
@@ -165,6 +166,18 @@ describe('connection quality', () => {
     expect(worstQuality(['good', 'good'])).toBe('good')
     expect(worstQuality(['good', 'fair'])).toBe('fair')
     expect(worstQuality(['fair', 'poor', 'good'])).toBe('poor')
+  })
+})
+
+describe('isDeviceGoneError', () => {
+  it('flags the errors that mean the saved device is gone', () => {
+    expect(isDeviceGoneError('OverconstrainedError')).toBe(true)
+    expect(isDeviceGoneError('NotFoundError')).toBe(true)
+  })
+  it('spares permission and busy-hardware errors (and junk)', () => {
+    expect(isDeviceGoneError('NotAllowedError')).toBe(false)
+    expect(isDeviceGoneError('NotReadableError')).toBe(false)
+    expect(isDeviceGoneError(undefined)).toBe(false)
   })
 })
 

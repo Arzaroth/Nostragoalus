@@ -18117,6 +18117,7 @@
                             "type": "string"
                           },
                           "initiatorName": {
+                            "nullable": true,
                             "type": "string"
                           },
                           "participantCount": {

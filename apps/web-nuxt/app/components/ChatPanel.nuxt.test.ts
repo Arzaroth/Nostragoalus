@@ -131,6 +131,7 @@ beforeEach(async () => {
   s.awaitingKey.value = false
   s.readMarker.value = null
   s.messages.value = []
+  s.callLog.value = []
   s.memberKeys.value = []
   s.muted.value = []
   s.identityStatus.value = 'ready'
@@ -145,6 +146,7 @@ beforeEach(async () => {
   d.awaitingKey.value = false
   d.readMarker.value = null
   d.messages.value = []
+  d.callLog.value = []
   d.memberKeys.value = []
   d.muted.value = []
   d.identityStatus.value = 'ready'
@@ -572,6 +574,50 @@ describe('ChatPanel', () => {
     await vi.waitFor(() => expect(document.body.textContent).toMatch(/\d{5} \d{5} \d{5} \d{5} \d{5} \d{5}/))
     expect(document.body.textContent).toContain('Your safety number')
     expect(document.body.textContent).toContain('Sam') // the peer's name
+  })
+
+  function call(over: Record<string, unknown> = {}) {
+    return { id: 'c1', status: 'ENDED', initiatorId: 'other', initiatorName: 'Sam', participantCount: 2, startedAt: '2026-06-10T09:00:00.000Z', endedAt: null, ...over }
+  }
+
+  it('interleaves call lines into the timeline with the three renderings', async () => {
+    const s = await chatState()
+    s.enabled.value = true
+    s.ready.value = true
+    s.messages.value = [
+      msg({ id: 'a', userId: 'other', text: 'first', createdAt: '2026-06-10T10:00:00.000Z' }),
+      msg({ id: 'b', userId: 'other', text: 'second', createdAt: '2026-06-10T10:02:00.000Z' }),
+    ]
+    s.callLog.value = [
+      call({ id: 'c1', status: 'MISSED', startedAt: '2026-06-10T09:00:00.000Z' }),
+      call({ id: 'c2', status: 'ONGOING', startedAt: '2026-06-10T10:01:00.000Z' }),
+      call({ id: 'c3', status: 'ENDED', startedAt: '2026-06-10T10:03:00.000Z', endedAt: '2026-06-10T10:04:00.000Z' }),
+    ]
+    const wrapper = await mount()
+    await vi.waitFor(() => expect(wrapper.text()).toContain('second'))
+    const text = wrapper.text()
+    expect(text).toContain('Missed call from Sam')
+    expect(text).toContain('Sam started a call')
+    expect(text).toContain('Call by Sam · 1:00')
+    // Anchoring: the missed call (older than every message) renders before the
+    // first message; the ongoing one between the two; the ended one trails.
+    expect(text.indexOf('Missed call from Sam')).toBeLessThan(text.indexOf('first'))
+    expect(text.indexOf('Sam started a call')).toBeGreaterThan(text.indexOf('first'))
+    expect(text.indexOf('Sam started a call')).toBeLessThan(text.indexOf('second'))
+    expect(text.indexOf('Call by Sam · 1:00')).toBeGreaterThan(text.indexOf('second'))
+  })
+
+  it('falls back to a localized name for a null initiator and hides call lines while searching', async () => {
+    const s = await chatState()
+    s.enabled.value = true
+    s.ready.value = true
+    s.messages.value = [msg({ id: 'a', userId: 'other', text: 'hello', createdAt: '2026-06-10T10:00:00.000Z' })]
+    s.callLog.value = [call({ id: 'c1', status: 'MISSED', initiatorId: null, initiatorName: null, startedAt: '2026-06-10T09:00:00.000Z' })]
+    const wrapper = await mount()
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Missed call from Someone'))
+
+    await wrapper.get('button[aria-label="Search messages"]').trigger('click')
+    expect(wrapper.text()).not.toContain('Missed call')
   })
 })
 

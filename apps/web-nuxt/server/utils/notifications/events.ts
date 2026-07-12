@@ -27,7 +27,9 @@ async function competitionInfo(db: AppDatabase, competitionId: string): Promise<
   return rows[0] ?? null
 }
 
-// Bulk displayName: one query for a small set (a voice roster), same fallbacks.
+// Bulk displayName: one query for a small set (a voice roster). user.name is NOT
+// NULL, so every fetched row yields a name; ids with no user row are simply
+// absent from the map (callers fall back themselves).
 export async function displayNames(db: AppDatabase, userIds: readonly string[]): Promise<Record<string, string>> {
   if (userIds.length === 0) return {}
   const rows = await db
@@ -35,7 +37,7 @@ export async function displayNames(db: AppDatabase, userIds: readonly string[]):
     .from(user)
     .leftJoin(userProfile, eq(userProfile.userId, user.id))
     .where(inArray(user.id, [...userIds]))
-  return Object.fromEntries(rows.map((r) => [r.id, r.display ?? r.name ?? 'Someone']))
+  return Object.fromEntries(rows.map((r) => [r.id, r.display ?? r.name]))
 }
 
 async function leagueName(db: AppDatabase, leagueId: string): Promise<string | null> {
@@ -44,13 +46,7 @@ async function leagueName(db: AppDatabase, leagueId: string): Promise<string | n
 }
 
 export async function displayName(db: AppDatabase, userId: string): Promise<string> {
-  const rows = await db
-    .select({ display: userProfile.displayName, name: user.name })
-    .from(user)
-    .leftJoin(userProfile, eq(userProfile.userId, user.id))
-    .where(eq(user.id, userId))
-    .limit(1)
-  return rows[0]?.display ?? rows[0]?.name ?? 'Someone'
+  return (await displayNames(db, [userId]))[userId] ?? 'Someone'
 }
 
 // Tell a league's owner and moderators that a new member joined. The joiner is
