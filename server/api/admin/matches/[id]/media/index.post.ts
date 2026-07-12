@@ -17,9 +17,11 @@ const bodySchema = z.object({
   allow: z.string().max(512).nullish(),
 })
 
+const responseSchema = z.object({ id: z.string() })
+
 // admin session OR a media:write API key (the curation bot); requireApiKey still
 // requires the key's owner to be an admin since this is an admin route.
-export default defineValidatedHandler({ admin: true, apiKey: { media: ['write'] }, body: bodySchema }, async ({ event, body }) => {
+export default defineValidatedHandler({ admin: true, apiKey: { media: ['write'] }, body: bodySchema, response: responseSchema }, async ({ event, body }) => {
   const matchId = getRouterParam(event, 'id') as string
   const row = await addMatchMedia(db, {
     matchId,

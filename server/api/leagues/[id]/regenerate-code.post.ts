@@ -1,17 +1,14 @@
+import { z } from 'zod'
 import { db } from '../../../../db'
-import { requireUser } from '../../../utils/auth-guards'
-import { toHttpError } from '../../../utils/http'
+import { defineValidatedHandler } from '../../../utils/validated-handler'
 import { regenerateJoinCode, resolveLeagueManage } from '../../../utils/leagues/service'
 
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
+const responseSchema = z.object({ joinCode: z.string() })
+
+export default defineValidatedHandler({ response: responseSchema }, async ({ event, user }) => {
   const id = getRouterParam(event, 'id')!
-  try {
-    await resolveLeagueManage(db, id, user.id)
-    return { joinCode: await regenerateJoinCode(db, id) }
-  } catch (error) {
-    throw toHttpError(error)
-  }
+  await resolveLeagueManage(db, id, user.id)
+  return { joinCode: await regenerateJoinCode(db, id) }
 })
 
 defineRouteMeta({

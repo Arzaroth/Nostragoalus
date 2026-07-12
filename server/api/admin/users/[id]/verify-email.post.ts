@@ -1,11 +1,14 @@
+import { z } from 'zod'
 import { db } from '../../../../../db'
 import { defineValidatedHandler } from '../../../../utils/validated-handler'
 import { forceVerifyUserEmail } from '../../../../utils/admin/email-verify'
 
-export default defineValidatedHandler({ admin: true }, async ({ event }) => {
+const responseSchema = z.object({ ok: z.literal(true) })
+
+export default defineValidatedHandler({ admin: true, response: responseSchema }, async ({ event }) => {
   const id = getRouterParam(event, 'id') as string
   await forceVerifyUserEmail(db, id)
-  return { ok: true }
+  return { ok: true as const }
 })
 
 defineRouteMeta({

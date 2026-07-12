@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { db } from '../../../../../db'
 import { defineValidatedHandler } from '../../../../utils/validated-handler'
 import { getLeague, renameLeague, setLeagueMode, setLeagueVisibility } from '../../../../utils/leagues/service'
+import { okSchema } from '../../../../schemas/chat'
 
 const bodySchema = z
   .object({
@@ -14,14 +15,14 @@ const bodySchema = z
     message: 'nothing to update',
   })
 
-export default defineValidatedHandler({ admin: true, body: bodySchema }, async ({ event, body }) => {
+export default defineValidatedHandler({ admin: true, body: bodySchema, response: okSchema }, async ({ event, body }) => {
   const id = getRouterParam(event, 'id')!
   if (!(await getLeague(db, id))) throw createError({ statusCode: 404, statusMessage: 'League not found' })
   if (body.name !== undefined) await renameLeague(db, id, body.name)
   if (body.visibility !== undefined) await setLeagueVisibility(db, id, body.visibility)
   // Admin bypass: swap the mode even after the competition has started.
   if (body.mode !== undefined) await setLeagueMode(db, id, body.mode, body.lives, true)
-  return { ok: true }
+  return { ok: true as const }
 })
 
 defineRouteMeta({

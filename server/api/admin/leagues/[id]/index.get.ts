@@ -1,10 +1,29 @@
+import { z } from 'zod'
 import { db } from '../../../../../db'
-import { requireAdmin } from '../../../../utils/auth-guards'
 import { getCompetitionById } from '../../../../utils/competitions/store'
 import { getLeague, listLeagueMembers } from '../../../../utils/leagues/service'
+import { defineReadHandler } from '../../../../utils/read-handler'
+import { adminCompetitionRefSchema } from '../../../../schemas/admin-league'
 
-export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
+const memberSchema = z.object({
+  userId: z.string(),
+  name: z.string(),
+  image: z.string().nullable(),
+  role: z.string(),
+  joinedAt: z.date(),
+})
+const responseSchema = z.object({
+  league: z.object({
+    id: z.string(),
+    name: z.string(),
+    visibility: z.string(),
+    joinCode: z.string(),
+    competition: adminCompetitionRefSchema.nullable(),
+  }),
+  members: z.array(memberSchema),
+})
+
+export default defineReadHandler({ response: responseSchema, auth: 'admin' }, async ({ event }) => {
   const id = getRouterParam(event, 'id')!
   const league = await getLeague(db, id)
   if (!league) throw createError({ statusCode: 404, statusMessage: 'League not found' })

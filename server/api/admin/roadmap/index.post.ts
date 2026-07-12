@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { db } from '../../../../db'
 import { defineValidatedHandler } from '../../../utils/validated-handler'
 import { createRoadmapItem } from '../../../utils/roadmap/service'
+import { adminRoadmapItemSchema } from '../../../schemas/admin-league'
 
 const bodySchema = z.object({
   title: z.string().trim().min(3).max(120),
@@ -9,7 +10,9 @@ const bodySchema = z.object({
   status: z.enum(['PLANNED', 'IN_PROGRESS', 'SHIPPED']).optional(),
 })
 
-export default defineValidatedHandler({ admin: true, body: bodySchema }, async ({ body }) => {
+const responseSchema = z.object({ item: adminRoadmapItemSchema })
+
+export default defineValidatedHandler({ admin: true, body: bodySchema, response: responseSchema }, async ({ body }) => {
   const item = await createRoadmapItem(db, body)
   return { item }
 })

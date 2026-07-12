@@ -1,15 +1,16 @@
 import { db } from '../../../../../db'
 import { disableLeagueChat } from '../../../../utils/chat/service'
 import { publishStateChanged } from '../../../../utils/live/league-chat'
+import { okSchema } from '../../../../schemas/chat'
 import { defineValidatedHandler } from '../../../../utils/validated-handler'
 
 // Turn chat off (OWNER/MODERATOR). History and keys are kept so it can be turned
 // back on without a re-key.
-export default defineValidatedHandler({}, async ({ user, event }) => {
+export default defineValidatedHandler({ response: okSchema }, async ({ user, event }) => {
   const leagueId = getRouterParam(event, 'id') as string
   await disableLeagueChat(db, { leagueId, actorId: user.id })
   void publishStateChanged(db, leagueId).catch(() => {})
-  return { ok: true }
+  return { ok: true as const }
 })
 
 defineRouteMeta({

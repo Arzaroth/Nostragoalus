@@ -1,9 +1,13 @@
 import { eq } from 'drizzle-orm'
+import { z } from 'zod'
 import { db } from '../../../db'
 import { user } from '../../../db/schema'
+import { defineReadHandler } from '../../utils/read-handler'
 import { getSessionUser, isEnvAdmin } from '../../utils/auth-guards'
 
-export default defineEventHandler(async (event) => {
+const responseSchema = z.object({ isAdmin: z.boolean() })
+
+export default defineReadHandler({ response: responseSchema }, async ({ event }) => {
   const u = await getSessionUser(event)
   if (!u) return { isAdmin: false }
   // Self-heal: env-configured admins are promoted to role=admin so the

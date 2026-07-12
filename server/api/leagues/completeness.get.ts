@@ -1,19 +1,46 @@
+import { z } from 'zod'
 import { db } from '../../../db'
-import { requireUser } from '../../utils/auth-guards'
+import { leagueModeSchema } from '../../schemas/league-list'
 import { getCompetitionBySlug } from '../../utils/competitions/store'
 import { getLeagueCompleteness } from '../../utils/predictions/service'
+import { defineReadHandler } from '../../utils/read-handler'
+
+const querySchema = z.object({ competition: z.string().optional() })
+
+// One LeagueCompleteness row: a league's mode, its pick-completeness summary, and
+// the per-match issues (matches not yet COMPLETE).
+const leagueCompletenessSchema = z.object({
+  leagueId: z.string(),
+  name: z.string(),
+  mode: leagueModeSchema,
+  summary: z.object({
+    total: z.number(),
+    complete: z.number(),
+    incomplete: z.number(),
+    missing: z.number(),
+    needsExact: z.number(),
+    needsStake: z.number(),
+  }),
+  issues: z.array(
+    z.object({
+      matchId: z.string(),
+      reason: z.enum(['NEEDS_PICK', 'NEEDS_EXACT', 'NEEDS_STAKE']),
+    }),
+  ),
+})
+
+const responseSchema = z.object({ leagues: z.array(leagueCompletenessSchema) })
 
 // Per-league completeness of the caller's picks for a competition (the nudge):
 // which leagues have every open match covered, and which still need a real score
 // (NORMAL) or a stake (HARD).
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
-  const slug = getQuery(event).competition
-  if (typeof slug !== 'string' || !slug) throw createError({ statusCode: 400, statusMessage: 'competition required' })
-  const competition = await getCompetitionBySlug(db, slug)
+export default defineReadHandler({ response: responseSchema, auth: 'user', query: querySchema }, async ({ user, query }) => {
+  // Kept as an in-handler 400 (not a required-query 422) so the documented
+  // "competition required" contract holds.
+  if (!query.competition) throw createError({ statusCode: 400, statusMessage: 'competition required' })
+  const competition = await getCompetitionBySlug(db, query.competition)
   if (!competition) throw createError({ statusCode: 404, statusMessage: 'Unknown competition' })
-  const leagues = await getLeagueCompleteness(db, user.id, competition.id)
-  return { leagues }
+  return { leagues: await getLeagueCompleteness(db, user.id, competition.id) }
 })
 
 defineRouteMeta({

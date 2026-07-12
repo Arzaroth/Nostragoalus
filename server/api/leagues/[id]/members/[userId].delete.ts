@@ -1,19 +1,16 @@
+import { z } from 'zod'
 import { db } from '../../../../../db'
-import { requireUser } from '../../../../utils/auth-guards'
-import { toHttpError } from '../../../../utils/http'
+import { defineValidatedHandler } from '../../../../utils/validated-handler'
 import { kickMember, resolveLeagueManage } from '../../../../utils/leagues/service'
 
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
+const responseSchema = z.object({ ok: z.literal(true) })
+
+export default defineValidatedHandler({ response: responseSchema }, async ({ event, user }) => {
   const id = getRouterParam(event, 'id')!
   const targetUserId = getRouterParam(event, 'userId')!
-  try {
-    await resolveLeagueManage(db, id, user.id)
-    await kickMember(db, { leagueId: id, actorUserId: user.id, targetUserId })
-    return { ok: true }
-  } catch (error) {
-    throw toHttpError(error)
-  }
+  await resolveLeagueManage(db, id, user.id)
+  await kickMember(db, { leagueId: id, actorUserId: user.id, targetUserId })
+  return { ok: true as const }
 })
 
 defineRouteMeta({

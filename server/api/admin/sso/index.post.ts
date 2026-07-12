@@ -1,14 +1,19 @@
 import { eq } from 'drizzle-orm'
+import { z } from 'zod'
 import { auth } from '../../../../lib/auth'
 import { db } from '../../../../db'
 import { ssoProvider } from '../../../../db/schema'
 import { defineValidatedHandler } from '../../../utils/validated-handler'
 import { findDomainConflicts, parseDomainList } from '../../../utils/auth/sso-domains'
 
+// `result` is better-auth's opaque registration payload; widen it rather than
+// mirror the plugin's internal union.
+const responseSchema = z.object({ ok: z.literal(true), providerId: z.string(), result: z.unknown() })
+
 // Registers an SSO provider (OIDC / Google / SAML). Secrets are envelope-encrypted
 // at rest by the adapter wrapper when better-auth persists the config. New
 // providers always start as 'draft': the admin tests + verifies before enabling.
-export default defineValidatedHandler({ admin: true }, async ({ event }) => {
+export default defineValidatedHandler({ admin: true, response: responseSchema }, async ({ event }) => {
   const b = await readBody(event)
   const providerId = String(b?.providerId || '').trim()
   const domains = parseDomainList(b?.domains ?? b?.domain)
@@ -89,7 +94,7 @@ export default defineValidatedHandler({ admin: true }, async ({ event }) => {
       .update(ssoProvider)
       .set({ status: 'draft', ...(displayName ? { displayName } : {}) })
       .where(eq(ssoProvider.providerId, providerId))
-    return { ok: true, providerId, result }
+    return { ok: true as const, providerId, result }
   } catch (error) {
     throw createError({ statusCode: 400, statusMessage: (error as Error)?.message || 'Failed to register provider' })
   }

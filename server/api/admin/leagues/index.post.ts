@@ -13,7 +13,18 @@ const bodySchema = z.object({
   ownerId: z.string().optional(),
 })
 
-export default defineValidatedHandler({ admin: true, body: bodySchema }, async ({ body }) => {
+const responseSchema = z.object({
+  league: z.object({
+    id: z.string(),
+    name: z.string(),
+    visibility: z.string(),
+    mode: z.string(),
+    lives: z.number().nullable(),
+    joinCode: z.string(),
+  }),
+})
+
+export default defineValidatedHandler({ admin: true, body: bodySchema, response: responseSchema }, async ({ body }) => {
   const competition = await getCompetitionBySlug(db, body.competition)
   if (!competition) throw createError({ statusCode: 404, statusMessage: 'Unknown competition' })
   // Admin has full capability: a moded league can be made even mid-competition.

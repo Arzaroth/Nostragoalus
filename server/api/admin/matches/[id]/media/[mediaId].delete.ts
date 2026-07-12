@@ -1,12 +1,15 @@
+import { z } from 'zod'
 import { db } from '../../../../../../db'
 import { defineValidatedHandler } from '../../../../../utils/validated-handler'
 import { deleteMatchMedia } from '../../../../../utils/match-media/service'
 
-export default defineValidatedHandler({ admin: true, apiKey: { media: ['write'] } }, async ({ event }) => {
+const responseSchema = z.object({ ok: z.literal(true) })
+
+export default defineValidatedHandler({ admin: true, apiKey: { media: ['write'] }, response: responseSchema }, async ({ event }) => {
   const matchId = getRouterParam(event, 'id') as string
   const mediaId = getRouterParam(event, 'mediaId') as string
   await deleteMatchMedia(db, matchId, mediaId)
-  return { ok: true }
+  return { ok: true as const }
 })
 
 defineRouteMeta({

@@ -1,14 +1,17 @@
+import { z } from 'zod'
 import { db } from '../../../../../db'
 import { defineValidatedHandler } from '../../../../utils/validated-handler'
 import { resolveLeagueManage } from '../../../../utils/leagues/service'
 import { revokeInvite } from '../../../../utils/leagues/invites'
 
-export default defineValidatedHandler({}, async ({ event, user }) => {
+const responseSchema = z.object({ ok: z.literal(true) })
+
+export default defineValidatedHandler({ response: responseSchema }, async ({ event, user }) => {
   const id = getRouterParam(event, 'id')!
   const inviteId = getRouterParam(event, 'inviteId')!
   await resolveLeagueManage(db, id, user.id)
   await revokeInvite(db, id, inviteId)
-  return { ok: true }
+  return { ok: true as const }
 })
 
 defineRouteMeta({

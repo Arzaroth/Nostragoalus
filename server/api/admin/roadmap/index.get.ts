@@ -1,11 +1,30 @@
+import { z } from 'zod'
 import { db } from '../../../../db'
-import { defineValidatedHandler } from '../../../utils/validated-handler'
+import { defineReadHandler } from '../../../utils/read-handler'
 import { listRoadmapItems } from '../../../utils/roadmap/service'
+import { adminRoadmapItemSchema } from '../../../schemas/admin-league'
+
+const responseSchema = z.object({
+  items: z.array(
+    adminRoadmapItemSchema
+      .pick({
+        id: true,
+        title: true,
+        description: true,
+        status: true,
+        position: true,
+        authorId: true,
+        moderationStatus: true,
+        updatedAt: true,
+      })
+      .extend({ voteCount: z.number() }),
+  ),
+})
 
 // Admin triage view: everything the public list omits (REJECTED/hidden items)
 // plus author and moderation state, so an admin can promote suggestions onto the
 // roadmap or hide spam.
-export default defineValidatedHandler({ admin: true }, async () => {
+export default defineReadHandler({ response: responseSchema, auth: 'admin' }, async () => {
   const items = await listRoadmapItems(db, { includeHidden: true })
   return {
     items: items.map((i) => ({

@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { db } from '../../../../../db'
 import { moderateMessage } from '../../../../utils/chat/moderation'
 import { publishModeration } from '../../../../utils/live/league-chat'
+import { moderationStateSchema } from '../../../../schemas/league-chat'
 import { defineValidatedHandler } from '../../../../utils/validated-handler'
 
 const bodySchema = z.object({
@@ -10,8 +11,10 @@ const bodySchema = z.object({
   action: z.enum(['remove', 'restore']),
 })
 
+const responseSchema = z.object({ state: moderationStateSchema })
+
 // Owner/moderator rules on a reported message, then pushes the new state live.
-export default defineValidatedHandler({ body: bodySchema }, async ({ body, user, event }) => {
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ body, user, event }) => {
   const leagueId = getRouterParam(event, 'id') as string
   const res = await moderateMessage(db, { leagueId, messageId: body.messageId, actorId: user.id, action: body.action })
   void publishModeration(db, leagueId, body.messageId, res.state).catch(() => {})

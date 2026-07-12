@@ -9,9 +9,11 @@ const bodySchema = z.object({
   expiresInSeconds: z.number().int().positive().nullable().optional(),
 })
 
+const responseSchema = z.object({ key: z.string() })
+
 // Minted server-side (the plugin rejects client-supplied scope), owned by the
 // creating admin so the consume-side admin-owner check passes for admin routes.
-export default defineValidatedHandler({ admin: true, body: bodySchema }, async ({ body, user }) => {
+export default defineValidatedHandler({ admin: true, body: bodySchema, response: responseSchema }, async ({ body, user }) => {
   return createApiKey(db, {
     name: body.name,
     scopes: body.scopes,

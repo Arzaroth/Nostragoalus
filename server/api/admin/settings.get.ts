@@ -1,9 +1,11 @@
+import { z } from 'zod'
 import { db } from '../../../db'
-import { requireAdmin } from '../../utils/auth-guards'
+import { defineReadHandler } from '../../utils/read-handler'
 import { isEmailVerificationRequired, isSmtpConfigured } from '../../utils/auth/email-verification'
 
-export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
+const responseSchema = z.object({ emailVerificationRequired: z.boolean(), smtpConfigured: z.boolean() })
+
+export default defineReadHandler({ response: responseSchema, auth: 'admin' }, async () => {
   return {
     emailVerificationRequired: await isEmailVerificationRequired(db),
     smtpConfigured: isSmtpConfigured(),

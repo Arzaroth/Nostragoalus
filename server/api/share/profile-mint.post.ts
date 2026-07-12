@@ -1,4 +1,3 @@
-import { getRequestURL } from 'h3'
 import { z } from 'zod'
 import { db } from '../../../db'
 import { NotFoundError } from '../../utils/errors'

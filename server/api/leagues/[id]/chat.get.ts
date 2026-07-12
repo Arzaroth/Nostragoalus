@@ -1,20 +1,26 @@
+import { z } from 'zod'
 import { db } from '../../../../db'
-import { requireUser } from '../../../utils/auth-guards'
 import { getChatStatus } from '../../../utils/chat/service'
-import { toHttpError } from '../../../utils/http'
+import { defineReadHandler } from '../../../utils/read-handler'
+
+const memberKeySchema = z.object({ userId: z.string(), publicKey: z.string(), name: z.string() })
+const responseSchema = z.object({
+  enabled: z.boolean(),
+  epoch: z.number(),
+  role: z.string(),
+  myWrappedKeys: z.array(z.object({ epoch: z.number(), wrappedKey: z.string() })),
+  missingKeys: z.array(memberKeySchema),
+  memberKeys: z.array(memberKeySchema),
+  rekeyPending: z.boolean(),
+})
 
 // Chat status for a league member: whether chat is on, the current key epoch, the
 // caller's sealed group key (to unwrap locally), members still missing a key (so
 // a keyholder can wrap for them) and every member's public key (for enabling /
 // wrapping). Members only - a 404 hides the league from non-members.
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
+export default defineReadHandler({ response: responseSchema, auth: 'user' }, async ({ event, user }) => {
   const leagueId = getRouterParam(event, 'id') as string
-  try {
-    return await getChatStatus(db, leagueId, user.id)
-  } catch (err) {
-    throw toHttpError(err)
-  }
+  return getChatStatus(db, leagueId, user.id)
 })
 
 defineRouteMeta({

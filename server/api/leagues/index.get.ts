@@ -1,14 +1,35 @@
+import { z } from 'zod'
 import { db } from '../../../db'
-import { requireUser } from '../../utils/auth-guards'
+import { competitionRefSchema } from '../../schemas/competition'
+import { leagueModeSchema, leagueRoleSchema, leagueVisibilitySchema } from '../../schemas/league-list'
 import { getCompetitionBySlug } from '../../utils/competitions/store'
 import { listUserLeagues } from '../../utils/leagues/service'
+import { defineReadHandler } from '../../utils/read-handler'
 
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
-  const slug = (getQuery(event).competition as string) || null
+const querySchema = z.object({ competition: z.string().optional() })
+
+// One row of listUserLeagues (LeagueSummary): the caller's membership with role,
+// mode, member count and - for owners/moderators only - the join code.
+const leagueSummarySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  visibility: leagueVisibilitySchema,
+  mode: leagueModeSchema,
+  lives: z.number().nullable(),
+  role: leagueRoleSchema,
+  picksSynced: z.boolean(),
+  memberCount: z.number(),
+  chatEnabled: z.boolean(),
+  competition: competitionRefSchema,
+  joinCode: z.string().optional(),
+})
+
+const responseSchema = z.object({ leagues: z.array(leagueSummarySchema) })
+
+export default defineReadHandler({ response: responseSchema, auth: 'user', query: querySchema }, async ({ user, query }) => {
   let competitionId: string | undefined
-  if (slug) {
-    const competition = await getCompetitionBySlug(db, slug)
+  if (query.competition) {
+    const competition = await getCompetitionBySlug(db, query.competition)
     if (!competition) return { leagues: [] }
     competitionId = competition.id
   }

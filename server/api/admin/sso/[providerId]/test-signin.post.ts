@@ -1,11 +1,15 @@
+import { z } from 'zod'
 import { db } from '../../../../../db'
 import { defineValidatedHandler } from '../../../../utils/validated-handler'
 import { startTestSignIn } from '../../../../utils/sso/test-signin'
 
+// Mirrors TestSignInStart (server/utils/sso/test-signin.ts).
+const responseSchema = z.object({ testId: z.string(), url: z.string() })
+
 // Starts an OIDC dry-run: returns the IdP authorization URL the admin opens in a
 // popup. The popup posts the result back, which the page reads via the result
 // route. No user/session is ever created.
-export default defineValidatedHandler({ admin: true }, async ({ event, user }) => {
+export default defineValidatedHandler({ admin: true, response: responseSchema }, async ({ event, user }) => {
   const providerId = getRouterParam(event, 'providerId')!
   const origin = getRequestURL(event).origin
   return await startTestSignIn(db, providerId, user.id, origin)

@@ -1,9 +1,15 @@
+import { z } from 'zod'
 import { db } from '../../../../db'
-import { requireAdmin } from '../../../utils/auth-guards'
 import { applyAllProviderAutoJoins } from '../../../utils/leagues/auto-join'
+import { defineValidatedHandler } from '../../../utils/validated-handler'
 
-export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
+const responseSchema = z.object({
+  providers: z.number(),
+  usersMatched: z.number(),
+  joined: z.number(),
+})
+
+export default defineValidatedHandler({ admin: true, response: responseSchema }, async () => {
   return await applyAllProviderAutoJoins(db)
 })
 

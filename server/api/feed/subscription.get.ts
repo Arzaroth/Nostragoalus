@@ -1,4 +1,3 @@
-import { getRequestURL } from 'h3'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '../../../db'

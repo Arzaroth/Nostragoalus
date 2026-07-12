@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { db } from '../../../../../db'
 import { defineValidatedHandler } from '../../../../utils/validated-handler'
 import { updateRoadmapItem } from '../../../../utils/roadmap/service'
+import { adminRoadmapItemSchema } from '../../../../schemas/admin-league'
 
 const bodySchema = z
   .object({
@@ -23,7 +24,9 @@ const bodySchema = z
     { message: 'nothing to update' },
   )
 
-export default defineValidatedHandler({ admin: true, body: bodySchema }, async ({ event, body }) => {
+const responseSchema = z.object({ item: adminRoadmapItemSchema })
+
+export default defineValidatedHandler({ admin: true, body: bodySchema, response: responseSchema }, async ({ event, body }) => {
   const id = getRouterParam(event, 'id')!
   const item = await updateRoadmapItem(db, id, body)
   return { item }

@@ -5,12 +5,14 @@ import { resolveLeagueManage, setMemberRole } from '../../../../utils/leagues/se
 
 const bodySchema = z.object({ role: z.enum(['MEMBER', 'MODERATOR']) })
 
-export default defineValidatedHandler({ body: bodySchema }, async ({ event, body, user }) => {
+const responseSchema = z.object({ ok: z.literal(true) })
+
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ event, body, user }) => {
   const id = getRouterParam(event, 'id')!
   const targetUserId = getRouterParam(event, 'userId')!
   await resolveLeagueManage(db, id, user.id, { requiredRole: 'OWNER' })
   await setMemberRole(db, { leagueId: id, targetUserId, role: body.role })
-  return { ok: true }
+  return { ok: true as const }
 })
 
 defineRouteMeta({

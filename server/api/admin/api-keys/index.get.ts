@@ -1,9 +1,24 @@
+import { z } from 'zod'
 import { db } from '../../../../db'
-import { requireAdmin } from '../../../utils/auth-guards'
+import { defineReadHandler } from '../../../utils/read-handler'
 import { listApiKeys } from '../../../utils/api-keys/service'
 
-export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
+// Mirrors ApiKeyView (server/utils/api-keys/service.ts): the mapped, secret-free
+// row the admin list renders (timestamps already ISO strings, permissions parsed).
+const apiKeyViewSchema = z.object({
+  id: z.string(),
+  name: z.string().nullable(),
+  start: z.string().nullable(),
+  enabled: z.boolean().nullable(),
+  permissions: z.record(z.string(), z.array(z.string())).nullable(),
+  expiresAt: z.string().nullable(),
+  lastRequest: z.string().nullable(),
+  createdAt: z.string(),
+  ownerEmail: z.string().nullable(),
+})
+const responseSchema = z.object({ apiKeys: z.array(apiKeyViewSchema) })
+
+export default defineReadHandler({ response: responseSchema, auth: 'admin' }, async () => {
   return { apiKeys: await listApiKeys(db) }
 })
 

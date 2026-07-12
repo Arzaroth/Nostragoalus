@@ -5,12 +5,14 @@ import { setLeaguePicksSynced } from '../../../utils/predictions/service'
 
 const bodySchema = z.object({ synced: z.boolean() })
 
+const responseSchema = z.object({ ok: z.literal(true) })
+
 // Toggle whether a league mirrors the member's base picks. Re-syncing drops the
 // member's overrides on matches that have not kicked off.
-export default defineValidatedHandler({ body: bodySchema }, async ({ event, body, user }) => {
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ event, body, user }) => {
   const leagueId = getRouterParam(event, 'id')!
   await setLeaguePicksSynced(db, { leagueId, userId: user.id, synced: body.synced })
-  return { ok: true }
+  return { ok: true as const }
 })
 
 defineRouteMeta({

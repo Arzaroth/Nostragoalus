@@ -1,5 +1,7 @@
 import { z } from 'zod'
 import { db } from '../../../db'
+import { competitionRefSchema } from '../../schemas/competition'
+import { leagueRoleSchema, leagueVisibilitySchema } from '../../schemas/league-list'
 import { defineValidatedHandler } from '../../utils/validated-handler'
 import { getCompetitionById } from '../../utils/competitions/store'
 import { joinLeagueByCode } from '../../utils/leagues/service'
@@ -7,11 +9,21 @@ import { createRateLimiter } from '../../utils/rate-limit'
 
 const bodySchema = z.object({ code: z.string().trim().min(4).max(16) })
 
+const responseSchema = z.object({
+  league: z.object({
+    id: z.string(),
+    name: z.string(),
+    visibility: leagueVisibilitySchema,
+    role: leagueRoleSchema,
+    competition: competitionRefSchema.nullable(),
+  }),
+})
+
 // Join codes are guessable inputs: cap attempts per user so brute force is
 // pointless (30^8 code space makes 10/min astronomically insufficient anyway).
 const limiter = createRateLimiter({ limit: 10, windowMs: 60_000 })
 
-export default defineValidatedHandler({ body: bodySchema }, async ({ body, user }) => {
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ body, user }) => {
   if (!limiter.allow(user.id)) {
     throw createError({ statusCode: 429, statusMessage: 'Too many attempts, try again in a minute' })
   }

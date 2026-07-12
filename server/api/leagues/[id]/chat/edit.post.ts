@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { db } from '../../../../../db'
 import { editMessage } from '../../../../utils/chat/service'
 import { publishEdit } from '../../../../utils/live/league-chat'
+import { chatAttachmentSchema } from '../../../../schemas/dm'
 import { defineValidatedHandler } from '../../../../utils/validated-handler'
 
 const bodySchema = z.object({
@@ -15,10 +16,12 @@ const bodySchema = z.object({
   removeIdxs: z.array(z.number().int().nonnegative()).optional(),
 })
 
+const responseSchema = z.object({ editedAt: z.string(), attachments: z.array(chatAttachmentSchema) })
+
 // The author edits their own message: store the re-encrypted text, drop/append
 // images, stamp the edit time, and push the new ciphertext + attachment set to the
 // league's members so they re-decrypt it in place.
-export default defineValidatedHandler({ body: bodySchema }, async ({ body, user, event }) => {
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ body, user, event }) => {
   const leagueId = getRouterParam(event, 'id') as string
   const { editedAt, attachments } = await editMessage(db, {
     leagueId,

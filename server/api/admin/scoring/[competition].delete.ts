@@ -1,10 +1,13 @@
+import { z } from 'zod'
 import { db } from '../../../../db'
 import { defineValidatedHandler } from '../../../utils/validated-handler'
 import { getCompetitionBySlug } from '../../../utils/competitions/store'
 import { deleteScoringConfigOverride } from '../../../utils/scoring/admin'
 import { NotFoundError } from '../../../utils/errors'
 
-export default defineValidatedHandler({ admin: true }, async ({ event }) => {
+const responseSchema = z.object({ recomputed: z.number() })
+
+export default defineValidatedHandler({ admin: true, response: responseSchema }, async ({ event }) => {
   const slug = getRouterParam(event, 'competition')
   if (!slug) throw new NotFoundError('competition not found')
   const competition = await getCompetitionBySlug(db, slug)

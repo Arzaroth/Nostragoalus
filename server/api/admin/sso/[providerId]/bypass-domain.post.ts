@@ -1,13 +1,16 @@
+import { z } from 'zod'
 import { db } from '../../../../../db'
 import { defineValidatedHandler } from '../../../../utils/validated-handler'
 import { bypassDomainVerification } from '../../../../utils/sso/service'
 
+const responseSchema = z.object({ ok: z.literal(true), domainVerified: z.literal(true) })
+
 // Admin escape hatch: mark the domain verified without the DNS proof. Safe in the
 // single-tenant model where the registering admin is already fully trusted.
-export default defineValidatedHandler({ admin: true }, async ({ event }) => {
+export default defineValidatedHandler({ admin: true, response: responseSchema }, async ({ event }) => {
   const providerId = getRouterParam(event, 'providerId')!
   await bypassDomainVerification(db, providerId)
-  return { ok: true, domainVerified: true }
+  return { ok: true as const, domainVerified: true as const }
 })
 
 defineRouteMeta({

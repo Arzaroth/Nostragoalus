@@ -1,14 +1,17 @@
 import { eq } from 'drizzle-orm'
+import { z } from 'zod'
 import { db } from '../../../../db'
 import { ssoProvider } from '../../../../db/schema'
 import { defineValidatedHandler } from '../../../utils/validated-handler'
 import { openConfig, sealConfig } from '../../../utils/sso/config'
 import { findDomainConflicts, parseDomainList } from '../../../utils/auth/sso-domains'
 
+const responseSchema = z.object({ ok: z.literal(true), providerId: z.string() })
+
 // Edits a registered SSO provider in place. The provider type (OIDC/SAML) and
 // providerId are immutable - the providerId is baked into the IdP-side callback
 // URL. Secret fields left blank keep their stored value.
-export default defineValidatedHandler({ admin: true }, async ({ event }) => {
+export default defineValidatedHandler({ admin: true, response: responseSchema }, async ({ event }) => {
   const providerId = getRouterParam(event, 'providerId') as string
   const rows = await db.select().from(ssoProvider).where(eq(ssoProvider.providerId, providerId)).limit(1)
   const existing = rows[0]
@@ -86,7 +89,7 @@ export default defineValidatedHandler({ admin: true }, async ({ event }) => {
   }
 
   await db.update(ssoProvider).set(update).where(eq(ssoProvider.providerId, providerId))
-  return { ok: true, providerId }
+  return { ok: true as const, providerId }
 })
 
 defineRouteMeta({

@@ -1,12 +1,30 @@
+import { z } from 'zod'
 import { db } from '../../../../db'
 import { scimProvider, ssoProvider } from '../../../../db/schema'
-import { requireAdmin } from '../../../utils/auth-guards'
 import { listProviderAutoJoinLeagues } from '../../../utils/leagues/service'
 import { scimProviderId } from '../../../utils/sso/service'
+import { defineReadHandler } from '../../../utils/read-handler'
+
+const responseSchema = z.object({
+  providers: z.array(
+    z.object({
+      providerId: z.string(),
+      issuer: z.string(),
+      name: z.string().nullable(),
+      domains: z.array(z.string()),
+      type: z.enum(['saml', 'oidc']),
+      autoJoinLeagueIds: z.array(z.string()),
+      status: z.string(),
+      domainVerified: z.boolean(),
+      lastTestedAt: z.date().nullable(),
+      lastTestOk: z.boolean().nullable(),
+      scimEnabled: z.boolean(),
+    }),
+  ),
+})
 
 // Lists registered SSO providers without exposing the (encrypted) config.
-export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
+export default defineReadHandler({ response: responseSchema, auth: 'admin' }, async () => {
   const scimRows = await db.select({ providerId: scimProvider.providerId }).from(scimProvider)
   const scimEnabled = new Set(scimRows.map((r) => r.providerId))
   const rows = await db

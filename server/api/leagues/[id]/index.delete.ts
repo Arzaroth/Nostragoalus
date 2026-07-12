@@ -1,18 +1,16 @@
+import { z } from 'zod'
 import { db } from '../../../../db'
-import { isAdmin, requireUser } from '../../../utils/auth-guards'
-import { toHttpError } from '../../../utils/http'
+import { isAdmin } from '../../../utils/auth-guards'
+import { defineValidatedHandler } from '../../../utils/validated-handler'
 import { deleteLeague, resolveLeagueManage } from '../../../utils/leagues/service'
 
-export default defineEventHandler(async (event) => {
-  const user = await requireUser(event)
+const responseSchema = z.object({ ok: z.literal(true) })
+
+export default defineValidatedHandler({ response: responseSchema }, async ({ event, user }) => {
   const id = getRouterParam(event, 'id')!
-  try {
-    await resolveLeagueManage(db, id, user.id, { requiredRole: 'OWNER', resolveAdmin: () => isAdmin(event) })
-    await deleteLeague(db, id)
-    return { ok: true }
-  } catch (error) {
-    throw toHttpError(error)
-  }
+  await resolveLeagueManage(db, id, user.id, { requiredRole: 'OWNER', resolveAdmin: () => isAdmin(event) })
+  await deleteLeague(db, id)
+  return { ok: true as const }
 })
 
 defineRouteMeta({

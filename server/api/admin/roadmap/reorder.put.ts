@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { db } from '../../../../db'
 import { defineValidatedHandler } from '../../../utils/validated-handler'
 import { reorderColumn } from '../../../utils/roadmap/service'
+import { okSchema } from '../../../schemas/chat'
 
 // Static path: takes precedence over the sibling [id] route, so this is never
 // read as id="reorder".
@@ -11,9 +12,9 @@ const bodySchema = z.object({
   ids: z.array(z.string()).max(1000),
 })
 
-export default defineValidatedHandler({ admin: true, body: bodySchema }, async ({ body }) => {
+export default defineValidatedHandler({ admin: true, body: bodySchema, response: okSchema }, async ({ body }) => {
   await reorderColumn(db, body.status, body.ids)
-  return { ok: true }
+  return { ok: true as const }
 })
 
 defineRouteMeta({

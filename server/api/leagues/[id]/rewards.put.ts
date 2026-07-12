@@ -5,6 +5,7 @@ import { resolveLeagueManage } from '../../../utils/leagues/service'
 import { listLeagueRewards, type LeagueRewardWrite, setLeagueRewards } from '../../../utils/rewards/service'
 import { storeRewardFromDataUrl } from '../../../utils/rewards/image'
 import { useStorageDriver } from '../../../utils/storage'
+import { leagueRewardDtoSchema } from '../../../schemas/league'
 import { LEAGUE_REWARD_CRITERIA } from '#shared/types/rewards'
 
 // The prize link is rendered as an anchor href to every member, so only http(s)
@@ -37,7 +38,9 @@ const bodySchema = z.object({
     .refine((items) => new Set(items.map((i) => i.type)).size === items.length, 'each criterion may appear at most once'),
 })
 
-export default defineValidatedHandler({ body: bodySchema }, async ({ event, body, user }) => {
+const responseSchema = z.object({ ok: z.literal(true), rewards: z.array(leagueRewardDtoSchema) })
+
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ event, body, user }) => {
   const id = getRouterParam(event, 'id')!
   // Owner or moderator (throws 403/404 via toHttpError otherwise).
   await resolveLeagueManage(db, id, user.id)
@@ -53,7 +56,7 @@ export default defineValidatedHandler({ body: bodySchema }, async ({ event, body
   }
 
   await setLeagueRewards(db, id, writes)
-  return { ok: true, rewards: await listLeagueRewards(db, id) }
+  return { ok: true as const, rewards: await listLeagueRewards(db, id) }
 })
 
 defineRouteMeta({

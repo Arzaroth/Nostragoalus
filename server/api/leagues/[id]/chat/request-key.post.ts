@@ -1,14 +1,17 @@
+import { z } from 'zod'
 import { db } from '../../../../../db'
 import { requestChatRekey } from '../../../../utils/chat/service'
 import { publishRekeyRequest } from '../../../../utils/live/league-chat'
 import { defineValidatedHandler } from '../../../../utils/validated-handler'
+
+const responseSchema = z.object({ requested: z.boolean(), epoch: z.number() })
 
 // A member stuck without the current group key nudges the league's keyholders to
 // re-seal it. No body: the server checks the caller really is a keyless member
 // and, if so, broadcasts a keyless rekey prompt to the league's connected members
 // (only a keyholder client can act on it). This covers every join path uniformly
 // - public, code, invite, SSO auto-join, admin add - without a per-path hook.
-export default defineValidatedHandler({}, async ({ user, event }) => {
+export default defineValidatedHandler({ response: responseSchema }, async ({ user, event }) => {
   const leagueId = getRouterParam(event, 'id') as string
   const res = await requestChatRekey(db, leagueId, user.id)
   if (res.requested) void publishRekeyRequest(db, leagueId).catch(() => {})

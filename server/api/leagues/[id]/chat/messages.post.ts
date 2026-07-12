@@ -3,6 +3,7 @@ import { db } from '../../../../../db'
 import { postMessage } from '../../../../utils/chat/service'
 import { notifyMentions } from '../../../../utils/chat/mentions'
 import { publishChatMessage } from '../../../../utils/live/league-chat'
+import { chatMessageSchema } from '../../../../schemas/dm'
 import { defineValidatedHandler } from '../../../../utils/validated-handler'
 import { emptyReactionTotals } from '../../../../../shared/reactions'
 import type { ChatMessageDTO } from '../../../../../shared/types/chat'
@@ -26,9 +27,11 @@ const bodySchema = z.object({
   mentions: z.array(z.string().max(64)).max(64).optional(),
 })
 
+const responseSchema = z.object({ message: chatMessageSchema })
+
 // Post one encrypted message (server stores ciphertext only) and push it live to
 // the league's connected members.
-export default defineValidatedHandler({ body: bodySchema }, async ({ body, user, event }) => {
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ body, user, event }) => {
   const leagueId = getRouterParam(event, 'id') as string
   const row = await postMessage(db, {
     leagueId,

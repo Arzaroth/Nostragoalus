@@ -9,8 +9,10 @@ const bodySchema = z.object({
   wraps: z.array(z.object({ userId: z.string(), wrappedKey: z.string().min(1).max(1024) })).min(1).max(2000),
 })
 
+const responseSchema = z.object({ added: z.number() })
+
 // Any keyholding member seals the group key for newcomers and uploads the wraps.
-export default defineValidatedHandler({ body: bodySchema }, async ({ body, user, event }) => {
+export default defineValidatedHandler({ body: bodySchema, response: responseSchema }, async ({ body, user, event }) => {
   const leagueId = getRouterParam(event, 'id') as string
   const res = await addWrappedKeys(db, { leagueId, actorId: user.id, epoch: body.epoch, wraps: body.wraps })
   // Tell the freshly-sealed members to reload and open their new key, clearing

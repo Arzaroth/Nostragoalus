@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import { db } from '../../../../db'
 import { defineValidatedHandler } from '../../../utils/validated-handler'
 import { getCompetitionBySlug } from '../../../utils/competitions/store'
@@ -5,7 +6,9 @@ import { saveScoringConfig } from '../../../utils/scoring/admin'
 import { saveScoringConfigSchema } from '../../../utils/scoring/schema'
 import { NotFoundError } from '../../../utils/errors'
 
-export default defineValidatedHandler({ admin: true, body: saveScoringConfigSchema }, async ({ body }) => {
+const responseSchema = z.object({ version: z.number(), recomputed: z.number() })
+
+export default defineValidatedHandler({ admin: true, body: saveScoringConfigSchema, response: responseSchema }, async ({ body }) => {
   let competitionId: string | null = null
   if (body.competition) {
     const competition = await getCompetitionBySlug(db, body.competition)

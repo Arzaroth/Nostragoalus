@@ -1,12 +1,14 @@
 import { ne } from 'drizzle-orm'
+import { z } from 'zod'
 import { db } from '../../../../db'
 import { account } from '../../../../db/schema'
-import { requireAdmin } from '../../../utils/auth-guards'
+import { defineReadHandler } from '../../../utils/read-handler'
+
+const responseSchema = z.object({ links: z.record(z.string(), z.array(z.string())) })
 
 // Per-user SSO provider links for the admin user list (better-auth's listUsers
 // only returns user rows): drives the SSO indicator and the unlink action.
-export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
+export default defineReadHandler({ response: responseSchema, auth: 'admin' }, async () => {
   const rows = await db
     .select({ userId: account.userId, providerId: account.providerId })
     .from(account)

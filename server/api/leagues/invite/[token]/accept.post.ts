@@ -1,13 +1,24 @@
+import { z } from 'zod'
 import { db } from '../../../../../db'
-import { defineValidatedHandler } from '../../../../utils/validated-handler'
 import { getCompetitionById } from '../../../../utils/competitions/store'
 import { acceptInvite } from '../../../../utils/leagues/invites'
 import { createRateLimiter } from '../../../../utils/rate-limit'
+import { defineValidatedHandler } from '../../../../utils/validated-handler'
 
 // Tokens are 96-bit (unguessable), but probing is free to block anyway.
 const limiter = createRateLimiter({ limit: 10, windowMs: 60_000 })
 
-export default defineValidatedHandler({}, async ({ event, user }) => {
+const responseSchema = z.object({
+  league: z.object({
+    id: z.string(),
+    name: z.string(),
+    visibility: z.string(),
+    role: z.string(),
+    competition: z.object({ id: z.string(), slug: z.string(), name: z.string() }).nullable(),
+  }),
+})
+
+export default defineValidatedHandler({ response: responseSchema }, async ({ event, user }) => {
   if (!limiter.allow(user.id)) {
     throw createError({ statusCode: 429, statusMessage: 'Too many attempts, try again in a minute' })
   }
