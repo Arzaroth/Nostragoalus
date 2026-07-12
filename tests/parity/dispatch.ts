@@ -10,6 +10,7 @@ import * as scoring from '../../server/utils/scoring/engine'
 import * as standings from '../../server/utils/stats/standings'
 import * as commitment from '#shared/commitment'
 import * as kt from '#shared/key-transparency'
+import * as matchLogic from '#shared/types/match'
 
 // Only pure, deterministic functions belong here: same args -> same result on
 // every platform. No I/O, no clock, no randomness (any random input - a salt, a
@@ -54,6 +55,13 @@ const registry: Record<string, Record<string, (...args: never[]) => unknown>> = 
   },
   consensus: {
     computeConsensus: consensus.computeConsensus,
+  },
+  match: {
+    matchIsInPlay: matchLogic.matchIsInPlay,
+    matchHasStarted: matchLogic.matchHasStarted,
+    isSingleMatchStage: matchLogic.isSingleMatchStage,
+    countsDouble: matchLogic.countsDouble,
+    isKnockout: matchLogic.isKnockout,
   },
 }
 
