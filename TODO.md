@@ -44,7 +44,32 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
   ONGOING rows on boot (or age them out) so old chats don't show a phantom
   "ongoing" line.
 - **Call log pagination.** The chat fetches the latest 50 call rows per scope;
-  older call lines silently drop off (messages paginate, call lines don't).
+  older call lines silently drop off (messages paginate, call lines don't). Also:
+  a call older than the oldest LOADED message anchors before it, so with "load
+  older" paging, calls that happened between unloaded messages clump at the top
+  of the loaded window until their neighbourhood is paged in.
+- **Missed-call row spam via invite/cancel.** `voice:invite` (undelivered) and
+  `voice:cancel` (delivered) each insert a MISSED `voice_call` row per frame with
+  no per-socket rate limit; the call-line strip now renders those rows to every
+  member, so a looping client can fill a room's timeline (pushes are deduped, the
+  rows are not). `voice:cancel` can also mint a "missed call from X" for a target
+  that was never actually rung. Fold into the ring rate-limit item above.
+- **Stale `voice:ended` can kill a same-thread redial.** The client teardown
+  matches on roomKey only, so a `voice:ended` frame from the just-ended call that
+  arrives after an immediate redial to the SAME DM thread tears the new call down
+  and leaves a phantom server-side roster member. Needs a call/session id in the
+  ended frame to disambiguate.
+- **Server-side room-hop skips the DM force-end.** If a socket already in a DM
+  call joins a different voice room (unreachable through the shipped client,
+  which guards on `state !== 'idle'`), the stranded DM peer never gets
+  `voice:ended` or a roster push - only the call LOG of the prior room is closed.
+- **Call-line row markup is duplicated in ChatPanel.vue** (before-anchor block and
+  tail block, ~10 identical lines each); extract a small presentational component
+  next time it changes.
+- **`VOICE_MISSED` payload embeds the caller name pre-resolved**, so a deleted
+  caller shows the English "Someone" inside a localized bell sentence; the call
+  lines themselves now send `initiatorName: null` and localize client-side - do
+  the same for the notification payload.
 - **Video / screen share.** v1 is audio only.
 
 ## Chat identity recovery / reset
