@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Operator notes
+
+- Voice-chat coturn: `NUXT_TURN_EXTERNAL_IP` may be left blank to auto-resolve from `NUXT_TURN_HOST` at container start, so a dyndns hostname stays the single source of truth for the relay's public IP. `NUXT_TURN_HOST` must be a name the browser resolves directly, not a CDN-proxied one (Cloudflare can't carry TURN/UDP).
+
 ## [3.0.1] - 2026-07-12
 
 ### Operator notes
