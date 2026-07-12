@@ -1,0 +1,236 @@
+{
+  "module": "match",
+  "cases": [
+    {
+      "fn": "matchIsInPlay",
+      "args": [
+        "SCHEDULED"
+      ],
+      "expected": false
+    },
+    {
+      "fn": "matchHasStarted",
+      "args": [
+        "SCHEDULED"
+      ],
+      "expected": false
+    },
+    {
+      "fn": "matchIsInPlay",
+      "args": [
+        "LIVE"
+      ],
+      "expected": true
+    },
+    {
+      "fn": "matchHasStarted",
+      "args": [
+        "LIVE"
+      ],
+      "expected": true
+    },
+    {
+      "fn": "matchIsInPlay",
+      "args": [
+        "PAUSED"
+      ],
+      "expected": true
+    },
+    {
+      "fn": "matchHasStarted",
+      "args": [
+        "PAUSED"
+      ],
+      "expected": true
+    },
+    {
+      "fn": "matchIsInPlay",
+      "args": [
+        "SUSPENDED"
+      ],
+      "expected": true
+    },
+    {
+      "fn": "matchHasStarted",
+      "args": [
+        "SUSPENDED"
+      ],
+      "expected": true
+    },
+    {
+      "fn": "matchIsInPlay",
+      "args": [
+        "INTERRUPTED"
+      ],
+      "expected": true
+    },
+    {
+      "fn": "matchHasStarted",
+      "args": [
+        "INTERRUPTED"
+      ],
+      "expected": true
+    },
+    {
+      "fn": "matchIsInPlay",
+      "args": [
+        "FINISHED"
+      ],
+      "expected": false
+    },
+    {
+      "fn": "matchHasStarted",
+      "args": [
+        "FINISHED"
+      ],
+      "expected": true
+    },
+    {
+      "fn": "isSingleMatchStage",
+      "args": [
+        "GROUP"
+      ],
+      "expected": false
+    },
+    {
+      "fn": "countsDouble",
+      "args": [
+        "GROUP"
+      ],
+      "expected": false
+    },
+    {
+      "fn": "isKnockout",
+      "args": [
+        "GROUP"
+      ],
+      "expected": false
+    },
+    {
+      "fn": "isSingleMatchStage",
+      "args": [
+        "ROUND_OF_16"
+      ],
+      "expected": false
+    },
+    {
+      "fn": "countsDouble",
+      "args": [
+        "ROUND_OF_16"
+      ],
+      "expected": false
+    },
+    {
+      "fn": "isKnockout",
+      "args": [
+        "ROUND_OF_16"
+      ],
+      "expected": true
+    },
+    {
+      "fn": "isSingleMatchStage",
+      "args": [
+        "QUARTER_FINAL"
+      ],
+      "expected": false
+    },
+    {
+      "fn": "countsDouble",
+      "args": [
+        "QUARTER_FINAL"
+      ],
+      "expected": false
+    },
+    {
+      "fn": "isKnockout",
+      "args": [
+        "QUARTER_FINAL"
+      ],
+      "expected": true
+    },
+    {
+      "fn": "isSingleMatchStage",
+      "args": [
+        "SEMI_FINAL"
+      ],
+      "expected": false
+    },
+    {
+      "fn": "countsDouble",
+      "args": [
+        "SEMI_FINAL"
+      ],
+      "expected": false
+    },
+    {
+      "fn": "isKnockout",
+      "args": [
+        "SEMI_FINAL"
+      ],
+      "expected": true
+    },
+    {
+      "fn": "isSingleMatchStage",
+      "args": [
+        "THIRD_PLACE"
+      ],
+      "expected": true
+    },
+    {
+      "fn": "countsDouble",
+      "args": [
+        "THIRD_PLACE"
+      ],
+      "expected": false
+    },
+    {
+      "fn": "isKnockout",
+      "args": [
+        "THIRD_PLACE"
+      ],
+      "expected": true
+    },
+    {
+      "fn": "isSingleMatchStage",
+      "args": [
+        "FINAL"
+      ],
+      "expected": true
+    },
+    {
+      "fn": "countsDouble",
+      "args": [
+        "FINAL"
+      ],
+      "expected": true
+    },
+    {
+      "fn": "isKnockout",
+      "args": [
+        "FINAL"
+      ],
+      "expected": true
+    },
+    {
+      "fn": "isSingleMatchStage",
+      "args": [
+        null
+      ],
+      "expected": false
+    },
+    {
+      "fn": "countsDouble",
+      "args": [
+        null
+      ],
+      "expected": false
+    },
+    {
+      "fn": "isKnockout",
+      "args": [
+        null
+      ],
+      "expected": false
+    }
+  ]
+}
