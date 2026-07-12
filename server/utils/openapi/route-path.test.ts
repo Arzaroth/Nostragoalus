@@ -29,4 +29,12 @@ describe('filePathToRoute', () => {
   it('keeps a dotted name that is not a method verb', () => {
     expect(filePathToRoute('feed.rss.get.ts')).toEqual({ path: '/api/feed.rss', method: 'get' })
   })
+
+  it('does not treat a dotted non-method trailing segment as the method', () => {
+    // `feed.rss.ts` - trailing `rss` is not an HTTP verb, so no method is split
+    // off and the whole `feed.rss` stays the path (exercises the METHODS.has=false
+    // branch that only .get/.put/... suffixes would hide).
+    expect(filePathToRoute('feed.rss.ts')).toEqual({ path: '/api/feed.rss', method: null })
+    expect(filePathToRoute('sitemap.xml.ts')).toEqual({ path: '/api/sitemap.xml', method: null })
+  })
 })

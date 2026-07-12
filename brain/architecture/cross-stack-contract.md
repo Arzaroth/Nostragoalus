@@ -41,10 +41,13 @@ and builds one operation per route via `buildOperation` +
 [route-path.ts](../../server/utils/openapi/route-path.ts) (Nitro filename ->
 `{ path, method }`). Normal run asserts the rebuilt spec equals the committed
 `openapi.snapshot.json` (drift gate, like `db:generate`); `CONTRACT_BLESS=1`
-re-freezes. A converted route that fails to import is a hard error; unconverted
-ones are tolerated + counted. The hand-written `requestBody`/`responses`
-literals in `defineRouteMeta` are now redundant for converted routes (retired
-during fan-out).
+re-freezes. The gate **ratchets**: every route not contract-bound (no response
+schema, or fails to import) must appear in the test's `NO_CONTRACT` exempt list,
+so a new raw-handler route - or a converted route that starts failing to
+import - trips the gate instead of silently missing from the spec. Two files
+resolving to the same `path`+method also throw (no last-write-wins drop). The
+hand-written `requestBody`/`responses` literals in `defineRouteMeta` are now
+redundant for converted routes (retired during fan-out).
 
 Date policy (b, shipped): a response schema uses `z.date()` - it validates the
 Date the handler returns, cheaply, in every env; `toOpenApiSchema` maps

@@ -11,7 +11,9 @@ export async function buildCases(): Promise<RawCase[]> {
     cases.push({ fn: 'matchIsInPlay', args: [s] })
     cases.push({ fn: 'matchHasStarted', args: [s] })
   }
-  for (const stage of ['GROUP', 'ROUND_OF_16', 'QUARTER_FINAL', 'SEMI_FINAL', 'THIRD_PLACE', 'FINAL', null]) {
+  // The real AppStage domain (shared/types/match.ts) - so the vectors are a
+  // faithful spec of the inputs a client actually sees, plus an unknown string.
+  for (const stage of ['GROUP', 'R32', 'R16', 'QF', 'SF', 'THIRD_PLACE', 'FINAL', 'UNKNOWN', null]) {
     cases.push({ fn: 'isSingleMatchStage', args: [stage] })
     cases.push({ fn: 'countsDouble', args: [stage] })
     cases.push({ fn: 'isKnockout', args: [stage] })

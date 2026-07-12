@@ -98,10 +98,13 @@ export interface HandlerContract {
 export function parseResponse<R>(schema: ZodType, result: unknown): R {
   const parsed = schema.safeParse(result)
   if (!parsed.success) {
+    // A server-side contract breach: keep the offending field paths in `cause`
+    // (h3 keeps it server-side) rather than `data` (which is echoed to the
+    // client) - the caller can't act on it and it discloses internal shape.
     throw createError({
       statusCode: 500,
       statusMessage: 'Response contract violation',
-      data: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
+      cause: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
     })
   }
   return parsed.data as R

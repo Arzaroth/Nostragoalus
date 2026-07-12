@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Changed
+
+- The API documentation (OpenAPI, served at `/_docs`) now derives every endpoint's request and response schema from the server's own validation, so the published contract always matches exactly what each endpoint accepts and returns.
+
 ## [3.0.2] - 2026-07-12
 
 ### Operator notes

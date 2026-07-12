@@ -5,6 +5,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Modifié
+
+- La documentation de l'API (OpenAPI, servie sur `/_docs`) dérive désormais le schéma de requête et de réponse de chaque point d'accès de la validation du serveur elle-même, afin que le contrat publié corresponde toujours exactement à ce que chaque point d'accès accepte et renvoie.
+
 ## [3.0.2] - 2026-07-12
 
 ### Notes d'exploitation
