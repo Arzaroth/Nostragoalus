@@ -32,20 +32,29 @@ can never drift from what the server accepts and returns.
   same response contract. Brings the read routes under the mutations' discipline.
 
 `defineRouteMeta` is a static Nuxt macro - it cannot call `buildOperation()`
-inline - so the full `openapi.json` is generated OUT OF BAND by a stubbed-import
-walker (stub the h3/wrapper globals, import each route, capture its schemas),
-NOT through the macro. The old hand-written `requestBody`/`responses` JSON-Schema
-literals in `defineRouteMeta` are the copy being retired.
+inline - so the full `openapi.json` is generated OUT OF BAND. Each wrapper
+attaches an inert `__contract` (body + response + kind) to the handler it
+returns; the emitter
+([tests/contract/openapi.test.ts](../../tests/contract/openapi.test.ts)) stubs
+the h3/Nitro globals, imports every `server/api` route, reads that `__contract`,
+and builds one operation per route via `buildOperation` +
+[route-path.ts](../../server/utils/openapi/route-path.ts) (Nitro filename ->
+`{ path, method }`). Normal run asserts the rebuilt spec equals the committed
+`openapi.snapshot.json` (drift gate, like `db:generate`); `CONTRACT_BLESS=1`
+re-freezes. A converted route that fails to import is a hard error; unconverted
+ones are tolerated + counted. The hand-written `requestBody`/`responses`
+literals in `defineRouteMeta` are now redundant for converted routes (retired
+during fan-out).
+
+Date policy (b, shipped): a response schema uses `z.date()` - it validates the
+Date the handler returns, cheaply, in every env; `toOpenApiSchema` maps
+`z.date()` to a date-time string for the wire/Dart contract, so the runtime
+check and the published contract agree with no serialize dance.
 
 ### Open slices (see TODO.md "Cross-stack contract & parity")
-- Spec emitter: the stubbed-import walker over all routes -> committed
-  `openapi.json`; a contract test that fails on staleness or a missing response
-  schema (regen-clean, same discipline as `db:generate`).
-- Date wire-shape policy: a handler returns a `Date` before h3 serializes it,
-  but the wire/Dart contract wants an ISO string. Decide once (schema describes
-  the wire shape + validate post-serialize, or `z.date()` + a mapper) before
-  fanning out to the routes that return dates.
-- Fan-out: response schema on the remaining routes, by feature area.
+- Fan-out: response schema on the remaining routes, by feature area. ~180
+  unconverted; 8 currently fail to import under the bare unit env (aliases /
+  runtime-only imports) and must be made import-clean as they are converted.
 
 ## Logic parity: frozen golden vectors
 
@@ -62,10 +71,13 @@ can.
 - `*.parity.test.ts` - normal run replays + asserts; `pnpm parity:bless`
   (`PARITY_BLESS=1`) re-freezes after a deliberate semantics change.
 
-First module: `commitment` (the commit-reveal ledger,
-[../features](../features/index.md) tamper-evidence). Queued: `key-transparency`,
-`e2ee` crypto (libsodium KATs), `scoring`, `criteria`, `fergie`, `achievements`,
-`match`/`stage`.
+Suite factored into
+[tests/parity/harness.ts](../../tests/parity/harness.ts) (`parityVectors`);
+`dispatch.ts` marshals `Uint8Array` args/results as `{ $b64 }` so crypto vectors
+cross the JSON boundary. Modules done: `commitment` (commit-reveal ledger),
+`key-transparency` (chat-key hash chain), `e2ee` (libsodium interop KATs -
+decrypt/unseal/derive direction, since encrypt/seal is random). Queued:
+`scoring`, `criteria`, `fergie`, `achievements`, `match`/`stage`.
 
 Related: [e2ee-trust-model.md](e2ee-trust-model.md),
 [build-integrity.md](build-integrity.md), [testing.md](testing.md).
