@@ -67,19 +67,22 @@ describe('computeHeadToHead', () => {
     expect(r.agreement.sameOutcome).toBe(2)
   })
 
-  it('lists diverged matches only, biggest points gap first, capped at six', () => {
-    // Seven diverged matches with growing gaps, plus one agreeing match.
-    const rows = Array.from({ length: 7 }, (_, i) =>
-      hrow({ matchId: `d${i}`, aHome: 2, aAway: 0, bHome: 0, bAway: 1, aPoints: i, bPoints: 0 }),
+  it('lists matches with a points gap, biggest gap first, capped at six', () => {
+    // Six diverged-outcome matches with growing gaps, one same-outcome match
+    // with a huge gap (exact score + joker vs plain right result), and one
+    // match with equal points on both sides.
+    const rows = Array.from({ length: 6 }, (_, i) =>
+      hrow({ matchId: `d${i}`, aHome: 2, aAway: 0, bHome: 0, bAway: 1, aPoints: i + 1, bPoints: 0 }),
     )
-    rows.push(hrow({ matchId: 'agree', aHome: 1, aAway: 0, bHome: 1, bAway: 0, aPoints: 9, bPoints: 9 }))
+    rows.push(hrow({ matchId: 'joker', aHome: 3, aAway: 1, bHome: 2, bAway: 1, aPoints: 24, bPoints: 1 }))
+    rows.push(hrow({ matchId: 'even', aHome: 1, aAway: 0, bHome: 0, bAway: 1, aPoints: 2, bPoints: 2 }))
     const r = computeHeadToHead('C', A, B, rows)
     expect(r.divergences).toHaveLength(6)
-    expect(r.divergences.every((m) => m.diverged)).toBe(true)
-    // d6 (gap 6) leads, d1 (gap 1) is the smallest kept; d0 (gap 0) drops off.
-    expect(r.divergences[0].matchId).toBe('d6')
-    expect(r.divergences.some((m) => m.matchId === 'agree')).toBe(false)
+    // The same-outcome joker rout (gap 23) leads; d0 (gap 1) drops off the six;
+    // the equal-points match never qualifies even though its outcomes diverged.
+    expect(r.divergences[0].matchId).toBe('joker')
     expect(r.divergences.some((m) => m.matchId === 'd0')).toBe(false)
+    expect(r.divergences.some((m) => m.matchId === 'even')).toBe(false)
   })
 
   it('breaks an equal points-gap divergence tie by matchId for a stable order', () => {

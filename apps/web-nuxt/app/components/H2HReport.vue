@@ -3,6 +3,8 @@ import type { H2HResponse } from '#shared/types/h2h'
 
 const props = defineProps<{ data: H2HResponse }>()
 const { t } = useI18n()
+const route = useRoute()
+const slug = computed(() => String(route.params.competition ?? ''))
 
 // Player A carries the primary hue and a solid line; player B a contrasting
 // amber and a dashed line, so the two series are told apart by shape as well as
@@ -34,14 +36,18 @@ const chart = computed(() => {
     <!-- Header: the two players and the score line -->
     <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
       <div class="flex flex-col items-center text-center gap-1" :class="leader === 'b' ? 'opacity-60' : ''">
-        <UserAvatar :image="data.a.image" :user-id="data.a.id" size="large" />
-        <div class="font-semibold text-sm truncate max-w-full">{{ data.a.name }}</div>
+        <NuxtLink :to="`/${slug}/users/${data.a.id}`" class="flex flex-col items-center gap-1 max-w-full hover:underline">
+          <UserAvatar :image="data.a.image" :user-id="data.a.id" size="large" />
+          <div class="font-semibold text-sm truncate max-w-full">{{ data.a.name }}</div>
+        </NuxtLink>
         <div class="text-2xl font-bold tabular-nums" :style="`color: ${A_COLOR}`">{{ data.aPoints }}</div>
       </div>
       <div class="text-xs uppercase tracking-wide" style="color: var(--p-text-muted-color)">{{ t('h2h.vs') }}</div>
       <div class="flex flex-col items-center text-center gap-1" :class="leader === 'a' ? 'opacity-60' : ''">
-        <UserAvatar :image="data.b.image" :user-id="data.b.id" size="large" />
-        <div class="font-semibold text-sm truncate max-w-full">{{ data.b.name }}</div>
+        <NuxtLink :to="`/${slug}/users/${data.b.id}`" class="flex flex-col items-center gap-1 max-w-full hover:underline">
+          <UserAvatar :image="data.b.image" :user-id="data.b.id" size="large" />
+          <div class="font-semibold text-sm truncate max-w-full">{{ data.b.name }}</div>
+        </NuxtLink>
         <div class="text-2xl font-bold tabular-nums" :style="`color: ${B_COLOR}`">{{ data.bPoints }}</div>
       </div>
     </div>
