@@ -4,7 +4,7 @@ import { publishVoicePresence, publishVoiceRoster, publishVoiceToUser, sendVoice
 import { isInRoom, joinRoom, leaveRoom, roomOf, rosterOf, tokenInRoom, tokensInRoom } from './voice-rooms'
 import { recordMissedCall, resolveVoiceScope } from '../voice/service'
 import { getLeagueMemberIds } from '../chat/service'
-import { displayName } from '../notifications/events'
+import { displayName, displayNames } from '../notifications/events'
 import type { VoiceScope, VoiceSignalKind } from '../../../shared/types/voice'
 import { parseVoiceRoomKey } from '../../../shared/types/voice'
 
@@ -17,10 +17,13 @@ async function broadcastLeaguePresence(
   roomKey: string,
   scope: VoiceScope,
   members?: readonly string[],
+  names?: Record<string, string>,
 ): Promise<void> {
   if (scope.kind !== 'league') return
   const recipients = members ?? (await getLeagueMemberIds(db, scope.leagueId))
-  publishVoicePresence(recipients, { type: 'voice:presence', roomKey, scope, count: rosterOf(roomKey).length })
+  const roster = rosterOf(roomKey)
+  const rosterNames = names ?? (await displayNames(db, roster))
+  publishVoicePresence(recipients, { type: 'voice:presence', roomKey, scope, count: roster.length, names: rosterNames })
 }
 
 // The WS-frame orchestration for voice: authorize (reusing chat/DM rules), mutate
@@ -45,8 +48,9 @@ export async function handleVoiceJoin(db: AppDatabase, sub: LiveSubscriber, scop
       if (token !== sub) sendVoiceToToken(token, { type: 'voice:peer-reset', userId: sub.userId })
     }
   }
-  publishVoiceRoster(resolved.roomKey, scope)
-  await broadcastLeaguePresence(db, resolved.roomKey, scope, resolved.audience)
+  const names = await displayNames(db, rosterOf(resolved.roomKey))
+  publishVoiceRoster(resolved.roomKey, scope, names)
+  await broadcastLeaguePresence(db, resolved.roomKey, scope, resolved.audience, names)
 }
 
 // Leave whatever call this socket is in (an explicit leave or a disconnect): push
@@ -66,8 +70,9 @@ export async function handleVoiceLeave(db: AppDatabase, sub: LiveSubscriber): Pr
       sendVoiceToToken(token, { type: 'voice:ended', scope, from: left.userId })
     }
   }
-  publishVoiceRoster(left.roomKey, scope)
-  await broadcastLeaguePresence(db, left.roomKey, scope)
+  const names = await displayNames(db, rosterOf(left.roomKey))
+  publishVoiceRoster(left.roomKey, scope, names)
+  await broadcastLeaguePresence(db, left.roomKey, scope, undefined, names)
 }
 
 // Relay one SDP/ICE payload to another participant. Authorized purely by live

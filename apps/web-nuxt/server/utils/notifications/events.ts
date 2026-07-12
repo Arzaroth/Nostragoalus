@@ -27,6 +27,17 @@ async function competitionInfo(db: AppDatabase, competitionId: string): Promise<
   return rows[0] ?? null
 }
 
+// Bulk displayName: one query for a small set (a voice roster), same fallbacks.
+export async function displayNames(db: AppDatabase, userIds: readonly string[]): Promise<Record<string, string>> {
+  if (userIds.length === 0) return {}
+  const rows = await db
+    .select({ id: user.id, display: userProfile.displayName, name: user.name })
+    .from(user)
+    .leftJoin(userProfile, eq(userProfile.userId, user.id))
+    .where(inArray(user.id, [...userIds]))
+  return Object.fromEntries(rows.map((r) => [r.id, r.display ?? r.name ?? 'Someone']))
+}
+
 async function leagueName(db: AppDatabase, leagueId: string): Promise<string | null> {
   const rows = await db.select({ name: league.name }).from(league).where(eq(league.id, leagueId)).limit(1)
   return rows[0]?.name ?? null

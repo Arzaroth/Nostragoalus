@@ -63,13 +63,18 @@ describe('voice signaling glue', () => {
     const { db, threadId, scope } = await dmFixture()
     const a = connect('alice')
     await handleVoiceJoin(db, a, scope)
-    expect(framesOfType(a, 'voice:roster').at(-1)).toMatchObject({ roomKey: `dm:${threadId}`, roster: ['alice'] })
+    expect(framesOfType(a, 'voice:roster').at(-1)).toMatchObject({
+      roomKey: `dm:${threadId}`,
+      roster: ['alice'],
+      names: { alice: 'Alice' },
+    })
 
     const b = connect('bob')
     await handleVoiceJoin(db, b, scope)
-    // Both participants get the new roster.
+    // Both participants get the new roster, names included (a DM client has no
+    // member list of its own to resolve them from).
     expect(framesOfType(a, 'voice:roster').at(-1)?.roster).toEqual(['alice', 'bob'])
-    expect(framesOfType(b, 'voice:roster').at(-1)?.roster).toEqual(['alice', 'bob'])
+    expect(framesOfType(b, 'voice:roster').at(-1)).toMatchObject({ names: { alice: 'Alice', bob: 'Bob' } })
   })
 
   it('relays a signal only between two members of the same room', async () => {
@@ -161,8 +166,8 @@ describe('voice signaling glue', () => {
     const owner = connect('owner')
     const member = connect('member') // not joining - just a league member watching the badge
     await handleVoiceJoin(db, owner, scope)
-    // The non-participant member is told the room now has 1.
-    expect(framesOfType(member, 'voice:presence').at(-1)).toMatchObject({ roomKey, count: 1 })
+    // The non-participant member is told the room now has 1 and who it is.
+    expect(framesOfType(member, 'voice:presence').at(-1)).toMatchObject({ roomKey, count: 1, names: { owner: 'Owner' } })
     await handleVoiceLeave(db, owner)
     // Emptied room broadcasts 0 so the badge clears.
     expect(framesOfType(member, 'voice:presence').at(-1)).toMatchObject({ roomKey, count: 0 })

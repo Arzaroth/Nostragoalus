@@ -5,14 +5,23 @@
 // wrap it in <ClientOnly>. All call state comes from the useVoiceCall singleton.
 const { t } = useI18n()
 const toast = useToast()
-const { state, activeScope, roster, remoteStreams, incoming, muted, errorKey, accept, decline, hangup, invite, toggleMute } =
+const { state, activeScope, roster, rosterNames, remoteStreams, incoming, muted, errorKey, accept, decline, hangup, invite, toggleMute } =
   useVoiceCall()
 
-// Names for the in-call bar / invite picker come from the league roster (a DM has
-// just the two of you; the other's name rides the ring).
+// Names come from the league roster when available (fresher on a rename), else
+// from the names the server ships with each voice:roster push (covers DMs).
 const leagueId = computed(() => (activeScope.value?.kind === 'league' ? activeScope.value.leagueId : null))
 const detail = useLeagueDetail(leagueId)
-const nameOf = (userId: string): string => detail.data.value?.members?.find((m) => m.userId === userId)?.name ?? userId
+const nameOf = (userId: string): string =>
+  detail.data.value?.members?.find((m) => m.userId === userId)?.name ?? rosterNames.value[userId] ?? userId
+
+// Who else is on the call, for the "with X, Y" line under the status.
+const { session } = useAuth()
+const myId = computed(() => session.value?.data?.user?.id ?? null)
+const others = computed(() => roster.value.filter((id) => id !== myId.value))
+const participantsLabel = computed(() =>
+  state.value === 'in-call' && others.value.length ? others.value.map(nameOf).join(', ') : '',
+)
 
 const remoteEntries = computed(() => Object.entries(remoteStreams.value))
 const isLeague = computed(() => activeScope.value?.kind === 'league')
@@ -109,7 +118,14 @@ function ring(userId: string): void {
         <span class="absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping" style="background: var(--p-primary-color)" />
         <span class="relative inline-flex rounded-full h-2.5 w-2.5" style="background: var(--p-primary-color)" />
       </span>
-      <span class="text-sm font-medium tabular-nums">{{ statusLabel }}</span>
+      <span class="flex flex-col min-w-0">
+        <span class="text-sm font-medium tabular-nums">{{ statusLabel }}</span>
+        <span
+          v-if="participantsLabel"
+          class="text-xs truncate max-w-[14rem]"
+          style="color: var(--p-text-muted-color)"
+        >{{ participantsLabel }}</span>
+      </span>
 
       <button
         v-if="state === 'in-call'"

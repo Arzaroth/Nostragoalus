@@ -98,23 +98,24 @@ export type VoiceInboundFrame =
 // === Server -> client frames (outbound) ===
 
 // The full roster of a room after a join/leave - the mesh membership (user ids)
-// the client reconciles its peer connections against. Display names are resolved
-// client-side from data it already holds (league roster / DM peer), so the server
-// keeps this to ids and stays out of the name-resolution business here.
+// the client reconciles its peer connections against, plus the display names the
+// UI shows (a DM has no client-side roster to resolve names from).
 export interface VoiceRosterFrame {
   type: 'voice:roster'
   roomKey: string
   scope: VoiceScope
   roster: string[]
+  names: Record<string, string>
 }
 // A league voice room's participant count, broadcast to every league member (not
-// just participants) so the chat can show an always-on "N in voice" badge and an
-// invite affordance. count 0 = the room emptied (clear the badge).
+// just participants) so the chat can show an always-on "N in voice" badge (with
+// who is in) and an invite affordance. count 0 = the room emptied (clear the badge).
 export interface VoicePresenceFrame {
   type: 'voice:presence'
   roomKey: string
   scope: VoiceScope
   count: number
+  names: Record<string, string>
 }
 // An incoming ring for the recipient.
 export interface VoiceRingFrame {

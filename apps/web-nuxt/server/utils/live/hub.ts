@@ -391,9 +391,10 @@ function guardedSend(token: VoiceToken, payload: unknown): void {
   }
 }
 
-// Push a room's current roster (user ids) to every participating socket.
-export function publishVoiceRoster(roomKey: string, scope: VoiceScope): void {
-  const payload = { type: 'voice:roster', roomKey, scope, roster: rosterOf(roomKey) }
+// Push a room's current roster (user ids + display names) to every participating
+// socket.
+export function publishVoiceRoster(roomKey: string, scope: VoiceScope, names: Record<string, string>): void {
+  const payload = { type: 'voice:roster', roomKey, scope, roster: rosterOf(roomKey), names }
   for (const token of tokensInRoom(roomKey)) guardedSend(token, payload)
 }
 

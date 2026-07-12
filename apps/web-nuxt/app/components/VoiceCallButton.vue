@@ -14,7 +14,7 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
-const { inCall, isInScope, voiceCountFor, startDmCall, joinLeagueVoice } = useVoiceCall()
+const { inCall, isInScope, voiceCountFor, voiceNamesFor, startDmCall, joinLeagueVoice } = useVoiceCall()
 
 const scope = computed<VoiceScope | null>(() => {
   if (props.isDm) return props.threadId ? { kind: 'dm', threadId: props.threadId } : null
@@ -23,6 +23,12 @@ const scope = computed<VoiceScope | null>(() => {
 
 const here = computed(() => (scope.value ? isInScope(scope.value) : false))
 const count = computed(() => (scope.value ? voiceCountFor(voiceRoomKey(scope.value)) : 0))
+// League tooltip names who is already in the call, so the badge answers "who?".
+const tooltip = computed(() => {
+  if (props.isDm) return t('voice.call')
+  const names = scope.value ? voiceNamesFor(voiceRoomKey(scope.value)) : []
+  return names.length ? `${t('voice.joinVoice')} - ${names.join(', ')}` : t('voice.joinVoice')
+})
 // Busy elsewhere: a call is up but not for this room.
 const busy = computed(() => inCall.value && !here.value)
 const canCall = computed(() => (props.isDm ? !!props.threadId && !!props.calleeId : !!props.leagueId))
@@ -38,7 +44,7 @@ function act(): void {
   <button
     v-if="canCall && !here"
     type="button"
-    v-tooltip.top="isDm ? t('voice.call') : t('voice.joinVoice')"
+    v-tooltip.top="tooltip"
     class="relative inline-flex items-center opacity-70 hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
     :class="count > 0 ? 'opacity-100' : ''"
     :style="count > 0 ? 'color: var(--p-primary-color)' : ''"
