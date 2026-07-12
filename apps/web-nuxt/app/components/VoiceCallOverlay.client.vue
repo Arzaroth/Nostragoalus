@@ -7,7 +7,10 @@ const { t } = useI18n()
 const toast = useToast()
 const {
   state, activeScope, roster, rosterNames, remoteStreams, incoming, muted, errorKey,
-  localLevel, speakingPeers, mutedTalkingAt, accept, decline, hangup, invite, toggleMute,
+  localLevel, speakingPeers, mutedTalkingAt,
+  inputDevices, outputDevices, inputDeviceId, outputDeviceId, noiseSuppression, canPickOutput,
+  accept, decline, hangup, invite, toggleMute,
+  refreshDevices, setInputDevice, setOutputDevice, setNoiseSuppression,
 } = useVoiceCall()
 
 // Names come from the league roster when available (fresher on a rename), else
@@ -85,6 +88,34 @@ const statusLabel = computed(() => {
   }
 })
 
+// Audio settings dialog: device pickers + noise suppression. Options are built
+// with a "system default" first; unnamed devices fall back to a generic label.
+const showSettings = ref(false)
+watch(showSettings, (open) => {
+  if (open) void refreshDevices()
+})
+const deviceOptions = (devices: readonly { deviceId: string; label: string }[], fallback: string) => [
+  { label: t('voice.deviceDefault'), value: null as string | null },
+  ...devices.filter((d) => d.deviceId && d.deviceId !== 'default').map((d, i) => ({
+    label: d.label || `${fallback} ${i + 1}`,
+    value: d.deviceId as string | null,
+  })),
+]
+const inputOptions = computed(() => deviceOptions(inputDevices.value, t('voice.input')))
+const outputOptions = computed(() => deviceOptions(outputDevices.value, t('voice.output')))
+const nsModel = computed({
+  get: () => noiseSuppression.value,
+  set: (on: boolean) => void setNoiseSuppression(on),
+})
+const inputModel = computed({
+  get: () => inputDeviceId.value,
+  set: (id: string | null) => void setInputDevice(id),
+})
+const outputModel = computed({
+  get: () => outputDeviceId.value,
+  set: (id: string | null) => setOutputDevice(id),
+})
+
 // Invite picker (league only): members not already in the room.
 const showInvite = ref(false)
 const invitable = computed(() =>
@@ -99,7 +130,7 @@ function ring(userId: string): void {
 <template>
   <div>
     <!-- Hidden remote audio, one element per connected peer. -->
-    <VoiceAudio v-for="[peerId, stream] in remoteEntries" :key="peerId" :stream="stream" />
+    <VoiceAudio v-for="[peerId, stream] in remoteEntries" :key="peerId" :stream="stream" :sink-id="outputDeviceId" />
 
     <!-- Incoming ring. -->
     <Dialog
@@ -172,6 +203,17 @@ function ring(userId: string): void {
       </button>
 
       <button
+        v-if="state === 'in-call'"
+        type="button"
+        v-tooltip.top="t('voice.settings')"
+        class="inline-flex items-center opacity-80 hover:opacity-100"
+        :aria-label="t('voice.settings')"
+        @click="showSettings = true"
+      >
+        <i class="pi pi-cog" />
+      </button>
+
+      <button
         v-if="isLeague && state === 'in-call'"
         type="button"
         v-tooltip.top="t('voice.invite')"
@@ -193,6 +235,24 @@ function ring(userId: string): void {
         <i class="pi pi-phone" style="transform: rotate(135deg)" />
       </button>
     </div>
+
+    <!-- Audio settings. -->
+    <Dialog v-model:visible="showSettings" modal :header="t('voice.settings')" :style="{ width: '24rem', maxWidth: '92vw' }">
+      <div class="flex flex-col gap-4">
+        <label class="flex flex-col gap-1 text-sm">
+          {{ t('voice.input') }}
+          <Select v-model="inputModel" :options="inputOptions" option-label="label" option-value="value" class="w-full" />
+        </label>
+        <label v-if="canPickOutput" class="flex flex-col gap-1 text-sm">
+          {{ t('voice.output') }}
+          <Select v-model="outputModel" :options="outputOptions" option-label="label" option-value="value" class="w-full" />
+        </label>
+        <label class="flex items-center gap-2 text-sm">
+          <ToggleSwitch v-model="nsModel" />
+          {{ t('voice.noiseSuppression') }}
+        </label>
+      </div>
+    </Dialog>
 
     <!-- League invite picker. -->
     <Dialog v-model:visible="showInvite" modal :header="t('voice.inviteTitle')" :style="{ width: '24rem', maxWidth: '92vw' }">

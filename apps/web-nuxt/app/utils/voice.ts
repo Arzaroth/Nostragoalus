@@ -36,6 +36,18 @@ export function rosterDelta(previous: Iterable<string>, roster: readonly string[
   return { added, removed }
 }
 
+// getUserMedia audio constraints for a call. Echo cancellation and auto gain are
+// always on (a speakerphone call without them howls); noise suppression is the
+// user's toggle. A chosen device is `exact` so a switch never silently falls back.
+export function buildAudioConstraints(deviceId: string | null, noiseSuppression: boolean): MediaTrackConstraints {
+  return {
+    echoCancellation: true,
+    autoGainControl: true,
+    noiseSuppression,
+    ...(deviceId ? { deviceId: { exact: deviceId } } : {}),
+  }
+}
+
 // RMS level above which a stream counts as someone speaking. Time-domain RMS of
 // normal speech sits well above this; keyboard/breath noise stays below.
 export const VOICE_SPEAKING_THRESHOLD = 0.04
