@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [4.1.1] - 2026-07-13
+
 ### Changed
 
 - Voice calls: your microphone meter is now a smooth live waveform instead of three coarse threshold bars.
