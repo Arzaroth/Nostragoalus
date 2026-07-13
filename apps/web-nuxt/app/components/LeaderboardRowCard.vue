@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BOT_PERSONA_META, botPersonaParamFromUserId } from '#shared/types/bot'
 import type { LeaderboardDisplayRow } from '../composables/useLeaderboard'
 
 // One leaderboard row, shared by the competition board and the per-league board
@@ -18,6 +19,15 @@ function medal(rank: number) {
   return rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null
 }
 const isMe = computed(() => props.row.userId === props.meId)
+
+// While a cosmetic skin is active, a bot ghost row wears its villain avatar
+// instead of the emoji (easter egg). null = default theme or a real player.
+const { skin } = useSkin()
+const botVillain = computed(() => {
+  if (!skin.value || !props.row.isBot) return null
+  const param = botPersonaParamFromUserId(props.row.userId)
+  return param ? BOT_PERSONA_META[param].villain : null
+})
 </script>
 
 <template>
@@ -36,7 +46,8 @@ const isMe = computed(() => props.row.userId === props.meId)
         {{ row.movement > 0 ? '▲' : '▼' }}{{ Math.abs(row.movement) }}
       </div>
     </div>
-    <span v-if="row.isBot" class="shrink-0 text-2xl leading-none w-8 h-8 inline-flex items-center justify-center">{{ row.icon }}</span>
+    <img v-if="botVillain" :src="botVillain" class="shrink-0 w-8 h-8 rounded-full object-cover" :alt="row.displayName" >
+    <span v-else-if="row.isBot" class="shrink-0 text-2xl leading-none w-8 h-8 inline-flex items-center justify-center">{{ row.icon }}</span>
     <UserAvatar v-else :image="row.image" :user-id="row.userId" />
     <div class="flex-1 min-w-0">
       <div class="font-semibold truncate flex items-center gap-2.5">

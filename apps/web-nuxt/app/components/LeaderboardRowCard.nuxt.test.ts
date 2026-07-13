@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import LeaderboardRowCard from './LeaderboardRowCard.vue'
+import { botUserId } from '#shared/types/bot'
+import { useSkin } from '../composables/useSkin'
 import type { LeaderboardRow } from '../composables/useLeaderboard'
 
 type DisplayRow = LeaderboardRow & { isBot?: boolean; icon?: string }
@@ -32,6 +34,7 @@ let wrapper: Awaited<ReturnType<typeof mountSuspended>> | null = null
 afterEach(() => {
   wrapper?.unmount()
   wrapper = null
+  useSkin().setSkin(null)
 })
 
 async function mount(r: DisplayRow, meId?: string) {
@@ -108,5 +111,18 @@ describe('LeaderboardRowCard', () => {
     const style = w.find('[data-test=leaderboard-row]').attributes('style')
     expect(style).toContain('border-style: dashed')
     expect(w.text()).toContain('🤖')
+  })
+
+  it('wears the villain avatar in place of the emoji while a skin is active', async () => {
+    useSkin().setSkin('twilight')
+    const w = await mount(row({ isBot: true, icon: '🤖', userId: botUserId('CONSENSUS'), displayName: 'Consensus' }))
+    expect(w.find('img[src="/bots/discord.png"]').exists()).toBe(true)
+    expect(w.text()).not.toContain('🤖')
+  })
+
+  it('keeps the emoji for a bot ghost when no skin is active', async () => {
+    const w = await mount(row({ isBot: true, icon: '⚖️', userId: botUserId('EQUALIZER'), displayName: 'Equalizer' }))
+    expect(w.find('img[src^="/bots/"]').exists()).toBe(false)
+    expect(w.text()).toContain('⚖️')
   })
 })

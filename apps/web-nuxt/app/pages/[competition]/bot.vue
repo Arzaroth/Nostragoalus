@@ -19,6 +19,8 @@ function selectPersona(p: BotPersonaParam) {
   router.replace({ query: { ...route.query, persona: p } })
 }
 const meta = computed(() => BOT_PERSONA_META[persona.value])
+const { skin } = useSkin()
+const villain = computed(() => (skin.value ? meta.value.villain : null))
 const { data, isLoading } = useBotPredictions(persona, botMethod, leagueId)
 
 // Only the crowd bots have a shared page; the evil twin lives on profiles.
@@ -51,7 +53,8 @@ const upcoming = computed(() => (data.value?.predictions ?? []).filter((p) => ne
     <div v-else-if="data">
       <div class="flex items-center justify-between gap-3 flex-wrap mt-3 mb-1">
         <div class="flex items-center gap-3 min-w-0">
-          <span class="text-4xl leading-none shrink-0">{{ meta.icon }}</span>
+          <img v-if="villain" :src="villain" class="w-12 h-12 rounded-full object-cover shrink-0" :alt="t(meta.nameKey)" >
+          <span v-else class="text-4xl leading-none shrink-0">{{ meta.icon }}</span>
           <h1 class="text-2xl font-bold truncate">{{ t(meta.nameKey) }}</h1>
           <span class="text-xs font-normal px-1.5 py-0.5 rounded-full shrink-0" style="color: var(--p-text-muted-color); background: var(--p-content-border-color)">{{ t('bot.virtual') }}</span>
           <span

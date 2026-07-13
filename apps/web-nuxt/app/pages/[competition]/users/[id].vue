@@ -82,6 +82,7 @@ const twinOn = ref(route.query.twin === '1')
 const twinCompetition = computed(() => (global.value ? null : (slug.value ?? null)))
 const twinEnabled = computed(() => twinOn.value && !global.value)
 const { data: twin } = useUserEvilTwin(userId, twinCompetition, twinEnabled)
+const { skin } = useSkin()
 const showTwin = computed(() => twinEnabled.value && !!twin.value)
 
 // One scroll decision, once, after the page mounts and profile data resolves -
@@ -170,7 +171,9 @@ watch(
     </div>
     <template v-if="showTwin && twin">
       <p class="text-sm mb-1 flex items-center gap-2 flex-wrap" style="color: var(--p-text-muted-color)">
-        <span>😈 {{ t('bot.evilTwinNote') }}</span>
+        <img v-if="skin" src="/bots/chrysalis.png" class="w-6 h-6 rounded-full object-cover shrink-0" alt="" >
+        <span v-else>😈</span>
+        <span>{{ t('bot.evilTwinNote') }}</span>
       </p>
       <div class="flex items-center gap-2 flex-wrap text-sm mb-4" style="color: var(--p-text-muted-color)">
         <span v-if="twin.summary.rank" class="font-semibold" style="color: var(--p-text-color)">{{ t('bot.twinWouldRank', { rank: twin.summary.rank }) }}</span>
