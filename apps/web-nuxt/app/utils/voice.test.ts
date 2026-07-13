@@ -210,6 +210,8 @@ describe('createSpeakingTracker', () => {
   it('holds speaking through inter-word dips, drops after the hangover', () => {
     const tr = createSpeakingTracker()
     expect(tr.feed('bob', dip, 0)).toBe(false)
+    // The threshold itself counts as speaking (>=, not >).
+    expect(tr.feed('bob', VOICE_SPEAKING_THRESHOLD, 50)).toBe(true)
     expect(tr.feed('bob', loud, 100)).toBe(true)
     // A dip shorter than the hold window stays lit (no mid-sentence strobe).
     expect(tr.feed('bob', dip, 100 + SPEAKING_HOLD_MS - 1)).toBe(true)

@@ -190,6 +190,8 @@ function start(): void {
     // is the guaranteed signal, the sound is best-effort.
     let toneCtx: AudioContext | null = null
     let toneTimer: ReturnType<typeof setInterval> | undefined
+    // Callee-side bound on an unanswered incoming ring (see the voice:ring case).
+    let incomingTimer: ReturnType<typeof setTimeout> | undefined
 
     function toneBurst(ctx: AudioContext, freqs: number[], durationMs: number): void {
       const t0 = ctx.currentTime
@@ -217,11 +219,33 @@ function start(): void {
         toneCtx = new AudioContext()
         void toneCtx.resume().catch(() => {})
         const ctx = toneCtx
+        // Route the tone to the user's picked output where the API exists, so
+        // the ring follows the call audio (headset, not laptop speakers).
+        const sinkable = ctx as AudioContext & { setSinkId?: (id: string) => Promise<void> }
+        if (outputDeviceId.value && sinkable.setSinkId) {
+          void sinkable.setSinkId(outputDeviceId.value).catch(() => {})
+        }
         const freqs = kind === 'ring' ? [440, 480] : [425]
         const onMs = kind === 'ring' ? 1500 : 1000
         const periodMs = kind === 'ring' ? 3500 : 4000
-        toneBurst(ctx, freqs, onMs)
-        toneTimer = setInterval(() => toneBurst(ctx, freqs, onMs), periodMs)
+        const tick = () => {
+          try {
+            // A suspended (autoplay-blocked) context freezes currentTime, so a
+            // burst scheduled into it stacks on the previous ones and the whole
+            // backlog blasts at once when a later user gesture resumes the
+            // context. Skip while blocked and keep nudging resume; the first
+            // tick after it unblocks rings normally.
+            if (ctx.state !== 'running') {
+              void ctx.resume().catch(() => {})
+              return
+            }
+            toneBurst(ctx, freqs, onMs)
+          } catch {
+            // Same best-effort policy as the context creation.
+          }
+        }
+        tick()
+        toneTimer = setInterval(tick, periodMs)
       } catch {
         // No AudioContext = no tone; the visual ring still shows.
       }
@@ -605,6 +629,16 @@ function start(): void {
           }
           incoming.value = { scope: data.scope as VoiceScope, from: String(data.from), fromName: String(data.fromName) }
           state.value = 'incoming'
+          // A crashed/offline caller can never send voice:cancel (they are not
+          // in a room the server would notify us about), so bound the ring on
+          // this side too - mirroring the caller's own 30s give-up.
+          clearTimeout(incomingTimer)
+          incomingTimer = setTimeout(() => {
+            if (state.value === 'incoming') {
+              incoming.value = null
+              state.value = 'idle'
+            }
+          }, RING_TIMEOUT_MS)
           break
         }
         case 'voice:signal':

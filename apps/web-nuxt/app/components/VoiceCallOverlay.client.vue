@@ -166,15 +166,18 @@ function ring(userId: string): void {
       class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-full border px-4 py-2 shadow-lg"
       style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
     >
-      <!-- "You're muted" flash, anchored above the bar where the eyes already are. -->
-      <Transition name="voice-flash">
-        <span
-          v-if="mutedFlash"
-          class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold shadow"
-          style="background: var(--ng-star); color: #1a1a06"
-          role="status"
-        >{{ t('voice.mutedTalking') }}</span>
-      </Transition>
+      <!-- "You're muted" flash, anchored above the bar where the eyes already
+           are. The live region persists and only its CONTENT toggles - screen
+           readers skip a region that mounts with its text pre-filled. -->
+      <span role="status" aria-live="polite" class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2">
+        <Transition name="voice-flash">
+          <span
+            v-if="mutedFlash"
+            class="block whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold shadow"
+            style="background: var(--ng-star); color: #1a1a06"
+          >{{ t('voice.mutedTalking') }}</span>
+        </Transition>
+      </span>
       <span class="relative flex h-2.5 w-2.5">
         <span class="absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping" style="background: var(--p-primary-color)" />
         <span class="relative inline-flex rounded-full h-2.5 w-2.5" style="background: var(--p-primary-color)" />
