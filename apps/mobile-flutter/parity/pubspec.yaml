@@ -14,8 +14,8 @@ dependencies:
 
 dev_dependencies:
   test: ^1.25.0
-  # NOTE: the e2ee module needs libsodium's exact primitives (secretbox,
-  # sealed box, Argon2id, blake2b). In the real app that is `sodium_libs`
-  # (Flutter) / `sodium` (ffi to the system libsodium). It is intentionally
-  # NOT wired here so this package stays pure-Dart runnable; e2ee vectors are
-  # skipped until a libsodium binding is added. See dispatch.dart.
+  # e2ee interop (test/e2ee_interop_test.dart) needs libsodium's exact primitives
+  # (secretbox, sealed box, Argon2id, blake2b). `sodium` is the ffi binding to the
+  # system libsodium (in the Flutter app it's sodium_libs). The pure modules
+  # (commitment/kt/match) still run with zero native deps via parity_test.dart.
+  sodium: ^3.4.4

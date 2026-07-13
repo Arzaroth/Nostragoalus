@@ -1,0 +1,35 @@
+name: nostragoalus
+description: Nostragoalus native mobile client (Flutter).
+publish_to: none
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.5.0
+  flutter: ">=3.24.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # API client + bearer auth token storage
+  dio: ^5.7.0
+  flutter_secure_storage: ^9.2.0
+  # state (the TanStack-query-equivalent query layer)
+  flutter_riverpod: ^2.6.1
+  # realtime: voice signaling + live over the server's _ws.ts hub
+  web_socket_channel: ^3.0.1
+  # Phase 0 voice probe (+ Phase 4): WebRTC + native call UI/background audio
+  flutter_webrtc: ^0.12.5
+  flutter_callkit_incoming: ^2.5.2
+  # E2EE: libsodium, the same primitives as the web app's libsodium-wrappers-sumo
+  # (used by the Phase 0 e2ee probe / Phase 3). ffi to the native lib.
+  sodium_libs: ^3.4.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  # The shared locale JSON (shared/i18n-json) is bundled from the monorepo root.
+  # Kept out for the Phase 0 spike; wired in Phase 1's i18n loader.

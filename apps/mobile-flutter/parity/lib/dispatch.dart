@@ -33,10 +33,11 @@ final Map<String, Map<String, Fn>> registry = {
   },
 };
 
-// Vector files that exist on the TS side but whose Dart port is not wired yet.
-// The runner skips them (loudly) rather than failing. To close one:
-//   - e2ee:      add a libsodium binding (sodium_libs / sodium ffi) and port
-//                app/utils/e2ee.ts; wire $b64 arg/result marshalling (see README).
+// Vector files whose Dart port is not wired into THIS (pure, sync) runner. The
+// runner skips them loudly rather than failing. To close one:
+//   - e2ee:      DONE - ported in lib/e2ee.dart and replayed by
+//                test/e2ee_interop_test.dart (needs libsodium; async, so it lives
+//                in its own test rather than this sync dispatch).
 //   - scoring:   port server/utils/scoring/engine.ts (+ tiers.ts, bonus.ts).
 //   - fergie:    port server/utils/analytics/fergie.ts.
 //   - standings: port server/utils/stats/standings.ts.

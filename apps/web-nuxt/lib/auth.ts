@@ -4,7 +4,7 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { sso } from '@better-auth/sso'
 import { scim } from '@better-auth/scim'
 import { passkey } from '@better-auth/passkey'
-import { admin, haveIBeenPwned, twoFactor } from 'better-auth/plugins'
+import { admin, bearer, haveIBeenPwned, twoFactor } from 'better-auth/plugins'
 import { apiKey } from '@better-auth/api-key'
 import { and, count, eq } from 'drizzle-orm'
 import type { PgDatabase, PgQueryResultHKT } from 'drizzle-orm/pg-core'
@@ -280,6 +280,11 @@ export function buildAuthOptions(database: AuthDb) {
     // Runtime-configurable SSO (OIDC + SAML), role-based user administration,
     // and 2FA (TOTP authenticator + email OTP when SMTP is configured).
     plugins: [
+      // Token auth for the native mobile client: sign-in returns the session
+      // token in a `set-auth-token` response header, and requests authenticate
+      // with `Authorization: Bearer <token>` instead of the session cookie.
+      // Additive - the web app keeps using cookie sessions.
+      bearer(),
       sso({
         // @better-auth/sso 1.6.x hardcodes trustProviderByName:false, so our
         // accountLinking.trustedProviders list no longer drives SSO link-trust;
