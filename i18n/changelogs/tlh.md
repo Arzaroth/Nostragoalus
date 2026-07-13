@@ -5,6 +5,18 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### chel
+
+- ghogh rItmey: DaH wab ghaj rItmey - rIt 'elbogh QoylaH wab, rIt tlhabbogh QoylaH wab pIm, lajlu'pa' pagh lajQo'lu'pa'.
+
+### choHpu'
+
+- ghogh rItmey: DaH rIt tlhegh Dung boch "bItammoH" qach; SuchwI' QIn lo'be'lu'.
+
+### tI'pu'
+
+- ghogh rItmey: DaH mu'mey joj wovHa'choHbe' jatlhbogh nuv pong - QIt yevDI' jatlhwI', wovtaH pong.
+
 ## [4.1.1] - 2026-07-13
 
 ### choHpu'

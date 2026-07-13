@@ -5,6 +5,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+
+- Voice calls: calls now have sound - an incoming call plays a ring tone and dialing out plays a ringback, until the call is answered, declined or cancelled.
+
+### Changed
+
+- Voice calls: the "You're muted" reminder now flashes right above the call bar instead of popping a toast in a corner of the screen.
+
+### Fixed
+
+- Voice calls: the speaking highlight on a participant's name no longer flickers between words - it holds through the natural pauses of a sentence.
+
 ## [4.1.1] - 2026-07-13
 
 ### Changed

@@ -215,17 +215,27 @@ describe('VoiceCallOverlay', () => {
     expect(labels).toContain('Invite to call')
   })
 
-  it('nudges when talking while muted, but not on mount', async () => {
-    state.value = 'in-call'
-    activeScope.value = { kind: 'dm', threadId: 't1' }
-    mutedTalkingAt.value = 0
-    const w = await mountSuspended(VoiceCallOverlay)
-    expect(toastAdd).not.toHaveBeenCalled()
+  it('flashes above the call bar when talking while muted, but not on mount', async () => {
+    vi.useFakeTimers()
+    try {
+      state.value = 'in-call'
+      activeScope.value = { kind: 'dm', threadId: 't1' }
+      mutedTalkingAt.value = 0
+      const w = await mountSuspended(VoiceCallOverlay)
+      expect(w.text()).not.toContain("You're muted")
 
-    mutedTalkingAt.value = Date.now()
-    await nextTick()
-    expect(toastAdd).toHaveBeenCalledWith(expect.objectContaining({ summary: "You're muted" }))
-    w.unmount()
+      mutedTalkingAt.value = Date.now()
+      await nextTick()
+      // A flash pinned to the bar, not a toast off in a screen corner.
+      expect(w.find('[role="status"]').text()).toBe("You're muted")
+      expect(toastAdd).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(2500)
+      expect(w.find('[role="status"]').exists()).toBe(false)
+      w.unmount()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('starts the clock immediately when mounted mid-call', async () => {

@@ -65,13 +65,21 @@ watch(
   },
 )
 
-// Talking while muted: nudge, throttled composable-side.
+// Talking while muted: a transient flash right above the call bar (throttled
+// composable-side). Not a toast - that lands in a screen corner, away from
+// where the eyes are during a call.
+const mutedFlash = ref(false)
+let flashTimer: ReturnType<typeof setTimeout> | undefined
 watch(
   () => mutedTalkingAt.value,
   (at) => {
-    if (at) toast.add({ severity: 'warn', summary: t('voice.mutedTalking'), life: 3000 })
+    if (!at) return
+    mutedFlash.value = true
+    clearTimeout(flashTimer)
+    flashTimer = setTimeout(() => (mutedFlash.value = false), 2500)
   },
 )
+onBeforeUnmount(() => clearTimeout(flashTimer))
 
 const statusLabel = computed(() => {
   switch (state.value) {
@@ -158,6 +166,15 @@ function ring(userId: string): void {
       class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-full border px-4 py-2 shadow-lg"
       style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
     >
+      <!-- "You're muted" flash, anchored above the bar where the eyes already are. -->
+      <Transition name="voice-flash">
+        <span
+          v-if="mutedFlash"
+          class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold shadow"
+          style="background: var(--ng-star); color: #1a1a06"
+          role="status"
+        >{{ t('voice.mutedTalking') }}</span>
+      </Transition>
       <span class="relative flex h-2.5 w-2.5">
         <span class="absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping" style="background: var(--p-primary-color)" />
         <span class="relative inline-flex rounded-full h-2.5 w-2.5" style="background: var(--p-primary-color)" />
@@ -298,3 +315,15 @@ function ring(userId: string): void {
     </Dialog>
   </div>
 </template>
+
+<style scoped>
+/* Opacity-only: a transform transition would override the centering translate. */
+.voice-flash-enter-active,
+.voice-flash-leave-active {
+  transition: opacity 200ms ease;
+}
+.voice-flash-enter-from,
+.voice-flash-leave-to {
+  opacity: 0;
+}
+</style>
