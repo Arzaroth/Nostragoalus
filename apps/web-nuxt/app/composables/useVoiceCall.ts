@@ -111,7 +111,9 @@ function start(): void {
     const analysers = new Map<string, { analyser: AnalyserNode; source: MediaStreamAudioSourceNode }>()
     let meterTimer: ReturnType<typeof setInterval> | undefined
     const mutedTracker = createMutedTalkingTracker()
-    const METER_INTERVAL_MS = 150
+    // Fast enough for the waveform meter to feel live; its CSS height
+    // transition (120ms) bridges the ticks into a smooth motion.
+    const METER_INTERVAL_MS = 80
 
     // Disconnect the entry's source node too - replacing an entry without it
     // accumulates orphaned nodes on the shared AudioContext.

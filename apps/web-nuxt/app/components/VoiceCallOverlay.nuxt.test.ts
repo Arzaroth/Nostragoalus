@@ -131,7 +131,7 @@ describe('VoiceCallOverlay', () => {
     expect(w.text()).not.toContain('Me,')
   })
 
-  it('highlights a speaking participant', async () => {
+  it('highlights a speaking participant by color only (no layout shift)', async () => {
     state.value = 'in-call'
     activeScope.value = { kind: 'dm', threadId: 't1' }
     roster.value = ['me', 'bob']
@@ -140,7 +140,36 @@ describe('VoiceCallOverlay', () => {
     const w = await mountSuspended(VoiceCallOverlay)
     // The innermost span is the name itself (its wrapper also texts as 'Bob').
     const bob = w.findAll('span').filter((s) => s.text() === 'Bob').at(-1)
-    expect(bob!.attributes('style')).toContain('font-weight')
+    expect(bob!.attributes('style')).toContain('--p-primary-color')
+    // A width-changing style (font-weight) would shift the whole bar per utterance.
+    expect(bob!.attributes('style')).not.toContain('font-weight')
+  })
+
+  it('keeps a reachable unmute control while muted (strike, not a missing glyph)', async () => {
+    state.value = 'in-call'
+    activeScope.value = { kind: 'dm', threadId: 't1' }
+    muted.value = true
+    const w = await mountSuspended(VoiceCallOverlay)
+    const unmute = w.findAll('button').find((b) => b.attributes('aria-label') === 'Unmute')
+    expect(unmute).toBeTruthy()
+    // primeicons has no microphone-slash: the icon stays pi-microphone + a strike.
+    expect(unmute!.find('.pi-microphone').exists()).toBe(true)
+    expect(unmute!.findAll('span').length).toBeGreaterThan(1)
+    await unmute!.trigger('click')
+    expect(toggleMute).toHaveBeenCalled()
+  })
+
+  it('renders the waveform meter and lifts the bars with the level', async () => {
+    state.value = 'in-call'
+    activeScope.value = { kind: 'dm', threadId: 't1' }
+    localLevel.value = 0
+    const w = await mountSuspended(VoiceCallOverlay)
+    const bars = () => w.find('[aria-hidden="true"]').findAll('span')
+    expect(bars().length).toBe(5)
+    const silentHeights = bars().map((b) => b.attributes('style'))
+    localLevel.value = 0.2
+    await nextTick()
+    expect(bars().map((b) => b.attributes('style'))).not.toEqual(silentHeights)
   })
 
   it('opens the audio settings with device pickers and the noise toggle', async () => {
