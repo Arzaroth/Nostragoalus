@@ -151,6 +151,36 @@ export function meterBarHeights(level: number, muted: boolean): number[] {
   )
 }
 
+// How long a participant stays "speaking" after their level last crossed the
+// threshold. Raw RMS dips below it between syllables and words, so gating the
+// highlight on the instantaneous level makes names strobe mid-sentence; the
+// hangover rides through those dips and only drops on a real pause.
+export const SPEAKING_HOLD_MS = 800
+
+export interface SpeakingTracker {
+  // Feed one meter tick for a peer; returns whether they count as speaking.
+  feed: (key: string, level: number, now: number) => boolean
+  forget: (key: string) => void
+  reset: () => void
+}
+
+export function createSpeakingTracker(holdMs: number = SPEAKING_HOLD_MS): SpeakingTracker {
+  const lastAbove = new Map<string, number>()
+  return {
+    feed(key, level, now) {
+      if (level >= VOICE_SPEAKING_THRESHOLD) lastAbove.set(key, now)
+      const at = lastAbove.get(key)
+      return at !== undefined && now - at < holdMs
+    },
+    forget(key) {
+      lastAbove.delete(key)
+    },
+    reset() {
+      lastAbove.clear()
+    },
+  }
+}
+
 export interface MutedTalkingTracker {
   // Feed one meter tick; returns true when the "you're muted" nudge should fire.
   feed: (muted: boolean, level: number, now: number) => boolean
