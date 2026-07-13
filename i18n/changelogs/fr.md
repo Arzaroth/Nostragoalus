@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [4.1.1] - 2026-07-13
+
 ### Modifié
 
 - Appels vocaux : le vumètre de votre micro est désormais une forme d'onde fluide au lieu de trois barres à seuils.
