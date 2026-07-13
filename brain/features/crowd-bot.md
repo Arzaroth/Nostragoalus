@@ -17,6 +17,9 @@ Each persona is a picking strategy scored by the real engine. See
 | `EVIL_TWIN` | 😈 | **per-user**: the signed-in player's own picks with each score **swapped** (winner flipped, margin kept; a draw is its own twin) | the same match the **player** jokered | the **player's own** champion (kept, not inverted) |
 | `EQUALIZER` | ⚖️ | always a **1-1 draw** (`DRAW_SCORELINE`), ignoring the crowd scoreline and the MODE gate | the **most drawish** match (smallest crowd margin) | none (a draw-caller has no champion) |
 
+The icon is swapped for a MLP-villain avatar while a cosmetic skin is active (an
+easter egg): see [Villain bot avatars](easter-eggs.md#villain-bot-avatars).
+
 The evil twin is computed by scoping `getBotOverview` to a single `userId` (the
 signed-in viewer): `scoped` is just that player's own predictions, so
 `botPick` inverts each of their picks, the joker logic finds only their jokered

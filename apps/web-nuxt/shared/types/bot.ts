@@ -60,6 +60,14 @@ export function botPersonaParam(persona: BotPersona): BotPersonaParam {
   return PERSONA_TO_PARAM[persona]
 }
 
+// Reverse of botUserId: recover a bot's wire param from a ghost row's synthetic
+// user id. Returns null for a real user. Lets a leaderboard row resolve its
+// persona (and villain skin avatar) without threading the param through.
+export function botPersonaParamFromUserId(userId: string): BotPersonaParam | null {
+  const persona = BOT_PERSONAS.find((p) => PERSONA_USER_IDS[p] === userId)
+  return persona ? PERSONA_TO_PARAM[persona] : null
+}
+
 // The equalizer always calls a draw; 1-1 is the modal drawn scoreline.
 export const DRAW_SCORELINE = { home: 1, away: 1 } as const
 
@@ -72,14 +80,17 @@ export function personaUsesMethod(persona: BotPersonaParam): boolean {
 
 // Display metadata for each bot, shared by the leaderboard rows and the bot
 // page. The i18n keys resolve in all five locales.
+// `villain` is the MLP-skin avatar shown in place of the emoji while a cosmetic
+// skin is active (an easter egg - default theme keeps the emoji). Public path.
 export interface BotPersonaMeta {
   icon: string
+  villain: string
   nameKey: string
   blurbKey: string
 }
 
 export const BOT_PERSONA_META: Record<BotPersonaParam, BotPersonaMeta> = {
-  consensus: { icon: '🤖', nameKey: 'bot.persona.consensus', blurbKey: 'bot.blurb.consensus' },
-  'evil-twin': { icon: '😈', nameKey: 'bot.persona.evilTwin', blurbKey: 'bot.blurb.evilTwin' },
-  equalizer: { icon: '⚖️', nameKey: 'bot.persona.equalizer', blurbKey: 'bot.blurb.equalizer' },
+  consensus: { icon: '🤖', villain: '/bots/discord.png', nameKey: 'bot.persona.consensus', blurbKey: 'bot.blurb.consensus' },
+  'evil-twin': { icon: '😈', villain: '/bots/chrysalis.png', nameKey: 'bot.persona.evilTwin', blurbKey: 'bot.blurb.evilTwin' },
+  equalizer: { icon: '⚖️', villain: '/bots/tirek.png', nameKey: 'bot.persona.equalizer', blurbKey: 'bot.blurb.equalizer' },
 }

@@ -92,6 +92,7 @@ watch(locale, () => {
 const { leagueId } = useSelectedLeague()
 const { session } = useAuth()
 const meId = computed(() => session.value?.data?.user?.id)
+const { skin } = useSkin()
 const {
   data: leagueBoardData,
   status: leagueBoardStatus,
@@ -714,7 +715,10 @@ function toggleFormInfo(side: string, i: number | string) {
                 <Skeleton :width="`${6 + (i % 3) * 2}rem`" height="0.9rem" />
               </div>
             </div>
-            <div v-else-if="!leagueRows.length" class="text-sm text-center py-4" style="color: var(--p-text-muted-color)">{{ t('match.noPicks') }}</div>
+            <div v-else-if="!leagueRows.length" class="text-sm text-center py-4 flex flex-col items-center gap-2" style="color: var(--p-text-muted-color)">
+              <img v-if="skin" src="/bots/cozyglow.png" class="w-16 h-16 rounded-full object-cover opacity-90" alt="" >
+              <span>{{ t('match.noPicks') }}</span>
+            </div>
             <div v-else class="flex flex-col gap-2">
               <NuxtLink
                 v-for="r in leagueRows"

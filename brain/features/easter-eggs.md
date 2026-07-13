@@ -52,6 +52,28 @@ WOW -> twilight, LAUGH -> pinkie, SAD -> fluttershy, ANGRY -> rarity. The swap i
 display-only; the stored reaction enum key is unchanged. The public palette
 (fire, goal, wow, laugh, sad, angry glyphs) is what end users normally see.
 
+## Villain bot avatars
+
+When a skin is active, the synthetic [prediction bots](crowd-bot.md) trade their
+emoji for MLP-villain mugshots (sunglasses fan art); the default theme keeps the
+emoji. The mapping is a `villain` public path on `BOT_PERSONA_META[param]` in
+`apps/web-nuxt/shared/types/bot.ts` (gate-covered), fixed and independent of the
+selected skin:
+
+- consensus (crowd) -> Discord (`/bots/discord.png`)
+- evil-twin -> Queen Chrysalis (`/bots/chrysalis.png`)
+- equalizer -> Lord Tirek (`/bots/tirek.png`)
+
+Every render site gates on `useSkin().skin` being non-null: `LeaderboardRowCard.vue`
+(a ghost row recovers its persona from the row's synthetic `userId` via
+`botPersonaParamFromUserId`, since the row carries no param), the `/bot` page
+header, and the evil-twin note on the profile page. Display-only, same as the
+pony reactions - nothing about bot scoring changes.
+
+A seventh face, Cozy Glow (`/bots/cozyglow.png`), is the smug empty-state avatar
+shown above `match.noPicks` on a match's league ranking tab while a skin is
+active. Assets live in `apps/web-nuxt/public/bots/*.png`.
+
 ## Klingon locale
 
 The fourth locale, `tlh` (Klingon), is itself an in-character easter egg. The
@@ -65,3 +87,6 @@ strings are kept terse and in-character. It is a real locale file
 - `apps/web-nuxt/server/middleware/skin.ts`, `apps/web-nuxt/lib/auth.ts` (skin additionalFields + update hook)
 - `apps/web-nuxt/app/components/ReactionGlyph.vue`, `apps/web-nuxt/app/components/MatchReactionsLine.vue`,
   `apps/web-nuxt/public/skins/*`, `shared/i18n-json/tlh.json`
+- `apps/web-nuxt/shared/types/bot.ts` (`villain` map, `botPersonaParamFromUserId`),
+  `apps/web-nuxt/public/bots/*`, `apps/web-nuxt/app/components/LeaderboardRowCard.vue`,
+  `apps/web-nuxt/app/pages/[competition]/bot.vue`
