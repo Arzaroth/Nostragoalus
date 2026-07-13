@@ -1,0 +1,17 @@
+# Flutter/Dart toolchain for the mobile app (app/) + the parity runner (parity/).
+# `mise install` here provisions them. The pure-Dart parity tests (`dart test`)
+# and Android builds run on any OS; iOS builds need macOS + Xcode.
+[tools]
+dart = "3.12.2"
+# flutter = "stable"   # add when building the app (large install); dart alone
+#                        runs the parity + e2ee tests.
+
+[tasks.parity]
+description = "Replay the cross-stack golden vectors (pure Dart)"
+dir = "{{ config_root }}/parity"
+run = "dart test"
+
+[tasks.e2ee-interop]
+description = "E2EE interop KATs against the frozen vectors (needs libsodium)"
+dir = "{{ config_root }}/parity"
+run = "dart test test/e2ee_interop_test.dart"

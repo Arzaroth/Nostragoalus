@@ -4,7 +4,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:nostragoalus_parity/e2ee.dart' as e2ee;
-import 'package:sodium/sodium.dart';
+import 'package:sodium/sodium_sumo.dart';
 import 'package:test/test.dart';
 
 // Phase 0 spike #3: prove `sodium` (libsodium) in Dart reproduces the web app's
@@ -18,8 +18,9 @@ import 'package:test/test.dart';
 
 DynamicLibrary _loadLibsodium() {
   const candidates = [
-    'libsodium.so.23', 'libsodium.so', 'libsodium.dylib',
-    '/opt/homebrew/lib/libsodium.dylib', '/usr/local/lib/libsodium.dylib',
+    'libsodium.so.26', 'libsodium.so.23', 'libsodium.so',
+    '/lib64/libsodium.so.26', '/lib/libsodium.so.26',
+    'libsodium.dylib', '/opt/homebrew/lib/libsodium.dylib', '/usr/local/lib/libsodium.dylib',
   ];
   for (final name in candidates) {
     try {
@@ -31,19 +32,22 @@ DynamicLibrary _loadLibsodium() {
 
 const _vectorsPath = '../../../shared/parity-json/e2ee.json';
 
+// The harness $b64 tag is STANDARD base64 (padded) - it mirrors the TS side's
+// `Buffer.from(x, 'base64')` / `Buffer.from(x).toString('base64')` in
+// tests/parity/dispatch.ts, NOT e2ee's url-safe wire format.
 dynamic _revive(dynamic x) {
   if (x is Map && x.length == 1 && x.containsKey(r'$b64')) {
-    return e2ee.b64decode(x[r'$b64'] as String);
+    return base64.decode(x[r'$b64'] as String);
   }
   if (x is List) return x.map(_revive).toList();
   if (x is Map) return x.map((k, v) => MapEntry(k, _revive(v)));
   return x;
 }
 
-dynamic _encode(dynamic x) => x is Uint8List ? {r'$b64': e2ee.b64encode(x)} : x;
+dynamic _encode(dynamic x) => x is Uint8List ? {r'$b64': base64.encode(x)} : x;
 
 void main() async {
-  final sodium = await SodiumInit.init(_loadLibsodium);
+  final sodium = await SodiumSumoInit.init(_loadLibsodium);
   final vf = jsonDecode(File(_vectorsPath).readAsStringSync()) as Map<String, dynamic>;
 
   dynamic dispatch(String fn, List rawArgs) {

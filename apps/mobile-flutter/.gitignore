@@ -1,0 +1,6 @@
+# Dart / Flutter build + tool artifacts (both app/ and parity/)
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies

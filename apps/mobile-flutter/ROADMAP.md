@@ -22,7 +22,7 @@ Authored on a machine without the Flutter SDK - `[~]` = code written, needs a
 - [~] **Scaffold** `apps/mobile-flutter/app` - pubspec + `lib/{config,main}.dart` + spike launcher authored. Pending: `flutter create .` (platform dirs) + `flutter pub get`.
 - [~] **Auth probe** (`lib/spike/auth_probe.dart`) - bearer login + secure-storage token + authed GET /api/me/trust-status. Pending: `flutter run` on emulator against a bearer-enabled server.
 - [!] **Voice probe** (`lib/spike/voice_probe.dart`) - WebRTC + CallKit + `_ws.ts` signaling SKELETON. Needs the on-device build-out (2 real devices + coturn; mirror `voice.ts`).
-- [~] **E2EE interop probe** - `e2ee.ts` ported to `parity/lib/e2ee.dart` (sodium ffi) + `parity/test/e2ee_interop_test.dart` replays the frozen `shared/parity-json/e2ee.json` KATs. Pending: `dart test` with libsodium installed.
+- [x] **E2EE interop probe** - `e2ee.ts` ported to `parity/lib/e2ee.dart` (sodium ffi, SUMO API for Argon2id pwhash) + `parity/test/e2ee_interop_test.dart` replays the frozen `shared/parity-json/e2ee.json` KATs. GREEN: 24 KATs pass against system libsodium (`mise run e2ee-interop`); Dart reproduces the web's decrypt/derive byte-for-byte.
 - [ ] **Decision** - record spike outcome; adjust scope if any red
 
 ## Phase 1 - MVP core loop (ship to TestFlight / Play internal)

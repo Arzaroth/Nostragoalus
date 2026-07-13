@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:sodium/sodium.dart';
+import 'package:sodium/sodium_sumo.dart';
 
 // Dart port of the DETERMINISTIC half of app/utils/e2ee.ts (decrypt / unseal /
 // derive), using libsodium via the `sodium` ffi package - the same primitives as
@@ -23,7 +23,7 @@ String b64encode(Uint8List b) => base64Url.encode(b).replaceAll('=', '');
 String _normalizeCode(String code) => code.replaceAll(RegExp(r'[\s-]'), '');
 
 /// crypto_generichash(30) of the public key -> six groups of five digits.
-String fingerprint(Sodium sodium, String publicKey) {
+String fingerprint(SodiumSumo sodium, String publicKey) {
   final digest = sodium.crypto.genericHash(outLen: 30, message: b64decode(publicKey));
   final groups = <String>[];
   for (var i = 0; i < 6; i++) {
@@ -39,7 +39,7 @@ String fingerprint(Sodium sodium, String publicKey) {
 /// crypto_box_seal_open: unwrap a group key sealed to me. `identity.privateKey`
 /// arrives as raw bytes (the harness revives the {$b64} tag before the call);
 /// `publicKey` is a base64 string, `wrapped` the base64 sealed box.
-Uint8List openGroupKey(Sodium sodium, String wrapped, Map identity) {
+Uint8List openGroupKey(SodiumSumo sodium, String wrapped, Map identity) {
   final sk = SecureKey.fromList(sodium, identity['privateKey'] as Uint8List);
   try {
     return sodium.crypto.box.sealOpen(
@@ -52,7 +52,7 @@ Uint8List openGroupKey(Sodium sodium, String wrapped, Map identity) {
   }
 }
 
-Uint8List _openSecretBox(Sodium sodium, Uint8List packed, SecureKey key) {
+Uint8List _openSecretBox(SodiumSumo sodium, Uint8List packed, SecureKey key) {
   final n = sodium.crypto.secretBox.nonceBytes;
   final nonce = packed.sublist(0, n);
   final ct = packed.sublist(n);
@@ -60,7 +60,7 @@ Uint8List _openSecretBox(Sodium sodium, Uint8List packed, SecureKey key) {
 }
 
 /// crypto_secretbox_open_easy of a nonce-prefixed text message.
-String decryptMessage(Sodium sodium, String packed, Uint8List groupKey) {
+String decryptMessage(SodiumSumo sodium, String packed, Uint8List groupKey) {
   final key = SecureKey.fromList(sodium, groupKey);
   try {
     return utf8.decode(_openSecretBox(sodium, b64decode(packed), key));
@@ -70,7 +70,7 @@ String decryptMessage(Sodium sodium, String packed, Uint8List groupKey) {
 }
 
 /// Same, binary payload (attachment bytes).
-Uint8List decryptBytes(Sodium sodium, String packed, Uint8List groupKey) {
+Uint8List decryptBytes(SodiumSumo sodium, String packed, Uint8List groupKey) {
   final key = SecureKey.fromList(sodium, groupKey);
   try {
     return _openSecretBox(sodium, b64decode(packed), key);
@@ -80,10 +80,9 @@ Uint8List decryptBytes(Sodium sodium, String packed, Uint8List groupKey) {
 }
 
 /// crypto_pwhash(Argon2id, INTERACTIVE) of the recovery code, then secretbox open.
-Uint8List unwrapPrivateKeyWithRecovery(Sodium sodium, String blob, String code) {
+Uint8List unwrapPrivateKeyWithRecovery(SodiumSumo sodium, String blob, String code) {
   final raw = b64decode(blob);
   final saltLen = sodium.crypto.pwhash.saltBytes;
-  final nonceLen = sodium.crypto.secretBox.nonceBytes;
   final salt = raw.sublist(0, saltLen);
   final rest = raw.sublist(saltLen); // nonce + ct
 
