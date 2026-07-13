@@ -20,6 +20,10 @@ export interface Heartbeat {
   stop: () => void
   // Feed every received pong here to clear the pending watchdog.
   onPong: () => void
+  // Ping now (out of band), e.g. on tab foregrounding: a half-open socket is
+  // declared dead within timeoutMs instead of waiting for the next beat.
+  // No-op while stopped or while a ping is already pending.
+  probe: () => void
 }
 
 export function createHeartbeat(opts: HeartbeatOptions): Heartbeat {
@@ -63,5 +67,10 @@ export function createHeartbeat(opts: HeartbeatOptions): Heartbeat {
     clearWatchdog()
   }
 
-  return { start, stop, onPong }
+  function probe() {
+    if (beat === undefined) return
+    tick()
+  }
+
+  return { start, stop, onPong, probe }
 }

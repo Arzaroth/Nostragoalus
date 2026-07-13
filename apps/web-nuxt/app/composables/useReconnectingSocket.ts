@@ -82,11 +82,21 @@ export function useReconnectingSocket(opts: {
 
   // Background tabs throttle timers and may freeze the page, so a socket that
   // dropped while hidden reconnects late or not at all, and a one-shot push
-  // (full-time, kickoff) is missed with nothing to retrigger it. Reconnect on
-  // the way back to the foreground (and when the network returns) so onOpen
-  // re-subscribes and the server snapshot converges the view without a reload.
+  // (full-time, kickoff) is missed with nothing to retrigger it. On the way
+  // back to the foreground (and when the network returns), reconnect a socket
+  // that is not open - but only PROBE one that looks open. This socket also
+  // carries voice signaling, and the server treats a close as leaving the call
+  // (a DM call ends for both sides), so unconditionally tearing down a healthy
+  // socket hung up live calls on every tab switch. A half-open survivor still
+  // converges: the probe's unanswered pong forces the reconnect within its
+  // timeout, and onOpen re-subscribes as before.
+  function checkAlive() {
+    if (socket?.readyState === WebSocket.OPEN) heartbeat.probe()
+    else forceReconnect()
+  }
+
   function onVisible() {
-    if (document.visibilityState === 'visible') forceReconnect()
+    if (document.visibilityState === 'visible') checkAlive()
   }
 
   function send(payload: unknown): boolean {
@@ -100,14 +110,14 @@ export function useReconnectingSocket(opts: {
   onMounted(() => {
     connect()
     document.addEventListener('visibilitychange', onVisible)
-    window.addEventListener('online', forceReconnect)
+    window.addEventListener('online', checkAlive)
   })
   onBeforeUnmount(() => {
     closed = true
     clearTimeout(reconnectTimer)
     heartbeat.stop()
     document.removeEventListener('visibilitychange', onVisible)
-    window.removeEventListener('online', forceReconnect)
+    window.removeEventListener('online', checkAlive)
     socket?.close()
   })
 
