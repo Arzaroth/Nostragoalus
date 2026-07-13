@@ -5,6 +5,18 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Ajouté
+
+- Appels vocaux : les appels ont désormais du son - un appel entrant joue une sonnerie et un appel sortant une tonalité de retour, jusqu'à ce que l'appel soit décroché, refusé ou annulé.
+
+### Modifié
+
+- Appels vocaux : le rappel « Vous êtes en sourdine » s'affiche désormais en flash juste au-dessus de la barre d'appel au lieu d'un toast dans un coin de l'écran.
+
+### Corrigé
+
+- Appels vocaux : la mise en évidence du participant qui parle ne clignote plus entre les mots - elle tient pendant les pauses naturelles d'une phrase.
+
 ## [4.1.1] - 2026-07-13
 
 ### Modifié
