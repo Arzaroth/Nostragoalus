@@ -105,6 +105,22 @@ test('a DM voice call: caller rings, callee answers, both land in the call', asy
   await pageB.keyboard.press('Escape')
   await expect(pageB.getByText('Noise suppression')).toBeHidden({ timeout: 10_000 })
 
+  // Mute, then unmute: the muted state must keep a clickable unmute control (a
+  // missing icon glyph once rendered it invisible and stranded users muted).
+  await pageA.getByRole('button', { name: 'Mute' }).click()
+  const unmute = pageA.getByRole('button', { name: 'Unmute' })
+  await expect(unmute).toBeVisible({ timeout: 10_000 })
+  await unmute.click()
+  await expect(pageA.getByRole('button', { name: 'Mute' })).toBeVisible({ timeout: 10_000 })
+
+  // Coming back to a foregrounded tab must not tear the call down: the
+  // visibility handler used to force-reconnect the live socket, which the
+  // server treats as leaving the call (ending the DM for both sides).
+  await pageB.evaluate(() => document.dispatchEvent(new Event('visibilitychange')))
+  await pageB.waitForTimeout(3_000)
+  await expect(pageA.getByRole('button', { name: 'Hang up' })).toBeVisible()
+  await expect(pageB.getByRole('button', { name: 'Hang up' })).toBeVisible()
+
   // A hangs up; BOTH bars clear - one side leaving ends the DM call for the other.
   await pageA.getByRole('button', { name: 'Hang up' }).click()
   await expect(pageA.getByRole('button', { name: 'Hang up' })).toBeHidden({ timeout: 15_000 })
