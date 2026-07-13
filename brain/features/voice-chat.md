@@ -19,14 +19,22 @@ Back to the catalog: [index.md](index.md). The transport it rides:
   "N in voice" badge (its tooltip names who is in) so members see a call is
   happening without being in it. Inside the call, an Invite control rings chosen
   members. The room is ephemeral - it exists while at least one person is in it.
+- Ringing has sound: WebAudio-synthesized tones (no audio assets) - a 440+480Hz
+  dual ring for an incoming call, a 425Hz ringback while dialing - loop while
+  the call state is incoming/outgoing and stop on any transition. Best-effort:
+  autoplay policy can block a gestureless incoming ring, so the ring dialog
+  stays the guaranteed signal.
 - The in-call bar lists the other participants (names ride the roster frames),
   lights a speaker's name while they talk (color only - a weight change would
-  shift the bar's width per utterance), and shows a 5-bar waveform meter for the
-  local mic whose heights follow the RMS level continuously (`meterBarHeights` in
-  `apps/web-nuxt/app/utils/voice.ts`). The muted state draws the mic icon with a
-  strike overlay because primeicons ships no `microphone-slash` glyph (an unknown
-  class renders an empty, unclickable icon). Talking while muted pops a throttled
-  "you're muted" toast.
+  shift the bar's width per utterance; held for `SPEAKING_HOLD_MS` past the last
+  threshold crossing via `createSpeakingTracker`, because raw RMS dips between
+  syllables and the highlight would strobe), and shows a 5-bar waveform meter
+  for the local mic whose heights follow the RMS level continuously
+  (`meterBarHeights` in `apps/web-nuxt/app/utils/voice.ts`). The muted state
+  draws the mic icon with a strike overlay because primeicons ships no
+  `microphone-slash` glyph (an unknown class renders an empty, unclickable
+  icon). Talking while muted flashes a throttled "you're muted" bubble directly
+  above the call bar (not a toast - the eyes are on the bar during a call).
 - An audio-settings dialog picks the input/output device (persisted in
   localStorage, output only where `setSinkId` exists) and toggles noise
   suppression; echo cancellation + auto gain are always requested.
