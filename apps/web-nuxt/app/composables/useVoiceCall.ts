@@ -111,6 +111,7 @@ function start(): void {
     const analysers = new Map<string, { analyser: AnalyserNode; source: MediaStreamAudioSourceNode }>()
     let meterTimer: ReturnType<typeof setInterval> | undefined
     const mutedTracker = createMutedTalkingTracker()
+    const speakingTracker = createSpeakingTracker()
     // Fast enough for the waveform meter to feel live; its CSS height
     // transition (120ms) bridges the ticks into a smooth motion.
     const METER_INTERVAL_MS = 80
@@ -126,6 +127,7 @@ function start(): void {
         // The context may already be closed; nothing left to release.
       }
       analysers.delete(key)
+      speakingTracker.forget(key)
     }
 
     function attachAnalyser(key: string, stream: MediaStream): void {
@@ -157,7 +159,8 @@ function start(): void {
           localLevel.value = muted.value ? 0 : level
           if (mutedTracker.feed(muted.value, level, Date.now())) mutedTalkingAt.value = Date.now()
         } else {
-          nextSpeaking[key] = level >= VOICE_SPEAKING_THRESHOLD
+          // Held through inter-word dips so the highlight doesn't strobe.
+          nextSpeaking[key] = speakingTracker.feed(key, level, Date.now())
         }
       }
       speakingPeers.value = nextSpeaking
@@ -174,9 +177,70 @@ function start(): void {
         audioCtx = null
       }
       mutedTracker.reset()
+      speakingTracker.reset()
       localLevel.value = 0
       speakingPeers.value = {}
     }
+
+    // Call-progress tones, synthesized (no audio asset to ship or cache-bust):
+    // the classic 440+480Hz dual ring for an incoming call, a single 425Hz
+    // ringback while dialing out. Own AudioContext because the metering one
+    // only exists once a mic is acquired; everything is try/catch'd since
+    // autoplay policy can block a gestureless incoming ring - the ring dialog
+    // is the guaranteed signal, the sound is best-effort.
+    let toneCtx: AudioContext | null = null
+    let toneTimer: ReturnType<typeof setInterval> | undefined
+
+    function toneBurst(ctx: AudioContext, freqs: number[], durationMs: number): void {
+      const t0 = ctx.currentTime
+      const t1 = t0 + durationMs / 1000
+      const gain = ctx.createGain()
+      // Ramped edges: a hard oscillator start/stop clicks audibly.
+      gain.gain.setValueAtTime(0, t0)
+      gain.gain.linearRampToValueAtTime(0.06, t0 + 0.02)
+      gain.gain.setValueAtTime(0.06, t1 - 0.04)
+      gain.gain.linearRampToValueAtTime(0, t1)
+      gain.connect(ctx.destination)
+      for (const freq of freqs) {
+        const osc = ctx.createOscillator()
+        osc.type = 'sine'
+        osc.frequency.value = freq
+        osc.connect(gain)
+        osc.start(t0)
+        osc.stop(t1)
+      }
+    }
+
+    function startCallTone(kind: 'ring' | 'ringback'): void {
+      stopCallTone()
+      try {
+        toneCtx = new AudioContext()
+        void toneCtx.resume().catch(() => {})
+        const ctx = toneCtx
+        const freqs = kind === 'ring' ? [440, 480] : [425]
+        const onMs = kind === 'ring' ? 1500 : 1000
+        const periodMs = kind === 'ring' ? 3500 : 4000
+        toneBurst(ctx, freqs, onMs)
+        toneTimer = setInterval(() => toneBurst(ctx, freqs, onMs), periodMs)
+      } catch {
+        // No AudioContext = no tone; the visual ring still shows.
+      }
+    }
+
+    function stopCallTone(): void {
+      clearInterval(toneTimer)
+      toneTimer = undefined
+      if (toneCtx) {
+        void toneCtx.close().catch(() => {})
+        toneCtx = null
+      }
+    }
+
+    watch(state, (s) => {
+      if (s === 'incoming') startCallTone('ring')
+      else if (s === 'outgoing') startCallTone('ringback')
+      else stopCallTone()
+    })
 
     const socket = useReconnectingSocket({
       onMessage: (data) => handleFrame(data as Record<string, unknown>),

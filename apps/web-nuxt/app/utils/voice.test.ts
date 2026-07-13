@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest'
 import {
   MUTED_TALKING_SUSTAIN_MS,
   MUTED_TALKING_THROTTLE_MS,
+  SPEAKING_HOLD_MS,
   VOICE_SPEAKING_THRESHOLD,
   buildAudioConstraints,
   createMutedTalkingTracker,
+  createSpeakingTracker,
   extractQualityInputs,
   formatCallDuration,
   isCallEstablished,
@@ -198,6 +200,35 @@ describe('formatCallDuration', () => {
   it('clamps negatives and floors fractions', () => {
     expect(formatCallDuration(-5)).toBe('0:00')
     expect(formatCallDuration(61.9)).toBe('1:01')
+  })
+})
+
+describe('createSpeakingTracker', () => {
+  const loud = VOICE_SPEAKING_THRESHOLD * 2
+  const dip = VOICE_SPEAKING_THRESHOLD / 2
+
+  it('holds speaking through inter-word dips, drops after the hangover', () => {
+    const tr = createSpeakingTracker()
+    expect(tr.feed('bob', dip, 0)).toBe(false)
+    expect(tr.feed('bob', loud, 100)).toBe(true)
+    // A dip shorter than the hold window stays lit (no mid-sentence strobe).
+    expect(tr.feed('bob', dip, 100 + SPEAKING_HOLD_MS - 1)).toBe(true)
+    // Silence past the hangover goes dark.
+    expect(tr.feed('bob', dip, 100 + SPEAKING_HOLD_MS)).toBe(false)
+    // Speech re-lights immediately.
+    expect(tr.feed('bob', loud, 5000)).toBe(true)
+  })
+
+  it('tracks peers independently and forgets on demand', () => {
+    const tr = createSpeakingTracker(500)
+    expect(tr.feed('a', loud, 0)).toBe(true)
+    expect(tr.feed('b', dip, 0)).toBe(false)
+    tr.forget('a')
+    // A forgotten peer (left the call) does not resurrect as speaking.
+    expect(tr.feed('a', dip, 1)).toBe(false)
+    tr.feed('b', loud, 10)
+    tr.reset()
+    expect(tr.feed('b', dip, 11)).toBe(false)
   })
 })
 
