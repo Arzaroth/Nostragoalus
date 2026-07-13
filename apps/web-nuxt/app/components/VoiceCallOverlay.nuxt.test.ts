@@ -217,12 +217,15 @@ describe('VoiceCallOverlay', () => {
 
   it('flashes above the call bar when talking while muted, but not on mount', async () => {
     vi.useFakeTimers()
+    let w: Awaited<ReturnType<typeof mountSuspended>> | undefined
     try {
       state.value = 'in-call'
       activeScope.value = { kind: 'dm', threadId: 't1' }
       mutedTalkingAt.value = 0
-      const w = await mountSuspended(VoiceCallOverlay)
-      expect(w.text()).not.toContain("You're muted")
+      w = await mountSuspended(VoiceCallOverlay)
+      // The live region persists (screen readers only announce content
+      // changes); it starts empty and fills on the nudge.
+      expect(w.find('[role="status"]').text()).toBe('')
 
       mutedTalkingAt.value = Date.now()
       await nextTick()
@@ -231,9 +234,9 @@ describe('VoiceCallOverlay', () => {
       expect(toastAdd).not.toHaveBeenCalled()
 
       await vi.advanceTimersByTimeAsync(2500)
-      expect(w.find('[role="status"]').exists()).toBe(false)
-      w.unmount()
+      expect(w.find('[role="status"]').text()).toBe('')
     } finally {
+      w?.unmount()
       vi.useRealTimers()
     }
   })
