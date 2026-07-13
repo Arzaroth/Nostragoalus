@@ -18,9 +18,9 @@ The three things that can't be worked around. All green -> proceed.
 Authored on a machine without the Flutter SDK - `[~]` = code written, needs a
 `flutter`/`dart` run to verify (first run may need small API-nit fixes).
 
-- [x] **Server prerequisite** - `bearer()` plugin enabled in `apps/web-nuxt/lib/auth.ts` (typechecks; MUST be deployed before the auth probe works against a server)
+- [x] **Server prerequisite** - `bearer()` plugin enabled in `apps/web-nuxt/lib/auth.ts`. Contract PROVEN in-process by `apps/web-nuxt/tests/bearer-token-auth.test.ts` (sign-in -> `set-auth-token` header -> `Authorization: Bearer` -> authed get-session, no cookie). MUST still be deployed before an on-device probe hits a real server.
 - [~] **Scaffold** `apps/mobile-flutter/app` - pubspec + `lib/{config,main}.dart` + spike launcher authored. Pending: `flutter create .` (platform dirs) + `flutter pub get`.
-- [~] **Auth probe** (`lib/spike/auth_probe.dart`) - bearer login + secure-storage token + authed GET /api/me/trust-status. Pending: `flutter run` on emulator against a bearer-enabled server.
+- [~] **Auth probe** (`lib/spike/auth_probe.dart`) - bearer login + secure-storage token + authed GET /api/me/trust-status. The bearer HTTP contract it rests on is proven (see the server-prereq test); the remaining leg is only the Flutter/dio packaging: `flutter run` on an emulator against a bearer-enabled server. Blocked here on Flutter SDK + emulator + a deployed server.
 - [!] **Voice probe** (`lib/spike/voice_probe.dart`) - WebRTC + CallKit + `_ws.ts` signaling SKELETON. Needs the on-device build-out (2 real devices + coturn; mirror `voice.ts`).
 - [x] **E2EE interop probe** - `e2ee.ts` ported to `parity/lib/e2ee.dart` (sodium ffi, SUMO API for Argon2id pwhash) + `parity/test/e2ee_interop_test.dart` replays the frozen `shared/parity-json/e2ee.json` KATs. GREEN: 24 KATs pass against system libsodium (`mise run e2ee-interop`); Dart reproduces the web's decrypt/derive byte-for-byte.
 - [ ] **Decision** - record spike outcome; adjust scope if any red
