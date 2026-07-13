@@ -7,13 +7,13 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ### choHpu'
 
-- ghogh rItmey: DaH yoq ghogh 'aqroS 'oH mIllogh yav rur - wej 'aqroS QaD Dalbogh qel be'.
+- ghogh rItmey: DaH yu'egh yIn rur ghogh 'aqroS; wej 'aqroS QaD lo'be'lu'.
 
-### lughmoH
+### tI'pu'
 
-- ghogh rItmey: tamchoHDI' leQ ngab be' DaH - mIllogh Hutlhbogh Degh lo'ta', vaj leQ leghlaHbe' 'ej tamHa'laH pagh. DaH tamlu'DI' ghogh jan mIllogh 'ej tlheghvo' 'oH.
-- ghogh rItmey: browser tab choHmoHDI' 'ej cheghDI' rIt polHa' be' DaH - Hoch chegh 'app qatlh raQ chu'qa'moH, 'ej rIt mejta' 'e' Har server. DaH Heghpu'bogh raQ neH chu'qa'moH.
-- ghogh rItmey: jatlhbogh yoq pong tlhoy' be' DaH (rIt tlhegh Sach 'oH Hoch jatlhtaHvIS) - rItlh neH wov.
+- ghogh rItmey: DaH ngabbe' tamwI' leQ - mIllogh Hutlhbogh Degh lo'pu', vaj leghlaHbe'lu' leQ 'ej tamHa'laH pagh. DaH tamlu'DI' tlhegh ghaj ghogh jan mIllogh.
+- ghogh rItmey: browser tab choHlu'DI' 'ej cheghlu'DI' rIt chIlbe'lu' DaH - cheghlu'DI' Hoch raQ chu'qa'pu' 'app 'ej rIt mej 'e' Harpu' server. DaH Heghpu'bogh raQ neH chu'qa'lu'.
+- ghogh rItmey: jatlhbogh nuv pong SachmoHbe'lu' DaH (jatlhtaHvIS rIt tlhegh SachmoHpu') - DaH rItlh neH wov.
 
 ## [4.1.0] - 2026-07-13
 

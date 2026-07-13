@@ -107,17 +107,24 @@ test('a DM voice call: caller rings, callee answers, both land in the call', asy
 
   // Mute, then unmute: the muted state must keep a clickable unmute control (a
   // missing icon glyph once rendered it invisible and stranded users muted).
-  await pageA.getByRole('button', { name: 'Mute' }).click()
-  const unmute = pageA.getByRole('button', { name: 'Unmute' })
+  // exact: true throughout - a substring match on 'Mute' also hits 'Unmute',
+  // which would let a no-op unmute pass unnoticed.
+  await pageA.getByRole('button', { name: 'Mute', exact: true }).click()
+  const unmute = pageA.getByRole('button', { name: 'Unmute', exact: true })
   await expect(unmute).toBeVisible({ timeout: 10_000 })
   await unmute.click()
-  await expect(pageA.getByRole('button', { name: 'Mute' })).toBeVisible({ timeout: 10_000 })
+  await expect(pageA.getByRole('button', { name: 'Mute', exact: true })).toBeVisible({ timeout: 10_000 })
 
   // Coming back to a foregrounded tab must not tear the call down: the
   // visibility handler used to force-reconnect the live socket, which the
-  // server treats as leaving the call (ending the DM for both sides).
+  // server treats as leaving the call (ending the DM for both sides). The
+  // handler only acts when the page reports itself visible, so pin that
+  // precondition or the dispatch tests nothing. The wait must outlast the 10s
+  // heartbeat watchdog: a probe that wrongly declares a healthy socket dead
+  // would hang up at ~10s, not immediately.
+  expect(await pageB.evaluate(() => document.visibilityState)).toBe('visible')
   await pageB.evaluate(() => document.dispatchEvent(new Event('visibilitychange')))
-  await pageB.waitForTimeout(3_000)
+  await pageB.waitForTimeout(12_000)
   await expect(pageA.getByRole('button', { name: 'Hang up' })).toBeVisible()
   await expect(pageB.getByRole('button', { name: 'Hang up' })).toBeVisible()
 

@@ -10,6 +10,7 @@ import {
   isCallEstablished,
   isDeviceGoneError,
   levelFromSamples,
+  METER_LEVEL_FULL,
   meterBarHeights,
   qualityOf,
   rosterDelta,
@@ -206,7 +207,7 @@ describe('meterBarHeights', () => {
     expect(meterBarHeights(0.3, true)).toEqual([3, 3, 3, 3, 3])
   })
   it('peaks center-out at full level and clamps beyond it', () => {
-    const full = meterBarHeights(0.25, false)
+    const full = meterBarHeights(METER_LEVEL_FULL, false)
     expect(full[2]).toBe(14)
     expect(full[0]).toBeLessThan(full[1]!)
     expect(full[1]).toBeLessThan(full[2]!)

@@ -21,8 +21,10 @@ export interface Heartbeat {
   // Feed every received pong here to clear the pending watchdog.
   onPong: () => void
   // Ping now (out of band), e.g. on tab foregrounding: a half-open socket is
-  // declared dead within timeoutMs instead of waiting for the next beat.
-  // No-op while stopped or while a ping is already pending.
+  // declared dead within timeoutMs instead of waiting for the next beat. No-op
+  // while stopped, and while a ping is already unanswered (the pending
+  // watchdog, possibly armed pre-throttle in a background tab, already bounds
+  // detection).
   probe: () => void
 }
 

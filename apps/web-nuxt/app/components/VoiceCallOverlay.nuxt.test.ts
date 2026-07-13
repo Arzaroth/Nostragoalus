@@ -154,9 +154,16 @@ describe('VoiceCallOverlay', () => {
     expect(unmute).toBeTruthy()
     // primeicons has no microphone-slash: the icon stays pi-microphone + a strike.
     expect(unmute!.find('.pi-microphone').exists()).toBe(true)
-    expect(unmute!.findAll('span').length).toBeGreaterThan(1)
+    const mutedSpans = unmute!.findAll('span').length
     await unmute!.trigger('click')
     expect(toggleMute).toHaveBeenCalled()
+    // Unmuting removes exactly the strike span - a permanent strike would read
+    // as always-muted.
+    muted.value = false
+    await nextTick()
+    const mute = w.findAll('button').find((b) => b.attributes('aria-label') === 'Mute')
+    expect(mute!.find('.pi-microphone').exists()).toBe(true)
+    expect(mute!.findAll('span').length).toBe(mutedSpans - 1)
   })
 
   it('renders the waveform meter and lifts the bars with the level', async () => {

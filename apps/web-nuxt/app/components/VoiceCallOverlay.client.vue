@@ -169,8 +169,8 @@ function ring(userId: string): void {
         </span>
         <span v-if="others.length" class="text-xs truncate max-w-[14rem]">
           <template v-for="(o, i) in others" :key="o">
-<!-- Speaking is signaled by color only: a weight change alters the text
-                 width and shifts the whole bar on every utterance. -->
+            <!-- Speaking is signaled by color only: a weight change alters the
+                 text width and shifts the whole bar on every utterance. -->
             <span
               :style="{
                 color: speakingPeers[o] ? 'var(--p-primary-color)' : 'var(--p-text-muted-color)',
