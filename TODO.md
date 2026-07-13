@@ -54,6 +54,23 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
   member, so a looping client can fill a room's timeline (pushes are deduped, the
   rows are not). `voice:cancel` can also mint a "missed call from X" for a target
   that was never actually rung. Fold into the ring rate-limit item above.
+- **Foreground/online recovery of an OPEN-but-dead socket now takes up to 10s.**
+  The voice-ui-polish fix probes an OPEN socket on tab refocus instead of
+  force-reconnecting it (a close ends any DM call for both sides), so after a
+  network switch or wake-from-sleep every live consumer (scores, chat,
+  notifications) can stare at stale data for the heartbeat pong timeout before
+  the reconnect fires. Deliberate tradeoff; if it bites, arm the probe with a
+  shorter foreground-specific timeout.
+- **Cross-generation pong can clear the new socket's probe watchdog.**
+  `forceReconnect` detaches `onclose` but not `onmessage`, and `heartbeat.onPong`
+  is not generation-scoped: a late pong from the abandoned socket can clear a
+  watchdog armed for the replacement, deferring its death detection to the next
+  25s beat. Pre-existing, window widened slightly by out-of-band probes; scope
+  the heartbeat (or the pong handler) to the current socket generation.
+- **`useReconnectingSocket` has no unit tests.** The `checkAlive` else branch
+  (non-open socket on refocus -> immediate reconnect, the behavior the probe fix
+  was careful to keep) is guarded by no test at any level; composables sit
+  outside the coverage gate.
 - **Stale `voice:ended` can kill a same-thread redial.** The client teardown
   matches on roomKey only, so a `voice:ended` frame from the just-ended call that
   arrives after an immediate redial to the SAME DM thread tears the new call down
