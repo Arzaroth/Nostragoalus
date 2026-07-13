@@ -20,8 +20,13 @@ Back to the catalog: [index.md](index.md). The transport it rides:
   happening without being in it. Inside the call, an Invite control rings chosen
   members. The room is ephemeral - it exists while at least one person is in it.
 - The in-call bar lists the other participants (names ride the roster frames),
-  lights a speaker's name while they talk, and shows a 3-bar meter for the local
-  mic. Talking while muted pops a throttled "you're muted" toast.
+  lights a speaker's name while they talk (color only - a weight change would
+  shift the bar's width per utterance), and shows a 5-bar waveform meter for the
+  local mic whose heights follow the RMS level continuously (`meterBarHeights` in
+  `apps/web-nuxt/app/utils/voice.ts`). The muted state draws the mic icon with a
+  strike overlay because primeicons ships no `microphone-slash` glyph (an unknown
+  class renders an empty, unclickable icon). Talking while muted pops a throttled
+  "you're muted" toast.
 - An audio-settings dialog picks the input/output device (persisted in
   localStorage, output only where `setSinkId` exists) and toggles noise
   suppression; echo cancellation + auto gain are always requested.
