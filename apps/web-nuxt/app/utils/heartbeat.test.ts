@@ -91,4 +91,33 @@ describe('createHeartbeat', () => {
     vi.advanceTimersByTime(400)
     expect(onDead).not.toHaveBeenCalled()
   })
+
+  it('probe() pings immediately and its unanswered pong declares death', () => {
+    const { ping, onDead, hb } = setup()
+    hb.start()
+    hb.probe()
+    expect(ping).toHaveBeenCalledTimes(1)
+    vi.advanceTimersByTime(500)
+    expect(onDead).toHaveBeenCalledTimes(1)
+  })
+
+  it('probe() answered by a pong keeps the socket alive', () => {
+    const { onDead, hb } = setup()
+    hb.start()
+    hb.probe()
+    hb.onPong()
+    vi.advanceTimersByTime(500)
+    expect(onDead).not.toHaveBeenCalled()
+  })
+
+  it('probe() is a no-op while stopped or while a ping is pending', () => {
+    const { ping, hb } = setup()
+    hb.probe()
+    expect(ping).not.toHaveBeenCalled()
+    hb.start()
+    hb.probe() // ping #1, watchdog pending
+    hb.probe() // must not double-ping
+    expect(ping).toHaveBeenCalledTimes(1)
+    hb.stop()
+  })
 })
