@@ -10,6 +10,7 @@ import {
   isCallEstablished,
   isDeviceGoneError,
   levelFromSamples,
+  meterBarHeights,
   qualityOf,
   rosterDelta,
   shouldOffer,
@@ -196,5 +197,31 @@ describe('formatCallDuration', () => {
   it('clamps negatives and floors fractions', () => {
     expect(formatCallDuration(-5)).toBe('0:00')
     expect(formatCallDuration(61.9)).toBe('1:01')
+  })
+})
+
+describe('meterBarHeights', () => {
+  it('sits at the floor when silent or muted, whatever the level', () => {
+    expect(meterBarHeights(0, false)).toEqual([3, 3, 3, 3, 3])
+    expect(meterBarHeights(0.3, true)).toEqual([3, 3, 3, 3, 3])
+  })
+  it('peaks center-out at full level and clamps beyond it', () => {
+    const full = meterBarHeights(0.25, false)
+    expect(full[2]).toBe(14)
+    expect(full[0]).toBeLessThan(full[1]!)
+    expect(full[1]).toBeLessThan(full[2]!)
+    // Symmetric wave profile.
+    expect(full[3]).toBe(full[1])
+    expect(full[4]).toBe(full[0])
+    expect(meterBarHeights(5, false)).toEqual(full)
+  })
+  it('grows monotonically with the level and clamps negatives', () => {
+    const quiet = meterBarHeights(0.03, false)
+    const loud = meterBarHeights(0.15, false)
+    for (let i = 0; i < quiet.length; i++) {
+      expect(quiet[i]!).toBeGreaterThan(3)
+      expect(loud[i]!).toBeGreaterThan(quiet[i]!)
+    }
+    expect(meterBarHeights(-1, false)).toEqual([3, 3, 3, 3, 3])
   })
 })

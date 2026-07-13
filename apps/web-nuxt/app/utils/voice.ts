@@ -135,6 +135,22 @@ export function levelFromSamples(samples: Uint8Array): number {
   return Math.sqrt(sum / samples.length)
 }
 
+// The in-call mic meter, a 5-bar mini waveform. Speech RMS lives in ~0.02-0.25,
+// so the level is normalized against METER_LEVEL_FULL and sqrt-compressed:
+// quiet speech already moves the bars instead of pinning them at the floor.
+const METER_LEVEL_FULL = 0.25
+const METER_BAR_MIN_PX = 3
+const METER_BAR_MAX_PX = 14
+// Center-peaked profile so the bars read as a wave, not a flat block.
+const METER_BAR_PROFILE = [0.45, 0.75, 1, 0.75, 0.45]
+
+export function meterBarHeights(level: number, muted: boolean): number[] {
+  const norm = muted ? 0 : Math.sqrt(Math.min(Math.max(level, 0) / METER_LEVEL_FULL, 1))
+  return METER_BAR_PROFILE.map(
+    (p) => Math.round((METER_BAR_MIN_PX + (METER_BAR_MAX_PX - METER_BAR_MIN_PX) * norm * p) * 10) / 10,
+  )
+}
+
 export interface MutedTalkingTracker {
   // Feed one meter tick; returns true when the "you're muted" nudge should fire.
   feed: (muted: boolean, level: number, now: number) => boolean

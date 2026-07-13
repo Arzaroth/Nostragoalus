@@ -26,12 +26,9 @@ const { session } = useAuth()
 const myId = computed(() => session.value?.data?.user?.id ?? null)
 const others = computed(() => (state.value === 'in-call' ? roster.value.filter((id) => id !== myId.value) : []))
 
-// Own mic meter: three bars lit by rising RMS thresholds.
-const METER_BARS = [
-  { threshold: 0.02, height: '6px' },
-  { threshold: 0.08, height: '10px' },
-  { threshold: 0.18, height: '14px' },
-]
+// Own mic meter: a mini waveform whose bar heights follow the RMS level
+// continuously (meterBarHeights), smoothed by a CSS height transition.
+const meterHeights = computed(() => meterBarHeights(localLevel.value, muted.value))
 
 const remoteEntries = computed(() => Object.entries(remoteStreams.value))
 const isLeague = computed(() => activeScope.value?.kind === 'league')
@@ -172,10 +169,13 @@ function ring(userId: string): void {
         </span>
         <span v-if="others.length" class="text-xs truncate max-w-[14rem]">
           <template v-for="(o, i) in others" :key="o">
+<!-- Speaking is signaled by color only: a weight change alters the text
+                 width and shifts the whole bar on every utterance. -->
             <span
-              :style="speakingPeers[o]
-                ? 'color: var(--p-primary-color); font-weight: 600'
-                : 'color: var(--p-text-muted-color)'"
+              :style="{
+                color: speakingPeers[o] ? 'var(--p-primary-color)' : 'var(--p-text-muted-color)',
+                transition: 'color 150ms ease',
+              }"
             >{{ nameOf(o) }}</span><span v-if="i < others.length - 1" style="color: var(--p-text-muted-color)">, </span>
           </template>
         </span>
@@ -191,15 +191,16 @@ function ring(userId: string): void {
         role="img"
       />
 
-      <!-- Own mic meter; hollow while muted. -->
-      <span v-if="state === 'in-call'" class="flex items-end gap-0.5 h-3.5" aria-hidden="true">
+      <!-- Own mic meter: a live waveform, greyed flat while muted. -->
+      <span v-if="state === 'in-call'" class="flex items-center gap-0.5 h-3.5" aria-hidden="true">
         <span
-          v-for="bar in METER_BARS"
-          :key="bar.threshold"
+          v-for="(h, i) in meterHeights"
+          :key="i"
           class="w-1 rounded-sm"
           :style="{
-            height: bar.height,
-            background: !muted && localLevel >= bar.threshold ? 'var(--p-primary-color)' : 'var(--p-content-border-color)',
+            height: `${h}px`,
+            background: muted ? 'var(--p-content-border-color)' : 'var(--p-primary-color)',
+            transition: 'height 120ms ease-out',
           }"
         />
       </span>
@@ -213,7 +214,16 @@ function ring(userId: string): void {
         :aria-label="muted ? t('voice.unmute') : t('voice.mute')"
         @click="toggleMute"
       >
-        <i :class="muted ? 'pi pi-microphone-slash' : 'pi pi-microphone'" />
+        <!-- primeicons has no microphone-slash glyph (an unknown class renders an
+             empty, unclickable icon), so muted = the mic icon plus a strike. -->
+        <span class="relative inline-flex">
+          <i class="pi pi-microphone" />
+          <span
+            v-if="muted"
+            class="absolute left-1/2 top-1/2 w-[2px] h-[1.35em] rounded-full"
+            style="background: currentColor; transform: translate(-50%, -50%) rotate(45deg)"
+          />
+        </span>
       </button>
 
       <button
