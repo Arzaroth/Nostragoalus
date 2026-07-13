@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [4.2.0] - 2026-07-14
+
 ### chelpu'
 
 - ghogh rItmey: DaH wab ghaj rItmey - rIt 'elDI' wab Qoylu', rIt tlhabDI' wab pIm Qoylu'; rIt lajlu'DI', lajQo'lu'DI' pagh qIllu'DI' mev wab.

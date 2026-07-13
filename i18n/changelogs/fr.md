@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [4.2.0] - 2026-07-14
+
 ### Ajouté
 
 - Appels vocaux : les appels ont désormais du son - un appel entrant joue une sonnerie et un appel sortant une tonalité de retour, jusqu'à ce que l'appel soit décroché, refusé ou annulé.

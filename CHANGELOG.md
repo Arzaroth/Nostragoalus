@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [4.2.0] - 2026-07-14
+
 ### Added
 
 - Voice calls: calls now have sound - an incoming call plays a ring tone and dialing out plays a ringback, until the call is answered, declined or cancelled.
