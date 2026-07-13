@@ -1,6 +1,10 @@
 import 'commitment.dart' as c;
+import 'consensus.dart' as cons;
+import 'fergie.dart' as fg;
 import 'key_transparency.dart' as kt;
 import 'match_logic.dart' as m;
+import 'scoring.dart' as sc;
+import 'standings.dart' as st;
 
 typedef Fn = dynamic Function(List args);
 
@@ -31,18 +35,30 @@ final Map<String, Map<String, Fn>> registry = {
     'countsDouble': (a) => m.countsDouble(a[0] as String?),
     'isKnockout': (a) => m.isKnockout(a[0] as String?),
   },
+  'scoring': {
+    'scorePredictions': (a) => sc.scorePredictions(a[0] as Map),
+    'computeBonus': (a) => sc.computeBonus(a[0] as Map, a[1] as Map, a[2] as Map, a[3] as Map, a[4] as num?),
+    'buildHistogram': (a) => sc.buildHistogram(a[0] as Map, a[1] as List),
+    'scoreSyntheticPrediction': (a) => sc.scoreSyntheticPrediction(a[0] as Map, a[1] as Map),
+  },
+  'fergie': {
+    'computeFergie': (a) => fg.computeFergie(a[0] as List, a[1] as Map),
+    'isAddedTime': (a) => fg.isAddedTime(a[0] as String?),
+  },
+  'standings': {
+    'computeGroupStandings': (a) => st.computeGroupStandings(a[0] as List, a.length > 1 ? a[1] as Map? : null),
+  },
+  'consensus': {
+    'computeConsensus': (a) => cons.computeConsensus(a[0] as List, a[1] as String),
+  },
 };
 
 // Vector files whose Dart port is not wired into THIS (pure, sync) runner. The
-// runner skips them loudly rather than failing. To close one:
-//   - e2ee:      DONE - ported in lib/e2ee.dart and replayed by
-//                test/e2ee_interop_test.dart (needs libsodium; async, so it lives
-//                in its own test rather than this sync dispatch).
-//   - scoring:   port server/utils/scoring/engine.ts (+ tiers.ts, bonus.ts).
-//   - fergie:    port server/utils/analytics/fergie.ts.
-//   - standings: port server/utils/stats/standings.ts.
-//   - consensus: port server/utils/bot/service.ts (computeConsensus only).
-const notYetImplemented = {'e2ee', 'scoring', 'fergie', 'standings', 'consensus'};
+// runner skips them loudly rather than failing.
+//   - e2ee: ported in lib/e2ee.dart and replayed by test/e2ee_interop_test.dart
+//     (needs libsodium; async, so it lives in its own test not this sync dispatch).
+// Everything else (scoring / fergie / standings / consensus) is now wired above.
+const notYetImplemented = {'e2ee'};
 
 dynamic dispatch(String module, String fn, List args) {
   final mod = registry[module];
