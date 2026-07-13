@@ -433,6 +433,14 @@ feature/architecture doc that implements it.
 
 ## Voice chat
 
+- **Foreground the tab = probe the socket, never tear it down.** The live socket
+  used to force-reconnect on every `visibilitychange` back to visible. Once voice
+  rode the same socket that became a hangup: the server treats a socket close as
+  leaving the call, and a DM leave ends the call for both sides. `checkAlive` now
+  reconnects only a non-open socket and probes an open one (out-of-band heartbeat
+  ping); a half-open survivor still reconnects within the pong timeout, so the
+  original "converge after a background freeze" goal is kept without sacrificing
+  live calls. See [architecture/realtime.md](architecture/realtime.md).
 - **Mesh, not an SFU.** Voice is a full peer-to-peer mesh so the media stays
   DTLS-SRTP end-to-end encrypted - the same privacy stance as the E2EE chat. An SFU
   would terminate the streams server-side and break that. The cost is scaling:

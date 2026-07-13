@@ -78,13 +78,19 @@ fire-and-forget after a successful mutation or during a scheduled task.
 
 ### `useReconnectingSocket`
 
-The single managed connection. Exponential backoff 1s -> 30s (capped),
-force-reconnect on `visibilitychange` (tab refocus) and the `online` event. Its
+The single managed connection. Exponential backoff 1s -> 30s (capped). On
+`visibilitychange` (tab refocus) and the `online` event it runs `checkAlive`: a
+non-open socket force-reconnects immediately; an OPEN one only gets a heartbeat
+`probe()` (an out-of-band ping whose unanswered pong forces the reconnect within
+the pong timeout). It must NOT tear down a healthy socket: the server treats any
+socket close as leaving the voice call (a DM call ends for both sides), so the
+old unconditional refocus reconnect hung up live calls on every tab switch. Its
 `onOpen` fires on connect AND on every reconnect, which is the hook to
 re-subscribe and refetch so the cache heals after a drop.
 
 **Heartbeat / half-open detection** (`apps/web-nuxt/app/utils/heartbeat.ts`): a `visibilitychange`
-/ `online` reconnect only fires when the OS reports the flap. On mobile/CGNAT a
+/ `online` reconnect only fires when the socket is observably down or fails the
+probe. On mobile/CGNAT a
 carrier silently drops an idle NAT mapping - the socket stops delivering but never
 fires `onclose`, so nothing retriggers and live data freezes until a manual reload.
 The heartbeat pings every 25s (under a typical carrier idle timeout, which also
