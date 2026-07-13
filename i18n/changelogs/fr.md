@@ -5,6 +5,16 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Modifié
+
+- Appels vocaux : le vumètre de votre micro est désormais une forme d'onde fluide au lieu de trois barres à seuils.
+
+### Corrigé
+
+- Appels vocaux : le bouton muet ne disparaît plus une fois le micro coupé - il basculait vers une icône absente de notre jeu d'icônes, laissant un bouton invisible et aucun moyen de réactiver le micro. Le mode muet affiche désormais le micro barré.
+- Appels vocaux : changer d'onglet puis revenir ne raccroche plus l'appel - l'application forçait une reconnexion de son canal temps réel à chaque retour au premier plan, ce que le serveur interprète comme quitter l'appel. Elle ne se reconnecte désormais que si la connexion est réellement morte.
+- Appels vocaux : le nom d'un participant qui parle ne passe plus en gras (ce qui élargissait toute la barre d'appel à chaque prise de parole) - il s'illumine désormais uniquement en couleur.
+
 ## [4.1.0] - 2026-07-13
 
 ### Ajouté

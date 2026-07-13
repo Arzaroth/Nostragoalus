@@ -5,6 +5,16 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### choHpu'
+
+- ghogh rItmey: DaH yoq ghogh 'aqroS 'oH mIllogh yav rur - wej 'aqroS QaD Dalbogh qel be'.
+
+### lughmoH
+
+- ghogh rItmey: tamchoHDI' leQ ngab be' DaH - mIllogh Hutlhbogh Degh lo'ta', vaj leQ leghlaHbe' 'ej tamHa'laH pagh. DaH tamlu'DI' ghogh jan mIllogh 'ej tlheghvo' 'oH.
+- ghogh rItmey: browser tab choHmoHDI' 'ej cheghDI' rIt polHa' be' DaH - Hoch chegh 'app qatlh raQ chu'qa'moH, 'ej rIt mejta' 'e' Har server. DaH Heghpu'bogh raQ neH chu'qa'moH.
+- ghogh rItmey: jatlhbogh yoq pong tlhoy' be' DaH (rIt tlhegh Sach 'oH Hoch jatlhtaHvIS) - rItlh neH wov.
+
 ## [4.1.0] - 2026-07-13
 
 ### chel

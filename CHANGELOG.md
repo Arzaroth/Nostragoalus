@@ -5,6 +5,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Changed
+
+- Voice calls: your microphone meter is now a smooth live waveform instead of three coarse threshold bars.
+
+### Fixed
+
+- Voice calls: the mute button no longer vanishes once muted - it switched to an icon glyph our icon set does not have, leaving an invisible button and no way to unmute. Muted now shows the microphone with a strike through it.
+- Voice calls: switching browser tabs and coming back no longer hangs up the call - the app force-reconnected its live socket on every return to the foreground, which the server treats as leaving the call. It now only reconnects when the socket is actually dead.
+- Voice calls: a speaking participant's name no longer turns bold (which nudged the whole call bar wider on every utterance) - it lights up in color only.
+
 ## [4.1.0] - 2026-07-13
 
 ### Added
