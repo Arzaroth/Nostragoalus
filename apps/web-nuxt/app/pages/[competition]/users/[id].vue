@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BOT_PERSONA_META } from '#shared/types/bot'
 const route = useRoute()
 const router = useRouter()
 const { t, locale } = useI18n()
@@ -171,7 +172,7 @@ watch(
     </div>
     <template v-if="showTwin && twin">
       <p class="text-sm mb-1 flex items-center gap-2 flex-wrap" style="color: var(--p-text-muted-color)">
-        <img v-if="skin" src="/bots/chrysalis.png" class="w-6 h-6 rounded-full object-cover shrink-0" alt="" >
+        <img v-if="skin" :src="BOT_PERSONA_META['evil-twin'].villain" class="w-6 h-6 rounded-full object-cover shrink-0" alt="" >
         <span v-else>😈</span>
         <span>{{ t('bot.evilTwinNote') }}</span>
       </p>
