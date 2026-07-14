@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [4.2.2] - 2026-07-14
+
 ### Fixed
 
 - The built production app image is now tagged with the app version (`nostragoalus-app:<x.y.z>`) via `mise run deploy`, instead of always `:local`.

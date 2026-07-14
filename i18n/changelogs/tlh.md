@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [4.2.2] - 2026-07-14
+
 ### tI'pu'
 
 - `mise run deploy` lo'DI' app version (`nostragoalus-app:<x.y.z>`) production image taglu' DaH; reH `:local` rurbe'.
