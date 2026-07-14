@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [4.2.1] - 2026-07-14
+
 ### Corrigé
 
 - L'empreinte d'intégrité du code client sur la page À propos s'affiche désormais sur les builds de production au lieu de « Aucune empreinte d'intégrité n'est disponible pour cette build. » Le fichier d'empreinte était généré à la compilation mais jamais servi, donc la vérification retombait toujours sur le repli.
