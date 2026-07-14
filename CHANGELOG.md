@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+
+- The About page's client-code integrity fingerprint now shows on production builds instead of "No integrity fingerprint is available for this build." The fingerprint file was generated at build time but never served, so the check always fell back.
+
 ## [4.2.0] - 2026-07-14
 
 ### Added

@@ -17,8 +17,13 @@ prevented - it is server-delivered code).
   `postbuild` npm script; also `mise run build-integrity`). Walks the
   content-hashed client chunks under `.output/public/_nuxt/*.js`, SHA-256s each,
   computes the bundle digest, and writes `.output/public/build-integrity.json`
-  (`{ version, algorithm, digest, chunkCount, generatedAt }`), served statically
-  at `/build-integrity.json`. Tolerant of a missing build dir (warns, exits 0).
+  (`{ version, algorithm, digest, chunkCount, generatedAt }`). Tolerant of a
+  missing build dir (warns, exits 0).
+- `apps/web-nuxt/server/routes/build-integrity.json.get.ts` - serves that file at
+  `/build-integrity.json`. It can't be a static public asset: `postbuild` writes
+  it *after* `nuxt build` freezes the node-server preset's public-asset manifest,
+  so Nitro never registers it and static serving 404s. The route reads it off disk
+  (`dirname(process.argv[1])/../public/...`) at request time; absent -> 404.
 - `apps/web-nuxt/app/pages/about.vue` - fetches `/build-integrity.json` client-side (tolerant
   of 404 on a dev server) and shows the build version + grouped digest under a
   "Client-code integrity" card. i18n keys `about.integrity*` in all five locales.
