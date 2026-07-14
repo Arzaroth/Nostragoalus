@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [4.2.3] - 2026-07-14
+
 ### tI'pu'
 
 - wejDIch Daq may' "QatlhwI' may' cha'logh" 'angbe'qa'; naghmey cha'logh chI'be'qa'. DaH match stage wa'DIch qa'meH ghItlhlu'DI' Qottag; vaj provider pong choHDI', QatlhwI' may' rurmoHlaHbe'.
