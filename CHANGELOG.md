@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+
+- The third-place play-off no longer shows "Final counts double" and no longer doubles points: a match's stage is now frozen when first synced, so a provider relabelling the tie can't drift it into being treated as the final.
+
 ## [4.2.2] - 2026-07-14
 
 ### Fixed

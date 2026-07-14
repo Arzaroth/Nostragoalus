@@ -68,6 +68,19 @@ describe('upsertMatches', () => {
     await client.close()
   })
 
+  it('freezes stage across syncs so a relabelled round cannot flip it', async () => {
+    const { db, client } = await createTestDb()
+    const cid = await seedCompetition(db)
+    const tp = normalized({ providerMatchId: 'ptp', stage: 'THIRD_PLACE', group: null, matchday: null })
+    await upsertMatches(db, cid, [tp])
+    // Provider later renames the tie to a "final"-mapping label -> stage=FINAL.
+    const res = await upsertMatches(db, cid, [normalized({ ...tp, stage: 'FINAL' })])
+    const [row] = await db.select().from(match).where(eq(match.providerMatchId, 'ptp'))
+    expect(row.stage).toBe('THIRD_PLACE')
+    expect(res.updated).toBe(1)
+    await client.close()
+  })
+
   it('flags a shootout score change even while full-time is frozen', async () => {
     const { db, client } = await createTestDb()
     const cid = await seedCompetition(db)
