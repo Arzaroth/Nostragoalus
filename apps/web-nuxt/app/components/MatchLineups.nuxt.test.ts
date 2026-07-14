@@ -99,7 +99,7 @@ describe('MatchLineups', () => {
     const wrapper = await mountSuspended(MatchLineups, { props: { lineups: placedLineups, home: 'A', away: 'B', slug: 'wc' } })
     mounted.push(wrapper)
     expect(wrapper.find('svg.pitch-half').exists()).toBe(true)
-    expect(wrapper.html()).toContain('bottom: 92%') // the forward, placed by coordinate
+    expect(wrapper.html()).toContain('top: 8%') // the forward, placed by coordinate (100 - y)
     expect(wrapper.text()).toContain('Forward')
   })
 })
