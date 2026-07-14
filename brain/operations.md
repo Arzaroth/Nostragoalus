@@ -9,7 +9,8 @@ How the app is built, run locally, tested, released, and deployed. Task runner i
 |---|---|
 | `mise run dev` | HMR dev server + db + maildev (source bind-mounted, hot reload) |
 | `mise run preview` | Built (prod-target) app + db + maildev, no HMR - what you demo a branch with |
-| `mise run up` | Prod-like: built app + db, no mail catcher |
+| `mise run up` | Prod-like: built app + db, no mail catcher (image tagged `:local`) |
+| `mise run deploy` | Prod deploy: builds + tags the app image with the `apps/web-nuxt/package.json` version (`nostragoalus-app:<x.y.z>`), then ups the prod stack |
 | `mise run down` | Stop everything (incl. dev overlay) |
 | `mise run logs` / `logs-dev` | Follow built-app / HMR logs |
 | `mise run psql` | psql into the db container |
@@ -38,7 +39,7 @@ and prod (a provider HTTP engine fails on Alpine/musl without it). See
 | `rustfs` | rustfs/rustfs | S3-compatible object storage (volume `nostragoalus_media`) |
 | `rustfs-init` | minio/mc | one-shot bucket init (idempotent) |
 | `mc` | minio/mc | backup/restore client (profile `tools`) |
-| `app` | nostragoalus-app:local | built prod-target app |
+| `app` | nostragoalus-app:${NG_APP_VERSION:-local} | built prod-target app; `mise run deploy` sets `NG_APP_VERSION` to the package.json version, otherwise `:local` |
 | `app-dev` | (same build) | HMR dev server (profile `dev`) |
 | `maildev` | - | dev email catcher |
 

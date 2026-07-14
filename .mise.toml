@@ -14,6 +14,15 @@ COMPOSE_FILE = "apps/web-nuxt/compose.yaml"
 description = "Prod-like stack: built app + db + coturn (no mail catcher)"
 run = "docker compose -f apps/web-nuxt/compose.yaml -f apps/web-nuxt/compose.dev.yaml --profile dev stop app-dev 2>/dev/null; docker compose --profile voice up -d --build --wait"
 
+[tasks.deploy]
+description = "Prod deploy: build + tag the app image with the package.json version, then up the prod stack"
+run = '''
+NG_APP_VERSION="$(sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' apps/web-nuxt/package.json | head -1)"
+export NG_APP_VERSION
+echo "Deploying nostragoalus-app:$NG_APP_VERSION"
+docker compose --profile voice up -d --build --wait
+'''
+
 [tasks.dev]
 description = "HMR dev server + db + maildev (source bind-mounted, hot reload)"
 run = "docker compose stop app 2>/dev/null; docker compose -f apps/web-nuxt/compose.yaml -f apps/web-nuxt/compose.dev.yaml --profile dev up -d --build --renew-anon-volumes --wait db maildev app-dev"

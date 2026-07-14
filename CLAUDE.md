@@ -129,6 +129,11 @@ pnpm workspace. The paths below are relative to the repo root unless noted.
 - Pre-release: stop `app-dev` and the working tree must be clean. The release
   only writes the tag and pushes - the user owns the actual prod deploy (and the
   prod roadmap update).
+- Prod deploys go through `mise run deploy`, never `mise run up`. `deploy` tags
+  the built image with the `apps/web-nuxt/package.json` version
+  (`nostragoalus-app:<x.y.z>`); `up` is the local prod-like stack and stays
+  `:local`. Any other invocation must export `NG_APP_VERSION=<x.y.z>` or the tag
+  falls back to `:local`.
 
 ## Keep the planning docs current as you work
 
