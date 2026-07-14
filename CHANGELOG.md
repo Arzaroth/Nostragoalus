@@ -8,6 +8,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 ### Fixed
 
 - The built production app image is now tagged with the app version (`nostragoalus-app:<x.y.z>`) via `mise run deploy`, instead of always `:local`.
+- Fixed player avatars sitting lower than their teammates on the match lineup pitch when a player's name wrapped onto two lines.
 
 ## [4.2.1] - 2026-07-14
 

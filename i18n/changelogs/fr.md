@@ -5,6 +5,11 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Corrigé
+
+- L'image de production de l'application est désormais taguée avec la version de l'app (`nostragoalus-app:<x.y.z>`) via `mise run deploy`, au lieu de toujours `:local`.
+- Correction des photos de joueurs qui s'affichaient plus bas que leurs coéquipiers sur le terrain de la composition quand le nom passait sur deux lignes.
+
 ## [4.2.1] - 2026-07-14
 
 ### Corrigé

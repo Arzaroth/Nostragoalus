@@ -56,7 +56,7 @@ const teamLink = (code?: string | null) => (code ? `/${props.slug}/teams/${code}
             v-for="p in side.team.startingXI"
             :key="p.playerId"
             class="absolute"
-            :style="`left: ${p.x}%; bottom: ${p.y}%; transform: translate(-50%, 50%)`"
+            :style="`left: ${p.x}%; top: ${100 - p.y!}%; transform: translate(-50%, -1.75rem)`"
           >
             <LineupPlayer :player="p" />
           </div>
