@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [4.2.1] - 2026-07-14
+
 ### tI'pu'
 
 - About HaStaDaq ngoqvam nempuq DaH cha'lu' production build-mey-Daq, "ngoqvam nempuq tu'be'lu'" rurbe'. build-DI' nempuq De' chenlu' 'ach not noblu'; vaj reH San lo' bejwI'.
