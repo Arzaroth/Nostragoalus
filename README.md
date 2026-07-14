@@ -250,7 +250,8 @@ Migrations apply automatically on startup (`RUN_MIGRATIONS=true`). With [mise](h
 
 ```bash
 cp .env.example .env   # set BETTER_AUTH_SECRET, NUXT_ADMIN_EMAILS, ...
-mise run up            # prod-like: app + db
+mise run up            # prod-like: app + db (image tagged :local)
+mise run deploy        # prod: build + tag the image with the app version, then up
 mise run dev           # HMR dev server + db + maildev (inbox UI on :1080)
 mise run preview       # built app + db + maildev
 mise run down          # stop everything

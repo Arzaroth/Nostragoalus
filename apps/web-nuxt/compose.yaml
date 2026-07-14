@@ -122,7 +122,7 @@ services:
       context: ../..
       dockerfile: apps/web-nuxt/Dockerfile
       target: prod
-    image: nostragoalus-app:local
+    image: nostragoalus-app:${NG_APP_VERSION:-local}
     restart: unless-stopped
     # A hard Node crash dumps a multi-GB core into the container's writable layer
     # (cwd /app), which silently fills the docker data disk and took the DB down
