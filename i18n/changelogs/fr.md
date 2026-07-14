@@ -5,6 +5,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Corrigé
+
+- Le match pour la troisième place n'affiche plus « La finale compte double » et ne double plus les points : le stage d'un match est désormais figé à sa première synchronisation, si bien qu'un renommage du match par le fournisseur ne peut plus le faire passer pour la finale.
+
 ## [4.2.2] - 2026-07-14
 
 ### Corrigé

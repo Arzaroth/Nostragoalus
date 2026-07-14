@@ -40,11 +40,14 @@ export interface UpsertResult {
   transitions: MatchTransition[]
 }
 
-// Fields that may change between syncs. competitionId/roundId are intentionally
-// excluded: they are assigned once at insert and must stay stable.
+// Fields that may change between syncs. competitionId/roundId/stage are
+// intentionally excluded: they are assigned once at insert and must stay stable.
+// stage is frozen alongside roundId (both derive from the same map at insert):
+// letting a later sync move stage without moving the frozen roundId would strand
+// a match at a stage its round contradicts (a provider renaming the third-place
+// tie to a "final"-mapping label flipped it to FINAL, so it counted double).
 function mutableFields(m: NormalizedMatch) {
   return {
-    stage: m.stage,
     groupName: m.group,
     homeTeam: m.homeTeam.name,
     awayTeam: m.awayTeam.name,
@@ -89,6 +92,7 @@ export async function upsertMatches(
         providerMatchId: m.providerMatchId,
         providerStageId: m.providerStageId ?? null,
         roundId,
+        stage: m.stage,
         ...mutableFields(m),
       })
       result.inserted += 1
@@ -129,7 +133,7 @@ export async function upsertMatches(
       result.changedMatchIds.push(prev.id)
       result.transitions.push({
         matchId: prev.id,
-        stage: m.stage,
+        stage: prev.stage,
         homeTeam: m.homeTeam.name,
         awayTeam: m.awayTeam.name,
         prevStatus: prev.status,
