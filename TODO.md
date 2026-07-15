@@ -3,6 +3,22 @@
 Deferred work, queued behind feature development.
 Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
+## Pick-save locking (deferred from the commitment-race treatment review)
+
+- **No `lock_timeout` on the pg pool.** `apps/web-nuxt/db/index.ts` builds
+  `new Pool({ connectionString })` with nothing else, so `pg_advisory_xact_lock` in
+  `upsertPrediction` blocks indefinitely and a blocked transaction holds a pool
+  connection while it waits. Self-limited today (the bucket is per user+match, each
+  transaction is milliseconds, and the pre-existing chain-head `for update` already
+  serializes every appending save platform-wide), but a `lock_timeout` on the pool is
+  the right backstop and belongs at the pool, not in this logic.
+- **The advisory lock has no regression test, and cannot have one under pglite** -
+  it is a single embedded connection, so two transactions can never contend and the
+  lock can never block. The fix also silently depends on READ COMMITTED: adding
+  `isolationLevel: 'repeatable read'` to the `upsertPrediction` transaction would
+  reopen the race with a green gate. Catching either needs a real-Postgres
+  integration test firing concurrent saves.
+
 ## Voice chat (deferred from the feature pass)
 
 - **Ring rate-limiting + invite-only-while-in-a-call.** A league member can send
