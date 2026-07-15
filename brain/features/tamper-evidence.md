@@ -32,9 +32,10 @@ Privacy is built in:
   That de-dupe reads the current score before the upsert, so `upsertPrediction` takes a
   `pg_advisory_xact_lock` on the pick first - without it a double-submit (autosave firing
   alongside a manual save) had both transactions read "no pick yet" and both append a
-  same-score row, which reads as an edit to
-  [set-and-forget](achievements.md). The chain is append-only, so the duplicates it
-  already wrote stay: consumers compare scorelines, not row counts.
+  same-score row, which read as an edit to [set-and-forget](achievements.md). The chain
+  is append-only, so the duplicates it already wrote stay: consumers compare scorelines,
+  not row counts. The lock relies on the pool's READ COMMITTED default - a
+  repeatable-read snapshot would predate the wait and re-read "no pick yet" anyway.
 
 ## Code + public surface
 

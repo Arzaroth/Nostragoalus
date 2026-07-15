@@ -106,6 +106,17 @@ feature/architecture doc that implements it.
   commitment binds `sha256(userId)`, not the raw id, so a public reveal proves
   integrity without deanonymizing private profiles. See
   [features/tamper-evidence.md](features/tamper-evidence.md).
+- **Ledger consumers compare scorelines, never count rows.** The chain is append-only,
+  so a bug that writes a spurious entry is permanent - the row cannot be removed
+  without breaking the hash chain. A save race did exactly that: two concurrent saves
+  both read "no pick yet" and both appended the same scoreline. set-and-forget defined
+  "never edited" as "exactly one ledger row", so untouched picks read as edited. The
+  race is fixed with a per-pick advisory lock in `upsertPrediction`, but the entries it
+  already wrote stay forever, so the badge counts DISTINCT scorelines instead. Do not
+  "simplify" that back to `count(*)` on the grounds that the lock now prevents
+  duplicates: the lock stops new ones, only the distinct-count forgives the old. Any
+  future ledger consumer inherits the rule. See
+  [features/achievements.md](features/achievements.md).
 
 ## Rendering / client
 
