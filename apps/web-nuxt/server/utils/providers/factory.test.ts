@@ -15,6 +15,10 @@ describe('createProvider', () => {
     expect(() => createProvider({ provider: 'football-data' })).toThrow(/NUXT_FOOTBALL_DATA_TOKEN/)
   })
 
+  it('creates the offline fixture provider', () => {
+    expect(createProvider({ provider: 'fixture' }).meta.name).toBe('fixture')
+  })
+
   it('throws for the not-yet-implemented api-football provider', () => {
     expect(() => createProvider({ provider: 'api-football', apiFootballKey: 'k' })).toThrow(/not implemented/)
   })

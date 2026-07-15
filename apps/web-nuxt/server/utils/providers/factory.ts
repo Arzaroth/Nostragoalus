@@ -1,6 +1,7 @@
 import { fifaProvider } from './fifa'
 import { uefaProvider } from './uefa'
 import { footballDataProvider } from './football-data'
+import { fixtureProvider } from './fixture'
 import type { MatchDataProvider } from './types'
 
 export interface ProviderSelection {
@@ -39,6 +40,11 @@ export function createProvider(selection: ProviderSelection): MatchDataProvider 
       competitionId: selection.externalCompetitionId || '3',
       fetchImpl: selection.fetchImpl,
     })
+  }
+
+  // Offline canned data for the e2e stack (see fixture.ts).
+  if (selection.provider === 'fixture') {
+    return fixtureProvider()
   }
 
   if (selection.provider === 'api-football') {
