@@ -624,9 +624,11 @@ describe('normalizeFifaMatchDetail fallbacks', () => {
 })
 
 describe('normalizeFifaBracket fallbacks', () => {
-  it('handles a stage and winner with missing fields', () => {
+  it('handles a stage with missing fields, and ignores the feed-level Winner', () => {
     const b = normalizeFifaBracket({ Winner: {}, KnockoutStages: [{ SequenceOrder: 1 }] })
-    expect(b.winner).toEqual({ name: '', code: null })
+    // The champion is read off the final's own result, never from data.Winner -
+    // FIFA fills that one as soon as the last semi resolves the final's slot.
+    expect(b.winner).toBeNull()
     expect(b.rounds[0]).toMatchObject({ name: '', sequence: 1, matches: [] })
   })
 })

@@ -6,6 +6,7 @@ import {
   mapFifaStage,
   mapFifaStatus,
   mergeGamedayStories,
+  normalizeFifaBracket,
   normalizeFifaMatch,
   normalizeFifaPlayerStats,
   parseGamedayActors,
@@ -449,5 +450,76 @@ describe('normalizeFifaPlayerStats', () => {
     })
     expect(out.map((p) => p.playerName)).toEqual(['Scorer', 'Passer'])
     expect(out[0]).toMatchObject({ goals: 2, assists: 0, teamName: '', teamCode: null })
+  })
+})
+
+describe('normalizeFifaBracket', () => {
+  const team = (id: string, name: string, code: string) => ({ IdTeam: id, TeamName: [{ Locale: 'en', Description: name }], Abbreviation: code })
+  const ESP = team('esp', 'Spain', 'ESP')
+  const ARG = team('arg', 'Argentina', 'ARG')
+
+  // The shape FIFA's seasonbracket feed serves once both semis are done but the
+  // final has not kicked off: the season-level Winner is already filled in.
+  const beforeTheFinal = {
+    Winner: ARG,
+    KnockoutStages: [
+      {
+        SequenceOrder: 7,
+        Name: [{ Locale: 'en', Description: 'Final' }],
+        Matches: [{ IdMatch: 'f', HomeTeam: ESP, AwayTeam: ARG, Winner: null, MatchStatus: 1, Date: '2026-07-19T19:00:00Z' }],
+      },
+    ],
+  }
+
+  it('crowns nobody while the final is undecided, even when the feed already names a Winner', () => {
+    const out = normalizeFifaBracket(beforeTheFinal)
+    expect(out.winner).toBeNull()
+    expect(out.rounds[0]!.matches[0]).toMatchObject({ homeTeam: 'Spain', awayTeam: 'Argentina', winner: null })
+  })
+
+  it('crowns the winner of the final once it is decided', () => {
+    const out = normalizeFifaBracket({
+      ...beforeTheFinal,
+      KnockoutStages: [
+        {
+          ...beforeTheFinal.KnockoutStages[0]!,
+          Matches: [{ IdMatch: 'f', HomeTeam: ESP, AwayTeam: ARG, Winner: 'esp', MatchStatus: 0, Date: '2026-07-19T19:00:00Z' }],
+        },
+      ],
+    })
+    expect(out.winner).toEqual({ name: 'Spain', code: 'ESP' })
+  })
+
+  // "Bronze final" maps to THIRD_PLACE, so it must not be mistaken for the
+  // decider - otherwise the third-place winner would be crowned champion.
+  it('reads the champion off the Final, not off a decided "Bronze final"', () => {
+    const out = normalizeFifaBracket({
+      Winner: ARG,
+      KnockoutStages: [
+        {
+          SequenceOrder: 6,
+          Name: [{ Locale: 'en', Description: 'Bronze final' }],
+          Matches: [{ IdMatch: 'b', HomeTeam: team('fra', 'France', 'FRA'), AwayTeam: team('eng', 'England', 'ENG'), Winner: 'fra', MatchStatus: 0, Date: '2026-07-18T21:00:00Z' }],
+        },
+        ...beforeTheFinal.KnockoutStages,
+      ],
+    })
+    expect(out.winner).toBeNull()
+  })
+
+  it('sorts rounds by sequence and reads placeholder slots as the team name', () => {
+    const out = normalizeFifaBracket({
+      KnockoutStages: [
+        { SequenceOrder: 7, Name: [{ Locale: 'en', Description: 'Final' }], Matches: [{ IdMatch: 'f', HomeTeam: ESP, PlaceHolderB: 'W102', Winner: null, MatchStatus: 1, Date: '2026-07-19T19:00:00Z' }] },
+        { SequenceOrder: 5, Name: [{ Locale: 'en', Description: 'Semi-final' }], Matches: [] },
+      ],
+    })
+    expect(out.rounds.map((r) => r.name)).toEqual(['Semi-final', 'Final'])
+    expect(out.rounds[1]!.matches[0]).toMatchObject({ awayTeam: 'W102', awayCode: null })
+    expect(out.winner).toBeNull()
+  })
+
+  it('has no champion when the feed carries no knockout stages', () => {
+    expect(normalizeFifaBracket({})).toEqual({ winner: null, rounds: [] })
   })
 })

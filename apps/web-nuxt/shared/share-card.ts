@@ -5,9 +5,12 @@
 
 // Maps a provider bracket label to its bracket.round.* i18n key, or null when it
 // isn't a known knockout round (the caller shows the group letter or raw label
-// instead). Order matters: "semi-finals" and "bronze final" both contain "final".
+// instead). Order matters, and for the same reasons as the server-side ladder in
+// server/utils/providers/stage.ts: "final tournament" (UEFA's group stage),
+// "semi-finals" and "bronze final" all contain "final". Keep the two in step.
 export function roundLabelKey(name: string | null | undefined): string | null {
   const n = (name ?? '').toLowerCase()
+  if (/final tournament/.test(n)) return null
   if (/round of 32|last 32/.test(n)) return 'bracket.round.r32'
   if (/round of 16|last 16/.test(n)) return 'bracket.round.r16'
   if (/quarter/.test(n)) return 'bracket.round.qf'

@@ -773,9 +773,17 @@ export function normalizeFifaBracket(data: FifaBracketResponse): NormalizedBrack
       sequence: st.SequenceOrder,
       matches: (st.Matches ?? []).map(toBracketMatch),
     }))
-  const winner = data.Winner
-    ? { name: data.Winner.TeamName?.[0]?.Description ?? '', code: data.Winner.Abbreviation ?? null }
-    : null
+  // Not data.Winner: FIFA fills it as soon as the last semi-final resolves the
+  // final's placeholder slot, which crowns a champion before the final is
+  // played. Only the final's own result decides it (same rule as the UEFA
+  // provider).
+  const decider = rounds.find((r) => mapStageFromName(r.name) === 'FINAL')?.matches[0]
+  const winner =
+    decider?.winner === 'HOME'
+      ? { name: decider.homeTeam, code: decider.homeCode }
+      : decider?.winner === 'AWAY'
+        ? { name: decider.awayTeam, code: decider.awayCode }
+        : null
   return { winner, rounds }
 }
 

@@ -7,7 +7,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ### tI'pu'
 
-- Sor botlhDaq QI'lop bIngDaq Qamqa' wej DIS may'; retlhDaqbe', 'ej nIteb tlhoy' ghajbe'qa'. vaj QI'lop botlhDaq Qamqa', 'ej tlhoy' chIm ghoSbogh tlhegh vIHHa'lu'. "Bronze final" ponglu'bogh may': wej DIS may' 'oH 'e' luSovqa'; vaj Sor HaSta, nob HaSta je lughmoH per.
+- QI'lop qaSpa', Qat'a' pong 'angbe'qa' Sor. cha' QI'lop Hop rInDI', QI'lopDaq jaHbogh negh pong 'ang huch'a' - QI'lop taghbe'pu'bogh So'ha'. DaH QI'lop mIw'a' neH lo'lu' Qat'a' ngu'meH.
+- Sor botlhDaq QI'lop bIngDaq Qam wej DIS may'; retlhDaqbe', 'ej nIteb tlhoy' ghajbe'qa'. vaj QI'lop botlhDaq Qamqa', 'ej tlhoy' chIm ghoSbogh tlheghmey luteqlu'. may' So'lu'pu', qatlh? "Bronze final" pong ghItlhwI'; pong'a' luSovbe' De'wI'Hom.
 
 ## [4.2.4] - 2026-07-16
 

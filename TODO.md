@@ -2500,3 +2500,48 @@ Open:
       passthrough in matches live-detail/timeline + admin run-task; `z.custom`
       for the notification-data union; `z.string()` for a few enums). Tighten if
       the Dart models need them structured.
+
+## Round-name ladders (deferred from the feature-treatment review, bracket bronze-final fix)
+
+- [ ] The bracket endpoint re-derives the round from a provider display string
+      when the DB already knows it. `server/api/competitions/bracket.get.ts`
+      already joins `match` (to fill `m.id`) but selects only `id` +
+      `providerMatchId`, discarding `match.stage` - which is frozen at insert
+      (`sync/upsert-matches.ts`, `stage: prev.stage`) and therefore strictly more
+      trustworthy than the feed's prose. Carry `stage: AppStage` on `BracketRound`
+      (`shared/types/match.ts`) + `bracketSchema`, and the bracket page's
+      `roundLabelKey(r.name) === 'bracket.round.third'` becomes
+      `r.stage === 'THIRD_PLACE'`. That is rename-proof: the "Bronze final" bug
+      reopens on the next feed rename ("Match for 3rd place", a localized feed)
+      as long as the page matches on prose.
+- [ ] One domain fact (which name means which stage) is encoded in FOUR maps:
+      `providers/stage.ts` STAGE_KEYWORDS, `shared/share-card.ts` roundLabelKey,
+      `sync/rounds.ts` KNOCKOUT_LABELS, `providers/uefa.ts` STAGE_LABELS. UEFA's
+      `getBracket` even has the `AppStage` in hand and stringifies it back to
+      English only for the page to regex it into a key again. Collapse to one
+      ladder (name -> AppStage) + a projection (AppStage -> i18n key). They have
+      already drifted in both directions, both latent today:
+      `mapStageFromName('Last 16')` -> `GROUP` (no `last 16` rung, while
+      roundLabelKey has one), and the two English label maps disagree
+      ('Third-place play-off' vs 'Third place') - only roundLabelKey's `/third/`
+      hides it. The bronze fix had to hand-sync both ladders; that is the third time.
+- [ ] The two ladders disagree on ORDER while both comments claim order matters:
+      `stage.ts` tests third/3rd/bronze BEFORE semi/quarter, `share-card.ts`
+      tests it after. No real provider name collides today ("Bronze semi-final"
+      would map SF on one and THIRD_PLACE on the other). Falls out of the collapse above.
+- [ ] `roundLabelKey`'s `last 32` / `last 16` branches are unreachable: its only
+      inputs are `round.label` (canonical KNOCKOUT_LABELS the app generates) and
+      `BracketRound.name` (FIFA KnockoutStages or UEFA's own STAGE_LABELS), none
+      of which produce "Last 16". Delete with the collapse.
+- [ ] `providers/stage.ts parseGroupLetter` is a trailing-letter matcher
+      (`/([A-L])\s*$/i`), not a group parser: 'Final' -> 'L', 'Third place
+      play-off' -> 'F'. Unreachable today (both callers pass the provider's
+      group-name field - `fifa.ts` `GroupName`, `uefa.ts` `groupName` - never a
+      stage name), but the day a knockout stage name reaches it, every such match
+      lands in a phantom group. Anchor it (`/^group\s+([A-L])\s*$/i`) once the
+      real GroupName format is confirmed against a live payload.
+- [ ] `providers/status-map.ts mapApiFootballRound` keeps a fifth, divergent
+      third/final ladder that the bronze fix did not reach ("Bronze final" ->
+      FINAL). Dead code today - no production caller, only its own test - so
+      delete it or fold it into the unified ladder rather than leave a trap for
+      whoever re-adopts the api-football provider.

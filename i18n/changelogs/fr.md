@@ -7,7 +7,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ### Corrigé
 
-- Le match pour la troisième place s'affiche de nouveau sous la finale, au centre du tableau, au lieu d'occuper sa propre colonne à côté d'elle : la finale est ainsi recentrée et les traits de liaison qui rejoignaient une colonne vide ont disparu. Les tours que le fournisseur nomme « Bronze final » sont de nouveau reconnus comme le match pour la troisième place, et donc correctement libellés dans le tableau et sur les images de partage.
+- Le tableau ne sacre plus de champion avant que la finale soit jouée. Une fois les deux demi-finales terminées, le trophée affichait le nom de l'équipe qualifiée pour la finale par la seconde demi-finale, dévoilant ainsi une finale qui n'avait pas commencé. Le champion est désormais déterminé par le résultat de la finale elle-même.
+- Le match pour la troisième place s'affiche désormais sous la finale, au centre du tableau, au lieu d'occuper sa propre colonne à côté d'elle. La finale est ainsi recentrée et les traits de liaison qui rejoignaient une colonne vide ont disparu. Le match manquait à l'appel parce que le fournisseur le nomme « Bronze final », une graphie que l'application ne reconnaissait pas comme le match pour la troisième place.
 
 ## [4.2.4] - 2026-07-16
 
