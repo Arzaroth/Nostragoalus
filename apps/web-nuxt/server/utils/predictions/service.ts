@@ -69,17 +69,24 @@ async function loadOpenMatch(db: AppDatabase, matchId: string, now: Date) {
 
 // Serialize concurrent writes that read-then-write the same logical bucket. Two
 // uses, both read-modify-write races the upserts alone can't close:
-// - stakes (`base:`/`league:` + member + round): base picks share one round
-//   budget, a league override chain has its own. Without it two saves on
-//   different matches of the same round each read the other's stake as 0, both
-//   pass the budget check, and both commit - overshooting the fixed budget.
-// - picks (`pick:`/`lpick:` + member + match): the ledger append is gated on a
-//   pre-read of the current scoreline. Without it a double-submit (autosave +
-//   manual save) has both transactions read "no pick yet", so both append and
-//   an untouched pick looks edited to set-and-forget and the pick history.
+// - stakes (`base:${userId}:${roundId}`, `league:${leagueId}:${userId}:${roundId}`):
+//   base picks share one round budget, a league override chain has its own.
+//   Without it two saves on different matches of the same round each read the
+//   other's stake as 0, both pass the budget check, and both commit -
+//   overshooting the fixed budget.
+// - picks (`pick:${userId}:${matchId}`, lpickBucket): the ledger append is gated
+//   on a pre-read of the current scoreline. Without it a double-submit (autosave
+//   + manual save) has both transactions read "no pick yet", so both append the
+//   same scoreline and an untouched pick reads as edited to set-and-forget.
+// Relies on READ COMMITTED (the pool default): the post-lock re-read must see
+// the winner's committed row, which a repeatable-read snapshot would not.
 async function lockBucket(tx: AppDatabase, bucket: string): Promise<void> {
   await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${bucket}))`)
 }
+
+// Both writers of a league override (score upsert, joker seed) must land in the
+// same bucket to exclude each other.
+const lpickBucket = (leagueId: string, userId: string, matchId: string) => `lpick:${leagueId}:${userId}:${matchId}`
 
 // Reject a stake that would push the round's total over the fixed confidence
 // budget. Scoped to a column (base prediction.wager, or a league override's) so
@@ -452,7 +459,7 @@ export async function upsertLeaguePrediction(
   if (lg?.mode === 'NORMAL') throw new ValidationError('per-league picks are only available in easy, hard and hardcore leagues')
 
   return db.transaction(async (tx) => {
-    await lockBucket(tx, `lpick:${input.leagueId}:${input.userId}:${input.matchId}`)
+    await lockBucket(tx, lpickBucket(input.leagueId, input.userId, input.matchId))
     if (input.wager != null && input.wager > 0) {
       await lockBucket(tx, `league:${input.leagueId}:${input.userId}:${matchRow.roundId}`)
       // Budget across this league's EFFECTIVE stakes in the round: per match, the
@@ -595,7 +602,7 @@ export async function setLeagueJoker(db: AppDatabase, input: SetLeagueJokerInput
   if (!m.homeTeamCode || !m.awayTeamCode) throw new ValidationError('teams not confirmed yet')
 
   await db.transaction(async (tx) => {
-    await lockBucket(tx, `lpick:${input.leagueId}:${input.userId}:${input.matchId}`)
+    await lockBucket(tx, lpickBucket(input.leagueId, input.userId, input.matchId))
     let [ov] = await tx
       .select({ id: leaguePrediction.id })
       .from(leaguePrediction)

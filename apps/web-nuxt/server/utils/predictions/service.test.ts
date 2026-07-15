@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { eq } from 'drizzle-orm'
+import { asc, eq } from 'drizzle-orm'
 import { createTestDb } from '../../../tests/db'
 import { findRoundId } from '../sync/rounds'
 import { addLeagueMember, makeLeague, makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
-import { getCrowdTotals, getMatchCrowdTotal, getMyPredictions, getMyStats, getUserPublicPredictions, setJoker, upsertPrediction } from './service'
-import { prediction, userAchievement } from '../../../db/schema'
+import { getCrowdTotals, getMatchCrowdTotal, getMyPredictions, getMyStats, getUserPublicPredictions, setJoker, upsertLeaguePrediction, upsertPrediction } from './service'
+import { leaguePredictionCommitment, prediction, predictionCommitment, userAchievement } from '../../../db/schema'
 import { LockedError, NotFoundError, ValidationError } from '../errors'
 
 const NOW = new Date('2026-06-10T00:00:00Z')
@@ -57,6 +57,40 @@ describe('upsertPrediction', () => {
     expect(id1).toBe(id2)
     const [p] = await db.select().from(prediction).where(eq(prediction.id, id1))
     expect(p).toMatchObject({ homeGoals: 2, awayGoals: 2 })
+    await client.close()
+  })
+
+  it('appends one ledger entry per real score change, none for a re-save', async () => {
+    const { db, client, competitionId, roundId, userId } = await setup()
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: FUTURE })
+    const ledger = async () =>
+      db.select().from(predictionCommitment).where(eq(predictionCommitment.matchId, m)).orderBy(asc(predictionCommitment.seq))
+
+    await upsertPrediction(db, { userId, matchId: m, home: 1, away: 0 }, NOW)
+    expect(await ledger()).toHaveLength(1)
+    // Autosave re-fires the same score: the ledger must not grow, or set-and-forget
+    // reads a pick that was placed once and left alone as edited.
+    await upsertPrediction(db, { userId, matchId: m, home: 1, away: 0 }, NOW)
+    expect(await ledger()).toHaveLength(1)
+    // Only the away goal moves: a real edit the guard must not miss.
+    await upsertPrediction(db, { userId, matchId: m, home: 1, away: 2 }, NOW)
+    expect((await ledger()).map((r) => `${r.homeGoals}-${r.awayGoals}`)).toEqual(['1-0', '1-2'])
+    await client.close()
+  })
+
+  it('appends one league-ledger entry per real override change, none for a re-save', async () => {
+    const { db, client, competitionId, roundId, userId } = await setup()
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: FUTURE })
+    const leagueId = await makeLeague(db, { competitionId, mode: 'HARD' })
+    await addLeagueMember(db, leagueId, userId)
+    await upsertPrediction(db, { userId, matchId: m, home: 1, away: 0 }, NOW)
+    const ledger = async () =>
+      db.select().from(leaguePredictionCommitment).where(eq(leaguePredictionCommitment.matchId, m))
+
+    await upsertLeaguePrediction(db, { leagueId, userId, matchId: m, home: 3, away: 1 }, NOW)
+    expect(await ledger()).toHaveLength(1)
+    await upsertLeaguePrediction(db, { leagueId, userId, matchId: m, home: 3, away: 1 }, NOW)
+    expect(await ledger()).toHaveLength(1)
     await client.close()
   })
 

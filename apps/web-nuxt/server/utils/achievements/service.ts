@@ -170,7 +170,7 @@ function perfectRounds(
 }
 
 // Set and Forget: predicted every match of a complete multi-match round and never
-// edited any of those picks (each has a single commitment-ledger entry). Discipline,
+// edited any of those picks (each committed a single distinct scoreline). Discipline,
 // not accuracy. Only complete rounds count (same partial-round guard as Flawless);
 // single-match rounds are excluded (one untouched pick is no feat).
 function untouchedRound(
@@ -415,11 +415,9 @@ export async function computeAchievementStats(
   const championMatchCount = championMatchIds.size
 
   // How many distinct scorelines each prediction's commitment ledger holds: one
-  // = never edited (backs set-and-forget). Counting distinct scorelines rather
-  // than entries because entries are append-only and a save race (fixed since,
-  // see upsertPrediction) left ~60 same-score duplicate entries in the ledger -
-  // those are one placed-and-left pick, not an edit, and the chain can't be
-  // rewritten to say so.
+  // = never edited (backs set-and-forget). Distinct scorelines rather than entry
+  // count because a save race (fixed since, see upsertPrediction) wrote same-score
+  // duplicate entries, and an append-only chain can't be rewritten to drop them.
   const commitCounts = await db
     .select({
       predictionId: predictionCommitment.predictionId,

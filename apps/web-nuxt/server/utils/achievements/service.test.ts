@@ -87,13 +87,14 @@ async function pred(o: PredOpts): Promise<string> {
   return id
 }
 
-// Append n commitment-ledger entries for a prediction, each a different scoreline
-// (n>1 = it was edited). The achievement code counts distinct scorelines, so the
-// goals matter; the hash fields just need to be unique. Pass `home` to pin every
-// entry to one scoreline - a same-score duplicate, which is NOT an edit.
+// Append one commitment-ledger entry per scoreline given, oldest first. The
+// achievement code counts DISTINCT scorelines, so the goals are what matters and
+// the hash fields just need to be unique: `['1-0', '1-2']` is an edited pick,
+// `['1-0', '1-0']` is the same pick committed twice by the save race.
 let commitSeq = 1
-async function commit(predictionId: string, userId: string, matchId: string, n = 1, home?: number): Promise<void> {
-  for (let i = 0; i < n; i++) {
+async function commit(predictionId: string, userId: string, matchId: string, scorelines: string[]): Promise<void> {
+  for (const line of scorelines) {
+    const [home, away] = line.split('-').map(Number)
     const seq = commitSeq++
     await db.insert(predictionCommitment).values({
       seq,
@@ -101,8 +102,8 @@ async function commit(predictionId: string, userId: string, matchId: string, n =
       userId,
       subject: 'subj',
       matchId,
-      homeGoals: home ?? i,
-      awayGoals: 0,
+      homeGoals: home,
+      awayGoals: away,
       salt: `salt-${seq}`,
       commitment: `commit-${seq}`,
       prevHash: `prev-${seq}`,
@@ -204,15 +205,16 @@ describe('computeAchievementStats', () => {
     const m1 = await scoredMatch(c, g1, 'GROUP', kickoff)
     const m2 = await scoredMatch(c, g1, 'GROUP', kickoff)
     // Alice predicted both matches of the round, each committed once (never edited).
-    const a1 = await pred({ userId: alice, matchId: m1, roundId: g1, tier: 'DIFF', points: 1 })
-    const a2 = await pred({ userId: alice, matchId: m2, roundId: g1, tier: 'DIFF', points: 1 })
-    await commit(a1, alice, m1, 1)
-    await commit(a2, alice, m2, 1)
-    // Bob predicted both too, but edited one of them (two commitments).
-    const b1 = await pred({ userId: bob, matchId: m1, roundId: g1, tier: 'DIFF', points: 1 })
-    const b2 = await pred({ userId: bob, matchId: m2, roundId: g1, tier: 'DIFF', points: 1 })
-    await commit(b1, bob, m1, 1)
-    await commit(b2, bob, m2, 2)
+    const a1 = await pred({ userId: alice, matchId: m1, roundId: g1, tier: 'DIFF', points: 1, home: 1, away: 0 })
+    const a2 = await pred({ userId: alice, matchId: m2, roundId: g1, tier: 'DIFF', points: 1, home: 2, away: 1 })
+    await commit(a1, alice, m1, ['1-0'])
+    await commit(a2, alice, m2, ['2-1'])
+    // Bob predicted both too, but edited one of them - and only its away goal, so
+    // the whole scoreline has to be compared to see it.
+    const b1 = await pred({ userId: bob, matchId: m1, roundId: g1, tier: 'DIFF', points: 1, home: 1, away: 0 })
+    const b2 = await pred({ userId: bob, matchId: m2, roundId: g1, tier: 'DIFF', points: 1, home: 1, away: 2 })
+    await commit(b1, bob, m1, ['1-0'])
+    await commit(b2, bob, m2, ['1-0', '1-2'])
     expect((await stats(c, alice)).setAndForget).toBe(1)
     expect((await stats(c, bob)).setAndForget).toBe(0)
   })
@@ -226,10 +228,10 @@ describe('computeAchievementStats', () => {
     const m2 = await scoredMatch(c, g1, 'GROUP', kickoff)
     // Both picks carry two ledger entries, but each pair holds the same scoreline:
     // a save race duplicated the entry, the user never edited anything.
-    const a1 = await pred({ userId: alice, matchId: m1, roundId: g1, tier: 'DIFF', points: 1 })
-    const a2 = await pred({ userId: alice, matchId: m2, roundId: g1, tier: 'DIFF', points: 1 })
-    await commit(a1, alice, m1, 2, 1)
-    await commit(a2, alice, m2, 2, 2)
+    const a1 = await pred({ userId: alice, matchId: m1, roundId: g1, tier: 'DIFF', points: 1, home: 1, away: 0 })
+    const a2 = await pred({ userId: alice, matchId: m2, roundId: g1, tier: 'DIFF', points: 1, home: 2, away: 1 })
+    await commit(a1, alice, m1, ['1-0', '1-0'])
+    await commit(a2, alice, m2, ['2-1', '2-1'])
     expect((await stats(c, alice)).setAndForget).toBe(1)
   })
 
@@ -328,8 +330,8 @@ describe('computeAchievementStats', () => {
     // One match scored and left untouched, but a second match of the round is unplayed.
     const played = await scoredMatch(c, qf, 'QF', new Date('2026-07-10T18:00:00Z'))
     await makeMatch(db, { competitionId: c, roundId: qf, stage: 'QF', kickoffTime: new Date('2026-07-11T18:00:00Z') })
-    const p = await pred({ userId: alice, matchId: played, roundId: qf, tier: 'DIFF', points: 1 })
-    await commit(p, alice, played, 1)
+    const p = await pred({ userId: alice, matchId: played, roundId: qf, tier: 'DIFF', points: 1, home: 1, away: 0 })
+    await commit(p, alice, played, ['1-0'])
     expect((await stats(c, alice)).setAndForget).toBe(0)
   })
 
