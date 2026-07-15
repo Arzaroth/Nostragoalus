@@ -3,7 +3,7 @@ import { matchIsInPlay } from '#shared/types/match'
 
 const slug = useSelectedCompetition()
 const { t, locale } = useI18n()
-const props = defineProps<{ match: any }>()
+const props = defineProps<{ match: any; seq?: number }>()
 const NuxtLinkC = resolveComponent('NuxtLink')
 function fmtDate(d: string) {
   return new Date(d).toLocaleDateString(locale.value, { day: 'numeric', month: 'short' })
@@ -27,6 +27,10 @@ const isLive = computed(() => matchIsInPlay(props.match.status))
     :is="match.id ? NuxtLinkC : 'div'"
     :to="match.id ? `/${slug}/matches/${match.id}` : undefined"
     class="br-card relative"
+    :data-home="match.homeCode || undefined"
+    :data-away="match.awayCode || undefined"
+    :data-winner="match.winner || undefined"
+    :data-seq="seq"
     style="background: var(--p-content-background); border: 1px solid var(--p-content-border-color)"
   >
     <span
@@ -70,9 +74,20 @@ a.br-card:hover {
   white-space: nowrap;
   min-width: 0;
   max-width: 47%;
+  transition: color 0.2s ease, text-shadow 0.2s ease;
 }
 .br-team.win {
   font-weight: 800;
+}
+/* Hovering a decided cell tints its two sides to match the journey lines the
+   bracket draws for them: the winner green, the loser red. */
+.br-card[data-winner]:hover .br-team.win {
+  color: var(--ng-success);
+  text-shadow: 0 0 0.6rem color-mix(in srgb, var(--ng-success) 55%, transparent);
+}
+.br-card[data-winner]:hover .br-team:not(.win) {
+  color: var(--ng-danger);
+  text-shadow: 0 0 0.6rem color-mix(in srgb, var(--ng-danger) 45%, transparent);
 }
 /* Projected side: the flag/name carry a dashed underline so it reads as
    not-yet-official at a glance (alongside the corner chip). */
