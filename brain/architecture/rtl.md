@@ -60,6 +60,10 @@ their own (the FIFA-style "reversed" look), and the connector elbows (scoped-CSS
 stays centered, elbows still converge inward, cards flip (flag on the trailing
 side). Identical under LTR. Matches FIFA's own Arabic bracket.
 
+The hover journey lines ([../features/bracket.md](../features/bracket.md)) need
+no mirroring at all: they are routed from viewport rects, so which edge of a card
+faces the next one is read off the measured geometry rather than assumed.
+
 ## Icons
 
 Directional glyphs (back/forward arrows, chevrons) are font glyphs, so a global
