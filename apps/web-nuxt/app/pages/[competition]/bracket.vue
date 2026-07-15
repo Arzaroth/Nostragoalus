@@ -6,6 +6,34 @@ const { data: rawBracket, isLoading } = useBracket()
 const { bracket } = useLiveBracket(rawBracket)
 
 const sides = computed(() => splitBracketSides(bracket.value?.rounds ?? []))
+
+const brEl = useTemplateRef<HTMLElement>('brEl')
+const journeys = ref<{ code: string; d: string; outcome: 'win' | 'loss' }[]>([])
+
+function cardsOf(code: string) {
+  const sel = `.br-card[data-home="${CSS.escape(code)}"], .br-card[data-away="${CSS.escape(code)}"]`
+  return [...(brEl.value?.querySelectorAll<HTMLElement>(sel) ?? [])]
+    .sort((a, b) => Number(a.dataset.seq ?? 0) - Number(b.dataset.seq ?? 0))
+    .map(el => el.getBoundingClientRect())
+}
+
+// Hovering a decided cell traces both its teams' journeys: winner green, loser
+// red. Anything else - the gaps between cells, a tie with no outcome to colour
+// by - clears the trace. Delegated, so it also fires moving card-to-card.
+function onEnter(e: MouseEvent) {
+  const card = (e.target as HTMLElement).closest<HTMLElement>('.br-card')
+  const winner = card?.dataset.winner
+  if (!brEl.value || !card || !winner) {
+    journeys.value = []
+    return
+  }
+  const won = winner === 'HOME' ? card.dataset.home : card.dataset.away
+  const lost = winner === 'HOME' ? card.dataset.away : card.dataset.home
+  const origin = brEl.value.getBoundingClientRect()
+  journeys.value = ([[won, 'win'], [lost, 'loss']] as const)
+    .map(([code, outcome]) => ({ code: code ?? '', outcome, d: code ? bracketJourneyPath(cardsOf(code), origin) : '' }))
+    .filter(j => j.d)
+}
 </script>
 
 <template>
@@ -20,11 +48,13 @@ const sides = computed(() => splitBracketSides(bracket.value?.rounds ?? []))
     <div v-else-if="!sides" class="opacity-60">{{ t('bracket.empty') }}</div>
 
     <div v-else class="overflow-x-auto pb-4" style="width: 100vw; margin-inline-start: calc(50% - 50vw)">
-      <div class="br w-max mx-auto flex items-stretch gap-8 px-6">
+      <div ref="brEl" class="br w-max mx-auto flex items-stretch gap-8 px-6" @mouseover="onEnter" @mouseleave="journeys = []">
+        <svg class="br-journey" aria-hidden="true">
+          <path v-for="j in journeys" :key="j.code + j.outcome" :d="j.d" :class="'br-line br-line-' + j.outcome" path-length="1" /></svg>
         <!-- left side -->
         <div class="flex items-stretch gap-8 br-left">
           <div v-for="(col, ci) in sides.left" :key="'l' + ci" class="br-col" :data-advance="ci < sides.left.length - 1 ? 'true' : 'false'" :data-tail="ci === sides.left.length - 1 ? 'true' : 'false'">
-            <div v-for="(m, mi) in col.matches" :key="mi" class="br-cell"><BracketMatchCard :match="m" /></div>
+            <div v-for="(m, mi) in col.matches" :key="mi" class="br-cell"><BracketMatchCard :match="m" :seq="col.sequence" /></div>
           </div>
         </div>
 
@@ -37,12 +67,12 @@ const sides = computed(() => splitBracketSides(bracket.value?.rounds ?? []))
           </div>
           <div v-if="sides.final" class="text-center">
             <div class="text-[10px] uppercase tracking-wider font-semibold mb-1" style="color: var(--p-primary-color)">{{ roundLabel(sides.final.name, t) }}</div>
-            <BracketMatchCard v-for="(m, mi) in sides.final.matches" :key="mi" :match="m" />
+            <BracketMatchCard v-for="(m, mi) in sides.final.matches" :key="mi" :match="m" :seq="sides.final.sequence" />
           </div>
           <div v-else />
           <div v-if="sides.third" class="text-center opacity-80 self-start pt-4">
             <div class="text-[10px] uppercase tracking-wider font-semibold mb-1" style="color: var(--p-text-muted-color)">{{ t('bracket.round.third') }}</div>
-            <BracketMatchCard v-for="(m, mi) in sides.third.matches" :key="mi" :match="m" />
+            <BracketMatchCard v-for="(m, mi) in sides.third.matches" :key="mi" :match="m" :seq="sides.third.sequence" />
           </div>
           <div v-else />
         </div>
@@ -50,7 +80,7 @@ const sides = computed(() => splitBracketSides(bracket.value?.rounds ?? []))
         <!-- right side -->
         <div class="flex items-stretch gap-8 br-right">
           <div v-for="(col, ci) in sides.right" :key="'r' + ci" class="br-col" :data-advance="ci > 0 ? 'true' : 'false'" :data-tail="ci === 0 ? 'true' : 'false'">
-            <div v-for="(m, mi) in col.matches" :key="mi" class="br-cell"><BracketMatchCard :match="m" /></div>
+            <div v-for="(m, mi) in col.matches" :key="mi" class="br-cell"><BracketMatchCard :match="m" :seq="col.sequence" /></div>
           </div>
         </div>
       </div>
@@ -60,6 +90,7 @@ const sides = computed(() => splitBracketSides(bracket.value?.rounds ?? []))
 
 <style scoped>
 .br {
+  position: relative;
   --line: var(--p-content-border-color);
   /* Stretch columns so the dense edge rounds (8 matches) get vertical air.
      The 270px budget covers header + page paddings + the site footer. */
@@ -69,6 +100,46 @@ const sides = computed(() => splitBracketSides(bracket.value?.rounds ?? []))
   display: flex;
   flex-direction: column;
   justify-content: space-around;
+}
+/* Journey overlay: sits above the static elbows, below nothing that takes input.
+   pathLength=1 normalises every route to a unit length, so one keyframe draws
+   any of them at the same pace regardless of how far the team got. */
+.br-journey {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 1;
+}
+.br-line {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: br-draw 1.6s ease-in-out forwards;
+}
+.br-line-win {
+  stroke: var(--ng-success);
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--ng-success) 60%, transparent));
+}
+.br-line-loss {
+  stroke: var(--ng-danger);
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--ng-danger) 50%, transparent));
+}
+@keyframes br-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .br-line {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
 }
 .br-cell {
   flex: 1 1 0;
