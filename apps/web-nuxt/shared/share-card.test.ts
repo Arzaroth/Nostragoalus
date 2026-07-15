@@ -19,6 +19,12 @@ describe('roundLabelKey', () => {
     expect(roundLabelKey('3rd place final')).toBe('bracket.round.third')
     expect(roundLabelKey('Bronze medal match')).toBe('bracket.round.third')
   })
+
+  // Same rung, and the same reason, as the server-side ladder's GROUP guard.
+  it('does not read UEFA\'s "Final tournament" group stage as a knockout round', () => {
+    expect(roundLabelKey('Final tournament')).toBeNull()
+    expect(roundLabelKey('European Qualifiers - Final tournament')).toBeNull()
+  })
 })
 
 describe('shareScore', () => {

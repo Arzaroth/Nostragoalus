@@ -1,24 +1,11 @@
 <script setup lang="ts">
-import { roundLabelKey } from '#shared/share-card'
-
 const { t } = useI18n()
 useHead({ title: t('nav.bracket') })
 const { data: rawBracket, isLoading } = useBracket()
 // Overlay live WS scores and refetch advancement so the tree updates in play.
 const { bracket } = useLiveBracket(rawBracket)
 
-const sides = computed(() => {
-  const rounds = bracket.value?.rounds ?? []
-  if (!rounds.length) return null
-  const final = rounds.find((r: any) => roundLabelKey(r.name) === 'bracket.round.final')
-  const third = rounds.find((r: any) => roundLabelKey(r.name) === 'bracket.round.third')
-  const side = rounds.filter((r: any) => r !== final && r !== third).sort((a: any, b: any) => a.sequence - b.sequence)
-  const left: { name: string; matches: unknown[] }[] = side.map((r: any) => ({ name: r.name, matches: r.matches.slice(0, Math.ceil(r.matches.length / 2)) }))
-  const right: { name: string; matches: unknown[] }[] = side
-    .map((r: any) => ({ name: r.name, matches: r.matches.slice(Math.ceil(r.matches.length / 2)) }))
-    .reverse()
-  return { left, right, final, third }
-})
+const sides = computed(() => splitBracketSides(bracket.value?.rounds ?? []))
 </script>
 
 <template>

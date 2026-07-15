@@ -17,7 +17,21 @@ are unofficial or undocumented endpoints), so the quirks below are load-bearing.
   must be captured at fixtures sync. Two traps: exclude **Period 11**
   (penalty-shootout goals) from the score, and the goal feed's `IdAssistPlayer`
   is the **beaten keeper, NOT an assister** - ignore it.
-- **Knockout bracket:** `/seasonbracket/season/{id}`.
+- **Knockout bracket:** `/seasonbracket/season/{id}`. Three traps. Its season-level
+  `Winner` is **not the champion** - FIFA fills it as soon as the last semi-final
+  resolves the final's placeholder slot, so trusting it crowns a winner before the
+  final kicks off. Both providers read the champion off the final's own result
+  instead (`normalizeFifaBracket`, `uefa.ts getBracket`). It also names the
+  third-place tie **"Bronze final"**, while `/calendar/matches` names the same
+  fixture **"Third-place play-off"** - the same match reaches the app under two
+  names, so any "is this the third-place round?" test must know both (the
+  `/third|3rd|bronze/` rung in [share-card.ts](../../apps/web-nuxt/shared/share-card.ts)
+  and [stage.ts](../../apps/web-nuxt/server/utils/providers/stage.ts)). A name that
+  only matches `final` maps to FINAL, and the tie then renders as a second final.
+  And this feed **lags** `/calendar/matches`: it can still report a semi as LIVE
+  with the next round's slots left as `PlaceHolderA/B` ("W102", "RU102") long
+  after our own `match` rows carry the resolved teams. The bracket page shows the
+  feed's names verbatim - see [bracket rendering](../features/competitions.md).
 - **Player stats (top scorers + assists):** `getPlayerStats` has two sources.
   For the **live** edition it reads FIFA's "gameday" stats stories
   (`gameday-prod.fifa.mangodev.co.uk`): mint an anonymous ~24h Bearer token from

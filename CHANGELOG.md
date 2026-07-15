@@ -7,7 +7,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ### Fixed
 
-- The third-place play-off now sits under the final in the centre of the bracket instead of in its own column beside it, which also re-centres the final and removes the connector lines that ran to an empty column. Rounds the provider names "Bronze final" are recognised as the third-place play-off again, so they are labelled correctly on the bracket and on share images.
+- The bracket no longer crowns a champion before the final is played. Once both semi-finals were done, the trophy named the team that had reached the final from the second semi, spoiling a final that had not kicked off. The champion is now read from the final's own result.
+- The third-place play-off now sits under the final in the centre of the bracket, instead of in its own column beside it. This also re-centres the final and removes the connector lines that ran to an empty column. The play-off went missing because the bracket feed names it "Bronze final", a spelling the app did not recognise as the third-place tie.
 
 ## [4.2.4] - 2026-07-16
 

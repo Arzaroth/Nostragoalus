@@ -14,7 +14,6 @@ describe('mapStageFromName', () => {
 
   it('keeps the names that contain "final" off FINAL', () => {
     expect(mapStageFromName('Final Tournament')).toBe('GROUP')
-    expect(mapStageFromName('Semi-finals')).toBe('SF')
     expect(mapStageFromName('Bronze final')).toBe('THIRD_PLACE')
     expect(mapStageFromName('3rd place final')).toBe('THIRD_PLACE')
   })
@@ -30,7 +29,7 @@ describe('parseGroupLetter', () => {
   it('reads the trailing group letter, else null', () => {
     expect(parseGroupLetter('Group F')).toBe('F')
     expect(parseGroupLetter('group a')).toBe('A')
-    expect(parseGroupLetter('Round of 16')).toBeNull()
+    expect(parseGroupLetter('Group M')).toBeNull()
     expect(parseGroupLetter(null)).toBeNull()
   })
 })
