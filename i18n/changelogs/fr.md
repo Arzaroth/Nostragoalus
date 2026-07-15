@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [4.2.4] - 2026-07-16
+
 ### Corrigé
 
 - Le trophée « Set and Forget » n'est plus refusé aux joueurs qui n'ont jamais touché à leurs pronostics. L'enregistrement d'un pronostic pouvait l'inscrire deux fois dans le registre d'inviolabilité, ce qui passait pour une modification. Le double enregistrement est corrigé, et le trophée compare désormais les scores réellement engagés plutôt que le nombre d'entrées du registre : un pronostic inscrit deux fois avec le même score redevient intact. Les joueurs concernés reçoivent le trophée dès le prochain match noté de leur compétition.

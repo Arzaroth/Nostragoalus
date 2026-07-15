@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [4.2.4] - 2026-07-16
+
 ### tI'pu'
 
 - "Set and Forget" huch'a' luSuqlaHqa' chovnatlh choHbe'bogh chamwI'pu'. wa' chovnatlh qonlu'DI', cha'logh ghItlhlu'meH Duy'; choHlu'pu' rurmoH. DaH cha'logh qonwI' Qottag, 'ej huch'a' naghmey per lulegh, ghItlh mI' luleghbe'. vaj naghmey rap lu'angbogh cha' ghItlh, chovnatlh choHbe'lu'pu' 'e' luvoq. QujwI'pu' Duy'pu'bogh: may' veb toDuj chovlu'DI', huch'a' nobqa'lu'.
