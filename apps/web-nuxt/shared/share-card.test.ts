@@ -13,6 +13,12 @@ describe('roundLabelKey', () => {
     expect(roundLabelKey(null)).toBeNull()
     expect(roundLabelKey(undefined)).toBeNull()
   })
+
+  it('reads the third-place variants that contain "final" as third, not final', () => {
+    expect(roundLabelKey('Bronze final')).toBe('bracket.round.third')
+    expect(roundLabelKey('3rd place final')).toBe('bracket.round.third')
+    expect(roundLabelKey('Bronze medal match')).toBe('bracket.round.third')
+  })
 })
 
 describe('shareScore', () => {

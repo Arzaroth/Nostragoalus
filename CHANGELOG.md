@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+
+- The third-place play-off now sits under the final in the centre of the bracket instead of in its own column beside it, which also re-centres the final and removes the connector lines that ran to an empty column. Rounds the provider names "Bronze final" are recognised as the third-place play-off again, so they are labelled correctly on the bracket and on share images.
+
 ## [4.2.4] - 2026-07-16
 
 ### Fixed

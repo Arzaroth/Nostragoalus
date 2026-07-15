@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { roundLabelKey } from '#shared/share-card'
+
 const { t } = useI18n()
 useHead({ title: t('nav.bracket') })
 const { data: rawBracket, isLoading } = useBracket()
@@ -8,8 +10,8 @@ const { bracket } = useLiveBracket(rawBracket)
 const sides = computed(() => {
   const rounds = bracket.value?.rounds ?? []
   if (!rounds.length) return null
-  const final = rounds.find((r: any) => /^final$/i.test(r.name.trim()))
-  const third = rounds.find((r: any) => /third/i.test(r.name))
+  const final = rounds.find((r: any) => roundLabelKey(r.name) === 'bracket.round.final')
+  const third = rounds.find((r: any) => roundLabelKey(r.name) === 'bracket.round.third')
   const side = rounds.filter((r: any) => r !== final && r !== third).sort((a: any, b: any) => a.sequence - b.sequence)
   const left: { name: string; matches: unknown[] }[] = side.map((r: any) => ({ name: r.name, matches: r.matches.slice(0, Math.ceil(r.matches.length / 2)) }))
   const right: { name: string; matches: unknown[] }[] = side
