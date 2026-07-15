@@ -5,6 +5,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Corrigé
+
+- Le match pour la troisième place s'affiche de nouveau sous la finale, au centre du tableau, au lieu d'occuper sa propre colonne à côté d'elle : la finale est ainsi recentrée et les traits de liaison qui rejoignaient une colonne vide ont disparu. Les tours que le fournisseur nomme « Bronze final » sont de nouveau reconnus comme le match pour la troisième place, et donc correctement libellés dans le tableau et sur les images de partage.
+
 ## [4.2.4] - 2026-07-16
 
 ### Corrigé
