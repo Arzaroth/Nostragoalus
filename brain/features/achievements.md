@@ -99,8 +99,11 @@ sweep of a real multi-match round. Both Flawless and set-and-forget only count a
 === the round's total match count). Without this a knockout round with just its first
 match scored would read as perfect off that one exact, before the rest are played.
 **set-and-forget** rewards predicting every match of such a complete multi-match round
-and never editing one - "never edited" = the pick has a single `prediction_commitment`
-ledger entry (the chain appends only on a real change).
+and never editing one - "never edited" = the pick's `prediction_commitment` entries all
+carry the same scoreline. It counts distinct scorelines, not entries: the chain appends
+only on a real change, but a save race (fixed in `upsertPrediction`, see
+[tamper-evidence](tamper-evidence.md)) once wrote same-score duplicate entries, and an
+append-only chain can't be rewritten to drop them.
 
 **Correct-outcome badges** grade off calling the RESULT, not the exact scoreline -
 `baseTier` in `{EXACT, DIFF, OUTCOME}` (i.e. non-MISS). **Form Reader (`form-reader`)**

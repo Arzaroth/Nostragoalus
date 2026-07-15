@@ -67,12 +67,17 @@ async function loadOpenMatch(db: AppDatabase, matchId: string, now: Date) {
   return row
 }
 
-// Serialize concurrent stake writes for the same member+round (base picks share
-// one budget; a league override chain has its own). Without it two saves on
-// different matches of the same round each read the other's stake as 0, both
-// pass the budget check, and both commit - overshooting the fixed budget. A
-// transaction-level advisory lock makes the read-then-write atomic per bucket.
-async function lockWagerBudget(tx: AppDatabase, bucket: string): Promise<void> {
+// Serialize concurrent writes that read-then-write the same logical bucket. Two
+// uses, both read-modify-write races the upserts alone can't close:
+// - stakes (`base:`/`league:` + member + round): base picks share one round
+//   budget, a league override chain has its own. Without it two saves on
+//   different matches of the same round each read the other's stake as 0, both
+//   pass the budget check, and both commit - overshooting the fixed budget.
+// - picks (`pick:`/`lpick:` + member + match): the ledger append is gated on a
+//   pre-read of the current scoreline. Without it a double-submit (autosave +
+//   manual save) has both transactions read "no pick yet", so both append and
+//   an untouched pick looks edited to set-and-forget and the pick history.
+async function lockBucket(tx: AppDatabase, bucket: string): Promise<void> {
   await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${bucket}))`)
 }
 
@@ -109,6 +114,7 @@ export async function upsertPrediction(
   // back together, so the ledger can never disagree with the stored prediction.
   let wasNew = false
   const predictionId = await db.transaction(async (tx) => {
+    await lockBucket(tx, `pick:${input.userId}:${input.matchId}`)
     const [existing] = await tx
       .select({ homeGoals: prediction.homeGoals, awayGoals: prediction.awayGoals })
       .from(prediction)
@@ -118,7 +124,7 @@ export async function upsertPrediction(
     // A confidence stake (HARD leagues) shares one round budget across the base
     // pick. Reject a stake that would push the round total over it.
     if (input.wager != null && input.wager > 0) {
-      await lockWagerBudget(tx, `base:${input.userId}:${matchRow.roundId}`)
+      await lockBucket(tx, `base:${input.userId}:${matchRow.roundId}`)
       const [{ other }] = await tx
         .select({ other: sql<number>`coalesce(sum(${prediction.wager}), 0)`.mapWith(Number) })
         .from(prediction)
@@ -446,8 +452,9 @@ export async function upsertLeaguePrediction(
   if (lg?.mode === 'NORMAL') throw new ValidationError('per-league picks are only available in easy, hard and hardcore leagues')
 
   return db.transaction(async (tx) => {
+    await lockBucket(tx, `lpick:${input.leagueId}:${input.userId}:${input.matchId}`)
     if (input.wager != null && input.wager > 0) {
-      await lockWagerBudget(tx, `league:${input.leagueId}:${input.userId}:${matchRow.roundId}`)
+      await lockBucket(tx, `league:${input.leagueId}:${input.userId}:${matchRow.roundId}`)
       // Budget across this league's EFFECTIVE stakes in the round: per match, the
       // override stake when present, else the base stake. Walks the round's
       // matches so a member mixing base + override picks can't exceed the true
@@ -588,6 +595,7 @@ export async function setLeagueJoker(db: AppDatabase, input: SetLeagueJokerInput
   if (!m.homeTeamCode || !m.awayTeamCode) throw new ValidationError('teams not confirmed yet')
 
   await db.transaction(async (tx) => {
+    await lockBucket(tx, `lpick:${input.leagueId}:${input.userId}:${input.matchId}`)
     let [ov] = await tx
       .select({ id: leaguePrediction.id })
       .from(leaguePrediction)

@@ -87,10 +87,12 @@ async function pred(o: PredOpts): Promise<string> {
   return id
 }
 
-// Append n commitment-ledger entries for a prediction (n>1 = it was edited). The
-// achievement code only counts rows, so the hash fields just need to be unique.
+// Append n commitment-ledger entries for a prediction, each a different scoreline
+// (n>1 = it was edited). The achievement code counts distinct scorelines, so the
+// goals matter; the hash fields just need to be unique. Pass `home` to pin every
+// entry to one scoreline - a same-score duplicate, which is NOT an edit.
 let commitSeq = 1
-async function commit(predictionId: string, userId: string, matchId: string, n = 1): Promise<void> {
+async function commit(predictionId: string, userId: string, matchId: string, n = 1, home?: number): Promise<void> {
   for (let i = 0; i < n; i++) {
     const seq = commitSeq++
     await db.insert(predictionCommitment).values({
@@ -99,7 +101,7 @@ async function commit(predictionId: string, userId: string, matchId: string, n =
       userId,
       subject: 'subj',
       matchId,
-      homeGoals: 0,
+      homeGoals: home ?? i,
       awayGoals: 0,
       salt: `salt-${seq}`,
       commitment: `commit-${seq}`,
@@ -213,6 +215,22 @@ describe('computeAchievementStats', () => {
     await commit(b2, bob, m2, 2)
     expect((await stats(c, alice)).setAndForget).toBe(1)
     expect((await stats(c, bob)).setAndForget).toBe(0)
+  })
+
+  it('awards set-and-forget despite same-score duplicate ledger entries', async () => {
+    const c = await seedCompetition(db)
+    const g1 = await roundId(c, 'GROUP', 1)
+    const alice = await makeUser(db, 'alice')
+    const kickoff = new Date('2026-06-15T12:00:00Z')
+    const m1 = await scoredMatch(c, g1, 'GROUP', kickoff)
+    const m2 = await scoredMatch(c, g1, 'GROUP', kickoff)
+    // Both picks carry two ledger entries, but each pair holds the same scoreline:
+    // a save race duplicated the entry, the user never edited anything.
+    const a1 = await pred({ userId: alice, matchId: m1, roundId: g1, tier: 'DIFF', points: 1 })
+    const a2 = await pred({ userId: alice, matchId: m2, roundId: g1, tier: 'DIFF', points: 1 })
+    await commit(a1, alice, m1, 2, 1)
+    await commit(a2, alice, m2, 2, 2)
+    expect((await stats(c, alice)).setAndForget).toBe(1)
   })
 
   it('measures the longest EXACT and non-MISS streaks in kickoff order', async () => {
