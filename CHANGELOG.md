@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [4.2.5] - 2026-07-16
+
 ### Fixed
 
 - The bracket no longer crowns a champion before the final is played. Once both semi-finals were done, the trophy named the team that had reached the final from the second semi, spoiling a final that had not kicked off. The champion is now read from the final's own result.

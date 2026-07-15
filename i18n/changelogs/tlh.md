@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [4.2.5] - 2026-07-16
+
 ### tI'pu'
 
 - QI'lop qaSpa', Qat'a' pong 'angbe'qa' Sor. cha' QI'lop Hop rInDI', QI'lopDaq jaHbogh negh pong 'ang huch'a' - QI'lop taghbe'pu'bogh So'ha'. DaH QI'lop mIw'a' neH lo'lu' Qat'a' ngu'meH.
