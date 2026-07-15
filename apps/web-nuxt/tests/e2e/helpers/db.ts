@@ -9,6 +9,7 @@ const CONNECTION =
   process.env.E2E_DATABASE_URL ?? 'postgres://nostragoalus:nostragoalus@localhost:5432/nostragoalus'
 
 export const E2E_SLUG = 'e2e-cup'
+export const E2E_BRACKET_SLUG = 'e2e-bracket'
 
 let pool: Pool | null = null
 function db(): Pool {
@@ -211,6 +212,27 @@ export async function getUserByEmail(email: string): Promise<{ id: string; banne
 // Remove a SCIM-provisioned test user (and its accounts) so re-runs start clean.
 export async function deleteUserByEmail(email: string): Promise<void> {
   await db().query(`delete from "user" where email = $1`, [email])
+}
+
+// A competition served by the offline `fixture` provider, whose canned bracket is
+// a fully-decided 8-team tree (server/utils/providers/fixture.ts). The bracket
+// comes from the provider rather than the DB, so no match rows are needed - the
+// cards just render without a link. Seasoned older than E2E_SLUG so it never
+// displaces the default competition (active list is newest-season-first), but
+// still active, which /api/competitions requires for the slug to validate.
+export async function seedFixtureBracketCompetition(): Promise<string> {
+  await cleanupBracket()
+  const { rows } = await db().query<{ id: string }>(
+    `insert into competition (id, slug, name, provider, external_competition_id, season_hint, is_active)
+     values (gen_random_uuid(), $1, 'E2E Bracket', 'fixture', 'e2e-bracket', '2025', true)
+     returning id`,
+    [E2E_BRACKET_SLUG],
+  )
+  return rows[0].id
+}
+
+export async function cleanupBracket(): Promise<void> {
+  await db().query(`delete from competition where slug = $1`, [E2E_BRACKET_SLUG])
 }
 
 // Remove the e2e competition and everything hanging off it. Predictions reference
