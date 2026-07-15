@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+
+- Set and Forget is no longer withheld from players who never touched their picks. Saving a pick could record it twice in the tamper-evidence ledger, which read as an edit. The double-save is fixed, and the badge now compares the scorelines you committed instead of counting ledger entries - so already-affected picks count as untouched again and the badge lands retroactively.
+
 ## [4.2.3] - 2026-07-14
 
 ### Fixed

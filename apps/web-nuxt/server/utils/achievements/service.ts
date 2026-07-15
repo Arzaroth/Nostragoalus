@@ -414,11 +414,19 @@ export async function computeAchievementStats(
   }
   const championMatchCount = championMatchIds.size
 
-  // How many commitment-ledger entries each prediction in this competition has: one
-  // entry = never edited (backs set-and-forget). The ledger appends only on a real
-  // pick change, so a single entry means the pick was placed once and left alone.
+  // How many distinct scorelines each prediction's commitment ledger holds: one
+  // = never edited (backs set-and-forget). Counting distinct scorelines rather
+  // than entries because entries are append-only and a save race (fixed since,
+  // see upsertPrediction) left ~60 same-score duplicate entries in the ledger -
+  // those are one placed-and-left pick, not an edit, and the chain can't be
+  // rewritten to say so.
   const commitCounts = await db
-    .select({ predictionId: predictionCommitment.predictionId, n: sql<number>`count(*)`.mapWith(Number) })
+    .select({
+      predictionId: predictionCommitment.predictionId,
+      n: sql<number>`count(distinct (${predictionCommitment.homeGoals}, ${predictionCommitment.awayGoals}))`.mapWith(
+        Number,
+      ),
+    })
     .from(predictionCommitment)
     .innerJoin(prediction, eq(prediction.id, predictionCommitment.predictionId))
     .innerJoin(match, inComp)

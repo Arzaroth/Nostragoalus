@@ -29,6 +29,12 @@ Privacy is built in:
 - A 256-bit salt hides the actual pick while the commitment is public; the
   opening (score + salt) is revealed only once the match kicks off.
 - A row is appended only when the score actually changes (the autosave de-dupes).
+  That de-dupe reads the current score before the upsert, so `upsertPrediction` takes a
+  `pg_advisory_xact_lock` on the pick first - without it a double-submit (autosave firing
+  alongside a manual save) had both transactions read "no pick yet" and both append a
+  same-score row, which reads as an edit to
+  [set-and-forget](achievements.md). The chain is append-only, so the duplicates it
+  already wrote stay: consumers compare scorelines, not row counts.
 
 ## Code + public surface
 
