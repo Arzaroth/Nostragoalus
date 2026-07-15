@@ -7,6 +7,7 @@ early on). Back to the root map: [../BRAIN.md](../BRAIN.md).
 | Feature | What it is | Shipped | Key tables / files |
 |---|---|---|---|
 | [Competitions](competitions.md) | Multi-tournament model + `/[competition]/` URL routing and switcher | core | `competition`, `round`, `match`; `useCompetitions.ts`, `CompetitionPill.vue` |
+| [Knockout bracket](bracket.md) | Provider-sourced knockout tree with projected qualifiers; hover a tie to trace both teams' journeys (winner green, loser red) | core | `bracket.vue`, `BracketMatchCard.vue`, `app/utils/bracketPath.ts`, `competitions/bracket.get.ts` |
 | [Predictions & scoring](predictions-and-scoring.md) | The core loop: predict scores, lock at kickoff, earn tiered points + bonuses | core | `prediction`, `match_score_event`, `scoring_config`; `server/utils/scoring/*` |
 | [Pick guard](pick-guard.md) | Outstanding-picks nudge + jump-to-first, and an outlandish-score confirm before auto-save | unreleased | `app/utils/outstanding-picks.ts`, `app/utils/prediction-sanity.ts`, `ScoreInput.vue` |
 | [Champion pick](champion-pick.md) | Per-competition winner pick, FIFA-rank tier points snapshotted at pick time | core | `champion_pick`; `server/utils/champion/*` |

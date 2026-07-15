@@ -55,6 +55,15 @@ not implemented.
 This feeds [../features/predictions-and-scoring.md](../features/predictions-and-scoring.md)
 and [../features/best-scorer.md](../features/best-scorer.md).
 
+## Match data: fixture (offline, e2e only)
+
+`server/utils/providers/fixture.ts` serves a canned, fully decided 8-team
+knockout tree and nothing else (no fixtures, no live). It exists because the
+bracket is sourced from `getBracket()` over HTTP, which leaves an e2e spec
+nothing to assert against without live network. Reached only by a competition
+seeded with `provider='fixture'` - see
+[../features/bracket.md](../features/bracket.md).
+
 ## Odds: Sofascore (primary), BetExplorer (backup)
 
 - **Sofascore** unofficial JSON API is the primary odds provider (chosen

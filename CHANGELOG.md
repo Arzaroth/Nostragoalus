@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+
+- Hover any decided tie in the bracket to watch both teams' roads through the tournament draw themselves in: the winner's in green, the loser's in red, with the two names in the tie tinted to match.
+
 ## [4.2.5] - 2026-07-16
 
 ### Fixed
