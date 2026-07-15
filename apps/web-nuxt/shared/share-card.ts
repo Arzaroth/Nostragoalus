@@ -5,14 +5,14 @@
 
 // Maps a provider bracket label to its bracket.round.* i18n key, or null when it
 // isn't a known knockout round (the caller shows the group letter or raw label
-// instead). Order matters: "semi-finals" contains "final".
+// instead). Order matters: "semi-finals" and "bronze final" both contain "final".
 export function roundLabelKey(name: string | null | undefined): string | null {
   const n = (name ?? '').toLowerCase()
   if (/round of 32|last 32/.test(n)) return 'bracket.round.r32'
   if (/round of 16|last 16/.test(n)) return 'bracket.round.r16'
   if (/quarter/.test(n)) return 'bracket.round.qf'
   if (/semi/.test(n)) return 'bracket.round.sf'
-  if (/third/.test(n)) return 'bracket.round.third'
+  if (/third|3rd|bronze/.test(n)) return 'bracket.round.third'
   if (/final/.test(n)) return 'bracket.round.final'
   return null
 }
