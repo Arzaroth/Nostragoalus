@@ -5,6 +5,10 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### tI'pu'
+
+- Sor botlhDaq QI'lop bIngDaq Qamqa' wej DIS may'; retlhDaqbe', 'ej nIteb tlhoy' ghajbe'qa'. vaj QI'lop botlhDaq Qamqa', 'ej tlhoy' chIm ghoSbogh tlhegh vIHHa'lu'. "Bronze final" ponglu'bogh may': wej DIS may' 'oH 'e' luSovqa'; vaj Sor HaSta, nob HaSta je lughmoH per.
+
 ## [4.2.4] - 2026-07-16
 
 ### tI'pu'
