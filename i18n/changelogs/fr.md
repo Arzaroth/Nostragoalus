@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [4.2.5] - 2026-07-16
+
 ### Corrigé
 
 - Le tableau ne sacre plus de champion avant que la finale soit jouée. Une fois les deux demi-finales terminées, le trophée affichait le nom de l'équipe qualifiée pour la finale par la seconde demi-finale, dévoilant ainsi une finale qui n'avait pas commencé. Le champion est désormais déterminé par le résultat de la finale elle-même.
