@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [4.3.0] - 2026-07-16
+
 ### Ajouté
 
 - Survolez n'importe quel match joué du tableau final pour voir les parcours des deux équipes se tracer à travers le tableau : celui du vainqueur en vert, celui du perdant en rouge, avec les deux noms du match colorés en conséquence.

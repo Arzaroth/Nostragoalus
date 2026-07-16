@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [4.3.0] - 2026-07-16
+
 ### chelpu'
 
 - SorDaq may' rInpu'bogh DaHotchugh, cha' ghom Hoch He 'ang: charghwI' He SuD, lujwI' He Doq. may'Daq je cha' pong QuvmoHlu' rurmeH.
