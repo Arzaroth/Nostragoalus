@@ -6,10 +6,10 @@ The native Flutter client. Spine: contract-driven API (models generated from
 (`shared/i18n-json`, 1753 keys), better-auth `bearer` auth. Lives under
 `apps/mobile-flutter/{app,parity}`.
 
-> No Flutter SDK in the authoring env: code here is authored, not compiled. Run
-> `flutter pub get` + the probes on a machine with the Flutter SDK; the voice +
-> push spikes need real devices (CallKit / APNs / a TURN relay). Treat first
-> `flutter run` / `flutter test` as the real validation.
+> Build env now has the Flutter SDK (3.44.6 via mise) + JDK 17/21 + Android SDK,
+> and a real device over adb: `flutter build`, `flutter test`, and on-device
+> probes all run here. The voice + push spikes still need extra hardware
+> (2 devices + a Mac / TURN relay; APNs).
 
 Legend: `[ ]` todo `[~]` in progress `[x]` done `[!]` blocked/needs-device
 
@@ -60,9 +60,9 @@ the authoring env):
 Scope unchanged. Proceed to Phase 1 on a Flutter machine.
 
 ## Phase 1 - MVP core loop (ship to TestFlight / Play internal)
-- [ ] Bootstrap on a Flutter machine: `flutter create .` (platform dirs) + `flutter pub get`, then run the authored auth probe against a bearer-deployed server (carried from Phase 0)
-- [ ] Contract codegen wired (`tool/gen_models.sh` -> `lib/api/`), stale-check
-- [ ] API client (dio + bearer interceptor + generated models), riverpod query layer (hierarchical keys, invalidate-on-mutation, staleTime)
+- [x] Bootstrap on a Flutter machine: `flutter create .` + `flutter pub get`, auth probe GREEN on a real device (Samsung SM A556E, Android 16). flutter 3.44.6 + JDK 17/21 via mise; gradle foojay resolver auto-provisions the JDK 17 that flutter_callkit_incoming pins; plugin modules forced to compileSdk 36 (flutter_webrtc pins 31). On-device signal is the headless logcat entrypoint - DDS is flaky over wireless adb.
+- [x] Contract codegen wired (`tool/gen_models.sh` -> `lib/api/models.gen.dart`), `mise run models-check` stale-check. The snapshot inlines every schema (no components/$ref); the generator dedups identical inline shapes.
+- [x] API client (dio + bearer interceptor + generated models), riverpod query layer (kept-alive reads, invalidate-on-mutation). staleTime parity approximate; competition/league query-scoping deferred (routes are session/cookie-scoped server-side).
 - [ ] i18n loader over `shared/i18n-json` (5 locales, RTL)
 - [ ] Auth flow (sign in / session / sign out)
 - [ ] Competition browse + switcher
