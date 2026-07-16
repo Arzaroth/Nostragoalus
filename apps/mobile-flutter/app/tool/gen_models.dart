@@ -24,6 +24,13 @@ const targets = <Target>[
   Target('get', '/api/me/trust-status', 'TrustStatusResponse'),
   Target('put', '/api/leagues/{id}/predictions/{matchId}', 'PredictionSaveResponse',
       reqName: 'PredictionInput'),
+  // Phase 2 - social + read-only
+  Target('get', '/api/leagues/public', 'PublicLeaguesResponse'),
+  Target('get', '/api/notifications', 'NotificationsResponse'),
+  Target('get', '/api/me/analytics', 'AnalyticsResponse'),
+  // /api/me/wrapped is a top-level oneOf (ready vs not-ready) - read raw, not typed.
+  Target('get', '/api/reactions/{matchId}', 'ReactionsResponse'),
+  Target('get', '/api/leagues/{id}/mode-board', 'ModeBoardResponse'),
 ];
 
 class Target {
@@ -47,7 +54,7 @@ class Field {
       {this.elementParse, this.enumValues});
 }
 
-enum _Kind { scalar, dateTime, object, listScalar, listDateTime, listObject, map }
+enum _Kind { scalar, dateTime, object, listScalar, listDateTime, listObject, map, raw }
 
 class ModelClass {
   final String name;
@@ -110,6 +117,7 @@ const _reserved = {
   'Row', 'Column', 'Table', 'Image', 'Icon', 'Card', 'Text', 'Divider', 'Center',
   'Padding', 'Stack', 'Align', 'Wrap', 'Flow', 'Chip', 'Badge', 'Banner', 'Hero',
   'Form', 'Scaffold', 'Title', 'Tab', 'Step', 'Page', 'Placeholder', 'Spacer',
+  'Notification', 'Action', 'Route', 'Overlay', 'Semantics',
 };
 
 /// Register (dedup) an object schema as a class and return its name.
@@ -135,10 +143,22 @@ String _emitObject(Map<String, dynamic> schema, String suggested) {
   return name;
 }
 
+bool _isUnion(Map<String, dynamic> s) =>
+    s.containsKey('anyOf') || s.containsKey('oneOf') || s.containsKey('allOf');
+
 Field _field(String key, Map<String, dynamic> s, bool nullable) {
   final dartName = _camel(key);
   final q = nullable ? '?' : '';
   final type = _typeOf(s);
+
+  // Union / free-form shapes stay dynamic rather than forcing a lossy class.
+  if (_isUnion(s)) {
+    return Field(key, dartName, 'dynamic', nullable, _Kind.raw);
+  }
+  if (type == 'array' && _isUnion(s['items'] as Map<String, dynamic>)) {
+    return Field(key, dartName, 'List<dynamic>$q', nullable, _Kind.listScalar,
+        elementParse: 'dynamic');
+  }
 
   if (type == 'object') {
     // additionalProperties map or nested class.
@@ -172,6 +192,14 @@ Field _field(String key, Map<String, dynamic> s, bool nullable) {
 }
 
 void _writeClass(StringBuffer out, ModelClass c) {
+  if (c.fields.isEmpty) {
+    out.writeln('class ${c.name} {');
+    out.writeln('  const ${c.name}();');
+    out.writeln('  factory ${c.name}.fromJson(Map<String, dynamic> json) => const ${c.name}();');
+    out.writeln('  Map<String, dynamic> toJson() => const {};');
+    out.writeln('}');
+    return;
+  }
   out.writeln('class ${c.name} {');
   for (final f in c.fields) {
     if (f.enumValues != null) {
@@ -207,6 +235,7 @@ String _encode(Field f) {
   final n = f.dartName;
   final q = f.nullable ? '?' : '';
   switch (f.kind) {
+    case _Kind.raw:
     case _Kind.scalar:
     case _Kind.map:
     case _Kind.listScalar:
@@ -227,6 +256,8 @@ String _parse(Field f) {
   final v = "json['${f.jsonKey}']";
   final n = f.nullable;
   switch (f.kind) {
+    case _Kind.raw:
+      return v;
     case _Kind.scalar:
       final base = f.type.replaceAll('?', '');
       if (base == 'double') return n ? '($v as num?)?.toDouble()' : '($v as num).toDouble()';
@@ -311,7 +342,12 @@ String _camel(String s) {
 String _pascal(String s) => s
     .split(RegExp(r'[_\-\s]+'))
     .where((w) => w.isNotEmpty)
-    .map((w) => w[0].toUpperCase() + w.substring(1))
+    .map((w) {
+      // Normalise an all-caps token (FIRE) so it camelCases cleanly; leave a
+      // token that already carries internal caps (matchId) untouched.
+      final base = (w == w.toUpperCase() && w != w.toLowerCase()) ? w.toLowerCase() : w;
+      return base[0].toUpperCase() + base.substring(1);
+    })
     .join();
 
 String _singular(String s) {
