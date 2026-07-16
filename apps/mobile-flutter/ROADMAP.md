@@ -72,11 +72,11 @@ Scope unchanged. Proceed to Phase 1 on a Flutter machine.
 - [~] Internal build published (TestFlight / Play internal) - debug + native build proven on device + emulator; a signed release appbundle needs an upload keystore + a Play account (owner action).
 
 ## Phase 2 - Social + realtime-read
-- [ ] Leagues: browse / join / board (movement, crown, live)
-- [ ] Notifications: in-app center + push (FCM + APNs), server sender beside web-push
-- [ ] Live scores over WS (subscribe, reconnect)
-- [ ] Reactions
-- [ ] Read-only: achievements, analytics, wrapped
+- [x] Leagues: browse / join / board - my leagues, public browse, join by code / id, mode-board (points/survival union rendered leniently).
+- [~] Notifications: in-app center done (bell + unread badge + mark-all-read). Push (FCM + APNs + a server sender beside web-push) is deferred - needs a Firebase project, an APNs cert, and server work.
+- [x] Live scores over WS (subscribe, reconnect) - bearer-authenticated hub connection, invalidates the reads each frame touches.
+- [x] Reactions - emoji bar on match detail (6 emoji, live counts).
+- [~] Read-only: analytics + wrapped shipped. Achievements deferred (no obvious list endpoint in the snapshot; the leaderboard already carries the showcase).
 
 ## Phase 3 - E2EE messaging (gated by Phase 0 e2ee)
 - [ ] Dart `e2ee` port (parity-verified) - the full crypto module
