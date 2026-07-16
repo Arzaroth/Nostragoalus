@@ -79,11 +79,19 @@ Scope unchanged. Proceed to Phase 1 on a Flutter machine.
 - [~] Read-only: analytics + wrapped shipped. Achievements deferred (no obvious list endpoint in the snapshot; the leaderboard already carries the showcase).
 
 ## Phase 3 - E2EE messaging (gated by Phase 0 e2ee)
-- [ ] Dart `e2ee` port (parity-verified) - the full crypto module
-- [ ] League chat (send / receive / history)
-- [ ] DMs (1:1)
-- [ ] Key transparency + safety numbers
-- [ ] Recovery-code flow
+- [~] Dart `e2ee` port (parity-verified) - the DECRYPT/derive half is ported into
+  the app (`lib/e2ee/e2ee.dart`) and GREEN on the emulator against the frozen KATs
+  with native libsodium. The ENCRYPT/seal half (needed to send) is still unported
+  (it's random, so no KAT freezes it - it needs its own test strategy).
+- [ ] League chat (send / receive / history) - receive/decrypt is unblocked by the
+  module, but exercising it end-to-end needs a provisioned E2EE identity + group
+  keys on the dev stack (none seeded); send additionally needs the encrypt port.
+  Deferred until those two are in place.
+- [ ] DMs (1:1) - same crypto + provisioning gap as league chat.
+- [~] Key transparency + safety numbers - the safety-number derivation
+  (`fingerprint`) is ported + proven; the KT-log fetch/verify UI is deferred.
+- [~] Recovery-code flow - `unwrapPrivateKeyWithRecovery` is ported + proven; the
+  interactive recovery screen is deferred (needs the provisioned identity blob).
 
 ## Phase 4 - Voice + native polish (gated by Phase 0 voice)
 - [ ] WebRTC voice: DM 1:1
