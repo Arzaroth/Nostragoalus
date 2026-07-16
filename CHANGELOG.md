@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [4.3.1] - 2026-07-16
+
 ### Added
 
 - Hovering a scheduled tie whose two sides are already known (a final waiting to be played) now traces both teams' roads back through the draw, one in the team colour of each side, so you can see how the two finalists got there before a ball is kicked.

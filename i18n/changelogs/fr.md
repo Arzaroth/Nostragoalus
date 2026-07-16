@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [4.3.1] - 2026-07-16
+
 ### Ajouté
 
 - Survoler un match programmé dont les deux équipes sont déjà connues (une finale en attente d'être jouée) trace désormais les parcours des deux équipes en remontant le tableau, chacun dans une couleur propre à son côté, pour voir comment les deux finalistes en sont arrivés là avant même le coup d'envoi.

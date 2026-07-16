@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [4.3.1] - 2026-07-16
+
 ### chelpu'
 
 - may' ghItlhlu'pu'bogh, cha' ghomDaj Sovlu'bogh (Qat'a' loSlI'bogh) DaHotchugh, DaH SorDaq cha' ghom He wIv 'ang, ghom Hoch retlh Segh rurmeH; vaj may' taghpa', chay' naDev paw cha' Qat'a' ghom 'e' Daleghlaḥ.
