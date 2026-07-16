@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
 import 'analytics_screen.dart';
+import 'champion_screen.dart';
 import 'locale_menu.dart';
 import 'my_predictions_screen.dart';
+import 'roadmap_screen.dart';
 import 'wrapped_screen.dart';
 
 /// Account tab: who you are, your predictions, locale, sign out.
@@ -62,6 +64,22 @@ class AccountScreen extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const WrappedScreen()),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.emoji_events),
+            title: Text(context.tr('nav.champion')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ChampionScreen()),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.map),
+            title: Text(context.tr('nav.roadmap')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const RoadmapScreen()),
             ),
           ),
           const Divider(),

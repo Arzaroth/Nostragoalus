@@ -313,6 +313,8 @@
     "streamCapReached": "Only {count} stream at a time"
   },
   "nav": {
+    "roadmap": "Roadmap",
+    "champion": "Champion",
     "standings": "Standings",
     "leaderboard": "Leaderboard",
     "account": "Account",
@@ -657,6 +659,8 @@
     "adminUpcomingDivider": "Upcoming matches below — only admins see picks before kickoff"
   },
   "champion": {
+    "potential": "Potential: +{n}",
+    "rank": "FIFA rank {n}",
     "title": "Your champion",
     "current": "Current pick:",
     "pick": "Pick the winner",

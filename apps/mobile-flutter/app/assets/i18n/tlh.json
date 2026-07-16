@@ -308,6 +308,8 @@
     "streamCapReached": "{count} HaSta neH"
   },
   "nav": {
+    "roadmap": "He'So'",
+    "champion": "Qup",
     "standings": "patlh",
     "leaderboard": "Dojmey",
     "account": "De'wI'",
@@ -652,6 +654,8 @@
     "adminUpcomingDivider": "qaStaHvIS lojmIt — admin neH lo'laHbe'"
   },
   "champion": {
+    "potential": "laH: +{n}",
+    "rank": "FIFA patlh {n}",
     "title": "che'wI'lIj",
     "current": "DaH wIv:",
     "pick": "jeywI' yIwIv",

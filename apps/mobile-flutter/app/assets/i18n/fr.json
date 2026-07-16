@@ -308,6 +308,8 @@
     "streamCapReached": "{count} direct à la fois"
   },
   "nav": {
+    "roadmap": "Feuille de route",
+    "champion": "Champion",
     "standings": "Classement",
     "leaderboard": "Classement joueurs",
     "account": "Compte",
@@ -652,6 +654,8 @@
     "adminUpcomingDivider": "Matchs à venir ci-dessous — seuls les admins voient les pronos avant le coup d'envoi"
   },
   "champion": {
+    "potential": "Potentiel : +{n}",
+    "rank": "Classement FIFA {n}",
     "title": "Votre vainqueur",
     "current": "Choix actuel :",
     "pick": "Choisissez le vainqueur",

@@ -80,4 +80,20 @@ class NostragoalusApi {
 
   Future<void> react(String matchId, String emoji) async =>
       _api.putJson('/api/reactions', body: {'matchId': matchId, 'emoji': emoji});
+
+  // --- Phase 5 ---
+
+  Future<RoadmapResponse> roadmap() async =>
+      RoadmapResponse.fromJson(await _api.getJson('/api/roadmap'));
+
+  Future<void> voteRoadmap(String id) async => _api.postJson('/api/roadmap/$id/vote');
+
+  Future<ChampionResponse> champion() async =>
+      ChampionResponse.fromJson(await _api.getJson('/api/champion'));
+
+  Future<void> setChampion(String teamCode, String teamName) async =>
+      _api.putJson('/api/champion', body: {'teamCode': teamCode, 'teamName': teamName});
+
+  Future<BestScorerResponse> bestScorer() async =>
+      BestScorerResponse.fromJson(await _api.getJson('/api/best-scorer'));
 }

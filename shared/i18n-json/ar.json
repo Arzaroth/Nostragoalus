@@ -432,6 +432,8 @@
     "streamCapReached": "{count} بث في كل مرة"
   },
   "nav": {
+    "roadmap": "خارطة الطريق",
+    "champion": "البطل",
     "standings": "الترتيب",
     "leaderboard": "لوحة الصدارة",
     "account": "الحساب",
@@ -788,6 +790,8 @@
     "adminUpcomingDivider": "المباريات القادمة أدناه — يرى المشرفون فقط التوقعات قبل انطلاق المباراة"
   },
   "champion": {
+    "potential": "المحتمل: +{n}",
+    "rank": "تصنيف فيفا {n}",
     "title": "بطلك",
     "current": "الاختيار الحالي:",
     "pick": "اختر الفائز",

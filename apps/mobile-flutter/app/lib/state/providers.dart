@@ -130,6 +130,17 @@ final liveServiceProvider = Provider<LiveService>((ref) {
 /// Live viewer counts per match, pushed by `viewers:update` frames.
 final viewersProvider = StateProvider<Map<String, int>>((ref) => const {});
 
+// --- Phase 5 ---
+
+final roadmapProvider =
+    FutureProvider<RoadmapResponse>((ref) => ref.watch(apiProvider).roadmap());
+
+final championProvider =
+    FutureProvider<ChampionResponse>((ref) => ref.watch(apiProvider).champion());
+
+final bestScorerProvider =
+    FutureProvider<BestScorerResponse>((ref) => ref.watch(apiProvider).bestScorer());
+
 /// The match whose detail is open, so the hub keeps its room subscribed (which
 /// is what makes the server count this client as a viewer).
 final viewedMatchProvider = StateProvider<String?>((ref) => null);
