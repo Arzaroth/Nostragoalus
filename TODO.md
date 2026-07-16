@@ -5,7 +5,7 @@ Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
 ## Bracket journey lines (deferred from the feature-treatment review)
 
-- **A first-round loser gets a red name but no red line.** `bracketJourneyPath`
+- **A first-round loser gets a red name but no red line.** `bracketJourneyHops`
   needs two cards to emit a hop, so a team eliminated on its only bracket
   appearance traces nothing while `BracketMatchCard.vue`'s tint still paints its
   name red. Honest ("their road ended here") but asymmetric, and on a real

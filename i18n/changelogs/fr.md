@@ -5,6 +5,15 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Ajouté
+
+- Survoler un match programmé dont les deux équipes sont déjà connues (une finale en attente d'être jouée) trace désormais les parcours des deux équipes en remontant le tableau, chacun dans une couleur propre à son côté, pour voir comment les deux finalistes en sont arrivés là avant même le coup d'envoi.
+
+### Modifié
+
+- Les parcours du tableau partent maintenant du match survolé et se déploient à la fois vers la finale et vers les phases de groupes, et se superposent exactement aux traits de liaison au lieu de courir à côté d'eux. Chaque tronçon se trace à un rythme régulier, si bien que les parcours des deux équipes restent synchronisés quelle que soit la distance qui les sépare.
+- La finale et le match pour la troisième place sont désormais empilés, la finale juste au-dessus des demi-finales et le match pour la troisième place juste en dessous, si bien que les parcours qui y mènent ne se croisent plus au milieu du tableau.
+
 ## [4.3.0] - 2026-07-16
 
 ### Ajouté

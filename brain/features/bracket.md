@@ -40,8 +40,12 @@ writes that column, but that is an absence rather than a guard.
 
 `pages/[competition]/bracket.vue` is a symmetric flex tree - each side round is
 split in half, the left halves fan in from the left, the right halves (reversed)
-from the right, and the final sits in a center 3-row grid that keeps it on the
-semis' midline whatever sits above (trophy) or below (third place).
+from the right, and the center is a 3-row grid whose empty middle row pins the
+semis' midline. The trophy and the final sit in the top row (bottom-aligned, so
+the final rides just **above** the midline) and the third-place tie in the bottom
+row (top-aligned, just **below** it). That vertical split is deliberate: it keeps
+the winner roads (which rise into the final) and the loser roads (which fall into
+the bronze) in separate horizontal lanes instead of overlapping on the midline.
 `app/utils/bracket-sides.ts` does the splitting, pulling the final and the
 third-place tie out of the round list by `roundLabelKey(r.name)` - a name ladder,
 because `BracketRound` carries only the provider's display name (the feed calls
@@ -58,31 +62,42 @@ right), the winner in bold, live ties with a pulsing dot.
 
 ## Journey lines (hover)
 
-Hovering a decided tie animates both its teams' roads through the tree over
-~1.6s: the winner's in green (`--ng-success`), the loser's in red
-(`--ng-danger`), with the two names in the hovered cell tinted to match. One
-cell holds both teams (FIFA's bracket gives each its own), so a cell hover has
-two journeys to tell apart rather than one to follow. Undecided ties trace
-nothing - there is no outcome to colour by.
+Hovering a cell with two known teams traces both their roads through the tree,
+each **growing out of the hovered card** rather than drawn as one static line. A
+**decided** tie colours the winner green (`--ng-success`) and loser red
+(`--ng-danger`); an **undecided** tie whose two sides are both official (a
+scheduled final, say) has no outcome to read, so it colours home (accent,
+`--p-primary-color`) and away (amber, `--ng-star`) instead. Either way the two
+names in the hovered cell are tinted to match. One cell holds both teams (FIFA's
+bracket gives each its own), so a cell hover has two journeys to tell apart. A
+tie still missing a side traces nothing.
 
 - The card carries `data-home`/`data-away`/`data-winner`/`data-seq`; the page
   finds a team's cards by attribute selector and orders them by round sequence.
   Only **official** codes are tagged, so a journey stops at the last decided
   tie rather than following a projection.
-- `app/utils/bracketPath.ts` routes the polyline: out of the facing edge, across
-  to the next card's near edge, then onto its midline - the same shape as the
-  static elbows. It works off viewport rects, so direction falls out of the
-  geometry and RTL needs no special case. Cards are skipped rather than crossed
-  (their two team names sit on the midline a crossing line would cut through),
-  which is why each hop is its own subpath.
+- `app/utils/bracketPath.ts` (`bracketJourneyHops`) routes **one elbow per hop**,
+  each bending at the child's stub x (12px / 0.75rem out of the facing edge) - the
+  same coordinates as the static `::before`/`::after` connector, so the road lies
+  **over** the grey elbow instead of beside it. It works off viewport rects, so
+  direction falls out of the geometry and RTL needs no special case. Cards are
+  skipped rather than crossed (their two team names sit on the midline a crossing
+  line would cut through), which is why each hop is its own path.
+- The animation emanates from the hovered card: each hop draws over a fixed
+  ~0.4s, and a per-hop `--hop` delay (its distance from the hovered card in hops)
+  staggers them outward - so a hop past the hover reverses its point order to
+  start at the hovered end, and hops before/after the hover fan out in both
+  directions at once. Because every hop takes the same time, two teams of unequal
+  reach stay in step (the sync a single whole-path keyframe could not give).
 - One `<svg>` overlays `.br`, `pointer-events: none`. `pathLength="1"` normalises
-  every route to unit length, so a single `stroke-dashoffset` keyframe draws a
-  quarter-finalist's road and a champion's at the same pace without measuring
-  either. Spell it `pathLength`: SVG attribute names are case-sensitive, and
-  `path-length` is silently ignored, which leaves the dash pattern measured in
-  pixels and the route appearing fully drawn. Honours `prefers-reduced-motion`.
+  each hop to unit length so one `stroke-dashoffset` keyframe draws it in a fixed
+  time without measuring. Spell it `pathLength`: SVG attribute names are
+  case-sensitive, and `path-length` is silently ignored, which leaves the dash
+  pattern measured in pixels and the route appearing fully drawn. `animation-fill:
+  both` holds the undrawn first frame through the delay so a later hop stays
+  hidden until its turn. Honours `prefers-reduced-motion`.
 - Each hover bumps a counter that keys the paths, so Vue remounts them and the
-  animation restarts. Reusing a team+outcome key across two cards (a semi-final
+  animation restarts. Reusing a team+kind+hop key across two cards (a semi-final
   and the final the same side won) would patch the element instead and leave its
   finished animation in place. Re-entering the same card is a no-op, since
   `mouseover` fires again for every child crossed.
