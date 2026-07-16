@@ -31,6 +31,10 @@ const targets = <Target>[
   // /api/me/wrapped is a top-level oneOf (ready vs not-ready) - read raw, not typed.
   Target('get', '/api/reactions/{matchId}', 'ReactionsResponse'),
   Target('get', '/api/leagues/{id}/mode-board', 'ModeBoardResponse'),
+  // Phase 5 - long-tail
+  Target('get', '/api/roadmap', 'RoadmapResponse'),
+  Target('get', '/api/champion', 'ChampionResponse'),
+  Target('get', '/api/best-scorer', 'BestScorerResponse'),
 ];
 
 class Target {
