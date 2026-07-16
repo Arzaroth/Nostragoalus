@@ -3,6 +3,30 @@
 Deferred work, queued behind feature development.
 Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
+## Bracket journey lines (deferred from the feature-treatment review)
+
+- **A first-round loser gets a red name but no red line.** `bracketJourneyPath`
+  needs two cards to emit a hop, so a team eliminated on its only bracket
+  appearance traces nothing while `BracketMatchCard.vue`'s tint still paints its
+  name red. Honest ("their road ended here") but asymmetric, and on a real
+  bracket that is half the cards in the outermost round. Decide between a short
+  stub out of the card, suppressing the tint when there is no line, or leaving
+  it.
+- **Outcome is carried by colour alone.** Green/red is the deuteranopia pair, in
+  both the stroke and the name tint. The winner is already bold and the tree
+  structure already rendered, so nothing is lost that is not available
+  elsewhere, but a second channel (dash pattern, or a glyph) would be better.
+  The overlay is `aria-hidden` and purely decorative by design.
+- **A projected side is never traced.** Only official `homeCode`/`awayCode` are
+  tagged `data-home`/`data-away`, so mid-tournament a journey stops at the last
+  officially-named card. Deliberate (a projection is a guess), but no e2e covers
+  that shape - the fixture tree's undecided final has both sides official.
+- **No `resize` recompute.** Journey `d` strings are a snapshot of
+  `getBoundingClientRect()` taken at hover. Horizontal scroll is harmless (origin
+  and cards move together) and a live bracket change now drops the trace, but a
+  window resize under a stationary pointer leaves it desynced until the next
+  pointer move.
+
 ## Pick-save locking (deferred from the commitment-race treatment review)
 
 - **No `lock_timeout` on the pg pool.** `apps/web-nuxt/db/index.ts` builds
