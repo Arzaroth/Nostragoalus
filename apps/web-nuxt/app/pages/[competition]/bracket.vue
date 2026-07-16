@@ -8,7 +8,15 @@ const { bracket } = useLiveBracket(rawBracket)
 const sides = computed(() => splitBracketSides(bracket.value?.rounds ?? []))
 
 const brEl = useTemplateRef<HTMLElement>('brEl')
-const journeys = ref<{ code: string; d: string; outcome: 'win' | 'loss' }[]>([])
+const journeys = ref<{ key: string; d: string; outcome: 'win' | 'loss' }[]>([])
+// The card being traced. Kept out of the render so re-entering it is a no-op
+// rather than a restart: `mouseover` fires again for every child crossed.
+let traced: HTMLElement | null = null
+// Bumped per traced card so the paths get fresh keys and Vue remounts them.
+// Without it, two cards sharing a team and outcome (a semi-final and the final
+// the same side won) reuse a key, and a patched element keeps its finished
+// animation instead of drawing again.
+let pass = 0
 
 function cardsOf(code: string) {
   const sel = `.br-card[data-home="${CSS.escape(code)}"], .br-card[data-away="${CSS.escape(code)}"]`
@@ -17,23 +25,37 @@ function cardsOf(code: string) {
     .map(el => el.getBoundingClientRect())
 }
 
+function clearTrace() {
+  traced = null
+  journeys.value = []
+}
+
 // Hovering a decided cell traces both its teams' journeys: winner green, loser
 // red. Anything else - the gaps between cells, a tie with no outcome to colour
 // by - clears the trace. Delegated, so it also fires moving card-to-card.
-function onEnter(e: MouseEvent) {
+function onEnter(e: Event) {
   const card = (e.target as HTMLElement).closest<HTMLElement>('.br-card')
+  if (card === traced) return
   const winner = card?.dataset.winner
   if (!brEl.value || !card || !winner) {
-    journeys.value = []
+    clearTrace()
     return
   }
+  traced = card
+  pass++
   const won = winner === 'HOME' ? card.dataset.home : card.dataset.away
   const lost = winner === 'HOME' ? card.dataset.away : card.dataset.home
   const origin = brEl.value.getBoundingClientRect()
   journeys.value = ([[won, 'win'], [lost, 'loss']] as const)
-    .map(([code, outcome]) => ({ code: code ?? '', outcome, d: code ? bracketJourneyPath(cardsOf(code), origin) : '' }))
+    .map(([code, outcome]) => ({ key: `${pass}-${outcome}`, outcome, d: code ? bracketJourneyPath(cardsOf(code), origin) : '' }))
     .filter(j => j.d)
 }
+
+// A live score can re-render the tree (a winner flips on a VAR reversal, a
+// projected side resolves) under a stationary pointer, with no event to
+// recompute against. The measured routes and the win/loss colours would both be
+// stale, so drop the trace and let the next move redraw it.
+watch(bracket, clearTrace)
 </script>
 
 <template>
@@ -48,9 +70,14 @@ function onEnter(e: MouseEvent) {
     <div v-else-if="!sides" class="opacity-60">{{ t('bracket.empty') }}</div>
 
     <div v-else class="overflow-x-auto pb-4" style="width: 100vw; margin-inline-start: calc(50% - 50vw)">
-      <div ref="brEl" class="br w-max mx-auto flex items-stretch gap-8 px-6" @mouseover="onEnter" @mouseleave="journeys = []">
+      <!-- focusin as well as mouseover: a decided card is a link, so tabbing the
+           tree traces the same journeys a pointer would. -->
+      <div ref="brEl" class="br w-max mx-auto flex items-stretch gap-8 px-6" @mouseover="onEnter" @focusin="onEnter" @mouseleave="clearTrace">
         <svg class="br-journey" aria-hidden="true">
-          <path v-for="j in journeys" :key="j.code + j.outcome" :d="j.d" :class="'br-line br-line-' + j.outcome" path-length="1" /></svg>
+          <!-- pathLength, not path-length: SVG attribute names are case-sensitive
+               and an unknown one is silently ignored, which would leave the dash
+               pattern measured in pixels instead of whole-path units. -->
+          <path v-for="j in journeys" :key="j.key" :d="j.d" :class="'br-line br-line-' + j.outcome" pathLength="1" /></svg>
         <!-- left side -->
         <div class="flex items-stretch gap-8 br-left">
           <div v-for="(col, ci) in sides.left" :key="'l' + ci" class="br-col" :data-advance="ci < sides.left.length - 1 ? 'true' : 'false'" :data-tail="ci === sides.left.length - 1 ? 'true' : 'false'">
