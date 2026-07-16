@@ -181,7 +181,34 @@ void _writeClass(StringBuffer out, ModelClass c) {
     out.writeln('    ${f.dartName}: ${_parse(f)},');
   }
   out.writeln('  );');
+  out.writeln();
+  // toJson
+  out.writeln('  Map<String, dynamic> toJson() => {');
+  for (final f in c.fields) {
+    out.writeln("    '${f.jsonKey}': ${_encode(f)},");
+  }
+  out.writeln('  };');
   out.writeln('}');
+}
+
+/// The encode expression for a field, producing a JSON-ready value.
+String _encode(Field f) {
+  final n = f.dartName;
+  final q = f.nullable ? '?' : '';
+  switch (f.kind) {
+    case _Kind.scalar:
+    case _Kind.map:
+    case _Kind.listScalar:
+      return n;
+    case _Kind.dateTime:
+      return '$n$q.toIso8601String()';
+    case _Kind.object:
+      return '$n$q.toJson()';
+    case _Kind.listDateTime:
+      return '$n$q.map((e) => e.toIso8601String()).toList()';
+    case _Kind.listObject:
+      return '$n$q.map((e) => e.toJson()).toList()';
+  }
 }
 
 /// The parse expression for a field, reading `json['key']`.

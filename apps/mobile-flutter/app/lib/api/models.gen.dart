@@ -25,6 +25,14 @@ class Bookmaker {
         draw: (json['draw'] as num).toDouble(),
         away: (json['away'] as num).toDouble(),
       );
+
+  Map<String, dynamic> toJson() => {
+        'key': key,
+        'title': title,
+        'home': home,
+        'draw': draw,
+        'away': away,
+      };
 }
 
 class Competition {
@@ -43,6 +51,12 @@ class Competition {
         slug: json['slug'] as String,
         name: json['name'] as String,
       );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'slug': slug,
+        'name': name,
+      };
 }
 
 class Competition2 {
@@ -61,6 +75,12 @@ class Competition2 {
         slug: json['slug'] as String,
         name: json['name'] as String,
       );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'slug': slug,
+        'name': name,
+      };
 }
 
 class CompetitionsResponse {
@@ -76,6 +96,10 @@ class CompetitionsResponse {
             .map((e) => Competition.fromJson(e as Map<String, dynamic>))
             .toList(),
       );
+
+  Map<String, dynamic> toJson() => {
+        'competitions': competitions.map((e) => e.toJson()).toList(),
+      };
 }
 
 class Group {
@@ -93,6 +117,11 @@ class Group {
             .map((e) => Row.fromJson(e as Map<String, dynamic>))
             .toList(),
       );
+
+  Map<String, dynamic> toJson() => {
+        'group': group,
+        'rows': rows.map((e) => e.toJson()).toList(),
+      };
 }
 
 class Initial {
@@ -111,6 +140,12 @@ class Initial {
         draw: (json['draw'] as num).toDouble(),
         away: (json['away'] as num).toDouble(),
       );
+
+  Map<String, dynamic> toJson() => {
+        'home': home,
+        'draw': draw,
+        'away': away,
+      };
 }
 
 class LeaderboardResponse {
@@ -143,6 +178,14 @@ class LeaderboardResponse {
             .map((e) => Row2.fromJson(e as Map<String, dynamic>))
             .toList(),
       );
+
+  Map<String, dynamic> toJson() => {
+        'competition': competition?.toJson(),
+        'league': league?.toJson(),
+        'live': live,
+        'hiddenCount': hiddenCount,
+        'rows': rows.map((e) => e.toJson()).toList(),
+      };
 }
 
 class League {
@@ -158,6 +201,11 @@ class League {
         id: json['id'] as String,
         name: json['name'] as String,
       );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+      };
 }
 
 class Match {
@@ -246,6 +294,32 @@ class Match {
             : Odd.fromJson(json['odds'] as Map<String, dynamic>),
         isLocked: json['isLocked'] as bool,
       );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'competitionId': competitionId,
+        'providerMatchId': providerMatchId,
+        'stage': stage,
+        'group': group,
+        'homeTeam': homeTeam,
+        'awayTeam': awayTeam,
+        'homeTeamCode': homeTeamCode,
+        'awayTeamCode': awayTeamCode,
+        'kickoffTime': kickoffTime.toIso8601String(),
+        'status': status,
+        'fullTimeHome': fullTimeHome,
+        'fullTimeAway': fullTimeAway,
+        'penaltiesHome': penaltiesHome,
+        'penaltiesAway': penaltiesAway,
+        'winner': winner,
+        'scoringState': scoringState,
+        'roundId': roundId,
+        'roundLabel': roundLabel,
+        'matchday': matchday,
+        'roundSortOrder': roundSortOrder,
+        'odds': odds?.toJson(),
+        'isLocked': isLocked,
+      };
 }
 
 class Match2 {
@@ -326,6 +400,30 @@ class Match2 {
         matchday: json['matchday'] as int?,
         roundSortOrder: json['roundSortOrder'] as int,
       );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'competitionId': competitionId,
+        'providerMatchId': providerMatchId,
+        'stage': stage,
+        'group': group,
+        'homeTeam': homeTeam,
+        'awayTeam': awayTeam,
+        'homeTeamCode': homeTeamCode,
+        'awayTeamCode': awayTeamCode,
+        'kickoffTime': kickoffTime.toIso8601String(),
+        'status': status,
+        'fullTimeHome': fullTimeHome,
+        'fullTimeAway': fullTimeAway,
+        'penaltiesHome': penaltiesHome,
+        'penaltiesAway': penaltiesAway,
+        'winner': winner,
+        'scoringState': scoringState,
+        'roundId': roundId,
+        'roundLabel': roundLabel,
+        'matchday': matchday,
+        'roundSortOrder': roundSortOrder,
+      };
 }
 
 class MatchDetailResponse {
@@ -353,6 +451,13 @@ class MatchDetailResponse {
             : Odd.fromJson(json['odds'] as Map<String, dynamic>),
         isLocked: json['isLocked'] as bool,
       );
+
+  Map<String, dynamic> toJson() => {
+        'match': match.toJson(),
+        'myPrediction': myPrediction?.toJson(),
+        'odds': odds?.toJson(),
+        'isLocked': isLocked,
+      };
 }
 
 class MatchesResponse {
@@ -374,6 +479,11 @@ class MatchesResponse {
             .map((e) => Match.fromJson(e as Map<String, dynamic>))
             .toList(),
       );
+
+  Map<String, dynamic> toJson() => {
+        'competition': competition?.toJson(),
+        'matches': matches.map((e) => e.toJson()).toList(),
+      };
 }
 
 class MyPrediction {
@@ -454,6 +564,30 @@ class MyPrediction {
         createdAt: DateTime.parse(json['createdAt'] as String),
         updatedAt: DateTime.parse(json['updatedAt'] as String),
       );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'userId': userId,
+        'matchId': matchId,
+        'roundId': roundId,
+        'homeGoals': homeGoals,
+        'awayGoals': awayGoals,
+        'isOutcomeOnly': isOutcomeOnly,
+        'wager': wager,
+        'isJoker': isJoker,
+        'lockedAt': lockedAt?.toIso8601String(),
+        'basePoints': basePoints,
+        'baseTier': baseTier,
+        'bonusPoints': bonusPoints,
+        'bonusSource': bonusSource,
+        'crowdShare': crowdShare,
+        'jokerMultiplierApplied': jokerMultiplierApplied,
+        'totalPoints': totalPoints,
+        'scoredAtVersion': scoredAtVersion,
+        'scoredAt': scoredAt?.toIso8601String(),
+        'createdAt': createdAt.toIso8601String(),
+        'updatedAt': updatedAt.toIso8601String(),
+      };
 }
 
 class Odd {
@@ -487,6 +621,15 @@ class Odd {
                 .map((e) => Bookmaker.fromJson(e as Map<String, dynamic>))
                 .toList(),
       );
+
+  Map<String, dynamic> toJson() => {
+        'home': home,
+        'draw': draw,
+        'away': away,
+        'fetchedAt': fetchedAt.toIso8601String(),
+        'initial': initial?.toJson(),
+        'bookmakers': bookmakers?.map((e) => e.toJson()).toList(),
+      };
 }
 
 class PredictionInput {
@@ -509,6 +652,13 @@ class PredictionInput {
         isOutcomeOnly: json['isOutcomeOnly'] as bool?,
         wager: json['wager'] as int?,
       );
+
+  Map<String, dynamic> toJson() => {
+        'home': home,
+        'away': away,
+        'isOutcomeOnly': isOutcomeOnly,
+        'wager': wager,
+      };
 }
 
 class PredictionSaveResponse {
@@ -522,6 +672,10 @@ class PredictionSaveResponse {
       PredictionSaveResponse(
         id: json['id'] as String,
       );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+      };
 }
 
 class Row {
@@ -561,6 +715,19 @@ class Row {
         gd: (json['gd'] as num).toDouble(),
         points: (json['points'] as num).toDouble(),
       );
+
+  Map<String, dynamic> toJson() => {
+        'code': code,
+        'name': name,
+        'played': played,
+        'won': won,
+        'drawn': drawn,
+        'lost': lost,
+        'gf': gf,
+        'ga': ga,
+        'gd': gd,
+        'points': points,
+      };
 }
 
 class Row2 {
@@ -626,6 +793,27 @@ class Row2 {
             .toList(),
         movement: (json['movement'] as num?)?.toDouble(),
       );
+
+  Map<String, dynamic> toJson() => {
+        'rank': rank,
+        'userId': userId,
+        'displayName': displayName,
+        'image': image,
+        'totalPoints': totalPoints,
+        'predictionPoints': predictionPoints,
+        'championPoints': championPoints,
+        'championCode': championCode,
+        'championName': championName,
+        'bestScorerPoints': bestScorerPoints,
+        'bestScorerName': bestScorerName,
+        'bestScorerCode': bestScorerCode,
+        'livePoints': livePoints,
+        'exactCount': exactCount,
+        'outcomeCount': outcomeCount,
+        'gdCount': gdCount,
+        'showcase': showcase.map((e) => e.toJson()).toList(),
+        'movement': movement,
+      };
 }
 
 class Scorer {
@@ -653,6 +841,15 @@ class Scorer {
         assists: (json['assists'] as num?)?.toDouble(),
         penalties: (json['penalties'] as num?)?.toDouble(),
       );
+
+  Map<String, dynamic> toJson() => {
+        'playerName': playerName,
+        'teamName': teamName,
+        'teamCode': teamCode,
+        'goals': goals,
+        'assists': assists,
+        'penalties': penalties,
+      };
 }
 
 class ScorersResponse {
@@ -673,6 +870,11 @@ class ScorersResponse {
             .map((e) => Scorer.fromJson(e as Map<String, dynamic>))
             .toList(),
       );
+
+  Map<String, dynamic> toJson() => {
+        'scorers': scorers.map((e) => e.toJson()).toList(),
+        'assists': assists.map((e) => e.toJson()).toList(),
+      };
 }
 
 class Showcase {
@@ -693,6 +895,12 @@ class Showcase {
         category: json['category'] as String,
         tier: json['tier'] as String?,
       );
+
+  Map<String, dynamic> toJson() => {
+        'key': key,
+        'category': category,
+        'tier': tier,
+      };
 }
 
 class StandingsResponse {
@@ -708,6 +916,10 @@ class StandingsResponse {
             .map((e) => Group.fromJson(e as Map<String, dynamic>))
             .toList(),
       );
+
+  Map<String, dynamic> toJson() => {
+        'groups': groups.map((e) => e.toJson()).toList(),
+      };
 }
 
 class TrustStatusResponse {
@@ -721,4 +933,8 @@ class TrustStatusResponse {
       TrustStatusResponse(
         trusted: json['trusted'] as bool,
       );
+
+  Map<String, dynamic> toJson() => {
+        'trusted': trusted,
+      };
 }
