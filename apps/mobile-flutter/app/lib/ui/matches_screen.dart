@@ -6,6 +6,7 @@ import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
 import 'match_detail_screen.dart';
 import 'widgets/async_value_view.dart';
+import 'widgets/notifications_bell.dart';
 import 'widgets/score_pill.dart';
 
 /// Fixtures list. Tap a match to open its detail + make a prediction.
@@ -16,7 +17,10 @@ class MatchesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final matches = ref.watch(matchesProvider);
     return Scaffold(
-      appBar: AppBar(title: Text(context.tr('nav.matches'))),
+      appBar: AppBar(
+        title: Text(context.tr('nav.matches')),
+        actions: const [NotificationsBell()],
+      ),
       body: RefreshIndicator(
         onRefresh: () async => ref.refresh(matchesProvider.future),
         child: AsyncValueView<MatchesResponse>(

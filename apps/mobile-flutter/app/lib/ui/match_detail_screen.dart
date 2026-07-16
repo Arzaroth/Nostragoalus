@@ -5,6 +5,7 @@ import '../api/models.gen.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
 import 'widgets/async_value_view.dart';
+import 'widgets/reactions_bar.dart';
 import 'widgets/score_pill.dart';
 
 /// Match detail + the prediction editor (score, outcome-only, wager, joker).
@@ -51,6 +52,8 @@ class MatchDetailScreen extends ConsumerWidget {
                 current: res.myPrediction,
                 isLocked: res.isLocked,
               ),
+              const SizedBox(height: 16),
+              ReactionsBar(matchId: matchId),
             ],
           );
         },

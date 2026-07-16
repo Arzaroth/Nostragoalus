@@ -710,6 +710,8 @@
     "loadError": "Impossible de charger la comparaison."
   },
   "analytics": {
+    "avg": "Points moyens",
+    "exactRate": "Taux exact",
     "title": "Analyses",
     "subtitle": "Les tendances de vos pronostics, comparées à la réalité.",
     "signInHint": "Connectez-vous pour voir vos analyses.",
@@ -1413,6 +1415,11 @@
     "home": "Retour au terrain"
   },
   "leagues": {
+    "browse": "Ligues publiques",
+    "code": "Code d'invitation",
+    "joined": "Rejoint",
+    "joinFailed": "Impossible de rejoindre",
+    "emptyPublic": "Aucune ligue publique.",
     "emptyHint": "Rejoignez une ligue pour pronostiquer.",
     "title": "Ligues",
     "global": "Tout le monde",
@@ -1557,6 +1564,7 @@
     }
   },
   "notifications": {
+    "markAllRead": "Tout marquer comme lu",
     "title": "Notifications",
     "ariaLabel": "Notifications",
     "empty": "Vous êtes à jour.",
@@ -1722,6 +1730,9 @@
     }
   },
   "wrapped": {
+    "notReady": "Votre rétro n'est pas encore prête - revenez après le tournoi.",
+    "exact": "Scores exacts",
+    "rank": "Classement final",
     "title": "Retro du tournoi",
     "close": "Fermer",
     "prev": "Diapositive precedente",

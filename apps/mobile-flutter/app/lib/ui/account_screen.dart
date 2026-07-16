@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import 'analytics_screen.dart';
 import 'locale_menu.dart';
 import 'my_predictions_screen.dart';
+import 'wrapped_screen.dart';
 
 /// Account tab: who you are, your predictions, locale, sign out.
 class AccountScreen extends ConsumerWidget {
@@ -44,6 +46,22 @@ class AccountScreen extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const MyPredictionsScreen()),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.insights),
+            title: Text(context.tr('analytics.title')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AnalyticsScreen()),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.auto_awesome),
+            title: Text(context.tr('wrapped.title')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const WrappedScreen()),
             ),
           ),
           const Divider(),

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../i18n/i18n_scope.dart';
 import 'account_screen.dart';
 import 'leaderboard_screen.dart';
+import 'leagues_screen.dart';
 import 'matches_screen.dart';
 import 'standings_screen.dart';
 
@@ -23,6 +24,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     MatchesScreen(),
     StandingsScreen(),
     LeaderboardScreen(),
+    LeaguesScreen(),
     AccountScreen(),
   ];
 
@@ -40,6 +42,8 @@ class _HomeShellState extends ConsumerState<HomeShell> {
               icon: const Icon(Icons.table_chart), label: context.tr('nav.standings')),
           NavigationDestination(
               icon: const Icon(Icons.leaderboard), label: context.tr('nav.leaderboard')),
+          NavigationDestination(
+              icon: const Icon(Icons.groups), label: context.tr('nav.leagues')),
           NavigationDestination(
               icon: const Icon(Icons.person), label: context.tr('nav.account')),
         ],

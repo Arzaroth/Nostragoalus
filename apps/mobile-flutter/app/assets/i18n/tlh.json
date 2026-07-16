@@ -704,6 +704,8 @@
     "loadError": "vu' laDlaHbe'."
   },
   "analytics": {
+    "avg": "DoemwI",
+    "exactRate": "lugh",
     "title": "nughmey",
     "subtitle": "wIvmeylIj DuvmeH: bIlughpu''a', bIQaghpu''a'?",
     "signInHint": "peyel', nughmeylIj DaleghmeH.",
@@ -1407,6 +1409,11 @@
     "home": "yotlh chegh"
   },
   "leagues": {
+    "browse": "ghommey Sam",
+    "code": "ghItlh",
+    "joined": "DamuvchoH",
+    "joinFailed": "bImuvlaHbe'",
+    "emptyPublic": "ghommey tuHbe'.",
     "emptyHint": "ghom yImuvmeH wIv.",
     "title": "boqmey",
     "global": "Hoch",
@@ -1551,6 +1558,7 @@
     }
   },
   "notifications": {
+    "markAllRead": "Hoch laDta'",
     "title": "QInmey",
     "ariaLabel": "QInmey",
     "empty": "QIn chu' tu'lu'be'.",
@@ -1716,6 +1724,9 @@
     }
   },
   "wrapped": {
+    "notReady": "DaH pItlh ghajbe' - qImHa' yIghoH.",
+    "exact": "mI lugh",
+    "rank": "patlh Qav",
     "title": "may' qonwI'",
     "close": "SoQmoH",
     "prev": "ret",

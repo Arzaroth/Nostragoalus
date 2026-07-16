@@ -715,6 +715,8 @@
     "loadError": "Could not load the comparison."
   },
   "analytics": {
+    "avg": "Avg points",
+    "exactRate": "Exact rate",
     "title": "Analytics",
     "subtitle": "How your predictions lean, measured against what actually happened.",
     "signInHint": "Sign in to see your prediction analytics.",
@@ -1418,6 +1420,11 @@
     "home": "Back to the pitch"
   },
   "leagues": {
+    "browse": "Browse public",
+    "code": "Invite code",
+    "joined": "Joined",
+    "joinFailed": "Could not join",
+    "emptyPublic": "No public leagues.",
     "emptyHint": "Join a league to make predictions.",
     "title": "Leagues",
     "global": "Everyone",
@@ -1562,6 +1569,7 @@
     }
   },
   "notifications": {
+    "markAllRead": "Mark all read",
     "title": "Notifications",
     "ariaLabel": "Notifications",
     "empty": "You're all caught up.",
@@ -1727,6 +1735,9 @@
     }
   },
   "wrapped": {
+    "notReady": "Your wrapped isn't ready yet - check back after the tournament.",
+    "exact": "Exact scores",
+    "rank": "Final rank",
     "title": "Tournament Wrapped",
     "close": "Close",
     "prev": "Previous slide",
