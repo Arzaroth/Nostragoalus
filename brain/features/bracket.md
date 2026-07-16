@@ -28,10 +28,13 @@ The pipeline, per request (memoised by `server/utils/bracket/cache.ts`):
 
 Failures fall back to "no bracket" rather than erroring the page.
 
-The `fixture` provider (`server/utils/providers/fixture.ts`) returns a canned,
-fully decided 8-team tree with no network. It exists so the e2e stack has a
-bracket to drive; a competition reaches it only by being seeded with
-`provider='fixture'`.
+The `fixture` provider (`server/utils/providers/fixture.ts`) returns a canned
+8-team tree with no network, so the e2e stack has a bracket to drive. It models a
+late-tournament state - everything played except a final that is scheduled with
+both sides official - which is what gives the specs a genuinely undecided card,
+and it names the third-place tie "Bronze final" like the live feed does. A
+competition reaches it only by being seeded with `provider='fixture'`; no route
+writes that column, but that is an absence rather than a guard.
 
 ## Layout
 
@@ -75,7 +78,19 @@ nothing - there is no outcome to colour by.
 - One `<svg>` overlays `.br`, `pointer-events: none`. `pathLength="1"` normalises
   every route to unit length, so a single `stroke-dashoffset` keyframe draws a
   quarter-finalist's road and a champion's at the same pace without measuring
-  either. Honours `prefers-reduced-motion`.
+  either. Spell it `pathLength`: SVG attribute names are case-sensitive, and
+  `path-length` is silently ignored, which leaves the dash pattern measured in
+  pixels and the route appearing fully drawn. Honours `prefers-reduced-motion`.
+- Each hover bumps a counter that keys the paths, so Vue remounts them and the
+  animation restarts. Reusing a team+outcome key across two cards (a semi-final
+  and the final the same side won) would patch the element instead and leave its
+  finished animation in place. Re-entering the same card is a no-op, since
+  `mouseover` fires again for every child crossed.
+- A live score can re-render the tree under a stationary pointer, with no event
+  to recompute against, so the trace is dropped when the bracket data changes
+  rather than left pointing at stale coordinates.
+- A team eliminated in its first bracket appearance has one card and so no hop:
+  it gets the red name tint but no line. See [../../TODO.md](../../TODO.md).
 
 ## Files
 
