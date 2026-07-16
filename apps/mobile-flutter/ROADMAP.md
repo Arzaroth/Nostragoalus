@@ -63,13 +63,13 @@ Scope unchanged. Proceed to Phase 1 on a Flutter machine.
 - [x] Bootstrap on a Flutter machine: `flutter create .` + `flutter pub get`, auth probe GREEN on a real device (Samsung SM A556E, Android 16). flutter 3.44.6 + JDK 17/21 via mise; gradle foojay resolver auto-provisions the JDK 17 that flutter_callkit_incoming pins; plugin modules forced to compileSdk 36 (flutter_webrtc pins 31). On-device signal is the headless logcat entrypoint - DDS is flaky over wireless adb.
 - [x] Contract codegen wired (`tool/gen_models.sh` -> `lib/api/models.gen.dart`), `mise run models-check` stale-check. The snapshot inlines every schema (no components/$ref); the generator dedups identical inline shapes.
 - [x] API client (dio + bearer interceptor + generated models), riverpod query layer (kept-alive reads, invalidate-on-mutation). staleTime parity approximate; competition/league query-scoping deferred (routes are session/cookie-scoped server-side).
-- [ ] i18n loader over `shared/i18n-json` (5 locales, RTL)
-- [ ] Auth flow (sign in / session / sign out)
-- [ ] Competition browse + switcher
-- [ ] Fixtures list + match detail
-- [ ] Make / edit prediction + joker
-- [ ] Leaderboard + my-predictions
-- [ ] Internal build published (TestFlight / Play internal)
+- [x] i18n loader over `shared/i18n-json` (5 locales, RTL) - dotted-key lookup + `{var}` interpolation + English fallback, `I18nScope`/`context.tr`, locale switcher.
+- [x] Auth flow (sign in / session / sign out) - bearer session, gated app shell; sign-in flow green on the emulator.
+- [~] Competition browse + switcher - matches/standings/leaderboard render the session's active competition; an explicit switcher needs a server-side scoping param (routes are cookie/session-scoped, no query). Deferred with the API-client note.
+- [x] Fixtures list + match detail
+- [x] Make / edit prediction + joker - score + outcome-only + wager via the league PUT, joker via `PUT /api/leagues/{id}/joker`.
+- [x] Leaderboard + my-predictions
+- [~] Internal build published (TestFlight / Play internal) - debug + native build proven on device + emulator; a signed release appbundle needs an upload keystore + a Play account (owner action).
 
 ## Phase 2 - Social + realtime-read
 - [ ] Leagues: browse / join / board (movement, crown, live)
