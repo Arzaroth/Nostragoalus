@@ -94,12 +94,18 @@ Scope unchanged. Proceed to Phase 1 on a Flutter machine.
   interactive recovery screen is deferred (needs the provisioned identity blob).
 
 ## Phase 4 - Voice + native polish (gated by Phase 0 voice)
-- [ ] WebRTC voice: DM 1:1
-- [ ] WebRTC voice: league rooms (mesh, N-in-voice)
-- [ ] CallKit background audio + ring / missed-call push
-- [ ] OS share (`share_plus`)
-- [ ] Deep links
-- [ ] Live-viewers
+- [ ] WebRTC voice: DM 1:1 - hardware-gated (two real devices + the coturn relay);
+  the signaling rides the existing WS hub (voice:* frames) but the audio path
+  can't be exercised on a single emulator. Deferred to a device session.
+- [ ] WebRTC voice: league rooms (mesh, N-in-voice) - same hardware gate.
+- [ ] CallKit background audio + ring / missed-call push - needs iOS + a Mac +
+  real devices; also depends on the push slice (Phase 2). Deferred.
+- [x] OS share (`share_plus`) - share a match link from the detail screen.
+- [~] Deep links - the app produces `goal.arzaroth.com/matches/{id}` share links;
+  inbound deep-link handling (intent-filters + iOS assoc + route parsing) is a
+  later slice.
+- [x] Live-viewers - the detail screen keeps its hub room subscribed and shows the
+  live `viewers:update` count.
 
 ## Phase 5 - Long-tail parity
 - [ ] Multiview grid
