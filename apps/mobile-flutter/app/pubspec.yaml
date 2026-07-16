@@ -33,5 +33,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  # The shared locale JSON (shared/i18n-json) is bundled from the monorepo root.
-  # Kept out for the Phase 0 spike; wired in Phase 1's i18n loader.
+  # The shared locale JSON (shared/i18n-json) mirrored into assets/i18n by
+  # tool/sync_i18n.sh (mise run i18n-sync); the single source of truth stays in
+  # shared/. mise run i18n-check fails CI if the mirror drifts.
+  assets:
+    - assets/i18n/

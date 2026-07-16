@@ -24,3 +24,13 @@ run = "bash tool/gen_models.sh"
 description = "Fail if lib/api/models.gen.dart is stale vs the OpenAPI snapshot"
 dir = "{{ config_root }}/app"
 run = "bash tool/gen_models.sh && git diff --exit-code lib/api/models.gen.dart"
+
+[tasks.i18n-sync]
+description = "Mirror shared/i18n-json into the app asset bundle"
+dir = "{{ config_root }}/app"
+run = "bash tool/sync_i18n.sh"
+
+[tasks.i18n-check]
+description = "Fail if the bundled locales drift from shared/i18n-json"
+dir = "{{ config_root }}/app"
+run = "bash tool/sync_i18n.sh && git diff --exit-code assets/i18n"
