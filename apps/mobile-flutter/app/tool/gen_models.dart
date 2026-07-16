@@ -19,6 +19,8 @@ const targets = <Target>[
   Target('get', '/api/matches', 'MatchesResponse'),
   Target('get', '/api/matches/{id}', 'MatchDetailResponse'),
   Target('get', '/api/leaderboard', 'LeaderboardResponse'),
+  Target('get', '/api/leagues', 'LeaguesResponse'),
+  Target('get', '/api/predictions', 'PredictionsResponse'),
   Target('get', '/api/me/trust-status', 'TrustStatusResponse'),
   Target('put', '/api/leagues/{id}/predictions/{matchId}', 'PredictionSaveResponse',
       reqName: 'PredictionInput'),
@@ -102,12 +104,21 @@ Map<String, dynamic>? _schemaOf(dynamic responseOrBody) {
   return (responseOrBody['content']?['application/json']?['schema']) as Map<String, dynamic>?;
 }
 
+/// Model names that would collide with a common Flutter/dart widget or type get
+/// a `Data` suffix, so a UI file can import the models and the framework together.
+const _reserved = {
+  'Row', 'Column', 'Table', 'Image', 'Icon', 'Card', 'Text', 'Divider', 'Center',
+  'Padding', 'Stack', 'Align', 'Wrap', 'Flow', 'Chip', 'Badge', 'Banner', 'Hero',
+  'Form', 'Scaffold', 'Title', 'Tab', 'Step', 'Page', 'Placeholder', 'Spacer',
+};
+
 /// Register (dedup) an object schema as a class and return its name.
 String _emitObject(Map<String, dynamic> schema, String suggested) {
   final sig = _signature(schema);
   final existing = _bySignature[sig];
   if (existing != null) return existing;
 
+  if (_reserved.contains(suggested)) suggested = '${suggested}Data';
   final name = _uniqueName(suggested);
   _bySignature[sig] = name;
   _usedNames.add(name);

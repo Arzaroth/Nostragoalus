@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../api/api_client.dart';
@@ -5,6 +6,13 @@ import '../api/auth_repository.dart';
 import '../api/models.gen.dart';
 import '../api/nostragoalus_api.dart';
 import '../api/token_store.dart';
+import '../i18n/i18n.dart';
+
+/// The active UI locale (defaults to English; the locale switcher sets it).
+final localeProvider = StateProvider<Locale>((ref) => const Locale('en'));
+
+/// The loaded strings for the active locale (English fallback baked in).
+final i18nProvider = FutureProvider<I18n>((ref) => I18n.load(ref.watch(localeProvider)));
 
 /// One keystore-backed bearer token for the process.
 final tokenStoreProvider = Provider<TokenStore>((ref) => TokenStore());
@@ -56,6 +64,8 @@ class AuthController extends AsyncNotifier<AuthUser?> {
     ref.invalidate(scorersProvider);
     ref.invalidate(matchesProvider);
     ref.invalidate(leaderboardProvider);
+    ref.invalidate(leaguesProvider);
+    ref.invalidate(myPredictionsProvider);
     ref.invalidate(matchProvider);
   }
 }
@@ -77,6 +87,12 @@ final matchesProvider =
 final leaderboardProvider = FutureProvider<LeaderboardResponse>(
     (ref) => ref.watch(apiProvider).leaderboard());
 
+final leaguesProvider =
+    FutureProvider<LeaguesResponse>((ref) => ref.watch(apiProvider).leagues());
+
+final myPredictionsProvider =
+    FutureProvider<PredictionsResponse>((ref) => ref.watch(apiProvider).myPredictions());
+
 final matchProvider = FutureProvider.family<MatchDetailResponse, String>(
     (ref, id) => ref.watch(apiProvider).match(id));
 
@@ -87,6 +103,7 @@ final savePredictionProvider = Provider<
     final res = await ref.read(apiProvider).savePrediction(leagueId, matchId, input);
     ref.invalidate(matchProvider);
     ref.invalidate(leaderboardProvider);
+    ref.invalidate(myPredictionsProvider);
     return res;
   };
 });

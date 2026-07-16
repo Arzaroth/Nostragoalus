@@ -27,6 +27,12 @@ class NostragoalusApi {
   Future<LeaderboardResponse> leaderboard() async =>
       LeaderboardResponse.fromJson(await _api.getJson('/api/leaderboard'));
 
+  Future<LeaguesResponse> leagues() async =>
+      LeaguesResponse.fromJson(await _api.getJson('/api/leagues'));
+
+  Future<PredictionsResponse> myPredictions() async =>
+      PredictionsResponse.fromJson(await _api.getJson('/api/predictions'));
+
   Future<PredictionSaveResponse> savePrediction(
     String leagueId,
     String matchId,
@@ -36,4 +42,10 @@ class NostragoalusApi {
         '/api/leagues/$leagueId/predictions/$matchId',
         body: input.toJson(),
       ));
+
+  /// Set or clear this match as the league's joker (one per league).
+  Future<void> setJoker(String leagueId, String matchId, bool isJoker) async {
+    await _api.putJson('/api/leagues/$leagueId/joker',
+        body: {'matchId': matchId, 'isJoker': isJoker});
+  }
 }
