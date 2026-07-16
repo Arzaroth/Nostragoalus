@@ -60,19 +60,36 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       case 'reaction:update':
         final id = frame['matchId'];
         if (id is String) ref.invalidate(reactionsProvider(id));
+      case 'viewers:update':
+        final id = frame['matchId'];
+        final count = frame['count'];
+        if (id is String && count is num) {
+          ref.read(viewersProvider.notifier).state = {
+            ...ref.read(viewersProvider),
+            id: count.toInt(),
+          };
+        }
     }
   }
 
   static const _liveStatuses = {'LIVE', 'PAUSED'};
 
+  void _resubscribe() {
+    final live = ref.read(matchesProvider).maybeWhen(
+          data: (res) =>
+              res.matches.where((m) => _liveStatuses.contains(m.status)).map((m) => m.id).toSet(),
+          orElse: () => <String>{},
+        );
+    final viewed = ref.read(viewedMatchProvider);
+    if (viewed != null) live.add(viewed);
+    ref.read(liveServiceProvider).subscribe(live);
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Keep the hub subscribed to whatever matches are currently in-play.
-    ref.listen(matchesProvider, (_, next) {
-      next.whenData((res) => ref.read(liveServiceProvider).subscribe(
-            res.matches.where((m) => _liveStatuses.contains(m.status)).map((m) => m.id).toSet(),
-          ));
-    });
+    // Keep the hub subscribed to the in-play matches plus the one being viewed.
+    ref.listen(matchesProvider, (_, __) => _resubscribe());
+    ref.listen(viewedMatchProvider, (_, __) => _resubscribe());
     return Scaffold(
       body: IndexedStack(index: _tab, children: _screens),
       bottomNavigationBar: NavigationBar(

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../api/models.gen.dart';
+import '../config.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
 import 'widgets/async_value_view.dart';
@@ -9,15 +11,67 @@ import 'widgets/reactions_bar.dart';
 import 'widgets/score_pill.dart';
 
 /// Match detail + the prediction editor (score, outcome-only, wager, joker).
-class MatchDetailScreen extends ConsumerWidget {
+/// Marks itself the "viewed" match so the hub keeps its room subscribed (live
+/// viewer count) and offers an OS share of the match link.
+class MatchDetailScreen extends ConsumerStatefulWidget {
   const MatchDetailScreen({super.key, required this.matchId});
   final String matchId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MatchDetailScreen> createState() => _MatchDetailScreenState();
+}
+
+class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
+  String get matchId => widget.matchId;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(viewedMatchProvider.notifier).state = matchId;
+    });
+  }
+
+  @override
+  void dispose() {
+    // The provider outlives this screen; clear it if we're still the viewer.
+    Future.microtask(() {
+      final notifier = ref.read(viewedMatchProvider.notifier);
+      if (notifier.state == matchId) notifier.state = null;
+    });
+    super.dispose();
+  }
+
+  void _share(MatchDetailResponse res) {
+    final m = res.match;
+    final base = AppConfig.apiBase.replaceFirst('http://10.0.2.2:3000', 'https://goal.arzaroth.com');
+    SharePlus.instance.share(ShareParams(text: '${m.homeTeam} v ${m.awayTeam}\n$base/matches/${m.id}'));
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final detail = ref.watch(matchProvider(matchId));
+    final viewers = ref.watch(viewersProvider)[matchId] ?? 0;
     return Scaffold(
-      appBar: AppBar(title: Text(context.tr('nav.matches'))),
+      appBar: AppBar(
+        title: Text(context.tr('nav.matches')),
+        actions: [
+          if (viewers > 0)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Row(children: [
+                const Icon(Icons.visibility, size: 18),
+                const SizedBox(width: 4),
+                Center(child: Text('$viewers')),
+                const SizedBox(width: 8),
+              ]),
+            ),
+          IconButton(
+            icon: const Icon(Icons.share),
+            onPressed: () => detail.whenData(_share),
+          ),
+        ],
+      ),
       body: AsyncValueView<MatchDetailResponse>(
         value: detail,
         onRetry: () => ref.invalidate(matchProvider(matchId)),
