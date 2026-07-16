@@ -3,8 +3,7 @@
 # and Android builds run on any OS; iOS builds need macOS + Xcode.
 [tools]
 dart = "3.12.2"
-# flutter = "stable"   # add when building the app (large install); dart alone
-#                        runs the parity + e2ee tests.
+flutter = "3.44.6"   # building the app (app/); dart alone runs the parity + e2ee tests.
 
 [tasks.parity]
 description = "Replay the cross-stack golden vectors (pure Dart)"
