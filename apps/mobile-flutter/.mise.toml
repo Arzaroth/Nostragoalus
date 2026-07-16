@@ -34,3 +34,13 @@ run = "bash tool/sync_i18n.sh"
 description = "Fail if the bundled locales drift from shared/i18n-json"
 dir = "{{ config_root }}/app"
 run = "bash tool/sync_i18n.sh && git diff --exit-code assets/i18n"
+
+[tasks.parity-sync]
+description = "Mirror shared/parity-json KATs into the app asset bundle"
+dir = "{{ config_root }}/app"
+run = "bash tool/sync_parity.sh"
+
+[tasks.parity-check]
+description = "Fail if the bundled KATs drift from shared/parity-json"
+dir = "{{ config_root }}/app"
+run = "bash tool/sync_parity.sh && git diff --exit-code assets/parity"

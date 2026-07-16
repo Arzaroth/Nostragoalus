@@ -38,3 +38,5 @@ flutter:
   # shared/. mise run i18n-check fails CI if the mirror drifts.
   assets:
     - assets/i18n/
+    # Frozen cross-stack KATs (shared/parity-json), mirrored by tool/sync_parity.sh.
+    - assets/parity/
