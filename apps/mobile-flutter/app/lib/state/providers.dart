@@ -7,6 +7,7 @@ import '../api/models.gen.dart';
 import '../api/nostragoalus_api.dart';
 import '../api/token_store.dart';
 import '../i18n/i18n.dart';
+import '../live/live_service.dart';
 
 /// The active UI locale (defaults to English; the locale switcher sets it).
 final localeProvider = StateProvider<Locale>((ref) => const Locale('en'));
@@ -118,6 +119,13 @@ final reactionsProvider = FutureProvider.family<ReactionsResponse, String>(
 
 final leagueBoardProvider = FutureProvider.family<ModeBoardResponse, String>(
     (ref, id) => ref.watch(apiProvider).leagueBoard(id));
+
+/// The live hub connection (one per app), disposed with the provider scope.
+final liveServiceProvider = Provider<LiveService>((ref) {
+  final service = LiveService(ref.watch(tokenStoreProvider));
+  ref.onDispose(service.dispose);
+  return service;
+});
 
 final matchProvider = FutureProvider.family<MatchDetailResponse, String>(
     (ref, id) => ref.watch(apiProvider).match(id));

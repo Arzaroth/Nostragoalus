@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../i18n/i18n_scope.dart';
+import '../live/live_service.dart';
+import '../state/providers.dart';
 import 'account_screen.dart';
 import 'leaderboard_screen.dart';
 import 'leagues_screen.dart';
@@ -19,6 +23,7 @@ class HomeShell extends ConsumerStatefulWidget {
 
 class _HomeShellState extends ConsumerState<HomeShell> {
   int _tab = 0;
+  StreamSubscription<LiveFrame>? _liveSub;
 
   static const _screens = [
     MatchesScreen(),
@@ -29,7 +34,45 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    final live = ref.read(liveServiceProvider)..connect();
+    _liveSub = live.frames.listen(_onFrame);
+  }
+
+  @override
+  void dispose() {
+    _liveSub?.cancel();
+    super.dispose();
+  }
+
+  // Server-pushed frames invalidate the reads they touch, so live scores,
+  // notifications and reaction counts refresh without polling.
+  void _onFrame(LiveFrame frame) {
+    switch (frame['type']) {
+      case 'match:update':
+      case 'scores:changed':
+        ref.invalidate(matchesProvider);
+        final id = frame['matchId'];
+        if (id is String) ref.invalidate(matchProvider(id));
+      case 'notification:new':
+        ref.invalidate(notificationsProvider);
+      case 'reaction:update':
+        final id = frame['matchId'];
+        if (id is String) ref.invalidate(reactionsProvider(id));
+    }
+  }
+
+  static const _liveStatuses = {'LIVE', 'PAUSED'};
+
+  @override
   Widget build(BuildContext context) {
+    // Keep the hub subscribed to whatever matches are currently in-play.
+    ref.listen(matchesProvider, (_, next) {
+      next.whenData((res) => ref.read(liveServiceProvider).subscribe(
+            res.matches.where((m) => _liveStatuses.contains(m.status)).map((m) => m.id).toSet(),
+          ));
+    });
     return Scaffold(
       body: IndexedStack(index: _tab, children: _screens),
       bottomNavigationBar: NavigationBar(
