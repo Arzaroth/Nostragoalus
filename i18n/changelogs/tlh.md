@@ -5,6 +5,15 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### chelpu'
+
+- may' ghItlhlu'pu'bogh, cha' ghomDaj Sovlu'bogh (Qat'a' loSlI'bogh) DaHotchugh, DaH SorDaq cha' ghom He wIv 'ang, ghom Hoch retlh Segh rurmeH; vaj may' taghpa', chay' naDev paw cha' Qat'a' ghom 'e' Daleghlaḥ.
+
+### choHpu'
+
+- DaH may' DaHotchbogh SorDaq He tagh, rap Qat'a'Daq ghom Daqmey je HeghmeH ghoS, 'ej tlhegh HaSta Sarghqu' - retlhDaqbe'. rep rurmeH He Hoch chenmoHlu', vaj chID'a' Sar 'a' cha' ghom He rurchuq.
+- DaH Qat'a' QI'lop je lutlhegh: QI'lop QeD wa'DIch Dung Qat'a', bIng QI'lop; vaj Sor botlhDaq HechajmeH He mIvbe'qa'.
+
 ## [4.3.0] - 2026-07-16
 
 ### chelpu'

@@ -5,6 +5,14 @@ export interface PathBox {
   bottom: number
 }
 
+export interface JourneyHop {
+  d: string
+  // Distance in hops from the hovered card, so a staggered animation delay draws
+  // each hop after the one nearer the hover: every hop takes the same time, which
+  // keeps two teams of unequal reach in step.
+  delay: number
+}
+
 function centerX(b: PathBox) {
   return (b.left + b.right) / 2
 }
@@ -12,28 +20,47 @@ function centerY(b: PathBox) {
   return (b.top + b.bottom) / 2
 }
 
+// The 0.75rem stub the static connector CSS puts out of each card before it turns
+// vertical. The road bends at the same x so it lies over the connector rather
+// than beside it.
+const STUB = 12
+
+function toPath(pts: [number, number][]): string {
+  return pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join('')
+}
+
 /**
- * SVG path tracing a team's journey through the cards it appears in, in order.
+ * A team's journey as one elbow per hop, each drawn from the end nearer the
+ * hovered card outward, so the road grows out of the card the pointer is on.
  *
- * One subpath per hop, each an orthogonal elbow matching the static connector
- * geometry: out of the facing edge, across to the next card's near edge, then
- * vertical onto its midline. Cards are skipped rather than crossed (their two
- * team names sit on the midline). Boxes are viewport rects, so direction falls
- * out of the geometry and RTL needs no special-casing.
+ * Cards come ordered by round sequence (`hovered` is the hovered card's index).
+ * Each hop bends at the child's stub x - the same geometry as the static
+ * `::before`/`::after` connector - out of the facing edge, vertical at the stub,
+ * then a lead-in onto the parent's midline. Cards are skipped rather than crossed
+ * (their two team names sit on the midline). Hops before the hovered card are
+ * reversed so the stroke still starts at the hovered end; `delay` grows with the
+ * distance from it. Boxes are viewport rects, so direction falls out of the
+ * geometry and RTL needs no special-casing.
  *
  * Coordinates are relative to `origin`, the overlay's own rect.
  */
-export function bracketJourneyPath(cards: PathBox[], origin: { left: number; top: number }): string {
-  const d: string[] = []
+export function bracketJourneyHops(cards: PathBox[], hovered: number, origin: { left: number; top: number }): JourneyHop[] {
+  const hops: JourneyHop[] = []
   for (let i = 0; i < cards.length - 1; i++) {
-    const a = cards[i]!
-    const b = cards[i + 1]!
-    const forward = centerX(b) >= centerX(a)
-    const exit = (forward ? a.right : a.left) - origin.left
-    const enter = (forward ? b.left : b.right) - origin.left
-    const ay = centerY(a) - origin.top
-    const by = centerY(b) - origin.top
-    d.push(`M${exit.toFixed(1)},${ay.toFixed(1)}L${enter.toFixed(1)},${ay.toFixed(1)}L${enter.toFixed(1)},${by.toFixed(1)}`)
+    const child = cards[i]!
+    const parent = cards[i + 1]!
+    const toParent = centerX(parent) >= centerX(child) ? 1 : -1
+    const childEdge = (toParent > 0 ? child.right : child.left) - origin.left
+    const bendX = childEdge + STUB * toParent
+    const parentEdge = (toParent > 0 ? parent.left : parent.right) - origin.left
+    const cy = centerY(child) - origin.top
+    const py = centerY(parent) - origin.top
+    const pts: [number, number][] = [[childEdge, cy], [bendX, cy], [bendX, py], [parentEdge, py]]
+    const past = i < hovered
+    hops.push({
+      d: toPath(past ? [...pts].reverse() : pts),
+      delay: past ? hovered - 1 - i : i - hovered,
+    })
   }
-  return d.join('')
+  return hops
 }

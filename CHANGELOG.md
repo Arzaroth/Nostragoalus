@@ -5,6 +5,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+
+- Hovering a scheduled tie whose two sides are already known (a final waiting to be played) now traces both teams' roads back through the draw, one in the team colour of each side, so you can see how the two finalists got there before a ball is kicked.
+
+### Changed
+
+- The bracket roads now grow out of the tie you hover, fanning out toward the final and back toward the group stage at the same time, and lie exactly over the connector lines instead of running alongside them. Each leg draws at a steady pace, so both teams' roads stay in step however far apart their journeys are.
+- The final and the third-place play-off are now stacked with the final just above the semi-finals and the bronze just below, so the roads into them no longer cross in the middle of the bracket.
+
 ## [4.3.0] - 2026-07-16
 
 ### Added

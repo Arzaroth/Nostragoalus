@@ -32,12 +32,13 @@ async function openBracket(page: Page) {
 
 // An SSR-rendered card can be hovered before hydration wires the handler, so
 // retry until the lines actually appear. Doubles as the interactivity gate every
-// later assertion leans on.
-async function hoverUntilTraced(page: Page, selector: string) {
+// later assertion leans on. Each team now draws one line per hop, so a two-hop
+// journey each side is four lines.
+async function hoverUntilTraced(page: Page, selector: string, count = 4) {
   await expect(async () => {
     await page.mouse.move(0, 0)
     await page.locator(selector).hover()
-    await expect(page.locator('.br-line')).toHaveCount(2)
+    await expect(page.locator('.br-line')).toHaveCount(count)
   }).toPass({ timeout: 15_000 })
 }
 
@@ -47,19 +48,21 @@ test('hovering a decided tie traces both teams journeys, winner green and loser 
 
   await expect(page.locator('.br-line')).toHaveCount(0)
   await hoverUntilTraced(page, SEMI)
-  await expect(page.locator('.br-line-win')).toHaveCount(1)
-  await expect(page.locator('.br-line-loss')).toHaveCount(1)
+  // ARG: QF -> SF -> final. BRA: QF -> SF -> bronze. Two hops each, one line per
+  // hop (a card is skipped, not crossed), so two green and two red.
+  await expect(page.locator('.br-line-win')).toHaveCount(2)
+  await expect(page.locator('.br-line-loss')).toHaveCount(2)
 
-  // ARG: QF -> SF -> final. BRA: QF -> SF -> bronze. Two hops each, one subpath
-  // per hop, because a card is skipped rather than crossed.
+  // Each hop is a single elbow, so exactly one move command per line.
   for (const cls of ['.br-line-win', '.br-line-loss']) {
-    const d = await page.locator(cls).getAttribute('d')
-    expect(d!.match(/M/g)).toHaveLength(2)
+    for (const d of await page.locator(cls).evaluateAll(els => els.map(e => e.getAttribute('d')))) {
+      expect(d!.match(/M/g)).toHaveLength(1)
+    }
   }
 
   // The colours are the outcome of the hovered tie, not a per-team constant.
-  await expect(page.locator('.br-line-win')).toHaveCSS('stroke', 'rgb(34, 197, 94)')
-  await expect(page.locator('.br-line-loss')).toHaveCSS('stroke', 'rgb(239, 68, 68)')
+  await expect(page.locator('.br-line-win').first()).toHaveCSS('stroke', 'rgb(34, 197, 94)')
+  await expect(page.locator('.br-line-loss').first()).toHaveCSS('stroke', 'rgb(239, 68, 68)')
 
   // Leaving the tree clears the trace.
   await page.mouse.move(0, 0)
@@ -73,16 +76,25 @@ test('the trace is normalised so it draws itself in rather than appearing at onc
 
   // pathLength=1 has to land as the real (case-sensitive) SVG attribute, or the
   // dash pattern is measured in pixels and the route appears fully drawn.
-  await expect(page.locator('.br-line-win')).toHaveAttribute('pathLength', '1')
+  await expect(page.locator('.br-line-win').first()).toHaveAttribute('pathLength', '1')
 
-  // Sampled past the 1.6s keyframe, so the last one is the settled end state.
-  const offsets: number[] = []
-  for (let i = 0; i < 6; i++) {
-    offsets.push(
-      await page.locator('.br-line-win').evaluate(el => Number.parseFloat(getComputedStyle(el).strokeDashoffset)),
-    )
-    await page.waitForTimeout(400)
-  }
+  // Sample every frame from inside the page over one draw's worth of time. The
+  // per-hop keyframe is only ~0.4s, so a per-sample CDP round-trip could miss the
+  // draw entirely on a loaded box; an in-page rAF loop pays the round-trip once
+  // and still catches the retreat. The first hop draws with no delay.
+  const offsets = await page.locator('.br-line-win').first().evaluate<number[], SVGPathElement>(
+    el =>
+      new Promise((resolve) => {
+        const out: number[] = []
+        const start = performance.now()
+        const tick = () => {
+          out.push(Number.parseFloat(getComputedStyle(el).strokeDashoffset))
+          if (performance.now() - start < 700) requestAnimationFrame(tick)
+          else resolve(out)
+        }
+        tick()
+      }),
+  )
   // Monotonically retreating to ~0: the line is being drawn, not revealed. With
   // the dash measured in pixels instead of path units, every sample would sit at
   // 1 and the first assertion below would still pass - the retreat is the check.
@@ -97,26 +109,35 @@ test('the losing side of a semi-final is traced into the bronze tie, not the fin
   await openBracket(page)
   await hoverUntilTraced(page, SEMI)
 
-  // BRA lost the SF to ARG, so its journey is QF -> SF -> bronze final.
+  // BRA lost the SF to ARG, so its journey is QF -> SF -> bronze final. That last
+  // hop draws out of the hovered SF, so it is the last loss line.
   const bronze = await page.locator(BRONZE).boundingBox()
-  const loss = await page.locator('.br-line-loss').getAttribute('d')
-  // The last point of BRA's trace lands on the bronze tie's vertical midline.
+  const loss = await page.locator('.br-line-loss').last().getAttribute('d')
+  // The last point of the hop lands on the bronze tie's vertical midline.
   const lastY = Number(loss!.split('L').at(-1)!.split(',')[1])
   const overlayTop = (await page.locator('.br').boundingBox())!.y
   expect(Math.abs(overlayTop + lastY - (bronze!.y + bronze!.height / 2))).toBeLessThan(2)
 })
 
-test('an unplayed tie traces nothing', async ({ page }) => {
+test('an undecided tie with both sides official traces home and away, not win/loss', async ({ page }) => {
   await signUp(page, freshUser())
   await openBracket(page)
 
-  // Prove the overlay is live first, so the absence below means the guard fired
+  // Prove the overlay is live first, so anything below means the handler fired
   // and not that the page simply never hydrated.
   await hoverUntilTraced(page, SEMI)
 
-  // The final is scheduled with both sides official: a real undecided card, with
-  // no outcome to colour a journey by.
+  // The final is scheduled with both sides official (ARG vs FRA): a real
+  // undecided card, coloured home/away since there is no outcome to read.
   await expect(page.locator(FINAL)).not.toHaveAttribute('data-winner', /.*/)
-  await page.locator(FINAL).hover()
-  await expect(page.locator('.br-line')).toHaveCount(0)
+  await hoverUntilTraced(page, FINAL)
+  // ARG (home): QF -> SF -> final. FRA (away): QF -> SF -> final. Two hops each.
+  await expect(page.locator('.br-line-home')).toHaveCount(2)
+  await expect(page.locator('.br-line-away')).toHaveCount(2)
+  await expect(page.locator('.br-line-win')).toHaveCount(0)
+  await expect(page.locator('.br-line-loss')).toHaveCount(0)
+  // Away is amber; home is the theme accent, distinct from it.
+  await expect(page.locator('.br-line-away').first()).toHaveCSS('stroke', 'rgb(245, 158, 11)')
+  const homeStroke = await page.locator('.br-line-home').first().evaluate(el => getComputedStyle(el).stroke)
+  expect(homeStroke).not.toBe('rgb(245, 158, 11)')
 })

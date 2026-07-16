@@ -89,6 +89,16 @@ a.br-card:hover {
   color: var(--ng-danger);
   text-shadow: 0 0 0.6rem color-mix(in srgb, var(--ng-danger) 45%, transparent);
 }
+/* Undecided tie with both sides official: no winner to colour by, so tint home
+   (accent) and away (amber) to match the two journey roads it traces. */
+.br-card:not([data-winner])[data-home][data-away]:hover .br-team:first-child {
+  color: var(--p-primary-color);
+  text-shadow: 0 0 0.6rem color-mix(in srgb, var(--p-primary-color) 45%, transparent);
+}
+.br-card:not([data-winner])[data-home][data-away]:hover .br-team:last-child {
+  color: var(--ng-star);
+  text-shadow: 0 0 0.6rem color-mix(in srgb, var(--ng-star) 45%, transparent);
+}
 /* Projected side: the flag/name carry a dashed underline so it reads as
    not-yet-official at a glance (alongside the corner chip). */
 .br-proj .truncate {
