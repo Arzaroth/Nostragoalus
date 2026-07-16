@@ -14,3 +14,13 @@ run = "dart test"
 description = "E2EE interop KATs against the frozen vectors (needs libsodium)"
 dir = "{{ config_root }}/parity"
 run = "dart test test/e2ee_interop_test.dart"
+
+[tasks.gen-models]
+description = "Regenerate lib/api/models.gen.dart from the OpenAPI snapshot (pure Dart)"
+dir = "{{ config_root }}/app"
+run = "bash tool/gen_models.sh"
+
+[tasks.models-check]
+description = "Fail if lib/api/models.gen.dart is stale vs the OpenAPI snapshot"
+dir = "{{ config_root }}/app"
+run = "bash tool/gen_models.sh && git diff --exit-code lib/api/models.gen.dart"
