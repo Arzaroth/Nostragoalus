@@ -93,6 +93,32 @@ final leaguesProvider =
 final myPredictionsProvider =
     FutureProvider<PredictionsResponse>((ref) => ref.watch(apiProvider).myPredictions());
 
+// --- Phase 2 ---
+
+final publicLeaguesProvider =
+    FutureProvider<PublicLeaguesResponse>((ref) => ref.watch(apiProvider).publicLeagues());
+
+final notificationsProvider =
+    FutureProvider<NotificationsResponse>((ref) => ref.watch(apiProvider).notifications());
+
+/// Count of unread notifications, for the header badge.
+final unreadCountProvider = Provider<int>((ref) => ref.watch(notificationsProvider).maybeWhen(
+      data: (n) => n.unreadCount.toInt(),
+      orElse: () => 0,
+    ));
+
+final analyticsProvider =
+    FutureProvider<AnalyticsResponse>((ref) => ref.watch(apiProvider).analytics());
+
+final wrappedProvider =
+    FutureProvider<Map<String, dynamic>>((ref) => ref.watch(apiProvider).wrapped());
+
+final reactionsProvider = FutureProvider.family<ReactionsResponse, String>(
+    (ref, matchId) => ref.watch(apiProvider).reactions(matchId));
+
+final leagueBoardProvider = FutureProvider.family<ModeBoardResponse, String>(
+    (ref, id) => ref.watch(apiProvider).leagueBoard(id));
+
 final matchProvider = FutureProvider.family<MatchDetailResponse, String>(
     (ref, id) => ref.watch(apiProvider).match(id));
 
