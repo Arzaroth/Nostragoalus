@@ -1,0 +1,110 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../i18n/i18n_scope.dart';
+import '../state/providers.dart';
+import 'locale_menu.dart';
+
+/// Email/password sign in over the bearer contract. Sign-up and password reset
+/// live on the web app for now; this is the native entry into an existing account.
+class SignInScreen extends ConsumerStatefulWidget {
+  const SignInScreen({super.key});
+
+  @override
+  ConsumerState<SignInScreen> createState() => _SignInScreenState();
+}
+
+class _SignInScreenState extends ConsumerState<SignInScreen> {
+  final _email = TextEditingController();
+  final _password = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  void dispose() {
+    _email.dispose();
+    _password.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    FocusScope.of(context).unfocus();
+    await ref
+        .read(authControllerProvider.notifier)
+        .signIn(_email.text.trim(), _password.text);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = ref.watch(authControllerProvider);
+    final busy = auth.isLoading;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(context.tr('landing.title')),
+        actions: const [LocaleMenu()],
+      ),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(context.tr('auth.signIn'),
+                      style: Theme.of(context).textTheme.headlineSmall,
+                      textAlign: TextAlign.center),
+                  const SizedBox(height: 24),
+                  TextFormField(
+                    controller: _email,
+                    keyboardType: TextInputType.emailAddress,
+                    autofillHints: const [AutofillHints.email],
+                    decoration: InputDecoration(
+                      labelText: context.tr('auth.email'),
+                      border: const OutlineInputBorder(),
+                    ),
+                    validator: (v) =>
+                        (v == null || !v.contains('@')) ? context.tr('auth.email') : null,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _password,
+                    obscureText: true,
+                    autofillHints: const [AutofillHints.password],
+                    onFieldSubmitted: (_) => _submit(),
+                    decoration: InputDecoration(
+                      labelText: context.tr('auth.password'),
+                      border: const OutlineInputBorder(),
+                    ),
+                    validator: (v) =>
+                        (v == null || v.isEmpty) ? context.tr('auth.password') : null,
+                  ),
+                  const SizedBox(height: 24),
+                  FilledButton(
+                    onPressed: busy ? null : _submit,
+                    child: busy
+                        ? const SizedBox(
+                            height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                        : Text(context.tr('auth.signIn')),
+                  ),
+                  if (auth.hasError) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      context.tr('err.signInFailed'),
+                      style: TextStyle(color: Theme.of(context).colorScheme.error),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
