@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../auth/sso.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
 import 'locale_menu.dart';
@@ -18,6 +19,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  SsoProviderInfo? _sso;
+  bool _ssoBusy = false;
 
   @override
   void dispose() {
@@ -32,6 +35,31 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     await ref
         .read(authControllerProvider.notifier)
         .signIn(_email.text.trim(), _password.text);
+  }
+
+  /// When the email's domain is SSO-managed, offer the provider instead of a
+  /// password. Runs when the email field loses focus / is submitted.
+  Future<void> _checkSso() async {
+    final email = _email.text.trim();
+    if (!email.contains('@')) return;
+    final info = await ref.read(ssoServiceProvider).check(email);
+    if (mounted) setState(() => _sso = info);
+  }
+
+  Future<void> _signInWithSso() async {
+    final sso = _sso;
+    if (sso == null) return;
+    setState(() => _ssoBusy = true);
+    try {
+      await ref.read(ssoServiceProvider).signIn(sso.providerId);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(context.tr('auth.ssoFailed'))));
+      }
+    } finally {
+      if (mounted) setState(() => _ssoBusy = false);
+    }
   }
 
   @override
@@ -63,6 +91,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     controller: _email,
                     keyboardType: TextInputType.emailAddress,
                     autofillHints: const [AutofillHints.email],
+                    onEditingComplete: _checkSso,
                     decoration: InputDecoration(
                       labelText: context.tr('auth.email'),
                       border: const OutlineInputBorder(),
@@ -70,6 +99,19 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     validator: (v) =>
                         (v == null || !v.contains('@')) ? context.tr('auth.email') : null,
                   ),
+                  if (_sso != null) ...[
+                    const SizedBox(height: 16),
+                    FilledButton.tonalIcon(
+                      onPressed: _ssoBusy ? null : _signInWithSso,
+                      icon: _ssoBusy
+                          ? const SizedBox(
+                              height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(Icons.business),
+                      label: Text(context.tr('auth.ssoDomainUse', {'name': _sso!.name})),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(context.tr('auth.or'), textAlign: TextAlign.center),
+                  ],
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _password,

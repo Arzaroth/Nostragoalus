@@ -175,4 +175,17 @@ class NostragoalusApi {
 
   /// The key-transparency log (verified client-side against the hash chain).
   Future<Map<String, dynamic>> keysLog() async => _api.getJson('/api/keys/log');
+
+  // --- SSO ---
+
+  /// The SSO provider capturing an email's domain, if any ({providerId, name}).
+  Future<Map<String, dynamic>> ssoCheck(String email) async =>
+      _api.getJson('/api/sso/check', query: {'email': email});
+
+  /// Start a better-auth SSO sign-in; returns the IdP authorize URL to open.
+  Future<String?> ssoAuthorizeUrl(String providerId, String callbackURL) async {
+    final res = await _api
+        .postJson('/api/auth/sign-in/sso', body: {'providerId': providerId, 'callbackURL': callbackURL});
+    return res['url'] as String?;
+  }
 }
