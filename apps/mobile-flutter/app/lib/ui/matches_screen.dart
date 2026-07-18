@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/models.gen.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import 'competition_switcher.dart';
 import 'match_detail_screen.dart';
 import 'widgets/async_value_view.dart';
 import 'widgets/notifications_bell.dart';
@@ -19,7 +20,7 @@ class MatchesScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(context.tr('nav.matches')),
-        actions: const [NotificationsBell()],
+        actions: const [CompetitionSwitcher(), NotificationsBell()],
       ),
       body: RefreshIndicator(
         onRefresh: () async => ref.refresh(matchesProvider.future),

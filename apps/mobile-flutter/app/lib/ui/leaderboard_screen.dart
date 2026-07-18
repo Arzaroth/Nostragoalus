@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/models.gen.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import 'competition_switcher.dart';
 import 'widgets/async_value_view.dart';
 
 /// The standings of players by points (movement arrow, live flag).
@@ -14,7 +15,10 @@ class LeaderboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final board = ref.watch(leaderboardProvider);
     return Scaffold(
-      appBar: AppBar(title: Text(context.tr('nav.leaderboard'))),
+      appBar: AppBar(
+        title: Text(context.tr('nav.leaderboard')),
+        actions: const [CompetitionSwitcher()],
+      ),
       body: RefreshIndicator(
         onRefresh: () async => ref.refresh(leaderboardProvider.future),
         child: AsyncValueView<LeaderboardResponse>(

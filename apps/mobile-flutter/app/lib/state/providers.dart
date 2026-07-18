@@ -12,6 +12,10 @@ import '../live/live_service.dart';
 /// The active UI locale (defaults to English; the locale switcher sets it).
 final localeProvider = StateProvider<Locale>((ref) => const Locale('en'));
 
+/// The selected competition slug for the scoped reads (null = server default).
+/// The switcher sets it; the scoped data providers watch it and refetch.
+final selectedCompetitionProvider = StateProvider<String?>((ref) => null);
+
 /// The loaded strings for the active locale (English fallback baked in).
 final i18nProvider = FutureProvider<I18n>((ref) => I18n.load(ref.watch(localeProvider)));
 
@@ -76,17 +80,17 @@ class AuthController extends AsyncNotifier<AuthUser?> {
 final competitionsProvider = FutureProvider<CompetitionsResponse>(
     (ref) => ref.watch(apiProvider).competitions());
 
-final standingsProvider = FutureProvider<StandingsResponse>(
-    (ref) => ref.watch(apiProvider).standings());
+final standingsProvider = FutureProvider<StandingsResponse>((ref) =>
+    ref.watch(apiProvider).standings(competition: ref.watch(selectedCompetitionProvider)));
 
-final scorersProvider =
-    FutureProvider<ScorersResponse>((ref) => ref.watch(apiProvider).scorers());
+final scorersProvider = FutureProvider<ScorersResponse>((ref) =>
+    ref.watch(apiProvider).scorers(competition: ref.watch(selectedCompetitionProvider)));
 
-final matchesProvider =
-    FutureProvider<MatchesResponse>((ref) => ref.watch(apiProvider).matches());
+final matchesProvider = FutureProvider<MatchesResponse>((ref) =>
+    ref.watch(apiProvider).matches(competition: ref.watch(selectedCompetitionProvider)));
 
-final leaderboardProvider = FutureProvider<LeaderboardResponse>(
-    (ref) => ref.watch(apiProvider).leaderboard());
+final leaderboardProvider = FutureProvider<LeaderboardResponse>((ref) =>
+    ref.watch(apiProvider).leaderboard(competition: ref.watch(selectedCompetitionProvider)));
 
 final leaguesProvider =
     FutureProvider<LeaguesResponse>((ref) => ref.watch(apiProvider).leagues());
@@ -135,11 +139,11 @@ final viewersProvider = StateProvider<Map<String, int>>((ref) => const {});
 final roadmapProvider =
     FutureProvider<RoadmapResponse>((ref) => ref.watch(apiProvider).roadmap());
 
-final championProvider =
-    FutureProvider<ChampionResponse>((ref) => ref.watch(apiProvider).champion());
+final championProvider = FutureProvider<ChampionResponse>((ref) =>
+    ref.watch(apiProvider).champion(competition: ref.watch(selectedCompetitionProvider)));
 
-final bestScorerProvider =
-    FutureProvider<BestScorerResponse>((ref) => ref.watch(apiProvider).bestScorer());
+final bestScorerProvider = FutureProvider<BestScorerResponse>((ref) =>
+    ref.watch(apiProvider).bestScorer(competition: ref.watch(selectedCompetitionProvider)));
 
 /// The match whose detail is open, so the hub keeps its room subscribed (which
 /// is what makes the server count this client as a viewer).

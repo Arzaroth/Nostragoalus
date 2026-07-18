@@ -2,30 +2,35 @@ import 'api_client.dart';
 import 'models.gen.dart';
 
 /// Typed facade over the MVP endpoints. Each method maps one route to its
-/// generated response model. Competition/league scoping is server-side (session
-/// + route context) for these routes, so they take no query parameters yet.
+/// generated response model. The competition-scoped reads take an optional
+/// `competition` slug (the switcher's selection); null uses the server default.
 class NostragoalusApi {
   NostragoalusApi(this._api);
 
   final ApiClient _api;
 
+  Map<String, dynamic>? _comp(String? competition) =>
+      competition == null ? null : {'competition': competition};
+
   Future<CompetitionsResponse> competitions() async =>
       CompetitionsResponse.fromJson(await _api.getJson('/api/competitions'));
 
-  Future<StandingsResponse> standings() async =>
-      StandingsResponse.fromJson(await _api.getJson('/api/competitions/standings'));
+  Future<StandingsResponse> standings({String? competition}) async =>
+      StandingsResponse.fromJson(
+          await _api.getJson('/api/competitions/standings', query: _comp(competition)));
 
-  Future<ScorersResponse> scorers() async =>
-      ScorersResponse.fromJson(await _api.getJson('/api/competitions/scorers'));
+  Future<ScorersResponse> scorers({String? competition}) async => ScorersResponse.fromJson(
+      await _api.getJson('/api/competitions/scorers', query: _comp(competition)));
 
-  Future<MatchesResponse> matches() async =>
-      MatchesResponse.fromJson(await _api.getJson('/api/matches'));
+  Future<MatchesResponse> matches({String? competition}) async =>
+      MatchesResponse.fromJson(await _api.getJson('/api/matches', query: _comp(competition)));
 
   Future<MatchDetailResponse> match(String id) async =>
       MatchDetailResponse.fromJson(await _api.getJson('/api/matches/$id'));
 
-  Future<LeaderboardResponse> leaderboard() async =>
-      LeaderboardResponse.fromJson(await _api.getJson('/api/leaderboard'));
+  Future<LeaderboardResponse> leaderboard({String? competition}) async =>
+      LeaderboardResponse.fromJson(
+          await _api.getJson('/api/leaderboard', query: _comp(competition)));
 
   Future<LeaguesResponse> leagues() async =>
       LeaguesResponse.fromJson(await _api.getJson('/api/leagues'));
@@ -88,12 +93,12 @@ class NostragoalusApi {
 
   Future<void> voteRoadmap(String id) async => _api.postJson('/api/roadmap/$id/vote');
 
-  Future<ChampionResponse> champion() async =>
-      ChampionResponse.fromJson(await _api.getJson('/api/champion'));
+  Future<ChampionResponse> champion({String? competition}) async =>
+      ChampionResponse.fromJson(await _api.getJson('/api/champion', query: _comp(competition)));
 
   Future<void> setChampion(String teamCode, String teamName) async =>
       _api.putJson('/api/champion', body: {'teamCode': teamCode, 'teamName': teamName});
 
-  Future<BestScorerResponse> bestScorer() async =>
-      BestScorerResponse.fromJson(await _api.getJson('/api/best-scorer'));
+  Future<BestScorerResponse> bestScorer({String? competition}) async =>
+      BestScorerResponse.fromJson(await _api.getJson('/api/best-scorer', query: _comp(competition)));
 }

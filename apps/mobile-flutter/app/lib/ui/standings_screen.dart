@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/models.gen.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import 'competition_switcher.dart';
 import 'widgets/async_value_view.dart';
 
 /// Group standings tables for the active competition.
@@ -14,7 +15,10 @@ class StandingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final standings = ref.watch(standingsProvider);
     return Scaffold(
-      appBar: AppBar(title: Text(context.tr('nav.standings'))),
+      appBar: AppBar(
+        title: Text(context.tr('nav.standings')),
+        actions: const [CompetitionSwitcher()],
+      ),
       body: RefreshIndicator(
         onRefresh: () async => ref.refresh(standingsProvider.future),
         child: AsyncValueView<StandingsResponse>(
