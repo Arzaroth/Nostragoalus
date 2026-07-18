@@ -87,8 +87,11 @@ feature/architecture doc that implements it.
   matchday derived by date). football-data.org is a token-gated fallback.
 - **cycletls (browser JA3) for WAF-guarded providers.** Node's default TLS
   fingerprint is 403'd by Cloudflare-class WAFs (Sofascore, some unfurl targets);
-  one shared uTLS engine with a Chrome JA3 gets through. It needs `gcompat` in the
-  Docker base stage. See [architecture/providers.md](architecture/providers.md).
+  one shared uTLS engine with a Chrome JA3 gets through. Its Go helper is
+  glibc-linked AND cycletls spawns it via `/bin/sh -c`, so the Docker images run
+  on `node:22-slim` (glibc + a shell), dropping the old Alpine `gcompat` shim.
+  Distroless was rejected for prod: glibc but no `/bin/sh`, so the helper spawn
+  fails. See [architecture/providers.md](architecture/providers.md).
 - **Live player stats from FIFA's gameday stories, not the official aggregate.**
   FIFA's `/statistics/teams` aggregate stays empty for an in-progress edition, so
   the Stats tab's assists were wrong (derived from the lossy local `goal_event`
