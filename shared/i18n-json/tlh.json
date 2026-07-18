@@ -186,6 +186,13 @@
     "undecryptable": "QIn poSmoHlaHbe'."
   },
   "chat": {
+    "compose": "QIn",
+    "disabled": "vaghbe chat",
+    "recoveryNeeded": "De Hom recovery code poQ",
+    "recoveryCode": "recovery code",
+    "recover": "poSmoH",
+    "recoverFailed": "recovery code lugh Qagh",
+    "undecryptable": "[QIn DamojlaHbe]",
     "roomTitle": "ghom ja'chuq",
     "threadTitle": "qugh ja'chuq",
     "e2ee": "E2EE",

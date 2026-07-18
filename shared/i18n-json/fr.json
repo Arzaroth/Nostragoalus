@@ -186,6 +186,13 @@
     "undecryptable": "Impossible de déchiffrer ce message"
   },
   "chat": {
+    "compose": "Message",
+    "disabled": "Le chat est désactivé pour cette ligue.",
+    "recoveryNeeded": "Cet appareil a besoin de votre code de récupération pour déverrouiller le chat chiffré.",
+    "recoveryCode": "Code de récupération",
+    "recover": "Déverrouiller",
+    "recoverFailed": "Code de récupération incorrect.",
+    "undecryptable": "[impossible de déchiffrer ce message]",
     "roomTitle": "Chat de la ligue",
     "threadTitle": "Chat du match",
     "e2ee": "E2EE",

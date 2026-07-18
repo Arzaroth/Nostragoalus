@@ -191,6 +191,13 @@
     "undecryptable": "Can't decrypt this message"
   },
   "chat": {
+    "compose": "Message",
+    "disabled": "Chat is disabled for this league.",
+    "recoveryNeeded": "This device needs your recovery code to unlock encrypted chat.",
+    "recoveryCode": "Recovery code",
+    "recover": "Unlock",
+    "recoverFailed": "Wrong recovery code.",
+    "undecryptable": "[cannot decrypt this message]",
     "roomTitle": "League chat",
     "threadTitle": "Match chat",
     "e2ee": "E2EE",

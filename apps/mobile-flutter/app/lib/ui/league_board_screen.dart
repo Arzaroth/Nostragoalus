@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../api/models.gen.dart';
 import '../state/providers.dart';
+import 'league_chat_screen.dart';
 import 'widgets/async_value_view.dart';
 
 /// A league's board. Rows are a points/survival union (raw maps), rendered by
@@ -16,7 +17,17 @@ class LeagueBoardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final board = ref.watch(leagueBoardProvider(leagueId));
     return Scaffold(
-      appBar: AppBar(title: Text(name)),
+      appBar: AppBar(
+        title: Text(name),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.chat),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => LeagueChatScreen(leagueId: leagueId, name: name),
+            )),
+          ),
+        ],
+      ),
       body: RefreshIndicator(
         onRefresh: () async => ref.refresh(leagueBoardProvider(leagueId).future),
         child: AsyncValueView<ModeBoardResponse>(
