@@ -1,4 +1,13 @@
 {
+  "kt": {
+    "title": "Key transparency",
+    "verified": "Key log verified",
+    "broken": "Key log FAILED verification",
+    "entries": "{n} entries, chain intact",
+    "headHash": "Head hash",
+    "safetyNumber": "Your safety number",
+    "safetyHint": "Compare this out-of-band with a contact to confirm no key was substituted."
+  },
   "achievements": {
     "cabinetTitle": "Trophy cabinet",
     "showcaseTitle": "My showcase",

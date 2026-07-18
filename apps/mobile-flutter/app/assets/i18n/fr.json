@@ -1,4 +1,13 @@
 {
+  "kt": {
+    "title": "Transparence des clés",
+    "verified": "Journal des clés vérifié",
+    "broken": "Échec de la vérification du journal",
+    "entries": "{n} entrées, chaîne intacte",
+    "headHash": "Empreinte de tête",
+    "safetyNumber": "Votre numéro de sécurité",
+    "safetyHint": "Comparez-le hors ligne avec un contact pour confirmer qu’aucune clé n’a été substituée."
+  },
   "achievements": {
     "cabinetTitle": "Vitrine à trophées",
     "showcaseTitle": "Ma vitrine",

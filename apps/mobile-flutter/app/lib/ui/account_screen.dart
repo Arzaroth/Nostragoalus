@@ -7,6 +7,7 @@ import 'analytics_screen.dart';
 import 'bot_screen.dart';
 import 'champion_screen.dart';
 import 'dm_inbox_screen.dart';
+import 'kt_screen.dart';
 import 'locale_menu.dart';
 import 'multiview_screen.dart';
 import 'my_predictions_screen.dart';
@@ -116,6 +117,14 @@ class AccountScreen extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const VerifyScreen()),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.verified_user),
+            title: Text(context.tr('kt.title')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const KtScreen()),
             ),
           ),
           const Divider(),

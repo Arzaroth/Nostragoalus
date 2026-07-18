@@ -172,4 +172,7 @@ class NostragoalusApi {
 
   Future<void> sendDm(String threadId, String ciphertext, int epoch) async =>
       _api.postJson('/api/dm/$threadId/messages', body: {'ciphertext': ciphertext, 'epoch': epoch});
+
+  /// The key-transparency log (verified client-side against the hash chain).
+  Future<Map<String, dynamic>> keysLog() async => _api.getJson('/api/keys/log');
 }

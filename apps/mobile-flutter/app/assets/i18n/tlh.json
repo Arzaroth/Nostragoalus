@@ -1,4 +1,13 @@
 {
+  "kt": {
+    "title": "ngaywI patlh",
+    "verified": "patlh lulaj",
+    "broken": "patlh luj",
+    "entries": "{n} entries",
+    "headHash": "head hash",
+    "safetyNumber": "Hom mI",
+    "safetyHint": "ghoHwI yISamqa"
+  },
   "achievements": {
     "cabinetTitle": "Qapla' pa'",
     "showcaseTitle": "'angwI'wIj",
