@@ -162,6 +162,7 @@
     }
   },
   "dm": {
+    "startFailed": "Impossible de démarrer la conversation.",
     "title": "Messages",
     "message": "Message",
     "cantMessage": "Cet utilisateur n'a pas activé la messagerie.",

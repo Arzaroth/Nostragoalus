@@ -707,6 +707,61 @@ class CompetitionsResponse {
       };
 }
 
+class DmRecipientsResponse {
+  final List<Recipient> recipients;
+
+  const DmRecipientsResponse({
+    required this.recipients,
+  });
+
+  factory DmRecipientsResponse.fromJson(Map<String, dynamic> json) =>
+      DmRecipientsResponse(
+        recipients: (json['recipients'] as List)
+            .map((e) => Recipient.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'recipients': recipients.map((e) => e.toJson()).toList(),
+      };
+}
+
+class DmThreadResponse {
+  final Thread2 thread;
+
+  const DmThreadResponse({
+    required this.thread,
+  });
+
+  factory DmThreadResponse.fromJson(Map<String, dynamic> json) =>
+      DmThreadResponse(
+        thread: Thread2.fromJson(json['thread'] as Map<String, dynamic>),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'thread': thread.toJson(),
+      };
+}
+
+class DmThreadsResponse {
+  final List<Thread> threads;
+
+  const DmThreadsResponse({
+    required this.threads,
+  });
+
+  factory DmThreadsResponse.fromJson(Map<String, dynamic> json) =>
+      DmThreadsResponse(
+        threads: (json['threads'] as List)
+            .map((e) => Thread.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'threads': threads.map((e) => e.toJson()).toList(),
+      };
+}
+
 class Earlier {
   final double home;
   final double away;
@@ -1952,6 +2007,58 @@ class Odd {
       };
 }
 
+class Other {
+  final String id;
+  final String name;
+  final String? image;
+
+  const Other({
+    required this.id,
+    required this.name,
+    this.image,
+  });
+
+  factory Other.fromJson(Map<String, dynamic> json) => Other(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        image: json['image'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'image': image,
+      };
+}
+
+class Other2 {
+  final String userId;
+  final String name;
+  final String? image;
+  final String publicKey;
+
+  const Other2({
+    required this.userId,
+    required this.name,
+    this.image,
+    required this.publicKey,
+  });
+
+  factory Other2.fromJson(Map<String, dynamic> json) => Other2(
+        userId: json['userId'] as String,
+        name: json['name'] as String,
+        image: json['image'] as String?,
+        publicKey: json['publicKey'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'userId': userId,
+        'name': name,
+        'image': image,
+        'publicKey': publicKey,
+      };
+}
+
 class OutcomeLean {
   final Predicted predicted;
   final Predicted actual;
@@ -2489,6 +2596,34 @@ class ReactionsResponse {
       };
 }
 
+class Recipient {
+  final String userId;
+  final String name;
+  final String? image;
+  final bool shared;
+
+  const Recipient({
+    required this.userId,
+    required this.name,
+    this.image,
+    required this.shared,
+  });
+
+  factory Recipient.fromJson(Map<String, dynamic> json) => Recipient(
+        userId: json['userId'] as String,
+        name: json['name'] as String,
+        image: json['image'] as String?,
+        shared: json['shared'] as bool,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'userId': userId,
+        'name': name,
+        'image': image,
+        'shared': shared,
+      };
+}
+
 class RoadmapResponse {
   final List<Item> items;
 
@@ -2929,6 +3064,72 @@ class Team3 {
   Map<String, dynamic> toJson() => {
         'code': code,
         'name': name,
+      };
+}
+
+class Thread {
+  final String threadId;
+  final Other other;
+  final String? lastMessageAt;
+  final double unread;
+  final String? myWrappedKey;
+
+  const Thread({
+    required this.threadId,
+    required this.other,
+    this.lastMessageAt,
+    required this.unread,
+    this.myWrappedKey,
+  });
+
+  factory Thread.fromJson(Map<String, dynamic> json) => Thread(
+        threadId: json['threadId'] as String,
+        other: Other.fromJson(json['other'] as Map<String, dynamic>),
+        lastMessageAt: json['lastMessageAt'] as String?,
+        unread: (json['unread'] as num).toDouble(),
+        myWrappedKey: json['myWrappedKey'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'threadId': threadId,
+        'other': other.toJson(),
+        'lastMessageAt': lastMessageAt,
+        'unread': unread,
+        'myWrappedKey': myWrappedKey,
+      };
+}
+
+class Thread2 {
+  final String threadId;
+  final double epoch;
+  final Other2 other;
+  final List<MyWrappedKey> myWrappedKeys;
+  final bool otherMissingCurrentKey;
+
+  const Thread2({
+    required this.threadId,
+    required this.epoch,
+    required this.other,
+    required this.myWrappedKeys,
+    required this.otherMissingCurrentKey,
+  });
+
+  factory Thread2.fromJson(Map<String, dynamic> json) => Thread2(
+        threadId: json['threadId'] as String,
+        epoch: (json['epoch'] as num).toDouble(),
+        other: Other2.fromJson(json['other'] as Map<String, dynamic>),
+        myWrappedKeys: (json['myWrappedKeys'] as List)
+            .map((e) => MyWrappedKey.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        otherMissingCurrentKey: json['otherMissingCurrentKey'] as bool,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'threadId': threadId,
+        'epoch': epoch,
+        'other': other.toJson(),
+        'myWrappedKeys': myWrappedKeys.map((e) => e.toJson()).toList(),
+        'otherMissingCurrentKey': otherMissingCurrentKey,
       };
 }
 

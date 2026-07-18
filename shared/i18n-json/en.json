@@ -171,6 +171,7 @@
     }
   },
   "dm": {
+    "startFailed": "Could not start the conversation.",
     "title": "Messages",
     "message": "Message",
     "cantMessage": "This user hasn't set up messaging.",

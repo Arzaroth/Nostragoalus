@@ -143,4 +143,33 @@ class NostragoalusApi {
           String leagueId, int epoch, List<Map<String, String>> wraps) async =>
       _api.postJson('/api/leagues/$leagueId/chat/keys',
           body: {'epoch': epoch, 'wraps': wraps});
+
+  // --- Direct messages (1:1, same identity keypair as league chat) ---
+
+  Future<DmThreadsResponse> dmThreads() async =>
+      DmThreadsResponse.fromJson(await _api.getJson('/api/dm/threads'));
+
+  Future<DmRecipientsResponse> dmRecipients() async =>
+      DmRecipientsResponse.fromJson(await _api.getJson('/api/dm/recipients'));
+
+  /// A user's DM public key (own identity when [userId] is null).
+  Future<String> dmPublicKey(String userId) async {
+    final res = await _api.getJson('/api/dm/identity', query: {'userId': userId});
+    return (res['identity'] as Map<String, dynamic>)['publicKey'] as String;
+  }
+
+  Future<String> createDmThread(String recipientId, List<Map<String, String>> wraps) async {
+    final res = await _api.postJson('/api/dm/threads', body: {'recipientId': recipientId, 'wraps': wraps});
+    return res['threadId'] as String;
+  }
+
+  Future<DmThreadResponse> dmThread(String threadId) async =>
+      DmThreadResponse.fromJson(await _api.getJson('/api/dm/$threadId'));
+
+  // DM messages share ChatMessagesResponse's shape (the generator dedups them).
+  Future<ChatMessagesResponse> dmMessages(String threadId) async =>
+      ChatMessagesResponse.fromJson(await _api.getJson('/api/dm/$threadId/messages'));
+
+  Future<void> sendDm(String threadId, String ciphertext, int epoch) async =>
+      _api.postJson('/api/dm/$threadId/messages', body: {'ciphertext': ciphertext, 'epoch': epoch});
 }

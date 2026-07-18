@@ -162,6 +162,7 @@
     }
   },
   "dm": {
+    "startFailed": "ja chImmoHlaHbe",
     "title": "QInmey",
     "message": "QIn",
     "cantMessage": "QIn lo'be' loDvam.",

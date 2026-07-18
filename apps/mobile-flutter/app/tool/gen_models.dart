@@ -42,6 +42,10 @@ const targets = <Target>[
   Target('get', '/api/chat/identity', 'ChatIdentityResponse'),
   Target('get', '/api/leagues/{id}/chat', 'ChatStatusResponse'),
   Target('get', '/api/leagues/{id}/chat/messages', 'ChatMessagesResponse'),
+  Target('get', '/api/dm/threads', 'DmThreadsResponse'),
+  Target('get', '/api/dm/recipients', 'DmRecipientsResponse'),
+  Target('get', '/api/dm/{threadId}', 'DmThreadResponse'),
+  Target('get', '/api/dm/{threadId}/messages', 'DmMessagesResponse'),
 ];
 
 class Target {
