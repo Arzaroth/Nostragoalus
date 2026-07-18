@@ -1104,9 +1104,12 @@ export function fifaProvider(options: FifaOptions): MatchDataProvider {
       // Live edition: the gameday stories carry goals + assists with the exact
       // FIFA ranking. They 404 once the edition ends (and any transient error
       // shouldn't blank the board), so fall back to the published aggregate.
+      // The two stories rebuild independently after a matchday: require an actual
+      // scorer, else an assists-only half-rebuild yields a goals:0 board that
+      // would blank the top-scorers list until the 10-min cache expires.
       try {
         const live = await gamedayPlayerStats()
-        if (live.length > 0) return live
+        if (live.some((p) => p.goals > 0)) return live
       } catch {
         // fall through to the official aggregate
       }

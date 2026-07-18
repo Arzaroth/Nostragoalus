@@ -398,6 +398,24 @@ describe('fifaProvider.getPlayerStats', () => {
     expect(out.find((p) => p.playerName === 'Bruno')).toMatchObject({ assists: 4, goals: 0 })
   })
 
+  it('falls back to the aggregate when the goals story is empty but assists arrived (partial rebuild)', async () => {
+    // Post-matchday window: gcp_attack (assists) published, gcp_top_scorer (goals) not yet.
+    const gamedayFetch = async (url: string) => {
+      if (url.includes('gameDay/token')) return { token: 'tok' }
+      if (url.includes('gcp_top_scorer')) return gdStory([])
+      return gdStory([gdActor('Bruno', 'Brazil', 'BRA', { assists: 4, goals: 0 })])
+    }
+    const aggregate = {
+      AggregatedTeamStats: [{ IdTeam: 't1', TeamName: [{ Locale: 'en-GB', Description: 'France' }], IdCountry: 'FRA' }],
+      AggregatedPlayerStats: [{ IdTeam: 't1', PlayerName: [{ Locale: 'en-GB', Description: 'Mbappe' }], Statistic: [{ Type: 1, Value: 8 }, { Type: 219, Value: 2 }] }],
+    }
+    const fetchImpl = (async () => jsonResponse(aggregate)) as unknown as typeof fetch
+    const provider = fifaProvider({ seasonId: '285023', gamedayFetch, fetchImpl, rateLimiter: noWait() })
+    const out = await provider.getPlayerStats!({ teamId: 't1' })
+    // The assists-only, goals:0 gameday board is rejected; the aggregate wins.
+    expect(out).toEqual([{ playerName: 'Mbappe', teamName: 'France', teamCode: 'FRA', goals: 8, assists: 2, penalties: null }])
+  })
+
   it('falls back to the official aggregate when gameday has no token (finished edition)', async () => {
     const aggregate = {
       AggregatedTeamStats: [{ IdTeam: 't1', TeamName: [{ Locale: 'en-GB', Description: 'France' }], IdCountry: 'FRA' }],

@@ -39,8 +39,11 @@ are unofficial or undocumented endpoints), so the quirks below are load-bearing.
   ranked-page stories - `gcp_top_scorer:goals` (goals + assists) and
   `gcp_attack:assists` - and merge their actors by player id (`mergeGamedayStories`
   in `fifa.ts`). Stat values ride as `urn:gd:tag:football:stats:*` tags; the team
-  code is the `team:abbreviation` tag. These stories 404 once an edition ends, so
-  `getPlayerStats` then falls back to the **team-statistics** aggregate
+  code is the `team:abbreviation` tag. These stories 404 once an edition ends - and
+  the two rebuild independently after a matchday, so a goals-story lag leaves an
+  assists-only, `goals:0` board - so `getPlayerStats` only trusts the gameday result
+  when it carries at least one scorer (`live.some(p => p.goals > 0)`), else it falls
+  back to the **team-statistics** aggregate
   (`/statistics/teams/{id}`, tournament-wide despite the per-team path, needing
   any stored `goal_event` team id; `Type 1 = goals`, `Type 219 = assists`), which
   only publishes for a finished edition. Behind both, the `/api/competitions/scorers`
