@@ -667,9 +667,9 @@ effort buckets; order within a bucket is not priority.
     fetch, node-libcurl and alpine-curl all fail; host curl 8.15 passes (CCM
     ciphers + `compress_certificate` ext). Reached via `cycletls` (Go uTLS
     engine) with an allow-listed host-curl JA3 and an honest `curl/8.15.0` UA.
-    Alpine prod image needs `gcompat libstdc++` (musl shim) and the Go binary
-    copied into `.output` (Nitro traces JS, not the native binary) for both
-    arches.
+    Prod image runs on `node:22-slim` (real glibc plus a shell - cycletls spawns
+    its Go helper via `/bin/sh`), and the Go binary is copied into `.output`
+    (Nitro traces JS, not the native binary), pruned to the running arch.
   - **Architecture**: a `getMatchLineups()` on the provider interface (FIFA +
     UEFA normalizers to a shared `MatchLineups` type), a thin
     `GET /api/matches/[id]/lineups` over a service, a `useMatchLineups`

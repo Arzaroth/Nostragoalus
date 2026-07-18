@@ -848,6 +848,14 @@ routes). These are the real-but-out-of-scope items it surfaced:
 - [ ] Worktree previews start without the gitignored `.env` (better-auth
       refuses its default secret, auth 500s): `mise run preview` could copy
       `.env` from the main checkout when missing, or at least fail loudly.
+- [ ] **fs storage backend + non-root prod image**: the prod container now runs
+      as the non-root `node` user (uid 1000). The default `s3`/rustfs driver is
+      unaffected (network writes), but `NUXT_STORAGE_DRIVER=fs` writes to
+      `/data/storage`, which the `app` service does not mount - so writes hit the
+      root-owned container layer and now `EACCES` under uid 1000 (they were
+      already ephemeral/data-losing as root). If fs is ever used in prod, add a
+      writable media mount `chown`ed to 1000. Surfaced by the slim/non-root
+      Dockerfile treatment review.
 
 ## Image storage (deferred from the feature pass)
 
