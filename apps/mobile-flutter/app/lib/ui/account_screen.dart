@@ -4,10 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
 import 'analytics_screen.dart';
+import 'bot_screen.dart';
 import 'champion_screen.dart';
 import 'locale_menu.dart';
+import 'multiview_screen.dart';
 import 'my_predictions_screen.dart';
 import 'roadmap_screen.dart';
+import 'verify_screen.dart';
 import 'wrapped_screen.dart';
 
 /// Account tab: who you are, your predictions, locale, sign out.
@@ -80,6 +83,30 @@ class AccountScreen extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const RoadmapScreen()),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.grid_view),
+            title: Text(context.tr('nav.multiview')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const MultiviewScreen()),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.smart_toy),
+            title: Text(context.tr('bot.title')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const BotScreen()),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.verified),
+            title: Text(context.tr('verify.title')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const VerifyScreen()),
             ),
           ),
           const Divider(),

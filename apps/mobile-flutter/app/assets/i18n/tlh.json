@@ -293,6 +293,7 @@
   },
   "presence": { "active": "vumtaH", "idle": "Qotbe'" },
   "multiview": {
+    "empty": "DaH Qujmey tuHbe.",
     "title": "may' law'",
     "subtitle": "may' law' bejlu'",
     "addMatch": "may' chel",
@@ -765,6 +766,7 @@
     "hiddenTip": "patlhvo' chamwI'pu' So'pu' loHwI'. ghomDaq ratlh 'ej ghom 'ev QInmey lor; patlhDaq cha'lu'be' neH."
   },
   "bot": {
+    "title": "qoq wIv",
     "virtual": "QujwI' qoq",
     "pickedBy": "{count}/{total} wIv",
     "empty": "wej noH - noHDI' QujwI'pu' 'ang.",
@@ -841,6 +843,9 @@
     "watching": "{n} bejwI' | {n} bejwI'pu'"
   },
   "pastPick": {
+    "title": "qatlh",
+    "earlier": "wIv wa'Hu' {score}: {n}",
+    "kept": "pol {score}: {n}",
     "final": "{score} DaHIchpu'bogh Qapta' - 'ach DaweHpu'.",
     "finalCheeky": "Qapta' DoQ wa'Hu'... 'ach DaleghnISbe'.",
     "live": "DaH Qap {score} DaHIchpu'bogh - DaweHpu'bogh. SuvtaH.",

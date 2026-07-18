@@ -293,6 +293,7 @@
   },
   "presence": { "active": "Actif", "idle": "Absent" },
   "multiview": {
+    "empty": "Aucun match en direct.",
     "title": "Multi-vue",
     "subtitle": "Regardez plusieurs matchs à la fois",
     "addMatch": "Ajouter un match",
@@ -765,6 +766,7 @@
     "hiddenTip": "Des membres qu'un admin a masqués du classement. Ils restent dans la ligue et leurs pronos comptent toujours dans les totaux du groupe ; ils n'apparaissent simplement pas au classement."
   },
   "bot": {
+    "title": "Pronostics du bot",
     "virtual": "joueur virtuel",
     "pickedBy": "choisi par {count}/{total}",
     "empty": "Pas encore de pronos - ils apparaissent dès que les joueurs pronostiquent.",
@@ -841,6 +843,9 @@
     "watching": "1 spectateur | {n} spectateurs"
   },
   "pastPick": {
+    "title": "Et si",
+    "earlier": "Pronostic précédent {score} : {n} pts",
+    "kept": "Gardé {score} : {n} pts",
     "final": "Ton pronostic précédent {score} aurait marqué - celui que tu as changé.",
     "finalCheeky": "Ton pronostic précédent a gagné... mais ça ne valait sûrement pas le coup d'œil.",
     "live": "Ton pronostic précédent {score} est en tête pour l'instant - celui que tu as changé. Match en cours.",

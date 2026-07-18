@@ -298,6 +298,7 @@
   },
   "presence": { "active": "Active", "idle": "Away" },
   "multiview": {
+    "empty": "No live matches.",
     "title": "Multi-view",
     "subtitle": "Watch several matches at once",
     "addMatch": "Add match",
@@ -770,6 +771,7 @@
     "hiddenTip": "Members an admin has hidden from the rankings. They're still in the league and their picks still count in the crowd totals; they just don't appear on the board."
   },
   "bot": {
+    "title": "Bot predictions",
     "virtual": "virtual player",
     "pickedBy": "picked by {count}/{total}",
     "empty": "No picks yet - they appear once players start predicting.",
@@ -846,6 +848,9 @@
     "watching": "1 watching now | {n} watching now"
   },
   "pastPick": {
+    "title": "What if",
+    "earlier": "Earlier pick {score}: {n} pts",
+    "kept": "Kept {score}: {n} pts",
     "final": "Your earlier {score} would have scored - the one you swapped off.",
     "finalCheeky": "Your previous pick won... but it probably was not worth watching.",
     "live": "Your earlier {score} is leading right now - the one you swapped off. Still in play.",

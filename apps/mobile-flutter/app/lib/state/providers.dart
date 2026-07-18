@@ -145,6 +145,15 @@ final championProvider = FutureProvider<ChampionResponse>((ref) =>
 final bestScorerProvider = FutureProvider<BestScorerResponse>((ref) =>
     ref.watch(apiProvider).bestScorer(competition: ref.watch(selectedCompetitionProvider)));
 
+final commitmentsProvider =
+    FutureProvider<CommitmentsResponse>((ref) => ref.watch(apiProvider).commitments());
+
+final botPredictionsProvider =
+    FutureProvider<BotPredictionsResponse>((ref) => ref.watch(apiProvider).botPredictions());
+
+final pastPicksProvider = FutureProvider.family<PastPicksResponse, String>(
+    (ref, matchId) => ref.watch(apiProvider).pastPicks(matchId));
+
 /// The match whose detail is open, so the hub keeps its room subscribed (which
 /// is what makes the server count this client as a viewer).
 final viewedMatchProvider = StateProvider<String?>((ref) => null);

@@ -101,4 +101,13 @@ class NostragoalusApi {
 
   Future<BestScorerResponse> bestScorer({String? competition}) async =>
       BestScorerResponse.fromJson(await _api.getJson('/api/best-scorer', query: _comp(competition)));
+
+  Future<CommitmentsResponse> commitments() async =>
+      CommitmentsResponse.fromJson(await _api.getJson('/api/commitments'));
+
+  Future<BotPredictionsResponse> botPredictions() async =>
+      BotPredictionsResponse.fromJson(await _api.getJson('/api/bot/predictions'));
+
+  Future<PastPicksResponse> pastPicks(String matchId) async =>
+      PastPicksResponse.fromJson(await _api.getJson('/api/matches/$matchId/my-past-picks'));
 }
