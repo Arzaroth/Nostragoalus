@@ -820,6 +820,7 @@
     "repickedNote": "تم التغيير (نصف النقاط). الأصل: {team}."
   },
   "bestScorer": {
+    "topScorers": "أفضل الهدافين",
     "title": "أفضل هدّاف لديك",
     "pickTeam": "اختر فريقًا",
     "pickPlayer": "اختر الهدّاف",

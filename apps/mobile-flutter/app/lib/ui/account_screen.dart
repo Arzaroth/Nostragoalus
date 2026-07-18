@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
 import 'analytics_screen.dart';
+import 'best_scorer_screen.dart';
 import 'bot_screen.dart';
 import 'champion_screen.dart';
 import 'dm_inbox_screen.dart';
@@ -85,6 +86,14 @@ class AccountScreen extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const ChampionScreen()),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.sports_soccer),
+            title: Text(context.tr('bestScorer.title')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const BestScorerScreen()),
             ),
           ),
           ListTile(

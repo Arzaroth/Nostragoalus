@@ -698,6 +698,7 @@
     "repickedNote": "Changed (half points). Originally: {team}."
   },
   "bestScorer": {
+    "topScorers": "Top scorers",
     "title": "Your best scorer",
     "pickTeam": "Pick a team",
     "pickPlayer": "Pick the scorer",

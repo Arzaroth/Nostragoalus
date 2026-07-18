@@ -693,6 +693,7 @@
     "repickedNote": "Modifié (moitié des points). À l'origine : {team}."
   },
   "bestScorer": {
+    "topScorers": "Meilleurs buteurs",
     "title": "Votre meilleur buteur",
     "pickTeam": "Choisissez une équipe",
     "pickPlayer": "Choisissez le buteur",
