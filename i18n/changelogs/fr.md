@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [4.3.2] - 2026-07-19
+
 ### Modifié
 
 - L'image Docker de production tourne désormais sur une base glibc Debian slim, sous un utilisateur non-root. Le client TLS des cotes et compositions Sofascore s'exécute sur une glibc native au lieu de l'ancien shim de compatibilité musl d'Alpine, ce qui supprime toute une classe d'échecs à l'exécution, et l'image n'embarque plus que la copie de ce client pour l'architecture processeur utilisée, au lieu de celles de toutes les plateformes.

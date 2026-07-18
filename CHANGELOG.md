@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [4.3.2] - 2026-07-19
+
 ### Changed
 
 - The production Docker image now runs on a Debian slim glibc base as a non-root user. The Sofascore odds/line-ups TLS helper runs on native glibc instead of the previous Alpine musl compatibility shim, removing a class of runtime failure, and the image now carries only the running CPU architecture's copy of that helper instead of every platform's.
