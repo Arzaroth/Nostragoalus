@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+
+- The Stats tab no longer shows an empty "Top scorers" board while "Top assists" is full. FIFA publishes the two rankings separately and can lag one behind the other after a matchday; the app now ignores a scorers feed that carries no goals yet and falls back to its own goal data, so both boards stay populated.
+
 ## [4.3.2] - 2026-07-19
 
 ### Changed
