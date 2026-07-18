@@ -104,11 +104,16 @@ Node's default TLS by JA3 fingerprint. The shared engine
 to pass, exposing `cycleGet` / `withOk` / `cycleHeader`. It is used by both the
 odds client and the chat link unfurl (see [../features/chat.md](../features/chat.md)).
 
-Operational gotcha: cycletls' Go helper is glibc-linked, so the Alpine images
-need `gcompat` (and `libstdc++`). It is installed in the Docker **base** stage so
-dev, build and prod images all inherit it. If odds or unfurl return null in a
-container, check that the running image actually has `gcompat` before blaming the
-provider.
+Operational note: cycletls' Go helper is glibc-linked, and cycletls spawns it via
+`/bin/sh -c` (`shell: true` on non-Windows). The Docker images run on `node:22-slim`
+(real glibc plus a shell), so the helper links native `libc.so.6` with no musl shim
+and the `sh` spawn works - the earlier Alpine builds needed a `gcompat` +
+`libstdc++` shim, since dropped. A distroless prod base was rejected for exactly
+this: it has glibc but no `/bin/sh`, so the spawn dies with `spawn /bin/sh ENOENT`
+on the first odds/unfurl call. Nitro traces the helper's JS but not its spawned
+binary, so the prod stage copies this arch's Go helper (`cycletls/dist/index`,
+pruned to one by `TARGETARCH`) into `.output`. If odds or unfurl return null in a
+container, check that binary is present before blaming the provider.
 
 ## Sources
 

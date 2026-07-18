@@ -28,10 +28,13 @@ default secret.
 
 Compose project `nostragoalus`: base `apps/web-nuxt/compose.yaml` + dev overlay
 `apps/web-nuxt/compose.dev.yaml`. `apps/web-nuxt/Dockerfile` stages: `base` -> `deps` (pnpm fetch, cached) ->
-`install` -> `dev` | `build` | `prod`. The cycletls glibc shim (`gcompat`,
-`libstdc++`) is installed in the **base** stage so it is inherited by dev, build,
-and prod (a provider HTTP engine fails on Alpine/musl without it). See
-[architecture/providers.md](architecture/providers.md).
+`install` -> `dev` | `build` | `prod`. Every stage runs on `node:22-slim`; the
+`prod` stage runs as the image's built-in non-root `node` user (uid 1000), with a
+node-`fetch` healthcheck since slim ships no wget/curl. The glibc base runs
+cycletls' glibc-linked Go helper native, replacing the old Alpine
+`gcompat`/`libstdc++` shim. Distroless was tried for prod and rejected: cycletls
+spawns its Go helper via `/bin/sh -c`, which distroless lacks (see
+[architecture/providers.md](architecture/providers.md)).
 
 | Service | Image | Role |
 |---|---|---|

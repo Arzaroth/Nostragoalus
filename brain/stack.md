@@ -8,7 +8,8 @@ Sources of truth: `package.json`, `pnpm-workspace.yaml`, `apps/web-nuxt/nuxt.con
 
 ## Runtime / language
 
-- **Node** >= 22 (Docker base `node:22-alpine`).
+- **Node** >= 22 (Docker: `node:22-slim` for every stage - real glibc, unlike
+  the old Alpine base; prod runs as the non-root `node` user).
 - **TypeScript** 6.0.3, strict.
 - **pnpm** 11.5.1 (workspace config in `pnpm-workspace.yaml`, `minimumReleaseAge: 0`).
   Dependencies change through `pnpm add/remove/update` only - never hand-edit
