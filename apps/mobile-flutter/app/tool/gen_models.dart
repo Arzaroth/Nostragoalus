@@ -35,6 +35,13 @@ const targets = <Target>[
   Target('get', '/api/roadmap', 'RoadmapResponse'),
   Target('get', '/api/champion', 'ChampionResponse'),
   Target('get', '/api/best-scorer', 'BestScorerResponse'),
+  Target('get', '/api/commitments', 'CommitmentsResponse'),
+  Target('get', '/api/bot/predictions', 'BotPredictionsResponse'),
+  Target('get', '/api/matches/{id}/my-past-picks', 'PastPicksResponse'),
+  // E2EE chat
+  Target('get', '/api/chat/identity', 'ChatIdentityResponse'),
+  Target('get', '/api/leagues/{id}/chat', 'ChatStatusResponse'),
+  Target('get', '/api/leagues/{id}/chat/messages', 'ChatMessagesResponse'),
 ];
 
 class Target {

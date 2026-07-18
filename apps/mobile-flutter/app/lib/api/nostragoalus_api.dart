@@ -110,4 +110,37 @@ class NostragoalusApi {
 
   Future<PastPicksResponse> pastPicks(String matchId) async =>
       PastPicksResponse.fromJson(await _api.getJson('/api/matches/$matchId/my-past-picks'));
+
+  // --- E2EE chat ---
+
+  Future<ChatIdentityResponse> chatIdentity() async =>
+      ChatIdentityResponse.fromJson(await _api.getJson('/api/chat/identity'));
+
+  Future<void> registerIdentity(String publicKey) async =>
+      _api.putJson('/api/chat/identity', body: {'publicKey': publicKey});
+
+  Future<String?> chatRecoveryBlob() async =>
+      (await _api.getJson('/api/chat/recovery'))['blob'] as String?;
+
+  Future<void> setChatRecovery(String blob) async =>
+      _api.putJson('/api/chat/recovery', body: {'blob': blob});
+
+  Future<ChatStatusResponse> chatStatus(String leagueId) async =>
+      ChatStatusResponse.fromJson(await _api.getJson('/api/leagues/$leagueId/chat'));
+
+  Future<ChatMessagesResponse> chatMessages(String leagueId) async =>
+      ChatMessagesResponse.fromJson(await _api.getJson('/api/leagues/$leagueId/chat/messages'));
+
+  Future<void> sendChat(String leagueId, String ciphertext, int epoch, {String? matchId}) async =>
+      _api.postJson('/api/leagues/$leagueId/chat/messages',
+          body: {'ciphertext': ciphertext, 'epoch': epoch, if (matchId != null) 'matchId': matchId});
+
+  Future<void> requestChatKey(String leagueId) async =>
+      _api.postJson('/api/leagues/$leagueId/chat/request-key');
+
+  /// Keyholder: seal the current group key to members who are missing it.
+  Future<void> sealChatKeys(
+          String leagueId, int epoch, List<Map<String, String>> wraps) async =>
+      _api.postJson('/api/leagues/$leagueId/chat/keys',
+          body: {'epoch': epoch, 'wraps': wraps});
 }

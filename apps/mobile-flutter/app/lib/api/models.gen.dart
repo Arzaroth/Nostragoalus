@@ -88,6 +88,26 @@ class AnalyticsResponse {
       };
 }
 
+class Attachment {
+  final double idx;
+  final double epoch;
+
+  const Attachment({
+    required this.idx,
+    required this.epoch,
+  });
+
+  factory Attachment.fromJson(Map<String, dynamic> json) => Attachment(
+        idx: (json['idx'] as num).toDouble(),
+        epoch: (json['epoch'] as num).toDouble(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'idx': idx,
+        'epoch': epoch,
+      };
+}
+
 class BestCall {
   final String home;
   final String away;
@@ -504,6 +524,95 @@ class ChampionResponse {
       };
 }
 
+class ChatIdentityResponse {
+  final Identity? identity;
+
+  const ChatIdentityResponse({
+    this.identity,
+  });
+
+  factory ChatIdentityResponse.fromJson(Map<String, dynamic> json) =>
+      ChatIdentityResponse(
+        identity: json['identity'] == null
+            ? null
+            : Identity.fromJson(json['identity'] as Map<String, dynamic>),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'identity': identity?.toJson(),
+      };
+}
+
+class ChatMessagesResponse {
+  final List<Message> messages;
+  final String? readMarker;
+
+  const ChatMessagesResponse({
+    required this.messages,
+    this.readMarker,
+  });
+
+  factory ChatMessagesResponse.fromJson(Map<String, dynamic> json) =>
+      ChatMessagesResponse(
+        messages: (json['messages'] as List)
+            .map((e) => Message.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        readMarker: json['readMarker'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'messages': messages.map((e) => e.toJson()).toList(),
+        'readMarker': readMarker,
+      };
+}
+
+class ChatStatusResponse {
+  final bool enabled;
+  final double epoch;
+  final String role;
+  final List<MyWrappedKey> myWrappedKeys;
+  final List<MissingKey> missingKeys;
+  final List<MissingKey> memberKeys;
+  final bool rekeyPending;
+
+  const ChatStatusResponse({
+    required this.enabled,
+    required this.epoch,
+    required this.role,
+    required this.myWrappedKeys,
+    required this.missingKeys,
+    required this.memberKeys,
+    required this.rekeyPending,
+  });
+
+  factory ChatStatusResponse.fromJson(Map<String, dynamic> json) =>
+      ChatStatusResponse(
+        enabled: json['enabled'] as bool,
+        epoch: (json['epoch'] as num).toDouble(),
+        role: json['role'] as String,
+        myWrappedKeys: (json['myWrappedKeys'] as List)
+            .map((e) => MyWrappedKey.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        missingKeys: (json['missingKeys'] as List)
+            .map((e) => MissingKey.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        memberKeys: (json['memberKeys'] as List)
+            .map((e) => MissingKey.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        rekeyPending: json['rekeyPending'] as bool,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'enabled': enabled,
+        'epoch': epoch,
+        'role': role,
+        'myWrappedKeys': myWrappedKeys.map((e) => e.toJson()).toList(),
+        'missingKeys': missingKeys.map((e) => e.toJson()).toList(),
+        'memberKeys': memberKeys.map((e) => e.toJson()).toList(),
+        'rekeyPending': rekeyPending,
+      };
+}
+
 class CommitmentsResponse {
   final List<Entry> entries;
   final Head head;
@@ -797,6 +906,26 @@ class Head {
   Map<String, dynamic> toJson() => {
         'seq': seq,
         'headHash': headHash,
+      };
+}
+
+class Identity {
+  final String publicKey;
+  final bool hasRecovery;
+
+  const Identity({
+    required this.publicKey,
+    required this.hasRecovery,
+  });
+
+  factory Identity.fromJson(Map<String, dynamic> json) => Identity(
+        publicKey: json['publicKey'] as String,
+        hasRecovery: json['hasRecovery'] as bool,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'publicKey': publicKey,
+        'hasRecovery': hasRecovery,
       };
 }
 
@@ -1338,6 +1467,112 @@ class MatchesResponse {
       };
 }
 
+class Message {
+  final String id;
+  final String leagueId;
+  final String? matchId;
+  final String? parentId;
+  final String? threadId;
+  final String? userId;
+  final double epoch;
+  final String ciphertext;
+  final String createdAt;
+  final String? editedAt;
+  final List<Attachment> attachments;
+
+  /// One of: VISIBLE, PENDING, REMOVED.
+  final String moderation;
+  final bool reported;
+  final Total reactions;
+
+  /// One of: FIRE, GOAL, WOW, LAUGH, SAD, ANGRY.
+  final String? myReaction;
+  final double threadCount;
+
+  const Message({
+    required this.id,
+    required this.leagueId,
+    this.matchId,
+    this.parentId,
+    this.threadId,
+    this.userId,
+    required this.epoch,
+    required this.ciphertext,
+    required this.createdAt,
+    this.editedAt,
+    required this.attachments,
+    required this.moderation,
+    required this.reported,
+    required this.reactions,
+    this.myReaction,
+    required this.threadCount,
+  });
+
+  factory Message.fromJson(Map<String, dynamic> json) => Message(
+        id: json['id'] as String,
+        leagueId: json['leagueId'] as String,
+        matchId: json['matchId'] as String?,
+        parentId: json['parentId'] as String?,
+        threadId: json['threadId'] as String?,
+        userId: json['userId'] as String?,
+        epoch: (json['epoch'] as num).toDouble(),
+        ciphertext: json['ciphertext'] as String,
+        createdAt: json['createdAt'] as String,
+        editedAt: json['editedAt'] as String?,
+        attachments: (json['attachments'] as List)
+            .map((e) => Attachment.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        moderation: json['moderation'] as String,
+        reported: json['reported'] as bool,
+        reactions: Total.fromJson(json['reactions'] as Map<String, dynamic>),
+        myReaction: json['myReaction'] as String?,
+        threadCount: (json['threadCount'] as num).toDouble(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'leagueId': leagueId,
+        'matchId': matchId,
+        'parentId': parentId,
+        'threadId': threadId,
+        'userId': userId,
+        'epoch': epoch,
+        'ciphertext': ciphertext,
+        'createdAt': createdAt,
+        'editedAt': editedAt,
+        'attachments': attachments.map((e) => e.toJson()).toList(),
+        'moderation': moderation,
+        'reported': reported,
+        'reactions': reactions.toJson(),
+        'myReaction': myReaction,
+        'threadCount': threadCount,
+      };
+}
+
+class MissingKey {
+  final String userId;
+  final String publicKey;
+  final String name;
+
+  const MissingKey({
+    required this.userId,
+    required this.publicKey,
+    required this.name,
+  });
+
+  factory MissingKey.fromJson(Map<String, dynamic> json) => MissingKey(
+        userId: json['userId'] as String,
+        publicKey: json['publicKey'] as String,
+        name: json['name'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'userId': userId,
+        'publicKey': publicKey,
+        'name': name,
+      };
+}
+
 class ModeBoardResponse {
   final Board board;
 
@@ -1594,6 +1829,26 @@ class MyPrediction {
         'scoredAt': scoredAt?.toIso8601String(),
         'createdAt': createdAt.toIso8601String(),
         'updatedAt': updatedAt.toIso8601String(),
+      };
+}
+
+class MyWrappedKey {
+  final double epoch;
+  final String wrappedKey;
+
+  const MyWrappedKey({
+    required this.epoch,
+    required this.wrappedKey,
+  });
+
+  factory MyWrappedKey.fromJson(Map<String, dynamic> json) => MyWrappedKey(
+        epoch: (json['epoch'] as num).toDouble(),
+        wrappedKey: json['wrappedKey'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'epoch': epoch,
+        'wrappedKey': wrappedKey,
       };
 }
 
