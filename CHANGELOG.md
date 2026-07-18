@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Changed
+
+- The production Docker image now runs on a Debian slim glibc base as a non-root user. The Sofascore odds/line-ups TLS helper runs on native glibc instead of the previous Alpine musl compatibility shim, removing a class of runtime failure, and the image now carries only the running CPU architecture's copy of that helper instead of every platform's.
+
 ### Fixed
 
 - The line-ups on a match page now keep refreshing on their own until the match is over. They used to stop the moment the first XI was published, so a later formation correction or substitution from the feed only showed after a manual page reload.

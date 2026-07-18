@@ -5,6 +5,14 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Modifié
+
+- L'image Docker de production tourne désormais sur une base glibc Debian slim, sous un utilisateur non-root. Le client TLS des cotes et compositions Sofascore s'exécute sur une glibc native au lieu de l'ancien shim de compatibilité musl d'Alpine, ce qui supprime toute une classe d'échecs à l'exécution, et l'image n'embarque plus que la copie de ce client pour l'architecture processeur utilisée, au lieu de celles de toutes les plateformes.
+
+### Corrigé
+
+- Les compositions sur la page d'un match continuent maintenant de se rafraîchir d'elles-mêmes jusqu'à la fin de la rencontre. Auparavant elles s'arrêtaient dès la publication du onze de départ, si bien qu'une correction de formation ou un remplacement arrivé ensuite depuis le flux n'apparaissait qu'après un rechargement manuel de la page.
+
 ## [4.3.1] - 2026-07-16
 
 ### Ajouté
