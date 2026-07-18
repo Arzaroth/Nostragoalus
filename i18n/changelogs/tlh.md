@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [4.3.2] - 2026-07-19
+
 ### choHpu'
 
 - DaH ghItlh'a' Docker HaSta glibc Debian slim Sordaq qet, che'wI'be'. Sofascore SIQ'a' HablI' je QaHwI' glibc nIteb lo', Alpine musl shim rurbe'; vaj Qagh chelbe'lu'. 'ej DaH HaSta lo'lu'bogh cha'DIch Segh QaHwI' neH woHlu', Hoch Sep QaHwI' woHbe'lu'.
