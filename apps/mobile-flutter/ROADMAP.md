@@ -90,14 +90,16 @@ Scope unchanged. Proceed to Phase 1 on a Flutter machine.
   recovery gate). Identity bootstrap validated on-device against the live server.
   The live message round-trip needs a provisioned multi-member league chat (a
   keyholder to seal the group key), which a solo probe account can't stage.
-- [ ] DMs (1:1) - same shape as league chat (the crypto + identity are done); the
-  1:1 seal/inbox wiring is the remaining slice.
-- [~] Key transparency + safety numbers - safety-number derivation (`fingerprint`)
-  ported + proven; the KT-log fetch/verify UI is deferred.
+- [~] DMs (1:1) - inbox + room + thread creation built (generate a group key, seal
+  to me + the recipient via /api/dm/identity, POST /api/dm/threads); reuses the
+  chat identity + crypto. Build + sign-in green on the emulator; live 1:1 round-trip
+  needs a second real user (same gap as league chat).
+- [x] Key transparency + safety numbers - the app re-walks the server's public-key
+  hash chain (`verifyKtChain`) and shows the safety number; validated on-device
+  against the live log, unit-tested for tamper cases.
 - [~] Recovery-code flow - the wrap/unwrap crypto is proven and the recovery-code
   unlock gate ships in the chat screen; the set-up-recovery UX (showing a new code)
   is the remaining bit.
-  interactive recovery screen is deferred (needs the provisioned identity blob).
 
 ## Phase 4 - Voice + native polish (gated by Phase 0 voice)
 - [ ] WebRTC voice: DM 1:1 - hardware-gated (two real devices + the coturn relay);
@@ -116,13 +118,16 @@ Scope unchanged. Proceed to Phase 1 on a Flutter machine.
 ## Phase 5 - Long-tail parity
 - [x] Multiview grid - live-match tile grid (WS-updated).
 - [x] Tamper-evidence `/verify` - commit-reveal ledger read (head hash + chained entries).
-- [~] Best-scorer + champion picks - champion pick shipped; best-scorer has its read
-  layer wired, dedicated screen deferred.
+- [~] Best-scorer + champion picks - champion pick shipped; best-scorer read screen
+  shipped (current pick + top scorers). Interactive best-scorer picking needs a
+  player-id source the contract doesn't expose - stays web-only.
 - [x] Bot personas - a persona's per-match predictions.
 - [x] Past-pick counterfactual - earlier-vs-kept scoring on match detail.
 - [x] Roadmap view - public items by status with community upvotes.
-- [ ] SSO login (OIDC via `flutter_web_auth_2`) - deferred; needs the browser-auth
-  dep + a configured SSO provider to exercise.
+- [~] SSO login (OIDC via `flutter_web_auth_2`) - the sign-in screen detects an
+  SSO-managed email domain (/api/sso/check) and runs the better-auth web-auth flow;
+  the `nostragoalus://` callback scheme is registered on Android. Completing it
+  needs the scheme in NUXT_SSO_TRUSTED_ORIGINS, an iOS URL type, and a real IdP.
 - [ ] (Admin + SSO-config stay web-only; satori share-images shown/shared as URL)
 
 ## Cross-cutting (stand up in Phase 0/1)
