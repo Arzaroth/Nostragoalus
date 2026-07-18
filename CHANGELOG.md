@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+
+- The line-ups on a match page now keep refreshing on their own until the match is over. They used to stop the moment the first XI was published, so a later formation correction or substitution from the feed only showed after a manual page reload.
+
 ## [4.3.1] - 2026-07-16
 
 ### Added

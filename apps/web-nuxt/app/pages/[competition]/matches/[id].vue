@@ -371,7 +371,7 @@ const visibleMedia = computed(() => visibleMediaForStatus(mediaData.value ?? [],
 
 // Line-ups surface their tab only once the official XI has dropped (~1h before
 // kickoff); until then the feed answers available:false and no tab shows.
-const { data: lineupsData } = useMatchLineups(id)
+const { data: lineupsData } = useMatchLineups(id, computed(() => status.value !== 'FINISHED'))
 const MEDIA_ORDER: MatchMediaKind[] = ['LIVE', 'REPLAY', 'HIGHLIGHTS']
 const mediaKinds = computed(() => {
   const present = new Set(visibleMedia.value.map((mm) => mm.kind))
