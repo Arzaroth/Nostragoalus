@@ -111,13 +111,12 @@ Scope unchanged. Proceed to Phase 1 on a Flutter machine.
   live `viewers:update` count.
 
 ## Phase 5 - Long-tail parity
-- [ ] Multiview grid - deferred (a live-match tile grid; a UI-composition slice).
-- [ ] Tamper-evidence `/verify` - deferred (commit-reveal ledger read; the crypto
-  hashing is already parity-proven, only the read UI is missing).
-- [~] Best-scorer + champion picks - champion pick shipped (set + tiered points,
-  locks with the competition); best-scorer has its read layer wired, screen deferred.
-- [ ] Bot personas - deferred (read of the bot leaderboard rows / predictions).
-- [ ] Past-pick counterfactual - deferred (`/api/matches/{id}/my-past-picks` read).
+- [x] Multiview grid - live-match tile grid (WS-updated).
+- [x] Tamper-evidence `/verify` - commit-reveal ledger read (head hash + chained entries).
+- [~] Best-scorer + champion picks - champion pick shipped; best-scorer has its read
+  layer wired, dedicated screen deferred.
+- [x] Bot personas - a persona's per-match predictions.
+- [x] Past-pick counterfactual - earlier-vs-kept scoring on match detail.
 - [x] Roadmap view - public items by status with community upvotes.
 - [ ] SSO login (OIDC via `flutter_web_auth_2`) - deferred; needs the browser-auth
   dep + a configured SSO provider to exercise.
