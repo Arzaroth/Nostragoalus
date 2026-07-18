@@ -1,0 +1,47 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
+import 'package:nostragoalus/e2ee/e2ee.dart' as e2ee;
+import 'package:sodium_libs/sodium_libs_sumo.dart';
+
+/// The encrypt/seal half is random (no KAT freezes it), so it's proven by
+/// round-tripping through the KAT-verified decrypt half: what the app encrypts,
+/// the app (and therefore the web, same primitives + wire format) decrypts.
+///   flutter test integration_test/e2ee_roundtrip_test.dart -d emulator-5554
+void main() {
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
+  testWidgets('e2ee encrypt round-trips through the proven decrypt path', (tester) async {
+    final sodium = await SodiumSumoInit.init();
+
+    // message <-> group key
+    final groupKey = e2ee.generateGroupKey(sodium);
+    const plain = 'goal in the 90th 🔥 - {"score":"2-1"}';
+    expect(e2ee.decryptMessage(sodium, e2ee.encryptMessage(sodium, plain, groupKey), groupKey),
+        equals(plain));
+
+    // attachment bytes
+    final bytes = Uint8List.fromList(List.generate(1024, (i) => i % 256));
+    expect(e2ee.decryptBytes(sodium, e2ee.encryptBytes(sodium, bytes, groupKey), groupKey),
+        equals(bytes));
+
+    // group key sealed to an identity <-> opened with its keypair
+    final id = e2ee.generateIdentity(sodium);
+    final wrapped = e2ee.sealGroupKey(sodium, groupKey, id.publicKey);
+    final opened = e2ee.openGroupKey(
+        sodium, wrapped, {'publicKey': id.publicKey, 'privateKey': id.privateKey});
+    expect(opened, equals(groupKey));
+
+    // private key escrow <-> recovery-code unwrap
+    const code = 'ABCDEF-GHIJKL-MNOPQR-STUVWX';
+    final blob = e2ee.wrapPrivateKeyWithRecovery(sodium, id.privateKey, code);
+    expect(e2ee.unwrapPrivateKeyWithRecovery(sodium, blob, code), equals(id.privateKey));
+
+    // recovery code shape: url-safe base64 of 18 bytes, hyphen-grouped by 6
+    final generated = e2ee.generateRecoveryCode(sodium);
+    expect(generated.replaceAll('-', '').length, equals(24));
+    expect(base64Url.decode(generated.replaceAll('-', '')).length, equals(18));
+  });
+}
