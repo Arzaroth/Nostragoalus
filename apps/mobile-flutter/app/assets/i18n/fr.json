@@ -1537,6 +1537,11 @@
     "home": "Retour au terrain"
   },
   "leagues": {
+    "editPrizes": "Modifier les récompenses",
+    "editPrizesHint": "Définissez une récompense par critère. Laissez le libellé vide pour la retirer.",
+    "prizeLabel": "Libellé",
+    "prizeNote": "Note (facultatif)",
+    "prizeLink": "Lien (facultatif)",
     "settings": "Paramètres de la ligue",
     "description": "Description",
     "featuredTeam": "Équipe à l'honneur",

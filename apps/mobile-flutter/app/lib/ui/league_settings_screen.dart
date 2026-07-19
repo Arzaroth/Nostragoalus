@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/models.gen.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import 'league_rewards_editor_screen.dart';
 
 /// Owner/moderator league settings: name, visibility, mode, lives, description
 /// and the TEAM_SPECIALIST featured team. Sends only the changed fields.
@@ -150,6 +151,14 @@ class _LeagueSettingsScreenState extends ConsumerState<LeagueSettingsScreen> {
               labelText: context.tr('leagues.description'),
               border: const OutlineInputBorder(),
             ),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.card_giftcard),
+            label: Text(context.tr('leagues.editPrizes')),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => LeagueRewardsEditorScreen(leagueId: widget.league.id),
+            )),
           ),
           const SizedBox(height: 24),
           FilledButton(

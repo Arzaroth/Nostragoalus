@@ -1543,6 +1543,11 @@
     "home": "yotlh chegh"
   },
   "leagues": {
+    "editPrizes": "pop choH",
+    "editPrizesHint": "DichDaq pop yIchel. teqmeH pong yIlonQo'.",
+    "prizeLabel": "pop pong",
+    "prizeNote": "QIn (DoHlu'laH)",
+    "prizeLink": "ghItlh (DoHlu'laH)",
     "settings": "ghom SeH",
     "description": "QIj",
     "featuredTeam": "mangghom pol",

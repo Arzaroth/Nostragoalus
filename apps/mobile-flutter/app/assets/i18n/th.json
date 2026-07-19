@@ -1537,6 +1537,11 @@
     "home": "กลับสู่สนาม"
   },
   "leagues": {
+    "editPrizes": "แก้ไขรางวัล",
+    "editPrizesHint": "ตั้งรางวัลต่อเกณฑ์ เว้นชื่อว่างเพื่อลบ",
+    "prizeLabel": "ชื่อรางวัล",
+    "prizeNote": "หมายเหตุ (ถ้ามี)",
+    "prizeLink": "ลิงก์ (ถ้ามี)",
     "settings": "ตั้งค่าลีก",
     "description": "คำอธิบาย",
     "featuredTeam": "ทีมเด่น",

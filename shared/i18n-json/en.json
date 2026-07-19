@@ -1548,6 +1548,11 @@
     "home": "Back to the pitch"
   },
   "leagues": {
+    "editPrizes": "Edit prizes",
+    "editPrizesHint": "Set a prize per criterion. Leave the label blank to remove it.",
+    "prizeLabel": "Prize label",
+    "prizeNote": "Note (optional)",
+    "prizeLink": "Link (optional)",
     "settings": "League settings",
     "description": "Description",
     "featuredTeam": "Featured team",

@@ -223,6 +223,11 @@ class NostragoalusApi {
   Future<void> transferOwnership(String leagueId, String userId) async =>
       _api.postJson('/api/leagues/$leagueId/transfer-ownership', body: {'userId': userId});
 
+  /// Replace the league's prize set (each item {type,label,note?,link?}); a blank
+  /// label deletes that criterion's prize.
+  Future<void> updateLeagueRewards(String leagueId, List<Map<String, dynamic>> items) async =>
+      _api.putJson('/api/leagues/$leagueId/rewards', body: {'items': items});
+
   /// Reward ranking for one criterion type (raw; nested shape read in the UI).
   Future<Map<String, dynamic>> rewardRanking(String leagueId, String type) async =>
       _api.getJson('/api/leagues/$leagueId/rewards/$type/ranking');

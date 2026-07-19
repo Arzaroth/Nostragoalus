@@ -88,8 +88,9 @@ with the data caveat noted per area.
 - [x] Invites (create / list / delete / accept-link via join screen + deep link)
 - [x] Leave league / transfer ownership / member management (promote, demote, kick)
 - [x] Rewards / prizes (per-league criteria + ranking drill-in bottom sheet)
-- [~] Featured team / team specialist - set via league settings; `[ ]` full
-  per-criterion reward-config editor (labels/notes/links/images)
+- [x] Featured team / team specialist (league settings) + full per-criterion
+  reward-config editor (label/note/link per criterion, replace-set); `[~]` image
+  upload per prize deferred
 - [x] Regenerate join code
 - [x] Per-league nudge / prompt - "finish your picks" banner on the leagues tab
   (from /api/leagues/completeness), taps through to the needy league
