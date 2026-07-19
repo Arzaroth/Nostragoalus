@@ -154,10 +154,11 @@ with the data caveat noted per area.
 - [x] OpenAPI model codegen + stale-check
 - [x] i18n mirror + stale-check; parity KAT mirror + on-device replay
 - [!] Signed release build + Play internal (needs an upload keystore + a Play account)
-- [ ] Flutter CI job (analyze + test + models/i18n stale-check) - repo has no
-  committed CI pipeline today (the gate runs by hand via mise/pnpm); would need one
-- [ ] Widget/integration test coverage across screens (only smoke + crypto + auth
-  flows tested today)
+- [x] Flutter gate (`mise run gate`) - stale-checks (models/i18n/KAT mirrors) +
+  analyze + app tests + cross-stack parity, sequential. Repo has no hosted CI;
+  this is the by-hand gate matching the web's `pnpm` gate.
+- [~] Widget test coverage - smoke + crypto + auth + models + i18n + StatTile +
+  SessionsScreen (data/empty) + MapScreen (31 tests); `[ ]` a spec per screen
 
 ## Genuinely external-blocked (not effort)
 - Push (mobile FCM) = server FCM work + Firebase project
