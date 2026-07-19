@@ -96,6 +96,10 @@ final bracketProvider = FutureProvider<BracketResponse>((ref) =>
 final matchesProvider = FutureProvider<MatchesResponse>((ref) =>
     ref.watch(apiProvider).matches(competition: ref.watch(selectedCompetitionProvider)));
 
+/// Crowd consensus totals per match (display-only, gated on the show-crowd pref).
+final crowdTotalsProvider = FutureProvider<Map<String, dynamic>>((ref) =>
+    ref.watch(apiProvider).crowdTotals(competition: ref.watch(selectedCompetitionProvider)));
+
 final leaderboardProvider = FutureProvider<LeaderboardResponse>((ref) =>
     ref.watch(apiProvider).leaderboard(competition: ref.watch(selectedCompetitionProvider)));
 

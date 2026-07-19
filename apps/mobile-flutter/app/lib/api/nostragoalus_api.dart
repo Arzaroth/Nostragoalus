@@ -31,6 +31,13 @@ class NostragoalusApi {
   Future<MatchesResponse> matches({String? competition}) async =>
       MatchesResponse.fromJson(await _api.getJson('/api/matches', query: _comp(competition)));
 
+  /// Crowd totals keyed by matchId -> {home, away, count}. Display-only.
+  Future<Map<String, dynamic>> crowdTotals({String? competition}) async {
+    final res = await _api.getJson('/api/predictions/crowd', query: _comp(competition));
+    final totals = res['totals'];
+    return totals is Map ? totals.cast<String, dynamic>() : const <String, dynamic>{};
+  }
+
   Future<MatchDetailResponse> match(String id) async =>
       MatchDetailResponse.fromJson(await _api.getJson('/api/matches/$id'));
 
@@ -215,8 +222,7 @@ class NostragoalusApi {
   // --- Account security: connected sessions (better-auth) ---
 
   Future<List<dynamic>> listSessions() async {
-    final r = await _api.raw((dio) => dio.get<dynamic>('/api/auth/list-sessions',
-        options: Options(validateStatus: (_) => true)));
+    final r = await _api.raw((dio) => dio.get<dynamic>('/api/auth/list-sessions'));
     final data = r.data;
     if (data is List) return data;
     if (data is Map && data['sessions'] is List) return data['sessions'] as List;

@@ -1,4 +1,8 @@
 {
+  "crowd": {
+    "title": "ghom Qub",
+    "count": "{n} Qub"
+  },
   "rewards": {
     "title": "pop",
     "empty": "pop tuHbe."

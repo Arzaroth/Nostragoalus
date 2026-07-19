@@ -1,4 +1,8 @@
 {
+  "crowd": {
+    "title": "Crowd consensus",
+    "count": "{n} predictions"
+  },
   "rewards": {
     "title": "My rewards",
     "empty": "No rewards yet."

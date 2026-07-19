@@ -135,6 +135,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                             isLocked: res.isLocked,
                           ),
                           const SizedBox(height: 16),
+                          _CrowdConsensus(matchId: matchId, homeTeam: m.homeTeam, awayTeam: m.awayTeam),
                           ReactionsBar(matchId: matchId),
                           const SizedBox(height: 16),
                           _PastPicks(matchId: matchId),
@@ -253,6 +254,58 @@ class _InsightsTab extends ConsumerWidget {
             trailing: Text('${res.possession.home?.toInt() ?? 0}% - ${res.possession.away?.toInt() ?? 0}%'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Crowd consensus for one match, shown under the prediction input when the
+/// show-crowd preference is on. Silent when off, loading, or no picks yet.
+class _CrowdConsensus extends ConsumerWidget {
+  const _CrowdConsensus({required this.matchId, required this.homeTeam, required this.awayTeam});
+  final String matchId;
+  final String homeTeam;
+  final String awayTeam;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final showCrowd = ref.watch(authControllerProvider).valueOrNull?.showCrowd ?? false;
+    if (!showCrowd) return const SizedBox.shrink();
+    final totals = ref.watch(crowdTotalsProvider).valueOrNull;
+    final t = totals?[matchId];
+    if (t is! Map) return const SizedBox.shrink();
+    final home = (t['home'] as num?)?.toInt() ?? 0;
+    final away = (t['away'] as num?)?.toInt() ?? 0;
+    final count = (t['count'] as num?)?.toInt() ?? 0;
+    if (count == 0) return const SizedBox.shrink();
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(context.tr('crowd.title'), style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Expanded(child: Text(homeTeam, textAlign: TextAlign.end)),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text('$home - $away',
+                      style: Theme.of(context).textTheme.titleLarge),
+                ),
+                Expanded(child: Text(awayTeam)),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Center(
+              child: Text(context.tr('crowd.count').replaceAll('{n}', '$count'),
+                  style: Theme.of(context).textTheme.bodySmall),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1,4 +1,8 @@
 {
+  "crowd": {
+    "title": "Consensus de la foule",
+    "count": "{n} pronostics"
+  },
   "rewards": {
     "title": "Mes récompenses",
     "empty": "Aucune récompense."
