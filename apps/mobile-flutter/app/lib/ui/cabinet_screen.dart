@@ -44,7 +44,8 @@ class CabinetScreen extends ConsumerWidget {
                   for (final t in c.trophies)
                     ListTile(
                       leading: const Icon(Icons.emoji_events, color: Colors.amber),
-                      title: Text(t.type),
+                      title: Text(_trophyName(context, t)),
+                      subtitle: Text(context.tr('achievements.trophy.${t.type}.desc')),
                       trailing: t.value > 0 ? Text('${t.value.toInt()}') : null,
                     ),
                 ],
@@ -55,12 +56,13 @@ class CabinetScreen extends ConsumerWidget {
                     padding: const EdgeInsets.all(24),
                     child: Center(child: Text(context.tr('achievements.empty'))),
                   ),
-                for (final a in earned)
-                  ListTile(
-                    leading: const Icon(Icons.military_tech),
-                    title: Text(a.key),
-                    subtitle: Text(a.category),
-                  ),
+                for (final a in earned) _earnedTile(context, a),
+                // The owner sees locked achievements with their progress.
+                if (c.isOwner) ...[
+                  for (final a in c.achievements.where((a) => a.earned == null && !a.hidden))
+                    _lockedTile(context, a),
+                ],
+                const SizedBox(height: 24),
               ],
             );
           },
@@ -68,6 +70,76 @@ class CabinetScreen extends ConsumerWidget {
       ),
     );
   }
+
+  String _trophyName(BuildContext context, Trophy t) => t.type == 'TEAM_SPECIALIST' && t.teamCode != null
+      ? context.tr('achievements.trophy.TEAM_SPECIALIST.name').replaceAll('{team}', t.teamCode!)
+      : context.tr('achievements.trophy.${t.type}.name');
+
+  Widget _earnedTile(BuildContext context, Achievement a) {
+    final tier = a.earned?.tier;
+    final rarity = _rarityFor(a, tier);
+    return ListTile(
+      leading: Icon(Icons.military_tech, color: _tierColor(tier)),
+      title: Text(context.tr('achievements.badge.${a.key}.name')),
+      subtitle: Text(context.tr('achievements.badge.${a.key}.desc')),
+      trailing: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (tier != null)
+            Text(context.tr('achievements.tier.$tier'),
+                style: TextStyle(color: _tierColor(tier), fontWeight: FontWeight.bold)),
+          if (rarity != null)
+            Text(context.tr('achievements.rarity').replaceAll('{pct}', _fmtPct(rarity.pct)),
+                style: Theme.of(context).textTheme.bodySmall),
+        ],
+      ),
+    );
+  }
+
+  Widget _lockedTile(BuildContext context, Achievement a) {
+    final current = a.current ?? 0;
+    final next = a.tiers
+        .where((t) => t.threshold > current)
+        .fold<double?>(null, (m, t) => m == null || t.threshold < m ? t.threshold : m);
+    final frac = next == null || next <= 0 ? null : (current / next).clamp(0.0, 1.0);
+    return ListTile(
+      leading: Icon(Icons.lock_outline, color: Theme.of(context).disabledColor),
+      title: Text(context.tr('achievements.badge.${a.key}.name')),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(context.tr('achievements.badge.${a.key}.criteria')),
+          if (frac != null) ...[
+            const SizedBox(height: 4),
+            LinearProgressIndicator(value: frac),
+            Text('${current.toInt()} / ${next!.toInt()}',
+                style: Theme.of(context).textTheme.bodySmall),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Rarity? _rarityFor(Achievement a, String? tier) {
+    if (a.rarity.isEmpty) return null;
+    if (tier != null) {
+      for (final r in a.rarity) {
+        if (r.tier == tier) return r;
+      }
+    }
+    return a.rarity.first;
+  }
+
+  String _fmtPct(double pct) => pct >= 10 ? pct.toStringAsFixed(0) : pct.toStringAsFixed(1);
+
+  Color? _tierColor(String? tier) => switch (tier) {
+        'BRONZE' => const Color(0xFFCD7F32),
+        'SILVER' => const Color(0xFF9CA3AF),
+        'GOLD' => const Color(0xFFF59E0B),
+        'DIAMOND' => const Color(0xFF38BDF8),
+        _ => null,
+      };
 
   Widget _header(BuildContext context, String text) => Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
