@@ -317,13 +317,18 @@ class NostragoalusApi {
       ChatMessagesResponse.fromJson(await _api.getJson('/api/leagues/$leagueId/chat/messages'));
 
   Future<void> sendChat(String leagueId, String ciphertext, int epoch,
-          {String? matchId, List<String>? mentions}) async =>
+          {String? matchId, List<String>? mentions, List<Map<String, dynamic>>? images}) async =>
       _api.postJson('/api/leagues/$leagueId/chat/messages', body: {
         'ciphertext': ciphertext,
         'epoch': epoch,
         if (matchId != null) 'matchId': matchId,
         if (mentions != null && mentions.isNotEmpty) 'mentions': mentions,
+        if (images != null && images.isNotEmpty) 'images': images,
       });
+
+  /// Fetch one message attachment's {ciphertext, epoch} (decrypted client-side).
+  Future<Map<String, dynamic>> chatAttachment(String leagueId, String messageId, int idx) async =>
+      _api.getJson('/api/leagues/$leagueId/chat/attachments/$messageId', query: {'idx': '$idx'});
 
   Future<void> requestChatKey(String leagueId) async =>
       _api.postJson('/api/leagues/$leagueId/chat/request-key');

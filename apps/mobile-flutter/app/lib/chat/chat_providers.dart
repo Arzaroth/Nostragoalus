@@ -95,11 +95,17 @@ class ChatIdentityController extends AsyncNotifier<ChatIdentityState> {
 
 /// One decrypted (or undecryptable) line of chat.
 class ChatLine {
-  const ChatLine({required this.id, required this.userId, required this.text, required this.createdAt});
+  const ChatLine(
+      {required this.id,
+      required this.userId,
+      required this.text,
+      required this.createdAt,
+      this.attachmentCount = 0});
   final String id;
   final String? userId;
   final String? text; // null when this epoch's key is unavailable
   final String createdAt;
+  final int attachmentCount;
 }
 
 /// A league's chat, decrypted for display. `state` distinguishes the reasons a
@@ -151,22 +157,63 @@ final leagueChatProvider =
         text = e2ee.decryptMessage(sodium, m.ciphertext, k);
       } catch (_) {/* corrupt / wrong key */}
     }
-    lines.add(ChatLine(id: m.id, userId: m.userId, text: text, createdAt: m.createdAt));
+    lines.add(ChatLine(
+        id: m.id,
+        userId: m.userId,
+        text: text,
+        createdAt: m.createdAt,
+        attachmentCount: m.attachments.length));
   }
   return LeagueChatView(state: ChatState.ready, epoch: epoch, lines: lines, key: keys[epoch]);
 });
 
-/// Encrypt + send a message to the league (with optional @-mention ids), refresh.
-final sendChatProvider =
-    Provider<Future<void> Function(String, String, {List<String> mentions})>((ref) {
-  return (leagueId, text, {List<String> mentions = const []}) async {
+/// Encrypt + send a message to the league (optional @-mentions + an image),
+/// then refresh. The image bytes are encrypted under the same group key.
+final sendChatProvider = Provider<
+    Future<void> Function(String, String,
+        {List<String> mentions, Uint8List? image})>((ref) {
+  return (leagueId, text, {List<String> mentions = const [], Uint8List? image}) async {
     final sodium = await ref.read(sodiumProvider.future);
     final view = ref.read(leagueChatProvider(leagueId)).valueOrNull;
     if (view == null || view.key == null) return;
     final ct = e2ee.encryptMessage(sodium, text, view.key!);
-    await ref.read(apiProvider).sendChat(leagueId, ct, view.epoch, mentions: mentions);
+    final images = image == null
+        ? null
+        : [
+            {
+              'ciphertext': e2ee.encryptBytes(sodium, image, view.key!),
+              'byteSize': image.length,
+            }
+          ];
+    await ref
+        .read(apiProvider)
+        .sendChat(leagueId, ct, view.epoch, mentions: mentions, images: images);
     ref.invalidate(leagueChatProvider(leagueId));
   };
+});
+
+/// Fetch + decrypt one message image attachment (by (leagueId, messageId, idx)).
+final chatAttachmentProvider =
+    FutureProvider.family<Uint8List?, (String, String, int)>((ref, args) async {
+  final (leagueId, messageId, idx) = args;
+  final sodium = await ref.watch(sodiumProvider.future);
+  final identity = (await ref.watch(chatIdentityProvider.future)).identity;
+  if (identity == null) return null;
+  final status = await ref.watch(apiProvider).chatStatus(leagueId);
+  final keys = <int, Uint8List>{};
+  for (final wk in status.myWrappedKeys) {
+    try {
+      keys[wk.epoch.toInt()] = e2ee.openGroupKey(sodium, wk.wrappedKey, identity.asMap);
+    } catch (_) {/* skip */}
+  }
+  final att = await ref.watch(apiProvider).chatAttachment(leagueId, messageId, idx);
+  final key = keys[(att['epoch'] as num?)?.toInt() ?? -1];
+  if (key == null) return null;
+  try {
+    return e2ee.decryptBytes(sodium, att['ciphertext'].toString(), key);
+  } catch (_) {
+    return null;
+  }
 });
 
 /// One reported message, decrypted for the moderator.

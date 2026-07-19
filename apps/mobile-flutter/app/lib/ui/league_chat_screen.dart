@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../api/models.gen.dart';
 import '../chat/chat_providers.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
 import 'widgets/async_value_view.dart';
+import 'widgets/chat_attachment.dart';
 
 /// End-to-end-encrypted league chat. The identity bootstraps automatically on a
 /// device that has never chatted; a fresh device with an escrowed identity is
@@ -116,6 +118,22 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
       await ref.read(sendChatProvider)(widget.leagueId, text, mentions: _mentions.toList());
       _input.clear();
       _mentions.clear();
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  Future<void> _sendImage() async {
+    final picked = await ImagePicker()
+        .pickImage(source: ImageSource.gallery, maxWidth: 1280, maxHeight: 1280, imageQuality: 80);
+    if (picked == null) return;
+    final bytes = await picked.readAsBytes();
+    setState(() => _sending = true);
+    try {
+      final caption = _input.text.trim();
+      await ref.read(sendChatProvider)(widget.leagueId, caption.isEmpty ? '\u{1F5BC}' : caption,
+          image: bytes);
+      _input.clear();
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -256,10 +274,22 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
                         final line = view.lines[view.lines.length - 1 - i];
                         return ListTile(
                           dense: true,
-                          title: Text(line.text ?? context.tr('chat.undecryptable'),
-                              style: line.text == null
-                                  ? const TextStyle(fontStyle: FontStyle.italic)
-                                  : null),
+                          title: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(line.text ?? context.tr('chat.undecryptable'),
+                                  style: line.text == null
+                                      ? const TextStyle(fontStyle: FontStyle.italic)
+                                      : null),
+                              for (var idx = 0; idx < line.attachmentCount; idx++)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 6),
+                                  child: ChatAttachment(
+                                      provider: chatAttachmentProvider(
+                                          (widget.leagueId, line.id, idx))),
+                                ),
+                            ],
+                          ),
                           subtitle: Text(line.createdAt),
                           onLongPress: () => _messageActions(line),
                         );
@@ -275,6 +305,11 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
               padding: const EdgeInsets.all(8),
               child: Row(
                 children: [
+                  IconButton(
+                    icon: const Icon(Icons.image),
+                    tooltip: context.tr('chat.image'),
+                    onPressed: _sending ? null : _sendImage,
+                  ),
                   IconButton(
                     icon: const Icon(Icons.alternate_email),
                     tooltip: context.tr('chat.mention.title'),
