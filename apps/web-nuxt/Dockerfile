@@ -40,6 +40,19 @@ RUN cd apps/web-nuxt/node_modules/cycletls/dist \
   && case "$TARGETARCH" in arm64) keep=index-arm64 ;; *) keep=index ;; esac \
   && find . -maxdepth 1 -type f -name 'index*' ! -name "$keep" ! -name 'index.js' ! -name 'index.d.ts' -delete
 
+# Bun build: same sources, Nitro's `bun` preset instead of node-server. Required for
+# the Bun runtime - crossws' node WebSocket-upgrade path does not work under Bun, so
+# the node-preset output would silently break every /_ws consumer (chat, voice,
+# live board); the bun preset uses Bun's native Bun.serve WebSocket adapter.
+FROM install AS build-bun
+ARG TARGETARCH
+ENV NODE_ENV=production
+ENV NITRO_PRESET=bun
+RUN pnpm -C apps/web-nuxt build
+RUN cd apps/web-nuxt/node_modules/cycletls/dist \
+  && case "$TARGETARCH" in arm64) keep=index-arm64 ;; *) keep=index ;; esac \
+  && find . -maxdepth 1 -type f -name 'index*' ! -name "$keep" ! -name 'index.js' ! -name 'index.d.ts' -delete
+
 # Minimal production runtime on slim: real glibc AND a shell, which cycletls' Go
 # uTLS helper needs (it spawns via `/bin/sh -c`, absent on distroless). Runs as the
 # node image's built-in non-root `node` user (uid 1000).
@@ -56,3 +69,24 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 CMD ["node", ".output/server/index.mjs"]
+
+# Alternate runtime: the Bun-preset build output, run under Bun instead of Node.
+# Opt-in via the compose `NG_APP_TARGET=prod-bun` switch; Node `prod` stays default.
+# oven/bun is Debian-based (glibc + /bin/sh, which cycletls' Go helper needs) and
+# ships a non-root `bun` user (uid 1000).
+FROM oven/bun:1-slim AS prod-bun
+ENV NODE_ENV=production
+# The Bun preset's Nitro server defaults to loopback (`localhost`), unlike the
+# node preset's `[::]`. Loopback-only is unreachable via Docker's DNAT path, which
+# surfaces as intermittent ECONNREFUSED under load. Bind all interfaces like Node.
+ENV HOST=::
+WORKDIR /app
+COPY --from=build-bun /app/apps/web-nuxt/.output ./.output
+COPY --from=build-bun /app/apps/web-nuxt/node_modules/cycletls/dist/index* ./.output/server/node_modules/cycletls/dist/
+COPY --from=build-bun /app/apps/web-nuxt/drizzle ./drizzle
+USER bun
+EXPOSE 3000
+# oven/bun has no wget/curl and no node; bun's global fetch is the liveness probe.
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD bun -e "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+CMD ["bun", "run", ".output/server/index.mjs"]

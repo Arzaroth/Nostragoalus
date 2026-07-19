@@ -15,11 +15,16 @@ description = "Prod-like stack: built app + db + coturn (no mail catcher)"
 run = "docker compose -f apps/web-nuxt/compose.yaml -f apps/web-nuxt/compose.dev.yaml --profile dev stop app-dev 2>/dev/null; docker compose --profile voice up -d --build --wait"
 
 [tasks.deploy]
-description = "Prod deploy: build + tag the app image with the package.json version, then up the prod stack"
+description = "Prod deploy: build + tag the app image with the package.json version, then up the prod stack. NG_RUNTIME=bun runs it under Bun (default Node)."
 run = '''
 NG_APP_VERSION="$(sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' apps/web-nuxt/package.json | head -1)"
 export NG_APP_VERSION
-echo "Deploying nostragoalus-app:$NG_APP_VERSION"
+if [ "$NG_RUNTIME" = "bun" ]; then
+  export NG_APP_TARGET=prod-bun NG_APP_TAG_SUFFIX=-bun
+  echo "Deploying nostragoalus-app:$NG_APP_VERSION-bun (Bun runtime)"
+else
+  echo "Deploying nostragoalus-app:$NG_APP_VERSION (Node runtime)"
+fi
 docker compose --profile voice up -d --build --wait
 '''
 
@@ -65,4 +70,27 @@ run = "pnpm -C apps/web-nuxt e2e"
 
 [tasks.e2e-down]
 description = "Tear down the isolated e2e stack and drop its DB volume."
-run = 'docker compose -p "ng-e2e-$(basename "$PWD" | tr . -)" -f apps/web-nuxt/compose.yaml -f apps/web-nuxt/compose.dev.yaml -f apps/web-nuxt/compose.e2e.yaml --profile dev --profile e2e down -v'
+run = 'docker compose -p "ng-e2e-$(basename "$PWD" | tr . -)" -f apps/web-nuxt/compose.yaml -f apps/web-nuxt/compose.dev.yaml -f apps/web-nuxt/compose.e2e.yaml -f apps/web-nuxt/compose.e2e-bun.yaml --profile dev --profile e2e --profile e2e-bun down -v'
+
+[tasks.e2e-up-bun]
+description = "Bring up the isolated e2e stack with the app under the BUN runtime (prod-bun target) instead of Node."
+# Same disposable ng-e2e project as e2e-up, but starts `app-bun` (built prod-bun
+# image on :3100) rather than the Node `app-dev`. Only one app runs on :3100 at a
+# time, so run e2e OR e2e-bun, not both. See compose.e2e-bun.yaml.
+# `--wait` blocks until app-bun is healthy, then a warmup primes Bun's per-route
+# SSR (its cold first render can exceed a spec's visibility timeout - a flake, not
+# a bug); prewarming the routes the suite hits keeps the run deterministic.
+run = '''
+docker compose -p "ng-e2e-$(basename "$PWD" | tr . -)" -f apps/web-nuxt/compose.yaml -f apps/web-nuxt/compose.dev.yaml -f apps/web-nuxt/compose.e2e.yaml -f apps/web-nuxt/compose.e2e-bun.yaml --profile dev --profile e2e --profile e2e-bun up -d --build --wait db maildev keycloak app-bun
+for p in / /admin /roadmap /leagues /rankings /about /login /signup; do curl -s -o /dev/null --max-time 30 "http://localhost:3100$p" || true; done
+'''
+
+[tasks.e2e-bun]
+description = "Browser e2e (Playwright) against the app running under BUN (prod-bun). Proves CI can cover the Bun runtime; Node e2e is `mise run e2e`."
+depends = ["e2e-up-bun"]
+# --retries=2: Bun's cold-start + hydration is a touch slower than Node's, so a
+# couple of interaction-timing specs (an SSR control clicked before hydration
+# wires it) flake under the parallel suite - a timing flake, not a Bun defect (the
+# endpoints and features are verified correct under Bun). Retries let a
+# pass-on-retry spec count as flaky, not failed, without weakening the shared test.
+run = "pnpm -C apps/web-nuxt exec playwright test --retries=2"

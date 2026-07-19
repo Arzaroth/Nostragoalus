@@ -152,7 +152,10 @@ export default defineNuxtConfig({
   },
 
   nitro: {
-    preset: 'node-server',
+    // node-server by default; the Bun runtime target builds with NITRO_PRESET=bun
+    // so crossws uses Bun's native WebSocket adapter (the node adapter's upgrade
+    // path does not work under Bun).
+    preset: process.env.NITRO_PRESET ?? 'node-server',
     experimental: { tasks: true, websocket: true, openAPI: true },
     openAPI: {
       production: 'runtime',
