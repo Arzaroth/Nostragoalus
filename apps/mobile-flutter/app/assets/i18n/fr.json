@@ -823,6 +823,8 @@
     }
   },
   "match": {
+    "media": "Médias",
+    "noMedia": "Aucun flux ni résumé.",
     "timeline": "Chronologie",
     "insights": "Analyses",
     "noEvents": "Aucun événement.",

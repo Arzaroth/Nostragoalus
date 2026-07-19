@@ -829,6 +829,8 @@
     }
   },
   "match": {
+    "media": "HaSta",
+    "noMedia": "HaSta tuHbe.",
     "timeline": "poH",
     "insights": "yaj",
     "noEvents": "wanI tuHbe.",

@@ -187,6 +187,15 @@ final cabinetProvider = FutureProvider.family<CabinetResponse, String>(
 
 final meStatsProvider = FutureProvider<MeStatsResponse>((ref) => ref.watch(apiProvider).meStats());
 
+final matchLeagueStandingsProvider =
+    FutureProvider.family<MatchLeagueStandingsResponse, String>(
+        (ref, id) => ref.watch(apiProvider).matchLeagueStandings(id));
+
+final matchMediaProvider = FutureProvider.family<MatchMediaResponse, String>(
+    (ref, id) => ref.watch(apiProvider).matchMedia(id));
+
+final meRewardsProvider = FutureProvider<List<dynamic>>((ref) => ref.watch(apiProvider).meRewards());
+
 /// Save (or overwrite) a prediction, then refresh the reads it affects.
 final savePredictionProvider = Provider<
     Future<PredictionSaveResponse> Function(String, String, PredictionInput)>((ref) {

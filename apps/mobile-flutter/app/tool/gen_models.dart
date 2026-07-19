@@ -52,6 +52,8 @@ const targets = <Target>[
   Target('get', '/api/matches/{id}/scorers', 'MatchScorersResponse'),
   Target('get', '/api/matches/{id}/insights', 'MatchInsightsResponse'),
   Target('get', '/api/matches/{id}/live-detail', 'MatchLiveDetailResponse'),
+  Target('get', '/api/matches/{id}/league-standings', 'MatchLeagueStandingsResponse'),
+  Target('get', '/api/matches/{id}/media', 'MatchMediaResponse'),
   // Profile + prefs + stats
   Target('get', '/api/users/{id}/cabinet', 'CabinetResponse'),
   Target('get', '/api/me/stats', 'MeStatsResponse'),

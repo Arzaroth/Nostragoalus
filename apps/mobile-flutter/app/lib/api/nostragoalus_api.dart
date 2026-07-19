@@ -40,6 +40,19 @@ class NostragoalusApi {
   Future<MatchInsightsResponse> matchInsights(String id) async =>
       MatchInsightsResponse.fromJson(await _api.getJson('/api/matches/$id/insights'));
 
+  Future<MatchLeagueStandingsResponse> matchLeagueStandings(String id) async =>
+      MatchLeagueStandingsResponse.fromJson(
+          await _api.getJson('/api/matches/$id/league-standings'));
+
+  Future<MatchMediaResponse> matchMedia(String id) async =>
+      MatchMediaResponse.fromJson(await _api.getJson('/api/matches/$id/media'));
+
+  /// My rewards across leagues (a top-level array, read raw).
+  Future<List<dynamic>> meRewards() async {
+    final r = await _api.raw((dio) => dio.get<dynamic>('/api/me/rewards'));
+    return r.data as List<dynamic>;
+  }
+
   Future<CabinetResponse> cabinet(String userId) async =>
       CabinetResponse.fromJson(await _api.getJson('/api/users/$userId/cabinet'));
 

@@ -79,7 +79,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
         data: (res) {
           final m = res.match;
           return DefaultTabController(
-            length: 5,
+            length: 7,
             child: Column(
               children: [
                 Padding(
@@ -116,6 +116,8 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                     Tab(text: context.tr('match.lineups')),
                     Tab(text: context.tr('nav.standings')),
                     Tab(text: context.tr('match.insights')),
+                    Tab(text: context.tr('nav.leaderboard')),
+                    Tab(text: context.tr('match.media')),
                   ],
                 ),
                 Expanded(
@@ -142,6 +144,8 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                       _LineupsTab(matchId: matchId),
                       _ScorersTab(matchId: matchId),
                       _InsightsTab(matchId: matchId),
+                      _LeagueTab(matchId: matchId),
+                      _MediaTab(matchId: matchId),
                     ],
                   ),
                 ),
@@ -250,6 +254,62 @@ class _InsightsTab extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _LeagueTab extends ConsumerWidget {
+  const _LeagueTab({required this.matchId});
+  final String matchId;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return AsyncValueView<MatchLeagueStandingsResponse>(
+      value: ref.watch(matchLeagueStandingsProvider(matchId)),
+      onRetry: () => ref.invalidate(matchLeagueStandingsProvider(matchId)),
+      data: (res) => res.rows.isEmpty
+          ? Center(child: Text(context.tr('leaderboard.empty')))
+          : ListView(
+              children: [
+                for (final r in res.rows)
+                  ListTile(
+                    dense: true,
+                    leading: Text('${r.rank.toInt()}'),
+                    title: Text(r.displayName),
+                    subtitle: Text('${r.homeGoals.toInt()}-${r.awayGoals.toInt()}'),
+                    trailing: Text('${r.points.toInt()}'),
+                  ),
+              ],
+            ),
+    );
+  }
+}
+
+class _MediaTab extends ConsumerWidget {
+  const _MediaTab({required this.matchId});
+  final String matchId;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return AsyncValueView<MatchMediaResponse>(
+      value: ref.watch(matchMediaProvider(matchId)),
+      onRetry: () => ref.invalidate(matchMediaProvider(matchId)),
+      data: (res) => res.media.isEmpty
+          ? Center(child: Text(context.tr('match.noMedia')))
+          : ListView(
+              children: [
+                for (final m in res.media)
+                  ListTile(
+                    leading: Icon(switch (m.kind) {
+                      'LIVE' => Icons.live_tv,
+                      'HIGHLIGHTS' => Icons.movie,
+                      _ => Icons.replay,
+                    }),
+                    title: Text(m.label ?? m.kind),
+                    subtitle: Text(m.url, maxLines: 1, overflow: TextOverflow.ellipsis),
+                    trailing: const Icon(Icons.open_in_new, size: 18),
+                    onTap: () => SharePlus.instance.share(ShareParams(text: m.url)),
+                  ),
+              ],
+            ),
     );
   }
 }

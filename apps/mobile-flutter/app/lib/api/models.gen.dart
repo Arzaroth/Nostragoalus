@@ -2015,6 +2015,40 @@ class MatchInsightsResponse {
       };
 }
 
+class MatchLeagueStandingsResponse {
+  /// One of: upcoming, live, final.
+  final String scope;
+  final List<RowData3> rows;
+  final double notPredicted;
+  final League? league;
+
+  const MatchLeagueStandingsResponse({
+    required this.scope,
+    required this.rows,
+    required this.notPredicted,
+    this.league,
+  });
+
+  factory MatchLeagueStandingsResponse.fromJson(Map<String, dynamic> json) =>
+      MatchLeagueStandingsResponse(
+        scope: json['scope'] as String,
+        rows: (json['rows'] as List)
+            .map((e) => RowData3.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        notPredicted: (json['notPredicted'] as num).toDouble(),
+        league: json['league'] == null
+            ? null
+            : League.fromJson(json['league'] as Map<String, dynamic>),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'scope': scope,
+        'rows': rows.map((e) => e.toJson()).toList(),
+        'notPredicted': notPredicted,
+        'league': league?.toJson(),
+      };
+}
+
 class MatchLineupsResponse {
   final Lineup? lineups;
 
@@ -2048,6 +2082,25 @@ class MatchLiveDetailResponse {
 
   Map<String, dynamic> toJson() => {
         'detail': detail,
+      };
+}
+
+class MatchMediaResponse {
+  final List<Media> media;
+
+  const MatchMediaResponse({
+    required this.media,
+  });
+
+  factory MatchMediaResponse.fromJson(Map<String, dynamic> json) =>
+      MatchMediaResponse(
+        media: (json['media'] as List)
+            .map((e) => Media.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'media': media.map((e) => e.toJson()).toList(),
       };
 }
 
@@ -2110,6 +2163,48 @@ class MeStatsResponse {
 
   Map<String, dynamic> toJson() => {
         'stats': stats?.toJson(),
+      };
+}
+
+class Media {
+  final String id;
+
+  /// One of: LIVE, REPLAY, HIGHLIGHTS.
+  final String kind;
+  final String url;
+  final String? label;
+  final bool embeddable;
+  final bool? sandbox;
+  final String? allow;
+
+  const Media({
+    required this.id,
+    required this.kind,
+    required this.url,
+    this.label,
+    required this.embeddable,
+    this.sandbox,
+    this.allow,
+  });
+
+  factory Media.fromJson(Map<String, dynamic> json) => Media(
+        id: json['id'] as String,
+        kind: json['kind'] as String,
+        url: json['url'] as String,
+        label: json['label'] as String?,
+        embeddable: json['embeddable'] as bool,
+        sandbox: json['sandbox'] as bool?,
+        allow: json['allow'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'kind': kind,
+        'url': url,
+        'label': label,
+        'embeddable': embeddable,
+        'sandbox': sandbox,
+        'allow': allow,
       };
 }
 
@@ -3477,6 +3572,56 @@ class RowData2 {
         'gdCount': gdCount,
         'showcase': showcase.map((e) => e.toJson()).toList(),
         'movement': movement,
+      };
+}
+
+class RowData3 {
+  final double rank;
+  final String userId;
+  final String displayName;
+  final String? image;
+  final double homeGoals;
+  final double awayGoals;
+  final bool isJoker;
+  final double points;
+
+  /// One of: EXACT, DIFF, OUTCOME, MISS.
+  final String? baseTier;
+
+  const RowData3({
+    required this.rank,
+    required this.userId,
+    required this.displayName,
+    this.image,
+    required this.homeGoals,
+    required this.awayGoals,
+    required this.isJoker,
+    required this.points,
+    this.baseTier,
+  });
+
+  factory RowData3.fromJson(Map<String, dynamic> json) => RowData3(
+        rank: (json['rank'] as num).toDouble(),
+        userId: json['userId'] as String,
+        displayName: json['displayName'] as String,
+        image: json['image'] as String?,
+        homeGoals: (json['homeGoals'] as num).toDouble(),
+        awayGoals: (json['awayGoals'] as num).toDouble(),
+        isJoker: json['isJoker'] as bool,
+        points: (json['points'] as num).toDouble(),
+        baseTier: json['baseTier'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'rank': rank,
+        'userId': userId,
+        'displayName': displayName,
+        'image': image,
+        'homeGoals': homeGoals,
+        'awayGoals': awayGoals,
+        'isJoker': isJoker,
+        'points': points,
+        'baseTier': baseTier,
       };
 }
 
