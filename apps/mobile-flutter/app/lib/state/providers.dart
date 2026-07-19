@@ -181,6 +181,10 @@ final voiceServiceProvider = Provider<VoiceService>((ref) {
 /// Live viewer counts per match, pushed by `viewers:update` frames.
 final viewersProvider = StateProvider<Map<String, int>>((ref) => const {});
 
+/// Presence per user (userId -> 'active' | 'idle' | 'offline'), from the hub's
+/// presence:snapshot + presence:update frames. Absent = offline.
+final presenceProvider = StateProvider<Map<String, String>>((ref) => const {});
+
 // --- Phase 5 ---
 
 final roadmapProvider =

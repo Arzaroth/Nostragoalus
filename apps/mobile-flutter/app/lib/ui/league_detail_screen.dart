@@ -9,6 +9,7 @@ import 'league_board_screen.dart';
 import 'league_chat_screen.dart';
 import 'league_settings_screen.dart';
 import 'moderation_screen.dart';
+import 'widgets/online_dot.dart';
 import 'widgets/async_value_view.dart';
 
 /// A league's home: info, join code, members, invites, and the leave action;
@@ -95,7 +96,12 @@ class LeagueDetailScreen extends ConsumerWidget {
                 _sectionHeader(context, context.tr('leagues.members')),
                 for (final m in res.members)
                   ListTile(
-                    leading: CircleAvatar(child: Text(m.name.characters.first.toUpperCase())),
+                    leading: Stack(
+                      children: [
+                        CircleAvatar(child: Text(m.name.characters.first.toUpperCase())),
+                        Positioned(right: 0, bottom: 0, child: OnlineDot(userId: m.userId)),
+                      ],
+                    ),
                     title: Text(m.name),
                     trailing: (canManage && m.userId != selfId)
                         ? _memberMenu(context, ref, l.id, m, isOwner)

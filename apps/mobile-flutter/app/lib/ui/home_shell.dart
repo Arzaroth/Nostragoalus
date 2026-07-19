@@ -81,6 +81,21 @@ class _HomeShellState extends ConsumerState<HomeShell> {
             id: count.toInt(),
           };
         }
+      case 'presence:snapshot':
+        final users = frame['users'];
+        if (users is Map) {
+          ref.read(presenceProvider.notifier).state =
+              users.map((k, v) => MapEntry(k.toString(), v.toString()));
+        }
+      case 'presence:update':
+        final id = frame['userId'];
+        final status = frame['status'];
+        if (id is String && status is String) {
+          ref.read(presenceProvider.notifier).state = {
+            ...ref.read(presenceProvider),
+            id: status,
+          };
+        }
       case 'voice:ring':
         _onIncomingCall(frame);
     }
