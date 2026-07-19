@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'i18n/i18n_scope.dart';
 import 'state/providers.dart';
+import 'theme/app_theme.dart';
 import 'ui/home_shell.dart';
 import 'ui/sign_in_screen.dart';
 
@@ -13,16 +14,21 @@ class NostragoalusApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ThemeData(colorSchemeSeed: Colors.green, useMaterial3: true);
+    // Honor the signed-in user's konami skin + light/dark preference.
+    final user = ref.watch(authControllerProvider).valueOrNull;
+    final seed = AppTheme.skinSeed(user?.skin);
+    final mode = AppTheme.themeModeFor(user?.theme);
     return ref.watch(i18nProvider).when(
-          loading: () => _Bootstrapping(theme: theme),
-          error: (e, _) => _Bootstrapping(theme: theme, error: '$e'),
+          loading: () => const _Bootstrapping(),
+          error: (e, _) => _Bootstrapping(error: '$e'),
           data: (i18n) => I18nScope(
             i18n: i18n,
             child: MaterialApp(
               title: 'Nostragoalus',
               debugShowCheckedModeBanner: false,
-              theme: theme,
+              theme: AppTheme.light(seed),
+              darkTheme: AppTheme.dark(seed),
+              themeMode: mode,
               builder: (context, child) =>
                   Directionality(textDirection: i18n.textDirection, child: child!),
               home: const _AuthGate(),
@@ -47,14 +53,15 @@ class _AuthGate extends ConsumerWidget {
 }
 
 class _Bootstrapping extends StatelessWidget {
-  const _Bootstrapping({required this.theme, this.error});
-  final ThemeData theme;
+  const _Bootstrapping({this.error});
   final String? error;
 
   @override
   Widget build(BuildContext context) => MaterialApp(
         debugShowCheckedModeBanner: false,
-        theme: theme,
+        theme: AppTheme.light(),
+        darkTheme: AppTheme.dark(),
+        themeMode: ThemeMode.system,
         home: Scaffold(
           body: Center(
             child: error == null
