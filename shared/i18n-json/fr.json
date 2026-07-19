@@ -1,4 +1,10 @@
 {
+  "verifyEmail": {
+    "title": "Vérifiez votre e-mail",
+    "body": "Confirmez votre adresse pour sécuriser votre compte.",
+    "resend": "Renvoyer",
+    "sent": "E-mail de vérification envoyé."
+  },
   "profile": {
     "editTitle": "Modifier le profil",
     "displayName": "Nom affiché"

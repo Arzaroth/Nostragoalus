@@ -22,7 +22,7 @@ with the data caveat noted per area.
 - [x] Forgot / reset password (request-reset form)
 - [x] Two-factor (2FA enrol: password -> secret + backup codes -> verify; disable
   with password + current code) - QR shown as secret/otpauth (no QR renderer)
-- [ ] Email verification flow
+- [x] Email verification flow (unverified banner + resend link)
 - [ ] Passkeys
 - [x] Connected sessions / devices (list + revoke)
 - [ ] Confirm-credentials / revoke-trust

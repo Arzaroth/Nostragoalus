@@ -80,6 +80,25 @@ class AccountScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 24),
+          if (user != null && user.emailVerified == false)
+            Card(
+              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              color: Theme.of(context).colorScheme.errorContainer,
+              child: ListTile(
+                leading: const Icon(Icons.mark_email_unread),
+                title: Text(context.tr('verifyEmail.title')),
+                subtitle: Text(context.tr('verifyEmail.body')),
+                trailing: TextButton(
+                  onPressed: () async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    final msg = context.tr('verifyEmail.sent');
+                    await ref.read(apiProvider).sendVerificationEmail(user.email);
+                    messenger.showSnackBar(SnackBar(content: Text(msg)));
+                  },
+                  child: Text(context.tr('verifyEmail.resend')),
+                ),
+              ),
+            ),
           if (user != null)
             ListTile(
               leading: const Icon(Icons.workspace_premium),

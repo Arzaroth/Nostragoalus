@@ -19,6 +19,7 @@ class AuthUser {
     this.showOdds,
     this.twoFactorEnabled,
     this.onboardingTourDismissedAt,
+    this.emailVerified,
   });
 
   final String id;
@@ -32,6 +33,7 @@ class AuthUser {
   final bool? showOdds;
   final bool? twoFactorEnabled;
   final String? onboardingTourDismissedAt; // null => the one-time tour can auto-start
+  final bool? emailVerified;
 
   factory AuthUser.fromJson(Map<String, dynamic> json) => AuthUser(
         id: json['id'] as String,
@@ -45,6 +47,7 @@ class AuthUser {
         showOdds: json['showOdds'] as bool?,
         twoFactorEnabled: json['twoFactorEnabled'] as bool?,
         onboardingTourDismissedAt: json['onboardingTourDismissedAt']?.toString(),
+        emailVerified: json['emailVerified'] as bool?,
       );
 }
 

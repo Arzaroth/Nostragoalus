@@ -99,6 +99,11 @@ class NostragoalusApi {
   Future<void> updatePrefs(Map<String, dynamic> prefs) async =>
       _api.postJson('/api/auth/update-user', body: prefs);
 
+  /// Resend the email-verification link to the given address.
+  Future<void> sendVerificationEmail(String email) async =>
+      _api.postJson('/api/auth/send-verification-email',
+          body: {'email': email, 'callbackURL': '/verify-email'});
+
   /// Mark the one-time onboarding tour finished/skipped for the caller.
   Future<void> dismissOnboardingTour() async => _api.postJson('/api/me/onboarding-tour');
 

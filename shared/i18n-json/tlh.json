@@ -1,4 +1,10 @@
 {
+  "verifyEmail": {
+    "title": "De'wI' QIn yIngu'",
+    "body": "De'wI' yI'ol reH lojmItID Qan.",
+    "resend": "chu'moH",
+    "sent": "QIn ngeHlu'."
+  },
   "profile": {
     "editTitle": "nughDaq choH",
     "displayName": "pong"
