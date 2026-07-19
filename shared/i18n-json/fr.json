@@ -58,6 +58,8 @@
     "safetyHint": "Comparez-le hors ligne avec un contact pour confirmer qu’aucune clé n’a été substituée."
   },
   "achievements": {
+    "showcaseHeading": "Vitrine",
+    "showcaseEditHint": "Choisissez jusqu'à 3 badges à mettre en avant.",
     "cabinetTitle": "Vitrine à trophées",
     "showcaseTitle": "Ma vitrine",
     "trophiesHeading": "Trophées",
@@ -517,6 +519,7 @@
     "hideBreakdown": "Masquer le détail des cotes"
   },
   "common": {
+    "edit": "Modifier",
     "delete": "Supprimer",
     "copied": "Copié",
     "retry": "Réessayer",

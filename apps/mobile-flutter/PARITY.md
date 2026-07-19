@@ -116,9 +116,9 @@ with the data caveat noted per area.
 - [!] Push (APNs) - no Apple
 
 ## Achievements / stats / rewards
-- [~] Trophy cabinet - trophies + earned achievements (i18n names/desc), tier
-  colour + rarity %, owner sees locked achievements with criteria + progress bar;
-  `[ ]` showcase pin/edit
+- [x] Trophy cabinet - trophies + earned achievements (i18n names/desc), tier
+  colour + rarity %, owner sees locked achievements with criteria + progress bar,
+  showcase pin/edit (up to 3)
 - [x] My stats screen (`/api/me/stats`)
 - [x] My rewards screen (`/api/me/rewards`)
 

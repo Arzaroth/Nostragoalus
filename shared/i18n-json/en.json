@@ -58,6 +58,8 @@
     "safetyHint": "Compare this out-of-band with a contact to confirm no key was substituted."
   },
   "achievements": {
+    "showcaseHeading": "Showcase",
+    "showcaseEditHint": "Pick up to 3 badges to feature.",
     "cabinetTitle": "Trophy cabinet",
     "showcaseTitle": "My showcase",
     "trophiesHeading": "Trophies",
@@ -522,6 +524,7 @@
     "hideBreakdown": "Hide odds breakdown"
   },
   "common": {
+    "edit": "Edit",
     "delete": "Delete",
     "copied": "Copied",
     "retry": "Retry",

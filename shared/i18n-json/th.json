@@ -58,6 +58,8 @@
     "safetyHint": "เปรียบเทียบนอกช่องทางกับผู้ติดต่อเพื่อยืนยันว่าไม่มีการเปลี่ยนกุญแจ"
   },
   "achievements": {
+    "showcaseHeading": "โชว์เคส",
+    "showcaseEditHint": "เลือกแบดจ์สูงสุด 3 อันเพื่อแสดง",
     "cabinetTitle": "ตู้โชว์ถ้วยรางวัล",
     "showcaseTitle": "ตู้โชว์ของฉัน",
     "trophiesHeading": "ถ้วยรางวัล",
@@ -517,6 +519,7 @@
     "hideBreakdown": "ซ่อนรายละเอียดราคา"
   },
   "common": {
+    "edit": "แก้ไข",
     "delete": "ลบ",
     "copied": "คัดลอกแล้ว",
     "retry": "ลองอีกครั้ง",

@@ -58,6 +58,8 @@
     "safetyHint": "ghoHwI yISamqa"
   },
   "achievements": {
+    "showcaseHeading": "'angwI'",
+    "showcaseEditHint": "wej DevwI' yIwIv.",
     "cabinetTitle": "Qapla' pa'",
     "showcaseTitle": "'angwI'wIj",
     "trophiesHeading": "Qapla'mey",
@@ -517,6 +519,7 @@
     "hideBreakdown": "mI'mey So'"
   },
   "common": {
+    "edit": "choH",
     "delete": "Qaw'",
     "copied": "boSuqta",
     "retry": "yInID",

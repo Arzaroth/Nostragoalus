@@ -39,6 +39,7 @@ class CabinetScreen extends ConsumerWidget {
                     child: Text(c.displayName,
                         style: Theme.of(context).textTheme.titleLarge)),
                 const SizedBox(height: 16),
+                _showcaseSection(context, ref, c, earned),
                 if (c.trophies.isNotEmpty) ...[
                   _header(context, context.tr('achievements.trophiesHeading')),
                   for (final t in c.trophies)
@@ -140,6 +141,112 @@ class CabinetScreen extends ConsumerWidget {
         'DIAMOND' => const Color(0xFF38BDF8),
         _ => null,
       };
+
+  Widget _showcaseSection(
+      BuildContext context, WidgetRef ref, CabinetResponse c, List<Achievement> earned) {
+    final pinnedKeys = (c.showcase.toList()..sort((a, b) => a.slot.compareTo(b.slot)))
+        .map((s) => s.achievementKey)
+        .toList();
+    if (pinnedKeys.isEmpty && !c.isOwner) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Row(
+            children: [
+              Text(context.tr('achievements.showcaseHeading'),
+                  style: Theme.of(context).textTheme.titleMedium),
+              const Spacer(),
+              if (c.isOwner)
+                TextButton.icon(
+                  icon: const Icon(Icons.edit, size: 18),
+                  label: Text(context.tr('common.edit')),
+                  onPressed: () => _editShowcase(context, ref, c, earned, pinnedKeys),
+                ),
+            ],
+          ),
+        ),
+        if (pinnedKeys.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(context.tr('achievements.showcaseEmpty'),
+                style: Theme.of(context).textTheme.bodySmall),
+          )
+        else
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              for (final k in pinnedKeys)
+                Expanded(
+                  child: Column(
+                    children: [
+                      const Icon(Icons.military_tech, size: 32, color: Colors.amber),
+                      Padding(
+                        padding: const EdgeInsets.all(4),
+                        child: Text(context.tr('achievements.badge.$k.name'),
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodySmall),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  Future<void> _editShowcase(BuildContext context, WidgetRef ref, CabinetResponse c,
+      List<Achievement> earned, List<String> pinned) async {
+    final selected = <String>[...pinned];
+    final saved = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.7,
+          builder: (context, controller) => ListView(
+            controller: controller,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(context.tr('achievements.showcaseEditHint'),
+                    style: Theme.of(context).textTheme.titleSmall),
+              ),
+              for (final a in earned)
+                CheckboxListTile(
+                  dense: true,
+                  value: selected.contains(a.key),
+                  title: Text(context.tr('achievements.badge.${a.key}.name')),
+                  onChanged: (v) {
+                    setModalState(() {
+                      if (v == true) {
+                        if (selected.length < 3 && !selected.contains(a.key)) selected.add(a.key);
+                      } else {
+                        selected.remove(a.key);
+                      }
+                    });
+                  },
+                ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: FilledButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: Text(context.tr('common.save')),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (saved != true) return;
+    await ref.read(apiProvider).setShowcase(selected,
+        competition: ref.read(selectedCompetitionProvider));
+    ref.invalidate(cabinetProvider(c.userId));
+  }
 
   Widget _header(BuildContext context, String text) => Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),

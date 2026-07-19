@@ -89,6 +89,13 @@ class NostragoalusApi {
     return r.data as List<dynamic>;
   }
 
+  /// Replace the showcase (ordered, max 3 earned achievement keys) for a competition.
+  Future<void> setShowcase(List<String> keys, {String? competition}) async =>
+      _api.putJson('/api/showcase', body: {
+        if (competition != null) 'competition': competition,
+        'items': [for (final k in keys) {'achievementKey': k}],
+      });
+
   Future<CabinetResponse> cabinet(String userId) async =>
       CabinetResponse.fromJson(await _api.getJson('/api/users/$userId/cabinet'));
 

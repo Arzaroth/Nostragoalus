@@ -58,6 +58,8 @@
     "safetyHint": "قارن هذا خارج القناة مع جهة اتصال للتأكد من عدم استبدال أي مفتاح."
   },
   "achievements": {
+    "showcaseHeading": "العرض",
+    "showcaseEditHint": "اختر حتى 3 شارات للعرض.",
     "cabinetTitle": "خزانة الكؤوس",
     "showcaseTitle": "واجهتي",
     "trophiesHeading": "الكؤوس",
@@ -642,6 +644,7 @@
     "hideBreakdown": "إخفاء تفصيل الاحتمالات"
   },
   "common": {
+    "edit": "تعديل",
     "delete": "حذف",
     "copied": "تم النسخ",
     "retry": "إعادة المحاولة",
