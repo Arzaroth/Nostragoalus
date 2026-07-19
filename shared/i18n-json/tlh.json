@@ -49,7 +49,7 @@
       "champion-oracle": { "name": "ta' chenmoHwI'", "desc": "Qappu' wInwI'lI'.", "criteria": "charghwI' Damaq." },
       "golden-touch": { "name": "baS SuD ghop", "desc": "Qappu' DujwI'lI'.", "criteria": "chID pIn Damaq." },
       "underdog-whisperer": { "name": "Do'Ha' wInwI'", "desc": "puj wInwI'lI' Qap.", "criteria": "puj wInwI' (rIn 15 nungbe') Damaq 'ej Qap." },
-      "treble": { "name": "wej Qapla'", "desc": "wej Qapla' Daghaj.", "criteria": "wej Qapla' DatlhejtaH." },
+      "treble": { "name": "wej Qapla'", "desc": "wej Qapla' Daghaj.", "criteria": "may' rInDI' wej Qapla' Daghaj: charghwI' 'utlh, ghom may' pIn, Qaw' may' pIn, joH irma. Deghmey qelbe'." },
       "form-reader": { "name": "Sub laDwI'", "desc": "naDev Sub Hoch may' DalaD.", "criteria": "wa' Sub may' mI' vagh DaDel; wej Sub (baS Doq), vagh (baS chIS), Soch (baS SuD)." },
       "champions-path": { "name": "charghwI' He", "desc": "Qapla' He naQ DaDel.", "criteria": "charghwI' He naQ DaDel: Hoch may' mI' Del baS SuD Suq, Hoch may' mI' pup Del nagh 'IH Suq." },
       "group-guru": { "name": "ghom pIn'a'", "desc": "ghommey naQ DalaD.", "criteria": "wa' ghom naQ may' Hoch mI' DaDel: wa' baS Doq, cha' baS chIS, wej baS SuD." },

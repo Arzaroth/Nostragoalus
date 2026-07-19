@@ -54,7 +54,7 @@
       "champion-oracle": { "name": "Kingmaker", "desc": "Your champion pick lifted the trophy.", "criteria": "Pick the team that goes on to win the tournament." },
       "golden-touch": { "name": "Golden Touch", "desc": "Your Golden Boot pick finished top scorer.", "criteria": "Pick the tournament's top scorer as your Golden Boot." },
       "underdog-whisperer": { "name": "Underdog Whisperer", "desc": "Your long-shot champion pick came good.", "criteria": "Win with a champion pick ranked outside the FIFA top 15 (or unranked)." },
-      "treble": { "name": "Treble", "desc": "Held three trophies in one tournament.", "criteria": "Hold three competition-end trophies at the same time." },
+      "treble": { "name": "Treble", "desc": "Held three trophies in one tournament.", "criteria": "Win three of the four end-of-tournament trophies in the same competition: Grand Champion, Group Stage Guru, Bracket Master, Madame Irma. Achievement badges do not count." },
       "form-reader": { "name": "Form Reader", "desc": "You read whole teams' tournaments, game after game.", "criteria": "Call the outcome of one team's matches 5 times, for 3 teams (bronze), 5 (silver), 7 (gold)." },
       "champions-path": { "name": "Champion's Path", "desc": "You called the winners' entire run to the trophy.", "criteria": "Call the champion's whole run: every match's outcome for gold, every one exact for diamond." },
       "group-guru": { "name": "Group Guru", "desc": "Read whole groups, top to bottom.", "criteria": "Call every match's outcome in a full group: 1 for bronze, 2 silver, 3 gold." },

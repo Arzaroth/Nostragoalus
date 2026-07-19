@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Changed
+
+- The Treble achievement now spells out what it wants: three of the four end-of-tournament trophies (Grand Champion, Group Stage Guru, Bracket Master, Madame Irma) in the same competition, and achievement badges do not count.
+
 ### Fixed
 
 - Once a competition is over, the fixtures list lands on the final again instead of staying at the top: with nothing live or upcoming left, the auto-scroll now targets the last match.
