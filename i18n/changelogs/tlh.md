@@ -5,6 +5,10 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### choHpu'
+
+- DaH may'mey tetlh poSlu'DI', may'mey rIntaH SoQ. Hoch may' qaSpu'bogh 'ay' SoQ mob, vaj tetlh may'mey qaSbe'bogh 'agh. 'ay' Qav SoQbe'taH, 'ej may' qaSpu'bogh ghomHa'wI' poSmoH.
+
 ### tI'pu'
 
 - DaH may' De' HaStaDaq «pIn wanI'wI'pu'» raQ chImbe' 'ej «pIn boQwI'pu'» buy'. FIFA cha' patmey pIm ghItlh, may' tlha' wa' pat latlh pat tlhaHmoH; DaH ghItlh'a' wanI' pagh ngaSbogh pIn wanI'wI' De' buSHa', 'ej wanI' De'Daj lo'qa', vaj cha' raQ buy'taH.
