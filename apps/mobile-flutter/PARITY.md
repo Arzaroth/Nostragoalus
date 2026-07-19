@@ -97,8 +97,9 @@ with the data caveat noted per area.
 - [~] League chat - send / receive / history + message reactions; `[!]` live message
   round-trip needs a provisioned multi-member league (a keyholder to seal keys)
 - [~] DMs (1:1) - inbox / room / create; `[!]` live round-trip needs a 2nd user
-- [~] Chat rich: message reactions + report done; `[ ]` threads, mentions, images,
-  edit/delete, moderator dashboard (reports/moderate), presence, typing
+- [~] Chat rich: message reactions + report + edit (own, re-encrypt) done; `[ ]`
+  threads, mentions, images, delete, moderator dashboard (reports/moderate),
+  presence, typing
 - [~] DM rich: reactions (long-press) + read-on-open (mark thread read); `[ ]`
   read-receipt display, images
 - [x] Identity reset (hard reset -> fresh keypair, revoke old sealed keys, confirm dialog)

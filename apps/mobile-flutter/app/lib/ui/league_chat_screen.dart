@@ -118,7 +118,9 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
     }
   }
 
-  Future<void> _messageActions(String messageId) async {
+  Future<void> _messageActions(ChatLine line) async {
+    final selfId = ref.read(authControllerProvider).valueOrNull?.id;
+    final isOwn = line.userId != null && line.userId == selfId;
     const emojis = ['👍', '❤️', '😂', '🔥', '😮', '😢'];
     final action = await showModalBottomSheet<String>(
       context: context,
@@ -137,6 +139,12 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
                   ),
               ],
             ),
+            if (isOwn && line.text != null)
+              ListTile(
+                leading: const Icon(Icons.edit),
+                title: Text(context.tr('chat.edit.button')),
+                onTap: () => Navigator.pop(context, 'edit'),
+              ),
             ListTile(
               leading: const Icon(Icons.flag_outlined),
               title: Text(context.tr('chat.report')),
@@ -150,16 +158,44 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
     try {
       final api = ref.read(apiProvider);
       if (action == 'report') {
-        await api.reportChatMessage(widget.leagueId, messageId);
+        await api.reportChatMessage(widget.leagueId, line.id);
         if (mounted) {
           ScaffoldMessenger.of(context)
               .showSnackBar(SnackBar(content: Text(context.tr('chat.reported'))));
         }
+      } else if (action == 'edit') {
+        await _edit(line);
       } else if (action.startsWith('react:')) {
-        await api.reactChatMessage(widget.leagueId, messageId, action.substring(6));
+        await api.reactChatMessage(widget.leagueId, line.id, action.substring(6));
         ref.invalidate(leagueChatProvider(widget.leagueId));
       }
     } catch (_) {/* ignore */}
+  }
+
+  Future<void> _edit(ChatLine line) async {
+    final controller = TextEditingController(text: line.text ?? '');
+    final newText = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(context.tr('chat.edit.button')),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLines: null,
+          decoration: const InputDecoration(border: OutlineInputBorder()),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context), child: Text(context.tr('common.cancel'))),
+          FilledButton(
+              onPressed: () => Navigator.pop(context, controller.text.trim()),
+              child: Text(context.tr('common.save'))),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (newText == null || newText.isEmpty || newText == line.text) return;
+    await ref.read(editChatProvider)(widget.leagueId, line.id, newText);
   }
 
   @override
@@ -195,7 +231,7 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
                                   ? const TextStyle(fontStyle: FontStyle.italic)
                                   : null),
                           subtitle: Text(line.createdAt),
-                          onLongPress: () => _messageActions(line.id),
+                          onLongPress: () => _messageActions(line),
                         );
                       },
                     ),

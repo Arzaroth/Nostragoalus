@@ -311,6 +311,10 @@ class NostragoalusApi {
       _api.putJson('/api/leagues/$leagueId/chat/react',
           body: {'messageId': messageId, 'emoji': emoji});
 
+  Future<void> editChatMessage(String leagueId, String messageId, String ciphertext) async =>
+      _api.postJson('/api/leagues/$leagueId/chat/edit',
+          body: {'messageId': messageId, 'ciphertext': ciphertext});
+
   Future<void> reportChatMessage(String leagueId, String messageId) async =>
       _api.postJson('/api/leagues/$leagueId/chat/report',
           body: {'messageId': messageId, 'reported': true});

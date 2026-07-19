@@ -167,3 +167,15 @@ final sendChatProvider = Provider<Future<void> Function(String, String)>((ref) {
     ref.invalidate(leagueChatProvider(leagueId));
   };
 });
+
+/// Re-encrypt + edit an existing own message under the current epoch key.
+final editChatProvider = Provider<Future<void> Function(String, String, String)>((ref) {
+  return (leagueId, messageId, text) async {
+    final sodium = await ref.read(sodiumProvider.future);
+    final view = ref.read(leagueChatProvider(leagueId)).valueOrNull;
+    if (view == null || view.key == null) return;
+    final ct = e2ee.encryptMessage(sodium, text, view.key!);
+    await ref.read(apiProvider).editChatMessage(leagueId, messageId, ct);
+    ref.invalidate(leagueChatProvider(leagueId));
+  };
+});
