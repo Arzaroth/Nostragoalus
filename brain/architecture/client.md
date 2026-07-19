@@ -28,7 +28,14 @@ The active competition is a **URL path prefix**. See
 
 - `apps/web-nuxt/app/pages/[competition]/` - matches (list + detail), bracket, map (Leaflet),
   leaderboard, predictions/bot, teams/[code], users/[id]. The fixtures list
-  auto-scrolls on load to the live (else next upcoming) match; the `users/[id]`
+  auto-scrolls on load to the live (else next upcoming) match, and seeds its
+  per-round collapse from the unfiltered match list: a round whose matches have
+  all reached a full-time status starts collapsed, except the last round (the
+  final). The seed runs once per competition so a refetch cannot undo a manual
+  toggle, and both the `#match-<id>` hash anchor and "Jump to first" open a
+  collapsed round before scrolling (a `v-show`n row cannot be scrolled to). The
+  auto-scroll target is never in a collapsed round - a concluded round has no
+  live or upcoming match by definition. The `users/[id]`
   profile splits picks at "now" (played above, admin-only upcoming below) and
   centers that boundary anchor on load, so it opens on the latest action rather
   than the top of a long history.

@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Changed
+
+- Fixtures now open with the finished rounds folded away: any round whose matches have all been played starts collapsed, so the list lands on what is still to come. The final is never folded, and a link straight to a played match still opens its round.
+
 ### Fixed
 
 - The Stats tab no longer shows an empty "Top scorers" board while "Top assists" is full. FIFA publishes the two rankings separately and can lag one behind the other after a matchday; the app now ignores a scorers feed that carries no goals yet and falls back to its own goal data, so both boards stay populated.

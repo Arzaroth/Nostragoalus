@@ -271,6 +271,30 @@ function toggleRound(id: string) {
   next.has(id) ? next.delete(id) : next.add(id)
   collapsedRounds.value = next
 }
+// ... except rounds whose matches have all been played, which start collapsed
+// (the last round - the final - always stays open). Seeded from the unfiltered
+// list once per competition, so the status filter can't fake a "done" round and
+// a refetch can't undo a manual toggle.
+let seededRoundsFor: string | null = null
+watch(
+  [matches, slug],
+  () => {
+    const list = matches.value
+    if (!list?.length || seededRoundsFor === slug.value) return
+    seededRoundsFor = slug.value
+    const rounds = new Map<string, { sort: number; done: boolean }>()
+    for (const m of list) {
+      const r = rounds.get(m.roundId) ?? { sort: m.roundSortOrder, done: true }
+      if (bucketOf(m.status) !== 'fulltime') r.done = false
+      rounds.set(m.roundId, r)
+    }
+    const last = Math.max(...[...rounds.values()].map((r) => r.sort))
+    collapsedRounds.value = new Set(
+      [...rounds].filter(([, r]) => r.done && r.sort !== last).map(([id]) => id),
+    )
+  },
+  { immediate: true },
+)
 
 // Hash anchors (e.g. the home page's next-match CTA) point at rows that only
 // exist once the query resolves AND the page is mounted - the router's own
@@ -286,6 +310,14 @@ watch(
   async () => {
     const target = route.hash.startsWith('#match-') ? route.hash.slice(1) : null
     if (!target || route.hash === scrolledHash || !pageMounted.value) return
+    // A concluded round starts collapsed, and a v-show'd row can't be scrolled
+    // to - open the anchored match's round first.
+    const roundId = (matches.value ?? []).find((m) => `match-${m.id}` === target)?.roundId
+    if (roundId && collapsedRounds.value.has(roundId)) {
+      const next = new Set(collapsedRounds.value)
+      next.delete(roundId)
+      collapsedRounds.value = next
+    }
     await nextTick()
     const el = document.getElementById(target)
     if (!el) return
