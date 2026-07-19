@@ -25,6 +25,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ### Fixed
 
+- A chat message no longer vanishes while it is being sent: it appears right away marked "Sending...", then turns into the real message once it lands. A send that fails now stays in the conversation marked "Not sent" with Retry and Discard instead of disappearing, so the text is never lost. Same in direct messages and thread replies.
 - Once a competition is over, the fixtures list lands on the final again instead of staying at the top: with nothing live or upcoming left, the auto-scroll now targets the last match.
 
 ## [4.3.3] - 2026-07-19

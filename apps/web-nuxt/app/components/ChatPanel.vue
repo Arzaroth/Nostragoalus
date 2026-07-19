@@ -1114,6 +1114,7 @@ watch(
           <div
             v-memo="[
               m.id, m.userId, m.text, m.editedAt, m.moderation, m.reported, m.myReaction, m.reactions, m.threadCount, m.attachments, m.parentId,
+              m.pending, m.failed,
               names, avatars,
               m.id === firstUnreadId,
               pickerFor === m.id,
@@ -1131,6 +1132,7 @@ watch(
             ]"
             :data-mid="m.id"
             class="group text-sm flex flex-col rounded transition-colors min-w-0"
+            :class="m.pending ? 'opacity-60' : ''"
           >
             <div class="flex items-center gap-2 mb-0.5" :class="m.userId === meId ? 'flex-row-reverse' : ''">
               <NuxtLink
@@ -1148,8 +1150,17 @@ watch(
               <span v-tooltip.top="fmtFull(m.createdAt)" class="text-[10px]" style="color: var(--p-text-muted-color)">{{ fmtTime(m.createdAt) }}</span>
               <span v-if="m.editedAt" v-tooltip.bottom="t('chat.edit.at', { time: fmtTime(m.editedAt) })" class="text-[10px] italic" style="color: var(--p-text-muted-color)">{{ t('chat.edit.edited') }}</span>
               <span v-if="!isDm && m.moderation === 'PENDING'" class="text-[10px] uppercase tracking-wider font-semibold px-1 rounded" style="border: 1px solid var(--ng-danger); color: var(--ng-danger)">{{ t('chat.moderation.pendingTag') }}</span>
+              <!-- In-flight / failed send: the message stays visible with its state. -->
+              <span v-if="m.pending" class="text-[10px] inline-flex items-center gap-1" style="color: var(--p-text-muted-color)" data-testid="chat-sending">
+                <i class="pi pi-spin pi-spinner text-[10px]" />{{ t('chat.outbox.sending') }}
+              </span>
+              <span v-else-if="m.failed" class="text-[10px] inline-flex items-center gap-1.5" style="color: var(--ng-danger)" data-testid="chat-send-failed">
+                <i class="pi pi-exclamation-circle text-[10px]" />{{ t('chat.outbox.failed') }}
+                <button type="button" class="underline" @click="chat.retrySend(m.id)">{{ t('chat.outbox.retry') }}</button>
+                <button type="button" class="underline opacity-70 hover:opacity-100" @click="chat.discardSend(m.id)">{{ t('chat.outbox.discard') }}</button>
+              </span>
               <!-- Per-message actions, icon-only, revealed on hover. -->
-              <span v-if="m.moderation !== 'REMOVED'" class="ms-auto flex items-center gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+              <span v-if="m.moderation !== 'REMOVED' && !m.pending && !m.failed" class="ms-auto flex items-center gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                 <button type="button" v-tooltip.bottom="t('chat.reply.button')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.reply.button')" @click="startReply(m)"><i class="pi pi-reply text-xs" /></button>
                 <button type="button" v-tooltip.bottom="t('chat.thread.reply')" class="opacity-60 hover:opacity-100" :aria-label="t('chat.thread.reply')" @click="openThreadFor(m)"><i class="pi pi-comments text-xs" /></button>
                 <span v-if="contentVisible(m)" class="relative inline-flex">
@@ -1300,14 +1311,22 @@ watch(
               </div>
               <p v-if="threadLoading" class="text-xs" style="color: var(--p-text-muted-color)">{{ t('chat.loading') }}</p>
               <p v-else-if="!threadMessages.length" class="text-xs" style="color: var(--p-text-muted-color)">{{ t('chat.thread.empty') }}</p>
-              <div v-for="r in threadMessages" :key="r.id" :data-mid="r.id" class="group flex flex-col text-sm min-w-0" :class="r.userId === meId ? 'items-end' : 'items-start'">
+              <div v-for="r in threadMessages" :key="r.id" :data-mid="r.id" class="group flex flex-col text-sm min-w-0" :class="[r.userId === meId ? 'items-end' : 'items-start', r.pending ? 'opacity-60' : '']">
                 <div class="flex items-center gap-2 self-stretch" :class="r.userId === meId ? 'flex-row-reverse' : ''">
                   <UserAvatar :image="avatarFor(r.userId)" :user-id="r.userId" class="!w-5 !h-5 shrink-0 text-[0.5rem]" />
                   <NuxtLink v-if="profileLink(r.userId)" :to="profileLink(r.userId)!" class="font-semibold truncate text-xs hover:underline" :style="r.userId === meId ? 'color: var(--p-primary-color)' : ''">{{ nameFor(r.userId) }}</NuxtLink>
                   <span v-else class="font-semibold truncate text-xs" :style="r.userId === meId ? 'color: var(--p-primary-color)' : ''">{{ nameFor(r.userId) }}</span>
                   <span v-tooltip.top="fmtFull(r.createdAt)" class="text-[10px]" style="color: var(--p-text-muted-color)">{{ fmtTime(r.createdAt) }}</span>
                   <span v-if="r.editedAt" class="text-[10px] italic" style="color: var(--p-text-muted-color)">{{ t('chat.edit.edited') }}</span>
-                  <span class="ms-auto flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span v-if="r.pending" class="text-[10px] inline-flex items-center gap-1" style="color: var(--p-text-muted-color)">
+                    <i class="pi pi-spin pi-spinner text-[10px]" />{{ t('chat.outbox.sending') }}
+                  </span>
+                  <span v-else-if="r.failed" class="text-[10px] inline-flex items-center gap-1.5" style="color: var(--ng-danger)">
+                    <i class="pi pi-exclamation-circle text-[10px]" />{{ t('chat.outbox.failed') }}
+                    <button type="button" class="underline" @click="chat.retrySend(r.id)">{{ t('chat.outbox.retry') }}</button>
+                    <button type="button" class="underline opacity-70 hover:opacity-100" @click="chat.discardSend(r.id)">{{ t('chat.outbox.discard') }}</button>
+                  </span>
+                  <span v-if="!r.pending && !r.failed" class="ms-auto flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button v-if="!isDm && contentVisible(r) && r.userId && r.userId !== meId" type="button" v-tooltip.bottom="r.reported ? t('chat.moderation.unreport') : t('chat.moderation.report')" class="opacity-60 hover:opacity-100" :aria-label="r.reported ? t('chat.moderation.unreport') : t('chat.moderation.report')" :style="r.reported ? 'color: var(--ng-danger)' : ''" @click="chat.report(r.id)"><i :class="r.reported ? 'pi pi-flag-fill' : 'pi pi-flag'" class="text-[10px]" /></button>
                     <button v-if="!isDm && (isAdmin || r.userId === meId)" type="button" v-tooltip.bottom="r.userId === meId ? t('chat.delete') : t('chat.moderation.remove')" class="opacity-60 hover:opacity-100" :aria-label="r.userId === meId ? t('chat.delete') : t('chat.moderation.remove')" style="color: var(--ng-danger)" @click="chat.moderate(r.id, 'remove')"><i class="pi pi-trash text-[10px]" /></button>
                   </span>

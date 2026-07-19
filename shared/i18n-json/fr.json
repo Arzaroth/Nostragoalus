@@ -190,6 +190,7 @@
     "enable": "Activer le chat",
     "disable": "Désactiver le chat",
     "send": "Envoyer",
+    "outbox": { "sending": "Envoi...", "failed": "Non envoyé", "retry": "Réessayer", "discard": "Supprimer" },
     "copyText": "Copier le texte",
     "placeholder": "Écrire un message",
     "loadMore": "Charger les messages précédents",

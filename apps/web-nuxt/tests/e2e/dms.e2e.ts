@@ -86,9 +86,18 @@ test('a signed-in user opens the messaging dock in Direct mode, finds someone, a
   await expect(composer).toBeVisible({ timeout: 15_000 })
   const body = `hello ${tag}`
   await typeInto(composer, body)
+  // Hold the POST so the in-flight state is observable: the message must show up
+  // straight away, marked as sending, instead of vanishing until the server answers.
+  await page.route('**/api/dm/*/messages', async (route) => {
+    if (route.request().method() === 'POST') await new Promise((r) => setTimeout(r, 3_000))
+    await route.continue()
+  })
   await composer.press('Enter')
+  await expect(page.getByText(body)).toBeVisible({ timeout: 5_000 })
+  await expect(page.getByTestId('chat-sending')).toBeVisible({ timeout: 5_000 })
 
-  // The sent message bubble appears in the thread (decrypted client-side).
+  // Once it lands the bubble is the real message, no sending marker left.
+  await expect(page.getByTestId('chat-sending')).toBeHidden({ timeout: 15_000 })
   await expect(page.getByText(body)).toBeVisible({ timeout: 15_000 })
 })
 

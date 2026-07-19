@@ -11,7 +11,8 @@ import { chatKeyPins, isKeyTrusted } from '~/composables/useChatKeyPins'
 import { emptyReactionTotals, type ReactionEmoji, type ReactionTotals } from '#shared/reactions'
 import type { ChatAttachmentDTO, ChatMediaItemDTO, ChatMessageDTO, ChatModerationState } from '#shared/types/chat'
 import type { DmThreadDetailDTO } from '#shared/types/dm'
-import type { DecryptedMessage, PendingImage, ReportedMessage } from '~/composables/useLeagueChat'
+import { makePendingMessage } from '~/composables/useLeagueChat'
+import type { DecryptedMessage, PendingImage, ReportedMessage, SendOptions } from '~/composables/useLeagueChat'
 
 // A single DM thread as a chat "room", exposing the SAME surface as useLeagueChat
 // so ChatPanel drives either. The message stack (reactions, replies, threads,
@@ -182,15 +183,15 @@ export function useDmRoom(threadId: MaybeRefOrGetter<string>) {
     }
   }
 
-  async function send(
-    text: string,
-    opts: { parentId?: string | null; threadId?: string | null; images?: PendingImage[]; mentions?: string[] } = {},
-  ): Promise<void> {
+  async function send(text: string, opts: SendOptions = {}): Promise<void> {
     const body = text.trim()
     const images = opts.images ?? []
     const ck = currentKey.value
     if ((!body && images.length === 0) || !ck || sending.value) return
     sending.value = true
+    const local = makePendingMessage(myId.value, body, { parentId: opts.parentId, threadId: opts.threadId })
+    const list = opts.threadId ? threadMessages : messages
+    list.value = [...list.value, local]
     try {
       const [ciphertext, imageCts] = await Promise.all([
         encryptMessage(body, ck),
@@ -206,19 +207,34 @@ export function useDmRoom(threadId: MaybeRefOrGetter<string>) {
           images: images.map((img, i) => ({ ciphertext: imageCts[i], byteSize: img.byteSize })),
         },
       })
-      if (message) {
-        const dec = await decryptRow(message)
-        if (opts.threadId) {
-          if (!threadMessages.value.some((m) => m.id === message.id)) {
-            threadMessages.value = [...threadMessages.value, dec]
-          }
-        } else if (!messages.value.some((m) => m.id === message.id)) {
-          messages.value = [...messages.value, dec]
-        }
-      }
+      // Swap the pending stand-in for the real row (or just drop it if the WS echo
+      // already landed the message).
+      const dec = message ? await decryptRow(message) : null
+      list.value = dec && !list.value.some((m) => m.id === dec.id)
+        ? list.value.map((m) => (m.id === local.id ? dec : m))
+        : list.value.filter((m) => m.id !== local.id)
+    } catch {
+      failedSends.set(local.id, { text, opts })
+      list.value = list.value.map((m) => (m.id === local.id ? { ...m, pending: false, failed: true } : m))
     } finally {
       sending.value = false
     }
+  }
+
+  const failedSends = new Map<string, { text: string; opts: SendOptions }>()
+  function dropLocal(id: string): void {
+    failedSends.delete(id)
+    messages.value = messages.value.filter((m) => m.id !== id)
+    threadMessages.value = threadMessages.value.filter((m) => m.id !== id)
+  }
+  async function retrySend(id: string): Promise<void> {
+    const payload = failedSends.get(id)
+    if (!payload) return
+    dropLocal(id)
+    await send(payload.text, payload.opts)
+  }
+  function discardSend(id: string): void {
+    dropLocal(id)
   }
 
   function patchMessage(id: string, patch: Partial<DecryptedMessage>): void {
@@ -456,6 +472,8 @@ export function useDmRoom(threadId: MaybeRefOrGetter<string>) {
     identityStatus,
     load,
     send,
+    retrySend,
+    discardSend,
     editMessage,
     roomMedia,
     loadAttachment,

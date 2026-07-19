@@ -56,6 +56,15 @@ private key lives in IndexedDB. Three recovery paths, all in the chat overflow m
 - Length limit 2000 (`MAX_MESSAGE_TEXT_LENGTH`), with a 16KB ciphertext server
   backstop.
 - Own messages are right-aligned (bubble, images, reactions, mirrored header).
+- Sending is optimistic: `send()` appends a local stand-in (`makePendingMessage`,
+  id `local-<n>`, `pending: true`) before it encrypts and POSTs, so the message
+  never vanishes between enter and the server answering. The POST response
+  replaces it in place (or just removes it if the `chat:new` echo already landed
+  the row). A failed POST flips it to `failed: true` and keeps it in the list with
+  retry / discard (`retrySend` / `discardSend` replay the stored payload, images
+  included) instead of losing the text. Pending and failed bubbles carry no
+  per-message actions. Same code path for a DM (`useDmRoom` reuses
+  `makePendingMessage`).
 - Quotes (`parentId`) render the decrypted parent inline; threads (`threadId`)
   are a separate relation shown oldest-first with their own scoped composer, and
   `getThreadCounts` feeds the per-message thread count.
