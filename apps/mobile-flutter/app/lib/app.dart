@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'i18n/i18n_scope.dart';
@@ -38,6 +39,15 @@ class NostragoalusApp extends ConsumerWidget {
   }
 }
 
+bool _splashRemoved = false;
+
+/// Drop the native splash once, after the first real screen has laid out.
+void _removeSplashOnce() {
+  if (_splashRemoved) return;
+  _splashRemoved = true;
+  WidgetsBinding.instance.addPostFrameCallback((_) => FlutterNativeSplash.remove());
+}
+
 class _AuthGate extends ConsumerWidget {
   const _AuthGate();
 
@@ -46,8 +56,14 @@ class _AuthGate extends ConsumerWidget {
     return ref.watch(authControllerProvider).when(
           loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
           // An auth error means no usable session; fall back to sign in.
-          error: (_, __) => const SignInScreen(),
-          data: (user) => user == null ? const SignInScreen() : const HomeShell(),
+          error: (_, __) {
+            _removeSplashOnce();
+            return const SignInScreen();
+          },
+          data: (user) {
+            _removeSplashOnce();
+            return user == null ? const SignInScreen() : const HomeShell();
+          },
         );
   }
 }

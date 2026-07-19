@@ -27,6 +27,7 @@ dependencies:
   sodium: ^3.4.6
   crypto: ^3.0.7
   flutter_web_auth_2: ^5.0.3
+  flutter_native_splash: ^2.4.8
 
 dev_dependencies:
   flutter_test:
@@ -46,6 +47,18 @@ flutter:
     # Frozen cross-stack KATs (shared/parity-json), mirrored by tool/sync_parity.sh.
     - assets/parity/
     - assets/icon/
+
+# Launch splash (indigo brand background + the app icon). Regenerate:
+# dart run flutter_native_splash:create
+flutter_native_splash:
+  color: "#0D0F1A"
+  image: assets/icon/maskable.png
+  android_12:
+    color: "#0D0F1A"
+    image: assets/icon/maskable.png
+  android: true
+  ios: false
+  web: false
 
 # App launcher icon (from the web PWA icon). Regenerate: dart run flutter_launcher_icons
 flutter_launcher_icons:

@@ -127,7 +127,7 @@ with the data caveat noted per area.
 - [ ] Deep links (inbound `goal.arzaroth.com/...`)
 - [ ] Feed subscription (calendar)
 - [ ] Share-token landing pages (a/p/s/[token] - analytics/profile/wrapped shares)
-- [ ] App launcher name + icon `[x]`, splash `[ ]`
+- [x] App launcher name + icon + native splash (indigo brand, held to first frame)
 
 ---
 
