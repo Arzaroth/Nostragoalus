@@ -1506,6 +1506,8 @@
     "home": "Retour au terrain"
   },
   "leagues": {
+    "open": "Ouvrir la ligue",
+    "joinButton": "Rejoindre",
     "prizes": "Récompenses",
     "makeModerator": "Nommer modérateur",
     "makeMember": "Rétrograder en membre",

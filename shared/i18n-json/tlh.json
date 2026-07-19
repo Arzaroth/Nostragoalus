@@ -1506,6 +1506,8 @@
     "home": "yotlh chegh"
   },
   "leagues": {
+    "open": "ghaj poSmoH",
+    "joinButton": "muvchuq",
     "prizes": "pop",
     "makeModerator": "pIn moj",
     "makeMember": "'utlh moj",

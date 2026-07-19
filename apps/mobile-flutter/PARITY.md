@@ -75,7 +75,7 @@ with the data caveat noted per area.
 - [~] League board (points/survival mode-board)
 - [x] League detail: members, role, mode
 - [x] Create league
-- [~] Invites (create / list / delete); `[ ]` accept-link (inbound deep link)
+- [x] Invites (create / list / delete / accept-link via join screen + deep link)
 - [x] Leave league / transfer ownership / member management (promote, demote, kick)
 - [x] Rewards / prizes (per-league criteria + ranking drill-in bottom sheet)
 - [ ] Featured team / team specialist (admin edit)
@@ -124,7 +124,8 @@ with the data caveat noted per area.
 - [x] Roadmap suggestions (submit)
 - [x] About / license / tech-stack page
 - [ ] Onboarding tour
-- [ ] Deep links (inbound `goal.arzaroth.com/...`)
+- [x] Deep links (inbound `goal.arzaroth.com/...`) - invite join, league detail,
+  match detail; App Links intent-filter (autoVerify pending server assetlinks.json)
 - [x] Feed subscription (calendar) - subscribe (webcal) / copy / regenerate
 - [ ] Share-token landing pages (a/p/s/[token] - analytics/profile/wrapped shares)
 - [x] App launcher name + icon + native splash (indigo brand, held to first frame)

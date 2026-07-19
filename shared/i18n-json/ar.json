@@ -1708,6 +1708,8 @@
     "home": "العودة إلى الملعب"
   },
   "leagues": {
+    "open": "افتح الدوري",
+    "joinButton": "انضم",
     "prizes": "الجوائز",
     "makeModerator": "تعيين مشرفًا",
     "makeMember": "تعيين عضوًا",

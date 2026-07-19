@@ -151,6 +151,14 @@ class NostragoalusApi {
         if (maxUses != null) 'maxUses': maxUses,
       });
 
+  /// Public invite preview for a join landing (league name + member count).
+  Future<Map<String, dynamic>> invitePreview(String token) async =>
+      _api.getJson('/api/leagues/invite/$token');
+
+  /// Accept an invite token; returns the joined league.
+  Future<Map<String, dynamic>> acceptInvite(String token) async =>
+      _api.postJson('/api/leagues/invite/$token/accept');
+
   Future<void> deleteInvite(String leagueId, String inviteId) async =>
       _api.deleteJson('/api/leagues/$leagueId/invites/$inviteId');
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'deeplink/deep_links.dart';
 import 'i18n/i18n_scope.dart';
 import 'state/providers.dart';
 import 'theme/app_theme.dart';
@@ -27,11 +28,14 @@ class NostragoalusApp extends ConsumerWidget {
             child: MaterialApp(
               title: 'Nostragoalus',
               debugShowCheckedModeBanner: false,
+              navigatorKey: navigatorKey,
               theme: AppTheme.light(seed),
               darkTheme: AppTheme.dark(seed),
               themeMode: mode,
-              builder: (context, child) =>
-                  Directionality(textDirection: i18n.textDirection, child: child!),
+              builder: (context, child) => Directionality(
+                textDirection: i18n.textDirection,
+                child: DeepLinkController(child: child!),
+              ),
               home: const _AuthGate(),
             ),
           ),

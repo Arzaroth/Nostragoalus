@@ -214,6 +214,10 @@ final matchLiveDetailProvider = FutureProvider.family<Map<String, dynamic>?, Str
 final feedSubscriptionProvider =
     FutureProvider<Map<String, dynamic>>((ref) => ref.watch(apiProvider).feedSubscription());
 
+/// Public preview for an invite token (league name + member count).
+final invitePreviewProvider = FutureProvider.family<Map<String, dynamic>, String>(
+    (ref, token) => ref.watch(apiProvider).invitePreview(token));
+
 final cabinetProvider = FutureProvider.family<CabinetResponse, String>(
     (ref, userId) => ref.watch(apiProvider).cabinet(userId));
 

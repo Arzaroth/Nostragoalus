@@ -1511,6 +1511,8 @@
     "home": "Back to the pitch"
   },
   "leagues": {
+    "open": "Open league",
+    "joinButton": "Join",
     "prizes": "Prizes",
     "makeModerator": "Make moderator",
     "makeMember": "Make member",

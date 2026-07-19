@@ -30,6 +30,15 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Inbound web deep links (app_links). autoVerify needs
+                 /.well-known/assetlinks.json on goal.arzaroth.com; until that is
+                 served, Android offers the app in the link chooser. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="goal.arzaroth.com" />
+            </intent-filter>
         </activity>
         <!-- SSO redirect callback (flutter_web_auth_2). The `nostragoalus` scheme
              must also be in the server's NUXT_SSO_TRUSTED_ORIGINS. -->

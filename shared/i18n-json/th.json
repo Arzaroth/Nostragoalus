@@ -1506,6 +1506,8 @@
     "home": "กลับสู่สนาม"
   },
   "leagues": {
+    "open": "เปิดลีก",
+    "joinButton": "เข้าร่วม",
     "prizes": "รางวัล",
     "makeModerator": "ตั้งเป็นผู้ดูแล",
     "makeMember": "ตั้งเป็นสมาชิก",
