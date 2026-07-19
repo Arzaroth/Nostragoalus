@@ -168,6 +168,63 @@ final sendChatProvider = Provider<Future<void> Function(String, String)>((ref) {
   };
 });
 
+/// One reported message, decrypted for the moderator.
+class ModerationReport {
+  const ModerationReport({
+    required this.messageId,
+    required this.text,
+    required this.reports,
+    required this.moderation,
+    required this.createdAt,
+  });
+  final String messageId;
+  final String? text; // null when the key for its epoch is unavailable
+  final int reports;
+  final String moderation; // VISIBLE / PENDING / REMOVED
+  final String createdAt;
+}
+
+/// The decrypted moderation queue for a league (owner/moderators only). Reuses
+/// the per-epoch keys the caller holds to read each reported message; the server
+/// only ever sees ciphertext.
+final moderationReportsProvider =
+    FutureProvider.family<List<ModerationReport>, String>((ref, leagueId) async {
+  final sodium = await ref.watch(sodiumProvider.future);
+  final api = ref.watch(apiProvider);
+  final identity = (await ref.watch(chatIdentityProvider.future)).identity;
+  if (identity == null) return const [];
+
+  final status = await api.chatStatus(leagueId);
+  final keys = <int, Uint8List>{};
+  for (final wk in status.myWrappedKeys) {
+    try {
+      keys[wk.epoch.toInt()] = e2ee.openGroupKey(sodium, wk.wrappedKey, identity.asMap);
+    } catch (_) {/* skip epochs we cannot open */}
+  }
+
+  final reports = await api.chatReports(leagueId);
+  final out = <ModerationReport>[];
+  for (final raw in reports) {
+    final r = (raw as Map).cast<String, dynamic>();
+    final epoch = (r['epoch'] as num?)?.toInt() ?? 0;
+    final k = keys[epoch];
+    String? text;
+    if (k != null) {
+      try {
+        text = e2ee.decryptMessage(sodium, r['ciphertext'].toString(), k);
+      } catch (_) {/* corrupt / wrong key */}
+    }
+    out.add(ModerationReport(
+      messageId: r['id'].toString(),
+      text: text,
+      reports: (r['reports'] as num?)?.toInt() ?? 0,
+      moderation: (r['moderation'] ?? 'VISIBLE').toString(),
+      createdAt: (r['createdAt'] ?? '').toString(),
+    ));
+  }
+  return out;
+});
+
 /// Re-encrypt + edit an existing own message under the current epoch key.
 final editChatProvider = Provider<Future<void> Function(String, String, String)>((ref) {
   return (leagueId, messageId, text) async {

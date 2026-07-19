@@ -1,4 +1,11 @@
 {
+  "moderation": {
+    "title": "Modération",
+    "empty": "Aucun message signalé",
+    "reportCount": "{n} signalements",
+    "remove": "Retirer",
+    "restore": "Restaurer"
+  },
   "verifyEmail": {
     "title": "Vérifiez votre e-mail",
     "body": "Confirmez votre adresse pour sécuriser votre compte.",

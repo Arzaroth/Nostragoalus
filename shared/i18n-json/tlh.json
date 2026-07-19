@@ -1,4 +1,11 @@
 {
+  "moderation": {
+    "title": "SeH",
+    "empty": "pagh QIn ghItlhlu'",
+    "reportCount": "{n} ghItlh",
+    "remove": "teq",
+    "restore": "chegh"
+  },
   "verifyEmail": {
     "title": "De'wI' QIn yIngu'",
     "body": "De'wI' yI'ol reH lojmItID Qan.",

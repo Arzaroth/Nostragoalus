@@ -315,6 +315,14 @@ class NostragoalusApi {
       _api.postJson('/api/leagues/$leagueId/chat/edit',
           body: {'messageId': messageId, 'ciphertext': ciphertext});
 
+  /// The moderation queue (owner/mod): reported messages with ciphertext + epoch.
+  Future<List<dynamic>> chatReports(String leagueId) async =>
+      (await _api.getJson('/api/leagues/$leagueId/chat/reports'))['reports'] as List<dynamic>;
+
+  Future<void> moderateChatMessage(String leagueId, String messageId, String action) async =>
+      _api.postJson('/api/leagues/$leagueId/chat/moderate',
+          body: {'messageId': messageId, 'action': action});
+
   Future<void> reportChatMessage(String leagueId, String messageId) async =>
       _api.postJson('/api/leagues/$leagueId/chat/report',
           body: {'messageId': messageId, 'reported': true});

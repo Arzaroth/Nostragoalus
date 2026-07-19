@@ -8,6 +8,7 @@ import '../state/providers.dart';
 import 'league_board_screen.dart';
 import 'league_chat_screen.dart';
 import 'league_settings_screen.dart';
+import 'moderation_screen.dart';
 import 'widgets/async_value_view.dart';
 
 /// A league's home: info, join code, members, invites, and the leave action;
@@ -34,6 +35,14 @@ class LeagueDetailScreen extends ConsumerWidget {
                 title: Text(l.name),
                 pinned: true,
                 actions: [
+                  if (canManage)
+                    IconButton(
+                      icon: const Icon(Icons.gavel),
+                      tooltip: context.tr('moderation.title'),
+                      onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => ModerationScreen(leagueId: leagueId),
+                      )),
+                    ),
                   if (canManage)
                     IconButton(
                       icon: const Icon(Icons.settings),
