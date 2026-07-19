@@ -343,6 +343,7 @@
     "streamCapReached": "Only {count} stream at a time"
   },
   "nav": {
+    "competition": "Competition",
     "scorers": "Scorers",
     "roadmap": "Roadmap",
     "champion": "Champion",
@@ -475,6 +476,7 @@
     "hideBreakdown": "Hide odds breakdown"
   },
   "common": {
+    "copied": "Copied",
     "retry": "Retry",
     "loading": "Loading…",
     "save": "Save",
@@ -1467,6 +1469,12 @@
     "home": "Back to the pitch"
   },
   "leagues": {
+    "invites": "Invites",
+    "newInvite": "New invite",
+    "name": "League name",
+    "visibility": "Visibility",
+    "mode": "Mode",
+    "createFailed": "Could not create the league.",
     "browse": "Browse public",
     "code": "Invite code",
     "joined": "Joined",

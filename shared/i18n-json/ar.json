@@ -456,6 +456,7 @@
     "streamCapReached": "{count} بث في كل مرة"
   },
   "nav": {
+    "competition": "المسابقة",
     "scorers": "الهدافون",
     "roadmap": "خارطة الطريق",
     "champion": "البطل",
@@ -595,6 +596,7 @@
     "hideBreakdown": "إخفاء تفصيل الاحتمالات"
   },
   "common": {
+    "copied": "تم النسخ",
     "retry": "إعادة المحاولة",
     "loading": "جارٍ التحميل…",
     "save": "حفظ",
@@ -1664,6 +1666,12 @@
     "home": "العودة إلى الملعب"
   },
   "leagues": {
+    "invites": "الدعوات",
+    "newInvite": "دعوة جديدة",
+    "name": "اسم الدوري",
+    "visibility": "الظهور",
+    "mode": "الوضع",
+    "createFailed": "تعذر إنشاء الدوري.",
     "browse": "تصفح الدوريات العامة",
     "code": "رمز الدعوة",
     "joined": "تم الانضمام",

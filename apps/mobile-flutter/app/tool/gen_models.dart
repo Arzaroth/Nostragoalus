@@ -26,6 +26,9 @@ const targets = <Target>[
       reqName: 'PredictionInput'),
   // Phase 2 - social + read-only
   Target('get', '/api/leagues/public', 'PublicLeaguesResponse'),
+  Target('get', '/api/leagues/{id}', 'LeagueDetailResponse'),
+  Target('get', '/api/leagues/{id}/invites', 'LeagueInvitesResponse'),
+  Target('post', '/api/leagues', 'CreateLeagueResponse', reqName: 'CreateLeagueInput'),
   Target('get', '/api/notifications', 'NotificationsResponse'),
   Target('get', '/api/me/analytics', 'AnalyticsResponse'),
   // /api/me/wrapped is a top-level oneOf (ready vs not-ready) - read raw, not typed.

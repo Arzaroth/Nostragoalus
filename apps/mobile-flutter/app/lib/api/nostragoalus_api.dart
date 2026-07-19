@@ -100,6 +100,32 @@ class NostragoalusApi {
   Future<void> joinLeague(String leagueId) async =>
       _api.postJson('/api/leagues/$leagueId/join');
 
+  Future<LeagueDetailResponse> leagueDetail(String leagueId) async =>
+      LeagueDetailResponse.fromJson(await _api.getJson('/api/leagues/$leagueId'));
+
+  Future<void> createLeague(CreateLeagueInput input) async =>
+      _api.postJson('/api/leagues', body: input.toJson());
+
+  Future<LeagueInvitesResponse> leagueInvites(String leagueId) async =>
+      LeagueInvitesResponse.fromJson(await _api.getJson('/api/leagues/$leagueId/invites'));
+
+  Future<void> createInvite(String leagueId, {int? expiresInHours, int? maxUses}) async =>
+      _api.postJson('/api/leagues/$leagueId/invites', body: {
+        if (expiresInHours != null) 'expiresInHours': expiresInHours,
+        if (maxUses != null) 'maxUses': maxUses,
+      });
+
+  Future<void> leaveLeague(String leagueId) async =>
+      _api.postJson('/api/leagues/$leagueId/leave');
+
+  Future<void> regenerateLeagueCode(String leagueId) async =>
+      _api.postJson('/api/leagues/$leagueId/regenerate-code');
+
+  Future<List<dynamic>> leagueRewards(String leagueId) async {
+    final r = await _api.raw((dio) => dio.get<dynamic>('/api/leagues/$leagueId/rewards'));
+    return r.data as List<dynamic>;
+  }
+
   Future<ModeBoardResponse> leagueBoard(String leagueId) async =>
       ModeBoardResponse.fromJson(await _api.getJson('/api/leagues/$leagueId/mode-board'));
 

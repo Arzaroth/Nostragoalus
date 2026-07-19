@@ -388,7 +388,7 @@ class BotPredictionsResponse {
   /// One of: consensus, evil-twin, equalizer.
   final String persona;
   final Competition competition;
-  final League4? league;
+  final League6? league;
   final Champion? champion;
   final Summary summary;
   final Subject? subject;
@@ -424,7 +424,7 @@ class BotPredictionsResponse {
             Competition.fromJson(json['competition'] as Map<String, dynamic>),
         league: json['league'] == null
             ? null
-            : League4.fromJson(json['league'] as Map<String, dynamic>),
+            : League6.fromJson(json['league'] as Map<String, dynamic>),
         champion: json['champion'] == null
             ? null
             : Champion.fromJson(json['champion'] as Map<String, dynamic>),
@@ -805,6 +805,60 @@ class CompetitionsResponse {
 
   Map<String, dynamic> toJson() => {
         'competitions': competitions.map((e) => e.toJson()).toList(),
+      };
+}
+
+class CreateLeagueInput {
+  final String competition;
+  final String name;
+
+  /// One of: PRIVATE, PUBLIC.
+  final String? visibility;
+
+  /// One of: NORMAL, EASY, HARD, HARDCORE.
+  final String? mode;
+  final int? lives;
+
+  const CreateLeagueInput({
+    required this.competition,
+    required this.name,
+    this.visibility,
+    this.mode,
+    this.lives,
+  });
+
+  factory CreateLeagueInput.fromJson(Map<String, dynamic> json) =>
+      CreateLeagueInput(
+        competition: json['competition'] as String,
+        name: json['name'] as String,
+        visibility: json['visibility'] as String?,
+        mode: json['mode'] as String?,
+        lives: json['lives'] as int?,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'competition': competition,
+        'name': name,
+        'visibility': visibility,
+        'mode': mode,
+        'lives': lives,
+      };
+}
+
+class CreateLeagueResponse {
+  final League5 league;
+
+  const CreateLeagueResponse({
+    required this.league,
+  });
+
+  factory CreateLeagueResponse.fromJson(Map<String, dynamic> json) =>
+      CreateLeagueResponse(
+        league: League5.fromJson(json['league'] as Map<String, dynamic>),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'league': league.toJson(),
       };
 }
 
@@ -1445,6 +1499,50 @@ class Initial {
       };
 }
 
+class Invite {
+  final String id;
+  final String token;
+  final DateTime? expiresAt;
+  final double? maxUses;
+  final double uses;
+  final DateTime createdAt;
+
+  /// One of: VALID, EXPIRED, EXHAUSTED.
+  final String status;
+
+  const Invite({
+    required this.id,
+    required this.token,
+    this.expiresAt,
+    this.maxUses,
+    required this.uses,
+    required this.createdAt,
+    required this.status,
+  });
+
+  factory Invite.fromJson(Map<String, dynamic> json) => Invite(
+        id: json['id'] as String,
+        token: json['token'] as String,
+        expiresAt: json['expiresAt'] == null
+            ? null
+            : DateTime.parse(json['expiresAt'] as String),
+        maxUses: (json['maxUses'] as num?)?.toDouble(),
+        uses: (json['uses'] as num).toDouble(),
+        createdAt: DateTime.parse(json['createdAt'] as String),
+        status: json['status'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'token': token,
+        'expiresAt': expiresAt?.toIso8601String(),
+        'maxUses': maxUses,
+        'uses': uses,
+        'createdAt': createdAt.toIso8601String(),
+        'status': status,
+      };
+}
+
 class Item {
   final String id;
   final String title;
@@ -1646,12 +1744,136 @@ class League4 {
   final String id;
   final String name;
 
+  /// One of: PRIVATE, PUBLIC.
+  final String visibility;
+  final String? description;
+
+  /// One of: NORMAL, EASY, HARD, HARDCORE.
+  final String mode;
+  final double? lives;
+
+  /// One of: OWNER, MODERATOR, MEMBER.
+  final String? role;
+  final double memberCount;
+  final Competition2? competition;
+  final String? joinCode;
+
   const League4({
+    required this.id,
+    required this.name,
+    required this.visibility,
+    this.description,
+    required this.mode,
+    this.lives,
+    this.role,
+    required this.memberCount,
+    this.competition,
+    this.joinCode,
+  });
+
+  factory League4.fromJson(Map<String, dynamic> json) => League4(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        visibility: json['visibility'] as String,
+        description: json['description'] as String?,
+        mode: json['mode'] as String,
+        lives: (json['lives'] as num?)?.toDouble(),
+        role: json['role'] as String?,
+        memberCount: (json['memberCount'] as num).toDouble(),
+        competition: json['competition'] == null
+            ? null
+            : Competition2.fromJson(
+                json['competition'] as Map<String, dynamic>),
+        joinCode: json['joinCode'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'visibility': visibility,
+        'description': description,
+        'mode': mode,
+        'lives': lives,
+        'role': role,
+        'memberCount': memberCount,
+        'competition': competition?.toJson(),
+        'joinCode': joinCode,
+      };
+}
+
+class League5 {
+  final String id;
+  final String name;
+
+  /// One of: PRIVATE, PUBLIC.
+  final String visibility;
+
+  /// One of: NORMAL, EASY, HARD, HARDCORE.
+  final String mode;
+  final double? lives;
+
+  /// One of: true.
+  final bool picksSynced;
+  final String joinCode;
+
+  /// One of: OWNER.
+  final String role;
+
+  /// One of: 1.
+  final double memberCount;
+  final Competition competition;
+
+  const League5({
+    required this.id,
+    required this.name,
+    required this.visibility,
+    required this.mode,
+    this.lives,
+    required this.picksSynced,
+    required this.joinCode,
+    required this.role,
+    required this.memberCount,
+    required this.competition,
+  });
+
+  factory League5.fromJson(Map<String, dynamic> json) => League5(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        visibility: json['visibility'] as String,
+        mode: json['mode'] as String,
+        lives: (json['lives'] as num?)?.toDouble(),
+        picksSynced: json['picksSynced'] as bool,
+        joinCode: json['joinCode'] as String,
+        role: json['role'] as String,
+        memberCount: (json['memberCount'] as num).toDouble(),
+        competition:
+            Competition.fromJson(json['competition'] as Map<String, dynamic>),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'visibility': visibility,
+        'mode': mode,
+        'lives': lives,
+        'picksSynced': picksSynced,
+        'joinCode': joinCode,
+        'role': role,
+        'memberCount': memberCount,
+        'competition': competition.toJson(),
+      };
+}
+
+class League6 {
+  final String id;
+  final String name;
+
+  const League6({
     required this.id,
     required this.name,
   });
 
-  factory League4.fromJson(Map<String, dynamic> json) => League4(
+  factory League6.fromJson(Map<String, dynamic> json) => League6(
         id: json['id'] as String,
         name: json['name'] as String,
       );
@@ -1659,6 +1881,48 @@ class League4 {
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
+      };
+}
+
+class LeagueDetailResponse {
+  final League4 league;
+  final List<Member> members;
+
+  const LeagueDetailResponse({
+    required this.league,
+    required this.members,
+  });
+
+  factory LeagueDetailResponse.fromJson(Map<String, dynamic> json) =>
+      LeagueDetailResponse(
+        league: League4.fromJson(json['league'] as Map<String, dynamic>),
+        members: (json['members'] as List)
+            .map((e) => Member.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'league': league.toJson(),
+        'members': members.map((e) => e.toJson()).toList(),
+      };
+}
+
+class LeagueInvitesResponse {
+  final List<Invite> invites;
+
+  const LeagueInvitesResponse({
+    required this.invites,
+  });
+
+  factory LeagueInvitesResponse.fromJson(Map<String, dynamic> json) =>
+      LeagueInvitesResponse(
+        invites: (json['invites'] as List)
+            .map((e) => Invite.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'invites': invites.map((e) => e.toJson()).toList(),
       };
 }
 
@@ -2249,6 +2513,40 @@ class Meeting {
         'awayCode': awayCode,
         'homeScore': homeScore,
         'awayScore': awayScore,
+      };
+}
+
+class Member {
+  final String userId;
+  final String name;
+  final String? image;
+
+  /// One of: OWNER, MODERATOR, MEMBER.
+  final String role;
+  final DateTime joinedAt;
+
+  const Member({
+    required this.userId,
+    required this.name,
+    this.image,
+    required this.role,
+    required this.joinedAt,
+  });
+
+  factory Member.fromJson(Map<String, dynamic> json) => Member(
+        userId: json['userId'] as String,
+        name: json['name'] as String,
+        image: json['image'] as String?,
+        role: json['role'] as String,
+        joinedAt: DateTime.parse(json['joinedAt'] as String),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'userId': userId,
+        'name': name,
+        'image': image,
+        'role': role,
+        'joinedAt': joinedAt.toIso8601String(),
       };
 }
 

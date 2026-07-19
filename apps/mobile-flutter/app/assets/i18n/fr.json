@@ -332,6 +332,7 @@
     "streamCapReached": "{count} direct à la fois"
   },
   "nav": {
+    "competition": "Compétition",
     "scorers": "Buteurs",
     "roadmap": "Feuille de route",
     "champion": "Champion",
@@ -464,6 +465,7 @@
     "hideBreakdown": "Masquer le détail des cotes"
   },
   "common": {
+    "copied": "Copié",
     "retry": "Réessayer",
     "loading": "Chargement…",
     "save": "Enregistrer",
@@ -1456,6 +1458,12 @@
     "home": "Retour au terrain"
   },
   "leagues": {
+    "invites": "Invitations",
+    "newInvite": "Nouvelle invitation",
+    "name": "Nom de la ligue",
+    "visibility": "Visibilité",
+    "mode": "Mode",
+    "createFailed": "Impossible de créer la ligue.",
     "browse": "Ligues publiques",
     "code": "Code d'invitation",
     "joined": "Rejoint",

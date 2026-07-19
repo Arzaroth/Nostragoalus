@@ -338,6 +338,7 @@
     "streamCapReached": "{count} HaSta neH"
   },
   "nav": {
+    "competition": "Qoj",
     "scorers": "wISuSwI",
     "roadmap": "He'So'",
     "champion": "Qup",
@@ -470,6 +471,7 @@
     "hideBreakdown": "mI'mey So'"
   },
   "common": {
+    "copied": "boSuqta",
     "retry": "yInID",
     "loading": "yIloS…",
     "save": "yIchoq",
@@ -1462,6 +1464,12 @@
     "home": "yotlh chegh"
   },
   "leagues": {
+    "invites": "rIt",
+    "newInvite": "rIt chu",
+    "name": "ghom pong",
+    "visibility": "legh",
+    "mode": "mIw",
+    "createFailed": "ghom chenmoHlaHbe.",
     "browse": "ghommey Sam",
     "code": "ghItlh",
     "joined": "DamuvchoH",

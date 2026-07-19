@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/models.gen.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
-import 'league_board_screen.dart';
+import 'create_league_screen.dart';
+import 'league_detail_screen.dart';
 import 'widgets/async_value_view.dart';
 
 /// The user's leagues, with browse-public and join-by-code entry points.
@@ -15,7 +16,18 @@ class LeaguesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final leagues = ref.watch(leaguesProvider);
     return Scaffold(
-      appBar: AppBar(title: Text(context.tr('nav.leagues'))),
+      appBar: AppBar(
+        title: Text(context.tr('nav.leagues')),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: context.tr('leagues.create'),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const CreateLeagueScreen()),
+            ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _joinByCode(context, ref),
         icon: const Icon(Icons.vpn_key),
@@ -35,7 +47,7 @@ class LeaguesScreen extends ConsumerWidget {
                   subtitle: Text('${l.competition.name} · ${l.memberCount.toInt()}'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => LeagueBoardScreen(leagueId: l.id, name: l.name),
+                    builder: (_) => LeagueDetailScreen(leagueId: l.id),
                   )),
                 ),
               const Divider(),

@@ -125,6 +125,15 @@ final reactionsProvider = FutureProvider.family<ReactionsResponse, String>(
 final leagueBoardProvider = FutureProvider.family<ModeBoardResponse, String>(
     (ref, id) => ref.watch(apiProvider).leagueBoard(id));
 
+final leagueDetailProvider = FutureProvider.family<LeagueDetailResponse, String>(
+    (ref, id) => ref.watch(apiProvider).leagueDetail(id));
+
+final leagueInvitesProvider = FutureProvider.family<LeagueInvitesResponse, String>(
+    (ref, id) => ref.watch(apiProvider).leagueInvites(id));
+
+final leagueRewardsProvider = FutureProvider.family<List<dynamic>, String>(
+    (ref, id) => ref.watch(apiProvider).leagueRewards(id));
+
 /// The live hub connection (one per app), disposed with the provider scope.
 final liveServiceProvider = Provider<LiveService>((ref) {
   final service = LiveService(ref.watch(tokenStoreProvider));
