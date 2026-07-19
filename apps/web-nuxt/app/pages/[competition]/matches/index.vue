@@ -380,7 +380,9 @@ function autoScrollTargetId(): string | null {
   if (live) return live.id
   const now = Date.now()
   const next = flat.find((m) => m.status === 'SCHEDULED' && new Date(m.kickoffTime).getTime() >= now)
-  return next?.id ?? null
+  // Nothing live or upcoming means the competition is over - land on its last
+  // match (the final), the one round that stays expanded.
+  return next?.id ?? flat.at(-1)?.id ?? null
 }
 // Scroll a match row into view, honoring the contained scroll region when the
 // list owns one (otherwise scroll the page; the row's scroll-margin clears the

@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+
+- Once a competition is over, the fixtures list lands on the final again instead of staying at the top: with nothing live or upcoming left, the auto-scroll now targets the last match.
+
 ## [4.3.3] - 2026-07-19
 
 ### Changed

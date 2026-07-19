@@ -5,6 +5,10 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### tI'pu'
+
+- may'mey rIntaH SoQ, tetlh may' Qav 'agh, tetlh tIn 'aghbe'. may' qaStaHbogh may' qaSbe'bogh je tu'be'lu'DI', may' Qav wIv jotlh.
+
 ## [4.3.3] - 2026-07-19
 
 ### choHpu'
