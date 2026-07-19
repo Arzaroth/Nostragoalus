@@ -84,8 +84,14 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  Image.asset('assets/icon/icon.png', height: 88),
+                  const SizedBox(height: 16),
+                  Text(context.tr('landing.title'),
+                      style: Theme.of(context).textTheme.headlineMedium,
+                      textAlign: TextAlign.center),
+                  const SizedBox(height: 4),
                   Text(context.tr('auth.signIn'),
-                      style: Theme.of(context).textTheme.headlineSmall,
+                      style: Theme.of(context).textTheme.titleMedium,
                       textAlign: TextAlign.center),
                   const SizedBox(height: 24),
                   TextFormField(

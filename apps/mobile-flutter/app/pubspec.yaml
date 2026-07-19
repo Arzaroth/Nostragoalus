@@ -45,6 +45,7 @@ flutter:
     - assets/i18n/
     # Frozen cross-stack KATs (shared/parity-json), mirrored by tool/sync_parity.sh.
     - assets/parity/
+    - assets/icon/
 
 # App launcher icon (from the web PWA icon). Regenerate: dart run flutter_launcher_icons
 flutter_launcher_icons:
