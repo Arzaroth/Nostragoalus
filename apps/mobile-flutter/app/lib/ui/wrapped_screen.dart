@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 
+import '../config.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
 import 'widgets/async_value_view.dart';
@@ -16,7 +18,20 @@ class WrappedScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final wrapped = ref.watch(wrappedProvider);
     return Scaffold(
-      appBar: AppBar(title: Text(context.tr('wrapped.title'))),
+      appBar: AppBar(
+        title: Text(context.tr('wrapped.title')),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share),
+            tooltip: context.tr('common.share'),
+            onPressed: () async {
+              final comp = ref.read(selectedCompetitionProvider);
+              final token = await ref.read(apiProvider).mintWrappedShare(competition: comp);
+              await SharePlus.instance.share(ShareParams(text: '${AppConfig.webBase}/s/$token'));
+            },
+          ),
+        ],
+      ),
       body: AsyncValueView<Map<String, dynamic>>(
         value: wrapped,
         onRetry: () => ref.invalidate(wrappedProvider),

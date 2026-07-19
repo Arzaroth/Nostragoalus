@@ -25,7 +25,8 @@ with the data caveat noted per area.
 - [x] Email verification flow (unverified banner + resend link)
 - [ ] Passkeys
 - [x] Connected sessions / devices (list + revoke)
-- [ ] Confirm-credentials / revoke-trust
+- [!] Confirm-credentials / revoke-trust - the trust flag is a better-auth
+  HttpOnly cookie; bearer-token mobile sessions never set it, so it's inert here
 - [x] Preferences: show-crowd, show-odds, light/dark/system theme
 - [x] Account home - identity + links + edit profile (display name + avatar upload
   via image_picker -> data URL update-user)
@@ -138,7 +139,8 @@ with the data caveat noted per area.
 - [x] Deep links (inbound `goal.arzaroth.com/...`) - invite join, league detail,
   match detail; App Links intent-filter (autoVerify pending server assetlinks.json)
 - [x] Feed subscription (calendar) - subscribe (webcal) / copy / regenerate
-- [ ] Share-token landing pages (a/p/s/[token] - analytics/profile/wrapped shares)
+- [~] Share-token cards - mint + OS-share analytics (/a), wrapped (/s), profile
+  (/p) links; `[ ]` in-app viewer for an inbound a/p/s link (opens in browser)
 - [x] App launcher name + icon + native splash (indigo brand, held to first frame)
 
 ---

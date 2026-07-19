@@ -11,4 +11,11 @@ class AppConfig {
 
   /// The server's WebSocket hub (server/routes/_ws.ts) - live + voice signaling.
   static String get wsUrl => '${apiBase.replaceFirst('http', 'ws')}/_ws';
+
+  /// Public web origin for shareable landing links (a/p/s/[token], invites). In
+  /// dev the API base is a LAN IP, so share links still point at the real site.
+  static const webBase = String.fromEnvironment(
+    'WEB_BASE',
+    defaultValue: 'https://goal.arzaroth.com',
+  );
 }

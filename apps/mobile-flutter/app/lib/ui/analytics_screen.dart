@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../api/models.gen.dart';
+import '../config.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
 import 'widgets/async_value_view.dart';
@@ -16,7 +18,20 @@ class AnalyticsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final analytics = ref.watch(analyticsProvider);
     return Scaffold(
-      appBar: AppBar(title: Text(context.tr('analytics.title'))),
+      appBar: AppBar(
+        title: Text(context.tr('analytics.title')),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share),
+            tooltip: context.tr('common.share'),
+            onPressed: () async {
+              final comp = ref.read(selectedCompetitionProvider);
+              final token = await ref.read(apiProvider).mintAnalyticsShare(competition: comp);
+              await SharePlus.instance.share(ShareParams(text: '${AppConfig.webBase}/a/$token'));
+            },
+          ),
+        ],
+      ),
       body: RefreshIndicator(
         onRefresh: () async => ref.refresh(analyticsProvider.future),
         child: AsyncValueView<AnalyticsResponse>(

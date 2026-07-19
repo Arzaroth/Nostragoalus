@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../api/models.gen.dart';
+import '../config.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
 import 'widgets/async_value_view.dart';
@@ -17,6 +19,17 @@ class CabinetScreen extends ConsumerWidget {
     final cabinet = ref.watch(cabinetProvider(userId));
     return Scaffold(
       appBar: AppBar(title: Text(name)),
+      floatingActionButton: cabinet.valueOrNull?.isOwner == true
+          ? FloatingActionButton.extended(
+              icon: const Icon(Icons.share),
+              label: Text(context.tr('common.share')),
+              onPressed: () async {
+                final comp = ref.read(selectedCompetitionProvider);
+                final token = await ref.read(apiProvider).mintProfileShare(competition: comp);
+                await SharePlus.instance.share(ShareParams(text: '${AppConfig.webBase}/p/$token'));
+              },
+            )
+          : null,
       body: RefreshIndicator(
         onRefresh: () async => ref.refresh(cabinetProvider(userId).future),
         child: AsyncValueView<CabinetResponse>(

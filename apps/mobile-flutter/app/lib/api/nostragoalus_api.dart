@@ -46,6 +46,20 @@ class NostragoalusApi {
     return d is Map ? d.cast<String, dynamic>() : null;
   }
 
+  /// Mint a share token for the caller's own analytics / wrapped / profile card.
+  /// Returns the token used to build the public /a|/s|/p landing URL.
+  Future<String> mintAnalyticsShare({String? competition}) async =>
+      (await _api.postJson('/api/share/analytics-mint', body: _comp(competition) ?? {}))['token']
+          .toString();
+
+  Future<String> mintWrappedShare({String? competition}) async =>
+      (await _api.postJson('/api/share/wrapped-mint', body: _comp(competition) ?? {}))['token']
+          .toString();
+
+  Future<String> mintProfileShare({String? competition}) async =>
+      (await _api.postJson('/api/share/profile-mint', body: _comp(competition) ?? {}))['token']
+          .toString();
+
   /// Head-to-head compare of two players (raw; nested shape read in the UI).
   Future<Map<String, dynamic>> headToHead(String a, String b, {String? competition}) async =>
       _api.getJson('/api/head-to-head', query: {
