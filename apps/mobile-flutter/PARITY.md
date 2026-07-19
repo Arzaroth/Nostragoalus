@@ -128,7 +128,8 @@ with the data caveat noted per area.
 - [x] Roadmap view (+ upvote)
 - [x] Roadmap suggestions (submit)
 - [x] About / license / tech-stack page
-- [ ] Onboarding tour
+- [x] Onboarding tour - 8-step paged intro (auto-starts once for new accounts,
+  server-dismissed; re-runnable from the account tab)
 - [x] Deep links (inbound `goal.arzaroth.com/...`) - invite join, league detail,
   match detail; App Links intent-filter (autoVerify pending server assetlinks.json)
 - [x] Feed subscription (calendar) - subscribe (webcal) / copy / regenerate

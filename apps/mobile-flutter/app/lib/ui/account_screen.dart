@@ -22,6 +22,7 @@ import 'multiview_screen.dart';
 import 'my_predictions_screen.dart';
 import 'my_rewards_screen.dart';
 import 'my_stats_screen.dart';
+import 'onboarding_tour.dart';
 import 'recovery_setup_screen.dart';
 import 'roadmap_screen.dart';
 import 'sessions_screen.dart';
@@ -159,6 +160,12 @@ class AccountScreen extends ConsumerWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const BracketScreen()),
             ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.school),
+            title: Text(context.tr('onboarding.takeTour')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => showOnboardingTour(context),
           ),
           ListTile(
             leading: const Icon(Icons.info_outline),

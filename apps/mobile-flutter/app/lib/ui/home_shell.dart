@@ -10,6 +10,7 @@ import 'account_screen.dart';
 import 'leaderboard_screen.dart';
 import 'leagues_screen.dart';
 import 'matches_screen.dart';
+import 'onboarding_tour.dart';
 import 'standings_screen.dart';
 
 /// The signed-in shell: four tabs over the MVP loop. IndexedStack keeps each
@@ -24,6 +25,7 @@ class HomeShell extends ConsumerStatefulWidget {
 class _HomeShellState extends ConsumerState<HomeShell> {
   int _tab = 0;
   StreamSubscription<LiveFrame>? _liveSub;
+  bool _tourChecked = false;
 
   static const _screens = [
     MatchesScreen(),
@@ -38,6 +40,15 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     super.initState();
     final live = ref.read(liveServiceProvider)..connect();
     _liveSub = live.frames.listen(_onFrame);
+    // Auto-start the one-time tour for a brand-new account (server flag null).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_tourChecked || !mounted) return;
+      _tourChecked = true;
+      final user = ref.read(authControllerProvider).valueOrNull;
+      if (user != null && user.onboardingTourDismissedAt == null) {
+        showOnboardingTour(context);
+      }
+    });
   }
 
   @override

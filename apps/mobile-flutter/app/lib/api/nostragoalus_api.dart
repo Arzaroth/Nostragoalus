@@ -99,6 +99,9 @@ class NostragoalusApi {
   Future<void> updatePrefs(Map<String, dynamic> prefs) async =>
       _api.postJson('/api/auth/update-user', body: prefs);
 
+  /// Mark the one-time onboarding tour finished/skipped for the caller.
+  Future<void> dismissOnboardingTour() async => _api.postJson('/api/me/onboarding-tour');
+
   /// Update the display name and/or avatar (a data: URL, or null to clear).
   Future<void> updateProfile({String? name, String? imageDataUrl}) async =>
       _api.postJson('/api/auth/update-user', body: {
