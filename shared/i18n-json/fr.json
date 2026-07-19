@@ -1,4 +1,8 @@
 {
+  "profile": {
+    "editTitle": "Modifier le profil",
+    "displayName": "Nom affiché"
+  },
   "calendar": {
     "title": "Flux calendrier",
     "blurb": "Abonnez-vous aux matchs et aux échéances de pronostics dans votre agenda. Mise à jour automatique.",

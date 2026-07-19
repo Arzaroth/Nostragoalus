@@ -27,7 +27,8 @@ with the data caveat noted per area.
 - [x] Connected sessions / devices (list + revoke)
 - [ ] Confirm-credentials / revoke-trust
 - [x] Preferences: show-crowd, show-odds, light/dark/system theme
-- [~] Account home - identity + links; no edit name/avatar
+- [x] Account home - identity + links + edit profile (display name + avatar upload
+  via image_picker -> data URL update-user)
 - [x] Locale switch (5 locales, RTL) - `[ ]` not yet persisted to the server profile
 
 ## Competition

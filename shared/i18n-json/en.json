@@ -1,4 +1,8 @@
 {
+  "profile": {
+    "editTitle": "Edit profile",
+    "displayName": "Display name"
+  },
   "calendar": {
     "title": "Calendar feed",
     "blurb": "Subscribe to fixtures and pick deadlines in your device calendar. It updates automatically.",

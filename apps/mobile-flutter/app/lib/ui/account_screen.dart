@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../config.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
 import 'about_screen.dart';
@@ -13,6 +14,7 @@ import 'calendar_screen.dart';
 import 'champion_screen.dart';
 import 'compare_screen.dart';
 import 'dm_inbox_screen.dart';
+import 'edit_profile_screen.dart';
 import 'kt_screen.dart';
 import 'locale_menu.dart';
 import 'preferences_screen.dart';
@@ -43,22 +45,39 @@ class AccountScreen extends ConsumerWidget {
       body: ListView(
         children: [
           const SizedBox(height: 16),
-          Center(
-            child: CircleAvatar(
-              radius: 36,
-              child: Text(
-                (user?.name ?? user?.email ?? '?').characters.first.toUpperCase(),
-                style: const TextStyle(fontSize: 28),
-              ),
+          InkWell(
+            onTap: user == null
+                ? null
+                : () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+                    ),
+            child: Column(
+              children: [
+                CircleAvatar(
+                  radius: 36,
+                  backgroundImage: (user?.image != null && user!.image!.isNotEmpty)
+                      ? NetworkImage(user.image!.startsWith('http')
+                          ? user.image!
+                          : '${AppConfig.apiBase}${user.image}')
+                      : null,
+                  child: (user?.image == null || user!.image!.isEmpty)
+                      ? Text(
+                          (user?.name ?? user?.email ?? '?').characters.first.toUpperCase(),
+                          style: const TextStyle(fontSize: 28),
+                        )
+                      : null,
+                ),
+                const SizedBox(height: 12),
+                Text(user?.name ?? user?.email ?? '',
+                    style: Theme.of(context).textTheme.titleLarge),
+                if (user?.name != null)
+                  Text(user!.email, style: Theme.of(context).textTheme.bodySmall),
+                const SizedBox(height: 4),
+                Text(context.tr('profile.editTitle'),
+                    style: TextStyle(color: Theme.of(context).colorScheme.primary, fontSize: 12)),
+              ],
             ),
           ),
-          const SizedBox(height: 12),
-          Center(
-            child: Text(user?.name ?? user?.email ?? '',
-                style: Theme.of(context).textTheme.titleLarge),
-          ),
-          if (user?.name != null)
-            Center(child: Text(user!.email, style: Theme.of(context).textTheme.bodySmall)),
           const SizedBox(height: 24),
           if (user != null)
             ListTile(
