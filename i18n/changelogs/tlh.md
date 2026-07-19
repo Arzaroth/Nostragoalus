@@ -5,6 +5,10 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### tI'pu'
+
+- DaH may' De' HaStaDaq «pIn wanI'wI'pu'» raQ chImbe' 'ej «pIn boQwI'pu'» buy'. FIFA cha' patmey pIm ghItlh, may' tlha' wa' pat latlh pat tlhaHmoH; DaH ghItlh'a' wanI' pagh ngaSbogh pIn wanI'wI' De' buSHa', 'ej wanI' De'Daj lo'qa', vaj cha' raQ buy'taH.
+
 ## [4.3.2] - 2026-07-19
 
 ### choHpu'

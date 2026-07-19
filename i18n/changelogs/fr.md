@@ -5,6 +5,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Corrigé
+
+- L'onglet Stats n'affiche plus un tableau « Meilleurs buteurs » vide alors que « Meilleures passes » est rempli. La FIFA publie les deux classements séparément et l'un peut être en retard sur l'autre après une journée ; l'app ignore désormais un flux de buteurs encore sans buts et se rabat sur ses propres données de buts, si bien que les deux tableaux restent remplis.
+
 ## [4.3.2] - 2026-07-19
 
 ### Modifié

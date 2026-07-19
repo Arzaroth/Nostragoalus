@@ -92,6 +92,14 @@ feature/architecture doc that implements it.
   on `node:22-slim` (glibc + a shell), dropping the old Alpine `gcompat` shim.
   Distroless was rejected for prod: glibc but no `/bin/sh`, so the helper spawn
   fails. See [architecture/providers.md](architecture/providers.md).
+- **Bun is an opt-in second prod runtime; Node stays the default.** Bun runs the
+  same app smaller/faster, but the vitest gate + component tests run on Node, so
+  Node stays the tested-by-default runtime and Bun is switchable
+  (`NG_APP_TARGET=prod-bun`), validated by its own `mise run e2e-bun`. Bun needs
+  its own build (Nitro `bun` preset): under the node-server preset crossws'
+  WebSocket upgrade path silently fails on Bun. And `prod-bun` must set `HOST=::` -
+  the bun preset binds loopback-only by default, unreachable behind Docker DNAT.
+  See [operations.md](operations.md).
 - **Live player stats from FIFA's gameday stories, not the official aggregate.**
   FIFA's `/statistics/teams` aggregate stays empty for an in-progress edition, so
   the Stats tab's assists were wrong (derived from the lossy local `goal_event`
