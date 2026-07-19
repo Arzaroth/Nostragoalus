@@ -898,6 +898,7 @@
     }
   },
   "match": {
+    "allTime": "Bilan historique",
     "liveDetail": "Direct",
     "noLiveDetail": "Aucun détail en direct",
     "goals": "Buts",

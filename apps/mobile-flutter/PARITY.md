@@ -64,7 +64,8 @@ with the data caveat noted per area.
 - [x] Timeline (play-by-play)
 - [x] Lineups (formation + XI)
 - [x] Scorers/assists (match)
-- [~] Insights - h2h count + possession; `[ ]` form/goals/standings/next detail
+- [x] Insights - possession, all-time record, recent H2H meetings, home/away form
+  (WDL chips), group standings, next fixtures, this-match goals
 - [x] League standings (per-match)
 - [x] Media / stream links (LIVE / REPLAY / HIGHLIGHTS)
 - [x] Live-detail (live stats blob) - venue/attendance, cards, per-team stats,

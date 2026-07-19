@@ -892,6 +892,7 @@
     }
   },
   "match": {
+    "allTime": "สถิติตลอดกาล",
     "liveDetail": "สด",
     "noLiveDetail": "ยังไม่มีรายละเอียดสด",
     "goals": "ประตู",

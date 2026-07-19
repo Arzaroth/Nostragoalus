@@ -247,17 +247,88 @@ class _InsightsTab extends ConsumerWidget {
       data: (res) => ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          ListTile(
-            title: Text(context.tr('h2h.title')),
-            trailing: Text('${res.headToHead.length}'),
-          ),
-          ListTile(
-            title: Text(context.tr('match.possession')),
-            trailing: Text('${res.possession.home?.toInt() ?? 0}% - ${res.possession.away?.toInt() ?? 0}%'),
-          ),
+          if (res.possession.home != null || res.possession.away != null)
+            _section(context, context.tr('match.possession'), [
+              Text('${res.possession.home?.toInt() ?? 0}% - ${res.possession.away?.toInt() ?? 0}%'),
+            ]),
+          if (res.h2hAll != null)
+            _section(context, context.tr('match.allTime'), [
+              Text('${res.h2hAll!.wins.toInt()}W ${res.h2hAll!.draws.toInt()}D '
+                  '${res.h2hAll!.losses.toInt()}L  ·  '
+                  '${res.h2hAll!.goalsFor.toInt()}-${res.h2hAll!.goalsAgainst.toInt()}'),
+            ]),
+          if (res.headToHead.isNotEmpty)
+            _section(context, context.tr('match.h2h'), [
+              for (final m in res.headToHead.take(6))
+                Text('${m.homeTeam} ${m.homeScore.toInt()}-${m.awayScore.toInt()} ${m.awayTeam}'),
+            ]),
+          _formSection(context, context.tr('match.form'), res.form.home, res.form.away),
+          if (res.standings != null && res.standings!.isNotEmpty)
+            _section(context, context.tr('match.standings'), [
+              for (final r in res.standings!)
+                Row(children: [
+                  Expanded(child: Text(r.name)),
+                  Text('${r.played.toInt()}  ${r.points.toInt()}pt',
+                      style: Theme.of(context).textTheme.bodySmall),
+                ]),
+            ]),
+          _nextSection(context, res.next.home, res.next.away),
+          if (res.goals.isNotEmpty)
+            _section(context, context.tr('match.goals'), [
+              for (final g in res.goals)
+                Text('${g.minute ?? ''} ${g.playerName}'
+                    '${g.ownGoal ? ' (OG)' : ''}'.trim()),
+            ]),
         ],
       ),
     );
+  }
+
+  Widget _section(BuildContext context, String title, List<Widget> children) => Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 6),
+              ...children,
+            ],
+          ),
+        ),
+      );
+
+  Widget _formRow(BuildContext context, List<Home2> form) => Wrap(
+        spacing: 4,
+        children: [
+          for (final f in form)
+            CircleAvatar(
+              radius: 11,
+              backgroundColor: switch (f.result) {
+                'W' => Colors.green,
+                'L' => Theme.of(context).colorScheme.error,
+                _ => Colors.grey,
+              },
+              child: Text(f.result, style: const TextStyle(fontSize: 11, color: Colors.white)),
+            ),
+        ],
+      );
+
+  Widget _formSection(BuildContext context, String title, List<Home2> home, List<Home2> away) {
+    if (home.isEmpty && away.isEmpty) return const SizedBox.shrink();
+    return _section(context, title, [
+      if (home.isNotEmpty) _formRow(context, home),
+      if (away.isNotEmpty) ...[const SizedBox(height: 6), _formRow(context, away)],
+    ]);
+  }
+
+  Widget _nextSection(BuildContext context, List<Home3> home, List<Home3> away) {
+    final all = [...home, ...away];
+    if (all.isEmpty) return const SizedBox.shrink();
+    return _section(context, context.tr('match.next'), [
+      for (final n in all) Text('${n.opponent} · ${n.kickoffTime}'),
+    ]);
   }
 }
 

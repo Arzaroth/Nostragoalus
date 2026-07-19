@@ -897,6 +897,7 @@
     }
   },
   "match": {
+    "allTime": "All-time record",
     "liveDetail": "Live",
     "noLiveDetail": "No live detail yet",
     "goals": "Goals",
