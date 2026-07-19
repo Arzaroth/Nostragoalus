@@ -47,7 +47,8 @@ with the data caveat noted per area.
 - [x] Teams list (competition-scoped)
 - [x] Bracket (knockout tree)
 - [ ] Map (host cities / group map - Leaflet on web)
-- [ ] Compare (player head-to-head, `/head-to-head`)
+- [x] Compare (player head-to-head) - self vs a leaderboard opponent: points,
+  win/tie record, agreement, over-time, divergences
 
 ## Match detail (tabs)
 - [x] Prediction + joker (score, outcome-only, wager)

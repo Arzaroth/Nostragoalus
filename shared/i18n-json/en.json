@@ -1,4 +1,15 @@
 {
+  "compare": {
+    "title": "Compare players",
+    "pickOpponent": "Pick an opponent",
+    "noShared": "No shared graded picks yet",
+    "record": "{a} wins · {t} ties · {b} wins",
+    "shared": "{n} shared matches",
+    "agreement": "Agreement",
+    "sameScore": "Same score: {n}",
+    "sameOutcome": "Same outcome: {n}",
+    "divergences": "Where you split"
+  },
   "crowd": {
     "title": "Crowd consensus",
     "count": "{n} predictions"

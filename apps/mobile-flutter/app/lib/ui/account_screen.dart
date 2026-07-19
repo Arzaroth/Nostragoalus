@@ -10,6 +10,7 @@ import 'bot_screen.dart';
 import 'bracket_screen.dart';
 import 'cabinet_screen.dart';
 import 'champion_screen.dart';
+import 'compare_screen.dart';
 import 'dm_inbox_screen.dart';
 import 'kt_screen.dart';
 import 'locale_menu.dart';
@@ -112,6 +113,14 @@ class AccountScreen extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const AnalyticsScreen()),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.compare_arrows),
+            title: Text(context.tr('compare.title')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const CompareScreen()),
             ),
           ),
           ListTile(

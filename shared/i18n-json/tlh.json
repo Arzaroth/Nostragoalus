@@ -1,4 +1,15 @@
 {
+  "compare": {
+    "title": "vagh chov",
+    "pickOpponent": "jagh wIv",
+    "noShared": "pagh Qub rap",
+    "record": "{a} Qap · {t} rap · {b} Qap",
+    "shared": "{n} Qojmey rap",
+    "agreement": "'ej",
+    "sameScore": "mI' rap: {n}",
+    "sameOutcome": "Qav rap: {n}",
+    "divergences": "pImchoH"
+  },
   "crowd": {
     "title": "ghom Qub",
     "count": "{n} Qub"

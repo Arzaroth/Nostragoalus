@@ -1,4 +1,15 @@
 {
+  "compare": {
+    "title": "Comparer les joueurs",
+    "pickOpponent": "Choisir un adversaire",
+    "noShared": "Aucun pronostic commun noté",
+    "record": "{a} victoires · {t} nuls · {b} victoires",
+    "shared": "{n} matchs communs",
+    "agreement": "Accord",
+    "sameScore": "Même score : {n}",
+    "sameOutcome": "Même résultat : {n}",
+    "divergences": "Où vous divergez"
+  },
   "crowd": {
     "title": "Consensus de la foule",
     "count": "{n} pronostics"

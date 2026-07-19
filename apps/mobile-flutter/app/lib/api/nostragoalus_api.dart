@@ -31,6 +31,14 @@ class NostragoalusApi {
   Future<MatchesResponse> matches({String? competition}) async =>
       MatchesResponse.fromJson(await _api.getJson('/api/matches', query: _comp(competition)));
 
+  /// Head-to-head compare of two players (raw; nested shape read in the UI).
+  Future<Map<String, dynamic>> headToHead(String a, String b, {String? competition}) async =>
+      _api.getJson('/api/head-to-head', query: {
+        'a': a,
+        'b': b,
+        if (competition != null) 'competition': competition,
+      });
+
   /// Crowd totals keyed by matchId -> {home, away, count}. Display-only.
   Future<Map<String, dynamic>> crowdTotals({String? competition}) async {
     final res = await _api.getJson('/api/predictions/crowd', query: _comp(competition));

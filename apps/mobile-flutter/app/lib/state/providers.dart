@@ -100,6 +100,12 @@ final matchesProvider = FutureProvider<MatchesResponse>((ref) =>
 final crowdTotalsProvider = FutureProvider<Map<String, dynamic>>((ref) =>
     ref.watch(apiProvider).crowdTotals(competition: ref.watch(selectedCompetitionProvider)));
 
+/// Head-to-head compare of two players (a, b) in the selected competition.
+final headToHeadProvider =
+    FutureProvider.family<Map<String, dynamic>, (String, String)>((ref, pair) =>
+        ref.watch(apiProvider).headToHead(pair.$1, pair.$2,
+            competition: ref.watch(selectedCompetitionProvider)));
+
 final leaderboardProvider = FutureProvider<LeaderboardResponse>((ref) =>
     ref.watch(apiProvider).leaderboard(competition: ref.watch(selectedCompetitionProvider)));
 
