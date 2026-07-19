@@ -97,17 +97,18 @@ Scope unchanged. Proceed to Phase 1 on a Flutter machine.
 - [x] Key transparency + safety numbers - the app re-walks the server's public-key
   hash chain (`verifyKtChain`) and shows the safety number; validated on-device
   against the live log, unit-tested for tamper cases.
-- [~] Recovery-code flow - the wrap/unwrap crypto is proven and the recovery-code
-  unlock gate ships in the chat screen; the set-up-recovery UX (showing a new code)
-  is the remaining bit.
+- [x] Recovery-code flow - wrap/unwrap crypto proven; the unlock gate (chat screen)
+  and the set-up UX (generate + show + escrow a new code) both ship.
 
 ## Phase 4 - Voice + native polish (gated by Phase 0 voice)
-- [ ] WebRTC voice: DM 1:1 - hardware-gated (two real devices + the coturn relay);
-  the signaling rides the existing WS hub (voice:* frames) but the audio path
-  can't be exercised on a single emulator. Deferred to a device session.
-- [ ] WebRTC voice: league rooms (mesh, N-in-voice) - same hardware gate.
-- [ ] CallKit background audio + ring / missed-call push - needs iOS + a Mac +
-  real devices; also depends on the push slice (Phase 2). Deferred.
+- [~] WebRTC voice: league rooms (mesh, N-in-voice) - full audio-only mesh built
+  (ICE fetch, bearer signaling socket, getUserMedia, per-peer offer/answer/candidate
+  over voice:*, deterministic offerer, join/leave/mute call bar on the league board).
+  Builds + signs in on the emulator; audio-through needs two participants.
+- [~] WebRTC voice: DM 1:1 - the mesh service takes a `dm` scope; a DM-room call
+  entry + ring/decline UI is the remaining wiring.
+- [ ] CallKit background audio + ring / missed-call push - iOS-only (no Apple);
+  Android background-call + ring UI + the push dependency remain.
 - [x] OS share (`share_plus`) - share a match link from the detail screen.
 - [~] Deep links - the app produces `goal.arzaroth.com/matches/{id}` share links;
   inbound deep-link handling (intent-filters + iOS assoc + route parsing) is a
