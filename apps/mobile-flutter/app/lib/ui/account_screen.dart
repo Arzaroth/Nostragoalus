@@ -23,6 +23,7 @@ import 'my_stats_screen.dart';
 import 'recovery_setup_screen.dart';
 import 'roadmap_screen.dart';
 import 'sessions_screen.dart';
+import 'two_factor_screen.dart';
 import 'teams_screen.dart';
 import 'verify_screen.dart';
 import 'wrapped_screen.dart';
@@ -229,6 +230,15 @@ class AccountScreen extends ConsumerWidget {
             ),
           ),
           const Divider(),
+          ListTile(
+            leading: const Icon(Icons.shield),
+            title: Text(context.tr('twofa.title')),
+            subtitle: user?.twoFactorEnabled == true ? Text(context.tr('twofa.enabled')) : null,
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const TwoFactorScreen()),
+            ),
+          ),
           ListTile(
             leading: const Icon(Icons.devices),
             title: Text(context.tr('sessions.title')),

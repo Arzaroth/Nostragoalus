@@ -276,6 +276,25 @@ class NostragoalusApi {
     return const [];
   }
 
+  /// Begin 2FA enrolment: returns {totpURI, backupCodes}. Confirm with verifyTotp.
+  Future<Map<String, dynamic>> twoFactorEnable(String password) async =>
+      _api.postJson('/api/auth/two-factor/enable', body: {'password': password});
+
+  Future<void> twoFactorVerify(String code) async =>
+      _api.postJson('/api/auth/two-factor/verify-totp', body: {'code': code});
+
+  Future<Map<String, dynamic>> twoFactorBackupCodes(String password) async =>
+      _api.postJson('/api/auth/two-factor/generate-backup-codes', body: {'password': password});
+
+  Future<void> twoFactorDisable(String password) async =>
+      _api.postJson('/api/auth/two-factor/disable', body: {'password': password});
+
+  /// Check a current TOTP code (used to gate disabling 2FA).
+  Future<bool> confirmTotp(String code) async {
+    final r = await _api.postJson('/api/me/confirm-totp', body: {'code': code});
+    return r['valid'] == true;
+  }
+
   Future<void> revokeSession(String token) async =>
       _api.postJson('/api/auth/revoke-session', body: {'token': token});
 

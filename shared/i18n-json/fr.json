@@ -1296,6 +1296,9 @@
     "strong": "Fort"
   },
   "twofa": {
+    "failed": "Une erreur est survenue. Vérifiez votre mot de passe.",
+    "done": "Terminé",
+    "disableBlurb": "Saisissez votre mot de passe et un code actuel pour désactiver la double authentification.",
     "sectionTitle": "Authentification à deux facteurs",
     "sectionHint": "Une seconde étape à la connexion : une application d'authentification (ou un code par e-mail si configuré).",
     "enable": "Activer la 2FA",

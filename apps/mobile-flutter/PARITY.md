@@ -20,7 +20,8 @@ with the data caveat noted per area.
   NUXT_SSO_TRUSTED_ORIGINS + an iOS URL type + a real IdP
 - [x] Sign up (native form)
 - [x] Forgot / reset password (request-reset form)
-- [ ] Two-factor (2FA enrol / verify / recovery)
+- [x] Two-factor (2FA enrol: password -> secret + backup codes -> verify; disable
+  with password + current code) - QR shown as secret/otpauth (no QR renderer)
 - [ ] Email verification flow
 - [ ] Passkeys
 - [x] Connected sessions / devices (list + revoke)

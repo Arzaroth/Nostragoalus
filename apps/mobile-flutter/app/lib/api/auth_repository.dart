@@ -17,6 +17,7 @@ class AuthUser {
     this.theme,
     this.showCrowd,
     this.showOdds,
+    this.twoFactorEnabled,
   });
 
   final String id;
@@ -28,6 +29,7 @@ class AuthUser {
   final String? theme; // 'light' | 'dark' | null (system)
   final bool? showCrowd;
   final bool? showOdds;
+  final bool? twoFactorEnabled;
 
   factory AuthUser.fromJson(Map<String, dynamic> json) => AuthUser(
         id: json['id'] as String,
@@ -39,6 +41,7 @@ class AuthUser {
         theme: json['theme'] as String?,
         showCrowd: json['showCrowd'] as bool?,
         showOdds: json['showOdds'] as bool?,
+        twoFactorEnabled: json['twoFactorEnabled'] as bool?,
       );
 }
 

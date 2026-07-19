@@ -1296,6 +1296,9 @@
     "strong": "HoSghaj"
   },
   "twofa": {
+    "failed": "qaS Qagh. mu'wIj yISov.",
+    "done": "rIn",
+    "disableBlurb": "cha' HuH choHmeH mu' 'ej mI' DaghItlh.",
     "sectionTitle": "cha' 'ol mIw",
     "sectionHint": "bI'elDI' mIw cha'DIch: 'olwI' App (pagh jabbI'ID ngoq, cherlu'pu'chugh).",
     "enable": "cha' 'ol yIchu'",

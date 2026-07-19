@@ -1301,6 +1301,9 @@
     "strong": "Strong"
   },
   "twofa": {
+    "failed": "Something went wrong. Check your password and try again.",
+    "done": "Done",
+    "disableBlurb": "Enter your password and a current code to turn off two-factor.",
     "sectionTitle": "Two-factor authentication",
     "sectionHint": "A second step at sign-in: an authenticator app (or a code by email when configured).",
     "enable": "Enable 2FA",
