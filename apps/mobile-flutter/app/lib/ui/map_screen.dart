@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../api/models.gen.dart';
+import '../data/country_centroids.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
 import 'widgets/async_value_view.dart';
 
-/// The nations board: every team in the competition with its still-in / knocked-
-/// out state (the web renders this as a Leaflet world map; the geographic layout
-/// is web-only, but the who's-in/out data is the useful part on mobile).
+/// The nations board: an OpenStreetMap world map with a marker at each team's
+/// country centroid (green in / grey out), plus the full still-in / eliminated
+/// list below - the same information the web's Leaflet map carries.
 class MapScreen extends ConsumerWidget {
   const MapScreen({super.key});
 
@@ -36,6 +39,43 @@ class MapScreen extends ConsumerWidget {
             final stillIn = sorted.where((t) => !eliminated.contains(t.code)).length;
             return ListView(
               children: [
+                SizedBox(
+                  height: 280,
+                  child: FlutterMap(
+                    options: const MapOptions(
+                      initialCenter: LatLng(25, 10),
+                      initialZoom: 1.4,
+                      interactionOptions: InteractionOptions(flags: InteractiveFlag.all),
+                    ),
+                    children: [
+                      TileLayer(
+                        urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        userAgentPackageName: 'com.nostragoalus.app',
+                      ),
+                      MarkerLayer(
+                        markers: [
+                          for (final t in res.teams)
+                            if (countryCentroids[t.code] != null)
+                              Marker(
+                                point: LatLng(
+                                    countryCentroids[t.code]![0], countryCentroids[t.code]![1]),
+                                width: 14,
+                                height: 14,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: eliminated.contains(t.code)
+                                        ? Colors.grey
+                                        : Colors.green,
+                                    border: Border.all(color: Colors.white, width: 1.5),
+                                  ),
+                                ),
+                              ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(

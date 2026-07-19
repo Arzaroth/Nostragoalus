@@ -52,9 +52,10 @@ with the data caveat noted per area.
   current+best streak
 - [x] Teams list (competition-scoped)
 - [x] Bracket (knockout tree)
-- [~] Map / nations - teams with still-in / eliminated overlay
-  (/api/competitions/eliminated); `[ ]` the Leaflet geographic layout (no team
-  coordinates in the mobile contract)
+- [x] Map / nations - OpenStreetMap world map (flutter_map) with a marker per
+  team at its country centroid (green in / grey out) + the still-in / eliminated
+  list. Centroids mirrored from the web's country-centroids table (reference data,
+  not the API contract - the "no coords" framing was imprecise).
 - [x] Compare (player head-to-head) - self vs a leaderboard opponent: points,
   win/tie record, agreement, over-time, divergences
 
