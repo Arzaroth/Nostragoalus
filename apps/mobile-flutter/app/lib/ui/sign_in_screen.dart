@@ -21,6 +21,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   final _formKey = GlobalKey<FormState>();
   SsoProviderInfo? _sso;
   bool _ssoBusy = false;
+  bool _obscure = true;
 
   @override
   void dispose() {
@@ -115,12 +116,16 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _password,
-                    obscureText: true,
+                    obscureText: _obscure,
                     autofillHints: const [AutofillHints.password],
                     onFieldSubmitted: (_) => _submit(),
                     decoration: InputDecoration(
                       labelText: context.tr('auth.password'),
                       border: const OutlineInputBorder(),
+                      suffixIcon: IconButton(
+                        icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
+                        onPressed: () => setState(() => _obscure = !_obscure),
+                      ),
                     ),
                     validator: (v) =>
                         (v == null || v.isEmpty) ? context.tr('auth.password') : null,
