@@ -58,9 +58,22 @@ class NostragoalusApi {
       (await _api.postJson('/api/share/analytics-mint', body: _comp(competition) ?? {}))['token']
           .toString();
 
+  /// Wrapped shares are image-only (no landing page): returns the card image URL.
   Future<String> mintWrappedShare({String? competition}) async =>
-      (await _api.postJson('/api/share/wrapped-mint', body: _comp(competition) ?? {}))['token']
+      (await _api.postJson('/api/share/wrapped-mint', body: _comp(competition) ?? {}))['imageUrl']
           .toString();
+
+  /// Read a shared card by token for the in-app viewer (analytics /a, profile /p,
+  /// or pick /s). `kind` selects the endpoint; returns the `card` object.
+  Future<Map<String, dynamic>> shareCard(String kind, String token) async {
+    final path = switch (kind) {
+      'a' => '/api/share/analytics/$token',
+      'p' => '/api/share/profile/$token',
+      _ => '/api/share/$token',
+    };
+    final res = await _api.getJson(path);
+    return (res['card'] as Map?)?.cast<String, dynamic>() ?? const {};
+  }
 
   Future<String> mintProfileShare({String? competition}) async =>
       (await _api.postJson('/api/share/profile-mint', body: _comp(competition) ?? {}))['token']

@@ -26,8 +26,9 @@ class WrappedScreen extends ConsumerWidget {
             tooltip: context.tr('common.share'),
             onPressed: () async {
               final comp = ref.read(selectedCompetitionProvider);
-              final token = await ref.read(apiProvider).mintWrappedShare(competition: comp);
-              await SharePlus.instance.share(ShareParams(text: '${AppConfig.webBase}/s/$token'));
+              final img = await ref.read(apiProvider).mintWrappedShare(competition: comp);
+              final url = img.startsWith('http') ? img : '${AppConfig.webBase}$img';
+              await SharePlus.instance.share(ShareParams(text: url));
             },
           ),
         ],

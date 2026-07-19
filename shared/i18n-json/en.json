@@ -1830,6 +1830,8 @@
     "alarm": "Predict {home} - {away} before kickoff"
   },
   "share": {
+    "cardTitle": "Shared card",
+    "notFound": "This shared card is no longer available.",
     "action": "Share",
     "shareResult": "Share result",
     "shareSealed": "Share sealed pick",

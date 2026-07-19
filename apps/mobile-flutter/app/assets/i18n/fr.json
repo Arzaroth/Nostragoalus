@@ -1819,6 +1819,8 @@
     "alarm": "Pronostiquez {home} - {away} avant le coup d'envoi"
   },
   "share": {
+    "cardTitle": "Carte partagée",
+    "notFound": "Cette carte partagée n'est plus disponible.",
     "action": "Partager",
     "shareResult": "Partager le résultat",
     "shareSealed": "Partager le pronostic scellé",

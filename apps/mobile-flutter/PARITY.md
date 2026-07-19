@@ -149,8 +149,9 @@ with the data caveat noted per area.
 - [x] Deep links (inbound `goal.arzaroth.com/...`) - invite join, league detail,
   match detail; App Links intent-filter (autoVerify pending server assetlinks.json)
 - [x] Feed subscription (calendar) - subscribe (webcal) / copy / regenerate
-- [~] Share-token cards - mint + OS-share analytics (/a), wrapped (/s), profile
-  (/p) links; `[ ]` in-app viewer for an inbound a/p/s link (opens in browser)
+- [x] Share-token cards - mint + OS-share (analytics /a + profile /p landing
+  links, wrapped image URL) + in-app viewer for inbound /a /p /s deep links
+  (public, signed-out-friendly)
 - [x] App launcher name + icon + native splash (indigo brand, held to first frame)
 
 ---

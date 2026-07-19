@@ -104,6 +104,10 @@ final matchesProvider = FutureProvider<MatchesResponse>((ref) =>
 final crowdTotalsProvider = FutureProvider<Map<String, dynamic>>((ref) =>
     ref.watch(apiProvider).crowdTotals(competition: ref.watch(selectedCompetitionProvider)));
 
+/// A shared card resolved by (kind, token) for the in-app viewer.
+final shareCardProvider = FutureProvider.family<Map<String, dynamic>, (String, String)>(
+    (ref, args) => ref.watch(apiProvider).shareCard(args.$1, args.$2));
+
 /// Head-to-head compare of two players (a, b) in the selected competition.
 final headToHeadProvider =
     FutureProvider.family<Map<String, dynamic>, (String, String)>((ref, pair) =>

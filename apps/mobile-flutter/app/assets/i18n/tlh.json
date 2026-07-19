@@ -1819,6 +1819,8 @@
     "alarm": "QochDI'pa' {home} - {away} yIwuq"
   },
   "share": {
+    "cardTitle": "boSaHpu'bogh nav",
+    "notFound": "nav vam lo'laHbe'.",
     "action": "yIngeH",
     "shareResult": "Qap yIngeH",
     "shareSealed": "wuq So'lu'bogh yIngeH",
