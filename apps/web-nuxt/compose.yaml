@@ -121,8 +121,11 @@ services:
     build:
       context: ../..
       dockerfile: apps/web-nuxt/Dockerfile
-      target: prod
-    image: nostragoalus-app:${NG_APP_VERSION:-local}
+      # Runtime is switchable: `prod` (Node, default) or `prod-bun` (Bun) - same
+      # build output, different runtime base. Set NG_APP_TARGET=prod-bun to run
+      # under Bun; NG_APP_TAG_SUFFIX keeps the two images on distinct tags.
+      target: ${NG_APP_TARGET:-prod}
+    image: nostragoalus-app:${NG_APP_VERSION:-local}${NG_APP_TAG_SUFFIX:-}
     restart: unless-stopped
     # A hard Node crash dumps a multi-GB core into the container's writable layer
     # (cwd /app), which silently fills the docker data disk and took the DB down

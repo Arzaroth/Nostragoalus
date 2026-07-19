@@ -1,0 +1,53 @@
+# Runs the e2e Playwright suite against the app under the BUN runtime (the
+# `prod-bun` target), reusing the isolated ng-e2e stack (own DB/maildev/keycloak
+# on shifted ports). This is how CI covers the Bun runtime; the Node e2e
+# (`app-dev`, `mise run e2e`) is left untouched.
+#
+#   mise run e2e-bun   wraps:
+#     docker compose -p ng-e2e-<wt> \
+#       -f compose.yaml -f compose.dev.yaml -f compose.e2e.yaml -f compose.e2e-bun.yaml \
+#       --profile dev --profile e2e --profile e2e-bun up -d --build \
+#       db maildev keycloak app-bun
+#
+# app-bun is a built image (no source bind-mount), so it runs the code as baked at
+# build time - the same worktree code, just executed by Bun instead of Node.
+
+services:
+  app-bun:
+    profiles: ['e2e-bun']
+    build:
+      context: ../..
+      dockerfile: apps/web-nuxt/Dockerfile
+      target: prod-bun
+    image: nostragoalus-app:e2e-bun
+    # Run as root here (as the Node app-dev e2e service does) so the fs storage
+    # dir is writable; Bun-as-non-root is validated separately. This stack exists
+    # to exercise the Bun runtime over real HTTP, not the prod user.
+    user: root
+    env_file:
+      - path: .env
+        required: false
+      - path: .env.dev
+        required: false
+    environment:
+      NODE_ENV: production
+      RUN_MIGRATIONS: 'true'
+      DATABASE_URL: postgres://nostragoalus:nostragoalus@db:5432/nostragoalus
+      NUXT_DATABASE_URL: postgres://nostragoalus:nostragoalus@db:5432/nostragoalus
+      NUXT_SMTP_URL: smtp://maildev:1025
+      NUXT_SSO_TRUSTED_ORIGINS: http://keycloak:8080
+      # Match the app-dev e2e overrides: the app's own URL on the shifted port so
+      # auth redirects/origins line up, and the pinned e2e admin.
+      NUXT_PUBLIC_AUTH_URL: http://localhost:3100
+      BETTER_AUTH_URL: http://localhost:3100
+      NUXT_ADMIN_EMAILS: verify@example.com
+      # Self-contained fs storage (root-writable); these specs don't upload, so
+      # this just avoids pulling in rustfs.
+      NUXT_STORAGE_DRIVER: fs
+    ports:
+      - '127.0.0.1:3100:3000'
+    depends_on:
+      db:
+        condition: service_healthy
+      maildev:
+        condition: service_started

@@ -10,7 +10,7 @@ How the app is built, run locally, tested, released, and deployed. Task runner i
 | `mise run dev` | HMR dev server + db + maildev (source bind-mounted, hot reload) |
 | `mise run preview` | Built (prod-target) app + db + maildev, no HMR - what you demo a branch with |
 | `mise run up` | Prod-like: built app + db, no mail catcher (image tagged `:local`) |
-| `mise run deploy` | Prod deploy: builds + tags the app image with the `apps/web-nuxt/package.json` version (`nostragoalus-app:<x.y.z>`), then ups the prod stack |
+| `mise run deploy` | Prod deploy: builds + tags the app image with the `apps/web-nuxt/package.json` version (`nostragoalus-app:<x.y.z>`), then ups the prod stack. `NG_RUNTIME=bun mise run deploy` runs it under Bun (`:<x.y.z>-bun`) instead of Node |
 | `mise run down` | Stop everything (incl. dev overlay) |
 | `mise run logs` / `logs-dev` | Follow built-app / HMR logs |
 | `mise run psql` | psql into the db container |
@@ -20,6 +20,7 @@ How the app is built, run locally, tested, released, and deployed. Task runner i
 | `mise run shots` | Retake landing screenshots (headless Firefox) |
 | `mise run e2e-smtp` | Email-OTP flow end-to-end through the stack + maildev |
 | `mise run e2e` | Browser e2e (Playwright): predict/finalize/leaderboard + mail + SSO against the isolated `ng-e2e` stack (`e2e-up` / `e2e-down` manage its own DB/maildev/keycloak); see `apps/web-nuxt/tests/e2e/README.md` |
+| `mise run e2e-bun` | Same Playwright suite, but the app runs under the **Bun** runtime (`prod-bun` target, `compose.e2e-bun.yaml`) - so CI can cover Bun; Node e2e is unchanged |
 
 Worktree previews need `apps/web-nuxt/.env` copied from the main checkout, or auth 500s on the
 default secret.
@@ -28,13 +29,29 @@ default secret.
 
 Compose project `nostragoalus`: base `apps/web-nuxt/compose.yaml` + dev overlay
 `apps/web-nuxt/compose.dev.yaml`. `apps/web-nuxt/Dockerfile` stages: `base` -> `deps` (pnpm fetch, cached) ->
-`install` -> `dev` | `build` | `prod`. Every stage runs on `node:22-slim`; the
-`prod` stage runs as the image's built-in non-root `node` user (uid 1000), with a
-node-`fetch` healthcheck since slim ships no wget/curl. The glibc base runs
-cycletls' glibc-linked Go helper native, replacing the old Alpine
+`install` -> `dev` | `build` | `prod` | `prod-bun`. Every stage runs on
+`node:22-slim`; the `prod` stage runs as the image's built-in non-root `node` user
+(uid 1000), with a node-`fetch` healthcheck since slim ships no wget/curl. The
+glibc base runs cycletls' glibc-linked Go helper native, replacing the old Alpine
 `gcompat`/`libstdc++` shim. Distroless was tried for prod and rejected: cycletls
 spawns its Go helper via `/bin/sh -c`, which distroless lacks (see
 [architecture/providers.md](architecture/providers.md)).
+
+**Switchable runtime (Node or Bun).** `prod-bun` (`oven/bun:1-slim`, non-root
+`bun` user, glibc + `/bin/sh`) runs under Bun. It needs its OWN build: Nitro's
+`bun` preset (`build-bun` stage, `NITRO_PRESET=bun`), NOT the node-server output -
+crossws' node WebSocket-upgrade path silently fails under Bun (every `/_ws`
+consumer - chat, voice, live board - dies), while the bun preset uses Bun's native
+`Bun.serve` WebSocket adapter. The preset is env-driven in `nuxt.config.ts`
+(`process.env.NITRO_PRESET ?? 'node-server'`). Node `prod` is the default and the
+tested-by-default path; Bun is opt-in. Switch the prod stack with
+`NG_APP_TARGET=prod-bun` (the compose `app` build target, tag suffixed via
+`NG_APP_TAG_SUFFIX`), or `NG_RUNTIME=bun mise run deploy`. CI covers the Bun
+runtime: `mise run e2e-bun` runs the full Playwright suite (incl. the WebSocket
+specs) against the `prod-bun` build (`compose.e2e-bun.yaml`, service `app-bun` on
+the isolated ng-e2e stack), leaving the Node `mise run e2e` untouched. Bun is
+otherwise viable here: its `child_process` honors `{shell:true}` so cycletls'
+`/bin/sh` spawn works, and @resvg/resvg-js (OG images) is Bun-napi-compatible.
 
 | Service | Image | Role |
 |---|---|---|
