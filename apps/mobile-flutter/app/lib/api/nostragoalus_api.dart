@@ -31,6 +31,13 @@ class NostragoalusApi {
   Future<MatchesResponse> matches({String? competition}) async =>
       MatchesResponse.fromJson(await _api.getJson('/api/matches', query: _comp(competition)));
 
+  /// Upstream live match detail (opaque provider blob; null when unavailable).
+  Future<Map<String, dynamic>?> matchLiveDetail(String id) async {
+    final res = await _api.getJson('/api/matches/$id/live-detail');
+    final d = res['detail'];
+    return d is Map ? d.cast<String, dynamic>() : null;
+  }
+
   /// Head-to-head compare of two players (raw; nested shape read in the UI).
   Future<Map<String, dynamic>> headToHead(String a, String b, {String? competition}) async =>
       _api.getJson('/api/head-to-head', query: {

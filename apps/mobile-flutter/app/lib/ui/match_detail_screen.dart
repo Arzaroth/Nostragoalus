@@ -116,6 +116,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                     Tab(text: context.tr('match.lineups')),
                     Tab(text: context.tr('nav.standings')),
                     Tab(text: context.tr('match.insights')),
+                    Tab(text: context.tr('match.liveDetail')),
                     Tab(text: context.tr('nav.leaderboard')),
                     Tab(text: context.tr('match.media')),
                   ],
@@ -145,6 +146,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                       _LineupsTab(matchId: matchId),
                       _ScorersTab(matchId: matchId),
                       _InsightsTab(matchId: matchId),
+                      _LiveDetailTab(matchId: matchId),
                       _LeagueTab(matchId: matchId),
                       _MediaTab(matchId: matchId),
                     ],
@@ -254,6 +256,123 @@ class _InsightsTab extends ConsumerWidget {
             trailing: Text('${res.possession.home?.toInt() ?? 0}% - ${res.possession.away?.toInt() ?? 0}%'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Upstream live match detail (opaque provider blob): venue, attendance, cards,
+/// per-team stats, goals, bookings and subs. Renders only what the feed exposes.
+class _LiveDetailTab extends ConsumerWidget {
+  const _LiveDetailTab({required this.matchId});
+  final String matchId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return AsyncValueView<Map<String, dynamic>?>(
+      value: ref.watch(matchLiveDetailProvider(matchId)),
+      onRetry: () => ref.invalidate(matchLiveDetailProvider(matchId)),
+      data: (d) {
+        if (d == null || d.isEmpty) {
+          return Center(child: Text(context.tr('match.noLiveDetail')));
+        }
+        final stats = d['stats'] as Map?;
+        final goals = (d['goals'] as List?) ?? const [];
+        final bookings = (d['bookings'] as List?) ?? const [];
+        final subs = (d['substitutions'] as List?) ?? const [];
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            if (d['stadium'] != null)
+              ListTile(
+                dense: true,
+                leading: const Icon(Icons.stadium),
+                title: Text(d['stadium'].toString()),
+                subtitle: d['attendance'] != null ? Text('${d['attendance']}') : null,
+              ),
+            _cards(context, d['cards'] as Map?),
+            _statsBlock(context, stats),
+            _eventList(context, context.tr('match.goals'), goals,
+                (g) => '${_min(g)} ${_str(g, 'scorer') ?? _str(g, 'player') ?? ''}'.trim()),
+            _eventList(context, context.tr('match.bookings'), bookings,
+                (b) => '${_min(b)} ${_str(b, 'player') ?? ''} (${_str(b, 'card') ?? _str(b, 'type') ?? ''})'.trim()),
+            _eventList(context, context.tr('match.subs'), subs,
+                (s) => '${_min(s)} ${_str(s, 'playerOut') ?? ''} → ${_str(s, 'playerIn') ?? ''}'.trim()),
+          ],
+        );
+      },
+    );
+  }
+
+  String _min(dynamic e) {
+    final m = e is Map ? (e['minute'] ?? e['time']) : null;
+    return m == null ? '' : "$m'";
+  }
+
+  String? _str(dynamic e, String k) {
+    if (e is! Map) return null;
+    return e[k]?.toString();
+  }
+
+  Widget _cards(BuildContext context, Map? cards) {
+    if (cards == null) return const SizedBox.shrink();
+    final h = cards['home'] as Map?;
+    final a = cards['away'] as Map?;
+    if (h == null && a == null) return const SizedBox.shrink();
+    return ListTile(
+      dense: true,
+      leading: const Icon(Icons.style),
+      title: Text(context.tr('match.bookings')),
+      trailing: Text('🟨 ${h?['yellow'] ?? 0}-${a?['yellow'] ?? 0}   '
+          '🟥 ${h?['red'] ?? 0}-${a?['red'] ?? 0}'),
+    );
+  }
+
+  Widget _statsBlock(BuildContext context, Map? stats) {
+    if (stats == null) return const SizedBox.shrink();
+    final h = (stats['home'] as Map?)?.cast<String, dynamic>();
+    final a = (stats['away'] as Map?)?.cast<String, dynamic>();
+    if (h == null && a == null) return const SizedBox.shrink();
+    final keys = {...?h?.keys, ...?a?.keys}.toList();
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(context.tr('match.stats'), style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 6),
+            for (final k in keys)
+              Row(
+                children: [
+                  SizedBox(width: 40, child: Text('${h?[k] ?? '-'}', textAlign: TextAlign.start)),
+                  Expanded(child: Text(k, textAlign: TextAlign.center)),
+                  SizedBox(width: 40, child: Text('${a?[k] ?? '-'}', textAlign: TextAlign.end)),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _eventList(
+      BuildContext context, String title, List items, String Function(dynamic) label) {
+    if (items.isEmpty) return const SizedBox.shrink();
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: Theme.of(context).textTheme.titleSmall),
+            for (final e in items)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Text(label(e)),
+              ),
+          ],
+        ),
       ),
     );
   }

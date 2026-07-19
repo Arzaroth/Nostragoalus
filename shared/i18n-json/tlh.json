@@ -854,6 +854,9 @@
     }
   },
   "match": {
+    "liveDetail": "yImej",
+    "noLiveDetail": "pagh De' yImej",
+    "goals": "maQmIgh",
     "media": "HaSta",
     "noMedia": "HaSta tuHbe.",
     "timeline": "poH",

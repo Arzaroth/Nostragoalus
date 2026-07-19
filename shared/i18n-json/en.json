@@ -859,6 +859,9 @@
     }
   },
   "match": {
+    "liveDetail": "Live",
+    "noLiveDetail": "No live detail yet",
+    "goals": "Goals",
     "media": "Media",
     "noMedia": "No streams or highlights yet.",
     "timeline": "Timeline",

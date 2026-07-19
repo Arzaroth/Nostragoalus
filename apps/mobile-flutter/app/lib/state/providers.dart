@@ -207,6 +207,9 @@ final matchScorersProvider = FutureProvider.family<ScorersResponse, String>(
 final matchInsightsProvider = FutureProvider.family<MatchInsightsResponse, String>(
     (ref, id) => ref.watch(apiProvider).matchInsights(id));
 
+final matchLiveDetailProvider = FutureProvider.family<Map<String, dynamic>?, String>(
+    (ref, id) => ref.watch(apiProvider).matchLiveDetail(id));
+
 final cabinetProvider = FutureProvider.family<CabinetResponse, String>(
     (ref, userId) => ref.watch(apiProvider).cabinet(userId));
 

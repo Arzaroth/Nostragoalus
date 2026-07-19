@@ -60,7 +60,8 @@ with the data caveat noted per area.
 - [~] Insights - h2h count + possession; `[ ]` form/goals/standings/next detail
 - [x] League standings (per-match)
 - [x] Media / stream links (LIVE / REPLAY / HIGHLIGHTS)
-- [ ] Live-detail (live stats blob)
+- [x] Live-detail (live stats blob) - venue/attendance, cards, per-team stats,
+  goals/bookings/subs; defensive render of the opaque provider payload
 
 ## Predictions
 - [x] Make / edit prediction + joker

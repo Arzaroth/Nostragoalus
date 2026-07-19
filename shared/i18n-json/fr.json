@@ -854,6 +854,9 @@
     }
   },
   "match": {
+    "liveDetail": "Direct",
+    "noLiveDetail": "Aucun détail en direct",
+    "goals": "Buts",
     "media": "Médias",
     "noMedia": "Aucun flux ni résumé.",
     "timeline": "Chronologie",
