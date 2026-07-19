@@ -40,6 +40,7 @@ class LeaguesScreen extends ConsumerWidget {
           onRetry: () => ref.invalidate(leaguesProvider),
           data: (res) => ListView(
             children: [
+              const _NudgeBanner(),
               for (final l in res.leagues)
                 ListTile(
                   leading: const Icon(Icons.groups),
@@ -97,6 +98,60 @@ class LeaguesScreen extends ConsumerWidget {
     } catch (_) {
       messenger.showSnackBar(SnackBar(content: Text(failed)));
     }
+  }
+}
+
+/// Prompts to finish picks in any league that still has open matches uncovered.
+/// Silent when everything is complete (or the read errors/loads).
+class _NudgeBanner extends ConsumerWidget {
+  const _NudgeBanner();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final data = ref.watch(leagueCompletenessProvider).valueOrNull;
+    if (data == null) return const SizedBox.shrink();
+    final needy = <Map<String, dynamic>>[];
+    for (final raw in data.cast<Map>()) {
+      final l = raw.cast<String, dynamic>();
+      final s = (l['summary'] as Map?)?.cast<String, dynamic>() ?? const {};
+      final incomplete = (s['incomplete'] as num?)?.toInt() ?? 0;
+      final missing = (s['missing'] as num?)?.toInt() ?? 0;
+      if (incomplete + missing > 0) l['_open'] = incomplete + missing;
+      if ((l['_open'] as int? ?? 0) > 0) needy.add(l);
+    }
+    if (needy.isEmpty) return const SizedBox.shrink();
+    return Card(
+      margin: const EdgeInsets.all(12),
+      color: Theme.of(context).colorScheme.tertiaryContainer,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Row(
+              children: [
+                const Icon(Icons.notifications_active),
+                const SizedBox(width: 8),
+                Text(context.tr('nudge.title'),
+                    style: Theme.of(context).textTheme.titleSmall),
+              ],
+            ),
+          ),
+          for (final l in needy)
+            ListTile(
+              dense: true,
+              title: Text(l['name'].toString()),
+              subtitle: Text(context
+                  .tr('nudge.openCount')
+                  .replaceAll('{n}', '${l['_open']}')),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => LeagueDetailScreen(leagueId: l['leagueId'].toString()),
+              )),
+            ),
+        ],
+      ),
+    );
   }
 }
 

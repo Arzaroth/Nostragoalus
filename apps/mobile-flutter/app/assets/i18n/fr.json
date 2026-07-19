@@ -1,4 +1,8 @@
 {
+  "nudge": {
+    "title": "Terminez vos pronostics",
+    "openCount": "{n} matchs à pronostiquer"
+  },
   "moderation": {
     "title": "Modération",
     "empty": "Aucun message signalé",

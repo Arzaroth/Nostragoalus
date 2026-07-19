@@ -1,4 +1,8 @@
 {
+  "nudge": {
+    "title": "Finish your picks",
+    "openCount": "{n} matches still need a pick"
+  },
   "moderation": {
     "title": "Moderation",
     "empty": "No reported messages",

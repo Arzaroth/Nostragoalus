@@ -112,6 +112,11 @@ final leaderboardProvider = FutureProvider<LeaderboardResponse>((ref) =>
 final leaguesProvider =
     FutureProvider<LeaguesResponse>((ref) => ref.watch(apiProvider).leagues());
 
+/// Per-league pick completeness for the nudge banner (leagues needing picks).
+final leagueCompletenessProvider = FutureProvider<List<dynamic>>((ref) => ref
+    .watch(apiProvider)
+    .leagueCompleteness(competition: ref.watch(selectedCompetitionProvider)));
+
 final myPredictionsProvider =
     FutureProvider<PredictionsResponse>((ref) => ref.watch(apiProvider).myPredictions());
 

@@ -88,7 +88,8 @@ with the data caveat noted per area.
 - [~] Featured team / team specialist - set via league settings; `[ ]` full
   per-criterion reward-config editor (labels/notes/links/images)
 - [x] Regenerate join code
-- [ ] Per-league nudge / prompt
+- [x] Per-league nudge / prompt - "finish your picks" banner on the leagues tab
+  (from /api/leagues/completeness), taps through to the needy league
 
 ## Messaging (E2EE)
 - [x] Crypto module - encrypt + decrypt, proven on-device vs the frozen KATs

@@ -139,6 +139,11 @@ class NostragoalusApi {
       LeaderboardResponse.fromJson(
           await _api.getJson('/api/leaderboard', query: _comp(competition)));
 
+  /// Per-league pick completeness (which leagues still need picks/exact/stake).
+  Future<List<dynamic>> leagueCompleteness({String? competition}) async =>
+      (await _api.getJson('/api/leagues/completeness', query: _comp(competition)))['leagues']
+          as List<dynamic>;
+
   Future<LeaguesResponse> leagues() async =>
       LeaguesResponse.fromJson(await _api.getJson('/api/leagues'));
 
