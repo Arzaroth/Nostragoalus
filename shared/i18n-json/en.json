@@ -195,6 +195,7 @@
     "enable": "Enable chat",
     "disable": "Turn chat off",
     "send": "Send",
+    "outbox": { "sending": "Sending...", "failed": "Not sent", "retry": "Retry", "discard": "Discard" },
     "copyText": "Copy text",
     "placeholder": "Write a message",
     "loadMore": "Load earlier messages",

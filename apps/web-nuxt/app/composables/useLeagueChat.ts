@@ -35,6 +35,43 @@ export interface DecryptedMessage {
   reactions: ReactionTotals
   myReaction: ReactionEmoji | null
   threadCount: number
+  pending?: boolean // local stand-in, its POST is still in flight
+  failed?: boolean // its POST failed; retrySend/discardSend act on it
+}
+
+export interface SendOptions {
+  parentId?: string | null
+  threadId?: string | null
+  images?: PendingImage[]
+  mentions?: string[]
+}
+
+let localSendSeq = 0
+
+// The stand-in shown in the list while a message's POST is in flight, so what you
+// just sent never vanishes between hitting enter and the server answering.
+export function makePendingMessage(
+  userId: string | null,
+  text: string,
+  ctx: { matchId?: string | null; parentId?: string | null; threadId?: string | null },
+): DecryptedMessage {
+  return {
+    id: `local-${++localSendSeq}`,
+    userId,
+    matchId: ctx.matchId ?? null,
+    parentId: ctx.parentId ?? null,
+    threadId: ctx.threadId ?? null,
+    text,
+    createdAt: new Date().toISOString(),
+    editedAt: null,
+    attachments: [],
+    moderation: 'VISIBLE',
+    reported: false,
+    reactions: emptyReactionTotals(),
+    myReaction: null,
+    threadCount: 0,
+    pending: true,
+  }
 }
 
 export interface ReportedMessage {
@@ -64,6 +101,8 @@ export function useLeagueChat(
   matchId?: MaybeRefOrGetter<string | null>,
 ) {
   const { identity, ensure, status: identityStatus } = useChatIdentity()
+  const { session } = useAuth()
+  const myId = computed(() => session.value?.data?.user?.id ?? null)
   const queryClient = useQueryClient()
 
   const enabled = ref(false)
@@ -315,15 +354,15 @@ export function useLeagueChat(
   // Send a message: an (optional) caption plus any buffered images, as one post.
   // The caption and each image are sealed under the current epoch; the blobs never
   // leave the device in the clear. A message must carry text or at least one image.
-  async function send(
-    text: string,
-    opts: { parentId?: string | null; threadId?: string | null; images?: PendingImage[]; mentions?: string[] } = {},
-  ): Promise<void> {
+  async function send(text: string, opts: SendOptions = {}): Promise<void> {
     const body = text.trim()
     const images = opts.images ?? []
     const ck = currentKey.value
     if ((!body && images.length === 0) || !ck || sending.value) return
     sending.value = true
+    const local = makePendingMessage(myId.value, body, { matchId: mid(), parentId: opts.parentId, threadId: opts.threadId })
+    const list = opts.threadId ? threadMessages : messages
+    list.value = [...list.value, local]
     try {
       const [ciphertext, imageCts] = await Promise.all([
         encryptMessage(body, ck),
@@ -342,24 +381,40 @@ export function useLeagueChat(
           mentions: opts.mentions ?? [],
         },
       })
-      // Append our own message from the POST response; the WS echo (chat:new)
-      // dedupes on id, so we don't depend on it to see what we just sent. A thread
-      // reply lands in the open thread (its threadCount bump rides the echo, so it
-      // isn't double-counted here); everything else (incl. a quote) lands in the
-      // main list.
-      if (message) {
-        const dec = await decryptRow(message)
-        if (opts.threadId) {
-          if (!threadMessages.value.some((m) => m.id === message.id)) {
-            threadMessages.value = [...threadMessages.value, dec]
-          }
-        } else if (!messages.value.some((m) => m.id === message.id)) {
-          messages.value = [...messages.value, dec]
-        }
-      }
+      // Swap the pending stand-in for our own message from the POST response; the
+      // WS echo (chat:new) dedupes on id, so we don't depend on it to see what we
+      // just sent - and if the echo beat us to it, the stand-in just drops. A
+      // thread reply lands in the open thread (its threadCount bump rides the echo,
+      // so it isn't double-counted here); everything else (incl. a quote) lands in
+      // the main list.
+      const dec = message ? await decryptRow(message) : null
+      list.value = dec && !list.value.some((m) => m.id === dec.id)
+        ? list.value.map((m) => (m.id === local.id ? dec : m))
+        : list.value.filter((m) => m.id !== local.id)
+    } catch {
+      failedSends.set(local.id, { text, opts })
+      list.value = list.value.map((m) => (m.id === local.id ? { ...m, pending: false, failed: true } : m))
     } finally {
       sending.value = false
     }
+  }
+
+  // A send that failed stays in the list as a failed bubble the author can retry
+  // (same payload, images included) or discard, so the text isn't lost.
+  const failedSends = new Map<string, { text: string; opts: SendOptions }>()
+  function dropLocal(id: string): void {
+    failedSends.delete(id)
+    messages.value = messages.value.filter((m) => m.id !== id)
+    threadMessages.value = threadMessages.value.filter((m) => m.id !== id)
+  }
+  async function retrySend(id: string): Promise<void> {
+    const payload = failedSends.get(id)
+    if (!payload) return
+    dropLocal(id)
+    await send(payload.text, payload.opts)
+  }
+  function discardSend(id: string): void {
+    dropLocal(id)
   }
 
   function patchMessage(id: string, patch: Partial<DecryptedMessage>): void {
@@ -818,6 +873,8 @@ export function useLeagueChat(
     identityStatus,
     load,
     send,
+    retrySend,
+    discardSend,
     editMessage,
     roomMedia,
     loadAttachment,
