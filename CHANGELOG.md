@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [4.3.3] - 2026-07-19
+
 ### Changed
 
 - Fixtures now open with the finished rounds folded away: any round whose matches have all been played starts collapsed, so the list lands on what is still to come. The final is never folded, and a link straight to a played match still opens its round.
