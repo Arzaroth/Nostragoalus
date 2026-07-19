@@ -18,12 +18,12 @@ with the data caveat noted per area.
 - [~] SSO sign in - email-domain detection + better-auth web-auth flow + Android
   callback scheme. `[!]` completing it needs `nostragoalus` in
   NUXT_SSO_TRUSTED_ORIGINS + an iOS URL type + a real IdP
-- [ ] Sign up (native form) - currently web-only
-- [ ] Forgot / reset password
+- [x] Sign up (native form)
+- [x] Forgot / reset password (request-reset form)
 - [ ] Two-factor (2FA enrol / verify / recovery)
 - [ ] Email verification flow
 - [ ] Passkeys
-- [ ] Connected sessions / devices (list + revoke)
+- [x] Connected sessions / devices (list + revoke)
 - [ ] Confirm-credentials / revoke-trust
 - [x] Preferences: show-crowd, show-odds, light/dark/system theme
 - [~] Account home - identity + links; no edit name/avatar
@@ -43,8 +43,8 @@ with the data caveat noted per area.
 - [~] Wrapped - headline totals; `[ ]` full recap
 - [~] Analytics - headline stat tiles; `[ ]` bias-detector, sparklines, over-time,
   streaks
-- [ ] Teams list + team detail (`[competition]/teams/[code]`)
-- [ ] Bracket (knockout tree)
+- [x] Teams list (competition-scoped)
+- [x] Bracket (knockout tree)
 - [ ] Map (host cities / group map - Leaflet on web)
 - [ ] Compare (player head-to-head, `/head-to-head`)
 
@@ -70,13 +70,13 @@ with the data caveat noted per area.
 - [x] My leagues list
 - [x] Browse public + join by code / by id
 - [~] League board (points/survival mode-board)
-- [ ] League detail: members, role, settings, mode, lives
-- [ ] Create league
-- [ ] Invites (create / list / accept link / delete)
-- [ ] Leave / transfer ownership / member management (kick, role)
-- [ ] Rewards / prizes (per-league criteria + rankings)
+- [x] League detail: members, role, mode
+- [x] Create league
+- [~] Invites (create / list); `[ ]` accept-link / delete
+- [~] Leave league; `[ ]` transfer ownership / member management (kick, role)
+- [~] Rewards / prizes (per-league criteria, raw render); `[ ]` rankings drill-in
 - [ ] Featured team / team specialist
-- [ ] Regenerate join code
+- [x] Regenerate join code
 - [ ] Per-league nudge / prompt
 
 ## Messaging (E2EE)
@@ -84,8 +84,8 @@ with the data caveat noted per area.
 - [x] Identity bootstrap (generate / register / restore)
 - [x] Recovery-code flow (unlock gate + set-up)
 - [x] Key-transparency verify + safety number
-- [~] League chat - send / receive / history; `[!]` live message round-trip needs a
-  provisioned multi-member league (a keyholder to seal keys)
+- [~] League chat - send / receive / history + message reactions; `[!]` live message
+  round-trip needs a provisioned multi-member league (a keyholder to seal keys)
 - [~] DMs (1:1) - inbox / room / create; `[!]` live round-trip needs a 2nd user
 - [ ] Chat rich: threads, mentions, images, edit/delete, moderation, presence, typing
 - [ ] DM rich: read receipts, reactions, images
@@ -109,8 +109,8 @@ with the data caveat noted per area.
 ## Achievements / stats / rewards
 - [~] Trophy cabinet (trophies + earned achievements) - own + other users; `[ ]`
   tiers / rarity / criteria-progress detail, showcase pin/edit
-- [ ] My stats screen (`/api/me/stats` - provider wired, no screen)
-- [ ] My rewards screen (`/api/me/rewards` - provider wired, no screen)
+- [x] My stats screen (`/api/me/stats`)
+- [x] My rewards screen (`/api/me/rewards`)
 
 ## Long-tail & native
 - [x] i18n (5 locales incl. RTL Arabic, tlh)
@@ -118,12 +118,12 @@ with the data caveat noted per area.
 - [x] OS share (match link, media links)
 - [x] Tamper-evidence /verify (commit-reveal ledger)
 - [x] Roadmap view (+ upvote)
-- [ ] Roadmap suggestions (submit)
+- [x] Roadmap suggestions (submit)
+- [x] About / license / tech-stack page
 - [ ] Onboarding tour
 - [ ] Deep links (inbound `goal.arzaroth.com/...`)
 - [ ] Feed subscription (calendar)
 - [ ] Share-token landing pages (a/p/s/[token] - analytics/profile/wrapped shares)
-- [ ] About / license / tech-stack pages
 - [ ] App launcher name + icon `[x]`, splash `[ ]`
 
 ---
