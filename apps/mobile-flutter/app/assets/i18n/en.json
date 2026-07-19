@@ -499,6 +499,7 @@
     }
   },
   "landing": {
+    "subtitle": "Predict the matches. Beat your friends.",
     "title": "Nostragoalus",
     "badge": "Live for the 2026 World Cup",
     "scrollCue": "Scroll to explore",
@@ -1327,6 +1328,7 @@
     "revokeFailed": "Could not sign out that device. Try again."
   },
   "about": {
+    "client": "Client",
     "title": "About",
     "intro": "Nostragoalus is an open-source football prediction game: call the scores, earn points for how close you get, and out-foresee your friends.",
     "aiTitle": "Built with AI",
@@ -1345,6 +1347,9 @@
     "integrityUnavailable": "No integrity fingerprint is available for this build."
   },
   "roadmap": {
+    "suggestTitle": "Title",
+    "suggestDesc": "Description",
+    "suggestSent": "Thanks - your suggestion was submitted.",
     "title": "Roadmap",
     "sub": "What's planned, what's being built, and what already shipped.",
     "planned": "Planned",

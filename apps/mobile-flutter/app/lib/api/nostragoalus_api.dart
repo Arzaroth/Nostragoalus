@@ -160,6 +160,9 @@ class NostragoalusApi {
 
   Future<void> voteRoadmap(String id) async => _api.postJson('/api/roadmap/$id/vote');
 
+  Future<void> suggestRoadmap(String title, String description) async => _api
+      .postJson('/api/roadmap/suggestions', body: {'title': title, 'description': description});
+
   Future<ChampionResponse> champion({String? competition}) async =>
       ChampionResponse.fromJson(await _api.getJson('/api/champion', query: _comp(competition)));
 

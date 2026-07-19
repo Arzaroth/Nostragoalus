@@ -500,6 +500,7 @@
     }
   },
   "landing": {
+    "subtitle": "Qup yIwIv. jup yIjey.",
     "title": "Nostragoalus",
     "badge": "qo' HIvje' 2026 - DaH qaSlI'",
     "scrollCue": "bIngDaq yIghoS",
@@ -1328,6 +1329,7 @@
     "revokeFailed": "janvam mejmoHlaHbe'. yInID."
   },
   "about": {
+    "client": "De'wI'",
     "title": "De'",
     "intro": "Nostragoalus: QI'D noH Quj poSmoHlu'pu'bogh. mI'mey yInoH, QuQmey yISuq, juppu'lI' tIjey.",
     "aiTitle": "AI lo'taHvIS chenmoHlu'",
@@ -1346,6 +1348,9 @@
     "integrityUnavailable": "ngoqvam nempuq tu'be'lu'."
   },
   "roadmap": {
+    "suggestTitle": "pong",
+    "suggestDesc": "QIj",
+    "suggestSent": "qatlho - chup lID.",
     "title": "He nab",
     "sub": "nabmey, chenmoHtaHghachmey, rInpu'bogh Doch je.",
     "planned": "nablu'",

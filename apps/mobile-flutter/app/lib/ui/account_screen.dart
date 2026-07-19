@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import 'about_screen.dart';
 import 'analytics_screen.dart';
 import 'best_scorer_screen.dart';
 import 'bot_screen.dart';
+import 'bracket_screen.dart';
 import 'cabinet_screen.dart';
 import 'champion_screen.dart';
 import 'dm_inbox_screen.dart';
@@ -117,6 +119,22 @@ class AccountScreen extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const TeamsScreen()),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.account_tree),
+            title: Text(context.tr('nav.bracket')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const BracketScreen()),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.info_outline),
+            title: Text(context.tr('about.title')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AboutScreen()),
             ),
           ),
           ListTile(

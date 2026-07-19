@@ -494,6 +494,7 @@
     }
   },
   "landing": {
+    "subtitle": "Pronostiquez les matchs. Battez vos amis.",
     "title": "Nostragoalus",
     "badge": "En direct pour la Coupe du Monde 2026",
     "scrollCue": "Faites défiler pour découvrir",
@@ -1322,6 +1323,7 @@
     "revokeFailed": "Impossible de déconnecter cet appareil. Réessaie."
   },
   "about": {
+    "client": "Client",
     "title": "À propos",
     "intro": "Nostragoalus est un jeu de pronostics football open source : pronostiquez les scores, marquez des points selon votre précision et devancez vos amis.",
     "aiTitle": "Construit avec l'IA",
@@ -1340,6 +1342,9 @@
     "integrityUnavailable": "Aucune empreinte d'intégrité n'est disponible pour cette build."
   },
   "roadmap": {
+    "suggestTitle": "Titre",
+    "suggestDesc": "Description",
+    "suggestSent": "Merci - votre suggestion a été envoyée.",
     "title": "Feuille de route",
     "sub": "Ce qui est prévu, en cours de développement et déjà livré.",
     "planned": "Prévu",

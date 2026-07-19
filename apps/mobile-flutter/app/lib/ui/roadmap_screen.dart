@@ -15,6 +15,11 @@ class RoadmapScreen extends ConsumerWidget {
     final roadmap = ref.watch(roadmapProvider);
     return Scaffold(
       appBar: AppBar(title: Text(context.tr('nav.roadmap'))),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _suggest(context, ref),
+        icon: const Icon(Icons.lightbulb),
+        label: Text(context.tr('roadmap.suggest')),
+      ),
       body: RefreshIndicator(
         onRefresh: () async => ref.refresh(roadmapProvider.future),
         child: AsyncValueView<RoadmapResponse>(
@@ -27,6 +32,41 @@ class RoadmapScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+Future<void> _suggest(BuildContext context, WidgetRef ref) async {
+  final title = TextEditingController();
+  final desc = TextEditingController();
+  final submit = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(context.tr('roadmap.suggest')),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+              controller: title,
+              decoration: InputDecoration(labelText: context.tr('roadmap.suggestTitle'))),
+          TextField(
+              controller: desc,
+              maxLines: 3,
+              decoration: InputDecoration(labelText: context.tr('roadmap.suggestDesc'))),
+        ],
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context, false), child: Text(context.tr('common.cancel'))),
+        FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(context.tr('roadmap.suggest'))),
+      ],
+    ),
+  );
+  if (submit != true || title.text.trim().isEmpty || !context.mounted) return;
+  final messenger = ScaffoldMessenger.of(context);
+  final sent = context.tr('roadmap.suggestSent');
+  try {
+    await ref.read(apiProvider).suggestRoadmap(title.text.trim(), desc.text.trim());
+    ref.invalidate(roadmapProvider);
+    messenger.showSnackBar(SnackBar(content: Text(sent)));
+  } catch (_) {/* ignore */}
 }
 
 class _ItemCard extends ConsumerWidget {
