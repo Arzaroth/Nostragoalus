@@ -66,6 +66,15 @@ class ChatIdentityController extends AsyncNotifier<ChatIdentityState> {
     final blob = e2ee.wrapPrivateKeyWithRecovery(sodium, id.privateKey, code);
     await ref.read(apiProvider).setChatRecovery(blob);
   }
+
+  /// Generate a fresh recovery code, escrow the private key under it, and return
+  /// it to show the user once.
+  Future<String> createRecoveryCode() async {
+    final sodium = await ref.read(sodiumProvider.future);
+    final code = e2ee.generateRecoveryCode(sodium);
+    await setupRecovery(code);
+    return code;
+  }
 }
 
 /// One decrypted (or undecryptable) line of chat.

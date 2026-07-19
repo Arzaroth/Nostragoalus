@@ -1,4 +1,10 @@
 {
+  "recovery": {
+    "title": "Chat backup",
+    "hint": "Generate a recovery code to restore encrypted chat on another device. Save it somewhere safe - it is shown once and cannot be recovered.",
+    "generate": "Generate recovery code",
+    "saveWarning": "Save this now - it will not be shown again."
+  },
   "kt": {
     "title": "Key transparency",
     "verified": "Key log verified",

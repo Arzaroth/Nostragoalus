@@ -12,6 +12,7 @@ import 'kt_screen.dart';
 import 'locale_menu.dart';
 import 'multiview_screen.dart';
 import 'my_predictions_screen.dart';
+import 'recovery_setup_screen.dart';
 import 'roadmap_screen.dart';
 import 'verify_screen.dart';
 import 'wrapped_screen.dart';
@@ -134,6 +135,14 @@ class AccountScreen extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const KtScreen()),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.vpn_key),
+            title: Text(context.tr('recovery.title')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const RecoverySetupScreen()),
             ),
           ),
           const Divider(),

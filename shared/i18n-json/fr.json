@@ -1,4 +1,10 @@
 {
+  "recovery": {
+    "title": "Sauvegarde du chat",
+    "hint": "Générez un code de récupération pour restaurer le chat chiffré sur un autre appareil. Conservez-le en lieu sûr - il n’est affiché qu’une fois.",
+    "generate": "Générer un code de récupération",
+    "saveWarning": "Enregistrez-le maintenant - il ne sera plus affiché."
+  },
   "kt": {
     "title": "Transparence des clés",
     "verified": "Journal des clés vérifié",

@@ -1,4 +1,10 @@
 {
+  "recovery": {
+    "title": "QIn nge",
+    "hint": "latlh De vaD recovery code chenmoH. QaQ DaqDaq yISaH - wa logh cha lu.",
+    "generate": "recovery code chenmoH",
+    "saveWarning": "DaH yISaH - cha qaSqa be."
+  },
   "kt": {
     "title": "ngaywI patlh",
     "verified": "patlh lulaj",
