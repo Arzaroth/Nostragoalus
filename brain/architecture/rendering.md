@@ -28,7 +28,11 @@ Pipeline lives in `apps/web-nuxt/server/utils/share/*`:
    Noto Sans Thai for locale glyph coverage via satori's per-glyph fallback).
    Additional script subsets (ja/ko/zh/ar/he/hi, etc.) are fetched from Google
    Fonts on demand through satori's `loadAdditionalAsset` and cached, degrading
-   to tofu offline. Team identity uses CODE pills (ENG/SEN) or flags inlined as
+   to tofu offline. satori also emits non-script codes for the decorative
+   characters display names are full of - `math` (Mathematical Alphanumeric
+   letters like `𝓑`), `symbol` (dingbats like `✕`) and `emoji` - each mapped in
+   `SCRIPT_FAMILY` to Noto Sans Math / Noto Sans Symbols 2 / Noto Emoji
+   (monochrome: the card traces glyphs to paths, so a color font gains nothing). Team identity uses CODE pills (ENG/SEN) or flags inlined as
    data URIs, never a remote FIFA-CDN `<img>` (that would add a render-time
    network dependency). Assets load at runtime via
    `useStorage('assets:server').getItemRaw(...)`.
