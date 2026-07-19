@@ -5,6 +5,14 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### chelpu'
+
+- QIn per: QIn nach per DaHIvDI', ghom QInDaq je may' QInDaq QIn bIt. patlh tetlhDaq ghom DawIvqa'chugh, ghap Hoch may' HaSta latlh may' DawIvchugh, QIn tlha'be'. Qu'mey Hoch per lI'; per ghom pong 'agh nach; per Daq, per DaQaw'DI' ghap ghomvo' DamejDI' neH.
+
+### choHpu'
+
+- DaH wej Dochmey poQbogh 'agh Treble: Qu' rIntaH Doch loSvo' wej (Grand Champion, Group Stage Guru, Bracket Master, Madame Irma), Qu' rap; 'ej Doch per toghbe'lu'.
+
 ### tI'pu'
 
 - may'mey rIntaH SoQ, tetlh may' Qav 'agh, tetlh tIn 'aghbe'. may' qaStaHbogh may' qaSbe'bogh je tu'be'lu'DI', may' Qav wIv jotlh.

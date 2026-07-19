@@ -301,6 +301,24 @@ per-match `FergieMatch`, not a `highlight()`-shaped swing).
       release, so it can't drift again. The fresh Arabic (2.9.0/2.9.1 + the 2.13.1
       batch) is machine-authored - folds into the human-review item above.
 
+## Chat room pin (deferred from the feature-treatment review)
+
+- [ ] **Cross-competition pin has no thread label**: `matchLabel` in `ChatDock.vue`
+      resolves against `useMatches()`, which is scoped to the competition in view, so
+      a match thread pinned in another competition falls back to the generic
+      `chat.threadTitle` - exactly when the pin is the only thing telling the user
+      which match they are reading. Needs a match lookup by id outside the current
+      competition (or carrying the label in the pin).
+- [ ] **Author links follow the page, not the pinned room**: `ChatPanel.vue` derives
+      its own `slug` from `useSelectedCompetition` and links authors to
+      `/${slug}/users/${uid}`. Pinned to another competition's league, those links
+      point at a competition the author may not play in. Pre-existing shape (the
+      dock's league always matched the page before the pin); needs the panel to take
+      the room's competition rather than the current one.
+- [ ] **No e2e for the cross-competition pin**: the spec covers pin/unpin/re-pin and
+      reload within one competition. The "follows you across competitions" claim and
+      the pinned-match paths are only covered by component tests.
+
 ## Cross-league chat inbox (deferred from the feature-treatment review)
 
 - [ ] **Fabricated-mention abuse**: the `mentions[]` sidecar on `messages.post` is

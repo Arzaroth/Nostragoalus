@@ -67,8 +67,10 @@ test('pinning the chat keeps it on one league while the rankings filter moves', 
 
   // Unpinned: no league name in the dock header, because the dock cannot disagree
   // with the pill.
-  await expect(pinButton).not.toContainText(ALPHA)
+  await expect(pinButton).toHaveAttribute('aria-pressed', 'false')
+  await expect(pinButton).toHaveText('')
   await pinButton.click()
+  await expect(pinButton).toHaveAttribute('aria-pressed', 'true')
   await expect(pinButton).toContainText(ALPHA)
 
   // The whole point: the page moves to Beta, the chat does not.
@@ -79,7 +81,8 @@ test('pinning the chat keeps it on one league while the rankings filter moves', 
   // Unpinning hands the dock back: re-pinning now captures Beta, the league the
   // page is on.
   await pinButton.click()
-  await expect(pinButton).not.toContainText(ALPHA)
+  await expect(pinButton).toHaveAttribute('aria-pressed', 'false')
+  await expect(pinButton).toHaveText('')
   await pinButton.click()
   await expect(pinButton).toContainText(BETA)
 

@@ -123,15 +123,33 @@ dots and client-side search are built in.
 the `ng-league` cookie (so the rankings league pill drags the chat with it) and a
 focused multiview cell re-targets its match thread. The bookmark toggle in the
 dock header pins the room in view - league AND thread together - into
-`ng-chat-pin` (`useStorage`, per device, `{ competition, leagueId, matchId }`),
-and the dock then ignores both auto-follows. The pin deliberately survives a
-competition switch: the pinned conversation is the one you keep reading wherever
-you browse, so the header shows the pinned league's name (only while pinned, and
-only when it belongs to the competition in view). Explicit in-dock navigation
-re-points the pin instead of fighting it: the league switcher, an inbox row, the
-scope toggle and a mention deep link all rewrite it. Leaving/being kicked from
-the pinned league drops it, mirroring the league cookie's own prune. Resolution
-and staleness live in `apps/web-nuxt/app/utils/chat-pin.ts`.
+`ng-chat-pin` (`useStorage`, per device, `{ userId, competition, leagueId,
+matchId }`), and the dock then ignores both auto-follows. The pin deliberately
+survives a competition switch: the pinned conversation is the one you keep
+reading wherever you browse, so the header shows the pinned league's name (only
+while pinned, and only when it belongs to the competition in view). Explicit
+in-dock navigation re-points the pin instead of fighting it: the league switcher,
+an inbox row, the scope toggle and a mention deep link all rewrite it (a deep
+link with no league to re-point at unpins instead, so the link is never
+swallowed).
+
+The Global/Match toggle follows the pin, not the page: it names the pinned thread
+when there is one, the page's thread when the pin is on this competition's global
+room, and disappears for a pin held on another competition - pairing that
+league with a match from the competition in view is not a room that exists.
+Unpinning seeds the scope from the room you were reading, so the dock stays put.
+
+The pin is client state, so the dock refuses one it cannot trust:
+`apps/web-nuxt/app/utils/chat-pin.ts` holds `asChatPin` (shape guard - an
+unreadable pin would hide the button that unpins it) and `isPinStale`, which
+drops a pin made by another account on the same device, or one on a league the
+user left or whose chat was switched off. The league check waits for a settled
+my-leagues query for the same reason
+[useSelectedLeague](../../apps/web-nuxt/app/composables/useSelectedLeague.ts)'s
+own prune does. Storage is read on mount (`initOnMounted`) so SSR and hydration
+agree, and cross-tab storage events are ignored so pinning here never yanks a
+conversation open in another tab. Nothing server-side trusts the pin: every chat
+route re-derives membership from the session.
 
 Live events on the WebSocket: `chat:new`, `chat:moderation`,
 `chat:roster` (display-name changes), and `chat:state-changed` (chat on/off and

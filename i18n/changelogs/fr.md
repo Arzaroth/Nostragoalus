@@ -5,6 +5,14 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Ajouté
+
+- Épinglez le chat sur une conversation : le marque-page dans l'en-tête du chat le maintient sur la ligue et le fil que vous lisez, si bien que changer le filtre de ligue dans le classement, ou mettre un autre match en avant en multi-vue, n'emporte plus le chat avec lui. L'épingle vous suit d'une compétition à l'autre, nomme la ligue épinglée dans l'en-tête et reste en place jusqu'à ce que vous la retiriez ou quittiez cette ligue.
+
+### Modifié
+
+- Le succès Le Triplé annonce désormais clairement ce qu'il attend : trois des quatre trophées de fin de tournoi (Grand Champion, Maître des poules, Maître du tableau, Madame Irma) dans la même compétition, et les badges de succès ne comptent pas.
+
 ### Corrigé
 
 - Une fois la compétition terminée, la liste des matchs se cale à nouveau sur la finale au lieu de rester en haut : sans match en direct ni à venir, le défilement automatique vise désormais le dernier match.
