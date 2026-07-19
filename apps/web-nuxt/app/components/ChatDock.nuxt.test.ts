@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
-import { nextTick, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import ChatDock from './ChatDock.vue'
 
 // The chat itself (ChatPanel -> useLeagueChat) is tested elsewhere; here we only
@@ -19,9 +19,17 @@ const myLeagues = ref<Array<{ id: string; name: string; chatEnabled: boolean }> 
   { id: 'L1', name: 'Alpha', chatEnabled: true },
   { id: 'L2', name: 'Beta', chatEnabled: true },
 ])
+const leaguesFetching = ref(false)
 vi.mock('../composables/useSelectedLeague', () => ({
-  useSelectedLeague: () => ({ leagueId: selectedLeagueId, leagues: myLeagues }),
+  useSelectedLeague: () => ({ leagueId: selectedLeagueId }),
   useLeagueSelections: () => leagueSelections,
+}))
+// The dock takes the whole my-leagues query (not just its data) so it can hold
+// the pin prune until the list has settled.
+mockNuxtImport('useMyLeagues', () => () => ({
+  data: myLeagues,
+  isSuccess: computed(() => myLeagues.value !== undefined),
+  isFetching: leaguesFetching,
 }))
 mockNuxtImport('useRoute', () => () => route.value as never)
 
@@ -82,8 +90,17 @@ async function mount(enabled = true) {
 }
 const bubble = (w: Awaited<ReturnType<typeof mount>>) => w.find('button[aria-label="Open league chat"]')
 
+// A pin as it sits on disk, before the dock mounts and reads it.
+function seedPin(over: Partial<{ userId: string; competition: string; leagueId: string; matchId: string | null }>) {
+  localStorage.setItem(
+    'ng-chat-pin',
+    JSON.stringify({ userId: 'me', competition: 'world-cup-2026', leagueId: 'L1', matchId: null, ...over }),
+  )
+}
+
 beforeEach(() => {
   localStorage.removeItem('ng-chat-pin')
+  leaguesFetching.value = false
   myLeagues.value = [
     { id: 'L1', name: 'Alpha', chatEnabled: true },
     { id: 'L2', name: 'Beta', chatEnabled: true },
@@ -162,6 +179,59 @@ describe('ChatDock', () => {
     focusedMatchId.value = 'M2'
     await nextTick()
     expect(w.findComponent(ChatPanelStub).props('matchId')).toBe(null)
+  })
+
+  it('keeps the Match tab reachable for a pinned thread off any match route', async () => {
+    seedPin({ matchId: 'M9' })
+    const w = await mount(true)
+    expect(w.text()).toContain('This match')
+    expect(w.findComponent(ChatPanelStub).props('matchId')).toBe('M9')
+  })
+
+  it('offers no Match tab for a pin held on another competition', async () => {
+    // Its league and this page's match are not a room that exists.
+    seedPin({ competition: 'euro-2024' })
+    route.value = { name: 'competition-matches-id', path: '/world-cup-2026/matches/M1', params: { id: 'M1' }, query: {} }
+    const w = await mount(true)
+    expect(w.text()).not.toContain('This match')
+  })
+
+  it('self-heals from a pin it cannot read', async () => {
+    localStorage.setItem('ng-chat-pin', JSON.stringify({ leagueId: 'L1' }))
+    const w = await mount(true)
+    expect(w.findComponent(ChatPanelStub).props('leagueId')).toBe('L1')
+    // Back on the page's league, and the unpin control is reachable again.
+    selectedLeagueId.value = 'L2'
+    await nextTick()
+    expect(w.findComponent(ChatPanelStub).props('leagueId')).toBe('L2')
+    expect(w.find('[data-testid="chat-pin"]').exists()).toBe(true)
+  })
+
+  it('does not inherit the pin of whoever used the device last', async () => {
+    seedPin({ userId: 'someone-else' })
+    selectedLeagueId.value = 'L2'
+    const w = await mount(true)
+    expect(w.findComponent(ChatPanelStub).props('leagueId')).toBe('L2')
+  })
+
+  it('holds the pin while the leagues list is still being revalidated', async () => {
+    seedPin({})
+    leaguesFetching.value = true
+    myLeagues.value = [{ id: 'L2', name: 'Beta', chatEnabled: true }]
+    const w = await mount(true)
+    expect(w.findComponent(ChatPanelStub).props('leagueId')).toBe('L1')
+  })
+
+  it('drops the pin once the pinned league turns its chat off', async () => {
+    const w = await mount(true)
+    await w.find('[data-testid="chat-pin"]').trigger('click')
+    myLeagues.value = [
+      { id: 'L1', name: 'Alpha', chatEnabled: false },
+      { id: 'L2', name: 'Beta', chatEnabled: true },
+    ]
+    selectedLeagueId.value = 'L2'
+    await nextTick()
+    expect(w.findComponent(ChatPanelStub).props('leagueId')).toBe('L2')
   })
 
   it('drops the pin once the pinned league is no longer joined', async () => {

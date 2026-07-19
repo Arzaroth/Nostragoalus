@@ -9,7 +9,7 @@
 // for everyone - the panel reports its on/off state up via update:enabled.
 import { StorageSerializers, useDraggable, useStorage } from '@vueuse/core'
 import { GLOBAL_ROOM, roomKeyOf, useChatActivity } from '~/composables/useChatActivity'
-import { isPinStale, resolvePinnedRoom, type ChatPin } from '~/utils/chat-pin'
+import { asChatPin, isPinStale, type ChatPin } from '~/utils/chat-pin'
 import { withLeagueSelection } from '~/utils/league-cookie'
 import type { ChatUnreadRoomDTO } from '#shared/types/chat'
 import type { DmRecipientDTO } from '#shared/types/dm'
@@ -18,21 +18,35 @@ const { t } = useI18n()
 const route = useRoute()
 const slug = useSelectedCompetition()
 const matches = useMatches()
-const { leagueId: selectedLeagueId, leagues: myLeagues } = useSelectedLeague()
+const { leagueId: selectedLeagueId } = useSelectedLeague()
 const selections = useLeagueSelections()
+// The full query, not just its data: pruning the pin off a list that is still
+// being revalidated would erase a just-joined league (see the same guard in
+// useSelectedLeague).
+const myLeaguesQuery = useMyLeagues(slug)
+const myLeagues = myLeaguesQuery.data
+const { session } = useAuth()
+const signedIn = computed(() => !!session.value?.data?.user)
+const currentUserId = computed<string | null>(() => session.value?.data?.user?.id ?? null)
 
 // Pinning freezes the dock on one room (league + thread) so switching the league
 // filter on the rankings - or focusing another multiview cell - no longer drags
 // the chat along. It deliberately outlives a competition switch: the pinned
 // conversation is the one you want to keep reading wherever you browse. Explicit
 // in-dock navigation (league switcher, inbox row, scope toggle) re-points the pin
-// rather than fighting it.
-const pin = useStorage<ChatPin | null>('ng-chat-pin', null, undefined, { serializer: StorageSerializers.object })
+// rather than fighting it. Read on mount, not during SSR, or the server would
+// render the page's room and the client would swap it under a hydration mismatch;
+// deaf to other tabs, so pinning here never yanks a conversation open there.
+const pin = useStorage<ChatPin | null>('ng-chat-pin', null, undefined, {
+  serializer: StorageSerializers.object,
+  initOnMounted: true,
+  listenToStorageChanges: false,
+})
 
 // The league detail/list pages render the chat inline; don't double it there.
 const onLeaguePages = computed(() => route.path === '/leagues' || route.path.startsWith('/leagues/'))
 const leagueId = computed<string | null>(() =>
-  onLeaguePages.value ? null : resolvePinnedRoom(pin.value, selectedLeagueId.value, null).leagueId,
+  onLeaguePages.value ? null : (pin.value?.leagueId ?? selectedLeagueId.value),
 )
 
 // The focused multiview cell wins; otherwise a match detail route unlocks the
@@ -59,31 +73,60 @@ watch(matchId, (m) => {
 watch(mvFocus.focusedMatchId, (id) => {
   if (id && !pin.value) scope.value = 'match'
 })
-const scopedMatchId = computed<string | null>(
-  () => resolvePinnedRoom(pin.value, null, scope.value === 'match' ? matchId.value : null).matchId,
+const scopedMatchId = computed<string | null>(() =>
+  pin.value ? pin.value.matchId : (scope.value === 'match' ? matchId.value : null),
 )
+// What the Match tab would show. The pinned thread wins - so the tab reflects the
+// room on screen rather than the page behind it - and a pin held on another
+// competition offers no thread at all, since pairing its league with a match from
+// the competition in view is not a room that exists.
+const toggleMatchId = computed<string | null>(() => {
+  if (!pin.value) return matchId.value
+  if (pin.value.matchId) return pin.value.matchId
+  return pin.value.competition === slug.value ? matchId.value : null
+})
 
-// Pinning captures the room in view; unpinning hands the dock back to the page.
+// Pinning captures the room in view; unpinning hands the dock back to the page,
+// seeded with the scope that room was on so it does not snap elsewhere.
 function togglePin(): void {
   if (pin.value) {
+    scope.value = pin.value.matchId ? 'match' : 'global'
     pin.value = null
     return
   }
-  if (!leagueId.value) return
-  pin.value = { competition: slug.value, leagueId: leagueId.value, matchId: scopedMatchId.value }
+  if (!leagueId.value || !currentUserId.value) return
+  pin.value = {
+    userId: currentUserId.value,
+    competition: slug.value,
+    leagueId: leagueId.value,
+    matchId: scopedMatchId.value,
+  }
 }
 
 function setScope(next: 'global' | 'match'): void {
   scope.value = next
-  if (pin.value) pin.value = { ...pin.value, matchId: next === 'match' ? matchId.value : null }
+  if (pin.value) pin.value = { ...pin.value, matchId: next === 'match' ? toggleMatchId.value : null }
 }
 
-// Leaving/being kicked from the pinned league drops the pin, the same way the
-// league cookie prunes itself. Only checkable on the pin's own competition.
-watch([myLeagues, slug], () => {
-  if (!myLeagues.value) return
-  if (isPinStale(pin.value, slug.value, myLeagues.value.map((l) => l.id))) pin.value = null
-}, { immediate: true })
+// Drop a pin the dock must not honour: one it cannot read (hand-edited or from an
+// older release - it would hide the very button that unpins it), one made by
+// whoever used this device last, or one on a league the user left or whose chat
+// was switched off. The league check waits for a settled list for the same reason
+// the league cookie's own prune does: vue-query keeps serving the previous array
+// during a background refetch, which would erase a just-joined league.
+watch(
+  [pin, myLeagues, () => myLeaguesQuery.isSuccess.value, () => myLeaguesQuery.isFetching.value, slug, currentUserId],
+  () => {
+    if (pin.value && !asChatPin(pin.value)) {
+      pin.value = null
+      return
+    }
+    if (!myLeaguesQuery.isSuccess.value || myLeaguesQuery.isFetching.value) return
+    const chatLeagueIds = (myLeagues.value ?? []).filter((l) => l.chatEnabled).map((l) => l.id)
+    if (isPinStale(pin.value, currentUserId.value, slug.value, chatLeagueIds)) pin.value = null
+  },
+  { immediate: true },
+)
 
 // Named from this competition's leagues, so a pin held on another competition
 // has no name to show here.
@@ -177,13 +220,18 @@ watch(
     collapsed.value = false
     scope.value = want === 'match' && matchId.value ? 'match' : 'global'
     // A pin must not swallow an explicit deep link: re-point it at the room the
-    // link asked for (the plugin already put that league in the cookie).
+    // link asked for (the plugin already put that league in the cookie). With no
+    // league to re-point at, drop the pin rather than pair this competition with
+    // the old one's league - a pairing the prune would then silently delete.
     if (pin.value) {
-      pin.value = {
-        competition: slug.value,
-        leagueId: selectedLeagueId.value ?? pin.value.leagueId,
-        matchId: scope.value === 'match' ? matchId.value : null,
-      }
+      pin.value = selectedLeagueId.value
+        ? {
+            ...pin.value,
+            competition: slug.value,
+            leagueId: selectedLeagueId.value,
+            matchId: scope.value === 'match' ? matchId.value : null,
+          }
+        : null
     }
   },
   { immediate: true },
@@ -199,7 +247,7 @@ const leaguesOpen = ref(false)
 const chatLeagues = computed(() => (myLeagues.value ?? []).filter((l) => l.chatEnabled))
 function switchLeague(id: string): void {
   leaguesOpen.value = false
-  if (pin.value) pin.value = { competition: slug.value, leagueId: id, matchId: null }
+  if (pin.value) pin.value = { ...pin.value, competition: slug.value, leagueId: id, matchId: null }
   else selectedLeagueId.value = id
 }
 
@@ -210,7 +258,9 @@ function switchLeague(id: string): void {
 async function openRoom(r: ChatUnreadRoomDTO) {
   roomsOpen.value = false
   collapsed.value = false
-  if (pin.value) pin.value = { competition: r.competitionSlug, leagueId: r.leagueId, matchId: r.matchId ?? null }
+  if (pin.value) {
+    pin.value = { ...pin.value, competition: r.competitionSlug, leagueId: r.leagueId, matchId: r.matchId ?? null }
+  }
   selections.value = withLeagueSelection(selections.value, r.competitionSlug, r.leagueId)
   const sameComp = r.competitionSlug === slug.value
   if (r.matchId) {
@@ -232,8 +282,6 @@ async function openRoom(r: ChatUnreadRoomDTO) {
 // DMs are global (not league scoped), so this mode is available to any signed-in
 // user, even on a page with no league selected. The conversation list + recipient
 // search live here; an open thread reuses ChatPanel in DM mode (full chat parity).
-const { session } = useAuth()
-const signedIn = computed(() => !!session.value?.data?.user)
 const dm = useDmInbox()
 const toast = useToast()
 // League mode needs a resolved league; without one, only Direct is available.
@@ -468,7 +516,7 @@ const bubbleTotal = computed(() => activity.total.value + dm.totalUnread.value)
           >{{ activeLeagueName }}</span>
         </button>
 
-        <div v-if="mode === 'league' && matchId" class="flex items-center shrink-0 rounded-lg overflow-hidden text-xs" style="border: 1px solid var(--p-content-border-color)">
+        <div v-if="mode === 'league' && toggleMatchId" class="flex items-center shrink-0 rounded-lg overflow-hidden text-xs" style="border: 1px solid var(--p-content-border-color)">
           <button
             type="button"
             class="relative px-2.5 py-1 font-semibold"
@@ -476,7 +524,7 @@ const bubbleTotal = computed(() => activity.total.value + dm.totalUnread.value)
             @click="setScope('global')"
           >
             {{ t('chat.scope.global') }}
-            <span v-if="scopedMatchId && activity.unreadFor(leagueId, GLOBAL_ROOM)" class="absolute top-0.5 right-0.5 w-2 h-2 rounded-full" style="background: var(--ng-danger)" />
+            <span v-if="scopedMatchId && activity.unreadFor(leagueId, GLOBAL_ROOM)" class="absolute top-0.5 end-0.5 w-2 h-2 rounded-full" style="background: var(--ng-danger)" />
           </button>
           <button
             type="button"
@@ -485,7 +533,7 @@ const bubbleTotal = computed(() => activity.total.value + dm.totalUnread.value)
             @click="setScope('match')"
           >
             {{ t('chat.scope.match') }}
-            <span v-if="!scopedMatchId && matchId && activity.unreadFor(leagueId, matchId)" class="absolute top-0.5 right-0.5 w-2 h-2 rounded-full" style="background: var(--ng-danger)" />
+            <span v-if="!scopedMatchId && toggleMatchId && activity.unreadFor(leagueId, toggleMatchId)" class="absolute top-0.5 end-0.5 w-2 h-2 rounded-full" style="background: var(--ng-danger)" />
           </button>
         </div>
 
