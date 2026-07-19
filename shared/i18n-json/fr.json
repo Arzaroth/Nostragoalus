@@ -237,6 +237,7 @@
     }
   },
   "dm": {
+    "seen": "Vu ✓✓",
     "startFailed": "Impossible de démarrer la conversation.",
     "title": "Messages",
     "message": "Message",

@@ -12,6 +12,7 @@ const responseSchema = z.object({
     other: dmParticipantSchema,
     myWrappedKeys: z.array(z.object({ epoch: z.number(), wrappedKey: z.string() })),
     otherMissingCurrentKey: z.boolean(),
+    otherLastReadAt: z.string().nullable(),
   }),
 })
 
@@ -26,6 +27,7 @@ export default defineReadHandler({ response: responseSchema, auth: 'user' }, asy
     other: { userId: detail.other.userId, name: detail.other.name, image: detail.other.image, publicKey: detail.other.publicKey },
     myWrappedKeys: detail.myWrappedKeys,
     otherMissingCurrentKey: detail.otherMissingCurrentKey,
+    otherLastReadAt: detail.otherLastReadAt,
   }
   return { thread: dto }
 })

@@ -238,6 +238,7 @@
     }
   },
   "dm": {
+    "seen": "Seen ✓✓",
     "startFailed": "Could not start the conversation.",
     "title": "Messages",
     "message": "Message",

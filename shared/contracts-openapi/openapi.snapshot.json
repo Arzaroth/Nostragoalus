@@ -5984,6 +5984,10 @@
                         },
                         "otherMissingCurrentKey": {
                           "type": "boolean"
+                        },
+                        "otherLastReadAt": {
+                          "nullable": true,
+                          "type": "string"
                         }
                       },
                       "required": [
@@ -5991,7 +5995,8 @@
                         "epoch",
                         "other",
                         "myWrappedKeys",
-                        "otherMissingCurrentKey"
+                        "otherMissingCurrentKey",
+                        "otherLastReadAt"
                       ],
                       "additionalProperties": false
                     }

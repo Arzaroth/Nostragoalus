@@ -4526,6 +4526,7 @@ class Thread2 {
   final Other2 other;
   final List<MyWrappedKey> myWrappedKeys;
   final bool otherMissingCurrentKey;
+  final String? otherLastReadAt;
 
   const Thread2({
     required this.threadId,
@@ -4533,6 +4534,7 @@ class Thread2 {
     required this.other,
     required this.myWrappedKeys,
     required this.otherMissingCurrentKey,
+    this.otherLastReadAt,
   });
 
   factory Thread2.fromJson(Map<String, dynamic> json) => Thread2(
@@ -4543,6 +4545,7 @@ class Thread2 {
             .map((e) => MyWrappedKey.fromJson(e as Map<String, dynamic>))
             .toList(),
         otherMissingCurrentKey: json['otherMissingCurrentKey'] as bool,
+        otherLastReadAt: json['otherLastReadAt'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -4551,6 +4554,7 @@ class Thread2 {
         'other': other.toJson(),
         'myWrappedKeys': myWrappedKeys.map((e) => e.toJson()).toList(),
         'otherMissingCurrentKey': otherMissingCurrentKey,
+        'otherLastReadAt': otherLastReadAt,
       };
 }
 

@@ -23,6 +23,7 @@ class DmRoomView {
     this.key,
     this.otherName = '',
     this.otherId = '',
+    this.otherReadAt,
   });
   final ChatState state;
   final int epoch;
@@ -30,6 +31,7 @@ class DmRoomView {
   final Uint8List? key;
   final String otherName;
   final String otherId;
+  final DateTime? otherReadAt; // when the other participant last read the thread
 }
 
 final dmRoomProvider = FutureProvider.family<DmRoomView, String>((ref, threadId) async {
@@ -73,7 +75,8 @@ final dmRoomProvider = FutureProvider.family<DmRoomView, String>((ref, threadId)
       lines: lines,
       key: keys[epoch],
       otherName: thread.other.name,
-      otherId: thread.other.userId);
+      otherId: thread.other.userId,
+      otherReadAt: DateTime.tryParse(thread.otherLastReadAt ?? ''));
 });
 
 /// Start a DM: generate a group key, seal it to me + the recipient, create the

@@ -59,6 +59,20 @@ class _DmRoomScreenState extends ConsumerState<DmRoomScreen> {
     }
   }
 
+  /// The id of the caller's newest own message the other participant has read
+  /// (createdAt <= their last-read time), for the single "Seen" marker.
+  String? _lastSeenOwnMessage(DmRoomView view, String? selfId) {
+    final readAt = view.otherReadAt;
+    if (selfId == null || readAt == null) return null;
+    String? seen;
+    for (final l in view.lines) {
+      if (l.userId != selfId) continue;
+      final ts = DateTime.tryParse(l.createdAt);
+      if (ts != null && !ts.isAfter(readAt)) seen = l.id;
+    }
+    return seen;
+  }
+
   Future<void> _react(String messageId) async {
     // REACTION_EMOJIS codes -> display glyphs (matches the web reaction set).
     const reactions = {
@@ -132,34 +146,42 @@ class _DmRoomScreenState extends ConsumerState<DmRoomScreen> {
                 ChatState.disabled => Center(child: Text(context.tr('chat.disabled'))),
                 ChatState.ready => view.lines.isEmpty
                     ? Center(child: Text(context.tr('chat.empty')))
-                    : ListView.builder(
-                        reverse: true,
-                        itemCount: view.lines.length,
-                        itemBuilder: (context, i) {
-                          final line = view.lines[view.lines.length - 1 - i];
-                          return ListTile(
-                            dense: true,
-                            title: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(line.text ?? context.tr('chat.undecryptable'),
-                                    style: line.text == null
-                                        ? const TextStyle(fontStyle: FontStyle.italic)
-                                        : null),
-                                for (var idx = 0; idx < line.attachmentCount; idx++)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 6),
-                                    child: ChatAttachment(
-                                        provider: dmAttachmentProvider(
-                                            (widget.threadId, line.id, idx))),
-                                  ),
-                              ],
-                            ),
-                            subtitle: Text(line.createdAt),
-                            onLongPress: () => _react(line.id),
-                          );
-                        },
-                      ),
+                    : Builder(builder: (context) {
+                        final self = ref.watch(authControllerProvider).valueOrNull?.id;
+                        final seenId = _lastSeenOwnMessage(view, self);
+                        return ListView.builder(
+                          reverse: true,
+                          itemCount: view.lines.length,
+                          itemBuilder: (context, i) {
+                            final line = view.lines[view.lines.length - 1 - i];
+                            return ListTile(
+                              dense: true,
+                              title: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(line.text ?? context.tr('chat.undecryptable'),
+                                      style: line.text == null
+                                          ? const TextStyle(fontStyle: FontStyle.italic)
+                                          : null),
+                                  for (var idx = 0; idx < line.attachmentCount; idx++)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 6),
+                                      child: ChatAttachment(
+                                          provider: dmAttachmentProvider(
+                                              (widget.threadId, line.id, idx))),
+                                    ),
+                                ],
+                              ),
+                              subtitle: Text(line.createdAt),
+                              trailing: line.id == seenId
+                                  ? Text(context.tr('dm.seen'),
+                                      style: Theme.of(context).textTheme.bodySmall)
+                                  : null,
+                              onLongPress: () => _react(line.id),
+                            );
+                          },
+                        );
+                      }),
               },
             ),
           ),

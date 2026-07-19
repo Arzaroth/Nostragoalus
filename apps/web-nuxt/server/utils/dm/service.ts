@@ -251,6 +251,10 @@ export interface DmThreadDetail {
   // they reset their identity, so their old sealed copy was purged. If I hold the key,
   // my client re-seals it to their (new) public key via addDmWrappedKey.
   otherMissingCurrentKey: boolean
+  // When the other participant last read the thread (ISO), or null if never - for
+  // the read-receipt marker on my own messages. The server only exposes the
+  // timestamp, never message plaintext.
+  otherLastReadAt: string | null
 }
 
 // Full detail for one thread the caller is in: the other participant's public
@@ -260,7 +264,7 @@ export async function getThreadDetail(db: AppDatabase, threadId: string, userId:
   const t = await requireParticipant(db, threadId, userId)
   const other = await getPublicIdentity(db, t.otherId)
   if (!other) throw new NotFoundError('conversation not found')
-  const [keys, otherCurrent] = await Promise.all([
+  const [keys, otherCurrent, otherRead] = await Promise.all([
     db
       .select({ epoch: dmThreadKey.epoch, wrappedKey: dmThreadKey.wrappedKey })
       .from(dmThreadKey)
@@ -271,8 +275,20 @@ export async function getThreadDetail(db: AppDatabase, threadId: string, userId:
       .from(dmThreadKey)
       .where(and(eq(dmThreadKey.threadId, threadId), eq(dmThreadKey.userId, t.otherId), eq(dmThreadKey.epoch, t.keyEpoch)))
       .limit(1),
+    db
+      .select({ lastReadAt: dmThreadRead.lastReadAt })
+      .from(dmThreadRead)
+      .where(and(eq(dmThreadRead.threadId, threadId), eq(dmThreadRead.userId, t.otherId)))
+      .limit(1),
   ])
-  return { threadId, epoch: t.keyEpoch, other, myWrappedKeys: keys, otherMissingCurrentKey: otherCurrent.length === 0 }
+  return {
+    threadId,
+    epoch: t.keyEpoch,
+    other,
+    myWrappedKeys: keys,
+    otherMissingCurrentKey: otherCurrent.length === 0,
+    otherLastReadAt: otherRead[0]?.lastReadAt?.toISOString() ?? null,
+  }
 }
 
 // Seal the current thread key to the OTHER participant at the current epoch. Used when

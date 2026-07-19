@@ -41,6 +41,9 @@ export interface DmThreadDetailDTO {
   // The other participant lacks a sealed key at the current epoch (they reset their
   // identity): a keyholder client re-seals the thread key to their new public key.
   otherMissingCurrentKey: boolean
+  // ISO time the other participant last read the thread (null = never), for the
+  // read-receipt marker on the caller's own messages.
+  otherLastReadAt: string | null
 }
 
 // A candidate to start a DM with. `shared` marks a league co-member (always
