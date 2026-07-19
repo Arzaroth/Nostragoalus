@@ -80,7 +80,8 @@ with the data caveat noted per area.
 ## Leagues
 - [x] My leagues list
 - [x] Browse public + join by code / by id
-- [~] League board (points/survival mode-board)
+- [x] League board (points/survival mode-board) + movement arrows + survival
+  elimination (lives-out struck through, eliminated-round label)
 - [x] League detail: members, role, mode
 - [x] League settings editor (owner/mod): name, visibility, mode, lives,
   description, featured team

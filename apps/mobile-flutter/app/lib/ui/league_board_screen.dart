@@ -8,6 +8,26 @@ import 'league_chat_screen.dart';
 import 'widgets/async_value_view.dart';
 import 'widgets/voice_bar.dart';
 
+/// A small up/down rank-movement arrow (green up, red down) with the delta.
+class _MovementArrow extends StatelessWidget {
+  const _MovementArrow(this.movement);
+  final int movement;
+  @override
+  Widget build(BuildContext context) {
+    final up = movement > 0;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(up ? Icons.arrow_upward : Icons.arrow_downward,
+            size: 14, color: up ? Colors.green : Theme.of(context).colorScheme.error),
+        Text('${movement.abs()}',
+            style: TextStyle(
+                fontSize: 12, color: up ? Colors.green : Theme.of(context).colorScheme.error)),
+      ],
+    );
+  }
+}
+
 /// A league's board. Rows are a points/survival union (raw maps), rendered by
 /// the common fields both variants carry.
 class LeagueBoardScreen extends ConsumerWidget {
@@ -51,12 +71,32 @@ class LeagueBoardScreen extends ConsumerWidget {
                     : r.containsKey('livesLeft')
                         ? '♥ ${(r['livesLeft'] as num).toInt()}'
                         : '';
+                final movement = (r['movement'] as num?)?.toInt();
+                final eliminatedRound = r['eliminatedRoundLabel'] as String?;
+                final out = (r['livesLeft'] as num?)?.toInt() == 0 || eliminatedRound != null;
                 return ListTile(
                   leading: rank != null
-                      ? CircleAvatar(child: Text('${(rank as num).toInt()}'))
+                      ? CircleAvatar(
+                          backgroundColor: out ? Theme.of(context).disabledColor : null,
+                          child: Text('${(rank as num).toInt()}'))
                       : const Icon(Icons.person),
-                  title: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
-                  trailing: Text(trailing, style: Theme.of(context).textTheme.titleMedium),
+                  title: Text(name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: out
+                          ? TextStyle(
+                              decoration: TextDecoration.lineThrough,
+                              color: Theme.of(context).disabledColor)
+                          : null),
+                  subtitle: eliminatedRound != null ? Text(eliminatedRound) : null,
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (movement != null && movement != 0) _MovementArrow(movement),
+                      const SizedBox(width: 6),
+                      Text(trailing, style: Theme.of(context).textTheme.titleMedium),
+                    ],
+                  ),
                 );
               },
             );
