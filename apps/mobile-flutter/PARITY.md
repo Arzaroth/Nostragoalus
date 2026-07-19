@@ -109,9 +109,9 @@ with the data caveat noted per area.
 - [x] Chat rich: reactions + report + edit + moderator dashboard + @-mentions +
   E2EE image attachments + threads + presence dots + typing indicator; `[!]` delete
   (no own-message delete endpoint - edit only)
-- [~] DM rich: reactions (long-press) + read-on-open + E2EE image attachments
-  (send + decrypt-on-demand); `[!]` read-receipt display (contract exposes only
-  the caller's own unread count, not the peer's read state)
+- [x] DM rich: reactions (long-press) + read-on-open + E2EE image attachments
+  (send + decrypt-on-demand) + read receipts ("Seen ✓✓" via the otherLastReadAt
+  contract field added this branch)
 - [x] Identity reset (hard reset -> fresh keypair, revoke old sealed keys, confirm dialog)
 
 ## Realtime & voice
