@@ -41,8 +41,9 @@ with the data caveat noted per area.
   in the contract)
 - [x] Bot personas (per-match bot predictions)
 - [~] Wrapped - headline totals; `[ ]` full recap
-- [~] Analytics - headline stat tiles; `[ ]` bias-detector, sparklines, over-time,
-  streaks
+- [x] Analytics - headline tiles + tier bars, goals/outcome lean, home-bias +
+  draw-gap, team over/under-rate, accuracy-by-round, best/worst call, Fergie-time,
+  current+best streak
 - [x] Teams list (competition-scoped)
 - [x] Bracket (knockout tree)
 - [ ] Map (host cities / group map - Leaflet on web)
@@ -64,7 +65,7 @@ with the data caveat noted per area.
 - [x] Make / edit prediction + joker
 - [x] My predictions
 - [x] Past-pick counterfactual
-- [ ] Crowd predictions view (`/predictions/crowd`)
+- [x] Crowd predictions view - consensus card under the prediction input (show-crowd pref)
 
 ## Leagues
 - [x] My leagues list
