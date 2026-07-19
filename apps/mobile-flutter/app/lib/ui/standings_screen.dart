@@ -5,6 +5,7 @@ import '../api/models.gen.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
 import 'competition_switcher.dart';
+import 'scorers_screen.dart';
 import 'widgets/async_value_view.dart';
 
 /// Group standings tables for the active competition.
@@ -17,7 +18,16 @@ class StandingsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(context.tr('nav.standings')),
-        actions: const [CompetitionSwitcher()],
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.sports_soccer),
+            tooltip: context.tr('nav.scorers'),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ScorersScreen()),
+            ),
+          ),
+          const CompetitionSwitcher(),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: () async => ref.refresh(standingsProvider.future),

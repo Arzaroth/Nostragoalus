@@ -46,6 +46,15 @@ const targets = <Target>[
   Target('get', '/api/dm/recipients', 'DmRecipientsResponse'),
   Target('get', '/api/dm/{threadId}', 'DmThreadResponse'),
   Target('get', '/api/dm/{threadId}/messages', 'DmMessagesResponse'),
+  // Match tabs
+  Target('get', '/api/matches/{id}/timeline', 'MatchTimelineResponse'),
+  Target('get', '/api/matches/{id}/lineups', 'MatchLineupsResponse'),
+  Target('get', '/api/matches/{id}/scorers', 'MatchScorersResponse'),
+  Target('get', '/api/matches/{id}/insights', 'MatchInsightsResponse'),
+  Target('get', '/api/matches/{id}/live-detail', 'MatchLiveDetailResponse'),
+  // Profile + prefs + stats
+  Target('get', '/api/users/{id}/cabinet', 'CabinetResponse'),
+  Target('get', '/api/me/stats', 'MeStatsResponse'),
 ];
 
 class Target {

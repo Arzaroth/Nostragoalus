@@ -170,6 +170,23 @@ final viewedMatchProvider = StateProvider<String?>((ref) => null);
 final matchProvider = FutureProvider.family<MatchDetailResponse, String>(
     (ref, id) => ref.watch(apiProvider).match(id));
 
+final matchTimelineProvider = FutureProvider.family<MatchTimelineResponse, String>(
+    (ref, id) => ref.watch(apiProvider).matchTimeline(id));
+
+final matchLineupsProvider = FutureProvider.family<MatchLineupsResponse, String>(
+    (ref, id) => ref.watch(apiProvider).matchLineups(id));
+
+final matchScorersProvider = FutureProvider.family<ScorersResponse, String>(
+    (ref, id) => ref.watch(apiProvider).matchScorers(id));
+
+final matchInsightsProvider = FutureProvider.family<MatchInsightsResponse, String>(
+    (ref, id) => ref.watch(apiProvider).matchInsights(id));
+
+final cabinetProvider = FutureProvider.family<CabinetResponse, String>(
+    (ref, userId) => ref.watch(apiProvider).cabinet(userId));
+
+final meStatsProvider = FutureProvider<MeStatsResponse>((ref) => ref.watch(apiProvider).meStats());
+
 /// Save (or overwrite) a prediction, then refresh the reads it affects.
 final savePredictionProvider = Provider<
     Future<PredictionSaveResponse> Function(String, String, PredictionInput)>((ref) {

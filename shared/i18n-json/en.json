@@ -343,6 +343,7 @@
     "streamCapReached": "Only {count} stream at a time"
   },
   "nav": {
+    "scorers": "Scorers",
     "roadmap": "Roadmap",
     "champion": "Champion",
     "standings": "Standings",
@@ -406,6 +407,11 @@
     "jokers": "Jokers used · {n} picks"
   },
   "prefs": {
+    "showCrowd": "Show crowd predictions",
+    "showOdds": "Show bookmaker odds",
+    "theme_system": "System",
+    "theme_light": "Light",
+    "theme_dark": "Dark",
     "title": "Preferences",
     "hint": "Saved to your account and restored when you sign in. Until then, your browser and system settings are used.",
     "language": "Language",
@@ -631,6 +637,8 @@
     }
   },
   "stats": {
+    "assists": "Assists",
+    "penalties": "{n} pen",
     "player": "Player",
     "topScorers": "Top scorers",
     "topAssists": "Top assists",
@@ -826,6 +834,10 @@
     }
   },
   "match": {
+    "timeline": "Timeline",
+    "insights": "Insights",
+    "noEvents": "No events yet.",
+    "noLineups": "Lineups not available yet.",
     "standings": "Standings",
     "form": "Form",
     "next": "Next",

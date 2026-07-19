@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/models.gen.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import 'cabinet_screen.dart';
 import 'competition_switcher.dart';
 import 'widgets/async_value_view.dart';
 
@@ -53,6 +54,9 @@ class _Row extends StatelessWidget {
       leading: CircleAvatar(child: Text('${row.rank.toInt()}')),
       title: Text(row.displayName, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Text('${row.exactCount.toInt()} exact · ${row.outcomeCount.toInt()} outcome'),
+      onTap: () => Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => CabinetScreen(userId: row.userId, name: row.displayName),
+      )),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

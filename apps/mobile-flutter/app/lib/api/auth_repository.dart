@@ -15,6 +15,8 @@ class AuthUser {
     this.role,
     this.skin,
     this.theme,
+    this.showCrowd,
+    this.showOdds,
   });
 
   final String id;
@@ -24,6 +26,8 @@ class AuthUser {
   final String? role;
   final String? skin; // active konami skin (twilight/rainbow/...)
   final String? theme; // 'light' | 'dark' | null (system)
+  final bool? showCrowd;
+  final bool? showOdds;
 
   factory AuthUser.fromJson(Map<String, dynamic> json) => AuthUser(
         id: json['id'] as String,
@@ -33,6 +37,8 @@ class AuthUser {
         role: json['role'] as String?,
         skin: json['skin'] as String?,
         theme: json['theme'] as String?,
+        showCrowd: json['showCrowd'] as bool?,
+        showOdds: json['showOdds'] as bool?,
       );
 }
 

@@ -28,6 +28,28 @@ class NostragoalusApi {
   Future<MatchDetailResponse> match(String id) async =>
       MatchDetailResponse.fromJson(await _api.getJson('/api/matches/$id'));
 
+  Future<MatchTimelineResponse> matchTimeline(String id) async =>
+      MatchTimelineResponse.fromJson(await _api.getJson('/api/matches/$id/timeline'));
+
+  Future<MatchLineupsResponse> matchLineups(String id) async =>
+      MatchLineupsResponse.fromJson(await _api.getJson('/api/matches/$id/lineups'));
+
+  Future<ScorersResponse> matchScorers(String id) async =>
+      ScorersResponse.fromJson(await _api.getJson('/api/matches/$id/scorers'));
+
+  Future<MatchInsightsResponse> matchInsights(String id) async =>
+      MatchInsightsResponse.fromJson(await _api.getJson('/api/matches/$id/insights'));
+
+  Future<CabinetResponse> cabinet(String userId) async =>
+      CabinetResponse.fromJson(await _api.getJson('/api/users/$userId/cabinet'));
+
+  Future<MeStatsResponse> meStats() async =>
+      MeStatsResponse.fromJson(await _api.getJson('/api/me/stats'));
+
+  /// Save a user preference (theme/locale/showCrowd/showOdds/skin) via better-auth.
+  Future<void> updatePrefs(Map<String, dynamic> prefs) async =>
+      _api.postJson('/api/auth/update-user', body: prefs);
+
   Future<LeaderboardResponse> leaderboard({String? competition}) async =>
       LeaderboardResponse.fromJson(
           await _api.getJson('/api/leaderboard', query: _comp(competition)));

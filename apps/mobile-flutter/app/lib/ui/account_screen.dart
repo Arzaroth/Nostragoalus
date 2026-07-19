@@ -6,10 +6,12 @@ import '../state/providers.dart';
 import 'analytics_screen.dart';
 import 'best_scorer_screen.dart';
 import 'bot_screen.dart';
+import 'cabinet_screen.dart';
 import 'champion_screen.dart';
 import 'dm_inbox_screen.dart';
 import 'kt_screen.dart';
 import 'locale_menu.dart';
+import 'preferences_screen.dart';
 import 'multiview_screen.dart';
 import 'my_predictions_screen.dart';
 import 'recovery_setup_screen.dart';
@@ -49,12 +51,29 @@ class AccountScreen extends ConsumerWidget {
           if (user?.name != null)
             Center(child: Text(user!.email, style: Theme.of(context).textTheme.bodySmall)),
           const SizedBox(height: 24),
+          if (user != null)
+            ListTile(
+              leading: const Icon(Icons.workspace_premium),
+              title: Text(context.tr('achievements.cabinetTitle')),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => CabinetScreen(userId: user.id, name: user.name ?? user.email),
+              )),
+            ),
           ListTile(
             leading: const Icon(Icons.checklist),
             title: Text(context.tr('predictions.title')),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const MyPredictionsScreen()),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.tune),
+            title: Text(context.tr('prefs.title')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const PreferencesScreen()),
             ),
           ),
           ListTile(

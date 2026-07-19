@@ -9,6 +9,7 @@ import '../state/providers.dart';
 import 'widgets/async_value_view.dart';
 import 'widgets/reactions_bar.dart';
 import 'widgets/score_pill.dart';
+import 'widgets/scorers_table.dart';
 
 /// Match detail + the prediction editor (score, outcome-only, wager, joker).
 /// Marks itself the "viewed" match so the hub keeps its room subscribed (live
@@ -77,42 +78,177 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
         onRetry: () => ref.invalidate(matchProvider(matchId)),
         data: (res) {
           final m = res.match;
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Text(m.roundLabel, style: Theme.of(context).textTheme.labelMedium),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                      child: Text(m.homeTeam,
-                          style: Theme.of(context).textTheme.titleLarge,
-                          textAlign: TextAlign.end)),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: ScorePill(
-                        status: m.status, home: m.fullTimeHome, away: m.fullTimeAway),
+          return DefaultTabController(
+            length: 5,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: Column(
+                    children: [
+                      Text(m.roundLabel, style: Theme.of(context).textTheme.labelMedium),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                              child: Text(m.homeTeam,
+                                  style: Theme.of(context).textTheme.titleLarge,
+                                  textAlign: TextAlign.end)),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: ScorePill(
+                                status: m.status, home: m.fullTimeHome, away: m.fullTimeAway),
+                          ),
+                          Expanded(
+                              child:
+                                  Text(m.awayTeam, style: Theme.of(context).textTheme.titleLarge)),
+                        ],
+                      ),
+                    ],
                   ),
-                  Expanded(
-                      child: Text(m.awayTeam, style: Theme.of(context).textTheme.titleLarge)),
-                ],
-              ),
-              const SizedBox(height: 24),
-              _PredictionEditor(
-                matchId: matchId,
-                competitionId: m.competitionId,
-                homeTeam: m.homeTeam,
-                awayTeam: m.awayTeam,
-                current: res.myPrediction,
-                isLocked: res.isLocked,
-              ),
-              const SizedBox(height: 16),
-              ReactionsBar(matchId: matchId),
-              const SizedBox(height: 16),
-              _PastPicks(matchId: matchId),
-            ],
+                ),
+                TabBar(
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.start,
+                  tabs: [
+                    Tab(text: context.tr('picks.yourPrediction')),
+                    Tab(text: context.tr('match.timeline')),
+                    Tab(text: context.tr('match.lineups')),
+                    Tab(text: context.tr('nav.standings')),
+                    Tab(text: context.tr('match.insights')),
+                  ],
+                ),
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      ListView(
+                        padding: const EdgeInsets.all(16),
+                        children: [
+                          _PredictionEditor(
+                            matchId: matchId,
+                            competitionId: m.competitionId,
+                            homeTeam: m.homeTeam,
+                            awayTeam: m.awayTeam,
+                            current: res.myPrediction,
+                            isLocked: res.isLocked,
+                          ),
+                          const SizedBox(height: 16),
+                          ReactionsBar(matchId: matchId),
+                          const SizedBox(height: 16),
+                          _PastPicks(matchId: matchId),
+                        ],
+                      ),
+                      _TimelineTab(matchId: matchId),
+                      _LineupsTab(matchId: matchId),
+                      _ScorersTab(matchId: matchId),
+                      _InsightsTab(matchId: matchId),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _TimelineTab extends ConsumerWidget {
+  const _TimelineTab({required this.matchId});
+  final String matchId;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return AsyncValueView<MatchTimelineResponse>(
+      value: ref.watch(matchTimelineProvider(matchId)),
+      onRetry: () => ref.invalidate(matchTimelineProvider(matchId)),
+      data: (res) {
+        final entries = res.events.entries.toList();
+        if (entries.isEmpty) return Center(child: Text(context.tr('match.noEvents')));
+        return ListView(
+          children: [
+            for (final e in entries)
+              ListTile(dense: true, leading: Text(e.key), title: Text('${e.value}')),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _LineupsTab extends ConsumerWidget {
+  const _LineupsTab({required this.matchId});
+  final String matchId;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return AsyncValueView<MatchLineupsResponse>(
+      value: ref.watch(matchLineupsProvider(matchId)),
+      onRetry: () => ref.invalidate(matchLineupsProvider(matchId)),
+      data: (res) {
+        final l = res.lineups;
+        if (l == null || !l.available) return Center(child: Text(context.tr('match.noLineups')));
+        return ListView(
+          children: [
+            _side(context, l.home),
+            _side(context, l.away),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _side(BuildContext context, Home side) => Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(side.formation ?? '', style: Theme.of(context).textTheme.titleMedium),
+            for (final p in side.startingXI)
+              ListTile(
+                dense: true,
+                leading: Text(p.shirtNumber?.toInt().toString() ?? ''),
+                title: Text(p.name),
+                subtitle: p.position != null ? Text(p.position!) : null,
+                trailing: p.captain ? const Text('C') : null,
+              ),
+          ],
+        ),
+      );
+}
+
+class _ScorersTab extends ConsumerWidget {
+  const _ScorersTab({required this.matchId});
+  final String matchId;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return AsyncValueView<ScorersResponse>(
+      value: ref.watch(matchScorersProvider(matchId)),
+      onRetry: () => ref.invalidate(matchScorersProvider(matchId)),
+      data: (res) => ScorersTable(scorers: res.scorers, assists: res.assists),
+    );
+  }
+}
+
+class _InsightsTab extends ConsumerWidget {
+  const _InsightsTab({required this.matchId});
+  final String matchId;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return AsyncValueView<MatchInsightsResponse>(
+      value: ref.watch(matchInsightsProvider(matchId)),
+      onRetry: () => ref.invalidate(matchInsightsProvider(matchId)),
+      data: (res) => ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          ListTile(
+            title: Text(context.tr('h2h.title')),
+            trailing: Text('${res.headToHead.length}'),
+          ),
+          ListTile(
+            title: Text(context.tr('match.possession')),
+            trailing: Text('${res.possession.home?.toInt() ?? 0}% - ${res.possession.away?.toInt() ?? 0}%'),
+          ),
+        ],
       ),
     );
   }

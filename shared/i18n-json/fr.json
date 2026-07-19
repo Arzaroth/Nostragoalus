@@ -338,6 +338,7 @@
     "streamCapReached": "{count} direct à la fois"
   },
   "nav": {
+    "scorers": "Buteurs",
     "roadmap": "Feuille de route",
     "champion": "Champion",
     "standings": "Classement",
@@ -401,6 +402,11 @@
     "jokers": "Jokers utilisés · {n} pronos"
   },
   "prefs": {
+    "showCrowd": "Afficher les pronostics de la foule",
+    "showOdds": "Afficher les cotes",
+    "theme_system": "Système",
+    "theme_light": "Clair",
+    "theme_dark": "Sombre",
     "title": "Préférences",
     "hint": "Enregistrées sur votre compte et restaurées à la connexion. Avant cela, les réglages du navigateur et du système sont utilisés.",
     "language": "Langue",
@@ -626,6 +632,8 @@
     }
   },
   "stats": {
+    "assists": "Passes décisives",
+    "penalties": "{n} pén",
     "player": "Joueur",
     "topScorers": "Meilleurs buteurs",
     "topAssists": "Meilleurs passeurs",
@@ -821,6 +829,10 @@
     }
   },
   "match": {
+    "timeline": "Chronologie",
+    "insights": "Analyses",
+    "noEvents": "Aucun événement.",
+    "noLineups": "Compositions non disponibles.",
     "standings": "Groupe",
     "form": "Forme",
     "next": "À venir",

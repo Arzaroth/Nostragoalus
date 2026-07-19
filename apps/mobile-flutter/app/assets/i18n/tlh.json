@@ -332,6 +332,7 @@
     "streamCapReached": "{count} HaSta neH"
   },
   "nav": {
+    "scorers": "wISuSwI",
     "roadmap": "He'So'",
     "champion": "Qup",
     "standings": "patlh",
@@ -395,6 +396,11 @@
     "jokers": "Hov lo'lu'ta' · {n} wIvmey"
   },
   "prefs": {
+    "showCrowd": "ghom wIv cha",
+    "showOdds": "Suy cha",
+    "theme_system": "pat",
+    "theme_light": "wov",
+    "theme_dark": "Hurgh",
     "title": "wIvmey qaq",
     "hint": "Doch'a'lIjDaq choqlu' 'ej bI'elDI' cheghmoHlu'. wej DanoHpu'chugh, De'wI'lIj patlh lo'lu'.",
     "language": "Hol",
@@ -620,6 +626,8 @@
     }
   },
   "stats": {
+    "assists": "boQ",
+    "penalties": "{n} pen",
     "player": "QujwI'",
     "topScorers": "bachwI' po'",
     "topAssists": "qachwI' po'",
@@ -815,6 +823,10 @@
     }
   },
   "match": {
+    "timeline": "poH",
+    "insights": "yaj",
+    "noEvents": "wanI tuHbe.",
+    "noLineups": "ghom tuHbe.",
     "standings": "patmey",
     "form": "Dotlh",
     "next": "veb",
