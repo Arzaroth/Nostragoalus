@@ -5,6 +5,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Corrigé
+
+- Une fois la compétition terminée, la liste des matchs se cale à nouveau sur la finale au lieu de rester en haut : sans match en direct ni à venir, le défilement automatique vise désormais le dernier match.
+
 ## [4.3.3] - 2026-07-19
 
 ### Modifié
