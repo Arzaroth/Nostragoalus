@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [4.3.3] - 2026-07-19
+
 ### choHpu'
 
 - DaH may'mey tetlh poSlu'DI', may'mey rIntaH SoQ. Hoch may' qaSpu'bogh 'ay' SoQ mob, vaj tetlh may'mey qaSbe'bogh 'agh. 'ay' Qav SoQbe'taH, 'ej may' qaSpu'bogh ghomHa'wI' poSmoH.

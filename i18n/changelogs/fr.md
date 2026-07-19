@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [4.3.3] - 2026-07-19
+
 ### Modifié
 
 - Les matchs s'ouvrent désormais avec les journées terminées repliées : toute journée dont les matchs ont tous été joués démarre repliée, si bien que la liste arrive sur ce qui reste à venir. La finale n'est jamais repliée, et un lien direct vers un match joué ouvre toujours sa journée.
