@@ -42,7 +42,8 @@ with the data caveat noted per area.
 - [~] Best-scorer - read (pick + top scorers); `[ ]` interactive pick (no player-id
   in the contract)
 - [x] Bot personas (per-match bot predictions)
-- [~] Wrapped - headline totals; `[ ]` full recap
+- [x] Wrapped - full recap: totals + rank/percentile, tier breakdown + streak,
+  best call, biggest miss, jokers, crowd, champion/scorer, chat, trophy/badge haul
 - [x] Analytics - headline tiles + tier bars, goals/outcome lean, home-bias +
   draw-gap, team over/under-rate, accuracy-by-round, best/worst call, Fergie-time,
   current+best streak
