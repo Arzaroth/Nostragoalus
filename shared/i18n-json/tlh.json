@@ -201,6 +201,7 @@
     "scope": { "global": "ghom", "match": "may'vam" },
     "rooms": { "button": "pa'mey vum", "title": "pa'mey vum", "none": "vum chu' tu'be'" },
     "league": { "switch": "ghom choH", "title": "ghommey" },
+    "pin": { "pin": "QIn per", "unpin": "per Qaw' - ghom wIv tlha'" },
     "empty": "QIn tu'lu'be'. yIjatlh.",
     "unknownUser": "vay'",
     "cantDecrypt": "[So'lu' - naDev ngaQHa'moHwI' tu'lu'be']",

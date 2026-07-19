@@ -206,6 +206,7 @@
     "scope": { "global": "League", "match": "This match" },
     "rooms": { "button": "Rooms with activity", "title": "Rooms with activity", "none": "No new activity" },
     "league": { "switch": "Switch league", "title": "Leagues" },
+    "pin": { "pin": "Pin this chat", "unpin": "Unpin - follow the selected league" },
     "empty": "No messages yet. Say something.",
     "unknownUser": "Someone",
     "cantDecrypt": "[encrypted - no key on this device]",

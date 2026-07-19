@@ -117,7 +117,23 @@ leagues that have chat **enabled** (`chatEnabled` on the my-leagues DTO), and ea
 shows a dot when it has any unread chat, whether in its global room or a match
 thread (`useChatActivity.hasUnreadInLeague`). Enabling/disabling a league's chat
 invalidates the my-leagues query so the switcher updates without a reload. Presence
-dots and client-side search are built in. Live events on the WebSocket: `chat:new`, `chat:moderation`,
+dots and client-side search are built in.
+
+**Pinning.** By default the dock follows the page: its league is a computed off
+the `ng-league` cookie (so the rankings league pill drags the chat with it) and a
+focused multiview cell re-targets its match thread. The bookmark toggle in the
+dock header pins the room in view - league AND thread together - into
+`ng-chat-pin` (`useStorage`, per device, `{ competition, leagueId, matchId }`),
+and the dock then ignores both auto-follows. The pin deliberately survives a
+competition switch: the pinned conversation is the one you keep reading wherever
+you browse, so the header shows the pinned league's name (only while pinned, and
+only when it belongs to the competition in view). Explicit in-dock navigation
+re-points the pin instead of fighting it: the league switcher, an inbox row, the
+scope toggle and a mention deep link all rewrite it. Leaving/being kicked from
+the pinned league drops it, mirroring the league cookie's own prune. Resolution
+and staleness live in `apps/web-nuxt/app/utils/chat-pin.ts`.
+
+Live events on the WebSocket: `chat:new`, `chat:moderation`,
 `chat:roster` (display-name changes), and `chat:state-changed` (chat on/off and
 key rotation). See [../architecture/realtime.md](../architecture/realtime.md).
 

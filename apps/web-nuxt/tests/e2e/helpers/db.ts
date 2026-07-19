@@ -310,6 +310,25 @@ export async function seedLeague(competitionId: string, ownerId: string): Promis
   return rows[0].id
 }
 
+// A named private league with chat already switched on, so it shows up in the
+// chat dock's league switcher. No group key is seeded: the specs using this only
+// drive the dock chrome, never the message stream.
+export async function seedChatLeague(competitionId: string, ownerId: string, name: string): Promise<string> {
+  const { rows } = await db().query<{ id: string }>(
+    `with l as (
+       insert into league (id, competition_id, name, visibility, join_code, created_by,
+                           chat_enabled, chat_key_epoch)
+       values (gen_random_uuid(), $1, $3, 'PRIVATE', 'E2E' || substr(md5(random()::text), 1, 8), $2,
+               true, 1)
+       returning id
+     )
+     insert into league_member (league_id, user_id, role) select id, $2, 'OWNER' from l
+     returning league_id as id`,
+    [competitionId, ownerId, name],
+  )
+  return rows[0].id
+}
+
 // A scored prediction for a user on a match, so they lead the leaderboard.
 export async function seedScoredPrediction(
   userId: string,
