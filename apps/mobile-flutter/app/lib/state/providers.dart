@@ -185,6 +185,10 @@ final viewersProvider = StateProvider<Map<String, int>>((ref) => const {});
 /// presence:snapshot + presence:update frames. Absent = offline.
 final presenceProvider = StateProvider<Map<String, String>>((ref) => const {});
 
+/// Last-seen typing time keyed "leagueId|userId", from `chat:typing` frames. A
+/// consumer treats an entry as active while it is under a few seconds old.
+final typingProvider = StateProvider<Map<String, DateTime>>((ref) => const {});
+
 // --- Phase 5 ---
 
 final roadmapProvider =

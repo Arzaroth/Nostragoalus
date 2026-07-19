@@ -259,6 +259,7 @@
     "undecryptable": "Can't decrypt this message"
   },
   "chat": {
+    "typingSome": "Someone is typing…",
     "report": "Report message",
     "reported": "Message reported",
     "compose": "Message",

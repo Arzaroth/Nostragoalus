@@ -104,6 +104,27 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
   final _input = TextEditingController();
   final _mentions = <String>{};
   bool _sending = false;
+  DateTime? _lastTyping;
+
+  // Throttle chat:typing to at most one frame every 2s while composing.
+  void _notifyTyping() {
+    final now = DateTime.now();
+    if (_lastTyping != null && now.difference(_lastTyping!).inSeconds < 2) return;
+    _lastTyping = now;
+    ref.read(liveServiceProvider).send({'type': 'chat:typing', 'leagueId': widget.leagueId});
+  }
+
+  bool _othersTyping() {
+    final self = ref.watch(authControllerProvider).valueOrNull?.id;
+    final now = DateTime.now();
+    return ref.watch(typingProvider).entries.any((e) {
+      final parts = e.key.split('|');
+      return parts.length == 2 &&
+          parts[0] == widget.leagueId &&
+          parts[1] != self &&
+          now.difference(e.value).inSeconds < 5;
+    });
+  }
 
   @override
   void dispose() {
@@ -313,6 +334,15 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
             },
           ),
         ),
+        if (chat.valueOrNull?.state == ChatState.ready && _othersTyping())
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Padding(
+              padding: const EdgeInsetsDirectional.only(start: 16, bottom: 2),
+              child: Text(context.tr('chat.typingSome'),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic)),
+            ),
+          ),
         if (chat.valueOrNull?.state == ChatState.ready)
           SafeArea(
             top: false,
@@ -333,6 +363,7 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
                   Expanded(
                     child: TextField(
                       controller: _input,
+                      onChanged: (_) => _notifyTyping(),
                       onSubmitted: (_) => _send(),
                       decoration: InputDecoration(
                         hintText: context.tr('chat.compose'),

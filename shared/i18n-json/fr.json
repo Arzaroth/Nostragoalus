@@ -258,6 +258,7 @@
     "undecryptable": "Impossible de déchiffrer ce message"
   },
   "chat": {
+    "typingSome": "Quelqu'un écrit…",
     "report": "Signaler le message",
     "reported": "Message signalé",
     "compose": "Message",

@@ -96,6 +96,15 @@ class _HomeShellState extends ConsumerState<HomeShell> {
             id: status,
           };
         }
+      case 'chat:typing':
+        final league = frame['leagueId'];
+        final who = frame['userId'];
+        if (league is String && who is String) {
+          ref.read(typingProvider.notifier).state = {
+            ...ref.read(typingProvider),
+            '$league|$who': DateTime.now(),
+          };
+        }
       case 'voice:ring':
         _onIncomingCall(frame);
     }
