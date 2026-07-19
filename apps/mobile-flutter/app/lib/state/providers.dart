@@ -87,6 +87,12 @@ final standingsProvider = FutureProvider<StandingsResponse>((ref) =>
 final scorersProvider = FutureProvider<ScorersResponse>((ref) =>
     ref.watch(apiProvider).scorers(competition: ref.watch(selectedCompetitionProvider)));
 
+final teamsProvider = FutureProvider<TeamsResponse>((ref) =>
+    ref.watch(apiProvider).teams(competition: ref.watch(selectedCompetitionProvider)));
+
+final bracketProvider = FutureProvider<BracketResponse>((ref) =>
+    ref.watch(apiProvider).bracket(competition: ref.watch(selectedCompetitionProvider)));
+
 final matchesProvider = FutureProvider<MatchesResponse>((ref) =>
     ref.watch(apiProvider).matches(competition: ref.watch(selectedCompetitionProvider)));
 

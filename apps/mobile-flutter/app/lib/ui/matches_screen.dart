@@ -48,7 +48,7 @@ class MatchesScreen extends ConsumerWidget {
 
 class _MatchTile extends StatelessWidget {
   const _MatchTile(this.match);
-  final Match match;
+  final Match2 match;
 
   @override
   Widget build(BuildContext context) {

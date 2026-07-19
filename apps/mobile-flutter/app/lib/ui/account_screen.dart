@@ -14,8 +14,11 @@ import 'locale_menu.dart';
 import 'preferences_screen.dart';
 import 'multiview_screen.dart';
 import 'my_predictions_screen.dart';
+import 'my_rewards_screen.dart';
+import 'my_stats_screen.dart';
 import 'recovery_setup_screen.dart';
 import 'roadmap_screen.dart';
+import 'teams_screen.dart';
 import 'verify_screen.dart';
 import 'wrapped_screen.dart';
 
@@ -85,11 +88,35 @@ class AccountScreen extends ConsumerWidget {
             ),
           ),
           ListTile(
+            leading: const Icon(Icons.query_stats),
+            title: Text(context.tr('stats.title')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const MyStatsScreen()),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.card_giftcard),
+            title: Text(context.tr('rewards.title')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const MyRewardsScreen()),
+            ),
+          ),
+          ListTile(
             leading: const Icon(Icons.insights),
             title: Text(context.tr('analytics.title')),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const AnalyticsScreen()),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.groups_3),
+            title: Text(context.tr('nav.teams')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const TeamsScreen()),
             ),
           ),
           ListTile(

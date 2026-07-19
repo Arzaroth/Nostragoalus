@@ -1,4 +1,8 @@
 {
+  "rewards": {
+    "title": "pop",
+    "empty": "pop tuHbe."
+  },
   "recovery": {
     "title": "QIn nge",
     "hint": "latlh De vaD recovery code chenmoH. QaQ DaqDaq yISaH - wa logh cha lu.",
@@ -332,6 +336,7 @@
     "streamCapReached": "{count} HaSta neH"
   },
   "nav": {
+    "teams": "ghommey",
     "competition": "Qoj",
     "scorers": "wISuSwI",
     "roadmap": "He'So'",
@@ -628,6 +633,8 @@
     }
   },
   "stats": {
+    "title": "mIwwIj",
+    "rank": "patlh",
     "assists": "boQ",
     "penalties": "{n} pen",
     "player": "QujwI'",

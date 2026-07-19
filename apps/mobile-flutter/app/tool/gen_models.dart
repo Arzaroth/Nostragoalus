@@ -16,6 +16,8 @@ const targets = <Target>[
   Target('get', '/api/competitions', 'CompetitionsResponse'),
   Target('get', '/api/competitions/standings', 'StandingsResponse'),
   Target('get', '/api/competitions/scorers', 'ScorersResponse'),
+  Target('get', '/api/competitions/teams', 'TeamsResponse'),
+  Target('get', '/api/competitions/bracket', 'BracketResponse'),
   Target('get', '/api/matches', 'MatchesResponse'),
   Target('get', '/api/matches/{id}', 'MatchDetailResponse'),
   Target('get', '/api/leaderboard', 'LeaderboardResponse'),

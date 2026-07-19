@@ -47,7 +47,7 @@ class MultiviewScreen extends ConsumerWidget {
 
 class _Tile extends StatelessWidget {
   const _Tile(this.match);
-  final Match match;
+  final Match2 match;
 
   @override
   Widget build(BuildContext context) => Card(

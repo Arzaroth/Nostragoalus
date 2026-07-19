@@ -1,4 +1,8 @@
 {
+  "rewards": {
+    "title": "Mes récompenses",
+    "empty": "Aucune récompense."
+  },
   "recovery": {
     "title": "Sauvegarde du chat",
     "hint": "Générez un code de récupération pour restaurer le chat chiffré sur un autre appareil. Conservez-le en lieu sûr - il n’est affiché qu’une fois.",
@@ -332,6 +336,7 @@
     "streamCapReached": "{count} direct à la fois"
   },
   "nav": {
+    "teams": "Équipes",
     "competition": "Compétition",
     "scorers": "Buteurs",
     "roadmap": "Feuille de route",
@@ -628,6 +633,8 @@
     }
   },
   "stats": {
+    "title": "Mes stats",
+    "rank": "Rang",
     "assists": "Passes décisives",
     "penalties": "{n} pén",
     "player": "Joueur",

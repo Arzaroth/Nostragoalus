@@ -72,7 +72,7 @@ class AnalyticsResponse {
   final double exactRate;
   final Goal goals;
   final OutcomeLean outcomeLean;
-  final Team teams;
+  final Team2 teams;
   final List<OverTime> overTime;
   final Streak streak;
   final BestCall? bestCall;
@@ -111,7 +111,7 @@ class AnalyticsResponse {
         goals: Goal.fromJson(json['goals'] as Map<String, dynamic>),
         outcomeLean:
             OutcomeLean.fromJson(json['outcomeLean'] as Map<String, dynamic>),
-        teams: Team.fromJson(json['teams'] as Map<String, dynamic>),
+        teams: Team2.fromJson(json['teams'] as Map<String, dynamic>),
         overTime: (json['overTime'] as List)
             .map((e) => OverTime.fromJson(e as Map<String, dynamic>))
             .toList(),
@@ -219,7 +219,7 @@ class BestScorerResponse {
   final String? provider;
   final String? season;
   final double bonus;
-  final List<Team3> teams;
+  final List<Team> teams;
   final MyPick2? myPick;
   final bool locked;
   final SecondChance secondChance;
@@ -245,7 +245,7 @@ class BestScorerResponse {
         season: json['season'] as String?,
         bonus: (json['bonus'] as num).toDouble(),
         teams: (json['teams'] as List)
-            .map((e) => Team3.fromJson(e as Map<String, dynamic>))
+            .map((e) => Team.fromJson(e as Map<String, dynamic>))
             .toList(),
         myPick: json['myPick'] == null
             ? null
@@ -457,6 +457,49 @@ class BotPredictionsResponse {
       };
 }
 
+class Bracket {
+  final Winner? winner;
+  final List<Round> rounds;
+
+  const Bracket({
+    this.winner,
+    required this.rounds,
+  });
+
+  factory Bracket.fromJson(Map<String, dynamic> json) => Bracket(
+        winner: json['winner'] == null
+            ? null
+            : Winner.fromJson(json['winner'] as Map<String, dynamic>),
+        rounds: (json['rounds'] as List)
+            .map((e) => Round.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'winner': winner?.toJson(),
+        'rounds': rounds.map((e) => e.toJson()).toList(),
+      };
+}
+
+class BracketResponse {
+  final Bracket? bracket;
+
+  const BracketResponse({
+    this.bracket,
+  });
+
+  factory BracketResponse.fromJson(Map<String, dynamic> json) =>
+      BracketResponse(
+        bracket: json['bracket'] == null
+            ? null
+            : Bracket.fromJson(json['bracket'] as Map<String, dynamic>),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'bracket': bracket?.toJson(),
+      };
+}
+
 class Breakdown {
   final String home;
   final String away;
@@ -586,7 +629,7 @@ class Champion {
 
 class ChampionResponse {
   final Competition2? competition;
-  final List<Team2> teams;
+  final List<Team3> teams;
   final MyPick? myPick;
   final bool locked;
   final SecondChance secondChance;
@@ -606,7 +649,7 @@ class ChampionResponse {
             : Competition2.fromJson(
                 json['competition'] as Map<String, dynamic>),
         teams: (json['teams'] as List)
-            .map((e) => Team2.fromJson(e as Map<String, dynamic>))
+            .map((e) => Team3.fromJson(e as Map<String, dynamic>))
             .toList(),
         myPick: json['myPick'] == null
             ? null
@@ -1970,6 +2013,92 @@ class Lineup {
 }
 
 class Match {
+  final String? id;
+  final String providerMatchId;
+  final double? matchNumber;
+  final String homeTeam;
+  final String? homeCode;
+  final String awayTeam;
+  final String? awayCode;
+  final String? homeProjectedCode;
+  final String? homeProjectedTeam;
+  final String? awayProjectedCode;
+  final String? awayProjectedTeam;
+  final double? homeScore;
+  final double? awayScore;
+  final double? homePens;
+  final double? awayPens;
+
+  /// One of: HOME, AWAY.
+  final String? winner;
+  final String status;
+  final String kickoffTime;
+
+  const Match({
+    this.id,
+    required this.providerMatchId,
+    this.matchNumber,
+    required this.homeTeam,
+    this.homeCode,
+    required this.awayTeam,
+    this.awayCode,
+    this.homeProjectedCode,
+    this.homeProjectedTeam,
+    this.awayProjectedCode,
+    this.awayProjectedTeam,
+    this.homeScore,
+    this.awayScore,
+    this.homePens,
+    this.awayPens,
+    this.winner,
+    required this.status,
+    required this.kickoffTime,
+  });
+
+  factory Match.fromJson(Map<String, dynamic> json) => Match(
+        id: json['id'] as String?,
+        providerMatchId: json['providerMatchId'] as String,
+        matchNumber: (json['matchNumber'] as num?)?.toDouble(),
+        homeTeam: json['homeTeam'] as String,
+        homeCode: json['homeCode'] as String?,
+        awayTeam: json['awayTeam'] as String,
+        awayCode: json['awayCode'] as String?,
+        homeProjectedCode: json['homeProjectedCode'] as String?,
+        homeProjectedTeam: json['homeProjectedTeam'] as String?,
+        awayProjectedCode: json['awayProjectedCode'] as String?,
+        awayProjectedTeam: json['awayProjectedTeam'] as String?,
+        homeScore: (json['homeScore'] as num?)?.toDouble(),
+        awayScore: (json['awayScore'] as num?)?.toDouble(),
+        homePens: (json['homePens'] as num?)?.toDouble(),
+        awayPens: (json['awayPens'] as num?)?.toDouble(),
+        winner: json['winner'] as String?,
+        status: json['status'] as String,
+        kickoffTime: json['kickoffTime'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'providerMatchId': providerMatchId,
+        'matchNumber': matchNumber,
+        'homeTeam': homeTeam,
+        'homeCode': homeCode,
+        'awayTeam': awayTeam,
+        'awayCode': awayCode,
+        'homeProjectedCode': homeProjectedCode,
+        'homeProjectedTeam': homeProjectedTeam,
+        'awayProjectedCode': awayProjectedCode,
+        'awayProjectedTeam': awayProjectedTeam,
+        'homeScore': homeScore,
+        'awayScore': awayScore,
+        'homePens': homePens,
+        'awayPens': awayPens,
+        'winner': winner,
+        'status': status,
+        'kickoffTime': kickoffTime,
+      };
+}
+
+class Match2 {
   final String id;
   final String competitionId;
   final String providerMatchId;
@@ -2002,7 +2131,7 @@ class Match {
   final Odd? odds;
   final bool isLocked;
 
-  const Match({
+  const Match2({
     required this.id,
     required this.competitionId,
     required this.providerMatchId,
@@ -2028,7 +2157,7 @@ class Match {
     required this.isLocked,
   });
 
-  factory Match.fromJson(Map<String, dynamic> json) => Match(
+  factory Match2.fromJson(Map<String, dynamic> json) => Match2(
         id: json['id'] as String,
         competitionId: json['competitionId'] as String,
         providerMatchId: json['providerMatchId'] as String,
@@ -2083,7 +2212,7 @@ class Match {
       };
 }
 
-class Match2 {
+class Match3 {
   final String id;
   final String competitionId;
   final String providerMatchId;
@@ -2114,7 +2243,7 @@ class Match2 {
   final int? matchday;
   final int roundSortOrder;
 
-  const Match2({
+  const Match3({
     required this.id,
     required this.competitionId,
     required this.providerMatchId,
@@ -2138,7 +2267,7 @@ class Match2 {
     required this.roundSortOrder,
   });
 
-  factory Match2.fromJson(Map<String, dynamic> json) => Match2(
+  factory Match3.fromJson(Map<String, dynamic> json) => Match3(
         id: json['id'] as String,
         competitionId: json['competitionId'] as String,
         providerMatchId: json['providerMatchId'] as String,
@@ -2188,7 +2317,7 @@ class Match2 {
 }
 
 class MatchDetailResponse {
-  final Match2 match;
+  final Match3 match;
   final MyPrediction? myPrediction;
   final Odd? odds;
   final bool isLocked;
@@ -2202,7 +2331,7 @@ class MatchDetailResponse {
 
   factory MatchDetailResponse.fromJson(Map<String, dynamic> json) =>
       MatchDetailResponse(
-        match: Match2.fromJson(json['match'] as Map<String, dynamic>),
+        match: Match3.fromJson(json['match'] as Map<String, dynamic>),
         myPrediction: json['myPrediction'] == null
             ? null
             : MyPrediction.fromJson(
@@ -2387,7 +2516,7 @@ class MatchTimelineResponse {
 
 class MatchesResponse {
   final Competition2? competition;
-  final List<Match> matches;
+  final List<Match2> matches;
 
   const MatchesResponse({
     this.competition,
@@ -2401,7 +2530,7 @@ class MatchesResponse {
             : Competition2.fromJson(
                 json['competition'] as Map<String, dynamic>),
         matches: (json['matches'] as List)
-            .map((e) => Match.fromJson(e as Map<String, dynamic>))
+            .map((e) => Match2.fromJson(e as Map<String, dynamic>))
             .toList(),
       );
 
@@ -3735,6 +3864,32 @@ class RoadmapResponse {
       };
 }
 
+class Round {
+  final String name;
+  final double sequence;
+  final List<Match> matches;
+
+  const Round({
+    required this.name,
+    required this.sequence,
+    required this.matches,
+  });
+
+  factory Round.fromJson(Map<String, dynamic> json) => Round(
+        name: json['name'] as String,
+        sequence: (json['sequence'] as num).toDouble(),
+        matches: (json['matches'] as List)
+            .map((e) => Match.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'sequence': sequence,
+        'matches': matches.map((e) => e.toJson()).toList(),
+      };
+}
+
 class RowData {
   final String? code;
   final String name;
@@ -4244,15 +4399,35 @@ class Summary {
 }
 
 class Team {
+  final String code;
+  final String name;
+
+  const Team({
+    required this.code,
+    required this.name,
+  });
+
+  factory Team.fromJson(Map<String, dynamic> json) => Team(
+        code: json['code'] as String,
+        name: json['name'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'code': code,
+        'name': name,
+      };
+}
+
+class Team2 {
   final List<Overrated> overrated;
   final List<Overrated> underrated;
 
-  const Team({
+  const Team2({
     required this.overrated,
     required this.underrated,
   });
 
-  factory Team.fromJson(Map<String, dynamic> json) => Team(
+  factory Team2.fromJson(Map<String, dynamic> json) => Team2(
         overrated: (json['overrated'] as List)
             .map((e) => Overrated.fromJson(e as Map<String, dynamic>))
             .toList(),
@@ -4267,20 +4442,20 @@ class Team {
       };
 }
 
-class Team2 {
+class Team3 {
   final String code;
   final String name;
   final double? fifaRank;
   final double potentialPoints;
 
-  const Team2({
+  const Team3({
     required this.code,
     required this.name,
     this.fifaRank,
     required this.potentialPoints,
   });
 
-  factory Team2.fromJson(Map<String, dynamic> json) => Team2(
+  factory Team3.fromJson(Map<String, dynamic> json) => Team3(
         code: json['code'] as String,
         name: json['name'] as String,
         fifaRank: (json['fifaRank'] as num?)?.toDouble(),
@@ -4295,23 +4470,21 @@ class Team2 {
       };
 }
 
-class Team3 {
-  final String code;
-  final String name;
+class TeamsResponse {
+  final List<Team> teams;
 
-  const Team3({
-    required this.code,
-    required this.name,
+  const TeamsResponse({
+    required this.teams,
   });
 
-  factory Team3.fromJson(Map<String, dynamic> json) => Team3(
-        code: json['code'] as String,
-        name: json['name'] as String,
+  factory TeamsResponse.fromJson(Map<String, dynamic> json) => TeamsResponse(
+        teams: (json['teams'] as List)
+            .map((e) => Team.fromJson(e as Map<String, dynamic>))
+            .toList(),
       );
 
   Map<String, dynamic> toJson() => {
-        'code': code,
-        'name': name,
+        'teams': teams.map((e) => e.toJson()).toList(),
       };
 }
 
@@ -4507,5 +4680,25 @@ class TrustStatusResponse {
 
   Map<String, dynamic> toJson() => {
         'trusted': trusted,
+      };
+}
+
+class Winner {
+  final String name;
+  final String? code;
+
+  const Winner({
+    required this.name,
+    this.code,
+  });
+
+  factory Winner.fromJson(Map<String, dynamic> json) => Winner(
+        name: json['name'] as String,
+        code: json['code'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'code': code,
       };
 }

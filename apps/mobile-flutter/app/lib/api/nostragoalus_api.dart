@@ -22,6 +22,12 @@ class NostragoalusApi {
   Future<ScorersResponse> scorers({String? competition}) async => ScorersResponse.fromJson(
       await _api.getJson('/api/competitions/scorers', query: _comp(competition)));
 
+  Future<TeamsResponse> teams({String? competition}) async =>
+      TeamsResponse.fromJson(await _api.getJson('/api/competitions/teams', query: _comp(competition)));
+
+  Future<BracketResponse> bracket({String? competition}) async =>
+      BracketResponse.fromJson(await _api.getJson('/api/competitions/bracket', query: _comp(competition)));
+
   Future<MatchesResponse> matches({String? competition}) async =>
       MatchesResponse.fromJson(await _api.getJson('/api/matches', query: _comp(competition)));
 

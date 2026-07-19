@@ -1,4 +1,8 @@
 {
+  "rewards": {
+    "title": "My rewards",
+    "empty": "No rewards yet."
+  },
   "recovery": {
     "title": "Chat backup",
     "hint": "Generate a recovery code to restore encrypted chat on another device. Save it somewhere safe - it is shown once and cannot be recovered.",
@@ -343,6 +347,7 @@
     "streamCapReached": "Only {count} stream at a time"
   },
   "nav": {
+    "teams": "Teams",
     "competition": "Competition",
     "scorers": "Scorers",
     "roadmap": "Roadmap",
@@ -639,6 +644,8 @@
     }
   },
   "stats": {
+    "title": "My stats",
+    "rank": "Rank",
     "assists": "Assists",
     "penalties": "{n} pen",
     "player": "Player",
