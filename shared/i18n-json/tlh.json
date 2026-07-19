@@ -1318,6 +1318,7 @@
     "gateFailed": "pegh mu' pagh ngoq qarbe'."
   },
   "sessions": {
+    "empty": "pagh Qub",
     "title": "rarlu'bogh janmey",
     "hint": "DaH 'elpu'bogh janmey. DaSovbe'bogh jan yImej.",
     "current": "janvam",

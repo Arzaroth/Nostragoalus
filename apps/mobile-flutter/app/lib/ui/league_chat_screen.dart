@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../chat/chat_providers.dart';
 import '../i18n/i18n_scope.dart';
+import '../state/providers.dart';
 import 'widgets/async_value_view.dart';
 
 /// End-to-end-encrypted league chat. The identity bootstraps automatically on a
@@ -117,6 +118,31 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
     }
   }
 
+  Future<void> _react(String messageId) async {
+    const emojis = ['👍', '❤️', '😂', '🔥', '😮', '😢'];
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          alignment: WrapAlignment.center,
+          children: [
+            for (final e in emojis)
+              IconButton(
+                iconSize: 30,
+                icon: Text(e, style: const TextStyle(fontSize: 28)),
+                onPressed: () => Navigator.pop(context, e),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked == null) return;
+    try {
+      await ref.read(apiProvider).reactChatMessage(widget.leagueId, messageId, picked);
+      ref.invalidate(leagueChatProvider(widget.leagueId));
+    } catch (_) {/* ignore */}
+  }
+
   @override
   Widget build(BuildContext context) {
     final chat = ref.watch(leagueChatProvider(widget.leagueId));
@@ -150,6 +176,7 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
                                   ? const TextStyle(fontStyle: FontStyle.italic)
                                   : null),
                           subtitle: Text(line.createdAt),
+                          onLongPress: () => _react(line.id),
                         );
                       },
                     ),

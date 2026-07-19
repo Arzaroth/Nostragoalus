@@ -20,6 +20,7 @@ import 'my_rewards_screen.dart';
 import 'my_stats_screen.dart';
 import 'recovery_setup_screen.dart';
 import 'roadmap_screen.dart';
+import 'sessions_screen.dart';
 import 'teams_screen.dart';
 import 'verify_screen.dart';
 import 'wrapped_screen.dart';
@@ -210,6 +211,14 @@ class AccountScreen extends ConsumerWidget {
             ),
           ),
           const Divider(),
+          ListTile(
+            leading: const Icon(Icons.devices),
+            title: Text(context.tr('sessions.title')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SessionsScreen()),
+            ),
+          ),
           ListTile(
             leading: const Icon(Icons.logout),
             title: Text(context.tr('nav.signOut')),

@@ -208,6 +208,24 @@ class NostragoalusApi {
   Future<void> requestChatKey(String leagueId) async =>
       _api.postJson('/api/leagues/$leagueId/chat/request-key');
 
+  Future<void> reactChatMessage(String leagueId, String messageId, String emoji) async =>
+      _api.putJson('/api/leagues/$leagueId/chat/react',
+          body: {'messageId': messageId, 'emoji': emoji});
+
+  // --- Account security: connected sessions (better-auth) ---
+
+  Future<List<dynamic>> listSessions() async {
+    final r = await _api.raw((dio) => dio.get<dynamic>('/api/auth/list-sessions',
+        options: Options(validateStatus: (_) => true)));
+    final data = r.data;
+    if (data is List) return data;
+    if (data is Map && data['sessions'] is List) return data['sessions'] as List;
+    return const [];
+  }
+
+  Future<void> revokeSession(String token) async =>
+      _api.postJson('/api/auth/revoke-session', body: {'token': token});
+
   /// Keyholder: seal the current group key to members who are missing it.
   Future<void> sealChatKeys(
           String leagueId, int epoch, List<Map<String, String>> wraps) async =>

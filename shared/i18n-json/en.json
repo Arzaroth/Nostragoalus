@@ -1323,6 +1323,7 @@
     "gateFailed": "Wrong password or code."
   },
   "sessions": {
+    "empty": "No active sessions",
     "title": "Connected devices",
     "hint": "Devices currently signed in to your account. Sign out any you don't recognise.",
     "current": "This device",

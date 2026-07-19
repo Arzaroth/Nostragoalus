@@ -202,6 +202,8 @@ final cabinetProvider = FutureProvider.family<CabinetResponse, String>(
 
 final meStatsProvider = FutureProvider<MeStatsResponse>((ref) => ref.watch(apiProvider).meStats());
 
+final sessionsProvider = FutureProvider<List<dynamic>>((ref) => ref.watch(apiProvider).listSessions());
+
 final matchLeagueStandingsProvider =
     FutureProvider.family<MatchLeagueStandingsResponse, String>(
         (ref, id) => ref.watch(apiProvider).matchLeagueStandings(id));

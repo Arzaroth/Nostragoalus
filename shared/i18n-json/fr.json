@@ -1318,6 +1318,7 @@
     "gateFailed": "Mot de passe ou code incorrect."
   },
   "sessions": {
+    "empty": "Aucune session active",
     "title": "Appareils connectés",
     "hint": "Les appareils actuellement connectés à ton compte. Déconnecte ceux que tu ne reconnais pas.",
     "current": "Cet appareil",
