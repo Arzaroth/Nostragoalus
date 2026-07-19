@@ -463,6 +463,15 @@ effort buckets; order within a bucket is not priority.
         header-bell `CHAT_MENTION`: the mentioned ids ride as a plaintext sidecar
         (validated against real members, sender dropped), and the alert carries
         room context only, never the E2EE message text.
+      - **Pinned chat room** (in progress, `feat/chat-room-pin`): a bookmark in
+        the dock header freezes the room in view - league AND thread - in
+        `ng-chat-pin` (per device), so the rankings league filter and multiview
+        focus stop dragging the chat around. Decisions: one pin for the whole
+        room (not separate league/match pins); it survives a competition switch
+        on purpose (the pinned conversation is the one you keep reading); explicit
+        in-dock navigation re-points the pin instead of being blocked by it; the
+        pinned league's name shows in the header so the dock disagreeing with the
+        page is legible; leaving that league drops the pin.
 - [x] **Voice chat** (shipped in 3.0.0): audio calls in the
       chat surface - 1:1 from a DM, and small group rooms in a league (optionally
       match-scoped, "watch together"). Decisions (locked):
