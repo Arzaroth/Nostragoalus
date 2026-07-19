@@ -223,10 +223,27 @@ describe('getWrapped', () => {
       ]),
     )
 
-    // Journey: after G1 alice leads (8 vs 3); after G2 she extends (10).
+    // Journey: after G1 alice leads (8 vs 3); after G2 she extends (10), and the
+    // last point closes on the final total (10 + the 10-point champion bonus).
     expect(res.journey).toHaveLength(2)
     expect(res.journey[0]).toMatchObject({ rank: 1, players: 2, points: 8 })
-    expect(res.journey[1]).toMatchObject({ rank: 1, players: 2, points: 10 })
+    expect(res.journey[1]).toMatchObject({ rank: 1, players: 2, points: 20 })
+  })
+
+  it('finishes the journey on the final standing, meta bonuses included', async () => {
+    const c = await seedCompetition(db)
+    const g1 = await roundId(c, 'GROUP', 1)
+    const alice = await makeUser(db, 'alice')
+    const bob = await makeUser(db, 'bob')
+    const m1 = await scoredMatch(c, g1, 'GROUP', new Date('2026-06-11T12:00:00Z'))
+    await pred({ userId: alice, matchId: m1, roundId: g1, tier: 'OUTCOME', points: 1 })
+    await pred({ userId: bob, matchId: m1, roundId: g1, tier: 'EXACT', points: 3 })
+    await db.insert(championPick).values({ userId: alice, competitionId: c, teamCode: 'FRA', teamName: 'France', awardedPoints: 10 })
+    await decideFinal(c)
+    const res = (await getWrapped(db, { competitionId: c, userId: alice })) as WrappedDto
+    // Prediction points alone rank alice 2nd; the champion bonus makes her 1st.
+    expect(res.totals.rank).toBe(1)
+    expect(res.journey[res.journey.length - 1]).toMatchObject({ rank: 1, players: 2, points: 11 })
   })
 
   it('nulls the empty surfaces for a user with no activity', async () => {

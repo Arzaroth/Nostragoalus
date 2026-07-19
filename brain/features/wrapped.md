@@ -29,7 +29,9 @@ predictions, zeroed bonuses and an empty haul.
   - rank journey is REPLAYED per round from scored predictions (cumulative
     ladder, `compareLeaderboardRows`), prediction points only - there is no
     rank-history table, and the champion/best-scorer bonuses land at finalize
-    with no mid-tournament timeline.
+    with no mid-tournament timeline. The LAST point is then overwritten with the
+    real final standing (`getLeaderboard` rank/players/total) so the chart cannot
+    contradict the rank the totals slide and the share card show.
   - chat stats are counts only (messages sent, reactions given/received, top
     emoji); bodies stay E2EE, reactions are plaintext glyphs by design.
   - haul from `competition_award` + `user_achievement` (global badges folded

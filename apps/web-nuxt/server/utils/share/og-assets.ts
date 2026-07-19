@@ -66,6 +66,13 @@ const SCRIPT_FAMILY: Record<string, string> = {
   hi: 'Noto Sans Devanagari',
   bn: 'Noto Sans Bengali',
   ta: 'Noto Sans Tamil',
+  // satori also classifies non-script runs: "math" covers the stylized
+  // Mathematical Alphanumeric letters people use in display names, "symbol"
+  // the dingbats (✕, ✦...), "emoji" the pictographs (monochrome Noto Emoji -
+  // the card traces glyphs to paths, so a color font would flatten anyway).
+  math: 'Noto Sans Math',
+  symbol: 'Noto Sans Symbols 2',
+  emoji: 'Noto Emoji',
   unknown: 'Noto Sans',
 }
 const fallbackFontCache = new Map<string, Promise<ShareFont[]>>()
@@ -98,6 +105,6 @@ function loadFallbackFont(code: string, text: string): Promise<ShareFont[]> {
   return cached
 }
 export async function shareLoadAdditionalAsset(code: string, segment: string): Promise<ShareFont[]> {
-  if (code === 'emoji' || !segment.trim()) return []
+  if (!segment.trim()) return []
   return loadFallbackFont(code, segment)
 }

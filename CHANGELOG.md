@@ -18,6 +18,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 ### Fixed
 
 - Once a competition is over, the fixtures list lands on the final again instead of staying at the top: with nothing live or upcoming left, the auto-scroll now targets the last match.
+- Tournament Wrapped no longer ends your climb on the wrong rank. The standings chart replayed prediction points only, so a champion or best-scorer bonus was missing from the finish line and the last slide could announce a worse rank than the leaderboard and the share card. The chart now closes on your real final standing.
+- Share cards render stylized display names instead of empty boxes: the fancy script letters, dingbats and emoji people put in their names now pull the matching font, like the non-Latin scripts already did.
+- The cross on the Tournament Wrapped close button is centred again.
 
 ## [4.3.3] - 2026-07-19
 

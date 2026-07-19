@@ -83,7 +83,7 @@ const topEmojiGlyph = computed(() =>
 
     <button
       type="button"
-      class="absolute top-6 end-3 z-10 w-9 h-9 rounded-full bg-black/30 text-white"
+      class="absolute top-6 end-3 z-10 w-9 h-9 rounded-full bg-black/30 text-white flex items-center justify-center"
       :aria-label="t('wrapped.close')"
       data-test="wrapped-close"
       @click="emit('close')"
