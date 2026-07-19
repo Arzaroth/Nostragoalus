@@ -104,10 +104,9 @@ with the data caveat noted per area.
 - [~] League chat - send / receive / history + message reactions; `[!]` live message
   round-trip needs a provisioned multi-member league (a keyholder to seal keys)
 - [~] DMs (1:1) - inbox / room / create; `[!]` live round-trip needs a 2nd user
-- [~] Chat rich: reactions + report + edit (own, re-encrypt) + moderator dashboard
-  (decrypt reports client-side) + @-mentions + E2EE image attachments (send +
-  decrypt-on-demand) done; `[ ]` threads, presence, typing; `[!]` delete (no
-  own-message delete endpoint - edit only)
+- [~] Chat rich: reactions + report + edit + moderator dashboard + @-mentions +
+  E2EE image attachments + threads (reply-in-thread view, thread counts) done;
+  `[ ]` presence, typing indicators; `[!]` delete (no own-message delete endpoint)
 - [~] DM rich: reactions (long-press) + read-on-open + E2EE image attachments
   (send + decrypt-on-demand); `[!]` read-receipt display (contract exposes only
   the caller's own unread count, not the peer's read state)

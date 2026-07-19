@@ -326,15 +326,20 @@ class NostragoalusApi {
   Future<ChatStatusResponse> chatStatus(String leagueId) async =>
       ChatStatusResponse.fromJson(await _api.getJson('/api/leagues/$leagueId/chat'));
 
-  Future<ChatMessagesResponse> chatMessages(String leagueId) async =>
-      ChatMessagesResponse.fromJson(await _api.getJson('/api/leagues/$leagueId/chat/messages'));
+  Future<ChatMessagesResponse> chatMessages(String leagueId, {String? thread}) async =>
+      ChatMessagesResponse.fromJson(await _api.getJson('/api/leagues/$leagueId/chat/messages',
+          query: thread != null ? {'thread': thread} : null));
 
   Future<void> sendChat(String leagueId, String ciphertext, int epoch,
-          {String? matchId, List<String>? mentions, List<Map<String, dynamic>>? images}) async =>
+          {String? matchId,
+          String? threadId,
+          List<String>? mentions,
+          List<Map<String, dynamic>>? images}) async =>
       _api.postJson('/api/leagues/$leagueId/chat/messages', body: {
         'ciphertext': ciphertext,
         'epoch': epoch,
         if (matchId != null) 'matchId': matchId,
+        if (threadId != null) 'threadId': threadId,
         if (mentions != null && mentions.isNotEmpty) 'mentions': mentions,
         if (images != null && images.isNotEmpty) 'images': images,
       });

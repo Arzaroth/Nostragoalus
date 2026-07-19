@@ -100,12 +100,14 @@ class ChatLine {
       required this.userId,
       required this.text,
       required this.createdAt,
-      this.attachmentCount = 0});
+      this.attachmentCount = 0,
+      this.threadCount = 0});
   final String id;
   final String? userId;
   final String? text; // null when this epoch's key is unavailable
   final String createdAt;
   final int attachmentCount;
+  final int threadCount;
 }
 
 /// A league's chat, decrypted for display. `state` distinguishes the reasons a
@@ -162,17 +164,54 @@ final leagueChatProvider =
         userId: m.userId,
         text: text,
         createdAt: m.createdAt,
-        attachmentCount: m.attachments.length));
+        attachmentCount: m.attachments.length,
+        threadCount: m.threadCount.toInt()));
   }
   return LeagueChatView(state: ChatState.ready, epoch: epoch, lines: lines, key: keys[epoch]);
 });
 
-/// Encrypt + send a message to the league (optional @-mentions + an image),
-/// then refresh. The image bytes are encrypted under the same group key.
+/// Decrypted messages inside one thread ((leagueId, threadRootId)). Reuses the
+/// caller's per-epoch keys; used by the thread view.
+final leagueThreadProvider =
+    FutureProvider.family<List<ChatLine>, (String, String)>((ref, args) async {
+  final (leagueId, threadId) = args;
+  final sodium = await ref.watch(sodiumProvider.future);
+  final identity = (await ref.watch(chatIdentityProvider.future)).identity;
+  if (identity == null) return const [];
+  final status = await ref.watch(apiProvider).chatStatus(leagueId);
+  final keys = <int, Uint8List>{};
+  for (final wk in status.myWrappedKeys) {
+    try {
+      keys[wk.epoch.toInt()] = e2ee.openGroupKey(sodium, wk.wrappedKey, identity.asMap);
+    } catch (_) {/* skip */}
+  }
+  final msgs = await ref.watch(apiProvider).chatMessages(leagueId, thread: threadId);
+  final lines = <ChatLine>[];
+  for (final m in msgs.messages) {
+    final k = keys[m.epoch.toInt()];
+    String? text;
+    if (k != null) {
+      try {
+        text = e2ee.decryptMessage(sodium, m.ciphertext, k);
+      } catch (_) {/* corrupt / wrong key */}
+    }
+    lines.add(ChatLine(
+        id: m.id,
+        userId: m.userId,
+        text: text,
+        createdAt: m.createdAt,
+        attachmentCount: m.attachments.length));
+  }
+  return lines;
+});
+
+/// Encrypt + send a message to the league (optional @-mentions, image, or thread
+/// id), then refresh. The image bytes are encrypted under the same group key.
 final sendChatProvider = Provider<
     Future<void> Function(String, String,
-        {List<String> mentions, Uint8List? image})>((ref) {
-  return (leagueId, text, {List<String> mentions = const [], Uint8List? image}) async {
+        {List<String> mentions, Uint8List? image, String? threadId})>((ref) {
+  return (leagueId, text,
+      {List<String> mentions = const [], Uint8List? image, String? threadId}) async {
     final sodium = await ref.read(sodiumProvider.future);
     final view = ref.read(leagueChatProvider(leagueId)).valueOrNull;
     if (view == null || view.key == null) return;
@@ -185,9 +224,9 @@ final sendChatProvider = Provider<
               'byteSize': image.length,
             }
           ];
-    await ref
-        .read(apiProvider)
-        .sendChat(leagueId, ct, view.epoch, mentions: mentions, images: images);
+    await ref.read(apiProvider).sendChat(leagueId, ct, view.epoch,
+        mentions: mentions, images: images, threadId: threadId);
+    if (threadId != null) ref.invalidate(leagueThreadProvider((leagueId, threadId)));
     ref.invalidate(leagueChatProvider(leagueId));
   };
 });

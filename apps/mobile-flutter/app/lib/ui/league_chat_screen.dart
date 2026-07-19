@@ -6,6 +6,7 @@ import '../api/models.gen.dart';
 import '../chat/chat_providers.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import 'thread_screen.dart';
 import 'widgets/async_value_view.dart';
 import 'widgets/chat_attachment.dart';
 
@@ -288,6 +289,20 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
                                       provider: chatAttachmentProvider(
                                           (widget.leagueId, line.id, idx))),
                                 ),
+                              TextButton.icon(
+                                style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: const Size(0, 28),
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                                icon: const Icon(Icons.forum, size: 14),
+                                label: Text(line.threadCount > 0
+                                    ? context.tr('chat.thread.count').replaceAll('{n}', '${line.threadCount}')
+                                    : context.tr('chat.reply.button')),
+                                onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                                  builder: (_) =>
+                                      ThreadScreen(leagueId: widget.leagueId, threadId: line.id),
+                                )),
+                              ),
                             ],
                           ),
                           subtitle: Text(line.createdAt),
