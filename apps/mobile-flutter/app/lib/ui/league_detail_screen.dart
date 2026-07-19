@@ -25,6 +25,8 @@ class LeagueDetailScreen extends ConsumerWidget {
         data: (res) {
           final l = res.league;
           final canManage = l.role == 'OWNER' || l.role == 'MODERATOR';
+          final isOwner = l.role == 'OWNER';
+          final selfId = ref.watch(authControllerProvider).valueOrNull?.id;
           return CustomScrollView(
             slivers: [
               SliverAppBar(
@@ -78,9 +80,12 @@ class LeagueDetailScreen extends ConsumerWidget {
                   ListTile(
                     leading: CircleAvatar(child: Text(m.name.characters.first.toUpperCase())),
                     title: Text(m.name),
-                    trailing: m.role != 'MEMBER' ? Text(m.role) : null,
+                    trailing: (canManage && m.userId != selfId)
+                        ? _memberMenu(context, ref, l.id, m, isOwner)
+                        : (m.role != 'MEMBER' ? Text(m.role) : null),
                   ),
                 if (canManage) _InvitesSection(leagueId: leagueId),
+                _RewardsSection(leagueId: leagueId),
                 const Divider(),
                 ListTile(
                   leading: Icon(Icons.logout, color: Theme.of(context).colorScheme.error),
@@ -104,6 +109,135 @@ class LeagueDetailScreen extends ConsumerWidget {
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
         child: Text(text, style: Theme.of(context).textTheme.titleMedium),
       );
+
+  Widget _memberMenu(
+      BuildContext context, WidgetRef ref, String leagueId, Member m, bool isOwner) {
+    final api = ref.read(apiProvider);
+    void refresh() => ref.invalidate(leagueDetailProvider(leagueId));
+    return PopupMenuButton<String>(
+      onSelected: (v) async {
+        switch (v) {
+          case 'promote':
+            await api.setMemberRole(leagueId, m.userId, 'MODERATOR');
+          case 'demote':
+            await api.setMemberRole(leagueId, m.userId, 'MEMBER');
+          case 'transfer':
+            await api.transferOwnership(leagueId, m.userId);
+          case 'remove':
+            await api.removeMember(leagueId, m.userId);
+        }
+        refresh();
+      },
+      itemBuilder: (context) => [
+        if (m.role == 'MEMBER')
+          PopupMenuItem(value: 'promote', child: Text(context.tr('leagues.makeModerator'))),
+        if (m.role == 'MODERATOR')
+          PopupMenuItem(value: 'demote', child: Text(context.tr('leagues.makeMember'))),
+        if (isOwner)
+          PopupMenuItem(value: 'transfer', child: Text(context.tr('leagues.transferOwnership'))),
+        PopupMenuItem(value: 'remove', child: Text(context.tr('leagues.removeMember'))),
+      ],
+    );
+  }
+}
+
+/// Per-league reward criteria; tap one to see its full ranking.
+class _RewardsSection extends ConsumerWidget {
+  const _RewardsSection({required this.leagueId});
+  final String leagueId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final rewards = ref.watch(leagueRewardsProvider(leagueId));
+    return rewards.maybeWhen(
+      data: (list) {
+        if (list.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Divider(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: Text(context.tr('leagues.prizes'),
+                  style: Theme.of(context).textTheme.titleMedium),
+            ),
+            for (final raw in list.cast<Map>())
+              Builder(builder: (context) {
+                final type = (raw['type'] ?? '').toString();
+                final reward = raw['reward'] as Map?;
+                final label = (reward?['label'] ?? type).toString();
+                final winners = (raw['winners'] as List?) ?? const [];
+                final youHold = raw['youHold'] == true;
+                final disabled = raw['disabled'] == true;
+                return ListTile(
+                  dense: true,
+                  enabled: !disabled,
+                  leading: Icon(youHold ? Icons.emoji_events : Icons.emoji_events_outlined,
+                      color: youHold ? Colors.amber : null),
+                  title: Text(label),
+                  subtitle: winners.isEmpty
+                      ? Text(context.tr('rewards.noWinner'))
+                      : Text(winners
+                          .cast<Map>()
+                          .map((w) => (w['displayName'] ?? '').toString())
+                          .join(', ')),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: disabled
+                      ? null
+                      : () => _showRanking(context, ref, leagueId, type, label),
+                );
+              }),
+          ],
+        );
+      },
+      orElse: () => const SizedBox.shrink(),
+    );
+  }
+
+  Future<void> _showRanking(
+      BuildContext context, WidgetRef ref, String leagueId, String type, String label) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.6,
+        builder: (context, controller) => FutureBuilder<Map<String, dynamic>>(
+          future: ref.read(apiProvider).rewardRanking(leagueId, type),
+          builder: (context, snap) {
+            if (!snap.hasData) {
+              return const Center(child: Padding(
+                padding: EdgeInsets.all(32), child: CircularProgressIndicator()));
+            }
+            final rows = (snap.data!['rows'] as List?) ?? const [];
+            return ListView(
+              controller: controller,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(label, style: Theme.of(context).textTheme.titleLarge),
+                ),
+                if (rows.isEmpty)
+                  Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(context.tr('rewards.noWinner'))),
+                for (final r in rows.cast<Map>())
+                  ListTile(
+                    dense: true,
+                    leading: Text('${(r['rank'] as num?)?.toInt() ?? 0}'),
+                    title: Text((r['displayName'] ?? '').toString(),
+                        style: r['isViewer'] == true
+                            ? const TextStyle(fontWeight: FontWeight.bold)
+                            : null),
+                    trailing: Text('${(r['value'] as num?)?.toInt() ?? 0}'),
+                  ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
 }
 
 class _InvitesSection extends ConsumerWidget {
@@ -144,6 +278,14 @@ class _InvitesSection extends ConsumerWidget {
                   leading: const Icon(Icons.link),
                   title: Text(i.token, style: const TextStyle(fontFamily: 'monospace')),
                   subtitle: Text('${i.uses.toInt()}${i.maxUses != null ? '/${i.maxUses!.toInt()}' : ''}'),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    tooltip: context.tr('common.delete'),
+                    onPressed: () async {
+                      await ref.read(apiProvider).deleteInvite(leagueId, i.id);
+                      ref.invalidate(leagueInvitesProvider(leagueId));
+                    },
+                  ),
                 ),
             ],
           ),

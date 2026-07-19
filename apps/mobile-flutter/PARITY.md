@@ -75,10 +75,10 @@ with the data caveat noted per area.
 - [~] League board (points/survival mode-board)
 - [x] League detail: members, role, mode
 - [x] Create league
-- [~] Invites (create / list); `[ ]` accept-link / delete
-- [~] Leave league; `[ ]` transfer ownership / member management (kick, role)
-- [~] Rewards / prizes (per-league criteria, raw render); `[ ]` rankings drill-in
-- [ ] Featured team / team specialist
+- [~] Invites (create / list / delete); `[ ]` accept-link (inbound deep link)
+- [x] Leave league / transfer ownership / member management (promote, demote, kick)
+- [x] Rewards / prizes (per-league criteria + ranking drill-in bottom sheet)
+- [ ] Featured team / team specialist (admin edit)
 - [x] Regenerate join code
 - [ ] Per-league nudge / prompt
 

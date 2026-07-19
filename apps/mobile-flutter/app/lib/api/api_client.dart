@@ -78,6 +78,11 @@ class ApiClient {
     return _json(r);
   }
 
+  Future<Map<String, dynamic>> deleteJson(String path, {Object? body}) async {
+    final r = await _dio.delete<dynamic>(path, data: body);
+    return _json(r);
+  }
+
   /// Raw response for the sign-in call, where the caller needs the headers
   /// (the token arrives in `set-auth-token`, captured by the interceptor).
   Future<Response<dynamic>> raw(Future<Response<dynamic>> Function(Dio) call) => call(_dio);

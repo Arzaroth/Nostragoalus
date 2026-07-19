@@ -15,6 +15,7 @@
     "count": "{n} การทำนาย"
   },
   "rewards": {
+    "noWinner": "ยังไม่มีผู้ชนะ",
     "title": "รางวัลของฉัน",
     "empty": "ยังไม่มีรางวัล"
   },
@@ -491,6 +492,7 @@
     "hideBreakdown": "ซ่อนรายละเอียดราคา"
   },
   "common": {
+    "delete": "ลบ",
     "copied": "คัดลอกแล้ว",
     "retry": "ลองอีกครั้ง",
     "loading": "กำลังโหลด…",
@@ -1495,6 +1497,11 @@
     "home": "กลับสู่สนาม"
   },
   "leagues": {
+    "prizes": "รางวัล",
+    "makeModerator": "ตั้งเป็นผู้ดูแล",
+    "makeMember": "ตั้งเป็นสมาชิก",
+    "transferOwnership": "โอนความเป็นเจ้าของ",
+    "removeMember": "นำออกจากลีก",
     "invites": "คำเชิญ",
     "newInvite": "คำเชิญใหม่",
     "name": "ชื่อลีก",

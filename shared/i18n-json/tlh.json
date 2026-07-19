@@ -15,6 +15,7 @@
     "count": "{n} Qub"
   },
   "rewards": {
+    "noWinner": "pagh Qapla'wI'",
     "title": "pop",
     "empty": "pop tuHbe."
   },
@@ -491,6 +492,7 @@
     "hideBreakdown": "mI'mey So'"
   },
   "common": {
+    "delete": "Qaw'",
     "copied": "boSuqta",
     "retry": "yInID",
     "loading": "yIloS…",
@@ -1495,6 +1497,11 @@
     "home": "yotlh chegh"
   },
   "leagues": {
+    "prizes": "pop",
+    "makeModerator": "pIn moj",
+    "makeMember": "'utlh moj",
+    "transferOwnership": "che' nob",
+    "removeMember": "teq",
     "invites": "rIt",
     "newInvite": "rIt chu",
     "name": "ghom pong",

@@ -143,6 +143,22 @@ class NostragoalusApi {
         if (maxUses != null) 'maxUses': maxUses,
       });
 
+  Future<void> deleteInvite(String leagueId, String inviteId) async =>
+      _api.deleteJson('/api/leagues/$leagueId/invites/$inviteId');
+
+  Future<void> setMemberRole(String leagueId, String userId, String role) async =>
+      _api.putJson('/api/leagues/$leagueId/members/$userId', body: {'role': role});
+
+  Future<void> removeMember(String leagueId, String userId) async =>
+      _api.deleteJson('/api/leagues/$leagueId/members/$userId');
+
+  Future<void> transferOwnership(String leagueId, String userId) async =>
+      _api.postJson('/api/leagues/$leagueId/transfer-ownership', body: {'userId': userId});
+
+  /// Reward ranking for one criterion type (raw; nested shape read in the UI).
+  Future<Map<String, dynamic>> rewardRanking(String leagueId, String type) async =>
+      _api.getJson('/api/leagues/$leagueId/rewards/$type/ranking');
+
   Future<void> leaveLeague(String leagueId) async =>
       _api.postJson('/api/leagues/$leagueId/leave');
 

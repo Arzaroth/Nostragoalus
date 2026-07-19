@@ -15,6 +15,7 @@
     "count": "{n} predictions"
   },
   "rewards": {
+    "noWinner": "No winner yet",
     "title": "My rewards",
     "empty": "No rewards yet."
   },
@@ -496,6 +497,7 @@
     "hideBreakdown": "Hide odds breakdown"
   },
   "common": {
+    "delete": "Delete",
     "copied": "Copied",
     "retry": "Retry",
     "loading": "Loading…",
@@ -1500,6 +1502,11 @@
     "home": "Back to the pitch"
   },
   "leagues": {
+    "prizes": "Prizes",
+    "makeModerator": "Make moderator",
+    "makeMember": "Make member",
+    "transferOwnership": "Transfer ownership",
+    "removeMember": "Remove from league",
     "invites": "Invites",
     "newInvite": "New invite",
     "name": "League name",

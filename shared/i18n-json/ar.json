@@ -15,6 +15,7 @@
     "count": "{n} تنبؤات"
   },
   "rewards": {
+    "noWinner": "لا فائز بعد",
     "title": "مكافآتي",
     "empty": "لا مكافآت بعد."
   },
@@ -616,6 +617,7 @@
     "hideBreakdown": "إخفاء تفصيل الاحتمالات"
   },
   "common": {
+    "delete": "حذف",
     "copied": "تم النسخ",
     "retry": "إعادة المحاولة",
     "loading": "جارٍ التحميل…",
@@ -1697,6 +1699,11 @@
     "home": "العودة إلى الملعب"
   },
   "leagues": {
+    "prizes": "الجوائز",
+    "makeModerator": "تعيين مشرفًا",
+    "makeMember": "تعيين عضوًا",
+    "transferOwnership": "نقل الملكية",
+    "removeMember": "إزالة من الدوري",
     "invites": "الدعوات",
     "newInvite": "دعوة جديدة",
     "name": "اسم الدوري",
