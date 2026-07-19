@@ -432,6 +432,8 @@
     "round": { "r32": "Round of 32", "r16": "Round of 16", "qf": "Quarter-finals", "sf": "Semi-finals", "third": "3rd place", "final": "Final" }
   },
   "map": {
+    "stillIn": "{n} teams still in",
+    "eliminated": "Eliminated",
     "lean": {
       "title": "Crowd lean",
       "filterHint": "Click a label to filter the map",

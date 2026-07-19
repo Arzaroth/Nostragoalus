@@ -51,7 +51,9 @@ with the data caveat noted per area.
   current+best streak
 - [x] Teams list (competition-scoped)
 - [x] Bracket (knockout tree)
-- [ ] Map (host cities / group map - Leaflet on web)
+- [~] Map / nations - teams with still-in / eliminated overlay
+  (/api/competitions/eliminated); `[ ]` the Leaflet geographic layout (no team
+  coordinates in the mobile contract)
 - [x] Compare (player head-to-head) - self vs a leaderboard opponent: points,
   win/tie record, agreement, over-time, divergences
 

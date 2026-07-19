@@ -90,6 +90,10 @@ final scorersProvider = FutureProvider<ScorersResponse>((ref) =>
 final teamsProvider = FutureProvider<TeamsResponse>((ref) =>
     ref.watch(apiProvider).teams(competition: ref.watch(selectedCompetitionProvider)));
 
+/// Team codes eliminated from the tournament, for the nations/map overlay.
+final eliminatedProvider = FutureProvider<List<String>>((ref) =>
+    ref.watch(apiProvider).eliminatedTeams(competition: ref.watch(selectedCompetitionProvider)));
+
 final bracketProvider = FutureProvider<BracketResponse>((ref) =>
     ref.watch(apiProvider).bracket(competition: ref.watch(selectedCompetitionProvider)));
 

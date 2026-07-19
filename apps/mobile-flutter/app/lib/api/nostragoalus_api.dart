@@ -22,6 +22,12 @@ class NostragoalusApi {
   Future<ScorersResponse> scorers({String? competition}) async => ScorersResponse.fromJson(
       await _api.getJson('/api/competitions/scorers', query: _comp(competition)));
 
+  /// Team codes certainly out of the tournament (knockout losers, non-qualifiers).
+  Future<List<String>> eliminatedTeams({String? competition}) async {
+    final codes = (await _api.getJson('/api/competitions/eliminated', query: _comp(competition)))['codes'];
+    return codes is List ? codes.map((e) => e.toString()).toList() : const [];
+  }
+
   Future<TeamsResponse> teams({String? competition}) async =>
       TeamsResponse.fromJson(await _api.getJson('/api/competitions/teams', query: _comp(competition)));
 

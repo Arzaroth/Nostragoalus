@@ -421,6 +421,8 @@
     "round": { "r32": "32 may'", "r16": "16 may'", "qf": "loS may'", "sf": "cha' may'", "third": "wejDIch Daq", "final": "Qav may'" }
   },
   "map": {
+    "stillIn": "{n} mangghommey ratlh",
+    "eliminated": "luHIj",
     "lean": {
       "title": "qaywI' wuq",
       "favored": "pop",

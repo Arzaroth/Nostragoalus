@@ -17,6 +17,7 @@ import 'dm_inbox_screen.dart';
 import 'edit_profile_screen.dart';
 import 'kt_screen.dart';
 import 'locale_menu.dart';
+import 'map_screen.dart';
 import 'preferences_screen.dart';
 import 'multiview_screen.dart';
 import 'my_predictions_screen.dart';
@@ -170,6 +171,14 @@ class AccountScreen extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const TeamsScreen()),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.public),
+            title: Text(context.tr('nav.map')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const MapScreen()),
             ),
           ),
           ListTile(
