@@ -1,9 +1,55 @@
 {
+  "moderation": {
+    "title": "SeH",
+    "empty": "pagh QIn ghItlhlu'",
+    "reportCount": "{n} ghItlh",
+    "remove": "teq",
+    "restore": "chegh"
+  },
+  "verifyEmail": {
+    "title": "De'wI' QIn yIngu'",
+    "body": "De'wI' yI'ol reH lojmItID Qan.",
+    "resend": "chu'moH",
+    "sent": "QIn ngeHlu'."
+  },
+  "profile": {
+    "editTitle": "nughDaq choH",
+    "displayName": "pong"
+  },
+  "calendar": {
+    "title": "jar De'wI'",
+    "blurb": "Qojmey 'ej poH bepmey Dalaj. taghlaHbe'.",
+    "subscribe": "ghItlh",
+    "copyLink": "ghItlh nge'",
+    "regenerate": "ghItlh chu'",
+    "regenerateHint": "ghItlh qan Hoch teq. ghItlh ngeH 'e' lo'.",
+    "regenerated": "ghItlh chu' chenmoHlu'."
+  },
+  "compare": {
+    "title": "vagh chov",
+    "pickOpponent": "jagh wIv",
+    "noShared": "pagh Qub rap",
+    "record": "{a} Qap · {t} rap · {b} Qap",
+    "shared": "{n} Qojmey rap",
+    "agreement": "'ej",
+    "sameScore": "mI' rap: {n}",
+    "sameOutcome": "Qav rap: {n}",
+    "divergences": "pImchoH"
+  },
+  "crowd": {
+    "title": "ghom Qub",
+    "count": "{n} Qub"
+  },
   "rewards": {
+    "noWinner": "pagh Qapla'wI'",
     "title": "pop",
     "empty": "pop tuHbe."
   },
   "recovery": {
+    "resetHint": "ghItlh 'ej cholmey Hoch chIllu'? qawHaq chu'moH.",
+    "reset": "qawHaq chu'moH",
+    "resetConfirm": "ngoqmey teqlu' reH. QIn ngoq qan laDlaHbe' 'ej ja'chuq Hoch Dachu'. taH'a'?",
+    "resetDone": "qawHaq chu'lu'. ngoq chu' Suqmeh ja'chuq yIchol.",
     "title": "QIn nge",
     "hint": "latlh De vaD recovery code chenmoH. QaQ DaqDaq yISaH - wa logh cha lu.",
     "generate": "recovery code chenmoH",
@@ -19,6 +65,8 @@
     "safetyHint": "ghoHwI yISamqa"
   },
   "achievements": {
+    "showcaseHeading": "'angwI'",
+    "showcaseEditHint": "wej DevwI' yIwIv.",
     "cabinetTitle": "Qapla' pa'",
     "showcaseTitle": "'angwI'wIj",
     "trophiesHeading": "Qapla'mey",
@@ -202,6 +250,8 @@
     "undecryptable": "QIn poSmoHlaHbe'."
   },
   "chat": {
+    "report": "QIn ghItlh",
+    "reported": "QIn ghItlhlu'",
     "compose": "QIn",
     "disabled": "vaghbe chat",
     "recoveryNeeded": "De Hom recovery code poQ",
@@ -470,6 +520,9 @@
     "hideBreakdown": "mI'mey So'"
   },
   "common": {
+    "share": "boSaH",
+    "edit": "choH",
+    "delete": "Qaw'",
     "copied": "boSuqta",
     "retry": "yInID",
     "loading": "yIloS…",
@@ -833,6 +886,9 @@
     }
   },
   "match": {
+    "liveDetail": "yImej",
+    "noLiveDetail": "pagh De' yImej",
+    "goals": "maQmIgh",
     "media": "HaSta",
     "noMedia": "HaSta tuHbe.",
     "timeline": "poH",
@@ -1261,6 +1317,9 @@
     "strong": "HoSghaj"
   },
   "twofa": {
+    "failed": "qaS Qagh. mu'wIj yISov.",
+    "done": "rIn",
+    "disableBlurb": "cha' HuH choHmeH mu' 'ej mI' DaghItlh.",
     "sectionTitle": "cha' 'ol mIw",
     "sectionHint": "bI'elDI' mIw cha'DIch: 'olwI' App (pagh jabbI'ID ngoq, cherlu'pu'chugh).",
     "enable": "cha' 'ol yIchu'",
@@ -1312,6 +1371,7 @@
     "gateFailed": "pegh mu' pagh ngoq qarbe'."
   },
   "sessions": {
+    "empty": "pagh Qub",
     "title": "rarlu'bogh janmey",
     "hint": "DaH 'elpu'bogh janmey. DaSovbe'bogh jan yImej.",
     "current": "janvam",
@@ -1470,6 +1530,18 @@
     "home": "yotlh chegh"
   },
   "leagues": {
+    "settings": "ghom SeH",
+    "description": "QIj",
+    "featuredTeam": "mangghom pol",
+    "noFeaturedTeam": "pagh",
+    "lives": "yInmey",
+    "open": "ghaj poSmoH",
+    "joinButton": "muvchuq",
+    "prizes": "pop",
+    "makeModerator": "pIn moj",
+    "makeMember": "'utlh moj",
+    "transferOwnership": "che' nob",
+    "removeMember": "teq",
     "invites": "rIt",
     "newInvite": "rIt chu",
     "name": "ghom pong",

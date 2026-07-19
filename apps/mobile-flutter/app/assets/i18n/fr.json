@@ -1,9 +1,55 @@
 {
+  "moderation": {
+    "title": "Modération",
+    "empty": "Aucun message signalé",
+    "reportCount": "{n} signalements",
+    "remove": "Retirer",
+    "restore": "Restaurer"
+  },
+  "verifyEmail": {
+    "title": "Vérifiez votre e-mail",
+    "body": "Confirmez votre adresse pour sécuriser votre compte.",
+    "resend": "Renvoyer",
+    "sent": "E-mail de vérification envoyé."
+  },
+  "profile": {
+    "editTitle": "Modifier le profil",
+    "displayName": "Nom affiché"
+  },
+  "calendar": {
+    "title": "Flux calendrier",
+    "blurb": "Abonnez-vous aux matchs et aux échéances de pronostics dans votre agenda. Mise à jour automatique.",
+    "subscribe": "S'abonner",
+    "copyLink": "Copier le lien",
+    "regenerate": "Régénérer le lien",
+    "regenerateHint": "Révoque tous les anciens liens. À utiliser si un lien a fuité.",
+    "regenerated": "Un nouveau lien a été généré."
+  },
+  "compare": {
+    "title": "Comparer les joueurs",
+    "pickOpponent": "Choisir un adversaire",
+    "noShared": "Aucun pronostic commun noté",
+    "record": "{a} victoires · {t} nuls · {b} victoires",
+    "shared": "{n} matchs communs",
+    "agreement": "Accord",
+    "sameScore": "Même score : {n}",
+    "sameOutcome": "Même résultat : {n}",
+    "divergences": "Où vous divergez"
+  },
+  "crowd": {
+    "title": "Consensus de la foule",
+    "count": "{n} pronostics"
+  },
   "rewards": {
+    "noWinner": "Pas encore de gagnant",
     "title": "Mes récompenses",
     "empty": "Aucune récompense."
   },
   "recovery": {
+    "resetHint": "Code de récupération et appareils perdus ? Réinitialisez l'identité pour repartir de zéro.",
+    "reset": "Réinitialiser l'identité",
+    "resetConfirm": "Cela révoque définitivement vos clés. Les anciens messages chiffrés deviennent illisibles et vous rejoignez chaque discussion à zéro. Continuer ?",
+    "resetDone": "Identité réinitialisée. Rejoignez vos discussions pour de nouvelles clés.",
     "title": "Sauvegarde du chat",
     "hint": "Générez un code de récupération pour restaurer le chat chiffré sur un autre appareil. Conservez-le en lieu sûr - il n’est affiché qu’une fois.",
     "generate": "Générer un code de récupération",
@@ -19,6 +65,8 @@
     "safetyHint": "Comparez-le hors ligne avec un contact pour confirmer qu’aucune clé n’a été substituée."
   },
   "achievements": {
+    "showcaseHeading": "Vitrine",
+    "showcaseEditHint": "Choisissez jusqu'à 3 badges à mettre en avant.",
     "cabinetTitle": "Vitrine à trophées",
     "showcaseTitle": "Ma vitrine",
     "trophiesHeading": "Trophées",
@@ -202,6 +250,8 @@
     "undecryptable": "Impossible de déchiffrer ce message"
   },
   "chat": {
+    "report": "Signaler le message",
+    "reported": "Message signalé",
     "compose": "Message",
     "disabled": "Le chat est désactivé pour cette ligue.",
     "recoveryNeeded": "Cet appareil a besoin de votre code de récupération pour déverrouiller le chat chiffré.",
@@ -470,6 +520,9 @@
     "hideBreakdown": "Masquer le détail des cotes"
   },
   "common": {
+    "share": "Partager",
+    "edit": "Modifier",
+    "delete": "Supprimer",
     "copied": "Copié",
     "retry": "Réessayer",
     "loading": "Chargement…",
@@ -833,6 +886,9 @@
     }
   },
   "match": {
+    "liveDetail": "Direct",
+    "noLiveDetail": "Aucun détail en direct",
+    "goals": "Buts",
     "media": "Médias",
     "noMedia": "Aucun flux ni résumé.",
     "timeline": "Chronologie",
@@ -1261,6 +1317,9 @@
     "strong": "Fort"
   },
   "twofa": {
+    "failed": "Une erreur est survenue. Vérifiez votre mot de passe.",
+    "done": "Terminé",
+    "disableBlurb": "Saisissez votre mot de passe et un code actuel pour désactiver la double authentification.",
     "sectionTitle": "Authentification à deux facteurs",
     "sectionHint": "Une seconde étape à la connexion : une application d'authentification (ou un code par e-mail si configuré).",
     "enable": "Activer la 2FA",
@@ -1312,6 +1371,7 @@
     "gateFailed": "Mot de passe ou code incorrect."
   },
   "sessions": {
+    "empty": "Aucune session active",
     "title": "Appareils connectés",
     "hint": "Les appareils actuellement connectés à ton compte. Déconnecte ceux que tu ne reconnais pas.",
     "current": "Cet appareil",
@@ -1470,6 +1530,18 @@
     "home": "Retour au terrain"
   },
   "leagues": {
+    "settings": "Paramètres de la ligue",
+    "description": "Description",
+    "featuredTeam": "Équipe à l'honneur",
+    "noFeaturedTeam": "Aucune",
+    "lives": "Vies",
+    "open": "Ouvrir la ligue",
+    "joinButton": "Rejoindre",
+    "prizes": "Récompenses",
+    "makeModerator": "Nommer modérateur",
+    "makeMember": "Rétrograder en membre",
+    "transferOwnership": "Transférer la propriété",
+    "removeMember": "Retirer de la ligue",
     "invites": "Invitations",
     "newInvite": "Nouvelle invitation",
     "name": "Nom de la ligue",

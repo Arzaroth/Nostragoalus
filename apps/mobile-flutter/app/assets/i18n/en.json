@@ -1,9 +1,55 @@
 {
+  "moderation": {
+    "title": "Moderation",
+    "empty": "No reported messages",
+    "reportCount": "{n} reports",
+    "remove": "Remove",
+    "restore": "Restore"
+  },
+  "verifyEmail": {
+    "title": "Verify your email",
+    "body": "Confirm your address to secure your account.",
+    "resend": "Resend",
+    "sent": "Verification email sent."
+  },
+  "profile": {
+    "editTitle": "Edit profile",
+    "displayName": "Display name"
+  },
+  "calendar": {
+    "title": "Calendar feed",
+    "blurb": "Subscribe to fixtures and pick deadlines in your device calendar. It updates automatically.",
+    "subscribe": "Subscribe",
+    "copyLink": "Copy link",
+    "regenerate": "Regenerate link",
+    "regenerateHint": "Revokes every old calendar link. Use this if a link leaked.",
+    "regenerated": "A fresh calendar link was minted."
+  },
+  "compare": {
+    "title": "Compare players",
+    "pickOpponent": "Pick an opponent",
+    "noShared": "No shared graded picks yet",
+    "record": "{a} wins · {t} ties · {b} wins",
+    "shared": "{n} shared matches",
+    "agreement": "Agreement",
+    "sameScore": "Same score: {n}",
+    "sameOutcome": "Same outcome: {n}",
+    "divergences": "Where you split"
+  },
+  "crowd": {
+    "title": "Crowd consensus",
+    "count": "{n} predictions"
+  },
   "rewards": {
+    "noWinner": "No winner yet",
     "title": "My rewards",
     "empty": "No rewards yet."
   },
   "recovery": {
+    "resetHint": "Lost your recovery code and every device? Reset the identity to start fresh.",
+    "reset": "Reset identity",
+    "resetConfirm": "This permanently revokes your keys. Past encrypted messages become unreadable and you rejoin every chat fresh. Continue?",
+    "resetDone": "Identity reset. Rejoin your chats to get new keys.",
     "title": "Chat backup",
     "hint": "Generate a recovery code to restore encrypted chat on another device. Save it somewhere safe - it is shown once and cannot be recovered.",
     "generate": "Generate recovery code",
@@ -19,6 +65,8 @@
     "safetyHint": "Compare this out-of-band with a contact to confirm no key was substituted."
   },
   "achievements": {
+    "showcaseHeading": "Showcase",
+    "showcaseEditHint": "Pick up to 3 badges to feature.",
     "cabinetTitle": "Trophy cabinet",
     "showcaseTitle": "My showcase",
     "trophiesHeading": "Trophies",
@@ -207,6 +255,8 @@
     "undecryptable": "Can't decrypt this message"
   },
   "chat": {
+    "report": "Report message",
+    "reported": "Message reported",
     "compose": "Message",
     "disabled": "Chat is disabled for this league.",
     "recoveryNeeded": "This device needs your recovery code to unlock encrypted chat.",
@@ -475,6 +525,9 @@
     "hideBreakdown": "Hide odds breakdown"
   },
   "common": {
+    "share": "Share",
+    "edit": "Edit",
+    "delete": "Delete",
     "copied": "Copied",
     "retry": "Retry",
     "loading": "Loading…",
@@ -838,6 +891,9 @@
     }
   },
   "match": {
+    "liveDetail": "Live",
+    "noLiveDetail": "No live detail yet",
+    "goals": "Goals",
     "media": "Media",
     "noMedia": "No streams or highlights yet.",
     "timeline": "Timeline",
@@ -1266,6 +1322,9 @@
     "strong": "Strong"
   },
   "twofa": {
+    "failed": "Something went wrong. Check your password and try again.",
+    "done": "Done",
+    "disableBlurb": "Enter your password and a current code to turn off two-factor.",
     "sectionTitle": "Two-factor authentication",
     "sectionHint": "A second step at sign-in: an authenticator app (or a code by email when configured).",
     "enable": "Enable 2FA",
@@ -1317,6 +1376,7 @@
     "gateFailed": "Wrong password or code."
   },
   "sessions": {
+    "empty": "No active sessions",
     "title": "Connected devices",
     "hint": "Devices currently signed in to your account. Sign out any you don't recognise.",
     "current": "This device",
@@ -1475,6 +1535,18 @@
     "home": "Back to the pitch"
   },
   "leagues": {
+    "settings": "League settings",
+    "description": "Description",
+    "featuredTeam": "Featured team",
+    "noFeaturedTeam": "None",
+    "lives": "Lives",
+    "open": "Open league",
+    "joinButton": "Join",
+    "prizes": "Prizes",
+    "makeModerator": "Make moderator",
+    "makeMember": "Make member",
+    "transferOwnership": "Transfer ownership",
+    "removeMember": "Remove from league",
     "invites": "Invites",
     "newInvite": "New invite",
     "name": "League name",
