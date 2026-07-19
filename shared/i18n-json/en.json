@@ -788,6 +788,7 @@
     "repickedNote": "Changed (half points). Originally: {team}."
   },
   "bestScorer": {
+    "saved": "Golden Boot pick saved",
     "topScorers": "Top scorers",
     "title": "Your best scorer",
     "pickTeam": "Pick a team",

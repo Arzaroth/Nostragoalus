@@ -41,8 +41,9 @@ with the data caveat noted per area.
 - [x] Leaderboard (+ movement arrow)
 - [x] Multiview grid (live matches)
 - [x] Champion pick (FIFA-tiered)
-- [~] Best-scorer - read (pick + top scorers); `[ ]` interactive pick (no player-id
-  in the contract)
+- [x] Best-scorer - interactive Golden Boot pick (team -> squad from
+  /api/teams/[code].squad -> save via PUT /api/best-scorer) + top scorers; locks
+  at first kickoff. (The "no player-id" earlier claim was wrong - the squad carries ids.)
 - [x] Bot personas (per-match bot predictions)
 - [x] Wrapped - full recap: totals + rank/percentile, tier breakdown + streak,
   best call, biggest miss, jokers, crowd, champion/scorer, chat, trophy/badge haul

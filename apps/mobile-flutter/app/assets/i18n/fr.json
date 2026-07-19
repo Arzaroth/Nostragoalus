@@ -777,6 +777,7 @@
     "repickedNote": "Modifié (moitié des points). À l'origine : {team}."
   },
   "bestScorer": {
+    "saved": "Pronostic Soulier d'or enregistré",
     "topScorers": "Meilleurs buteurs",
     "title": "Votre meilleur buteur",
     "pickTeam": "Choisissez une équipe",

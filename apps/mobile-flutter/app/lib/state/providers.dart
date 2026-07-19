@@ -200,6 +200,11 @@ final championProvider = FutureProvider<ChampionResponse>((ref) =>
 final bestScorerProvider = FutureProvider<BestScorerResponse>((ref) =>
     ref.watch(apiProvider).bestScorer(competition: ref.watch(selectedCompetitionProvider)));
 
+/// A team's squad for the best-scorer picker (keyed by team code).
+final squadProvider = FutureProvider.family<List<dynamic>, String>((ref, code) => ref
+    .watch(apiProvider)
+    .teamSquad(code, competition: ref.watch(selectedCompetitionProvider)));
+
 final commitmentsProvider =
     FutureProvider<CommitmentsResponse>((ref) => ref.watch(apiProvider).commitments());
 

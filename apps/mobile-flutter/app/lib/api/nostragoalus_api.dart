@@ -293,6 +293,29 @@ class NostragoalusApi {
   Future<void> setChampion(String teamCode, String teamName) async =>
       _api.putJson('/api/champion', body: {'teamCode': teamCode, 'teamName': teamName});
 
+  /// A team's squad ([{playerId, name, position, pictureUrl}]) for the
+  /// best-scorer pick (raw; the teams/[code] shape isn't a codegen target).
+  Future<List<dynamic>> teamSquad(String code, {String? competition}) async {
+    final res = await _api.getJson('/api/teams/$code', query: _comp(competition));
+    final squad = res['squad'];
+    return squad is List ? squad : const [];
+  }
+
+  /// Save the Golden Boot pick.
+  Future<void> setBestScorer(
+          {required String playerId,
+          required String playerName,
+          String? teamCode,
+          required String teamName,
+          String? competition}) async =>
+      _api.putJson('/api/best-scorer', body: {
+        'playerId': playerId,
+        'playerName': playerName,
+        if (teamCode != null) 'teamCode': teamCode,
+        'teamName': teamName,
+        if (competition != null) 'competition': competition,
+      });
+
   Future<BestScorerResponse> bestScorer({String? competition}) async =>
       BestScorerResponse.fromJson(await _api.getJson('/api/best-scorer', query: _comp(competition)));
 
