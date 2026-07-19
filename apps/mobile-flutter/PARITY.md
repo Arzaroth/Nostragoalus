@@ -95,7 +95,7 @@ with the data caveat noted per area.
   edit/delete, moderator dashboard (reports/moderate), presence, typing
 - [~] DM rich: reactions (long-press) + read-on-open (mark thread read); `[ ]`
   read-receipt display, images
-- [ ] Identity reset
+- [x] Identity reset (hard reset -> fresh keypair, revoke old sealed keys, confirm dialog)
 
 ## Realtime & voice
 - [x] Live scores over WS (subscribe, invalidate, reconnect)

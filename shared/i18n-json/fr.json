@@ -29,6 +29,10 @@
     "empty": "Aucune récompense."
   },
   "recovery": {
+    "resetHint": "Code de récupération et appareils perdus ? Réinitialisez l'identité pour repartir de zéro.",
+    "reset": "Réinitialiser l'identité",
+    "resetConfirm": "Cela révoque définitivement vos clés. Les anciens messages chiffrés deviennent illisibles et vous rejoignez chaque discussion à zéro. Continuer ?",
+    "resetDone": "Identité réinitialisée. Rejoignez vos discussions pour de nouvelles clés.",
     "title": "Sauvegarde du chat",
     "hint": "Générez un code de récupération pour restaurer le chat chiffré sur un autre appareil. Conservez-le en lieu sûr - il n’est affiché qu’une fois.",
     "generate": "Générer un code de récupération",

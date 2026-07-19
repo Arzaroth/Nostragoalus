@@ -72,9 +72,57 @@ class _RecoverySetupScreenState extends ConsumerState<RecoverySetupScreen> {
               Text(context.tr('recovery.saveWarning'),
                   style: TextStyle(color: Theme.of(context).colorScheme.error)),
             ],
+            const Divider(height: 48),
+            Text(context.tr('recovery.resetHint'),
+                style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error,
+              ),
+              onPressed: _busy ? null : _reset,
+              icon: const Icon(Icons.delete_forever),
+              label: Text(context.tr('recovery.reset')),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _reset() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(context.tr('recovery.reset')),
+        content: Text(context.tr('recovery.resetConfirm')),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(context.tr('common.cancel'))),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(context.tr('recovery.reset')),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    setState(() { _busy = true; _code = null; });
+    try {
+      await ref.read(chatIdentityProvider.notifier).reset();
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(context.tr('recovery.resetDone'))));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(context.tr('err.generic'))));
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 }

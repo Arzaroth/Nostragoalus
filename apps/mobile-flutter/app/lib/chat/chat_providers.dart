@@ -58,6 +58,22 @@ class ChatIdentityController extends AsyncNotifier<ChatIdentityState> {
     state = AsyncData(ChatIdentityState(identity: id));
   }
 
+  /// Hard reset: generate a fresh keypair, tell the server to revoke the old
+  /// identity + sealed keys, and replace the local key. History sealed to the old
+  /// identity becomes permanently unreadable; the user re-joins each chat afresh.
+  Future<void> reset() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final sodium = await ref.read(sodiumProvider.future);
+      final api = ref.read(apiProvider);
+      final gen = e2ee.generateIdentity(sodium);
+      final id = ChatIdentity(gen.publicKey, gen.privateKey);
+      await api.resetChatIdentity(id.publicKey);
+      await ref.read(chatKeyStoreProvider).save(id);
+      return ChatIdentityState(identity: id);
+    });
+  }
+
   /// Escrow the private key under a recovery code so another device can restore it.
   Future<void> setupRecovery(String code) async {
     final sodium = await ref.read(sodiumProvider.future);

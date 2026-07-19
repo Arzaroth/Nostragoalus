@@ -29,6 +29,10 @@
     "empty": "No rewards yet."
   },
   "recovery": {
+    "resetHint": "Lost your recovery code and every device? Reset the identity to start fresh.",
+    "reset": "Reset identity",
+    "resetConfirm": "This permanently revokes your keys. Past encrypted messages become unreadable and you rejoin every chat fresh. Continue?",
+    "resetDone": "Identity reset. Rejoin your chats to get new keys.",
     "title": "Chat backup",
     "hint": "Generate a recovery code to restore encrypted chat on another device. Save it somewhere safe - it is shown once and cannot be recovered.",
     "generate": "Generate recovery code",

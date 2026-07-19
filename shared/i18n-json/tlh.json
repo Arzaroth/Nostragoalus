@@ -29,6 +29,10 @@
     "empty": "pop tuHbe."
   },
   "recovery": {
+    "resetHint": "ghItlh 'ej cholmey Hoch chIllu'? qawHaq chu'moH.",
+    "reset": "qawHaq chu'moH",
+    "resetConfirm": "ngoqmey teqlu' reH. QIn ngoq qan laDlaHbe' 'ej ja'chuq Hoch Dachu'. taH'a'?",
+    "resetDone": "qawHaq chu'lu'. ngoq chu' Suqmeh ja'chuq yIchol.",
     "title": "QIn nge",
     "hint": "latlh De vaD recovery code chenmoH. QaQ DaqDaq yISaH - wa logh cha lu.",
     "generate": "recovery code chenmoH",

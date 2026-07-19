@@ -243,6 +243,10 @@ class NostragoalusApi {
   Future<void> registerIdentity(String publicKey) async =>
       _api.putJson('/api/chat/identity', body: {'publicKey': publicKey});
 
+  /// Hard-reset the chat identity to a fresh keypair, revoking old sealed keys.
+  Future<void> resetChatIdentity(String publicKey) async =>
+      _api.postJson('/api/chat/identity/reset', body: {'publicKey': publicKey});
+
   Future<String?> chatRecoveryBlob() async =>
       (await _api.getJson('/api/chat/recovery'))['blob'] as String?;
 
