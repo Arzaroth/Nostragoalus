@@ -85,6 +85,26 @@ class AuthRepository {
     return user is Map<String, dynamic> ? AuthUser.fromJson(user) : null;
   }
 
+  /// Create an account. Returns true on success (email verification may still be
+  /// required before sign-in works).
+  Future<bool> signUp(String name, String email, String password) async {
+    final res = await _api.raw((dio) => dio.post<dynamic>(
+          '/api/auth/sign-up/email',
+          data: {'name': name, 'email': email, 'password': password},
+          options: Options(validateStatus: (_) => true),
+        ));
+    return res.statusCode == 200;
+  }
+
+  /// Email a password-reset link.
+  Future<void> requestPasswordReset(String email) async {
+    await _api.raw((dio) => dio.post<dynamic>(
+          '/api/auth/request-password-reset',
+          data: {'email': email, 'redirectTo': '/reset-password'},
+          options: Options(validateStatus: (_) => true),
+        ));
+  }
+
   Future<void> signOut() async {
     try {
       await _api.raw((dio) => dio.post<dynamic>(

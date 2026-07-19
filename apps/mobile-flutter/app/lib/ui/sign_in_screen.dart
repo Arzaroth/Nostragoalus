@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../auth/sso.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import 'forgot_password_screen.dart';
 import 'locale_menu.dart';
+import 'signup_screen.dart';
 
 /// Email/password sign in over the bearer contract. Sign-up and password reset
 /// live on the web app for now; this is the native entry into an existing account.
@@ -152,6 +154,17 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                       textAlign: TextAlign.center,
                     ),
                   ],
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () => Navigator.of(context)
+                        .push(MaterialPageRoute(builder: (_) => const ForgotPasswordScreen())),
+                    child: Text(context.tr('auth.forgot')),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context)
+                        .push(MaterialPageRoute(builder: (_) => const SignUpScreen())),
+                    child: Text(context.tr('auth.needAccount')),
+                  ),
                 ],
               ),
             ),
