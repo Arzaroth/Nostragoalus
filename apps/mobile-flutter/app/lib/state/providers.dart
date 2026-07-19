@@ -8,6 +8,7 @@ import '../api/nostragoalus_api.dart';
 import '../api/token_store.dart';
 import '../i18n/i18n.dart';
 import '../live/live_service.dart';
+import '../voice/voice_service.dart';
 
 /// The active UI locale (defaults to English; the locale switcher sets it).
 final localeProvider = StateProvider<Locale>((ref) => const Locale('en'));
@@ -127,6 +128,14 @@ final leagueBoardProvider = FutureProvider.family<ModeBoardResponse, String>(
 /// The live hub connection (one per app), disposed with the provider scope.
 final liveServiceProvider = Provider<LiveService>((ref) {
   final service = LiveService(ref.watch(tokenStoreProvider));
+  ref.onDispose(service.dispose);
+  return service;
+});
+
+/// The WebRTC voice mesh service (one per app).
+final voiceServiceProvider = Provider<VoiceService>((ref) {
+  final selfId = ref.watch(authControllerProvider).valueOrNull?.id ?? '';
+  final service = VoiceService(ref.watch(apiProvider), ref.watch(tokenStoreProvider), selfId);
   ref.onDispose(service.dispose);
   return service;
 });

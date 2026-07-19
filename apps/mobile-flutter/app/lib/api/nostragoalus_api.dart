@@ -176,6 +176,10 @@ class NostragoalusApi {
   /// The key-transparency log (verified client-side against the hash chain).
   Future<Map<String, dynamic>> keysLog() async => _api.getJson('/api/keys/log');
 
+  /// ICE/TURN servers for the voice mesh.
+  Future<List<dynamic>> iceServers() async =>
+      (await _api.getJson('/api/voice/ice-servers'))['iceServers'] as List;
+
   // --- SSO ---
 
   /// The SSO provider capturing an email's domain, if any ({providerId, name}).

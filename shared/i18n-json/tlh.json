@@ -1627,6 +1627,8 @@
     }
   },
   "voice": {
+    "join": "ghogh yImuv",
+    "inCall": "{n} ghogh",
     "call": "rI'",
     "joinVoice": "wab yItlhej",
     "ringing": "rItaH…",

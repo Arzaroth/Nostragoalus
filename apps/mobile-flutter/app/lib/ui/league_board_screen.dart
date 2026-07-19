@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../api/models.gen.dart';
 import '../state/providers.dart';
+import '../voice/voice_service.dart';
 import 'league_chat_screen.dart';
 import 'widgets/async_value_view.dart';
+import 'widgets/voice_bar.dart';
 
 /// A league's board. Rows are a points/survival union (raw maps), rendered by
 /// the common fields both variants carry.
@@ -28,6 +30,7 @@ class LeagueBoardScreen extends ConsumerWidget {
           ),
         ],
       ),
+      bottomNavigationBar: VoiceBar(scope: VoiceScope(kind: 'league', leagueId: leagueId)),
       body: RefreshIndicator(
         onRefresh: () async => ref.refresh(leagueBoardProvider(leagueId).future),
         child: AsyncValueView<ModeBoardResponse>(

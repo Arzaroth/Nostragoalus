@@ -1621,6 +1621,8 @@
     }
   },
   "voice": {
+    "join": "Rejoindre la voix",
+    "inCall": "{n} en vocal",
     "call": "Appeler",
     "joinVoice": "Rejoindre l'audio",
     "ringing": "Sonnerie…",
