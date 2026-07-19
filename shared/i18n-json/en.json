@@ -236,6 +236,8 @@
     "undecryptable": "Can't decrypt this message"
   },
   "chat": {
+    "report": "Report message",
+    "reported": "Message reported",
     "compose": "Message",
     "disabled": "Chat is disabled for this league.",
     "recoveryNeeded": "This device needs your recovery code to unlock encrypted chat.",

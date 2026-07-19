@@ -118,28 +118,47 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
     }
   }
 
-  Future<void> _react(String messageId) async {
+  Future<void> _messageActions(String messageId) async {
     const emojis = ['👍', '❤️', '😂', '🔥', '😮', '😢'];
-    final picked = await showModalBottomSheet<String>(
+    final action = await showModalBottomSheet<String>(
       context: context,
       builder: (context) => SafeArea(
-        child: Wrap(
-          alignment: WrapAlignment.center,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            for (final e in emojis)
-              IconButton(
-                iconSize: 30,
-                icon: Text(e, style: const TextStyle(fontSize: 28)),
-                onPressed: () => Navigator.pop(context, e),
-              ),
+            Wrap(
+              alignment: WrapAlignment.center,
+              children: [
+                for (final e in emojis)
+                  IconButton(
+                    iconSize: 30,
+                    icon: Text(e, style: const TextStyle(fontSize: 28)),
+                    onPressed: () => Navigator.pop(context, 'react:$e'),
+                  ),
+              ],
+            ),
+            ListTile(
+              leading: const Icon(Icons.flag_outlined),
+              title: Text(context.tr('chat.report')),
+              onTap: () => Navigator.pop(context, 'report'),
+            ),
           ],
         ),
       ),
     );
-    if (picked == null) return;
+    if (action == null) return;
     try {
-      await ref.read(apiProvider).reactChatMessage(widget.leagueId, messageId, picked);
-      ref.invalidate(leagueChatProvider(widget.leagueId));
+      final api = ref.read(apiProvider);
+      if (action == 'report') {
+        await api.reportChatMessage(widget.leagueId, messageId);
+        if (mounted) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(context.tr('chat.reported'))));
+        }
+      } else if (action.startsWith('react:')) {
+        await api.reactChatMessage(widget.leagueId, messageId, action.substring(6));
+        ref.invalidate(leagueChatProvider(widget.leagueId));
+      }
     } catch (_) {/* ignore */}
   }
 
@@ -176,7 +195,7 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
                                   ? const TextStyle(fontStyle: FontStyle.italic)
                                   : null),
                           subtitle: Text(line.createdAt),
-                          onLongPress: () => _react(line.id),
+                          onLongPress: () => _messageActions(line.id),
                         );
                       },
                     ),

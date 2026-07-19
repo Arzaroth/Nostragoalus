@@ -231,6 +231,8 @@
     "undecryptable": "Impossible de déchiffrer ce message"
   },
   "chat": {
+    "report": "Signaler le message",
+    "reported": "Message signalé",
     "compose": "Message",
     "disabled": "Le chat est désactivé pour cette ligue.",
     "recoveryNeeded": "Cet appareil a besoin de votre code de récupération pour déverrouiller le chat chiffré.",

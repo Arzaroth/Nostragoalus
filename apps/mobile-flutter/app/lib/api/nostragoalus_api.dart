@@ -266,6 +266,10 @@ class NostragoalusApi {
       _api.putJson('/api/leagues/$leagueId/chat/react',
           body: {'messageId': messageId, 'emoji': emoji});
 
+  Future<void> reportChatMessage(String leagueId, String messageId) async =>
+      _api.postJson('/api/leagues/$leagueId/chat/report',
+          body: {'messageId': messageId, 'reported': true});
+
   // --- Account security: connected sessions (better-auth) ---
 
   Future<List<dynamic>> listSessions() async {
