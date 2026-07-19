@@ -1,4 +1,13 @@
 {
+  "calendar": {
+    "title": "Flux calendrier",
+    "blurb": "Abonnez-vous aux matchs et aux échéances de pronostics dans votre agenda. Mise à jour automatique.",
+    "subscribe": "S'abonner",
+    "copyLink": "Copier le lien",
+    "regenerate": "Régénérer le lien",
+    "regenerateHint": "Révoque tous les anciens liens. À utiliser si un lien a fuité.",
+    "regenerated": "Un nouveau lien a été généré."
+  },
   "compare": {
     "title": "Comparer les joueurs",
     "pickOpponent": "Choisir un adversaire",

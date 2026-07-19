@@ -1,4 +1,13 @@
 {
+  "calendar": {
+    "title": "jar De'wI'",
+    "blurb": "Qojmey 'ej poH bepmey Dalaj. taghlaHbe'.",
+    "subscribe": "ghItlh",
+    "copyLink": "ghItlh nge'",
+    "regenerate": "ghItlh chu'",
+    "regenerateHint": "ghItlh qan Hoch teq. ghItlh ngeH 'e' lo'.",
+    "regenerated": "ghItlh chu' chenmoHlu'."
+  },
   "compare": {
     "title": "vagh chov",
     "pickOpponent": "jagh wIv",

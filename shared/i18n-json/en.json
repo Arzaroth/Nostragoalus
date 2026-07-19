@@ -1,4 +1,13 @@
 {
+  "calendar": {
+    "title": "Calendar feed",
+    "blurb": "Subscribe to fixtures and pick deadlines in your device calendar. It updates automatically.",
+    "subscribe": "Subscribe",
+    "copyLink": "Copy link",
+    "regenerate": "Regenerate link",
+    "regenerateHint": "Revokes every old calendar link. Use this if a link leaked.",
+    "regenerated": "A fresh calendar link was minted."
+  },
   "compare": {
     "title": "Compare players",
     "pickOpponent": "Pick an opponent",

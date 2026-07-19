@@ -125,7 +125,7 @@ with the data caveat noted per area.
 - [x] About / license / tech-stack page
 - [ ] Onboarding tour
 - [ ] Deep links (inbound `goal.arzaroth.com/...`)
-- [ ] Feed subscription (calendar)
+- [x] Feed subscription (calendar) - subscribe (webcal) / copy / regenerate
 - [ ] Share-token landing pages (a/p/s/[token] - analytics/profile/wrapped shares)
 - [x] App launcher name + icon + native splash (indigo brand, held to first frame)
 

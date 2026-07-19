@@ -31,6 +31,14 @@ class NostragoalusApi {
   Future<MatchesResponse> matches({String? competition}) async =>
       MatchesResponse.fromJson(await _api.getJson('/api/matches', query: _comp(competition)));
 
+  /// Calendar-feed subscription URLs ({url, webcalUrl}) for the signed-in user.
+  Future<Map<String, dynamic>> feedSubscription() async =>
+      _api.getJson('/api/feed/subscription');
+
+  /// Revoke every prior calendar URL and mint a fresh one.
+  Future<Map<String, dynamic>> regenerateFeed() async =>
+      _api.postJson('/api/feed/regenerate');
+
   /// Upstream live match detail (opaque provider blob; null when unavailable).
   Future<Map<String, dynamic>?> matchLiveDetail(String id) async {
     final res = await _api.getJson('/api/matches/$id/live-detail');

@@ -210,6 +210,10 @@ final matchInsightsProvider = FutureProvider.family<MatchInsightsResponse, Strin
 final matchLiveDetailProvider = FutureProvider.family<Map<String, dynamic>?, String>(
     (ref, id) => ref.watch(apiProvider).matchLiveDetail(id));
 
+/// Calendar-feed subscription URLs for the signed-in user.
+final feedSubscriptionProvider =
+    FutureProvider<Map<String, dynamic>>((ref) => ref.watch(apiProvider).feedSubscription());
+
 final cabinetProvider = FutureProvider.family<CabinetResponse, String>(
     (ref, userId) => ref.watch(apiProvider).cabinet(userId));
 

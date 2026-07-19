@@ -9,6 +9,7 @@ import 'best_scorer_screen.dart';
 import 'bot_screen.dart';
 import 'bracket_screen.dart';
 import 'cabinet_screen.dart';
+import 'calendar_screen.dart';
 import 'champion_screen.dart';
 import 'compare_screen.dart';
 import 'dm_inbox_screen.dart';
@@ -169,6 +170,14 @@ class AccountScreen extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const BestScorerScreen()),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.calendar_month),
+            title: Text(context.tr('calendar.title')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const CalendarScreen()),
             ),
           ),
           ListTile(

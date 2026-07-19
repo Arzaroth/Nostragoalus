@@ -28,6 +28,7 @@ dependencies:
   crypto: ^3.0.7
   flutter_web_auth_2: ^5.0.3
   flutter_native_splash: ^2.4.8
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
