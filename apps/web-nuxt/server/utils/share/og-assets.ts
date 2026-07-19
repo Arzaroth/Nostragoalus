@@ -73,8 +73,34 @@ const SCRIPT_FAMILY: Record<string, string> = {
   math: 'Noto Sans Math',
   symbol: 'Noto Sans Symbols 2',
   emoji: 'Noto Emoji',
-  unknown: 'Noto Sans',
 }
+
+// Everything else satori reports as "unknown" - one code for ~140 scripts. Noto
+// names its families after the Unicode script, so read the script off the text
+// itself and derive the family. Only scripts with a matching Google-hosted
+// "Noto Sans <Script>" are listed (verified against the API); the rest, plus
+// text in no script at all, fall through to plain Noto Sans.
+const NOTO_SCRIPTS = `Adlam Anatolian_Hieroglyphs Arabic Armenian Avestan Balinese Bamum Bassa_Vah Batak
+Bengali Bhaiksuki Brahmi Buginese Buhid Canadian_Aboriginal Carian Caucasian_Albanian Chakma Cham
+Cherokee Chorasmian Coptic Cuneiform Cypriot Cypro_Minoan Deseret Devanagari Duployan
+Egyptian_Hieroglyphs Elbasan Elymaic Ethiopic Georgian Glagolitic Gothic Grantha Gujarati
+Gunjala_Gondi Gurmukhi Hanifi_Rohingya Hanunoo Hatran Hebrew Imperial_Aramaic Inscriptional_Pahlavi
+Inscriptional_Parthian Javanese Kaithi Kannada Kawi Kayah_Li Kharoshthi Khmer Khojki Khudawadi Lao
+Lepcha Limbu Linear_A Linear_B Lisu Lycian Lydian Mahajani Malayalam Mandaic Manichaean Marchen
+Masaram_Gondi Medefaidrin Meetei_Mayek Mende_Kikakui Miao Modi Mongolian Mro Multani Myanmar
+Nabataean Nag_Mundari Nandinagari New_Tai_Lue Newa Nushu Ogham Ol_Chiki Old_Hungarian Old_Italic
+Old_North_Arabian Old_Permic Old_Persian Old_Sogdian Old_South_Arabian Old_Turkic Oriya Osage
+Osmanya Pahawh_Hmong Palmyrene Pau_Cin_Hau Phags_Pa Phoenician Psalter_Pahlavi Rejang Runic
+Samaritan Saurashtra Sharada Shavian Siddham SignWriting Sinhala Sogdian Sora_Sompeng Soyombo
+Sundanese Syloti_Nagri Syriac Tagalog Tagbanwa Tai_Le Tai_Tham Tai_Viet Takri Tamil Tangsa Telugu
+Thaana Thai Tifinagh Tirhuta Ugaritic Vai Vithkuqi Wancho Warang_Citi Yi Zanabazar_Square`.split(/\s+/)
+function detectNotoFamily(text: string): string | null {
+  for (const script of NOTO_SCRIPTS) {
+    if (new RegExp(`\\p{Script=${script}}`, 'u').test(text)) return `Noto Sans ${script.replace(/_/g, ' ')}`
+  }
+  return null
+}
+
 const fallbackFontCache = new Map<string, Promise<ShareFont[]>>()
 async function fetchGoogleFont(family: string, text: string): Promise<Buffer | null> {
   try {
@@ -92,7 +118,11 @@ async function fetchGoogleFont(family: string, text: string): Promise<Buffer | n
   }
 }
 function loadFallbackFont(code: string, text: string): Promise<ShareFont[]> {
-  const family = SCRIPT_FAMILY[code.toLowerCase()] ?? SCRIPT_FAMILY[code.split('-')[0]!.toLowerCase()] ?? 'Noto Sans'
+  const family =
+    SCRIPT_FAMILY[code.toLowerCase()] ??
+    SCRIPT_FAMILY[code.split('-')[0]!.toLowerCase()] ??
+    detectNotoFamily(text) ??
+    'Noto Sans'
   const key = `${family}::${text}`
   let cached = fallbackFontCache.get(key)
   if (!cached) {

@@ -32,7 +32,10 @@ Pipeline lives in `apps/web-nuxt/server/utils/share/*`:
    characters display names are full of - `math` (Mathematical Alphanumeric
    letters like `𝓑`), `symbol` (dingbats like `✕`) and `emoji` - each mapped in
    `SCRIPT_FAMILY` to Noto Sans Math / Noto Sans Symbols 2 / Noto Emoji
-   (monochrome: the card traces glyphs to paths, so a color font gains nothing). Team identity uses CODE pills (ENG/SEN) or flags inlined as
+   (monochrome: the card traces glyphs to paths, so a color font gains nothing).
+   Every remaining script comes back as the single code `unknown`, so the family
+   is derived from the text instead: `\p{Script=X}` over the `NOTO_SCRIPTS` list
+   gives `Noto Sans <Script>` (Noto's family naming follows the Unicode script). Team identity uses CODE pills (ENG/SEN) or flags inlined as
    data URIs, never a remote FIFA-CDN `<img>` (that would add a render-time
    network dependency). Assets load at runtime via
    `useStorage('assets:server').getItemRaw(...)`.
