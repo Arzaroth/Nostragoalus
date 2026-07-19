@@ -106,7 +106,8 @@ with the data caveat noted per area.
 
 ## Notifications
 - [x] In-app notification center (bell + unread badge + mark-all-read)
-- [ ] Per-type message templates (currently humanised enum)
+- [x] Per-type message templates (all 12 types via notifications.item.* i18n +
+  per-type icons; humanised-enum fallback for unknowns)
 - [!] Push (FCM Android) - the server exposes only web-push/VAPID; mobile FCM needs
   NEW server endpoints (device-token registration + sender) + a Firebase project
 - [!] Push (APNs) - no Apple
