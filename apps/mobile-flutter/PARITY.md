@@ -23,7 +23,8 @@ with the data caveat noted per area.
 - [x] Two-factor (2FA enrol: password -> secret + backup codes -> verify; disable
   with password + current code) - QR shown as secret/otpauth (no QR renderer)
 - [x] Email verification flow (unverified banner + resend link)
-- [ ] Passkeys
+- [!] Passkeys - no maintained Flutter platform-authenticator (FIDO2/WebAuthn)
+  plugin; needs native Credential Manager integration
 - [x] Connected sessions / devices (list + revoke)
 - [!] Confirm-credentials / revoke-trust - the trust flag is a better-auth
   HttpOnly cookie; bearer-token mobile sessions never set it, so it's inert here
@@ -149,8 +150,9 @@ with the data caveat noted per area.
 ## Cross-cutting
 - [x] OpenAPI model codegen + stale-check
 - [x] i18n mirror + stale-check; parity KAT mirror + on-device replay
-- [ ] Signed release build + Play internal (needs an upload keystore + a Play account)
-- [ ] Flutter CI job (analyze + test + models/i18n stale-check)
+- [!] Signed release build + Play internal (needs an upload keystore + a Play account)
+- [ ] Flutter CI job (analyze + test + models/i18n stale-check) - repo has no
+  committed CI pipeline today (the gate runs by hand via mise/pnpm); would need one
 - [ ] Widget/integration test coverage across screens (only smoke + crypto + auth
   flows tested today)
 
