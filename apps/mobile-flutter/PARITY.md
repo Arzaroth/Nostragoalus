@@ -93,7 +93,8 @@ with the data caveat noted per area.
 - [~] DMs (1:1) - inbox / room / create; `[!]` live round-trip needs a 2nd user
 - [~] Chat rich: message reactions + report done; `[ ]` threads, mentions, images,
   edit/delete, moderator dashboard (reports/moderate), presence, typing
-- [ ] DM rich: read receipts, reactions, images
+- [~] DM rich: reactions (long-press) + read-on-open (mark thread read); `[ ]`
+  read-receipt display, images
 - [ ] Identity reset
 
 ## Realtime & voice

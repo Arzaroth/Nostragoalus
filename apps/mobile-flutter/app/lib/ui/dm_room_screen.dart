@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../chat/chat_providers.dart' show ChatState;
 import '../chat/dm_providers.dart';
 import '../i18n/i18n_scope.dart';
+import '../state/providers.dart';
 import 'widgets/async_value_view.dart';
 
 /// A 1:1 encrypted conversation. Same crypto + display as league chat.
@@ -21,9 +22,49 @@ class _DmRoomScreenState extends ConsumerState<DmRoomScreen> {
   bool _sending = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Mark the thread read on open, then refresh the inbox unread badge.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        await ref.read(apiProvider).markDmRead(widget.threadId);
+        ref.invalidate(dmThreadsProvider);
+      } catch (_) {/* ignore */}
+    });
+  }
+
+  @override
   void dispose() {
     _input.dispose();
     super.dispose();
+  }
+
+  Future<void> _react(String messageId) async {
+    // REACTION_EMOJIS codes -> display glyphs (matches the web reaction set).
+    const reactions = {
+      'FIRE': '🔥', 'GOAL': '⚽', 'WOW': '😮', 'LAUGH': '😂', 'SAD': '😢', 'ANGRY': '😡',
+    };
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          alignment: WrapAlignment.center,
+          children: [
+            for (final e in reactions.entries)
+              IconButton(
+                iconSize: 30,
+                icon: Text(e.value, style: const TextStyle(fontSize: 28)),
+                onPressed: () => Navigator.pop(context, e.key),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked == null) return;
+    try {
+      await ref.read(apiProvider).reactDm(widget.threadId, messageId, picked);
+      ref.invalidate(dmRoomProvider(widget.threadId));
+    } catch (_) {/* ignore */}
   }
 
   Future<void> _send() async {
@@ -68,6 +109,7 @@ class _DmRoomScreenState extends ConsumerState<DmRoomScreen> {
                                     ? const TextStyle(fontStyle: FontStyle.italic)
                                     : null),
                             subtitle: Text(line.createdAt),
+                            onLongPress: () => _react(line.id),
                           );
                         },
                       ),
