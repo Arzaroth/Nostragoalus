@@ -1528,6 +1528,11 @@
     "home": "กลับสู่สนาม"
   },
   "leagues": {
+    "settings": "ตั้งค่าลีก",
+    "description": "คำอธิบาย",
+    "featuredTeam": "ทีมเด่น",
+    "noFeaturedTeam": "ไม่มี",
+    "lives": "ชีวิต",
     "open": "เปิดลีก",
     "joinButton": "เข้าร่วม",
     "prizes": "รางวัล",

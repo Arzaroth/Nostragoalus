@@ -1730,6 +1730,11 @@
     "home": "العودة إلى الملعب"
   },
   "leagues": {
+    "settings": "إعدادات الدوري",
+    "description": "الوصف",
+    "featuredTeam": "الفريق المميز",
+    "noFeaturedTeam": "لا شيء",
+    "lives": "الأرواح",
     "open": "افتح الدوري",
     "joinButton": "انضم",
     "prizes": "الجوائز",

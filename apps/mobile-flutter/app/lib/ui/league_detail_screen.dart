@@ -7,6 +7,7 @@ import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
 import 'league_board_screen.dart';
 import 'league_chat_screen.dart';
+import 'league_settings_screen.dart';
 import 'widgets/async_value_view.dart';
 
 /// A league's home: info, join code, members, invites, and the leave action;
@@ -33,6 +34,13 @@ class LeagueDetailScreen extends ConsumerWidget {
                 title: Text(l.name),
                 pinned: true,
                 actions: [
+                  if (canManage)
+                    IconButton(
+                      icon: const Icon(Icons.settings),
+                      onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => LeagueSettingsScreen(league: l),
+                      )),
+                    ),
                   IconButton(
                     icon: const Icon(Icons.chat),
                     onPressed: () => Navigator.of(context).push(MaterialPageRoute(

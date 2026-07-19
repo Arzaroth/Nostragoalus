@@ -1528,6 +1528,11 @@
     "home": "yotlh chegh"
   },
   "leagues": {
+    "settings": "ghom SeH",
+    "description": "QIj",
+    "featuredTeam": "mangghom pol",
+    "noFeaturedTeam": "pagh",
+    "lives": "yInmey",
     "open": "ghaj poSmoH",
     "joinButton": "muvchuq",
     "prizes": "pop",

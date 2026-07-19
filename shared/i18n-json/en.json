@@ -1533,6 +1533,11 @@
     "home": "Back to the pitch"
   },
   "leagues": {
+    "settings": "League settings",
+    "description": "Description",
+    "featuredTeam": "Featured team",
+    "noFeaturedTeam": "None",
+    "lives": "Lives",
     "open": "Open league",
     "joinButton": "Join",
     "prizes": "Prizes",

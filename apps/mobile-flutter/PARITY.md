@@ -77,11 +77,14 @@ with the data caveat noted per area.
 - [x] Browse public + join by code / by id
 - [~] League board (points/survival mode-board)
 - [x] League detail: members, role, mode
+- [x] League settings editor (owner/mod): name, visibility, mode, lives,
+  description, featured team
 - [x] Create league
 - [x] Invites (create / list / delete / accept-link via join screen + deep link)
 - [x] Leave league / transfer ownership / member management (promote, demote, kick)
 - [x] Rewards / prizes (per-league criteria + ranking drill-in bottom sheet)
-- [ ] Featured team / team specialist (admin edit)
+- [~] Featured team / team specialist - set via league settings; `[ ]` full
+  per-criterion reward-config editor (labels/notes/links/images)
 - [x] Regenerate join code
 - [ ] Per-league nudge / prompt
 

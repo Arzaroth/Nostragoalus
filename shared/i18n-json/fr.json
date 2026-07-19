@@ -1528,6 +1528,11 @@
     "home": "Retour au terrain"
   },
   "leagues": {
+    "settings": "Paramètres de la ligue",
+    "description": "Description",
+    "featuredTeam": "Équipe à l'honneur",
+    "noFeaturedTeam": "Aucune",
+    "lives": "Vies",
     "open": "Ouvrir la ligue",
     "joinButton": "Rejoindre",
     "prizes": "Récompenses",

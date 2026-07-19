@@ -181,6 +181,11 @@ class NostragoalusApi {
   Future<Map<String, dynamic>> acceptInvite(String token) async =>
       _api.postJson('/api/leagues/invite/$token/accept');
 
+  /// Update league settings (name, visibility, description, featuredTeamCode,
+  /// mode, lives) - only the provided keys change.
+  Future<void> updateLeague(String leagueId, Map<String, dynamic> body) async =>
+      _api.putJson('/api/leagues/$leagueId', body: body);
+
   Future<void> deleteInvite(String leagueId, String inviteId) async =>
       _api.deleteJson('/api/leagues/$leagueId/invites/$inviteId');
 
