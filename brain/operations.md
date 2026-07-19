@@ -29,9 +29,11 @@ default secret.
 
 Compose project `nostragoalus`: base `apps/web-nuxt/compose.yaml` + dev overlay
 `apps/web-nuxt/compose.dev.yaml`. `apps/web-nuxt/Dockerfile` stages: `base` -> `deps` (pnpm fetch, cached) ->
-`install` -> `dev` | `build` | `prod` | `prod-bun`. Every stage runs on
-`node:22-slim`; the `prod` stage runs as the image's built-in non-root `node` user
-(uid 1000), with a node-`fetch` healthcheck since slim ships no wget/curl. The
+`install` -> `dev` | `build` | `prod` | `build-bun` -> `prod-bun`. The node stages
+(`dev`, `build`, `prod`) run on `node:22-slim`; the `prod` stage runs as the
+image's built-in non-root `node` user (uid 1000), with a node-`fetch` healthcheck
+since slim ships no wget/curl. (`build-bun`/`prod-bun` are the Bun runtime - see
+the switchable-runtime note below.) The
 glibc base runs cycletls' glibc-linked Go helper native, replacing the old Alpine
 `gcompat`/`libstdc++` shim. Distroless was tried for prod and rejected: cycletls
 spawns its Go helper via `/bin/sh -c`, which distroless lacks (see
@@ -43,7 +45,10 @@ spawns its Go helper via `/bin/sh -c`, which distroless lacks (see
 crossws' node WebSocket-upgrade path silently fails under Bun (every `/_ws`
 consumer - chat, voice, live board - dies), while the bun preset uses Bun's native
 `Bun.serve` WebSocket adapter. The preset is env-driven in `nuxt.config.ts`
-(`process.env.NITRO_PRESET ?? 'node-server'`). Node `prod` is the default and the
+(`process.env.NITRO_PRESET ?? 'node-server'`). The `prod-bun` stage also sets
+`HOST=::`: the bun preset otherwise binds loopback-only (unlike node-server's
+`[::]`), which is unreachable via Docker's DNAT path and shows up as intermittent
+ECONNREFUSED under load. Node `prod` is the default and the
 tested-by-default path; Bun is opt-in. Switch the prod stack with
 `NG_APP_TARGET=prod-bun` (the compose `app` build target, tag suffixed via
 `NG_APP_TAG_SUFFIX`), or `NG_RUNTIME=bun mise run deploy`. CI covers the Bun
