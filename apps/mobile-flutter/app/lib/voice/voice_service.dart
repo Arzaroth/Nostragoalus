@@ -18,6 +18,13 @@ class VoiceScope {
   final String? matchId;
   final String? threadId;
 
+  factory VoiceScope.fromJson(Map<String, dynamic> j) => VoiceScope(
+        kind: (j['kind'] ?? 'dm').toString(),
+        leagueId: j['leagueId'] as String?,
+        matchId: j['matchId'] as String?,
+        threadId: j['threadId'] as String?,
+      );
+
   Map<String, dynamic> toJson() => {
         'kind': kind,
         if (leagueId != null) 'leagueId': leagueId,
@@ -56,6 +63,13 @@ class VoiceService {
     _local = await navigator.mediaDevices.getUserMedia({'audio': true, 'video': false});
     _openSocket();
     inCall.value = true;
+  }
+
+  /// Place an outgoing call: join the scope, then ring the given users so they
+  /// get a voice:ring push.
+  Future<void> invite(VoiceScope scope, List<String> userIds) async {
+    await join(scope);
+    _send({'type': 'voice:invite', 'scope': scope.toJson(), 'userIds': userIds});
   }
 
   void _openSocket() {

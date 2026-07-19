@@ -118,7 +118,10 @@ with the data caveat noted per area.
 - [x] Live viewers count (per match)
 - [~] WebRTC voice mesh (league rooms) - full signaling + mesh; `[!]` audio-through
   needs two participants
-- [~] Voice DM 1:1 - scope supported; `[ ]` ring / decline / missed-call UI
+- [~] Voice DM 1:1 - call button (voice:invite) + incoming-ring sheet (accept ->
+  join / decline -> voice:decline) + DM voice bar; missed calls via the existing
+  VOICE_MISSED notification. `[!]` round-trip (ring delivery + audio) needs a 2nd
+  peer - compile-validated only, like the mesh audio
 - [!] CallKit / background audio / ring push - iOS-only (no Apple)
 
 ## Notifications

@@ -6,8 +6,10 @@ import '../chat/chat_providers.dart' show ChatState;
 import '../chat/dm_providers.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import '../voice/voice_service.dart';
 import 'widgets/async_value_view.dart';
 import 'widgets/chat_attachment.dart';
+import 'widgets/voice_bar.dart';
 
 /// A 1:1 encrypted conversation. Same crypto + display as league chat.
 class DmRoomScreen extends ConsumerStatefulWidget {
@@ -100,8 +102,23 @@ class _DmRoomScreenState extends ConsumerState<DmRoomScreen> {
   @override
   Widget build(BuildContext context) {
     final room = ref.watch(dmRoomProvider(widget.threadId));
+    final otherId = room.valueOrNull?.otherId ?? '';
     return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
+      appBar: AppBar(
+        title: Text(widget.title),
+        actions: [
+          if (otherId.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.call),
+              tooltip: context.tr('voice.call'),
+              onPressed: () => ref
+                  .read(voiceServiceProvider)
+                  .invite(VoiceScope(kind: 'dm', threadId: widget.threadId), [otherId]),
+            ),
+        ],
+      ),
+      bottomNavigationBar:
+          VoiceBar(scope: VoiceScope(kind: 'dm', threadId: widget.threadId)),
       body: Column(
         children: [
           Expanded(

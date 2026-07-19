@@ -50,6 +50,10 @@ class LiveService {
     }
   }
 
+  /// Send a frame over the always-on socket (e.g. voice:decline for a ringing
+  /// call the user hasn't joined yet).
+  void send(Map<String, dynamic> message) => _send(message);
+
   /// Replace the set of watched matches (and push it to the server).
   void subscribe(Set<String> matchIds) {
     if (matchIds.length == _matchIds.length && matchIds.containsAll(_matchIds)) return;

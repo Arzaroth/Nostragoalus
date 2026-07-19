@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../i18n/i18n_scope.dart';
 import '../live/live_service.dart';
 import '../state/providers.dart';
+import '../voice/voice_service.dart';
 import 'account_screen.dart';
 import 'leaderboard_screen.dart';
 import 'leagues_screen.dart';
@@ -80,7 +81,65 @@ class _HomeShellState extends ConsumerState<HomeShell> {
             id: count.toInt(),
           };
         }
+      case 'voice:ring':
+        _onIncomingCall(frame);
     }
+  }
+
+  /// An inbound voice:ring: show an accept/decline sheet. Accept joins the call
+  /// scope; decline pushes voice:decline back over the always-on socket.
+  void _onIncomingCall(LiveFrame frame) {
+    final scopeJson = frame['scope'];
+    final from = frame['from'];
+    if (scopeJson is! Map || from is! String) return;
+    final scope = VoiceScope.fromJson(scopeJson.cast<String, dynamic>());
+    final fromName = (frame['fromName'] ?? '').toString();
+    showModalBottomSheet<void>(
+      context: context,
+      isDismissible: false,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.call, size: 40),
+              const SizedBox(height: 12),
+              Text(
+                  fromName.isEmpty
+                      ? context.tr('voice.incoming')
+                      : context.tr('voice.callingYou').replaceAll('{name}', fromName),
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.error),
+                    icon: const Icon(Icons.call_end),
+                    label: Text(context.tr('voice.decline')),
+                    onPressed: () {
+                      ref.read(liveServiceProvider)
+                          .send({'type': 'voice:decline', 'scope': scope.toJson(), 'to': from});
+                      Navigator.pop(context);
+                    },
+                  ),
+                  FilledButton.icon(
+                    icon: const Icon(Icons.call),
+                    label: Text(context.tr('voice.accept')),
+                    onPressed: () {
+                      ref.read(voiceServiceProvider).join(scope);
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   static const _liveStatuses = {'LIVE', 'PAUSED'};

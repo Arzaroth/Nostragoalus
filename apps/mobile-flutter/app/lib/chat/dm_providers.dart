@@ -22,12 +22,14 @@ class DmRoomView {
     this.lines = const [],
     this.key,
     this.otherName = '',
+    this.otherId = '',
   });
   final ChatState state;
   final int epoch;
   final List<ChatLine> lines;
   final Uint8List? key;
   final String otherName;
+  final String otherId;
 }
 
 final dmRoomProvider = FutureProvider.family<DmRoomView, String>((ref, threadId) async {
@@ -70,7 +72,8 @@ final dmRoomProvider = FutureProvider.family<DmRoomView, String>((ref, threadId)
       epoch: epoch,
       lines: lines,
       key: keys[epoch],
-      otherName: thread.other.name);
+      otherName: thread.other.name,
+      otherId: thread.other.userId);
 });
 
 /// Start a DM: generate a group key, seal it to me + the recipient, create the
