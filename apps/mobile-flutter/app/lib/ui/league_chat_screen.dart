@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../api/models.gen.dart';
 import '../chat/chat_providers.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
@@ -98,6 +99,7 @@ class _ChatBody extends ConsumerStatefulWidget {
 
 class _ChatBodyState extends ConsumerState<_ChatBody> {
   final _input = TextEditingController();
+  final _mentions = <String>{};
   bool _sending = false;
 
   @override
@@ -111,11 +113,39 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
     if (text.isEmpty) return;
     setState(() => _sending = true);
     try {
-      await ref.read(sendChatProvider)(widget.leagueId, text);
+      await ref.read(sendChatProvider)(widget.leagueId, text, mentions: _mentions.toList());
       _input.clear();
+      _mentions.clear();
     } finally {
       if (mounted) setState(() => _sending = false);
     }
+  }
+
+  Future<void> _pickMention() async {
+    final members = ref.read(leagueDetailProvider(widget.leagueId)).valueOrNull?.members ?? const [];
+    if (members.isEmpty) return;
+    final picked = await showModalBottomSheet<Member>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            for (final m in members)
+              ListTile(
+                leading: CircleAvatar(child: Text(m.name.characters.first.toUpperCase())),
+                title: Text(m.name),
+                onTap: () => Navigator.pop(context, m),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked == null) return;
+    _mentions.add(picked.userId);
+    final t = _input.text;
+    _input.text = t.isEmpty || t.endsWith(' ') ? '$t@${picked.name} ' : '$t @${picked.name} ';
+    _input.selection = TextSelection.collapsed(offset: _input.text.length);
   }
 
   Future<void> _messageActions(ChatLine line) async {
@@ -245,6 +275,11 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
               padding: const EdgeInsets.all(8),
               child: Row(
                 children: [
+                  IconButton(
+                    icon: const Icon(Icons.alternate_email),
+                    tooltip: context.tr('chat.mention.title'),
+                    onPressed: _pickMention,
+                  ),
                   Expanded(
                     child: TextField(
                       controller: _input,

@@ -156,14 +156,15 @@ final leagueChatProvider =
   return LeagueChatView(state: ChatState.ready, epoch: epoch, lines: lines, key: keys[epoch]);
 });
 
-/// Encrypt + send a message to the league, then refresh.
-final sendChatProvider = Provider<Future<void> Function(String, String)>((ref) {
-  return (leagueId, text) async {
+/// Encrypt + send a message to the league (with optional @-mention ids), refresh.
+final sendChatProvider =
+    Provider<Future<void> Function(String, String, {List<String> mentions})>((ref) {
+  return (leagueId, text, {List<String> mentions = const []}) async {
     final sodium = await ref.read(sodiumProvider.future);
     final view = ref.read(leagueChatProvider(leagueId)).valueOrNull;
     if (view == null || view.key == null) return;
     final ct = e2ee.encryptMessage(sodium, text, view.key!);
-    await ref.read(apiProvider).sendChat(leagueId, ct, view.epoch);
+    await ref.read(apiProvider).sendChat(leagueId, ct, view.epoch, mentions: mentions);
     ref.invalidate(leagueChatProvider(leagueId));
   };
 });

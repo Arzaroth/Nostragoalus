@@ -300,9 +300,14 @@ class NostragoalusApi {
   Future<ChatMessagesResponse> chatMessages(String leagueId) async =>
       ChatMessagesResponse.fromJson(await _api.getJson('/api/leagues/$leagueId/chat/messages'));
 
-  Future<void> sendChat(String leagueId, String ciphertext, int epoch, {String? matchId}) async =>
-      _api.postJson('/api/leagues/$leagueId/chat/messages',
-          body: {'ciphertext': ciphertext, 'epoch': epoch, if (matchId != null) 'matchId': matchId});
+  Future<void> sendChat(String leagueId, String ciphertext, int epoch,
+          {String? matchId, List<String>? mentions}) async =>
+      _api.postJson('/api/leagues/$leagueId/chat/messages', body: {
+        'ciphertext': ciphertext,
+        'epoch': epoch,
+        if (matchId != null) 'matchId': matchId,
+        if (mentions != null && mentions.isNotEmpty) 'mentions': mentions,
+      });
 
   Future<void> requestChatKey(String leagueId) async =>
       _api.postJson('/api/leagues/$leagueId/chat/request-key');
