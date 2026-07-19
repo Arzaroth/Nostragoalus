@@ -104,10 +104,12 @@ with the data caveat noted per area.
   round-trip needs a provisioned multi-member league (a keyholder to seal keys)
 - [~] DMs (1:1) - inbox / room / create; `[!]` live round-trip needs a 2nd user
 - [~] Chat rich: reactions + report + edit (own, re-encrypt) + moderator dashboard
-  (decrypt reports client-side, remove/restore) + @-mentions (member picker ->
-  mention ids) done; `[ ]` threads, images, delete, presence, typing
-- [~] DM rich: reactions (long-press) + read-on-open (mark thread read); `[ ]`
-  read-receipt display, images
+  (decrypt reports client-side) + @-mentions + E2EE image attachments (send +
+  decrypt-on-demand) done; `[ ]` threads, presence, typing; `[!]` delete (no
+  own-message delete endpoint - edit only)
+- [~] DM rich: reactions (long-press) + read-on-open + E2EE image attachments
+  (send + decrypt-on-demand); `[!]` read-receipt display (contract exposes only
+  the caller's own unread count, not the peer's read state)
 - [x] Identity reset (hard reset -> fresh keypair, revoke old sealed keys, confirm dialog)
 
 ## Realtime & voice

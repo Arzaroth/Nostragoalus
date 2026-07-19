@@ -417,8 +417,17 @@ class NostragoalusApi {
   Future<ChatMessagesResponse> dmMessages(String threadId) async =>
       ChatMessagesResponse.fromJson(await _api.getJson('/api/dm/$threadId/messages'));
 
-  Future<void> sendDm(String threadId, String ciphertext, int epoch) async =>
-      _api.postJson('/api/dm/$threadId/messages', body: {'ciphertext': ciphertext, 'epoch': epoch});
+  Future<void> sendDm(String threadId, String ciphertext, int epoch,
+          {List<Map<String, dynamic>>? images}) async =>
+      _api.postJson('/api/dm/$threadId/messages', body: {
+        'ciphertext': ciphertext,
+        'epoch': epoch,
+        if (images != null && images.isNotEmpty) 'images': images,
+      });
+
+  /// Fetch one DM message attachment's {ciphertext, epoch} (decrypted client-side).
+  Future<Map<String, dynamic>> dmAttachment(String threadId, String messageId, int idx) async =>
+      _api.getJson('/api/dm/$threadId/attachments/$messageId', query: {'idx': '$idx'});
 
   /// Set (or clear, with null) the caller's reaction on a DM message. `emoji` is
   /// a REACTION_EMOJIS code (FIRE/GOAL/WOW/LAUGH/SAD/ANGRY).

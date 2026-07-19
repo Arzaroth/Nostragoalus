@@ -58,7 +58,12 @@ final dmRoomProvider = FutureProvider.family<DmRoomView, String>((ref, threadId)
         text = e2ee.decryptMessage(sodium, m.ciphertext, k);
       } catch (_) {/* corrupt / wrong key */}
     }
-    lines.add(ChatLine(id: m.id, userId: m.userId, text: text, createdAt: m.createdAt));
+    lines.add(ChatLine(
+        id: m.id,
+        userId: m.userId,
+        text: text,
+        createdAt: m.createdAt,
+        attachmentCount: m.attachments.length));
   }
   return DmRoomView(
       state: ChatState.ready,
@@ -89,13 +94,46 @@ final createDmProvider = Provider<Future<String> Function(String)>((ref) {
   };
 });
 
-final sendDmProvider = Provider<Future<void> Function(String, String)>((ref) {
-  return (threadId, text) async {
+final sendDmProvider =
+    Provider<Future<void> Function(String, String, {Uint8List? image})>((ref) {
+  return (threadId, text, {Uint8List? image}) async {
     final sodium = await ref.read(sodiumProvider.future);
     final view = ref.read(dmRoomProvider(threadId)).valueOrNull;
     if (view == null || view.key == null) return;
     final ct = e2ee.encryptMessage(sodium, text, view.key!);
-    await ref.read(apiProvider).sendDm(threadId, ct, view.epoch);
+    final images = image == null
+        ? null
+        : [
+            {
+              'ciphertext': e2ee.encryptBytes(sodium, image, view.key!),
+              'byteSize': image.length,
+            }
+          ];
+    await ref.read(apiProvider).sendDm(threadId, ct, view.epoch, images: images);
     ref.invalidate(dmRoomProvider(threadId));
   };
+});
+
+/// Fetch + decrypt one DM message image attachment ((threadId, messageId, idx)).
+final dmAttachmentProvider =
+    FutureProvider.family<Uint8List?, (String, String, int)>((ref, args) async {
+  final (threadId, messageId, idx) = args;
+  final sodium = await ref.watch(sodiumProvider.future);
+  final identity = (await ref.watch(chatIdentityProvider.future)).identity;
+  if (identity == null) return null;
+  final thread = (await ref.watch(apiProvider).dmThread(threadId)).thread;
+  final keys = <int, Uint8List>{};
+  for (final wk in thread.myWrappedKeys) {
+    try {
+      keys[wk.epoch.toInt()] = e2ee.openGroupKey(sodium, wk.wrappedKey, identity.asMap);
+    } catch (_) {/* skip */}
+  }
+  final att = await ref.watch(apiProvider).dmAttachment(threadId, messageId, idx);
+  final key = keys[(att['epoch'] as num?)?.toInt() ?? -1];
+  if (key == null) return null;
+  try {
+    return e2ee.decryptBytes(sodium, att['ciphertext'].toString(), key);
+  } catch (_) {
+    return null;
+  }
 });
