@@ -49,7 +49,7 @@
       "champion-oracle": { "name": "Faiseur de rois", "desc": "Votre pronostic champion a soulevé le trophée.", "criteria": "Choisissez l'équipe qui remporte le tournoi." },
       "golden-touch": { "name": "Touche d'or", "desc": "Votre pari Soulier d'or a fini meilleur buteur.", "criteria": "Choisissez le meilleur buteur du tournoi comme Soulier d'or." },
       "underdog-whisperer": { "name": "L'ami des outsiders", "desc": "Votre pronostic champion très improbable a fini par payer.", "criteria": "Gagnez avec un champion classé hors du top 15 FIFA (ou non classé)." },
-      "treble": { "name": "Triplé", "desc": "Détenu trois trophées dans un même tournoi.", "criteria": "Détenez trois trophées de fin de compétition en même temps." },
+      "treble": { "name": "Triplé", "desc": "Détenu trois trophées dans un même tournoi.", "criteria": "Remportez trois des quatre trophées de fin de tournoi dans la même compétition : Grand champion, Gourou de la phase de groupes, Maître du tableau final, Madame Irma. Les badges ne comptent pas." },
       "form-reader": { "name": "Lecteur de forme", "desc": "Tu lis le tournoi entier des équipes, match après match.", "criteria": "Trouve le résultat des matchs d'une équipe 5 fois, pour 3 équipes (bronze), 5 (argent), 7 (or)." },
       "champions-path": { "name": "La route du champion", "desc": "Tu as pronostiqué tout le parcours des vainqueurs jusqu'au trophée.", "criteria": "Pronostique tout le parcours du champion : le résultat de chaque match pour l'or, le score exact de chacun pour le diamant." },
       "group-guru": { "name": "Gourou de groupe", "desc": "Des groupes entiers lus de haut en bas.", "criteria": "Trouve le résultat de tous les matchs d'un groupe complet : 1 pour le bronze, 2 argent, 3 or." },
