@@ -30,6 +30,7 @@ class VoiceProbe {
 
   /// 1. Fetch ICE servers (STUN + short-lived TURN creds) from the API, using
   ///    the bearer token from the auth probe.
+  // ignore: unused_element
   Future<Map<String, dynamic>> _iceServers(String bearer) async {
     // TODO: dio GET /api/voice/ice-servers with Authorization: Bearer <token>.
     // Shape: { iceServers: [{ urls, username?, credential? }], ttl }.
@@ -70,6 +71,7 @@ class VoiceProbe {
   }
 
   /// 4. The WebRTC peer + the mic. secure origin, ICE from step 1.
+  // ignore: unused_element
   Future<RTCPeerConnection> _makePeer(Map<String, dynamic> ice) async {
     _localStream ??= await navigator.mediaDevices
         .getUserMedia({'audio': true, 'video': false});

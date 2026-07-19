@@ -44,3 +44,31 @@ run = "bash tool/sync_parity.sh"
 description = "Fail if the bundled KATs drift from shared/parity-json"
 dir = "{{ config_root }}/app"
 run = "bash tool/sync_parity.sh && git diff --exit-code assets/parity"
+
+[tasks.analyze]
+description = "Static analysis of the Flutter app"
+dir = "{{ config_root }}/app"
+run = "flutter analyze"
+
+[tasks.app-test]
+description = "Flutter unit + widget tests (app/)"
+dir = "{{ config_root }}/app"
+run = "flutter test"
+
+# The mobile gate, run by hand the way the web gate runs via pnpm (this repo has
+# no hosted CI). Fails on a stale model/i18n/KAT mirror, an analyzer issue, a red
+# unit/widget test, or a cross-stack parity regression - e.g. the injector-only-
+# touched-shared/i18n drift that renders keys as literals on device. Steps run
+# SEQUENTIALLY (a `depends` fan-out races `flutter analyze` against `flutter
+# test` and the test harness dies with "Cannot close sink while adding stream").
+[tasks.gate]
+description = "Mobile gate: stale-checks + analyze + app tests + cross-stack parity"
+dir = "{{ config_root }}"
+run = [
+  "cd app && bash tool/gen_models.sh && git diff --exit-code lib/api/models.gen.dart",
+  "cd app && bash tool/sync_i18n.sh && git diff --exit-code assets/i18n",
+  "cd app && bash tool/sync_parity.sh && git diff --exit-code assets/parity",
+  "cd app && flutter analyze",
+  "cd app && flutter test",
+  "cd parity && dart test",
+]

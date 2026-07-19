@@ -1,3 +1,4 @@
+// ignore_for_file: library_private_types_in_public_api, curly_braces_in_flow_control_structures
 // Generates lib/api/models.gen.dart from the committed OpenAPI snapshot
 // (shared/contracts-openapi/openapi.snapshot.json). The snapshot inlines every
 // schema (zod-to-openapi, no components/$ref), so we walk each targeted
