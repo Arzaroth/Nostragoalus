@@ -87,8 +87,9 @@ pnpm build && node .output/server/index.mjs   # or: bun .output/server/index.mjs
   messages, see who is typing, page
   back through older history, share a pick card straight to chat, jump to any room with unread activity
   across every league you belong to from a cross-league inbox that survives a reload, switch league from
-  inside the chat window, pick up where you left off at a "new messages" line drawn at your last-read
-  point, undock the window
+  inside the chat window, pin the chat to one conversation so changing the league filter or the match
+  you are watching no longer moves it, pick up where you left off at a "new messages" line drawn at
+  your last-read point, undock the window
   into a draggable panel, and mute or report others. A **Verify keys** panel shows
   per-member safety numbers to compare out-of-band (first-seen pinning, change warning) and cross-checks
   each member's key against a public, tamper-evident **key-transparency log**, so a server that
