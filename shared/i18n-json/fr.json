@@ -201,6 +201,7 @@
     "scope": { "global": "Ligue", "match": "Ce match" },
     "rooms": { "button": "Salons actifs", "title": "Salons actifs", "none": "Aucune nouvelle activité" },
     "league": { "switch": "Changer de ligue", "title": "Ligues" },
+    "pin": { "pin": "Épingler ce chat", "unpin": "Détacher - suivre la ligue sélectionnée" },
     "empty": "Aucun message pour l'instant. Lancez-vous.",
     "unknownUser": "Quelqu'un",
     "cantDecrypt": "[chiffré - aucune clé sur cet appareil]",

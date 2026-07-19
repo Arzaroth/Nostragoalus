@@ -15,8 +15,12 @@ const route = ref<{ name: string; path: string; params: Record<string, string>; 
   query: {},
 })
 
+const myLeagues = ref<Array<{ id: string; name: string; chatEnabled: boolean }> | undefined>([
+  { id: 'L1', name: 'Alpha', chatEnabled: true },
+  { id: 'L2', name: 'Beta', chatEnabled: true },
+])
 vi.mock('../composables/useSelectedLeague', () => ({
-  useSelectedLeague: () => ({ leagueId: selectedLeagueId }),
+  useSelectedLeague: () => ({ leagueId: selectedLeagueId, leagues: myLeagues }),
   useLeagueSelections: () => leagueSelections,
 }))
 mockNuxtImport('useRoute', () => () => route.value as never)
@@ -79,6 +83,11 @@ async function mount(enabled = true) {
 const bubble = (w: Awaited<ReturnType<typeof mount>>) => w.find('button[aria-label="Open league chat"]')
 
 beforeEach(() => {
+  localStorage.removeItem('ng-chat-pin')
+  myLeagues.value = [
+    { id: 'L1', name: 'Alpha', chatEnabled: true },
+    { id: 'L2', name: 'Beta', chatEnabled: true },
+  ]
   selectedLeagueId.value = 'L1'
   leagueSelections.value = {}
   route.value = { name: 'competition-home', path: '/world-cup-2026', params: {}, query: {} }
@@ -126,5 +135,41 @@ describe('ChatDock', () => {
     focusedMatchId.value = 'M2'
     const w = await mount(true)
     expect(w.text()).toContain('This match')
+  })
+
+  it('pinning holds the league while the rankings filter moves on', async () => {
+    const w = await mount(true)
+    await w.find('[data-testid="chat-pin"]').trigger('click')
+    selectedLeagueId.value = 'L2'
+    await nextTick()
+    expect(w.findComponent(ChatPanelStub).props('leagueId')).toBe('L1')
+  })
+
+  it('unpinning hands the dock back to the rankings filter', async () => {
+    const w = await mount(true)
+    const btn = w.find('[data-testid="chat-pin"]')
+    await btn.trigger('click')
+    selectedLeagueId.value = 'L2'
+    await nextTick()
+    await btn.trigger('click')
+    await nextTick()
+    expect(w.findComponent(ChatPanelStub).props('leagueId')).toBe('L2')
+  })
+
+  it('a pinned global room ignores a multiview cell taking focus', async () => {
+    const w = await mount(true)
+    await w.find('[data-testid="chat-pin"]').trigger('click')
+    focusedMatchId.value = 'M2'
+    await nextTick()
+    expect(w.findComponent(ChatPanelStub).props('matchId')).toBe(null)
+  })
+
+  it('drops the pin once the pinned league is no longer joined', async () => {
+    const w = await mount(true)
+    await w.find('[data-testid="chat-pin"]').trigger('click')
+    myLeagues.value = [{ id: 'L2', name: 'Beta', chatEnabled: true }]
+    selectedLeagueId.value = 'L2'
+    await nextTick()
+    expect(w.findComponent(ChatPanelStub).props('leagueId')).toBe('L2')
   })
 })
