@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [4.4.0] - 2026-07-20
+
 ### Added
 
 - Pin the chat to one conversation: the bookmark in the chat header holds it on the league and thread you are reading, so switching the league filter on the rankings - or focusing another match in multi-view - no longer drags the chat along. The pin follows you across competitions, names the pinned league in the header, and stays put until you unpin it or leave that league.

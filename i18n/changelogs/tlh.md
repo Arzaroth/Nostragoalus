@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [4.4.0] - 2026-07-20
+
 ### chelpu'
 
 - QIn per: QIn nach per DaHIvDI', ghom QInDaq je may' QInDaq QIn bIt. patlh tetlhDaq ghom DawIvqa'chugh, ghap Hoch may' HaSta latlh may' DawIvchugh, QIn tlha'be'. Qu'mey Hoch per lI'; per ghom pong 'agh nach; per Daq, per DaQaw'DI' ghap ghomvo' DamejDI' neH.
