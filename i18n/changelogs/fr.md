@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [4.4.1] - 2026-07-20
+
 ### Corrigé
 
 - La Rétro du tournoi ne termine plus votre ascension sur le mauvais rang. Le graphique du classement ne rejouait que les points de pronostics, si bien que le bonus champion ou meilleur buteur manquait à l'arrivée et que la dernière diapositive pouvait annoncer un rang moins bon que le classement et la carte de partage. Le graphique se termine désormais sur votre classement final réel.
