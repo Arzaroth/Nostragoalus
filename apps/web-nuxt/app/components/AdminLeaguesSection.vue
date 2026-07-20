@@ -249,7 +249,7 @@ const roleOptions = computed(() => [
       :visible="!!managing"
       modal
       :draggable="false"
-      :header="`${t('admin.leagues.manageMembers')} — ${managing?.name ?? ''}`"
+      :header="`${t('admin.leagues.manageMembers')} - ${managing?.name ?? ''}`"
       class="w-full max-w-lg mx-4"
       @update:visible="managing = null"
     >

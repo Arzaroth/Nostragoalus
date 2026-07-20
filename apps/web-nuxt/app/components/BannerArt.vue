@@ -17,7 +17,7 @@ const { skin } = useSkin()
     role="img"
     aria-label="Nostragoalus - the football oracle"
   >
-<title>Nostragoalus — the football oracle</title>
+<title>Nostragoalus - the football oracle</title>
 <defs>
   <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
     <stop offset="0" stop-color="#171436"/><stop offset="0.45" stop-color="#221d4e"/><stop offset="0.75" stop-color="#2b2566"/><stop offset="1" stop-color="#181538"/>

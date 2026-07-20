@@ -171,26 +171,42 @@ with the data caveat noted per area.
 - [x] OpenAPI model codegen + stale-check
 - [x] i18n mirror + stale-check; parity KAT mirror + stale-check. Both use
   `git status --porcelain`, so a newly added locale/KAT fails the check too.
-- [~] On-device KAT replay - `app/integration_test/` (e2ee interop + round-trip,
-  chat identity, KT verify, sign-in) is a MANUAL, device-gated step
-  (`mise run integration`, needs a connected device/emulator). It is deliberately
-  NOT in `mise run gate`, so it does not run unless someone runs it.
+- [x] One copy of the cross-stack logic - `parity/` is a path dependency of the
+  app, and `lib/e2ee/e2ee.dart`, `lib/kt/key_transparency.dart`,
+  `lib/ui/match/timeline_label.dart` re-export it, so the frozen vectors replay
+  against the code the device actually ships (no hand-maintained fork)
+- [~] On-device KAT replay - `app/integration_test/` (e2ee interop against the
+  bundled NATIVE libsodium, chat identity, KT verify, sign-in, main-path e2e) is
+  a MANUAL step (`mise run integration`): every spec left there needs a connected
+  device/emulator, and all but the interop KAT also need a live server with a
+  probe account. Deliberately NOT in `mise run gate`, so it only runs when someone
+  runs it - a release ritual, written down in README.md. The device-independent
+  half moved into the gate as `app/test/e2ee/roundtrip_test.dart` (system
+  libsodium, headless).
+- [~] End-to-end / UI-driving - `integration_test/main_path_test.dart`
+  (`mise run e2e`) drives the real UI through sign in -> fixtures -> save a
+  prediction -> reopen and see it persisted from the server. It is the mobile
+  answer to the web's Playwright layer, but one spec on the main path, and it
+  needs an emulator plus a seeded live server, so it never runs unattended.
 - [!] Signed release build + Play internal (needs an upload keystore + a Play
   account). Until then `android/app/build.gradle.kts` signs release with the
   DEBUG key - never hand that APK to anyone as "the release build".
 - [~] Flutter gate (`mise run gate`) - sequential: model/i18n/KAT stale-checks,
-  `flutter analyze`, `flutter test` (app/test only), `dart test` (parity vectors),
-  `flutter build apk --debug`. Repo has no hosted CI, so this is the by-hand gate.
-  It is NOT equivalent to the web's `pnpm` gate:
-  - it measures **no coverage** and enforces no threshold (the web gate enforces 98%)
+  em-dash check, `flutter analyze`, `flutter test --coverage` + the coverage floor
+  (app/test only), `dart test` (parity vectors), `flutter build apk --debug`.
+  Repo has no hosted CI, so this is the by-hand gate. It is NOT equivalent to the
+  web's `pnpm` gate:
+  - it enforces a **60%** line floor over `lib/` minus `lib/ui/**`, generated
+    models and `main.dart` (the web gate enforces 98% over its logic layers)
   - `app/integration_test/` never runs (see above)
-  - there is no end-to-end/UI-driving suite (the web's Playwright layer)
+  - the end-to-end spec is one main-path spec, and device+server gated (see above)
   - it needs a system libsodium (the parity e2ee interop KATs `dlopen` it) and an
     Android SDK; `mise install` provisions neither.
-- [~] Widget test coverage - smoke + crypto + auth + models + i18n + StatTile +
-  Sessions (data/empty) + Map + Notifications (per-type template) + ShareCard;
-  most of `lib/` (API client, providers, chat/DM, voice, deep links, ~55 of 61
-  `ui/` files) has no gate-run test at all. Tracked in the root `TODO.md`.
+- [~] Widget test coverage - `lib/ui/**` is outside the coverage floor by design
+  (as `app/pages` is on the web). Widget tests exist for smoke + crypto + auth +
+  models + i18n + StatTile + Sessions (data/empty) + Map + Notifications
+  (per-type template) + ShareCard; most `ui/` files still have none. Tracked in
+  the root `TODO.md`.
 
 ## Genuinely external-blocked (not effort)
 - Push (mobile FCM) = server FCM work + Firebase project

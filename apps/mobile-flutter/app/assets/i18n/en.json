@@ -779,7 +779,7 @@
       "body": "Save {home}-{away}? That's a wildly high score - double-check it's what you meant.",
       "confirm": "Save anyway"
     },
-    "adminUpcomingDivider": "Upcoming matches below — only admins see picks before kickoff"
+    "adminUpcomingDivider": "Upcoming matches below - only admins see picks before kickoff"
   },
   "champion": {
     "potential": "Potential: +{n}",
@@ -889,7 +889,7 @@
     "leagueScope": "League",
     "liveProvisional": "LIVE",
     "live": "live",
-    "livePointsHint": "Provisional points from matches in progress — updates as scores change.",
+    "livePointsHint": "Provisional points from matches in progress - updates as scores change.",
     "tiebreakHint": "Players tied on points are split by exact scores, then correct results, then goal difference. Still level after that? They share the rank, and the next place is skipped.",
     "hidden": "{n} hidden player | {n} hidden players",
     "hiddenTip": "Members an admin has hidden from the rankings. They're still in the league and their picks still count in the crowd totals; they just don't appear on the board."
@@ -1625,8 +1625,8 @@
     "createSubmit": "Create",
     "competitionLabel": "Competition",
     "visibilityLabel": "Visibility",
-    "visibilityPrivate": "Private — join by code",
-    "visibilityPublic": "Public — anyone can join and view rankings",
+    "visibilityPrivate": "Private - join by code",
+    "visibilityPublic": "Public - anyone can join and view rankings",
     "members": "Members",
     "memberCount": "{n} member | {n} members",
     "roleOwner": "Owner",
@@ -1813,7 +1813,8 @@
     "inviteTitle": "Invite to voice",
     "inviteNone": "Everyone's already here.",
     "invited": "Invited {name}",
-    "error": { "micDenied": "Microphone access is needed for a call." }
+    "error": { "micDenied": "Microphone access is needed for a call." },
+    "endedInBackground": "Call ended - the app can't keep the microphone on in the background."
   },
   "push": {
     "dm": { "title": "New message", "body": "{name} sent you a message" },

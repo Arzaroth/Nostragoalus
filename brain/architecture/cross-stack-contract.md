@@ -79,19 +79,23 @@ can.
 
 - [apps/web-nuxt/tests/parity/dispatch.ts](../../apps/web-nuxt/tests/parity/dispatch.ts) - name -> pure-
   function registry, so a vector replays with no reference to the impl.
-- [apps/web-nuxt/tests/parity/cases/](../../apps/web-nuxt/tests/parity/cases/) - bless-time input builders
-  (may call the impl to manufacture concrete, self-contained args).
+- [apps/web-nuxt/tests/parity/cases/](../../apps/web-nuxt/tests/parity/cases/) - bless-time input
+  builders. Inputs are LITERAL, so bless is idempotent: re-blessing with no source
+  change rewrites a byte-identical file, and a diff means the semantics moved. The
+  crypto module keeps frozen ciphertexts / sealed key / recovery blob from one
+  real seal run rather than minting a fresh keypair per bless.
 - `*.parity.test.ts` - normal run replays + asserts; `pnpm parity:bless`
   (`PARITY_BLESS=1`) re-freezes after a deliberate semantics change.
 
 Suite factored into
 [apps/web-nuxt/tests/parity/harness.ts](../../apps/web-nuxt/tests/parity/harness.ts) (`parityVectors`);
 `dispatch.ts` marshals `Uint8Array` args/results as `{ $b64 }` so crypto vectors
-cross the JSON boundary. Eight modules: `commitment` (commit-reveal ledger),
+cross the JSON boundary. Nine modules: `commitment` (commit-reveal ledger),
 `key-transparency` (chat-key hash chain), `e2ee` (libsodium interop KATs -
 decrypt/unseal/derive direction, since encrypt/seal is random), `scoring` (the
 points engine), `fergie` (added-time replay), `standings` (group table),
-`consensus` (bot scoreline), `match` (stage/status predicates). Only db-bound
+`consensus` (bot scoreline), `match` (stage/status predicates), `match-view`
+(play-by-play label spec + icon table + the SHOUTED-name formatter). Only db-bound
 logic (criteria, achievements) is out of scope for pure vectors.
 
 ## Dart consumer side
@@ -99,10 +103,18 @@ logic (criteria, achievements) is out of scope for pure vectors.
 [apps/mobile-flutter/parity/](../../apps/mobile-flutter/parity) is the Flutter-side counterpart, fed by
 both artifacts above:
 - `test/parity_test.dart` replays the frozen vectors (read in place from
-  `shared/parity-json`, single source) against Dart ports. `commitment`,
-  `key-transparency`, `match` are ported + pass; the rest are skipped-loudly with
-  a porting recipe in `dispatch.dart` (`e2ee` needs a libsodium binding +
-  `$b64` marshalling).
+  `shared/parity-json`, single source) against the Dart ports in `parity/lib/`,
+  auto-discovering every vector file. All modules are wired except `e2ee`, which
+  is async and needs libsodium, so it replays in its own
+  `test/e2ee_interop_test.dart` (`dlopen` of the system libsodium).
+- `parity/` is a **path dependency of the Flutter app**, not a parallel copy. The
+  app's `lib/e2ee/e2ee.dart`, `lib/kt/key_transparency.dart` and
+  `lib/ui/match/timeline_label.dart` are one-line re-exports of the parity
+  package, so the vectors replay against the exact code the device ships. A fork
+  under `app/lib/` would let the shipped crypto drift from the server with a
+  green gate - that is the failure mode this layer exists to prevent. New
+  cross-stack logic goes in `parity/lib/` + the vector generator + both
+  dispatchers, never in a widget file.
 - `tool/gen_models.sh` generates Dart request/response classes from
   `shared/contracts-openapi/openapi.snapshot.json` (openapi-generator), single-sourcing the wire contract
   from the server's zod.

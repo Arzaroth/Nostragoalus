@@ -774,7 +774,7 @@
       "body": "{home}-{away} yIchoq'a'? mI' tIn law' - yIlegh.",
       "confirm": "vaj yIchoq"
     },
-    "adminUpcomingDivider": "qaStaHvIS lojmIt — admin neH lo'laHbe'"
+    "adminUpcomingDivider": "qaStaHvIS lojmIt - admin neH lo'laHbe'"
   },
   "champion": {
     "potential": "laH: +{n}",
@@ -884,8 +884,8 @@
     "leagueScope": "ghom",
     "liveProvisional": "DaH",
     "live": "DaH",
-    "livePointsHint": "qaStaHvIS may' provisional points — Sumchugh score choH",
-    "tiebreakHint": "rap points luSuqbogh chamwI'pu' — exact score wInoH, ghIq result lugh, ghIq goal difference. rapchugh je? rap patlh luSuq, 'ej patlh veb luchID.",
+    "livePointsHint": "qaStaHvIS may' provisional points - Sumchugh score choH",
+    "tiebreakHint": "rap points luSuqbogh chamwI'pu' - exact score wInoH, ghIq result lugh, ghIq goal difference. rapchugh je? rap patlh luSuq, 'ej patlh veb luchID.",
     "hidden": "{n} So'lu'bogh chamwI'",
     "hiddenTip": "patlhvo' chamwI'pu' So'pu' loHwI'. ghomDaq ratlh 'ej ghom 'ev QInmey lor; patlhDaq cha'lu'be' neH."
   },
@@ -1620,8 +1620,8 @@
     "createSubmit": "yIchenmoH",
     "competitionLabel": "'ovghach",
     "visibilityLabel": "leghlaHghach",
-    "visibilityPrivate": "pegh — ngoqmo' muv",
-    "visibilityPublic": "Sachlaw' — muvlaH 'ej patlh leghlaH Hoch",
+    "visibilityPrivate": "pegh - ngoqmo' muv",
+    "visibilityPublic": "Sachlaw' - muvlaH 'ej patlh leghlaH Hoch",
     "members": "boqwI'pu'",
     "memberCount": "{n} boqwI' | {n} boqwI'pu'",
     "roleOwner": "ghajwI'",
@@ -1657,7 +1657,7 @@
     "onboardSkip": "tugh",
     "crowdLeague": "boq",
     "crowdGlobal": "Hoch",
-    "crowdBonusHint": "reH Hoch QInmey lo' ghom 'ev — boqlIj neH lo'be'.",
+    "crowdBonusHint": "reH Hoch QInmey lo' ghom 'ev - boqlIj neH lo'be'.",
     "modeLabel": "mIw",
     "modeNormal": "motlh",
     "modeNormalDesc": "mI' lugh DaSov 'e' DaHar. QujmeH motlh.",
@@ -1808,7 +1808,8 @@
     "inviteTitle": "wabvaD yIrI'",
     "inviteNone": "naDev Hoch.",
     "invited": "{name} rI'lu'",
-    "error": { "micDenied": "QoymeH jan poQlu'." }
+    "error": { "micDenied": "QoymeH jan poQlu'." },
+    "endedInBackground": "ja'chuq rIn - Hurgh De'wI' 'e' chaw'be'; QoymeH jan lo'laHbe'."
   },
   "push": {
     "dm": { "title": "QIn chu'", "body": "SoHvaD QIn ngeH {name}" },

@@ -55,6 +55,16 @@ description = "Flutter unit + widget tests (app/)"
 dir = "{{ config_root }}/app"
 run = "flutter test"
 
+[tasks.coverage]
+description = "Unit + widget tests with line coverage, checked against the floor in tool/coverage_check.sh"
+dir = "{{ config_root }}/app"
+run = ["flutter test --coverage", "bash tool/coverage_check.sh"]
+
+[tasks.em-dash-check]
+description = "Fail if the em-dash character appears in the locale sources or anywhere under apps/mobile-flutter"
+dir = "{{ config_root }}/app"
+run = "bash tool/no_em_dash.sh"
+
 # The mobile gate, run by hand the way the web gate runs via pnpm (this repo has
 # no hosted CI). Fails on a stale model/i18n/KAT mirror, an analyzer issue, a red
 # unit/widget test, a cross-stack parity regression - e.g. the injector-only-
@@ -69,15 +79,24 @@ run = [
   "cd app && bash tool/gen_models.sh && git diff --exit-code lib/api/models.gen.dart",
   "cd app && bash tool/sync_shared.sh i18n-json i18n --check",
   "cd app && bash tool/sync_shared.sh parity-json parity --check",
+  "cd app && bash tool/no_em_dash.sh",
   "cd app && flutter analyze",
-  "cd app && flutter test",
+  "cd app && flutter test --coverage && bash tool/coverage_check.sh",
   "cd parity && dart test",
   "cd app && flutter build apk --debug",
 ]
 
-# Not in the gate: needs a connected device/emulator. These are the only on-device
-# proof of the e2ee round-trip, chat identity, KT verify and sign-in.
+# Not in the gate: every spec left here needs a connected device/emulator AND a
+# live server (a probe account's credentials). The device-independent crypto that
+# used to live here now runs in the gate as app/test/e2ee/roundtrip_test.dart;
+# what remains is the on-device native-libsodium KAT replay and the three
+# server-backed flows. Run it before a release - see README.md.
 [tasks.integration]
 description = "On-device integration tests (needs a connected device/emulator: flutter devices)"
 dir = "{{ config_root }}/app"
 run = "flutter test integration_test"
+
+[tasks.e2e]
+description = "The main-path UI end-to-end spec on a device/emulator against a live server (see README.md for the required --dart-defines)"
+dir = "{{ config_root }}/app"
+run = "flutter test integration_test/main_path_test.dart"

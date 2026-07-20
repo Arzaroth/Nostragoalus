@@ -577,3 +577,38 @@ See [features/mobile-app.md](features/mobile-app.md).
   friends into the release manifest - Play-Console-flagged declarations for a
   feature marked as never done. Removed with the spike; re-add it when CallKit is
   actually built.
+- **The app imports the parity package; it does not copy it.** The crypto and
+  key-transparency ports used to exist twice - once in `parity/lib/` (what the
+  vectors replay) and once under `app/lib/` (what the device ships). A green gate
+  therefore proved nothing about the shipped code, on the security-critical path.
+  `parity/` is now a path dependency of the app and holds the ONE copy; the
+  app-side files are one-line re-exports. Anything cross-stack (labels included)
+  belongs there, not in a widget file. See
+  [architecture/cross-stack-contract.md](architecture/cross-stack-contract.md).
+- **On mobile, backgrounding ends the call - it does not "keep it running".**
+  Android suspends the microphone for a process that is not in the foreground and
+  holds no foreground service, so the choice was (a) a `FOREGROUND_SERVICE` +
+  `FOREGROUND_SERVICE_MICROPHONE` path (plus `MANAGE_OWN_CALLS` and a
+  ConnectionService for a real call experience, and CallKit on an iOS nobody here
+  can build or verify), or (b) end the call and say so. (b) shipped:
+  `VoiceService.backgrounded()` tears down with reason `backgrounded` and the
+  shell surfaces `voice.endedInBackground` on resume. The rejected middle ground -
+  the earlier 30s grace timer - was the worst of both: the mic was already dead
+  while the bar still said "in call", and the server kept a zombie room member for
+  half a minute. Real background calling is a feature with a permission budget and
+  a Play Console declaration, not a fix, and stays unbuilt until someone wants it
+  enough to justify those permissions (see the `flutter_callkit_incoming` entry
+  above for why they do not ship early).
+- **The TURN credential is refreshed mid-call, on both clients.**
+  `/api/voice/ice-servers` mints a credential valid for `ttl` seconds (3600), and
+  a long call outlives it: the next ICE restart or renegotiation would then have
+  no working relay. Both clients refetch at 90% of the ttl and push the fresh
+  config into the live peer connections instead of only reading it at join. A
+  failed refresh is not fatal - the credential in hand is usually still valid, so
+  the call stays up and the fetch retries.
+- **Parity case inputs are literal, never regenerated.** `cases/e2ee.ts` used to
+  mint a fresh keypair on every `parity:bless`, so the whole vector file churned
+  and buried any real semantic diff. The ciphertexts, sealed key and recovery
+  blob are now frozen constants captured from one real seal run: bless recomputes
+  only `expected`, so a diff means the crypto actually changed. That is also what
+  a KAT is supposed to be.

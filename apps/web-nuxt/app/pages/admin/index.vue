@@ -268,7 +268,7 @@ const { data: allLeaguesData, isPending: leaguesLoading } = useQuery({
     }).then((r) => r.leagues),
 })
 const leagueOptions = computed(() =>
-  (allLeaguesData.value ?? []).map((l) => ({ label: `${l.name} — ${l.competition.name}`, value: l.id })),
+  (allLeaguesData.value ?? []).map((l) => ({ label: `${l.name} - ${l.competition.name}`, value: l.id })),
 )
 const leagueTotal = computed(() => allLeaguesData.value?.length ?? 0)
 
@@ -676,7 +676,7 @@ const counts = computed<Record<string, { total: number; loading: boolean }>>(() 
                   </div>
                   <div v-if="claimPreview" class="rounded-lg border p-2 flex flex-col gap-1 text-xs" style="border-color: var(--p-content-border-color)">
                     <div class="font-medium">{{ t('admin.sso.claimPreviewTitle') }}</div>
-                    <div v-for="(v, k) in claimPreview.mapped" :key="k"><code>{{ k }}</code> → {{ v ?? '—' }}</div>
+                    <div v-for="(v, k) in claimPreview.mapped" :key="k"><code>{{ k }}</code> → {{ v ?? '-' }}</div>
                     <details class="mt-1">
                       <summary class="cursor-pointer" style="color: var(--p-text-muted-color)">{{ t('admin.sso.rawClaims') }}</summary>
                       <pre class="whitespace-pre-wrap break-all mt-1">{{ JSON.stringify(claimPreview.rawClaims, null, 2) }}</pre>
