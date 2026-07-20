@@ -463,7 +463,7 @@ effort buckets; order within a bucket is not priority.
         header-bell `CHAT_MENTION`: the mentioned ids ride as a plaintext sidecar
         (validated against real members, sender dropped), and the alert carries
         room context only, never the E2EE message text.
-      - **Pinned chat room** (in progress, `feat/chat-room-pin`): a bookmark in
+      - **Pinned chat room** (shipped in 4.4.0): a bookmark in
         the dock header freezes the room in view - league AND thread - in
         `ng-chat-pin` (per device), so the rankings league filter and multiview
         focus stop dragging the chat around. Decisions: one pin for the whole
