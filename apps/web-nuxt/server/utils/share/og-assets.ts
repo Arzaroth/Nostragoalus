@@ -1,4 +1,5 @@
 import type { ShareFont } from './render'
+import { fallbackFamilies } from './font-fallback'
 
 // Shared bundled-asset + fallback-font loading for the OG share-card routes
 // (prediction card and wrapped card). Kept in one place so both cards load the
@@ -49,92 +50,68 @@ export function loadShareMark(): Promise<string | null> {
 }
 
 // Bundled fonts cover Latin/Cyrillic/Greek (Inter) and Thai; a username in
-// another script (CJK, Arabic, Hebrew, Indic...) would render as tofu boxes.
-// satori asks for a font per uncovered script via loadAdditionalAsset; fetch the
-// matching Noto subset from Google Fonts (just the needed glyphs), cached for the
-// process. A failure resolves to no font (the glyph tofus, as before) - never a
-// broken render.
-const SCRIPT_FAMILY: Record<string, string> = {
-  ja: 'Noto Sans JP',
-  ko: 'Noto Sans KR',
-  zh: 'Noto Sans SC',
-  'zh-tw': 'Noto Sans TC',
-  'zh-hk': 'Noto Sans HK',
-  th: 'Noto Sans Thai',
-  ar: 'Noto Sans Arabic',
-  he: 'Noto Sans Hebrew',
-  hi: 'Noto Sans Devanagari',
-  bn: 'Noto Sans Bengali',
-  ta: 'Noto Sans Tamil',
-  // satori also classifies non-script runs: "math" covers the stylized
-  // Mathematical Alphanumeric letters people use in display names, "symbol"
-  // the dingbats (✕, ✦...), "emoji" the pictographs (monochrome Noto Emoji -
-  // the card traces glyphs to paths, so a color font would flatten anyway).
-  math: 'Noto Sans Math',
-  symbol: 'Noto Sans Symbols 2',
-  emoji: 'Noto Emoji',
-}
+// another script (CJK, Arabic, Indic, Lisu...), a dingbat or an emoji would
+// render as tofu boxes. satori asks for a font per uncovered run via
+// loadAdditionalAsset; fetch the matching Noto subsets from Google Fonts (just
+// the needed glyphs), cached for the process. Any failure resolves to no font
+// (the glyph tofus, as before) - never a broken render.
 
-// Everything else satori reports as "unknown" - one code for ~140 scripts. Noto
-// names its families after the Unicode script, so read the script off the text
-// itself and derive the family. Only scripts with a matching Google-hosted
-// "Noto Sans <Script>" are listed (verified against the API); the rest, plus
-// text in no script at all, fall through to plain Noto Sans.
-const NOTO_SCRIPTS = `Adlam Anatolian_Hieroglyphs Arabic Armenian Avestan Balinese Bamum Bassa_Vah Batak
-Bengali Bhaiksuki Brahmi Buginese Buhid Canadian_Aboriginal Carian Caucasian_Albanian Chakma Cham
-Cherokee Chorasmian Coptic Cuneiform Cypriot Cypro_Minoan Deseret Devanagari Duployan
-Egyptian_Hieroglyphs Elbasan Elymaic Ethiopic Georgian Glagolitic Gothic Grantha Gujarati
-Gunjala_Gondi Gurmukhi Hanifi_Rohingya Hanunoo Hatran Hebrew Imperial_Aramaic Inscriptional_Pahlavi
-Inscriptional_Parthian Javanese Kaithi Kannada Kawi Kayah_Li Kharoshthi Khmer Khojki Khudawadi Lao
-Lepcha Limbu Linear_A Linear_B Lisu Lycian Lydian Mahajani Malayalam Mandaic Manichaean Marchen
-Masaram_Gondi Medefaidrin Meetei_Mayek Mende_Kikakui Miao Modi Mongolian Mro Multani Myanmar
-Nabataean Nag_Mundari Nandinagari New_Tai_Lue Newa Nushu Ogham Ol_Chiki Old_Hungarian Old_Italic
-Old_North_Arabian Old_Permic Old_Persian Old_Sogdian Old_South_Arabian Old_Turkic Oriya Osage
-Osmanya Pahawh_Hmong Palmyrene Pau_Cin_Hau Phags_Pa Phoenician Psalter_Pahlavi Rejang Runic
-Samaritan Saurashtra Sharada Shavian Siddham SignWriting Sinhala Sogdian Sora_Sompeng Soyombo
-Sundanese Syloti_Nagri Syriac Tagalog Tagbanwa Tai_Le Tai_Tham Tai_Viet Takri Tamil Tangsa Telugu
-Thaana Thai Tifinagh Tirhuta Ugaritic Vai Vithkuqi Wancho Warang_Citi Yi Zanabazar_Square`.split(/\s+/)
-function detectNotoFamily(text: string): string | null {
-  for (const script of NOTO_SCRIPTS) {
-    if (new RegExp(`\\p{Script=${script}}`, 'u').test(text)) return `Noto Sans ${script.replace(/_/g, ' ')}`
-  }
-  return null
-}
-
+// Bounded so a stream of distinct display names cannot grow the process
+// unchecked; the whole map is dropped rather than evicted one by one, since a
+// re-fetch is cheap and the common case is a warm handful of families.
+const CACHE_MAX = 500
+const FETCH_TIMEOUT_MS = 5_000
 const fallbackFontCache = new Map<string, Promise<ShareFont[]>>()
+
+// An sfnt/woff signature. Google answering with anything else (an error page, a
+// woff2) must not reach satori, which throws on an unparseable buffer.
+function isFontBuffer(buf: Buffer): boolean {
+  const tag = buf.subarray(0, 4).toString('binary')
+  return tag === '\x00\x01\x00\x00' || tag === 'true' || tag === 'OTTO' || tag === 'wOFF'
+}
+
 async function fetchGoogleFont(family: string, text: string): Promise<Buffer | null> {
   try {
     // No browser UA, so Google serves a TrueType src (satori can't parse woff2).
     const css = await fetch(
       `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}&text=${encodeURIComponent(text)}`,
+      { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) },
     ).then((r) => (r.ok ? r.text() : ''))
     const url = css.match(/src:\s*url\(([^)]+)\)/)?.[1]
     if (!url) return null
-    const res = await fetch(url)
+    const res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
     if (!res.ok) return null
-    return Buffer.from(await res.arrayBuffer())
+    const buf = Buffer.from(await res.arrayBuffer())
+    return isFontBuffer(buf) ? buf : null
   } catch {
     return null
   }
 }
-function loadFallbackFont(code: string, text: string): Promise<ShareFont[]> {
-  const family =
-    SCRIPT_FAMILY[code.toLowerCase()] ??
-    SCRIPT_FAMILY[code.split('-')[0]!.toLowerCase()] ??
-    detectNotoFamily(text) ??
-    'Noto Sans'
-  const key = `${family}::${text}`
-  let cached = fallbackFontCache.get(key)
-  if (!cached) {
-    cached = (async () => {
-      const data = await fetchGoogleFont(family, text)
-      return data ? [{ name: family, data, weight: 400 as const, style: 'normal' as const }] : []
-    })()
-    fallbackFontCache.set(key, cached)
-  }
-  return cached
+
+function loadFallbackFonts(code: string, text: string): Promise<ShareFont[]> {
+  const families = fallbackFamilies(code, text)
+  const key = `${families.join('|')}::${text}`
+  const cached = fallbackFontCache.get(key)
+  if (cached) return cached
+  const pending = (async () => {
+    const loaded = await Promise.all(
+      families.map(async (family): Promise<ShareFont | null> => {
+        const data = await fetchGoogleFont(family, text)
+        // Each subset is scoped to its own run: satori keys registered fonts by
+        // name, so two runs pulling different subsets of the same family (Noto
+        // Sans for both a symbol run and a Cyrillic one) would collide and one
+        // run's glyphs would tofu.
+        return data ? { name: `${family}#${text}`, data, weight: 400, style: 'normal' } : null
+      }),
+    )
+    return loaded.filter((f) => f !== null)
+  })()
+  if (fallbackFontCache.size >= CACHE_MAX) fallbackFontCache.clear()
+  fallbackFontCache.set(key, pending)
+  return pending
 }
+
 export async function shareLoadAdditionalAsset(code: string, segment: string): Promise<ShareFont[]> {
   if (!segment.trim()) return []
-  return loadFallbackFont(code, segment)
+  return loadFallbackFonts(code, segment)
 }

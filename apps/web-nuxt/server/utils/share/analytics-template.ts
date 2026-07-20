@@ -1,7 +1,7 @@
 import type { AnalyticsCardData } from './analytics-card'
 import type { ShareTranslate } from './i18n'
 import type { ShareLocale } from './token'
-import type { VNode } from './template'
+import { shareName, type VNode } from './template'
 
 // The personal-analytics card element tree (satori consumes it). Pure builder,
 // unit-tested without a database; the OG route feeds the tree to satori. Amber
@@ -61,7 +61,7 @@ export function buildAnalyticsCardElement(card: AnalyticsCardInput, ctx: Analyti
   ]
 
   const center = el('div', { flexDirection: 'column', alignItems: 'center', gap: 26, flexGrow: 1, justifyContent: 'center' }, [
-    el('div', { fontSize: 52, fontWeight: 700, color: INK }, card.displayName),
+    el('div', { fontSize: 52, fontWeight: 700, color: INK }, shareName(card.displayName)),
     el('div', { fontSize: 28, color: MUTED }, card.competitionName),
     el('div', { gap: 20, flexWrap: 'wrap', justifyContent: 'center' }, stats),
   ])

@@ -350,15 +350,6 @@ export async function getWrapped(
     rounds,
     opts.userId,
   )
-  // The replay ranks on prediction points alone; the champion/best-scorer
-  // bonuses only exist at finalize, so the last point takes the real final
-  // standing instead of contradicting the rank the deck just showed.
-  const lastPoint = journey[journey.length - 1]
-  if (lastPoint && rank !== null) {
-    lastPoint.rank = rank
-    lastPoint.players = players
-    lastPoint.points = boardRow.totalPoints
-  }
 
   return {
     ready: true,

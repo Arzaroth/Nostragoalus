@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { WrappedDto, WrappedPickDto } from '#shared/types/wrapped'
 import { REACTION_GLYPHS } from '#shared/reactions'
-import { buildSlides, journeyPolyline, type WrappedSlideType } from '../utils/wrapped-slides'
+import { buildSlides, journeyFinishRank, journeyPolyline, type WrappedSlideType } from '../utils/wrapped-slides'
 import { flagUrl, tierLabel } from '../utils/format'
 
 const props = defineProps<{ wrapped: WrappedDto }>()
@@ -181,7 +181,7 @@ const topEmojiGlyph = computed(() =>
             <polyline :points="polyline" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
           </svg>
           <p class="text-xl font-semibold">
-            {{ t('wrapped.journeyEnd', { rank: wrapped.journey[wrapped.journey.length - 1]!.rank }) }}
+            {{ t('wrapped.journeyEnd', { rank: journeyFinishRank(wrapped) }) }}
           </p>
           <p class="text-sm opacity-70">
             {{ t('wrapped.journeyBest', { rank: Math.min(...wrapped.journey.map((p) => p.rank)) }) }}
