@@ -255,6 +255,10 @@
     "undecryptable": "Impossible de déchiffrer ce message"
   },
   "chat": {
+    "sending": "Envoi…",
+    "notSent": "Non envoyé",
+    "retry": "Réessayer",
+    "discard": "Abandonner",
     "typingSome": "Quelqu'un écrit…",
     "report": "Signaler le message",
     "reported": "Message signalé",

@@ -260,6 +260,10 @@
     "undecryptable": "Can't decrypt this message"
   },
   "chat": {
+    "sending": "Sending…",
+    "notSent": "Not sent",
+    "retry": "Retry",
+    "discard": "Discard",
     "typingSome": "Someone is typing…",
     "report": "Report message",
     "reported": "Message reported",

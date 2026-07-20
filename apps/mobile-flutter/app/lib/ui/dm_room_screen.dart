@@ -4,11 +4,13 @@ import 'package:image_picker/image_picker.dart';
 
 import '../chat/chat_providers.dart' show ChatState;
 import '../chat/dm_providers.dart';
+import '../chat/outbox.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
 import '../voice/voice_service.dart';
 import 'widgets/async_value_view.dart';
 import 'widgets/chat_attachment.dart';
+import 'widgets/outbox_tile.dart';
 import 'widgets/voice_bar.dart';
 
 /// A 1:1 encrypted conversation. Same crypto + display as league chat.
@@ -23,7 +25,6 @@ class DmRoomScreen extends ConsumerStatefulWidget {
 
 class _DmRoomScreenState extends ConsumerState<DmRoomScreen> {
   final _input = TextEditingController();
-  bool _sending = false;
 
   @override
   void initState() {
@@ -48,15 +49,11 @@ class _DmRoomScreenState extends ConsumerState<DmRoomScreen> {
         .pickImage(source: ImageSource.gallery, maxWidth: 1280, maxHeight: 1280, imageQuality: 80);
     if (picked == null) return;
     final bytes = await picked.readAsBytes();
-    setState(() => _sending = true);
-    try {
-      final caption = _input.text.trim();
-      await ref.read(sendDmProvider)(widget.threadId, caption.isEmpty ? '\u{1F5BC}' : caption,
-          image: bytes);
-      _input.clear();
-    } finally {
-      if (mounted) setState(() => _sending = false);
-    }
+    final caption = _input.text.trim();
+    final text = caption.isEmpty ? '\u{1F5BC}' : caption;
+    _input.clear();
+    ref.read(chatOutboxProvider.notifier).enqueue('dm:${widget.threadId}', text,
+        () => ref.read(sendDmProvider)(widget.threadId, text, image: bytes));
   }
 
   /// The id of the caller's newest own message the other participant has read
@@ -101,16 +98,12 @@ class _DmRoomScreenState extends ConsumerState<DmRoomScreen> {
     } catch (_) {/* ignore */}
   }
 
-  Future<void> _send() async {
+  void _send() {
     final text = _input.text.trim();
     if (text.isEmpty) return;
-    setState(() => _sending = true);
-    try {
-      await ref.read(sendDmProvider)(widget.threadId, text);
-      _input.clear();
-    } finally {
-      if (mounted) setState(() => _sending = false);
-    }
+    _input.clear();
+    ref.read(chatOutboxProvider.notifier).enqueue('dm:${widget.threadId}', text,
+        () => ref.read(sendDmProvider)(widget.threadId, text));
   }
 
   @override
@@ -144,16 +137,25 @@ class _DmRoomScreenState extends ConsumerState<DmRoomScreen> {
                   Center(child: Text(context.tr('chat.awaitingKey'), textAlign: TextAlign.center)),
                 ChatState.needsIdentity => const Center(child: CircularProgressIndicator()),
                 ChatState.disabled => Center(child: Text(context.tr('chat.disabled'))),
-                ChatState.ready => view.lines.isEmpty
-                    ? Center(child: Text(context.tr('chat.empty')))
-                    : Builder(builder: (context) {
+                ChatState.ready => Builder(builder: (context) {
                         final self = ref.watch(authControllerProvider).valueOrNull?.id;
                         final seenId = _lastSeenOwnMessage(view, self);
+                        final outbox = ref
+                            .watch(chatOutboxProvider)
+                            .where((e) => e.roomId == 'dm:${widget.threadId}')
+                            .toList();
+                        if (view.lines.isEmpty && outbox.isEmpty) {
+                          return Center(child: Text(context.tr('chat.empty')));
+                        }
                         return ListView.builder(
                           reverse: true,
-                          itemCount: view.lines.length,
+                          itemCount: view.lines.length + outbox.length,
                           itemBuilder: (context, i) {
-                            final line = view.lines[view.lines.length - 1 - i];
+                            if (i < outbox.length) {
+                              return OutboxTile(entry: outbox[outbox.length - 1 - i]);
+                            }
+                            final line =
+                                view.lines[view.lines.length - 1 - (i - outbox.length)];
                             return ListTile(
                               dense: true,
                               title: Column(
@@ -195,7 +197,7 @@ class _DmRoomScreenState extends ConsumerState<DmRoomScreen> {
                     IconButton(
                       icon: const Icon(Icons.image),
                       tooltip: context.tr('chat.image'),
-                      onPressed: _sending ? null : _sendImage,
+                      onPressed: _sendImage,
                     ),
                     Expanded(
                       child: TextField(
@@ -209,11 +211,8 @@ class _DmRoomScreenState extends ConsumerState<DmRoomScreen> {
                       ),
                     ),
                     IconButton(
-                      icon: _sending
-                          ? const SizedBox(
-                              height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Icon(Icons.send),
-                      onPressed: _sending ? null : _send,
+                      icon: const Icon(Icons.send),
+                      onPressed: _send,
                     ),
                   ],
                 ),

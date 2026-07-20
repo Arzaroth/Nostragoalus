@@ -259,6 +259,10 @@
     "undecryptable": "QIn poSmoHlaHbe'."
   },
   "chat": {
+    "sending": "ngeHtaH…",
+    "notSent": "ngeHbe'",
+    "retry": "nud",
+    "discard": "woD",
     "typingSome": "vay' ghItlh…",
     "report": "QIn ghItlh",
     "reported": "QIn ghItlhlu'",

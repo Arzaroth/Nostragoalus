@@ -4,11 +4,13 @@ import 'package:image_picker/image_picker.dart';
 
 import '../api/models.gen.dart';
 import '../chat/chat_providers.dart';
+import '../chat/outbox.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
 import 'thread_screen.dart';
 import 'widgets/async_value_view.dart';
 import 'widgets/chat_attachment.dart';
+import 'widgets/outbox_tile.dart';
 
 /// End-to-end-encrypted league chat. The identity bootstraps automatically on a
 /// device that has never chatted; a fresh device with an escrowed identity is
@@ -103,7 +105,6 @@ class _ChatBody extends ConsumerStatefulWidget {
 class _ChatBodyState extends ConsumerState<_ChatBody> {
   final _input = TextEditingController();
   final _mentions = <String>{};
-  bool _sending = false;
   DateTime? _lastTyping;
 
   // Throttle chat:typing to at most one frame every 2s while composing.
@@ -132,17 +133,16 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
     super.dispose();
   }
 
-  Future<void> _send() async {
+  // Optimistic send: the text shows immediately in the outbox ("Sending…"), then
+  // either lands as the real message or stays as "Not sent" with Retry/Discard.
+  void _send() {
     final text = _input.text.trim();
     if (text.isEmpty) return;
-    setState(() => _sending = true);
-    try {
-      await ref.read(sendChatProvider)(widget.leagueId, text, mentions: _mentions.toList());
-      _input.clear();
-      _mentions.clear();
-    } finally {
-      if (mounted) setState(() => _sending = false);
-    }
+    final mentions = _mentions.toList();
+    _input.clear();
+    _mentions.clear();
+    ref.read(chatOutboxProvider.notifier).enqueue('league:${widget.leagueId}', text,
+        () => ref.read(sendChatProvider)(widget.leagueId, text, mentions: mentions));
   }
 
   Future<void> _sendImage() async {
@@ -150,15 +150,11 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
         .pickImage(source: ImageSource.gallery, maxWidth: 1280, maxHeight: 1280, imageQuality: 80);
     if (picked == null) return;
     final bytes = await picked.readAsBytes();
-    setState(() => _sending = true);
-    try {
-      final caption = _input.text.trim();
-      await ref.read(sendChatProvider)(widget.leagueId, caption.isEmpty ? '\u{1F5BC}' : caption,
-          image: bytes);
-      _input.clear();
-    } finally {
-      if (mounted) setState(() => _sending = false);
-    }
+    final caption = _input.text.trim();
+    final text = caption.isEmpty ? '\u{1F5BC}' : caption;
+    _input.clear();
+    ref.read(chatOutboxProvider.notifier).enqueue('league:${widget.leagueId}', text,
+        () => ref.read(sendChatProvider)(widget.leagueId, text, image: bytes));
   }
 
   Future<void> _pickMention() async {
@@ -287,14 +283,25 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
                 ),
               ChatState.needsIdentity =>
                 const Center(child: CircularProgressIndicator()),
-              ChatState.ready => view.lines.isEmpty
-                  ? Center(child: Text(context.tr('chat.empty')))
-                  : ListView.builder(
-                      reverse: true,
-                      itemCount: view.lines.length,
-                      itemBuilder: (context, i) {
-                        final line = view.lines[view.lines.length - 1 - i];
-                        return ListTile(
+              ChatState.ready => Builder(builder: (context) {
+                final outbox = ref
+                    .watch(chatOutboxProvider)
+                    .where((e) => e.roomId == 'league:${widget.leagueId}')
+                    .toList();
+                if (view.lines.isEmpty && outbox.isEmpty) {
+                  return Center(child: Text(context.tr('chat.empty')));
+                }
+                return ListView.builder(
+                  reverse: true,
+                  itemCount: view.lines.length + outbox.length,
+                  itemBuilder: (context, i) {
+                    // Reverse list: i=0 is the newest (bottom). Pending outbox
+                    // entries sit below the delivered messages.
+                    if (i < outbox.length) {
+                      return OutboxTile(entry: outbox[outbox.length - 1 - i]);
+                    }
+                    final line = view.lines[view.lines.length - 1 - (i - outbox.length)];
+                    return ListTile(
                           dense: true,
                           title: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -330,7 +337,8 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
                           onLongPress: () => _messageActions(line),
                         );
                       },
-                    ),
+                    );
+                  }),
             },
           ),
         ),
@@ -353,7 +361,7 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
                   IconButton(
                     icon: const Icon(Icons.image),
                     tooltip: context.tr('chat.image'),
-                    onPressed: _sending ? null : _sendImage,
+                    onPressed: _sendImage,
                   ),
                   IconButton(
                     icon: const Icon(Icons.alternate_email),
@@ -373,11 +381,8 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
                     ),
                   ),
                   IconButton(
-                    icon: _sending
-                        ? const SizedBox(
-                            height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Icon(Icons.send),
-                    onPressed: _sending ? null : _send,
+                    icon: const Icon(Icons.send),
+                    onPressed: _send,
                   ),
                 ],
               ),

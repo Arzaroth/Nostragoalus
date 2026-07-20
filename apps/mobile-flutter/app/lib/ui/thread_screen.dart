@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../chat/chat_providers.dart';
+import '../chat/outbox.dart';
 import '../i18n/i18n_scope.dart';
 import 'widgets/async_value_view.dart';
 import 'widgets/chat_attachment.dart';
+import 'widgets/outbox_tile.dart';
 
 /// One chat thread: the messages under a root message, with a compose box that
 /// posts replies into the same thread (threadId = the root message id).
@@ -18,7 +20,8 @@ class ThreadScreen extends ConsumerStatefulWidget {
 
 class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   final _input = TextEditingController();
-  bool _sending = false;
+
+  String get _room => 'thread:${widget.leagueId}:${widget.threadId}';
 
   @override
   void dispose() {
@@ -26,16 +29,12 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     super.dispose();
   }
 
-  Future<void> _send() async {
+  void _send() {
     final text = _input.text.trim();
     if (text.isEmpty) return;
-    setState(() => _sending = true);
-    try {
-      await ref.read(sendChatProvider)(widget.leagueId, text, threadId: widget.threadId);
-      _input.clear();
-    } finally {
-      if (mounted) setState(() => _sending = false);
-    }
+    _input.clear();
+    ref.read(chatOutboxProvider.notifier).enqueue(_room, text,
+        () => ref.read(sendChatProvider)(widget.leagueId, text, threadId: widget.threadId));
   }
 
   @override
@@ -50,13 +49,20 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
               value: thread,
               onRetry: () =>
                   ref.invalidate(leagueThreadProvider((widget.leagueId, widget.threadId))),
-              data: (lines) => lines.isEmpty
-                  ? Center(child: Text(context.tr('chat.empty')))
-                  : ListView.builder(
-                      itemCount: lines.length,
-                      itemBuilder: (context, i) {
-                        final line = lines[i];
-                        return ListTile(
+              data: (lines) => Builder(builder: (context) {
+                final outbox =
+                    ref.watch(chatOutboxProvider).where((e) => e.roomId == _room).toList();
+                if (lines.isEmpty && outbox.isEmpty) {
+                  return Center(child: Text(context.tr('chat.empty')));
+                }
+                return ListView.builder(
+                  itemCount: lines.length + outbox.length,
+                  itemBuilder: (context, i) {
+                    if (i >= lines.length) {
+                      return OutboxTile(entry: outbox[i - lines.length]);
+                    }
+                    final line = lines[i];
+                    return ListTile(
                           dense: true,
                           title: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,7 +83,8 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                           subtitle: Text(line.createdAt),
                         );
                       },
-                    ),
+                    );
+                  }),
             ),
           ),
           SafeArea(
@@ -98,11 +105,8 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                     ),
                   ),
                   IconButton(
-                    icon: _sending
-                        ? const SizedBox(
-                            height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Icon(Icons.send),
-                    onPressed: _sending ? null : _send,
+                    icon: const Icon(Icons.send),
+                    onPressed: _send,
                   ),
                 ],
               ),
