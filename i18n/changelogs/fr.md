@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [4.4.0] - 2026-07-20
+
 ### Ajouté
 
 - Épinglez le chat sur une conversation : le marque-page dans l'en-tête du chat le maintient sur la ligue et le fil que vous lisez, si bien que changer le filtre de ligue dans le classement, ou mettre un autre match en avant en multi-vue, n'emporte plus le chat avec lui. L'épingle vous suit d'une compétition à l'autre, nomme la ligue épinglée dans l'en-tête et reste en place jusqu'à ce que vous la retiriez ou quittiez cette ligue.
