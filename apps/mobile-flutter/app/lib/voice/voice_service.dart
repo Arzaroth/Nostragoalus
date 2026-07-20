@@ -1,105 +1,220 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
-import 'package:web_socket_channel/io.dart';
 
 import '../api/nostragoalus_api.dart';
 import '../api/token_store.dart';
-import '../config.dart';
+import '../live/live_service.dart';
+import 'voice_call_state.dart';
 import 'voice_mesh.dart';
 
-/// A voice room to join (a league room, or a 1:1 DM call).
-class VoiceScope {
-  const VoiceScope({required this.kind, this.leagueId, this.matchId, this.threadId});
-  final String kind; // 'league' | 'dm'
-  final String? leagueId;
-  final String? matchId;
-  final String? threadId;
+export 'voice_call_state.dart';
 
-  factory VoiceScope.fromJson(Map<String, dynamic> j) => VoiceScope(
-        kind: (j['kind'] ?? 'dm').toString(),
-        leagueId: j['leagueId'] as String?,
-        matchId: j['matchId'] as String?,
-        threadId: j['threadId'] as String?,
-      );
+typedef VoiceMediaFactory = Future<MediaStream> Function();
+typedef VoicePeerFactory = Future<RTCPeerConnection> Function(Map<String, dynamic> config);
 
-  Map<String, dynamic> toJson() => {
-        'kind': kind,
-        if (leagueId != null) 'leagueId': leagueId,
-        if (matchId != null) 'matchId': matchId,
-        if (threadId != null) 'threadId': threadId,
-      };
+/// A `join()` that never got off the ground. `micDenied` separates the one
+/// failure the user can act on from everything else.
+class VoiceJoinException implements Exception {
+  const VoiceJoinException(this.micDenied, this.cause);
+  final bool micDenied;
+  final Object cause;
+
+  @override
+  String toString() => 'VoiceJoinException(micDenied: $micDenied, $cause)';
 }
+
+Future<MediaStream> _defaultMedia() =>
+    navigator.mediaDevices.getUserMedia({'audio': true, 'video': false});
 
 /// WebRTC mesh voice over the server signaling hub (voice:* frames). One
 /// RTCPeerConnection per peer; the deterministic offerer avoids glare. Audio
 /// only; the remote tracks play through the device automatically.
+///
+/// Signaling rides the shared [LiveService] socket (see [attach]): the server
+/// seats one socket per user per room and ref-counts presence per connection,
+/// so a second socket of our own would fight the first.
 class VoiceService {
-  VoiceService(this._api, this._tokens, this._selfId);
+  /// `tokens` is unused since the signaling moved onto the shared LiveService
+  /// socket; the positional slot stays until providers.dart drops the argument.
+  VoiceService(
+    this._api,
+    // ignore: avoid_unused_constructor_parameters
+    TokenStore tokens,
+    this._selfId, {
+    VoiceMediaFactory? media,
+    VoicePeerFactory? peers,
+    this.ringTimeout = const Duration(seconds: 30),
+    this.reconnectGrace = const Duration(seconds: 20),
+  })  : _media = media ?? _defaultMedia,
+        _peerFactory = peers ?? createPeerConnection;
 
   final NostragoalusApi _api;
-  final TokenStore _tokens;
   final String _selfId;
+  final VoiceMediaFactory _media;
+  final VoicePeerFactory _peerFactory;
 
-  IOWebSocketChannel? _socket;
+  /// How long an unanswered outgoing ring lasts (matches the web's
+  /// RING_TIMEOUT_MS) and how long a dropped socket may take to come back
+  /// before the call is declared lost.
+  final Duration ringTimeout;
+  final Duration reconnectGrace;
+
+  LiveService? _live;
+  StreamSubscription<LiveFrame>? _frameSub;
   MediaStream? _local;
   Map<String, dynamic>? _iceConfig;
-  VoiceScope? _scope;
   final Map<String, RTCPeerConnection> _peers = {};
+  final Set<String> _pendingInvites = {};
+  Timer? _ringTimer;
+  Timer? _reconnectTimer;
+  bool _disposed = false;
 
-  /// Current participant ids (incl. self) and mute state, for the call bar.
-  final ValueNotifier<List<String>> roster = ValueNotifier(const []);
-  final ValueNotifier<bool> muted = ValueNotifier(false);
-  final ValueNotifier<bool> inCall = ValueNotifier(false);
+  /// The whole call in one value, for the call bar.
+  final ValueNotifier<VoiceCallState> state = ValueNotifier(const VoiceIdle());
 
-  bool get isActive => _scope != null;
+  VoiceScope? get activeScope => state.value.scope;
+
+  /// Bind the shared hub socket. Called once by the app shell; a join before it
+  /// throws rather than silently opening a second connection.
+  void attach(LiveService live) {
+    if (identical(_live, live)) return;
+    unawaited(_frameSub?.cancel());
+    _live = live;
+    _frameSub = live.frames.listen(_onFrame);
+  }
 
   Future<void> join(VoiceScope scope) async {
-    if (_scope != null) await leave();
-    _scope = scope;
-    _iceConfig = {'iceServers': await _api.iceServers()};
-    _local = await navigator.mediaDevices.getUserMedia({'audio': true, 'video': false});
-    _openSocket();
-    inCall.value = true;
+    final live = _live;
+    if (live == null) throw StateError('VoiceService.attach() was not called');
+    if (state.value.scope != null) await leave();
+    _set(VoiceConnecting(scope));
+    var atMic = false;
+    try {
+      // A call with no STUN/TURN fails mysteriously behind NAT minutes later;
+      // fail here instead.
+      final servers = await _api.iceServers();
+      if (servers.isEmpty) throw StateError('no ICE servers configured');
+      _iceConfig = {'iceServers': servers.map((s) => s.toJson()).toList()};
+      atMic = true;
+      _local = await _media();
+      atMic = false;
+      live.connect();
+      live.send({'type': 'voice:join', 'scope': scope.toJson()});
+      _set(VoiceInCall(scope: scope, roster: const [], muted: false, startedAt: DateTime.now()));
+    } catch (e) {
+      await _teardown(VoiceEndReason.failed);
+      throw VoiceJoinException(atMic, e);
+    }
   }
 
   /// Place an outgoing call: join the scope, then ring the given users so they
-  /// get a voice:ring push.
+  /// get a voice:ring push. An unanswered ring is cancelled after [ringTimeout]
+  /// so the callee's phone stops ringing and the miss gets logged.
   Future<void> invite(VoiceScope scope, List<String> userIds) async {
     await join(scope);
-    _send({'type': 'voice:invite', 'scope': scope.toJson(), 'userIds': userIds});
+    _pendingInvites
+      ..clear()
+      ..addAll(userIds.where((id) => id != _selfId));
+    _live?.send({'type': 'voice:invite', 'scope': scope.toJson(), 'userIds': userIds});
+    _ringTimer?.cancel();
+    _ringTimer = Timer(ringTimeout, () => unawaited(_teardown(VoiceEndReason.cancelled)));
   }
 
-  void _openSocket() {
-    final token = _tokens.token;
-    final headers = token != null ? {'Authorization': 'Bearer $token'} : null;
-    final socket = IOWebSocketChannel.connect(Uri.parse(AppConfig.wsUrl), headers: headers);
-    _socket = socket;
-    socket.stream.listen(_onFrame, onDone: leave, onError: (_) => leave(), cancelOnError: true);
-    _send({'type': 'voice:join', 'scope': _scope!.toJson()});
+  Future<void> leave() => _teardown(VoiceEndReason.hangUp);
+
+  void toggleMute() {
+    final current = state.value;
+    if (current is! VoiceInCall) return;
+    final muted = !current.muted;
+    _set(current.copyWith(muted: muted));
+    for (final t in _local?.getAudioTracks() ?? const <MediaStreamTrack>[]) {
+      t.enabled = !muted;
+    }
   }
 
-  Future<void> _onFrame(dynamic data) async {
-    final frame = jsonDecode(data as String);
-    if (frame is! Map<String, dynamic>) return;
+  Future<void> _onFrame(LiveFrame frame) async {
     switch (frame['type']) {
+      case 'live:closed':
+        _onSocketLost();
+      case 'live:open':
+        await _onSocketBack();
       case 'voice:roster':
+        if (!_isOurScope(frame['scope'])) return;
         await _applyRoster(((frame['roster'] as List?) ?? const []).cast<String>());
       case 'voice:signal':
+        if (state.value.scope == null) return;
         await _onSignal(frame['from'] as String, frame['kind'] as String, frame['payload']);
       case 'voice:ended':
+        await _teardown(VoiceEndReason.ended, notifyServer: false);
       case 'voice:evicted':
-        await leave();
+        await _teardown(VoiceEndReason.evicted, notifyServer: false);
+      case 'voice:declined':
+        await _onDeclined(frame['from']);
       case 'voice:peer-reset':
-        final id = frame['from'];
-        if (id is String) await _dropPeer(id);
+        // A takeover leaves the roster userIds unchanged, so the next roster
+        // frame carries no delta: rebuild the link here or it is gone for good.
+        final id = frame['userId'];
+        if (id is String && state.value.scope != null) {
+          await _dropPeer(id);
+          await _ensurePeer(id);
+        }
+    }
+  }
+
+  bool _isOurScope(dynamic raw) {
+    final scope = state.value.scope;
+    if (scope == null || raw is! Map) return false;
+    return VoiceScope.fromJson(raw.cast<String, dynamic>()) == scope;
+  }
+
+  void _onSocketLost() {
+    final current = state.value;
+    if (current is! VoiceInCall && current is! VoiceConnecting) return;
+    final scope = current.scope!;
+    _set(VoiceConnecting(scope,
+        reconnecting: true, muted: current is VoiceInCall ? current.muted : false));
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer(
+      reconnectGrace,
+      () => unawaited(_teardown(VoiceEndReason.networkLost, notifyServer: false)),
+    );
+  }
+
+  Future<void> _onSocketBack() async {
+    final current = state.value;
+    if (current is! VoiceConnecting || !current.reconnecting) return;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    // The server ended our room membership when the old socket closed, so every
+    // peer link is dead; the fresh roster rebuilds them.
+    for (final id in _peers.keys.toList()) {
+      await _dropPeer(id);
+    }
+    _live?.send({'type': 'voice:join', 'scope': current.scope.toJson()});
+    _set(VoiceInCall(
+        scope: current.scope, roster: const [], muted: current.muted, startedAt: DateTime.now()));
+  }
+
+  Future<void> _onDeclined(dynamic from) async {
+    final current = state.value;
+    if (from is! String || current is! VoiceInCall) return;
+    _pendingInvites.remove(from);
+    if (_pendingInvites.isEmpty && !current.established) {
+      await _teardown(VoiceEndReason.declined);
     }
   }
 
   Future<void> _applyRoster(List<String> ids) async {
-    roster.value = ids;
+    final current = state.value;
+    if (current is! VoiceInCall) return;
+    _set(current.copyWith(roster: ids));
+    _pendingInvites.removeAll(ids);
+    if (_pendingInvites.isEmpty) {
+      _ringTimer?.cancel();
+      _ringTimer = null;
+    }
     final delta = rosterDelta(_peers.keys, ids, _selfId);
     for (final id in delta.added) {
       await _ensurePeer(id);
@@ -113,17 +228,17 @@ class VoiceService {
     final existing = _peers[peerId];
     if (existing != null) return existing;
 
-    final pc = await createPeerConnection(_iceConfig ?? {});
+    final pc = await _peerFactory(_iceConfig ?? const {});
     _peers[peerId] = pc;
-    for (final track in _local?.getTracks() ?? const []) {
+    for (final track in _local?.getTracks() ?? const <MediaStreamTrack>[]) {
       await pc.addTrack(track, _local!);
     }
     pc.onIceCandidate = (c) {
       if (c.candidate == null) return;
-      _send({
+      _live?.send({
         'type': 'voice:signal',
         'to': peerId,
-        'kind': 'candidate',
+        'kind': 'ice',
         'payload': {
           'candidate': c.candidate,
           'sdpMid': c.sdpMid,
@@ -137,7 +252,7 @@ class VoiceService {
     if (shouldOffer(_selfId, peerId)) {
       final offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-      _send({
+      _live?.send({
         'type': 'voice:signal',
         'to': peerId,
         'kind': 'offer',
@@ -155,7 +270,7 @@ class VoiceService {
         await pc.setRemoteDescription(RTCSessionDescription(p['sdp'] as String, p['type'] as String));
         final answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
-        _send({
+        _live?.send({
           'type': 'voice:signal',
           'to': from,
           'kind': 'answer',
@@ -163,7 +278,7 @@ class VoiceService {
         });
       case 'answer':
         await pc.setRemoteDescription(RTCSessionDescription(p['sdp'] as String, p['type'] as String));
-      case 'candidate':
+      case 'ice':
         await pc.addCandidate(
             RTCIceCandidate(p['candidate'] as String?, p['sdpMid'] as String?, p['sdpMLineIndex'] as int?));
     }
@@ -174,43 +289,48 @@ class VoiceService {
     await pc?.close();
   }
 
-  void toggleMute() {
-    muted.value = !muted.value;
-    for (final t in _local?.getAudioTracks() ?? const []) {
-      t.enabled = !muted.value;
+  Future<void> _teardown(VoiceEndReason reason, {bool notifyServer = true}) async {
+    final scope = state.value.scope;
+    if (scope == null) return;
+    // Publish the terminal state BEFORE the first await: the notifier may be
+    // disposed while the teardown below is still running.
+    _set(VoiceEnding(reason));
+    _ringTimer?.cancel();
+    _ringTimer = null;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    if (notifyServer) {
+      // An unanswered ring is cancelled, not just left: that is what makes the
+      // callee's phone stop and records the missed call.
+      for (final id in _pendingInvites) {
+        _live?.send({'type': 'voice:cancel', 'scope': scope.toJson(), 'to': id});
+      }
+      _live?.send({'type': 'voice:leave'});
     }
-  }
-
-  void _send(Map<String, dynamic> message) {
-    try {
-      _socket?.sink.add(jsonEncode(message));
-    } catch (_) {/* socket closing */}
-  }
-
-  Future<void> leave() async {
-    if (_scope == null) return;
-    _send({'type': 'voice:leave', 'scope': _scope!.toJson()});
+    _pendingInvites.clear();
     for (final pc in _peers.values) {
       await pc.close();
     }
     _peers.clear();
-    for (final t in _local?.getTracks() ?? const []) {
+    for (final t in _local?.getTracks() ?? const <MediaStreamTrack>[]) {
       await t.stop();
     }
     await _local?.dispose();
-    await _socket?.sink.close();
     _local = null;
-    _socket = null;
-    _scope = null;
-    roster.value = const [];
-    muted.value = false;
-    inCall.value = false;
+    _iceConfig = null;
+    _set(const VoiceIdle());
   }
 
-  void dispose() {
-    leave();
-    roster.dispose();
-    muted.dispose();
-    inCall.dispose();
+  void _set(VoiceCallState next) {
+    if (_disposed) return;
+    state.value = next;
+  }
+
+  Future<void> dispose() async {
+    await _teardown(VoiceEndReason.hangUp);
+    _disposed = true;
+    await _frameSub?.cancel();
+    _frameSub = null;
+    state.dispose();
   }
 }
