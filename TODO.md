@@ -2845,7 +2845,12 @@ majors a HIGH advisory forced: `nuxt` 4.4.7 -> 4.5.2 and `nodemailer` 8 -> 9.
 
 The big one, and the reason everything below is possible:
 
-- [ ] **The mobile gate measures no coverage at all**, and roughly 88% of the
+- [ ] **The mobile gate measures no coverage at all.** The fix pass took the
+      suite from 33 cases to 267 (plus 128 parity cases) and every subsystem
+      below now has some coverage, but there is still no `flutter test
+      --coverage` and no threshold, against a web side that enforces 98%. Add
+      the measurement to `mise run gate` first, then a floor.
+- [ ] Historical note, kept for the number: at review time roughly 88% of the
       ~10.9k hand-written Dart lines in `app/lib/` have no gate-run test
       (`models.gen.dart` excluded). No `flutter test --coverage`, no threshold,
       against a web side that enforces 98%. Add coverage measurement to
@@ -2855,7 +2860,7 @@ The big one, and the reason everything below is possible:
       `e2ee/e2ee.dart`, `voice/voice_service.dart`, `live/live_service.dart`,
       `deeplink/deep_links.dart`, `auth/sso.dart`, `kt/kt_providers.dart`,
       `tool/gen_models.dart`, and ~55 of 61 `ui/` files.
-- [ ] Highest-value first tests: the `ChatOutbox` state machine (the web's
+- [x] Highest-value first tests: the `ChatOutbox` state machine (the web's
       equivalent shipped with two review-caught bugs in exactly this logic), an
       `i18n` key-resolution test asserting every `context.tr('...')` literal in
       `lib/` resolves to a String in `en.json`, and the mutating API contracts
@@ -2870,7 +2875,7 @@ The big one, and the reason everything below is possible:
       copies are replayed against the frozen vectors, so the app's crypto can
       drift from the TS server with a green gate. Make `parity/` a path
       dependency of `app/pubspec.yaml` and delete the forks.
-- [ ] `app/tool/gen_models.dart` is 402 lines of bespoke schema walking, union
+- [x] `app/tool/gen_models.dart` is 402 lines of bespoke schema walking, union
       detection, structural dedup and singularisation with no test of its own,
       opening with two `ignore_for_file` lint suppressions. Either add a golden
       test (small fixture schema in -> expected Dart out) or evaluate
@@ -2883,10 +2888,58 @@ The big one, and the reason everything below is possible:
       `shared/i18n-json` source (`chat.adminUpcomingDivider`,
       `leaderboard.livePointsHint`, `league.visibilityPrivate/Public`). Fix at
       the source, in all five locales.
-- [ ] `flutter analyze` under the newly enabled `strict-casts`/`strict-raw-types`
+- [x] `flutter analyze` under the newly enabled `strict-casts`/`strict-raw-types`
       surfaces ~21 issues (mostly `strict_raw_type` on bare `Map`/`List` in
       `kt/key_transparency.dart`, `ui/league_detail_screen.dart`,
       `ui/league_rewards_editor_screen.dart`, `ui/match_detail_screen.dart`,
       `ui/compare_screen.dart`). Type them properly rather than loosening the
       analyzer back.
 - [ ] No end-to-end / UI-driving suite at all, the Playwright layer's equivalent.
+
+Deferred by the review fix pass (each was a deliberate call, not an oversight):
+
+- [ ] **Mobile SSO has never worked and needs a server route.** better-auth's SSO
+      callback redirects to `callbackURL` verbatim with no token - the session is
+      a cookie, and `bearer()` only sets a header on direct API calls. The old
+      client read `token ?? set-auth-token ?? session`, none of which could ever
+      match, and returned `false` silently. The app half (a `Random.secure()`
+      state round-trip, a pinned token param, thrown `SsoException`s) is done;
+      the server needs a `/sso-callback` route that mints the bearer and
+      redirects back. Ship it as a verified App Link, not the `nostragoalus://`
+      private scheme, which any Android app can register.
+- [ ] `apps/web-nuxt/tests/parity/cases/e2ee.ts` is non-deterministic: a
+      `pnpm parity:bless` regenerates every keypair, so `e2ee.json` churns
+      wholesale and hides the real diff. Make the inputs literal so bless is
+      idempotent.
+- [ ] `api/nostragoalus_api.dart` is a ~500-line god-facade over eight unrelated
+      features, every method a one-line forward. Split into per-feature
+      `extension`s on `ApiClient`. Not done during the review because every UI
+      file calls through it and they were all being edited concurrently.
+- [ ] The 51 contract fields with a closed value set are still `String?`, now
+      carrying a generated `<field>Values` constant beside them. Promote to real
+      Dart enums with an `unknown` member now that the UI files have settled.
+- [ ] `_LiveDetailTab` renders an opaque `Map<String, dynamic>` with string
+      poking helpers, and drops feed stat keys it cannot label. Give the endpoint
+      a real schema in `shared/contracts-openapi/` and regenerate. Same for the
+      chat-report and attachment endpoints, which the crypto layer parses with
+      local DTOs.
+- [ ] The timeline label logic (a port of `pbpTextSpec`/`TIMELINE_ICONS`) lives
+      in `ui/match/timeline_label.dart`. It is canonical cross-stack logic and
+      belongs in `parity/lib/` with golden vectors like scoring and standings.
+- [ ] Chat messages render no author for a non-member and no reaction totals:
+      `ChatLine` needs `authorName`/`authorImage` and a reactions map (the UI
+      sends reactions but cannot display them). Same for moderation rows.
+- [ ] `leagueDetailProvider` is the one family left without `autoDispose`,
+      because `ui/league_chat_screen.dart` `ref.read`s it unwatched.
+- [ ] Voice: the TURN credential TTL is ignored for the lifetime of a call, and
+      there is no background-audio path (no CallKit/ConnectionService, so
+      backgrounding on Android kills the mic). An `AppLifecycleListener` leaves
+      the call instead; document or build the real thing before anyone relies on
+      long calls.
+- [ ] `mise run models-check` exists but nothing calls it unattended; wire the
+      workflow when this repo gains hosted CI.
+- [ ] DM typing indicators need a server `chat:typing` frame scoped to a thread;
+      only league chat has one today.
+- [ ] The KT head pin is per-install (`ng_kt_head`), so a fresh install cannot
+      catch a from-genesis log rewrite. Same documented limit as the web.
+
