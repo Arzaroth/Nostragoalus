@@ -337,6 +337,12 @@ per-match `FergieMatch`, not a `highlight()`-shaped swing).
 - [ ] **No e2e for the cross-competition pin**: the spec covers pin/unpin/re-pin and
       reload within one competition. The "follows you across competitions" claim and
       the pinned-match paths are only covered by component tests.
+- [ ] **The pinned room has no VISIBLE name** (4.4.3): the header lost the league name
+      beside the bookmark (it overflowed the 24rem dock), so a dock pinned to league B
+      while the page shows league A is only distinguishable via the league switcher's
+      tooltip and `aria-label` - neither reaches a touch user. Options: name the room
+      in the panel body instead of the header, or an icon-only scope toggle below a
+      width threshold to buy the room back.
 
 ## Cross-league chat inbox (deferred from the feature-treatment review)
 

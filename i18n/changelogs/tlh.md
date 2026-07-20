@@ -5,6 +5,11 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### chIlmoHta'
+
+- ghomHomlIjmey De' HaSta 'e' Da'angDI' ja'chuq Sopwelh chIlbe'. epInmoHta'bogh ja'chuq Hoch HaSta pa' ratlh, ghom HaSta je.
+- ja'chuq nach 'ay' luDaq chu'qu': mach 'ej tlheDmoH SeHlaw poSDaq luteqlu'pu'. epInmoHta'bogh ghom pong DaH Sovbe'; ghom wIvwI' ghom pong 'angtaH.
+
 ## [4.4.2] - 2026-07-20
 
 ### tI'pu'

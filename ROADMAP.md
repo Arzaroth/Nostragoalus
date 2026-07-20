@@ -470,8 +470,9 @@ effort buckets; order within a bucket is not priority.
         room (not separate league/match pins); it survives a competition switch
         on purpose (the pinned conversation is the one you keep reading); explicit
         in-dock navigation re-points the pin instead of being blocked by it; the
-        pinned league's name shows in the header so the dock disagreeing with the
-        page is legible; leaving that league drops the pin.
+        pinned room is named by the dock's league switcher (4.4.3 dropped the
+        name beside the bookmark - the header had no width for it); leaving that
+        league drops the pin.
 - [x] **Voice chat** (shipped in 3.0.0): audio calls in the
       chat surface - 1:1 from a DM, and small group rooms in a league (optionally
       match-scoped, "watch together"). Decisions (locked):

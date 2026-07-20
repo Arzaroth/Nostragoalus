@@ -1,8 +1,8 @@
 <script setup lang="ts">
 // Floating, collapsible league chat. Bottom-right, collapsed by default, shown
-// on competition pages once a league is selected and its chat is enabled. The
-// league detail page keeps its own inline panel, so the dock stays out of its
-// way there. Whenever a league is resolved the inner ChatPanel is kept mounted
+// once a league is selected and its chat is enabled. A league detail page keeps
+// its own inline panel, so the dock stands down for THAT league there and
+// nothing else. Whenever a league is resolved the inner ChatPanel is kept mounted
 // (its container is only hidden, never torn down) so its live socket stays open:
 // that is what lets a keyholder re-seal the group key for a newcomer without
 // opening the chat first, and what makes an admin's enable/disable reflect live
@@ -43,11 +43,17 @@ const pin = useStorage<ChatPin | null>('ng-chat-pin', null, undefined, {
   listenToStorageChanges: false,
 })
 
-// The league detail/list pages render the chat inline; don't double it there.
-const onLeaguePages = computed(() => route.path === '/leagues' || route.path.startsWith('/leagues/'))
-const leagueId = computed<string | null>(() =>
-  onLeaguePages.value ? null : (pin.value?.leagueId ?? selectedLeagueId.value),
+// A league detail page renders THAT league's chat inline; the dock stands down
+// only for that one room, so two ChatPanels never share a league (two live
+// panels would each run the auto-rotate and key-request paths). Every other
+// /leagues route, and a pin held on any other league, keeps its chat.
+const inlineLeagueId = computed<string | null>(() =>
+  String(route.name) === 'leagues-id' ? ((route.params.id as string) ?? null) : null,
 )
+const leagueId = computed<string | null>(() => {
+  const id = pin.value?.leagueId ?? selectedLeagueId.value
+  return id && id === inlineLeagueId.value ? null : id
+})
 
 // The focused multiview cell wins; otherwise a match detail route unlocks the
 // Global/Match scope toggle. Either way there's a single match thread in view.
@@ -286,10 +292,19 @@ const dm = useDmInbox()
 const toast = useToast()
 // League mode needs a resolved league; without one, only Direct is available.
 const mode = ref<'league' | 'direct'>('league')
+// A forced flip is undone when a league comes back (walking onto a league's own
+// page must not strand the dock in DMs); an explicit switch is not.
+let forcedDirect = false
 watch(
   leagueId,
   (l) => {
-    if (!l) mode.value = 'direct'
+    if (!l) {
+      forcedDirect = mode.value === 'league'
+      mode.value = 'direct'
+    } else if (forcedDirect) {
+      forcedDirect = false
+      mode.value = 'league'
+    }
   },
   { immediate: true },
 )
@@ -307,6 +322,7 @@ async function openDock() {
 }
 function switchMode(m: 'league' | 'direct') {
   mode.value = m
+  forcedDirect = false
   if (m === 'direct') {
     void dm.ensureIdentity()
     if (dmView.value === 'thread' && !dmThreadId.value) dmView.value = 'inbox'
@@ -435,7 +451,7 @@ const bubbleTotal = computed(() => activity.total.value + dm.totalUnread.value)
     >
       <div
         ref="handleEl"
-        class="flex items-center gap-2 px-3 py-2 border-b"
+        class="flex items-center gap-1 px-2 py-2 border-b"
         :class="undocked ? 'cursor-move select-none' : ''"
         style="border-color: var(--p-content-border-color); background: var(--p-content-background)"
       >
@@ -462,7 +478,8 @@ const bubbleTotal = computed(() => activity.total.value + dm.totalUnread.value)
           <button
             type="button"
             class="inline-flex items-center gap-1 rounded-lg px-2 py-1 hover:bg-black/5 dark:hover:bg-white/10"
-            :aria-label="t('chat.league.switch')"
+            :aria-label="activeLeagueName ? `${t('chat.league.switch')}: ${activeLeagueName}` : t('chat.league.switch')"
+            data-testid="chat-league-switch"
             v-tooltip.bottom="activeLeagueName ?? t('chat.dock.title')"
             @click="leaguesOpen = !leaguesOpen"
           >
@@ -504,22 +521,17 @@ const bubbleTotal = computed(() => activity.total.value + dm.totalUnread.value)
         >
           <i
             :class="pin ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'"
-            class="text-sm"
+            class="shrink-0 text-sm"
             :style="pin ? 'color: var(--p-primary-color)' : 'opacity: 0.6'"
           />
-          <!-- Named only while pinned: that is when the dock can disagree with the
-               league the rest of the page is showing. -->
-          <span
-            v-if="pin && activeLeagueName"
-            class="ms-1 max-w-[6rem] truncate text-xs font-semibold"
-            style="color: var(--p-primary-color)"
-          >{{ activeLeagueName }}</span>
         </button>
 
-        <div v-if="mode === 'league' && toggleMatchId" class="flex items-center shrink-0 rounded-lg overflow-hidden text-xs" style="border: 1px solid var(--p-content-border-color)">
+        <!-- The only shrinkable child of the header: on a narrow phone the dock is
+             94vw, not 24rem, and these two labels are what has to give. -->
+        <div v-if="mode === 'league' && toggleMatchId" class="flex items-center min-w-0 rounded-lg overflow-hidden text-xs" style="border: 1px solid var(--p-content-border-color)">
           <button
             type="button"
-            class="relative px-2.5 py-1 font-semibold"
+            class="relative min-w-0 truncate px-2.5 py-1 font-semibold"
             :style="!scopedMatchId ? 'background: var(--p-primary-color); color: var(--p-primary-contrast-color)' : 'color: var(--p-text-muted-color)'"
             @click="setScope('global')"
           >
@@ -528,7 +540,7 @@ const bubbleTotal = computed(() => activity.total.value + dm.totalUnread.value)
           </button>
           <button
             type="button"
-            class="relative px-2.5 py-1 font-semibold"
+            class="relative min-w-0 truncate px-2.5 py-1 font-semibold"
             :style="scopedMatchId ? 'background: var(--p-primary-color); color: var(--p-primary-contrast-color)' : 'color: var(--p-text-muted-color)'"
             @click="setScope('match')"
           >
@@ -542,7 +554,7 @@ const bubbleTotal = computed(() => activity.total.value + dm.totalUnread.value)
           <button v-if="dmView !== 'inbox'" type="button" class="opacity-70 hover:opacity-100 shrink-0" :aria-label="t('dm.back')" @click="dmBackToInbox">
             <i class="pi pi-arrow-left" />
           </button>
-          <span class="font-semibold truncate">{{ dmView === 'thread' ? (dmThread?.other.name ?? '') : dmView === 'new' ? t('dm.new') : t('dm.title') }}</span>
+          <span class="min-w-0 font-semibold truncate">{{ dmView === 'thread' ? (dmThread?.other.name ?? '') : dmView === 'new' ? t('dm.new') : t('dm.title') }}</span>
           <button v-if="dmView === 'inbox'" type="button" class="ms-auto opacity-70 hover:opacity-100 shrink-0" :aria-label="t('dm.new')" @click="openDmNew">
             <i class="pi pi-pencil" />
           </button>
@@ -589,7 +601,7 @@ const bubbleTotal = computed(() => activity.total.value + dm.totalUnread.value)
 
         <button
           type="button"
-          class="opacity-70 hover:opacity-100"
+          class="shrink-0 p-1 -m-1 opacity-70 hover:opacity-100"
           :aria-label="t(undocked ? 'chat.dock.redock' : 'chat.dock.undock')"
           @click="toggleUndock"
         >
@@ -597,7 +609,7 @@ const bubbleTotal = computed(() => activity.total.value + dm.totalUnread.value)
         </button>
         <button
           type="button"
-          class="opacity-70 hover:opacity-100"
+          class="shrink-0 p-1 -m-1 opacity-70 hover:opacity-100"
           :aria-label="t(expanded ? 'chat.dock.shrink' : 'chat.dock.expand')"
           @click="expanded = !expanded"
         >
@@ -605,7 +617,7 @@ const bubbleTotal = computed(() => activity.total.value + dm.totalUnread.value)
         </button>
         <button
           type="button"
-          class="opacity-70 hover:opacity-100"
+          class="shrink-0 p-1 -m-1 opacity-70 hover:opacity-100"
           :aria-label="t('chat.dock.collapse')"
           @click="collapsed = true"
         >
