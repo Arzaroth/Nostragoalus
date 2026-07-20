@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+
+- A single sign-on left waiting too long, or a login link reopened from an old tab, no longer dumps you on a bare error page: you land back on the login form with a "sign-in failed" message and can try again.
+
 ## [4.4.3] - 2026-07-20
 
 ### Fixed

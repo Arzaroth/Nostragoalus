@@ -119,6 +119,12 @@ for SSO league auto-join.
   resolves the domain via `apps/web-nuxt/server/utils/auth/sso-domains.ts`, then either
   redirects through `signIn.sso({ providerId })` or reveals the password field.
 - `/login?password=1` is the escape hatch for an IdP outage.
+- A failed callback lands back on `/login?error=…`, which the page turns into a
+  flash. Per-flow that comes from `errorCallbackURL: '/login'` on `signIn.sso`;
+  when the state itself cannot be read (its `verification` row is gone after the
+  10-minute TTL - slow IdP login, stale tab, replayed callback) there is no
+  per-flow URL left, so `buildAuthOptions` sets `onAPIError.errorURL: '/login'`
+  as the global fallback instead of better-auth's own `/api/auth/error` page.
 - Multi-domain is a CSV in `sso_provider.domain` (native plugin support, matches
   subdomains). Conflicts across providers are rejected first-come-first-served
   (status-agnostic: a draft still reserves its domain).
