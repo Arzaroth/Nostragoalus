@@ -5,6 +5,12 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Corrigé
+
+- La Rétro du tournoi ne termine plus votre ascension sur le mauvais rang. Le graphique du classement ne rejouait que les points de pronostics, si bien que le bonus champion ou meilleur buteur manquait à l'arrivée et que la dernière diapositive pouvait annoncer un rang moins bon que le classement et la carte de partage. Le graphique se termine désormais sur votre classement final réel.
+- Les cartes de partage affichent les pseudos stylisés au lieu de carrés vides. Les lettres fantaisie, les symboles, les émojis et les lettres empruntées à l'une des ~140 écritures existantes chargent maintenant la police qui convient, là où seule une poignée d'écritures majeures fonctionnait.
+- La croix du bouton de fermeture de la Rétro du tournoi est de nouveau centrée.
+
 ## [4.4.0] - 2026-07-20
 
 ### Ajouté
