@@ -2064,6 +2064,20 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
 
 ## Share cards (deferred from the feature pass)
 
+### Deferred from the font-fallback review (fix/wrapped-rank-glyphs)
+
+- [ ] Chinese display names render on share cards with the Japanese Noto family.
+      satori labels Han text with the pipe-joined code
+      `ja-JP|ko-KR|zh-CN|zh-TW|zh-HK`, and `fallbackFamilies` resolves it through
+      `code.split('-')[0]` to `ja` -> Noto Sans JP. Han mostly survives that, but
+      simplified-only forms do not. Split the pipe and prefer the locale the card
+      is being rendered in.
+- [ ] The Wrapped journey slide has no UI-level coverage: `WrappedDeck.nuxt.test.ts`
+      passes `journey: []` and `wrapped.e2e.ts` seeds a single prediction, so
+      `buildSlides` never emits the slide and neither the polyline nor
+      `journeyFinishRank` is exercised through the component. The pure helpers are
+      unit-tested; the slide itself is not.
+
 ### Deferred from the feature-treatment review
 
 - [ ] The card-summary shape is hand-declared three times: `ShareCard` in
