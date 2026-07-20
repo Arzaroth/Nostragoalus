@@ -301,6 +301,25 @@ per-match `FergieMatch`, not a `highlight()`-shaped swing).
       release, so it can't drift again. The fresh Arabic (2.9.0/2.9.1 + the 2.13.1
       batch) is machine-authored - folds into the human-review item above.
 
+## Chat send outbox (deferred from the feature-treatment review)
+
+- [ ] **A committed POST whose response is lost reads as failed, and Retry
+      duplicates it**: `send()` in `useLeagueChat.ts` / `useDmRoom.ts` carries no
+      client-generated message id, so a timeout or dropped connection after the
+      server inserted the row lands in the catch and offers Retry, which inserts a
+      second copy. Needs a client id on the message row plus a server-side
+      insert-once on it (the `chat:new` echo landing the delivered copy next to the
+      failed bubble is the only current signal).
+- [ ] **Stand-in ordering is client-clock and append-only**: the optimistic row uses
+      `new Date().toISOString()` and no list is ever sorted, so a message that
+      arrives from the socket between the insert and the swap renders after ours even
+      when the server ordered it before; a reload re-orders them. Also mis-anchors
+      the call-line merge (`callLinesByAnchor`) on a skewed clock.
+- [ ] **No `useLeagueChat` composable tests**: the outbox helpers are unit tested and
+      the DM room covers the composable wiring (pending, failed, reload, overlapping
+      sends), but the league-chat copy of that wiring has no test, so the two can
+      drift.
+
 ## Chat room pin (deferred from the feature-treatment review)
 
 - [ ] **Cross-competition pin has no thread label**: `matchLabel` in `ChatDock.vue`
