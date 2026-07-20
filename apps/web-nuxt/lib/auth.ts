@@ -369,6 +369,12 @@ export function buildAuthOptions(database: AuthDb) {
     ],
     secret: process.env.BETTER_AUTH_SECRET ?? process.env.NUXT_BETTER_AUTH_SECRET,
     baseURL: process.env.BETTER_AUTH_URL ?? process.env.NUXT_PUBLIC_AUTH_URL,
+    // A callback whose state can no longer be parsed (the 10-minute verification
+    // row is gone: slow IdP login, a stale tab, a replayed callback) has no
+    // per-flow errorCallbackURL left to honour, so better-auth would dump the
+    // user on its own /api/auth/error page. Send them back to the login form,
+    // which turns ?error= into a retry-able flash.
+    onAPIError: { errorURL: '/login' },
     // Extra trusted origins (comma-separated). Needed for an internal or
     // self-hosted SSO IdP whose token endpoint resolves to a private address:
     // the SSO plugin's SSRF guard refuses such a host unless its origin is

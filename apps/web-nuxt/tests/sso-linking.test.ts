@@ -156,6 +156,14 @@ describe('SSO account linking', () => {
     expect(accounts.map((a) => a.providerId)).toEqual(['acme'])
   })
 
+  it('sends a callback whose state is gone back to the login form', async () => {
+    const cb = await auth.handler(
+      new Request(`${BASE}/api/auth/sso/callback/acme?code=fake-code&state=long-gone-state-value`),
+    )
+    expect(cb.status).toBe(302)
+    expect(cb.headers.get('location')).toBe('/login?error=state_mismatch')
+  })
+
   it('auto-joins the provider leagues on sign-in but never re-adds after a leave', async () => {
     const { makeCompetition, makeLeague } = await import('./factories')
     const { leaveLeague, getMembership, setProviderAutoJoinLeagues } = await import('../server/utils/leagues/service')
