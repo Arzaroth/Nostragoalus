@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [4.4.3] - 2026-07-20
+
 ### Corrigé
 
 - La discussion ne disparaît plus quand vous ouvrez la page Ligues : le volet garde la conversation en cours, et une discussion épinglée le reste partout, y compris sur la page d'une ligue.
