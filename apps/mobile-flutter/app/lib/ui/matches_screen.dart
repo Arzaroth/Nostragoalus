@@ -10,7 +10,9 @@ import 'widgets/async_value_view.dart';
 import 'widgets/notifications_bell.dart';
 import 'widgets/score_pill.dart';
 
-/// Fixtures list. Tap a match to open its detail + make a prediction.
+/// Fixtures list, grouped by round. A round whose matches have all been played
+/// starts collapsed (the final is never folded), so the list lands on what is
+/// still to come. Tap a match to open its detail + make a prediction.
 class MatchesScreen extends ConsumerWidget {
   const MatchesScreen({super.key});
 
@@ -34,14 +36,55 @@ class MatchesScreen extends ConsumerWidget {
                 Center(child: Text(context.tr('matches.empty'))),
               ]);
             }
-            return ListView.separated(
-              itemCount: res.matches.length,
-              separatorBuilder: (_, __) => const Divider(height: 1),
-              itemBuilder: (context, i) => _MatchTile(res.matches[i]),
+            final rounds = _groupByRound(res.matches);
+            return ListView.builder(
+              itemCount: rounds.length,
+              itemBuilder: (context, i) => _RoundGroup(rounds[i]),
             );
           },
         ),
       ),
+    );
+  }
+
+  List<_Round> _groupByRound(List<Match2> matches) {
+    final byId = <String, _Round>{};
+    for (final m in matches) {
+      (byId[m.roundId] ??= _Round(m.roundId, m.roundLabel, m.roundSortOrder))
+          .matches
+          .add(m);
+    }
+    return byId.values.toList()..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+  }
+}
+
+class _Round {
+  _Round(this.id, this.label, this.sortOrder);
+  final String id;
+  final String label;
+  final int sortOrder;
+  final List<Match2> matches = [];
+
+  // Concluded = every match played; the final round is never treated as foldable.
+  bool get allPlayed => matches.every((m) => m.status == 'FINISHED');
+  bool get isFinal => matches.any((m) => m.stage == 'FINAL');
+}
+
+class _RoundGroup extends StatelessWidget {
+  const _RoundGroup(this.round);
+  final _Round round;
+
+  @override
+  Widget build(BuildContext context) {
+    final collapsed = round.allPlayed && !round.isFinal;
+    return ExpansionTile(
+      key: PageStorageKey(round.id),
+      initiallyExpanded: !collapsed,
+      title: Text(round.label, style: Theme.of(context).textTheme.titleSmall),
+      childrenPadding: EdgeInsets.zero,
+      children: [
+        for (final m in round.matches) _MatchTile(m),
+      ],
     );
   }
 }
