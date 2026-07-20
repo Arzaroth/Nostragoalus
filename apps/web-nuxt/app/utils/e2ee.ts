@@ -122,7 +122,12 @@ export async function decryptBytes(packed: string, groupKey: Uint8Array): Promis
 // chosen by the user (no weak passwords) and shown once.
 export async function generateRecoveryCode(): Promise<string> {
   const s = await sodium()
-  const str = b64encode(s, s.randombytes_buf(18))
+  // The base64url alphabet contains '-', which is also the grouping separator,
+  // so an encoding carrying one would be indistinguishable from a separator and
+  // normalizeCode would silently eat a data character. Resample instead of
+  // substituting, which would skew the distribution.
+  let str = b64encode(s, s.randombytes_buf(18))
+  while (str.includes('-')) str = b64encode(s, s.randombytes_buf(18))
   let out = ''
   for (let i = 0; i < str.length; i += 6) out += (i ? '-' : '') + str.slice(i, i + 6)
   return out

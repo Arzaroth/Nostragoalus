@@ -42,9 +42,16 @@ void main() {
     expect(e2ee.unwrapPrivateKeyWithRecovery(sodium, blob, code).extractBytes(),
         equals(id.privateKey.extractBytes()));
 
-    // recovery code shape: url-safe base64 of 18 bytes, hyphen-grouped by 6
-    final generated = e2ee.generateRecoveryCode(sodium);
-    expect(generated.replaceAll('-', '').length, equals(24));
-    expect(base64Url.decode(generated.replaceAll('-', '')).length, equals(18));
+    // Recovery code shape: url-safe base64 of 18 bytes, hyphen-grouped by 6.
+    // Every hyphen must be a SEPARATOR: the base64url alphabet also contains
+    // '-', and normalizeCode strips them all before Argon2id, so a data hyphen
+    // would silently shorten the derived secret. Resampled because a single
+    // code only carries one about 31% of the time.
+    for (var i = 0; i < 200; i++) {
+      final generated = e2ee.generateRecoveryCode(sodium);
+      expect(generated.split('-'), hasLength(4));
+      expect(generated.split('-'), everyElement(hasLength(6)));
+      expect(base64Url.decode(generated.replaceAll('-', '')).length, equals(18));
+    }
   });
 }

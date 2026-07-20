@@ -134,7 +134,14 @@ String encryptBytes(SodiumSumo sodium, Uint8List bytes, SecureKey groupKey) =>
 
 /// A high-entropy recovery code, grouped for readability (never user-chosen).
 String generateRecoveryCode(SodiumSumo sodium) {
-  final str = b64encode(sodium.randombytes.buf(18));
+  // The base64url alphabet contains '-', which is also the grouping separator,
+  // so an encoding carrying one would be indistinguishable from a separator and
+  // normalizeCode would silently eat a data character. Resample instead of
+  // substituting, which would skew the distribution.
+  var str = b64encode(sodium.randombytes.buf(18));
+  while (str.contains('-')) {
+    str = b64encode(sodium.randombytes.buf(18));
+  }
   final out = StringBuffer();
   for (var i = 0; i < str.length; i += 6) {
     if (i > 0) out.write('-');

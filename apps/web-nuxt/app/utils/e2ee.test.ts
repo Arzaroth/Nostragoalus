@@ -80,6 +80,19 @@ describe('e2ee recovery', () => {
     expect(code.replace(/-/g, '').length).toBeGreaterThan(0)
   })
 
+  // The base64url alphabet contains '-', which is also the grouping separator,
+  // and normalizeCode strips every hyphen before Argon2id. A data hyphen would
+  // therefore silently shorten the derived secret, so every hyphen a code
+  // carries must be a separator. Resampled: one code only trips this ~31% of
+  // the time.
+  it('never emits a data hyphen, only separators', async () => {
+    for (let i = 0; i < 200; i++) {
+      const groups = (await generateRecoveryCode()).split('-')
+      expect(groups).toHaveLength(4)
+      for (const g of groups) expect(g).toHaveLength(6)
+    }
+  })
+
   it('wraps and unwraps the private key with the recovery code', async () => {
     const id = await generateIdentity()
     const code = await generateRecoveryCode()
