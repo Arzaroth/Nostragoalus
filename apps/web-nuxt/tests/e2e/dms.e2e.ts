@@ -88,17 +88,23 @@ test('a signed-in user opens the messaging dock in Direct mode, finds someone, a
   await typeInto(composer, body)
   // Hold the POST so the in-flight state is observable: the message must show up
   // straight away, marked as sending, instead of vanishing until the server answers.
+  // The hold is generous - a cold runner spends seconds on key setup and the first
+  // encrypt before the request is even issued.
+  let releasePost = () => {}
+  const held = new Promise<void>((r) => (releasePost = r))
   await page.route('**/api/dm/*/messages', async (route) => {
-    if (route.request().method() === 'POST') await new Promise((r) => setTimeout(r, 3_000))
+    if (route.request().method() === 'POST') await held
     await route.continue()
   })
   await composer.press('Enter')
-  await expect(page.getByText(body)).toBeVisible({ timeout: 5_000 })
-  await expect(page.getByTestId('chat-sending')).toBeVisible({ timeout: 5_000 })
+  await expect(page.getByTestId('chat-sending')).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByText(body).first()).toBeVisible()
 
   // Once it lands the bubble is the real message, no sending marker left.
+  releasePost()
   await expect(page.getByTestId('chat-sending')).toBeHidden({ timeout: 15_000 })
-  await expect(page.getByText(body)).toBeVisible({ timeout: 15_000 })
+  await page.unroute('**/api/dm/*/messages')
+  await expect(page.getByText(body).first()).toBeVisible({ timeout: 15_000 })
 })
 
 test('DM notifications collapse into one bell entry that opens the dock instead of the home page', async ({

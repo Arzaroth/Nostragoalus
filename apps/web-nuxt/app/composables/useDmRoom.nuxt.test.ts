@@ -69,16 +69,39 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+const mounted: Array<{ unmount: () => void }> = []
+afterEach(() => {
+  // Leaked live rooms keep watchers and socket handlers calling $fetch between
+  // tests, which surfaces as a failure in whichever test runs next.
+  while (mounted.length) mounted.pop()!.unmount()
+})
+
 async function setup() {
   let api!: ReturnType<typeof useDmRoom>
-  await mountSuspended({
+  const wrapper = await mountSuspended({
     setup() {
       api = useDmRoom('T1')
       return () => null
     },
   })
+  mounted.push(wrapper)
   await vi.waitFor(() => expect(api.ready.value).toBe(true))
   return api
+}
+
+// The POST body carries a ciphertext we cannot reuse (a fresh nonce each time), so
+// a test answers with its own row sealed under the test key.
+async function serverRow(id: string, text: string, extra: Record<string, unknown> = {}) {
+  return {
+    message: {
+      id,
+      userId: 'me',
+      epoch: 1,
+      ciphertext: await encryptMessage(text, groupKey),
+      createdAt: new Date().toISOString(),
+      ...extra,
+    },
+  }
 }
 
 describe('useDmRoom peer key re-seal', () => {
@@ -120,15 +143,7 @@ describe('useDmRoom optimistic send', () => {
     expect(api.messages.value[0]).toMatchObject({ text: 'hello', userId: 'me', pending: true })
 
     await vi.waitFor(() => expect(release).toBeTypeOf('function'))
-    release({
-      message: {
-        id: 'M1',
-        userId: 'me',
-        epoch: 1,
-        ciphertext: await encryptMessage('hello', groupKey),
-        createdAt: new Date().toISOString(),
-      },
-    })
+    release(await serverRow('M1', 'hello'))
     await vi.waitFor(() => expect(api.messages.value[0]!.id).toBe('M1'))
     expect(api.messages.value).toHaveLength(1)
     expect(api.messages.value[0]!.pending).toBeUndefined()
@@ -141,9 +156,7 @@ describe('useDmRoom optimistic send', () => {
     expect(api.messages.value[0]).toMatchObject({ text: 'hello', pending: false, failed: true })
     const localId = api.messages.value[0]!.id
 
-    onMessagePost = async () => ({
-      message: { id: 'M2', userId: 'me', epoch: 1, ciphertext: await encryptMessage('hello', groupKey), createdAt: new Date().toISOString() },
-    })
+    onMessagePost = () => serverRow('M2', 'hello')
     await api.retrySend(localId)
     expect(api.messages.value).toHaveLength(1)
     expect(api.messages.value[0]).toMatchObject({ id: 'M2', text: 'hello' })
@@ -155,5 +168,48 @@ describe('useDmRoom optimistic send', () => {
     await api.send('hello')
     api.discardSend(api.messages.value[0]!.id)
     expect(api.messages.value).toEqual([])
+  })
+
+  it('does not drop a second message typed while the first is still posting', async () => {
+    const holds: Array<(v: unknown) => void> = []
+    onMessagePost = () => new Promise((r) => holds.push(r))
+    const api = await setup()
+    void api.send('first')
+    void api.send('second')
+    await vi.waitFor(() => expect(holds.length).toBe(2))
+    expect(api.messages.value.map((m) => m.text)).toEqual(['first', 'second'])
+
+    holds[0]!(await serverRow('M1', 'first'))
+    holds[1]!(await serverRow('M2', 'second'))
+    await vi.waitFor(() => expect(api.messages.value.map((m) => m.id)).toEqual(['M1', 'M2']))
+  })
+
+  it('still shows the sent message when a reload wipes the stand-in mid-flight', async () => {
+    let release!: (v: unknown) => void
+    onMessagePost = () => new Promise((r) => (release = r))
+    const api = await setup()
+    void api.send('hello')
+    await vi.waitFor(() => expect(release).toBeTypeOf('function'))
+    // A reconnect refetches the room and replaces the list under the in-flight send.
+    await api.load({ background: true })
+    expect(api.messages.value).toEqual([])
+
+    release(await serverRow('M1', 'hello'))
+    await vi.waitFor(() => expect(api.messages.value.map((m) => m.id)).toEqual(['M1']))
+  })
+
+  it('keeps a failed send visible across a reload, and can still retry it', async () => {
+    onMessagePost = () => Promise.reject(new Error('offline'))
+    const api = await setup()
+    await api.send('hello')
+    const localId = api.messages.value[0]!.id
+
+    await api.load({ background: true })
+    expect(api.messages.value).toHaveLength(1)
+    expect(api.messages.value[0]).toMatchObject({ id: localId, failed: true })
+
+    onMessagePost = () => serverRow('M3', 'hello')
+    await api.retrySend(localId)
+    expect(api.messages.value.map((m) => m.id)).toEqual(['M3'])
   })
 })

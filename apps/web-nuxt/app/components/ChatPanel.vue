@@ -307,7 +307,10 @@ function cancelEdit() {
 // the previous one (and off the top, close the editor). Only your own still-
 // visible messages are editable, so those are what we step through.
 function myEditable(): DecryptedMessage[] {
-  return messages.value.filter((m) => m.userId === meId.value && m.moderation === 'VISIBLE')
+  // A stand-in the server has not acknowledged has no id to edit against.
+  return messages.value.filter(
+    (m) => m.userId === meId.value && m.moderation === 'VISIBLE' && !m.pending && !m.failed,
+  )
 }
 function onComposerUp(e: KeyboardEvent) {
   if (draft.value) return // typing: let the caret move through the draft
@@ -1151,11 +1154,11 @@ watch(
               <span v-if="m.editedAt" v-tooltip.bottom="t('chat.edit.at', { time: fmtTime(m.editedAt) })" class="text-[10px] italic" style="color: var(--p-text-muted-color)">{{ t('chat.edit.edited') }}</span>
               <span v-if="!isDm && m.moderation === 'PENDING'" class="text-[10px] uppercase tracking-wider font-semibold px-1 rounded" style="border: 1px solid var(--ng-danger); color: var(--ng-danger)">{{ t('chat.moderation.pendingTag') }}</span>
               <!-- In-flight / failed send: the message stays visible with its state. -->
-              <span v-if="m.pending" class="text-[10px] inline-flex items-center gap-1" style="color: var(--p-text-muted-color)" data-testid="chat-sending">
-                <i class="pi pi-spin pi-spinner text-[10px]" />{{ t('chat.outbox.sending') }}
+              <span v-if="m.pending" role="status" class="text-[10px] inline-flex items-center gap-1" style="color: var(--p-text-muted-color)" data-testid="chat-sending">
+                <i class="pi pi-spin pi-spinner text-[10px]" aria-hidden="true" />{{ t('chat.outbox.sending') }}
               </span>
-              <span v-else-if="m.failed" class="text-[10px] inline-flex items-center gap-1.5" style="color: var(--ng-danger)" data-testid="chat-send-failed">
-                <i class="pi pi-exclamation-circle text-[10px]" />{{ t('chat.outbox.failed') }}
+              <span v-else-if="m.failed" role="status" class="text-[10px] inline-flex items-center gap-1.5" style="color: var(--ng-danger)" data-testid="chat-send-failed">
+                <i class="pi pi-exclamation-circle text-[10px]" aria-hidden="true" />{{ t('chat.outbox.failed') }}
                 <button type="button" class="underline" @click="chat.retrySend(m.id)">{{ t('chat.outbox.retry') }}</button>
                 <button type="button" class="underline opacity-70 hover:opacity-100" @click="chat.discardSend(m.id)">{{ t('chat.outbox.discard') }}</button>
               </span>
@@ -1257,6 +1260,9 @@ watch(
                 :bubble-style="bubbleStyle(m)"
               />
               <span v-else-if="m.text === null && m.attachments.length === 0" class="italic" :class="m.userId === meId ? 'self-end' : 'self-start'" style="color: var(--p-text-muted-color)">{{ t('chat.cantDecrypt') }}</span>
+              <!-- A stand-in carries no attachments yet: name what is riding with it
+                   so an image-only send is not an empty bubble. -->
+              <span v-if="m.pendingImages" class="text-xs italic" :class="m.userId === meId ? 'self-end' : 'self-start'" style="color: var(--p-text-muted-color)">{{ t('chat.outbox.images', { n: m.pendingImages }) }}</span>
               <ChatImage
                 v-if="m.attachments.length"
                 :class="m.userId === meId ? 'self-end' : 'self-start'"
@@ -1318,11 +1324,11 @@ watch(
                   <span v-else class="font-semibold truncate text-xs" :style="r.userId === meId ? 'color: var(--p-primary-color)' : ''">{{ nameFor(r.userId) }}</span>
                   <span v-tooltip.top="fmtFull(r.createdAt)" class="text-[10px]" style="color: var(--p-text-muted-color)">{{ fmtTime(r.createdAt) }}</span>
                   <span v-if="r.editedAt" class="text-[10px] italic" style="color: var(--p-text-muted-color)">{{ t('chat.edit.edited') }}</span>
-                  <span v-if="r.pending" class="text-[10px] inline-flex items-center gap-1" style="color: var(--p-text-muted-color)">
-                    <i class="pi pi-spin pi-spinner text-[10px]" />{{ t('chat.outbox.sending') }}
+                  <span v-if="r.pending" role="status" class="text-[10px] inline-flex items-center gap-1" style="color: var(--p-text-muted-color)" data-testid="chat-sending">
+                    <i class="pi pi-spin pi-spinner text-[10px]" aria-hidden="true" />{{ t('chat.outbox.sending') }}
                   </span>
-                  <span v-else-if="r.failed" class="text-[10px] inline-flex items-center gap-1.5" style="color: var(--ng-danger)">
-                    <i class="pi pi-exclamation-circle text-[10px]" />{{ t('chat.outbox.failed') }}
+                  <span v-else-if="r.failed" role="status" class="text-[10px] inline-flex items-center gap-1.5" style="color: var(--ng-danger)" data-testid="chat-send-failed">
+                    <i class="pi pi-exclamation-circle text-[10px]" aria-hidden="true" />{{ t('chat.outbox.failed') }}
                     <button type="button" class="underline" @click="chat.retrySend(r.id)">{{ t('chat.outbox.retry') }}</button>
                     <button type="button" class="underline opacity-70 hover:opacity-100" @click="chat.discardSend(r.id)">{{ t('chat.outbox.discard') }}</button>
                   </span>
@@ -1335,6 +1341,7 @@ watch(
                 <template v-else>
                   <ChatMessageContent v-if="r.text" :text="r.text" :names="names" :profile-link="profileLink" :own="r.userId === meId" :bubble-style="bubbleStyle(r)" />
                   <span v-else-if="r.text === null && r.attachments.length === 0" class="italic text-xs" style="color: var(--p-text-muted-color)">{{ t('chat.cantDecrypt') }}</span>
+                  <span v-if="r.pendingImages" class="text-xs italic" style="color: var(--p-text-muted-color)">{{ t('chat.outbox.images', { n: r.pendingImages }) }}</span>
                   <ChatImage v-if="r.attachments.length" :class="r.userId === meId ? 'self-end' : 'self-start'" :message-id="r.id" :attachments="r.attachments" :load="chat.loadAttachment" @open="(idx) => openMessageImages(r, idx)" />
                 </template>
               </div>

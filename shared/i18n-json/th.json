@@ -190,7 +190,7 @@
     "enable": "เปิดแชท",
     "disable": "ปิดแชท",
     "send": "ส่ง",
-    "outbox": { "sending": "กำลังส่ง...", "failed": "ส่งไม่สำเร็จ", "retry": "ลองใหม่", "discard": "ทิ้ง" },
+    "outbox": { "sending": "กำลังส่ง...", "failed": "ส่งไม่สำเร็จ", "retry": "ลองใหม่", "discard": "ทิ้ง", "images": "{n} รูป" },
     "copyText": "คัดลอกข้อความ",
     "placeholder": "พิมพ์ข้อความ",
     "loadMore": "โหลดข้อความก่อนหน้า",
