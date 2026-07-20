@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [4.4.2] - 2026-07-20
+
 ### tI'pu'
 
 - QIn ngeHlu'DI' ngesbe' QIn. SIbI' 'angtaH, "ngeHlu'taH..." 'oS; ngeHlu'pu'DI' QIn Hoch 'oH. ngeHbe'lu'chugh, ngesbe'; "ngeHbe'lu'" 'oS, yInIDqa' yIwoD je lo'laH. mu'mey lujbe'. DM je thread jangmeH rap.

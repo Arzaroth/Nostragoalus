@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [4.4.2] - 2026-07-20
+
 ### Corrigé
 
 - Un message de discussion ne disparaît plus pendant son envoi : il apparaît immédiatement avec la mention « Envoi... », puis devient le vrai message une fois arrivé. Un envoi qui échoue reste désormais dans la conversation avec la mention « Non envoyé » et les actions Réessayer et Abandonner, au lieu de disparaître : le texte n'est jamais perdu. Idem pour les messages privés et les réponses en fil.

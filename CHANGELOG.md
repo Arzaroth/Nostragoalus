@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [4.4.2] - 2026-07-20
+
 ### Fixed
 
 - A chat message no longer vanishes while it is being sent: it appears right away marked "Sending...", then turns into the real message once it lands. A send that fails now stays in the conversation marked "Not sent" with Retry and Discard instead of disappearing, so the text is never lost. Same in direct messages and thread replies.
