@@ -11,7 +11,7 @@ const _ktPrefix = 'ngc-kt-v1:';
 
 String sha256Hex(String s) => sha256.convert(utf8.encode(s)).toString();
 
-String computeKtEntryHash(Map l) => sha256Hex(
+String computeKtEntryHash(Map<dynamic, dynamic> l) => sha256Hex(
     _ktPrefix + [l['seq'], l['prevHash'], l['userId'], l['publicKey'], l['createdAt']].join(':'));
 
 /// Result of walking the chain: `ok` plus how far it got and where it broke.
@@ -23,10 +23,10 @@ class KtVerification {
   final String? failure;
 }
 
-KtVerification verifyKtChain(List entries, [String genesis = ktGenesis]) {
+KtVerification verifyKtChain(List<dynamic> entries, [String genesis = ktGenesis]) {
   var prev = genesis;
   for (var i = 0; i < entries.length; i++) {
-    final e = entries[i] as Map;
+    final e = entries[i] as Map<dynamic, dynamic>;
     if (e['seq'] != i) return KtVerification(ok: false, count: i, head: prev, failure: 'sequence');
     if (e['prevHash'] != prev) return KtVerification(ok: false, count: i, head: prev, failure: 'link');
     if (computeKtEntryHash(e) != e['entryHash']) {
@@ -38,9 +38,9 @@ KtVerification verifyKtChain(List entries, [String genesis = ktGenesis]) {
 }
 
 /// The most recent logged public key for a user (null if never logged).
-String? loggedKeyFor(List entries, String userId) {
+String? loggedKeyFor(List<dynamic> entries, String userId) {
   for (var i = entries.length - 1; i >= 0; i--) {
-    final e = entries[i] as Map;
+    final e = entries[i] as Map<dynamic, dynamic>;
     if (e['userId'] == userId) return e['publicKey'] as String;
   }
   return null;

@@ -1,7 +1,9 @@
 import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sodium/sodium_sumo.dart' show SecureKey, SodiumSumo;
 
+import '../api/models.gen.dart';
 import '../e2ee/e2ee.dart' as e2ee;
 import '../state/providers.dart';
 import 'chat_crypto.dart';
@@ -26,15 +28,22 @@ class ChatIdentityController extends AsyncNotifier<ChatIdentityState> {
     final sodium = await ref.watch(sodiumProvider.future);
     final api = ref.watch(apiProvider);
     final store = ref.watch(chatKeyStoreProvider);
+    final userId = (await ref.watch(authControllerProvider.future))?.id;
+    if (userId == null) return const ChatIdentityState();
 
     final server = await api.chatIdentity();
-    final local = await store.load();
+    final local = await store.load(sodium, userId);
 
     if (server.identity == null) {
-      final gen = e2ee.generateIdentity(sodium);
-      final id = ChatIdentity(gen.publicKey, gen.privateKey);
+      // Reuse an existing device key: a server that transiently reports no
+      // identity must not cost us the private key every sealed group key needs.
+      final id = local ??
+          () {
+            final gen = e2ee.generateIdentity(sodium);
+            return ChatIdentity(gen.publicKey, gen.privateKey);
+          }();
+      await store.save(userId, id);
       await api.registerIdentity(id.publicKey);
-      await store.save(id);
       return ChatIdentityState(identity: id);
     }
     if (local != null && local.publicKey == server.identity!.publicKey) {
@@ -43,18 +52,32 @@ class ChatIdentityController extends AsyncNotifier<ChatIdentityState> {
     return const ChatIdentityState(needsRecovery: true);
   }
 
+  String _requireUserId() {
+    final userId = ref.read(authControllerProvider).valueOrNull?.id;
+    if (userId == null) throw StateError('signed out');
+    return userId;
+  }
+
   /// Restore the private key on a fresh device from the recovery code.
   Future<void> recover(String code) async {
     final sodium = await ref.read(sodiumProvider.future);
     final api = ref.read(apiProvider);
+    final userId = _requireUserId();
     final server = await api.chatIdentity();
     final blob = await api.chatRecoveryBlob();
     if (server.identity == null || blob == null) {
       throw StateError('no escrowed identity to recover');
     }
     final priv = e2ee.unwrapPrivateKeyWithRecovery(sodium, blob, code);
+    // An escrow can predate an identity reset done elsewhere: it would decrypt
+    // fine yet hold the OLD private key. Pairing it with the server's current
+    // public key would leave every message undecryptable with no error at all.
+    if (!e2ee.keyPairMatches(sodium, server.identity!.publicKey, priv)) {
+      priv.dispose();
+      throw const ChatKeyMismatch();
+    }
     final id = ChatIdentity(server.identity!.publicKey, priv);
-    await ref.read(chatKeyStoreProvider).save(id);
+    await ref.read(chatKeyStoreProvider).save(userId, id);
     state = AsyncData(ChatIdentityState(identity: id));
   }
 
@@ -66,10 +89,16 @@ class ChatIdentityController extends AsyncNotifier<ChatIdentityState> {
     state = await AsyncValue.guard(() async {
       final sodium = await ref.read(sodiumProvider.future);
       final api = ref.read(apiProvider);
+      final userId = _requireUserId();
       final gen = e2ee.generateIdentity(sodium);
       final id = ChatIdentity(gen.publicKey, gen.privateKey);
+      // Persist locally BEFORE the server call. The reset drops the old escrow
+      // and every key sealed to the old identity server-side; if it landed and
+      // the local write were then lost, the server would hold a public key whose
+      // private key never existed - unrecoverable. Writing first means a
+      // mid-flight failure leaves the old server identity and its escrow intact.
+      await ref.read(chatKeyStoreProvider).save(userId, id);
       await api.resetChatIdentity(id.publicKey);
-      await ref.read(chatKeyStoreProvider).save(id);
       return ChatIdentityState(identity: id);
     });
   }
@@ -111,8 +140,10 @@ class ChatLine {
 }
 
 /// A league's chat, decrypted for display. `state` distinguishes the reasons a
-/// user might not see messages yet.
-enum ChatState { ready, needsIdentity, awaitingKey, disabled }
+/// user might not see messages yet. `keyMismatch` is the alarm: the device
+/// identity opens none of the keys sealed to it (a bad recovery / a reset
+/// elsewhere), which must not read as an ordinary empty room.
+enum ChatState { ready, needsIdentity, awaitingKey, keyMismatch, disabled }
 
 class LeagueChatView {
   const LeagueChatView({
@@ -124,8 +155,31 @@ class LeagueChatView {
   final ChatState state;
   final int epoch;
   final List<ChatLine> lines;
-  final Uint8List? key; // current epoch's group key, for sending
+  final SecureKey? key; // current epoch's group key, for sending
 }
+
+/// The league's chat status, shared by every consumer (status, keys, messages)
+/// so opening a thread or an attachment does not refetch it.
+final chatStatusProvider = FutureProvider.family<ChatStatusResponse, String>(
+    (ref, leagueId) => ref.watch(apiProvider).chatStatus(leagueId));
+
+/// My openable group keys per epoch for a league, unwrapped ONCE and cached for
+/// as long as anything watches the league (the unwrap is a sealed-box open per
+/// epoch, and every chat screen needs the same map).
+final leagueEpochKeysProvider =
+    FutureProvider.family<Map<int, SecureKey>, String>((ref, leagueId) async {
+  final sodium = await ref.watch(sodiumProvider.future);
+  final identity = (await ref.watch(chatIdentityProvider.future)).identity;
+  if (identity == null) throw StateError('no chat identity');
+  final status = await ref.watch(chatStatusProvider(leagueId).future);
+  final keys = openEpochKeys(sodium, identity, status.myWrappedKeys);
+  ref.onDispose(() {
+    for (final k in keys.values) {
+      k.dispose();
+    }
+  });
+  return keys;
+});
 
 final leagueChatProvider =
     FutureProvider.family<LeagueChatView, String>((ref, leagueId) async {
@@ -134,24 +188,33 @@ final leagueChatProvider =
   final identity = (await ref.watch(chatIdentityProvider.future)).identity;
   if (identity == null) return const LeagueChatView(state: ChatState.needsIdentity);
 
-  final status = await api.chatStatus(leagueId);
+  final status = await ref.watch(chatStatusProvider(leagueId).future);
   if (!status.enabled) return const LeagueChatView(state: ChatState.disabled);
-
-  final keys = <int, Uint8List>{};
-  for (final wk in status.myWrappedKeys) {
-    try {
-      keys[wk.epoch.toInt()] = e2ee.openGroupKey(sodium, wk.wrappedKey, identity.asMap);
-    } catch (_) {/* an epoch we can't open; others may still work */}
-  }
   final epoch = status.epoch.toInt();
+
+  final Map<int, SecureKey> keys;
+  try {
+    keys = await ref.watch(leagueEpochKeysProvider(leagueId).future);
+  } on ChatKeyMismatch {
+    return LeagueChatView(state: ChatState.keyMismatch, epoch: epoch);
+  }
   if (keys[epoch] == null) {
     await api.requestChatKey(leagueId).catchError((_) {});
     return LeagueChatView(state: ChatState.awaitingKey, epoch: epoch);
   }
 
   final msgs = await api.chatMessages(leagueId);
+  return LeagueChatView(
+      state: ChatState.ready,
+      epoch: epoch,
+      lines: _decryptLines(sodium, msgs.messages, keys),
+      key: keys[epoch]);
+});
+
+List<ChatLine> _decryptLines(
+    SodiumSumo sodium, List<Message> messages, Map<int, SecureKey> keys) {
   final lines = <ChatLine>[];
-  for (final m in msgs.messages) {
+  for (final m in messages) {
     final k = keys[m.epoch.toInt()];
     String? text;
     if (k != null) {
@@ -167,42 +230,20 @@ final leagueChatProvider =
         attachmentCount: m.attachments.length,
         threadCount: m.threadCount.toInt()));
   }
-  return LeagueChatView(state: ChatState.ready, epoch: epoch, lines: lines, key: keys[epoch]);
-});
+  return lines;
+}
 
 /// Decrypted messages inside one thread ((leagueId, threadRootId)). Reuses the
-/// caller's per-epoch keys; used by the thread view.
+/// league's cached per-epoch keys; used by the thread view.
 final leagueThreadProvider =
     FutureProvider.family<List<ChatLine>, (String, String)>((ref, args) async {
   final (leagueId, threadId) = args;
   final sodium = await ref.watch(sodiumProvider.future);
   final identity = (await ref.watch(chatIdentityProvider.future)).identity;
   if (identity == null) return const [];
-  final status = await ref.watch(apiProvider).chatStatus(leagueId);
-  final keys = <int, Uint8List>{};
-  for (final wk in status.myWrappedKeys) {
-    try {
-      keys[wk.epoch.toInt()] = e2ee.openGroupKey(sodium, wk.wrappedKey, identity.asMap);
-    } catch (_) {/* skip */}
-  }
+  final keys = await ref.watch(leagueEpochKeysProvider(leagueId).future);
   final msgs = await ref.watch(apiProvider).chatMessages(leagueId, thread: threadId);
-  final lines = <ChatLine>[];
-  for (final m in msgs.messages) {
-    final k = keys[m.epoch.toInt()];
-    String? text;
-    if (k != null) {
-      try {
-        text = e2ee.decryptMessage(sodium, m.ciphertext, k);
-      } catch (_) {/* corrupt / wrong key */}
-    }
-    lines.add(ChatLine(
-        id: m.id,
-        userId: m.userId,
-        text: text,
-        createdAt: m.createdAt,
-        attachmentCount: m.attachments.length));
-  }
-  return lines;
+  return _decryptLines(sodium, msgs.messages, keys);
 });
 
 /// Encrypt + send a message to the league (optional @-mentions, image, or thread
@@ -214,19 +255,24 @@ final sendChatProvider = Provider<
       {List<String> mentions = const [], Uint8List? image, String? threadId}) async {
     final sodium = await ref.read(sodiumProvider.future);
     final view = ref.read(leagueChatProvider(leagueId)).valueOrNull;
-    if (view == null || view.key == null) return;
-    final ct = e2ee.encryptMessage(sodium, text, view.key!);
+    final key = view?.key;
+    // Throwing (not returning) is what keeps the typed text: the outbox only
+    // drops an entry when its send completes, and renders a throw as "Not sent"
+    // with Retry/Discard.
+    if (key == null) throw StateError('no chat key for league $leagueId');
+    final ct = e2ee.encryptMessage(sodium, text, key);
     final images = image == null
         ? null
         : [
             {
-              'ciphertext': e2ee.encryptBytes(sodium, image, view.key!),
+              'ciphertext': e2ee.encryptBytes(sodium, image, key),
               'byteSize': image.length,
             }
           ];
-    await ref.read(apiProvider).sendChat(leagueId, ct, view.epoch,
+    await ref.read(apiProvider).sendChat(leagueId, ct, view!.epoch,
         mentions: mentions, images: images, threadId: threadId);
     if (threadId != null) ref.invalidate(leagueThreadProvider((leagueId, threadId)));
+    ref.invalidate(chatStatusProvider(leagueId));
     ref.invalidate(leagueChatProvider(leagueId));
   };
 });
@@ -238,18 +284,13 @@ final chatAttachmentProvider =
   final sodium = await ref.watch(sodiumProvider.future);
   final identity = (await ref.watch(chatIdentityProvider.future)).identity;
   if (identity == null) return null;
-  final status = await ref.watch(apiProvider).chatStatus(leagueId);
-  final keys = <int, Uint8List>{};
-  for (final wk in status.myWrappedKeys) {
-    try {
-      keys[wk.epoch.toInt()] = e2ee.openGroupKey(sodium, wk.wrappedKey, identity.asMap);
-    } catch (_) {/* skip */}
-  }
-  final att = await ref.watch(apiProvider).chatAttachment(leagueId, messageId, idx);
-  final key = keys[(att['epoch'] as num?)?.toInt() ?? -1];
+  final keys = await ref.watch(leagueEpochKeysProvider(leagueId).future);
+  final att = EncryptedBlob.fromJson(
+      await ref.watch(apiProvider).chatAttachment(leagueId, messageId, idx));
+  final key = keys[att.epoch];
   if (key == null) return null;
   try {
-    return e2ee.decryptBytes(sodium, att['ciphertext'].toString(), key);
+    return e2ee.decryptBytes(sodium, att.ciphertext, key);
   } catch (_) {
     return null;
   }
@@ -271,6 +312,28 @@ class ModerationReport {
   final String createdAt;
 }
 
+/// One row of the moderation queue as the server sends it (ciphertext + epoch;
+/// no generated model covers this endpoint yet).
+class _RawReport {
+  const _RawReport(this.id, this.ciphertext, this.epoch, this.reports, this.moderation,
+      this.createdAt);
+  final String id;
+  final String ciphertext;
+  final int epoch;
+  final int reports;
+  final String moderation;
+  final String createdAt;
+
+  factory _RawReport.fromJson(Map<String, dynamic> json) => _RawReport(
+        json['id'] as String,
+        json['ciphertext'] as String,
+        (json['epoch'] as num).toInt(),
+        (json['reports'] as num?)?.toInt() ?? 0,
+        json['moderation'] as String? ?? 'VISIBLE',
+        json['createdAt'] as String? ?? '',
+      );
+}
+
 /// The decrypted moderation queue for a league (owner/moderators only). Reuses
 /// the per-epoch keys the caller holds to read each reported message; the server
 /// only ever sees ciphertext.
@@ -281,32 +344,24 @@ final moderationReportsProvider =
   final identity = (await ref.watch(chatIdentityProvider.future)).identity;
   if (identity == null) return const [];
 
-  final status = await api.chatStatus(leagueId);
-  final keys = <int, Uint8List>{};
-  for (final wk in status.myWrappedKeys) {
-    try {
-      keys[wk.epoch.toInt()] = e2ee.openGroupKey(sodium, wk.wrappedKey, identity.asMap);
-    } catch (_) {/* skip epochs we cannot open */}
-  }
-
+  final keys = await ref.watch(leagueEpochKeysProvider(leagueId).future);
   final reports = await api.chatReports(leagueId);
   final out = <ModerationReport>[];
   for (final raw in reports) {
-    final r = (raw as Map).cast<String, dynamic>();
-    final epoch = (r['epoch'] as num?)?.toInt() ?? 0;
-    final k = keys[epoch];
+    final r = _RawReport.fromJson((raw as Map).cast<String, dynamic>());
+    final k = keys[r.epoch];
     String? text;
     if (k != null) {
       try {
-        text = e2ee.decryptMessage(sodium, r['ciphertext'].toString(), k);
+        text = e2ee.decryptMessage(sodium, r.ciphertext, k);
       } catch (_) {/* corrupt / wrong key */}
     }
     out.add(ModerationReport(
-      messageId: r['id'].toString(),
+      messageId: r.id,
       text: text,
-      reports: (r['reports'] as num?)?.toInt() ?? 0,
-      moderation: (r['moderation'] ?? 'VISIBLE').toString(),
-      createdAt: (r['createdAt'] ?? '').toString(),
+      reports: r.reports,
+      moderation: r.moderation,
+      createdAt: r.createdAt,
     ));
   }
   return out;
@@ -316,9 +371,9 @@ final moderationReportsProvider =
 final editChatProvider = Provider<Future<void> Function(String, String, String)>((ref) {
   return (leagueId, messageId, text) async {
     final sodium = await ref.read(sodiumProvider.future);
-    final view = ref.read(leagueChatProvider(leagueId)).valueOrNull;
-    if (view == null || view.key == null) return;
-    final ct = e2ee.encryptMessage(sodium, text, view.key!);
+    final key = ref.read(leagueChatProvider(leagueId)).valueOrNull?.key;
+    if (key == null) throw StateError('no chat key for league $leagueId');
+    final ct = e2ee.encryptMessage(sodium, text, key);
     await ref.read(apiProvider).editChatMessage(leagueId, messageId, ct);
     ref.invalidate(leagueChatProvider(leagueId));
   };

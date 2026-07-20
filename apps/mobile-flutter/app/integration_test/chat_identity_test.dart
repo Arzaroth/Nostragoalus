@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:nostragoalus/api/token_store.dart';
+import 'package:nostragoalus/chat/chat_crypto.dart';
 import 'package:nostragoalus/chat/chat_providers.dart';
 import 'package:nostragoalus/state/providers.dart';
 
@@ -22,9 +23,13 @@ void main() {
   const password = String.fromEnvironment('PROBE_PASSWORD');
 
   testWidgets('chat identity bootstraps + registers against the server', (tester) async {
-    // A fresh keystore each run, so we exercise the generate-and-register path.
+    // A fresh token AND chat keystore each run, so we exercise the
+    // generate-and-register path instead of whatever the device already holds.
     final container = ProviderContainer(
-      overrides: [tokenStoreProvider.overrideWithValue(TokenStore(InMemoryKv()))],
+      overrides: [
+        tokenStoreProvider.overrideWithValue(TokenStore(InMemoryKv())),
+        chatKeyStoreProvider.overrideWithValue(ChatKeyStore(InMemoryKv())),
+      ],
     );
     addTearDown(container.dispose);
 
@@ -34,6 +39,6 @@ void main() {
     expect(state.needsRecovery, isFalse);
     expect(state.identity, isNotNull);
     expect(state.identity!.publicKey, isNotEmpty);
-    expect(state.identity!.privateKey.length, equals(32));
+    expect(state.identity!.privateKey.extractBytes().length, equals(32));
   });
 }
