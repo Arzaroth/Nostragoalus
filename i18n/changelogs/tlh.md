@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [4.4.3] - 2026-07-20
+
 ### chIlmoHta'
 
 - ghomHomlIjmey De' HaSta 'e' Da'angDI' ja'chuq Sopwelh chIlbe'. epInmoHta'bogh ja'chuq Hoch HaSta pa' ratlh, ghom HaSta je.

@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [4.4.3] - 2026-07-20
+
 ### Fixed
 
 - The chat no longer disappears when you open the Leagues page: the dock keeps the conversation you were reading, and a pinned chat now stays pinned everywhere, including on a league's own page.
