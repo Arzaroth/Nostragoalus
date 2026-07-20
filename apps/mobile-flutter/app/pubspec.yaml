@@ -32,6 +32,10 @@ dependencies:
   image_picker: ^1.2.3
   flutter_map: ^8.3.1
   latlong2: ^0.10.1
+  # The cross-stack logic the golden vectors replay (e2ee, key transparency,
+  # play-by-play labels): the app ships that exact code, no fork.
+  nostragoalus_parity:
+    path: ../parity
 
 dev_dependencies:
   flutter_test:

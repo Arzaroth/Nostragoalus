@@ -3,6 +3,7 @@ import 'consensus.dart' as cons;
 import 'fergie.dart' as fg;
 import 'key_transparency.dart' as kt;
 import 'match_logic.dart' as m;
+import 'match_view.dart' as mv;
 import 'scoring.dart' as sc;
 import 'standings.dart' as st;
 
@@ -25,7 +26,8 @@ final Map<String, Map<String, Fn>> registry = {
   },
   'key-transparency': {
     'computeKtEntryHash': (a) => kt.computeKtEntryHash(a[0] as Map),
-    'verifyKtChain': (a) => kt.verifyKtChain(a[0] as List, a.length > 1 ? a[1] as String : kt.ktGenesis),
+    'verifyKtChain': (a) =>
+        kt.verifyKtChain(a[0] as List, a.length > 1 ? a[1] as String : kt.ktGenesis).toJson(),
     'loggedKeyFor': (a) => kt.loggedKeyFor(a[0] as List, a[1] as String),
   },
   'match': {
@@ -50,6 +52,24 @@ final Map<String, Map<String, Fn>> registry = {
   },
   'consensus': {
     'computeConsensus': (a) => cons.computeConsensus(a[0] as List, a[1] as String),
+  },
+  'match-view': {
+    'pbpTextSpec': (a) {
+      final e = a[0] as Map;
+      return mv
+          .pbpTextSpec(
+            kind: e['kind'] as String,
+            playerName: e['playerName'] as String?,
+            playerInName: e['playerInName'] as String?,
+            playerOutName: e['playerOutName'] as String?,
+            periodKind: e['periodKind'] as String?,
+            text: e['text'] as String?,
+          )
+          .toJson();
+    },
+    'timelineIcon': (a) => mv.timelineIcons[a[0] as String],
+    'isGoalKind': (a) => mv.isGoalKind(a[0] as String),
+    'formatPlayerName': (a) => mv.formatPlayerName(a[0] as String?),
   },
 };
 

@@ -4,6 +4,8 @@
 // Dart reimplementation (a mobile client) - the frozen `expected` is the target
 // both stacks must hit, and the TS replay here is the drift alarm on this side.
 import * as e2ee from '../../app/utils/e2ee'
+import { formatPlayerName } from '../../app/utils/format'
+import * as matchView from '../../app/utils/match-view'
 import * as fergie from '../../server/utils/analytics/fergie'
 import * as consensus from '../../server/utils/bot/service'
 import * as scoring from '../../server/utils/scoring/engine'
@@ -55,6 +57,14 @@ const registry: Record<string, Record<string, (...args: never[]) => unknown>> = 
   },
   consensus: {
     computeConsensus: consensus.computeConsensus,
+  },
+  'match-view': {
+    pbpTextSpec: matchView.pbpTextSpec,
+    // The icon table is data, not a function, but it is cross-stack data: a
+    // lookup makes it freezable per kind.
+    timelineIcon: (kind: string) => matchView.TIMELINE_ICONS[kind] ?? null,
+    isGoalKind: matchView.isGoalKind,
+    formatPlayerName,
   },
   match: {
     matchIsInPlay: matchLogic.matchIsInPlay,

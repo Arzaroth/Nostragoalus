@@ -192,7 +192,10 @@ export interface PbpTextSpec {
 // We phrase the commentary ourselves (localized) from the resolved names - the
 // team is shown by the flag, so the country never appears in the text.
 export function pbpTextSpec(e: PbpEventInput): PbpTextSpec {
-  if (e.kind === 'period') return { key: e.periodKind ? `match.pbp.period.${PERIOD_KEYS[e.periodKind] ?? ''}` : '' }
+  if (e.kind === 'period') {
+    const period = e.periodKind ? PERIOD_KEYS[e.periodKind] : undefined
+    return { key: period ? `match.pbp.period.${period}` : '' }
+  }
   if (e.kind === 'var') return e.text ? { key: '', literal: e.text } : { key: 'match.pbpKind.var' }
   if (e.kind === 'sub') {
     return e.playerInName && e.playerOutName

@@ -51,19 +51,45 @@ void main() async {
   final sodium = await SodiumSumoInit.init(_loadLibsodium);
   final vf = jsonDecode(File(_vectorsPath).readAsStringSync()) as Map<String, dynamic>;
 
+  // The vectors marshal keys as raw bytes; the impl takes SecureKeys, so wrap
+  // and dispose around each call.
+  T withKey<T>(Uint8List bytes, T Function(SecureKey) body) {
+    final key = SecureKey.fromList(sodium, bytes);
+    try {
+      return body(key);
+    } finally {
+      key.dispose();
+    }
+  }
+
   dynamic dispatch(String fn, List rawArgs) {
     final a = rawArgs.map(_revive).toList();
     switch (fn) {
       case 'fingerprint':
         return e2ee.fingerprint(sodium, a[0] as String);
       case 'openGroupKey':
-        return _encode(e2ee.openGroupKey(sodium, a[0] as String, a[1] as Map));
+        final identity = a[1] as Map;
+        return withKey(identity['privateKey'] as Uint8List, (sk) {
+          final groupKey = e2ee.openGroupKey(sodium, a[0] as String,
+              publicKey: identity['publicKey'] as String, privateKey: sk);
+          try {
+            return _encode(groupKey.extractBytes());
+          } finally {
+            groupKey.dispose();
+          }
+        });
       case 'decryptMessage':
-        return e2ee.decryptMessage(sodium, a[0] as String, a[1] as Uint8List);
+        return withKey(a[1] as Uint8List, (k) => e2ee.decryptMessage(sodium, a[0] as String, k));
       case 'decryptBytes':
-        return _encode(e2ee.decryptBytes(sodium, a[0] as String, a[1] as Uint8List));
+        return withKey(
+            a[1] as Uint8List, (k) => _encode(e2ee.decryptBytes(sodium, a[0] as String, k)));
       case 'unwrapPrivateKeyWithRecovery':
-        return _encode(e2ee.unwrapPrivateKeyWithRecovery(sodium, a[0] as String, a[1] as String));
+        final sk = e2ee.unwrapPrivateKeyWithRecovery(sodium, a[0] as String, a[1] as String);
+        try {
+          return _encode(sk.extractBytes());
+        } finally {
+          sk.dispose();
+        }
       default:
         throw StateError('unknown fn $fn');
     }

@@ -158,8 +158,9 @@ describe('isGoalKind', () => {
 describe('pbpTextSpec', () => {
   it('resolves period markers by key, and empty when the period is unknown/absent', () => {
     expect(pbpTextSpec({ kind: 'period', periodKind: 'half-time' })).toEqual({ key: 'match.pbp.period.halfTime' })
-    // unknown periodKind still yields a (trailing-dot) key, matching prior behavior
-    expect(pbpTextSpec({ kind: 'period', periodKind: 'mystery' })).toEqual({ key: 'match.pbp.period.' })
+    // an unmapped periodKind shows nothing rather than a half-built key the view
+    // would render raw
+    expect(pbpTextSpec({ kind: 'period', periodKind: 'mystery' })).toEqual({ key: '' })
     expect(pbpTextSpec({ kind: 'period', periodKind: null })).toEqual({ key: '' })
   })
 

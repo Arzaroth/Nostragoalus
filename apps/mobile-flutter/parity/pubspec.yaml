@@ -11,11 +11,11 @@ environment:
 dependencies:
   # SHA-256 for the commit-reveal ledger and the key-transparency log.
   crypto: ^3.0.0
+  # lib/e2ee.dart needs libsodium's exact primitives (secretbox, sealed box,
+  # Argon2id, blake2b). `sodium` is the ffi binding to the system libsodium (the
+  # Flutter app hands it an instance from sodium_libs). The pure modules
+  # (commitment/kt/match/...) still run with zero native deps via parity_test.dart.
+  sodium: ^3.4.4
 
 dev_dependencies:
   test: ^1.25.0
-  # e2ee interop (test/e2ee_interop_test.dart) needs libsodium's exact primitives
-  # (secretbox, sealed box, Argon2id, blake2b). `sodium` is the ffi binding to the
-  # system libsodium (in the Flutter app it's sodium_libs). The pure modules
-  # (commitment/kt/match) still run with zero native deps via parity_test.dart.
-  sodium: ^3.4.4

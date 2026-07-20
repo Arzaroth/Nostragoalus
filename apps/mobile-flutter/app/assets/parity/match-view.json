@@ -1,0 +1,956 @@
+{
+  "module": "match-view",
+  "cases": [
+    {
+      "fn": "timelineIcon",
+      "args": [
+        "goal"
+      ],
+      "expected": "⚽"
+    },
+    {
+      "fn": "isGoalKind",
+      "args": [
+        "goal"
+      ],
+      "expected": true
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "goal"
+        }
+      ],
+      "expected": {
+        "key": "match.pbpKind.goal"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "goal",
+          "playerName": "VAN DIJK"
+        }
+      ],
+      "expected": {
+        "key": "match.pbp.goal",
+        "params": {
+          "player": "Van Dijk"
+        }
+      }
+    },
+    {
+      "fn": "timelineIcon",
+      "args": [
+        "own-goal"
+      ],
+      "expected": "⚽"
+    },
+    {
+      "fn": "isGoalKind",
+      "args": [
+        "own-goal"
+      ],
+      "expected": true
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "own-goal"
+        }
+      ],
+      "expected": {
+        "key": "match.pbpKind.ownGoal"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "own-goal",
+          "playerName": "VAN DIJK"
+        }
+      ],
+      "expected": {
+        "key": "match.pbp.ownGoal",
+        "params": {
+          "player": "Van Dijk"
+        }
+      }
+    },
+    {
+      "fn": "timelineIcon",
+      "args": [
+        "penalty-goal"
+      ],
+      "expected": "⚽"
+    },
+    {
+      "fn": "isGoalKind",
+      "args": [
+        "penalty-goal"
+      ],
+      "expected": true
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "penalty-goal"
+        }
+      ],
+      "expected": {
+        "key": "match.pbpKind.penaltyGoal"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "penalty-goal",
+          "playerName": "VAN DIJK"
+        }
+      ],
+      "expected": {
+        "key": "match.pbp.penaltyGoal",
+        "params": {
+          "player": "Van Dijk"
+        }
+      }
+    },
+    {
+      "fn": "timelineIcon",
+      "args": [
+        "penalty-missed"
+      ],
+      "expected": "❌"
+    },
+    {
+      "fn": "isGoalKind",
+      "args": [
+        "penalty-missed"
+      ],
+      "expected": false
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "penalty-missed"
+        }
+      ],
+      "expected": {
+        "key": "match.pbpKind.penaltyMissed"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "penalty-missed",
+          "playerName": "VAN DIJK"
+        }
+      ],
+      "expected": {
+        "key": "match.pbp.penaltyMissed",
+        "params": {
+          "player": "Van Dijk"
+        }
+      }
+    },
+    {
+      "fn": "timelineIcon",
+      "args": [
+        "penalty-awarded"
+      ],
+      "expected": "🎯"
+    },
+    {
+      "fn": "isGoalKind",
+      "args": [
+        "penalty-awarded"
+      ],
+      "expected": false
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "penalty-awarded"
+        }
+      ],
+      "expected": {
+        "key": "match.pbpKind.penaltyAwarded"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "penalty-awarded",
+          "playerName": "VAN DIJK"
+        }
+      ],
+      "expected": {
+        "key": "match.pbpKind.penaltyAwarded"
+      }
+    },
+    {
+      "fn": "timelineIcon",
+      "args": [
+        "assist"
+      ],
+      "expected": "👟"
+    },
+    {
+      "fn": "isGoalKind",
+      "args": [
+        "assist"
+      ],
+      "expected": false
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "assist"
+        }
+      ],
+      "expected": {
+        "key": "match.pbpKind.assist"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "assist",
+          "playerName": "VAN DIJK"
+        }
+      ],
+      "expected": {
+        "key": "match.pbp.assist",
+        "params": {
+          "player": "Van Dijk"
+        }
+      }
+    },
+    {
+      "fn": "timelineIcon",
+      "args": [
+        "yellow"
+      ],
+      "expected": "🟨"
+    },
+    {
+      "fn": "isGoalKind",
+      "args": [
+        "yellow"
+      ],
+      "expected": false
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "yellow"
+        }
+      ],
+      "expected": {
+        "key": "match.pbpKind.yellow"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "yellow",
+          "playerName": "VAN DIJK"
+        }
+      ],
+      "expected": {
+        "key": "match.pbp.yellow",
+        "params": {
+          "player": "Van Dijk"
+        }
+      }
+    },
+    {
+      "fn": "timelineIcon",
+      "args": [
+        "red"
+      ],
+      "expected": "🟥"
+    },
+    {
+      "fn": "isGoalKind",
+      "args": [
+        "red"
+      ],
+      "expected": false
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "red"
+        }
+      ],
+      "expected": {
+        "key": "match.pbpKind.red"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "red",
+          "playerName": "VAN DIJK"
+        }
+      ],
+      "expected": {
+        "key": "match.pbp.red",
+        "params": {
+          "player": "Van Dijk"
+        }
+      }
+    },
+    {
+      "fn": "timelineIcon",
+      "args": [
+        "second-yellow"
+      ],
+      "expected": "🟥"
+    },
+    {
+      "fn": "isGoalKind",
+      "args": [
+        "second-yellow"
+      ],
+      "expected": false
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "second-yellow"
+        }
+      ],
+      "expected": {
+        "key": "match.pbpKind.secondYellow"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "second-yellow",
+          "playerName": "VAN DIJK"
+        }
+      ],
+      "expected": {
+        "key": "match.pbp.secondYellow",
+        "params": {
+          "player": "Van Dijk"
+        }
+      }
+    },
+    {
+      "fn": "timelineIcon",
+      "args": [
+        "sub"
+      ],
+      "expected": "🔄"
+    },
+    {
+      "fn": "isGoalKind",
+      "args": [
+        "sub"
+      ],
+      "expected": false
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "sub"
+        }
+      ],
+      "expected": {
+        "key": "match.pbpKind.sub"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "sub",
+          "playerName": "VAN DIJK"
+        }
+      ],
+      "expected": {
+        "key": "match.pbpKind.sub"
+      }
+    },
+    {
+      "fn": "timelineIcon",
+      "args": [
+        "shot"
+      ],
+      "expected": "🥅"
+    },
+    {
+      "fn": "isGoalKind",
+      "args": [
+        "shot"
+      ],
+      "expected": false
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "shot"
+        }
+      ],
+      "expected": {
+        "key": "match.pbpKind.shot"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "shot",
+          "playerName": "VAN DIJK"
+        }
+      ],
+      "expected": {
+        "key": "match.pbp.shot",
+        "params": {
+          "player": "Van Dijk"
+        }
+      }
+    },
+    {
+      "fn": "timelineIcon",
+      "args": [
+        "foul"
+      ],
+      "expected": null
+    },
+    {
+      "fn": "isGoalKind",
+      "args": [
+        "foul"
+      ],
+      "expected": false
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "foul"
+        }
+      ],
+      "expected": {
+        "key": "match.pbpKind.foul"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "foul",
+          "playerName": "VAN DIJK"
+        }
+      ],
+      "expected": {
+        "key": "match.pbp.foul",
+        "params": {
+          "player": "Van Dijk"
+        }
+      }
+    },
+    {
+      "fn": "timelineIcon",
+      "args": [
+        "corner"
+      ],
+      "expected": null
+    },
+    {
+      "fn": "isGoalKind",
+      "args": [
+        "corner"
+      ],
+      "expected": false
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "corner"
+        }
+      ],
+      "expected": {
+        "key": "match.pbpKind.corner"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "corner",
+          "playerName": "VAN DIJK"
+        }
+      ],
+      "expected": {
+        "key": "match.pbp.corner",
+        "params": {
+          "player": "Van Dijk"
+        }
+      }
+    },
+    {
+      "fn": "timelineIcon",
+      "args": [
+        "var"
+      ],
+      "expected": "📺"
+    },
+    {
+      "fn": "isGoalKind",
+      "args": [
+        "var"
+      ],
+      "expected": false
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "var"
+        }
+      ],
+      "expected": {
+        "key": "match.pbpKind.var"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "var",
+          "playerName": "VAN DIJK"
+        }
+      ],
+      "expected": {
+        "key": "match.pbpKind.var"
+      }
+    },
+    {
+      "fn": "timelineIcon",
+      "args": [
+        "period"
+      ],
+      "expected": "⏱️"
+    },
+    {
+      "fn": "isGoalKind",
+      "args": [
+        "period"
+      ],
+      "expected": false
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "period"
+        }
+      ],
+      "expected": {
+        "key": ""
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "period",
+          "playerName": "VAN DIJK"
+        }
+      ],
+      "expected": {
+        "key": ""
+      }
+    },
+    {
+      "fn": "timelineIcon",
+      "args": [
+        "meteorite"
+      ],
+      "expected": null
+    },
+    {
+      "fn": "isGoalKind",
+      "args": [
+        "meteorite"
+      ],
+      "expected": false
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "meteorite"
+        }
+      ],
+      "expected": {
+        "key": ""
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "meteorite",
+          "playerName": "VAN DIJK"
+        }
+      ],
+      "expected": {
+        "key": ""
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "period",
+          "periodKind": "kickoff"
+        }
+      ],
+      "expected": {
+        "key": "match.pbp.period.kickoff"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "period",
+          "periodKind": "half-time"
+        }
+      ],
+      "expected": {
+        "key": "match.pbp.period.halfTime"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "period",
+          "periodKind": "second-half"
+        }
+      ],
+      "expected": {
+        "key": "match.pbp.period.secondHalf"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "period",
+          "periodKind": "second-half-end"
+        }
+      ],
+      "expected": {
+        "key": "match.pbp.period.secondHalfEnd"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "period",
+          "periodKind": "extra-time"
+        }
+      ],
+      "expected": {
+        "key": "match.pbp.period.extraTime"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "period",
+          "periodKind": "extra-time-end"
+        }
+      ],
+      "expected": {
+        "key": "match.pbp.period.extraTimeEnd"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "period",
+          "periodKind": "full-time"
+        }
+      ],
+      "expected": {
+        "key": "match.pbp.period.fullTime"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "period",
+          "periodKind": "mystery"
+        }
+      ],
+      "expected": {
+        "key": ""
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "period",
+          "periodKind": null
+        }
+      ],
+      "expected": {
+        "key": ""
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "sub",
+          "playerInName": "MUSIALA",
+          "playerOutName": "Thomas MÜLLER"
+        }
+      ],
+      "expected": {
+        "key": "match.pbp.sub",
+        "params": {
+          "playerIn": "Musiala",
+          "playerOut": "Thomas Müller"
+        }
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "sub",
+          "playerInName": "MUSIALA"
+        }
+      ],
+      "expected": {
+        "key": "match.pbpKind.sub"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "sub",
+          "playerOutName": "MUSIALA"
+        }
+      ],
+      "expected": {
+        "key": "match.pbpKind.sub"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "sub",
+          "playerInName": "",
+          "playerOutName": ""
+        }
+      ],
+      "expected": {
+        "key": "match.pbpKind.sub"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "var",
+          "text": "Goal cancelled - offside"
+        }
+      ],
+      "expected": {
+        "key": "",
+        "literal": "Goal cancelled - offside"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "var",
+          "text": ""
+        }
+      ],
+      "expected": {
+        "key": "match.pbpKind.var"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "penalty-goal",
+          "playerName": "PALMER"
+        }
+      ],
+      "expected": {
+        "key": "match.pbp.penaltyGoal",
+        "params": {
+          "player": "Palmer"
+        }
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "penalty-missed",
+          "playerName": "SAKA"
+        }
+      ],
+      "expected": {
+        "key": "match.pbp.penaltyMissed",
+        "params": {
+          "player": "Saka"
+        }
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "own-goal",
+          "playerName": "Riccardo CALAFIORI"
+        }
+      ],
+      "expected": {
+        "key": "match.pbp.ownGoal",
+        "params": {
+          "player": "Riccardo Calafiori"
+        }
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "penalty-awarded",
+          "playerName": "KANE"
+        }
+      ],
+      "expected": {
+        "key": "match.pbpKind.penaltyAwarded"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "goal",
+          "playerName": ""
+        }
+      ],
+      "expected": {
+        "key": "match.pbpKind.goal"
+      }
+    },
+    {
+      "fn": "formatPlayerName",
+      "args": [
+        "VAN DIJK"
+      ],
+      "expected": "Van Dijk"
+    },
+    {
+      "fn": "formatPlayerName",
+      "args": [
+        "O'NEILL"
+      ],
+      "expected": "O'Neill"
+    },
+    {
+      "fn": "formatPlayerName",
+      "args": [
+        "DE-BRUYNE"
+      ],
+      "expected": "De-Bruyne"
+    },
+    {
+      "fn": "formatPlayerName",
+      "args": [
+        "Kylian MBAPPÉ"
+      ],
+      "expected": "Kylian Mbappé"
+    },
+    {
+      "fn": "formatPlayerName",
+      "args": [
+        "Kylian Mbappé"
+      ],
+      "expected": "Kylian Mbappé"
+    },
+    {
+      "fn": "formatPlayerName",
+      "args": [
+        "A"
+      ],
+      "expected": "A"
+    },
+    {
+      "fn": "formatPlayerName",
+      "args": [
+        "A B"
+      ],
+      "expected": "A B"
+    },
+    {
+      "fn": "formatPlayerName",
+      "args": [
+        "DE LA FUENTE"
+      ],
+      "expected": "De La Fuente"
+    },
+    {
+      "fn": "formatPlayerName",
+      "args": [
+        ""
+      ],
+      "expected": ""
+    },
+    {
+      "fn": "formatPlayerName",
+      "args": [
+        null
+      ],
+      "expected": ""
+    }
+  ]
+}
