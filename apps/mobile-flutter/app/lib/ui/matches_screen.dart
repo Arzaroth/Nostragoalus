@@ -7,6 +7,7 @@ import '../state/providers.dart';
 import 'competition_switcher.dart';
 import 'match_detail_screen.dart';
 import 'widgets/async_value_view.dart';
+import 'widgets/empty_state.dart';
 import 'widgets/notifications_bell.dart';
 import 'widgets/score_pill.dart';
 
@@ -31,12 +32,9 @@ class MatchesScreen extends ConsumerWidget {
           onRetry: () => ref.invalidate(matchesProvider),
           data: (res) {
             if (res.matches.isEmpty) {
-              return ListView(children: [
-                const SizedBox(height: 80),
-                Center(child: Text(context.tr('matches.empty'))),
-              ]);
+              return EmptyState(message: context.tr('matches.empty'));
             }
-            final rounds = _groupByRound(res.matches);
+            final rounds = groupByRound(res.matches);
             return ListView.builder(
               itemCount: rounds.length,
               itemBuilder: (context, i) => _RoundGroup(rounds[i]),
@@ -46,40 +44,41 @@ class MatchesScreen extends ConsumerWidget {
       ),
     );
   }
-
-  List<_Round> _groupByRound(List<Match2> matches) {
-    final byId = <String, _Round>{};
-    for (final m in matches) {
-      (byId[m.roundId] ??= _Round(m.roundId, m.roundLabel, m.roundSortOrder))
-          .matches
-          .add(m);
-    }
-    return byId.values.toList()..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-  }
 }
 
-class _Round {
-  _Round(this.id, this.label, this.sortOrder);
+/// Fixtures bucketed by round, in the competition's round order.
+List<MatchRound> groupByRound(List<MatchesResponseMatch> matches) {
+  final byId = <String, MatchRound>{};
+  for (final m in matches) {
+    (byId[m.roundId] ??= MatchRound(m.roundId, m.roundLabel, m.roundSortOrder)).matches.add(m);
+  }
+  return byId.values.toList()..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+}
+
+class MatchRound {
+  MatchRound(this.id, this.label, this.sortOrder);
   final String id;
   final String label;
   final int sortOrder;
-  final List<Match2> matches = [];
+  final List<MatchesResponseMatch> matches = [];
 
   // Concluded = every match played; the final round is never treated as foldable.
   bool get allPlayed => matches.every((m) => m.status == 'FINISHED');
   bool get isFinal => matches.any((m) => m.stage == 'FINAL');
+
+  /// A concluded round folds away so the list lands on what is still to come.
+  bool get collapsed => allPlayed && !isFinal;
 }
 
 class _RoundGroup extends StatelessWidget {
   const _RoundGroup(this.round);
-  final _Round round;
+  final MatchRound round;
 
   @override
   Widget build(BuildContext context) {
-    final collapsed = round.allPlayed && !round.isFinal;
     return ExpansionTile(
       key: PageStorageKey(round.id),
-      initiallyExpanded: !collapsed,
+      initiallyExpanded: !round.collapsed,
       title: Text(round.label, style: Theme.of(context).textTheme.titleSmall),
       childrenPadding: EdgeInsets.zero,
       children: [
@@ -91,7 +90,7 @@ class _RoundGroup extends StatelessWidget {
 
 class _MatchTile extends StatelessWidget {
   const _MatchTile(this.match);
-  final Match2 match;
+  final MatchesResponseMatch match;
 
   @override
   Widget build(BuildContext context) {

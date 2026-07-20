@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../api/models.gen.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import 'feedback.dart';
 import 'widgets/async_value_view.dart';
 
 /// Calendar feed: subscribe to fixtures + pick deadlines in the device calendar,
@@ -17,12 +19,12 @@ class CalendarScreen extends ConsumerWidget {
     final feed = ref.watch(feedSubscriptionProvider);
     return Scaffold(
       appBar: AppBar(title: Text(context.tr('calendar.title'))),
-      body: AsyncValueView<Map<String, dynamic>>(
+      body: AsyncValueView<FeedSubscriptionResponse>(
         value: feed,
         onRetry: () => ref.invalidate(feedSubscriptionProvider),
         data: (f) {
-          final url = (f['url'] ?? '').toString();
-          final webcal = (f['webcalUrl'] ?? url).toString();
+          final url = f.url;
+          final webcal = f.webcalUrl.isEmpty ? url : f.webcalUrl;
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -52,11 +54,17 @@ class CalendarScreen extends ConsumerWidget {
                 icon: const Icon(Icons.refresh),
                 label: Text(context.tr('calendar.regenerate')),
                 onPressed: () async {
-                  final messenger = ScaffoldMessenger.of(context);
-                  final msg = context.tr('calendar.regenerated');
-                  await ref.read(apiProvider).regenerateFeed();
-                  ref.invalidate(feedSubscriptionProvider);
-                  messenger.showSnackBar(SnackBar(content: Text(msg)));
+                  final ok = await confirmDialog(
+                    context,
+                    title: context.tr('calendar.regenerate'),
+                    message: context.tr('calendar.regenerateHint'),
+                    confirmLabel: context.tr('calendar.regenerate'),
+                  );
+                  if (!ok || !context.mounted) return;
+                  await runAction(context, () async {
+                    await ref.read(apiProvider).regenerateFeed();
+                    ref.invalidate(feedSubscriptionProvider);
+                  }, successKey: 'calendar.regenerated');
                 },
               ),
               Padding(

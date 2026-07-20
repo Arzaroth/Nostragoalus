@@ -1,27 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../api/models.gen.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import 'feedback.dart';
 import 'widgets/async_value_view.dart';
 
 /// The full per-criterion prize editor (owner/moderator). Each criterion gets a
 /// label + optional note + link; a blank label removes that prize. Replace-set:
 /// the save sends the whole desired list.
-const _criteria = [
-  'OVERALL',
-  'WOODEN_SPOON',
-  'GROUP_PHASE',
-  'KNOCKOUT_PHASE',
-  'FINALIST',
-  'MADAME_IRMA',
-  'GROUP_ORACLE',
-  'KNOCKOUT_ORACLE',
-  'SHARPSHOOTER',
-  'GOAL_DIFF_GURU',
-  'TEAM_SPECIALIST',
-];
-
 class LeagueRewardsEditorScreen extends ConsumerWidget {
   const LeagueRewardsEditorScreen({super.key, required this.leagueId});
   final String leagueId;
@@ -33,12 +21,15 @@ class LeagueRewardsEditorScreen extends ConsumerWidget {
       body: AsyncValueView<List<dynamic>>(
         value: ref.watch(leagueRewardsProvider(leagueId)),
         onRetry: () => ref.invalidate(leagueRewardsProvider(leagueId)),
-        data: (rewards) {
-          final byType = <String, Map>{};
-          for (final r in rewards.cast<Map>()) {
-            byType[(r['type'] ?? '').toString()] = (r['reward'] as Map?) ?? const {};
-          }
-          return _RewardsForm(leagueId: leagueId, existing: byType);
+        data: (raw) {
+          final existing = {
+            for (final r in raw.cast<LeagueReward>())
+              if (r.reward != null) r.type: r.reward!,
+          };
+          // The contract enum plus anything the server already stores, so a
+          // criterion this build doesn't know about survives the replace-set.
+          final criteria = <String>{...Reward.typeValues, ...existing.keys}.toList();
+          return _RewardsForm(leagueId: leagueId, criteria: criteria, existing: existing);
         },
       ),
     );
@@ -46,9 +37,14 @@ class LeagueRewardsEditorScreen extends ConsumerWidget {
 }
 
 class _RewardsForm extends ConsumerStatefulWidget {
-  const _RewardsForm({required this.leagueId, required this.existing});
+  const _RewardsForm({
+    required this.leagueId,
+    required this.criteria,
+    required this.existing,
+  });
   final String leagueId;
-  final Map<String, Map> existing;
+  final List<String> criteria;
+  final Map<String, Reward> existing;
   @override
   ConsumerState<_RewardsForm> createState() => _RewardsFormState();
 }
@@ -62,11 +58,11 @@ class _RewardsFormState extends ConsumerState<_RewardsForm> {
   @override
   void initState() {
     super.initState();
-    for (final type in _criteria) {
+    for (final type in widget.criteria) {
       final r = widget.existing[type];
-      _label[type] = TextEditingController(text: (r?['label'] ?? '').toString());
-      _note[type] = TextEditingController(text: (r?['note'] ?? '').toString());
-      _link[type] = TextEditingController(text: (r?['link'] ?? '').toString());
+      _label[type] = TextEditingController(text: r?.label ?? '');
+      _note[type] = TextEditingController(text: r?.note ?? '');
+      _link[type] = TextEditingController(text: r?.link ?? '');
     }
   }
 
@@ -82,7 +78,7 @@ class _RewardsFormState extends ConsumerState<_RewardsForm> {
     setState(() => _busy = true);
     try {
       final items = <Map<String, dynamic>>[];
-      for (final type in _criteria) {
+      for (final type in widget.criteria) {
         final label = _label[type]!.text.trim();
         if (label.isEmpty) continue; // blank label => no prize for this criterion
         final note = _note[type]!.text.trim();
@@ -98,11 +94,8 @@ class _RewardsFormState extends ConsumerState<_RewardsForm> {
       ref.invalidate(leagueRewardsProvider(widget.leagueId));
       ref.invalidate(leagueDetailProvider(widget.leagueId));
       if (mounted) Navigator.of(context).pop();
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(context.tr('err.generic'))));
-      }
+    } catch (e) {
+      if (mounted) showToast(context, apiMessage(context, e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -115,7 +108,7 @@ class _RewardsFormState extends ConsumerState<_RewardsForm> {
       children: [
         Text(context.tr('leagues.editPrizesHint'), style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(height: 8),
-        for (final type in _criteria)
+        for (final type in widget.criteria)
           Card(
             margin: const EdgeInsets.symmetric(vertical: 6),
             child: Padding(

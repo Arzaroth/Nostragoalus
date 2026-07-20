@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
 import 'league_detail_screen.dart';
+import 'leagues_screen.dart' show joinLeague;
 import 'widgets/async_value_view.dart';
 
 /// Invite landing: previews the league behind a token, then joins on tap and
@@ -17,27 +18,25 @@ class JoinLeagueScreen extends ConsumerStatefulWidget {
 
 class _JoinLeagueScreenState extends ConsumerState<JoinLeagueScreen> {
   bool _busy = false;
-  String? _error;
 
   Future<void> _join() async {
-    setState(() { _busy = true; _error = null; });
-    try {
+    setState(() => _busy = true);
+    var leagueId = '';
+    final joined = await joinLeague(context, () async {
       final res = await ref.read(apiProvider).acceptInvite(widget.token);
       ref.invalidate(leaguesProvider);
-      final leagueId = ((res['league'] as Map?)?['id'] ?? '').toString();
-      if (!mounted) return;
-      if (leagueId.isEmpty) {
-        Navigator.of(context).pop();
-        return;
-      }
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => LeagueDetailScreen(leagueId: leagueId)),
-      );
-    } catch (_) {
-      if (mounted) setState(() => _error = context.tr('leagues.joinFailed'));
-    } finally {
-      if (mounted) setState(() => _busy = false);
+      leagueId = ((res['league'] as Map?)?['id'] ?? '').toString();
+    });
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (!joined) return;
+    if (leagueId.isEmpty) {
+      Navigator.of(context).pop();
+      return;
     }
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => LeagueDetailScreen(leagueId: leagueId)),
+    );
   }
 
   @override
@@ -48,7 +47,7 @@ class _JoinLeagueScreenState extends ConsumerState<JoinLeagueScreen> {
         value: ref.watch(invitePreviewProvider(widget.token)),
         onRetry: () => ref.invalidate(invitePreviewProvider(widget.token)),
         data: (p) {
-          final league = (p['league'] as Map?) ?? const {};
+          final league = (p['league'] as Map?)?.cast<String, dynamic>() ?? const {};
           final name = (league['name'] ?? '').toString();
           final members = (league['memberCount'] as num?)?.toInt() ?? 0;
           final already = p['alreadyMember'] == true;
@@ -65,12 +64,6 @@ class _JoinLeagueScreenState extends ConsumerState<JoinLeagueScreen> {
                   Text('$members ${context.tr('leagues.members')}',
                       style: Theme.of(context).textTheme.bodySmall),
                   const SizedBox(height: 24),
-                  if (_error != null)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Text(_error!,
-                          style: TextStyle(color: Theme.of(context).colorScheme.error)),
-                    ),
                   if (already)
                     FilledButton(
                       onPressed: () => Navigator.of(context).pushReplacement(

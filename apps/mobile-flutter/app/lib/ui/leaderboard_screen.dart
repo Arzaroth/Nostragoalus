@@ -7,6 +7,8 @@ import '../state/providers.dart';
 import 'cabinet_screen.dart';
 import 'competition_switcher.dart';
 import 'widgets/async_value_view.dart';
+import 'widgets/empty_state.dart';
+import 'widgets/movement_arrow.dart';
 
 /// The standings of players by points (movement arrow, live flag).
 class LeaderboardScreen extends ConsumerWidget {
@@ -27,10 +29,7 @@ class LeaderboardScreen extends ConsumerWidget {
           onRetry: () => ref.invalidate(leaderboardProvider),
           data: (res) {
             if (res.rows.isEmpty) {
-              return ListView(children: [
-                const SizedBox(height: 80),
-                Center(child: Text(context.tr('leaderboard.empty'))),
-              ]);
+              return EmptyState(message: context.tr('leaderboard.empty'));
             }
             return ListView.separated(
               itemCount: res.rows.length,
@@ -46,40 +45,27 @@ class LeaderboardScreen extends ConsumerWidget {
 
 class _Row extends StatelessWidget {
   const _Row(this.row);
-  final RowData2 row;
+  final LeaderboardResponseRow row;
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
       leading: CircleAvatar(child: Text('${row.rank.toInt()}')),
       title: Text(row.displayName, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: Text('${row.exactCount.toInt()} exact · ${row.outcomeCount.toInt()} outcome'),
+      subtitle: Text('${row.exactCount.toInt()} ${context.tr('leaderboard.exact')} · '
+          '${row.outcomeCount.toInt()} ${context.tr('leaderboard.correct')}'),
       onTap: () => Navigator.of(context).push(MaterialPageRoute(
         builder: (_) => CabinetScreen(userId: row.userId, name: row.displayName),
       )),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _Movement(row.movement),
+          MovementArrow(delta: (row.movement ?? 0).toInt()),
           const SizedBox(width: 8),
           Text('${row.totalPoints.toInt()}',
               style: Theme.of(context).textTheme.titleMedium),
         ],
       ),
     );
-  }
-}
-
-class _Movement extends StatelessWidget {
-  const _Movement(this.movement);
-  final double? movement;
-
-  @override
-  Widget build(BuildContext context) {
-    final m = movement ?? 0;
-    if (m == 0) return const Icon(Icons.remove, size: 16, color: Colors.grey);
-    final up = m > 0;
-    return Icon(up ? Icons.arrow_drop_up : Icons.arrow_drop_down,
-        color: up ? Colors.green : Colors.red);
   }
 }

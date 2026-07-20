@@ -6,7 +6,10 @@ import '../api/models.gen.dart';
 import '../config.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import 'feedback.dart';
 import 'widgets/async_value_view.dart';
+import 'widgets/empty_state.dart';
+import 'widgets/section_card.dart';
 import 'widgets/stat_tile.dart';
 
 /// Personal prediction analytics: headline stats + bias report, round-by-round
@@ -24,11 +27,11 @@ class AnalyticsScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.share),
             tooltip: context.tr('common.share'),
-            onPressed: () async {
+            onPressed: () => runAction(context, () async {
               final comp = ref.read(selectedCompetitionProvider);
               final token = await ref.read(apiProvider).mintAnalyticsShare(competition: comp);
               await SharePlus.instance.share(ShareParams(text: '${AppConfig.webBase}/a/$token'));
-            },
+            }),
           ),
         ],
       ),
@@ -39,10 +42,7 @@ class AnalyticsScreen extends ConsumerWidget {
           onRetry: () => ref.invalidate(analyticsProvider),
           data: (a) {
             if (!a.hasData) {
-              return ListView(children: [
-                const SizedBox(height: 80),
-                Center(child: Text(context.tr('analytics.signInHint'))),
-              ]);
+              return EmptyState(message: context.tr('analytics.signInHint'));
             }
             return ListView(
               padding: const EdgeInsets.all(12),
@@ -83,21 +83,6 @@ class AnalyticsScreen extends ConsumerWidget {
         ],
       );
 
-  Widget _section(BuildContext context, String title, List<Widget> children) => Card(
-        margin: const EdgeInsets.only(top: 12),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: Theme.of(context).textTheme.titleSmall),
-              const SizedBox(height: 8),
-              ...children,
-            ],
-          ),
-        ),
-      );
-
   Widget _bar(BuildContext context, String label, double value, double max) {
     final frac = max <= 0 ? 0.0 : (value / max).clamp(0.0, 1.0);
     return Padding(
@@ -121,7 +106,7 @@ class AnalyticsScreen extends ConsumerWidget {
 
   Widget _tiers(BuildContext context, Tier t) {
     final max = [t.exact, t.diff, t.outcome, t.miss].reduce((a, b) => a > b ? a : b);
-    return _section(context, context.tr('analytics.tierTitle'), [
+    return SectionCard(title: context.tr('analytics.tierTitle'), children: [
       _bar(context, context.tr('analytics.tier.exact'), t.exact, max),
       _bar(context, context.tr('analytics.tier.diff'), t.diff, max),
       _bar(context, context.tr('analytics.tier.outcome'), t.outcome, max),
@@ -129,17 +114,16 @@ class AnalyticsScreen extends ConsumerWidget {
     ]);
   }
 
-  Widget _goals(BuildContext context, Goal g) => _section(context, context.tr('analytics.goalsTitle'), [
+  Widget _goals(BuildContext context, Goal g) => SectionCard(title: context.tr('analytics.goalsTitle'), children: [
         Text(context
             .tr('analytics.goalsLine')
             .replaceAll('{predicted}', g.predictedAvg.toStringAsFixed(1))
             .replaceAll('{actual}', g.actualAvg.toStringAsFixed(1))),
       ]);
 
-  Widget _outcome(BuildContext context, OutcomeLean o) => _section(
-        context,
-        context.tr('analytics.outcomeTitle'),
-        [
+  Widget _outcome(BuildContext context, OutcomeLean o) => SectionCard(
+        title: context.tr('analytics.outcomeTitle'),
+        children: [
           _bar(context, context.tr('analytics.outcome.home'), o.predicted.home,
               _maxOf(o.predicted)),
           _bar(context, context.tr('analytics.outcome.draw'), o.predicted.draw,
@@ -157,9 +141,9 @@ class AnalyticsScreen extends ConsumerWidget {
   double _maxOf(Predicted p) =>
       [p.home, p.draw, p.away].reduce((a, b) => a > b ? a : b);
 
-  Widget _teamBias(BuildContext context, Team2 teams) {
+  Widget _teamBias(BuildContext context, AnalyticsResponseTeam teams) {
     if (teams.overrated.isEmpty && teams.underrated.isEmpty) {
-      return _section(context, context.tr('analytics.overrated'), [
+      return SectionCard(title: context.tr('analytics.overrated'), children: [
         Text(context.tr('analytics.noTeamBias')),
       ]);
     }
@@ -171,28 +155,27 @@ class AnalyticsScreen extends ConsumerWidget {
         );
     return Column(children: [
       if (teams.overrated.isNotEmpty)
-        _section(context, context.tr('analytics.overrated'), teams.overrated.map(row).toList()),
+        SectionCard(title: context.tr('analytics.overrated'), children: teams.overrated.map(row).toList()),
       if (teams.underrated.isNotEmpty)
-        _section(context, context.tr('analytics.underrated'), teams.underrated.map(row).toList()),
+        SectionCard(title: context.tr('analytics.underrated'), children: teams.underrated.map(row).toList()),
     ]);
   }
 
   Widget _overTime(BuildContext context, List<OverTime> rounds) {
     if (rounds.isEmpty) return const SizedBox.shrink();
-    return _section(
-      context,
-      context.tr('analytics.overTimeTitle'),
-      rounds.map((r) => _bar(context, r.label, (r.accuracy * 100), 100)).toList(),
+    return SectionCard(
+      title: context.tr('analytics.overTimeTitle'),
+      children: rounds.map((r) => _bar(context, r.label, r.accuracy * 100, 100)).toList(),
     );
   }
 
   Widget _highlights(BuildContext context, AnalyticsResponse a) {
     Widget call(String title, BestCall? c) {
       if (c == null) return const SizedBox.shrink();
-      return _section(context, title, [
+      return SectionCard(title: title, children: [
         Text('${c.home} ${c.actual} ${c.away}'),
         Text(context.tr('analytics.youPicked').replaceAll('{score}', c.predicted)),
-        Text('${c.points >= 0 ? '+' : ''}${c.points.toInt()} pts',
+        Text('${c.points >= 0 ? '+' : ''}${c.points.toInt()} ${context.tr('leaderboard.pts')}',
             style: Theme.of(context).textTheme.bodySmall),
       ]);
     }
@@ -205,7 +188,7 @@ class AnalyticsScreen extends ConsumerWidget {
 
   Widget _fergie(BuildContext context, FergieTime f) {
     if (f.matches <= 0) return const SizedBox.shrink();
-    return _section(context, context.tr('analytics.fergieTitle'), [
+    return SectionCard(title: context.tr('analytics.fergieTitle'), children: [
       Text(context
           .tr('analytics.fergieSummary')
           .replaceAll('{goals}', '${f.goals.toInt()}')

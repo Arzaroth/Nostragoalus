@@ -6,6 +6,7 @@ import '../api/models.gen.dart';
 import '../config.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import 'feedback.dart';
 import 'widgets/async_value_view.dart';
 
 /// A user's public trophy cabinet: trophies + earned achievements.
@@ -23,11 +24,11 @@ class CabinetScreen extends ConsumerWidget {
           ? FloatingActionButton.extended(
               icon: const Icon(Icons.share),
               label: Text(context.tr('common.share')),
-              onPressed: () async {
+              onPressed: () => runAction(context, () async {
                 final comp = ref.read(selectedCompetitionProvider);
                 final token = await ref.read(apiProvider).mintProfileShare(competition: comp);
                 await SharePlus.instance.share(ShareParams(text: '${AppConfig.webBase}/p/$token'));
-              },
+              }),
             )
           : null,
       body: RefreshIndicator(
@@ -255,10 +256,12 @@ class CabinetScreen extends ConsumerWidget {
         ),
       ),
     );
-    if (saved != true) return;
-    await ref.read(apiProvider).setShowcase(selected,
-        competition: ref.read(selectedCompetitionProvider));
-    ref.invalidate(cabinetProvider(c.userId));
+    if (saved != true || !context.mounted) return;
+    await runAction(context, () async {
+      await ref.read(apiProvider).setShowcase(selected,
+          competition: ref.read(selectedCompetitionProvider));
+      ref.invalidate(cabinetProvider(c.userId));
+    }, successKey: 'common.saved');
   }
 
   Widget _header(BuildContext context, String text) => Padding(

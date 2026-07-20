@@ -6,12 +6,32 @@ import '../chat/chat_providers.dart' show ChatState;
 import '../chat/dm_providers.dart';
 import '../chat/outbox.dart';
 import '../i18n/i18n_scope.dart';
+import '../reactions.dart';
 import '../state/providers.dart';
 import '../voice/voice_service.dart';
+import 'feedback.dart';
 import 'widgets/async_value_view.dart';
 import 'widgets/chat_attachment.dart';
-import 'widgets/outbox_tile.dart';
+import 'widgets/chat_composer.dart';
+import 'widgets/chat_line_tile.dart';
+import 'widgets/chat_message_list.dart';
+import 'widgets/chat_recovery_gate.dart';
+import 'widgets/kt_key_badge.dart';
 import 'widgets/voice_bar.dart';
+
+/// The id of the caller's newest own message the other participant has read
+/// (createdAt <= their last-read time), for the single "Seen" marker.
+String? lastSeenOwnMessage(DmRoomView view, String? selfId) {
+  final readAt = view.otherReadAt;
+  if (selfId == null || readAt == null) return null;
+  String? seen;
+  for (final l in view.lines) {
+    if (l.userId != selfId) continue;
+    final ts = DateTime.tryParse(l.createdAt);
+    if (ts != null && !ts.isAfter(readAt)) seen = l.id;
+  }
+  return seen;
+}
 
 /// A 1:1 encrypted conversation. Same crypto + display as league chat.
 class DmRoomScreen extends ConsumerStatefulWidget {
@@ -26,6 +46,10 @@ class DmRoomScreen extends ConsumerStatefulWidget {
 class _DmRoomScreenState extends ConsumerState<DmRoomScreen> {
   final _input = TextEditingController();
 
+  String get _room => 'dm:${widget.threadId}';
+
+  VoiceScope get _scope => VoiceScope.dm(widget.threadId);
+
   @override
   void initState() {
     super.initState();
@@ -33,8 +57,11 @@ class _DmRoomScreenState extends ConsumerState<DmRoomScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
         await ref.read(apiProvider).markDmRead(widget.threadId);
+        if (!mounted) return;
         ref.invalidate(dmThreadsProvider);
-      } catch (_) {/* ignore */}
+      } catch (e) {
+        if (mounted) showToast(context, apiMessage(context, e));
+      }
     });
   }
 
@@ -52,171 +79,133 @@ class _DmRoomScreenState extends ConsumerState<DmRoomScreen> {
     final caption = _input.text.trim();
     final text = caption.isEmpty ? '\u{1F5BC}' : caption;
     _input.clear();
-    ref.read(chatOutboxProvider.notifier).enqueue('dm:${widget.threadId}', text,
+    ref.read(chatOutboxProvider.notifier).enqueue(_room, text,
         () => ref.read(sendDmProvider)(widget.threadId, text, image: bytes));
   }
 
-  /// The id of the caller's newest own message the other participant has read
-  /// (createdAt <= their last-read time), for the single "Seen" marker.
-  String? _lastSeenOwnMessage(DmRoomView view, String? selfId) {
-    final readAt = view.otherReadAt;
-    if (selfId == null || readAt == null) return null;
-    String? seen;
-    for (final l in view.lines) {
-      if (l.userId != selfId) continue;
-      final ts = DateTime.tryParse(l.createdAt);
-      if (ts != null && !ts.isAfter(readAt)) seen = l.id;
-    }
-    return seen;
-  }
-
   Future<void> _react(String messageId) async {
-    // REACTION_EMOJIS codes -> display glyphs (matches the web reaction set).
-    const reactions = {
-      'FIRE': '🔥', 'GOAL': '⚽', 'WOW': '😮', 'LAUGH': '😂', 'SAD': '😢', 'ANGRY': '😡',
-    };
     final picked = await showModalBottomSheet<String>(
       context: context,
       builder: (context) => SafeArea(
         child: Wrap(
           alignment: WrapAlignment.center,
           children: [
-            for (final e in reactions.entries)
+            for (final (key, glyph) in reactionPalette)
               IconButton(
                 iconSize: 30,
-                icon: Text(e.value, style: const TextStyle(fontSize: 28)),
-                onPressed: () => Navigator.pop(context, e.key),
+                tooltip: key,
+                icon: Text(glyph, style: const TextStyle(fontSize: 28)),
+                onPressed: () => Navigator.pop(context, key),
               ),
           ],
         ),
       ),
     );
-    if (picked == null) return;
+    if (picked == null || !mounted) return;
+    final ok = await runAction(
+        context, () => ref.read(apiProvider).reactDm(widget.threadId, messageId, picked));
+    if (ok) ref.invalidate(dmRoomProvider(widget.threadId));
+  }
+
+  Future<void> _call(String otherId) async {
     try {
-      await ref.read(apiProvider).reactDm(widget.threadId, messageId, picked);
-      ref.invalidate(dmRoomProvider(widget.threadId));
-    } catch (_) {/* ignore */}
+      await ref.read(voiceServiceProvider).invite(_scope, [otherId]);
+    } on VoiceJoinException catch (e) {
+      if (!mounted) return;
+      showToast(context, context.tr(e.micDenied ? 'voice.error.micDenied' : 'err.serverError'));
+    } catch (e) {
+      if (mounted) showToast(context, apiMessage(context, e));
+    }
   }
 
   void _send() {
     final text = _input.text.trim();
     if (text.isEmpty) return;
     _input.clear();
-    ref.read(chatOutboxProvider.notifier).enqueue('dm:${widget.threadId}', text,
+    ref.read(chatOutboxProvider.notifier).enqueue(_room, text,
         () => ref.read(sendDmProvider)(widget.threadId, text));
   }
 
   @override
   Widget build(BuildContext context) {
     final room = ref.watch(dmRoomProvider(widget.threadId));
-    final otherId = room.valueOrNull?.otherId ?? '';
+    final view = room.valueOrNull;
+    final otherId = view?.otherId ?? '';
+    final self = ref.watch(authControllerProvider).valueOrNull?.id;
+    final outbox = ref.watch(chatOutboxProvider).where((e) => e.roomId == _room).toList();
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Row(
+          children: [
+            Flexible(child: Text(widget.title, overflow: TextOverflow.ellipsis)),
+            if (view != null) ...[
+              const SizedBox(width: 8),
+              KtKeyBadge(check: view.otherKeyCheck),
+            ],
+          ],
+        ),
         actions: [
           if (otherId.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.call),
               tooltip: context.tr('voice.call'),
-              onPressed: () => ref
-                  .read(voiceServiceProvider)
-                  .invite(VoiceScope(kind: 'dm', threadId: widget.threadId), [otherId]),
+              onPressed: () => _call(otherId),
             ),
         ],
       ),
-      bottomNavigationBar:
-          VoiceBar(scope: VoiceScope(kind: 'dm', threadId: widget.threadId)),
+      bottomNavigationBar: VoiceBar(scope: _scope),
       body: Column(
         children: [
           Expanded(
             child: AsyncValueView<DmRoomView>(
               value: room,
               onRetry: () => ref.invalidate(dmRoomProvider(widget.threadId)),
-              data: (view) => switch (view.state) {
-                ChatState.awaitingKey =>
-                  Center(child: Text(context.tr('chat.awaitingKey'), textAlign: TextAlign.center)),
-                ChatState.needsIdentity => const Center(child: CircularProgressIndicator()),
-                ChatState.disabled => Center(child: Text(context.tr('chat.disabled'))),
-                ChatState.ready => Builder(builder: (context) {
-                        final self = ref.watch(authControllerProvider).valueOrNull?.id;
-                        final seenId = _lastSeenOwnMessage(view, self);
-                        final outbox = ref
-                            .watch(chatOutboxProvider)
-                            .where((e) => e.roomId == 'dm:${widget.threadId}')
-                            .toList();
-                        if (view.lines.isEmpty && outbox.isEmpty) {
-                          return Center(child: Text(context.tr('chat.empty')));
-                        }
-                        return ListView.builder(
-                          reverse: true,
-                          itemCount: view.lines.length + outbox.length,
-                          itemBuilder: (context, i) {
-                            if (i < outbox.length) {
-                              return OutboxTile(entry: outbox[outbox.length - 1 - i]);
-                            }
-                            final line =
-                                view.lines[view.lines.length - 1 - (i - outbox.length)];
-                            return ListTile(
-                              dense: true,
-                              title: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(line.text ?? context.tr('chat.undecryptable'),
-                                      style: line.text == null
-                                          ? const TextStyle(fontStyle: FontStyle.italic)
-                                          : null),
-                                  for (var idx = 0; idx < line.attachmentCount; idx++)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 6),
-                                      child: ChatAttachment(
-                                          provider: dmAttachmentProvider(
-                                              (widget.threadId, line.id, idx))),
-                                    ),
-                                ],
-                              ),
-                              subtitle: Text(line.createdAt),
-                              trailing: line.id == seenId
-                                  ? Text(context.tr('dm.seen'),
-                                      style: Theme.of(context).textTheme.bodySmall)
-                                  : null,
-                              onLongPress: () => _react(line.id),
-                            );
-                          },
-                        );
-                      }),
+              data: (view) {
+                final seenId = lastSeenOwnMessage(view, self);
+                return switch (view.state) {
+                  ChatState.awaitingKey => Center(
+                      child: Text(context.tr('chat.awaitingKey'), textAlign: TextAlign.center)),
+                  ChatState.needsIdentity => const Center(child: CircularProgressIndicator()),
+                  ChatState.disabled => Center(child: Text(context.tr('chat.disabled'))),
+                  ChatState.keyMismatch => const ChatRecoveryGate(
+                      messageKey: 'chat.keyMismatch',
+                      icon: Icons.gpp_bad,
+                      danger: true,
+                      offerReset: true,
+                    ),
+                  ChatState.ready => ChatMessageList(
+                      lines: view.lines,
+                      outbox: outbox,
+                      reverse: true,
+                      emptyMessage: context.tr('chat.empty'),
+                      tile: (line) => ChatLineTile(
+                        line: line,
+                        undecryptableLabel: context.tr('chat.undecryptable'),
+                        attachmentBuilder: (i) => ChatAttachment(
+                          provider: dmAttachmentProvider((widget.threadId, line.id, i)),
+                        ),
+                        trailing: line.id == seenId
+                            ? Text(context.tr('dm.seen'),
+                                style: Theme.of(context).textTheme.bodySmall)
+                            : null,
+                        onLongPress: () => _react(line.id),
+                      ),
+                    ),
+                };
               },
             ),
           ),
-          if (room.valueOrNull?.state == ChatState.ready)
-            SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.image),
-                      tooltip: context.tr('chat.image'),
-                      onPressed: _sendImage,
-                    ),
-                    Expanded(
-                      child: TextField(
-                        controller: _input,
-                        onSubmitted: (_) => _send(),
-                        decoration: InputDecoration(
-                          hintText: context.tr('chat.compose'),
-                          border: const OutlineInputBorder(),
-                          isDense: true,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.send),
-                      onPressed: _send,
-                    ),
-                  ],
+          if (view?.state == ChatState.ready)
+            ChatComposer(
+              controller: _input,
+              onSend: _send,
+              leading: [
+                IconButton(
+                  icon: const Icon(Icons.image),
+                  tooltip: context.tr('chat.image.attach'),
+                  onPressed: _sendImage,
                 ),
-              ),
+              ],
             ),
         ],
       ),

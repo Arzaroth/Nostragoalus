@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
 import 'widgets/async_value_view.dart';
+import 'widgets/empty_state.dart';
 
 /// In-app viewer for a shared card link (analytics /a, profile /p, pick /s). Opens
 /// from an inbound deep link; renders the card the token resolves to. Public -
@@ -12,6 +13,36 @@ class ShareCardScreen extends ConsumerWidget {
   const ShareCardScreen({super.key, required this.kind, required this.token});
   final String kind; // 'a' | 'p' | 's'
   final String token;
+
+  /// The fields each card kind carries (server/api/share/*), in display order,
+  /// each with its own i18n key. Anything else the endpoint adds is not shown
+  /// rather than labelled with an invented English name.
+  static const _fields = <String, List<(String, String)>>{
+    'a': [
+      ('accuracyPct', 'share.field.accuracy'),
+      ('exactPct', 'share.field.exactRate'),
+      ('goalLean', 'share.field.goalLean'),
+      ('homeBiasPct', 'share.field.homeBias'),
+    ],
+    'p': [
+      ('rank', 'share.field.rank'),
+      ('players', 'share.field.players'),
+      ('totalPoints', 'share.field.points'),
+      ('exact', 'share.field.exact'),
+      ('trophies', 'share.field.trophies'),
+      ('badges', 'share.field.badges'),
+    ],
+    's': [
+      ('roundLabel', 'share.field.round'),
+      ('group', 'share.field.group'),
+      ('predicted', 'share.card.myCall'),
+      ('actual', 'share.field.result'),
+      ('tier', 'share.field.tier'),
+      ('totalPoints', 'share.field.points'),
+      ('isJoker', 'share.card.joker'),
+      ('crowdSharePct', 'share.field.crowdShare'),
+    ],
+  };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -22,12 +53,13 @@ class ShareCardScreen extends ConsumerWidget {
         value: card,
         onRetry: () => ref.invalidate(shareCardProvider((kind, token))),
         data: (c) {
-          if (c.isEmpty) return Center(child: Text(context.tr('share.notFound')));
+          if (c.isEmpty) return EmptyState(message: context.tr('share.notFound'));
           final title = (c['displayName'] ?? c['ownerName'] ?? '').toString();
-          final subtitle = (c['competitionName'] ?? '').toString();
-          // Headline fields already surfaced above; show the rest as rows.
-          const shown = {'displayName', 'ownerName', 'competitionName'};
-          final rows = c.entries.where((e) => !shown.contains(e.key) && e.value != null).toList();
+          final subtitle = [
+            if (kind == 's' && c['homeTeam'] != null) '${c['homeTeam']} v ${c['awayTeam']}',
+            if (c['competitionName'] != null) c['competitionName'].toString(),
+          ].join(' · ');
+          final values = _values(c);
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -46,12 +78,13 @@ class ShareCardScreen extends ConsumerWidget {
               Card(
                 child: Column(
                   children: [
-                    for (final e in rows)
-                      ListTile(
-                        dense: true,
-                        title: Text(_humanise(e.key)),
-                        trailing: Text(_fmt(e.value)),
-                      ),
+                    for (final (field, labelKey) in _fields[kind] ?? const <(String, String)>[])
+                      if (values[field] case final v?)
+                        ListTile(
+                          dense: true,
+                          title: Text(context.tr(labelKey)),
+                          trailing: Text(v),
+                        ),
                   ],
                 ),
               ),
@@ -62,14 +95,25 @@ class ShareCardScreen extends ConsumerWidget {
     );
   }
 
-  String _humanise(String k) {
-    final s = k.replaceAllMapped(RegExp('([A-Z])'), (m) => ' ${m[1]!.toLowerCase()}');
-    return s.isEmpty ? k : '${s[0].toUpperCase()}${s.substring(1)}';
-  }
+  /// Formatted value per field name, null when the card omits it. The pick card
+  /// splits each score across two keys; they are joined here.
+  Map<String, String?> _values(Map<String, dynamic> c) => {
+        for (final (field, _) in _fields[kind] ?? const <(String, String)>[])
+          field: switch (field) {
+            'predicted' => _score(c['predHome'], c['predAway']),
+            'actual' => _score(c['actualHome'], c['actualAway']),
+            _ => _fmt(c[field]),
+          },
+      };
 
-  String _fmt(dynamic v) {
+  static String? _score(Object? home, Object? away) =>
+      home is num && away is num ? '${home.toInt()}-${away.toInt()}' : null;
+
+  static String? _fmt(Object? v) {
+    if (v == null) return null;
     if (v is num) return v == v.roundToDouble() ? '${v.toInt()}' : v.toStringAsFixed(1);
     if (v is bool) return v ? '✓' : '✗';
-    return v.toString();
+    final s = v.toString();
+    return s.isEmpty ? null : s;
   }
 }

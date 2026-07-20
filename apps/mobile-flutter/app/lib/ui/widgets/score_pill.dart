@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../i18n/i18n_scope.dart';
+
 /// A compact score / status chip. Shows the score once a match is under way,
-/// otherwise the status (SCHEDULED, POSTPONED, ...).
+/// otherwise the localized status.
 class ScorePill extends StatelessWidget {
   const ScorePill({super.key, required this.status, this.home, this.away});
 
@@ -12,12 +14,29 @@ class ScorePill extends StatelessWidget {
   static const _live = {'LIVE', 'PAUSED'};
   static const _played = {'LIVE', 'PAUSED', 'FINISHED'};
 
+  static const _statusKeys = {
+    'SCHEDULED': 'scheduled',
+    'LIVE': 'live',
+    'PAUSED': 'halfTime',
+    'FINISHED': 'fullTime',
+    'POSTPONED': 'postponed',
+    'CANCELLED': 'cancelled',
+    'SUSPENDED': 'suspended',
+    'AWARDED': 'awarded',
+    'INTERRUPTED': 'interrupted',
+  };
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final hasScore = _played.contains(status) && home != null && away != null;
     final isLive = _live.contains(status);
-    final label = hasScore ? '$home - $away' : status;
+    final statusKey = _statusKeys[status];
+    final label = hasScore
+        ? '$home - $away'
+        : statusKey == null
+            ? status
+            : context.tr('match.statusLabel.$statusKey');
     final bg = isLive
         ? scheme.errorContainer
         : hasScore

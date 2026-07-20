@@ -24,16 +24,17 @@ class AboutScreen extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.phone_android),
             title: Text(context.tr('about.client')),
-            subtitle: const Text('Flutter (native Android)'),
+            subtitle: Text(context.tr('about.clientFlutter')),
           ),
-          const ListTile(
-            leading: Icon(Icons.lock),
-            title: Text('End-to-end encryption'),
-            subtitle: Text('libsodium (X25519 + secretbox), key-transparency verified'),
+          ListTile(
+            leading: const Icon(Icons.lock),
+            title: Text(context.tr('about.e2eeTitle')),
+            subtitle: Text(context.tr('about.e2eeText')),
           ),
-          const ListTile(
-            leading: Icon(Icons.public),
-            title: Text('goal.arzaroth.com'),
+          ListTile(
+            leading: const Icon(Icons.public),
+            title: Text(context.tr('about.website')),
+            subtitle: const Text('goal.arzaroth.com'),
           ),
         ],
       ),

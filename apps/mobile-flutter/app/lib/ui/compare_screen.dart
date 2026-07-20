@@ -5,6 +5,7 @@ import '../api/models.gen.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
 import 'widgets/async_value_view.dart';
+import 'widgets/section_card.dart';
 
 /// Player head-to-head: self vs a leaderboard opponent, in the selected
 /// competition. Pick an opponent, then the h2h breakdown loads.
@@ -15,7 +16,9 @@ class CompareScreen extends ConsumerStatefulWidget {
 }
 
 class _CompareScreenState extends ConsumerState<CompareScreen> {
-  RowData2? _opponent;
+  // The id, never the row: generated models have identity equality, so a
+  // refetched row would no longer match any dropdown item.
+  String? _opponentId;
 
   @override
   Widget build(BuildContext context) {
@@ -26,13 +29,14 @@ class _CompareScreenState extends ConsumerState<CompareScreen> {
         value: ref.watch(leaderboardProvider),
         onRetry: () => ref.invalidate(leaderboardProvider),
         data: (board) {
-          final opponents =
-              board.rows.where((r) => r.userId != self?.id).toList();
+          final opponents = board.rows.where((r) => r.userId != self?.id).toList();
+          final selected =
+              opponents.any((r) => r.userId == _opponentId) ? _opponentId : null;
           return ListView(
             padding: const EdgeInsets.all(12),
             children: [
-              DropdownButtonFormField<RowData2>(
-                initialValue: _opponent,
+              DropdownButtonFormField<String>(
+                initialValue: selected,
                 isExpanded: true,
                 decoration: InputDecoration(
                   labelText: context.tr('compare.pickOpponent'),
@@ -40,13 +44,12 @@ class _CompareScreenState extends ConsumerState<CompareScreen> {
                 ),
                 items: [
                   for (final r in opponents)
-                    DropdownMenuItem(value: r, child: Text(r.displayName)),
+                    DropdownMenuItem(value: r.userId, child: Text(r.displayName)),
                 ],
-                onChanged: (r) => setState(() => _opponent = r),
+                onChanged: (id) => setState(() => _opponentId = id),
               ),
               const SizedBox(height: 16),
-              if (self != null && _opponent != null)
-                _H2H(a: self.id, b: _opponent!.userId),
+              if (self != null && selected != null) _H2H(a: self.id, b: selected),
             ],
           );
         },
@@ -67,7 +70,10 @@ class _H2H extends ConsumerWidget {
       onRetry: () => ref.invalidate(headToHeadProvider((a, b))),
       data: (h) {
         if (h['hasData'] != true) {
-          return Center(child: Text(context.tr('compare.noShared')));
+          return Padding(
+            padding: const EdgeInsets.all(24),
+            child: Center(child: Text(context.tr('compare.noShared'))),
+          );
         }
         final an = ((h['a'] as Map?)?['name'] ?? '?').toString();
         final bn = ((h['b'] as Map?)?['name'] ?? '?').toString();
@@ -116,60 +122,45 @@ class _H2H extends ConsumerWidget {
                 ]),
               ),
             ),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(context.tr('compare.agreement'),
-                      style: Theme.of(context).textTheme.titleSmall),
-                  const SizedBox(height: 6),
-                  Text(context
-                      .tr('compare.sameScore')
-                      .replaceAll('{n}', '${(agreement['sameScore'] as num?)?.toInt() ?? 0}')),
-                  Text(context
-                      .tr('compare.sameOutcome')
-                      .replaceAll('{n}', '${(agreement['sameOutcome'] as num?)?.toInt() ?? 0}')),
-                ]),
-              ),
+            SectionCard(
+              title: context.tr('compare.agreement'),
+              children: [
+                Text(context
+                    .tr('compare.sameScore')
+                    .replaceAll('{n}', '${(agreement['sameScore'] as num?)?.toInt() ?? 0}')),
+                Text(context
+                    .tr('compare.sameOutcome')
+                    .replaceAll('{n}', '${(agreement['sameOutcome'] as num?)?.toInt() ?? 0}')),
+              ],
             ),
             if (overTime.isNotEmpty)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(context.tr('analytics.overTimeTitle'),
-                        style: Theme.of(context).textTheme.titleSmall),
-                    const SizedBox(height: 6),
-                    for (final r in overTime.cast<Map>())
-                      ListTile(
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
-                        title: Text((r['label'] ?? '').toString()),
-                        trailing: Text(
-                            '${(r['aPoints'] as num?)?.toInt() ?? 0} - ${(r['bPoints'] as num?)?.toInt() ?? 0}'),
-                      ),
-                  ]),
-                ),
+              SectionCard(
+                title: context.tr('analytics.overTimeTitle'),
+                children: [
+                  for (final r in overTime.whereType<Map<String, dynamic>>())
+                    ListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      title: Text((r['label'] ?? '').toString()),
+                      trailing: Text(
+                          '${(r['aPoints'] as num?)?.toInt() ?? 0} - ${(r['bPoints'] as num?)?.toInt() ?? 0}'),
+                    ),
+                ],
               ),
             if (divergences.isNotEmpty)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(context.tr('compare.divergences'),
-                        style: Theme.of(context).textTheme.titleSmall),
-                    const SizedBox(height: 6),
-                    for (final m in divergences.cast<Map>())
-                      ListTile(
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
-                        title: Text('${m['home']} ${m['actual']} ${m['away']}'),
-                        subtitle: Text(
-                            '$an ${m['aPredicted']} (${(m['aPoints'] as num?)?.toInt() ?? 0}) · '
-                            '$bn ${m['bPredicted']} (${(m['bPoints'] as num?)?.toInt() ?? 0})'),
-                      ),
-                  ]),
-                ),
+              SectionCard(
+                title: context.tr('compare.divergences'),
+                children: [
+                  for (final m in divergences.whereType<Map<String, dynamic>>())
+                    ListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      title: Text('${m['home']} ${m['actual']} ${m['away']}'),
+                      subtitle: Text(
+                          '$an ${m['aPredicted']} (${(m['aPoints'] as num?)?.toInt() ?? 0}) · '
+                          '$bn ${m['bPredicted']} (${(m['bPoints'] as num?)?.toInt() ?? 0})'),
+                    ),
+                ],
               ),
           ],
         );

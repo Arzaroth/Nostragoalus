@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../i18n/i18n_scope.dart';
+import '../live/live_frame_router.dart';
 import '../live/live_service.dart';
 import '../state/providers.dart';
 import '../voice/voice_service.dart';
@@ -13,6 +14,16 @@ import 'leagues_screen.dart';
 import 'matches_screen.dart';
 import 'onboarding_tour.dart';
 import 'standings_screen.dart';
+
+/// How long a backgrounded app keeps a call alive. There is no CallKit /
+/// ConnectionService integration, so Android suspends the microphone shortly
+/// after the app leaves the foreground: holding the call open past that would
+/// leave the user muted-but-listed and the server holding a zombie room member.
+const _backgroundCallGrace = Duration(seconds: 30);
+
+/// How long an unanswered incoming ring stays on screen (matches the web's
+/// RING_TIMEOUT_MS).
+const _ringTimeout = Duration(seconds: 30);
 
 /// The signed-in shell: four tabs over the MVP loop. IndexedStack keeps each
 /// tab's scroll + query state alive when switching.
@@ -26,7 +37,12 @@ class HomeShell extends ConsumerStatefulWidget {
 class _HomeShellState extends ConsumerState<HomeShell> {
   int _tab = 0;
   StreamSubscription<LiveFrame>? _liveSub;
+  AppLifecycleListener? _lifecycle;
   bool _tourChecked = false;
+  BuildContext? _ringContext;
+  String? _ringFrom;
+  Timer? _ringTimer;
+  Timer? _backgroundTimer;
 
   static const _screens = [
     MatchesScreen(),
@@ -40,7 +56,15 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   void initState() {
     super.initState();
     final live = ref.read(liveServiceProvider)..connect();
-    _liveSub = live.frames.listen(_onFrame);
+    // One hub socket for the whole app: the voice signaling multiplexes over it.
+    ref.read(voiceServiceProvider).attach(live);
+    _liveSub = live.frames.listen(_router.handle);
+    _lifecycle = AppLifecycleListener(
+      onPause: _onPaused,
+      onRestart: _onResumed,
+      onResume: _onResumed,
+      onDetach: () => unawaited(ref.read(voiceServiceProvider).leave()),
+    );
     // Auto-start the one-time tour for a brand-new account (server flag null).
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_tourChecked || !mounted) return;
@@ -54,116 +78,157 @@ class _HomeShellState extends ConsumerState<HomeShell> {
 
   @override
   void dispose() {
+    _ringTimer?.cancel();
+    _backgroundTimer?.cancel();
+    _lifecycle?.dispose();
     _liveSub?.cancel();
+    // The shell is only torn down on sign-out; a socket left open would stay
+    // authenticated as the user who just signed out.
+    ref.read(liveServiceProvider).disconnect();
     super.dispose();
   }
 
   // Server-pushed frames invalidate the reads they touch, so live scores,
   // notifications and reaction counts refresh without polling.
-  void _onFrame(LiveFrame frame) {
-    switch (frame['type']) {
-      case 'match:update':
-      case 'scores:changed':
-        ref.invalidate(matchesProvider);
-        final id = frame['matchId'];
-        if (id is String) ref.invalidate(matchProvider(id));
-      case 'notification:new':
-        ref.invalidate(notificationsProvider);
-      case 'reaction:update':
-        final id = frame['matchId'];
-        if (id is String) ref.invalidate(reactionsProvider(id));
-      case 'viewers:update':
-        final id = frame['matchId'];
-        final count = frame['count'];
-        if (id is String && count is num) {
-          ref.read(viewersProvider.notifier).state = {
-            ...ref.read(viewersProvider),
-            id: count.toInt(),
-          };
-        }
-      case 'presence:snapshot':
-        final users = frame['users'];
-        if (users is Map) {
-          ref.read(presenceProvider.notifier).state =
-              users.map((k, v) => MapEntry(k.toString(), v.toString()));
-        }
-      case 'presence:update':
-        final id = frame['userId'];
-        final status = frame['status'];
-        if (id is String && status is String) {
-          ref.read(presenceProvider.notifier).state = {
-            ...ref.read(presenceProvider),
-            id: status,
-          };
-        }
-      case 'chat:typing':
-        final league = frame['leagueId'];
-        final who = frame['userId'];
-        if (league is String && who is String) {
-          ref.read(typingProvider.notifier).state = {
-            ...ref.read(typingProvider),
-            '$league|$who': DateTime.now(),
-          };
-        }
-      case 'voice:ring':
-        _onIncomingCall(frame);
-    }
+  late final LiveFrameRouter _router = LiveFrameRouter(
+    onMatches: () => ref.invalidate(matchesProvider),
+    onMatch: (id) => ref.invalidate(matchProvider(id)),
+    onNotifications: () => ref.invalidate(notificationsProvider),
+    onReactions: (id) => ref.invalidate(reactionsProvider(id)),
+    onViewers: (id, count) => ref.read(viewersProvider.notifier).state = {
+      ...ref.read(viewersProvider),
+      id: count,
+    },
+    onPresenceSnapshot: (users) => ref.read(presenceProvider.notifier).state = users,
+    onPresence: (id, status) {
+      final next = {...ref.read(presenceProvider)};
+      if (status == null) {
+        next.remove(id);
+      } else {
+        next[id] = status;
+      }
+      ref.read(presenceProvider.notifier).state = next;
+    },
+    onTyping: (league, who) {
+      final now = DateTime.now();
+      final next = {...ref.read(typingProvider)}
+        ..removeWhere((_, at) => now.difference(at).inSeconds > 10)
+        ..['$league|$who'] = now;
+      ref.read(typingProvider.notifier).state = next;
+    },
+    onRing: (frame) => unawaited(_onIncomingCall(frame)),
+    onRingCancelled: (from) {
+      if (_ringFrom == from) _dismissRing();
+    },
+  );
+
+  // Backgrounded is the app's only idle signal, and it is what makes the amber
+  // presence dot reachable at all (the server never infers idle by itself).
+  void _onPaused() {
+    _cancelBackgroundTimer();
+    ref.read(liveServiceProvider).send({'type': 'presence:ping', 'active': false});
+    if (ref.read(voiceServiceProvider).activeScope == null) return;
+    _backgroundTimer =
+        Timer(_backgroundCallGrace, () => unawaited(ref.read(voiceServiceProvider).leave()));
+  }
+
+  void _onResumed() {
+    _cancelBackgroundTimer();
+    ref.read(liveServiceProvider).send({'type': 'presence:ping', 'active': true});
+  }
+
+  void _cancelBackgroundTimer() {
+    _backgroundTimer?.cancel();
+    _backgroundTimer = null;
+  }
+
+  void _dismissRing() {
+    _ringTimer?.cancel();
+    _ringTimer = null;
+    final sheet = _ringContext;
+    _ringContext = null;
+    _ringFrom = null;
+    if (sheet != null && sheet.mounted) Navigator.pop(sheet);
   }
 
   /// An inbound voice:ring: show an accept/decline sheet. Accept joins the call
-  /// scope; decline pushes voice:decline back over the always-on socket.
-  void _onIncomingCall(LiveFrame frame) {
+  /// scope; decline pushes voice:decline back over the hub socket. The sheet
+  /// self-dismisses on the caller's voice:cancelled and on the ring timeout, so
+  /// a caller who gives up cannot leave it on screen forever.
+  Future<void> _onIncomingCall(LiveFrame frame) async {
     final scopeJson = frame['scope'];
     final from = frame['from'];
-    if (scopeJson is! Map || from is! String) return;
+    // One ring at a time: a second concurrent invite would stack another modal
+    // over this one with no way back to it.
+    if (scopeJson is! Map || from is! String || _ringFrom != null) return;
     final scope = VoiceScope.fromJson(scopeJson.cast<String, dynamic>());
     final fromName = (frame['fromName'] ?? '').toString();
-    showModalBottomSheet<void>(
+    _ringFrom = from;
+    _ringTimer = Timer(_ringTimeout, _dismissRing);
+    await showModalBottomSheet<void>(
       context: context,
       isDismissible: false,
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.call, size: 40),
-              const SizedBox(height: 12),
-              Text(
-                  fromName.isEmpty
-                      ? context.tr('voice.incoming')
-                      : context.tr('voice.callingYou').replaceAll('{name}', fromName),
-                  style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  FilledButton.icon(
-                    style: FilledButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.error),
-                    icon: const Icon(Icons.call_end),
-                    label: Text(context.tr('voice.decline')),
-                    onPressed: () {
-                      ref.read(liveServiceProvider)
-                          .send({'type': 'voice:decline', 'scope': scope.toJson(), 'to': from});
-                      Navigator.pop(context);
-                    },
-                  ),
-                  FilledButton.icon(
-                    icon: const Icon(Icons.call),
-                    label: Text(context.tr('voice.accept')),
-                    onPressed: () {
-                      ref.read(voiceServiceProvider).join(scope);
-                      Navigator.pop(context);
-                    },
-                  ),
-                ],
-              ),
-            ],
+      builder: (sheetContext) {
+        _ringContext = sheetContext;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.call, size: 40),
+                const SizedBox(height: 12),
+                Text(
+                    fromName.isEmpty
+                        ? context.tr('voice.incoming')
+                        : context.tr('voice.callingYou', {'name': fromName}),
+                    style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                          backgroundColor: Theme.of(context).colorScheme.error),
+                      icon: const Icon(Icons.call_end),
+                      label: Text(context.tr('voice.decline')),
+                      onPressed: () {
+                        ref.read(liveServiceProvider).send(
+                            {'type': 'voice:decline', 'scope': scope.toJson(), 'to': from});
+                        _dismissRing();
+                      },
+                    ),
+                    FilledButton.icon(
+                      icon: const Icon(Icons.call),
+                      label: Text(context.tr('voice.accept')),
+                      onPressed: () {
+                        _dismissRing();
+                        unawaited(_accept(scope));
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
+    _ringContext = null;
+    _ringFrom = null;
+    _ringTimer?.cancel();
+    _ringTimer = null;
+  }
+
+  Future<void> _accept(VoiceScope scope) async {
+    try {
+      await ref.read(voiceServiceProvider).join(scope);
+    } on VoiceJoinException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(context.tr(e.micDenied ? 'voice.error.micDenied' : 'err.serverError')),
+      ));
+    }
   }
 
   static const _liveStatuses = {'LIVE', 'PAUSED'};
@@ -174,14 +239,16 @@ class _HomeShellState extends ConsumerState<HomeShell> {
               res.matches.where((m) => _liveStatuses.contains(m.status)).map((m) => m.id).toSet(),
           orElse: () => <String>{},
         );
-    final viewed = ref.read(viewedMatchProvider);
-    if (viewed != null) live.add(viewed);
-    ref.read(liveServiceProvider).subscribe(live);
+    final hub = ref.read(liveServiceProvider);
+    hub.subscribe(live);
+    // The viewed match rides its own frame: the server's "N watching now" is
+    // built from `viewing` only, never from the subscribe set.
+    hub.viewing(ref.read(viewedMatchProvider));
   }
 
   @override
   Widget build(BuildContext context) {
-    // Keep the hub subscribed to the in-play matches plus the one being viewed.
+    // Keep the hub subscribed to the in-play matches, and told which one is open.
     ref.listen(matchesProvider, (_, __) => _resubscribe());
     ref.listen(viewedMatchProvider, (_, __) => _resubscribe());
     return Scaffold(

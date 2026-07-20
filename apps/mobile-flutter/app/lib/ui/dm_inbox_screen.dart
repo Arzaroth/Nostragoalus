@@ -4,8 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/models.gen.dart';
 import '../chat/dm_providers.dart';
 import '../i18n/i18n_scope.dart';
+import '../kt/kt_providers.dart' show KtKeyMismatch;
 import 'dm_room_screen.dart';
+import 'feedback.dart';
 import 'widgets/async_value_view.dart';
+import 'widgets/empty_state.dart';
 
 /// Direct-message inbox: existing 1:1 threads + start a new one.
 class DmInboxScreen extends ConsumerWidget {
@@ -27,10 +30,7 @@ class DmInboxScreen extends ConsumerWidget {
           value: threads,
           onRetry: () => ref.invalidate(dmThreadsProvider),
           data: (res) => res.threads.isEmpty
-              ? ListView(children: [
-                  const SizedBox(height: 80),
-                  Center(child: Text(context.tr('dm.empty'))),
-                ])
+              ? EmptyState(message: context.tr('dm.empty'), icon: Icons.forum_outlined)
               : ListView(
                   children: [
                     for (final t in res.threads)
@@ -59,6 +59,7 @@ class DmInboxScreen extends ConsumerWidget {
           final recipients = ref.watch(dmRecipientsProvider);
           return AsyncValueView<DmRecipientsResponse>(
             value: recipients,
+            onRetry: () => ref.invalidate(dmRecipientsProvider),
             data: (res) => ListView(
               children: [
                 for (final r in res.recipients)
@@ -74,16 +75,33 @@ class DmInboxScreen extends ConsumerWidget {
       ),
     );
     if (recipient == null || !context.mounted) return;
-    final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
-    final failed = context.tr('dm.startFailed');
     try {
       final threadId = await ref.read(createDmProvider)(recipient.userId);
-      navigator.push(MaterialPageRoute(
+      navigator.push(MaterialPageRoute<void>(
         builder: (_) => DmRoomScreen(threadId: threadId, title: recipient.name),
       ));
-    } catch (_) {
-      messenger.showSnackBar(SnackBar(content: Text(failed)));
+    } on KtKeyMismatch {
+      // Refusing to seal a key to a contradicted public key is a security event,
+      // not a transient failure: say so instead of "could not start".
+      if (context.mounted) {
+        await showDialog<void>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            icon: Icon(Icons.gpp_bad, color: Theme.of(ctx).colorScheme.error),
+            title: Text(ctx.tr('dm.startRefused.title')),
+            content: Text(ctx.tr('dm.startRefused.body')),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: Text(ctx.tr('common.confirm')),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) showToast(context, apiMessage(context, e));
     }
   }
 }

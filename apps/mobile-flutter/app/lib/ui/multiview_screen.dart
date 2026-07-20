@@ -6,6 +6,7 @@ import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
 import 'match_detail_screen.dart';
 import 'widgets/async_value_view.dart';
+import 'widgets/empty_state.dart';
 import 'widgets/score_pill.dart';
 
 /// A grid of the in-play matches, updated live over the WS hub.
@@ -27,10 +28,7 @@ class MultiviewScreen extends ConsumerWidget {
           data: (res) {
             final live = res.matches.where((m) => _live.contains(m.status)).toList();
             if (live.isEmpty) {
-              return ListView(children: [
-                const SizedBox(height: 80),
-                Center(child: Text(context.tr('multiview.empty'))),
-              ]);
+              return EmptyState(message: context.tr('multiview.empty'));
             }
             return GridView.count(
               crossAxisCount: 2,
@@ -47,7 +45,7 @@ class MultiviewScreen extends ConsumerWidget {
 
 class _Tile extends StatelessWidget {
   const _Tile(this.match);
-  final Match2 match;
+  final MatchesResponseMatch match;
 
   @override
   Widget build(BuildContext context) => Card(

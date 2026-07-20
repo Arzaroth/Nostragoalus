@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../auth/sso.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import 'feedback.dart';
 import 'forgot_password_screen.dart';
 import 'locale_menu.dart';
 import 'signup_screen.dart';
@@ -54,12 +55,12 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     if (sso == null) return;
     setState(() => _ssoBusy = true);
     try {
-      await ref.read(ssoServiceProvider).signIn(sso.providerId);
+      // A false return means the callback never produced a token: as much a
+      // failure for the user as a thrown error.
+      final ok = await ref.read(ssoServiceProvider).signIn(sso.providerId);
+      if (!ok && mounted) showToast(context, context.tr('auth.ssoFailed'));
     } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(context.tr('auth.ssoFailed'))));
-      }
+      if (mounted) showToast(context, context.tr('auth.ssoFailed'));
     } finally {
       if (mounted) setState(() => _ssoBusy = false);
     }
@@ -106,7 +107,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                       border: const OutlineInputBorder(),
                     ),
                     validator: (v) =>
-                        (v == null || !v.contains('@')) ? context.tr('auth.email') : null,
+                        (v == null || !v.contains('@')) ? context.tr('auth.emailInvalid') : null,
                   ),
                   if (_sso != null) ...[
                     const SizedBox(height: 16),
@@ -136,7 +137,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                       ),
                     ),
                     validator: (v) =>
-                        (v == null || v.isEmpty) ? context.tr('auth.password') : null,
+                        (v == null || v.isEmpty) ? context.tr('auth.passwordRequired') : null,
                   ),
                   const SizedBox(height: 24),
                   FilledButton(

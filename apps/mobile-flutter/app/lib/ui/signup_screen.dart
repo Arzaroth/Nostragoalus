@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import 'feedback.dart';
 
 /// Create an account. Email verification may be required before sign-in.
 class SignUpScreen extends ConsumerStatefulWidget {
@@ -34,13 +35,12 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       _busy = true;
       _message = null;
     });
+    final email = _email.text.trim();
     try {
-      final ok = await ref
-          .read(authRepositoryProvider)
-          .signUp(_name.text.trim(), _email.text.trim(), _password.text);
-      setState(() => _message = ok ? context.tr('auth.verifySent') : context.tr('err.generic'));
-    } catch (_) {
-      setState(() => _message = context.tr('err.generic'));
+      await ref.read(authRepositoryProvider).signUp(_name.text.trim(), email, _password.text);
+      if (mounted) setState(() => _message = context.tr('auth.verifySent', {'email': email}));
+    } catch (e) {
+      if (mounted) setState(() => _message = apiMessage(context, e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -66,7 +66,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     decoration: InputDecoration(
                         labelText: context.tr('auth.displayName'),
                         border: const OutlineInputBorder()),
-                    validator: (v) => (v == null || v.trim().isEmpty) ? '!' : null,
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? context.tr('auth.nameRequired')
+                        : null,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -74,7 +76,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     keyboardType: TextInputType.emailAddress,
                     decoration: InputDecoration(
                         labelText: context.tr('auth.email'), border: const OutlineInputBorder()),
-                    validator: (v) => (v == null || !v.contains('@')) ? '!' : null,
+                    validator: (v) =>
+                        (v == null || !v.contains('@')) ? context.tr('auth.emailInvalid') : null,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -88,7 +91,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                         onPressed: () => setState(() => _obscure = !_obscure),
                       ),
                     ),
-                    validator: (v) => (v == null || v.length < 8) ? '!' : null,
+                    validator: (v) =>
+                        (v == null || v.length < 8) ? context.tr('auth.passwordTooShort') : null,
                   ),
                   const SizedBox(height: 24),
                   FilledButton(

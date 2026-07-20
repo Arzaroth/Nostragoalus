@@ -6,11 +6,25 @@ import '../api/models.gen.dart';
 import '../chat/chat_providers.dart';
 import '../chat/outbox.dart';
 import '../i18n/i18n_scope.dart';
+import '../reactions.dart';
 import '../state/providers.dart';
+import 'feedback.dart';
 import 'thread_screen.dart';
 import 'widgets/async_value_view.dart';
 import 'widgets/chat_attachment.dart';
-import 'widgets/outbox_tile.dart';
+import 'widgets/chat_composer.dart';
+import 'widgets/chat_line_tile.dart';
+import 'widgets/chat_message_list.dart';
+import 'widgets/chat_recovery_gate.dart';
+import 'widgets/typing_indicator.dart';
+
+/// The league members named with a literal `@Name` in [text]. Derived at send
+/// time so an edited-away or image-interrupted mention cannot ride along on a
+/// later message.
+List<String> mentionIdsIn(String text, List<Member> members) => [
+      for (final m in members)
+        if (m.name.isNotEmpty && text.contains('@${m.name}')) m.userId,
+    ];
 
 /// End-to-end-encrypted league chat. The identity bootstraps automatically on a
 /// device that has never chatted; a fresh device with an escrowed identity is
@@ -29,70 +43,11 @@ class LeagueChatScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, __) => Center(child: Text(context.tr('err.generic'))),
         data: (state) => state.needsRecovery
-            ? _RecoveryGate(leagueId: leagueId)
+            ? const ChatRecoveryGate()
             : _ChatBody(leagueId: leagueId),
       ),
     );
   }
-}
-
-class _RecoveryGate extends ConsumerStatefulWidget {
-  const _RecoveryGate({required this.leagueId});
-  final String leagueId;
-  @override
-  ConsumerState<_RecoveryGate> createState() => _RecoveryGateState();
-}
-
-class _RecoveryGateState extends ConsumerState<_RecoveryGate> {
-  final _code = TextEditingController();
-  bool _busy = false;
-  String? _error;
-
-  @override
-  void dispose() {
-    _code.dispose();
-    super.dispose();
-  }
-
-  Future<void> _recover() async {
-    setState(() { _busy = true; _error = null; });
-    try {
-      await ref.read(chatIdentityProvider.notifier).recover(_code.text.trim());
-    } catch (_) {
-      setState(() => _error = context.tr('chat.recoverFailed'));
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.lock, size: 40),
-              const SizedBox(height: 12),
-              Text(context.tr('chat.recoveryNeeded'), textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _code,
-                decoration: InputDecoration(
-                  labelText: context.tr('chat.recoveryCode'),
-                  border: const OutlineInputBorder(),
-                  errorText: _error,
-                ),
-              ),
-              const SizedBox(height: 16),
-              FilledButton(
-                onPressed: _busy ? null : _recover,
-                child: Text(context.tr('chat.recover')),
-              ),
-            ],
-          ),
-        ),
-      );
 }
 
 class _ChatBody extends ConsumerStatefulWidget {
@@ -104,8 +59,12 @@ class _ChatBody extends ConsumerStatefulWidget {
 
 class _ChatBodyState extends ConsumerState<_ChatBody> {
   final _input = TextEditingController();
-  final _mentions = <String>{};
   DateTime? _lastTyping;
+
+  String get _room => 'league:${widget.leagueId}';
+
+  List<Member> get _members =>
+      ref.read(leagueDetailProvider(widget.leagueId)).valueOrNull?.members ?? const <Member>[];
 
   // Throttle chat:typing to at most one frame every 2s while composing.
   void _notifyTyping() {
@@ -113,18 +72,6 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
     if (_lastTyping != null && now.difference(_lastTyping!).inSeconds < 2) return;
     _lastTyping = now;
     ref.read(liveServiceProvider).send({'type': 'chat:typing', 'leagueId': widget.leagueId});
-  }
-
-  bool _othersTyping() {
-    final self = ref.watch(authControllerProvider).valueOrNull?.id;
-    final now = DateTime.now();
-    return ref.watch(typingProvider).entries.any((e) {
-      final parts = e.key.split('|');
-      return parts.length == 2 &&
-          parts[0] == widget.leagueId &&
-          parts[1] != self &&
-          now.difference(e.value).inSeconds < 5;
-    });
   }
 
   @override
@@ -138,10 +85,9 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
   void _send() {
     final text = _input.text.trim();
     if (text.isEmpty) return;
-    final mentions = _mentions.toList();
+    final mentions = mentionIdsIn(text, _members);
     _input.clear();
-    _mentions.clear();
-    ref.read(chatOutboxProvider.notifier).enqueue('league:${widget.leagueId}', text,
+    ref.read(chatOutboxProvider.notifier).enqueue(_room, text,
         () => ref.read(sendChatProvider)(widget.leagueId, text, mentions: mentions));
   }
 
@@ -152,13 +98,17 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
     final bytes = await picked.readAsBytes();
     final caption = _input.text.trim();
     final text = caption.isEmpty ? '\u{1F5BC}' : caption;
+    final mentions = mentionIdsIn(caption, _members);
     _input.clear();
-    ref.read(chatOutboxProvider.notifier).enqueue('league:${widget.leagueId}', text,
-        () => ref.read(sendChatProvider)(widget.leagueId, text, image: bytes));
+    ref.read(chatOutboxProvider.notifier).enqueue(
+        _room,
+        text,
+        () => ref.read(sendChatProvider)(widget.leagueId, text,
+            image: bytes, mentions: mentions));
   }
 
   Future<void> _pickMention() async {
-    final members = ref.read(leagueDetailProvider(widget.leagueId)).valueOrNull?.members ?? const [];
+    final members = _members;
     if (members.isEmpty) return;
     final picked = await showModalBottomSheet<Member>(
       context: context,
@@ -178,7 +128,6 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
       ),
     );
     if (picked == null) return;
-    _mentions.add(picked.userId);
     final t = _input.text;
     _input.text = t.isEmpty || t.endsWith(' ') ? '$t@${picked.name} ' : '$t @${picked.name} ';
     _input.selection = TextSelection.collapsed(offset: _input.text.length);
@@ -187,7 +136,6 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
   Future<void> _messageActions(ChatLine line) async {
     final selfId = ref.read(authControllerProvider).valueOrNull?.id;
     final isOwn = line.userId != null && line.userId == selfId;
-    const emojis = ['👍', '❤️', '😂', '🔥', '😮', '😢'];
     final action = await showModalBottomSheet<String>(
       context: context,
       builder: (context) => SafeArea(
@@ -197,11 +145,12 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
             Wrap(
               alignment: WrapAlignment.center,
               children: [
-                for (final e in emojis)
+                for (final (key, glyph) in reactionPalette)
                   IconButton(
                     iconSize: 30,
-                    icon: Text(e, style: const TextStyle(fontSize: 28)),
-                    onPressed: () => Navigator.pop(context, 'react:$e'),
+                    tooltip: key,
+                    icon: Text(glyph, style: const TextStyle(fontSize: 28)),
+                    onPressed: () => Navigator.pop(context, 'react:$key'),
                   ),
               ],
             ),
@@ -220,22 +169,19 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
         ),
       ),
     );
-    if (action == null) return;
-    try {
-      final api = ref.read(apiProvider);
-      if (action == 'report') {
-        await api.reportChatMessage(widget.leagueId, line.id);
-        if (mounted) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(context.tr('chat.reported'))));
-        }
-      } else if (action == 'edit') {
-        await _edit(line);
-      } else if (action.startsWith('react:')) {
-        await api.reactChatMessage(widget.leagueId, line.id, action.substring(6));
-        ref.invalidate(leagueChatProvider(widget.leagueId));
-      }
-    } catch (_) {/* ignore */}
+    if (action == null || !mounted) return;
+    final api = ref.read(apiProvider);
+    if (action == 'report') {
+      await runAction(context, () => api.reportChatMessage(widget.leagueId, line.id),
+          successKey: 'chat.reported');
+    } else if (action == 'edit') {
+      await _edit(line);
+    } else if (action.startsWith('react:')) {
+      // The server validates the KEY (`z.enum(REACTION_EMOJIS)`), never the glyph.
+      final ok = await runAction(
+          context, () => api.reactChatMessage(widget.leagueId, line.id, action.substring(6)));
+      if (ok) ref.invalidate(leagueChatProvider(widget.leagueId));
+    }
   }
 
   Future<void> _edit(ChatLine line) async {
@@ -260,13 +206,48 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
       ),
     );
     controller.dispose();
-    if (newText == null || newText.isEmpty || newText == line.text) return;
-    await ref.read(editChatProvider)(widget.leagueId, line.id, newText);
+    if (newText == null || newText.isEmpty || newText == line.text || !mounted) return;
+    // editChatProvider throws when this device holds no key for the epoch.
+    await runAction(context, () => ref.read(editChatProvider)(widget.leagueId, line.id, newText));
+  }
+
+  Widget _tile(ChatLine line, List<Member> members) {
+    Member? author;
+    for (final m in members) {
+      if (m.userId == line.userId) author = m;
+    }
+    return ChatLineTile(
+      line: line,
+      undecryptableLabel: context.tr('chat.undecryptable'),
+      authorName: author?.name ?? (line.userId == null ? null : context.tr('chat.unknownUser')),
+      authorImage: author?.image,
+      attachmentBuilder: (i) => ChatAttachment(
+        provider: chatAttachmentProvider((widget.leagueId, line.id, i)),
+      ),
+      footer: TextButton.icon(
+        style: TextButton.styleFrom(
+            padding: EdgeInsets.zero,
+            minimumSize: const Size(0, 28),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+        icon: const Icon(Icons.forum, size: 14),
+        label: Text(line.threadCount > 0
+            ? context.tr('chat.thread.count', {'n': line.threadCount})
+            : context.tr('chat.reply.button')),
+        onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => ThreadScreen(leagueId: widget.leagueId, threadId: line.id),
+        )),
+      ),
+      onLongPress: () => _messageActions(line),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final chat = ref.watch(leagueChatProvider(widget.leagueId));
+    final outbox = ref.watch(chatOutboxProvider).where((e) => e.roomId == _room).toList();
+    final members =
+        ref.watch(leagueDetailProvider(widget.leagueId)).valueOrNull?.members ?? const <Member>[];
+    final ready = chat.valueOrNull?.state == ChatState.ready;
     return Column(
       children: [
         Expanded(
@@ -281,113 +262,43 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
                     child: Text(context.tr('chat.awaitingKey'), textAlign: TextAlign.center),
                   ),
                 ),
-              ChatState.needsIdentity =>
-                const Center(child: CircularProgressIndicator()),
-              ChatState.ready => Builder(builder: (context) {
-                final outbox = ref
-                    .watch(chatOutboxProvider)
-                    .where((e) => e.roomId == 'league:${widget.leagueId}')
-                    .toList();
-                if (view.lines.isEmpty && outbox.isEmpty) {
-                  return Center(child: Text(context.tr('chat.empty')));
-                }
-                return ListView.builder(
+              ChatState.needsIdentity => const Center(child: CircularProgressIndicator()),
+              ChatState.keyMismatch => const ChatRecoveryGate(
+                  messageKey: 'chat.keyMismatch',
+                  icon: Icons.gpp_bad,
+                  danger: true,
+                  offerReset: true,
+                ),
+              ChatState.ready => ChatMessageList(
+                  lines: view.lines,
+                  outbox: outbox,
                   reverse: true,
-                  itemCount: view.lines.length + outbox.length,
-                  itemBuilder: (context, i) {
-                    // Reverse list: i=0 is the newest (bottom). Pending outbox
-                    // entries sit below the delivered messages.
-                    if (i < outbox.length) {
-                      return OutboxTile(entry: outbox[outbox.length - 1 - i]);
-                    }
-                    final line = view.lines[view.lines.length - 1 - (i - outbox.length)];
-                    return ListTile(
-                          dense: true,
-                          title: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(line.text ?? context.tr('chat.undecryptable'),
-                                  style: line.text == null
-                                      ? const TextStyle(fontStyle: FontStyle.italic)
-                                      : null),
-                              for (var idx = 0; idx < line.attachmentCount; idx++)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 6),
-                                  child: ChatAttachment(
-                                      provider: chatAttachmentProvider(
-                                          (widget.leagueId, line.id, idx))),
-                                ),
-                              TextButton.icon(
-                                style: TextButton.styleFrom(
-                                    padding: EdgeInsets.zero,
-                                    minimumSize: const Size(0, 28),
-                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-                                icon: const Icon(Icons.forum, size: 14),
-                                label: Text(line.threadCount > 0
-                                    ? context.tr('chat.thread.count').replaceAll('{n}', '${line.threadCount}')
-                                    : context.tr('chat.reply.button')),
-                                onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-                                  builder: (_) =>
-                                      ThreadScreen(leagueId: widget.leagueId, threadId: line.id),
-                                )),
-                              ),
-                            ],
-                          ),
-                          subtitle: Text(line.createdAt),
-                          onLongPress: () => _messageActions(line),
-                        );
-                      },
-                    );
-                  }),
+                  emptyMessage: context.tr('chat.empty'),
+                  tile: (line) => _tile(line, members),
+                ),
             },
           ),
         ),
-        if (chat.valueOrNull?.state == ChatState.ready && _othersTyping())
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: Padding(
-              padding: const EdgeInsetsDirectional.only(start: 16, bottom: 2),
-              child: Text(context.tr('chat.typingSome'),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic)),
-            ),
-          ),
-        if (chat.valueOrNull?.state == ChatState.ready)
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.image),
-                    tooltip: context.tr('chat.image'),
-                    onPressed: _sendImage,
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.alternate_email),
-                    tooltip: context.tr('chat.mention.title'),
-                    onPressed: _pickMention,
-                  ),
-                  Expanded(
-                    child: TextField(
-                      controller: _input,
-                      onChanged: (_) => _notifyTyping(),
-                      onSubmitted: (_) => _send(),
-                      decoration: InputDecoration(
-                        hintText: context.tr('chat.compose'),
-                        border: const OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.send),
-                    onPressed: _send,
-                  ),
-                ],
+        if (ready) ...[
+          TypingIndicator(leagueId: widget.leagueId),
+          ChatComposer(
+            controller: _input,
+            onSend: _send,
+            onChanged: (_) => _notifyTyping(),
+            leading: [
+              IconButton(
+                icon: const Icon(Icons.image),
+                tooltip: context.tr('chat.image.attach'),
+                onPressed: _sendImage,
               ),
-            ),
+              IconButton(
+                icon: const Icon(Icons.alternate_email),
+                tooltip: context.tr('chat.mention.title'),
+                onPressed: _pickMention,
+              ),
+            ],
           ),
+        ],
       ],
     );
   }

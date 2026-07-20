@@ -7,6 +7,13 @@ import '../state/providers.dart';
 import 'widgets/async_value_view.dart';
 import 'widgets/score_pill.dart';
 
+/// i18n key for a bot persona (the API sends the kebab-case value).
+String _personaKey(String persona) => switch (persona) {
+      'evil-twin' => 'bot.persona.evilTwin',
+      'equalizer' => 'bot.persona.equalizer',
+      _ => 'bot.persona.consensus',
+    };
+
 /// A bot persona's predictions (consensus / evil-twin / equalizer) - what the
 /// crowd-derived bot picked for each match.
 class BotScreen extends ConsumerWidget {
@@ -28,7 +35,7 @@ class BotScreen extends ConsumerWidget {
                 padding: const EdgeInsets.all(12),
                 child: Chip(
                   avatar: const Icon(Icons.smart_toy, size: 18),
-                  label: Text(res.persona),
+                  label: Text(context.tr(_personaKey(res.persona))),
                 ),
               ),
               for (final p in res.predictions)

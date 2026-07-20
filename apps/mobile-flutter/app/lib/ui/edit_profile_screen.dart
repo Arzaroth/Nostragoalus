@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import 'feedback.dart';
 
 /// Edit the display name and avatar. Avatar is uploaded as a data: URL (the same
 /// contract as the web account page's update-user call).
@@ -52,11 +53,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           );
       ref.invalidate(authControllerProvider);
       if (mounted) Navigator.of(context).pop();
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(context.tr('err.generic'))));
-      }
+    } catch (e) {
+      if (mounted) showToast(context, apiMessage(context, e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }

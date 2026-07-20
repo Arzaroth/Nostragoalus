@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../chat/chat_providers.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import 'feedback.dart';
 import 'widgets/async_value_view.dart';
+import 'widgets/empty_state.dart';
 
 /// League chat moderation queue (owner/moderators): reported messages decrypted
 /// client-side, each removable or restorable.
@@ -23,10 +25,7 @@ class ModerationScreen extends ConsumerWidget {
           value: reports,
           onRetry: () => ref.invalidate(moderationReportsProvider(leagueId)),
           data: (list) => list.isEmpty
-              ? ListView(children: [
-                  const SizedBox(height: 80),
-                  Center(child: Text(context.tr('moderation.empty'))),
-                ])
+              ? EmptyState(message: context.tr('moderation.empty'), icon: Icons.flag_outlined)
               : ListView(
                   children: [
                     for (final r in list)
@@ -56,14 +55,16 @@ class ModerationScreen extends ConsumerWidget {
                                   const Spacer(),
                                   if (r.moderation == 'REMOVED')
                                     TextButton(
-                                      onPressed: () => _act(ref, r.messageId, 'restore'),
+                                      onPressed: () =>
+                                          _act(context, ref, r.messageId, 'restore'),
                                       child: Text(context.tr('moderation.restore')),
                                     )
                                   else
                                     TextButton(
                                       style: TextButton.styleFrom(
                                           foregroundColor: Theme.of(context).colorScheme.error),
-                                      onPressed: () => _act(ref, r.messageId, 'remove'),
+                                      onPressed: () =>
+                                          _act(context, ref, r.messageId, 'remove'),
                                       child: Text(context.tr('moderation.remove')),
                                     ),
                                 ],
@@ -79,8 +80,13 @@ class ModerationScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _act(WidgetRef ref, String messageId, String action) async {
-    await ref.read(apiProvider).moderateChatMessage(leagueId, messageId, action);
-    ref.invalidate(moderationReportsProvider(leagueId));
+  Future<void> _act(
+      BuildContext context, WidgetRef ref, String messageId, String action) async {
+    final ok = await runAction(
+      context,
+      () => ref.read(apiProvider).moderateChatMessage(leagueId, messageId, action),
+      successKey: 'chat.moderation.done',
+    );
+    if (ok) ref.invalidate(moderationReportsProvider(leagueId));
   }
 }

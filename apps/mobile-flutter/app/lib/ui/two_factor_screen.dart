@@ -42,10 +42,11 @@ class _TwoFactorScreenState extends ConsumerState<TwoFactorScreen> {
 
   Future<void> _run(Future<void> Function() body) async {
     setState(() { _busy = true; _error = null; });
+    final failed = context.tr('twofa.failed');
     try {
       await body();
     } catch (_) {
-      if (mounted) setState(() => _error = context.tr('twofa.failed'));
+      if (mounted) setState(() => _error = failed);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -53,13 +54,18 @@ class _TwoFactorScreenState extends ConsumerState<TwoFactorScreen> {
 
   Future<void> _startEnable() => _run(() async {
         final res = await ref.read(apiProvider).twoFactorEnable(_password.text);
-        _uri = (res['totpURI'] ?? '').toString();
-        _backup = ((res['backupCodes'] as List?) ?? const []).map((e) => e.toString()).toList();
-        setState(() => _step = _Step.verify);
+        final uri = res['totpURI'];
+        // No secret means no enrolment: advancing would show an empty, copyable key.
+        if (uri is! String || uri.isEmpty) throw StateError('no totpURI');
+        _uri = uri;
+        _backup =
+            ((res['backupCodes'] as List?) ?? const []).map((e) => e.toString()).toList();
+        if (mounted) setState(() => _step = _Step.verify);
       });
 
   Future<void> _confirmEnable() => _run(() async {
         await ref.read(apiProvider).twoFactorVerify(_code.text.trim());
+        if (!mounted) return;
         setState(() => _step = _Step.backup);
         _password.clear();
         _code.clear();
@@ -72,9 +78,10 @@ class _TwoFactorScreenState extends ConsumerState<TwoFactorScreen> {
 
   Future<void> _disable() => _run(() async {
         final api = ref.read(apiProvider);
+        final wrongCode = context.tr('twofa.wrongCode');
         final ok = await api.confirmTotp(_code.text.trim());
         if (!ok) {
-          setState(() => _error = context.tr('twofa.wrongCode'));
+          if (mounted) setState(() => _error = wrongCode);
           return;
         }
         await api.twoFactorDisable(_password.text);

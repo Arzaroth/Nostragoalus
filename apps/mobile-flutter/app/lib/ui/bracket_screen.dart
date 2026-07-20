@@ -7,6 +7,7 @@ import '../state/providers.dart';
 import 'competition_switcher.dart';
 import 'match_detail_screen.dart';
 import 'widgets/async_value_view.dart';
+import 'widgets/empty_state.dart';
 import 'widgets/score_pill.dart';
 
 /// The knockout bracket - rounds of ties, with the champion when decided.
@@ -26,7 +27,7 @@ class BracketScreen extends ConsumerWidget {
           data: (res) {
             final b = res.bracket;
             if (b == null || b.rounds.isEmpty) {
-              return Center(child: Text(context.tr('bracket.empty')));
+              return EmptyState(message: context.tr('bracket.empty'));
             }
             return ListView(
               children: [

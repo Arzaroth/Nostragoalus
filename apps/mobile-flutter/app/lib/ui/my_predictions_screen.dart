@@ -6,6 +6,15 @@ import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
 import 'match_detail_screen.dart';
 import 'widgets/async_value_view.dart';
+import 'widgets/empty_state.dart';
+
+/// i18n key for a scoring tier (EXACT / DIFF / OUTCOME / MISS).
+String tierKey(String baseTier) => switch (baseTier) {
+      'EXACT' => 'analytics.tier.exact',
+      'DIFF' => 'analytics.tier.diff',
+      'OUTCOME' => 'analytics.tier.outcome',
+      _ => 'analytics.tier.miss',
+    };
 
 /// The signed-in user's predictions across matches, newest first.
 class MyPredictionsScreen extends ConsumerWidget {
@@ -23,10 +32,7 @@ class MyPredictionsScreen extends ConsumerWidget {
           onRetry: () => ref.invalidate(myPredictionsProvider),
           data: (res) {
             if (res.predictions.isEmpty) {
-              return ListView(children: [
-                const SizedBox(height: 80),
-                Center(child: Text(context.tr('predictions.empty'))),
-              ]);
+              return EmptyState(message: context.tr('predictions.empty'));
             }
             return ListView.separated(
               itemCount: res.predictions.length,
@@ -51,9 +57,10 @@ class _PredictionTile extends StatelessWidget {
           ? const Icon(Icons.star, color: Colors.amber)
           : const Icon(Icons.sports_soccer),
       title: Text('${p.homeGoals} - ${p.awayGoals}'),
-      subtitle: p.baseTier != null ? Text(p.baseTier!) : null,
+      subtitle: p.baseTier != null ? Text(context.tr(tierKey(p.baseTier!))) : null,
       trailing: p.totalPoints != null
-          ? Text('${p.totalPoints} pts', style: Theme.of(context).textTheme.titleMedium)
+          ? Text('${p.totalPoints} ${context.tr('leaderboard.pts')}',
+              style: Theme.of(context).textTheme.titleMedium)
           : null,
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => MatchDetailScreen(matchId: p.matchId)),

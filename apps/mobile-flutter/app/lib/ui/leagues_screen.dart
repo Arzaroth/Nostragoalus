@@ -5,6 +5,7 @@ import '../api/models.gen.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
 import 'create_league_screen.dart';
+import 'feedback.dart';
 import 'league_detail_screen.dart';
 import 'widgets/async_value_view.dart';
 
@@ -87,19 +88,19 @@ class LeaguesScreen extends ConsumerWidget {
         ],
       ),
     );
+    controller.dispose();
     if (code == null || code.isEmpty || !context.mounted) return;
-    final messenger = ScaffoldMessenger.of(context);
-    final joined = context.tr('leagues.joined');
-    final failed = context.tr('leagues.joinFailed');
-    try {
+    await joinLeague(context, () async {
       await ref.read(apiProvider).joinLeagueByCode(code);
       ref.invalidate(leaguesProvider);
-      messenger.showSnackBar(SnackBar(content: Text(joined)));
-    } catch (_) {
-      messenger.showSnackBar(SnackBar(content: Text(failed)));
-    }
+    });
   }
 }
+
+/// The one "join, then say what happened" path shared by the code, public and
+/// invite entry points.
+Future<bool> joinLeague(BuildContext context, Future<void> Function() action) =>
+    runAction(context, action, successKey: 'leagues.joined');
 
 /// Prompts to finish picks in any league that still has open matches uncovered.
 /// Silent when everything is complete (or the read errors/loads).
@@ -110,14 +111,10 @@ class _NudgeBanner extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final data = ref.watch(leagueCompletenessProvider).valueOrNull;
     if (data == null) return const SizedBox.shrink();
-    final needy = <Map<String, dynamic>>[];
-    for (final raw in data.cast<Map>()) {
-      final l = raw.cast<String, dynamic>();
-      final s = (l['summary'] as Map?)?.cast<String, dynamic>() ?? const {};
-      final incomplete = (s['incomplete'] as num?)?.toInt() ?? 0;
-      final missing = (s['missing'] as num?)?.toInt() ?? 0;
-      if (incomplete + missing > 0) l['_open'] = incomplete + missing;
-      if ((l['_open'] as int? ?? 0) > 0) needy.add(l);
+    final needy = <(LeagueCompletenessResponseLeague, int)>[];
+    for (final league in data.cast<LeagueCompletenessResponseLeague>()) {
+      final open = league.summary.incomplete.toInt() + league.summary.missing.toInt();
+      if (open > 0) needy.add((league, open));
     }
     if (needy.isEmpty) return const SizedBox.shrink();
     return Card(
@@ -137,16 +134,14 @@ class _NudgeBanner extends ConsumerWidget {
               ],
             ),
           ),
-          for (final l in needy)
+          for (final (league, open) in needy)
             ListTile(
               dense: true,
-              title: Text(l['name'].toString()),
-              subtitle: Text(context
-                  .tr('nudge.openCount')
-                  .replaceAll('{n}', '${l['_open']}')),
+              title: Text(league.name),
+              subtitle: Text(context.tr('nudge.openCount', {'n': open})),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => LeagueDetailScreen(leagueId: l['leagueId'].toString()),
+                builder: (_) => LeagueDetailScreen(leagueId: league.leagueId),
               )),
             ),
         ],
@@ -176,18 +171,10 @@ class _PublicLeagues extends ConsumerWidget {
                       title: Text(l.name),
                       subtitle: Text('${l.memberCount.toInt()}'),
                       trailing: TextButton(
-                        onPressed: () async {
-                          final messenger = ScaffoldMessenger.of(context);
-                          final joined = context.tr('leagues.joined');
-                          final failed = context.tr('leagues.joinFailed');
-                          try {
-                            await ref.read(apiProvider).joinLeague(l.id);
-                            ref.invalidate(leaguesProvider);
-                            messenger.showSnackBar(SnackBar(content: Text(joined)));
-                          } catch (_) {
-                            messenger.showSnackBar(SnackBar(content: Text(failed)));
-                          }
-                        },
+                        onPressed: () => joinLeague(context, () async {
+                          await ref.read(apiProvider).joinLeague(l.id);
+                          ref.invalidate(leaguesProvider);
+                        }),
                         child: Text(context.tr('leagues.join')),
                       ),
                     ),

@@ -5,6 +5,7 @@ import '../api/models.gen.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
 import 'widgets/async_value_view.dart';
+import 'widgets/empty_state.dart';
 import 'widgets/stat_tile.dart';
 
 /// The signed-in user's headline stats across the competition.
@@ -23,7 +24,7 @@ class MyStatsScreen extends ConsumerWidget {
           onRetry: () => ref.invalidate(meStatsProvider),
           data: (res) {
             final s = res.stats;
-            if (s == null) return Center(child: Text(context.tr('stats.empty')));
+            if (s == null) return EmptyState(message: context.tr('stats.empty'));
             return GridView.count(
               crossAxisCount: 2,
               padding: const EdgeInsets.all(12),

@@ -7,6 +7,7 @@ import '../state/providers.dart';
 import 'competition_switcher.dart';
 import 'scorers_screen.dart';
 import 'widgets/async_value_view.dart';
+import 'widgets/empty_state.dart';
 
 /// Group standings tables for the active competition.
 class StandingsScreen extends ConsumerWidget {
@@ -36,10 +37,7 @@ class StandingsScreen extends ConsumerWidget {
           onRetry: () => ref.invalidate(standingsProvider),
           data: (res) {
             if (res.groups.isEmpty) {
-              return ListView(children: [
-                const SizedBox(height: 80),
-                Center(child: Text(context.tr('standings.empty'))),
-              ]);
+              return EmptyState(message: context.tr('standings.empty'));
             }
             return ListView(
               padding: const EdgeInsets.all(12),

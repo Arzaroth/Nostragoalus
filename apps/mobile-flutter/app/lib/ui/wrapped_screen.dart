@@ -5,7 +5,9 @@ import 'package:share_plus/share_plus.dart';
 import '../config.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import 'feedback.dart';
 import 'widgets/async_value_view.dart';
+import 'widgets/section_card.dart';
 import 'widgets/stat_tile.dart';
 
 /// Tournament "wrapped" recap. The endpoint is a ready/not-ready union, read
@@ -24,12 +26,12 @@ class WrappedScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.share),
             tooltip: context.tr('common.share'),
-            onPressed: () async {
+            onPressed: () => runAction(context, () async {
               final comp = ref.read(selectedCompetitionProvider);
               final img = await ref.read(apiProvider).mintWrappedShare(competition: comp);
               final url = img.startsWith('http') ? img : '${AppConfig.webBase}$img';
               await SharePlus.instance.share(ShareParams(text: url));
-            },
+            }),
           ),
         ],
       ),
@@ -85,19 +87,19 @@ class WrappedScreen extends ConsumerWidget {
               _pickCard(context, context.tr('wrapped.bestPickLead'), _map(w['bestPick']), Icons.star),
               _missCard(context, _map(w['biggestMiss'])),
               if (_n(jokers['played']) > 0)
-                _card(context, context.tr('wrapped.jokerLead'), [
+                SectionCard(title: context.tr('wrapped.jokerLead'), children: [
                   Text(context.tr('wrapped.jokerPlayed').replaceAll('{n}', '${_n(jokers['played']).toInt()}')),
                   Text('+${_n(jokers['points']).toInt()} ${context.tr('wrapped.pts')}'),
                 ]),
               if (_n(crowd['bonusPoints']) > 0 || _n(crowd['loneWolf']) > 0)
-                _card(context, context.tr('wrapped.crowdLead'), [
+                SectionCard(title: context.tr('wrapped.crowdLead'), children: [
                   Text('+${_n(crowd['bonusPoints']).toInt()} ${context.tr('wrapped.crowdBonus')}'),
                   if (_n(crowd['loneWolf']) > 0)
                     Text(context.tr('wrapped.loneWolf').replaceAll('{n}', '${_n(crowd['loneWolf']).toInt()}')),
                 ]),
               _metaCard(context, meta),
               if (_n(chat['messages']) > 0)
-                _card(context, context.tr('wrapped.chatLead'), [
+                SectionCard(title: context.tr('wrapped.chatLead'), children: [
                   Text('${_n(chat['messages']).toInt()} ${context.tr('wrapped.chatMessages')}'),
                   Text(context
                       .tr('wrapped.chatReactions')
@@ -106,7 +108,7 @@ class WrappedScreen extends ConsumerWidget {
                   if (chat['topEmoji'] != null)
                     Text('${context.tr('wrapped.chatTopEmoji')} ${chat['topEmoji']}'),
                 ]),
-              _card(context, context.tr('wrapped.haulLead'), [
+              SectionCard(title: context.tr('wrapped.haulLead'), children: [
                 Text(context
                     .tr('wrapped.haulTrophies')
                     .replaceAll('{n}', '${(haul['trophies'] as List?)?.length ?? 0}')),
@@ -136,23 +138,8 @@ class WrappedScreen extends ConsumerWidget {
     return '$home $pred$actual $away';
   }
 
-  Widget _card(BuildContext context, String title, List<Widget> children) => Card(
-        margin: const EdgeInsets.only(top: 12),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: Theme.of(context).textTheme.titleSmall),
-              const SizedBox(height: 6),
-              ...children,
-            ],
-          ),
-        ),
-      );
-
   Widget _tiersCard(BuildContext context, Map<String, dynamic> t, Map<String, dynamic> s) =>
-      _card(context, context.tr('wrapped.tiersLead'), [
+      SectionCard(title: context.tr('wrapped.tiersLead'), children: [
         Text('${context.tr('wrapped.tiersExact')}: ${_n(t['exact']).toInt()}  '
             '${context.tr('wrapped.tiersDiff')}: ${_n(t['diff']).toInt()}  '
             '${context.tr('wrapped.tiersOutcome')}: ${_n(t['outcome']).toInt()}  '
@@ -166,7 +153,7 @@ class WrappedScreen extends ConsumerWidget {
 
   Widget _pickCard(BuildContext context, String title, Map<String, dynamic> p, IconData icon) {
     if (p.isEmpty) return const SizedBox.shrink();
-    return _card(context, title, [
+    return SectionCard(title: title, children: [
       Row(children: [
         Icon(icon, size: 18, color: Colors.amber),
         const SizedBox(width: 6),
@@ -178,7 +165,7 @@ class WrappedScreen extends ConsumerWidget {
 
   Widget _missCard(BuildContext context, Map<String, dynamic> p) {
     if (p.isEmpty) return const SizedBox.shrink();
-    return _card(context, context.tr('wrapped.missLead'), [
+    return SectionCard(title: context.tr('wrapped.missLead'), children: [
       Text(_pickLine(p)),
       if (p['fieldExactPct'] != null)
         Text('${_n(p['fieldExactPct']).toStringAsFixed(0)}% ${context.tr('wrapped.missField')}',
@@ -190,7 +177,7 @@ class WrappedScreen extends ConsumerWidget {
     final champ = _map(meta['champion']);
     final scorer = _map(meta['bestScorer']);
     if (champ.isEmpty && scorer.isEmpty) return const SizedBox.shrink();
-    return _card(context, context.tr('wrapped.metaLead'), [
+    return SectionCard(title: context.tr('wrapped.metaLead'), children: [
       if (champ.isNotEmpty)
         Text(champ['hit'] == true
             ? context

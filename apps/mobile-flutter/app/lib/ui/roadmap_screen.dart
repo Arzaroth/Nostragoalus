@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/models.gen.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import 'feedback.dart';
 import 'widgets/async_value_view.dart';
 
 /// Public product roadmap - items by status, with community upvotes.
@@ -18,7 +19,7 @@ class RoadmapScreen extends ConsumerWidget {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _suggest(context, ref),
         icon: const Icon(Icons.lightbulb),
-        label: Text(context.tr('roadmap.suggest')),
+        label: Text(context.tr('roadmap.suggest.submit')),
       ),
       body: RefreshIndicator(
         onRefresh: () async => ref.refresh(roadmapProvider.future),
@@ -40,7 +41,7 @@ Future<void> _suggest(BuildContext context, WidgetRef ref) async {
   final submit = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      title: Text(context.tr('roadmap.suggest')),
+      title: Text(context.tr('roadmap.suggest.submit')),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -54,20 +55,31 @@ Future<void> _suggest(BuildContext context, WidgetRef ref) async {
         ],
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context, false), child: Text(context.tr('common.cancel'))),
-        FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(context.tr('roadmap.suggest'))),
+        TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(context.tr('common.cancel'))),
+        FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(context.tr('roadmap.suggest.submit'))),
       ],
     ),
   );
-  if (submit != true || title.text.trim().isEmpty || !context.mounted) return;
-  final messenger = ScaffoldMessenger.of(context);
-  final sent = context.tr('roadmap.suggestSent');
-  try {
-    await ref.read(apiProvider).suggestRoadmap(title.text.trim(), desc.text.trim());
+  final suggestion = (title: title.text.trim(), description: desc.text.trim());
+  title.dispose();
+  desc.dispose();
+  if (submit != true || suggestion.title.isEmpty || !context.mounted) return;
+  await runAction(context, () async {
+    await ref.read(apiProvider).suggestRoadmap(suggestion.title, suggestion.description);
     ref.invalidate(roadmapProvider);
-    messenger.showSnackBar(SnackBar(content: Text(sent)));
-  } catch (_) {/* ignore */}
+  }, successKey: 'roadmap.suggest.thanks');
 }
+
+String roadmapStatusKey(String status) => switch (status) {
+      'IN_PROGRESS' => 'roadmap.inProgress',
+      'SHIPPED' => 'roadmap.shipped',
+      'SUGGESTED' => 'roadmap.statusSuggested',
+      _ => 'roadmap.planned',
+    };
 
 class _ItemCard extends ConsumerWidget {
   const _ItemCard(this.item);
@@ -85,7 +97,8 @@ class _ItemCard extends ConsumerWidget {
             if (item.description != null) Text(item.description!),
             const SizedBox(height: 4),
             Chip(
-              label: Text(item.status, style: const TextStyle(fontSize: 11)),
+              label: Text(context.tr(roadmapStatusKey(item.status)),
+                  style: const TextStyle(fontSize: 11)),
               visualDensity: VisualDensity.compact,
               padding: EdgeInsets.zero,
             ),
@@ -98,10 +111,10 @@ class _ItemCard extends ConsumerWidget {
             IconButton(
               icon: Icon(item.viewerHasVoted ? Icons.thumb_up : Icons.thumb_up_outlined),
               color: item.viewerHasVoted ? Theme.of(context).colorScheme.primary : null,
-              onPressed: () async {
+              onPressed: () => runAction(context, () async {
                 await ref.read(apiProvider).voteRoadmap(item.id);
                 ref.invalidate(roadmapProvider);
-              },
+              }),
             ),
             Text('${item.voteCount.toInt()}'),
           ],

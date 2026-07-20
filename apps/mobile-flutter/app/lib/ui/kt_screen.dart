@@ -21,11 +21,26 @@ class KtScreen extends ConsumerWidget {
           value: kt,
           onRetry: () => ref.invalidate(ktProvider),
           data: (view) {
-            final ok = view.verification.ok;
             final scheme = Theme.of(context).colorScheme;
+            // `verification.ok` alone green-badges an empty log or a chain that
+            // recomputes cleanly under a head the server made up.
+            final ok = view.chainOk;
             return ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                if (view.headTampered)
+                  Card(
+                    color: scheme.error,
+                    child: ListTile(
+                      leading: Icon(Icons.warning_amber, color: scheme.onError),
+                      title: Text(context.tr('kt.tampered'),
+                          style: TextStyle(
+                              color: scheme.onError, fontWeight: FontWeight.bold)),
+                      subtitle: Text(context.tr('chat.verify.logTampered'),
+                          style: TextStyle(color: scheme.onError)),
+                    ),
+                  ),
+                if (view.headTampered) const SizedBox(height: 12),
                 Card(
                   color: ok ? scheme.secondaryContainer : scheme.errorContainer,
                   child: ListTile(
@@ -33,7 +48,9 @@ class KtScreen extends ConsumerWidget {
                     title: Text(context.tr(ok ? 'kt.verified' : 'kt.broken')),
                     subtitle: Text(ok
                         ? context.tr('kt.entries', {'n': view.entryCount})
-                        : '${view.verification.failure} @ #${view.verification.count}'),
+                        : view.verification.ok
+                            ? context.tr('kt.headMismatch')
+                            : '${view.verification.failure} @ #${view.verification.count}'),
                   ),
                 ),
                 const SizedBox(height: 16),

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/models.gen.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import 'feedback.dart';
 import 'widgets/async_value_view.dart';
 
 /// The Golden Boot pick + the tournament's top scorers. Interactive: pick a team,
@@ -20,29 +21,19 @@ class _BestScorerScreenState extends ConsumerState<BestScorerScreen> {
   String? _teamName;
   bool _saving = false;
 
-  Future<void> _pick(Map<String, dynamic> player) async {
+  Future<void> _pick(Squad player) async {
     setState(() => _saving = true);
-    try {
+    await runAction(context, () async {
       await ref.read(apiProvider).setBestScorer(
-            playerId: player['playerId'].toString(),
-            playerName: player['name'].toString(),
+            playerId: player.playerId,
+            playerName: player.name,
             teamCode: _teamCode,
             teamName: _teamName ?? '',
             competition: ref.read(selectedCompetitionProvider),
           );
       ref.invalidate(bestScorerProvider);
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(context.tr('bestScorer.saved'))));
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(context.tr('err.generic'))));
-      }
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
+    }, successKey: 'bestScorer.saved');
+    if (mounted) setState(() => _saving = false);
   }
 
   @override
@@ -55,6 +46,8 @@ class _BestScorerScreenState extends ConsumerState<BestScorerScreen> {
         onRefresh: () async {
           ref.invalidate(bestScorerProvider);
           ref.invalidate(scorersProvider);
+          await ref.read(bestScorerProvider.future);
+          await ref.read(scorersProvider.future);
         },
         child: AsyncValueView<BestScorerResponse>(
           value: best,
@@ -141,19 +134,18 @@ class _BestScorerScreenState extends ConsumerState<BestScorerScreen> {
           onRetry: () => ref.invalidate(squadProvider(_teamCode!)),
           data: (squad) => Column(
             children: [
-              for (final raw in squad.cast<Map>())
-                Builder(builder: (context) {
-                  final p = raw.cast<String, dynamic>();
-                  final isPick = bs.myPick?.playerId == p['playerId']?.toString();
-                  return ListTile(
+              // A squad entry with no id cannot be persisted as a pick.
+              for (final p in squad.whereType<Squad>())
+                if (p.playerId.isNotEmpty)
+                  ListTile(
                     dense: true,
-                    leading: Icon(isPick ? Icons.check_circle : Icons.person,
-                        color: isPick ? Colors.green : null),
-                    title: Text((p['name'] ?? '').toString()),
-                    subtitle: p['position'] != null ? Text(p['position'].toString()) : null,
+                    leading: Icon(
+                        bs.myPick?.playerId == p.playerId ? Icons.check_circle : Icons.person,
+                        color: bs.myPick?.playerId == p.playerId ? Colors.green : null),
+                    title: Text(p.name),
+                    subtitle: p.position != null ? Text(p.position!) : null,
                     onTap: _saving ? null : () => _pick(p),
-                  );
-                }),
+                  ),
             ],
           ),
         ),

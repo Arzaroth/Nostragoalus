@@ -3,16 +3,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import 'feedback.dart';
 
 /// User preferences (persisted server-side via better-auth update-user): show the
 /// crowd/odds hints and the light/dark theme.
 class PreferencesScreen extends ConsumerWidget {
   const PreferencesScreen({super.key});
 
-  Future<void> _save(WidgetRef ref, Map<String, dynamic> prefs) async {
-    await ref.read(apiProvider).updatePrefs(prefs);
-    ref.invalidate(authControllerProvider);
-  }
+  Future<void> _save(BuildContext context, WidgetRef ref, Map<String, dynamic> prefs) =>
+      runAction(context, () async {
+        await ref.read(apiProvider).updatePrefs(prefs);
+        ref.invalidate(authControllerProvider);
+      }, successKey: 'prefs.saved');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -24,18 +26,18 @@ class PreferencesScreen extends ConsumerWidget {
           SwitchListTile(
             title: Text(context.tr('prefs.showCrowd')),
             value: user?.showCrowd ?? true,
-            onChanged: (v) => _save(ref, {'showCrowd': v}),
+            onChanged: (v) => _save(context, ref, {'showCrowd': v}),
           ),
           SwitchListTile(
             title: Text(context.tr('prefs.showOdds')),
             value: user?.showOdds ?? true,
-            onChanged: (v) => _save(ref, {'showOdds': v}),
+            onChanged: (v) => _save(context, ref, {'showOdds': v}),
           ),
           const Divider(),
           ListTile(title: Text(context.tr('prefs.theme'))),
           RadioGroup<String>(
             groupValue: user?.theme ?? 'system',
-            onChanged: (v) => _save(ref, {'theme': v == 'system' ? null : v}),
+            onChanged: (v) => _save(context, ref, {'theme': v == 'system' ? null : v}),
             child: Column(
               children: [
                 for (final opt in const ['system', 'light', 'dark'])

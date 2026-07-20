@@ -2,16 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/models.gen.dart';
+import '../../reactions.dart';
 import '../../state/providers.dart';
-
-const _reactions = [
-  ('FIRE', '🔥'),
-  ('GOAL', '⚽'),
-  ('WOW', '😮'),
-  ('LAUGH', '😂'),
-  ('SAD', '😢'),
-  ('ANGRY', '😠'),
-];
 
 int _count(Total t, String emoji) => switch (emoji) {
       'FIRE' => t.fire.toInt(),
@@ -34,7 +26,7 @@ class ReactionsBar extends ConsumerWidget {
       data: (res) => Wrap(
         spacing: 8,
         children: [
-          for (final (emoji, glyph) in _reactions)
+          for (final (emoji, glyph) in reactionPalette)
             _Chip(
               glyph: glyph,
               count: _count(res.totals, emoji),

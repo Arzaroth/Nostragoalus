@@ -4,13 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../api/models.gen.dart';
 import '../i18n/i18n_scope.dart';
+import '../leagues/permissions.dart';
 import '../state/providers.dart';
+import 'feedback.dart';
 import 'league_board_screen.dart';
 import 'league_chat_screen.dart';
 import 'league_settings_screen.dart';
 import 'moderation_screen.dart';
-import 'widgets/online_dot.dart';
 import 'widgets/async_value_view.dart';
+import 'widgets/online_dot.dart';
 
 /// A league's home: info, join code, members, invites, and the leave action;
 /// links out to the board + chat.
@@ -27,8 +29,7 @@ class LeagueDetailScreen extends ConsumerWidget {
         onRetry: () => ref.invalidate(leagueDetailProvider(leagueId)),
         data: (res) {
           final l = res.league;
-          final canManage = l.role == 'OWNER' || l.role == 'MODERATOR';
-          final isOwner = l.role == 'OWNER';
+          final canManage = canManageLeague(l.role);
           final selfId = ref.watch(authControllerProvider).valueOrNull?.id;
           return CustomScrollView(
             slivers: [
@@ -73,9 +74,9 @@ class LeagueDetailScreen extends ConsumerWidget {
                   children: [
                     Padding(
                         padding: const EdgeInsets.only(left: 16),
-                        child: Chip(label: Text(l.mode))),
+                        child: Chip(label: Text(context.tr(modeLabelKey(l.mode))))),
                     Chip(label: Text('${l.memberCount.toInt()} ${context.tr('leagues.members')}')),
-                    Chip(label: Text(l.visibility)),
+                    Chip(label: Text(context.tr(visibilityLabelKey(l.visibility)))),
                   ],
                 ),
                 if (l.joinCode != null)
@@ -87,8 +88,7 @@ class LeagueDetailScreen extends ConsumerWidget {
                       icon: const Icon(Icons.copy),
                       onPressed: () {
                         Clipboard.setData(ClipboardData(text: l.joinCode!));
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(SnackBar(content: Text(context.tr('common.copied'))));
+                        showToast(context, context.tr('common.copied'));
                       },
                     ),
                   ),
@@ -103,9 +103,9 @@ class LeagueDetailScreen extends ConsumerWidget {
                       ],
                     ),
                     title: Text(m.name),
-                    trailing: (canManage && m.userId != selfId)
-                        ? _memberMenu(context, ref, l.id, m, isOwner)
-                        : (m.role != 'MEMBER' ? Text(m.role) : null),
+                    trailing: (m.userId != selfId && _hasMenu(l.role, m.role))
+                        ? _MemberMenu(leagueId: l.id, member: m, actorRole: l.role)
+                        : (m.role != 'MEMBER' ? Text(context.tr(roleLabelKey(m.role))) : null),
                   ),
                 if (canManage) _InvitesSection(leagueId: leagueId),
                 _RewardsSection(leagueId: leagueId),
@@ -114,10 +114,19 @@ class LeagueDetailScreen extends ConsumerWidget {
                   leading: Icon(Icons.logout, color: Theme.of(context).colorScheme.error),
                   title: Text(context.tr('leagues.leave')),
                   onTap: () async {
+                    final ok = await confirmDialog(
+                      context,
+                      title: context.tr('leagues.leave'),
+                      message: context.tr('leagues.leaveConfirm'),
+                      confirmLabel: context.tr('leagues.leave'),
+                    );
+                    if (!ok || !context.mounted) return;
                     final nav = Navigator.of(context);
-                    await ref.read(apiProvider).leaveLeague(leagueId);
-                    ref.invalidate(leaguesProvider);
-                    nav.pop();
+                    final left = await runAction(context, () async {
+                      await ref.read(apiProvider).leaveLeague(leagueId);
+                      ref.invalidate(leaguesProvider);
+                    });
+                    if (left) nav.pop();
                   },
                 ),
               ]),
@@ -128,37 +137,67 @@ class LeagueDetailScreen extends ConsumerWidget {
     );
   }
 
+  static bool _hasMenu(String? actorRole, String targetRole) =>
+      canKick(actorRole, targetRole) ||
+      canChangeRole(actorRole, targetRole) ||
+      canTransferOwnership(actorRole, targetRole);
+
   Widget _sectionHeader(BuildContext context, String text) => Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
         child: Text(text, style: Theme.of(context).textTheme.titleMedium),
       );
+}
 
-  Widget _memberMenu(
-      BuildContext context, WidgetRef ref, String leagueId, Member m, bool isOwner) {
+/// Member actions, offering only what the server would accept from [actorRole]
+/// (mirrors `server/utils/leagues/permissions.ts`).
+class _MemberMenu extends ConsumerWidget {
+  const _MemberMenu({required this.leagueId, required this.member, required this.actorRole});
+
+  final String leagueId;
+  final Member member;
+  final String? actorRole;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final api = ref.read(apiProvider);
-    void refresh() => ref.invalidate(leagueDetailProvider(leagueId));
+    final canPromote = canChangeRole(actorRole, member.role);
     return PopupMenuButton<String>(
       onSelected: (v) async {
-        switch (v) {
-          case 'promote':
-            await api.setMemberRole(leagueId, m.userId, 'MODERATOR');
-          case 'demote':
-            await api.setMemberRole(leagueId, m.userId, 'MEMBER');
-          case 'transfer':
-            await api.transferOwnership(leagueId, m.userId);
-          case 'remove':
-            await api.removeMember(leagueId, m.userId);
+        final confirmKey = v == 'remove'
+            ? 'leagues.kickConfirm'
+            : (v == 'transfer' ? 'leagues.transferConfirm' : null);
+        if (confirmKey != null) {
+          final ok = await confirmDialog(
+            context,
+            title: context.tr(v == 'remove' ? 'leagues.removeMember' : 'leagues.transferOwnership'),
+            message: context.tr(confirmKey, {'name': member.name}),
+            confirmLabel: context.tr('common.confirm'),
+          );
+          if (!ok || !context.mounted) return;
         }
-        refresh();
+        await runAction(context, () async {
+          switch (v) {
+            case 'promote':
+              await api.setMemberRole(leagueId, member.userId, 'MODERATOR');
+            case 'demote':
+              await api.setMemberRole(leagueId, member.userId, 'MEMBER');
+            case 'transfer':
+              await api.transferOwnership(leagueId, member.userId);
+            case 'remove':
+              await api.removeMember(leagueId, member.userId);
+          }
+          ref.invalidate(leagueDetailProvider(leagueId));
+        });
       },
       itemBuilder: (context) => [
-        if (m.role == 'MEMBER')
+        if (canPromote && member.role == 'MEMBER')
           PopupMenuItem(value: 'promote', child: Text(context.tr('leagues.makeModerator'))),
-        if (m.role == 'MODERATOR')
+        if (canPromote && member.role == 'MODERATOR')
           PopupMenuItem(value: 'demote', child: Text(context.tr('leagues.makeMember'))),
-        if (isOwner)
+        if (canTransferOwnership(actorRole, member.role))
           PopupMenuItem(value: 'transfer', child: Text(context.tr('leagues.transferOwnership'))),
-        PopupMenuItem(value: 'remove', child: Text(context.tr('leagues.removeMember'))),
+        if (canKick(actorRole, member.role))
+          PopupMenuItem(value: 'remove', child: Text(context.tr('leagues.removeMember'))),
       ],
     );
   }
@@ -171,9 +210,11 @@ class _RewardsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final rewards = ref.watch(leagueRewardsProvider(leagueId));
-    return rewards.maybeWhen(
-      data: (list) {
+    return AsyncValueView<List<dynamic>>(
+      value: ref.watch(leagueRewardsProvider(leagueId)),
+      onRetry: () => ref.invalidate(leagueRewardsProvider(leagueId)),
+      data: (raw) {
+        final list = raw.cast<LeagueReward>();
         if (list.isEmpty) return const SizedBox.shrink();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -184,41 +225,34 @@ class _RewardsSection extends ConsumerWidget {
               child: Text(context.tr('leagues.prizes'),
                   style: Theme.of(context).textTheme.titleMedium),
             ),
-            for (final raw in list.cast<Map>())
-              Builder(builder: (context) {
-                final type = (raw['type'] ?? '').toString();
-                final reward = raw['reward'] as Map?;
-                final label = (reward?['label'] ?? type).toString();
-                final winners = (raw['winners'] as List?) ?? const [];
-                final youHold = raw['youHold'] == true;
-                final disabled = raw['disabled'] == true;
-                return ListTile(
-                  dense: true,
-                  enabled: !disabled,
-                  leading: Icon(youHold ? Icons.emoji_events : Icons.emoji_events_outlined,
-                      color: youHold ? Colors.amber : null),
-                  title: Text(label),
-                  subtitle: winners.isEmpty
-                      ? Text(context.tr('rewards.noWinner'))
-                      : Text(winners
-                          .cast<Map>()
-                          .map((w) => (w['displayName'] ?? '').toString())
-                          .join(', ')),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: disabled
-                      ? null
-                      : () => _showRanking(context, ref, leagueId, type, label),
-                );
-              }),
+            for (final reward in list)
+              ListTile(
+                dense: true,
+                enabled: !reward.disabled,
+                leading: Icon(
+                    reward.youHold ? Icons.emoji_events : Icons.emoji_events_outlined,
+                    color: reward.youHold ? Colors.amber : null),
+                title: Text(reward.reward?.label ?? reward.type),
+                subtitle: reward.winners.isEmpty
+                    ? Text(context.tr('rewards.noWinner'))
+                    : Text(reward.winners.map((w) => w.displayName).join(', ')),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: reward.disabled
+                    ? null
+                    : () => _showRanking(context, ref, reward.type,
+                        reward.reward?.label ?? reward.type),
+              ),
           ],
         );
       },
-      orElse: () => const SizedBox.shrink(),
     );
   }
 
   Future<void> _showRanking(
-      BuildContext context, WidgetRef ref, String leagueId, String type, String label) async {
+      BuildContext context, WidgetRef ref, String type, String label) async {
+    // Built once, outside the sheet builder: a DraggableScrollableSheet rebuilds
+    // on every drag frame and would otherwise re-fire the request each time.
+    final ranking = ref.read(apiProvider).rewardRanking(leagueId, type);
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -226,13 +260,22 @@ class _RewardsSection extends ConsumerWidget {
         expand: false,
         initialChildSize: 0.6,
         builder: (context, controller) => FutureBuilder<Map<String, dynamic>>(
-          future: ref.read(apiProvider).rewardRanking(leagueId, type),
+          future: ranking,
           builder: (context, snap) {
-            if (!snap.hasData) {
-              return const Center(child: Padding(
-                padding: EdgeInsets.all(32), child: CircularProgressIndicator()));
+            if (snap.hasError) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Text(apiMessage(context, snap.error!)),
+                ),
+              );
             }
-            final rows = (snap.data!['rows'] as List?) ?? const [];
+            if (!snap.hasData) {
+              return const Center(
+                  child: Padding(
+                      padding: EdgeInsets.all(32), child: CircularProgressIndicator()));
+            }
+            final rows = (snap.data!['rows'] as List?) ?? const <dynamic>[];
             return ListView(
               controller: controller,
               children: [
@@ -244,7 +287,7 @@ class _RewardsSection extends ConsumerWidget {
                   Padding(
                       padding: const EdgeInsets.all(16),
                       child: Text(context.tr('rewards.noWinner'))),
-                for (final r in rows.cast<Map>())
+                for (final r in rows.cast<Map<String, dynamic>>())
                   ListTile(
                     dense: true,
                     leading: Text('${(r['rank'] as num?)?.toInt() ?? 0}'),
@@ -284,15 +327,14 @@ class _InvitesSection extends ConsumerWidget {
               TextButton.icon(
                 icon: const Icon(Icons.add),
                 label: Text(context.tr('leagues.newInvite')),
-                onPressed: () async {
-                  await ref.read(apiProvider).createInvite(leagueId, expiresInHours: 168, maxUses: 25);
-                  ref.invalidate(leagueInvitesProvider(leagueId));
-                },
+                onPressed: () => _createInvite(context, ref),
               ),
             ],
           ),
         ),
-        invites.maybeWhen(
+        AsyncValueView<LeagueInvitesResponse>(
+          value: invites,
+          onRetry: () => ref.invalidate(leagueInvitesProvider(leagueId)),
           data: (res) => Column(
             children: [
               for (final i in res.invites)
@@ -300,21 +342,76 @@ class _InvitesSection extends ConsumerWidget {
                   dense: true,
                   leading: const Icon(Icons.link),
                   title: Text(i.token, style: const TextStyle(fontFamily: 'monospace')),
-                  subtitle: Text('${i.uses.toInt()}${i.maxUses != null ? '/${i.maxUses!.toInt()}' : ''}'),
+                  subtitle: Text(
+                      '${i.uses.toInt()}${i.maxUses != null ? '/${i.maxUses!.toInt()}' : ''}'),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete_outline),
                     tooltip: context.tr('common.delete'),
                     onPressed: () async {
-                      await ref.read(apiProvider).deleteInvite(leagueId, i.id);
-                      ref.invalidate(leagueInvitesProvider(leagueId));
+                      await runAction(context, () async {
+                        await ref.read(apiProvider).deleteInvite(leagueId, i.id);
+                        ref.invalidate(leagueInvitesProvider(leagueId));
+                      });
                     },
                   ),
                 ),
             ],
           ),
-          orElse: () => const SizedBox.shrink(),
         ),
       ],
     );
+  }
+
+  /// Same coarse presets as the web dialog: an expiry and a use limit, both
+  /// defaulting the way the web does (7 days, unlimited uses).
+  Future<void> _createInvite(BuildContext context, WidgetRef ref) async {
+    var expiresInHours = 168;
+    int? maxUses;
+    final create = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: Text(ctx.tr('invites.title')),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<int>(
+                initialValue: expiresInHours,
+                decoration: InputDecoration(labelText: ctx.tr('invites.expiryLabel')),
+                items: [
+                  DropdownMenuItem(value: 24, child: Text(ctx.tr('invites.expiry.h24'))),
+                  DropdownMenuItem(value: 168, child: Text(ctx.tr('invites.expiry.d7'))),
+                  DropdownMenuItem(value: 720, child: Text(ctx.tr('invites.expiry.d30'))),
+                ],
+                onChanged: (v) => setLocal(() => expiresInHours = v ?? expiresInHours),
+              ),
+              DropdownButtonFormField<int?>(
+                initialValue: maxUses,
+                decoration: InputDecoration(labelText: ctx.tr('invites.usesLabel')),
+                items: [
+                  DropdownMenuItem(value: null, child: Text(ctx.tr('invites.uses.unlimited'))),
+                  for (final n in const [1, 5, 25])
+                    DropdownMenuItem(value: n, child: Text('$n')),
+                ],
+                onChanged: (v) => setLocal(() => maxUses = v),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false), child: Text(ctx.tr('common.cancel'))),
+            FilledButton(
+                onPressed: () => Navigator.pop(ctx, true), child: Text(ctx.tr('invites.create'))),
+          ],
+        ),
+      ),
+    );
+    if (create != true || !context.mounted) return;
+    await runAction(context, () async {
+      await ref
+          .read(apiProvider)
+          .createInvite(leagueId, expiresInHours: expiresInHours, maxUses: maxUses);
+      ref.invalidate(leagueInvitesProvider(leagueId));
+    });
   }
 }

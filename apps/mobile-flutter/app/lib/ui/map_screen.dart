@@ -25,6 +25,7 @@ class MapScreen extends ConsumerWidget {
         onRefresh: () async {
           ref.invalidate(eliminatedProvider);
           ref.invalidate(teamsProvider);
+          await ref.read(eliminatedProvider.future);
           await ref.read(teamsProvider.future);
         },
         child: AsyncValueView<TeamsResponse>(
