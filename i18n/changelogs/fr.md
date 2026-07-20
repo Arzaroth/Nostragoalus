@@ -5,6 +5,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Corrigé
+
+- Une connexion unique (SSO) restée trop longtemps en attente, ou un lien de connexion rouvert depuis un vieil onglet, ne vous jette plus sur une page d'erreur brute : vous revenez sur le formulaire de connexion avec un message « échec de la connexion » et pouvez réessayer.
+
 ## [4.4.3] - 2026-07-20
 
 ### Corrigé
