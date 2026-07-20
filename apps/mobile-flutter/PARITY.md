@@ -35,7 +35,8 @@ with the data caveat noted per area.
 
 ## Competition
 - [x] Competition browse + switcher (all scoped reads honor it)
-- [x] Fixtures list
+- [x] Fixtures list - grouped by round, concluded rounds collapsed on load (final
+  never folds) [master 4.3.3/4.4.0 parity]
 - [x] Standings (group tables)
 - [x] Scorers + assists table (competition)
 - [x] Leaderboard (+ movement arrow)
@@ -107,8 +108,10 @@ with the data caveat noted per area.
   round-trip needs a provisioned multi-member league (a keyholder to seal keys)
 - [~] DMs (1:1) - inbox / room / create; `[!]` live round-trip needs a 2nd user
 - [x] Chat rich: reactions + report + edit + moderator dashboard + @-mentions +
-  E2EE image attachments + threads + presence dots + typing indicator; `[!]` delete
-  (no own-message delete endpoint - edit only)
+  E2EE image attachments + threads + presence dots + typing indicator + optimistic
+  send (Sending/Not sent + Retry, master 4.4.2 parity); `[!]` delete (no own-message
+  delete endpoint - edit only); `[!]` chat-pin is a web dock feature - mobile chat
+  is screen-based, no dock to pin
 - [x] DM rich: reactions (long-press) + read-on-open + E2EE image attachments
   (send + decrypt-on-demand) + read receipts ("Seen ✓✓" via the otherLastReadAt
   contract field added this branch)
