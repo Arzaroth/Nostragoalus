@@ -17,6 +17,7 @@ void main() {
       onPresenceSnapshot: (users) => calls.add('snapshot:$users'),
       onPresence: (id, status) => calls.add('presence:$id=$status'),
       onTyping: (league, who) => calls.add('typing:$league/$who'),
+      onDmTyping: (thread, who) => calls.add('dmTyping:$thread/$who'),
       onRing: (f) => calls.add('ring:${f['from']}'),
       onRingCancelled: (from) => calls.add('cancelled:$from'),
     );
@@ -60,6 +61,13 @@ void main() {
   test('chat:typing routes league and user', () {
     router.handle({'type': 'chat:typing', 'leagueId': 'lg', 'userId': 'u2'});
     expect(calls, ['typing:lg/u2']);
+  });
+
+  test('dm:typing routes thread and user, and never as a league hint', () {
+    router.handle({'type': 'dm:typing', 'threadId': 't7', 'userId': 'u2'});
+    // A malformed frame is dropped rather than keyed on a null thread.
+    router.handle({'type': 'dm:typing', 'userId': 'u2'});
+    expect(calls, ['dmTyping:t7/u2']);
   });
 
   test('a ring and the caller giving up are both terminal-handled', () {

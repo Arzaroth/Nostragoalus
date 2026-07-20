@@ -15,12 +15,6 @@ import 'matches_screen.dart';
 import 'onboarding_tour.dart';
 import 'standings_screen.dart';
 
-/// How long a backgrounded app keeps a call alive. There is no CallKit /
-/// ConnectionService integration, so Android suspends the microphone shortly
-/// after the app leaves the foreground: holding the call open past that would
-/// leave the user muted-but-listed and the server holding a zombie room member.
-const _backgroundCallGrace = Duration(seconds: 30);
-
 /// How long an unanswered incoming ring stays on screen (matches the web's
 /// RING_TIMEOUT_MS).
 const _ringTimeout = Duration(seconds: 30);
@@ -42,7 +36,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   BuildContext? _ringContext;
   String? _ringFrom;
   Timer? _ringTimer;
-  Timer? _backgroundTimer;
+  bool _endedInBackground = false;
 
   static const _screens = [
     MatchesScreen(),
@@ -79,7 +73,6 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   @override
   void dispose() {
     _ringTimer?.cancel();
-    _backgroundTimer?.cancel();
     _lifecycle?.dispose();
     _liveSub?.cancel();
     // The shell is only torn down on sign-out; a socket left open would stay
@@ -109,37 +102,48 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       }
       ref.read(presenceProvider.notifier).state = next;
     },
-    onTyping: (league, who) {
-      final now = DateTime.now();
-      final next = {...ref.read(typingProvider)}
-        ..removeWhere((_, at) => now.difference(at).inSeconds > 10)
-        ..['$league|$who'] = now;
-      ref.read(typingProvider.notifier).state = next;
-    },
+    onTyping: (league, who) => _markTyping(league, who),
+    onDmTyping: (threadId, who) => _markTyping('dm:$threadId', who),
     onRing: (frame) => unawaited(_onIncomingCall(frame)),
     onRingCancelled: (from) {
       if (_ringFrom == from) _dismissRing();
     },
   );
 
+  // One map for both rooms: the key is `<room>|<userId>`, where a room is a
+  // leagueId or `dm:<threadId>`. Entries older than 10s are pruned on every write
+  // so the map cannot outgrow the people currently typing.
+  void _markTyping(String room, String who) {
+    final now = DateTime.now();
+    final next = {...ref.read(typingProvider)}
+      ..removeWhere((_, at) => now.difference(at).inSeconds > 10)
+      ..['$room|$who'] = now;
+    ref.read(typingProvider.notifier).state = next;
+  }
+
   // Backgrounded is the app's only idle signal, and it is what makes the amber
   // presence dot reachable at all (the server never infers idle by itself).
+  //
+  // It also ends any call, immediately: without a foreground service the OS
+  // suspends the microphone as soon as the app leaves the foreground, so any
+  // grace period would be a window in which the UI says "in call" over a dead
+  // mic. Leaving is honest, and the user is told why on the way back.
   void _onPaused() {
-    _cancelBackgroundTimer();
     ref.read(liveServiceProvider).send({'type': 'presence:ping', 'active': false});
-    if (ref.read(voiceServiceProvider).activeScope == null) return;
-    _backgroundTimer =
-        Timer(_backgroundCallGrace, () => unawaited(ref.read(voiceServiceProvider).leave()));
+    unawaited(_endCallForBackground());
+  }
+
+  Future<void> _endCallForBackground() async {
+    _endedInBackground = await ref.read(voiceServiceProvider).backgrounded();
   }
 
   void _onResumed() {
-    _cancelBackgroundTimer();
     ref.read(liveServiceProvider).send({'type': 'presence:ping', 'active': true});
-  }
-
-  void _cancelBackgroundTimer() {
-    _backgroundTimer?.cancel();
-    _backgroundTimer = null;
+    if (!_endedInBackground) return;
+    _endedInBackground = false;
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(context.tr('voice.endedInBackground'))));
   }
 
   void _dismissRing() {

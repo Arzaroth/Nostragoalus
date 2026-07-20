@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
+import '../api/models.gen.dart' show IceServersResponse;
 import '../api/nostragoalus_api.dart';
 import '../api/token_store.dart';
 import '../live/live_service.dart';
@@ -13,6 +14,12 @@ export 'voice_call_state.dart';
 
 typedef VoiceMediaFactory = Future<MediaStream> Function();
 typedef VoicePeerFactory = Future<RTCPeerConnection> Function(Map<String, dynamic> config);
+typedef IceFetcher = Future<IceServersResponse> Function();
+
+/// What the server hands out when nothing else says otherwise
+/// (`buildIceServers`'s `ttlSeconds` default). Only used because the api facade
+/// drops the response's `ttl`; see the handoff note.
+const _fallbackIceTtlSeconds = 3600.0;
 
 /// A `join()` that never got off the ground. `micDenied` separates the one
 /// failure the user can act on from everything else.
@@ -45,15 +52,23 @@ class VoiceService {
     this._selfId, {
     VoiceMediaFactory? media,
     VoicePeerFactory? peers,
+    IceFetcher? ice,
     this.ringTimeout = const Duration(seconds: 30),
     this.reconnectGrace = const Duration(seconds: 20),
+    this.iceRetry = const Duration(seconds: 30),
   })  : _media = media ?? _defaultMedia,
-        _peerFactory = peers ?? createPeerConnection;
+        _peerFactory = peers ?? createPeerConnection,
+        _ice = ice;
 
   final NostragoalusApi _api;
   final String _selfId;
   final VoiceMediaFactory _media;
   final VoicePeerFactory _peerFactory;
+  final IceFetcher? _ice;
+
+  /// How soon to try again when refreshing the TURN credential fails. The old
+  /// credential is kept meanwhile: it is usually still inside its own ttl.
+  final Duration iceRetry;
 
   /// How long an unanswered outgoing ring lasts (matches the web's
   /// RING_TIMEOUT_MS) and how long a dropped socket may take to come back
@@ -69,6 +84,7 @@ class VoiceService {
   final Set<String> _pendingInvites = {};
   Timer? _ringTimer;
   Timer? _reconnectTimer;
+  Timer? _iceTimer;
   bool _disposed = false;
 
   /// The whole call in one value, for the call bar.
@@ -94,9 +110,7 @@ class VoiceService {
     try {
       // A call with no STUN/TURN fails mysteriously behind NAT minutes later;
       // fail here instead.
-      final servers = await _api.iceServers();
-      if (servers.isEmpty) throw StateError('no ICE servers configured');
-      _iceConfig = {'iceServers': servers.map((s) => s.toJson()).toList()};
+      await _loadIce();
       atMic = true;
       _local = await _media();
       atMic = false;
@@ -124,6 +138,16 @@ class VoiceService {
 
   Future<void> leave() => _teardown(VoiceEndReason.hangUp);
 
+  /// The app left the foreground. Nostragoalus ships no foreground service /
+  /// CallKit, so the OS suspends the microphone here: the call ends instead of
+  /// staying listed with a dead mic. Returns true when a call was actually
+  /// ended, so the shell can tell the user why on the way back.
+  Future<bool> backgrounded() async {
+    if (state.value.scope == null) return false;
+    await _teardown(VoiceEndReason.backgrounded);
+    return true;
+  }
+
   void toggleMute() {
     final current = state.value;
     if (current is! VoiceInCall) return;
@@ -131,6 +155,40 @@ class VoiceService {
     _set(current.copyWith(muted: muted));
     for (final t in _local?.getAudioTracks() ?? const <MediaStreamTrack>[]) {
       t.enabled = !muted;
+    }
+  }
+
+  /// Fetch the ICE configuration and arm the refresh that keeps it valid. The
+  /// TURN credential the server mints is time-limited, so a call that outlives
+  /// its ttl would lose the relay on the next renegotiation or ICE restart.
+  Future<void> _loadIce() async {
+    final res = _ice != null
+        ? await _ice()
+        : IceServersResponse(iceServers: await _api.iceServers(), ttl: _fallbackIceTtlSeconds);
+    if (res.iceServers.isEmpty) throw StateError('no ICE servers configured');
+    _iceConfig = {'iceServers': res.iceServers.map((s) => s.toJson()).toList()};
+    // 90% of the ttl, matching the web (useVoiceCall.ensureIce).
+    _armIceTimer(Duration(milliseconds: (res.ttl * 900).round()));
+  }
+
+  void _armIceTimer(Duration delay) {
+    _iceTimer?.cancel();
+    _iceTimer = delay > Duration.zero ? Timer(delay, () => unawaited(_refreshIce())) : null;
+  }
+
+  Future<void> _refreshIce() async {
+    if (state.value.scope == null) return;
+    try {
+      await _loadIce();
+      // Live peers keep their old credential until told otherwise, so an ICE
+      // restart on this connection would still try to relay with a dead one.
+      for (final pc in _peers.values) {
+        await pc.setConfiguration(_iceConfig!);
+      }
+    } catch (_) {
+      // A blip must not drop a live call: keep the credential we have and try
+      // again shortly, before it lapses.
+      _armIceTimer(iceRetry);
     }
   }
 
@@ -299,6 +357,8 @@ class VoiceService {
     _ringTimer = null;
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
+    _iceTimer?.cancel();
+    _iceTimer = null;
     if (notifyServer) {
       // An unanswered ring is cancelled, not just left: that is what makes the
       // callee's phone stop and records the missed call.

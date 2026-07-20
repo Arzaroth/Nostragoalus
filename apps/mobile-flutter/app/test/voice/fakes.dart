@@ -43,7 +43,16 @@ class FakeSender implements RTCRtpSender {
 
 class FakePeer implements RTCPeerConnection {
   FakePeer(this.config);
-  final Map<String, dynamic> config;
+  Map<String, dynamic> config;
+
+  /// Every configuration pushed after construction (the TURN refresh path).
+  final reconfigured = <Map<String, dynamic>>[];
+
+  @override
+  Future<void> setConfiguration(Map<String, dynamic> configuration) async {
+    config = configuration;
+    reconfigured.add(configuration);
+  }
 
   @override
   Function(RTCIceCandidate candidate)? onIceCandidate;

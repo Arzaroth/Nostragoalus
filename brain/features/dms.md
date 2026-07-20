@@ -103,6 +103,15 @@ message id, new ciphertext, editedAt and attachment set. No per-thread room
 registry exists - a DM reaches exactly the sender and the recipient wherever they
 are connected.
 
+`dm:typing` is the DM twin of league chat's `chat:typing`: the composer sends
+`{type:'dm:typing', threadId}` at most once every 2s, and
+`publishDmTypingHint` (`apps/web-nuxt/server/utils/live/dm-chat.ts`) resolves the
+pair through `requireParticipant` before fanning out, so a non-participant can
+neither inject a hint nor learn the thread exists. Ephemeral: nothing is stored,
+no content travels, and the typer never gets their own frame back. The pair is
+TTL-cached (10s) exactly like the league member roster, because the frame is on a
+per-keystroke path.
+
 ## Notifications + push
 
 `notifyDm` (`apps/web-nuxt/server/utils/dm/notify.ts`) fires a `DM_MESSAGE`

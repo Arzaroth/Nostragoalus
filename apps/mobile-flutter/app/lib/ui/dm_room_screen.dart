@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -6,6 +8,7 @@ import '../chat/chat_providers.dart' show ChatState;
 import '../chat/dm_providers.dart';
 import '../chat/outbox.dart';
 import '../i18n/i18n_scope.dart';
+import '../live/typing_throttle.dart';
 import '../reactions.dart';
 import '../state/providers.dart';
 import '../voice/voice_service.dart';
@@ -45,6 +48,7 @@ class DmRoomScreen extends ConsumerStatefulWidget {
 
 class _DmRoomScreenState extends ConsumerState<DmRoomScreen> {
   final _input = TextEditingController();
+  DateTime? _lastTyping;
 
   String get _room => 'dm:${widget.threadId}';
 
@@ -69,6 +73,14 @@ class _DmRoomScreenState extends ConsumerState<DmRoomScreen> {
   void dispose() {
     _input.dispose();
     super.dispose();
+  }
+
+  // The server only relays this to the other participant.
+  void _notifyTyping() {
+    final now = DateTime.now();
+    if (!mayNotifyTyping(_lastTyping, now)) return;
+    _lastTyping = now;
+    ref.read(liveServiceProvider).send({'type': 'dm:typing', 'threadId': widget.threadId});
   }
 
   Future<void> _sendImage() async {
@@ -195,10 +207,12 @@ class _DmRoomScreenState extends ConsumerState<DmRoomScreen> {
               },
             ),
           ),
-          if (view?.state == ChatState.ready)
+          if (view?.state == ChatState.ready) ...[
+            DmTypingHint(room: _room, otherId: otherId, otherName: widget.title),
             ChatComposer(
               controller: _input,
               onSend: _send,
+              onChanged: (_) => _notifyTyping(),
               leading: [
                 IconButton(
                   icon: const Icon(Icons.image),
@@ -207,7 +221,59 @@ class _DmRoomScreenState extends ConsumerState<DmRoomScreen> {
                 ),
               ],
             ),
+          ],
         ],
+      ),
+    );
+  }
+}
+
+/// How long a `dm:typing` frame keeps the hint on screen.
+const _typingWindow = Duration(seconds: 5);
+
+/// "X is typing…" for a DM thread, off the hub's `dm:typing` frames. The league
+/// equivalent (TypingIndicator) resolves names from the league roster; a DM has
+/// exactly one other participant, whose name is the room title.
+class DmTypingHint extends ConsumerStatefulWidget {
+  const DmTypingHint({super.key, required this.room, required this.otherId, required this.otherName});
+
+  /// The typing-map room key (`dm:<threadId>`).
+  final String room;
+  final String otherId;
+  final String otherName;
+
+  @override
+  ConsumerState<DmTypingHint> createState() => _DmTypingHintState();
+}
+
+class _DmTypingHintState extends ConsumerState<DmTypingHint> {
+  Timer? _expiry;
+
+  @override
+  void dispose() {
+    _expiry?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final at = ref.watch(typingProvider)['${widget.room}|${widget.otherId}'];
+    final now = DateTime.now();
+    if (at == null || now.difference(at) >= _typingWindow) return const SizedBox.shrink();
+    // Nothing else rebuilds when the entry merely goes stale, so re-render at
+    // its expiry or the hint would stick until the next unrelated frame.
+    _expiry?.cancel();
+    _expiry = Timer(at.add(_typingWindow).difference(now), () {
+      if (mounted) setState(() {});
+    });
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: Padding(
+        padding: const EdgeInsetsDirectional.only(start: 16, bottom: 2),
+        child: Text(
+          context.tr('chat.typing.one', {'name': widget.otherName}),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
+        ),
       ),
     );
   }

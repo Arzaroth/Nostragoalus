@@ -124,7 +124,9 @@ and unit-tested in `apps/web-nuxt/app/utils/voice.ts`:
 The browser fetches `GET /api/voice/ice-servers` for STUN (always) plus TURN when
 [self-hosted coturn](../architecture/webrtc.md) is configured, with an ephemeral
 per-request credential. Without TURN the app is STUN-only and a call behind
-symmetric NAT will fail (the UI surfaces the failure).
+symmetric NAT will fail (the UI surfaces the failure). The credential expires, so
+both clients refetch at 90% of the response's `ttl` and push the new config into
+the live peer connections - see [../architecture/webrtc.md](../architecture/webrtc.md).
 
 ### Persistence (the call log)
 
@@ -144,6 +146,10 @@ context (no media), deep-linking to the DM thread or league room.
   span a multi-node deploy (tracked in [../../TODO.md](../../TODO.md)).
 - Mesh scales to a handful of participants; large league rooms would need an SFU
   (deferred, TODO).
+- **No background calling on mobile.** The Flutter client ends the call when the
+  app leaves the foreground and tells the user why: without a foreground service
+  the OS kills the microphone anyway. See
+  [mobile-app.md](mobile-app.md) and [../decisions.md](../decisions.md).
 - Deferred to TODO: signing the SDP fingerprint to close a server-side SDP MITM
   (passive listening is already blocked by SRTP), ICE-restart to survive a socket
   flap mid-call, a presence snapshot on chat open (the badge is live from the

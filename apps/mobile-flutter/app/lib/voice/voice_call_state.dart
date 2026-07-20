@@ -44,7 +44,7 @@ class VoiceScope {
 }
 
 /// Why a call stopped, so the UI can say something other than "gone".
-enum VoiceEndReason { hangUp, declined, cancelled, ended, evicted, networkLost, failed }
+enum VoiceEndReason { hangUp, declined, cancelled, ended, evicted, networkLost, failed, backgrounded }
 
 /// The whole call lifecycle in one value: there is no "connected but scopeless"
 /// combination to get wrong.

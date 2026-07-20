@@ -38,6 +38,14 @@ relaying a candidate is authorized by live room membership alone. See
   only when self-hosted coturn is configured. Without it the app is STUN-only and
   such calls fail to connect; the client surfaces that.
 
+The response carries a `ttl` (seconds; `buildIceServers` defaults to 3600) because
+the TURN credential is time-limited. **Both clients refetch at 90% of it and push
+the fresh config into the live `RTCPeerConnection`s** (`setConfiguration`) - the
+web in `useVoiceCall.ensureIce`, the app in `VoiceService._refreshIce`. A call
+that outlived the credential would otherwise keep a dead one, and the next ICE
+restart or renegotiation would fail to relay. A failed refresh keeps the
+credential in hand and retries (30s on mobile) rather than dropping the call.
+
 ### coturn (self-hosted relay)
 
 A `coturn` container behind the `voice` [compose](../operations.md) profile

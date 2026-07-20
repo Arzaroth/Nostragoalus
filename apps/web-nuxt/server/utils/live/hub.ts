@@ -336,6 +336,13 @@ export function publishDmReaction(
   return deliverToMembers(participantIds, { type: 'dm:reaction', threadId, messageId, totals })
 }
 
+// A participant is typing in a DM thread: tell the other participant's connected
+// sockets. Ephemeral like publishChatTyping - nothing is stored and no content
+// travels, only who is typing where. Never delivered back to the typer.
+export function publishDmTyping(recipientIds: readonly string[], threadId: string, userId: string): number {
+  return deliverToMembers(recipientIds, { type: 'dm:typing', threadId, userId })
+}
+
 // A member changed their display name: tell every connected member of the leagues
 // they belong to, so chat rosters update the name live (no message content). The
 // recipients are the union of those leagues' members; leagueIds lets each client

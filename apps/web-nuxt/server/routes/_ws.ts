@@ -13,6 +13,7 @@ import {
   type LiveSubscriber,
 } from '../utils/live/hub'
 import { publishTyping } from '../utils/live/league-chat'
+import { publishDmTypingHint } from '../utils/live/dm-chat'
 import {
   handleVoiceCancel,
   handleVoiceDecline,
@@ -127,6 +128,15 @@ export default defineWebSocketHandler({
         // Ephemeral typing hint - members only (publishTyping checks membership).
         const matchId = typeof data.matchId === 'string' ? data.matchId : null
         await publishTyping(db, { leagueId: data.leagueId, matchId, userId: subscriber.userId, nowMs: Date.now() })
+      } else if (
+        data?.type === 'dm:typing' &&
+        typeof data.threadId === 'string' &&
+        data.threadId.length <= 64 &&
+        subscriber.userId
+      ) {
+        // Same hint for a 1:1 thread - publishDmTypingHint checks participation,
+        // so it only ever reaches the other participant.
+        await publishDmTypingHint(db, { threadId: data.threadId, userId: subscriber.userId, nowMs: Date.now() })
       } else if (data?.type === 'presence:ping' && subscriber.userId) {
         // The client reports active/idle (it tracks its own 15-min idle timer).
         presenceSetIdle(subscriber.userId, data.active === false)

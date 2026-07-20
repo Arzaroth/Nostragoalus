@@ -240,6 +240,22 @@ it('publishDmMessage delivers to the two participants only', async () => {
   }
 })
 
+it('publishDmTyping reaches only the recipients it is given', async () => {
+  const { addLiveSubscriber, removeLiveSubscriber, publishDmTyping } = await import('./hub')
+  const other = { matchIds: new Set<string>(), userId: 'b', send: vi.fn() }
+  const typer = { matchIds: new Set<string>(), userId: 'a', send: vi.fn() }
+  const outsider = { matchIds: new Set<string>(), userId: 'o', send: vi.fn() }
+  for (const s of [other, typer, outsider]) addLiveSubscriber(s)
+  try {
+    expect(publishDmTyping(['b'], 't1', 'a')).toBe(1)
+    expect(other.send).toHaveBeenCalledWith({ type: 'dm:typing', threadId: 't1', userId: 'a' })
+    expect(typer.send).not.toHaveBeenCalled()
+    expect(outsider.send).not.toHaveBeenCalled()
+  } finally {
+    for (const s of [other, typer, outsider]) removeLiveSubscriber(s)
+  }
+})
+
 it('publishDmEdit pushes the new ciphertext + attachments to the two participants only', async () => {
   const { addLiveSubscriber, removeLiveSubscriber, publishDmEdit } = await import('./hub')
   const a = { matchIds: new Set<string>(), userId: 'a', send: vi.fn() }

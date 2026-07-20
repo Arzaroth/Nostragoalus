@@ -34,7 +34,12 @@ fire-and-forget after a successful mutation or during a scheduled task.
 - `chat:new` - a new message (replies ride this too and bump the parent thread
   count); `chat:moderation` - hide/restore/pending; `chat:roster` - member name
   change (keyed by `leagueIds`, handled BEFORE the per-room leagueId guard);
-  `chat:state-changed` - chat turned off / key rotated.
+  `chat:state-changed` - chat turned off / key rotated; `chat:typing` - a member
+  is composing (client -> server with the `leagueId`, server -> the room's other
+  members).
+- `dm:typing` - the same hint for a 1:1 thread (`{threadId}`), authorized through
+  `requireParticipant` and delivered only to the other participant. See
+  [../features/dms.md](../features/dms.md).
 - `notification:new` - a new in-app notification.
 - `presence:update` (a user's online/idle state changed), `presence:snapshot`
   (full state sent to a freshly connected socket), `presence:ping` (client ->

@@ -14,6 +14,7 @@ class LiveFrameRouter {
     this.onPresenceSnapshot,
     this.onPresence,
     this.onTyping,
+    this.onDmTyping,
     this.onRing,
     this.onRingCancelled,
   });
@@ -32,6 +33,10 @@ class LiveFrameRouter {
   /// map rather than stored (an 'offline' entry would accumulate forever).
   final void Function(String userId, String? status)? onPresence;
   final void Function(String leagueId, String userId)? onTyping;
+
+  /// The DM equivalent (`dm:typing`), scoped to a conversation instead of a
+  /// league. The server only fans it out to the thread's other participant.
+  final void Function(String threadId, String userId)? onDmTyping;
 
   /// An incoming call, and the caller giving up on it.
   final void Function(Map<String, dynamic> frame)? onRing;
@@ -69,6 +74,10 @@ class LiveFrameRouter {
         final league = frame['leagueId'];
         final who = frame['userId'];
         if (league is String && who is String) onTyping?.call(league, who);
+      case 'dm:typing':
+        final thread = frame['threadId'];
+        final who = frame['userId'];
+        if (thread is String && who is String) onDmTyping?.call(thread, who);
       case 'voice:ring':
         onRing?.call(frame);
       case 'voice:cancelled':

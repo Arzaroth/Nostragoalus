@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:nostragoalus/api/api_client.dart';
+import 'package:nostragoalus/api/models.gen.dart' show IceServer, IceServersResponse;
 import 'package:nostragoalus/api/nostragoalus_api.dart';
 import 'package:nostragoalus/api/token_store.dart';
 import 'package:nostragoalus/live/live_service.dart';
@@ -26,6 +27,8 @@ class Harness {
     Object iceBody = _iceReply,
     int iceStatus = 200,
     Future<MediaStream> Function()? media,
+    IceFetcher? ice,
+    Duration iceRetry = const Duration(seconds: 30),
   }) {
     final client = ApiClient(
       TokenStore(InMemoryKv()),
@@ -49,8 +52,10 @@ class Harness {
         peers.add(peer);
         return peer;
       },
+      ice: ice,
       ringTimeout: const Duration(milliseconds: 40),
       reconnectGrace: const Duration(milliseconds: 40),
+      iceRetry: iceRetry,
     );
     live.connect();
     voice.attach(live);
@@ -346,6 +351,80 @@ void main() {
     h.emit({'type': 'voice:ended', 'scope': _scopeJson, 'from': 'zzz'});
     await settle();
     h.live.dispose();
+  });
+
+  test('the TURN credential is refreshed before its ttl and pushed to live peers', () async {
+    var fetches = 0;
+    final h = Harness(ice: () async {
+      fetches += 1;
+      // 50ms of credit: the refresh is armed at 90% of it.
+      return IceServersResponse(iceServers: [IceServer(urls: 'turn:cred-$fetches')], ttl: 0.05);
+    });
+    await h.voice.join(_scope);
+    h.roster(['self', 'zzz']);
+    await settle();
+    expect(h.peers.single.config['iceServers'], [
+      {'urls': 'turn:cred-1'},
+    ]);
+
+    await settle(80);
+    expect(fetches, greaterThan(1), reason: 'the credential lapses mid-call');
+    expect(h.peers.single.reconfigured.last['iceServers'], [
+      {'urls': 'turn:cred-$fetches'},
+    ]);
+    // A call ending stops the refresh loop.
+    await h.voice.leave();
+    final settled = fetches;
+    await settle(80);
+    expect(fetches, settled);
+    await h.dispose();
+  });
+
+  test('a refresh that fails mid-call keeps the call up and retries', () async {
+    var fetches = 0;
+    final h = Harness(
+      iceRetry: const Duration(milliseconds: 60),
+      ice: () async {
+        fetches += 1;
+        if (fetches == 1) {
+          return IceServersResponse(iceServers: [IceServer(urls: 'turn:first')], ttl: 0.05);
+        }
+        if (fetches == 2) throw Exception('ice endpoint down');
+        return IceServersResponse(iceServers: [IceServer(urls: 'turn:later')], ttl: 3600);
+      },
+    );
+    await h.voice.join(_scope);
+    h.roster(['self', 'zzz']);
+    await settle();
+
+    await settle(70);
+    expect(h.voice.state.value, isA<VoiceInCall>(), reason: 'a blip must not drop the call');
+    expect(h.peers.single.config['iceServers'], [
+      {'urls': 'turn:first'},
+    ], reason: 'the credential we still have is kept');
+
+    await settle(90);
+    expect(h.peers.single.reconfigured.last['iceServers'], [
+      {'urls': 'turn:later'},
+    ]);
+    await h.dispose();
+  });
+
+  test('backgrounding ends the call instead of listing a dead microphone', () async {
+    final h = Harness();
+    await h.voice.join(_scope);
+    final states = <VoiceCallState>[];
+    h.voice.state.addListener(() => states.add(h.voice.state.value));
+
+    expect(await h.voice.backgrounded(), isTrue);
+    expect(states.whereType<VoiceEnding>().single.reason, VoiceEndReason.backgrounded);
+    expect(h.voice.state.value, isA<VoiceIdle>());
+    expect(h.sentOf('voice:leave'), hasLength(1));
+    expect(h.stream.tracks.single.stopped, isTrue);
+
+    // Nothing to end means nothing to explain to the user.
+    expect(await h.voice.backgrounded(), isFalse);
+    await h.dispose();
   });
 
   test('a roster for another room is ignored', () async {
