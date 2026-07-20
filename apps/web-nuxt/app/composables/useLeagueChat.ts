@@ -10,6 +10,7 @@ import {
 } from '~/utils/e2ee'
 import { useQueryClient } from '@tanstack/vue-query'
 import { chatKeyPins, isKeyTrusted } from '~/composables/useChatKeyPins'
+import { failedFrom, makePendingMessage, settlePending } from '~/utils/chat-outbox'
 import { emptyReactionTotals, type ReactionEmoji, type ReactionTotals } from '#shared/reactions'
 import type { ChatAttachmentDTO, ChatMediaItemDTO, ChatMessageDTO, ChatModerationState } from '#shared/types/chat'
 
@@ -36,7 +37,9 @@ export interface DecryptedMessage {
   myReaction: ReactionEmoji | null
   threadCount: number
   pending?: boolean // local stand-in, its POST is still in flight
-  failed?: boolean // its POST failed; retrySend/discardSend act on it
+  failed?: boolean // its POST never made it out; retrySend/discardSend act on it
+  pendingImages?: number // images riding along, not yet uploaded (no attachments yet)
+  retry?: { text: string; opts: SendOptions } // payload a failed bubble replays
 }
 
 export interface SendOptions {
@@ -44,34 +47,6 @@ export interface SendOptions {
   threadId?: string | null
   images?: PendingImage[]
   mentions?: string[]
-}
-
-let localSendSeq = 0
-
-// The stand-in shown in the list while a message's POST is in flight, so what you
-// just sent never vanishes between hitting enter and the server answering.
-export function makePendingMessage(
-  userId: string | null,
-  text: string,
-  ctx: { matchId?: string | null; parentId?: string | null; threadId?: string | null },
-): DecryptedMessage {
-  return {
-    id: `local-${++localSendSeq}`,
-    userId,
-    matchId: ctx.matchId ?? null,
-    parentId: ctx.parentId ?? null,
-    threadId: ctx.threadId ?? null,
-    text,
-    createdAt: new Date().toISOString(),
-    editedAt: null,
-    attachments: [],
-    moderation: 'VISIBLE',
-    reported: false,
-    reactions: emptyReactionTotals(),
-    myReaction: null,
-    threadCount: 0,
-    pending: true,
-  }
 }
 
 export interface ReportedMessage {
@@ -114,7 +89,11 @@ export function useLeagueChat(
   const messages = ref<DecryptedMessage[]>([])
   const memberKeys = ref<{ userId: string; publicKey: string; name: string }[]>([])
   const loading = ref(false)
-  const sending = ref(false)
+  // Sends can overlap, so the composer's busy state is a count, not a flag.
+  const inFlight = ref(0)
+  const sending = computed(() => inFlight.value > 0)
+  // Sends that failed, kept outside `messages` so no reload can drop them.
+  const failed = ref<DecryptedMessage[]>([])
   // The caller's last-read time for this room (ISO), frozen when the room is
   // opened so a "new messages" divider can mark the boundary. It is captured
   // before the read marker is advanced, and only refreshed on a foreground room
@@ -141,7 +120,11 @@ export function useLeagueChat(
   // Client-side mute list (per device): the owner is server-blind, so abuse
   // handling is the member's own mute plus league-admin action.
   const muted = useStorage<string[]>('ng-chat-muted', [])
-  const visibleMessages = computed(() => messages.value.filter((m) => !m.userId || !muted.value.includes(m.userId)))
+  const visibleMessages = computed(() =>
+    [...messages.value, ...failed.value.filter((m) => !m.threadId)].filter(
+      (m) => !m.userId || !muted.value.includes(m.userId),
+    ),
+  )
   function toggleMute(userId: string) {
     const set = new Set(muted.value)
     set.has(userId) ? set.delete(userId) : set.add(userId)
@@ -358,9 +341,16 @@ export function useLeagueChat(
     const body = text.trim()
     const images = opts.images ?? []
     const ck = currentKey.value
-    if ((!body && images.length === 0) || !ck || sending.value) return
-    sending.value = true
-    const local = makePendingMessage(myId.value, body, { matchId: mid(), parentId: opts.parentId, threadId: opts.threadId })
+    // No in-flight guard: a second message typed while the first is still posting
+    // gets its own stand-in rather than being silently dropped.
+    if ((!body && images.length === 0) || !ck) return
+    inFlight.value += 1
+    const local = makePendingMessage(myId.value, body, {
+      matchId: mid(),
+      parentId: opts.parentId,
+      threadId: opts.threadId,
+      images: images.length,
+    })
     const list = opts.threadId ? threadMessages : messages
     list.value = [...list.value, local]
     try {
@@ -383,38 +373,32 @@ export function useLeagueChat(
       })
       // Swap the pending stand-in for our own message from the POST response; the
       // WS echo (chat:new) dedupes on id, so we don't depend on it to see what we
-      // just sent - and if the echo beat us to it, the stand-in just drops. A
-      // thread reply lands in the open thread (its threadCount bump rides the echo,
-      // so it isn't double-counted here); everything else (incl. a quote) lands in
-      // the main list.
+      // just sent. A thread reply lands in the open thread (its threadCount bump
+      // rides the echo, so it isn't double-counted here); everything else (incl. a
+      // quote) lands in the main list.
       const dec = message ? await decryptRow(message) : null
-      list.value = dec && !list.value.some((m) => m.id === dec.id)
-        ? list.value.map((m) => (m.id === local.id ? dec : m))
-        : list.value.filter((m) => m.id !== local.id)
-    } catch {
-      failedSends.set(local.id, { text, opts })
-      list.value = list.value.map((m) => (m.id === local.id ? { ...m, pending: false, failed: true } : m))
+      list.value = settlePending(list.value, local.id, dec)
+    } catch (error) {
+      console.error('[chat] send failed', error)
+      list.value = list.value.filter((m) => m.id !== local.id)
+      failed.value = [...failed.value, failedFrom(local, text, opts)]
     } finally {
-      sending.value = false
+      inFlight.value -= 1
     }
   }
 
-  // A send that failed stays in the list as a failed bubble the author can retry
-  // (same payload, images included) or discard, so the text isn't lost.
-  const failedSends = new Map<string, { text: string; opts: SendOptions }>()
-  function dropLocal(id: string): void {
-    failedSends.delete(id)
-    messages.value = messages.value.filter((m) => m.id !== id)
-    threadMessages.value = threadMessages.value.filter((m) => m.id !== id)
-  }
+  // A send that never made it out is kept aside rather than in the message list, so
+  // a reload or a reconnect (which replace the list wholesale) cannot drop the
+  // author's text. It is merged back in for rendering, and carries its own payload.
   async function retrySend(id: string): Promise<void> {
-    const payload = failedSends.get(id)
-    if (!payload) return
-    dropLocal(id)
-    await send(payload.text, payload.opts)
+    const row = failed.value.find((m) => m.id === id)
+    // Without a key the resend would no-op and the bubble would be gone for nothing.
+    if (!row?.retry || !currentKey.value) return
+    failed.value = failed.value.filter((m) => m.id !== id)
+    await send(row.retry.text, row.retry.opts)
   }
   function discardSend(id: string): void {
-    dropLocal(id)
+    failed.value = failed.value.filter((m) => m.id !== id)
   }
 
   function patchMessage(id: string, patch: Partial<DecryptedMessage>): void {
@@ -817,6 +801,8 @@ export function useLeagueChat(
         bumpThreadCount(incoming.threadId, 1)
         if (threadParentId.value === incoming.threadId && !threadMessages.value.some((m) => m.id === incoming.id)) {
           void decryptRow(incoming).then((m) => {
+            // Re-check: decrypting awaited, our own POST may have landed it since.
+            if (threadMessages.value.some((x) => x.id === m.id)) return
             threadMessages.value = [...threadMessages.value, m]
           })
         }
@@ -826,6 +812,7 @@ export function useLeagueChat(
       // it (our own echo).
       if (messages.value.some((m) => m.id === incoming.id)) return
       void decryptRow(incoming).then((m) => {
+        if (messages.value.some((x) => x.id === m.id)) return
         messages.value = [...messages.value, m]
       })
     },
@@ -837,6 +824,8 @@ export function useLeagueChat(
     () => [toValue(leagueId), toValue(matchId)],
     () => {
       closeThread()
+      // The failed bubbles belonged to the room we're leaving, key and all.
+      failed.value = []
       // The call lines belong to the room we're leaving: clear + refetch.
       resetCallLog()
       void load()
@@ -847,7 +836,10 @@ export function useLeagueChat(
 
   // Thread replies, muted authors filtered like the main list.
   const visibleThread = computed(() =>
-    threadMessages.value.filter((m) => !m.userId || !muted.value.includes(m.userId)),
+    [
+      ...threadMessages.value,
+      ...failed.value.filter((m) => m.threadId && m.threadId === threadParentId.value),
+    ].filter((m) => !m.userId || !muted.value.includes(m.userId)),
   )
 
   return {

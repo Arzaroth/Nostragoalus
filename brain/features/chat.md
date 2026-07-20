@@ -56,15 +56,22 @@ private key lives in IndexedDB. Three recovery paths, all in the chat overflow m
 - Length limit 2000 (`MAX_MESSAGE_TEXT_LENGTH`), with a 16KB ciphertext server
   backstop.
 - Own messages are right-aligned (bubble, images, reactions, mirrored header).
-- Sending is optimistic: `send()` appends a local stand-in (`makePendingMessage`,
-  id `local-<n>`, `pending: true`) before it encrypts and POSTs, so the message
-  never vanishes between enter and the server answering. The POST response
-  replaces it in place (or just removes it if the `chat:new` echo already landed
-  the row). A failed POST flips it to `failed: true` and keeps it in the list with
-  retry / discard (`retrySend` / `discardSend` replay the stored payload, images
-  included) instead of losing the text. Pending and failed bubbles carry no
-  per-message actions. Same code path for a DM (`useDmRoom` reuses
-  `makePendingMessage`).
+- Sending is optimistic - the outbox, `apps/web-nuxt/app/utils/chat-outbox.ts`,
+  shared by league chat and DMs. `send()` appends a local stand-in
+  (`makePendingMessage`, id `local-<n>`, `pending: true`, `pendingImages` counting
+  blobs that have not uploaded yet) before it encrypts and POSTs, so the message
+  never vanishes between enter and the server answering. `settlePending` puts the
+  server row in the stand-in's place, appends it if a reload wiped the stand-in
+  mid-flight, or drops the stand-in if the `chat:new` echo already landed the row.
+  Sends may overlap: the composer's busy state is an in-flight COUNT, so a second
+  message typed while the first is posting gets its own stand-in instead of being
+  swallowed. A POST that never made it out becomes a failed bubble held in a
+  separate `failed` list (merged in only for rendering, so a reconnect refetch
+  cannot drop the user's text) carrying its own replay payload
+  (`retry: { text, opts }`); `retrySend` re-sends it under the CURRENT key,
+  `discardSend` throws it away, and switching room or thread clears them with the
+  room they belonged to. Pending and failed bubbles carry no per-message actions
+  and are excluded from up-arrow edit - a stand-in has no server id to act on.
 - Quotes (`parentId`) render the decrypted parent inline; threads (`threadId`)
   are a separate relation shown oldest-first with their own scoped composer, and
   `getThreadCounts` feeds the per-message thread count.
