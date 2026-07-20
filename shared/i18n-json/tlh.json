@@ -66,8 +66,14 @@
     "entries": "{n} entries",
     "headHash": "head hash",
     "safetyNumber": "Hom mI",
-    "safetyHint": "ghoHwI yISamqa"
-  },
+    "safetyHint": "ghoHwI yISamqa",
+      "tampered": "qon choHlu'pu'",
+      "headMismatch": "rar motlh 'ach nach rapbe'.",
+      "peer": {
+        "mismatch": "ngaQHa'moHwI' choHlu'pu'",
+        "absent": "qonDaq ngaQHa'moHwI' tu'be'lu'"
+      }
+    },
   "achievements": {
     "showcaseHeading": "'angwI'",
     "showcaseEditHint": "wej DevwI' yIwIv.",
@@ -256,8 +262,12 @@
     "edit": "choH",
     "edited": "choHlu'",
     "cancel": "qIl",
-    "undecryptable": "QIn poSmoHlaHbe'."
-  },
+    "undecryptable": "QIn poSmoHlaHbe'.",
+      "startRefused": {
+        "title": "ja'chuq botlu'",
+        "body": "ghaH ngaQHa'moHwI' qon rapbe'. ghaH ngu'Ha' vay'. ngaQHa'moHwI' ngeHbe'lu'. wa'DIch mI' Qan yIngu'."
+      }
+    },
   "chat": {
     "sending": "ngeHtaH…",
     "notSent": "ngeHbe'",
@@ -382,8 +392,9 @@
     "mention": { "title": "ghot yIpong", "unread": "{n} pong laDbe'lu'", "unreadOne": "wa' pong laDbe'lu'" },
     "embed": { "hideImage": "mIllogh yISo'", "showImage": "mIllogh yI'ang", "preview": "rar nuD", "hidePreview": "nuD yISo'", "showPreview": "nuD yI'ang" },
     "thread": { "count": "{n} jangmey", "one": "wa' jang", "reply": "ghantoHDaq yIjang", "collapse": "jangmey yISo'", "placeholder": "ghantoHDaq yIjang", "empty": "jang tu'be'." },
-    "search": { "button": "QInmey yISam", "placeholder": "QInmey ngImlu'pu' yISam", "results": "{n} rar", "one": "wa' rar", "none": "rar tu'be'", "deeper": "QInmey qan yISammeH yItoD", "close": "Sam yISoQmoH" }
-  },
+    "search": { "button": "QInmey yISam", "placeholder": "QInmey ngImlu'pu' yISam", "results": "{n} rar", "one": "wa' rar", "none": "rar tu'be'", "deeper": "QInmey qan yISammeH yItoD", "close": "Sam yISoQmoH" },
+      "keyMismatch": "ngaQHa'moHwI' rapbe'. yIchargh pagh ngu'wI' yIchu'qa'."
+    },
   "presence": { "active": "vumtaH", "idle": "Qotbe'" },
   "multiview": {
     "empty": "DaH Qujmey tuHbe.",
@@ -467,8 +478,10 @@
     "points": "QuQmey",
     "rank": "patlh - {n} SuvwI'pu'",
     "exact": "pup wIvmey",
-    "jokers": "Hov lo'lu'ta' · {n} wIvmey"
-  },
+    "jokers": "Hov lo'lu'ta' · {n} wIvmey",
+      "noLeagueForCompetition": "qojvam ghom Daghajbe'. Qub DaQIjmeH Daq tu'lu'be'.",
+      "leagueForPick": "ghomDaq yIchoq"
+    },
   "prefs": {
     "showCrowd": "ghom wIv cha",
     "showOdds": "Suy cha",
@@ -550,8 +563,9 @@
     "refresh": "yIchu'qa'",
     "confirm": "yIchut",
     "clear": "Qil",
-    "remove": "teq"
-  },
+    "remove": "teq",
+      "saved": "choqlu'pu'"
+    },
   "home": {
     "tagline": "QujmeH qonwI' wIvmey yIqon, pup DanIDmo' QuQmey yISuq, 'ej patlhDaq juppu'lI' tIjey.",
     "getStarted": "yItagh",
@@ -964,8 +978,10 @@
     "rankingTab": "patlh",
     "noPicks": "DoQ tu'lu'be'.",
     "leagueNoPick": "DoQ Hutlh {n} | DoQ Hutlh {n}",
-    "watching": "{n} bejwI' | {n} bejwI'pu'"
-  },
+    "watching": "{n} bejwI' | {n} bejwI'pu'",
+      "captainShort": "C",
+      "ownGoalShort": "OG"
+    },
   "pastPick": {
     "title": "qatlh",
     "earlier": "wIv wa'Hu' {score}: {n}",
@@ -1046,8 +1062,12 @@
     "resendFailed": "ngu'meH leQ ngeHqa'laHbe'. yInIDqa'.",
     "verifyChecking": "jabbI'ID ngu'lI'…",
     "verifyDone": "jabbI'ID ngu'lu'ta'. DaH yI'el.",
-    "verifyError": "ngu'meH leQvam qar be' pagh ngabpu'. leQ chu' netlh'a'meH yI'el."
-  },
+    "verifyError": "ngu'meH leQvam qar be' pagh ngabpu'. leQ chu' netlh'a'meH yI'el.",
+      "emailInvalid": "jabbI'ID lI' yIqon.",
+      "passwordRequired": "pegh mu' yIqon.",
+      "passwordTooShort": "chorgh ngutlh puS law'be'.",
+      "nameRequired": "pong yIqon."
+    },
   "account": {
     "title": "Doch'a'",
     "profile": "ngoDmey",
@@ -1400,8 +1420,10 @@
     "revoke": "janvam yImej",
     "revokeOthers": "latlh janmey Hoch yImej",
     "loadFailed": "janlIj laDlaHbe'.",
-    "revokeFailed": "janvam mejmoHlaHbe'. yInID."
-  },
+    "revokeFailed": "janvam mejmoHlaHbe'. yInID.",
+      "revokeConfirm": "De'wI'vam yImejmoH'a'? 'elqa'nIS.",
+      "revokeCurrentConfirm": "De'wI'vam Dalo'. bImejchugh, naDev bImej."
+    },
   "about": {
     "client": "De'wI'",
     "title": "De'",
@@ -1419,8 +1441,12 @@
     "integrityText": "HablI'lIjDaq E2EE ja'chuq Qan. mI'vam 'oH ngoq nempuq SHA-256'e'. Qorwaghvam mI' cha'lu'bogh yItlhej. rap'be'chugh, choHlu' ngoq. wa'DIch neH Qan - ghIq choH tu'lu'.",
     "integrityVersionLabel": "ngoq mI'",
     "integrityDigestLabel": "ngoq nempuq ({algo}, {count} 'ay')",
-    "integrityUnavailable": "ngoqvam nempuq tu'be'lu'."
-  },
+    "integrityUnavailable": "ngoqvam nempuq tu'be'lu'.",
+      "clientFlutter": "Flutter (Android)",
+      "e2eeTitle": "pegh ghItlh",
+      "e2eeText": "libsodium (X25519 + secretbox), ngaQHa'moHwI' qon ngu'lu'pu'",
+      "website": "QumwI' Daq"
+    },
   "roadmap": {
     "suggestTitle": "pong",
     "suggestDesc": "QIj",
@@ -1448,8 +1474,9 @@
       "signInHint": "qeSlIj'a'?",
       "signInCta": "qeSmeH yI'el",
       "empty": "pagh qeSmey - yIqeSchoH."
-    }
-  },
+    },
+      "statusSuggested": "qechlu'pu'"
+    },
   "update": {
     "available": "Segh chu' tu'lu'",
     "reload": "yItagh",
@@ -1667,8 +1694,13 @@
     "nudgeNeedsExact": "{n} mI' Hutlh",
     "nudgeNeedsStake": "{n} nID Hutlh",
     "reasonScore": "mI' Hutlh",
-    "reasonStake": "nID Hutlh"
-  },
+    "reasonStake": "nID Hutlh",
+      "nameTooShort": "pong: wej ngutlh puS law'be'.",
+      "competitionRequired": "qoj yIwIv.",
+      "visibilityPrivateShort": "pegh",
+      "visibilityPublicShort": "Hoch",
+      "featuredTeamKeep": "yIchoHQo'"
+    },
   "invites": {
     "title": "rIymey muvmeH",
     "hint": "rIy yIboq 'ej latlh tlhej. poH vuS joq mI' vuS yIchel 'oH yISeH 'e' DaneHchugh.",
@@ -1748,8 +1780,9 @@
       "mention": "{league}Daq {name} pong.",
       "mentionMatch": "{home}-{away}Daq {name} pong.",
       "trophyAwarded": "{competition}Daq {trophy} Qapla' DaSuq!",
-      "achievementUnlocked": "ta' poSlu': {achievement}."
-    }
+      "achievementUnlocked": "ta' poSlu': {achievement}.",
+        "generic": "QIn chu' Daghaj."
+      }
   },
   "voice": {
     "join": "ghogh yImuv",
@@ -1889,8 +1922,25 @@
       "sealedTitle": "wuq So' {name}",
       "subtitle": "Nostragoalus: QuQmey yIwuq, QuQmey yISuq, juplI' yIqul.",
       "cta": "wuqlI' yIchel"
-    }
-  },
+    },
+      "field": {
+        "accuracy": "lugh",
+        "exactRate": "mI' pup 'ar",
+        "goalLean": "QuQ Duv",
+        "homeBias": "juH DaparHa'",
+        "rank": "patlh",
+        "players": "SuvwI'pu'",
+        "points": "QuQmey",
+        "exact": "mI' pup",
+        "trophies": "Qapla'mey",
+        "badges": "Deghmey",
+        "round": "may'",
+        "group": "ghom",
+        "result": "ta'",
+        "tier": "patlh nIv",
+        "crowdShare": "ghom Qub 'ar"
+      }
+    },
   "wrapped": {
     "notReady": "DaH pItlh ghajbe' - qImHa' yIghoH.",
     "exact": "mI lugh",

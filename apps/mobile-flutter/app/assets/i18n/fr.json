@@ -66,8 +66,14 @@
     "entries": "{n} entrées, chaîne intacte",
     "headHash": "Empreinte de tête",
     "safetyNumber": "Votre numéro de sécurité",
-    "safetyHint": "Comparez-le hors ligne avec un contact pour confirmer qu’aucune clé n’a été substituée."
-  },
+    "safetyHint": "Comparez-le hors ligne avec un contact pour confirmer qu’aucune clé n’a été substituée.",
+      "tampered": "Le journal des cles a ete reecrit",
+      "headMismatch": "La chaine est coherente mais ne correspond pas a l'en-tete fourni par le serveur.",
+      "peer": {
+        "mismatch": "Cle substituee",
+        "absent": "Cle absente du journal"
+      }
+    },
   "achievements": {
     "showcaseHeading": "Vitrine",
     "showcaseEditHint": "Choisissez jusqu'à 3 badges à mettre en avant.",
@@ -252,8 +258,12 @@
     "edit": "Modifier",
     "edited": "modifié",
     "cancel": "Annuler",
-    "undecryptable": "Impossible de déchiffrer ce message"
-  },
+    "undecryptable": "Impossible de déchiffrer ce message",
+      "startRefused": {
+        "title": "Conversation bloquee",
+        "body": "La cle de cette personne ne correspond pas au journal public de transparence des cles. Quelqu'un l'usurpe peut-etre, donc aucune cle n'a ete partagee. Verifiez son numero de securite par un autre canal avant de lui ecrire."
+      }
+    },
   "chat": {
     "sending": "Envoi…",
     "notSent": "Non envoyé",
@@ -378,8 +388,9 @@
     "mention": { "title": "Mentionner quelqu'un", "unread": "{n} mentions non lues", "unreadOne": "1 mention non lue" },
     "embed": { "hideImage": "Masquer l'image", "showImage": "Afficher l'image", "preview": "Aperçu du lien", "hidePreview": "Masquer l'aperçu", "showPreview": "Afficher l'aperçu" },
     "thread": { "count": "{n} réponses", "one": "1 réponse", "reply": "Répondre dans le fil", "collapse": "Masquer les réponses", "placeholder": "Répondre au fil", "empty": "Aucune réponse pour l'instant." },
-    "search": { "button": "Rechercher des messages", "placeholder": "Rechercher dans les messages chargés", "results": "{n} résultats", "one": "1 résultat", "none": "Aucun résultat", "deeper": "Chargez d'anciens messages pour chercher plus loin", "close": "Fermer la recherche" }
-  },
+    "search": { "button": "Rechercher des messages", "placeholder": "Rechercher dans les messages chargés", "results": "{n} résultats", "one": "1 résultat", "none": "Aucun résultat", "deeper": "Chargez d'anciens messages pour chercher plus loin", "close": "Fermer la recherche" },
+      "keyMismatch": "La cle de discussion de cet appareil ne correspond plus a votre compte. Restaurez-la avec votre code de recuperation, ou reinitialisez votre identite de discussion."
+    },
   "presence": { "active": "Actif", "idle": "Absent" },
   "multiview": {
     "empty": "Aucun match en direct.",
@@ -463,8 +474,10 @@
     "points": "Points",
     "rank": "Rang sur {n} joueurs",
     "exact": "Scores exacts",
-    "jokers": "Jokers utilisés · {n} pronos"
-  },
+    "jokers": "Jokers utilisés · {n} pronos",
+      "noLeagueForCompetition": "Vous n'etes dans aucune ligue pour cette competition, il n'y a donc nulle part ou enregistrer ce pronostic.",
+      "leagueForPick": "Enregistrer dans la ligue"
+    },
   "prefs": {
     "showCrowd": "Afficher les pronostics de la foule",
     "showOdds": "Afficher les cotes",
@@ -546,8 +559,9 @@
     "refresh": "Actualiser",
     "confirm": "Confirmer",
     "clear": "Effacer",
-    "remove": "Supprimer"
-  },
+    "remove": "Supprimer",
+      "saved": "Enregistre"
+    },
   "home": {
     "tagline": "Pronostiquez les scores, gagnez des points selon votre précision, et devancez vos amis au classement global.",
     "getStarted": "Commencer",
@@ -960,8 +974,10 @@
     "rankingTab": "Classement",
     "noPicks": "Aucun pronostic pour ce match.",
     "leagueNoPick": "{n} membre sans pronostic | {n} membres sans pronostic",
-    "watching": "1 spectateur | {n} spectateurs"
-  },
+    "watching": "1 spectateur | {n} spectateurs",
+      "captainShort": "C",
+      "ownGoalShort": "CSC"
+    },
   "pastPick": {
     "title": "Et si",
     "earlier": "Pronostic précédent {score} : {n} pts",
@@ -1042,8 +1058,12 @@
     "resendFailed": "Impossible de renvoyer l'e-mail de vérification. Veuillez réessayer.",
     "verifyChecking": "Vérification de votre e-mail…",
     "verifyDone": "Votre e-mail est vérifié. Vous pouvez vous connecter.",
-    "verifyError": "Ce lien de vérification est invalide ou a expiré. Connectez-vous pour en demander un nouveau."
-  },
+    "verifyError": "Ce lien de vérification est invalide ou a expiré. Connectez-vous pour en demander un nouveau.",
+      "emailInvalid": "Saisissez une adresse e-mail valide.",
+      "passwordRequired": "Saisissez votre mot de passe.",
+      "passwordTooShort": "Utilisez au moins 8 caracteres.",
+      "nameRequired": "Saisissez un nom d'affichage."
+    },
   "account": {
     "title": "Compte",
     "profile": "Profil",
@@ -1396,8 +1416,10 @@
     "revoke": "Déconnecter cet appareil",
     "revokeOthers": "Déconnecter tous les autres appareils",
     "loadFailed": "Impossible de charger tes appareils.",
-    "revokeFailed": "Impossible de déconnecter cet appareil. Réessaie."
-  },
+    "revokeFailed": "Impossible de déconnecter cet appareil. Réessaie.",
+      "revokeConfirm": "Deconnecter cet appareil ? Il devra se reconnecter.",
+      "revokeCurrentConfirm": "C'est l'appareil que vous utilisez. Le deconnecter vous deconnectera ici."
+    },
   "about": {
     "client": "Client",
     "title": "À propos",
@@ -1415,8 +1437,12 @@
     "integrityText": "Le chat et les messages privés sont chiffrés de bout en bout dans votre navigateur : leur sécurité repose donc sur le JavaScript que ce site vous livre. L'empreinte ci-dessous est le SHA-256 du bundle de code client qui vous a réellement été servi. Comparez-la à la valeur publiée pour cette version : si une build remplace le code de chiffrement, les empreintes cessent de correspondre. Un serveur peut toujours livrer du code altéré au tout premier chargement - cela rend une divergence ultérieure détectable, pas impossible.",
     "integrityVersionLabel": "Version de build",
     "integrityDigestLabel": "Empreinte du bundle ({algo}, {count} fragments)",
-    "integrityUnavailable": "Aucune empreinte d'intégrité n'est disponible pour cette build."
-  },
+    "integrityUnavailable": "Aucune empreinte d'intégrité n'est disponible pour cette build.",
+      "clientFlutter": "Flutter (Android natif)",
+      "e2eeTitle": "Chiffrement de bout en bout",
+      "e2eeText": "libsodium (X25519 + secretbox), transparence des cles verifiee",
+      "website": "Site web"
+    },
   "roadmap": {
     "suggestTitle": "Titre",
     "suggestDesc": "Description",
@@ -1444,8 +1470,9 @@
       "signInHint": "Une idée ?",
       "signInCta": "Connecte-toi pour proposer",
       "empty": "Aucune suggestion pour l'instant - sois le premier."
-    }
-  },
+    },
+      "statusSuggested": "Propose"
+    },
   "update": {
     "available": "Une nouvelle version est disponible",
     "reload": "Recharger",
@@ -1663,8 +1690,13 @@
     "nudgeNeedsExact": "{n} sans score",
     "nudgeNeedsStake": "{n} sans mise",
     "reasonScore": "sans score",
-    "reasonStake": "sans mise"
-  },
+    "reasonStake": "sans mise",
+      "nameTooShort": "Un nom de ligue doit faire au moins 3 caracteres.",
+      "competitionRequired": "Choisissez une competition.",
+      "visibilityPrivateShort": "Privee",
+      "visibilityPublicShort": "Publique",
+      "featuredTeamKeep": "Laisser inchange"
+    },
   "invites": {
     "title": "Liens d'invitation",
     "hint": "Partagez un lien pour laisser des gens rejoindre. Ajoutez une expiration ou une limite d'utilisations pour plus de contrôle.",
@@ -1744,8 +1776,9 @@
       "mention": "{name} vous a mentionné dans {league}.",
       "mentionMatch": "{name} vous a mentionné dans {home} v {away}.",
       "trophyAwarded": "Vous avez remporté le trophée {trophy} dans {competition} !",
-      "achievementUnlocked": "Succès débloqué : {achievement}."
-    }
+      "achievementUnlocked": "Succès débloqué : {achievement}.",
+        "generic": "Vous avez une nouvelle notification."
+      }
   },
   "voice": {
     "join": "Rejoindre la voix",
@@ -1885,8 +1918,25 @@
       "sealedTitle": "{name} a scellé un pronostic",
       "subtitle": "Nostragoalus est un jeu de pronostics football : pronostiquez les scores, gagnez des points, soyez plus visionnaire que vos amis.",
       "cta": "Faites votre propre pronostic"
-    }
-  },
+    },
+      "field": {
+        "accuracy": "Precision",
+        "exactRate": "Taux d'exacts",
+        "goalLean": "Biais de buts",
+        "homeBias": "Biais domicile",
+        "rank": "Rang",
+        "players": "Joueurs",
+        "points": "Points",
+        "exact": "Scores exacts",
+        "trophies": "Trophees",
+        "badges": "Badges",
+        "round": "Tour",
+        "group": "Groupe",
+        "result": "Resultat",
+        "tier": "Palier",
+        "crowdShare": "Part de la foule"
+      }
+    },
   "wrapped": {
     "notReady": "Votre rétro n'est pas encore prête - revenez après le tournoi.",
     "exact": "Scores exacts",

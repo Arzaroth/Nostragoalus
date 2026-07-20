@@ -66,8 +66,14 @@
     "entries": "{n} entries, chain intact",
     "headHash": "Head hash",
     "safetyNumber": "Your safety number",
-    "safetyHint": "Compare this out-of-band with a contact to confirm no key was substituted."
-  },
+    "safetyHint": "Compare this out-of-band with a contact to confirm no key was substituted.",
+      "tampered": "The key log was rewritten",
+      "headMismatch": "The chain is self-consistent but does not match the head the server served.",
+      "peer": {
+        "mismatch": "Key substituted",
+        "absent": "Key not in log"
+      }
+    },
   "achievements": {
     "showcaseHeading": "Showcase",
     "showcaseEditHint": "Pick up to 3 badges to feature.",
@@ -261,8 +267,12 @@
     "edit": "Edit",
     "edited": "edited",
     "cancel": "Cancel",
-    "undecryptable": "Can't decrypt this message"
-  },
+    "undecryptable": "Can't decrypt this message",
+      "startRefused": {
+        "title": "Conversation blocked",
+        "body": "This person's key does not match the public key-transparency log. Someone may be impersonating them, so no key was shared. Verify their safety number out-of-band before messaging."
+      }
+    },
   "chat": {
     "sending": "Sending…",
     "notSent": "Not sent",
@@ -387,8 +397,9 @@
     "mention": { "title": "Mention someone", "unread": "{n} unread mentions", "unreadOne": "1 unread mention" },
     "embed": { "hideImage": "Hide image", "showImage": "Show image", "preview": "Link preview", "hidePreview": "Hide preview", "showPreview": "Show preview" },
     "thread": { "count": "{n} replies", "one": "1 reply", "reply": "Reply in thread", "collapse": "Hide replies", "placeholder": "Reply to thread", "empty": "No replies yet." },
-    "search": { "button": "Search messages", "placeholder": "Search loaded messages", "results": "{n} matches", "one": "1 match", "none": "No matches", "deeper": "Load earlier messages to search further", "close": "Close search" }
-  },
+    "search": { "button": "Search messages", "placeholder": "Search loaded messages", "results": "{n} matches", "one": "1 match", "none": "No matches", "deeper": "Load earlier messages to search further", "close": "Close search" },
+      "keyMismatch": "This device's chat key no longer matches your account - restore it with your recovery code, or reset your chat identity."
+    },
   "presence": { "active": "Active", "idle": "Away" },
   "multiview": {
     "empty": "No live matches.",
@@ -472,8 +483,10 @@
     "points": "Points",
     "rank": "Rank of {n} players",
     "exact": "Exact scores",
-    "jokers": "Jokers used · {n} picks"
-  },
+    "jokers": "Jokers used · {n} picks",
+      "noLeagueForCompetition": "You're not in a league for this competition, so there's nowhere to save this pick yet.",
+      "leagueForPick": "Save to league"
+    },
   "prefs": {
     "showCrowd": "Show crowd predictions",
     "showOdds": "Show bookmaker odds",
@@ -555,8 +568,9 @@
     "refresh": "Refresh",
     "confirm": "Confirm",
     "clear": "Clear",
-    "remove": "Remove"
-  },
+    "remove": "Remove",
+      "saved": "Saved"
+    },
   "home": {
     "tagline": "Predict football scores, earn points for how close you get, and out-foresee your friends on the global ranking.",
     "getStarted": "Get started",
@@ -969,8 +983,10 @@
     "rankingTab": "Ranking",
     "noPicks": "No picks for this match yet.",
     "leagueNoPick": "{n} member made no pick | {n} members made no pick",
-    "watching": "1 watching now | {n} watching now"
-  },
+    "watching": "1 watching now | {n} watching now",
+      "captainShort": "C",
+      "ownGoalShort": "OG"
+    },
   "pastPick": {
     "title": "What if",
     "earlier": "Earlier pick {score}: {n} pts",
@@ -1051,8 +1067,12 @@
     "resendFailed": "Could not resend the verification email. Please try again.",
     "verifyChecking": "Verifying your email…",
     "verifyDone": "Your email is verified. You can sign in now.",
-    "verifyError": "This verification link is invalid or has expired. Sign in to request a new one."
-  },
+    "verifyError": "This verification link is invalid or has expired. Sign in to request a new one.",
+      "emailInvalid": "Enter a valid email address.",
+      "passwordRequired": "Enter your password.",
+      "passwordTooShort": "Use at least 8 characters.",
+      "nameRequired": "Enter a display name."
+    },
   "account": {
     "title": "Account",
     "profile": "Profile",
@@ -1405,8 +1425,10 @@
     "revoke": "Sign out this device",
     "revokeOthers": "Sign out all other devices",
     "loadFailed": "Could not load your devices.",
-    "revokeFailed": "Could not sign out that device. Try again."
-  },
+    "revokeFailed": "Could not sign out that device. Try again.",
+      "revokeConfirm": "Sign this device out? It will need to sign in again.",
+      "revokeCurrentConfirm": "This is the device you are using. Signing it out signs you out here."
+    },
   "about": {
     "client": "Client",
     "title": "About",
@@ -1424,8 +1446,12 @@
     "integrityText": "Chat and direct messages are end-to-end encrypted in your browser, so their security rests on the JavaScript this site serves you. The fingerprint below is the SHA-256 of the client code bundle you were actually delivered. Compare it against the value published for this release: if a build ever swaps the crypto code, the fingerprints stop matching. A server can still ship altered code on the very first load - this makes a later divergence detectable, not impossible.",
     "integrityVersionLabel": "Build version",
     "integrityDigestLabel": "Bundle digest ({algo}, {count} chunks)",
-    "integrityUnavailable": "No integrity fingerprint is available for this build."
-  },
+    "integrityUnavailable": "No integrity fingerprint is available for this build.",
+      "clientFlutter": "Flutter (native Android)",
+      "e2eeTitle": "End-to-end encryption",
+      "e2eeText": "libsodium (X25519 + secretbox), key-transparency verified",
+      "website": "Website"
+    },
   "roadmap": {
     "suggestTitle": "Title",
     "suggestDesc": "Description",
@@ -1453,8 +1479,9 @@
       "signInHint": "Have an idea?",
       "signInCta": "Sign in to suggest",
       "empty": "No suggestions yet - be the first."
-    }
-  },
+    },
+      "statusSuggested": "Suggested"
+    },
   "update": {
     "available": "A new version is available",
     "reload": "Reload",
@@ -1672,8 +1699,13 @@
     "nudgeNeedsExact": "{n} need a score",
     "nudgeNeedsStake": "{n} need a stake",
     "reasonScore": "needs a score",
-    "reasonStake": "needs a stake"
-  },
+    "reasonStake": "needs a stake",
+      "nameTooShort": "A league name needs at least 3 characters.",
+      "competitionRequired": "Pick a competition.",
+      "visibilityPrivateShort": "Private",
+      "visibilityPublicShort": "Public",
+      "featuredTeamKeep": "Leave unchanged"
+    },
   "invites": {
     "title": "Invite links",
     "hint": "Share a link to let people join. Add an expiry or a use limit for tighter control.",
@@ -1753,8 +1785,9 @@
       "mention": "{name} mentioned you in {league}.",
       "mentionMatch": "{name} mentioned you in {home} v {away}.",
       "trophyAwarded": "You won the {trophy} trophy in {competition}!",
-      "achievementUnlocked": "Achievement unlocked: {achievement}."
-    }
+      "achievementUnlocked": "Achievement unlocked: {achievement}.",
+        "generic": "You have a new notification."
+      }
   },
   "voice": {
     "join": "Join voice",
@@ -1894,8 +1927,25 @@
       "sealedTitle": "{name} sealed a pick",
       "subtitle": "Nostragoalus is a football prediction game: call the scores, earn points, out-foresee your friends.",
       "cta": "Make your own prediction"
-    }
-  },
+    },
+      "field": {
+        "accuracy": "Accuracy",
+        "exactRate": "Exact rate",
+        "goalLean": "Goal lean",
+        "homeBias": "Home bias",
+        "rank": "Rank",
+        "players": "Players",
+        "points": "Points",
+        "exact": "Exact scores",
+        "trophies": "Trophies",
+        "badges": "Badges",
+        "round": "Round",
+        "group": "Group",
+        "result": "Result",
+        "tier": "Tier",
+        "crowdShare": "Crowd share"
+      }
+    },
   "wrapped": {
     "notReady": "Your wrapped isn't ready yet - check back after the tournament.",
     "exact": "Exact scores",
