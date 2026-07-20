@@ -23,10 +23,10 @@ class NostragoalusApi {
       await _api.getJson('/api/competitions/scorers', query: _comp(competition)));
 
   /// Team codes certainly out of the tournament (knockout losers, non-qualifiers).
-  Future<List<String>> eliminatedTeams({String? competition}) async {
-    final codes = (await _api.getJson('/api/competitions/eliminated', query: _comp(competition)))['codes'];
-    return codes is List ? codes.map((e) => e.toString()).toList() : const [];
-  }
+  Future<List<String>> eliminatedTeams({String? competition}) async =>
+      EliminatedResponse.fromJson(
+              await _api.getJson('/api/competitions/eliminated', query: _comp(competition)))
+          .codes;
 
   Future<TeamsResponse> teams({String? competition}) async =>
       TeamsResponse.fromJson(await _api.getJson('/api/competitions/teams', query: _comp(competition)));
@@ -37,9 +37,9 @@ class NostragoalusApi {
   Future<MatchesResponse> matches({String? competition}) async =>
       MatchesResponse.fromJson(await _api.getJson('/api/matches', query: _comp(competition)));
 
-  /// Calendar-feed subscription URLs ({url, webcalUrl}) for the signed-in user.
-  Future<Map<String, dynamic>> feedSubscription() async =>
-      _api.getJson('/api/feed/subscription');
+  /// Calendar-feed subscription URLs for the signed-in user.
+  Future<FeedSubscriptionResponse> feedSubscription() async =>
+      FeedSubscriptionResponse.fromJson(await _api.getJson('/api/feed/subscription'));
 
   /// Revoke every prior calendar URL and mint a fresh one.
   Future<Map<String, dynamic>> regenerateFeed() async =>
@@ -55,13 +55,15 @@ class NostragoalusApi {
   /// Mint a share token for the caller's own analytics / wrapped / profile card.
   /// Returns the token used to build the public /a|/s|/p landing URL.
   Future<String> mintAnalyticsShare({String? competition}) async =>
-      (await _api.postJson('/api/share/analytics-mint', body: _comp(competition) ?? {}))['token']
-          .toString();
+      ShareMintResponse.fromJson(
+              await _api.postJson('/api/share/analytics-mint', body: _comp(competition) ?? {}))
+          .token;
 
   /// Wrapped shares are image-only (no landing page): returns the card image URL.
   Future<String> mintWrappedShare({String? competition}) async =>
-      (await _api.postJson('/api/share/wrapped-mint', body: _comp(competition) ?? {}))['imageUrl']
-          .toString();
+      WrappedMintResponse.fromJson(
+              await _api.postJson('/api/share/wrapped-mint', body: _comp(competition) ?? {}))
+          .imageUrl;
 
   /// Read a shared card by token for the in-app viewer (analytics /a, profile /p,
   /// or pick /s). `kind` selects the endpoint; returns the `card` object.
@@ -76,8 +78,9 @@ class NostragoalusApi {
   }
 
   Future<String> mintProfileShare({String? competition}) async =>
-      (await _api.postJson('/api/share/profile-mint', body: _comp(competition) ?? {}))['token']
-          .toString();
+      ProfileMintResponse.fromJson(
+              await _api.postJson('/api/share/profile-mint', body: _comp(competition) ?? {}))
+          .token;
 
   /// Head-to-head compare of two players (raw; nested shape read in the UI).
   Future<Map<String, dynamic>> headToHead(String a, String b, {String? competition}) async =>
@@ -87,12 +90,11 @@ class NostragoalusApi {
         if (competition != null) 'competition': competition,
       });
 
-  /// Crowd totals keyed by matchId -> {home, away, count}. Display-only.
-  Future<Map<String, dynamic>> crowdTotals({String? competition}) async {
-    final res = await _api.getJson('/api/predictions/crowd', query: _comp(competition));
-    final totals = res['totals'];
-    return totals is Map ? totals.cast<String, dynamic>() : const <String, dynamic>{};
-  }
+  /// Crowd totals keyed by matchId. Display-only.
+  Future<Map<String, CrowdResponseTotal>> crowdTotals({String? competition}) async =>
+      CrowdResponse.fromJson(
+              await _api.getJson('/api/predictions/crowd', query: _comp(competition)))
+          .totals;
 
   Future<MatchDetailResponse> match(String id) async =>
       MatchDetailResponse.fromJson(await _api.getJson('/api/matches/$id'));
@@ -103,8 +105,8 @@ class NostragoalusApi {
   Future<MatchLineupsResponse> matchLineups(String id) async =>
       MatchLineupsResponse.fromJson(await _api.getJson('/api/matches/$id/lineups'));
 
-  Future<ScorersResponse> matchScorers(String id) async =>
-      ScorersResponse.fromJson(await _api.getJson('/api/matches/$id/scorers'));
+  Future<MatchScorersResponse> matchScorers(String id) async =>
+      MatchScorersResponse.fromJson(await _api.getJson('/api/matches/$id/scorers'));
 
   Future<MatchInsightsResponse> matchInsights(String id) async =>
       MatchInsightsResponse.fromJson(await _api.getJson('/api/matches/$id/insights'));
@@ -116,11 +118,9 @@ class NostragoalusApi {
   Future<MatchMediaResponse> matchMedia(String id) async =>
       MatchMediaResponse.fromJson(await _api.getJson('/api/matches/$id/media'));
 
-  /// My rewards across leagues (a top-level array, read raw).
-  Future<List<dynamic>> meRewards() async {
-    final r = await _api.raw((dio) => dio.get<dynamic>('/api/me/rewards'));
-    return r.data as List<dynamic>;
-  }
+  /// My rewards across leagues (a top-level array).
+  Future<List<MeReward>> meRewards() async =>
+      parseMeRewardList(await _api.getList('/api/me/rewards'));
 
   /// Replace the showcase (ordered, max 3 earned achievement keys) for a competition.
   Future<void> setShowcase(List<String> keys, {String? competition}) async =>
@@ -159,9 +159,10 @@ class NostragoalusApi {
           await _api.getJson('/api/leaderboard', query: _comp(competition)));
 
   /// Per-league pick completeness (which leagues still need picks/exact/stake).
-  Future<List<dynamic>> leagueCompleteness({String? competition}) async =>
-      (await _api.getJson('/api/leagues/completeness', query: _comp(competition)))['leagues']
-          as List<dynamic>;
+  Future<List<LeagueCompletenessResponseLeague>> leagueCompleteness({String? competition}) async =>
+      LeagueCompletenessResponse.fromJson(
+              await _api.getJson('/api/leagues/completeness', query: _comp(competition)))
+          .leagues;
 
   Future<LeaguesResponse> leagues() async =>
       LeaguesResponse.fromJson(await _api.getJson('/api/leagues'));
@@ -251,10 +252,8 @@ class NostragoalusApi {
   Future<void> regenerateLeagueCode(String leagueId) async =>
       _api.postJson('/api/leagues/$leagueId/regenerate-code');
 
-  Future<List<dynamic>> leagueRewards(String leagueId) async {
-    final r = await _api.raw((dio) => dio.get<dynamic>('/api/leagues/$leagueId/rewards'));
-    return r.data as List<dynamic>;
-  }
+  Future<List<LeagueReward>> leagueRewards(String leagueId) async =>
+      parseLeagueRewardList(await _api.getList('/api/leagues/$leagueId/rewards'));
 
   Future<ModeBoardResponse> leagueBoard(String leagueId) async =>
       ModeBoardResponse.fromJson(await _api.getJson('/api/leagues/$leagueId/mode-board'));
@@ -295,11 +294,10 @@ class NostragoalusApi {
 
   /// A team's squad ([{playerId, name, position, pictureUrl}]) for the
   /// best-scorer pick (raw; the teams/[code] shape isn't a codegen target).
-  Future<List<dynamic>> teamSquad(String code, {String? competition}) async {
-    final res = await _api.getJson('/api/teams/$code', query: _comp(competition));
-    final squad = res['squad'];
-    return squad is List ? squad : const [];
-  }
+  Future<List<Squad>> teamSquad(String code, {String? competition}) async =>
+      TeamDetailResponse.fromJson(
+              await _api.getJson('/api/teams/$code', query: _comp(competition)))
+          .squad;
 
   /// Save the Golden Boot pick.
   Future<void> setBestScorer(
@@ -341,7 +339,7 @@ class NostragoalusApi {
       _api.postJson('/api/chat/identity/reset', body: {'publicKey': publicKey});
 
   Future<String?> chatRecoveryBlob() async =>
-      (await _api.getJson('/api/chat/recovery'))['blob'] as String?;
+      ChatRecoveryResponse.fromJson(await _api.getJson('/api/chat/recovery')).blob;
 
   Future<void> setChatRecovery(String blob) async =>
       _api.putJson('/api/chat/recovery', body: {'blob': blob});
@@ -383,8 +381,9 @@ class NostragoalusApi {
           body: {'messageId': messageId, 'ciphertext': ciphertext});
 
   /// The moderation queue (owner/mod): reported messages with ciphertext + epoch.
-  Future<List<dynamic>> chatReports(String leagueId) async =>
-      (await _api.getJson('/api/leagues/$leagueId/chat/reports'))['reports'] as List<dynamic>;
+  Future<List<Report>> chatReports(String leagueId) async =>
+      ChatReportsResponse.fromJson(await _api.getJson('/api/leagues/$leagueId/chat/reports'))
+          .reports;
 
   Future<void> moderateChatMessage(String leagueId, String messageId, String action) async =>
       _api.postJson('/api/leagues/$leagueId/chat/moderate',
@@ -396,12 +395,17 @@ class NostragoalusApi {
 
   // --- Account security: connected sessions (better-auth) ---
 
+  /// A failure throws: on a security screen, an empty device list must never be
+  /// indistinguishable from a call that never succeeded.
   Future<List<dynamic>> listSessions() async {
-    final r = await _api.raw((dio) => dio.get<dynamic>('/api/auth/list-sessions'));
-    final data = r.data;
-    if (data is List) return data;
-    if (data is Map && data['sessions'] is List) return data['sessions'] as List;
-    return const [];
+    try {
+      return await _api.getList('/api/auth/list-sessions');
+    } on ApiException catch (e) {
+      // Some better-auth versions wrap the array in {sessions: [...]}.
+      final body = e.body;
+      if (body is Map && body['sessions'] is List) return body['sessions'] as List;
+      rethrow;
+    }
   }
 
   /// Begin 2FA enrolment: returns {totpURI, backupCodes}. Confirm with verifyTotp.
@@ -418,10 +422,9 @@ class NostragoalusApi {
       _api.postJson('/api/auth/two-factor/disable', body: {'password': password});
 
   /// Check a current TOTP code (used to gate disabling 2FA).
-  Future<bool> confirmTotp(String code) async {
-    final r = await _api.postJson('/api/me/confirm-totp', body: {'code': code});
-    return r['valid'] == true;
-  }
+  Future<bool> confirmTotp(String code) async => ConfirmTotpResponse.fromJson(
+          await _api.postJson('/api/me/confirm-totp', body: {'code': code}))
+      .valid;
 
   Future<void> revokeSession(String token) async =>
       _api.postJson('/api/auth/revoke-session', body: {'token': token});
@@ -441,22 +444,22 @@ class NostragoalusApi {
       DmRecipientsResponse.fromJson(await _api.getJson('/api/dm/recipients'));
 
   /// A user's DM public key (own identity when [userId] is null).
-  Future<String> dmPublicKey(String userId) async {
-    final res = await _api.getJson('/api/dm/identity', query: {'userId': userId});
-    return (res['identity'] as Map<String, dynamic>)['publicKey'] as String;
-  }
+  Future<String> dmPublicKey(String userId) async => DmIdentityResponse.fromJson(
+          await _api.getJson('/api/dm/identity', query: {'userId': userId}))
+      .identity
+      .publicKey;
 
-  Future<String> createDmThread(String recipientId, List<Map<String, String>> wraps) async {
-    final res = await _api.postJson('/api/dm/threads', body: {'recipientId': recipientId, 'wraps': wraps});
-    return res['threadId'] as String;
-  }
+  Future<String> createDmThread(String recipientId, List<Map<String, String>> wraps) async =>
+      DmThreadCreatedResponse.fromJson(await _api
+              .postJson('/api/dm/threads', body: {'recipientId': recipientId, 'wraps': wraps}))
+          .threadId;
 
   Future<DmThreadResponse> dmThread(String threadId) async =>
       DmThreadResponse.fromJson(await _api.getJson('/api/dm/$threadId'));
 
-  // DM messages share ChatMessagesResponse's shape (the generator dedups them).
-  Future<ChatMessagesResponse> dmMessages(String threadId) async =>
-      ChatMessagesResponse.fromJson(await _api.getJson('/api/dm/$threadId/messages'));
+  // DmMessagesResponse is a typedef onto ChatMessagesResponse (identical shape).
+  Future<DmMessagesResponse> dmMessages(String threadId) async =>
+      DmMessagesResponse.fromJson(await _api.getJson('/api/dm/$threadId/messages'));
 
   Future<void> sendDm(String threadId, String ciphertext, int epoch,
           {List<Map<String, dynamic>>? images}) async =>
@@ -483,8 +486,8 @@ class NostragoalusApi {
   Future<Map<String, dynamic>> keysLog() async => _api.getJson('/api/keys/log');
 
   /// ICE/TURN servers for the voice mesh.
-  Future<List<dynamic>> iceServers() async =>
-      (await _api.getJson('/api/voice/ice-servers'))['iceServers'] as List;
+  Future<List<IceServer>> iceServers() async =>
+      IceServersResponse.fromJson(await _api.getJson('/api/voice/ice-servers')).iceServers;
 
   // --- SSO ---
 

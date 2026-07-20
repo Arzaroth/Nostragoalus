@@ -9,7 +9,7 @@ class Achievement {
   final String scope;
   final String? icon;
   final bool hidden;
-  final List<Tier2> tiers;
+  final List<AchievementTier> tiers;
   final Earned? earned;
   final double? current;
   final double? currentStreak;
@@ -35,7 +35,7 @@ class Achievement {
         icon: json['icon'] as String?,
         hidden: json['hidden'] as bool,
         tiers: (json['tiers'] as List)
-            .map((e) => Tier2.fromJson(e as Map<String, dynamic>))
+            .map((e) => AchievementTier.fromJson(e as Map<String, dynamic>))
             .toList(),
         earned: json['earned'] == null
             ? null
@@ -61,6 +61,27 @@ class Achievement {
       };
 }
 
+class AchievementTier {
+  final String tier;
+  final double threshold;
+
+  const AchievementTier({
+    required this.tier,
+    required this.threshold,
+  });
+
+  factory AchievementTier.fromJson(Map<String, dynamic> json) =>
+      AchievementTier(
+        tier: json['tier'] as String,
+        threshold: (json['threshold'] as num).toDouble(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'tier': tier,
+        'threshold': threshold,
+      };
+}
+
 class AnalyticsResponse {
   final String competitionName;
   final bool hasData;
@@ -72,7 +93,7 @@ class AnalyticsResponse {
   final double exactRate;
   final Goal goals;
   final OutcomeLean outcomeLean;
-  final Team2 teams;
+  final AnalyticsResponseTeam teams;
   final List<OverTime> overTime;
   final Streak streak;
   final BestCall? bestCall;
@@ -111,7 +132,8 @@ class AnalyticsResponse {
         goals: Goal.fromJson(json['goals'] as Map<String, dynamic>),
         outcomeLean:
             OutcomeLean.fromJson(json['outcomeLean'] as Map<String, dynamic>),
-        teams: Team2.fromJson(json['teams'] as Map<String, dynamic>),
+        teams: AnalyticsResponseTeam.fromJson(
+            json['teams'] as Map<String, dynamic>),
         overTime: (json['overTime'] as List)
             .map((e) => OverTime.fromJson(e as Map<String, dynamic>))
             .toList(),
@@ -143,6 +165,31 @@ class AnalyticsResponse {
         'bestCall': bestCall?.toJson(),
         'worstMiss': worstMiss?.toJson(),
         'fergieTime': fergieTime.toJson(),
+      };
+}
+
+class AnalyticsResponseTeam {
+  final List<Overrated> overrated;
+  final List<Overrated> underrated;
+
+  const AnalyticsResponseTeam({
+    required this.overrated,
+    required this.underrated,
+  });
+
+  factory AnalyticsResponseTeam.fromJson(Map<String, dynamic> json) =>
+      AnalyticsResponseTeam(
+        overrated: (json['overrated'] as List)
+            .map((e) => Overrated.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        underrated: (json['underrated'] as List)
+            .map((e) => Overrated.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'overrated': overrated.map((e) => e.toJson()).toList(),
+        'underrated': underrated.map((e) => e.toJson()).toList(),
       };
 }
 
@@ -215,12 +262,12 @@ class BestCall {
 }
 
 class BestScorerResponse {
-  final Competition2? competition;
+  final MatchesResponseCompetition? competition;
   final String? provider;
   final String? season;
   final double bonus;
   final List<Team> teams;
-  final MyPick2? myPick;
+  final BestScorerResponseMyPick? myPick;
   final bool locked;
   final SecondChance secondChance;
 
@@ -239,7 +286,7 @@ class BestScorerResponse {
       BestScorerResponse(
         competition: json['competition'] == null
             ? null
-            : Competition2.fromJson(
+            : MatchesResponseCompetition.fromJson(
                 json['competition'] as Map<String, dynamic>),
         provider: json['provider'] as String?,
         season: json['season'] as String?,
@@ -249,7 +296,8 @@ class BestScorerResponse {
             .toList(),
         myPick: json['myPick'] == null
             ? null
-            : MyPick2.fromJson(json['myPick'] as Map<String, dynamic>),
+            : BestScorerResponseMyPick.fromJson(
+                json['myPick'] as Map<String, dynamic>),
         locked: json['locked'] as bool,
         secondChance:
             SecondChance.fromJson(json['secondChance'] as Map<String, dynamic>),
@@ -257,13 +305,78 @@ class BestScorerResponse {
 
   Map<String, dynamic> toJson() => {
         'competition': competition?.toJson(),
-        'provider': provider,
+        if (provider != null) 'provider': provider,
         'season': season,
         'bonus': bonus,
         'teams': teams.map((e) => e.toJson()).toList(),
         'myPick': myPick?.toJson(),
         'locked': locked,
         'secondChance': secondChance.toJson(),
+      };
+}
+
+class BestScorerResponseMyPick {
+  final String id;
+  final String userId;
+  final String competitionId;
+  final String playerId;
+  final String playerName;
+  final String? teamCode;
+  final String teamName;
+  final int awardedPoints;
+  final bool repicked;
+  final String? originalPlayerName;
+  final String? originalTeamCode;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  const BestScorerResponseMyPick({
+    required this.id,
+    required this.userId,
+    required this.competitionId,
+    required this.playerId,
+    required this.playerName,
+    this.teamCode,
+    required this.teamName,
+    required this.awardedPoints,
+    required this.repicked,
+    this.originalPlayerName,
+    this.originalTeamCode,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory BestScorerResponseMyPick.fromJson(Map<String, dynamic> json) =>
+      BestScorerResponseMyPick(
+        id: json['id'] as String,
+        userId: json['userId'] as String,
+        competitionId: json['competitionId'] as String,
+        playerId: json['playerId'] as String,
+        playerName: json['playerName'] as String,
+        teamCode: json['teamCode'] as String?,
+        teamName: json['teamName'] as String,
+        awardedPoints: json['awardedPoints'] as int,
+        repicked: json['repicked'] as bool,
+        originalPlayerName: json['originalPlayerName'] as String?,
+        originalTeamCode: json['originalTeamCode'] as String?,
+        createdAt: DateTime.parse(json['createdAt'] as String),
+        updatedAt: DateTime.parse(json['updatedAt'] as String),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'userId': userId,
+        'competitionId': competitionId,
+        'playerId': playerId,
+        'playerName': playerName,
+        'teamCode': teamCode,
+        'teamName': teamName,
+        'awardedPoints': awardedPoints,
+        'repicked': repicked,
+        'originalPlayerName': originalPlayerName,
+        'originalTeamCode': originalTeamCode,
+        'createdAt': createdAt.toIso8601String(),
+        'updatedAt': updatedAt.toIso8601String(),
       };
 }
 
@@ -328,6 +441,9 @@ class Board {
   final bool live;
   final List<dynamic> rows;
 
+  static const kindValues = <String>['points', 'survival'];
+  static const modeValues = <String>['NORMAL', 'EASY', 'HARD', 'HARDCORE'];
+
   const Board({
     required this.kind,
     required this.mode,
@@ -388,7 +504,7 @@ class BotPredictionsResponse {
   /// One of: consensus, evil-twin, equalizer.
   final String persona;
   final Competition competition;
-  final League6? league;
+  final BotPredictionsResponseLeague? league;
   final Champion? champion;
   final Summary summary;
   final Subject? subject;
@@ -398,7 +514,10 @@ class BotPredictionsResponse {
   final String method;
   final bool modeAvailable;
   final double population;
-  final List<Prediction2> predictions;
+  final List<BotPredictionsResponsePrediction> predictions;
+
+  static const personaValues = <String>['consensus', 'evil-twin', 'equalizer'];
+  static const methodValues = <String>['MODE', 'MEAN'];
 
   const BotPredictionsResponse({
     required this.bot,
@@ -424,7 +543,8 @@ class BotPredictionsResponse {
             Competition.fromJson(json['competition'] as Map<String, dynamic>),
         league: json['league'] == null
             ? null
-            : League6.fromJson(json['league'] as Map<String, dynamic>),
+            : BotPredictionsResponseLeague.fromJson(
+                json['league'] as Map<String, dynamic>),
         champion: json['champion'] == null
             ? null
             : Champion.fromJson(json['champion'] as Map<String, dynamic>),
@@ -437,7 +557,8 @@ class BotPredictionsResponse {
         modeAvailable: json['modeAvailable'] as bool,
         population: (json['population'] as num).toDouble(),
         predictions: (json['predictions'] as List)
-            .map((e) => Prediction2.fromJson(e as Map<String, dynamic>))
+            .map((e) => BotPredictionsResponsePrediction.fromJson(
+                e as Map<String, dynamic>))
             .toList(),
       );
 
@@ -454,6 +575,169 @@ class BotPredictionsResponse {
         'modeAvailable': modeAvailable,
         'population': population,
         'predictions': predictions.map((e) => e.toJson()).toList(),
+      };
+}
+
+class BotPredictionsResponseLeague {
+  final String id;
+  final String name;
+
+  const BotPredictionsResponseLeague({
+    required this.id,
+    required this.name,
+  });
+
+  factory BotPredictionsResponseLeague.fromJson(Map<String, dynamic> json) =>
+      BotPredictionsResponseLeague(
+        id: json['id'] as String,
+        name: json['name'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+      };
+}
+
+class BotPredictionsResponsePrediction {
+  final String id;
+  final String userId;
+  final String matchId;
+  final String roundId;
+  final double homeGoals;
+  final double awayGoals;
+  final bool isOutcomeOnly;
+  final double? wager;
+  final bool isJoker;
+  final String? baseTier;
+  final double? totalPoints;
+  final double? basePoints;
+  final double? bonusPoints;
+  final String? crowdShare;
+  final String? jokerMultiplierApplied;
+  final String homeTeam;
+  final String awayTeam;
+  final String? homeTeamCode;
+  final String? awayTeamCode;
+  final DateTime kickoffTime;
+  final String status;
+  final String stage;
+  final double? fullTimeHome;
+  final double? fullTimeAway;
+  final double? penaltiesHome;
+  final double? penaltiesAway;
+  final String roundLabel;
+  final double roundSort;
+  final double consensusCount;
+  final double consensusTotal;
+
+  /// One of: MODE, MEAN.
+  final String consensusMethod;
+
+  static const consensusMethodValues = <String>['MODE', 'MEAN'];
+
+  const BotPredictionsResponsePrediction({
+    required this.id,
+    required this.userId,
+    required this.matchId,
+    required this.roundId,
+    required this.homeGoals,
+    required this.awayGoals,
+    required this.isOutcomeOnly,
+    this.wager,
+    required this.isJoker,
+    this.baseTier,
+    this.totalPoints,
+    this.basePoints,
+    this.bonusPoints,
+    this.crowdShare,
+    this.jokerMultiplierApplied,
+    required this.homeTeam,
+    required this.awayTeam,
+    this.homeTeamCode,
+    this.awayTeamCode,
+    required this.kickoffTime,
+    required this.status,
+    required this.stage,
+    this.fullTimeHome,
+    this.fullTimeAway,
+    this.penaltiesHome,
+    this.penaltiesAway,
+    required this.roundLabel,
+    required this.roundSort,
+    required this.consensusCount,
+    required this.consensusTotal,
+    required this.consensusMethod,
+  });
+
+  factory BotPredictionsResponsePrediction.fromJson(
+          Map<String, dynamic> json) =>
+      BotPredictionsResponsePrediction(
+        id: json['id'] as String,
+        userId: json['userId'] as String,
+        matchId: json['matchId'] as String,
+        roundId: json['roundId'] as String,
+        homeGoals: (json['homeGoals'] as num).toDouble(),
+        awayGoals: (json['awayGoals'] as num).toDouble(),
+        isOutcomeOnly: json['isOutcomeOnly'] as bool,
+        wager: (json['wager'] as num?)?.toDouble(),
+        isJoker: json['isJoker'] as bool,
+        baseTier: json['baseTier'] as String?,
+        totalPoints: (json['totalPoints'] as num?)?.toDouble(),
+        basePoints: (json['basePoints'] as num?)?.toDouble(),
+        bonusPoints: (json['bonusPoints'] as num?)?.toDouble(),
+        crowdShare: json['crowdShare'] as String?,
+        jokerMultiplierApplied: json['jokerMultiplierApplied'] as String?,
+        homeTeam: json['homeTeam'] as String,
+        awayTeam: json['awayTeam'] as String,
+        homeTeamCode: json['homeTeamCode'] as String?,
+        awayTeamCode: json['awayTeamCode'] as String?,
+        kickoffTime: DateTime.parse(json['kickoffTime'] as String),
+        status: json['status'] as String,
+        stage: json['stage'] as String,
+        fullTimeHome: (json['fullTimeHome'] as num?)?.toDouble(),
+        fullTimeAway: (json['fullTimeAway'] as num?)?.toDouble(),
+        penaltiesHome: (json['penaltiesHome'] as num?)?.toDouble(),
+        penaltiesAway: (json['penaltiesAway'] as num?)?.toDouble(),
+        roundLabel: json['roundLabel'] as String,
+        roundSort: (json['roundSort'] as num).toDouble(),
+        consensusCount: (json['consensusCount'] as num).toDouble(),
+        consensusTotal: (json['consensusTotal'] as num).toDouble(),
+        consensusMethod: json['consensusMethod'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'userId': userId,
+        'matchId': matchId,
+        'roundId': roundId,
+        'homeGoals': homeGoals,
+        'awayGoals': awayGoals,
+        'isOutcomeOnly': isOutcomeOnly,
+        'wager': wager,
+        'isJoker': isJoker,
+        'baseTier': baseTier,
+        'totalPoints': totalPoints,
+        'basePoints': basePoints,
+        'bonusPoints': bonusPoints,
+        'crowdShare': crowdShare,
+        'jokerMultiplierApplied': jokerMultiplierApplied,
+        'homeTeam': homeTeam,
+        'awayTeam': awayTeam,
+        'homeTeamCode': homeTeamCode,
+        'awayTeamCode': awayTeamCode,
+        'kickoffTime': kickoffTime.toIso8601String(),
+        'status': status,
+        'stage': stage,
+        'fullTimeHome': fullTimeHome,
+        'fullTimeAway': fullTimeAway,
+        'penaltiesHome': penaltiesHome,
+        'penaltiesAway': penaltiesAway,
+        'roundLabel': roundLabel,
+        'roundSort': roundSort,
+        'consensusCount': consensusCount,
+        'consensusTotal': consensusTotal,
+        'consensusMethod': consensusMethod,
       };
 }
 
@@ -558,7 +842,7 @@ class CabinetResponse {
   final bool isOwner;
   final List<Trophy> trophies;
   final List<Achievement> achievements;
-  final List<Showcase2> showcase;
+  final List<CabinetResponseShowcase> showcase;
 
   const CabinetResponse({
     required this.userId,
@@ -581,7 +865,8 @@ class CabinetResponse {
             .map((e) => Achievement.fromJson(e as Map<String, dynamic>))
             .toList(),
         showcase: (json['showcase'] as List)
-            .map((e) => Showcase2.fromJson(e as Map<String, dynamic>))
+            .map((e) =>
+                CabinetResponseShowcase.fromJson(e as Map<String, dynamic>))
             .toList(),
       );
 
@@ -592,6 +877,27 @@ class CabinetResponse {
         'trophies': trophies.map((e) => e.toJson()).toList(),
         'achievements': achievements.map((e) => e.toJson()).toList(),
         'showcase': showcase.map((e) => e.toJson()).toList(),
+      };
+}
+
+class CabinetResponseShowcase {
+  final double slot;
+  final String achievementKey;
+
+  const CabinetResponseShowcase({
+    required this.slot,
+    required this.achievementKey,
+  });
+
+  factory CabinetResponseShowcase.fromJson(Map<String, dynamic> json) =>
+      CabinetResponseShowcase(
+        slot: (json['slot'] as num).toDouble(),
+        achievementKey: json['achievementKey'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'slot': slot,
+        'achievementKey': achievementKey,
       };
 }
 
@@ -628,8 +934,8 @@ class Champion {
 }
 
 class ChampionResponse {
-  final Competition2? competition;
-  final List<Team3> teams;
+  final MatchesResponseCompetition? competition;
+  final List<ChampionResponseTeam> teams;
   final MyPick? myPick;
   final bool locked;
   final SecondChance secondChance;
@@ -646,10 +952,11 @@ class ChampionResponse {
       ChampionResponse(
         competition: json['competition'] == null
             ? null
-            : Competition2.fromJson(
+            : MatchesResponseCompetition.fromJson(
                 json['competition'] as Map<String, dynamic>),
         teams: (json['teams'] as List)
-            .map((e) => Team3.fromJson(e as Map<String, dynamic>))
+            .map(
+                (e) => ChampionResponseTeam.fromJson(e as Map<String, dynamic>))
             .toList(),
         myPick: json['myPick'] == null
             ? null
@@ -665,6 +972,35 @@ class ChampionResponse {
         'myPick': myPick?.toJson(),
         'locked': locked,
         'secondChance': secondChance.toJson(),
+      };
+}
+
+class ChampionResponseTeam {
+  final String code;
+  final String name;
+  final double? fifaRank;
+  final double potentialPoints;
+
+  const ChampionResponseTeam({
+    required this.code,
+    required this.name,
+    this.fifaRank,
+    required this.potentialPoints,
+  });
+
+  factory ChampionResponseTeam.fromJson(Map<String, dynamic> json) =>
+      ChampionResponseTeam(
+        code: json['code'] as String,
+        name: json['name'] as String,
+        fifaRank: (json['fifaRank'] as num?)?.toDouble(),
+        potentialPoints: (json['potentialPoints'] as num).toDouble(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'code': code,
+        'name': name,
+        'fifaRank': fifaRank,
+        'potentialPoints': potentialPoints,
       };
 }
 
@@ -707,6 +1043,42 @@ class ChatMessagesResponse {
   Map<String, dynamic> toJson() => {
         'messages': messages.map((e) => e.toJson()).toList(),
         'readMarker': readMarker,
+      };
+}
+
+class ChatRecoveryResponse {
+  final String? blob;
+
+  const ChatRecoveryResponse({
+    this.blob,
+  });
+
+  factory ChatRecoveryResponse.fromJson(Map<String, dynamic> json) =>
+      ChatRecoveryResponse(
+        blob: json['blob'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'blob': blob,
+      };
+}
+
+class ChatReportsResponse {
+  final List<Report> reports;
+
+  const ChatReportsResponse({
+    required this.reports,
+  });
+
+  factory ChatReportsResponse.fromJson(Map<String, dynamic> json) =>
+      ChatReportsResponse(
+        reports: (json['reports'] as List)
+            .map((e) => Report.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'reports': reports.map((e) => e.toJson()).toList(),
       };
 }
 
@@ -808,30 +1180,6 @@ class Competition {
       };
 }
 
-class Competition2 {
-  final String id;
-  final String slug;
-  final String name;
-
-  const Competition2({
-    required this.id,
-    required this.slug,
-    required this.name,
-  });
-
-  factory Competition2.fromJson(Map<String, dynamic> json) => Competition2(
-        id: json['id'] as String,
-        slug: json['slug'] as String,
-        name: json['name'] as String,
-      );
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'slug': slug,
-        'name': name,
-      };
-}
-
 class CompetitionsResponse {
   final List<Competition> competitions;
 
@@ -851,6 +1199,23 @@ class CompetitionsResponse {
       };
 }
 
+class ConfirmTotpResponse {
+  final bool valid;
+
+  const ConfirmTotpResponse({
+    required this.valid,
+  });
+
+  factory ConfirmTotpResponse.fromJson(Map<String, dynamic> json) =>
+      ConfirmTotpResponse(
+        valid: json['valid'] as bool,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'valid': valid,
+      };
+}
+
 class CreateLeagueInput {
   final String competition;
   final String name;
@@ -861,6 +1226,9 @@ class CreateLeagueInput {
   /// One of: NORMAL, EASY, HARD, HARDCORE.
   final String? mode;
   final int? lives;
+
+  static const visibilityValues = <String>['PRIVATE', 'PUBLIC'];
+  static const modeValues = <String>['NORMAL', 'EASY', 'HARD', 'HARDCORE'];
 
   const CreateLeagueInput({
     required this.competition,
@@ -882,14 +1250,14 @@ class CreateLeagueInput {
   Map<String, dynamic> toJson() => {
         'competition': competition,
         'name': name,
-        'visibility': visibility,
-        'mode': mode,
-        'lives': lives,
+        if (visibility != null) 'visibility': visibility,
+        if (mode != null) 'mode': mode,
+        if (lives != null) 'lives': lives,
       };
 }
 
 class CreateLeagueResponse {
-  final League5 league;
+  final CreateLeagueResponseLeague league;
 
   const CreateLeagueResponse({
     required this.league,
@@ -897,11 +1265,148 @@ class CreateLeagueResponse {
 
   factory CreateLeagueResponse.fromJson(Map<String, dynamic> json) =>
       CreateLeagueResponse(
-        league: League5.fromJson(json['league'] as Map<String, dynamic>),
+        league: CreateLeagueResponseLeague.fromJson(
+            json['league'] as Map<String, dynamic>),
       );
 
   Map<String, dynamic> toJson() => {
         'league': league.toJson(),
+      };
+}
+
+class CreateLeagueResponseLeague {
+  final String id;
+  final String name;
+
+  /// One of: PRIVATE, PUBLIC.
+  final String visibility;
+
+  /// One of: NORMAL, EASY, HARD, HARDCORE.
+  final String mode;
+  final double? lives;
+
+  /// One of: true.
+  final bool picksSynced;
+  final String joinCode;
+
+  /// One of: OWNER.
+  final String role;
+
+  /// One of: 1.
+  final double memberCount;
+  final Competition competition;
+
+  static const visibilityValues = <String>['PRIVATE', 'PUBLIC'];
+  static const modeValues = <String>['NORMAL', 'EASY', 'HARD', 'HARDCORE'];
+  static const picksSyncedValues = <String>['true'];
+  static const roleValues = <String>['OWNER'];
+  static const memberCountValues = <String>['1'];
+
+  const CreateLeagueResponseLeague({
+    required this.id,
+    required this.name,
+    required this.visibility,
+    required this.mode,
+    this.lives,
+    required this.picksSynced,
+    required this.joinCode,
+    required this.role,
+    required this.memberCount,
+    required this.competition,
+  });
+
+  factory CreateLeagueResponseLeague.fromJson(Map<String, dynamic> json) =>
+      CreateLeagueResponseLeague(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        visibility: json['visibility'] as String,
+        mode: json['mode'] as String,
+        lives: (json['lives'] as num?)?.toDouble(),
+        picksSynced: json['picksSynced'] as bool,
+        joinCode: json['joinCode'] as String,
+        role: json['role'] as String,
+        memberCount: (json['memberCount'] as num).toDouble(),
+        competition:
+            Competition.fromJson(json['competition'] as Map<String, dynamic>),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'visibility': visibility,
+        'mode': mode,
+        'lives': lives,
+        'picksSynced': picksSynced,
+        'joinCode': joinCode,
+        'role': role,
+        'memberCount': memberCount,
+        'competition': competition.toJson(),
+      };
+}
+
+class CrowdResponse {
+  final Map<String, CrowdResponseTotal> totals;
+  final League? league;
+
+  const CrowdResponse({
+    required this.totals,
+    this.league,
+  });
+
+  factory CrowdResponse.fromJson(Map<String, dynamic> json) => CrowdResponse(
+        totals: (json['totals'] as Map).map((k, e) => MapEntry(k as String,
+            CrowdResponseTotal.fromJson(e as Map<String, dynamic>))),
+        league: json['league'] == null
+            ? null
+            : League.fromJson(json['league'] as Map<String, dynamic>),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'totals': totals.map((k, e) => MapEntry(k, e.toJson())),
+        if (league != null) 'league': league?.toJson(),
+      };
+}
+
+class CrowdResponseTotal {
+  final double home;
+  final double away;
+  final double count;
+
+  const CrowdResponseTotal({
+    required this.home,
+    required this.away,
+    required this.count,
+  });
+
+  factory CrowdResponseTotal.fromJson(Map<String, dynamic> json) =>
+      CrowdResponseTotal(
+        home: (json['home'] as num).toDouble(),
+        away: (json['away'] as num).toDouble(),
+        count: (json['count'] as num).toDouble(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'home': home,
+        'away': away,
+        'count': count,
+      };
+}
+
+class DmIdentityResponse {
+  final DmThreadResponseThreadOther identity;
+
+  const DmIdentityResponse({
+    required this.identity,
+  });
+
+  factory DmIdentityResponse.fromJson(Map<String, dynamic> json) =>
+      DmIdentityResponse(
+        identity: DmThreadResponseThreadOther.fromJson(
+            json['identity'] as Map<String, dynamic>),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'identity': identity.toJson(),
       };
 }
 
@@ -924,8 +1429,33 @@ class DmRecipientsResponse {
       };
 }
 
+class DmThreadCreatedResponse {
+  final String threadId;
+  final double epoch;
+  final bool created;
+
+  const DmThreadCreatedResponse({
+    required this.threadId,
+    required this.epoch,
+    required this.created,
+  });
+
+  factory DmThreadCreatedResponse.fromJson(Map<String, dynamic> json) =>
+      DmThreadCreatedResponse(
+        threadId: json['threadId'] as String,
+        epoch: (json['epoch'] as num).toDouble(),
+        created: json['created'] as bool,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'threadId': threadId,
+        'epoch': epoch,
+        'created': created,
+      };
+}
+
 class DmThreadResponse {
-  final Thread2 thread;
+  final DmThreadResponseThread thread;
 
   const DmThreadResponse({
     required this.thread,
@@ -933,11 +1463,81 @@ class DmThreadResponse {
 
   factory DmThreadResponse.fromJson(Map<String, dynamic> json) =>
       DmThreadResponse(
-        thread: Thread2.fromJson(json['thread'] as Map<String, dynamic>),
+        thread: DmThreadResponseThread.fromJson(
+            json['thread'] as Map<String, dynamic>),
       );
 
   Map<String, dynamic> toJson() => {
         'thread': thread.toJson(),
+      };
+}
+
+class DmThreadResponseThread {
+  final String threadId;
+  final double epoch;
+  final DmThreadResponseThreadOther other;
+  final List<MyWrappedKey> myWrappedKeys;
+  final bool otherMissingCurrentKey;
+  final String? otherLastReadAt;
+
+  const DmThreadResponseThread({
+    required this.threadId,
+    required this.epoch,
+    required this.other,
+    required this.myWrappedKeys,
+    required this.otherMissingCurrentKey,
+    this.otherLastReadAt,
+  });
+
+  factory DmThreadResponseThread.fromJson(Map<String, dynamic> json) =>
+      DmThreadResponseThread(
+        threadId: json['threadId'] as String,
+        epoch: (json['epoch'] as num).toDouble(),
+        other: DmThreadResponseThreadOther.fromJson(
+            json['other'] as Map<String, dynamic>),
+        myWrappedKeys: (json['myWrappedKeys'] as List)
+            .map((e) => MyWrappedKey.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        otherMissingCurrentKey: json['otherMissingCurrentKey'] as bool,
+        otherLastReadAt: json['otherLastReadAt'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'threadId': threadId,
+        'epoch': epoch,
+        'other': other.toJson(),
+        'myWrappedKeys': myWrappedKeys.map((e) => e.toJson()).toList(),
+        'otherMissingCurrentKey': otherMissingCurrentKey,
+        'otherLastReadAt': otherLastReadAt,
+      };
+}
+
+class DmThreadResponseThreadOther {
+  final String userId;
+  final String name;
+  final String? image;
+  final String publicKey;
+
+  const DmThreadResponseThreadOther({
+    required this.userId,
+    required this.name,
+    this.image,
+    required this.publicKey,
+  });
+
+  factory DmThreadResponseThreadOther.fromJson(Map<String, dynamic> json) =>
+      DmThreadResponseThreadOther(
+        userId: json['userId'] as String,
+        name: json['name'] as String,
+        image: json['image'] as String?,
+        publicKey: json['publicKey'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'userId': userId,
+        'name': name,
+        'image': image,
+        'publicKey': publicKey,
       };
 }
 
@@ -967,6 +1567,8 @@ class Earlier {
 
   /// One of: EXACT, DIFF, OUTCOME, MISS.
   final String tier;
+
+  static const tierValues = <String>['EXACT', 'DIFF', 'OUTCOME', 'MISS'];
 
   const Earlier({
     required this.home,
@@ -1011,6 +1613,23 @@ class Earned {
         'tier': tier,
         'progress': progress,
         'unlockedAt': unlockedAt,
+      };
+}
+
+class EliminatedResponse {
+  final List<String> codes;
+
+  const EliminatedResponse({
+    required this.codes,
+  });
+
+  factory EliminatedResponse.fromJson(Map<String, dynamic> json) =>
+      EliminatedResponse(
+        codes: (json['codes'] as List).map((e) => e as String).toList(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'codes': codes,
       };
 }
 
@@ -1064,9 +1683,82 @@ class Entry {
         'createdAt': createdAt,
         'entryHash': entryHash,
         'opened': opened,
-        'homeGoals': homeGoals,
-        'awayGoals': awayGoals,
-        'salt': salt,
+        if (homeGoals != null) 'homeGoals': homeGoals,
+        if (awayGoals != null) 'awayGoals': awayGoals,
+        if (salt != null) 'salt': salt,
+      };
+}
+
+class Event {
+  final String kind;
+  final String? side;
+  final String? minute;
+  final String? playerName;
+  final String? playerInName;
+  final String? playerOutName;
+  final String? periodKind;
+  final String? text;
+  final int? homeScore;
+  final int? awayScore;
+
+  const Event({
+    required this.kind,
+    this.side,
+    this.minute,
+    this.playerName,
+    this.playerInName,
+    this.playerOutName,
+    this.periodKind,
+    this.text,
+    this.homeScore,
+    this.awayScore,
+  });
+
+  factory Event.fromJson(Map<String, dynamic> json) => Event(
+        kind: json['kind'] as String,
+        side: json['side'] as String?,
+        minute: json['minute'] as String?,
+        playerName: json['playerName'] as String?,
+        playerInName: json['playerInName'] as String?,
+        playerOutName: json['playerOutName'] as String?,
+        periodKind: json['periodKind'] as String?,
+        text: json['text'] as String?,
+        homeScore: json['homeScore'] as int?,
+        awayScore: json['awayScore'] as int?,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'kind': kind,
+        'side': side,
+        'minute': minute,
+        'playerName': playerName,
+        'playerInName': playerInName,
+        'playerOutName': playerOutName,
+        'periodKind': periodKind,
+        'text': text,
+        'homeScore': homeScore,
+        'awayScore': awayScore,
+      };
+}
+
+class FeedSubscriptionResponse {
+  final String url;
+  final String webcalUrl;
+
+  const FeedSubscriptionResponse({
+    required this.url,
+    required this.webcalUrl,
+  });
+
+  factory FeedSubscriptionResponse.fromJson(Map<String, dynamic> json) =>
+      FeedSubscriptionResponse(
+        url: json['url'] as String,
+        webcalUrl: json['webcalUrl'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'url': url,
+        'webcalUrl': webcalUrl,
       };
 }
 
@@ -1121,8 +1813,8 @@ class FergieTime {
 }
 
 class FormAll {
-  final List<Home4> home;
-  final List<Home4> away;
+  final List<FormAllHome> home;
+  final List<FormAllHome> away;
 
   const FormAll({
     required this.home,
@@ -1131,10 +1823,10 @@ class FormAll {
 
   factory FormAll.fromJson(Map<String, dynamic> json) => FormAll(
         home: (json['home'] as List)
-            .map((e) => Home4.fromJson(e as Map<String, dynamic>))
+            .map((e) => FormAllHome.fromJson(e as Map<String, dynamic>))
             .toList(),
         away: (json['away'] as List)
-            .map((e) => Home4.fromJson(e as Map<String, dynamic>))
+            .map((e) => FormAllHome.fromJson(e as Map<String, dynamic>))
             .toList(),
       );
 
@@ -1144,27 +1836,38 @@ class FormAll {
       };
 }
 
-class FormData {
-  final List<Home2> home;
-  final List<Home2> away;
+class FormAllHome {
+  /// One of: W, D, L.
+  final String result;
+  final String opponent;
+  final String score;
+  final String date;
+  final String competition;
 
-  const FormData({
-    required this.home,
-    required this.away,
+  static const resultValues = <String>['W', 'D', 'L'];
+
+  const FormAllHome({
+    required this.result,
+    required this.opponent,
+    required this.score,
+    required this.date,
+    required this.competition,
   });
 
-  factory FormData.fromJson(Map<String, dynamic> json) => FormData(
-        home: (json['home'] as List)
-            .map((e) => Home2.fromJson(e as Map<String, dynamic>))
-            .toList(),
-        away: (json['away'] as List)
-            .map((e) => Home2.fromJson(e as Map<String, dynamic>))
-            .toList(),
+  factory FormAllHome.fromJson(Map<String, dynamic> json) => FormAllHome(
+        result: json['result'] as String,
+        opponent: json['opponent'] as String,
+        score: json['score'] as String,
+        date: json['date'] as String,
+        competition: json['competition'] as String,
       );
 
   Map<String, dynamic> toJson() => {
-        'home': home.map((e) => e.toJson()).toList(),
-        'away': away.map((e) => e.toJson()).toList(),
+        'result': result,
+        'opponent': opponent,
+        'score': score,
+        'date': date,
+        'competition': competition,
       };
 }
 
@@ -1192,50 +1895,9 @@ class Goal {
       };
 }
 
-class Goal2 {
-  /// One of: HOME, AWAY.
-  final String side;
-  final String teamName;
-  final String? teamCode;
-  final String playerName;
-  final String? minute;
-  final bool ownGoal;
-  final String? assistPlayerName;
-
-  const Goal2({
-    required this.side,
-    required this.teamName,
-    this.teamCode,
-    required this.playerName,
-    this.minute,
-    required this.ownGoal,
-    this.assistPlayerName,
-  });
-
-  factory Goal2.fromJson(Map<String, dynamic> json) => Goal2(
-        side: json['side'] as String,
-        teamName: json['teamName'] as String,
-        teamCode: json['teamCode'] as String?,
-        playerName: json['playerName'] as String,
-        minute: json['minute'] as String?,
-        ownGoal: json['ownGoal'] as bool,
-        assistPlayerName: json['assistPlayerName'] as String?,
-      );
-
-  Map<String, dynamic> toJson() => {
-        'side': side,
-        'teamName': teamName,
-        'teamCode': teamCode,
-        'playerName': playerName,
-        'minute': minute,
-        'ownGoal': ownGoal,
-        'assistPlayerName': assistPlayerName,
-      };
-}
-
 class Group {
   final String group;
-  final List<RowData> rows;
+  final List<GroupRow> rows;
 
   const Group({
     required this.group,
@@ -1245,13 +1907,65 @@ class Group {
   factory Group.fromJson(Map<String, dynamic> json) => Group(
         group: json['group'] as String,
         rows: (json['rows'] as List)
-            .map((e) => RowData.fromJson(e as Map<String, dynamic>))
+            .map((e) => GroupRow.fromJson(e as Map<String, dynamic>))
             .toList(),
       );
 
   Map<String, dynamic> toJson() => {
         'group': group,
         'rows': rows.map((e) => e.toJson()).toList(),
+      };
+}
+
+class GroupRow {
+  final String? code;
+  final String name;
+  final double played;
+  final double won;
+  final double drawn;
+  final double lost;
+  final double gf;
+  final double ga;
+  final double gd;
+  final double points;
+
+  const GroupRow({
+    this.code,
+    required this.name,
+    required this.played,
+    required this.won,
+    required this.drawn,
+    required this.lost,
+    required this.gf,
+    required this.ga,
+    required this.gd,
+    required this.points,
+  });
+
+  factory GroupRow.fromJson(Map<String, dynamic> json) => GroupRow(
+        code: json['code'] as String?,
+        name: json['name'] as String,
+        played: (json['played'] as num).toDouble(),
+        won: (json['won'] as num).toDouble(),
+        drawn: (json['drawn'] as num).toDouble(),
+        lost: (json['lost'] as num).toDouble(),
+        gf: (json['gf'] as num).toDouble(),
+        ga: (json['ga'] as num).toDouble(),
+        gd: (json['gd'] as num).toDouble(),
+        points: (json['points'] as num).toDouble(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'code': code,
+        'name': name,
+        'played': played,
+        'won': won,
+        'drawn': drawn,
+        'lost': lost,
+        'gf': gf,
+        'ga': ga,
+        'gd': gd,
+        'points': points,
       };
 }
 
@@ -1397,104 +2111,50 @@ class Home {
       };
 }
 
-class Home2 {
-  final String matchId;
+class IceServer {
+  final dynamic urls;
+  final String? username;
+  final String? credential;
 
-  /// One of: W, D, L.
-  final String result;
-  final String opponent;
-  final String score;
-
-  const Home2({
-    required this.matchId,
-    required this.result,
-    required this.opponent,
-    required this.score,
+  const IceServer({
+    required this.urls,
+    this.username,
+    this.credential,
   });
 
-  factory Home2.fromJson(Map<String, dynamic> json) => Home2(
-        matchId: json['matchId'] as String,
-        result: json['result'] as String,
-        opponent: json['opponent'] as String,
-        score: json['score'] as String,
+  factory IceServer.fromJson(Map<String, dynamic> json) => IceServer(
+        urls: json['urls'],
+        username: json['username'] as String?,
+        credential: json['credential'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
-        'matchId': matchId,
-        'result': result,
-        'opponent': opponent,
-        'score': score,
+        'urls': urls,
+        if (username != null) 'username': username,
+        if (credential != null) 'credential': credential,
       };
 }
 
-class Home3 {
-  final String matchId;
-  final String opponent;
-  final String? opponentCode;
-  final String kickoffTime;
+class IceServersResponse {
+  final List<IceServer> iceServers;
+  final double ttl;
 
-  /// One of: W, D, L.
-  final String? result;
-  final String? score;
-
-  const Home3({
-    required this.matchId,
-    required this.opponent,
-    this.opponentCode,
-    required this.kickoffTime,
-    this.result,
-    this.score,
+  const IceServersResponse({
+    required this.iceServers,
+    required this.ttl,
   });
 
-  factory Home3.fromJson(Map<String, dynamic> json) => Home3(
-        matchId: json['matchId'] as String,
-        opponent: json['opponent'] as String,
-        opponentCode: json['opponentCode'] as String?,
-        kickoffTime: json['kickoffTime'] as String,
-        result: json['result'] as String?,
-        score: json['score'] as String?,
+  factory IceServersResponse.fromJson(Map<String, dynamic> json) =>
+      IceServersResponse(
+        iceServers: (json['iceServers'] as List)
+            .map((e) => IceServer.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        ttl: (json['ttl'] as num).toDouble(),
       );
 
   Map<String, dynamic> toJson() => {
-        'matchId': matchId,
-        'opponent': opponent,
-        'opponentCode': opponentCode,
-        'kickoffTime': kickoffTime,
-        'result': result,
-        'score': score,
-      };
-}
-
-class Home4 {
-  /// One of: W, D, L.
-  final String result;
-  final String opponent;
-  final String score;
-  final String date;
-  final String competition;
-
-  const Home4({
-    required this.result,
-    required this.opponent,
-    required this.score,
-    required this.date,
-    required this.competition,
-  });
-
-  factory Home4.fromJson(Map<String, dynamic> json) => Home4(
-        result: json['result'] as String,
-        opponent: json['opponent'] as String,
-        score: json['score'] as String,
-        date: json['date'] as String,
-        competition: json['competition'] as String,
-      );
-
-  Map<String, dynamic> toJson() => {
-        'result': result,
-        'opponent': opponent,
-        'score': score,
-        'date': date,
-        'competition': competition,
+        'iceServers': iceServers.map((e) => e.toJson()).toList(),
+        'ttl': ttl,
       };
 }
 
@@ -1553,6 +2213,8 @@ class Invite {
   /// One of: VALID, EXPIRED, EXHAUSTED.
   final String status;
 
+  static const statusValues = <String>['VALID', 'EXPIRED', 'EXHAUSTED'];
+
   const Invite({
     required this.id,
     required this.token,
@@ -1586,6 +2248,34 @@ class Invite {
       };
 }
 
+class Issue {
+  final String matchId;
+
+  /// One of: NEEDS_PICK, NEEDS_EXACT, NEEDS_STAKE.
+  final String reason;
+
+  static const reasonValues = <String>[
+    'NEEDS_PICK',
+    'NEEDS_EXACT',
+    'NEEDS_STAKE'
+  ];
+
+  const Issue({
+    required this.matchId,
+    required this.reason,
+  });
+
+  factory Issue.fromJson(Map<String, dynamic> json) => Issue(
+        matchId: json['matchId'] as String,
+        reason: json['reason'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'matchId': matchId,
+        'reason': reason,
+      };
+}
+
 class Item {
   final String id;
   final String title;
@@ -1598,6 +2288,13 @@ class Item {
   final bool viewerHasVoted;
   final bool underReview;
   final DateTime updatedAt;
+
+  static const statusValues = <String>[
+    'PLANNED',
+    'IN_PROGRESS',
+    'SHIPPED',
+    'SUGGESTED'
+  ];
 
   const Item({
     required this.id,
@@ -1637,11 +2334,11 @@ class Item {
 }
 
 class LeaderboardResponse {
-  final Competition2? competition;
+  final MatchesResponseCompetition? competition;
   final League? league;
   final bool? live;
   final double? hiddenCount;
-  final List<RowData2> rows;
+  final List<LeaderboardResponseRow> rows;
 
   const LeaderboardResponse({
     this.competition,
@@ -1655,7 +2352,7 @@ class LeaderboardResponse {
       LeaderboardResponse(
         competition: json['competition'] == null
             ? null
-            : Competition2.fromJson(
+            : MatchesResponseCompetition.fromJson(
                 json['competition'] as Map<String, dynamic>),
         league: json['league'] == null
             ? null
@@ -1663,16 +2360,104 @@ class LeaderboardResponse {
         live: json['live'] as bool?,
         hiddenCount: (json['hiddenCount'] as num?)?.toDouble(),
         rows: (json['rows'] as List)
-            .map((e) => RowData2.fromJson(e as Map<String, dynamic>))
+            .map((e) =>
+                LeaderboardResponseRow.fromJson(e as Map<String, dynamic>))
             .toList(),
       );
 
   Map<String, dynamic> toJson() => {
         'competition': competition?.toJson(),
-        'league': league?.toJson(),
-        'live': live,
-        'hiddenCount': hiddenCount,
+        if (league != null) 'league': league?.toJson(),
+        if (live != null) 'live': live,
+        if (hiddenCount != null) 'hiddenCount': hiddenCount,
         'rows': rows.map((e) => e.toJson()).toList(),
+      };
+}
+
+class LeaderboardResponseRow {
+  final double rank;
+  final String userId;
+  final String displayName;
+  final String? image;
+  final double totalPoints;
+  final double predictionPoints;
+  final double championPoints;
+  final String? championCode;
+  final String? championName;
+  final double bestScorerPoints;
+  final String? bestScorerName;
+  final String? bestScorerCode;
+  final double livePoints;
+  final double exactCount;
+  final double outcomeCount;
+  final double gdCount;
+  final List<Showcase> showcase;
+  final double? movement;
+
+  const LeaderboardResponseRow({
+    required this.rank,
+    required this.userId,
+    required this.displayName,
+    this.image,
+    required this.totalPoints,
+    required this.predictionPoints,
+    required this.championPoints,
+    this.championCode,
+    this.championName,
+    required this.bestScorerPoints,
+    this.bestScorerName,
+    this.bestScorerCode,
+    required this.livePoints,
+    required this.exactCount,
+    required this.outcomeCount,
+    required this.gdCount,
+    required this.showcase,
+    this.movement,
+  });
+
+  factory LeaderboardResponseRow.fromJson(Map<String, dynamic> json) =>
+      LeaderboardResponseRow(
+        rank: (json['rank'] as num).toDouble(),
+        userId: json['userId'] as String,
+        displayName: json['displayName'] as String,
+        image: json['image'] as String?,
+        totalPoints: (json['totalPoints'] as num).toDouble(),
+        predictionPoints: (json['predictionPoints'] as num).toDouble(),
+        championPoints: (json['championPoints'] as num).toDouble(),
+        championCode: json['championCode'] as String?,
+        championName: json['championName'] as String?,
+        bestScorerPoints: (json['bestScorerPoints'] as num).toDouble(),
+        bestScorerName: json['bestScorerName'] as String?,
+        bestScorerCode: json['bestScorerCode'] as String?,
+        livePoints: (json['livePoints'] as num).toDouble(),
+        exactCount: (json['exactCount'] as num).toDouble(),
+        outcomeCount: (json['outcomeCount'] as num).toDouble(),
+        gdCount: (json['gdCount'] as num).toDouble(),
+        showcase: (json['showcase'] as List)
+            .map((e) => Showcase.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        movement: (json['movement'] as num?)?.toDouble(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'rank': rank,
+        'userId': userId,
+        'displayName': displayName,
+        'image': image,
+        'totalPoints': totalPoints,
+        'predictionPoints': predictionPoints,
+        'championPoints': championPoints,
+        'championCode': championCode,
+        'championName': championName,
+        'bestScorerPoints': bestScorerPoints,
+        'bestScorerName': bestScorerName,
+        'bestScorerCode': bestScorerCode,
+        'livePoints': livePoints,
+        'exactCount': exactCount,
+        'outcomeCount': outcomeCount,
+        'gdCount': gdCount,
+        'showcase': showcase.map((e) => e.toJson()).toList(),
+        'movement': movement,
       };
 }
 
@@ -1696,7 +2481,327 @@ class League {
       };
 }
 
-class League2 {
+class LeagueCompletenessResponse {
+  final List<LeagueCompletenessResponseLeague> leagues;
+
+  const LeagueCompletenessResponse({
+    required this.leagues,
+  });
+
+  factory LeagueCompletenessResponse.fromJson(Map<String, dynamic> json) =>
+      LeagueCompletenessResponse(
+        leagues: (json['leagues'] as List)
+            .map((e) => LeagueCompletenessResponseLeague.fromJson(
+                e as Map<String, dynamic>))
+            .toList(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'leagues': leagues.map((e) => e.toJson()).toList(),
+      };
+}
+
+class LeagueCompletenessResponseLeague {
+  final String leagueId;
+  final String name;
+
+  /// One of: NORMAL, EASY, HARD, HARDCORE.
+  final String mode;
+  final LeagueCompletenessResponseLeagueSummary summary;
+  final List<Issue> issues;
+
+  static const modeValues = <String>['NORMAL', 'EASY', 'HARD', 'HARDCORE'];
+
+  const LeagueCompletenessResponseLeague({
+    required this.leagueId,
+    required this.name,
+    required this.mode,
+    required this.summary,
+    required this.issues,
+  });
+
+  factory LeagueCompletenessResponseLeague.fromJson(
+          Map<String, dynamic> json) =>
+      LeagueCompletenessResponseLeague(
+        leagueId: json['leagueId'] as String,
+        name: json['name'] as String,
+        mode: json['mode'] as String,
+        summary: LeagueCompletenessResponseLeagueSummary.fromJson(
+            json['summary'] as Map<String, dynamic>),
+        issues: (json['issues'] as List)
+            .map((e) => Issue.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'leagueId': leagueId,
+        'name': name,
+        'mode': mode,
+        'summary': summary.toJson(),
+        'issues': issues.map((e) => e.toJson()).toList(),
+      };
+}
+
+class LeagueCompletenessResponseLeagueSummary {
+  final double total;
+  final double complete;
+  final double incomplete;
+  final double missing;
+  final double needsExact;
+  final double needsStake;
+
+  const LeagueCompletenessResponseLeagueSummary({
+    required this.total,
+    required this.complete,
+    required this.incomplete,
+    required this.missing,
+    required this.needsExact,
+    required this.needsStake,
+  });
+
+  factory LeagueCompletenessResponseLeagueSummary.fromJson(
+          Map<String, dynamic> json) =>
+      LeagueCompletenessResponseLeagueSummary(
+        total: (json['total'] as num).toDouble(),
+        complete: (json['complete'] as num).toDouble(),
+        incomplete: (json['incomplete'] as num).toDouble(),
+        missing: (json['missing'] as num).toDouble(),
+        needsExact: (json['needsExact'] as num).toDouble(),
+        needsStake: (json['needsStake'] as num).toDouble(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'total': total,
+        'complete': complete,
+        'incomplete': incomplete,
+        'missing': missing,
+        'needsExact': needsExact,
+        'needsStake': needsStake,
+      };
+}
+
+class LeagueDetailResponse {
+  final LeagueDetailResponseLeague league;
+  final List<Member> members;
+
+  const LeagueDetailResponse({
+    required this.league,
+    required this.members,
+  });
+
+  factory LeagueDetailResponse.fromJson(Map<String, dynamic> json) =>
+      LeagueDetailResponse(
+        league: LeagueDetailResponseLeague.fromJson(
+            json['league'] as Map<String, dynamic>),
+        members: (json['members'] as List)
+            .map((e) => Member.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'league': league.toJson(),
+        'members': members.map((e) => e.toJson()).toList(),
+      };
+}
+
+class LeagueDetailResponseLeague {
+  final String id;
+  final String name;
+
+  /// One of: PRIVATE, PUBLIC.
+  final String visibility;
+  final String? description;
+
+  /// One of: NORMAL, EASY, HARD, HARDCORE.
+  final String mode;
+  final double? lives;
+
+  /// One of: OWNER, MODERATOR, MEMBER.
+  final String? role;
+  final double memberCount;
+  final MatchesResponseCompetition? competition;
+  final String? joinCode;
+
+  static const visibilityValues = <String>['PRIVATE', 'PUBLIC'];
+  static const modeValues = <String>['NORMAL', 'EASY', 'HARD', 'HARDCORE'];
+  static const roleValues = <String>['OWNER', 'MODERATOR', 'MEMBER'];
+
+  const LeagueDetailResponseLeague({
+    required this.id,
+    required this.name,
+    required this.visibility,
+    this.description,
+    required this.mode,
+    this.lives,
+    this.role,
+    required this.memberCount,
+    this.competition,
+    this.joinCode,
+  });
+
+  factory LeagueDetailResponseLeague.fromJson(Map<String, dynamic> json) =>
+      LeagueDetailResponseLeague(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        visibility: json['visibility'] as String,
+        description: json['description'] as String?,
+        mode: json['mode'] as String,
+        lives: (json['lives'] as num?)?.toDouble(),
+        role: json['role'] as String?,
+        memberCount: (json['memberCount'] as num).toDouble(),
+        competition: json['competition'] == null
+            ? null
+            : MatchesResponseCompetition.fromJson(
+                json['competition'] as Map<String, dynamic>),
+        joinCode: json['joinCode'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'visibility': visibility,
+        'description': description,
+        'mode': mode,
+        'lives': lives,
+        'role': role,
+        'memberCount': memberCount,
+        'competition': competition?.toJson(),
+        if (joinCode != null) 'joinCode': joinCode,
+      };
+}
+
+class LeagueInvitesResponse {
+  final List<Invite> invites;
+
+  const LeagueInvitesResponse({
+    required this.invites,
+  });
+
+  factory LeagueInvitesResponse.fromJson(Map<String, dynamic> json) =>
+      LeagueInvitesResponse(
+        invites: (json['invites'] as List)
+            .map((e) => Invite.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'invites': invites.map((e) => e.toJson()).toList(),
+      };
+}
+
+class LeagueReward {
+  /// One of: OVERALL, WOODEN_SPOON, GROUP_PHASE, KNOCKOUT_PHASE, FINALIST, MADAME_IRMA, GROUP_ORACLE, KNOCKOUT_ORACLE, SHARPSHOOTER, GOAL_DIFF_GURU, TEAM_SPECIALIST.
+  final String type;
+  final Reward? reward;
+  final List<LeagueRewardWinner> winners;
+  final double value;
+
+  /// One of: points, exact, outcome, goaldiff.
+  final String metric;
+  final String? teamCode;
+  final bool disabled;
+  final bool youHold;
+
+  static const typeValues = <String>[
+    'OVERALL',
+    'WOODEN_SPOON',
+    'GROUP_PHASE',
+    'KNOCKOUT_PHASE',
+    'FINALIST',
+    'MADAME_IRMA',
+    'GROUP_ORACLE',
+    'KNOCKOUT_ORACLE',
+    'SHARPSHOOTER',
+    'GOAL_DIFF_GURU',
+    'TEAM_SPECIALIST'
+  ];
+  static const metricValues = <String>[
+    'points',
+    'exact',
+    'outcome',
+    'goaldiff'
+  ];
+
+  const LeagueReward({
+    required this.type,
+    this.reward,
+    required this.winners,
+    required this.value,
+    required this.metric,
+    this.teamCode,
+    required this.disabled,
+    required this.youHold,
+  });
+
+  factory LeagueReward.fromJson(Map<String, dynamic> json) => LeagueReward(
+        type: json['type'] as String,
+        reward: json['reward'] == null
+            ? null
+            : Reward.fromJson(json['reward'] as Map<String, dynamic>),
+        winners: (json['winners'] as List)
+            .map((e) => LeagueRewardWinner.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        value: (json['value'] as num).toDouble(),
+        metric: json['metric'] as String,
+        teamCode: json['teamCode'] as String?,
+        disabled: json['disabled'] as bool,
+        youHold: json['youHold'] as bool,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'type': type,
+        'reward': reward?.toJson(),
+        'winners': winners.map((e) => e.toJson()).toList(),
+        'value': value,
+        'metric': metric,
+        'teamCode': teamCode,
+        'disabled': disabled,
+        'youHold': youHold,
+      };
+}
+
+class LeagueRewardWinner {
+  final String userId;
+  final String displayName;
+
+  const LeagueRewardWinner({
+    required this.userId,
+    required this.displayName,
+  });
+
+  factory LeagueRewardWinner.fromJson(Map<String, dynamic> json) =>
+      LeagueRewardWinner(
+        userId: json['userId'] as String,
+        displayName: json['displayName'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'userId': userId,
+        'displayName': displayName,
+      };
+}
+
+class LeaguesResponse {
+  final List<LeaguesResponseLeague> leagues;
+
+  const LeaguesResponse({
+    required this.leagues,
+  });
+
+  factory LeaguesResponse.fromJson(Map<String, dynamic> json) =>
+      LeaguesResponse(
+        leagues: (json['leagues'] as List)
+            .map((e) =>
+                LeaguesResponseLeague.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'leagues': leagues.map((e) => e.toJson()).toList(),
+      };
+}
+
+class LeaguesResponseLeague {
   final String id;
   final String name;
 
@@ -1715,7 +2820,11 @@ class League2 {
   final Competition competition;
   final String? joinCode;
 
-  const League2({
+  static const visibilityValues = <String>['PRIVATE', 'PUBLIC'];
+  static const modeValues = <String>['NORMAL', 'EASY', 'HARD', 'HARDCORE'];
+  static const roleValues = <String>['OWNER', 'MODERATOR', 'MEMBER'];
+
+  const LeaguesResponseLeague({
     required this.id,
     required this.name,
     required this.visibility,
@@ -1729,7 +2838,8 @@ class League2 {
     this.joinCode,
   });
 
-  factory League2.fromJson(Map<String, dynamic> json) => League2(
+  factory LeaguesResponseLeague.fromJson(Map<String, dynamic> json) =>
+      LeaguesResponseLeague(
         id: json['id'] as String,
         name: json['name'] as String,
         visibility: json['visibility'] as String,
@@ -1755,236 +2865,7 @@ class League2 {
         'memberCount': memberCount,
         'chatEnabled': chatEnabled,
         'competition': competition.toJson(),
-        'joinCode': joinCode,
-      };
-}
-
-class League3 {
-  final String id;
-  final String name;
-  final double memberCount;
-
-  const League3({
-    required this.id,
-    required this.name,
-    required this.memberCount,
-  });
-
-  factory League3.fromJson(Map<String, dynamic> json) => League3(
-        id: json['id'] as String,
-        name: json['name'] as String,
-        memberCount: (json['memberCount'] as num).toDouble(),
-      );
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'memberCount': memberCount,
-      };
-}
-
-class League4 {
-  final String id;
-  final String name;
-
-  /// One of: PRIVATE, PUBLIC.
-  final String visibility;
-  final String? description;
-
-  /// One of: NORMAL, EASY, HARD, HARDCORE.
-  final String mode;
-  final double? lives;
-
-  /// One of: OWNER, MODERATOR, MEMBER.
-  final String? role;
-  final double memberCount;
-  final Competition2? competition;
-  final String? joinCode;
-
-  const League4({
-    required this.id,
-    required this.name,
-    required this.visibility,
-    this.description,
-    required this.mode,
-    this.lives,
-    this.role,
-    required this.memberCount,
-    this.competition,
-    this.joinCode,
-  });
-
-  factory League4.fromJson(Map<String, dynamic> json) => League4(
-        id: json['id'] as String,
-        name: json['name'] as String,
-        visibility: json['visibility'] as String,
-        description: json['description'] as String?,
-        mode: json['mode'] as String,
-        lives: (json['lives'] as num?)?.toDouble(),
-        role: json['role'] as String?,
-        memberCount: (json['memberCount'] as num).toDouble(),
-        competition: json['competition'] == null
-            ? null
-            : Competition2.fromJson(
-                json['competition'] as Map<String, dynamic>),
-        joinCode: json['joinCode'] as String?,
-      );
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'visibility': visibility,
-        'description': description,
-        'mode': mode,
-        'lives': lives,
-        'role': role,
-        'memberCount': memberCount,
-        'competition': competition?.toJson(),
-        'joinCode': joinCode,
-      };
-}
-
-class League5 {
-  final String id;
-  final String name;
-
-  /// One of: PRIVATE, PUBLIC.
-  final String visibility;
-
-  /// One of: NORMAL, EASY, HARD, HARDCORE.
-  final String mode;
-  final double? lives;
-
-  /// One of: true.
-  final bool picksSynced;
-  final String joinCode;
-
-  /// One of: OWNER.
-  final String role;
-
-  /// One of: 1.
-  final double memberCount;
-  final Competition competition;
-
-  const League5({
-    required this.id,
-    required this.name,
-    required this.visibility,
-    required this.mode,
-    this.lives,
-    required this.picksSynced,
-    required this.joinCode,
-    required this.role,
-    required this.memberCount,
-    required this.competition,
-  });
-
-  factory League5.fromJson(Map<String, dynamic> json) => League5(
-        id: json['id'] as String,
-        name: json['name'] as String,
-        visibility: json['visibility'] as String,
-        mode: json['mode'] as String,
-        lives: (json['lives'] as num?)?.toDouble(),
-        picksSynced: json['picksSynced'] as bool,
-        joinCode: json['joinCode'] as String,
-        role: json['role'] as String,
-        memberCount: (json['memberCount'] as num).toDouble(),
-        competition:
-            Competition.fromJson(json['competition'] as Map<String, dynamic>),
-      );
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'visibility': visibility,
-        'mode': mode,
-        'lives': lives,
-        'picksSynced': picksSynced,
-        'joinCode': joinCode,
-        'role': role,
-        'memberCount': memberCount,
-        'competition': competition.toJson(),
-      };
-}
-
-class League6 {
-  final String id;
-  final String name;
-
-  const League6({
-    required this.id,
-    required this.name,
-  });
-
-  factory League6.fromJson(Map<String, dynamic> json) => League6(
-        id: json['id'] as String,
-        name: json['name'] as String,
-      );
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-      };
-}
-
-class LeagueDetailResponse {
-  final League4 league;
-  final List<Member> members;
-
-  const LeagueDetailResponse({
-    required this.league,
-    required this.members,
-  });
-
-  factory LeagueDetailResponse.fromJson(Map<String, dynamic> json) =>
-      LeagueDetailResponse(
-        league: League4.fromJson(json['league'] as Map<String, dynamic>),
-        members: (json['members'] as List)
-            .map((e) => Member.fromJson(e as Map<String, dynamic>))
-            .toList(),
-      );
-
-  Map<String, dynamic> toJson() => {
-        'league': league.toJson(),
-        'members': members.map((e) => e.toJson()).toList(),
-      };
-}
-
-class LeagueInvitesResponse {
-  final List<Invite> invites;
-
-  const LeagueInvitesResponse({
-    required this.invites,
-  });
-
-  factory LeagueInvitesResponse.fromJson(Map<String, dynamic> json) =>
-      LeagueInvitesResponse(
-        invites: (json['invites'] as List)
-            .map((e) => Invite.fromJson(e as Map<String, dynamic>))
-            .toList(),
-      );
-
-  Map<String, dynamic> toJson() => {
-        'invites': invites.map((e) => e.toJson()).toList(),
-      };
-}
-
-class LeaguesResponse {
-  final List<League2> leagues;
-
-  const LeaguesResponse({
-    required this.leagues,
-  });
-
-  factory LeaguesResponse.fromJson(Map<String, dynamic> json) =>
-      LeaguesResponse(
-        leagues: (json['leagues'] as List)
-            .map((e) => League2.fromJson(e as Map<String, dynamic>))
-            .toList(),
-      );
-
-  Map<String, dynamic> toJson() => {
-        'leagues': leagues.map((e) => e.toJson()).toList(),
+        if (joinCode != null) 'joinCode': joinCode,
       };
 }
 
@@ -2033,6 +2914,8 @@ class Match {
   final String? winner;
   final String status;
   final String kickoffTime;
+
+  static const winnerValues = <String>['HOME', 'AWAY'];
 
   const Match({
     this.id,
@@ -2098,226 +2981,8 @@ class Match {
       };
 }
 
-class Match2 {
-  final String id;
-  final String competitionId;
-  final String providerMatchId;
-
-  /// One of: GROUP, R32, R16, QF, SF, THIRD_PLACE, FINAL.
-  final String stage;
-  final String? group;
-  final String homeTeam;
-  final String awayTeam;
-  final String? homeTeamCode;
-  final String? awayTeamCode;
-  final DateTime kickoffTime;
-
-  /// One of: SCHEDULED, LIVE, PAUSED, FINISHED, POSTPONED, CANCELLED, SUSPENDED, AWARDED, INTERRUPTED.
-  final String status;
-  final int? fullTimeHome;
-  final int? fullTimeAway;
-  final int? penaltiesHome;
-  final int? penaltiesAway;
-
-  /// One of: HOME, DRAW, AWAY.
-  final String? winner;
-
-  /// One of: PENDING, SCORED, VOID, STALE.
-  final String scoringState;
-  final String roundId;
-  final String roundLabel;
-  final int? matchday;
-  final int roundSortOrder;
-  final Odd? odds;
-  final bool isLocked;
-
-  const Match2({
-    required this.id,
-    required this.competitionId,
-    required this.providerMatchId,
-    required this.stage,
-    this.group,
-    required this.homeTeam,
-    required this.awayTeam,
-    this.homeTeamCode,
-    this.awayTeamCode,
-    required this.kickoffTime,
-    required this.status,
-    this.fullTimeHome,
-    this.fullTimeAway,
-    this.penaltiesHome,
-    this.penaltiesAway,
-    this.winner,
-    required this.scoringState,
-    required this.roundId,
-    required this.roundLabel,
-    this.matchday,
-    required this.roundSortOrder,
-    this.odds,
-    required this.isLocked,
-  });
-
-  factory Match2.fromJson(Map<String, dynamic> json) => Match2(
-        id: json['id'] as String,
-        competitionId: json['competitionId'] as String,
-        providerMatchId: json['providerMatchId'] as String,
-        stage: json['stage'] as String,
-        group: json['group'] as String?,
-        homeTeam: json['homeTeam'] as String,
-        awayTeam: json['awayTeam'] as String,
-        homeTeamCode: json['homeTeamCode'] as String?,
-        awayTeamCode: json['awayTeamCode'] as String?,
-        kickoffTime: DateTime.parse(json['kickoffTime'] as String),
-        status: json['status'] as String,
-        fullTimeHome: json['fullTimeHome'] as int?,
-        fullTimeAway: json['fullTimeAway'] as int?,
-        penaltiesHome: json['penaltiesHome'] as int?,
-        penaltiesAway: json['penaltiesAway'] as int?,
-        winner: json['winner'] as String?,
-        scoringState: json['scoringState'] as String,
-        roundId: json['roundId'] as String,
-        roundLabel: json['roundLabel'] as String,
-        matchday: json['matchday'] as int?,
-        roundSortOrder: json['roundSortOrder'] as int,
-        odds: json['odds'] == null
-            ? null
-            : Odd.fromJson(json['odds'] as Map<String, dynamic>),
-        isLocked: json['isLocked'] as bool,
-      );
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'competitionId': competitionId,
-        'providerMatchId': providerMatchId,
-        'stage': stage,
-        'group': group,
-        'homeTeam': homeTeam,
-        'awayTeam': awayTeam,
-        'homeTeamCode': homeTeamCode,
-        'awayTeamCode': awayTeamCode,
-        'kickoffTime': kickoffTime.toIso8601String(),
-        'status': status,
-        'fullTimeHome': fullTimeHome,
-        'fullTimeAway': fullTimeAway,
-        'penaltiesHome': penaltiesHome,
-        'penaltiesAway': penaltiesAway,
-        'winner': winner,
-        'scoringState': scoringState,
-        'roundId': roundId,
-        'roundLabel': roundLabel,
-        'matchday': matchday,
-        'roundSortOrder': roundSortOrder,
-        'odds': odds?.toJson(),
-        'isLocked': isLocked,
-      };
-}
-
-class Match3 {
-  final String id;
-  final String competitionId;
-  final String providerMatchId;
-
-  /// One of: GROUP, R32, R16, QF, SF, THIRD_PLACE, FINAL.
-  final String stage;
-  final String? group;
-  final String homeTeam;
-  final String awayTeam;
-  final String? homeTeamCode;
-  final String? awayTeamCode;
-  final DateTime kickoffTime;
-
-  /// One of: SCHEDULED, LIVE, PAUSED, FINISHED, POSTPONED, CANCELLED, SUSPENDED, AWARDED, INTERRUPTED.
-  final String status;
-  final int? fullTimeHome;
-  final int? fullTimeAway;
-  final int? penaltiesHome;
-  final int? penaltiesAway;
-
-  /// One of: HOME, DRAW, AWAY.
-  final String? winner;
-
-  /// One of: PENDING, SCORED, VOID, STALE.
-  final String scoringState;
-  final String roundId;
-  final String roundLabel;
-  final int? matchday;
-  final int roundSortOrder;
-
-  const Match3({
-    required this.id,
-    required this.competitionId,
-    required this.providerMatchId,
-    required this.stage,
-    this.group,
-    required this.homeTeam,
-    required this.awayTeam,
-    this.homeTeamCode,
-    this.awayTeamCode,
-    required this.kickoffTime,
-    required this.status,
-    this.fullTimeHome,
-    this.fullTimeAway,
-    this.penaltiesHome,
-    this.penaltiesAway,
-    this.winner,
-    required this.scoringState,
-    required this.roundId,
-    required this.roundLabel,
-    this.matchday,
-    required this.roundSortOrder,
-  });
-
-  factory Match3.fromJson(Map<String, dynamic> json) => Match3(
-        id: json['id'] as String,
-        competitionId: json['competitionId'] as String,
-        providerMatchId: json['providerMatchId'] as String,
-        stage: json['stage'] as String,
-        group: json['group'] as String?,
-        homeTeam: json['homeTeam'] as String,
-        awayTeam: json['awayTeam'] as String,
-        homeTeamCode: json['homeTeamCode'] as String?,
-        awayTeamCode: json['awayTeamCode'] as String?,
-        kickoffTime: DateTime.parse(json['kickoffTime'] as String),
-        status: json['status'] as String,
-        fullTimeHome: json['fullTimeHome'] as int?,
-        fullTimeAway: json['fullTimeAway'] as int?,
-        penaltiesHome: json['penaltiesHome'] as int?,
-        penaltiesAway: json['penaltiesAway'] as int?,
-        winner: json['winner'] as String?,
-        scoringState: json['scoringState'] as String,
-        roundId: json['roundId'] as String,
-        roundLabel: json['roundLabel'] as String,
-        matchday: json['matchday'] as int?,
-        roundSortOrder: json['roundSortOrder'] as int,
-      );
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'competitionId': competitionId,
-        'providerMatchId': providerMatchId,
-        'stage': stage,
-        'group': group,
-        'homeTeam': homeTeam,
-        'awayTeam': awayTeam,
-        'homeTeamCode': homeTeamCode,
-        'awayTeamCode': awayTeamCode,
-        'kickoffTime': kickoffTime.toIso8601String(),
-        'status': status,
-        'fullTimeHome': fullTimeHome,
-        'fullTimeAway': fullTimeAway,
-        'penaltiesHome': penaltiesHome,
-        'penaltiesAway': penaltiesAway,
-        'winner': winner,
-        'scoringState': scoringState,
-        'roundId': roundId,
-        'roundLabel': roundLabel,
-        'matchday': matchday,
-        'roundSortOrder': roundSortOrder,
-      };
-}
-
 class MatchDetailResponse {
-  final Match3 match;
+  final MatchDetailResponseMatch match;
   final MyPrediction? myPrediction;
   final Odd? odds;
   final bool isLocked;
@@ -2331,7 +2996,8 @@ class MatchDetailResponse {
 
   factory MatchDetailResponse.fromJson(Map<String, dynamic> json) =>
       MatchDetailResponse(
-        match: Match3.fromJson(json['match'] as Map<String, dynamic>),
+        match: MatchDetailResponseMatch.fromJson(
+            json['match'] as Map<String, dynamic>),
         myPrediction: json['myPrediction'] == null
             ? null
             : MyPrediction.fromJson(
@@ -2350,13 +3016,146 @@ class MatchDetailResponse {
       };
 }
 
+class MatchDetailResponseMatch {
+  final String id;
+  final String competitionId;
+  final String providerMatchId;
+
+  /// One of: GROUP, R32, R16, QF, SF, THIRD_PLACE, FINAL.
+  final String stage;
+  final String? group;
+  final String homeTeam;
+  final String awayTeam;
+  final String? homeTeamCode;
+  final String? awayTeamCode;
+  final DateTime kickoffTime;
+
+  /// One of: SCHEDULED, LIVE, PAUSED, FINISHED, POSTPONED, CANCELLED, SUSPENDED, AWARDED, INTERRUPTED.
+  final String status;
+  final int? fullTimeHome;
+  final int? fullTimeAway;
+  final int? penaltiesHome;
+  final int? penaltiesAway;
+
+  /// One of: HOME, DRAW, AWAY.
+  final String? winner;
+
+  /// One of: PENDING, SCORED, VOID, STALE.
+  final String scoringState;
+  final String roundId;
+  final String roundLabel;
+  final int? matchday;
+  final int roundSortOrder;
+
+  static const stageValues = <String>[
+    'GROUP',
+    'R32',
+    'R16',
+    'QF',
+    'SF',
+    'THIRD_PLACE',
+    'FINAL'
+  ];
+  static const statusValues = <String>[
+    'SCHEDULED',
+    'LIVE',
+    'PAUSED',
+    'FINISHED',
+    'POSTPONED',
+    'CANCELLED',
+    'SUSPENDED',
+    'AWARDED',
+    'INTERRUPTED'
+  ];
+  static const winnerValues = <String>['HOME', 'DRAW', 'AWAY'];
+  static const scoringStateValues = <String>[
+    'PENDING',
+    'SCORED',
+    'VOID',
+    'STALE'
+  ];
+
+  const MatchDetailResponseMatch({
+    required this.id,
+    required this.competitionId,
+    required this.providerMatchId,
+    required this.stage,
+    this.group,
+    required this.homeTeam,
+    required this.awayTeam,
+    this.homeTeamCode,
+    this.awayTeamCode,
+    required this.kickoffTime,
+    required this.status,
+    this.fullTimeHome,
+    this.fullTimeAway,
+    this.penaltiesHome,
+    this.penaltiesAway,
+    this.winner,
+    required this.scoringState,
+    required this.roundId,
+    required this.roundLabel,
+    this.matchday,
+    required this.roundSortOrder,
+  });
+
+  factory MatchDetailResponseMatch.fromJson(Map<String, dynamic> json) =>
+      MatchDetailResponseMatch(
+        id: json['id'] as String,
+        competitionId: json['competitionId'] as String,
+        providerMatchId: json['providerMatchId'] as String,
+        stage: json['stage'] as String,
+        group: json['group'] as String?,
+        homeTeam: json['homeTeam'] as String,
+        awayTeam: json['awayTeam'] as String,
+        homeTeamCode: json['homeTeamCode'] as String?,
+        awayTeamCode: json['awayTeamCode'] as String?,
+        kickoffTime: DateTime.parse(json['kickoffTime'] as String),
+        status: json['status'] as String,
+        fullTimeHome: json['fullTimeHome'] as int?,
+        fullTimeAway: json['fullTimeAway'] as int?,
+        penaltiesHome: json['penaltiesHome'] as int?,
+        penaltiesAway: json['penaltiesAway'] as int?,
+        winner: json['winner'] as String?,
+        scoringState: json['scoringState'] as String,
+        roundId: json['roundId'] as String,
+        roundLabel: json['roundLabel'] as String,
+        matchday: json['matchday'] as int?,
+        roundSortOrder: json['roundSortOrder'] as int,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'competitionId': competitionId,
+        'providerMatchId': providerMatchId,
+        'stage': stage,
+        'group': group,
+        'homeTeam': homeTeam,
+        'awayTeam': awayTeam,
+        'homeTeamCode': homeTeamCode,
+        'awayTeamCode': awayTeamCode,
+        'kickoffTime': kickoffTime.toIso8601String(),
+        'status': status,
+        'fullTimeHome': fullTimeHome,
+        'fullTimeAway': fullTimeAway,
+        'penaltiesHome': penaltiesHome,
+        'penaltiesAway': penaltiesAway,
+        'winner': winner,
+        'scoringState': scoringState,
+        'roundId': roundId,
+        'roundLabel': roundLabel,
+        'matchday': matchday,
+        'roundSortOrder': roundSortOrder,
+      };
+}
+
 class MatchInsightsResponse {
-  final List<RowData>? standings;
-  final FormData form;
+  final List<GroupRow>? standings;
+  final MatchInsightsResponseForm form;
   final Next next;
   final List<HeadToHead> headToHead;
   final Possession possession;
-  final List<Goal2> goals;
+  final List<MatchInsightsResponseGoal> goals;
   final H2hAll? h2hAll;
   final FormAll? formAll;
 
@@ -2376,9 +3175,10 @@ class MatchInsightsResponse {
         standings: json['standings'] == null
             ? null
             : (json['standings'] as List)
-                .map((e) => RowData.fromJson(e as Map<String, dynamic>))
+                .map((e) => GroupRow.fromJson(e as Map<String, dynamic>))
                 .toList(),
-        form: FormData.fromJson(json['form'] as Map<String, dynamic>),
+        form: MatchInsightsResponseForm.fromJson(
+            json['form'] as Map<String, dynamic>),
         next: Next.fromJson(json['next'] as Map<String, dynamic>),
         headToHead: (json['headToHead'] as List)
             .map((e) => HeadToHead.fromJson(e as Map<String, dynamic>))
@@ -2386,7 +3186,8 @@ class MatchInsightsResponse {
         possession:
             Possession.fromJson(json['possession'] as Map<String, dynamic>),
         goals: (json['goals'] as List)
-            .map((e) => Goal2.fromJson(e as Map<String, dynamic>))
+            .map((e) =>
+                MatchInsightsResponseGoal.fromJson(e as Map<String, dynamic>))
             .toList(),
         h2hAll: json['h2hAll'] == null
             ? null
@@ -2408,12 +3209,118 @@ class MatchInsightsResponse {
       };
 }
 
+class MatchInsightsResponseForm {
+  final List<MatchInsightsResponseFormHome> home;
+  final List<MatchInsightsResponseFormHome> away;
+
+  const MatchInsightsResponseForm({
+    required this.home,
+    required this.away,
+  });
+
+  factory MatchInsightsResponseForm.fromJson(Map<String, dynamic> json) =>
+      MatchInsightsResponseForm(
+        home: (json['home'] as List)
+            .map((e) => MatchInsightsResponseFormHome.fromJson(
+                e as Map<String, dynamic>))
+            .toList(),
+        away: (json['away'] as List)
+            .map((e) => MatchInsightsResponseFormHome.fromJson(
+                e as Map<String, dynamic>))
+            .toList(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'home': home.map((e) => e.toJson()).toList(),
+        'away': away.map((e) => e.toJson()).toList(),
+      };
+}
+
+class MatchInsightsResponseFormHome {
+  final String matchId;
+
+  /// One of: W, D, L.
+  final String result;
+  final String opponent;
+  final String score;
+
+  static const resultValues = <String>['W', 'D', 'L'];
+
+  const MatchInsightsResponseFormHome({
+    required this.matchId,
+    required this.result,
+    required this.opponent,
+    required this.score,
+  });
+
+  factory MatchInsightsResponseFormHome.fromJson(Map<String, dynamic> json) =>
+      MatchInsightsResponseFormHome(
+        matchId: json['matchId'] as String,
+        result: json['result'] as String,
+        opponent: json['opponent'] as String,
+        score: json['score'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'matchId': matchId,
+        'result': result,
+        'opponent': opponent,
+        'score': score,
+      };
+}
+
+class MatchInsightsResponseGoal {
+  /// One of: HOME, AWAY.
+  final String side;
+  final String teamName;
+  final String? teamCode;
+  final String playerName;
+  final String? minute;
+  final bool ownGoal;
+  final String? assistPlayerName;
+
+  static const sideValues = <String>['HOME', 'AWAY'];
+
+  const MatchInsightsResponseGoal({
+    required this.side,
+    required this.teamName,
+    this.teamCode,
+    required this.playerName,
+    this.minute,
+    required this.ownGoal,
+    this.assistPlayerName,
+  });
+
+  factory MatchInsightsResponseGoal.fromJson(Map<String, dynamic> json) =>
+      MatchInsightsResponseGoal(
+        side: json['side'] as String,
+        teamName: json['teamName'] as String,
+        teamCode: json['teamCode'] as String?,
+        playerName: json['playerName'] as String,
+        minute: json['minute'] as String?,
+        ownGoal: json['ownGoal'] as bool,
+        assistPlayerName: json['assistPlayerName'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'side': side,
+        'teamName': teamName,
+        'teamCode': teamCode,
+        'playerName': playerName,
+        'minute': minute,
+        'ownGoal': ownGoal,
+        'assistPlayerName': assistPlayerName,
+      };
+}
+
 class MatchLeagueStandingsResponse {
   /// One of: upcoming, live, final.
   final String scope;
-  final List<RowData3> rows;
+  final List<MatchLeagueStandingsResponseRow> rows;
   final double notPredicted;
   final League? league;
+
+  static const scopeValues = <String>['upcoming', 'live', 'final'];
 
   const MatchLeagueStandingsResponse({
     required this.scope,
@@ -2426,7 +3333,8 @@ class MatchLeagueStandingsResponse {
       MatchLeagueStandingsResponse(
         scope: json['scope'] as String,
         rows: (json['rows'] as List)
-            .map((e) => RowData3.fromJson(e as Map<String, dynamic>))
+            .map((e) => MatchLeagueStandingsResponseRow.fromJson(
+                e as Map<String, dynamic>))
             .toList(),
         notPredicted: (json['notPredicted'] as num).toDouble(),
         league: json['league'] == null
@@ -2438,7 +3346,60 @@ class MatchLeagueStandingsResponse {
         'scope': scope,
         'rows': rows.map((e) => e.toJson()).toList(),
         'notPredicted': notPredicted,
-        'league': league?.toJson(),
+        if (league != null) 'league': league?.toJson(),
+      };
+}
+
+class MatchLeagueStandingsResponseRow {
+  final double rank;
+  final String userId;
+  final String displayName;
+  final String? image;
+  final double homeGoals;
+  final double awayGoals;
+  final bool isJoker;
+  final double points;
+
+  /// One of: EXACT, DIFF, OUTCOME, MISS.
+  final String? baseTier;
+
+  static const baseTierValues = <String>['EXACT', 'DIFF', 'OUTCOME', 'MISS'];
+
+  const MatchLeagueStandingsResponseRow({
+    required this.rank,
+    required this.userId,
+    required this.displayName,
+    this.image,
+    required this.homeGoals,
+    required this.awayGoals,
+    required this.isJoker,
+    required this.points,
+    this.baseTier,
+  });
+
+  factory MatchLeagueStandingsResponseRow.fromJson(Map<String, dynamic> json) =>
+      MatchLeagueStandingsResponseRow(
+        rank: (json['rank'] as num).toDouble(),
+        userId: json['userId'] as String,
+        displayName: json['displayName'] as String,
+        image: json['image'] as String?,
+        homeGoals: (json['homeGoals'] as num).toDouble(),
+        awayGoals: (json['awayGoals'] as num).toDouble(),
+        isJoker: json['isJoker'] as bool,
+        points: (json['points'] as num).toDouble(),
+        baseTier: json['baseTier'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'rank': rank,
+        'userId': userId,
+        'displayName': displayName,
+        'image': image,
+        'homeGoals': homeGoals,
+        'awayGoals': awayGoals,
+        'isJoker': isJoker,
+        'points': points,
+        'baseTier': baseTier,
       };
 }
 
@@ -2470,7 +3431,7 @@ class MatchLiveDetailResponse {
 
   factory MatchLiveDetailResponse.fromJson(Map<String, dynamic> json) =>
       MatchLiveDetailResponse(
-        detail: (json['detail'] as Map<String, dynamic>).cast(),
+        detail: Map<String, dynamic>.from(json['detail'] as Map),
       );
 
   Map<String, dynamic> toJson() => {
@@ -2498,7 +3459,7 @@ class MatchMediaResponse {
 }
 
 class MatchTimelineResponse {
-  final Map<String, dynamic> events;
+  final List<Event> events;
 
   const MatchTimelineResponse({
     required this.events,
@@ -2506,17 +3467,19 @@ class MatchTimelineResponse {
 
   factory MatchTimelineResponse.fromJson(Map<String, dynamic> json) =>
       MatchTimelineResponse(
-        events: (json['events'] as Map<String, dynamic>).cast(),
+        events: (json['events'] as List)
+            .map((e) => Event.fromJson(e as Map<String, dynamic>))
+            .toList(),
       );
 
   Map<String, dynamic> toJson() => {
-        'events': events,
+        'events': events.map((e) => e.toJson()).toList(),
       };
 }
 
 class MatchesResponse {
-  final Competition2? competition;
-  final List<Match2> matches;
+  final MatchesResponseCompetition? competition;
+  final List<MatchesResponseMatch> matches;
 
   const MatchesResponse({
     this.competition,
@@ -2527,16 +3490,253 @@ class MatchesResponse {
       MatchesResponse(
         competition: json['competition'] == null
             ? null
-            : Competition2.fromJson(
+            : MatchesResponseCompetition.fromJson(
                 json['competition'] as Map<String, dynamic>),
         matches: (json['matches'] as List)
-            .map((e) => Match2.fromJson(e as Map<String, dynamic>))
+            .map(
+                (e) => MatchesResponseMatch.fromJson(e as Map<String, dynamic>))
             .toList(),
       );
 
   Map<String, dynamic> toJson() => {
         'competition': competition?.toJson(),
         'matches': matches.map((e) => e.toJson()).toList(),
+      };
+}
+
+class MatchesResponseCompetition {
+  final String id;
+  final String slug;
+  final String name;
+
+  const MatchesResponseCompetition({
+    required this.id,
+    required this.slug,
+    required this.name,
+  });
+
+  factory MatchesResponseCompetition.fromJson(Map<String, dynamic> json) =>
+      MatchesResponseCompetition(
+        id: json['id'] as String,
+        slug: json['slug'] as String,
+        name: json['name'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'slug': slug,
+        'name': name,
+      };
+}
+
+class MatchesResponseMatch {
+  final String id;
+  final String competitionId;
+  final String providerMatchId;
+
+  /// One of: GROUP, R32, R16, QF, SF, THIRD_PLACE, FINAL.
+  final String stage;
+  final String? group;
+  final String homeTeam;
+  final String awayTeam;
+  final String? homeTeamCode;
+  final String? awayTeamCode;
+  final DateTime kickoffTime;
+
+  /// One of: SCHEDULED, LIVE, PAUSED, FINISHED, POSTPONED, CANCELLED, SUSPENDED, AWARDED, INTERRUPTED.
+  final String status;
+  final int? fullTimeHome;
+  final int? fullTimeAway;
+  final int? penaltiesHome;
+  final int? penaltiesAway;
+
+  /// One of: HOME, DRAW, AWAY.
+  final String? winner;
+
+  /// One of: PENDING, SCORED, VOID, STALE.
+  final String scoringState;
+  final String roundId;
+  final String roundLabel;
+  final int? matchday;
+  final int roundSortOrder;
+  final Odd? odds;
+  final bool isLocked;
+
+  static const stageValues = <String>[
+    'GROUP',
+    'R32',
+    'R16',
+    'QF',
+    'SF',
+    'THIRD_PLACE',
+    'FINAL'
+  ];
+  static const statusValues = <String>[
+    'SCHEDULED',
+    'LIVE',
+    'PAUSED',
+    'FINISHED',
+    'POSTPONED',
+    'CANCELLED',
+    'SUSPENDED',
+    'AWARDED',
+    'INTERRUPTED'
+  ];
+  static const winnerValues = <String>['HOME', 'DRAW', 'AWAY'];
+  static const scoringStateValues = <String>[
+    'PENDING',
+    'SCORED',
+    'VOID',
+    'STALE'
+  ];
+
+  const MatchesResponseMatch({
+    required this.id,
+    required this.competitionId,
+    required this.providerMatchId,
+    required this.stage,
+    this.group,
+    required this.homeTeam,
+    required this.awayTeam,
+    this.homeTeamCode,
+    this.awayTeamCode,
+    required this.kickoffTime,
+    required this.status,
+    this.fullTimeHome,
+    this.fullTimeAway,
+    this.penaltiesHome,
+    this.penaltiesAway,
+    this.winner,
+    required this.scoringState,
+    required this.roundId,
+    required this.roundLabel,
+    this.matchday,
+    required this.roundSortOrder,
+    this.odds,
+    required this.isLocked,
+  });
+
+  factory MatchesResponseMatch.fromJson(Map<String, dynamic> json) =>
+      MatchesResponseMatch(
+        id: json['id'] as String,
+        competitionId: json['competitionId'] as String,
+        providerMatchId: json['providerMatchId'] as String,
+        stage: json['stage'] as String,
+        group: json['group'] as String?,
+        homeTeam: json['homeTeam'] as String,
+        awayTeam: json['awayTeam'] as String,
+        homeTeamCode: json['homeTeamCode'] as String?,
+        awayTeamCode: json['awayTeamCode'] as String?,
+        kickoffTime: DateTime.parse(json['kickoffTime'] as String),
+        status: json['status'] as String,
+        fullTimeHome: json['fullTimeHome'] as int?,
+        fullTimeAway: json['fullTimeAway'] as int?,
+        penaltiesHome: json['penaltiesHome'] as int?,
+        penaltiesAway: json['penaltiesAway'] as int?,
+        winner: json['winner'] as String?,
+        scoringState: json['scoringState'] as String,
+        roundId: json['roundId'] as String,
+        roundLabel: json['roundLabel'] as String,
+        matchday: json['matchday'] as int?,
+        roundSortOrder: json['roundSortOrder'] as int,
+        odds: json['odds'] == null
+            ? null
+            : Odd.fromJson(json['odds'] as Map<String, dynamic>),
+        isLocked: json['isLocked'] as bool,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'competitionId': competitionId,
+        'providerMatchId': providerMatchId,
+        'stage': stage,
+        'group': group,
+        'homeTeam': homeTeam,
+        'awayTeam': awayTeam,
+        'homeTeamCode': homeTeamCode,
+        'awayTeamCode': awayTeamCode,
+        'kickoffTime': kickoffTime.toIso8601String(),
+        'status': status,
+        'fullTimeHome': fullTimeHome,
+        'fullTimeAway': fullTimeAway,
+        'penaltiesHome': penaltiesHome,
+        'penaltiesAway': penaltiesAway,
+        'winner': winner,
+        'scoringState': scoringState,
+        'roundId': roundId,
+        'roundLabel': roundLabel,
+        'matchday': matchday,
+        'roundSortOrder': roundSortOrder,
+        'odds': odds?.toJson(),
+        'isLocked': isLocked,
+      };
+}
+
+class MeReward {
+  final String leagueId;
+  final String leagueName;
+  final MeRewardReward reward;
+  final String type;
+  final String? teamCode;
+  final bool youHold;
+
+  const MeReward({
+    required this.leagueId,
+    required this.leagueName,
+    required this.reward,
+    required this.type,
+    this.teamCode,
+    required this.youHold,
+  });
+
+  factory MeReward.fromJson(Map<String, dynamic> json) => MeReward(
+        leagueId: json['leagueId'] as String,
+        leagueName: json['leagueName'] as String,
+        reward: MeRewardReward.fromJson(json['reward'] as Map<String, dynamic>),
+        type: json['type'] as String,
+        teamCode: json['teamCode'] as String?,
+        youHold: json['youHold'] as bool,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'leagueId': leagueId,
+        'leagueName': leagueName,
+        'reward': reward.toJson(),
+        'type': type,
+        'teamCode': teamCode,
+        'youHold': youHold,
+      };
+}
+
+class MeRewardReward {
+  final String type;
+  final String label;
+  final String? imageUrl;
+  final String? note;
+  final String? link;
+
+  const MeRewardReward({
+    required this.type,
+    required this.label,
+    this.imageUrl,
+    this.note,
+    this.link,
+  });
+
+  factory MeRewardReward.fromJson(Map<String, dynamic> json) => MeRewardReward(
+        type: json['type'] as String,
+        label: json['label'] as String,
+        imageUrl: json['imageUrl'] as String?,
+        note: json['note'] as String?,
+        link: json['link'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'type': type,
+        'label': label,
+        'imageUrl': imageUrl,
+        'note': note,
+        'link': link,
       };
 }
 
@@ -2569,6 +3769,8 @@ class Media {
   final bool embeddable;
   final bool? sandbox;
   final String? allow;
+
+  static const kindValues = <String>['LIVE', 'REPLAY', 'HIGHLIGHTS'];
 
   const Media({
     required this.id,
@@ -2654,6 +3856,8 @@ class Member {
   final String role;
   final DateTime joinedAt;
 
+  static const roleValues = <String>['OWNER', 'MODERATOR', 'MEMBER'];
+
   const Member({
     required this.userId,
     required this.name,
@@ -2700,6 +3904,16 @@ class Message {
   /// One of: FIRE, GOAL, WOW, LAUGH, SAD, ANGRY.
   final String? myReaction;
   final double threadCount;
+
+  static const moderationValues = <String>['VISIBLE', 'PENDING', 'REMOVED'];
+  static const myReactionValues = <String>[
+    'FIRE',
+    'GOAL',
+    'WOW',
+    'LAUGH',
+    'SAD',
+    'ANGRY'
+  ];
 
   const Message({
     required this.id,
@@ -2792,6 +4006,8 @@ class ModeBoardResponse {
   final String mode;
   final double? lives;
 
+  static const modeValues = <String>['NORMAL', 'EASY', 'HARD', 'HARDCORE'];
+
   const ModeBoardResponse({
     required this.board,
     required this.mode,
@@ -2876,70 +4092,6 @@ class MyPick {
       };
 }
 
-class MyPick2 {
-  final String id;
-  final String userId;
-  final String competitionId;
-  final String playerId;
-  final String playerName;
-  final String? teamCode;
-  final String teamName;
-  final int awardedPoints;
-  final bool repicked;
-  final String? originalPlayerName;
-  final String? originalTeamCode;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-
-  const MyPick2({
-    required this.id,
-    required this.userId,
-    required this.competitionId,
-    required this.playerId,
-    required this.playerName,
-    this.teamCode,
-    required this.teamName,
-    required this.awardedPoints,
-    required this.repicked,
-    this.originalPlayerName,
-    this.originalTeamCode,
-    required this.createdAt,
-    required this.updatedAt,
-  });
-
-  factory MyPick2.fromJson(Map<String, dynamic> json) => MyPick2(
-        id: json['id'] as String,
-        userId: json['userId'] as String,
-        competitionId: json['competitionId'] as String,
-        playerId: json['playerId'] as String,
-        playerName: json['playerName'] as String,
-        teamCode: json['teamCode'] as String?,
-        teamName: json['teamName'] as String,
-        awardedPoints: json['awardedPoints'] as int,
-        repicked: json['repicked'] as bool,
-        originalPlayerName: json['originalPlayerName'] as String?,
-        originalTeamCode: json['originalTeamCode'] as String?,
-        createdAt: DateTime.parse(json['createdAt'] as String),
-        updatedAt: DateTime.parse(json['updatedAt'] as String),
-      );
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'userId': userId,
-        'competitionId': competitionId,
-        'playerId': playerId,
-        'playerName': playerName,
-        'teamCode': teamCode,
-        'teamName': teamName,
-        'awardedPoints': awardedPoints,
-        'repicked': repicked,
-        'originalPlayerName': originalPlayerName,
-        'originalTeamCode': originalTeamCode,
-        'createdAt': createdAt.toIso8601String(),
-        'updatedAt': updatedAt.toIso8601String(),
-      };
-}
-
 class MyPrediction {
   final String id;
   final String userId;
@@ -2966,6 +4118,9 @@ class MyPrediction {
   final DateTime? scoredAt;
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  static const baseTierValues = <String>['EXACT', 'DIFF', 'OUTCOME', 'MISS'];
+  static const bonusSourceValues = <String>['NONE', 'CROWD', 'ODDS'];
 
   const MyPrediction({
     required this.id,
@@ -3065,8 +4220,8 @@ class MyWrappedKey {
 }
 
 class Next {
-  final List<Home3> home;
-  final List<Home3> away;
+  final List<NextHome> home;
+  final List<NextHome> away;
 
   const Next({
     required this.home,
@@ -3075,10 +4230,10 @@ class Next {
 
   factory Next.fromJson(Map<String, dynamic> json) => Next(
         home: (json['home'] as List)
-            .map((e) => Home3.fromJson(e as Map<String, dynamic>))
+            .map((e) => NextHome.fromJson(e as Map<String, dynamic>))
             .toList(),
         away: (json['away'] as List)
-            .map((e) => Home3.fromJson(e as Map<String, dynamic>))
+            .map((e) => NextHome.fromJson(e as Map<String, dynamic>))
             .toList(),
       );
 
@@ -3088,43 +4243,48 @@ class Next {
       };
 }
 
-class NotificationData {
-  final String id;
+class NextHome {
+  final String matchId;
+  final String opponent;
+  final String? opponentCode;
+  final String kickoffTime;
 
-  /// One of: LEAGUE_JOIN, LEAGUE_ROLE, LEAGUE_REMOVED, PICK_REMINDER, MATCH_RESULT, CHAMPION_RESULT, BEST_SCORER_RESULT, TROPHY_AWARDED, ACHIEVEMENT_UNLOCKED, CHAT_MENTION, DM_MESSAGE, VOICE_MISSED.
-  final String type;
-  final Map<String, dynamic> data;
-  final bool read;
-  final String createdAt;
+  /// One of: W, D, L.
+  final String? result;
+  final String? score;
 
-  const NotificationData({
-    required this.id,
-    required this.type,
-    required this.data,
-    required this.read,
-    required this.createdAt,
+  static const resultValues = <String>['W', 'D', 'L'];
+
+  const NextHome({
+    required this.matchId,
+    required this.opponent,
+    this.opponentCode,
+    required this.kickoffTime,
+    this.result,
+    this.score,
   });
 
-  factory NotificationData.fromJson(Map<String, dynamic> json) =>
-      NotificationData(
-        id: json['id'] as String,
-        type: json['type'] as String,
-        data: (json['data'] as Map<String, dynamic>).cast(),
-        read: json['read'] as bool,
-        createdAt: json['createdAt'] as String,
+  factory NextHome.fromJson(Map<String, dynamic> json) => NextHome(
+        matchId: json['matchId'] as String,
+        opponent: json['opponent'] as String,
+        opponentCode: json['opponentCode'] as String?,
+        kickoffTime: json['kickoffTime'] as String,
+        result: json['result'] as String?,
+        score: json['score'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'type': type,
-        'data': data,
-        'read': read,
-        'createdAt': createdAt,
+        'matchId': matchId,
+        'opponent': opponent,
+        'opponentCode': opponentCode,
+        'kickoffTime': kickoffTime,
+        'result': result,
+        'score': score,
       };
 }
 
 class NotificationsResponse {
-  final List<NotificationData> notifications;
+  final List<NotificationsResponseNotification> notifications;
   final double unreadCount;
 
   const NotificationsResponse({
@@ -3135,7 +4295,8 @@ class NotificationsResponse {
   factory NotificationsResponse.fromJson(Map<String, dynamic> json) =>
       NotificationsResponse(
         notifications: (json['notifications'] as List)
-            .map((e) => NotificationData.fromJson(e as Map<String, dynamic>))
+            .map((e) => NotificationsResponseNotification.fromJson(
+                e as Map<String, dynamic>))
             .toList(),
         unreadCount: (json['unreadCount'] as num).toDouble(),
       );
@@ -3143,6 +4304,57 @@ class NotificationsResponse {
   Map<String, dynamic> toJson() => {
         'notifications': notifications.map((e) => e.toJson()).toList(),
         'unreadCount': unreadCount,
+      };
+}
+
+class NotificationsResponseNotification {
+  final String id;
+
+  /// One of: LEAGUE_JOIN, LEAGUE_ROLE, LEAGUE_REMOVED, PICK_REMINDER, MATCH_RESULT, CHAMPION_RESULT, BEST_SCORER_RESULT, TROPHY_AWARDED, ACHIEVEMENT_UNLOCKED, CHAT_MENTION, DM_MESSAGE, VOICE_MISSED.
+  final String type;
+  final Map<String, dynamic> data;
+  final bool read;
+  final String createdAt;
+
+  static const typeValues = <String>[
+    'LEAGUE_JOIN',
+    'LEAGUE_ROLE',
+    'LEAGUE_REMOVED',
+    'PICK_REMINDER',
+    'MATCH_RESULT',
+    'CHAMPION_RESULT',
+    'BEST_SCORER_RESULT',
+    'TROPHY_AWARDED',
+    'ACHIEVEMENT_UNLOCKED',
+    'CHAT_MENTION',
+    'DM_MESSAGE',
+    'VOICE_MISSED'
+  ];
+
+  const NotificationsResponseNotification({
+    required this.id,
+    required this.type,
+    required this.data,
+    required this.read,
+    required this.createdAt,
+  });
+
+  factory NotificationsResponseNotification.fromJson(
+          Map<String, dynamic> json) =>
+      NotificationsResponseNotification(
+        id: json['id'] as String,
+        type: json['type'] as String,
+        data: Map<String, dynamic>.from(json['data'] as Map),
+        read: json['read'] as bool,
+        createdAt: json['createdAt'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'type': type,
+        'data': data,
+        'read': read,
+        'createdAt': createdAt,
       };
 }
 
@@ -3209,34 +4421,6 @@ class Other {
         'id': id,
         'name': name,
         'image': image,
-      };
-}
-
-class Other2 {
-  final String userId;
-  final String name;
-  final String? image;
-  final String publicKey;
-
-  const Other2({
-    required this.userId,
-    required this.name,
-    this.image,
-    required this.publicKey,
-  });
-
-  factory Other2.fromJson(Map<String, dynamic> json) => Other2(
-        userId: json['userId'] as String,
-        name: json['name'] as String,
-        image: json['image'] as String?,
-        publicKey: json['publicKey'] as String,
-      );
-
-  Map<String, dynamic> toJson() => {
-        'userId': userId,
-        'name': name,
-        'image': image,
-        'publicKey': publicKey,
       };
 }
 
@@ -3344,6 +4528,8 @@ class PastPicksResponse {
   final Earlier? kept;
   final bool? cheeky;
 
+  static const scopeValues = <String>['none', 'live', 'final'];
+
   const PastPicksResponse({
     required this.scope,
     this.earlier,
@@ -3365,9 +4551,9 @@ class PastPicksResponse {
 
   Map<String, dynamic> toJson() => {
         'scope': scope,
-        'earlier': earlier?.toJson(),
-        'kept': kept?.toJson(),
-        'cheeky': cheeky,
+        if (earlier != null) 'earlier': earlier?.toJson(),
+        if (kept != null) 'kept': kept?.toJson(),
+        if (cheeky != null) 'cheeky': cheeky,
       };
 }
 
@@ -3450,6 +4636,28 @@ class Prediction {
   final int? penaltiesAway;
   final String roundLabel;
   final int roundSort;
+
+  static const baseTierValues = <String>['EXACT', 'DIFF', 'OUTCOME', 'MISS'];
+  static const statusValues = <String>[
+    'SCHEDULED',
+    'LIVE',
+    'PAUSED',
+    'FINISHED',
+    'POSTPONED',
+    'CANCELLED',
+    'SUSPENDED',
+    'AWARDED',
+    'INTERRUPTED'
+  ];
+  static const stageValues = <String>[
+    'GROUP',
+    'R32',
+    'R16',
+    'QF',
+    'SF',
+    'THIRD_PLACE',
+    'FINAL'
+  ];
 
   const Prediction({
     required this.id,
@@ -3545,144 +4753,6 @@ class Prediction {
       };
 }
 
-class Prediction2 {
-  final String id;
-  final String userId;
-  final String matchId;
-  final String roundId;
-  final double homeGoals;
-  final double awayGoals;
-  final bool isOutcomeOnly;
-  final double? wager;
-  final bool isJoker;
-  final String? baseTier;
-  final double? totalPoints;
-  final double? basePoints;
-  final double? bonusPoints;
-  final String? crowdShare;
-  final String? jokerMultiplierApplied;
-  final String homeTeam;
-  final String awayTeam;
-  final String? homeTeamCode;
-  final String? awayTeamCode;
-  final DateTime kickoffTime;
-  final String status;
-  final String stage;
-  final double? fullTimeHome;
-  final double? fullTimeAway;
-  final double? penaltiesHome;
-  final double? penaltiesAway;
-  final String roundLabel;
-  final double roundSort;
-  final double consensusCount;
-  final double consensusTotal;
-
-  /// One of: MODE, MEAN.
-  final String consensusMethod;
-
-  const Prediction2({
-    required this.id,
-    required this.userId,
-    required this.matchId,
-    required this.roundId,
-    required this.homeGoals,
-    required this.awayGoals,
-    required this.isOutcomeOnly,
-    this.wager,
-    required this.isJoker,
-    this.baseTier,
-    this.totalPoints,
-    this.basePoints,
-    this.bonusPoints,
-    this.crowdShare,
-    this.jokerMultiplierApplied,
-    required this.homeTeam,
-    required this.awayTeam,
-    this.homeTeamCode,
-    this.awayTeamCode,
-    required this.kickoffTime,
-    required this.status,
-    required this.stage,
-    this.fullTimeHome,
-    this.fullTimeAway,
-    this.penaltiesHome,
-    this.penaltiesAway,
-    required this.roundLabel,
-    required this.roundSort,
-    required this.consensusCount,
-    required this.consensusTotal,
-    required this.consensusMethod,
-  });
-
-  factory Prediction2.fromJson(Map<String, dynamic> json) => Prediction2(
-        id: json['id'] as String,
-        userId: json['userId'] as String,
-        matchId: json['matchId'] as String,
-        roundId: json['roundId'] as String,
-        homeGoals: (json['homeGoals'] as num).toDouble(),
-        awayGoals: (json['awayGoals'] as num).toDouble(),
-        isOutcomeOnly: json['isOutcomeOnly'] as bool,
-        wager: (json['wager'] as num?)?.toDouble(),
-        isJoker: json['isJoker'] as bool,
-        baseTier: json['baseTier'] as String?,
-        totalPoints: (json['totalPoints'] as num?)?.toDouble(),
-        basePoints: (json['basePoints'] as num?)?.toDouble(),
-        bonusPoints: (json['bonusPoints'] as num?)?.toDouble(),
-        crowdShare: json['crowdShare'] as String?,
-        jokerMultiplierApplied: json['jokerMultiplierApplied'] as String?,
-        homeTeam: json['homeTeam'] as String,
-        awayTeam: json['awayTeam'] as String,
-        homeTeamCode: json['homeTeamCode'] as String?,
-        awayTeamCode: json['awayTeamCode'] as String?,
-        kickoffTime: DateTime.parse(json['kickoffTime'] as String),
-        status: json['status'] as String,
-        stage: json['stage'] as String,
-        fullTimeHome: (json['fullTimeHome'] as num?)?.toDouble(),
-        fullTimeAway: (json['fullTimeAway'] as num?)?.toDouble(),
-        penaltiesHome: (json['penaltiesHome'] as num?)?.toDouble(),
-        penaltiesAway: (json['penaltiesAway'] as num?)?.toDouble(),
-        roundLabel: json['roundLabel'] as String,
-        roundSort: (json['roundSort'] as num).toDouble(),
-        consensusCount: (json['consensusCount'] as num).toDouble(),
-        consensusTotal: (json['consensusTotal'] as num).toDouble(),
-        consensusMethod: json['consensusMethod'] as String,
-      );
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'userId': userId,
-        'matchId': matchId,
-        'roundId': roundId,
-        'homeGoals': homeGoals,
-        'awayGoals': awayGoals,
-        'isOutcomeOnly': isOutcomeOnly,
-        'wager': wager,
-        'isJoker': isJoker,
-        'baseTier': baseTier,
-        'totalPoints': totalPoints,
-        'basePoints': basePoints,
-        'bonusPoints': bonusPoints,
-        'crowdShare': crowdShare,
-        'jokerMultiplierApplied': jokerMultiplierApplied,
-        'homeTeam': homeTeam,
-        'awayTeam': awayTeam,
-        'homeTeamCode': homeTeamCode,
-        'awayTeamCode': awayTeamCode,
-        'kickoffTime': kickoffTime.toIso8601String(),
-        'status': status,
-        'stage': stage,
-        'fullTimeHome': fullTimeHome,
-        'fullTimeAway': fullTimeAway,
-        'penaltiesHome': penaltiesHome,
-        'penaltiesAway': penaltiesAway,
-        'roundLabel': roundLabel,
-        'roundSort': roundSort,
-        'consensusCount': consensusCount,
-        'consensusTotal': consensusTotal,
-        'consensusMethod': consensusMethod,
-      };
-}
-
 class PredictionInput {
   final int home;
   final int away;
@@ -3707,7 +4777,7 @@ class PredictionInput {
   Map<String, dynamic> toJson() => {
         'home': home,
         'away': away,
-        'isOutcomeOnly': isOutcomeOnly,
+        if (isOutcomeOnly != null) 'isOutcomeOnly': isOutcomeOnly,
         'wager': wager,
       };
 }
@@ -3749,8 +4819,8 @@ class PredictionsResponse {
 }
 
 class PublicLeaguesResponse {
-  final Competition2? competition;
-  final List<League3> leagues;
+  final MatchesResponseCompetition? competition;
+  final List<PublicLeaguesResponseLeague> leagues;
 
   const PublicLeaguesResponse({
     this.competition,
@@ -3761,16 +4831,42 @@ class PublicLeaguesResponse {
       PublicLeaguesResponse(
         competition: json['competition'] == null
             ? null
-            : Competition2.fromJson(
+            : MatchesResponseCompetition.fromJson(
                 json['competition'] as Map<String, dynamic>),
         leagues: (json['leagues'] as List)
-            .map((e) => League3.fromJson(e as Map<String, dynamic>))
+            .map((e) =>
+                PublicLeaguesResponseLeague.fromJson(e as Map<String, dynamic>))
             .toList(),
       );
 
   Map<String, dynamic> toJson() => {
         'competition': competition?.toJson(),
         'leagues': leagues.map((e) => e.toJson()).toList(),
+      };
+}
+
+class PublicLeaguesResponseLeague {
+  final String id;
+  final String name;
+  final double memberCount;
+
+  const PublicLeaguesResponseLeague({
+    required this.id,
+    required this.name,
+    required this.memberCount,
+  });
+
+  factory PublicLeaguesResponseLeague.fromJson(Map<String, dynamic> json) =>
+      PublicLeaguesResponseLeague(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        memberCount: (json['memberCount'] as num).toDouble(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'memberCount': memberCount,
       };
 }
 
@@ -3799,6 +4895,15 @@ class ReactionsResponse {
 
   /// One of: FIRE, GOAL, WOW, LAUGH, SAD, ANGRY.
   final String? mine;
+
+  static const mineValues = <String>[
+    'FIRE',
+    'GOAL',
+    'WOW',
+    'LAUGH',
+    'SAD',
+    'ANGRY'
+  ];
 
   const ReactionsResponse({
     required this.totals,
@@ -3845,6 +4950,101 @@ class Recipient {
       };
 }
 
+class Report {
+  final String id;
+  final String? userId;
+  final String? matchId;
+  final double epoch;
+  final String ciphertext;
+
+  /// One of: VISIBLE, PENDING, REMOVED.
+  final String moderation;
+  final double reports;
+  final String createdAt;
+
+  static const moderationValues = <String>['VISIBLE', 'PENDING', 'REMOVED'];
+
+  const Report({
+    required this.id,
+    this.userId,
+    this.matchId,
+    required this.epoch,
+    required this.ciphertext,
+    required this.moderation,
+    required this.reports,
+    required this.createdAt,
+  });
+
+  factory Report.fromJson(Map<String, dynamic> json) => Report(
+        id: json['id'] as String,
+        userId: json['userId'] as String?,
+        matchId: json['matchId'] as String?,
+        epoch: (json['epoch'] as num).toDouble(),
+        ciphertext: json['ciphertext'] as String,
+        moderation: json['moderation'] as String,
+        reports: (json['reports'] as num).toDouble(),
+        createdAt: json['createdAt'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'userId': userId,
+        'matchId': matchId,
+        'epoch': epoch,
+        'ciphertext': ciphertext,
+        'moderation': moderation,
+        'reports': reports,
+        'createdAt': createdAt,
+      };
+}
+
+class Reward {
+  /// One of: OVERALL, WOODEN_SPOON, GROUP_PHASE, KNOCKOUT_PHASE, FINALIST, MADAME_IRMA, GROUP_ORACLE, KNOCKOUT_ORACLE, SHARPSHOOTER, GOAL_DIFF_GURU, TEAM_SPECIALIST.
+  final String type;
+  final String label;
+  final String? imageUrl;
+  final String? note;
+  final String? link;
+
+  static const typeValues = <String>[
+    'OVERALL',
+    'WOODEN_SPOON',
+    'GROUP_PHASE',
+    'KNOCKOUT_PHASE',
+    'FINALIST',
+    'MADAME_IRMA',
+    'GROUP_ORACLE',
+    'KNOCKOUT_ORACLE',
+    'SHARPSHOOTER',
+    'GOAL_DIFF_GURU',
+    'TEAM_SPECIALIST'
+  ];
+
+  const Reward({
+    required this.type,
+    required this.label,
+    this.imageUrl,
+    this.note,
+    this.link,
+  });
+
+  factory Reward.fromJson(Map<String, dynamic> json) => Reward(
+        type: json['type'] as String,
+        label: json['label'] as String,
+        imageUrl: json['imageUrl'] as String?,
+        note: json['note'] as String?,
+        link: json['link'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'type': type,
+        'label': label,
+        'imageUrl': imageUrl,
+        'note': note,
+        'link': link,
+      };
+}
+
 class RoadmapResponse {
   final List<Item> items;
 
@@ -3887,194 +5087,6 @@ class Round {
         'name': name,
         'sequence': sequence,
         'matches': matches.map((e) => e.toJson()).toList(),
-      };
-}
-
-class RowData {
-  final String? code;
-  final String name;
-  final double played;
-  final double won;
-  final double drawn;
-  final double lost;
-  final double gf;
-  final double ga;
-  final double gd;
-  final double points;
-
-  const RowData({
-    this.code,
-    required this.name,
-    required this.played,
-    required this.won,
-    required this.drawn,
-    required this.lost,
-    required this.gf,
-    required this.ga,
-    required this.gd,
-    required this.points,
-  });
-
-  factory RowData.fromJson(Map<String, dynamic> json) => RowData(
-        code: json['code'] as String?,
-        name: json['name'] as String,
-        played: (json['played'] as num).toDouble(),
-        won: (json['won'] as num).toDouble(),
-        drawn: (json['drawn'] as num).toDouble(),
-        lost: (json['lost'] as num).toDouble(),
-        gf: (json['gf'] as num).toDouble(),
-        ga: (json['ga'] as num).toDouble(),
-        gd: (json['gd'] as num).toDouble(),
-        points: (json['points'] as num).toDouble(),
-      );
-
-  Map<String, dynamic> toJson() => {
-        'code': code,
-        'name': name,
-        'played': played,
-        'won': won,
-        'drawn': drawn,
-        'lost': lost,
-        'gf': gf,
-        'ga': ga,
-        'gd': gd,
-        'points': points,
-      };
-}
-
-class RowData2 {
-  final double rank;
-  final String userId;
-  final String displayName;
-  final String? image;
-  final double totalPoints;
-  final double predictionPoints;
-  final double championPoints;
-  final String? championCode;
-  final String? championName;
-  final double bestScorerPoints;
-  final String? bestScorerName;
-  final String? bestScorerCode;
-  final double livePoints;
-  final double exactCount;
-  final double outcomeCount;
-  final double gdCount;
-  final List<Showcase> showcase;
-  final double? movement;
-
-  const RowData2({
-    required this.rank,
-    required this.userId,
-    required this.displayName,
-    this.image,
-    required this.totalPoints,
-    required this.predictionPoints,
-    required this.championPoints,
-    this.championCode,
-    this.championName,
-    required this.bestScorerPoints,
-    this.bestScorerName,
-    this.bestScorerCode,
-    required this.livePoints,
-    required this.exactCount,
-    required this.outcomeCount,
-    required this.gdCount,
-    required this.showcase,
-    this.movement,
-  });
-
-  factory RowData2.fromJson(Map<String, dynamic> json) => RowData2(
-        rank: (json['rank'] as num).toDouble(),
-        userId: json['userId'] as String,
-        displayName: json['displayName'] as String,
-        image: json['image'] as String?,
-        totalPoints: (json['totalPoints'] as num).toDouble(),
-        predictionPoints: (json['predictionPoints'] as num).toDouble(),
-        championPoints: (json['championPoints'] as num).toDouble(),
-        championCode: json['championCode'] as String?,
-        championName: json['championName'] as String?,
-        bestScorerPoints: (json['bestScorerPoints'] as num).toDouble(),
-        bestScorerName: json['bestScorerName'] as String?,
-        bestScorerCode: json['bestScorerCode'] as String?,
-        livePoints: (json['livePoints'] as num).toDouble(),
-        exactCount: (json['exactCount'] as num).toDouble(),
-        outcomeCount: (json['outcomeCount'] as num).toDouble(),
-        gdCount: (json['gdCount'] as num).toDouble(),
-        showcase: (json['showcase'] as List)
-            .map((e) => Showcase.fromJson(e as Map<String, dynamic>))
-            .toList(),
-        movement: (json['movement'] as num?)?.toDouble(),
-      );
-
-  Map<String, dynamic> toJson() => {
-        'rank': rank,
-        'userId': userId,
-        'displayName': displayName,
-        'image': image,
-        'totalPoints': totalPoints,
-        'predictionPoints': predictionPoints,
-        'championPoints': championPoints,
-        'championCode': championCode,
-        'championName': championName,
-        'bestScorerPoints': bestScorerPoints,
-        'bestScorerName': bestScorerName,
-        'bestScorerCode': bestScorerCode,
-        'livePoints': livePoints,
-        'exactCount': exactCount,
-        'outcomeCount': outcomeCount,
-        'gdCount': gdCount,
-        'showcase': showcase.map((e) => e.toJson()).toList(),
-        'movement': movement,
-      };
-}
-
-class RowData3 {
-  final double rank;
-  final String userId;
-  final String displayName;
-  final String? image;
-  final double homeGoals;
-  final double awayGoals;
-  final bool isJoker;
-  final double points;
-
-  /// One of: EXACT, DIFF, OUTCOME, MISS.
-  final String? baseTier;
-
-  const RowData3({
-    required this.rank,
-    required this.userId,
-    required this.displayName,
-    this.image,
-    required this.homeGoals,
-    required this.awayGoals,
-    required this.isJoker,
-    required this.points,
-    this.baseTier,
-  });
-
-  factory RowData3.fromJson(Map<String, dynamic> json) => RowData3(
-        rank: (json['rank'] as num).toDouble(),
-        userId: json['userId'] as String,
-        displayName: json['displayName'] as String,
-        image: json['image'] as String?,
-        homeGoals: (json['homeGoals'] as num).toDouble(),
-        awayGoals: (json['awayGoals'] as num).toDouble(),
-        isJoker: json['isJoker'] as bool,
-        points: (json['points'] as num).toDouble(),
-        baseTier: json['baseTier'] as String?,
-      );
-
-  Map<String, dynamic> toJson() => {
-        'rank': rank,
-        'userId': userId,
-        'displayName': displayName,
-        'image': image,
-        'homeGoals': homeGoals,
-        'awayGoals': awayGoals,
-        'isJoker': isJoker,
-        'points': points,
-        'baseTier': baseTier,
       };
 }
 
@@ -4159,12 +5171,39 @@ class SecondChance {
       };
 }
 
+class ShareMintResponse {
+  final String token;
+  final String url;
+  final String imageUrl;
+
+  const ShareMintResponse({
+    required this.token,
+    required this.url,
+    required this.imageUrl,
+  });
+
+  factory ShareMintResponse.fromJson(Map<String, dynamic> json) =>
+      ShareMintResponse(
+        token: json['token'] as String,
+        url: json['url'] as String,
+        imageUrl: json['imageUrl'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'token': token,
+        'url': url,
+        'imageUrl': imageUrl,
+      };
+}
+
 class Showcase {
   final String key;
   final String category;
 
   /// One of: BRONZE, SILVER, GOLD, DIAMOND.
   final String? tier;
+
+  static const tierValues = <String>['BRONZE', 'SILVER', 'GOLD', 'DIAMOND'];
 
   const Showcase({
     required this.key,
@@ -4185,23 +5224,59 @@ class Showcase {
       };
 }
 
-class Showcase2 {
-  final double slot;
-  final String achievementKey;
+class Squad {
+  final String playerId;
+  final String name;
+  final double? shirtNumber;
 
-  const Showcase2({
-    required this.slot,
-    required this.achievementKey,
+  /// One of: GK, DF, MF, FW.
+  final String? position;
+  final bool captain;
+  final String? pictureUrl;
+  final double? x;
+  final double? y;
+  final double goals;
+  final double assists;
+
+  static const positionValues = <String>['GK', 'DF', 'MF', 'FW'];
+
+  const Squad({
+    required this.playerId,
+    required this.name,
+    this.shirtNumber,
+    this.position,
+    required this.captain,
+    this.pictureUrl,
+    this.x,
+    this.y,
+    required this.goals,
+    required this.assists,
   });
 
-  factory Showcase2.fromJson(Map<String, dynamic> json) => Showcase2(
-        slot: (json['slot'] as num).toDouble(),
-        achievementKey: json['achievementKey'] as String,
+  factory Squad.fromJson(Map<String, dynamic> json) => Squad(
+        playerId: json['playerId'] as String,
+        name: json['name'] as String,
+        shirtNumber: (json['shirtNumber'] as num?)?.toDouble(),
+        position: json['position'] as String?,
+        captain: json['captain'] as bool,
+        pictureUrl: json['pictureUrl'] as String?,
+        x: (json['x'] as num?)?.toDouble(),
+        y: (json['y'] as num?)?.toDouble(),
+        goals: (json['goals'] as num).toDouble(),
+        assists: (json['assists'] as num).toDouble(),
       );
 
   Map<String, dynamic> toJson() => {
-        'slot': slot,
-        'achievementKey': achievementKey,
+        'playerId': playerId,
+        'name': name,
+        'shirtNumber': shirtNumber,
+        'position': position,
+        'captain': captain,
+        'pictureUrl': pictureUrl,
+        'x': x,
+        'y': y,
+        'goals': goals,
+        'assists': assists,
       };
 }
 
@@ -4235,6 +5310,8 @@ class StartingXI {
   final String? pictureUrl;
   final double? x;
   final double? y;
+
+  static const positionValues = <String>['GK', 'DF', 'MF', 'FW'];
 
   const StartingXI({
     required this.playerId,
@@ -4418,55 +5495,191 @@ class Team {
       };
 }
 
-class Team2 {
-  final List<Overrated> overrated;
-  final List<Overrated> underrated;
+class TeamDetailResponse {
+  final TeamDetailResponseTeam? team;
+  final List<MatchDetailResponseMatch> matches;
+  final String? group;
+  final List<GroupRow>? standings;
+  final TopScorer? topScorer;
+  final TopScorer? topAssister;
+  final TeamStat? teamStats;
+  final List<Squad> squad;
+  final String? coach;
+  final List<TeamDetailResponseCompetition> competitions;
 
-  const Team2({
-    required this.overrated,
-    required this.underrated,
+  const TeamDetailResponse({
+    this.team,
+    required this.matches,
+    this.group,
+    this.standings,
+    this.topScorer,
+    this.topAssister,
+    this.teamStats,
+    required this.squad,
+    this.coach,
+    required this.competitions,
   });
 
-  factory Team2.fromJson(Map<String, dynamic> json) => Team2(
-        overrated: (json['overrated'] as List)
-            .map((e) => Overrated.fromJson(e as Map<String, dynamic>))
+  factory TeamDetailResponse.fromJson(Map<String, dynamic> json) =>
+      TeamDetailResponse(
+        team: json['team'] == null
+            ? null
+            : TeamDetailResponseTeam.fromJson(
+                json['team'] as Map<String, dynamic>),
+        matches: (json['matches'] as List)
+            .map((e) =>
+                MatchDetailResponseMatch.fromJson(e as Map<String, dynamic>))
             .toList(),
-        underrated: (json['underrated'] as List)
-            .map((e) => Overrated.fromJson(e as Map<String, dynamic>))
+        group: json['group'] as String?,
+        standings: json['standings'] == null
+            ? null
+            : (json['standings'] as List)
+                .map((e) => GroupRow.fromJson(e as Map<String, dynamic>))
+                .toList(),
+        topScorer: json['topScorer'] == null
+            ? null
+            : TopScorer.fromJson(json['topScorer'] as Map<String, dynamic>),
+        topAssister: json['topAssister'] == null
+            ? null
+            : TopScorer.fromJson(json['topAssister'] as Map<String, dynamic>),
+        teamStats: json['teamStats'] == null
+            ? null
+            : TeamStat.fromJson(json['teamStats'] as Map<String, dynamic>),
+        squad: (json['squad'] as List)
+            .map((e) => Squad.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        coach: json['coach'] as String?,
+        competitions: (json['competitions'] as List)
+            .map((e) => TeamDetailResponseCompetition.fromJson(
+                e as Map<String, dynamic>))
             .toList(),
       );
 
   Map<String, dynamic> toJson() => {
-        'overrated': overrated.map((e) => e.toJson()).toList(),
-        'underrated': underrated.map((e) => e.toJson()).toList(),
+        'team': team?.toJson(),
+        'matches': matches.map((e) => e.toJson()).toList(),
+        'group': group,
+        'standings': standings?.map((e) => e.toJson()).toList(),
+        'topScorer': topScorer?.toJson(),
+        'topAssister': topAssister?.toJson(),
+        'teamStats': teamStats?.toJson(),
+        'squad': squad.map((e) => e.toJson()).toList(),
+        'coach': coach,
+        'competitions': competitions.map((e) => e.toJson()).toList(),
       };
 }
 
-class Team3 {
-  final String code;
+class TeamDetailResponseCompetition {
+  final String slug;
   final String name;
-  final double? fifaRank;
-  final double potentialPoints;
+  final String? seasonHint;
 
-  const Team3({
-    required this.code,
+  const TeamDetailResponseCompetition({
+    required this.slug,
     required this.name,
-    this.fifaRank,
-    required this.potentialPoints,
+    this.seasonHint,
   });
 
-  factory Team3.fromJson(Map<String, dynamic> json) => Team3(
+  factory TeamDetailResponseCompetition.fromJson(Map<String, dynamic> json) =>
+      TeamDetailResponseCompetition(
+        slug: json['slug'] as String,
+        name: json['name'] as String,
+        seasonHint: json['seasonHint'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'slug': slug,
+        'name': name,
+        'seasonHint': seasonHint,
+      };
+}
+
+class TeamDetailResponseTeam {
+  final String code;
+  final String name;
+  final String competition;
+
+  const TeamDetailResponseTeam({
+    required this.code,
+    required this.name,
+    required this.competition,
+  });
+
+  factory TeamDetailResponseTeam.fromJson(Map<String, dynamic> json) =>
+      TeamDetailResponseTeam(
         code: json['code'] as String,
         name: json['name'] as String,
-        fifaRank: (json['fifaRank'] as num?)?.toDouble(),
-        potentialPoints: (json['potentialPoints'] as num).toDouble(),
+        competition: json['competition'] as String,
       );
 
   Map<String, dynamic> toJson() => {
         'code': code,
         'name': name,
-        'fifaRank': fifaRank,
-        'potentialPoints': potentialPoints,
+        'competition': competition,
+      };
+}
+
+class TeamStat {
+  final double? goals;
+  final double? conceded;
+  final double? assists;
+  final double? possession;
+  final double? attempts;
+  final double? onTarget;
+  final double? passes;
+  final double? passAccuracy;
+  final double? crosses;
+  final double? corners;
+  final double? offsides;
+  final double? yellowCards;
+  final double? redCards;
+
+  const TeamStat({
+    this.goals,
+    this.conceded,
+    this.assists,
+    this.possession,
+    this.attempts,
+    this.onTarget,
+    this.passes,
+    this.passAccuracy,
+    this.crosses,
+    this.corners,
+    this.offsides,
+    this.yellowCards,
+    this.redCards,
+  });
+
+  factory TeamStat.fromJson(Map<String, dynamic> json) => TeamStat(
+        goals: (json['goals'] as num?)?.toDouble(),
+        conceded: (json['conceded'] as num?)?.toDouble(),
+        assists: (json['assists'] as num?)?.toDouble(),
+        possession: (json['possession'] as num?)?.toDouble(),
+        attempts: (json['attempts'] as num?)?.toDouble(),
+        onTarget: (json['onTarget'] as num?)?.toDouble(),
+        passes: (json['passes'] as num?)?.toDouble(),
+        passAccuracy: (json['passAccuracy'] as num?)?.toDouble(),
+        crosses: (json['crosses'] as num?)?.toDouble(),
+        corners: (json['corners'] as num?)?.toDouble(),
+        offsides: (json['offsides'] as num?)?.toDouble(),
+        yellowCards: (json['yellowCards'] as num?)?.toDouble(),
+        redCards: (json['redCards'] as num?)?.toDouble(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'goals': goals,
+        'conceded': conceded,
+        'assists': assists,
+        'possession': possession,
+        'attempts': attempts,
+        'onTarget': onTarget,
+        'passes': passes,
+        'passAccuracy': passAccuracy,
+        'crosses': crosses,
+        'corners': corners,
+        'offsides': offsides,
+        'yellowCards': yellowCards,
+        'redCards': redCards,
       };
 }
 
@@ -4520,44 +5733,6 @@ class Thread {
       };
 }
 
-class Thread2 {
-  final String threadId;
-  final double epoch;
-  final Other2 other;
-  final List<MyWrappedKey> myWrappedKeys;
-  final bool otherMissingCurrentKey;
-  final String? otherLastReadAt;
-
-  const Thread2({
-    required this.threadId,
-    required this.epoch,
-    required this.other,
-    required this.myWrappedKeys,
-    required this.otherMissingCurrentKey,
-    this.otherLastReadAt,
-  });
-
-  factory Thread2.fromJson(Map<String, dynamic> json) => Thread2(
-        threadId: json['threadId'] as String,
-        epoch: (json['epoch'] as num).toDouble(),
-        other: Other2.fromJson(json['other'] as Map<String, dynamic>),
-        myWrappedKeys: (json['myWrappedKeys'] as List)
-            .map((e) => MyWrappedKey.fromJson(e as Map<String, dynamic>))
-            .toList(),
-        otherMissingCurrentKey: json['otherMissingCurrentKey'] as bool,
-        otherLastReadAt: json['otherLastReadAt'] as String?,
-      );
-
-  Map<String, dynamic> toJson() => {
-        'threadId': threadId,
-        'epoch': epoch,
-        'other': other.toJson(),
-        'myWrappedKeys': myWrappedKeys.map((e) => e.toJson()).toList(),
-        'otherMissingCurrentKey': otherMissingCurrentKey,
-        'otherLastReadAt': otherLastReadAt,
-      };
-}
-
 class Tier {
   final double exact;
   final double diff;
@@ -4586,23 +5761,31 @@ class Tier {
       };
 }
 
-class Tier2 {
-  final String tier;
-  final double threshold;
+class TopScorer {
+  final String playerName;
+  final String? teamCode;
+  final double goals;
+  final double? assists;
 
-  const Tier2({
-    required this.tier,
-    required this.threshold,
+  const TopScorer({
+    required this.playerName,
+    this.teamCode,
+    required this.goals,
+    this.assists,
   });
 
-  factory Tier2.fromJson(Map<String, dynamic> json) => Tier2(
-        tier: json['tier'] as String,
-        threshold: (json['threshold'] as num).toDouble(),
+  factory TopScorer.fromJson(Map<String, dynamic> json) => TopScorer(
+        playerName: json['playerName'] as String,
+        teamCode: json['teamCode'] as String?,
+        goals: (json['goals'] as num).toDouble(),
+        assists: (json['assists'] as num?)?.toDouble(),
       );
 
   Map<String, dynamic> toJson() => {
-        'tier': tier,
-        'threshold': threshold,
+        'playerName': playerName,
+        'teamCode': teamCode,
+        'goals': goals,
+        'assists': assists,
       };
 }
 
@@ -4706,3 +5889,36 @@ class Winner {
         'code': code,
       };
 }
+
+class WrappedMintResponse {
+  final String token;
+  final String imageUrl;
+
+  const WrappedMintResponse({
+    required this.token,
+    required this.imageUrl,
+  });
+
+  factory WrappedMintResponse.fromJson(Map<String, dynamic> json) =>
+      WrappedMintResponse(
+        token: json['token'] as String,
+        imageUrl: json['imageUrl'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'token': token,
+        'imageUrl': imageUrl,
+      };
+}
+
+typedef DmMessagesResponse = ChatMessagesResponse;
+typedef MatchScorersResponse = ScorersResponse;
+typedef ProfileMintResponse = ShareMintResponse;
+
+List<LeagueReward> parseLeagueRewardList(dynamic json) => (json as List)
+    .map((e) => LeagueReward.fromJson(e as Map<String, dynamic>))
+    .toList();
+
+List<MeReward> parseMeRewardList(dynamic json) => (json as List)
+    .map((e) => MeReward.fromJson(e as Map<String, dynamic>))
+    .toList();

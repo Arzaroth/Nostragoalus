@@ -6,16 +6,29 @@ import { providerForCompetition } from '../../../utils/providers'
 import { getCompetitionById } from '../../../utils/competitions/store'
 import { resolveCompetitionSeason } from '../../../utils/sync/competition'
 import { defineReadHandler } from '../../../utils/read-handler'
+import type { TimelineEvent } from '../../../../shared/types/match'
 
-// The curated play-by-play is a provider-shaped list the route passes through
-// verbatim (typed `unknown` in the cache), so the contract is the envelope, not
-// each event's internal shape.
-const responseSchema = z.object({ events: z.unknown() })
+// `kind`, `side` and `periodKind` stay open strings rather than enums: an
+// unexpected provider value must render as an unknown row, never 500 the route
+// on its own response contract.
+const timelineEventSchema = z.object({
+  kind: z.string(),
+  side: z.string().nullable(),
+  minute: z.string().nullable(),
+  playerName: z.string().nullable(),
+  playerInName: z.string().nullable(),
+  playerOutName: z.string().nullable(),
+  periodKind: z.string().nullable(),
+  text: z.string().nullable(),
+  homeScore: z.number().int().nullable(),
+  awayScore: z.number().int().nullable(),
+})
+const responseSchema = z.object({ events: z.array(timelineEventSchema) })
 
 // Finished timelines never change again - cache for the process lifetime. Live
 // matches refresh every minute so new events show up. (Single instance: an
 // in-memory map is enough.)
-const cache = new Map<string, { at: number; final: boolean; events: unknown }>()
+const cache = new Map<string, { at: number; final: boolean; events: TimelineEvent[] }>()
 const TTL_MS = 60 * 1000
 
 // Locales the FIFA feed actually localizes its commentary for - only these get

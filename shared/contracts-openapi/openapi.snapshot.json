@@ -13225,7 +13225,70 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "events": {}
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string"
+                          },
+                          "side": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "minute": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "playerName": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "playerInName": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "playerOutName": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "periodKind": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "text": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "homeScore": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "awayScore": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "side",
+                          "minute",
+                          "playerName",
+                          "playerInName",
+                          "playerOutName",
+                          "periodKind",
+                          "text",
+                          "homeScore",
+                          "awayScore"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
                   },
                   "required": [
                     "events"

@@ -1,5 +1,4 @@
-import 'package:dio/dio.dart';
-
+import '../chat/chat_crypto.dart';
 import 'api_client.dart';
 import 'token_store.dart';
 
@@ -61,20 +60,13 @@ class AuthRepository {
   final TokenStore _tokens;
 
   Future<AuthUser> signIn(String email, String password) async {
-    final res = await _api.raw((dio) => dio.post<dynamic>(
-          '/api/auth/sign-in/email',
-          data: {'email': email, 'password': password},
-          options: Options(validateStatus: (_) => true),
-        ));
-    final code = res.statusCode ?? 0;
-    if (code != 200) {
-      throw ApiException(code, 'sign-in failed', res.data);
-    }
+    final res = await _api
+        .postJson('/api/auth/sign-in/email', body: {'email': email, 'password': password});
     // The interceptor persisted the token from set-auth-token; confirm it landed.
     if (_tokens.token == null) {
       throw ApiException(200, 'sign-in returned no bearer token');
     }
-    final user = (res.data as Map<String, dynamic>)['user'];
+    final user = res['user'];
     if (user is Map<String, dynamic>) return AuthUser.fromJson(user);
     // Some flows return only the token; fall back to a session fetch.
     final session = await currentUser();
@@ -85,43 +77,43 @@ class AuthRepository {
   /// The current user, or null when there is no valid session.
   Future<AuthUser?> currentUser() async {
     if (_tokens.token == null) return null;
-    final res = await _api.raw((dio) => dio.get<dynamic>(
-          '/api/auth/get-session',
-          options: Options(validateStatus: (_) => true),
-        ));
-    if (res.statusCode != 200 || res.data is! Map) return null;
-    final user = (res.data as Map<String, dynamic>)['user'];
+    final Map<String, dynamic> res;
+    try {
+      res = await _api.getJson('/api/auth/get-session');
+    } on ApiException {
+      return null;
+    }
+    final user = res['user'];
     return user is Map<String, dynamic> ? AuthUser.fromJson(user) : null;
   }
 
-  /// Create an account. Returns true on success (email verification may still be
-  /// required before sign-in works).
-  Future<bool> signUp(String name, String email, String password) async {
-    final res = await _api.raw((dio) => dio.post<dynamic>(
-          '/api/auth/sign-up/email',
-          data: {'name': name, 'email': email, 'password': password},
-          options: Options(validateStatus: (_) => true),
-        ));
-    return res.statusCode == 200;
+  /// Create an account. Throws [ApiException] carrying the server body (email
+  /// taken, weak password, ...); email verification may still be required before
+  /// sign-in works.
+  Future<void> signUp(String name, String email, String password) async {
+    await _api.postJson('/api/auth/sign-up/email',
+        body: {'name': name, 'email': email, 'password': password});
   }
 
-  /// Email a password-reset link.
+  /// Email a password-reset link. Throws [ApiException] when the server refuses.
   Future<void> requestPasswordReset(String email) async {
-    await _api.raw((dio) => dio.post<dynamic>(
-          '/api/auth/request-password-reset',
-          data: {'email': email, 'redirectTo': '/reset-password'},
-          options: Options(validateStatus: (_) => true),
-        ));
+    await _api.postJson('/api/auth/request-password-reset',
+        body: {'email': email, 'redirectTo': '/reset-password'});
   }
 
   Future<void> signOut() async {
     try {
-      await _api.raw((dio) => dio.post<dynamic>(
-            '/api/auth/sign-out',
-            options: Options(validateStatus: (_) => true),
-          ));
+      await _api.postJson('/api/auth/sign-out');
+    } on ApiException {
+      // The local token goes either way; a failed server-side revoke must not
+      // leave the app stuck signed in.
     } finally {
       await _tokens.clear();
+      // The chat private key is per-account: leaving it behind lets the next
+      // account on this device read it (and, on its own bootstrap, overwrite it).
+      try {
+        await ChatKeyStore().clearCurrent();
+      } catch (_) {/* no platform keystore (headless test / unsupported host) */}
     }
   }
 }

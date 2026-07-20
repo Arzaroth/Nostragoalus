@@ -83,17 +83,29 @@ class ApiClient {
     return _json(r);
   }
 
-  /// Raw response for the sign-in call, where the caller needs the headers
-  /// (the token arrives in `set-auth-token`, captured by the interceptor).
-  Future<Response<dynamic>> raw(Future<Response<dynamic>> Function(Dio) call) => call(_dio);
+  /// A route whose 200 body is a top-level JSON array. Same status checking as
+  /// [getJson]: an error body is never handed back as if it were data.
+  Future<List<dynamic>> getList(String path, {Map<String, dynamic>? query}) async {
+    final r = await _dio.get<dynamic>(path, queryParameters: query);
+    _checkStatus(r);
+    final data = r.data;
+    if (data is List) return data;
+    throw ApiException(
+        r.statusCode ?? 0, 'expected a JSON array from ${r.requestOptions.path}', data);
+  }
 
-  Map<String, dynamic> _json(Response<dynamic> r) {
+  void _checkStatus(Response<dynamic> r) {
     final code = r.statusCode ?? 0;
     if (code < 200 || code >= 300) {
       throw ApiException(code, 'HTTP $code for ${r.requestOptions.path}', r.data);
     }
+  }
+
+  Map<String, dynamic> _json(Response<dynamic> r) {
+    _checkStatus(r);
     final data = r.data;
     if (data is Map<String, dynamic>) return data;
-    throw ApiException(code, 'expected a JSON object from ${r.requestOptions.path}', data);
+    throw ApiException(
+        r.statusCode ?? 0, 'expected a JSON object from ${r.requestOptions.path}', data);
   }
 }

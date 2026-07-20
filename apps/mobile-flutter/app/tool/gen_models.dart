@@ -51,11 +51,11 @@ const targets = <Target>[
   Target('get', '/api/dm/threads', 'DmThreadsResponse'),
   Target('get', '/api/dm/recipients', 'DmRecipientsResponse'),
   Target('get', '/api/dm/{threadId}', 'DmThreadResponse'),
-  Target('get', '/api/dm/{threadId}/messages', 'DmMessagesResponse'),
+  Target('get', '/api/dm/{threadId}/messages', 'DmMessagesResponse', aliasExpected: true),
   // Match tabs
   Target('get', '/api/matches/{id}/timeline', 'MatchTimelineResponse'),
   Target('get', '/api/matches/{id}/lineups', 'MatchLineupsResponse'),
-  Target('get', '/api/matches/{id}/scorers', 'MatchScorersResponse'),
+  Target('get', '/api/matches/{id}/scorers', 'MatchScorersResponse', aliasExpected: true),
   Target('get', '/api/matches/{id}/insights', 'MatchInsightsResponse'),
   Target('get', '/api/matches/{id}/live-detail', 'MatchLiveDetailResponse'),
   Target('get', '/api/matches/{id}/league-standings', 'MatchLeagueStandingsResponse'),
@@ -63,6 +63,24 @@ const targets = <Target>[
   // Profile + prefs + stats
   Target('get', '/api/users/{id}/cabinet', 'CabinetResponse'),
   Target('get', '/api/me/stats', 'MeStatsResponse'),
+  // Newly bound endpoints stay LAST: a target registers its nested class names
+  // in list order, so appending never renames an existing class.
+  Target('get', '/api/competitions/eliminated', 'EliminatedResponse'),
+  Target('get', '/api/predictions/crowd', 'CrowdResponse'),
+  Target('get', '/api/leagues/completeness', 'LeagueCompletenessResponse'),
+  Target('get', '/api/leagues/{id}/rewards', 'LeagueReward', rootList: true),
+  Target('get', '/api/me/rewards', 'MeReward', rootList: true),
+  Target('get', '/api/teams/{code}', 'TeamDetailResponse'),
+  Target('get', '/api/feed/subscription', 'FeedSubscriptionResponse'),
+  Target('get', '/api/voice/ice-servers', 'IceServersResponse'),
+  Target('post', '/api/me/confirm-totp', 'ConfirmTotpResponse'),
+  Target('post', '/api/share/analytics-mint', 'ShareMintResponse'),
+  Target('post', '/api/share/profile-mint', 'ProfileMintResponse', aliasExpected: true),
+  Target('post', '/api/share/wrapped-mint', 'WrappedMintResponse'),
+  Target('get', '/api/chat/recovery', 'ChatRecoveryResponse'),
+  Target('get', '/api/leagues/{id}/chat/reports', 'ChatReportsResponse'),
+  Target('post', '/api/dm/threads', 'DmThreadCreatedResponse'),
+  Target('get', '/api/dm/identity', 'DmIdentityResponse'),
 ];
 
 class Target {
@@ -70,7 +88,17 @@ class Target {
   final String path;
   final String resName;
   final String? reqName;
-  const Target(this.method, this.path, this.resName, {this.reqName});
+
+  /// The 200 body is a top-level JSON array: [resName] names the ITEM class and
+  /// a `List<resName> parse<resName>List(dynamic)` helper is emitted alongside.
+  final bool rootList;
+
+  /// This response is structurally identical to an earlier target's, so it
+  /// collapses onto that class and gets a `typedef`. Declaring it is mandatory:
+  /// an undeclared collapse (or a stale declaration) fails the generator.
+  final bool aliasExpected;
+  const Target(this.method, this.path, this.resName,
+      {this.reqName, this.rootList = false, this.aliasExpected = false});
 }
 
 /// A resolved Dart field on a generated class.
@@ -78,15 +106,32 @@ class Field {
   final String jsonKey;
   final String dartName;
   final String type; // Dart type, e.g. `String`, `List<Team>`, `DateTime?`
-  final bool nullable;
+  /// The schema itself allows null - `toJson` must emit an explicit null.
+  final bool nullableInSchema;
+  /// Absent from `required` - `toJson` must OMIT the key (server zod
+  /// `.optional()` without `.nullable()` rejects an explicit null).
+  final bool optional;
   final _Kind kind;
-  final String? elementParse; // for lists/objects: how to build one element
+  final String? elementParse; // for lists/objects/maps: how to build one element
   final List<String>? enumValues;
-  Field(this.jsonKey, this.dartName, this.type, this.nullable, this.kind,
+  Field(this.jsonKey, this.dartName, this.type, this.nullableInSchema, this.optional, this.kind,
       {this.elementParse, this.enumValues});
+
+  /// The Dart type carries `?` when either concept applies.
+  bool get nullable => nullableInSchema || optional;
 }
 
-enum _Kind { scalar, dateTime, object, listScalar, listDateTime, listObject, map, raw }
+enum _Kind {
+  scalar,
+  dateTime,
+  object,
+  listScalar,
+  listDateTime,
+  listObject,
+  map,
+  mapObject,
+  raw,
+}
 
 class ModelClass {
   final String name;
@@ -94,31 +139,83 @@ class ModelClass {
   ModelClass(this.name, this.fields);
 }
 
+/// Raised for a contract/target mismatch the generator refuses to paper over.
+class GenError implements Exception {
+  GenError(this.message);
+  final String message;
+  @override
+  String toString() => message;
+}
+
 // signature -> emitted class name, so identical inline shapes collapse to one class.
 final Map<String, String> _bySignature = {};
 final Map<String, ModelClass> _classes = {};
 final Set<String> _usedNames = {};
+final Map<String, String> _typedefs = {}; // alias name -> emitted class
+final Map<String, String> _listParsers = {}; // parser name -> item class
 
 void main() {
   final root = _repoRoot();
   final snap = jsonDecode(
-      File('$root/shared/contracts-openapi/openapi.snapshot.json').readAsStringSync())
+          File('$root/shared/contracts-openapi/openapi.snapshot.json').readAsStringSync())
       as Map<String, dynamic>;
-  final paths = snap['paths'] as Map<String, dynamic>;
+  final String source;
+  try {
+    source = generate(snap, targets);
+  } on GenError catch (e) {
+    stderr.writeln('ERROR: $e');
+    exitCode = 1;
+    return;
+  }
+  final dest = File('$root/apps/mobile-flutter/app/lib/api/models.gen.dart');
+  dest.parent.createSync(recursive: true);
+  dest.writeAsStringSync(source);
+  stdout.writeln('wrote ${_classes.length} models -> lib/api/models.gen.dart');
+}
 
-  for (final t in targets) {
+/// Emit the whole models library for [snapshot]. Throws [GenError] on a target
+/// the snapshot no longer carries, or a collapse that is not a declared alias.
+String generate(Map<String, dynamic> snapshot, List<Target> ts) {
+  _bySignature.clear();
+  _classes.clear();
+  _usedNames.clear();
+  _typedefs.clear();
+  _listParsers.clear();
+
+  final paths = snapshot['paths'] as Map<String, dynamic>? ?? const {};
+  final problems = <String>[];
+
+  for (final t in ts) {
     final op = (paths[t.path] as Map<String, dynamic>?)?[t.method] as Map<String, dynamic>?;
     if (op == null) {
-      stderr.writeln('WARN: missing ${t.method.toUpperCase()} ${t.path}');
+      problems.add('missing ${t.method.toUpperCase()} ${t.path}');
       continue;
     }
     final res = _schemaOf(op['responses']?['200']);
-    if (res != null) _emitObject(res, t.resName);
+    if (res != null) {
+      final schema = t.rootList ? (res['items'] as Map<String, dynamic>?) : res;
+      if (t.rootList && schema == null) {
+        problems.add('${t.path} is declared rootList but its 200 schema has no items');
+        continue;
+      }
+      final emitted = _emitObject(schema!, t.resName);
+      if (emitted != t.resName && !t.aliasExpected) {
+        problems.add(
+            '${t.method.toUpperCase()} ${t.path}: ${t.resName} collapsed into $emitted; declare it aliasExpected');
+      } else if (emitted == t.resName && t.aliasExpected) {
+        problems.add(
+            '${t.method.toUpperCase()} ${t.path}: ${t.resName} is declared aliasExpected but no longer collapses');
+      } else if (t.aliasExpected) {
+        _typedefs[t.resName] = emitted;
+      }
+      if (t.rootList) _listParsers['parse${t.resName}List'] = emitted;
+    }
     if (t.reqName != null) {
       final req = _schemaOf(op['requestBody']);
       if (req != null) _emitObject(req, t.reqName!);
     }
   }
+  if (problems.isNotEmpty) throw GenError(problems.join('\n'));
 
   final out = StringBuffer()
     ..writeln('// GENERATED by tool/gen_models.dart from the OpenAPI snapshot - do not edit.')
@@ -131,11 +228,17 @@ void main() {
     _writeClass(out, _classes[name]!);
     out.writeln();
   }
-
-  final dest = File('${_repoRoot()}/apps/mobile-flutter/app/lib/api/models.gen.dart');
-  dest.parent.createSync(recursive: true);
-  dest.writeAsStringSync(out.toString());
-  stdout.writeln('wrote ${_classes.length} models -> lib/api/models.gen.dart');
+  for (final alias in _typedefs.keys.toList()..sort()) {
+    out.writeln('typedef $alias = ${_typedefs[alias]};');
+  }
+  if (_typedefs.isNotEmpty) out.writeln();
+  for (final parser in _listParsers.keys.toList()..sort()) {
+    final cls = _listParsers[parser]!;
+    out.writeln('List<$cls> $parser(dynamic json) =>');
+    out.writeln('    (json as List).map((e) => $cls.fromJson(e as Map<String, dynamic>)).toList();');
+    out.writeln();
+  }
+  return out.toString();
 }
 
 Map<String, dynamic>? _schemaOf(dynamic responseOrBody) {
@@ -143,23 +246,30 @@ Map<String, dynamic>? _schemaOf(dynamic responseOrBody) {
   return (responseOrBody['content']?['application/json']?['schema']) as Map<String, dynamic>?;
 }
 
-/// Model names that would collide with a common Flutter/dart widget or type get
-/// a `Data` suffix, so a UI file can import the models and the framework together.
-const _reserved = {
+/// Names a consumer that imports both this library and `package:flutter/material.dart`
+/// unprefixed would see as ambiguous. They are never emitted bare; the parent
+/// prefix disambiguates, and `Data` is the last resort.
+const _ambiguousWithFlutter = {
   'Row', 'Column', 'Table', 'Image', 'Icon', 'Card', 'Text', 'Divider', 'Center',
   'Padding', 'Stack', 'Align', 'Wrap', 'Flow', 'Chip', 'Badge', 'Banner', 'Hero',
   'Form', 'Scaffold', 'Title', 'Tab', 'Step', 'Page', 'Placeholder', 'Spacer',
   'Notification', 'Action', 'Route', 'Overlay', 'Semantics',
 };
 
-/// Register (dedup) an object schema as a class and return its name.
-String _emitObject(Map<String, dynamic> schema, String suggested) {
+/// Register (dedup) an object schema as a class and return its name. [parent]
+/// prefixes the suggestion when the bare name is taken, so a nested `home` under
+/// `MatchDetailResponse` becomes `MatchDetailResponseHome`, never an
+/// ordering-dependent `Home2`.
+String _emitObject(Map<String, dynamic> schema, String suggested, {String? parent}) {
   final sig = _signature(schema);
   final existing = _bySignature[sig];
   if (existing != null) return existing;
 
-  if (_reserved.contains(suggested)) suggested = '${suggested}Data';
-  final name = _uniqueName(suggested);
+  var candidate = suggested;
+  final taken = _usedNames.contains(candidate) || _ambiguousWithFlutter.contains(candidate);
+  if (taken && parent != null && parent.isNotEmpty) candidate = '$parent$suggested';
+  if (_ambiguousWithFlutter.contains(candidate)) candidate = '${candidate}Data';
+  final name = _uniqueName(candidate);
   _bySignature[sig] = name;
   _usedNames.add(name);
 
@@ -168,8 +278,7 @@ String _emitObject(Map<String, dynamic> schema, String suggested) {
   final fields = <Field>[];
   props.forEach((key, raw) {
     final s = raw as Map<String, dynamic>;
-    final nullable = (s['nullable'] == true) || !required.contains(key);
-    fields.add(_field(key, s, nullable));
+    fields.add(_field(key, s, s['nullable'] == true, !required.contains(key), parent: name));
   });
   _classes[name] = ModelClass(name, fields);
   return name;
@@ -178,17 +287,18 @@ String _emitObject(Map<String, dynamic> schema, String suggested) {
 bool _isUnion(Map<String, dynamic> s) =>
     s.containsKey('anyOf') || s.containsKey('oneOf') || s.containsKey('allOf');
 
-Field _field(String key, Map<String, dynamic> s, bool nullable) {
+Field _field(String key, Map<String, dynamic> s, bool nullableInSchema, bool optional,
+    {String? parent}) {
   final dartName = _camel(key);
-  final q = nullable ? '?' : '';
+  final q = (nullableInSchema || optional) ? '?' : '';
   final type = _typeOf(s);
 
   // Union / free-form shapes stay dynamic rather than forcing a lossy class.
   if (_isUnion(s)) {
-    return Field(key, dartName, 'dynamic', nullable, _Kind.raw);
+    return Field(key, dartName, 'dynamic', nullableInSchema, optional, _Kind.raw);
   }
   if (type == 'array' && _isUnion(s['items'] as Map<String, dynamic>)) {
-    return Field(key, dartName, 'List<dynamic>$q', nullable, _Kind.listScalar,
+    return Field(key, dartName, 'List<dynamic>$q', nullableInSchema, optional, _Kind.listScalar,
         elementParse: 'dynamic');
   }
 
@@ -196,31 +306,40 @@ Field _field(String key, Map<String, dynamic> s, bool nullable) {
     // additionalProperties map or nested class.
     if (s['properties'] == null) {
       final v = s['additionalProperties'];
+      if (v is Map<String, dynamic> && v['properties'] != null) {
+        final cls = _emitObject(v, _pascal(_singular(key)), parent: parent);
+        return Field(key, dartName, 'Map<String, $cls>$q', nullableInSchema, optional,
+            _Kind.mapObject,
+            elementParse: cls);
+      }
       final valType = (v is Map<String, dynamic>) ? _scalarDart(v) ?? 'dynamic' : 'dynamic';
-      return Field(key, dartName, 'Map<String, $valType>$q', nullable, _Kind.map);
+      return Field(key, dartName, 'Map<String, $valType>$q', nullableInSchema, optional, _Kind.map,
+          elementParse: valType);
     }
-    final cls = _emitObject(s, _pascal(_singular(key)));
-    return Field(key, dartName, '$cls$q', nullable, _Kind.object);
+    final cls = _emitObject(s, _pascal(_singular(key)), parent: parent);
+    return Field(key, dartName, '$cls$q', nullableInSchema, optional, _Kind.object);
   }
   if (type == 'array') {
     final item = s['items'] as Map<String, dynamic>;
     final it = _typeOf(item);
     if (it == 'object') {
-      final cls = _emitObject(item, _pascal(_singular(key)));
-      return Field(key, dartName, 'List<$cls>$q', nullable, _Kind.listObject, elementParse: cls);
+      final cls = _emitObject(item, _pascal(_singular(key)), parent: parent);
+      return Field(key, dartName, 'List<$cls>$q', nullableInSchema, optional, _Kind.listObject,
+          elementParse: cls);
     }
     if (_isDateTime(item)) {
-      return Field(key, dartName, 'List<DateTime>$q', nullable, _Kind.listDateTime);
+      return Field(key, dartName, 'List<DateTime>$q', nullableInSchema, optional, _Kind.listDateTime);
     }
     final sc = _scalarDart(item) ?? 'dynamic';
-    return Field(key, dartName, 'List<$sc>$q', nullable, _Kind.listScalar, elementParse: sc);
+    return Field(key, dartName, 'List<$sc>$q', nullableInSchema, optional, _Kind.listScalar,
+        elementParse: sc);
   }
   if (_isDateTime(s)) {
-    return Field(key, dartName, 'DateTime$q', nullable, _Kind.dateTime);
+    return Field(key, dartName, 'DateTime$q', nullableInSchema, optional, _Kind.dateTime);
   }
   final sc = _scalarDart(s) ?? 'dynamic';
   final enums = (s['enum'] as List?)?.cast<Object>().map((e) => e.toString()).toList();
-  return Field(key, dartName, '$sc$q', nullable, _Kind.scalar, enumValues: enums);
+  return Field(key, dartName, '$sc$q', nullableInSchema, optional, _Kind.scalar, enumValues: enums);
 }
 
 void _writeClass(StringBuffer out, ModelClass c) {
@@ -240,6 +359,14 @@ void _writeClass(StringBuffer out, ModelClass c) {
     out.writeln('  final ${f.type} ${f.dartName};');
   }
   out.writeln();
+  // The contract's closed value sets, so a caller can validate or build a picker
+  // without re-typing them.
+  for (final f in c.fields) {
+    if (f.enumValues == null) continue;
+    final values = f.enumValues!.map((v) => "'$v'").join(', ');
+    out.writeln('  static const ${f.dartName}Values = <String>[$values];');
+  }
+  if (c.fields.any((f) => f.enumValues != null)) out.writeln();
   out.writeln('  const ${c.name}({');
   for (final f in c.fields) {
     out.writeln('    ${f.nullable ? '' : 'required '}this.${f.dartName},');
@@ -253,10 +380,15 @@ void _writeClass(StringBuffer out, ModelClass c) {
   }
   out.writeln('  );');
   out.writeln();
-  // toJson
+  // toJson - an optional-but-not-nullable key is omitted when null, because the
+  // server's zod `.optional()` rejects an explicit null.
   out.writeln('  Map<String, dynamic> toJson() => {');
   for (final f in c.fields) {
-    out.writeln("    '${f.jsonKey}': ${_encode(f)},");
+    if (f.optional && !f.nullableInSchema) {
+      out.writeln("    if (${f.dartName} != null) '${f.jsonKey}': ${_encode(f)},");
+    } else {
+      out.writeln("    '${f.jsonKey}': ${_encode(f)},");
+    }
   }
   out.writeln('  };');
   out.writeln('}');
@@ -276,6 +408,8 @@ String _encode(Field f) {
       return '$n$q.toIso8601String()';
     case _Kind.object:
       return '$n$q.toJson()';
+    case _Kind.mapObject:
+      return '$n$q.map((k, e) => MapEntry(k, e.toJson()))';
     case _Kind.listDateTime:
       return '$n$q.map((e) => e.toIso8601String()).toList()';
     case _Kind.listObject:
@@ -302,7 +436,14 @@ String _parse(Field f) {
           ? '$v == null ? null : $cls.fromJson($v as Map<String, dynamic>)'
           : '$cls.fromJson($v as Map<String, dynamic>)';
     case _Kind.map:
-      return n ? '($v as Map<String, dynamic>?)?.cast()' : '($v as Map<String, dynamic>).cast()';
+      // Eager copy, not a lazy .cast(): a wire-type violation must throw at the
+      // parse boundary, not at the first read somewhere in the UI.
+      final body = 'Map<String, ${f.elementParse}>.from($v as Map)';
+      return n ? '$v == null ? null : $body' : body;
+    case _Kind.mapObject:
+      final body = '($v as Map).map((k, e) => '
+          'MapEntry(k as String, ${f.elementParse}.fromJson(e as Map<String, dynamic>)))';
+      return n ? '$v == null ? null : $body' : body;
     case _Kind.listScalar:
       final e = f.elementParse == 'double' ? '(e as num).toDouble()' : 'e as ${f.elementParse}';
       final body = '($v as List).map((e) => $e).toList()';
@@ -395,7 +536,8 @@ String _repoRoot() {
     if (Directory('${dir.path}/shared/contracts-openapi').existsSync()) return dir.path;
     final parent = dir.parent;
     if (parent.path == dir.path) {
-      throw StateError('repo root (shared/contracts-openapi) not found from ${Directory.current.path}');
+      throw StateError(
+          'repo root (shared/contracts-openapi) not found from ${Directory.current.path}');
     }
     dir = parent;
   }
