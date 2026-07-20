@@ -26,16 +26,30 @@ Pipeline lives in `apps/web-nuxt/server/utils/share/*`:
 1. **satori needs `ttf` / `otf` / `woff`, NOT `woff2`, and does not fetch remote
    images.** Vendored woff fonts live in `apps/web-nuxt/server/assets/fonts/` (Inter Latin plus
    Noto Sans Thai for locale glyph coverage via satori's per-glyph fallback).
-   Additional script subsets (ja/ko/zh/ar/he/hi, etc.) are fetched from Google
-   Fonts on demand through satori's `loadAdditionalAsset` and cached, degrading
-   to tofu offline. satori also emits non-script codes for the decorative
-   characters display names are full of - `math` (Mathematical Alphanumeric
-   letters like `𝓑`), `symbol` (dingbats like `✕`) and `emoji` - each mapped in
-   `SCRIPT_FAMILY` to Noto Sans Math / Noto Sans Symbols 2 / Noto Emoji
-   (monochrome: the card traces glyphs to paths, so a color font gains nothing).
-   Every remaining script comes back as the single code `unknown`, so the family
-   is derived from the text instead: `\p{Script=X}` over the `NOTO_SCRIPTS` list
-   gives `Noto Sans <Script>` (Noto's family naming follows the Unicode script). Team identity uses CODE pills (ENG/SEN) or flags inlined as
+   Additional subsets are fetched from Google Fonts on demand through satori's
+   `loadAdditionalAsset` and cached, degrading to tofu offline.
+   `apps/web-nuxt/server/utils/share/font-fallback.ts` picks which families to
+   try for a run and is the tested half; `og-assets.ts` is the I/O half.
+   Rules that took a round of debugging, all of them satori behaviour:
+   - satori labels a run with a locale (`ar-AR`, `ja-JP|zh-CN|...`), with
+     `emoji` / `symbol` / `math`, or with `unknown`. Only the first two forms are
+     a lookup; `unknown` covers ~140 scripts, so the family is read off the text
+     with `\p{scx=X}` over `NOTO_SCRIPTS` (Noto names families after the Unicode
+     script). Latin, Cyrillic and Greek also arrive as `unknown` and are served
+     by plain Noto Sans, which is why it always closes the candidate list.
+   - satori tests its symbol regex before its math one, so math operators are
+     labelled `symbol`; both codes try Symbols 2 and Math.
+   - One run can mix scripts, so every detected script is fetched, not the first.
+   - Registered fonts are keyed by NAME, so a subset is registered under
+     `family#run` - two runs pulling different subsets of one family (Noto Sans
+     for a symbol run and a Cyrillic one) otherwise collide and one tofus.
+   - Emoji use monochrome Noto Emoji: the card traces glyphs to paths, so a
+     color font gains nothing.
+   Google can answer 200 with an HTML error page, so a buffer that is not an
+   sfnt/woff is dropped rather than handed to satori (which throws on it), both
+   fetches carry a timeout, and display names are capped by `shareName`
+   (`template.ts`) so one card cannot pull unbounded subsets.
+   Team identity uses CODE pills (ENG/SEN) or flags inlined as
    data URIs, never a remote FIFA-CDN `<img>` (that would add a render-time
    network dependency). Assets load at runtime via
    `useStorage('assets:server').getItemRaw(...)`.

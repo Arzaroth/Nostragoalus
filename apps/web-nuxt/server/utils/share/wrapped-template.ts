@@ -1,6 +1,6 @@
 import type { ShareLocale } from './token'
 import type { ShareTranslate } from './i18n'
-import type { VNode } from './template'
+import { shareName, type VNode } from './template'
 
 // The summary numbers the wrapped card brags about. Kept as a plain interface
 // so the builder is a pure function testable without a database.
@@ -56,7 +56,7 @@ export function buildWrappedCardElement(card: WrappedCardData, ctx: WrappedCardC
   if (card.trophies + card.badges > 0) stats.push(stat(String(card.trophies + card.badges), t('wrapped.card.haul')))
 
   const center = el('div', { flexDirection: 'column', alignItems: 'center', gap: 26, flexGrow: 1, justifyContent: 'center' }, [
-    el('div', { fontSize: 52, fontWeight: 700, color: INK }, card.displayName),
+    el('div', { fontSize: 52, fontWeight: 700, color: INK }, shareName(card.displayName)),
     el('div', { fontSize: 28, color: MUTED }, card.competitionName),
     el('div', { gap: 22, flexWrap: 'wrap', justifyContent: 'center' }, stats),
     card.topPercent !== null

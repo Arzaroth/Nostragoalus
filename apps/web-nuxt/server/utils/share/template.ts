@@ -15,6 +15,14 @@ type VChildren = VChild | VChild[]
 export const SHARE_CARD_WIDTH = 1200
 export const SHARE_CARD_HEIGHT = 630
 
+// Display names are unbounded user text and the card gives them one line. Cap by
+// code point (slicing UTF-16 units would split a surrogate pair into a lone
+// tofu); this also bounds how many font subsets one render can pull.
+export function shareName(name: string, max = 40): string {
+  const chars = [...name]
+  return chars.length <= max ? name : `${chars.slice(0, max).join('')}...`
+}
+
 const INK = '#f5f3ff'
 const MUTED = '#a5b4fc'
 const ACCENT = '#818cf8'

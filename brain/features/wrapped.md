@@ -29,9 +29,12 @@ predictions, zeroed bonuses and an empty haul.
   - rank journey is REPLAYED per round from scored predictions (cumulative
     ladder, `compareLeaderboardRows`), prediction points only - there is no
     rank-history table, and the champion/best-scorer bonuses land at finalize
-    with no mid-tournament timeline. The LAST point is then overwritten with the
-    real final standing (`getLeaderboard` rank/players/total) so the chart cannot
-    contradict the rank the totals slide and the share card show.
+    with no mid-tournament timeline. Every point therefore stays on one basis.
+    The deck does NOT read the finishing rank off the last point, which would
+    contradict the totals slide and the share card for anyone carrying a bonus:
+    `journeyFinishRank` (`app/utils/wrapped-slides.ts`) takes `totals.rank`, and
+    falls back to the replay only for a hidden or private user, who has no
+    public standing.
   - chat stats are counts only (messages sent, reactions given/received, top
     emoji); bodies stay E2EE, reactions are plaintext glyphs by design.
   - haul from `competition_award` + `user_achievement` (global badges folded

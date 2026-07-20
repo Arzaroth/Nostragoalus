@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { WrappedDto } from '#shared/types/wrapped'
-import { buildSlides, journeyPolyline } from './wrapped-slides'
+import { buildSlides, journeyFinishRank, journeyPolyline } from './wrapped-slides'
 
 function emptyWrapped(): WrappedDto {
   return {
@@ -112,5 +112,25 @@ describe('journeyPolyline', () => {
 
   it('centers a single point', () => {
     expect(journeyPolyline([{ roundLabel: 'MD1', sortOrder: 1, rank: 2, players: 5, points: 3 }])).toBe('50,50')
+  })
+})
+
+describe('journeyFinishRank', () => {
+  const journey = [
+    { roundLabel: 'MD1', sortOrder: 1, rank: 11, players: 20, points: 5 },
+    { roundLabel: 'MD2', sortOrder: 2, rank: 11, players: 20, points: 9 },
+  ]
+
+  it('finishes on the final standing, not the bonus-free replay', () => {
+    const w = { ...emptyWrapped(), journey, totals: { ...emptyWrapped().totals, rank: 6, players: 35 } }
+    expect(journeyFinishRank(w)).toBe(6)
+  })
+
+  it('keeps the private replay rank for a user with no public standing', () => {
+    expect(journeyFinishRank({ ...emptyWrapped(), journey })).toBe(11)
+  })
+
+  it('falls back to zero when there is no journey and no rank', () => {
+    expect(journeyFinishRank(emptyWrapped())).toBe(0)
   })
 })

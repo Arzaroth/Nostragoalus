@@ -31,6 +31,14 @@ export function buildSlides(w: WrappedDto): WrappedSlideType[] {
   return slides
 }
 
+// Where the climb ends. The journey replays prediction points only - the
+// champion and best-scorer bonuses land at finalize and belong to no round - so
+// the finish line is the final standing, not the replay's last point. A hidden
+// or private user has no public rank and keeps their private replay one.
+export function journeyFinishRank(w: WrappedDto): number {
+  return w.totals.rank ?? w.journey[w.journey.length - 1]?.rank ?? 0
+}
+
 // Points of the journey chart mapped into a 0..100 viewBox, worst rank at the
 // bottom. A single-rank journey draws flat mid-height rather than dividing by
 // zero.
