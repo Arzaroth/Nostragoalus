@@ -5,6 +5,12 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### tI'pu'
+
+- qunHom: patlh Dun DamuvDI', patlh mIS 'oSbe'law'qu'. patlh HaSta'e' pab je'wI' Huch neH; vaj Qup 'ej ghIj bonus lujmoH, 'ej Qav HaSta patlh qab 'ang. DaH patlh Qav teH 'oS HaSta.
+- HaSta HevmeH pong Dun 'oS, box chImbe'. ngutlh Dun, degh, emoji, ngutlh mIw law' (~140) je pIm; DaH ngutlh mIw Hoch pab lI'. wa'logh ngutlh mIw puS neH lI'pu'.
+- qunHom SoQmeH Degh ghIq botlhDaq.
+
 ## [4.4.0] - 2026-07-20
 
 ### chelpu'
