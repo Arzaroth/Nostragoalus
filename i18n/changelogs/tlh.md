@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [4.4.1] - 2026-07-20
+
 ### tI'pu'
 
 - qunHom: patlh Dun DamuvDI', patlh mIS 'oSbe'law'qu'. patlh HaSta'e' pab je'wI' Huch neH; vaj Qup 'ej ghIj bonus lujmoH, 'ej Qav HaSta patlh qab 'ang. DaH patlh Qav teH 'oS HaSta.

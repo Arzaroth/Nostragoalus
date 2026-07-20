@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [4.4.1] - 2026-07-20
+
 ### Fixed
 
 - Tournament Wrapped no longer ends your climb on the wrong rank. The standings chart replayed prediction points only, so a champion or best-scorer bonus was missing from the finish line and the last slide could announce a worse rank than the leaderboard and the share card. The chart now closes on your real final standing.
