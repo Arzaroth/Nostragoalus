@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray, ne, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
-import { chatMessage, chatMessageReport, leagueMember } from '../../../db/schema'
+import { chatMessage, chatMessageReport, leagueMember, user } from '../../../db/schema'
 import { ForbiddenError, NotFoundError, ValidationError } from '../errors'
 import { getMembership } from '../leagues/service'
 import type { ChatModerationState } from '../../../shared/types/chat'
@@ -120,6 +120,10 @@ export async function moderateMessage(
 export interface ReportedMessage {
   id: string
   userId: string | null
+  // Author display name + avatar, so a moderator can see who they are ruling on
+  // even after that member left the league.
+  authorName: string | null
+  authorImage: string | null
   matchId: string | null
   epoch: number
   ciphertext: string
@@ -140,6 +144,8 @@ export async function listReports(
     .select({
       id: chatMessage.id,
       userId: chatMessage.userId,
+      authorName: user.name,
+      authorImage: user.image,
       matchId: chatMessage.matchId,
       epoch: chatMessage.epoch,
       ciphertext: chatMessage.ciphertext,
@@ -149,9 +155,10 @@ export async function listReports(
     })
     .from(chatMessage)
     .innerJoin(chatMessageReport, eq(chatMessageReport.messageId, chatMessage.id))
+    .leftJoin(user, eq(user.id, chatMessage.userId))
     // A removed message is already dealt with - drop it from the queue.
     .where(and(eq(chatMessage.leagueId, opts.leagueId), ne(chatMessage.moderationState, 'REMOVED')))
-    .groupBy(chatMessage.id)
+    .groupBy(chatMessage.id, user.id)
     .orderBy(desc(sql`count(${chatMessageReport.id})`), desc(chatMessage.createdAt))
   return rows.map((r) => ({ ...r, moderationState: r.moderationState as ChatModerationState }))
 }

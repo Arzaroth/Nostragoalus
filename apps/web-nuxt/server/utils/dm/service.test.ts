@@ -643,6 +643,18 @@ describe('listDmMessages', () => {
     await client.close()
   })
 
+  it('names the author on each message', async () => {
+    const { db, client } = await createTestDb()
+    const me = await mkUser(db, 'aaa')
+    const other = await mkUser(db, 'bbb')
+    const threadId = await openThread(db, me, other)
+    await db.insert(chatMessage).values({ dmThreadId: threadId, userId: other, epoch: 1, ciphertext: 'm1' })
+    const rows = await listDmMessages(db, { threadId, userId: me })
+    expect(rows[0].authorName).toBe('bbb')
+    expect(rows[0].authorImage).toBeNull()
+    await client.close()
+  })
+
   it('lists the main thread newest-first, paginates and clamps the page size', async () => {
     const { db, client } = await createTestDb()
     const me = await mkUser(db, 'aaa')

@@ -57,7 +57,6 @@ const targets = <Target>[
   Target('get', '/api/matches/{id}/lineups', 'MatchLineupsResponse'),
   Target('get', '/api/matches/{id}/scorers', 'MatchScorersResponse', aliasExpected: true),
   Target('get', '/api/matches/{id}/insights', 'MatchInsightsResponse'),
-  Target('get', '/api/matches/{id}/live-detail', 'MatchLiveDetailResponse'),
   Target('get', '/api/matches/{id}/league-standings', 'MatchLeagueStandingsResponse'),
   Target('get', '/api/matches/{id}/media', 'MatchMediaResponse'),
   // Profile + prefs + stats
@@ -81,6 +80,12 @@ const targets = <Target>[
   Target('get', '/api/leagues/{id}/chat/reports', 'ChatReportsResponse'),
   Target('post', '/api/dm/threads', 'DmThreadCreatedResponse'),
   Target('get', '/api/dm/identity', 'DmIdentityResponse'),
+  // Was bound with an opaque `detail`; typing it emits nested classes, so it
+  // moved to the end where their names cannot displace an older target's.
+  Target('get', '/api/matches/{id}/live-detail', 'MatchLiveDetailResponse'),
+  Target('get', '/api/leagues/{id}/chat/attachments/{messageId}', 'ChatAttachmentResponse'),
+  Target('get', '/api/dm/{threadId}/attachments/{messageId}', 'DmAttachmentResponse',
+      aliasExpected: true),
 ];
 
 class Target {
@@ -123,6 +128,7 @@ class Field {
 
 enum _Kind {
   scalar,
+  enumValue,
   dateTime,
   object,
   listScalar,
@@ -153,6 +159,8 @@ final Map<String, ModelClass> _classes = {};
 final Set<String> _usedNames = {};
 final Map<String, String> _typedefs = {}; // alias name -> emitted class
 final Map<String, String> _listParsers = {}; // parser name -> item class
+final Map<String, String> _enumBySignature = {}; // joined values -> enum name
+final Map<String, List<String>> _enums = {}; // enum name -> wire values
 
 void main() {
   final root = _repoRoot();
@@ -181,6 +189,8 @@ String generate(Map<String, dynamic> snapshot, List<Target> ts) {
   _usedNames.clear();
   _typedefs.clear();
   _listParsers.clear();
+  _enumBySignature.clear();
+  _enums.clear();
 
   final paths = snapshot['paths'] as Map<String, dynamic>? ?? const {};
   final problems = <String>[];
@@ -224,6 +234,10 @@ String generate(Map<String, dynamic> snapshot, List<Target> ts) {
     ..writeln('// ignore_for_file: type=lint')
     ..writeln();
 
+  for (final name in _enums.keys.toList()..sort()) {
+    _writeEnum(out, name, _enums[name]!);
+    out.writeln();
+  }
   for (final name in _classes.keys.toList()..sort()) {
     _writeClass(out, _classes[name]!);
     out.writeln();
@@ -339,7 +353,72 @@ Field _field(String key, Map<String, dynamic> s, bool nullableInSchema, bool opt
   }
   final sc = _scalarDart(s) ?? 'dynamic';
   final enums = (s['enum'] as List?)?.cast<Object>().map((e) => e.toString()).toList();
+  // A closed set of 2+ strings becomes a real Dart enum. A single-value literal
+  // (or a boolean/number literal) is not a choice - it stays a plain scalar with
+  // its value documented.
+  if (enums != null && enums.length > 1 && sc == 'String') {
+    final name = _emitEnum(enums, dartName, parent: parent);
+    return Field(key, dartName, '$name$q', nullableInSchema, optional, _Kind.enumValue,
+        elementParse: name, enumValues: enums);
+  }
   return Field(key, dartName, '$sc$q', nullableInSchema, optional, _Kind.scalar, enumValues: enums);
+}
+
+/// Register (dedup) a closed string set as a Dart enum and return its name. Two
+/// fields with the SAME value set share one enum; a clashing name with a
+/// different set takes the parent-class prefix, as nested classes do.
+String _emitEnum(List<String> values, String field, {String? parent}) {
+  final sig = values.join(' ');
+  final existing = _enumBySignature[sig];
+  if (existing != null) return existing;
+
+  var candidate = '${_pascal(field)}Value';
+  if (_usedNames.contains(candidate) && parent != null && parent.isNotEmpty) {
+    candidate = '$parent${_pascal(field)}Value';
+  }
+  final name = _uniqueName(candidate);
+  _usedNames.add(name);
+  _enumBySignature[sig] = name;
+  _enums[name] = values;
+  return name;
+}
+
+/// Identifiers an enum member may not use: Dart keywords, plus the members every
+/// enum already has (`index`, `values`, `name`) and this generator's own `wire`.
+const _reservedMembers = {
+  'abstract', 'as', 'assert', 'async', 'await', 'break', 'case', 'catch', 'class',
+  'const', 'continue', 'covariant', 'default', 'deferred', 'do', 'dynamic', 'else',
+  'enum', 'export', 'extends', 'extension', 'external', 'factory', 'false', 'final',
+  'finally', 'for', 'function', 'get', 'hide', 'if', 'implements', 'import', 'in',
+  'interface', 'is', 'late', 'library', 'mixin', 'new', 'null', 'on', 'operator',
+  'part', 'required', 'rethrow', 'return', 'set', 'show', 'static', 'super',
+  'switch', 'sync', 'this', 'throw', 'true', 'try', 'typedef', 'var', 'void',
+  'while', 'with', 'yield',
+  'index', 'values', 'name', 'wire', 'from', 'hashCode', 'runtimeType', 'toString',
+  'noSuchMethod', 'unknown',
+};
+
+String _enumMember(String value) {
+  var n = _camel(value);
+  if (n.isEmpty || RegExp(r'^[0-9]').hasMatch(n)) n = 'v$n';
+  return _reservedMembers.contains(n) ? '${n}_' : n;
+}
+
+void _writeEnum(StringBuffer out, String name, List<String> values) {
+  out.writeln('enum $name {');
+  for (final v in values) {
+    out.writeln("  ${_enumMember(v)}('$v'),");
+  }
+  // A value this build does not know degrades to `unknown` instead of throwing:
+  // a server that adds a case must not brick an installed app.
+  out.writeln("  unknown('');");
+  out.writeln();
+  out.writeln('  const $name(this.wire);');
+  out.writeln('  final String wire;');
+  out.writeln();
+  out.writeln('  static $name from(Object? v) =>');
+  out.writeln('      values.firstWhere((e) => e.wire == v, orElse: () => unknown);');
+  out.writeln('}');
 }
 
 void _writeClass(StringBuffer out, ModelClass c) {
@@ -359,14 +438,14 @@ void _writeClass(StringBuffer out, ModelClass c) {
     out.writeln('  final ${f.type} ${f.dartName};');
   }
   out.writeln();
-  // The contract's closed value sets, so a caller can validate or build a picker
-  // without re-typing them.
-  for (final f in c.fields) {
-    if (f.enumValues == null) continue;
+  // A closed set that did not earn an enum (a single literal) still publishes its
+  // values, so a caller can validate without re-typing them.
+  final consts = c.fields.where((f) => f.enumValues != null && f.kind != _Kind.enumValue);
+  for (final f in consts) {
     final values = f.enumValues!.map((v) => "'$v'").join(', ');
     out.writeln('  static const ${f.dartName}Values = <String>[$values];');
   }
-  if (c.fields.any((f) => f.enumValues != null)) out.writeln();
+  if (consts.isNotEmpty) out.writeln();
   out.writeln('  const ${c.name}({');
   for (final f in c.fields) {
     out.writeln('    ${f.nullable ? '' : 'required '}this.${f.dartName},');
@@ -404,6 +483,8 @@ String _encode(Field f) {
     case _Kind.map:
     case _Kind.listScalar:
       return n;
+    case _Kind.enumValue:
+      return '$n$q.wire';
     case _Kind.dateTime:
       return '$n$q.toIso8601String()';
     case _Kind.object:
@@ -428,6 +509,9 @@ String _parse(Field f) {
       final base = f.type.replaceAll('?', '');
       if (base == 'double') return n ? '($v as num?)?.toDouble()' : '($v as num).toDouble()';
       return n ? '$v as $base?' : '$v as $base';
+    case _Kind.enumValue:
+      final e = '${f.elementParse}.from($v)';
+      return n ? '$v == null ? null : $e' : e;
     case _Kind.dateTime:
       return n ? '$v == null ? null : DateTime.parse($v as String)' : 'DateTime.parse($v as String)';
     case _Kind.object:

@@ -13,7 +13,7 @@ import 'widgets/score_pill.dart';
 class MultiviewScreen extends ConsumerWidget {
   const MultiviewScreen({super.key});
 
-  static const _live = {'LIVE', 'PAUSED'};
+  static const _live = {StatusValue.live, StatusValue.paused};
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

@@ -3,20 +3,26 @@
 /// exists so the UI never offers an action that is going to 403.
 library;
 
-bool canManageLeague(String? role) => role == 'OWNER' || role == 'MODERATOR';
+import '../api/models.gen.dart';
 
-bool canKick(String? actor, String? target) {
-  if (actor == 'OWNER') return target == 'MODERATOR' || target == 'MEMBER';
-  if (actor == 'MODERATOR') return target == 'MEMBER';
+bool canManageLeague(RoleValue? role) =>
+    role == RoleValue.owner || role == RoleValue.moderator;
+
+bool canKick(RoleValue? actor, RoleValue? target) {
+  if (actor == RoleValue.owner) {
+    return target == RoleValue.moderator || target == RoleValue.member;
+  }
+  if (actor == RoleValue.moderator) return target == RoleValue.member;
   return false;
 }
 
-bool canSeeJoinCode(String? role) => canManageLeague(role);
+bool canSeeJoinCode(RoleValue? role) => canManageLeague(role);
 
 /// `PUT /api/leagues/[id]/members/[userId]` requires OWNER.
-bool canChangeRole(String? actor, String? target) =>
-    actor == 'OWNER' && (target == 'MEMBER' || target == 'MODERATOR');
+bool canChangeRole(RoleValue? actor, RoleValue? target) =>
+    actor == RoleValue.owner &&
+    (target == RoleValue.member || target == RoleValue.moderator);
 
 /// Ownership moves through the transfer endpoint, owner only.
-bool canTransferOwnership(String? actor, String? target) =>
-    actor == 'OWNER' && target != 'OWNER';
+bool canTransferOwnership(RoleValue? actor, RoleValue? target) =>
+    actor == RoleValue.owner && target != RoleValue.owner;

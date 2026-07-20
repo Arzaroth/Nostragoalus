@@ -6183,6 +6183,14 @@
                             "nullable": true,
                             "type": "string"
                           },
+                          "authorName": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "authorImage": {
+                            "nullable": true,
+                            "type": "string"
+                          },
                           "epoch": {
                             "type": "number"
                           },
@@ -6413,6 +6421,14 @@
                           "type": "string"
                         },
                         "userId": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "authorName": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "authorImage": {
                           "nullable": true,
                           "type": "string"
                         },
@@ -8097,6 +8113,14 @@
                             "nullable": true,
                             "type": "string"
                           },
+                          "authorName": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "authorImage": {
+                            "nullable": true,
+                            "type": "string"
+                          },
                           "epoch": {
                             "type": "number"
                           },
@@ -8341,6 +8365,14 @@
                           "type": "string"
                         },
                         "userId": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "authorName": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "authorImage": {
                           "nullable": true,
                           "type": "string"
                         },
@@ -8716,6 +8748,14 @@
                             "nullable": true,
                             "type": "string"
                           },
+                          "authorName": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "authorImage": {
+                            "nullable": true,
+                            "type": "string"
+                          },
                           "matchId": {
                             "nullable": true,
                             "type": "string"
@@ -8744,6 +8784,8 @@
                         "required": [
                           "id",
                           "userId",
+                          "authorName",
+                          "authorImage",
                           "matchId",
                           "epoch",
                           "ciphertext",
@@ -12921,7 +12963,412 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "detail": {}
+                    "detail": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "minute": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "halfTime": {
+                          "type": "boolean"
+                        },
+                        "possessionHome": {
+                          "nullable": true,
+                          "type": "number"
+                        },
+                        "possessionAway": {
+                          "nullable": true,
+                          "type": "number"
+                        },
+                        "attendance": {
+                          "nullable": true,
+                          "type": "number"
+                        },
+                        "stadium": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "cards": {
+                          "type": "object",
+                          "properties": {
+                            "home": {
+                              "type": "object",
+                              "properties": {
+                                "yellow": {
+                                  "type": "number"
+                                },
+                                "red": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "yellow",
+                                "red"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "away": {
+                              "type": "object",
+                              "properties": {
+                                "yellow": {
+                                  "type": "number"
+                                },
+                                "red": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "yellow",
+                                "red"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "home",
+                            "away"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "goals": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "side": {
+                                "type": "string",
+                                "enum": [
+                                  "HOME",
+                                  "AWAY"
+                                ]
+                              },
+                              "teamId": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "teamName": {
+                                "type": "string"
+                              },
+                              "teamCode": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "playerId": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "playerName": {
+                                "type": "string"
+                              },
+                              "minute": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "goalType": {
+                                "nullable": true,
+                                "type": "number"
+                              },
+                              "ownGoal": {
+                                "type": "boolean"
+                              },
+                              "assistPlayerId": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "assistPlayerName": {
+                                "nullable": true,
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "side",
+                              "teamId",
+                              "teamName",
+                              "teamCode",
+                              "playerId",
+                              "playerName",
+                              "minute",
+                              "goalType",
+                              "ownGoal",
+                              "assistPlayerId",
+                              "assistPlayerName"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "bookings": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "side": {
+                                "type": "string",
+                                "enum": [
+                                  "HOME",
+                                  "AWAY"
+                                ]
+                              },
+                              "playerId": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "playerName": {
+                                "type": "string"
+                              },
+                              "minute": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "card": {
+                                "type": "string",
+                                "enum": [
+                                  "YELLOW",
+                                  "SECOND_YELLOW",
+                                  "RED"
+                                ]
+                              },
+                              "coach": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "side",
+                              "playerId",
+                              "playerName",
+                              "minute",
+                              "card"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "substitutions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "side": {
+                                "type": "string",
+                                "enum": [
+                                  "HOME",
+                                  "AWAY"
+                                ]
+                              },
+                              "minute": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "playerOffId": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "playerOffName": {
+                                "type": "string"
+                              },
+                              "playerOnId": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "playerOnName": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "side",
+                              "minute",
+                              "playerOffId",
+                              "playerOffName",
+                              "playerOnId",
+                              "playerOnName"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "playerNames": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          }
+                        },
+                        "ifesId": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "homeTeamId": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "awayTeamId": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "stats": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "home": {
+                              "nullable": true,
+                              "type": "object",
+                              "properties": {
+                                "possession": {
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "attempts": {
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "onTarget": {
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "passes": {
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "passesCompleted": {
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "crosses": {
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "corners": {
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "fouls": {
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "offsides": {
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "distanceKm": {
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "pressuresApplied": {
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "forcedTurnovers": {
+                                  "nullable": true,
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "possession",
+                                "attempts",
+                                "onTarget",
+                                "passes",
+                                "passesCompleted",
+                                "crosses",
+                                "corners",
+                                "fouls",
+                                "offsides",
+                                "distanceKm",
+                                "pressuresApplied",
+                                "forcedTurnovers"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "away": {
+                              "nullable": true,
+                              "type": "object",
+                              "properties": {
+                                "possession": {
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "attempts": {
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "onTarget": {
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "passes": {
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "passesCompleted": {
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "crosses": {
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "corners": {
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "fouls": {
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "offsides": {
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "distanceKm": {
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "pressuresApplied": {
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "forcedTurnovers": {
+                                  "nullable": true,
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "possession",
+                                "attempts",
+                                "onTarget",
+                                "passes",
+                                "passesCompleted",
+                                "crosses",
+                                "corners",
+                                "fouls",
+                                "offsides",
+                                "distanceKm",
+                                "pressuresApplied",
+                                "forcedTurnovers"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "home",
+                            "away"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "possessionHome",
+                        "possessionAway",
+                        "attendance",
+                        "stadium",
+                        "cards",
+                        "goals",
+                        "bookings",
+                        "substitutions",
+                        "ifesId",
+                        "homeTeamId",
+                        "awayTeamId",
+                        "stats"
+                      ],
+                      "additionalProperties": false
+                    }
                   },
                   "required": [
                     "detail"

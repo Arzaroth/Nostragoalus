@@ -3,6 +3,403 @@
 //
 // ignore_for_file: type=lint
 
+enum BaseTierValue {
+  exact('EXACT'),
+  diff('DIFF'),
+  outcome('OUTCOME'),
+  miss('MISS'),
+  unknown('');
+
+  const BaseTierValue(this.wire);
+  final String wire;
+
+  static BaseTierValue from(Object? v) =>
+      values.firstWhere((e) => e.wire == v, orElse: () => unknown);
+}
+
+enum BonusSourceValue {
+  none('NONE'),
+  crowd('CROWD'),
+  odds('ODDS'),
+  unknown('');
+
+  const BonusSourceValue(this.wire);
+  final String wire;
+
+  static BonusSourceValue from(Object? v) =>
+      values.firstWhere((e) => e.wire == v, orElse: () => unknown);
+}
+
+enum CardValue {
+  yellow('YELLOW'),
+  secondYellow('SECOND_YELLOW'),
+  red('RED'),
+  unknown('');
+
+  const CardValue(this.wire);
+  final String wire;
+
+  static CardValue from(Object? v) =>
+      values.firstWhere((e) => e.wire == v, orElse: () => unknown);
+}
+
+enum InviteStatusValue {
+  valid('VALID'),
+  expired('EXPIRED'),
+  exhausted('EXHAUSTED'),
+  unknown('');
+
+  const InviteStatusValue(this.wire);
+  final String wire;
+
+  static InviteStatusValue from(Object? v) =>
+      values.firstWhere((e) => e.wire == v, orElse: () => unknown);
+}
+
+enum ItemStatusValue {
+  planned('PLANNED'),
+  inProgress('IN_PROGRESS'),
+  shipped('SHIPPED'),
+  suggested('SUGGESTED'),
+  unknown('');
+
+  const ItemStatusValue(this.wire);
+  final String wire;
+
+  static ItemStatusValue from(Object? v) =>
+      values.firstWhere((e) => e.wire == v, orElse: () => unknown);
+}
+
+enum KindValue {
+  points('points'),
+  survival('survival'),
+  unknown('');
+
+  const KindValue(this.wire);
+  final String wire;
+
+  static KindValue from(Object? v) =>
+      values.firstWhere((e) => e.wire == v, orElse: () => unknown);
+}
+
+enum LeagueRewardTypeValue {
+  overall('OVERALL'),
+  woodenSpoon('WOODEN_SPOON'),
+  groupPhase('GROUP_PHASE'),
+  knockoutPhase('KNOCKOUT_PHASE'),
+  finalist('FINALIST'),
+  madameIrma('MADAME_IRMA'),
+  groupOracle('GROUP_ORACLE'),
+  knockoutOracle('KNOCKOUT_ORACLE'),
+  sharpshooter('SHARPSHOOTER'),
+  goalDiffGuru('GOAL_DIFF_GURU'),
+  teamSpecialist('TEAM_SPECIALIST'),
+  unknown('');
+
+  const LeagueRewardTypeValue(this.wire);
+  final String wire;
+
+  static LeagueRewardTypeValue from(Object? v) =>
+      values.firstWhere((e) => e.wire == v, orElse: () => unknown);
+}
+
+enum MatchLeagueStandingsResponseScopeValue {
+  upcoming('upcoming'),
+  live('live'),
+  final_('final'),
+  unknown('');
+
+  const MatchLeagueStandingsResponseScopeValue(this.wire);
+  final String wire;
+
+  static MatchLeagueStandingsResponseScopeValue from(Object? v) =>
+      values.firstWhere((e) => e.wire == v, orElse: () => unknown);
+}
+
+enum MatchesResponseMatchWinnerValue {
+  home('HOME'),
+  draw('DRAW'),
+  away('AWAY'),
+  unknown('');
+
+  const MatchesResponseMatchWinnerValue(this.wire);
+  final String wire;
+
+  static MatchesResponseMatchWinnerValue from(Object? v) =>
+      values.firstWhere((e) => e.wire == v, orElse: () => unknown);
+}
+
+enum MediaKindValue {
+  live('LIVE'),
+  replay('REPLAY'),
+  highlights('HIGHLIGHTS'),
+  unknown('');
+
+  const MediaKindValue(this.wire);
+  final String wire;
+
+  static MediaKindValue from(Object? v) =>
+      values.firstWhere((e) => e.wire == v, orElse: () => unknown);
+}
+
+enum MethodValue {
+  mode('MODE'),
+  mean('MEAN'),
+  unknown('');
+
+  const MethodValue(this.wire);
+  final String wire;
+
+  static MethodValue from(Object? v) =>
+      values.firstWhere((e) => e.wire == v, orElse: () => unknown);
+}
+
+enum MetricValue {
+  points('points'),
+  exact('exact'),
+  outcome('outcome'),
+  goaldiff('goaldiff'),
+  unknown('');
+
+  const MetricValue(this.wire);
+  final String wire;
+
+  static MetricValue from(Object? v) =>
+      values.firstWhere((e) => e.wire == v, orElse: () => unknown);
+}
+
+enum MineValue {
+  fire('FIRE'),
+  goal('GOAL'),
+  wow('WOW'),
+  laugh('LAUGH'),
+  sad('SAD'),
+  angry('ANGRY'),
+  unknown('');
+
+  const MineValue(this.wire);
+  final String wire;
+
+  static MineValue from(Object? v) =>
+      values.firstWhere((e) => e.wire == v, orElse: () => unknown);
+}
+
+enum ModeValue {
+  normal('NORMAL'),
+  easy('EASY'),
+  hard('HARD'),
+  hardcore('HARDCORE'),
+  unknown('');
+
+  const ModeValue(this.wire);
+  final String wire;
+
+  static ModeValue from(Object? v) =>
+      values.firstWhere((e) => e.wire == v, orElse: () => unknown);
+}
+
+enum ModerationValue {
+  visible('VISIBLE'),
+  pending('PENDING'),
+  removed('REMOVED'),
+  unknown('');
+
+  const ModerationValue(this.wire);
+  final String wire;
+
+  static ModerationValue from(Object? v) =>
+      values.firstWhere((e) => e.wire == v, orElse: () => unknown);
+}
+
+enum PersonaValue {
+  consensus('consensus'),
+  evilTwin('evil-twin'),
+  equalizer('equalizer'),
+  unknown('');
+
+  const PersonaValue(this.wire);
+  final String wire;
+
+  static PersonaValue from(Object? v) =>
+      values.firstWhere((e) => e.wire == v, orElse: () => unknown);
+}
+
+enum PositionValue {
+  gk('GK'),
+  df('DF'),
+  mf('MF'),
+  fw('FW'),
+  unknown('');
+
+  const PositionValue(this.wire);
+  final String wire;
+
+  static PositionValue from(Object? v) =>
+      values.firstWhere((e) => e.wire == v, orElse: () => unknown);
+}
+
+enum ReasonValue {
+  needsPick('NEEDS_PICK'),
+  needsExact('NEEDS_EXACT'),
+  needsStake('NEEDS_STAKE'),
+  unknown('');
+
+  const ReasonValue(this.wire);
+  final String wire;
+
+  static ReasonValue from(Object? v) =>
+      values.firstWhere((e) => e.wire == v, orElse: () => unknown);
+}
+
+enum ResultValue {
+  w('W'),
+  d('D'),
+  l('L'),
+  unknown('');
+
+  const ResultValue(this.wire);
+  final String wire;
+
+  static ResultValue from(Object? v) =>
+      values.firstWhere((e) => e.wire == v, orElse: () => unknown);
+}
+
+enum RoleValue {
+  owner('OWNER'),
+  moderator('MODERATOR'),
+  member('MEMBER'),
+  unknown('');
+
+  const RoleValue(this.wire);
+  final String wire;
+
+  static RoleValue from(Object? v) =>
+      values.firstWhere((e) => e.wire == v, orElse: () => unknown);
+}
+
+enum ScopeValue {
+  none('none'),
+  live('live'),
+  final_('final'),
+  unknown('');
+
+  const ScopeValue(this.wire);
+  final String wire;
+
+  static ScopeValue from(Object? v) =>
+      values.firstWhere((e) => e.wire == v, orElse: () => unknown);
+}
+
+enum ScoringStateValue {
+  pending('PENDING'),
+  scored('SCORED'),
+  void_('VOID'),
+  stale('STALE'),
+  unknown('');
+
+  const ScoringStateValue(this.wire);
+  final String wire;
+
+  static ScoringStateValue from(Object? v) =>
+      values.firstWhere((e) => e.wire == v, orElse: () => unknown);
+}
+
+enum StageValue {
+  group('GROUP'),
+  r32('R32'),
+  r16('R16'),
+  qf('QF'),
+  sf('SF'),
+  thirdPlace('THIRD_PLACE'),
+  final_('FINAL'),
+  unknown('');
+
+  const StageValue(this.wire);
+  final String wire;
+
+  static StageValue from(Object? v) =>
+      values.firstWhere((e) => e.wire == v, orElse: () => unknown);
+}
+
+enum StatusValue {
+  scheduled('SCHEDULED'),
+  live('LIVE'),
+  paused('PAUSED'),
+  finished('FINISHED'),
+  postponed('POSTPONED'),
+  cancelled('CANCELLED'),
+  suspended('SUSPENDED'),
+  awarded('AWARDED'),
+  interrupted('INTERRUPTED'),
+  unknown('');
+
+  const StatusValue(this.wire);
+  final String wire;
+
+  static StatusValue from(Object? v) =>
+      values.firstWhere((e) => e.wire == v, orElse: () => unknown);
+}
+
+enum TierValue {
+  bronze('BRONZE'),
+  silver('SILVER'),
+  gold('GOLD'),
+  diamond('DIAMOND'),
+  unknown('');
+
+  const TierValue(this.wire);
+  final String wire;
+
+  static TierValue from(Object? v) =>
+      values.firstWhere((e) => e.wire == v, orElse: () => unknown);
+}
+
+enum TypeValue {
+  leagueJoin('LEAGUE_JOIN'),
+  leagueRole('LEAGUE_ROLE'),
+  leagueRemoved('LEAGUE_REMOVED'),
+  pickReminder('PICK_REMINDER'),
+  matchResult('MATCH_RESULT'),
+  championResult('CHAMPION_RESULT'),
+  bestScorerResult('BEST_SCORER_RESULT'),
+  trophyAwarded('TROPHY_AWARDED'),
+  achievementUnlocked('ACHIEVEMENT_UNLOCKED'),
+  chatMention('CHAT_MENTION'),
+  dmMessage('DM_MESSAGE'),
+  voiceMissed('VOICE_MISSED'),
+  unknown('');
+
+  const TypeValue(this.wire);
+  final String wire;
+
+  static TypeValue from(Object? v) =>
+      values.firstWhere((e) => e.wire == v, orElse: () => unknown);
+}
+
+enum VisibilityValue {
+  private('PRIVATE'),
+  public('PUBLIC'),
+  unknown('');
+
+  const VisibilityValue(this.wire);
+  final String wire;
+
+  static VisibilityValue from(Object? v) =>
+      values.firstWhere((e) => e.wire == v, orElse: () => unknown);
+}
+
+enum WinnerValue {
+  home('HOME'),
+  away('AWAY'),
+  unknown('');
+
+  const WinnerValue(this.wire);
+  final String wire;
+
+  static WinnerValue from(Object? v) =>
+      values.firstWhere((e) => e.wire == v, orElse: () => unknown);
+}
+
 class Achievement {
   final String key;
   final String category;
@@ -434,15 +831,12 @@ class BiggestGain {
 
 class Board {
   /// One of: points, survival.
-  final String kind;
+  final KindValue kind;
 
   /// One of: NORMAL, EASY, HARD, HARDCORE.
-  final String mode;
+  final ModeValue mode;
   final bool live;
   final List<dynamic> rows;
-
-  static const kindValues = <String>['points', 'survival'];
-  static const modeValues = <String>['NORMAL', 'EASY', 'HARD', 'HARDCORE'];
 
   const Board({
     required this.kind,
@@ -452,17 +846,56 @@ class Board {
   });
 
   factory Board.fromJson(Map<String, dynamic> json) => Board(
-        kind: json['kind'] as String,
-        mode: json['mode'] as String,
+        kind: KindValue.from(json['kind']),
+        mode: ModeValue.from(json['mode']),
         live: json['live'] as bool,
         rows: (json['rows'] as List).map((e) => e as dynamic).toList(),
       );
 
   Map<String, dynamic> toJson() => {
-        'kind': kind,
-        'mode': mode,
+        'kind': kind.wire,
+        'mode': mode.wire,
         'live': live,
         'rows': rows,
+      };
+}
+
+class Booking {
+  /// One of: HOME, AWAY.
+  final WinnerValue side;
+  final String? playerId;
+  final String playerName;
+  final String? minute;
+
+  /// One of: YELLOW, SECOND_YELLOW, RED.
+  final CardValue card;
+  final bool? coach;
+
+  const Booking({
+    required this.side,
+    this.playerId,
+    required this.playerName,
+    this.minute,
+    required this.card,
+    this.coach,
+  });
+
+  factory Booking.fromJson(Map<String, dynamic> json) => Booking(
+        side: WinnerValue.from(json['side']),
+        playerId: json['playerId'] as String?,
+        playerName: json['playerName'] as String,
+        minute: json['minute'] as String?,
+        card: CardValue.from(json['card']),
+        coach: json['coach'] as bool?,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'side': side.wire,
+        'playerId': playerId,
+        'playerName': playerName,
+        'minute': minute,
+        'card': card.wire,
+        if (coach != null) 'coach': coach,
       };
 }
 
@@ -502,7 +935,7 @@ class BotPredictionsResponse {
   final PredictionSaveResponse bot;
 
   /// One of: consensus, evil-twin, equalizer.
-  final String persona;
+  final PersonaValue persona;
   final Competition competition;
   final BotPredictionsResponseLeague? league;
   final Champion? champion;
@@ -511,13 +944,10 @@ class BotPredictionsResponse {
   final bool admin;
 
   /// One of: MODE, MEAN.
-  final String method;
+  final MethodValue method;
   final bool modeAvailable;
   final double population;
   final List<BotPredictionsResponsePrediction> predictions;
-
-  static const personaValues = <String>['consensus', 'evil-twin', 'equalizer'];
-  static const methodValues = <String>['MODE', 'MEAN'];
 
   const BotPredictionsResponse({
     required this.bot,
@@ -538,7 +968,7 @@ class BotPredictionsResponse {
       BotPredictionsResponse(
         bot: PredictionSaveResponse.fromJson(
             json['bot'] as Map<String, dynamic>),
-        persona: json['persona'] as String,
+        persona: PersonaValue.from(json['persona']),
         competition:
             Competition.fromJson(json['competition'] as Map<String, dynamic>),
         league: json['league'] == null
@@ -553,7 +983,7 @@ class BotPredictionsResponse {
             ? null
             : Subject.fromJson(json['subject'] as Map<String, dynamic>),
         admin: json['admin'] as bool,
-        method: json['method'] as String,
+        method: MethodValue.from(json['method']),
         modeAvailable: json['modeAvailable'] as bool,
         population: (json['population'] as num).toDouble(),
         predictions: (json['predictions'] as List)
@@ -564,14 +994,14 @@ class BotPredictionsResponse {
 
   Map<String, dynamic> toJson() => {
         'bot': bot.toJson(),
-        'persona': persona,
+        'persona': persona.wire,
         'competition': competition.toJson(),
         'league': league?.toJson(),
         'champion': champion?.toJson(),
         'summary': summary.toJson(),
         'subject': subject?.toJson(),
         'admin': admin,
-        'method': method,
+        'method': method.wire,
         'modeAvailable': modeAvailable,
         'population': population,
         'predictions': predictions.map((e) => e.toJson()).toList(),
@@ -632,9 +1062,7 @@ class BotPredictionsResponsePrediction {
   final double consensusTotal;
 
   /// One of: MODE, MEAN.
-  final String consensusMethod;
-
-  static const consensusMethodValues = <String>['MODE', 'MEAN'];
+  final MethodValue consensusMethod;
 
   const BotPredictionsResponsePrediction({
     required this.id,
@@ -703,7 +1131,7 @@ class BotPredictionsResponsePrediction {
         roundSort: (json['roundSort'] as num).toDouble(),
         consensusCount: (json['consensusCount'] as num).toDouble(),
         consensusTotal: (json['consensusTotal'] as num).toDouble(),
-        consensusMethod: json['consensusMethod'] as String,
+        consensusMethod: MethodValue.from(json['consensusMethod']),
       );
 
   Map<String, dynamic> toJson() => {
@@ -737,7 +1165,7 @@ class BotPredictionsResponsePrediction {
         'roundSort': roundSort,
         'consensusCount': consensusCount,
         'consensusTotal': consensusTotal,
-        'consensusMethod': consensusMethod,
+        'consensusMethod': consensusMethod.wire,
       };
 }
 
@@ -1004,6 +1432,27 @@ class ChampionResponseTeam {
       };
 }
 
+class ChatAttachmentResponse {
+  final String ciphertext;
+  final double epoch;
+
+  const ChatAttachmentResponse({
+    required this.ciphertext,
+    required this.epoch,
+  });
+
+  factory ChatAttachmentResponse.fromJson(Map<String, dynamic> json) =>
+      ChatAttachmentResponse(
+        ciphertext: json['ciphertext'] as String,
+        epoch: (json['epoch'] as num).toDouble(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'ciphertext': ciphertext,
+        'epoch': epoch,
+      };
+}
+
 class ChatIdentityResponse {
   final Identity? identity;
 
@@ -1221,14 +1670,11 @@ class CreateLeagueInput {
   final String name;
 
   /// One of: PRIVATE, PUBLIC.
-  final String? visibility;
+  final VisibilityValue? visibility;
 
   /// One of: NORMAL, EASY, HARD, HARDCORE.
-  final String? mode;
+  final ModeValue? mode;
   final int? lives;
-
-  static const visibilityValues = <String>['PRIVATE', 'PUBLIC'];
-  static const modeValues = <String>['NORMAL', 'EASY', 'HARD', 'HARDCORE'];
 
   const CreateLeagueInput({
     required this.competition,
@@ -1242,16 +1688,18 @@ class CreateLeagueInput {
       CreateLeagueInput(
         competition: json['competition'] as String,
         name: json['name'] as String,
-        visibility: json['visibility'] as String?,
-        mode: json['mode'] as String?,
+        visibility: json['visibility'] == null
+            ? null
+            : VisibilityValue.from(json['visibility']),
+        mode: json['mode'] == null ? null : ModeValue.from(json['mode']),
         lives: json['lives'] as int?,
       );
 
   Map<String, dynamic> toJson() => {
         'competition': competition,
         'name': name,
-        if (visibility != null) 'visibility': visibility,
-        if (mode != null) 'mode': mode,
+        if (visibility != null) 'visibility': visibility?.wire,
+        if (mode != null) 'mode': mode?.wire,
         if (lives != null) 'lives': lives,
       };
 }
@@ -1279,10 +1727,10 @@ class CreateLeagueResponseLeague {
   final String name;
 
   /// One of: PRIVATE, PUBLIC.
-  final String visibility;
+  final VisibilityValue visibility;
 
   /// One of: NORMAL, EASY, HARD, HARDCORE.
-  final String mode;
+  final ModeValue mode;
   final double? lives;
 
   /// One of: true.
@@ -1296,8 +1744,6 @@ class CreateLeagueResponseLeague {
   final double memberCount;
   final Competition competition;
 
-  static const visibilityValues = <String>['PRIVATE', 'PUBLIC'];
-  static const modeValues = <String>['NORMAL', 'EASY', 'HARD', 'HARDCORE'];
   static const picksSyncedValues = <String>['true'];
   static const roleValues = <String>['OWNER'];
   static const memberCountValues = <String>['1'];
@@ -1319,8 +1765,8 @@ class CreateLeagueResponseLeague {
       CreateLeagueResponseLeague(
         id: json['id'] as String,
         name: json['name'] as String,
-        visibility: json['visibility'] as String,
-        mode: json['mode'] as String,
+        visibility: VisibilityValue.from(json['visibility']),
+        mode: ModeValue.from(json['mode']),
         lives: (json['lives'] as num?)?.toDouble(),
         picksSynced: json['picksSynced'] as bool,
         joinCode: json['joinCode'] as String,
@@ -1333,8 +1779,8 @@ class CreateLeagueResponseLeague {
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
-        'visibility': visibility,
-        'mode': mode,
+        'visibility': visibility.wire,
+        'mode': mode.wire,
         'lives': lives,
         'picksSynced': picksSynced,
         'joinCode': joinCode,
@@ -1389,6 +1835,269 @@ class CrowdResponseTotal {
         'home': home,
         'away': away,
         'count': count,
+      };
+}
+
+class Detail {
+  final String? minute;
+  final bool? halfTime;
+  final double? possessionHome;
+  final double? possessionAway;
+  final double? attendance;
+  final String? stadium;
+  final DetailCard cards;
+  final List<DetailGoal> goals;
+  final List<Booking> bookings;
+  final List<Substitution> substitutions;
+  final Map<String, String>? playerNames;
+  final String? ifesId;
+  final String? homeTeamId;
+  final String? awayTeamId;
+  final DetailStat? stats;
+
+  const Detail({
+    this.minute,
+    this.halfTime,
+    this.possessionHome,
+    this.possessionAway,
+    this.attendance,
+    this.stadium,
+    required this.cards,
+    required this.goals,
+    required this.bookings,
+    required this.substitutions,
+    this.playerNames,
+    this.ifesId,
+    this.homeTeamId,
+    this.awayTeamId,
+    this.stats,
+  });
+
+  factory Detail.fromJson(Map<String, dynamic> json) => Detail(
+        minute: json['minute'] as String?,
+        halfTime: json['halfTime'] as bool?,
+        possessionHome: (json['possessionHome'] as num?)?.toDouble(),
+        possessionAway: (json['possessionAway'] as num?)?.toDouble(),
+        attendance: (json['attendance'] as num?)?.toDouble(),
+        stadium: json['stadium'] as String?,
+        cards: DetailCard.fromJson(json['cards'] as Map<String, dynamic>),
+        goals: (json['goals'] as List)
+            .map((e) => DetailGoal.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        bookings: (json['bookings'] as List)
+            .map((e) => Booking.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        substitutions: (json['substitutions'] as List)
+            .map((e) => Substitution.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        playerNames: json['playerNames'] == null
+            ? null
+            : Map<String, String>.from(json['playerNames'] as Map),
+        ifesId: json['ifesId'] as String?,
+        homeTeamId: json['homeTeamId'] as String?,
+        awayTeamId: json['awayTeamId'] as String?,
+        stats: json['stats'] == null
+            ? null
+            : DetailStat.fromJson(json['stats'] as Map<String, dynamic>),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'minute': minute,
+        if (halfTime != null) 'halfTime': halfTime,
+        'possessionHome': possessionHome,
+        'possessionAway': possessionAway,
+        'attendance': attendance,
+        'stadium': stadium,
+        'cards': cards.toJson(),
+        'goals': goals.map((e) => e.toJson()).toList(),
+        'bookings': bookings.map((e) => e.toJson()).toList(),
+        'substitutions': substitutions.map((e) => e.toJson()).toList(),
+        if (playerNames != null) 'playerNames': playerNames,
+        'ifesId': ifesId,
+        'homeTeamId': homeTeamId,
+        'awayTeamId': awayTeamId,
+        'stats': stats?.toJson(),
+      };
+}
+
+class DetailCard {
+  final DetailCardHome home;
+  final DetailCardHome away;
+
+  const DetailCard({
+    required this.home,
+    required this.away,
+  });
+
+  factory DetailCard.fromJson(Map<String, dynamic> json) => DetailCard(
+        home: DetailCardHome.fromJson(json['home'] as Map<String, dynamic>),
+        away: DetailCardHome.fromJson(json['away'] as Map<String, dynamic>),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'home': home.toJson(),
+        'away': away.toJson(),
+      };
+}
+
+class DetailCardHome {
+  final double yellow;
+  final double red;
+
+  const DetailCardHome({
+    required this.yellow,
+    required this.red,
+  });
+
+  factory DetailCardHome.fromJson(Map<String, dynamic> json) => DetailCardHome(
+        yellow: (json['yellow'] as num).toDouble(),
+        red: (json['red'] as num).toDouble(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'yellow': yellow,
+        'red': red,
+      };
+}
+
+class DetailGoal {
+  /// One of: HOME, AWAY.
+  final WinnerValue side;
+  final String? teamId;
+  final String teamName;
+  final String? teamCode;
+  final String? playerId;
+  final String playerName;
+  final String? minute;
+  final double? goalType;
+  final bool ownGoal;
+  final String? assistPlayerId;
+  final String? assistPlayerName;
+
+  const DetailGoal({
+    required this.side,
+    this.teamId,
+    required this.teamName,
+    this.teamCode,
+    this.playerId,
+    required this.playerName,
+    this.minute,
+    this.goalType,
+    required this.ownGoal,
+    this.assistPlayerId,
+    this.assistPlayerName,
+  });
+
+  factory DetailGoal.fromJson(Map<String, dynamic> json) => DetailGoal(
+        side: WinnerValue.from(json['side']),
+        teamId: json['teamId'] as String?,
+        teamName: json['teamName'] as String,
+        teamCode: json['teamCode'] as String?,
+        playerId: json['playerId'] as String?,
+        playerName: json['playerName'] as String,
+        minute: json['minute'] as String?,
+        goalType: (json['goalType'] as num?)?.toDouble(),
+        ownGoal: json['ownGoal'] as bool,
+        assistPlayerId: json['assistPlayerId'] as String?,
+        assistPlayerName: json['assistPlayerName'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'side': side.wire,
+        'teamId': teamId,
+        'teamName': teamName,
+        'teamCode': teamCode,
+        'playerId': playerId,
+        'playerName': playerName,
+        'minute': minute,
+        'goalType': goalType,
+        'ownGoal': ownGoal,
+        'assistPlayerId': assistPlayerId,
+        'assistPlayerName': assistPlayerName,
+      };
+}
+
+class DetailStat {
+  final DetailStatHome? home;
+  final DetailStatHome? away;
+
+  const DetailStat({
+    this.home,
+    this.away,
+  });
+
+  factory DetailStat.fromJson(Map<String, dynamic> json) => DetailStat(
+        home: json['home'] == null
+            ? null
+            : DetailStatHome.fromJson(json['home'] as Map<String, dynamic>),
+        away: json['away'] == null
+            ? null
+            : DetailStatHome.fromJson(json['away'] as Map<String, dynamic>),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'home': home?.toJson(),
+        'away': away?.toJson(),
+      };
+}
+
+class DetailStatHome {
+  final double? possession;
+  final double? attempts;
+  final double? onTarget;
+  final double? passes;
+  final double? passesCompleted;
+  final double? crosses;
+  final double? corners;
+  final double? fouls;
+  final double? offsides;
+  final double? distanceKm;
+  final double? pressuresApplied;
+  final double? forcedTurnovers;
+
+  const DetailStatHome({
+    this.possession,
+    this.attempts,
+    this.onTarget,
+    this.passes,
+    this.passesCompleted,
+    this.crosses,
+    this.corners,
+    this.fouls,
+    this.offsides,
+    this.distanceKm,
+    this.pressuresApplied,
+    this.forcedTurnovers,
+  });
+
+  factory DetailStatHome.fromJson(Map<String, dynamic> json) => DetailStatHome(
+        possession: (json['possession'] as num?)?.toDouble(),
+        attempts: (json['attempts'] as num?)?.toDouble(),
+        onTarget: (json['onTarget'] as num?)?.toDouble(),
+        passes: (json['passes'] as num?)?.toDouble(),
+        passesCompleted: (json['passesCompleted'] as num?)?.toDouble(),
+        crosses: (json['crosses'] as num?)?.toDouble(),
+        corners: (json['corners'] as num?)?.toDouble(),
+        fouls: (json['fouls'] as num?)?.toDouble(),
+        offsides: (json['offsides'] as num?)?.toDouble(),
+        distanceKm: (json['distanceKm'] as num?)?.toDouble(),
+        pressuresApplied: (json['pressuresApplied'] as num?)?.toDouble(),
+        forcedTurnovers: (json['forcedTurnovers'] as num?)?.toDouble(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'possession': possession,
+        'attempts': attempts,
+        'onTarget': onTarget,
+        'passes': passes,
+        'passesCompleted': passesCompleted,
+        'crosses': crosses,
+        'corners': corners,
+        'fouls': fouls,
+        'offsides': offsides,
+        'distanceKm': distanceKm,
+        'pressuresApplied': pressuresApplied,
+        'forcedTurnovers': forcedTurnovers,
       };
 }
 
@@ -1566,9 +2275,7 @@ class Earlier {
   final double points;
 
   /// One of: EXACT, DIFF, OUTCOME, MISS.
-  final String tier;
-
-  static const tierValues = <String>['EXACT', 'DIFF', 'OUTCOME', 'MISS'];
+  final BaseTierValue tier;
 
   const Earlier({
     required this.home,
@@ -1581,14 +2288,14 @@ class Earlier {
         home: (json['home'] as num).toDouble(),
         away: (json['away'] as num).toDouble(),
         points: (json['points'] as num).toDouble(),
-        tier: json['tier'] as String,
+        tier: BaseTierValue.from(json['tier']),
       );
 
   Map<String, dynamic> toJson() => {
         'home': home,
         'away': away,
         'points': points,
-        'tier': tier,
+        'tier': tier.wire,
       };
 }
 
@@ -1838,13 +2545,11 @@ class FormAll {
 
 class FormAllHome {
   /// One of: W, D, L.
-  final String result;
+  final ResultValue result;
   final String opponent;
   final String score;
   final String date;
   final String competition;
-
-  static const resultValues = <String>['W', 'D', 'L'];
 
   const FormAllHome({
     required this.result,
@@ -1855,7 +2560,7 @@ class FormAllHome {
   });
 
   factory FormAllHome.fromJson(Map<String, dynamic> json) => FormAllHome(
-        result: json['result'] as String,
+        result: ResultValue.from(json['result']),
         opponent: json['opponent'] as String,
         score: json['score'] as String,
         date: json['date'] as String,
@@ -1863,7 +2568,7 @@ class FormAllHome {
       );
 
   Map<String, dynamic> toJson() => {
-        'result': result,
+        'result': result.wire,
         'opponent': opponent,
         'score': score,
         'date': date,
@@ -2211,9 +2916,7 @@ class Invite {
   final DateTime createdAt;
 
   /// One of: VALID, EXPIRED, EXHAUSTED.
-  final String status;
-
-  static const statusValues = <String>['VALID', 'EXPIRED', 'EXHAUSTED'];
+  final InviteStatusValue status;
 
   const Invite({
     required this.id,
@@ -2234,7 +2937,7 @@ class Invite {
         maxUses: (json['maxUses'] as num?)?.toDouble(),
         uses: (json['uses'] as num).toDouble(),
         createdAt: DateTime.parse(json['createdAt'] as String),
-        status: json['status'] as String,
+        status: InviteStatusValue.from(json['status']),
       );
 
   Map<String, dynamic> toJson() => {
@@ -2244,7 +2947,7 @@ class Invite {
         'maxUses': maxUses,
         'uses': uses,
         'createdAt': createdAt.toIso8601String(),
-        'status': status,
+        'status': status.wire,
       };
 }
 
@@ -2252,13 +2955,7 @@ class Issue {
   final String matchId;
 
   /// One of: NEEDS_PICK, NEEDS_EXACT, NEEDS_STAKE.
-  final String reason;
-
-  static const reasonValues = <String>[
-    'NEEDS_PICK',
-    'NEEDS_EXACT',
-    'NEEDS_STAKE'
-  ];
+  final ReasonValue reason;
 
   const Issue({
     required this.matchId,
@@ -2267,12 +2964,12 @@ class Issue {
 
   factory Issue.fromJson(Map<String, dynamic> json) => Issue(
         matchId: json['matchId'] as String,
-        reason: json['reason'] as String,
+        reason: ReasonValue.from(json['reason']),
       );
 
   Map<String, dynamic> toJson() => {
         'matchId': matchId,
-        'reason': reason,
+        'reason': reason.wire,
       };
 }
 
@@ -2282,19 +2979,12 @@ class Item {
   final String? description;
 
   /// One of: PLANNED, IN_PROGRESS, SHIPPED, SUGGESTED.
-  final String status;
+  final ItemStatusValue status;
   final int position;
   final double voteCount;
   final bool viewerHasVoted;
   final bool underReview;
   final DateTime updatedAt;
-
-  static const statusValues = <String>[
-    'PLANNED',
-    'IN_PROGRESS',
-    'SHIPPED',
-    'SUGGESTED'
-  ];
 
   const Item({
     required this.id,
@@ -2312,7 +3002,7 @@ class Item {
         id: json['id'] as String,
         title: json['title'] as String,
         description: json['description'] as String?,
-        status: json['status'] as String,
+        status: ItemStatusValue.from(json['status']),
         position: json['position'] as int,
         voteCount: (json['voteCount'] as num).toDouble(),
         viewerHasVoted: json['viewerHasVoted'] as bool,
@@ -2324,7 +3014,7 @@ class Item {
         'id': id,
         'title': title,
         'description': description,
-        'status': status,
+        'status': status.wire,
         'position': position,
         'voteCount': voteCount,
         'viewerHasVoted': viewerHasVoted,
@@ -2506,11 +3196,9 @@ class LeagueCompletenessResponseLeague {
   final String name;
 
   /// One of: NORMAL, EASY, HARD, HARDCORE.
-  final String mode;
+  final ModeValue mode;
   final LeagueCompletenessResponseLeagueSummary summary;
   final List<Issue> issues;
-
-  static const modeValues = <String>['NORMAL', 'EASY', 'HARD', 'HARDCORE'];
 
   const LeagueCompletenessResponseLeague({
     required this.leagueId,
@@ -2525,7 +3213,7 @@ class LeagueCompletenessResponseLeague {
       LeagueCompletenessResponseLeague(
         leagueId: json['leagueId'] as String,
         name: json['name'] as String,
-        mode: json['mode'] as String,
+        mode: ModeValue.from(json['mode']),
         summary: LeagueCompletenessResponseLeagueSummary.fromJson(
             json['summary'] as Map<String, dynamic>),
         issues: (json['issues'] as List)
@@ -2536,7 +3224,7 @@ class LeagueCompletenessResponseLeague {
   Map<String, dynamic> toJson() => {
         'leagueId': leagueId,
         'name': name,
-        'mode': mode,
+        'mode': mode.wire,
         'summary': summary.toJson(),
         'issues': issues.map((e) => e.toJson()).toList(),
       };
@@ -2609,22 +3297,18 @@ class LeagueDetailResponseLeague {
   final String name;
 
   /// One of: PRIVATE, PUBLIC.
-  final String visibility;
+  final VisibilityValue visibility;
   final String? description;
 
   /// One of: NORMAL, EASY, HARD, HARDCORE.
-  final String mode;
+  final ModeValue mode;
   final double? lives;
 
   /// One of: OWNER, MODERATOR, MEMBER.
-  final String? role;
+  final RoleValue? role;
   final double memberCount;
   final MatchesResponseCompetition? competition;
   final String? joinCode;
-
-  static const visibilityValues = <String>['PRIVATE', 'PUBLIC'];
-  static const modeValues = <String>['NORMAL', 'EASY', 'HARD', 'HARDCORE'];
-  static const roleValues = <String>['OWNER', 'MODERATOR', 'MEMBER'];
 
   const LeagueDetailResponseLeague({
     required this.id,
@@ -2643,11 +3327,11 @@ class LeagueDetailResponseLeague {
       LeagueDetailResponseLeague(
         id: json['id'] as String,
         name: json['name'] as String,
-        visibility: json['visibility'] as String,
+        visibility: VisibilityValue.from(json['visibility']),
         description: json['description'] as String?,
-        mode: json['mode'] as String,
+        mode: ModeValue.from(json['mode']),
         lives: (json['lives'] as num?)?.toDouble(),
-        role: json['role'] as String?,
+        role: json['role'] == null ? null : RoleValue.from(json['role']),
         memberCount: (json['memberCount'] as num).toDouble(),
         competition: json['competition'] == null
             ? null
@@ -2659,11 +3343,11 @@ class LeagueDetailResponseLeague {
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
-        'visibility': visibility,
+        'visibility': visibility.wire,
         'description': description,
-        'mode': mode,
+        'mode': mode.wire,
         'lives': lives,
-        'role': role,
+        'role': role?.wire,
         'memberCount': memberCount,
         'competition': competition?.toJson(),
         if (joinCode != null) 'joinCode': joinCode,
@@ -2691,36 +3375,16 @@ class LeagueInvitesResponse {
 
 class LeagueReward {
   /// One of: OVERALL, WOODEN_SPOON, GROUP_PHASE, KNOCKOUT_PHASE, FINALIST, MADAME_IRMA, GROUP_ORACLE, KNOCKOUT_ORACLE, SHARPSHOOTER, GOAL_DIFF_GURU, TEAM_SPECIALIST.
-  final String type;
+  final LeagueRewardTypeValue type;
   final Reward? reward;
   final List<LeagueRewardWinner> winners;
   final double value;
 
   /// One of: points, exact, outcome, goaldiff.
-  final String metric;
+  final MetricValue metric;
   final String? teamCode;
   final bool disabled;
   final bool youHold;
-
-  static const typeValues = <String>[
-    'OVERALL',
-    'WOODEN_SPOON',
-    'GROUP_PHASE',
-    'KNOCKOUT_PHASE',
-    'FINALIST',
-    'MADAME_IRMA',
-    'GROUP_ORACLE',
-    'KNOCKOUT_ORACLE',
-    'SHARPSHOOTER',
-    'GOAL_DIFF_GURU',
-    'TEAM_SPECIALIST'
-  ];
-  static const metricValues = <String>[
-    'points',
-    'exact',
-    'outcome',
-    'goaldiff'
-  ];
 
   const LeagueReward({
     required this.type,
@@ -2734,7 +3398,7 @@ class LeagueReward {
   });
 
   factory LeagueReward.fromJson(Map<String, dynamic> json) => LeagueReward(
-        type: json['type'] as String,
+        type: LeagueRewardTypeValue.from(json['type']),
         reward: json['reward'] == null
             ? null
             : Reward.fromJson(json['reward'] as Map<String, dynamic>),
@@ -2742,18 +3406,18 @@ class LeagueReward {
             .map((e) => LeagueRewardWinner.fromJson(e as Map<String, dynamic>))
             .toList(),
         value: (json['value'] as num).toDouble(),
-        metric: json['metric'] as String,
+        metric: MetricValue.from(json['metric']),
         teamCode: json['teamCode'] as String?,
         disabled: json['disabled'] as bool,
         youHold: json['youHold'] as bool,
       );
 
   Map<String, dynamic> toJson() => {
-        'type': type,
+        'type': type.wire,
         'reward': reward?.toJson(),
         'winners': winners.map((e) => e.toJson()).toList(),
         'value': value,
-        'metric': metric,
+        'metric': metric.wire,
         'teamCode': teamCode,
         'disabled': disabled,
         'youHold': youHold,
@@ -2806,23 +3470,19 @@ class LeaguesResponseLeague {
   final String name;
 
   /// One of: PRIVATE, PUBLIC.
-  final String visibility;
+  final VisibilityValue visibility;
 
   /// One of: NORMAL, EASY, HARD, HARDCORE.
-  final String mode;
+  final ModeValue mode;
   final double? lives;
 
   /// One of: OWNER, MODERATOR, MEMBER.
-  final String role;
+  final RoleValue role;
   final bool picksSynced;
   final double memberCount;
   final bool chatEnabled;
   final Competition competition;
   final String? joinCode;
-
-  static const visibilityValues = <String>['PRIVATE', 'PUBLIC'];
-  static const modeValues = <String>['NORMAL', 'EASY', 'HARD', 'HARDCORE'];
-  static const roleValues = <String>['OWNER', 'MODERATOR', 'MEMBER'];
 
   const LeaguesResponseLeague({
     required this.id,
@@ -2842,10 +3502,10 @@ class LeaguesResponseLeague {
       LeaguesResponseLeague(
         id: json['id'] as String,
         name: json['name'] as String,
-        visibility: json['visibility'] as String,
-        mode: json['mode'] as String,
+        visibility: VisibilityValue.from(json['visibility']),
+        mode: ModeValue.from(json['mode']),
         lives: (json['lives'] as num?)?.toDouble(),
-        role: json['role'] as String,
+        role: RoleValue.from(json['role']),
         picksSynced: json['picksSynced'] as bool,
         memberCount: (json['memberCount'] as num).toDouble(),
         chatEnabled: json['chatEnabled'] as bool,
@@ -2857,10 +3517,10 @@ class LeaguesResponseLeague {
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
-        'visibility': visibility,
-        'mode': mode,
+        'visibility': visibility.wire,
+        'mode': mode.wire,
         'lives': lives,
-        'role': role,
+        'role': role.wire,
         'picksSynced': picksSynced,
         'memberCount': memberCount,
         'chatEnabled': chatEnabled,
@@ -2911,11 +3571,9 @@ class Match {
   final double? awayPens;
 
   /// One of: HOME, AWAY.
-  final String? winner;
+  final WinnerValue? winner;
   final String status;
   final String kickoffTime;
-
-  static const winnerValues = <String>['HOME', 'AWAY'];
 
   const Match({
     this.id,
@@ -2954,7 +3612,8 @@ class Match {
         awayScore: (json['awayScore'] as num?)?.toDouble(),
         homePens: (json['homePens'] as num?)?.toDouble(),
         awayPens: (json['awayPens'] as num?)?.toDouble(),
-        winner: json['winner'] as String?,
+        winner:
+            json['winner'] == null ? null : WinnerValue.from(json['winner']),
         status: json['status'] as String,
         kickoffTime: json['kickoffTime'] as String,
       );
@@ -2975,7 +3634,7 @@ class Match {
         'awayScore': awayScore,
         'homePens': homePens,
         'awayPens': awayPens,
-        'winner': winner,
+        'winner': winner?.wire,
         'status': status,
         'kickoffTime': kickoffTime,
       };
@@ -3022,7 +3681,7 @@ class MatchDetailResponseMatch {
   final String providerMatchId;
 
   /// One of: GROUP, R32, R16, QF, SF, THIRD_PLACE, FINAL.
-  final String stage;
+  final StageValue stage;
   final String? group;
   final String homeTeam;
   final String awayTeam;
@@ -3031,49 +3690,21 @@ class MatchDetailResponseMatch {
   final DateTime kickoffTime;
 
   /// One of: SCHEDULED, LIVE, PAUSED, FINISHED, POSTPONED, CANCELLED, SUSPENDED, AWARDED, INTERRUPTED.
-  final String status;
+  final StatusValue status;
   final int? fullTimeHome;
   final int? fullTimeAway;
   final int? penaltiesHome;
   final int? penaltiesAway;
 
   /// One of: HOME, DRAW, AWAY.
-  final String? winner;
+  final MatchesResponseMatchWinnerValue? winner;
 
   /// One of: PENDING, SCORED, VOID, STALE.
-  final String scoringState;
+  final ScoringStateValue scoringState;
   final String roundId;
   final String roundLabel;
   final int? matchday;
   final int roundSortOrder;
-
-  static const stageValues = <String>[
-    'GROUP',
-    'R32',
-    'R16',
-    'QF',
-    'SF',
-    'THIRD_PLACE',
-    'FINAL'
-  ];
-  static const statusValues = <String>[
-    'SCHEDULED',
-    'LIVE',
-    'PAUSED',
-    'FINISHED',
-    'POSTPONED',
-    'CANCELLED',
-    'SUSPENDED',
-    'AWARDED',
-    'INTERRUPTED'
-  ];
-  static const winnerValues = <String>['HOME', 'DRAW', 'AWAY'];
-  static const scoringStateValues = <String>[
-    'PENDING',
-    'SCORED',
-    'VOID',
-    'STALE'
-  ];
 
   const MatchDetailResponseMatch({
     required this.id,
@@ -3104,20 +3735,22 @@ class MatchDetailResponseMatch {
         id: json['id'] as String,
         competitionId: json['competitionId'] as String,
         providerMatchId: json['providerMatchId'] as String,
-        stage: json['stage'] as String,
+        stage: StageValue.from(json['stage']),
         group: json['group'] as String?,
         homeTeam: json['homeTeam'] as String,
         awayTeam: json['awayTeam'] as String,
         homeTeamCode: json['homeTeamCode'] as String?,
         awayTeamCode: json['awayTeamCode'] as String?,
         kickoffTime: DateTime.parse(json['kickoffTime'] as String),
-        status: json['status'] as String,
+        status: StatusValue.from(json['status']),
         fullTimeHome: json['fullTimeHome'] as int?,
         fullTimeAway: json['fullTimeAway'] as int?,
         penaltiesHome: json['penaltiesHome'] as int?,
         penaltiesAway: json['penaltiesAway'] as int?,
-        winner: json['winner'] as String?,
-        scoringState: json['scoringState'] as String,
+        winner: json['winner'] == null
+            ? null
+            : MatchesResponseMatchWinnerValue.from(json['winner']),
+        scoringState: ScoringStateValue.from(json['scoringState']),
         roundId: json['roundId'] as String,
         roundLabel: json['roundLabel'] as String,
         matchday: json['matchday'] as int?,
@@ -3128,20 +3761,20 @@ class MatchDetailResponseMatch {
         'id': id,
         'competitionId': competitionId,
         'providerMatchId': providerMatchId,
-        'stage': stage,
+        'stage': stage.wire,
         'group': group,
         'homeTeam': homeTeam,
         'awayTeam': awayTeam,
         'homeTeamCode': homeTeamCode,
         'awayTeamCode': awayTeamCode,
         'kickoffTime': kickoffTime.toIso8601String(),
-        'status': status,
+        'status': status.wire,
         'fullTimeHome': fullTimeHome,
         'fullTimeAway': fullTimeAway,
         'penaltiesHome': penaltiesHome,
         'penaltiesAway': penaltiesAway,
-        'winner': winner,
-        'scoringState': scoringState,
+        'winner': winner?.wire,
+        'scoringState': scoringState.wire,
         'roundId': roundId,
         'roundLabel': roundLabel,
         'matchday': matchday,
@@ -3240,11 +3873,9 @@ class MatchInsightsResponseFormHome {
   final String matchId;
 
   /// One of: W, D, L.
-  final String result;
+  final ResultValue result;
   final String opponent;
   final String score;
-
-  static const resultValues = <String>['W', 'D', 'L'];
 
   const MatchInsightsResponseFormHome({
     required this.matchId,
@@ -3256,14 +3887,14 @@ class MatchInsightsResponseFormHome {
   factory MatchInsightsResponseFormHome.fromJson(Map<String, dynamic> json) =>
       MatchInsightsResponseFormHome(
         matchId: json['matchId'] as String,
-        result: json['result'] as String,
+        result: ResultValue.from(json['result']),
         opponent: json['opponent'] as String,
         score: json['score'] as String,
       );
 
   Map<String, dynamic> toJson() => {
         'matchId': matchId,
-        'result': result,
+        'result': result.wire,
         'opponent': opponent,
         'score': score,
       };
@@ -3271,15 +3902,13 @@ class MatchInsightsResponseFormHome {
 
 class MatchInsightsResponseGoal {
   /// One of: HOME, AWAY.
-  final String side;
+  final WinnerValue side;
   final String teamName;
   final String? teamCode;
   final String playerName;
   final String? minute;
   final bool ownGoal;
   final String? assistPlayerName;
-
-  static const sideValues = <String>['HOME', 'AWAY'];
 
   const MatchInsightsResponseGoal({
     required this.side,
@@ -3293,7 +3922,7 @@ class MatchInsightsResponseGoal {
 
   factory MatchInsightsResponseGoal.fromJson(Map<String, dynamic> json) =>
       MatchInsightsResponseGoal(
-        side: json['side'] as String,
+        side: WinnerValue.from(json['side']),
         teamName: json['teamName'] as String,
         teamCode: json['teamCode'] as String?,
         playerName: json['playerName'] as String,
@@ -3303,7 +3932,7 @@ class MatchInsightsResponseGoal {
       );
 
   Map<String, dynamic> toJson() => {
-        'side': side,
+        'side': side.wire,
         'teamName': teamName,
         'teamCode': teamCode,
         'playerName': playerName,
@@ -3315,12 +3944,10 @@ class MatchInsightsResponseGoal {
 
 class MatchLeagueStandingsResponse {
   /// One of: upcoming, live, final.
-  final String scope;
+  final MatchLeagueStandingsResponseScopeValue scope;
   final List<MatchLeagueStandingsResponseRow> rows;
   final double notPredicted;
   final League? league;
-
-  static const scopeValues = <String>['upcoming', 'live', 'final'];
 
   const MatchLeagueStandingsResponse({
     required this.scope,
@@ -3331,7 +3958,7 @@ class MatchLeagueStandingsResponse {
 
   factory MatchLeagueStandingsResponse.fromJson(Map<String, dynamic> json) =>
       MatchLeagueStandingsResponse(
-        scope: json['scope'] as String,
+        scope: MatchLeagueStandingsResponseScopeValue.from(json['scope']),
         rows: (json['rows'] as List)
             .map((e) => MatchLeagueStandingsResponseRow.fromJson(
                 e as Map<String, dynamic>))
@@ -3343,7 +3970,7 @@ class MatchLeagueStandingsResponse {
       );
 
   Map<String, dynamic> toJson() => {
-        'scope': scope,
+        'scope': scope.wire,
         'rows': rows.map((e) => e.toJson()).toList(),
         'notPredicted': notPredicted,
         if (league != null) 'league': league?.toJson(),
@@ -3361,9 +3988,7 @@ class MatchLeagueStandingsResponseRow {
   final double points;
 
   /// One of: EXACT, DIFF, OUTCOME, MISS.
-  final String? baseTier;
-
-  static const baseTierValues = <String>['EXACT', 'DIFF', 'OUTCOME', 'MISS'];
+  final BaseTierValue? baseTier;
 
   const MatchLeagueStandingsResponseRow({
     required this.rank,
@@ -3387,7 +4012,9 @@ class MatchLeagueStandingsResponseRow {
         awayGoals: (json['awayGoals'] as num).toDouble(),
         isJoker: json['isJoker'] as bool,
         points: (json['points'] as num).toDouble(),
-        baseTier: json['baseTier'] as String?,
+        baseTier: json['baseTier'] == null
+            ? null
+            : BaseTierValue.from(json['baseTier']),
       );
 
   Map<String, dynamic> toJson() => {
@@ -3399,7 +4026,7 @@ class MatchLeagueStandingsResponseRow {
         'awayGoals': awayGoals,
         'isJoker': isJoker,
         'points': points,
-        'baseTier': baseTier,
+        'baseTier': baseTier?.wire,
       };
 }
 
@@ -3423,19 +4050,21 @@ class MatchLineupsResponse {
 }
 
 class MatchLiveDetailResponse {
-  final Map<String, dynamic> detail;
+  final Detail? detail;
 
   const MatchLiveDetailResponse({
-    required this.detail,
+    this.detail,
   });
 
   factory MatchLiveDetailResponse.fromJson(Map<String, dynamic> json) =>
       MatchLiveDetailResponse(
-        detail: Map<String, dynamic>.from(json['detail'] as Map),
+        detail: json['detail'] == null
+            ? null
+            : Detail.fromJson(json['detail'] as Map<String, dynamic>),
       );
 
   Map<String, dynamic> toJson() => {
-        'detail': detail,
+        'detail': detail?.toJson(),
       };
 }
 
@@ -3535,7 +4164,7 @@ class MatchesResponseMatch {
   final String providerMatchId;
 
   /// One of: GROUP, R32, R16, QF, SF, THIRD_PLACE, FINAL.
-  final String stage;
+  final StageValue stage;
   final String? group;
   final String homeTeam;
   final String awayTeam;
@@ -3544,51 +4173,23 @@ class MatchesResponseMatch {
   final DateTime kickoffTime;
 
   /// One of: SCHEDULED, LIVE, PAUSED, FINISHED, POSTPONED, CANCELLED, SUSPENDED, AWARDED, INTERRUPTED.
-  final String status;
+  final StatusValue status;
   final int? fullTimeHome;
   final int? fullTimeAway;
   final int? penaltiesHome;
   final int? penaltiesAway;
 
   /// One of: HOME, DRAW, AWAY.
-  final String? winner;
+  final MatchesResponseMatchWinnerValue? winner;
 
   /// One of: PENDING, SCORED, VOID, STALE.
-  final String scoringState;
+  final ScoringStateValue scoringState;
   final String roundId;
   final String roundLabel;
   final int? matchday;
   final int roundSortOrder;
   final Odd? odds;
   final bool isLocked;
-
-  static const stageValues = <String>[
-    'GROUP',
-    'R32',
-    'R16',
-    'QF',
-    'SF',
-    'THIRD_PLACE',
-    'FINAL'
-  ];
-  static const statusValues = <String>[
-    'SCHEDULED',
-    'LIVE',
-    'PAUSED',
-    'FINISHED',
-    'POSTPONED',
-    'CANCELLED',
-    'SUSPENDED',
-    'AWARDED',
-    'INTERRUPTED'
-  ];
-  static const winnerValues = <String>['HOME', 'DRAW', 'AWAY'];
-  static const scoringStateValues = <String>[
-    'PENDING',
-    'SCORED',
-    'VOID',
-    'STALE'
-  ];
 
   const MatchesResponseMatch({
     required this.id,
@@ -3621,20 +4222,22 @@ class MatchesResponseMatch {
         id: json['id'] as String,
         competitionId: json['competitionId'] as String,
         providerMatchId: json['providerMatchId'] as String,
-        stage: json['stage'] as String,
+        stage: StageValue.from(json['stage']),
         group: json['group'] as String?,
         homeTeam: json['homeTeam'] as String,
         awayTeam: json['awayTeam'] as String,
         homeTeamCode: json['homeTeamCode'] as String?,
         awayTeamCode: json['awayTeamCode'] as String?,
         kickoffTime: DateTime.parse(json['kickoffTime'] as String),
-        status: json['status'] as String,
+        status: StatusValue.from(json['status']),
         fullTimeHome: json['fullTimeHome'] as int?,
         fullTimeAway: json['fullTimeAway'] as int?,
         penaltiesHome: json['penaltiesHome'] as int?,
         penaltiesAway: json['penaltiesAway'] as int?,
-        winner: json['winner'] as String?,
-        scoringState: json['scoringState'] as String,
+        winner: json['winner'] == null
+            ? null
+            : MatchesResponseMatchWinnerValue.from(json['winner']),
+        scoringState: ScoringStateValue.from(json['scoringState']),
         roundId: json['roundId'] as String,
         roundLabel: json['roundLabel'] as String,
         matchday: json['matchday'] as int?,
@@ -3649,20 +4252,20 @@ class MatchesResponseMatch {
         'id': id,
         'competitionId': competitionId,
         'providerMatchId': providerMatchId,
-        'stage': stage,
+        'stage': stage.wire,
         'group': group,
         'homeTeam': homeTeam,
         'awayTeam': awayTeam,
         'homeTeamCode': homeTeamCode,
         'awayTeamCode': awayTeamCode,
         'kickoffTime': kickoffTime.toIso8601String(),
-        'status': status,
+        'status': status.wire,
         'fullTimeHome': fullTimeHome,
         'fullTimeAway': fullTimeAway,
         'penaltiesHome': penaltiesHome,
         'penaltiesAway': penaltiesAway,
-        'winner': winner,
-        'scoringState': scoringState,
+        'winner': winner?.wire,
+        'scoringState': scoringState.wire,
         'roundId': roundId,
         'roundLabel': roundLabel,
         'matchday': matchday,
@@ -3763,14 +4366,12 @@ class Media {
   final String id;
 
   /// One of: LIVE, REPLAY, HIGHLIGHTS.
-  final String kind;
+  final MediaKindValue kind;
   final String url;
   final String? label;
   final bool embeddable;
   final bool? sandbox;
   final String? allow;
-
-  static const kindValues = <String>['LIVE', 'REPLAY', 'HIGHLIGHTS'];
 
   const Media({
     required this.id,
@@ -3784,7 +4385,7 @@ class Media {
 
   factory Media.fromJson(Map<String, dynamic> json) => Media(
         id: json['id'] as String,
-        kind: json['kind'] as String,
+        kind: MediaKindValue.from(json['kind']),
         url: json['url'] as String,
         label: json['label'] as String?,
         embeddable: json['embeddable'] as bool,
@@ -3794,7 +4395,7 @@ class Media {
 
   Map<String, dynamic> toJson() => {
         'id': id,
-        'kind': kind,
+        'kind': kind.wire,
         'url': url,
         'label': label,
         'embeddable': embeddable,
@@ -3853,10 +4454,8 @@ class Member {
   final String? image;
 
   /// One of: OWNER, MODERATOR, MEMBER.
-  final String role;
+  final RoleValue role;
   final DateTime joinedAt;
-
-  static const roleValues = <String>['OWNER', 'MODERATOR', 'MEMBER'];
 
   const Member({
     required this.userId,
@@ -3870,7 +4469,7 @@ class Member {
         userId: json['userId'] as String,
         name: json['name'] as String,
         image: json['image'] as String?,
-        role: json['role'] as String,
+        role: RoleValue.from(json['role']),
         joinedAt: DateTime.parse(json['joinedAt'] as String),
       );
 
@@ -3878,7 +4477,7 @@ class Member {
         'userId': userId,
         'name': name,
         'image': image,
-        'role': role,
+        'role': role.wire,
         'joinedAt': joinedAt.toIso8601String(),
       };
 }
@@ -3890,6 +4489,8 @@ class Message {
   final String? parentId;
   final String? threadId;
   final String? userId;
+  final String? authorName;
+  final String? authorImage;
   final double epoch;
   final String ciphertext;
   final String createdAt;
@@ -3897,23 +4498,13 @@ class Message {
   final List<Attachment> attachments;
 
   /// One of: VISIBLE, PENDING, REMOVED.
-  final String moderation;
+  final ModerationValue moderation;
   final bool reported;
   final Total reactions;
 
   /// One of: FIRE, GOAL, WOW, LAUGH, SAD, ANGRY.
-  final String? myReaction;
+  final MineValue? myReaction;
   final double threadCount;
-
-  static const moderationValues = <String>['VISIBLE', 'PENDING', 'REMOVED'];
-  static const myReactionValues = <String>[
-    'FIRE',
-    'GOAL',
-    'WOW',
-    'LAUGH',
-    'SAD',
-    'ANGRY'
-  ];
 
   const Message({
     required this.id,
@@ -3922,6 +4513,8 @@ class Message {
     this.parentId,
     this.threadId,
     this.userId,
+    this.authorName,
+    this.authorImage,
     required this.epoch,
     required this.ciphertext,
     required this.createdAt,
@@ -3941,6 +4534,8 @@ class Message {
         parentId: json['parentId'] as String?,
         threadId: json['threadId'] as String?,
         userId: json['userId'] as String?,
+        authorName: json['authorName'] as String?,
+        authorImage: json['authorImage'] as String?,
         epoch: (json['epoch'] as num).toDouble(),
         ciphertext: json['ciphertext'] as String,
         createdAt: json['createdAt'] as String,
@@ -3948,10 +4543,12 @@ class Message {
         attachments: (json['attachments'] as List)
             .map((e) => Attachment.fromJson(e as Map<String, dynamic>))
             .toList(),
-        moderation: json['moderation'] as String,
+        moderation: ModerationValue.from(json['moderation']),
         reported: json['reported'] as bool,
         reactions: Total.fromJson(json['reactions'] as Map<String, dynamic>),
-        myReaction: json['myReaction'] as String?,
+        myReaction: json['myReaction'] == null
+            ? null
+            : MineValue.from(json['myReaction']),
         threadCount: (json['threadCount'] as num).toDouble(),
       );
 
@@ -3962,15 +4559,17 @@ class Message {
         'parentId': parentId,
         'threadId': threadId,
         'userId': userId,
+        'authorName': authorName,
+        'authorImage': authorImage,
         'epoch': epoch,
         'ciphertext': ciphertext,
         'createdAt': createdAt,
         'editedAt': editedAt,
         'attachments': attachments.map((e) => e.toJson()).toList(),
-        'moderation': moderation,
+        'moderation': moderation.wire,
         'reported': reported,
         'reactions': reactions.toJson(),
-        'myReaction': myReaction,
+        'myReaction': myReaction?.wire,
         'threadCount': threadCount,
       };
 }
@@ -4003,10 +4602,8 @@ class ModeBoardResponse {
   final Board board;
 
   /// One of: NORMAL, EASY, HARD, HARDCORE.
-  final String mode;
+  final ModeValue mode;
   final double? lives;
-
-  static const modeValues = <String>['NORMAL', 'EASY', 'HARD', 'HARDCORE'];
 
   const ModeBoardResponse({
     required this.board,
@@ -4017,13 +4614,13 @@ class ModeBoardResponse {
   factory ModeBoardResponse.fromJson(Map<String, dynamic> json) =>
       ModeBoardResponse(
         board: Board.fromJson(json['board'] as Map<String, dynamic>),
-        mode: json['mode'] as String,
+        mode: ModeValue.from(json['mode']),
         lives: (json['lives'] as num?)?.toDouble(),
       );
 
   Map<String, dynamic> toJson() => {
         'board': board.toJson(),
-        'mode': mode,
+        'mode': mode.wire,
         'lives': lives,
       };
 }
@@ -4106,11 +4703,11 @@ class MyPrediction {
   final int? basePoints;
 
   /// One of: EXACT, DIFF, OUTCOME, MISS.
-  final String? baseTier;
+  final BaseTierValue? baseTier;
   final int? bonusPoints;
 
   /// One of: NONE, CROWD, ODDS.
-  final String? bonusSource;
+  final BonusSourceValue? bonusSource;
   final String? crowdShare;
   final String? jokerMultiplierApplied;
   final int? totalPoints;
@@ -4118,9 +4715,6 @@ class MyPrediction {
   final DateTime? scoredAt;
   final DateTime createdAt;
   final DateTime updatedAt;
-
-  static const baseTierValues = <String>['EXACT', 'DIFF', 'OUTCOME', 'MISS'];
-  static const bonusSourceValues = <String>['NONE', 'CROWD', 'ODDS'];
 
   const MyPrediction({
     required this.id,
@@ -4160,9 +4754,13 @@ class MyPrediction {
             ? null
             : DateTime.parse(json['lockedAt'] as String),
         basePoints: json['basePoints'] as int?,
-        baseTier: json['baseTier'] as String?,
+        baseTier: json['baseTier'] == null
+            ? null
+            : BaseTierValue.from(json['baseTier']),
         bonusPoints: json['bonusPoints'] as int?,
-        bonusSource: json['bonusSource'] as String?,
+        bonusSource: json['bonusSource'] == null
+            ? null
+            : BonusSourceValue.from(json['bonusSource']),
         crowdShare: json['crowdShare'] as String?,
         jokerMultiplierApplied: json['jokerMultiplierApplied'] as String?,
         totalPoints: json['totalPoints'] as int?,
@@ -4186,9 +4784,9 @@ class MyPrediction {
         'isJoker': isJoker,
         'lockedAt': lockedAt?.toIso8601String(),
         'basePoints': basePoints,
-        'baseTier': baseTier,
+        'baseTier': baseTier?.wire,
         'bonusPoints': bonusPoints,
-        'bonusSource': bonusSource,
+        'bonusSource': bonusSource?.wire,
         'crowdShare': crowdShare,
         'jokerMultiplierApplied': jokerMultiplierApplied,
         'totalPoints': totalPoints,
@@ -4250,10 +4848,8 @@ class NextHome {
   final String kickoffTime;
 
   /// One of: W, D, L.
-  final String? result;
+  final ResultValue? result;
   final String? score;
-
-  static const resultValues = <String>['W', 'D', 'L'];
 
   const NextHome({
     required this.matchId,
@@ -4269,7 +4865,8 @@ class NextHome {
         opponent: json['opponent'] as String,
         opponentCode: json['opponentCode'] as String?,
         kickoffTime: json['kickoffTime'] as String,
-        result: json['result'] as String?,
+        result:
+            json['result'] == null ? null : ResultValue.from(json['result']),
         score: json['score'] as String?,
       );
 
@@ -4278,7 +4875,7 @@ class NextHome {
         'opponent': opponent,
         'opponentCode': opponentCode,
         'kickoffTime': kickoffTime,
-        'result': result,
+        'result': result?.wire,
         'score': score,
       };
 }
@@ -4311,25 +4908,10 @@ class NotificationsResponseNotification {
   final String id;
 
   /// One of: LEAGUE_JOIN, LEAGUE_ROLE, LEAGUE_REMOVED, PICK_REMINDER, MATCH_RESULT, CHAMPION_RESULT, BEST_SCORER_RESULT, TROPHY_AWARDED, ACHIEVEMENT_UNLOCKED, CHAT_MENTION, DM_MESSAGE, VOICE_MISSED.
-  final String type;
+  final TypeValue type;
   final Map<String, dynamic> data;
   final bool read;
   final String createdAt;
-
-  static const typeValues = <String>[
-    'LEAGUE_JOIN',
-    'LEAGUE_ROLE',
-    'LEAGUE_REMOVED',
-    'PICK_REMINDER',
-    'MATCH_RESULT',
-    'CHAMPION_RESULT',
-    'BEST_SCORER_RESULT',
-    'TROPHY_AWARDED',
-    'ACHIEVEMENT_UNLOCKED',
-    'CHAT_MENTION',
-    'DM_MESSAGE',
-    'VOICE_MISSED'
-  ];
 
   const NotificationsResponseNotification({
     required this.id,
@@ -4343,7 +4925,7 @@ class NotificationsResponseNotification {
           Map<String, dynamic> json) =>
       NotificationsResponseNotification(
         id: json['id'] as String,
-        type: json['type'] as String,
+        type: TypeValue.from(json['type']),
         data: Map<String, dynamic>.from(json['data'] as Map),
         read: json['read'] as bool,
         createdAt: json['createdAt'] as String,
@@ -4351,7 +4933,7 @@ class NotificationsResponseNotification {
 
   Map<String, dynamic> toJson() => {
         'id': id,
-        'type': type,
+        'type': type.wire,
         'data': data,
         'read': read,
         'createdAt': createdAt,
@@ -4523,12 +5105,10 @@ class Overrated {
 
 class PastPicksResponse {
   /// One of: none, live, final.
-  final String scope;
+  final ScopeValue scope;
   final Earlier? earlier;
   final Earlier? kept;
   final bool? cheeky;
-
-  static const scopeValues = <String>['none', 'live', 'final'];
 
   const PastPicksResponse({
     required this.scope,
@@ -4539,7 +5119,7 @@ class PastPicksResponse {
 
   factory PastPicksResponse.fromJson(Map<String, dynamic> json) =>
       PastPicksResponse(
-        scope: json['scope'] as String,
+        scope: ScopeValue.from(json['scope']),
         earlier: json['earlier'] == null
             ? null
             : Earlier.fromJson(json['earlier'] as Map<String, dynamic>),
@@ -4550,7 +5130,7 @@ class PastPicksResponse {
       );
 
   Map<String, dynamic> toJson() => {
-        'scope': scope,
+        'scope': scope.wire,
         if (earlier != null) 'earlier': earlier?.toJson(),
         if (kept != null) 'kept': kept?.toJson(),
         if (cheeky != null) 'cheeky': cheeky,
@@ -4613,7 +5193,7 @@ class Prediction {
   final bool isJoker;
 
   /// One of: EXACT, DIFF, OUTCOME, MISS.
-  final String? baseTier;
+  final BaseTierValue? baseTier;
   final int? totalPoints;
   final int? basePoints;
   final int? bonusPoints;
@@ -4626,38 +5206,16 @@ class Prediction {
   final DateTime kickoffTime;
 
   /// One of: SCHEDULED, LIVE, PAUSED, FINISHED, POSTPONED, CANCELLED, SUSPENDED, AWARDED, INTERRUPTED.
-  final String status;
+  final StatusValue status;
 
   /// One of: GROUP, R32, R16, QF, SF, THIRD_PLACE, FINAL.
-  final String stage;
+  final StageValue stage;
   final int? fullTimeHome;
   final int? fullTimeAway;
   final int? penaltiesHome;
   final int? penaltiesAway;
   final String roundLabel;
   final int roundSort;
-
-  static const baseTierValues = <String>['EXACT', 'DIFF', 'OUTCOME', 'MISS'];
-  static const statusValues = <String>[
-    'SCHEDULED',
-    'LIVE',
-    'PAUSED',
-    'FINISHED',
-    'POSTPONED',
-    'CANCELLED',
-    'SUSPENDED',
-    'AWARDED',
-    'INTERRUPTED'
-  ];
-  static const stageValues = <String>[
-    'GROUP',
-    'R32',
-    'R16',
-    'QF',
-    'SF',
-    'THIRD_PLACE',
-    'FINAL'
-  ];
 
   const Prediction({
     required this.id,
@@ -4700,7 +5258,9 @@ class Prediction {
         isOutcomeOnly: json['isOutcomeOnly'] as bool,
         wager: json['wager'] as int?,
         isJoker: json['isJoker'] as bool,
-        baseTier: json['baseTier'] as String?,
+        baseTier: json['baseTier'] == null
+            ? null
+            : BaseTierValue.from(json['baseTier']),
         totalPoints: json['totalPoints'] as int?,
         basePoints: json['basePoints'] as int?,
         bonusPoints: json['bonusPoints'] as int?,
@@ -4711,8 +5271,8 @@ class Prediction {
         homeTeamCode: json['homeTeamCode'] as String?,
         awayTeamCode: json['awayTeamCode'] as String?,
         kickoffTime: DateTime.parse(json['kickoffTime'] as String),
-        status: json['status'] as String,
-        stage: json['stage'] as String,
+        status: StatusValue.from(json['status']),
+        stage: StageValue.from(json['stage']),
         fullTimeHome: json['fullTimeHome'] as int?,
         fullTimeAway: json['fullTimeAway'] as int?,
         penaltiesHome: json['penaltiesHome'] as int?,
@@ -4731,7 +5291,7 @@ class Prediction {
         'isOutcomeOnly': isOutcomeOnly,
         'wager': wager,
         'isJoker': isJoker,
-        'baseTier': baseTier,
+        'baseTier': baseTier?.wire,
         'totalPoints': totalPoints,
         'basePoints': basePoints,
         'bonusPoints': bonusPoints,
@@ -4742,8 +5302,8 @@ class Prediction {
         'homeTeamCode': homeTeamCode,
         'awayTeamCode': awayTeamCode,
         'kickoffTime': kickoffTime.toIso8601String(),
-        'status': status,
-        'stage': stage,
+        'status': status.wire,
+        'stage': stage.wire,
         'fullTimeHome': fullTimeHome,
         'fullTimeAway': fullTimeAway,
         'penaltiesHome': penaltiesHome,
@@ -4894,16 +5454,7 @@ class ReactionsResponse {
   final Total totals;
 
   /// One of: FIRE, GOAL, WOW, LAUGH, SAD, ANGRY.
-  final String? mine;
-
-  static const mineValues = <String>[
-    'FIRE',
-    'GOAL',
-    'WOW',
-    'LAUGH',
-    'SAD',
-    'ANGRY'
-  ];
+  final MineValue? mine;
 
   const ReactionsResponse({
     required this.totals,
@@ -4913,12 +5464,12 @@ class ReactionsResponse {
   factory ReactionsResponse.fromJson(Map<String, dynamic> json) =>
       ReactionsResponse(
         totals: Total.fromJson(json['totals'] as Map<String, dynamic>),
-        mine: json['mine'] as String?,
+        mine: json['mine'] == null ? null : MineValue.from(json['mine']),
       );
 
   Map<String, dynamic> toJson() => {
         'totals': totals.toJson(),
-        'mine': mine,
+        'mine': mine?.wire,
       };
 }
 
@@ -4953,20 +5504,22 @@ class Recipient {
 class Report {
   final String id;
   final String? userId;
+  final String? authorName;
+  final String? authorImage;
   final String? matchId;
   final double epoch;
   final String ciphertext;
 
   /// One of: VISIBLE, PENDING, REMOVED.
-  final String moderation;
+  final ModerationValue moderation;
   final double reports;
   final String createdAt;
-
-  static const moderationValues = <String>['VISIBLE', 'PENDING', 'REMOVED'];
 
   const Report({
     required this.id,
     this.userId,
+    this.authorName,
+    this.authorImage,
     this.matchId,
     required this.epoch,
     required this.ciphertext,
@@ -4978,10 +5531,12 @@ class Report {
   factory Report.fromJson(Map<String, dynamic> json) => Report(
         id: json['id'] as String,
         userId: json['userId'] as String?,
+        authorName: json['authorName'] as String?,
+        authorImage: json['authorImage'] as String?,
         matchId: json['matchId'] as String?,
         epoch: (json['epoch'] as num).toDouble(),
         ciphertext: json['ciphertext'] as String,
-        moderation: json['moderation'] as String,
+        moderation: ModerationValue.from(json['moderation']),
         reports: (json['reports'] as num).toDouble(),
         createdAt: json['createdAt'] as String,
       );
@@ -4989,10 +5544,12 @@ class Report {
   Map<String, dynamic> toJson() => {
         'id': id,
         'userId': userId,
+        'authorName': authorName,
+        'authorImage': authorImage,
         'matchId': matchId,
         'epoch': epoch,
         'ciphertext': ciphertext,
-        'moderation': moderation,
+        'moderation': moderation.wire,
         'reports': reports,
         'createdAt': createdAt,
       };
@@ -5000,25 +5557,11 @@ class Report {
 
 class Reward {
   /// One of: OVERALL, WOODEN_SPOON, GROUP_PHASE, KNOCKOUT_PHASE, FINALIST, MADAME_IRMA, GROUP_ORACLE, KNOCKOUT_ORACLE, SHARPSHOOTER, GOAL_DIFF_GURU, TEAM_SPECIALIST.
-  final String type;
+  final LeagueRewardTypeValue type;
   final String label;
   final String? imageUrl;
   final String? note;
   final String? link;
-
-  static const typeValues = <String>[
-    'OVERALL',
-    'WOODEN_SPOON',
-    'GROUP_PHASE',
-    'KNOCKOUT_PHASE',
-    'FINALIST',
-    'MADAME_IRMA',
-    'GROUP_ORACLE',
-    'KNOCKOUT_ORACLE',
-    'SHARPSHOOTER',
-    'GOAL_DIFF_GURU',
-    'TEAM_SPECIALIST'
-  ];
 
   const Reward({
     required this.type,
@@ -5029,7 +5572,7 @@ class Reward {
   });
 
   factory Reward.fromJson(Map<String, dynamic> json) => Reward(
-        type: json['type'] as String,
+        type: LeagueRewardTypeValue.from(json['type']),
         label: json['label'] as String,
         imageUrl: json['imageUrl'] as String?,
         note: json['note'] as String?,
@@ -5037,7 +5580,7 @@ class Reward {
       );
 
   Map<String, dynamic> toJson() => {
-        'type': type,
+        'type': type.wire,
         'label': label,
         'imageUrl': imageUrl,
         'note': note,
@@ -5201,9 +5744,7 @@ class Showcase {
   final String category;
 
   /// One of: BRONZE, SILVER, GOLD, DIAMOND.
-  final String? tier;
-
-  static const tierValues = <String>['BRONZE', 'SILVER', 'GOLD', 'DIAMOND'];
+  final TierValue? tier;
 
   const Showcase({
     required this.key,
@@ -5214,13 +5755,13 @@ class Showcase {
   factory Showcase.fromJson(Map<String, dynamic> json) => Showcase(
         key: json['key'] as String,
         category: json['category'] as String,
-        tier: json['tier'] as String?,
+        tier: json['tier'] == null ? null : TierValue.from(json['tier']),
       );
 
   Map<String, dynamic> toJson() => {
         'key': key,
         'category': category,
-        'tier': tier,
+        'tier': tier?.wire,
       };
 }
 
@@ -5230,15 +5771,13 @@ class Squad {
   final double? shirtNumber;
 
   /// One of: GK, DF, MF, FW.
-  final String? position;
+  final PositionValue? position;
   final bool captain;
   final String? pictureUrl;
   final double? x;
   final double? y;
   final double goals;
   final double assists;
-
-  static const positionValues = <String>['GK', 'DF', 'MF', 'FW'];
 
   const Squad({
     required this.playerId,
@@ -5257,7 +5796,9 @@ class Squad {
         playerId: json['playerId'] as String,
         name: json['name'] as String,
         shirtNumber: (json['shirtNumber'] as num?)?.toDouble(),
-        position: json['position'] as String?,
+        position: json['position'] == null
+            ? null
+            : PositionValue.from(json['position']),
         captain: json['captain'] as bool,
         pictureUrl: json['pictureUrl'] as String?,
         x: (json['x'] as num?)?.toDouble(),
@@ -5270,7 +5811,7 @@ class Squad {
         'playerId': playerId,
         'name': name,
         'shirtNumber': shirtNumber,
-        'position': position,
+        'position': position?.wire,
         'captain': captain,
         'pictureUrl': pictureUrl,
         'x': x,
@@ -5305,13 +5846,11 @@ class StartingXI {
   final double? shirtNumber;
 
   /// One of: GK, DF, MF, FW.
-  final String? position;
+  final PositionValue? position;
   final bool captain;
   final String? pictureUrl;
   final double? x;
   final double? y;
-
-  static const positionValues = <String>['GK', 'DF', 'MF', 'FW'];
 
   const StartingXI({
     required this.playerId,
@@ -5328,7 +5867,9 @@ class StartingXI {
         playerId: json['playerId'] as String,
         name: json['name'] as String,
         shirtNumber: (json['shirtNumber'] as num?)?.toDouble(),
-        position: json['position'] as String?,
+        position: json['position'] == null
+            ? null
+            : PositionValue.from(json['position']),
         captain: json['captain'] as bool,
         pictureUrl: json['pictureUrl'] as String?,
         x: (json['x'] as num?)?.toDouble(),
@@ -5339,7 +5880,7 @@ class StartingXI {
         'playerId': playerId,
         'name': name,
         'shirtNumber': shirtNumber,
-        'position': position,
+        'position': position?.wire,
         'captain': captain,
         'pictureUrl': pictureUrl,
         'x': x,
@@ -5432,6 +5973,43 @@ class Subject {
         'totalPoints': totalPoints,
         'exactCount': exactCount,
         'outcomeCount': outcomeCount,
+      };
+}
+
+class Substitution {
+  /// One of: HOME, AWAY.
+  final WinnerValue side;
+  final String? minute;
+  final String? playerOffId;
+  final String playerOffName;
+  final String? playerOnId;
+  final String playerOnName;
+
+  const Substitution({
+    required this.side,
+    this.minute,
+    this.playerOffId,
+    required this.playerOffName,
+    this.playerOnId,
+    required this.playerOnName,
+  });
+
+  factory Substitution.fromJson(Map<String, dynamic> json) => Substitution(
+        side: WinnerValue.from(json['side']),
+        minute: json['minute'] as String?,
+        playerOffId: json['playerOffId'] as String?,
+        playerOffName: json['playerOffName'] as String,
+        playerOnId: json['playerOnId'] as String?,
+        playerOnName: json['playerOnName'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'side': side.wire,
+        'minute': minute,
+        'playerOffId': playerOffId,
+        'playerOffName': playerOffName,
+        'playerOnId': playerOnId,
+        'playerOnName': playerOnName,
       };
 }
 
@@ -5911,6 +6489,7 @@ class WrappedMintResponse {
       };
 }
 
+typedef DmAttachmentResponse = ChatAttachmentResponse;
 typedef DmMessagesResponse = ChatMessagesResponse;
 typedef MatchScorersResponse = ScorersResponse;
 typedef ProfileMintResponse = ShareMintResponse;

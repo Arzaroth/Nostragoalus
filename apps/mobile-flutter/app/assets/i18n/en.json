@@ -981,8 +981,9 @@
     "leagueNoPick": "{n} member made no pick | {n} members made no pick",
     "watching": "1 watching now | {n} watching now",
       "captainShort": "C",
-      "ownGoalShort": "OG"
-    },
+      "ownGoalShort": "OG",
+    "passesCompleted": "Passes completed"
+  },
   "pastPick": {
     "title": "What if",
     "earlier": "Earlier pick {score}: {n} pts",

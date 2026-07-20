@@ -6,16 +6,19 @@ import { providerForCompetition } from '../../../utils/providers'
 import { getCompetitionById } from '../../../utils/competitions/store'
 import { resolveCompetitionSeason } from '../../../utils/sync/competition'
 import { defineReadHandler } from '../../../utils/read-handler'
+import { matchLiveDetailSchema } from '../../../schemas/match'
+import type { TeamMatchStats } from '../../../../shared/types/match'
 
-// The upstream match detail is a provider-shaped payload the route passes through
-// verbatim (typed `unknown` here and in the cache), so the contract is the
-// envelope, not the provider's internal shape.
-const responseSchema = z.object({ detail: z.unknown() })
+// The upstream detail, normalized by the provider adapter (MatchDetail) plus the
+// per-team stats block. Published as a real shape so a client never has to guess
+// at the provider's internals.
+const responseSchema = z.object({ detail: matchLiveDetailSchema.nullable() })
+type Detail = z.infer<typeof matchLiveDetailSchema>
 
 // Full-time details never change again - cache them for the process lifetime.
 // Live matches refresh every minute so the clock and stats stay current.
 // (Single instance: in-memory is enough.)
-const cache = new Map<string, { at: number; final: boolean; detail: unknown }>()
+const cache = new Map<string, { at: number; final: boolean; detail: Detail | null }>()
 const TTL_MS = 60 * 1000
 
 export default defineReadHandler({ response: responseSchema }, async ({ event }) => {
@@ -38,7 +41,7 @@ export default defineReadHandler({ response: responseSchema }, async ({ event })
   try {
     const detail = await provider.getMatchDetail({ stageId: rows[0].providerStageId ?? undefined, matchId: rows[0].providerMatchId })
     // Enrich with the football-intelligence per-match stats when FIFA exposes them.
-    let stats: { home: unknown; away: unknown } | null = null
+    let stats: { home: TeamMatchStats | null; away: TeamMatchStats | null } | null = null
     if (detail?.ifesId && provider.getMatchStats) {
       try {
         const byTeam = await provider.getMatchStats({ ifesId: detail.ifesId })

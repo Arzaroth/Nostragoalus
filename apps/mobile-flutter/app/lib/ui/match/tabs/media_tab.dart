@@ -27,11 +27,11 @@ class MediaTab extends ConsumerWidget {
                 for (final m in res.media)
                   ListTile(
                     leading: Icon(switch (m.kind) {
-                      'LIVE' => Icons.live_tv,
-                      'HIGHLIGHTS' => Icons.movie,
+                      MediaKindValue.live => Icons.live_tv,
+                      MediaKindValue.highlights => Icons.movie,
                       _ => Icons.replay,
                     }),
-                    title: Text(m.label ?? m.kind),
+                    title: Text(m.label ?? m.kind.wire),
                     subtitle: Text(m.url, maxLines: 1, overflow: TextOverflow.ellipsis),
                     trailing: const Icon(Icons.open_in_new, size: 18),
                     onTap: () => runAction(

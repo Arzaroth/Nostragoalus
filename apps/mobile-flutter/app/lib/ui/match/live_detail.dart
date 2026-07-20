@@ -1,113 +1,28 @@
-/// Local typing for the upstream live-match blob. The endpoint is not in the
-/// OpenAPI snapshot yet (see `deferred-match-ui.md`), so the shape is asserted
-/// here once instead of being string-poked at every render site.
+/// Presentation helpers for the typed upstream live-match detail
+/// ([Detail] in `api/models.gen.dart`, from `/api/matches/{id}/live-detail`).
 library;
 
-class LiveDetailEvent {
-  const LiveDetailEvent({this.minute, this.player, this.detail});
+import '../../api/models.gen.dart';
 
-  final String? minute;
-  final String? player;
-  final String? detail;
+/// Nothing worth a tab: no venue, no cards, no stats, no events.
+bool liveDetailIsEmpty(Detail d) =>
+    d.stadium == null &&
+    d.attendance == null &&
+    (d.cards.home.yellow + d.cards.home.red + d.cards.away.yellow + d.cards.away.red) == 0 &&
+    liveTeamStats(d.stats?.home).isEmpty &&
+    liveTeamStats(d.stats?.away).isEmpty &&
+    d.goals.isEmpty &&
+    d.bookings.isEmpty &&
+    d.substitutions.isEmpty;
 
-  static LiveDetailEvent goal(Map<String, dynamic> j) => LiveDetailEvent(
-        minute: _str(j['minute']) ?? _str(j['time']),
-        player: _str(j['scorer']) ?? _str(j['player']) ?? _str(j['playerName']),
-      );
-
-  static LiveDetailEvent booking(Map<String, dynamic> j) => LiveDetailEvent(
-        minute: _str(j['minute']) ?? _str(j['time']),
-        player: _str(j['player']) ?? _str(j['playerName']),
-        detail: _str(j['card']) ?? _str(j['type']),
-      );
-
-  static LiveDetailEvent substitution(Map<String, dynamic> j) => LiveDetailEvent(
-        minute: _str(j['minute']) ?? _str(j['time']),
-        player: _str(j['playerIn']) ?? _str(j['playerInName']),
-        detail: _str(j['playerOut']) ?? _str(j['playerOutName']),
-      );
-}
-
-class LiveDetailCards {
-  const LiveDetailCards({
-    required this.homeYellow,
-    required this.awayYellow,
-    required this.homeRed,
-    required this.awayRed,
-  });
-
-  final int homeYellow;
-  final int awayYellow;
-  final int homeRed;
-  final int awayRed;
-
-  bool get isEmpty => homeYellow == 0 && awayYellow == 0 && homeRed == 0 && awayRed == 0;
-
-  static LiveDetailCards? fromJson(Object? raw) {
-    final m = _map(raw);
-    if (m == null) return null;
-    final home = _map(m['home']) ?? const {};
-    final away = _map(m['away']) ?? const {};
-    return LiveDetailCards(
-      homeYellow: _int(home['yellow']),
-      awayYellow: _int(away['yellow']),
-      homeRed: _int(home['red']),
-      awayRed: _int(away['red']),
-    );
-  }
-}
-
-class LiveDetail {
-  const LiveDetail({
-    this.stadium,
-    this.attendance,
-    this.cards,
-    this.homeStats = const {},
-    this.awayStats = const {},
-    this.goals = const [],
-    this.bookings = const [],
-    this.substitutions = const [],
-  });
-
-  final String? stadium;
-  final String? attendance;
-  final LiveDetailCards? cards;
-  final Map<String, num> homeStats;
-  final Map<String, num> awayStats;
-  final List<LiveDetailEvent> goals;
-  final List<LiveDetailEvent> bookings;
-  final List<LiveDetailEvent> substitutions;
-
-  bool get isEmpty =>
-      stadium == null &&
-      (cards?.isEmpty ?? true) &&
-      homeStats.isEmpty &&
-      awayStats.isEmpty &&
-      goals.isEmpty &&
-      bookings.isEmpty &&
-      substitutions.isEmpty;
-
-  factory LiveDetail.fromJson(Map<String, dynamic> json) {
-    final stats = _map(json['stats']);
-    return LiveDetail(
-      stadium: _str(json['stadium']),
-      attendance: _str(json['attendance']),
-      cards: LiveDetailCards.fromJson(json['cards']),
-      homeStats: _stats(stats?['home']),
-      awayStats: _stats(stats?['away']),
-      goals: _list(json['goals'], LiveDetailEvent.goal),
-      bookings: _list(json['bookings'], LiveDetailEvent.booking),
-      substitutions: _list(json['substitutions'], LiveDetailEvent.substitution),
-    );
-  }
-}
-
-/// Feed stat key -> i18n key. Keys we have no label for are dropped rather than
-/// shown raw (a five-locale app must not render `pressuresApplied` as a label).
+/// Stat key -> i18n key, in display order. The contract fixes the key set, so
+/// every stat the feed can send has a label - nothing is dropped any more.
 const liveStatLabels = <String, String>{
+  'possession': 'match.possession',
   'attempts': 'match.attempts',
   'onTarget': 'match.onTarget',
   'passes': 'match.passes',
+  'passesCompleted': 'match.passesCompleted',
   'crosses': 'match.crosses',
   'corners': 'match.corners',
   'fouls': 'match.fouls',
@@ -115,35 +30,30 @@ const liveStatLabels = <String, String>{
   'distanceKm': 'match.distance',
   'pressuresApplied': 'match.pressures',
   'forcedTurnovers': 'match.turnovers',
-  'possession': 'match.possession',
 };
 
-Map<String, num> _stats(Object? raw) {
-  final m = _map(raw);
-  if (m == null) return const {};
+/// One team's stats as `key -> value`, skipping the ones the feed left null.
+Map<String, num> liveTeamStats(DetailStatHome? s) {
+  if (s == null) return const {};
   return {
-    for (final e in m.entries)
-      if (e.value is num) e.key: e.value as num,
+    for (final e in <String, num?>{
+      'possession': s.possession,
+      'attempts': s.attempts,
+      'onTarget': s.onTarget,
+      'passes': s.passes,
+      'passesCompleted': s.passesCompleted,
+      'crosses': s.crosses,
+      'corners': s.corners,
+      'fouls': s.fouls,
+      'offsides': s.offsides,
+      'distanceKm': s.distanceKm,
+      'pressuresApplied': s.pressuresApplied,
+      'forcedTurnovers': s.forcedTurnovers,
+    }.entries)
+      if (e.value != null) e.key: e.value!,
   };
 }
 
-List<LiveDetailEvent> _list(
-  Object? raw,
-  LiveDetailEvent Function(Map<String, dynamic>) build,
-) {
-  if (raw is! List) return const [];
-  return [
-    for (final e in raw)
-      if (_map(e) case final m?) build(m),
-  ];
-}
-
-Map<String, dynamic>? _map(Object? v) => v is Map ? v.cast<String, dynamic>() : null;
-
-String? _str(Object? v) {
-  if (v == null) return null;
-  final s = v.toString();
-  return s.isEmpty ? null : s;
-}
-
-int _int(Object? v) => v is num ? v.toInt() : 0;
+/// `45+2` -> `45+2'`, null/empty -> `''`. One place so every event row agrees.
+String liveMinuteLabel(String? minute) =>
+    (minute == null || minute.isEmpty) ? '' : "$minute'";

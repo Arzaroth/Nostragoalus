@@ -38,7 +38,7 @@ class LineupsTab extends ConsumerWidget {
                 dense: true,
                 leading: Text(p.shirtNumber?.toInt().toString() ?? ''),
                 title: Text(p.name),
-                subtitle: p.position != null ? Text(p.position!) : null,
+                subtitle: p.position != null ? Text(p.position!.wire) : null,
                 trailing: p.captain ? Text(context.tr('match.captainShort')) : null,
               ),
           ],

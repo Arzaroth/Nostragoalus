@@ -1,8 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nostragoalus/api/api_client.dart';
-import 'package:nostragoalus/api/nostragoalus_api.dart';
+import 'package:nostragoalus/api/api.dart';
 import 'package:nostragoalus/api/token_store.dart';
 import 'package:nostragoalus/chat/chat_crypto.dart';
 import 'package:nostragoalus/kt/key_transparency.dart';
@@ -44,7 +43,7 @@ void main() {
       });
     final c = ProviderContainer(overrides: [
       sodiumProvider.overrideWith((ref) async => sodium),
-      apiProvider.overrideWithValue(NostragoalusApi(ApiClient(TokenStore(InMemoryKv()), dio: dio))),
+      apiProvider.overrideWithValue(ApiClient(TokenStore(InMemoryKv()), dio: dio)),
       ktPinStoreProvider.overrideWithValue(pins ?? InMemoryKv()),
     ]);
     addTearDown(c.dispose);

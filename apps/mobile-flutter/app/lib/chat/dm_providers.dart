@@ -100,6 +100,10 @@ final dmRoomProvider = FutureProvider.family<DmRoomView, String>((ref, threadId)
         userId: m.userId,
         text: text,
         createdAt: m.createdAt,
+        authorName: m.authorName,
+        authorImage: m.authorImage,
+        reactions: m.reactions,
+        myReaction: m.myReaction,
         attachmentCount: m.attachments.length));
   }
   return DmRoomView(
@@ -183,9 +187,8 @@ final dmAttachmentProvider =
   final identity = (await ref.watch(chatIdentityProvider.future)).identity;
   if (identity == null) return null;
   final keys = await ref.watch(dmEpochKeysProvider(threadId).future);
-  final att = EncryptedBlob.fromJson(
-      await ref.watch(apiProvider).dmAttachment(threadId, messageId, idx));
-  final key = keys[att.epoch];
+  final att = await ref.watch(apiProvider).dmAttachment(threadId, messageId, idx);
+  final key = keys[att.epoch.toInt()];
   if (key == null) return null;
   try {
     return e2ee.decryptBytes(sodium, att.ciphertext, key);

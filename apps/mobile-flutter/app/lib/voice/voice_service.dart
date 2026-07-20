@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
+import '../api/api.dart';
 import '../api/models.gen.dart' show IceServersResponse;
-import '../api/nostragoalus_api.dart';
 import '../api/token_store.dart';
 import '../live/live_service.dart';
 import 'voice_call_state.dart';
@@ -15,11 +15,6 @@ export 'voice_call_state.dart';
 typedef VoiceMediaFactory = Future<MediaStream> Function();
 typedef VoicePeerFactory = Future<RTCPeerConnection> Function(Map<String, dynamic> config);
 typedef IceFetcher = Future<IceServersResponse> Function();
-
-/// What the server hands out when nothing else says otherwise
-/// (`buildIceServers`'s `ttlSeconds` default). Only used because the api facade
-/// drops the response's `ttl`; see the handoff note.
-const _fallbackIceTtlSeconds = 3600.0;
 
 /// A `join()` that never got off the ground. `micDenied` separates the one
 /// failure the user can act on from everything else.
@@ -60,7 +55,7 @@ class VoiceService {
         _peerFactory = peers ?? createPeerConnection,
         _ice = ice;
 
-  final NostragoalusApi _api;
+  final ApiClient _api;
   final String _selfId;
   final VoiceMediaFactory _media;
   final VoicePeerFactory _peerFactory;
@@ -162,9 +157,7 @@ class VoiceService {
   /// TURN credential the server mints is time-limited, so a call that outlives
   /// its ttl would lose the relay on the next renegotiation or ICE restart.
   Future<void> _loadIce() async {
-    final res = _ice != null
-        ? await _ice()
-        : IceServersResponse(iceServers: await _api.iceServers(), ttl: _fallbackIceTtlSeconds);
+    final res = _ice != null ? await _ice() : await _api.iceServers();
     if (res.iceServers.isEmpty) throw StateError('no ICE servers configured');
     _iceConfig = {'iceServers': res.iceServers.map((s) => s.toJson()).toList()};
     // 90% of the ttl, matching the web (useVoiceCall.ensureIce).

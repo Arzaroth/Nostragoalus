@@ -153,6 +153,16 @@ describe('listReports + getMyReports', () => {
     await client.close()
   })
 
+  it('names the reported author so a moderator is not ruling on a bare id', async () => {
+    const { db, client, owner, leagueId, members } = await setup(1)
+    const a = await addMessage(db, leagueId, members[0], 'a')
+    await reportMessage(db, { leagueId, messageId: a, userId: owner })
+    const reports = await listReports(db, { leagueId, actorId: owner })
+    expect(reports[0].authorName).toBe('m0')
+    expect(reports[0].authorImage).toBeNull()
+    await client.close()
+  })
+
   it('drops removed messages from the queue', async () => {
     const { db, client, owner, leagueId, members } = await setup(3)
     const a = await addMessage(db, leagueId, owner, 'a')

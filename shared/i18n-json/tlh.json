@@ -980,8 +980,9 @@
     "leagueNoPick": "DoQ Hutlh {n} | DoQ Hutlh {n}",
     "watching": "{n} bejwI' | {n} bejwI'pu'",
       "captainShort": "C",
-      "ownGoalShort": "OG"
-    },
+      "ownGoalShort": "OG",
+    "passesCompleted": "chIl nge'"
+  },
   "pastPick": {
     "title": "qatlh",
     "earlier": "wIv wa'Hu' {score}: {n}",

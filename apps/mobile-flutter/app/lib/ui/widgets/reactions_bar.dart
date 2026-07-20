@@ -30,7 +30,7 @@ class ReactionsBar extends ConsumerWidget {
             _Chip(
               glyph: glyph,
               count: _count(res.totals, emoji),
-              selected: res.mine == emoji,
+              selected: res.mine?.wire == emoji,
               onTap: () async {
                 await ref.read(apiProvider).react(matchId, emoji);
                 ref.invalidate(reactionsProvider(matchId));

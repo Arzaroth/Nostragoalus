@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../api/models.gen.dart';
 import '../../i18n/i18n_scope.dart';
 
 /// A compact score / status chip. Shows the score once a match is under way,
@@ -7,23 +8,23 @@ import '../../i18n/i18n_scope.dart';
 class ScorePill extends StatelessWidget {
   const ScorePill({super.key, required this.status, this.home, this.away});
 
-  final String status;
+  final StatusValue status;
   final int? home;
   final int? away;
 
-  static const _live = {'LIVE', 'PAUSED'};
-  static const _played = {'LIVE', 'PAUSED', 'FINISHED'};
+  static const _live = {StatusValue.live, StatusValue.paused};
+  static const _played = {StatusValue.live, StatusValue.paused, StatusValue.finished};
 
   static const _statusKeys = {
-    'SCHEDULED': 'scheduled',
-    'LIVE': 'live',
-    'PAUSED': 'halfTime',
-    'FINISHED': 'fullTime',
-    'POSTPONED': 'postponed',
-    'CANCELLED': 'cancelled',
-    'SUSPENDED': 'suspended',
-    'AWARDED': 'awarded',
-    'INTERRUPTED': 'interrupted',
+    StatusValue.scheduled: 'scheduled',
+    StatusValue.live: 'live',
+    StatusValue.paused: 'halfTime',
+    StatusValue.finished: 'fullTime',
+    StatusValue.postponed: 'postponed',
+    StatusValue.cancelled: 'cancelled',
+    StatusValue.suspended: 'suspended',
+    StatusValue.awarded: 'awarded',
+    StatusValue.interrupted: 'interrupted',
   };
 
   @override
@@ -35,7 +36,7 @@ class ScorePill extends StatelessWidget {
     final label = hasScore
         ? '$home - $away'
         : statusKey == null
-            ? status
+            ? status.wire
             : context.tr('match.statusLabel.$statusKey');
     final bg = isLive
         ? scheme.errorContainer

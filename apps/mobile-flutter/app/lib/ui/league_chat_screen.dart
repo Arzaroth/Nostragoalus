@@ -219,8 +219,12 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
     return ChatLineTile(
       line: line,
       undecryptableLabel: context.tr('chat.undecryptable'),
-      authorName: author?.name ?? (line.userId == null ? null : context.tr('chat.unknownUser')),
-      authorImage: author?.image,
+      // The server names the author (it holds that metadata anyway), so an
+      // ex-member's messages stay attributed; the roster is only a fallback.
+      authorName: line.authorName ??
+          author?.name ??
+          (line.userId == null ? null : context.tr('chat.unknownUser')),
+      authorImage: line.authorImage ?? author?.image,
       attachmentBuilder: (i) => ChatAttachment(
         provider: chatAttachmentProvider((widget.leagueId, line.id, i)),
       ),

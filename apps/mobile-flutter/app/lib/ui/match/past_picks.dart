@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../api/models.gen.dart';
 import '../../i18n/i18n_scope.dart';
 import '../../state/providers.dart';
 
@@ -15,7 +16,7 @@ class PastPicks extends ConsumerWidget {
     return ref.watch(pastPicksProvider(matchId)).maybeWhen(
           data: (res) {
             final earlier = res.earlier;
-            if (res.scope == 'none' || earlier == null) return const SizedBox.shrink();
+            if (res.scope == ScopeValue.none || earlier == null) return const SizedBox.shrink();
             final kept = res.kept;
             return Card(
               child: Padding(

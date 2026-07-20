@@ -58,6 +58,85 @@ export const matchOddsViewSchema = z.object({
   bookmakers: z.array(storedBookmakerOddsSchema).nullable(),
 })
 
+// --- upstream live match detail ---
+// Mirrors MatchDetail + TeamMatchStats (shared/types/match.ts) as the provider
+// adapters normalize them, so /api/matches/{id}/live-detail publishes a real
+// shape instead of an opaque blob. A provider value outside these types is a
+// normalizer bug, not something the client should have to string-poke around.
+
+const sideSchema = z.enum(['HOME', 'AWAY'])
+
+export const liveDetailGoalSchema = z.object({
+  side: sideSchema,
+  teamId: z.string().nullable(),
+  teamName: z.string(),
+  teamCode: z.string().nullable(),
+  playerId: z.string().nullable(),
+  playerName: z.string(),
+  minute: z.string().nullable(),
+  goalType: z.number().nullable(),
+  ownGoal: z.boolean(),
+  assistPlayerId: z.string().nullable(),
+  assistPlayerName: z.string().nullable(),
+})
+
+export const liveDetailBookingSchema = z.object({
+  side: sideSchema,
+  playerId: z.string().nullable(),
+  playerName: z.string(),
+  minute: z.string().nullable(),
+  card: z.enum(['YELLOW', 'SECOND_YELLOW', 'RED']),
+  coach: z.boolean().optional(),
+})
+
+export const liveDetailSubstitutionSchema = z.object({
+  side: sideSchema,
+  minute: z.string().nullable(),
+  playerOffId: z.string().nullable(),
+  playerOffName: z.string(),
+  playerOnId: z.string().nullable(),
+  playerOnName: z.string(),
+})
+
+// TeamMatchStats: the FIFA football-intelligence per-team numbers. Every key is
+// nullable - a feed that ships only some of them still validates.
+export const teamMatchStatsSchema = z.object({
+  possession: z.number().nullable(),
+  attempts: z.number().nullable(),
+  onTarget: z.number().nullable(),
+  passes: z.number().nullable(),
+  passesCompleted: z.number().nullable(),
+  crosses: z.number().nullable(),
+  corners: z.number().nullable(),
+  fouls: z.number().nullable(),
+  offsides: z.number().nullable(),
+  distanceKm: z.number().nullable(),
+  pressuresApplied: z.number().nullable(),
+  forcedTurnovers: z.number().nullable(),
+})
+
+export const teamCardsSchema = z.object({ yellow: z.number(), red: z.number() })
+
+export const matchLiveDetailSchema = z.object({
+  minute: z.string().nullable().optional(),
+  halfTime: z.boolean().optional(),
+  possessionHome: z.number().nullable(),
+  possessionAway: z.number().nullable(),
+  attendance: z.number().nullable(),
+  stadium: z.string().nullable(),
+  cards: z.object({ home: teamCardsSchema, away: teamCardsSchema }),
+  goals: z.array(liveDetailGoalSchema),
+  bookings: z.array(liveDetailBookingSchema),
+  substitutions: z.array(liveDetailSubstitutionSchema),
+  playerNames: z.record(z.string(), z.string()).optional(),
+  ifesId: z.string().nullable(),
+  homeTeamId: z.string().nullable(),
+  awayTeamId: z.string().nullable(),
+  stats: z
+    .object({ home: teamMatchStatsSchema.nullable(), away: teamMatchStatsSchema.nullable() })
+    .nullable(),
+})
+
 // StandingRow (server/utils/stats/standings.ts): one computed group-table row.
 export const standingRowSchema = z.object({
   code: z.string().nullable(),

@@ -314,6 +314,9 @@ export async function addDmWrappedKey(
 export interface DmMessageRow {
   id: string
   userId: string | null
+  // Author display name + avatar; only the read path joins them.
+  authorName?: string | null
+  authorImage?: string | null
   parentId: string | null
   threadId: string | null
   epoch: number
@@ -502,8 +505,9 @@ export async function listDmMessages(
   const scope = opts.thread ? eq(chatMessage.threadId, opts.thread) : isNull(chatMessage.threadId)
   const cursor = keysetBefore(chatMessage.createdAt, chatMessage.id, opts.before, opts.beforeId)
   const rows = await db
-    .select(messageColumns)
+    .select({ ...messageColumns, authorName: user.name, authorImage: user.image })
     .from(chatMessage)
+    .leftJoin(user, eq(user.id, chatMessage.userId))
     .where(and(eq(chatMessage.dmThreadId, opts.threadId), scope, cursor))
     .orderBy(desc(chatMessage.createdAt), desc(chatMessage.id))
     .limit(limit)

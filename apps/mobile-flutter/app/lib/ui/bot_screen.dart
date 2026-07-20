@@ -8,9 +8,9 @@ import 'widgets/async_value_view.dart';
 import 'widgets/score_pill.dart';
 
 /// i18n key for a bot persona (the API sends the kebab-case value).
-String _personaKey(String persona) => switch (persona) {
-      'evil-twin' => 'bot.persona.evilTwin',
-      'equalizer' => 'bot.persona.equalizer',
+String _personaKey(PersonaValue persona) => switch (persona) {
+      PersonaValue.evilTwin => 'bot.persona.evilTwin',
+      PersonaValue.equalizer => 'bot.persona.equalizer',
       _ => 'bot.persona.consensus',
     };
 
@@ -49,7 +49,7 @@ class BotScreen extends ConsumerWidget {
                           style: Theme.of(context).textTheme.titleMedium),
                       const SizedBox(width: 8),
                       ScorePill(
-                          status: p.status,
+                          status: StatusValue.from(p.status),
                           home: p.fullTimeHome?.toInt(),
                           away: p.fullTimeAway?.toInt()),
                     ],

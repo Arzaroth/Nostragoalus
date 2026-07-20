@@ -5,7 +5,7 @@ import '../api/models.gen.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
 import 'feedback.dart';
-import 'league_settings_screen.dart' show modeLabelKey, visibilityLabelKey;
+import 'league_settings_screen.dart' show modeLabelKey, pickable, visibilityLabelKey;
 
 class CreateLeagueScreen extends ConsumerStatefulWidget {
   const CreateLeagueScreen({super.key});
@@ -17,8 +17,8 @@ class _CreateLeagueScreenState extends ConsumerState<CreateLeagueScreen> {
   final _name = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   String? _competition;
-  String _visibility = 'PRIVATE';
-  String _mode = 'NORMAL';
+  VisibilityValue _visibility = VisibilityValue.private;
+  ModeValue _mode = ModeValue.normal;
   int _lives = 3;
   bool _busy = false;
 
@@ -38,7 +38,7 @@ class _CreateLeagueScreenState extends ConsumerState<CreateLeagueScreen> {
             name: _name.text.trim(),
             visibility: _visibility,
             mode: _mode,
-            lives: _mode == 'HARDCORE' ? _lives : null,
+            lives: _mode == ModeValue.hardcore ? _lives : null,
           ));
       ref.invalidate(leaguesProvider);
       nav.pop();
@@ -86,34 +86,34 @@ class _CreateLeagueScreenState extends ConsumerState<CreateLeagueScreen> {
               orElse: () => const LinearProgressIndicator(),
             ),
             const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
+            DropdownButtonFormField<VisibilityValue>(
               initialValue: _visibility,
               decoration: InputDecoration(
                 labelText: context.tr('leagues.visibility'),
                 border: const OutlineInputBorder(),
               ),
               items: [
-                for (final v in CreateLeagueInput.visibilityValues)
+                for (final v in pickable(VisibilityValue.values, VisibilityValue.unknown))
                   DropdownMenuItem(value: v, child: Text(context.tr(visibilityLabelKey(v)))),
               ],
-              onChanged: (v) => setState(() => _visibility = v ?? 'PRIVATE'),
+              onChanged: (v) => setState(() => _visibility = v ?? VisibilityValue.private),
             ),
             const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
+            DropdownButtonFormField<ModeValue>(
               initialValue: _mode,
               decoration: InputDecoration(
                 labelText: context.tr('leagues.mode'),
                 border: const OutlineInputBorder(),
               ),
               items: [
-                for (final m in CreateLeagueInput.modeValues)
+                for (final m in pickable(ModeValue.values, ModeValue.unknown))
                   DropdownMenuItem(value: m, child: Text(context.tr(modeLabelKey(m)))),
               ],
-              onChanged: (v) => setState(() => _mode = v ?? 'NORMAL'),
+              onChanged: (v) => setState(() => _mode = v ?? ModeValue.normal),
             ),
             // HARDCORE is the only mode the server accepts a lives count for,
             // and it rejects the create without one.
-            if (_mode == 'HARDCORE')
+            if (_mode == ModeValue.hardcore)
               Row(
                 children: [
                   Text(context.tr('leagues.lives')),

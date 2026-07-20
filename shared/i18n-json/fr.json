@@ -980,8 +980,9 @@
     "leagueNoPick": "{n} membre sans pronostic | {n} membres sans pronostic",
     "watching": "1 spectateur | {n} spectateurs",
       "captainShort": "C",
-      "ownGoalShort": "CSC"
-    },
+      "ownGoalShort": "CSC",
+    "passesCompleted": "Passes reussies"
+  },
   "pastPick": {
     "title": "Et si",
     "earlier": "Pronostic précédent {score} : {n} pts",

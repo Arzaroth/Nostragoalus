@@ -33,6 +33,8 @@ export const chatMessageSchema = z.object({
   parentId: z.string().nullable(),
   threadId: z.string().nullable(),
   userId: z.string().nullable(),
+  authorName: z.string().nullable().optional(),
+  authorImage: z.string().nullable().optional(),
   epoch: z.number(),
   ciphertext: z.string(),
   createdAt: z.string(),

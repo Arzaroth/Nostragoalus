@@ -63,8 +63,8 @@ class MatchRound {
   final List<MatchesResponseMatch> matches = [];
 
   // Concluded = every match played; the final round is never treated as foldable.
-  bool get allPlayed => matches.every((m) => m.status == 'FINISHED');
-  bool get isFinal => matches.any((m) => m.stage == 'FINAL');
+  bool get allPlayed => matches.every((m) => m.status == StatusValue.finished);
+  bool get isFinal => matches.any((m) => m.stage == StageValue.final_);
 
   /// A concluded round folds away so the list lands on what is still to come.
   bool get collapsed => allPlayed && !isFinal;

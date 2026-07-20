@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../api/models.gen.dart';
 import '../../../i18n/i18n_scope.dart';
 import '../../../state/providers.dart';
 import '../../widgets/async_value_view.dart';
@@ -9,23 +10,21 @@ import '../../widgets/section_card.dart';
 import '../live_detail.dart';
 
 /// Upstream live match detail: venue, attendance, cards, per-team stats, goals,
-/// bookings and subs. Renders only what the feed exposes and only stats we have
-/// a label for.
+/// bookings and subs. The endpoint is contract-typed, so this renders whatever
+/// the feed actually filled in - nothing is dropped for want of a label.
 class LiveDetailTab extends ConsumerWidget {
   const LiveDetailTab({super.key, required this.matchId});
   final String matchId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return AsyncValueView<Map<String, dynamic>?>(
+    return AsyncValueView<Detail?>(
       value: ref.watch(matchLiveDetailProvider(matchId)),
       onRetry: () => ref.invalidate(matchLiveDetailProvider(matchId)),
-      data: (raw) {
-        if (raw == null || raw.isEmpty) {
+      data: (d) {
+        if (d == null || liveDetailIsEmpty(d)) {
           return EmptyState(message: context.tr('match.noLiveDetail'));
         }
-        final d = LiveDetail.fromJson(raw);
-        if (d.isEmpty) return EmptyState(message: context.tr('match.noLiveDetail'));
         return ListView(
           padding: const EdgeInsets.symmetric(vertical: 8),
           children: [
@@ -34,35 +33,52 @@ class LiveDetailTab extends ConsumerWidget {
                 dense: true,
                 leading: const Icon(Icons.stadium),
                 title: Text(d.stadium!),
-                subtitle: d.attendance != null ? Text(d.attendance!) : null,
+                subtitle:
+                    d.attendance != null ? Text('${d.attendance!.toInt()}') : null,
               ),
             _cards(context, d.cards),
             _stats(context, d),
-            _events(context, context.tr('match.goals'), d.goals, (e) => e.player ?? ''),
-            _events(context, context.tr('match.bookings'), d.bookings,
-                (e) => e.detail == null ? (e.player ?? '') : '${e.player ?? ''} (${e.detail})'),
-            _events(context, context.tr('match.subs'), d.substitutions,
-                (e) => '${e.detail ?? ''} → ${e.player ?? ''}'),
+            _events(
+              context,
+              context.tr('match.goals'),
+              [for (final g in d.goals) (g.minute, g.playerName)],
+            ),
+            _events(
+              context,
+              context.tr('match.bookings'),
+              [for (final b in d.bookings) (b.minute, '${b.playerName} (${b.card.wire})')],
+            ),
+            _events(
+              context,
+              context.tr('match.subs'),
+              [for (final s in d.substitutions) (s.minute, '${s.playerOffName} → ${s.playerOnName}')],
+            ),
           ],
         );
       },
     );
   }
 
-  Widget _cards(BuildContext context, LiveDetailCards? c) {
-    if (c == null || c.isEmpty) return const SizedBox.shrink();
+  Widget _cards(BuildContext context, DetailCard c) {
+    final hy = c.home.yellow.toInt();
+    final ay = c.away.yellow.toInt();
+    final hr = c.home.red.toInt();
+    final ar = c.away.red.toInt();
+    if (hy + ay + hr + ar == 0) return const SizedBox.shrink();
     return ListTile(
       dense: true,
       leading: const Icon(Icons.style),
       title: Text(context.tr('match.bookings')),
-      trailing: Text('🟨 ${c.homeYellow}-${c.awayYellow}   🟥 ${c.homeRed}-${c.awayRed}'),
+      trailing: Text('🟨 $hy-$ay   🟥 $hr-$ar'),
     );
   }
 
-  Widget _stats(BuildContext context, LiveDetail d) {
+  Widget _stats(BuildContext context, Detail d) {
+    final home = liveTeamStats(d.stats?.home);
+    final away = liveTeamStats(d.stats?.away);
     final keys = [
       for (final k in liveStatLabels.keys)
-        if (d.homeStats.containsKey(k) || d.awayStats.containsKey(k)) k,
+        if (home.containsKey(k) || away.containsKey(k)) k,
     ];
     if (keys.isEmpty) return const SizedBox.shrink();
     String cell(num? v) => v == null ? '-' : '${v.toInt()}';
@@ -72,31 +88,24 @@ class LiveDetailTab extends ConsumerWidget {
         for (final k in keys)
           Row(
             children: [
-              SizedBox(width: 40, child: Text(cell(d.homeStats[k]))),
+              SizedBox(width: 40, child: Text(cell(home[k]))),
               Expanded(child: Text(context.tr(liveStatLabels[k]!), textAlign: TextAlign.center)),
-              SizedBox(
-                  width: 40,
-                  child: Text(cell(d.awayStats[k]), textAlign: TextAlign.end)),
+              SizedBox(width: 40, child: Text(cell(away[k]), textAlign: TextAlign.end)),
             ],
           ),
       ],
     );
   }
 
-  Widget _events(
-    BuildContext context,
-    String title,
-    List<LiveDetailEvent> items,
-    String Function(LiveDetailEvent) label,
-  ) {
+  Widget _events(BuildContext context, String title, List<(String?, String)> items) {
     if (items.isEmpty) return const SizedBox.shrink();
     return SectionCard(
       title: title,
       children: [
-        for (final e in items)
+        for (final (minute, label) in items)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 2),
-            child: Text('${e.minute == null ? '' : "${e.minute}'"} ${label(e)}'.trim()),
+            child: Text('${liveMinuteLabel(minute)} $label'.trim()),
           ),
       ],
     );

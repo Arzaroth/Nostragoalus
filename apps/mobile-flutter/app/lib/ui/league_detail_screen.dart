@@ -105,7 +105,7 @@ class LeagueDetailScreen extends ConsumerWidget {
                     title: Text(m.name),
                     trailing: (m.userId != selfId && _hasMenu(l.role, m.role))
                         ? _MemberMenu(leagueId: l.id, member: m, actorRole: l.role)
-                        : (m.role != 'MEMBER' ? Text(context.tr(roleLabelKey(m.role))) : null),
+                        : (m.role != RoleValue.member ? Text(context.tr(roleLabelKey(m.role))) : null),
                   ),
                 if (canManage) _InvitesSection(leagueId: leagueId),
                 _RewardsSection(leagueId: leagueId),
@@ -137,7 +137,7 @@ class LeagueDetailScreen extends ConsumerWidget {
     );
   }
 
-  static bool _hasMenu(String? actorRole, String targetRole) =>
+  static bool _hasMenu(RoleValue? actorRole, RoleValue targetRole) =>
       canKick(actorRole, targetRole) ||
       canChangeRole(actorRole, targetRole) ||
       canTransferOwnership(actorRole, targetRole);
@@ -155,7 +155,7 @@ class _MemberMenu extends ConsumerWidget {
 
   final String leagueId;
   final Member member;
-  final String? actorRole;
+  final RoleValue? actorRole;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -190,9 +190,9 @@ class _MemberMenu extends ConsumerWidget {
         });
       },
       itemBuilder: (context) => [
-        if (canPromote && member.role == 'MEMBER')
+        if (canPromote && member.role == RoleValue.member)
           PopupMenuItem(value: 'promote', child: Text(context.tr('leagues.makeModerator'))),
-        if (canPromote && member.role == 'MODERATOR')
+        if (canPromote && member.role == RoleValue.moderator)
           PopupMenuItem(value: 'demote', child: Text(context.tr('leagues.makeMember'))),
         if (canTransferOwnership(actorRole, member.role))
           PopupMenuItem(value: 'transfer', child: Text(context.tr('leagues.transferOwnership'))),
@@ -232,15 +232,15 @@ class _RewardsSection extends ConsumerWidget {
                 leading: Icon(
                     reward.youHold ? Icons.emoji_events : Icons.emoji_events_outlined,
                     color: reward.youHold ? Colors.amber : null),
-                title: Text(reward.reward?.label ?? reward.type),
+                title: Text(reward.reward?.label ?? reward.type.wire),
                 subtitle: reward.winners.isEmpty
                     ? Text(context.tr('rewards.noWinner'))
                     : Text(reward.winners.map((w) => w.displayName).join(', ')),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: reward.disabled
                     ? null
-                    : () => _showRanking(context, ref, reward.type,
-                        reward.reward?.label ?? reward.type),
+                    : () => _showRanking(context, ref, reward.type.wire,
+                        reward.reward?.label ?? reward.type.wire),
               ),
           ],
         );

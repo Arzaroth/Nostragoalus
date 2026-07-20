@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nostragoalus/api/api_client.dart';
 import 'package:nostragoalus/api/auth_repository.dart';
 import 'package:nostragoalus/api/models.gen.dart';
-import 'package:nostragoalus/api/nostragoalus_api.dart';
+import 'package:nostragoalus/api/api.dart';
 import 'package:nostragoalus/api/token_store.dart';
 import 'package:nostragoalus/chat/chat_providers.dart';
 import 'package:nostragoalus/chat/dm_providers.dart';
@@ -165,29 +165,52 @@ Map<String, dynamic> _member(String id, String name) => {
       'joinedAt': '2026-01-01T00:00:00.000Z',
     };
 
-ChatLine _line(String id, {String? userId, String? text, String? at}) => ChatLine(
+ChatLine _line(String id,
+        {String? userId,
+        String? text,
+        String? at,
+        String? authorName,
+        Total? reactions,
+        MineValue? myReaction}) =>
+    ChatLine(
       id: id,
       userId: userId,
       text: text ?? 'body $id',
       createdAt: at ?? '2026-07-01T10:00:00.000Z',
+      authorName: authorName,
+      reactions: reactions,
+      myReaction: myReaction,
+    );
+
+Total _totals({int fire = 0, int goal = 0, int wow = 0}) => Total(
+      fire: fire.toDouble(),
+      goal: goal.toDouble(),
+      wow: wow.toDouble(),
+      laugh: 0,
+      sad: 0,
+      angry: 0,
     );
 
 OutboxEntry _pending(String id, String room, String text) =>
     OutboxEntry(localId: id, roomId: room, text: text, send: () async {});
 
-class _ModApi extends NostragoalusApi {
-  _ModApi() : super(ApiClient(TokenStore()));
+/// The api surface is a set of extensions on [ApiClient], so a fake overrides
+/// the transport underneath them rather than the (non-virtual) endpoint method.
+class _ModApi extends ApiClient {
+  _ModApi() : super(TokenStore());
   final calls = <String>[];
   bool fail = false;
   @override
-  Future<void> moderateChatMessage(String leagueId, String messageId, String action) async {
-    calls.add('$messageId:$action');
+  Future<Map<String, dynamic>> postJson(String path, {Object? body}) async {
+    final b = body! as Map<String, dynamic>;
+    calls.add('${b['messageId']}:${b['action']}');
     if (fail) throw ApiException(500, 'nope');
+    return {'ok': true};
   }
 }
 
-class _TwoFactorApi extends NostragoalusApi {
-  _TwoFactorApi() : super(ApiClient(TokenStore()));
+class _TwoFactorApi extends ApiClient {
+  _TwoFactorApi() : super(TokenStore());
   Map<String, dynamic> enableResponse = const {
     'totpURI': 'otpauth://totp/x?secret=SEKRIT',
     'backupCodes': ['aaa', 'bbb'],
@@ -196,13 +219,19 @@ class _TwoFactorApi extends NostragoalusApi {
   int disableCalls = 0;
 
   @override
-  Future<Map<String, dynamic>> twoFactorEnable(String password) async => enableResponse;
-  @override
-  Future<void> twoFactorVerify(String code) async {}
-  @override
-  Future<bool> confirmTotp(String code) async => totpValid;
-  @override
-  Future<void> twoFactorDisable(String password) async => disableCalls++;
+  Future<Map<String, dynamic>> postJson(String path, {Object? body}) async {
+    switch (path) {
+      case '/api/auth/two-factor/enable':
+        return enableResponse;
+      case '/api/me/confirm-totp':
+        return {'valid': totpValid};
+      case '/api/auth/two-factor/disable':
+        disableCalls++;
+        return {'ok': true};
+      default:
+        return {'ok': true};
+    }
+  }
 }
 
 KtView _ktView({
@@ -368,6 +397,37 @@ void main() {
       expect(find.text('Me'), findsOneWidget);
       expect(find.text('2026-07-01T10:00:00.000Z'), findsNothing);
     });
+
+    testWidgets('an ex-member is still named from the server metadata',
+        (tester) async {
+      // 'gone' is not in the roster override, so only the message's own
+      // authorName can name them.
+      await pumpState(tester, ChatState.ready,
+          lines: [_line('m1', userId: 'gone', text: 'bye', authorName: 'Departed')]);
+      expect(find.text('Departed'), findsOneWidget);
+      expect(find.text('Someone'), findsNothing);
+    });
+
+    testWidgets('a message with no author metadata at all falls back', (tester) async {
+      await pumpState(tester, ChatState.ready, lines: [_line('m1', userId: 'gone')]);
+      expect(find.text('Someone'), findsOneWidget);
+    });
+
+    testWidgets('reaction totals render as chips, zero counts omitted',
+        (tester) async {
+      await pumpState(tester, ChatState.ready, lines: [
+        _line('m1', userId: 'me', reactions: _totals(fire: 2, goal: 1), myReaction: MineValue.fire),
+      ]);
+      expect(find.text('🔥 2'), findsOneWidget);
+      expect(find.text('⚽ 1'), findsOneWidget);
+      expect(find.textContaining('😮'), findsNothing);
+    });
+
+    testWidgets('a message nobody reacted to renders no chips', (tester) async {
+      await pumpState(tester, ChatState.ready,
+          lines: [_line('m1', userId: 'me', reactions: _totals())]);
+      expect(find.textContaining('🔥'), findsNothing);
+    });
   });
 
   group('DmRoomScreen chat states', () {
@@ -506,13 +566,13 @@ void main() {
                     messageId: 'm1',
                     text: 'gone',
                     reports: 2,
-                    moderation: 'REMOVED',
+                    moderation: ModerationValue.removed,
                     createdAt: '2026-07-01T10:00:00.000Z'),
                 ModerationReport(
                     messageId: 'm2',
                     text: 'here',
                     reports: 1,
-                    moderation: 'VISIBLE',
+                    moderation: ModerationValue.visible,
                     createdAt: '2026-07-01T10:00:00.000Z'),
               ]),
         ],
@@ -538,7 +598,7 @@ void main() {
                     messageId: 'm2',
                     text: 'here',
                     reports: 1,
-                    moderation: 'VISIBLE',
+                    moderation: ModerationValue.visible,
                     createdAt: '2026-07-01T10:00:00.000Z'),
               ]),
         ],

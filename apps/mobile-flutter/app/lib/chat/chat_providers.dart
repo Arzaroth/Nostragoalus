@@ -122,19 +122,30 @@ class ChatIdentityController extends AsyncNotifier<ChatIdentityState> {
   }
 }
 
-/// One decrypted (or undecryptable) line of chat.
+/// One decrypted (or undecryptable) line of chat. Author name/avatar and the
+/// reaction totals are server-held METADATA riding alongside the ciphertext, so
+/// a message stays attributed even once its sender left the league. The text
+/// itself is still only ever readable after the local decrypt below.
 class ChatLine {
   const ChatLine(
       {required this.id,
       required this.userId,
       required this.text,
       required this.createdAt,
+      this.authorName,
+      this.authorImage,
+      this.reactions,
+      this.myReaction,
       this.attachmentCount = 0,
       this.threadCount = 0});
   final String id;
   final String? userId;
   final String? text; // null when this epoch's key is unavailable
   final String createdAt;
+  final String? authorName;
+  final String? authorImage;
+  final Total? reactions;
+  final MineValue? myReaction;
   final int attachmentCount;
   final int threadCount;
 }
@@ -227,6 +238,10 @@ List<ChatLine> _decryptLines(
         userId: m.userId,
         text: text,
         createdAt: m.createdAt,
+        authorName: m.authorName,
+        authorImage: m.authorImage,
+        reactions: m.reactions,
+        myReaction: m.myReaction,
         attachmentCount: m.attachments.length,
         threadCount: m.threadCount.toInt()));
   }
@@ -285,9 +300,8 @@ final chatAttachmentProvider =
   final identity = (await ref.watch(chatIdentityProvider.future)).identity;
   if (identity == null) return null;
   final keys = await ref.watch(leagueEpochKeysProvider(leagueId).future);
-  final att = EncryptedBlob.fromJson(
-      await ref.watch(apiProvider).chatAttachment(leagueId, messageId, idx));
-  final key = keys[att.epoch];
+  final att = await ref.watch(apiProvider).chatAttachment(leagueId, messageId, idx);
+  final key = keys[att.epoch.toInt()];
   if (key == null) return null;
   try {
     return e2ee.decryptBytes(sodium, att.ciphertext, key);
@@ -296,7 +310,8 @@ final chatAttachmentProvider =
   }
 });
 
-/// One reported message, decrypted for the moderator.
+/// One reported message, decrypted for the moderator. The author is named from
+/// the server's metadata, so a ruling is not made against a bare user id.
 class ModerationReport {
   const ModerationReport({
     required this.messageId,
@@ -304,34 +319,16 @@ class ModerationReport {
     required this.reports,
     required this.moderation,
     required this.createdAt,
+    this.authorName,
+    this.authorImage,
   });
   final String messageId;
   final String? text; // null when the key for its epoch is unavailable
   final int reports;
-  final String moderation; // VISIBLE / PENDING / REMOVED
+  final ModerationValue moderation;
   final String createdAt;
-}
-
-/// One row of the moderation queue as the server sends it (ciphertext + epoch;
-/// no generated model covers this endpoint yet).
-class _RawReport {
-  const _RawReport(this.id, this.ciphertext, this.epoch, this.reports, this.moderation,
-      this.createdAt);
-  final String id;
-  final String ciphertext;
-  final int epoch;
-  final int reports;
-  final String moderation;
-  final String createdAt;
-
-  factory _RawReport.fromJson(Map<String, dynamic> json) => _RawReport(
-        json['id'] as String,
-        json['ciphertext'] as String,
-        (json['epoch'] as num).toInt(),
-        (json['reports'] as num?)?.toInt() ?? 0,
-        json['moderation'] as String? ?? 'VISIBLE',
-        json['createdAt'] as String? ?? '',
-      );
+  final String? authorName;
+  final String? authorImage;
 }
 
 /// The decrypted moderation queue for a league (owner/moderators only). Reuses
@@ -347,9 +344,8 @@ final moderationReportsProvider =
   final keys = await ref.watch(leagueEpochKeysProvider(leagueId).future);
   final reports = await api.chatReports(leagueId);
   final out = <ModerationReport>[];
-  for (final raw in reports) {
-    final r = _RawReport.fromJson((raw as Map).cast<String, dynamic>());
-    final k = keys[r.epoch];
+  for (final r in reports) {
+    final k = keys[r.epoch.toInt()];
     String? text;
     if (k != null) {
       try {
@@ -359,9 +355,11 @@ final moderationReportsProvider =
     out.add(ModerationReport(
       messageId: r.id,
       text: text,
-      reports: r.reports,
+      reports: r.reports.toInt(),
       moderation: r.moderation,
       createdAt: r.createdAt,
+      authorName: r.authorName,
+      authorImage: r.authorImage,
     ));
   }
   return out;

@@ -1,16 +1,15 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nostragoalus/api/api_client.dart';
+import 'package:nostragoalus/api/api.dart';
 import 'package:nostragoalus/api/models.gen.dart';
-import 'package:nostragoalus/api/nostragoalus_api.dart';
 import 'package:nostragoalus/api/token_store.dart';
 
 import 'helpers.dart';
 
-(NostragoalusApi, FakeAdapter) build(List<Reply> replies) {
+(ApiClient, FakeAdapter) build(List<Reply> replies) {
   final adapter = FakeAdapter(replies);
   final api = ApiClient(TokenStore(InMemoryKv()), dio: Dio()..httpClientAdapter = adapter);
-  return (NostragoalusApi(api), adapter);
+  return (api, adapter);
 }
 
 void main() {
@@ -197,6 +196,38 @@ void main() {
     test('mintAnalyticsShare returns the token', () async {
       final (api, _) = build([Reply(200, {'token': 'tk', 'url': 'u', 'imageUrl': 'i'})]);
       expect(await api.mintAnalyticsShare(competition: 'wc'), 'tk');
+    });
+
+    // The voice mesh re-arms its TURN refresh from this ttl; dropping it pinned
+    // the interval to a guessed constant.
+    test('iceServers keeps the credential ttl alongside the servers', () async {
+      final (api, _) = build([
+        Reply(200, {
+          'iceServers': [
+            {'urls': 'stun:stun.example:3478'},
+            {'urls': ['turn:turn.example:3478'], 'username': 'u', 'credential': 'c'},
+          ],
+          'ttl': 600,
+        }),
+      ]);
+
+      final res = await api.iceServers();
+      expect(res.ttl, 600);
+      expect(res.iceServers, hasLength(2));
+      expect(res.iceServers.first.urls, 'stun:stun.example:3478');
+    });
+
+    test('matchLiveDetail unwraps the envelope and tolerates a null detail', () async {
+      final (empty, _) = build([Reply(200, const {'detail': null})]);
+      expect(await empty.matchLiveDetail('m1'), isNull);
+    });
+
+    test('chatAttachment returns the typed ciphertext envelope', () async {
+      final (api, adapter) = build([Reply(200, const {'ciphertext': 'AAA', 'epoch': 2})]);
+      final att = await api.chatAttachment('l1', 'm1', 3);
+      expect(att.ciphertext, 'AAA');
+      expect(att.epoch.toInt(), 2);
+      expect(adapter.requests.single.path, '/api/leagues/l1/chat/attachments/m1');
     });
   });
 }

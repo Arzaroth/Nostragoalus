@@ -8,6 +8,8 @@ const responseSchema = z.object({
   reports: z.array(z.object({
     id: z.string(),
     userId: z.string().nullable(),
+    authorName: z.string().nullable(),
+    authorImage: z.string().nullable(),
     matchId: z.string().nullable(),
     epoch: z.number(),
     ciphertext: z.string(),
@@ -27,6 +29,8 @@ export default defineReadHandler({ response: responseSchema, auth: 'user' }, asy
     reports: rows.map((r) => ({
       id: r.id,
       userId: r.userId,
+      authorName: r.authorName,
+      authorImage: r.authorImage,
       matchId: r.matchId,
       epoch: r.epoch,
       ciphertext: r.ciphertext,

@@ -980,8 +980,9 @@
     "leagueNoPick": "{n} สมาชิกไม่ได้ทายผล",
     "watching": "{n} คนกำลังดูอยู่ | {n} คนกำลังดูอยู่",
       "captainShort": "C",
-      "ownGoalShort": "OG"
-    },
+      "ownGoalShort": "OG",
+    "passesCompleted": "จ่ายบอลสำเร็จ"
+  },
   "pastPick": {
     "title": "จะเป็นอย่างไรถ้า",
     "earlier": "การทายก่อนหน้า {score}: {n} แต้ม",

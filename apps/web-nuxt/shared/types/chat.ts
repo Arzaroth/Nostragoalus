@@ -51,6 +51,11 @@ export interface ChatMessageDTO {
   parentId: string | null
   threadId: string | null
   userId: string | null
+  // Author display name + avatar, so a client can label a message without a
+  // roster lookup - and still name someone who has since left the league.
+  // Metadata the server already holds; the plaintext stays end-to-end encrypted.
+  authorName?: string | null
+  authorImage?: string | null
   epoch: number
   ciphertext: string
   createdAt: string

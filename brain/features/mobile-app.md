@@ -27,7 +27,7 @@ Inside `app/lib/`:
 
 | Dir | What |
 |---|---|
-| `api/` | `dio` client + `models.gen.dart`, generated from `shared/contracts-openapi/` by `tool/gen_models.dart`. Never hand-edited. |
+| `api/` | `dio` client (`api_client.dart`) + `models.gen.dart`, generated from `shared/contracts-openapi/` by `tool/gen_models.dart` and never hand-edited. The endpoints are one `extension` on `ApiClient` per feature (`leagues_api.dart`, `chat_api.dart`, `dm_api.dart`, ...), re-exported by the `api.dart` barrel. |
 | `state/` | Riverpod providers, the app's answer to the web's vue-query composables. |
 | `ui/` | 61 screen/widget files. |
 | `chat/`, `e2ee/`, `kt/` | E2EE chat + DMs: group keys, sealed boxes, key transparency. Dart ports of `apps/web-nuxt/app/utils/e2ee.ts` and the KT chain. |
@@ -43,7 +43,15 @@ Nothing in the app is the source of truth for shared data. Three artifacts are
 generated, committed, and re-checked by the gate:
 
 - `app/lib/api/models.gen.dart` from `shared/contracts-openapi/`, via
-  `tool/gen_models.sh`.
+  `tool/gen_models.sh`. A contract field with a closed set of 2+ string values
+  becomes a real Dart `enum` (`StatusValue`, `ModeValue`, ...) carrying its wire
+  string on `.wire`, plus an `unknown` member: a value this build never heard of
+  degrades to `unknown` instead of throwing, so a newer server cannot brick an
+  installed app. One enum is shared by every field with the same value set;
+  a single-value literal stays a plain scalar with a `<field>Values` constant.
+  `state/providers.dart` re-exports `api/api.dart` so the per-feature extension
+  methods resolve at every screen that reads `apiProvider` (a Dart extension is
+  only callable where its library is in scope).
 - `app/assets/i18n/*.json` from `shared/i18n-json/`.
 - `app/assets/parity/*.json` from `shared/parity-json/`.
 

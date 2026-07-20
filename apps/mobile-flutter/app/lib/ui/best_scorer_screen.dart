@@ -143,7 +143,7 @@ class _BestScorerScreenState extends ConsumerState<BestScorerScreen> {
                         bs.myPick?.playerId == p.playerId ? Icons.check_circle : Icons.person,
                         color: bs.myPick?.playerId == p.playerId ? Colors.green : null),
                     title: Text(p.name),
-                    subtitle: p.position != null ? Text(p.position!) : null,
+                    subtitle: p.position != null ? Text(p.position!.wire) : null,
                     onTap: _saving ? null : () => _pick(p),
                   ),
             ],

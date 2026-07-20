@@ -74,10 +74,10 @@ Future<void> _suggest(BuildContext context, WidgetRef ref) async {
   }, successKey: 'roadmap.suggest.thanks');
 }
 
-String roadmapStatusKey(String status) => switch (status) {
-      'IN_PROGRESS' => 'roadmap.inProgress',
-      'SHIPPED' => 'roadmap.shipped',
-      'SUGGESTED' => 'roadmap.statusSuggested',
+String roadmapStatusKey(ItemStatusValue status) => switch (status) {
+      ItemStatusValue.inProgress => 'roadmap.inProgress',
+      ItemStatusValue.shipped => 'roadmap.shipped',
+      ItemStatusValue.suggested => 'roadmap.statusSuggested',
       _ => 'roadmap.planned',
     };
 

@@ -69,18 +69,6 @@ class ChatKeyStore {
 
 final chatKeyStoreProvider = Provider<ChatKeyStore>((ref) => ChatKeyStore());
 
-/// An attachment as the chat/DM attachment endpoints return it: the ciphertext
-/// and the epoch whose group key opens it. No generated model covers these two
-/// endpoints, and a `.toString()` on a missing field would decrypt as garbage.
-class EncryptedBlob {
-  const EncryptedBlob(this.ciphertext, this.epoch);
-  final String ciphertext;
-  final int epoch;
-
-  factory EncryptedBlob.fromJson(Map<String, dynamic> json) =>
-      EncryptedBlob(json['ciphertext'] as String, (json['epoch'] as num).toInt());
-}
-
 /// Unwrap every epoch key sealed to me into `epoch -> key`. Epochs that fail
 /// individually are skipped (an old epoch sealed to a previous identity is
 /// expected); nothing opening at all means the identity itself is wrong, which

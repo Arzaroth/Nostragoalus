@@ -1154,8 +1154,9 @@
     "leagueNoPick": "{n} عضو لم يتوقّع | {n} أعضاء لم يتوقّعوا",
     "watching": "شخص واحد يشاهد الآن | {n} أشخاص يشاهدون الآن",
       "captainShort": "ق",
-      "ownGoalShort": "ه.ع"
-    },
+      "ownGoalShort": "ه.ع",
+    "passesCompleted": "التمريرات الناجحة"
+  },
   "pastPick": {
     "title": "ماذا لو",
     "earlier": "التوقع السابق {score}: {n} نقطة",

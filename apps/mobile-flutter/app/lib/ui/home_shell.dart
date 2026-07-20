@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../api/models.gen.dart';
 import '../i18n/i18n_scope.dart';
 import '../live/live_frame_router.dart';
 import '../live/live_service.dart';
@@ -235,7 +236,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     }
   }
 
-  static const _liveStatuses = {'LIVE', 'PAUSED'};
+  static const _liveStatuses = {StatusValue.live, StatusValue.paused};
 
   void _resubscribe() {
     final live = ref.read(matchesProvider).maybeWhen(

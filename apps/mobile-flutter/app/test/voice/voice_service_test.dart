@@ -1,9 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
-import 'package:nostragoalus/api/api_client.dart';
 import 'package:nostragoalus/api/models.gen.dart' show IceServer, IceServersResponse;
-import 'package:nostragoalus/api/nostragoalus_api.dart';
+import 'package:nostragoalus/api/api.dart';
 import 'package:nostragoalus/api/token_store.dart';
 import 'package:nostragoalus/live/live_service.dart';
 import 'package:nostragoalus/voice/voice_service.dart';
@@ -43,7 +42,7 @@ class Harness {
       retryCap: const Duration(milliseconds: 5),
     );
     voice = VoiceService(
-      NostragoalusApi(client),
+      client,
       TokenStore(InMemoryKv()),
       'self',
       media: media ?? (() async => stream),
@@ -89,7 +88,7 @@ class Harness {
 void main() {
   test('join needs the shared hub socket', () async {
     final voice = VoiceService(
-      NostragoalusApi(ApiClient(TokenStore(InMemoryKv()))),
+      ApiClient(TokenStore(InMemoryKv())),
       TokenStore(InMemoryKv()),
       'self',
     );

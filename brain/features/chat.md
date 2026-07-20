@@ -20,6 +20,14 @@ exact boundary and the hardening layers.
   are rejected.
 - `chat_message` - `ciphertext`, `epoch`, `parentId` (an inline QUOTE),
   `threadId` (a thread relation), `editedAt`.
+- `ChatMessageDTO` (`apps/web-nuxt/shared/types/chat.ts`, zod in
+  `server/schemas/dm.ts`) carries `authorName`/`authorImage` beside `userId`,
+  joined from `user` by the read paths (`listMessages`, `listDmMessages`,
+  `listReports`). That is metadata the server holds anyway - it moves NO
+  plaintext - and it is what lets a client name the author of a message whose
+  sender has since left the league, where a roster lookup finds nothing. The web
+  prefers its live roster (`memberKeys`) so a rename shows without a refetch; the
+  mobile app renders the DTO field directly.
 - `chat_attachment` - composite key `(messageId, idx)`. Either `ciphertext` or
   `storage_key` is set (a CHECK enforces exactly one), so the encrypted blob can
   live in Postgres or in the [object store](image-storage.md). Up to 6 images per

@@ -68,9 +68,10 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                   return ChatLineTile(
                     line: line,
                     undecryptableLabel: context.tr('chat.undecryptable'),
-                    authorName: author?.name ??
+                    authorName: line.authorName ??
+                        author?.name ??
                         (line.userId == null ? null : context.tr('chat.unknownUser')),
-                    authorImage: author?.image,
+                    authorImage: line.authorImage ?? author?.image,
                     attachmentBuilder: (i) => ChatAttachment(
                       provider: chatAttachmentProvider((widget.leagueId, line.id, i)),
                     ),

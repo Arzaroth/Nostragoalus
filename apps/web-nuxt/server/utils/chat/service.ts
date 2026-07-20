@@ -406,6 +406,10 @@ import type { ChatAttachmentDTO, ChatModerationState } from '../../../shared/typ
 export interface ChatMessageRow {
   id: string
   userId: string | null
+  // Author display name + avatar, so an ex-member's messages stay attributed.
+  // Only the read paths join them; a just-inserted row leaves them undefined.
+  authorName?: string | null
+  authorImage?: string | null
   matchId: string | null
   parentId: string | null
   threadId: string | null
@@ -668,6 +672,8 @@ export async function listMessages(
     .select({
       id: chatMessage.id,
       userId: chatMessage.userId,
+      authorName: user.name,
+      authorImage: user.image,
       matchId: chatMessage.matchId,
       parentId: chatMessage.parentId,
       threadId: chatMessage.threadId,
@@ -678,6 +684,7 @@ export async function listMessages(
       createdAt: chatMessage.createdAt,
     })
     .from(chatMessage)
+    .leftJoin(user, eq(user.id, chatMessage.userId))
     .where(and(eq(chatMessage.leagueId, opts.leagueId), room, scope, cursor))
     .orderBy(desc(chatMessage.createdAt), desc(chatMessage.id))
     .limit(limit)

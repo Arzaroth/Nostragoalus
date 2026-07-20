@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nostragoalus/api/api_client.dart';
 import 'package:nostragoalus/api/auth_repository.dart';
 import 'package:nostragoalus/api/models.gen.dart';
-import 'package:nostragoalus/api/nostragoalus_api.dart';
+import 'package:nostragoalus/api/api.dart';
 import 'package:nostragoalus/api/token_store.dart';
 import 'package:nostragoalus/i18n/i18n.dart';
 import 'package:nostragoalus/i18n/i18n_scope.dart';
@@ -40,16 +40,19 @@ Override authOverride({bool showCrowd = false}) => authControllerProvider.overri
     );
 
 /// Records joker calls so a double tap is observable.
-class _FakeApi extends NostragoalusApi {
-  _FakeApi() : super(ApiClient(TokenStore()));
+/// The api surface is a set of extensions on [ApiClient], so a fake overrides
+/// the transport underneath them rather than the (non-virtual) endpoint method.
+class _FakeApi extends ApiClient {
+  _FakeApi() : super(TokenStore());
   int jokerCalls = 0;
   bool fail = false;
 
   @override
-  Future<void> setJoker(String leagueId, String matchId, bool isJoker) async {
+  Future<Map<String, dynamic>> putJson(String path, {Object? body}) async {
     jokerCalls++;
     await Future<void>.delayed(const Duration(milliseconds: 50));
     if (fail) throw ApiException(500, 'nope');
+    return {'ok': true};
   }
 }
 
@@ -155,7 +158,7 @@ List<Override> matchOverrides({
       crowdTotalsProvider.overrideWith((ref) async => const <String, CrowdResponseTotal>{}),
       reactionsProvider('m1').overrideWith((ref) async =>
           const ReactionsResponse(totals: Total(fire: 0, goal: 0, wow: 0, laugh: 0, sad: 0, angry: 0))),
-      pastPicksProvider('m1').overrideWith((ref) async => const PastPicksResponse(scope: 'none')),
+      pastPicksProvider('m1').overrideWith((ref) async => const PastPicksResponse(scope: ScopeValue.none)),
       matchTimelineProvider('m1').overrideWith((ref) async => const MatchTimelineResponse(events: [
             Event(kind: 'goal', minute: "23'", playerName: 'VAN DIJK', homeScore: 1, awayScore: 0),
           ])),
@@ -172,7 +175,8 @@ List<Override> matchOverrides({
           )),
       matchLiveDetailProvider('m1').overrideWith((ref) async => null),
       matchLeagueStandingsProvider('m1').overrideWith((ref) async =>
-          const MatchLeagueStandingsResponse(scope: 'upcoming', rows: [], notPredicted: 0)),
+          const MatchLeagueStandingsResponse(
+              scope: MatchLeagueStandingsResponseScopeValue.upcoming, rows: [], notPredicted: 0)),
       matchMediaProvider('m1').overrideWith((ref) async => const MatchMediaResponse(media: [])),
     ];
 

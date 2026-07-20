@@ -1,10 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nostragoalus/api/api_client.dart';
 import 'package:nostragoalus/api/auth_repository.dart';
 import 'package:nostragoalus/api/models.gen.dart';
-import 'package:nostragoalus/api/nostragoalus_api.dart';
+import 'package:nostragoalus/api/api.dart';
 import 'package:nostragoalus/api/token_store.dart';
 import 'package:nostragoalus/chat/chat_crypto.dart';
 import 'package:nostragoalus/chat/chat_providers.dart';
@@ -27,7 +26,7 @@ void main() {
 
   ProviderContainer container(RouteAdapter adapter, ChatKeyStore store) {
     final dio = Dio()..httpClientAdapter = adapter;
-    final api = NostragoalusApi(ApiClient(TokenStore(InMemoryKv()), dio: dio));
+    final api = ApiClient(TokenStore(InMemoryKv()), dio: dio);
     final c = ProviderContainer(overrides: [
       sodiumProvider.overrideWith((ref) async => sodium),
       apiProvider.overrideWithValue(api),

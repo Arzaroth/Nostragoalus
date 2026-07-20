@@ -57,9 +57,9 @@ class _Tile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListTile(
-        leading: Icon(notificationIcon(n.type, read: n.read),
+        leading: Icon(notificationIcon(n.type.wire, read: n.read),
             color: n.read ? null : Theme.of(context).colorScheme.primary),
-        title: Text(notificationMessage(n.type, n.data, context.tr)),
+        title: Text(notificationMessage(n.type.wire, n.data, context.tr)),
         subtitle: Text(formatNotificationDate(n.createdAt)),
       );
 }

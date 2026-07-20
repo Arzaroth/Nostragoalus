@@ -24,11 +24,15 @@ class LeagueRewardsEditorScreen extends ConsumerWidget {
         data: (raw) {
           final existing = {
             for (final r in raw.cast<LeagueReward>())
-              if (r.reward != null) r.type: r.reward!,
+              if (r.reward != null) r.type.wire: r.reward!,
           };
-          // The contract enum plus anything the server already stores, so a
-          // criterion this build doesn't know about survives the replace-set.
-          final criteria = <String>{...Reward.typeValues, ...existing.keys}.toList();
+          // Only the criteria this build knows: a newer server's criterion has no
+          // label to render, and the save is per-criterion (the route deletes only
+          // the types it is sent), so leaving it out never destroys it.
+          final criteria = [
+            for (final t in LeagueRewardTypeValue.values)
+              if (t != LeagueRewardTypeValue.unknown) t.wire,
+          ];
           return _RewardsForm(leagueId: leagueId, criteria: criteria, existing: existing);
         },
       ),

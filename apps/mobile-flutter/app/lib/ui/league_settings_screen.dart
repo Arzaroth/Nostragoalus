@@ -20,8 +20,8 @@ class LeagueEdit {
   });
 
   final String name;
-  final String visibility;
-  final String mode;
+  final VisibilityValue visibility;
+  final ModeValue mode;
   final int lives;
   final String description;
 
@@ -36,9 +36,9 @@ Map<String, dynamic> leagueUpdateBody(LeagueDetailResponseLeague current, League
   final body = <String, dynamic>{};
   final name = edited.name.trim();
   if (name != current.name) body['name'] = name;
-  if (edited.visibility != current.visibility) body['visibility'] = edited.visibility;
-  if (edited.mode != current.mode) body['mode'] = edited.mode;
-  if (edited.mode == 'HARDCORE' &&
+  if (edited.visibility != current.visibility) body['visibility'] = edited.visibility.wire;
+  if (edited.mode != current.mode) body['mode'] = edited.mode.wire;
+  if (edited.mode == ModeValue.hardcore &&
       (body.containsKey('mode') || edited.lives != current.lives?.toInt())) {
     body['lives'] = edited.lives;
   }
@@ -64,8 +64,8 @@ class _LeagueSettingsScreenState extends ConsumerState<LeagueSettingsScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _name;
   late final TextEditingController _description;
-  late String _visibility;
-  late String _mode;
+  late VisibilityValue _visibility;
+  late ModeValue _mode;
   late int _lives;
   String? _featuredTeam;
   bool _busy = false;
@@ -75,8 +75,12 @@ class _LeagueSettingsScreenState extends ConsumerState<LeagueSettingsScreen> {
     super.initState();
     _name = TextEditingController(text: widget.league.name);
     _description = TextEditingController(text: widget.league.description ?? '');
-    _visibility = widget.league.visibility;
-    _mode = widget.league.mode;
+    // A value this build does not know cannot be an option in the dropdown, so
+    // it falls back to the contract's default rather than tripping an assert.
+    _visibility = widget.league.visibility == VisibilityValue.unknown
+        ? VisibilityValue.private
+        : widget.league.visibility;
+    _mode = widget.league.mode == ModeValue.unknown ? ModeValue.normal : widget.league.mode;
     _lives = (widget.league.lives ?? 3).toInt();
   }
 
@@ -136,32 +140,32 @@ class _LeagueSettingsScreenState extends ConsumerState<LeagueSettingsScreen> {
                   (v == null || v.trim().length < 3) ? context.tr('leagues.nameTooShort') : null,
             ),
             const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
+            DropdownButtonFormField<VisibilityValue>(
               initialValue: _visibility,
               decoration: InputDecoration(
                 labelText: context.tr('leagues.visibility'),
                 border: const OutlineInputBorder(),
               ),
               items: [
-                for (final v in LeagueDetailResponseLeague.visibilityValues)
+                for (final v in pickable(VisibilityValue.values, VisibilityValue.unknown))
                   DropdownMenuItem(value: v, child: Text(context.tr(visibilityLabelKey(v)))),
               ],
               onChanged: (v) => setState(() => _visibility = v ?? _visibility),
             ),
             const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
+            DropdownButtonFormField<ModeValue>(
               initialValue: _mode,
               decoration: InputDecoration(
                 labelText: context.tr('leagues.mode'),
                 border: const OutlineInputBorder(),
               ),
               items: [
-                for (final m in LeagueDetailResponseLeague.modeValues)
+                for (final m in pickable(ModeValue.values, ModeValue.unknown))
                   DropdownMenuItem(value: m, child: Text(context.tr(modeLabelKey(m)))),
               ],
               onChanged: (v) => setState(() => _mode = v ?? _mode),
             ),
-            if (_mode == 'HARDCORE') ...[
+            if (_mode == ModeValue.hardcore) ...[
               const SizedBox(height: 16),
               Row(
                 children: [
@@ -229,18 +233,24 @@ class _LeagueSettingsScreenState extends ConsumerState<LeagueSettingsScreen> {
 
 /// Shared by the settings and create screens, which used to disagree on the
 /// same enum values.
-String modeLabelKey(String mode) => switch (mode) {
-      'EASY' => 'leagues.modeEasy',
-      'HARD' => 'leagues.modeHard',
-      'HARDCORE' => 'leagues.modeHardcore',
+String modeLabelKey(ModeValue mode) => switch (mode) {
+      ModeValue.easy => 'leagues.modeEasy',
+      ModeValue.hard => 'leagues.modeHard',
+      ModeValue.hardcore => 'leagues.modeHardcore',
       _ => 'leagues.modeNormal',
     };
 
-String visibilityLabelKey(String visibility) =>
-    visibility == 'PUBLIC' ? 'leagues.visibilityPublicShort' : 'leagues.visibilityPrivateShort';
+String visibilityLabelKey(VisibilityValue visibility) => visibility == VisibilityValue.public
+    ? 'leagues.visibilityPublicShort'
+    : 'leagues.visibilityPrivateShort';
 
-String roleLabelKey(String role) => switch (role) {
-      'OWNER' => 'leagues.roleOwner',
-      'MODERATOR' => 'leagues.roleModerator',
+String roleLabelKey(RoleValue role) => switch (role) {
+      RoleValue.owner => 'leagues.roleOwner',
+      RoleValue.moderator => 'leagues.roleModerator',
       _ => 'leagues.roleMember',
     };
+
+/// The pickable members of a closed set: everything the contract declares, minus
+/// the forward-compatibility `unknown` (never a choice the user can make).
+List<T> pickable<T>(List<T> values, T unknown) =>
+    [for (final v in values) if (v != unknown) v];

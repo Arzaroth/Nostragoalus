@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../api/models.gen.dart';
 import '../chat/chat_providers.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
@@ -36,6 +37,26 @@ class ModerationScreen extends ConsumerWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              if (r.authorName != null)
+                                Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 12,
+                                      foregroundImage: r.authorImage == null
+                                          ? null
+                                          : NetworkImage(r.authorImage!),
+                                      onForegroundImageError:
+                                          r.authorImage == null ? null : (_, __) {},
+                                      child: Text(r.authorName!.isEmpty
+                                          ? '?'
+                                          : r.authorName!.characters.first.toUpperCase()),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(r.authorName!,
+                                        style: Theme.of(context).textTheme.labelMedium),
+                                  ],
+                                ),
+                              if (r.authorName != null) const SizedBox(height: 6),
                               Text(r.text ?? context.tr('chat.undecryptable'),
                                   style: r.text == null
                                       ? const TextStyle(fontStyle: FontStyle.italic)
@@ -50,10 +71,10 @@ class ModerationScreen extends ConsumerWidget {
                                     visualDensity: VisualDensity.compact,
                                   ),
                                   const SizedBox(width: 8),
-                                  Text(r.moderation,
+                                  Text(r.moderation.wire,
                                       style: Theme.of(context).textTheme.bodySmall),
                                   const Spacer(),
-                                  if (r.moderation == 'REMOVED')
+                                  if (r.moderation == ModerationValue.removed)
                                     TextButton(
                                       onPressed: () =>
                                           _act(context, ref, r.messageId, 'restore'),

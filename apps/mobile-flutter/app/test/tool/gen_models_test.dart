@@ -157,7 +157,7 @@ void main() {
     );
   });
 
-  test('an enum field keeps its String type and exposes the contract values', () {
+  test('a closed string set becomes a real enum with an unknown member', () {
     final src = generate(
       snapshot(
         '/x',
@@ -168,8 +168,80 @@ void main() {
       const [Target('get', '/x', 'X')],
     );
 
-    expect(src, contains('final String mode;'));
-    expect(src, contains("static const modeValues = <String>['EASY', 'HARD'];"));
+    expect(src, contains('enum ModeValue {'));
+    expect(src, contains("  easy('EASY'),"));
+    expect(src, contains("  hard('HARD'),"));
+    // The forward-compatibility member, and the lookup that lands on it.
+    expect(src, contains("  unknown('');"));
+    expect(src, contains('values.firstWhere((e) => e.wire == v, orElse: () => unknown)'));
+    expect(src, contains('final ModeValue mode;'));
+    expect(src, contains("mode: ModeValue.from(json['mode'])"));
+    expect(src, contains("'mode': mode.wire,"));
+    expect(src, isNot(contains('modeValues')));
+  });
+
+  test('an enum member that is a Dart keyword is escaped', () {
+    final src = generate(
+      snapshot(
+        '/x',
+        obj({
+          'scope': {'type': 'string', 'enum': ['live', 'final']},
+        }, required: ['scope']),
+      ),
+      const [Target('get', '/x', 'X')],
+    );
+
+    expect(src, contains("  final_('final'),"));
+  });
+
+  test('one enum is shared by every field with the same value set', () {
+    final src = generate(
+      snapshot(
+        '/x',
+        obj({
+          'mode': {'type': 'string', 'enum': ['EASY', 'HARD']},
+          'other': {'type': 'string', 'enum': ['EASY', 'HARD']},
+        }, required: ['mode', 'other']),
+      ),
+      const [Target('get', '/x', 'X')],
+    );
+
+    expect('enum '.allMatches(src).length, 1);
+    expect(src, contains('final ModeValue other;'));
+  });
+
+  test('a nullable enum field stays nullable and parses null as null', () {
+    final src = generate(
+      snapshot(
+        '/x',
+        obj({
+          'mode': {'type': 'string', 'enum': ['EASY', 'HARD'], 'nullable': true},
+        }, required: ['mode']),
+      ),
+      const [Target('get', '/x', 'X')],
+    );
+
+    expect(src, contains('final ModeValue? mode;'));
+    expect(src, contains("json['mode'] == null ? null : ModeValue.from(json['mode'])"));
+    expect(src, contains("'mode': mode?.wire,"));
+  });
+
+  test('a single-value literal is not a choice, so it stays a plain scalar', () {
+    final src = generate(
+      snapshot(
+        '/x',
+        obj({
+          'role': {'type': 'string', 'enum': ['OWNER']},
+          'synced': {'type': 'boolean', 'enum': [true]},
+        }, required: ['role', 'synced']),
+      ),
+      const [Target('get', '/x', 'X')],
+    );
+
+    expect(src, isNot(contains('enum ')));
+    expect(src, contains('final String role;'));
+    expect(src, contains("static const roleValues = <String>['OWNER'];"));
+    expect(src, contains('final bool synced;'));
   });
 
   test('two structurally identical targets collapse, and the alias emits a typedef', () {

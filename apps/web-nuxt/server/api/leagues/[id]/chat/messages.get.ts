@@ -62,6 +62,8 @@ export default defineReadHandler({ response: responseSchema, auth: 'user', query
       parentId: r.parentId,
       threadId: r.threadId,
       userId: r.userId,
+      authorName: r.authorName ?? null,
+      authorImage: r.authorImage ?? null,
       epoch: r.epoch,
       ciphertext: hidden ? '' : r.ciphertext,
       createdAt: r.createdAt.toISOString(),

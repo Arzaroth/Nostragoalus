@@ -3,6 +3,11 @@ import 'package:dio/dio.dart';
 import '../config.dart';
 import 'token_store.dart';
 
+/// The `?competition=` query for a competition-scoped read; null uses the
+/// server default. Shared by every feature extension over [ApiClient].
+Map<String, dynamic>? competitionQuery(String? competition) =>
+    competition == null ? null : {'competition': competition};
+
 /// Thrown for a non-2xx API response, carrying the status so callers (and the
 /// auth layer) can branch on 401 without re-parsing Dio internals.
 class ApiException implements Exception {
@@ -30,6 +35,10 @@ class ApiClient {
       // letting Dio throw on non-2xx - one error type for all callers.
       ..validateStatus = (_) => true;
     _onUnauthorized = onUnauthorized;
+    // A client can be rebuilt over a Dio that is shared for the process life
+    // (the account flush makes a fresh one); without this the auth interceptor
+    // would stack a copy per rebuild and run the 401 path once per copy.
+    _dio.interceptors.clear();
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) {
         final t = _tokens.token;

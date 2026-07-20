@@ -4,7 +4,7 @@ import { createTestDb } from '../../../tests/db'
 import { findRoundId } from '../sync/rounds'
 import { addLeagueMember, makeLeague, makeMatch, makeUser, seedCompetition } from '../../../tests/factories'
 import { memoryStorage } from '../../../tests/storage'
-import { chatIdentity, chatMessage, keyTransparencyEntry, league, leagueChatKey } from '../../../db/schema'
+import { chatIdentity, chatMessage, keyTransparencyEntry, league, leagueChatKey, leagueMember, user } from '../../../db/schema'
 import { removeMembership } from '../leagues/service'
 import {
   addWrappedKeys,
@@ -578,6 +578,29 @@ describe('editMessage', () => {
 })
 
 describe('listMessages', () => {
+  it('names the author, and keeps naming them after they leave the league', async () => {
+    const { db, client, owner, leagueId } = await setup()
+    const gone = await makeUser(db, 'gone')
+    await addLeagueMember(db, leagueId, gone)
+    await db.update(user).set({ image: 'https://cdn/x.png' }).where(eq(user.id, gone))
+    await db.insert(chatMessage).values({ leagueId, userId: gone, epoch: 1, ciphertext: 'c' })
+    await db.delete(leagueMember).where(and(eq(leagueMember.leagueId, leagueId), eq(leagueMember.userId, gone)))
+
+    const rows = await listMessages(db, { leagueId, userId: owner })
+    expect(rows[0].authorName).toBe('gone')
+    expect(rows[0].authorImage).toBe('https://cdn/x.png')
+    await client.close()
+  })
+
+  it('leaves the author null for a message whose user row is gone', async () => {
+    const { db, client, owner, leagueId } = await setup()
+    await db.insert(chatMessage).values({ leagueId, userId: null, epoch: 1, ciphertext: 'c' })
+    const rows = await listMessages(db, { leagueId, userId: owner })
+    expect(rows[0].authorName).toBeNull()
+    expect(rows[0].authorImage).toBeNull()
+    await client.close()
+  })
+
   it('hides existence from non-members', async () => {
     const { db, client, leagueId } = await setup()
     const stranger = await makeUser(db, 'stranger')

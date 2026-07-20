@@ -4,15 +4,19 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../api/api_client.dart';
+import '../api/api.dart';
 import '../api/auth_repository.dart';
 import '../api/models.gen.dart';
-import '../api/nostragoalus_api.dart';
 import '../api/token_store.dart';
 import '../i18n/i18n.dart';
 import '../live/live_service.dart';
 import '../voice/voice_service.dart';
 import 'app_prefs.dart';
+
+// The API is a set of extensions on ApiClient, and an extension method only
+// resolves where its library is imported - so every screen that reads
+// [apiProvider] would otherwise need its own api import.
+export '../api/api.dart' hide ApiClient;
 
 /// Persisted UI preferences. `main()` overrides this with an instance whose
 /// `load()` already ran, so the providers below can seed synchronously.
@@ -97,8 +101,16 @@ void flushAccountCaches(Ref ref) {
 final authRepositoryProvider = Provider<AuthRepository>((ref) =>
     AuthRepository(ref.watch(apiClientProvider), ref.watch(tokenStoreProvider)));
 
-final apiProvider =
-    Provider<NostragoalusApi>((ref) => NostragoalusApi(ref.watch(apiClientProvider)));
+/// The API surface every data provider reads through - one `extension` per
+/// feature over [ApiClient] (see `api/api.dart`). It is its own client, not
+/// [apiClientProvider]'s: invalidating it must hand out a DIFFERENT instance, or
+/// riverpod sees an unchanged value and leaves every cached read in place. The
+/// auth wiring is identical (same token store, same 401 path).
+final apiProvider = Provider<ApiClient>((ref) => ApiClient(
+      ref.watch(tokenStoreProvider),
+      dio: ref.watch(dioProvider),
+      onUnauthorized: () => ref.read(sessionRevokedProvider.notifier).state++,
+    ));
 
 /// Signed-in user (null when signed out). `build` restores a persisted session
 /// on launch; sign in/out mutate it and invalidate the cached data reads.
@@ -296,9 +308,8 @@ final matchScorersProvider = FutureProvider.autoDispose.family<MatchScorersRespo
 final matchInsightsProvider = FutureProvider.autoDispose.family<MatchInsightsResponse, String>(
     (ref, id) => ref.watch(apiProvider).matchInsights(id));
 
-final matchLiveDetailProvider =
-    FutureProvider.autoDispose.family<Map<String, dynamic>?, String>(
-        (ref, id) => ref.watch(apiProvider).matchLiveDetail(id));
+final matchLiveDetailProvider = FutureProvider.autoDispose
+    .family<Detail?, String>((ref, id) => ref.watch(apiProvider).matchLiveDetail(id));
 
 /// Calendar-feed subscription URLs for the signed-in user.
 final feedSubscriptionProvider =

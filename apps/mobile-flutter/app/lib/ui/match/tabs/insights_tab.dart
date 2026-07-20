@@ -68,11 +68,12 @@ class InsightsTab extends ConsumerWidget {
             CircleAvatar(
               radius: 11,
               backgroundColor: switch (f.result) {
-                'W' => Colors.green,
-                'L' => Theme.of(context).colorScheme.error,
+                ResultValue.w => Colors.green,
+                ResultValue.l => Theme.of(context).colorScheme.error,
                 _ => Colors.grey,
               },
-              child: Text(f.result, style: const TextStyle(fontSize: 11, color: Colors.white)),
+              child:
+                  Text(f.result.wire, style: const TextStyle(fontSize: 11, color: Colors.white)),
             ),
         ],
       );

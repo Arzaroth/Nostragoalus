@@ -9,10 +9,10 @@ import 'widgets/async_value_view.dart';
 import 'widgets/empty_state.dart';
 
 /// i18n key for a scoring tier (EXACT / DIFF / OUTCOME / MISS).
-String tierKey(String baseTier) => switch (baseTier) {
-      'EXACT' => 'analytics.tier.exact',
-      'DIFF' => 'analytics.tier.diff',
-      'OUTCOME' => 'analytics.tier.outcome',
+String tierKey(BaseTierValue baseTier) => switch (baseTier) {
+      BaseTierValue.exact => 'analytics.tier.exact',
+      BaseTierValue.diff => 'analytics.tier.diff',
+      BaseTierValue.outcome => 'analytics.tier.outcome',
       _ => 'analytics.tier.miss',
     };
 

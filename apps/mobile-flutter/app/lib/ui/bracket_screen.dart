@@ -51,7 +51,7 @@ class BracketScreen extends ConsumerWidget {
                       dense: true,
                       title: Text('${m.homeTeam} v ${m.awayTeam}'),
                       trailing: ScorePill(
-                          status: m.status,
+                          status: StatusValue.from(m.status),
                           home: m.homeScore?.toInt(),
                           away: m.awayScore?.toInt()),
                       onTap: m.id == null
