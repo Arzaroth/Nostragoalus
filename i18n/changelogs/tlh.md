@@ -5,6 +5,10 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### chIlmoHta'
+
+- SSO 'el poH nI'chugh, pagh QorwaghHom qan lo'chugh, Qagh HaSta chIlbe'lu'. 'el HaSta cheghlu'; "'elmeH luj" 'angtaH 'ej nID nIv chaw'lu'.
+
 ## [4.4.3] - 2026-07-20
 
 ### chIlmoHta'
