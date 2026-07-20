@@ -2845,7 +2845,9 @@ majors a HIGH advisory forced: `nuxt` 4.4.7 -> 4.5.2 and `nodemailer` 8 -> 9.
 
 The big one, and the reason everything below is possible:
 
-- [ ] **The mobile gate measures no coverage at all.** The fix pass took the
+- [x] ~~The mobile gate measures no coverage at all.~~ Now measured and floored
+      at 60% (`app/tool/coverage_check.sh`, 65.75% today). Raising the floor
+      toward the web's 98% is the remaining work. The fix pass took the
       suite from 33 cases to 267 (plus 128 parity cases) and every subsystem
       below now has some coverage, but there is still no `flutter test
       --coverage` and no threshold, against a web side that enforces 98%. Add
@@ -2865,12 +2867,12 @@ The big one, and the reason everything below is possible:
       `i18n` key-resolution test asserting every `context.tr('...')` literal in
       `lib/` resolves to a String in `en.json`, and the mutating API contracts
       (method + path + body) in `nostragoalus_api.dart`.
-- [ ] `app/integration_test/` (e2ee interop + round-trip, chat identity, KT
+- [x] (partial) `app/integration_test/` (e2ee interop + round-trip, chat identity, KT
       verify, sign-in) runs only via the manual `mise run integration` against a
       connected device. Nothing runs it unattended, so it rots. Either move the
       device-independent specs into `app/test/` or accept it as a release ritual
       and write it down.
-- [ ] The app keeps its own copies of `kt/key_transparency.dart` and
+- [x] The app keeps its own copies of `kt/key_transparency.dart` and
       `e2ee/e2ee.dart`, forked from the `parity/` versions. Only the parity
       copies are replayed against the frozen vectors, so the app's crypto can
       drift from the TS server with a green gate. Make `parity/` a path
@@ -2880,11 +2882,15 @@ The big one, and the reason everything below is possible:
       opening with two `ignore_for_file` lint suppressions. Either add a golden
       test (small fixture schema in -> expected Dart out) or evaluate
       `swagger_parser`/`openapi_generator` and delete it.
-- [ ] Release APKs are signed with the DEBUG key
+- [~] Release signing now reads a keystore the repo does not contain (env or
+      `android/key.properties`), added so App Links could publish a real
+      fingerprint instead of the debug key's, which is a shared secret. Generate
+      an upload keystore before distributing anything. Until then it still falls
+      back to the DEBUG key
       (`app/android/app/build.gradle.kts`) - no upload keystore, no Play
       account. Disclosed in `PARITY.md` and the README; revisit if anything is
       ever distributed.
-- [ ] The bundled `app/assets/i18n/*.json` mirrors inherit em-dashes from the
+- [x] The bundled `app/assets/i18n/*.json` mirrors inherit em-dashes from the
       `shared/i18n-json` source (`chat.adminUpcomingDivider`,
       `leaderboard.livePointsHint`, `league.visibilityPrivate/Public`). Fix at
       the source, in all five locales.
@@ -2894,11 +2900,38 @@ The big one, and the reason everything below is possible:
       `ui/league_rewards_editor_screen.dart`, `ui/match_detail_screen.dart`,
       `ui/compare_screen.dart`). Type them properly rather than loosening the
       analyzer back.
-- [ ] No end-to-end / UI-driving suite at all, the Playwright layer's equivalent.
+- [~] An end-to-end spec now exists (`integration_test/main_path_test.dart`,
+      `mise run e2e`: sign in, fixtures, save a prediction, reopen and assert it
+      came back from the server). It compiles and analyzes clean but has NEVER
+      EXECUTED: this environment has no running server and no probe account. It
+      is runnable on demand, not a passing suite. Run it before trusting it.
+
+Closed in the deferral pass, kept for the record:
+
+- [x] Mobile SSO works end to end: single-use exchange code with a PKCE-style
+      verifier, no token in any URL, on verified App Links. NEEDS OPERATOR
+      CONFIG before it works in prod: `NUXT_ANDROID_CERT_FINGERPRINTS` /
+      `NUXT_IOS_APP_IDS` (the `.well-known` files 404 until set), a release
+      keystore, and the IdP side. iOS is unverifiable here (no Apple hardware).
+- [x] Backgrounding a call no longer shows "in call" over a microphone Android
+      has already killed. No CallKit dependency was re-added; that would drag
+      MANAGE_OWN_CALLS and a ConnectionService back into the release manifest.
+- [x] The no-em-dash rule is enforced repo-wide by a gate step
+      (`app/tool/no_em_dash.sh`), not just observed.
+
+Deliberately NOT doing, with reasons:
+
+- [!] `mise run models-check` in CI: this repo has no hosted CI. It is already a
+      gate step; the README notes what a future CI would run. A pre-push hook was
+      proposed and deliberately not installed unasked.
+- [!] The KT head pin stays per-install (`ng_kt_head`), so a fresh install cannot
+      catch a from-genesis log rewrite. Same documented limit as the web; fixing
+      it properly needs a pinned genesis shipped with the app.
+
 
 Deferred by the review fix pass (each was a deliberate call, not an oversight):
 
-- [ ] **Mobile SSO has never worked and needs a server route.** better-auth's SSO
+- [x] **Mobile SSO has never worked and needs a server route.** better-auth's SSO
       callback redirects to `callbackURL` verbatim with no token - the session is
       a cookie, and `bearer()` only sets a header on direct API calls. The old
       client read `token ?? set-auth-token ?? session`, none of which could ever
@@ -2907,38 +2940,38 @@ Deferred by the review fix pass (each was a deliberate call, not an oversight):
       the server needs a `/sso-callback` route that mints the bearer and
       redirects back. Ship it as a verified App Link, not the `nostragoalus://`
       private scheme, which any Android app can register.
-- [ ] `apps/web-nuxt/tests/parity/cases/e2ee.ts` is non-deterministic: a
+- [x] `apps/web-nuxt/tests/parity/cases/e2ee.ts` is non-deterministic: a
       `pnpm parity:bless` regenerates every keypair, so `e2ee.json` churns
       wholesale and hides the real diff. Make the inputs literal so bless is
       idempotent.
-- [ ] `api/nostragoalus_api.dart` is a ~500-line god-facade over eight unrelated
+- [x] `api/nostragoalus_api.dart` is a ~500-line god-facade over eight unrelated
       features, every method a one-line forward. Split into per-feature
       `extension`s on `ApiClient`. Not done during the review because every UI
       file calls through it and they were all being edited concurrently.
-- [ ] The 51 contract fields with a closed value set are still `String?`, now
+- [x] The 51 contract fields with a closed value set are still `String?`, now
       carrying a generated `<field>Values` constant beside them. Promote to real
       Dart enums with an `unknown` member now that the UI files have settled.
-- [ ] `_LiveDetailTab` renders an opaque `Map<String, dynamic>` with string
+- [x] `_LiveDetailTab` renders an opaque `Map<String, dynamic>` with string
       poking helpers, and drops feed stat keys it cannot label. Give the endpoint
       a real schema in `shared/contracts-openapi/` and regenerate. Same for the
       chat-report and attachment endpoints, which the crypto layer parses with
       local DTOs.
-- [ ] The timeline label logic (a port of `pbpTextSpec`/`TIMELINE_ICONS`) lives
+- [x] The timeline label logic (a port of `pbpTextSpec`/`TIMELINE_ICONS`) lives
       in `ui/match/timeline_label.dart`. It is canonical cross-stack logic and
       belongs in `parity/lib/` with golden vectors like scoring and standings.
-- [ ] Chat messages render no author for a non-member and no reaction totals:
+- [x] Chat messages render no author for a non-member and no reaction totals:
       `ChatLine` needs `authorName`/`authorImage` and a reactions map (the UI
       sends reactions but cannot display them). Same for moderation rows.
-- [ ] `leagueDetailProvider` is the one family left without `autoDispose`,
+- [x] `leagueDetailProvider` is the one family left without `autoDispose`,
       because `ui/league_chat_screen.dart` `ref.read`s it unwatched.
-- [ ] Voice: the TURN credential TTL is ignored for the lifetime of a call, and
+- [x] Voice: the TURN credential TTL is ignored for the lifetime of a call, and
       there is no background-audio path (no CallKit/ConnectionService, so
       backgrounding on Android kills the mic). An `AppLifecycleListener` leaves
       the call instead; document or build the real thing before anyone relies on
       long calls.
 - [ ] `mise run models-check` exists but nothing calls it unattended; wire the
       workflow when this repo gains hosted CI.
-- [ ] DM typing indicators need a server `chat:typing` frame scoped to a thread;
+- [x] DM typing indicators need a server `chat:typing` frame scoped to a thread;
       only league chat has one today.
 - [ ] The KT head pin is per-install (`ng_kt_head`), so a fresh install cannot
       catch a from-genesis log rewrite. Same documented limit as the web.

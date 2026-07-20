@@ -221,10 +221,7 @@ final reactionsProvider = FutureProvider.autoDispose.family<ReactionsResponse, S
 final leagueBoardProvider = FutureProvider.autoDispose.family<ModeBoardResponse, String>(
     (ref, id) => ref.watch(apiProvider).leagueBoard(id));
 
-/// Kept alive deliberately: the chat screen reads the member list off this
-/// cache without watching it (for @-mention completion), so it must survive
-/// being unwatched.
-final leagueDetailProvider = FutureProvider.family<LeagueDetailResponse, String>(
+final leagueDetailProvider = FutureProvider.autoDispose.family<LeagueDetailResponse, String>(
     (ref, id) => ref.watch(apiProvider).leagueDetail(id));
 
 final leagueInvitesProvider = FutureProvider.autoDispose.family<LeagueInvitesResponse, String>(
