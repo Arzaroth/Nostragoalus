@@ -65,29 +65,31 @@ test('pinning the chat keeps it on one league while the rankings filter moves', 
   }
   await openDock()
 
-  // Unpinned: no league name in the dock header, because the dock cannot disagree
-  // with the pill.
+  // The header has no room for a league name next to the bookmark, so the room
+  // the dock is actually on is read off the league switcher's accessible name.
+  const dockLeague = page.getByTestId('chat-league-switch')
+  await expect(dockLeague).toHaveAttribute('aria-label', new RegExp(ALPHA))
+
   await expect(pinButton).toHaveAttribute('aria-pressed', 'false')
-  await expect(pinButton).toHaveText('')
   await pinButton.click()
   await expect(pinButton).toHaveAttribute('aria-pressed', 'true')
-  await expect(pinButton).toContainText(ALPHA)
 
   // The whole point: the page moves to Beta, the chat does not.
   await selectLeague(BETA)
   await expect(pill).toContainText(BETA)
-  await expect(pinButton).toContainText(ALPHA)
+  await expect(dockLeague).toHaveAttribute('aria-label', new RegExp(ALPHA))
 
-  // Unpinning hands the dock back: re-pinning now captures Beta, the league the
-  // page is on.
+  // Unpinning hands the dock back: it follows the pill to Beta, and re-pinning
+  // now captures Beta.
   await pinButton.click()
   await expect(pinButton).toHaveAttribute('aria-pressed', 'false')
-  await expect(pinButton).toHaveText('')
+  await expect(dockLeague).toHaveAttribute('aria-label', new RegExp(BETA))
   await pinButton.click()
-  await expect(pinButton).toContainText(BETA)
+  await expect(pinButton).toHaveAttribute('aria-pressed', 'true')
 
   // And it survives a reload (per-device, like the undocked state).
   await page.reload()
   await openDock()
-  await expect(pinButton).toContainText(BETA)
+  await expect(pinButton).toHaveAttribute('aria-pressed', 'true')
+  await expect(dockLeague).toHaveAttribute('aria-label', new RegExp(BETA))
 })

@@ -5,6 +5,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+
+- The chat no longer disappears when you open the Leagues page: the dock keeps the conversation you were reading, and a pinned chat now stays pinned everywhere, including on a league's own page.
+- The chat header fits again: the collapse and pop-out buttons were being cut off on the right edge. The pinned league's name no longer sits next to the bookmark; the league switcher next to it still names the room you are in.
+
 ## [4.4.2] - 2026-07-20
 
 ### Fixed

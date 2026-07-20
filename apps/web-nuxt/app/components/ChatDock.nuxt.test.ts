@@ -117,10 +117,49 @@ afterEach(() => {
 })
 
 describe('ChatDock', () => {
-  it('renders nothing on the league pages (the inline panel owns it there)', async () => {
+  it('renders nothing on a league detail page (the inline panel owns it there)', async () => {
     route.value = { name: 'leagues-id', path: '/leagues/L1', params: { id: 'L1' }, query: {} }
     const w = await mount()
     expect(w.find('.chat-panel-stub').exists()).toBe(false)
+  })
+
+  it('keeps the league chat on the leagues list (nothing renders it inline there)', async () => {
+    route.value = { name: 'leagues', path: '/leagues', params: {}, query: {} }
+    const w = await mount()
+    expect(w.findComponent(ChatPanelStub).props('leagueId')).toBe('L1')
+  })
+
+  it('a pin on another league keeps the dock chat on a league detail page', async () => {
+    seedPin({ leagueId: 'L2' })
+    route.value = { name: 'leagues-id', path: '/leagues/L1', params: { id: 'L1' }, query: {} }
+    const w = await mount()
+    expect(w.findComponent(ChatPanelStub).props('leagueId')).toBe('L2')
+  })
+
+  it('stands down for the very league whose page renders the chat inline, pin or not', async () => {
+    seedPin({ leagueId: 'L1' })
+    route.value = { name: 'leagues-id', path: '/leagues/L1', params: { id: 'L1' }, query: {} }
+    const w = await mount()
+    expect(w.find('.chat-panel-stub').exists()).toBe(false)
+  })
+
+  it('keeps a pinned chat on the leagues list', async () => {
+    seedPin({ leagueId: 'L2' })
+    route.value = { name: 'leagues', path: '/leagues', params: {}, query: {} }
+    const w = await mount()
+    expect(w.findComponent(ChatPanelStub).props('leagueId')).toBe('L2')
+  })
+
+  it('comes back to league mode once a league is handed back (no league = Direct only)', async () => {
+    selectedLeagueId.value = null
+    const w = await mount()
+    expect(w.find('.chat-panel-stub').exists()).toBe(false)
+    selectedLeagueId.value = 'L1'
+    await nextTick()
+    await nextTick()
+    expect(w.findComponent(ChatPanelStub).props('leagueId')).toBe('L1')
+    // League mode, not the DM inbox it was forced into.
+    expect(w.find('[data-testid="chat-pin"]').exists()).toBe(true)
   })
 
   it('keeps the league panel mounted even while league chat is off', async () => {

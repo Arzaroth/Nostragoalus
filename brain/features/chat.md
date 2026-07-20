@@ -125,12 +125,19 @@ known residual is the DNS-rebind TOCTOU window (documented in TODO).
 ## Surfaces + live
 
 The floating, collapsible `ChatDock` (Global / Match scope) coexists with the
-inline `ChatPanel` on the league page. Its header carries a league switcher
-(change league without the competition pill), shown as just the league glyph plus
-a chevron (the name would crowd the scope toggle in the narrow dock; it rides a
-tooltip, and the dropdown lists full names). The dropdown lists only the user's
-leagues that have chat **enabled** (`chatEnabled` on the my-leagues DTO), and each
-shows a dot when it has any unread chat, whether in its global room or a match
+inline `ChatPanel` on the league page. It stands down for exactly one room: the
+league whose detail page (`leagues-id`) is open, so the same league is never
+rendered by two live panels (each would run the auto-rotate and key-request paths
+of its own `useLeagueChat`). Every other route under `/leagues` - the list, a
+join link - keeps its chat, and so does a pin held on any other league. Its
+header carries a league switcher (change league without the competition pill),
+shown as just the league glyph plus a chevron (the name would crowd the scope
+toggle in the narrow dock; it rides a tooltip and the button's `aria-label`, and
+the dropdown lists full names). The header row is width-critical at 24rem docked
+(94vw on a phone): everything in it is `shrink-0` except the Global/Match labels,
+which truncate, so the trailing pop-out and collapse buttons are never clipped.
+The dropdown lists only the user's leagues that have chat **enabled**
+(`chatEnabled` on the my-leagues DTO), and each shows a dot when it has any unread chat, whether in its global room or a match
 thread (`useChatActivity.hasUnreadInLeague`). Enabling/disabling a league's chat
 invalidates the my-leagues query so the switcher updates without a reload. Presence
 dots and client-side search are built in.
@@ -141,9 +148,10 @@ focused multiview cell re-targets its match thread. The bookmark toggle in the
 dock header pins the room in view - league AND thread together - into
 `ng-chat-pin` (`useStorage`, per device, `{ userId, competition, leagueId,
 matchId }`), and the dock then ignores both auto-follows. The pin deliberately
-survives a competition switch: the pinned conversation is the one you keep
-reading wherever you browse, so the header shows the pinned league's name (only
-while pinned, and only when it belongs to the competition in view). Explicit
+survives a competition switch, and a league detail page for some OTHER league:
+the pinned conversation is the one you keep reading wherever you browse. Which
+room that is is read off the league switcher (tooltip plus `aria-label`) rather
+than a name beside the bookmark - the header has no width for one. Explicit
 in-dock navigation re-points the pin instead of fighting it: the league switcher,
 an inbox row, the scope toggle and a mention deep link all rewrite it (a deep
 link with no league to re-point at unpins instead, so the link is never

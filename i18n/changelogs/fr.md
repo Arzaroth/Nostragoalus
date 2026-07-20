@@ -5,6 +5,11 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Corrigé
+
+- La discussion ne disparaît plus quand vous ouvrez la page Ligues : le volet garde la conversation en cours, et une discussion épinglée le reste partout, y compris sur la page d'une ligue.
+- L'en-tête de la discussion tient à nouveau dans sa largeur : les boutons Réduire et Détacher étaient rognés sur le bord droit. Le nom de la ligue épinglée n'apparaît plus à côté du marque-page ; le sélecteur de ligue juste à côté indique toujours la ligue en cours.
+
 ## [4.4.2] - 2026-07-20
 
 ### Corrigé

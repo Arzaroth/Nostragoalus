@@ -135,7 +135,10 @@ There is no standalone DM dock. `apps/web-nuxt/app/components/DmDock.vue` and
 - **Mode toggle.** The header carries a two-button League | Direct toggle (a
   `pi-users` glyph and a `pi-send` paper-plane), shown only when a league chat is
   in reach. Off a league (`leagueId` null) the dock forces `mode = 'direct'` and
-  hides the toggle, so DMs work where league chat cannot.
+  hides the toggle, so DMs work where league chat cannot. That flip is remembered
+  and undone when a league comes back (walking onto a league's own page, which
+  blanks the dock's league, must not strand the dock in DMs); an explicit switch
+  through the toggle is not.
 - **Direct mode views.** Three inner views (`dmView`): an **inbox** (thread list
   with unread counts and the other participant's name/avatar), a **new-message**
   view opened by the header pencil (a recipient search - suggestions shown on
