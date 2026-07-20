@@ -12,6 +12,9 @@ const supportedLocales = <Locale>[
   Locale('ar'),
 ];
 
+/// Reads a bundled asset as a string (`rootBundle.loadString` in production).
+typedef AssetReader = Future<String> Function(String key);
+
 /// Loads a locale's strings from the bundled `shared/i18n-json` mirror and looks
 /// them up by dotted key (`achievements.cabinetTitle`), interpolating `{var}`
 /// placeholders. Missing keys fall back to English, then to the key itself.
@@ -50,15 +53,18 @@ class I18n {
     );
   }
 
-  static Future<I18n> load(Locale locale) async {
+  /// [readAsset] is a seam for tests; production reads the bundled mirror of
+  /// `shared/i18n-json` (kept in sync by `tool/sync_shared.sh`).
+  static Future<I18n> load(Locale locale, {AssetReader? readAsset}) async {
+    final read = readAsset ?? rootBundle.loadString;
     final code = supportedLocales.any((l) => l.languageCode == locale.languageCode)
         ? locale.languageCode
         : 'en';
-    final map = await _loadMap(code);
-    final fallback = code == 'en' ? map : await _loadMap('en');
+    final map = await _loadMap(read, code);
+    final fallback = code == 'en' ? map : await _loadMap(read, 'en');
     return I18n(map, fallback, Locale(code));
   }
 
-  static Future<Map<String, dynamic>> _loadMap(String code) async =>
-      jsonDecode(await rootBundle.loadString('assets/i18n/$code.json')) as Map<String, dynamic>;
+  static Future<Map<String, dynamic>> _loadMap(AssetReader read, String code) async =>
+      jsonDecode(await read('assets/i18n/$code.json')) as Map<String, dynamic>;
 }

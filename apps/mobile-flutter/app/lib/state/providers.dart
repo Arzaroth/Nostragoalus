@@ -1,3 +1,6 @@
+import 'dart:ui' show PlatformDispatcher;
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -9,13 +12,35 @@ import '../api/token_store.dart';
 import '../i18n/i18n.dart';
 import '../live/live_service.dart';
 import '../voice/voice_service.dart';
+import 'app_prefs.dart';
 
-/// The active UI locale (defaults to English; the locale switcher sets it).
-final localeProvider = StateProvider<Locale>((ref) => const Locale('en'));
+/// Persisted UI preferences. `main()` overrides this with an instance whose
+/// `load()` already ran, so the providers below can seed synchronously.
+final appPrefsProvider = Provider<AppPrefs>((ref) => AppPrefs());
+
+/// The active UI locale: the stored choice, else the device language, else
+/// English. [prefsPersistenceProvider] writes back whatever the switcher sets.
+final localeProvider = StateProvider<Locale>((ref) => Locale(resolveLocaleCode(
+    ref.watch(appPrefsProvider).locale ??
+        PlatformDispatcher.instance.locale.languageCode)));
+
+/// Narrows any language tag to one of the five shipped locales.
+String resolveLocaleCode(String code) =>
+    supportedLocales.any((l) => l.languageCode == code) ? code : 'en';
 
 /// The selected competition slug for the scoped reads (null = server default).
-/// The switcher sets it; the scoped data providers watch it and refetch.
-final selectedCompetitionProvider = StateProvider<String?>((ref) => null);
+/// The switcher sets it; the scoped data providers watch it and refetch. The
+/// choice is persisted, matching the web app.
+final selectedCompetitionProvider =
+    StateProvider<String?>((ref) => ref.watch(appPrefsProvider).competition);
+
+/// Writes both UI preferences back to the store whenever they change. The root
+/// widget watches it once; it has no value of its own.
+final prefsPersistenceProvider = Provider<void>((ref) {
+  final prefs = ref.watch(appPrefsProvider);
+  ref.listen(localeProvider, (_, next) => prefs.setLocale(next.languageCode));
+  ref.listen(selectedCompetitionProvider, (_, next) => prefs.setCompetition(next));
+});
 
 /// The loaded strings for the active locale (English fallback baked in).
 final i18nProvider = FutureProvider<I18n>((ref) => I18n.load(ref.watch(localeProvider)));
@@ -26,12 +51,48 @@ final tokenStoreProvider = Provider<TokenStore>((ref) => TokenStore());
 /// The shared Dio client. A 401 anywhere clears the token and refreshes auth,
 /// so the UI drops to signed-out without a manual check at each call site.
 final apiClientProvider = Provider<ApiClient>((ref) {
-  final tokens = ref.watch(tokenStoreProvider);
   return ApiClient(
-    tokens,
-    onUnauthorized: () => ref.invalidate(authControllerProvider),
+    ref.watch(tokenStoreProvider),
+    dio: ref.watch(dioProvider),
+    // A dead session drops to signed-out. It bumps a counter rather than
+    // invalidating the auth controller directly: that controller is a dependent
+    // of this provider, and riverpod (rightly) refuses to let a provider
+    // invalidate something that depends on it.
+    onUnauthorized: () => ref.read(sessionRevokedProvider.notifier).state++,
   );
 });
+
+/// Bumped whenever a 401 proves the stored session is dead. [AuthController]
+/// watches it, so the app re-reads the session and drops to signed-out.
+final sessionRevokedProvider = StateProvider<int>((ref) => 0);
+
+/// Flushes every cached read whenever the signed-in identity changes - sign-in,
+/// sign-out, or a 401 that killed the session - so no personal data outlives
+/// the account it belongs to. Watched once by the root widget.
+final accountCacheGuardProvider = Provider<void>((ref) {
+  ref.listen(authControllerProvider, (previous, next) {
+    if (next.isLoading) return;
+    if (previous?.valueOrNull?.id == next.valueOrNull?.id) return;
+    flushAccountCaches(ref);
+  });
+});
+
+/// The HTTP transport, so a test can drive the whole provider graph through a
+/// fake adapter instead of overriding the API facade.
+final dioProvider = Provider<Dio>((ref) => Dio());
+
+/// Drops every cached read of the current account. Every data provider in this
+/// file (and in chat/dm/kt) watches [apiProvider], so invalidating that one
+/// flushes all of them - including providers added later, which a
+/// hand-maintained list would miss. The live StateProviders hold other users'
+/// presence and are reset here because nothing refetches them.
+void flushAccountCaches(Ref ref) {
+  ref.invalidate(apiProvider);
+  ref.invalidate(viewersProvider);
+  ref.invalidate(presenceProvider);
+  ref.invalidate(typingProvider);
+  ref.invalidate(viewedMatchProvider);
+}
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) =>
     AuthRepository(ref.watch(apiClientProvider), ref.watch(tokenStoreProvider)));
@@ -47,6 +108,7 @@ final authControllerProvider =
 class AuthController extends AsyncNotifier<AuthUser?> {
   @override
   Future<AuthUser?> build() async {
+    ref.watch(sessionRevokedProvider);
     await ref.watch(tokenStoreProvider).load();
     return ref.watch(authRepositoryProvider).currentUser();
   }
@@ -64,19 +126,10 @@ class AuthController extends AsyncNotifier<AuthUser?> {
     _invalidateData();
   }
 
-  void _invalidateData() {
-    ref.invalidate(competitionsProvider);
-    ref.invalidate(standingsProvider);
-    ref.invalidate(scorersProvider);
-    ref.invalidate(matchesProvider);
-    ref.invalidate(leaderboardProvider);
-    ref.invalidate(leaguesProvider);
-    ref.invalidate(myPredictionsProvider);
-    ref.invalidate(matchProvider);
-  }
+  void _invalidateData() => flushAccountCaches(ref);
 }
 
-// --- data reads (kept alive; invalidated on auth change / mutation) ---
+// --- data reads (invalidated on auth change / mutation) ---
 
 final competitionsProvider = FutureProvider<CompetitionsResponse>(
     (ref) => ref.watch(apiProvider).competitions());
@@ -101,16 +154,17 @@ final matchesProvider = FutureProvider<MatchesResponse>((ref) =>
     ref.watch(apiProvider).matches(competition: ref.watch(selectedCompetitionProvider)));
 
 /// Crowd consensus totals per match (display-only, gated on the show-crowd pref).
-final crowdTotalsProvider = FutureProvider<Map<String, dynamic>>((ref) =>
+final crowdTotalsProvider = FutureProvider<Map<String, CrowdResponseTotal>>((ref) =>
     ref.watch(apiProvider).crowdTotals(competition: ref.watch(selectedCompetitionProvider)));
 
 /// A shared card resolved by (kind, token) for the in-app viewer.
-final shareCardProvider = FutureProvider.family<Map<String, dynamic>, (String, String)>(
-    (ref, args) => ref.watch(apiProvider).shareCard(args.$1, args.$2));
+final shareCardProvider =
+    FutureProvider.autoDispose.family<Map<String, dynamic>, (String, String)>(
+        (ref, args) => ref.watch(apiProvider).shareCard(args.$1, args.$2));
 
 /// Head-to-head compare of two players (a, b) in the selected competition.
 final headToHeadProvider =
-    FutureProvider.family<Map<String, dynamic>, (String, String)>((ref, pair) =>
+    FutureProvider.autoDispose.family<Map<String, dynamic>, (String, String)>((ref, pair) =>
         ref.watch(apiProvider).headToHead(pair.$1, pair.$2,
             competition: ref.watch(selectedCompetitionProvider)));
 
@@ -121,9 +175,10 @@ final leaguesProvider =
     FutureProvider<LeaguesResponse>((ref) => ref.watch(apiProvider).leagues());
 
 /// Per-league pick completeness for the nudge banner (leagues needing picks).
-final leagueCompletenessProvider = FutureProvider<List<dynamic>>((ref) => ref
-    .watch(apiProvider)
-    .leagueCompleteness(competition: ref.watch(selectedCompetitionProvider)));
+final leagueCompletenessProvider =
+    FutureProvider<List<LeagueCompletenessResponseLeague>>((ref) => ref
+        .watch(apiProvider)
+        .leagueCompleteness(competition: ref.watch(selectedCompetitionProvider)));
 
 final myPredictionsProvider =
     FutureProvider<PredictionsResponse>((ref) => ref.watch(apiProvider).myPredictions());
@@ -148,22 +203,28 @@ final analyticsProvider =
 final wrappedProvider =
     FutureProvider<Map<String, dynamic>>((ref) => ref.watch(apiProvider).wrapped());
 
-final reactionsProvider = FutureProvider.family<ReactionsResponse, String>(
+final reactionsProvider = FutureProvider.autoDispose.family<ReactionsResponse, String>(
     (ref, matchId) => ref.watch(apiProvider).reactions(matchId));
 
-final leagueBoardProvider = FutureProvider.family<ModeBoardResponse, String>(
+final leagueBoardProvider = FutureProvider.autoDispose.family<ModeBoardResponse, String>(
     (ref, id) => ref.watch(apiProvider).leagueBoard(id));
 
+/// Kept alive deliberately: the chat screen reads the member list off this
+/// cache without watching it (for @-mention completion), so it must survive
+/// being unwatched.
 final leagueDetailProvider = FutureProvider.family<LeagueDetailResponse, String>(
     (ref, id) => ref.watch(apiProvider).leagueDetail(id));
 
-final leagueInvitesProvider = FutureProvider.family<LeagueInvitesResponse, String>(
+final leagueInvitesProvider = FutureProvider.autoDispose.family<LeagueInvitesResponse, String>(
     (ref, id) => ref.watch(apiProvider).leagueInvites(id));
 
-final leagueRewardsProvider = FutureProvider.family<List<dynamic>, String>(
+final leagueRewardsProvider = FutureProvider.autoDispose.family<List<LeagueReward>, String>(
     (ref, id) => ref.watch(apiProvider).leagueRewards(id));
 
 /// The live hub connection (one per app), disposed with the provider scope.
+/// It holds no session state of its own: `connect()` reads the current bearer
+/// token, and the shell disconnects it on sign-out, so the next account gets a
+/// fresh socket rather than one still authenticated as the previous user.
 final liveServiceProvider = Provider<LiveService>((ref) {
   final service = LiveService(ref.watch(tokenStoreProvider));
   ref.onDispose(service.dispose);
@@ -186,7 +247,9 @@ final viewersProvider = StateProvider<Map<String, int>>((ref) => const {});
 final presenceProvider = StateProvider<Map<String, String>>((ref) => const {});
 
 /// Last-seen typing time keyed "leagueId|userId", from `chat:typing` frames. A
-/// consumer treats an entry as active while it is under a few seconds old.
+/// consumer treats an entry as active while it is under a few seconds old; the
+/// frame router prunes entries older than 10s on every write, so the map cannot
+/// grow past the users currently typing.
 final typingProvider = StateProvider<Map<String, DateTime>>((ref) => const {});
 
 // --- Phase 5 ---
@@ -201,7 +264,7 @@ final bestScorerProvider = FutureProvider<BestScorerResponse>((ref) =>
     ref.watch(apiProvider).bestScorer(competition: ref.watch(selectedCompetitionProvider)));
 
 /// A team's squad for the best-scorer picker (keyed by team code).
-final squadProvider = FutureProvider.family<List<dynamic>, String>((ref, code) => ref
+final squadProvider = FutureProvider.autoDispose.family<List<Squad>, String>((ref, code) => ref
     .watch(apiProvider)
     .teamSquad(code, competition: ref.watch(selectedCompetitionProvider)));
 
@@ -211,40 +274,41 @@ final commitmentsProvider =
 final botPredictionsProvider =
     FutureProvider<BotPredictionsResponse>((ref) => ref.watch(apiProvider).botPredictions());
 
-final pastPicksProvider = FutureProvider.family<PastPicksResponse, String>(
+final pastPicksProvider = FutureProvider.autoDispose.family<PastPicksResponse, String>(
     (ref, matchId) => ref.watch(apiProvider).pastPicks(matchId));
 
-/// The match whose detail is open, so the hub keeps its room subscribed (which
-/// is what makes the server count this client as a viewer).
+/// The match whose detail is open. The shell reports it to the hub with a
+/// `viewing` frame, which is what the server's "N watching now" counts.
 final viewedMatchProvider = StateProvider<String?>((ref) => null);
 
-final matchProvider = FutureProvider.family<MatchDetailResponse, String>(
+final matchProvider = FutureProvider.autoDispose.family<MatchDetailResponse, String>(
     (ref, id) => ref.watch(apiProvider).match(id));
 
-final matchTimelineProvider = FutureProvider.family<MatchTimelineResponse, String>(
+final matchTimelineProvider = FutureProvider.autoDispose.family<MatchTimelineResponse, String>(
     (ref, id) => ref.watch(apiProvider).matchTimeline(id));
 
-final matchLineupsProvider = FutureProvider.family<MatchLineupsResponse, String>(
+final matchLineupsProvider = FutureProvider.autoDispose.family<MatchLineupsResponse, String>(
     (ref, id) => ref.watch(apiProvider).matchLineups(id));
 
-final matchScorersProvider = FutureProvider.family<ScorersResponse, String>(
+final matchScorersProvider = FutureProvider.autoDispose.family<MatchScorersResponse, String>(
     (ref, id) => ref.watch(apiProvider).matchScorers(id));
 
-final matchInsightsProvider = FutureProvider.family<MatchInsightsResponse, String>(
+final matchInsightsProvider = FutureProvider.autoDispose.family<MatchInsightsResponse, String>(
     (ref, id) => ref.watch(apiProvider).matchInsights(id));
 
-final matchLiveDetailProvider = FutureProvider.family<Map<String, dynamic>?, String>(
-    (ref, id) => ref.watch(apiProvider).matchLiveDetail(id));
+final matchLiveDetailProvider =
+    FutureProvider.autoDispose.family<Map<String, dynamic>?, String>(
+        (ref, id) => ref.watch(apiProvider).matchLiveDetail(id));
 
 /// Calendar-feed subscription URLs for the signed-in user.
 final feedSubscriptionProvider =
-    FutureProvider<Map<String, dynamic>>((ref) => ref.watch(apiProvider).feedSubscription());
+    FutureProvider<FeedSubscriptionResponse>((ref) => ref.watch(apiProvider).feedSubscription());
 
 /// Public preview for an invite token (league name + member count).
-final invitePreviewProvider = FutureProvider.family<Map<String, dynamic>, String>(
+final invitePreviewProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, String>(
     (ref, token) => ref.watch(apiProvider).invitePreview(token));
 
-final cabinetProvider = FutureProvider.family<CabinetResponse, String>(
+final cabinetProvider = FutureProvider.autoDispose.family<CabinetResponse, String>(
     (ref, userId) => ref.watch(apiProvider).cabinet(userId));
 
 final meStatsProvider = FutureProvider<MeStatsResponse>((ref) => ref.watch(apiProvider).meStats());
@@ -252,22 +316,112 @@ final meStatsProvider = FutureProvider<MeStatsResponse>((ref) => ref.watch(apiPr
 final sessionsProvider = FutureProvider<List<dynamic>>((ref) => ref.watch(apiProvider).listSessions());
 
 final matchLeagueStandingsProvider =
-    FutureProvider.family<MatchLeagueStandingsResponse, String>(
+    FutureProvider.autoDispose.family<MatchLeagueStandingsResponse, String>(
         (ref, id) => ref.watch(apiProvider).matchLeagueStandings(id));
 
-final matchMediaProvider = FutureProvider.family<MatchMediaResponse, String>(
+final matchMediaProvider = FutureProvider.autoDispose.family<MatchMediaResponse, String>(
     (ref, id) => ref.watch(apiProvider).matchMedia(id));
 
-final meRewardsProvider = FutureProvider<List<dynamic>>((ref) => ref.watch(apiProvider).meRewards());
+final meRewardsProvider = FutureProvider<List<MeReward>>((ref) => ref.watch(apiProvider).meRewards());
 
-/// Save (or overwrite) a prediction, then refresh the reads it affects.
+// --- mutations ---
+//
+// One canonical function per write, owning the invalidation set. A screen that
+// hand-rolls the same call picks its own subset and drifts from the web app's
+// contract (apps/web-nuxt/app/composables/*), which is exactly how the
+// prediction save ended up refreshing two of the six reads it affects.
+
+/// Save (or overwrite) a prediction, then refresh the reads it affects. Mirrors
+/// `usePredictions.ts` `upsert`: predictions, matches, mode board, completeness.
 final savePredictionProvider = Provider<
     Future<PredictionSaveResponse> Function(String, String, PredictionInput)>((ref) {
   return (leagueId, matchId, input) async {
     final res = await ref.read(apiProvider).savePrediction(leagueId, matchId, input);
-    ref.invalidate(matchProvider);
-    ref.invalidate(leaderboardProvider);
     ref.invalidate(myPredictionsProvider);
+    ref.invalidate(matchesProvider);
+    ref.invalidate(matchProvider(matchId));
+    ref.invalidate(leaderboardProvider);
+    ref.invalidate(leagueBoardProvider(leagueId));
+    ref.invalidate(leagueCompletenessProvider);
     return res;
+  };
+});
+
+/// Flag or unflag a pick as the joker. Mirrors `usePredictions.ts` `setJoker`
+/// (predictions only), plus the match the joker sits on.
+final setJokerProvider = Provider<Future<void> Function(String, String, bool)>((ref) {
+  return (leagueId, matchId, isJoker) async {
+    await ref.read(apiProvider).setJoker(leagueId, matchId, isJoker);
+    ref.invalidate(myPredictionsProvider);
+    ref.invalidate(matchProvider(matchId));
+    ref.invalidate(leagueBoardProvider(leagueId));
+  };
+});
+
+/// Pick the tournament champion (scored at the final).
+final setChampionProvider = Provider<Future<void> Function(String, String)>((ref) {
+  return (teamCode, teamName) async {
+    await ref.read(apiProvider).setChampion(teamCode, teamName);
+    ref.invalidate(championProvider);
+    ref.invalidate(leaderboardProvider);
+  };
+});
+
+/// Pick the golden-boot player.
+final setBestScorerProvider = Provider<
+    Future<void> Function({
+      required String playerId,
+      required String playerName,
+      required String teamName,
+      String? teamCode,
+    })>((ref) {
+  return ({required playerId, required playerName, required teamName, teamCode}) async {
+    await ref.read(apiProvider).setBestScorer(
+          playerId: playerId,
+          playerName: playerName,
+          teamName: teamName,
+          teamCode: teamCode,
+          competition: ref.read(selectedCompetitionProvider),
+        );
+    ref.invalidate(bestScorerProvider);
+    ref.invalidate(leaderboardProvider);
+  };
+});
+
+/// Join a league by id (public listing) or by invite code. Mirrors
+/// `useLeagues.ts`: the membership change moves the leaderboard too.
+final joinLeagueProvider = Provider<Future<void> Function({String? leagueId, String? code})>((ref) {
+  return ({leagueId, code}) async {
+    final api = ref.read(apiProvider);
+    if (leagueId != null) {
+      await api.joinLeague(leagueId);
+    } else if (code != null) {
+      await api.joinLeagueByCode(code);
+    } else {
+      throw ArgumentError('joinLeague needs a leagueId or a code');
+    }
+    ref.invalidate(leaguesProvider);
+    ref.invalidate(publicLeaguesProvider);
+    ref.invalidate(leaderboardProvider);
+    ref.invalidate(leagueCompletenessProvider);
+  };
+});
+
+final leaveLeagueProvider = Provider<Future<void> Function(String)>((ref) {
+  return (leagueId) async {
+    await ref.read(apiProvider).leaveLeague(leagueId);
+    ref.invalidate(leaguesProvider);
+    ref.invalidate(publicLeaguesProvider);
+    ref.invalidate(leaderboardProvider);
+    ref.invalidate(leagueCompletenessProvider);
+  };
+});
+
+/// Mark notifications read; the header badge reads off the same provider.
+final markNotificationsReadProvider =
+    Provider<Future<void> Function({List<String>? ids, bool all})>((ref) {
+  return ({ids, all = false}) async {
+    await ref.read(apiProvider).markNotificationsRead(ids: ids, all: all);
+    ref.invalidate(notificationsProvider);
   };
 });

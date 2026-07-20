@@ -16,11 +16,20 @@ class NostragoalusApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Persist locale / competition changes for the next cold start.
+    ref.watch(prefsPersistenceProvider);
+    // No account's cached reads may outlive its session.
+    ref.watch(accountCacheGuardProvider);
     // Honor the signed-in user's konami skin + light/dark preference.
     final user = ref.watch(authControllerProvider).valueOrNull;
     final seed = AppTheme.skinSeed(user?.skin);
     final mode = AppTheme.themeModeFor(user?.theme);
     return ref.watch(i18nProvider).when(
+          // A locale change RELOADS this provider. Without this the whole
+          // MaterialApp is replaced by the bootstrap screen mid-session, tearing
+          // down every pushed route and the deep-link controller; the previous
+          // locale's strings render until the new ones resolve instead.
+          skipLoadingOnReload: true,
           loading: () => const _Bootstrapping(),
           error: (e, _) => _Bootstrapping(error: '$e'),
           data: (i18n) => I18nScope(
@@ -43,20 +52,25 @@ class NostragoalusApp extends ConsumerWidget {
   }
 }
 
-bool _splashRemoved = false;
-
-/// Drop the native splash once, after the first real screen has laid out.
-void _removeSplashOnce() {
-  if (_splashRemoved) return;
-  _splashRemoved = true;
-  WidgetsBinding.instance.addPostFrameCallback((_) => FlutterNativeSplash.remove());
-}
-
-class _AuthGate extends ConsumerWidget {
+class _AuthGate extends ConsumerStatefulWidget {
   const _AuthGate();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends ConsumerState<_AuthGate> {
+  bool _splashRemoved = false;
+
+  /// Drop the native splash once, after the first real screen has laid out.
+  void _removeSplashOnce() {
+    if (_splashRemoved) return;
+    _splashRemoved = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) => FlutterNativeSplash.remove());
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return ref.watch(authControllerProvider).when(
           loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
           // An auth error means no usable session; fall back to sign in.

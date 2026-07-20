@@ -36,10 +36,38 @@ void main() {
     expect(build(const {}, code: 'fr').isRtl, isFalse);
   });
 
-  test('load() normalises an unsupported locale to English', () {
-    // rootBundle asset loading is exercised on-device (the emulator run + the
-    // i18n-check task), not here - it hangs under the headless test binding.
-    expect(supportedLocales.map((l) => l.languageCode),
-        containsAll(<String>['en', 'fr', 'th', 'tlh', 'ar']));
+  group('load()', () {
+    final asked = <String>[];
+    Future<String> reader(String key) async {
+      asked.add(key);
+      final code = key.split('/').last.split('.').first;
+      return '{"a":"[$code]"}';
+    }
+
+    setUp(asked.clear);
+
+    test('normalises an unsupported locale to English', () async {
+      final i = await I18n.load(const Locale('de'), readAsset: reader);
+      expect(i.locale, const Locale('en'));
+      expect(asked, ['assets/i18n/en.json']);
+      expect(i.t('a'), '[en]');
+    });
+
+    test('a supported locale loads its own file plus the English fallback', () async {
+      final i = await I18n.load(const Locale('th'), readAsset: reader);
+      expect(i.locale, const Locale('th'));
+      expect(asked, ['assets/i18n/th.json', 'assets/i18n/en.json']);
+    });
+
+    test('English is read once, not twice', () async {
+      await I18n.load(const Locale('en'), readAsset: reader);
+      expect(asked, ['assets/i18n/en.json']);
+    });
+
+    test('every shipped locale is loadable', () async {
+      for (final l in supportedLocales) {
+        expect((await I18n.load(l, readAsset: reader)).locale, l);
+      }
+    });
   });
 }
