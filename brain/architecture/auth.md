@@ -207,6 +207,56 @@ for SSO league auto-join.
   plugin's registering-admin-only owner check, but it matches the plugin's
   `_better-auth-token-{providerId}` identifier + TXT format.
 
+### Mobile SSO (code exchange over a verified App Link)
+
+The native client cannot use the web flow. better-auth ends an SSO sign-in by
+setting a session **cookie** and redirecting to `callbackURL` verbatim; the
+`bearer()` plugin only emits `set-auth-token` on a direct API call, so a mobile
+callback carries no credential at all. (Before this landed, the app read
+`token`/`set-auth-token`/`session` off the callback URL - none of which can ever
+be there - and silently returned false. Mobile SSO had never worked.)
+
+The handoff, all of it in
+`apps/web-nuxt/server/utils/sso/mobile-exchange.ts`:
+
+1. The app generates two unpadded-base64url nonces, `state` and a PKCE-style
+   `verifier`, and asks `/api/auth/sign-in/sso` for the authorize URL with the
+   **relative** `callbackURL`
+   `/api/sso/mobile-callback?state=<state>&challenge=<sha256(verifier)>`.
+   Relative, so better-auth resolves it against its own baseURL and no extra
+   trusted origin is needed.
+2. `GET /api/sso/mobile-callback` (public, unauthenticated, same exposure as
+   `test-callback`) runs after better-auth created the session, so the request
+   carries the session cookie. That cookie value **is** what `bearer()` hands out
+   as `set-auth-token`. `parkMobileSsoToken` stores it in the `verification`
+   table under `_sso-mobile-<sha256(code)>` with a **2-minute** TTL, bound to the
+   state and challenge, and the route 302s to
+   `<origin>/mobile/sso-callback?state=&code=` - a verified App Link / Universal
+   Link, never a custom scheme. It answers with a `Location` only, so the
+   reflected-XSS trap `test-callback` documents cannot apply; the reflected
+   `state` is pinned to `[A-Za-z0-9_-]{16,128}` either way.
+3. `POST /api/sso/mobile-exchange` (`{code, state, verifier}`) redeems it.
+   `DELETE ... RETURNING` consumes the row atomically, so a replay, an expired
+   code, a wrong state and a wrong verifier all fail identically (`404`, no
+   oracle). Rate limited per client IP (10/min).
+
+**No bearer ever rides a URL.** A URL lands in browser history, in intermediate
+redirect logs, and - until App Links verification is live on the device - in an
+Android intent any app registered for the host can read. The code alone would not
+fix that, because whoever sees the redirect sees the code AND the state: hence
+the verifier, which travels only in the exchange POST body. An observer of the
+redirect therefore holds nothing redeemable.
+
+Deep-link verification is served from
+`apps/web-nuxt/server/routes/.well-known/` (`assetlinks.json.get.ts`,
+`apple-app-site-association.get.ts`), built by
+`apps/web-nuxt/server/utils/auth/well-known.ts` from `NUXT_ANDROID_CERT_FINGERPRINTS`
+/ `NUXT_IOS_APP_IDS`. Both **404 when unset**, which is deliberate: the Android
+debug keystore is a shared secret every SDK ships, so a committed debug
+fingerprint would let any debug-signed app claim `goal.arzaroth.com`'s links -
+strictly worse than serving nothing. See
+[../features/mobile-app.md](../features/mobile-app.md) for the app side.
+
 ### SCIM provisioning
 
 - `@better-auth/scim` (`scim({ storeSCIMToken: 'hashed' })`) exposes SCIM 2.0
@@ -228,7 +278,8 @@ for SSO league auto-join.
 - `apps/web-nuxt/server/plugins/warm-settings.ts`, `apps/web-nuxt/server/middleware/passkey-guard.ts`
 - `apps/web-nuxt/server/utils/crypto/envelope.ts`, `apps/web-nuxt/server/utils/crypto/encrypted-adapter.ts`
 - `apps/web-nuxt/server/utils/auth/sso-domains.ts`, `apps/web-nuxt/server/utils/auth/sso-guard-paths.ts`
-- `apps/web-nuxt/server/utils/sso/{service,config,test-signin}.ts`, `apps/web-nuxt/server/api/admin/sso/**`
-- `apps/web-nuxt/server/api/sso/{check,test-callback}.get.ts`
+- `apps/web-nuxt/server/utils/sso/{service,config,test-signin,mobile-exchange}.ts`, `apps/web-nuxt/server/api/admin/sso/**`
+- `apps/web-nuxt/server/api/sso/{check,test-callback,mobile-callback}.get.ts`, `apps/web-nuxt/server/api/sso/mobile-exchange.post.ts`
+- `apps/web-nuxt/server/utils/auth/well-known.ts`, `apps/web-nuxt/server/routes/.well-known/**`
 - See [../features/sso-provisioning.md](../features/sso-provisioning.md)
 - `apps/web-nuxt/db/auth-schema.ts` (`user`, `session`, `account`, `ssoProvider`, `scimProvider`, `apikey`)

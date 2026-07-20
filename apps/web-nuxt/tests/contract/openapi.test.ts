@@ -83,6 +83,8 @@ const NO_CONTRACT = [
   'media/avatar/[key].get.ts', // avatar image bytes
   'media/reward/[key].get.ts', // reward image bytes
   'notifications/_schema.ts', // shared zod helper, not a route (underscore-prefixed)
+  'sso/mobile-callback.get.ts', // mobile SSO callback (302 to the app's deep link)
+  'sso/mobile-exchange.post.ts', // unauthenticated bearer exchange (no session yet, so no defineValidatedHandler)
   'sso/test-callback.get.ts', // SSO test result page (text/html)
 ].sort()
 

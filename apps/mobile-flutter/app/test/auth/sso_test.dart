@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,84 +12,145 @@ import 'package:nostragoalus/state/providers.dart';
 import '../api/helpers.dart';
 import '../chat/route_adapter.dart';
 
-typedef Harness = ({SsoService sso, TokenStore tokens, List<String> callbacks});
+typedef Harness = ({
+  SsoService sso,
+  TokenStore tokens,
+  List<Uri> callbacks,
+  List<Map<String, dynamic>> exchanges,
+});
 
 void main() {
-  /// Wires a service whose browser answers with [callback], computed from the
+  /// Wires a service whose browser answers with [reply], computed from the
   /// callbackURL the app actually asked the server for (that is where the
-  /// generated `state` lives).
-  Harness build(String Function(Uri callbackUri) callback) {
-    final callbacks = <String>[];
-    final c = ProviderContainer(overrides: [
-      dioProvider.overrideWithValue(Dio()..httpClientAdapter = _CapturingAdapter(callbacks)),
+  /// generated `state` and `challenge` live). The fake exchange endpoint hands
+  /// back a bearer only for a well-formed, correctly bound redemption.
+  Harness build(String Function(Uri callbackUri) reply) {
+    final callbacks = <Uri>[];
+    final exchanges = <Map<String, dynamic>>[];
+    final container = ProviderContainer(overrides: [
+      dioProvider.overrideWithValue(
+          Dio()..httpClientAdapter = _SsoAdapter(callbacks, exchanges)),
       tokenStoreProvider.overrideWithValue(TokenStore(InMemoryKv())),
       ssoServiceProvider.overrideWith((ref) => SsoService(
             ref,
-            browser: ({required String url, required String callbackUrlScheme}) async =>
-                callback(Uri.parse(callbacks.last)),
+            browser: ({required String url, required Uri callback}) async =>
+                reply(callbacks.last),
           )),
     ]);
-    addTearDown(c.dispose);
-    return (sso: c.read(ssoServiceProvider), tokens: c.read(tokenStoreProvider), callbacks: callbacks);
+    addTearDown(container.dispose);
+    return (
+      sso: container.read(ssoServiceProvider),
+      tokens: container.read(tokenStoreProvider),
+      callbacks: callbacks,
+      exchanges: exchanges,
+    );
   }
 
   test('the callback must echo the state we generated', () async {
-    final t = build((_) => '$ssoScheme://sso-callback?state=forged&token=stolen');
+    final t = build((_) => 'https://goal.arzaroth.com$ssoCallbackPath?state=forged&code=stolen');
     await expectLater(t.sso.signIn('idp'), throwsA(isA<SsoException>()));
     expect(t.tokens.token, isNull, reason: 'a hijacked callback must not be adopted');
+    expect(t.exchanges, isEmpty, reason: 'a rejected callback must never be exchanged');
   });
 
-  test('a matching state with the pinned token param signs in', () async {
-    final t = build((cb) =>
-        '$ssoScheme://sso-callback?state=${cb.queryParameters[ssoStateParam]}&$ssoTokenParam=good');
+  test('a matching state exchanges the code and signs in', () async {
+    final t = build((cb) => '${cb.replace(queryParameters: {
+          ssoStateParam: cb.queryParameters[ssoStateParam],
+          ssoCodeParam: 'the-code',
+        })}');
     expect(await t.sso.signIn('idp'), isTrue);
-    expect(t.tokens.token, 'good');
+    expect(t.tokens.token, 'bearer-from-exchange');
+    expect(t.exchanges.single['code'], 'the-code');
   });
 
-  test('no other parameter name is accepted as a bearer', () async {
-    for (final name in const ['set-auth-token', 'session', 'access_token']) {
-      final t = build((cb) =>
-          '$ssoScheme://sso-callback?state=${cb.queryParameters[ssoStateParam]}&$name=x');
+  test('the verifier travels only in the exchange body, never in the redirect', () async {
+    final t = build((cb) => '${cb.replace(queryParameters: {
+          ssoStateParam: cb.queryParameters[ssoStateParam],
+          ssoCodeParam: 'the-code',
+        })}');
+    await t.sso.signIn('idp');
+    final verifier = t.exchanges.single['verifier'] as String;
+    final asked = t.callbacks.single;
+    expect(asked.query, isNot(contains(verifier)));
+    // What the redirect did carry is the SHA-256 of it.
+    expect(
+      asked.queryParameters[ssoChallengeParam],
+      base64Url.encode(sha256.convert(utf8.encode(verifier)).bytes).replaceAll('=', ''),
+    );
+  });
+
+  test('no bearer is ever read straight off the callback URL', () async {
+    for (final name in const ['token', 'set-auth-token', 'session', 'access_token']) {
+      final t = build((cb) => '${cb.replace(queryParameters: {
+            ssoStateParam: cb.queryParameters[ssoStateParam],
+            name: 'stolen',
+          })}');
       await expectLater(t.sso.signIn('idp'), throwsA(isA<SsoException>()));
       expect(t.tokens.token, isNull);
     }
   });
 
   test('an error callback surfaces instead of failing silently', () async {
-    final t = build((cb) =>
-        '$ssoScheme://sso-callback?state=${cb.queryParameters[ssoStateParam]}&error=access_denied');
+    final t = build((cb) => '${cb.replace(queryParameters: {
+          ssoStateParam: cb.queryParameters[ssoStateParam],
+          'error': 'access_denied',
+        })}');
     await expectLater(
       t.sso.signIn('idp'),
       throwsA(isA<SsoException>().having((e) => e.reason, 'reason', 'access_denied')),
     );
   });
 
-  test('each attempt generates a fresh state', () async {
-    final t = build((cb) =>
-        '$ssoScheme://sso-callback?state=${cb.queryParameters[ssoStateParam]}&$ssoTokenParam=good');
+  test('a refused exchange does not sign the user in', () async {
+    final t = build((cb) => '${cb.replace(queryParameters: {
+          ssoStateParam: cb.queryParameters[ssoStateParam],
+          ssoCodeParam: 'replayed',
+        })}');
+    await expectLater(t.sso.signIn('idp'), throwsA(isA<Object>()));
+    expect(t.tokens.token, isNull);
+  });
+
+  test('each attempt generates a fresh state and verifier', () async {
+    final t = build((cb) => '${cb.replace(queryParameters: {
+          ssoStateParam: cb.queryParameters[ssoStateParam],
+          ssoCodeParam: 'the-code',
+        })}');
     await t.sso.signIn('idp');
     await t.sso.signIn('idp');
-    final states =
-        t.callbacks.map((c) => Uri.parse(c).queryParameters[ssoStateParam]).toSet();
-    expect(states.length, 2);
+    expect(t.callbacks.map((c) => c.queryParameters[ssoStateParam]).toSet(), hasLength(2));
+    expect(t.callbacks.map((c) => c.queryParameters[ssoChallengeParam]).toSet(), hasLength(2));
+    expect(t.exchanges.map((e) => e['verifier']).toSet(), hasLength(2));
   });
 }
 
-/// Answers `/api/auth/sign-in/sso` with an authorize URL and records the
-/// callbackURL the app asked for.
-class _CapturingAdapter extends RouteAdapter {
-  _CapturingAdapter(this.callbacks)
+/// Answers `/api/auth/sign-in/sso` with an authorize URL, records the
+/// callbackURL the app asked for, and plays the exchange endpoint: only the
+/// well-formed `the-code` redemption yields a bearer.
+class _SsoAdapter extends RouteAdapter {
+  _SsoAdapter(this.callbacks, this.exchanges)
       : super({
           '/api/auth/sign-in/sso': () => Reply(200, {'url': 'https://idp.example/authorize'}),
         });
-  final List<String> callbacks;
+  final List<Uri> callbacks;
+  final List<Map<String, dynamic>> exchanges;
 
   @override
   Future<ResponseBody> fetch(
       RequestOptions options, Stream<Uint8List>? requestStream, Future<void>? cancelFuture) {
     final body = options.data;
     if (body is Map && body['callbackURL'] is String) {
-      callbacks.add(body['callbackURL'] as String);
+      callbacks.add(Uri.parse(body['callbackURL'] as String));
+    }
+    if (options.path == '/api/sso/mobile-exchange' && body is Map<String, dynamic>) {
+      exchanges.add(body);
+      final ok = body['code'] == 'the-code';
+      return Future.value(ResponseBody.fromString(
+        jsonEncode(ok ? {'token': 'bearer-from-exchange'} : {'statusMessage': 'unknown code'}),
+        ok ? 200 : 404,
+        headers: {
+          Headers.contentTypeHeader: [Headers.jsonContentType],
+        },
+      ));
     }
     return super.fetch(options, requestStream, cancelFuture);
   }

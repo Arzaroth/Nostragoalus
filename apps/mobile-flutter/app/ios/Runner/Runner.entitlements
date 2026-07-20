@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Universal Links. Apple fetches
+	     https://goal.arzaroth.com/.well-known/apple-app-site-association at
+	     install time; the app only claims the domain's links once that file
+	     lists this app's <TeamID>.<bundle id> (server env NUXT_IOS_APP_IDS).
+	     The SSO callback rides the same association - no custom URL scheme. -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:goal.arzaroth.com</string>
+	</array>
+</dict>
+</plist>

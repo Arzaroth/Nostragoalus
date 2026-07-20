@@ -80,8 +80,9 @@ class _DeepLinkControllerState extends ConsumerState<DeepLinkController> {
   }
 
   Future<void> _handle(Uri uri) async {
-    // The SSO callback uses the custom scheme and is consumed by
-    // flutter_web_auth_2; only route real https web links here.
+    // Only real web links are routed here. The SSO callback is an https App Link
+    // too, but the auth session consumes it before it is ever dispatched as a
+    // link, and deepLinkTarget has no route for it either way.
     if (uri.scheme != 'http' && uri.scheme != 'https') return;
     final s = uri.pathSegments.where((e) => e.isNotEmpty).toList();
     if (s.isEmpty) return;

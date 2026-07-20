@@ -33,9 +33,10 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- Inbound web deep links (app_links). autoVerify needs
-                 /.well-known/assetlinks.json on goal.arzaroth.com; until that is
-                 served, Android offers the app in the link chooser. -->
+            <!-- Inbound web deep links (app_links). autoVerify is backed by
+                 /.well-known/assetlinks.json on goal.arzaroth.com, served from
+                 NUXT_ANDROID_CERT_FINGERPRINTS; with no fingerprint configured
+                 the file 404s and Android falls back to the link chooser. -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -43,16 +44,23 @@
                 <data android:scheme="https" android:host="goal.arzaroth.com" />
             </intent-filter>
         </activity>
-        <!-- SSO redirect callback (flutter_web_auth_2). The `nostragoalus` scheme
-             must also be in the server's NUXT_SSO_TRUSTED_ORIGINS. -->
+        <!-- SSO redirect callback (flutter_web_auth_2). It is a verified App
+             Link, not the old `nostragoalus://` scheme: a private scheme is
+             claimable by any installed app, which is exactly what an auth
+             callback must not be. Same host as the deep-link filter above, so
+             the same assetlinks.json verifies it. -->
         <activity
             android:name="com.linusu.flutter_web_auth_2.CallbackActivity"
-            android:exported="true">
-            <intent-filter android:label="flutter_web_auth_2">
+            android:exported="true"
+            android:taskAffinity="">
+            <intent-filter android:label="flutter_web_auth_2" android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="nostragoalus" />
+                <data
+                    android:scheme="https"
+                    android:host="goal.arzaroth.com"
+                    android:path="/mobile/sso-callback" />
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

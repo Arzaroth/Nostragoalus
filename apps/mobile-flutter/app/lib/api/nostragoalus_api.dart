@@ -501,4 +501,17 @@ class NostragoalusApi {
         .postJson('/api/auth/sign-in/sso', body: {'providerId': providerId, 'callbackURL': callbackURL});
     return res['url'] as String?;
   }
+
+  /// Trade the single-use code from the SSO callback for the session bearer.
+  /// The verifier proves we are the client that started the flow, so the code
+  /// is worthless to anyone who merely observed the redirect.
+  Future<String?> ssoExchange({
+    required String code,
+    required String state,
+    required String verifier,
+  }) async {
+    final res = await _api.postJson('/api/sso/mobile-exchange',
+        body: {'code': code, 'state': state, 'verifier': verifier});
+    return res['token'] as String?;
+  }
 }

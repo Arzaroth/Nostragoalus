@@ -1,29 +1,38 @@
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 
+import '../config.dart';
 import '../state/providers.dart';
 
-/// URL scheme the IdP redirect comes back on. Must be registered in the Android
-/// manifest / iOS Info.plist and added to NUXT_SSO_TRUSTED_ORIGINS.
+/// Path the SSO round trip comes back on. It is a **verified App Link /
+/// Universal Link** on the server's own origin, not a private URL scheme: any
+/// installed Android app can register `nostragoalus://` and receive a custom
+/// scheme callback, while an autoVerify'd https link is claimed only by the app
+/// whose signing certificate the domain publishes in
+/// `/.well-known/assetlinks.json`.
 ///
-/// A private scheme is hijackable on Android: any installed app may register
-/// `nostragoalus://` and receive the callback. The [ssoStateParam] round-trip
-/// below is what stops a hijacked callback from being adopted; moving to a
-/// verified App Link / Universal Link (https://goal.arzaroth.com/sso-callback)
-/// is the real fix and needs a server-side change - see deferred-state.md.
-const ssoScheme = 'nostragoalus';
+/// The host comes from the API base, so a self-hosted or dev server round-trips
+/// to itself. Verification only exists for https origins - a plain-http dev
+/// server cannot complete this flow.
+const ssoCallbackPath = '/mobile/sso-callback';
 
-/// The ONE query parameter the callback must carry the session token in. It is
-/// pinned, not probed: adopting a bearer from whichever of several parameter
-/// names happens to be present is how an attacker-chosen value gets saved.
-const ssoTokenParam = 'token';
+/// The ONE query parameter the callback carries the exchange code in. It is
+/// pinned, not probed: adopting whichever of several parameter names happens to
+/// be present is how an attacker-chosen value gets used.
+const ssoCodeParam = 'code';
 
 /// CSRF/hijack guard: generated before the authorize URL is built, echoed back
 /// by the callback, compared here.
 const ssoStateParam = 'state';
+
+/// base64url SHA-256 of [_verifier], sent through the redirect. The verifier
+/// itself only ever travels in the exchange POST body, so someone who observes
+/// the redirect holds a code they cannot spend.
+const ssoChallengeParam = 'challenge';
 
 /// A completed-but-rejected SSO round trip. The sign-in screen already catches
 /// it and shows `auth.ssoFailed`; [reason] is for logs, not for users.
@@ -44,11 +53,18 @@ class SsoProviderInfo {
 /// callback handling is testable without a platform channel.
 typedef SsoBrowser = Future<String> Function({
   required String url,
-  required String callbackUrlScheme,
+  required Uri callback,
 });
 
-Future<String> _webAuth({required String url, required String callbackUrlScheme}) =>
-    FlutterWebAuth2.authenticate(url: url, callbackUrlScheme: callbackUrlScheme);
+Future<String> _webAuth({required String url, required Uri callback}) =>
+    FlutterWebAuth2.authenticate(
+      url: url,
+      callbackUrlScheme: callback.scheme,
+      // Required whenever the callback scheme is https: the Auth Tab (Android)
+      // and ASWebAuthenticationSession (iOS) need the exact host+path to
+      // intercept, so the callback returns to us rather than loading a page.
+      options: FlutterWebAuth2Options(httpsHost: callback.host, httpsPath: callback.path),
+    );
 
 final ssoServiceProvider = Provider<SsoService>((ref) => SsoService(ref));
 
@@ -69,18 +85,26 @@ class SsoService {
     return SsoProviderInfo(id, (res['name'] as String?) ?? id);
   }
 
-  /// Run the browser SSO round-trip and adopt the returned bearer token.
-  /// Returns false when the provider has no authorize URL; anything that
-  /// completed but cannot be trusted throws [SsoException].
+  /// Run the browser SSO round-trip, trade the returned single-use code for the
+  /// session bearer and adopt it. Returns false when the provider has no
+  /// authorize URL; anything that completed but cannot be trusted throws
+  /// [SsoException].
   Future<bool> signIn(String providerId) async {
-    final state = _newState();
-    final callback = Uri.parse('$ssoScheme://sso-callback')
-        .replace(queryParameters: {ssoStateParam: state})
-        .toString();
-    final url = await _ref.read(apiProvider).ssoAuthorizeUrl(providerId, callback);
+    final state = _newNonce();
+    final verifier = _newNonce();
+    final challenge = _b64(sha256.convert(utf8.encode(verifier)).bytes);
+    final callback = Uri.parse(AppConfig.apiBase).replace(path: ssoCallbackPath);
+    // Relative, so better-auth resolves it against its own baseURL and no extra
+    // trusted origin has to be configured for the app to sign in.
+    final callbackUrl = Uri(
+      path: ssoCallbackPath,
+      queryParameters: {ssoStateParam: state, ssoChallengeParam: challenge},
+    ).toString();
+
+    final url = await _ref.read(apiProvider).ssoAuthorizeUrl(providerId, callbackUrl);
     if (url == null) return false;
 
-    final result = await _browser(url: url, callbackUrlScheme: ssoScheme);
+    final result = await _browser(url: url, callback: callback);
     final params = Uri.parse(result).queryParameters;
 
     final error = params['error'];
@@ -88,14 +112,22 @@ class SsoService {
     // A callback that cannot echo our state did not come from the flow we
     // started, whichever app produced it.
     if (params[ssoStateParam] != state) throw const SsoException('state_mismatch');
-    final token = params[ssoTokenParam];
-    if (token == null || token.isEmpty) throw const SsoException('missing_token');
+    final code = params[ssoCodeParam];
+    if (code == null || code.isEmpty) throw const SsoException('missing_code');
+
+    final token =
+        await _ref.read(apiProvider).ssoExchange(code: code, state: state, verifier: verifier);
+    if (token == null || token.isEmpty) throw const SsoException('exchange_failed');
 
     await _ref.read(tokenStoreProvider).save(token);
     _ref.invalidate(authControllerProvider);
     return true;
   }
 
-  String _newState() =>
-      base64Url.encode(List<int>.generate(32, (_) => _random.nextInt(256)));
+  String _newNonce() => _b64(List<int>.generate(32, (_) => _random.nextInt(256)));
 }
+
+/// Unpadded base64url. The `=` padding Dart emits is not in the character set
+/// the server pins these values to (and Node's `base64url` digest omits it), so
+/// a padded challenge would never match.
+String _b64(List<int> bytes) => base64Url.encode(bytes).replaceAll('=', '');
