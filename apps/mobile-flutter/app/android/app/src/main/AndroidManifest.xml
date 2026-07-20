@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The Flutter template declares INTERNET only in src/debug + src/profile,
+         so a release APK ships without it and every API call fails. -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <!-- WebRTC voice (flutter_webrtc). -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />

@@ -87,6 +87,7 @@ use the indexes.
 | [roadmap.md](features/roadmap.md) | Public roadmap + community suggestions and upvotes, admin triage. |
 | [wrapped.md](features/wrapped.md) | Tournament Wrapped: post-final recap deck + shareable summary card. |
 | [easter-eggs.md](features/easter-eggs.md) | MLP skins, pony reactions, the Klingon locale. |
+| [mobile-app.md](features/mobile-app.md) | The native Flutter client: layout, the three generated mirrors, its own gate and how it is weaker. |
 
 ## Find by question
 
@@ -109,6 +110,7 @@ use the indexes.
 | Why Sofascore / FIFA ranking and not odds? | [decisions.md](decisions.md) |
 | How does a brand-new player learn the app (the spotlight tour)? | [features/onboarding-tour.md](features/onboarding-tour.md) |
 | What's the konami easter egg? | [features/easter-eggs.md](features/easter-eggs.md) |
+| How do I run or gate the Flutter mobile app? | [features/mobile-app.md](features/mobile-app.md) |
 
 ## Maintaining the brain
 

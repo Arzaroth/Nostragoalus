@@ -748,14 +748,23 @@ effort buckets; order within a bucket is not priority.
     opt-in. Long club comps default to a **featured view** (top-table
     clashes + the user's followed teams), full matchday behind a tab.
     Picking stays optional per match; rankings stay total-points.
-- [ ] **Mobile / desktop apps** (tech showcase, no store publishing planned):
-  - PWA first regardless (see push above).
-  - Then **Tauri v2** for both desktop and mobile (single framework, small
-    binaries, system webview) - better showcase than Capacitor + a separate
-    desktop stack. Capacitor remains the boring-proven fallback if Tauri
-    mobile bites.
-  - Electron / Neutralino / Electrobun ruled out (size / ecosystem /
-    maturity).
+- [~] **Mobile / desktop apps** (tech showcase, no store publishing planned):
+  - [x] PWA first regardless (see push above).
+  - [x] **Native mobile client in Flutter/Dart**, not Tauri: `apps/mobile-flutter/app/`.
+    Tauri v2 / Capacitor / Electron were all dropped - a webview wrapper repeats
+    the PWA instead of exercising a second stack, and the interesting showcase is
+    a genuinely independent client held to the server contract. That contract is
+    the zod-derived OpenAPI snapshot (`shared/contracts-openapi/`, generating the
+    Dart models) plus frozen golden vectors (`shared/parity-json/`) replayed by
+    `apps/mobile-flutter/parity/`, so the Dart ports of scoring, standings,
+    fergie-time, commit-reveal, key transparency and E2EE are proven bit-for-bit
+    against TS. Roughly 50 screens; per-feature status in
+    `apps/mobile-flutter/PARITY.md`, docs in `apps/mobile-flutter/README.md`.
+  - [ ] Remaining: mobile push (needs new server FCM endpoints - the server
+    speaks only web-push/VAPID), a real upload keystore (release currently
+    signs with the debug key), coverage measurement in the mobile gate, and
+    anything iOS/CallKit/passkeys (no Apple hardware, no maintained plugin).
+  - [ ] Desktop: still unstarted, still not obviously worth it over the PWA.
 - [ ] **Tamper-evident / E2EE scores**:
   - Phase 1 **commit-reveal** (shipped in 1.33.0). Locked
     design: an append-only `prediction_commitment` ledger, hash-chained like a

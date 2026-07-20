@@ -126,7 +126,11 @@ with the data caveat noted per area.
   join / decline -> voice:decline) + DM voice bar; missed calls via the existing
   VOICE_MISSED notification. `[!]` round-trip (ring delivery + audio) needs a 2nd
   peer - compile-validated only, like the mesh audio
-- [!] CallKit / background audio / ring push - iOS-only (no Apple)
+- [!] CallKit / background audio / ring push - iOS-only (no Apple). The
+  `flutter_callkit_incoming` dependency was removed: it was reachable only from
+  dead Phase-0 spike code, and its manifest merged `MANAGE_OWN_CALLS` +
+  full-screen-intent (Play-Console-flagged) into the shipped release manifest.
+  Re-add it when the feature is actually built.
 
 ## Notifications
 - [x] In-app notification center (bell + unread badge + mark-all-read)
@@ -165,18 +169,31 @@ with the data caveat noted per area.
 
 ## Cross-cutting
 - [x] OpenAPI model codegen + stale-check
-- [x] i18n mirror + stale-check; parity KAT mirror + on-device replay
-- [!] Signed release build + Play internal (needs an upload keystore + a Play account)
-- [x] Flutter gate (`mise run gate`) - stale-checks (models/i18n/KAT mirrors) +
-  analyze + app tests + cross-stack parity, sequential. Repo has no hosted CI;
-  this is the by-hand gate matching the web's `pnpm` gate.
-- [x] Widget test coverage - smoke + crypto + auth + models + i18n + StatTile +
-  Sessions (data/empty) + Map + Notifications (per-type template) + ShareCard
-  (33 tests); more per-screen specs can always be added
+- [x] i18n mirror + stale-check; parity KAT mirror + stale-check. Both use
+  `git status --porcelain`, so a newly added locale/KAT fails the check too.
+- [~] On-device KAT replay - `app/integration_test/` (e2ee interop + round-trip,
+  chat identity, KT verify, sign-in) is a MANUAL, device-gated step
+  (`mise run integration`, needs a connected device/emulator). It is deliberately
+  NOT in `mise run gate`, so it does not run unless someone runs it.
+- [!] Signed release build + Play internal (needs an upload keystore + a Play
+  account). Until then `android/app/build.gradle.kts` signs release with the
+  DEBUG key - never hand that APK to anyone as "the release build".
+- [~] Flutter gate (`mise run gate`) - sequential: model/i18n/KAT stale-checks,
+  `flutter analyze`, `flutter test` (app/test only), `dart test` (parity vectors),
+  `flutter build apk --debug`. Repo has no hosted CI, so this is the by-hand gate.
+  It is NOT equivalent to the web's `pnpm` gate:
+  - it measures **no coverage** and enforces no threshold (the web gate enforces 98%)
+  - `app/integration_test/` never runs (see above)
+  - there is no end-to-end/UI-driving suite (the web's Playwright layer)
+  - it needs a system libsodium (the parity e2ee interop KATs `dlopen` it) and an
+    Android SDK; `mise install` provisions neither.
+- [~] Widget test coverage - smoke + crypto + auth + models + i18n + StatTile +
+  Sessions (data/empty) + Map + Notifications (per-type template) + ShareCard;
+  most of `lib/` (API client, providers, chat/DM, voice, deep links, ~55 of 61
+  `ui/` files) has no gate-run test at all. Tracked in the root `TODO.md`.
 
 ## Genuinely external-blocked (not effort)
 - Push (mobile FCM) = server FCM work + Firebase project
 - SSO completion = trusted-origin config + real IdP
 - Live chat/DM/voice round-trips = provisioned data / a 2nd participant
 - Anything iOS / CallKit / APNs = no Apple hardware
-- Best-scorer pick = no player-id in the public contract

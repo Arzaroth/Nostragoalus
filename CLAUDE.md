@@ -11,8 +11,13 @@ pnpm workspace. The paths below are relative to the repo root unless noted.
   (`Dockerfile`, `Dockerfile.dockerignore`, `compose*.yaml`, `.env*`). Run the
   gate and dev scripts here: `pnpm -C apps/web-nuxt <script>` from the root, or
   `cd apps/web-nuxt` first.
-- `apps/mobile-flutter/` - the Dart cross-stack parity runner (and a future
-  Flutter client).
+- `apps/mobile-flutter/` - the native Flutter mobile client (`app/`, ~15k Dart
+  lines, ~50 screens: picks, leagues, E2EE chat/DMs, WebRTC voice, achievements)
+  plus `parity/`, the pure-Dart runner replaying `shared/parity-json/` to prove
+  the Dart ports match the TS server. Its own gate: `mise run gate` from
+  `apps/mobile-flutter` (needs a system libsodium + an Android SDK). See
+  `apps/mobile-flutter/README.md`, feature status in `PARITY.md`, and
+  `brain/features/mobile-app.md`.
 - `shared/` - cross-app, language-neutral DATA only (consumed by both apps):
   `shared/contracts-openapi/` (the emitted OpenAPI snapshot), `shared/parity-json/`
   (golden vectors), `shared/i18n-json/` (locale JSON; the app reads it via the

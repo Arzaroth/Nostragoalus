@@ -17,9 +17,8 @@ dependencies:
   flutter_riverpod: ^2.6.1
   # realtime: voice signaling + live over the server's _ws.ts hub
   web_socket_channel: ^3.0.1
-  # Phase 0 voice probe (+ Phase 4): WebRTC + native call UI/background audio
+  # WebRTC voice mesh (league rooms + DM 1:1)
   flutter_webrtc: ^0.12.5
-  flutter_callkit_incoming: ^2.5.2
   # E2EE: libsodium, the same primitives as the web app's libsodium-wrappers-sumo
   # (used by the Phase 0 e2ee probe / Phase 3). ffi to the native lib.
   sodium_libs: ^3.4.4
@@ -45,11 +44,11 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   # The shared locale JSON (shared/i18n-json) mirrored into assets/i18n by
-  # tool/sync_i18n.sh (mise run i18n-sync); the single source of truth stays in
+  # tool/sync_shared.sh (mise run i18n-sync); the single source of truth stays in
   # shared/. mise run i18n-check fails CI if the mirror drifts.
   assets:
     - assets/i18n/
-    # Frozen cross-stack KATs (shared/parity-json), mirrored by tool/sync_parity.sh.
+    # Frozen cross-stack KATs (shared/parity-json), mirrored by tool/sync_shared.sh.
     - assets/parity/
     - assets/icon/
 

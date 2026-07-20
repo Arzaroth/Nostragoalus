@@ -33,15 +33,23 @@ void main() {
     final vf = jsonDecode(await rootBundle.loadString('assets/parity/e2ee.json'))
         as Map<String, dynamic>;
 
-    dynamic dispatch(String fn, List rawArgs) {
+    dynamic dispatch(String fn, List<dynamic> rawArgs) {
       final a = rawArgs.map(revive).toList();
       return switch (fn) {
         'fingerprint' => e2ee.fingerprint(sodium, a[0] as String),
-        'openGroupKey' => encode(e2ee.openGroupKey(sodium, a[0] as String, a[1] as Map)),
-        'decryptMessage' => e2ee.decryptMessage(sodium, a[0] as String, a[1] as Uint8List),
-        'decryptBytes' => encode(e2ee.decryptBytes(sodium, a[0] as String, a[1] as Uint8List)),
-        'unwrapPrivateKeyWithRecovery' =>
-          encode(e2ee.unwrapPrivateKeyWithRecovery(sodium, a[0] as String, a[1] as String)),
+        'openGroupKey' => encode(e2ee
+            .openGroupKey(sodium, a[0] as String,
+                publicKey: (a[1] as Map)['publicKey'] as String,
+                privateKey:
+                    SecureKey.fromList(sodium, (a[1] as Map)['privateKey'] as Uint8List))
+            .extractBytes()),
+        'decryptMessage' => e2ee.decryptMessage(
+            sodium, a[0] as String, SecureKey.fromList(sodium, a[1] as Uint8List)),
+        'decryptBytes' => encode(e2ee.decryptBytes(
+            sodium, a[0] as String, SecureKey.fromList(sodium, a[1] as Uint8List))),
+        'unwrapPrivateKeyWithRecovery' => encode(
+            e2ee.unwrapPrivateKeyWithRecovery(sodium, a[0] as String, a[1] as String)
+                .extractBytes()),
         _ => throw StateError('unknown fn $fn'),
       };
     }

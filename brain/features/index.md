@@ -41,6 +41,7 @@ early on). Back to the root map: [../BRAIN.md](../BRAIN.md).
 | [Roadmap](roadmap.md) | Public `/roadmap` (planned/in-progress/shipped) + community suggestions users submit and upvote; admin triage | 2.12.0, 2.13.0 | `roadmap_item`, `roadmap_vote`; `server/utils/roadmap/*`, `useRoadmap.ts`, `roadmap.vue` |
 | [Tournament Wrapped](wrapped.md) | Post-final personal recap: story-slide deck + shareable summary card | 2.15.0 | `server/utils/wrapped/service.ts`, `WrappedDeck.vue`, `server/utils/share/wrapped-*` |
 | [Easter eggs](easter-eggs.md) | Konami "My Little Prono" skins, pony reactions, Klingon locale | hidden | `app/utils/skins.ts`, `public/skins/*`, `ng-skin` cookie |
+| [Mobile app](mobile-app.md) | Native Flutter client on the same public API + WS hub (~50 screens); generated models, mirrored locales/KATs, its own weaker by-hand gate | unreleased | `apps/mobile-flutter/{app,parity}`, `PARITY.md`, `app/tool/sync_shared.sh` |
 
 ## Cross-cutting architecture
 

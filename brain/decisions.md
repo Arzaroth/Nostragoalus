@@ -545,3 +545,35 @@ feature/architecture doc that implements it.
   DTLS fingerprint and actively MITM a call (passive listening is already blocked by
   SRTP). Closing it needs the fingerprint signed with an identity key - deferred
   (TODO), the same tiered approach as the E2EE hardening above.
+
+## Mobile app
+
+See [features/mobile-app.md](features/mobile-app.md).
+
+- **Flutter, not Tauri or Capacitor.** The roadmap originally said Tauri v2. A
+  webview wrapper would have re-shipped the PWA in a shell and proved nothing
+  about the server contract, so the choice flipped to a genuinely independent
+  native client in a different language. The contract discipline
+  ([architecture/cross-stack-contract.md](architecture/cross-stack-contract.md))
+  only has teeth if a non-TS consumer actually exists.
+- **No mobile-only endpoints, no BFF.** The app consumes the same public API and
+  the same WS hub as the web client. Any shape the app needs is a shape the web
+  client can have too, which keeps one contract instead of two.
+- **Shared data is mirrored into the bundle, not fetched or symlinked.** Locales
+  and golden vectors are committed copies under `app/assets/`, produced by
+  `app/tool/sync_shared.sh` and stale-checked by the gate, so a clean checkout
+  builds offline. The check is `git status --porcelain`, not `git diff`, because
+  `git diff` cannot see an untracked newly added locale or vector.
+- **The mobile gate is deliberately weaker, and says so.** No coverage
+  measurement, no threshold, no UI-driving end-to-end layer, and
+  `app/integration_test/` is a manual device step. That is an accepted state, not
+  a claim of parity with the web's 98% gate; the debt is itemised in the root
+  `TODO.md`. The one thing not compromised is the `flutter build apk --debug`
+  step, which is the only check for the Android build class (manifest merger,
+  minSdk/NDK, plugin registration).
+- **A dependency whose feature is not built does not ship.**
+  `flutter_callkit_incoming` was reachable only from dead Phase-0 spike code, yet
+  merged `MANAGE_OWN_CALLS`, `USE_FULL_SCREEN_INTENT`, `DISABLE_KEYGUARD` and
+  friends into the release manifest - Play-Console-flagged declarations for a
+  feature marked as never done. Removed with the spike; re-add it when CallKit is
+  actually built.

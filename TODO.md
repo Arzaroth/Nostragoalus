@@ -2575,16 +2575,17 @@ Shipped (vertical slices proving each mechanism):
 - [x] Parity vectors for the scoring core: `scoring`, `fergie`, `standings`,
       `consensus`, `match` (8 modules total with crypto). `criteria` +
       `achievements` are db-bound, out of scope for pure vectors.
-- [x] Dart consumer side: `mobile/parity/` vector runner (commitment/kt/match
-      ported + passing, rest stubbed with recipes) + `tool/gen_models.sh`
-      (OpenAPI -> Dart models). Authored but not executed (no Dart SDK here).
+- [x] Dart consumer side: `apps/mobile-flutter/parity/` vector runner
+      (commitment/kt/match ported + passing, rest stubbed with recipes) +
+      `tool/gen_models.sh` (OpenAPI -> Dart models).
 
 Open:
 - [ ] Retire the now-redundant hand-written `requestBody`/`responses` literals
       in `defineRouteMeta` on converted routes (emitter is authoritative). Prose
       (tags/summary/description) still comes from defineRouteMeta.
-- [ ] Port the remaining Dart parity modules (e2ee + scoring/fergie/standings/
-      consensus) and run `dart test` - only when the mobile app actually starts.
+- [x] Port the remaining Dart parity modules (e2ee + scoring/fergie/standings/
+      consensus) and run `dart test`. All 8 modules replay in
+      `apps/mobile-flutter/parity/`, wired into `mise run gate` there.
 - [ ] Some response schemas use deliberate looseness (`z.unknown()` for provider
       passthrough in matches live-detail/timeline + admin run-task; `z.custom`
       for the notification-data union; `z.string()` for a few enums). Tighten if
@@ -2840,3 +2841,52 @@ majors a HIGH advisory forced: `nuxt` 4.4.7 -> 4.5.2 and `nodemailer` 8 -> 9.
       `app:templates` override in `apps/web-nuxt/nuxt.config.ts` that resolves
       the global per call. The sanctioned fix is `mockNuxtImport('$fetch', ...)`
       in each spec - worth doing if the override ever fights a Nuxt upgrade.
+## Mobile app (apps/mobile-flutter) - tech debt from the gaps review
+
+The big one, and the reason everything below is possible:
+
+- [ ] **The mobile gate measures no coverage at all**, and roughly 88% of the
+      ~10.9k hand-written Dart lines in `app/lib/` have no gate-run test
+      (`models.gen.dart` excluded). No `flutter test --coverage`, no threshold,
+      against a web side that enforces 98%. Add coverage measurement to
+      `mise run gate` first (so the number is at least visible), then a floor.
+      Wholly untested today: `api/nostragoalus_api.dart`, `state/providers.dart`,
+      `chat/{chat,dm}_providers.dart`, `chat/outbox.dart`, `chat/chat_crypto.dart`,
+      `e2ee/e2ee.dart`, `voice/voice_service.dart`, `live/live_service.dart`,
+      `deeplink/deep_links.dart`, `auth/sso.dart`, `kt/kt_providers.dart`,
+      `tool/gen_models.dart`, and ~55 of 61 `ui/` files.
+- [ ] Highest-value first tests: the `ChatOutbox` state machine (the web's
+      equivalent shipped with two review-caught bugs in exactly this logic), an
+      `i18n` key-resolution test asserting every `context.tr('...')` literal in
+      `lib/` resolves to a String in `en.json`, and the mutating API contracts
+      (method + path + body) in `nostragoalus_api.dart`.
+- [ ] `app/integration_test/` (e2ee interop + round-trip, chat identity, KT
+      verify, sign-in) runs only via the manual `mise run integration` against a
+      connected device. Nothing runs it unattended, so it rots. Either move the
+      device-independent specs into `app/test/` or accept it as a release ritual
+      and write it down.
+- [ ] The app keeps its own copies of `kt/key_transparency.dart` and
+      `e2ee/e2ee.dart`, forked from the `parity/` versions. Only the parity
+      copies are replayed against the frozen vectors, so the app's crypto can
+      drift from the TS server with a green gate. Make `parity/` a path
+      dependency of `app/pubspec.yaml` and delete the forks.
+- [ ] `app/tool/gen_models.dart` is 402 lines of bespoke schema walking, union
+      detection, structural dedup and singularisation with no test of its own,
+      opening with two `ignore_for_file` lint suppressions. Either add a golden
+      test (small fixture schema in -> expected Dart out) or evaluate
+      `swagger_parser`/`openapi_generator` and delete it.
+- [ ] Release APKs are signed with the DEBUG key
+      (`app/android/app/build.gradle.kts`) - no upload keystore, no Play
+      account. Disclosed in `PARITY.md` and the README; revisit if anything is
+      ever distributed.
+- [ ] The bundled `app/assets/i18n/*.json` mirrors inherit em-dashes from the
+      `shared/i18n-json` source (`chat.adminUpcomingDivider`,
+      `leaderboard.livePointsHint`, `league.visibilityPrivate/Public`). Fix at
+      the source, in all five locales.
+- [ ] `flutter analyze` under the newly enabled `strict-casts`/`strict-raw-types`
+      surfaces ~21 issues (mostly `strict_raw_type` on bare `Map`/`List` in
+      `kt/key_transparency.dart`, `ui/league_detail_screen.dart`,
+      `ui/league_rewards_editor_screen.dart`, `ui/match_detail_screen.dart`,
+      `ui/compare_screen.dart`). Type them properly rather than loosening the
+      analyzer back.
+- [ ] No end-to-end / UI-driving suite at all, the Playwright layer's equivalent.

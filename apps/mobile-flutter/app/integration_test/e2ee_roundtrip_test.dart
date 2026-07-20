@@ -30,14 +30,16 @@ void main() {
     // group key sealed to an identity <-> opened with its keypair
     final id = e2ee.generateIdentity(sodium);
     final wrapped = e2ee.sealGroupKey(sodium, groupKey, id.publicKey);
-    final opened = e2ee.openGroupKey(
-        sodium, wrapped, {'publicKey': id.publicKey, 'privateKey': id.privateKey});
-    expect(opened, equals(groupKey));
+    final opened = e2ee.openGroupKey(sodium, wrapped,
+        publicKey: id.publicKey, privateKey: id.privateKey);
+    expect(opened.extractBytes(), equals(groupKey.extractBytes()));
+    expect(e2ee.keyPairMatches(sodium, id.publicKey, id.privateKey), isTrue);
 
     // private key escrow <-> recovery-code unwrap
     const code = 'ABCDEF-GHIJKL-MNOPQR-STUVWX';
     final blob = e2ee.wrapPrivateKeyWithRecovery(sodium, id.privateKey, code);
-    expect(e2ee.unwrapPrivateKeyWithRecovery(sodium, blob, code), equals(id.privateKey));
+    expect(e2ee.unwrapPrivateKeyWithRecovery(sodium, blob, code).extractBytes(),
+        equals(id.privateKey.extractBytes()));
 
     // recovery code shape: url-safe base64 of 18 bytes, hyphen-grouped by 6
     final generated = e2ee.generateRecoveryCode(sodium);

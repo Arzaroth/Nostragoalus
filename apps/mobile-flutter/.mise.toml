@@ -28,22 +28,22 @@ run = "bash tool/gen_models.sh && git diff --exit-code lib/api/models.gen.dart"
 [tasks.i18n-sync]
 description = "Mirror shared/i18n-json into the app asset bundle"
 dir = "{{ config_root }}/app"
-run = "bash tool/sync_i18n.sh"
+run = "bash tool/sync_shared.sh i18n-json i18n"
 
 [tasks.i18n-check]
 description = "Fail if the bundled locales drift from shared/i18n-json"
 dir = "{{ config_root }}/app"
-run = "bash tool/sync_i18n.sh && git diff --exit-code assets/i18n"
+run = "bash tool/sync_shared.sh i18n-json i18n --check"
 
 [tasks.parity-sync]
 description = "Mirror shared/parity-json KATs into the app asset bundle"
 dir = "{{ config_root }}/app"
-run = "bash tool/sync_parity.sh"
+run = "bash tool/sync_shared.sh parity-json parity"
 
 [tasks.parity-check]
 description = "Fail if the bundled KATs drift from shared/parity-json"
 dir = "{{ config_root }}/app"
-run = "bash tool/sync_parity.sh && git diff --exit-code assets/parity"
+run = "bash tool/sync_shared.sh parity-json parity --check"
 
 [tasks.analyze]
 description = "Static analysis of the Flutter app"
@@ -57,18 +57,27 @@ run = "flutter test"
 
 # The mobile gate, run by hand the way the web gate runs via pnpm (this repo has
 # no hosted CI). Fails on a stale model/i18n/KAT mirror, an analyzer issue, a red
-# unit/widget test, or a cross-stack parity regression - e.g. the injector-only-
-# touched-shared/i18n drift that renders keys as literals on device. Steps run
+# unit/widget test, a cross-stack parity regression - e.g. the injector-only-
+# touched-shared/i18n drift that renders keys as literals on device - or a broken
+# Android build (manifest merger, minSdk/NDK, plugin registration). Steps run
 # SEQUENTIALLY (a `depends` fan-out races `flutter analyze` against `flutter
 # test` and the test harness dies with "Cannot close sink while adding stream").
 [tasks.gate]
-description = "Mobile gate: stale-checks + analyze + app tests + cross-stack parity"
+description = "Mobile gate: stale-checks + analyze + app tests + cross-stack parity + debug APK. Needs a system libsodium (the e2ee interop KATs dlopen it) and an Android SDK."
 dir = "{{ config_root }}"
 run = [
   "cd app && bash tool/gen_models.sh && git diff --exit-code lib/api/models.gen.dart",
-  "cd app && bash tool/sync_i18n.sh && git diff --exit-code assets/i18n",
-  "cd app && bash tool/sync_parity.sh && git diff --exit-code assets/parity",
+  "cd app && bash tool/sync_shared.sh i18n-json i18n --check",
+  "cd app && bash tool/sync_shared.sh parity-json parity --check",
   "cd app && flutter analyze",
   "cd app && flutter test",
   "cd parity && dart test",
+  "cd app && flutter build apk --debug",
 ]
+
+# Not in the gate: needs a connected device/emulator. These are the only on-device
+# proof of the e2ee round-trip, chat identity, KT verify and sign-in.
+[tasks.integration]
+description = "On-device integration tests (needs a connected device/emulator: flutter devices)"
+dir = "{{ config_root }}/app"
+run = "flutter test integration_test"

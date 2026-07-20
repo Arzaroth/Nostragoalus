@@ -1,9 +1,11 @@
 # Cross-stack contract & logic parity
 
-Two build-time disciplines that let a non-TS client (a planned Flutter/Dart
-mobile app) stay bit-for-bit consistent with the server without sharing code.
-Both are pure wins on their own - they harden the web app today - and neither is
-lost if the mobile app never ships. Back to the map: [../BRAIN.md](../BRAIN.md).
+Two build-time disciplines that let a non-TS client stay bit-for-bit consistent
+with the server without sharing code. That client now exists: the Flutter
+[mobile app](../features/mobile-app.md), which generates its Dart models from the
+OpenAPI snapshot and replays the golden vectors in its own gate. Both disciplines
+are pure wins on their own and harden the web app regardless. Back to the map:
+[../BRAIN.md](../BRAIN.md).
 
 ## Why
 
