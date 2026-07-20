@@ -1,7 +1,8 @@
 // Dart port of computeGroupStandings + its tiebreak ladder from
 // server/utils/stats/standings.ts (with CLASSIC from tiebreakers.ts). Operates on
-// JSON-shaped maps. Team names in play are ASCII, so String.compareTo matches the
-// TS localeCompare; every tie path terminates in that name sort, so Dart's
+// JSON-shaped maps. The terminal name tie-break is a code-unit compare on BOTH
+// stacks (the TS side dropped localeCompare for `<`/`>` so no locale data is
+// needed here); every tie path terminates in that total name sort, so Dart's
 // unstable List.sort cannot change the final order.
 
 const classic = ['points', 'gd', 'gf'];

@@ -13,6 +13,12 @@ const NO_BONUS: ScoringRules = { ...DEFAULT_RULES, bonusSource: 'NONE' }
 const CROWD_EXACT: ScoringRules = { ...DEFAULT_RULES, bonusSource: 'CROWD', crowdMatchBasis: 'EXACT', crowdMinDenominator: 1 }
 const CROWD_OUTCOME: ScoringRules = { ...CROWD_EXACT, crowdMatchBasis: 'OUTCOME' }
 const ODDS: ScoringRules = { ...DEFAULT_RULES, bonusSource: 'ODDS' }
+const ODDS_EXACT: ScoringRules = { ...ODDS, oddsAppliesTo: 'EXACT' }
+// The joker scales the base points only, and by a fractional multiplier - the
+// total then needs rounding, which is where two stacks can drift.
+const JOKER_BASE_ONLY: ScoringRules = { ...CROWD_EXACT, jokerAppliesToBonus: false, jokerMultiplier: 1.5 }
+const CROWD_NO_OUTCOME_TIERS: ScoringRules = { ...CROWD_EXACT, crowdOutcomeTiers: null }
+const CROWD_EMPTY_OUTCOME_TIERS: ScoringRules = { ...CROWD_EXACT, crowdOutcomeTiers: [] }
 
 function preds(...rows: [string, number, number, boolean?][]): PredictionInput[] {
   return rows.map(([id, home, away, isJoker = false]) => ({ id, home, away, isJoker }))
@@ -42,5 +48,16 @@ export async function buildCases(): Promise<RawCase[]> {
     { fn: 'buildHistogram', args: [actual, crowd] },
     { fn: 'computeBonus', args: [{ home: 2, away: 1 }, actual, CROWD_EXACT, hist, null] },
     { fn: 'scoreSyntheticPrediction', args: [{ actual, rules: CROWD_EXACT, predictions: crowd }, { id: 'bot', home: 2, away: 1, isJoker: false }] },
+    // joker scales the base only, by a fractional multiplier (rounding path)
+    { fn: 'scorePredictions', args: [{ actual, rules: JOKER_BASE_ONLY, predictions: preds(['j', 2, 1, true], ['d', 3, 2, true], ['m', 0, 3, true], ['plain', 2, 1]) }] },
+    // odds bonus paid on the EXACT score rather than the outcome
+    { fn: 'scorePredictions', args: [{ actual, rules: ODDS_EXACT, predictions: preds(['exact', 2, 1], ['outcome', 3, 1]), actualOutcomeOdds: 6.5 }] },
+    // no odds passed at all, and an empty odds-tier list
+    { fn: 'scorePredictions', args: [{ actual, rules: ODDS, predictions: preds(['a', 2, 1]) }] },
+    { fn: 'scorePredictions', args: [{ actual, rules: { ...ODDS, oddsTiers: [] }, predictions: preds(['a', 2, 1]), actualOutcomeOdds: 9 }] },
+    // the result-rarity layer switched off, both ways
+    { fn: 'scorePredictions', args: [{ actual, rules: CROWD_NO_OUTCOME_TIERS, predictions: crowd }] },
+    { fn: 'scorePredictions', args: [{ actual, rules: CROWD_EMPTY_OUTCOME_TIERS, predictions: crowd }] },
+    { fn: 'computeBonus', args: [{ home: 2, away: 1 }, actual, CROWD_NO_OUTCOME_TIERS, hist, null] },
   ]
 }

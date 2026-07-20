@@ -1,0 +1,203 @@
+{
+  "module": "key-transparency",
+  "cases": [
+    {
+      "fn": "computeKtEntryHash",
+      "args": [
+        {
+          "seq": 0,
+          "prevHash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "userId": "u1",
+          "publicKey": "pk-A",
+          "createdAt": "2026-06-19T10:00:00.000Z"
+        }
+      ],
+      "expected": "8254c7590238158722e6aaa57b9cd7451e90da4b7f631606d9eb8ebaae300ea4"
+    },
+    {
+      "fn": "verifyKtChain",
+      "args": [
+        []
+      ],
+      "expected": {
+        "ok": true,
+        "count": 0,
+        "head": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    },
+    {
+      "fn": "verifyKtChain",
+      "args": [
+        [
+          {
+            "seq": 0,
+            "prevHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "userId": "u1",
+            "publicKey": "pk-A",
+            "createdAt": "2026-06-19T10:00:00.000Z",
+            "entryHash": "8254c7590238158722e6aaa57b9cd7451e90da4b7f631606d9eb8ebaae300ea4"
+          },
+          {
+            "seq": 1,
+            "prevHash": "8254c7590238158722e6aaa57b9cd7451e90da4b7f631606d9eb8ebaae300ea4",
+            "userId": "u2",
+            "publicKey": "pk-B",
+            "createdAt": "2026-06-19T11:00:00.000Z",
+            "entryHash": "18f878df109bfc8c6ebfb6ea8d71865d6b95bbce999cff848c77226193797966"
+          }
+        ]
+      ],
+      "expected": {
+        "ok": true,
+        "count": 2,
+        "head": "18f878df109bfc8c6ebfb6ea8d71865d6b95bbce999cff848c77226193797966"
+      }
+    },
+    {
+      "fn": "verifyKtChain",
+      "args": [
+        [
+          {
+            "seq": 1,
+            "prevHash": "8254c7590238158722e6aaa57b9cd7451e90da4b7f631606d9eb8ebaae300ea4",
+            "userId": "u2",
+            "publicKey": "pk-B",
+            "createdAt": "2026-06-19T11:00:00.000Z",
+            "entryHash": "18f878df109bfc8c6ebfb6ea8d71865d6b95bbce999cff848c77226193797966"
+          }
+        ]
+      ],
+      "expected": {
+        "ok": false,
+        "count": 0,
+        "head": "0000000000000000000000000000000000000000000000000000000000000000",
+        "failure": "sequence"
+      }
+    },
+    {
+      "fn": "verifyKtChain",
+      "args": [
+        [
+          {
+            "seq": 0,
+            "prevHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "userId": "u1",
+            "publicKey": "pk-A",
+            "createdAt": "2026-06-19T10:00:00.000Z",
+            "entryHash": "8254c7590238158722e6aaa57b9cd7451e90da4b7f631606d9eb8ebaae300ea4"
+          },
+          {
+            "seq": 1,
+            "prevHash": "wrong",
+            "userId": "u2",
+            "publicKey": "pk-B",
+            "createdAt": "2026-06-19T11:00:00.000Z",
+            "entryHash": "18f878df109bfc8c6ebfb6ea8d71865d6b95bbce999cff848c77226193797966"
+          }
+        ]
+      ],
+      "expected": {
+        "ok": false,
+        "count": 1,
+        "head": "8254c7590238158722e6aaa57b9cd7451e90da4b7f631606d9eb8ebaae300ea4",
+        "failure": "link"
+      }
+    },
+    {
+      "fn": "verifyKtChain",
+      "args": [
+        [
+          {
+            "seq": 0,
+            "prevHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "userId": "u1",
+            "publicKey": "pk-A",
+            "createdAt": "2026-06-19T10:00:00.000Z",
+            "entryHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+          }
+        ]
+      ],
+      "expected": {
+        "ok": false,
+        "count": 0,
+        "head": "0000000000000000000000000000000000000000000000000000000000000000",
+        "failure": "entry-hash"
+      }
+    },
+    {
+      "fn": "loggedKeyFor",
+      "args": [
+        [
+          {
+            "seq": 0,
+            "prevHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "userId": "u1",
+            "publicKey": "pk-A",
+            "createdAt": "2026-06-19T10:00:00.000Z",
+            "entryHash": "8254c7590238158722e6aaa57b9cd7451e90da4b7f631606d9eb8ebaae300ea4"
+          },
+          {
+            "seq": 1,
+            "prevHash": "8254c7590238158722e6aaa57b9cd7451e90da4b7f631606d9eb8ebaae300ea4",
+            "userId": "u2",
+            "publicKey": "pk-B",
+            "createdAt": "2026-06-19T11:00:00.000Z",
+            "entryHash": "18f878df109bfc8c6ebfb6ea8d71865d6b95bbce999cff848c77226193797966"
+          }
+        ],
+        "u1"
+      ],
+      "expected": "pk-A"
+    },
+    {
+      "fn": "loggedKeyFor",
+      "args": [
+        [
+          {
+            "seq": 0,
+            "prevHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "userId": "u1",
+            "publicKey": "pk-A",
+            "createdAt": "2026-06-19T10:00:00.000Z",
+            "entryHash": "8254c7590238158722e6aaa57b9cd7451e90da4b7f631606d9eb8ebaae300ea4"
+          },
+          {
+            "seq": 1,
+            "prevHash": "8254c7590238158722e6aaa57b9cd7451e90da4b7f631606d9eb8ebaae300ea4",
+            "userId": "u1",
+            "publicKey": "pk-A2",
+            "createdAt": "2026-06-19T11:00:00.000Z",
+            "entryHash": "1cba8c1907d7c91bc02c1ea3cc42daf4c321454f3cbf38d4f48964fb834d0079"
+          }
+        ],
+        "u1"
+      ],
+      "expected": "pk-A2"
+    },
+    {
+      "fn": "loggedKeyFor",
+      "args": [
+        [
+          {
+            "seq": 0,
+            "prevHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "userId": "u1",
+            "publicKey": "pk-A",
+            "createdAt": "2026-06-19T10:00:00.000Z",
+            "entryHash": "8254c7590238158722e6aaa57b9cd7451e90da4b7f631606d9eb8ebaae300ea4"
+          },
+          {
+            "seq": 1,
+            "prevHash": "8254c7590238158722e6aaa57b9cd7451e90da4b7f631606d9eb8ebaae300ea4",
+            "userId": "u2",
+            "publicKey": "pk-B",
+            "createdAt": "2026-06-19T11:00:00.000Z",
+            "entryHash": "18f878df109bfc8c6ebfb6ea8d71865d6b95bbce999cff848c77226193797966"
+          }
+        ],
+        "nobody"
+      ],
+      "expected": null
+    }
+  ]
+}

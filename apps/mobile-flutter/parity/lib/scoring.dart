@@ -113,6 +113,9 @@ Map<String, dynamic> _scoreOne(Map input, Map hist, Map p) {
   final multiplier = (p['isJoker'] == true || input['forceJoker'] == true) ? rules['jokerMultiplier'] as num : 1;
   final scalable = rules['jokerAppliesToBonus'] == true ? basePoints + bonus : basePoints;
   final fixed = rules['jokerAppliesToBonus'] == true ? 0 : bonus;
+  // .round() is half-away-from-zero, JS Math.round is half-up; they only differ
+  // on a negative .5, which scoring/schema.ts:22-28 rules out (base points min 0,
+  // jokerMultiplier min 1).
   final totalPoints = (scalable * multiplier + fixed).round();
 
   return {

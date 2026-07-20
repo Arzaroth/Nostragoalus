@@ -46,9 +46,17 @@ num _realPoints(Map m, Map rules, Map at) {
 
 Map<String, dynamic>? _replayMatch(Map m, Map rules) {
   final goals = (m['goals'] as List).cast<Map>();
-  final ordered = goals.map((g) => {'g': g, 'order': minuteValue(g['minute'] as String?)}).toList();
+  final ordered = [
+    for (var i = 0; i < goals.length; i++)
+      {'g': goals[i], 'order': minuteValue(goals[i]['minute'] as String?), 'i': i},
+  ];
   if (ordered.any((o) => (o['order'] as num) >= _unknownMinute)) return null;
-  ordered.sort((a, b) => (a['order'] as num).compareTo(b['order'] as num));
+  // TS sorts with the stable Array.prototype.sort; Dart's List.sort is not
+  // stable, so feed order is carried explicitly as the terminal tie-break.
+  ordered.sort((a, b) {
+    final byOrder = (a['order'] as num).compareTo(b['order'] as num);
+    return byOrder != 0 ? byOrder : (a['i'] as int).compareTo(b['i'] as int);
+  });
   final sorted = ordered.map((o) => o['g'] as Map).toList();
 
   var home = 0, away = 0;
@@ -93,7 +101,7 @@ Map<String, dynamic>? _replayMatch(Map m, Map rules) {
 
 Map<String, dynamic> computeFergie(List matches, Map rules) {
   final result = _emptyFergie();
-  final breakdown = result['breakdown'] as List;
+  final breakdown = <Map<String, dynamic>>[];
   for (final m in matches.cast<Map>()) {
     final replay = _replayMatch(m, rules);
     if (replay == null) continue;
@@ -109,14 +117,19 @@ Map<String, dynamic> computeFergie(List matches, Map rules) {
     final bl = result['biggestLoss'] as Map?;
     if (lost > 0 && (bl == null || lost > (bl['lost'] as num))) result['biggestLoss'] = replay;
 
-    if (gained > 0 || lost > 0) breakdown.add(replay);
+    if (gained > 0 || lost > 0) breakdown.add({'r': replay, 'i': breakdown.length});
   }
   result['netPoints'] = (result['pointsWon'] as num) - (result['pointsLost'] as num);
-  breakdown.sort((a, b) {
+  // Same stability gap as the goal replay: TS keeps insertion order for entries
+  // level on both keys, so the push index is the terminal tie-break here too.
+  breakdown.sort((ea, eb) {
+    final a = ea['r'] as Map, b = eb['r'] as Map;
     final byMove = ((b['gained'] as num) + (b['lost'] as num)) - ((a['gained'] as num) + (a['lost'] as num));
     if (byMove != 0) return byMove > 0 ? 1 : -1;
     final byLost = (b['lost'] as num) - (a['lost'] as num);
-    return byLost == 0 ? 0 : (byLost > 0 ? 1 : -1);
+    if (byLost != 0) return byLost > 0 ? 1 : -1;
+    return (ea['i'] as int).compareTo(eb['i'] as int);
   });
+  result['breakdown'] = breakdown.map((e) => e['r']).toList();
   return result;
 }

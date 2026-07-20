@@ -4,11 +4,6 @@ import 'package:nostragoalus_parity/dispatch.dart';
 import 'package:nostragoalus_parity/harness.dart';
 import 'package:test/test.dart';
 
-// The TS side owns the vectors (shared/parity-json/*.json); read them in place
-// so the two stacks can never diverge on the file. `dart test` runs with the
-// package root as CWD, so this is repo-root/shared/parity-json.
-const vectorsDir = '../../../shared/parity-json';
-
 void main() {
   final files = Directory(vectorsDir)
       .listSync()

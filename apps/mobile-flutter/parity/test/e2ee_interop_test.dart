@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:nostragoalus_parity/e2ee.dart' as e2ee;
+import 'package:nostragoalus_parity/harness.dart';
 import 'package:sodium/sodium_sumo.dart';
 import 'package:test/test.dart';
 
@@ -30,7 +31,7 @@ DynamicLibrary _loadLibsodium() {
   throw StateError('libsodium not found - install it (see the header comment)');
 }
 
-const _vectorsPath = '../../../shared/parity-json/e2ee.json';
+const _vectorsPath = '$vectorsDir/e2ee.json';
 
 // The harness $b64 tag is STANDARD base64 (padded) - it mirrors the TS side's
 // `Buffer.from(x, 'base64')` / `Buffer.from(x).toString('base64')` in
@@ -74,8 +75,13 @@ void main() async {
       final c = cases[i] as Map<String, dynamic>;
       test('${c['fn']} #$i', () {
         final actual = dispatch(c['fn'] as String, c['args'] as List);
-        // Compare structurally via canonical JSON (bytes are {$b64}-tagged).
-        expect(jsonEncode(actual), equals(jsonEncode(c['expected'])));
+        expect(
+          deepEquals(actual, c['expected']),
+          isTrue,
+          reason: '${c['fn']}(${jsonEncode(c['args'])})\n'
+              '  expected: ${jsonEncode(c['expected'])}\n'
+              '  actual:   ${jsonEncode(actual)}',
+        );
       });
     }
   });

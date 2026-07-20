@@ -113,7 +113,10 @@ function rankTied(
 ): StandingRow[] {
   const applyFrom = (group: StandingRow[], idx: number): StandingRow[] => {
     if (group.length <= 1) return group
-    if (idx >= criteria.length) return [...group].sort((a, b) => a.name.localeCompare(b.name))
+    // Plain code-point compare, NOT localeCompare: the cross-stack parity port
+    // (apps/mobile-flutter) has to reproduce this exact order without shipping
+    // ICU locale data, and feed names include "Turkiye"/"Cote d'Ivoire".
+    if (idx >= criteria.length) return [...group].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
 
     if (isH2H(criteria[idx])) {
       let end = idx

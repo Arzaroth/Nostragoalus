@@ -6,6 +6,10 @@ import 'dart:io';
 // Structural deep-equality on decoded JSON, so map key order is irrelevant and
 // an int that reads back as a double still matches.
 
+// The TS side owns the vectors; read them in place so the two stacks can never
+// diverge on the file. `dart test` runs with the package root as CWD.
+const vectorsDir = '../../../shared/parity-json';
+
 class VectorFile {
   VectorFile(this.module, this.cases);
   final String module;
