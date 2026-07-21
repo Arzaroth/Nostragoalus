@@ -183,11 +183,15 @@ with the data caveat noted per area.
   runs it - a release ritual, written down in README.md. The device-independent
   half moved into the gate as `app/test/e2ee/roundtrip_test.dart` (system
   libsodium, headless).
-- [~] End-to-end / UI-driving - `integration_test/main_path_test.dart`
+- [x] End-to-end / UI-driving - `integration_test/main_path_test.dart`
   (`mise run e2e`) drives the real UI through sign in -> fixtures -> save a
-  prediction -> reopen and see it persisted from the server. It is the mobile
-  answer to the web's Playwright layer, but one spec on the main path, and it
-  needs an emulator plus a seeded live server, so it never runs unattended.
+  prediction -> reopen and see it persisted from the server. RUN AND GREEN on an
+  x86_64 emulator against the isolated `e2e-up` stack, reproducible from a clean
+  teardown via `e2e-up` + `e2e-seed`. It is the mobile answer to the web's
+  Playwright layer, but one spec on the main path, and it needs an emulator plus
+  a seeded live server, so it stays out of the unattended gate. It earned its
+  keep immediately: it caught the per-league save route 400ing in NORMAL
+  leagues, and a ref-after-dispose in the home shell.
 - [!] Signed release build + Play internal (needs an upload keystore + a Play
   account). Until then `android/app/build.gradle.kts` signs release with the
   DEBUG key - never hand that APK to anyone as "the release build".

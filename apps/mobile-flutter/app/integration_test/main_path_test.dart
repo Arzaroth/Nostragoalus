@@ -35,6 +35,24 @@ void main() {
     expect(f, findsWidgets, reason: 'timed out waiting for $what');
   }
 
+  /// A brand-new account gets the onboarding tour as a barrier-dismissible-false
+  /// modal, which absorbs every pointer until it is closed. The web e2e skips it
+  /// the same way. Polls first because it opens once the auth read resolves,
+  /// which can land after the home shell is already on screen.
+  Future<void> skipOnboardingTour(WidgetTester tester) async {
+    final dialog = find.byType(Dialog);
+    for (var i = 0; i < 20 && dialog.evaluate().isEmpty; i++) {
+      await tester.pump(const Duration(milliseconds: 500));
+    }
+    if (dialog.evaluate().isEmpty) return;
+    await tester.tap(
+        find.descendant(of: dialog, matching: find.byType(TextButton)).first);
+    for (var i = 0; i < 40 && dialog.evaluate().isNotEmpty; i++) {
+      await tester.pump(const Duration(milliseconds: 500));
+    }
+    expect(dialog, findsNothing, reason: 'the onboarding tour never closed');
+  }
+
   /// The editor's first numeric Text is the home stepper's value (the ones
   /// before it are the section title, the league name and the team label).
   int homeGoals(WidgetTester tester) {
@@ -60,6 +78,7 @@ void main() {
     await tester.enterText(fields.at(1), password);
     await tester.tap(find.byType(FilledButton));
     await waitFor(tester, find.byType(HomeShell), 'the home shell');
+    await skipOnboardingTour(tester);
 
     // 2. the fixtures list, and an unlocked match to pick on (the schedule icon
     // is the tile's not-locked marker)
@@ -75,7 +94,15 @@ void main() {
     await tester.tap(steppers.first);
     await tester.pump();
     await tester.tap(find.byIcon(Icons.save));
+    // Assert the SUCCESS toast, not merely that a SnackBar appeared: the failure
+    // path snackbars too, so "any SnackBar" let a rejected save read as a pass
+    // (it did - the per-league route 400s in a NORMAL league).
     await waitFor(tester, find.byType(SnackBar), 'the save confirmation');
+    expect(
+      find.descendant(of: find.byType(SnackBar), matching: find.text('Prediction saved')),
+      findsOneWidget,
+      reason: 'the save was rejected; the snackbar carries the server reason',
+    );
 
     // 4. leave the match and reopen it: the value must come back from the server
     await tester.pageBack();

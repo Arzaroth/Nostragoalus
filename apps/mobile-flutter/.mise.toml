@@ -96,7 +96,22 @@ description = "On-device integration tests (needs a connected device/emulator: f
 dir = "{{ config_root }}/app"
 run = "flutter test integration_test"
 
+[tasks.e2e-seed]
+description = "Seed the isolated e2e stack (mise run e2e-up, from the repo root) with the probe account, fixture and league the mobile e2e needs"
+dir = "{{ config_root }}/../.."
+run = "bash apps/mobile-flutter/app/tool/seed_e2e.sh"
+
+# Needs a device/emulator AND a seeded server. The full ritual, from the repo root:
+#   mise run e2e-up                        # isolated stack, app on :3100
+#   mise -C apps/mobile-flutter run e2e-seed
+#   mise -C apps/mobile-flutter run e2e
+# API_BASE points at 10.0.2.2, the emulator's alias for the host loopback.
 [tasks.e2e]
-description = "The main-path UI end-to-end spec on a device/emulator against a live server (see README.md for the required --dart-defines)"
+description = "The main-path UI end-to-end spec on a device/emulator against a live, seeded server (run e2e-up + e2e-seed first)"
 dir = "{{ config_root }}/app"
-run = "flutter test integration_test/main_path_test.dart"
+run = """
+flutter test integration_test/main_path_test.dart \
+  --dart-define=API_BASE=${NG_E2E_API_BASE:-http://10.0.2.2:3100} \
+  --dart-define=PROBE_EMAIL=${PROBE_EMAIL:-probe@example.com} \
+  --dart-define=PROBE_PASSWORD=${PROBE_PASSWORD:-Probe-Password123!}
+"""

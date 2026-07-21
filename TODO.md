@@ -2900,11 +2900,13 @@ The big one, and the reason everything below is possible:
       `ui/league_rewards_editor_screen.dart`, `ui/match_detail_screen.dart`,
       `ui/compare_screen.dart`). Type them properly rather than loosening the
       analyzer back.
-- [~] An end-to-end spec now exists (`integration_test/main_path_test.dart`,
-      `mise run e2e`: sign in, fixtures, save a prediction, reopen and assert it
-      came back from the server). It compiles and analyzes clean but has NEVER
-      EXECUTED: this environment has no running server and no probe account. It
-      is runnable on demand, not a passing suite. Run it before trusting it.
+- [x] The end-to-end spec (`integration_test/main_path_test.dart`, `mise run
+      e2e`) is RUN AND GREEN on an x86_64 emulator against the isolated
+      `mise run e2e-up` stack, reproducible from a clean teardown via
+      `e2e-up` + the new idempotent `e2e-seed`. It stays out of the unattended
+      gate (needs a device and a live server). It paid for itself on first run:
+      it caught per-league prediction saves 400ing in NORMAL leagues, and a
+      ref-after-dispose crash in the home shell.
 
 Closed in the deferral pass, kept for the record:
 

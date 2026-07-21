@@ -115,17 +115,21 @@ Playwright layer: it drives the real UI through sign in -> the fixtures list ->
 bump a score and save -> leave the match, reopen it and see the pick come back
 **from the server**. Deliberately one spec on the main path, not a suite.
 
-It cannot run unattended: it needs an emulator and a live server, so it is a
-by-hand step. This is the ritual:
+It cannot run unattended: it needs an emulator and a live, seeded server, so it
+is a by-hand step. VERIFIED GREEN with this ritual, from the repo root:
 
 ```
-mise run dev                                    # repo root: the local web stack
-flutter emulators --launch duogo_test           # or any x86_64 AVD
-mise run e2e -- -d emulator-5554 \
-  --dart-define=API_BASE=http://10.0.2.2:3001 \
-  --dart-define=PROBE_EMAIL=probe@example.com \
-  --dart-define=PROBE_PASSWORD='Probe-Password123!'
+mise run e2e-up                             # isolated, disposable stack on :3100
+mise -C apps/mobile-flutter run e2e-seed    # probe account + fixture + league
+flutter emulators --launch duogo_test       # or any running x86_64 AVD
+mise -C apps/mobile-flutter run e2e
+mise run e2e-down                           # drops the stack and its volume
 ```
+
+`e2e-up` is the same disposable stack the web Playwright suite uses: its own DB,
+never the dev one. `e2e-seed` is idempotent, so re-running it between attempts
+is safe. The dart-defines default to the stack above; override `NG_E2E_API_BASE`,
+`PROBE_EMAIL` or `PROBE_PASSWORD` to point somewhere else.
 
 `10.0.2.2` is the host as seen from inside the Android emulator. The probe
 account must be a member of at least one league in the default competition, or
