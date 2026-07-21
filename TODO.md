@@ -2845,9 +2845,13 @@ majors a HIGH advisory forced: `nuxt` 4.4.7 -> 4.5.2 and `nodemailer` 8 -> 9.
 
 The big one, and the reason everything below is possible:
 
-- [x] ~~The mobile gate measures no coverage at all.~~ Now measured and floored
-      at 60% (`app/tool/coverage_check.sh`, 65.75% today). Raising the floor
-      toward the web's 98% is the remaining work. The fix pass took the
+- [x] ~~The mobile gate measures no coverage at all.~~ Measured and enforced at
+      the web's own bar: 98% over the same scoping (generated models, `lib/ui/**`
+      as the pages analogue, and the entrypoint excluded), 98.34% today, 674
+      tests. What is left uncovered is platform-bound and unreachable headless
+      (the IOWebSocketChannel wrapper, FlutterWebAuth2, getUserMedia, the
+      rootBundle read), and is named in `app/tool/coverage_check.sh`.
+      Historical note: the fix pass took the
       suite from 33 cases to 267 (plus 128 parity cases) and every subsystem
       below now has some coverage, but there is still no `flutter test
       --coverage` and no threshold, against a web side that enforces 98%. Add
