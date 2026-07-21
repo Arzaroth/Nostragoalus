@@ -46,6 +46,7 @@ use the indexes.
 | [testing.md](architecture/testing.md) | The 98% gate, vitest projects, pglite, factories, and the out-of-band Playwright e2e harness. |
 | [i18n.md](architecture/i18n.md) | Five locales (en/fr/th/tlh/ar), the all-locales rule. |
 | [rtl.md](architecture/rtl.md) | Right-to-left: dynamic `<html dir>`, logical CSS, the mirrored bracket, icon flipping (Arabic). |
+| [runtime.md](architecture/runtime.md) | The deployed containers, the Bun target, the memory cap and why it exists, heap diagnosis. |
 
 ## Features (the what) - [features/index.md](features/index.md)
 

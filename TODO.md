@@ -2645,19 +2645,35 @@ Open:
       `mem_limit: 2g` on the `app` service (`apps/web-nuxt/compose.yaml`): the
       cgroup OOM-kills and the restart policy brings it back in ~10 s. The leak
       itself is unfound.
-- [ ] Finding it needs a heap snapshot from a process that has already grown -
-      the evidence dies with every restart. Bun exposes
-      `generateHeapSnapshot()` from `bun:jsc`; an admin-only route (or a
-      `mise` task shelling into the container) that dumps one would make the
-      next occurrence diagnosable instead of a second guess.
-- [ ] Suspects reviewed and cleared by reading: the module-level
+- [x] Finding it needs a heap snapshot from a process that has already grown -
+      the evidence dies with every restart. Done: `GET /api/admin/heap`
+      (admin-only) returns the `process.memoryUsage()` counters, and
+      `?snapshot=1` writes a full snapshot inside the container. Documented in
+      `brain/architecture/runtime.md`.
+- [ ] Take that snapshot on the next growth and actually find the leak. The
+      window matters: elevated but under the 2g cap, because the OOM kill
+      destroys the evidence and generating a snapshot itself allocates.
+- [x] Suspects reviewed and cleared by reading: the module-level
       process-lifetime caches (`api/matches/[id]/live-detail.get.ts`,
       `api/matches/[id]/timeline.get.ts`, `api/competitions/scorers.get.ts`,
       `api/teams/[code].get.ts`) are all keyed by a match/competition/team id
       that is validated against the DB before any `cache.set`, so an unknown
       key cannot populate them and their size is bounded by the fixture list.
-      Unreviewed and still open: the long-lived live-hub state keyed by
-      connection token (`utils/live/viewers.ts` `rooms`/`viewing`/
-      `viewerIdentity`, `utils/live/voice-rooms.ts` `rooms`/`membership`,
-      `utils/live/hub.ts` `subscribers`/`presence`) - these grow per connection
-      and only shrink if every disconnect path deletes.
+      The live-hub state keyed by connection token is clean too: `viewers.ts`
+      drops empty rooms and both token maps on `removeViewer`, `hub.ts`
+      ref-counts presence and deletes at zero, and `_ws.ts` `close()` unwinds
+      presence, voice, the subscriber set and the viewer room (with a `closed`
+      flag covering the open-mid-await race).
+- [ ] Remaining unexamined suspects, in rough order of how much memory they
+      could plausibly hold: the satori/resvg share-image renderer
+      (`utils/share/`, `routes/og/`) - resvg's WASM linear memory grows and is
+      never returned to the OS, and it would show as RSS growth that a JS heap
+      snapshot cannot see; then the retained provider payloads in the
+      process-lifetime match caches (bounded by the fixture list, but each
+      full-time `detail`/`events` blob is held forever).
+- [ ] The healthcheck is decorative: Docker does not restart an unhealthy
+      container, only a dead one, which is the whole reason this outage lasted
+      hours instead of seconds. The memory cap covers the observed failure, but
+      any future non-memory wedge repeats it. A `--exit-on-unhealthy` sidecar
+      (or making the healthcheck's failure path exit the process) would close
+      that generally.

@@ -323,6 +323,70 @@
         }
       }
     },
+    "/api/admin/heap": {
+      "get": {
+        "tags": [
+          "Admin (internal)"
+        ],
+        "summary": "Process memory",
+        "description": "Current process memory counters, and with ?snapshot=1 a heap snapshot written inside the container. Internal: diagnoses the heap growth tracked in TODO.md.",
+        "responses": {
+          "200": {
+            "description": "Memory counters, plus the snapshot path when one was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "rss": {
+                      "type": "number"
+                    },
+                    "heapUsed": {
+                      "type": "number"
+                    },
+                    "heapTotal": {
+                      "type": "number"
+                    },
+                    "external": {
+                      "type": "number"
+                    },
+                    "uptimeSec": {
+                      "type": "number"
+                    },
+                    "snapshot": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "path": {
+                          "type": "string"
+                        },
+                        "bytes": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "path",
+                        "bytes"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "rss",
+                    "heapUsed",
+                    "heapTotal",
+                    "external",
+                    "uptimeSec",
+                    "snapshot"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/leagues/{id}": {
       "delete": {
         "tags": [
