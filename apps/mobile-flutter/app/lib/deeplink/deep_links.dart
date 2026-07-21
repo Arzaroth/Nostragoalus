@@ -44,14 +44,17 @@ MaterialPageRoute<dynamic>? deepLinkTarget(List<String> s, {required bool signed
 /// loading when the link arrives, and reading it early would drop every
 /// signed-in target.
 class DeepLinkController extends ConsumerStatefulWidget {
-  const DeepLinkController({super.key, required this.child});
+  const DeepLinkController({super.key, required this.child, this.links});
   final Widget child;
+
+  /// Seam for tests: the real [AppLinks] needs a platform channel.
+  final AppLinks? links;
   @override
   ConsumerState<DeepLinkController> createState() => _DeepLinkControllerState();
 }
 
 class _DeepLinkControllerState extends ConsumerState<DeepLinkController> {
-  final _appLinks = AppLinks();
+  late final _appLinks = widget.links ?? AppLinks();
   StreamSubscription<Uri>? _sub;
 
   @override

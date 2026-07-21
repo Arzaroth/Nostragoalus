@@ -13,9 +13,12 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-# 60, measured at ~63.5% the day the floor went in. Ratchet it up as the suite
-# grows; never lower it to make a red gate green.
-MIN="${1:-${COVERAGE_MIN:-60}}"
+# 98, the same bar the web gate holds its logic layers to. What is left
+# uncovered is platform-bound and not reachable from a headless test: the
+# IOWebSocketChannel wrapper in live_service, FlutterWebAuth2 in sso,
+# getUserMedia in voice_service, and the rootBundle read in i18n.
+# Ratchet it up as the suite grows; never lower it to make a red gate green.
+MIN="${1:-${COVERAGE_MIN:-98}}"
 LCOV=coverage/lcov.info
 
 if [ ! -f "$LCOV" ]; then
