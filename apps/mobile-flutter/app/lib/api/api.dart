@@ -12,6 +12,7 @@ export 'dm_api.dart';
 export 'leagues_api.dart';
 export 'matches_api.dart';
 export 'me_api.dart';
+export 'predictions_api.dart';
 export 'share_api.dart';
 export 'sso_api.dart';
 export 'voice_api.dart';

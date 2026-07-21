@@ -7,6 +7,7 @@ import 'package:nostragoalus/api/token_store.dart';
 import 'package:nostragoalus/state/app_prefs.dart';
 import 'package:nostragoalus/state/providers.dart';
 
+import '../api/build_client.dart';
 import '../api/helpers.dart';
 import '../chat/route_adapter.dart';
 
@@ -220,12 +221,51 @@ void main() {
     expect(completeness, 1);
 
     await c.read(savePredictionProvider)(
-        'l1', 'm1', const PredictionInput(home: 2, away: 1));
+        'l1', ModeValue.hardcore, 'm1', const PredictionInput(home: 2, away: 1));
     await c.read(myPredictionsProvider.future);
     await c.read(leagueCompletenessProvider.future);
 
     expect(predictions, 2, reason: 'the saved pick must show in my predictions');
     expect(completeness, 2, reason: 'the pick-nudge banner must stop nagging');
     expect(board, 0, reason: 'the board was never read, so nothing to refetch');
+  });
+
+  // A NORMAL league scores the account-wide pick. Routing it to the per-league
+  // override made every save in the default league mode fail with 400
+  // "per-league picks are only available in easy, hard and hardcore leagues".
+  test('a NORMAL league saves through the account-wide route', () async {
+    final (api, adapter) = buildApi([Reply(200, const {'id': 'p1'})]);
+    final c = ProviderContainer(overrides: [apiProvider.overrideWithValue(api)]);
+    addTearDown(c.dispose);
+
+    await c.read(savePredictionProvider)(
+        'l1', ModeValue.normal, 'm1', const PredictionInput(home: 1, away: 0));
+
+    expect(adapter.requests.single.path, '/api/predictions');
+  });
+
+  test('a moded league saves through the per-league override route', () async {
+    final (api, adapter) = buildApi([Reply(200, const {'id': 'p1'})]);
+    final c = ProviderContainer(overrides: [apiProvider.overrideWithValue(api)]);
+    addTearDown(c.dispose);
+
+    await c.read(savePredictionProvider)(
+        'l1', ModeValue.hardcore, 'm1', const PredictionInput(home: 1, away: 0));
+
+    expect(adapter.requests.single.path, '/api/leagues/l1/predictions/m1');
+  });
+
+  test('the joker follows the same split', () async {
+    final (normalApi, normalAdapter) = buildApi([Reply(200, const {'ok': true})]);
+    final n = ProviderContainer(overrides: [apiProvider.overrideWithValue(normalApi)]);
+    addTearDown(n.dispose);
+    await n.read(setJokerProvider)('l1', ModeValue.normal, 'm1', true);
+    expect(normalAdapter.requests.single.path, '/api/predictions/joker');
+
+    final (modedApi, modedAdapter) = buildApi([Reply(200, const {'ok': true})]);
+    final m = ProviderContainer(overrides: [apiProvider.overrideWithValue(modedApi)]);
+    addTearDown(m.dispose);
+    await m.read(setJokerProvider)('l1', ModeValue.easy, 'm1', true);
+    expect(modedAdapter.requests.single.path, '/api/leagues/l1/joker');
   });
 }

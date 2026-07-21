@@ -184,7 +184,7 @@ final leaderboardProvider = FutureProvider<LeaderboardResponse>((ref) =>
     ref.watch(apiProvider).leaderboard(competition: ref.watch(selectedCompetitionProvider)));
 
 final leaguesProvider =
-    FutureProvider<LeaguesResponse>((ref) => ref.watch(apiProvider).leagues());
+    FutureProvider<LeaguesResponse>((ref) => ref.watch(apiProvider).leagues(competition: ref.watch(selectedCompetitionProvider)));
 
 /// Per-league pick completeness for the nudge banner (leagues needing picks).
 final leagueCompletenessProvider =
@@ -193,12 +193,14 @@ final leagueCompletenessProvider =
         .leagueCompleteness(competition: ref.watch(selectedCompetitionProvider)));
 
 final myPredictionsProvider =
-    FutureProvider<PredictionsResponse>((ref) => ref.watch(apiProvider).myPredictions());
+    FutureProvider<PredictionsResponse>((ref) => ref.watch(apiProvider)
+        .myPredictions(competition: ref.watch(selectedCompetitionProvider)));
 
 // --- Phase 2 ---
 
 final publicLeaguesProvider =
-    FutureProvider<PublicLeaguesResponse>((ref) => ref.watch(apiProvider).publicLeagues());
+    FutureProvider<PublicLeaguesResponse>((ref) => ref.watch(apiProvider)
+        .publicLeagues(competition: ref.watch(selectedCompetitionProvider)));
 
 final notificationsProvider =
     FutureProvider<NotificationsResponse>((ref) => ref.watch(apiProvider).notifications());
@@ -210,10 +212,10 @@ final unreadCountProvider = Provider<int>((ref) => ref.watch(notificationsProvid
     ));
 
 final analyticsProvider =
-    FutureProvider<AnalyticsResponse>((ref) => ref.watch(apiProvider).analytics());
+    FutureProvider<AnalyticsResponse>((ref) => ref.watch(apiProvider).analytics(competition: ref.watch(selectedCompetitionProvider)));
 
 final wrappedProvider =
-    FutureProvider<Map<String, dynamic>>((ref) => ref.watch(apiProvider).wrapped());
+    FutureProvider<Map<String, dynamic>>((ref) => ref.watch(apiProvider).wrapped(competition: ref.watch(selectedCompetitionProvider)));
 
 final reactionsProvider = FutureProvider.autoDispose.family<ReactionsResponse, String>(
     (ref, matchId) => ref.watch(apiProvider).reactions(matchId));
@@ -281,7 +283,8 @@ final commitmentsProvider =
     FutureProvider<CommitmentsResponse>((ref) => ref.watch(apiProvider).commitments());
 
 final botPredictionsProvider =
-    FutureProvider<BotPredictionsResponse>((ref) => ref.watch(apiProvider).botPredictions());
+    FutureProvider<BotPredictionsResponse>((ref) => ref.watch(apiProvider)
+        .botPredictions(competition: ref.watch(selectedCompetitionProvider)));
 
 final pastPicksProvider = FutureProvider.autoDispose.family<PastPicksResponse, String>(
     (ref, matchId) => ref.watch(apiProvider).pastPicks(matchId));
@@ -317,9 +320,10 @@ final invitePreviewProvider = FutureProvider.autoDispose.family<Map<String, dyna
     (ref, token) => ref.watch(apiProvider).invitePreview(token));
 
 final cabinetProvider = FutureProvider.autoDispose.family<CabinetResponse, String>(
-    (ref, userId) => ref.watch(apiProvider).cabinet(userId));
+    (ref, userId) => ref.watch(apiProvider)
+        .cabinet(userId, competition: ref.watch(selectedCompetitionProvider)));
 
-final meStatsProvider = FutureProvider<MeStatsResponse>((ref) => ref.watch(apiProvider).meStats());
+final meStatsProvider = FutureProvider<MeStatsResponse>((ref) => ref.watch(apiProvider).meStats(competition: ref.watch(selectedCompetitionProvider)));
 
 final sessionsProvider = FutureProvider<List<dynamic>>((ref) => ref.watch(apiProvider).listSessions());
 
@@ -339,12 +343,23 @@ final meRewardsProvider = FutureProvider<List<MeReward>>((ref) => ref.watch(apiP
 // contract (apps/web-nuxt/app/composables/*), which is exactly how the
 // prediction save ended up refreshing two of the six reads it affects.
 
+/// A NORMAL league scores the account-wide pick, so it must be saved through
+/// `/api/predictions`. The per-league routes are an override the server rejects
+/// outside easy/hard/hardcore, which made every save in a NORMAL league (the
+/// default) fail with "per-league picks are only available in easy, hard and
+/// hardcore leagues".
+bool isModedLeague(ModeValue mode) => mode != ModeValue.normal && mode != ModeValue.unknown;
+
 /// Save (or overwrite) a prediction, then refresh the reads it affects. Mirrors
 /// `usePredictions.ts` `upsert`: predictions, matches, mode board, completeness.
 final savePredictionProvider = Provider<
-    Future<PredictionSaveResponse> Function(String, String, PredictionInput)>((ref) {
-  return (leagueId, matchId, input) async {
-    final res = await ref.read(apiProvider).savePrediction(leagueId, matchId, input);
+    Future<PredictionSaveResponse> Function(
+        String, ModeValue, String, PredictionInput)>((ref) {
+  return (leagueId, mode, matchId, input) async {
+    final api = ref.read(apiProvider);
+    final res = isModedLeague(mode)
+        ? await api.savePrediction(leagueId, matchId, input)
+        : await api.savePredictionGlobal(matchId, input);
     ref.invalidate(myPredictionsProvider);
     ref.invalidate(matchesProvider);
     ref.invalidate(matchProvider(matchId));
@@ -357,9 +372,15 @@ final savePredictionProvider = Provider<
 
 /// Flag or unflag a pick as the joker. Mirrors `usePredictions.ts` `setJoker`
 /// (predictions only), plus the match the joker sits on.
-final setJokerProvider = Provider<Future<void> Function(String, String, bool)>((ref) {
-  return (leagueId, matchId, isJoker) async {
-    await ref.read(apiProvider).setJoker(leagueId, matchId, isJoker);
+final setJokerProvider =
+    Provider<Future<void> Function(String, ModeValue, String, bool)>((ref) {
+  return (leagueId, mode, matchId, isJoker) async {
+    final api = ref.read(apiProvider);
+    if (isModedLeague(mode)) {
+      await api.setJoker(leagueId, matchId, isJoker);
+    } else {
+      await api.setJokerGlobal(matchId, isJoker);
+    }
     ref.invalidate(myPredictionsProvider);
     ref.invalidate(matchProvider(matchId));
     ref.invalidate(leagueBoardProvider(leagueId));

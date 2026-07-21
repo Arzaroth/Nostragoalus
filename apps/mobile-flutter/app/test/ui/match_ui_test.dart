@@ -346,7 +346,8 @@ void main() {
         authOverride(),
         leaguesProvider.overrideWith((ref) async => LeaguesResponse(leagues: [league()])),
         savePredictionProvider.overrideWithValue(
-          (leagueId, matchId, input) async => throw ApiException(400, 'bad', {'message': 'Too late'}),
+          (leagueId, mode, matchId, input) async =>
+              throw ApiException(400, 'bad', {'message': 'Too late'}),
         ),
       ]));
       await tester.pumpAndSettle();

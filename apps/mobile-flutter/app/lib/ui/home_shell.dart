@@ -38,6 +38,9 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   String? _ringFrom;
   Timer? _ringTimer;
   bool _endedInBackground = false;
+  // Captured in initState: riverpod rejects `ref` once the element is disposed,
+  // and the socket still has to be closed from dispose().
+  LiveService? _live;
 
   static const _screens = [
     MatchesScreen(),
@@ -51,6 +54,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   void initState() {
     super.initState();
     final live = ref.read(liveServiceProvider)..connect();
+    _live = live;
     // One hub socket for the whole app: the voice signaling multiplexes over it.
     ref.read(voiceServiceProvider).attach(live);
     _liveSub = live.frames.listen(_router.handle);
@@ -78,7 +82,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     _liveSub?.cancel();
     // The shell is only torn down on sign-out; a socket left open would stay
     // authenticated as the user who just signed out.
-    ref.read(liveServiceProvider).disconnect();
+    _live?.disconnect();
     super.dispose();
   }
 

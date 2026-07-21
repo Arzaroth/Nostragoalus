@@ -55,12 +55,13 @@ class _PredictionEditorState extends ConsumerState<PredictionEditor> {
 
   bool get _isJoker => _jokerPending ?? widget.current?.isJoker ?? false;
 
-  Future<void> _save(String leagueId) async {
+  Future<void> _save(String leagueId, ModeValue mode) async {
     setState(() => _saving = true);
     await runAction(
       context,
       () => ref.read(savePredictionProvider)(
         leagueId,
+        mode,
         widget.matchId,
         PredictionInput(home: _home, away: _away, isOutcomeOnly: _outcomeOnly),
       ),
@@ -69,7 +70,7 @@ class _PredictionEditorState extends ConsumerState<PredictionEditor> {
     if (mounted) setState(() => _saving = false);
   }
 
-  Future<void> _toggleJoker(String leagueId) async {
+  Future<void> _toggleJoker(String leagueId, ModeValue mode) async {
     if (_saving) return;
     final next = !_isJoker;
     setState(() {
@@ -77,8 +78,7 @@ class _PredictionEditorState extends ConsumerState<PredictionEditor> {
       _jokerPending = next;
     });
     final ok = await runAction(context, () async {
-      await ref.read(apiProvider).setJoker(leagueId, widget.matchId, next);
-      ref.invalidate(matchProvider(widget.matchId));
+      await ref.read(setJokerProvider)(leagueId, mode, widget.matchId, next);
       ref.invalidate(leaguesProvider);
     });
     if (!mounted) return;
@@ -182,11 +182,11 @@ class _PredictionEditorState extends ConsumerState<PredictionEditor> {
                 contentPadding: EdgeInsets.zero,
                 title: Text(context.tr('picks.joker')),
                 value: _isJoker,
-                onChanged: _saving ? null : (_) => _toggleJoker(league.id),
+                onChanged: _saving ? null : (_) => _toggleJoker(league.id, league.mode),
               ),
               const SizedBox(height: 8),
               FilledButton.icon(
-                onPressed: _saving ? null : () => _save(league.id),
+                onPressed: _saving ? null : () => _save(league.id, league.mode),
                 icon: _saving
                     ? const SizedBox(
                         height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
