@@ -5,6 +5,10 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### chIlmoHta'
+
+- rep law' Qam pagh De'wI'. qawHaq luj puS puSqu'; vaj Qatlh HochHom 'ej poH natlh, 'ach Heghbe'; vaj taghqa'be'lu'. DaH lup puS taghqa''egh.
+
 ## [4.4.4] - 2026-07-20
 
 ### chIlmoHta'
