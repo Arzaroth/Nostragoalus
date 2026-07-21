@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [4.4.5] - 2026-07-21
+
 ### Corrigé
 
 - Le site ne s'enlise plus pendant des heures. Une fuite de mémoire lente pouvait laisser le serveur répondre si lentement que chaque page expirait, sans jamais planter, donc rien ne le relançait. Il redémarre désormais tout seul en quelques secondes.
