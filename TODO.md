@@ -2634,3 +2634,30 @@ Open:
       FINAL). Dead code today - no production caller, only its own test - so
       delete it or fold it into the unified ladder rather than leave a trap for
       whoever re-adopts the api-football provider.
+
+## Prod app heap leak (2026-07-21 incident, second occurrence)
+
+- [ ] The prod app process grew from a ~350 MB steady-state RSS to 6.2 GB over
+      ~24 h, at which point JSC's GC pegged a core (7 `HeapHelper` threads at
+      ~2 h CPU each) and every request took 30 s. The container stayed `up`
+      (Docker `HEALTHCHECK` failing, streak 279), so `restart: unless-stopped`
+      never fired and the origin 502'd for hours. Mitigated only, with
+      `mem_limit: 2g` on the `app` service (`apps/web-nuxt/compose.yaml`): the
+      cgroup OOM-kills and the restart policy brings it back in ~10 s. The leak
+      itself is unfound.
+- [ ] Finding it needs a heap snapshot from a process that has already grown -
+      the evidence dies with every restart. Bun exposes
+      `generateHeapSnapshot()` from `bun:jsc`; an admin-only route (or a
+      `mise` task shelling into the container) that dumps one would make the
+      next occurrence diagnosable instead of a second guess.
+- [ ] Suspects reviewed and cleared by reading: the module-level
+      process-lifetime caches (`api/matches/[id]/live-detail.get.ts`,
+      `api/matches/[id]/timeline.get.ts`, `api/competitions/scorers.get.ts`,
+      `api/teams/[code].get.ts`) are all keyed by a match/competition/team id
+      that is validated against the DB before any `cache.set`, so an unknown
+      key cannot populate them and their size is bounded by the fixture list.
+      Unreviewed and still open: the long-lived live-hub state keyed by
+      connection token (`utils/live/viewers.ts` `rooms`/`viewing`/
+      `viewerIdentity`, `utils/live/voice-rooms.ts` `rooms`/`membership`,
+      `utils/live/hub.ts` `subscribers`/`presence`) - these grow per connection
+      and only shrink if every disconnect path deletes.

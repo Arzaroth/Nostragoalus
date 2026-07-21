@@ -133,6 +133,11 @@ services:
     # restarts (restart: unless-stopped) instead of leaving a 5 GB core behind.
     ulimits:
       core: 0
+    # Steady-state RSS is ~350 MB. A leak once grew the heap to 6 GB, where JSC's
+    # GC marking pegged a core and every request took 30 s - the container stayed
+    # "up" (unhealthy), so restart: unless-stopped never fired and the origin 502'd
+    # for hours. A cap turns that into an OOM kill plus a ~10 s restart.
+    mem_limit: 2g
     env_file:
       - path: .env
         required: false
