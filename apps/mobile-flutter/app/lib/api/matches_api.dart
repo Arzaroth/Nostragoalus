@@ -42,8 +42,9 @@ extension MatchesApi on ApiClient {
               await getJson('/api/predictions/crowd', query: competitionQuery(competition)))
           .totals;
 
-  Future<BotPredictionsResponse> botPredictions() async =>
-      BotPredictionsResponse.fromJson(await getJson('/api/bot/predictions'));
+  Future<BotPredictionsResponse> botPredictions({String? competition}) async =>
+      BotPredictionsResponse.fromJson(
+          await getJson('/api/bot/predictions', query: competitionQuery(competition)));
 
   Future<ReactionsResponse> reactions(String matchId) async =>
       ReactionsResponse.fromJson(await getJson('/api/reactions/$matchId'));

@@ -4,14 +4,15 @@ import 'models.gen.dart';
 /// The signed-in account's own view: profile and preferences, stats, trophies,
 /// rewards, notifications, analytics, and the public roadmap it can vote on.
 extension MeApi on ApiClient {
-  Future<MeStatsResponse> meStats() async =>
-      MeStatsResponse.fromJson(await getJson('/api/me/stats'));
+  Future<MeStatsResponse> meStats({String? competition}) async => MeStatsResponse.fromJson(
+      await getJson('/api/me/stats', query: competitionQuery(competition)));
 
-  Future<AnalyticsResponse> analytics() async =>
-      AnalyticsResponse.fromJson(await getJson('/api/me/analytics'));
+  Future<AnalyticsResponse> analytics({String? competition}) async => AnalyticsResponse.fromJson(
+      await getJson('/api/me/analytics', query: competitionQuery(competition)));
 
   /// Wrapped is a top-level oneOf (ready vs not-ready); returned raw.
-  Future<Map<String, dynamic>> wrapped() async => getJson('/api/me/wrapped');
+  Future<Map<String, dynamic>> wrapped({String? competition}) async =>
+      getJson('/api/me/wrapped', query: competitionQuery(competition));
 
   /// Head-to-head compare of two players (raw; nested shape read in the UI).
   Future<Map<String, dynamic>> headToHead(String a, String b, {String? competition}) async =>
@@ -24,8 +25,9 @@ extension MeApi on ApiClient {
   /// My rewards across leagues (a top-level array).
   Future<List<MeReward>> meRewards() async => parseMeRewardList(await getList('/api/me/rewards'));
 
-  Future<CabinetResponse> cabinet(String userId) async =>
-      CabinetResponse.fromJson(await getJson('/api/users/$userId/cabinet'));
+  Future<CabinetResponse> cabinet(String userId, {String? competition}) async =>
+      CabinetResponse.fromJson(
+          await getJson('/api/users/$userId/cabinet', query: competitionQuery(competition)));
 
   /// Replace the showcase (ordered, max 3 earned achievement keys) for a competition.
   Future<void> setShowcase(List<String> keys, {String? competition}) async =>

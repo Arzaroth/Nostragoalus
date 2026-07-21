@@ -4,11 +4,12 @@ import 'models.gen.dart';
 /// Leagues: membership and admin, the boards they rank, the prizes they award,
 /// and the predictions a member saves against them.
 extension LeaguesApi on ApiClient {
-  Future<LeaguesResponse> leagues() async =>
-      LeaguesResponse.fromJson(await getJson('/api/leagues'));
+  Future<LeaguesResponse> leagues({String? competition}) async =>
+      LeaguesResponse.fromJson(await getJson('/api/leagues', query: competitionQuery(competition)));
 
-  Future<PublicLeaguesResponse> publicLeagues() async =>
-      PublicLeaguesResponse.fromJson(await getJson('/api/leagues/public'));
+  Future<PublicLeaguesResponse> publicLeagues({String? competition}) async =>
+      PublicLeaguesResponse.fromJson(
+          await getJson('/api/leagues/public', query: competitionQuery(competition)));
 
   Future<LeagueDetailResponse> leagueDetail(String leagueId) async =>
       LeagueDetailResponse.fromJson(await getJson('/api/leagues/$leagueId'));
@@ -85,8 +86,9 @@ extension LeaguesApi on ApiClient {
               await getJson('/api/leagues/completeness', query: competitionQuery(competition)))
           .leagues;
 
-  Future<PredictionsResponse> myPredictions() async =>
-      PredictionsResponse.fromJson(await getJson('/api/predictions'));
+  Future<PredictionsResponse> myPredictions({String? competition}) async =>
+      PredictionsResponse.fromJson(
+          await getJson('/api/predictions', query: competitionQuery(competition)));
 
   Future<PredictionSaveResponse> savePrediction(
     String leagueId,

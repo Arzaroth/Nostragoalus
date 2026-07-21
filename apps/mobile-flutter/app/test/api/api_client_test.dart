@@ -95,4 +95,80 @@ void main() {
       throwsA(isA<ApiException>().having((e) => e.status, 'status', 503)),
     );
   });
+
+  test('ApiException prints the status and message', () {
+    expect(ApiException(404, 'nope').toString(), 'ApiException(404): nope');
+  });
+
+  test('competitionQuery is null without a competition', () {
+    expect(competitionQuery(null), isNull);
+    expect(competitionQuery('wc26'), {'competition': 'wc26'});
+  });
+
+  test('a 401 with no stored token keeps the anonymous caller as-is', () async {
+    final tokens = TokenStore(InMemoryKv());
+    var kicked = false;
+    final adapter = FakeAdapter([Reply(401, {'error': 'INVALID_CREDENTIALS'})]);
+
+    await expectLater(
+      _client(adapter, tokens, onUnauthorized: () => kicked = true)
+          .postJson('/api/auth/sign-in/email'),
+      throwsA(isA<ApiException>().having((e) => e.status, 'status', 401)),
+    );
+    expect(kicked, isFalse);
+  });
+
+  test('a set-auth-token identical to the stored one is not re-saved', () async {
+    final tokens = TokenStore(InMemoryKv());
+    await tokens.save('same');
+    final adapter = FakeAdapter([
+      Reply(200, {'ok': true}, headers: {'set-auth-token': 'same'}),
+    ]);
+
+    await _client(adapter, tokens).getJson('/api/matches');
+    expect(tokens.token, 'same');
+  });
+
+  test('putJson sends the body as a PUT', () async {
+    final tokens = TokenStore(InMemoryKv());
+    final adapter = FakeAdapter([Reply(200, {'ok': true})]);
+
+    final res =
+        await _client(adapter, tokens).putJson('/api/champion', body: {'teamCode': 'FRA'});
+
+    expect(res, {'ok': true});
+    expect(adapter.requests.single.method, 'PUT');
+    expect(adapter.requests.single.data, {'teamCode': 'FRA'});
+  });
+
+  test('deleteJson sends the body as a DELETE', () async {
+    final tokens = TokenStore(InMemoryKv());
+    final adapter = FakeAdapter([Reply(200, {'ok': true})]);
+
+    final res = await _client(adapter, tokens)
+        .deleteJson('/api/leagues/lg/invites/i1', body: {'reason': 'stale'});
+
+    expect(res, {'ok': true});
+    expect(adapter.requests.single.method, 'DELETE');
+    expect(adapter.requests.single.data, {'reason': 'stale'});
+  });
+
+  test('postJson returns the created object', () async {
+    final tokens = TokenStore(InMemoryKv());
+    final adapter = FakeAdapter([Reply(201, {'id': 'l1'})]);
+
+    expect(await _client(adapter, tokens).postJson('/api/leagues', body: {'name': 'Mine'}),
+        {'id': 'l1'});
+  });
+
+  test('getList returns the array on a 200', () async {
+    final tokens = TokenStore(InMemoryKv());
+    final adapter = FakeAdapter([
+      Reply(200, [
+        {'id': 'a'},
+      ]),
+    ]);
+
+    expect(await _client(adapter, tokens).getList('/api/me/rewards'), hasLength(1));
+  });
 }
