@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+
+- The site no longer grinds to a halt for hours. A slow memory leak could leave the server answering every page so slowly that it timed out, without ever crashing, so nothing restarted it. It now restarts itself within seconds instead.
+
 ## [4.4.4] - 2026-07-20
 
 ### Fixed
