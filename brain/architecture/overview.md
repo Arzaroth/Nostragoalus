@@ -74,6 +74,7 @@ not deep `../../../../shared/*`, or the SSR/rollup build fails on link errors.
 | External data: FIFA match data, odds, FIFA ranking | [providers.md](providers.md) |
 | Test gate, coverage, pglite, factories | [testing.md](testing.md) |
 | i18n, five locales | [i18n.md](i18n.md) |
+| Deployed containers, memory cap, heap diagnosis | [runtime.md](runtime.md) |
 
 ## Hard rules that shape the code
 
