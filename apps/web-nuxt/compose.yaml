@@ -155,9 +155,10 @@ services:
       NUXT_STORAGE_S3_ACCESS_KEY_ID: ${NUXT_STORAGE_S3_ACCESS_KEY_ID:-rustfsadmin}
       NUXT_STORAGE_S3_SECRET_ACCESS_KEY: ${NUXT_STORAGE_S3_SECRET_ACCESS_KEY:-rustfsadmin}
     # Bound to loopback: put a reverse proxy (TLS, the public BETTER_AUTH_URL host)
-    # in front. Change to '3000:3000' only if exposing the app directly.
+    # in front. Set NG_APP_PORT in .env when the host port is taken (prod uses
+    # 3333). Drop the 127.0.0.1 prefix only if exposing the app directly.
     ports:
-      - '127.0.0.1:3000:3000'
+      - '127.0.0.1:${NG_APP_PORT:-3000}:3000'
     depends_on:
       db:
         condition: service_healthy
