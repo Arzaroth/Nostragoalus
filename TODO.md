@@ -2758,10 +2758,18 @@ majors a HIGH advisory forced: `nuxt` 4.4.7 -> 4.5.2 and `nodemailer` 8 -> 9.
 - [ ] `esbuild <=0.24.2` (MODERATE, dev-server request forgery) survives only
       through `drizzle-kit` -> deprecated `@esbuild-kit/*`. Dev-only tooling, no
       prod reach; clears itself when drizzle-kit drops esbuild-kit.
-- [ ] Majors deliberately left alone, no advisory forcing them: PrimeVue 4 -> 5
-      (with `@primeuix/themes` 2 -> 3, `@primevue/nuxt-module` 4 -> 5,
-      `primeicons` 7 -> 8), TypeScript 6 -> 7, `satori` 0.26 -> 0.29. Each is a
-      migration of its own.
+- [x] `satori` 0.26 -> 0.29 done - no API change, cards verified by rendering.
+- [ ] TypeScript 6 -> 7 blocked on tooling, not on us: no `vue-tsc` release
+      supports it yet (3.3.9, published after TS 7 shipped, still resolves
+      `typescript/lib/tsc`, a subpath the native port dropped), so
+      `pnpm typecheck` dies with `ERR_PACKAGE_PATH_NOT_EXPORTED`. Retry when
+      vue-tsc / `@vue/language-tools` ships TS 7 support.
+- [ ] PrimeVue stays on 4 by decision, not by neglect - the v5 family relicensed
+      away from MIT. See `brain/decisions.md` ("Rendering / client"). What to
+      watch: `primevue@v4-stable` (4.5.5) and `primeicons@v7-stable` (7.0.0) are
+      still tagged, but `@primeuix/themes` has no v2 tag, so 2.0.3 is simply the
+      last MIT build. If v4 stops getting security fixes the answer is a
+      UI-library migration, so it wants its own planning pass.
 - [ ] Nuxt 4.5 turned `$fetch` into an auto-import backed by a build template
       that snapshots `globalThis.$fetch`, which broke all 62 component tests
       stubbing it with `vi.stubGlobal`. Worked around with a VITEST-only

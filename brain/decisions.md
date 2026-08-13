@@ -143,6 +143,16 @@ feature/architecture doc that implements it.
 - **Stylized tooltips only** (PrimeVue `v-tooltip`), never native `title=`, except
   to reveal truncated text. Tooltips are mobile-dead, so prefer always-visible
   affordances.
+- **Pinned to PrimeVue 4, deliberately (2026-08-13).** PrimeTek relicensed the
+  whole family at the next major - `primevue` 5, `@primevue/nuxt-module` 5,
+  `@primeuix/themes` 3, `primeicons` 8 all moved from MIT to a commercial
+  dual license (free Community tier under revenue/headcount/funding limits,
+  paid otherwise) and now pull `@primeui/license-manager`, an ed25519 offline
+  verifier: without a key it reports "No license key configured" and the terms
+  say the library may display a license notice. Nostragoalus is `(MIT OR WTFPL)`
+  and takes no keys, so it stays on the last MIT versions (`v4-stable` /
+  `v7-stable` dist-tags). Revisit only if v4 stops getting security fixes - the
+  exit is a UI-library swap, not an upgrade.
 
 ## Storage
 
