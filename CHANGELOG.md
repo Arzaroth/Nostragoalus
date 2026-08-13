@@ -5,6 +5,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Security
+
+- Requests to the sign-in system can no longer dodge its guards with a specially crafted web address. The trick got past the checks that keep identity-provider and user-provisioning management admin-only, and past the password confirmation required before a new passkey is added to your account.
+- A profile picture address can no longer point the server at a destination of the sender's choosing. The one identity-provider host whose pictures we re-fetch is now matched exactly, instead of being looked for anywhere inside the address.
+
 ## [4.5.0] - 2026-08-26
 
 ### Added

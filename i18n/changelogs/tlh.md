@@ -5,6 +5,11 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### Hung
+
+- **qI' Daq He ngoDHa' luDoDlu'be'**: qI'meH He ngoDHa'lu'bogh lo'lu'DI', che'wI' neH lo'laHbogh nuD-SuqwI' SeHmeH chutmey luDoDlu'pu', 'ej passkey chu' chelmeH mu'qaD 'ol poQbogh chut luDoDlu'pu' je. DaH luDoDlu'laHbe'.
+- **mIllogh He wIvbogh ngeHwI'**: mIllogh He lo'lu'chugh, ngeHwI' wIvbogh Daq SuqmeH server ra'laHbe'. wa' nuD-SuqwI' Daq'e' mIlloghmey wISuqbogh 'olta'lu'chu'; He qoDDaq nejlu'be'.
+
 ## [4.5.0] - 2026-08-26
 
 ### chelpu'

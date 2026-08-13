@@ -2700,3 +2700,46 @@ Open:
       not cover this case, because those leagues legitimately start empty. Options:
       let an admin pin the owner when creating an SSO league, or keep an
       SSO-provisioned league ownerless and admin-managed by default.
+
+## Whole-project security pass (2026-08-13, fix/auth-guard-path-normalization)
+
+Six-slice audit (auth/session/SSO, admin + API keys, chat/DM/E2EE/media, public
+token surface, leagues/predictions authz, infra + client XSS sinks), each finding
+put through an independent refutation pass. Three confirmed and fixed on the
+branch; the rest scored below the bar and are recorded here.
+
+- [x] `/api/auth/*` guards matched `event.path` while better-call routes on the
+      WHATWG-normalized pathname, so `/api/auth/x/../scim/generate-token` walked
+      past the SCIM/SSO admin-only denylist, the SSO-locked-path check, the
+      draft-provider callback gate and the passkey reauth middleware. Fixed with
+      `apps/web-nuxt/server/utils/auth/routed-path.ts`, used by both guards.
+- [x] `isUnusableAvatarUrl` substring-matched `graph.microsoft.com/`, so any
+      `user.image` carrying it in the path or query drove a server-side fetch,
+      with the user's OAuth bearer, to an attacker-chosen host. Now parses the
+      URL and requires `https:` + that exact hostname.
+- [ ] Belt-and-braces from the same finding, not done: reject a `user.image`
+      that is neither a `data:` URL nor an `/api/media/` path in the better-auth
+      update hook, so an arbitrary URL never reaches a fetch sink at all. Also
+      consider flipping the `sso_provider.status` column default from `enabled`
+      to `draft` now that the migration it grandfathered is long past.
+- [ ] The commit-reveal ledger's `subject` is an unkeyed
+      `sha256('ngc-subject-v1:' + userId)` (`apps/web-nuxt/shared/commitment.ts`),
+      and `/api/keys/log` is unauthenticated and returns raw `userId`s for every
+      chat-enabled account with no `profilePrivate` filter. Anyone can build a
+      subject -> user table offline and recover post-kickoff pick history for
+      private-profile users, whose `/api/users/:id/predictions`, cabinet,
+      head-to-head and bot views all 404. Fix is to key the subject with the
+      existing HMAC secret derivation, which is a ledger-format boundary (old
+      rows keep their subjects), so it wants its own pass.
+- [ ] Crowd totals leak individual pre-kickoff picks by differencing:
+      `MIN_CROWD_COUNT = 3` masks the standing total but never the delta, so once
+      `count >= 3` every `count + 1` transition publishes one exact scoreline,
+      pushed live per save over the WS hub. Naming the predictor needs colluding
+      co-members or league-intersection correlation, which is why it scored down,
+      but the floor's comment claims a protection it does not provide. Cheapest
+      fixes: drop or bucket `count` on the wire, or debounce the publish until
+      the count has advanced by >= 3.
+- [ ] Re-confirmed as still open, already tracked above: the link-unfurl
+      DNS-rebinding TOCTOU. The audit's redirect-bypass theory was refuted -
+      `disableRedirect: true` plus the re-entrant loop re-runs `assertPublicHost`
+      on every hop.

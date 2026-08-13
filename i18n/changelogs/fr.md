@@ -5,6 +5,11 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Sécurité
+
+- Les requêtes vers le système de connexion ne peuvent plus contourner ses garde-fous avec une adresse web spécialement conçue. L'astuce passait outre les contrôles qui réservent aux administrateurs la gestion des fournisseurs d'identité et du provisionnement des comptes, ainsi que la confirmation du mot de passe exigée avant l'ajout d'une nouvelle clé d'accès à votre compte.
+- Une adresse d'image de profil ne peut plus diriger le serveur vers une destination choisie par l'expéditeur. Le seul hôte de fournisseur d'identité dont nous récupérons les photos est désormais vérifié exactement, au lieu d'être cherché n'importe où dans l'adresse.
+
 ## [4.5.0] - 2026-08-26
 
 ### Ajouté
