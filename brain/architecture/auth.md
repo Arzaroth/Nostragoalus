@@ -5,6 +5,14 @@ Authentication and authorization run on **better-auth** 1.6.23, configured in
 mounts all better-auth routes. This file covers the local auth surface, the admin
 model, passkeys/2FA/API keys, and the runtime SSO subsystem.
 
+Every guard that decides on a `/api/auth/*` path matches
+`routedPath(event)` (`apps/web-nuxt/server/utils/auth/routed-path.ts`), never
+`event.path`. better-auth dispatches on the WHATWG-normalized pathname, which
+resolves `.`, `..` and `\`, while `event.path` keeps them verbatim - so a guard
+reading `event.path` sees a different string than the router and
+`/api/auth/x/../scim/generate-token` walks past it into an endpoint gated only by
+a session. Both the catch-all and the passkey middleware go through the helper.
+
 ## Local accounts
 
 - Email + password enabled. Local accounts are intentionally **never
@@ -149,6 +157,13 @@ for SSO league auto-join.
 - The `provisionUser` callback (`provisionUserOnEveryLogin: true`) runs on every
   login: it stores IdP avatars (see [storage.md](storage.md)) and performs SSO
   league auto-join via `sso_provider_league`.
+- The avatar step re-fetches a token-gated IdP picture server-side with the
+  user's OAuth bearer, so `isUnusableAvatarUrl`
+  (`apps/web-nuxt/server/utils/auth/avatar.ts`) is an allow-list, not a hint: it
+  parses the stored `user.image` and requires `https:` + host exactly
+  `graph.microsoft.com`. `user.image` is client-writable through better-auth's
+  update-user endpoint, so a substring match there is an SSRF that ships the
+  bearer to whatever host the string names.
 
 ### Onboarding lifecycle (draft -> test -> verify -> enable)
 
