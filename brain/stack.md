@@ -62,7 +62,7 @@ Sources of truth: `package.json`, `pnpm-workspace.yaml`, `apps/web-nuxt/nuxt.con
 
 ## Server-rendered images / providers
 
-- **satori** 0.26.0 (HTML/CSS -> SVG) + **@resvg/resvg-js** 2.6.2 (SVG -> PNG)
+- **satori** 0.29.0 (HTML/CSS -> SVG) + **@resvg/resvg-js** 2.6.2 (SVG -> PNG)
   for OG/share cards. See [features/share-images.md](features/share-images.md).
 - **web-push** 3.6.7 - VAPID web push.
 - **cycletls** 2.0.5 - uTLS (browser JA3 fingerprint) HTTP engine for providers
