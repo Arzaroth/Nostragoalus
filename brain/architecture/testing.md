@@ -60,6 +60,15 @@ that prevent order-dependent flakes:
   60s `staleTime` (see [client.md](client.md)) have both caused flakes where a
   later test reads a previous test's cached data.
 
+These specs stub the data layer with `vi.stubGlobal('$fetch', ...)`. That only
+works because of a VITEST-only `app:templates` override in
+`apps/web-nuxt/nuxt.config.ts`: since Nuxt 4.5 `$fetch` is an auto-import backed
+by a generated `fetch.mjs` that snapshots `globalThis.$fetch` at module-eval
+time, so an unpatched build binds the real ofetch before any stub runs. The
+override rewrites that template to resolve the global per call. The alternative,
+if the override ever fights an upgrade, is `mockNuxtImport('$fetch', ...)` per
+spec.
+
 ## End-to-end (Playwright)
 
 A browser e2e suite runs OUT-OF-BAND from the 98% merge gate: it needs a Docker

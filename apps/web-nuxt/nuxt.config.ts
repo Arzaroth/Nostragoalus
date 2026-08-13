@@ -43,6 +43,22 @@ export default defineNuxtConfig({
     '@unocss/nuxt',
     '@nuxtjs/i18n',
     '@vite-pwa/nuxt',
+    // Nuxt 4.5 auto-imports `$fetch` from a template that snapshots
+    // `globalThis.$fetch` at module-eval time, so a `vi.stubGlobal('$fetch')` in
+    // a component test never reaches the code under test. Under vitest, resolve
+    // the global per call instead.
+    (_options, nuxt) => {
+      if (!process.env.VITEST) return
+      nuxt.hook('app:templates', (app) => {
+        const template = app.templates.find(t => t.filename === 'fetch.mjs')
+        if (template) {
+          template.getContents = () => 'export const $fetch = new Proxy(function () {}, {\n'
+            + '  apply: (_t, _thisArg, args) => globalThis.$fetch(...args),\n'
+            + '  get: (_t, prop) => globalThis.$fetch[prop],\n'
+            + '})\n'
+        }
+      })
+    },
   ],
 
   // Surface new deploys: poll the build manifest so the update banner can

@@ -2743,3 +2743,28 @@ branch; the rest scored below the bar and are recorded here.
       DNS-rebinding TOCTOU. The audit's redirect-bypass theory was refuted -
       `disableRedirect: true` plus the re-entrant loop re-runs `assertPublicHost`
       on every hop.
+
+## Dependency updates (2026-08-13, fix/auth-guard-path-normalization)
+
+Every in-range dependency taken to latest (49 audit findings -> 2), plus the two
+majors a HIGH advisory forced: `nuxt` 4.4.7 -> 4.5.2 and `nodemailer` 8 -> 9.
+
+- [ ] `@better-auth/scim` GHSA-j8v8-g9cx-5qf4 (HIGH, account/provider takeover
+      via missing owner binding on non-org SCIM providers) is the one advisory
+      still open: our SCIM providers are non-org, so we are in the affected
+      shape, and the fix only exists in the `1.7.0` pre-releases (`1.7.0-rc.5`
+      is current; `latest` is still the vulnerable `1.6.27`). Take the whole
+      better-auth stack to `1.7.0` once it goes stable, or decide to ride the RC.
+- [ ] `esbuild <=0.24.2` (MODERATE, dev-server request forgery) survives only
+      through `drizzle-kit` -> deprecated `@esbuild-kit/*`. Dev-only tooling, no
+      prod reach; clears itself when drizzle-kit drops esbuild-kit.
+- [ ] Majors deliberately left alone, no advisory forcing them: PrimeVue 4 -> 5
+      (with `@primeuix/themes` 2 -> 3, `@primevue/nuxt-module` 4 -> 5,
+      `primeicons` 7 -> 8), TypeScript 6 -> 7, `satori` 0.26 -> 0.29. Each is a
+      migration of its own.
+- [ ] Nuxt 4.5 turned `$fetch` into an auto-import backed by a build template
+      that snapshots `globalThis.$fetch`, which broke all 62 component tests
+      stubbing it with `vi.stubGlobal`. Worked around with a VITEST-only
+      `app:templates` override in `apps/web-nuxt/nuxt.config.ts` that resolves
+      the global per call. The sanctioned fix is `mockNuxtImport('$fetch', ...)`
+      in each spec - worth doing if the override ever fights a Nuxt upgrade.
