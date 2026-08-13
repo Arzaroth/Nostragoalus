@@ -6,7 +6,7 @@ import { ValidationError } from '../errors'
 describe('isUnusableAvatarUrl', () => {
   it('flags Microsoft Graph photo URLs (need an OAuth token, 401 in a browser)', () => {
     expect(isUnusableAvatarUrl('https://graph.microsoft.com/v1.0/me/photo/$value')).toBe(true)
-    expect(isUnusableAvatarUrl('graph.microsoft.com/v1.0/me/photo/$value')).toBe(true)
+    expect(isUnusableAvatarUrl('https://GRAPH.microsoft.com/v1.0/me/photo/$value')).toBe(true)
   })
 
   it('keeps uploaded data URLs and public CDN pictures', () => {
@@ -15,6 +15,18 @@ describe('isUnusableAvatarUrl', () => {
     expect(isUnusableAvatarUrl(null)).toBe(false)
     expect(isUnusableAvatarUrl(undefined)).toBe(false)
     expect(isUnusableAvatarUrl('')).toBe(false)
+  })
+
+  it('does not flag a URL that only carries the host as a substring', () => {
+    expect(isUnusableAvatarUrl('http://169.254.169.254/latest/meta-data/?x=graph.microsoft.com/')).toBe(false)
+    expect(isUnusableAvatarUrl('http://127.0.0.1:6379/graph.microsoft.com/')).toBe(false)
+    expect(isUnusableAvatarUrl('https://evil.tld/graph.microsoft.com/photo/$value')).toBe(false)
+    expect(isUnusableAvatarUrl('https://graph.microsoft.com.evil.tld/photo/$value')).toBe(false)
+    expect(isUnusableAvatarUrl('graph.microsoft.com/v1.0/me/photo/$value')).toBe(false)
+  })
+
+  it('requires https, so the fetch never leaks the bearer over plaintext', () => {
+    expect(isUnusableAvatarUrl('http://graph.microsoft.com/v1.0/me/photo/$value')).toBe(false)
   })
 })
 

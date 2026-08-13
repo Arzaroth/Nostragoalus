@@ -8,9 +8,17 @@ import { ValidationError } from '../errors'
 // stored access token) and inline it as a data URL; if that fails it's dropped
 // so the placeholder shows. Public CDN pictures (Google lh3, etc.) and uploaded
 // data: URLs are kept untouched.
+// This is the allow-list for a server-side fetch that carries the user's OAuth
+// bearer, so it matches the parsed host - never a substring, which any URL can
+// carry in its path or query.
 export function isUnusableAvatarUrl(image: string | null | undefined): boolean {
   if (!image) return false
-  return /(^https?:\/\/)?graph\.microsoft\.com\//i.test(image)
+  try {
+    const u = new URL(image)
+    return u.protocol === 'https:' && u.hostname === 'graph.microsoft.com'
+  } catch {
+    return false
+  }
 }
 
 // A 240px thumbnail keeps the inlined data URL small; the stored claim is the
