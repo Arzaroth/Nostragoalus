@@ -5,7 +5,7 @@ import { league, leagueMember, leagueReward, match, prediction, round, user } fr
 import type { BaseTier } from '../scoring/tiers'
 import { createTestDb } from '../../../tests/db'
 import { addLeagueMember, makeLeague, makeMatch, makePrediction, makeUser, seedCompetition } from '../../../tests/factories'
-import { getMyRewards, getRewardRanking, getRewardStandings, listLeagueRewards, setLeagueRewards } from './service'
+import { getMyRewards, getRewardRanking, getRewardStandings, getRewardWinnersExport, listLeagueRewards, setLeagueRewards } from './service'
 
 let db: AppDatabase
 
@@ -314,5 +314,79 @@ describe('getRewardRanking', () => {
     await db.delete(leagueMember).where(eq(leagueMember.leagueId, leagueId))
     expect((await getRewardRanking(db, leagueId, 'OVERALL', null)).rows).toEqual([])
     await expect(getRewardRanking(db, 'nope', 'OVERALL', null)).rejects.toThrow()
+  })
+})
+
+describe('getRewardWinnersExport', () => {
+  it('exports a row per holder with their email, only for criteria carrying a prize', async () => {
+    const { leagueId, alice } = await scenario()
+    await setLeagueRewards(db, leagueId, [
+      { type: 'OVERALL', label: 'Un magnum' },
+      { type: 'MADAME_IRMA', label: 'A crystal ball' },
+    ])
+
+    const out = await getRewardWinnersExport(db, leagueId, alice)
+    expect(out.leagueName).toBe('Test League')
+    // Alice leads both; Bob (DIFF only) holds neither, and the nine criteria with
+    // no prize contribute nothing.
+    expect(out.rows).toEqual([
+      { type: 'OVERALL', prizeLabel: 'Un magnum', teamCode: null, metric: 'points', userId: alice, displayName: 'alice', email: 'alice@example.com', value: 3 },
+      { type: 'MADAME_IRMA', prizeLabel: 'A crystal ball', teamCode: null, metric: 'exact', userId: alice, displayName: 'alice', email: 'alice@example.com', value: 1 },
+    ])
+  })
+
+  it('exports every TEAM_SPECIALIST holder, top count first, with the featured team', async () => {
+    const competitionId = await seedCompetition(db)
+    const g1 = await groupRound(competitionId)
+    const alice = await makeUser(db, 'xa')
+    const bob = await makeUser(db, 'xb')
+    const leagueId = await makeLeague(db, { competitionId, ownerId: alice })
+    await db.update(league).set({ featuredTeamCode: 'FRA' }).where(eq(league.id, leagueId))
+    await addLeagueMember(db, leagueId, bob, 'MEMBER')
+    const fra1 = await makeMatch(db, { competitionId, roundId: g1, stage: 'GROUP', status: 'FINISHED', homeTeamCode: 'FRA', fullTimeHome: 1, fullTimeAway: 0, winner: 'HOME', kickoffTime: new Date('2026-06-11T12:00:00Z') })
+    const fra2 = await makeMatch(db, { competitionId, roundId: g1, stage: 'GROUP', status: 'FINISHED', homeTeamCode: 'FRA', fullTimeHome: 2, fullTimeAway: 0, winner: 'HOME', kickoffTime: new Date('2026-06-12T12:00:00Z') })
+    await scoredPred(alice, fra1, g1, 'EXACT', 3)
+    await scoredPred(alice, fra2, g1, 'EXACT', 3)
+    await scoredPred(bob, fra1, g1, 'EXACT', 3)
+    await setLeagueRewards(db, leagueId, [{ type: 'TEAM_SPECIALIST', label: 'A scarf' }])
+
+    const rows = (await getRewardWinnersExport(db, leagueId, alice)).rows.filter((r) => r.type === 'TEAM_SPECIALIST')
+    expect(rows.map((r) => [r.displayName, r.email, r.value, r.teamCode])).toEqual([
+      ['xa', 'xa@example.com', 2, 'FRA'],
+      ['xb', 'xb@example.com', 1, 'FRA'],
+    ])
+  })
+
+  it('omits a TEAM_SPECIALIST prize that has no featured team to be earned on', async () => {
+    const { leagueId, alice } = await scenario()
+    await setLeagueRewards(db, leagueId, [{ type: 'TEAM_SPECIALIST', label: 'A scarf' }])
+    expect((await getRewardWinnersExport(db, leagueId, alice)).rows).toEqual([])
+  })
+
+  it('blanks both the name and the email of an admin-hidden holder', async () => {
+    const { leagueId, alice, bob } = await scenario() // alice leads OVERALL
+    await setLeagueRewards(db, leagueId, [{ type: 'OVERALL', label: 'Un magnum' }])
+    await db.update(user).set({ hiddenFromLeaderboard: true }).where(eq(user.id, alice))
+
+    // An email identifies as well as a name, so concealment has to cover both.
+    const forBob = (await getRewardWinnersExport(db, leagueId, bob)).rows[0]
+    expect(forBob.userId).toBe(alice)
+    expect(forBob.displayName).toBe('')
+    expect(forBob.email).toBe('')
+
+    // A private profile is not concealed from a fellow member (the exporter always is one).
+    await db.update(user).set({ hiddenFromLeaderboard: false, profilePrivate: true }).where(eq(user.id, alice))
+    expect((await getRewardWinnersExport(db, leagueId, bob)).rows[0].email).toBe('alice@example.com')
+  })
+
+  it('is empty with no prizes configured or no members, and throws for an unknown league', async () => {
+    const { leagueId, alice } = await scenario()
+    expect((await getRewardWinnersExport(db, leagueId, alice)).rows).toEqual([])
+
+    await setLeagueRewards(db, leagueId, [{ type: 'OVERALL', label: 'Un magnum' }])
+    await db.delete(leagueMember).where(eq(leagueMember.leagueId, leagueId))
+    expect((await getRewardWinnersExport(db, leagueId, alice)).rows).toEqual([])
+
+    await expect(getRewardWinnersExport(db, 'nope', alice)).rejects.toThrow()
   })
 })

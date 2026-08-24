@@ -7,7 +7,14 @@ import {
   type LeagueRewardCriterion,
   rewardMetricFor,
 } from '#shared/types/rewards'
-import type { LeagueRewardDto, MyRewardDto, RewardRankingDto, RewardStandingDto } from '#shared/types/rewards'
+import type {
+  LeagueRewardDto,
+  MyRewardDto,
+  RewardRankingDto,
+  RewardStandingDto,
+  RewardWinnerExportRow,
+  RewardWinnersExportDto,
+} from '#shared/types/rewards'
 import { NotFoundError } from '../errors'
 import { computeLeagueRewardWinners, rankLeagueCriterion } from './criteria'
 
@@ -84,10 +91,21 @@ async function resolveVisibleNames(
     .where(inArray(user.id, ids))
   return new Map(
     rows.map((u) => {
-      const shown = u.id === viewerId || (!u.hidden && (!u.isPrivate || viewerIsMember))
+      const shown = isIdentityVisible(u, viewerId, viewerIsMember)
       return [u.id, { displayName: shown ? u.name : '', image: shown ? u.image : null }] as const
     }),
   )
+}
+
+// The one rule behind every reveal in this file, so the standings, the ranking and
+// the winners export can't drift: you always see yourself; an admin-hidden member
+// is concealed from everyone else; a private profile is concealed from non-members.
+function isIdentityVisible(
+  u: { id: string; hidden: boolean; isPrivate: boolean },
+  viewerId: string | null,
+  viewerIsMember: boolean,
+): boolean {
+  return u.id === viewerId || (!u.hidden && (!u.isPrivate || viewerIsMember))
 }
 
 // Every criterion for a league: each configured prize + who currently leads it
@@ -220,4 +238,82 @@ export async function getRewardRanking(
       }
     }),
   }
+}
+
+// The same visibility rule as the standings, plus the contact email the export
+// exists for. A holder the exporter isn't entitled to identify keeps their row but
+// surfaces with neither a name nor an email - an address identifies a person as
+// well as a name does, so concealment has to cover both or it isn't concealment.
+async function resolveWinnerContacts(
+  db: AppDatabase,
+  userIds: string[],
+  viewerId: string,
+  viewerIsMember: boolean,
+): Promise<Map<string, { displayName: string; email: string }>> {
+  const ids = [...new Set(userIds)]
+  if (ids.length === 0) return new Map()
+  const rows = await db
+    .select({ id: user.id, name: user.name, email: user.email, hidden: user.hiddenFromLeaderboard, isPrivate: user.profilePrivate })
+    .from(user)
+    .where(inArray(user.id, ids))
+  return new Map(
+    rows.map((u) => {
+      const shown = isIdentityVisible(u, viewerId, viewerIsMember)
+      return [u.id, { displayName: shown ? u.name : '', email: shown ? u.email : '' }] as const
+    }),
+  )
+}
+
+// The current holders of the league's configured prizes with their email, for the
+// owner/moderator CSV export (the route authorizes; see the export row type for the
+// privacy note). Only criteria carrying a prize are exported - the export exists to
+// hand a real prize over - and a prize nobody holds yet simply has no row. Holders
+// of one prize sort by value desc, so the top holder of a multi-holder
+// TEAM_SPECIALIST leads its block.
+export async function getRewardWinnersExport(
+  db: AppDatabase,
+  leagueId: string,
+  viewerId: string,
+): Promise<RewardWinnersExportDto> {
+  const [lg] = await db
+    .select({ name: league.name, competitionId: league.competitionId, featuredTeamCode: league.featuredTeamCode })
+    .from(league)
+    .where(eq(league.id, leagueId))
+    .limit(1)
+  if (!lg) throw new NotFoundError('league not found')
+
+  const rewards = new Map((await listLeagueRewards(db, leagueId)).map((r) => [r.type, r]))
+  const memberIds = (
+    await db.select({ userId: leagueMember.userId }).from(leagueMember).where(eq(leagueMember.leagueId, leagueId))
+  ).map((m) => m.userId)
+  if (rewards.size === 0 || memberIds.length === 0) return { leagueName: lg.name, rows: [] }
+
+  // computeLeagueRewardWinners already drops TEAM_SPECIALIST without a featured
+  // team, so a disabled criterion contributes no rows even if it carries a prize.
+  const winners = await computeLeagueRewardWinners(db, lg.competitionId, {
+    leagueId,
+    memberIds,
+    featuredTeamCode: lg.featuredTeamCode,
+  })
+  const contacts = await resolveWinnerContacts(db, winners.map((w) => w.userId), viewerId, memberIds.includes(viewerId))
+
+  const rows: RewardWinnerExportRow[] = []
+  for (const type of LEAGUE_REWARD_CRITERIA) {
+    const reward = rewards.get(type)
+    if (!reward) continue
+    for (const w of winners.filter((w) => w.type === type).sort((a, b) => b.value - a.value)) {
+      const contact = contacts.get(w.userId)
+      rows.push({
+        type,
+        prizeLabel: reward.label,
+        teamCode: isTeamScopedCriterion(type) ? lg.featuredTeamCode : null,
+        metric: rewardMetricFor(type),
+        userId: w.userId,
+        displayName: contact?.displayName ?? '',
+        email: contact?.email ?? '',
+        value: w.value,
+      })
+    }
+  }
+  return { leagueName: lg.name, rows }
 }

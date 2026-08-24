@@ -130,3 +130,28 @@ export interface RewardRankingDto {
   metric: RewardMetric
   rows: RewardRankingRow[]
 }
+
+// One current holder of a configured prize, for the owner/moderator winners
+// export. The email is the point of the export - a league owner needs a way to
+// hand a real prize over - so it is the one place a member's address leaves the
+// server, and only to that league's owners/moderators. displayName and email are
+// both '' for a holder the exporter is not entitled to identify (an email
+// identifies just as well as a name).
+export interface RewardWinnerExportRow {
+  type: LeagueRewardCriterion
+  prizeLabel: string
+  // The league's featured team (TEAM_SPECIALIST only), else null.
+  teamCode: string | null
+  metric: RewardMetric
+  userId: string
+  displayName: string
+  email: string
+  value: number
+}
+
+// The winners export payload: one row per holder, over the criteria that carry a
+// prize. Criteria with no prize - and prizes nobody holds yet - are absent.
+export interface RewardWinnersExportDto {
+  leagueName: string
+  rows: RewardWinnerExportRow[]
+}

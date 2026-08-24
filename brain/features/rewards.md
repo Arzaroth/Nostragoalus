@@ -95,6 +95,37 @@ each prize; it settles when the competition ends. No finalize hook, no award tab
   visibility rules as the standings (`resolveVisibleNames`), each flagged `isViewer`.
   Served at `GET /api/leagues/[id]/rewards/[type]/ranking`.
 
+## Winners export (owner/moderator)
+
+A prize is a real object someone has to post, so a manager can download the current
+holders with their **email**: `GET /api/leagues/[id]/rewards/export` ->
+`getRewardWinnersExport(db, leagueId, viewerId)` (`rewards/service.ts`).
+
+- Authorized by `resolveLeagueManage` with **no site-admin bypass** (unlike the
+  reward reads, which pass `resolveAdmin`). This is the only payload in the app that
+  carries a member's email address, so it stays with the people running that
+  league's prizes.
+- One row per holder, only for criteria that carry a configured prize (a criterion
+  with no prize, and a prize nobody holds yet, produce no rows); a TEAM_SPECIALIST
+  with no featured team is skipped by `computeLeagueRewardWinners` and so exports
+  nothing. Holders of one prize sort by value desc, matching the standings card.
+- Concealment is the standings' rule, applied to the email too: a holder the
+  exporter may not identify (admin-hidden - a private profile is visible to the
+  fellow member the exporter always is) keeps their row but comes back with a blank
+  name **and** a blank email. `isIdentityVisible` is the single predicate all three
+  read paths (standings, ranking, export) share so they can't drift.
+- The CSV is built client-side, not served: the route returns JSON and
+  `useLeagueRewards().exportWinners()` renders it through `app/utils/csv.ts` and
+  downloads a blob. Columns are stable across locales -
+  `criterion,prize,player,email,metric,value` - because it is a spreadsheet a
+  manager keeps, not a rendered view. Two spreadsheet details live in that util: a
+  cell opening with `=`/`+`/`-`/`@` is prefixed with `'` (a player-chosen display
+  name would otherwise execute as a formula on the manager's machine), and the file
+  opens with a UTF-8 BOM so Excel doesn't mojibake accented names.
+- UI: "Export winners (CSV)" next to **Edit prizes** in `LeagueRewards.vue`, shown
+  to managers only and only once a prize exists. An export with zero holders toasts
+  `reward.exportEmpty` instead of handing over an empty file.
+
 ## Team Specialist featured team (per league)
 
 TEAM_SPECIALIST tracks the **league's** `featuredTeamCode` (`league` table), picked by
@@ -130,6 +161,7 @@ team. (This replaced the old admin-global, per-competition featured team; see
   (`rankableForMatches`, `computeCriteriaWinners`, `criteriaMatchFilter`)
 - `apps/web-nuxt/server/api/leagues/[id]/rewards.{get,put}.ts`,
   `apps/web-nuxt/server/api/leagues/[id]/rewards/[type]/ranking.get.ts`,
+  `apps/web-nuxt/server/api/leagues/[id]/rewards/export.get.ts`, `apps/web-nuxt/app/utils/csv.ts`,
   `apps/web-nuxt/server/api/leagues/[id]/index.put.ts` (featured team),
   `apps/web-nuxt/server/api/me/rewards.get.ts`, `apps/web-nuxt/server/api/media/reward/[key].get.ts`
 - `apps/web-nuxt/app/composables/use{LeagueRewards,MyRewards,RewardRanking,CriterionName}.ts`,

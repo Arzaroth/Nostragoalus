@@ -3,7 +3,8 @@ import { LEAGUE_REWARD_CRITERIA, type LeagueRewardCriterion, type LeagueRewardIn
 
 const props = defineProps<{ leagueId: string; canManage: boolean; competitionSlug?: string | null }>()
 const { t } = useI18n()
-const { standings, save } = useLeagueRewards(() => props.leagueId)
+const toast = useToast()
+const { standings, save, exportWinners, exporting } = useLeagueRewards(() => props.leagueId)
 const { update } = useLeagueActions()
 const criterionName = useCriterionName()
 
@@ -16,6 +17,16 @@ function leaderNames(winners: { displayName: string }[]): string {
 
 // The prizes actually configured (members see these), in criterion order.
 const configured = computed(() => (standings.data.value ?? []).filter((s) => s.reward))
+
+// Download the current prize holders + their emails, so a manager can hand the
+// real prizes over. An empty file would read as a bug, so say it out loud instead.
+async function onExport() {
+  try {
+    if ((await exportWinners()) === 0) toast.add({ severity: 'info', summary: t('reward.exportEmpty'), life: 3000 })
+  } catch {
+    toast.add({ severity: 'error', summary: t('reward.exportFailed'), life: 3000 })
+  }
+}
 
 // Open a criterion's live ranking. Disabled criteria (TEAM_SPECIALIST with no
 // featured team) have no ranking to show.
@@ -132,7 +143,20 @@ async function submit() {
   <section class="mt-6">
     <div class="flex items-center justify-between mb-3">
       <h3 class="text-lg font-bold">{{ t('reward.title') }}</h3>
-      <Button v-if="canManage" size="small" severity="secondary" icon="pi pi-pencil" :label="t('reward.edit')" @click="openEdit" />
+      <div v-if="canManage" class="flex items-center gap-2">
+        <Button
+          v-if="configured.length > 0"
+          v-tooltip.bottom="t('reward.exportHint')"
+          size="small"
+          severity="secondary"
+          outlined
+          icon="pi pi-download"
+          :label="t('reward.exportCsv')"
+          :loading="exporting"
+          @click="onExport"
+        />
+        <Button size="small" severity="secondary" icon="pi pi-pencil" :label="t('reward.edit')" @click="openEdit" />
+      </div>
     </div>
 
     <div v-if="standings.isLoading.value" class="text-sm" style="color: var(--p-text-muted-color)">{{ t('common.loading') }}</div>

@@ -10628,6 +10628,109 @@
         }
       }
     },
+    "/api/leagues/{id}/rewards/export": {
+      "get": {
+        "tags": [
+          "Leagues"
+        ],
+        "summary": "Export the prize winners",
+        "description": "Owner/moderator only. The current holder(s) of each configured prize with the email needed to hand it over. Live/provisional until the competition ends. A holder the caller may not identify (admin-hidden) comes back with a blank name and email.",
+        "responses": {
+          "200": {
+            "description": "The prize winners.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "leagueName": {
+                      "type": "string"
+                    },
+                    "rows": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "OVERALL",
+                              "WOODEN_SPOON",
+                              "GROUP_PHASE",
+                              "KNOCKOUT_PHASE",
+                              "FINALIST",
+                              "MADAME_IRMA",
+                              "GROUP_ORACLE",
+                              "KNOCKOUT_ORACLE",
+                              "SHARPSHOOTER",
+                              "GOAL_DIFF_GURU",
+                              "TEAM_SPECIALIST"
+                            ]
+                          },
+                          "prizeLabel": {
+                            "type": "string"
+                          },
+                          "teamCode": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "metric": {
+                            "type": "string",
+                            "enum": [
+                              "points",
+                              "exact",
+                              "outcome",
+                              "goaldiff"
+                            ]
+                          },
+                          "userId": {
+                            "type": "string"
+                          },
+                          "displayName": {
+                            "type": "string"
+                          },
+                          "email": {
+                            "type": "string"
+                          },
+                          "value": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "prizeLabel",
+                          "teamCode",
+                          "metric",
+                          "userId",
+                          "displayName",
+                          "email",
+                          "value"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "leagueName",
+                    "rows"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in."
+          },
+          "403": {
+            "description": "Not an owner or moderator."
+          },
+          "404": {
+            "description": "Unknown league, or a league the caller is not in."
+          }
+        }
+      }
+    },
     "/api/leagues/{id}/transfer-ownership": {
       "post": {
         "tags": [
