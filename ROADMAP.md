@@ -702,6 +702,14 @@ effort buckets; order within a bucket is not priority.
     competition) to each league** (picked in the prize editor), so the global
     Team Specialist trophy is retired. Leagues also gained a Markdown **"About
     this league" description** (headings, lists, links, uploaded images).
+  - **Winners export (in progress, feat/rewards-winners-export)**: an owner or
+    moderator downloads the current holders of the league's configured prizes as
+    a CSV, **with their email address**, so the bottle can actually be posted.
+    One row per holder (ties and multi-holder Team Specialist included), stable
+    columns across locales. Owner/moderator of that league only - deliberately
+    **no site-admin bypass**, since it is the only payload in the app carrying a
+    member's email - and a moderation-hidden holder exports with a blank name
+    and blank email.
 - [ ] **Prune inactive users** (admin):
   - Users with predictions are load-bearing (historical rankings, crowd
     totals, rarity): **anonymize, never delete** - keep picks/points under
