@@ -26,6 +26,7 @@ export default defineConfig(async () => ({
         'server/utils/share/og-assets.ts', // storage reads + Google Fonts fetch glue - exercised via the OG routes, not unit tests
         'server/utils/http.ts',
         'app/utils/image.ts', // canvas/Image DOM glue - no headless canvas to exercise it
+        'app/utils/download.ts', // anchor-click + object-URL DOM glue - exercised by the e2e downloads
       ],
       thresholds: { lines: 98, functions: 98, statements: 98, branches: 98 },
     },

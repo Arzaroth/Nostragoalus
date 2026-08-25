@@ -109,19 +109,27 @@ holders with their **email**: `GET /api/leagues/[id]/rewards/export` ->
   with no prize, and a prize nobody holds yet, produce no rows); a TEAM_SPECIALIST
   with no featured team is skipped by `computeLeagueRewardWinners` and so exports
   nothing. Holders of one prize sort by value desc, matching the standings card.
-- Concealment is the standings' rule, applied to the email too: a holder the
-  exporter may not identify (admin-hidden - a private profile is visible to the
-  fellow member the exporter always is) keeps their row but comes back with a blank
-  name **and** a blank email. `isIdentityVisible` is the single predicate all three
-  read paths (standings, ranking, export) share so they can't drift.
+- Concealment covers the email, and is **stricter than the board's**. One loader
+  (`resolveVisibleIdentities`) and one predicate (`isIdentityVisible`) serve both
+  audiences, switched by an `'board' | 'export'` flag: both always reveal you to
+  yourself and always conceal an admin-hidden member, but `profile_private` hides
+  you from non-members on a board and from **everyone** in the export. The export's
+  caller is always a member (`resolveLeagueManage`), so the board rule would never
+  fire there - a player's own privacy switch has to mean something on the one route
+  handing out their address. A concealed holder keeps their row with a blank name
+  and a blank email; `player_id` still identifies the row as a real person.
+- Rate-limited (10/minute/user) and pinned `Cache-Control: no-store`, so no future
+  route rule or CDN can cache the one response carrying other people's addresses.
 - The CSV is built client-side, not served: the route returns JSON and
-  `useLeagueRewards().exportWinners()` renders it through `app/utils/csv.ts` and
-  downloads a blob. Columns are stable across locales -
-  `criterion,prize,player,email,metric,value` - because it is a spreadsheet a
-  manager keeps, not a rendered view. Two spreadsheet details live in that util: a
-  cell opening with `=`/`+`/`-`/`@` is prefixed with `'` (a player-chosen display
-  name would otherwise execute as a formula on the manager's machine), and the file
-  opens with a UTF-8 BOM so Excel doesn't mojibake accented names.
+  `useLeagueRewards().exportWinners()` renders it through `app/utils/csv.ts`
+  (`winnersCsv`) and saves it via `app/utils/download.ts`. Columns are stable across
+  locales - `criterion,prize,team,player,player_id,email,metric,value` - because it
+  is a spreadsheet a manager keeps, not a rendered view; header and accessor are
+  paired in one table so a new column cannot land under the wrong heading. Two
+  spreadsheet details live in that util: a **text** cell opening with `=`/`+`/`-`/`@`
+  is prefixed with `'` (a player-chosen display name would otherwise execute as a
+  formula on the manager's machine; numbers are left alone so totals still work),
+  and the file opens with a UTF-8 BOM so Excel doesn't mojibake accented names.
 - UI: "Export winners (CSV)" next to **Edit prizes** in `LeagueRewards.vue`, shown
   to managers only and only once a prize exists. An export with zero holders toasts
   `reward.exportEmpty` instead of handing over an empty file.

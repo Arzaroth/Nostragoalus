@@ -382,6 +382,33 @@ feature/architecture doc that implements it.
   Description images reuse the reward image store rather than inlining data URLs (which
   would blow the length cap). See [features/leagues.md](features/leagues.md).
 
+- **The winners export is the app's only email disclosure, so it gets the narrowest
+  guard in the codebase.** Handing over a real prize needs a way to reach the winner,
+  so `GET /api/leagues/[id]/rewards/export` returns member email addresses - the only
+  route that does. It therefore uses `resolveLeagueManage` **without** the
+  `resolveAdmin` escape hatch every other reward read passes, so a site admin who is
+  not in the league cannot pull a member list out of it; site moderation has its own
+  tools and does not need this one. Concealment covers the email as well as the name
+  (an address identifies a person just as well), and it is **stricter** than the
+  board's: `profile_private` hides you from non-members on a board, but from everyone
+  in the export. The export's caller is always a member, so the board rule would
+  never have concealed anyone - the player's own privacy switch would have been a
+  no-op on the one route that discloses their address. One loader and one predicate
+  (`resolveVisibleIdentities` / `isIdentityVisible`, switched by audience) serve both,
+  because it is the *query* that drifts: a concealment input added to only one of two
+  copies leaks. See [features/rewards.md](features/rewards.md).
+
+- **The CSV is rendered on the client, not served as `text/csv`.** The route stays an
+  ordinary zod-contracted `defineReadHandler` returning JSON, so it keeps its OpenAPI
+  operation and its place in the cross-stack contract; `app/utils/csv.ts` turns that
+  into a file in the browser. Serving the file directly would have meant a route with
+  no machine-readable response shape. The two spreadsheet hazards live in that util
+  rather than in a component: a cell opening with `=`/`+`/`-`/`@` is prefixed with an
+  apostrophe (a player picks their own display name, and Excel executes formula cells
+  on open - a code-execution path on the league owner's machine, not a cosmetic
+  issue), and the file leads with a UTF-8 BOM or Excel renders accented names as
+  mojibake. Being pure, it sits inside the 98% coverage gate.
+
 ## Tournament Wrapped
 
 - **Tournament Wrapped is post-final only, and read-side only.** The recap gates

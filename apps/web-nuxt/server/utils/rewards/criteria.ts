@@ -3,7 +3,7 @@ import type { AppDatabase } from '../../../db/types'
 import { match } from '../../../db/schema'
 import { compareLeaderboardRows, denseRanks, getLeaderboard, type RankableRow } from '../leaderboard/service'
 import { rankableForMatches } from '../awards/service'
-import { LEAGUE_REWARD_CRITERIA, type LeagueRewardCriterion, type RewardMetric, rewardMetricFor } from '#shared/types/rewards'
+import { isInverseCriterion, LEAGUE_REWARD_CRITERIA, type LeagueRewardCriterion, type RewardMetric, rewardMetricFor } from '#shared/types/rewards'
 
 // The live league-prize engine. Where the global trophies (server/utils/awards)
 // cover a fixed five, a league can attach a prize to any of LEAGUE_REWARD_CRITERIA.
@@ -57,7 +57,7 @@ function metricValue(r: RankableRow, metric: RewardMetric): number {
 // path share it without sharing a query.
 function rankRows(type: LeagueRewardCriterion, rows: RankableRow[]): RankedRewardRow[] {
   if (rows.length === 0) return []
-  if (type === 'WOODEN_SPOON') {
+  if (isInverseCriterion(type)) {
     const sorted = [...rows].sort((a, b) => a.totalPoints - b.totalPoints || compareLeaderboardRows(a, b))
     const ranks = denseRanks(sorted.map((r) => `${r.totalPoints}`))
     return sorted.map((r, i) => ({ userId: r.userId, value: r.totalPoints, rank: ranks[i] }))

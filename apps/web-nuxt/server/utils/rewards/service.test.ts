@@ -363,7 +363,7 @@ describe('getRewardWinnersExport', () => {
     expect((await getRewardWinnersExport(db, leagueId, alice)).rows).toEqual([])
   })
 
-  it('blanks both the name and the email of an admin-hidden holder', async () => {
+  it('blanks both the name and the email of a holder the exporter may not identify', async () => {
     const { leagueId, alice, bob } = await scenario() // alice leads OVERALL
     await setLeagueRewards(db, leagueId, [{ type: 'OVERALL', label: 'Un magnum' }])
     await db.update(user).set({ hiddenFromLeaderboard: true }).where(eq(user.id, alice))
@@ -374,18 +374,63 @@ describe('getRewardWinnersExport', () => {
     expect(forBob.displayName).toBe('')
     expect(forBob.email).toBe('')
 
-    // A private profile is not concealed from a fellow member (the exporter always is one).
+    // A private profile conceals here even from a fellow member, unlike the board:
+    // the exporter is ALWAYS a member, so the board's rule would never fire and the
+    // player's own privacy switch would mean nothing on the one route that hands
+    // out their address.
     await db.update(user).set({ hiddenFromLeaderboard: false, profilePrivate: true }).where(eq(user.id, alice))
-    expect((await getRewardWinnersExport(db, leagueId, bob)).rows[0].email).toBe('alice@example.com')
+    const stillHidden = (await getRewardWinnersExport(db, leagueId, bob)).rows[0]
+    expect(stillHidden.userId).toBe(alice)
+    expect(stillHidden.email).toBe('')
+    expect(stillHidden.displayName).toBe('')
+
+    // The board keeps its own, looser rule: a fellow member still sees the name.
+    const standings = await getRewardStandings(db, leagueId, bob)
+    expect(standings.find((s) => s.type === 'OVERALL')?.winners[0]?.displayName).toBe('alice')
+
+    // A holder always sees themselves, private profile or not.
+    expect((await getRewardWinnersExport(db, leagueId, alice)).rows[0].email).toBe('alice@example.com')
+  })
+
+  it('exports the inverse WOODEN_SPOON criterion, keeping a zero-point holder', async () => {
+    const competitionId = await seedCompetition(db)
+    const g1 = await groupRound(competitionId)
+    const alice = await makeUser(db, 'wa')
+    const bob = await makeUser(db, 'wb')
+    const leagueId = await makeLeague(db, { competitionId, ownerId: alice })
+    await addLeagueMember(db, leagueId, bob, 'MEMBER')
+    const m = await makeMatch(db, { competitionId, roundId: g1, stage: 'GROUP', status: 'FINISHED', fullTimeHome: 1, fullTimeAway: 0, winner: 'HOME', kickoffTime: new Date('2026-06-11T12:00:00Z') })
+    await scoredPred(alice, m, g1, 'EXACT', 3)
+    await scoredPred(bob, m, g1, 'MISS', 0)
+    await setLeagueRewards(db, leagueId, [{ type: 'WOODEN_SPOON', label: 'A lemon' }])
+
+    // Rank 1 is the LOWEST score, and a zero is a legitimate last place - the one
+    // criterion that keeps zero-value rows.
+    const rows = (await getRewardWinnersExport(db, leagueId, alice)).rows
+    expect(rows.map((r) => [r.type, r.prizeLabel, r.displayName, r.value])).toEqual([['WOODEN_SPOON', 'A lemon', 'wb', 0]])
+  })
+
+  it('exports for a moderator, not just the owner', async () => {
+    const { leagueId, alice, bob } = await scenario()
+    await db.update(leagueMember).set({ role: 'MODERATOR' }).where(eq(leagueMember.userId, bob))
+    await setLeagueRewards(db, leagueId, [{ type: 'OVERALL', label: 'Un magnum' }])
+    const rows = (await getRewardWinnersExport(db, leagueId, bob)).rows
+    expect(rows.map((r) => r.email)).toEqual(['alice@example.com'])
   })
 
   it('is empty with no prizes configured or no members, and throws for an unknown league', async () => {
     const { leagueId, alice } = await scenario()
-    expect((await getRewardWinnersExport(db, leagueId, alice)).rows).toEqual([])
+    // Members but no prize: nothing to hand over. The league still names itself, so
+    // the download keeps its filename rather than falling back to "league".
+    const noPrizes = await getRewardWinnersExport(db, leagueId, alice)
+    expect(noPrizes.rows).toEqual([])
+    expect(noPrizes.leagueName).toBe('Test League')
 
     await setLeagueRewards(db, leagueId, [{ type: 'OVERALL', label: 'Un magnum' }])
     await db.delete(leagueMember).where(eq(leagueMember.leagueId, leagueId))
-    expect((await getRewardWinnersExport(db, leagueId, alice)).rows).toEqual([])
+    const noMembers = await getRewardWinnersExport(db, leagueId, alice)
+    expect(noMembers.rows).toEqual([])
+    expect(noMembers.leagueName).toBe('Test League')
 
     await expect(getRewardWinnersExport(db, 'nope', alice)).rejects.toThrow()
   })

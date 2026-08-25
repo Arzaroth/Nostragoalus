@@ -63,7 +63,7 @@ cd mobile/parity
 sh tool/gen_models.sh   # needs openapi-generator-cli + a JDK
 ```
 
-The input snapshot only covers routes converted so far; it grows as the
-response-schema fan-out finishes (`admin/` and `leagues/` still pending on the
-TS side). Re-freeze it with `CONTRACT_BLESS=1 pnpm test:run tests/contract`
-before regenerating.
+The response-schema fan-out is complete, so the input snapshot covers every
+contract-bound route (`admin/` and `leagues/` included); the only exemptions are
+the 7 non-JSON routes. Re-freeze it with `CONTRACT_BLESS=1 pnpm test:run
+tests/contract` before regenerating.

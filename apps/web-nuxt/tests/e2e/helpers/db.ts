@@ -310,6 +310,12 @@ export async function seedLeague(competitionId: string, ownerId: string): Promis
   return rows[0].id
 }
 
+// Add an existing user to an existing league, for the specs that need a second
+// member (a plain MEMBER an owner-only action must reject, a moderator, ...).
+export async function seedLeagueMember(leagueId: string, userId: string, role = 'MEMBER'): Promise<void> {
+  await db().query(`insert into league_member (league_id, user_id, role) values ($1, $2, $3)`, [leagueId, userId, role])
+}
+
 // A named private league with chat already switched on, so it shows up in the
 // chat dock's league switcher. No group key is seeded: the specs using this only
 // drive the dock chrome, never the message stream.

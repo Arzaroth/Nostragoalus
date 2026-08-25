@@ -1,3 +1,5 @@
+import { slugify } from './slug'
+
 // Resize + square-crop an image File to a small JPEG data URL (no upload infra).
 export function resizeToDataUrl(file: File, size = 256): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -88,17 +90,6 @@ export async function toPng(blob: Blob): Promise<Blob> {
   } catch {
     return blob
   }
-}
-
-// A filesystem-safe slug: lowercase, strip diacritics, non-alphanumerics to single
-// dashes, trimmed. Empty input (or all-punctuation) yields ''.
-export function slugify(input: string): string {
-  return input
-    .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
 }
 
 // nostragoalus-chat-{league}[-{match}]-{YYYY-MM-DD}.{ext}. A missing/blank league

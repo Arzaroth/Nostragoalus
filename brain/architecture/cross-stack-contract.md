@@ -62,7 +62,7 @@ compile error, not a runtime 500. Shared DB-projection shapes are derived from
 the drizzle tables with `drizzle-zod` in [apps/web-nuxt/server/schemas/](../../apps/web-nuxt/server/schemas)
 (out of the coverage gate; route files stay thin).
 
-Fan-out is COMPLETE: 183 routes carry a compile-verified response schema. The 7
+Fan-out is COMPLETE: 186 routes carry a compile-verified response schema. The 7
 routes without one are excluded by design - binary (media, share OG images),
 XML (SAML SP metadata), HTML (SSO test-callback), the `.ics` calendar feed, the
 better-auth `[...all]` catch-all, and the `_schema` helper (not a route).

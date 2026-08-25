@@ -83,7 +83,7 @@ use the indexes.
 | [image-storage.md](features/image-storage.md) | Blobs out of Postgres (feature view). |
 | [changelog.md](features/changelog.md) | In-app release history + "What's new" badge, rendered by locale. |
 | [achievements.md](features/achievements.md) | Competition-end trophies + milestone badges, the trophy cabinet and "my showcase". |
-| [rewards.md](features/rewards.md) | Per-league prizes for the trophy criteria: owner config + live winner standings. |
+| [rewards.md](features/rewards.md) | Per-league prizes for the trophy criteria: owner config, live winner standings, winners CSV export. |
 | [roadmap.md](features/roadmap.md) | Public roadmap + community suggestions and upvotes, admin triage. |
 | [wrapped.md](features/wrapped.md) | Tournament Wrapped: post-final recap deck + shareable summary card. |
 | [easter-eggs.md](features/easter-eggs.md) | MLP skins, pony reactions, the Klingon locale. |

@@ -33,6 +33,15 @@ export function isTeamScopedCriterion(type: LeagueRewardCriterion): boolean {
   return (TEAM_SCOPED_CRITERIA as readonly string[]).includes(type)
 }
 
+// Criteria ranked the other way up: rank 1 is the LOWEST value. WOODEN_SPOON is
+// the only one, but every place that orders a criterion's rows asks here rather
+// than naming it again, so a second inverse criterion lands in one edit.
+export const INVERSE_CRITERIA = ['WOODEN_SPOON'] as const satisfies readonly LeagueRewardCriterion[]
+
+export function isInverseCriterion(type: LeagueRewardCriterion): boolean {
+  return (INVERSE_CRITERIA as readonly string[]).includes(type)
+}
+
 // How a criterion's ranking value reads: prediction points, EXACT-scoreline count,
 // correct-outcome (win/draw/loss) count, or correct goal-difference count. Drives
 // the unit label shown next to a member's value.

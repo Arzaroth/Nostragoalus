@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { expect, test, type Download, type Page } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import { dismissOnboarding, freshUser, signUp } from './helpers/auth'
 import {
   cleanup,
@@ -8,6 +8,7 @@ import {
   getUserIdByEmail,
   seedCompetitionWithMatch,
   seedLeague,
+  seedLeagueMember,
   seedScoredPrediction,
   type SeededFixture,
 } from './helpers/db'
@@ -85,22 +86,43 @@ test('a league manager exports the prize winners with their email as CSV', async
 
   await addOverallPrize(page, 'A crate of beer')
 
-  // The export is a download built in the browser; retry the first click until
-  // hydration has wired it.
+  // addOverallPrize already drove hydrated interactions, so the page is live by
+  // now: one click, one download, no retry racing several real downloads.
   const exportButton = page.getByRole('button', { name: 'Export winners (CSV)' })
   await expect(exportButton).toBeVisible()
-  let download: Download | undefined
-  await expect(async () => {
-    const pending = page.waitForEvent('download', { timeout: 2_000 })
-    await exportButton.click()
-    download = await pending
-  }).toPass({ timeout: 20_000 })
+  const [download] = await Promise.all([page.waitForEvent('download'), exportButton.click()])
 
-  expect(download!.suggestedFilename()).toMatch(/^prizes-.*\.csv$/)
-  const csv = readFileSync((await download!.path())!, 'utf8')
-  expect(csv.split('\r\n')[0]).toContain('criterion,prize,player,email,metric,value')
+  expect(download.suggestedFilename()).toMatch(/^prizes-.*\.csv$/)
+  const csv = readFileSync((await download.path())!, 'utf8')
+  expect(csv.split('\r\n')[0]).toContain('criterion,prize,team,player,player_id,email,metric,value')
   expect(csv).toContain('OVERALL,A crate of beer')
   expect(csv).toContain(user.email)
+})
+
+test('the winners export is refused to a plain member and to an outsider', async ({ page }) => {
+  const owner = freshUser()
+  await signUp(page, owner)
+  const ownerId = await getUserIdByEmail(owner.email)
+  const leagueId = await seedLeague(fixture.competitionId, ownerId)
+
+  // A plain member of the league knows it exists, so they get a 403...
+  const member = freshUser()
+  await signUp(page, member)
+  await seedLeagueMember(leagueId, await getUserIdByEmail(member.email))
+  const asMember = await page.request.get(`/api/leagues/${leagueId}/rewards/export`)
+  expect(asMember.status()).toBe(403)
+
+  // ...while an outsider gets a 404, so the route can't probe a private league.
+  const outsider = freshUser()
+  await signUp(page, outsider)
+  const asOutsider = await page.request.get(`/api/leagues/${leagueId}/rewards/export`)
+  expect(asOutsider.status()).toBe(404)
+
+  // And the control is not offered to a member in the first place.
+  await expect(async () => {
+    await page.goto(`/leagues/${leagueId}`)
+  }).toPass({ timeout: 30_000 })
+  await expect(page.getByRole('button', { name: 'Export winners (CSV)' })).toHaveCount(0)
 })
 
 test('a league owner writes a markdown description that renders for viewers', async ({ page }) => {

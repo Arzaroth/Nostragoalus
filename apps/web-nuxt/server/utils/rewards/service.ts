@@ -2,6 +2,7 @@ import { and, eq, inArray } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { league, leagueMember, leagueReward, user } from '../../../db/schema'
 import {
+  isInverseCriterion,
   isTeamScopedCriterion,
   LEAGUE_REWARD_CRITERIA,
   type LeagueRewardCriterion,
@@ -72,40 +73,66 @@ export async function setLeagueRewards(db: AppDatabase, leagueId: string, inputs
   }
 }
 
-// Resolve the names/avatars a viewer is allowed to see for a set of users, with
-// the leaderboard's visibility rules: admin-hidden members stay hidden from
-// everyone but themselves, and private profiles stay hidden from non-members.
-// A concealed user maps to an empty name (and no avatar) so the caller can still
-// show their slot without leaking identity.
-async function resolveVisibleNames(
+// What a viewer is allowed to see of a set of users, under the audience's rule
+// below. A concealed user maps to an empty name, no avatar and an empty email, so
+// a caller can still show their slot without leaking who fills it. One loader for
+// both audiences: the query is the half that drifts, and a concealment input added
+// to only one copy of it would leak.
+async function resolveVisibleIdentities(
   db: AppDatabase,
   userIds: string[],
   viewerId: string | null,
   viewerIsMember: boolean,
-): Promise<Map<string, { displayName: string; image: string | null }>> {
+  audience: IdentityAudience = 'board',
+): Promise<Map<string, VisibleIdentity>> {
   const ids = [...new Set(userIds)]
   if (ids.length === 0) return new Map()
   const rows = await db
-    .select({ id: user.id, name: user.name, image: user.image, hidden: user.hiddenFromLeaderboard, isPrivate: user.profilePrivate })
+    .select({
+      id: user.id,
+      name: user.name,
+      image: user.image,
+      email: user.email,
+      hidden: user.hiddenFromLeaderboard,
+      isPrivate: user.profilePrivate,
+    })
     .from(user)
     .where(inArray(user.id, ids))
   return new Map(
     rows.map((u) => {
-      const shown = isIdentityVisible(u, viewerId, viewerIsMember)
-      return [u.id, { displayName: shown ? u.name : '', image: shown ? u.image : null }] as const
+      const shown = isIdentityVisible(u, viewerId, viewerIsMember, audience)
+      return [u.id, { displayName: shown ? u.name : '', image: shown ? u.image : null, email: shown ? u.email : '' }] as const
     }),
   )
 }
 
-// The one rule behind every reveal in this file, so the standings, the ranking and
-// the winners export can't drift: you always see yourself; an admin-hidden member
-// is concealed from everyone else; a private profile is concealed from non-members.
+interface VisibleIdentity {
+  displayName: string
+  image: string | null
+  email: string
+}
+
+// Who a reveal is for. One loader and one predicate serve both, so the standings,
+// the ranking and the winners export can't drift apart on who gets concealed.
+type IdentityAudience = 'board' | 'export'
+
+// You always see yourself, and an admin-hidden member is concealed from everyone
+// else - that much holds for both audiences. They part on `profile_private`: on a
+// board it hides you from non-members only, but the export discloses an email
+// address rather than a name in a ranking, and its caller is always a member
+// (resolveLeagueManage), so the board rule would never conceal anyone there. A
+// player's own privacy switch has to mean something on the one route that hands
+// out their address, so for 'export' a private profile conceals from everyone.
 function isIdentityVisible(
   u: { id: string; hidden: boolean; isPrivate: boolean },
   viewerId: string | null,
   viewerIsMember: boolean,
+  audience: IdentityAudience,
 ): boolean {
-  return u.id === viewerId || (!u.hidden && (!u.isPrivate || viewerIsMember))
+  if (u.id === viewerId) return true
+  if (u.hidden) return false
+  if (!u.isPrivate) return true
+  return audience === 'board' && viewerIsMember
 }
 
 // Every criterion for a league: each configured prize + who currently leads it
@@ -135,7 +162,7 @@ export async function getRewardStandings(
   // Concealed leaders keep their slot (so the criterion still reads as "led") but
   // surface with an empty displayName.
   const viewerIsMember = viewerId !== null && memberIds.includes(viewerId)
-  const visible = await resolveVisibleNames(db, winners.map((w) => w.userId), viewerId, viewerIsMember)
+  const visible = await resolveVisibleIdentities(db, winners.map((w) => w.userId), viewerId, viewerIsMember)
 
   return LEAGUE_REWARD_CRITERIA.map((type) => {
     // Sort by value desc so winners[0] is the top holder (most exacts for
@@ -218,7 +245,7 @@ export async function getRewardRanking(
       : []
 
   const viewerIsMember = viewerId !== null && memberIds.includes(viewerId)
-  const visible = await resolveVisibleNames(db, ranked.map((r) => r.userId), viewerId, viewerIsMember)
+  const visible = await resolveVisibleIdentities(db, ranked.map((r) => r.userId), viewerId, viewerIsMember)
   const reward = (await listLeagueRewards(db, leagueId)).find((r) => r.type === type) ?? null
 
   return {
@@ -240,36 +267,10 @@ export async function getRewardRanking(
   }
 }
 
-// The same visibility rule as the standings, plus the contact email the export
-// exists for. A holder the exporter isn't entitled to identify keeps their row but
-// surfaces with neither a name nor an email - an address identifies a person as
-// well as a name does, so concealment has to cover both or it isn't concealment.
-async function resolveWinnerContacts(
-  db: AppDatabase,
-  userIds: string[],
-  viewerId: string,
-  viewerIsMember: boolean,
-): Promise<Map<string, { displayName: string; email: string }>> {
-  const ids = [...new Set(userIds)]
-  if (ids.length === 0) return new Map()
-  const rows = await db
-    .select({ id: user.id, name: user.name, email: user.email, hidden: user.hiddenFromLeaderboard, isPrivate: user.profilePrivate })
-    .from(user)
-    .where(inArray(user.id, ids))
-  return new Map(
-    rows.map((u) => {
-      const shown = isIdentityVisible(u, viewerId, viewerIsMember)
-      return [u.id, { displayName: shown ? u.name : '', email: shown ? u.email : '' }] as const
-    }),
-  )
-}
-
 // The current holders of the league's configured prizes with their email, for the
 // owner/moderator CSV export (the route authorizes; see the export row type for the
 // privacy note). Only criteria carrying a prize are exported - the export exists to
-// hand a real prize over - and a prize nobody holds yet simply has no row. Holders
-// of one prize sort by value desc, so the top holder of a multi-holder
-// TEAM_SPECIALIST leads its block.
+// hand a real prize over - and a prize nobody holds yet simply has no row.
 export async function getRewardWinnersExport(
   db: AppDatabase,
   leagueId: string,
@@ -286,31 +287,46 @@ export async function getRewardWinnersExport(
   const memberIds = (
     await db.select({ userId: leagueMember.userId }).from(leagueMember).where(eq(leagueMember.leagueId, leagueId))
   ).map((m) => m.userId)
+  // Neither an empty member list nor a prize-less league has anything to export,
+  // and short-circuiting keeps a memberless league out of the winners computation.
   if (rewards.size === 0 || memberIds.length === 0) return { leagueName: lg.name, rows: [] }
 
-  // computeLeagueRewardWinners already drops TEAM_SPECIALIST without a featured
-  // team, so a disabled criterion contributes no rows even if it carries a prize.
   const winners = await computeLeagueRewardWinners(db, lg.competitionId, {
     leagueId,
     memberIds,
     featuredTeamCode: lg.featuredTeamCode,
   })
-  const contacts = await resolveWinnerContacts(db, winners.map((w) => w.userId), viewerId, memberIds.includes(viewerId))
+  const identities = await resolveVisibleIdentities(
+    db,
+    winners.map((w) => w.userId),
+    viewerId,
+    memberIds.includes(viewerId),
+    'export',
+  )
 
   const rows: RewardWinnerExportRow[] = []
   for (const type of LEAGUE_REWARD_CRITERIA) {
     const reward = rewards.get(type)
     if (!reward) continue
-    for (const w of winners.filter((w) => w.type === type).sort((a, b) => b.value - a.value)) {
-      const contact = contacts.get(w.userId)
+    // The same rule the standings report as `disabled`: a team-scoped criterion
+    // cannot be earned until the league picks a team, so its prize has no holder.
+    // Stated here rather than left to computeLeagueRewardWinners, so the export and
+    // the card can't disagree about whether a prize is live.
+    if (isTeamScopedCriterion(type) && !lg.featuredTeamCode) continue
+    // Holders of one prize share a rank, so only the multi-holder TEAM_SPECIALIST
+    // really orders here - but sort on the criterion's own direction anyway, so an
+    // inverse criterion can never read upside down if that ever stops holding.
+    const dir = isInverseCriterion(type) ? -1 : 1
+    for (const w of winners.filter((w) => w.type === type).sort((a, b) => dir * (b.value - a.value))) {
+      const identity = identities.get(w.userId)
       rows.push({
         type,
         prizeLabel: reward.label,
         teamCode: isTeamScopedCriterion(type) ? lg.featuredTeamCode : null,
         metric: rewardMetricFor(type),
         userId: w.userId,
-        displayName: contact?.displayName ?? '',
-        email: contact?.email ?? '',
+        displayName: identity?.displayName ?? '',
+        email: identity?.email ?? '',
         value: w.value,
       })
     }

@@ -10634,7 +10634,7 @@
           "Leagues"
         ],
         "summary": "Export the prize winners",
-        "description": "Owner/moderator only. The current holder(s) of each configured prize with the email needed to hand it over. Live/provisional until the competition ends. A holder the caller may not identify (admin-hidden) comes back with a blank name and email.",
+        "description": "Owner/moderator only. The current holder(s) of each configured prize with the email needed to hand it over. Live/provisional until the competition ends. A holder the caller may not identify (admin-hidden, or a private profile) comes back with a blank name and email. Rate-limited; never cached.",
         "responses": {
           "200": {
             "description": "The prize winners.",
@@ -10727,6 +10727,9 @@
           },
           "404": {
             "description": "Unknown league, or a league the caller is not in."
+          },
+          "429": {
+            "description": "Too many exports."
           }
         }
       }

@@ -18,8 +18,7 @@ function leaderNames(winners: { displayName: string }[]): string {
 // The prizes actually configured (members see these), in criterion order.
 const configured = computed(() => (standings.data.value ?? []).filter((s) => s.reward))
 
-// Download the current prize holders + their emails, so a manager can hand the
-// real prizes over. An empty file would read as a bug, so say it out loud instead.
+// An empty file would read as a bug, so say it out loud instead.
 async function onExport() {
   try {
     if ((await exportWinners()) === 0) toast.add({ severity: 'info', summary: t('reward.exportEmpty'), life: 3000 })

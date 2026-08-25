@@ -7,8 +7,8 @@
 # test:run tests/contract) whenever a schema changes, then re-run this.
 #
 # Requires openapi-generator-cli (https://openapi-generator.tech/) and a JDK.
-# NOTE: the snapshot only covers routes converted so far; it grows as the
-# response-schema fan-out completes (admin/ and leagues/ still pending).
+# NOTE: the fan-out is complete - the snapshot covers every contract-bound
+# route (admin/ and leagues/ included); only the 7 non-JSON routes are exempt.
 set -eu
 
 SPEC="../../../shared/contracts-openapi/openapi.snapshot.json"
