@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [4.5.0] - 2026-08-26
+
 ### Added
 
 - League owners and moderators can export their prize winners: an "Export winners (CSV)" button next to "Edit prizes" downloads a spreadsheet of who currently holds each prize, with their email address, so the prizes can actually be handed over. Only owners and moderators of that league can do it, and a player who has hidden their profile stays anonymous in the file.

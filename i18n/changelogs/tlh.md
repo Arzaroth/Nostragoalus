@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [4.5.0] - 2026-08-26
+
 ### chelpu'
 
 - pop ghajwI'pu' tetlh: ghom pIn moHwI' je neH pop ghajwI'pu' tetlh (CSV) luHotlaH. DaH pop ghaj 'Iv, QInDaq je 'oH nuq - vaj pop lunobmeH lughaj. pegh ghajbogh ghotvaD pong QInDaq je tu'lu'be'.

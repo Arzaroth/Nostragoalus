@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [4.5.0] - 2026-08-26
+
 ### Ajouté
 
 - Les propriétaires et modérateurs de ligue peuvent exporter leurs gagnants : un bouton « Exporter les gagnants (CSV) » à côté de « Modifier les récompenses » télécharge un tableur listant qui détient actuellement chaque récompense, avec son adresse e-mail, pour enfin pouvoir remettre les lots. Réservé aux propriétaires et modérateurs de la ligue ; un joueur qui a rendu son profil privé reste anonyme dans le fichier.
