@@ -75,7 +75,7 @@ each prize; it settles when the competition ends. No finalize hook, no award tab
   holder's name follows the league board's visibility rule ([leagues.md](leagues.md)):
   admin-hidden members and (to non-members) private profiles keep their slot but
   surface with an empty `displayName`, rendered as a neutral "hidden player"
-  placeholder. `teamCode`/`disabled` for TEAM_SPECIALIST come from the league's
+  placeholder. (The export applies a stricter variant of the same rule - see below.) `teamCode`/`disabled` for TEAM_SPECIALIST come from the league's
   `featuredTeamCode` (see below), so the criterion reads as disabled before a team is
   picked.
 - `getMyRewards(db, userId)` walks the user's leagues and returns every configured
@@ -92,7 +92,7 @@ each prize; it settles when the competition ends. No finalize hook, no award tab
   except for WOODEN_SPOON.
 - `getRewardRanking(db, leagueId, type, viewerId)` (`rewards/service.ts`) wraps it for a
   league: the reward, the `metric`, and the ranked rows with the same name/avatar
-  visibility rules as the standings (`resolveVisibleNames`), each flagged `isViewer`.
+  visibility rules as the standings (`resolveVisibleIdentities`), each flagged `isViewer`.
   Served at `GET /api/leagues/[id]/rewards/[type]/ranking`.
 
 ## Winners export (owner/moderator)
@@ -106,9 +106,12 @@ holders with their **email**: `GET /api/leagues/[id]/rewards/export` ->
   carries a member's email address, so it stays with the people running that
   league's prizes.
 - One row per holder, only for criteria that carry a configured prize (a criterion
-  with no prize, and a prize nobody holds yet, produce no rows); a TEAM_SPECIALIST
-  with no featured team is skipped by `computeLeagueRewardWinners` and so exports
-  nothing. Holders of one prize sort by value desc, matching the standings card.
+  with no prize, and a prize nobody holds yet, produce no rows). A team-scoped
+  criterion with no featured team is skipped explicitly, by the same rule the
+  standings report as `disabled`, rather than left to `computeLeagueRewardWinners`
+  dropping it - so the export and the prize card cannot disagree about whether a
+  prize is live. Holders of one prize sort on the criterion's own direction
+  (`isInverseCriterion`), so an inverse criterion never reads upside down.
 - Concealment covers the email, and is **stricter than the board's**. One loader
   (`resolveVisibleIdentities`) and one predicate (`isIdentityVisible`) serve both
   audiences, switched by an `'board' | 'export'` flag: both always reveal you to
