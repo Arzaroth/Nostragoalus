@@ -2677,3 +2677,26 @@ Open:
       any future non-memory wedge repeats it. A `--exit-on-unhealthy` sidecar
       (or making the healthcheck's failure path exit the process) would close
       that generally.
+
+## League prize-winners export (deferred from the feature-treatment review)
+
+- [ ] Fold the five existing blob-download call sites into `app/utils/download.ts`
+      `saveBlob`: `app/composables/useShareCard.ts`, `app/pages/[competition]/wrapped.vue`,
+      `app/pages/account.vue`, `app/pages/s/[token].vue`, `app/components/ChatLightbox.vue`.
+      The helper was extracted for the CSV export (the sixth copy) and carries the
+      deferred `revokeObjectURL` the others still get wrong - Firefox and Safari
+      truncate a download whose object URL is revoked in the same task. Each of
+      those five is a latent non-Chromium download bug, and the e2e suite is
+      Chromium-only so nothing catches them.
+- [ ] No audit trail on the one route that discloses member email addresses. A
+      stolen owner session can attach a prize to every criterion and poll the
+      export as the leaderboard moves, and nothing afterwards distinguishes that
+      from the owner never having used it. Wants an append-only row (actor,
+      leagueId, row count, timestamp) - a schema change, hence deferred. The
+      10/min limit and `Cache-Control: no-store` are in place already.
+- [ ] SSO auto-join still hands OWNER to the first employee through the door on
+      an admin-created org-wide league, and ownership now carries the members'
+      email addresses. Narrowing the auto-claim to empty leagues (shipped) does
+      not cover this case, because those leagues legitimately start empty. Options:
+      let an admin pin the owner when creating an SSO league, or keep an
+      SSO-provisioned league ownerless and admin-managed by default.
