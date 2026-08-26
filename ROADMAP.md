@@ -702,7 +702,7 @@ effort buckets; order within a bucket is not priority.
     competition) to each league** (picked in the prize editor), so the global
     Team Specialist trophy is retired. Leagues also gained a Markdown **"About
     this league" description** (headings, lists, links, uploaded images).
-  - **Winners export (in progress, feat/rewards-winners-export)**: an owner or
+  - **Winners export (SHIPPED v4.5.0)**: an owner or
     moderator downloads the current holders of the league's configured prizes as
     a CSV, **with their email address**, so the bottle can actually be posted.
     One row per holder (ties and multi-holder Team Specialist included), stable
