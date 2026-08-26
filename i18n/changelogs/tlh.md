@@ -7,7 +7,11 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ### chelpu'
 
-- pop ghajwI'pu' tetlh: ghom pIn moHwI' je neH pop ghajwI'pu' tetlh (CSV) luHotlaH. DaH pop ghaj 'Iv, QInDaq je 'oH nuq - vaj pop lunobmeH lughaj. So'lu'bogh ghotvaD pong QInDaq je tu'lu'be'.
+- pop ghajwI'pu' tetlh: ghom pIn moHwI' je neH pop ghajwI'pu' tetlh (CSV) luHotlaH. DaH pop ghaj 'Iv, QInDaq je 'oH nuq - vaj pop lunobmeH lughaj. pegh ghajbogh ghotvaD pong QInDaq je tu'lu'be'.
+
+### choHpu'
+
+- ghom pIn Hutlhbogh ghom Daghomchugh 'ach latlh nuvpu' tu'lu', ghom pIn Danagh be'. ghom chIm neH Daghomchugh ghom pIn Danagh. ghom pIn chIlbogh ghom pIn Hutlh, che'wI' ghom pIn wIvta'DI' neH.
 
 ## [4.4.5] - 2026-07-21
 

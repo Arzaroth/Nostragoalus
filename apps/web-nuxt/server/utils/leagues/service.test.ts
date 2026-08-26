@@ -404,6 +404,26 @@ describe('leaveLeague', () => {
     expect((await getMembership(db, id, 'bob'))?.role).toBe('OWNER')
   })
 
+  it('does not hand a populated but ownerless league to the next joiner', async () => {
+    await makeUser(db, 'alice')
+    await makeUser(db, 'bob')
+    await makeUser(db, 'carol')
+    const id = await makeLeague(db, { competitionId, ownerId: 'alice', joinCode: 'ABCD3456' })
+    await addLeagueMember(db, id, 'bob')
+    // Only account deletion orphans a POPULATED league (the owner's membership
+    // cascades away); an owner cannot simply leave while other members remain.
+    await db.delete(leagueMember).where(and(eq(leagueMember.leagueId, id), eq(leagueMember.userId, 'alice')))
+
+    // Carol walks in off the street. Ownership carries the members' email
+    // addresses through the winners export, so it is not hers for the taking.
+    await joinLeagueByCode(db, { userId: 'carol', code: 'ABCD3456' })
+    expect((await getMembership(db, id, 'carol'))?.role).toBe('MEMBER')
+
+    // It stays vacant until an admin grants it to someone already in the league.
+    await setAdminMemberRole(db, { leagueId: id, userId: 'bob', role: 'OWNER' })
+    expect((await getMembership(db, id, 'bob'))?.role).toBe('OWNER')
+  })
+
   it('404s for non-members', async () => {
     await makeUser(db, 'bob')
     const id = await makeLeague(db, { competitionId })

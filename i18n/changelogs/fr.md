@@ -7,7 +7,11 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ### Ajouté
 
-- Les propriétaires et modérateurs de ligue peuvent exporter leurs gagnants : un bouton « Exporter les gagnants (CSV) » à côté de « Modifier les récompenses » télécharge un tableur listant qui détient actuellement chaque récompense, avec son adresse e-mail, pour enfin pouvoir remettre les lots. Réservé aux propriétaires et modérateurs de la ligue ; un joueur masqué par la modération reste anonyme dans le fichier.
+- Les propriétaires et modérateurs de ligue peuvent exporter leurs gagnants : un bouton « Exporter les gagnants (CSV) » à côté de « Modifier les récompenses » télécharge un tableur listant qui détient actuellement chaque récompense, avec son adresse e-mail, pour enfin pouvoir remettre les lots. Réservé aux propriétaires et modérateurs de la ligue ; un joueur qui a rendu son profil privé reste anonyme dans le fichier.
+
+### Modifié
+
+- Rejoindre une ligue qui a des membres mais plus de propriétaire ne vous en rend plus propriétaire. Cela n'arrive que pour une ligue que personne n'a encore rejointe ; une ligue existante qui a perdu son propriétaire reste sans propriétaire jusqu'à ce qu'un administrateur confie le rôle à l'un de ses membres.
 
 ## [4.4.5] - 2026-07-21
 

@@ -310,21 +310,23 @@ export async function listLeagueMembers(
   return rows as Array<{ userId: string; name: string; image: string | null; role: LeagueRole; joinedAt: Date }>
 }
 
-export async function leagueHasOwner(db: AppDatabase, leagueId: string): Promise<boolean> {
-  const owners = await db
-    .select({ userId: leagueMember.userId })
-    .from(leagueMember)
-    .where(and(eq(leagueMember.leagueId, leagueId), eq(leagueMember.role, 'OWNER')))
-    .limit(1)
-  return owners.length > 0
-}
-
-// Membership insert for an ownerless-league claim: the first one in becomes
-// OWNER. The single-owner unique index makes it race-safe at the DB level - a
-// concurrent second OWNER insert is rejected (surfaced as a 409 by toHttpError)
-// rather than creating two owners; the loser retries and joins as a member.
+// Membership insert for an ownerless-league claim: the first one into an EMPTY
+// league becomes OWNER. Both cases this exists for start memberless - an
+// admin-created league awaiting its SSO cohort, and one everyone left behind (the
+// code stays valid, the next joiner owns it).
+//
+// A league that still HAS members but lost its owner does NOT hand ownership to
+// the next stranger through the door. Only account deletion produces that state
+// (an owner cannot leave while other members remain), and ownership now carries
+// the members' email addresses through the winners export, so such a league stays
+// ownerless until an admin grants the role to someone already in it
+// (PUT /api/admin/leagues/[id]/members/[userId]).
+//
+// The single-owner unique index makes it race-safe at the DB level - a concurrent
+// second OWNER insert is rejected (surfaced as a 409 by toHttpError) rather than
+// creating two owners; the loser retries and joins as a member.
 export async function claimMembership(db: AppDatabase, leagueId: string, userId: string): Promise<LeagueRole> {
-  const role: LeagueRole = (await leagueHasOwner(db, leagueId)) ? 'MEMBER' : 'OWNER'
+  const role: LeagueRole = (await countLeagueMembers(db, leagueId)) === 0 ? 'OWNER' : 'MEMBER'
   await db.insert(leagueMember).values({ leagueId, userId, role })
   return role
 }

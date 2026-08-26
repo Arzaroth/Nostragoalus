@@ -7,7 +7,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ### Added
 
-- League owners and moderators can export their prize winners: an "Export winners (CSV)" button next to "Edit prizes" downloads a spreadsheet of who currently holds each prize, with their email address, so the prizes can actually be handed over. Only owners and moderators of that league can do it, and a player hidden by moderation stays anonymous in the file.
+- League owners and moderators can export their prize winners: an "Export winners (CSV)" button next to "Edit prizes" downloads a spreadsheet of who currently holds each prize, with their email address, so the prizes can actually be handed over. Only owners and moderators of that league can do it, and a player who has hidden their profile stays anonymous in the file.
+
+### Changed
+
+- Joining a league that has members but no owner no longer makes you its owner. That only happens for a league nobody has joined yet; an existing league that lost its owner now stays ownerless until an admin hands the role to one of its members.
 
 ## [4.4.5] - 2026-07-21
 

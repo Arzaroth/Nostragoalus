@@ -398,6 +398,16 @@ feature/architecture doc that implements it.
   because it is the *query* that drifts: a concealment input added to only one of two
   copies leaks. See [features/rewards.md](features/rewards.md).
 
+- **Auto-claiming ownership stops at the door of a populated league.** The first
+  joiner of an ownerless league becomes OWNER, which is what makes an admin-created
+  SSO league and an abandoned one work. It used to apply to any league with no
+  owner, including one orphaned by its owner deleting their account while members
+  remained - so a stranger could join and inherit the league. That was survivable
+  when ownership only exposed names; the winners export made it a way to harvest
+  member email addresses, so the claim now requires the league to be **empty**.
+  A populated ownerless league stays vacant until an admin grants the role to
+  someone already in it. See [features/leagues.md](features/leagues.md).
+
 - **The CSV is rendered on the client, not served as `text/csv`.** The route stays an
   ordinary zod-contracted `defineReadHandler` returning JSON, so it keeps its OpenAPI
   operation and its place in the cross-stack contract; `app/utils/csv.ts` turns that

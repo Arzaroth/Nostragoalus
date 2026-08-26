@@ -27,10 +27,16 @@ cookie ref is exposed as a per-Nuxt-app singleton (`useLeagueSelections`) becaus
 - `league_opt_out` is a separate "never auto-re-add" memory. Leaving, being
   kicked, or being admin-removed writes an opt-out row; rejoining or being
   admin-added clears it. This stops SSO auto-join from re-adding someone who left.
-- Ownership: the first joiner of an ownerless league becomes `OWNER` (including
-  via SSO auto-join). An ownerless league is legal (admins can create one). The
-  last member leaving keeps the league alive (code stays valid, next joiner
-  owns it); an admin "Prune empty leagues" action deletes memberless leagues.
+- Ownership: the first joiner of an **empty** ownerless league becomes `OWNER`
+  (including via SSO auto-join). An ownerless league is legal (admins can create
+  one). The last member leaving keeps the league alive (code stays valid, next
+  joiner owns it); an admin "Prune empty leagues" action deletes memberless
+  leagues. A league that still has members but lost its owner - only account
+  deletion does that - does **not** pass ownership to the next joiner, who joins
+  as a `MEMBER`: ownership carries the members' email addresses through the
+  [winners export](rewards.md), so a stranger cannot claim an orphaned league and
+  harvest them. It stays ownerless until an admin grants the role to a member
+  (`PUT /api/admin/leagues/[id]/members/[userId]`).
   An owner cannot leave while other members remain (transfer or delete first); a
   sole owner leaving deletes the league.
 
