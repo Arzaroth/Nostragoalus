@@ -9,7 +9,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 - Les requêtes vers le système de connexion ne peuvent plus contourner ses garde-fous avec une adresse web spécialement conçue. L'astuce passait outre les contrôles qui réservent aux administrateurs la gestion des fournisseurs d'identité et du provisionnement des comptes, ainsi que la confirmation du mot de passe exigée avant l'ajout d'une nouvelle clé d'accès à votre compte.
 - Une adresse d'image de profil ne peut plus diriger le serveur vers une destination choisie par l'expéditeur. Le seul hôte de fournisseur d'identité dont nous récupérons les photos est désormais vérifié exactement, au lieu d'être cherché n'importe où dans l'adresse.
-- Les briques logicielles du site ont été mises à jour vers leurs versions sécurisées les plus récentes. Cela corrige plusieurs failles signalées, dont les plus graves pouvaient faire qu'une page affichée à une personne connectée contienne les données d'une autre, que des règles d'accès soient ignorées pour des adresses écrites avec une casse inhabituelle, ou qu'un e-mail parte avec des pièces jointes qui auraient dû être refusées.
+- Les briques logicielles du site ont été mises à jour. Cela corrige plusieurs failles signalées, dont les plus graves pouvaient faire qu'une page affichée à une personne connectée contienne les données d'une autre, que des règles d'accès soient ignorées pour des adresses écrites avec une casse inhabituelle, ou qu'un e-mail parte avec des pièces jointes qui auraient dû être refusées.
 
 ## [4.5.0] - 2026-08-26
 

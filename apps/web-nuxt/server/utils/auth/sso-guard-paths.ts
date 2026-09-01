@@ -56,7 +56,16 @@ export function ssoCallbackProviderId(path: string): string | null {
   for (const prefix of SSO_CALLBACK_PREFIXES) {
     if (clean.startsWith(prefix)) {
       const segment = clean.slice(prefix.length).split('/')[0]
-      return segment ? decodeURIComponent(segment) : null
+      if (!segment) return null
+      // The segment is attacker-controlled, and a lone `%` makes
+      // decodeURIComponent throw - which would 500 the catch-all on an
+      // unauthenticated GET. A malformed escape cannot name a real provider,
+      // so fall back to the raw segment and let the enabled-check reject it.
+      try {
+        return decodeURIComponent(segment)
+      } catch {
+        return segment
+      }
     }
   }
   return null

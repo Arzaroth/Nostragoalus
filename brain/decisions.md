@@ -323,6 +323,21 @@ feature/architecture doc that implements it.
   (shared `@better-auth/core`). 1.6.23 also makes an SSO and a SCIM provider id
   mutually exclusive, so the SCIM connection uses a derived `{providerId}-scim`
   id; provisioned users still link to their SSO login by email.
+- **A path guard normalizes with the router's own parser, never by hand.**
+  The `/api/auth/*` guards used to match `event.path`, which better-auth never
+  routes on: the catch-all hands `toWebRequest(event)` to the handler, and that
+  Request is built from the RAW `originalUrl`, while `event.path` is the
+  percent-decoded target. Every difference between those two views is a bypass -
+  dot segments (`/api/auth/x/../scim/generate-token`), and encodings that decode
+  into delimiters (`x%23/..`, `x%3f/..`, `x%5c/..`) which end the guard's view
+  early while the router still resolves the traversal into the session-only SCIM
+  endpoint that mints a provisioning bearer. The fix is parity by construction:
+  `routedPath()` derives the path the same way h3 does and parses it with the same
+  URL parser, instead of hand-normalizing a different string. Corollary learned
+  the hard way in review: do not "harden" it with extra normalization the router
+  does not perform (stripping trailing slashes was proposed and rejected - the
+  router 404s those, so stripping would judge a path that is never routed).
+  See [architecture/auth.md](architecture/auth.md).
 
 ## Achievements and trophies
 

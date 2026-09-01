@@ -143,3 +143,28 @@ test('the SCIM management endpoints are blocked over HTTP even for an admin', as
   const direct = await admin.post('/api/auth/scim/generate-token', { data: { providerId: PROVIDER_ID } })
   expect(direct.status()).toBe(404)
 })
+
+// The guard and better-auth's router must agree on what the path IS. These are
+// the forms where they used to disagree: `event.path` resolves dot segments
+// differently from the raw target the router parses, and h3 percent-decodes it,
+// so `%23`/`%3f`/`%5c` could truncate the guard's view while the router still
+// resolved the traversal into a session-only endpoint. Sent as raw request
+// targets so nothing normalizes them before the server sees them.
+test('a crafted path cannot walk past the /api/auth guards', async () => {
+  test.skip(!SSO_ENABLED, 'set E2E_SSO=1 and bring up Keycloak (--profile e2e)')
+  const targets = [
+    '/api/auth/x/../scim/generate-token',
+    '/api/auth/x/%2e%2e/scim/generate-token',
+    '/api/auth/x%23/../scim/generate-token',
+    '/api/auth/x%3f/../sso/register',
+    '/api/auth/x%5c/../scim/generate-token',
+    '/api/auth/%2ex/../scim/generate-token',
+    '/api/auth//scim/generate-token',
+    '/api/auth/scim/generate-token/',
+  ]
+  for (const target of targets) {
+    const res = await admin.post(target, { data: { providerId: PROVIDER_ID } })
+    // Never 200: either the guard 404s it or the router refuses to route it.
+    expect(res.status(), `${target} reached a handler`).not.toBe(200)
+  }
+})

@@ -2744,6 +2744,52 @@ branch; the rest scored below the bar and are recorded here.
       `disableRedirect: true` plus the re-entrant loop re-runs `assertPublicHost`
       on every hop.
 
+## Auth guard review deferrals (2026-09-01, fix/auth-guard-path-normalization)
+
+From the feature-treatment review of the guard-normalization fix. The confirmed
+correctness and security findings were fixed on the branch; these are the rest.
+
+- [ ] `@better-auth/sso` also registers a BARE `/sso/callback` that resolves the
+      provider from the OAuth state rather than the path, and
+      `SSO_CALLBACK_PREFIXES` cannot match it, so the draft/disabled-provider gate
+      never fires there. It is inert only by configuration accident: the plugin
+      puts `ssoProviderId` into the state only when its `redirectURI` option is
+      set, and `lib/auth.ts` does not set it. Setting `redirectURI` later - the
+      documented way to share one callback URL across IdPs - silently reopens
+      draft-provider sign-in with no failing test. Gate the bare callback (or
+      assert the option stays unset) before anyone reaches for `redirectURI`.
+- [ ] The draft-provider gate double-decodes the providerId (h3 already decoded
+      `event.path`, then `ssoCallbackProviderId` runs `decodeURIComponent` again)
+      while rou3 hands the plugin the RAW segment, so `/sso/callback/p%69d` checks
+      provider `pid` and mints for `p%69d`. Fails closed today because no provider
+      id contains a percent escape; the durable fix is to read the provider id the
+      same way the plugin does rather than re-deriving it.
+- [ ] `matchesAny` still carries `path.startsWith(`${p}?`)` and
+      `ssoCallbackProviderId` still does `split('?')[0]`, but every production
+      caller now passes a query-free pathname, so that tolerance is dead code and
+      the unit tests feeding it `?x=1` assert inputs production cannot produce.
+      Harmless, but it is a second half-parser in the file whose whole point is
+      that only one parser decides the path.
+- [ ] `server/api/auth/[...all].ts` and `server/middleware/passkey-guard.ts` are
+      both outside the coverage gate, so reverting either to `event.path` reopens
+      the bypass with a fully green unit suite. Partly mitigated on this branch by
+      an e2e case sending the crafted targets raw; a guard-level integration test
+      would be stronger.
+- [ ] The VITEST-only `fetch.mjs` template override in `nuxt.config.ts` fails
+      silently if Nuxt renames the template (`if (template)` with no else), and
+      the nuxt test env sets `win.$fetch` itself - so the 62 component tests that
+      stub `$fetch` would go on passing while no longer testing the stub. Worth an
+      explicit throw when the template is missing, plus one spec asserting the
+      stub is actually reached.
+- [ ] `isUnusableAvatarUrl` is the SSRF allow-list but `fetchAvatarDataUrl` is what
+      carries the bearer and validates nothing itself; the pairing is enforced only
+      at an uncovered `lib/` call site. Moving the check into the function that
+      makes the request would make it structurally safe.
+- [ ] Scheme-less `user.image` values (`graph.microsoft.com/v1.0/me/photo/$value`)
+      that the old substring match accepted are no longer detected as unusable, so
+      any pre-existing row in that form keeps showing a broken avatar instead of
+      being repaired. Check whether such rows exist before deciding to care.
+
 ## Dependency updates (2026-08-13, refreshed 2026-09-01, fix/auth-guard-path-normalization)
 
 Every in-range dependency taken to latest (49 audit findings -> 2), plus the two

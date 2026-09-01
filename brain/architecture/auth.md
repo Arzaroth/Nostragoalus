@@ -1,6 +1,6 @@
 # Auth
 
-Authentication and authorization run on **better-auth** 1.6.23, configured in
+Authentication and authorization run on **better-auth** 1.6.27, configured in
 `apps/web-nuxt/lib/auth.ts` (`buildAuthOptions`). The Nitro catch-all `apps/web-nuxt/server/api/auth/[...all].ts`
 mounts all better-auth routes. This file covers the local auth surface, the admin
 model, passkeys/2FA/API keys, and the runtime SSO subsystem.
@@ -11,7 +11,17 @@ Every guard that decides on a `/api/auth/*` path matches
 resolves `.`, `..` and `\`, while `event.path` keeps them verbatim - so a guard
 reading `event.path` sees a different string than the router and
 `/api/auth/x/../scim/generate-token` walks past it into an endpoint gated only by
-a session. Both the catch-all and the passkey middleware go through the helper.
+a session. `event.path` is also percent-DECODED, while the dispatcher parses the
+RAW target, so `%23`, `%3f` and `%5c` decode into path delimiters that truncate a
+naive guard's view while the router still resolves the traversal. `routedPath`
+therefore derives the path exactly as `getRequestURL` does - raw
+`originalUrl`, leading slash run collapsed - and parses that. Both the catch-all
+and the passkey middleware go through the helper.
+
+The rule to keep: a guard must consume the path the dispatcher will route on,
+derived the same way, rather than re-normalizing a different string. Trailing
+slashes are deliberately left alone - better-call 404s a trailing-slash mismatch
+itself, so stripping would make the guard judge a path that is never routed.
 
 ## Local accounts
 

@@ -15,7 +15,10 @@ export function isUnusableAvatarUrl(image: string | null | undefined): boolean {
   if (!image) return false
   try {
     const u = new URL(image)
-    return u.protocol === 'https:' && u.hostname === 'graph.microsoft.com'
+    // Host AND path: `user.image` is client-writable, and this allow-list is what
+    // sends the user's OAuth bearer somewhere, so an arbitrary Graph path would be
+    // a server-side fetch primitive against any endpoint that token can reach.
+    return u.protocol === 'https:' && u.hostname === 'graph.microsoft.com' && u.pathname.endsWith('/photo/$value')
   } catch {
     return false
   }
