@@ -9,6 +9,7 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 - **qI' Daq He ngoDHa' luDoDlu'be'**: qI'meH He ngoDHa'lu'bogh lo'lu'DI', che'wI' neH lo'laHbogh nuD-SuqwI' SeHmeH chutmey luDoDlu'pu', 'ej passkey chu' chelmeH mu'qaD 'ol poQbogh chut luDoDlu'pu' je. DaH luDoDlu'laHbe'.
 - **mIllogh He wIvbogh ngeHwI'**: mIllogh He lo'lu'chugh, ngeHwI' wIvbogh Daq SuqmeH server ra'laHbe'. wa' nuD-SuqwI' Daq'e' mIlloghmey wISuqbogh 'olta'lu'chu'; He qoDDaq nejlu'be'.
+- **Dochmey chu'moHlu'pu'**: qach chenmoHmeH Dochmey Hoch chu'moHlu', 'ej Qagh law' luDoDlu'. Qagh potlhqu': wa' nuv HaSta'Daq latlh nuv De'; He mu' tIn mach qelbe'bogh chut; QIn chelwI' luDoDbogh.
 
 ## [4.5.0] - 2026-08-26
 

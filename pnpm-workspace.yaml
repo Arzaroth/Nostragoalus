@@ -11,3 +11,10 @@ allowBuilds:
   esbuild: true
   '@parcel/watcher': true
   vue-demi: true
+
+# The better-auth family is held at 1.6.27 (see TODO.md): 1.7 redesigned the SCIM
+# plugin. @better-auth/api-key's core range floats to 1.7.x on its own, and two
+# @better-auth/core copies in one tree make the plugin-registry types unassignable,
+# so collapse core to the version the pinned family expects.
+overrides:
+  '@better-auth/core': 1.6.27

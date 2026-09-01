@@ -19,12 +19,12 @@ Sources of truth: `package.json`, `pnpm-workspace.yaml`, `apps/web-nuxt/nuxt.con
 
 ## Framework / frontend
 
-- **Nuxt** 4.5.2 (Vue 3.5.41, vue-router 5.2.0). SSR + Nitro `node-server` preset.
+- **Nuxt** 4.5.2 (Vue 3.5.42, vue-router 5.3.0). SSR + Nitro `node-server` preset.
 - **Nitro** websocket enabled; OpenAPI docs served at `/_docs/openapi.json`.
 - **PrimeVue v4** (`@primevue/nuxt-module`) with `@primeuix/themes`; custom
   `NostraTheme` preset, dark mode via the `.app-dark` selector.
-- **UnoCSS** 66.7.5 (utility CSS; dark variant `.app-dark`).
-- **@tanstack/vue-query** 5.101.4 - the client data layer (see
+- **UnoCSS** 66.9.1 (utility CSS; dark variant `.app-dark`).
+- **@tanstack/vue-query** 5.102.8 - the client data layer (see
   [architecture/client.md](architecture/client.md)). App-level `staleTime: 60_000`,
   `refetchOnWindowFocus: false`.
 - **@nuxtjs/i18n** 10.6.0 - five locales `en / fr / th / tlh / ar` (see
@@ -36,8 +36,10 @@ Sources of truth: `package.json`, `pnpm-workspace.yaml`, `apps/web-nuxt/nuxt.con
 
 ## Auth
 
-- **better-auth** 1.6.27 with plugins, all in lockstep at 1.6.27 (`scim` +
-  `api-key` exact-pinned, the rest `^1.6.27`):
+- **better-auth** 1.6.27 with plugins, all in lockstep at 1.6.27, every one
+  **exact-pinned** and with a `@better-auth/core` override in
+  `pnpm-workspace.yaml`. 1.7 redesigned the SCIM plugin, so a caret would float
+  the app into a breaking line - see TODO.md ("Dependency updates"):
   - `@better-auth/sso` (OIDC + SAML, SAML via `samlify`)
   - `@better-auth/passkey`
   - `@better-auth/api-key`
@@ -62,17 +64,17 @@ Sources of truth: `package.json`, `pnpm-workspace.yaml`, `apps/web-nuxt/nuxt.con
 
 ## Server-rendered images / providers
 
-- **satori** 0.29.0 (HTML/CSS -> SVG) + **@resvg/resvg-js** 2.6.2 (SVG -> PNG)
+- **satori** 0.33.4 (HTML/CSS -> SVG) + **@resvg/resvg-js** 2.6.2 (SVG -> PNG)
   for OG/share cards. See [features/share-images.md](features/share-images.md).
 - **web-push** 3.6.7 - VAPID web push.
 - **cycletls** 2.0.5 - uTLS (browser JA3 fingerprint) HTTP engine for providers
   whose WAF (Cloudflare) blocks Node's default TLS: odds + link unfurl. See
   [architecture/providers.md](architecture/providers.md).
-- **marked** 18.0.9 (changelog/roadmap markdown), **qrcode** 1.5.4 (2FA).
+- **marked** 18.0.11 (changelog/roadmap markdown), **qrcode** 1.5.4 (2FA).
 
 ## Testing
 
-- **vitest** 4.1.10 + **@vitest/coverage-v8** 4.1.10 + **@nuxt/test-utils** 4.1.0.
+- **vitest** 4.1.11 + **@vitest/coverage-v8** 4.1.11 + **@nuxt/test-utils** 4.2.0.
 - **@electric-sql/pglite** - in-memory Postgres running the real migrations for
   service tests. See [architecture/testing.md](architecture/testing.md).
 

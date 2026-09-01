@@ -2744,23 +2744,38 @@ branch; the rest scored below the bar and are recorded here.
       `disableRedirect: true` plus the re-entrant loop re-runs `assertPublicHost`
       on every hop.
 
-## Dependency updates (2026-08-13, fix/auth-guard-path-normalization)
+## Dependency updates (2026-08-13, refreshed 2026-09-01, fix/auth-guard-path-normalization)
 
 Every in-range dependency taken to latest (49 audit findings -> 2), plus the two
 majors a HIGH advisory forced: `nuxt` 4.4.7 -> 4.5.2 and `nodemailer` 8 -> 9.
 
 - [ ] `@better-auth/scim` GHSA-j8v8-g9cx-5qf4 (HIGH, account/provider takeover
-      via missing owner binding on non-org SCIM providers) is the one advisory
-      still open: our SCIM providers are non-org, so we are in the affected
-      shape, and the fix only exists in the `1.7.0` pre-releases (`1.7.0-rc.5`
-      is current; `latest` is still the vulnerable `1.6.27`). Take the whole
-      better-auth stack to `1.7.0` once it goes stable, or decide to ride the RC.
+      via missing owner binding on non-org SCIM providers) is still the one open
+      advisory, and it is now a migration rather than a bump. 1.7.2 is stable and
+      fixes it, but 1.7 *redesigned* the SCIM plugin: `SCIMOptions` lost
+      `storeSCIMToken` and gained `connections` / `authentication` /
+      `managedConnections`, `auth.api.generateSCIMToken` is gone, and credentials
+      are now plugin-managed with an explicit `provisioningDomainId` ownership
+      boundary - which is precisely how they closed the hole. Adopting it means
+      reshaping `lib/auth.ts`, replacing the `scim-token.post/delete` admin routes
+      and our hashed-token storage, re-checking `sso-guard-paths.ts` against the
+      new endpoint set, a data migration for provisioned providers, and a new
+      required >=32-char `credentialHashSecret`. That last one makes it a **major**
+      release by our own rule. 15 files touch SCIM. Wants its own feature pass.
+      Attempted on 2026-09-01 and reverted; the family is pinned meanwhile.
+- [ ] The better-auth family is pinned to exact `1.6.27` (not `^`) with a
+      `@better-auth/core: 1.6.27` override in `pnpm-workspace.yaml`, because
+      `^1.6.27` floats into the breaking 1.7 line and `@better-auth/api-key`
+      drags a second `@better-auth/core` in on its own, which makes the
+      plugin-registry types unassignable. Drop both when the SCIM migration
+      above lands.
 - [ ] `esbuild <=0.24.2` (MODERATE, dev-server request forgery) survives only
       through `drizzle-kit` -> deprecated `@esbuild-kit/*`. Dev-only tooling, no
       prod reach; clears itself when drizzle-kit drops esbuild-kit.
-- [x] `satori` 0.26 -> 0.29 done - no API change, cards verified by rendering.
+- [x] `satori` 0.26 -> 0.33 done - no API change, cards verified by rendering
+      (`SHARE_CARD_DUMP=1`) at both 0.29 and 0.33.
 - [ ] TypeScript 6 -> 7 blocked on tooling, not on us: no `vue-tsc` release
-      supports it yet (3.3.9, published after TS 7 shipped, still resolves
+      supports it yet (re-checked at 3.3.11: still resolves
       `typescript/lib/tsc`, a subpath the native port dropped), so
       `pnpm typecheck` dies with `ERR_PACKAGE_PATH_NOT_EXPORTED`. Retry when
       vue-tsc / `@vue/language-tools` ships TS 7 support.
@@ -2770,6 +2785,9 @@ majors a HIGH advisory forced: `nuxt` 4.4.7 -> 4.5.2 and `nodemailer` 8 -> 9.
       still tagged, but `@primeuix/themes` has no v2 tag, so 2.0.3 is simply the
       last MIT build. If v4 stops getting security fixes the answer is a
       UI-library migration, so it wants its own planning pass.
+- [ ] `isomorphic-dompurify` 4.0 is out (major, published the same day it was
+      considered). No advisory forces it and it is an XSS-sanitiser boundary, so
+      it stayed on 3.x pending a look at the v4 changes.
 - [ ] Nuxt 4.5 turned `$fetch` into an auto-import backed by a build template
       that snapshots `globalThis.$fetch`, which broke all 62 component tests
       stubbing it with `vi.stubGlobal`. Worked around with a VITEST-only
