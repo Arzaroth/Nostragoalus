@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [4.5.1] - 2026-09-01
+
 ### Security
 
 - Requests to the sign-in system can no longer dodge its guards with a specially crafted web address. The trick got past the checks that keep identity-provider and user-provisioning management admin-only, and past the password confirmation required before a new passkey is added to your account.

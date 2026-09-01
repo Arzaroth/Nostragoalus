@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [4.5.1] - 2026-09-01
+
 ### Hung
 
 - **qI' Daq He ngoDHa' luDoDlu'be'**: qI'meH He ngoDHa'lu'bogh lo'lu'DI', che'wI' neH lo'laHbogh nuD-SuqwI' SeHmeH chutmey luDoDlu'pu', 'ej passkey chu' chelmeH mu'qaD 'ol poQbogh chut luDoDlu'pu' je. DaH luDoDlu'laHbe'.
