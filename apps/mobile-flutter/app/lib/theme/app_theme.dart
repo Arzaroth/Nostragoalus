@@ -20,10 +20,13 @@ class AppTheme {
         _ => brand,
       };
 
+  // Dark-first, matching the web: only an explicit 'light' opts out, and
+  // 'system' still defers to the platform. A null or unknown preference lands
+  // on dark rather than the platform default.
   static ThemeMode themeModeFor(String? theme) => switch (theme) {
         'light' => ThemeMode.light,
-        'dark' => ThemeMode.dark,
-        _ => ThemeMode.system,
+        'system' => ThemeMode.system,
+        _ => ThemeMode.dark,
       };
 
   // Surface ramp from lib/theme.ts (indigo-tinted neutrals).
@@ -32,12 +35,29 @@ class AppTheme {
   static const _darkElev = Color(0xFF262A3F); // surface-800
   static const _lightBase = Color(0xFFE7E8F6); // --ng-base
 
+  /// The scaffold gradient painted behind the whole app (scaffolds are
+  /// transparent so it shows through), echoing the web's tinted background: a
+  /// faint indigo-to-emerald wash over the base.
+  static const darkScaffoldGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF141827), _darkBase, Color(0xFF0C1512)],
+    stops: [0.0, 0.55, 1.0],
+  );
+
+  static const lightScaffoldGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFFEDEEFA), _lightBase, Color(0xFFE7F0EC)],
+    stops: [0.0, 0.55, 1.0],
+  );
+
   static ThemeData light([Color seed = brand]) {
     final scheme = ColorScheme.fromSeed(
       seedColor: seed,
       brightness: Brightness.light,
     ).copyWith(secondary: emerald, tertiary: amber, error: danger);
-    return _base(scheme, _lightBase);
+    return _base(scheme);
   }
 
   static ThemeData dark([Color seed = brand]) {
@@ -55,16 +75,18 @@ class AppTheme {
       surfaceContainerHigh: _darkElev,
       surfaceContainerHighest: _darkElev,
     );
-    return _base(scheme, _darkBase);
+    return _base(scheme);
   }
 
-  static ThemeData _base(ColorScheme scheme, Color scaffold) {
+  static ThemeData _base(ColorScheme scheme) {
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
-      scaffoldBackgroundColor: scaffold,
-      appBarTheme: AppBarTheme(
-        backgroundColor: scaffold,
+      // Transparent so the root gradient (painted in app.dart) shows through
+      // every scaffold and app bar, the way the web's tinted background does.
+      scaffoldBackgroundColor: Colors.transparent,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         centerTitle: false,
       ),

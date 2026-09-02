@@ -10,6 +10,7 @@ import '../widgets/async_value_view.dart';
 import '../widgets/reactions_bar.dart';
 import '../widgets/score_pill.dart';
 import '../widgets/scorers_table.dart';
+import '../widgets/team_flag.dart';
 import 'crowd_consensus.dart';
 import 'past_picks.dart';
 import 'prediction_editor.dart';
@@ -157,17 +158,38 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
                       Row(
                         children: [
                           Expanded(
-                              child: Text(m.homeTeam,
-                                  style: Theme.of(context).textTheme.titleLarge,
-                                  textAlign: TextAlign.end)),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Flexible(
+                                    child: Text(m.homeTeam,
+                                        style: Theme.of(context).textTheme.titleLarge,
+                                        textAlign: TextAlign.end,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis)),
+                                const SizedBox(width: 10),
+                                TeamFlag(m.homeTeamCode, height: 30),
+                              ],
+                            ),
+                          ),
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                             child: ScorePill(
                                 status: m.status, home: m.fullTimeHome, away: m.fullTimeAway),
                           ),
                           Expanded(
-                              child: Text(m.awayTeam,
-                                  style: Theme.of(context).textTheme.titleLarge)),
+                            child: Row(
+                              children: [
+                                TeamFlag(m.awayTeamCode, height: 30),
+                                const SizedBox(width: 10),
+                                Flexible(
+                                    child: Text(m.awayTeam,
+                                        style: Theme.of(context).textTheme.titleLarge,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis)),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                     ],

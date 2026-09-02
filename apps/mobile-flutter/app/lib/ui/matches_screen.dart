@@ -8,8 +8,8 @@ import 'competition_switcher.dart';
 import 'match_detail_screen.dart';
 import 'widgets/async_value_view.dart';
 import 'widgets/empty_state.dart';
+import 'widgets/match_card.dart';
 import 'widgets/notifications_bell.dart';
-import 'widgets/score_pill.dart';
 
 /// Fixtures list, grouped by round. A round whose matches have all been played
 /// starts collapsed (the final is never folded), so the list lands on what is
@@ -94,11 +94,19 @@ class _MatchTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: match.isLocked ? const Icon(Icons.lock, size: 18) : const Icon(Icons.schedule, size: 18),
-      title: Text('${match.homeTeam} v ${match.awayTeam}'),
-      subtitle: Text(match.roundLabel),
-      trailing: ScorePill(status: match.status, home: match.fullTimeHome, away: match.fullTimeAway),
+    final l = MaterialLocalizations.of(context);
+    final k = match.kickoffTime.toLocal();
+    final kickoff = '${l.formatMediumDate(k)} · ${l.formatTimeOfDay(TimeOfDay.fromDateTime(k))}';
+    return MatchCard(
+      homeTeam: match.homeTeam,
+      awayTeam: match.awayTeam,
+      homeCode: match.homeTeamCode,
+      awayCode: match.awayTeamCode,
+      status: match.status,
+      kickoffLabel: kickoff,
+      homeGoals: match.fullTimeHome,
+      awayGoals: match.fullTimeAway,
+      locked: match.isLocked,
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => MatchDetailScreen(matchId: match.id)),
       ),

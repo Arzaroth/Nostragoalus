@@ -43,12 +43,33 @@ class NostragoalusApp extends ConsumerWidget {
               themeMode: mode,
               builder: (context, child) => Directionality(
                 textDirection: i18n.textDirection,
-                child: DeepLinkController(child: child!),
+                child: _GradientBackground(
+                  child: DeepLinkController(child: child!),
+                ),
               ),
               home: const _AuthGate(),
             ),
           ),
         );
+  }
+}
+
+/// Paints the theme's scaffold gradient behind the whole app. Scaffolds are
+/// transparent (see AppTheme), so this wash shows through every screen the way
+/// the web's tinted background does.
+class _GradientBackground extends StatelessWidget {
+  const _GradientBackground({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: dark ? AppTheme.darkScaffoldGradient : AppTheme.lightScaffoldGradient,
+      ),
+      child: child,
+    );
   }
 }
 
