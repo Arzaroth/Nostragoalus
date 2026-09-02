@@ -10,6 +10,7 @@ import 'widgets/async_value_view.dart';
 import 'widgets/empty_state.dart';
 import 'widgets/match_card.dart';
 import 'widgets/notifications_bell.dart';
+import 'widgets/stat_tile.dart';
 
 /// Fixtures list, grouped by round. A round whose matches have all been played
 /// starts collapsed (the final is never folded), so the list lands on what is
@@ -35,12 +36,54 @@ class MatchesScreen extends ConsumerWidget {
               return EmptyState(message: context.tr('matches.empty'));
             }
             final rounds = groupByRound(res.matches);
-            return ListView.builder(
-              itemCount: rounds.length,
-              itemBuilder: (context, i) => _RoundGroup(rounds[i]),
+            return ListView(
+              children: [
+                const _StatHeader(),
+                for (final r in rounds) _RoundGroup(r),
+              ],
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+/// The web fixtures page leads with the player's standing; mirror a compact
+/// Points / Rank / Exact strip above the list, read off the leaderboard the
+/// leaderboard tab already fetches. Renders nothing until it resolves, so it
+/// never delays or blocks the fixtures.
+class _StatHeader extends ConsumerWidget {
+  const _StatHeader();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final board = ref.watch(leaderboardProvider).valueOrNull;
+    final myId = ref.watch(authControllerProvider).valueOrNull?.id;
+    if (board == null || myId == null) return const SizedBox.shrink();
+
+    LeaderboardResponseRow? mine;
+    for (final r in board.rows) {
+      if (r.userId == myId) {
+        mine = r;
+        break;
+      }
+    }
+    if (mine == null) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      child: Row(
+        children: [
+          Expanded(
+              child: StatTile(
+                  label: context.tr('picks.points'), value: '${mine.totalPoints.toInt()}')),
+          Expanded(
+              child: StatTile(label: context.tr('stats.rank'), value: '#${mine.rank.toInt()}')),
+          Expanded(
+              child: StatTile(
+                  label: context.tr('picks.exact'), value: '${mine.exactCount.toInt()}')),
+        ],
       ),
     );
   }
