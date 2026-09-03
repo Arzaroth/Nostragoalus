@@ -24,30 +24,98 @@ class MatchesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final matches = ref.watch(matchesProvider);
+    final active = ref.watch(matchFilterProvider);
     return Scaffold(
       appBar: AppBar(
         title: Text(context.tr('nav.matches')),
         actions: const [CompetitionSwitcher(), NotificationsBell()],
       ),
-      body: RefreshIndicator(
-        onRefresh: () async => ref.refresh(matchesProvider.future),
-        child: AsyncValueView<MatchesResponse>(
-          value: matches,
-          onRetry: () => ref.invalidate(matchesProvider),
-          data: (res) {
-            if (res.matches.isEmpty) {
-              return EmptyState(message: context.tr('matches.empty'));
-            }
-            final rounds = groupByRound(res.matches);
-            return ListView(
-              children: [
-                const _StatHeader(),
-                const _PicksSection(),
-                for (final r in rounds) _RoundGroup(r),
-              ],
-            );
-          },
-        ),
+      body: Column(
+        children: [
+          const _FilterBar(),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () async => ref.refresh(matchesProvider.future),
+              child: AsyncValueView<MatchesResponse>(
+                value: matches,
+                onRetry: () => ref.invalidate(matchesProvider),
+                data: (res) {
+                  if (res.matches.isEmpty) {
+                    return EmptyState(message: context.tr('matches.empty'));
+                  }
+                  final shown =
+                      res.matches.where((m) => active.contains(_filterOf(m.status))).toList();
+                  final rounds = groupByRound(shown);
+                  return ListView(
+                    children: [
+                      const _StatHeader(),
+                      const _PicksSection(),
+                      if (rounds.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 48),
+                          child: Center(child: Text(context.tr('matches.noResults'))),
+                        ),
+                      for (final r in rounds) _RoundGroup(r),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Which status bucket a match falls in, for the fixtures filter chips.
+enum MatchFilter { full, live, upcoming }
+
+MatchFilter _filterOf(StatusValue s) => switch (s) {
+      StatusValue.finished || StatusValue.awarded => MatchFilter.full,
+      StatusValue.live || StatusValue.paused => MatchFilter.live,
+      _ => MatchFilter.upcoming,
+    };
+
+/// The active fixtures filters (all on by default). A chip toggles its bucket;
+/// clearing the last one is disallowed so the list never goes blank by accident.
+final matchFilterProvider = StateProvider.autoDispose<Set<MatchFilter>>(
+    (ref) => {MatchFilter.full, MatchFilter.live, MatchFilter.upcoming});
+
+class _FilterBar extends ConsumerWidget {
+  const _FilterBar();
+
+  static const _labelKeys = {
+    MatchFilter.full: 'match.statusLabel.fullTime',
+    MatchFilter.live: 'match.statusLabel.live',
+    MatchFilter.upcoming: 'match.statusLabel.scheduled',
+  };
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final active = ref.watch(matchFilterProvider);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+      child: Row(
+        children: [
+          for (final f in MatchFilter.values)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: FilterChip(
+                label: Text(context.tr(_labelKeys[f]!)),
+                selected: active.contains(f),
+                onSelected: (on) {
+                  final next = {...active};
+                  if (on) {
+                    next.add(f);
+                  } else if (next.length > 1) {
+                    next.remove(f);
+                  }
+                  ref.read(matchFilterProvider.notifier).state = next;
+                },
+              ),
+            ),
+        ],
       ),
     );
   }
