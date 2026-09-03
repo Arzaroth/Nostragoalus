@@ -5,6 +5,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+
+- Foundations for a Nostragoalus mobile app, still in development. The server can now sign a native app in over a secure app link, single sign-on included, without a password or session ever appearing in a web address, and it serves the extra match and conversation details the app displays. The website itself is unchanged.
+
+### Fixed
+
+- The match play-by-play commentary no longer prints a raw placeholder in place of a match period it does not recognise.
+
 ## [4.5.1] - 2026-09-01
 
 ### Security

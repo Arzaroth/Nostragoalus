@@ -5,6 +5,14 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Ajouté
+
+- Les fondations d'une application mobile Nostragoalus, encore en développement. Le serveur peut désormais connecter une application native via un lien d'application sécurisé, authentification unique comprise, sans qu'un mot de passe ni une session n'apparaisse jamais dans une adresse web, et il fournit les détails de match et de conversation supplémentaires que l'application affiche. Le site web lui-même est inchangé.
+
+### Corrigé
+
+- Le commentaire en direct des matchs n'affiche plus un espace réservé brut à la place d'une période de match qu'il ne reconnaît pas.
+
 ## [4.5.1] - 2026-09-01
 
 ### Sécurité

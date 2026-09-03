@@ -5,6 +5,14 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### chelpu'
+
+- **Nostragoalus ngefang QuQ mIw taghlu'pu'** (chenmoHtaHvIS): DaH server-Daq ngefang chu' luchel He QI, wa'DIch 'el mIw je; He QIDaq mu'qaD, session je 'angbe'. QojmeH De', ja'chuqmeH De' je nob server; 'ach web Sar choHbe'.
+
+### tI'pu'
+
+- Qoj ja'chuqmeH poH luSovbe'bogh Daq, per HeghrupHa' 'aghbe' DaH.
+
 ## [4.5.1] - 2026-09-01
 
 ### Hung
