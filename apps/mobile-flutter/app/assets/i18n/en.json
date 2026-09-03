@@ -151,6 +151,10 @@
   "reward": {
     "title": "Prizes",
     "edit": "Edit prizes",
+    "exportCsv": "Export winners (CSV)",
+    "exportHint": "Download the current prize holders and their email addresses.",
+    "exportEmpty": "No prize has a holder yet.",
+    "exportFailed": "Could not export the winners.",
     "save": "Save prizes",
     "held": "Prizes you hold",
     "none": "No prizes set for this league yet.",

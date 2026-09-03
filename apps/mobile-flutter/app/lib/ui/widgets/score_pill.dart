@@ -13,7 +13,13 @@ class ScorePill extends StatelessWidget {
   final int? away;
 
   static const _live = {StatusValue.live, StatusValue.paused};
-  static const _played = {StatusValue.live, StatusValue.paused, StatusValue.finished};
+  // Awarded (walkover) matches carry a final score, so show it like any played match.
+  static const _played = {
+    StatusValue.live,
+    StatusValue.paused,
+    StatusValue.finished,
+    StatusValue.awarded,
+  };
 
   static const _statusKeys = {
     StatusValue.scheduled: 'scheduled',

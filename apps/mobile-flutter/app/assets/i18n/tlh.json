@@ -146,6 +146,10 @@
   "reward": {
     "title": "pop",
     "edit": "pop yIchoH",
+    "exportCsv": "QapwI'pu' yIngeH (CSV)",
+    "exportHint": "DaH pop ghajwI'pu' QInHom je yIHot.",
+    "exportEmpty": "pop ghajwI' tu'lu'be'.",
+    "exportFailed": "QapwI'pu' ngeHlaHbe'.",
     "save": "pop yIpol",
     "held": "pop Daghajbogh",
     "none": "boqvamvaD pop tu'lu'be'.",

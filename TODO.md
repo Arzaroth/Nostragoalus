@@ -2935,6 +2935,22 @@ Deliberately NOT doing, with reasons:
       it properly needs a pinned genesis shipped with the app.
 
 
+Surfaced by the feature-treatment review (low severity, accepted):
+
+- [ ] SSO exchange consumes the code (`DELETE ... RETURNING`) keyed on the code
+      hash BEFORE the state/verifier binding is checked
+      (`server/utils/sso/mobile-exchange.ts`), so a redirect observer who has the
+      code+state but not the verifier can burn one login attempt (availability
+      nuisance, no token leak). It is the unverified-App-Link case the design
+      already mitigates with verified App Links. A hardening would consume
+      conditioned on the verifier challenge; deferred to avoid reworking the
+      atomic single-use path.
+- [ ] `isModedLeague(ModeValue.unknown)` returns false, so a future moded league
+      type whose wire value is not yet in the generated enum would save picks via
+      the account-wide `/api/predictions` route instead of the per-league
+      override (`lib/state/providers.dart`). NORMAL is the safe default guess;
+      revisit if a new moded type ships before the enum is regenerated.
+
 Deferred by the review fix pass (each was a deliberate call, not an oversight):
 
 - [x] **Mobile SSO has never worked and needs a server route.** better-auth's SSO

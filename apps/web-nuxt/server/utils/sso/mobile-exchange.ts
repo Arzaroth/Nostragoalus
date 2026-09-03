@@ -30,8 +30,8 @@ export const MOBILE_SSO_CALLBACK_PATH = '/mobile/sso-callback'
 // into a redirect can only ever carry [A-Za-z0-9_-].
 const OPAQUE = /^[A-Za-z0-9_-]{16,128}$/
 
-// One code per second per caller is already generous for a human sign-in; the
-// budget only exists to stop someone grinding the code space.
+// Ten exchanges a minute per caller is ample for a human sign-in; the budget
+// only exists to stop someone grinding the code space.
 const limiter = createRateLimiter({ limit: 10, windowMs: 60_000 })
 
 export function isOpaqueNonce(value: unknown): value is string {
