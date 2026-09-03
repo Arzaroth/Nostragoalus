@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/models.gen.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import 'best_scorer_screen.dart';
+import 'champion_screen.dart';
 import 'competition_switcher.dart';
 import 'match_detail_screen.dart';
 import 'widgets/async_value_view.dart';
@@ -11,6 +13,7 @@ import 'widgets/empty_state.dart';
 import 'widgets/match_card.dart';
 import 'widgets/notifications_bell.dart';
 import 'widgets/stat_tile.dart';
+import 'widgets/team_flag.dart';
 
 /// Fixtures list, grouped by round. A round whose matches have all been played
 /// starts collapsed (the final is never folded), so the list lands on what is
@@ -39,6 +42,7 @@ class MatchesScreen extends ConsumerWidget {
             return ListView(
               children: [
                 const _StatHeader(),
+                const _PicksSection(),
                 for (final r in rounds) _RoundGroup(r),
               ],
             );
@@ -84,6 +88,130 @@ class _StatHeader extends ConsumerWidget {
               child: StatTile(
                   label: context.tr('picks.exact'), value: '${mine.exactCount.toInt()}')),
         ],
+      ),
+    );
+  }
+}
+
+/// The champion + best-scorer season picks, as the web shows them at the top of
+/// the fixtures page: each a card with the current pick (or a prompt) that opens
+/// its full screen. Renders nothing until both resolve, so it never blocks the
+/// fixtures.
+class _PicksSection extends ConsumerWidget {
+  const _PicksSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final champion = ref.watch(championProvider).valueOrNull;
+    final scorer = ref.watch(bestScorerProvider).valueOrNull;
+    if (champion == null || scorer == null) return const SizedBox.shrink();
+
+    final cp = champion.myPick;
+    final sp = scorer.myPick;
+    return Column(
+      children: [
+        _PickCard(
+          icon: Icons.emoji_events,
+          title: context.tr('champion.title'),
+          hint: context.tr('champion.hint'),
+          pick: cp == null
+              ? null
+              : _Pick(code: cp.teamCode, label: cp.teamName),
+          ctaKey: champion.locked ? 'champion.noPick' : 'champion.pick',
+          onTap: () =>
+              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ChampionScreen())),
+        ),
+        _PickCard(
+          icon: Icons.sports_soccer,
+          title: context.tr('bestScorer.title'),
+          hint: context.tr('bestScorer.hint'),
+          pick: sp == null
+              ? null
+              : _Pick(code: sp.teamCode, label: sp.playerName),
+          ctaKey: scorer.locked ? 'bestScorer.noPick' : 'bestScorer.pickPlayer',
+          onTap: () => Navigator.of(context)
+              .push(MaterialPageRoute(builder: (_) => const BestScorerScreen())),
+        ),
+      ],
+    );
+  }
+}
+
+class _Pick {
+  const _Pick({required this.code, required this.label});
+  final String? code;
+  final String label;
+}
+
+class _PickCard extends StatelessWidget {
+  const _PickCard({
+    required this.icon,
+    required this.title,
+    required this.hint,
+    required this.pick,
+    required this.ctaKey,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String hint;
+  final _Pick? pick;
+  final String ctaKey;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Icon(icon, size: 20, color: scheme.tertiary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: theme.textTheme.titleSmall),
+                    const SizedBox(height: 3),
+                    Text(hint,
+                        style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+                    const SizedBox(height: 6),
+                    if (pick != null)
+                      Row(
+                        children: [
+                          if (pick!.code != null) ...[
+                            TeamFlag(pick!.code, height: 18),
+                            const SizedBox(width: 8),
+                          ],
+                          Flexible(
+                            child: Text(pick!.label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.bodyMedium
+                                    ?.copyWith(fontWeight: FontWeight.w600)),
+                          ),
+                        ],
+                      )
+                    else
+                      Text(context.tr(ctaKey),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                              color: ctaKey.endsWith('noPick') ? scheme.onSurfaceVariant : scheme.primary,
+                              fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, size: 18, color: scheme.outline),
+            ],
+          ),
+        ),
       ),
     );
   }
