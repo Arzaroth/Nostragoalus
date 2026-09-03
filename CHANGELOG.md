@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [4.6.0] - 2026-09-03
+
 ### Added
 
 - Foundations for a Nostragoalus mobile app, still in development. The server can now sign a native app in over a secure app link, single sign-on included, without a password or session ever appearing in a web address, and it serves the extra match and conversation details the app displays. The website itself is unchanged.

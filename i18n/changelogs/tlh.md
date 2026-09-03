@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [4.6.0] - 2026-09-03
+
 ### chelpu'
 
 - **Nostragoalus ngefang QuQ mIw taghlu'pu'** (chenmoHtaHvIS): DaH server-Daq ngefang chu' luchel He QI, wa'DIch 'el mIw je; He QIDaq mu'qaD, session je 'angbe'. QojmeH De', ja'chuqmeH De' je nob server; 'ach web Sar choHbe'.
