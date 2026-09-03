@@ -37,6 +37,31 @@ Inside `app/lib/`:
 | `deeplink/` | Inbound `goal.arzaroth.com/...` App Links. |
 | `auth/` | Identifier-first SSO: the browser round trip and the code exchange ([../architecture/auth.md](../architecture/auth.md)). |
 
+## Look and feel
+
+The app follows the web's visual language rather than stock Material. `theme/app_theme.dart`
+is dark-first (a null or unknown user preference lands on dark; only an explicit
+`light`, or `system`, opts out) and paints a faint indigo-to-emerald gradient
+behind the whole app via a root builder in `app.dart`, with every scaffold and
+app bar transparent so the wash shows through.
+
+Matches are flag-forward. `ui/widgets/team_flag.dart` renders a national flag by
+FIFA tricode from `app/assets/flags/<CODE>.png` - the same square FIFA images the
+web's `flagUrl` serves ([../architecture/cross-stack-contract.md](../architecture/cross-stack-contract.md)),
+vendored (not a package, not a CDN) so they work offline, with a tinted code-chip
+fallback for a missing flag. `ui/widgets/match_card.dart` (flags + centre
+score/status + kickoff) replaces plain list rows on the fixtures screen and in
+the match-detail header. `ui/widgets/leaderboard_row_card.dart` mirrors the web
+`LeaderboardRowCard`: medal-or-number rank + movement, avatar, champion/best-scorer
+flag badges, exact/correct line, points, with the signed-in player's row
+outlined. The fixtures screen (`ui/matches_screen.dart`) leads with a
+Points/Rank/Exact stat strip, champion + best-scorer pick cards, and
+Full-time/Live/Scheduled filter chips, echoing the web fixtures dashboard.
+
+The flag set under `app/assets/flags/` is vendored image assets, not a synced
+mirror of a `shared/` source, so it is not part of the stale-check below; a new
+tricode is added by dropping its PNG in.
+
 ## Three committed mirrors, all stale-checked
 
 Nothing in the app is the source of truth for shared data. Three artifacts are
