@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostragoalus/api/auth_repository.dart';
 import 'package:nostragoalus/api/models.gen.dart';
+import 'package:nostragoalus/auth/sso.dart';
 import 'package:nostragoalus/i18n/i18n.dart';
 import 'package:nostragoalus/i18n/i18n_scope.dart';
 import 'package:nostragoalus/state/providers.dart';
@@ -44,12 +45,61 @@ const _authStrings = {
     'resetHint': 'Enter your email.',
     'resetSend': 'Send',
     'resetSent': 'Sent',
+    'ssoDomainUse': 'Sign in with {name}',
+    'or': 'or',
   },
-  'err': {'signInFailed': 'Sign in failed', 'generic': 'Something went wrong'},
+  'err': {
+    'signInFailed': 'Sign in failed',
+    'offline': 'Cannot reach the server',
+    'generic': 'Something went wrong',
+  },
   'prefs': {'language': 'Language'},
 };
 
+/// Records the domain lookups a screen makes and answers with one provider.
+class _FakeSso implements SsoService {
+  _FakeSso(this.checked);
+  final List<String> checked;
+
+  @override
+  Future<SsoProviderInfo?> check(String email) async {
+    checked.add(email);
+    return const SsoProviderInfo('idp', 'Axeo System');
+  }
+
+  @override
+  Future<bool> signIn(String providerId) async => true;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 void main() {
+  testWidgets('leaving the email field offers the domain SSO provider', (tester) async {
+    // Tapping from email straight into password is the ordinary way out of the
+    // field, and it fires no editing-complete action - so the lookup has to hang
+    // off focus or the button never appears for anyone who does that.
+    final checked = <String>[];
+    await tester.pumpWidget(_host(const SignInScreen(), _authStrings, [
+      ssoServiceProvider.overrideWith((ref) => _FakeSso(checked)),
+    ]));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.widgetWithText(TextFormField, 'Email'), 'someone@axxone.fr');
+    await tester.tap(find.widgetWithText(TextFormField, 'Password'));
+    await tester.pumpAndSettle();
+
+    expect(checked, ['someone@axxone.fr']);
+    expect(find.text('Sign in with Axeo System'), findsOneWidget);
+
+    // Bouncing focus back and forth must not re-ask for the same address.
+    await tester.tap(find.widgetWithText(TextFormField, 'Email'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextFormField, 'Password'));
+    await tester.pumpAndSettle();
+    expect(checked, ['someone@axxone.fr']);
+  });
+
   testWidgets('SignInScreen shows real errors, not the field labels', (tester) async {
     await tester.pumpWidget(_host(const SignInScreen(), _authStrings));
     await tester.pumpAndSettle();

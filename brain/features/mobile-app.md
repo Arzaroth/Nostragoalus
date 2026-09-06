@@ -154,12 +154,23 @@ The open debt is listed in the root `TODO.md` under "Mobile app".
 
 - Android release signs with a real keystore **when one is configured** -
   `android/key.properties` (gitignored) or `NG_ANDROID_KEYSTORE` +
-  `NG_ANDROID_{STORE_PASSWORD,KEY_ALIAS,KEY_PASSWORD}`. The repo contains no
-  keystore, so an unconfigured checkout falls back to the debug key purely so
-  `flutter run --release` works. That fallback must never be the identity
-  published in `assetlinks.json`: the debug keystore ships with every Android
-  SDK, so anyone could then claim `goal.arzaroth.com`'s links. There is still no
-  Play account.
+  `NG_ANDROID_{STORE_PASSWORD,KEY_ALIAS,KEY_PASSWORD}`. An unconfigured checkout
+  falls back to the debug key purely so `flutter run --release` works. That
+  fallback must never be the identity published in `assetlinks.json`: the debug
+  keystore ships with every Android SDK, so anyone could then claim
+  `goal.arzaroth.com`'s links. The release keystore lives OUTSIDE the repo
+  (`~/.keys/nostragoalus/`) so no worktree removal or clean can destroy it -
+  losing it means never being able to update an installed app. `key.properties`
+  is the in-repo pointer at it, gitignored and listed in `.worktreeinclude` so a
+  new worktree can still build a publishable APK. There is still no Play account.
+- **The published APK is built against the public origin**, and the publish task
+  enforces it. `AppConfig.apiBase` is a compile-time `String.fromEnvironment`
+  defaulting to the emulator's host alias, so `mise run apk-publish` passes
+  `--dart-define=API_BASE` (plus `WEB_BASE`) and refuses to publish a base that
+  is not https or that points at a loopback. v4.7.0 shipped without the define:
+  every install could reach nothing, and the sign-in screen reported that as a
+  wrong password. `versionName`/`versionCode` come from the release version too,
+  so the APK's own metadata matches what `/api/app/android` advertises.
 - **Deep links are verified App Links**, not a custom scheme. The manifest
   autoVerify's `https://goal.arzaroth.com` (all paths, for share/league/match
   links) and `/mobile/sso-callback` on `flutter_web_auth_2`'s CallbackActivity.

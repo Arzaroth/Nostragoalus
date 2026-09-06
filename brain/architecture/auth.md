@@ -240,6 +240,17 @@ The handoff, all of it in
    code, a wrong state and a wrong verifier all fail identically (`404`, no
    oracle). Rate limited per client IP (10/min).
 
+**The two paths in step 1 and step 2 are different on purpose**, and conflating
+them is how this broke a second time (fixed in 4.7.2). `/api/sso/mobile-callback`
+is where better-auth is told to land: it is the only point that runs with the
+session cookie, so it is the only point that can park a bearer.
+`/mobile/sso-callback` is the App Link the app itself intercepts. Sending
+better-auth straight to the App Link looks equivalent and is not - better-auth
+redirects verbatim after setting the cookie, so the app receives its own `state`
+and `challenge` back with no `code` and no credential, and every attempt dies on
+`missing_code`. The client keeps them as two constants, `ssoParkPath` and
+`ssoCallbackPath`, and `sso_test.dart` pins the requested one.
+
 **No bearer ever rides a URL.** A URL lands in browser history, in intermediate
 redirect logs, and - until App Links verification is live on the device - in an
 Android intent any app registered for the host can read. The code alone would not

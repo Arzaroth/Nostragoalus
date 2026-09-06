@@ -16,3 +16,9 @@ node_modules/
 .nitro/
 .cache/
 .data/
+
+# Android release signing - key.properties points at a keystore kept OUTSIDE
+# the repo (~/.keys/nostragoalus), so a worktree needs the pointer to build a
+# publishable APK. Without it the release build silently falls back to the debug
+# key, which App Links verification rejects.
+apps/mobile-flutter/app/android/key.properties

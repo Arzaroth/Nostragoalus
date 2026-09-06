@@ -23,14 +23,28 @@ class SignInScreen extends ConsumerStatefulWidget {
 
 class _SignInScreenState extends ConsumerState<SignInScreen> {
   final _email = TextEditingController();
+  final _emailFocus = FocusNode();
   final _password = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   SsoProviderInfo? _sso;
+  String? _ssoChecked;
   bool _ssoBusy = false;
   bool _obscure = true;
 
   @override
+  void initState() {
+    super.initState();
+    // Losing focus is the common way out of the email field - tapping straight
+    // into the password. onEditingComplete alone only fires on the keyboard's
+    // action key, so anyone who did that never saw the SSO button at all.
+    _emailFocus.addListener(() {
+      if (!_emailFocus.hasFocus) _checkSso();
+    });
+  }
+
+  @override
   void dispose() {
+    _emailFocus.dispose();
     _email.dispose();
     _password.dispose();
     super.dispose();
@@ -49,6 +63,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   Future<void> _checkSso() async {
     final email = _email.text.trim();
     if (!email.contains('@')) return;
+    // Focus can bounce between the fields; only ask the server about an address
+    // it has not already answered for.
+    if (email == _ssoChecked) return;
+    _ssoChecked = email;
     final info = await ref.read(ssoServiceProvider).check(email);
     if (mounted) setState(() => _sso = info);
   }
@@ -115,6 +133,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     children: [
                       TextFormField(
                         controller: _email,
+                        focusNode: _emailFocus,
                         keyboardType: TextInputType.emailAddress,
                         autofillHints: const [AutofillHints.email],
                         onEditingComplete: _checkSso,
