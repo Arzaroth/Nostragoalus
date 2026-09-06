@@ -92,6 +92,18 @@ describe('readAndroidBuild', () => {
     expect(second.sha256).toBe(first.sha256)
   })
 
+  it('hashes once for a burst of concurrent cold-cache reads', async () => {
+    await write('fake-apk-bytes')
+    const [a, b, c] = await Promise.all([
+      readAndroidBuild(dir),
+      readAndroidBuild(dir),
+      readAndroidBuild(dir),
+    ])
+    expect(a.sha256).toBe(createHash('sha256').update('fake-apk-bytes').digest('hex'))
+    expect(b.sha256).toBe(a.sha256)
+    expect(c.sha256).toBe(a.sha256)
+  })
+
   it('re-hashes once a new build replaces the file', async () => {
     await write('build-one')
     const first = await readAndroidBuild(dir)
