@@ -51,23 +51,21 @@ const publishedOn = computed(() => build.value?.builtAt?.slice(0, 10) ?? null)
       >
         <i class="pi pi-download" />{{ t('androidApp.download') }}
       </a>
-      <dl class="mt-4 flex flex-col gap-2 text-sm">
-        <div v-if="build!.version" class="flex items-baseline gap-2">
-          <dt class="text-xs uppercase tracking-wider font-semibold shrink-0" style="color: var(--p-text-muted-color)">{{ t('androidApp.versionLabel') }}</dt>
+      <dl class="mt-4 grid grid-cols-[max-content_1fr] items-baseline gap-x-4 gap-y-2 text-sm">
+        <template v-if="build!.version">
+          <dt class="text-xs uppercase tracking-wider font-semibold" style="color: var(--p-text-muted-color)">{{ t('androidApp.versionLabel') }}</dt>
           <dd class="font-mono">{{ build!.version }}</dd>
-        </div>
-        <div v-if="megabytes" class="flex items-baseline gap-2">
-          <dt class="text-xs uppercase tracking-wider font-semibold shrink-0" style="color: var(--p-text-muted-color)">{{ t('androidApp.sizeLabel') }}</dt>
+        </template>
+        <template v-if="megabytes">
+          <dt class="text-xs uppercase tracking-wider font-semibold" style="color: var(--p-text-muted-color)">{{ t('androidApp.sizeLabel') }}</dt>
           <dd class="font-mono">{{ t('androidApp.size', { n: megabytes }) }}</dd>
-        </div>
-        <div v-if="publishedOn" class="flex items-baseline gap-2">
-          <dt class="text-xs uppercase tracking-wider font-semibold shrink-0" style="color: var(--p-text-muted-color)">{{ t('androidApp.builtLabel') }}</dt>
+        </template>
+        <template v-if="publishedOn">
+          <dt class="text-xs uppercase tracking-wider font-semibold" style="color: var(--p-text-muted-color)">{{ t('androidApp.builtLabel') }}</dt>
           <dd class="font-mono">{{ publishedOn }}</dd>
-        </div>
-        <div class="flex flex-col gap-1">
-          <dt class="text-xs uppercase tracking-wider font-semibold" style="color: var(--p-text-muted-color)">{{ t('androidApp.checksumLabel') }}</dt>
-          <dd class="font-mono text-xs break-all select-all p-2 rounded border" style="border-color: var(--p-content-border-color)">{{ groupedDigest }}</dd>
-        </div>
+        </template>
+        <dt class="col-span-2 mt-1 text-xs uppercase tracking-wider font-semibold" style="color: var(--p-text-muted-color)">{{ t('androidApp.checksumLabel') }}</dt>
+        <dd class="col-span-2 m-0 font-mono text-xs break-all select-all p-2 rounded border" style="border-color: var(--p-content-border-color)">{{ groupedDigest }}</dd>
       </dl>
       <p class="text-xs mt-3" style="color: var(--p-text-muted-color)">{{ t('androidApp.installNote') }}</p>
     </template>
