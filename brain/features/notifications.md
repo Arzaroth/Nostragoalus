@@ -20,11 +20,11 @@ One table, `user_notification`:
   unread with the new data, so a grouping key collapses a burst into one
   freshly-unread entry (used by `DM_MESSAGE`, one row per thread).
 
-The eleven `notification_type` values:
+The twelve `notification_type` values:
 
 `LEAGUE_JOIN`, `LEAGUE_ROLE`, `LEAGUE_REMOVED`, `PICK_REMINDER`, `MATCH_RESULT`,
 `CHAMPION_RESULT`, `BEST_SCORER_RESULT`, `TROPHY_AWARDED`,
-`ACHIEVEMENT_UNLOCKED`, `CHAT_MENTION`, `DM_MESSAGE`.
+`ACHIEVEMENT_UNLOCKED`, `CHAT_MENTION`, `DM_MESSAGE`, `VOICE_MISSED`.
 
 (The transient push-only `MATCH_LIVE` and `GOAL` kinds are NOT in this enum or
 the bell - see [web push](web-push.md).)
@@ -63,8 +63,9 @@ directly). Strings are i18n'd in all five locales.
   including 0), emitted from the finalize scoring transaction. Dedupe
   `match-result:{matchId}`.
 - `CHAMPION_RESULT` / `BEST_SCORER_RESULT` - to winners at finalize, deduped per
-  competition. See [champion pick](champion-pick.md) and [best
-  scorer](best-scorer.md).
+  competition, and announced only when the bonus changes hands (see
+  [announce once, not every tick](#announce-once-not-every-tick)). See [champion
+  pick](champion-pick.md) and [best scorer](best-scorer.md).
 - `TROPHY_AWARDED` / `ACHIEVEMENT_UNLOCKED` - competition-end trophies and
   milestone badges, emitted from the finalize scoring transaction (a badge like
   the secret unlock can also fire outside finalize). Both deep-link to the
@@ -91,6 +92,25 @@ directly). Strings are i18n'd in all five locales.
   in place), not a route, so it never lands on the home page. Web push still deep-
   links via `dmPath` (`/?dm=<threadId>`) for a fresh app open.
 
+## Announce once, not every tick
+
+`dedupeKey` only holds while the row exists, and dismissing is a hard delete - so
+a producer that re-runs against an unchanged world re-mints what the user threw
+away. `matches:finalize` is exactly that: it re-awards both meta-pick bonuses
+every 5 minutes forever, which is deliberate (it is what heals a `winner` the
+provider fills in late, since the re-score gate hashes only the scoreline and
+never sees `winner` move).
+
+So the award stays unconditional and the *announcement* is gated on state the
+user cannot delete: `awardChampionBonuses` and `awardBestScorerBonuses` read
+which picks hold the bonus before resetting, compare that to the set they just
+awarded, and call the notify helper only when the two differ. First award
+announces; the next thousand identical ticks say nothing; a corrected winner or a
+late Golden Boot goal announces again.
+
+Anything else minting a notification from a cron has to make the same call - the
+bell's delete button is a hard delete, and a dedupeKey alone will not survive it.
+
 ## Retention
 
 A daily `notifications:prune` task drops READ notifications older than 7 days and
@@ -101,6 +121,8 @@ caps each user to the newest 200.
 - `apps/web-nuxt/db/app-schema.ts` (`user_notification`, `notification_type`)
 - `apps/web-nuxt/shared/types/notifications.ts` (`NotificationType` / `NotificationData`, `cabinetPath`)
 - `apps/web-nuxt/server/utils/notifications/service.ts`, `events.ts`, `reminders.ts`
+- `apps/web-nuxt/server/utils/champion/service.ts`, `apps/web-nuxt/server/utils/bestscorer/service.ts`
+  (`awardChampionBonuses` / `awardBestScorerBonuses`, the announce-once gate)
 - `apps/web-nuxt/server/utils/live/hub.ts` (`publishUserNotification`)
 - `apps/web-nuxt/server/api/notifications/*`, `apps/web-nuxt/app/components/NotificationBell.vue`,
   `apps/web-nuxt/app/composables/useNotifications.ts`

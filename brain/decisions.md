@@ -633,3 +633,22 @@ See [features/mobile-app.md](features/mobile-app.md).
   blob are now frozen constants captured from one real seal run: bless recomputes
   only `expected`, so a diff means the crypto actually changed. That is also what
   a KAT is supposed to be.
+- **A recurring producer gates its notification on state, not on the dedupe row.**
+  `dedupeKey` is enforced by the row's presence in the partial unique index, and
+  the bell's dismiss is a hard delete - so a producer that re-runs against an
+  unchanged world hands itself the key back and re-mints what the user threw
+  away. `matches:finalize` re-awarded both meta-pick bonuses every 5 minutes, so
+  the champion notification came back within minutes of every delete, forever.
+  The award has to keep running (it is what heals a `winner` the provider fills
+  in late: `resultHashOf` hashes only status and the full-time score, so a
+  winner-only change never re-scores and never re-enters a "scored this tick"
+  branch - gating the award there loses the bonus outright for a final decided on
+  penalties). So the fix gates the *announcement* instead:
+  `awardChampionBonuses` / `awardBestScorerBonuses` compare who held the bonus
+  before the reset against who was just awarded, and notify only on a difference.
+  The rejected alternative was a `deleted_at` tombstone making every dismissed
+  deduped row permanent. It looked more general and was worse: `VOICE_MISSED` and
+  `MATCH_RESULT` reuse a stable key on purpose and would have been silenced for
+  good by one dismissal, and tombstones are exempt from both retention sweeps by
+  construction, so the table loses its only upper bound. See
+  [features/notifications.md](features/notifications.md).

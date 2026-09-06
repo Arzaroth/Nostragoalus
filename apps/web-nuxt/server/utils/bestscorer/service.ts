@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from 'drizzle-orm'
+import { and, eq, gt, inArray, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { bestScorerPick, goalEvent, match } from '../../../db/schema'
 import { LockedError } from '../errors'
@@ -120,6 +120,10 @@ export async function topScorerPlayerIds(db: AppDatabase, competitionId: string)
 // awarding early would crown a transient leader (and this runs AFTER the detail
 // sync that populates goal_event, not inside the scoring transaction).
 export async function awardBestScorerBonuses(db: AppDatabase, competitionId: string, bonus: number): Promise<number> {
+  const before = await db
+    .select({ id: bestScorerPick.id })
+    .from(bestScorerPick)
+    .where(and(eq(bestScorerPick.competitionId, competitionId), gt(bestScorerPick.awardedPoints, 0)))
   await db.update(bestScorerPick).set({ awardedPoints: 0 }).where(eq(bestScorerPick.competitionId, competitionId))
 
   const finals = await db
@@ -141,7 +145,16 @@ export async function awardBestScorerBonuses(db: AppDatabase, competitionId: str
       awardedPoints: sql`(CASE WHEN ${bestScorerPick.repicked} THEN ${halved} ELSE ${bonus} END)::int`,
     })
     .where(and(eq(bestScorerPick.competitionId, competitionId), inArray(bestScorerPick.playerId, winners)))
-    .returning({ id: bestScorerPick.id })
-  await notifyBestScorerResult(db, competitionId, winners)
+    .returning({ id: bestScorerPick.id, points: bestScorerPick.awardedPoints })
+
+  // Notify only when the bonus changes hands. This runs on every finalize tick
+  // (a late goal_event correction can still move the Golden Boot), and the
+  // dedupe is a row the user can delete - so re-announcing an unchanged award
+  // resurrects a dismissal.
+  const held = new Set(before.map((r) => r.id))
+  const awarded = updated.filter((r) => r.points > 0).map((r) => r.id)
+  if (awarded.length !== held.size || awarded.some((id) => !held.has(id))) {
+    await notifyBestScorerResult(db, competitionId, winners)
+  }
   return updated.length
 }

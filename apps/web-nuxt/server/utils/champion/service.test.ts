@@ -9,7 +9,7 @@ import {
   listCompetitionTeams,
   setChampionPick,
 } from './service'
-import { championPick } from '../../../db/schema'
+import { championPick, userNotification } from '../../../db/schema'
 import { LockedError } from '../errors'
 
 const PAST = new Date('2026-06-01T00:00:00Z')
@@ -107,6 +107,30 @@ describe('awardChampionBonuses', () => {
     byUser = Object.fromEntries((await db.select().from(championPick)).map((p) => [p.userId, p.awardedPoints]))
     expect(byUser[userId]).toBe(0)
     expect(byUser[other]).toBe(10)
+    await client.close()
+  })
+
+  it('announces the result once, so a dismissed notification is not re-minted by the next tick', async () => {
+    const { db, client, competitionId, userId } = await setup()
+    await setChampionPick(db, { userId, competitionId, teamCode: 'BRA', teamName: 'Brazil', ...snapshot })
+
+    await awardChampionBonuses(db, competitionId, 'BRA')
+    expect(await db.select().from(userNotification)).toHaveLength(1)
+
+    // The user dismisses it. finalize keeps calling this every 5 minutes (that
+    // is what heals a late `winner`), and it must stay dismissed.
+    await db.delete(userNotification)
+    await awardChampionBonuses(db, competitionId, 'BRA')
+    await awardChampionBonuses(db, competitionId, 'BRA')
+    expect(await db.select().from(userNotification)).toHaveLength(0)
+
+    // A corrected winner moves the bonus, which is worth announcing again.
+    const other = await makeUser(db, 'u2')
+    await setChampionPick(db, { userId: other, competitionId, teamCode: 'ARG', teamName: 'Argentina', ...snapshot })
+    await awardChampionBonuses(db, competitionId, 'ARG')
+    const after = await db.select().from(userNotification)
+    expect(after).toHaveLength(1)
+    expect(after[0]!.userId).toBe(other)
     await client.close()
   })
 

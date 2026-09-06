@@ -8,7 +8,7 @@ import {
   setBestScorerPick,
   topScorerPlayerIds,
 } from './service'
-import { bestScorerPick, goalEvent } from '../../../db/schema'
+import { bestScorerPick, goalEvent, userNotification } from '../../../db/schema'
 import { LockedError } from '../errors'
 
 const PAST = new Date('2026-06-01T00:00:00Z')
@@ -137,6 +137,25 @@ describe('awardBestScorerBonuses', () => {
     byUser = Object.fromEntries((await db.select().from(bestScorerPick)).map((p) => [p.userId, p.awardedPoints]))
     expect(byUser[userId]).toBe(10)
     expect(byUser[other]).toBe(10)
+    await client.close()
+  })
+
+  it('announces the result once, so a dismissed notification is not re-minted by the next tick', async () => {
+    const { db, client, competitionId, roundId, userId } = await setup()
+    await setBestScorerPick(db, { userId, competitionId, ...MBAPPE })
+    await seedDecidedFinal(db, competitionId)
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: PAST })
+    await makeGoal(db, { matchId: m, competitionId, playerId: 'p-mbappe' })
+
+    await awardBestScorerBonuses(db, competitionId, 10)
+    expect(await db.select().from(userNotification)).toHaveLength(1)
+
+    // The finalize task keeps calling this every 5 minutes; a dismissed
+    // notification must not come back on the next one.
+    await db.delete(userNotification)
+    await awardBestScorerBonuses(db, competitionId, 10)
+    await awardBestScorerBonuses(db, competitionId, 10)
+    expect(await db.select().from(userNotification)).toHaveLength(0)
     await client.close()
   })
 

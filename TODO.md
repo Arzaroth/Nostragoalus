@@ -1720,6 +1720,24 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
       older than 7 days and caps each user to the newest 200; users can also
       dismiss any notification individually (delete button, `POST
       /api/notifications/delete`). PICK_REMINDER keeps its own self-prune.
+- [ ] A dismissed PICK_REMINDER comes back on the next `*/15` tick while the
+      match is still unpicked, because the dedupe key only holds while the row
+      exists. Arguably right (it is a last-chance nudge, and it self-prunes at
+      kickoff and on pick), but "delete brought it back" is the same complaint
+      the meta-pick results just fixed. Decide whether a dismiss should silence
+      the nudge for that match, which needs state outside the notification row.
+- [ ] `CHAMPION_RESULT` / `BEST_SCORER_RESULT` dedupe per competition, so when a
+      corrected winner moves the bonus, the announce-once gate fires but only
+      reaches users with no result row yet - a previous winner keeps a now-wrong
+      "you won" entry, and a new winner who had one for the old result gets
+      nothing. Rare (it needs a post-final correction). Fix by keying the dedupe
+      on the winning team/player rather than the competition.
+- [ ] The `matches:finalize` tick keeps re-awarding both meta-pick bonuses every
+      5 minutes forever once the final is decided (the UPDATEs, not the
+      notification, which is now gated). That is deliberate - it is what heals a
+      `winner` the provider fills in late, since `resultHashOf` never sees
+      `winner` move - but it is unbounded churn on a settled competition. A cheap
+      guard would be to skip once the competition is archived.
 - [ ] The bell loads the newest 30 with no "load more" wired (the `before`
       cursor exists in the service/API but the UI doesn't page), while
       `countUnread` counts ALL unread - so >30 unread shows a badge larger than
@@ -1767,11 +1785,12 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
       dedupe freezes that notification (a later re-award fixes the points but never
       the notification). Acceptable given the ordering; harden by re-notifying when
       the winner set changes (ties into the stale-on-correction item).
-- [ ] `listNotifications` orders by `createdAt desc` only, and `createdAt` is
+- [x] `listNotifications` ordered by `createdAt desc` only, and `createdAt` is
       `defaultNow()` = the transaction-start time, so every notification minted in
-      one finalize tick shares an identical timestamp. The `before` pagination cursor
-      (`lt(createdAt, …)`) at such a tie boundary can skip or repeat rows. Add `id`
-      as a stable secondary sort and make the cursor composite (createdAt, id).
+      one finalize tick shares an identical timestamp, and the `before` cursor
+      could skip or repeat rows at that tie boundary. Done: `keysetBefore` makes
+      the cursor composite `(createdAt, id)` and the sort tiebreaks on `id`, with
+      `beforeId` threaded through `GET /api/notifications`.
 - [ ] The finalize task swallows `awardBestScorerBonuses` errors ("never fail the
       task over the best-scorer award") with no log, so a best-scorer award OR its
       notification write failing is invisible. Log the swallowed error at least

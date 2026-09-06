@@ -1,4 +1,4 @@
-import { and, eq, min, sql } from 'drizzle-orm'
+import { and, eq, gt, min, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { championPick, match } from '../../../db/schema'
 import { LockedError } from '../errors'
@@ -137,6 +137,10 @@ export async function awardChampionBonuses(
   winnerCode: string | null,
   collector?: PendingNotification[],
 ): Promise<number> {
+  const before = await db
+    .select({ id: championPick.id })
+    .from(championPick)
+    .where(and(eq(championPick.competitionId, competitionId), gt(championPick.awardedPoints, 0)))
   await db.update(championPick).set({ awardedPoints: 0 }).where(eq(championPick.competitionId, competitionId))
   if (!winnerCode) return 0
 
@@ -148,7 +152,16 @@ export async function awardChampionBonuses(
       awardedPoints: sql`CASE WHEN ${championPick.repicked} THEN ${championPick.potentialPoints} / 2 ELSE ${championPick.potentialPoints} END`,
     })
     .where(and(eq(championPick.competitionId, competitionId), eq(championPick.teamCode, winnerCode)))
-    .returning({ id: championPick.id })
-  await notifyChampionResult(db, competitionId, winnerCode, collector)
+    .returning({ id: championPick.id, points: championPick.awardedPoints })
+
+  // Notify only when the bonus changes hands. This runs on every finalize tick
+  // (that is what heals a `winner` the provider fills in late, since the
+  // re-score gate never sees `winner` move), and the dedupe is a row the user
+  // can delete - so re-announcing an unchanged award resurrects a dismissal.
+  const held = new Set(before.map((r) => r.id))
+  const awarded = updated.filter((r) => r.points > 0).map((r) => r.id)
+  if (awarded.length !== held.size || awarded.some((id) => !held.has(id))) {
+    await notifyChampionResult(db, competitionId, winnerCode, collector)
+  }
   return updated.length
 }
